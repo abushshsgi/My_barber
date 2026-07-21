@@ -134,6 +134,44 @@ function BarberDashboard() {
         </div>
       </div>
 
+      {/* TOP boost CTA — empty calendar / growth */}
+      {today.length === 0 ? (
+        <Link
+          to="/barber/marketing"
+          className="flex flex-col gap-3 rounded-xl border border-foreground/15 bg-foreground p-5 text-background sm:flex-row sm:items-center sm:justify-between"
+        >
+          <div className="min-w-0">
+            <p className="text-[11px] font-bold uppercase tracking-[0.16em] opacity-60">Marketing</p>
+            <p className="mt-1 font-heading text-lg font-semibold tracking-tight">
+              Bugun bron yo‘q — TOP boost yoqing
+            </p>
+            <p className="mt-1 text-sm opacity-75">
+              Xaritada yuqoriroq ko‘rinish · 99 000 so‘m / 7 kun
+            </p>
+          </div>
+          <span className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-lg bg-background px-4 text-sm font-bold text-foreground">
+            Boost sotib ol
+            <ArrowRight className="size-4" />
+          </span>
+        </Link>
+      ) : (
+        <div className="flex flex-col gap-2 rounded-xl border border-border bg-card p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-sm font-semibold">Shu oy oqim</p>
+            <p className="text-xs text-muted-foreground">
+              {today.length} bugungi bron · {clients.length} mijoz bazada · reyting {avgRating.toFixed(1)}
+            </p>
+          </div>
+          <Link
+            to="/barber/marketing"
+            className="inline-flex h-10 items-center justify-center gap-1.5 rounded-lg border border-border px-3 text-xs font-bold hover:bg-muted"
+          >
+            TOP boost
+            <ArrowRight className="size-3.5" />
+          </Link>
+        </div>
+      )}
+
       {/* KPI grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <KPI

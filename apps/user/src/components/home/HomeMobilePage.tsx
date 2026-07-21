@@ -3,6 +3,7 @@ import type { HomeData } from "@/components/home/useHomeData";
 import { HomeUnifiedSearchResults } from "@/components/home/HomeBlocks";
 import { HomeMobileBanner } from "@/components/home/HomeMobileBanner";
 import { HomeSubscriptionMarketing } from "@/components/home/HomeSubscriptionMarketing";
+import { SubscriptionWinBackBanner } from "@/components/subscriptions/SubscriptionWinBackBanner";
 import {
   HomeMobileCategories,
   HomeMobileFeatured,
@@ -41,6 +42,10 @@ export function HomeMobilePage({ data }: Props) {
 
           <MotionSection>
             <HomeMobileBanner />
+          </MotionSection>
+
+          <MotionSection>
+            <SubscriptionWinBackBanner />
           </MotionSection>
 
           <MotionSection>

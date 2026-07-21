@@ -93,12 +93,24 @@ export function MorphLookShareLanding({ styleId }: Props) {
           className="flex w-full min-h-14 items-center justify-center gap-2 rounded-2xl bg-white text-base font-bold text-black touch-manipulation active:scale-[0.98]"
         >
           <Sparkles className="h-5 w-5" />
-          {t("aiStylePage.shareLook.cta", { defaultValue: "O‘zimda sinab ko‘rish" })}
+          {t("aiStylePage.shareLook.cta", { defaultValue: "O‘zimda sinab ko‘rish — Morph AI" })}
         </button>
+
+        <Link
+          to="/wallet"
+          search={{ section: "subscriptions", plan: "starter", returnTo: "/ai-style" }}
+          className="flex w-full min-h-11 items-center justify-center gap-2 rounded-2xl border border-white/20 text-sm font-bold text-white/90 touch-manipulation"
+        >
+          <Wand2 className="h-4 w-4" />
+          {t("aiStylePage.shareLook.unlockCta", {
+            defaultValue: "Obuna bilan ochish — Starter",
+          })}
+        </Link>
 
         <p className="text-center text-[11px] text-white/45">
           {t("aiStylePage.shareLook.authHint", {
-            defaultValue: "Davom etish uchun tezkor ro‘yxatdan o‘tasiz — keyin to‘g‘ridan-to‘g‘ri Morf AI try-on ochiladi.",
+            defaultValue:
+              "Davom etish uchun tezkor ro‘yxatdan o‘tasiz — keyin Morph AI try-on. 3 do‘st = 7 kun bepul.",
           })}
         </p>
 

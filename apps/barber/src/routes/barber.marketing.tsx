@@ -1,11 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
-import { Plus, Megaphone, Copy, Sparkles, Send, Rocket } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Plus, Megaphone, Copy, Sparkles, Send, Rocket, UserRound } from "lucide-react";
 import { useBarberContext } from "@/components/barber/BarberContext";
 import { PageHeader, SectionCard, StatusPill } from "@/components/barber/primitives";
 import { toast } from "sonner";
 import { apiFetch, formatApiError } from "@/lib/api";
 import { useQuery } from "@tanstack/react-query";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/barber/marketing")({
   component: MarketingPage,
@@ -33,6 +34,16 @@ function MarketingPage() {
     expires: "",
   });
   const [announcement, setAnnouncement] = useState({ title: "", message: "" });
+
+  const staleClients = useMemo(() => {
+    const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
+    return clients.filter((c) => {
+      if (!c.last_visit) return true;
+      const t = Date.parse(c.last_visit);
+      if (Number.isNaN(t)) return true;
+      return t < cutoff;
+    });
+  }, [clients]);
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto space-y-6">
@@ -160,24 +171,70 @@ function MarketingPage() {
         </div>
       </SectionCard>
 
+      <SectionCard
+        title="Win-back — 30 kun kelmagan"
+        description={`${staleClients.length} ta mijoz qayta chaqirishga tayyor`}
+      >
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm text-muted-foreground">
+            Uzoq kelmagan mijozlarga −15% promokod yarating va e&apos;lon yuboring.
+          </p>
+          <button
+            type="button"
+            onClick={async () => {
+              const code = `BACK${Math.floor(10 + Math.random() * 89)}`;
+              const expires = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000)
+                .toISOString()
+                .slice(0, 10);
+              const ok = await addPromo({
+                code,
+                description: "30 kun kelmaganlar uchun −15%",
+                discount_pct: 15,
+                max_uses: Math.max(10, staleClients.length),
+                expires,
+              });
+              if (ok) {
+                toast.success(`${code} yaratildi`);
+                setAnnouncement({
+                  title: "Sizni kutamiz!",
+                  message: `Uzoq ko‘rinmadingiz. ${code} promokodi bilan −15% chegirma — 14 kun amal qiladi.`,
+                });
+                document.getElementById("announcement-form")?.scrollIntoView({ behavior: "smooth" });
+              } else {
+                toast.error("Promokod yaratilmadi");
+              }
+            }}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-foreground text-background text-sm font-medium hover:opacity-90"
+          >
+            <UserRound className="size-4" />
+            Win-back promokod
+          </button>
+        </div>
+      </SectionCard>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
         <Hero
           icon={<Megaphone className="size-5" />}
           title="Aksiya yuborish"
           desc="Barcha mijozlarga push xabar yuboring."
           cta="Boshlash"
+          onClick={() => {
+            document.getElementById("announcement-form")?.scrollIntoView({ behavior: "smooth" });
+          }}
         />
         <Hero
           icon={<Sparkles className="size-5" />}
           title="Loyallik dasturi"
-          desc="Doimiy mijozlar uchun chegirmalar."
-          cta="Yoqish"
+          desc="Tez orada — doimiy mijozlar uchun chegirmalar."
+          cta="Tez orada"
+          disabled
         />
         <Hero
           icon={<Send className="size-5" />}
           title="SMS reklama"
-          desc={`${clients.length} ta mijozga SMS yuboring.`}
-          cta="Tayyorlash"
+          desc={`${clients.length} ta mijoz — SMS moduli tez orada.`}
+          cta="Tez orada"
+          disabled
         />
       </div>
 
@@ -225,7 +282,7 @@ function MarketingPage() {
       </SectionCard>
 
       <SectionCard title="Mijozlarga e'lon" description="Push, SMS yoki email orqali yuboring">
-        <div className="space-y-3">
+        <div id="announcement-form" className="space-y-3">
           <input
             placeholder="Sarlavha"
             value={announcement.title}
@@ -277,21 +334,36 @@ function Hero({
   title,
   desc,
   cta,
+  onClick,
+  disabled,
 }: {
   icon: React.ReactNode;
   title: string;
   desc: string;
   cta: string;
+  onClick?: () => void;
+  disabled?: boolean;
 }) {
   return (
-    <div className="rounded-xl border border-border bg-card p-5 hover:border-foreground/30 transition-colors">
+    <div
+      className={cn(
+        "rounded-xl border border-border bg-card p-5 transition-colors",
+        disabled ? "opacity-70" : "hover:border-foreground/30",
+      )}
+    >
       <div className="size-10 rounded-lg bg-foreground text-background flex items-center justify-center mb-3">
         {icon}
       </div>
       <div className="font-heading font-medium">{title}</div>
       <div className="text-sm text-muted-foreground mt-1">{desc}</div>
-      <button className="mt-4 text-sm font-medium underline-offset-4 hover:underline">
-        {cta} →
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={onClick}
+        className="mt-4 text-sm font-medium underline-offset-4 hover:underline disabled:cursor-not-allowed disabled:no-underline"
+      >
+        {cta}
+        {disabled ? "" : " →"}
       </button>
     </div>
   );

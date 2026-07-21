@@ -10,6 +10,7 @@ import {
 import { HomeSalonSectionsBlock, useHomeLayoutSlice } from "./home-layout-shared";
 import { HomeUnifiedSearchResults } from "@/components/home/HomeBlocks";
 import { HomeSubscriptionMarketing } from "@/components/home/HomeSubscriptionMarketing";
+import { SubscriptionWinBackBanner } from "@/components/subscriptions/SubscriptionWinBackBanner";
 import { HomeMobileMixedDiscovery } from "@/components/home/HomeMobileSections";
 import { NoSalonsEmpty } from "@/components/NoSalonsEmpty";
 
@@ -63,7 +64,10 @@ export function HomeBazaarClassic({ data }: Props) {
         </div>
       </div>
       {!data.searchActive ? (
-        <HomeSubscriptionMarketing className="px-0" />
+        <>
+          <SubscriptionWinBackBanner className="px-0" />
+          <HomeSubscriptionMarketing className="px-0" />
+        </>
       ) : null}
       {!data.searchActive ? (
         <div className="min-w-0 overflow-hidden">

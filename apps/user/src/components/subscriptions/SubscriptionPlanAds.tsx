@@ -82,7 +82,7 @@ export function SubscriptionPlanAds({
             <Link
               key={plan.code}
               to="/wallet"
-              search={{ section: "subscriptions" }}
+              search={{ section: "subscriptions", plan: plan.code }}
               onClick={onNavigate}
               className={cn(
                 "flex min-w-[148px] shrink-0 flex-col gap-2 rounded-2xl border px-3.5 py-3 transition-[transform,background-color] active:scale-[0.98]",
@@ -120,7 +120,7 @@ export function SubscriptionPlanAds({
                   plan.highlight ? "text-black/70" : "text-white/70",
                 )}
               >
-                Ochish
+                Shu tarif bilan ochish
                 <ChevronRight className="size-3.5" strokeWidth={2.5} />
               </span>
             </Link>
@@ -139,7 +139,7 @@ export function SubscriptionPlanAds({
           <Link
             key={plan.code}
             to="/wallet"
-            search={{ section: "subscriptions" }}
+            search={{ section: "subscriptions", plan: plan.code }}
             onClick={onNavigate}
             className={cn(
               "group relative flex items-stretch gap-3 overflow-hidden rounded-[22px] border p-3.5 transition-[transform,background-color] active:scale-[0.985]",
@@ -228,7 +228,7 @@ export function SubscriptionPromoBanner({
   return (
     <Link
       to="/wallet"
-      search={{ section: "subscriptions" }}
+      search={{ section: "subscriptions", plan: "starter", returnTo: "/ai-style" }}
       onClick={onNavigate}
       className={cn(
         "flex items-center gap-3 overflow-hidden rounded-2xl border border-border bg-foreground px-4 py-3.5 text-background",
@@ -240,9 +240,9 @@ export function SubscriptionPromoBanner({
         <Crown className="size-5" strokeWidth={2} />
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block text-[13px] font-bold leading-snug">Morph AI obunalari</span>
+        <span className="block text-[13px] font-bold leading-snug">Morph AI ni ochish</span>
         <span className="mt-0.5 block text-[11px] font-medium opacity-70">
-          Starter · Plus · Pro — tanlang va oching
+          Selfie → yangi uslub — Starter bilan bir zumda
         </span>
       </span>
       <ChevronRight className="size-5 shrink-0 opacity-70" strokeWidth={2.25} />

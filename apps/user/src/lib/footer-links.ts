@@ -66,8 +66,9 @@ export const FOOTER_SECTIONS: FooterSection[] = [
     titleKey: "footer.business",
     titleDefault: "Salon egalari uchun",
     links: [
-      { to: "/support", labelKey: "footer.joinSalon", defaultValue: "Saloningizni qo'shing" },
-      { to: "/support", labelKey: "footer.partnership", defaultValue: "Hamkorlik" },
+      { to: "/for-salons", labelKey: "footer.joinSalon", defaultValue: "Saloningizni qo'shing" },
+      { to: "__partner_signup__", labelKey: "footer.partnership", defaultValue: "Hamkorlik", external: true },
+      { to: "__partner_welcome__", labelKey: "footer.partnerApp", defaultValue: "Partner panel", external: true },
     ],
   },
   {

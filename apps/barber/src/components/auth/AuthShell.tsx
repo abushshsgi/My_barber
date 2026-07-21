@@ -23,8 +23,8 @@ export function AuthShell({ flow, tab, signupStep = 0, onTabChange, children }: 
       : signupStep === 0
         ? "Biznes turi"
         : signupStep === 1 && !flow
-          ? "Ro'yxatdan o'tish"
-          : (meta?.signupTitle ?? "Ro'yxatdan o'tish");
+          ? "Bepul boshlash"
+          : (meta?.signupTitle ?? "Bepul boshlash");
 
   useEffect(() => {
     const html = document.documentElement;

@@ -26,7 +26,7 @@ const HERO_SLIDES = [
   {
     photoId: 3993448,
     to: "/wallet" as const,
-    search: { section: "subscriptions" as const },
+    search: { section: "subscriptions" as const, plan: "starter" as const, returnTo: "/ai-style" as const },
     badgeKey: "homePage.subscriptionPromo.eyebrow",
     titleKey: "homePage.subscriptionPromo.bannerTitle",
     descKey: "homePage.subscriptionPromo.hint",

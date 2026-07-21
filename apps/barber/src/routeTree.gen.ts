@@ -9,65 +9,56 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as VerifyEmailRouteImport } from './routes/verify-email'
-import { Route as CheckEmailRouteImport } from './routes/check-email'
-import { Route as BarberRouteImport } from './routes/barber'
-import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as BarberRouteImport } from './routes/barber'
+import { Route as CheckEmailRouteImport } from './routes/check-email'
+import { Route as VerifyEmailRouteImport } from './routes/verify-email'
+import { Route as WelcomeRouteImport } from './routes/welcome'
 import { Route as BarberIndexRouteImport } from './routes/barber.index'
-import { Route as SalonJoinRouteImport } from './routes/salon.join'
-import { Route as SalonCreateRouteImport } from './routes/salon.create'
-import { Route as MybarberSetupRouteImport } from './routes/mybarber.setup'
-import { Route as IndependentSetupRouteImport } from './routes/independent.setup'
-import { Route as BarberWithdrawalsRouteImport } from './routes/barber.withdrawals'
-import { Route as BarberStatsRouteImport } from './routes/barber.stats'
-import { Route as BarberSettingsRouteImport } from './routes/barber.settings'
-import { Route as BarberServicesRouteImport } from './routes/barber.services'
-import { Route as BarberScheduleRouteImport } from './routes/barber.schedule'
-import { Route as BarberReviewsRouteImport } from './routes/barber.reviews'
-import { Route as BarberProfileRouteImport } from './routes/barber.profile'
-import { Route as BarberPortfolioRouteImport } from './routes/barber.portfolio'
-import { Route as BarberNotificationsRouteImport } from './routes/barber.notifications'
-import { Route as BarberMarketingRouteImport } from './routes/barber.marketing'
-import { Route as BarberInventoryRouteImport } from './routes/barber.inventory'
-import { Route as BarberHelpRouteImport } from './routes/barber.help'
-import { Route as BarberGoalsRouteImport } from './routes/barber.goals'
-import { Route as BarberExpensesRouteImport } from './routes/barber.expenses'
-import { Route as BarberEarningsRouteImport } from './routes/barber.earnings'
-import { Route as BarberClientsRouteImport } from './routes/barber.clients'
-import { Route as BarberChatRouteImport } from './routes/barber.chat'
-import { Route as BarberCalendarRouteImport } from './routes/barber.calendar'
-import { Route as BarberBookingsRouteImport } from './routes/barber.bookings'
-import { Route as BarberAmenitiesRouteImport } from './routes/barber.amenities'
 import { Route as BarberActivationRouteImport } from './routes/barber.activation'
-import { Route as SalonJoinIndexRouteImport } from './routes/salon.join.index'
-import { Route as BarberStatsIndexRouteImport } from './routes/barber.stats.index'
-import { Route as BarberSalonViewIndexRouteImport } from './routes/barber.salon-view.index'
-import { Route as SalonJoinSetupRouteImport } from './routes/salon.join.setup'
-import { Route as BarberStatsGraphsRouteImport } from './routes/barber.stats.graphs'
-import { Route as BarberSalonViewTeamRouteImport } from './routes/barber.salon-view.team'
-import { Route as BarberSalonViewReviewsRouteImport } from './routes/barber.salon-view.reviews'
-import { Route as BarberSalonViewMembersRouteImport } from './routes/barber.salon-view.members'
-import { Route as BarberSalonViewGalleryRouteImport } from './routes/barber.salon-view.gallery'
-import { Route as BarberSalonViewEditRouteImport } from './routes/barber.salon-view.edit'
+import { Route as BarberAmenitiesRouteImport } from './routes/barber.amenities'
+import { Route as BarberBookingsRouteImport } from './routes/barber.bookings'
+import { Route as BarberCalendarRouteImport } from './routes/barber.calendar'
+import { Route as BarberChatRouteImport } from './routes/barber.chat'
+import { Route as BarberClientsRouteImport } from './routes/barber.clients'
+import { Route as BarberEarningsRouteImport } from './routes/barber.earnings'
+import { Route as BarberExpensesRouteImport } from './routes/barber.expenses'
+import { Route as BarberGoalsRouteImport } from './routes/barber.goals'
+import { Route as BarberHelpRouteImport } from './routes/barber.help'
+import { Route as BarberInventoryRouteImport } from './routes/barber.inventory'
+import { Route as BarberMarketingRouteImport } from './routes/barber.marketing'
+import { Route as BarberNotificationsRouteImport } from './routes/barber.notifications'
+import { Route as BarberPortfolioRouteImport } from './routes/barber.portfolio'
+import { Route as BarberProfileRouteImport } from './routes/barber.profile'
+import { Route as BarberReviewsRouteImport } from './routes/barber.reviews'
+import { Route as BarberScheduleRouteImport } from './routes/barber.schedule'
+import { Route as BarberServicesRouteImport } from './routes/barber.services'
+import { Route as BarberSettingsRouteImport } from './routes/barber.settings'
+import { Route as BarberStatsRouteImport } from './routes/barber.stats'
+import { Route as BarberWithdrawalsRouteImport } from './routes/barber.withdrawals'
+import { Route as IndependentSetupRouteImport } from './routes/independent.setup'
+import { Route as MybarberSetupRouteImport } from './routes/mybarber.setup'
+import { Route as SalonCreateRouteImport } from './routes/salon.create'
+import { Route as SalonJoinRouteImport } from './routes/salon.join'
 import { Route as BarberBookingsBookingIdRouteImport } from './routes/barber.bookings.$bookingId'
+import { Route as BarberSalonViewIndexRouteImport } from './routes/barber.salon-view.index'
+import { Route as BarberSalonViewEditRouteImport } from './routes/barber.salon-view.edit'
+import { Route as BarberSalonViewGalleryRouteImport } from './routes/barber.salon-view.gallery'
+import { Route as BarberSalonViewMembersRouteImport } from './routes/barber.salon-view.members'
+import { Route as BarberSalonViewReviewsRouteImport } from './routes/barber.salon-view.reviews'
+import { Route as BarberSalonViewTeamRouteImport } from './routes/barber.salon-view.team'
+import { Route as BarberStatsIndexRouteImport } from './routes/barber.stats.index'
+import { Route as BarberStatsGraphsRouteImport } from './routes/barber.stats.graphs'
+import { Route as SalonJoinIndexRouteImport } from './routes/salon.join.index'
+import { Route as SalonJoinSetupRouteImport } from './routes/salon.join.setup'
 import { Route as BarberBookingsBookingIdIndexRouteImport } from './routes/barber.bookings.$bookingId.index'
-import { Route as BarberBookingsBookingIdSessionRouteImport } from './routes/barber.bookings.$bookingId.session'
 import { Route as BarberBookingsBookingIdCheckInRouteImport } from './routes/barber.bookings.$bookingId.check-in'
+import { Route as BarberBookingsBookingIdSessionRouteImport } from './routes/barber.bookings.$bookingId.session'
 
-const VerifyEmailRoute = VerifyEmailRouteImport.update({
-  id: '/verify-email',
-  path: '/verify-email',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CheckEmailRoute = CheckEmailRouteImport.update({
-  id: '/check-email',
-  path: '/check-email',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const BarberRoute = BarberRouteImport.update({
-  id: '/barber',
-  path: '/barber',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRoute = AuthRouteImport.update({
@@ -75,9 +66,24 @@ const AuthRoute = AuthRouteImport.update({
   path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const BarberRoute = BarberRouteImport.update({
+  id: '/barber',
+  path: '/barber',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CheckEmailRoute = CheckEmailRouteImport.update({
+  id: '/check-email',
+  path: '/check-email',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VerifyEmailRoute = VerifyEmailRouteImport.update({
+  id: '/verify-email',
+  path: '/verify-email',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WelcomeRoute = WelcomeRouteImport.update({
+  id: '/welcome',
+  path: '/welcome',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BarberIndexRoute = BarberIndexRouteImport.update({
@@ -85,119 +91,9 @@ const BarberIndexRoute = BarberIndexRouteImport.update({
   path: '/',
   getParentRoute: () => BarberRoute,
 } as any)
-const SalonJoinRoute = SalonJoinRouteImport.update({
-  id: '/salon/join',
-  path: '/salon/join',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SalonCreateRoute = SalonCreateRouteImport.update({
-  id: '/salon/create',
-  path: '/salon/create',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const MybarberSetupRoute = MybarberSetupRouteImport.update({
-  id: '/mybarber/setup',
-  path: '/mybarber/setup',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const IndependentSetupRoute = IndependentSetupRouteImport.update({
-  id: '/independent/setup',
-  path: '/independent/setup',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const BarberWithdrawalsRoute = BarberWithdrawalsRouteImport.update({
-  id: '/withdrawals',
-  path: '/withdrawals',
-  getParentRoute: () => BarberRoute,
-} as any)
-const BarberStatsRoute = BarberStatsRouteImport.update({
-  id: '/stats',
-  path: '/stats',
-  getParentRoute: () => BarberRoute,
-} as any)
-const BarberSettingsRoute = BarberSettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
-  getParentRoute: () => BarberRoute,
-} as any)
-const BarberServicesRoute = BarberServicesRouteImport.update({
-  id: '/services',
-  path: '/services',
-  getParentRoute: () => BarberRoute,
-} as any)
-const BarberScheduleRoute = BarberScheduleRouteImport.update({
-  id: '/schedule',
-  path: '/schedule',
-  getParentRoute: () => BarberRoute,
-} as any)
-const BarberReviewsRoute = BarberReviewsRouteImport.update({
-  id: '/reviews',
-  path: '/reviews',
-  getParentRoute: () => BarberRoute,
-} as any)
-const BarberProfileRoute = BarberProfileRouteImport.update({
-  id: '/profile',
-  path: '/profile',
-  getParentRoute: () => BarberRoute,
-} as any)
-const BarberPortfolioRoute = BarberPortfolioRouteImport.update({
-  id: '/portfolio',
-  path: '/portfolio',
-  getParentRoute: () => BarberRoute,
-} as any)
-const BarberNotificationsRoute = BarberNotificationsRouteImport.update({
-  id: '/notifications',
-  path: '/notifications',
-  getParentRoute: () => BarberRoute,
-} as any)
-const BarberMarketingRoute = BarberMarketingRouteImport.update({
-  id: '/marketing',
-  path: '/marketing',
-  getParentRoute: () => BarberRoute,
-} as any)
-const BarberInventoryRoute = BarberInventoryRouteImport.update({
-  id: '/inventory',
-  path: '/inventory',
-  getParentRoute: () => BarberRoute,
-} as any)
-const BarberHelpRoute = BarberHelpRouteImport.update({
-  id: '/help',
-  path: '/help',
-  getParentRoute: () => BarberRoute,
-} as any)
-const BarberGoalsRoute = BarberGoalsRouteImport.update({
-  id: '/goals',
-  path: '/goals',
-  getParentRoute: () => BarberRoute,
-} as any)
-const BarberExpensesRoute = BarberExpensesRouteImport.update({
-  id: '/expenses',
-  path: '/expenses',
-  getParentRoute: () => BarberRoute,
-} as any)
-const BarberEarningsRoute = BarberEarningsRouteImport.update({
-  id: '/earnings',
-  path: '/earnings',
-  getParentRoute: () => BarberRoute,
-} as any)
-const BarberClientsRoute = BarberClientsRouteImport.update({
-  id: '/clients',
-  path: '/clients',
-  getParentRoute: () => BarberRoute,
-} as any)
-const BarberChatRoute = BarberChatRouteImport.update({
-  id: '/chat',
-  path: '/chat',
-  getParentRoute: () => BarberRoute,
-} as any)
-const BarberCalendarRoute = BarberCalendarRouteImport.update({
-  id: '/calendar',
-  path: '/calendar',
-  getParentRoute: () => BarberRoute,
-} as any)
-const BarberBookingsRoute = BarberBookingsRouteImport.update({
-  id: '/bookings',
-  path: '/bookings',
+const BarberActivationRoute = BarberActivationRouteImport.update({
+  id: '/activation',
+  path: '/activation',
   getParentRoute: () => BarberRoute,
 } as any)
 const BarberAmenitiesRoute = BarberAmenitiesRouteImport.update({
@@ -205,54 +101,129 @@ const BarberAmenitiesRoute = BarberAmenitiesRouteImport.update({
   path: '/amenities',
   getParentRoute: () => BarberRoute,
 } as any)
-const BarberActivationRoute = BarberActivationRouteImport.update({
-  id: '/activation',
-  path: '/activation',
+const BarberBookingsRoute = BarberBookingsRouteImport.update({
+  id: '/bookings',
+  path: '/bookings',
   getParentRoute: () => BarberRoute,
 } as any)
-const SalonJoinIndexRoute = SalonJoinIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => SalonJoinRoute,
+const BarberCalendarRoute = BarberCalendarRouteImport.update({
+  id: '/calendar',
+  path: '/calendar',
+  getParentRoute: () => BarberRoute,
 } as any)
-const BarberStatsIndexRoute = BarberStatsIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => BarberStatsRoute,
+const BarberChatRoute = BarberChatRouteImport.update({
+  id: '/chat',
+  path: '/chat',
+  getParentRoute: () => BarberRoute,
+} as any)
+const BarberClientsRoute = BarberClientsRouteImport.update({
+  id: '/clients',
+  path: '/clients',
+  getParentRoute: () => BarberRoute,
+} as any)
+const BarberEarningsRoute = BarberEarningsRouteImport.update({
+  id: '/earnings',
+  path: '/earnings',
+  getParentRoute: () => BarberRoute,
+} as any)
+const BarberExpensesRoute = BarberExpensesRouteImport.update({
+  id: '/expenses',
+  path: '/expenses',
+  getParentRoute: () => BarberRoute,
+} as any)
+const BarberGoalsRoute = BarberGoalsRouteImport.update({
+  id: '/goals',
+  path: '/goals',
+  getParentRoute: () => BarberRoute,
+} as any)
+const BarberHelpRoute = BarberHelpRouteImport.update({
+  id: '/help',
+  path: '/help',
+  getParentRoute: () => BarberRoute,
+} as any)
+const BarberInventoryRoute = BarberInventoryRouteImport.update({
+  id: '/inventory',
+  path: '/inventory',
+  getParentRoute: () => BarberRoute,
+} as any)
+const BarberMarketingRoute = BarberMarketingRouteImport.update({
+  id: '/marketing',
+  path: '/marketing',
+  getParentRoute: () => BarberRoute,
+} as any)
+const BarberNotificationsRoute = BarberNotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
+  getParentRoute: () => BarberRoute,
+} as any)
+const BarberPortfolioRoute = BarberPortfolioRouteImport.update({
+  id: '/portfolio',
+  path: '/portfolio',
+  getParentRoute: () => BarberRoute,
+} as any)
+const BarberProfileRoute = BarberProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => BarberRoute,
+} as any)
+const BarberReviewsRoute = BarberReviewsRouteImport.update({
+  id: '/reviews',
+  path: '/reviews',
+  getParentRoute: () => BarberRoute,
+} as any)
+const BarberScheduleRoute = BarberScheduleRouteImport.update({
+  id: '/schedule',
+  path: '/schedule',
+  getParentRoute: () => BarberRoute,
+} as any)
+const BarberServicesRoute = BarberServicesRouteImport.update({
+  id: '/services',
+  path: '/services',
+  getParentRoute: () => BarberRoute,
+} as any)
+const BarberSettingsRoute = BarberSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => BarberRoute,
+} as any)
+const BarberStatsRoute = BarberStatsRouteImport.update({
+  id: '/stats',
+  path: '/stats',
+  getParentRoute: () => BarberRoute,
+} as any)
+const BarberWithdrawalsRoute = BarberWithdrawalsRouteImport.update({
+  id: '/withdrawals',
+  path: '/withdrawals',
+  getParentRoute: () => BarberRoute,
+} as any)
+const IndependentSetupRoute = IndependentSetupRouteImport.update({
+  id: '/independent/setup',
+  path: '/independent/setup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MybarberSetupRoute = MybarberSetupRouteImport.update({
+  id: '/mybarber/setup',
+  path: '/mybarber/setup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SalonCreateRoute = SalonCreateRouteImport.update({
+  id: '/salon/create',
+  path: '/salon/create',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SalonJoinRoute = SalonJoinRouteImport.update({
+  id: '/salon/join',
+  path: '/salon/join',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BarberBookingsBookingIdRoute = BarberBookingsBookingIdRouteImport.update({
+  id: '/$bookingId',
+  path: '/$bookingId',
+  getParentRoute: () => BarberBookingsRoute,
 } as any)
 const BarberSalonViewIndexRoute = BarberSalonViewIndexRouteImport.update({
   id: '/salon-view/',
   path: '/salon-view/',
-  getParentRoute: () => BarberRoute,
-} as any)
-const SalonJoinSetupRoute = SalonJoinSetupRouteImport.update({
-  id: '/setup',
-  path: '/setup',
-  getParentRoute: () => SalonJoinRoute,
-} as any)
-const BarberStatsGraphsRoute = BarberStatsGraphsRouteImport.update({
-  id: '/graphs',
-  path: '/graphs',
-  getParentRoute: () => BarberStatsRoute,
-} as any)
-const BarberSalonViewTeamRoute = BarberSalonViewTeamRouteImport.update({
-  id: '/salon-view/team',
-  path: '/salon-view/team',
-  getParentRoute: () => BarberRoute,
-} as any)
-const BarberSalonViewReviewsRoute = BarberSalonViewReviewsRouteImport.update({
-  id: '/salon-view/reviews',
-  path: '/salon-view/reviews',
-  getParentRoute: () => BarberRoute,
-} as any)
-const BarberSalonViewMembersRoute = BarberSalonViewMembersRouteImport.update({
-  id: '/salon-view/members',
-  path: '/salon-view/members',
-  getParentRoute: () => BarberRoute,
-} as any)
-const BarberSalonViewGalleryRoute = BarberSalonViewGalleryRouteImport.update({
-  id: '/salon-view/gallery',
-  path: '/salon-view/gallery',
   getParentRoute: () => BarberRoute,
 } as any)
 const BarberSalonViewEditRoute = BarberSalonViewEditRouteImport.update({
@@ -260,10 +231,45 @@ const BarberSalonViewEditRoute = BarberSalonViewEditRouteImport.update({
   path: '/salon-view/edit',
   getParentRoute: () => BarberRoute,
 } as any)
-const BarberBookingsBookingIdRoute = BarberBookingsBookingIdRouteImport.update({
-  id: '/$bookingId',
-  path: '/$bookingId',
-  getParentRoute: () => BarberBookingsRoute,
+const BarberSalonViewGalleryRoute = BarberSalonViewGalleryRouteImport.update({
+  id: '/salon-view/gallery',
+  path: '/salon-view/gallery',
+  getParentRoute: () => BarberRoute,
+} as any)
+const BarberSalonViewMembersRoute = BarberSalonViewMembersRouteImport.update({
+  id: '/salon-view/members',
+  path: '/salon-view/members',
+  getParentRoute: () => BarberRoute,
+} as any)
+const BarberSalonViewReviewsRoute = BarberSalonViewReviewsRouteImport.update({
+  id: '/salon-view/reviews',
+  path: '/salon-view/reviews',
+  getParentRoute: () => BarberRoute,
+} as any)
+const BarberSalonViewTeamRoute = BarberSalonViewTeamRouteImport.update({
+  id: '/salon-view/team',
+  path: '/salon-view/team',
+  getParentRoute: () => BarberRoute,
+} as any)
+const BarberStatsIndexRoute = BarberStatsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => BarberStatsRoute,
+} as any)
+const BarberStatsGraphsRoute = BarberStatsGraphsRouteImport.update({
+  id: '/graphs',
+  path: '/graphs',
+  getParentRoute: () => BarberStatsRoute,
+} as any)
+const SalonJoinIndexRoute = SalonJoinIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => SalonJoinRoute,
+} as any)
+const SalonJoinSetupRoute = SalonJoinSetupRouteImport.update({
+  id: '/setup',
+  path: '/setup',
+  getParentRoute: () => SalonJoinRoute,
 } as any)
 const BarberBookingsBookingIdIndexRoute =
   BarberBookingsBookingIdIndexRouteImport.update({
@@ -271,16 +277,16 @@ const BarberBookingsBookingIdIndexRoute =
     path: '/',
     getParentRoute: () => BarberBookingsBookingIdRoute,
   } as any)
-const BarberBookingsBookingIdSessionRoute =
-  BarberBookingsBookingIdSessionRouteImport.update({
-    id: '/session',
-    path: '/session',
-    getParentRoute: () => BarberBookingsBookingIdRoute,
-  } as any)
 const BarberBookingsBookingIdCheckInRoute =
   BarberBookingsBookingIdCheckInRouteImport.update({
     id: '/check-in',
     path: '/check-in',
+    getParentRoute: () => BarberBookingsBookingIdRoute,
+  } as any)
+const BarberBookingsBookingIdSessionRoute =
+  BarberBookingsBookingIdSessionRouteImport.update({
+    id: '/session',
+    path: '/session',
     getParentRoute: () => BarberBookingsBookingIdRoute,
   } as any)
 
@@ -290,6 +296,7 @@ export interface FileRoutesByFullPath {
   '/barber': typeof BarberRouteWithChildren
   '/check-email': typeof CheckEmailRoute
   '/verify-email': typeof VerifyEmailRoute
+  '/welcome': typeof WelcomeRoute
   '/barber/activation': typeof BarberActivationRoute
   '/barber/amenities': typeof BarberAmenitiesRoute
   '/barber/bookings': typeof BarberBookingsRouteWithChildren
@@ -336,6 +343,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/check-email': typeof CheckEmailRoute
   '/verify-email': typeof VerifyEmailRoute
+  '/welcome': typeof WelcomeRoute
   '/barber/activation': typeof BarberActivationRoute
   '/barber/amenities': typeof BarberAmenitiesRoute
   '/barber/bookings': typeof BarberBookingsRouteWithChildren
@@ -381,6 +389,7 @@ export interface FileRoutesById {
   '/barber': typeof BarberRouteWithChildren
   '/check-email': typeof CheckEmailRoute
   '/verify-email': typeof VerifyEmailRoute
+  '/welcome': typeof WelcomeRoute
   '/barber/activation': typeof BarberActivationRoute
   '/barber/amenities': typeof BarberAmenitiesRoute
   '/barber/bookings': typeof BarberBookingsRouteWithChildren
@@ -430,6 +439,7 @@ export interface FileRouteTypes {
     | '/barber'
     | '/check-email'
     | '/verify-email'
+    | '/welcome'
     | '/barber/activation'
     | '/barber/amenities'
     | '/barber/bookings'
@@ -476,6 +486,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/check-email'
     | '/verify-email'
+    | '/welcome'
     | '/barber/activation'
     | '/barber/amenities'
     | '/barber/bookings'
@@ -520,6 +531,7 @@ export interface FileRouteTypes {
     | '/barber'
     | '/check-email'
     | '/verify-email'
+    | '/welcome'
     | '/barber/activation'
     | '/barber/amenities'
     | '/barber/bookings'
@@ -568,6 +580,7 @@ export interface RootRouteChildren {
   BarberRoute: typeof BarberRouteWithChildren
   CheckEmailRoute: typeof CheckEmailRoute
   VerifyEmailRoute: typeof VerifyEmailRoute
+  WelcomeRoute: typeof WelcomeRoute
   IndependentSetupRoute: typeof IndependentSetupRoute
   MybarberSetupRoute: typeof MybarberSetupRoute
   SalonCreateRoute: typeof SalonCreateRoute
@@ -576,25 +589,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/verify-email': {
-      id: '/verify-email'
-      path: '/verify-email'
-      fullPath: '/verify-email'
-      preLoaderRoute: typeof VerifyEmailRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/check-email': {
-      id: '/check-email'
-      path: '/check-email'
-      fullPath: '/check-email'
-      preLoaderRoute: typeof CheckEmailRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/barber': {
-      id: '/barber'
-      path: '/barber'
-      fullPath: '/barber'
-      preLoaderRoute: typeof BarberRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth': {
@@ -604,11 +603,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/barber': {
+      id: '/barber'
+      path: '/barber'
+      fullPath: '/barber'
+      preLoaderRoute: typeof BarberRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/check-email': {
+      id: '/check-email'
+      path: '/check-email'
+      fullPath: '/check-email'
+      preLoaderRoute: typeof CheckEmailRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/verify-email': {
+      id: '/verify-email'
+      path: '/verify-email'
+      fullPath: '/verify-email'
+      preLoaderRoute: typeof VerifyEmailRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/welcome': {
+      id: '/welcome'
+      path: '/welcome'
+      fullPath: '/welcome'
+      preLoaderRoute: typeof WelcomeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/barber/': {
@@ -618,165 +638,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BarberIndexRouteImport
       parentRoute: typeof BarberRoute
     }
-    '/salon/join': {
-      id: '/salon/join'
-      path: '/salon/join'
-      fullPath: '/salon/join'
-      preLoaderRoute: typeof SalonJoinRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/salon/create': {
-      id: '/salon/create'
-      path: '/salon/create'
-      fullPath: '/salon/create'
-      preLoaderRoute: typeof SalonCreateRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/mybarber/setup': {
-      id: '/mybarber/setup'
-      path: '/mybarber/setup'
-      fullPath: '/mybarber/setup'
-      preLoaderRoute: typeof MybarberSetupRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/independent/setup': {
-      id: '/independent/setup'
-      path: '/independent/setup'
-      fullPath: '/independent/setup'
-      preLoaderRoute: typeof IndependentSetupRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/barber/withdrawals': {
-      id: '/barber/withdrawals'
-      path: '/withdrawals'
-      fullPath: '/barber/withdrawals'
-      preLoaderRoute: typeof BarberWithdrawalsRouteImport
-      parentRoute: typeof BarberRoute
-    }
-    '/barber/stats': {
-      id: '/barber/stats'
-      path: '/stats'
-      fullPath: '/barber/stats'
-      preLoaderRoute: typeof BarberStatsRouteImport
-      parentRoute: typeof BarberRoute
-    }
-    '/barber/settings': {
-      id: '/barber/settings'
-      path: '/settings'
-      fullPath: '/barber/settings'
-      preLoaderRoute: typeof BarberSettingsRouteImport
-      parentRoute: typeof BarberRoute
-    }
-    '/barber/services': {
-      id: '/barber/services'
-      path: '/services'
-      fullPath: '/barber/services'
-      preLoaderRoute: typeof BarberServicesRouteImport
-      parentRoute: typeof BarberRoute
-    }
-    '/barber/schedule': {
-      id: '/barber/schedule'
-      path: '/schedule'
-      fullPath: '/barber/schedule'
-      preLoaderRoute: typeof BarberScheduleRouteImport
-      parentRoute: typeof BarberRoute
-    }
-    '/barber/reviews': {
-      id: '/barber/reviews'
-      path: '/reviews'
-      fullPath: '/barber/reviews'
-      preLoaderRoute: typeof BarberReviewsRouteImport
-      parentRoute: typeof BarberRoute
-    }
-    '/barber/profile': {
-      id: '/barber/profile'
-      path: '/profile'
-      fullPath: '/barber/profile'
-      preLoaderRoute: typeof BarberProfileRouteImport
-      parentRoute: typeof BarberRoute
-    }
-    '/barber/portfolio': {
-      id: '/barber/portfolio'
-      path: '/portfolio'
-      fullPath: '/barber/portfolio'
-      preLoaderRoute: typeof BarberPortfolioRouteImport
-      parentRoute: typeof BarberRoute
-    }
-    '/barber/notifications': {
-      id: '/barber/notifications'
-      path: '/notifications'
-      fullPath: '/barber/notifications'
-      preLoaderRoute: typeof BarberNotificationsRouteImport
-      parentRoute: typeof BarberRoute
-    }
-    '/barber/marketing': {
-      id: '/barber/marketing'
-      path: '/marketing'
-      fullPath: '/barber/marketing'
-      preLoaderRoute: typeof BarberMarketingRouteImport
-      parentRoute: typeof BarberRoute
-    }
-    '/barber/inventory': {
-      id: '/barber/inventory'
-      path: '/inventory'
-      fullPath: '/barber/inventory'
-      preLoaderRoute: typeof BarberInventoryRouteImport
-      parentRoute: typeof BarberRoute
-    }
-    '/barber/help': {
-      id: '/barber/help'
-      path: '/help'
-      fullPath: '/barber/help'
-      preLoaderRoute: typeof BarberHelpRouteImport
-      parentRoute: typeof BarberRoute
-    }
-    '/barber/goals': {
-      id: '/barber/goals'
-      path: '/goals'
-      fullPath: '/barber/goals'
-      preLoaderRoute: typeof BarberGoalsRouteImport
-      parentRoute: typeof BarberRoute
-    }
-    '/barber/expenses': {
-      id: '/barber/expenses'
-      path: '/expenses'
-      fullPath: '/barber/expenses'
-      preLoaderRoute: typeof BarberExpensesRouteImport
-      parentRoute: typeof BarberRoute
-    }
-    '/barber/earnings': {
-      id: '/barber/earnings'
-      path: '/earnings'
-      fullPath: '/barber/earnings'
-      preLoaderRoute: typeof BarberEarningsRouteImport
-      parentRoute: typeof BarberRoute
-    }
-    '/barber/clients': {
-      id: '/barber/clients'
-      path: '/clients'
-      fullPath: '/barber/clients'
-      preLoaderRoute: typeof BarberClientsRouteImport
-      parentRoute: typeof BarberRoute
-    }
-    '/barber/chat': {
-      id: '/barber/chat'
-      path: '/chat'
-      fullPath: '/barber/chat'
-      preLoaderRoute: typeof BarberChatRouteImport
-      parentRoute: typeof BarberRoute
-    }
-    '/barber/calendar': {
-      id: '/barber/calendar'
-      path: '/calendar'
-      fullPath: '/barber/calendar'
-      preLoaderRoute: typeof BarberCalendarRouteImport
-      parentRoute: typeof BarberRoute
-    }
-    '/barber/bookings': {
-      id: '/barber/bookings'
-      path: '/bookings'
-      fullPath: '/barber/bookings'
-      preLoaderRoute: typeof BarberBookingsRouteImport
+    '/barber/activation': {
+      id: '/barber/activation'
+      path: '/activation'
+      fullPath: '/barber/activation'
+      preLoaderRoute: typeof BarberActivationRouteImport
       parentRoute: typeof BarberRoute
     }
     '/barber/amenities': {
@@ -786,67 +652,179 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BarberAmenitiesRouteImport
       parentRoute: typeof BarberRoute
     }
-    '/barber/activation': {
-      id: '/barber/activation'
-      path: '/activation'
-      fullPath: '/barber/activation'
-      preLoaderRoute: typeof BarberActivationRouteImport
+    '/barber/bookings': {
+      id: '/barber/bookings'
+      path: '/bookings'
+      fullPath: '/barber/bookings'
+      preLoaderRoute: typeof BarberBookingsRouteImport
       parentRoute: typeof BarberRoute
     }
-    '/salon/join/': {
-      id: '/salon/join/'
-      path: '/'
-      fullPath: '/salon/join/'
-      preLoaderRoute: typeof SalonJoinIndexRouteImport
-      parentRoute: typeof SalonJoinRoute
+    '/barber/calendar': {
+      id: '/barber/calendar'
+      path: '/calendar'
+      fullPath: '/barber/calendar'
+      preLoaderRoute: typeof BarberCalendarRouteImport
+      parentRoute: typeof BarberRoute
     }
-    '/barber/stats/': {
-      id: '/barber/stats/'
-      path: '/'
-      fullPath: '/barber/stats/'
-      preLoaderRoute: typeof BarberStatsIndexRouteImport
-      parentRoute: typeof BarberStatsRoute
+    '/barber/chat': {
+      id: '/barber/chat'
+      path: '/chat'
+      fullPath: '/barber/chat'
+      preLoaderRoute: typeof BarberChatRouteImport
+      parentRoute: typeof BarberRoute
+    }
+    '/barber/clients': {
+      id: '/barber/clients'
+      path: '/clients'
+      fullPath: '/barber/clients'
+      preLoaderRoute: typeof BarberClientsRouteImport
+      parentRoute: typeof BarberRoute
+    }
+    '/barber/earnings': {
+      id: '/barber/earnings'
+      path: '/earnings'
+      fullPath: '/barber/earnings'
+      preLoaderRoute: typeof BarberEarningsRouteImport
+      parentRoute: typeof BarberRoute
+    }
+    '/barber/expenses': {
+      id: '/barber/expenses'
+      path: '/expenses'
+      fullPath: '/barber/expenses'
+      preLoaderRoute: typeof BarberExpensesRouteImport
+      parentRoute: typeof BarberRoute
+    }
+    '/barber/goals': {
+      id: '/barber/goals'
+      path: '/goals'
+      fullPath: '/barber/goals'
+      preLoaderRoute: typeof BarberGoalsRouteImport
+      parentRoute: typeof BarberRoute
+    }
+    '/barber/help': {
+      id: '/barber/help'
+      path: '/help'
+      fullPath: '/barber/help'
+      preLoaderRoute: typeof BarberHelpRouteImport
+      parentRoute: typeof BarberRoute
+    }
+    '/barber/inventory': {
+      id: '/barber/inventory'
+      path: '/inventory'
+      fullPath: '/barber/inventory'
+      preLoaderRoute: typeof BarberInventoryRouteImport
+      parentRoute: typeof BarberRoute
+    }
+    '/barber/marketing': {
+      id: '/barber/marketing'
+      path: '/marketing'
+      fullPath: '/barber/marketing'
+      preLoaderRoute: typeof BarberMarketingRouteImport
+      parentRoute: typeof BarberRoute
+    }
+    '/barber/notifications': {
+      id: '/barber/notifications'
+      path: '/notifications'
+      fullPath: '/barber/notifications'
+      preLoaderRoute: typeof BarberNotificationsRouteImport
+      parentRoute: typeof BarberRoute
+    }
+    '/barber/portfolio': {
+      id: '/barber/portfolio'
+      path: '/portfolio'
+      fullPath: '/barber/portfolio'
+      preLoaderRoute: typeof BarberPortfolioRouteImport
+      parentRoute: typeof BarberRoute
+    }
+    '/barber/profile': {
+      id: '/barber/profile'
+      path: '/profile'
+      fullPath: '/barber/profile'
+      preLoaderRoute: typeof BarberProfileRouteImport
+      parentRoute: typeof BarberRoute
+    }
+    '/barber/reviews': {
+      id: '/barber/reviews'
+      path: '/reviews'
+      fullPath: '/barber/reviews'
+      preLoaderRoute: typeof BarberReviewsRouteImport
+      parentRoute: typeof BarberRoute
+    }
+    '/barber/schedule': {
+      id: '/barber/schedule'
+      path: '/schedule'
+      fullPath: '/barber/schedule'
+      preLoaderRoute: typeof BarberScheduleRouteImport
+      parentRoute: typeof BarberRoute
+    }
+    '/barber/services': {
+      id: '/barber/services'
+      path: '/services'
+      fullPath: '/barber/services'
+      preLoaderRoute: typeof BarberServicesRouteImport
+      parentRoute: typeof BarberRoute
+    }
+    '/barber/settings': {
+      id: '/barber/settings'
+      path: '/settings'
+      fullPath: '/barber/settings'
+      preLoaderRoute: typeof BarberSettingsRouteImport
+      parentRoute: typeof BarberRoute
+    }
+    '/barber/stats': {
+      id: '/barber/stats'
+      path: '/stats'
+      fullPath: '/barber/stats'
+      preLoaderRoute: typeof BarberStatsRouteImport
+      parentRoute: typeof BarberRoute
+    }
+    '/barber/withdrawals': {
+      id: '/barber/withdrawals'
+      path: '/withdrawals'
+      fullPath: '/barber/withdrawals'
+      preLoaderRoute: typeof BarberWithdrawalsRouteImport
+      parentRoute: typeof BarberRoute
+    }
+    '/independent/setup': {
+      id: '/independent/setup'
+      path: '/independent/setup'
+      fullPath: '/independent/setup'
+      preLoaderRoute: typeof IndependentSetupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mybarber/setup': {
+      id: '/mybarber/setup'
+      path: '/mybarber/setup'
+      fullPath: '/mybarber/setup'
+      preLoaderRoute: typeof MybarberSetupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/salon/create': {
+      id: '/salon/create'
+      path: '/salon/create'
+      fullPath: '/salon/create'
+      preLoaderRoute: typeof SalonCreateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/salon/join': {
+      id: '/salon/join'
+      path: '/salon/join'
+      fullPath: '/salon/join'
+      preLoaderRoute: typeof SalonJoinRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/barber/bookings/$bookingId': {
+      id: '/barber/bookings/$bookingId'
+      path: '/$bookingId'
+      fullPath: '/barber/bookings/$bookingId'
+      preLoaderRoute: typeof BarberBookingsBookingIdRouteImport
+      parentRoute: typeof BarberBookingsRoute
     }
     '/barber/salon-view/': {
       id: '/barber/salon-view/'
       path: '/salon-view'
       fullPath: '/barber/salon-view/'
       preLoaderRoute: typeof BarberSalonViewIndexRouteImport
-      parentRoute: typeof BarberRoute
-    }
-    '/salon/join/setup': {
-      id: '/salon/join/setup'
-      path: '/setup'
-      fullPath: '/salon/join/setup'
-      preLoaderRoute: typeof SalonJoinSetupRouteImport
-      parentRoute: typeof SalonJoinRoute
-    }
-    '/barber/stats/graphs': {
-      id: '/barber/stats/graphs'
-      path: '/graphs'
-      fullPath: '/barber/stats/graphs'
-      preLoaderRoute: typeof BarberStatsGraphsRouteImport
-      parentRoute: typeof BarberStatsRoute
-    }
-    '/barber/salon-view/team': {
-      id: '/barber/salon-view/team'
-      path: '/salon-view/team'
-      fullPath: '/barber/salon-view/team'
-      preLoaderRoute: typeof BarberSalonViewTeamRouteImport
-      parentRoute: typeof BarberRoute
-    }
-    '/barber/salon-view/reviews': {
-      id: '/barber/salon-view/reviews'
-      path: '/salon-view/reviews'
-      fullPath: '/barber/salon-view/reviews'
-      preLoaderRoute: typeof BarberSalonViewReviewsRouteImport
-      parentRoute: typeof BarberRoute
-    }
-    '/barber/salon-view/members': {
-      id: '/barber/salon-view/members'
-      path: '/salon-view/members'
-      fullPath: '/barber/salon-view/members'
-      preLoaderRoute: typeof BarberSalonViewMembersRouteImport
       parentRoute: typeof BarberRoute
     }
     '/barber/salon-view/edit': {
@@ -863,12 +841,54 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BarberSalonViewGalleryRouteImport
       parentRoute: typeof BarberRoute
     }
-    '/barber/bookings/$bookingId': {
-      id: '/barber/bookings/$bookingId'
-      path: '/$bookingId'
-      fullPath: '/barber/bookings/$bookingId'
-      preLoaderRoute: typeof BarberBookingsBookingIdRouteImport
-      parentRoute: typeof BarberBookingsRoute
+    '/barber/salon-view/members': {
+      id: '/barber/salon-view/members'
+      path: '/salon-view/members'
+      fullPath: '/barber/salon-view/members'
+      preLoaderRoute: typeof BarberSalonViewMembersRouteImport
+      parentRoute: typeof BarberRoute
+    }
+    '/barber/salon-view/reviews': {
+      id: '/barber/salon-view/reviews'
+      path: '/salon-view/reviews'
+      fullPath: '/barber/salon-view/reviews'
+      preLoaderRoute: typeof BarberSalonViewReviewsRouteImport
+      parentRoute: typeof BarberRoute
+    }
+    '/barber/salon-view/team': {
+      id: '/barber/salon-view/team'
+      path: '/salon-view/team'
+      fullPath: '/barber/salon-view/team'
+      preLoaderRoute: typeof BarberSalonViewTeamRouteImport
+      parentRoute: typeof BarberRoute
+    }
+    '/barber/stats/': {
+      id: '/barber/stats/'
+      path: '/'
+      fullPath: '/barber/stats/'
+      preLoaderRoute: typeof BarberStatsIndexRouteImport
+      parentRoute: typeof BarberStatsRoute
+    }
+    '/barber/stats/graphs': {
+      id: '/barber/stats/graphs'
+      path: '/graphs'
+      fullPath: '/barber/stats/graphs'
+      preLoaderRoute: typeof BarberStatsGraphsRouteImport
+      parentRoute: typeof BarberStatsRoute
+    }
+    '/salon/join/': {
+      id: '/salon/join/'
+      path: '/'
+      fullPath: '/salon/join/'
+      preLoaderRoute: typeof SalonJoinIndexRouteImport
+      parentRoute: typeof SalonJoinRoute
+    }
+    '/salon/join/setup': {
+      id: '/salon/join/setup'
+      path: '/setup'
+      fullPath: '/salon/join/setup'
+      preLoaderRoute: typeof SalonJoinSetupRouteImport
+      parentRoute: typeof SalonJoinRoute
     }
     '/barber/bookings/$bookingId/': {
       id: '/barber/bookings/$bookingId/'
@@ -877,18 +897,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BarberBookingsBookingIdIndexRouteImport
       parentRoute: typeof BarberBookingsBookingIdRoute
     }
-    '/barber/bookings/$bookingId/session': {
-      id: '/barber/bookings/$bookingId/session'
-      path: '/session'
-      fullPath: '/barber/bookings/$bookingId/session'
-      preLoaderRoute: typeof BarberBookingsBookingIdSessionRouteImport
-      parentRoute: typeof BarberBookingsBookingIdRoute
-    }
     '/barber/bookings/$bookingId/check-in': {
       id: '/barber/bookings/$bookingId/check-in'
       path: '/check-in'
       fullPath: '/barber/bookings/$bookingId/check-in'
       preLoaderRoute: typeof BarberBookingsBookingIdCheckInRouteImport
+      parentRoute: typeof BarberBookingsBookingIdRoute
+    }
+    '/barber/bookings/$bookingId/session': {
+      id: '/barber/bookings/$bookingId/session'
+      path: '/session'
+      fullPath: '/barber/bookings/$bookingId/session'
+      preLoaderRoute: typeof BarberBookingsBookingIdSessionRouteImport
       parentRoute: typeof BarberBookingsBookingIdRoute
     }
   }
@@ -1023,6 +1043,7 @@ const rootRouteChildren: RootRouteChildren = {
   BarberRoute: BarberRouteWithChildren,
   CheckEmailRoute: CheckEmailRoute,
   VerifyEmailRoute: VerifyEmailRoute,
+  WelcomeRoute: WelcomeRoute,
   IndependentSetupRoute: IndependentSetupRoute,
   MybarberSetupRoute: MybarberSetupRoute,
   SalonCreateRoute: SalonCreateRoute,

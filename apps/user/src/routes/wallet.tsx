@@ -9,6 +9,10 @@ import { resolveActivityBackTo } from "@/lib/activity-nav";
 
 const walletSearchSchema = z.object({
   section: z.string().optional(),
+  /** Prefocus / scroll to this subscription plan code (starter|plus|pro). */
+  plan: z.string().optional(),
+  /** After successful checkout, navigate here (e.g. /ai-style). */
+  returnTo: z.string().optional(),
   backTo: z.string().optional(),
   manage: z
     .union([z.boolean(), z.literal("1"), z.literal(1)])

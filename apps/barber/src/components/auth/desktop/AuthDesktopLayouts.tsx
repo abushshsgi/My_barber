@@ -59,7 +59,7 @@ function FormPanel({ tab, signupStep, flow, onTabChange, children }: AuthDesktop
                 ga rozilik bildirasiz.
               </>
             ) : (
-              "Ro'yxatdan o'tish bepul — bir necha daqiqada profilni yoqing."
+              "Bepul boshlash — birinchi bronni bugun qabul qiling."
             )}
           </p>
         </motion.div>

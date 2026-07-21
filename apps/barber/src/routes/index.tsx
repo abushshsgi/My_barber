@@ -7,7 +7,7 @@ import { resolveBarberEntryPath } from "@/lib/onboarding-redirect";
 export const Route = createFileRoute("/")({
   beforeLoad: async () => {
     if (typeof window === "undefined") {
-      throw redirect({ to: "/auth" });
+      throw redirect({ to: "/welcome" });
     }
     if (getBarberAccessToken()) {
       const next = await resolveBarberEntryPath();
@@ -19,6 +19,6 @@ export const Route = createFileRoute("/")({
     if (draft?.flow && draft.flow in SIGNUP_FLOW_PATH) {
       throw redirect({ to: SIGNUP_FLOW_PATH[draft.flow] });
     }
-    throw redirect({ to: "/auth" });
+    throw redirect({ to: "/welcome" });
   },
 });

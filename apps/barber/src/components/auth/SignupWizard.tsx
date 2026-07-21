@@ -191,7 +191,7 @@ export function SignupWizard({
         : step === 3
           ? loading
             ? "Kutilmoqda..."
-            : "Davom etish"
+            : "Bepul boshlash"
           : "Keyingisi";
 
   const disabledTooltip =

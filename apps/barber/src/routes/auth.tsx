@@ -33,11 +33,13 @@ import { cn } from "@/lib/utils";
 
 type AuthSearch = {
   session?: string;
+  tab?: "login" | "signup";
 };
 
 export const Route = createFileRoute("/auth")({
   validateSearch: (raw: Record<string, unknown>): AuthSearch => ({
     session: typeof raw.session === "string" ? raw.session : undefined,
+    tab: raw.tab === "signup" || raw.tab === "login" ? raw.tab : undefined,
   }),
   beforeLoad: async () => {
     if (typeof window === "undefined") return;
@@ -51,8 +53,8 @@ export const Route = createFileRoute("/auth")({
 
 function AuthPage() {
   const navigate = useNavigate({ from: Route.fullPath });
-  const { session } = Route.useSearch();
-  const [tab, setTab] = useState<"login" | "signup">("login");
+  const { session, tab: tabFromSearch } = Route.useSearch();
+  const [tab, setTab] = useState<"login" | "signup">(tabFromSearch === "signup" ? "signup" : "login");
   const [signupStep, setSignupStep] = useState(0);
 
   const [loginEmail, setLoginEmail] = useState("");
@@ -262,6 +264,11 @@ function AuthPage() {
     setLoginEmailError(null);
     setEmailError(null);
     setPhoneError(null);
+    void navigate({
+      to: "/auth",
+      search: (prev: AuthSearch) => ({ ...prev, tab: v }),
+      replace: true,
+    });
   };
 
   const loginMotion = tabSlide("login");
@@ -287,7 +294,7 @@ function AuthPage() {
                 tab === t ? "bg-white text-foreground shadow-sm" : "text-muted-foreground",
               )}
             >
-              {t === "login" ? "Kirish" : "Ro'yxatdan o'tish"}
+              {t === "login" ? "Kirish" : "Bepul boshlash"}
             </button>
           ))}
         </div>

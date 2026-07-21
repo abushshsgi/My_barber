@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { DesktopPageSplit } from "@/components/desktop/DesktopPageSplit";
-import { ExploreDesktopPage } from "@/components/desktop/pages/ExploreDesktopPage";
+import { ExploreDesktopPage, MorfAiExploreCard } from "@/components/desktop/pages/ExploreDesktopPage";
 import { ExploreStyleGrid } from "@/components/explore/ExploreStyleGrid";
 import { PageHeader } from "@/components/PageHeader";
 import { PersonaPicker } from "@/components/PersonaPicker";
@@ -28,6 +28,9 @@ function ExploreMobile() {
     <div className="min-h-full min-w-0">
       <PageHeader showBack sticky title={t("explorePage.title")} />
       <div className="px-2 pb-3">
+        <div className="mb-3 px-1">
+          <MorfAiExploreCard className="min-h-[180px]" />
+        </div>
         {audience === "men" ? (
           <PersonaPicker value={personaId} onChange={setPersonaId} compact />
         ) : null}

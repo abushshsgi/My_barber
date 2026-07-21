@@ -25,7 +25,7 @@ export function AuthDesktopTabSwitcher({ tab, onTabChange, accent }: Props) {
               active ? cn(a.btn, "text-primary-foreground shadow-sm") : "text-muted-foreground hover:bg-card hover:text-foreground",
             )}
           >
-            {t === "login" ? "Kirish" : "Ro'yxatdan o'tish"}
+            {t === "login" ? "Kirish" : "Bepul boshlash"}
           </button>
         );
       })}

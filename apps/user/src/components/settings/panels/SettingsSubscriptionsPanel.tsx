@@ -1,5 +1,5 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
   BadgeCheck,
   Check,
@@ -14,7 +14,7 @@ import {
   X,
   Zap,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { FeatureIcon } from "@/components/subscriptions/SubscriptionPlanAds";
@@ -23,6 +23,16 @@ import { useWalletMe } from "@/hooks/use-wallet";
 import { parseWalletBalance } from "@/lib/api/wallet";
 import { confirmSubscriptionPayment, type SubscriptionPlan } from "@/lib/api/subscriptions";
 import { cn } from "@/lib/utils";
+
+function readSubscriptionDeepLink(searchStr: string) {
+  const sp = new URLSearchParams(searchStr.startsWith("?") ? searchStr.slice(1) : searchStr);
+  const planRaw = (sp.get("plan") || "").toLowerCase();
+  const plan = planRaw === "starter" || planRaw === "plus" || planRaw === "pro" ? planRaw : null;
+  const returnToRaw = sp.get("returnTo");
+  const returnTo =
+    returnToRaw && returnToRaw.startsWith("/") && !returnToRaw.startsWith("//") ? returnToRaw : null;
+  return { plan, returnTo };
+}
 
 function formatUzs(n: number) {
   return `${n.toLocaleString("uz-UZ")} so'm`;
@@ -85,25 +95,36 @@ function PlanCard({
   plan,
   activeCode,
   busy,
+  focused,
   onSubscribe,
 }: {
   plan: SubscriptionPlan;
   activeCode: string | null;
   busy: boolean;
+  focused?: boolean;
   onSubscribe: (code: string, method: "wallet" | "click" | "payme") => void;
 }) {
   const isActive = activeCode === plan.code;
   const PlanGlyph =
     plan.code === "pro" ? Crown : plan.code === "plus" ? Sparkles : Zap;
+  const cardRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    if (!focused || !cardRef.current) return;
+    cardRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [focused]);
 
   return (
     <article
+      ref={cardRef}
+      id={`sub-plan-${plan.code}`}
       className={cn(
         "relative overflow-hidden rounded-2xl border p-5 transition-shadow",
         plan.highlight
           ? "border-foreground/20 bg-gradient-to-b from-foreground/[0.06] to-background shadow-md"
           : "border-border bg-card",
         isActive && "ring-2 ring-foreground/80",
+        focused && !isActive && "ring-2 ring-foreground/40",
       )}
     >
       {plan.highlight ? (
@@ -193,6 +214,12 @@ function PlanCard({
 export function SettingsSubscriptionsPanel() {
   const { t } = useTranslation();
   const qc = useQueryClient();
+  const navigate = useNavigate();
+  const searchStr = useRouterState({ select: (s) => s.location.searchStr });
+  const { plan: focusPlan, returnTo } = useMemo(
+    () => readSubscriptionDeepLink(searchStr),
+    [searchStr],
+  );
   const plansQ = useSubscriptionPlans();
   const meQ = useSubscriptionMe();
   const checkout = useSubscriptionCheckout();
@@ -208,6 +235,12 @@ export function SettingsSubscriptionsPanel() {
   const progress = trial?.progress ?? trial?.invite_count ?? 0;
   const remainingInvites = trial?.remaining_invites ?? Math.max(0, required - progress);
   const daysLeft = me?.days_remaining ?? sub?.days_remaining ?? null;
+
+  const goAfterSuccess = () => {
+    if (returnTo) {
+      void navigate({ to: returnTo });
+    }
+  };
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -228,6 +261,9 @@ export function SettingsSubscriptionsPanel() {
           toast.success("Obuna faollashtirildi!");
           void qc.invalidateQueries({ queryKey: ["subscriptions"] });
           void qc.invalidateQueries({ queryKey: ["wallet"] });
+          if (returnTo) {
+            void navigate({ to: returnTo });
+          }
         }
       } catch (e) {
         if (!cancelled) {
@@ -238,7 +274,7 @@ export function SettingsSubscriptionsPanel() {
     return () => {
       cancelled = true;
     };
-  }, [qc]);
+  }, [qc, navigate, returnTo]);
 
   const usageRows = useMemo(() => {
     if (!me?.has_active) return [];
@@ -266,12 +302,14 @@ export function SettingsSubscriptionsPanel() {
     try {
       const return_url =
         typeof window !== "undefined"
-          ? `${window.location.origin}/wallet?section=subscriptions`
+          ? `${window.location.origin}${returnTo || "/wallet?section=subscriptions"}`
           : undefined;
       const res = await checkout.mutateAsync({ plan_code, method, return_url });
       if (method === "wallet") {
         toast.success("Obuna faollashtirildi!");
         void qc.invalidateQueries({ queryKey: ["wallet"] });
+        void qc.invalidateQueries({ queryKey: ["subscriptions"] });
+        goAfterSuccess();
         return;
       }
       if (res.checkout_url) {
@@ -287,6 +325,7 @@ export function SettingsSubscriptionsPanel() {
           });
           toast.success("Obuna faollashtirildi!");
           void qc.invalidateQueries({ queryKey: ["subscriptions"] });
+          goAfterSuccess();
           return;
         } catch {
           /* fall through */
@@ -484,6 +523,7 @@ export function SettingsSubscriptionsPanel() {
               plan={plan}
               activeCode={activeCode}
               busy={busyCode === plan.code || checkout.isPending}
+              focused={focusPlan === plan.code}
               onSubscribe={onSubscribe}
             />
           ))}

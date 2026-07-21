@@ -22,8 +22,8 @@ function formatUzs(n: number) {
 }
 
 /**
- * Home marketing — obunaga majburlovchi/ tavsiya qiluvchi reklama.
- * Ikonkalar + tariflar + Obunalar sahifasiga link.
+ * Home marketing — Morph AI obunasiga majburlovchi CTA.
+ * Plan deep-link + referal progress + outcome-tili.
  */
 export function HomeSubscriptionMarketing({ className }: { className?: string }) {
   const { t } = useTranslation();
@@ -32,23 +32,59 @@ export function HomeSubscriptionMarketing({ className }: { className?: string })
   const hasActive = Boolean(meQ.data?.has_active);
   const activeCode = meQ.data?.subscription?.plan_code ?? null;
   const plans = plansQ.data ?? [];
+  const trial = meQ.data?.referral_trial;
+  const required = trial?.required_referrals ?? 3;
+  const progress = trial?.progress ?? trial?.invite_count ?? 0;
+  const remaining = trial?.remaining_invites ?? Math.max(0, required - progress);
+  const trialDays = trial?.trial_days ?? 7;
+  const usage = meQ.data?.usage;
+  const morphRemaining = usage?.morph_ai_remaining;
+  const morphLimit = usage?.morph_ai_limit;
 
   const title = hasActive
     ? t("homePage.subscriptionPromo.titleUpgrade", {
-        defaultValue: "Tarifni kuchaytiring",
+        defaultValue: "Ko‘proq generatsiya oching",
       })
     : t("homePage.subscriptionPromo.title", {
-        defaultValue: "Morph AI — faqat obuna bilan",
+        defaultValue: "Selfie → yangi uslub. Obunasiz yopiq.",
       });
 
   const hint = hasActive
-    ? t("homePage.subscriptionPromo.hintUpgrade", {
-        defaultValue: "Ko‘proq generatsiya, Studio va oila — Plus yoki Pro ga o‘ting.",
-      })
+    ? morphRemaining != null && morphLimit != null && morphLimit > 0
+      ? t("homePage.subscriptionPromo.hintUpgradeUsage", {
+          remaining: morphRemaining,
+          limit: morphLimit,
+          defaultValue: "{{remaining}}/{{limit}} try-on qoldi — Plus yoki Pro bilan limitni oshiring.",
+        })
+      : t("homePage.subscriptionPromo.hintUpgrade", {
+          defaultValue: "Studio, oila va yuqori limitlar — Plus yoki Pro ga o‘ting.",
+        })
     : t("homePage.subscriptionPromo.hint", {
         defaultValue:
-          "Yangi hisobda Morph AI yopiq. Starter / Plus / Pro tanlang yoki 3 do‘st taklif qilib Starter sinov oling.",
+          "Bir zumda mos uslub. Starter bilan oching yoki 3 do‘st taklif qilib {{days}} kun bepul oling.",
+        days: trialDays,
       });
+
+  const primaryCta = hasActive
+    ? t("homePage.subscriptionPromo.ctaManage", {
+        defaultValue: "Plus ga o‘tish — ko‘proq generatsiya",
+      })
+    : t("homePage.subscriptionPromo.cta", {
+        defaultValue: "Morph AI ni ochish — Starter",
+      });
+
+  const referralCta =
+    remaining > 0
+      ? t("homePage.subscriptionPromo.referralCtaProgress", {
+          progress: Math.min(progress, required),
+          required,
+          days: trialDays,
+          defaultValue: "Bepul {{days}} kun: {{progress}}/{{required}} do‘st",
+        })
+      : t("homePage.subscriptionPromo.referralCta", {
+          days: trialDays,
+          defaultValue: "Bepul {{days}} kun: 3 do‘st taklif qil",
+        });
 
   return (
     <section className={cn("px-4", className)}>
@@ -65,12 +101,35 @@ export function HomeSubscriptionMarketing({ className }: { className?: string })
             </span>
             <div className="min-w-0 flex-1">
               <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-background/55">
-                {t("homePage.subscriptionPromo.eyebrow", { defaultValue: "Tavsiya" })}
+                {t("homePage.subscriptionPromo.eyebrow", { defaultValue: "Morph AI" })}
               </p>
               <h2 className="mt-1 text-[17px] font-bold leading-snug tracking-tight">{title}</h2>
               <p className="mt-1.5 text-[12px] leading-relaxed text-background/65">{hint}</p>
             </div>
           </div>
+
+          {!hasActive && trial ? (
+            <div className="relative mt-4 space-y-2 rounded-2xl border border-background/15 bg-background/10 px-3 py-3">
+              <div className="flex items-center justify-between gap-2 text-[11px] font-bold">
+                <span className="uppercase tracking-[0.14em] text-background/50">
+                  {t("homePage.subscriptionPromo.referralProgressLabel", {
+                    defaultValue: "Referal sinov",
+                  })}
+                </span>
+                <span className="tabular-nums text-background/85">
+                  {Math.min(progress, required)}/{required}
+                </span>
+              </div>
+              <div className="h-1.5 overflow-hidden rounded-full bg-background/15">
+                <div
+                  className="h-full rounded-full bg-background"
+                  style={{
+                    width: `${Math.round((Math.min(progress, required) / Math.max(1, required)) * 100)}%`,
+                  }}
+                />
+              </div>
+            </div>
+          ) : null}
 
           <ul className="relative mt-4 space-y-2">
             {(
@@ -112,7 +171,7 @@ export function HomeSubscriptionMarketing({ className }: { className?: string })
                 <Link
                   key={code}
                   to="/wallet"
-                  search={{ section: "subscriptions" }}
+                  search={{ section: "subscriptions", plan: code }}
                   className={cn(
                     "flex flex-col items-center gap-1.5 rounded-2xl border px-2 py-3 text-center transition-[transform,background-color] active:scale-[0.98]",
                     isActive
@@ -136,6 +195,18 @@ export function HomeSubscriptionMarketing({ className }: { className?: string })
                           defaultValue: blurbKey,
                         })}
                   </span>
+                  <span
+                    className={cn(
+                      "text-[9px] font-bold leading-none",
+                      isActive ? "text-foreground/50" : "text-background/45",
+                    )}
+                  >
+                    {isActive
+                      ? t("homePage.subscriptionPromo.planActive", { defaultValue: "Joriy" })
+                      : t("homePage.subscriptionPromo.planOpen", {
+                          defaultValue: "Shu tarif bilan ochish",
+                        })}
+                  </span>
                 </Link>
               );
             })}
@@ -143,27 +214,24 @@ export function HomeSubscriptionMarketing({ className }: { className?: string })
 
           <Link
             to="/wallet"
-            search={{ section: "subscriptions" }}
+            search={{
+              section: "subscriptions",
+              plan: hasActive ? "plus" : "starter",
+            }}
             className="relative mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-background text-[14px] font-bold text-foreground active:scale-[0.99]"
           >
-            {hasActive
-              ? t("homePage.subscriptionPromo.ctaManage", {
-                  defaultValue: "Obunani boshqarish",
-                })
-              : t("homePage.subscriptionPromo.cta", {
-                  defaultValue: "Obuna olish",
-                })}
+            {primaryCta}
             <ChevronRight className="size-4" strokeWidth={2.5} />
           </Link>
 
-          <Link
-            to="/referrals"
-            className="relative mt-2 flex h-10 w-full items-center justify-center gap-1.5 rounded-2xl border border-background/25 text-[12px] font-bold text-background/80 hover:bg-background/10"
-          >
-            {t("homePage.subscriptionPromo.referralCta", {
-              defaultValue: "Yoki 3 do‘st taklif qil — 7 kun Starter",
-            })}
-          </Link>
+          {!hasActive ? (
+            <Link
+              to="/referrals"
+              className="relative mt-2 flex h-10 w-full items-center justify-center gap-1.5 rounded-2xl border border-background/25 text-[12px] font-bold text-background/80 hover:bg-background/10"
+            >
+              {referralCta}
+            </Link>
+          ) : null}
         </div>
       </div>
     </section>

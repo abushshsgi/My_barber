@@ -4,6 +4,9 @@ import { ChevronLeft, ChevronRight, Droplets, ImagePlus, ScanFace, UserRound, Wa
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { SubscriptionPromoBanner } from "@/components/subscriptions/SubscriptionPlanAds";
+import { MorphLimitMeter } from "@/components/subscriptions/MorphLimitMeter";
+import { MorphSoftPaywall } from "@/components/ai-style/MorphSoftPaywall";
+import { useSubscriptionMe } from "@/hooks/use-subscription";
 import { useExplorePersona } from "@/hooks/use-explore-persona";
 import { useHairstyles } from "@/hooks/use-hairstyles";
 import { getHairstyleDisplayUrl } from "@/lib/hairstyles/catalog";
@@ -46,6 +49,8 @@ export function MorphAiHome({
   const { t } = useTranslation();
   const navigate = useNavigate();
   const router = useRouter();
+  const meQ = useSubscriptionMe();
+  const morphLocked = Boolean(meQ.data && !meQ.data.has_active);
   const { personaId } = useExplorePersona();
   const { data: styles = [], isLoading } = useHairstyles(
     audience === "women" ? "women" : "men",
@@ -190,8 +195,9 @@ export function MorphAiHome({
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.12, duration: 0.4 }}
-          className="mt-4"
+          className="mt-4 space-y-3"
         >
+          {morphLocked ? <MorphSoftPaywall /> : <MorphLimitMeter />}
           <SubscriptionPromoBanner />
         </motion.div>
 

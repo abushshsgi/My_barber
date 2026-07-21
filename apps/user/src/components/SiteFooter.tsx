@@ -13,7 +13,18 @@ import {
   type FooterLink,
   type FooterSection,
 } from "@/lib/footer-links";
+import { partnerSignupUrl, partnerWelcomeUrl } from "@/lib/partner-origin";
 import { cn } from "@/lib/utils";
+
+function resolveFooterLink(link: FooterLink): FooterLink {
+  if (link.to === "__partner_signup__") {
+    return { ...link, to: partnerSignupUrl("owner"), external: true };
+  }
+  if (link.to === "__partner_welcome__") {
+    return { ...link, to: partnerWelcomeUrl(), external: true };
+  }
+  return link;
+}
 
 type Props = {
   insetClassName?: string;
@@ -22,19 +33,20 @@ type Props = {
 
 function FooterNavLink({ link }: { link: FooterLink }) {
   const { t } = useTranslation();
-  const label = t(link.labelKey, { defaultValue: link.defaultValue });
+  const resolved = resolveFooterLink(link);
+  const label = t(resolved.labelKey, { defaultValue: resolved.defaultValue });
   const className = "text-sm font-semibold text-foreground hover:underline";
 
-  if (link.external) {
+  if (resolved.external) {
     return (
-      <a href={link.to} className={className} target="_blank" rel="noopener noreferrer">
+      <a href={resolved.to} className={className} target="_blank" rel="noopener noreferrer">
         {label}
       </a>
     );
   }
 
   return (
-    <Link to={link.to} className={className}>
+    <Link to={resolved.to} className={className}>
       {label}
     </Link>
   );

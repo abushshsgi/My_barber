@@ -232,7 +232,7 @@ function MorphLimitUpsellBody({
             </p>
             <Link
               to="/wallet"
-              search={{ section: "subscriptions" }}
+              search={{ section: "subscriptions", returnTo: "/ai-style" }}
               onClick={onClose}
               className="inline-flex items-center gap-1 text-[12px] font-bold text-white/70 hover:text-white"
             >
@@ -250,27 +250,43 @@ function MorphLimitUpsellBody({
       ) : null}
 
       {locked ? (
-        <Link
-          to="/referrals"
-          onClick={onClose}
-          className={cn(
-            "flex h-14 items-center justify-center gap-2 rounded-[22px] border border-white/20 bg-transparent text-[15px] font-bold text-white",
-            "transition-[transform,background-color] duration-200 hover:bg-white/[0.06] active:scale-[0.985]",
-          )}
-        >
-          <UserPlus className="size-5" />
-          {remaining > 0
-            ? t("aiStylePage.limitSheet.inviteFriends", { count: remaining })
-            : t("aiStylePage.limitSheet.openReferrals")}
-        </Link>
+        <>
+          <Link
+            to="/wallet"
+            search={{ section: "subscriptions", plan: "starter", returnTo: "/ai-style" }}
+            onClick={onClose}
+            className={cn(
+              "flex h-14 items-center justify-center gap-2 rounded-[22px] bg-white text-[15px] font-bold text-[#0a0a0a]",
+              "transition-[transform,background-color] duration-200 hover:bg-white/95 active:scale-[0.985]",
+            )}
+          >
+            <Crown className="size-5" strokeWidth={2.25} />
+            {t("aiStylePage.limitSheet.buyPlan", {
+              defaultValue: "Morph AI ni ochish — Starter",
+            })}
+          </Link>
+          <Link
+            to="/referrals"
+            onClick={onClose}
+            className={cn(
+              "flex h-12 items-center justify-center gap-2 rounded-[22px] border border-white/20 bg-transparent text-[14px] font-bold text-white",
+              "transition-[transform,background-color] duration-200 hover:bg-white/[0.06] active:scale-[0.985]",
+            )}
+          >
+            <UserPlus className="size-4.5" />
+            {remaining > 0
+              ? t("aiStylePage.limitSheet.inviteFriends", { count: remaining })
+              : t("aiStylePage.limitSheet.openReferrals")}
+          </Link>
+        </>
       ) : (
         <Link
           to="/wallet"
-          search={{ section: "subscriptions" }}
+          search={{ section: "subscriptions", plan: "plus", returnTo: "/ai-style" }}
           onClick={onClose}
           className={cn(
-            "flex h-14 items-center justify-center rounded-[22px] border border-white/20 bg-transparent text-[15px] font-bold text-white",
-            "transition-[transform,background-color] duration-200 hover:bg-white/[0.06] active:scale-[0.985]",
+            "flex h-14 items-center justify-center rounded-[22px] bg-white text-[15px] font-bold text-[#0a0a0a]",
+            "transition-[transform,background-color] duration-200 hover:bg-white/95 active:scale-[0.985]",
           )}
         >
           {t("aiStylePage.limitSheet.switchPlan")}
