@@ -3124,6 +3124,28 @@ export async function patchMorphAiSettings(
 
 /* —— B2C Subscriptions —— */
 
+export type AdminSubscriptionPaymentRow = {
+  id: string;
+  user_id: number;
+  plan_code: string;
+  amount_uzs: number;
+  provider: string;
+  status: string;
+  order_id: string;
+  transaction_id?: string;
+  paid_at: string | null;
+  created_at: string;
+  subscription_id: string | null;
+  promo_code: string | null;
+  discount_uzs: number;
+  base_uzs: number;
+  discount_pct: number;
+  has_discount: boolean;
+  user_name?: string;
+  user_phone?: string;
+  user?: { id: number; full_name: string; phone: string; email: string };
+};
+
 export type AdminSubscriptionStats = {
   active_count: number;
   expired_count: number;
@@ -3131,8 +3153,41 @@ export type AdminSubscriptionStats = {
   pending_payments: number;
   revenue_uzs: number;
   paid_count: number;
+  unique_buyers: number;
+  new_subscriptions: number;
+  purchases_today: number;
+  purchases_this_week: number;
+  purchases_this_month: number;
+  buyers_today: number;
+  buyers_this_week: number;
+  buyers_this_month: number;
+  discounted_count: number;
+  discounted_buyers: number;
+  discount_total_uzs: number;
   by_plan: Array<{ plan_code: string; count: number }>;
+  by_plan_purchases: Array<{
+    plan_code: string;
+    count: number;
+    buyers: number;
+    revenue_uzs: number;
+  }>;
   by_source: Array<{ source: string; count: number }>;
+  by_provider: Array<{ provider: string; count: number; revenue_uzs: number }>;
+  by_promo: Array<{
+    promo_code: string;
+    count: number;
+    buyers: number;
+    discount_uzs: number;
+    revenue_uzs: number;
+  }>;
+  purchases_by_day: Array<{
+    date: string;
+    count: number;
+    buyers: number;
+    revenue_uzs: number;
+  }>;
+  recent_purchases: AdminSubscriptionPaymentRow[];
+  recent_discounted: AdminSubscriptionPaymentRow[];
   referral_trials_granted: number;
   usage_totals: { morph_ai: number; morph_studio: number };
   recent_events: Array<{
@@ -3156,6 +3211,7 @@ export type AdminSubscriptionRow = {
   starts_at: string | null;
   ends_at: string | null;
   price_uzs: number;
+  created_at?: string;
   user: { id: number; full_name: string; phone: string; email: string };
   usage: {
     morph_ai_used: number;
@@ -3167,8 +3223,17 @@ export type AdminSubscriptionRow = {
   };
 };
 
-export async function fetchAdminSubscriptionStats(): Promise<AdminSubscriptionStats> {
-  return apiJson("/api/v1/admin/subscriptions/stats/");
+export async function fetchAdminSubscriptionStats(params?: {
+  start?: string;
+  end?: string;
+}): Promise<AdminSubscriptionStats> {
+  const sp = new URLSearchParams();
+  if (params?.start) sp.set("start", params.start);
+  if (params?.end) sp.set("end", params.end);
+  const qs = sp.toString();
+  return apiJson(
+    qs ? `/api/v1/admin/subscriptions/stats/?${qs}` : "/api/v1/admin/subscriptions/stats/",
+  );
 }
 
 export async function fetchAdminSubscriptions(params?: {
@@ -3187,6 +3252,32 @@ export async function fetchAdminSubscriptions(params?: {
   return apiJson(qs ? `${base}?${qs}` : base);
 }
 
+export async function fetchAdminSubscriptionPayments(params?: {
+  status?: string;
+  plan?: string;
+  provider?: string;
+  promo?: string;
+  discounted?: boolean;
+  q?: string;
+  page?: number;
+  start?: string;
+  end?: string;
+}): Promise<{ count: number; page: number; results: AdminSubscriptionPaymentRow[] }> {
+  const sp = new URLSearchParams();
+  if (params?.status) sp.set("status", params.status);
+  if (params?.plan) sp.set("plan", params.plan);
+  if (params?.provider) sp.set("provider", params.provider);
+  if (params?.promo) sp.set("promo", params.promo);
+  if (params?.discounted) sp.set("discounted", "1");
+  if (params?.q) sp.set("q", params.q);
+  if (params?.page) sp.set("page", String(params.page));
+  if (params?.start) sp.set("start", params.start);
+  if (params?.end) sp.set("end", params.end);
+  const qs = sp.toString();
+  const base = "/api/v1/admin/subscriptions/payments/";
+  return apiJson(qs ? `${base}?${qs}` : base);
+}
+
 export async function fetchAdminSubscriptionDetail(id: string): Promise<{
   subscription: AdminSubscriptionRow & {
     notes: string;
@@ -3199,15 +3290,7 @@ export async function fetchAdminSubscriptionDetail(id: string): Promise<{
   };
   usage: AdminSubscriptionRow["usage"];
   events: AdminSubscriptionStats["recent_events"];
-  payments: Array<{
-    id: string;
-    plan_code: string;
-    amount_uzs: number;
-    provider: string;
-    status: string;
-    order_id: string;
-    paid_at: string | null;
-  }>;
+  payments: AdminSubscriptionPaymentRow[];
   referral_trial: {
     granted: boolean;
     ends_at: string | null;

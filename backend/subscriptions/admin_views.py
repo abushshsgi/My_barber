@@ -13,10 +13,12 @@ from subscriptions.models import (
     ReferralTrialGrant,
     SubscriptionEvent,
     SubscriptionPayment,
+    SubscriptionUsagePeriod,
     UserSubscription,
 )
 from subscriptions.plans import PLAN_CODES, get_plan, list_plans, serialize_plan
 from subscriptions.services import (
+    _payment_promo_fields,
     activate_subscription,
     admin_stats,
     build_me_payload,
@@ -57,8 +59,9 @@ def _serialize_event(ev: SubscriptionEvent) -> dict:
     }
 
 
-def _serialize_payment(p: SubscriptionPayment) -> dict:
-    return {
+def _serialize_payment(p: SubscriptionPayment, *, include_user: bool = False) -> dict:
+    promo = _payment_promo_fields(p.metadata)
+    row = {
         "id": str(p.pk),
         "user_id": p.user_id,
         "plan_code": p.plan_code,
@@ -70,7 +73,19 @@ def _serialize_payment(p: SubscriptionPayment) -> dict:
         "paid_at": p.paid_at.isoformat() if p.paid_at else None,
         "created_at": p.created_at.isoformat(),
         "subscription_id": str(p.subscription_id) if p.subscription_id else None,
+        "metadata": p.metadata or {},
+        **promo,
     }
+    if include_user and getattr(p, "user", None) is not None:
+        row["user"] = {
+            "id": p.user_id,
+            "full_name": p.user.full_name or "",
+            "phone": p.user.phone or "",
+            "email": p.user.email or "",
+        }
+        row["user_name"] = p.user.full_name or p.user.phone or p.user.email or ""
+        row["user_phone"] = p.user.phone or ""
+    return row
 
 
 def models_q_user_search(q: str):
@@ -248,10 +263,48 @@ class AdminSubscriptionPaymentsView(APIView):
     permission_classes = [IsAdmin]
 
     def get(self, request):
-        qs = SubscriptionPayment.objects.select_related("user").order_by("-created_at")
+        qs = SubscriptionPayment.objects.select_related("user").order_by(
+            "-paid_at", "-created_at"
+        )
         status_f = (request.query_params.get("status") or "").strip()
+        plan_f = (request.query_params.get("plan") or "").strip().lower()
+        provider_f = (request.query_params.get("provider") or "").strip().lower()
+        promo_f = (request.query_params.get("promo") or "").strip().upper()
+        discounted_only = (request.query_params.get("discounted") or "").strip() in (
+            "1",
+            "true",
+            "yes",
+        )
+        q = (request.query_params.get("q") or "").strip()
+        start, end = _parse_range(request)
+
         if status_f:
             qs = qs.filter(status=status_f)
+        if plan_f:
+            qs = qs.filter(plan_code=plan_f)
+        if provider_f:
+            qs = qs.filter(provider=provider_f)
+        if start:
+            qs = qs.filter(Q(paid_at__gte=start) | Q(paid_at__isnull=True, created_at__gte=start))
+        if end:
+            qs = qs.filter(Q(paid_at__lte=end) | Q(paid_at__isnull=True, created_at__lte=end))
+        if q:
+            qs = qs.filter(
+                Q(user__full_name__icontains=q)
+                | Q(user__phone__icontains=q)
+                | Q(user__email__icontains=q)
+                | Q(order_id__icontains=q)
+                | Q(plan_code__icontains=q)
+                | Q(metadata__promo_code__icontains=q)
+            )
+        if promo_f:
+            qs = qs.filter(metadata__promo_code__iexact=promo_f)
+        if discounted_only:
+            # JSON: promo_code mavjud va bo'sh emas
+            qs = qs.exclude(metadata__promo_code__isnull=True).exclude(
+                metadata__promo_code=""
+            )
+
         try:
             page = max(1, int(request.query_params.get("page") or 1))
         except ValueError:
@@ -263,7 +316,10 @@ class AdminSubscriptionPaymentsView(APIView):
             {
                 "count": total,
                 "page": page,
-                "results": [_serialize_payment(p) for p in items],
+                "page_size": page_size,
+                "results": [
+                    _serialize_payment(p, include_user=True) for p in items
+                ],
             }
         )
 

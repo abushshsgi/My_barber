@@ -182,9 +182,26 @@ function AdminSubscriptionDetailPage() {
           ) : (
             d.payments.map((p) => (
               <li key={p.id} className="flex flex-wrap justify-between gap-2 border-b border-border py-2">
-                <span>
-                  {p.provider} · {p.plan_code} · {p.amount_uzs.toLocaleString("uz-UZ")} so'm
-                </span>
+                <div>
+                  <div>
+                    {p.provider} · {p.plan_code} · {p.amount_uzs.toLocaleString("uz-UZ")} so'm
+                  </div>
+                  {p.has_discount ? (
+                    <div className="mt-0.5 text-xs text-muted-foreground">
+                      Chegirma: {p.promo_code || "—"}
+                      {p.discount_uzs
+                        ? ` (−${p.discount_uzs.toLocaleString("uz-UZ")} so'm)`
+                        : ""}
+                      {p.paid_at
+                        ? ` · ${new Date(p.paid_at).toLocaleString("uz-UZ")}`
+                        : ""}
+                    </div>
+                  ) : p.paid_at ? (
+                    <div className="mt-0.5 text-xs text-muted-foreground">
+                      {new Date(p.paid_at).toLocaleString("uz-UZ")}
+                    </div>
+                  ) : null}
+                </div>
                 <Badge variant="secondary">{p.status}</Badge>
               </li>
             ))

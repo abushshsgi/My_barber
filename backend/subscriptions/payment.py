@@ -76,6 +76,7 @@ def pay_with_wallet(*, user: User, plan_code: str, request=None, promo_code: str
                 "promo_code": priced.get("promo_code"),
                 "base_uzs": priced.get("base_uzs"),
                 "discount_uzs": priced.get("discount_uzs"),
+                "discount_pct": priced.get("discount_pct"),
             },
         )
     except InsufficientBalanceError:
@@ -93,12 +94,13 @@ def pay_with_wallet(*, user: User, plan_code: str, request=None, promo_code: str
         transaction_id=str(entry.pk),
         idempotency_key=idempotency_key,
         paid_at=timezone.now(),
-        metadata={
-            "wallet_entry_id": str(entry.pk),
-            "promo_code": priced.get("promo_code"),
-            "base_uzs": priced.get("base_uzs"),
-            "discount_uzs": priced.get("discount_uzs"),
-        },
+            metadata={
+                "wallet_entry_id": str(entry.pk),
+                "promo_code": priced.get("promo_code"),
+                "base_uzs": priced.get("base_uzs"),
+                "discount_uzs": priced.get("discount_uzs"),
+                "discount_pct": priced.get("discount_pct"),
+            },
     )
 
     sub = activate_subscription(
@@ -178,6 +180,7 @@ def start_provider_checkout(
             "promo_code": priced.get("promo_code"),
             "base_uzs": priced.get("base_uzs"),
             "discount_uzs": priced.get("discount_uzs"),
+            "discount_pct": priced.get("discount_pct"),
         },
     )
     log_event(

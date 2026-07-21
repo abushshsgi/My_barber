@@ -8,6 +8,7 @@ from typing import Any
 
 from django.db import transaction
 from django.db.models import Count, Q, Sum
+from django.db.models.functions import TruncDate
 from django.utils import timezone
 
 from accounts.models import User
@@ -547,8 +548,38 @@ def maybe_grant_referral_trial(referrer: User) -> UserSubscription | None:
     return sub
 
 
+def _payment_promo_fields(meta: dict | None) -> dict[str, Any]:
+    m = meta or {}
+    promo = m.get("promo_code") or None
+    if isinstance(promo, str):
+        promo = promo.strip().upper() or None
+    try:
+        discount_uzs = int(m.get("discount_uzs") or 0)
+    except (TypeError, ValueError):
+        discount_uzs = 0
+    try:
+        base_uzs = int(m.get("base_uzs") or 0)
+    except (TypeError, ValueError):
+        base_uzs = 0
+    try:
+        discount_pct = int(m.get("discount_pct") or 0)
+    except (TypeError, ValueError):
+        discount_pct = 0
+    return {
+        "promo_code": promo,
+        "discount_uzs": discount_uzs,
+        "base_uzs": base_uzs,
+        "discount_pct": discount_pct,
+        "has_discount": bool(promo) or discount_uzs > 0,
+    }
+
+
 def admin_stats(*, start=None, end=None) -> dict[str, Any]:
     now = timezone.now()
+    today_start = timezone.localtime(now).replace(hour=0, minute=0, second=0, microsecond=0)
+    week_start = today_start - timedelta(days=today_start.weekday())
+    month_start = today_start.replace(day=1)
+
     active = UserSubscription.objects.filter(status=UserSubscription.Status.ACTIVE)
     # muddati o'tganlarni ham hisoblash uchun filter
     active_live = active.filter(Q(ends_at__isnull=True) | Q(ends_at__gt=now))
@@ -557,23 +588,162 @@ def admin_stats(*, start=None, end=None) -> dict[str, Any]:
     if start:
         payments = payments.filter(paid_at__gte=start)
         events_qs = SubscriptionEvent.objects.filter(created_at__gte=start)
+        subs_created = UserSubscription.objects.filter(created_at__gte=start)
     else:
         events_qs = SubscriptionEvent.objects.all()
+        subs_created = UserSubscription.objects.all()
     if end:
         payments = payments.filter(paid_at__lte=end)
         events_qs = events_qs.filter(created_at__lte=end)
+        subs_created = subs_created.filter(created_at__lte=end)
 
     revenue = payments.aggregate(total=Sum("amount_uzs"))["total"] or Decimal("0")
+    unique_buyers = payments.values("user_id").distinct().count()
+
     by_plan = list(
         active_live.values("plan_code")
         .annotate(count=Count("id"))
         .order_by("plan_code")
+    )
+    by_plan_purchases = list(
+        payments.values("plan_code")
+        .annotate(
+            count=Count("id"),
+            buyers=Count("user_id", distinct=True),
+            revenue=Sum("amount_uzs"),
+        )
+        .order_by("-count")
     )
     by_source = list(
         UserSubscription.objects.values("source")
         .annotate(count=Count("id"))
         .order_by("-count")
     )
+    by_provider = list(
+        payments.values("provider")
+        .annotate(count=Count("id"), revenue=Sum("amount_uzs"))
+        .order_by("-count")
+    )
+
+    # Kunlik sotuvlar (vaqt oralig'i yoki oxirgi 30 kun)
+    day_qs = payments
+    if not start:
+        day_qs = payments.filter(paid_at__gte=today_start - timedelta(days=29))
+    purchases_by_day = []
+    for row in (
+        day_qs.annotate(day=TruncDate("paid_at"))
+        .values("day")
+        .annotate(
+            count=Count("id"),
+            buyers=Count("user_id", distinct=True),
+            revenue=Sum("amount_uzs"),
+        )
+        .order_by("day")
+    ):
+        if not row["day"]:
+            continue
+        purchases_by_day.append(
+            {
+                "date": row["day"].isoformat(),
+                "count": row["count"],
+                "buyers": row["buyers"],
+                "revenue_uzs": int(row["revenue"] or 0),
+            }
+        )
+
+    # Chegirma / promokod statistikasi (metadata JSON)
+    promo_map: dict[str, dict[str, Any]] = {}
+    discount_total = 0
+    discounted_count = 0
+    discounted_buyers: set[int] = set()
+    recent_purchases: list[dict[str, Any]] = []
+    recent_discounted: list[dict[str, Any]] = []
+
+    paid_rows = list(
+        payments.select_related("user").order_by("-paid_at", "-created_at")[:500]
+    )
+    for p in paid_rows:
+        promo = _payment_promo_fields(p.metadata)
+        user = p.user
+        row = {
+            "id": str(p.pk),
+            "user_id": p.user_id,
+            "user_name": (user.full_name or user.phone or user.email or "") if user else "",
+            "user_phone": (user.phone or "") if user else "",
+            "plan_code": p.plan_code,
+            "amount_uzs": int(p.amount_uzs),
+            "provider": p.provider,
+            "paid_at": p.paid_at.isoformat() if p.paid_at else p.created_at.isoformat(),
+            "subscription_id": str(p.subscription_id) if p.subscription_id else None,
+            **promo,
+        }
+        if len(recent_purchases) < 40:
+            recent_purchases.append(row)
+        if promo["has_discount"]:
+            discounted_count += 1
+            discount_total += promo["discount_uzs"]
+            discounted_buyers.add(p.user_id)
+            code = promo["promo_code"] or "UNKNOWN"
+            bucket = promo_map.setdefault(
+                code,
+                {
+                    "promo_code": code,
+                    "count": 0,
+                    "buyers": set(),
+                    "discount_uzs": 0,
+                    "revenue_uzs": 0,
+                },
+            )
+            bucket["count"] += 1
+            bucket["buyers"].add(p.user_id)
+            bucket["discount_uzs"] += promo["discount_uzs"]
+            bucket["revenue_uzs"] += int(p.amount_uzs)
+            if len(recent_discounted) < 40:
+                recent_discounted.append(row)
+
+    # Agar range katta bo'lsa — to'liq discounted count uchun qayta skan (faqat metadata)
+    if payments.count() > len(paid_rows):
+        discounted_count = 0
+        discount_total = 0
+        discounted_buyers = set()
+        promo_map = {}
+        for p in payments.only("id", "user_id", "amount_uzs", "metadata").iterator(
+            chunk_size=500
+        ):
+            promo = _payment_promo_fields(p.metadata)
+            if not promo["has_discount"]:
+                continue
+            discounted_count += 1
+            discount_total += promo["discount_uzs"]
+            discounted_buyers.add(p.user_id)
+            code = promo["promo_code"] or "UNKNOWN"
+            bucket = promo_map.setdefault(
+                code,
+                {
+                    "promo_code": code,
+                    "count": 0,
+                    "buyers": set(),
+                    "discount_uzs": 0,
+                    "revenue_uzs": 0,
+                },
+            )
+            bucket["count"] += 1
+            bucket["buyers"].add(p.user_id)
+            bucket["discount_uzs"] += promo["discount_uzs"]
+            bucket["revenue_uzs"] += int(p.amount_uzs)
+
+    by_promo = [
+        {
+            "promo_code": v["promo_code"],
+            "count": v["count"],
+            "buyers": len(v["buyers"]),
+            "discount_uzs": v["discount_uzs"],
+            "revenue_uzs": v["revenue_uzs"],
+        }
+        for v in sorted(promo_map.values(), key=lambda x: -x["count"])
+    ]
+
+    all_paid = SubscriptionPayment.objects.filter(status=SubscriptionPayment.Status.PAID)
     trials = ReferralTrialGrant.objects.count()
     usage_agg = SubscriptionUsagePeriod.objects.aggregate(
         ai=Sum("morph_ai_used"),
@@ -593,8 +763,49 @@ def admin_stats(*, start=None, end=None) -> dict[str, Any]:
         ).count(),
         "revenue_uzs": int(revenue),
         "paid_count": payments.count(),
+        "unique_buyers": unique_buyers,
+        "new_subscriptions": subs_created.count(),
+        "purchases_today": all_paid.filter(paid_at__gte=today_start).count(),
+        "purchases_this_week": all_paid.filter(paid_at__gte=week_start).count(),
+        "purchases_this_month": all_paid.filter(paid_at__gte=month_start).count(),
+        "buyers_today": all_paid.filter(paid_at__gte=today_start)
+        .values("user_id")
+        .distinct()
+        .count(),
+        "buyers_this_week": all_paid.filter(paid_at__gte=week_start)
+        .values("user_id")
+        .distinct()
+        .count(),
+        "buyers_this_month": all_paid.filter(paid_at__gte=month_start)
+        .values("user_id")
+        .distinct()
+        .count(),
+        "discounted_count": discounted_count,
+        "discounted_buyers": len(discounted_buyers),
+        "discount_total_uzs": discount_total,
         "by_plan": by_plan,
+        "by_plan_purchases": [
+            {
+                "plan_code": r["plan_code"],
+                "count": r["count"],
+                "buyers": r["buyers"],
+                "revenue_uzs": int(r["revenue"] or 0),
+            }
+            for r in by_plan_purchases
+        ],
         "by_source": by_source,
+        "by_provider": [
+            {
+                "provider": r["provider"],
+                "count": r["count"],
+                "revenue_uzs": int(r["revenue"] or 0),
+            }
+            for r in by_provider
+        ],
+        "by_promo": by_promo,
+        "purchases_by_day": purchases_by_day,
+        "recent_purchases": recent_purchases,
+        "recent_discounted": recent_discounted,
         "referral_trials_granted": trials,
         "usage_totals": {
             "morph_ai": usage_agg["ai"] or 0,
