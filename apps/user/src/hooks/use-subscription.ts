@@ -3,6 +3,8 @@ import {
   checkoutSubscription,
   fetchSubscriptionMe,
   fetchSubscriptionPlans,
+  fetchSubscriptionPromos,
+  previewSubscriptionPromo,
   type SubscriptionMe,
 } from "@/lib/api/subscriptions";
 
@@ -19,6 +21,20 @@ export function useSubscriptionPlans() {
     queryKey: ["subscriptions", "plans"],
     queryFn: fetchSubscriptionPlans,
     staleTime: 60_000,
+  });
+}
+
+export function useSubscriptionPromos() {
+  return useQuery({
+    queryKey: ["subscriptions", "promos"],
+    queryFn: fetchSubscriptionPromos,
+    staleTime: 60_000,
+  });
+}
+
+export function useSubscriptionPromoPreview() {
+  return useMutation({
+    mutationFn: previewSubscriptionPromo,
   });
 }
 

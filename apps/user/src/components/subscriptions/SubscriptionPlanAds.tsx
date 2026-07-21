@@ -228,7 +228,7 @@ export function SubscriptionPromoBanner({
   return (
     <Link
       to="/wallet"
-      search={{ section: "subscriptions", plan: "starter", returnTo: "/ai-style" }}
+      search={{ section: "subscriptions", plan: "starter", returnTo: "/ai-style", promo: "MORPH30" }}
       onClick={onNavigate}
       className={cn(
         "flex items-center gap-3 overflow-hidden rounded-2xl border border-border bg-foreground px-4 py-3.5 text-background",
@@ -242,7 +242,7 @@ export function SubscriptionPromoBanner({
       <span className="min-w-0 flex-1">
         <span className="block text-[13px] font-bold leading-snug">Morph AI ni ochish</span>
         <span className="mt-0.5 block text-[11px] font-medium opacity-70">
-          Selfie → yangi uslub — Starter bilan bir zumda
+          Kod MORPH30 — −30% · Starter dan
         </span>
       </span>
       <ChevronRight className="size-5 shrink-0 opacity-70" strokeWidth={2.25} />

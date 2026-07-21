@@ -11,6 +11,8 @@ const walletSearchSchema = z.object({
   section: z.string().optional(),
   /** Prefocus / scroll to this subscription plan code (starter|plus|pro). */
   plan: z.string().optional(),
+  /** Prefill Morph subscription promo code (e.g. MORPH30). */
+  promo: z.string().optional(),
   /** After successful checkout, navigate here (e.g. /ai-style). */
   returnTo: z.string().optional(),
   backTo: z.string().optional(),

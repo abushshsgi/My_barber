@@ -71,6 +71,7 @@ from subscriptions.views import (
     SubscriptionConfirmView,
     SubscriptionMeView,
     SubscriptionPlansView,
+    SubscriptionPromoPreviewView,
 )
 from subscriptions.admin_views import (
     AdminSubscriptionActivateView,
@@ -394,6 +395,7 @@ api_routes = [
     path("users/family/<int:pk>/", FamilyMemberDetailView.as_view()),
     path("users/me/referral/", MyReferralView.as_view()),
     path("subscriptions/plans/", SubscriptionPlansView.as_view()),
+    path("subscriptions/promo-preview/", SubscriptionPromoPreviewView.as_view()),
     path("subscriptions/me/", SubscriptionMeView.as_view()),
     path("subscriptions/checkout/", SubscriptionCheckoutView.as_view()),
     path("subscriptions/confirm/", SubscriptionConfirmView.as_view()),

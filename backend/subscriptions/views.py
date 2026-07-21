@@ -12,6 +12,7 @@ from subscriptions.payment import (
     start_provider_checkout,
 )
 from subscriptions.plans import PLAN_CODES, list_plans, serialize_plan
+from subscriptions.promos import list_public_promos, resolve_checkout_price
 from subscriptions.services import build_me_payload, can_use_morph_care, serialize_subscription
 from subscriptions.throttles import (
     SubscriptionCheckoutThrottle,
@@ -32,7 +33,37 @@ class SubscriptionPlansView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        return Response({"plans": [serialize_plan(p) for p in list_plans()]})
+        return Response(
+            {
+                "plans": [serialize_plan(p) for p in list_plans()],
+                "promos": list_public_promos(),
+            }
+        )
+
+
+class SubscriptionPromoPreviewView(APIView):
+    """Promokod + tarif → yakuniy narx (checkout oldidan)."""
+
+    permission_classes = [IsAuthenticated]
+    throttle_classes = [SubscriptionCheckoutThrottle, SubscriptionIPThrottle]
+
+    def post(self, request):
+        plan_code = str(request.data.get("plan_code") or "").strip().lower()
+        promo_code = str(request.data.get("promo_code") or "").strip()
+        if plan_code not in PLAN_CODES:
+            return Response(
+                {"detail": "plan_code starter, plus yoki pro bo'lishi kerak."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            priced = resolve_checkout_price(
+                plan_code=plan_code,
+                promo_code=promo_code or None,
+                user=request.user,
+            )
+        except ValueError as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"ok": True, **priced})
 
 
 class SubscriptionMeView(APIView):
@@ -56,13 +87,19 @@ class SubscriptionCheckoutView(APIView):
             )
 
         method = str(request.data.get("method") or request.data.get("provider") or "wallet").strip().lower()
+        promo_code = str(request.data.get("promo_code") or "").strip() or None
         return_url = str(request.data.get("return_url") or _default_return_url()).strip()
         if not return_url.startswith(("http://", "https://")):
             return Response({"detail": "return_url noto'g'ri."}, status=status.HTTP_400_BAD_REQUEST)
 
         if method == "wallet":
             try:
-                sub = pay_with_wallet(user=request.user, plan_code=plan_code, request=request)
+                sub = pay_with_wallet(
+                    user=request.user,
+                    plan_code=plan_code,
+                    request=request,
+                    promo_code=promo_code,
+                )
             except InsufficientBalanceError as exc:
                 return Response({"detail": str(exc)}, status=status.HTTP_402_PAYMENT_REQUIRED)
             except WalletServiceError as exc:
@@ -73,6 +110,7 @@ class SubscriptionCheckoutView(APIView):
                     "method": "wallet",
                     "subscription": serialize_subscription(sub),
                     "me": build_me_payload(request.user),
+                    "promo_code": promo_code,
                 },
                 status=status.HTTP_201_CREATED,
             )
@@ -85,6 +123,7 @@ class SubscriptionCheckoutView(APIView):
                     provider=method,
                     return_url=return_url,
                     request=request,
+                    promo_code=promo_code,
                 )
             except ValueError as exc:
                 return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)

@@ -253,7 +253,7 @@ function MorphLimitUpsellBody({
         <>
           <Link
             to="/wallet"
-            search={{ section: "subscriptions", plan: "starter", returnTo: "/ai-style" }}
+            search={{ section: "subscriptions", plan: "starter", returnTo: "/ai-style", promo: "MORPH30" }}
             onClick={onClose}
             className={cn(
               "flex h-14 items-center justify-center gap-2 rounded-[22px] bg-white text-[15px] font-bold text-[#0a0a0a]",
@@ -262,7 +262,7 @@ function MorphLimitUpsellBody({
           >
             <Crown className="size-5" strokeWidth={2.25} />
             {t("aiStylePage.limitSheet.buyPlan", {
-              defaultValue: "Morph AI ni ochish — Starter",
+              defaultValue: "Morph AI ni ochish — MORPH30 (−30%)",
             })}
           </Link>
           <Link

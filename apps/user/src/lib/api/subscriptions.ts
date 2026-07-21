@@ -77,9 +77,46 @@ export type SubscriptionMe = {
   };
 };
 
+export type SubscriptionPromo = {
+  code: string;
+  label_uz: string;
+  discount_pct: number;
+};
+
+export type SubscriptionPromoPreview = {
+  ok: boolean;
+  plan_code: string;
+  base_uzs: number;
+  amount_uzs: number;
+  discount_uzs: number;
+  discount_pct: number;
+  promo_code: string | null;
+  promo_label: string | null;
+  detail?: string;
+};
+
 export async function fetchSubscriptionPlans(): Promise<SubscriptionPlan[]> {
-  const data = await apiJson<{ plans: SubscriptionPlan[] }>("/api/v1/subscriptions/plans/");
+  const data = await apiJson<{ plans: SubscriptionPlan[]; promos?: SubscriptionPromo[] }>(
+    "/api/v1/subscriptions/plans/",
+  );
   return data.plans ?? [];
+}
+
+export async function fetchSubscriptionPromos(): Promise<SubscriptionPromo[]> {
+  const data = await apiJson<{ plans: SubscriptionPlan[]; promos?: SubscriptionPromo[] }>(
+    "/api/v1/subscriptions/plans/",
+  );
+  return data.promos ?? [];
+}
+
+export async function previewSubscriptionPromo(payload: {
+  plan_code: string;
+  promo_code?: string;
+}): Promise<SubscriptionPromoPreview> {
+  return apiJson("/api/v1/subscriptions/promo-preview/", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
 }
 
 export async function fetchSubscriptionMe(): Promise<SubscriptionMe> {
@@ -90,6 +127,7 @@ export async function checkoutSubscription(payload: {
   plan_code: string;
   method: "wallet" | "click" | "payme";
   return_url?: string;
+  promo_code?: string;
 }): Promise<{
   ok?: boolean;
   method?: string;
@@ -101,6 +139,9 @@ export async function checkoutSubscription(payload: {
   configured?: boolean;
   message?: string;
   amount_uzs?: number;
+  base_uzs?: number;
+  discount_uzs?: number;
+  promo_code?: string | null;
   plan_code?: string;
   detail?: string;
 }> {

@@ -51,18 +51,23 @@ export function MorphSoftPaywall({ className, previewUrl }: Props) {
           </h3>
           <p className="mt-2 max-w-sm text-[13px] leading-relaxed text-background/60">
             {t("aiStylePage.softPaywall.hint", {
-              defaultValue: "Selfie → yangi uslub. Starter bilan bir zumda ochiladi.",
+              defaultValue: "Selfie → yangi uslub. Kod MORPH30 bilan −30%.",
             })}
           </p>
 
           <Link
             to="/wallet"
-            search={{ section: "subscriptions", plan: "starter", returnTo: "/ai-style" }}
+            search={{
+              section: "subscriptions",
+              plan: "starter",
+              returnTo: "/ai-style",
+              promo: "MORPH30",
+            }}
             className="mt-5 inline-flex h-12 w-full max-w-xs items-center justify-center gap-2 rounded-2xl bg-background text-[14px] font-bold text-foreground"
           >
             <Crown className="size-4" strokeWidth={2.25} />
             {t("aiStylePage.limitSheet.buyPlan", {
-              defaultValue: "Morph AI ni ochish — Starter",
+              defaultValue: "Morph AI ni ochish — MORPH30 (−30%)",
             })}
           </Link>
           <Link
