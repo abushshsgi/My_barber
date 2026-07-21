@@ -1419,7 +1419,7 @@ class AdminAdminAccountDetailView(generics.RetrieveUpdateAPIView):
 
 
 class AdminPlatformIncomeView(APIView):
-    """Platforma daromadi — B2B, B2C, sovg'a dizayn, obuna va boshqa."""
+    """Platforma sof daromadi — faqat platforma olgan pul (aylanma emas)."""
 
     permission_classes = [IsAdmin]
 
@@ -1436,7 +1436,30 @@ class AdminPlatformIncomeView(APIView):
             prefix="admin:finance:platform-income",
             parts={"start": start_dt.isoformat(), "end": end_dt.isoformat()},
             producer=lambda: build_platform_income(start_dt, end_dt),
-            ttl=8,
+            ttl=5,
+        )
+        return Response(payload)
+
+
+class AdminPlatformTurnoverView(APIView):
+    """Platforma aylanmasi — bronlar va mijoz pul oqimi."""
+
+    permission_classes = [IsAdmin]
+
+    def get(self, request):
+        from config.api_cache import cached_json
+
+        from .platform_analytics import build_platform_turnover, resolve_range
+
+        start_dt, end_dt = resolve_range(
+            request.query_params.get("start"),
+            request.query_params.get("end"),
+        )
+        payload = cached_json(
+            prefix="admin:finance:platform-turnover",
+            parts={"start": start_dt.isoformat(), "end": end_dt.isoformat()},
+            producer=lambda: build_platform_turnover(start_dt, end_dt),
+            ttl=5,
         )
         return Response(payload)
 

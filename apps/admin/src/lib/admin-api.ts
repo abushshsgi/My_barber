@@ -2243,36 +2243,21 @@ export type PlatformIncome = {
   range: StatDateRange;
   summary: {
     platform_net: number;
-    marketplace_gmv: number;
-    b2c_online_gmv: number;
-    b2c_cash_gmv: number;
-    b2b_promotions: number;
+    today_net: number | null;
     gift_design_fees: number;
     subscriptions: number;
+    b2b_promotions: number;
     other: number;
   };
-  b2c: {
-    online_gmv: number;
-    cash_gmv: number;
-    online_count: number;
-    cash_count: number;
-    completed_bookings: number;
-  };
-  b2b: {
-    promotions_total: number;
-    promotions_count: number;
-  };
+  sources: Array<{ key: string; label: string; amount: number; count: number }>;
   gifts: {
     design_fee_total: number;
-    gift_amount_total: number;
-    charged_total: number;
     count: number;
     by_design: Array<{
       design_id: string;
       design_name: string;
       count: number;
       fee_total: number;
-      amount_total: number;
     }>;
   };
   subscriptions: {
@@ -2280,14 +2265,68 @@ export type PlatformIncome = {
     count: number;
     by_provider: Array<{ provider: string; count: number; revenue_uzs: number }>;
   };
+  promotions: {
+    revenue_uzs: number;
+    count: number;
+  };
   other: {
     revenue_uzs: number;
     count: number;
   };
+  recent: Array<{
+    id: string;
+    kind: string;
+    label: string;
+    payer_name: string;
+    payer_type: string;
+    payer_id?: number | null;
+    amount: number;
+    created_at: string | null;
+  }>;
 };
 
 export async function fetchPlatformIncome(range?: StatDateRange): Promise<PlatformIncome> {
   return apiJson<PlatformIncome>(`/api/v1/admin/finance/platform-income/${rangeQuery(range)}`);
+}
+
+export type PlatformTurnover = {
+  range: StatDateRange;
+  summary: {
+    total_turnover: number;
+    today_turnover: number;
+    booking_gmv: number;
+    cash_gmv: number;
+    online_gmv: number;
+    topup_total: number;
+    gift_amount_total: number;
+    wallet_booking_spend: number;
+  };
+  b2b: {
+    label: string;
+    cash_total: number;
+    cash_count: number;
+    online_total: number;
+    online_count: number;
+    total: number;
+    completed_count: number;
+  };
+  b2c: {
+    label: string;
+    topup_total: number;
+    topup_count: number;
+    gift_amount_total: number;
+    gift_count: number;
+    wallet_booking_spend: number;
+    wallet_booking_count: number;
+    topup_sources: Array<{ source: string; amount: number; count: number }>;
+  };
+  streams: Array<{ key: string; label: string; amount: number; count: number }>;
+};
+
+export async function fetchPlatformTurnover(range?: StatDateRange): Promise<PlatformTurnover> {
+  return apiJson<PlatformTurnover>(
+    `/api/v1/admin/finance/platform-turnover/${rangeQuery(range)}`,
+  );
 }
 
 export type AdminGiftTransfer = {

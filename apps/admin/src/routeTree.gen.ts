@@ -15,6 +15,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminAdminsRouteImport } from './routes/admin.admins'
 import { Route as AdminAuditRouteImport } from './routes/admin.audit'
+import { Route as AdminAylanmaRouteImport } from './routes/admin.aylanma'
 import { Route as AdminBarbersRouteImport } from './routes/admin.barbers'
 import { Route as AdminBookingsRouteImport } from './routes/admin.bookings'
 import { Route as AdminBroadcastRouteImport } from './routes/admin.broadcast'
@@ -30,6 +31,7 @@ import { Route as AdminStatisticsRouteImport } from './routes/admin.statistics'
 import { Route as AdminSubscriptionsRouteImport } from './routes/admin.subscriptions'
 import { Route as AdminSupportRouteImport } from './routes/admin.support'
 import { Route as AdminUsersRouteImport } from './routes/admin.users'
+import { Route as AdminAylanmaIndexRouteImport } from './routes/admin.aylanma.index'
 import { Route as AdminBarbersBarberIdRouteImport } from './routes/admin.barbers.$barberId'
 import { Route as AdminBookingsBookingIdRouteImport } from './routes/admin.bookings.$bookingId'
 import { Route as AdminFinanceIndexRouteImport } from './routes/admin.finance.index'
@@ -103,6 +105,11 @@ const AdminAdminsRoute = AdminAdminsRouteImport.update({
 const AdminAuditRoute = AdminAuditRouteImport.update({
   id: '/audit',
   path: '/audit',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminAylanmaRoute = AdminAylanmaRouteImport.update({
+  id: '/aylanma',
+  path: '/aylanma',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminBarbersRoute = AdminBarbersRouteImport.update({
@@ -179,6 +186,11 @@ const AdminUsersRoute = AdminUsersRouteImport.update({
   id: '/users',
   path: '/users',
   getParentRoute: () => AdminRoute,
+} as any)
+const AdminAylanmaIndexRoute = AdminAylanmaIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminAylanmaRoute,
 } as any)
 const AdminBarbersBarberIdRoute = AdminBarbersBarberIdRouteImport.update({
   id: '/$barberId',
@@ -416,6 +428,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/admin/admins': typeof AdminAdminsRoute
   '/admin/audit': typeof AdminAuditRoute
+  '/admin/aylanma': typeof AdminAylanmaRouteWithChildren
   '/admin/barbers': typeof AdminBarbersRouteWithChildren
   '/admin/bookings': typeof AdminBookingsRouteWithChildren
   '/admin/broadcast': typeof AdminBroadcastRoute
@@ -461,6 +474,7 @@ export interface FileRoutesByFullPath {
   '/admin/support/$ticketId': typeof AdminSupportTicketIdRoute
   '/admin/users/$userId': typeof AdminUsersUserIdRoute
   '/admin/users/signups': typeof AdminUsersSignupsRoute
+  '/admin/aylanma/': typeof AdminAylanmaIndexRoute
   '/admin/finance/': typeof AdminFinanceIndexRoute
   '/admin/morph-ai/': typeof AdminMorphAiIndexRoute
   '/admin/statistics/': typeof AdminStatisticsIndexRoute
@@ -522,6 +536,7 @@ export interface FileRoutesByTo {
   '/admin/support/$ticketId': typeof AdminSupportTicketIdRoute
   '/admin/users/$userId': typeof AdminUsersUserIdRoute
   '/admin/users/signups': typeof AdminUsersSignupsRoute
+  '/admin/aylanma': typeof AdminAylanmaIndexRoute
   '/admin/finance': typeof AdminFinanceIndexRoute
   '/admin/morph-ai': typeof AdminMorphAiIndexRoute
   '/admin/statistics': typeof AdminStatisticsIndexRoute
@@ -543,6 +558,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/admin/admins': typeof AdminAdminsRoute
   '/admin/audit': typeof AdminAuditRoute
+  '/admin/aylanma': typeof AdminAylanmaRouteWithChildren
   '/admin/barbers': typeof AdminBarbersRouteWithChildren
   '/admin/bookings': typeof AdminBookingsRouteWithChildren
   '/admin/broadcast': typeof AdminBroadcastRoute
@@ -588,6 +604,7 @@ export interface FileRoutesById {
   '/admin/support/$ticketId': typeof AdminSupportTicketIdRoute
   '/admin/users/$userId': typeof AdminUsersUserIdRoute
   '/admin/users/signups': typeof AdminUsersSignupsRoute
+  '/admin/aylanma/': typeof AdminAylanmaIndexRoute
   '/admin/finance/': typeof AdminFinanceIndexRoute
   '/admin/morph-ai/': typeof AdminMorphAiIndexRoute
   '/admin/statistics/': typeof AdminStatisticsIndexRoute
@@ -612,6 +629,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/admin/admins'
     | '/admin/audit'
+    | '/admin/aylanma'
     | '/admin/barbers'
     | '/admin/bookings'
     | '/admin/broadcast'
@@ -657,6 +675,7 @@ export interface FileRouteTypes {
     | '/admin/support/$ticketId'
     | '/admin/users/$userId'
     | '/admin/users/signups'
+    | '/admin/aylanma/'
     | '/admin/finance/'
     | '/admin/morph-ai/'
     | '/admin/statistics/'
@@ -718,6 +737,7 @@ export interface FileRouteTypes {
     | '/admin/support/$ticketId'
     | '/admin/users/$userId'
     | '/admin/users/signups'
+    | '/admin/aylanma'
     | '/admin/finance'
     | '/admin/morph-ai'
     | '/admin/statistics'
@@ -738,6 +758,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/admin/admins'
     | '/admin/audit'
+    | '/admin/aylanma'
     | '/admin/barbers'
     | '/admin/bookings'
     | '/admin/broadcast'
@@ -783,6 +804,7 @@ export interface FileRouteTypes {
     | '/admin/support/$ticketId'
     | '/admin/users/$userId'
     | '/admin/users/signups'
+    | '/admin/aylanma/'
     | '/admin/finance/'
     | '/admin/morph-ai/'
     | '/admin/statistics/'
@@ -848,6 +870,13 @@ declare module '@tanstack/react-router' {
       path: '/audit'
       fullPath: '/admin/audit'
       preLoaderRoute: typeof AdminAuditRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/aylanma': {
+      id: '/admin/aylanma'
+      path: '/aylanma'
+      fullPath: '/admin/aylanma'
+      preLoaderRoute: typeof AdminAylanmaRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/barbers': {
@@ -954,6 +983,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/users'
       preLoaderRoute: typeof AdminUsersRouteImport
       parentRoute: typeof AdminRoute
+    }
+    '/admin/aylanma/': {
+      id: '/admin/aylanma/'
+      path: '/'
+      fullPath: '/admin/aylanma/'
+      preLoaderRoute: typeof AdminAylanmaIndexRouteImport
+      parentRoute: typeof AdminAylanmaRoute
     }
     '/admin/barbers/$barberId': {
       id: '/admin/barbers/$barberId'
@@ -1266,6 +1302,18 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AdminAylanmaRouteChildren {
+  AdminAylanmaIndexRoute: typeof AdminAylanmaIndexRoute
+}
+
+const AdminAylanmaRouteChildren: AdminAylanmaRouteChildren = {
+  AdminAylanmaIndexRoute: AdminAylanmaIndexRoute,
+}
+
+const AdminAylanmaRouteWithChildren = AdminAylanmaRoute._addFileChildren(
+  AdminAylanmaRouteChildren,
+)
+
 interface AdminBarbersBarberIdStatsRouteChildren {
   AdminBarbersBarberIdStatsGraphsRoute: typeof AdminBarbersBarberIdStatsGraphsRoute
   AdminBarbersBarberIdStatsIndexRoute: typeof AdminBarbersBarberIdStatsIndexRoute
@@ -1498,6 +1546,7 @@ const AdminUsersRouteWithChildren = AdminUsersRoute._addFileChildren(
 interface AdminRouteChildren {
   AdminAdminsRoute: typeof AdminAdminsRoute
   AdminAuditRoute: typeof AdminAuditRoute
+  AdminAylanmaRoute: typeof AdminAylanmaRouteWithChildren
   AdminBarbersRoute: typeof AdminBarbersRouteWithChildren
   AdminBookingsRoute: typeof AdminBookingsRouteWithChildren
   AdminBroadcastRoute: typeof AdminBroadcastRoute
@@ -1519,6 +1568,7 @@ interface AdminRouteChildren {
 const AdminRouteChildren: AdminRouteChildren = {
   AdminAdminsRoute: AdminAdminsRoute,
   AdminAuditRoute: AdminAuditRoute,
+  AdminAylanmaRoute: AdminAylanmaRouteWithChildren,
   AdminBarbersRoute: AdminBarbersRouteWithChildren,
   AdminBookingsRoute: AdminBookingsRouteWithChildren,
   AdminBroadcastRoute: AdminBroadcastRoute,

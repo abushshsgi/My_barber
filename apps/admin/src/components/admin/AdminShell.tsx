@@ -13,7 +13,6 @@ import {
   TrendingUp,
   Wallet,
   CreditCard,
-  Receipt,
   LifeBuoy,
   Megaphone,
   ShieldCheck,
@@ -29,6 +28,7 @@ import {
   Radio,
   Repeat,
   Gift,
+  ArrowLeftRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MysaloonLogo } from "@/components/brand/MysaloonLogo";
@@ -78,6 +78,16 @@ const SECTIONS: Section[] = [
       { to: "/admin", label: "Dashboard", icon: LayoutDashboard },
       { to: "/admin/bookings", label: "Bronlar", icon: CalendarClock },
       { to: "/admin/map", label: "Xarita", icon: MapIcon },
+    ],
+  },
+  {
+    key: "aylanma",
+    label: "Aylanma",
+    icon: ArrowLeftRight,
+    matchPrefixes: ["/admin/aylanma", "/admin/statistics/wallet"],
+    items: [
+      { to: "/admin/aylanma", label: "Umumiy aylanma", icon: ArrowLeftRight },
+      { to: "/admin/statistics/wallet", label: "Hamyon oqimi", icon: Wallet },
     ],
   },
   {
@@ -139,20 +149,14 @@ const SECTIONS: Section[] = [
     key: "finance",
     label: "Moliya",
     icon: Wallet,
-    matchPrefixes: [
-      "/admin/finance",
-      "/admin/subscriptions",
-      "/admin/statistics/wallet",
-    ],
+    matchPrefixes: ["/admin/finance", "/admin/subscriptions"],
     items: [
       { to: "/admin/finance", label: "Platforma daromadi", icon: TrendingUp },
       { to: "/admin/finance/gifts", label: "Sovg'a kartalar", icon: Gift },
       { to: "/admin/subscriptions", label: "B2C Obunalar", icon: Repeat },
-      { to: "/admin/statistics/wallet", label: "Hamyon oqimi", icon: Wallet },
       { to: "/admin/finance/deposits", label: "Karta to'ldirish", icon: CreditCard },
       { to: "/admin/finance/payouts", label: "To'lovlar", icon: Wallet },
       { to: "/admin/finance/promotions", label: "TOP reklamalar", icon: Megaphone },
-      { to: "/admin/finance/transactions", label: "Tranzaksiyalar", icon: Receipt },
     ],
   },
   {

@@ -160,3 +160,9 @@ export function formatAdminUzs(amount: number): string {
   if (amount >= 1_000) return `${Math.round(amount / 1_000)}K so'm`;
   return `${Math.round(amount).toLocaleString("uz-UZ")} so'm`;
 }
+
+/** Katta hero uchun to'liq summa (K/M qisqartmasiz). */
+export function formatAdminUzsFull(amount: number): string {
+  if (!Number.isFinite(amount)) return "0 so'm";
+  return `${Math.round(amount).toLocaleString("uz-UZ")} so'm`;
+}

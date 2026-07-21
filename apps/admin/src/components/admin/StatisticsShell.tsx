@@ -14,7 +14,6 @@ const TABS = [
   { to: "/admin/statistics/users" as const, label: "Mijozlar" },
   { to: "/admin/statistics/salons" as const, label: "Salonlar" },
   { to: "/admin/statistics/bookings" as const, label: "Bronlar" },
-  { to: "/admin/statistics/wallet" as const, label: "Hamyon" },
 ];
 
 export function StatisticsSubNav() {

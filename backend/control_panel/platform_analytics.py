@@ -388,34 +388,32 @@ def build_bookings_rows(start_dt, end_dt, *, status="", payment_method=""):
 
 def build_platform_income(start_dt: datetime, end_dt: datetime) -> dict:
     """
-    Platforma o'z daromadi (B2B + B2C + sovg'a dizayn + obuna + boshqa).
+    Faqat platforma sof daromadi (aylanma/GMV emas).
 
-    - B2C: onlayn bron to'lovlari (hamyon orqali o'tgan GMV) — marketplace hajmi
-    - B2B: TOP reklama to'lovlari
-    - Gift: sovg'a karta dizayn to'lovlari (platforma sof daromadi)
-    - Subscriptions: B2C obuna to'lovlari
-    - Other: ledger adjustment (platforma wallet)
+    Manbalar:
+    - Sovg'a karta dizayn to'lovlari
+    - B2C obuna to'lovlari
+    - B2B TOP reklama to'lovlari
+    - Boshqa (platforma wallet adjustment)
     """
     from barbers.models import BarberPromotion
     from subscriptions.models import SubscriptionPayment
     from wallet.gift_designs import get_gift_design
     from wallet.services.wallet_service import WalletService
 
-    completed_range = filter_bookings_by_earnings_period(completed_bookings_qs(), start_dt, end_dt)
-    breakdown = payment_breakdown(completed_range)
-
-    gifts = GiftTransfer.objects.filter(created_at__gte=start_dt, created_at__lte=end_dt)
+    gifts = (
+        GiftTransfer.objects.filter(created_at__gte=start_dt, created_at__lte=end_dt)
+        .select_related("sender_wallet__user")
+        .order_by("-created_at")
+    )
     gift_agg = gifts.aggregate(
-        amount_total=_decimal_sum("amount"),
         fee_total=_decimal_sum("design_fee"),
-        charged_total=_decimal_sum("total_charged"),
         count=Count("id"),
     )
     design_rows: dict[str, dict] = {}
     for row in gifts.values("design_id").annotate(
         count=Count("id"),
         fee_total=_decimal_sum("design_fee"),
-        amount_total=_decimal_sum("amount"),
     ):
         design_id = (row["design_id"] or "").strip() or "unknown"
         design = get_gift_design(design_id)
@@ -424,13 +422,16 @@ def build_platform_income(start_dt: datetime, end_dt: datetime) -> dict:
             "design_name": design.name_uz if design else design_id,
             "count": row["count"],
             "fee_total": _float(row["fee_total"]),
-            "amount_total": _float(row["amount_total"]),
         }
 
-    subs = SubscriptionPayment.objects.filter(
-        status=SubscriptionPayment.Status.PAID,
-        paid_at__gte=start_dt,
-        paid_at__lte=end_dt,
+    subs = (
+        SubscriptionPayment.objects.filter(
+            status=SubscriptionPayment.Status.PAID,
+            paid_at__gte=start_dt,
+            paid_at__lte=end_dt,
+        )
+        .select_related("user")
+        .order_by("-paid_at")
     )
     sub_agg = subs.aggregate(total=_decimal_sum("amount_uzs"), count=Count("id"))
     by_provider = [
@@ -446,19 +447,20 @@ def build_platform_income(start_dt: datetime, end_dt: datetime) -> dict:
         )
     ]
 
-    promos = BarberPromotion.objects.filter(
-        created_at__gte=start_dt,
-        created_at__lte=end_dt,
-        status__in=[
-            BarberPromotion.Status.ACTIVE,
-            BarberPromotion.Status.EXPIRED,
-            BarberPromotion.Status.PENDING,
-        ],
-    ).exclude(amount_paid=0)
+    promos = (
+        BarberPromotion.objects.filter(
+            created_at__gte=start_dt,
+            created_at__lte=end_dt,
+        )
+        .exclude(amount_paid=0)
+        .select_related("barber")
+        .order_by("-created_at")
+    )
     promo_agg = promos.aggregate(total=_decimal_sum("amount_paid"), count=Count("id"))
 
     other_total = 0.0
     other_count = 0
+    other_events: list[dict] = []
     try:
         platform_wallet = WalletService.ensure_platform_wallet()
         other_qs = LedgerEntry.objects.filter(
@@ -467,21 +469,116 @@ def build_platform_income(start_dt: datetime, end_dt: datetime) -> dict:
             created_at__gte=start_dt,
             created_at__lte=end_dt,
             amount__gt=0,
-        )
+        ).order_by("-created_at")
         other_agg = other_qs.aggregate(total=_decimal_sum("amount"), count=Count("id"))
         other_total = _float(other_agg["total"])
         other_count = int(other_agg["count"] or 0)
+        for entry in other_qs[:10]:
+            other_events.append(
+                {
+                    "id": f"adj-{entry.id}",
+                    "kind": "other",
+                    "label": "Boshqa (adjustment)",
+                    "payer_name": "Platforma",
+                    "payer_type": "system",
+                    "amount": _float(entry.amount),
+                    "created_at": entry.created_at.isoformat() if entry.created_at else None,
+                }
+            )
     except Exception:
         pass
 
     gift_fee_total = _float(gift_agg["fee_total"])
     subscription_total = _float(sub_agg["total"])
     b2b_promotions = _float(promo_agg["total"])
-    b2c_online_gmv = _float(breakdown["online_total"])
-    b2c_cash_gmv = _float(breakdown["cash_total"])
-
-    # Sof platforma daromadi = dizayn + obuna + reklama + boshqa (GMV alohida)
     platform_net = gift_fee_total + subscription_total + b2b_promotions + other_total
+
+    # Bugungi sof daromad (live delta)
+    today_start = timezone.make_aware(
+        datetime.combine(timezone.localdate(), datetime.min.time()),
+        timezone.get_current_timezone(),
+    )
+    today_end = timezone.now()
+    today_payload = None
+    if start_dt.date() <= timezone.localdate() <= end_dt.date():
+        today_gifts = GiftTransfer.objects.filter(
+            created_at__gte=today_start, created_at__lte=today_end
+        ).aggregate(fee_total=_decimal_sum("design_fee"))
+        today_subs = SubscriptionPayment.objects.filter(
+            status=SubscriptionPayment.Status.PAID,
+            paid_at__gte=today_start,
+            paid_at__lte=today_end,
+        ).aggregate(total=_decimal_sum("amount_uzs"))
+        today_promos = BarberPromotion.objects.filter(
+            created_at__gte=today_start, created_at__lte=today_end
+        ).exclude(amount_paid=0).aggregate(total=_decimal_sum("amount_paid"))
+        today_payload = (
+            _float(today_gifts["fee_total"])
+            + _float(today_subs["total"])
+            + _float(today_promos["total"])
+        )
+
+    recent: list[dict] = []
+    for gift in gifts[:25]:
+        if _float(gift.design_fee) <= 0:
+            continue
+        sender = gift.sender_wallet.user if gift.sender_wallet_id else None
+        design = get_gift_design(gift.design_id)
+        recent.append(
+            {
+                "id": f"gift-{gift.id}",
+                "kind": "gift_design",
+                "label": f"Sovg'a dizayn — {design.name_uz if design else gift.design_id}",
+                "payer_name": (
+                    (sender.full_name or sender.phone or str(sender.pk)).strip()
+                    if sender
+                    else "—"
+                ),
+                "payer_type": "user",
+                "payer_id": sender.pk if sender else None,
+                "amount": _float(gift.design_fee),
+                "created_at": gift.created_at.isoformat() if gift.created_at else None,
+            }
+        )
+    for pay in subs[:25]:
+        user = pay.user
+        recent.append(
+            {
+                "id": f"sub-{pay.id}",
+                "kind": "subscription",
+                "label": f"Obuna — {pay.plan_code}",
+                "payer_name": (
+                    (user.full_name or user.phone or str(user.pk)).strip() if user else "—"
+                ),
+                "payer_type": "user",
+                "payer_id": user.pk if user else None,
+                "amount": _float(pay.amount_uzs),
+                "created_at": (pay.paid_at or pay.created_at).isoformat()
+                if (pay.paid_at or pay.created_at)
+                else None,
+            }
+        )
+    for promo in promos[:25]:
+        barber = promo.barber
+        recent.append(
+            {
+                "id": f"promo-{promo.id}",
+                "kind": "promotion",
+                "label": "TOP reklama",
+                "payer_name": (
+                    (barber.full_name or barber.phone or str(barber.pk)).strip()
+                    if barber
+                    else "—"
+                ),
+                "payer_type": "barber",
+                "payer_id": barber.pk if barber else None,
+                "amount": _float(promo.amount_paid),
+                "created_at": promo.created_at.isoformat() if promo.created_at else None,
+            }
+        )
+    recent.extend(other_events)
+    recent.sort(key=lambda r: r.get("created_at") or "", reverse=True)
+    recent = recent[:40]
 
     return {
         "range": {
@@ -490,29 +587,40 @@ def build_platform_income(start_dt: datetime, end_dt: datetime) -> dict:
         },
         "summary": {
             "platform_net": platform_net,
-            "marketplace_gmv": _float(breakdown["total_income"]),
-            "b2c_online_gmv": b2c_online_gmv,
-            "b2c_cash_gmv": b2c_cash_gmv,
-            "b2b_promotions": b2b_promotions,
+            "today_net": today_payload,
             "gift_design_fees": gift_fee_total,
             "subscriptions": subscription_total,
+            "b2b_promotions": b2b_promotions,
             "other": other_total,
         },
-        "b2c": {
-            "online_gmv": b2c_online_gmv,
-            "cash_gmv": b2c_cash_gmv,
-            "online_count": breakdown["online_count"],
-            "cash_count": breakdown["cash_count"],
-            "completed_bookings": breakdown["cash_count"] + breakdown["online_count"],
-        },
-        "b2b": {
-            "promotions_total": b2b_promotions,
-            "promotions_count": int(promo_agg["count"] or 0),
-        },
+        "sources": [
+            {
+                "key": "gift_design",
+                "label": "Sovg'a dizayn",
+                "amount": gift_fee_total,
+                "count": int(gift_agg["count"] or 0),
+            },
+            {
+                "key": "subscriptions",
+                "label": "B2C obunalar",
+                "amount": subscription_total,
+                "count": int(sub_agg["count"] or 0),
+            },
+            {
+                "key": "promotions",
+                "label": "B2B TOP reklama",
+                "amount": b2b_promotions,
+                "count": int(promo_agg["count"] or 0),
+            },
+            {
+                "key": "other",
+                "label": "Boshqa",
+                "amount": other_total,
+                "count": other_count,
+            },
+        ],
         "gifts": {
             "design_fee_total": gift_fee_total,
-            "gift_amount_total": _float(gift_agg["amount_total"]),
-            "charged_total": _float(gift_agg["charged_total"]),
             "count": int(gift_agg["count"] or 0),
             "by_design": sorted(design_rows.values(), key=lambda r: r["fee_total"], reverse=True),
         },
@@ -521,10 +629,141 @@ def build_platform_income(start_dt: datetime, end_dt: datetime) -> dict:
             "count": int(sub_agg["count"] or 0),
             "by_provider": by_provider,
         },
+        "promotions": {
+            "revenue_uzs": b2b_promotions,
+            "count": int(promo_agg["count"] or 0),
+        },
         "other": {
             "revenue_uzs": other_total,
             "count": other_count,
         },
+        "recent": recent,
+    }
+
+
+def build_platform_turnover(start_dt: datetime, end_dt: datetime) -> dict:
+    """
+    Platforma aylanmasi — bronlar / mijoz oqimi (sof daromad emas).
+
+    - B2B: sartarosh bron to'lovlari (naqd + onlayn)
+    - B2C: mijoz hamyon to'ldirish, sovg'a o'tkazmalari
+    """
+    completed_range = filter_bookings_by_earnings_period(completed_bookings_qs(), start_dt, end_dt)
+    breakdown = payment_breakdown(completed_range)
+
+    entries = LedgerEntry.objects.filter(created_at__gte=start_dt, created_at__lte=end_dt)
+    topups = entries.filter(entry_type=LedgerEntry.EntryType.TOPUP)
+    booking_pays = entries.filter(entry_type=LedgerEntry.EntryType.BOOKING_PAY)
+
+    topup_total = _float(topups.aggregate(s=_decimal_sum("amount"))["s"])
+    wallet_booking_spend = abs(_float(booking_pays.aggregate(s=_decimal_sum("amount"))["s"]))
+
+    gifts = GiftTransfer.objects.filter(created_at__gte=start_dt, created_at__lte=end_dt)
+    gift_count = gifts.count()
+    gift_amount = _float(gifts.aggregate(s=_decimal_sum("amount"))["s"])
+
+    cash_gmv = _float(breakdown["cash_total"])
+    online_gmv = _float(breakdown["online_total"])
+    booking_gmv = cash_gmv + online_gmv
+
+    # Jami aylanma: bron GMV + P2P sovg'a summasi + hamyon to'ldirish
+    # (onlayn bron allaqachon GMV da — wallet spend alohida ko'rsatiladi, qo'shilmaydi)
+    total_turnover = booking_gmv + gift_amount + topup_total
+
+    today_start = timezone.make_aware(
+        datetime.combine(timezone.localdate(), datetime.min.time()),
+        timezone.get_current_timezone(),
+    )
+    today_end = timezone.now()
+    today_completed = filter_bookings_by_earnings_period(
+        completed_bookings_qs(), today_start, today_end
+    )
+    today_bd = payment_breakdown(today_completed)
+    today_gifts = _float(
+        GiftTransfer.objects.filter(
+            created_at__gte=today_start, created_at__lte=today_end
+        ).aggregate(s=_decimal_sum("amount"))["s"]
+    )
+    today_topups = _float(
+        LedgerEntry.objects.filter(
+            entry_type=LedgerEntry.EntryType.TOPUP,
+            created_at__gte=today_start,
+            created_at__lte=today_end,
+        ).aggregate(s=_decimal_sum("amount"))["s"]
+    )
+    today_turnover = (
+        _float(today_bd["total_income"]) + today_gifts + today_topups
+    )
+
+    topup_sources: dict[str, dict] = {}
+    for entry in topups.only("amount", "metadata"):
+        source = (entry.metadata or {}).get("source", "unknown")
+        row = topup_sources.setdefault(source, {"source": source, "amount": 0.0, "count": 0})
+        row["amount"] += _float(entry.amount)
+        row["count"] += 1
+
+    return {
+        "range": {
+            "start": start_dt.date().isoformat(),
+            "end": end_dt.date().isoformat(),
+        },
+        "summary": {
+            "total_turnover": total_turnover,
+            "today_turnover": today_turnover,
+            "booking_gmv": booking_gmv,
+            "cash_gmv": cash_gmv,
+            "online_gmv": online_gmv,
+            "topup_total": topup_total,
+            "gift_amount_total": gift_amount,
+            "wallet_booking_spend": wallet_booking_spend,
+        },
+        "b2b": {
+            "label": "Sartaroshlar (bronlar)",
+            "cash_total": cash_gmv,
+            "cash_count": breakdown["cash_count"],
+            "online_total": online_gmv,
+            "online_count": breakdown["online_count"],
+            "total": booking_gmv,
+            "completed_count": breakdown["cash_count"] + breakdown["online_count"],
+        },
+        "b2c": {
+            "label": "Mijozlar",
+            "topup_total": topup_total,
+            "topup_count": topups.count(),
+            "gift_amount_total": gift_amount,
+            "gift_count": gift_count,
+            "wallet_booking_spend": wallet_booking_spend,
+            "wallet_booking_count": booking_pays.count(),
+            "topup_sources": sorted(
+                topup_sources.values(), key=lambda r: r["amount"], reverse=True
+            ),
+        },
+        "streams": [
+            {
+                "key": "b2b_cash",
+                "label": "B2B naqd bronlar",
+                "amount": cash_gmv,
+                "count": breakdown["cash_count"],
+            },
+            {
+                "key": "b2b_online",
+                "label": "B2B onlayn bronlar",
+                "amount": online_gmv,
+                "count": breakdown["online_count"],
+            },
+            {
+                "key": "b2c_topup",
+                "label": "Mijoz to'ldirish",
+                "amount": topup_total,
+                "count": topups.count(),
+            },
+            {
+                "key": "b2c_gift",
+                "label": "Sovg'a o'tkazmalari",
+                "amount": gift_amount,
+                "count": gift_count,
+            },
+        ],
     }
 
 
