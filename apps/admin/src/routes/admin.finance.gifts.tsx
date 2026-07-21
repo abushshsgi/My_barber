@@ -10,6 +10,7 @@ import {
   Gift,
   Hash,
   LayoutGrid,
+  LifeBuoy,
   Lock,
   Search,
   ShieldAlert,
@@ -25,9 +26,12 @@ import {
   fetchAdminGiftDetail,
   fetchAdminGifts,
   holdAdminGift,
+  openAdminGiftDispute,
   PAGE_SIZE,
   refundAdminGift,
   releaseAdminGift,
+  bulkHoldAdminGifts,
+  verifyAdminGiftChains,
   type AdminGiftRisk,
   type AdminGiftTransfer,
 } from "@/lib/admin-api";
@@ -165,6 +169,8 @@ function GiftDetailSheet({
   const qc = useQueryClient();
   const [reason, setReason] = useState("");
   const [refundFee, setRefundFee] = useState(false);
+  const [refundAmount, setRefundAmount] = useState("");
+  const [verifyResult, setVerifyResult] = useState<string | null>(null);
 
   const detailQ = useQuery({
     queryKey: ["admin", "gift-detail", giftId],
@@ -180,7 +186,7 @@ function GiftDetailSheet({
   const holdM = useMutation({
     mutationFn: () => holdAdminGift(giftId!, { reason: reason.trim() }),
     onSuccess: async () => {
-      toast.success("Sovg'a hold qilindi");
+      toast.success("Sovg'a hold qilindi · userga xabar yuborildi");
       setReason("");
       await invalidate();
     },
@@ -190,7 +196,7 @@ function GiftDetailSheet({
   const releaseM = useMutation({
     mutationFn: () => releaseAdminGift(giftId!, { reason: reason.trim() || "Release" }),
     onSuccess: async () => {
-      toast.success("Hold ochildi — pul qaytarildi");
+      toast.success("Hold ochildi · userga xabar yuborildi");
       setReason("");
       await invalidate();
     },
@@ -202,19 +208,58 @@ function GiftDetailSheet({
       refundAdminGift(giftId!, {
         reason: reason.trim(),
         refund_design_fee: refundFee,
+        amount: refundAmount.trim() ? Number(refundAmount) : undefined,
       }),
     onSuccess: async () => {
-      toast.success("Refund qilindi — yuboruvchiga qaytdi");
+      toast.success("Refund qilindi · userga xabar yuborildi");
       setReason("");
+      setRefundAmount("");
       setRefundFee(false);
       await invalidate();
     },
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const disputeM = useMutation({
+    mutationFn: () =>
+      openAdminGiftDispute(giftId!, {
+        note: reason.trim() || "Admin dispute",
+        priority: "high",
+      }),
+    onSuccess: (res) => {
+      toast.success(`Dispute ochildi · ticket #${res.ticket_id}`);
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const verifyM = useMutation({
+    mutationFn: () => verifyAdminGiftChains(giftId!),
+    onSuccess: (res) => {
+      if (res.all_ok) {
+        setVerifyResult("Zanjir OK — sender va recipient hashlar mos");
+        toast.success("Ledger zanjiri ishonchli");
+      } else {
+        const msg = [
+          res.sender.ok ? null : `Sender: ${res.sender.error || "buzilgan"}`,
+          res.recipient.ok ? null : `Recipient: ${res.recipient.error || "buzilgan"}`,
+        ]
+          .filter(Boolean)
+          .join(" · ");
+        setVerifyResult(msg || "Zanjir buzilgan");
+        toast.error("Zanjirda muammo bor");
+      }
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const g = detailQ.data;
   const trail = g?.spend_trail;
-  const busy = holdM.isPending || releaseM.isPending || refundM.isPending;
+  const busy =
+    holdM.isPending ||
+    releaseM.isPending ||
+    refundM.isPending ||
+    disputeM.isPending ||
+    verifyM.isPending;
   const actions = g?.actions;
 
   return (
@@ -302,6 +347,15 @@ function GiftDetailSheet({
                   rows={3}
                 />
               </div>
+              <div className="mt-3 space-y-1">
+                <Label htmlFor="refund-amount">Partial refund summasi (ixtiyoriy)</Label>
+                <Input
+                  id="refund-amount"
+                  value={refundAmount}
+                  onChange={(e) => setRefundAmount(e.target.value)}
+                  placeholder={`Bo'sh = to'liq qoldiq (max ${formatAdminUzs(g.holdable_amount ?? g.held_amount ?? 0)})`}
+                />
+              </div>
               <div className="mt-3 flex items-center gap-2">
                 <Checkbox
                   id="refund-fee"
@@ -309,7 +363,7 @@ function GiftDetailSheet({
                   onCheckedChange={(v) => setRefundFee(v === true)}
                 />
                 <Label htmlFor="refund-fee" className="text-xs font-normal">
-                  Refund da dizayn narxini ham qaytarish
+                  To&apos;liq refund da dizayn narxini ham qaytarish
                 </Label>
               </div>
               <div className="mt-4 flex flex-wrap gap-2">
@@ -346,7 +400,30 @@ function GiftDetailSheet({
                   <Undo2 className="size-3.5" />
                   Refund
                 </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  disabled={busy}
+                  onClick={() => disputeM.mutate()}
+                >
+                  <LifeBuoy className="size-3.5" />
+                  Dispute
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  disabled={busy}
+                  onClick={() => verifyM.mutate()}
+                >
+                  <ShieldCheck className="size-3.5" />
+                  Verify zanjir
+                </Button>
               </div>
+              {verifyResult ? (
+                <p className="mt-2 text-xs text-muted-foreground">{verifyResult}</p>
+              ) : null}
               {!actions?.can_hold && !actions?.can_release && !actions?.can_refund ? (
                 <p className="mt-3 text-xs text-muted-foreground">
                   Bu holatda amal yo&apos;q (sarflangan yoki allaqachon refund).
@@ -524,6 +601,7 @@ function GiftDetailSheet({
 }
 
 function AdminGiftsPage() {
+  const qc = useQueryClient();
   const { rangeKey, setRangeKey, range } = useStatsRange("90d");
   const [q, setQ] = useState("");
   const [search, setSearch] = useState("");
@@ -553,6 +631,21 @@ function AdminGiftsPage() {
   const riskAlerts = giftsQ.data?.risk_alerts;
   const pag = giftsQ.data;
 
+  const bulkHoldM = useMutation({
+    mutationFn: (giftIds: string[]) =>
+      bulkHoldAdminGifts({
+        gift_ids: giftIds,
+        reason: "Bulk hold — risk alert tekshiruvi",
+      }),
+    onSuccess: async (res) => {
+      toast.success(
+        `${res.held_count} ta hold · ${res.error_count} ta xato · userga xabar yuborildi`,
+      );
+      await qc.invalidateQueries({ queryKey: ["admin", "gifts"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const applySearch = () => {
     setSearch(q.trim());
     setPage(1);
@@ -574,6 +667,22 @@ function AdminGiftsPage() {
   const openGift = (id: string) => {
     setSelectedId(id);
     setSheetOpen(true);
+  };
+
+  const onBulkHoldAlerts = () => {
+    const ids = (riskAlerts?.alerts ?? []).map((a) => a.gift_id).filter(Boolean);
+    if (!ids.length) {
+      toast.error("Hold qilish uchun alert yo'q");
+      return;
+    }
+    if (
+      !window.confirm(
+        `${ids.length} ta risk alert sovg'asi hold qilinsinmi? Userlarga xabar ketadi.`,
+      )
+    ) {
+      return;
+    }
+    bulkHoldM.mutate(ids);
   };
 
   return (
@@ -668,17 +777,29 @@ function AdminGiftsPage() {
                 </p>
               </div>
             </div>
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              onClick={() => {
-                setRiskFilter("flagged");
-                setPage(1);
-              }}
-            >
-              Faqat risklarni ko&apos;rsat
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  setRiskFilter("flagged");
+                  setPage(1);
+                }}
+              >
+                Faqat risklarni ko&apos;rsat
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="destructive"
+                disabled={bulkHoldM.isPending || !(riskAlerts?.alerts?.length)}
+                onClick={onBulkHoldAlerts}
+              >
+                <Lock className="size-3.5" />
+                {bulkHoldM.isPending ? "Hold..." : "Barchasini hold"}
+              </Button>
+            </div>
           </div>
           <ul className="mt-4 space-y-2">
             {(riskAlerts?.alerts ?? []).slice(0, 6).map((a) => (

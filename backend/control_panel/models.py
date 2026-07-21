@@ -106,6 +106,9 @@ class SupportTicket(models.Model):
     category = models.CharField(max_length=64, blank=True, default="general")
     status = models.CharField(max_length=24, choices=Status.choices, default=Status.OPEN, db_index=True)
     priority = models.CharField(max_length=24, choices=Priority.choices, default=Priority.NORMAL, db_index=True)
+    # Bog'langan obyekt (masalan gift_transfer)
+    related_type = models.CharField(max_length=64, blank=True, default="", db_index=True)
+    related_id = models.CharField(max_length=64, blank=True, default="", db_index=True)
     assignee = models.ForeignKey(
         "accounts.AdminAccount",
         null=True,

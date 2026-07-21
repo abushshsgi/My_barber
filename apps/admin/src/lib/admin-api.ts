@@ -2531,9 +2531,44 @@ export async function releaseAdminGift(
 
 export async function refundAdminGift(
   id: string,
-  body: { reason: string; refund_design_fee?: boolean },
+  body: { reason: string; refund_design_fee?: boolean; amount?: number },
 ): Promise<AdminGiftTransfer> {
   return apiJson<AdminGiftTransfer>(`/api/v1/admin/finance/gifts/${id}/refund/`, {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export async function openAdminGiftDispute(
+  id: string,
+  body: { note?: string; priority?: string } = {},
+): Promise<{ ok: boolean; ticket_id: number; subject: string; status: string }> {
+  return apiJson(`/api/v1/admin/finance/gifts/${id}/dispute/`, {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export async function verifyAdminGiftChains(id: string): Promise<{
+  gift_id: string;
+  all_ok: boolean;
+  sender: { wallet_number: string; ok: boolean; error: string | null };
+  recipient: { wallet_number: string; ok: boolean; error: string | null };
+}> {
+  return apiJson(`/api/v1/admin/finance/gifts/${id}/verify-chains/`);
+}
+
+export async function bulkHoldAdminGifts(body: {
+  gift_ids: string[];
+  reason: string;
+}): Promise<{
+  ok: boolean;
+  held_count: number;
+  error_count: number;
+  held: Array<{ gift_id: string; held_amount: number }>;
+  errors: Array<{ gift_id: string; detail: string }>;
+}> {
+  return apiJson(`/api/v1/admin/finance/gifts/bulk-hold/`, {
     method: "POST",
     body: JSON.stringify(body),
   });

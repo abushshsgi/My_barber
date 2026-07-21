@@ -1690,6 +1690,47 @@ def _reload_gift(pk):
     ).get(pk=pk)
 
 
+def _notify_gift_action(gift, *, action: str, reason: str = "", amount=None) -> None:
+    """Hold/release/refund dan keyin yuboruvchi va qabul qiluvchiga bildirishnoma."""
+    try:
+        from notifications.utils import notify_user
+
+        sender = gift.sender_wallet.user if gift.sender_wallet_id else None
+        recipient = gift.recipient_wallet.user if gift.recipient_wallet_id else None
+        amt = amount if amount is not None else gift.amount
+        titles = {
+            "hold": "Sovg'a tekshiruvda",
+            "release": "Sovg'a holddan chiqarildi",
+            "refund": "Sovg'a qaytarildi",
+        }
+        bodies = {
+            "hold": f"Sovg'a ({amt} so'm) vaqtincha hold qilindi. Sabab: {reason or 'tekshiruv'}.",
+            "release": f"Sovg'a ({amt} so'm) holddan chiqarildi — pul qabul qiluvchiga ochildi.",
+            "refund": f"Sovg'a ({amt} so'm) qaytarildi. Sabab: {reason or 'admin refund'}.",
+        }
+        title = titles.get(action, "Sovg'a yangilandi")
+        body = bodies.get(action, reason or title)
+        payload = {
+            "gift_id": str(gift.id),
+            "action": action,
+            "amount": str(amt),
+        }
+        if sender:
+            notify_user(sender, f"gift_{action}", title, body, payload=payload)
+        if recipient and action in ("hold", "release"):
+            notify_user(recipient, f"gift_{action}", title, body, payload=payload)
+        if recipient and action == "refund":
+            notify_user(
+                recipient,
+                f"gift_{action}",
+                "Sovg'a qaytarildi",
+                f"Sizga kelgan sovg'adan {amt} so'm yuboruvchiga qaytarildi.",
+                payload=payload,
+            )
+    except Exception:
+        return
+
+
 class AdminGiftHoldView(APIView):
     """Shubhali sovg'ani vaqtincha hold (platforma escrow)."""
 
@@ -1742,6 +1783,7 @@ class AdminGiftHoldView(APIView):
             before=before,
             after={"status": gift.status, "held_amount": str(gift.held_amount), "reason": reason},
         )
+        _notify_gift_action(gift, action="hold", reason=reason, amount=gift.held_amount)
         return Response(serialize_gift_transfer(_reload_gift(gift.id), detail=True))
 
 
@@ -1759,6 +1801,7 @@ class AdminGiftReleaseView(APIView):
         gift = get_object_or_404(GiftTransfer, pk=pk)
         reason = (request.data.get("reason") or "").strip()
         before = {"status": gift.status, "held_amount": str(gift.held_amount)}
+        held_before = gift.held_amount
         try:
             gift = WalletService.admin_release_gift(
                 gift=gift,
@@ -1778,15 +1821,18 @@ class AdminGiftReleaseView(APIView):
             before=before,
             after={"status": gift.status, "reason": reason},
         )
+        _notify_gift_action(gift, action="release", reason=reason, amount=held_before)
         return Response(serialize_gift_transfer(_reload_gift(gift.id), detail=True))
 
 
 class AdminGiftRefundView(APIView):
-    """Sovg'ani qaytarish — qoldiq yuboruvchiga."""
+    """Sovg'ani qaytarish — to'liq yoki partial (amount)."""
 
     permission_classes = [IsAdmin]
 
     def post(self, request, pk):
+        from decimal import Decimal, InvalidOperation
+
         from wallet.models import GiftTransfer
         from wallet.services.wallet_service import WalletService, WalletServiceError
 
@@ -1800,6 +1846,16 @@ class AdminGiftRefundView(APIView):
                 status=http_status.HTTP_400_BAD_REQUEST,
             )
         refund_fee = bool(request.data.get("refund_design_fee"))
+        amount = None
+        raw_amount = request.data.get("amount")
+        if raw_amount not in (None, ""):
+            try:
+                amount = Decimal(str(raw_amount))
+            except (InvalidOperation, TypeError, ValueError):
+                return Response(
+                    {"detail": "Summa noto'g'ri."},
+                    status=http_status.HTTP_400_BAD_REQUEST,
+                )
         before = {"status": gift.status, "held_amount": str(gift.held_amount)}
         try:
             gift = WalletService.admin_refund_gift(
@@ -1807,6 +1863,7 @@ class AdminGiftRefundView(APIView):
                 admin_id=_admin_id_from_request(request),
                 reason=reason,
                 refund_design_fee=refund_fee,
+                amount=amount,
                 idempotency_key=(request.data.get("idempotency_key") or "").strip(),
             )
         except WalletServiceError as exc:
@@ -1823,9 +1880,177 @@ class AdminGiftRefundView(APIView):
                 "status": gift.status,
                 "reason": reason,
                 "refund_design_fee": refund_fee,
+                "amount": str(amount) if amount is not None else "full_remaining",
             },
         )
+        last = (gift.remediation_log or [])[-1] if gift.remediation_log else {}
+        _notify_gift_action(
+            gift,
+            action="refund",
+            reason=reason,
+            amount=last.get("gift_amount") or gift.amount,
+        )
         return Response(serialize_gift_transfer(_reload_gift(gift.id), detail=True))
+
+
+class AdminGiftDisputeView(APIView):
+    """Sovg'aga bog'langan dispute / shikoyat ticket ochish."""
+
+    permission_classes = [IsAdmin]
+
+    def post(self, request, pk):
+        from wallet.models import GiftTransfer
+
+        gift = get_object_or_404(
+            GiftTransfer.objects.select_related(
+                "sender_wallet__user", "recipient_wallet__user"
+            ),
+            pk=pk,
+        )
+        note = (request.data.get("note") or request.data.get("reason") or "").strip()
+        priority = (request.data.get("priority") or SupportTicket.Priority.HIGH).strip()
+        if priority not in {c.value for c in SupportTicket.Priority}:
+            priority = SupportTicket.Priority.HIGH
+
+        sender = gift.sender_wallet.user if gift.sender_wallet_id else None
+        recipient = gift.recipient_wallet.user if gift.recipient_wallet_id else None
+        subject = f"Sovg'a dispute · {str(gift.id)[:8]}"
+        body_parts = [
+            f"Gift TX: {gift.id}",
+            f"Summa: {gift.amount} so'm",
+            f"Status: {gift.status}",
+            f"Yuboruvchi: {(sender.full_name if sender else '—')} / {(sender.phone if sender else '')}",
+            f"Qabul qiluvchi: {(recipient.full_name if recipient else '—')} / {(recipient.phone if recipient else '')}",
+        ]
+        if note:
+            body_parts.append(f"Izoh: {note}")
+        ticket = SupportTicket.objects.create(
+            subject=subject[:255],
+            body="\n".join(body_parts),
+            category="gift_dispute",
+            priority=priority,
+            related_type="gift_transfer",
+            related_id=str(gift.id),
+            created_by_user=sender,
+            status=SupportTicket.Status.OPEN,
+        )
+        _audit(
+            request,
+            "gift_dispute_open",
+            "gift_transfer",
+            str(gift.id),
+            subject,
+            before={},
+            after={"ticket_id": ticket.id, "note": note},
+        )
+        return Response(
+            {
+                "ok": True,
+                "ticket_id": ticket.id,
+                "subject": ticket.subject,
+                "status": ticket.status,
+                "related_type": ticket.related_type,
+                "related_id": ticket.related_id,
+            },
+            status=http_status.HTTP_201_CREATED,
+        )
+
+
+class AdminGiftBulkHoldView(APIView):
+    """Bir nechta sovg'ani birga hold qilish (risk alertlardan)."""
+
+    permission_classes = [IsAdmin]
+
+    def post(self, request):
+        from wallet.models import GiftTransfer
+        from wallet.services.wallet_service import WalletService, WalletServiceError
+
+        reason = (request.data.get("reason") or "").strip()
+        if len(reason) < 5:
+            return Response(
+                {"detail": "Sabab kamida 5 belgi bo'lishi kerak."},
+                status=http_status.HTTP_400_BAD_REQUEST,
+            )
+        ids = request.data.get("gift_ids") or []
+        if not isinstance(ids, list) or not ids:
+            return Response(
+                {"detail": "gift_ids ro'yxati kerak."},
+                status=http_status.HTTP_400_BAD_REQUEST,
+            )
+        ids = [str(x) for x in ids][:50]
+        admin_id = _admin_id_from_request(request)
+        held = []
+        errors = []
+        for gid in ids:
+            gift = GiftTransfer.objects.filter(pk=gid).first()
+            if not gift:
+                errors.append({"gift_id": gid, "detail": "Topilmadi"})
+                continue
+            try:
+                g = WalletService.admin_hold_gift(
+                    gift=gift,
+                    admin_id=admin_id,
+                    reason=reason,
+                    idempotency_key=f"bulk-hold:{gid}:{admin_id or 0}",
+                )
+                _notify_gift_action(g, action="hold", reason=reason, amount=g.held_amount)
+                held.append({"gift_id": str(g.id), "held_amount": float(g.held_amount)})
+            except WalletServiceError as exc:
+                errors.append({"gift_id": gid, "detail": str(exc)})
+
+        _audit(
+            request,
+            "gift_bulk_hold",
+            "gift_transfer",
+            ",".join(ids)[:64],
+            f"{len(held)} held",
+            before={},
+            after={"held": held, "errors": errors, "reason": reason},
+        )
+        return Response(
+            {
+                "ok": True,
+                "held_count": len(held),
+                "error_count": len(errors),
+                "held": held,
+                "errors": errors,
+            }
+        )
+
+
+class AdminGiftVerifyChainsView(APIView):
+    """Yuboruvchi va qabul qiluvchi ledger hash zanjirini tekshirish."""
+
+    permission_classes = [IsAdmin]
+
+    def get(self, request, pk):
+        from wallet.models import GiftTransfer
+        from wallet.services.wallet_service import WalletService
+
+        gift = get_object_or_404(
+            GiftTransfer.objects.select_related("sender_wallet", "recipient_wallet"),
+            pk=pk,
+        )
+        sender_ok, sender_err = WalletService.verify_chain(gift.sender_wallet)
+        recipient_ok, recipient_err = WalletService.verify_chain(gift.recipient_wallet)
+        return Response(
+            {
+                "gift_id": str(gift.id),
+                "sender": {
+                    "wallet_id": gift.sender_wallet_id,
+                    "wallet_number": gift.sender_wallet.wallet_number,
+                    "ok": sender_ok,
+                    "error": sender_err,
+                },
+                "recipient": {
+                    "wallet_id": gift.recipient_wallet_id,
+                    "wallet_number": gift.recipient_wallet.wallet_number,
+                    "ok": recipient_ok,
+                    "error": recipient_err,
+                },
+                "all_ok": bool(sender_ok and recipient_ok),
+            }
+        )
 
 
 class AdminWalletAdjustView(APIView):
@@ -1875,6 +2100,18 @@ class AdminWalletAdjustView(APIView):
                 "balance_after": str(entry.balance_after),
             },
         )
+        try:
+            from notifications.utils import notify_user
+
+            notify_user(
+                user,
+                "wallet_adjust",
+                "Hamyon tuzatildi",
+                f"Admin balansni {amount} so'm ga o'zgartirdi. Sabab: {reason}",
+                payload={"ledger_id": str(entry.id), "amount": str(amount)},
+            )
+        except Exception:
+            pass
         return Response(
             {
                 "ok": True,

@@ -563,6 +563,7 @@ class WalletService:
         admin_id: int | None,
         reason: str,
         refund_design_fee: bool = False,
+        amount: Decimal | None = None,
         idempotency_key: str = "",
     ) -> GiftTransfer:
         gift = GiftTransfer.objects.select_for_update().select_related(
@@ -574,7 +575,7 @@ class WalletService:
         ):
             raise WalletServiceError("Bu holatda refund qilib bo'lmaydi.")
 
-        key = (idempotency_key or "").strip() or f"gift-refund:{gift.id}"
+        key = (idempotency_key or "").strip() or f"gift-refund:{gift.id}:{uuid4()}"
         note = (reason or "").strip()[:500] or "Admin refund"
         platform = cls.ensure_platform_wallet()
         sender = Wallet.objects.select_for_update().get(pk=gift.sender_wallet_id)
@@ -590,38 +591,53 @@ class WalletService:
         }
 
         refunded_gift = Decimal("0")
+        full_remaining = False
+
         if gift.status == GiftTransfer.Status.ON_HOLD:
             hold_amount = Decimal(gift.held_amount).quantize(Decimal("0.01"))
-            if hold_amount > 0:
-                cls.post_entry(
-                    wallet=platform,
-                    entry_type=LedgerEntry.EntryType.REFUND,
-                    amount=-hold_amount,
-                    idempotency_key=f"{key}:hold-from-platform"[:128],
-                    reference_type="gift_refund",
-                    reference_id=str(gift.id),
-                    metadata=meta,
-                )
-                cls.post_entry(
-                    wallet=sender,
-                    entry_type=LedgerEntry.EntryType.REFUND,
-                    amount=hold_amount,
-                    idempotency_key=f"{key}:hold-to-sender"[:128],
-                    reference_type="gift_refund",
-                    reference_id=str(gift.id),
-                    metadata=meta,
-                )
-                refunded_gift = hold_amount
+            if hold_amount <= 0:
+                raise WalletServiceError("Hold summasi topilmadi.")
+            target = hold_amount if amount is None else Decimal(amount).quantize(Decimal("0.01"))
+            if target <= 0:
+                raise WalletServiceError("Refund summasi 0 dan katta bo'lishi kerak.")
+            if target > hold_amount:
+                raise WalletServiceError(f"Maksimal refund (hold): {hold_amount} so'm.")
+            cls.post_entry(
+                wallet=platform,
+                entry_type=LedgerEntry.EntryType.REFUND,
+                amount=-target,
+                idempotency_key=f"{key}:hold-from-platform"[:128],
+                reference_type="gift_refund",
+                reference_id=str(gift.id),
+                metadata=meta,
+            )
+            cls.post_entry(
+                wallet=sender,
+                entry_type=LedgerEntry.EntryType.REFUND,
+                amount=target,
+                idempotency_key=f"{key}:hold-to-sender"[:128],
+                reference_type="gift_refund",
+                reference_id=str(gift.id),
+                metadata=meta,
+            )
+            refunded_gift = target
+            full_remaining = target >= hold_amount
+            gift.held_amount = (hold_amount - target).quantize(Decimal("0.01"))
         else:
             refundable = cls.gift_holdable_amount(gift)
             if refundable <= 0:
                 raise WalletServiceError(
                     "Qaytarish uchun qoldiq yo'q (sarflangan yoki balans yetarli emas)."
                 )
+            target = refundable if amount is None else Decimal(amount).quantize(Decimal("0.01"))
+            if target <= 0:
+                raise WalletServiceError("Refund summasi 0 dan katta bo'lishi kerak.")
+            if target > refundable:
+                raise WalletServiceError(f"Maksimal refund: {refundable} so'm.")
             cls.post_entry(
                 wallet=recipient,
                 entry_type=LedgerEntry.EntryType.REFUND,
-                amount=-refundable,
+                amount=-target,
                 idempotency_key=f"{key}:from-recipient"[:128],
                 reference_type="gift_refund",
                 reference_id=str(gift.id),
@@ -630,16 +646,18 @@ class WalletService:
             cls.post_entry(
                 wallet=sender,
                 entry_type=LedgerEntry.EntryType.REFUND,
-                amount=refundable,
+                amount=target,
                 idempotency_key=f"{key}:to-sender"[:128],
                 reference_type="gift_refund",
                 reference_id=str(gift.id),
                 metadata=meta,
             )
-            refunded_gift = refundable
+            refunded_gift = target
+            full_remaining = target >= refundable
 
         refunded_fee = Decimal("0")
-        if refund_design_fee and Decimal(gift.design_fee) > 0:
+        # Dizayn fee faqat to'liq qoldiq qaytarilganda
+        if refund_design_fee and full_remaining and Decimal(gift.design_fee) > 0:
             fee = Decimal(gift.design_fee).quantize(Decimal("0.01"))
             cls.post_entry(
                 wallet=platform,
@@ -661,19 +679,23 @@ class WalletService:
             )
             refunded_fee = fee
 
-        gift.status = GiftTransfer.Status.REFUNDED
-        gift.held_amount = Decimal("0")
-        gift.held_at = None
-        gift.held_by_admin_id = None
-        gift.refunded_at = timezone.now()
-        gift.refunded_by_admin_id = admin_id
+        if full_remaining:
+            gift.status = GiftTransfer.Status.REFUNDED
+            gift.held_amount = Decimal("0")
+            gift.held_at = None
+            gift.held_by_admin_id = None
+            gift.refunded_at = timezone.now()
+            gift.refunded_by_admin_id = admin_id
+        # partial: status o'zgarmaydi (completed yoki on_hold qoladi)
+
         gift.admin_note = note
         cls._append_remediation(
             gift,
             {
-                "action": "refund",
+                "action": "refund_partial" if not full_remaining else "refund",
                 "gift_amount": str(refunded_gift),
                 "design_fee": str(refunded_fee),
+                "full_remaining": full_remaining,
                 "reason": note,
                 "admin_id": admin_id,
                 "at": timezone.now().isoformat(),
