@@ -86,6 +86,7 @@ function SupportPage() {
                   </div>
                   <div className="text-xs text-muted-foreground mt-0.5 truncate">
                     {t.user_name} · {t.assignee ?? "Biriktirilmagan"}
+                    {t.related_type === "gift_transfer" ? " · Sovg'a dispute" : ""}
                   </div>
                 </div>
                 <span

@@ -2893,6 +2893,9 @@ export type AdminTicket = {
   subject: string;
   status: string;
   priority: string;
+  category?: string;
+  related_type?: string;
+  related_id?: string;
   unread: number;
   user_name: string;
   user_avatar: string;
@@ -2912,6 +2915,9 @@ export async function fetchTickets(params?: { status?: string }): Promise<AdminT
     subject: String(t.subject || ""),
     status: String(t.status || ""),
     priority: String(t.priority || ""),
+    category: String(t.category || ""),
+    related_type: String(t.related_type || ""),
+    related_id: String(t.related_id || ""),
     unread: Number(t.unread || 0),
     user_name: String(t.user_name || ""),
     user_avatar: String(t.user_avatar || ""),

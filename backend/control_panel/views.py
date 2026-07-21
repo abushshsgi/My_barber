@@ -656,47 +656,144 @@ class AdminBookingDetailView(generics.RetrieveAPIView):
         )
 
 
+def _user_ticket_qs(user):
+    return SupportTicket.objects.filter(created_by_user=user).prefetch_related("replies")
+
+
+def _serialize_user_reply(r: SupportReply) -> dict:
+    return {
+        "id": r.id,
+        "author_role": r.author_role,
+        "author_name": r.author_name or (
+            "Support" if r.author_role == SupportReply.AuthorRole.ADMIN else "Siz"
+        ),
+        "body": r.body,
+        "created_at": r.created_at.isoformat(),
+    }
+
+
+def _serialize_user_ticket(t: SupportTicket, *, detail: bool = False) -> dict:
+    replies_qs = list(t.replies.all())
+    last = replies_qs[-1] if replies_qs else None
+    payload = {
+        "id": t.id,
+        "subject": t.subject,
+        "body": t.body,
+        "status": t.status,
+        "category": t.category,
+        "related_type": t.related_type or "",
+        "related_id": t.related_id or "",
+        "reply_count": len(replies_qs),
+        "last_message": ((last.body if last else t.body) or "")[:160],
+        "last_message_role": last.author_role if last else "user",
+        "created_at": t.created_at.isoformat(),
+        "updated_at": t.updated_at.isoformat(),
+        "can_reply": t.status not in (SupportTicket.Status.CLOSED,),
+    }
+    if detail:
+        # Agar faqat body bor, replies yo'q — UI uchun birinchi xabar sifatida
+        messages = [_serialize_user_reply(r) for r in replies_qs]
+        if t.body and not any(m["body"] == t.body and m["author_role"] == "user" for m in messages):
+            messages.insert(
+                0,
+                {
+                    "id": 0,
+                    "author_role": "user",
+                    "author_name": "Siz",
+                    "body": t.body,
+                    "created_at": t.created_at.isoformat(),
+                },
+            )
+        payload["replies"] = messages
+    return payload
+
+
 class UserSupportTicketListCreateView(APIView):
-    """Mijoz yordam murojaatlari."""
+    """Mijoz yordam murojaatlari — ro'yxat + yangi ticket."""
 
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        qs = SupportTicket.objects.filter(created_by_user=request.user).order_by("-updated_at")[:50]
-        return Response(
-            [
-                {
-                    "id": t.id,
-                    "subject": t.subject,
-                    "body": t.body,
-                    "status": t.status,
-                    "created_at": t.created_at.isoformat(),
-                    "updated_at": t.updated_at.isoformat(),
-                }
-                for t in qs
-            ]
-        )
+        qs = _user_ticket_qs(request.user).order_by("-updated_at")[:50]
+        return Response([_serialize_user_ticket(t) for t in qs])
 
     def post(self, request):
         subject = str(request.data.get("subject", "")).strip()
         body = str(request.data.get("body", "")).strip()
+        category = str(request.data.get("category", "user_support") or "user_support").strip()[:64]
+        related_type = str(request.data.get("related_type", "") or "").strip()[:64]
+        related_id = str(request.data.get("related_id", "") or "").strip()[:64]
         if not subject:
-            return Response({"detail": "subject is required."}, status=http_status.HTTP_400_BAD_REQUEST)
+            return Response({"detail": "Mavzu kerak."}, status=http_status.HTTP_400_BAD_REQUEST)
+        if len(body) < 5:
+            return Response(
+                {"detail": "Shikoyat matni kamida 5 belgi bo'lishi kerak."},
+                status=http_status.HTTP_400_BAD_REQUEST,
+            )
         ticket = SupportTicket.objects.create(
             subject=subject[:255],
             body=body,
-            category="user_support",
+            category=category or "user_support",
+            related_type=related_type,
+            related_id=related_id,
+            priority=SupportTicket.Priority.NORMAL,
             created_by_user=request.user,
+            unread=1,
+        )
+        name = (request.user.full_name or request.user.phone or request.user.email or "User")[:255]
+        SupportReply.objects.create(
+            ticket=ticket,
+            author_role=SupportReply.AuthorRole.USER,
+            author_name=name,
+            body=body,
         )
         return Response(
-            {
-                "id": ticket.id,
-                "subject": ticket.subject,
-                "status": ticket.status,
-                "created_at": ticket.created_at.isoformat(),
-            },
+            _serialize_user_ticket(ticket, detail=True),
             status=http_status.HTTP_201_CREATED,
         )
+
+
+class UserSupportTicketDetailView(APIView):
+    """Mijoz o'z ticketini + javoblar zanjirini ko'radi."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk: int):
+        ticket = _user_ticket_qs(request.user).filter(pk=pk).first()
+        if not ticket:
+            raise NotFound()
+        return Response(_serialize_user_ticket(ticket, detail=True))
+
+
+class UserSupportTicketReplyView(APIView):
+    """Mijoz o'z ticketiga javob yozadi (dialog)."""
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk: int):
+        ticket = SupportTicket.objects.filter(pk=pk, created_by_user=request.user).first()
+        if not ticket:
+            raise NotFound()
+        if ticket.status == SupportTicket.Status.CLOSED:
+            return Response(
+                {"detail": "Yopilgan murojaatga javob yozib bo'lmaydi."},
+                status=http_status.HTTP_400_BAD_REQUEST,
+            )
+        body = str((request.data or {}).get("body", "")).strip()
+        if len(body) < 1:
+            return Response({"detail": "Xabar matni kerak."}, status=http_status.HTTP_400_BAD_REQUEST)
+        name = (request.user.full_name or request.user.phone or request.user.email or "User")[:255]
+        reply = SupportReply.objects.create(
+            ticket=ticket,
+            author_role=SupportReply.AuthorRole.USER,
+            author_name=name,
+            body=body,
+        )
+        ticket.unread = int(ticket.unread or 0) + 1
+        if ticket.status in (SupportTicket.Status.RESOLVED, SupportTicket.Status.PENDING):
+            ticket.status = SupportTicket.Status.OPEN
+        ticket.save(update_fields=["unread", "status", "updated_at"])
+        return Response(_serialize_user_reply(reply), status=http_status.HTTP_201_CREATED)
 
 
 class AdminReviewListView(generics.ListAPIView):
@@ -1435,12 +1532,28 @@ class AdminSupportTicketRepliesView(APIView):
         name = getattr(account, "email", "") or getattr(admin, "email", "admin")
         r = SupportReply.objects.create(ticket=t, author_role=SupportReply.AuthorRole.ADMIN, author_name=name, body=body)
         t.unread = 0
-        t.save(update_fields=["unread", "updated_at"])
+        if t.status == SupportTicket.Status.OPEN:
+            t.status = SupportTicket.Status.PENDING
+        t.save(update_fields=["unread", "status", "updated_at"])
         if t.category.startswith("barber_support:"):
             source_id = t.category.split(":", 1)[1]
             BarberSupportTicket.objects.filter(id=source_id).update(
                 status=BarberSupportTicket.Status.IN_PROGRESS
             )
+        # Userga in-app xabar
+        if t.created_by_user_id:
+            try:
+                from notifications.utils import notify_user
+
+                notify_user(
+                    t.created_by_user,
+                    "support_reply",
+                    "Support javob berdi",
+                    body[:180],
+                    payload={"ticket_id": t.id, "subject": t.subject},
+                )
+            except Exception:
+                pass
         _audit(request, "create", "ticket_reply", r.id, t.subject, before={}, after={"ticket": t.id})
         return Response({"ok": True})
 
@@ -1933,7 +2046,27 @@ class AdminGiftDisputeView(APIView):
             related_id=str(gift.id),
             created_by_user=sender,
             status=SupportTicket.Status.OPEN,
+            unread=1,
         )
+        SupportReply.objects.create(
+            ticket=ticket,
+            author_role=SupportReply.AuthorRole.ADMIN,
+            author_name="Admin",
+            body="\n".join(body_parts),
+        )
+        if sender:
+            try:
+                from notifications.utils import notify_user
+
+                notify_user(
+                    sender,
+                    "support_ticket",
+                    "Sovg'a bo'yicha dispute ochildi",
+                    f"Ticket #{ticket.id}: {subject}",
+                    payload={"ticket_id": ticket.id, "gift_id": str(gift.id)},
+                )
+            except Exception:
+                pass
         _audit(
             request,
             "gift_dispute_open",

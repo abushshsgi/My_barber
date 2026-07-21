@@ -83,6 +83,17 @@ function TicketDetailPage() {
               <div className="text-sm text-muted-foreground mt-1">
                 {t.user_name} · {t.category} · {format(new Date(t.created_at), "dd MMM yyyy")}
               </div>
+              {t.related_type === "gift_transfer" && t.related_id ? (
+                <p className="mt-2 rounded-lg border border-border bg-muted/40 px-3 py-2 text-xs">
+                  Sovg&apos;a TX:{" "}
+                  <span className="font-mono font-medium text-foreground">{t.related_id}</span>
+                  <span className="text-muted-foreground"> · Finance → Sovg&apos;a oqimi</span>
+                </p>
+              ) : t.related_type && t.related_id ? (
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Bog&apos;liq: {t.related_type} · {t.related_id}
+                </p>
+              ) : null}
             </div>
             <div className="flex items-center gap-2">
               <StatusBadge
@@ -102,6 +113,11 @@ function TicketDetailPage() {
               </Button>
             </div>
           </div>
+          {t.body ? (
+            <p className="mt-4 whitespace-pre-wrap rounded-xl border border-border bg-background/60 p-3 text-sm text-muted-foreground">
+              {t.body}
+            </p>
+          ) : null}
         </div>
       )}
 
