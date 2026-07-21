@@ -2419,30 +2419,101 @@ export async function fetchTransactions(): Promise<AdminTransaction[]> {
 
 export type AdminPayout = {
   id: string;
+  barber_id: string;
   barber_name: string;
+  barber_phone: string;
   barber_avatar: string;
   period: string;
   amount: number;
   status: string;
+  reference: string;
+  payout_holder_name: string;
+  payout_bank_name: string;
+  payout_account_last4: string;
+  created_at: string | null;
+  paid_at: string | null;
 };
 
-export async function fetchPayouts(): Promise<AdminPayout[]> {
-  const res = await apiFetch("/api/v1/admin/finance/payouts/");
-  const j = (await res.json().catch(() => ({}))) as any;
-  if (!res.ok) throw new Error(j.detail || "Xato");
-  const rows = Array.isArray(j) ? j : j.results || [];
-  return rows.map((p: any) => ({
+export type AdminPayoutsResponse = Paginated<AdminPayout> & {
+  summary: {
+    pending_total: number;
+    pending_count: number;
+    paid_total: number;
+    paid_count: number;
+    failed_total: number;
+    failed_count: number;
+    all_total: number;
+    all_count: number;
+  };
+};
+
+function mapAdminPayout(p: any): AdminPayout {
+  return {
     id: String(p.id),
+    barber_id: String(p.barber_id ?? ""),
     barber_name: String(p.barber_name || ""),
-    barber_avatar: String(p.barber_avatar || ""),
+    barber_phone: String(p.barber_phone || ""),
+    barber_avatar: resolveMediaUrl(p.barber_avatar) ?? String(p.barber_avatar || ""),
     period: String(p.period || ""),
     amount: Number(p.amount || 0),
     status: String(p.status || ""),
-  }));
+    reference: String(p.reference || ""),
+    payout_holder_name: String(p.payout_holder_name || ""),
+    payout_bank_name: String(p.payout_bank_name || ""),
+    payout_account_last4: String(p.payout_account_last4 || ""),
+    created_at: p.created_at ? String(p.created_at) : null,
+    paid_at: p.paid_at ? String(p.paid_at) : null,
+  };
+}
+
+export async function fetchPayouts(params?: {
+  status?: string;
+  q?: string;
+  page?: number;
+}): Promise<AdminPayoutsResponse> {
+  const page = params?.page ?? 1;
+  const sp = new URLSearchParams();
+  if (params?.status && params.status !== "all") sp.set("status", params.status);
+  if (params?.q?.trim()) sp.set("q", params.q.trim());
+  sp.set("page", String(page));
+  const j = await apiJson<{
+    results?: any[];
+    count?: number;
+    page_size?: number;
+    page?: number;
+    summary?: AdminPayoutsResponse["summary"];
+  }>(`/api/v1/admin/payouts/?${sp}`);
+  const results = (j.results ?? []).map(mapAdminPayout);
+  const count = toInt(j.count, results.length);
+  const pageSize = toInt(j.page_size, PAGE_SIZE);
+  return {
+    results,
+    count,
+    page: toInt(j.page, page),
+    page_size: pageSize,
+    total_pages: totalPages(count, pageSize),
+    summary: j.summary ?? {
+      pending_total: 0,
+      pending_count: 0,
+      paid_total: 0,
+      paid_count: 0,
+      failed_total: 0,
+      failed_count: 0,
+      all_total: 0,
+      all_count: 0,
+    },
+  };
 }
 
 export async function markPayoutPaid(id: string): Promise<{ ok: true }> {
-  const res = await apiFetch(`/api/v1/admin/finance/payouts/${id}/paid/`, { method: "POST" });
+  const res = await apiFetch(`/api/v1/admin/payouts/${id}/paid/`, { method: "POST" });
+  const j = (await res.json().catch(() => ({}))) as any;
+  if (!res.ok) throw new Error(j.detail || "Xato");
+  return { ok: true as const };
+}
+
+export async function rejectPayout(id: string): Promise<{ ok: true }> {
+  const res = await apiFetch(`/api/v1/admin/payouts/${id}/reject/`, { method: "POST" });
   const j = (await res.json().catch(() => ({}))) as any;
   if (!res.ok) throw new Error(j.detail || "Xato");
   return { ok: true as const };

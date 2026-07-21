@@ -1212,12 +1212,36 @@ class AdminFinanceTransactionSerializer(serializers.ModelSerializer):
 
 
 class AdminPayoutSerializer(serializers.ModelSerializer):
-    barber_name = serializers.CharField(source="barber.full_name", read_only=True)
+    barber_id = serializers.IntegerField(read_only=True)
+    barber_name = serializers.SerializerMethodField()
+    barber_phone = serializers.CharField(source="barber.phone", read_only=True, allow_null=True)
     barber_avatar = serializers.SerializerMethodField()
+    payout_holder_name = serializers.SerializerMethodField()
+    payout_bank_name = serializers.SerializerMethodField()
+    payout_account_last4 = serializers.SerializerMethodField()
 
     class Meta:
         model = Payout
-        fields = ("id", "barber_name", "barber_avatar", "period", "amount", "status", "created_at")
+        fields = (
+            "id",
+            "barber_id",
+            "barber_name",
+            "barber_phone",
+            "barber_avatar",
+            "period",
+            "amount",
+            "status",
+            "reference",
+            "payout_holder_name",
+            "payout_bank_name",
+            "payout_account_last4",
+            "created_at",
+            "paid_at",
+        )
+
+    def get_barber_name(self, obj: Payout) -> str:
+        b = obj.barber
+        return (b.full_name or b.phone or b.email or str(b.pk)).strip()
 
     def get_barber_avatar(self, obj: Payout) -> str:
         b = obj.barber
@@ -1227,6 +1251,24 @@ class AdminPayoutSerializer(serializers.ModelSerializer):
             return b.avatar.url
         except Exception:
             return ""
+
+    def _settings(self, obj: Payout):
+        try:
+            return obj.barber.settings
+        except Exception:
+            return None
+
+    def get_payout_holder_name(self, obj: Payout) -> str:
+        s = self._settings(obj)
+        return (s.payout_holder_name if s else "") or ""
+
+    def get_payout_bank_name(self, obj: Payout) -> str:
+        s = self._settings(obj)
+        return (s.payout_bank_name if s else "") or ""
+
+    def get_payout_account_last4(self, obj: Payout) -> str:
+        s = self._settings(obj)
+        return (s.payout_account_last4 if s else "") or ""
 
 
 class AdminBarberPromotionSerializer(serializers.ModelSerializer):

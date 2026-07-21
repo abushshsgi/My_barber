@@ -1163,17 +1163,64 @@ class AdminFinanceTransactionsView(generics.ListAPIView):
     queryset = FinanceTransaction.objects.all()
 
 
-class AdminPayoutsView(generics.ListAPIView):
+class AdminPayoutsView(APIView):
+    """Sartarosh yechish so'rovlari — summary + to'liq ro'yxat."""
+
     permission_classes = [IsAdmin]
-    serializer_class = AdminPayoutSerializer
-    queryset = Payout.objects.select_related("barber").all()
+
+    def get(self, request):
+        qs = (
+            Payout.objects.select_related("barber", "barber__settings")
+            .all()
+            .order_by("-created_at")
+        )
+        status_f = (request.query_params.get("status") or "").strip()
+        if status_f and status_f != "all":
+            qs = qs.filter(status=status_f)
+        q = (request.query_params.get("q") or "").strip()
+        if q:
+            qs = qs.filter(
+                Q(barber__full_name__icontains=q)
+                | Q(barber__phone__icontains=q)
+                | Q(barber__email__icontains=q)
+                | Q(reference__icontains=q)
+                | Q(period__icontains=q)
+            )
+
+        # Summary — filtrdan oldin (barcha payoutlar)
+        all_qs = Payout.objects.all()
+        summary = {
+            "pending_total": float(
+                all_qs.filter(status=Payout.Status.PENDING).aggregate(s=Sum("amount"))["s"] or 0
+            ),
+            "pending_count": all_qs.filter(status=Payout.Status.PENDING).count(),
+            "paid_total": float(
+                all_qs.filter(status=Payout.Status.PAID).aggregate(s=Sum("amount"))["s"] or 0
+            ),
+            "paid_count": all_qs.filter(status=Payout.Status.PAID).count(),
+            "failed_total": float(
+                all_qs.filter(status=Payout.Status.FAILED).aggregate(s=Sum("amount"))["s"] or 0
+            ),
+            "failed_count": all_qs.filter(status=Payout.Status.FAILED).count(),
+            "all_total": float(all_qs.aggregate(s=Sum("amount"))["s"] or 0),
+            "all_count": all_qs.count(),
+        }
+
+        paginator = AdminPageNumberPagination()
+        page = paginator.paginate_queryset(qs, request)
+        data = AdminPayoutSerializer(page, many=True, context={"request": request}).data
+        response = paginator.get_paginated_response(data)
+        response.data["summary"] = summary
+        response.data["page"] = paginator.page.number
+        response.data["page_size"] = paginator.get_page_size(request)
+        return response
 
 
 class AdminPayoutMarkPaidView(APIView):
     permission_classes = [IsAdmin]
 
     def post(self, request, pk: int):
-        p = Payout.objects.filter(id=pk).first()
+        p = Payout.objects.select_related("barber").filter(id=pk).first()
         if not p:
             raise NotFound()
         before = {"status": p.status, "amount": str(p.amount)}
@@ -1189,6 +1236,42 @@ class AdminPayoutMarkPaidView(APIView):
                 "payout_paid",
                 "To'lov amalga oshirildi",
                 f"{p.amount} so'm hisobingizga o'tkazildi.",
+                {"payout_id": p.id},
+            )
+        except Exception:
+            pass
+        return Response({"ok": True})
+
+
+class AdminPayoutRejectView(APIView):
+    permission_classes = [IsAdmin]
+
+    def post(self, request, pk: int):
+        p = Payout.objects.select_related("barber").filter(id=pk).first()
+        if not p:
+            raise NotFound()
+        if p.status != Payout.Status.PENDING:
+            return Response({"detail": "Faqat kutilayotgan so'rovni rad etish mumkin."}, status=400)
+        before = {"status": p.status}
+        p.status = Payout.Status.FAILED
+        p.save(update_fields=["status"])
+        _audit(
+            request,
+            "update",
+            "payout",
+            p.id,
+            p.period,
+            before=before,
+            after={"status": p.status},
+        )
+        try:
+            from notifications.utils import notify_barber
+
+            notify_barber(
+                p.barber,
+                "payout_rejected",
+                "Yechish so'rovi rad etildi",
+                f"{p.amount} so'm so'rovi rad etildi. Balans qayta ochiq.",
                 {"payout_id": p.id},
             )
         except Exception:

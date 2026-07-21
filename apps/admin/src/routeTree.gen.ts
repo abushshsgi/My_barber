@@ -23,6 +23,7 @@ import { Route as AdminCategoriesRouteImport } from './routes/admin.categories'
 import { Route as AdminFinanceRouteImport } from './routes/admin.finance'
 import { Route as AdminMapRouteImport } from './routes/admin.map'
 import { Route as AdminMorphAiRouteImport } from './routes/admin.morph-ai'
+import { Route as AdminPayoutsRouteImport } from './routes/admin.payouts'
 import { Route as AdminProfileRouteImport } from './routes/admin.profile'
 import { Route as AdminReviewsRouteImport } from './routes/admin.reviews'
 import { Route as AdminSalonsRouteImport } from './routes/admin.salons'
@@ -50,6 +51,7 @@ import { Route as AdminMorphAiLimitsRouteImport } from './routes/admin.morph-ai.
 import { Route as AdminMorphAiPopularityRouteImport } from './routes/admin.morph-ai.popularity'
 import { Route as AdminMorphAiQueueRouteImport } from './routes/admin.morph-ai.queue'
 import { Route as AdminMorphAiSettingsRouteImport } from './routes/admin.morph-ai.settings'
+import { Route as AdminPayoutsIndexRouteImport } from './routes/admin.payouts.index'
 import { Route as AdminSalonsSalonIdRouteImport } from './routes/admin.salons.$salonId'
 import { Route as AdminServicesAnalyticsRouteImport } from './routes/admin.services.analytics'
 import { Route as AdminStatisticsIndexRouteImport } from './routes/admin.statistics.index'
@@ -145,6 +147,11 @@ const AdminMapRoute = AdminMapRouteImport.update({
 const AdminMorphAiRoute = AdminMorphAiRouteImport.update({
   id: '/morph-ai',
   path: '/morph-ai',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminPayoutsRoute = AdminPayoutsRouteImport.update({
+  id: '/payouts',
+  path: '/payouts',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminProfileRoute = AdminProfileRouteImport.update({
@@ -282,6 +289,11 @@ const AdminMorphAiSettingsRoute = AdminMorphAiSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
   getParentRoute: () => AdminMorphAiRoute,
+} as any)
+const AdminPayoutsIndexRoute = AdminPayoutsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminPayoutsRoute,
 } as any)
 const AdminSalonsSalonIdRoute = AdminSalonsSalonIdRouteImport.update({
   id: '/$salonId',
@@ -436,6 +448,7 @@ export interface FileRoutesByFullPath {
   '/admin/finance': typeof AdminFinanceRouteWithChildren
   '/admin/map': typeof AdminMapRoute
   '/admin/morph-ai': typeof AdminMorphAiRouteWithChildren
+  '/admin/payouts': typeof AdminPayoutsRouteWithChildren
   '/admin/profile': typeof AdminProfileRoute
   '/admin/reviews': typeof AdminReviewsRoute
   '/admin/salons': typeof AdminSalonsRouteWithChildren
@@ -477,6 +490,7 @@ export interface FileRoutesByFullPath {
   '/admin/aylanma/': typeof AdminAylanmaIndexRoute
   '/admin/finance/': typeof AdminFinanceIndexRoute
   '/admin/morph-ai/': typeof AdminMorphAiIndexRoute
+  '/admin/payouts/': typeof AdminPayoutsIndexRoute
   '/admin/statistics/': typeof AdminStatisticsIndexRoute
   '/admin/barbers/$barberId/bookings': typeof AdminBarbersBarberIdBookingsRoute
   '/admin/barbers/$barberId/reviews': typeof AdminBarbersBarberIdReviewsRoute
@@ -539,6 +553,7 @@ export interface FileRoutesByTo {
   '/admin/aylanma': typeof AdminAylanmaIndexRoute
   '/admin/finance': typeof AdminFinanceIndexRoute
   '/admin/morph-ai': typeof AdminMorphAiIndexRoute
+  '/admin/payouts': typeof AdminPayoutsIndexRoute
   '/admin/statistics': typeof AdminStatisticsIndexRoute
   '/admin/barbers/$barberId/bookings': typeof AdminBarbersBarberIdBookingsRoute
   '/admin/barbers/$barberId/reviews': typeof AdminBarbersBarberIdReviewsRoute
@@ -566,6 +581,7 @@ export interface FileRoutesById {
   '/admin/finance': typeof AdminFinanceRouteWithChildren
   '/admin/map': typeof AdminMapRoute
   '/admin/morph-ai': typeof AdminMorphAiRouteWithChildren
+  '/admin/payouts': typeof AdminPayoutsRouteWithChildren
   '/admin/profile': typeof AdminProfileRoute
   '/admin/reviews': typeof AdminReviewsRoute
   '/admin/salons': typeof AdminSalonsRouteWithChildren
@@ -607,6 +623,7 @@ export interface FileRoutesById {
   '/admin/aylanma/': typeof AdminAylanmaIndexRoute
   '/admin/finance/': typeof AdminFinanceIndexRoute
   '/admin/morph-ai/': typeof AdminMorphAiIndexRoute
+  '/admin/payouts/': typeof AdminPayoutsIndexRoute
   '/admin/statistics/': typeof AdminStatisticsIndexRoute
   '/admin/barbers/$barberId/bookings': typeof AdminBarbersBarberIdBookingsRoute
   '/admin/barbers/$barberId/reviews': typeof AdminBarbersBarberIdReviewsRoute
@@ -637,6 +654,7 @@ export interface FileRouteTypes {
     | '/admin/finance'
     | '/admin/map'
     | '/admin/morph-ai'
+    | '/admin/payouts'
     | '/admin/profile'
     | '/admin/reviews'
     | '/admin/salons'
@@ -678,6 +696,7 @@ export interface FileRouteTypes {
     | '/admin/aylanma/'
     | '/admin/finance/'
     | '/admin/morph-ai/'
+    | '/admin/payouts/'
     | '/admin/statistics/'
     | '/admin/barbers/$barberId/bookings'
     | '/admin/barbers/$barberId/reviews'
@@ -740,6 +759,7 @@ export interface FileRouteTypes {
     | '/admin/aylanma'
     | '/admin/finance'
     | '/admin/morph-ai'
+    | '/admin/payouts'
     | '/admin/statistics'
     | '/admin/barbers/$barberId/bookings'
     | '/admin/barbers/$barberId/reviews'
@@ -766,6 +786,7 @@ export interface FileRouteTypes {
     | '/admin/finance'
     | '/admin/map'
     | '/admin/morph-ai'
+    | '/admin/payouts'
     | '/admin/profile'
     | '/admin/reviews'
     | '/admin/salons'
@@ -807,6 +828,7 @@ export interface FileRouteTypes {
     | '/admin/aylanma/'
     | '/admin/finance/'
     | '/admin/morph-ai/'
+    | '/admin/payouts/'
     | '/admin/statistics/'
     | '/admin/barbers/$barberId/bookings'
     | '/admin/barbers/$barberId/reviews'
@@ -926,6 +948,13 @@ declare module '@tanstack/react-router' {
       path: '/morph-ai'
       fullPath: '/admin/morph-ai'
       preLoaderRoute: typeof AdminMorphAiRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/payouts': {
+      id: '/admin/payouts'
+      path: '/payouts'
+      fullPath: '/admin/payouts'
+      preLoaderRoute: typeof AdminPayoutsRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/profile': {
@@ -1116,6 +1145,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/morph-ai/settings'
       preLoaderRoute: typeof AdminMorphAiSettingsRouteImport
       parentRoute: typeof AdminMorphAiRoute
+    }
+    '/admin/payouts/': {
+      id: '/admin/payouts/'
+      path: '/'
+      fullPath: '/admin/payouts/'
+      preLoaderRoute: typeof AdminPayoutsIndexRouteImport
+      parentRoute: typeof AdminPayoutsRoute
     }
     '/admin/salons/$salonId': {
       id: '/admin/salons/$salonId'
@@ -1425,6 +1461,18 @@ const AdminMorphAiRouteWithChildren = AdminMorphAiRoute._addFileChildren(
   AdminMorphAiRouteChildren,
 )
 
+interface AdminPayoutsRouteChildren {
+  AdminPayoutsIndexRoute: typeof AdminPayoutsIndexRoute
+}
+
+const AdminPayoutsRouteChildren: AdminPayoutsRouteChildren = {
+  AdminPayoutsIndexRoute: AdminPayoutsIndexRoute,
+}
+
+const AdminPayoutsRouteWithChildren = AdminPayoutsRoute._addFileChildren(
+  AdminPayoutsRouteChildren,
+)
+
 interface AdminSalonsSalonIdStatsRouteChildren {
   AdminSalonsSalonIdStatsGraphsRoute: typeof AdminSalonsSalonIdStatsGraphsRoute
   AdminSalonsSalonIdStatsIndexRoute: typeof AdminSalonsSalonIdStatsIndexRoute
@@ -1554,6 +1602,7 @@ interface AdminRouteChildren {
   AdminFinanceRoute: typeof AdminFinanceRouteWithChildren
   AdminMapRoute: typeof AdminMapRoute
   AdminMorphAiRoute: typeof AdminMorphAiRouteWithChildren
+  AdminPayoutsRoute: typeof AdminPayoutsRouteWithChildren
   AdminProfileRoute: typeof AdminProfileRoute
   AdminReviewsRoute: typeof AdminReviewsRoute
   AdminSalonsRoute: typeof AdminSalonsRouteWithChildren
@@ -1576,6 +1625,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminFinanceRoute: AdminFinanceRouteWithChildren,
   AdminMapRoute: AdminMapRoute,
   AdminMorphAiRoute: AdminMorphAiRouteWithChildren,
+  AdminPayoutsRoute: AdminPayoutsRouteWithChildren,
   AdminProfileRoute: AdminProfileRoute,
   AdminReviewsRoute: AdminReviewsRoute,
   AdminSalonsRoute: AdminSalonsRouteWithChildren,

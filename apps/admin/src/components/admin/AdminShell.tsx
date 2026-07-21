@@ -29,6 +29,7 @@ import {
   Repeat,
   Gift,
   ArrowLeftRight,
+  Banknote,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MysaloonLogo } from "@/components/brand/MysaloonLogo";
@@ -88,6 +89,15 @@ const SECTIONS: Section[] = [
     items: [
       { to: "/admin/aylanma", label: "Umumiy aylanma", icon: ArrowLeftRight },
       { to: "/admin/statistics/wallet", label: "Hamyon oqimi", icon: Wallet },
+    ],
+  },
+  {
+    key: "payouts",
+    label: "Payout",
+    icon: Banknote,
+    matchPrefixes: ["/admin/payouts"],
+    items: [
+      { to: "/admin/payouts", label: "Yechish so'rovlari", icon: Banknote },
     ],
   },
   {
@@ -155,7 +165,6 @@ const SECTIONS: Section[] = [
       { to: "/admin/finance/gifts", label: "Sovg'a kartalar", icon: Gift },
       { to: "/admin/subscriptions", label: "B2C Obunalar", icon: Repeat },
       { to: "/admin/finance/deposits", label: "Karta to'ldirish", icon: CreditCard },
-      { to: "/admin/finance/payouts", label: "To'lovlar", icon: Wallet },
       { to: "/admin/finance/promotions", label: "TOP reklamalar", icon: Megaphone },
     ],
   },
