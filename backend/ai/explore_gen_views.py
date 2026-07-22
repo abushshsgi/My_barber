@@ -5,7 +5,6 @@ from __future__ import annotations
 from django.http import FileResponse, Http404
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
-from rest_framework.views import APIView
 
 from ai.explore_gen_auth import ExploreGenAuthMixin, explore_gen_is_allowed
 from ai.explore_published import publish_explore_asset, publish_explore_persona
@@ -20,9 +19,10 @@ from ai.services.explore_image_gen import (
     output_mode,
 )
 from ai.services.gemini_style import AiStyleError
+from ai.unthrottled import UnthrottledAPIView
 
 
-class ExploreGenStatusView(ExploreGenAuthMixin, APIView):
+class ExploreGenStatusView(ExploreGenAuthMixin, UnthrottledAPIView):
     """GET — generatsiya sozlamalari va job ro'yxati."""
 
     permission_classes = [AllowAny]
@@ -52,7 +52,7 @@ class ExploreGenStatusView(ExploreGenAuthMixin, APIView):
         )
 
 
-class ExploreGenGenerateView(ExploreGenAuthMixin, APIView):
+class ExploreGenGenerateView(ExploreGenAuthMixin, UnthrottledAPIView):
     """POST — bitta reference yoki uslub rasmini generatsiya qilish."""
 
     permission_classes = [AllowAny]
@@ -79,7 +79,7 @@ class ExploreGenGenerateView(ExploreGenAuthMixin, APIView):
         return Response(result)
 
 
-class ExploreGenPublishView(ExploreGenAuthMixin, APIView):
+class ExploreGenPublishView(ExploreGenAuthMixin, UnthrottledAPIView):
     """POST — tasdiqlangan rasmni haqiqiy Explore katalogiga joylash."""
 
     permission_classes = [AllowAny]
@@ -106,7 +106,7 @@ class ExploreGenPublishView(ExploreGenAuthMixin, APIView):
         return Response(result)
 
 
-class ExploreGenPersonaLabelView(ExploreGenAuthMixin, APIView):
+class ExploreGenPersonaLabelView(ExploreGenAuthMixin, UnthrottledAPIView):
     """POST — personaj ko'rinish nomini o'zgartirish."""
 
     permission_classes = [AllowAny]
@@ -123,7 +123,7 @@ class ExploreGenPersonaLabelView(ExploreGenAuthMixin, APIView):
         return Response(result)
 
 
-class ExploreGenDownloadView(APIView):
+class ExploreGenDownloadView(UnthrottledAPIView):
     """GET — generatsiya qilingan faylni yuklab olish (production media)."""
 
     permission_classes = [AllowAny]

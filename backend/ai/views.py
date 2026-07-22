@@ -1,11 +1,9 @@
 from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
 
 from accounts.models import User
-from accounts.throttles import AuthIPThrottle
 
 from ai.age_groups import birth_year_to_group, normalize_age_group, resolve_hairstyle_image_path
 from ai.explore_personas import has_persona_style_asset, list_explore_personas, normalize_persona_id
@@ -33,6 +31,7 @@ from .services.gemini_style import (
     analyze_style_from_data_url,
     check_face_in_data_url,
 )
+from .unthrottled import UnthrottledAPIView
 from .usage_log import record_ai_generation
 from .morph_ops import check_user_can_generate, morph_generation_blocked_response
 
@@ -66,7 +65,7 @@ def _resolve_persona_from_body(request, audience: str | None) -> str | None:
     return normalize_persona_id(request.data.get("persona"))
 
 
-class ExplorePersonaListView(APIView):
+class ExplorePersonaListView(UnthrottledAPIView):
     """GET — erkak Explore personajlari ro'yxati."""
 
     permission_classes = [AllowAny]
@@ -75,7 +74,7 @@ class ExplorePersonaListView(APIView):
         return Response(list_explore_personas())
 
 
-class HairstyleListView(APIView):
+class HairstyleListView(UnthrottledAPIView):
     """GET ?audience=men|women&age_group=kids|teen|young|adult|mature — Explore katalogi."""
 
     permission_classes = [AllowAny]
@@ -115,7 +114,7 @@ class HairstyleListView(APIView):
         return Response(serializer.data)
 
 
-class HairstyleDetailView(APIView):
+class HairstyleDetailView(UnthrottledAPIView):
     """GET /hairstyles/{style_id}/ — bitta uslub."""
 
     permission_classes = [AllowAny]
@@ -137,12 +136,10 @@ class HairstyleDetailView(APIView):
         return Response(serializer.data)
 
 
-class AiStyleAnalyzeView(APIView):
+class AiStyleAnalyzeView(UnthrottledAPIView):
     """POST { image: data-url, audience } — Gemini selfie tahlili."""
 
     permission_classes = [IsAuthenticated]
-    # Faqat obuna/tarif limiti — soatlik API throttle yo'q
-    throttle_classes = []
 
     def post(self, request):
         user = _require_customer_user(request)
@@ -210,12 +207,10 @@ class AiStyleAnalyzeView(APIView):
             return Response({"detail": exc.message}, status=exc.status)
 
 
-class AiStyleTryOnView(APIView):
+class AiStyleTryOnView(UnthrottledAPIView):
     """POST { image, style_id } — selfie + uslub bo'yicha AI preview rasm."""
 
     permission_classes = [IsAuthenticated]
-    # Faqat obuna/tarif limiti — soatlik API throttle yo'q
-    throttle_classes = []
 
     def post(self, request):
         user = _require_customer_user(request)
@@ -307,11 +302,10 @@ class AiStyleTryOnView(APIView):
             return Response({"detail": exc.message}, status=exc.status)
 
 
-class AiStyleTryOnJobView(APIView):
+class AiStyleTryOnJobView(UnthrottledAPIView):
     """GET /ai/style-tryon/{job_id}/ — navbat holati va natija."""
 
     permission_classes = [IsAuthenticated]
-    throttle_classes = [AuthIPThrottle]
 
     def get(self, request, job_id: str):
         user = _require_customer_user(request)
@@ -324,11 +318,10 @@ class AiStyleTryOnJobView(APIView):
         return Response(job)
 
 
-class AiFaceCheckView(APIView):
+class AiFaceCheckView(UnthrottledAPIView):
     """POST { image } — yuz bormi (yuklashdan oldin tekshirish)."""
 
     permission_classes = [IsAuthenticated]
-    throttle_classes = []
 
     def post(self, request):
         user = _require_customer_user(request)
@@ -372,11 +365,10 @@ class AiFaceCheckView(APIView):
             return Response({"has_face": False, "detail": exc.message}, status=exc.status)
 
 
-class AiStyleHistoryListCreateView(APIView):
+class AiStyleHistoryListCreateView(UnthrottledAPIView):
     """GET — oxirgi 6 ta selfie tarixi; POST — yangi yoki oxirgisini yangilash."""
 
     permission_classes = [IsAuthenticated]
-    throttle_classes = [AuthIPThrottle]
 
     def get(self, request):
         user = _require_customer_user(request)
@@ -433,11 +425,10 @@ class AiStyleHistoryListCreateView(APIView):
         return Response(out.data, status=status.HTTP_201_CREATED)
 
 
-class MorphAiLookShareCreateView(APIView):
+class MorphAiLookShareCreateView(UnthrottledAPIView):
     """POST — create a public before/after share link (auth required)."""
 
     permission_classes = [IsAuthenticated]
-    throttle_classes = [AuthIPThrottle]
 
     def post(self, request):
         user = _require_customer_user(request)
@@ -477,11 +468,10 @@ class MorphAiLookShareCreateView(APIView):
         return Response(out.data, status=status.HTTP_201_CREATED)
 
 
-class MorphAiLookShareDetailView(APIView):
+class MorphAiLookShareDetailView(UnthrottledAPIView):
     """GET — public look share (no auth)."""
 
     permission_classes = [AllowAny]
-    throttle_classes = [AuthIPThrottle]
 
     def get(self, request, share_id):
         share = get_object_or_404(MorphAiLookShare, pk=share_id)
@@ -489,11 +479,10 @@ class MorphAiLookShareDetailView(APIView):
         return Response(out.data)
 
 
-class AiStyleStudioCatalogView(APIView):
+class AiStyleStudioCatalogView(UnthrottledAPIView):
     """GET — Morf AI Studio variantlari (soch rangi, uslub, yuz rangi, …)."""
 
     permission_classes = [IsAuthenticated]
-    throttle_classes = [AuthIPThrottle]
 
     def get(self, request):
         user = _require_customer_user(request)
@@ -504,11 +493,10 @@ class AiStyleStudioCatalogView(APIView):
         return Response({"categories": list_studio_catalog()})
 
 
-class AiStyleStudioEditView(APIView):
+class AiStyleStudioEditView(UnthrottledAPIView):
     """POST { image, preset_id } — generatsiya qilingan rasmni studio variantiga o'zgartirish."""
 
     permission_classes = [IsAuthenticated]
-    throttle_classes = []
 
     def post(self, request):
         user = _require_customer_user(request)

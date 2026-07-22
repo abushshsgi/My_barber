@@ -5,7 +5,7 @@ from __future__ import annotations
 from django.http import FileResponse, Http404
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
-from rest_framework.views import APIView
+from ai.unthrottled import UnthrottledAPIView
 
 from ai.explore_gen_auth import ExploreGenAuthMixin
 from ai.services.assets_studio import (
@@ -20,7 +20,7 @@ from ai.services.assets_studio import (
 from ai.services.gemini_style import AiStyleError
 
 
-class AssetsStudioStatusView(ExploreGenAuthMixin, APIView):
+class AssetsStudioStatusView(ExploreGenAuthMixin, UnthrottledAPIView):
     """GET — shablonlar + kutubxona."""
 
     permission_classes = [AllowAny]
@@ -40,7 +40,7 @@ class AssetsStudioStatusView(ExploreGenAuthMixin, APIView):
         )
 
 
-class AssetsStudioGenerateView(ExploreGenAuthMixin, APIView):
+class AssetsStudioGenerateView(ExploreGenAuthMixin, UnthrottledAPIView):
     """POST — shablon bo'yicha yangi rasm."""
 
     permission_classes = [AllowAny]
@@ -62,7 +62,7 @@ class AssetsStudioGenerateView(ExploreGenAuthMixin, APIView):
         return Response({"status": "created", "item": item})
 
 
-class AssetsStudioSelectView(ExploreGenAuthMixin, APIView):
+class AssetsStudioSelectView(ExploreGenAuthMixin, UnthrottledAPIView):
     """POST — saytga qo'yish uchun tanlash / bekor qilish."""
 
     permission_classes = [AllowAny]
@@ -81,7 +81,7 @@ class AssetsStudioSelectView(ExploreGenAuthMixin, APIView):
         return Response({"item": item})
 
 
-class AssetsStudioDownloadView(ExploreGenAuthMixin, APIView):
+class AssetsStudioDownloadView(ExploreGenAuthMixin, UnthrottledAPIView):
     """GET — preview (inline) yoki yuklab olish (?download=1)."""
 
     permission_classes = [AllowAny]

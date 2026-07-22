@@ -100,38 +100,6 @@ class PhoneScopedVerifyThrottle(SimpleRateThrottle):
         return self.cache_format % {"scope": self.scope, "ident": phone}
 
 
-class AiStyleThrottle(SimpleRateThrottle):
-    """AI selfie tahlili va yuz tekshiruvi."""
-
-    scope = "ai_style"
-
-    def get_cache_key(self, request, view):
-        if request.user and request.user.is_authenticated:
-            ident = f"user-{request.user.pk}"
-        else:
-            ident = self.get_ident(request)
-        return self.cache_format % {"scope": self.scope, "ident": ident}
-
-    def throttle_failure_message(self):
-        return "Morph AI hozir ishlamayapti. Keyinroq urinib ko'ring."
-
-
-class AiTryOnThrottle(SimpleRateThrottle):
-    """AI rasm generatsiya (try-on) — endi viewlarda o'chirilgan; legacy rate."""
-
-    scope = "ai_tryon"
-
-    def get_cache_key(self, request, view):
-        if request.user and request.user.is_authenticated:
-            ident = f"user-{request.user.pk}"
-        else:
-            ident = self.get_ident(request)
-        return self.cache_format % {"scope": self.scope, "ident": ident}
-
-    def throttle_failure_message(self):
-        return "Morph AI hozir ishlamayapti. Keyinroq urinib ko'ring."
-
-
 class PhoneCheckThrottle(SimpleRateThrottle):
     """Telefon tekshirish — enumeration / spam."""
 

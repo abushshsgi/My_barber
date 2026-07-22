@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from rest_framework import status
 from rest_framework.response import Response
-from rest_framework.views import APIView
+from ai.unthrottled import UnthrottledAPIView
 
 from accounts.permissions import IsAdmin
 from ai.models import Hairstyle, MorphAiSettings
@@ -32,7 +32,7 @@ def _int_param(raw, default: int, *, lo: int = 1, hi: int = 200) -> int:
         return default
 
 
-class AdminMorphAiAnalyticsView(APIView):
+class AdminMorphAiAnalyticsView(UnthrottledAPIView):
     permission_classes = [IsAdmin]
 
     def get(self, request):
@@ -46,7 +46,7 @@ class AdminMorphAiAnalyticsView(APIView):
         )
 
 
-class AdminMorphAiErrorsView(APIView):
+class AdminMorphAiErrorsView(UnthrottledAPIView):
     permission_classes = [IsAdmin]
 
     def get(self, request):
@@ -59,7 +59,7 @@ class AdminMorphAiErrorsView(APIView):
         )
 
 
-class AdminMorphAiPopularityView(APIView):
+class AdminMorphAiPopularityView(UnthrottledAPIView):
     permission_classes = [IsAdmin]
 
     def get(self, request):
@@ -72,7 +72,7 @@ class AdminMorphAiPopularityView(APIView):
         )
 
 
-class AdminMorphAiConversionView(APIView):
+class AdminMorphAiConversionView(UnthrottledAPIView):
     permission_classes = [IsAdmin]
 
     def get(self, request):
@@ -84,7 +84,7 @@ class AdminMorphAiConversionView(APIView):
         )
 
 
-class AdminMorphAiBudgetView(APIView):
+class AdminMorphAiBudgetView(UnthrottledAPIView):
     permission_classes = [IsAdmin]
 
     def get(self, request):
@@ -96,14 +96,14 @@ class AdminMorphAiBudgetView(APIView):
         )
 
 
-class AdminMorphAiLimitsView(APIView):
+class AdminMorphAiLimitsView(UnthrottledAPIView):
     permission_classes = [IsAdmin]
 
     def get(self, request):
         return Response(build_limits_overview())
 
 
-class AdminMorphAiQueueView(APIView):
+class AdminMorphAiQueueView(UnthrottledAPIView):
     permission_classes = [IsAdmin]
 
     def get(self, request):
@@ -116,7 +116,7 @@ class AdminMorphAiQueueView(APIView):
         return Response({"detail": "Unknown action"}, status=status.HTTP_400_BAD_REQUEST)
 
 
-class AdminMorphAiGalleryView(APIView):
+class AdminMorphAiGalleryView(UnthrottledAPIView):
     permission_classes = [IsAdmin]
 
     def get(self, request):
@@ -128,7 +128,7 @@ class AdminMorphAiGalleryView(APIView):
         )
 
 
-class AdminMorphAiSettingsView(APIView):
+class AdminMorphAiSettingsView(UnthrottledAPIView):
     permission_classes = [IsAdmin]
 
     def get(self, request):
@@ -139,7 +139,7 @@ class AdminMorphAiSettingsView(APIView):
         return Response(update_settings(request.data or {}))
 
 
-class AdminMorphAiExportView(APIView):
+class AdminMorphAiExportView(UnthrottledAPIView):
     permission_classes = [IsAdmin]
 
     def get(self, request):
@@ -149,7 +149,7 @@ class AdminMorphAiExportView(APIView):
         )
 
 
-class AdminMorphAiListView(APIView):
+class AdminMorphAiListView(UnthrottledAPIView):
     permission_classes = [IsAdmin]
 
     def get(self, request, kind: str):
@@ -170,7 +170,7 @@ class AdminMorphAiListView(APIView):
             return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
 
 
-class AdminMorphAiListExportView(APIView):
+class AdminMorphAiListExportView(UnthrottledAPIView):
     permission_classes = [IsAdmin]
 
     def get(self, request, kind: str):
@@ -183,7 +183,7 @@ class AdminMorphAiListExportView(APIView):
         )
 
 
-class AdminMorphAiCatalogListCreateView(APIView):
+class AdminMorphAiCatalogListCreateView(UnthrottledAPIView):
     permission_classes = [IsAdmin]
 
     def get(self, request):
@@ -235,7 +235,7 @@ class AdminMorphAiCatalogListCreateView(APIView):
         return Response(serialize_hairstyle(obj), status=201)
 
 
-class AdminMorphAiCatalogDetailView(APIView):
+class AdminMorphAiCatalogDetailView(UnthrottledAPIView):
     permission_classes = [IsAdmin]
 
     def get(self, request, style_id: str):
