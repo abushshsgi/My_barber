@@ -2863,27 +2863,56 @@ export async function rejectPromotion(id: string): Promise<AdminPromotion> {
 export type AdminAuditRow = {
   id: string;
   admin: string;
+  admin_name: string;
   admin_avatar: string;
   action: string;
   target_type: string;
+  target_id: string;
   target_name: string;
+  before_json: Record<string, unknown>;
+  after_json: Record<string, unknown>;
   ip: string;
+  user_agent: string;
   created_at: string;
 };
 
-export async function fetchAuditLog(): Promise<AdminAuditRow[]> {
-  const res = await apiFetch("/api/v1/admin/audit/");
+export type AuditLogFilters = {
+  q?: string;
+  action?: string;
+  target_type?: string;
+  from?: string;
+  to?: string;
+};
+
+export async function fetchAuditLog(filters: AuditLogFilters = {}): Promise<AdminAuditRow[]> {
+  const params = new URLSearchParams();
+  if (filters.q?.trim()) params.set("q", filters.q.trim());
+  if (filters.action && filters.action !== "all") params.set("action", filters.action);
+  if (filters.target_type && filters.target_type !== "all") {
+    params.set("target_type", filters.target_type);
+  }
+  if (filters.from) params.set("from", filters.from);
+  if (filters.to) params.set("to", filters.to);
+  const qs = params.toString();
+  const res = await apiFetch(`/api/v1/admin/audit/${qs ? `?${qs}` : ""}`);
   const j = (await res.json().catch(() => ({}))) as any;
   if (!res.ok) throw new Error(j.detail || "Xato");
   const rows = Array.isArray(j) ? j : j.results || [];
   return rows.map((a: any) => ({
     id: String(a.id),
     admin: String(a.admin || ""),
-    admin_avatar: avatarFor(String(a.admin || a.id || "admin")),
+    admin_name: String(a.admin_name || a.admin || ""),
+    admin_avatar: avatarFor(String(a.admin_name || a.admin || a.id || "admin")),
     action: String(a.action || ""),
     target_type: String(a.target_type || ""),
+    target_id: String(a.target_id || ""),
     target_name: String(a.target_name || ""),
+    before_json:
+      a.before_json && typeof a.before_json === "object" ? (a.before_json as Record<string, unknown>) : {},
+    after_json:
+      a.after_json && typeof a.after_json === "object" ? (a.after_json as Record<string, unknown>) : {},
     ip: String(a.ip || ""),
+    user_agent: String(a.user_agent || ""),
     created_at: String(a.created_at || ""),
   }));
 }

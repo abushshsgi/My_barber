@@ -1185,6 +1185,7 @@ class AdminServiceListSerializer(serializers.Serializer):
 
 class AdminAuditLogSerializer(serializers.ModelSerializer):
     admin = serializers.CharField(source="admin.email", read_only=True)
+    admin_name = serializers.SerializerMethodField()
     admin_avatar = serializers.SerializerMethodField()
 
     class Meta:
@@ -1192,14 +1193,24 @@ class AdminAuditLogSerializer(serializers.ModelSerializer):
         fields = (
             "id",
             "admin",
+            "admin_name",
             "action",
             "target_type",
             "target_id",
             "target_name",
+            "before_json",
+            "after_json",
             "ip",
+            "user_agent",
             "created_at",
             "admin_avatar",
         )
+
+    def get_admin_name(self, obj: AuditLog) -> str:
+        admin = getattr(obj, "admin", None)
+        if not admin:
+            return ""
+        return (getattr(admin, "email", None) or "")[:120]
 
     def get_admin_avatar(self, obj: AuditLog) -> str:
         return ""

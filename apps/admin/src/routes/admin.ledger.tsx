@@ -40,32 +40,39 @@ function AdminLedgerLookupPage() {
   const { q: qParam } = Route.useSearch();
   const [draft, setDraft] = useState(qParam || "");
   const [activeIdx, setActiveIdx] = useState(0);
+  const [inputFocused, setInputFocused] = useState(false);
 
   useEffect(() => {
     setDraft(qParam || "");
   }, [qParam]);
 
+  const draftTrim = draft.trim();
+  const qTrim = (qParam || "").trim();
+  const suggestOpen =
+    inputFocused && draftTrim.length >= 3 && draftTrim !== qTrim;
+
   const suggestQ = useQuery({
-    queryKey: ["admin", "ledger-suggest", draft.trim()],
-    queryFn: () => fetchLedgerSuggest(draft.trim()),
-    enabled: draft.trim().length >= 3 && draft.trim() !== (qParam || "").trim(),
+    queryKey: ["admin", "ledger-suggest", draftTrim],
+    queryFn: () => fetchLedgerSuggest(draftTrim),
+    enabled: suggestOpen,
     staleTime: 8_000,
   });
 
   const lookupQ = useQuery({
     queryKey: ["admin", "ledger-lookup", qParam],
     queryFn: () => fetchLedgerLookup(qParam),
-    enabled: qParam.trim().length >= 3,
+    enabled: qTrim.length >= 3,
   });
 
-  const suggestions = suggestQ.data?.suggestions ?? [];
+  const suggestions = suggestOpen ? (suggestQ.data?.suggestions ?? []) : [];
   const hit = lookupQ.data?.results?.[0] as LedgerLookupHit | undefined;
   const allHits = lookupQ.data?.results ?? [];
 
   const runSearch = (value: string) => {
     const q = value.trim();
-    void navigate({ search: { q } });
+    setInputFocused(false);
     setActiveIdx(0);
+    void navigate({ search: { q } });
   };
 
   return (
@@ -88,7 +95,7 @@ function AdminLedgerLookupPage() {
         </p>
       </header>
 
-      <section className="relative overflow-hidden rounded-3xl border border-border bg-card/90 p-4 shadow-card backdrop-blur sm:p-6">
+      <section className="relative z-30 rounded-3xl border border-border bg-card/90 p-4 shadow-card backdrop-blur sm:p-6">
         <div className="flex flex-col gap-3 sm:flex-row">
           <div className="relative flex-1">
             <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -97,6 +104,12 @@ function AdminLedgerLookupPage() {
               onChange={(e) => {
                 setDraft(e.target.value);
                 setActiveIdx(0);
+                setInputFocused(true);
+              }}
+              onFocus={() => setInputFocused(true)}
+              onBlur={() => {
+                // Allow suggestion click before closing
+                window.setTimeout(() => setInputFocused(false), 120);
               }}
               onKeyDown={(e) => {
                 if (e.key === "ArrowDown") {
@@ -105,6 +118,9 @@ function AdminLedgerLookupPage() {
                 } else if (e.key === "ArrowUp") {
                   e.preventDefault();
                   setActiveIdx((i) => Math.max(i - 1, 0));
+                } else if (e.key === "Escape") {
+                  e.preventDefault();
+                  setInputFocused(false);
                 } else if (e.key === "Enter") {
                   e.preventDefault();
                   const pick = suggestions[activeIdx];
@@ -114,13 +130,15 @@ function AdminLedgerLookupPage() {
               placeholder="UUID, hash, merchant ID, hamyon raqami…"
               className="h-12 rounded-2xl pl-10 font-mono text-sm"
               autoFocus
+              autoComplete="off"
             />
             {suggestions.length > 0 ? (
-              <ul className="absolute inset-x-0 top-[calc(100%+8px)] z-20 overflow-hidden rounded-2xl border border-border bg-background shadow-xl">
+              <ul className="absolute inset-x-0 top-[calc(100%+8px)] z-50 max-h-72 overflow-y-auto rounded-2xl border border-border bg-background shadow-xl">
                 {suggestions.map((s, i) => (
                   <li key={`${s.kind}-${s.value}`}>
                     <button
                       type="button"
+                      onMouseDown={(e) => e.preventDefault()}
                       onMouseEnter={() => setActiveIdx(i)}
                       onClick={() => runSearch(s.value)}
                       className={cn(

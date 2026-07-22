@@ -1463,7 +1463,40 @@ class AdminBarberPromotionRejectView(APIView):
 class AdminAuditLogListView(generics.ListAPIView):
     permission_classes = [IsAdmin]
     serializer_class = AdminAuditLogSerializer
-    queryset = AuditLog.objects.select_related("admin").all()
+
+    def get_queryset(self):
+        from datetime import datetime
+
+        qs = AuditLog.objects.select_related("admin").all()
+        params = self.request.query_params
+        action = (params.get("action") or "").strip()
+        if action and action != "all":
+            qs = qs.filter(action=action)
+        target_type = (params.get("target_type") or "").strip()
+        if target_type and target_type != "all":
+            qs = qs.filter(target_type=target_type)
+        q = (params.get("q") or "").strip()
+        if q:
+            qs = qs.filter(
+                Q(target_name__icontains=q)
+                | Q(target_id__icontains=q)
+                | Q(action__icontains=q)
+                | Q(admin__email__icontains=q)
+                | Q(ip__icontains=q)
+            )
+        date_from = (params.get("from") or "").strip()
+        if date_from:
+            try:
+                qs = qs.filter(created_at__date__gte=datetime.fromisoformat(date_from).date())
+            except ValueError:
+                pass
+        date_to = (params.get("to") or "").strip()
+        if date_to:
+            try:
+                qs = qs.filter(created_at__date__lte=datetime.fromisoformat(date_to).date())
+            except ValueError:
+                pass
+        return qs
 
 
 class AdminSupportTicketListView(generics.ListAPIView):
@@ -2240,7 +2273,27 @@ class AdminLedgerLookupView(APIView):
         from .ledger_lookup import resolve_ledger_query
 
         q = (request.query_params.get("q") or "").strip()
-        return Response(resolve_ledger_query(q))
+        payload = resolve_ledger_query(q)
+        if q and len(q) >= 3:
+            results = payload.get("results") or []
+            first = results[0] if results else {}
+            chain = first.get("chain") or {}
+            _audit(
+                request,
+                "ledger_lookup",
+                str(first.get("kind") or "ledger"),
+                str(first.get("primary_id") or q)[:64],
+                str(first.get("title") or q)[:255],
+                before={},
+                after={
+                    "q": q[:128],
+                    "ok": bool(payload.get("ok")),
+                    "hits": len(results),
+                    "match_field": first.get("match_field") or "",
+                    "chain_ok": chain.get("ok") if chain else None,
+                },
+            )
+        return Response(payload)
 
 
 class AdminWalletAdjustView(APIView):
