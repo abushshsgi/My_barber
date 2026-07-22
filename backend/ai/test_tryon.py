@@ -93,3 +93,45 @@ class VertexImageEndpointTests(SimpleTestCase):
             "publishers/google/models/gemini-3.1-flash-lite-image:generateContent",
         )
         self.assertNotIn("global-aiplatform", url)
+
+
+class ImageProviderPriorityTests(SimpleTestCase):
+    @patch("ai.services.vertex_auth.vertex_image_configured", return_value=True)
+    def test_provider_prefers_vertex(self, _vertex):
+        from ai.services.studio_image import image_generation_provider
+
+        with override_settings(GEMINI_API_KEY="studio-key"):
+            self.assertEqual(image_generation_provider(), "vertex")
+
+    @patch("ai.services.vertex_auth.vertex_image_configured", return_value=False)
+    def test_provider_falls_back_to_studio(self, _vertex):
+        from ai.services.studio_image import image_generation_provider
+
+        with override_settings(GEMINI_API_KEY="studio-key"):
+            self.assertEqual(image_generation_provider(), "studio")
+
+    @patch("ai.services.vertex_image.studio_generate_image_content")
+    @patch("ai.services.vertex_image._generate_via_vertex")
+    @patch("ai.services.vertex_image.vertex_credentials_configured", return_value=True)
+    def test_generate_uses_vertex_first(self, _creds, mock_vertex, mock_studio):
+        from ai.services.vertex_image import generate_image_content
+
+        mock_vertex.return_value = {"ok": True}
+        out = generate_image_content({"contents": []})
+        self.assertEqual(out, {"ok": True})
+        mock_vertex.assert_called_once()
+        mock_studio.assert_not_called()
+
+    @patch("ai.services.vertex_image.studio_generate_image_content")
+    @patch("ai.services.vertex_image._generate_via_vertex")
+    @patch("ai.services.vertex_image.studio_image_configured", return_value=True)
+    @patch("ai.services.vertex_image.vertex_credentials_configured", return_value=True)
+    def test_generate_falls_back_to_studio_on_429(self, _creds, _studio_cfg, mock_vertex, mock_studio):
+        from ai.services.gemini_style import AiStyleError
+        from ai.services.vertex_image import generate_image_content
+
+        mock_vertex.side_effect = AiStyleError("limit", 429)
+        mock_studio.return_value = {"from": "studio"}
+        out = generate_image_content({"contents": []})
+        self.assertEqual(out, {"from": "studio"})
+        mock_studio.assert_called_once()

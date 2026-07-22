@@ -97,7 +97,9 @@ def generate_tryon_preview(
 ) -> TryOnResult:
     if not vertex_image_configured():
         raise AiStyleError(
-            "AI rasm xizmati hozircha ulanmagan. GEMINI_API_KEY qo'ying.",
+            "AI rasm xizmati hozircha ulanmagan. "
+            "VERTEX_PROJECT_ID + VERTEX_SERVICE_ACCOUNT_JSON qo'ying "
+            "(yoki zaxira sifatida GEMINI_API_KEY).",
             503,
         )
 

@@ -615,7 +615,7 @@ def _generate_image(
 ) -> bytes:
     if not image_generation_configured():
         raise AiStyleError(
-            "Rasm generatsiya sozlanmagan. GEMINI_API_KEY (AI Studio) qo'ying.",
+            "Rasm generatsiya sozlanmagan. Vertex (VERTEX_*) yoki GEMINI_API_KEY qo'ying.",
             503,
         )
 

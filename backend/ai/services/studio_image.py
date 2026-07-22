@@ -99,10 +99,11 @@ def generate_image_content(body: dict[str, Any], *, model: str | None = None) ->
 
 
 def image_generation_provider() -> Literal["studio", "vertex"] | None:
-    if studio_image_configured():
-        return "studio"
+    """Rasm generatsiya: Vertex (GCP) birinchi, AI Studio zaxira."""
     from .vertex_auth import vertex_image_configured
 
     if vertex_image_configured():
         return "vertex"
+    if studio_image_configured():
+        return "studio"
     return None

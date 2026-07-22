@@ -390,9 +390,11 @@ function ExploreGenDevPage() {
             <ConfigBadge
               ok={configured?.studio_image}
               label={
-                configured?.provider === "studio"
-                  ? "AI Studio API (GEMINI_API_KEY)"
-                  : "Gemini rasm (Vertex zaxira)"
+                configured?.provider === "vertex"
+                  ? "Vertex AI (GCP kvota)"
+                  : configured?.provider === "studio"
+                    ? "AI Studio API (zaxira)"
+                    : "Gemini rasm sozlanmagan"
               }
             />
             {configured?.provider ? (
@@ -410,16 +412,9 @@ function ExploreGenDevPage() {
 
           {!configured?.studio_image ? (
             <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-              Railway Variables ga <strong>GEMINI_API_KEY</strong> qo&apos;ying (
-              <a
-                href="https://aistudio.google.com/apikey"
-                target="_blank"
-                rel="noreferrer"
-                className="underline"
-              >
-                aistudio.google.com/apikey
-              </a>
-              ). Model: <strong>gemini-3.1-flash-lite-image</strong>
+              Railway Variables ga <strong>VERTEX_PROJECT_ID</strong> +{" "}
+              <strong>VERTEX_SERVICE_ACCOUNT_JSON</strong> qo&apos;ying (asosiy). Ixtiyoriy zaxira:{" "}
+              <strong>GEMINI_API_KEY</strong>. Model: <strong>gemini-3.1-flash-lite-image</strong>
             </div>
           ) : null}
 

@@ -1,7 +1,8 @@
-"""Rasm generatsiya — AI Studio (GEMINI_API_KEY) yoki Vertex zaxira."""
+"""Rasm generatsiya — Vertex (GCP kvota) asosiy, AI Studio zaxira."""
 
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 from django.conf import settings
@@ -14,6 +15,8 @@ from .studio_image import (
 )
 from .vertex_auth import vertex_image_configured as vertex_credentials_configured
 from .vertex_client import generate_content
+
+logger = logging.getLogger(__name__)
 
 VERTEX_IMAGE_MODEL = "gemini-3.1-flash-lite-image"
 VERTEX_IMAGE_LOCATION = "global"
@@ -38,19 +41,36 @@ def vertex_image_configured() -> bool:
     return image_generation_configured()
 
 
+def _generate_via_vertex(body: dict[str, Any], *, model: str | None = None) -> dict[str, Any]:
+    resolved = (model or "").strip() or vertex_image_model()
+    return generate_content(
+        resolved,
+        body,
+        timeout=180,
+        kind="image",
+        location=vertex_image_location(),
+    )
+
+
 def generate_image_content(body: dict[str, Any], *, model: str | None = None) -> dict[str, Any]:
+    """Vertex birinchi (GCP kvota). Studio faqat zaxira / 429 fallback."""
+    if vertex_credentials_configured():
+        try:
+            return _generate_via_vertex(body, model=model)
+        except AiStyleError as exc:
+            if studio_image_configured() and exc.status in (429, 502, 503):
+                logger.warning(
+                    "Vertex image failed (%s), falling back to AI Studio",
+                    exc.status,
+                )
+                return studio_generate_image_content(body, model=model)
+            raise
+
     if studio_image_configured():
         return studio_generate_image_content(body, model=model)
-    if vertex_credentials_configured():
-        resolved = (model or "").strip() or vertex_image_model()
-        return generate_content(
-            resolved,
-            body,
-            timeout=180,
-            kind="image",
-            location=vertex_image_location(),
-        )
+
     raise AiStyleError(
-        "Rasm generatsiya sozlanmagan. GEMINI_API_KEY (AI Studio) yoki Vertex kerak.",
+        "Rasm generatsiya sozlanmagan. VERTEX_PROJECT_ID + VERTEX_SERVICE_ACCOUNT_JSON "
+        "(tavsiya) yoki GEMINI_API_KEY kerak.",
         503,
     )
