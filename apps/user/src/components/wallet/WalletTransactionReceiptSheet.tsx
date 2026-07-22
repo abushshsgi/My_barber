@@ -1,4 +1,5 @@
-import { ArrowDownLeft, ArrowUpRight, ShieldAlert } from "lucide-react";
+import { useState } from "react";
+import { ArrowDownLeft, ArrowUpRight, Check, Copy, ShieldAlert } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -16,18 +17,70 @@ type Props = {
   onOpenChange: (open: boolean) => void;
 };
 
-function Row({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
+async function copyText(value: string): Promise<boolean> {
+  try {
+    await navigator.clipboard.writeText(value);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function Row({
+  label,
+  value,
+  mono,
+  copyable,
+}: {
+  label: string;
+  value: string;
+  mono?: boolean;
+  copyable?: boolean;
+}) {
+  const [copied, setCopied] = useState(false);
+
+  const onCopy = async () => {
+    if (!copyable) return;
+    const ok = await copyText(value);
+    if (!ok) return;
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1400);
+  };
+
   return (
     <div className="flex items-start justify-between gap-3 border-b border-border/50 py-2.5 last:border-b-0">
       <span className="text-[11px] font-medium text-muted-foreground">{label}</span>
-      <span
-        className={cn(
-          "max-w-[62%] text-right text-[12px] font-semibold break-all",
-          mono && "font-mono text-[11px]",
-        )}
-      >
-        {value}
-      </span>
+      {copyable ? (
+        <button
+          type="button"
+          onClick={() => void onCopy()}
+          className="inline-flex max-w-[68%] items-start gap-1.5 text-right"
+          title="Nusxa olish"
+        >
+          <span
+            className={cn(
+              "break-all text-[12px] font-semibold",
+              mono && "font-mono text-[11px]",
+            )}
+          >
+            {value}
+          </span>
+          {copied ? (
+            <Check className="mt-0.5 size-3.5 shrink-0 text-emerald-600" />
+          ) : (
+            <Copy className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
+          )}
+        </button>
+      ) : (
+        <span
+          className={cn(
+            "max-w-[62%] text-right text-[12px] font-semibold break-all",
+            mono && "font-mono text-[11px]",
+          )}
+        >
+          {value}
+        </span>
+      )}
     </div>
   );
 }
@@ -50,7 +103,7 @@ export function WalletTransactionReceiptSheet({ tx, open, onOpenChange }: Props)
         <SheetHeader className="text-left">
           <SheetTitle className="text-base font-bold">Tranzaksiya cheki</SheetTitle>
           <SheetDescription className="text-xs">
-            Hamyon yozuvi — o‘zgartirilmaydigan ledger
+            Hamyon yozuvi — o‘zgartirilmaydigan ledger. Shikoyat uchun ID ni nusxalang.
           </SheetDescription>
         </SheetHeader>
 
@@ -106,15 +159,23 @@ export function WalletTransactionReceiptSheet({ tx, open, onOpenChange }: Props)
           <Row label="Yo‘nalish" value={tx.kind === "in" ? "Kirim" : "Chiqim"} />
           {tx.entryType ? <Row label="Tur" value={tx.entryType} mono /> : null}
           {tx.referenceType ? <Row label="Reference" value={tx.referenceType} mono /> : null}
-          {tx.referenceId ? <Row label="Merchant ID" value={tx.referenceId} mono /> : null}
+          {tx.referenceId ? (
+            <Row label="Merchant ID" value={tx.referenceId} mono copyable />
+          ) : null}
           {tx.balanceAfter != null ? (
             <Row label="Keyingi balans" value={formatPrice(tx.balanceAfter)} />
           ) : null}
           {tx.entryHash ? (
-            <Row label="Hash" value={tx.entryHash.slice(0, 24)} mono />
+            <Row label="Hash" value={tx.entryHash.slice(0, 24)} mono copyable />
           ) : null}
-          <Row label="Yozuv ID" value={tx.id} mono />
+          <Row label="Yozuv ID" value={tx.id} mono copyable />
         </div>
+
+        <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground">
+          Yordamga yozganda <span className="font-semibold text-foreground">Merchant ID</span> yoki{" "}
+          <span className="font-semibold text-foreground">Yozuv ID</span> ni yuboring — admin shu
+          orqali yozuvni topadi va hold / refund / dispute qiladi.
+        </p>
       </SheetContent>
     </Sheet>
   );
