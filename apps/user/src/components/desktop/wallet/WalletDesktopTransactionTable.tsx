@@ -1,7 +1,9 @@
 import { Link } from "@tanstack/react-router";
-import { ArrowDownLeft, ArrowUpRight } from "lucide-react";
+import { ArrowDownLeft, ArrowUpRight, Shield } from "lucide-react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { WalletEmptyTransactions } from "@/components/wallet/WalletEmptyTransactions";
+import { WalletTransactionReceiptSheet } from "@/components/wallet/WalletTransactionReceiptSheet";
 import {
   formatWalletTxAmount,
   type WalletTransaction,
@@ -27,6 +29,7 @@ export function WalletDesktopTransactionTable({
   showViewAll = true,
 }: Props) {
   const { t } = useTranslation();
+  const [selected, setSelected] = useState<WalletTransaction | null>(null);
 
   const tabLabels: Record<WalletTxTab, string> = {
     all: t("walletPage.tabs.all"),
@@ -79,7 +82,11 @@ export function WalletDesktopTransactionTable({
             </thead>
             <tbody>
               {items.map((tx) => (
-                <tr key={tx.id} className="border-b border-border/40 last:border-b-0">
+                <tr
+                  key={tx.id}
+                  className="cursor-pointer border-b border-border/40 last:border-b-0 hover:bg-surface/40"
+                  onClick={() => setSelected(tx)}
+                >
                   <td className="px-5 py-3.5">
                     <div className="flex items-center gap-3">
                       <span
@@ -94,7 +101,15 @@ export function WalletDesktopTransactionTable({
                           <ArrowUpRight className="h-4 w-4" strokeWidth={2} />
                         )}
                       </span>
-                      <span className="font-medium text-foreground">{tx.title}</span>
+                      <div className="min-w-0">
+                        <span className="font-medium text-foreground">{tx.title}</span>
+                        {tx.adminAction ? (
+                          <span className="ml-2 inline-flex items-center gap-0.5 rounded-md bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-amber-900">
+                            <Shield className="size-2.5" />
+                            Admin
+                          </span>
+                        ) : null}
+                      </div>
                     </div>
                   </td>
                   <td className="px-5 py-3.5 text-muted-foreground">{tx.date}</td>
@@ -125,6 +140,14 @@ export function WalletDesktopTransactionTable({
           </Link>
         </div>
       ) : null}
+
+      <WalletTransactionReceiptSheet
+        tx={selected}
+        open={!!selected}
+        onOpenChange={(open) => {
+          if (!open) setSelected(null);
+        }}
+      />
     </div>
   );
 }

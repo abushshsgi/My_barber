@@ -74,6 +74,7 @@ export function WalletGiftPanel() {
   const [recipientUserId, setRecipientUserId] = useState<number | null>(null);
   const [recipientLabel, setRecipientLabel] = useState("");
   const [note, setNote] = useState("");
+  const [step, setStep] = useState<"form" | "confirm">("form");
 
   const { balance } = useWalletBalance();
   const sendGift = useSendGift();
@@ -181,10 +182,19 @@ export function WalletGiftPanel() {
     sendGift.mutate(payload, {
       onSuccess: () => {
         toast.success(t("walletPage.giftPanel.sent", { defaultValue: "Sovg'a yuborildi!" }));
+        setStep("form");
         void navigate({ to: "/wallet", search: { section: "transactions" } });
       },
       onError: (e: Error) => toast.error(e.message),
     });
+  };
+
+  const onContinueToConfirm = () => {
+    if (!canSend) {
+      onSend();
+      return;
+    }
+    setStep("confirm");
   };
 
   const designName = (d: ApiGiftDesign) =>
@@ -375,14 +385,72 @@ export function WalletGiftPanel() {
         <button
           type="button"
           disabled={!canSend}
-          onClick={onSend}
+          onClick={onContinueToConfirm}
           className="w-full cursor-pointer rounded-2xl bg-foreground py-4 text-sm font-bold text-background transition-transform active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
         >
-          {sendGift.isPending
-            ? t("walletPage.giftPanel.sending", { defaultValue: "Yuborilmoqda…" })
-            : t("walletPage.giftPanel.send", { defaultValue: "Sovg'ani yuborish" })}
+          {t("walletPage.giftPanel.review", { defaultValue: "Tekshirib yuborish" })}
         </button>
       </div>
+
+      {step === "confirm" ? (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/55 p-4 sm:items-center">
+          <div className="w-full max-w-md rounded-[28px] bg-background p-5 shadow-2xl">
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+              {t("walletPage.giftPanel.confirmTitle", { defaultValue: "2-bosqich · tasdiqlash" })}
+            </p>
+            <h3 className="mt-2 text-lg font-bold">
+              {t("walletPage.giftPanel.confirmHeading", { defaultValue: "Sovg'ani yuborasizmi?" })}
+            </h3>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {t("walletPage.giftPanel.confirmHint", {
+                defaultValue: "Tekshiruv → dizayn to'lovi → yechish → kirim → ledger muhri",
+              })}
+            </p>
+            <ul className="mt-4 space-y-2 rounded-2xl bg-surface px-4 py-3 text-sm">
+              <li className="flex justify-between gap-3">
+                <span className="text-muted-foreground">Qabul qiluvchi</span>
+                <span className="font-semibold text-right">{recipientLabel || query || "—"}</span>
+              </li>
+              <li className="flex justify-between gap-3">
+                <span className="text-muted-foreground">Dizayn</span>
+                <span className="font-semibold">{selectedDesign ? designName(selectedDesign) : "—"}</span>
+              </li>
+              <li className="flex justify-between gap-3">
+                <span className="text-muted-foreground">Sovg'a</span>
+                <span className="font-semibold tabular-nums">{formatPrice(giftAmount)}</span>
+              </li>
+              <li className="flex justify-between gap-3">
+                <span className="text-muted-foreground">Dizayn to'lovi</span>
+                <span className="font-semibold tabular-nums">{formatPrice(designFee)}</span>
+              </li>
+              <li className="flex justify-between gap-3 border-t border-border/60 pt-2 font-bold">
+                <span>Jami</span>
+                <span className="tabular-nums">{formatPrice(total)}</span>
+              </li>
+            </ul>
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setStep("form")}
+                disabled={sendGift.isPending}
+                className="rounded-2xl bg-surface py-3.5 text-sm font-bold"
+              >
+                {t("common.back", { defaultValue: "Orqaga" })}
+              </button>
+              <button
+                type="button"
+                disabled={sendGift.isPending}
+                onClick={onSend}
+                className="rounded-2xl bg-foreground py-3.5 text-sm font-bold text-background disabled:opacity-40"
+              >
+                {sendGift.isPending
+                  ? t("walletPage.giftPanel.sending", { defaultValue: "Yuborilmoqda…" })
+                  : t("walletPage.giftPanel.confirmSend", { defaultValue: "Tasdiqlash" })}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -901,11 +901,13 @@ def _ledger_brief(entry: LedgerEntry | None) -> dict | None:
 
 
 def build_gift_security_steps(gift: GiftTransfer) -> list[dict]:
-    """Har bir sovg'a 5 bosqichli xavfsizlik zanjiri orqali o'tadi (ledger muhri bilan)."""
+    """Har bir sovg'a 5+ bosqichli xavfsizlik zanjiri (ledger + admin remediation)."""
     fee = gift.design_fee_entry
     sender_e = gift.sender_entry
     recipient_e = gift.recipient_entry
     completed = gift.status == GiftTransfer.Status.COMPLETED
+    on_hold = gift.status == GiftTransfer.Status.ON_HOLD
+    refunded = gift.status == GiftTransfer.Status.REFUNDED
 
     def _status(ok: bool) -> str:
         if gift.status == GiftTransfer.Status.ON_HOLD:
@@ -917,7 +919,7 @@ def build_gift_security_steps(gift: GiftTransfer) -> list[dict]:
             GiftTransfer.Status.REFUNDED,
         ) else "pending"
 
-    return [
+    steps = [
         {
             "key": "validate",
             "step": 1,
@@ -960,11 +962,60 @@ def build_gift_security_steps(gift: GiftTransfer) -> list[dict]:
             "step": 5,
             "label": "Ledger muhri",
             "detail": "Hash zanjiri yozildi — yozuv o'zgartirilmaydi",
-            "status": _status(completed and bool(sender_e) and bool(recipient_e)),
+            "status": _status(
+                (completed or on_hold or refunded) and bool(sender_e) and bool(recipient_e)
+            ),
             "merchant_tx_id": str(gift.id),
             "entry_hash": (sender_e.entry_hash[:16] if sender_e and sender_e.entry_hash else None),
         },
     ]
+
+    log = list(getattr(gift, "remediation_log", None) or [])
+    next_step = 6
+    for row in log:
+        action = str(row.get("action") or "").strip().lower()
+        if not action:
+            continue
+        amount = row.get("amount") or row.get("gift_amount") or ""
+        reason = str(row.get("reason") or "").strip()
+        labels = {
+            "hold": ("Admin hold", "Mablag' platforma escrowiga olindi"),
+            "release": ("Admin release", "Hold ochildi — pul qabul qiluvchiga qaytdi"),
+            "refund": ("Admin refund", "Sovg'a yuboruvchiga qaytarildi"),
+        }
+        label, default_detail = labels.get(action, (f"Admin · {action}", "Admin tuzatish"))
+        detail = default_detail
+        if amount:
+            detail = f"{default_detail} · {amount}"
+        if reason:
+            detail = f"{detail} · {reason[:80]}"
+        steps.append(
+            {
+                "key": f"remediation_{action}_{next_step}",
+                "step": next_step,
+                "label": label,
+                "detail": detail,
+                "status": "passed",
+                "merchant_tx_id": str(gift.id),
+                "entry_hash": None,
+            }
+        )
+        next_step += 1
+
+    if on_hold and not any(s["key"].startswith("remediation_hold") for s in steps):
+        steps.append(
+            {
+                "key": "admin_hold_active",
+                "step": next_step,
+                "label": "Hold faol",
+                "detail": f"Ushlab turilgan: {_float(gift.held_amount):,.0f} so'm".replace(",", " "),
+                "status": "pending",
+                "merchant_tx_id": str(gift.id),
+                "entry_hash": None,
+            }
+        )
+
+    return steps
 
 
 # --- Sovg'a Risk Alert (faqat monitoring, hold yo'q) ---

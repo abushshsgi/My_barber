@@ -7,6 +7,16 @@ export interface WalletTransaction {
   date: string;
   group: string;
   amount: number;
+  /** API fields for receipt / chek */
+  entryType?: string;
+  referenceType?: string;
+  referenceId?: string;
+  balanceAfter?: number;
+  entryHash?: string;
+  createdAt?: string;
+  adminAction?: boolean;
+  adminReason?: string;
+  subtitle?: string;
 }
 
 export const WALLET_TRANSACTIONS: WalletTransaction[] = [

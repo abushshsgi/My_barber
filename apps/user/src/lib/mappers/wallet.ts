@@ -9,6 +9,7 @@ const ENTRY_TITLES: Record<string, string> = {
   booking_pay: "Bron to'lovi",
   refund: "Qaytarim",
   adjustment: "Tuzatish",
+  subscription: "Obuna",
 };
 
 function formatTxDate(iso: string): string {
@@ -34,21 +35,67 @@ function monthGroupLabel(iso: string): string {
   return d.toLocaleDateString("uz-UZ", { month: "long" });
 }
 
+function adminGiftTitle(
+  entry: ApiLedgerEntry,
+  meta: Record<string, unknown>,
+): { title: string; subtitle?: string; adminAction: boolean; adminReason?: string } | null {
+  const action = typeof meta.action === "string" ? meta.action : "";
+  const ref = (entry.reference_type || "").trim();
+  const reason = typeof meta.reason === "string" ? meta.reason.trim() : "";
+
+  if (action === "gift_hold" || ref === "gift_hold") {
+    return {
+      title: "Admin · sovg'a hold",
+      subtitle: "Platforma nazorati — mablag' vaqtincha ushlab turildi",
+      adminAction: true,
+      adminReason: reason || undefined,
+    };
+  }
+  if (action === "gift_release" || ref === "gift_release") {
+    return {
+      title: "Admin · hold ochildi",
+      subtitle: "Ushlab turilgan mablag' qaytarildi",
+      adminAction: true,
+      adminReason: reason || undefined,
+    };
+  }
+  if (action === "gift_refund" || ref === "gift_refund" || ref === "gift_refund_fee") {
+    return {
+      title: ref === "gift_refund_fee" ? "Admin · dizayn to'lovi qaytarildi" : "Admin · sovg'a qaytarildi",
+      subtitle: "Admin tomonidan refund",
+      adminAction: true,
+      adminReason: reason || undefined,
+    };
+  }
+  return null;
+}
+
 export function mapLedgerEntry(entry: ApiLedgerEntry): WalletTransaction {
   const amount = typeof entry.amount === "number" ? entry.amount : parseFloat(String(entry.amount));
+  const balanceAfter =
+    typeof entry.balance_after === "number"
+      ? entry.balance_after
+      : parseFloat(String(entry.balance_after ?? 0));
   const meta = entry.metadata || {};
   let title = ENTRY_TITLES[entry.entry_type] || entry.entry_type;
-  if (entry.entry_type === "gift_out" && typeof meta.message === "string" && meta.message) {
+  let subtitle: string | undefined;
+  let adminAction = false;
+  let adminReason: string | undefined;
+
+  const admin = adminGiftTitle(entry, meta);
+  if (admin) {
+    title = admin.title;
+    subtitle = admin.subtitle;
+    adminAction = admin.adminAction;
+    adminReason = admin.adminReason;
+  } else if (entry.entry_type === "gift_out" && typeof meta.message === "string" && meta.message) {
     title = `Sovg'a · ${meta.message.slice(0, 40)}`;
-  }
-  if (entry.entry_type === "gift_in") {
+  } else if (entry.entry_type === "gift_in") {
     title = "Sovg'a qabul qilindi";
-  }
-  if (entry.entry_type === "gift_design_fee" && entry.kind === "out") {
+  } else if (entry.entry_type === "gift_design_fee" && entry.kind === "out") {
     const designId = typeof meta.design_id === "string" ? meta.design_id : "";
     title = designId ? `Dizayn · ${designId}` : "Sovg'a karta dizayni";
-  }
-  if (entry.entry_type === "topup") {
+  } else if (entry.entry_type === "topup") {
     const source = typeof meta.source === "string" ? meta.source : "";
     const ref = typeof meta.transaction_ref === "string" ? meta.transaction_ref : "";
     if (source === "card_manual") {
@@ -58,8 +105,7 @@ export function mapLedgerEntry(entry: ApiLedgerEntry): WalletTransaction {
     } else if (source.includes("payme")) {
       title = "Payme to'ldirish";
     }
-  }
-  if (entry.entry_type === "adjustment") {
+  } else if (entry.entry_type === "adjustment") {
     const action = typeof meta.action === "string" ? meta.action : "";
     if (action === "clawback_fake_provider_topup") {
       title = "Soxta to'lov bekor qilindi";
@@ -70,9 +116,18 @@ export function mapLedgerEntry(entry: ApiLedgerEntry): WalletTransaction {
     id: entry.id,
     kind: entry.kind,
     title,
+    subtitle,
     date: formatTxDate(entry.created_at),
     group: monthGroupLabel(entry.created_at),
     amount,
+    entryType: entry.entry_type,
+    referenceType: entry.reference_type || "",
+    referenceId: entry.reference_id || "",
+    balanceAfter: Number.isFinite(balanceAfter) ? balanceAfter : undefined,
+    entryHash: entry.entry_hash || "",
+    createdAt: entry.created_at,
+    adminAction,
+    adminReason,
   };
 }
 

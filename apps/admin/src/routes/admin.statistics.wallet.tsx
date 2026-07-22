@@ -35,6 +35,13 @@ const ENTRY_META: Record<string, { label: string; className: string }> = {
   adjustment: { label: "Tuzatish", className: "bg-muted text-muted-foreground" },
 };
 
+const REF_META: Record<string, { label: string; className: string }> = {
+  gift_hold: { label: "Admin · hold", className: "bg-amber-500/15 text-amber-900" },
+  gift_release: { label: "Admin · release", className: "bg-sky-500/15 text-sky-900" },
+  gift_refund: { label: "Admin · refund", className: "bg-rose-500/15 text-rose-900" },
+  gift_refund_fee: { label: "Admin · dizayn refund", className: "bg-rose-500/15 text-rose-900" },
+};
+
 const SOURCE_LABELS: Record<string, string> = {
   card_manual: "Karta",
   admin_topup: "Admin",
@@ -62,7 +69,7 @@ function StatisticsWalletPage() {
     <div className="space-y-6">
       <StatsPageHeader
         title="Hamyon oqimi"
-        description="To'ldirish, sarflash va sovg'alar — kim nima qilayotgani real vaqtda."
+        description="To'ldirish, sarflash, sovg'a va admin hold/refund — real vaqtda nazorat."
         rangeKey={rangeKey}
         onRangeChange={setRangeKey}
         onExport={() => downloadStatisticsCsv("wallet", { range })}
@@ -252,6 +259,7 @@ function StatisticsWalletPage() {
               <tbody className="divide-y divide-border">
                 {d.recent.map((row) => {
                   const meta =
+                    REF_META[row.reference_type] ??
                     ENTRY_META[row.entry_type] ?? {
                       label: row.entry_type,
                       className: "bg-muted text-muted-foreground",
