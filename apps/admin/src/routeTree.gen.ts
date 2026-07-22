@@ -21,6 +21,7 @@ import { Route as AdminBookingsRouteImport } from './routes/admin.bookings'
 import { Route as AdminBroadcastRouteImport } from './routes/admin.broadcast'
 import { Route as AdminCategoriesRouteImport } from './routes/admin.categories'
 import { Route as AdminFinanceRouteImport } from './routes/admin.finance'
+import { Route as AdminLedgerRouteImport } from './routes/admin.ledger'
 import { Route as AdminMapRouteImport } from './routes/admin.map'
 import { Route as AdminMorphAiRouteImport } from './routes/admin.morph-ai'
 import { Route as AdminPayoutsRouteImport } from './routes/admin.payouts'
@@ -138,6 +139,11 @@ const AdminCategoriesRoute = AdminCategoriesRouteImport.update({
 const AdminFinanceRoute = AdminFinanceRouteImport.update({
   id: '/finance',
   path: '/finance',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminLedgerRoute = AdminLedgerRouteImport.update({
+  id: '/ledger',
+  path: '/ledger',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminMapRoute = AdminMapRouteImport.update({
@@ -452,6 +458,7 @@ export interface FileRoutesByFullPath {
   '/admin/broadcast': typeof AdminBroadcastRoute
   '/admin/categories': typeof AdminCategoriesRoute
   '/admin/finance': typeof AdminFinanceRouteWithChildren
+  '/admin/ledger': typeof AdminLedgerRoute
   '/admin/map': typeof AdminMapRoute
   '/admin/morph-ai': typeof AdminMorphAiRouteWithChildren
   '/admin/payouts': typeof AdminPayoutsRouteWithChildren
@@ -521,6 +528,7 @@ export interface FileRoutesByTo {
   '/admin/bookings': typeof AdminBookingsRouteWithChildren
   '/admin/broadcast': typeof AdminBroadcastRoute
   '/admin/categories': typeof AdminCategoriesRoute
+  '/admin/ledger': typeof AdminLedgerRoute
   '/admin/map': typeof AdminMapRoute
   '/admin/profile': typeof AdminProfileRoute
   '/admin/reviews': typeof AdminReviewsRoute
@@ -587,6 +595,7 @@ export interface FileRoutesById {
   '/admin/broadcast': typeof AdminBroadcastRoute
   '/admin/categories': typeof AdminCategoriesRoute
   '/admin/finance': typeof AdminFinanceRouteWithChildren
+  '/admin/ledger': typeof AdminLedgerRoute
   '/admin/map': typeof AdminMapRoute
   '/admin/morph-ai': typeof AdminMorphAiRouteWithChildren
   '/admin/payouts': typeof AdminPayoutsRouteWithChildren
@@ -661,6 +670,7 @@ export interface FileRouteTypes {
     | '/admin/broadcast'
     | '/admin/categories'
     | '/admin/finance'
+    | '/admin/ledger'
     | '/admin/map'
     | '/admin/morph-ai'
     | '/admin/payouts'
@@ -730,6 +740,7 @@ export interface FileRouteTypes {
     | '/admin/bookings'
     | '/admin/broadcast'
     | '/admin/categories'
+    | '/admin/ledger'
     | '/admin/map'
     | '/admin/profile'
     | '/admin/reviews'
@@ -795,6 +806,7 @@ export interface FileRouteTypes {
     | '/admin/broadcast'
     | '/admin/categories'
     | '/admin/finance'
+    | '/admin/ledger'
     | '/admin/map'
     | '/admin/morph-ai'
     | '/admin/payouts'
@@ -946,6 +958,13 @@ declare module '@tanstack/react-router' {
       path: '/finance'
       fullPath: '/admin/finance'
       preLoaderRoute: typeof AdminFinanceRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/ledger': {
+      id: '/admin/ledger'
+      path: '/ledger'
+      fullPath: '/admin/ledger'
+      preLoaderRoute: typeof AdminLedgerRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/map': {
@@ -1621,6 +1640,7 @@ interface AdminRouteChildren {
   AdminBroadcastRoute: typeof AdminBroadcastRoute
   AdminCategoriesRoute: typeof AdminCategoriesRoute
   AdminFinanceRoute: typeof AdminFinanceRouteWithChildren
+  AdminLedgerRoute: typeof AdminLedgerRoute
   AdminMapRoute: typeof AdminMapRoute
   AdminMorphAiRoute: typeof AdminMorphAiRouteWithChildren
   AdminPayoutsRoute: typeof AdminPayoutsRouteWithChildren
@@ -1644,6 +1664,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminBroadcastRoute: AdminBroadcastRoute,
   AdminCategoriesRoute: AdminCategoriesRoute,
   AdminFinanceRoute: AdminFinanceRouteWithChildren,
+  AdminLedgerRoute: AdminLedgerRoute,
   AdminMapRoute: AdminMapRoute,
   AdminMorphAiRoute: AdminMorphAiRouteWithChildren,
   AdminPayoutsRoute: AdminPayoutsRouteWithChildren,

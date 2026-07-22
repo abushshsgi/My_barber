@@ -2219,6 +2219,30 @@ class AdminGiftVerifyChainsView(APIView):
         )
 
 
+class AdminLedgerSuggestView(APIView):
+    """Autocomplete: hash, merchant id, yozuv id, hamyon."""
+
+    permission_classes = [IsAdmin]
+
+    def get(self, request):
+        from .ledger_lookup import suggest_ledger_query
+
+        q = (request.query_params.get("q") or "").strip()
+        return Response({"ok": True, "q": q, "suggestions": suggest_ledger_query(q)})
+
+
+class AdminLedgerLookupView(APIView):
+    """Tez qidiruv + zanjir holati + tegishli havolalar."""
+
+    permission_classes = [IsAdmin]
+
+    def get(self, request):
+        from .ledger_lookup import resolve_ledger_query
+
+        q = (request.query_params.get("q") or "").strip()
+        return Response(resolve_ledger_query(q))
+
+
 class AdminWalletAdjustView(APIView):
     """Manual balans tuzatish (+/-) — sabab majburiy, audit yoziladi."""
 

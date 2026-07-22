@@ -3950,3 +3950,87 @@ export async function rejectAdminCardDeposit(id: string, note?: string): Promise
     body: JSON.stringify({ note: note || "Rad etildi" }),
   });
 }
+
+export type LedgerLookupSuggestion = {
+  kind: string;
+  kind_label: string;
+  value: string;
+  title: string;
+  subtitle: string;
+};
+
+export type LedgerLookupHit = {
+  kind: string;
+  kind_label: string;
+  match_field: string;
+  match_explain: string;
+  primary_id: string;
+  title: string;
+  subtitle?: string;
+  query?: string;
+  owner?: {
+    user_id?: number;
+    name?: string;
+    phone?: string | null;
+    wallet_number?: string | null;
+    wallet_id?: number;
+    balance?: number;
+    sender?: { user_id?: number; name?: string; phone?: string | null } | null;
+    recipient?: { user_id?: number; name?: string; phone?: string | null } | null;
+    sender_wallet?: string | null;
+    recipient_wallet?: string | null;
+  };
+  entry?: {
+    id: string;
+    entry_type: string;
+    entry_type_label: string;
+    amount: number;
+    balance_after: number;
+    reference_type: string;
+    reference_id: string;
+    entry_hash: string;
+    created_at?: string | null;
+  } | null;
+  chain?: {
+    ok: boolean;
+    error?: string | null;
+    wallet_number: string;
+    balance: number;
+    entry_count: number;
+    steps_total: number;
+    truncated?: boolean;
+    steps: Array<{
+      index: number;
+      id: string;
+      entry_type: string;
+      entry_type_label: string;
+      amount: number;
+      entry_hash: string;
+      ok: boolean;
+      focus?: boolean;
+      created_at?: string | null;
+    }>;
+  } | null;
+  recipient_chain?: LedgerLookupHit["chain"];
+  links: Array<{ label: string; href: string }>;
+};
+
+export async function fetchLedgerSuggest(q: string): Promise<{
+  ok: boolean;
+  q: string;
+  suggestions: LedgerLookupSuggestion[];
+}> {
+  const sp = new URLSearchParams({ q });
+  return apiJson(`/api/v1/admin/ledger/suggest/?${sp}`);
+}
+
+export async function fetchLedgerLookup(q: string): Promise<{
+  ok: boolean;
+  query?: string;
+  detail?: string;
+  count?: number;
+  results: LedgerLookupHit[];
+}> {
+  const sp = new URLSearchParams({ q });
+  return apiJson(`/api/v1/admin/ledger/lookup/?${sp}`);
+}

@@ -27,6 +27,7 @@ import {
   Sparkles,
   Radio,
   Repeat,
+  Fingerprint,
   Gift,
   ArrowLeftRight,
   Banknote,
@@ -100,6 +101,17 @@ const SECTIONS: Section[] = [
       { to: "/admin/finance/gifts", label: "Sovg'a oqimi", icon: Gift },
       { to: "/admin/finance/gift-designs", label: "Dizaynlar", icon: Sparkles },
       { to: "/admin/statistics/wallet", label: "Hamyon nazorati", icon: ShieldCheck },
+    ],
+  },
+  {
+    key: "ledger",
+    label: "Ledger nazorat",
+    icon: Fingerprint,
+    matchPrefixes: ["/admin/ledger"],
+    items: [
+      { to: "/admin/ledger", label: "ID / Hash qidiruv", icon: Fingerprint },
+      { to: "/admin/statistics/wallet", label: "Hamyon oqimi", icon: Wallet },
+      { to: "/admin/audit", label: "Audit log", icon: History },
     ],
   },
   {
