@@ -5,12 +5,7 @@ from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
 
 from accounts.models import User
-from accounts.throttles import (
-    AiStyleThrottle,
-    AiTryOnThrottle,
-    AuthIPThrottle,
-    FriendlyThrottleMixin,
-)
+from accounts.throttles import AuthIPThrottle
 
 from ai.age_groups import birth_year_to_group, normalize_age_group, resolve_hairstyle_image_path
 from ai.explore_personas import has_persona_style_asset, list_explore_personas, normalize_persona_id
@@ -142,12 +137,12 @@ class HairstyleDetailView(APIView):
         return Response(serializer.data)
 
 
-class AiStyleAnalyzeView(FriendlyThrottleMixin, APIView):
+class AiStyleAnalyzeView(APIView):
     """POST { image: data-url, audience } — Gemini selfie tahlili."""
 
     permission_classes = [IsAuthenticated]
-    throttle_classes = [AiStyleThrottle, AuthIPThrottle]
-    throttle_detail = "So'rov limiti tugadi (soatiga 30 ta)."
+    # Faqat obuna/tarif limiti — soatlik API throttle yo'q
+    throttle_classes = []
 
     def post(self, request):
         user = _require_customer_user(request)
@@ -215,12 +210,12 @@ class AiStyleAnalyzeView(FriendlyThrottleMixin, APIView):
             return Response({"detail": exc.message}, status=exc.status)
 
 
-class AiStyleTryOnView(FriendlyThrottleMixin, APIView):
+class AiStyleTryOnView(APIView):
     """POST { image, style_id } — selfie + uslub bo'yicha AI preview rasm."""
 
     permission_classes = [IsAuthenticated]
-    throttle_classes = [AiTryOnThrottle, AuthIPThrottle]
-    throttle_detail = "Rasm generatsiya limiti tugadi (soatiga 30 ta)."
+    # Faqat obuna/tarif limiti — soatlik API throttle yo'q
+    throttle_classes = []
 
     def post(self, request):
         user = _require_customer_user(request)
@@ -329,12 +324,11 @@ class AiStyleTryOnJobView(APIView):
         return Response(job)
 
 
-class AiFaceCheckView(FriendlyThrottleMixin, APIView):
+class AiFaceCheckView(APIView):
     """POST { image } — yuz bormi (yuklashdan oldin tekshirish)."""
 
     permission_classes = [IsAuthenticated]
-    throttle_classes = [AiStyleThrottle, AuthIPThrottle]
-    throttle_detail = "So'rov limiti tugadi (soatiga 30 ta)."
+    throttle_classes = []
 
     def post(self, request):
         user = _require_customer_user(request)
@@ -510,12 +504,11 @@ class AiStyleStudioCatalogView(APIView):
         return Response({"categories": list_studio_catalog()})
 
 
-class AiStyleStudioEditView(FriendlyThrottleMixin, APIView):
+class AiStyleStudioEditView(APIView):
     """POST { image, preset_id } — generatsiya qilingan rasmni studio variantiga o'zgartirish."""
 
     permission_classes = [IsAuthenticated]
-    throttle_classes = [AiTryOnThrottle, AuthIPThrottle]
-    throttle_detail = "Rasm generatsiya limiti tugadi (soatiga 30 ta)."
+    throttle_classes = []
 
     def post(self, request):
         user = _require_customer_user(request)

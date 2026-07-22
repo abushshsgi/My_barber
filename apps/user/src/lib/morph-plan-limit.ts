@@ -17,7 +17,7 @@ export function isMorphPlanLimitError(error: unknown): error is MorphPlanLimitEr
 
 /** Server detail — obuna/oylik kvota (DRF throttle emas). */
 export function isMorphPlanLimitMessage(message: string): boolean {
-  return /Oylik Morph|Bepul Morph|Morph AI faqat obuna|obuna|Studio Plus|Bu reja Morph|Kunlik try-on|Kunlik AI tahlil|do'stingizni taklif/i.test(
+  return /Oylik Morph|Bepul Morph|Morph AI faqat obuna|obuna|Studio Plus|Bu reja Morph|do'stingizni taklif/i.test(
     message,
   );
 }
@@ -27,7 +27,8 @@ export function isMorphRateLimitMessage(message: string): boolean {
   return (
     /Request was throttled|throttl/i.test(message) ||
     /(?:available in|Expected available in)\s+\d+\s+seconds?/i.test(message) ||
-    /soatiga \d+ ta/i.test(message)
+    /soatiga \d+ ta/i.test(message) ||
+    /Juda ko'p so'rov/i.test(message)
   );
 }
 
@@ -69,23 +70,8 @@ export function throwFromMorphApiError(res: Response, body: unknown, fallback: s
   }
 
   if (res.status === 429 && isMorphRateLimitMessage(detail)) {
-    const retryHeader = res.headers.get("Retry-After");
-    const retryFromHeader = retryHeader ? Number(retryHeader) : NaN;
-    const waitMatch = /(?:available in|Expected available in)\s+(\d+)\s+seconds?/i.exec(detail);
-    const seconds = Number.isFinite(retryFromHeader)
-      ? retryFromHeader
-      : waitMatch
-        ? Number(waitMatch[1])
-        : 0;
-    if (seconds >= 60) {
-      throw new Error(
-        `Juda ko'p so'rov. Taxminan ${Math.ceil(seconds / 60)} daqiqadan keyin qayta urinib ko'ring.`,
-      );
-    }
-    if (seconds > 0) {
-      throw new Error(`Juda ko'p so'rov. Taxminan ${seconds} soniyadan keyin qayta urinib ko'ring.`);
-    }
-    throw new Error("Juda ko'p so'rov. Biroz kutib qayta urinib ko'ring.");
+    // Soatlik / Google rate-limit — userga "kutish" ogohlantiruvi ko'rsatilmaydi.
+    throw new Error("Morph AI hozir ishlamayapti. Keyinroq urinib ko'ring.");
   }
 
   throw new Error(detail);

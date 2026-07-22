@@ -95,7 +95,7 @@ def enqueue_tryon_job(
     depth = int(client.llen(QUEUE_KEY))
     if depth >= _max_queue_depth():
         raise AiStyleError(
-            "Navbat juda uzun. 1–2 daqiqadan keyin qayta urinib ko'ring.",
+            "Morph AI hozir band. Keyinroq urinib ko'ring.",
             503,
         )
 

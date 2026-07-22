@@ -25,18 +25,9 @@ def map_gemini_http_error(status: int, body: str, *, kind: str = "general", mode
             "aistudio.google.com/apikey dan yangi kalit oling."
         )
     if status == 429 or "quota" in lowered or "rate" in lowered or "exceeded" in lowered:
-        if kind == "image":
-            return (
-                "Rasm generatsiya limiti tugadi (Google AI). "
-                "Bepul rejada tez tugaydi — aistudio.google.com da billing yoqing "
-                "yoki 30–60 daqiqadan keyin qayta urinib ko'ring."
-            )
-        return (
-            "AI so'rov limiti tugadi (Google). "
-            "Biroz kuting yoki aistudio.google.com da billing/limitni tekshiring."
-        )
+        return "Morph AI hozir ishlamayapti. Keyinroq urinib ko'ring."
     if status == 503 or "unavailable" in lowered or "high demand" in lowered:
-        return "AI hozir juda yuklangan. 1–2 daqiqadan keyin qayta urinib ko'ring."
+        return "Morph AI hozir ishlamayapti. Keyinroq urinib ko'ring."
     if status == 404:
         if kind == "image":
             return (

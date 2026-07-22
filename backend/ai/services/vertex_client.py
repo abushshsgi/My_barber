@@ -45,12 +45,7 @@ def _map_vertex_http_error(status: int, body: str, *, kind: str = "general") -> 
     if "billing" in lowered or "account disabled" in lowered:
         return "Google Cloud billing yoqilmagan yoki $300 kredit tugagan."
     if status == 429 or "resource_exhausted" in lowered or "resource has been exhausted" in lowered:
-        if kind == "image":
-            return (
-                "Rasm generatsiya vaqtincha band (Google limit). "
-                "1–2 daqiqadan keyin qayta urinib ko'ring."
-            )
-        return "AI vaqtincha band. Biroz kutib qayta urinib ko'ring."
+        return "Morph AI hozir ishlamayapti. Keyinroq urinib ko'ring."
     if status == 404:
         if kind == "image":
             return (

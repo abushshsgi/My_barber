@@ -44,15 +44,7 @@ function formatAiRequestError(error: unknown, fallback: string): string {
     return raw;
   }
   if (isMorphRateLimitMessage(raw)) {
-    const waitMatch = /(?:available in|Expected available in)\s+(\d+)\s+seconds?/i.exec(raw);
-    const seconds = waitMatch ? Number(waitMatch[1]) : 0;
-    if (seconds >= 60) {
-      return `Juda ko'p so'rov. Taxminan ${Math.ceil(seconds / 60)} daqiqadan keyin qayta urinib ko'ring.`;
-    }
-    if (seconds > 0) {
-      return `Juda ko'p so'rov. Taxminan ${seconds} soniyadan keyin qayta urinib ko'ring.`;
-    }
-    return "Juda ko'p so'rov. Biroz kutib qayta urinib ko'ring.";
+    return "Morph AI hozir ishlamayapti. Keyinroq urinib ko'ring.";
   }
   return raw.replace(/\s*Expected available in \d+ seconds?\./gi, "").trim() || raw;
 }

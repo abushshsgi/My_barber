@@ -549,21 +549,20 @@ def build_export_csv(start_raw: str | None, end_raw: str | None) -> HttpResponse
 
 
 def check_user_can_generate(*, user_id: int | None, kind: str) -> str | None:
-    """Return error message if blocked, else None."""
+    """Bloklash faqat: feature o'chirilgan yoki obuna/tarif limiiti.
+
+    Soatlik throttle, kunlik soft-cap va byudjet — userlar uchun yo'q.
+    """
     s = MorphAiSettings.load()
     if kind in ("tryon", "studio") and not s.tryon_enabled:
-        return "Try-on vaqtincha o'chirilgan."
+        return "Morph AI hozir ishlamayapti."
     if kind in ("analyze", "face_check") and not s.analyze_enabled:
-        return "AI tahlil vaqtincha o'chirilgan."
-
-    budget = build_budget_status()
-    if budget["period"]["blocked"]:
-        return "Kunlik AI byudjeti tugadi. Keyinroq qayta urinib ko'ring."
+        return "Morph AI hozir ishlamayapti."
 
     if not user_id:
         return None
 
-    # B2C obuna — Morph AI (analyze / try-on / studio) uchun majburiy + oylik limit
+    # B2C obuna — Morph AI uchun majburiy + oylik tarif limiiti
     if kind in ("tryon", "studio", "analyze", "face_check"):
         try:
             from accounts.models import User
@@ -575,30 +574,8 @@ def check_user_can_generate(*, user_id: int | None, kind: str) -> str | None:
                 if blocked:
                     return blocked
         except Exception:
-            # subscriptions moduli yo'q / migratsiya oldin — eski kunlik limitga tushamiz
             pass
 
-    now = timezone.now()
-    today_start = timezone.localtime(now).replace(hour=0, minute=0, second=0, microsecond=0)
-    # Analyze / face_check — global kunlik soft-limit (obunasiz ham)
-    if kind in ("analyze", "face_check") and s.daily_analyze_limit_per_user > 0:
-        used = AiGenerationUsage.objects.filter(
-            user_id=user_id,
-            kind__in=[AiGenerationUsage.Kind.ANALYZE, AiGenerationUsage.Kind.FACE_CHECK],
-            created_at__gte=today_start,
-        ).count()
-        if used >= s.daily_analyze_limit_per_user:
-            return "Kunlik AI tahlil limitiga yetdingiz."
-
-    # Try-on / studio uchun qo'shimcha global kunlik soft-cap (DDoS / abuse)
-    if kind in ("tryon", "studio") and s.daily_tryon_limit_per_user > 0:
-        used = AiGenerationUsage.objects.filter(
-            user_id=user_id,
-            kind__in=[AiGenerationUsage.Kind.TRYON, AiGenerationUsage.Kind.STUDIO],
-            created_at__gte=today_start,
-        ).count()
-        if used >= s.daily_tryon_limit_per_user:
-            return "Kunlik try-on limitiga yetdingiz."
     return None
 
 
@@ -612,8 +589,6 @@ def is_morph_plan_limit_message(message: str) -> bool:
         "obuna",
         "Studio Plus",
         "Bu reja Morph",
-        "Kunlik try-on",
-        "Kunlik AI tahlil",
         "do'stingizni taklif",
     )
     return any(m in msg for m in markers)
@@ -627,7 +602,8 @@ def morph_generation_blocked_response(message: str):
     if is_morph_plan_limit_message(message):
         payload["code"] = "morph_plan_limit"
         return Response(payload, status=status.HTTP_403_FORBIDDEN)
-    return Response(payload, status=status.HTTP_429_TOO_MANY_REQUESTS)
+    # Feature o'chirilgan / AI o'chiq — throttle emas
+    return Response(payload, status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
 
 def pick_ab_prompt() -> tuple[str, str]:

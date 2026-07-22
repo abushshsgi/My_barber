@@ -113,11 +113,11 @@ class AiStyleThrottle(SimpleRateThrottle):
         return self.cache_format % {"scope": self.scope, "ident": ident}
 
     def throttle_failure_message(self):
-        return "So'rov limiti tugadi (soatiga 30 ta)."
+        return "Morph AI hozir ishlamayapti. Keyinroq urinib ko'ring."
 
 
 class AiTryOnThrottle(SimpleRateThrottle):
-    """AI rasm generatsiya (try-on) — qimmat, alohida limit."""
+    """AI rasm generatsiya (try-on) — endi viewlarda o'chirilgan; legacy rate."""
 
     scope = "ai_tryon"
 
@@ -129,7 +129,7 @@ class AiTryOnThrottle(SimpleRateThrottle):
         return self.cache_format % {"scope": self.scope, "ident": ident}
 
     def throttle_failure_message(self):
-        return "Rasm generatsiya limiti tugadi (soatiga 30 ta)."
+        return "Morph AI hozir ishlamayapti. Keyinroq urinib ko'ring."
 
 
 class PhoneCheckThrottle(SimpleRateThrottle):
