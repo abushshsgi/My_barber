@@ -99,6 +99,10 @@ def _user_web_static_origins() -> tuple[str, ...]:
     return tuple(origins)
 
 
+_REMOTE_EXIST_CACHE: dict[str, tuple[float, bool]] = {}
+_REMOTE_EXIST_TTL_S = 60.0
+
+
 def _fetch_remote_static_image(relative_url: str) -> tuple[str, bytes] | None:
     rel = (relative_url or "").lstrip("/")
     if not rel:
@@ -117,9 +121,65 @@ def _fetch_remote_static_image(relative_url: str) -> tuple[str, bytes] | None:
             continue
         if len(raw) < 128:
             continue
-        logger.info("Loaded explore anchor from %s", url)
+        logger.debug("Loaded explore anchor from %s", url)
         return _detect_image_mime(raw), raw
     return None
+
+
+def _remote_static_image_exists(relative_url: str) -> bool:
+    """Status uchun — to'liq body yuklamasdan HEAD/GET bilan mavjudlik."""
+    rel = (relative_url or "").lstrip("/")
+    if not rel:
+        return False
+    now = time.monotonic()
+    cached = _REMOTE_EXIST_CACHE.get(rel)
+    if cached is not None and now - cached[0] < _REMOTE_EXIST_TTL_S:
+        return cached[1]
+
+    found = False
+    for origin in _user_web_static_origins():
+        url = f"{origin}/{rel}"
+        try:
+            req = urllib.request.Request(
+                url,
+                method="HEAD",
+                headers={"User-Agent": "MySaloon/1.0 (explore-gen)"},
+            )
+            with urllib.request.urlopen(req, timeout=8) as resp:
+                code = getattr(resp, "status", 200) or 200
+                if 200 <= int(code) < 400:
+                    found = True
+                    break
+        except urllib.error.HTTPError as exc:
+            if exc.code in {405, 501}:
+                # Ba'zi static hostlar HEAD qo'llab-quvvatlamaydi — engil GET.
+                try:
+                    get_req = urllib.request.Request(
+                        url,
+                        headers={"User-Agent": "MySaloon/1.0 (explore-gen)"},
+                    )
+                    with urllib.request.urlopen(get_req, timeout=8) as resp:
+                        raw = resp.read(128)
+                    if len(raw) >= 128:
+                        found = True
+                        break
+                except (urllib.error.URLError, TimeoutError, ValueError):
+                    continue
+            continue
+        except (urllib.error.URLError, TimeoutError, ValueError, OSError):
+            continue
+
+    _REMOTE_EXIST_CACHE[rel] = (now, found)
+    return found
+
+
+def _explore_static_image_exists(relative_url: str) -> bool:
+    rel = (relative_url or "").lstrip("/")
+    if not rel:
+        return False
+    if (PUBLIC_ROOT / rel).is_file():
+        return True
+    return _remote_static_image_exists(rel)
 
 
 def _load_explore_static_image(relative_url: str) -> tuple[str, bytes] | None:
@@ -216,17 +276,32 @@ def _persona_order() -> tuple[str, ...]:
     return ("irland", "slavyan")
 
 
+def _persona_style_view_exists(*, persona_id: str, slug: str, view: str) -> bool:
+    """Anchor mavjudligini tekshirish — status pollida to'liq rasm yuklanmasin."""
+    normalized_view = normalize_explore_view(view)
+    if asset_file_path(persona_id=persona_id, slug=slug, view=normalized_view).is_file():
+        return True
+    if live_asset_path(persona_id=persona_id, slug=slug, view=normalized_view).is_file():
+        return True
+    rel = _relative_asset_path(persona_id=persona_id, slug=slug, view=normalized_view)
+    return _explore_static_image_exists(rel)
+
+
+def _persona_reference_exists(*, persona_id: str) -> bool:
+    return _persona_style_view_exists(persona_id=persona_id, slug="reference", view="front")
+
+
 def _explore_anchor_status(*, persona_id: str, slug: str, view: str) -> dict[str, bool] | None:
     if slug == "reference":
         return None
     normalized_view = normalize_explore_view(view)
     if normalized_view == "front":
         return {
-            "reference": _persona_reference_bytes(persona_id=persona_id) is not None,
+            "reference": _persona_reference_exists(persona_id=persona_id),
         }
     return {
-        "front": _persona_style_front_bytes(persona_id=persona_id, slug=slug) is not None,
-        "reference": _persona_reference_bytes(persona_id=persona_id) is not None,
+        "front": _persona_style_view_exists(persona_id=persona_id, slug=slug, view="front"),
+        "reference": _persona_reference_exists(persona_id=persona_id),
     }
 
 

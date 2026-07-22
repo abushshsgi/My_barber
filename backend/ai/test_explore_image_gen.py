@@ -70,6 +70,23 @@ class ExploreImageGenPromptTests(SimpleTestCase):
         self.assertEqual(views, {"front", "left", "right", "back"})
         self.assertEqual(len(jobs), 96)
 
+    def test_list_jobs_does_not_download_anchor_bodies(self):
+        """Status polli to'liq webp yuklamasligi kerak (Railway stderr INFO spam)."""
+        with patch(
+            "ai.services.explore_image_gen._fetch_remote_static_image",
+        ) as fetch_mock, patch(
+            "ai.services.explore_image_gen._remote_static_image_exists",
+            return_value=True,
+        ), patch(
+            "ai.services.explore_image_gen._load_public_image",
+            return_value=None,
+        ):
+            jobs = list_explore_gen_jobs()
+        self.assertEqual(len(jobs), 96)
+        fetch_mock.assert_not_called()
+        sample = next(j for j in jobs if j["slug"] != "reference" and j["view"] == "right")
+        self.assertEqual(sample["explore_anchors"], {"front": True, "reference": True})
+
     def test_slavyan_mid_fade_collects_front_anchor_from_public(self):
         anchors = _collect_view_rotation_anchors(
             persona_id="slavyan",
