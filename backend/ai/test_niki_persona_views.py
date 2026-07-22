@@ -4,13 +4,10 @@ from ai.explore_personas import MEN_CATALOG_STYLE_SLUGS, NIKI_READY_SLUGS, perso
 
 
 class NikiPersonaViewsTests(SimpleTestCase):
-    def test_irland_declares_left_right_and_back_for_all_slugs(self):
+    def test_new_styles_have_no_static_extra_views_until_publish(self):
         for slug in MEN_CATALOG_STYLE_SLUGS:
-            self.assertEqual(persona_static_extra_views("irland", slug), ("left", "right", "back"))
+            self.assertEqual(persona_static_extra_views("irland", slug), ())
+            self.assertEqual(persona_static_extra_views("niki", slug), ())
 
-    def test_niki_declares_left_right_and_back_for_ready_slugs(self):
-        for slug in NIKI_READY_SLUGS:
-            self.assertEqual(persona_static_extra_views("niki", slug), ("left", "right", "back"))
-
-    def test_niki_low_fade_not_in_ready_slugs(self):
-        self.assertNotIn("low-fade", NIKI_READY_SLUGS)
+    def test_niki_ready_slugs_empty_until_assets(self):
+        self.assertEqual(NIKI_READY_SLUGS, frozenset())

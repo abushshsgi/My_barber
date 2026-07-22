@@ -13,22 +13,24 @@ from ai.services.explore_image_gen import (
 )
 from ai.services.errors import AiStyleError
 
+ACTIVE_SLUG = "old-money-loose-curl"
+
 
 class ExploreImageGenPromptTests(SimpleTestCase):
     def test_irland_right_prompt_mentions_ginger_stubble(self):
         prompt = _build_view_rotation_prompt(
             persona_id="irland",
-            slug="mid-fade",
+            slug=ACTIVE_SLUG,
             view="right",
             anchor_views=("front", "left", "reference"),
         )
         self.assertIn("light ginger stubble", prompt)
-        self.assertIn("RIGHT temple taper/fade", prompt)
+        self.assertIn("curl/wave", prompt.lower())
 
     def test_slavyan_prompt_is_clean_shaven(self):
         prompt = _build_view_rotation_prompt(
             persona_id="slavyan",
-            slug="skin-fade",
+            slug="old-money-soft-wave",
             view="left",
             anchor_views=("front", "reference"),
         )
@@ -38,24 +40,28 @@ class ExploreImageGenPromptTests(SimpleTestCase):
         hint = _style_side_consistency_hint(slug="skin-fade", view="right")
         self.assertIn("RIGHT temple", hint)
 
+    def test_curl_style_gets_back_hint(self):
+        hint = _style_side_consistency_hint(slug=ACTIVE_SLUG, view="back")
+        self.assertIn("back-of-head", hint)
+
     def test_non_fade_style_has_no_side_hint(self):
         hint = _style_side_consistency_hint(slug="buzz-cut", view="right")
         self.assertEqual(hint, "")
 
     def test_rejects_niki_persona(self):
         with self.assertRaises(AiStyleError) as ctx:
-            _assert_dev_explore_job(persona_id="niki", slug="mid-fade", view="right")
+            _assert_dev_explore_job(persona_id="niki", slug=ACTIVE_SLUG, view="right")
         self.assertIn("Irland va Slavyan", ctx.exception.message)
 
-    def test_rejects_britan_persona(self):
+    def test_rejects_unknown_persona(self):
         with self.assertRaises(AiStyleError):
-            _assert_dev_explore_job(persona_id="britan", slug="mid-fade", view="front")
+            _assert_dev_explore_job(persona_id="unknown-persona", slug=ACTIVE_SLUG, view="front")
 
     def test_accepts_irland_and_slavyan(self):
         for pid in ("irland", "slavyan"):
             persona_id, view = _assert_dev_explore_job(
                 persona_id=pid,
-                slug="mid-fade",
+                slug=ACTIVE_SLUG,
                 view="left",
             )
             self.assertEqual(persona_id, pid)
@@ -68,7 +74,8 @@ class ExploreImageGenPromptTests(SimpleTestCase):
         self.assertEqual(persona_ids, DEV_EXPLORE_PERSONA_IDS)
         views = {job["view"] for job in jobs}
         self.assertEqual(views, {"front", "left", "right", "back"})
-        self.assertEqual(len(jobs), 96)
+        # 2 personas × 5 styles × 4 views
+        self.assertEqual(len(jobs), 40)
 
     def test_list_jobs_does_not_download_anchor_bodies(self):
         """Status polli to'liq webp yuklamasligi kerak (Railway stderr INFO spam)."""
@@ -82,12 +89,13 @@ class ExploreImageGenPromptTests(SimpleTestCase):
             return_value=None,
         ):
             jobs = list_explore_gen_jobs()
-        self.assertEqual(len(jobs), 96)
+        self.assertEqual(len(jobs), 40)
         fetch_mock.assert_not_called()
         sample = next(j for j in jobs if j["slug"] != "reference" and j["view"] == "right")
         self.assertEqual(sample["explore_anchors"], {"front": True, "reference": True})
 
-    def test_slavyan_mid_fade_collects_front_anchor_from_public(self):
+    def test_slavyan_collects_front_anchor_from_public(self):
+        # Arxivdagi mid-fade fayli hali diskda — anchor yuklashni tekshirish uchun.
         anchors = _collect_view_rotation_anchors(
             persona_id="slavyan",
             slug="mid-fade",
@@ -127,7 +135,7 @@ class ExploreImageGenPromptTests(SimpleTestCase):
             with self.assertRaises(AiStyleError) as ctx:
                 generate_explore_asset(
                     persona_id="irland",
-                    slug="mid-fade",
+                    slug=ACTIVE_SLUG,
                     view="right",
                     force=True,
                 )

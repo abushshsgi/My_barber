@@ -1,4 +1,5 @@
 from pathlib import Path
+from unittest.mock import patch
 
 from django.test import TestCase, override_settings
 
@@ -30,31 +31,43 @@ class ExplorePublishedTests(TestCase):
         self.assertEqual(url, "/hairstyles/men/personas/irland/reference.webp")
 
     def test_publish_copies_draft_and_updates_manifest(self):
-        draft = self.media_root / "explore_gen" / "irland" / "buzz-cut.webp"
+        draft = self.media_root / "explore_gen" / "irland" / "old-money-loose-curl.webp"
         draft.parent.mkdir(parents=True, exist_ok=True)
         draft.write_bytes(b"fake-webp")
 
-        result = publish_explore_asset(persona_id="irland", slug="buzz-cut")
+        # PUBLIC_ROOT mavjud bo'lsa live shu yerga yoziladi — test uchun MEDIA ga majburan.
+        live_under_media = self.media_root / "hairstyles" / "men" / "personas" / "irland" / "old-money-loose-curl.webp"
+        with patch("ai.explore_published.PUBLIC_ROOT", Path("/tmp/mybarber-explore-missing-public")):
+            result = publish_explore_asset(persona_id="irland", slug="old-money-loose-curl")
 
-        self.assertTrue(result["published"])
-        self.assertTrue(is_explore_asset_published("irland", "buzz-cut"))
-        live = self.media_root / "hairstyles" / "men" / "personas" / "irland" / "buzz-cut.webp"
-        self.assertTrue(live.is_file())
-        self.assertEqual(
-            resolve_explore_asset_url(audience="men", persona_id="irland", slug="buzz-cut"),
-            "https://api.test.local/media/hairstyles/men/personas/irland/buzz-cut.webp",
-        )
-        self.assertTrue(explore_asset_available("irland", "buzz-cut"))
+            self.assertTrue(result["published"])
+            self.assertTrue(is_explore_asset_published("irland", "old-money-loose-curl"))
+            self.assertTrue(live_under_media.is_file())
+            # Front view URL static path qaytaradi (media URL emas).
+            self.assertEqual(
+                resolve_explore_asset_url(
+                    audience="men", persona_id="irland", slug="old-money-loose-curl"
+                ),
+                "/hairstyles/men/personas/irland/old-money-loose-curl.webp",
+            )
+            self.assertTrue(explore_asset_available("irland", "old-money-loose-curl"))
 
     def test_gallery_includes_multiple_published_views(self):
-        for view, name in [("front", "buzz-cut.webp"), ("right", "buzz-cut__right.webp")]:
-            draft = self.media_root / "explore_gen" / "irland" / name
-            draft.parent.mkdir(parents=True, exist_ok=True)
-            draft.write_bytes(b"fake-webp")
-            publish_explore_asset(persona_id="irland", slug="buzz-cut", view=view)
+        with patch("ai.explore_published.PUBLIC_ROOT", Path("/tmp/mybarber-explore-missing-public")):
+            for view, name in [
+                ("front", "old-money-loose-curl.webp"),
+                ("right", "old-money-loose-curl__right.webp"),
+            ]:
+                draft = self.media_root / "explore_gen" / "irland" / name
+                draft.parent.mkdir(parents=True, exist_ok=True)
+                draft.write_bytes(b"fake-webp")
+                publish_explore_asset(persona_id="irland", slug="old-money-loose-curl", view=view)
 
-        from ai.explore_personas import list_persona_style_gallery
+            from ai.explore_personas import list_persona_style_gallery
 
-        gallery = list_persona_style_gallery(audience="men", persona_id="irland", slug="buzz-cut")
+            with patch("ai.explore_published.PUBLIC_ROOT", Path("/tmp/mybarber-explore-missing-public")):
+                gallery = list_persona_style_gallery(
+                    audience="men", persona_id="irland", slug="old-money-loose-curl"
+                )
         views = [item["view"] for item in gallery]
         self.assertEqual(views, ["front", "right"])

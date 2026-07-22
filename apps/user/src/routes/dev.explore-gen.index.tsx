@@ -318,11 +318,14 @@ function ExploreGenDevPage() {
               <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-amber-700">
                 Vaqtinchalik
               </p>
-              <h1 className="mt-2 text-2xl font-bold tracking-tight">Irland &amp; Slavyan — 12 uslub</h1>
+              <h1 className="mt-2 text-2xl font-bold tracking-tight">
+                Irland &amp; Slavyan — 5 Old Money jingalak
+              </h1>
               <p className="mt-2 max-w-2xl text-sm text-neutral-600">
-                <strong>Irland</strong> va <strong>Slavyan</strong> uchun 12 uslub × 4 ko&apos;rinish (old, chap,
-                o&apos;ng, orqa). Tartib: har uslubda <strong>old (front)</strong> mavjud bo&apos;lsa → chap/o&apos;ng/orqa
-                shu frontdan aylantiriladi. Yuz va soqol Explore&apos;dagi mavjud personaj bilan bir xil bo&apos;lishi
+                <strong>Irland</strong> va <strong>Slavyan</strong> uchun 5 uslub × 4 ko&apos;rinish (old, chap,
+                o&apos;ng, orqa). Fokus: orqadan olingan old money jingalaklar. Tartib: har uslubda{" "}
+                <strong>old (front)</strong> mavjud bo&apos;lsa → chap/o&apos;ng/orqa shu frontdan
+                aylantiriladi. Yuz va soqol Explore&apos;dagi mavjud personaj bilan bir xil bo&apos;lishi
                 shart.
               </p>
             </div>

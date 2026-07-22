@@ -268,10 +268,10 @@ export const bookings: BookingItem[] = [
 ];
 
 export const trendingStyles: TrendingStyle[] = [
-  { id: "men-mid-fade", title: "Mid Fade", audience: "men", category: "barber", seed: "mid-fade" },
-  { id: "men-skin-fade", title: "Skin Fade", audience: "men", category: "barber", seed: "skin-fade" },
-  { id: "men-buzz-cut", title: "Buzz Cut", audience: "men", category: "barber", seed: "buzz-cut" },
-  { id: "men-textured-crop", title: "Textured Crop", audience: "men", category: "barber", seed: "textured-crop" },
+  { id: "men-old-money-loose-curl", title: "Old Money Loose Curl", audience: "men", category: "barber", seed: "old-money-loose-curl" },
+  { id: "men-old-money-soft-wave", title: "Old Money Soft Wave", audience: "men", category: "barber", seed: "old-money-soft-wave" },
+  { id: "men-old-money-defined-curl", title: "Old Money Defined Curl", audience: "men", category: "barber", seed: "old-money-defined-curl" },
+  { id: "men-old-money-layered-curl", title: "Old Money Layered Curl", audience: "men", category: "barber", seed: "old-money-layered-curl" },
 ];
 
 export const giftCards: GiftCard[] = [

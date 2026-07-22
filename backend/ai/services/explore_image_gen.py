@@ -51,7 +51,7 @@ PUBLIC_ROOT = Path(settings.BASE_DIR).parent / "apps" / "user" / "public"
 OUTPUT_W, OUTPUT_H = 768, 1024
 WEBP_QUALITY = 92
 
-# Dev Explore — Irland va Slavyan: 12 uslub × 4 ko'rinish (old/chap/o'ng/orqa).
+# Dev Explore — Irland va Slavyan: 5 Old Money jingalak × 4 ko'rinish (old/chap/o'ng/orqa).
 DEV_EXPLORE_PERSONA_IDS: frozenset[str] = frozenset({"irland", "slavyan"})
 
 def _detect_image_mime(raw: bytes, path: Path | None = None) -> str:
@@ -458,7 +458,18 @@ Output a single portrait photo with only this hairstyle."""
 
 
 def _style_side_consistency_hint(*, slug: str, view: str) -> str:
-    """Fade/taper uslublarda profil ko'rinishlarida ikkala chet bir xil bo'lishi kerak."""
+    """Yon/orqa ko'rinishlarda fade yoki jingalak shaklini saqlash uchun qo'shimcha hint."""
+    if "curl" in slug or "wave" in slug:
+        if view == "back":
+            return (
+                "CRITICAL: back-of-head curl/wave pattern must be fully readable — "
+                "same curl size, density, and length as the front/side anchors, "
+                "clean premium old-money silhouette, no flat crown, no harsh skin fade."
+            )
+        return (
+            "CRITICAL: keep the same curl/wave texture and length on the visible side — "
+            "match crown volume and nape length from the front anchor, premium old-money look."
+        )
     if "fade" not in slug and slug != "undercut":
         return ""
     if view == "right":

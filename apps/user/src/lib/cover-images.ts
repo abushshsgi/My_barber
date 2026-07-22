@@ -66,7 +66,7 @@ export function resolveCoverUrl(
 
 const TREND_SEEDS = [
   "tr1", "tr2", "tr3", "tr4", "tr5", "tr6",
-  "mid-fade", "textured-crop", "curly-top-fade", "beach-waves", "blunt-cut",
+  "old-money-loose-curl", "old-money-soft-wave", "old-money-defined-curl", "beach-waves", "blunt-cut",
   "curtain-bangs", "highlights", "soft-bob", "balayage",
 ] as const;
 

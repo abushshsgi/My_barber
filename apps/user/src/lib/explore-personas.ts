@@ -25,8 +25,8 @@ export function isHomeTrendPersonaId(value: ExplorePersonaId): value is HomeTren
   return (HOME_TREND_PERSONA_IDS as readonly ExplorePersonaId[]).includes(value);
 }
 
-/** Erkaklar katalogidagi barcha uslub sluglari. */
-export const MEN_CATALOG_STYLE_SLUGS = [
+/** Erkaklar katalogidagi faol uslub sluglari (Old Money orqa jingalak). */
+export const MEN_ARCHIVED_STYLE_SLUGS = [
   "mid-fade",
   "low-fade",
   "skin-fade",
@@ -41,19 +41,24 @@ export const MEN_CATALOG_STYLE_SLUGS = [
   "modern-mullet",
 ] as const;
 
-/** Generatsiya qilingan persona assetlari */
-/** Niki uchun hozircha low-fade yo'q (front rasmlari keyin qo'shiladi). */
-export const NIKI_READY_SLUGS = MEN_CATALOG_STYLE_SLUGS.filter(
-  (slug) => slug !== "low-fade",
-);
+export const MEN_CATALOG_STYLE_SLUGS = [
+  "old-money-loose-curl",
+  "old-money-soft-wave",
+  "old-money-defined-curl",
+  "old-money-layered-curl",
+  "old-money-tousled-curl",
+] as const;
+
+/** Yangi uslublar generate/publish qilinmaguncha bo'sh. */
+export const NIKI_READY_SLUGS: readonly string[] = [];
 
 export const PERSONA_READY_ASSETS: Record<
   ExplorePersonaId,
   { reference: boolean; slugs: readonly string[] }
 > = {
-  irland: { reference: true, slugs: MEN_CATALOG_STYLE_SLUGS },
-  slavyan: { reference: true, slugs: MEN_CATALOG_STYLE_SLUGS },
-  niki: { reference: true, slugs: NIKI_READY_SLUGS },
+  irland: { reference: true, slugs: [] },
+  slavyan: { reference: true, slugs: [] },
+  niki: { reference: true, slugs: [] },
 };
 
 export function hasPersonaReference(personaId: ExplorePersonaId): boolean {

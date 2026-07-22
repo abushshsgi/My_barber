@@ -1,4 +1,4 @@
-"""Explore erkak personajlari — 3 ta model, har biri uchun bitta reference + 12 uslub."""
+"""Explore erkak personajlari — 3 ta model, har biri uchun bitta reference + faol uslublar."""
 
 from __future__ import annotations
 
@@ -83,7 +83,8 @@ def persona_facial_hair_line(persona_id: str | None) -> str:
     pid = normalize_persona_id(persona_id) or DEFAULT_MEN_PERSONA
     return PERSONA_FACIAL_HAIR.get(pid, "match facial hair exactly as in the reference photos")
 
-MEN_CATALOG_STYLE_SLUGS = frozenset(
+# Arxiv — avvalgi 12 uslub (diskdagi rasmlar saqlanadi, katalog/explore-gen da faol emas).
+MEN_ARCHIVED_STYLE_SLUGS = frozenset(
     {
         "mid-fade",
         "low-fade",
@@ -100,24 +101,28 @@ MEN_CATALOG_STYLE_SLUGS = frozenset(
     }
 )
 
-# Generatsiya qilingan assetlar — persona papkasida bo'lmasa flat katalog fallback.
-# Niki uchun hozircha low-fade yo'q (front rasmlari keyin qo'shiladi).
-NIKI_READY_SLUGS = frozenset(MEN_CATALOG_STYLE_SLUGS - {"low-fade"})
+# Faol katalog — Old Money orqa jingalak uslublari (explore-gen).
+MEN_CATALOG_STYLE_SLUGS = frozenset(
+    {
+        "old-money-loose-curl",
+        "old-money-soft-wave",
+        "old-money-defined-curl",
+        "old-money-layered-curl",
+        "old-money-tousled-curl",
+    }
+)
+
+# Yangi uslublar generate/publish qilinmaguncha faqat reference tayyor.
+NIKI_READY_SLUGS: frozenset[str] = frozenset()
 PERSONA_READY_ASSETS: dict[str, frozenset[str]] = {
-    **{
-        pid: frozenset({"reference", *MEN_CATALOG_STYLE_SLUGS})
-        for pid in ("irland", "slavyan")
-    },
-    "niki": frozenset({"reference", *NIKI_READY_SLUGS}),
+    pid: frozenset({"reference"}) for pid in ("irland", "slavyan", "niki")
 }
 
 # Git (public) ga qo'yilgan qo'shimcha ko'rinishlar. Front doim ready deb hisoblanadi;
 # bu yerda faqat chap/o'ng/orqa kabi qo'shimcha ko'rinishlar e'lon qilinadi. Production
 # backend (Railway) da public papka bo'lmagani uchun fayl tizimiga tayanmaymiz.
-PERSONA_READY_VIEWS: dict[str, dict[str, tuple[str, ...]]] = {
-    "irland": {slug: ("left", "right", "back") for slug in MEN_CATALOG_STYLE_SLUGS},
-    "niki": {slug: ("left", "right", "back") for slug in NIKI_READY_SLUGS},
-}
+# Yangi Old Money uslublar publish qilingach shu yerga qo'shiladi.
+PERSONA_READY_VIEWS: dict[str, dict[str, tuple[str, ...]]] = {}
 
 
 def persona_static_extra_views(persona_id: str | None, slug: str) -> tuple[str, ...]:
