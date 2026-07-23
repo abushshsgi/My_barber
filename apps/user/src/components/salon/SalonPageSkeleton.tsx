@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 export function SalonPageSkeleton({ className }: { className?: string }) {
   return (
     <div className={cn("animate-pulse overflow-x-clip pb-28", className)}>
-      <div className="aspect-[4/3] max-h-[52vh] min-h-[280px] bg-muted" />
+      <div className="h-[min(52vh,75vw)] min-h-[280px] bg-muted" />
       <div className="relative z-10 -mt-10 space-y-4 rounded-t-[1.75rem] bg-background px-4 pt-5 shadow-[0_-18px_48px_-28px_rgba(0,0,0,0.2)]">
         <div className="mx-auto h-1 w-10 rounded-full bg-muted" />
         <div className="h-3 w-20 rounded bg-muted" />

@@ -15,8 +15,9 @@ export function SalonHeroGallery({
     <div
       className={cn(
         "relative overflow-hidden bg-muted",
+        // Fixed height (not aspect+absolute) — abspos children height collapse ni oldini oladi
         isMobile
-          ? "aspect-[4/3] max-h-[52vh] min-h-[280px] w-full"
+          ? "h-[min(52vh,75vw)] min-h-[280px] w-full"
           : "h-full min-h-[min(420px,42vh)] rounded-2xl",
       )}
     >
@@ -27,7 +28,7 @@ export function SalonHeroGallery({
         autoPlay
         showDots
         dotsClassName={isMobile ? "bottom-12" : undefined}
-        className={cn("h-full w-full", isMobile && "absolute inset-0")}
+        className="h-full w-full"
       />
     </div>
   );

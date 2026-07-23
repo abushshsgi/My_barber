@@ -1,7 +1,5 @@
+import { useEffect, useState } from "react";
 import { createFileRoute, useParams } from "@tanstack/react-router";
-import { useTranslation } from "react-i18next";
-import { ClientOnly } from "@/components/ClientOnly";
-import { DesktopPageSplit } from "@/components/desktop/DesktopPageSplit";
 import { SalonDesktopPage } from "@/components/desktop/pages/SalonDesktopPage";
 import { SalonMobilePage } from "@/components/salon/SalonMobilePage";
 import { SalonPageSkeleton } from "@/components/salon/SalonPageSkeleton";
@@ -9,6 +7,7 @@ import { useFavorites } from "@/hooks/use-favorites";
 import { SalonShareSheet } from "@/components/salon/SalonShareSheet";
 import { useShareSalon } from "@/hooks/use-share-salon";
 import { useSalonPage } from "@/hooks/use-salon-page";
+import { useIsLgUp } from "@/hooks/use-mobile";
 import { salonsQueryKey } from "@/hooks/use-salons";
 import { fetchSalon, fetchSalonStaff } from "@/lib/api/salons";
 import { mapSalonDetail } from "@/lib/mappers/salon";
@@ -39,31 +38,24 @@ export const Route = createFileRoute("/salon/$id")({
 });
 
 function SalonPage() {
-  const { t } = useTranslation();
   const { id } = useParams({ from: "/salon/$id" });
   const { salon, isLoading, reviewsAreMock } = useSalonPage(id);
   const { isFav, toggle, isPending } = useFavorites();
   const { openShare, shareOpen, setShareOpen, shareSalon } = useShareSalon(salon ?? undefined);
+  const isLgUp = useIsLgUp();
+  // SSR + hydration bir xil skeleton; client mount dan keyin haqiqiy UI.
+  // DesktopPageSplit / ClientOnly aralashmasi refreshda #423 oq ekranga olib kelardi.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
-  if (isLoading || !salon) {
-    return (
-      <DesktopPageSplit
-        mobile={<SalonPageSkeleton />}
-        desktop={
-          <div className="flex min-h-[50vh] items-center justify-center">
-            <p className="text-sm text-muted-foreground">{t("common.loading")}</p>
-          </div>
-        }
-      />
-    );
+  if (!mounted || isLoading || !salon) {
+    return <SalonPageSkeleton />;
   }
 
-  const fav = isFav(salon.id);
-  const toggleFav = () => toggle(salon.id);
   const pageProps = {
     salon,
-    fav,
-    onToggleFav: toggleFav,
+    fav: isFav(salon.id),
+    onToggleFav: () => toggle(salon.id),
     onShare: openShare,
     favPending: isPending,
     reviewsAreMock,
@@ -71,24 +63,7 @@ function SalonPage() {
 
   return (
     <>
-      {/* ClientOnly: hydration mismatch / oq ekranni oldini oladi */}
-      <ClientOnly
-        fallback={
-          <DesktopPageSplit
-            mobile={<SalonPageSkeleton />}
-            desktop={
-              <div className="flex min-h-[50vh] items-center justify-center">
-                <p className="text-sm text-muted-foreground">{t("common.loading")}</p>
-              </div>
-            }
-          />
-        }
-      >
-        <DesktopPageSplit
-          mobile={<SalonMobilePage {...pageProps} />}
-          desktop={<SalonDesktopPage {...pageProps} />}
-        />
-      </ClientOnly>
+      {isLgUp ? <SalonDesktopPage {...pageProps} /> : <SalonMobilePage {...pageProps} />}
       {shareSalon ? (
         <SalonShareSheet open={shareOpen} onOpenChange={setShareOpen} salon={shareSalon} />
       ) : null}
