@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowDownLeft, ArrowUpRight, Check, Copy, ShieldAlert } from "lucide-react";
+import { ArrowDownLeft, ArrowUpRight, Check, Copy, Shield } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -8,7 +8,6 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { formatWalletTxAmount, type WalletTransaction } from "@/lib/wallet-transactions";
-import { formatPrice } from "@/lib/price-display";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -26,21 +25,10 @@ async function copyText(value: string): Promise<boolean> {
   }
 }
 
-function Row({
-  label,
-  value,
-  mono,
-  copyable,
-}: {
-  label: string;
-  value: string;
-  mono?: boolean;
-  copyable?: boolean;
-}) {
+function CopyIdButton({ value, label }: { value: string; label: string }) {
   const [copied, setCopied] = useState(false);
 
   const onCopy = async () => {
-    if (!copyable) return;
     const ok = await copyText(value);
     if (!ok) return;
     setCopied(true);
@@ -48,40 +36,25 @@ function Row({
   };
 
   return (
-    <div className="flex items-start justify-between gap-3 border-b border-border/50 py-2.5 last:border-b-0">
-      <span className="text-[11px] font-medium text-muted-foreground">{label}</span>
-      {copyable ? (
-        <button
-          type="button"
-          onClick={() => void onCopy()}
-          className="inline-flex max-w-[68%] items-start gap-1.5 text-right"
-          title="Nusxa olish"
-        >
-          <span
-            className={cn(
-              "break-all text-[12px] font-semibold",
-              mono && "font-mono text-[11px]",
-            )}
-          >
-            {value}
-          </span>
-          {copied ? (
-            <Check className="mt-0.5 size-3.5 shrink-0 text-emerald-600" />
-          ) : (
-            <Copy className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
-          )}
-        </button>
-      ) : (
-        <span
-          className={cn(
-            "max-w-[62%] text-right text-[12px] font-semibold break-all",
-            mono && "font-mono text-[11px]",
-          )}
-        >
-          {value}
-        </span>
-      )}
-    </div>
+    <button
+      type="button"
+      onClick={() => void onCopy()}
+      className="flex w-full items-center gap-3 rounded-2xl border border-border/60 bg-surface/60 px-3.5 py-3 text-left transition-colors active:bg-surface"
+      title="Nusxa olish"
+    >
+      <div className="min-w-0 flex-1">
+        <p className="text-[11px] font-medium text-muted-foreground">{label}</p>
+        <p className="mt-0.5 break-all font-mono text-[12px] font-semibold tracking-tight">{value}</p>
+      </div>
+      <span
+        className={cn(
+          "grid size-9 shrink-0 place-items-center rounded-xl",
+          copied ? "bg-emerald-500/15 text-emerald-700" : "bg-background text-muted-foreground",
+        )}
+      >
+        {copied ? <Check className="size-4" /> : <Copy className="size-4" />}
+      </span>
+    </button>
   );
 }
 
@@ -93,6 +66,8 @@ export function WalletTransactionReceiptSheet({ tx, open, onOpenChange }: Props)
       ? `+${formatWalletTxAmount(tx.amount)}`
       : `−${formatWalletTxAmount(tx.amount)}`;
 
+  const direction = tx.kind === "in" ? "Kirim" : "Chiqim";
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
@@ -103,15 +78,15 @@ export function WalletTransactionReceiptSheet({ tx, open, onOpenChange }: Props)
         <SheetHeader className="text-left">
           <SheetTitle className="text-base font-bold">Tranzaksiya cheki</SheetTitle>
           <SheetDescription className="text-xs">
-            Hamyon yozuvi — o‘zgartirilmaydigan ledger. Shikoyat uchun ID ni nusxalang.
+            Yordam kerak bo‘lsa, pastdagi ID ni nusxalang.
           </SheetDescription>
         </SheetHeader>
 
-        <div className="mt-5 rounded-[24px] border border-border/70 bg-card p-4">
-          <div className="flex items-center gap-3">
+        <div className="mt-5 rounded-[24px] border border-border/70 bg-card p-5">
+          <div className="flex items-start gap-3">
             <span
               className={cn(
-                "grid h-12 w-12 place-items-center rounded-2xl",
+                "grid h-11 w-11 shrink-0 place-items-center rounded-2xl",
                 tx.kind === "in" ? "bg-foreground text-background" : "bg-surface",
               )}
             >
@@ -121,18 +96,17 @@ export function WalletTransactionReceiptSheet({ tx, open, onOpenChange }: Props)
                 <ArrowUpRight className="h-5 w-5" strokeWidth={2.2} />
               )}
             </span>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-[15px] font-bold">{tx.title}</p>
-              {tx.subtitle ? (
-                <p className="mt-0.5 text-[11px] text-muted-foreground">{tx.subtitle}</p>
-              ) : null}
-              <p className="mt-1 text-[11px] text-muted-foreground">{tx.date}</p>
+            <div className="min-w-0 flex-1 pt-0.5">
+              <p className="truncate text-[15px] font-bold leading-snug">{tx.title}</p>
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                {direction} · {tx.date}
+              </p>
             </div>
           </div>
 
           <p
             className={cn(
-              "mt-5 text-center font-heading text-3xl font-bold tabular-nums tracking-tight",
+              "mt-6 text-center font-heading text-[2rem] font-bold tabular-nums tracking-tight",
               tx.kind === "in" ? "text-foreground" : "text-muted-foreground",
             )}
           >
@@ -140,41 +114,23 @@ export function WalletTransactionReceiptSheet({ tx, open, onOpenChange }: Props)
           </p>
 
           {tx.adminAction ? (
-            <div className="mt-4 flex items-start gap-2 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-3 py-2.5 text-[11px] text-amber-950">
-              <ShieldAlert className="mt-0.5 size-3.5 shrink-0" />
-              <div>
-                <p className="font-bold">Admin harakati</p>
-                <p className="mt-0.5 opacity-90">
-                  Bu yozuv platforma nazorati (hold / refund) natijasida yaratilgan.
-                </p>
-                {tx.adminReason ? (
-                  <p className="mt-1.5 font-medium">Sabab: {tx.adminReason}</p>
-                ) : null}
-              </div>
+            <div className="mt-4 flex items-center gap-2.5 rounded-2xl border border-amber-500/25 bg-amber-500/10 px-3.5 py-3 text-[12px] text-amber-950">
+              <Shield className="size-4 shrink-0 text-amber-800" />
+              <p className="font-semibold leading-snug">
+                {tx.adminReason?.trim() || "Admin harakati"}
+              </p>
             </div>
           ) : null}
         </div>
 
-        <div className="mt-4 rounded-[22px] border border-border/60 bg-surface/50 px-4">
-          <Row label="Yo‘nalish" value={tx.kind === "in" ? "Kirim" : "Chiqim"} />
-          {tx.entryType ? <Row label="Tur" value={tx.entryType} mono /> : null}
-          {tx.referenceType ? <Row label="Reference" value={tx.referenceType} mono /> : null}
-          {tx.referenceId ? (
-            <Row label="Merchant ID" value={tx.referenceId} mono copyable />
-          ) : null}
-          {tx.balanceAfter != null ? (
-            <Row label="Keyingi balans" value={formatPrice(tx.balanceAfter)} />
-          ) : null}
-          {tx.entryHash ? (
-            <Row label="Hash" value={tx.entryHash.slice(0, 24)} mono copyable />
-          ) : null}
-          <Row label="Yozuv ID" value={tx.id} mono copyable />
+        <div className="mt-4 space-y-2">
+          <p className="px-0.5 text-[11px] font-medium text-muted-foreground">Yordam uchun</p>
+          <CopyIdButton label="Yozuv ID" value={tx.id} />
         </div>
 
-        <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground">
-          Yordamga yozganda <span className="font-semibold text-foreground">Merchant ID</span> yoki{" "}
-          <span className="font-semibold text-foreground">Yozuv ID</span> ni yuboring — admin shu
-          orqali yozuvni topadi va hold / refund / dispute qiladi.
+        <p className="mt-3 px-0.5 text-[11px] leading-relaxed text-muted-foreground">
+          Supportga yozganda <span className="font-semibold text-foreground">Yozuv ID</span> ni
+          yuboring — shu orqali yozuv topiladi.
         </p>
       </SheetContent>
     </Sheet>

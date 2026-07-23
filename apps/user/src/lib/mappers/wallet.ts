@@ -35,36 +35,36 @@ function monthGroupLabel(iso: string): string {
   return d.toLocaleDateString("uz-UZ", { month: "long" });
 }
 
+/** User-facing short notice — never dump raw admin free-text (can be gibberish). */
 function adminGiftTitle(
   entry: ApiLedgerEntry,
   meta: Record<string, unknown>,
 ): { title: string; subtitle?: string; adminAction: boolean; adminReason?: string } | null {
   const action = typeof meta.action === "string" ? meta.action : "";
   const ref = (entry.reference_type || "").trim();
-  const reason = typeof meta.reason === "string" ? meta.reason.trim() : "";
 
   if (action === "gift_hold" || ref === "gift_hold") {
     return {
       title: "Admin · sovg'a hold",
-      subtitle: "Platforma nazorati — mablag' vaqtincha ushlab turildi",
+      subtitle: "Mablag' ushlab turildi",
       adminAction: true,
-      adminReason: reason || undefined,
+      adminReason: "Ogohlantirish: mablag' vaqtincha ushlab turildi.",
     };
   }
   if (action === "gift_release" || ref === "gift_release") {
     return {
       title: "Admin · hold ochildi",
-      subtitle: "Ushlab turilgan mablag' qaytarildi",
+      subtitle: "Mablag' qaytarildi",
       adminAction: true,
-      adminReason: reason || undefined,
+      adminReason: "Mablag' qaytarildi.",
     };
   }
   if (action === "gift_refund" || ref === "gift_refund" || ref === "gift_refund_fee") {
     return {
       title: ref === "gift_refund_fee" ? "Admin · dizayn to'lovi qaytarildi" : "Admin · sovg'a qaytarildi",
-      subtitle: "Admin tomonidan refund",
+      subtitle: "Mablag' qaytarildi",
       adminAction: true,
-      adminReason: reason || undefined,
+      adminReason: "Mablag' qaytarildi.",
     };
   }
   return null;
@@ -88,10 +88,18 @@ export function mapLedgerEntry(entry: ApiLedgerEntry): WalletTransaction {
     subtitle = admin.subtitle;
     adminAction = admin.adminAction;
     adminReason = admin.adminReason;
-  } else if (entry.entry_type === "gift_out" && typeof meta.message === "string" && meta.message) {
-    title = `Sovg'a · ${meta.message.slice(0, 40)}`;
+  } else if (entry.entry_type === "gift_out") {
+    const toName = typeof meta.recipient_name === "string" ? meta.recipient_name.trim() : "";
+    title = toName ? `Sovg'a · ${toName}` : "Sovg'a yuborildi";
+    if (typeof meta.message === "string" && meta.message) {
+      subtitle = meta.message.slice(0, 60);
+    }
   } else if (entry.entry_type === "gift_in") {
-    title = "Sovg'a qabul qilindi";
+    const fromName = typeof meta.sender_name === "string" ? meta.sender_name.trim() : "";
+    title = fromName ? `${fromName}dan sovg'a` : "Sovg'a qabul qilindi";
+    if (typeof meta.message === "string" && meta.message) {
+      subtitle = meta.message.slice(0, 60);
+    }
   } else if (entry.entry_type === "gift_design_fee" && entry.kind === "out") {
     const designId = typeof meta.design_id === "string" ? meta.design_id : "";
     title = designId ? `Dizayn · ${designId}` : "Sovg'a karta dizayni";
