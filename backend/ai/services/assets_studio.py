@@ -19,6 +19,14 @@ from ai.services.gemini_style import AiStyleError
 from ai.services.image_response import extract_image_bytes
 from ai.services.vertex_image import generate_image_content, image_generation_configured
 from ai.services.studio_image import image_generation_provider
+from media_store.utils import (
+    media_name_exists,
+    media_url,
+    read_json_media,
+    read_media_bytes,
+    save_media_bytes,
+    write_json_media,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -222,13 +230,7 @@ def _assets_dir() -> Path:
 
 
 def _load_library() -> dict[str, Any]:
-    path = _library_path()
-    if not path.is_file():
-        return {"items": [], "updated_at": None}
-    try:
-        data = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
-        return {"items": [], "updated_at": None}
+    data = read_json_media(LIBRARY_FILENAME, default={"items": [], "updated_at": None})
     if not isinstance(data, dict):
         return {"items": [], "updated_at": None}
     items = data.get("items")
@@ -238,13 +240,11 @@ def _load_library() -> dict[str, Any]:
 
 
 def _save_library(items: list[dict[str, Any]]) -> None:
-    path = _library_path()
-    path.parent.mkdir(parents=True, exist_ok=True)
     payload = {
         "items": items,
         "updated_at": datetime.now(timezone.utc).isoformat(),
     }
-    path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+    write_json_media(LIBRARY_FILENAME, payload)
 
 
 def _slugify(value: str) -> str:
@@ -258,8 +258,7 @@ def _item_file_path(item: dict[str, Any]) -> Path:
 
 
 def _public_media_url(relative_path: str) -> str:
-    base = (getattr(settings, "MEDIA_URL", "/media/") or "/media/").rstrip("/")
-    return f"{base}/{relative_path.lstrip('/')}"
+    return media_url(relative_path)
 
 
 def _download_path(asset_id: str) -> str:
@@ -267,12 +266,12 @@ def _download_path(asset_id: str) -> str:
 
 
 def _enrich_item(item: dict[str, Any]) -> dict[str, Any]:
-    path = _item_file_path(item)
-    exists = path.is_file()
+    rel = str(item.get("relative_path") or "")
+    exists = media_name_exists(rel)
     return {
         **item,
         "exists": exists,
-        "public_url": _public_media_url(item["relative_path"]) if exists else None,
+        "public_url": _public_media_url(rel) if exists else None,
         "download_path": _download_path(str(item["id"])),
     }
 
@@ -299,14 +298,15 @@ def get_asset(asset_id: str) -> dict[str, Any] | None:
     return None
 
 
-def asset_bytes(asset_id: str) -> tuple[Path, bytes]:
+def asset_bytes(asset_id: str) -> tuple[str, bytes]:
     item = get_asset(asset_id)
     if not item:
         raise FileNotFoundError(asset_id)
-    path = _item_file_path(item)
-    if not path.is_file():
+    rel = str(item.get("relative_path") or "")
+    raw = read_media_bytes(rel)
+    if raw is None:
         raise FileNotFoundError(asset_id)
-    return path, path.read_bytes()
+    return rel, raw
 
 
 def set_asset_selected(*, asset_id: str, selected: bool) -> dict[str, Any]:
@@ -342,11 +342,18 @@ def _image_body(*, prompt: str, aspect_ratio: str) -> dict[str, Any]:
     }
 
 
-def _save_resized(raw: bytes, dest: Path, *, width: int, height: int) -> None:
+def _save_resized_bytes(raw: bytes, *, width: int, height: int) -> bytes:
     img = Image.open(BytesIO(raw)).convert("RGB")
     img = img.resize((width, height), Image.Resampling.LANCZOS)
+    buf = BytesIO()
+    img.save(buf, "WEBP", quality=WEBP_QUALITY)
+    return buf.getvalue()
+
+
+def _save_resized(raw: bytes, dest: Path, *, width: int, height: int) -> None:
+    data = _save_resized_bytes(raw, width=width, height=height)
     dest.parent.mkdir(parents=True, exist_ok=True)
-    img.save(dest, "WEBP", quality=WEBP_QUALITY)
+    dest.write_bytes(data)
 
 
 def generate_asset(
@@ -375,8 +382,8 @@ def generate_asset(
     stamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
     filename = f"{stamp}_{_slugify(template_id)}_{asset_id}.webp"
     relative = f"assets_studio/{template_id}/{filename}"
-    dest = _media_root() / relative
-    _save_resized(raw, dest, width=int(template["width"]), height=int(template["height"]))
+    webp = _save_resized_bytes(raw, width=int(template["width"]), height=int(template["height"]))
+    save_media_bytes(relative, webp, content_type="image/webp")
 
     item = {
         "id": asset_id,

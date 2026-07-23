@@ -457,7 +457,9 @@ def build_gallery(*, limit: int = 40, request=None) -> dict[str, Any]:
         photo_url = None
         if row.photo:
             try:
-                if row.photo.storage.exists(row.photo.name):
+                from media_store.utils import media_field_exists
+
+                if media_field_exists(row.photo):
                     photo_url = row.photo.url
                     # Prefer relative /media/… so admin/user same-origin proxies work.
                     if photo_url and photo_url.startswith("http"):

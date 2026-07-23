@@ -7,12 +7,16 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from ai.explore_gen_auth import ExploreGenAuthMixin, explore_gen_is_allowed
-from ai.explore_published import publish_explore_asset, publish_explore_persona
+from ai.explore_published import (
+    draft_asset_rel,
+    live_asset_rel,
+    publish_explore_asset,
+    publish_explore_persona,
+)
 from ai.explore_persona_labels import persona_display_label, set_persona_display_label
 from ai.explore_views import EXPLORE_VIEW_IDS, EXPLORE_VIEW_LABELS, normalize_explore_view
 from ai.services.explore_image_gen import (
     DEV_EXPLORE_PERSONA_IDS,
-    asset_file_path,
     explore_gen_configured,
     generate_explore_asset,
     list_explore_gen_jobs,
@@ -20,6 +24,7 @@ from ai.services.explore_image_gen import (
 )
 from ai.services.gemini_style import AiStyleError
 from ai.unthrottled import UnthrottledAPIView
+from media_store.utils import open_media_stream
 
 
 class ExploreGenStatusView(ExploreGenAuthMixin, UnthrottledAPIView):
@@ -138,12 +143,10 @@ class ExploreGenDownloadView(UnthrottledAPIView):
         if not persona_id or not slug:
             return Response({"detail": "persona_id va slug kerak."}, status=400)
 
-        path = asset_file_path(persona_id=persona_id, slug=slug, view=view)
-        if not path.is_file():
-            from ai.explore_published import live_asset_path
-
-            path = live_asset_path(persona_id=persona_id, slug=slug, view=view)
-        if not path.is_file():
+        stream = open_media_stream(draft_asset_rel(persona_id=persona_id, slug=slug, view=view))
+        if stream is None:
+            stream = open_media_stream(live_asset_rel(persona_id=persona_id, slug=slug, view=view))
+        if stream is None:
             raise Http404("Fayl topilmadi.")
 
         from ai.explore_views import explore_asset_storage_slug
@@ -153,9 +156,10 @@ class ExploreGenDownloadView(UnthrottledAPIView):
         pid = normalize_persona_id(persona_id) or persona_id
         storage = explore_asset_storage_slug(slug, view)
         filename = f"{pid}-{storage}.webp"
+        buf, content_type = stream
         return FileResponse(
-            path.open("rb"),
+            buf,
             filename=filename,
-            content_type="image/webp",
+            content_type=content_type or "image/webp",
             as_attachment=True,
         )

@@ -26,11 +26,16 @@ from ai.explore_personas import (
 )
 from ai.explore_persona_labels import persona_display_label
 from ai.explore_published import (
+    draft_asset_exists,
     draft_asset_path,
+    draft_asset_rel,
     is_explore_asset_published,
     live_asset_path,
+    live_asset_rel,
+    live_media_exists,
     resolve_explore_asset_url,
 )
+from media_store.utils import read_media_bytes, save_media_bytes
 from ai.services.image_response import extract_image_bytes
 from ai.services.studio_image import image_generation_provider, studio_image_configured
 from ai.services.vertex_auth import vertex_configured
@@ -279,9 +284,12 @@ def _persona_order() -> tuple[str, ...]:
 def _persona_style_view_exists(*, persona_id: str, slug: str, view: str) -> bool:
     """Anchor mavjudligini tekshirish — status pollida to'liq rasm yuklanmasin."""
     normalized_view = normalize_explore_view(view)
-    if asset_file_path(persona_id=persona_id, slug=slug, view=normalized_view).is_file():
+    if draft_asset_exists(persona_id=persona_id, slug=slug, view=normalized_view):
         return True
-    if live_asset_path(persona_id=persona_id, slug=slug, view=normalized_view).is_file():
+    if live_media_exists(persona_id=persona_id, slug=slug, view=normalized_view):
+        return True
+    live = live_asset_path(persona_id=persona_id, slug=slug, view=normalized_view)
+    if live.is_file():
         return True
     rel = _relative_asset_path(persona_id=persona_id, slug=slug, view=normalized_view)
     return _explore_static_image_exists(rel)
@@ -314,15 +322,28 @@ def _assert_dev_explore_job(*, persona_id: str, slug: str, view: str) -> tuple[s
     return pid, normalize_explore_view(view)
 
 
-def _asset_version(*, draft: Path, live: Path, published: bool) -> int:
-    """Ko'rsatiladigan fayl mtime — brauzer keshini yangilash uchun."""
-    target = live if (published and live.is_file()) else draft
-    if not target.is_file():
-        target = live if live.is_file() else draft
-    try:
-        return int(target.stat().st_mtime)
-    except OSError:
+def _asset_version(*, persona_id: str, slug: str, view: str, published: bool) -> int:
+    """Ko'rsatiladigan fayl versiyasi — brauzer keshini yangilash uchun."""
+    import hashlib
+
+    rel = (
+        live_asset_rel(persona_id=persona_id, slug=slug, view=view)
+        if published
+        else draft_asset_rel(persona_id=persona_id, slug=slug, view=view)
+    )
+    raw = read_media_bytes(rel)
+    if raw is None and published:
+        raw = read_media_bytes(draft_asset_rel(persona_id=persona_id, slug=slug, view=view))
+    if raw is None:
+        # public/ disk
+        live = live_asset_path(persona_id=persona_id, slug=slug, view=view)
+        try:
+            if live.is_file():
+                return int(live.stat().st_mtime)
+        except OSError:
+            return 0
         return 0
+    return int(hashlib.sha1(raw[:4096]).hexdigest()[:8], 16)
 
 
 def list_explore_gen_jobs() -> list[dict[str, Any]]:
@@ -357,11 +378,16 @@ def list_explore_gen_jobs() -> list[dict[str, Any]]:
                             slug=slug,
                             view=view,
                         ),
-                        "exists": path.is_file() or live.is_file(),
+                        "exists": draft_asset_exists(
+                            persona_id=persona_id, slug=slug, view=view
+                        )
+                        or live_media_exists(persona_id=persona_id, slug=slug, view=view)
+                        or live.is_file(),
                         "published": published,
                         "asset_version": _asset_version(
-                            draft=path,
-                            live=live,
+                            persona_id=persona_id,
+                            slug=slug,
+                            view=view,
                             published=published,
                         ),
                         "live_url": resolve_explore_asset_url(
@@ -535,14 +561,18 @@ Output a single photo of the SAME person and SAME hairstyle, from the new angle 
 def _persona_style_view_bytes(*, persona_id: str, slug: str, view: str) -> tuple[str, bytes] | None:
     """Personaj uslub rasmini topish (draft → live → public)."""
     normalized_view = normalize_explore_view(view)
-    draft = asset_file_path(persona_id=persona_id, slug=slug, view=normalized_view)
-    if draft.is_file():
-        raw = draft.read_bytes()
-        return _detect_image_mime(raw, draft), raw
+    draft_rel = draft_asset_rel(persona_id=persona_id, slug=slug, view=normalized_view)
+    raw = read_media_bytes(draft_rel)
+    if raw:
+        return _detect_image_mime(raw, Path(draft_rel)), raw
+    live_rel = live_asset_rel(persona_id=persona_id, slug=slug, view=normalized_view)
+    raw = read_media_bytes(live_rel)
+    if raw:
+        return _detect_image_mime(raw, Path(live_rel)), raw
     live = live_asset_path(persona_id=persona_id, slug=slug, view=normalized_view)
     if live.is_file():
-        raw = live.read_bytes()
-        return _detect_image_mime(raw, live), raw
+        data = live.read_bytes()
+        return _detect_image_mime(data, live), data
     rel = _relative_asset_path(persona_id=persona_id, slug=slug, view=normalized_view)
     return _load_explore_static_image(rel)
 
@@ -553,16 +583,7 @@ def _persona_style_front_bytes(*, persona_id: str, slug: str) -> tuple[str, byte
 
 
 def _persona_reference_bytes(*, persona_id: str) -> tuple[str, bytes] | None:
-    draft = asset_file_path(persona_id=persona_id, slug="reference", view="front")
-    if draft.is_file():
-        raw = draft.read_bytes()
-        return _detect_image_mime(raw, draft), raw
-    live = live_asset_path(persona_id=persona_id, slug="reference", view="front")
-    if live.is_file():
-        raw = live.read_bytes()
-        return _detect_image_mime(raw, live), raw
-    rel = _relative_asset_path(persona_id=persona_id, slug="reference", view="front")
-    return _load_explore_static_image(rel)
+    return _persona_style_view_bytes(persona_id=persona_id, slug="reference", view="front")
 
 
 def _collect_view_rotation_anchors(
@@ -724,11 +745,25 @@ def _generation_method(*, edit: bool) -> str:
     return f"{provider}_{'edit' if edit else 'generate'}"
 
 
-def _resize_webp(raw: bytes, dest: Path) -> None:
+def _resize_webp_bytes(raw: bytes) -> bytes:
     img = Image.open(BytesIO(raw)).convert("RGB")
     img = img.resize((OUTPUT_W, OUTPUT_H), Image.Resampling.LANCZOS)
+    buf = BytesIO()
+    img.save(buf, "WEBP", quality=WEBP_QUALITY)
+    return buf.getvalue()
+
+
+def _resize_webp(raw: bytes, dest: Path) -> None:
+    """Legacy Path yozuvi — yangi kod _save_explore_draft ishlatadi."""
+    data = _resize_webp_bytes(raw)
     dest.parent.mkdir(parents=True, exist_ok=True)
-    img.save(dest, "WEBP", quality=WEBP_QUALITY)
+    dest.write_bytes(data)
+
+
+def _save_explore_draft(*, persona_id: str, slug: str, view: str, raw: bytes) -> str:
+    rel = draft_asset_rel(persona_id=persona_id, slug=slug, view=view)
+    webp = _resize_webp_bytes(raw)
+    return save_media_bytes(rel, webp, content_type="image/webp")
 
 
 def generate_explore_asset(
@@ -742,8 +777,9 @@ def generate_explore_asset(
 
     dest = asset_file_path(persona_id=pid, slug=slug, view=normalized_view)
     rel = _relative_asset_path(persona_id=pid, slug=slug, view=normalized_view)
+    draft_rel = draft_asset_rel(persona_id=pid, slug=slug, view=normalized_view)
 
-    if dest.is_file() and not force:
+    if draft_asset_exists(persona_id=pid, slug=slug, view=normalized_view) and not force:
         return {
             "status": "skipped",
             "persona_id": pid,
@@ -820,7 +856,7 @@ def generate_explore_asset(
         )
         method = _generation_method(edit=True)
 
-    _resize_webp(raw, dest)
+    _save_explore_draft(persona_id=pid, slug=slug, view=normalized_view, raw=raw)
     elapsed_ms = int((time.monotonic() - started) * 1000)
 
     return {
@@ -829,6 +865,7 @@ def generate_explore_asset(
         "slug": slug,
         "view": normalized_view,
         "relative_path": rel,
+        "draft_rel": draft_rel,
         "public_url": _public_url_for(
             persona_id=pid,
             slug=slug,

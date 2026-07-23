@@ -74,6 +74,10 @@ class AiStyleHistoryEntrySerializer(serializers.ModelSerializer):
     def get_photo_url(self, obj: AiStyleHistoryEntry) -> str | None:
         if not obj.photo:
             return None
+        from media_store.utils import media_field_exists
+
+        if not media_field_exists(obj.photo):
+            return None
         request = self.context.get("request")
         url = obj.photo.url
         if request is not None:

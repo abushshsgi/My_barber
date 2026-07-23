@@ -1,10 +1,8 @@
-"""Explore persona rasmlari — draft, publish manifest, live URL."""
+"""Explore persona rasmlari — draft, publish manifest, live URL (DB media)."""
 
 from __future__ import annotations
 
-import json
 import logging
-import shutil
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -24,11 +22,18 @@ from ai.explore_views import (
     EXPLORE_VIEW_LABELS,
     explore_asset_storage_slug,
     normalize_explore_view,
-    parse_storage_slug,
     resolve_style_image_path_with_view,
     views_for_job_slug,
 )
 from ai.services.gemini_style import AiStyleError
+from media_store.utils import (
+    media_name_exists,
+    media_url,
+    read_json_media,
+    read_media_bytes,
+    save_media_bytes,
+    write_json_media,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -36,19 +41,8 @@ PUBLIC_ROOT = Path(settings.BASE_DIR).parent / "apps" / "user" / "public"
 MANIFEST_NAME = "explore_published_assets.json"
 
 
-def _manifest_path() -> Path:
-    return Path(settings.MEDIA_ROOT) / MANIFEST_NAME
-
-
 def _load_manifest() -> dict[str, list[str]]:
-    path = _manifest_path()
-    if not path.is_file():
-        return {}
-    try:
-        data = json.loads(path.read_text(encoding="utf-8"))
-    except json.JSONDecodeError:
-        logger.warning("Invalid explore publish manifest — resetting")
-        return {}
+    data = read_json_media(MANIFEST_NAME, default={})
     if not isinstance(data, dict):
         return {}
     out: dict[str, list[str]] = {}
@@ -63,18 +57,21 @@ def _load_manifest() -> dict[str, list[str]]:
 
 
 def _save_manifest(data: dict[str, list[str]]) -> None:
-    path = _manifest_path()
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+    write_json_media(MANIFEST_NAME, data)
+
+
+def draft_asset_rel(*, persona_id: str, slug: str, view: str = "front") -> str:
+    pid = normalize_persona_id(persona_id) or persona_id
+    storage = explore_asset_storage_slug(slug, view)
+    return f"explore_gen/{pid}/{storage}.webp"
 
 
 def draft_asset_path(*, persona_id: str, slug: str, view: str = "front") -> Path:
-    pid = normalize_persona_id(persona_id) or persona_id
-    storage = explore_asset_storage_slug(slug, view)
-    return Path(settings.MEDIA_ROOT) / "explore_gen" / pid / f"{storage}.webp"
+    """Legacy Path helper — faqat test/local; mavjudlik uchun draft_asset_exists ishlating."""
+    return Path(settings.MEDIA_ROOT) / draft_asset_rel(persona_id=persona_id, slug=slug, view=view)
 
 
-def live_asset_path(*, persona_id: str, slug: str, view: str = "front") -> Path:
+def live_asset_rel(*, persona_id: str, slug: str, view: str = "front") -> str:
     pid = normalize_persona_id(persona_id) or persona_id
     normalized_view = normalize_explore_view(view)
     if slug == "reference":
@@ -86,10 +83,24 @@ def live_asset_path(*, persona_id: str, slug: str, view: str = "front") -> Path:
             slug=slug,
             view=normalized_view,
         )
-    rel_path = rel.lstrip("/")
+    return rel.lstrip("/")
+
+
+def live_asset_path(*, persona_id: str, slug: str, view: str = "front") -> Path:
+    rel = live_asset_rel(persona_id=persona_id, slug=slug, view=view)
     if PUBLIC_ROOT.is_dir():
-        return PUBLIC_ROOT / rel_path
-    return Path(settings.MEDIA_ROOT) / rel_path
+        return PUBLIC_ROOT / rel
+    return Path(settings.MEDIA_ROOT) / rel
+
+
+def draft_asset_exists(*, persona_id: str, slug: str, view: str = "front") -> bool:
+    return media_name_exists(draft_asset_rel(persona_id=persona_id, slug=slug, view=view))
+
+
+def live_media_exists(*, persona_id: str, slug: str, view: str = "front") -> bool:
+    """MEDIA_ROOT / StoredMedia dagi live nusxa (public/ emas)."""
+    rel = live_asset_rel(persona_id=persona_id, slug=slug, view=view)
+    return media_name_exists(rel)
 
 
 def is_explore_asset_published(persona_id: str | None, slug: str, view: str = "front") -> bool:
@@ -107,10 +118,10 @@ def published_slugs_for_persona(persona_id: str | None) -> frozenset[str]:
     return frozenset(_load_manifest().get(pid, []))
 
 
-def _public_static_exists(*, persona_id: str, slug: str) -> bool:
+def _public_static_exists(*, persona_id: str, slug: str, view: str = "front") -> bool:
     if not PUBLIC_ROOT.is_dir():
         return False
-    return live_asset_path(persona_id=persona_id, slug=slug).is_file()
+    return live_asset_path(persona_id=persona_id, slug=slug, view=view).is_file()
 
 
 def _static_rel_path(*, audience: str, persona_id: str, slug: str, view: str = "front") -> str:
@@ -139,8 +150,9 @@ def view_asset_file_exists(*, persona_id: str, slug: str, view: str = "front") -
         return False
     normalized_view = normalize_explore_view(view)
     if is_explore_asset_published(pid, slug, view=normalized_view):
-        live = live_asset_path(persona_id=pid, slug=slug, view=normalized_view)
-        if live.is_file():
+        if live_media_exists(persona_id=pid, slug=slug, view=normalized_view):
+            return True
+        if _public_static_exists(persona_id=pid, slug=slug, view=normalized_view):
             return True
     if _static_file_exists(audience="men", persona_id=pid, slug=slug, view=normalized_view):
         return True
@@ -205,13 +217,15 @@ def resolve_explore_asset_url(
         return rel
 
     published = is_explore_asset_published(pid, slug, view=normalized_view)
-    live = live_asset_path(persona_id=pid, slug=slug, view=normalized_view)
-    if published and live.is_file() and not (PUBLIC_ROOT.is_dir() and live.is_relative_to(PUBLIC_ROOT)):
+    live_path = live_asset_path(persona_id=pid, slug=slug, view=normalized_view)
+    in_public = PUBLIC_ROOT.is_dir() and live_path.is_file() and live_path.is_relative_to(PUBLIC_ROOT)
+    if published and live_media_exists(persona_id=pid, slug=slug, view=normalized_view) and not in_public:
         media_rel = rel.lstrip("/")
         api_base = explore_media_base_url()
-        if api_base:
-            return f"{api_base}/media/{media_rel}"
-        return f"/media/{media_rel}"
+        url = media_url(media_rel)
+        if api_base and url.startswith("/"):
+            return f"{api_base}{url}"
+        return url
     return rel
 
 
@@ -246,12 +260,23 @@ def publish_explore_asset(*, persona_id: str, slug: str, view: str = "front") ->
 
     normalized_view = normalize_explore_view(view)
     storage = explore_asset_storage_slug(slug, normalized_view)
-    draft = draft_asset_path(persona_id=pid, slug=slug, view=normalized_view)
-    live = live_asset_path(persona_id=pid, slug=slug, view=normalized_view)
-    if draft.is_file():
-        live.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(draft, live)
-    elif not live.is_file():
+    draft_rel = draft_asset_rel(persona_id=pid, slug=slug, view=normalized_view)
+    live_rel = live_asset_rel(persona_id=pid, slug=slug, view=normalized_view)
+
+    draft_bytes = read_media_bytes(draft_rel)
+    if draft_bytes:
+        save_media_bytes(live_rel, draft_bytes, content_type="image/webp")
+        # Agar local public/ mavjud bo‘lsa — frontend staticga ham nusxa
+        live_path = live_asset_path(persona_id=pid, slug=slug, view=normalized_view)
+        if PUBLIC_ROOT.is_dir() and live_path.is_relative_to(PUBLIC_ROOT):
+            try:
+                live_path.parent.mkdir(parents=True, exist_ok=True)
+                live_path.write_bytes(draft_bytes)
+            except Exception:
+                logger.exception("Explore publish: public/ ga yozib bo'lmadi")
+    elif not live_media_exists(persona_id=pid, slug=slug, view=normalized_view) and not (
+        PUBLIC_ROOT.is_dir() and live_asset_path(persona_id=pid, slug=slug, view=normalized_view).is_file()
+    ):
         raise AiStyleError("Avval generatsiya qiling.", 400)
 
     manifest = _load_manifest()
@@ -269,13 +294,14 @@ def publish_explore_asset(*, persona_id: str, slug: str, view: str = "front") ->
             slug=slug,
             view=normalized_view,
         )
+    live_path = live_asset_path(persona_id=pid, slug=slug, view=normalized_view)
     return {
         "persona_id": pid,
         "slug": slug,
         "view": normalized_view,
         "published": True,
         "relative_path": rel.lstrip("/"),
-        "public_url": rel if PUBLIC_ROOT.is_dir() and live.is_relative_to(PUBLIC_ROOT) else None,
+        "public_url": rel if PUBLIC_ROOT.is_dir() and live_path.is_file() and live_path.is_relative_to(PUBLIC_ROOT) else None,
         "live_url": resolve_explore_asset_url(
             audience="men",
             persona_id=pid,
@@ -295,9 +321,11 @@ def publish_explore_persona(*, persona_id: str) -> dict[str, Any]:
     slugs = ["reference", *sorted(MEN_CATALOG_STYLE_SLUGS)]
     for slug in slugs:
         for view in views_for_job_slug(slug):
-            draft = draft_asset_path(persona_id=pid, slug=slug, view=view)
-            live = live_asset_path(persona_id=pid, slug=slug, view=view)
-            if not draft.is_file() and not live.is_file():
+            has_draft = draft_asset_exists(persona_id=pid, slug=slug, view=view)
+            has_live = live_media_exists(persona_id=pid, slug=slug, view=view) or (
+                PUBLIC_ROOT.is_dir() and live_asset_path(persona_id=pid, slug=slug, view=view).is_file()
+            )
+            if not has_draft and not has_live:
                 continue
             published.append(publish_explore_asset(persona_id=pid, slug=slug, view=view))
 

@@ -1,30 +1,16 @@
-"""Explore personaj ko'rinish nomlari — dev panel orqali o'zgartirish."""
+"""Explore personaj ko'rinish nomlari — DB media orqali saqlash."""
 
 from __future__ import annotations
 
-import json
-from pathlib import Path
-
-from django.conf import settings
-
 from ai.explore_personas import EXPLORE_PERSONAS, normalize_persona_id
 from ai.services.gemini_style import AiStyleError
+from media_store.utils import read_json_media, write_json_media
 
 LABELS_NAME = "explore_persona_labels.json"
 
 
-def _labels_path() -> Path:
-    return Path(settings.MEDIA_ROOT) / LABELS_NAME
-
-
 def load_persona_labels() -> dict[str, str]:
-    path = _labels_path()
-    if not path.is_file():
-        return {}
-    try:
-        data = json.loads(path.read_text(encoding="utf-8"))
-    except json.JSONDecodeError:
-        return {}
+    data = read_json_media(LABELS_NAME, default={})
     if not isinstance(data, dict):
         return {}
     out: dict[str, str] = {}
@@ -37,9 +23,7 @@ def load_persona_labels() -> dict[str, str]:
 
 
 def save_persona_labels(data: dict[str, str]) -> None:
-    path = _labels_path()
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+    write_json_media(LABELS_NAME, data)
 
 
 def persona_display_label(persona_id: str | None) -> str:

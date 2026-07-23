@@ -91,19 +91,20 @@ class AssetsStudioDownloadView(ExploreGenAuthMixin, UnthrottledAPIView):
         if not asset_id:
             return Response({"detail": "id kerak."}, status=400)
         try:
-            path, _raw = asset_bytes(asset_id)
+            _rel, raw = asset_bytes(asset_id)
         except FileNotFoundError as exc:
             raise Http404("Rasm topilmadi.") from exc
         item = get_asset(asset_id) or {}
         filename = f"{item.get('template_id', 'asset')}-{asset_id}.webp"
-        # as_attachment=True bo'lsa <img src> bo'sh qoladi — preview uchun inline.
         force_download = str(request.query_params.get("download") or "").lower() in (
             "1",
             "true",
             "yes",
         )
+        from io import BytesIO
+
         response = FileResponse(
-            path.open("rb"),
+            BytesIO(raw),
             as_attachment=force_download,
             filename=filename,
             content_type="image/webp",

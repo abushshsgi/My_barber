@@ -338,7 +338,9 @@ def _list_gallery(page, page_size, request=None) -> dict[str, Any]:
         photo_url = None
         if row.photo:
             try:
-                if row.photo.storage.exists(row.photo.name):
+                from media_store.utils import media_field_exists
+
+                if media_field_exists(row.photo):
                     photo_url = row.photo.url
                     if photo_url and photo_url.startswith("http"):
                         marker = "/media/"
