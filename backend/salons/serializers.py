@@ -52,9 +52,26 @@ class SalonHoursSerializer(serializers.ModelSerializer):
         fields = ("weekday", "open_time", "close_time")
 
 
+def _media_file_exists(file_field) -> bool:
+    """Disk/S3 da fayl yo‘q bo‘lsa URL bermaslik — frontend placeholder slidlarini oldini oladi."""
+    name = getattr(file_field, "name", None)
+    if not name:
+        return False
+    try:
+        storage = getattr(file_field, "storage", None)
+        if storage is None:
+            return True
+        return bool(storage.exists(name))
+    except Exception:
+        # exists() ishlamasa eski xatti-harakat — URL ni qaytaramiz
+        return True
+
+
 def _absolute_media_url(file_field, context: dict | None = None) -> str | None:
     """ImageField.url — fayl yo‘qolgan bo‘lsa 500 bermasın; absolute URI."""
     if not file_field or not getattr(file_field, "name", None):
+        return None
+    if not _media_file_exists(file_field):
         return None
     try:
         url = file_field.url
@@ -233,6 +250,7 @@ class SalonCatalogServiceSerializer(serializers.ModelSerializer):
 
 class SalonListSerializer(serializers.ModelSerializer):
     cover_image = serializers.SerializerMethodField()
+    images = serializers.SerializerMethodField()
     # get_queryset annotate bilan beriladi (N+1 oldini olish)
     rating_avg = serializers.FloatField(read_only=True)
     review_count = serializers.IntegerField(read_only=True)
@@ -246,6 +264,7 @@ class SalonListSerializer(serializers.ModelSerializer):
             "name",
             "slug",
             "cover_image",
+            "images",
             "latitude",
             "longitude",
             "address",
@@ -289,6 +308,17 @@ class SalonListSerializer(serializers.ModelSerializer):
 
     def get_cover_image(self, obj):
         return _salon_cover_url(obj, self.context)
+
+    def get_images(self, obj):
+        """Home/kartochka karuseli uchun — mavjud gallery URLlari (max 6)."""
+        images = getattr(obj, "_prefetched_objects_cache", {}).get("images")
+        if images is None:
+            images = obj.images.order_by("sort_order", "id")[:6]
+        else:
+            images = sorted(images, key=lambda i: (i.sort_order, i.id))[:6]
+        rows = SalonImageSerializer(images, many=True, context=self.context).data
+        # Bo‘sh/yo‘qolgan fayllarni chiqarib tashlash
+        return [r for r in rows if r.get("image")]
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
@@ -392,7 +422,8 @@ class SalonDetailSerializer(serializers.ModelSerializer):
             images = obj.images.order_by("sort_order", "id")
         else:
             images = sorted(images, key=lambda i: (i.sort_order, i.id))
-        return SalonImageSerializer(images, many=True, context=self.context).data
+        rows = SalonImageSerializer(images, many=True, context=self.context).data
+        return [r for r in rows if r.get("image")]
 
     def get_services(self, obj):
         from django.db.models import F
@@ -469,7 +500,8 @@ class BarberSalonViewSerializer(serializers.ModelSerializer):
             images = obj.images.order_by("sort_order", "id")
         else:
             images = sorted(images, key=lambda i: (i.sort_order, i.id))
-        return SalonImageSerializer(images, many=True, context=self.context).data
+        rows = SalonImageSerializer(images, many=True, context=self.context).data
+        return [r for r in rows if r.get("image")]
 
     def get_owner_id(self, obj):
         return obj.owner_barber_id or obj.owner_id

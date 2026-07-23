@@ -57,17 +57,35 @@ def mock_gallery_urls(slug: str, count: int = 2) -> list[str]:
     return [mock_cover_cdn_url(slug, offset=i + 1, width=800) for i in range(count)]
 
 
+def _media_file_exists(file_field) -> bool:
+    name = getattr(file_field, "name", None)
+    if not name:
+        return False
+    try:
+        storage = getattr(file_field, "storage", None)
+        if storage is None:
+            return True
+        return bool(storage.exists(name))
+    except Exception:
+        return True
+
+
 def resolve_salon_cover_url(salon, context: dict | None = None) -> str | None:
-    """Faqat DB dagi haqiqiy cover — stock/demo Pexels qaytarmaydi."""
+    """Faqat DB dagi haqiqiy cover — stock/demo Pexels qaytarmaydi; yo‘qolgan faylni bermaydi."""
     context = context or {}
-    if salon.cover_image:
-        try:
-            url = salon.cover_image.url
-        except (ValueError, OSError):
-            url = None
-        if url:
-            request = context.get("request")
-            if request is not None:
-                return request.build_absolute_uri(url)
-            return url
-    return None
+    if not salon.cover_image or not getattr(salon.cover_image, "name", None):
+        return None
+    if not _media_file_exists(salon.cover_image):
+        return None
+    try:
+        url = salon.cover_image.url
+    except (ValueError, OSError):
+        return None
+    if not url:
+        return None
+    if url.startswith("http://") or url.startswith("https://"):
+        return url
+    request = context.get("request")
+    if request is not None:
+        return request.build_absolute_uri(url)
+    return url

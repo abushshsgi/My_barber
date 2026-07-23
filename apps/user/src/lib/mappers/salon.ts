@@ -39,8 +39,13 @@ export function mapSalonList(api: ApiSalonList, distanceKm = 0): Salon {
   const coverSeed = api.slug || String(api.id);
   const { category, audience } = resolveCategoryAndAudience(api);
   const priceFrom = toNum(api.price_from);
+  const gallery = (api.images ?? [])
+    .map((img) => img.image)
+    .map((u) => u?.trim())
+    .filter(Boolean)
+    .map((u) => resolveMediaUrl(u) ?? u) as string[];
   const resolvedCover = resolveMediaUrl(api.cover_image);
-  const coverUrl = resolveCoverUrl(resolvedCover, coverSeed, category);
+  const coverUrl = resolveCoverUrl(resolvedCover || gallery[0], coverSeed, category);
   return {
     id: String(api.id),
     ownerId: api.owner_id != null ? String(api.owner_id) : undefined,
@@ -59,7 +64,7 @@ export function mapSalonList(api: ApiSalonList, distanceKm = 0): Salon {
     services: [],
     staff: [],
     reviews: [],
-    portfolio: [],
+    portfolio: gallery,
     lat: toNum(api.latitude),
     lng: toNum(api.longitude),
     amenities: (api.amenities ?? []).map((a) => ({
@@ -104,15 +109,18 @@ export function mapSalonDetail(api: ApiSalonDetail, distanceKm = 0): Salon {
     .map((u) => resolveMediaUrl(u) ?? u) as string[];
   const firstGallery = gallery[0] ?? null;
   const coverFromApi = resolveMediaUrl(api.cover_image);
+  // Cover + gallery unique — karusel uchun
+  const portfolio = [coverFromApi || firstGallery, ...gallery]
+    .filter((u): u is string => Boolean(u?.trim()))
+    .filter((url, i, arr) => arr.indexOf(url) === i);
   return {
     ...base,
     about: api.description || "",
     priceFrom: from,
     priceTo: to,
-    // Cover yo‘q bo‘lsa gallerydagi birinchi haqiqiy rasm
     coverUrl: resolveCoverUrl(coverFromApi || firstGallery, base.coverSeed, base.category),
     services: mapApiServices(api.services ?? []),
-    portfolio: gallery,
+    portfolio,
     amenities: (api.amenities ?? []).map((a) => ({
       code: a.code,
       icon: a.icon,

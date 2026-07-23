@@ -75,8 +75,10 @@ export function useSalonPage(id: string) {
         // Gallery (uploaded) + booking work photos — replace qilmasdan birlashtirish
         portfolio: (() => {
           const gallery = base.portfolio ?? [];
-          const work = portfolio.data ?? [];
-          const merged = [...gallery, ...work].map((u) => u?.trim()).filter(Boolean) as string[];
+          const work = (portfolio.data ?? [])
+            .map((u) => u?.trim())
+            .filter(Boolean) as string[];
+          const merged = [...gallery, ...work];
           return merged.filter((url, i, arr) => arr.indexOf(url) === i);
         })(),
         ratingSummary: resolvedSummary,

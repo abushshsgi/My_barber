@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { Star, MapPin, Heart } from "lucide-react";
 import type { Salon } from "@/lib/mock-data";
 import { shortPrice } from "@/lib/mock-data";
-import { SalonCoverImg } from "@/components/salon/SalonCoverImg";
+import { SalonImageCarousel } from "@/components/salon/SalonImageCarousel";
 import { useFavorites } from "@/hooks/use-favorites";
 import { prefetchSalonDetail } from "@/lib/prefetch-salon";
 import { cn } from "@/lib/utils";
@@ -32,21 +32,20 @@ export function SalonCard({ salon }: Props) {
         className="block shrink-0 active:scale-[0.98] transition-transform"
       >
         <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-surface">
-          <SalonCoverImg
-            src={salon.coverUrl}
-            seed={salon.coverSeed}
-            category={salon.category}
-            alt=""
-            loading="lazy"
-            decoding="async"
-            className="absolute inset-0 h-full w-full object-cover"
+          <SalonImageCarousel
+            coverUrl={salon.coverUrl}
+            portfolio={salon.portfolio}
+            alt={salon.name}
+            autoPlay
+            showDots
+            className="absolute inset-0"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/45 to-transparent" />
-          <div className="absolute right-3 top-3 flex items-center gap-1 rounded-full bg-background/95 px-2.5 py-1 text-[11px] font-bold">
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/45 to-transparent" />
+          <div className="pointer-events-none absolute right-3 top-3 flex items-center gap-1 rounded-full bg-background/95 px-2.5 py-1 text-[11px] font-bold">
             <Star className="h-3 w-3 fill-foreground" />
             {salon.rating.toFixed(1)}
           </div>
-          <div className="absolute bottom-3 left-3 flex items-center gap-1.5">
+          <div className="pointer-events-none absolute bottom-3 left-3 flex items-center gap-1.5">
             <span className="rounded-full bg-background/95 px-2 py-1 text-[9px] font-bold uppercase tracking-[0.12em]">
               {salon.category}
             </span>

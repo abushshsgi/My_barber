@@ -51,6 +51,9 @@ export type ApiSalonList = {
   name: string;
   slug: string;
   cover_image: string | null;
+  /** Gallery rasmlari (list/nearby — karusel uchun). */
+  images?: { id: number; image: string; sort_order: number }[];
+  owner_id?: number | null;
   latitude: string | number | null;
   longitude: string | number | null;
   address: string;

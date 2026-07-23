@@ -118,7 +118,7 @@ class SalonViewSet(viewsets.ModelViewSet):
         return (
             Salon.objects.filter(is_published=True)
             .select_related("owner", "owner_barber")
-            .prefetch_related("salon_amenities__amenity")
+            .prefetch_related("salon_amenities__amenity", "images")
             .annotate(
                 review_count=Count("reviews", distinct=True),
                 rating_avg=Coalesce(

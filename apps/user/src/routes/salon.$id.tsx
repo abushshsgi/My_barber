@@ -1,5 +1,6 @@
 import { createFileRoute, useParams } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
+import { ClientOnly } from "@/components/ClientOnly";
 import { DesktopPageSplit } from "@/components/desktop/DesktopPageSplit";
 import { SalonDesktopPage } from "@/components/desktop/pages/SalonDesktopPage";
 import { SalonMobilePage } from "@/components/salon/SalonMobilePage";
@@ -70,10 +71,24 @@ function SalonPage() {
 
   return (
     <>
-      <DesktopPageSplit
-        mobile={<SalonMobilePage {...pageProps} />}
-        desktop={<SalonDesktopPage {...pageProps} />}
-      />
+      {/* ClientOnly: hydration mismatch / oq ekranni oldini oladi */}
+      <ClientOnly
+        fallback={
+          <DesktopPageSplit
+            mobile={<SalonPageSkeleton />}
+            desktop={
+              <div className="flex min-h-[50vh] items-center justify-center">
+                <p className="text-sm text-muted-foreground">{t("common.loading")}</p>
+              </div>
+            }
+          />
+        }
+      >
+        <DesktopPageSplit
+          mobile={<SalonMobilePage {...pageProps} />}
+          desktop={<SalonDesktopPage {...pageProps} />}
+        />
+      </ClientOnly>
       {shareSalon ? (
         <SalonShareSheet open={shareOpen} onOpenChange={setShareOpen} salon={shareSalon} />
       ) : null}

@@ -5,12 +5,16 @@ import { PLACEHOLDER_SALON } from "@/lib/cover-images";
 /** apps/user Salon → @mybarber/user-ui SalonCardPremium uchun. */
 export function toUiSalon(salon: AppSalon): SharedSalon {
   const coverImage = salon.coverUrl?.trim() || PLACEHOLDER_SALON;
+  const gallery = [coverImage, ...salon.portfolio]
+    .map((u) => u?.trim())
+    .filter((u): u is string => Boolean(u) && u !== PLACEHOLDER_SALON)
+    .filter((u, i, arr) => arr.indexOf(u) === i);
   return {
     id: salon.id,
     name: salon.name,
     description: salon.about,
     coverImage,
-    gallery: salon.portfolio.length > 0 ? salon.portfolio : coverImage !== PLACEHOLDER_SALON ? [coverImage] : [],
+    gallery: gallery.length > 0 ? gallery : coverImage !== PLACEHOLDER_SALON ? [coverImage] : [],
     rating: salon.rating,
     reviewCount: salon.reviewCount,
     distance: salon.distanceKm,
