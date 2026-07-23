@@ -71,7 +71,7 @@ export function AiStyleFlow({ audience, menPersonaId: menPersonaIdProp, focusSty
   const menPersonaId = menPersonaIdProp ?? explorePersonaId;
 
   const tryOnGate = useCallback(
-    (source: "auto" | "manual") => limitGate.ensureTryOn({ silent: source === "auto" }),
+    (_source: "auto" | "manual") => limitGate.ensureTryOn({ silent: false }),
     [limitGate],
   );
   const onPlanLimit = useCallback(() => void limitGate.openFromApiLimit("tryon"), [limitGate]);
@@ -143,17 +143,17 @@ export function AiStyleFlow({ audience, menPersonaId: menPersonaIdProp, focusSty
   }, [reset]);
 
   const gatedStartNew = useCallback(async () => {
-    if (!(await limitGate.ensureAccess())) return;
+    if (!(await limitGate.ensureTryOn())) return;
     startNewLook();
   }, [limitGate, startNewLook]);
 
   const gatedOpenCamera = useCallback(async () => {
-    if (!(await limitGate.ensureAccess())) return;
+    if (!(await limitGate.ensureTryOn())) return;
     openCamera();
   }, [limitGate, openCamera]);
 
   const gatedOpenGallery = useCallback(async () => {
-    if (!(await limitGate.ensureAccess())) return;
+    if (!(await limitGate.ensureTryOn())) return;
     openFile();
   }, [limitGate, openFile]);
 
@@ -274,7 +274,8 @@ export function AiStyleFlow({ audience, menPersonaId: menPersonaIdProp, focusSty
             onStartNew={() => void gatedStartNew()}
             onOpenCamera={() => void gatedOpenCamera()}
             onOpenGallery={() => void gatedOpenGallery()}
-            ensureMorphAccess={limitGate.ensureAccess}
+            ensureMorphAccess={limitGate.ensureTryOn}
+            ensureMorphStudio={limitGate.ensureStudio}
           />
         </div>
       ) : (

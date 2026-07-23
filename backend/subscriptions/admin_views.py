@@ -26,6 +26,7 @@ from subscriptions.services import (
     entitlement_snapshot,
     reactivate_subscription,
     serialize_subscription,
+    subscription_lifecycle_analytics,
     usage_snapshot,
 )
 from decimal import Decimal
@@ -107,6 +108,15 @@ class AdminSubscriptionStatsView(APIView):
         raw["recent_events"] = [_serialize_event(e) for e in raw["recent_events"]]
         raw["plans"] = [serialize_plan(p) for p in list_plans()]
         return Response(raw)
+
+
+class AdminSubscriptionAnalyticsView(APIView):
+    """Obuna lifecycle / limit / renewal statistikasi (Statistika sahifasi)."""
+
+    permission_classes = [IsAdmin]
+
+    def get(self, request):
+        return Response(subscription_lifecycle_analytics())
 
 
 class AdminSubscriptionListView(APIView):

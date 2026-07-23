@@ -26,6 +26,7 @@ type Props = {
   onOpenCamera: () => void;
   onOpenGallery: () => void;
   ensureMorphAccess?: () => Promise<boolean>;
+  ensureMorphStudio?: () => Promise<boolean>;
 };
 
 function prettyLookTitle(title: string) {
@@ -44,6 +45,7 @@ export function MorphAiHome({
   onOpenCamera,
   onOpenGallery,
   ensureMorphAccess,
+  ensureMorphStudio,
 }: Props) {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -175,7 +177,8 @@ export function MorphAiHome({
               type="button"
               onClick={() => {
                 void (async () => {
-                  if (ensureMorphAccess && !(await ensureMorphAccess())) return;
+                  const gate = ensureMorphStudio ?? ensureMorphAccess;
+                  if (gate && !(await gate())) return;
                   void navigate({ to: "/ai-style/studio" });
                 })();
               }}

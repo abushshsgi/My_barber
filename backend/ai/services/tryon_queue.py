@@ -188,6 +188,29 @@ def process_next_tryon_job(*, block_seconds: int = 5) -> bool:
     meta.pop("queue_position", None)
     _save_job(client, job_id, meta)
 
+    user_id = int(meta.get("user_id") or 0) or None
+    if user_id:
+        from ai.morph_ops import check_user_can_generate
+
+        blocked = check_user_can_generate(user_id=user_id, kind="tryon")
+        if blocked:
+            meta["status"] = STATUS_FAILED
+            meta["detail"] = blocked
+            meta.pop("preview_image", None)
+            record_ai_generation(
+                user_id=user_id,
+                kind="tryon",
+                status="failed",
+                style_id=str(meta.get("style_id") or ""),
+                style_title=str(meta.get("style_title") or ""),
+                job_id=job_id,
+                error_detail=blocked[:500],
+            )
+            meta["updated_at"] = datetime.now(UTC).isoformat()
+            _save_job(client, job_id, meta)
+            client.delete(_payload_key(job_id))
+            return True
+
     try:
         result = generate_tryon_preview(
             selfie_data_url=str(payload.get("image") or ""),

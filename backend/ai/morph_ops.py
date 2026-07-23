@@ -566,17 +566,12 @@ def check_user_can_generate(*, user_id: int | None, kind: str) -> str | None:
 
     # B2C obuna — Morph AI uchun majburiy + oylik tarif limiiti
     if kind in ("tryon", "studio", "analyze", "face_check"):
-        try:
-            from accounts.models import User
-            from subscriptions.services import check_morph_entitlement
+        from accounts.models import User
+        from subscriptions.services import check_morph_entitlement
 
-            user = User.objects.filter(pk=user_id).first()
-            if user:
-                blocked = check_morph_entitlement(user=user, kind=kind)
-                if blocked:
-                    return blocked
-        except Exception:
-            pass
+        user = User.objects.filter(pk=user_id).first()
+        if user:
+            return check_morph_entitlement(user=user, kind=kind)
 
     return None
 
@@ -592,6 +587,8 @@ def is_morph_plan_limit_message(message: str) -> bool:
         "Studio Plus",
         "Bu reja Morph",
         "do'stingizni taklif",
+        "Tarifni yangilang",
+        "Plus/Pro",
     )
     return any(m in msg for m in markers)
 

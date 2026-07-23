@@ -137,6 +137,7 @@ const SECTIONS: Section[] = [
       { to: "/admin/statistics", label: "Umumiy", icon: BarChart3 },
       { to: "/admin/statistics/barbers", label: "Sartaroshlar", icon: Scissors },
       { to: "/admin/statistics/users", label: "Mijozlar", icon: Users },
+      { to: "/admin/statistics/subscriptions", label: "Obunalar", icon: Repeat },
       { to: "/admin/statistics/salons", label: "Salonlar", icon: Building2 },
       { to: "/admin/statistics/bookings", label: "Bronlar", icon: CalendarClock },
     ],

@@ -6,7 +6,7 @@ import {
 } from "@/lib/api/ai";
 
 const KEY_PREFIX = "mysaloon.morphAi.generations";
-const MAX_ENTRIES = 48;
+const MAX_ENTRIES = 60;
 export const MORPH_AI_GALLERY_UPDATED_EVENT = "mysaloon:morph-ai-gallery-updated";
 
 export type MorphAiGeneration = {

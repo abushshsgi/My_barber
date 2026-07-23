@@ -93,6 +93,7 @@ from subscriptions.views import (
 )
 from subscriptions.admin_views import (
     AdminSubscriptionActivateView,
+    AdminSubscriptionAnalyticsView,
     AdminSubscriptionDeactivateView,
     AdminSubscriptionDetailView,
     AdminSubscriptionEventsView,
@@ -344,6 +345,7 @@ api_routes = [
     path("admin/morph-ai/catalog/", AdminMorphAiCatalogListCreateView.as_view()),
     path("admin/morph-ai/catalog/<str:style_id>/", AdminMorphAiCatalogDetailView.as_view()),
     path("admin/subscriptions/stats/", AdminSubscriptionStatsView.as_view()),
+    path("admin/subscriptions/analytics/", AdminSubscriptionAnalyticsView.as_view()),
     path("admin/subscriptions/", AdminSubscriptionListView.as_view()),
     path("admin/subscriptions/payments/", AdminSubscriptionPaymentsView.as_view()),
     path("admin/subscriptions/events/", AdminSubscriptionEventsView.as_view()),

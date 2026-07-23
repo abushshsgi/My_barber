@@ -46,6 +46,7 @@ import { Route as AdminSupportTicketIdRouteImport } from './routes/admin.support
 import { Route as AdminSubscriptionsSubIdRouteImport } from './routes/admin.subscriptions.$subId'
 import { Route as AdminStatisticsWalletRouteImport } from './routes/admin.statistics.wallet'
 import { Route as AdminStatisticsUsersRouteImport } from './routes/admin.statistics.users'
+import { Route as AdminStatisticsSubscriptionsRouteImport } from './routes/admin.statistics.subscriptions'
 import { Route as AdminStatisticsSalonsRouteImport } from './routes/admin.statistics.salons'
 import { Route as AdminStatisticsRevenueRouteImport } from './routes/admin.statistics.revenue'
 import { Route as AdminStatisticsLiveRouteImport } from './routes/admin.statistics.live'
@@ -269,6 +270,12 @@ const AdminStatisticsUsersRoute = AdminStatisticsUsersRouteImport.update({
   path: '/users',
   getParentRoute: () => AdminStatisticsRoute,
 } as any)
+const AdminStatisticsSubscriptionsRoute =
+  AdminStatisticsSubscriptionsRouteImport.update({
+    id: '/subscriptions',
+    path: '/subscriptions',
+    getParentRoute: () => AdminStatisticsRoute,
+  } as any)
 const AdminStatisticsSalonsRoute = AdminStatisticsSalonsRouteImport.update({
   id: '/salons',
   path: '/salons',
@@ -515,6 +522,7 @@ export interface FileRoutesByFullPath {
   '/admin/statistics/live': typeof AdminStatisticsLiveRoute
   '/admin/statistics/revenue': typeof AdminStatisticsRevenueRoute
   '/admin/statistics/salons': typeof AdminStatisticsSalonsRoute
+  '/admin/statistics/subscriptions': typeof AdminStatisticsSubscriptionsRoute
   '/admin/statistics/users': typeof AdminStatisticsUsersRoute
   '/admin/statistics/wallet': typeof AdminStatisticsWalletRoute
   '/admin/subscriptions/$subId': typeof AdminSubscriptionsSubIdRoute
@@ -582,6 +590,7 @@ export interface FileRoutesByTo {
   '/admin/statistics/live': typeof AdminStatisticsLiveRoute
   '/admin/statistics/revenue': typeof AdminStatisticsRevenueRoute
   '/admin/statistics/salons': typeof AdminStatisticsSalonsRoute
+  '/admin/statistics/subscriptions': typeof AdminStatisticsSubscriptionsRoute
   '/admin/statistics/users': typeof AdminStatisticsUsersRoute
   '/admin/statistics/wallet': typeof AdminStatisticsWalletRoute
   '/admin/subscriptions/$subId': typeof AdminSubscriptionsSubIdRoute
@@ -657,6 +666,7 @@ export interface FileRoutesById {
   '/admin/statistics/live': typeof AdminStatisticsLiveRoute
   '/admin/statistics/revenue': typeof AdminStatisticsRevenueRoute
   '/admin/statistics/salons': typeof AdminStatisticsSalonsRoute
+  '/admin/statistics/subscriptions': typeof AdminStatisticsSubscriptionsRoute
   '/admin/statistics/users': typeof AdminStatisticsUsersRoute
   '/admin/statistics/wallet': typeof AdminStatisticsWalletRoute
   '/admin/subscriptions/$subId': typeof AdminSubscriptionsSubIdRoute
@@ -735,6 +745,7 @@ export interface FileRouteTypes {
     | '/admin/statistics/live'
     | '/admin/statistics/revenue'
     | '/admin/statistics/salons'
+    | '/admin/statistics/subscriptions'
     | '/admin/statistics/users'
     | '/admin/statistics/wallet'
     | '/admin/subscriptions/$subId'
@@ -802,6 +813,7 @@ export interface FileRouteTypes {
     | '/admin/statistics/live'
     | '/admin/statistics/revenue'
     | '/admin/statistics/salons'
+    | '/admin/statistics/subscriptions'
     | '/admin/statistics/users'
     | '/admin/statistics/wallet'
     | '/admin/subscriptions/$subId'
@@ -876,6 +888,7 @@ export interface FileRouteTypes {
     | '/admin/statistics/live'
     | '/admin/statistics/revenue'
     | '/admin/statistics/salons'
+    | '/admin/statistics/subscriptions'
     | '/admin/statistics/users'
     | '/admin/statistics/wallet'
     | '/admin/subscriptions/$subId'
@@ -1167,6 +1180,13 @@ declare module '@tanstack/react-router' {
       path: '/users'
       fullPath: '/admin/statistics/users'
       preLoaderRoute: typeof AdminStatisticsUsersRouteImport
+      parentRoute: typeof AdminStatisticsRoute
+    }
+    '/admin/statistics/subscriptions': {
+      id: '/admin/statistics/subscriptions'
+      path: '/subscriptions'
+      fullPath: '/admin/statistics/subscriptions'
+      preLoaderRoute: typeof AdminStatisticsSubscriptionsRouteImport
       parentRoute: typeof AdminStatisticsRoute
     }
     '/admin/statistics/salons': {
@@ -1643,6 +1663,7 @@ interface AdminStatisticsRouteChildren {
   AdminStatisticsLiveRoute: typeof AdminStatisticsLiveRoute
   AdminStatisticsRevenueRoute: typeof AdminStatisticsRevenueRoute
   AdminStatisticsSalonsRoute: typeof AdminStatisticsSalonsRoute
+  AdminStatisticsSubscriptionsRoute: typeof AdminStatisticsSubscriptionsRoute
   AdminStatisticsUsersRoute: typeof AdminStatisticsUsersRoute
   AdminStatisticsWalletRoute: typeof AdminStatisticsWalletRoute
   AdminStatisticsIndexRoute: typeof AdminStatisticsIndexRoute
@@ -1654,6 +1675,7 @@ const AdminStatisticsRouteChildren: AdminStatisticsRouteChildren = {
   AdminStatisticsLiveRoute: AdminStatisticsLiveRoute,
   AdminStatisticsRevenueRoute: AdminStatisticsRevenueRoute,
   AdminStatisticsSalonsRoute: AdminStatisticsSalonsRoute,
+  AdminStatisticsSubscriptionsRoute: AdminStatisticsSubscriptionsRoute,
   AdminStatisticsUsersRoute: AdminStatisticsUsersRoute,
   AdminStatisticsWalletRoute: AdminStatisticsWalletRoute,
   AdminStatisticsIndexRoute: AdminStatisticsIndexRoute,

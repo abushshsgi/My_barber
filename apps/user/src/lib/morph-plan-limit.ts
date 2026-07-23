@@ -17,7 +17,7 @@ export function isMorphPlanLimitError(error: unknown): error is MorphPlanLimitEr
 
 /** Server detail — obuna/oylik kvota (DRF throttle emas). */
 export function isMorphPlanLimitMessage(message: string): boolean {
-  return /Oylik Morph|Bepul Morph|Morph AI faqat obuna|obuna|Studio Plus|Bu reja Morph|do'stingizni taklif/i.test(
+  return /Oylik Morph|Bepul Morph|Morph AI faqat obuna|obuna|Studio Plus|Bu reja Morph|do'stingizni taklif|Tarifni yangilang|Plus\/Pro/i.test(
     message,
   );
 }

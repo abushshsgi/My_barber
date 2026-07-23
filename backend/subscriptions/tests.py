@@ -63,6 +63,8 @@ class SubscriptionServiceTests(TestCase):
         for _ in range(10):
             record_morph_usage(user=self.user, kind="tryon")
         self.assertIn("limiti", check_morph_entitlement(user=self.user, kind="tryon") or "")
+        # Limit tugaganda analyze ham yopiladi
+        self.assertIn("limiti", check_morph_entitlement(user=self.user, kind="analyze") or "")
 
     def test_expire_blocks_again(self):
         sub = activate_subscription(

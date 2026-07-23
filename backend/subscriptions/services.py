@@ -426,6 +426,7 @@ def can_use_morph_care(user: User) -> bool:
 def check_morph_entitlement(*, user: User, kind: str) -> str | None:
     """
     Morph AI (analyze / try-on / studio): faol obuna majburiy.
+    Oylik try-on kvotasi tugaganda analyze/face_check ham yopiladi.
     Yangi user — 0 kvota. Ochilishi: pullik obuna yoki 3 referal → 7 kun Starter trial.
     """
     if kind not in ("tryon", "studio", "analyze", "face_check"):
@@ -435,39 +436,38 @@ def check_morph_entitlement(*, user: User, kind: str) -> str | None:
     if not sub:
         return _no_subscription_message()
 
-    # Analyze / face_check — faqat obuna borligini tekshiramiz.
-    if kind in ("analyze", "face_check"):
-        return None
-
     usage = get_or_create_usage(user)
     ents = sub.entitlements or entitlement_snapshot(sub.plan_code)
 
-    if kind == "tryon":
-        limit = int(ents.get("morph_ai_monthly") or 0)
+    if kind == "studio":
+        limit = int(ents.get("morph_studio_monthly") or 0)
         if limit <= 0:
-            return "Bu reja Morph AI generatsiyasini qo'llab-quvvatlamaydi."
-        if usage.morph_ai_used >= limit:
+            return "Morph AI Studio Plus yoki Pro obunasida mavjud."
+        if usage.morph_studio_used >= limit:
             log_event(
                 action=SubscriptionEvent.Action.LIMIT_HIT,
                 user=user,
                 subscription=sub,
-                detail={"kind": "morph_ai", "used": usage.morph_ai_used, "limit": limit},
+                detail={"kind": "morph_studio", "used": usage.morph_studio_used, "limit": limit},
             )
-            return f"Oylik Morph AI limiti tugadi ({limit}/{limit})."
+            return f"Oylik Morph AI Studio limiti tugadi ({limit}/{limit}). Tarifni yangilang."
         return None
 
-    # studio
-    limit = int(ents.get("morph_studio_monthly") or 0)
+    # tryon + analyze + face_check — bir xil Morph AI oylik kvota
+    limit = int(ents.get("morph_ai_monthly") or 0)
     if limit <= 0:
-        return "Morph AI Studio Plus yoki Pro obunasida mavjud."
-    if usage.morph_studio_used >= limit:
+        return "Bu reja Morph AI generatsiyasini qo'llab-quvvatlamaydi. Tarifni yangilang."
+    if usage.morph_ai_used >= limit:
         log_event(
             action=SubscriptionEvent.Action.LIMIT_HIT,
             user=user,
             subscription=sub,
-            detail={"kind": "morph_studio", "used": usage.morph_studio_used, "limit": limit},
+            detail={"kind": "morph_ai", "used": usage.morph_ai_used, "limit": limit},
         )
-        return f"Oylik Morph AI Studio limiti tugadi ({limit}/{limit})."
+        return (
+            f"Oylik Morph AI limiti tugadi ({limit}/{limit}). "
+            f"Tarifni yangilang yoki Plus/Pro ga o'ting."
+        )
     return None
 
 
@@ -824,4 +824,176 @@ def admin_stats(*, start=None, end=None) -> dict[str, Any]:
         "recent_events": list(
             events_qs.select_related("user", "subscription").order_by("-created_at")[:30]
         ),
+    }
+
+
+def subscription_lifecycle_analytics() -> dict[str, Any]:
+    """Obuna sotib olish, foydalanish, limit tugashi va yangilanish statistikasi."""
+    from django.db.models.functions import TruncMonth
+
+    now = timezone.now()
+    period_start, _period_end = current_period_bounds(now)
+
+    active_qs = UserSubscription.objects.filter(
+        status=UserSubscription.Status.ACTIVE
+    ).filter(Q(ends_at__isnull=True) | Q(ends_at__gt=now))
+
+    paid_qs = SubscriptionPayment.objects.filter(status=SubscriptionPayment.Status.PAID)
+    paid_user_ids = set(paid_qs.values_list("user_id", flat=True).distinct())
+
+    # Joriy oy usage
+    usage_rows = {
+        u.user_id: u
+        for u in SubscriptionUsagePeriod.objects.filter(period_start=period_start).only(
+            "user_id", "morph_ai_used", "morph_studio_used"
+        )
+    }
+
+    limit_exhausted: list[dict[str, Any]] = []
+    active_using = 0
+    active_never_used = 0
+    by_plan_active: dict[str, dict[str, int]] = {}
+
+    for sub in active_qs.select_related("user").iterator(chunk_size=200):
+        ents = sub.entitlements or entitlement_snapshot(sub.plan_code)
+        ai_limit = int(ents.get("morph_ai_monthly") or 0)
+        studio_limit = int(ents.get("morph_studio_monthly") or 0)
+        usage = usage_rows.get(sub.user_id)
+        ai_used = usage.morph_ai_used if usage else 0
+        studio_used = usage.morph_studio_used if usage else 0
+
+        plan_bucket = by_plan_active.setdefault(
+            sub.plan_code,
+            {
+                "plan_code": sub.plan_code,
+                "active": 0,
+                "limit_exhausted": 0,
+                "never_used": 0,
+                "using": 0,
+            },
+        )
+        plan_bucket["active"] += 1
+
+        if ai_used > 0 or studio_used > 0:
+            active_using += 1
+            plan_bucket["using"] += 1
+        else:
+            active_never_used += 1
+            plan_bucket["never_used"] += 1
+
+        ai_exhausted = ai_limit > 0 and ai_used >= ai_limit
+        studio_exhausted = studio_limit > 0 and studio_used >= studio_limit
+        if ai_exhausted or studio_exhausted:
+            plan_bucket["limit_exhausted"] += 1
+            if len(limit_exhausted) < 50:
+                u = sub.user
+                limit_exhausted.append(
+                    {
+                        "user_id": sub.user_id,
+                        "user_name": u.full_name or u.phone or u.email or "",
+                        "plan_code": sub.plan_code,
+                        "morph_ai_used": ai_used,
+                        "morph_ai_limit": ai_limit,
+                        "morph_studio_used": studio_used,
+                        "morph_studio_limit": studio_limit,
+                        "subscription_id": str(sub.pk),
+                        "starts_at": sub.starts_at.isoformat() if sub.starts_at else None,
+                        "ends_at": sub.ends_at.isoformat() if sub.ends_at else None,
+                    }
+                )
+
+    # Sotib olgan lekin hech qachon Morph ishlatmagan
+    lifetime_usage = {
+        row["user_id"]: row["ai"] or 0
+        for row in SubscriptionUsagePeriod.objects.values("user_id")
+        .annotate(ai=Sum("morph_ai_used"))
+        .filter(user_id__in=paid_user_ids or [0])
+    }
+    buyers_never_used = sum(1 for uid in paid_user_ids if lifetime_usage.get(uid, 0) <= 0)
+    buyers_used = len(paid_user_ids) - buyers_never_used
+
+    # Har oy sotib olish
+    purchases_by_month_raw = (
+        paid_qs.annotate(month=TruncMonth("paid_at"))
+        .values("month")
+        .annotate(
+            count=Count("id"),
+            buyers=Count("user_id", distinct=True),
+            revenue_uzs=Sum("amount_uzs"),
+        )
+        .order_by("-month")[:18]
+    )
+    purchases_by_month = [
+        {
+            "month": (row["month"].date().isoformat() if row["month"] else None),
+            "count": row["count"],
+            "buyers": row["buyers"],
+            "revenue_uzs": int(row["revenue_uzs"] or 0),
+        }
+        for row in purchases_by_month_raw
+    ]
+
+    # Yangilanish: 2+ marta to'laganlar
+    renew_rows = list(
+        paid_qs.values("user_id")
+        .annotate(payments=Count("id"))
+        .filter(payments__gte=2)
+        .order_by("-payments")
+    )
+    renewers = len(renew_rows)
+    payment_count_dist = {"1": 0, "2": 0, "3+": 0}
+    for row in paid_qs.values("user_id").annotate(payments=Count("id")):
+        n = int(row["payments"] or 0)
+        if n <= 1:
+            payment_count_dist["1"] += 1
+        elif n == 2:
+            payment_count_dist["2"] += 1
+        else:
+            payment_count_dist["3+"] += 1
+
+    # Limit hit events (oxirgi 30 kun)
+    since = now - timedelta(days=30)
+    limit_hit_events = SubscriptionEvent.objects.filter(
+        action=SubscriptionEvent.Action.LIMIT_HIT,
+        created_at__gte=since,
+    ).count()
+    limit_hit_users_30d = (
+        SubscriptionEvent.objects.filter(
+            action=SubscriptionEvent.Action.LIMIT_HIT,
+            created_at__gte=since,
+        )
+        .values("user_id")
+        .distinct()
+        .count()
+    )
+
+    # Faol obunalarning o'rtacha yoshi (kun)
+    ages: list[int] = []
+    for sub in active_qs.only("starts_at", "created_at").iterator(chunk_size=300):
+        start_at = sub.starts_at or sub.created_at
+        if start_at:
+            ages.append(max(0, (now - start_at).days))
+    avg_active_days = int(sum(ages) / len(ages)) if ages else 0
+
+    return {
+        "as_of": now.isoformat(),
+        "period_start": period_start.isoformat(),
+        "active_subscriptions": active_qs.count(),
+        "active_using_morph": active_using,
+        "active_never_used_morph": active_never_used,
+        "limit_exhausted_count": sum(v["limit_exhausted"] for v in by_plan_active.values()),
+        "limit_exhausted_users": limit_exhausted,
+        "by_plan": sorted(by_plan_active.values(), key=lambda x: x["plan_code"]),
+        "buyers_total": len(paid_user_ids),
+        "buyers_used_morph": buyers_used,
+        "buyers_never_used_morph": buyers_never_used,
+        "renewers_count": renewers,
+        "payment_count_distribution": payment_count_dist,
+        "purchases_by_month": purchases_by_month,
+        "limit_hit_events_30d": limit_hit_events,
+        "limit_hit_users_30d": limit_hit_users_30d,
+        "avg_active_subscription_days": avg_active_days,
+        "top_renewers": [
+            {"user_id": r["user_id"], "payments": r["payments"]} for r in renew_rows[:20]
+        ],
     }

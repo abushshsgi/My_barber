@@ -3776,6 +3776,53 @@ export async function fetchAdminSubscriptionStats(params?: {
   );
 }
 
+export type AdminSubscriptionAnalytics = {
+  as_of: string;
+  period_start: string;
+  active_subscriptions: number;
+  active_using_morph: number;
+  active_never_used_morph: number;
+  limit_exhausted_count: number;
+  limit_exhausted_users: Array<{
+    user_id: number;
+    user_name: string;
+    plan_code: string;
+    morph_ai_used: number;
+    morph_ai_limit: number;
+    morph_studio_used: number;
+    morph_studio_limit: number;
+    subscription_id: string;
+    starts_at: string | null;
+    ends_at: string | null;
+  }>;
+  by_plan: Array<{
+    plan_code: string;
+    active: number;
+    limit_exhausted: number;
+    never_used: number;
+    using: number;
+  }>;
+  buyers_total: number;
+  buyers_used_morph: number;
+  buyers_never_used_morph: number;
+  renewers_count: number;
+  payment_count_distribution: { "1": number; "2": number; "3+": number };
+  purchases_by_month: Array<{
+    month: string | null;
+    count: number;
+    buyers: number;
+    revenue_uzs: number;
+  }>;
+  limit_hit_events_30d: number;
+  limit_hit_users_30d: number;
+  avg_active_subscription_days: number;
+  top_renewers: Array<{ user_id: number; payments: number }>;
+};
+
+export async function fetchAdminSubscriptionAnalytics(): Promise<AdminSubscriptionAnalytics> {
+  return apiJson("/api/v1/admin/subscriptions/analytics/");
+}
+
 export async function fetchAdminSubscriptions(params?: {
   status?: string;
   plan?: string;

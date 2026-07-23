@@ -5,7 +5,7 @@ from django.conf import settings
 from django.db import models
 
 HISTORY_MAX_PER_USER = 6
-GENERATION_HISTORY_MAX_PER_USER = 48
+GENERATION_HISTORY_MAX_PER_USER = 60
 
 
 class Hairstyle(models.Model):
