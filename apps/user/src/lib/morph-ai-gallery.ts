@@ -4,6 +4,7 @@ import {
   saveMorphAiGenerationRemote,
   type MorphAiGenerationApi,
 } from "@/lib/api/ai";
+import { resolveMediaUrl } from "@/lib/media-url";
 
 const KEY_PREFIX = "mysaloon.morphAi.generations";
 const MAX_ENTRIES = 60;
@@ -44,12 +45,16 @@ function writeAll(entries: MorphAiGeneration[]) {
 
 function mapApiGeneration(entry: MorphAiGenerationApi): MorphAiGeneration | null {
   if (!entry.after_url) return null;
+  const after = resolveMediaUrl(entry.after_url) ?? entry.after_url;
+  const before = entry.before_url
+    ? (resolveMediaUrl(entry.before_url) ?? entry.before_url)
+    : undefined;
   return {
     id: String(entry.id),
     styleId: entry.style_id || "",
     title: entry.title || entry.style_id || "Try-on",
-    previewImage: entry.after_url,
-    beforeImage: entry.before_url || undefined,
+    previewImage: after,
+    beforeImage: before,
     createdAt: entry.created_at,
     personaId: entry.persona_id || undefined,
   };

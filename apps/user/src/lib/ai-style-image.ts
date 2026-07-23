@@ -72,7 +72,7 @@ export async function shareAiStyleImage(title: string, url: string, pageUrl?: st
   }
 
   if (pageUrl && navigator.clipboard?.writeText) {
-    await navigator.clipboard.writeText(pageUrl);
+    await navigator.clipboard.writeText(`${title}\n${pageUrl}`);
     return "copied" as const;
   }
 

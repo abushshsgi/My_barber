@@ -203,10 +203,21 @@ def resolve_explore_asset_url(
     slug: str,
     view: str = "front",
 ) -> str:
+    """Explore katalog URL.
+
+    Vercel CDN dagi static `/hairstyles/...` birinchi tanlov — brauzer DB/Django
+    `/media` proxy'siz yuklaydi. Faqat public da yo'q (faqat StoredMedia) bo'lsa /media.
+    """
     pid = normalize_persona_id(persona_id) or persona_id
     normalized_view = normalize_explore_view(view)
+
+    # Prefer edge-static when apps/user/public has the file (fastest for Explore grid).
+    if _static_file_exists(
+        audience=audience, persona_id=pid, slug=slug, view=normalized_view
+    ):
+        return f"/{_static_rel_path(audience=audience, persona_id=pid, slug=slug, view=normalized_view)}"
+
     if slug == "reference":
-        # Reference ham DB da bo'lsa /media orqali
         rel = static_persona_ref_image_path(audience=audience, persona_id=pid).lstrip("/")
         if media_name_exists(rel):
             api_base = explore_media_base_url()
@@ -224,23 +235,15 @@ def resolve_explore_asset_url(
     )
     media_rel = rel.lstrip("/")
 
-    # DB / storage da bo'lsa — API /media (redeployda yo'qolmaydi)
+    # Only in DB / storage — API /media (redeployda yo'qolmaydi)
     if live_media_exists(persona_id=pid, slug=slug, view=normalized_view) or media_name_exists(
         media_rel
     ):
-        live_path = live_asset_path(persona_id=pid, slug=slug, view=normalized_view)
-        in_public = (
-            PUBLIC_ROOT.is_dir()
-            and live_path.is_file()
-            and live_path.is_relative_to(PUBLIC_ROOT)
-            and not media_name_exists(media_rel)
-        )
-        if not in_public:
-            api_base = explore_media_base_url()
-            url = media_url(media_rel)
-            if api_base and url.startswith("/"):
-                return f"{api_base}{url}"
-            return url
+        api_base = explore_media_base_url()
+        url = media_url(media_rel)
+        if api_base and url.startswith("/"):
+            return f"{api_base}{url}"
+        return url
 
     return rel
 

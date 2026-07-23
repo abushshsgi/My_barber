@@ -19,6 +19,7 @@ import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/
 import type { ExplorePersonaId } from "@/lib/explore-personas";
 import { createMorphAiLookShare } from "@/lib/api";
 import { downloadAiStyleImage, shareAiStyleLink } from "@/lib/ai-style-image";
+import { pickMorphShareText } from "@/lib/morph-share-copy";
 import { stashMorphStudioDraft } from "@/lib/morph-ai-studio-session";
 import { cn } from "@/lib/utils";
 
@@ -142,10 +143,9 @@ export function AiStylePreviewSheet({
         const pageUrl =
           created.share_page_url ||
           `${window.location.origin}/morf-ai/share/${encodeURIComponent(created.id)}`;
-        const shareTitle = t("aiStylePage.shareLook.shareText", {
+        const shareTitle = pickMorphShareText(t, {
           style: suggestion.title,
           name: created.sharer_name || "",
-          defaultValue: "{{style}} — Morf AI da sinab ko‘rdim. Sen ham sinab ko‘r!",
         });
         const result = await shareAiStyleLink(shareTitle, pageUrl);
         if (result === "copied") toast.success(t("aiStylePage.linkCopied"));
@@ -158,7 +158,8 @@ export function AiStylePreviewSheet({
         toast.error(t("aiStylePage.shareFailed"));
         return;
       }
-      const result = await shareAiStyleLink(suggestion.title, lookUrl);
+      const lookShareTitle = pickMorphShareText(t, { style: suggestion.title });
+      const result = await shareAiStyleLink(lookShareTitle, lookUrl);
       if (result === "copied") toast.success(t("aiStylePage.linkCopied"));
       else if (result === "shared") toast.success(t("aiStylePage.shared"));
     } catch {

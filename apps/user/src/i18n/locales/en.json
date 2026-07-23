@@ -1208,6 +1208,11 @@
       "authHint": "Quick sign-up, then you land straight in Morf AI try-on.",
       "browseHome": "Browse salons first",
       "shareText": "{{style}} — I tried it in Morf AI. You should too!",
+      "shareTextAlt1": "{{style}} — my new look! Morf AI did it in 10 seconds.",
+      "shareTextAlt2": "Morf AI: I tried {{style}} on myself. Looks great — you try it too!",
+      "shareTextAlt3": "{{style}} — friends keep asking. Try it on yourself in Morf AI!",
+      "shareTextAlt4": "Selfie + Morf AI = {{style}}. Real result — try it now!",
+      "shareTextAlt5": "{{style}} suited me. How will yours look in Morf AI?",
       "shareHint": "Only a link is shared. Friends see the result photo and can try it themselves."
     },
     "care": {

@@ -9,6 +9,8 @@ import { MorphBeforeAfter } from "@/components/ai-style/MorphBeforeAfter";
 import { createMorphAiLookShare } from "@/lib/api";
 import { shareAiStyleLink, downloadAiStyleImage } from "@/lib/ai-style-image";
 import { getActiveUserId } from "@/lib/face-profile";
+import { resolveMediaUrl } from "@/lib/media-url";
+import { pickMorphShareText } from "@/lib/morph-share-copy";
 import {
   loadMorphAiGenerations,
   MORPH_AI_GALLERY_UPDATED_EVENT,
@@ -42,7 +44,7 @@ type HistoryCard = {
 function AiStyleHistoryPage() {
   const { t } = useTranslation();
   const [gens, setGens] = useState<MorphAiGeneration[]>(() => loadMorphAiGenerations());
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => loadMorphAiGenerations().length === 0);
   const [active, setActive] = useState<HistoryCard | null>(null);
   const [downloading, setDownloading] = useState(false);
   const [sharing, setSharing] = useState(false);
@@ -77,13 +79,17 @@ function AiStyleHistoryPage() {
       const key = g.id || `${g.styleId}:${g.previewImage.slice(0, 64)}`;
       if (seen.has(key)) continue;
       seen.add(key);
+      const after = resolveMediaUrl(g.previewImage) ?? g.previewImage;
+      const before = g.beforeImage
+        ? (resolveMediaUrl(g.beforeImage) ?? g.beforeImage)
+        : undefined;
       unique.push({
         id: `gen-${g.id}`,
         styleId: g.styleId,
         title: g.title,
-        thumb: g.previewImage,
-        before: g.beforeImage,
-        after: g.previewImage,
+        thumb: after,
+        before,
+        after,
         at: g.createdAt,
       });
     }
@@ -123,10 +129,9 @@ function AiStyleHistoryPage() {
       const pageUrl =
         created.share_page_url ||
         `${typeof window !== "undefined" ? window.location.origin : "https://mysaloon.uz"}/morf-ai/share/${encodeURIComponent(created.id)}`;
-      const shareTitle = t("aiStylePage.shareLook.shareText", {
+      const shareTitle = pickMorphShareText(t, {
         style: active.title,
         name: created.sharer_name || "",
-        defaultValue: "{{style}} — Morf AI da sinab ko‘rdim. Sen ham sinab ko‘r!",
       });
       const result = await shareAiStyleLink(shareTitle, pageUrl);
       if (result === "copied") toast.success(t("aiStylePage.linkCopied"));
@@ -173,7 +178,7 @@ function AiStyleHistoryPage() {
       </div>
 
       <div className="mx-auto max-w-5xl px-4 pt-4 md:px-6">
-        {loading ? (
+        {loading && cards.length === 0 ? (
           <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-4">
             {Array.from({ length: 8 }).map((_, i) => (
               <div key={i} className="aspect-[3/4] animate-pulse rounded-2xl bg-surface" />
@@ -192,7 +197,7 @@ function AiStyleHistoryPage() {
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-2.5 pb-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-            {cards.map((card) => (
+            {cards.map((card, index) => (
               <button
                 key={card.id}
                 type="button"
@@ -203,6 +208,9 @@ function AiStyleHistoryPage() {
                   <img
                     src={card.thumb}
                     alt=""
+                    loading={index < 8 ? "eager" : "lazy"}
+                    decoding="async"
+                    fetchPriority={index < 4 ? "high" : "auto"}
                     className="h-full w-full object-cover object-top transition-transform duration-300 group-active:scale-[1.02]"
                   />
                 </div>

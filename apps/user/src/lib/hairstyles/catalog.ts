@@ -5,6 +5,7 @@ import {
   HOME_TREND_PERSONA_IDS,
   isHomeTrendPersonaId,
   listReadyExplorePersonas,
+  preferStaticHairstyleUrl,
   type ExplorePersonaId,
   type HomeTrendPersonaId,
 } from "@/lib/explore-personas";
@@ -13,6 +14,7 @@ import type { ApiHairstyle } from "@/lib/api/hairstyles";
 import type { Audience, Category } from "@/lib/mock-data";
 import type { AudienceFilter } from "@/hooks/use-audience";
 import { matchAudience } from "@/hooks/use-audience";
+import { resolveMediaUrl } from "@/lib/media-url";
 
 export type HairstyleGalleryItem = {
   view: string;
@@ -35,6 +37,13 @@ export type HairstyleEntry = {
   tags: string[];
 };
 
+function normalizeCatalogImageUrl(url: string | null | undefined): string {
+  const raw = url?.trim() ?? "";
+  if (!raw) return "";
+  const resolved = resolveMediaUrl(raw) ?? raw;
+  return preferStaticHairstyleUrl(resolved);
+}
+
 export function mapApiHairstyle(api: ApiHairstyle): HairstyleEntry {
   return {
     id: api.id,
@@ -45,8 +54,11 @@ export function mapApiHairstyle(api: ApiHairstyle): HairstyleEntry {
     category: api.category as Category,
     faceShapes: api.face_shapes,
     hairLength: api.hair_length,
-    imageUrl: api.image_url,
-    gallery: api.gallery ?? [],
+    imageUrl: normalizeCatalogImageUrl(api.image_url),
+    gallery: (api.gallery ?? []).map((item) => ({
+      ...item,
+      url: normalizeCatalogImageUrl(item.url),
+    })),
     descriptionUz: api.description_uz,
     tags: api.tags,
   };
@@ -192,9 +204,10 @@ export function getHairstyleImageUrl(entry: Pick<HairstyleEntry, "imageUrl">): s
   const url = entry.imageUrl?.trim();
   if (!url) return "";
   if (url.startsWith("http://") || url.startsWith("https://") || url.startsWith("data:")) {
-    return url;
+    return preferStaticHairstyleUrl(url);
   }
-  return url.startsWith("/") ? url : `/${url}`;
+  const path = url.startsWith("/") ? url : `/${url}`;
+  return preferStaticHairstyleUrl(path);
 }
 
 /** Explore / kartochkalar — yo‘q yoki 404 bo‘lsa barqaror fallback. */

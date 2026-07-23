@@ -3,6 +3,7 @@ import "./lib/error-capture";
 import { maybeProxyApi } from "./lib/api-proxy.server";
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
+import { injectMorphOgIntoHtml } from "./lib/morph-og-inject.server";
 import { injectSalonOgIntoHtml } from "./lib/salon-og-inject.server";
 
 type ServerEntry = {
@@ -52,6 +53,11 @@ export default {
       const { pathname } = new URL(request.url);
       if (request.method === "GET" && /^\/salon\/[^/]+\/?$/.test(pathname)) {
         response = await injectSalonOgIntoHtml(response, pathname);
+      } else if (
+        request.method === "GET" &&
+        /^\/morf-ai\/(share|look)\/[^/]+\/?$/.test(pathname)
+      ) {
+        response = await injectMorphOgIntoHtml(response, pathname);
       }
 
       return response;

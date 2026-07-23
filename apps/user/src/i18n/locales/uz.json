@@ -1208,6 +1208,11 @@
       "authHint": "Davom etish uchun tezkor ro‘yxatdan o‘tasiz — keyin to‘g‘ridan-to‘g‘ri Morf AI try-on ochiladi.",
       "browseHome": "Avval salonlarni ko‘rish",
       "shareText": "{{style}} — Morf AI da sinab ko‘rdim. Sen ham sinab ko‘r!",
+      "shareTextAlt1": "{{style}} — yangi lookim! Morf AI da 10 soniyada chiqardi.",
+      "shareTextAlt2": "Morf AI: {{style}} o‘zimda sinab ko‘rdim. Natija zo‘r — sen ham urinib ko‘r!",
+      "shareTextAlt3": "{{style}} — do‘stlarim so‘rashyapti. Morf AI da o‘zingda sinab ko‘r!",
+      "shareTextAlt4": "Selfie + Morf AI = {{style}}. Haqiqiy natija, hoziroq sinab ko‘r!",
+      "shareTextAlt5": "{{style}} menga yarashdi. Morf AI da seniki qanday chiqadi?",
       "shareHint": "Havola ulashiladi — do‘stingiz faqat natija rasmini ko‘radi va o‘zida sinab ko‘rishi mumkin."
     },
     "care": {

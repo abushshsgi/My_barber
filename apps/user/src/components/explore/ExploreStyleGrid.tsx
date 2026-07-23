@@ -9,9 +9,11 @@ import { cn } from "@/lib/utils";
 function ExploreStyleCard({
   entry,
   compact,
+  priority,
 }: {
   entry: HairstyleEntry;
   compact?: boolean;
+  priority?: boolean;
 }) {
   const imageUrl = getHairstyleDisplayUrl(entry);
   const frontItem = useMemo(
@@ -35,6 +37,7 @@ function ExploreStyleCard({
         autoPlay={false}
         showThumbs={false}
         variant="gridCard"
+        priority={priority}
         className="pointer-events-none space-y-0"
       />
       <p className={cn("mt-2 truncate font-bold leading-tight", compact ? "text-sm" : "text-sm lg:text-[15px]")}>
@@ -121,8 +124,13 @@ export function ExploreStyleGrid({
         className,
       )}
     >
-      {items.map((entry) => (
-        <ExploreStyleCard key={`${personaKey ?? "default"}-${entry.id}`} entry={entry} compact={compact} />
+      {items.map((entry, index) => (
+        <ExploreStyleCard
+          key={`${personaKey ?? "default"}-${entry.id}`}
+          entry={entry}
+          compact={compact}
+          priority={index < 6}
+        />
       ))}
     </div>
   );

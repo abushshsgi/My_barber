@@ -1202,6 +1202,11 @@
       "authHint": "Быстрая регистрация — затем сразу Morf AI try-on.",
       "browseHome": "Сначала посмотреть салоны",
       "shareText": "{{style}} — я примерил в Morf AI. Попробуй тоже!",
+      "shareTextAlt1": "{{style}} — мой новый look! Morf AI сделал за 10 секунд.",
+      "shareTextAlt2": "Morf AI: примерил {{style}} на себе. Круто — попробуй и ты!",
+      "shareTextAlt3": "{{style}} — друзья спрашивают. Примерь на себе в Morf AI!",
+      "shareTextAlt4": "Селфи + Morf AI = {{style}}. Реальный результат — попробуй сейчас!",
+      "shareTextAlt5": "{{style}} мне подошёл. Как будет у тебя в Morf AI?",
       "shareHint": "Отправляется только ссылка. Друг откроет вашу before/after страницу и сможет примерить на себе."
     },
     "care": {

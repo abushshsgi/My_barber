@@ -34,7 +34,7 @@ export const MEN_ARCHIVED_STYLE_SLUGS = [
   "old-money-tousled-curl",
 ] as const;
 
-/** Faol katalog — klassik 12 uslub (Irland rasmlari DB /media da). */
+/** Faol katalog — klassik 12 uslub (Irland rasmlari Vercel static `/hairstyles/`). */
 export const MEN_CATALOG_STYLE_SLUGS = [
   "mid-fade",
   "low-fade",
@@ -106,14 +106,26 @@ export function normalizeExplorePersonaId(value: string | null | undefined): Exp
 }
 
 export function getPersonaRefImageUrl(personaId: ExplorePersonaId): string {
-  // Reference: static (git) yoki /media proxy
   return `/hairstyles/men/personas/${personaId}/reference.webp`;
+}
+
+/**
+ * Katalog persona rasmlari — Vercel CDN `/hairstyles/` (DB `/media` emas).
+ * `/media/hairstyles/...` → `/hairstyles/...` (Explore tezligi uchun).
+ */
+export function preferStaticHairstyleUrl(url: string): string {
+  const trimmed = url.trim();
+  if (!trimmed) return trimmed;
+  const mediaCatalog = trimmed.match(
+    /^(?:https?:\/\/[^/]+)?\/media\/(hairstyles\/(?:men|women)\/.+)$/i,
+  );
+  if (mediaCatalog) return `/${mediaCatalog[1]}`;
+  return trimmed;
 }
 
 export function getPersonaStyleImageUrl(personaId: ExplorePersonaId, slug: string): string {
   if (hasPersonaStyleAsset(personaId, slug)) {
-    // Irland klassik uslublar — API /media (Postgres StoredMedia)
-    return `/media/hairstyles/men/personas/${personaId}/${slug}.webp`;
+    return `/hairstyles/men/personas/${personaId}/${slug}.webp`;
   }
   return `/hairstyles/men/${slug}.webp`;
 }
@@ -127,7 +139,7 @@ export function getPersonaStyleViewImageUrl(
     return getPersonaStyleImageUrl(personaId, slug);
   }
   if (view === "front") {
-    return `/media/hairstyles/men/personas/${personaId}/${slug}.webp`;
+    return `/hairstyles/men/personas/${personaId}/${slug}.webp`;
   }
-  return `/media/hairstyles/men/personas/${personaId}/${slug}__${view}.webp`;
+  return `/hairstyles/men/personas/${personaId}/${slug}__${view}.webp`;
 }

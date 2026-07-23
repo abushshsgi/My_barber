@@ -13,6 +13,8 @@ type Props = {
   description?: string;
   /** Mobile explore detail */
   variant?: "default" | "mobileHero" | "gridCard";
+  /** First viewport cards — eager + high priority */
+  priority?: boolean;
 };
 
 export function ExploreStyleGallery({
@@ -24,6 +26,7 @@ export function ExploreStyleGallery({
   showThumbs = true,
   description,
   variant = "default",
+  priority = false,
 }: Props) {
   const isMobileHero = variant === "mobileHero";
   const isGridCard = variant === "gridCard";
@@ -74,6 +77,8 @@ export function ExploreStyleGallery({
               <img
                 src={item.url}
                 alt={`${title} ${item.label}`}
+                loading="lazy"
+                decoding="async"
                 className="absolute inset-0 h-full w-full object-cover object-top"
               />
             </div>
@@ -111,6 +116,9 @@ export function ExploreStyleGallery({
             key={active?.url}
             src={active?.url}
             alt={`${title} — ${active?.label ?? ""}`}
+            loading={priority ? "eager" : "lazy"}
+            decoding="async"
+            fetchPriority={priority ? "high" : "auto"}
             className={cn(
               "absolute inset-0 h-full w-full object-cover object-top transition-opacity duration-500",
               fade ? "opacity-100" : "opacity-0",

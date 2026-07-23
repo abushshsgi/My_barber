@@ -10,6 +10,11 @@ export default defineConfig({
         changeOrigin: true,
         secure: true,
       },
+      "/media": {
+        target: process.env.DEV_API_TARGET ?? "http://127.0.0.1:8000",
+        changeOrigin: true,
+        secure: true,
+      },
       "/covers/pexels": {
         target: "https://images.pexels.com",
         changeOrigin: true,

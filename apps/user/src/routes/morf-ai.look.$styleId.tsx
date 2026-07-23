@@ -1,21 +1,17 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { MorphLookShareLanding } from "@/components/ai-style/MorphLookShareLanding";
+import {
+  buildMorphLookHeadMeta,
+  fetchMorphLookSeo,
+} from "@/lib/morph-share-seo.server";
 
 export const Route = createFileRoute("/morf-ai/look/$styleId")({
-  head: ({ params }) => ({
-    meta: [
-      { title: "Morf AI uslub — mysaloon.uz" },
-      {
-        name: "description",
-        content: "Do‘stingiz sinab ko‘rgan uslubni Morf AI da o‘zingizda sinang.",
-      },
-      { property: "og:title", content: "Morf AI — bu uslub sizga ham yarashishi mumkin" },
-      {
-        property: "og:description",
-        content: "Selfie yuklang va shu soch turmakini yuzingizda ko‘ring.",
-      },
-    ],
-  }),
+  loader: async ({ params }) => {
+    const seo = await fetchMorphLookSeo(params.styleId);
+    return { seo };
+  },
+  head: ({ loaderData, params }) =>
+    buildMorphLookHeadMeta(params.styleId, loaderData?.seo ?? null),
   component: MorphLookSharePage,
 });
 
