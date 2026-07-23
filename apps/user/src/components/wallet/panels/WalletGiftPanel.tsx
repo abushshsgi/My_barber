@@ -10,8 +10,9 @@ import {
   Sparkles,
   UserRound,
   Wallet,
+  X,
 } from "lucide-react";
-import { useEffect, useId, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { MysaloonLogo } from "@/components/brand/MysaloonLogo";
@@ -71,18 +72,26 @@ const OCCASIONS = [
   },
 ] as const;
 
+function formatAmountInput(value: string) {
+  const n = value.replace(/\D/g, "");
+  if (!n) return "";
+  return Number(n).toLocaleString("uz-UZ");
+}
+
 function GiftCardPreview({
   design,
   amount,
   recipientLabel,
   note,
   occasionLabel,
+  compact = false,
 }: {
   design: ApiGiftDesign | undefined;
   amount: number;
   recipientLabel: string;
   note: string;
   occasionLabel?: string;
+  compact?: boolean;
 }) {
   const { t } = useTranslation();
   const reduced = useReducedMotion();
@@ -92,75 +101,90 @@ function GiftCardPreview({
   const designKey = design?.id ?? "none";
 
   return (
-    <div className="relative" style={{ perspective: 1200 }}>
+    <div className="relative" style={{ perspective: 1400 }}>
       <AnimatePresence mode="wait">
         <motion.div
           key={designKey}
-          initial={reduced ? false : { opacity: 0.35, rotateY: -12, scale: 0.97 }}
+          initial={reduced ? false : { opacity: 0.4, rotateY: -14, scale: 0.96 }}
           animate={{ opacity: 1, rotateY: 0, scale: 1 }}
-          exit={reduced ? undefined : { opacity: 0.2, rotateY: 10, scale: 0.98 }}
-          transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-          className="relative overflow-hidden rounded-[28px] px-5 py-6 shadow-[0_24px_56px_-28px_rgba(0,0,0,0.5)]"
+          exit={reduced ? undefined : { opacity: 0.25, rotateY: 12, scale: 0.97 }}
+          transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+          className={cn(
+            "relative aspect-[1.68/1] overflow-hidden rounded-[26px] shadow-[0_28px_64px_-30px_rgba(0,0,0,0.55)]",
+            compact ? "px-4 py-4" : "px-5 py-5",
+          )}
           style={{
-            background: `linear-gradient(145deg, ${from}, ${to})`,
+            background: `linear-gradient(148deg, ${from}, ${to})`,
             color: accent,
             transformStyle: "preserve-3d",
           }}
         >
           <div
-            className="pointer-events-none absolute -right-8 -top-10 h-36 w-36 rounded-full opacity-30"
-            style={{ background: `radial-gradient(circle, ${accent}, transparent 70%)` }}
+            className="pointer-events-none absolute inset-0 opacity-[0.14]"
+            style={{
+              backgroundImage:
+                "radial-gradient(circle at 18% 20%, currentColor 0.6px, transparent 0.7px), radial-gradient(circle at 82% 70%, currentColor 0.5px, transparent 0.6px)",
+              backgroundSize: "18px 18px, 22px 22px",
+            }}
             aria-hidden
           />
           <div
-            className="pointer-events-none absolute -bottom-12 left-6 h-28 w-28 rounded-full opacity-20"
-            style={{ background: `radial-gradient(circle, ${accent}, transparent 70%)` }}
+            className="pointer-events-none absolute -right-10 -top-12 h-40 w-40 rounded-full opacity-25"
+            style={{ background: `radial-gradient(circle, ${accent}, transparent 68%)` }}
             aria-hidden
           />
 
-          <div className="relative flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-white/10 backdrop-blur-sm">
-                <Gift className="h-4 w-4" style={{ color: accent }} />
-              </span>
-              {occasionLabel ? (
-                <span className="rounded-full bg-white/12 px-2.5 py-1 text-[10px] font-bold tracking-wide opacity-90">
-                  {occasionLabel}
+          <div className="relative flex h-full flex-col justify-between">
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/12 backdrop-blur-sm">
+                  <Gift className="h-3.5 w-3.5" />
                 </span>
+                {occasionLabel ? (
+                  <span className="rounded-full bg-white/12 px-2.5 py-1 text-[10px] font-bold tracking-wide">
+                    {occasionLabel}
+                  </span>
+                ) : null}
+              </div>
+              <MysaloonLogo size="xs" tone="inherit" className="opacity-80" />
+            </div>
+
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] opacity-60">
+                {design?.name_uz ||
+                  design?.name ||
+                  t("walletPage.giftPanel.pickDesign", { defaultValue: "Dizayn" })}
+              </p>
+              <motion.p
+                key={amount}
+                initial={reduced ? false : { opacity: 0.45, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.22 }}
+                className={cn(
+                  "mt-1 font-bold tracking-tight tabular-nums leading-none",
+                  compact ? "text-2xl" : "text-[1.85rem] sm:text-[2.1rem]",
+                )}
+              >
+                {formatPrice(amount)}
+              </motion.p>
+            </div>
+
+            <div className="flex items-end justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-[9px] font-semibold uppercase tracking-[0.14em] opacity-45">
+                  {t("walletPage.giftPanel.forLabel", { defaultValue: "Kimga" })}
+                </p>
+                <p className="mt-0.5 truncate text-sm font-bold">
+                  {recipientLabel ||
+                    t("walletPage.giftPanel.recipientLabel", { defaultValue: "Sovg'a oluvchi" })}
+                </p>
+              </div>
+              {note.trim() ? (
+                <p className="max-w-[46%] truncate text-right text-[10px] font-medium italic opacity-55">
+                  “{note.trim()}”
+                </p>
               ) : null}
             </div>
-            <MysaloonLogo size="xs" tone="inherit" className="opacity-75" />
-          </div>
-
-          <p className="relative mt-5 text-[11px] font-semibold tracking-[0.14em] uppercase opacity-65">
-            {design?.name_uz ||
-              design?.name ||
-              t("walletPage.giftPanel.pickDesign", { defaultValue: "Dizayn" })}
-          </p>
-          <motion.p
-            key={amount}
-            initial={reduced ? false : { opacity: 0.5, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="relative mt-2 text-[2rem] font-bold tracking-tight tabular-nums leading-none"
-          >
-            {formatPrice(amount)}
-          </motion.p>
-
-          <div className="relative mt-6 flex items-end justify-between gap-3">
-            <div className="min-w-0">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] opacity-50">
-                {t("walletPage.giftPanel.forLabel", { defaultValue: "Kimga" })}
-              </p>
-              <p className="mt-0.5 truncate text-sm font-bold opacity-90">
-                {recipientLabel ||
-                  t("walletPage.giftPanel.recipientLabel", { defaultValue: "Sovg'a oluvchi" })}
-              </p>
-            </div>
-            {note.trim() ? (
-              <p className="max-w-[48%] truncate text-right text-[11px] font-medium italic opacity-55">
-                “{note.trim()}”
-              </p>
-            ) : null}
           </div>
         </motion.div>
       </AnimatePresence>
@@ -168,27 +192,65 @@ function GiftCardPreview({
   );
 }
 
-function SectionLabel({
-  step,
-  children,
-  htmlFor,
+function StepRail({
+  doneRecipient,
+  doneAmount,
+  doneDesign,
 }: {
-  step?: number;
-  children: ReactNode;
-  htmlFor?: string;
+  doneRecipient: boolean;
+  doneAmount: boolean;
+  doneDesign: boolean;
 }) {
+  const { t } = useTranslation();
+  const items = [
+    {
+      done: doneRecipient,
+      label: t("walletPage.giftPanel.recipientField", { defaultValue: "Kimga" }),
+    },
+    {
+      done: doneAmount,
+      label: t("walletPage.giftPanel.giftAmount", { defaultValue: "Summa" }),
+    },
+    {
+      done: doneDesign,
+      label: t("walletPage.giftPanel.designFee", { defaultValue: "Dizayn" }),
+    },
+  ];
+
   return (
-    <label
-      htmlFor={htmlFor}
-      className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground"
-    >
-      {step != null ? (
-        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-foreground text-[10px] font-bold text-background tabular-nums">
-          {step}
-        </span>
-      ) : null}
-      {children}
-    </label>
+    <div className="flex items-center gap-1.5" role="list" aria-label="Progress">
+      {items.map((item, i) => (
+        <div key={item.label} className="flex min-w-0 flex-1 items-center gap-1.5" role="listitem">
+          <div
+            className={cn(
+              "flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold transition-colors duration-200",
+              item.done
+                ? "bg-foreground text-background"
+                : "bg-surface text-muted-foreground ring-1 ring-border/70",
+            )}
+          >
+            {item.done ? <Check className="h-3 w-3" strokeWidth={3} /> : i + 1}
+          </div>
+          <span
+            className={cn(
+              "truncate text-[10px] font-bold uppercase tracking-[0.12em]",
+              item.done ? "text-foreground" : "text-muted-foreground",
+            )}
+          >
+            {item.label}
+          </span>
+          {i < items.length - 1 ? (
+            <span
+              className={cn(
+                "mx-0.5 h-px min-w-[10px] flex-1",
+                item.done ? "bg-foreground/35" : "bg-border",
+              )}
+              aria-hidden
+            />
+          ) : null}
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -199,6 +261,7 @@ export function WalletGiftPanel() {
   const amountInputId = useId();
   const noteInputId = useId();
   const reduced = useReducedMotion();
+  const designScrollerRef = useRef<HTMLDivElement>(null);
 
   const { data: designs = [], isLoading: designsLoading } = useGiftDesigns();
   const [designId, setDesignId] = useState("");
@@ -227,6 +290,12 @@ export function WalletGiftPanel() {
     }
   }, [designId, designs]);
 
+  useEffect(() => {
+    if (!designId || !designScrollerRef.current) return;
+    const el = designScrollerRef.current.querySelector<HTMLElement>(`[data-design-id="${designId}"]`);
+    el?.scrollIntoView({ behavior: reduced ? "auto" : "smooth", inline: "center", block: "nearest" });
+  }, [designId, reduced]);
+
   const selectedDesign = designs.find((d) => d.id === designId);
   const designFee = selectedDesign ? parseGiftDesignFee(selectedDesign.fee) : 0;
   const selectedOccasion = OCCASIONS.find((o) => o.id === occasionId);
@@ -246,8 +315,10 @@ export function WalletGiftPanel() {
   const canSend =
     Boolean(designId) && giftInRange && canAfford && hasRecipient && !sendGift.isPending;
 
-  const balanceHint = useMemo(() => {
-    if (!selectedDesign || giftAmount <= 0) return "";
+  const missingHint = useMemo(() => {
+    if (!hasRecipient) {
+      return t("walletPage.giftPanel.recipientRequired", { defaultValue: "Qabul qiluvchini tanlang." });
+    }
     if (!giftInRange) {
       return t("walletPage.giftPanel.amountRange", {
         defaultValue: "Sovg'a {{min}} — {{max}} oralig'ida bo'lishi kerak.",
@@ -255,17 +326,17 @@ export function WalletGiftPanel() {
         max: formatPrice(MAX_GIFT),
       });
     }
-    if (canAfford) {
-      return t("walletPage.giftPanel.balanceAfter", {
-        defaultValue: "Yuborgandan keyin: {{amount}}",
-        amount: formatPrice(Math.max(0, remaining)),
+    if (!canAfford) {
+      return t("walletPage.giftPanel.balanceLow", {
+        defaultValue: "Balans yetarli emas. Kamida {{amount}} kerak.",
+        amount: formatPrice(total),
       });
     }
-    return t("walletPage.giftPanel.balanceLow", {
-      defaultValue: "Balans yetarli emas. Kamida {{amount}} kerak.",
-      amount: formatPrice(total),
+    return t("walletPage.giftPanel.balanceAfter", {
+      defaultValue: "Yuborgandan keyin: {{amount}}",
+      amount: formatPrice(Math.max(0, remaining)),
     });
-  }, [selectedDesign, giftAmount, giftInRange, canAfford, remaining, total, t]);
+  }, [hasRecipient, giftInRange, canAfford, remaining, total, t]);
 
   const pickRecipient = (r: (typeof recipients)[0]) => {
     setRecipientUserId(r.user_id);
@@ -361,97 +432,154 @@ export function WalletGiftPanel() {
     setCustomAmount("");
   };
 
-  const formatAmountInput = (digits: string) => {
-    const n = digits.replace(/\D/g, "");
-    if (!n) return "";
-    return Number(n).toLocaleString("uz-UZ");
-  };
-
-  const onCustomAmountChange = (value: string) => {
-    setPresetId("custom");
-    setCustomAmount(formatAmountInput(value));
-  };
-
   const occasionLabel = selectedOccasion
     ? t(selectedOccasion.labelKey, { defaultValue: selectedOccasion.defaultLabel })
     : undefined;
 
+  const amountFieldValue =
+    presetId === "custom"
+      ? customAmount
+      : giftAmount > 0
+        ? giftAmount.toLocaleString("uz-UZ")
+        : "";
+
   return (
-    <div className="relative pb-24 lg:pb-0">
-      <div className="space-y-5 lg:grid lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] lg:items-start lg:gap-8">
-        {/* Preview column */}
-        <div className="space-y-3 lg:sticky lg:top-20">
-          <GiftCardPreview
-            design={selectedDesign}
-            amount={giftAmount > 0 ? giftAmount : MIN_GIFT}
-            recipientLabel={recipientLabel}
-            note={note}
-            occasionLabel={occasionLabel}
+    <div className="relative pb-[7.5rem] lg:pb-0">
+      <div className="mx-auto max-w-lg space-y-6 lg:mx-0 lg:grid lg:max-w-none lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] lg:items-start lg:gap-10 lg:space-y-0">
+        {/* Visual column */}
+        <div className="space-y-4 lg:sticky lg:top-20">
+          <StepRail
+            doneRecipient={hasRecipient}
+            doneAmount={giftInRange}
+            doneDesign={Boolean(designId)}
           />
 
-          <div className="grid grid-cols-3 gap-2">
-            <div className="rounded-2xl bg-surface/70 px-3 py-2.5">
-              <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
-                {t("walletPage.giftPanel.designFee", { defaultValue: "Dizayn" })}
-              </p>
-              <p className="mt-0.5 text-sm font-bold tabular-nums">{formatPrice(designFee)}</p>
-            </div>
-            <div className="rounded-2xl bg-surface/70 px-3 py-2.5">
-              <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
-                {t("walletPage.giftPanel.giftAmount", { defaultValue: "Sovg'a" })}
-              </p>
-              <p className="mt-0.5 text-sm font-bold tabular-nums">{formatPrice(giftAmount)}</p>
-            </div>
-            <div className="rounded-2xl bg-foreground px-3 py-2.5 text-background">
-              <p className="text-[9px] font-bold uppercase tracking-[0.14em] opacity-70">
-                {t("walletPage.giftPanel.total", { defaultValue: "Jami" })}
-              </p>
-              <p className="mt-0.5 text-sm font-bold tabular-nums">{formatPrice(total)}</p>
-            </div>
+          <div className="relative">
+            <div
+              className="pointer-events-none absolute inset-x-6 -bottom-3 top-8 rounded-[32px] opacity-50 blur-2xl"
+              style={{
+                background: selectedDesign
+                  ? `linear-gradient(180deg, ${selectedDesign.preview.from}, transparent)`
+                  : "transparent",
+              }}
+              aria-hidden
+            />
+            <GiftCardPreview
+              design={selectedDesign}
+              amount={giftAmount > 0 ? giftAmount : MIN_GIFT}
+              recipientLabel={recipientLabel}
+              note={note}
+              occasionLabel={occasionLabel}
+            />
           </div>
 
-          <div className="flex items-center gap-2 rounded-2xl border border-border/60 bg-surface/40 px-3 py-2.5 text-[11px] font-semibold text-muted-foreground">
-            <Wallet className="h-3.5 w-3.5 shrink-0" />
-            <span>
+          {/* Design picker — under card, immediate visual link */}
+          <div>
+            <div className="mb-2.5 flex items-baseline justify-between gap-3">
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+                {t("walletPage.giftPanel.chooseDesign", { defaultValue: "Dizaynni tanlang" })}
+              </p>
+              {selectedDesign ? (
+                <p className="text-[11px] font-semibold tabular-nums text-muted-foreground">
+                  {designName(selectedDesign)} · {formatPrice(designFee)}
+                </p>
+              ) : null}
+            </div>
+
+            {designsLoading ? (
+              <div className="flex gap-2.5 overflow-hidden">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className="h-[4.5rem] w-[4.5rem] shrink-0 animate-pulse rounded-2xl bg-surface" />
+                ))}
+              </div>
+            ) : (
+              <div
+                ref={designScrollerRef}
+                className="flex gap-2.5 overflow-x-auto pb-1 snap-x snap-mandatory [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+              >
+                {designs.map((d) => {
+                  const active = designId === d.id;
+                  return (
+                    <button
+                      key={d.id}
+                      type="button"
+                      data-design-id={d.id}
+                      onClick={() => setDesignId(d.id)}
+                      aria-pressed={active}
+                      aria-label={designName(d)}
+                      className={cn(
+                        "relative h-[4.5rem] w-[4.5rem] shrink-0 cursor-pointer snap-center overflow-hidden rounded-2xl transition-all duration-200",
+                        active
+                          ? "ring-2 ring-foreground ring-offset-2 ring-offset-background"
+                          : "opacity-80 hover:opacity-100",
+                      )}
+                      style={{
+                        background: `linear-gradient(145deg, ${d.preview.from}, ${d.preview.to})`,
+                      }}
+                    >
+                      {active ? (
+                        <span className="absolute inset-0 flex items-center justify-center bg-black/15">
+                          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-background text-foreground shadow-sm">
+                            <Check className="h-3 w-3" strokeWidth={3} />
+                          </span>
+                        </span>
+                      ) : null}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          <div className="hidden items-center justify-between gap-3 rounded-2xl bg-surface/60 px-3.5 py-3 text-[11px] font-semibold lg:flex">
+            <span className="inline-flex items-center gap-1.5 text-muted-foreground">
+              <Wallet className="h-3.5 w-3.5" />
               {t("walletPage.giftPanel.balanceOk", {
                 defaultValue: "Balans: {{amount}}",
                 amount: formatPrice(balance),
               })}
             </span>
+            <span className="tabular-nums text-foreground">
+              {t("walletPage.giftPanel.total", { defaultValue: "Jami" })} {formatPrice(total)}
+            </span>
           </div>
         </div>
 
         {/* Form column */}
-        <div className="space-y-5">
-          {/* 1. Recipient */}
-          <section className="rounded-[24px] border border-border/50 bg-surface/30 p-4">
-            <SectionLabel step={1} htmlFor={recipientInputId}>
+        <div className="space-y-7">
+          {/* Recipient */}
+          <section>
+            <label
+              htmlFor={recipientInputId}
+              className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground"
+            >
               {t("walletPage.giftPanel.recipientField", { defaultValue: "Kimga" })}
-            </SectionLabel>
+            </label>
 
             {recipientUserId && recipientLabel ? (
-              <div className="mt-3 flex items-center gap-3 rounded-2xl bg-background px-3 py-3 ring-1 ring-border/70">
-                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-foreground text-background">
+              <div className="mt-2.5 flex items-center gap-3 rounded-[20px] bg-surface/70 px-3 py-3">
+                <span className="flex h-11 w-11 items-center justify-center rounded-full bg-foreground text-background">
                   <UserRound className="h-4 w-4" />
                 </span>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-bold">{recipientLabel}</p>
                   <p className="text-[11px] text-muted-foreground">
                     {t("walletPage.giftPanel.recipientSelected", {
-                      defaultValue: "Tanlandi — o'zgartirish mumkin",
+                      defaultValue: "Tanlandi",
                     })}
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={clearRecipient}
-                  className="cursor-pointer rounded-xl bg-surface px-3 py-2 text-xs font-bold transition-colors hover:bg-surface/80"
+                  aria-label={t("common.change", { defaultValue: "Almashtirish" })}
+                  className="grid h-9 w-9 cursor-pointer place-items-center rounded-full bg-background text-muted-foreground transition-colors hover:text-foreground"
                 >
-                  {t("common.change", { defaultValue: "Almashtirish" })}
+                  <X className="h-4 w-4" />
                 </button>
               </div>
             ) : (
-              <div className="relative mt-3">
+              <div className="relative mt-2.5">
                 <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <input
                   id={recipientInputId}
@@ -464,11 +592,11 @@ export function WalletGiftPanel() {
                   placeholder={t("walletPage.giftPanel.recipientPlaceholder", {
                     defaultValue: "Ism, telefon yoki hamyon raqami",
                   })}
-                  className="w-full rounded-2xl bg-background py-3.5 pl-10 pr-4 text-sm font-medium placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-foreground"
+                  className="w-full rounded-[20px] bg-surface/70 py-3.5 pl-10 pr-4 text-sm font-medium placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-foreground"
                   autoComplete="off"
                 />
                 {recipients.length > 0 && !recipientUserId ? (
-                  <ul className="absolute inset-x-0 top-full z-20 mt-1 max-h-48 overflow-y-auto rounded-2xl bg-background shadow-lg ring-1 ring-border">
+                  <ul className="absolute inset-x-0 top-full z-20 mt-1.5 max-h-48 overflow-y-auto rounded-[20px] bg-background shadow-lg ring-1 ring-border">
                     {recipients.map((r) => (
                       <li key={r.user_id}>
                         <button
@@ -497,17 +625,25 @@ export function WalletGiftPanel() {
             )}
           </section>
 
-          {/* 2. Amount */}
-          <section className="rounded-[24px] border border-border/50 bg-surface/30 p-4">
-            <SectionLabel step={2} htmlFor={amountInputId}>
-              {t("walletPage.giftPanel.chooseAmount", { defaultValue: "Summani tanlang" })}
-            </SectionLabel>
+          {/* Amount */}
+          <section>
+            <div className="flex items-end justify-between gap-3">
+              <label
+                htmlFor={amountInputId}
+                className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground"
+              >
+                {t("walletPage.giftPanel.chooseAmount", { defaultValue: "Summani tanlang" })}
+              </label>
+              <p className="text-[11px] font-semibold tabular-nums text-muted-foreground">
+                {formatPrice(MIN_GIFT)} — {formatPrice(MAX_GIFT)}
+              </p>
+            </div>
 
-            <p className="mt-3 text-3xl font-bold tracking-tight tabular-nums">
+            <p className="mt-2 text-[2rem] font-bold tracking-tight tabular-nums leading-none">
               {formatPrice(giftAmount > 0 ? giftAmount : 0)}
             </p>
 
-            <div className="mt-3 flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <div className="mt-3 grid grid-cols-5 gap-2">
               {GIFT_PRESETS.map((g) => {
                 const active = presetId === g.id;
                 return (
@@ -516,10 +652,10 @@ export function WalletGiftPanel() {
                     type="button"
                     onClick={() => selectPreset(g.id)}
                     className={cn(
-                      "shrink-0 cursor-pointer rounded-full px-4 py-2.5 text-sm font-bold transition-colors duration-200",
+                      "cursor-pointer rounded-2xl py-3 text-sm font-bold transition-colors duration-200",
                       active
                         ? "bg-foreground text-background"
-                        : "bg-background text-foreground ring-1 ring-border/70 hover:bg-surface",
+                        : "bg-surface/70 text-foreground hover:bg-surface",
                     )}
                   >
                     {g.label}
@@ -528,19 +664,16 @@ export function WalletGiftPanel() {
               })}
             </div>
 
-            <div className="relative mt-3">
+            <div className="relative mt-2.5">
               <input
                 id={amountInputId}
                 type="text"
                 inputMode="numeric"
-                value={
-                  presetId === "custom"
-                    ? customAmount
-                    : giftAmount > 0
-                      ? giftAmount.toLocaleString("uz-UZ")
-                      : ""
-                }
-                onChange={(e) => onCustomAmountChange(e.target.value)}
+                value={amountFieldValue}
+                onChange={(e) => {
+                  setPresetId("custom");
+                  setCustomAmount(formatAmountInput(e.target.value));
+                }}
                 onFocus={() => {
                   if (presetId !== "custom") {
                     setPresetId("custom");
@@ -550,83 +683,24 @@ export function WalletGiftPanel() {
                 placeholder={t("walletPage.giftPanel.customAmountHint", {
                   defaultValue: "Yoki o'zingiz yozing…",
                 })}
-                className="w-full rounded-2xl bg-background px-4 py-3.5 text-sm font-bold tabular-nums placeholder:font-medium placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-foreground"
+                className="w-full rounded-[20px] bg-surface/70 px-4 py-3.5 text-sm font-bold tabular-nums placeholder:font-medium placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-foreground"
               />
+              <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[11px] font-bold text-muted-foreground">
+                so&apos;m
+              </span>
             </div>
-
-            {balanceHint ? (
-              <p
-                className={cn(
-                  "mt-2 text-[11px] font-semibold",
-                  canAfford && giftInRange ? "text-muted-foreground" : "text-destructive",
-                )}
-              >
-                {balanceHint}
-              </p>
-            ) : null}
           </section>
 
-          {/* 3. Design carousel */}
+          {/* Message */}
           <section>
-            <SectionLabel step={3}>
-              {t("walletPage.giftPanel.chooseDesign", { defaultValue: "Dizaynni tanlang" })}
-            </SectionLabel>
-
-            {designsLoading ? (
-              <div className="mt-3 flex gap-3 overflow-hidden">
-                {Array.from({ length: 4 }).map((_, i) => (
-                  <div key={i} className="h-[7.5rem] w-[7.25rem] shrink-0 animate-pulse rounded-[22px] bg-surface" />
-                ))}
-              </div>
-            ) : (
-              <div className="mt-3 -mx-1 flex gap-3 overflow-x-auto px-1 pb-2 snap-x snap-mandatory [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                {designs.map((d) => {
-                  const active = designId === d.id;
-                  const fee = parseGiftDesignFee(d.fee);
-                  return (
-                    <button
-                      key={d.id}
-                      type="button"
-                      onClick={() => setDesignId(d.id)}
-                      className={cn(
-                        "group relative w-[7.25rem] shrink-0 cursor-pointer snap-start overflow-hidden rounded-[22px] border-2 text-left transition-all duration-200",
-                        active
-                          ? "border-foreground shadow-[0_12px_28px_-18px_rgba(0,0,0,0.45)]"
-                          : "border-transparent opacity-90 hover:opacity-100",
-                      )}
-                    >
-                      <div
-                        className="relative h-16 w-full"
-                        style={{
-                          background: `linear-gradient(135deg, ${d.preview.from}, ${d.preview.to})`,
-                        }}
-                      >
-                        {active ? (
-                          <span className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full bg-background text-foreground shadow-sm">
-                            <Check className="h-3 w-3" strokeWidth={3} />
-                          </span>
-                        ) : null}
-                      </div>
-                      <div className="bg-surface px-2.5 py-2.5">
-                        <p className="truncate text-[11px] font-bold">{designName(d)}</p>
-                        <p className="text-[10px] font-semibold text-muted-foreground tabular-nums">
-                          {formatPrice(fee)}
-                        </p>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </section>
-
-          {/* 4. Occasion + note */}
-          <section className="rounded-[24px] border border-border/50 bg-surface/30 p-4">
-            <SectionLabel step={4} htmlFor={noteInputId}>
+            <label
+              htmlFor={noteInputId}
+              className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground"
+            >
               {t("walletPage.giftPanel.noteField", { defaultValue: "Tabriknoma" })}
-            </SectionLabel>
+            </label>
 
-            <div className="mt-3 flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <div className="mt-2.5 grid grid-cols-4 gap-2">
               {OCCASIONS.map((occ) => {
                 const Icon = occ.icon;
                 const active = occasionId === occ.id;
@@ -635,15 +709,18 @@ export function WalletGiftPanel() {
                     key={occ.id}
                     type="button"
                     onClick={() => applyOccasion(occ.id)}
+                    aria-pressed={active}
                     className={cn(
-                      "inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-bold transition-colors duration-200",
+                      "flex cursor-pointer flex-col items-center gap-1.5 rounded-2xl px-2 py-3 text-center transition-colors duration-200",
                       active
                         ? "bg-foreground text-background"
-                        : "bg-background text-foreground ring-1 ring-border/70 hover:bg-surface",
+                        : "bg-surface/70 text-foreground hover:bg-surface",
                     )}
                   >
-                    <Icon className="h-3.5 w-3.5" />
-                    {t(occ.labelKey, { defaultValue: occ.defaultLabel })}
+                    <Icon className="h-4 w-4" />
+                    <span className="text-[10px] font-bold leading-tight">
+                      {t(occ.labelKey, { defaultValue: occ.defaultLabel })}
+                    </span>
                   </button>
                 );
               })}
@@ -657,50 +734,74 @@ export function WalletGiftPanel() {
               placeholder={t("walletPage.giftPanel.notePlaceholder", {
                 defaultValue: "Sovg'aga qisqa xabar",
               })}
-              className="mt-3 w-full resize-none rounded-2xl bg-background px-4 py-3.5 text-sm font-medium placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-foreground"
+              className="mt-2.5 w-full resize-none rounded-[20px] bg-surface/70 px-4 py-3.5 text-sm font-medium placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-foreground"
             />
             <p className="mt-1.5 text-right text-[10px] font-semibold tabular-nums text-muted-foreground">
               {note.length}/500
             </p>
           </section>
 
-          {/* Desktop CTA */}
-          <button
-            type="button"
-            disabled={!canSend}
-            onClick={onContinueToConfirm}
-            className="hidden w-full cursor-pointer rounded-2xl bg-foreground py-4 text-sm font-bold text-background transition-transform duration-200 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 lg:block"
-          >
-            {t("walletPage.giftPanel.review", { defaultValue: "Tekshirib yuborish" })}
-          </button>
+          <div className="hidden space-y-2 lg:block">
+            <p
+              className={cn(
+                "text-[11px] font-semibold",
+                canSend ? "text-muted-foreground" : "text-destructive",
+              )}
+            >
+              {missingHint}
+            </p>
+            <button
+              type="button"
+              disabled={!canSend}
+              onClick={onContinueToConfirm}
+              className="w-full cursor-pointer rounded-[20px] bg-foreground py-4 text-sm font-bold text-background transition-transform duration-200 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              {t("walletPage.giftPanel.review", { defaultValue: "Tekshirib yuborish" })}
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Mobile sticky CTA */}
+      {/* Mobile sticky checkout */}
       <motion.div
-        initial={reduced ? false : { y: 24, opacity: 0 }}
+        initial={reduced ? false : { y: 28, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        className="fixed inset-x-0 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-30 px-4 lg:hidden"
+        className="fixed inset-x-0 bottom-[calc(4.25rem+env(safe-area-inset-bottom))] z-30 px-4 lg:hidden"
       >
-        <div className="mx-auto flex max-w-lg items-center gap-3 rounded-[22px] bg-foreground p-2 pl-4 shadow-[0_16px_40px_-16px_rgba(0,0,0,0.55)]">
-          <div className="min-w-0 flex-1 text-background">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] opacity-65">
-              {t("walletPage.giftPanel.total", { defaultValue: "Jami" })}
-            </p>
-            <p className="truncate text-base font-bold tabular-nums">{formatPrice(total)}</p>
+        <div className="mx-auto max-w-lg overflow-hidden rounded-[24px] bg-foreground text-background shadow-[0_18px_48px_-18px_rgba(0,0,0,0.55)]">
+          <div className="flex items-center gap-1 border-b border-white/10 px-4 py-2 text-[10px] font-semibold tabular-nums opacity-70">
+            <span>{formatPrice(giftAmount)}</span>
+            <span>+</span>
+            <span>{formatPrice(designFee)}</span>
+            <span className="ml-auto inline-flex items-center gap-1 opacity-90">
+              <Wallet className="h-3 w-3" />
+              {formatPrice(balance)}
+            </span>
           </div>
-          <button
-            type="button"
-            disabled={!canSend}
-            onClick={onContinueToConfirm}
-            className="cursor-pointer shrink-0 rounded-[16px] bg-background px-5 py-3.5 text-sm font-bold text-foreground transition-opacity duration-200 disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            {t("walletPage.giftPanel.reviewShort", { defaultValue: "Yuborish" })}
-          </button>
+          <div className="flex items-center gap-3 p-2 pl-4">
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] opacity-65">
+                {t("walletPage.giftPanel.total", { defaultValue: "Jami" })}
+              </p>
+              <p className="truncate text-base font-bold tabular-nums">{formatPrice(total)}</p>
+            </div>
+            <button
+              type="button"
+              disabled={!canSend}
+              onClick={onContinueToConfirm}
+              className="cursor-pointer shrink-0 rounded-[16px] bg-background px-5 py-3.5 text-sm font-bold text-foreground transition-opacity duration-200 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              {t("walletPage.giftPanel.reviewShort", { defaultValue: "Yuborish" })}
+            </button>
+          </div>
         </div>
+        {!canSend ? (
+          <p className="mx-auto mt-2 max-w-lg px-1 text-center text-[10px] font-semibold text-destructive">
+            {missingHint}
+          </p>
+        ) : null}
       </motion.div>
 
-      {/* Confirm sheet */}
       {step === "confirm" ? (
         <div
           className="fixed inset-0 z-50 flex items-end justify-center bg-black/55 p-4 sm:items-center"
@@ -718,28 +819,24 @@ export function WalletGiftPanel() {
             onClick={(e) => e.stopPropagation()}
           >
             <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-              {t("walletPage.giftPanel.confirmTitle", { defaultValue: "2-bosqich · tasdiqlash" })}
+              {t("walletPage.giftPanel.confirmTitle", { defaultValue: "Tasdiqlash" })}
             </p>
             <h3 id="gift-confirm-heading" className="mt-2 text-lg font-bold">
               {t("walletPage.giftPanel.confirmHeading", { defaultValue: "Sovg'ani yuborasizmi?" })}
             </h3>
-            <p className="mt-1 text-xs text-muted-foreground">
-              {t("walletPage.giftPanel.confirmHint", {
-                defaultValue: "Tekshiruv → dizayn to'lovi → yechish → kirim → ledger muhri",
-              })}
-            </p>
 
-            <div className="mt-4 overflow-hidden rounded-2xl">
+            <div className="mt-4">
               <GiftCardPreview
                 design={selectedDesign}
                 amount={giftAmount}
                 recipientLabel={recipientLabel || query}
                 note={note}
                 occasionLabel={occasionLabel}
+                compact
               />
             </div>
 
-            <ul className="mt-3 space-y-2 rounded-2xl bg-surface px-4 py-3 text-sm">
+            <ul className="mt-3 space-y-2.5 text-sm">
               <li className="flex justify-between gap-3">
                 <span className="text-muted-foreground">
                   {t("walletPage.giftPanel.recipientField", { defaultValue: "Kimga" })}
@@ -762,7 +859,7 @@ export function WalletGiftPanel() {
                 </span>
                 <span className="font-semibold tabular-nums">{formatPrice(giftAmount)}</span>
               </li>
-              <li className="flex justify-between gap-3 border-t border-border/60 pt-2 font-bold">
+              <li className="flex justify-between gap-3 border-t border-border/60 pt-2.5 font-bold">
                 <span>{t("walletPage.giftPanel.total", { defaultValue: "Jami" })}</span>
                 <span className="tabular-nums">{formatPrice(total)}</span>
               </li>
@@ -773,7 +870,7 @@ export function WalletGiftPanel() {
                 type="button"
                 onClick={() => setStep("form")}
                 disabled={sendGift.isPending}
-                className="cursor-pointer rounded-2xl bg-surface py-3.5 text-sm font-bold transition-colors hover:bg-surface/80"
+                className="cursor-pointer rounded-[18px] bg-surface py-3.5 text-sm font-bold transition-colors hover:bg-surface/80"
               >
                 {t("common.back", { defaultValue: "Orqaga" })}
               </button>
@@ -781,7 +878,7 @@ export function WalletGiftPanel() {
                 type="button"
                 disabled={sendGift.isPending}
                 onClick={onSend}
-                className="cursor-pointer rounded-2xl bg-foreground py-3.5 text-sm font-bold text-background disabled:opacity-40"
+                className="cursor-pointer rounded-[18px] bg-foreground py-3.5 text-sm font-bold text-background disabled:opacity-40"
               >
                 {sendGift.isPending
                   ? t("walletPage.giftPanel.sending", { defaultValue: "Yuborilmoqda…" })

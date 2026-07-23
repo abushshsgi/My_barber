@@ -21,7 +21,7 @@ export function WalletMobileSubpage({ section, backTo = "/wallet" }: Props) {
       strictBack
       flush
     >
-      <div className="px-4 pb-8">
+      <div className={section === "gift" ? "px-4 pb-4" : "px-4 pb-8"}>
         <WalletPanelContent section={section} hideTitle />
       </div>
     </MobilePageShell>
