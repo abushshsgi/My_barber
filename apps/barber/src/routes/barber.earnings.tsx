@@ -359,6 +359,15 @@ function EarningsPage() {
         </div>
       </div>
 
+      <div className="mb-4 flex flex-wrap gap-2">
+        <Link
+          to="/barber/qr-pay"
+          className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-card px-3 py-2 text-xs font-bold"
+        >
+          QR to'lov qabul qilish
+        </Link>
+      </div>
+
       <div className="rounded-xl border border-border bg-card overflow-hidden shadow-card">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-5 py-4">
           <div>

@@ -61,6 +61,7 @@ import { Route as SalonIdRouteImport } from './routes/salon.$id'
 import { Route as StoriesSalonIdRouteImport } from './routes/stories.$salonId'
 import { Route as WalletGiftsRouteImport } from './routes/wallet_.gifts'
 import { Route as WalletHistoryRouteImport } from './routes/wallet_.history'
+import { Route as WalletQrPayRouteImport } from './routes/wallet_.qr-pay'
 import { Route as WalletTopUpRouteImport } from './routes/wallet_.top-up'
 import { Route as BookingBarberBarberIdRouteImport } from './routes/booking.barber.$barberId'
 import { Route as DevExploreGenIndexRouteImport } from './routes/dev.explore-gen.index'
@@ -329,6 +330,11 @@ const WalletHistoryRoute = WalletHistoryRouteImport.update({
   path: '/wallet/history',
   getParentRoute: () => rootRouteImport,
 } as any)
+const WalletQrPayRoute = WalletQrPayRouteImport.update({
+  id: '/wallet_/qr-pay',
+  path: '/wallet/qr-pay',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const WalletTopUpRoute = WalletTopUpRouteImport.update({
   id: '/wallet_/top-up',
   path: '/wallet/top-up',
@@ -418,6 +424,7 @@ export interface FileRoutesByFullPath {
   '/stories/$salonId': typeof StoriesSalonIdRoute
   '/wallet/gifts': typeof WalletGiftsRoute
   '/wallet/history': typeof WalletHistoryRoute
+  '/wallet/qr-pay': typeof WalletQrPayRoute
   '/wallet/top-up': typeof WalletTopUpRoute
   '/booking/barber/$barberId': typeof BookingBarberBarberIdRoute
   '/dev/explore-gen/assets': typeof DevExploreGenAssetsRoute
@@ -478,6 +485,7 @@ export interface FileRoutesByTo {
   '/stories/$salonId': typeof StoriesSalonIdRoute
   '/wallet/gifts': typeof WalletGiftsRoute
   '/wallet/history': typeof WalletHistoryRoute
+  '/wallet/qr-pay': typeof WalletQrPayRoute
   '/wallet/top-up': typeof WalletTopUpRoute
   '/booking/barber/$barberId': typeof BookingBarberBarberIdRoute
   '/dev/explore-gen/assets': typeof DevExploreGenAssetsRoute
@@ -540,6 +548,7 @@ export interface FileRoutesById {
   '/stories/$salonId': typeof StoriesSalonIdRoute
   '/wallet_/gifts': typeof WalletGiftsRoute
   '/wallet_/history': typeof WalletHistoryRoute
+  '/wallet_/qr-pay': typeof WalletQrPayRoute
   '/wallet_/top-up': typeof WalletTopUpRoute
   '/booking/barber/$barberId': typeof BookingBarberBarberIdRoute
   '/dev/explore-gen/assets': typeof DevExploreGenAssetsRoute
@@ -603,6 +612,7 @@ export interface FileRouteTypes {
     | '/stories/$salonId'
     | '/wallet/gifts'
     | '/wallet/history'
+    | '/wallet/qr-pay'
     | '/wallet/top-up'
     | '/booking/barber/$barberId'
     | '/dev/explore-gen/assets'
@@ -663,6 +673,7 @@ export interface FileRouteTypes {
     | '/stories/$salonId'
     | '/wallet/gifts'
     | '/wallet/history'
+    | '/wallet/qr-pay'
     | '/wallet/top-up'
     | '/booking/barber/$barberId'
     | '/dev/explore-gen/assets'
@@ -724,6 +735,7 @@ export interface FileRouteTypes {
     | '/stories/$salonId'
     | '/wallet_/gifts'
     | '/wallet_/history'
+    | '/wallet_/qr-pay'
     | '/wallet_/top-up'
     | '/booking/barber/$barberId'
     | '/dev/explore-gen/assets'
@@ -783,6 +795,7 @@ export interface RootRouteChildren {
   SalonIdRoute: typeof SalonIdRoute
   WalletGiftsRoute: typeof WalletGiftsRoute
   WalletHistoryRoute: typeof WalletHistoryRoute
+  WalletQrPayRoute: typeof WalletQrPayRoute
   WalletTopUpRoute: typeof WalletTopUpRoute
   BookingBarberBarberIdRoute: typeof BookingBarberBarberIdRoute
   ExploreStyleIdTryRoute: typeof ExploreStyleIdTryRoute
@@ -1156,6 +1169,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WalletHistoryRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/wallet_/qr-pay': {
+      id: '/wallet_/qr-pay'
+      path: '/wallet/qr-pay'
+      fullPath: '/wallet/qr-pay'
+      preLoaderRoute: typeof WalletQrPayRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/wallet_/top-up': {
       id: '/wallet_/top-up'
       path: '/wallet/top-up'
@@ -1305,6 +1325,7 @@ const rootRouteChildren: RootRouteChildren = {
   SalonIdRoute: SalonIdRoute,
   WalletGiftsRoute: WalletGiftsRoute,
   WalletHistoryRoute: WalletHistoryRoute,
+  WalletQrPayRoute: WalletQrPayRoute,
   WalletTopUpRoute: WalletTopUpRoute,
   BookingBarberBarberIdRoute: BookingBarberBarberIdRoute,
   ExploreStyleIdTryRoute: ExploreStyleIdTryRoute,

@@ -63,6 +63,7 @@ export type NavItem = {
     | "ImageIcon"
     | "Wallet"
     | "Receipt"
+    | "QrCode"
     | "Package"
     | "BarChart3"
     | "LineChart"
@@ -90,6 +91,7 @@ export const NAV_CONFIG: Record<NavCapability, NavItem[]> = {
     { to: "/barber/reviews", label: "Sharhlar", iconName: "Star", group: "Aloqa" },
     { to: "/barber/portfolio", label: "Portfolio", iconName: "ImageIcon", group: "Aloqa" },
     { to: "/barber/earnings", label: "Daromad", iconName: "Wallet", group: "Biznes" },
+    { to: "/barber/qr-pay", label: "QR to'lov", iconName: "QrCode", group: "Biznes" },
     { to: "/barber/expenses", label: "Xarajatlar", iconName: "Receipt", group: "Biznes" },
     { to: "/barber/inventory", label: "Inventar", iconName: "Package", group: "Biznes" },
     { to: "/barber/stats", label: "Statistika", iconName: "BarChart3", group: "Biznes" },
@@ -343,7 +345,7 @@ export const QUICK_ACTIONS: Record<FlowIdentity, QuickAction[]> = {
   independent: [
     { to: "/barber/bookings", label: "Bronlarni boshqarish", iconName: "CalendarClock" },
     { to: "/barber/earnings", label: "Daromad", iconName: "Wallet" },
-    { to: "/barber/portfolio", label: "Portfolio", iconName: "ImageIcon" },
+    { to: "/barber/qr-pay", label: "QR to'lov", iconName: "QrCode" },
   ],
   unknown: [
     { to: "/barber/profile", label: "Profilni to'ldirish", iconName: "UserCog" },

@@ -10,6 +10,7 @@ const ENTRY_TITLES: Record<string, string> = {
   refund: "Qaytarim",
   adjustment: "Tuzatish",
   subscription: "Obuna",
+  qr_pay: "QR to'lov",
 };
 
 function formatTxDate(iso: string): string {
@@ -99,6 +100,12 @@ export function mapLedgerEntry(entry: ApiLedgerEntry): WalletTransaction {
     title = fromName ? `${fromName}dan sovg'a` : "Sovg'a qabul qilindi";
     if (typeof meta.message === "string" && meta.message) {
       subtitle = meta.message.slice(0, 60);
+    }
+  } else if (entry.entry_type === "qr_pay") {
+    const barberName = typeof meta.barber_name === "string" ? meta.barber_name.trim() : "";
+    title = barberName ? `QR to'lov · ${barberName}` : "QR to'lov";
+    if (typeof meta.note === "string" && meta.note.trim()) {
+      subtitle = meta.note.trim().slice(0, 60);
     }
   } else if (entry.entry_type === "gift_design_fee" && entry.kind === "out") {
     const designId = typeof meta.design_id === "string" ? meta.design_id : "";

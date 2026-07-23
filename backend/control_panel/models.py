@@ -27,6 +27,7 @@ class FinanceTransaction(models.Model):
         COMMISSION = "commission", "Commission"
         PAYOUT = "payout", "Payout"
         REFUND = "refund", "Refund"
+        QR_PAY = "qr_pay", "QR payment"
 
     class Status(models.TextChoices):
         PENDING = "pending", "Pending"

@@ -31,6 +31,7 @@ import {
   Gift,
   ArrowLeftRight,
   Banknote,
+  QrCode,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MysaloonLogo } from "@/components/brand/MysaloonLogo";
@@ -96,9 +97,10 @@ const SECTIONS: Section[] = [
     key: "gifts",
     label: "Sovg'a kartalar",
     icon: Gift,
-    matchPrefixes: ["/admin/finance/gifts", "/admin/finance/gift-designs"],
+    matchPrefixes: ["/admin/finance/gifts", "/admin/finance/gift-designs", "/admin/finance/qr-payments"],
     items: [
       { to: "/admin/finance/gifts", label: "Sovg'a oqimi", icon: Gift },
+      { to: "/admin/finance/qr-payments", label: "QR to'lovlar", icon: QrCode },
       { to: "/admin/finance/gift-designs", label: "Dizaynlar", icon: Sparkles },
       { to: "/admin/statistics/wallet", label: "Hamyon nazorati", icon: ShieldCheck },
     ],

@@ -20,6 +20,7 @@ MIN_WITHDRAWAL_UZS = Decimal("50000")
 def _barber_available_balance(barber) -> Decimal:
     income = barber_platform_earnings_qs(barber).aggregate(t=Sum("total_price"))["t"] or 0
     from barbers.models import BarberExpense
+    from wallet.services.qr_pay import QrPayService
 
     expenses = (
         BarberExpense.objects.filter(barber=barber).aggregate(t=Sum("amount"))["t"] or 0
@@ -31,7 +32,8 @@ def _barber_available_balance(barber) -> Decimal:
         ).aggregate(t=Sum("amount"))["t"]
         or 0
     )
-    gross = Decimal(str(income)) - Decimal(str(expenses))
+    qr_income = QrPayService.barber_qr_income_total(barber)
+    gross = Decimal(str(income)) + Decimal(str(qr_income)) - Decimal(str(expenses))
     return max(Decimal("0"), gross - Decimal(str(pending)))
 
 

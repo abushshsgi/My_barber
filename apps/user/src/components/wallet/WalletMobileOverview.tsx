@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { ChevronLeft, CreditCard, Crown, Gift, Inbox, Plus, Sparkles } from "lucide-react";
+import { ChevronLeft, CreditCard, Crown, Gift, Inbox, Plus, QrCode, Sparkles } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
@@ -169,6 +169,21 @@ export function WalletMobileOverview() {
               );
             })}
           </div>
+
+          <Link
+            to="/wallet/qr-pay"
+            className="flex items-center gap-3 rounded-[20px] border border-border/70 bg-card px-3.5 py-3 transition-transform active:scale-[0.99]"
+          >
+            <span className="grid h-10 w-10 place-items-center rounded-2xl bg-surface">
+              <QrCode className="h-[18px] w-[18px]" strokeWidth={2} />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-[13px] font-bold">QR to'lov</span>
+              <span className="mt-0.5 block text-[11px] text-muted-foreground">
+                Sartaroshga hamyondan to'lang
+              </span>
+            </span>
+          </Link>
         </div>
 
         <WalletNewsSection className="mt-7" />

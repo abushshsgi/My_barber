@@ -31,6 +31,7 @@ import { Route as BarberMarketingRouteImport } from './routes/barber.marketing'
 import { Route as BarberNotificationsRouteImport } from './routes/barber.notifications'
 import { Route as BarberPortfolioRouteImport } from './routes/barber.portfolio'
 import { Route as BarberProfileRouteImport } from './routes/barber.profile'
+import { Route as BarberQrPayRouteImport } from './routes/barber.qr-pay'
 import { Route as BarberReviewsRouteImport } from './routes/barber.reviews'
 import { Route as BarberScheduleRouteImport } from './routes/barber.schedule'
 import { Route as BarberServicesRouteImport } from './routes/barber.services'
@@ -164,6 +165,11 @@ const BarberPortfolioRoute = BarberPortfolioRouteImport.update({
 const BarberProfileRoute = BarberProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
+  getParentRoute: () => BarberRoute,
+} as any)
+const BarberQrPayRoute = BarberQrPayRouteImport.update({
+  id: '/qr-pay',
+  path: '/qr-pay',
   getParentRoute: () => BarberRoute,
 } as any)
 const BarberReviewsRoute = BarberReviewsRouteImport.update({
@@ -312,6 +318,7 @@ export interface FileRoutesByFullPath {
   '/barber/notifications': typeof BarberNotificationsRoute
   '/barber/portfolio': typeof BarberPortfolioRoute
   '/barber/profile': typeof BarberProfileRoute
+  '/barber/qr-pay': typeof BarberQrPayRoute
   '/barber/reviews': typeof BarberReviewsRoute
   '/barber/schedule': typeof BarberScheduleRoute
   '/barber/services': typeof BarberServicesRoute
@@ -359,6 +366,7 @@ export interface FileRoutesByTo {
   '/barber/notifications': typeof BarberNotificationsRoute
   '/barber/portfolio': typeof BarberPortfolioRoute
   '/barber/profile': typeof BarberProfileRoute
+  '/barber/qr-pay': typeof BarberQrPayRoute
   '/barber/reviews': typeof BarberReviewsRoute
   '/barber/schedule': typeof BarberScheduleRoute
   '/barber/services': typeof BarberServicesRoute
@@ -405,6 +413,7 @@ export interface FileRoutesById {
   '/barber/notifications': typeof BarberNotificationsRoute
   '/barber/portfolio': typeof BarberPortfolioRoute
   '/barber/profile': typeof BarberProfileRoute
+  '/barber/qr-pay': typeof BarberQrPayRoute
   '/barber/reviews': typeof BarberReviewsRoute
   '/barber/schedule': typeof BarberScheduleRoute
   '/barber/services': typeof BarberServicesRoute
@@ -455,6 +464,7 @@ export interface FileRouteTypes {
     | '/barber/notifications'
     | '/barber/portfolio'
     | '/barber/profile'
+    | '/barber/qr-pay'
     | '/barber/reviews'
     | '/barber/schedule'
     | '/barber/services'
@@ -502,6 +512,7 @@ export interface FileRouteTypes {
     | '/barber/notifications'
     | '/barber/portfolio'
     | '/barber/profile'
+    | '/barber/qr-pay'
     | '/barber/reviews'
     | '/barber/schedule'
     | '/barber/services'
@@ -547,6 +558,7 @@ export interface FileRouteTypes {
     | '/barber/notifications'
     | '/barber/portfolio'
     | '/barber/profile'
+    | '/barber/qr-pay'
     | '/barber/reviews'
     | '/barber/schedule'
     | '/barber/services'
@@ -741,6 +753,13 @@ declare module '@tanstack/react-router' {
       path: '/profile'
       fullPath: '/barber/profile'
       preLoaderRoute: typeof BarberProfileRouteImport
+      parentRoute: typeof BarberRoute
+    }
+    '/barber/qr-pay': {
+      id: '/barber/qr-pay'
+      path: '/qr-pay'
+      fullPath: '/barber/qr-pay'
+      preLoaderRoute: typeof BarberQrPayRouteImport
       parentRoute: typeof BarberRoute
     }
     '/barber/reviews': {
@@ -974,6 +993,7 @@ interface BarberRouteChildren {
   BarberNotificationsRoute: typeof BarberNotificationsRoute
   BarberPortfolioRoute: typeof BarberPortfolioRoute
   BarberProfileRoute: typeof BarberProfileRoute
+  BarberQrPayRoute: typeof BarberQrPayRoute
   BarberReviewsRoute: typeof BarberReviewsRoute
   BarberScheduleRoute: typeof BarberScheduleRoute
   BarberServicesRoute: typeof BarberServicesRoute
@@ -1005,6 +1025,7 @@ const BarberRouteChildren: BarberRouteChildren = {
   BarberNotificationsRoute: BarberNotificationsRoute,
   BarberPortfolioRoute: BarberPortfolioRoute,
   BarberProfileRoute: BarberProfileRoute,
+  BarberQrPayRoute: BarberQrPayRoute,
   BarberReviewsRoute: BarberReviewsRoute,
   BarberScheduleRoute: BarberScheduleRoute,
   BarberServicesRoute: BarberServicesRoute,

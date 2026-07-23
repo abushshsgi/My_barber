@@ -31,6 +31,7 @@ import {
   Target,
   Sparkles,
   Clock,
+  QrCode,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -93,6 +94,7 @@ const ICON_BY_NAME: Record<MatrixNavItem["iconName"], NavItem["icon"]> = {
   ImageIcon,
   Wallet,
   Receipt,
+  QrCode,
   Package,
   BarChart3,
   LineChart,

@@ -243,6 +243,15 @@ from wallet.card_deposit_views import (
     WalletCardDepositListView,
     WalletReceivingCardView,
 )
+from wallet.qr_pay_views import (
+    AdminQrPaymentDetailView,
+    AdminQrPaymentListView,
+    BarberQrPayPaymentsView,
+    BarberQrPayProfileView,
+    BarberQrPayRequestCreateView,
+    WalletQrPayResolveView,
+    WalletQrPayView,
+)
 from wallet.payment_confirm import PaymentConfirmView
 from wallet.payment_views import PaymentCheckoutView, PaymentProvidersView
 from wallet.views import (
@@ -368,6 +377,8 @@ api_routes = [
     path("admin/finance/gifts/<uuid:pk>/refund/", AdminGiftRefundView.as_view()),
     path("admin/finance/gifts/<uuid:pk>/dispute/", AdminGiftDisputeView.as_view()),
     path("admin/finance/gifts/<uuid:pk>/verify-chains/", AdminGiftVerifyChainsView.as_view()),
+    path("admin/finance/qr-payments/", AdminQrPaymentListView.as_view()),
+    path("admin/finance/qr-payments/<uuid:pk>/", AdminQrPaymentDetailView.as_view()),
     path("admin/finance/gift-designs/", AdminGiftDesignsAnalyticsView.as_view()),
     path("admin/ledger/suggest/", AdminLedgerSuggestView.as_view()),
     path("admin/ledger/lookup/", AdminLedgerLookupView.as_view()),
@@ -473,6 +484,9 @@ api_routes = [
     path("barber/payouts/balance/", BarberPayoutBalanceView.as_view()),
     path("barber/payouts/request/", BarberPayoutRequestView.as_view()),
     path("barber/payouts/details/", BarberPayoutDetailsView.as_view()),
+    path("barber/qr-pay/profile/", BarberQrPayProfileView.as_view()),
+    path("barber/qr-pay/requests/", BarberQrPayRequestCreateView.as_view()),
+    path("barber/qr-pay/payments/", BarberQrPayPaymentsView.as_view()),
     path("barber/marketing/boost/", BarberMarketingBoostView.as_view()),
     path("amenities/", AmenityCatalogView.as_view()),
     path("barber/amenities/", BarberSalonAmenitiesView.as_view()),
@@ -512,6 +526,8 @@ api_routes = [
     path("wallet/gift/designs/", WalletGiftDesignsView.as_view()),
     path("wallet/gift/send/", WalletGiftSendView.as_view()),
     path("wallet/gift/received/", WalletGiftReceivedView.as_view()),
+    path("wallet/qr-pay/resolve/", WalletQrPayResolveView.as_view()),
+    path("wallet/qr-pay/", WalletQrPayView.as_view()),
     path("wallet/recipients/search/", WalletRecipientSearchView.as_view()),
     path("payments/providers/", PaymentProvidersView.as_view()),
     path("payments/checkout/", PaymentCheckoutView.as_view()),

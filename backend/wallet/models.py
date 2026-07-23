@@ -46,6 +46,7 @@ class LedgerEntry(models.Model):
         SUBSCRIPTION = "subscription", "Subscription"
         REFUND = "refund", "Refund"
         ADJUSTMENT = "adjustment", "Adjustment"
+        QR_PAY = "qr_pay", "QR payment to barber"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     wallet = models.ForeignKey(
@@ -220,3 +221,126 @@ class ManualCardDeposit(models.Model):
 
     def __str__(self) -> str:
         return f"CardDeposit {self.transaction_ref} {self.amount} ({self.status})"
+
+
+class BarberQrPayProfile(models.Model):
+    """Sartaroshning doimiy QR to'lov identifikatori."""
+
+    barber = models.OneToOneField(
+        "barbers.Barber",
+        on_delete=models.CASCADE,
+        related_name="qr_pay_profile",
+    )
+    public_code = models.CharField(max_length=32, unique=True, db_index=True)
+    is_active = models.BooleanField(default=True, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self) -> str:
+        return f"QR {self.public_code} → barber {self.barber_id}"
+
+
+class QrPaymentRequest(models.Model):
+    """Sartarosh yaratgan summali (yoki ochiq) QR so'rov."""
+
+    class Status(models.TextChoices):
+        PENDING = "pending", "Pending"
+        PAID = "paid", "Paid"
+        CANCELLED = "cancelled", "Cancelled"
+        EXPIRED = "expired", "Expired"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    barber = models.ForeignKey(
+        "barbers.Barber",
+        on_delete=models.CASCADE,
+        related_name="qr_payment_requests",
+    )
+    profile = models.ForeignKey(
+        BarberQrPayProfile,
+        on_delete=models.CASCADE,
+        related_name="requests",
+    )
+    # 0 = mijoz summani o'zi kiritadi
+    amount = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    note = models.CharField(max_length=200, blank=True, default="")
+    status = models.CharField(
+        max_length=16,
+        choices=Status.choices,
+        default=Status.PENDING,
+        db_index=True,
+    )
+    expires_at = models.DateTimeField(null=True, blank=True, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        return f"QrReq {self.id} {self.amount} ({self.status})"
+
+
+class QrPayment(models.Model):
+    """Mijoz → sartarosh QR to'lovi (hamyondan)."""
+
+    class Status(models.TextChoices):
+        COMPLETED = "completed", "Completed"
+        REFUNDED = "refunded", "Refunded"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    barber = models.ForeignKey(
+        "barbers.Barber",
+        on_delete=models.PROTECT,
+        related_name="qr_payments",
+    )
+    payer = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="qr_payments_sent",
+    )
+    payer_wallet = models.ForeignKey(
+        Wallet,
+        on_delete=models.PROTECT,
+        related_name="qr_payments_sent",
+    )
+    request = models.ForeignKey(
+        QrPaymentRequest,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="payments",
+    )
+    amount = models.DecimalField(max_digits=14, decimal_places=2)
+    note = models.CharField(max_length=200, blank=True, default="")
+    status = models.CharField(
+        max_length=16,
+        choices=Status.choices,
+        default=Status.COMPLETED,
+        db_index=True,
+    )
+    ledger_entry = models.ForeignKey(
+        LedgerEntry,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="qr_payment",
+    )
+    finance_transaction = models.ForeignKey(
+        "control_panel.FinanceTransaction",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="qr_payments",
+    )
+    idempotency_key = models.CharField(max_length=128, unique=True, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["barber", "created_at"]),
+            models.Index(fields=["payer", "created_at"]),
+            models.Index(fields=["status", "created_at"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"QrPay {self.amount} → barber {self.barber_id}"
