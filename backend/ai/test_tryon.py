@@ -9,7 +9,7 @@ from ai.style_prompts import style_detail_for
 
 class StylePromptTests(SimpleTestCase):
     def test_men_style_detail(self):
-        self.assertIn("old money", style_detail_for("men", "old-money-loose-curl").lower())
+        self.assertIn("buzz cut", style_detail_for("men", "buzz-cut").lower())
 
     def test_women_style_detail_fallback(self):
         self.assertEqual(style_detail_for("women", "unknown"), "unknown")

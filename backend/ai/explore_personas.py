@@ -83,8 +83,19 @@ def persona_facial_hair_line(persona_id: str | None) -> str:
     pid = normalize_persona_id(persona_id) or DEFAULT_MEN_PERSONA
     return PERSONA_FACIAL_HAIR.get(pid, "match facial hair exactly as in the reference photos")
 
-# Arxiv — avvalgi 12 uslub (diskdagi rasmlar saqlanadi, katalog/explore-gen da faol emas).
+# Arxiv — Old Money (rasmlar yo'q / faol emas).
 MEN_ARCHIVED_STYLE_SLUGS = frozenset(
+    {
+        "old-money-loose-curl",
+        "old-money-soft-wave",
+        "old-money-defined-curl",
+        "old-money-layered-curl",
+        "old-money-tousled-curl",
+    }
+)
+
+# Faol katalog — klassik 12 uslub (Irland rasmlari DB StoredMedia da).
+MEN_CATALOG_STYLE_SLUGS = frozenset(
     {
         "mid-fade",
         "low-fade",
@@ -101,22 +112,11 @@ MEN_ARCHIVED_STYLE_SLUGS = frozenset(
     }
 )
 
-# Faol katalog — Old Money orqa jingalak uslublari (explore-gen).
-MEN_CATALOG_STYLE_SLUGS = frozenset(
-    {
-        "old-money-loose-curl",
-        "old-money-soft-wave",
-        "old-money-defined-curl",
-        "old-money-layered-curl",
-        "old-money-tousled-curl",
-    }
-)
-
 # Yangi uslublar generate/publish qilinmaguncha faqat reference tayyor.
 NIKI_READY_SLUGS: frozenset[str] = frozenset()
 
 # Irland klassik 12 uslub (front + left/right/back) — DB StoredMedia da.
-IRLAND_READY_SLUGS: frozenset[str] = frozenset(MEN_ARCHIVED_STYLE_SLUGS)
+IRLAND_READY_SLUGS: frozenset[str] = frozenset(MEN_CATALOG_STYLE_SLUGS)
 
 PERSONA_READY_ASSETS: dict[str, frozenset[str]] = {
     "irland": frozenset({"reference", *IRLAND_READY_SLUGS}),

@@ -13,7 +13,7 @@ from ai.services.explore_image_gen import (
 )
 from ai.services.errors import AiStyleError
 
-ACTIVE_SLUG = "old-money-loose-curl"
+ACTIVE_SLUG = "curly-top-fade"
 
 
 class ExploreImageGenPromptTests(SimpleTestCase):
@@ -30,7 +30,7 @@ class ExploreImageGenPromptTests(SimpleTestCase):
     def test_slavyan_prompt_is_clean_shaven(self):
         prompt = _build_view_rotation_prompt(
             persona_id="slavyan",
-            slug="old-money-soft-wave",
+            slug="curly-top-fade",
             view="left",
             anchor_views=("front", "reference"),
         )
@@ -74,8 +74,8 @@ class ExploreImageGenPromptTests(SimpleTestCase):
         self.assertEqual(persona_ids, DEV_EXPLORE_PERSONA_IDS)
         views = {job["view"] for job in jobs}
         self.assertEqual(views, {"front", "left", "right", "back"})
-        # 2 personas × 5 styles × 4 views
-        self.assertEqual(len(jobs), 40)
+        # 2 personas × 12 styles × 4 views
+        self.assertEqual(len(jobs), 96)
 
     def test_list_jobs_does_not_download_anchor_bodies(self):
         """Status polli to'liq webp yuklamasligi kerak (Railway stderr INFO spam)."""
@@ -89,7 +89,7 @@ class ExploreImageGenPromptTests(SimpleTestCase):
             return_value=None,
         ):
             jobs = list_explore_gen_jobs()
-        self.assertEqual(len(jobs), 40)
+        self.assertEqual(len(jobs), 96)
         fetch_mock.assert_not_called()
         sample = next(j for j in jobs if j["slug"] != "reference" and j["view"] == "right")
         self.assertEqual(sample["explore_anchors"], {"front": True, "reference": True})

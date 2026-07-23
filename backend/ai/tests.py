@@ -117,12 +117,12 @@ class AiStyleAnalyzeTests(TestCase):
         with patch("ai.views.is_queue_enabled", return_value=False):
             res = self.client.post(
                 "/api/v1/ai/style-tryon/",
-                {"image": self.tiny_png, "style_id": "men-old-money-loose-curl"},
+                {"image": self.tiny_png, "style_id": "men-buzz-cut"},
                 format="json",
             )
         self.assertEqual(res.status_code, 200)
         body = res.json()
-        self.assertEqual(body["style_id"], "men-old-money-loose-curl")
+        self.assertEqual(body["style_id"], "men-buzz-cut")
         self.assertTrue(body["preview_image"].startswith("data:image/"))
 
     @patch("ai.views.enqueue_tryon_job", return_value="abc123job")
@@ -130,7 +130,7 @@ class AiStyleAnalyzeTests(TestCase):
         with patch("ai.views.is_queue_enabled", return_value=True):
             res = self.client.post(
                 "/api/v1/ai/style-tryon/",
-                {"image": self.tiny_png, "style_id": "men-old-money-loose-curl"},
+                {"image": self.tiny_png, "style_id": "men-buzz-cut"},
                 format="json",
             )
         self.assertEqual(res.status_code, 202)
@@ -144,8 +144,8 @@ class AiStyleAnalyzeTests(TestCase):
         mock_get_job.return_value = {
             "job_id": "abc123job",
             "status": "completed",
-            "style_id": "men-old-money-loose-curl",
-            "style_title": "Old Money Loose Curl",
+            "style_id": "men-buzz-cut",
+            "style_title": "Buzz Cut",
             "preview_image": "data:image/png;base64,abc",
         }
         res = self.client.get("/api/v1/ai/style-tryon/abc123job/")
@@ -164,7 +164,7 @@ class AiStyleAnalyzeTests(TestCase):
         client = APIClient()
         res = client.post(
             "/api/v1/ai/style-tryon/",
-            {"image": self.tiny_png, "style_id": "men-old-money-loose-curl"},
+            {"image": self.tiny_png, "style_id": "men-buzz-cut"},
             format="json",
         )
         self.assertIn(res.status_code, (401, 403))
@@ -204,8 +204,8 @@ class HairstyleApiTests(TestCase):
         res = self.client.get("/api/v1/hairstyles/")
         self.assertEqual(res.status_code, 200)
         body = res.json()
-        self.assertEqual(len(body), 5)
-        self.assertEqual(body[0]["id"], "men-old-money-loose-curl")
+        self.assertEqual(len(body), 12)
+        self.assertEqual(body[0]["id"], "men-mid-fade")
         self.assertIn("image_url", body[0])
 
     def test_hairstyles_list_filters_audience(self):
@@ -217,32 +217,40 @@ class HairstyleApiTests(TestCase):
     def test_hairstyles_list_men_catalog(self):
         res = self.client.get("/api/v1/hairstyles/", {"audience": "men"})
         self.assertEqual(res.status_code, 200)
-        # Persona ready style yo'q — men list bo'sh.
         slugs = {item["slug"] for item in res.json()}
-        self.assertEqual(slugs, set())
+        self.assertEqual(len(slugs), 12)
+        self.assertIn("buzz-cut", slugs)
 
     def test_hairstyles_detail(self):
-        res = self.client.get("/api/v1/hairstyles/men-old-money-loose-curl/")
+        res = self.client.get("/api/v1/hairstyles/men-buzz-cut/")
         self.assertEqual(res.status_code, 200)
-        self.assertEqual(res.json()["slug"], "old-money-loose-curl")
+        self.assertEqual(res.json()["slug"], "buzz-cut")
 
     def test_hairstyles_detail_not_found(self):
         res = self.client.get("/api/v1/hairstyles/missing-style/")
         self.assertEqual(res.status_code, 404)
 
-    def test_hairstyles_list_with_persona_empty_until_ready(self):
+    def test_hairstyles_list_with_irland_persona(self):
         res = self.client.get(
             "/api/v1/hairstyles/",
             {"audience": "men", "persona": "irland"},
         )
         self.assertEqual(res.status_code, 200)
-        self.assertEqual(res.json(), [])
+        body = res.json()
+        self.assertEqual(len(body), 12)
+        self.assertTrue(
+            any("/media/hairstyles/men/personas/irland/" in (item.get("image_url") or "") for item in body)
+            or any("/hairstyles/men/personas/irland/" in (item.get("image_url") or "") for item in body)
+        )
 
     def test_hairstyles_detail_missing_persona_asset_returns_404(self):
-        res = self.client.get(
-            "/api/v1/hairstyles/men-old-money-loose-curl/",
-            {"persona": "niki"},
-        )
+        from unittest.mock import patch
+
+        with patch("ai.views.has_persona_style_asset", return_value=False):
+            res = self.client.get(
+                "/api/v1/hairstyles/men-buzz-cut/",
+                {"persona": "niki"},
+            )
         self.assertEqual(res.status_code, 404)
 
 

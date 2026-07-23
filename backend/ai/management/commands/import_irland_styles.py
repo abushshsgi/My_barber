@@ -8,7 +8,7 @@ from pathlib import Path
 
 from django.core.management.base import BaseCommand, CommandError
 
-from ai.explore_personas import MEN_ARCHIVED_STYLE_SLUGS, normalize_persona_id
+from ai.explore_personas import MEN_CATALOG_STYLE_SLUGS, normalize_persona_id
 from ai.explore_published import (
     _load_manifest,
     _save_manifest,
@@ -44,8 +44,8 @@ def _parse_filename(name: str) -> tuple[str, str] | None:
         return None
     slug = m.group("slug").lower()
     view = (m.group("view") or "front").lower()
-    # Known slugs only (archived classic set)
-    if slug not in MEN_ARCHIVED_STYLE_SLUGS:
+    # Known slugs only (faol klassik katalog)
+    if slug not in MEN_CATALOG_STYLE_SLUGS:
         # Try trimming accidental suffixes already handled
         return None
     return slug, normalize_explore_view(view)

@@ -3,31 +3,18 @@
 from __future__ import annotations
 
 MEN_STYLE_PROMPTS: dict[str, str] = {
-    "old-money-loose-curl": (
-        "old money loose curls from behind: medium-length soft open curls cascading "
-        "down the nape, polished premium silhouette, neat natural taper at sides, "
-        "no harsh skin fade, European classic wealth aesthetic, back-of-head readable shape"
-    ),
-    "old-money-soft-wave": (
-        "old money soft waves from behind: refined S-shaped waves flowing over the crown "
-        "and nape, sleek premium finish, tidy length around ears, classic European look, "
-        "no street fade, back view shows smooth wave pattern"
-    ),
-    "old-money-defined-curl": (
-        "old money defined curls from behind: clear spiral curl definition across the "
-        "back of the head, medium length, neat premium outline, controlled volume at crown, "
-        "clean nape, no buzz or skin fade, back-of-head fully readable"
-    ),
-    "old-money-layered-curl": (
-        "old money layered curls from behind: layered curly cut with volume on top and "
-        "longer flowing curls down the back, premium old-money silhouette, soft taper sides, "
-        "no harsh disconnect, nape shape clear from behind"
-    ),
-    "old-money-tousled-curl": (
-        "old money tousled curls from behind: casually tousled medium curls with effortless "
-        "premium texture, natural movement over the nape, neat overall outline, "
-        "no aggressive fade, European old-money back view"
-    ),
+    "mid-fade": "mid fade haircut, clean taper, short textured top",
+    "low-fade": "low fade haircut, natural taper, neat short top",
+    "skin-fade": "skin fade zero fade sides, very short top, sharp line-up",
+    "buzz-cut": "buzz cut uniform short clipper length all over",
+    "textured-crop": "textured crop short faded sides messy forward fringe top",
+    "pompadour": "pompadour volume swept up and back faded sides",
+    "undercut": "undercut short sides long top dramatic disconnect",
+    "side-part": "classic side part neat tapered sides professional look",
+    "french-crop": "french crop short forward fringe faded sides",
+    "slick-back": "slick back medium hair combed straight back pomade shine",
+    "curly-top-fade": "curly top fade natural curls on top skin fade sides",
+    "modern-mullet": "modern mullet short front faded sides longer back",
 }
 
 WOMEN_STYLE_PROMPTS: dict[str, str] = {

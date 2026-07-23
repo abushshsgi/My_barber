@@ -5,12 +5,19 @@ from ai.hairstyle_catalog import get_published_catalog, pick_catalog_suggestions
 from ai.services.gemini_style import AiStyleError
 from ai.style_recommend import assert_gender_matches_profile, build_suggestions_from_analysis
 
-OLD_MONEY_SLUGS = {
-    "old-money-loose-curl",
-    "old-money-soft-wave",
-    "old-money-defined-curl",
-    "old-money-layered-curl",
-    "old-money-tousled-curl",
+CLASSIC_SLUGS = {
+    "mid-fade",
+    "low-fade",
+    "skin-fade",
+    "buzz-cut",
+    "textured-crop",
+    "pompadour",
+    "undercut",
+    "side-part",
+    "french-crop",
+    "slick-back",
+    "curly-top-fade",
+    "modern-mullet",
 }
 
 
@@ -24,32 +31,31 @@ class AgeGroupTests(SimpleTestCase):
 
     def test_image_path_for_adult(self):
         path = resolve_hairstyle_image_path(
-            image_path="/hairstyles/men/personas/irland/old-money-loose-curl.webp",
-            slug="old-money-loose-curl",
+            image_path="/hairstyles/men/personas/irland/buzz-cut.webp",
+            slug="buzz-cut",
             audience="men",
             age_group="adult",
         )
-        self.assertEqual(path, "/hairstyles/men/adult/old-money-loose-curl.webp")
+        self.assertEqual(path, "/hairstyles/men/adult/buzz-cut.webp")
 
     def test_image_path_for_young_uses_legacy(self):
         path = resolve_hairstyle_image_path(
-            image_path="/hairstyles/men/personas/irland/old-money-loose-curl.webp",
-            slug="old-money-loose-curl",
+            image_path="/hairstyles/men/personas/irland/buzz-cut.webp",
+            slug="buzz-cut",
             audience="men",
             age_group="young",
         )
-        self.assertEqual(path, "/hairstyles/men/personas/irland/old-money-loose-curl.webp")
+        self.assertEqual(path, "/hairstyles/men/personas/irland/buzz-cut.webp")
 
-    def test_persona_without_ready_asset_keeps_seed_path(self):
+    def test_persona_irland_resolves_ready_asset(self):
         path = resolve_hairstyle_image_path(
-            image_path="/hairstyles/men/personas/irland/old-money-loose-curl.webp",
-            slug="old-money-loose-curl",
+            image_path="/hairstyles/men/personas/irland/buzz-cut.webp",
+            slug="buzz-cut",
             audience="men",
             age_group="young",
             persona_id="irland",
         )
-        # Ready assets hali yo'q — seed image_path qaytadi.
-        self.assertEqual(path, "/hairstyles/men/personas/irland/old-money-loose-curl.webp")
+        self.assertIn("irland/buzz-cut", path)
 
 
 class HairstyleCatalogTests(TestCase):
@@ -62,7 +68,7 @@ class HairstyleCatalogTests(TestCase):
         self.assertEqual(len(suggestions), 3)
         self.assertTrue(all(item["id"].startswith("men-") for item in suggestions))
         self.assertEqual(suggestions[0]["match"], 94)
-        self.assertTrue({item["seed"] for item in suggestions} <= OLD_MONEY_SLUGS)
+        self.assertTrue({item["seed"] for item in suggestions} <= CLASSIC_SLUGS)
 
     def test_pick_mature_men_prefers_catalog_styles(self):
         suggestions = pick_catalog_suggestions(
@@ -73,26 +79,26 @@ class HairstyleCatalogTests(TestCase):
         )
         self.assertEqual(len(suggestions), 3)
         slugs = {item["seed"] for item in suggestions}
-        self.assertTrue(slugs <= OLD_MONEY_SLUGS)
+        self.assertTrue(slugs <= CLASSIC_SLUGS)
 
     def test_catalog_filters_by_age_group(self):
         mature = get_published_catalog("men", "mature")
         slugs = {item["slug"] for item in mature}
-        self.assertIn("old-money-loose-curl", slugs)
-        self.assertEqual(len(slugs), 5)
+        self.assertIn("buzz-cut", slugs)
+        self.assertIn("low-fade", slugs)
+        self.assertEqual(len(slugs), 4)
 
     def test_score_prefers_face_and_length_match(self):
         catalog = get_published_catalog("men")
-        loose = next(s for s in catalog if s["slug"] == "old-money-loose-curl")
-        soft = next(s for s in catalog if s["slug"] == "old-money-soft-wave")
-        medium_oval = score_hairstyle(loose, "oval", "medium")
-        soft_oval = score_hairstyle(soft, "oval", "medium")
-        # loose oval+square+round, soft oval+square — bir xil oval+medium score
-        self.assertEqual(medium_oval, soft_oval)
+        buzz = next(s for s in catalog if s["slug"] == "buzz-cut")
+        french = next(s for s in catalog if s["slug"] == "french-crop")
+        short_oval = score_hairstyle(buzz, "oval", "short")
+        french_oval = score_hairstyle(french, "oval", "short")
+        self.assertGreaterEqual(short_oval, french_oval)
 
 
 class TrendingStylesTests(TestCase):
-    def test_trending_empty_without_ready_assets(self):
+    def test_trending_irland_uses_persona_images(self):
         trending = pick_trending_styles(
             audience="men",
             face_shape="oval",
@@ -100,8 +106,10 @@ class TrendingStylesTests(TestCase):
             preferred_persona_id="irland",
             limit=3,
         )
-        # PERSONA_READY_ASSETS da style yo'q — trending persona rasmlarisiz yoki bo'sh.
-        self.assertIsInstance(trending, list)
+        self.assertEqual(len(trending), 3)
+        irland_rows = [item for item in trending if item.get("persona_id") == "irland"]
+        self.assertTrue(irland_rows)
+        self.assertTrue(all("irland" in (item.get("image_url") or "") for item in irland_rows))
 
     def test_trending_returns_unique_styles(self):
         trending = pick_trending_styles(
@@ -158,4 +166,4 @@ class GenderGuardIntegrationTests(TestCase):
             age_group="teen",
         )
         slugs = {item["seed"] for item in teen}
-        self.assertTrue(slugs <= OLD_MONEY_SLUGS)
+        self.assertTrue(slugs <= CLASSIC_SLUGS)
