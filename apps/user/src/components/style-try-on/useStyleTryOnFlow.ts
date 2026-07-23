@@ -13,6 +13,13 @@ type UseStyleTryOnFlowOptions = {
   onTryOnSuccess?: () => void;
 };
 
+/** Strict Mode remount da juft API so'rovini oldini olish. */
+const styleTryOnInFlight = new Map<string, Promise<string>>();
+
+function styleTryOnFlightKey(styleId: string, personaId: string | null | undefined, photo: string): string {
+  return `${styleId}:${personaId ?? ""}:${photo.length}:${photo.slice(32, 64)}:${photo.slice(-48)}`;
+}
+
 export function useStyleTryOnFlow({
   styleId,
   personaId,
@@ -35,20 +42,38 @@ export function useStyleTryOnFlow({
   }, [styleId]);
 
   const runTryOn = async (dataUrl: string, source: "auto" | "manual" = "manual") => {
-    if (beforeTryOn) {
-      const ok = await beforeTryOn(source);
-      if (!ok) {
-        if (source === "auto") autoTriggeredRef.current = true;
+    const flightKey = styleTryOnFlightKey(styleId, personaId, dataUrl);
+    let run = styleTryOnInFlight.get(flightKey);
+    const joinedExisting = Boolean(run);
+    if (!run) {
+      setGenerating(true);
+      setError(null);
+      run = (async () => {
+        if (beforeTryOn) {
+          const ok = await beforeTryOn(source);
+          if (!ok) {
+            if (source === "auto") autoTriggeredRef.current = true;
+            throw new Error("__tryon_gate_blocked__");
+          }
+        }
+        const data = await generateAiStyleTryOn(dataUrl, styleId, personaId ?? undefined);
+        return data.preview_image;
+      })();
+      styleTryOnInFlight.set(flightKey, run);
+    } else {
+      setGenerating(true);
+      setError(null);
+    }
+
+    try {
+      const preview = await run;
+      setTryOnPreview(preview);
+      if (!joinedExisting) onTryOnSuccess?.();
+    } catch (e) {
+      if (joinedExisting) return;
+      if (e instanceof Error && e.message === "__tryon_gate_blocked__") {
         return;
       }
-    }
-    setGenerating(true);
-    setError(null);
-    try {
-      const data = await generateAiStyleTryOn(dataUrl, styleId, personaId ?? undefined);
-      setTryOnPreview(data.preview_image);
-      onTryOnSuccess?.();
-    } catch (e) {
       if (isMorphPlanLimitError(e)) {
         onPlanLimit?.();
         setTryOnPreview(null);
@@ -57,6 +82,7 @@ export function useStyleTryOnFlow({
       setError(e instanceof Error ? e.message : "Rasm yaratishda xatolik");
       setTryOnPreview(null);
     } finally {
+      if (!joinedExisting) styleTryOnInFlight.delete(flightKey);
       setGenerating(false);
     }
   };

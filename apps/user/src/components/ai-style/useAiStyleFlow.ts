@@ -50,6 +50,14 @@ function formatAiRequestError(error: unknown, fallback: string): string {
   return raw.replace(/\s*Expected available in \d+ seconds?\./gi, "").trim() || raw;
 }
 
+/** Strict Mode remount / parallel effects — bir xil try-onni ikki marta API ga yubormaslik. */
+const tryOnInFlight = new Map<string, Promise<string>>();
+
+function tryOnInFlightKey(photo: string, cacheKey: string): string {
+  // photo data-url uzun — bosh/oxir hash yetarli
+  return `${cacheKey}:${photo.length}:${photo.slice(32, 64)}:${photo.slice(-48)}`;
+}
+
 export function useAiStyleFlow(options: UseAiStyleFlowOptions = {}) {
   const { menPersonaId, focusStyleId, audience, tryOnGate, onPlanLimit, onTryOnSuccess } = options;
   const [photo, setPhoto] = useState<string | null>(null);
@@ -65,13 +73,14 @@ export function useAiStyleFlow(options: UseAiStyleFlowOptions = {}) {
   const [tryOnLoadingId, setTryOnLoadingId] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const analyzeTriggeredRef = useRef(false);
-  const autoTryOnRef = useRef<string | null>(null);
+  /** Avto try-on bir marta (cacheKey) — tahlil tugagach. */
+  const autoTryOnStartedRef = useRef<string | null>(null);
   /** Avto try-on muvaffaqiyatsiz bo‘lsa qayta-qayta so‘rov yubormaslik. */
   const tryOnFailedRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     analyzeTriggeredRef.current = false;
-    autoTryOnRef.current = null;
+    autoTryOnStartedRef.current = null;
   }, [focusStyleId]);
 
   const storePhoto = useCallback(
@@ -87,7 +96,7 @@ export function useAiStyleFlow(options: UseAiStyleFlowOptions = {}) {
       setTryOnByStyle({});
       setTryOnLoadingId(null);
       analyzeTriggeredRef.current = false;
-      autoTryOnRef.current = null;
+      autoTryOnStartedRef.current = null;
       tryOnFailedRef.current.clear();
 
       const scannedAt = meta?.scannedAt ?? new Date().toISOString();
@@ -240,34 +249,54 @@ export function useAiStyleFlow(options: UseAiStyleFlowOptions = {}) {
       const effectivePersona = personaId ?? menPersonaId ?? undefined;
       const cacheKey = tryOnCacheKey(styleId, effectivePersona);
       if (!photo || tryOnByStyle[cacheKey]) return;
-      if (tryOnGate) {
-        const allowed = await tryOnGate(source);
-        if (!allowed) {
-          if (source === "auto") tryOnFailedRef.current.add(cacheKey);
+
+      const flightKey = tryOnInFlightKey(photo, cacheKey);
+      let run = tryOnInFlight.get(flightKey);
+      const joinedExisting = Boolean(run);
+      if (!run) {
+        // Loading + in-flight — await dan OLDIN (gate race / Strict Mode).
+        tryOnFailedRef.current.delete(cacheKey);
+        setTryOnLoadingId(cacheKey);
+        setError(null);
+        run = (async () => {
+          if (tryOnGate) {
+            const allowed = await tryOnGate(source);
+            if (!allowed) {
+              if (source === "auto") tryOnFailedRef.current.add(cacheKey);
+              throw new Error("__tryon_gate_blocked__");
+            }
+          }
+          const data = await generateAiStyleTryOn(photo, styleId, effectivePersona);
+          return data.preview_image;
+        })();
+        tryOnInFlight.set(flightKey, run);
+      } else {
+        setTryOnLoadingId(cacheKey);
+      }
+
+      try {
+        const previewImage = await run;
+        setTryOnByStyle((prev) => ({ ...prev, [cacheKey]: previewImage }));
+        if (!joinedExisting) {
+          const resolvedTitle =
+            title ??
+            result?.suggestions.find((s) => s.id === styleId)?.title ??
+            styleId;
+          saveMorphAiGeneration({
+            styleId,
+            title: resolvedTitle,
+            previewImage,
+            beforeImage: photo,
+            personaId: effectivePersona,
+          });
+          markMorphAiOnboarded();
+          onTryOnSuccess?.();
+        }
+      } catch (e) {
+        if (joinedExisting) return;
+        if (e instanceof Error && e.message === "__tryon_gate_blocked__") {
           return;
         }
-      }
-      // Qo'lda qayta urinish uchun oldingi fail belgisini olib tashlash.
-      tryOnFailedRef.current.delete(cacheKey);
-      setTryOnLoadingId(cacheKey);
-      setError(null);
-      try {
-        const data = await generateAiStyleTryOn(photo, styleId, effectivePersona);
-        setTryOnByStyle((prev) => ({ ...prev, [cacheKey]: data.preview_image }));
-        const resolvedTitle =
-          title ??
-          result?.suggestions.find((s) => s.id === styleId)?.title ??
-          styleId;
-        saveMorphAiGeneration({
-          styleId,
-          title: resolvedTitle,
-          previewImage: data.preview_image,
-          beforeImage: photo,
-          personaId: effectivePersona,
-        });
-        markMorphAiOnboarded();
-        onTryOnSuccess?.();
-      } catch (e) {
         tryOnFailedRef.current.add(cacheKey);
         if (isMorphPlanLimitError(e)) {
           onPlanLimit?.();
@@ -275,6 +304,7 @@ export function useAiStyleFlow(options: UseAiStyleFlowOptions = {}) {
         }
         setError(formatAiRequestError(e, "Rasm yaratishda xatolik"));
       } finally {
+        if (!joinedExisting) tryOnInFlight.delete(flightKey);
         setTryOnLoadingId(null);
       }
     },
@@ -302,12 +332,7 @@ export function useAiStyleFlow(options: UseAiStyleFlowOptions = {}) {
     void analyze(audience);
   }, [photo, audience, analyzing, done, analyze]);
 
-  useEffect(() => {
-    if (!focusStyleId || !photo || autoTryOnRef.current === focusStyleId) return;
-    autoTryOnRef.current = focusStyleId;
-    void generateTryOn(focusStyleId, undefined, undefined, "auto");
-  }, [focusStyleId, photo, generateTryOn]);
-
+  // Bitta avto try-on: faqat tahlil tugagach (eski focusStyleId effecti bilan juft so'rov ketardi).
   useEffect(() => {
     if (!done || !result?.suggestions.length) return;
     const primary = focusStyleId
@@ -315,15 +340,17 @@ export function useAiStyleFlow(options: UseAiStyleFlowOptions = {}) {
       : result.suggestions[0];
     if (!primary) return;
     const primaryKey = tryOnCacheKey(primary.id, menPersonaId);
+    if (autoTryOnStartedRef.current === primaryKey) return;
     if (tryOnByStyle[primaryKey] || tryOnLoadingId === primaryKey) return;
     // Limit / xato bo‘lganda avto-qayta urinish — toast spamni to‘xtatadi.
     if (tryOnFailedRef.current.has(primaryKey)) return;
+    autoTryOnStartedRef.current = primaryKey;
     void generateTryOn(primary.id, undefined, primary.title, "auto");
   }, [done, result, focusStyleId, tryOnByStyle, tryOnLoadingId, generateTryOn, menPersonaId]);
 
   const reset = () => {
     analyzeTriggeredRef.current = false;
-    autoTryOnRef.current = null;
+    autoTryOnStartedRef.current = null;
     tryOnFailedRef.current.clear();
     setPhoto(null);
     setDone(false);
