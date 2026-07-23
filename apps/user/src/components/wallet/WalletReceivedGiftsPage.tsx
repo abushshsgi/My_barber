@@ -56,24 +56,24 @@ const USE_ACTIONS = [
     to: "/map" as const,
     search: undefined,
     icon: CalendarCheck,
-    title: "Barberga ishlatish",
-    hint: "Xarita orqali bron qiling — hamyondan to'lov",
+    title: "Bron",
+    hint: "Xarita · hamyon",
   },
   {
     id: "pro",
     to: "/wallet" as const,
     search: { section: "subscriptions" as const, plan: "pro" as const },
     icon: Crown,
-    title: "Obuna sotib olish",
-    hint: "Pro / AI imtiyozlar — balansdan",
+    title: "Obuna",
+    hint: "Pro · AI",
   },
   {
     id: "ai",
     to: "/explore" as const,
     search: undefined,
     icon: Sparkles,
-    title: "AI stil sinab ko'rish",
-    hint: "Explore da stil tanlang",
+    title: "AI stil",
+    hint: "Explore",
   },
 ] as const;
 
@@ -228,17 +228,17 @@ export function WalletReceivedGiftsPage() {
   );
 
   return (
-    <div className="space-y-6 pb-6">
-      <div className="rounded-[26px] bg-foreground px-5 py-5 text-background">
+    <div className="space-y-5 pb-6">
+      <div className="rounded-[24px] bg-foreground px-5 py-4 text-background">
         <div className="flex items-start justify-between gap-3">
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.16em] opacity-65">
+          <div className="min-w-0">
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-background/60">
               {t("walletPage.received.statsTitle", { defaultValue: "Kolleksiya" })}
             </p>
-            <p className="mt-1.5 text-[1.85rem] font-bold tabular-nums tracking-tight">
+            <p className="mt-1.5 text-[1.75rem] font-bold tabular-nums tracking-tight">
               {formatPrice(totalReceived)}
             </p>
-            <p className="mt-1.5 text-[12px] font-semibold opacity-70">
+            <p className="mt-1.5 text-[12px] font-medium text-background/65">
               {t("walletPage.received.count", {
                 defaultValue: "{{count}} ta sovg'a · balans {{balance}}",
                 count: gifts.length,
@@ -246,13 +246,13 @@ export function WalletReceivedGiftsPage() {
               })}
             </p>
           </div>
-          <span className="grid h-12 w-12 place-items-center rounded-2xl bg-background/15">
+          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-background/12">
             <Inbox className="h-5 w-5" />
           </span>
         </div>
       </div>
 
-      {/* Sovg'ani ishlatish */}
+      {/* Sovg'ani ishlatish — 3 ustunli grid */}
       <section>
         <h2 className="text-sm font-bold">
           {t("walletPage.received.useTitle", { defaultValue: "Sovg'ani ishlatish" })}
@@ -262,7 +262,7 @@ export function WalletReceivedGiftsPage() {
             defaultValue: "Pul hamyonga tushgan — bron, obuna yoki AI uchun sarflang.",
           })}
         </p>
-        <div className="mt-3 space-y-2">
+        <div className="mt-3 grid grid-cols-3 gap-2">
           {USE_ACTIONS.map((action) => {
             const Icon = action.icon;
             return (
@@ -270,14 +270,21 @@ export function WalletReceivedGiftsPage() {
                 key={action.id}
                 to={action.to}
                 search={action.search}
-                className="flex items-center gap-3 rounded-[20px] border border-border/70 bg-card px-3.5 py-3.5 transition-transform active:scale-[0.99]"
+                className={cn(
+                  "flex flex-col items-center gap-2 rounded-[18px] border border-border/50 bg-card px-2 py-3.5 text-center",
+                  "transition-transform active:scale-[0.97]",
+                )}
               >
-                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-surface">
-                  <Icon className="h-[18px] w-[18px]" strokeWidth={2} />
+                <span className="grid h-10 w-10 place-items-center rounded-2xl bg-surface text-foreground">
+                  <Icon className="h-[17px] w-[17px]" strokeWidth={2} />
                 </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block text-[13px] font-bold">{action.title}</span>
-                  <span className="mt-0.5 block text-[11px] text-muted-foreground">{action.hint}</span>
+                <span className="min-w-0">
+                  <span className="block text-[11px] font-bold leading-tight text-foreground">
+                    {action.title}
+                  </span>
+                  <span className="mt-0.5 block text-[10px] leading-snug text-muted-foreground">
+                    {action.hint}
+                  </span>
                 </span>
               </Link>
             );
@@ -285,39 +292,43 @@ export function WalletReceivedGiftsPage() {
         </div>
       </section>
 
-      <div className="flex gap-2">
-        {(
-          [
-            { id: "all", label: t("walletPage.received.filterAll", { defaultValue: "Barchasi" }) },
-            {
-              id: "starred",
-              label: t("walletPage.received.filterStarred", { defaultValue: "Kolleksiya" }),
-            },
-          ] as const
-        ).map((tab) => (
-          <button
-            key={tab.id}
-            type="button"
-            onClick={() => setFilter(tab.id)}
-            className={cn(
-              "cursor-pointer rounded-full px-4 py-2 text-[12px] font-bold transition-colors",
-              filter === tab.id
-                ? "bg-foreground text-background"
-                : "bg-surface text-muted-foreground",
-            )}
-          >
-            {tab.label}
-            {tab.id === "starred" ? ` · ${favorites.size}` : ""}
-          </button>
-        ))}
+      <div className="flex items-center gap-2">
+        <div className="flex min-w-0 flex-1 gap-1.5 rounded-[16px] bg-surface/80 p-1">
+          {(
+            [
+              { id: "all", label: t("walletPage.received.filterAll", { defaultValue: "Barchasi" }) },
+              {
+                id: "starred",
+                label: t("walletPage.received.filterStarred", { defaultValue: "Kolleksiya" }),
+              },
+            ] as const
+          ).map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setFilter(tab.id)}
+              className={cn(
+                "min-w-0 flex-1 cursor-pointer rounded-[12px] px-3 py-2 text-[12px] font-bold transition-colors",
+                filter === tab.id
+                  ? "bg-foreground text-background"
+                  : "text-muted-foreground",
+              )}
+            >
+              {tab.label}
+              {tab.id === "starred" ? ` · ${favorites.size}` : ""}
+            </button>
+          ))}
+        </div>
       </div>
 
       <Link
         to="/wallet"
         search={{ section: "gift" }}
-        className="flex items-center justify-center gap-2 rounded-[18px] bg-foreground px-3.5 py-3.5 text-background transition-transform active:scale-[0.98]"
+        className="flex items-center justify-center gap-2 rounded-[18px] border border-border/60 bg-card px-3.5 py-3.5 text-foreground transition-transform active:scale-[0.98]"
       >
-        <Plus className="h-4 w-4" strokeWidth={2.4} />
+        <span className="grid h-8 w-8 place-items-center rounded-xl bg-foreground text-background">
+          <Plus className="h-4 w-4" strokeWidth={2.4} />
+        </span>
         <span className="text-[13px] font-bold">
           {t("walletPage.received.sendCta", { defaultValue: "Sovg'a yuborish" })}
         </span>
