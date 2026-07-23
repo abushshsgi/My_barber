@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   fetchGiftDesigns,
+  fetchReceivedGiftsList,
   fetchWalletMe,
   fetchWalletTransactionsList,
   parseWalletBalance,
@@ -96,6 +97,16 @@ export function useSendGift() {
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["wallet"] });
     },
+  });
+}
+
+export function useReceivedGifts() {
+  const userId = getAuthUserId();
+  return useQuery({
+    queryKey: userQueryKey(["wallet", "gifts-received"] as const, userId),
+    queryFn: () => fetchReceivedGiftsList({ page_size: 50 }),
+    enabled: authQueryEnabled(!!userId),
+    staleTime: 15_000,
   });
 }
 

@@ -38,8 +38,15 @@ export function WalletTransactionList({ items }: { items: WalletTransaction[] })
                       Admin
                     </span>
                   ) : null}
-                  <span>{tx.date}</span>
+                  {tx.subtitle ? (
+                    <span className="truncate">{tx.subtitle}</span>
+                  ) : (
+                    <span>{tx.date}</span>
+                  )}
                 </p>
+                {tx.subtitle ? (
+                  <p className="text-[10px] text-muted-foreground">{tx.date}</p>
+                ) : null}
               </div>
               <p
                 className={cn(

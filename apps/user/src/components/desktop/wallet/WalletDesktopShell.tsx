@@ -24,7 +24,7 @@ export function WalletDesktopShell({ section, t }: Props) {
               {t("walletPage.title")}
             </h1>
             <p className="mt-2 text-sm text-muted-foreground">
-              {t("walletPage.subtitle", { defaultValue: "Cashback, sovg'a karta va tarix" })}
+              {t("walletPage.subtitle", { defaultValue: "Sovg'a karta, to'lov va tarix" })}
             </p>
             <div className="mt-7">
               <WalletSectionNav active={section} t={t} large />

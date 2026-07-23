@@ -78,13 +78,19 @@ class GiftSendSerializer(serializers.Serializer):
 
 class GiftTransferSerializer(serializers.ModelSerializer):
     recipient_name = serializers.SerializerMethodField()
+    sender_name = serializers.SerializerMethodField()
     recipient_wallet_number = serializers.CharField(
         source="recipient_wallet.wallet_number",
+        read_only=True,
+    )
+    sender_wallet_number = serializers.CharField(
+        source="sender_wallet.wallet_number",
         read_only=True,
     )
     gift_amount = serializers.DecimalField(
         source="amount", max_digits=14, decimal_places=2, read_only=True
     )
+    design = serializers.SerializerMethodField()
 
     class Meta:
         model = GiftTransfer
@@ -93,10 +99,13 @@ class GiftTransferSerializer(serializers.ModelSerializer):
             "amount",
             "gift_amount",
             "design_id",
+            "design",
             "design_fee",
             "total_charged",
             "message",
             "status",
+            "sender_name",
+            "sender_wallet_number",
             "recipient_name",
             "recipient_wallet_number",
             "created_at",
@@ -105,6 +114,21 @@ class GiftTransferSerializer(serializers.ModelSerializer):
     def get_recipient_name(self, obj: GiftTransfer) -> str:
         user = obj.recipient_wallet.user
         return (user.full_name or user.phone or str(user.pk)).strip()
+
+    def get_sender_name(self, obj: GiftTransfer) -> str:
+        user = obj.sender_wallet.user
+        return (user.full_name or user.phone or str(user.pk)).strip()
+
+    def get_design(self, obj: GiftTransfer) -> dict | None:
+        design = get_gift_design(obj.design_id)
+        if design is None:
+            return None
+        return {
+            "id": design.id,
+            "name": design.name,
+            "name_uz": design.name_uz,
+            "preview": design.preview,
+        }
 
 
 class WalletRecipientSerializer(serializers.Serializer):

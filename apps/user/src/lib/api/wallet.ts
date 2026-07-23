@@ -58,10 +58,38 @@ export type ApiGiftSendResponse = {
     total_charged: string | number;
     message: string;
     status: string;
+    sender_name?: string;
     recipient_name: string;
     recipient_wallet_number: string;
     created_at: string;
   };
+};
+
+export type ApiReceivedGift = {
+  id: string;
+  amount: string | number;
+  gift_amount: string | number;
+  design_id: string;
+  design: {
+    id: string;
+    name: string;
+    name_uz: string;
+    preview: {
+      from: string;
+      to: string;
+      accent: string;
+      pattern: string;
+    };
+  } | null;
+  design_fee: string | number;
+  total_charged: string | number;
+  message: string;
+  status: string;
+  sender_name: string;
+  sender_wallet_number: string;
+  recipient_name: string;
+  recipient_wallet_number: string;
+  created_at: string;
 };
 
 export type ApiTopUpResponse = {
@@ -146,6 +174,30 @@ export async function sendGift(payload: SendGiftPayload): Promise<ApiGiftSendRes
     headers: { "Idempotency-Key": idempotencyKey("gift") },
     body: JSON.stringify(payload),
   });
+}
+
+export async function fetchReceivedGifts(params?: {
+  page?: number;
+  page_size?: number;
+}): Promise<Paginated<ApiReceivedGift>> {
+  const q = new URLSearchParams();
+  if (params?.page) q.set("page", String(params.page));
+  if (params?.page_size) q.set("page_size", String(params.page_size ?? 50));
+  const qs = q.toString();
+  const path = qs ? `/api/v1/wallet/gift/received/?${qs}` : "/api/v1/wallet/gift/received/";
+  return apiJson<Paginated<ApiReceivedGift>>(path);
+}
+
+export async function fetchReceivedGiftsList(params?: {
+  page?: number;
+  page_size?: number;
+}): Promise<ApiReceivedGift[]> {
+  const q = new URLSearchParams();
+  if (params?.page) q.set("page", String(params.page));
+  if (params?.page_size) q.set("page_size", String(params.page_size ?? 50));
+  const qs = q.toString();
+  const path = qs ? `/api/v1/wallet/gift/received/?${qs}` : "/api/v1/wallet/gift/received/";
+  return apiList<ApiReceivedGift>(path);
 }
 
 export function parseWalletBalance(value: string | number): number {

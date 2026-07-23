@@ -248,6 +248,7 @@ from wallet.payment_views import PaymentCheckoutView, PaymentProvidersView
 from wallet.views import (
     AdminWalletTopUpView,
     WalletGiftDesignsView,
+    WalletGiftReceivedView,
     WalletGiftSendView,
     WalletMeView,
     WalletRecipientSearchView,
@@ -510,6 +511,7 @@ api_routes = [
     path("wallet/top-up/card/deposits/", WalletCardDepositListView.as_view()),
     path("wallet/gift/designs/", WalletGiftDesignsView.as_view()),
     path("wallet/gift/send/", WalletGiftSendView.as_view()),
+    path("wallet/gift/received/", WalletGiftReceivedView.as_view()),
     path("wallet/recipients/search/", WalletRecipientSearchView.as_view()),
     path("payments/providers/", PaymentProvidersView.as_view()),
     path("payments/checkout/", PaymentCheckoutView.as_view()),

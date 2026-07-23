@@ -298,12 +298,24 @@ class WalletService:
         out_key = f"{idempotency_key}:out"
         in_key = f"{idempotency_key}:in"
         ref_id = str(gift.id)
+        sender_user = sender_wallet.user
+        recipient_user = recipient_wallet.user
+        sender_name = (
+            (sender_user.full_name or sender_user.phone or str(sender_user.pk)).strip()
+        )
+        recipient_name = (
+            (recipient_user.full_name or recipient_user.phone or str(recipient_user.pk)).strip()
+        )
         meta = {
             "message": clean_message[:200] if clean_message else "",
             "design_id": design.id,
             "design_fee": str(design_fee),
             "gift_amount": str(gift_amount),
             "total_charged": str(total),
+            "sender_name": sender_name,
+            "sender_user_id": sender_user.pk,
+            "recipient_name": recipient_name,
+            "recipient_user_id": recipient_user.pk,
         }
 
         # 1) Dizayn narxi — senderdan platformaga

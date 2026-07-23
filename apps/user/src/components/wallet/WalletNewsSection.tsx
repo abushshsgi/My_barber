@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { ArrowUpRight, Gift, Percent, Sparkles, Wallet } from "lucide-react";
+import { ArrowUpRight, Gift, Inbox, Sparkles, Wallet } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 
@@ -10,33 +10,32 @@ type NewsItem = {
   defaultTitle: string;
   bodyKey: string;
   defaultBody: string;
-  to: "/wallet" | "/wallet/top-up" | "/offers";
+  to: "/wallet" | "/wallet/top-up" | "/wallet/gifts" | "/offers";
   search?: { section: "gift" | "loyalty" | "subscriptions"; plan?: string };
   accent: string;
 };
 
 const NEWS_ITEMS: NewsItem[] = [
   {
-    id: "cashback",
-    icon: Percent,
-    titleKey: "walletPage.news.cashbackTitle",
-    defaultTitle: "Cashback oshdi",
-    bodyKey: "walletPage.news.cashbackBody",
-    defaultBody: "Salon bronlarida 5% gacha qaytariladi.",
-    to: "/wallet",
-    search: { section: "loyalty" },
-    accent: "bg-amber-500/15 text-amber-800",
+    id: "received",
+    icon: Inbox,
+    titleKey: "walletPage.news.receivedTitle",
+    defaultTitle: "Kelgan sovg'alar",
+    bodyKey: "walletPage.news.receivedBody",
+    defaultBody: "Kimdan kelganini ko'ring va kolleksiyaga qo'shing.",
+    to: "/wallet/gifts",
+    accent: "bg-rose-500/12 text-rose-800",
   },
   {
     id: "gift",
     icon: Gift,
     titleKey: "walletPage.news.giftTitle",
-    defaultTitle: "Sovg'a kartalar",
+    defaultTitle: "Sovg'a yuboring",
     bodyKey: "walletPage.news.giftBody",
     defaultBody: "Do'stingizga balans yuboring — bir zumda.",
     to: "/wallet",
     search: { section: "gift" },
-    accent: "bg-rose-500/12 text-rose-800",
+    accent: "bg-violet-500/12 text-violet-800",
   },
   {
     id: "topup",

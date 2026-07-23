@@ -14,7 +14,7 @@ from accounts.permissions import IsAdmin
 from accounts.phone_auth import normalize_uz_phone
 from accounts.throttles import AuthIPThrottle, WalletGiftThrottle, WalletTopUpThrottle
 from wallet.gift_designs import gift_design_to_dict, list_gift_designs
-from wallet.models import LedgerEntry, Wallet
+from wallet.models import GiftTransfer, LedgerEntry, Wallet
 from wallet.serializers import (
     GiftSendSerializer,
     GiftTransferSerializer,
@@ -69,6 +69,50 @@ class WalletTransactionsView(ListAPIView):
         elif direction == "out":
             qs = qs.filter(amount__lt=0)
         return qs
+
+    def list(self, request, *args, **kwargs):
+        response = super().list(request, *args, **kwargs)
+        results = response.data.get("results")
+        if not isinstance(results, list):
+            return response
+
+        gift_ids = {
+            str(row.get("reference_id") or "")
+            for row in results
+            if row.get("entry_type") in ("gift_in", "gift_out")
+            and row.get("reference_type") == "gift_transfer"
+            and row.get("reference_id")
+        }
+        if not gift_ids:
+            return response
+
+        gifts = {
+            str(g.id): g
+            for g in GiftTransfer.objects.filter(id__in=gift_ids).select_related(
+                "sender_wallet__user", "recipient_wallet__user"
+            )
+        }
+        for row in results:
+            gift = gifts.get(str(row.get("reference_id") or ""))
+            if not gift:
+                continue
+            meta = dict(row.get("metadata") or {})
+            sender = gift.sender_wallet.user
+            recipient = gift.recipient_wallet.user
+            meta.setdefault(
+                "sender_name",
+                (sender.full_name or sender.phone or str(sender.pk)).strip(),
+            )
+            meta.setdefault("sender_user_id", sender.pk)
+            meta.setdefault(
+                "recipient_name",
+                (recipient.full_name or recipient.phone or str(recipient.pk)).strip(),
+            )
+            meta.setdefault("recipient_user_id", recipient.pk)
+            meta.setdefault("design_id", gift.design_id)
+            meta.setdefault("message", (gift.message or "")[:200])
+            row["metadata"] = meta
+        return response
 
 
 class WalletTopUpView(APIView):
@@ -146,12 +190,34 @@ class WalletGiftSendView(APIView):
 
         sender_wallet = WalletService.ensure_wallet(request.user)
         sender_wallet.refresh_from_db()
+        gift = (
+            GiftTransfer.objects.select_related(
+                "sender_wallet__user", "recipient_wallet__user"
+            ).get(pk=gift.pk)
+        )
         return Response(
             {
                 "balance": sender_wallet.balance,
                 "gift": GiftTransferSerializer(gift).data,
             },
             status=status.HTTP_201_CREATED,
+        )
+
+
+class WalletGiftReceivedView(ListAPIView):
+    """Qabul qilingan sovg'a kartalar — kimdan kelgani bilan."""
+
+    permission_classes = [IsAuthenticated]
+    serializer_class = GiftTransferSerializer
+    pagination_class = WalletTxPagination
+
+    def get_queryset(self):
+        wallet = WalletService.ensure_wallet(self.request.user)
+        return (
+            GiftTransfer.objects.filter(recipient_wallet=wallet)
+            .exclude(status=GiftTransfer.Status.FAILED)
+            .select_related("sender_wallet__user", "recipient_wallet__user")
+            .order_by("-created_at")
         )
 
 

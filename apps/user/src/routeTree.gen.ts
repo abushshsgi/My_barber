@@ -59,6 +59,7 @@ import { Route as DevExploreGenRouteImport } from './routes/dev.explore-gen'
 import { Route as ExploreStyleIdRouteImport } from './routes/explore_.$styleId'
 import { Route as SalonIdRouteImport } from './routes/salon.$id'
 import { Route as StoriesSalonIdRouteImport } from './routes/stories.$salonId'
+import { Route as WalletGiftsRouteImport } from './routes/wallet_.gifts'
 import { Route as WalletHistoryRouteImport } from './routes/wallet_.history'
 import { Route as WalletTopUpRouteImport } from './routes/wallet_.top-up'
 import { Route as BookingBarberBarberIdRouteImport } from './routes/booking.barber.$barberId'
@@ -318,6 +319,11 @@ const StoriesSalonIdRoute = StoriesSalonIdRouteImport.update({
   path: '/$salonId',
   getParentRoute: () => StoriesRoute,
 } as any)
+const WalletGiftsRoute = WalletGiftsRouteImport.update({
+  id: '/wallet_/gifts',
+  path: '/wallet/gifts',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const WalletHistoryRoute = WalletHistoryRouteImport.update({
   id: '/wallet_/history',
   path: '/wallet/history',
@@ -410,6 +416,7 @@ export interface FileRoutesByFullPath {
   '/explore/$styleId': typeof ExploreStyleIdRoute
   '/salon/$id': typeof SalonIdRoute
   '/stories/$salonId': typeof StoriesSalonIdRoute
+  '/wallet/gifts': typeof WalletGiftsRoute
   '/wallet/history': typeof WalletHistoryRoute
   '/wallet/top-up': typeof WalletTopUpRoute
   '/booking/barber/$barberId': typeof BookingBarberBarberIdRoute
@@ -469,6 +476,7 @@ export interface FileRoutesByTo {
   '/explore/$styleId': typeof ExploreStyleIdRoute
   '/salon/$id': typeof SalonIdRoute
   '/stories/$salonId': typeof StoriesSalonIdRoute
+  '/wallet/gifts': typeof WalletGiftsRoute
   '/wallet/history': typeof WalletHistoryRoute
   '/wallet/top-up': typeof WalletTopUpRoute
   '/booking/barber/$barberId': typeof BookingBarberBarberIdRoute
@@ -530,6 +538,7 @@ export interface FileRoutesById {
   '/explore_/$styleId': typeof ExploreStyleIdRoute
   '/salon/$id': typeof SalonIdRoute
   '/stories/$salonId': typeof StoriesSalonIdRoute
+  '/wallet_/gifts': typeof WalletGiftsRoute
   '/wallet_/history': typeof WalletHistoryRoute
   '/wallet_/top-up': typeof WalletTopUpRoute
   '/booking/barber/$barberId': typeof BookingBarberBarberIdRoute
@@ -592,6 +601,7 @@ export interface FileRouteTypes {
     | '/explore/$styleId'
     | '/salon/$id'
     | '/stories/$salonId'
+    | '/wallet/gifts'
     | '/wallet/history'
     | '/wallet/top-up'
     | '/booking/barber/$barberId'
@@ -651,6 +661,7 @@ export interface FileRouteTypes {
     | '/explore/$styleId'
     | '/salon/$id'
     | '/stories/$salonId'
+    | '/wallet/gifts'
     | '/wallet/history'
     | '/wallet/top-up'
     | '/booking/barber/$barberId'
@@ -711,6 +722,7 @@ export interface FileRouteTypes {
     | '/explore_/$styleId'
     | '/salon/$id'
     | '/stories/$salonId'
+    | '/wallet_/gifts'
     | '/wallet_/history'
     | '/wallet_/top-up'
     | '/booking/barber/$barberId'
@@ -769,6 +781,7 @@ export interface RootRouteChildren {
   DevExploreGenRoute: typeof DevExploreGenRouteWithChildren
   ExploreStyleIdRoute: typeof ExploreStyleIdRoute
   SalonIdRoute: typeof SalonIdRoute
+  WalletGiftsRoute: typeof WalletGiftsRoute
   WalletHistoryRoute: typeof WalletHistoryRoute
   WalletTopUpRoute: typeof WalletTopUpRoute
   BookingBarberBarberIdRoute: typeof BookingBarberBarberIdRoute
@@ -1129,6 +1142,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StoriesSalonIdRouteImport
       parentRoute: typeof StoriesRoute
     }
+    '/wallet_/gifts': {
+      id: '/wallet_/gifts'
+      path: '/wallet/gifts'
+      fullPath: '/wallet/gifts'
+      preLoaderRoute: typeof WalletGiftsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/wallet_/history': {
       id: '/wallet_/history'
       path: '/wallet/history'
@@ -1283,6 +1303,7 @@ const rootRouteChildren: RootRouteChildren = {
   DevExploreGenRoute: DevExploreGenRouteWithChildren,
   ExploreStyleIdRoute: ExploreStyleIdRoute,
   SalonIdRoute: SalonIdRoute,
+  WalletGiftsRoute: WalletGiftsRoute,
   WalletHistoryRoute: WalletHistoryRoute,
   WalletTopUpRoute: WalletTopUpRoute,
   BookingBarberBarberIdRoute: BookingBarberBarberIdRoute,
