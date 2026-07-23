@@ -151,7 +151,48 @@ export function syncFaceProfileHistoryCache(
   entries: FaceProfileHistoryEntry[],
 ) {
   try {
-    persistFaceProfileHistory(userId, entries.slice(0, FACE_HISTORY_MAX));
+    const server = entries.slice(0, FACE_HISTORY_MAX);
+    const local = loadFaceProfileHistory(userId);
+    const serverIds = new Set(server.map((e) => e.id));
+    const now = Date.now();
+    // Keep optimistic local rows (data URLs / temp ids) until POST finishes.
+    const pending = local.filter((entry) => {
+      if (serverIds.has(entry.id)) return false;
+      if (/^\d+$/.test(entry.id)) return false;
+      if (!entry.photoDataUrl) return false;
+      const scanned = Date.parse(entry.scannedAt);
+      if (!Number.isFinite(scanned)) return entry.photoDataUrl.startsWith("data:");
+      return now - scanned < 90_000;
+    });
+    persistFaceProfileHistory(userId, [...pending, ...server].slice(0, FACE_HISTORY_MAX));
+  } catch {
+    /* noop */
+  }
+}
+
+/** Soft-upsert after a successful POST — avoids wiping pending local rows. */
+export function upsertFaceProfileHistoryEntry(
+  entry: FaceProfileHistoryEntry,
+  userId?: number,
+) {
+  const uid = userId ?? getActiveUserId();
+  if (!uid) return;
+  try {
+    const list = loadFaceProfileHistory(uid).filter(
+      (item) =>
+        item.id !== entry.id &&
+        !(item.photoDataUrl.startsWith("data:") && entry.photoDataUrl && item.scannedAt === entry.scannedAt),
+    );
+    // Drop the most recent optimistic data-URL twin (same source, within a few seconds).
+    const entryAt = Date.parse(entry.scannedAt);
+    const withoutTwin = list.filter((item) => {
+      if (!item.photoDataUrl.startsWith("data:")) return true;
+      if (item.source !== entry.source) return true;
+      const at = Date.parse(item.scannedAt);
+      if (!Number.isFinite(at) || !Number.isFinite(entryAt)) return true;
+      return Math.abs(at - entryAt) > 15_000;
+    });
+    persistFaceProfileHistory(uid, [entry, ...withoutTwin].slice(0, FACE_HISTORY_MAX));
   } catch {
     /* noop */
   }

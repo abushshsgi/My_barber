@@ -11,6 +11,7 @@ import {
   enrichLatestFaceProfileHistory,
   saveFaceProfile,
 } from "@/lib/face-profile";
+import type { FaceShapeKey } from "@/components/ai-style/ai-style-shared";
 import { saveMorphAiGeneration } from "@/lib/morph-ai-gallery";
 import { markMorphAiOnboarded } from "@/lib/morph-ai-session";
 import type { ExplorePersonaId } from "@/lib/explore-personas";
@@ -73,28 +74,38 @@ export function useAiStyleFlow(options: UseAiStyleFlowOptions = {}) {
     autoTryOnRef.current = null;
   }, [focusStyleId]);
 
-  const storePhoto = useCallback(async (dataUrl: string, source: "gallery" | "camera_scan") => {
-    const prepared = await prepareSelfieDataUrl(dataUrl);
-    setPhoto(prepared);
-    setDone(false);
-    setResult(null);
-    setTryOnByStyle({});
-    setTryOnLoadingId(null);
-    analyzeTriggeredRef.current = false;
-    autoTryOnRef.current = null;
-    tryOnFailedRef.current.clear();
+  const storePhoto = useCallback(
+    async (
+      dataUrl: string,
+      source: "gallery" | "camera_scan",
+      meta?: { faceShapeKey?: FaceShapeKey; scannedAt?: string },
+    ) => {
+      const prepared = await prepareSelfieDataUrl(dataUrl);
+      setPhoto(prepared);
+      setDone(false);
+      setResult(null);
+      setTryOnByStyle({});
+      setTryOnLoadingId(null);
+      analyzeTriggeredRef.current = false;
+      autoTryOnRef.current = null;
+      tryOnFailedRef.current.clear();
 
-    const scannedAt = new Date().toISOString();
-    appendFaceProfileHistory({
-      photoDataUrl: prepared,
-      scannedAt,
-      source: source === "camera_scan" ? "camera_scan" : "gallery",
-    });
-    void persistAiStyleHistory({
-      image: prepared,
-      source: source === "camera_scan" ? "camera_scan" : "gallery",
-    });
-  }, []);
+      const scannedAt = meta?.scannedAt ?? new Date().toISOString();
+      appendFaceProfileHistory({
+        photoDataUrl: prepared,
+        scannedAt,
+        source: source === "camera_scan" ? "camera_scan" : "gallery",
+        faceShapeKey: meta?.faceShapeKey,
+      });
+      void persistAiStyleHistory({
+        image: prepared,
+        source: source === "camera_scan" ? "camera_scan" : "gallery",
+        face_shape_key: meta?.faceShapeKey,
+      });
+      return prepared;
+    },
+    [],
+  );
 
   const applyPhoto = async (dataUrl: string) => {
     setPreparingPreview(dataUrl);
@@ -149,20 +160,12 @@ export function useAiStyleFlow(options: UseAiStyleFlowOptions = {}) {
     } else {
       setFaceHint(null);
     }
-    appendFaceProfileHistory({
-      photoDataUrl: payload.dataUrl,
-      faceShapeKey: payload.faceShapeKey,
-      scannedAt,
-      source: "camera_scan",
-    });
-    void persistAiStyleHistory({
-      image: payload.dataUrl,
-      face_shape_key: payload.faceShapeKey,
-      source: "camera_scan",
-    });
     setCameraOpen(false);
     try {
-      await storePhoto(payload.dataUrl, "camera_scan");
+      await storePhoto(payload.dataUrl, "camera_scan", {
+        faceShapeKey: payload.faceShapeKey,
+        scannedAt,
+      });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Rasm yuklanmadi.");
     }
@@ -280,7 +283,18 @@ export function useAiStyleFlow(options: UseAiStyleFlowOptions = {}) {
 
   const updateTryOnPreview = useCallback((cacheKey: string, previewImage: string) => {
     setTryOnByStyle((prev) => ({ ...prev, [cacheKey]: previewImage }));
-  }, []);
+    // cacheKey is either styleId or `${personaId}:${styleId}`
+    const styleId = cacheKey.includes(":") ? cacheKey.slice(cacheKey.indexOf(":") + 1) : cacheKey;
+    const title =
+      result?.suggestions.find((s) => s.id === styleId)?.title ?? styleId;
+    saveMorphAiGeneration({
+      styleId,
+      title,
+      previewImage,
+      beforeImage: photo ?? undefined,
+      personaId: menPersonaId ?? undefined,
+    });
+  }, [photo, result, menPersonaId]);
 
   useEffect(() => {
     if (!photo || !audience || analyzing || done || analyzeTriggeredRef.current) return;

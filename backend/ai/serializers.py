@@ -115,6 +115,7 @@ class MorphAiLookShareCreateSerializer(serializers.Serializer):
 class MorphAiLookShareSerializer(serializers.ModelSerializer):
     before_url = serializers.SerializerMethodField()
     after_url = serializers.SerializerMethodField()
+    share_page_url = serializers.SerializerMethodField()
 
     class Meta:
         model = MorphAiLookShare
@@ -124,6 +125,7 @@ class MorphAiLookShareSerializer(serializers.ModelSerializer):
             "title",
             "before_url",
             "after_url",
+            "share_page_url",
             "created_at",
         )
         read_only_fields = fields
@@ -145,3 +147,8 @@ class MorphAiLookShareSerializer(serializers.ModelSerializer):
         if request is not None:
             return request.build_absolute_uri(url)
         return url
+
+    def get_share_page_url(self, obj: MorphAiLookShare) -> str:
+        from accounts.referral import user_app_public_base
+
+        return f"{user_app_public_base()}/morf-ai/share/{obj.pk}"

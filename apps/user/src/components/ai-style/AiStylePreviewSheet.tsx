@@ -17,7 +17,8 @@ import type { AiAnalysisResult } from "@/components/ai-style/ai-style-shared";
 import { isCatalogStyleId } from "@/components/ai-style/ai-style-shared";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 import type { ExplorePersonaId } from "@/lib/explore-personas";
-import { downloadAiStyleImage, shareAiStyleImage } from "@/lib/ai-style-image";
+import { createMorphAiLookShare } from "@/lib/api";
+import { downloadAiStyleImage, shareAiStyleLink } from "@/lib/ai-style-image";
 import { stashMorphStudioDraft } from "@/lib/morph-ai-studio-session";
 import { cn } from "@/lib/utils";
 
@@ -28,6 +29,8 @@ type Props = {
   onOpenChange: (open: boolean) => void;
   suggestion: Suggestion | null;
   previewImage?: string;
+  /** Original selfie — required for personal before/after share. */
+  selfiePhoto?: string | null;
   saved: boolean;
   tryOnLoading?: boolean;
   onToggleSave: (styleId: string, meta: { title: string; previewImage?: string }) => void;
@@ -70,6 +73,7 @@ export function AiStylePreviewSheet({
   onOpenChange,
   suggestion,
   previewImage,
+  selfiePhoto,
   saved,
   tryOnLoading,
   onToggleSave,
@@ -85,9 +89,9 @@ export function AiStylePreviewSheet({
 
   const imageSrc = previewImage || suggestion.imageUrl;
   const canTryOn = Boolean(onGenerateTryOn && isCatalogStyleId(suggestion.id));
-  const exploreUrl =
+  const lookUrl =
     typeof window !== "undefined" && isCatalogStyleId(suggestion.id)
-      ? `${window.location.origin}/explore/${suggestion.id}`
+      ? `${window.location.origin}/morf-ai/look/${suggestion.id}`
       : undefined;
 
   const goBack = () => onOpenChange(false);
@@ -96,6 +100,7 @@ export function AiStylePreviewSheet({
     if (!previewImage) return;
     stashMorphStudioDraft({
       image: previewImage,
+      beforeImage: selfiePhoto || undefined,
       styleId: suggestion.id,
       styleTitle: suggestion.title,
       source: "tryon",
@@ -128,7 +133,33 @@ export function AiStylePreviewSheet({
     }
     setSharing(true);
     try {
-      const result = await shareAiStyleImage(suggestion.title, imageSrc, exploreUrl);
+      const before = selfiePhoto || undefined;
+      if (previewImage && before) {
+        const created = await createMorphAiLookShare({
+          style_id: suggestion.id,
+          title: suggestion.title,
+          before_image: before,
+          after_image: previewImage,
+        });
+        const pageUrl =
+          created.share_page_url ||
+          `${window.location.origin}/morf-ai/share/${encodeURIComponent(created.id)}`;
+        const shareTitle = t("aiStylePage.shareLook.shareText", {
+          style: suggestion.title,
+          defaultValue: "{{style}} — Morf AI da sinab ko‘rdim. Sen ham sinab ko‘r!",
+        });
+        const result = await shareAiStyleLink(shareTitle, pageUrl);
+        if (result === "copied") toast.success(t("aiStylePage.linkCopied"));
+        else if (result === "shared") toast.success(t("aiStylePage.shared"));
+        return;
+      }
+
+      // Fallback: viral style look page (no personal before/after yet).
+      if (!lookUrl) {
+        toast.error(t("aiStylePage.shareFailed"));
+        return;
+      }
+      const result = await shareAiStyleLink(suggestion.title, lookUrl);
       if (result === "copied") toast.success(t("aiStylePage.linkCopied"));
       else if (result === "shared") toast.success(t("aiStylePage.shared"));
     } catch {

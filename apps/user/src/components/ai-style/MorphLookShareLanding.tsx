@@ -93,7 +93,7 @@ export function MorphLookShareLanding({ styleId }: Props) {
           className="flex w-full min-h-14 items-center justify-center gap-2 rounded-2xl bg-white text-base font-bold text-black touch-manipulation active:scale-[0.98]"
         >
           <Sparkles className="h-5 w-5" />
-          {t("aiStylePage.shareLook.cta", { defaultValue: "O‘zimda sinab ko‘rish — Morph AI" })}
+          {t("aiStylePage.shareLook.cta", { defaultValue: "O‘zimda sinab ko‘rish — Morf AI" })}
         </button>
 
         <Link
@@ -110,7 +110,7 @@ export function MorphLookShareLanding({ styleId }: Props) {
         <p className="text-center text-[11px] text-white/45">
           {t("aiStylePage.shareLook.authHint", {
             defaultValue:
-              "Davom etish uchun tezkor ro‘yxatdan o‘tasiz — keyin Morph AI try-on. 3 do‘st = 7 kun bepul.",
+              "Davom etish uchun tezkor ro‘yxatdan o‘tasiz — keyin Morf AI try-on. 3 do‘st = 7 kun bepul.",
           })}
         </p>
 

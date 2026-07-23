@@ -708,6 +708,7 @@ export function AiStyleResultsBlock({
   tryOnLoadingId,
   onGenerateTryOn,
   focusStyleId,
+  selfiePhoto,
 }: {
   result: AiAnalysisResult;
   saved: string[];
@@ -829,6 +830,7 @@ export function AiStyleResultsBlock({
         }}
         suggestion={previewSuggestion}
         previewImage={previewImage}
+        selfiePhoto={selfiePhoto}
         saved={previewSuggestion ? saved.includes(previewSuggestion.id) : false}
         tryOnLoading={
           previewId

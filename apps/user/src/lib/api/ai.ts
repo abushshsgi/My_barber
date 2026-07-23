@@ -3,6 +3,7 @@ import {
   getActiveUserId,
   loadFaceProfileHistory,
   syncFaceProfileHistoryCache,
+  upsertFaceProfileHistoryEntry,
   type FaceProfileHistoryEntry,
 } from "@/lib/face-profile";
 import type { ExplorePersonaId } from "@/lib/explore-personas";
@@ -251,6 +252,7 @@ export type MorphAiLookShareApi = {
   title: string;
   before_url: string | null;
   after_url: string | null;
+  share_page_url?: string;
   created_at: string;
 };
 
@@ -290,9 +292,9 @@ export async function refreshAiStyleHistoryCache(): Promise<FaceProfileHistoryEn
   if (!userId) return loadFaceProfileHistory();
   try {
     const entries = await fetchAiStyleHistory();
-    const mapped = entries.map(mapApiHistoryEntry);
+    const mapped = entries.map(mapApiHistoryEntry).filter((e) => Boolean(e.photoDataUrl));
     syncFaceProfileHistoryCache(userId, mapped);
-    return mapped;
+    return loadFaceProfileHistory(userId);
   } catch {
     return loadFaceProfileHistory(userId);
   }
@@ -304,8 +306,8 @@ export async function persistAiStyleHistory(
   const userId = getActiveUserId();
   if (!userId) return;
   try {
-    await saveAiStyleHistory(payload);
-    await refreshAiStyleHistoryCache();
+    const saved = await saveAiStyleHistory(payload);
+    upsertFaceProfileHistoryEntry(mapApiHistoryEntry(saved), userId);
   } catch {
     /* local cache already updated */
   }

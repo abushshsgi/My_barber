@@ -15,7 +15,7 @@ from PIL import Image
 from ai.studio_presets import get_studio_option
 from ai.usage_pricing import finalize_usage
 
-from .gemini_style import AiStyleError, parse_data_url
+from .gemini_style import AiStyleError, load_image_bytes
 from .image_response import extract_image_bytes, to_data_url
 from .studio_image import image_generation_provider, studio_edit_image_model
 from .vertex_image import generate_image_content, vertex_image_configured
@@ -135,7 +135,7 @@ def generate_studio_edit(
     if option is None:
         raise AiStyleError("Noto'g'ri studio varianti tanlandi.", 400)
 
-    mime, image_bytes = parse_data_url(image_data_url)
+    mime, image_bytes = load_image_bytes(image_data_url)
     _w, _h, aspect_ratio = _image_meta(image_bytes)
     prompt = _build_studio_prompt(
         instruction=option["instruction"],

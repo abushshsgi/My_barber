@@ -62,6 +62,47 @@ def parse_data_url(data_url: str) -> tuple[str, bytes]:
     return mime, payload
 
 
+def load_image_bytes(source: str) -> tuple[str, bytes]:
+    """Accept data URL or http(s) image URL (history sync / studio)."""
+    raw = (source or "").strip()
+    if not raw:
+        raise AiStyleError("Rasmni yuboring.", 400)
+    if raw.startswith("data:"):
+        return parse_data_url(raw)
+
+    from urllib.parse import urlparse
+
+    parsed = urlparse(raw)
+    if parsed.scheme not in ("http", "https") or not parsed.netloc:
+        raise AiStyleError("Rasm formati noto'g'ri. JPEG yoki PNG yuklang.", 400)
+
+    req = urllib.request.Request(raw, headers={"User-Agent": "MyBarber-MorphAI/1.0"})
+    try:
+        with urllib.request.urlopen(req, timeout=20) as resp:  # noqa: S310
+            content_type = (resp.headers.get("Content-Type") or "").split(";")[0].strip().lower()
+            payload = resp.read(MAX_IMAGE_BYTES + 1)
+    except Exception as exc:
+        raise AiStyleError("Rasmni yuklab bo'lmadi.", 400) from exc
+
+    if not payload:
+        raise AiStyleError("Rasm bo'sh.", 400)
+    if len(payload) > MAX_IMAGE_BYTES:
+        raise AiStyleError("Rasm hajmi 5 MB dan oshmasligi kerak.", 400)
+
+    mime = content_type if content_type in ALLOWED_MIME else "image/jpeg"
+    if mime not in ALLOWED_MIME:
+        # Sniff from magic bytes when CDN omits a useful Content-Type.
+        if payload[:3] == b"\xff\xd8\xff":
+            mime = "image/jpeg"
+        elif payload[:8] == b"\x89PNG\r\n\x1a\n":
+            mime = "image/png"
+        elif payload[:4] == b"RIFF" and payload[8:12] == b"WEBP":
+            mime = "image/webp"
+        else:
+            raise AiStyleError("Faqat JPEG, PNG yoki WebP qabul qilinadi.", 400)
+    return mime, payload
+
+
 def _build_face_check_prompt() -> str:
     return """Does this image clearly show ONE human face suitable for a hairstyle selfie?
 Return ONLY JSON: {"has_face": true} or {"has_face": false}

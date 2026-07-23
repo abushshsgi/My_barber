@@ -80,11 +80,17 @@ def trim_user_history(user: User) -> None:
         AiStyleHistoryEntry.objects.filter(id__in=ids).delete()
 
 
-def save_history_photo(entry: AiStyleHistoryEntry, data_url: str) -> None:
+def save_history_photo(entry: AiStyleHistoryEntry, source: str) -> None:
+    """Accept data URL or http(s) image URL (synced history / studio re-save)."""
     if entry.photo:
         entry.photo.delete(save=False)
     entry.photo.save(
         f"entry-{entry.pk}",
-        image_file_from_data_url(data_url, f"entry-{entry.pk}"),
+        image_file_from_source(
+            source,
+            f"entry-{entry.pk}",
+            max_px=HISTORY_THUMB_MAX_PX,
+            quality=HISTORY_JPEG_QUALITY,
+        ),
         save=True,
     )

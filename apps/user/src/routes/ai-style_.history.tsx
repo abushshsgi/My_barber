@@ -53,11 +53,6 @@ type HistoryCard =
       at: string;
     };
 
-function buildPersonalShareUrl(shareId: string) {
-  const origin = typeof window !== "undefined" ? window.location.origin : "https://mysaloon.uz";
-  return `${origin}/morf-ai/share/${encodeURIComponent(shareId)}`;
-}
-
 function AiStyleHistoryPage() {
   const { t } = useTranslation();
   const [selfies, setSelfies] = useState<FaceProfileHistoryEntry[]>([]);
@@ -93,21 +88,21 @@ function AiStyleHistoryPage() {
   }, [userId]);
 
   const cards = useMemo(() => {
+    const latestSelfie = selfies.find((s) => Boolean(s.photoDataUrl))?.photoDataUrl;
     const fromGens: HistoryCard[] = gens.map((g) => ({
       kind: "generation",
       id: `gen-${g.id}`,
       styleId: g.styleId,
       title: g.title,
       thumb: g.previewImage,
-      before: g.beforeImage,
+      before: g.beforeImage || latestSelfie,
       after: g.previewImage,
       at: g.createdAt,
     }));
-    const genBefore = new Set(gens.map((g) => g.beforeImage).filter(Boolean));
     const fromSelfies: HistoryCard[] = selfies
-      .filter((s) => !genBefore.has(s.photoDataUrl))
+      .filter((s) => Boolean(s.photoDataUrl))
       .map((s) => ({
-        kind: "selfie",
+        kind: "selfie" as const,
         id: `selfie-${s.id}`,
         title: s.faceShapeKey
           ? t(`aiStylePage.faceShapes.${s.faceShapeKey}`, { defaultValue: s.faceShapeKey })
@@ -142,20 +137,33 @@ function AiStyleHistoryPage() {
 
   const handleShare = async () => {
     if (!active) return;
-    const afterSrc = active.kind === "generation" ? active.after : active.thumb;
-    if (!afterSrc) {
-      toast.error(t("aiStylePage.previewNoImage"));
+    if (active.kind !== "generation" || !active.after) {
+      toast.error(
+        t("aiStylePage.shareLook.needTryOn", {
+          defaultValue: "Ulashish uchun try-on / studio natijasini tanlang",
+        }),
+      );
+      return;
+    }
+    if (!active.before) {
+      toast.error(
+        t("aiStylePage.beforeAfter.noBefore", {
+          defaultValue: "Before selfie saqlanmagan — yangi try-on qiling",
+        }),
+      );
       return;
     }
     setSharing(true);
     try {
       const created = await createMorphAiLookShare({
-        style_id: active.kind === "generation" ? active.styleId : undefined,
+        style_id: active.styleId,
         title: active.title,
-        before_image: active.before || undefined,
-        after_image: afterSrc,
+        before_image: active.before,
+        after_image: active.after,
       });
-      const pageUrl = buildPersonalShareUrl(created.id);
+      const pageUrl =
+        created.share_page_url ||
+        `${typeof window !== "undefined" ? window.location.origin : "https://mysaloon.uz"}/morf-ai/share/${encodeURIComponent(created.id)}`;
       const shareTitle = t("aiStylePage.shareLook.shareText", {
         style: active.title,
         defaultValue: "{{style}} — Morf AI da sinab ko‘rdim. Sen ham sinab ko‘r!",
@@ -169,6 +177,8 @@ function AiStyleHistoryPage() {
       setSharing(false);
     }
   };
+
+  const canShare = active?.kind === "generation" && Boolean(active.before && active.after);
 
   return (
     <div
@@ -304,7 +314,7 @@ function AiStyleHistoryPage() {
                   </div>
                 )}
 
-                <div className="grid w-full max-w-md grid-cols-2 gap-2.5">
+                <div className={`grid w-full max-w-md gap-2.5 ${canShare ? "grid-cols-2" : "grid-cols-1"}`}>
                   <button
                     type="button"
                     disabled={downloading}
@@ -318,21 +328,23 @@ function AiStyleHistoryPage() {
                     )}
                     {t("aiStylePage.download")}
                   </button>
-                  <button
-                    type="button"
-                    disabled={sharing}
-                    onClick={() => void handleShare()}
-                    className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-white/20 bg-white/10 text-sm font-bold text-white touch-manipulation active:scale-[0.98] disabled:opacity-50"
-                  >
-                    {sharing ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Share2 className="h-4 w-4" />
-                    )}
-                    {t("aiStylePage.share")}
-                  </button>
+                  {canShare ? (
+                    <button
+                      type="button"
+                      disabled={sharing}
+                      onClick={() => void handleShare()}
+                      className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-white/20 bg-white/10 text-sm font-bold text-white touch-manipulation active:scale-[0.98] disabled:opacity-50"
+                    >
+                      {sharing ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Share2 className="h-4 w-4" />
+                      )}
+                      {t("aiStylePage.share")}
+                    </button>
+                  ) : null}
                 </div>
-                {active.kind === "generation" || active.before ? (
+                {canShare ? (
                   <p className="max-w-md text-center text-[11px] text-white/50">
                     {t("aiStylePage.shareLook.shareHint", {
                       defaultValue:

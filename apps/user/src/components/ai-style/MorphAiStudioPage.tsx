@@ -22,11 +22,14 @@ import { useMorphLimitGate } from "@/hooks/use-morph-limit-gate";
 import {
   fetchMorphStudioCatalog,
   generateMorphStudioEdit,
+  persistAiStyleHistory,
+  refreshAiStyleHistoryCache,
   type MorphStudioCategory,
 } from "@/lib/api/ai";
 import { downloadAiStyleImage } from "@/lib/ai-style-image";
 import {
   FACE_HISTORY_UPDATED_EVENT,
+  appendFaceProfileHistory,
   loadFaceProfileHistory,
   type FaceProfileHistoryEntry,
 } from "@/lib/face-profile";
@@ -97,6 +100,7 @@ type SourceItem = {
   id: string;
   title: string;
   image: string;
+  beforeImage?: string;
   styleId?: string;
   kind: "generation" | "selfie";
 };
@@ -109,6 +113,7 @@ export function MorphAiStudioPage() {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [draftMeta, setDraftMeta] = useState<Pick<MorphStudioDraft, "styleId" | "styleTitle" | "source">>({});
   const [original, setOriginal] = useState<string | null>(null);
+  const [beforeImage, setBeforeImage] = useState<string | null>(null);
   const [current, setCurrent] = useState<string | null>(null);
   const [history, setHistory] = useState<string[]>([]);
   const [loadingId, setLoadingId] = useState<string | null>(null);
@@ -138,6 +143,7 @@ export function MorphAiStudioPage() {
       setOriginal(draft.image);
       setCurrent(draft.image);
       setHistory([draft.image]);
+      setBeforeImage(draft.beforeImage || draft.image);
       setDraftMeta({
         styleId: draft.styleId,
         styleTitle: draft.styleTitle,
@@ -147,16 +153,24 @@ export function MorphAiStudioPage() {
   }, []);
 
   useEffect(() => {
-    const refresh = () => {
+    let cancelled = false;
+    const refresh = async () => {
+      const list = await refreshAiStyleHistoryCache();
+      if (cancelled) return;
+      setGenerations(loadMorphAiGenerations());
+      setSelfies(list.length ? list : loadFaceProfileHistory());
+    };
+    void refresh();
+    const onLocal = () => {
       setGenerations(loadMorphAiGenerations());
       setSelfies(loadFaceProfileHistory());
     };
-    refresh();
-    window.addEventListener(MORPH_AI_GALLERY_UPDATED_EVENT, refresh);
-    window.addEventListener(FACE_HISTORY_UPDATED_EVENT, refresh);
+    window.addEventListener(MORPH_AI_GALLERY_UPDATED_EVENT, onLocal);
+    window.addEventListener(FACE_HISTORY_UPDATED_EVENT, onLocal);
     return () => {
-      window.removeEventListener(MORPH_AI_GALLERY_UPDATED_EVENT, refresh);
-      window.removeEventListener(FACE_HISTORY_UPDATED_EVENT, refresh);
+      cancelled = true;
+      window.removeEventListener(MORPH_AI_GALLERY_UPDATED_EVENT, onLocal);
+      window.removeEventListener(FACE_HISTORY_UPDATED_EVENT, onLocal);
     };
   }, []);
 
@@ -165,6 +179,7 @@ export function MorphAiStudioPage() {
       id: `gen-${g.id}`,
       title: g.title || "Try-on",
       image: g.previewImage,
+      beforeImage: g.beforeImage,
       styleId: g.styleId,
       kind: "generation" as const,
     }));
@@ -174,18 +189,36 @@ export function MorphAiStudioPage() {
         id: `selfie-${s.id}`,
         title: t("aiStylePage.studio.selfie", { defaultValue: "Selfie" }),
         image: s.photoDataUrl,
+        beforeImage: s.photoDataUrl,
         kind: "selfie" as const,
       }));
     return [...fromGen, ...fromSelfie].slice(0, 24);
   }, [generations, selfies, t]);
 
+  const persistStudioSelfie = (prepared: string, source: "gallery" | "camera_scan") => {
+    const scannedAt = new Date().toISOString();
+    appendFaceProfileHistory({
+      photoDataUrl: prepared,
+      scannedAt,
+      source,
+    });
+    void persistAiStyleHistory({ image: prepared, source });
+  };
+
   const selectImage = (
     image: string,
-    meta?: { styleId?: string; styleTitle?: string; source?: MorphStudioDraft["source"] },
+    meta?: {
+      styleId?: string;
+      styleTitle?: string;
+      source?: MorphStudioDraft["source"];
+      beforeImage?: string;
+    },
   ) => {
+    const before = meta?.beforeImage || image;
     setOriginal(image);
     setCurrent(image);
     setHistory([image]);
+    setBeforeImage(before);
     setDraftMeta({
       styleId: meta?.styleId,
       styleTitle: meta?.styleTitle,
@@ -193,6 +226,7 @@ export function MorphAiStudioPage() {
     });
     stashMorphStudioDraft({
       image,
+      beforeImage: before,
       styleId: meta?.styleId,
       styleTitle: meta?.styleTitle,
       source: meta?.source,
@@ -213,6 +247,7 @@ export function MorphAiStudioPage() {
       setCurrent(result.preview_image);
       stashMorphStudioDraft({
         image: result.preview_image,
+        beforeImage: beforeImage || original || undefined,
         styleId: draftMeta.styleId,
         styleTitle: draftMeta.styleTitle ?? result.preset_label,
         source: draftMeta.source ?? "tryon",
@@ -223,7 +258,7 @@ export function MorphAiStudioPage() {
           ? `${draftMeta.styleTitle} · ${result.preset_label}`
           : `Studio · ${result.preset_label}`,
         previewImage: result.preview_image,
-        beforeImage: original ?? undefined,
+        beforeImage: beforeImage || original || undefined,
       });
       limitGate.invalidateUsage();
       toast.success(
@@ -261,7 +296,8 @@ export function MorphAiStudioPage() {
     try {
       const dataUrl = await prepareSelfieFromFile(file);
       const prepared = await prepareSelfieDataUrl(dataUrl);
-      selectImage(prepared, { source: "gallery", styleTitle: "Studio" });
+      persistStudioSelfie(prepared, "gallery");
+      selectImage(prepared, { source: "gallery", styleTitle: "Studio", beforeImage: prepared });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : t("aiStylePage.studio.pickFailed"));
     } finally {
@@ -346,7 +382,7 @@ export function MorphAiStudioPage() {
               <button
                 type="button"
                 onClick={() => fileRef.current?.click()}
-                className="flex min-h-[52px] items-center justify-center gap-2 rounded-2xl border border-white/15 bg-white/8 text-sm font-bold touch-manipulation active:scale-[0.98]"
+                className="flex min-h-[52px] items-center justify-center gap-2 rounded-2xl border border-white/15 bg-white/10 text-sm font-bold touch-manipulation active:scale-[0.98]"
               >
                 <ImagePlus className="h-4 w-4" />
                 {t("aiStylePage.pickFromGallery")}
@@ -368,6 +404,7 @@ export function MorphAiStudioPage() {
                           styleId: item.styleId,
                           styleTitle: item.title,
                           source: item.kind === "generation" ? "generation" : "history",
+                          beforeImage: item.beforeImage || item.image,
                         })
                       }
                       className="relative aspect-[3/4] overflow-hidden rounded-2xl bg-white/5 touch-manipulation active:scale-[0.98]"
@@ -519,7 +556,7 @@ export function MorphAiStudioPage() {
                   type="button"
                   onClick={() => void handleDownload()}
                   disabled={!current || downloading || Boolean(loadingId)}
-                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-white/15 bg-white/8 text-sm font-bold disabled:opacity-40"
+                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-white/15 bg-white/10 text-sm font-bold disabled:opacity-40"
                 >
                   {downloading ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -547,7 +584,12 @@ export function MorphAiStudioPage() {
         onCapture={(payload) => {
           setCameraOpen(false);
           void prepareSelfieDataUrl(payload.dataUrl).then((prepared) => {
-            selectImage(prepared, { source: "camera", styleTitle: "Studio" });
+            persistStudioSelfie(prepared, "camera_scan");
+            selectImage(prepared, {
+              source: "camera",
+              styleTitle: "Studio",
+              beforeImage: prepared,
+            });
           });
         }}
       />

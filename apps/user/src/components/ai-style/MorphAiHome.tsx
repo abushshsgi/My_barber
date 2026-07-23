@@ -76,6 +76,7 @@ export function MorphAiHome({
       id: g.id,
       title: prettyLookTitle(g.title),
       image: g.previewImage,
+      beforeImage: g.beforeImage,
       styleId: g.styleId,
     }));
     const genStyleIds = new Set(generations.map((g) => g.styleId));
@@ -85,6 +86,7 @@ export function MorphAiHome({
         id: `saved-${s.styleId}`,
         title: prettyLookTitle(s.title),
         image: s.previewImage,
+        beforeImage: undefined as string | undefined,
         styleId: s.styleId,
       }));
     return [...fromGen, ...fromSaved].slice(0, 6);
@@ -221,6 +223,7 @@ export function MorphAiHome({
                   onClick={() => {
                     stashMorphStudioDraft({
                       image: look.image,
+                      beforeImage: look.beforeImage,
                       styleId: look.styleId,
                       styleTitle: look.title,
                       source: "generation",

@@ -41,6 +41,34 @@ export function loadMorphAiGenerations(): MorphAiGeneration[] {
   return readAll();
 }
 
+/** Guest try-ons → logged-in user key after auth. */
+export function migrateGuestMorphAiGenerations(userId: number) {
+  try {
+    const guestKey = `${KEY_PREFIX}:guest`;
+    const userKey = `${KEY_PREFIX}:${userId}`;
+    const guestRaw = localStorage.getItem(guestKey);
+    if (!guestRaw) return;
+    const guest = JSON.parse(guestRaw) as MorphAiGeneration[];
+    if (!Array.isArray(guest) || guest.length === 0) return;
+    const existingRaw = localStorage.getItem(userKey);
+    const existing = existingRaw
+      ? (JSON.parse(existingRaw) as MorphAiGeneration[])
+      : [];
+    const existingIds = new Set(
+      (Array.isArray(existing) ? existing : []).map((item) => item.id),
+    );
+    const merged = [
+      ...guest.filter((item) => item?.id && !existingIds.has(item.id)),
+      ...(Array.isArray(existing) ? existing : []),
+    ].slice(0, MAX_ENTRIES);
+    localStorage.setItem(userKey, JSON.stringify(merged));
+    localStorage.removeItem(guestKey);
+    window.dispatchEvent(new Event(MORPH_AI_GALLERY_UPDATED_EVENT));
+  } catch {
+    /* noop */
+  }
+}
+
 export function saveMorphAiGeneration(entry: Omit<MorphAiGeneration, "id" | "createdAt"> & {
   id?: string;
   createdAt?: string;

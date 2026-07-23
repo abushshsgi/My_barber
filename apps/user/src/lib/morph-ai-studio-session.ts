@@ -2,6 +2,8 @@ const KEY = "mysaloon.morphAi.studioDraft";
 
 export type MorphStudioDraft = {
   image: string;
+  /** Original selfie for before/after (not the try-on output). */
+  beforeImage?: string;
   styleId?: string;
   styleTitle?: string;
   source?: "tryon" | "history" | "gallery" | "camera" | "generation";
@@ -13,6 +15,7 @@ export function stashMorphStudioDraft(
 ) {
   const next: MorphStudioDraft = {
     image: draft.image,
+    beforeImage: draft.beforeImage,
     styleId: draft.styleId,
     styleTitle: draft.styleTitle,
     source: draft.source,
