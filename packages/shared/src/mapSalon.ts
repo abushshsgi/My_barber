@@ -6,6 +6,7 @@ export type SalonListApi = {
   name: string;
   slug: string;
   cover_image: string | null;
+  images?: { id: number; image: string; sort_order: number }[];
   latitude: string;
   longitude: string;
   address: string;
@@ -16,14 +17,17 @@ export type SalonListApi = {
 };
 
 export function mapSalonListApi(r: SalonListApi): Salon {
-  const cover = mediaSrc(r.cover_image, PLACEHOLDER_SALON);
+  const gallery = (r.images ?? [])
+    .map((img) => mediaSrc(img.image, ""))
+    .filter(Boolean);
+  const cover = mediaSrc(r.cover_image, gallery[0] || PLACEHOLDER_SALON);
 
   return {
     id: String(r.id),
     name: r.name,
     description: r.address || "Salon",
     coverImage: cover,
-    gallery: [],
+    gallery: [cover, ...gallery].filter((u, i, arr) => u && arr.indexOf(u) === i),
     rating: Number(r.rating_avg) || 0,
     reviewCount: r.review_count || 0,
     distance: 0,
