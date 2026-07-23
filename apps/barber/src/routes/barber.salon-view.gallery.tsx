@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useRef, useState } from "react";
+import { useRef, useState, type DragEvent } from "react";
 import {
   Plus,
   Camera,
@@ -10,11 +10,17 @@ import {
   Loader2,
   Lightbulb,
   ImagePlus,
+  Upload,
+  CheckCircle2,
 } from "lucide-react";
 import { useBarberContext } from "@/components/barber/BarberContext";
 import { SalonCameraCapture } from "@/components/salon/SalonCameraCapture";
 import { SalonImageEnhanceDialog } from "@/components/salon/SalonImageEnhanceDialog";
-import { enhanceImageFile } from "@/lib/salon-image-enhance";
+import {
+  isHeicLike,
+  isLikelyImageFile,
+  prepareSalonImageForUpload,
+} from "@/lib/salon-image-enhance";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -46,23 +52,58 @@ function GalleryPage() {
   const coverInputRef = useRef<HTMLInputElement | null>(null);
 
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<string | null>(null);
   const [cameraOpen, setCameraOpen] = useState(false);
   const [pendingEnhance, setPendingEnhance] = useState<File | null>(null);
   const [busyId, setBusyId] = useState<number | null>(null);
+  const [dragOver, setDragOver] = useState(false);
 
   const canEdit = ownsSalon && !isJoinedWorker;
   const items = salon.galleryItems?.length
     ? salon.galleryItems
     : salon.gallery.map((image, i) => ({ id: -i - 1, image, sort_order: i }));
 
-  const queueFiles = (files: FileList | File[] | null) => {
-    if (!files || (Array.isArray(files) ? files.length === 0 : files.length === 0)) return;
-    const list = Array.from(files).filter((f) => f.type.startsWith("image/"));
-    if (list.length === 0) {
-      toast.error("Faqat rasm fayllari.");
-      return;
+  const filterImageFiles = (files: FileList | File[] | null): File[] => {
+    if (!files) return [];
+    const list = Array.from(files);
+    const images = list.filter(isLikelyImageFile);
+    const heic = images.filter(isHeicLike);
+    if (heic.length > 0) {
+      toast.message("HEIC (iPhone) rasmlari: brauzer cheklashi mumkin", {
+        description: "Imkon bo‘lsa JPEG/PNG ga o‘girib yuklang.",
+      });
     }
-    // Enhance first file interactively; rest upload as-is (or with natural preset later)
+    if (images.length === 0) {
+      toast.error("Faqat rasm fayllari (JPG, PNG, WebP).");
+    }
+    return images;
+  };
+
+  const uploadMany = async (files: File[]) => {
+    if (files.length === 0) return;
+    setUploading(true);
+    setUploadProgress(`0 / ${files.length}`);
+    try {
+      const processed: File[] = [];
+      for (let i = 0; i < files.length; i++) {
+        setUploadProgress(`${i + 1} / ${files.length} tayyorlanmoqda…`);
+        processed.push(await prepareSalonImageForUpload(files[i]!, { preset: "natural" }));
+      }
+      setUploadProgress("Serverga yuklanmoqda…");
+      const ok = await addSalonImages(processed);
+      if (ok) toast.success(`${files.length} ta rasm qo‘shildi.`);
+      else toast.error("Yuklashda xato. Internetni tekshirib qayta urinib ko‘ring.");
+    } catch {
+      toast.error("Rasmlarni tayyorlashda xato.");
+    } finally {
+      setUploading(false);
+      setUploadProgress(null);
+    }
+  };
+
+  const queueFiles = (files: FileList | File[] | null) => {
+    const list = filterImageFiles(files);
+    if (list.length === 0) return;
     if (list.length === 1) {
       setPendingEnhance(list[0]!);
       return;
@@ -70,40 +111,42 @@ function GalleryPage() {
     void uploadMany(list);
   };
 
-  const uploadMany = async (files: File[]) => {
-    setUploading(true);
-    try {
-      const processed = await Promise.all(
-        files.map((f) => enhanceImageFile(f, { preset: "natural" })),
-      );
-      const ok = await addSalonImages(processed);
-      if (ok) toast.success(`${files.length} ta rasm qo‘shildi (avtomatik yaxshilandi).`);
-      else toast.error("Yuklashda xato.");
-    } catch {
-      toast.error("Rasmlarni tayyorlashda xato.");
-    } finally {
-      setUploading(false);
-    }
-  };
-
   const onEnhanced = async (file: File) => {
     setPendingEnhance(null);
     setUploading(true);
-    const ok = await addSalonImages([file]);
-    setUploading(false);
-    if (ok) toast.success("Rasm qo‘shildi.");
-    else toast.error("Yuklashda xato.");
+    setUploadProgress("Yuklanmoqda…");
+    try {
+      const prepared = await prepareSalonImageForUpload(file, { preset: "none" });
+      const ok = await addSalonImages([prepared]);
+      if (ok) toast.success("Rasm qo‘shildi — mijozlar ko‘radi.");
+      else toast.error("Yuklashda xato.");
+    } finally {
+      setUploading(false);
+      setUploadProgress(null);
+    }
+  };
+
+  const onDrop = (e: DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+    if (!canEdit || uploading) return;
+    queueFiles(e.dataTransfer.files);
   };
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+    <div className="mx-auto max-w-[1100px] space-y-5 p-4 sm:p-6 lg:p-8">
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="font-heading text-3xl font-semibold text-foreground">Galereya</h1>
-          <p className="text-muted-foreground mt-1 text-sm">
-            {salon.name || "Salon"} — {items.length} ta rasm
+          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            Salon
+          </p>
+          <h1 className="font-heading text-3xl font-semibold tracking-tight text-foreground">
+            Galereya
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {salon.name || "Salon"} · {items.length} ta rasm
             {!canEdit && (
-              <span className="block text-xs mt-1">Siz ishchi rolidasiz — faqat ko‘rish.</span>
+              <span className="mt-1 block text-xs">Siz ishchi rolidasiz — faqat ko‘rish.</span>
             )}
           </p>
         </div>
@@ -114,7 +157,7 @@ function GalleryPage() {
               type="button"
               disabled={uploading}
               onClick={() => setCameraOpen(true)}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-border bg-card text-sm font-medium hover:bg-muted disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-card px-3.5 py-2.5 text-sm font-medium hover:bg-muted disabled:opacity-50"
             >
               <Camera className="size-4" />
               Kamera
@@ -123,24 +166,28 @@ function GalleryPage() {
               type="button"
               disabled={uploading}
               onClick={() => cameraFileRef.current?.click()}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-border bg-card text-sm font-medium hover:bg-muted disabled:opacity-50 sm:hidden"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-card px-3.5 py-2.5 text-sm font-medium hover:bg-muted disabled:opacity-50 sm:hidden"
             >
               <Camera className="size-4" />
-              Telefon kamera
+              Telefon
             </button>
             <button
               type="button"
               disabled={uploading}
               onClick={() => galleryInputRef.current?.click()}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-foreground text-background text-sm font-medium hover:opacity-90 disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-foreground px-3.5 py-2.5 text-sm font-medium text-background hover:opacity-90 disabled:opacity-50"
             >
-              {uploading ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-4" />}
-              Bir nechta rasm
+              {uploading ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <Plus className="size-4" />
+              )}
+              Rasm qo‘shish
             </button>
             <input
               ref={galleryInputRef}
               type="file"
-              accept="image/*"
+              accept="image/*,.heic,.heif"
               multiple
               className="hidden"
               onChange={(e) => {
@@ -156,64 +203,121 @@ function GalleryPage() {
               className="hidden"
               onChange={(e) => {
                 const f = e.target.files?.[0];
-                if (f) setPendingEnhance(f);
+                if (f && isLikelyImageFile(f)) setPendingEnhance(f);
                 e.currentTarget.value = "";
               }}
             />
             <input
               ref={coverInputRef}
               type="file"
-              accept="image/*"
+              accept="image/*,.heic,.heif"
               className="hidden"
               onChange={async (e) => {
                 const f = e.target.files?.[0];
                 e.currentTarget.value = "";
-                if (!f) return;
+                if (!f || !isLikelyImageFile(f)) return;
                 setUploading(true);
-                const ok = await uploadSalonCover(f);
-                setUploading(false);
-                if (ok) toast.success("Muqova yangilandi.");
-                else toast.error("Muqova yuklanmadi.");
+                setUploadProgress("Muqova tayyorlanmoqda…");
+                try {
+                  const prepared = await prepareSalonImageForUpload(f, { preset: "natural" });
+                  setUploadProgress("Muqova yuklanmoqda…");
+                  const ok = await uploadSalonCover(prepared);
+                  if (ok) toast.success("Muqova yangilandi.");
+                  else toast.error("Muqova yuklanmadi.");
+                } catch {
+                  toast.error("Muqovani tayyorlashda xato.");
+                } finally {
+                  setUploading(false);
+                  setUploadProgress(null);
+                }
               }}
             />
           </div>
         )}
-      </div>
+      </header>
 
       {canEdit && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+        <section
+          onDragOver={(e) => {
+            e.preventDefault();
+            if (!uploading) setDragOver(true);
+          }}
+          onDragLeave={() => setDragOver(false)}
+          onDrop={onDrop}
+          className={cn(
+            "relative overflow-hidden rounded-2xl border-2 border-dashed transition-colors",
+            dragOver
+              ? "border-foreground bg-foreground/[0.04]"
+              : "border-border bg-gradient-to-b from-muted/40 to-card",
+            uploading && "pointer-events-none opacity-70",
+          )}
+        >
+          <div className="flex flex-col items-center gap-3 px-6 py-10 text-center sm:py-12">
+            <div className="flex size-14 items-center justify-center rounded-2xl bg-background shadow-sm ring-1 ring-border">
+              {uploading ? (
+                <Loader2 className="size-6 animate-spin text-foreground" />
+              ) : (
+                <Upload className="size-6 text-foreground" />
+              )}
+            </div>
+            <div className="space-y-1">
+              <p className="font-heading text-lg font-semibold text-foreground">
+                {uploading ? "Yuklanmoqda…" : "Rasmlarni shu yerga tashlang"}
+              </p>
+              <p className="mx-auto max-w-sm text-sm text-muted-foreground">
+                {uploadProgress ||
+                  "Yoki galereyadan tanlang. Rasmlar avtomatik siqiladi va mijozlarga ko‘rinadi."}
+              </p>
+            </div>
+            {!uploading && (
+              <button
+                type="button"
+                onClick={() => galleryInputRef.current?.click()}
+                className="mt-1 inline-flex items-center gap-2 rounded-xl bg-foreground px-4 py-2.5 text-sm font-medium text-background"
+              >
+                <ImagePlus className="size-4" />
+                Fayl tanlash
+              </button>
+            )}
+          </div>
+        </section>
+      )}
+
+      {canEdit && (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <button
             type="button"
             onClick={() => coverInputRef.current?.click()}
-            className="rounded-xl border border-border bg-card p-4 text-left hover:border-foreground/30 transition-colors flex items-start gap-3"
+            disabled={uploading}
+            className="flex items-start gap-3 rounded-2xl border border-border bg-card p-4 text-left transition-colors hover:border-foreground/25 disabled:opacity-50"
           >
-            <div className="size-10 rounded-lg bg-muted flex items-center justify-center shrink-0">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-muted">
               <ImagePlus className="size-4" />
             </div>
             <div>
-              <div className="font-medium text-sm">Muqova rasmi</div>
-              <div className="text-xs text-muted-foreground mt-0.5">
+              <div className="text-sm font-medium">Muqova rasmi</div>
+              <div className="mt-0.5 text-xs text-muted-foreground">
                 Qidiruv va salon sahifasidagi asosiy foto
               </div>
             </div>
           </button>
           <Link
             to="/barber/salon-view/edit"
-            className="rounded-xl border border-border bg-card p-4 hover:border-foreground/30 transition-colors flex items-start gap-3"
+            className="flex items-start gap-3 rounded-2xl border border-border bg-card p-4 transition-colors hover:border-foreground/25"
           >
-            <div className="size-10 rounded-lg bg-muted flex items-center justify-center shrink-0">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-muted">
               <Images className="size-4" />
             </div>
             <div>
-              <div className="font-medium text-sm">Salon maʼlumotlari</div>
-              <div className="text-xs text-muted-foreground mt-0.5">
+              <div className="text-sm font-medium">Salon maʼlumotlari</div>
+              <div className="mt-0.5 text-xs text-muted-foreground">
                 Nom, manzil, telefonni tahrirlash
               </div>
             </div>
           </Link>
-          <div className="rounded-xl border border-dashed border-border bg-muted/20 p-4 flex items-start gap-3">
-            <Lightbulb className="size-4 mt-0.5 shrink-0 text-muted-foreground" />
-            <p className="text-xs text-muted-foreground leading-relaxed">
+          <div className="flex items-start gap-3 rounded-2xl border border-dashed border-border bg-muted/25 p-4">
+            <Lightbulb className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+            <p className="text-xs leading-relaxed text-muted-foreground">
               {TIPS[Math.min(items.length, TIPS.length - 1)]}
             </p>
           </div>
@@ -221,48 +325,51 @@ function GalleryPage() {
       )}
 
       {items.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-border bg-card/50 p-12 text-center space-y-3">
-          <Images className="size-8 mx-auto text-muted-foreground" />
-          <p className="font-heading text-lg font-medium">Hali rasm yo‘q</p>
-          <p className="text-sm text-muted-foreground max-w-sm mx-auto">
-            Interyer va ish namunalarini qo‘shing — mijozlar ko‘rgandan keyin bron qiladi.
-          </p>
+        <div className="space-y-4 rounded-2xl border border-dashed border-border bg-card/60 px-6 py-14 text-center">
+          <Images className="mx-auto size-9 text-muted-foreground" />
+          <div className="space-y-1">
+            <p className="font-heading text-lg font-medium">Hali rasm yo‘q</p>
+            <p className="mx-auto max-w-sm text-sm text-muted-foreground">
+              Interyer va ish namunalarini qo‘shing — mijozlar ko‘rgandan keyin bron qiladi.
+            </p>
+          </div>
           {canEdit && (
             <button
               type="button"
               onClick={() => galleryInputRef.current?.click()}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-foreground text-background text-sm font-medium"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-foreground px-4 py-2.5 text-sm font-medium text-background"
             >
               <Plus className="size-4" />
-              Rasm qo‘shish
+              Birinchi rasmni qo‘shish
             </button>
           )}
         </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3 lg:grid-cols-4">
           {items.map((item) => {
             const isCover =
               Boolean(salon.cover) &&
-              (salon.cover === item.image || salon.cover.includes(item.image.split("/").pop() || "___"));
+              (salon.cover === item.image ||
+                salon.cover.includes(item.image.split("/").pop() || "___"));
             return (
               <div
                 key={item.id}
-                className="aspect-square rounded-xl overflow-hidden bg-muted relative group border border-border"
+                className="group relative aspect-square overflow-hidden rounded-2xl border border-border bg-muted"
               >
                 <img
                   src={item.image}
                   alt=""
-                  className="size-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  className="size-full object-cover transition-transform duration-500 group-hover:scale-105"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-foreground/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-foreground/75 via-transparent to-transparent opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100" />
                 {isCover && (
-                  <span className="absolute top-2 left-2 inline-flex items-center gap-1 rounded-md bg-background/90 px-2 py-0.5 text-[10px] font-medium">
+                  <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-lg bg-background/95 px-2 py-0.5 text-[10px] font-medium shadow-sm">
                     <Star className="size-3 fill-current" />
                     Muqova
                   </span>
                 )}
                 {canEdit && item.id > 0 && (
-                  <div className="absolute bottom-2 left-2 right-2 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="absolute inset-x-2 bottom-2 flex gap-1.5 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
                     <button
                       type="button"
                       disabled={busyId === item.id}
@@ -274,12 +381,16 @@ function GalleryPage() {
                         else toast.error("Muqova o‘zgarmadi.");
                       }}
                       className={cn(
-                        "flex-1 h-8 rounded-lg bg-background/95 text-[11px] font-medium inline-flex items-center justify-center gap-1",
+                        "inline-flex h-9 flex-1 items-center justify-center gap-1 rounded-xl bg-background/95 text-[11px] font-medium",
                         isCover && "opacity-60",
                       )}
                     >
-                      <Star className="size-3" />
-                      Muqova
+                      {isCover ? (
+                        <CheckCircle2 className="size-3.5" />
+                      ) : (
+                        <Star className="size-3" />
+                      )}
+                      {isCover ? "Muqova" : "Muqova qil"}
                     </button>
                     <button
                       type="button"
@@ -292,7 +403,7 @@ function GalleryPage() {
                         if (ok) toast.success("O‘chirildi.");
                         else toast.error("O‘chirishda xato.");
                       }}
-                      className="size-8 rounded-lg bg-background/95 inline-flex items-center justify-center text-destructive"
+                      className="inline-flex size-9 items-center justify-center rounded-xl bg-background/95 text-destructive"
                       aria-label="O‘chirish"
                     >
                       <Trash2 className="size-3.5" />
@@ -306,14 +417,14 @@ function GalleryPage() {
       )}
 
       {canEdit && (
-        <div className="rounded-2xl border border-border bg-card p-5 space-y-3">
-          <h2 className="font-heading text-base font-semibold inline-flex items-center gap-2">
+        <div className="space-y-3 rounded-2xl border border-border bg-card p-5">
+          <h2 className="font-heading inline-flex items-center gap-2 text-base font-semibold">
             <Sparkles className="size-4" />
             Foto tavsiyalari
           </h2>
-          <ul className="grid sm:grid-cols-2 gap-2 text-xs text-muted-foreground">
+          <ul className="grid gap-2 text-xs text-muted-foreground sm:grid-cols-2">
             {TIPS.map((tip) => (
-              <li key={tip} className="rounded-lg bg-muted/40 px-3 py-2 leading-relaxed">
+              <li key={tip} className="rounded-xl bg-muted/40 px-3 py-2.5 leading-relaxed">
                 {tip}
               </li>
             ))}

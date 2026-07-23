@@ -30,9 +30,17 @@ WALLET_DEBUG_TOPUP_MAX = int(os.environ.get("WALLET_DEBUG_TOPUP_MAX", "1000000")
 
 DEBUG = os.environ.get("DJANGO_DEBUG", "true").lower() in ("1", "true", "yes")
 
-# Request body size limit (DDoS / abuse mitigation)
-DATA_UPLOAD_MAX_MEMORY_SIZE = int(os.environ.get("DATA_UPLOAD_MAX_MEMORY_SIZE", str(2 * 1024 * 1024)))
+# Request body size limit — salon/gallery rasmlari (telefon 8–12MB) uchun yetarli bo‘lsin.
+# Env bilan override: DATA_UPLOAD_MAX_MEMORY_SIZE=20971520
+DATA_UPLOAD_MAX_MEMORY_SIZE = int(
+    os.environ.get("DATA_UPLOAD_MAX_MEMORY_SIZE", str(20 * 1024 * 1024))
+)
+FILE_UPLOAD_MAX_MEMORY_SIZE = int(
+    os.environ.get("FILE_UPLOAD_MAX_MEMORY_SIZE", str(10 * 1024 * 1024))
+)
 DATA_UPLOAD_MAX_NUMBER_FIELDS = 1000
+# Bir so‘rovdagi fayllar soni (galereya multi-upload)
+FILE_UPLOAD_MAX_NUMBER_FILES = int(os.environ.get("FILE_UPLOAD_MAX_NUMBER_FILES", "40"))
 
 
 def _build_allowed_hosts() -> list[str]:

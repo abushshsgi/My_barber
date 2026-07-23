@@ -50,6 +50,7 @@ from .serializers import (
     SalonCatalogServiceSerializer,
     SalonCreateUpdateSerializer,
     SalonDetailSerializer,
+    SalonImageSerializer,
     SalonListSerializer,
     SalonMembershipSerializer,
 )
@@ -238,7 +239,8 @@ class SalonViewSet(viewsets.ModelViewSet):
                     memberships__invite_state=SalonMembership.InviteState.ACTIVE,
                 )
             )
-            .select_related("owner")
+            .select_related("owner", "owner_barber")
+            .prefetch_related("images")
             .annotate(
                 review_count=Count("reviews", distinct=True),
                 rating_avg=Coalesce(
@@ -581,24 +583,77 @@ class SalonViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=["post"], permission_classes=[IsAuthenticatedBarberAware])
     def add_images(self, request, pk=None):
+        from django.conf import settings
+
         salon = self.get_object()
         bp = request_barber(request)
         if bp is None or salon.owner_barber_id != bp.id:
             return Response(status=status.HTTP_403_FORBIDDEN)
         images = request.FILES.getlist("images")
-        order = salon.images.count()
-        first_created = None
-        for img in images:
-            created = SalonImage.objects.create(salon=salon, image=img, sort_order=order)
-            if first_created is None:
-                first_created = created
-            order += 1
-        # Cover bo‘sh bo‘lsa, gallerydagi birinchi rasmni cover qilib qo‘yamiz
-        if first_created is not None and not salon.cover_image:
-            with first_created.image.open("rb") as src:
-                name = first_created.image.name.split("/")[-1] or "cover.jpg"
-                salon.cover_image.save(name, File(src), save=True)
-        return Response({"status": "ok"})
+        if not images:
+            # Ba'zi klientlar bitta faylni "image" kaliti bilan yuboradi
+            single = request.FILES.get("image") or request.FILES.get("file")
+            if single is not None:
+                images = [single]
+        if not images:
+            return Response(
+                {"detail": "Rasmlar yuborilmadi. `images` maydonida fayl(lar) kerak."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        max_files = int(getattr(settings, "FILE_UPLOAD_MAX_NUMBER_FILES", 40) or 40)
+        if len(images) > max_files:
+            return Response(
+                {"detail": f"Bir so‘rovda ko‘pi bilan {max_files} ta rasm."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        allowed_prefixes = ("image/",)
+        allowed_ext = {".jpg", ".jpeg", ".png", ".webp", ".gif", ".heic", ".heif"}
+        created_rows = []
+        with transaction.atomic():
+            order = salon.images.count()
+            first_created = None
+            for img in images:
+                content_type = (getattr(img, "content_type", None) or "").lower()
+                name = (getattr(img, "name", None) or "").lower()
+                ext = ""
+                if "." in name:
+                    ext = "." + name.rsplit(".", 1)[-1]
+                if content_type and not content_type.startswith(allowed_prefixes):
+                    if ext not in allowed_ext:
+                        return Response(
+                            {"detail": f"Faqat rasm fayllari: {img.name or 'file'}"},
+                            status=status.HTTP_400_BAD_REQUEST,
+                        )
+                created = SalonImage.objects.create(salon=salon, image=img, sort_order=order)
+                created_rows.append(created)
+                if first_created is None:
+                    first_created = created
+                order += 1
+            # Cover bo‘sh bo‘lsa, gallerydagi birinchi rasmni cover qilib qo‘yamiz
+            if first_created is not None and not salon.cover_image:
+                try:
+                    with first_created.image.open("rb") as src:
+                        name = first_created.image.name.split("/")[-1] or "cover.jpg"
+                        salon.cover_image.save(name, File(src), save=True)
+                except (OSError, ValueError, NotImplementedError):
+                    # Cover nusxa olish ixtiyoriy — gallery saqlangan bo‘lsa OK
+                    pass
+
+        salon.refresh_from_db()
+        return Response(
+            {
+                "status": "ok",
+                "created_count": len(created_rows),
+                "images": SalonImageSerializer(
+                    created_rows, many=True, context={"request": request}
+                ).data,
+                "cover_image": SalonDetailSerializer(
+                    salon, context={"request": request}
+                ).data.get("cover_image"),
+            },
+            status=status.HTTP_201_CREATED,
+        )
 
     @action(detail=True, methods=["post"], permission_classes=[IsAuthenticatedBarberAware])
     def upload_cover(self, request, pk=None):
@@ -606,9 +661,15 @@ class SalonViewSet(viewsets.ModelViewSet):
         bp = request_barber(request)
         if bp is None or salon.owner_barber_id != bp.id:
             return Response(status=status.HTTP_403_FORBIDDEN)
-        f = request.FILES.get("cover")
+        f = request.FILES.get("cover") or request.FILES.get("image") or request.FILES.get("file")
         if not f:
             return Response({"detail": "cover fayl majburiy."}, status=status.HTTP_400_BAD_REQUEST)
+        content_type = (getattr(f, "content_type", None) or "").lower()
+        if content_type and not content_type.startswith("image/"):
+            return Response(
+                {"detail": "Faqat rasm fayli yuklash mumkin."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         salon.cover_image.save(f.name, f, save=True)
         return Response(
             SalonDetailSerializer(salon, context={"request": request}).data

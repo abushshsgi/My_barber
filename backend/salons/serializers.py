@@ -32,26 +32,18 @@ def _salon_cover_url(salon, context: dict | None = None) -> str | None:
     if resolved:
         return resolved
     if not salon.cover_image:
-        first = salon.images.order_by("sort_order", "id").first()
-        if first and first.image:
-            try:
-                url = first.image.url
-            except (ValueError, OSError):
-                url = None
-            if url:
-                request = (context or {}).get("request")
-                if request is not None:
-                    return request.build_absolute_uri(url)
-                return url
+        images = getattr(salon, "_prefetched_objects_cache", {}).get("images")
+        if images is not None:
+            first = next(
+                (img for img in sorted(images, key=lambda i: (i.sort_order, i.id)) if img.image),
+                None,
+            )
+        else:
+            first = salon.images.order_by("sort_order", "id").first()
+        if first:
+            return _absolute_media_url(first.image, context)
         return None
-    try:
-        url = salon.cover_image.url
-    except (ValueError, OSError):
-        return None
-    request = (context or {}).get("request")
-    if request is not None:
-        return request.build_absolute_uri(url)
-    return url
+    return _absolute_media_url(salon.cover_image, context)
 
 
 class SalonHoursSerializer(serializers.ModelSerializer):
@@ -60,10 +52,33 @@ class SalonHoursSerializer(serializers.ModelSerializer):
         fields = ("weekday", "open_time", "close_time")
 
 
+def _absolute_media_url(file_field, context: dict | None = None) -> str | None:
+    """ImageField.url — fayl yo‘qolgan bo‘lsa 500 bermasın; absolute URI."""
+    if not file_field or not getattr(file_field, "name", None):
+        return None
+    try:
+        url = file_field.url
+    except (ValueError, OSError):
+        return None
+    if not url:
+        return None
+    if url.startswith("http://") or url.startswith("https://"):
+        return url
+    request = (context or {}).get("request")
+    if request is not None:
+        return request.build_absolute_uri(url)
+    return url
+
+
 class SalonImageSerializer(serializers.ModelSerializer):
+    image = serializers.SerializerMethodField()
+
     class Meta:
         model = SalonImage
         fields = ("id", "image", "sort_order")
+
+    def get_image(self, obj):
+        return _absolute_media_url(obj.image, self.context)
 
 
 class ServiceSerializer(serializers.ModelSerializer):
@@ -372,7 +387,12 @@ class SalonDetailSerializer(serializers.ModelSerializer):
         return _salon_cover_url(obj, self.context)
 
     def get_images(self, obj):
-        return SalonImageSerializer(obj.images.all(), many=True, context=self.context).data
+        images = getattr(obj, "_prefetched_objects_cache", {}).get("images")
+        if images is None:
+            images = obj.images.order_by("sort_order", "id")
+        else:
+            images = sorted(images, key=lambda i: (i.sort_order, i.id))
+        return SalonImageSerializer(images, many=True, context=self.context).data
 
     def get_services(self, obj):
         from django.db.models import F
@@ -410,7 +430,8 @@ class BarberSalonViewSerializer(serializers.ModelSerializer):
     """
 
     hours = SalonHoursSerializer(many=True, read_only=True)
-    images = SalonImageSerializer(many=True, read_only=True)
+    images = serializers.SerializerMethodField()
+    cover_image = serializers.SerializerMethodField()
     owner_id = serializers.SerializerMethodField()
     rating_avg = serializers.SerializerMethodField()
     review_count = serializers.SerializerMethodField()
@@ -438,6 +459,17 @@ class BarberSalonViewSerializer(serializers.ModelSerializer):
             "review_count",
             "created_at",
         )
+
+    def get_cover_image(self, obj):
+        return _salon_cover_url(obj, self.context)
+
+    def get_images(self, obj):
+        images = getattr(obj, "_prefetched_objects_cache", {}).get("images")
+        if images is None:
+            images = obj.images.order_by("sort_order", "id")
+        else:
+            images = sorted(images, key=lambda i: (i.sort_order, i.id))
+        return SalonImageSerializer(images, many=True, context=self.context).data
 
     def get_owner_id(self, obj):
         return obj.owner_barber_id or obj.owner_id

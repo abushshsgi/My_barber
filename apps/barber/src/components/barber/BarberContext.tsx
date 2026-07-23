@@ -784,9 +784,14 @@ export function BarberProvider({ children }: { children: ReactNode }) {
         images?: Array<{ id: number; image: string; sort_order?: number }>;
       } = {};
       try {
-        detail = await apiJson(`/api/v1/salons/${one.id}/`);
+        // barber_view — services/amenities yo‘q, gallery uchun engilroq
+        detail = await apiJson(`/api/v1/salons/${one.id}/barber_view/`);
       } catch {
-        /* detail optional — keep list fields */
+        try {
+          detail = await apiJson(`/api/v1/salons/${one.id}/`);
+        } catch {
+          /* detail optional — keep list fields */
+        }
       }
 
       const galleryItems: SalonGalleryImage[] = (detail.images || [])
@@ -1075,8 +1080,23 @@ export function BarberProvider({ children }: { children: ReactNode }) {
         method: "POST",
         body,
         headers: {},
+        timeoutMs: 120_000,
       });
-      if (!res.ok) return false;
+      if (!res.ok) {
+        try {
+          const err = await res.json();
+          const detail =
+            typeof err?.detail === "string"
+              ? err.detail
+              : res.status === 413
+                ? "Rasm juda katta. Kichikroq fayl tanlang."
+                : null;
+          if (detail) console.warn("[add_images]", detail);
+        } catch {
+          /* ignore */
+        }
+        return false;
+      }
       await refreshSalonView();
       return true;
     },
@@ -1125,6 +1145,7 @@ export function BarberProvider({ children }: { children: ReactNode }) {
         method: "POST",
         body,
         headers: {},
+        timeoutMs: 120_000,
       });
       if (!res.ok) return false;
       await refreshSalonView();

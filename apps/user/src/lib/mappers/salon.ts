@@ -100,8 +100,9 @@ export function mapSalonDetail(api: ApiSalonDetail, distanceKm = 0): Salon {
   const gallery = (api.images ?? [])
     .map((img) => img.image)
     .map((u) => u?.trim())
-    .filter(Boolean) as string[];
-  const firstGallery = gallery[0] ? resolveMediaUrl(gallery[0]) ?? gallery[0] : null;
+    .filter(Boolean)
+    .map((u) => resolveMediaUrl(u) ?? u) as string[];
+  const firstGallery = gallery[0] ?? null;
   const coverFromApi = resolveMediaUrl(api.cover_image);
   return {
     ...base,
