@@ -1,5 +1,13 @@
 import { Link } from "@tanstack/react-router";
-import { Gift, Inbox, Plus, Sparkles, Star } from "lucide-react";
+import {
+  CalendarCheck,
+  Crown,
+  Gift,
+  Inbox,
+  Plus,
+  Sparkles,
+  Star,
+} from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { MysaloonLogo } from "@/components/brand/MysaloonLogo";
@@ -42,6 +50,33 @@ function formatGiftDate(iso: string) {
   });
 }
 
+const USE_ACTIONS = [
+  {
+    id: "book",
+    to: "/map" as const,
+    search: undefined,
+    icon: CalendarCheck,
+    title: "Barberga ishlatish",
+    hint: "Xarita orqali bron qiling — hamyondan to'lov",
+  },
+  {
+    id: "pro",
+    to: "/wallet" as const,
+    search: { section: "subscriptions" as const, plan: "pro" as const },
+    icon: Crown,
+    title: "Obuna sotib olish",
+    hint: "Pro / AI imtiyozlar — balansdan",
+  },
+  {
+    id: "ai",
+    to: "/explore" as const,
+    search: undefined,
+    icon: Sparkles,
+    title: "AI stil sinab ko'rish",
+    hint: "Explore da stil tanlang",
+  },
+] as const;
+
 function ReceivedGiftCard({
   gift,
   starred,
@@ -61,40 +96,47 @@ function ReceivedGiftCard({
     : gift.design?.name || gift.design?.name_uz || gift.design_id;
 
   return (
-    <article className="overflow-hidden rounded-[26px] border border-border/50 bg-card shadow-[0_10px_36px_-28px_rgba(0,0,0,0.35)]">
+    <article className="overflow-hidden rounded-[28px] border border-border/50 bg-card shadow-[0_14px_40px_-28px_rgba(0,0,0,0.4)]">
       <div
-        className="relative aspect-[1.68/1] px-4 py-4"
+        className="relative min-h-[200px] px-5 py-5"
         style={{
           background: `linear-gradient(148deg, ${from}, ${to})`,
           color: accent,
         }}
       >
         <div className="flex items-start justify-between gap-2">
-          <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/12">
-            <Gift className="h-3.5 w-3.5" />
+          <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/12">
+            <Gift className="h-4 w-4" />
           </span>
           <MysaloonLogo size="xs" tone="inherit" className="opacity-80" />
         </div>
-        <p className="mt-5 text-[10px] font-semibold uppercase tracking-[0.14em] opacity-60">
+        <p className="mt-8 text-[10px] font-semibold uppercase tracking-[0.14em] opacity-60">
           {designLabel}
         </p>
-        <p className="mt-1 text-[1.7rem] font-bold tracking-tight tabular-nums leading-none">
+        <p className="mt-1.5 text-[2.15rem] font-bold tracking-tight tabular-nums leading-none">
           {formatPrice(amount)}
         </p>
-        <div className="mt-4 min-w-0">
-          <p className="text-[9px] font-semibold uppercase tracking-[0.14em] opacity-45">
-            {t("walletPage.received.from", { defaultValue: "Kimdan" })}
-          </p>
-          <p className="mt-0.5 truncate text-sm font-bold">
-            {t("walletPage.received.fromName", {
-              defaultValue: "{{name}}dan sovg'a",
-              name: gift.sender_name || "Do'st",
-            })}
-          </p>
+        <div className="mt-5 grid grid-cols-2 gap-3">
+          <div className="min-w-0">
+            <p className="text-[9px] font-semibold uppercase tracking-[0.14em] opacity-45">
+              {t("walletPage.received.from", { defaultValue: "Yuboruvchi" })}
+            </p>
+            <p className="mt-0.5 truncate text-sm font-bold">
+              {gift.sender_name || "Do'st"}
+            </p>
+          </div>
+          <div className="min-w-0 text-right">
+            <p className="text-[9px] font-semibold uppercase tracking-[0.14em] opacity-45">
+              {t("walletPage.received.to", { defaultValue: "Oluvchi" })}
+            </p>
+            <p className="mt-0.5 truncate text-sm font-bold">
+              {gift.recipient_name || "Siz"}
+            </p>
+          </div>
         </div>
       </div>
 
-      <div className="space-y-3 px-4 py-3.5">
+      <div className="space-y-3.5 px-5 py-4">
         {gift.message?.trim() ? (
           <p className="text-[13px] leading-relaxed text-foreground/90">“{gift.message.trim()}”</p>
         ) : (
@@ -102,6 +144,7 @@ function ReceivedGiftCard({
             {t("walletPage.received.noMessage", { defaultValue: "Xabarsiz sovg'a" })}
           </p>
         )}
+
         <div className="flex items-center justify-between gap-3">
           <p className="text-[11px] font-semibold text-muted-foreground">
             {formatGiftDate(gift.created_at)}
@@ -128,12 +171,30 @@ function ReceivedGiftCard({
               : t("walletPage.received.collect", { defaultValue: "Saqlash" })}
           </button>
         </div>
+
+        <div className="grid grid-cols-2 gap-2 pt-0.5">
+          <Link
+            to="/map"
+            className="inline-flex items-center justify-center gap-1.5 rounded-2xl bg-foreground px-3 py-2.5 text-[12px] font-bold text-background transition-transform active:scale-[0.98]"
+          >
+            <CalendarCheck className="h-3.5 w-3.5" />
+            Bron qilish
+          </Link>
+          <Link
+            to="/wallet"
+            search={{ section: "subscriptions", plan: "pro" }}
+            className="inline-flex items-center justify-center gap-1.5 rounded-2xl border border-border bg-card px-3 py-2.5 text-[12px] font-bold transition-transform active:scale-[0.98]"
+          >
+            <Crown className="h-3.5 w-3.5" />
+            Obuna
+          </Link>
+        </div>
       </div>
     </article>
   );
 }
 
-/** Qabul qilingan sovg'a kartalar — kolleksiya. */
+/** Qabul qilingan sovg'a kartalar — kolleksiya + ishlatish. */
 export function WalletReceivedGiftsPage() {
   const { t } = useTranslation();
   const userId = getAuthUserId();
@@ -167,17 +228,17 @@ export function WalletReceivedGiftsPage() {
   );
 
   return (
-    <div className="space-y-5 pb-6">
-      <div className="rounded-[24px] bg-foreground px-4 py-4 text-background">
+    <div className="space-y-6 pb-6">
+      <div className="rounded-[26px] bg-foreground px-5 py-5 text-background">
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="text-[10px] font-bold uppercase tracking-[0.16em] opacity-65">
               {t("walletPage.received.statsTitle", { defaultValue: "Kolleksiya" })}
             </p>
-            <p className="mt-1 text-2xl font-bold tabular-nums tracking-tight">
+            <p className="mt-1.5 text-[1.85rem] font-bold tabular-nums tracking-tight">
               {formatPrice(totalReceived)}
             </p>
-            <p className="mt-1 text-[11px] font-semibold opacity-70">
+            <p className="mt-1.5 text-[12px] font-semibold opacity-70">
               {t("walletPage.received.count", {
                 defaultValue: "{{count}} ta sovg'a · balans {{balance}}",
                 count: gifts.length,
@@ -185,11 +246,44 @@ export function WalletReceivedGiftsPage() {
               })}
             </p>
           </div>
-          <span className="grid h-11 w-11 place-items-center rounded-2xl bg-background/15">
+          <span className="grid h-12 w-12 place-items-center rounded-2xl bg-background/15">
             <Inbox className="h-5 w-5" />
           </span>
         </div>
       </div>
+
+      {/* Sovg'ani ishlatish */}
+      <section>
+        <h2 className="text-sm font-bold">
+          {t("walletPage.received.useTitle", { defaultValue: "Sovg'ani ishlatish" })}
+        </h2>
+        <p className="mt-1 text-[12px] text-muted-foreground">
+          {t("walletPage.received.useHint", {
+            defaultValue: "Pul hamyonga tushgan — bron, obuna yoki AI uchun sarflang.",
+          })}
+        </p>
+        <div className="mt-3 space-y-2">
+          {USE_ACTIONS.map((action) => {
+            const Icon = action.icon;
+            return (
+              <Link
+                key={action.id}
+                to={action.to}
+                search={action.search}
+                className="flex items-center gap-3 rounded-[20px] border border-border/70 bg-card px-3.5 py-3.5 transition-transform active:scale-[0.99]"
+              >
+                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-surface">
+                  <Icon className="h-[18px] w-[18px]" strokeWidth={2} />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[13px] font-bold">{action.title}</span>
+                  <span className="mt-0.5 block text-[11px] text-muted-foreground">{action.hint}</span>
+                </span>
+              </Link>
+            );
+          })}
+        </div>
+      </section>
 
       <div className="flex gap-2">
         {(
@@ -218,33 +312,21 @@ export function WalletReceivedGiftsPage() {
         ))}
       </div>
 
-      <div className="grid grid-cols-2 gap-2.5">
-        <Link
-          to="/wallet"
-          search={{ section: "gift" }}
-          className="flex items-center gap-2.5 rounded-[18px] bg-foreground px-3.5 py-3 text-background transition-transform active:scale-[0.98]"
-        >
-          <Plus className="h-4 w-4" strokeWidth={2.4} />
-          <span className="text-[12px] font-bold">
-            {t("walletPage.received.sendCta", { defaultValue: "Sovg'a yuborish" })}
-          </span>
-        </Link>
-        <Link
-          to="/wallet"
-          search={{ section: "transactions" }}
-          className="flex items-center gap-2.5 rounded-[18px] border border-border bg-card px-3.5 py-3 transition-transform active:scale-[0.98]"
-        >
-          <Sparkles className="h-4 w-4" />
-          <span className="text-[12px] font-bold">
-            {t("walletPage.nav.transactions", { defaultValue: "Tarix" })}
-          </span>
-        </Link>
-      </div>
+      <Link
+        to="/wallet"
+        search={{ section: "gift" }}
+        className="flex items-center justify-center gap-2 rounded-[18px] bg-foreground px-3.5 py-3.5 text-background transition-transform active:scale-[0.98]"
+      >
+        <Plus className="h-4 w-4" strokeWidth={2.4} />
+        <span className="text-[13px] font-bold">
+          {t("walletPage.received.sendCta", { defaultValue: "Sovg'a yuborish" })}
+        </span>
+      </Link>
 
       {isLoading ? (
-        <div className="space-y-3">
+        <div className="space-y-4">
           {Array.from({ length: 2 }).map((_, i) => (
-            <div key={i} className="h-52 animate-pulse rounded-[26px] bg-surface" />
+            <div key={i} className="h-64 animate-pulse rounded-[28px] bg-surface" />
           ))}
         </div>
       ) : visible.length === 0 ? (
@@ -272,7 +354,7 @@ export function WalletReceivedGiftsPage() {
           </p>
         </div>
       ) : (
-        <div className="space-y-3.5">
+        <div className="space-y-4">
           {visible.map((gift) => (
             <ReceivedGiftCard
               key={gift.id}

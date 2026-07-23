@@ -17,6 +17,10 @@ export interface WalletTransaction {
   adminAction?: boolean;
   adminReason?: string;
   subtitle?: string;
+  /** Gift / transfer parties for receipt */
+  senderName?: string;
+  recipientName?: string;
+  message?: string;
 }
 
 export const WALLET_TRANSACTIONS: WalletTransaction[] = [

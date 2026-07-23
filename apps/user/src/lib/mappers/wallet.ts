@@ -120,6 +120,13 @@ export function mapLedgerEntry(entry: ApiLedgerEntry): WalletTransaction {
     }
   }
 
+  const senderName =
+    typeof meta.sender_name === "string" ? meta.sender_name.trim() || undefined : undefined;
+  const recipientName =
+    typeof meta.recipient_name === "string" ? meta.recipient_name.trim() || undefined : undefined;
+  const message =
+    typeof meta.message === "string" ? meta.message.trim().slice(0, 120) || undefined : undefined;
+
   return {
     id: entry.id,
     kind: entry.kind,
@@ -136,6 +143,9 @@ export function mapLedgerEntry(entry: ApiLedgerEntry): WalletTransaction {
     createdAt: entry.created_at,
     adminAction,
     adminReason,
+    senderName,
+    recipientName,
+    message,
   };
 }
 

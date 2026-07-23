@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { ChevronLeft, ChevronRight, CreditCard, Gift, Inbox, Plus, Receipt, Sparkles } from "lucide-react";
+import { ChevronLeft, CreditCard, Crown, Gift, Inbox, Plus, Sparkles } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 
 const RECENT_TX_LIMIT = 5;
 
+/** Bitta kirish nuqtasi har bir vazifa uchun — dublikat yo‘q. */
 const QUICK_LINKS = [
   {
     id: "payments",
@@ -44,12 +45,12 @@ const QUICK_LINKS = [
     defaultLabel: "Kelgan",
   },
   {
-    id: "history",
+    id: "subscriptions",
     to: "/wallet" as const,
-    search: { section: "transactions" as const },
-    icon: Receipt,
-    labelKey: "walletPage.hubShort.history",
-    defaultLabel: "Tarix",
+    search: { section: "subscriptions" as const },
+    icon: Crown,
+    labelKey: "walletPage.hubShort.subscriptions",
+    defaultLabel: "Obuna",
   },
 ] as const;
 
@@ -93,15 +94,16 @@ export function WalletMobileOverview() {
           <ProfileUpgradeButton variant="compact" />
         </header>
 
-        <div className="px-5 pt-1">
-          <div className="relative mx-auto flex min-h-[200px] w-full max-w-[360px] items-center justify-center py-3">
+        {/* Full-bleed plastic card */}
+        <div className="px-4 pt-2">
+          <div className="relative mx-auto w-full max-w-[440px]">
             <ClientOnly
               fallback={
-                <div className="aspect-[1.586/1] w-full max-w-[340px] animate-pulse rounded-[26px] bg-surface" />
+                <div className="aspect-[1.586/1] w-full animate-pulse rounded-[28px] bg-surface" />
               }
             >
               {isLoading ? (
-                <div className="aspect-[1.586/1] w-full max-w-[340px] animate-pulse rounded-[26px] bg-surface" />
+                <div className="aspect-[1.586/1] w-full animate-pulse rounded-[28px] bg-surface" />
               ) : (
                 <PlasticCard
                   balance={balance}
@@ -114,7 +116,7 @@ export function WalletMobileOverview() {
           </div>
         </div>
 
-        <div className="mx-5 mt-3 space-y-4">
+        <div className="mx-5 mt-4 space-y-4">
           <div className="grid grid-cols-2 gap-2.5">
             <Link
               to="/wallet/top-up"
@@ -167,28 +169,6 @@ export function WalletMobileOverview() {
               );
             })}
           </div>
-
-          <Link
-            to="/wallet/gifts"
-            className="flex items-center justify-between gap-3 rounded-[20px] border border-border/70 bg-card px-3.5 py-3 transition-transform active:scale-[0.99]"
-          >
-            <span className="flex min-w-0 items-center gap-3">
-              <span className="grid h-10 w-10 place-items-center rounded-2xl bg-rose-500/12 text-rose-800">
-                <Inbox className="h-[18px] w-[18px]" strokeWidth={2} />
-              </span>
-              <span className="min-w-0">
-                <span className="block text-[13px] font-bold">
-                  {t("walletPage.received.title", { defaultValue: "Mening sovg'alarim" })}
-                </span>
-                <span className="mt-0.5 block text-[11px] text-muted-foreground">
-                  {t("walletPage.received.bannerHint", {
-                    defaultValue: "Kimdan kelganini ko'ring · kolleksiya",
-                  })}
-                </span>
-              </span>
-            </span>
-            <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" strokeWidth={2} />
-          </Link>
         </div>
 
         <WalletNewsSection className="mt-7" />

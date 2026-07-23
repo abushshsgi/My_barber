@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { ArrowUpRight, Gift, Inbox, Sparkles, Wallet } from "lucide-react";
+import { ArrowUpRight, CalendarCheck, Sparkles, Wallet } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 
@@ -10,32 +10,34 @@ type NewsItem = {
   defaultTitle: string;
   bodyKey: string;
   defaultBody: string;
-  to: "/wallet" | "/wallet/top-up" | "/wallet/gifts" | "/offers";
+  to: "/wallet" | "/wallet/top-up" | "/map" | "/offers";
   search?: { section: "gift" | "loyalty" | "subscriptions"; plan?: string };
-  accent: string;
+  /** Monochrome accents only — no rainbow chips */
+  tone: "dark" | "soft";
 };
 
+/** Sovg‘a / Kelgan dublikatlari olib tashlangan — yangi foydali kartochkalar. */
 const NEWS_ITEMS: NewsItem[] = [
   {
-    id: "received",
-    icon: Inbox,
-    titleKey: "walletPage.news.receivedTitle",
-    defaultTitle: "Kelgan sovg'alar",
-    bodyKey: "walletPage.news.receivedBody",
-    defaultBody: "Kimdan kelganini ko'ring va kolleksiyaga qo'shing.",
-    to: "/wallet/gifts",
-    accent: "bg-rose-500/12 text-rose-800",
+    id: "book",
+    icon: CalendarCheck,
+    titleKey: "walletPage.news.bookTitle",
+    defaultTitle: "Balans bilan bron",
+    bodyKey: "walletPage.news.bookBody",
+    defaultBody: "Yaqin atrofdagi ustani tanlang — hamyondan to'lang.",
+    to: "/map",
+    tone: "dark",
   },
   {
-    id: "gift",
-    icon: Gift,
-    titleKey: "walletPage.news.giftTitle",
-    defaultTitle: "Sovg'a yuboring",
-    bodyKey: "walletPage.news.giftBody",
-    defaultBody: "Do'stingizga balans yuboring — bir zumda.",
+    id: "pro",
+    icon: Sparkles,
+    titleKey: "walletPage.news.proTitle",
+    defaultTitle: "Pro obuna",
+    bodyKey: "walletPage.news.proBody",
+    defaultBody: "AI stil va bonuslar — balansdan bir zumda.",
     to: "/wallet",
-    search: { section: "gift" },
-    accent: "bg-violet-500/12 text-violet-800",
+    search: { section: "subscriptions", plan: "pro" },
+    tone: "soft",
   },
   {
     id: "topup",
@@ -45,18 +47,7 @@ const NEWS_ITEMS: NewsItem[] = [
     bodyKey: "walletPage.news.topUpBody",
     defaultBody: "Click, Payme yoki kartadan balansni to'ldiring.",
     to: "/wallet/top-up",
-    accent: "bg-emerald-500/12 text-emerald-800",
-  },
-  {
-    id: "pro",
-    icon: Sparkles,
-    titleKey: "walletPage.news.proTitle",
-    defaultTitle: "Pro imtiyozlar",
-    bodyKey: "walletPage.news.proBody",
-    defaultBody: "Obuna bilan AI stil va bonuslar ochiladi.",
-    to: "/wallet",
-    search: { section: "subscriptions", plan: "pro" },
-    accent: "bg-sky-500/12 text-sky-800",
+    tone: "soft",
   },
 ];
 
@@ -64,14 +55,14 @@ type Props = {
   className?: string;
 };
 
-/** Mobil hamyon — yangiliklar / tip karusel. */
+/** Mobil hamyon — katta promo kartochkalar. */
 export function WalletNewsSection({ className }: Props) {
   const { t } = useTranslation();
 
   return (
     <section className={cn(className)}>
       <div className="mb-3 flex items-end justify-between gap-3 px-5">
-        <h2 className="text-sm font-bold">{t("walletPage.news.title", { defaultValue: "Yangiliklar" })}</h2>
+        <h2 className="text-sm font-bold">{t("walletPage.news.title", { defaultValue: "Takliflar" })}</h2>
         <Link
           to="/offers"
           className="text-[11px] font-bold text-muted-foreground transition-colors hover:text-foreground"
@@ -83,26 +74,49 @@ export function WalletNewsSection({ className }: Props) {
       <div className="no-scrollbar flex snap-x snap-mandatory gap-3 overflow-x-auto overscroll-x-contain px-5 pb-1 [-webkit-overflow-scrolling:touch]">
         {NEWS_ITEMS.map((item) => {
           const Icon = item.icon;
+          const dark = item.tone === "dark";
           return (
             <Link
               key={item.id}
               to={item.to}
               search={item.search}
-              className="group relative flex w-[72%] max-w-[260px] shrink-0 snap-start flex-col justify-between overflow-hidden rounded-[22px] border border-border/70 bg-card p-4 shadow-[0_1px_0_rgba(0,0,0,0.03)] transition-transform active:scale-[0.98]"
+              className={cn(
+                "group relative flex min-h-[168px] w-[86%] max-w-[340px] shrink-0 snap-start flex-col justify-between overflow-hidden rounded-[26px] p-5 transition-transform active:scale-[0.98]",
+                dark
+                  ? "bg-foreground text-background"
+                  : "border border-border/70 bg-card text-foreground shadow-[0_1px_0_rgba(0,0,0,0.03)]",
+              )}
             >
               <div className="flex items-start justify-between gap-3">
-                <span className={cn("grid h-10 w-10 place-items-center rounded-2xl", item.accent)}>
+                <span
+                  className={cn(
+                    "grid h-11 w-11 place-items-center rounded-2xl",
+                    dark ? "bg-background/15" : "bg-surface",
+                  )}
+                >
                   <Icon className="h-5 w-5" strokeWidth={2} />
                 </span>
-                <span className="grid h-8 w-8 place-items-center rounded-full bg-surface text-muted-foreground transition-colors group-hover:bg-foreground group-hover:text-background">
+                <span
+                  className={cn(
+                    "grid h-9 w-9 place-items-center rounded-full transition-colors",
+                    dark
+                      ? "bg-background/15 text-background"
+                      : "bg-surface text-muted-foreground group-hover:bg-foreground group-hover:text-background",
+                  )}
+                >
                   <ArrowUpRight className="h-4 w-4" strokeWidth={2.2} />
                 </span>
               </div>
-              <div className="mt-4">
-                <p className="text-[15px] font-bold leading-snug tracking-tight">
+              <div className="mt-5">
+                <p className="text-[17px] font-bold leading-snug tracking-tight">
                   {t(item.titleKey, { defaultValue: item.defaultTitle })}
                 </p>
-                <p className="mt-1.5 text-[12px] leading-relaxed text-muted-foreground">
+                <p
+                  className={cn(
+                    "mt-2 text-[13px] leading-relaxed",
+                    dark ? "text-background/70" : "text-muted-foreground",
+                  )}
+                >
                   {t(item.bodyKey, { defaultValue: item.defaultBody })}
                 </p>
               </div>

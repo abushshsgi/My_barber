@@ -98,11 +98,11 @@ export function PlasticCard({
   );
 
   return (
-    <div className="w-full max-w-[340px]" style={{ perspective: 1100 }}>
+    <div className="w-full" style={{ perspective: 1200 }}>
       <motion.article
         ref={cardRef}
         className={cn(
-          "relative aspect-[1.586/1] w-full select-none overflow-hidden rounded-[26px]",
+          "relative aspect-[1.586/1] w-full select-none overflow-hidden rounded-[28px]",
           !reduced && !refreshing && "cursor-grab active:cursor-grabbing",
           refreshing && "ring-2 ring-foreground/15",
         )}
@@ -149,26 +149,26 @@ export function PlasticCard({
           aria-hidden
         />
 
-        <div className="relative z-20 flex h-[52%] flex-col justify-end px-5 pb-5 pt-4 text-foreground">
-          <p className="text-[40px] font-semibold leading-none tracking-tight tabular-nums">
+        <div className="relative z-20 flex h-[52%] flex-col justify-end px-6 pb-6 pt-5 text-foreground">
+          <p className="text-[2.65rem] font-semibold leading-none tracking-tight tabular-nums sm:text-[3rem]">
             {balance.toLocaleString("uz-UZ")}
-            <span className="ml-1.5 text-lg font-semibold text-muted-foreground">so&apos;m</span>
+            <span className="ml-1.5 text-xl font-semibold text-muted-foreground">so&apos;m</span>
           </p>
         </div>
 
-        <div className="absolute inset-x-0 bottom-0 z-20 flex h-[48%] flex-col justify-between px-5 pb-5 pt-4 text-background">
+        <div className="absolute inset-x-0 bottom-0 z-20 flex h-[48%] flex-col justify-between px-6 pb-6 pt-5 text-background">
           <div className="flex items-start justify-between gap-3">
             <EmvChip />
-            <div className="grid h-9 w-9 place-items-center rounded-xl bg-background text-foreground shadow-sm">
+            <div className="grid h-10 w-10 place-items-center rounded-xl bg-background text-foreground shadow-sm">
               <Nfc className="h-5 w-5" strokeWidth={2.2} aria-hidden />
             </div>
           </div>
 
           <div className="flex items-end justify-between gap-3">
             <div className="min-w-0">
-              <p className="truncate text-sm font-semibold uppercase tracking-wide">{displayName}</p>
+              <p className="truncate text-[15px] font-semibold uppercase tracking-wide">{displayName}</p>
               {walletNumber ? (
-                <p className="mt-1 truncate font-mono text-[9px] tracking-wider text-background/50">
+                <p className="mt-1.5 truncate font-mono text-[10px] tracking-wider text-background/50">
                   {walletNumber}
                 </p>
               ) : null}
