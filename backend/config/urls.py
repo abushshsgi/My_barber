@@ -228,6 +228,7 @@ from ai.views import (
     ExplorePersonaListView,
     HairstyleDetailView,
     HairstyleListView,
+    MorphAiGenerationListCreateView,
     MorphAiLookShareCreateView,
     MorphAiLookShareDetailView,
 )
@@ -432,6 +433,7 @@ api_routes = [
     path("ai/style-studio/catalog/", AiStyleStudioCatalogView.as_view()),
     path("ai/face-check/", AiFaceCheckView.as_view()),
     path("ai/style-history/", AiStyleHistoryListCreateView.as_view()),
+    path("ai/generations/", MorphAiGenerationListCreateView.as_view()),
     path("ai/look-share/", MorphAiLookShareCreateView.as_view()),
     path("ai/look-share/<uuid:share_id>/", MorphAiLookShareDetailView.as_view()),
     path("ai/dev/explore-gen/", ExploreGenStatusView.as_view()),

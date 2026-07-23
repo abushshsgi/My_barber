@@ -253,6 +253,7 @@ export type MorphAiLookShareApi = {
   before_url: string | null;
   after_url: string | null;
   share_page_url?: string;
+  sharer_name?: string;
   created_at: string;
 };
 
@@ -274,6 +275,37 @@ export async function createMorphAiLookShare(
 
 export async function fetchMorphAiLookShare(shareId: string): Promise<MorphAiLookShareApi> {
   return apiJson<MorphAiLookShareApi>(`/api/v1/ai/look-share/${encodeURIComponent(shareId)}/`);
+}
+
+export type MorphAiGenerationApi = {
+  id: number;
+  style_id: string;
+  title: string;
+  persona_id: string;
+  before_url: string | null;
+  after_url: string | null;
+  created_at: string;
+};
+
+export type SaveMorphAiGenerationPayload = {
+  style_id?: string;
+  title?: string;
+  persona_id?: string;
+  before_image?: string;
+  after_image: string;
+};
+
+export async function fetchMorphAiGenerations(): Promise<MorphAiGenerationApi[]> {
+  return apiJson<MorphAiGenerationApi[]>("/api/v1/ai/generations/");
+}
+
+export async function saveMorphAiGenerationRemote(
+  payload: SaveMorphAiGenerationPayload,
+): Promise<MorphAiGenerationApi> {
+  return apiJson<MorphAiGenerationApi>("/api/v1/ai/generations/", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
 }
 
 function mapApiHistoryEntry(entry: AiStyleHistoryEntryApi): FaceProfileHistoryEntry {

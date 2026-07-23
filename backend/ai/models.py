@@ -5,6 +5,7 @@ from django.conf import settings
 from django.db import models
 
 HISTORY_MAX_PER_USER = 6
+GENERATION_HISTORY_MAX_PER_USER = 48
 
 
 class Hairstyle(models.Model):
@@ -224,3 +225,32 @@ class MorphAiLookShare(models.Model):
 
     def __str__(self) -> str:
         return f"MorphAiLookShare({self.id}, {self.style_id})"
+
+
+class MorphAiGenerationEntry(models.Model):
+    """User try-on / studio result history (before + after) — media via DB storage."""
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="morph_generations",
+    )
+    style_id = models.CharField(max_length=64, blank=True, default="", db_index=True)
+    title = models.CharField(max_length=160, blank=True, default="")
+    persona_id = models.CharField(max_length=64, blank=True, default="")
+    before_photo = models.ImageField(
+        upload_to="ai-style/generations/%Y/%m/",
+        blank=True,
+        null=True,
+    )
+    after_photo = models.ImageField(upload_to="ai-style/generations/%Y/%m/")
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["user", "-created_at"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"MorphAiGeneration({self.user_id}, {self.style_id}, {self.created_at})"

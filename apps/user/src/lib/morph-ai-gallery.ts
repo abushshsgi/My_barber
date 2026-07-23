@@ -1,4 +1,9 @@
 import { getActiveUserId } from "@/lib/face-profile";
+import {
+  fetchMorphAiGenerations,
+  saveMorphAiGenerationRemote,
+  type MorphAiGenerationApi,
+} from "@/lib/api/ai";
 
 const KEY_PREFIX = "mysaloon.morphAi.generations";
 const MAX_ENTRIES = 48;
@@ -37,6 +42,19 @@ function writeAll(entries: MorphAiGeneration[]) {
   window.dispatchEvent(new Event(MORPH_AI_GALLERY_UPDATED_EVENT));
 }
 
+function mapApiGeneration(entry: MorphAiGenerationApi): MorphAiGeneration | null {
+  if (!entry.after_url) return null;
+  return {
+    id: String(entry.id),
+    styleId: entry.style_id || "",
+    title: entry.title || entry.style_id || "Try-on",
+    previewImage: entry.after_url,
+    beforeImage: entry.before_url || undefined,
+    createdAt: entry.created_at,
+    personaId: entry.persona_id || undefined,
+  };
+}
+
 export function loadMorphAiGenerations(): MorphAiGeneration[] {
   return readAll();
 }
@@ -69,6 +87,40 @@ export function migrateGuestMorphAiGenerations(userId: number) {
   }
 }
 
+export function syncMorphAiGenerationsCache(entries: MorphAiGeneration[]) {
+  writeAll(entries.slice(0, MAX_ENTRIES));
+}
+
+/** Pull DB-backed generation history into local cache. */
+export async function refreshMorphAiGenerationsCache(): Promise<MorphAiGeneration[]> {
+  const userId = getActiveUserId();
+  if (!userId) return readAll();
+  try {
+    const remote = await fetchMorphAiGenerations();
+    const mapped = remote
+      .map(mapApiGeneration)
+      .filter((item): item is MorphAiGeneration => Boolean(item));
+    // Keep very recent optimistic local rows until server ack.
+    const local = readAll();
+    const remoteIds = new Set(mapped.map((item) => item.id));
+    const now = Date.now();
+    const pending = local.filter((item) => {
+      if (remoteIds.has(item.id)) return false;
+      if (/^\d+$/.test(item.id)) return false;
+      const at = Date.parse(item.createdAt);
+      return Number.isFinite(at) && now - at < 90_000;
+    });
+    const merged = [...pending, ...mapped].slice(0, MAX_ENTRIES);
+    writeAll(merged);
+    return merged;
+  } catch {
+    return readAll();
+  }
+}
+
+/**
+ * Optimistic local save + async DB persist (media via Postgres storage).
+ */
 export function saveMorphAiGeneration(entry: Omit<MorphAiGeneration, "id" | "createdAt"> & {
   id?: string;
   createdAt?: string;
@@ -86,6 +138,30 @@ export function saveMorphAiGeneration(entry: Omit<MorphAiGeneration, "id" | "cre
     (item) => !(item.styleId === next.styleId && item.previewImage === next.previewImage),
   );
   writeAll([next, ...rest]);
+
+  if (getActiveUserId() && next.previewImage) {
+    void saveMorphAiGenerationRemote({
+      style_id: next.styleId,
+      title: next.title,
+      persona_id: next.personaId,
+      before_image: next.beforeImage,
+      after_image: next.previewImage,
+    })
+      .then((saved) => {
+        const mapped = mapApiGeneration(saved);
+        if (!mapped) return;
+        const list = readAll().filter(
+          (item) =>
+            item.id !== next.id &&
+            !(item.styleId === mapped.styleId && item.previewImage === mapped.previewImage),
+        );
+        writeAll([mapped, ...list]);
+      })
+      .catch(() => {
+        /* keep optimistic local row */
+      });
+  }
+
   return next;
 }
 

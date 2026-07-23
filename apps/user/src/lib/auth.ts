@@ -10,7 +10,7 @@ import {
   migrateFaceProfileOnLogout,
   prepareFaceProfileStorageForUser,
 } from "@/lib/face-profile";
-import { migrateGuestMorphAiGenerations } from "@/lib/morph-ai-gallery";
+import { migrateGuestMorphAiGenerations, refreshMorphAiGenerationsCache } from "@/lib/morph-ai-gallery";
 import { clearQueryClientCache, getQueryClient } from "@/lib/query-client";
 import { notifyAudienceReset, migrateUserPrefsOnLogout, prepareUserPrefsStorageForUser } from "@/lib/user-prefs";
 
@@ -68,6 +68,7 @@ export function setSession(
     migrateGuestMorphAiGenerations(user.id);
     notifyAudienceReset(user.id);
     void refreshAiStyleHistoryCache();
+    void refreshMorphAiGenerationsCache();
   }
 
   clearQueryClientCache();

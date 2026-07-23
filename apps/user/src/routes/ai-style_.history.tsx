@@ -6,16 +6,13 @@ import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { MorphBeforeAfter } from "@/components/ai-style/MorphBeforeAfter";
-import { refreshAiStyleHistoryCache, createMorphAiLookShare } from "@/lib/api";
+import { createMorphAiLookShare } from "@/lib/api";
 import { shareAiStyleLink, downloadAiStyleImage } from "@/lib/ai-style-image";
-import {
-  FACE_HISTORY_UPDATED_EVENT,
-  getActiveUserId,
-  type FaceProfileHistoryEntry,
-} from "@/lib/face-profile";
+import { getActiveUserId } from "@/lib/face-profile";
 import {
   loadMorphAiGenerations,
   MORPH_AI_GALLERY_UPDATED_EVENT,
+  refreshMorphAiGenerationsCache,
   type MorphAiGeneration,
 } from "@/lib/morph-ai-gallery";
 
@@ -25,37 +22,25 @@ export const Route = createFileRoute("/ai-style_/history")({
       { title: "Morf AI tarixi — mysaloon.uz" },
       {
         name: "description",
-        content: "Barcha Morf AI selfie va generatsiya rasmlari — before/after bilan.",
+        content: "Morf AI try-on natijalari — before/after bilan.",
       },
     ],
   }),
   component: AiStyleHistoryPage,
 });
 
-type HistoryCard =
-  | {
-      kind: "generation";
-      id: string;
-      styleId: string;
-      title: string;
-      thumb: string;
-      before?: string;
-      after: string;
-      at: string;
-    }
-  | {
-      kind: "selfie";
-      id: string;
-      title: string;
-      thumb: string;
-      before: string;
-      after?: string;
-      at: string;
-    };
+type HistoryCard = {
+  id: string;
+  styleId: string;
+  title: string;
+  thumb: string;
+  before?: string;
+  after: string;
+  at: string;
+};
 
 function AiStyleHistoryPage() {
   const { t } = useTranslation();
-  const [selfies, setSelfies] = useState<FaceProfileHistoryEntry[]>([]);
   const [gens, setGens] = useState<MorphAiGeneration[]>(() => loadMorphAiGenerations());
   const [loading, setLoading] = useState(true);
   const [active, setActive] = useState<HistoryCard | null>(null);
@@ -66,67 +51,54 @@ function AiStyleHistoryPage() {
   useEffect(() => {
     let cancelled = false;
     const refresh = async () => {
-      const list = await refreshAiStyleHistoryCache();
+      const list = await refreshMorphAiGenerationsCache();
       if (!cancelled) {
-        setSelfies(list);
-        setGens(loadMorphAiGenerations());
+        setGens(list);
         setLoading(false);
       }
     };
     void refresh();
     const onUpdate = () => {
-      void refresh();
       setGens(loadMorphAiGenerations());
+      void refresh();
     };
-    window.addEventListener(FACE_HISTORY_UPDATED_EVENT, onUpdate);
     window.addEventListener(MORPH_AI_GALLERY_UPDATED_EVENT, onUpdate);
     return () => {
       cancelled = true;
-      window.removeEventListener(FACE_HISTORY_UPDATED_EVENT, onUpdate);
       window.removeEventListener(MORPH_AI_GALLERY_UPDATED_EVENT, onUpdate);
     };
   }, [userId]);
 
-  const cards = useMemo(() => {
-    const latestSelfie = selfies.find((s) => Boolean(s.photoDataUrl))?.photoDataUrl;
-    const fromGens: HistoryCard[] = gens.map((g) => ({
-      kind: "generation",
-      id: `gen-${g.id}`,
-      styleId: g.styleId,
-      title: g.title,
-      thumb: g.previewImage,
-      before: g.beforeImage || latestSelfie,
-      after: g.previewImage,
-      at: g.createdAt,
-    }));
-    const fromSelfies: HistoryCard[] = selfies
-      .filter((s) => Boolean(s.photoDataUrl))
-      .map((s) => ({
-        kind: "selfie" as const,
-        id: `selfie-${s.id}`,
-        title: s.faceShapeKey
-          ? t(`aiStylePage.faceShapes.${s.faceShapeKey}`, { defaultValue: s.faceShapeKey })
-          : t("aiStylePage.selfieAlt", { defaultValue: "Selfie" }),
-        thumb: s.photoDataUrl,
-        before: s.photoDataUrl,
-        at: s.scannedAt,
-      }));
-    return [...fromGens, ...fromSelfies].sort(
-      (a, b) => new Date(b.at).getTime() - new Date(a.at).getTime(),
-    );
-  }, [gens, selfies, t]);
+  const cards = useMemo((): HistoryCard[] => {
+    const seen = new Set<string>();
+    const unique: HistoryCard[] = [];
+    for (const g of gens) {
+      if (!g.previewImage) continue;
+      const key = g.id || `${g.styleId}:${g.previewImage.slice(0, 64)}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      unique.push({
+        id: `gen-${g.id}`,
+        styleId: g.styleId,
+        title: g.title,
+        thumb: g.previewImage,
+        before: g.beforeImage,
+        after: g.previewImage,
+        at: g.createdAt,
+      });
+    }
+    return unique.sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime());
+  }, [gens]);
 
   const handleDownload = async () => {
-    if (!active) return;
-    const src = active.kind === "generation" ? active.after : active.thumb;
-    if (!src) {
+    if (!active?.after) {
       toast.error(t("aiStylePage.previewNoImage"));
       return;
     }
     setDownloading(true);
     try {
       const slug = active.title.replace(/[^a-z0-9-]+/gi, "-").toLowerCase() || "morf-ai";
-      await downloadAiStyleImage(src, `morf-ai-${slug}.jpg`);
+      await downloadAiStyleImage(active.after, `morf-ai-${slug}.jpg`);
       toast.success(t("aiStylePage.downloaded"));
     } catch {
       toast.error(t("aiStylePage.downloadFailed"));
@@ -136,29 +108,16 @@ function AiStyleHistoryPage() {
   };
 
   const handleShare = async () => {
-    if (!active) return;
-    if (active.kind !== "generation" || !active.after) {
-      toast.error(
-        t("aiStylePage.shareLook.needTryOn", {
-          defaultValue: "Ulashish uchun try-on / studio natijasini tanlang",
-        }),
-      );
-      return;
-    }
-    if (!active.before) {
-      toast.error(
-        t("aiStylePage.beforeAfter.noBefore", {
-          defaultValue: "Before selfie saqlanmagan — yangi try-on qiling",
-        }),
-      );
+    if (!active?.after) {
+      toast.error(t("aiStylePage.previewNoImage"));
       return;
     }
     setSharing(true);
     try {
+      // Share landing shows result only; before kept optional for future.
       const created = await createMorphAiLookShare({
         style_id: active.styleId,
         title: active.title,
-        before_image: active.before,
         after_image: active.after,
       });
       const pageUrl =
@@ -166,6 +125,7 @@ function AiStyleHistoryPage() {
         `${typeof window !== "undefined" ? window.location.origin : "https://mysaloon.uz"}/morf-ai/share/${encodeURIComponent(created.id)}`;
       const shareTitle = t("aiStylePage.shareLook.shareText", {
         style: active.title,
+        name: created.sharer_name || "",
         defaultValue: "{{style}} — Morf AI da sinab ko‘rdim. Sen ham sinab ko‘r!",
       });
       const result = await shareAiStyleLink(shareTitle, pageUrl);
@@ -178,81 +138,81 @@ function AiStyleHistoryPage() {
     }
   };
 
-  const canShare = active?.kind === "generation" && Boolean(active.before && active.after);
-
   return (
     <div
-      className="min-h-[100dvh] bg-[#0b0b0b] text-white"
-      style={{ paddingBottom: "max(1.5rem, env(safe-area-inset-bottom))" }}
+      className="min-h-[100dvh] bg-background text-foreground"
+      style={{ paddingBottom: "max(1.25rem, env(safe-area-inset-bottom))" }}
     >
       <div
-        className="px-5 pb-4"
-        style={{ paddingTop: "max(1rem, env(safe-area-inset-top))" }}
+        className="border-b border-border/70 bg-background/95 px-4 pb-3 backdrop-blur-md md:px-6"
+        style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}
       >
-        <Link
-          to="/ai-style"
-          className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-3.5 py-2 text-sm font-bold text-white backdrop-blur-md touch-manipulation"
-        >
-          <ChevronLeft className="h-4 w-4" strokeWidth={2.5} />
-          {t("common.back")}
-        </Link>
-        <div className="mt-5">
-          <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-white/45">
-            <Sparkles className="h-3.5 w-3.5" />
-            {t("aiStylePage.title")}
-          </p>
-          <h1 className="mt-1 text-2xl font-extrabold tracking-tight">
-            {t("aiStylePage.historyPageTitle", { defaultValue: "Tahlil tarixi" })}
-          </h1>
-          <p className="mt-1 text-sm text-white/60">
-            {t("aiStylePage.historyPageSubtitle", {
-              defaultValue: "Barcha selfie va generatsiyalar — before/after uchun bosing",
-            })}
-          </p>
+        <div className="mx-auto flex max-w-5xl items-center gap-3">
+          <Link
+            to="/ai-style"
+            className="inline-flex min-h-10 items-center gap-1 rounded-full border border-border bg-surface px-3 py-1.5 text-[13px] font-semibold touch-manipulation"
+          >
+            <ChevronLeft className="h-4 w-4" strokeWidth={2.25} />
+            {t("common.back")}
+          </Link>
+          <div className="min-w-0 flex-1">
+            <p className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+              <Sparkles className="h-3 w-3" />
+              Morf AI
+            </p>
+            <h1 className="truncate text-[17px] font-bold tracking-tight md:text-lg">
+              {t("aiStylePage.historyPageTitle", { defaultValue: "Try-on tarixi" })}
+            </h1>
+          </div>
         </div>
+        <p className="mx-auto mt-1.5 max-w-5xl text-[12px] text-muted-foreground md:text-[13px]">
+          {t("aiStylePage.historyPageSubtitle", {
+            defaultValue: "Faqat generatsiya natijalari — before/after uchun bosing",
+          })}
+        </p>
       </div>
 
-      <div className="px-5">
+      <div className="mx-auto max-w-5xl px-4 pt-4 md:px-6">
         {loading ? (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-4">
             {Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="aspect-[3/4] animate-pulse rounded-2xl bg-white/10" />
+              <div key={i} className="aspect-[3/4] animate-pulse rounded-2xl bg-surface" />
             ))}
           </div>
         ) : cards.length === 0 ? (
-          <div className="rounded-3xl border border-dashed border-white/20 bg-white/[0.04] px-5 py-10 text-center">
-            <p className="text-base font-semibold">{t("aiStylePage.historyEmpty")}</p>
-            <p className="mt-2 text-sm text-white/55">{t("aiStylePage.historyEmptyHint")}</p>
+          <div className="rounded-2xl border border-dashed border-border bg-surface/50 px-5 py-10 text-center">
+            <p className="text-[15px] font-semibold">{t("aiStylePage.historyEmpty")}</p>
+            <p className="mt-1.5 text-[13px] text-muted-foreground">{t("aiStylePage.historyEmptyHint")}</p>
             <Link
               to="/ai-style"
-              className="mt-6 inline-flex rounded-full bg-white px-5 py-2.5 text-sm font-bold text-black"
+              className="mt-5 inline-flex rounded-full bg-foreground px-5 py-2.5 text-[13px] font-bold text-background"
             >
               {t("aiStylePage.uploadTitle")}
             </Link>
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-3 pb-6 sm:grid-cols-3 md:grid-cols-4">
+          <div className="grid grid-cols-2 gap-2.5 pb-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
             {cards.map((card) => (
               <button
                 key={card.id}
                 type="button"
                 onClick={() => setActive(card)}
-                className="group overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] text-left touch-manipulation active:scale-[0.98]"
+                className="group overflow-hidden rounded-2xl border border-border bg-surface text-left touch-manipulation active:scale-[0.98]"
               >
-                <div className="aspect-[3/4] overflow-hidden bg-white/5">
+                <div className="aspect-[3/4] overflow-hidden bg-muted/40">
                   <img
                     src={card.thumb}
                     alt=""
-                    className="h-full w-full object-cover object-top transition-transform duration-300 group-active:scale-[1.03]"
+                    className="h-full w-full object-cover object-top transition-transform duration-300 group-active:scale-[1.02]"
                   />
                 </div>
-                <div className="px-2.5 py-2">
-                  <p className="truncate text-xs font-bold">{card.title}</p>
-                  <p className="mt-0.5 text-[10px] font-semibold tabular-nums text-white/45">
+                <div className="px-2 py-1.5">
+                  <p className="truncate text-[11px] font-bold md:text-xs">{card.title}</p>
+                  <p className="mt-0.5 text-[10px] font-medium tabular-nums text-muted-foreground">
                     {formatHistoryDate(card.at)}
                   </p>
-                  {card.kind === "generation" && card.before ? (
-                    <p className="mt-1 text-[10px] font-bold uppercase tracking-wide text-white/55">
+                  {card.before ? (
+                    <p className="mt-0.5 text-[9px] font-bold uppercase tracking-wide text-muted-foreground">
                       Before / After
                     </p>
                   ) : null}
@@ -265,31 +225,31 @@ function AiStyleHistoryPage() {
 
       {active && typeof document !== "undefined"
         ? createPortal(
-            <div className="fixed inset-0 z-[280] flex flex-col bg-black/95">
+            <div className="fixed inset-0 z-[280] flex flex-col bg-background/98 backdrop-blur-sm">
               <div
-                className="flex items-center justify-between px-4 pb-3"
-                style={{ paddingTop: "max(0.85rem, env(safe-area-inset-top))" }}
+                className="mx-auto flex w-full max-w-lg items-center justify-between px-4 pb-2"
+                style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}
               >
                 <button
                   type="button"
                   onClick={() => setActive(null)}
-                  className="inline-flex min-h-11 items-center gap-1.5 rounded-full bg-white/10 px-3.5 py-2 text-sm font-bold text-white touch-manipulation"
+                  className="inline-flex min-h-10 items-center gap-1 rounded-full border border-border bg-surface px-3 py-1.5 text-[13px] font-semibold touch-manipulation"
                 >
-                  <ChevronLeft className="h-4 w-4" strokeWidth={2.5} />
+                  <ChevronLeft className="h-4 w-4" strokeWidth={2.25} />
                   {t("common.back")}
                 </button>
                 <button
                   type="button"
                   onClick={() => setActive(null)}
-                  className="grid size-11 place-items-center rounded-full bg-white/10 text-white touch-manipulation"
+                  className="grid size-10 place-items-center rounded-full border border-border bg-surface touch-manipulation"
                   aria-label={t("common.close")}
                 >
-                  <X className="h-5 w-5" />
+                  <X className="h-4 w-4" />
                 </button>
               </div>
-              <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-4 overflow-y-auto px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
-                {active.kind === "generation" && active.before ? (
-                  <div className="w-full max-w-md">
+              <div className="mx-auto flex min-h-0 w-full max-w-lg flex-1 flex-col items-center justify-center gap-3 overflow-y-auto px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
+                {active.before ? (
+                  <div className="w-full">
                     <MorphBeforeAfter
                       beforeSrc={active.before}
                       afterSrc={active.after}
@@ -297,29 +257,22 @@ function AiStyleHistoryPage() {
                     />
                   </div>
                 ) : (
-                  <div className="w-full max-w-md overflow-hidden rounded-[24px]">
+                  <div className="w-full overflow-hidden rounded-2xl border border-border">
                     <img
                       src={active.thumb}
                       alt=""
                       className="aspect-[3/4] w-full object-cover object-top"
                     />
-                    <p className="mt-3 text-center text-sm font-bold text-white">{active.title}</p>
-                    <p className="mt-1 text-center text-xs text-white/55">
-                      {active.kind === "generation"
-                        ? t("aiStylePage.beforeAfter.noBefore", {
-                            defaultValue: "Before selfie saqlanmagan — yangi try-on qiling",
-                          })
-                        : formatHistoryDate(active.at)}
-                    </p>
+                    <p className="px-3 py-2 text-center text-[13px] font-bold">{active.title}</p>
                   </div>
                 )}
 
-                <div className={`grid w-full max-w-md gap-2.5 ${canShare ? "grid-cols-2" : "grid-cols-1"}`}>
+                <div className="grid w-full grid-cols-2 gap-2">
                   <button
                     type="button"
                     disabled={downloading}
                     onClick={() => void handleDownload()}
-                    className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-white text-sm font-bold text-black touch-manipulation active:scale-[0.98] disabled:opacity-50"
+                    className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-2xl bg-foreground text-[13px] font-bold text-background touch-manipulation active:scale-[0.98] disabled:opacity-50"
                   >
                     {downloading ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
@@ -328,30 +281,26 @@ function AiStyleHistoryPage() {
                     )}
                     {t("aiStylePage.download")}
                   </button>
-                  {canShare ? (
-                    <button
-                      type="button"
-                      disabled={sharing}
-                      onClick={() => void handleShare()}
-                      className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-white/20 bg-white/10 text-sm font-bold text-white touch-manipulation active:scale-[0.98] disabled:opacity-50"
-                    >
-                      {sharing ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Share2 className="h-4 w-4" />
-                      )}
-                      {t("aiStylePage.share")}
-                    </button>
-                  ) : null}
+                  <button
+                    type="button"
+                    disabled={sharing}
+                    onClick={() => void handleShare()}
+                    className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-2xl border border-border bg-surface text-[13px] font-bold touch-manipulation active:scale-[0.98] disabled:opacity-50"
+                  >
+                    {sharing ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Share2 className="h-4 w-4" />
+                    )}
+                    {t("aiStylePage.share")}
+                  </button>
                 </div>
-                {canShare ? (
-                  <p className="max-w-md text-center text-[11px] text-white/50">
-                    {t("aiStylePage.shareLook.shareHint", {
-                      defaultValue:
-                        "Faqat havola ulashiladi. Do‘stingiz sizning before/after sahifangizni ochadi va o‘zida sinab ko‘rishi mumkin.",
-                    })}
-                  </p>
-                ) : null}
+                <p className="max-w-md text-center text-[11px] text-muted-foreground">
+                  {t("aiStylePage.shareLook.shareHint", {
+                    defaultValue:
+                      "Havola ulashiladi — do‘stingiz faqat natija rasmini ko‘radi va o‘zida sinab ko‘rishi mumkin.",
+                  })}
+                </p>
               </div>
             </div>,
             document.body,

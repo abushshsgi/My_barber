@@ -3,19 +3,51 @@ async function imageUrlToBlob(url: string): Promise<Blob> {
     const res = await fetch(url);
     return res.blob();
   }
-  const res = await fetch(url);
+  const res = await fetch(url, { mode: "cors", credentials: "omit" });
   if (!res.ok) throw new Error("fetch failed");
   return res.blob();
 }
 
-export async function downloadAiStyleImage(url: string, filename: string) {
-  const blob = await imageUrlToBlob(url);
-  const objectUrl = URL.createObjectURL(blob);
+function triggerAnchorDownload(objectUrl: string, filename: string) {
   const anchor = document.createElement("a");
   anchor.href = objectUrl;
   anchor.download = filename;
+  anchor.rel = "noopener";
+  anchor.style.display = "none";
+  document.body.appendChild(anchor);
   anchor.click();
-  URL.revokeObjectURL(objectUrl);
+  anchor.remove();
+}
+
+/**
+ * Download try-on result to device Photos/Downloads gallery.
+ * Prefers Web Share Level 2 (files) on mobile so the image lands in Photos.
+ */
+export async function downloadAiStyleImage(url: string, filename: string) {
+  const blob = await imageUrlToBlob(url);
+  const file = new File([blob], filename, { type: blob.type || "image/jpeg" });
+
+  if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
+    try {
+      if (typeof navigator.canShare === "function" && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: filename });
+        return "shared" as const;
+      }
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") {
+        return "cancelled" as const;
+      }
+      /* fall through to anchor download */
+    }
+  }
+
+  const objectUrl = URL.createObjectURL(blob);
+  try {
+    triggerAnchorDownload(objectUrl, filename);
+  } finally {
+    window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1500);
+  }
+  return "downloaded" as const;
 }
 
 /**

@@ -133,12 +133,10 @@ export function AiStylePreviewSheet({
     }
     setSharing(true);
     try {
-      const before = selfiePhoto || undefined;
-      if (previewImage && before) {
+      if (previewImage) {
         const created = await createMorphAiLookShare({
           style_id: suggestion.id,
           title: suggestion.title,
-          before_image: before,
           after_image: previewImage,
         });
         const pageUrl =
@@ -146,6 +144,7 @@ export function AiStylePreviewSheet({
           `${window.location.origin}/morf-ai/share/${encodeURIComponent(created.id)}`;
         const shareTitle = t("aiStylePage.shareLook.shareText", {
           style: suggestion.title,
+          name: created.sharer_name || "",
           defaultValue: "{{style}} — Morf AI da sinab ko‘rdim. Sen ham sinab ko‘r!",
         });
         const result = await shareAiStyleLink(shareTitle, pageUrl);
@@ -154,7 +153,7 @@ export function AiStylePreviewSheet({
         return;
       }
 
-      // Fallback: viral style look page (no personal before/after yet).
+      // Fallback: viral style look page (no personal result yet).
       if (!lookUrl) {
         toast.error(t("aiStylePage.shareFailed"));
         return;

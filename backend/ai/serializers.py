@@ -3,7 +3,33 @@ from rest_framework import serializers
 from ai.age_groups import resolve_hairstyle_image_path
 from ai.services.gemini_style import FACE_SHAPES, HAIR_TYPES
 
-from .models import AiStyleHistoryEntry, Hairstyle, MorphAiLookShare
+from .models import AiStyleHistoryEntry, Hairstyle, MorphAiGenerationEntry, MorphAiLookShare
+
+
+def _media_absolute_url(request, field) -> str | None:
+    if not field:
+        return None
+    from media_store.utils import media_field_exists
+
+    if not media_field_exists(field):
+        return None
+    url = field.url
+    if request is not None:
+        return request.build_absolute_uri(url)
+    return url
+
+
+def _user_display_name(user) -> str:
+    if user is None:
+        return ""
+    name = (getattr(user, "full_name", None) or "").strip()
+    if name:
+        return name
+    phone = (getattr(user, "phone", None) or "").strip()
+    digits = "".join(ch for ch in phone if ch.isdigit())
+    if len(digits) >= 4:
+        return f"Mijoz ···{digits[-4:]}"
+    return "Mijoz"
 
 
 class HairstyleSerializer(serializers.ModelSerializer):
@@ -116,6 +142,7 @@ class MorphAiLookShareSerializer(serializers.ModelSerializer):
     before_url = serializers.SerializerMethodField()
     after_url = serializers.SerializerMethodField()
     share_page_url = serializers.SerializerMethodField()
+    sharer_name = serializers.SerializerMethodField()
 
     class Meta:
         model = MorphAiLookShare
@@ -126,29 +153,53 @@ class MorphAiLookShareSerializer(serializers.ModelSerializer):
             "before_url",
             "after_url",
             "share_page_url",
+            "sharer_name",
             "created_at",
         )
         read_only_fields = fields
 
     def get_before_url(self, obj: MorphAiLookShare) -> str | None:
-        if not obj.before_photo:
-            return None
-        request = self.context.get("request")
-        url = obj.before_photo.url
-        if request is not None:
-            return request.build_absolute_uri(url)
-        return url
+        return _media_absolute_url(self.context.get("request"), obj.before_photo)
 
     def get_after_url(self, obj: MorphAiLookShare) -> str | None:
-        if not obj.after_photo:
-            return None
-        request = self.context.get("request")
-        url = obj.after_photo.url
-        if request is not None:
-            return request.build_absolute_uri(url)
-        return url
+        return _media_absolute_url(self.context.get("request"), obj.after_photo)
 
     def get_share_page_url(self, obj: MorphAiLookShare) -> str:
         from accounts.referral import user_app_public_base
 
         return f"{user_app_public_base()}/morf-ai/share/{obj.pk}"
+
+    def get_sharer_name(self, obj: MorphAiLookShare) -> str:
+        return _user_display_name(obj.created_by)
+
+
+class MorphAiGenerationCreateSerializer(serializers.Serializer):
+    style_id = serializers.CharField(required=False, allow_blank=True, max_length=64, default="")
+    title = serializers.CharField(required=False, allow_blank=True, max_length=160, default="")
+    persona_id = serializers.CharField(required=False, allow_blank=True, max_length=64, default="")
+    before_image = serializers.CharField(required=False, allow_blank=True, default="")
+    after_image = serializers.CharField(required=True)
+
+
+class MorphAiGenerationSerializer(serializers.ModelSerializer):
+    before_url = serializers.SerializerMethodField()
+    after_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = MorphAiGenerationEntry
+        fields = (
+            "id",
+            "style_id",
+            "title",
+            "persona_id",
+            "before_url",
+            "after_url",
+            "created_at",
+        )
+        read_only_fields = fields
+
+    def get_before_url(self, obj: MorphAiGenerationEntry) -> str | None:
+        return _media_absolute_url(self.context.get("request"), obj.before_photo)
+
+    def get_after_url(self, obj: MorphAiGenerationEntry) -> str | None:
+        return _media_absolute_url(self.context.get("request"), obj.after_photo)

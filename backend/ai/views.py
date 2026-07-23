@@ -9,12 +9,21 @@ from ai.age_groups import birth_year_to_group, normalize_age_group, resolve_hair
 from ai.explore_personas import has_persona_style_asset, list_explore_personas, normalize_persona_id
 
 from .history_storage import image_file_from_source, save_history_photo, trim_user_history
-from .models import HISTORY_MAX_PER_USER, AiStyleHistoryEntry, Hairstyle, MorphAiLookShare
+from .models import (
+    GENERATION_HISTORY_MAX_PER_USER,
+    HISTORY_MAX_PER_USER,
+    AiStyleHistoryEntry,
+    Hairstyle,
+    MorphAiGenerationEntry,
+    MorphAiLookShare,
+)
 from .salon_match import attach_salons_to_suggestions
 from .serializers import (
     AiStyleHistoryCreateSerializer,
     AiStyleHistoryEntrySerializer,
     HairstyleSerializer,
+    MorphAiGenerationCreateSerializer,
+    MorphAiGenerationSerializer,
     MorphAiLookShareCreateSerializer,
     MorphAiLookShareSerializer,
 )
@@ -477,6 +486,71 @@ class MorphAiLookShareDetailView(UnthrottledAPIView):
         share = get_object_or_404(MorphAiLookShare, pk=share_id)
         out = MorphAiLookShareSerializer(share, context={"request": request})
         return Response(out.data)
+
+
+def _trim_user_generations(user: User) -> None:
+    ids = list(
+        MorphAiGenerationEntry.objects.filter(user=user)
+        .order_by("-created_at")
+        .values_list("id", flat=True)[GENERATION_HISTORY_MAX_PER_USER:]
+    )
+    if ids:
+        MorphAiGenerationEntry.objects.filter(id__in=ids).delete()
+
+
+class MorphAiGenerationListCreateView(UnthrottledAPIView):
+    """GET/POST — try-on & studio generation history (DB-backed media)."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = _require_customer_user(request)
+        if isinstance(user, Response):
+            return user
+        entries = MorphAiGenerationEntry.objects.filter(user=user).order_by("-created_at")[
+            :GENERATION_HISTORY_MAX_PER_USER
+        ]
+        out = MorphAiGenerationSerializer(entries, many=True, context={"request": request})
+        return Response(out.data)
+
+    def post(self, request):
+        user = _require_customer_user(request)
+        if isinstance(user, Response):
+            return user
+
+        serializer = MorphAiGenerationCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        after_raw = (data.get("after_image") or "").strip()
+        before_raw = (data.get("before_image") or "").strip()
+        if not after_raw:
+            return Response({"detail": "After rasm kerak."}, status=400)
+
+        entry = MorphAiGenerationEntry(
+            user=user,
+            style_id=(data.get("style_id") or "").strip()[:64],
+            title=(data.get("title") or "").strip()[:160],
+            persona_id=(data.get("persona_id") or "").strip()[:64],
+        )
+        try:
+            entry.after_photo.save(
+                "after.jpg",
+                image_file_from_source(after_raw, f"gen-after-{user.pk}"),
+                save=False,
+            )
+            if before_raw:
+                entry.before_photo.save(
+                    "before.jpg",
+                    image_file_from_source(before_raw, f"gen-before-{user.pk}"),
+                    save=False,
+                )
+        except Exception:
+            return Response({"detail": "Rasmni saqlab bo‘lmadi."}, status=400)
+
+        entry.save()
+        _trim_user_generations(user)
+        out = MorphAiGenerationSerializer(entry, context={"request": request})
+        return Response(out.data, status=status.HTTP_201_CREATED)
 
 
 class AiStyleStudioCatalogView(UnthrottledAPIView):
