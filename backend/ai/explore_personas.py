@@ -114,15 +114,22 @@ MEN_CATALOG_STYLE_SLUGS = frozenset(
 
 # Yangi uslublar generate/publish qilinmaguncha faqat reference tayyor.
 NIKI_READY_SLUGS: frozenset[str] = frozenset()
+
+# Irland klassik 12 uslub (front + left/right/back) — DB StoredMedia da.
+IRLAND_READY_SLUGS: frozenset[str] = frozenset(MEN_ARCHIVED_STYLE_SLUGS)
+
 PERSONA_READY_ASSETS: dict[str, frozenset[str]] = {
-    pid: frozenset({"reference"}) for pid in ("irland", "slavyan", "niki")
+    "irland": frozenset({"reference", *IRLAND_READY_SLUGS}),
+    "slavyan": frozenset({"reference"}),
+    "niki": frozenset({"reference"}),
 }
 
 # Git (public) ga qo'yilgan qo'shimcha ko'rinishlar. Front doim ready deb hisoblanadi;
 # bu yerda faqat chap/o'ng/orqa kabi qo'shimcha ko'rinishlar e'lon qilinadi. Production
 # backend (Railway) da public papka bo'lmagani uchun fayl tizimiga tayanmaymiz.
-# Yangi Old Money uslublar publish qilingach shu yerga qo'shiladi.
-PERSONA_READY_VIEWS: dict[str, dict[str, tuple[str, ...]]] = {}
+PERSONA_READY_VIEWS: dict[str, dict[str, tuple[str, ...]]] = {
+    "irland": {slug: ("left", "right", "back") for slug in sorted(IRLAND_READY_SLUGS)},
+}
 
 
 def persona_static_extra_views(persona_id: str | None, slug: str) -> tuple[str, ...]:

@@ -43,12 +43,12 @@ class ExplorePublishedTests(TestCase):
             self.assertTrue(result["published"])
             self.assertTrue(is_explore_asset_published("irland", "old-money-loose-curl"))
             self.assertTrue(live_under_media.is_file())
-            # Front view URL static path qaytaradi (media URL emas).
+            # Front view — DB/media da bo'lsa /media URL
             self.assertEqual(
                 resolve_explore_asset_url(
                     audience="men", persona_id="irland", slug="old-money-loose-curl"
                 ),
-                "/hairstyles/men/personas/irland/old-money-loose-curl.webp",
+                "https://api.test.local/media/hairstyles/men/personas/irland/old-money-loose-curl.webp",
             )
             self.assertTrue(explore_asset_available("irland", "old-money-loose-curl"))
 

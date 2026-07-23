@@ -25,7 +25,7 @@ export function isHomeTrendPersonaId(value: ExplorePersonaId): value is HomeTren
   return (HOME_TREND_PERSONA_IDS as readonly ExplorePersonaId[]).includes(value);
 }
 
-/** Erkaklar katalogidagi faol uslub sluglari (Old Money orqa jingalak). */
+/** Erkaklar katalogidagi arxiv uslub sluglari (Irland rasmlari DB da). */
 export const MEN_ARCHIVED_STYLE_SLUGS = [
   "mid-fade",
   "low-fade",
@@ -56,7 +56,7 @@ export const PERSONA_READY_ASSETS: Record<
   ExplorePersonaId,
   { reference: boolean; slugs: readonly string[] }
 > = {
-  irland: { reference: true, slugs: [] },
+  irland: { reference: true, slugs: MEN_ARCHIVED_STYLE_SLUGS },
   slavyan: { reference: true, slugs: [] },
   niki: { reference: true, slugs: [] },
 };
@@ -105,12 +105,28 @@ export function normalizeExplorePersonaId(value: string | null | undefined): Exp
 }
 
 export function getPersonaRefImageUrl(personaId: ExplorePersonaId): string {
+  // Reference: static (git) yoki /media proxy
   return `/hairstyles/men/personas/${personaId}/reference.webp`;
 }
 
 export function getPersonaStyleImageUrl(personaId: ExplorePersonaId, slug: string): string {
   if (hasPersonaStyleAsset(personaId, slug)) {
-    return `/hairstyles/men/personas/${personaId}/${slug}.webp`;
+    // Irland klassik uslublar — API /media (Postgres StoredMedia)
+    return `/media/hairstyles/men/personas/${personaId}/${slug}.webp`;
   }
   return `/hairstyles/men/${slug}.webp`;
+}
+
+export function getPersonaStyleViewImageUrl(
+  personaId: ExplorePersonaId,
+  slug: string,
+  view: "front" | "left" | "right" | "back" = "front",
+): string {
+  if (!hasPersonaStyleAsset(personaId, slug)) {
+    return getPersonaStyleImageUrl(personaId, slug);
+  }
+  if (view === "front") {
+    return `/media/hairstyles/men/personas/${personaId}/${slug}.webp`;
+  }
+  return `/media/hairstyles/men/personas/${personaId}/${slug}__${view}.webp`;
 }

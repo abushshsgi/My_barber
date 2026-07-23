@@ -10,6 +10,7 @@ from typing import Any
 from django.conf import settings
 
 from ai.explore_personas import (
+    MEN_ARCHIVED_STYLE_SLUGS,
     MEN_CATALOG_STYLE_SLUGS,
     PERSONA_READY_ASSETS,
     normalize_persona_id,
@@ -179,7 +180,7 @@ def explore_asset_available(persona_id: str | None, slug: str) -> bool:
     pid = normalize_persona_id(persona_id)
     if not pid:
         return False
-    if slug != "reference" and slug not in MEN_CATALOG_STYLE_SLUGS:
+    if slug != "reference" and slug not in MEN_CATALOG_STYLE_SLUGS and slug not in MEN_ARCHIVED_STYLE_SLUGS:
         return False
     if slug in PERSONA_READY_ASSETS.get(pid, frozenset()):
         return True
@@ -205,6 +206,14 @@ def resolve_explore_asset_url(
     pid = normalize_persona_id(persona_id) or persona_id
     normalized_view = normalize_explore_view(view)
     if slug == "reference":
+        # Reference ham DB da bo'lsa /media orqali
+        rel = static_persona_ref_image_path(audience=audience, persona_id=pid).lstrip("/")
+        if media_name_exists(rel):
+            api_base = explore_media_base_url()
+            url = media_url(rel)
+            if api_base and url.startswith("/"):
+                return f"{api_base}{url}"
+            return url
         return static_persona_ref_image_path(audience=audience, persona_id=pid)
 
     base = static_persona_style_image_path(audience=audience, persona_id=pid, slug=slug)
@@ -213,19 +222,26 @@ def resolve_explore_asset_url(
         slug=slug,
         view=normalized_view,
     )
-    if normalized_view == "front":
-        return rel
+    media_rel = rel.lstrip("/")
 
-    published = is_explore_asset_published(pid, slug, view=normalized_view)
-    live_path = live_asset_path(persona_id=pid, slug=slug, view=normalized_view)
-    in_public = PUBLIC_ROOT.is_dir() and live_path.is_file() and live_path.is_relative_to(PUBLIC_ROOT)
-    if published and live_media_exists(persona_id=pid, slug=slug, view=normalized_view) and not in_public:
-        media_rel = rel.lstrip("/")
-        api_base = explore_media_base_url()
-        url = media_url(media_rel)
-        if api_base and url.startswith("/"):
-            return f"{api_base}{url}"
-        return url
+    # DB / storage da bo'lsa — API /media (redeployda yo'qolmaydi)
+    if live_media_exists(persona_id=pid, slug=slug, view=normalized_view) or media_name_exists(
+        media_rel
+    ):
+        live_path = live_asset_path(persona_id=pid, slug=slug, view=normalized_view)
+        in_public = (
+            PUBLIC_ROOT.is_dir()
+            and live_path.is_file()
+            and live_path.is_relative_to(PUBLIC_ROOT)
+            and not media_name_exists(media_rel)
+        )
+        if not in_public:
+            api_base = explore_media_base_url()
+            url = media_url(media_rel)
+            if api_base and url.startswith("/"):
+                return f"{api_base}{url}"
+            return url
+
     return rel
 
 
@@ -255,7 +271,7 @@ def publish_explore_asset(*, persona_id: str, slug: str, view: str = "front") ->
     pid = normalize_persona_id(persona_id)
     if not pid:
         raise AiStyleError("Noto'g'ri persona_id.", 400)
-    if slug != "reference" and slug not in MEN_CATALOG_STYLE_SLUGS:
+    if slug != "reference" and slug not in MEN_CATALOG_STYLE_SLUGS and slug not in MEN_ARCHIVED_STYLE_SLUGS:
         raise AiStyleError("Noto'g'ri slug.", 400)
 
     normalized_view = normalize_explore_view(view)
