@@ -58,16 +58,9 @@ def mock_gallery_urls(slug: str, count: int = 2) -> list[str]:
 
 
 def _media_file_exists(file_field) -> bool:
-    name = getattr(file_field, "name", None)
-    if not name:
-        return False
-    try:
-        storage = getattr(file_field, "storage", None)
-        if storage is None:
-            return True
-        return bool(storage.exists(name))
-    except Exception:
-        return True
+    from media_store.utils import media_field_exists
+
+    return media_field_exists(file_field)
 
 
 def resolve_salon_cover_url(salon, context: dict | None = None) -> str | None:

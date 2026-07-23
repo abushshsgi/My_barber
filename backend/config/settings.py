@@ -278,6 +278,7 @@ else:
 
 MEDIA_URL = "/media/"
 # Railway Volume bo‘lsa RAILWAY_VOLUME_MOUNT_PATH avtomatik beriladi (masalan /app/media).
+# Volume faqat legacy/serve uchun; yangi yuklamalar default Postgresda.
 _volume_mount = os.environ.get("RAILWAY_VOLUME_MOUNT_PATH", "").strip()
 MEDIA_ROOT = Path(_volume_mount) if _volume_mount else (BASE_DIR / "media")
 if _volume_mount:
@@ -286,10 +287,11 @@ if _volume_mount:
     except OSError:
         pass
 
-# Media persistence (production):
-# 1) USE_S3_MEDIA=true → S3/R2 (eng yaxshi)
-# 2) Railway Volume → lokal disk (volume mount)
-# 3) aks holda productionda Postgres DatabaseMediaStorage (redeployda yo‘qolmaydi)
+# Media persistence:
+# 1) USE_S3_MEDIA=true → S3/R2
+# 2) USE_LOCAL_MEDIA=true yoki DEBUG → lokal disk (dev)
+# 3) default → Postgres DatabaseMediaStorage (deployda yo‘qolmaydi)
+# Eslatma: RAILWAY volume bo‘lsa ham productionda DB saqlash — disk ephemeral bo‘lishi mumkin.
 USE_S3_MEDIA = os.environ.get("USE_S3_MEDIA", "").lower() in ("1", "true", "yes")
 _force_db_media = os.environ.get("USE_DB_MEDIA", "").lower() in ("1", "true", "yes")
 _force_local_media = os.environ.get("USE_LOCAL_MEDIA", "").lower() in ("1", "true", "yes")
@@ -318,8 +320,11 @@ if USE_S3_MEDIA:
         MEDIA_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/"
     elif AWS_STORAGE_BUCKET_NAME and not AWS_S3_ENDPOINT_URL:
         MEDIA_URL = f"https://{AWS_STORAGE_BUCKET_NAME}.s3.{AWS_S3_REGION_NAME}.amazonaws.com/"
-elif _force_db_media or (not DEBUG and not _volume_mount and not _force_local_media):
-    # Ephemeral disk (Railway default) — fayllarni Postgresga yozamiz
+elif _force_local_media or (DEBUG and not _force_db_media):
+    # Lokal/dev disk
+    USE_DB_MEDIA = False
+elif _force_db_media or not DEBUG:
+    # Production default — Postgres (redeployda rasmlar qoladi)
     USE_DB_MEDIA = True
     STORAGES = {
         "default": {

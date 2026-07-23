@@ -42,9 +42,13 @@ def validate_break_list(value):
 
 def _public_avatar_url(obj, request):
     """Railway’da fayl yo‘qolgan bo‘lsa ImageField.url 500 bermasin."""
+    from media_store.utils import media_field_exists
+
     b = obj.barber
     f = getattr(b, "avatar", None)
     if not f or not getattr(f, "name", None):
+        return None
+    if not media_field_exists(f):
         return None
     try:
         path = f.url

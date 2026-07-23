@@ -14,7 +14,8 @@ import { mapSalonDetail } from "@/lib/mappers/salon";
 import { buildSalonHeadMeta, fetchSalonSeoMeta } from "@/lib/salon-seo.server";
 
 export const Route = createFileRoute("/salon/$id")({
-  ssr: true,
+  // Root `ssr: false` bilan mos — ssr:true refreshda React #423 oq ekran berardi.
+  ssr: false,
   preload: "intent",
   loader: async ({ params, context }) => {
     const { queryClient } = context;
@@ -43,8 +44,6 @@ function SalonPage() {
   const { isFav, toggle, isPending } = useFavorites();
   const { openShare, shareOpen, setShareOpen, shareSalon } = useShareSalon(salon ?? undefined);
   const isLgUp = useIsLgUp();
-  // SSR + hydration bir xil skeleton; client mount dan keyin haqiqiy UI.
-  // DesktopPageSplit / ClientOnly aralashmasi refreshda #423 oq ekranga olib kelardi.
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 

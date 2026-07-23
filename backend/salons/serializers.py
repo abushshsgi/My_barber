@@ -24,6 +24,7 @@ from .models import (
 
 
 from salons.mock.cover_urls import resolve_salon_cover_url
+from media_store.utils import media_field_exists
 
 
 def _salon_cover_url(salon, context: dict | None = None) -> str | None:
@@ -53,18 +54,8 @@ class SalonHoursSerializer(serializers.ModelSerializer):
 
 
 def _media_file_exists(file_field) -> bool:
-    """Disk/S3 da fayl yo‘q bo‘lsa URL bermaslik — frontend placeholder slidlarini oldini oladi."""
-    name = getattr(file_field, "name", None)
-    if not name:
-        return False
-    try:
-        storage = getattr(file_field, "storage", None)
-        if storage is None:
-            return True
-        return bool(storage.exists(name))
-    except Exception:
-        # exists() ishlamasa eski xatti-harakat — URL ni qaytaramiz
-        return True
+    """Disk/S3/Postgres da fayl yo‘q bo‘lsa URL bermaslik."""
+    return media_field_exists(file_field)
 
 
 def _absolute_media_url(file_field, context: dict | None = None) -> str | None:

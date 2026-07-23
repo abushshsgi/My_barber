@@ -8,14 +8,17 @@ from django.http import FileResponse, Http404, HttpResponse
 from django.views.decorators.cache import cache_control
 from django.views.decorators.http import require_GET
 
+from media_store.utils import ingest_disk_file_to_db, normalize_media_name
+
 
 @require_GET
 @cache_control(public=True, max_age=60 * 60 * 24 * 7)
 def serve_media(request, path: str):
     """
     /media/... — avval disk (volume), keyin Postgres StoredMedia.
+    Diskdan topilsa va USE_DB_MEDIA bo‘lsa — Postgresga ham yozib qo‘yamiz (lazy migrate).
     """
-    rel = (path or "").replace("\\", "/").lstrip("/")
+    rel = normalize_media_name(path)
     if not rel or ".." in rel.split("/"):
         raise Http404()
 
@@ -27,6 +30,11 @@ def serve_media(request, path: str):
         raise Http404() from None
 
     if disk.is_file():
+        # Redeploydan oldin diskda qolgan fayllarni DB ga ko‘chirish
+        try:
+            ingest_disk_file_to_db(rel)
+        except Exception:
+            pass
         content_type = mimetypes.guess_type(str(disk))[0] or "application/octet-stream"
         return FileResponse(disk.open("rb"), content_type=content_type)
 
