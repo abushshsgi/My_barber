@@ -8,9 +8,16 @@ export type { SalonSectionId };
 
 type NavItem = { id: SalonSectionId; label: string };
 
-export function SalonSectionNav({ salon }: { salon: Salon }) {
+export function SalonSectionNav({
+  salon,
+  variant = "desktop",
+}: {
+  salon: Salon;
+  variant?: "desktop" | "mobile";
+}) {
   const { t } = useTranslation();
   const [active, setActive] = useState<SalonSectionId>("about");
+  const isMobile = variant === "mobile";
 
   const items = useMemo((): NavItem[] => {
     const list: NavItem[] = [{ id: "about", label: t("salon.tabs.about") }];
@@ -47,18 +54,32 @@ export function SalonSectionNav({ salon }: { salon: Salon }) {
   }, [items]);
 
   return (
-    <nav className="sticky top-0 z-10 -mx-1 border-b border-border bg-background/95 py-3 backdrop-blur-md lg:top-[4.5rem]">
-      <div className="no-scrollbar flex touch-pan-x gap-2 overflow-x-auto overscroll-x-contain px-1 [-webkit-overflow-scrolling:touch]">
+    <nav
+      className={cn(
+        "sticky z-20 border-b border-border bg-background/95 backdrop-blur-md",
+        isMobile ? "-mx-4 top-0 py-2.5" : "top-0 -mx-1 py-3 lg:top-[4.5rem]",
+      )}
+      style={isMobile ? { top: "env(safe-area-inset-top, 0px)" } : undefined}
+    >
+      <div
+        className={cn(
+          "no-scrollbar flex touch-pan-x gap-2 overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch]",
+          isMobile ? "px-4" : "px-1",
+        )}
+      >
         {items.map((item) => (
           <button
             key={item.id}
             type="button"
             onClick={() => scrollToSalonSection(item.id)}
             className={cn(
-              "shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition-colors",
+              "shrink-0 rounded-full font-semibold transition-colors",
+              isMobile ? "px-3.5 py-1.5 text-xs" : "px-4 py-2 text-sm",
               active === item.id
                 ? "bg-foreground text-background"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                : isMobile
+                  ? "bg-muted/60 text-muted-foreground active:bg-muted"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
             )}
           >
             {item.label}

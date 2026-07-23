@@ -15,7 +15,9 @@ export function SalonHeroGallery({
     <div
       className={cn(
         "relative overflow-hidden bg-muted",
-        isMobile ? "h-[280px]" : "h-full min-h-[min(420px,42vh)] rounded-2xl",
+        isMobile
+          ? "aspect-[4/3] max-h-[52vh] min-h-[280px] w-full"
+          : "h-full min-h-[min(420px,42vh)] rounded-2xl",
       )}
     >
       <SalonImageCarousel
@@ -24,7 +26,8 @@ export function SalonHeroGallery({
         alt={salon.name}
         autoPlay
         showDots
-        className="h-full w-full"
+        dotsClassName={isMobile ? "bottom-12" : undefined}
+        className={cn("h-full w-full", isMobile && "absolute inset-0")}
       />
     </div>
   );

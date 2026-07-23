@@ -20,6 +20,8 @@ type Props = {
   imgClassName?: string;
   autoPlay?: boolean;
   showDots?: boolean;
+  /** e.g. bottom-12 when content overlaps the carousel */
+  dotsClassName?: string;
   /** pause autoplay while user is interacting */
   pauseOnInteract?: boolean;
 };
@@ -78,6 +80,7 @@ export function SalonImageCarousel({
   imgClassName,
   autoPlay = true,
   showDots = true,
+  dotsClassName,
   pauseOnInteract = true,
 }: Props) {
   const portfolioKey = (portfolio ?? []).join("\0");
@@ -163,7 +166,12 @@ export function SalonImageCarousel({
       </Carousel>
 
       {showDots && multi ? (
-        <div className="pointer-events-none absolute inset-x-0 bottom-2.5 z-10 flex justify-center gap-1.5">
+        <div
+          className={cn(
+            "pointer-events-none absolute inset-x-0 bottom-2.5 z-10 flex justify-center gap-1.5",
+            dotsClassName,
+          )}
+        >
           {images.map((_, i) => (
             <span
               key={i}
