@@ -522,6 +522,13 @@ class BookingViewSet(viewsets.ModelViewSet):
         booking.end_at = actual_end
         booking.save(update_fields=["status", "end_at", "updated_at"])
         BookingCompletion.objects.update_or_create(booking=booking, defaults=comp_defaults)
+        try:
+            from bookings.payments import release_booking_escrow_to_barber
+
+            release_booking_escrow_to_barber(booking)
+            booking.refresh_from_db()
+        except Exception:
+            pass
         from bookings.earnings import booking_counts_for_platform_earnings
 
         if booking_counts_for_platform_earnings(booking):

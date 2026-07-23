@@ -69,8 +69,17 @@ function CopyIdRow({ value }: { value: string }) {
   );
 }
 
-function isGiftTx(tx: WalletTransaction) {
-  return tx.entryType === "gift_in" || tx.entryType === "gift_out" || Boolean(tx.senderName || tx.recipientName);
+function isPartyTx(tx: WalletTransaction) {
+  return Boolean(
+    tx.senderName ||
+      tx.recipientName ||
+      tx.senderWalletMasked ||
+      tx.recipientWalletMasked ||
+      tx.entryType === "gift_in" ||
+      tx.entryType === "gift_out" ||
+      tx.entryType === "qr_pay" ||
+      tx.entryType === "booking_pay",
+  );
 }
 
 export function WalletTransactionReceiptSheet({ tx, open, onOpenChange }: Props) {
@@ -82,7 +91,7 @@ export function WalletTransactionReceiptSheet({ tx, open, onOpenChange }: Props)
       : `−${formatWalletTxAmount(tx.amount)}`;
 
   const direction = tx.kind === "in" ? "Kirim" : "Chiqim";
-  const gift = isGiftTx(tx);
+  const party = isPartyTx(tx);
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -122,10 +131,16 @@ export function WalletTransactionReceiptSheet({ tx, open, onOpenChange }: Props)
           </div>
 
           <div className="px-4">
-            {gift && (tx.senderName || tx.recipientName) ? (
+            {party ? (
               <div className="space-y-0">
                 {tx.senderName ? <DetailRow label="Yuboruvchi" value={tx.senderName} /> : null}
+                {tx.senderWalletMasked ? (
+                  <DetailRow label="Yuboruvchi hamyon" value={tx.senderWalletMasked} />
+                ) : null}
                 {tx.recipientName ? <DetailRow label="Oluvchi" value={tx.recipientName} /> : null}
+                {tx.recipientWalletMasked ? (
+                  <DetailRow label="Oluvchi hamyon" value={tx.recipientWalletMasked} />
+                ) : null}
               </div>
             ) : null}
 

@@ -9,6 +9,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from accounts.permissions import IsAdmin
+from accounts.throttles import WalletQrPayThrottle, WalletQrResolveThrottle
 from barbers.permissions import IsBarber
 from wallet.models import QrPayment
 from wallet.services.qr_pay import (
@@ -131,6 +132,7 @@ class BarberQrPayPaymentsView(APIView):
 
 class WalletQrPayResolveView(APIView):
     permission_classes = [IsAuthenticated]
+    throttle_classes = [WalletQrResolveThrottle]
 
     def get(self, request):
         raw = (
@@ -148,6 +150,7 @@ class WalletQrPayResolveView(APIView):
 
 class WalletQrPayView(APIView):
     permission_classes = [IsAuthenticated]
+    throttle_classes = [WalletQrPayThrottle]
 
     def post(self, request):
         raw = (

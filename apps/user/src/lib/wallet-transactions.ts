@@ -20,6 +20,8 @@ export interface WalletTransaction {
   /** Gift / transfer parties for receipt */
   senderName?: string;
   recipientName?: string;
+  senderWalletMasked?: string;
+  recipientWalletMasked?: string;
   message?: string;
 }
 

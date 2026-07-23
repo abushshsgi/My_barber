@@ -225,3 +225,27 @@ class BarberPromoThrottle(SimpleRateThrottle):
         else:
             ident = self.get_ident(request)
         return self.cache_format % {"scope": self.scope, "ident": ident}
+
+
+class WalletQrPayThrottle(SimpleRateThrottle):
+    """QR to'lov — flood / brute-force himoya."""
+
+    scope = "wallet_qr_pay"
+
+    def get_cache_key(self, request, view):
+        if request.user and request.user.is_authenticated:
+            ident = f"u{getattr(request.user, 'pk', None)}:{self.get_ident(request)}"
+        else:
+            ident = self.get_ident(request)
+        return self.cache_format % {"scope": self.scope, "ident": ident}
+
+
+class WalletQrResolveThrottle(SimpleRateThrottle):
+    scope = "wallet_qr_resolve"
+
+    def get_cache_key(self, request, view):
+        if request.user and request.user.is_authenticated:
+            ident = f"u{getattr(request.user, 'pk', None)}:{self.get_ident(request)}"
+        else:
+            ident = self.get_ident(request)
+        return self.cache_format % {"scope": self.scope, "ident": ident}

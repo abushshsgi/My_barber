@@ -47,3 +47,27 @@ def normalize_wallet_number(value: str) -> str:
 def card_display_from_wallet_number(wallet_number: str) -> str:
     raw = normalize_wallet_number(wallet_number)
     return f"•••• {raw[-4:]}"
+
+
+def mask_wallet_number(wallet_number: str) -> str:
+    """Chek / UI uchun: ****4444 (oxirgi 4 raqam)."""
+    raw = normalize_wallet_number(wallet_number)
+    if len(raw) < 4:
+        return "****"
+    return f"****{raw[-4:]}"
+
+
+def generate_barber_account_number(barber_id: int, *, attempt: int = 0) -> str:
+    """Sartarosh MySaloon hisob raqami (HMAC, Luhn). Prefiks 8800."""
+    msg = f"barber:{barber_id}:attempt:{attempt}".encode("utf-8")
+    digest = hmac.new(_wallet_secret(), msg, hashlib.sha256).hexdigest()
+    body_digits = "".join(str(int(c, 16) % 10) for c in digest[:11])
+    base15 = f"8800{body_digits}"
+    check = _luhn_check_digit(base15)
+    raw16 = base15 + check
+    return format_wallet_number(raw16)
+
+
+def account_hash(account_number: str) -> str:
+    raw = normalize_wallet_number(account_number)
+    return hmac.new(_wallet_secret(), f"acct:{raw}".encode("utf-8"), hashlib.sha256).hexdigest()

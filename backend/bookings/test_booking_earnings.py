@@ -134,9 +134,11 @@ class BookingEarningsPaymentTests(TestCase):
         self.assertEqual(res.status_code, status.HTTP_201_CREATED)
         booking = Booking.objects.get(pk=res.json()["id"])
         self.assertEqual(booking.payment_method, Booking.PaymentMethod.ONLINE)
-        self.assertEqual(booking.payment_status, Booking.PaymentStatus.PAID)
+        self.assertEqual(booking.payment_status, Booking.PaymentStatus.HELD)
 
         self._complete_booking(booking)
+        booking.refresh_from_db()
+        self.assertEqual(booking.payment_status, Booking.PaymentStatus.PAID)
 
         self.client.credentials(HTTP_AUTHORIZATION=self.barber_auth)
         fin = self.client.get("/api/v1/barber/finance/summary/")

@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Copy, Loader2, QrCode, RefreshCw, ToggleLeft, ToggleRight } from "lucide-react";
+import { Loader2, QrCode, RefreshCw, ToggleLeft, ToggleRight } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/barber/primitives";
@@ -57,6 +57,7 @@ function BarberQrPayPage() {
     queryKey: ["barber", "qr-pay", "profile"],
     queryFn: async () => apiFetch<QrProfile>("/api/v1/barber/qr-pay/profile/"),
     enabled: fullyReady,
+    refetchInterval: 60_000,
   });
 
   const paymentsQ = useQuery({
@@ -98,17 +99,6 @@ function BarberQrPayPage() {
 
   const display = activeRequest ?? profileQ.data;
   const qrUrl = display?.qr_image_url;
-  const payload = display?.payload ?? "";
-
-  const copyPayload = async () => {
-    if (!payload) return;
-    try {
-      await navigator.clipboard.writeText(payload);
-      toast.success("QR kod nusxalandi");
-    } catch {
-      toast.error("Nusxa olinmadi");
-    }
-  };
 
   const payments = paymentsQ.data?.results ?? [];
   const total = useMemo(
@@ -167,8 +157,13 @@ function BarberQrPayPage() {
           </div>
 
           <div className="mt-3 flex gap-2">
-            <Button type="button" variant="outline" className="flex-1" onClick={() => void copyPayload()}>
-              <Copy className="mr-1.5 size-4" /> Nusxa
+            <Button
+              type="button"
+              variant="outline"
+              className="flex-1"
+              onClick={() => void profileQ.refetch()}
+            >
+              <RefreshCw className="mr-1.5 size-4" /> QR yangilash
             </Button>
             {activeRequest ? (
               <Button
@@ -177,11 +172,13 @@ function BarberQrPayPage() {
                 className="flex-1"
                 onClick={() => setActiveRequest(null)}
               >
-                <RefreshCw className="mr-1.5 size-4" /> Doimiy QR
+                Doimiy QR
               </Button>
             ) : null}
           </div>
-          <p className="mt-2 break-all font-mono text-[10px] text-muted-foreground">{payload}</p>
+          <p className="mt-2 text-center text-[11px] text-muted-foreground">
+            QR 15 daqiqada yangilanadi — faqat skaner orqali to&apos;lov
+          </p>
         </div>
 
         <div className="space-y-4">

@@ -1,7 +1,8 @@
-"""Barber payout request and balance APIs."""
+"""Barber payout request and balance APIs — MySaloon hisobidan."""
 
 from decimal import Decimal
 
+from django.db import transaction
 from django.db.models import Sum
 from django.utils import timezone
 from rest_framework import generics, status
@@ -10,31 +11,16 @@ from rest_framework.views import APIView
 
 from accounts.throttles import BarberPayoutThrottle, BarberWriteThrottle
 from barbers.permissions import IsBarber
-from bookings.models import Booking
-from bookings.earnings import barber_platform_earnings_qs
 from control_panel.models import Payout
+from wallet.services.barber_wallet import BarberWalletService
+from wallet.services.wallet_service import InsufficientBalanceError, WalletServiceError
 
 MIN_WITHDRAWAL_UZS = Decimal("50000")
 
 
 def _barber_available_balance(barber) -> Decimal:
-    income = barber_platform_earnings_qs(barber).aggregate(t=Sum("total_price"))["t"] or 0
-    from barbers.models import BarberExpense
-    from wallet.services.qr_pay import QrPayService
-
-    expenses = (
-        BarberExpense.objects.filter(barber=barber).aggregate(t=Sum("amount"))["t"] or 0
-    )
-    pending = (
-        Payout.objects.filter(
-            barber=barber,
-            status=Payout.Status.PENDING,
-        ).aggregate(t=Sum("amount"))["t"]
-        or 0
-    )
-    qr_income = QrPayService.barber_qr_income_total(barber)
-    gross = Decimal(str(income)) + Decimal(str(qr_income)) - Decimal(str(expenses))
-    return max(Decimal("0"), gross - Decimal(str(pending)))
+    wallet = BarberWalletService.ensure_wallet(barber)
+    return max(Decimal("0"), Decimal(str(wallet.balance)))
 
 
 class BarberPayoutBalanceView(APIView):
@@ -42,17 +28,22 @@ class BarberPayoutBalanceView(APIView):
 
     def get(self, request):
         barber = request.user.barber
+        wallet = BarberWalletService.ensure_wallet(barber)
         pending = (
             Payout.objects.filter(barber=barber, status=Payout.Status.PENDING).aggregate(
                 t=Sum("amount")
             )["t"]
             or 0
         )
+        snap = BarberWalletService.public_snapshot(barber)
         return Response(
             {
-                "available_balance": str(_barber_available_balance(barber)),
+                "available_balance": str(wallet.balance),
                 "pending_payouts": str(pending),
                 "min_withdrawal": str(MIN_WITHDRAWAL_UZS),
+                "account_number": snap["account_number"],
+                "account_masked": snap["account_masked"],
+                "account_hash": snap["account_hash"],
             }
         )
 
@@ -93,13 +84,13 @@ class BarberPayoutRequestView(APIView):
                 {"detail": f"Minimal yechish summasi {MIN_WITHDRAWAL_UZS} so'm."},
                 status=400,
             )
-        available = _barber_available_balance(barber)
-        if amount > available:
-            return Response({"detail": "Balans yetarli emas."}, status=400)
 
         account_ref = str(request.data.get("account_reference", "") or "").strip()
         if len(account_ref) < 4:
             return Response({"detail": "Hisob raqami yoki karta ma'lumotini kiriting."}, status=400)
+
+        holder = str(request.data.get("payout_holder_name", "") or "").strip()
+        bank = str(request.data.get("payout_bank_name", "") or "").strip()
 
         idempotency = str(request.data.get("idempotency_key", "") or "").strip()
         if idempotency:
@@ -117,14 +108,45 @@ class BarberPayoutRequestView(APIView):
                     status=200,
                 )
 
-        period = timezone.now().strftime("%Y-%m-%d")
-        payout = Payout.objects.create(
-            barber=barber,
-            period=period,
-            amount=amount,
-            status=Payout.Status.PENDING,
-            reference=idempotency or account_ref[:120],
-        )
+        try:
+            with transaction.atomic():
+                available = _barber_available_balance(barber)
+                if amount > available:
+                    return Response({"detail": "Balans yetarli emas."}, status=400)
+
+                period = timezone.now().strftime("%Y-%m-%d")
+                payout = Payout.objects.create(
+                    barber=barber,
+                    period=period,
+                    amount=amount,
+                    status=Payout.Status.PENDING,
+                    reference=idempotency or account_ref[:120],
+                )
+                BarberWalletService.debit_payout(
+                    barber=barber,
+                    amount=amount,
+                    payout_id=payout.id,
+                    metadata={
+                        "account_reference": account_ref[:120],
+                        "holder": holder[:120],
+                        "bank": bank[:120],
+                    },
+                )
+                # Bank ma'lumotlarini saqlash
+                from barbers.models import BarberSetting
+
+                settings, _ = BarberSetting.objects.get_or_create(barber=barber)
+                if holder:
+                    settings.payout_holder_name = holder[:120]
+                if bank:
+                    settings.payout_bank_name = bank[:120]
+                settings.payout_account_last4 = account_ref[-4:]
+                settings.payout_account_encrypted = account_ref[:64]
+                settings.save()
+        except InsufficientBalanceError as exc:
+            return Response({"detail": str(exc)}, status=400)
+        except WalletServiceError as exc:
+            return Response({"detail": str(exc)}, status=400)
 
         try:
             from notifications.utils import notify_barber

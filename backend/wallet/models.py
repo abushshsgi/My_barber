@@ -344,3 +344,71 @@ class QrPayment(models.Model):
 
     def __str__(self) -> str:
         return f"QrPay {self.amount} → barber {self.barber_id}"
+
+
+class BarberWallet(models.Model):
+    """Sartaroshning MySaloon ichidagi yagona himoyalangan hisob raqami."""
+
+    barber = models.OneToOneField(
+        "barbers.Barber",
+        on_delete=models.CASCADE,
+        related_name="mysaloon_wallet",
+    )
+    account_number = models.CharField(max_length=19, unique=True, db_index=True)
+    account_hash = models.CharField(max_length=64, unique=True, db_index=True)
+    balance = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    is_locked = models.BooleanField(default=False, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        return f"BarberWallet {self.account_number} (barber {self.barber_id})"
+
+
+class BarberLedgerEntry(models.Model):
+    class EntryType(models.TextChoices):
+        BOOKING_IN = "booking_in", "Booking release"
+        QR_IN = "qr_in", "QR payment in"
+        PAYOUT_OUT = "payout_out", "Payout request"
+        PAYOUT_REFUND = "payout_refund", "Payout rejected refund"
+        OPENING = "opening", "Opening balance"
+        ADJUSTMENT = "adjustment", "Adjustment"
+        REFUND_OUT = "refund_out", "Booking refund clawback"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    wallet = models.ForeignKey(
+        BarberWallet,
+        on_delete=models.PROTECT,
+        related_name="ledger_entries",
+    )
+    entry_type = models.CharField(max_length=32, choices=EntryType.choices, db_index=True)
+    amount = models.DecimalField(max_digits=14, decimal_places=2)
+    balance_after = models.DecimalField(max_digits=14, decimal_places=2)
+    reference_type = models.CharField(max_length=64, blank=True, default="")
+    reference_id = models.CharField(max_length=64, blank=True, default="")
+    idempotency_key = models.CharField(max_length=128, unique=True, db_index=True)
+    prev_hash = models.CharField(max_length=64)
+    entry_hash = models.CharField(max_length=64, db_index=True)
+    metadata = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ["created_at"]
+        indexes = [
+            models.Index(fields=["wallet", "created_at"]),
+            models.Index(fields=["entry_type", "created_at"]),
+        ]
+
+    def save(self, *args, **kwargs):
+        if self.pk and BarberLedgerEntry.objects.filter(pk=self.pk).exists():
+            raise PermissionError("Barber ledger entries are immutable.")
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        raise PermissionError("Barber ledger entries are immutable.")
+
+    def __str__(self) -> str:
+        return f"{self.entry_type} {self.amount} (barber_wallet {self.wallet_id})"

@@ -1,11 +1,11 @@
 import { Link } from "@tanstack/react-router";
-import { ArrowUpRight, CalendarCheck, Sparkles, Wallet } from "lucide-react";
+import { ArrowUpRight, CalendarCheck, Sparkles } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 
 type NewsItem = {
   id: string;
-  icon: typeof Wallet;
+  icon: typeof CalendarCheck;
   titleKey: string;
   defaultTitle: string;
   bodyKey: string;
@@ -37,16 +37,6 @@ const NEWS_ITEMS: NewsItem[] = [
     defaultBody: "AI stil va bonuslar — balansdan bir zumda.",
     to: "/wallet",
     search: { section: "subscriptions", plan: "pro" },
-    tone: "soft",
-  },
-  {
-    id: "topup",
-    icon: Wallet,
-    titleKey: "walletPage.news.topUpTitle",
-    defaultTitle: "Tez to'ldirish",
-    bodyKey: "walletPage.news.topUpBody",
-    defaultBody: "Click, Payme yoki kartadan balansni to'ldiring.",
-    to: "/wallet/top-up",
     tone: "soft",
   },
 ];

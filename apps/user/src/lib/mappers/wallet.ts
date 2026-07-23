@@ -131,6 +131,14 @@ export function mapLedgerEntry(entry: ApiLedgerEntry): WalletTransaction {
     typeof meta.sender_name === "string" ? meta.sender_name.trim() || undefined : undefined;
   const recipientName =
     typeof meta.recipient_name === "string" ? meta.recipient_name.trim() || undefined : undefined;
+  const senderWalletMasked =
+    typeof meta.sender_wallet_masked === "string"
+      ? meta.sender_wallet_masked.trim() || undefined
+      : undefined;
+  const recipientWalletMasked =
+    typeof meta.recipient_wallet_masked === "string"
+      ? meta.recipient_wallet_masked.trim() || undefined
+      : undefined;
   const message =
     typeof meta.message === "string" ? meta.message.trim().slice(0, 120) || undefined : undefined;
 
@@ -152,6 +160,8 @@ export function mapLedgerEntry(entry: ApiLedgerEntry): WalletTransaction {
     adminReason,
     senderName,
     recipientName,
+    senderWalletMasked,
+    recipientWalletMasked,
     message,
   };
 }

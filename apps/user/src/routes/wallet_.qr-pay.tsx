@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Loader2, QrCode, ScanLine, Wallet } from "lucide-react";
+import { Loader2, QrCode, ScanLine, ShieldCheck, Wallet } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -27,6 +27,7 @@ type ResolveResult = {
   request: { id: string; amount: string; note: string; expires_at: string | null } | null;
   min_amount: string;
   max_amount: string;
+  account_masked?: string;
 };
 
 type PayResult = {
@@ -46,10 +47,9 @@ function QrPayPanel() {
   const { t } = useTranslation();
   const qc = useQueryClient();
   const { balance } = useWalletBalance();
-  const [raw, setRaw] = useState("");
+  const [scannedPayload, setScannedPayload] = useState("");
   const [resolved, setResolved] = useState<ResolveResult | null>(null);
   const [amount, setAmount] = useState("");
-  const [note, setNote] = useState("");
   const [scanning, setScanning] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -59,15 +59,16 @@ function QrPayPanel() {
       apiJson<ResolveResult>(`/api/v1/wallet/qr-pay/resolve/?code=${encodeURIComponent(code)}`),
     onSuccess: (data) => {
       setResolved(data);
+      setScannedPayload(data.payload);
       if (data.request && Number(data.request.amount) > 0) {
         setAmount(String(Math.round(Number(data.request.amount))));
       }
-      if (data.request?.note) setNote(data.request.note);
       toast.success(`${data.barber.full_name} topildi`);
     },
     onError: (e: Error & { body?: { detail?: string } }) => {
       toast.error(e.body?.detail || e.message || "QR topilmadi");
       setResolved(null);
+      setScannedPayload("");
     },
   });
 
@@ -77,17 +78,15 @@ function QrPayPanel() {
         method: "POST",
         headers: { "Idempotency-Key": idemKey() },
         body: JSON.stringify({
-          payload: resolved?.payload || raw,
+          payload: scannedPayload || resolved?.payload,
           amount: amount ? Number(amount) : undefined,
-          note,
         }),
       }),
     onSuccess: async (data) => {
       toast.success(`To'landi: ${formatPrice(Number(data.amount))} → ${data.barber_name}`);
       setResolved(null);
-      setRaw("");
+      setScannedPayload("");
       setAmount("");
-      setNote("");
       await qc.invalidateQueries({ queryKey: walletMeQueryKeyFor(getAuthUserId()) });
       await qc.invalidateQueries({ queryKey: ["wallet", "transactions"] });
     },
@@ -102,9 +101,15 @@ function QrPayPanel() {
       streamRef.current = null;
       return;
     }
-    const Detector = (window as unknown as { BarcodeDetector?: new (o?: { formats?: string[] }) => { detect: (s: CanvasImageSource) => Promise<{ rawValue: string }[]> } }).BarcodeDetector;
+    const Detector = (
+      window as unknown as {
+        BarcodeDetector?: new (o?: { formats?: string[] }) => {
+          detect: (s: CanvasImageSource) => Promise<{ rawValue: string }[]>;
+        };
+      }
+    ).BarcodeDetector;
     if (!Detector) {
-      toast.error("Bu qurilmada kamera skaner yo'q — kodni qo'lda kiriting.");
+      toast.error("Bu brauzerda kamera skaner yo'q. Chrome yoki yangi Safari ishlating.");
       setScanning(false);
       return;
     }
@@ -134,10 +139,9 @@ function QrPayPanel() {
           try {
             const codes = await detector.detect(videoRef.current);
             for (const c of codes) {
-              if (c.rawValue.includes("qrpay") || c.rawValue.length >= 8) {
+              if (c.rawValue.includes("mysaloon:qrpay:")) {
                 stopped = true;
                 setScanning(false);
-                setRaw(c.rawValue);
                 resolveMut.mutate(c.rawValue);
                 return;
               }
@@ -169,53 +173,62 @@ function QrPayPanel() {
 
   return (
     <div className="space-y-5 pb-8">
-      <div className="rounded-[24px] bg-foreground px-4 py-4 text-background">
-        <p className="text-[10px] font-bold uppercase tracking-wider opacity-65">Hamyon balansi</p>
-        <p className="mt-1 text-2xl font-bold tabular-nums">{formatPrice(balance)}</p>
-        <p className="mt-1 text-[11px] opacity-70">Sartarosh QR kodini skanerlab to'lang</p>
+      <div className="overflow-hidden rounded-[28px] bg-foreground px-5 py-5 text-background">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-wider opacity-65">Hamyon</p>
+            <p className="mt-1 text-2xl font-bold tabular-nums">{formatPrice(balance)}</p>
+          </div>
+          <span className="grid size-10 place-items-center rounded-2xl bg-background/15">
+            <ShieldCheck className="size-5" />
+          </span>
+        </div>
+        <p className="mt-3 text-[12px] leading-relaxed opacity-75">
+          Faqat sartarosh QR kodini kameradan skanerlab to&apos;lang. Kodni qo&apos;lda yozib
+          bo&apos;lmaydi.
+        </p>
       </div>
 
-      <div className="rounded-[22px] border border-border bg-card p-4">
-        <div className="flex gap-2">
-          <Button
-            type="button"
-            variant={scanning ? "default" : "outline"}
-            className="flex-1"
-            onClick={() => setScanning((v) => !v)}
-          >
-            <ScanLine className="mr-1.5 size-4" />
-            {scanning ? "To'xtatish" : "Skaner"}
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            className="flex-1"
-            disabled={!raw.trim() || resolveMut.isPending}
-            onClick={() => resolveMut.mutate(raw.trim())}
-          >
-            {resolveMut.isPending ? <Loader2 className="size-4 animate-spin" /> : "Tekshirish"}
-          </Button>
-        </div>
+      <div className="rounded-[24px] border border-border bg-card p-4">
+        <Button
+          type="button"
+          className="h-12 w-full rounded-2xl text-sm font-bold"
+          variant={scanning ? "secondary" : "default"}
+          onClick={() => setScanning((v) => !v)}
+        >
+          <ScanLine className="mr-2 size-4" />
+          {scanning ? "Skanerni to'xtatish" : "QR skanerlash"}
+        </Button>
 
         {scanning ? (
-          <div className="mt-3 overflow-hidden rounded-2xl bg-black">
-            <video ref={videoRef} className="aspect-[4/3] w-full object-cover" muted playsInline />
+          <div className="relative mt-4 overflow-hidden rounded-[22px] bg-black">
+            <video ref={videoRef} className="aspect-[3/4] w-full object-cover" muted playsInline />
+            <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+              <div className="h-48 w-48 rounded-3xl border-2 border-white/80 shadow-[0_0_0_9999px_rgba(0,0,0,0.35)]" />
+            </div>
+            <p className="absolute inset-x-0 bottom-3 text-center text-[11px] font-semibold text-white/90">
+              QR ni ramka ichiga joylashtiring
+            </p>
+          </div>
+        ) : (
+          <div className="mt-4 rounded-2xl bg-surface px-4 py-6 text-center">
+            <QrCode className="mx-auto size-8 text-muted-foreground" />
+            <p className="mt-2 text-sm font-semibold">Kamerani oching</p>
+            <p className="mt-1 text-[12px] text-muted-foreground">
+              Sartarosh ekranidagi MySaloon QR ni skanerlang
+            </p>
+          </div>
+        )}
+
+        {resolveMut.isPending ? (
+          <div className="mt-3 flex items-center justify-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="size-4 animate-spin" /> Tekshirilmoqda…
           </div>
         ) : null}
-
-        <label className="mt-3 block text-[11px] font-semibold text-muted-foreground">
-          QR kod / kod
-        </label>
-        <input
-          value={raw}
-          onChange={(e) => setRaw(e.target.value)}
-          placeholder="mysaloon:qrpay:v1:..."
-          className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2.5 font-mono text-xs"
-        />
       </div>
 
       {resolved ? (
-        <div className="space-y-3 rounded-[22px] border border-border bg-card p-4">
+        <div className="space-y-3 rounded-[24px] border border-border bg-card p-4">
           <div className="flex items-center gap-3">
             <span className="grid size-11 place-items-center rounded-2xl bg-surface">
               <QrCode className="size-5" />
@@ -223,7 +236,7 @@ function QrPayPanel() {
             <div className="min-w-0">
               <p className="truncate text-sm font-bold">{resolved.barber.full_name}</p>
               <p className="text-[11px] text-muted-foreground">
-                {resolved.barber.phone || `Kod · ${resolved.public_code}`}
+                Hisob · {resolved.account_masked || "****"}
               </p>
             </div>
           </div>
@@ -237,16 +250,9 @@ function QrPayPanel() {
             className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm font-bold tabular-nums disabled:opacity-70"
           />
 
-          <label className="block text-[11px] font-semibold text-muted-foreground">Izoh</label>
-          <input
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm"
-          />
-
           <Button
             type="button"
-            className="w-full"
+            className="h-11 w-full rounded-2xl font-bold"
             disabled={payMut.isPending || !amount}
             onClick={() => payMut.mutate()}
           >
@@ -289,9 +295,9 @@ function WalletQrPayRoute() {
       }
       desktop={
         <div className="mx-auto max-w-lg px-6 py-8">
-          <h1 className="text-2xl font-semibold tracking-tight">QR to'lov</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">QR to&apos;lov</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Sartarosh QR kodini skanerlab hamyondan to'lang.
+            Faqat kamera orqali skaner — xavfsiz to&apos;lov.
           </p>
           <div className="mt-6">
             <QrPayPanel />

@@ -391,6 +391,8 @@ REST_FRAMEWORK = {
         "barber_broadcast": "5/day",
         "barber_promo": "20/day",
         "referral": "60/minute",
+        "wallet_qr_pay": "12/minute",
+        "wallet_qr_resolve": "30/minute",
     },
 }
 

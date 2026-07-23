@@ -111,6 +111,16 @@ class WalletTransactionsView(ListAPIView):
             meta.setdefault("recipient_user_id", recipient.pk)
             meta.setdefault("design_id", gift.design_id)
             meta.setdefault("message", (gift.message or "")[:200])
+            from wallet.services.wallet_number import mask_wallet_number
+
+            meta.setdefault(
+                "sender_wallet_masked",
+                mask_wallet_number(gift.sender_wallet.wallet_number),
+            )
+            meta.setdefault(
+                "recipient_wallet_masked",
+                mask_wallet_number(gift.recipient_wallet.wallet_number),
+            )
             row["metadata"] = meta
         return response
 

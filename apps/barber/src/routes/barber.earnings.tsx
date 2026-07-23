@@ -202,7 +202,7 @@ function EarningsPage() {
       <div className="rounded-2xl bg-foreground text-background p-6 sm:p-8 shadow-card">
         <div className="flex items-center gap-2 text-xs uppercase tracking-wider opacity-70">
           <Wallet className="size-3.5" />
-          Hamyon balansi (karta / onlayn)
+          MySaloon hisob balansi
         </div>
         <div className="font-heading text-4xl sm:text-5xl font-semibold mt-2">
           {balancePending ? (
@@ -214,7 +214,7 @@ function EarningsPage() {
           )}
         </div>
         <div className="text-sm opacity-70 mt-2">
-          Faqat onlayn to&apos;lovlar yechiladi
+          Hisob · {(balance as { account_masked?: string } | undefined)?.account_masked || "****"}
           {balance?.pending_payouts
             ? ` · kutilayotgan: ${formatUZS(Number(balance.pending_payouts))}`
             : null}
@@ -359,13 +359,21 @@ function EarningsPage() {
         </div>
       </div>
 
-      <div className="mb-4 flex flex-wrap gap-2">
-        <Link
-          to="/barber/qr-pay"
-          className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-card px-3 py-2 text-xs font-bold"
-        >
-          QR to'lov qabul qilish
-        </Link>
+      <div className="rounded-xl border border-border bg-card p-5 shadow-card">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="font-heading text-lg font-semibold">QR to&apos;lov</h2>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              Mijozlar QR skanerlashi orqali to&apos;laydi — pul shu hisobga tushadi
+            </p>
+          </div>
+          <Link
+            to="/barber/qr-pay"
+            className="inline-flex items-center gap-1.5 rounded-xl bg-foreground px-3 py-2 text-xs font-bold text-background"
+          >
+            QR ochish
+          </Link>
+        </div>
       </div>
 
       <div className="rounded-xl border border-border bg-card overflow-hidden shadow-card">

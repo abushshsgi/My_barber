@@ -32,6 +32,7 @@ import {
   ArrowLeftRight,
   Banknote,
   QrCode,
+  Hash,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MysaloonLogo } from "@/components/brand/MysaloonLogo";
@@ -94,13 +95,23 @@ const SECTIONS: Section[] = [
     ],
   },
   {
+    key: "accounts",
+    label: "Hisob raqam",
+    icon: Hash,
+    matchPrefixes: ["/admin/hisob-raqam", "/admin/payouts", "/admin/finance/qr-payments"],
+    items: [
+      { to: "/admin/hisob-raqam", label: "Sartarosh hisoblari", icon: Hash },
+      { to: "/admin/payouts", label: "Payouts", icon: Banknote },
+      { to: "/admin/finance/qr-payments", label: "QR to'lovlar", icon: QrCode },
+    ],
+  },
+  {
     key: "gifts",
     label: "Sovg'a kartalar",
     icon: Gift,
-    matchPrefixes: ["/admin/finance/gifts", "/admin/finance/gift-designs", "/admin/finance/qr-payments"],
+    matchPrefixes: ["/admin/finance/gifts", "/admin/finance/gift-designs"],
     items: [
       { to: "/admin/finance/gifts", label: "Sovg'a oqimi", icon: Gift },
-      { to: "/admin/finance/qr-payments", label: "QR to'lovlar", icon: QrCode },
       { to: "/admin/finance/gift-designs", label: "Dizaynlar", icon: Sparkles },
       { to: "/admin/statistics/wallet", label: "Hamyon nazorati", icon: ShieldCheck },
     ],
@@ -114,15 +125,6 @@ const SECTIONS: Section[] = [
       { to: "/admin/ledger", label: "ID / Hash qidiruv", icon: Fingerprint },
       { to: "/admin/statistics/wallet", label: "Hamyon oqimi", icon: Wallet },
       { to: "/admin/audit", label: "Audit log", icon: History },
-    ],
-  },
-  {
-    key: "payouts",
-    label: "Payout",
-    icon: Banknote,
-    matchPrefixes: ["/admin/payouts"],
-    items: [
-      { to: "/admin/payouts", label: "Yechish so'rovlari", icon: Banknote },
     ],
   },
   {

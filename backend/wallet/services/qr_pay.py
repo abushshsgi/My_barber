@@ -1,13 +1,17 @@
-"""QR orqali mijoz → sartarosh to'lovi."""
+"""QR orqali mijoz → sartarosh to'lovi (faqat imzolangan QR payload)."""
 
 from __future__ import annotations
 
+import hashlib
+import hmac
 import re
 import secrets
+import time
 from datetime import timedelta
 from decimal import Decimal, ROUND_DOWN
 from uuid import UUID
 
+from django.conf import settings
 from django.db import transaction
 from django.db.models import Sum
 from django.utils import timezone
@@ -21,6 +25,8 @@ from wallet.models import (
     QrPaymentRequest,
     Wallet,
 )
+from wallet.services.barber_wallet import BarberWalletService
+from wallet.services.wallet_number import mask_wallet_number
 from wallet.services.wallet_service import (
     InsufficientBalanceError,
     WalletService,
@@ -30,34 +36,67 @@ from wallet.services.wallet_service import (
 MIN_QR_AMOUNT = Decimal("1000")
 MAX_QR_AMOUNT = Decimal("5000000")
 QR_PAYLOAD_PREFIX = "mysaloon:qrpay:v1:"
+QR_PAYLOAD_PREFIX_V2 = "mysaloon:qrpay:v2:"
 _CODE_RE = re.compile(r"^[a-z0-9]{8,24}$")
+# Resolve / pay: payload muddati (soniyalar)
+QR_TOKEN_TTL_SEC = 15 * 60
+
+
+def _qr_hmac_secret() -> bytes:
+    raw = getattr(settings, "WALLET_HMAC_SECRET", None) or settings.SECRET_KEY
+    return f"qrpay:{raw}".encode("utf-8")
+
+
+def _sign_parts(*parts: str) -> str:
+    msg = "|".join(parts).encode("utf-8")
+    return hmac.new(_qr_hmac_secret(), msg, hashlib.sha256).hexdigest()[:24]
 
 
 def build_qr_payload(*, public_code: str, request_id: str | None = None) -> str:
+    """Imzolangan QR payload — qo'lda yozib to'lov qilib bo'lmaydi."""
     code = (public_code or "").strip().lower()
-    if request_id:
-        return f"{QR_PAYLOAD_PREFIX}{code}:{request_id}"
-    return f"{QR_PAYLOAD_PREFIX}{code}"
+    exp = str(int(time.time()) + QR_TOKEN_TTL_SEC)
+    rid = (request_id or "").strip()
+    sig = _sign_parts(code, rid, exp)
+    if rid:
+        return f"{QR_PAYLOAD_PREFIX_V2}{code}:{rid}:{exp}:{sig}"
+    return f"{QR_PAYLOAD_PREFIX_V2}{code}::{exp}:{sig}"
 
 
 def parse_qr_payload(raw: str) -> tuple[str, str | None]:
-    """Return (public_code, request_id|None)."""
+    """Return (public_code, request_id|None). Faqat QR payload qabul qilinadi."""
     text = (raw or "").strip()
     if not text:
         raise WalletServiceError("QR kod bo'sh.")
-    # Allow bare code too
-    if text.startswith(QR_PAYLOAD_PREFIX):
-        body = text[len(QR_PAYLOAD_PREFIX) :]
-    elif text.startswith("mysaloon:qrpay:"):
-        body = text.split(":", 2)[-1]
-    else:
-        body = text
-    parts = body.split(":")
-    code = (parts[0] or "").strip().lower()
-    if not _CODE_RE.match(code):
-        raise WalletServiceError("QR kod noto'g'ri.")
-    request_id = parts[1].strip() if len(parts) > 1 and parts[1].strip() else None
-    return code, request_id
+
+    # Faqat rasmiy prefix — oddiy kod yozib to'lov yo'q
+    if text.startswith(QR_PAYLOAD_PREFIX_V2):
+        body = text[len(QR_PAYLOAD_PREFIX_V2) :]
+        parts = body.split(":")
+        if len(parts) < 4:
+            raise WalletServiceError("QR kod noto'g'ri yoki muddati o'tgan.")
+        code = (parts[0] or "").strip().lower()
+        request_id = parts[1].strip() or None
+        exp_s = parts[2].strip()
+        sig = parts[3].strip()
+        if not _CODE_RE.match(code):
+            raise WalletServiceError("QR kod noto'g'ri.")
+        try:
+            exp = int(exp_s)
+        except ValueError as exc:
+            raise WalletServiceError("QR kod muddati noto'g'ri.") from exc
+        if exp < int(time.time()):
+            raise WalletServiceError("QR kod muddati o'tgan — yangi QR skanerlang.")
+        expected = _sign_parts(code, request_id or "", exp_s)
+        if not hmac.compare_digest(sig, expected):
+            raise WalletServiceError("QR imzo noto'g'ri — faqat skaner orqali to'lang.")
+        return code, request_id
+
+    if text.startswith(QR_PAYLOAD_PREFIX) or text.startswith("mysaloon:qrpay:"):
+        # Eski format: yangi QR so'rang (xavfsizlik)
+        raise WalletServiceError("Eski QR. Sartarosh yangi QR chiqarsin.")
+
+    raise WalletServiceError("Faqat MySaloon QR skaner orqali to'lov qilinadi.")
 
 
 def _new_public_code() -> str:
@@ -67,6 +106,7 @@ def _new_public_code() -> str:
 class QrPayService:
     @classmethod
     def ensure_profile(cls, barber: Barber) -> BarberQrPayProfile:
+        BarberWalletService.ensure_wallet(barber)
         existing = BarberQrPayProfile.objects.filter(barber=barber).first()
         if existing:
             return existing
@@ -125,6 +165,7 @@ class QrPayService:
         barber = profile.barber
         if not barber.is_active:
             raise WalletServiceError("Sartarosh faol emas.")
+        BarberWalletService.ensure_wallet(barber)
         req = None
         if request_id:
             try:
@@ -143,12 +184,14 @@ class QrPayService:
                 req.save(update_fields=["status"])
                 raise WalletServiceError("QR so'rov muddati o'tgan.")
 
+        # Har resolve da yangi imzoli payload (replay oynasini qisqartirish)
+        fresh_payload = build_qr_payload(
+            public_code=profile.public_code,
+            request_id=str(req.id) if req else None,
+        )
         return {
             "public_code": profile.public_code,
-            "payload": build_qr_payload(
-                public_code=profile.public_code,
-                request_id=str(req.id) if req else None,
-            ),
+            "payload": fresh_payload,
             "barber": {
                 "id": barber.id,
                 "full_name": (barber.full_name or barber.username or "").strip() or "Sartarosh",
@@ -166,6 +209,9 @@ class QrPayService:
             ),
             "min_amount": str(MIN_QR_AMOUNT),
             "max_amount": str(MAX_QR_AMOUNT),
+            "account_masked": mask_wallet_number(
+                BarberWalletService.ensure_wallet(barber).account_number
+            ),
         }
 
     @classmethod
@@ -185,6 +231,7 @@ class QrPayService:
         if existing:
             return existing
 
+        # Faqat imzolangan QR
         resolved = cls.resolve(raw=raw_or_code)
         barber_id = resolved["barber"]["id"]
         barber = Barber.objects.get(pk=barber_id)
@@ -212,6 +259,7 @@ class QrPayService:
         if not clean_note and resolved.get("request"):
             clean_note = (resolved["request"].get("note") or "")[:200]
         wallet = WalletService.ensure_wallet(payer)
+        barber_wallet = BarberWalletService.ensure_wallet(barber)
 
         with transaction.atomic():
             locked = Wallet.objects.select_for_update().get(pk=wallet.pk)
@@ -248,6 +296,10 @@ class QrPayService:
                 "barber_name": (barber.full_name or barber.username or "").strip(),
                 "payer_user_id": payer.pk,
                 "payer_name": (payer.full_name or payer.phone or str(payer.pk)).strip(),
+                "sender_name": (payer.full_name or payer.phone or str(payer.pk)).strip(),
+                "recipient_name": (barber.full_name or barber.username or "").strip(),
+                "sender_wallet_masked": mask_wallet_number(locked.wallet_number),
+                "recipient_wallet_masked": mask_wallet_number(barber_wallet.account_number),
                 "note": clean_note,
                 "request_id": str(req.id) if req else "",
                 "action": "qr_pay",
@@ -260,6 +312,18 @@ class QrPayService:
                 reference_type="qr_payment",
                 reference_id=str(payment.id),
                 metadata=meta,
+            )
+            BarberWalletService.credit_qr(
+                barber=barber,
+                amount=pay_amount,
+                payment_id=payment.id,
+                metadata={
+                    "payer_id": payer.pk,
+                    "payer_name": meta["payer_name"],
+                    "payer_wallet_masked": meta["sender_wallet_masked"],
+                    "barber_account_masked": meta["recipient_wallet_masked"],
+                    "note": clean_note,
+                },
             )
             fin = FinanceTransaction.objects.create(
                 type=FinanceTransaction.Type.QR_PAY,

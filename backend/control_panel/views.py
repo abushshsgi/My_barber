@@ -1352,6 +1352,17 @@ class AdminPayoutRejectView(APIView):
         before = {"status": p.status}
         p.status = Payout.Status.FAILED
         p.save(update_fields=["status"])
+        try:
+            from wallet.services.barber_wallet import BarberWalletService
+
+            BarberWalletService.refund_payout(
+                barber=p.barber,
+                amount=p.amount,
+                payout_id=p.id,
+                metadata={"reason": "admin_reject"},
+            )
+        except Exception:
+            pass
         _audit(
             request,
             "update",

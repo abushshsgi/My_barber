@@ -252,6 +252,11 @@ from wallet.qr_pay_views import (
     WalletQrPayResolveView,
     WalletQrPayView,
 )
+from wallet.admin_accounts_views import (
+    AdminBarberAccountDetailView,
+    AdminBarberAccountLockView,
+    AdminBarberAccountsView,
+)
 from wallet.payment_confirm import PaymentConfirmView
 from wallet.payment_views import PaymentCheckoutView, PaymentProvidersView
 from wallet.views import (
@@ -379,6 +384,11 @@ api_routes = [
     path("admin/finance/gifts/<uuid:pk>/verify-chains/", AdminGiftVerifyChainsView.as_view()),
     path("admin/finance/qr-payments/", AdminQrPaymentListView.as_view()),
     path("admin/finance/qr-payments/<uuid:pk>/", AdminQrPaymentDetailView.as_view()),
+    path("admin/accounts/", AdminBarberAccountsView.as_view()),
+    path("admin/accounts/<int:barber_id>/", AdminBarberAccountDetailView.as_view()),
+    path("admin/accounts/<int:barber_id>/lock/", AdminBarberAccountLockView.as_view()),
+    path("admin/hisob-raqam/", AdminBarberAccountsView.as_view()),
+    path("admin/hisob-raqam/<int:barber_id>/", AdminBarberAccountDetailView.as_view()),
     path("admin/finance/gift-designs/", AdminGiftDesignsAnalyticsView.as_view()),
     path("admin/ledger/suggest/", AdminLedgerSuggestView.as_view()),
     path("admin/ledger/lookup/", AdminLedgerLookupView.as_view()),

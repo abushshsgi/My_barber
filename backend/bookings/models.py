@@ -18,6 +18,7 @@ class Booking(models.Model):
     class PaymentStatus(models.TextChoices):
         NOT_APPLICABLE = "not_applicable", "N/A"
         PENDING = "pending", "Pending"
+        HELD = "held", "Held in escrow"
         PAID = "paid", "Paid"
         REFUNDED = "refunded", "Refunded"
 
