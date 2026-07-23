@@ -365,6 +365,7 @@ type Ctx = {
   removeSalonImage: (imageId: number) => Promise<boolean>;
   setSalonCoverFromGallery: (imageId: number) => Promise<boolean>;
   uploadSalonCover: (file: File) => Promise<boolean>;
+  clearSalonCover: () => Promise<boolean>;
   updateSalonProfile: (payload: {
     name?: string;
     description?: string;
@@ -1154,6 +1155,17 @@ export function BarberProvider({ children }: { children: ReactNode }) {
     [refreshSalonView, salon.id],
   );
 
+  const clearSalonCoverApi = useCallback(async () => {
+    if (!salon.id) return false;
+    const res = await apiFetch(`/api/v1/salons/${salon.id}/clear_cover/`, {
+      method: "POST",
+      body: JSON.stringify({}),
+    });
+    if (!res.ok) return false;
+    await refreshSalonView();
+    return true;
+  }, [refreshSalonView, salon.id]);
+
   const updateSalonProfileApi = useCallback(
     async (payload: {
       name?: string;
@@ -1516,6 +1528,7 @@ export function BarberProvider({ children }: { children: ReactNode }) {
       removeSalonImage: (imageId) => removeSalonImageApi(imageId),
       setSalonCoverFromGallery: (imageId) => setSalonCoverFromGalleryApi(imageId),
       uploadSalonCover: (file) => uploadSalonCoverApi(file),
+      clearSalonCover: () => clearSalonCoverApi(),
       updateSalonProfile: (payload) => updateSalonProfileApi(payload),
       refreshSalonView,
       sendSupportTicket: (payload) => sendSupportTicketApi(payload),
@@ -1573,6 +1586,7 @@ export function BarberProvider({ children }: { children: ReactNode }) {
       removeSalonImageApi,
       setSalonCoverFromGalleryApi,
       uploadSalonCoverApi,
+      clearSalonCoverApi,
       updateSalonProfileApi,
       refreshSalonView,
       sendSupportTicketApi,

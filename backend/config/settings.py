@@ -289,12 +289,17 @@ if _volume_mount:
 
 # Media persistence:
 # 1) USE_S3_MEDIA=true → S3/R2
-# 2) USE_LOCAL_MEDIA=true yoki DEBUG → lokal disk (dev)
-# 3) default → Postgres DatabaseMediaStorage (deployda yo‘qolmaydi)
-# Eslatma: RAILWAY volume bo‘lsa ham productionda DB saqlash — disk ephemeral bo‘lishi mumkin.
+# 2) USE_LOCAL_MEDIA=true → lokal disk (faqat aniq so‘ralganda)
+# 3) default → Postgres DatabaseMediaStorage (Neon) — deployda yo‘qolmaydi
+# Eslatma: DEBUG=true bo‘lsa ham Neon/prod da DB — disk ephemeral.
 USE_S3_MEDIA = os.environ.get("USE_S3_MEDIA", "").lower() in ("1", "true", "yes")
 _force_db_media = os.environ.get("USE_DB_MEDIA", "").lower() in ("1", "true", "yes")
 _force_local_media = os.environ.get("USE_LOCAL_MEDIA", "").lower() in ("1", "true", "yes")
+_database_url = os.environ.get("DATABASE_URL", "") or os.environ.get("DATABASE_PRIVATE_URL", "")
+_is_managed_db = any(
+    host in _database_url
+    for host in ("neon.tech", "railway", "amazonaws.com", "supabase.co", "postgres.railway")
+)
 USE_DB_MEDIA = False
 
 if USE_S3_MEDIA:
@@ -320,11 +325,11 @@ if USE_S3_MEDIA:
         MEDIA_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/"
     elif AWS_STORAGE_BUCKET_NAME and not AWS_S3_ENDPOINT_URL:
         MEDIA_URL = f"https://{AWS_STORAGE_BUCKET_NAME}.s3.{AWS_S3_REGION_NAME}.amazonaws.com/"
-elif _force_local_media or (DEBUG and not _force_db_media):
-    # Lokal/dev disk
+elif _force_local_media:
+    # Faqat aniq so‘ralganda lokal disk
     USE_DB_MEDIA = False
-elif _force_db_media or not DEBUG:
-    # Production default — Postgres (redeployda rasmlar qoladi)
+elif _force_db_media or not DEBUG or _is_managed_db:
+    # Production / Neon / managed Postgres — baytlar StoredMedia jadvalida
     USE_DB_MEDIA = True
     STORAGES = {
         "default": {

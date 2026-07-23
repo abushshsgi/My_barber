@@ -670,7 +670,35 @@ class SalonViewSet(viewsets.ModelViewSet):
                 {"detail": "Faqat rasm fayli yuklash mumkin."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+        # Eski muqovani storage (Postgres StoredMedia / disk) dan o‘chiramiz
+        if salon.cover_image:
+            try:
+                salon.cover_image.delete(save=False)
+            except Exception:
+                pass
         salon.cover_image.save(f.name, f, save=True)
+        salon.refresh_from_db()
+        return Response(
+            SalonDetailSerializer(salon, context={"request": request}).data
+        )
+
+    @action(detail=True, methods=["post"], permission_classes=[IsAuthenticatedBarberAware])
+    def clear_cover(self, request, pk=None):
+        """Salon muqova rasmini o‘chirish (galereya rasmlari saqlanadi)."""
+        salon = self.get_object()
+        bp = request_barber(request)
+        if bp is None or salon.owner_barber_id != bp.id:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        if salon.cover_image:
+            try:
+                salon.cover_image.delete(save=True)
+            except Exception:
+                salon.cover_image = None
+                salon.save(update_fields=["cover_image"])
+        else:
+            salon.cover_image = None
+            salon.save(update_fields=["cover_image"])
+        salon.refresh_from_db()
         return Response(
             SalonDetailSerializer(salon, context={"request": request}).data
         )
@@ -689,9 +717,15 @@ class SalonViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         si = get_object_or_404(SalonImage, pk=si_id, salon=salon)
+        if salon.cover_image:
+            try:
+                salon.cover_image.delete(save=False)
+            except Exception:
+                pass
         with si.image.open("rb") as src:
             name = si.image.name.split("/")[-1] or "cover.jpg"
             salon.cover_image.save(name, File(src), save=True)
+        salon.refresh_from_db()
         return Response(
             SalonDetailSerializer(salon, context={"request": request}).data
         )
@@ -743,9 +777,15 @@ class SalonViewSet(viewsets.ModelViewSet):
                 {"detail": "image_id majburiy."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        deleted = SalonImage.objects.filter(pk=image_id, salon=salon).delete()[0]
-        if not deleted:
+        si = SalonImage.objects.filter(pk=image_id, salon=salon).first()
+        if si is None:
             return Response({"detail": "Rasm topilmadi."}, status=status.HTTP_404_NOT_FOUND)
+        try:
+            if si.image:
+                si.image.delete(save=False)
+        except Exception:
+            pass
+        si.delete()
         for idx, img in enumerate(salon.images.order_by("sort_order", "id")):
             SalonImage.objects.filter(pk=img.pk).update(sort_order=idx)
         return Response({"status": "ok"})
