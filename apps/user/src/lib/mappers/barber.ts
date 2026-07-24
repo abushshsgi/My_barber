@@ -19,6 +19,7 @@ export type BarberDiscovery = {
   paymentMethods: { code: string; label: string }[];
   priceFrom: number;
   servicesPreview: string[];
+  gender?: "male" | "female" | "";
 };
 
 function toNum(v: string | number | null | undefined, fallback = 0): number {
@@ -49,5 +50,6 @@ export function mapBarberDiscovery(api: ApiBarberPublic): BarberDiscovery {
     paymentMethods: api.payment_methods ?? [],
     priceFrom: prices.length ? Math.min(...prices) : 0,
     servicesPreview: services.slice(0, 3).map((s) => s.name),
+    gender: api.gender || "",
   };
 }

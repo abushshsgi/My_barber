@@ -259,6 +259,7 @@ class SalonListSerializer(serializers.ModelSerializer):
             "latitude",
             "longitude",
             "address",
+            "business_kind",
             "premium",
             "is_published",
             "rating_avg",
@@ -346,6 +347,7 @@ class SalonDetailSerializer(serializers.ModelSerializer):
             "longitude",
             "address",
             "phone",
+            "business_kind",
             "premium",
             "languages",
             "closed_weekdays",
@@ -562,6 +564,7 @@ class SalonCreateUpdateSerializer(serializers.ModelSerializer):
             "longitude",
             "address",
             "phone",
+            "business_kind",
             "premium",
             "languages",
             "closed_weekdays",
@@ -570,6 +573,17 @@ class SalonCreateUpdateSerializer(serializers.ModelSerializer):
             "services",
             "amenity_codes",
         )
+
+    def validate_business_kind(self, value):
+        v = (value or "").strip()
+        if not v:
+            return ""
+        valid = {c[0] for c in Salon.BusinessKind.choices}
+        if v not in valid:
+            raise serializers.ValidationError(
+                "Salon turi noto‘g‘ri. Sartaroshxona yoki go‘zallik salonini tanlang."
+            )
+        return v
 
     def validate(self, attrs):
         name = attrs.get("name")

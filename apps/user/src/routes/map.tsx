@@ -10,7 +10,7 @@ import { MapErrorBoundary } from "@/components/map/MapErrorBoundary";
 import { MapSalonSheet } from "@/components/map/MapSalonSheet";
 import { MapAreaSkeleton, MapMobileSheetSkeleton } from "@/components/map/MapLoadingSkeleton";
 import { SalonMap, type SalonMapHandle, type SalonMapMarker, type SalonMapViewport } from "@/components/map/SalonMap";
-import { resolveMapAudienceFilter, useAudience } from "@/hooks/use-audience";
+import { resolveMapAudienceFilter, matchBarberGender, useAudience } from "@/hooks/use-audience";
 import { useIsLgUp } from "@/hooks/use-mobile";
 import { useRecommendContext } from "@/hooks/use-recommend-context";
 import { useSalonsList, useSalonsNearby, useSalonSearch } from "@/hooks/use-salons";
@@ -326,11 +326,12 @@ function MapView() {
     discoveryTab === "salons" ? nearbyError || listError : barbersError || listBarbersError;
 
   const filteredBarbers = useMemo(() => {
+    const genderFiltered = baseBarbers.filter((b) => matchBarberGender(b.gender, mapAudience));
     if (apiSearchActive) {
-      return applyMapBarberFilters(baseBarbers, filters);
+      return applyMapBarberFilters(genderFiltered, filters);
     }
     const q = query.trim().toLowerCase();
-    const searchFiltered = baseBarbers.filter((b) => {
+    const searchFiltered = genderFiltered.filter((b) => {
       if (!q) return true;
       return (
         b.name.toLowerCase().includes(q) ||
@@ -338,7 +339,7 @@ function MapView() {
       );
     });
     return applyMapBarberFilters(searchFiltered, filters);
-  }, [query, baseBarbers, filters, apiSearchActive]);
+  }, [query, baseBarbers, filters, apiSearchActive, mapAudience]);
 
   const visibleBarbers = useMemo(() => {
     if (!viewport) return filteredBarbers;

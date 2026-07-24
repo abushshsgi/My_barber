@@ -7,16 +7,19 @@ import { authQueryEnabled } from "@/lib/auth-query";
 import { mapRatingSummary, mapStaffToBarber } from "@/lib/mappers/salon";
 import { mergeRatingSummary } from "@/lib/salon-rating-summary";
 import { useSalonDetail } from "@/hooks/use-salons";
+import { matchBarberGender, useAudience } from "@/hooks/use-audience";
 import i18n from "@/i18n/config";
 
 export function useSalonPage(id: string) {
   const detail = useSalonDetail(id);
+  const { audience } = useAudience();
   const lang = i18n.language?.split("-")[0] ?? "uz";
   const detailReady = Boolean(detail.data);
 
   const staffRaw = useQuery({
-    queryKey: ["salons", id, "staff"],
-    queryFn: () => fetchSalonStaff(id),
+    queryKey: ["salons", id, "staff", audience],
+    queryFn: () =>
+      fetchSalonStaff(id, audience === "all" ? undefined : { audience }),
     enabled: detailReady,
     staleTime: 60_000,
   });
@@ -24,8 +27,10 @@ export function useSalonPage(id: string) {
   const staffMapped = useMemo(() => {
     const rows = Array.isArray(staffRaw.data) ? staffRaw.data : [];
     const services = detail.data?.services ?? [];
-    return rows.map((r) => mapStaffToBarber(r, id, services));
-  }, [staffRaw.data, detail.data?.services, id]);
+    return rows
+      .map((r) => mapStaffToBarber(r, id, services))
+      .filter((b) => matchBarberGender(b.gender, audience));
+  }, [staffRaw.data, detail.data?.services, id, audience]);
 
   const reviews = useQuery({
     queryKey: ["reviews", "salon", id],

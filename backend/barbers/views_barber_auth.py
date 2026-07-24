@@ -240,6 +240,7 @@ class BarberMeView(APIView):
                 "email": b.email,
                 "full_name": b.full_name,
                 "phone": b.phone,
+                "gender": b.gender or "",
                 "avatar": avatar_url,
                 "role": "BARBER",
                 "work_mode": b.work_mode,
@@ -263,6 +264,7 @@ class BarberMeView(APIView):
         full_name = request.data.get("full_name")
         phone = request.data.get("phone")
         region = request.data.get("region")
+        gender = request.data.get("gender")
         if full_name is not None:
             b.full_name = str(full_name).strip()
         if phone is not None:
@@ -281,6 +283,13 @@ class BarberMeView(APIView):
             b.phone = normalized
         if region is not None:
             b.region = str(region).strip()
+        if gender is not None:
+            g = str(gender).strip()
+            if g and g not in {c[0] for c in Barber.Gender.choices}:
+                raise ValidationError(
+                    {"gender": "Jins noto‘g‘ri. Erkak yoki ayolni tanlang."}
+                )
+            b.gender = g
         avatar = request.FILES.get("avatar")
         if avatar is not None:
             b.avatar = avatar
@@ -299,6 +308,7 @@ class BarberMeView(APIView):
                 "email": b.email,
                 "full_name": b.full_name,
                 "phone": b.phone,
+                "gender": b.gender or "",
                 "avatar": avatar_url,
                 "role": "BARBER",
                 "work_mode": b.work_mode,

@@ -27,8 +27,8 @@ class BarberServiceInline(admin.TabularInline):
 
 @admin.register(Barber)
 class BarberAdmin(admin.ModelAdmin):
-    list_display = ("email", "full_name", "is_active", "date_joined")
-    list_filter = ("is_active", "region")
+    list_display = ("email", "full_name", "gender", "is_active", "date_joined")
+    list_filter = ("gender", "is_active", "region")
     search_fields = ("email", "full_name", "phone")
     ordering = ("-date_joined",)
 

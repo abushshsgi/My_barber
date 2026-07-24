@@ -78,6 +78,9 @@ def _persist(validated_data: dict[str, Any]) -> Barber:
     staff_count = validated_data.pop("staff_count_at_signup", 1)
     work_mode = validated_data.pop("work_mode", Barber.WorkMode.SALON)
     onboarding_flow = (validated_data.pop("onboarding_flow", "") or "").strip()
+    gender = (validated_data.pop("gender", "") or "").strip()
+    if gender and gender not in {c[0] for c in Barber.Gender.choices}:
+        gender = ""
     if not onboarding_flow:
         onboarding_flow = Barber.OnboardingFlow.OWNER
     business_kind = (validated_data.pop("business_kind", "") or "").strip()
@@ -88,6 +91,7 @@ def _persist(validated_data: dict[str, Any]) -> Barber:
             username=email,
             phone=phone,
             full_name=full_name,
+            gender=gender,
             region=region,
             work_mode=work_mode,
             onboarding_flow=onboarding_flow,

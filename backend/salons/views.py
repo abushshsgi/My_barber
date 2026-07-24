@@ -145,6 +145,28 @@ class SalonViewSet(viewsets.ModelViewSet):
             return qs.filter(owner_barber__region=region)
         return qs
 
+    def _apply_audience_salon_type(self, qs):
+        """
+        audience=men → sartaroshxona; audience=women → go‘zallik.
+        business_kind=barbershop|beauty_salon — to‘g‘ridan-to‘g‘ri filtr.
+        """
+        r = self.request.query_params
+        business_kind = (r.get("business_kind") or r.get("salon_type") or "").strip().lower()
+        audience = (r.get("audience") or "").strip().lower()
+        if business_kind == "beauty":
+            business_kind = Salon.BusinessKind.BEAUTY_SALON
+        if business_kind in (Salon.BusinessKind.BARBERSHOP, Salon.BusinessKind.BEAUTY_SALON):
+            return qs.filter(business_kind=business_kind)
+        if audience == "men":
+            return qs.filter(
+                Q(business_kind=Salon.BusinessKind.BARBERSHOP) | Q(business_kind="")
+            )
+        if audience == "women":
+            return qs.filter(
+                Q(business_kind=Salon.BusinessKind.BEAUTY_SALON) | Q(business_kind="")
+            )
+        return qs
+
     def get_queryset(self):
         qs = Salon.objects.select_related("owner", "owner_barber")
         if self.action == "retrieve":
@@ -157,7 +179,9 @@ class SalonViewSet(viewsets.ModelViewSet):
             )
 
         if self.action == "list":
-            qs = self._apply_public_salon_region(self._salon_public_list_qs())
+            qs = self._apply_audience_salon_type(
+                self._apply_public_salon_region(self._salon_public_list_qs())
+            )
             ids_param = (self.request.query_params.get("ids") or "").strip()
             if ids_param:
                 id_list = []
@@ -170,7 +194,9 @@ class SalonViewSet(viewsets.ModelViewSet):
             return qs
 
         if self.action == "nearby":
-            return self._apply_public_salon_region(self._salon_public_list_qs())
+            return self._apply_audience_salon_type(
+                self._apply_public_salon_region(self._salon_public_list_qs())
+            )
 
         if self.action == "retrieve":
             bp = request_barber(self.request)
@@ -313,6 +339,7 @@ class SalonViewSet(viewsets.ModelViewSet):
                 qs = qs.filter(owner_barber__region=br)
         else:
             qs = self._apply_public_salon_region(qs)
+        qs = self._apply_audience_salon_type(qs)
         qs = qs.order_by("name")[:30]
         out = []
         for s in qs:
@@ -398,11 +425,24 @@ class SalonViewSet(viewsets.ModelViewSet):
             "role": role,
             "experience_years": experience_years,
             "is_bookable": is_bookable,
+            "gender": barber.gender or "",
         }
+
+    @staticmethod
+    def _staff_matches_audience(barber, audience: str, gender: str) -> bool:
+        if gender in (Barber.Gender.MALE, Barber.Gender.FEMALE):
+            return (barber.gender or "") == gender or not (barber.gender or "")
+        if audience == "men":
+            return (barber.gender or "") in ("", Barber.Gender.MALE)
+        if audience == "women":
+            return (barber.gender or "") in ("", Barber.Gender.FEMALE)
+        return True
 
     @action(detail=True, methods=["get"], permission_classes=[AllowAny])
     def staff(self, request, pk=None):
         salon = self.get_object()
+        audience = (request.query_params.get("audience") or "").strip().lower()
+        gender = (request.query_params.get("gender") or "").strip().lower()
         out = []
         seen: set[int] = set()
 
@@ -419,7 +459,11 @@ class SalonViewSet(viewsets.ModelViewSet):
                 )
                 .first()
             )
-            if owner_mem and barber_is_staff_listable(owner, salon):
+            if (
+                owner_mem
+                and barber_is_staff_listable(owner, salon)
+                and self._staff_matches_audience(owner, audience, gender)
+            ):
                 out.append(
                     self._staff_row(
                         request,
@@ -447,6 +491,8 @@ class SalonViewSet(viewsets.ModelViewSet):
         for m in mems:
             b = m.barber
             if not barber_is_publicly_visible(b):
+                continue
+            if not self._staff_matches_audience(b, audience, gender):
                 continue
             out.append(
                 self._staff_row(

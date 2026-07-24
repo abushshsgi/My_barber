@@ -26,11 +26,23 @@ class Barber(models.Model):
         BARBERSHOP = "barbershop", "Sartaroshxona"
         BEAUTY_SALON = "beauty_salon", "Go'zallik saloni"
 
+    class Gender(models.TextChoices):
+        MALE = "male", "Erkak"
+        FEMALE = "female", "Ayol"
+
     email = models.EmailField(unique=True, db_index=True)
     username = models.CharField(max_length=150, unique=True)
     password = models.CharField(max_length=128)
     full_name = models.CharField(max_length=255, blank=True)
     phone = models.CharField(max_length=32, blank=True, null=True, unique=True)
+    gender = models.CharField(
+        max_length=16,
+        choices=Gender.choices,
+        blank=True,
+        default="",
+        db_index=True,
+        help_text="Erkak mijozlarga erkak ustalar; ayollarga ayol ustalar.",
+    )
     avatar = models.ImageField(upload_to="barbers/avatars/", blank=True, null=True)
     region = models.CharField(
         max_length=32,

@@ -11,6 +11,7 @@ import {
   audienceToCategory,
   categoriesForAudience,
   matchAudience,
+  matchBarberGender,
   useAudience,
 } from "@/hooks/use-audience";
 import { useHairstyles } from "@/hooks/use-hairstyles";
@@ -108,11 +109,14 @@ export function useHomeData() {
     return rankBarbersForUser(base, ctx);
   }, [searchActive, searchBarbers, hasCoords, nearbyBarbers, listBarbers, ctx]);
 
-  const filteredBarbers = browseBarbers;
+  const filteredBarbers = useMemo(
+    () => browseBarbers.filter((b) => matchBarberGender(b.gender, audience)),
+    [browseBarbers, audience],
+  );
 
   const mixedDiscovery = useMemo(
-    () => buildMixedDiscoveryItems(filtered.slice(0, 10), browseBarbers.slice(0, 10), 14),
-    [filtered, browseBarbers],
+    () => buildMixedDiscoveryItems(filtered.slice(0, 10), filteredBarbers.slice(0, 10), 14),
+    [filtered, filteredBarbers],
   );
 
   const trending = useMemo(() => {

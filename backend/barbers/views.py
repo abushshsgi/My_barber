@@ -108,9 +108,18 @@ class BarberPublicViewSet(viewsets.ReadOnlyModelViewSet):
         name_q = (r.get("name_q") or "").strip()
         available_date = (r.get("available_date") or "").strip()
         work_mode = (r.get("work_mode") or "").strip().lower()
+        gender = (r.get("gender") or "").strip().lower()
+        audience = (r.get("audience") or "").strip().lower()
 
         if work_mode == "independent":
             qs = qs.filter(barber__work_mode=Barber.WorkMode.INDEPENDENT)
+
+        if gender in (Barber.Gender.MALE, Barber.Gender.FEMALE):
+            qs = qs.filter(Q(barber__gender=gender) | Q(barber__gender=""))
+        elif audience == "men":
+            qs = qs.filter(Q(barber__gender=Barber.Gender.MALE) | Q(barber__gender=""))
+        elif audience == "women":
+            qs = qs.filter(Q(barber__gender=Barber.Gender.FEMALE) | Q(barber__gender=""))
 
         try:
             min_p = float(min_price) if min_price not in (None, "") else None

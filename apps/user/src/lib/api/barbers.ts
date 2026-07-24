@@ -22,8 +22,11 @@ export async function fetchBarbersNearby(
   lat: number,
   lng: number,
   radiusKm = 15,
+  params?: { audience?: string },
 ): Promise<import("./types").ApiBarberPublic[]> {
-  return apiJson(`/api/v1/barbers/nearby/${qs({ lat, lng, radius_km: radiusKm })}`);
+  return apiJson(
+    `/api/v1/barbers/nearby/${qs({ lat, lng, radius_km: radiusKm, audience: params?.audience })}`,
+  );
 }
 
 export async function findBarbers(q: string): Promise<import("./types").ApiBarberPublic[]> {
@@ -32,10 +35,11 @@ export async function findBarbers(q: string): Promise<import("./types").ApiBarbe
 
 export async function fetchBarbersList(params?: {
   region?: string;
+  audience?: string;
 }): Promise<import("./types").ApiBarberPublic[]> {
   const body = await apiJson<
     import("./types").ApiBarberPublic[] | import("./types").Paginated<import("./types").ApiBarberPublic>
-  >(`/api/v1/barbers/${qs({ region: params?.region })}`);
+  >(`/api/v1/barbers/${qs({ region: params?.region, audience: params?.audience })}`);
   if (Array.isArray(body)) return body;
   return Array.isArray(body.results) ? body.results : [];
 }

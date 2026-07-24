@@ -1,6 +1,5 @@
 import { apiJson } from "./client";
 import { apiList } from "./list-utils";
-import { apiList } from "./list-utils";
 import type { ApiSalonDetail, ApiSalonList, ApiSalonRatingSummary, ApiSalonStaff, ApiService } from "./types";
 import type { ApiNearbySalon } from "./types";
 
@@ -13,7 +12,12 @@ function qs(params: Record<string, string | number | undefined>): string {
   return s ? `?${s}` : "";
 }
 
-export async function fetchSalons(params?: { ids?: string; region?: string }): Promise<ApiSalonList[]> {
+export async function fetchSalons(params?: {
+  ids?: string;
+  region?: string;
+  audience?: string;
+  business_kind?: string;
+}): Promise<ApiSalonList[]> {
   return apiList<ApiSalonList>(`/api/v1/salons/${qs(params ?? {})}`);
 }
 
@@ -21,8 +25,11 @@ export async function fetchSalon(id: string | number): Promise<ApiSalonDetail> {
   return apiJson<ApiSalonDetail>(`/api/v1/salons/${id}/`);
 }
 
-export async function fetchSalonStaff(id: string | number): Promise<ApiSalonStaff[]> {
-  return apiList<ApiSalonStaff>(`/api/v1/salons/${id}/staff/`);
+export async function fetchSalonStaff(
+  id: string | number,
+  params?: { audience?: string },
+): Promise<ApiSalonStaff[]> {
+  return apiList<ApiSalonStaff>(`/api/v1/salons/${id}/staff/${qs(params ?? {})}`);
 }
 
 export async function fetchSalonBarberServices(

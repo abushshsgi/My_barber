@@ -23,6 +23,7 @@ export interface Barber {
   isBookable?: boolean;
   independent?: boolean;
   salonId?: string;
+  gender?: "male" | "female" | "";
 }
 
 export interface Review {

@@ -172,6 +172,18 @@ export function matchAudience(itemAudience: Audience, filter: AudienceFilter): b
   return itemAudience === filter;
 }
 
+/** Usta jinsi: erkak → male, ayol → female. Bo‘sh gender eski ma’lumotlar uchun o‘tkaziladi. */
+export function matchBarberGender(
+  gender: "male" | "female" | "" | undefined,
+  filter: AudienceFilter,
+): boolean {
+  if (filter === "all") return true;
+  if (!gender) return true;
+  if (filter === "men") return gender === "male";
+  if (filter === "women") return gender === "female";
+  return true;
+}
+
 export function categoriesForAudience(a: AudienceFilter): (Category | "all")[] {
   if (a === "men") return ["all", "barber"];
   if (a === "women") return ["all", "beauty", "nails"];

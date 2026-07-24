@@ -22,8 +22,8 @@ class ServiceInline(admin.TabularInline):
 
 @admin.register(Salon)
 class SalonAdmin(admin.ModelAdmin):
-    list_display = ("name", "owner_barber", "owner", "premium", "is_published", "created_at")
-    list_filter = ("premium", "is_published", "created_at", "updated_at")
+    list_display = ("name", "business_kind", "owner_barber", "owner", "premium", "is_published", "created_at")
+    list_filter = ("business_kind", "premium", "is_published", "created_at", "updated_at")
     search_fields = ("name", "slug", "owner_barber__email", "owner_barber__full_name", "owner__email", "address")
     autocomplete_fields = ("owner_barber", "owner")
     date_hierarchy = "created_at"

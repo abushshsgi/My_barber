@@ -37,6 +37,10 @@ import { finishOnboardingAndGo } from "@/lib/onboarding-complete";
 import { useBarberPhoneAvailability } from "@/lib/barber-phone-availability";
 import { uzRegionCodeFromLabel } from "@/lib/uz-regions";
 import { requestGpsLocation } from "@/lib/geo-location";
+import {
+  BarberGenderPicker,
+  type BarberGenderValue,
+} from "@/components/auth/AudienceTypePickers";
 
 type Service = { id: string; name: string; price: string; duration: string };
 
@@ -103,6 +107,7 @@ export function MyBarberSetupPage() {
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
+  const [gender, setGender] = useState<BarberGenderValue | "">("");
   const [phoneDigits, setPhoneDigits] = useState("");
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
@@ -194,7 +199,11 @@ export function MyBarberSetupPage() {
     const lng = Number(salonLongitude);
     return [
       nick.length >= 2 && nick.length <= 200 && `MyBarber · ${nick}`.length <= 255,
-      firstName.trim().length > 1 && lastName.trim().length > 1 && phoneDigits.length === 9 && !phoneError,
+      firstName.trim().length > 1 &&
+        lastName.trim().length > 1 &&
+        phoneDigits.length === 9 &&
+        !!gender &&
+        !phoneError,
       salonCity.trim().length > 1 &&
         salonAddress.trim().length > 2 &&
         Number.isFinite(lat) &&
@@ -210,6 +219,7 @@ export function MyBarberSetupPage() {
     salonNick,
     firstName,
     lastName,
+    gender,
     phoneDigits,
     phoneError,
     salonCity,
@@ -330,6 +340,7 @@ export function MyBarberSetupPage() {
         const fd = new FormData();
         fd.append("full_name", fullName);
         fd.append("phone", barberPhone);
+        if (gender) fd.append("gender", gender);
         if (regionCode) fd.append("region", regionCode);
         fd.append("avatar", avatarFile);
         const meRes = await apiFetch("/api/v1/barber/auth/me/", {
@@ -348,6 +359,7 @@ export function MyBarberSetupPage() {
           body: JSON.stringify({
             full_name: fullName,
             phone: barberPhone,
+            ...(gender ? { gender } : {}),
             ...(regionCode ? { region: regionCode } : {}),
           }),
         });
@@ -569,6 +581,8 @@ export function MyBarberSetupPage() {
                 setFirstName={setFirstName}
                 lastName={lastName}
                 setLastName={setLastName}
+                gender={gender}
+                setGender={setGender}
                 phoneDigits={phoneDigits}
                 setPhoneDigits={(v) => {
                   setPhoneDigits(v);
@@ -965,6 +979,8 @@ function ProfileStep(props: {
   setFirstName: (v: string) => void;
   lastName: string;
   setLastName: (v: string) => void;
+  gender: BarberGenderValue | "";
+  setGender: (v: BarberGenderValue) => void;
   phoneDigits: string;
   setPhoneDigits: (v: string) => void;
   phoneError?: string | null;
@@ -982,6 +998,7 @@ function ProfileStep(props: {
       title="Barber haqida"
       description="Mijozlar sizni shu ism va rasm bilan ko'radi."
     >
+      <BarberGenderPicker value={props.gender} onChange={props.setGender} />
       <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start sm:gap-5">
         <div className="relative">
           <input

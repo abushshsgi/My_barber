@@ -166,6 +166,7 @@ export async function submitEmployeeRegisterAndJoin(payload: {
   salon_id: number;
   latitude: number;
   longitude: number;
+  gender?: string;
 }): Promise<void> {
   const draft = readSignupDraft();
   const password = draft?.password ?? getSignupPassword();
@@ -186,6 +187,7 @@ export async function submitEmployeeRegisterAndJoin(payload: {
       salon_id: payload.salon_id,
       latitude: roundCoord6(payload.latitude),
       longitude: roundCoord6(payload.longitude),
+      ...(payload.gender ? { gender: payload.gender } : {}),
     }),
   });
   const body = await parseJsonSafe(res);

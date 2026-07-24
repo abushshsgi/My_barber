@@ -234,6 +234,7 @@ class BarberPublicListSerializer(BarberPublicContextMixin, serializers.ModelSeri
     avatar = serializers.SerializerMethodField()
     barber_id = serializers.IntegerField(source="barber.id", read_only=True)
     region = serializers.CharField(source="barber.region", read_only=True)
+    gender = serializers.CharField(source="barber.gender", read_only=True, allow_blank=True)
     avg_rating = serializers.FloatField(read_only=True, allow_null=True)
     review_count = serializers.IntegerField(read_only=True, allow_null=True)
     active_services = serializers.SerializerMethodField()
@@ -259,6 +260,7 @@ class BarberPublicListSerializer(BarberPublicContextMixin, serializers.ModelSeri
             "amenities",
             "work_location",
             "payment_methods",
+            "gender",
         )
 
     def get_avatar(self, obj):
@@ -279,6 +281,7 @@ class BarberPublicDetailSerializer(BarberPublicContextMixin, serializers.ModelSe
     avatar = serializers.SerializerMethodField()
     barber_id = serializers.IntegerField(source="barber.id", read_only=True)
     region = serializers.CharField(source="barber.region", read_only=True)
+    gender = serializers.CharField(source="barber.gender", read_only=True, allow_blank=True)
     avg_rating = serializers.FloatField(read_only=True, allow_null=True)
     review_count = serializers.IntegerField(read_only=True, allow_null=True)
     services = serializers.SerializerMethodField()
@@ -306,6 +309,7 @@ class BarberPublicDetailSerializer(BarberPublicContextMixin, serializers.ModelSe
             "amenities",
             "work_location",
             "payment_methods",
+            "gender",
         )
 
     def get_services(self, obj):

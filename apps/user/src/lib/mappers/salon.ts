@@ -15,7 +15,17 @@ function audienceForCategory(category: Category): Audience {
   return "unisex";
 }
 
+function resolveFromBusinessKind(
+  businessKind: ApiSalonList["business_kind"] | undefined,
+): { category: Category; audience: Audience } | null {
+  if (businessKind === "barbershop") return { category: "barber", audience: "men" };
+  if (businessKind === "beauty_salon") return { category: "beauty", audience: "women" };
+  return null;
+}
+
 function resolveCategory(api: ApiSalonList): Category {
+  const fromKind = resolveFromBusinessKind(api.business_kind);
+  if (fromKind) return fromKind.category;
   const name = api.name.toLowerCase();
   if (/nail|gel pro|manicure|polish/i.test(name)) return "nails";
   if (/spa|wellness|harmony|zen|oasis|serenity|retreat|calm|hammom|massaj|glow|beauty|silk|luxe|chic|rose|elite|viva|pearl|femme|studio/i.test(name)) {
@@ -25,6 +35,8 @@ function resolveCategory(api: ApiSalonList): Category {
 }
 
 function resolveCategoryAndAudience(api: ApiSalonList): { category: Category; audience: Audience } {
+  const fromKind = resolveFromBusinessKind(api.business_kind);
+  if (fromKind) return fromKind;
   const category = resolveCategory(api);
   return { category, audience: audienceForCategory(category) };
 }
@@ -157,6 +169,7 @@ export function mapStaffToBarber(
     avatar: string | null;
     role: string;
     is_bookable?: boolean;
+    gender?: "male" | "female" | "";
   },
   salonId: string,
   services: { id: string; barberId?: string | null }[] = [],
@@ -177,5 +190,6 @@ export function mapStaffToBarber(
     serviceIds,
     isBookable: staff.is_bookable !== false,
     salonId,
+    gender: staff.gender || undefined,
   };
 }

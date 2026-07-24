@@ -39,6 +39,10 @@ import { getFlowMeta } from "@/lib/barber-flow-config";
 import { finishOnboardingAndGo } from "@/lib/onboarding-complete";
 import { IndependentWorkPrefsEditor } from "@/components/barber/IndependentWorkPrefsEditor";
 import { useBarberPhoneAvailability } from "@/lib/barber-phone-availability";
+import {
+  BarberGenderPicker,
+  type BarberGenderValue,
+} from "@/components/auth/AudienceTypePickers";
 import { toast } from "sonner";
 
 /* ============================================================
@@ -143,6 +147,7 @@ export function IndependentSetupPage() {
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
+  const [gender, setGender] = useState<BarberGenderValue | "">("");
   const [phoneDigits, setPhoneDigits] = useState("");
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
@@ -259,7 +264,11 @@ export function IndependentSetupPage() {
     const lng = Number(longitude);
     return [
       // 0: Barber profile (Create salon bilan bir xil talablar)
-      firstName.trim().length > 1 && lastName.trim().length > 1 && phoneDigits.length === 9 && !phoneError,
+      firstName.trim().length > 1 &&
+        lastName.trim().length > 1 &&
+        phoneDigits.length === 9 &&
+        !!gender &&
+        !phoneError,
       // 1: Location + ish sharoiti
       city.trim().length > 1 &&
         address.trim().length > 2 &&
@@ -281,6 +290,7 @@ export function IndependentSetupPage() {
   }, [
     firstName,
     lastName,
+    gender,
     phoneDigits,
     phoneError,
     city,
@@ -396,6 +406,7 @@ export function IndependentSetupPage() {
         const meBody = new FormData();
         meBody.append("full_name", fullName);
         meBody.append("phone", barberPhone);
+        if (gender) meBody.append("gender", gender);
         if (regionCode) meBody.append("region", regionCode);
         meBody.append("avatar", avatarFile);
         const meRes = await apiFetch("/api/v1/barber/auth/me/", {
@@ -416,6 +427,7 @@ export function IndependentSetupPage() {
           body: JSON.stringify({
             full_name: fullName,
             phone: barberPhone,
+            ...(gender ? { gender } : {}),
             ...(regionCode ? { region: regionCode } : {}),
           }),
         });
@@ -653,6 +665,8 @@ export function IndependentSetupPage() {
                 setFirstName={setFirstName}
                 lastName={lastName}
                 setLastName={setLastName}
+                gender={gender}
+                setGender={setGender}
                 phoneDigits={phoneDigits}
                 setPhoneDigits={(v) => {
                   setPhoneDigits(v);
@@ -805,6 +819,8 @@ function IndependentBarberProfileStep(props: {
   setFirstName: (v: string) => void;
   lastName: string;
   setLastName: (v: string) => void;
+  gender: BarberGenderValue | "";
+  setGender: (v: BarberGenderValue) => void;
   phoneDigits: string;
   setPhoneDigits: (v: string) => void;
   phoneError?: string | null;
@@ -823,6 +839,7 @@ function IndependentBarberProfileStep(props: {
       title="Barber haqida"
       description="Mijozlar sizni shu ism va rasm bilan ko'radi."
     >
+      <BarberGenderPicker value={props.gender} onChange={props.setGender} />
       <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start sm:gap-5">
         <div className="relative">
           <input

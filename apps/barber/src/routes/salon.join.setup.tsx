@@ -36,6 +36,10 @@ import { useBarberPhoneAvailability } from "@/lib/barber-phone-availability";
 import { readJoinDraft, clearJoinDraft } from "@/lib/join-draft";
 import { readSignupDraft } from "@/lib/signup-draft";
 import { submitEmployeeRegisterAndJoin } from "@/lib/barber-signup-flow";
+import {
+  BarberGenderPicker,
+  type BarberGenderValue,
+} from "@/components/auth/AudienceTypePickers";
 
 export const Route = createFileRoute("/salon/join/setup")({
   beforeLoad: () => {
@@ -199,6 +203,7 @@ function SalonJoinSetupPage() {
   // Profile
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
+  const [gender, setGender] = useState<BarberGenderValue | "">("");
   const [phoneDigits, setPhoneDigits] = useState("");
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
@@ -408,7 +413,11 @@ function SalonJoinSetupPage() {
     const hasOpenDay = schedule.some((d) => d.open);
     return [
       // 0: Profile
-      firstName.trim().length > 1 && lastName.trim().length > 1 && phoneDigits.length === 9 && !phoneError,
+      firstName.trim().length > 1 &&
+        lastName.trim().length > 1 &&
+        phoneDigits.length === 9 &&
+        !!gender &&
+        !phoneError,
       // 1: Location text
       locationText.trim().length > 4,
       // 2: Services — kamida bitta to‘liq xizmat
@@ -418,7 +427,7 @@ function SalonJoinSetupPage() {
       // 4: Languages
       languages.length > 0,
     ];
-  }, [firstName, lastName, phoneDigits, phoneError, locationText, services, schedule, languages]);
+  }, [firstName, lastName, gender, phoneDigits, phoneError, locationText, services, schedule, languages]);
 
   const isLast = step === TOTAL_STEPS - 1;
   const canNext = stepValid[step];
@@ -432,6 +441,7 @@ function SalonJoinSetupPage() {
       const body = new FormData();
       body.append("full_name", fullName);
       body.append("phone", barberPhone);
+      if (gender) body.append("gender", gender);
       body.append("avatar", avatarFile);
       const res = await apiFetch("/api/v1/barber/auth/me/", {
         method: "PATCH",
@@ -443,7 +453,11 @@ function SalonJoinSetupPage() {
     } else {
       const res = await apiFetch("/api/v1/barber/auth/me/", {
         method: "PATCH",
-        body: JSON.stringify({ full_name: fullName, phone: barberPhone }),
+        body: JSON.stringify({
+          full_name: fullName,
+          phone: barberPhone,
+          ...(gender ? { gender } : {}),
+        }),
       });
       const err = await parseJsonSafe(res);
       if (!res.ok) throw new Error(extractApiError(err, "Profilni saqlab boʻlmadi."));
@@ -603,6 +617,7 @@ function SalonJoinSetupPage() {
           salon_id: joinDraft.salon_id,
           latitude: joinDraft.latitude,
           longitude: joinDraft.longitude,
+          ...(gender ? { gender } : {}),
         });
         clearJoinDraft();
         const stRes = await apiFetch("/api/v1/barber/onboarding/status/");
@@ -792,6 +807,8 @@ function SalonJoinSetupPage() {
                 setFirstName={setFirstName}
                 lastName={lastName}
                 setLastName={setLastName}
+                gender={gender}
+                setGender={setGender}
                 phoneDigits={phoneDigits}
                 setPhoneDigits={(v) => {
                   setPhoneDigits(v);
@@ -933,6 +950,8 @@ function BarberProfileStep(props: {
   setFirstName: (v: string) => void;
   lastName: string;
   setLastName: (v: string) => void;
+  gender: BarberGenderValue | "";
+  setGender: (v: BarberGenderValue) => void;
   phoneDigits: string;
   setPhoneDigits: (v: string) => void;
   phoneError?: string | null;
@@ -950,6 +969,7 @@ function BarberProfileStep(props: {
       title="Barber haqida"
       description="Mijozlar sizni shu ism va rasm bilan ko‘radi."
     >
+      <BarberGenderPicker value={props.gender} onChange={props.setGender} />
       <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start sm:gap-5">
         <div className="relative">
           <input

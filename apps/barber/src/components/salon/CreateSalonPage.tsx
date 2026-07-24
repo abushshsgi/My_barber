@@ -40,6 +40,10 @@ import { finishOnboardingAndGo } from "@/lib/onboarding-complete";
 import { validateSalonCityCoords } from "@/lib/salon-location";
 import { useBarberPhoneAvailability } from "@/lib/barber-phone-availability";
 import { uzRegionCodeFromLabel } from "@/lib/uz-regions";
+import {
+  BarberGenderPicker,
+  type BarberGenderValue,
+} from "@/components/auth/AudienceTypePickers";
 
 /* ============================================================
    Types
@@ -249,6 +253,7 @@ export function CreateSalonPage() {
   // --- Barber (owner) profile state ---
   const [barberFirstName, setBarberFirstName] = useState("");
   const [barberLastName, setBarberLastName] = useState("");
+  const [barberGender, setBarberGender] = useState<BarberGenderValue | "">("");
   const [barberPhoneDigits, setBarberPhoneDigits] = useState("");
   const [barberAvatar, setBarberAvatar] = useState<string | null>(null);
   const [barberAvatarFile, setBarberAvatarFile] = useState<File | null>(null);
@@ -306,6 +311,7 @@ export function CreateSalonPage() {
       barberFirstName.trim().length > 1 &&
         barberLastName.trim().length > 1 &&
         barberPhoneDigits.length === 9 &&
+        !!barberGender &&
         !barberPhoneError,
       // 4: Services can be skipped; dashboard checklist will keep booking disabled.
       true,
@@ -323,6 +329,7 @@ export function CreateSalonPage() {
     salonLongitude,
     barberFirstName,
     barberLastName,
+    barberGender,
     barberPhoneDigits,
     barberPhoneError,
     services,
@@ -449,6 +456,7 @@ export function CreateSalonPage() {
         const meBody = new FormData();
         meBody.append("full_name", fullName);
         meBody.append("phone", barberPhone);
+        if (barberGender) meBody.append("gender", barberGender);
         if (regionCode) meBody.append("region", regionCode);
         meBody.append("avatar", barberAvatarFile);
         const meRes = await apiFetch("/api/v1/barber/auth/me/", {
@@ -467,6 +475,7 @@ export function CreateSalonPage() {
           body: JSON.stringify({
             full_name: fullName,
             phone: barberPhone,
+            ...(barberGender ? { gender: barberGender } : {}),
             ...(regionCode ? { region: regionCode } : {}),
           }),
         });
@@ -812,6 +821,8 @@ export function CreateSalonPage() {
                 setFirstName={setBarberFirstName}
                 lastName={barberLastName}
                 setLastName={setBarberLastName}
+                gender={barberGender}
+                setGender={setBarberGender}
                 phoneDigits={barberPhoneDigits}
                 setPhoneDigits={(v) => {
                   setBarberPhoneDigits(v);
@@ -1138,6 +1149,8 @@ function BarberProfileStep(props: {
   setFirstName: (v: string) => void;
   lastName: string;
   setLastName: (v: string) => void;
+  gender: BarberGenderValue | "";
+  setGender: (v: BarberGenderValue) => void;
   phoneDigits: string;
   setPhoneDigits: (v: string) => void;
   phoneError?: string | null;
@@ -1156,6 +1169,7 @@ function BarberProfileStep(props: {
       title="Barber haqida"
       description="Mijozlar sizni shu ism va rasm bilan ko'radi."
     >
+      <BarberGenderPicker value={props.gender} onChange={props.setGender} />
       <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start sm:gap-5">
         <div className="relative">
           <input

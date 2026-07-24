@@ -57,6 +57,7 @@ export type ApiSalonList = {
   latitude: string | number | null;
   longitude: string | number | null;
   address: string;
+  business_kind?: "barbershop" | "beauty_salon" | "";
   premium: boolean;
   is_published: boolean;
   rating_avg: number;
@@ -123,6 +124,7 @@ export type ApiSalonStaff = {
   role: string;
   experience_years: number;
   is_bookable?: boolean;
+  gender?: "male" | "female" | "";
 };
 
 export type ApiNearbySalon = {
@@ -281,6 +283,7 @@ export type ApiBarberPublic = {
   payment_methods?: { code: string; label: string }[];
   work_mode?: string;
   distance_km?: number;
+  gender?: "male" | "female" | "";
 };
 
 export type Paginated<T> = {
