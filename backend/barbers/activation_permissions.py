@@ -23,6 +23,8 @@ _REL_ALLOWED = (
     "barber/service-recommendations",
     "barber/auth/verify-email",
     "barber/auth/resend-verification-email",
+    "barber/subscription",
+    "barber/subscriptions",
     "schedules",
     "salons",
     "memberships",
@@ -65,7 +67,7 @@ def barber_request_rel_path(request) -> str:
 class IsAuthenticatedBarberAware(IsAuthenticated):
     """
     Oddiy User — o‘zgarishsiz.
-    BarberPrincipal — fully_ready yoki faqat setup API.
+    BarberPrincipal — fully_ready + obuna, yoki setup/subscription whitelist.
     """
 
     def has_permission(self, request, view):
@@ -74,11 +76,23 @@ class IsAuthenticatedBarberAware(IsAuthenticated):
         u = getattr(request, "user", None)
         if not isinstance(u, BarberPrincipal):
             return True
-        if compute_barber_readiness(u.barber).fully_ready:
-            return True
         from barbers.activation_permissions import barber_activation_rel_allowed, barber_request_rel_path
+        from barbers.shop_subscription_gates import feature_blocked_reason, subscription_free_rel_allowed
+        from barbers.shop_subscription_services import has_active_subscription
 
+        barber = u.barber
         rel = barber_request_rel_path(request)
-        if barber_activation_rel_allowed(rel):
+        path = getattr(request, "path", "") or ""
+        ready = compute_barber_readiness(barber).fully_ready
+        if not ready:
+            if barber_activation_rel_allowed(rel) or barber_activation_rel_allowed(path):
+                return True
+            return False
+        if has_active_subscription(barber):
+            reason = feature_blocked_reason(barber, rel or path)
+            return reason is None
+        if subscription_free_rel_allowed(rel) or subscription_free_rel_allowed(path):
             return True
-        return barber_activation_rel_allowed(getattr(request, "path", ""))
+        if barber_activation_rel_allowed(rel) or barber_activation_rel_allowed(path):
+            return True
+        return False

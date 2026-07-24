@@ -3,6 +3,9 @@ import { useMemo, useState } from "react";
 import { Plus, Receipt, TrendingDown, Wallet } from "lucide-react";
 import { useBarberContext, formatUZS } from "@/components/barber/BarberContext";
 import { PageHeader, StatCard, SectionCard } from "@/components/barber/primitives";
+import { ShopPaywall } from "@/components/barber/ShopPaywall";
+import { useShopSubscriptionMe } from "@/hooks/use-shop-subscription";
+import { featureAllowed } from "@/lib/shop-subscription";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -23,6 +26,7 @@ type Cat = keyof typeof CATEGORY_LABEL;
 
 function ExpensesPage() {
   const { expenses, addExpense } = useBarberContext();
+  const { data: shopMe } = useShopSubscriptionMe();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<{ category: Cat; description: string; amount: string }>({
     category: "supplies",
@@ -37,6 +41,20 @@ function ExpensesPage() {
     return Array.from(m.entries()).sort((a, b) => b[1] - a[1]);
   }, [expenses]);
   const max = Math.max(1, ...byCat.map(([, v]) => v));
+
+  if (!featureAllowed(shopMe?.entitlements, "expenses")) {
+    return (
+      <div className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto">
+        <PageHeader title="Xarajatlar" description="Biznes xarajatlarini kuzating." />
+        <ShopPaywall
+          title="Xarajatlar — Business+"
+          description="Xarajatlar moduli Start tarifida yo'q. Business yoki Pro ga o'ting."
+          requiredPlan="business"
+          className="mt-6"
+        />
+      </div>
+    );
+  }
 
   const handleAdd = () => {
     const amt = parseInt(form.amount, 10);

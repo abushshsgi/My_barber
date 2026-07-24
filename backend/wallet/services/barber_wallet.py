@@ -233,6 +233,33 @@ class BarberWalletService:
         )
 
     @classmethod
+    def debit_subscription(
+        cls,
+        *,
+        barber: Barber,
+        amount: Decimal,
+        order_id: str,
+        plan_code: str,
+        idempotency_key: str,
+        metadata: dict | None = None,
+    ) -> BarberLedgerEntry:
+        wallet = cls.ensure_wallet(barber)
+        if wallet.balance < amount:
+            from wallet.services.wallet_service import InsufficientBalanceError
+
+            raise InsufficientBalanceError("Hisobda mablag' yetarli emas.")
+        meta = {"plan_code": plan_code, **(metadata or {})}
+        return cls.post_entry(
+            wallet=wallet,
+            entry_type=BarberLedgerEntry.EntryType.SUBSCRIPTION_OUT,
+            amount=-amount,
+            idempotency_key=idempotency_key,
+            reference_type="shop_subscription",
+            reference_id=str(order_id),
+            metadata=meta,
+        )
+
+    @classmethod
     def refund_payout(
         cls,
         *,

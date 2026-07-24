@@ -2,13 +2,17 @@ import { createFileRoute, isRedirect, redirect, useRouter } from "@tanstack/reac
 import { BarberShell } from "@/components/barber/BarberShell";
 import { BarberProvider } from "@/components/barber/BarberContext";
 import { apiFetch, clearBarberTokens, getBarberAccessToken } from "@/lib/api";
-import { isBarberPathAllowedDuringActivation } from "@/lib/barber-activation-gate";
+import {
+  isBarberPathAllowedDuringActivation,
+  isBarberPathAllowedWithoutSubscription,
+} from "@/lib/barber-activation-gate";
 import {
   readOnboardingStatusCache,
   writeOnboardingStatusCache,
 } from "@/lib/onboarding-status-cache";
 import { normalizeRequiredNextPath } from "@/lib/onboarding-redirect";
 import { isBarberSessionRevokedResponse } from "@/lib/barber-auth-session";
+import { fetchShopSubscriptionMe, pathNeedsSubscription } from "@/lib/shop-subscription";
 
 function activationRedirectTarget(_ownsSalon?: boolean): string {
   return "/barber";
@@ -28,51 +32,84 @@ export const Route = createFileRoute("/barber")({
       throw redirect({ to: "/auth" });
     }
     const path = location.pathname;
-    const cached = readOnboardingStatusCache();
-
-    if (isBarberPathAllowedDuringActivation(path)) return;
     if (typeof window === "undefined") return;
     if (!getBarberAccessToken()) return;
 
-    if (cached?.fully_ready === true) {
+    const cached = readOnboardingStatusCache();
+
+    // Setup phase (not fully ready)
+    if (!cached?.fully_ready) {
+      if (isBarberPathAllowedDuringActivation(path)) {
+        // Still refresh status in background for subscription page after ready
+        if (!path.startsWith("/barber/subscription")) return;
+      }
+      try {
+        const res = await apiFetch("/api/v1/barber/onboarding/status/");
+        if (!res.ok) {
+          let body: unknown;
+          try {
+            body = await res.clone().json();
+          } catch {
+            body = undefined;
+          }
+          if (isBarberSessionRevokedResponse(res.status, body)) {
+            clearBarberTokens();
+            throw redirect({ to: "/auth" });
+          }
+          if (isBarberPathAllowedDuringActivation(path)) return;
+          return;
+        }
+        const st = (await res.json()) as {
+          fully_ready?: boolean;
+          required_next_path?: string | null;
+          owns_salon?: boolean;
+          has_shop_subscription?: boolean;
+        };
+        writeOnboardingStatusCache(st);
+        if (st.fully_ready !== true) {
+          if (isBarberPathAllowedDuringActivation(path)) return;
+          const requiredNext = normalizeRequiredNextPath(st);
+          if (requiredNext) throw redirect({ to: requiredNext });
+          throw redirect({ to: "/barber/activation" });
+        }
+        // now fully ready — fall through to subscription gate
+        if (path.startsWith("/barber/activation")) {
+          // handled below
+        }
+      } catch (e) {
+        if (isRedirect(e)) throw e;
+        if (isBarberPathAllowedDuringActivation(path)) return;
+        return;
+      }
+    }
+
+    // fully_ready: subscription required for product pages
+    if (isBarberPathAllowedWithoutSubscription(path)) {
+      if (path.startsWith("/barber/activation")) {
+        try {
+          const me = await fetchShopSubscriptionMe();
+          if (me.has_subscription && me.subscription?.is_active) {
+            throw redirect({ to: activationRedirectTarget(), replace: true });
+          }
+          throw redirect({ to: "/barber/subscription", replace: true });
+        } catch (e) {
+          if (isRedirect(e)) throw e;
+          throw redirect({ to: "/barber/subscription", replace: true });
+        }
+      }
       return;
     }
 
-    try {
-      const res = await apiFetch("/api/v1/barber/onboarding/status/");
-      if (!res.ok) {
-        let body: unknown;
-        try {
-          body = await res.clone().json();
-        } catch {
-          body = undefined;
+    if (pathNeedsSubscription(path)) {
+      try {
+        const me = await fetchShopSubscriptionMe();
+        if (!me.has_subscription || !me.subscription?.is_active) {
+          throw redirect({ to: "/barber/subscription", replace: true });
         }
-        if (isBarberSessionRevokedResponse(res.status, body)) {
-          clearBarberTokens();
-          throw redirect({ to: "/auth" });
-        }
-        return;
+      } catch (e) {
+        if (isRedirect(e)) throw e;
+        throw redirect({ to: "/barber/subscription", replace: true });
       }
-      const st = (await res.json()) as {
-        fully_ready?: boolean;
-        required_next_path?: string | null;
-        owns_salon?: boolean;
-      };
-      writeOnboardingStatusCache(st);
-      if (st.fully_ready === true) {
-        if (path.startsWith("/barber/activation")) {
-          throw redirect({ to: activationRedirectTarget(st.owns_salon), replace: true });
-        }
-        return;
-      }
-      const requiredNext = normalizeRequiredNextPath(st);
-      if (requiredNext) {
-        throw redirect({ to: requiredNext });
-      }
-      throw redirect({ to: "/barber/activation" });
-    } catch (e) {
-      if (isRedirect(e)) throw e;
-      return;
     }
   },
   component: BarberRoot,

@@ -2,10 +2,13 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { BarChart3, Loader2 } from "lucide-react";
 import { PageHeader } from "@/components/barber/primitives";
+import { ShopPaywall } from "@/components/barber/ShopPaywall";
 import { StatsGraphsPanel } from "@/components/barber/StatsGraphsPanel";
 import { StatsRangePicker, StatsSectionTabs } from "@/components/barber/StatsSectionNav";
 import { prefetchBarberAnalytics } from "@/hooks/use-barber-queries";
 import { useBarberStatsMetrics } from "@/hooks/use-barber-stats";
+import { useShopSubscriptionMe } from "@/hooks/use-shop-subscription";
+import { featureAllowed } from "@/lib/shop-subscription";
 import { statsRangeToIsoParams, type StatsRangeKey } from "@/lib/finance-range";
 import { readOnboardingStatusCache } from "@/lib/onboarding-status-cache";
 
@@ -22,6 +25,20 @@ export const Route = createFileRoute("/barber/stats/graphs")({
 function StatsGraphsPage() {
   const [range, setRange] = useState<StatsRangeKey>("30d");
   const metrics = useBarberStatsMetrics(range);
+  const { data: shopMe } = useShopSubscriptionMe();
+
+  if (!featureAllowed(shopMe?.entitlements, "stats_graphs")) {
+    return (
+      <div className="mx-auto max-w-[1400px] space-y-6 p-4 sm:p-6 lg:p-8">
+        <PageHeader title="Grafiklar" description="Vizual tahlil." />
+        <ShopPaywall
+          title="Grafiklar — Business+"
+          description="To'liq grafiklar Start tarifida yo'q."
+          requiredPlan="business"
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-[1400px] space-y-6 p-4 sm:p-6 lg:p-8">

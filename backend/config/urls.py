@@ -147,6 +147,12 @@ from barbers.customer_invite_views import (
     BarberCustomerOutreachCancelView,
     BarberCustomerOutreachCreateView,
 )
+from barbers.shop_subscription_views import (
+    BarberShopCheckoutView,
+    BarberShopConfirmView,
+    BarberShopMeView,
+    BarberShopPlansView,
+)
 from control_panel.customer_invite_admin import (
     AdminBarberCustomerInviteDetailView,
     AdminBarberCustomerInviteListView,
@@ -517,6 +523,10 @@ api_routes = [
     path("barber/qr-pay/requests/", BarberQrPayRequestCreateView.as_view()),
     path("barber/qr-pay/payments/", BarberQrPayPaymentsView.as_view()),
     path("barber/marketing/boost/", BarberMarketingBoostView.as_view()),
+    path("barber/subscription/plans/", BarberShopPlansView.as_view()),
+    path("barber/subscription/me/", BarberShopMeView.as_view()),
+    path("barber/subscription/checkout/", BarberShopCheckoutView.as_view()),
+    path("barber/subscription/confirm/", BarberShopConfirmView.as_view()),
     path("barber/customer-invites/", BarberCustomerInviteView.as_view()),
     path("barber/customer-invites/outreach/", BarberCustomerOutreachCreateView.as_view()),
     path(

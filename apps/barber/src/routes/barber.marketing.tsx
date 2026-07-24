@@ -3,6 +3,9 @@ import { useMemo, useState } from "react";
 import { Plus, Megaphone, Copy, Sparkles, Send, Rocket, UserRound } from "lucide-react";
 import { useBarberContext } from "@/components/barber/BarberContext";
 import { PageHeader, SectionCard, StatusPill } from "@/components/barber/primitives";
+import { ShopPaywall } from "@/components/barber/ShopPaywall";
+import { useShopSubscriptionMe } from "@/hooks/use-shop-subscription";
+import { featureAllowed } from "@/lib/shop-subscription";
 import { toast } from "sonner";
 import { apiFetch, formatApiError } from "@/lib/api";
 import { useQuery } from "@tanstack/react-query";
@@ -14,6 +17,7 @@ export const Route = createFileRoute("/barber/marketing")({
 
 function MarketingPage() {
   const { promos, togglePromo, clients, addPromo, sendAnnouncement } = useBarberContext();
+  const { data: shopMe } = useShopSubscriptionMe();
   const boostQ = useQuery({
     queryKey: ["barber", "marketing-boost"],
     queryFn: async () => {
@@ -24,6 +28,7 @@ function MarketingPage() {
         active: { id: number; ends_at: string; amount_paid: string } | null;
       }>;
     },
+    enabled: featureAllowed(shopMe?.entitlements, "marketing"),
   });
   const [showPromoForm, setShowPromoForm] = useState(false);
   const [promoForm, setPromoForm] = useState({
@@ -34,6 +39,20 @@ function MarketingPage() {
     expires: "",
   });
   const [announcement, setAnnouncement] = useState({ title: "", message: "" });
+
+  if (!featureAllowed(shopMe?.entitlements, "marketing")) {
+    return (
+      <div className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto">
+        <PageHeader title="Marketing" description="Promokodlar va TOP joylashuv." />
+        <ShopPaywall
+          title="Marketing — Business+"
+          description="TOP boost va marketing Start tarifida yo'q."
+          requiredPlan="business"
+          className="mt-6"
+        />
+      </div>
+    );
+  }
 
   const staleClients = useMemo(() => {
     const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;

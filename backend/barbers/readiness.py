@@ -229,7 +229,11 @@ def compute_barber_readiness(barber: Barber) -> ReadinessBreakdown:
 
 
 def barber_is_publicly_visible(barber: Barber) -> bool:
-    return compute_barber_readiness(barber).fully_ready
+    if not compute_barber_readiness(barber).fully_ready:
+        return False
+    from barbers.shop_subscription_services import has_active_subscription
+
+    return has_active_subscription(barber)
 
 
 def barber_is_staff_listable(barber: Barber, salon) -> bool:
@@ -240,15 +244,16 @@ def barber_is_staff_listable(barber: Barber, salon) -> bool:
 
 
 def batch_publicly_visible_barber_ids(barber_ids: list[int]) -> set[int]:
-    """Katalog filtri uchun: berilgan ID lar ichidan faqat fully_ready bo‘lganlar."""
+    """Katalog filtri uchun: fully_ready + faol obuna."""
     from barbers.models import Barber
+    from barbers.shop_subscription_services import has_active_subscription
 
     if not barber_ids:
         return set()
     out: set[int] = set()
     qs = Barber.objects.filter(pk__in=barber_ids).select_related("profile")
     for b in qs:
-        if compute_barber_readiness(b).fully_ready:
+        if compute_barber_readiness(b).fully_ready and has_active_subscription(b):
             out.add(b.id)
     return out
 
@@ -276,6 +281,11 @@ def build_onboarding_status_payload(barber: Barber) -> dict:
     has_services_display = r.services_ok
     has_hours = bool(r.has_membership_hours or r.has_working_hours)
 
+    from barbers.shop_subscription_services import build_me_payload, has_active_subscription
+
+    shop_sub = build_me_payload(barber)
+    has_shop_sub = has_active_subscription(barber)
+
     return {
         "flow": r.flow,
         "work_mode": r.work_mode,
@@ -292,6 +302,10 @@ def build_onboarding_status_payload(barber: Barber) -> dict:
         "is_complete": r.signup_complete,
         "required_next_path": r.required_next_path if not r.signup_complete else None,
         "fully_ready": r.fully_ready,
+        "has_shop_subscription": has_shop_sub,
+        "shop_subscription": shop_sub,
+        "subscription_required": r.fully_ready and not has_shop_sub,
+        "subscribe_path": "/barber/subscription" if (r.fully_ready and not has_shop_sub) else None,
         "booking_ready": r.fully_ready,
         "booking_missing": booking_missing,
         "booking_setup_path": "/barber/activation" if not r.fully_ready else None,

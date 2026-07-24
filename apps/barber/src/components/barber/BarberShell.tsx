@@ -33,6 +33,8 @@ import {
   Clock,
   QrCode,
   UserPlus,
+  Crown,
+  Lock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -70,6 +72,8 @@ import {
   NAV_CONFIG,
   type NavItem as MatrixNavItem,
 } from "@/lib/barber-flow-config";
+import { useShopSubscriptionMe } from "@/hooks/use-shop-subscription";
+import { pathFeatureAllowed } from "@/lib/shop-subscription";
 import {
   isBarberNavAllowedDuringActivation,
   isBarberPathAllowedDuringActivation,
@@ -108,6 +112,7 @@ const ICON_BY_NAME: Record<MatrixNavItem["iconName"], NavItem["icon"]> = {
   Images,
   Sparkles,
   UserPlus,
+  Crown,
 };
 
 function mapNav(items: MatrixNavItem[]): NavItem[] {
@@ -151,6 +156,7 @@ function Sidebar({
   const navigate = useNavigate();
   const { viewMode, setViewMode, hasSalon, onboardingComplete, ownsSalon, profile, fullyReady } =
     useBarberContext();
+  const { data: shopMe } = useShopSubscriptionMe(fullyReady);
 
   return (
     <div className="flex flex-col h-full bg-sidebar">
@@ -206,14 +212,19 @@ function Sidebar({
                         item.to === "/barber"
                           ? pathname === "/barber"
                           : isBarberNavActive(pathname, item.to);
-                      const locked =
+                      const lockedActivation =
                         !fullyReady && !isBarberNavAllowedDuringActivation(item.to);
+                      const lockedPlan =
+                        fullyReady &&
+                        Boolean(shopMe?.has_subscription) &&
+                        !pathFeatureAllowed(item.to, shopMe?.entitlements);
+                      const locked = lockedActivation || lockedPlan;
                       return (
                         <div key={item.to}>
                           <Link
-                            to={item.to}
+                            to={lockedPlan ? "/barber/subscription" : item.to}
                             onClick={(e) => {
-                              if (locked) {
+                              if (lockedActivation) {
                                 e.preventDefault();
                                 return;
                               }
@@ -228,6 +239,7 @@ function Sidebar({
                                 ownsSalon &&
                                 !item.to.startsWith("/barber/salon-view") &&
                                 item.to !== "/barber/amenities" &&
+                                item.to !== "/barber/subscription" &&
                                 viewMode === "salon" &&
                                 !pathAllowedInSalonWorkspace(item.to, false)
                               ) {
@@ -235,17 +247,19 @@ function Sidebar({
                               }
                               onNavigate?.();
                             }}
-                            aria-disabled={locked}
+                            aria-disabled={lockedActivation}
                             className={cn(
                               "flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors duration-150",
                               active
                                 ? "bg-sidebar-primary text-sidebar-primary-foreground font-medium"
                                 : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                              locked && "pointer-events-none opacity-35",
+                              lockedActivation && "pointer-events-none opacity-35",
+                              lockedPlan && !active && "opacity-70",
                             )}
                           >
                             <Icon className="size-4 shrink-0" />
-                            <span>{item.label}</span>
+                            <span className="truncate flex-1">{item.label}</span>
+                            {lockedPlan ? <Lock className="size-3.5 shrink-0 opacity-60" /> : null}
                           </Link>
                         </div>
                       );

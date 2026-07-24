@@ -377,6 +377,7 @@ class BarberLedgerEntry(models.Model):
         OPENING = "opening", "Opening balance"
         ADJUSTMENT = "adjustment", "Adjustment"
         REFUND_OUT = "refund_out", "Booking refund clawback"
+        SUBSCRIPTION_OUT = "subscription_out", "Shop subscription"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     wallet = models.ForeignKey(

@@ -71,6 +71,7 @@ export type NavItem = {
     | "Target"
     | "UserCog"
     | "UserPlus"
+    | "Crown"
     | "Settings"
     | "HelpCircle"
     | "Building2"
@@ -99,6 +100,7 @@ export const NAV_CONFIG: Record<NavCapability, NavItem[]> = {
     { to: "/barber/stats/graphs", label: "Grafiklar", iconName: "LineChart", group: "Biznes" },
     { to: "/barber/marketing", label: "Marketing", iconName: "Megaphone", group: "Biznes" },
     { to: "/barber/goals", label: "Maqsadlar", iconName: "Target", group: "Biznes" },
+    { to: "/barber/subscription", label: "Obuna", iconName: "Crown", group: "Sozlama" },
     { to: "/barber/profile", label: "Profil", iconName: "UserCog", group: "Sozlama" },
     { to: "/barber/settings", label: "Sozlamalar", iconName: "Settings", group: "Sozlama" },
     { to: "/barber/help", label: "Yordam", iconName: "HelpCircle", group: "Sozlama" },
@@ -110,6 +112,7 @@ export const NAV_CONFIG: Record<NavCapability, NavItem[]> = {
     { to: "/barber/salon-view/reviews", label: "Sharhlar", iconName: "Star", group: "Salon" },
     { to: "/barber/salon-view/team", label: "Jamoa", iconName: "Users", group: "Salon" },
     { to: "/barber/invites", label: "Chaqirish", iconName: "UserPlus", group: "Salon" },
+    { to: "/barber/subscription", label: "Obuna", iconName: "Crown", group: "Sozlama" },
     { to: "/barber/profile", label: "Profil", iconName: "UserCog", group: "Sozlama" },
     { to: "/barber/settings", label: "Sozlamalar", iconName: "Settings", group: "Sozlama" },
     { to: "/barber/notifications", label: "Bildirishnomalar", iconName: "Bell", group: "Sozlama" },
@@ -122,6 +125,7 @@ export const NAV_CONFIG: Record<NavCapability, NavItem[]> = {
     { to: "/barber/invites", label: "Chaqirish", iconName: "UserPlus", group: "Salon" },
     { to: "/barber/salon-view/reviews", label: "Sharhlar", iconName: "Star", group: "Salon" },
     { to: "/barber/salon-view/gallery", label: "Galereya", iconName: "Images", group: "Salon" },
+    { to: "/barber/subscription", label: "Obuna", iconName: "Crown", group: "Sozlama" },
     { to: "/barber/profile", label: "Profil", iconName: "UserCog", group: "Sozlama" },
     { to: "/barber/settings", label: "Sozlamalar", iconName: "Settings", group: "Sozlama" },
     { to: "/barber/notifications", label: "Bildirishnomalar", iconName: "Bell", group: "Sozlama" },
@@ -389,6 +393,9 @@ export function pathAllowedInSalonWorkspace(
     return !isJoinedWorker;
   }
   if (pathname === "/barber/invites") {
+    return true;
+  }
+  if (pathname === "/barber/subscription" || pathname.startsWith("/barber/subscription/")) {
     return true;
   }
   if (

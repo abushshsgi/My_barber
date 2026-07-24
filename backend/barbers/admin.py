@@ -12,6 +12,9 @@ from .models import (
     BarberPromo,
     BarberService,
     BarberSetting,
+    BarberShopSubscription,
+    BarberShopSubscriptionEvent,
+    BarberShopSubscriptionPayment,
     BarberSupportTicket,
     BarberWorkPhoto,
 )
@@ -79,6 +82,24 @@ class BarberCustomerOutreachAdmin(admin.ModelAdmin):
     list_filter = ("channel", "status", "created_at")
     search_fields = ("full_name", "phone", "barber__email", "barber__full_name")
     autocomplete_fields = ("barber", "joined_customer")
+    ordering = ("-created_at",)
+
+
+@admin.register(BarberShopSubscription)
+class BarberShopSubscriptionAdmin(admin.ModelAdmin):
+    list_display = ("id", "barber", "plan_code", "status", "starts_at", "ends_at", "price_uzs")
+    list_filter = ("status", "plan_code", "source")
+    search_fields = ("barber__email", "barber__full_name", "payment_order_id")
+    autocomplete_fields = ("barber",)
+    ordering = ("-created_at",)
+
+
+@admin.register(BarberShopSubscriptionPayment)
+class BarberShopSubscriptionPaymentAdmin(admin.ModelAdmin):
+    list_display = ("order_id", "barber", "plan_code", "amount_uzs", "provider", "status", "paid_at")
+    list_filter = ("status", "provider", "plan_code")
+    search_fields = ("order_id", "barber__email", "transaction_id")
+    autocomplete_fields = ("barber", "subscription")
     ordering = ("-created_at",)
 
 

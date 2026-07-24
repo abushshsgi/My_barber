@@ -1,5 +1,8 @@
+import uuid
+
 from django.conf import settings
 from django.db import models
+from django.utils import timezone
 
 from accounts.uz_regions import UzRegion
 
@@ -570,3 +573,132 @@ class BarberCustomerInvite(models.Model):
 
     def __str__(self) -> str:
         return f"Invite({self.barber_id} → {self.customer_id})"
+
+
+class BarberShopSubscription(models.Model):
+    """Sartarosh / salon SaaS obunasi — panel to'liq ishlashi uchun majburiy."""
+
+    class Status(models.TextChoices):
+        PENDING = "pending", "To'lov kutilmoqda"
+        ACTIVE = "active", "Faol"
+        EXPIRED = "expired", "Muddati tugagan"
+        CANCELLED = "cancelled", "Bekor"
+        DEACTIVATED = "deactivated", "O'chirilgan"
+
+    class Source(models.TextChoices):
+        WALLET = "wallet", "Hisob raqam"
+        CLICK = "click", "Click"
+        PAYME = "payme", "Payme"
+        ADMIN = "admin", "Admin"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    barber = models.ForeignKey(
+        Barber, on_delete=models.CASCADE, related_name="shop_subscriptions", db_index=True
+    )
+    plan_code = models.CharField(max_length=32, db_index=True)
+    status = models.CharField(
+        max_length=16, choices=Status.choices, default=Status.PENDING, db_index=True
+    )
+    source = models.CharField(max_length=32, choices=Source.choices, db_index=True)
+    starts_at = models.DateTimeField(null=True, blank=True, db_index=True)
+    ends_at = models.DateTimeField(null=True, blank=True, db_index=True)
+    price_uzs = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    entitlements = models.JSONField(default=dict, blank=True)
+    payment_provider = models.CharField(max_length=16, blank=True, default="")
+    payment_order_id = models.CharField(max_length=128, blank=True, default="", db_index=True)
+    payment_transaction_id = models.CharField(max_length=128, blank=True, default="")
+    wallet_entry_id = models.CharField(max_length=64, blank=True, default="")
+    deactivated_at = models.DateTimeField(null=True, blank=True)
+    deactivated_reason = models.CharField(max_length=255, blank=True, default="")
+    notes = models.TextField(blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["barber", "status", "-ends_at"]),
+            models.Index(fields=["status", "ends_at"]),
+            models.Index(fields=["plan_code", "status"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.barber_id}:{self.plan_code}:{self.status}"
+
+    @property
+    def is_currently_active(self) -> bool:
+        if self.status != self.Status.ACTIVE:
+            return False
+        if self.ends_at and timezone.now() >= self.ends_at:
+            return False
+        return True
+
+
+class BarberShopSubscriptionPayment(models.Model):
+    class Status(models.TextChoices):
+        PENDING = "pending", "Kutilmoqda"
+        PAID = "paid", "To'langan"
+        FAILED = "failed", "Muvaffaqiyatsiz"
+        REFUNDED = "refunded", "Qaytarilgan"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    barber = models.ForeignKey(
+        Barber, on_delete=models.CASCADE, related_name="shop_subscription_payments"
+    )
+    subscription = models.ForeignKey(
+        BarberShopSubscription,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="payments",
+    )
+    plan_code = models.CharField(max_length=32, db_index=True)
+    amount_uzs = models.DecimalField(max_digits=12, decimal_places=2)
+    provider = models.CharField(max_length=16, db_index=True)
+    status = models.CharField(
+        max_length=16, choices=Status.choices, default=Status.PENDING, db_index=True
+    )
+    order_id = models.CharField(max_length=128, unique=True, db_index=True)
+    transaction_id = models.CharField(max_length=128, blank=True, default="", db_index=True)
+    idempotency_key = models.CharField(max_length=128, unique=True, db_index=True)
+    checkout_url = models.TextField(blank=True, default="")
+    metadata = models.JSONField(default=dict, blank=True)
+    paid_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        return f"{self.order_id}:{self.status}"
+
+
+class BarberShopSubscriptionEvent(models.Model):
+    """Audit — checkout, activate, expire, hacker urinishlari."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    barber = models.ForeignKey(
+        Barber,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="shop_subscription_events",
+    )
+    subscription = models.ForeignKey(
+        BarberShopSubscription,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="events",
+    )
+    action = models.CharField(max_length=64, db_index=True)
+    actor = models.CharField(max_length=64, blank=True, default="system")
+    detail = models.JSONField(default=dict, blank=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.CharField(max_length=512, blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
