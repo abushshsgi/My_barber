@@ -33,6 +33,7 @@ import {
   Banknote,
   QrCode,
   Hash,
+  UserPlus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MysaloonLogo } from "@/components/brand/MysaloonLogo";
@@ -138,6 +139,7 @@ const SECTIONS: Section[] = [
       { to: "/admin/statistics/barbers", label: "Sartaroshlar", icon: Scissors },
       { to: "/admin/statistics/users", label: "Mijozlar", icon: Users },
       { to: "/admin/statistics/subscriptions", label: "Obunalar", icon: Repeat },
+      { to: "/admin/statistics/customer-invites", label: "Chaqirishlar", icon: UserPlus },
       { to: "/admin/statistics/salons", label: "Salonlar", icon: Building2 },
       { to: "/admin/statistics/bookings", label: "Bronlar", icon: CalendarClock },
     ],

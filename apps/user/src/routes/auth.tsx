@@ -28,9 +28,12 @@ import { getStoredOtpCooldownSeconds, storeOtpCooldown } from "@/lib/otp-cooldow
 import { formatUzLocalPhone, parseUzLocalPhone } from "@/lib/phone";
 import { needsOnboarding } from "@/lib/recommendations";
 import {
+  clearStashedBarberInviteCode,
   clearStashedReferralCode,
+  parseBarberInviteFromSearch,
   parseReferralFromSearch,
   safeAuthRedirectPath,
+  stashBarberInviteCode,
   stashReferralCode,
 } from "@/lib/referral-storage";
 import { redirectIfAuthenticated } from "@/lib/require-auth";
@@ -39,14 +42,17 @@ import type { PhoneAuthIntent, PhoneVerifyResponse } from "@/lib/api/types";
 export const Route = createFileRoute("/auth")({
   validateSearch: (search: Record<string, unknown>) => {
     const ref = parseReferralFromSearch(search) || undefined;
+    const bref = parseBarberInviteFromSearch(search) || undefined;
     const redirectTo = safeAuthRedirectPath(search.redirect);
     return {
       ...(ref ? { ref } : {}),
+      ...(bref ? { bref } : {}),
       ...(redirectTo ? { redirect: redirectTo } : {}),
     };
   },
   beforeLoad: async ({ search }) => {
     if (search.ref) stashReferralCode(search.ref);
+    if (search.bref) stashBarberInviteCode(search.bref);
     await redirectIfAuthenticated();
   },
   head: () => ({ meta: [{ title: "Kirish — mysaloon.uz" }] }),
@@ -67,7 +73,7 @@ function Auth() {
   const { t } = useTranslation();
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { ref: refFromSearch, redirect: redirectTo } = Route.useSearch();
+  const { ref: refFromSearch, bref: brefFromSearch, redirect: redirectTo } = Route.useSearch();
   const [step, setStep] = useState<Step>("phone");
   const [phone, setPhone] = useState(() => getLastPhone());
   const [password, setPasswordInput] = useState("");
@@ -107,6 +113,10 @@ function Auth() {
   useEffect(() => {
     if (refFromSearch) stashReferralCode(refFromSearch);
   }, [refFromSearch]);
+
+  useEffect(() => {
+    if (brefFromSearch) stashBarberInviteCode(brefFromSearch);
+  }, [brefFromSearch]);
 
   useEffect(() => {
     furthestStep.current = step;
@@ -156,6 +166,7 @@ function Auth() {
     authCompleted.current = true;
     trackAuthSuccess({ isNewUser: Boolean(data.is_new_user), method });
     clearStashedReferralCode();
+    clearStashedBarberInviteCode();
     setSession(data.access, data.refresh, data.user, data.session_id);
     clearQueryClientCache();
     toast.success(data.is_new_user ? t("auth.welcomeNew") : t("auth.welcomeBack"));
@@ -263,6 +274,7 @@ function Auth() {
         method: "phone",
       });
       clearStashedReferralCode();
+      clearStashedBarberInviteCode();
       setSession(pendingAuth.access, pendingAuth.refresh, res.user);
       void router
         .navigate({ to: postAuthPath(res.user) })

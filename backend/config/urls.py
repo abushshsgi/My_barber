@@ -142,6 +142,17 @@ from bookings.views import (
     SalonPortfolioView,
 )
 from barbers.marketing_api import BarberMarketingBoostView
+from barbers.customer_invite_views import (
+    BarberCustomerInviteView,
+    BarberCustomerOutreachCancelView,
+    BarberCustomerOutreachCreateView,
+)
+from control_panel.customer_invite_admin import (
+    AdminBarberCustomerInviteDetailView,
+    AdminBarberCustomerInviteListView,
+    AdminBarberCustomerInviteStatsView,
+    AdminBarberInviteLeaderboardView,
+)
 from barbers.payout_api import (
     BarberPayoutBalanceView,
     BarberPayoutDetailsView,
@@ -363,7 +374,11 @@ api_routes = [
     path("admin/barbers/", AdminBarberListView.as_view()),
     path("admin/barbers/segment-stats/", AdminBarberSegmentStatsView.as_view()),
     path("admin/barbers/<int:pk>/analytics/", AdminBarberAnalyticsView.as_view()),
+    path("admin/barbers/<int:pk>/customer-invites/", AdminBarberCustomerInviteDetailView.as_view()),
     path("admin/barbers/<int:pk>/", AdminBarberDetailView.as_view()),
+    path("admin/customer-invites/stats/", AdminBarberCustomerInviteStatsView.as_view()),
+    path("admin/customer-invites/leaderboard/", AdminBarberInviteLeaderboardView.as_view()),
+    path("admin/customer-invites/", AdminBarberCustomerInviteListView.as_view()),
     path("admin/bookings/", AdminBookingListView.as_view()),
     path("admin/bookings/<int:pk>/", AdminBookingDetailView.as_view()),
     path("admin/reviews/", AdminReviewListView.as_view()),
@@ -502,6 +517,12 @@ api_routes = [
     path("barber/qr-pay/requests/", BarberQrPayRequestCreateView.as_view()),
     path("barber/qr-pay/payments/", BarberQrPayPaymentsView.as_view()),
     path("barber/marketing/boost/", BarberMarketingBoostView.as_view()),
+    path("barber/customer-invites/", BarberCustomerInviteView.as_view()),
+    path("barber/customer-invites/outreach/", BarberCustomerOutreachCreateView.as_view()),
+    path(
+        "barber/customer-invites/outreach/<int:pk>/cancel/",
+        BarberCustomerOutreachCancelView.as_view(),
+    ),
     path("amenities/", AmenityCatalogView.as_view()),
     path("barber/amenities/", BarberSalonAmenitiesView.as_view()),
     path("favorites/salons/", FavoriteSalonListCreateView.as_view()),

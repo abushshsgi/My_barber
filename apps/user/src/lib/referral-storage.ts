@@ -1,4 +1,5 @@
 const STORAGE_KEY = "mysaloon.referralCode";
+const BARBER_INVITE_STORAGE_KEY = "mysaloon.barberInviteCode";
 /** Backend bilan bir xil alifbo (O/0/I/1/L chalkashmasin). */
 const CODE_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
 const CODE_RE = new RegExp(`^[${CODE_ALPHABET}]{1,8}$`);
@@ -29,6 +30,18 @@ export function parseReferralFromSearch(search: Record<string, unknown> | null |
   return "";
 }
 
+/** Sartarosh taklifi: /auth?bref= yoki ?barber_invite= / ?barber_invite_code= */
+export function parseBarberInviteFromSearch(
+  search: Record<string, unknown> | null | undefined,
+): string {
+  if (!search) return "";
+  for (const key of ["bref", "barber_invite", "barber_invite_code"] as const) {
+    const normalized = normalizeReferralCode(firstSearchValue(search[key]));
+    if (normalized) return normalized;
+  }
+  return "";
+}
+
 /** window.location.search dan (SSR-safe). */
 export function parseReferralFromLocationSearch(search = typeof window !== "undefined" ? window.location.search : ""): string {
   if (!search) return "";
@@ -44,11 +57,34 @@ export function parseReferralFromLocationSearch(search = typeof window !== "unde
   return "";
 }
 
+export function parseBarberInviteFromLocationSearch(
+  search = typeof window !== "undefined" ? window.location.search : "",
+): string {
+  if (!search) return "";
+  try {
+    const params = new URLSearchParams(search.startsWith("?") ? search : `?${search}`);
+    for (const key of ["bref", "barber_invite", "barber_invite_code"]) {
+      const normalized = normalizeReferralCode(params.get(key) ?? "");
+      if (normalized) return normalized;
+    }
+  } catch {
+    // ignore
+  }
+  return "";
+}
+
 export function buildInviteUrl(code: string, baseOrigin?: string): string {
   const normalized = normalizeReferralCode(code);
   if (!normalized) return "";
   const origin = (baseOrigin || "https://mysaloon.uz").replace(/\/$/, "");
   return `${origin}/auth?ref=${encodeURIComponent(normalized)}`;
+}
+
+export function buildBarberInviteUrl(code: string, baseOrigin?: string): string {
+  const normalized = normalizeReferralCode(code);
+  if (!normalized) return "";
+  const origin = (baseOrigin || "https://mysaloon.uz").replace(/\/$/, "");
+  return `${origin}/auth?bref=${encodeURIComponent(normalized)}`;
 }
 
 /** API localhost qaytarsa ham ulashish uchun ochiq domen ishlatiladi. */
@@ -94,6 +130,36 @@ export function clearStashedReferralCode(): void {
   if (typeof window === "undefined") return;
   try {
     window.sessionStorage.removeItem(STORAGE_KEY);
+  } catch {
+    // ignore
+  }
+}
+
+export function stashBarberInviteCode(raw: unknown): void {
+  if (typeof window === "undefined") return;
+  const code = normalizeReferralCode(raw);
+  if (!code || !CODE_RE.test(code)) return;
+  try {
+    window.sessionStorage.setItem(BARBER_INVITE_STORAGE_KEY, code);
+  } catch {
+    // ignore
+  }
+}
+
+export function getStashedBarberInviteCode(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const value = window.sessionStorage.getItem(BARBER_INVITE_STORAGE_KEY);
+    return value && CODE_RE.test(value) ? value : null;
+  } catch {
+    return null;
+  }
+}
+
+export function clearStashedBarberInviteCode(): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.sessionStorage.removeItem(BARBER_INVITE_STORAGE_KEY);
   } catch {
     // ignore
   }

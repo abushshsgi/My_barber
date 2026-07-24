@@ -37,9 +37,13 @@ class GoogleLoginView(APIView):
         from wallet.services.wallet_service import WalletService
 
         if is_new:
-            from accounts.referral import apply_referral
+            from barbers.customer_invite import apply_signup_invites
 
-            apply_referral(new_user=user, code=request.data.get("referral_code"))
+            apply_signup_invites(
+                new_user=user,
+                referral_code=request.data.get("referral_code"),
+                barber_invite_code=request.data.get("barber_invite_code"),
+            )
 
         User.objects.filter(pk=user.pk).update(last_login=timezone.now())
         WalletService.ensure_wallet(user)

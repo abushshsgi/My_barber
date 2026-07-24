@@ -4110,3 +4110,125 @@ export async function fetchLedgerLookup(q: string): Promise<{
   const sp = new URLSearchParams({ q });
   return apiJson(`/api/v1/admin/ledger/lookup/?${sp}`);
 }
+
+export type AdminCustomerInviteRow = {
+  id: number;
+  joined_at: string | null;
+  source: string;
+  code_used: string;
+  customer: {
+    id: number;
+    full_name: string;
+    phone: string | null;
+    email: string | null;
+  };
+  barber: {
+    id: number;
+    full_name: string;
+    email: string;
+    phone: string | null;
+    invite_code: string;
+    business_kind: string;
+  };
+  outreach_id: number | null;
+};
+
+export type AdminCustomerInviteStats = {
+  as_of: string;
+  period_days: number;
+  total_invites: number;
+  invites_in_period: number;
+  barbers_with_invites: number;
+  outreach_total: number;
+  outreach_pending: number;
+  top_barbers: Array<{
+    barber_id: number;
+    full_name: string;
+    email: string;
+    phone: string;
+    invite_code: string;
+    invite_count: number;
+  }>;
+  by_day: Array<{ day: string | null; count: number }>;
+  by_source: Array<{ source: string; count: number }>;
+};
+
+export type AdminCustomerInviteLeaderboardRow = {
+  barber_id: number;
+  full_name: string;
+  email: string;
+  phone: string | null;
+  invite_code: string;
+  business_kind: string;
+  invite_count: number;
+  outreach_count: number;
+};
+
+export type AdminBarberCustomerInvitesDetail = {
+  barber: {
+    id: number;
+    full_name: string;
+    email: string;
+    phone: string | null;
+    business_kind: string;
+  };
+  code: string;
+  invite_count: number;
+  outreach_total: number;
+  outreach_pending: number;
+  outreach_joined: number;
+  invites: AdminCustomerInviteRow[];
+  outreaches: Array<{
+    id: number;
+    full_name: string;
+    phone: string | null;
+    channel: string;
+    note: string;
+    status: string;
+    joined_customer_id: number | null;
+    joined_at: string | null;
+    created_at: string | null;
+  }>;
+};
+
+export async function fetchAdminCustomerInviteStats(days = 30): Promise<AdminCustomerInviteStats> {
+  return apiJson(`/api/v1/admin/customer-invites/stats/?days=${days}`);
+}
+
+export async function fetchAdminCustomerInviteList(params?: {
+  q?: string;
+  barber_id?: string | number;
+  source?: string;
+  page?: number;
+}): Promise<{ count: number; results: AdminCustomerInviteRow[] }> {
+  const sp = new URLSearchParams();
+  if (params?.q) sp.set("q", params.q);
+  if (params?.barber_id) sp.set("barber_id", String(params.barber_id));
+  if (params?.source) sp.set("source", params.source);
+  if (params?.page) sp.set("page", String(params.page));
+  const qs = sp.toString();
+  return apiJson(qs ? `/api/v1/admin/customer-invites/?${qs}` : "/api/v1/admin/customer-invites/");
+}
+
+export async function fetchAdminCustomerInviteLeaderboard(params?: {
+  q?: string;
+  only_with_invites?: boolean;
+  page?: number;
+}): Promise<{ count: number; results: AdminCustomerInviteLeaderboardRow[] }> {
+  const sp = new URLSearchParams();
+  if (params?.q) sp.set("q", params.q);
+  if (params?.only_with_invites) sp.set("only_with_invites", "1");
+  if (params?.page) sp.set("page", String(params.page));
+  const qs = sp.toString();
+  return apiJson(
+    qs
+      ? `/api/v1/admin/customer-invites/leaderboard/?${qs}`
+      : "/api/v1/admin/customer-invites/leaderboard/",
+  );
+}
+
+export async function fetchAdminBarberCustomerInvites(
+  barberId: string | number,
+): Promise<AdminBarberCustomerInvitesDetail> {
+  return apiJson(`/api/v1/admin/barbers/${barberId}/customer-invites/`);
+}

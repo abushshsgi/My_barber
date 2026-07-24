@@ -2,6 +2,8 @@ from django.contrib import admin
 
 from .models import (
     Barber,
+    BarberCustomerInvite,
+    BarberCustomerOutreach,
     BarberExpense,
     BarberGoal,
     BarberInventoryItem,
@@ -27,10 +29,57 @@ class BarberServiceInline(admin.TabularInline):
 
 @admin.register(Barber)
 class BarberAdmin(admin.ModelAdmin):
-    list_display = ("email", "full_name", "gender", "is_active", "date_joined")
+    list_display = (
+        "email",
+        "full_name",
+        "gender",
+        "customer_invite_code",
+        "is_active",
+        "date_joined",
+    )
     list_filter = ("gender", "is_active", "region")
-    search_fields = ("email", "full_name", "phone")
+    search_fields = ("email", "full_name", "phone", "customer_invite_code")
     ordering = ("-date_joined",)
+
+
+@admin.register(BarberCustomerInvite)
+class BarberCustomerInviteAdmin(admin.ModelAdmin):
+    list_display = (
+        "id",
+        "barber",
+        "customer_full_name",
+        "customer_phone",
+        "source",
+        "code_used",
+        "created_at",
+    )
+    list_filter = ("source", "created_at")
+    search_fields = (
+        "customer_full_name",
+        "customer_phone",
+        "code_used",
+        "barber__email",
+        "barber__full_name",
+    )
+    autocomplete_fields = ("barber", "customer", "outreach")
+    ordering = ("-created_at",)
+
+
+@admin.register(BarberCustomerOutreach)
+class BarberCustomerOutreachAdmin(admin.ModelAdmin):
+    list_display = (
+        "id",
+        "barber",
+        "full_name",
+        "phone",
+        "channel",
+        "status",
+        "created_at",
+    )
+    list_filter = ("channel", "status", "created_at")
+    search_fields = ("full_name", "phone", "barber__email", "barber__full_name")
+    autocomplete_fields = ("barber", "joined_customer")
+    ordering = ("-created_at",)
 
 
 @admin.register(BarberProfile)

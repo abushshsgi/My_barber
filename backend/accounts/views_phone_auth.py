@@ -337,9 +337,13 @@ class PhoneVerifyView(APIView):
             return Response({"detail": "Akkaunt faol emas."}, status=403)
 
         if is_new:
-            from .referral import apply_referral
+            from barbers.customer_invite import apply_signup_invites
 
-            apply_referral(new_user=user, code=request.data.get("referral_code"))
+            apply_signup_invites(
+                new_user=user,
+                referral_code=request.data.get("referral_code"),
+                barber_invite_code=request.data.get("barber_invite_code"),
+            )
 
         User.objects.filter(pk=user.pk).update(last_login=timezone.now())
         from wallet.services.wallet_service import WalletService

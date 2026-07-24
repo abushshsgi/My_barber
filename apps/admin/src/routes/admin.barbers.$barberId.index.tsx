@@ -14,8 +14,9 @@ import {
   Phone,
   Scissors,
   User,
+  UserPlus,
 } from "lucide-react";
-import { fetchAdminBarberDetail, type AdminBarber } from "@/lib/admin-api";
+import { fetchAdminBarberDetail, fetchAdminBarberCustomerInvites, type AdminBarber } from "@/lib/admin-api";
 import { barberDetailSearchFromRaw } from "@/lib/admin-nav";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -270,6 +271,8 @@ function BarberOverviewPage() {
           </CardContent>
         </Card>
       </section>
+
+      <BarberCustomerInvitesSection barberId={barberId} />
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Card className="border-border/80 shadow-sm">
@@ -586,6 +589,93 @@ function BarberOverviewPage() {
         </Card>
       ) : null}
     </div>
+  );
+}
+
+function BarberCustomerInvitesSection({ barberId }: { barberId: string }) {
+  const invQ = useQuery({
+    queryKey: ["admin", "barber", barberId, "customer-invites"],
+    queryFn: () => fetchAdminBarberCustomerInvites(barberId),
+  });
+  const d = invQ.data;
+
+  return (
+    <section className="space-y-4">
+      <h2 className="font-heading text-lg font-semibold flex items-center gap-2">
+        <UserPlus className="size-5 shrink-0" />
+        Mijoz chaqirishlari
+      </h2>
+      {invQ.isLoading ? (
+        <TableSkeleton rows={4} />
+      ) : !d ? (
+        <p className="text-sm text-muted-foreground">Ma’lumot yuklanmadi.</p>
+      ) : (
+        <>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <StatCard label="Kod" value={d.code || "—"} hint="Taklif kodi" />
+            <StatCard
+              label="Qo‘shilgan"
+              value={String(d.invite_count)}
+              hint="MySaloon’ga kirganlar"
+            />
+            <StatCard
+              label="Outreach"
+              value={String(d.outreach_total)}
+              hint={`Kutilmoqda: ${d.outreach_pending}`}
+            />
+            <StatCard
+              label="Mos kelgan"
+              value={String(d.outreach_joined)}
+              hint="Telefon bo‘yicha bog‘langan"
+            />
+          </div>
+          <Card className="border-border/80 shadow-sm">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">Chaqirilgan mijozlar</CardTitle>
+              <CardDescription>Kim, qachon va qaysi kod orqali</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {d.invites.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Hali chaqirilgan mijoz yo‘q.</p>
+              ) : (
+                <div className="overflow-x-auto rounded-xl border border-border">
+                  <table className="w-full text-left text-sm">
+                    <thead className="bg-muted/50 text-xs uppercase text-muted-foreground">
+                      <tr>
+                        <th className="px-3 py-2">Mijoz</th>
+                        <th className="px-3 py-2">Telefon</th>
+                        <th className="px-3 py-2">Manba</th>
+                        <th className="px-3 py-2">Vaqt</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border">
+                      {d.invites.map((row) => (
+                        <tr key={row.id} className="hover:bg-muted/20">
+                          <td className="px-3 py-2">
+                            <Link
+                              to="/admin/users/$userId"
+                              params={{ userId: String(row.customer.id) }}
+                              className="hover:underline"
+                            >
+                              {row.customer.full_name}
+                            </Link>
+                          </td>
+                          <td className="px-3 py-2 tabular-nums text-xs">
+                            {row.customer.phone || "—"}
+                          </td>
+                          <td className="px-3 py-2 text-xs">{row.source}</td>
+                          <td className="px-3 py-2 tabular-nums text-xs">{fmtIso(row.joined_at)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </>
+      )}
+    </section>
   );
 }
 

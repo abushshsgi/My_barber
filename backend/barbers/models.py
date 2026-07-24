@@ -88,6 +88,14 @@ class Barber(models.Model):
     is_active = models.BooleanField(default=True)
     date_joined = models.DateTimeField(auto_now_add=True)
     last_login = models.DateTimeField(null=True, blank=True)
+    customer_invite_code = models.CharField(
+        max_length=12,
+        blank=True,
+        null=True,
+        unique=True,
+        db_index=True,
+        help_text="Sartaroshning mijozlarni MySaloon'ga chaqirish kodi.",
+    )
 
     class Meta:
         ordering = ["-date_joined"]
@@ -471,3 +479,94 @@ class BarberSignupSnapshot(models.Model):
 
     def __str__(self) -> str:
         return f"BarberSignupSnapshot({self.barber_id})"
+
+
+class BarberCustomerOutreach(models.Model):
+    """Sartarosh o'z mijozini Telegram/telefon orqali chaqirganligi (signupdan oldin)."""
+
+    class Channel(models.TextChoices):
+        TELEGRAM = "telegram", "Telegram"
+        PHONE = "phone", "Telefon"
+        IN_PERSON = "in_person", "Jonli"
+        SMS = "sms", "SMS"
+        OTHER = "other", "Boshqa"
+
+    class Status(models.TextChoices):
+        PENDING = "pending", "Kutilmoqda"
+        JOINED = "joined", "Qo'shildi"
+        CANCELLED = "cancelled", "Bekor"
+
+    barber = models.ForeignKey(
+        Barber, on_delete=models.CASCADE, related_name="customer_outreaches"
+    )
+    full_name = models.CharField(max_length=255, blank=True, default="")
+    phone = models.CharField(max_length=32, blank=True, default="", db_index=True)
+    channel = models.CharField(
+        max_length=16, choices=Channel.choices, default=Channel.TELEGRAM, db_index=True
+    )
+    note = models.CharField(max_length=512, blank=True, default="")
+    status = models.CharField(
+        max_length=16, choices=Status.choices, default=Status.PENDING, db_index=True
+    )
+    joined_customer = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="barber_outreach_matches",
+    )
+    joined_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at", "-id"]
+        indexes = [
+            models.Index(fields=["barber", "status", "-created_at"]),
+            models.Index(fields=["barber", "phone"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"Outreach({self.barber_id} → {self.phone or self.full_name})"
+
+
+class BarberCustomerInvite(models.Model):
+    """Mijoz sartarosh taklif kodi orqali MySaloon'ga qo'shilganda attribution."""
+
+    class Source(models.TextChoices):
+        LINK = "link", "Havola"
+        MANUAL_CODE = "manual_code", "Kod"
+        OUTREACH = "outreach", "Outreach match"
+
+    barber = models.ForeignKey(
+        Barber, on_delete=models.CASCADE, related_name="customer_invites", db_index=True
+    )
+    customer = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="barber_invite_attribution",
+    )
+    code_used = models.CharField(max_length=12, db_index=True)
+    source = models.CharField(
+        max_length=16, choices=Source.choices, default=Source.LINK, db_index=True
+    )
+    outreach = models.ForeignKey(
+        BarberCustomerOutreach,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="attributions",
+    )
+    customer_full_name = models.CharField(max_length=255, blank=True, default="")
+    customer_phone = models.CharField(max_length=32, blank=True, default="", db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ["-created_at", "-id"]
+        indexes = [
+            models.Index(fields=["barber", "-created_at"]),
+            models.Index(fields=["created_at"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"Invite({self.barber_id} → {self.customer_id})"

@@ -27,6 +27,7 @@ import { Route as BarberExpensesRouteImport } from './routes/barber.expenses'
 import { Route as BarberGoalsRouteImport } from './routes/barber.goals'
 import { Route as BarberHelpRouteImport } from './routes/barber.help'
 import { Route as BarberInventoryRouteImport } from './routes/barber.inventory'
+import { Route as BarberInvitesRouteImport } from './routes/barber.invites'
 import { Route as BarberMarketingRouteImport } from './routes/barber.marketing'
 import { Route as BarberNotificationsRouteImport } from './routes/barber.notifications'
 import { Route as BarberPortfolioRouteImport } from './routes/barber.portfolio'
@@ -145,6 +146,11 @@ const BarberHelpRoute = BarberHelpRouteImport.update({
 const BarberInventoryRoute = BarberInventoryRouteImport.update({
   id: '/inventory',
   path: '/inventory',
+  getParentRoute: () => BarberRoute,
+} as any)
+const BarberInvitesRoute = BarberInvitesRouteImport.update({
+  id: '/invites',
+  path: '/invites',
   getParentRoute: () => BarberRoute,
 } as any)
 const BarberMarketingRoute = BarberMarketingRouteImport.update({
@@ -314,6 +320,7 @@ export interface FileRoutesByFullPath {
   '/barber/goals': typeof BarberGoalsRoute
   '/barber/help': typeof BarberHelpRoute
   '/barber/inventory': typeof BarberInventoryRoute
+  '/barber/invites': typeof BarberInvitesRoute
   '/barber/marketing': typeof BarberMarketingRoute
   '/barber/notifications': typeof BarberNotificationsRoute
   '/barber/portfolio': typeof BarberPortfolioRoute
@@ -362,6 +369,7 @@ export interface FileRoutesByTo {
   '/barber/goals': typeof BarberGoalsRoute
   '/barber/help': typeof BarberHelpRoute
   '/barber/inventory': typeof BarberInventoryRoute
+  '/barber/invites': typeof BarberInvitesRoute
   '/barber/marketing': typeof BarberMarketingRoute
   '/barber/notifications': typeof BarberNotificationsRoute
   '/barber/portfolio': typeof BarberPortfolioRoute
@@ -409,6 +417,7 @@ export interface FileRoutesById {
   '/barber/goals': typeof BarberGoalsRoute
   '/barber/help': typeof BarberHelpRoute
   '/barber/inventory': typeof BarberInventoryRoute
+  '/barber/invites': typeof BarberInvitesRoute
   '/barber/marketing': typeof BarberMarketingRoute
   '/barber/notifications': typeof BarberNotificationsRoute
   '/barber/portfolio': typeof BarberPortfolioRoute
@@ -460,6 +469,7 @@ export interface FileRouteTypes {
     | '/barber/goals'
     | '/barber/help'
     | '/barber/inventory'
+    | '/barber/invites'
     | '/barber/marketing'
     | '/barber/notifications'
     | '/barber/portfolio'
@@ -508,6 +518,7 @@ export interface FileRouteTypes {
     | '/barber/goals'
     | '/barber/help'
     | '/barber/inventory'
+    | '/barber/invites'
     | '/barber/marketing'
     | '/barber/notifications'
     | '/barber/portfolio'
@@ -554,6 +565,7 @@ export interface FileRouteTypes {
     | '/barber/goals'
     | '/barber/help'
     | '/barber/inventory'
+    | '/barber/invites'
     | '/barber/marketing'
     | '/barber/notifications'
     | '/barber/portfolio'
@@ -725,6 +737,13 @@ declare module '@tanstack/react-router' {
       path: '/inventory'
       fullPath: '/barber/inventory'
       preLoaderRoute: typeof BarberInventoryRouteImport
+      parentRoute: typeof BarberRoute
+    }
+    '/barber/invites': {
+      id: '/barber/invites'
+      path: '/invites'
+      fullPath: '/barber/invites'
+      preLoaderRoute: typeof BarberInvitesRouteImport
       parentRoute: typeof BarberRoute
     }
     '/barber/marketing': {
@@ -989,6 +1008,7 @@ interface BarberRouteChildren {
   BarberGoalsRoute: typeof BarberGoalsRoute
   BarberHelpRoute: typeof BarberHelpRoute
   BarberInventoryRoute: typeof BarberInventoryRoute
+  BarberInvitesRoute: typeof BarberInvitesRoute
   BarberMarketingRoute: typeof BarberMarketingRoute
   BarberNotificationsRoute: typeof BarberNotificationsRoute
   BarberPortfolioRoute: typeof BarberPortfolioRoute
@@ -1021,6 +1041,7 @@ const BarberRouteChildren: BarberRouteChildren = {
   BarberGoalsRoute: BarberGoalsRoute,
   BarberHelpRoute: BarberHelpRoute,
   BarberInventoryRoute: BarberInventoryRoute,
+  BarberInvitesRoute: BarberInvitesRoute,
   BarberMarketingRoute: BarberMarketingRoute,
   BarberNotificationsRoute: BarberNotificationsRoute,
   BarberPortfolioRoute: BarberPortfolioRoute,

@@ -32,6 +32,7 @@ import {
   Sparkles,
   Clock,
   QrCode,
+  UserPlus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -106,6 +107,7 @@ const ICON_BY_NAME: Record<MatrixNavItem["iconName"], NavItem["icon"]> = {
   Building2,
   Images,
   Sparkles,
+  UserPlus,
 };
 
 function mapNav(items: MatrixNavItem[]): NavItem[] {
