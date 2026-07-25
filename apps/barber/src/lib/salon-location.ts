@@ -21,6 +21,7 @@ export async function validateSalonCityCoords(
       return `Manzil «${city}» deb ko'rsatilgan, lekin xarita nuqtasi ${gpsLabel}da. Iltimos, xaritada to'g'ri joyni belgilang.`;
     }
   } catch {
+    // Geo API ishlamasa — salon yaratishni to'xtatmaymiz.
     return null;
   }
   return null;

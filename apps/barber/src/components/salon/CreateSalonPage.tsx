@@ -548,19 +548,22 @@ export function CreateSalonPage() {
       const createBody = await parseJsonSafe(createRes);
       if (!createRes.ok) {
         const errMsg = extractApiError(createBody, "Salon yaratishda xatolik yuz berdi.");
-        if (createRes.status === 400 && /mavjud|band/i.test(errMsg)) {
-          const stRes = await apiFetch("/api/v1/barber/onboarding/status/");
-          if (stRes.ok) {
-            const st = (await stRes.json()) as { owns_salon?: boolean };
-            if (st.owns_salon) {
-              finished = true;
-              setCompleted(true);
-              await finishOnboardingAndGo(navigate, "Saloningiz allaqachon yaratilgan.", {
-                afterSetup: true,
-              });
-              return;
-            }
+        // 400 duplicate yoki 500 (salon DB da yaratilgan, javob xato) — recovery
+        const stRes = await apiFetch("/api/v1/barber/onboarding/status/");
+        if (stRes.ok) {
+          const st = (await stRes.json()) as { owns_salon?: boolean };
+          if (st.owns_salon) {
+            finished = true;
+            setCompleted(true);
+            await finishOnboardingAndGo(navigate, "Saloningiz tayyor.", {
+              afterSetup: true,
+            });
+            return;
           }
+        }
+        if (createRes.status === 400 && /mavjud|band/i.test(errMsg)) {
+          setSubmitError(errMsg);
+          return;
         }
         setSubmitError(errMsg);
         return;

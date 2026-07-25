@@ -147,13 +147,16 @@ def reverse_geocode(lat: float, lng: float) -> GeocodeResult | None:
     result: GeocodeResult | None = None
     try:
         result = _reverse_geocode_google(lat, lng)
-    except GeocoderError:
+    except Exception:
         result = None
     if not result:
-        from geo.services.nominatim import reverse_geocode_nominatim
-        from geo.services.photon import reverse_geocode_photon
+        try:
+            from geo.services.nominatim import reverse_geocode_nominatim
+            from geo.services.photon import reverse_geocode_photon
 
-        result = reverse_geocode_nominatim(lat, lng) or reverse_geocode_photon(lat, lng)
+            result = reverse_geocode_nominatim(lat, lng) or reverse_geocode_photon(lat, lng)
+        except Exception:
+            result = None
 
     if result:
         try:

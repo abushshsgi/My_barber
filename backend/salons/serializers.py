@@ -638,6 +638,8 @@ class SalonCreateUpdateSerializer(serializers.ModelSerializer):
         sync_salon_amenities(salon, codes)
 
     def create(self, validated_data):
+        from django.db import IntegrityError
+
         hours_data = validated_data.pop("hours", [])
         services_data = validated_data.pop("services", [])
         amenity_codes = validated_data.pop("amenity_codes", None)
@@ -653,26 +655,34 @@ class SalonCreateUpdateSerializer(serializers.ModelSerializer):
         owner = validated_data.get("owner_barber")
         if owner is not None and not (validated_data.get("business_kind") or "").strip():
             validated_data["business_kind"] = (getattr(owner, "business_kind", "") or "").strip()
-        with transaction.atomic():
-            salon = Salon.objects.create(**validated_data)
-            for h in hours_data:
-                SalonHours.objects.create(salon=salon, **h)
-            for s in services_data:
-                # Salon katalogi: barberga bog‘lanmagan (butun salonga tegishli).
-                Service.objects.create(
-                    salon=salon,
-                    barber=None,
-                    name=s["name"],
-                    price=s["price"],
-                    duration_minutes=s["duration_minutes"],
-                    is_active=True,
-                )
-            if amenity_codes is not None:
-                self._sync_amenities(salon, amenity_codes)
+        try:
+            with transaction.atomic():
+                salon = Salon.objects.create(**validated_data)
+                for h in hours_data:
+                    SalonHours.objects.create(salon=salon, **h)
+                for s in services_data:
+                    # Salon katalogi: barberga bog‘lanmagan (butun salonga tegishli).
+                    Service.objects.create(
+                        salon=salon,
+                        barber=None,
+                        name=s["name"],
+                        price=s["price"],
+                        duration_minutes=s["duration_minutes"],
+                        is_active=True,
+                    )
+                if amenity_codes is not None:
+                    self._sync_amenities(salon, amenity_codes)
+        except IntegrityError:
+            raise serializers.ValidationError(
+                {"name": "Bu nom bilan salon allaqachon mavjud. Boshqa nom tanlang."}
+            )
         if owner is not None:
-            from barbers.salon_service_sync import sync_all_barber_services_for_barber
+            try:
+                from barbers.salon_service_sync import sync_all_barber_services_for_barber
 
-            sync_all_barber_services_for_barber(owner)
+                sync_all_barber_services_for_barber(owner)
+            except Exception:
+                pass
         return salon
 
     def update(self, instance, validated_data):

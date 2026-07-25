@@ -231,9 +231,37 @@ class SalonViewSet(viewsets.ModelViewSet):
         if bp is None:
             raise PermissionDenied("Faqat sartarosh akkaunti bilan salon yaratish mumkin.")
         salon = serializer.save(owner_barber=bp)
-        sync_owner_region_from_salon(bp, salon, force=True)
-        sync_owner_profile_location_from_salon(bp, salon)
-        ensure_owner_membership_active(bp, salon)
+        # Region/membership sync — salon allaqachon yaratilgan; xato 500 qilmasin.
+        try:
+            sync_owner_region_from_salon(bp, salon, force=True)
+        except Exception:
+            pass
+        try:
+            sync_owner_profile_location_from_salon(bp, salon)
+        except Exception:
+            pass
+        try:
+            ensure_owner_membership_active(bp, salon)
+        except Exception:
+            pass
+
+    def create(self, request, *args, **kwargs):
+        """Salon create — response serialization 500 bermasligi uchun minimal body."""
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        salon = serializer.instance
+        return Response(
+            {
+                "id": salon.id,
+                "name": salon.name,
+                "latitude": str(salon.latitude),
+                "longitude": str(salon.longitude),
+                "address": salon.address or "",
+                "is_published": salon.is_published,
+            },
+            status=status.HTTP_201_CREATED,
+        )
 
     def perform_update(self, serializer):
         salon = self.get_object()

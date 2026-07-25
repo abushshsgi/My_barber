@@ -425,7 +425,18 @@ export function MyBarberSetupPage() {
       });
       const createBody = await parseJsonSafe(createRes);
       if (!createRes.ok) {
-        setSubmitError(extractApiError(createBody, "MyBarber salon yaratishda xatolik."));
+        const errMsg = extractApiError(createBody, "MyBarber salon yaratishda xatolik.");
+        const stRes = await apiFetch("/api/v1/barber/onboarding/status/");
+        if (stRes.ok) {
+          const st = (await stRes.json()) as { owns_salon?: boolean };
+          if (st.owns_salon) {
+            setSuccess(true);
+            clearSignupDraft();
+            await finishOnboardingAndGo(navigate, "MyBarber salon tayyor.", { afterSetup: true });
+            return;
+          }
+        }
+        setSubmitError(errMsg);
         return;
       }
       const createdId =
