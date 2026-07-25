@@ -672,10 +672,25 @@ class SalonCreateUpdateSerializer(serializers.ModelSerializer):
                     )
                 if amenity_codes is not None:
                     self._sync_amenities(salon, amenity_codes)
-        except IntegrityError:
+        except IntegrityError as exc:
+            err = str(exc).lower()
+            if "salon_name_unique_ci_trim" in err or (
+                "duplicate key" in err and "lower(trim" in err
+            ):
+                raise serializers.ValidationError(
+                    {"name": "Bu nom bilan salon allaqachon mavjud. Boshqa nom tanlang."}
+                ) from exc
+            if "salons_salon_slug" in err or ("duplicate key" in err and "slug" in err):
+                raise serializers.ValidationError(
+                    {"name": "Bu nom bilan salon allaqachon mavjud. Boshqa nom tanlang."}
+                ) from exc
+            if "salonhours" in err or ("weekday" in err and "unique" in err):
+                raise serializers.ValidationError(
+                    {"hours": "Ish kunlari takrorlangan. Jadvalni tekshiring."}
+                ) from exc
             raise serializers.ValidationError(
-                {"name": "Bu nom bilan salon allaqachon mavjud. Boshqa nom tanlang."}
-            )
+                {"detail": "Salon yaratib bo‘lmadi. Qayta urinib ko‘ring."}
+            ) from exc
         if owner is not None:
             try:
                 from barbers.salon_service_sync import sync_all_barber_services_for_barber
