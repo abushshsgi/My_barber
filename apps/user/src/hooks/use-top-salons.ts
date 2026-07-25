@@ -10,9 +10,11 @@ export function useTopSalons() {
   const { data: nearbySalons = [], isLoading: nearbyLoading } = useSalonsNearby(
     hasCoords ? ctx.lat! : undefined,
     hasCoords ? ctx.lng! : undefined,
-    25,
+    40,
   );
-  const { data: listSalons = [], isLoading: listLoading, error } = useSalonsList();
+  const { data: listSalons = [], isLoading: listLoading, error } = useSalonsList(
+    ctx.region?.trim() || undefined,
+  );
 
   const salons = useMemo(() => {
     const base =

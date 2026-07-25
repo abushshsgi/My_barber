@@ -26,7 +26,6 @@ import { rankBarbersForUser, rankSalonsForUser } from "@/lib/recommendations";
 export function useHomeData() {
   const { audience } = useAudience();
   const { data: me } = useMe();
-  const catalogRegion = me?.region?.trim() || undefined;
   const { personaId } = useExplorePersona();
   const ageGroup = useUserAgeGroup();
   const { data: menHairstyles = [], isLoading: menExploreLoading } = useHairstyles("men", personaId, {
@@ -43,13 +42,14 @@ export function useHomeData() {
     return [...menHairstyles, ...womenHairstyles];
   }, [audience, menHairstyles, womenHairstyles]);
   const ctx = useRecommendContext();
+  const catalogRegion = me?.region?.trim() || ctx.region?.trim() || undefined;
   const hasCoords = ctx.lat != null && ctx.lng != null;
   const { data: nearbySalons = [], isLoading: nearbyLoading, isError: nearbyError } = useSalonsNearby(
     hasCoords ? ctx.lat! : undefined,
     hasCoords ? ctx.lng! : undefined,
-    25,
+    40,
   );
-  const { data: listSalons = [], isLoading: listLoading, error } = useSalonsList();
+  const { data: listSalons = [], isLoading: listLoading, error } = useSalonsList(catalogRegion);
 
   const salons = useMemo(() => {
     const useNearby = hasCoords && !nearbyError && nearbySalons.length > 0;
@@ -70,7 +70,7 @@ export function useHomeData() {
   const { data: nearbyBarbers = [], isLoading: nearbyBarbersLoading } = useBarbersNearby(
     hasCoords ? ctx.lat! : undefined,
     hasCoords ? ctx.lng! : undefined,
-    25,
+    40,
     !searchActive,
   );
   const { data: listBarbers = [], isLoading: listBarbersLoading } = useBarbersList(

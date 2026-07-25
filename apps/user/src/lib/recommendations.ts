@@ -85,10 +85,12 @@ export function rankSalonsForUser(salons: Salon[], ctx: RecommendContext): Salon
   if (!salons.length) return salons;
 
   return [...salons]
-    .map((s) => ({
-      salon: { ...s },
-      score: recommendScore({ ...s }, ctx),
-    }))
+    .map((s) => {
+      // Bitta nusxa — recommendScore distanceKm ni shu obyektga yozadi.
+      const salon = { ...s };
+      const score = recommendScore(salon, ctx);
+      return { salon, score };
+    })
     .sort((a, b) => {
       if (b.score !== a.score) return b.score - a.score;
       return (a.salon.distanceKm || 999) - (b.salon.distanceKm || 999);

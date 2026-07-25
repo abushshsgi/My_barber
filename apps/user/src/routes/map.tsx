@@ -176,7 +176,7 @@ function MapView() {
 
   const ctx = useRecommendContext();
   const { data: me } = useMe();
-  const catalogRegion = me?.region?.trim() || undefined;
+  const catalogRegion = me?.region?.trim() || ctx.region?.trim() || undefined;
   const hasCoords = ctx.lat != null && ctx.lng != null;
   const [discoveryTab, setDiscoveryTab] = useState<MapDiscoveryTab>("salons");
   const [query, setQuery] = useState(routeQ);
@@ -191,14 +191,14 @@ function MapView() {
   } = useSalonsNearby(
     hasCoords ? ctx.lat! : undefined,
     hasCoords ? ctx.lng! : undefined,
-    25,
+    40,
   );
   const {
     data: listSalons = [],
     isLoading: listLoading,
     isError: listError,
     refetch: refetchList,
-  } = useSalonsList();
+  } = useSalonsList(catalogRegion);
   const {
     data: nearbyBarbers = [],
     isLoading: barbersLoading,
@@ -207,7 +207,7 @@ function MapView() {
   } = useBarbersNearby(
     hasCoords ? ctx.lat! : undefined,
     hasCoords ? ctx.lng! : undefined,
-    25,
+    40,
     discoveryTab === "barbers",
   );
   const {

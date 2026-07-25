@@ -5,11 +5,12 @@ import { mapNearbySalon, mapSalonDetail, mapSalonList, mapStaffToBarber } from "
 
 export const salonsQueryKey = ["salons"] as const;
 
-export function useSalonsList() {
+export function useSalonsList(region?: string | null) {
+  const regionKey = region?.trim() || "all";
   return useQuery({
-    queryKey: [...salonsQueryKey, "list"],
+    queryKey: [...salonsQueryKey, "list", regionKey],
     queryFn: async () => {
-      const data = await fetchSalons();
+      const data = await fetchSalons(region?.trim() ? { region: region.trim() } : undefined);
       return data.map((s) => mapSalonList(s));
     },
     staleTime: 30_000,

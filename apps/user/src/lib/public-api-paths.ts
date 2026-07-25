@@ -12,6 +12,9 @@ export function isPublicCustomerApiPath(path: string): boolean {
   }
   if (p.startsWith("/api/v1/bookings/availability")) return true;
   if (p === "/api/v1/geo/map-config") return true;
+  if (p === "/api/v1/geo/validate" || p === "/api/v1/geo/geocode" || p === "/api/v1/geo/reverse") {
+    return true;
+  }
   if (p === "/api/v1/regions") return true;
   if (p === "/api/v1/hairstyles" || p.startsWith("/api/v1/hairstyles/")) return true;
   if (/^\/api\/v1\/ai\/look-share\/[^/]+$/.test(p)) return true;

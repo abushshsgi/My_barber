@@ -38,11 +38,14 @@ export function SalonLocationPicker({
 }: Props) {
   const lat = parseCoord(latitude);
   const lng = parseCoord(longitude);
-  const skipGeocodeRef = useRef(false);
+  const skipCityGeocodeRef = useRef(false);
+  const skipAddressGeocodeRef = useRef(false);
   const skipReverseRef = useRef(false);
   const reverseTimerRef = useRef<number | null>(null);
   const prevCityRef = useRef(city);
+  const prevAddressRef = useRef(address);
 
+  // Shahar matni — faqat pin yo‘q bo‘lsa geocode (aks holda GPS/reverse pinni siljitadi).
   useEffect(() => {
     const c = city.trim();
     if (c.length < 2 || c === prevCityRef.current) {
@@ -50,10 +53,12 @@ export function SalonLocationPicker({
       return;
     }
     prevCityRef.current = c;
-    if (skipGeocodeRef.current) {
-      skipGeocodeRef.current = false;
+    if (skipCityGeocodeRef.current) {
+      skipCityGeocodeRef.current = false;
       return;
     }
+    if (lat != null && lng != null) return;
+
     const timer = window.setTimeout(() => {
       void geocodeAddress(`${c}, O'zbekiston`)
         .then((results) => {
@@ -63,18 +68,25 @@ export function SalonLocationPicker({
           setLatitude(first.lat.toFixed(6));
           setLongitude(first.lng.toFixed(6));
           if (!address.trim() && first.address) {
+            skipAddressGeocodeRef.current = true;
             setAddress?.(first.address);
           }
         })
         .catch(() => undefined);
     }, 450);
     return () => window.clearTimeout(timer);
-  }, [city, address, setLatitude, setLongitude, setAddress]);
+  }, [city, address, lat, lng, setLatitude, setLongitude, setAddress]);
 
+  // Manzil — foydalanuvchi yozganda pinni yangilash.
   useEffect(() => {
     const addressPart = address.trim();
-    if (addressPart.length < 5 || skipGeocodeRef.current) {
-      skipGeocodeRef.current = false;
+    if (addressPart.length < 5 || addressPart === prevAddressRef.current) {
+      prevAddressRef.current = addressPart;
+      return;
+    }
+    prevAddressRef.current = addressPart;
+    if (skipAddressGeocodeRef.current) {
+      skipAddressGeocodeRef.current = false;
       return;
     }
     const q = [city.trim(), addressPart].filter(Boolean).join(", ");
@@ -86,8 +98,16 @@ export function SalonLocationPicker({
           skipReverseRef.current = true;
           setLatitude(first.lat.toFixed(6));
           setLongitude(first.lng.toFixed(6));
-          setAddress?.(first.address || address);
-          setCity?.(first.city || city);
+          if (first.address) {
+            skipAddressGeocodeRef.current = true;
+            prevAddressRef.current = first.address.trim();
+            setAddress?.(first.address);
+          }
+          if (first.city) {
+            skipCityGeocodeRef.current = true;
+            prevCityRef.current = first.city.trim();
+            setCity?.(first.city);
+          }
         })
         .catch(() => undefined);
     }, 500);
@@ -101,15 +121,24 @@ export function SalonLocationPicker({
       setLongitude(nextLng.toFixed(6));
       return;
     }
-    skipGeocodeRef.current = true;
+    skipCityGeocodeRef.current = true;
+    skipAddressGeocodeRef.current = true;
     setLatitude(nextLat.toFixed(6));
     setLongitude(nextLng.toFixed(6));
     if (reverseTimerRef.current) window.clearTimeout(reverseTimerRef.current);
     reverseTimerRef.current = window.setTimeout(() => {
       void reverseGeocodeAddress(nextLat, nextLng).then((result) => {
         if (!result) return;
-        setAddress?.(result.address);
-        if (result.city) setCity?.(result.city);
+        skipAddressGeocodeRef.current = true;
+        skipCityGeocodeRef.current = true;
+        if (result.address) {
+          prevAddressRef.current = result.address.trim();
+          setAddress?.(result.address);
+        }
+        if (result.city) {
+          prevCityRef.current = result.city.trim();
+          setCity?.(result.city);
+        }
       });
     }, 450);
   };

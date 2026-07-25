@@ -115,6 +115,12 @@ export function useOnboardingFlow() {
         longitude: roundCoord(lng),
         onboarding_completed: true,
       });
+      try {
+        const { writeDiscoveryLocation } = await import("@/lib/discovery-location");
+        writeDiscoveryLocation({ lat, lng });
+      } catch {
+        /* */
+      }
       toast.success("Profil tayyor!");
       void navigate({ to: "/", replace: true });
     } catch (e) {

@@ -23,6 +23,24 @@ function isUsableMap(map: google.maps.Map | null | undefined): map is google.map
   }
 }
 
+function hasValidCoords(lat?: number | null, lng?: number | null): boolean {
+  return (
+    lat != null &&
+    lng != null &&
+    Number.isFinite(lat) &&
+    Number.isFinite(lng) &&
+    lat >= -90 &&
+    lat <= 90 &&
+    lng >= -180 &&
+    lng <= 180
+  );
+}
+
+/**
+ * Google Maps pin picker.
+ * Agar `lat`/`lng` berilmasa — Toshkent faqat vizual markaz; onCoordsChange
+ * faqat foydalanuvchi xaritani surtganda yoki tashqi GPS coords kelganda chaqiriladi.
+ */
 export function MapPicker({
   lat,
   lng,
@@ -37,11 +55,14 @@ export function MapPicker({
   const skipMoveRef = useRef(false);
   const lastSyncedRef = useRef<{ lat: number; lng: number } | null>(null);
   const listenerRef = useRef<google.maps.MapsEventListener | null>(null);
+  const dragListenerRef = useRef<google.maps.MapsEventListener | null>(null);
+  /** Placeholder (Toshkent) coords ni parentga yozmaslik. */
+  const emitAllowedRef = useRef(hasValidCoords(lat, lng));
 
   onCoordsRef.current = onCoordsChange;
 
-  const initialLat = lat ?? TASHKENT_CENTER.lat;
-  const initialLng = lng ?? TASHKENT_CENTER.lng;
+  const initialLat = hasValidCoords(lat, lng) ? lat! : TASHKENT_CENTER.lat;
+  const initialLng = hasValidCoords(lat, lng) ? lng! : TASHKENT_CENTER.lng;
 
   useEffect(() => {
     const el = containerRef.current;
@@ -75,11 +96,16 @@ export function MapPicker({
         mapRef.current = map;
         lastSyncedRef.current = { lat: initialLat, lng: initialLng };
 
+        dragListenerRef.current = map.addListener("dragstart", () => {
+          emitAllowedRef.current = true;
+        });
+
         listenerRef.current = map.addListener("idle", () => {
           if (skipMoveRef.current) {
             skipMoveRef.current = false;
             return;
           }
+          if (!emitAllowedRef.current) return;
           if (!isUsableMap(map)) return;
           try {
             const center = map.getCenter();
@@ -99,9 +125,15 @@ export function MapPicker({
 
     return () => {
       destroyed = true;
-      if (listenerRef.current && typeof google !== "undefined" && google?.maps?.event) {
-        google.maps.event.removeListener(listenerRef.current);
-        listenerRef.current = null;
+      if (typeof google !== "undefined" && google?.maps?.event) {
+        if (listenerRef.current) {
+          google.maps.event.removeListener(listenerRef.current);
+          listenerRef.current = null;
+        }
+        if (dragListenerRef.current) {
+          google.maps.event.removeListener(dragListenerRef.current);
+          dragListenerRef.current = null;
+        }
       }
       mapRef.current = null;
     };
@@ -110,17 +142,19 @@ export function MapPicker({
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!isUsableMap(map) || lat == null || lng == null) return;
+    if (!isUsableMap(map) || !hasValidCoords(lat, lng)) return;
+
+    emitAllowedRef.current = true;
 
     const prev = lastSyncedRef.current;
-    if (prev && Math.abs(prev.lat - lat) < 1e-6 && Math.abs(prev.lng - lng) < 1e-6) {
+    if (prev && Math.abs(prev.lat - lat!) < 1e-6 && Math.abs(prev.lng - lng!) < 1e-6) {
       return;
     }
 
     skipMoveRef.current = true;
-    lastSyncedRef.current = { lat, lng };
+    lastSyncedRef.current = { lat: lat!, lng: lng! };
     try {
-      map.panTo({ lat, lng });
+      map.panTo({ lat: lat!, lng: lng! });
     } catch {
       skipMoveRef.current = false;
     }

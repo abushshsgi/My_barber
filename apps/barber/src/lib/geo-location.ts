@@ -1,4 +1,5 @@
 import { toast } from "sonner";
+import { getAccuratePosition, GeolocationError } from "@mybarber/shared/geolocation";
 import { reverseGeocodeAddress } from "@/lib/api/geo";
 
 export type GpsLocationSetters = {
@@ -10,33 +11,37 @@ export type GpsLocationSetters = {
 
 /** Browser GPS → koordinata + backend reverse geocode (shahar, ko'cha). */
 export function requestGpsLocation(setters: GpsLocationSetters): void {
-  if (!("geolocation" in navigator)) {
-    toast.error("Brauzeringiz joylashuvni qo'llab-quvvatlamaydi.");
-    return;
-  }
-
-  navigator.geolocation.getCurrentPosition(
-    (pos) => {
-      const lat = pos.coords.latitude;
-      const lng = pos.coords.longitude;
+  void (async () => {
+    try {
+      const pos = await getAccuratePosition({
+        enableHighAccuracy: true,
+        desiredAccuracyMeters: 40,
+        maxWatchMs: 12_000,
+        maximumAge: 0,
+        timeout: 15_000,
+      });
+      const lat = pos.lat;
+      const lng = pos.lng;
       setters.setLatitude(lat.toFixed(6));
       setters.setLongitude(lng.toFixed(6));
-      void reverseGeocodeAddress(lat, lng).then((result) => {
+      try {
+        const result = await reverseGeocodeAddress(lat, lng);
         if (!result) {
           toast.error("Manzil aniqlanmadi. Shahar va ko'chani qo'lda kiriting.");
           return;
         }
         setters.setAddress?.(result.address);
         if (result.city) setters.setCity?.(result.city);
-      });
-    },
-    (err) => {
+        toast.success("Joylashuv aniqlandi");
+      } catch {
+        toast.error("Manzil aniqlanmadi. Shahar va ko'chani qo'lda kiriting.");
+      }
+    } catch (err) {
       const message =
-        err.code === err.PERMISSION_DENIED
-          ? "Joylashuvga ruxsat berilmadi. Sozlamalardan GPS ni yoqing."
+        err instanceof GeolocationError
+          ? err.message
           : "GPS joylashuvni aniqlab bo'lmadi. Qayta urinib ko'ring.";
       toast.error(message);
-    },
-    { enableHighAccuracy: true, timeout: 10000 },
-  );
+    }
+  })();
 }

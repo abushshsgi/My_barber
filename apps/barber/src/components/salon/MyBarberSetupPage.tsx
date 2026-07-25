@@ -41,6 +41,7 @@ import {
   BarberGenderPicker,
   type BarberGenderValue,
 } from "@/components/auth/AudienceTypePickers";
+import { validateSalonCityCoords } from "@/lib/salon-location";
 
 type Service = { id: string; name: string; price: string; duration: string };
 
@@ -180,12 +181,7 @@ export function MyBarberSetupPage() {
             if (seg[0]) setSalonCity(seg[0]);
             if (seg[1]) setSalonAddress(seg.slice(1).join(", "));
           }
-          const langs = b.spoken_languages;
-          if (Array.isArray(langs) && langs.length > 0) {
-            const ok = new Set<string>(LANGUAGES.map((l) => l.code));
-            const n = langs.filter((c): c is string => typeof c === "string" && ok.has(c));
-            if (n.length) setLanguages(n);
-          }
+          // spoken_languages — MyBarber da faqat "uz" (UI yo'q); preload skip.
         }
       } catch {
         /* */
@@ -329,6 +325,7 @@ export function MyBarberSetupPage() {
             phone: barberPhone,
             shop_name: salonBrandName,
             address: locationText,
+            ...(regionCode ? { region: regionCode } : {}),
           });
         } catch (err) {
           setSubmitError(err instanceof Error ? err.message : "Ro'yxatdan o'tish amalga oshmadi.");
@@ -382,6 +379,16 @@ export function MyBarberSetupPage() {
       const profErr = await parseJsonSafe(profRes);
       if (!profRes.ok) {
         setSubmitError(extractApiError(profErr, "Joylashuvni saqlashda xatolik."));
+        return;
+      }
+
+      const coordErr = await validateSalonCityCoords(
+        salonCity.trim(),
+        Number(salonLatitude),
+        Number(salonLongitude),
+      );
+      if (coordErr) {
+        setSubmitError(coordErr);
         return;
       }
 
@@ -474,6 +481,7 @@ export function MyBarberSetupPage() {
       }
 
       clearSignupDraft();
+      setSuccess(true);
       await finishOnboardingAndGo(navigate, "MyBarber salon tayyor.", { afterSetup: true });
     } catch (e) {
       setSubmitError(e instanceof Error ? e.message : "Xatolik");

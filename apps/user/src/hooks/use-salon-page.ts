@@ -3,15 +3,17 @@ import { useQuery } from "@tanstack/react-query";
 import { fetchSalonPortfolio, fetchSalonRatingSummary, fetchSalonStaff } from "@/lib/api/salons";
 import { fetchSalonReviews } from "@/lib/api/reviews";
 import { mapReview } from "@/lib/mappers/review";
-import { authQueryEnabled } from "@/lib/auth-query";
 import { mapRatingSummary, mapStaffToBarber } from "@/lib/mappers/salon";
 import { mergeRatingSummary } from "@/lib/salon-rating-summary";
 import { useSalonDetail } from "@/hooks/use-salons";
+import { useRecommendContext } from "@/hooks/use-recommend-context";
 import { matchBarberGender, useAudience } from "@/hooks/use-audience";
+import { haversineKm } from "@/lib/recommendations";
 import i18n from "@/i18n/config";
 
 export function useSalonPage(id: string) {
   const detail = useSalonDetail(id);
+  const ctx = useRecommendContext();
   const { audience } = useAudience();
   const lang = i18n.language?.split("-")[0] ?? "uz";
   const detailReady = Boolean(detail.data);
@@ -72,23 +74,35 @@ export function useSalonPage(id: string) {
     ? mergeRatingSummary(ratingSummary.data, resolvedReviews, base.rating, lang)
     : null;
 
-  const salon = base
-    ? {
-        ...base,
-        staff: staffMapped,
-        reviews: resolvedReviews,
-        // Gallery (uploaded) + booking work photos — replace qilmasdan birlashtirish
-        portfolio: (() => {
-          const gallery = base.portfolio ?? [];
-          const work = (portfolio.data ?? [])
-            .map((u) => u?.trim())
-            .filter(Boolean) as string[];
-          const merged = [...gallery, ...work];
-          return merged.filter((url, i, arr) => arr.indexOf(url) === i);
-        })(),
-        ratingSummary: resolvedSummary,
-      }
-    : null;
+  const salon = useMemo(() => {
+    if (!base) return null;
+    let distanceKm = base.distanceKm || 0;
+    if (
+      base.lat &&
+      base.lng &&
+      ctx.lat != null &&
+      ctx.lng != null &&
+      Number.isFinite(ctx.lat) &&
+      Number.isFinite(ctx.lng)
+    ) {
+      distanceKm = Math.round(haversineKm(ctx.lat, ctx.lng, base.lat, base.lng) * 10) / 10;
+    }
+    return {
+      ...base,
+      distanceKm,
+      staff: staffMapped,
+      reviews: resolvedReviews,
+      portfolio: (() => {
+        const gallery = base.portfolio ?? [];
+        const work = (portfolio.data ?? [])
+          .map((u) => u?.trim())
+          .filter(Boolean) as string[];
+        const merged = [...gallery, ...work];
+        return merged.filter((url, i, arr) => arr.indexOf(url) === i);
+      })(),
+      ratingSummary: resolvedSummary,
+    };
+  }, [base, staffMapped, resolvedReviews, portfolio.data, resolvedSummary, ctx.lat, ctx.lng]);
 
   return {
     salon,

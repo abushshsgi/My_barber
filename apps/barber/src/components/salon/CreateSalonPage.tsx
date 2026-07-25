@@ -410,6 +410,9 @@ export function CreateSalonPage() {
     setSubmitting(true);
     let finished = false;
     try {
+      const locationText = [salonCity.trim(), salonAddress.trim()].filter(Boolean).join(", ");
+      const regionCode = uzRegionCodeFromLabel(salonCity.trim()) || "";
+
       // Signup onboarding path: if barber token is missing, complete register -> login first.
       if (!getBarberAccessToken()) {
         const draft = readSignupDraft();
@@ -424,7 +427,8 @@ export function CreateSalonPage() {
             latitude: roundCoord6(Number(salonLatitude)),
             longitude: roundCoord6(Number(salonLongitude)),
             shop_name: salonName.trim(),
-            address: [salonCity.trim(), salonAddress.trim()].filter(Boolean).join(", "),
+            address: locationText,
+            ...(regionCode ? { region: regionCode } : {}),
           });
         } catch (err) {
           setSubmitError(err instanceof Error ? err.message : "Signup amalga oshmadi.");
@@ -436,8 +440,6 @@ export function CreateSalonPage() {
       const barberPhone = barberPhoneDigits ? `+998${barberPhoneDigits}` : "";
       const phoneOk = await verifyBarberPhone(barberPhoneDigits);
       if (!phoneOk) return;
-      const locationText = [salonCity.trim(), salonAddress.trim()].filter(Boolean).join(", ");
-      const regionCode = uzRegionCodeFromLabel(salonCity.trim()) || "";
       const hoursPayload = schedule
         .filter((d) => d.open)
         .map((d) => ({

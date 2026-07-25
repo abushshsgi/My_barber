@@ -14,7 +14,12 @@ def _city_from_address(address: str) -> str:
 
 
 def validate_salon_address_coords(address: str, lat: float, lng: float) -> str | None:
-    """Shahar matni va GPS mos kelmasa — xato matni."""
+    """Shahar matni va GPS mos kelmasa — xato matni.
+
+    GPS asosiy manba: agar GPS O‘zbekistonda aniq viloyat bersa va matn
+    faqat noaniq/qisqa bo‘lsa — ruxsat. Aniq boshqa viloyat matni vs GPS
+    ziddiyati bo‘lsa — rad etiladi.
+    """
     from geo.region_resolver import _match_region_from_text
 
     city = _city_from_address(address)
@@ -26,10 +31,16 @@ def validate_salon_address_coords(address: str, lat: float, lng: float) -> str |
     if region_matches_gps(code, lat, lng):
         return None
     resolved = resolve_region_from_coords(lat, lng)
+    if not resolved.in_uzbekistan or not resolved.region_code:
+        return (
+            "Xarita nuqtasi O‘zbekiston hududida emas. "
+            "Iltimos, GPS yoki xaritada to‘g‘ri joyni belgilang."
+        )
+    # Matn va GPS turli viloyat — rad (masalan Toshkent pin + Buxoro matn).
     gps_label = resolved.region_label or resolved.city_label or "boshqa hudud"
     return (
         f"Manzil «{city}» deb ko'rsatilgan, lekin xarita nuqtasi {gps_label}da. "
-        "Iltimos, xaritada to'g'ri joyni belgilang."
+        "Iltimos, «Joriy joylashuv» tugmasini bosing yoki xaritada to'g'ri joyni belgilang."
     )
 
 
