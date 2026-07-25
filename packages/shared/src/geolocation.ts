@@ -154,3 +154,92 @@ export function getAccuratePosition(options?: GeolocationOptions): Promise<Geolo
     );
   });
 }
+
+/**
+ * Salon / auth uchun tez GPS: avval cache/network (sekundlar ichida),
+ * keyin high-accuracy. Birinchi foydali fix darhol qaytadi.
+ */
+export function getFastPosition(options?: GeolocationOptions): Promise<GeolocationPosition> {
+  const softMaxAge = options?.maximumAge ?? 120_000;
+  const hardTimeout = options?.timeout ?? 8_000;
+
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    let pending = 2;
+    let lastError: GeolocationError | null = null;
+    let watchStarted = false;
+
+    const done = (pos: GeolocationPosition) => {
+      if (settled) return;
+      settled = true;
+      resolve(pos);
+    };
+
+    const noteFail = (err: unknown) => {
+      if (err instanceof GeolocationError) {
+        lastError = err;
+        // Ruxsat yo‘q — darhol to‘xtatish.
+        if (err.code === "denied" || err.code === "unsupported") {
+          if (!settled) {
+            settled = true;
+            reject(err);
+          }
+          return;
+        }
+      }
+      pending -= 1;
+      if (!settled && pending <= 0 && !watchStarted) {
+        startWatchFallback();
+      }
+    };
+
+    const startWatchFallback = () => {
+      if (settled || watchStarted) return;
+      watchStarted = true;
+      void getAccuratePosition({
+        enableHighAccuracy: true,
+        desiredAccuracyMeters: options?.desiredAccuracyMeters ?? 150,
+        maxWatchMs: Math.min(5_000, hardTimeout),
+        maximumAge: softMaxAge,
+        timeout: Math.min(5_000, hardTimeout),
+      })
+        .then((pos) => done(pos))
+        .catch((err) => {
+          if (settled) return;
+          settled = true;
+          reject(
+            err instanceof GeolocationError
+              ? err
+              : lastError ??
+                  new GeolocationError(
+                    "timeout",
+                    "Joylashuvni aniqlash vaqti tugadi. Qayta urinib ko'ring.",
+                  ),
+          );
+        });
+    };
+
+    // 1) Tez: past aniqlik + cache (Wi‑Fi / oxirgi GPS).
+    void getCurrentPosition({
+      enableHighAccuracy: false,
+      timeout: Math.min(3_500, hardTimeout),
+      maximumAge: softMaxAge,
+    })
+      .then((pos) => done(pos))
+      .catch(noteFail);
+
+    // 2) Parallel: yuqori aniqlik.
+    void getCurrentPosition({
+      enableHighAccuracy: options?.enableHighAccuracy ?? true,
+      timeout: hardTimeout,
+      maximumAge: Math.min(30_000, softMaxAge),
+    })
+      .then((pos) => done(pos))
+      .catch(noteFail);
+
+    // 3) Agar 2.5s ichida hech narsa kelmasa — qisqa watch.
+    setTimeout(() => {
+      if (!settled) startWatchFallback();
+    }, 2_500);
+  });
+}

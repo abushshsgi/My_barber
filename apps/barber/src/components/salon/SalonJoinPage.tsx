@@ -81,18 +81,15 @@ type DaySchedule = {
   to: string;
 };
 
-function getCurrentPosition(): Promise<{ lat: number; lng: number }> {
-  return new Promise((resolve, reject) => {
-    if (typeof navigator === "undefined" || !navigator.geolocation) {
-      reject(new Error("Brauzer geolokatsiyani qo‘llab-quvvatlamaydi."));
-      return;
-    }
-    navigator.geolocation.getCurrentPosition(
-      (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-      (err) => reject(new Error(err.message || "Geolokatsiya rad etildi.")),
-      { enableHighAccuracy: true, timeout: 18_000, maximumAge: 0 },
-    );
+async function getCurrentPosition(): Promise<{ lat: number; lng: number }> {
+  const { getFastPosition } = await import("@mybarber/shared/geolocation");
+  const pos = await getFastPosition({
+    enableHighAccuracy: true,
+    maximumAge: 60_000,
+    timeout: 8_000,
+    desiredAccuracyMeters: 120,
   });
+  return { lat: pos.lat, lng: pos.lng };
 }
 
 function defaultSchedule(): DaySchedule[] {

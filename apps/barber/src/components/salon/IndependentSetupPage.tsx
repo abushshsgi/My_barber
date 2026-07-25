@@ -33,7 +33,7 @@ import { roundCoord6, submitFlowSignup } from "@/lib/barber-signup-flow";
 import { clearSignupDraft, readSignupDraft } from "@/lib/signup-draft";
 import { uzRegionCodeFromLabel } from "@/lib/uz-regions";
 import { SalonLocationPicker } from "@/components/map/SalonLocationPicker";
-import { requestGpsLocation } from "@/lib/geo-location";
+import { useAutoGpsOnMount } from "@/lib/geo-location";
 import { cn } from "@/lib/utils";
 import { getFlowMeta } from "@/lib/barber-flow-config";
 import { finishOnboardingAndGo } from "@/lib/onboarding-complete";
@@ -1008,14 +1008,19 @@ function LocationStep(props: {
   paymentMethods: string[];
   onPaymentMethodsChange: (codes: string[]) => void;
 }) {
-  const fillCurrentLocation = () => {
-    requestGpsLocation({
+  const hasCoords =
+    Number.isFinite(Number(props.latitude)) &&
+    Number.isFinite(Number(props.longitude)) &&
+    Number(props.latitude) !== 0;
+  const { locating, retry } = useAutoGpsOnMount(
+    {
       setLatitude: props.setLatitude,
       setLongitude: props.setLongitude,
       setAddress: props.setAddress,
       setCity: props.setCity,
-    });
-  };
+    },
+    hasCoords,
+  );
 
   return (
     <div className="space-y-4 rounded-2xl border border-border bg-card p-3.5 shadow-[var(--shadow-card)] sm:space-y-5 sm:p-7">
@@ -1032,11 +1037,12 @@ function LocationStep(props: {
       />
       <button
         type="button"
-        onClick={fillCurrentLocation}
-        className="inline-flex items-center gap-2 text-sm font-semibold text-foreground transition hover:opacity-80 sm:text-[15px]"
+        disabled={locating}
+        onClick={retry}
+        className="inline-flex items-center gap-2 text-sm font-semibold text-foreground transition hover:opacity-80 disabled:opacity-60 sm:text-[15px]"
       >
-        <MapPin className="h-4 w-4" />
-        Joriy joylashuvni ishlatish
+        <MapPin className={`h-4 w-4 ${locating ? "animate-pulse" : ""}`} />
+        {locating ? "Joylashuv aniqlanmoqda…" : "Joriy joylashuvni ishlatish"}
       </button>
       <FloatingInput
         label="Shahar"

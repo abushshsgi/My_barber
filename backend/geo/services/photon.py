@@ -16,7 +16,7 @@ def _request(path: str, params: dict[str, str]) -> Any:
     url = f"{PHOTON_BASE}{path}?{urlencode(params)}"
     resp = requests.get(
         url,
-        timeout=12,
+        timeout=4,
         headers={"User-Agent": USER_AGENT, "Accept": "application/json"},
     )
     resp.raise_for_status()

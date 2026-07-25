@@ -73,7 +73,7 @@ export function SalonLocationPicker({
           }
         })
         .catch(() => undefined);
-    }, 450);
+    }, 250);
     return () => window.clearTimeout(timer);
   }, [city, address, lat, lng, setLatitude, setLongitude, setAddress]);
 
@@ -110,7 +110,7 @@ export function SalonLocationPicker({
           }
         })
         .catch(() => undefined);
-    }, 500);
+    }, 300);
     return () => window.clearTimeout(timer);
   }, [city, address, setLatitude, setLongitude, setAddress, setCity]);
 
@@ -140,7 +140,7 @@ export function SalonLocationPicker({
           setCity?.(result.city);
         }
       });
-    }, 450);
+    }, 250);
   };
 
   useEffect(() => {

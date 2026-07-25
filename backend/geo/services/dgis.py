@@ -40,7 +40,7 @@ def _api_key() -> str:
 def _request(params: dict[str, str]) -> dict[str, Any]:
     url = f"https://maps.googleapis.com/maps/api/geocode/json?{urlencode(params)}"
     try:
-        resp = requests.get(url, timeout=10)
+        resp = requests.get(url, timeout=4)
         resp.raise_for_status()
     except requests.RequestException as exc:
         raise GeocoderError("Google geocoder request failed.") from exc
@@ -127,19 +127,52 @@ def _geocode_query_google(q: str) -> list[GeocodeResult]:
 def reverse_geocode(lat: float, lng: float) -> GeocodeResult | None:
     if not (-90.0 <= lat <= 90.0) or not (-180.0 <= lng <= 180.0):
         raise GeocoderError("Invalid coordinates.", status_code=400)
+
+    cache_key = f"geo:rev:{round(lat, 5)}:{round(lng, 5)}"
+    try:
+        from django.core.cache import cache
+
+        cached = cache.get(cache_key)
+        if isinstance(cached, dict) and cached.get("lat") is not None:
+            return GeocodeResult(
+                lat=float(cached["lat"]),
+                lng=float(cached["lng"]),
+                address=str(cached.get("address") or ""),
+                city=str(cached.get("city") or ""),
+                full_name=str(cached.get("full_name") or ""),
+            )
+    except Exception:
+        pass
+
+    result: GeocodeResult | None = None
     try:
         result = _reverse_geocode_google(lat, lng)
-        if result:
-            return result
     except GeocoderError:
-        pass
-    from geo.services.nominatim import reverse_geocode_nominatim
-    from geo.services.photon import reverse_geocode_photon
+        result = None
+    if not result:
+        from geo.services.nominatim import reverse_geocode_nominatim
+        from geo.services.photon import reverse_geocode_photon
 
-    result = reverse_geocode_nominatim(lat, lng)
+        result = reverse_geocode_nominatim(lat, lng) or reverse_geocode_photon(lat, lng)
+
     if result:
-        return result
-    return reverse_geocode_photon(lat, lng)
+        try:
+            from django.core.cache import cache
+
+            cache.set(
+                cache_key,
+                {
+                    "lat": result.lat,
+                    "lng": result.lng,
+                    "address": result.address,
+                    "city": result.city,
+                    "full_name": result.full_name,
+                },
+                timeout=600,
+            )
+        except Exception:
+            pass
+    return result
 
 
 def _reverse_geocode_google(lat: float, lng: float) -> GeocodeResult | None:

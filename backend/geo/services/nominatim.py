@@ -20,18 +20,18 @@ NOMINATIM_HEADERS = {
 def _request(path: str, params: dict[str, str]) -> Any:
     url = f"{NOMINATIM_BASE}{path}?{urlencode(params)}"
     last_exc: requests.RequestException | None = None
-    for attempt in range(3):
+    for attempt in range(2):
         try:
-            resp = requests.get(url, timeout=12, headers=NOMINATIM_HEADERS)
-            if resp.status_code in (429, 503) and attempt < 2:
-                time.sleep(1.25 * (attempt + 1))
+            resp = requests.get(url, timeout=4, headers=NOMINATIM_HEADERS)
+            if resp.status_code in (429, 503) and attempt < 1:
+                time.sleep(0.6)
                 continue
             resp.raise_for_status()
             return resp.json()
         except requests.RequestException as exc:
             last_exc = exc
-            if attempt < 2:
-                time.sleep(0.75 * (attempt + 1))
+            if attempt < 1:
+                time.sleep(0.4)
                 continue
             raise last_exc from exc
     raise RuntimeError("unreachable")

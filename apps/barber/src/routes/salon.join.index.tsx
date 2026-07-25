@@ -227,31 +227,34 @@ function useCurrentLocation() {
     setStatus("locating");
     setError(null);
 
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
+    void (async () => {
+      try {
+        const { getFastPosition } = await import("@mybarber/shared/geolocation");
+        const pos = await getFastPosition({
+          enableHighAccuracy: true,
+          maximumAge: 120_000,
+          timeout: 8_000,
+          desiredAccuracyMeters: 120,
+        });
         setLocation({
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
-          accuracy: position.coords.accuracy,
+          latitude: pos.lat,
+          longitude: pos.lng,
+          accuracy: pos.accuracy,
         });
         setStatus("success");
-      },
-      (geoError) => {
+      } catch (geoError) {
         setStatus("error");
-        if (geoError.code === geoError.PERMISSION_DENIED) {
+        const msg =
+          geoError instanceof Error ? geoError.message : "Lokatsiyani aniqlab bo'lmadi.";
+        if (/ruxsat|denied/i.test(msg)) {
           setError("Lokatsiya ruxsati berilmadi. Brauzer sozlamalaridan ruxsat bering.");
-        } else if (geoError.code === geoError.TIMEOUT) {
+        } else if (/vaqt|timeout/i.test(msg)) {
           setError("Lokatsiya olish vaqti tugadi. Qayta urinib ko'ring.");
         } else {
           setError("Lokatsiyani aniqlab bo'lmadi. GPS yoki internetni tekshiring.");
         }
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 12000,
-        maximumAge: 30000,
-      },
-    );
+      }
+    })();
   };
 
   return { status, location, error, requestLocation };
