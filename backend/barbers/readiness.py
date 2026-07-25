@@ -124,11 +124,10 @@ def compute_barber_readiness(barber: Barber) -> ReadinessBreakdown:
         else:
             flow = "owner"
 
-    from accounts.email_utils import is_internal_email
-
     prof = BarberProfile.objects.filter(barber=barber).first()
     has_location = bool(prof and prof.latitude is not None and prof.longitude is not None)
-    email_verified = barber.email_verified_at is not None or is_internal_email(barber.email)
+    # Email tasdiqlash barber aktivatsiyasi uchun talab qilinmaydi.
+    email_verified = True
 
     owns_salon = Salon.objects.filter(owner_barber=barber).exists()
     active_mem = SalonMembership.objects.filter(
@@ -206,7 +205,7 @@ def compute_barber_readiness(barber: Barber) -> ReadinessBreakdown:
     else:
         required_next_path = "/auth"
 
-    fully_ready = email_verified and signup_complete and services_ok and schedule_ok
+    fully_ready = signup_complete and services_ok and schedule_ok
 
     return ReadinessBreakdown(
         email_verified=email_verified,
@@ -262,15 +261,14 @@ def build_onboarding_status_payload(barber: Barber) -> dict:
     """BarberOnboardingStatusView uchun JSON (DRF Response ga beriladi)."""
     r = compute_barber_readiness(barber)
     steps = {
-        "email_verified": r.email_verified,
+        "email_verified": True,
         "signup_complete": r.signup_complete,
         "services_ok": r.services_ok,
         "schedule_ok": r.schedule_ok,
     }
-    readiness_percent = int(round(100 * sum(bool(v) for v in steps.values()) / 4))
+    core_steps = (r.signup_complete, r.services_ok, r.schedule_ok)
+    readiness_percent = int(round(100 * sum(bool(v) for v in core_steps) / 3))
     booking_missing: list[str] = []
-    if not r.email_verified:
-        booking_missing.append("email")
     if not r.signup_complete:
         booking_missing.append("signup")
     if not r.services_ok:

@@ -452,7 +452,7 @@ export function BarberProvider({ children }: { children: ReactNode }) {
   const [activationHydrated, setActivationHydrated] = useState(false);
   const [readinessPercent, setReadinessPercent] = useState(0);
   const [activationSteps, setActivationSteps] = useState<ActivationSteps>({
-    email_verified: false,
+    email_verified: true,
     signup_complete: false,
     services_ok: false,
     schedule_ok: false,
@@ -1228,7 +1228,7 @@ export function BarberProvider({ children }: { children: ReactNode }) {
   );
 
   const emptyActivationSteps = (): ActivationSteps => ({
-    email_verified: false,
+    email_verified: true,
     signup_complete: false,
     services_ok: false,
     schedule_ok: false,

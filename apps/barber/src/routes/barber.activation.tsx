@@ -1,14 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Check, Loader2, Mail } from "lucide-react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { Check, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import {
-  apiFetch,
-  formatFetchError,
-  isFetchAbortError,
-  RESEND_VERIFICATION_EMAIL_TIMEOUT_MS,
-} from "@/lib/api";
-import { extractApiError, parseJsonSafe } from "@/lib/auth-ui";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useBarberContext } from "@/components/barber/BarberContext";
@@ -41,9 +34,6 @@ function computePrimaryNext(
   onboardingFlow: string | null,
   ownsSalon: boolean,
 ): { to: string; label: string } | null {
-  if (!steps.email_verified) {
-    return null;
-  }
   if (!steps.signup_complete) {
     if (requiredNextPath && !(ownsSalon && requiredNextPath === "/salon/create")) {
       return { to: requiredNextPath, label: "Keyingi qadam: sozlashni yakunlang" };
@@ -98,10 +88,8 @@ function BarberActivationPage() {
     requiredNextPath,
     onboardingFlow,
     ownsSalon,
-    profile,
     refreshActivationStatus,
   } = useBarberContext();
-  const [resending, setResending] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
@@ -118,12 +106,6 @@ function BarberActivationPage() {
     () => [
       {
         n: 1,
-        ok: activationSteps.email_verified,
-        title: "Email",
-        body: "Tasdiq havolasi pochtangizga yuboriladi.",
-      },
-      {
-        n: 2,
         ok: activationSteps.signup_complete,
         title: ownsSalon ? "Salon sozlash" : "Ro‘yxatdan o‘tish",
         body: ownsSalon
@@ -131,7 +113,7 @@ function BarberActivationPage() {
           : "Salon yoki mustaqil oqim — joylashuv va asosiy ma’lumotlar.",
       },
       {
-        n: 3,
+        n: 2,
         ok: activationSteps.services_ok,
         title: "Xizmatlar",
         body: activationSteps.services_ok
@@ -139,7 +121,7 @@ function BarberActivationPage() {
           : `Kamida ${MIN_ACTIVE_SERVICES} ta faol xizmat kerak. Serverda hozir: ${activationServicesCount} ta. Xizmatlar sahifasida narx kiriting va saqlang.`,
       },
       {
-        n: 4,
+        n: 3,
         ok: activationSteps.schedule_ok,
         title: "Ish jadvali",
         body: "Kamida bitta ish kuni ochiq va jadval saqlangan.",
@@ -170,39 +152,6 @@ function BarberActivationPage() {
       );
       document.getElementById(hash)?.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 120);
-  };
-
-  const onResend = async () => {
-    setResending(true);
-    try {
-      const res = await apiFetch("/api/v1/barber/auth/resend-verification-email/", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: "{}",
-        timeoutMs: RESEND_VERIFICATION_EMAIL_TIMEOUT_MS,
-      });
-      const body = await parseJsonSafe(res);
-      if (!res.ok) {
-        toast.error(extractApiError(body, "Tasdiq xatini yuborib bo‘lmadi.", res));
-        return;
-      }
-      toast.success(
-        typeof body === "object" && body && "detail" in body
-          ? String((body as { detail?: string }).detail || "Tasdiq xati yuborildi")
-          : "Tasdiq xati yuborildi. Pochtadagi havolani bosing.",
-      );
-      void refreshActivationStatus();
-    } catch (e: unknown) {
-      if (isFetchAbortError(e)) {
-        toast.error(
-          "Javob juda uzoqqa cho‘zilmoqda. Bir ozdan keyin qayta urinib ko‘ring; muammo davom etsa, SMTP (email) server sozlamalarini tekshiring.",
-        );
-        return;
-      }
-      toast.error(formatFetchError(e, "Tasdiq xatini yuborishda xatolik."));
-    } finally {
-      setResending(false);
-    }
   };
 
   const onRefreshStatus = async () => {
@@ -246,19 +195,6 @@ function BarberActivationPage() {
         <Progress value={readinessPercent} className="h-2" />
       </div>
 
-      {!activationSteps.email_verified ? (
-        <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm">
-          <p className="font-medium text-foreground">Emailni tasdiqlang</p>
-          <p className="mt-1 text-muted-foreground">
-            Quyidagi tugma orqali tasdiq xatini yuboring, so‘ng pochtangizdagi havolani bosing.
-            Havolada uzun <span className="font-medium">token=...</span> bo‘lishi kerak.
-          </p>
-          <Link to="/check-email" search={profile.email ? { email: profile.email } : {}} className="mt-2 inline-block text-sm text-primary underline">
-            Pochtani qanday tekshirish
-          </Link>
-        </div>
-      ) : null}
-
       <ol className="space-y-3">
         {stepMeta.map((step, idx) => {
           const isCurrent = idx === activeIndex && !step.ok;
@@ -299,18 +235,7 @@ function BarberActivationPage() {
       </ol>
 
       <div className="flex flex-col gap-3 pt-2">
-        {!activationSteps.email_verified ? (
-          <Button
-            type="button"
-            size="lg"
-            className="w-full"
-            onClick={() => void onResend()}
-            disabled={resending}
-          >
-            {resending ? <Loader2 className="size-4 animate-spin" /> : <Mail className="size-4" />}
-            <span className="ml-2">Tasdiq xatini yuborish</span>
-          </Button>
-        ) : primaryNext ? (
+        {primaryNext ? (
           <Button
             type="button"
             size="lg"
@@ -334,19 +259,6 @@ function BarberActivationPage() {
             )}
           </Button>
         )}
-
-        {!activationSteps.email_verified ? (
-          <Button
-            type="button"
-            variant="outline"
-            className="w-full"
-            disabled={refreshing}
-            onClick={() => void onRefreshStatus()}
-          >
-            {refreshing ? <Loader2 className="size-4 animate-spin" /> : null}
-            <span className={refreshing ? "ml-2" : ""}>Tasdiqlangach holatni yangilash</span>
-          </Button>
-        ) : null}
       </div>
     </div>
   );

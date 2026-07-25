@@ -8,7 +8,6 @@ from rest_framework import status
 from rest_framework.test import APIClient
 
 from barbers.barber_auth import encode_barber_tokens
-from barbers.email_verification import sign_barber_email_token
 from barbers.models import Barber, BarberProfile, BarberService, BarberWorkingHours
 from salons.models import Salon, SalonMembership
 
@@ -51,46 +50,23 @@ class BarberActivationReadinessTests(TestCase):
             is_day_off=False,
         )
 
-    def test_onboarding_status_sends_verification_email_on_first_status_check(self):
+    def test_onboarding_status_does_not_auto_send_verification_email(self):
         access, _ = encode_barber_tokens(self.barber.id)
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {access}")
         mail.outbox.clear()
         res = self.client.get("/api/v1/barber/onboarding/status/")
         self.assertEqual(res.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(mail.outbox), 1)
-        self.barber.refresh_from_db()
-        self.assertIsNotNone(self.barber.email_verification_invite_sent_at)
-
-    def test_onboarding_status_does_not_resend_auto_invite(self):
-        access, _ = encode_barber_tokens(self.barber.id)
-        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {access}")
-        mail.outbox.clear()
-        self.client.get("/api/v1/barber/onboarding/status/")
-        self.assertEqual(len(mail.outbox), 1)
-        mail.outbox.clear()
-        self.client.get("/api/v1/barber/onboarding/status/")
         self.assertEqual(len(mail.outbox), 0)
 
-    def test_onboarding_status_not_fully_ready_without_email(self):
+    def test_onboarding_status_fully_ready_without_email_verify(self):
         access, _ = encode_barber_tokens(self.barber.id)
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {access}")
         res = self.client.get("/api/v1/barber/onboarding/status/")
         self.assertEqual(res.status_code, status.HTTP_200_OK)
-        self.assertFalse(res.json()["fully_ready"])
-        self.assertIn("email", res.json()["booking_missing"])
-
-    def test_verify_email_then_fully_ready(self):
-        token = sign_barber_email_token(self.barber.id)
-        res = self.client.post("/api/v1/barber/auth/verify-email/", {"token": token}, format="json")
-        self.assertEqual(res.status_code, status.HTTP_200_OK)
-        self.barber.refresh_from_db()
-        self.assertIsNotNone(self.barber.email_verified_at)
-
-        access, _ = encode_barber_tokens(self.barber.id)
-        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {access}")
-        st = self.client.get("/api/v1/barber/onboarding/status/")
-        self.assertEqual(st.status_code, status.HTTP_200_OK)
-        self.assertTrue(st.json()["fully_ready"])
+        body = res.json()
+        self.assertTrue(body["fully_ready"])
+        self.assertTrue(body["email_verified"])
+        self.assertNotIn("email", body["booking_missing"])
 
     def test_owner_services_ok_counts_barber_services_not_only_salon_service(self):
         """Barber panel BarberService yozadi; salon Service bo‘lmasa ham 5+ hisoblansin."""
@@ -251,8 +227,8 @@ class BarberActivationReadinessTests(TestCase):
         r = compute_barber_readiness(phone_barber)
         self.assertTrue(r.email_verified)
 
-    def test_onboarding_status_sends_email_before_setup_complete(self):
-        """Ro‘yxatdan o‘tishdan keyin setup tugamasdan ham xat yuboriladi."""
+    def test_onboarding_status_does_not_send_email_before_setup_complete(self):
+        """Email tasdiqlash o‘chirilgan — setup tugamasdan ham xat yuborilmaydi."""
         partial = Barber.objects.create(
             email="partial@test.uz",
             username="partial@test.uz",
@@ -268,4 +244,4 @@ class BarberActivationReadinessTests(TestCase):
         res = self.client.get("/api/v1/barber/onboarding/status/")
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertFalse(res.json()["fully_ready"])
-        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(len(mail.outbox), 0)

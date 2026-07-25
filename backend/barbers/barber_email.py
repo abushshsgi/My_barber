@@ -132,35 +132,8 @@ def send_barber_email_verification_with_timeout(
 
 
 def maybe_schedule_verification_email_once(barber_id: int) -> None:
-    """
-    Haqiqiy email bo‘lsa bir marta tasdiq xatini yuborish.
-    Ro‘yxatdan o‘tish yoki onboarding/status so‘rovi orqali chaqiriladi.
-    """
-    from django.db import transaction
-    from django.utils import timezone
-
-    should_send = False
-    with transaction.atomic():
-        b = (
-            Barber.objects.select_for_update()
-            .filter(pk=barber_id, is_active=True)
-            .first()
-        )
-        if not b or b.email_verified_at is not None:
-            return
-        if not barber_has_verifiable_email(b):
-            return
-        if b.email_verification_invite_sent_at is not None:
-            return
-        Barber.objects.filter(pk=b.pk).update(
-            email_verification_invite_sent_at=timezone.now(),
-        )
-        should_send = True
-
-    if should_send:
-        b2 = Barber.objects.filter(pk=barber_id, is_active=True).first()
-        if b2 and b2.email_verified_at is None and barber_has_verifiable_email(b2):
-            send_barber_email_verification_async(b2)
+    """Email tasdiqlash o‘chirilgan — avtomatik xat yuborilmaydi."""
+    return
 
 
 def maybe_schedule_verification_email_when_setup_complete(barber_id: int) -> None:
