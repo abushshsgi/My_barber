@@ -49,17 +49,12 @@ function AdminAgentPayoutsPage() {
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto space-y-6">
-      <div className="flex items-end justify-between gap-3">
-        <div>
+      <div>
           <h1 className="font-heading text-3xl font-semibold">Agent payoutlar</h1>
           <p className="text-sm text-muted-foreground mt-1">
             Agentlar komissiyasini kartaga o&apos;tkazing yoki rad eting.
           </p>
         </div>
-        <Link to="/admin/agents" className="text-sm font-medium hover:underline">
-          ← Agentlar
-        </Link>
-      </div>
 
       <Section title="Kutilayotgan">
         {q.isLoading ? (

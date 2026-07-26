@@ -22,17 +22,12 @@ function AdminAgentSalonsPage() {
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto space-y-6">
-      <div className="flex items-end justify-between gap-3">
-        <div>
+      <div>
           <h1 className="font-heading text-3xl font-semibold">Agent salonlari</h1>
           <p className="text-sm text-muted-foreground mt-1">
             Agentlar orqali ro&apos;yxatdan o&apos;tgan salonlar, aylanma (GMV) va holat.
           </p>
         </div>
-        <Link to="/admin/agents" className="text-sm font-medium hover:underline">
-          ← Umumiy
-        </Link>
-      </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
         {q.isLoading || !totals ? (

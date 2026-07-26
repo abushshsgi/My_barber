@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Building2, QrCode, Scissors, UserPlus, Users } from "lucide-react";
 import { fetchAgentPlatformStats } from "@/lib/admin-api";
@@ -29,14 +29,7 @@ function AgentStatisticsPage() {
         description="Sotuv agentlari orqali olib kelingan salonlar, trial va reyting."
         rangeKey={rangeKey}
         onRangeChange={setRangeKey}
-      >
-        <Link
-          to="/admin/agents"
-          className="inline-flex items-center rounded-lg border border-border bg-card px-3 py-2 text-sm font-medium shadow-card hover:bg-muted"
-        >
-          Agentlar →
-        </Link>
-      </StatsPageHeader>
+      />
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-6">
         {q.isLoading || !d ? (

@@ -113,24 +113,10 @@ function AdminAgentsTeamPage() {
             trial (99.990 so&apos;m) avtomatik beriladi.
           </p>
         </div>
-          <div className="flex flex-wrap gap-2">
-          <Link
-            to="/admin/agents"
-            className="inline-flex items-center rounded-lg border border-border bg-card px-3 py-2 text-sm font-medium shadow-card hover:bg-muted"
-          >
-            Umumiy →
-          </Link>
-          <Link
-            to="/admin/agents/payouts"
-            className="inline-flex items-center rounded-lg border border-border bg-card px-3 py-2 text-sm font-medium shadow-card hover:bg-muted"
-          >
-            Payoutlar →
-          </Link>
-          <Button onClick={() => setOpen(true)}>
-            <Plus className="size-4 mr-1.5" />
-            Agent qo&apos;shish
-          </Button>
-        </div>
+        <Button onClick={() => setOpen(true)}>
+          <Plus className="size-4 mr-1.5" />
+          Agent qo&apos;shish
+        </Button>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">

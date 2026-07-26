@@ -7,10 +7,11 @@ export const Route = createFileRoute("/admin/statistics")({
 
 function StatisticsLayout() {
   const { pathname } = useLocation();
-  // Hamyon endi Aylanma kategoriyasida — yuqori tablar chalkashmasin.
+  // Hamyon → Aylanma; agent statistikasi → Agentlar — yuqori tablar chalkashmasin.
   const hideSubNav =
     pathname.startsWith("/admin/statistics/wallet") ||
-    pathname.startsWith("/admin/statistics/revenue");
+    pathname.startsWith("/admin/statistics/revenue") ||
+    pathname.startsWith("/admin/statistics/agents");
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto space-y-6">

@@ -35,6 +35,7 @@ import { Route as AdminStatisticsRouteImport } from './routes/admin.statistics'
 import { Route as AdminSubscriptionsRouteImport } from './routes/admin.subscriptions'
 import { Route as AdminSupportRouteImport } from './routes/admin.support'
 import { Route as AdminUsersRouteImport } from './routes/admin.users'
+import { Route as AdminAgentsIndexRouteImport } from './routes/admin.agents.index'
 import { Route as AdminAgentsAgentIdRouteImport } from './routes/admin.agents.$agentId'
 import { Route as AdminAgentsAylanmaRouteImport } from './routes/admin.agents.aylanma'
 import { Route as AdminAgentsPayoutsRouteImport } from './routes/admin.agents.payouts'
@@ -222,6 +223,11 @@ const AdminUsersRoute = AdminUsersRouteImport.update({
   id: '/users',
   path: '/users',
   getParentRoute: () => AdminRoute,
+} as any)
+const AdminAgentsIndexRoute = AdminAgentsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminAgentsRoute,
 } as any)
 const AdminAgentsAgentIdRoute = AdminAgentsAgentIdRouteImport.update({
   id: '/$agentId',
@@ -586,6 +592,7 @@ export interface FileRoutesByFullPath {
   '/admin/support/$ticketId': typeof AdminSupportTicketIdRoute
   '/admin/users/$userId': typeof AdminUsersUserIdRoute
   '/admin/users/signups': typeof AdminUsersSignupsRoute
+  '/admin/agents/': typeof AdminAgentsIndexRoute
   '/admin/aylanma/': typeof AdminAylanmaIndexRoute
   '/admin/finance/': typeof AdminFinanceIndexRoute
   '/admin/hisob-raqam/': typeof AdminHisobRaqamIndexRoute
@@ -609,7 +616,6 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/admin/admins': typeof AdminAdminsRoute
-  '/admin/agents': typeof AdminAgentsRouteWithChildren
   '/admin/audit': typeof AdminAuditRoute
   '/admin/barbers': typeof AdminBarbersRouteWithChildren
   '/admin/bookings': typeof AdminBookingsRouteWithChildren
@@ -662,6 +668,7 @@ export interface FileRoutesByTo {
   '/admin/support/$ticketId': typeof AdminSupportTicketIdRoute
   '/admin/users/$userId': typeof AdminUsersUserIdRoute
   '/admin/users/signups': typeof AdminUsersSignupsRoute
+  '/admin/agents': typeof AdminAgentsIndexRoute
   '/admin/aylanma': typeof AdminAylanmaIndexRoute
   '/admin/finance': typeof AdminFinanceIndexRoute
   '/admin/hisob-raqam': typeof AdminHisobRaqamIndexRoute
@@ -746,6 +753,7 @@ export interface FileRoutesById {
   '/admin/support/$ticketId': typeof AdminSupportTicketIdRoute
   '/admin/users/$userId': typeof AdminUsersUserIdRoute
   '/admin/users/signups': typeof AdminUsersSignupsRoute
+  '/admin/agents/': typeof AdminAgentsIndexRoute
   '/admin/aylanma/': typeof AdminAylanmaIndexRoute
   '/admin/finance/': typeof AdminFinanceIndexRoute
   '/admin/hisob-raqam/': typeof AdminHisobRaqamIndexRoute
@@ -833,6 +841,7 @@ export interface FileRouteTypes {
     | '/admin/support/$ticketId'
     | '/admin/users/$userId'
     | '/admin/users/signups'
+    | '/admin/agents/'
     | '/admin/aylanma/'
     | '/admin/finance/'
     | '/admin/hisob-raqam/'
@@ -856,7 +865,6 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/admin/admins'
-    | '/admin/agents'
     | '/admin/audit'
     | '/admin/barbers'
     | '/admin/bookings'
@@ -909,6 +917,7 @@ export interface FileRouteTypes {
     | '/admin/support/$ticketId'
     | '/admin/users/$userId'
     | '/admin/users/signups'
+    | '/admin/agents'
     | '/admin/aylanma'
     | '/admin/finance'
     | '/admin/hisob-raqam'
@@ -992,6 +1001,7 @@ export interface FileRouteTypes {
     | '/admin/support/$ticketId'
     | '/admin/users/$userId'
     | '/admin/users/signups'
+    | '/admin/agents/'
     | '/admin/aylanma/'
     | '/admin/finance/'
     | '/admin/hisob-raqam/'
@@ -1201,6 +1211,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/users'
       preLoaderRoute: typeof AdminUsersRouteImport
       parentRoute: typeof AdminRoute
+    }
+    '/admin/agents/': {
+      id: '/admin/agents/'
+      path: '/'
+      fullPath: '/admin/agents/'
+      preLoaderRoute: typeof AdminAgentsIndexRouteImport
+      parentRoute: typeof AdminAgentsRoute
     }
     '/admin/agents/$agentId': {
       id: '/admin/agents/$agentId'
@@ -1610,6 +1627,7 @@ interface AdminAgentsRouteChildren {
   AdminAgentsPayoutsRoute: typeof AdminAgentsPayoutsRoute
   AdminAgentsSalonsRoute: typeof AdminAgentsSalonsRoute
   AdminAgentsTeamRoute: typeof AdminAgentsTeamRoute
+  AdminAgentsIndexRoute: typeof AdminAgentsIndexRoute
 }
 
 const AdminAgentsRouteChildren: AdminAgentsRouteChildren = {
@@ -1618,6 +1636,7 @@ const AdminAgentsRouteChildren: AdminAgentsRouteChildren = {
   AdminAgentsPayoutsRoute: AdminAgentsPayoutsRoute,
   AdminAgentsSalonsRoute: AdminAgentsSalonsRoute,
   AdminAgentsTeamRoute: AdminAgentsTeamRoute,
+  AdminAgentsIndexRoute: AdminAgentsIndexRoute,
 }
 
 const AdminAgentsRouteWithChildren = AdminAgentsRoute._addFileChildren(

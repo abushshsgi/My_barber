@@ -166,13 +166,15 @@ const SECTIONS: Section[] = [
     key: "agents",
     label: "Agentlar",
     icon: UserCog,
-    matchPrefixes: ["/admin/agents"],
+    // Agent statistikasi ham shu bo'limda (Statistika tablarida emas)
+    matchPrefixes: ["/admin/agents", "/admin/statistics/agents"],
     items: [
       { to: "/admin/agents", label: "Umumiy", icon: LayoutDashboard },
       { to: "/admin/agents/team", label: "Jamoa", icon: Users },
       { to: "/admin/agents/salons", label: "Salonlar", icon: Building2 },
       { to: "/admin/agents/aylanma", label: "Aylanma", icon: ArrowLeftRight },
       { to: "/admin/agents/payouts", label: "Payout", icon: Banknote },
+      { to: "/admin/statistics/agents", label: "Statistika", icon: BarChart3 },
     ],
   },
   {
