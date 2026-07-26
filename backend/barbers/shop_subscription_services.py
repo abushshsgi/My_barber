@@ -241,10 +241,13 @@ def serialize_subscription(sub: BarberShopSubscription | None) -> dict | None:
 def build_me_payload(barber: Barber) -> dict[str, Any]:
     active = get_active_subscription(barber)
     ents = get_entitlements(barber)
+    from barbers.partner_trial import trial_claim_status_payload
+
     return {
         "has_subscription": bool(active),
         "subscription": serialize_subscription(active),
         "entitlements": ents,
         "required": True,
         "subscribe_path": "/barber/subscription",
+        "agent_trial": trial_claim_status_payload(barber),
     }

@@ -195,7 +195,19 @@ class SalonViewSet(viewsets.ModelViewSet):
                 self._apply_public_salon_region(self._salon_public_list_qs())
             )
 
-        if self.action == "retrieve":
+        # retrieve / staff / barber-services / boshqa detail — mijoz uchun faqat entitled
+        if self.action not in (
+            "list",
+            "nearby",
+            "create",
+            "update",
+            "partial_update",
+            "destroy",
+            "mine",
+            "search",
+            "join",
+            "check_join_distance",
+        ):
             bp = request_barber(self.request)
             if bp is not None:
                 return qs.filter(
@@ -208,8 +220,11 @@ class SalonViewSet(viewsets.ModelViewSet):
                 ).distinct()
             from salons.visibility import filter_customer_visible_salons
 
-            # Detail: hudud filtri yo‘q — nationwide katalogdan ochilishi mumkin.
-            return filter_customer_visible_salons(qs)
+            qs = filter_customer_visible_salons(qs)
+            reg = customer_catalog_region(self.request)
+            if reg and self.action == "retrieve":
+                qs = qs.filter(owner_barber__region=reg)
+            return qs
 
         return qs
 

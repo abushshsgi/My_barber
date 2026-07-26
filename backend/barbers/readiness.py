@@ -236,7 +236,14 @@ def barber_is_publicly_visible(barber: Barber) -> bool:
 
 
 def barber_is_staff_listable(barber: Barber, salon) -> bool:
-    """Salon staff: faqat obuna/trial bilan bron qabul qila oladiganlar (ega ham)."""
+    """
+    Salon staff: egasi — salon/shop entitlement bo‘lsa (readiness alohida is_bookable).
+    Ishchilar — fully_ready + o‘z obunasi/trial.
+    """
+    from barbers.shop_subscription_services import barber_has_customer_entitlement
+
+    if salon.owner_barber_id == barber.id:
+        return barber_has_customer_entitlement(barber)
     return barber_is_publicly_visible(barber)
 
 
