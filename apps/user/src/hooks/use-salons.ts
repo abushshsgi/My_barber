@@ -11,13 +11,17 @@ export function useSalonsList(region?: string | null, scope?: string | null) {
   return useQuery({
     queryKey: [...salonsQueryKey, "list", regionKey, scopeKey],
     queryFn: async () => {
-      const params: { region?: string; scope?: string } = {};
+      const params: { region?: string; scope?: string; page_size?: number } = {
+        page_size: 24,
+      };
       if (scope?.trim()) params.scope = scope.trim();
       else if (region?.trim()) params.region = region.trim();
-      const data = await fetchSalons(Object.keys(params).length ? params : undefined);
+      const data = await fetchSalons(params);
       return data.map((s) => mapSalonList(s));
     },
-    staleTime: 30_000,
+    staleTime: 5 * 60_000,
+    gcTime: 30 * 60_000,
+    placeholderData: (prev) => prev,
     enabled: catalogQueryEnabled(),
   });
 }
@@ -40,7 +44,9 @@ export function useSalonsNearby(lat?: number, lng?: number, radiusKm = 25) {
       return data.map(mapNearbySalon);
     },
     enabled: catalogQueryEnabled(lat != null && lng != null),
-    staleTime: 30_000,
+    staleTime: 5 * 60_000,
+    gcTime: 30 * 60_000,
+    placeholderData: (prev) => prev,
   });
 }
 
@@ -66,10 +72,14 @@ export function useSalonsByIds(ids: string[]) {
     queryKey: [...salonsQueryKey, "ids", ids.join(",")],
     queryFn: async () => {
       if (!ids.length) return [];
-      const data = await fetchSalons({ ids: ids.join(",") });
+      const data = await fetchSalons({
+        ids: ids.join(","),
+        page_size: Math.min(50, Math.max(ids.length, 24)),
+      });
       return data.map((s) => mapSalonList(s));
     },
     enabled: catalogQueryEnabled(ids.length > 0),
+    staleTime: 5 * 60_000,
   });
 }
 

@@ -18,6 +18,7 @@ export async function fetchSalons(params?: {
   scope?: string;
   audience?: string;
   business_kind?: string;
+  page_size?: number;
 }): Promise<ApiSalonList[]> {
   return apiList<ApiSalonList>(`/api/v1/salons/${qs(params ?? {})}`);
 }

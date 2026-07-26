@@ -53,16 +53,32 @@ function sanitizeProxyResponseHeaders(headers: Headers): void {
   headers.delete("transfer-encoding");
 }
 
-const PUBLIC_GET_CACHE_SECONDS = 30;
+const PUBLIC_GET_CACHE_SECONDS = 60;
+const PUBLIC_HAIRSTYLE_CACHE_SECONDS = 120;
+const PUBLIC_MEDIA_CACHE_SECONDS = 60 * 60 * 24 * 7;
 
-/** Ommaviy salon katalogi GET — brauzer/CDN qisqa vaqt keshlaydi. */
+/** Ommaviy GET — brauzer/CDN qisqa (API) yoki uzoq (media) keshlaydi. */
 function applyPublicCacheHeaders(request: Request, pathname: string, headers: Headers): void {
   if (request.method !== "GET" && request.method !== "HEAD") return;
+  if (pathname.startsWith("/media/") || pathname.startsWith("/covers/pexels/")) {
+    headers.set(
+      "Cache-Control",
+      `public, max-age=${PUBLIC_MEDIA_CACHE_SECONDS}, immutable`,
+    );
+    return;
+  }
+  if (pathname.startsWith("/api/v1/hairstyles")) {
+    headers.set(
+      "Cache-Control",
+      `public, max-age=${PUBLIC_HAIRSTYLE_CACHE_SECONDS}, stale-while-revalidate=600`,
+    );
+    return;
+  }
   if (!pathname.startsWith("/api/v1/salons")) return;
   if (/\/(book|favorite|claim)/i.test(pathname)) return;
   headers.set(
     "Cache-Control",
-    `public, max-age=${PUBLIC_GET_CACHE_SECONDS}, stale-while-revalidate=120`,
+    `public, max-age=${PUBLIC_GET_CACHE_SECONDS}, stale-while-revalidate=300`,
   );
 }
 

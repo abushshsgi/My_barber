@@ -40,15 +40,18 @@ def validate_break_list(value):
     return value
 
 
-def _public_avatar_url(obj, request):
-    """Railway’da fayl yo‘qolgan bo‘lsa ImageField.url 500 bermasin."""
+def _public_avatar_url(obj, request, *, check_exists: bool = True):
+    """Railway’da fayl yo‘qolgan bo‘lsa ImageField.url 500 bermasin.
+
+    check_exists=False — list hot path (N× Postgres EXISTS o‘rniga).
+    """
     from media_store.utils import media_field_exists
 
     b = obj.barber
     f = getattr(b, "avatar", None)
     if not f or not getattr(f, "name", None):
         return None
-    if not media_field_exists(f):
+    if check_exists and not media_field_exists(f):
         return None
     try:
         path = f.url
@@ -264,7 +267,7 @@ class BarberPublicListSerializer(BarberPublicContextMixin, serializers.ModelSeri
         )
 
     def get_avatar(self, obj):
-        return _public_avatar_url(obj, self.context.get("request"))
+        return _public_avatar_url(obj, self.context.get("request"), check_exists=False)
 
     def get_active_services(self, obj):
         qs = obj.services.filter(is_active=True).filter(

@@ -50,17 +50,26 @@ function CardCoverCarousel({
         }, 2500);
       }}
     >
-      {slides.map((src, i) => (
+      {/* Faqat joriy + keyingi — barcha gallery originallarni parallel yuklamaslik */}
+      <img
+        key={`${slides[index]}-${index}`}
+        src={slides[index]}
+        alt={alt}
+        loading="eager"
+        decoding="async"
+        className="absolute inset-0 h-full w-full object-cover transition-opacity duration-500 opacity-100"
+      />
+      {multi && slides[(index + 1) % slides.length] ? (
         <img
-          key={`${src}-${i}`}
-          src={src}
-          alt={alt}
-          loading={i === 0 ? "eager" : "lazy"}
-          className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-500 ${
-            i === index ? "opacity-100" : "opacity-0"
-          }`}
+          key={`preload-${slides[(index + 1) % slides.length]}`}
+          src={slides[(index + 1) % slides.length]}
+          alt=""
+          aria-hidden
+          loading="lazy"
+          decoding="async"
+          className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-0"
         />
-      ))}
+      ) : null}
       {multi ? (
         <div className="pointer-events-none absolute inset-x-0 bottom-2 z-10 flex justify-center gap-1">
           {slides.map((_, i) => (

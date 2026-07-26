@@ -11,7 +11,11 @@ function isStockOrPlaceholder(url: string): boolean {
   );
 }
 
-/** Bir xil rasmning same-origin va api.mysaloon.uz variantlari. */
+/** Bir xil rasmning same-origin va (zaruratda) api variantlari.
+
+  Avval same-origin /media — Vercel proxy orqali; api.mysaloon.uz ni
+  birinchi urinishda qo‘shmaslik (ketma-ket timeout sekin).
+*/
 export function mediaUrlCandidates(url: string): string[] {
   const trimmed = url.trim();
   if (!trimmed) return [];
@@ -21,18 +25,17 @@ export function mediaUrlCandidates(url: string): string[] {
     if (u && !out.includes(u)) out.push(u);
   };
 
-  push(resolved);
-  push(trimmed);
-
-  const apiMatch = trimmed.match(/^https?:\/\/(?:api\.mysaloon\.uz|[a-z0-9-]+\.up\.railway\.app)(\/media\/.+)$/i);
+  const apiMatch = trimmed.match(
+    /^https?:\/\/(?:api\.mysaloon\.uz|[a-z0-9-]+\.up\.railway\.app)(\/media\/.+)$/i,
+  );
   if (apiMatch?.[1]) {
     push(apiMatch[1]);
-    push(`https://api.mysaloon.uz${apiMatch[1]}`);
+    push(resolved);
+    return out.filter((u) => !isStockOrPlaceholder(u) || u === PLACEHOLDER_SALON);
   }
 
-  if (resolved.startsWith("/media/")) {
-    push(`https://api.mysaloon.uz${resolved}`);
-  }
+  push(resolved);
+  if (resolved !== trimmed) push(trimmed);
 
   return out.filter((u) => !isStockOrPlaceholder(u) || u === PLACEHOLDER_SALON);
 }

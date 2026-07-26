@@ -58,11 +58,20 @@ def _media_file_exists(file_field) -> bool:
     return media_field_exists(file_field)
 
 
-def _absolute_media_url(file_field, context: dict | None = None) -> str | None:
-    """ImageField.url — fayl yo‘qolgan bo‘lsa 500 bermasın; absolute URI."""
+def _absolute_media_url(
+    file_field,
+    context: dict | None = None,
+    *,
+    check_exists: bool = True,
+) -> str | None:
+    """ImageField.url — fayl yo‘qolgan bo‘lsa 500 bermasın; absolute URI.
+
+    check_exists=False: katalog list uchun (N× EXISTS o‘rniga URL ishonch).
+    Brauzer 404 ni handle qiladi; list TTFB sezilarli tushadi.
+    """
     if not file_field or not getattr(file_field, "name", None):
         return None
-    if not _media_file_exists(file_field):
+    if check_exists and not _media_file_exists(file_field):
         return None
     try:
         url = file_field.url
@@ -76,6 +85,23 @@ def _absolute_media_url(file_field, context: dict | None = None) -> str | None:
     if request is not None:
         return request.build_absolute_uri(url)
     return url
+
+
+def _salon_cover_url_fast(salon, context: dict | None = None) -> str | None:
+    """List/nearby — exists tekshiruvisiz cover (yoki gallery birinchisi)."""
+    if salon.cover_image and getattr(salon.cover_image, "name", None):
+        return _absolute_media_url(salon.cover_image, context, check_exists=False)
+    images = getattr(salon, "_prefetched_objects_cache", {}).get("images")
+    if images is not None:
+        first = next(
+            (img for img in sorted(images, key=lambda i: (i.sort_order, i.id)) if img.image),
+            None,
+        )
+        if first:
+            return _absolute_media_url(first.image, context, check_exists=False)
+        return None
+    # Prefetch yo‘q — qo‘shimcha query qilmaslik (list hot path)
+    return None
 
 
 class SalonImageSerializer(serializers.ModelSerializer):
@@ -299,18 +325,14 @@ class SalonListSerializer(serializers.ModelSerializer):
         return out
 
     def get_cover_image(self, obj):
-        return _salon_cover_url(obj, self.context)
+        return _salon_cover_url_fast(obj, self.context)
 
     def get_images(self, obj):
-        """Home/kartochka karuseli uchun — mavjud gallery URLlari (max 6)."""
-        images = getattr(obj, "_prefetched_objects_cache", {}).get("images")
-        if images is None:
-            images = obj.images.order_by("sort_order", "id")[:6]
-        else:
-            images = sorted(images, key=lambda i: (i.sort_order, i.id))[:6]
-        rows = SalonImageSerializer(images, many=True, context=self.context).data
-        # Bo‘sh/yo‘qolgan fayllarni chiqarib tashlash
-        return [r for r in rows if r.get("image")]
+        """List/home kartalar — faqat cover; gallery detail da.
+
+        Oldin max 6 rasm + har biri uchun EXISTS → sekin TTFB va bandwidth.
+        """
+        return []
 
     def to_representation(self, instance):
         data = super().to_representation(instance)

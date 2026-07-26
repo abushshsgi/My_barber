@@ -5,6 +5,7 @@ from django.db.models.functions import Cast, Coalesce
 from django.shortcuts import get_object_or_404
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import AllowAny
 
 from accounts.customer_permissions import IsAuthenticatedCustomer
@@ -94,8 +95,17 @@ def _delete_salon_catalog_service_for_owner(bp: Barber, service: Service) -> Non
     service.delete()
 
 
+class SalonCatalogPagination(PageNumberPagination):
+    """Home/map — kichikroq default; ?page_size= (max 50)."""
+
+    page_size = 24
+    page_size_query_param = "page_size"
+    max_page_size = 50
+
+
 class SalonViewSet(viewsets.ModelViewSet):
     lookup_field = "pk"
+    pagination_class = SalonCatalogPagination
 
     def get_permissions(self):
         if self.action in (
@@ -116,6 +126,7 @@ class SalonViewSet(viewsets.ModelViewSet):
 
         # PostgreSQL: Coalesce(Avg(..), Value(0)) integer/numeric aralashmasi 500 beradi — FloatField bilan bir xil.
         score = _salon_review_score_expr()
+        # images: faqat cover fallback (list images[] bo‘sh) — binary EXISTS yo‘q
         return (
             filter_customer_visible_salons(Salon.objects.all())
             .select_related("owner", "owner_barber")
@@ -234,6 +245,38 @@ class SalonViewSet(viewsets.ModelViewSet):
         if self.action in ("create", "update", "partial_update"):
             return SalonCreateUpdateSerializer
         return SalonDetailSerializer
+
+    def list(self, request, *args, **kwargs):
+        """Ommaviy katalog — qisqa TTL cache (anon + bir xil query)."""
+        from config.api_cache import cached_json
+
+        parts = {
+            "scope": (request.query_params.get("scope") or "").strip(),
+            "region": (request.query_params.get("region") or "").strip(),
+            "audience": (request.query_params.get("audience") or "").strip(),
+            "business_kind": (
+                request.query_params.get("business_kind")
+                or request.query_params.get("salon_type")
+                or ""
+            ).strip(),
+            "page": (request.query_params.get("page") or "1").strip(),
+            "page_size": (request.query_params.get("page_size") or "").strip(),
+            "ids": (request.query_params.get("ids") or "").strip(),
+            "catalog_region": customer_catalog_region(request) or "",
+            "lang": (request.query_params.get("lang") or "").strip()[:8],
+        }
+
+        def produce():
+            queryset = self.filter_queryset(self.get_queryset())
+            page = self.paginate_queryset(queryset)
+            if page is not None:
+                serializer = self.get_serializer(page, many=True)
+                return self.get_paginated_response(serializer.data).data
+            serializer = self.get_serializer(queryset, many=True)
+            return serializer.data
+
+        payload = cached_json(prefix="salons_list", parts=parts, producer=produce, ttl=45)
+        return Response(payload)
 
     def perform_create(self, serializer):
         from rest_framework.exceptions import PermissionDenied

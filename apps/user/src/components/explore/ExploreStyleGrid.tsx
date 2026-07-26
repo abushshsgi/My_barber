@@ -129,7 +129,7 @@ export function ExploreStyleGrid({
           key={`${personaKey ?? "default"}-${entry.id}`}
           entry={entry}
           compact={compact}
-          priority={index < 6}
+          priority={index < 4}
         />
       ))}
     </div>

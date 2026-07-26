@@ -41,24 +41,44 @@ logger = logging.getLogger(__name__)
 PUBLIC_ROOT = Path(settings.BASE_DIR).parent / "apps" / "user" / "public"
 MANIFEST_NAME = "explore_published_assets.json"
 
+# Process-local manifest cache — har list so‘rovda DB media o‘qimaslik
+_manifest_cache: dict[str, list[str]] | None = None
+_manifest_cache_mono: float = 0.0
+_MANIFEST_TTL_SEC = 60.0
+
 
 def _load_manifest() -> dict[str, list[str]]:
+    global _manifest_cache, _manifest_cache_mono
+    import time
+
+    now = time.monotonic()
+    if _manifest_cache is not None and (now - _manifest_cache_mono) < _MANIFEST_TTL_SEC:
+        return _manifest_cache
+
     data = read_json_media(MANIFEST_NAME, default={})
     if not isinstance(data, dict):
-        return {}
-    out: dict[str, list[str]] = {}
-    for key, value in data.items():
-        pid = normalize_persona_id(str(key))
-        if not pid or not isinstance(value, list):
-            continue
-        slugs = sorted({str(slug).strip() for slug in value if str(slug).strip()})
-        if slugs:
-            out[pid] = slugs
+        out: dict[str, list[str]] = {}
+    else:
+        out = {}
+        for key, value in data.items():
+            pid = normalize_persona_id(str(key))
+            if not pid or not isinstance(value, list):
+                continue
+            slugs = sorted({str(slug).strip() for slug in value if str(slug).strip()})
+            if slugs:
+                out[pid] = slugs
+    _manifest_cache = out
+    _manifest_cache_mono = now
     return out
 
 
 def _save_manifest(data: dict[str, list[str]]) -> None:
+    global _manifest_cache, _manifest_cache_mono
+    import time
+
     write_json_media(MANIFEST_NAME, data)
+    _manifest_cache = data
+    _manifest_cache_mono = time.monotonic()
 
 
 def draft_asset_rel(*, persona_id: str, slug: str, view: str = "front") -> str:
@@ -146,21 +166,23 @@ def _static_file_exists(*, audience: str, persona_id: str, slug: str, view: str 
 
 
 def view_asset_file_exists(*, persona_id: str, slug: str, view: str = "front") -> bool:
+    """Explore list filtri — DB media EXISTS qilmasdan tez tekshiruv.
+
+    Manifest / PERSONA_READY / static path yetarli; URL resolve keyinroq.
+    """
     pid = normalize_persona_id(persona_id)
     if not pid:
         return False
     normalized_view = normalize_explore_view(view)
-    if is_explore_asset_published(pid, slug, view=normalized_view):
-        if live_media_exists(persona_id=pid, slug=slug, view=normalized_view):
-            return True
-        if _public_static_exists(persona_id=pid, slug=slug, view=normalized_view):
-            return True
-    if _static_file_exists(audience="men", persona_id=pid, slug=slug, view=normalized_view):
-        return True
     ready = PERSONA_READY_ASSETS.get(pid, frozenset())
     if normalized_view == "front" and slug in ready:
         return True
     if normalized_view != "front" and normalized_view in persona_static_extra_views(pid, slug):
+        return True
+    # Publish qilingan = mavjud deb hisobla (live_media_exists × N o‘rniga)
+    if is_explore_asset_published(pid, slug, view=normalized_view):
+        return True
+    if _static_file_exists(audience="men", persona_id=pid, slug=slug, view=normalized_view):
         return True
     return False
 
@@ -186,6 +208,9 @@ def explore_asset_available(persona_id: str | None, slug: str) -> bool:
         return True
     if slug == "reference":
         return view_asset_file_exists(persona_id=pid, slug="reference", view="front")
+    # Front yetarli — barcha viewlarni aylanib DB tekshirish shart emas (list hot path)
+    if view_asset_file_exists(persona_id=pid, slug=slug, view="front"):
+        return True
     return bool(published_views_for_style(pid, slug))
 
 

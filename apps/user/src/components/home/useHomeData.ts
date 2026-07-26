@@ -158,6 +158,17 @@ export function useHomeData() {
   );
   const personalized = catalog.isLoggedIn && !catalog.isNationwide;
 
+  const salonsLoading = hasCoords
+    ? !(
+        (!nearbyLoading && !nearbyError && nearbySalons.length > 0) ||
+        !listLoading
+      )
+    : listLoading;
+  const loading =
+    salonsLoading || (searchActive && (searchSalonsLoading || searchBarbersLoading));
+  // Barberlar parallel — salon empty state barberlarni kutmasin
+  const barbersLoading = nearbyBarbersLoading || listBarbersLoading;
+
   return {
     audience,
     cat,
@@ -180,12 +191,8 @@ export function useHomeData() {
     personalized,
     catalog,
     exploreLoading: menExploreLoading || womenExploreLoading,
-    loading:
-      nearbyLoading ||
-      listLoading ||
-      nearbyBarbersLoading ||
-      listBarbersLoading ||
-      (searchActive && (searchSalonsLoading || searchBarbersLoading)),
+    barbersLoading,
+    loading,
     error,
   };
 }

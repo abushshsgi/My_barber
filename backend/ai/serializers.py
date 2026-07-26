@@ -69,6 +69,8 @@ class HairstyleSerializer(serializers.ModelSerializer):
         )
 
     def get_gallery(self, obj: Hairstyle) -> list[dict[str, str]]:
+        if self.context.get("skip_gallery"):
+            return []
         persona_id = self.context.get("persona_id")
         if obj.audience != "men" or not persona_id:
             return []

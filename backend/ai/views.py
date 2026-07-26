@@ -89,38 +89,55 @@ class HairstyleListView(UnthrottledAPIView):
     permission_classes = [AllowAny]
 
     def get(self, request):
+        from config.api_cache import cached_json
+
         audience = (request.query_params.get("audience") or "").strip().lower()
         age_group = _resolve_age_group(request)
         persona_id = _resolve_persona_id(request, audience if audience in {"men", "women"} else None)
-        qs = Hairstyle.objects.filter(is_published=True)
-        if audience in {"men", "women"}:
-            qs = qs.filter(audience=audience)
-        styles = list(qs)
-        if age_group:
-            styles = [
-                style
-                for style in styles
-                if age_group in (style.age_groups or [])
-            ]
-        if audience == "men" and not persona_id:
-            ready_persona_ids = [p["id"] for p in list_explore_personas()]
-            styles = [
-                style
-                for style in styles
-                if any(has_persona_style_asset(pid, style.slug) for pid in ready_persona_ids)
-            ]
-        if persona_id:
-            styles = [
-                style
-                for style in styles
-                if has_persona_style_asset(persona_id, style.slug)
-            ]
-        serializer = HairstyleSerializer(
-            styles,
-            many=True,
-            context={"age_group": age_group, "persona_id": persona_id},
-        )
-        return Response(serializer.data)
+        cache_parts = {
+            "audience": audience,
+            "age_group": age_group or "",
+            "persona_id": persona_id or "",
+        }
+
+        def produce():
+            qs = Hairstyle.objects.filter(is_published=True)
+            if audience in {"men", "women"}:
+                qs = qs.filter(audience=audience)
+            styles = list(qs)
+            if age_group:
+                styles = [
+                    style
+                    for style in styles
+                    if age_group in (style.age_groups or [])
+                ]
+            if audience == "men" and not persona_id:
+                ready_persona_ids = [p["id"] for p in list_explore_personas()]
+                # Manifest bir marta — har style×persona uchun DB EXISTS emas
+                styles = [
+                    style
+                    for style in styles
+                    if any(has_persona_style_asset(pid, style.slug) for pid in ready_persona_ids)
+                ]
+            if persona_id:
+                styles = [
+                    style
+                    for style in styles
+                    if has_persona_style_asset(persona_id, style.slug)
+                ]
+            serializer = HairstyleSerializer(
+                styles,
+                many=True,
+                context={
+                    "age_group": age_group,
+                    "persona_id": persona_id,
+                    "skip_gallery": True,
+                },
+            )
+            return serializer.data
+
+        payload = cached_json(prefix="hairstyles_list", parts=cache_parts, producer=produce, ttl=120)
+        return Response(payload)
 
 
 class HairstyleDetailView(UnthrottledAPIView):
