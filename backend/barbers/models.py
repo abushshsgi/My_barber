@@ -89,6 +89,14 @@ class Barber(models.Model):
         help_text="Tasdiq havolasi avtomatik yuborilgan vaqt (profil sozlamalari tugaganida, bir marta).",
     )
     is_active = models.BooleanField(default=True)
+    referred_by_agent = models.ForeignKey(
+        "agents.FieldAgent",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="referred_barbers",
+        db_index=True,
+    )
     date_joined = models.DateTimeField(auto_now_add=True)
     last_login = models.DateTimeField(null=True, blank=True)
     customer_invite_code = models.CharField(

@@ -34,15 +34,21 @@ import { cn } from "@/lib/utils";
 type AuthSearch = {
   session?: string;
   tab?: "login" | "signup";
+  ref?: string;
+  agent?: string;
 };
 
 export const Route = createFileRoute("/auth")({
   validateSearch: (raw: Record<string, unknown>): AuthSearch => ({
     session: typeof raw.session === "string" ? raw.session : undefined,
     tab: raw.tab === "signup" || raw.tab === "login" ? raw.tab : undefined,
+    ref: typeof raw.ref === "string" ? raw.ref : undefined,
+    agent: typeof raw.agent === "string" ? raw.agent : undefined,
   }),
-  beforeLoad: async () => {
+  beforeLoad: async ({ search }) => {
     if (typeof window === "undefined") return;
+    const { captureAgentRefFromSearch } = await import("@/lib/agent-ref");
+    captureAgentRefFromSearch(search);
     if (!getBarberAccessToken()) return;
     const next = await resolveBarberEntryPath();
     if (next === "/auth") return;
@@ -53,8 +59,10 @@ export const Route = createFileRoute("/auth")({
 
 function AuthPage() {
   const navigate = useNavigate({ from: Route.fullPath });
-  const { session, tab: tabFromSearch } = Route.useSearch();
-  const [tab, setTab] = useState<"login" | "signup">(tabFromSearch === "signup" ? "signup" : "login");
+  const { session, tab: tabFromSearch, ref, agent } = Route.useSearch();
+  const [tab, setTab] = useState<"login" | "signup">(
+    tabFromSearch === "signup" || Boolean(ref || agent) ? "signup" : "login",
+  );
   const [signupStep, setSignupStep] = useState(0);
 
   const [loginEmail, setLoginEmail] = useState("");
@@ -75,6 +83,12 @@ function AuthPage() {
   const [checkingAvailability, setCheckingAvailability] = useState(false);
   const [loadingLogin, setLoadingLogin] = useState(false);
   const [loadingSignup, setLoadingSignup] = useState(false);
+
+  useEffect(() => {
+    void import("@/lib/agent-ref").then(({ captureAgentRefFromSearch }) => {
+      captureAgentRefFromSearch({ ref, agent });
+    });
+  }, [ref, agent]);
 
   useEffect(() => {
     if (session === "expired") {

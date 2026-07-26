@@ -10,6 +10,12 @@ class Salon(models.Model):
         BARBERSHOP = "barbershop", "Sartaroshxona"
         BEAUTY_SALON = "beauty_salon", "Go'zallik saloni"
 
+    class SubscriptionStatus(models.TextChoices):
+        NONE = "none", "Yo'q"
+        TRIAL = "trial", "Trial"
+        ACTIVE = "active", "Faol"
+        EXPIRED = "expired", "Tugagan"
+
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -44,6 +50,24 @@ class Salon(models.Model):
         db_index=True,
         help_text="Sartaroshxona yoki go'zallik saloni — egasi signup tanlovi.",
     )
+    referred_by_agent = models.ForeignKey(
+        "agents.FieldAgent",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="referred_salons",
+        db_index=True,
+    )
+    subscription_status = models.CharField(
+        max_length=16,
+        choices=SubscriptionStatus.choices,
+        default=SubscriptionStatus.NONE,
+        blank=True,
+        db_index=True,
+    )
+    trial_started_at = models.DateTimeField(null=True, blank=True)
+    trial_ends_at = models.DateTimeField(null=True, blank=True, db_index=True)
+    trial_value_uzs = models.PositiveIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

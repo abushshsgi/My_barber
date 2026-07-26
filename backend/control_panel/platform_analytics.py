@@ -110,6 +110,35 @@ def build_platform_overview(start_dt: datetime, end_dt: datetime) -> dict:
         round(completed_count / total_bookings * 100, 1) if total_bookings else 0.0
     )
 
+    # Field agents (sotuv)
+    agents_block = {
+        "agents_total": 0,
+        "agents_active": 0,
+        "barbers_referred": 0,
+        "salons_referred": 0,
+        "salons_trial": 0,
+        "salons_in_range": 0,
+    }
+    try:
+        from agents.models import AgentReferralAttribution, FieldAgent
+
+        now = timezone.now()
+        referred = Salon.objects.filter(referred_by_agent__isnull=False)
+        agents_block = {
+            "agents_total": FieldAgent.objects.count(),
+            "agents_active": FieldAgent.objects.filter(is_active=True).count(),
+            "barbers_referred": AgentReferralAttribution.objects.count(),
+            "salons_referred": referred.count(),
+            "salons_trial": referred.filter(
+                subscription_status="trial", trial_ends_at__gt=now
+            ).count(),
+            "salons_in_range": referred.filter(
+                created_at__gte=start_dt, created_at__lte=end_dt
+            ).count(),
+        }
+    except Exception:
+        pass
+
     return {
         "range": {
             "start": start_dt.date().isoformat(),
@@ -135,6 +164,7 @@ def build_platform_overview(start_dt: datetime, end_dt: datetime) -> dict:
             "salons_published": salons_published,
             "pending_payouts": _float(pending_payouts),
         },
+        "agents": agents_block,
         "revenue": {
             "gmv": _float(gmv),
             "cash_total": _float(cash_revenue),

@@ -17,6 +17,7 @@ import {
   type SignupFlow,
 } from "@/lib/auth-ui";
 import { clearSignupDraft, getSignupPassword, readSignupDraft, type SignupDraft } from "@/lib/signup-draft";
+import { getStoredAgentRef } from "@/lib/agent-ref";
 
 export type FlowPayload = {
   latitude?: number;
@@ -109,6 +110,7 @@ export async function submitEarlyFlowSignup(flow: SignupFlow, draft: SignupDraft
   const email = draft.email.trim() ? normalizeEmail(draft.email) : "";
   const phoneE164 = draft.phone?.trim() ? draft.phone.trim() : "";
   const flowFields = deriveFlowFields(flow);
+  const agentCode = getStoredAgentRef();
   await registerAndStoreTokens(
     {
       ...(email ? { email } : {}),
@@ -118,6 +120,7 @@ export async function submitEarlyFlowSignup(flow: SignupFlow, draft: SignupDraft
       onboarding_flow: flow,
       business_kind: draft.business_kind,
       ...flowFields,
+      ...(agentCode ? { agent_code: agentCode } : {}),
     },
     phoneE164 ? { phone: phoneE164 } : { email },
     draft.password,
@@ -153,6 +156,8 @@ export async function submitFlowSignup(flow: SignupFlow, payload: FlowPayload): 
     registerBody.latitude = roundCoord6(latitude);
     registerBody.longitude = roundCoord6(longitude);
   }
+  const agentCode = getStoredAgentRef();
+  if (agentCode) registerBody.agent_code = agentCode;
 
   await registerAndStoreTokens(
     registerBody,

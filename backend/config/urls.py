@@ -70,6 +70,16 @@ from control_panel.statistics_views import (
     AdminStatisticsUsersView,
     AdminStatisticsWalletView,
 )
+from agents.views import (
+    AdminAgentStatsView,
+    AdminFieldAgentDetailView,
+    AdminFieldAgentListCreateView,
+    AgentInviteView,
+    AgentMeView,
+    AgentSalonsView,
+    AgentTokenRefreshView,
+    AgentTokenView,
+)
 
 from accounts.address_views import (
     UserAddressDetailView,
@@ -435,6 +445,14 @@ api_routes = [
     path("admin/broadcast/", AdminBroadcastListCreateView.as_view()),
     path("admin/admins/", AdminAdminAccountListCreateView.as_view()),
     path("admin/admins/<int:pk>/", AdminAdminAccountDetailView.as_view()),
+    path("admin/agents/", AdminFieldAgentListCreateView.as_view()),
+    path("admin/agents/stats/", AdminAgentStatsView.as_view()),
+    path("admin/agents/<int:pk>/", AdminFieldAgentDetailView.as_view()),
+    path("agent/auth/token/", AgentTokenView.as_view()),
+    path("agent/auth/token/refresh/", AgentTokenRefreshView.as_view()),
+    path("agent/me/", AgentMeView.as_view()),
+    path("agent/salons/", AgentSalonsView.as_view()),
+    path("agent/invite/", AgentInviteView.as_view()),
     path("regions/", UzRegionsView.as_view()),
     path("geo/map-config/", MapConfigView.as_view()),
     path("geo/geocode/", GeocodeView.as_view()),

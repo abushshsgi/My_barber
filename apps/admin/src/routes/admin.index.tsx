@@ -7,7 +7,7 @@ import { KPICard } from "@/components/admin/KPICard";
 import { CardSkeleton } from "@/components/admin/Skeletons";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { Button } from "@/components/ui/button";
-import { Download, TrendingUp, Users, Scissors, Building2, CalendarClock } from "lucide-react";
+import { Download, TrendingUp, Users, Scissors, Building2, CalendarClock, UserPlus, QrCode } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/admin/")({
@@ -25,6 +25,7 @@ function DashboardPage() {
   const statsQ = useQuery({
     queryKey: ["admin", "stats"],
     queryFn: fetchAdminStats,
+    refetchInterval: 20_000,
   });
 
   const bookingsQ = useQuery({
@@ -34,6 +35,7 @@ function DashboardPage() {
 
   const stats = statsQ.data;
   const recentBookings = (bookingsQ.data?.results ?? []).slice(0, 6);
+  const agents = stats?.agents;
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto space-y-8">
@@ -47,13 +49,21 @@ function DashboardPage() {
               Dashboard
             </h1>
             <p className="text-muted-foreground mt-2 text-sm max-w-xl">
-              Tarmoq bo&apos;yicha umumiy ko&apos;rinish — mijozlar, sartaroshlar, bronlar va daromad.
+              Tarmoq, agentlar va moliyaviy ko&apos;rsatkichlar — real vaqtda yangilanadi.
             </p>
           </div>
-          <Button onClick={() => reportMut.mutate()} disabled={reportMut.isPending} className="shrink-0">
-            <Download className="size-4 mr-2" />
-            Hisobot olish
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Link
+              to="/admin/statistics/live"
+              className="inline-flex items-center rounded-lg border border-border bg-card px-3 py-2 text-sm font-medium shadow-card hover:bg-muted"
+            >
+              Live statistika →
+            </Link>
+            <Button onClick={() => reportMut.mutate()} disabled={reportMut.isPending} className="shrink-0">
+              <Download className="size-4 mr-2" />
+              Hisobot olish
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -110,6 +120,38 @@ function DashboardPage() {
           </>
         ) : null}
       </div>
+
+      {agents && (
+        <div>
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+              Sotuv agentlari
+            </p>
+            <Link to="/admin/agents" className="text-sm font-medium hover:underline">
+              Agentlar →
+            </Link>
+          </div>
+          <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+            <KPICard label="Agentlar" value={(agents.agents_total ?? 0).toLocaleString()} icon={UserPlus} />
+            <KPICard label="Faol" value={(agents.agents_active ?? 0).toLocaleString()} />
+            <KPICard
+              label="Olib kelingan salon"
+              value={(agents.salons_referred ?? 0).toLocaleString()}
+              icon={Building2}
+            />
+            <KPICard
+              label="Trialda"
+              value={(agents.salons_trial ?? 0).toLocaleString()}
+              icon={QrCode}
+            />
+            <KPICard
+              label="Barberlar"
+              value={(agents.barbers_referred ?? 0).toLocaleString()}
+              icon={Scissors}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Two-column section */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

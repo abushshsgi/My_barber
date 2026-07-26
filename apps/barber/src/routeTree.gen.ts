@@ -10,11 +10,14 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AgentRouteImport } from './routes/agent'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as BarberRouteImport } from './routes/barber'
 import { Route as CheckEmailRouteImport } from './routes/check-email'
 import { Route as VerifyEmailRouteImport } from './routes/verify-email'
 import { Route as WelcomeRouteImport } from './routes/welcome'
+import { Route as AgentIndexRouteImport } from './routes/agent.index'
+import { Route as AgentLoginRouteImport } from './routes/agent.login'
 import { Route as BarberIndexRouteImport } from './routes/barber.index'
 import { Route as BarberActivationRouteImport } from './routes/barber.activation'
 import { Route as BarberAmenitiesRouteImport } from './routes/barber.amenities'
@@ -64,6 +67,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AgentRoute = AgentRouteImport.update({
+  id: '/agent',
+  path: '/agent',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
@@ -88,6 +96,16 @@ const WelcomeRoute = WelcomeRouteImport.update({
   id: '/welcome',
   path: '/welcome',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AgentIndexRoute = AgentIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AgentRoute,
+} as any)
+const AgentLoginRoute = AgentLoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => AgentRoute,
 } as any)
 const BarberIndexRoute = BarberIndexRouteImport.update({
   id: '/',
@@ -310,11 +328,13 @@ const BarberBookingsBookingIdSessionRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/agent': typeof AgentRouteWithChildren
   '/auth': typeof AuthRoute
   '/barber': typeof BarberRouteWithChildren
   '/check-email': typeof CheckEmailRoute
   '/verify-email': typeof VerifyEmailRoute
   '/welcome': typeof WelcomeRoute
+  '/agent/login': typeof AgentLoginRoute
   '/barber/activation': typeof BarberActivationRoute
   '/barber/amenities': typeof BarberAmenitiesRoute
   '/barber/bookings': typeof BarberBookingsRouteWithChildren
@@ -343,6 +363,7 @@ export interface FileRoutesByFullPath {
   '/mybarber/setup': typeof MybarberSetupRoute
   '/salon/create': typeof SalonCreateRoute
   '/salon/join': typeof SalonJoinRouteWithChildren
+  '/agent/': typeof AgentIndexRoute
   '/barber/': typeof BarberIndexRoute
   '/barber/bookings/$bookingId': typeof BarberBookingsBookingIdRouteWithChildren
   '/barber/salon-view/edit': typeof BarberSalonViewEditRoute
@@ -365,6 +386,7 @@ export interface FileRoutesByTo {
   '/check-email': typeof CheckEmailRoute
   '/verify-email': typeof VerifyEmailRoute
   '/welcome': typeof WelcomeRoute
+  '/agent/login': typeof AgentLoginRoute
   '/barber/activation': typeof BarberActivationRoute
   '/barber/amenities': typeof BarberAmenitiesRoute
   '/barber/bookings': typeof BarberBookingsRouteWithChildren
@@ -391,6 +413,7 @@ export interface FileRoutesByTo {
   '/independent/setup': typeof IndependentSetupRoute
   '/mybarber/setup': typeof MybarberSetupRoute
   '/salon/create': typeof SalonCreateRoute
+  '/agent': typeof AgentIndexRoute
   '/barber': typeof BarberIndexRoute
   '/barber/salon-view/edit': typeof BarberSalonViewEditRoute
   '/barber/salon-view/gallery': typeof BarberSalonViewGalleryRoute
@@ -409,11 +432,13 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/agent': typeof AgentRouteWithChildren
   '/auth': typeof AuthRoute
   '/barber': typeof BarberRouteWithChildren
   '/check-email': typeof CheckEmailRoute
   '/verify-email': typeof VerifyEmailRoute
   '/welcome': typeof WelcomeRoute
+  '/agent/login': typeof AgentLoginRoute
   '/barber/activation': typeof BarberActivationRoute
   '/barber/amenities': typeof BarberAmenitiesRoute
   '/barber/bookings': typeof BarberBookingsRouteWithChildren
@@ -442,6 +467,7 @@ export interface FileRoutesById {
   '/mybarber/setup': typeof MybarberSetupRoute
   '/salon/create': typeof SalonCreateRoute
   '/salon/join': typeof SalonJoinRouteWithChildren
+  '/agent/': typeof AgentIndexRoute
   '/barber/': typeof BarberIndexRoute
   '/barber/bookings/$bookingId': typeof BarberBookingsBookingIdRouteWithChildren
   '/barber/salon-view/edit': typeof BarberSalonViewEditRoute
@@ -462,11 +488,13 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/agent'
     | '/auth'
     | '/barber'
     | '/check-email'
     | '/verify-email'
     | '/welcome'
+    | '/agent/login'
     | '/barber/activation'
     | '/barber/amenities'
     | '/barber/bookings'
@@ -495,6 +523,7 @@ export interface FileRouteTypes {
     | '/mybarber/setup'
     | '/salon/create'
     | '/salon/join'
+    | '/agent/'
     | '/barber/'
     | '/barber/bookings/$bookingId'
     | '/barber/salon-view/edit'
@@ -517,6 +546,7 @@ export interface FileRouteTypes {
     | '/check-email'
     | '/verify-email'
     | '/welcome'
+    | '/agent/login'
     | '/barber/activation'
     | '/barber/amenities'
     | '/barber/bookings'
@@ -543,6 +573,7 @@ export interface FileRouteTypes {
     | '/independent/setup'
     | '/mybarber/setup'
     | '/salon/create'
+    | '/agent'
     | '/barber'
     | '/barber/salon-view/edit'
     | '/barber/salon-view/gallery'
@@ -560,11 +591,13 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/agent'
     | '/auth'
     | '/barber'
     | '/check-email'
     | '/verify-email'
     | '/welcome'
+    | '/agent/login'
     | '/barber/activation'
     | '/barber/amenities'
     | '/barber/bookings'
@@ -593,6 +626,7 @@ export interface FileRouteTypes {
     | '/mybarber/setup'
     | '/salon/create'
     | '/salon/join'
+    | '/agent/'
     | '/barber/'
     | '/barber/bookings/$bookingId'
     | '/barber/salon-view/edit'
@@ -612,6 +646,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AgentRoute: typeof AgentRouteWithChildren
   AuthRoute: typeof AuthRoute
   BarberRoute: typeof BarberRouteWithChildren
   CheckEmailRoute: typeof CheckEmailRoute
@@ -630,6 +665,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/agent': {
+      id: '/agent'
+      path: '/agent'
+      fullPath: '/agent'
+      preLoaderRoute: typeof AgentRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth': {
@@ -666,6 +708,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/welcome'
       preLoaderRoute: typeof WelcomeRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/agent/': {
+      id: '/agent/'
+      path: '/'
+      fullPath: '/agent/'
+      preLoaderRoute: typeof AgentIndexRouteImport
+      parentRoute: typeof AgentRoute
+    }
+    '/agent/login': {
+      id: '/agent/login'
+      path: '/login'
+      fullPath: '/agent/login'
+      preLoaderRoute: typeof AgentLoginRouteImport
+      parentRoute: typeof AgentRoute
     }
     '/barber/': {
       id: '/barber/'
@@ -971,6 +1027,18 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AgentRouteChildren {
+  AgentLoginRoute: typeof AgentLoginRoute
+  AgentIndexRoute: typeof AgentIndexRoute
+}
+
+const AgentRouteChildren: AgentRouteChildren = {
+  AgentLoginRoute: AgentLoginRoute,
+  AgentIndexRoute: AgentIndexRoute,
+}
+
+const AgentRouteWithChildren = AgentRoute._addFileChildren(AgentRouteChildren)
+
 interface BarberBookingsBookingIdRouteChildren {
   BarberBookingsBookingIdCheckInRoute: typeof BarberBookingsBookingIdCheckInRoute
   BarberBookingsBookingIdSessionRoute: typeof BarberBookingsBookingIdSessionRoute
@@ -1102,6 +1170,7 @@ const SalonJoinRouteWithChildren = SalonJoinRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AgentRoute: AgentRouteWithChildren,
   AuthRoute: AuthRoute,
   BarberRoute: BarberRouteWithChildren,
   CheckEmailRoute: CheckEmailRoute,

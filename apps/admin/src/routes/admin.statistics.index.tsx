@@ -133,6 +133,39 @@ function StatisticsOverviewPage() {
             </div>
           </div>
 
+          {d.agents && (
+            <div>
+              <div className="mb-3 flex items-center justify-between">
+                <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                  Sotuv agentlari
+                </p>
+                <Link to="/admin/statistics/agents" className="text-sm font-semibold hover:underline">
+                  Batafsil →
+                </Link>
+              </div>
+              <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-6">
+                <KPICard label="Agentlar" value={(d.agents.agents_total ?? 0).toLocaleString()} icon={Users} />
+                <KPICard label="Faol" value={(d.agents.agents_active ?? 0).toLocaleString()} />
+                <KPICard
+                  label="Salonlar"
+                  value={(d.agents.salons_referred ?? 0).toLocaleString()}
+                  icon={Building2}
+                />
+                <KPICard label="Trialda" value={(d.agents.salons_trial ?? 0).toLocaleString()} />
+                <KPICard
+                  label="Barberlar"
+                  value={(d.agents.barbers_referred ?? 0).toLocaleString()}
+                  icon={Scissors}
+                />
+                <KPICard
+                  label="Davrdagi yangi"
+                  value={(d.agents.salons_in_range ?? 0).toLocaleString()}
+                  hint="Tanlangan oralik"
+                />
+              </div>
+            </div>
+          )}
+
           <div className="bg-card rounded-2xl border border-border shadow-card p-5 sm:p-6">
             <h2 className="font-heading text-lg font-semibold">To'lov usullari nisbati</h2>
             <p className="text-sm text-muted-foreground mt-1">Yakunlangan bronlar bo'yicha naqd va onlayn</p>

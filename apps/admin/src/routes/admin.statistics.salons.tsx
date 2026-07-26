@@ -1,8 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
-import { Building2 } from "lucide-react";
-import { downloadStatisticsCsv, fetchAdminUserSignupAnalytics } from "@/lib/admin-api";
+import { Building2, QrCode, UserPlus } from "lucide-react";
+import {
+  downloadStatisticsCsv,
+  fetchAdminUserSignupAnalytics,
+  fetchAgentPlatformStats,
+} from "@/lib/admin-api";
 import { KPICard } from "@/components/admin/KPICard";
 import { CardSkeleton, TableSkeleton } from "@/components/admin/Skeletons";
 import { EmptyState } from "@/components/admin/EmptyState";
@@ -22,14 +26,21 @@ function StatisticsSalonsPage() {
     refetchIntervalInBackground: true,
   });
 
+  const agentsQ = useQuery({
+    queryKey: ["admin", "agent-stats-salons-page"],
+    queryFn: fetchAgentPlatformStats,
+    refetchInterval: 15_000,
+  });
+
   const salons = q.data?.salons;
   const summary = salons?.summary;
+  const agents = agentsQ.data;
 
   return (
     <div className="space-y-6">
       <StatsPageHeader
         title="Salonlar"
-        description="Platformaga qo'shilgan salonlar — chiqarilgan va tekshiruvda."
+        description="Platformaga qo'shilgan salonlar — chiqarilgan, tekshiruvda va agent orqali."
         onExport={() => downloadStatisticsCsv("salons")}
       />
 
@@ -47,6 +58,25 @@ function StatisticsSalonsPage() {
           </>
         )}
       </div>
+
+      {agents && (
+        <div>
+          <div className="mb-3 flex items-center justify-between">
+            <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+              Agent orqali
+            </p>
+            <Link to="/admin/statistics/agents" className="text-sm font-semibold hover:underline">
+              Agent statistikasi →
+            </Link>
+          </div>
+          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+            <KPICard label="Agent salonlari" value={agents.salons_referred.toLocaleString()} icon={UserPlus} />
+            <KPICard label="Trialda" value={agents.salons_trial.toLocaleString()} icon={QrCode} />
+            <KPICard label="Trial tugagan" value={agents.salons_expired.toLocaleString()} />
+            <KPICard label="Faol agentlar" value={agents.agents_active.toLocaleString()} />
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <div className="bg-card rounded-2xl border border-border shadow-card p-5 sm:p-6 lg:col-span-2">

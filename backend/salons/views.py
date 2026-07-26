@@ -244,6 +244,13 @@ class SalonViewSet(viewsets.ModelViewSet):
             ensure_owner_membership_active(bp, salon)
         except Exception:
             pass
+        try:
+            from agents.referral import attribute_salon_to_agent
+
+            attribute_salon_to_agent(salon=salon, barber=bp)
+        except Exception:
+            # Attribution xatosi salon yaratishni buzmasin.
+            pass
 
     def create(self, request, *args, **kwargs):
         """Salon create — response serialization 500 bermasligi uchun minimal body."""

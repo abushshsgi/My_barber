@@ -14,6 +14,7 @@ import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminAdminsRouteImport } from './routes/admin.admins'
+import { Route as AdminAgentsRouteImport } from './routes/admin.agents'
 import { Route as AdminAuditRouteImport } from './routes/admin.audit'
 import { Route as AdminAylanmaRouteImport } from './routes/admin.aylanma'
 import { Route as AdminBarbersRouteImport } from './routes/admin.barbers'
@@ -60,6 +61,7 @@ import { Route as AdminPayoutsIndexRouteImport } from './routes/admin.payouts.in
 import { Route as AdminSalonsSalonIdRouteImport } from './routes/admin.salons.$salonId'
 import { Route as AdminServicesAnalyticsRouteImport } from './routes/admin.services.analytics'
 import { Route as AdminStatisticsIndexRouteImport } from './routes/admin.statistics.index'
+import { Route as AdminStatisticsAgentsRouteImport } from './routes/admin.statistics.agents'
 import { Route as AdminStatisticsBarbersRouteImport } from './routes/admin.statistics.barbers'
 import { Route as AdminStatisticsBookingsRouteImport } from './routes/admin.statistics.bookings'
 import { Route as AdminStatisticsCustomerInvitesRouteImport } from './routes/admin.statistics.customer-invites'
@@ -109,6 +111,11 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
 const AdminAdminsRoute = AdminAdminsRouteImport.update({
   id: '/admins',
   path: '/admins',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminAgentsRoute = AdminAgentsRouteImport.update({
+  id: '/agents',
+  path: '/agents',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminAuditRoute = AdminAuditRouteImport.update({
@@ -342,6 +349,11 @@ const AdminStatisticsIndexRoute = AdminStatisticsIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AdminStatisticsRoute,
 } as any)
+const AdminStatisticsAgentsRoute = AdminStatisticsAgentsRouteImport.update({
+  id: '/agents',
+  path: '/agents',
+  getParentRoute: () => AdminStatisticsRoute,
+} as any)
 const AdminStatisticsBarbersRoute = AdminStatisticsBarbersRouteImport.update({
   id: '/barbers',
   path: '/barbers',
@@ -483,6 +495,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRoute
   '/admin/admins': typeof AdminAdminsRoute
+  '/admin/agents': typeof AdminAgentsRoute
   '/admin/audit': typeof AdminAuditRoute
   '/admin/aylanma': typeof AdminAylanmaRouteWithChildren
   '/admin/barbers': typeof AdminBarbersRouteWithChildren
@@ -524,6 +537,7 @@ export interface FileRoutesByFullPath {
   '/admin/morph-ai/settings': typeof AdminMorphAiSettingsRoute
   '/admin/salons/$salonId': typeof AdminSalonsSalonIdRouteWithChildren
   '/admin/services/analytics': typeof AdminServicesAnalyticsRoute
+  '/admin/statistics/agents': typeof AdminStatisticsAgentsRoute
   '/admin/statistics/barbers': typeof AdminStatisticsBarbersRoute
   '/admin/statistics/bookings': typeof AdminStatisticsBookingsRoute
   '/admin/statistics/customer-invites': typeof AdminStatisticsCustomerInvitesRoute
@@ -560,6 +574,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/admin/admins': typeof AdminAdminsRoute
+  '/admin/agents': typeof AdminAgentsRoute
   '/admin/audit': typeof AdminAuditRoute
   '/admin/barbers': typeof AdminBarbersRouteWithChildren
   '/admin/bookings': typeof AdminBookingsRouteWithChildren
@@ -593,6 +608,7 @@ export interface FileRoutesByTo {
   '/admin/morph-ai/queue': typeof AdminMorphAiQueueRoute
   '/admin/morph-ai/settings': typeof AdminMorphAiSettingsRoute
   '/admin/services/analytics': typeof AdminServicesAnalyticsRoute
+  '/admin/statistics/agents': typeof AdminStatisticsAgentsRoute
   '/admin/statistics/barbers': typeof AdminStatisticsBarbersRoute
   '/admin/statistics/bookings': typeof AdminStatisticsBookingsRoute
   '/admin/statistics/customer-invites': typeof AdminStatisticsCustomerInvitesRoute
@@ -629,6 +645,7 @@ export interface FileRoutesById {
   '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRoute
   '/admin/admins': typeof AdminAdminsRoute
+  '/admin/agents': typeof AdminAgentsRoute
   '/admin/audit': typeof AdminAuditRoute
   '/admin/aylanma': typeof AdminAylanmaRouteWithChildren
   '/admin/barbers': typeof AdminBarbersRouteWithChildren
@@ -670,6 +687,7 @@ export interface FileRoutesById {
   '/admin/morph-ai/settings': typeof AdminMorphAiSettingsRoute
   '/admin/salons/$salonId': typeof AdminSalonsSalonIdRouteWithChildren
   '/admin/services/analytics': typeof AdminServicesAnalyticsRoute
+  '/admin/statistics/agents': typeof AdminStatisticsAgentsRoute
   '/admin/statistics/barbers': typeof AdminStatisticsBarbersRoute
   '/admin/statistics/bookings': typeof AdminStatisticsBookingsRoute
   '/admin/statistics/customer-invites': typeof AdminStatisticsCustomerInvitesRoute
@@ -709,6 +727,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/auth'
     | '/admin/admins'
+    | '/admin/agents'
     | '/admin/audit'
     | '/admin/aylanma'
     | '/admin/barbers'
@@ -750,6 +769,7 @@ export interface FileRouteTypes {
     | '/admin/morph-ai/settings'
     | '/admin/salons/$salonId'
     | '/admin/services/analytics'
+    | '/admin/statistics/agents'
     | '/admin/statistics/barbers'
     | '/admin/statistics/bookings'
     | '/admin/statistics/customer-invites'
@@ -786,6 +806,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/admin/admins'
+    | '/admin/agents'
     | '/admin/audit'
     | '/admin/barbers'
     | '/admin/bookings'
@@ -819,6 +840,7 @@ export interface FileRouteTypes {
     | '/admin/morph-ai/queue'
     | '/admin/morph-ai/settings'
     | '/admin/services/analytics'
+    | '/admin/statistics/agents'
     | '/admin/statistics/barbers'
     | '/admin/statistics/bookings'
     | '/admin/statistics/customer-invites'
@@ -854,6 +876,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/auth'
     | '/admin/admins'
+    | '/admin/agents'
     | '/admin/audit'
     | '/admin/aylanma'
     | '/admin/barbers'
@@ -895,6 +918,7 @@ export interface FileRouteTypes {
     | '/admin/morph-ai/settings'
     | '/admin/salons/$salonId'
     | '/admin/services/analytics'
+    | '/admin/statistics/agents'
     | '/admin/statistics/barbers'
     | '/admin/statistics/bookings'
     | '/admin/statistics/customer-invites'
@@ -969,6 +993,13 @@ declare module '@tanstack/react-router' {
       path: '/admins'
       fullPath: '/admin/admins'
       preLoaderRoute: typeof AdminAdminsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/agents': {
+      id: '/admin/agents'
+      path: '/agents'
+      fullPath: '/admin/agents'
+      preLoaderRoute: typeof AdminAgentsRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/audit': {
@@ -1291,6 +1322,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/admin/statistics/'
       preLoaderRoute: typeof AdminStatisticsIndexRouteImport
+      parentRoute: typeof AdminStatisticsRoute
+    }
+    '/admin/statistics/agents': {
+      id: '/admin/statistics/agents'
+      path: '/agents'
+      fullPath: '/admin/statistics/agents'
+      preLoaderRoute: typeof AdminStatisticsAgentsRouteImport
       parentRoute: typeof AdminStatisticsRoute
     }
     '/admin/statistics/barbers': {
@@ -1678,6 +1716,7 @@ const AdminServicesRouteWithChildren = AdminServicesRoute._addFileChildren(
 )
 
 interface AdminStatisticsRouteChildren {
+  AdminStatisticsAgentsRoute: typeof AdminStatisticsAgentsRoute
   AdminStatisticsBarbersRoute: typeof AdminStatisticsBarbersRoute
   AdminStatisticsBookingsRoute: typeof AdminStatisticsBookingsRoute
   AdminStatisticsCustomerInvitesRoute: typeof AdminStatisticsCustomerInvitesRoute
@@ -1691,6 +1730,7 @@ interface AdminStatisticsRouteChildren {
 }
 
 const AdminStatisticsRouteChildren: AdminStatisticsRouteChildren = {
+  AdminStatisticsAgentsRoute: AdminStatisticsAgentsRoute,
   AdminStatisticsBarbersRoute: AdminStatisticsBarbersRoute,
   AdminStatisticsBookingsRoute: AdminStatisticsBookingsRoute,
   AdminStatisticsCustomerInvitesRoute: AdminStatisticsCustomerInvitesRoute,
@@ -1746,6 +1786,7 @@ const AdminUsersRouteWithChildren = AdminUsersRoute._addFileChildren(
 
 interface AdminRouteChildren {
   AdminAdminsRoute: typeof AdminAdminsRoute
+  AdminAgentsRoute: typeof AdminAgentsRoute
   AdminAuditRoute: typeof AdminAuditRoute
   AdminAylanmaRoute: typeof AdminAylanmaRouteWithChildren
   AdminBarbersRoute: typeof AdminBarbersRouteWithChildren
@@ -1771,6 +1812,7 @@ interface AdminRouteChildren {
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminAdminsRoute: AdminAdminsRoute,
+  AdminAgentsRoute: AdminAgentsRoute,
   AdminAuditRoute: AdminAuditRoute,
   AdminAylanmaRoute: AdminAylanmaRouteWithChildren,
   AdminBarbersRoute: AdminBarbersRouteWithChildren,

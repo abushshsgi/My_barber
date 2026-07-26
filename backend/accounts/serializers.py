@@ -295,6 +295,8 @@ class BarberSignupSerializer(serializers.Serializer):
         allow_blank=True,
         default="",
     )
+    agent_code = serializers.CharField(required=False, allow_blank=True, default="")
+    referral_code = serializers.CharField(required=False, allow_blank=True, default="")
 
     def validate_password(self, value):
         err = validate_barber_password(value)
@@ -342,6 +344,11 @@ class BarberSignupSerializer(serializers.Serializer):
             raise serializers.ValidationError({"detail": contact_err})
         attrs["email"] = resolved_email
         attrs["phone"] = resolved_phone
+
+        # agent_code yoki referral_code (QR ?ref=) — bir xil maydon.
+        code = (attrs.get("agent_code") or attrs.get("referral_code") or "").strip()
+        attrs["agent_code"] = code
+        attrs.pop("referral_code", None)
 
         flow = (attrs.get("onboarding_flow") or "").strip()
         lat_raw = attrs.get("latitude")
@@ -391,7 +398,13 @@ class BarberSignupSerializer(serializers.Serializer):
         return attrs
 
     def create(self, validated_data):
-        return create_barber_with_flow(validated_data)
+        agent_code = validated_data.pop("agent_code", "") or ""
+        barber = create_barber_with_flow(validated_data)
+        if agent_code:
+            from agents.referral import apply_agent_referral
+
+            apply_agent_referral(barber=barber, code=agent_code)
+        return barber
 
     def to_representation(self, instance):
         if isinstance(instance, Barber):

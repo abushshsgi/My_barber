@@ -472,6 +472,14 @@ export type AdminStats = {
   weekly_bookings: number;
   revenue_uzs: number;
   delta: { users: number; barbers: number; bookings: number; revenue: number };
+  agents?: {
+    agents_total: number;
+    agents_active: number;
+    barbers_referred: number;
+    salons_referred: number;
+    salons_trial: number;
+    salons_expired: number;
+  };
   regions: Array<{
     code: RegionCode;
     name: string;
@@ -1126,7 +1134,9 @@ function mapSalonDetail(s: BackendSalonRow): AdminSalonDetail {
 
 // --- API functions ---
 export async function fetchAdminStats(): Promise<AdminStats> {
-  const stats = await apiJson<BackendStats>("/api/v1/admin/stats/");
+  const stats = await apiJson<BackendStats & { agents?: AdminStats["agents"] }>(
+    "/api/v1/admin/stats/",
+  );
   return {
     total_users: stats.users_total ?? 0,
     total_barbers: stats.barbers_total ?? 0,
@@ -1135,6 +1145,7 @@ export async function fetchAdminStats(): Promise<AdminStats> {
     weekly_bookings: stats.bookings_week ?? stats.bookings_today ?? 0,
     revenue_uzs: toInt(stats.revenue_total, 0),
     delta: { users: 0, barbers: 0, bookings: 0, revenue: 0 },
+    agents: stats.agents,
     regions: (stats.regions ?? []).map((r) => ({
       code: r.region,
       name: r.label || r.region,
@@ -3052,6 +3063,106 @@ export async function updateAdmin(
   });
 }
 
+// ============= Field agents =============
+
+export type FieldAgentStats = {
+  barbers_referred: number;
+  salons_referred: number;
+  salons_trial: number;
+  salons_expired: number;
+  salons_active: number;
+  salons_published: number;
+  trial_days: number;
+  trial_value_uzs: number;
+};
+
+export type FieldAgent = {
+  id: number;
+  email: string;
+  full_name: string;
+  phone: string;
+  code: string;
+  is_active: boolean;
+  notes: string;
+  invite_url: string;
+  stats: FieldAgentStats;
+  created_at: string;
+  last_login: string | null;
+};
+
+export type AgentPlatformStats = {
+  agents_total: number;
+  agents_active: number;
+  barbers_referred: number;
+  salons_referred: number;
+  salons_trial: number;
+  salons_expired: number;
+  trial_days: number;
+  trial_value_uzs: number;
+  leaderboard: Array<{
+    id: number;
+    full_name: string;
+    code: string;
+    email: string;
+    phone: string;
+    barbers_referred: number;
+    salons_referred: number;
+    salons_trial: number;
+    salons_expired: number;
+    salons_active: number;
+    salons_published: number;
+  }>;
+};
+
+export async function fetchFieldAgents(params?: {
+  q?: string;
+  is_active?: boolean;
+}): Promise<FieldAgent[]> {
+  const sp = new URLSearchParams();
+  if (params?.q) sp.set("q", params.q);
+  if (params?.is_active != null) sp.set("is_active", params.is_active ? "true" : "false");
+  const qs = sp.toString();
+  const j = await apiJson<FieldAgent[] | { results: FieldAgent[] }>(
+    `/api/v1/admin/agents/${qs ? `?${qs}` : ""}`,
+  );
+  return Array.isArray(j) ? j : j.results ?? [];
+}
+
+export async function createFieldAgent(body: {
+  email: string;
+  full_name: string;
+  phone?: string;
+  password: string;
+  notes?: string;
+  is_active?: boolean;
+}): Promise<FieldAgent> {
+  return apiJson<FieldAgent>("/api/v1/admin/agents/", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export async function updateFieldAgent(
+  id: number,
+  body: Partial<{
+    email: string;
+    full_name: string;
+    phone: string;
+    password: string;
+    notes: string;
+    is_active: boolean;
+  }>,
+): Promise<FieldAgent> {
+  return apiJson<FieldAgent>(`/api/v1/admin/agents/${id}/`, {
+    method: "PATCH",
+    body: JSON.stringify(body),
+  });
+}
+
+export async function fetchAgentPlatformStats(): Promise<AgentPlatformStats> {
+  return apiJson<AgentPlatformStats>("/api/v1/admin/agents/stats/");
+}
+
 export type AdminProfile = { id: string; email: string; role: string };
 
 export async function fetchAdminProfile(): Promise<AdminProfile> {
@@ -3092,6 +3203,14 @@ export type PlatformOverview = {
     salons_total: number;
     salons_published: number;
     pending_payouts: number;
+  };
+  agents?: {
+    agents_total: number;
+    agents_active: number;
+    barbers_referred: number;
+    salons_referred: number;
+    salons_trial: number;
+    salons_in_range: number;
   };
   revenue: {
     gmv: number;

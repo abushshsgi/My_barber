@@ -102,6 +102,7 @@ INSTALLED_APPS = [
     "ai.apps.AiConfig",
     "geo.apps.GeoConfig",
     "media_store.apps.MediaStoreConfig",
+    "agents.apps.AgentsConfig",
 ]
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "").strip()
@@ -366,6 +367,7 @@ PLATFORM_WALLET_EMAIL = os.environ.get(
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "accounts.admin_auth.AdminJWTAuthentication",
+        "agents.auth.AgentJWTAuthentication",
         "barbers.barber_auth.BarberJWTAuthentication",
         "accounts.soft_jwt.SoftUserJWTAuthentication",
     ),

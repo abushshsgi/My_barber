@@ -156,6 +156,27 @@ def _admin_region_breakdown():
     return regions_payload
 
 
+def _admin_agent_breakdown():
+    """Field agent KPI — dashboard uchun."""
+    from agents.models import AgentReferralAttribution, FieldAgent
+
+    now = timezone.now()
+    referred = Salon.objects.filter(referred_by_agent__isnull=False)
+    return {
+        "agents_total": FieldAgent.objects.count(),
+        "agents_active": FieldAgent.objects.filter(is_active=True).count(),
+        "barbers_referred": AgentReferralAttribution.objects.count(),
+        "salons_referred": referred.count(),
+        "salons_trial": referred.filter(
+            subscription_status="trial", trial_ends_at__gt=now
+        ).count(),
+        "salons_expired": referred.filter(
+            Q(subscription_status="expired")
+            | Q(subscription_status="trial", trial_ends_at__lte=now)
+        ).count(),
+    }
+
+
 class AdminStatsView(APIView):
     """Aggregated numbers for Next.js admin dashboard."""
 
@@ -195,6 +216,7 @@ class AdminStatsView(APIView):
                 "reviews_avg": str(reviews_avg) if reviews_avg is not None else "0",
                 "launch_interest_total": LaunchInterest.objects.count(),
                 "regions": _admin_region_breakdown(),
+                "agents": _admin_agent_breakdown(),
             }
         )
 
