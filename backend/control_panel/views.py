@@ -390,7 +390,7 @@ def _admin_salon_queryset():
             ),
             _revenue_uzs=Coalesce(
                 Subquery(revenue_sq, output_field=DecimalField(max_digits=14, decimal_places=2)),
-                Value(0),
+                Value(0, output_field=DecimalField(max_digits=14, decimal_places=2)),
             ),
             _favorites_count=Coalesce(Subquery(favorites_sq, output_field=IntegerField()), Value(0)),
         )
