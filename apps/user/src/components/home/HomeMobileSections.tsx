@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
-import { ChevronRight, Map } from "lucide-react";
+import { ChevronRight, Map as MapIcon } from "lucide-react";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { MysaloonLogo } from "@/components/brand/MysaloonLogo";
@@ -70,7 +70,7 @@ export function HomeMobileWordmark({
         className="grid size-9 shrink-0 place-items-center rounded-full text-foreground active:bg-surface"
         aria-label="Xarita"
       >
-        <Map className="size-[18px]" strokeWidth={2} />
+        <MapIcon className="size-[18px]" strokeWidth={2} />
       </Link>
     </div>
   );
