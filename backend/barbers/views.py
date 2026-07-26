@@ -14,7 +14,6 @@ from rest_framework.views import APIView
 
 from accounts.auth_utils import customer_catalog_region
 from accounts.throttles import BarberBroadcastThrottle, BarberPromoThrottle, SalonSearchThrottle
-from accounts.uz_regions import UzRegion
 from bookings.availability import (
     build_available_slots,
     build_independent_month_availability,
@@ -102,8 +101,7 @@ class BarberPublicViewSet(viewsets.ReadOnlyModelViewSet):
         min_price = r.get("min_price")
         max_price = r.get("max_price")
         min_rating = r.get("min_rating")
-        forced_region = customer_catalog_region(self.request)
-        region = (r.get("region") or "").strip()
+        catalog_region = customer_catalog_region(self.request)
         service_q = (r.get("service_q") or "").strip()
         name_q = (r.get("name_q") or "").strip()
         available_date = (r.get("available_date") or "").strip()
@@ -144,11 +142,8 @@ class BarberPublicViewSet(viewsets.ReadOnlyModelViewSet):
                 qs = qs.filter(avg_rating__gte=float(min_rating))
             except ValueError:
                 pass
-        valid_regions = {c[0] for c in UzRegion.choices}
-        if forced_region:
-            qs = qs.filter(barber__region=forced_region)
-        elif region and region in valid_regions:
-            qs = qs.filter(barber__region=region)
+        if catalog_region:
+            qs = qs.filter(barber__region=catalog_region)
         if name_q:
             qs = qs.filter(barber__full_name__icontains=name_q).distinct()
         if service_q:
@@ -218,14 +213,6 @@ class BarberPublicViewSet(viewsets.ReadOnlyModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         qs = self.get_queryset().select_related("barber")
-        forced_region = customer_catalog_region(request)
-        if forced_region:
-            qs = qs.filter(barber__region=forced_region)
-        else:
-            region = (request.query_params.get("region") or "").strip()
-            valid_regions = {c[0] for c in UzRegion.choices}
-            if region and region in valid_regions:
-                qs = qs.filter(barber__region=region)
 
         barber_ids = list(qs.values_list("barber_id", flat=True).distinct())
         visible = batch_publicly_visible_barber_ids(barber_ids)
@@ -1057,12 +1044,6 @@ class IndependentAvailabilityView(APIView):
 
         if not barber_is_publicly_visible(barber):
             return Response({"detail": "Topilmadi."}, status=status.HTTP_404_NOT_FOUND)
-        forced_region = customer_catalog_region(request)
-        if forced_region and (barber.region or "").strip() != forced_region:
-            return Response(
-                {"detail": "Bu sartarosh boshqa hudud uchun."},
-                status=status.HTTP_403_FORBIDDEN,
-            )
         prof = get_object_or_404(BarberProfile, barber=barber)
 
         id_list = parse_id_list(service_ids)
@@ -1111,9 +1092,6 @@ class IndependentAvailabilityMonthView(APIView):
         from barbers.readiness import barber_is_publicly_visible
 
         if not barber_is_publicly_visible(barber):
-            return Response({"year": year, "month": month, "days": []})
-        forced_region = customer_catalog_region(request)
-        if forced_region and (barber.region or "").strip() != forced_region:
             return Response({"year": year, "month": month, "days": []})
 
         id_list = parse_id_list(service_ids)

@@ -85,6 +85,30 @@ def has_active_subscription(barber: Barber) -> bool:
     return get_active_subscription(barber) is not None
 
 
+def barber_has_customer_entitlement(barber: Barber) -> bool:
+    """
+    Mijozlarga ko‘rinish / bron: faol shop obuna YOKI egasi bo‘lgan salon
+    trial/active (agent trial yoki to‘langan salon).
+    """
+    if has_active_subscription(barber):
+        return True
+    from django.db.models import Q
+    from salons.models import Salon
+
+    now = timezone.now()
+    return (
+        Salon.objects.filter(owner_barber_id=barber.pk, is_published=True)
+        .filter(
+            Q(subscription_status=Salon.SubscriptionStatus.ACTIVE)
+            | Q(
+                subscription_status=Salon.SubscriptionStatus.TRIAL,
+                trial_ends_at__gt=now,
+            )
+        )
+        .exists()
+    )
+
+
 def get_entitlements(barber: Barber) -> dict[str, Any]:
     sub = get_active_subscription(barber)
     if not sub:
@@ -181,6 +205,12 @@ def activate_subscription(
         from agents.finance import grant_agent_commission_on_paid
 
         grant_agent_commission_on_paid(barber=barber, subscription=sub)
+    except Exception:
+        pass
+    try:
+        from salons.visibility import sync_owned_salons_subscription_active
+
+        sync_owned_salons_subscription_active(barber)
     except Exception:
         pass
     return sub

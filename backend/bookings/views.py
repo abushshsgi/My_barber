@@ -12,7 +12,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from accounts.auth_utils import customer_catalog_region, is_platform_admin, request_barber
+from accounts.auth_utils import is_platform_admin, request_barber
 from accounts.models import User
 from barbers.activation_permissions import IsAuthenticatedBarberAware
 from barbers.barber_auth import BarberPrincipal
@@ -762,16 +762,12 @@ class SalonPortfolioView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request, salon_id):
-        salon = get_object_or_404(
-            Salon.objects.select_related("owner_barber"),
-            pk=salon_id,
-            is_published=True,
+        from salons.visibility import get_customer_visible_salon_or_404
+
+        salon = get_customer_visible_salon_or_404(salon_id)
+        salon = (
+            Salon.objects.select_related("owner_barber").filter(pk=salon.pk).first() or salon
         )
-        reg = customer_catalog_region(request)
-        if reg:
-            ob = salon.owner_barber
-            if ob is not None and (ob.region or "").strip() != reg:
-                raise Http404()
         comps = (
             BookingCompletion.objects.filter(
                 booking__salon_id=salon_id,
@@ -838,8 +834,11 @@ class ReviewViewSet(viewsets.ModelViewSet):
                     .order_by("-created_at")
                 )
 
+        from salons.visibility import filter_customer_visible_salons
+
+        visible_salon_ids = filter_customer_visible_salons(Salon.objects.all()).values("pk")
         qs = Review.objects.filter(
-            Q(salon__isnull=True) | Q(salon__is_published=True)
+            Q(salon__isnull=True) | Q(salon_id__in=visible_salon_ids)
         ).select_related("author", "barber")
         if salon:
             qs = qs.filter(salon_id=salon)
@@ -1022,7 +1021,9 @@ class BookingAvailabilityView(APIView):
         except ValueError:
             return Response({"detail": "Invalid date."}, status=400)
 
-        salon = get_object_or_404(Salon, pk=salon_id, is_published=True)
+        from salons.visibility import get_customer_visible_salon_or_404
+
+        salon = get_customer_visible_salon_or_404(int(salon_id))
         barber = get_object_or_404(Barber, pk=barber_id)
         from barbers.readiness import barber_is_publicly_visible
 
@@ -1087,7 +1088,9 @@ class BookingAvailabilityMonthView(APIView):
         except (TypeError, ValueError):
             return Response({"detail": "Invalid year or month."}, status=400)
 
-        salon = get_object_or_404(Salon, pk=salon_id, is_published=True)
+        from salons.visibility import get_customer_visible_salon_or_404
+
+        salon = get_customer_visible_salon_or_404(int(salon_id))
 
         id_list = parse_id_list(service_ids_raw)
         barber = None

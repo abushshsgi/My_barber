@@ -57,6 +57,11 @@
   "home": {
     "title": "Ko'rinishingizni bugun yangilang",
     "nearby": "Yaqin atrofdagi salonlar",
+    "catalogScope": {
+      "label": "Hudud",
+      "uzbekistan": "O'zbekiston",
+      "allSalons": "Barcha salonlar"
+    },
     "categories": {
       "all": "Barchasi",
       "barber": "Barber",

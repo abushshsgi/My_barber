@@ -4,6 +4,8 @@ import { ChevronRight, Hand, Map, MapPin, Scissors, Sparkles, Star, User } from 
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { MysaloonLogo } from "@/components/brand/MysaloonLogo";
+import { CatalogScopeSelect } from "@/components/home/CatalogScopeSelect";
+import type { CatalogScopeValue } from "@/lib/catalog-scope";
 import { SalonCoverImg } from "@/components/salon/SalonCoverImg";
 import { NoSalonsEmpty } from "@/components/NoSalonsEmpty";
 import { HOME_CATEGORY_KEYS } from "@/lib/home-sections";
@@ -45,16 +47,30 @@ export function MotionSection({ children, className }: { children: React.ReactNo
   );
 }
 
-export function HomeMobileWordmark() {
+export function HomeMobileWordmark({
+  catalogScope,
+  onCatalogScopeChange,
+}: {
+  catalogScope: CatalogScopeValue;
+  onCatalogScopeChange: (value: CatalogScopeValue) => void;
+}) {
   return (
     <div className="flex items-center justify-between gap-3 px-4">
-      <Link to="/" className="min-w-0" aria-label="Mysaloon">
-        <MysaloonLogo size="sm" />
-      </Link>
+      <div className="flex min-w-0 flex-1 items-center gap-2">
+        <Link to="/" className="shrink-0" aria-label="Mysaloon">
+          <MysaloonLogo size="sm" />
+        </Link>
+        <CatalogScopeSelect
+          compact
+          value={catalogScope}
+          onChange={onCatalogScopeChange}
+          className="min-w-0 rounded-full bg-surface px-2.5 py-1.5"
+        />
+      </div>
       <Link
         to="/map"
         preload="intent"
-        className="grid size-9 place-items-center rounded-full text-foreground active:bg-surface"
+        className="grid size-9 shrink-0 place-items-center rounded-full text-foreground active:bg-surface"
         aria-label="Xarita"
       >
         <Map className="size-[18px]" strokeWidth={2} />
@@ -316,8 +332,15 @@ function NearbyCard({ salon }: { salon: Salon }) {
   );
 }
 
-export function HomeMobileNearby({ salons }: { salons: Salon[] }) {
+export function HomeMobileNearby({
+  salons,
+  title,
+}: {
+  salons: Salon[];
+  title?: string;
+}) {
   const { t } = useTranslation();
+  const heading = title || t("home.nearby");
 
   if (salons.length === 0) {
     return (
@@ -330,7 +353,7 @@ export function HomeMobileNearby({ salons }: { salons: Salon[] }) {
   return (
     <section className="px-4">
       <div className="mb-3.5 flex items-baseline justify-between gap-3">
-        <h2 className="text-[15px] font-semibold tracking-tight">{t("home.nearby")}</h2>
+        <h2 className="text-[15px] font-semibold tracking-tight">{heading}</h2>
         <Link to="/map" className="flex items-center gap-0.5 text-[11px] font-medium text-muted-foreground">
           {t("common.viewMap")}
           <ChevronRight className="size-3.5 opacity-70" />

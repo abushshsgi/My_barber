@@ -5,12 +5,16 @@ import { mapNearbySalon, mapSalonDetail, mapSalonList, mapStaffToBarber } from "
 
 export const salonsQueryKey = ["salons"] as const;
 
-export function useSalonsList(region?: string | null) {
+export function useSalonsList(region?: string | null, scope?: string | null) {
   const regionKey = region?.trim() || "all";
+  const scopeKey = scope?.trim() || "";
   return useQuery({
-    queryKey: [...salonsQueryKey, "list", regionKey],
+    queryKey: [...salonsQueryKey, "list", regionKey, scopeKey],
     queryFn: async () => {
-      const data = await fetchSalons(region?.trim() ? { region: region.trim() } : undefined);
+      const params: { region?: string; scope?: string } = {};
+      if (scope?.trim()) params.scope = scope.trim();
+      else if (region?.trim()) params.region = region.trim();
+      const data = await fetchSalons(Object.keys(params).length ? params : undefined);
       return data.map((s) => mapSalonList(s));
     },
     staleTime: 30_000,
@@ -40,12 +44,17 @@ export function useSalonsNearby(lat?: number, lng?: number, radiusKm = 25) {
   });
 }
 
-export function useSalonSearch(q: string) {
+export function useSalonSearch(q: string, region?: string | null, scope?: string | null) {
+  const regionKey = region?.trim() || "all";
+  const scopeKey = scope?.trim() || "";
   return useQuery({
-    queryKey: [...salonsQueryKey, "search", q],
+    queryKey: [...salonsQueryKey, "search", q, regionKey, scopeKey],
     queryFn: async () => {
       if (!q.trim()) return [];
-      const data = await searchSalons(q.trim());
+      const params: { region?: string; scope?: string } = {};
+      if (scope?.trim()) params.scope = scope.trim();
+      else if (region?.trim()) params.region = region.trim();
+      const data = await searchSalons(q.trim(), Object.keys(params).length ? params : undefined);
       return data.map((s) => mapSalonList(s));
     },
     enabled: catalogQueryEnabled(q.trim().length >= 2),

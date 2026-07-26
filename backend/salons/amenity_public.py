@@ -30,9 +30,13 @@ def get_amenities_for_salon(salon: Salon | None, lang: str = "uz") -> list[dict]
 
 
 def resolve_work_salon_for_barber(barber) -> SalonModel | None:
-    """Mijoz katalogi: egasi yoki ACTIVE membership salon (published)."""
+    """Mijoz katalogi: egasi yoki ACTIVE membership salon (published + obuna/trial)."""
+    from salons.visibility import filter_customer_visible_salons
+
     owned = (
-        SalonModel.objects.filter(owner_barber=barber, is_published=True)
+        filter_customer_visible_salons(
+            SalonModel.objects.filter(owner_barber=barber)
+        )
         .only("id", "name", "latitude", "longitude")
         .first()
     )
@@ -43,22 +47,26 @@ def resolve_work_salon_for_barber(barber) -> SalonModel | None:
         .filter(
             barber=barber,
             invite_state=SalonMembership.InviteState.ACTIVE,
-            salon__is_published=True,
         )
         .order_by("-activated_at", "-id")
         .first()
     )
-    return membership.salon if membership is not None else None
+    if membership is None:
+        return None
+    from salons.visibility import salon_is_customer_visible
+
+    return membership.salon if salon_is_customer_visible(membership.salon) else None
 
 
 def batch_resolve_work_salons_for_barbers(barber_ids: list[int]) -> dict[int, SalonModel]:
     """Katalog uchun barber → ish salonini N+1 siz yig'adi."""
+    from salons.visibility import filter_customer_visible_salons, salon_is_customer_visible
+
     if not barber_ids:
         return {}
     out: dict[int, SalonModel] = {}
-    for salon in SalonModel.objects.filter(
-        owner_barber_id__in=barber_ids,
-        is_published=True,
+    for salon in filter_customer_visible_salons(
+        SalonModel.objects.filter(owner_barber_id__in=barber_ids)
     ).only("id", "name", "latitude", "longitude", "owner_barber_id"):
         out[salon.owner_barber_id] = salon
     remaining = [bid for bid in barber_ids if bid not in out]
@@ -69,12 +77,11 @@ def batch_resolve_work_salons_for_barbers(barber_ids: list[int]) -> dict[int, Sa
         .filter(
             barber_id__in=remaining,
             invite_state=SalonMembership.InviteState.ACTIVE,
-            salon__is_published=True,
         )
         .order_by("barber_id", "-activated_at", "-id")
     )
     for mem in memberships:
-        if mem.barber_id not in out:
+        if mem.barber_id not in out and salon_is_customer_visible(mem.salon):
             out[mem.barber_id] = mem.salon
     return out
 
@@ -83,9 +90,12 @@ def barber_booking_context(barber, request=None) -> dict:
     """booking_kind, salon_id, salon_name, amenities for public barber payloads."""
     lang = amenity_lang_from_request(request)
     from barbers.models import Barber
+    from salons.visibility import filter_customer_visible_salons
 
     if barber.work_mode == Barber.WorkMode.INDEPENDENT:
-        salon = SalonModel.objects.filter(owner_barber=barber, is_published=True).first()
+        salon = filter_customer_visible_salons(
+            SalonModel.objects.filter(owner_barber=barber)
+        ).first()
         if salon is None:
             return {
                 "booking_kind": "independent",

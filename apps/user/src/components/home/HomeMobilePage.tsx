@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import { useTranslation } from "react-i18next";
 import type { HomeData } from "@/components/home/useHomeData";
 import { HomeUnifiedSearchResults } from "@/components/home/HomeBlocks";
 import { HomeMobileBanner } from "@/components/home/HomeMobileBanner";
@@ -17,7 +18,11 @@ type Props = { data: HomeData };
 
 /** Mobil home — brand + banner + kategoriyalar + top salon/usta + feed. */
 export function HomeMobilePage({ data }: Props) {
+  const { t } = useTranslation();
   const nearby = data.filtered.slice(0, 10);
+  const listTitle = data.catalog.isNationwide
+    ? t("home.catalogScope.allSalons", { defaultValue: "Barcha salonlar" })
+    : t("home.nearby");
 
   return (
     <div className="min-w-0 pt-[max(env(safe-area-inset-top),0.75rem)]">
@@ -36,7 +41,10 @@ export function HomeMobilePage({ data }: Props) {
           animate="show"
         >
           <MotionSection>
-            <HomeMobileWordmark />
+            <HomeMobileWordmark
+              catalogScope={data.catalog.scope}
+              onCatalogScopeChange={data.catalog.setScope}
+            />
           </MotionSection>
 
           <MotionSection>
@@ -60,7 +68,7 @@ export function HomeMobilePage({ data }: Props) {
           </MotionSection>
 
           <MotionSection>
-            <HomeMobileNearby salons={nearby} />
+            <HomeMobileNearby salons={nearby} title={listTitle} />
           </MotionSection>
         </motion.div>
       )}

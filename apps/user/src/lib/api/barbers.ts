@@ -29,17 +29,23 @@ export async function fetchBarbersNearby(
   );
 }
 
-export async function findBarbers(q: string): Promise<import("./types").ApiBarberPublic[]> {
-  return apiJson(`/api/v1/barbers/find/${qs({ q })}`);
+export async function findBarbers(
+  q: string,
+  params?: { region?: string; scope?: string },
+): Promise<import("./types").ApiBarberPublic[]> {
+  return apiJson(
+    `/api/v1/barbers/find/${qs({ q, region: params?.region, scope: params?.scope })}`,
+  );
 }
 
 export async function fetchBarbersList(params?: {
   region?: string;
+  scope?: string;
   audience?: string;
 }): Promise<import("./types").ApiBarberPublic[]> {
   const body = await apiJson<
     import("./types").ApiBarberPublic[] | import("./types").Paginated<import("./types").ApiBarberPublic>
-  >(`/api/v1/barbers/${qs({ region: params?.region, audience: params?.audience })}`);
+  >(`/api/v1/barbers/${qs({ region: params?.region, scope: params?.scope, audience: params?.audience })}`);
   if (Array.isArray(body)) return body;
   return Array.isArray(body.results) ? body.results : [];
 }

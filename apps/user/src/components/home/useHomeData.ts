@@ -5,6 +5,7 @@ import {
   pickTrendingStyles,
   readTrendingFaceHints,
 } from "@/lib/hairstyles/trending";
+import { useCatalogScope } from "@/hooks/use-catalog-scope";
 import { useExplorePersona } from "@/hooks/use-explore-persona";
 import { useUserAgeGroup } from "@/hooks/use-me";
 import {
@@ -15,7 +16,6 @@ import {
   useAudience,
 } from "@/hooks/use-audience";
 import { useHairstyles } from "@/hooks/use-hairstyles";
-import { useMe } from "@/hooks/use-me";
 import { useRecommendContext } from "@/hooks/use-recommend-context";
 import { useSalonsList, useSalonsNearby, useSalonSearch } from "@/hooks/use-salons";
 import { useBarberFind, useBarbersList, useBarbersNearby } from "@/hooks/use-barbers";
@@ -25,9 +25,9 @@ import { rankBarbersForUser, rankSalonsForUser } from "@/lib/recommendations";
 
 export function useHomeData() {
   const { audience } = useAudience();
-  const { data: me } = useMe();
   const { personaId } = useExplorePersona();
   const ageGroup = useUserAgeGroup();
+  const catalog = useCatalogScope();
   const { data: menHairstyles = [], isLoading: menExploreLoading } = useHairstyles("men", personaId, {
     ignoreAgeGroup: true,
     enabled: audience === "all" || audience === "men",
@@ -42,14 +42,16 @@ export function useHomeData() {
     return [...menHairstyles, ...womenHairstyles];
   }, [audience, menHairstyles, womenHairstyles]);
   const ctx = useRecommendContext();
-  const catalogRegion = me?.region?.trim() || ctx.region?.trim() || undefined;
-  const hasCoords = ctx.lat != null && ctx.lng != null;
+  const hasCoords = catalog.useNearby && ctx.lat != null && ctx.lng != null;
   const { data: nearbySalons = [], isLoading: nearbyLoading, isError: nearbyError } = useSalonsNearby(
     hasCoords ? ctx.lat! : undefined,
     hasCoords ? ctx.lng! : undefined,
     40,
   );
-  const { data: listSalons = [], isLoading: listLoading, error } = useSalonsList(catalogRegion);
+  const { data: listSalons = [], isLoading: listLoading, error } = useSalonsList(
+    catalog.region,
+    catalog.apiScope,
+  );
 
   const salons = useMemo(() => {
     const useNearby = hasCoords && !nearbyError && nearbySalons.length > 0;
@@ -62,10 +64,14 @@ export function useHomeData() {
   const searchActive = query.trim().length >= 2;
   const { data: searchSalons = [], isLoading: searchSalonsLoading } = useSalonSearch(
     searchActive ? query : "",
+    catalog.region,
+    catalog.apiScope,
   );
   const { data: searchBarbers = [], isLoading: searchBarbersLoading } = useBarberFind(
     searchActive ? query : "",
     searchActive,
+    catalog.region,
+    catalog.apiScope,
   );
   const { data: nearbyBarbers = [], isLoading: nearbyBarbersLoading } = useBarbersNearby(
     hasCoords ? ctx.lat! : undefined,
@@ -74,8 +80,9 @@ export function useHomeData() {
     !searchActive,
   );
   const { data: listBarbers = [], isLoading: listBarbersLoading } = useBarbersList(
-    catalogRegion,
+    catalog.region,
     !searchActive,
+    catalog.apiScope,
   );
 
   useEffect(() => {
@@ -149,7 +156,7 @@ export function useHomeData() {
     () => browseBarbers.filter((b) => hasValidMapCoords(b.lat, b.lng)),
     [browseBarbers],
   );
-  const personalized = hasCoords || Boolean(me?.region);
+  const personalized = catalog.isLoggedIn && !catalog.isNationwide;
 
   return {
     audience,
@@ -171,6 +178,7 @@ export function useHomeData() {
     topOffer,
     featuredSalons,
     personalized,
+    catalog,
     exploreLoading: menExploreLoading || womenExploreLoading,
     loading:
       nearbyLoading ||

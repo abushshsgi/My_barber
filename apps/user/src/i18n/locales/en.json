@@ -57,6 +57,11 @@
   "home": {
     "title": "Refresh your look today",
     "nearby": "Salons nearby",
+    "catalogScope": {
+      "label": "Region",
+      "uzbekistan": "Uzbekistan",
+      "allSalons": "All salons"
+    },
     "categories": {
       "all": "All",
       "barber": "Barber",

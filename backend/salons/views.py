@@ -13,7 +13,6 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from accounts.auth_utils import customer_catalog_region, is_platform_admin, request_barber
-from accounts.uz_regions import UzRegion
 from accounts.throttles import SalonJoinThrottle, SalonSearchThrottle
 from barbers.models import Barber, BarberProfile
 from barbers.readiness import barber_is_publicly_visible, barber_is_staff_listable
@@ -112,11 +111,13 @@ class SalonViewSet(viewsets.ModelViewSet):
         return [IsAuthenticatedBarberAware()]
 
     def _salon_public_list_qs(self):
-        """Ro‘yxat va nearby uchun: reyting/sharhlar soni bitta so‘rovda."""
+        """Ro‘yxat va nearby: faqat published + obuna/trial (mijoz katalogi)."""
+        from salons.visibility import filter_customer_visible_salons
+
         # PostgreSQL: Coalesce(Avg(..), Value(0)) integer/numeric aralashmasi 500 beradi — FloatField bilan bir xil.
         score = _salon_review_score_expr()
         return (
-            Salon.objects.filter(is_published=True)
+            filter_customer_visible_salons(Salon.objects.all())
             .select_related("owner", "owner_barber")
             .prefetch_related("salon_amenities__amenity", "images")
             .annotate(
@@ -135,14 +136,10 @@ class SalonViewSet(viewsets.ModelViewSet):
         )
 
     def _apply_public_salon_region(self, qs):
-        """Mijoz JWT: viloyat serverdan; anonim / barber: ixtiyoriy ?region=."""
-        forced = customer_catalog_region(self.request)
-        if forced:
-            return qs.filter(owner_barber__region=forced)
-        region = (self.request.query_params.get("region") or "").strip()
-        valid_regions = {c[0] for c in UzRegion.choices}
-        if region and region in valid_regions:
-            return qs.filter(owner_barber__region=region)
+        """Katalog: scope=all / ?region= / mijoz profil viloyati (auth_utils)."""
+        reg = customer_catalog_region(self.request)
+        if reg:
+            return qs.filter(owner_barber__region=reg)
         return qs
 
     def _apply_audience_salon_type(self, qs):
@@ -209,11 +206,10 @@ class SalonViewSet(viewsets.ModelViewSet):
                         memberships__invite_state=SalonMembership.InviteState.ACTIVE,
                     )
                 ).distinct()
-            qs = qs.filter(is_published=True)
-            reg = customer_catalog_region(self.request)
-            if reg:
-                qs = qs.filter(owner_barber__region=reg)
-            return qs
+            from salons.visibility import filter_customer_visible_salons
+
+            # Detail: hudud filtri yo‘q — nationwide katalogdan ochilishi mumkin.
+            return filter_customer_visible_salons(qs)
 
         return qs
 
@@ -894,7 +890,9 @@ class FavoriteSalonListCreateView(APIView):
             salon_id = int(raw)
         except (TypeError, ValueError):
             return Response({"detail": "salon butun son bo'lishi kerak."}, status=status.HTTP_400_BAD_REQUEST)
-        salon = get_object_or_404(Salon, pk=salon_id, is_published=True)
+        from salons.visibility import get_customer_visible_salon_or_404
+
+        salon = get_customer_visible_salon_or_404(salon_id)
         row, created = FavoriteSalon.objects.get_or_create(user=request.user, salon=salon)
         return Response(
             {"id": row.id, "salon": salon.id, "created_at": row.created_at.isoformat()},

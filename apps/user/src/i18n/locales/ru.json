@@ -57,6 +57,11 @@
   "home": {
     "title": "Обновите свой образ сегодня",
     "nearby": "Салоны рядом",
+    "catalogScope": {
+      "label": "Регион",
+      "uzbekistan": "Узбекистан",
+      "allSalons": "Все салоны"
+    },
     "categories": {
       "all": "Все",
       "barber": "Барбер",

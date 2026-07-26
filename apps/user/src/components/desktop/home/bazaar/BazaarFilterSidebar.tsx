@@ -1,10 +1,14 @@
 import { Link } from "@tanstack/react-router";
 import { ArrowRight, SlidersHorizontal } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { CatalogScopeSelect } from "@/components/home/CatalogScopeSelect";
 import type { HomeData } from "@/components/home/useHomeData";
 import { cn } from "@/lib/utils";
 
-type FilterProps = Pick<HomeData, "query" | "setQuery" | "effectiveCat" | "visibleCategoryKeys" | "setCat"> & {
+type FilterProps = Pick<
+  HomeData,
+  "query" | "setQuery" | "effectiveCat" | "visibleCategoryKeys" | "setCat" | "catalog"
+> & {
   className?: string;
 };
 
@@ -14,6 +18,7 @@ export function BazaarFilterSidebar({
   effectiveCat,
   visibleCategoryKeys,
   setCat,
+  catalog,
   className,
 }: FilterProps) {
   const { t } = useTranslation();
@@ -34,6 +39,11 @@ export function BazaarFilterSidebar({
         <SlidersHorizontal className="h-4 w-4 text-foreground" />
         {t("home.filters.title")}
       </p>
+      <CatalogScopeSelect
+        value={catalog.scope}
+        onChange={catalog.setScope}
+        className="mt-3 border-[#cfd8e6] bg-white/80"
+      />
       <input
         type="search"
         value={query}

@@ -1,13 +1,19 @@
 """Barber salon yaratgandan keyin mijoz katalogida ko'rinish."""
 
+from datetime import timedelta
+from decimal import Decimal
+
 from django.contrib.auth import get_user_model
 from django.test import TestCase
+from django.utils import timezone
 from rest_framework.test import APIClient
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from accounts.uz_regions import UzRegion
 from barbers.barber_auth import encode_barber_tokens
 from barbers.models import Barber
+from barbers.shop_plans import PLAN_START
+from barbers.shop_subscription_services import activate_subscription
 from salons.models import Salon, SalonMembership
 from salons.owner_setup import ensure_owner_membership_active, sync_owner_region_from_salon
 
@@ -16,6 +22,23 @@ User = get_user_model()
 
 def _customer_token(user) -> str:
     return str(RefreshToken.for_user(user).access_token)
+
+
+def _entitle_salon_trial(salon: Salon) -> None:
+    now = timezone.now()
+    salon.subscription_status = Salon.SubscriptionStatus.TRIAL
+    salon.trial_started_at = now
+    salon.trial_ends_at = now + timedelta(days=21)
+    salon.trial_value_uzs = 99_990
+    salon.save(
+        update_fields=[
+            "subscription_status",
+            "trial_started_at",
+            "trial_ends_at",
+            "trial_value_uzs",
+            "updated_at",
+        ]
+    )
 
 
 class OwnerCatalogVisibilityTests(TestCase):
@@ -68,6 +91,19 @@ class OwnerCatalogVisibilityTests(TestCase):
             ],
         }
 
+    def test_owner_salon_hidden_without_sub_or_trial(self):
+        payload = self._create_salon_payload("Hidden No Sub Salon")
+        create_res = self.barber_client.post("/api/v1/salons/", payload, format="json")
+        self.assertEqual(create_res.status_code, 201, create_res.content)
+        salon_id = create_res.json()["id"]
+        salon = Salon.objects.get(pk=salon_id)
+        self.assertEqual(salon.subscription_status, Salon.SubscriptionStatus.NONE)
+
+        list_res = self.customer_client.get("/api/v1/salons/")
+        results = list_res.json().get("results", list_res.json())
+        self.assertNotIn(salon_id, {row["id"] for row in results})
+        self.assertEqual(self.customer_client.get(f"/api/v1/salons/{salon_id}/").status_code, 404)
+
     def test_owner_salon_visible_for_customer_in_same_region(self):
         payload = self._create_salon_payload("Katalog Test Salon")
         create_res = self.barber_client.post(
@@ -77,6 +113,7 @@ class OwnerCatalogVisibilityTests(TestCase):
         )
         self.assertEqual(create_res.status_code, 201, create_res.content)
         salon_id = create_res.json()["id"]
+        _entitle_salon_trial(Salon.objects.get(pk=salon_id))
 
         self.barber.refresh_from_db()
         self.assertEqual(self.barber.region, UzRegion.TOSHKENT_SH)
@@ -95,6 +132,24 @@ class OwnerCatalogVisibilityTests(TestCase):
         detail_res = self.customer_client.get(f"/api/v1/salons/{salon_id}/")
         self.assertEqual(detail_res.status_code, 200)
         self.assertEqual(detail_res.json()["name"], "Katalog Test Salon")
+
+    def test_owner_salon_visible_with_shop_subscription(self):
+        payload = self._create_salon_payload("Paid Sub Salon")
+        create_res = self.barber_client.post("/api/v1/salons/", payload, format="json")
+        self.assertEqual(create_res.status_code, 201)
+        salon_id = create_res.json()["id"]
+        activate_subscription(
+            barber=self.barber,
+            plan_code=PLAN_START,
+            source="admin",
+            price_uzs=Decimal("99990"),
+        )
+        salon = Salon.objects.get(pk=salon_id)
+        self.assertEqual(salon.subscription_status, Salon.SubscriptionStatus.ACTIVE)
+
+        list_res = self.customer_client.get("/api/v1/salons/")
+        results = list_res.json().get("results", list_res.json())
+        self.assertIn(salon_id, {row["id"] for row in results})
 
     def test_sync_owner_region_from_coords(self):
         salon = Salon.objects.create(
@@ -149,6 +204,8 @@ class OwnerCatalogVisibilityTests(TestCase):
             longitude=69.2401,
             address="Toshkent",
             is_published=True,
+            subscription_status=Salon.SubscriptionStatus.TRIAL,
+            trial_ends_at=timezone.now() + timedelta(days=7),
         )
         self.assertEqual(self.barber.region, "")
 
@@ -166,6 +223,7 @@ class OwnerCatalogVisibilityTests(TestCase):
         create_res = self.barber_client.post("/api/v1/salons/", payload, format="json")
         self.assertEqual(create_res.status_code, 201)
         salon_id = create_res.json()["id"]
+        _entitle_salon_trial(Salon.objects.get(pk=salon_id))
 
         anon = APIClient()
         list_res = anon.get("/api/v1/salons/")
@@ -173,11 +231,12 @@ class OwnerCatalogVisibilityTests(TestCase):
         results = list_res.json().get("results", list_res.json())
         self.assertTrue(any(row["id"] == salon_id for row in results))
 
-    def test_owner_always_listed_in_staff_with_bookable_flag(self):
+    def test_owner_listed_in_staff_when_entitled(self):
         payload = self._create_salon_payload("Staff Owner Salon")
         create_res = self.barber_client.post("/api/v1/salons/", payload, format="json")
         self.assertEqual(create_res.status_code, 201, create_res.content)
         salon_id = create_res.json()["id"]
+        _entitle_salon_trial(Salon.objects.get(pk=salon_id))
 
         staff_res = self.customer_client.get(f"/api/v1/salons/{salon_id}/staff/")
         self.assertEqual(staff_res.status_code, 200)
@@ -187,14 +246,24 @@ class OwnerCatalogVisibilityTests(TestCase):
         self.assertEqual(owner_row["id"], self.barber.id)
         self.assertEqual(owner_row["role"], "owner")
         self.assertIn("is_bookable", owner_row)
-        # Xizmat + jadval bor — salon egasi bron qabul qiladi (email tasdiqlanmagan bo'lsa ham).
         self.assertTrue(owner_row["is_bookable"])
+
+    def test_owner_hidden_from_staff_without_entitlement(self):
+        payload = self._create_salon_payload("Staff Hidden Salon")
+        create_res = self.barber_client.post("/api/v1/salons/", payload, format="json")
+        self.assertEqual(create_res.status_code, 201)
+        salon_id = create_res.json()["id"]
+        self.assertEqual(
+            self.customer_client.get(f"/api/v1/salons/{salon_id}/staff/").status_code,
+            404,
+        )
 
     def test_barber_services_returns_owner_linked_services(self):
         payload = self._create_salon_payload("Barber Services Salon")
         create_res = self.barber_client.post("/api/v1/salons/", payload, format="json")
         self.assertEqual(create_res.status_code, 201, create_res.content)
         salon_id = create_res.json()["id"]
+        _entitle_salon_trial(Salon.objects.get(pk=salon_id))
 
         svc_res = self.customer_client.get(
             f"/api/v1/salons/{salon_id}/barber-services/?barber={self.barber.id}",
@@ -205,13 +274,14 @@ class OwnerCatalogVisibilityTests(TestCase):
         self.assertTrue(all(s.get("barber") in (None, self.barber.id) for s in services))
 
     def test_detail_services_exclude_worker_services(self):
-        from barbers.models import Barber, BarberProfile
+        from barbers.models import BarberProfile
         from salons.models import Service
 
         payload = self._create_salon_payload("Owner Only Services Salon")
         create_res = self.barber_client.post("/api/v1/salons/", payload, format="json")
         self.assertEqual(create_res.status_code, 201, create_res.content)
         salon_id = create_res.json()["id"]
+        _entitle_salon_trial(Salon.objects.get(pk=salon_id))
 
         worker = Barber.objects.create(
             email="worker-catalog@test.uz",

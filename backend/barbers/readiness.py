@@ -230,29 +230,27 @@ def compute_barber_readiness(barber: Barber) -> ReadinessBreakdown:
 def barber_is_publicly_visible(barber: Barber) -> bool:
     if not compute_barber_readiness(barber).fully_ready:
         return False
-    from barbers.shop_subscription_services import has_active_subscription
+    from barbers.shop_subscription_services import barber_has_customer_entitlement
 
-    return has_active_subscription(barber)
+    return barber_has_customer_entitlement(barber)
 
 
 def barber_is_staff_listable(barber: Barber, salon) -> bool:
-    """Salon staff ro‘yxati: ega doim; ishchilar faqat bron qabul qila oladigan bo‘lsa."""
-    if salon.owner_barber_id == barber.id:
-        return True
+    """Salon staff: faqat obuna/trial bilan bron qabul qila oladiganlar (ega ham)."""
     return barber_is_publicly_visible(barber)
 
 
 def batch_publicly_visible_barber_ids(barber_ids: list[int]) -> set[int]:
-    """Katalog filtri uchun: fully_ready + faol obuna."""
+    """Katalog filtri uchun: fully_ready + obuna yoki salon trial/active."""
     from barbers.models import Barber
-    from barbers.shop_subscription_services import has_active_subscription
+    from barbers.shop_subscription_services import barber_has_customer_entitlement
 
     if not barber_ids:
         return set()
     out: set[int] = set()
     qs = Barber.objects.filter(pk__in=barber_ids).select_related("profile")
     for b in qs:
-        if compute_barber_readiness(b).fully_ready and has_active_subscription(b):
+        if compute_barber_readiness(b).fully_ready and barber_has_customer_entitlement(b):
             out.add(b.id)
     return out
 

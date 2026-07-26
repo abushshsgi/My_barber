@@ -22,13 +22,18 @@ export function useBarbersNearby(lat?: number, lng?: number, radiusKm = 25, enab
   });
 }
 
-/** Viloyat bo'yicha usta katalogi — GPS bo'lmasa ham ishlaydi. */
-export function useBarbersList(region?: string | null, enabled = true) {
+/** Viloyat / butun UZ katalogi — GPS bo'lmasa ham ishlaydi. */
+export function useBarbersList(region?: string | null, enabled = true, scope?: string | null) {
+  const regionKey = region?.trim() || "all";
+  const scopeKey = scope?.trim() || "";
   return useQuery({
-    queryKey: [...barbersQueryKey, "list", region ?? "all"],
+    queryKey: [...barbersQueryKey, "list", regionKey, scopeKey],
     queryFn: async () => {
       try {
-        const data = await fetchBarbersList(region ? { region } : undefined);
+        const params: { region?: string; scope?: string } = {};
+        if (scope?.trim()) params.scope = scope.trim();
+        else if (region?.trim()) params.region = region.trim();
+        const data = await fetchBarbersList(Object.keys(params).length ? params : undefined);
         return data.map(mapBarberDiscovery);
       } catch {
         return [];
@@ -39,13 +44,23 @@ export function useBarbersList(region?: string | null, enabled = true) {
   });
 }
 
-export function useBarberFind(q: string, enabled = true) {
+export function useBarberFind(
+  q: string,
+  enabled = true,
+  region?: string | null,
+  scope?: string | null,
+) {
+  const regionKey = region?.trim() || "all";
+  const scopeKey = scope?.trim() || "";
   return useQuery({
-    queryKey: [...barbersQueryKey, "find", q],
+    queryKey: [...barbersQueryKey, "find", q, regionKey, scopeKey],
     queryFn: async () => {
       if (!q.trim()) return [];
       try {
-        const data = await findBarbers(q.trim());
+        const params: { region?: string; scope?: string } = {};
+        if (scope?.trim()) params.scope = scope.trim();
+        else if (region?.trim()) params.region = region.trim();
+        const data = await findBarbers(q.trim(), Object.keys(params).length ? params : undefined);
         return data.map(mapBarberDiscovery);
       } catch {
         return [];

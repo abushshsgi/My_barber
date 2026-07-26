@@ -12,10 +12,10 @@ import { MapAreaSkeleton, MapMobileSheetSkeleton } from "@/components/map/MapLoa
 import { SalonMap, type SalonMapHandle, type SalonMapMarker, type SalonMapViewport } from "@/components/map/SalonMap";
 import { resolveMapAudienceFilter, matchBarberGender, useAudience } from "@/hooks/use-audience";
 import { useIsLgUp } from "@/hooks/use-mobile";
+import { useCatalogScope } from "@/hooks/use-catalog-scope";
 import { useRecommendContext } from "@/hooks/use-recommend-context";
 import { useSalonsList, useSalonsNearby, useSalonSearch } from "@/hooks/use-salons";
 import { useBarbersNearby, useBarberFind, useBarbersList } from "@/hooks/use-barbers";
-import { useMe } from "@/hooks/use-me";
 import { shortPrice, type Salon } from "@/lib/mock-data";
 import { PLACEHOLDER_SALON } from "@/lib/cover-images";
 import { applyMapBarberFilters } from "@/lib/map-barber-filters";
@@ -175,14 +175,22 @@ function MapView() {
   useEffect(() => setMounted(true), []);
 
   const ctx = useRecommendContext();
-  const { data: me } = useMe();
-  const catalogRegion = me?.region?.trim() || ctx.region?.trim() || undefined;
-  const hasCoords = ctx.lat != null && ctx.lng != null;
+  const catalog = useCatalogScope();
+  const hasCoords = catalog.useNearby && ctx.lat != null && ctx.lng != null;
   const [discoveryTab, setDiscoveryTab] = useState<MapDiscoveryTab>("salons");
   const [query, setQuery] = useState(routeQ);
   const apiSearchActive = query.trim().length >= 2;
-  const { data: apiSearchSalons = [] } = useSalonSearch(apiSearchActive ? query : "");
-  const { data: apiSearchBarbers = [] } = useBarberFind(apiSearchActive ? query : "", apiSearchActive);
+  const { data: apiSearchSalons = [] } = useSalonSearch(
+    apiSearchActive ? query : "",
+    catalog.region,
+    catalog.apiScope,
+  );
+  const { data: apiSearchBarbers = [] } = useBarberFind(
+    apiSearchActive ? query : "",
+    apiSearchActive,
+    catalog.region,
+    catalog.apiScope,
+  );
   const {
     data: nearbySalons = [],
     isLoading: nearbyLoading,
@@ -198,7 +206,7 @@ function MapView() {
     isLoading: listLoading,
     isError: listError,
     refetch: refetchList,
-  } = useSalonsList(catalogRegion);
+  } = useSalonsList(catalog.region, catalog.apiScope);
   const {
     data: nearbyBarbers = [],
     isLoading: barbersLoading,
@@ -215,7 +223,7 @@ function MapView() {
     isLoading: listBarbersLoading,
     isError: listBarbersError,
     refetch: refetchListBarbers,
-  } = useBarbersList(catalogRegion, discoveryTab === "barbers");
+  } = useBarbersList(catalog.region, discoveryTab === "barbers", catalog.apiScope);
 
   const baseSalons = useMemo(() => {
     let base =

@@ -446,7 +446,7 @@ class BookingListSerializer(serializers.ModelSerializer):
 
 class BookingCreateSerializer(serializers.Serializer):
     salon = serializers.PrimaryKeyRelatedField(
-        queryset=Salon.objects.filter(is_published=True),
+        queryset=Salon.objects.all(),
         required=False,
         allow_null=True,
     )
@@ -472,6 +472,12 @@ class BookingCreateSerializer(serializers.Serializer):
         allow_blank=True,
         trim_whitespace=True,
     )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        from salons.visibility import filter_customer_visible_salons
+
+        self.fields["salon"].queryset = filter_customer_visible_salons(Salon.objects.all())
 
     def validate_payment_method(self, value):
         if value not in (Booking.PaymentMethod.CASH, Booking.PaymentMethod.ONLINE):

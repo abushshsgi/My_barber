@@ -138,6 +138,10 @@ class BarberBusinessApiTests(APITestCase):
             longitude=69.280100,
             address="Toshkent",
             is_published=True,
+            subscription_status=Salon.SubscriptionStatus.TRIAL,
+            trial_started_at=timezone.now(),
+            trial_ends_at=timezone.now() + timedelta(days=21),
+            trial_value_uzs=99_990,
         )
         owner_membership = SalonMembership.objects.create(
             barber=owner,
@@ -203,6 +207,10 @@ class BarberPublicDiscoveryTests(APITestCase):
             longitude=69.280100,
             address="Toshkent",
             is_published=True,
+            subscription_status=Salon.SubscriptionStatus.TRIAL,
+            trial_started_at=timezone.now(),
+            trial_ends_at=timezone.now() + timedelta(days=21),
+            trial_value_uzs=99_990,
         )
         for code, *_rest in DEFAULT_AMENITIES[:2]:
             amenity = Amenity.objects.get(code=code)

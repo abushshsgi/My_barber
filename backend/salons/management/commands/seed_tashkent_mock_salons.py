@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import random
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from datetime import time
+from datetime import time, timedelta
 from decimal import Decimal
 
 from django.core.files.base import ContentFile
@@ -137,6 +137,10 @@ class Command(BaseCommand):
                     "address": entry["address"],
                     "description": f"{MOCK_MARKER}: {kind} demo salon — Toshkent mock.",
                     "is_published": True,
+                    "subscription_status": Salon.SubscriptionStatus.TRIAL,
+                    "trial_started_at": now,
+                    "trial_ends_at": now + timedelta(days=21),
+                    "trial_value_uzs": 99_990,
                     "owner_barber": barber,
                     "phone": f"+99871{2000000 + int(slug.split('-')[-1]):07d}"[:13],
                 },

@@ -6,8 +6,10 @@ from salons.models import Salon, SalonMembership
 
 
 def attach_salons_to_suggestions(suggestions: list[dict]) -> list[dict]:
+    from salons.visibility import filter_customer_visible_salons
+
     salons = list(
-        Salon.objects.filter(is_published=True)
+        filter_customer_visible_salons(Salon.objects.all())
         .select_related("owner_barber")
         .order_by("-premium", "-created_at")[:12]
     )

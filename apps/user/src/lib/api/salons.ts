@@ -15,6 +15,7 @@ function qs(params: Record<string, string | number | undefined>): string {
 export async function fetchSalons(params?: {
   ids?: string;
   region?: string;
+  scope?: string;
   audience?: string;
   business_kind?: string;
 }): Promise<ApiSalonList[]> {
@@ -51,8 +52,13 @@ export async function fetchSalonsNearby(
   );
 }
 
-export async function searchSalons(q: string): Promise<ApiSalonList[]> {
-  return apiList<ApiSalonList>(`/api/v1/salons/search/${qs({ q })}`);
+export async function searchSalons(
+  q: string,
+  params?: { region?: string; scope?: string },
+): Promise<ApiSalonList[]> {
+  return apiList<ApiSalonList>(
+    `/api/v1/salons/search/${qs({ q, region: params?.region, scope: params?.scope })}`,
+  );
 }
 
 export async function fetchSalonPortfolio(
