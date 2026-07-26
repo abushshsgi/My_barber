@@ -12,7 +12,9 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/barber/primitives";
+import { AgentTrialClaimCard } from "@/components/barber/AgentTrialClaimCard";
 import {
+  useClaimAgentTrial,
   useShopCheckout,
   useShopConfirm,
   useShopPlans,
@@ -185,6 +187,7 @@ function BarberSubscriptionPage() {
   const meQ = useShopSubscriptionMe();
   const checkout = useShopCheckout();
   const confirm = useShopConfirm();
+  const claimTrial = useClaimAgentTrial();
   const [selected, setSelected] = useState<ShopPlanCode>(search.plan || "start");
   const [confirming, setConfirming] = useState(false);
 
@@ -217,12 +220,24 @@ function BarberSubscriptionPage() {
     );
   }, [search.order, search.provider]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const busy = checkout.isPending || confirm.isPending || confirming;
+  const busy = checkout.isPending || confirm.isPending || confirming || claimTrial.isPending;
 
   const returnUrl = useMemo(() => {
     if (typeof window === "undefined") return "/barber/subscription";
     return `${window.location.origin}/barber/subscription`;
   }, []);
+
+  async function onClaimTrial(agentCode: string) {
+    try {
+      await claimTrial.mutateAsync(agentCode);
+      toast.success("21 kunlik bepul trial faollashtirildi!");
+      void navigate({ to: "/barber", replace: true });
+    } catch (e) {
+      const err = e as Error;
+      toast.error(err.message || "Trial berilmadi");
+      throw e;
+    }
+  }
 
   async function buy(planCode: ShopPlanCode, method: "wallet" | "click" | "payme") {
     try {
@@ -306,12 +321,19 @@ function BarberSubscriptionPage() {
             <div>
               <p className="text-sm font-semibold">Obunasiz panel yopiq</p>
               <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
-                Bronlar, mijozlar, daromad va marketing — faqat to'lovdan keyin. Xavfsiz Click / Payme
-                yoki hisob raqamingiz orqali to'lang.
+                Bronlar, mijozlar, daromad va marketing — faqat to'lovdan keyin. Agent taklif kodi
+                bo'lsa — 21 kun bepul ochiladi. Aks holda Click / Payme yoki hisob raqam orqali
+                to'lang.
               </p>
             </div>
           </div>
         )}
+
+        <AgentTrialClaimCard
+          trial={me?.agent_trial}
+          busy={busy}
+          onClaim={onClaimTrial}
+        />
 
         {plansQ.isLoading ? (
           <div className="flex justify-center py-20 text-muted-foreground gap-2 text-sm">
@@ -353,6 +375,7 @@ function BarberSubscriptionPage() {
             <li>Checkout so'rovlari IP va akkaunt bo'yicha cheklangan (anti-spam / carding)</li>
             <li>Idempotency kaliti — qayta bosish ikki marta yechmaydi</li>
             <li>return_url faqat ruxsat etilgan domenlarga</li>
+            <li>Agent trial — bir partner / telefon / email uchun umrbod bir marta</li>
           </ul>
         </div>
       </div>

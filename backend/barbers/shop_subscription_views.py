@@ -32,6 +32,11 @@ class BarberShopConfirmThrottle(FriendlyThrottleMixin, UserRateThrottle):
     throttle_detail = "To'lov tasdiqlash limiti."
 
 
+class BarberShopClaimTrialThrottle(FriendlyThrottleMixin, UserRateThrottle):
+    scope = "barber_shop_claim_trial"
+    throttle_detail = "Trial so'rovlari limiti. Keyinroq qayta urinib ko'ring."
+
+
 class BarberShopIPThrottle(FriendlyThrottleMixin, SimpleRateThrottle):
     scope = "barber_shop_ip"
     throttle_detail = "Juda ko'p urinish. Keyinroq qayta urinib ko'ring."
@@ -163,4 +168,65 @@ class BarberShopConfirmView(APIView):
                 "subscription": serialize_subscription(sub),
                 "me": build_me_payload(barber),
             }
+        )
+
+
+class BarberShopClaimAgentTrialView(APIView):
+    """POST — obuna sahifasida agent kod / QR → 21 kunlik bir martalik trial."""
+
+    permission_classes = [IsBarber]
+    throttle_classes = [BarberShopClaimTrialThrottle, BarberShopIPThrottle]
+    throttle_detail = "Trial so'rovlari limiti."
+
+    def post(self, request):
+        from barbers.partner_trial import PartnerTrialError, claim_agent_trial_with_code
+        from barbers.shop_subscription_services import log_event
+
+        barber = request.user.barber
+        raw = request.data.get("agent_code") or request.data.get("code") or ""
+        try:
+            grant = claim_agent_trial_with_code(
+                barber=barber,
+                code=raw,
+                request=request,
+            )
+        except PartnerTrialError as exc:
+            log_event(
+                action="agent_trial_denied",
+                barber=barber,
+                actor="barber",
+                detail={"code": exc.code, "detail": exc.detail, "raw_len": len(str(raw))},
+                request=request,
+            )
+            status_code = (
+                status.HTTP_409_CONFLICT
+                if exc.code in ("already_used", "has_active_subscription")
+                else status.HTTP_400_BAD_REQUEST
+            )
+            return Response(
+                {"detail": exc.detail, "code": exc.code},
+                status=status_code,
+            )
+
+        barber.refresh_from_db()
+        sub = grant.shop_subscription
+        from agents.referral import TRIAL_DAYS, TRIAL_VALUE_UZS
+
+        return Response(
+            {
+                "ok": True,
+                "trial_days": TRIAL_DAYS,
+                "trial_value_uzs": TRIAL_VALUE_UZS,
+                "grant": {
+                    "ends_at": grant.ends_at.isoformat() if grant.ends_at else None,
+                    "granted_at": grant.granted_at.isoformat() if grant.granted_at else None,
+                    "source": grant.source,
+                    "agent_code": grant.code_used,
+                    "trial_value_uzs": grant.trial_value_uzs,
+                },
+                "subscription": serialize_subscription(sub),
+                "me": build_me_payload(barber),
+                "message": "21 kunlik bepul trial faollashtirildi.",
+            },
+            status=status.HTTP_201_CREATED,
         )

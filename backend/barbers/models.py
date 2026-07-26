@@ -598,6 +598,7 @@ class BarberShopSubscription(models.Model):
         CLICK = "click", "Click"
         PAYME = "payme", "Payme"
         ADMIN = "admin", "Admin"
+        AGENT_TRIAL = "agent_trial", "Agent trial"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     barber = models.ForeignKey(
@@ -709,4 +710,69 @@ class BarberShopSubscriptionEvent(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
+
+
+class PartnerTrialGrant(models.Model):
+    """Partner agent trial — bir barber / telefon / email uchun umrbod bir marta."""
+
+    class Source(models.TextChoices):
+        SIGNUP = "signup", "Ro'yxatdan o'tish"
+        CLAIM = "claim", "Obuna sahifasi"
+        ADMIN = "admin", "Admin"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    barber = models.OneToOneField(
+        Barber,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="partner_trial_grant",
+    )
+    agent = models.ForeignKey(
+        "agents.FieldAgent",
+        on_delete=models.PROTECT,
+        related_name="partner_trial_grants",
+    )
+    salon = models.ForeignKey(
+        "salons.Salon",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="partner_trial_grants",
+    )
+    shop_subscription = models.ForeignKey(
+        BarberShopSubscription,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="partner_trial_grants",
+    )
+    email_key = models.CharField(max_length=255, db_index=True)
+    phone_key = models.CharField(max_length=32, blank=True, default="", db_index=True)
+    code_used = models.CharField(max_length=12, blank=True, default="", db_index=True)
+    source = models.CharField(max_length=16, choices=Source.choices, db_index=True)
+    starts_at = models.DateTimeField(db_index=True)
+    ends_at = models.DateTimeField(db_index=True)
+    trial_value_uzs = models.PositiveIntegerField(default=99_990)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.CharField(max_length=512, blank=True, default="")
+    granted_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ["-granted_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["email_key"],
+                name="uniq_partner_trial_email_key",
+                condition=~models.Q(email_key=""),
+            ),
+            models.UniqueConstraint(
+                fields=["phone_key"],
+                name="uniq_partner_trial_phone_key",
+                condition=~models.Q(phone_key=""),
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"partner-trial:{self.barber_id}"
 

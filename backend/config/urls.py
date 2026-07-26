@@ -169,6 +169,7 @@ from barbers.customer_invite_views import (
 )
 from barbers.shop_subscription_views import (
     BarberShopCheckoutView,
+    BarberShopClaimAgentTrialView,
     BarberShopConfirmView,
     BarberShopMeView,
     BarberShopPlansView,
@@ -565,6 +566,7 @@ api_routes = [
     path("barber/subscription/me/", BarberShopMeView.as_view()),
     path("barber/subscription/checkout/", BarberShopCheckoutView.as_view()),
     path("barber/subscription/confirm/", BarberShopConfirmView.as_view()),
+    path("barber/subscription/claim-agent-trial/", BarberShopClaimAgentTrialView.as_view()),
     path("barber/customer-invites/", BarberCustomerInviteView.as_view()),
     path("barber/customer-invites/outreach/", BarberCustomerOutreachCreateView.as_view()),
     path(

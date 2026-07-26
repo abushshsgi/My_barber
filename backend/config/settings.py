@@ -400,6 +400,7 @@ REST_FRAMEWORK = {
         "subscription_ip": "30/hour",
         "barber_shop_checkout": "8/hour",
         "barber_shop_confirm": "15/hour",
+        "barber_shop_claim_trial": "5/hour",
         "barber_shop_ip": "40/hour",
         "barber_write": "60/minute",
         "barber_payout": "3/hour",

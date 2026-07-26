@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   checkoutShopSubscription,
+  claimAgentTrial,
   confirmShopSubscription,
   fetchShopPlans,
   fetchShopSubscriptionMe,
@@ -50,6 +51,17 @@ export function useShopConfirm() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: confirmShopSubscription,
+    onSuccess: (data) => {
+      if (data.me) qc.setQueryData(shopSubKeys.me, data.me);
+      else void qc.invalidateQueries({ queryKey: shopSubKeys.me });
+    },
+  });
+}
+
+export function useClaimAgentTrial() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (agentCode: string) => claimAgentTrial(agentCode),
     onSuccess: (data) => {
       if (data.me) qc.setQueryData(shopSubKeys.me, data.me);
       else void qc.invalidateQueries({ queryKey: shopSubKeys.me });

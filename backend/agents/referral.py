@@ -125,8 +125,21 @@ def apply_agent_referral(*, barber, code: object) -> AgentReferralAttribution | 
 
 
 def start_salon_trial(salon, *, agent: FieldAgent | None = None) -> None:
-    """3 haftalik bepul trial (99.990 so'm qiymatida)."""
+    """3 haftalik bepul trial (99.990 so'm qiymatida). Mavjud muddatni uzaytirmaydi."""
     now = timezone.now()
+    # Allaqachon faol trial yoki active — qayta yozilmasin (ayyorlik).
+    status = getattr(salon, "subscription_status", None) or ""
+    ends = getattr(salon, "trial_ends_at", None)
+    if status == "active":
+        if agent is not None and not getattr(salon, "referred_by_agent_id", None):
+            salon.referred_by_agent = agent
+            salon.save(update_fields=["referred_by_agent", "updated_at"])
+        return
+    if status == "trial" and ends is not None and ends > now:
+        if agent is not None and not getattr(salon, "referred_by_agent_id", None):
+            salon.referred_by_agent = agent
+            salon.save(update_fields=["referred_by_agent", "updated_at"])
+        return
     updates: dict = {
         "subscription_status": "trial",
         "trial_started_at": now,
@@ -141,7 +154,7 @@ def start_salon_trial(salon, *, agent: FieldAgent | None = None) -> None:
 
 
 def attribute_salon_to_agent(*, salon, barber) -> AgentReferralAttribution | None:
-    """Salon yaratilganda — barber agentiga bog'lash + trial."""
+    """Salon yaratilganda — barber agentiga bog'lash + (bir marta) trial."""
     agent = getattr(barber, "referred_by_agent", None)
     if agent is None:
         agent_id = getattr(barber, "referred_by_agent_id", None)
@@ -153,7 +166,6 @@ def attribute_salon_to_agent(*, salon, barber) -> AgentReferralAttribution | Non
     attribution = AgentReferralAttribution.objects.filter(barber=barber).first()
     now = timezone.now()
     with transaction.atomic():
-        start_salon_trial(salon, agent=agent)
         if attribution:
             if not attribution.salon_id:
                 attribution.salon = salon
@@ -174,12 +186,31 @@ def attribute_salon_to_agent(*, salon, barber) -> AgentReferralAttribution | Non
                     attribution.salon = salon
                     attribution.salon_attributed_at = now
                     attribution.save(update_fields=["salon", "salon_attributed_at"])
-        try:
-            from agents.finance import credit_salon_advance
 
-            credit_salon_advance(agent=agent, salon=salon, barber=barber)
-        except Exception:
-            pass
+        # Trial — faqat bir marta (telefon/email/akkaunt himoyasi).
+        from barbers.models import PartnerTrialGrant
+        from barbers.partner_trial import PartnerTrialError, grant_partner_agent_trial, partner_trial_already_used
+
+        if partner_trial_already_used(barber) is None:
+            try:
+                grant_partner_agent_trial(
+                    barber=barber,
+                    agent=agent,
+                    salon=salon,
+                    source=PartnerTrialGrant.Source.SIGNUP,
+                    code_used=agent.code,
+                    credit_advance=True,
+                )
+            except PartnerTrialError:
+                if not getattr(salon, "referred_by_agent_id", None):
+                    type(salon).objects.filter(pk=salon.pk, referred_by_agent__isnull=True).update(
+                        referred_by_agent=agent
+                    )
+        else:
+            if not getattr(salon, "referred_by_agent_id", None):
+                type(salon).objects.filter(pk=salon.pk, referred_by_agent__isnull=True).update(
+                    referred_by_agent=agent
+                )
         return attribution
 
 def agent_stats_payload(agent: FieldAgent) -> dict:

@@ -72,12 +72,27 @@ export type ShopSubscription = {
   badge: string;
 };
 
+export type AgentTrialStatus = {
+  trial_days: number;
+  trial_value_uzs: number;
+  already_used: boolean;
+  eligible: boolean;
+  ineligible_reason: string | null;
+  grant: {
+    ends_at: string | null;
+    granted_at: string | null;
+    source: string;
+    agent_code: string;
+  } | null;
+};
+
 export type ShopSubscriptionMe = {
   has_subscription: boolean;
   subscription: ShopSubscription | null;
   entitlements: ShopEntitlements;
   required: boolean;
   subscribe_path: string;
+  agent_trial?: AgentTrialStatus;
 };
 
 export type ShopCheckoutResult = {
@@ -153,6 +168,38 @@ export async function confirmShopSubscription(input: {
   const body = (await readJson(res)) as ShopCheckoutResult | null;
   if (!res.ok) throw new Error(formatApiError(body, "To'lovni tasdiqlab bo'lmadi"));
   return body as ShopCheckoutResult;
+}
+
+export type ClaimAgentTrialResult = {
+  ok: boolean;
+  trial_days?: number;
+  trial_value_uzs?: number;
+  message?: string;
+  me?: ShopSubscriptionMe;
+  subscription?: ShopSubscription;
+  detail?: string;
+  code?: string;
+};
+
+export async function claimAgentTrial(agentCode: string): Promise<ClaimAgentTrialResult> {
+  const res = await apiFetch("/api/v1/barber/subscription/claim-agent-trial/", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ agent_code: agentCode }),
+  });
+  const body = (await readJson(res)) as ClaimAgentTrialResult | null;
+  if (!res.ok) {
+    const err = new Error(formatApiError(body, "Trial berilmadi")) as Error & {
+      status?: number;
+      body?: ClaimAgentTrialResult | null;
+      code?: string;
+    };
+    err.status = res.status;
+    err.body = body;
+    err.code = body?.code;
+    throw err;
+  }
+  return body as ClaimAgentTrialResult;
 }
 
 /** Sahifa → kerakli entitlement kaliti */

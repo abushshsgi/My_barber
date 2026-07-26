@@ -186,6 +186,13 @@ def credit_salon_advance(*, agent: FieldAgent, salon, barber) -> None:
 
 def grant_agent_commission_on_paid(*, barber, subscription) -> None:
     """Trial tugab obuna to'langanda agentga komissiya."""
+    # Bepul agent trial — komissiya yo'q (faqat haqiqiy to'lov).
+    source = getattr(subscription, "source", "") or ""
+    if source in ("agent_trial", "admin"):
+        return
+    if Decimal(str(getattr(subscription, "price_uzs", 0) or 0)) <= 0:
+        return
+
     agent = getattr(barber, "referred_by_agent", None)
     if agent is None and getattr(barber, "referred_by_agent_id", None):
         agent = FieldAgent.objects.filter(pk=barber.referred_by_agent_id, is_active=True).first()
