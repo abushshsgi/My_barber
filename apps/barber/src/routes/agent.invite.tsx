@@ -35,8 +35,8 @@ function AgentInvitePage() {
       <div>
         <h1 className="font-heading text-2xl font-semibold">QR / Kod</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Salon egasiga telefon yoki noutbukda shu QR ni oching. U orqali MySaloon ga
-          o&apos;tsa, sizga bog&apos;lanadi. 3 hafta trial ({formatUzs(invite?.trial_value_uzs ?? 99990)})
+          Salon egasiga telefon yoki noutbukda shu QR ni oching. Partnerda «Skaner»
+          yoki kod maydoniga yozsa ham sizga bog&apos;lanadi. 3 hafta trial ({formatUzs(invite?.trial_value_uzs ?? 99990)})
           avtomatik.
         </p>
       </div>

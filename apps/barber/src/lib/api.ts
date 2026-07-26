@@ -104,6 +104,8 @@ function shouldOmitBearerForPath(path: string): boolean {
     p === "/api/v1/agent/auth/token/refresh/" ||
     p === "/api/v1/auth/barber-check-availability" ||
     p === "/api/v1/auth/barber-check-availability/" ||
+    p === "/api/v1/auth/agent-code-check" ||
+    p === "/api/v1/auth/agent-code-check/" ||
     p === "/api/v1/salons/search/"
   );
 }

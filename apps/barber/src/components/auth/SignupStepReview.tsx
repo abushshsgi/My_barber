@@ -1,3 +1,4 @@
+import { AgentRefField } from "@/components/auth/AgentRefField";
 import type { SignupBusinessKind, SignupFlow } from "@/lib/auth-ui";
 import { BUSINESS_KIND_META, FLOW_IDENTITY_META } from "@/lib/barber-flow-config";
 import { formatUzPhoneDisplay } from "@/lib/phone";
@@ -46,6 +47,10 @@ export function SignupStepReview({ name, phone, email, businessKind, flow }: Pro
           {phoneDisplay ? <ReviewRow label="Telefon" value={phoneDisplay} /> : null}
           {email.trim() ? <ReviewRow label="Email" value={email.trim()} /> : null}
         </div>
+      </div>
+
+      <div className="rounded-xl border border-border/35 bg-white p-4">
+        <AgentRefField />
       </div>
 
       <p className="text-xs leading-relaxed text-muted-foreground">

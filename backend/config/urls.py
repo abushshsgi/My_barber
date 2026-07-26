@@ -89,6 +89,7 @@ from agents.views import (
     AgentTokenView,
     AgentWalletView,
 )
+from agents.code_check import AgentCodeCheckView
 
 from accounts.address_views import (
     UserAddressDetailView,
@@ -510,6 +511,7 @@ api_routes = [
     path("auth/barber-register/", BarberRegisterView.as_view()),
     path("auth/barber-register-join-salon/", BarberRegisterJoinSalonView.as_view()),
     path("auth/barber-check-availability/", BarberCheckAvailabilityView.as_view()),
+    path("auth/agent-code-check/", AgentCodeCheckView.as_view()),
     path("auth/token/refresh/", UserTokenRefreshView.as_view()),
     path("admin/auth/token/", AdminTokenView.as_view()),
     path("admin/auth/token/refresh/", AdminTokenRefreshView.as_view()),
