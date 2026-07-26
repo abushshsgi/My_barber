@@ -161,7 +161,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
             { httpEquiv: "Cache-Control", content: "no-cache, no-store, must-revalidate" },
             { httpEquiv: "Pragma", content: "no-cache" },
             { httpEquiv: "Expires", content: "0" },
-            { name: "theme-color", content: "#faf8f5" },
+            { name: "theme-color", content: "#ffffff" },
             { title: "mysaloon.uz — Online salon bron qilish" },
             {
               name: "description",

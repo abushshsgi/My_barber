@@ -11,7 +11,7 @@ const MAX_TILT_X = 16;
 
 const CARD = {
   body: "linear-gradient(135deg, oklch(0.145 0 0), oklch(0.1 0 0))",
-  cream: "linear-gradient(180deg, oklch(0.99 0.01 97) 0%, oklch(0.95 0.02 90) 45%, oklch(0.9 0.03 88) 100%)",
+  cream: "linear-gradient(180deg, oklch(1 0 0) 0%, oklch(0.96 0 0) 45%, oklch(0.92 0 0) 100%)",
   shadow: "0 24px 56px -20px oklch(0.145 0 0 / 0.24)",
 } as const;
 
@@ -21,7 +21,7 @@ function EmvChip() {
       <div
         className="absolute inset-0 rounded-[5px] border border-foreground/25"
         style={{
-          background: "linear-gradient(148deg, oklch(0.84 0.06 85), oklch(0.58 0.05 75))",
+          background: "linear-gradient(148deg, oklch(0.88 0 0), oklch(0.62 0 0))",
           boxShadow: "inset 0 1px 0 oklch(1 0 0 / 0.35)",
         }}
       />

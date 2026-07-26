@@ -10,9 +10,10 @@ import type { BarberDiscovery } from "@/lib/mappers/barber";
 import { prefetchSalonDetail } from "@/lib/prefetch-salon";
 import { cn } from "@/lib/utils";
 
-/** UI kit — yumaloq rasm + title/★ + kulrang meta + narx. */
+/** UI kit — oq container + rasm + title/★ + meta + narx. */
 export const HOME_CARD_RADIUS = "rounded-[1.75rem]";
 export const HOME_CARD_ASPECT = "aspect-[4/3]";
+const CARD_SHADOW = "shadow-[0_10px_32px_-14px_rgba(0,0,0,0.18)]";
 
 function FavHeartButton({ salonId }: { salonId: string }) {
   const { isFav, toggle } = useFavorites();
@@ -26,17 +27,29 @@ function FavHeartButton({ salonId }: { salonId: string }) {
         e.stopPropagation();
         toggle(salonId);
       }}
-      className="absolute right-3 top-3 grid size-9 place-items-center rounded-full bg-white/95 shadow-[0_6px_16px_-6px_rgba(0,0,0,0.35)] backdrop-blur-md transition active:scale-95"
+      className="absolute right-3 top-3 grid size-9 place-items-center rounded-full bg-black/25 shadow-sm backdrop-blur-md transition active:scale-95"
       aria-label="Sevimli"
     >
       <Heart
         className={cn(
-          "size-[16px]",
-          fav ? "fill-foreground text-foreground" : "fill-transparent text-foreground",
+          "size-[16px] text-white",
+          fav ? "fill-white" : "fill-transparent",
         )}
         strokeWidth={2}
       />
     </button>
+  );
+}
+
+function HeartChrome({ salonId }: { salonId?: string | null }) {
+  if (salonId) return <FavHeartButton salonId={salonId} />;
+  return (
+    <span
+      className="pointer-events-none absolute right-3 top-3 grid size-9 place-items-center rounded-full bg-black/25 shadow-sm backdrop-blur-md"
+      aria-hidden
+    >
+      <Heart className="size-[16px] fill-transparent text-white" strokeWidth={2} />
+    </span>
   );
 }
 
@@ -61,16 +74,16 @@ function ListingBody({
   const suffix = t("map.priceFromSuffix", { defaultValue: "dan" });
 
   return (
-    <div className="mt-2.5 min-h-[4.25rem] px-0.5">
+    <div className="min-h-[4.5rem] px-3.5 pb-3.5 pt-3">
       <div className="flex items-start justify-between gap-2">
         <h3 className="min-w-0 flex-1 truncate text-[14px] font-semibold leading-snug tracking-tight text-foreground">
           {title}
         </h3>
         {rating > 0 ? (
-          <span className="inline-flex shrink-0 items-center gap-0.5 pt-0.5 text-[13px] leading-none text-foreground">
+          <span className="inline-flex shrink-0 items-center gap-0.5 pt-0.5 text-[13px] font-semibold leading-none text-foreground">
             <Star className="size-3 fill-foreground" strokeWidth={0} />
             <span className="tabular-nums">{rating.toFixed(2)}</span>
-            {reviewCount > 0 ? <span className="text-foreground/80">({reviewCount})</span> : null}
+            {reviewCount > 0 ? <span>({reviewCount})</span> : null}
           </span>
         ) : null}
       </div>
@@ -82,45 +95,44 @@ function ListingBody({
         <p className="mt-0.5 h-[1.125rem]" aria-hidden />
       )}
       {priceFrom > 0 ? (
-        <p className="mt-1 flex flex-wrap items-baseline gap-x-1.5 text-[13px] leading-snug">
+        <p className="mt-1.5 flex flex-wrap items-baseline gap-x-1.5 text-[13px] leading-snug">
           {showStrike ? (
             <span className="text-muted-foreground line-through">{shortPrice(priceTo!)}</span>
           ) : null}
           <span>
             <span className="font-semibold text-foreground">{shortPrice(priceFrom)}</span>
-            <span className="font-normal text-foreground"> {suffix}</span>
+            <span className="font-semibold text-foreground"> {suffix}</span>
           </span>
         </p>
       ) : (
-        <p className="mt-1 h-[1.25rem]" aria-hidden />
+        <p className="mt-1.5 h-[1.25rem]" aria-hidden />
       )}
     </div>
   );
 }
 
-function HeartChrome({ salonId }: { salonId?: string | null }) {
-  if (salonId) return <FavHeartButton salonId={salonId} />;
-  return (
-    <span
-      className="pointer-events-none absolute right-3 top-3 grid size-9 place-items-center rounded-full bg-white/95 shadow-[0_6px_16px_-6px_rgba(0,0,0,0.35)] backdrop-blur-md"
-      aria-hidden
-    >
-      <Heart className="size-[16px] fill-transparent text-foreground" strokeWidth={2} />
-    </span>
-  );
-}
-
-function ListingMediaShell({
+function ListingCardShell({
   children,
+  media,
   favoriteSalonId,
 }: {
   children: ReactNode;
+  media: ReactNode;
   favoriteSalonId?: string | null;
 }) {
   return (
-    <div className={cn("relative overflow-hidden bg-muted", HOME_CARD_ASPECT, HOME_CARD_RADIUS)}>
+    <div
+      className={cn(
+        "overflow-hidden bg-white",
+        HOME_CARD_RADIUS,
+        CARD_SHADOW,
+      )}
+    >
+      <div className={cn("relative overflow-hidden bg-muted", HOME_CARD_ASPECT)}>
+        {media}
+        <HeartChrome salonId={favoriteSalonId} />
+      </div>
       {children}
-      <HeartChrome salonId={favoriteSalonId} />
     </div>
   );
 }
@@ -142,24 +154,28 @@ export function HomeSalonListingCard({ salon }: { salon: Salon }) {
       onTouchStart={() => prefetchSalonDetail(salon.id)}
       className="group block active:opacity-95"
     >
-      <ListingMediaShell favoriteSalonId={salon.id}>
-        <SalonCoverImg
-          src={salon.coverUrl}
-          seed={salon.coverSeed}
-          category={salon.category}
-          alt=""
-          loading="lazy"
-          className="absolute inset-0 size-full object-cover transition duration-700 group-active:scale-[1.02]"
+      <ListingCardShell
+        favoriteSalonId={salon.id}
+        media={
+          <SalonCoverImg
+            src={salon.coverUrl}
+            seed={salon.coverSeed}
+            category={salon.category}
+            alt=""
+            loading="lazy"
+            className="absolute inset-0 size-full object-cover transition duration-700 group-active:scale-[1.02]"
+          />
+        }
+      >
+        <ListingBody
+          title={salon.name}
+          rating={salon.rating}
+          reviewCount={salon.reviewCount}
+          meta={meta}
+          priceFrom={salon.priceFrom}
+          priceTo={salon.priceTo}
         />
-      </ListingMediaShell>
-      <ListingBody
-        title={salon.name}
-        rating={salon.rating}
-        reviewCount={salon.reviewCount}
-        meta={meta}
-        priceFrom={salon.priceFrom}
-        priceTo={salon.priceTo}
-      />
+      </ListingCardShell>
     </Link>
   );
 }
@@ -169,7 +185,6 @@ export function HomeBarberListingCard({
   salonCover,
 }: {
   barber: BarberDiscovery;
-  /** Usta avatari bo‘lmasa — bog‘langan salon cover. */
   salonCover?: Pick<Salon, "coverUrl" | "coverSeed" | "category"> | null;
 }) {
   const [imgFailed, setImgFailed] = useState(false);
@@ -188,38 +203,42 @@ export function HomeBarberListingCard({
       preload="intent"
       className="group block active:opacity-95"
     >
-      <ListingMediaShell favoriteSalonId={barber.salonId}>
-        {showAvatar ? (
-          <img
-            src={avatar}
-            alt=""
-            loading="lazy"
-            decoding="async"
-            onError={() => setImgFailed(true)}
-            className="absolute inset-0 size-full object-cover transition duration-700 group-active:scale-[1.02]"
-          />
-        ) : salonCover ? (
-          <SalonCoverImg
-            src={salonCover.coverUrl}
-            seed={salonCover.coverSeed}
-            category={salonCover.category}
-            alt=""
-            loading="lazy"
-            className="absolute inset-0 size-full object-cover transition duration-700 group-active:scale-[1.02]"
-          />
-        ) : (
-          <div className="absolute inset-0 grid place-items-center bg-neutral-200">
-            <User className="size-12 text-neutral-400" strokeWidth={1.25} />
-          </div>
-        )}
-      </ListingMediaShell>
-      <ListingBody
-        title={barber.name}
-        rating={barber.rating}
-        reviewCount={barber.reviewCount}
-        meta={meta}
-        priceFrom={barber.priceFrom}
-      />
+      <ListingCardShell
+        favoriteSalonId={barber.salonId}
+        media={
+          showAvatar ? (
+            <img
+              src={avatar}
+              alt=""
+              loading="lazy"
+              decoding="async"
+              onError={() => setImgFailed(true)}
+              className="absolute inset-0 size-full object-cover transition duration-700 group-active:scale-[1.02]"
+            />
+          ) : salonCover ? (
+            <SalonCoverImg
+              src={salonCover.coverUrl}
+              seed={salonCover.coverSeed}
+              category={salonCover.category}
+              alt=""
+              loading="lazy"
+              className="absolute inset-0 size-full object-cover transition duration-700 group-active:scale-[1.02]"
+            />
+          ) : (
+            <div className="absolute inset-0 grid place-items-center bg-neutral-100">
+              <User className="size-12 text-neutral-400" strokeWidth={1.25} />
+            </div>
+          )
+        }
+      >
+        <ListingBody
+          title={barber.name}
+          rating={barber.rating}
+          reviewCount={barber.reviewCount}
+          meta={meta}
+          priceFrom={barber.priceFrom}
+        />
+      </ListingCardShell>
     </Link>
   );
 }

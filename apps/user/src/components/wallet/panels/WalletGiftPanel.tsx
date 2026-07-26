@@ -97,7 +97,7 @@ function GiftCardPreview({
   const reduced = useReducedMotion();
   const from = design?.preview.from ?? "oklch(0.18 0 0)";
   const to = design?.preview.to ?? "oklch(0.32 0 0)";
-  const accent = design?.preview.accent ?? "oklch(0.97 0.01 85)";
+  const accent = design?.preview.accent ?? "oklch(0.96 0 0)";
   const designKey = design?.id ?? "none";
 
   return (

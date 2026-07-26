@@ -1,35 +1,35 @@
-/* Mobil shell — faqat bej + qora (desktop :root bilan bir xil). lg+ o'zgarmaydi. */
+/* Mobil shell — oq + qora (desktop :root bilan bir xil). lg+ o'zgarmaydi. */
 
 @media (max-width: 1023px) {
   .mobile-neo {
     --radius: 0.875rem;
 
-    --background: oklch(0.972 0.011 85);
+    --background: oklch(1 0 0);
     --foreground: oklch(0.145 0 0);
-    --surface: oklch(0.945 0.014 85);
-    --surface-2: oklch(0.905 0.02 85);
+    --surface: oklch(0.965 0 0);
+    --surface-2: oklch(0.93 0 0);
     --surface-foreground: oklch(0.145 0 0);
     --card: oklch(1 0 0);
     --card-foreground: oklch(0.145 0 0);
-    --muted: oklch(0.945 0.014 85);
-    --muted-foreground: oklch(0.45 0.012 70);
+    --muted: oklch(0.965 0 0);
+    --muted-foreground: oklch(0.45 0 0);
 
     --primary: oklch(0.145 0 0);
-    --primary-foreground: oklch(0.972 0.011 85);
-    --secondary: oklch(0.945 0.014 85);
+    --primary-foreground: oklch(1 0 0);
+    --secondary: oklch(0.965 0 0);
     --secondary-foreground: oklch(0.145 0 0);
     --accent: oklch(0.145 0 0);
-    --accent-foreground: oklch(0.972 0.011 85);
+    --accent-foreground: oklch(1 0 0);
     --gold: oklch(0.145 0 0);
-    --gold-foreground: oklch(0.972 0.011 85);
+    --gold-foreground: oklch(1 0 0);
 
     --destructive: oklch(0.55 0.18 28);
     --destructive-foreground: oklch(0.98 0 0);
-    --border: oklch(0.88 0.018 85);
-    --input: oklch(0.88 0.018 85);
+    --border: oklch(0.9 0 0);
+    --input: oklch(0.9 0 0);
     --ring: oklch(0.25 0 0);
 
-    --shadow-card: none;
+    --shadow-card: 0 8px 28px -12px oklch(0 0 0 / 0.14);
     --shadow-dock: 0 -4px 24px oklch(0.145 0 0 / 0.06);
     --shadow-soft: none;
     --shadow-luxury: none;

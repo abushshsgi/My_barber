@@ -255,7 +255,7 @@ export function AiStyleDesktopLayout(props: AiStyleSplitLayoutProps) {
     >
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_10%_0%,oklch(0.94_0.02_85)_0%,transparent_50%),radial-gradient(ellipse_at_95%_40%,oklch(0.95_0.012_70)_0%,transparent_40%)]"
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_10%_0%,oklch(0.97_0_0)_0%,transparent_50%),radial-gradient(ellipse_at_95%_40%,oklch(0.95_0_0)_0%,transparent_40%)]"
       />
 
       <div className="relative mx-auto grid h-full w-full max-w-[1360px] grid-cols-[minmax(0,0.92fr)_minmax(440px,1.08fr)] gap-6 px-6 py-4 xl:max-w-[1440px] xl:grid-cols-[minmax(0,0.88fr)_minmax(480px,1.12fr)] xl:gap-8 xl:px-10 xl:py-5">

@@ -46,17 +46,15 @@ export function DesktopSalonCard({ salon, variant = "grid", elevated = false, cl
         to="/salon/$id"
         params={{ id: salon.id }}
         className={cn(
-          "group block",
+          "group block overflow-hidden rounded-[1.75rem] bg-white shadow-[0_10px_32px_-14px_rgba(0,0,0,0.18)]",
           elevated && "flex h-full flex-col transition-all duration-300 hover:-translate-y-1",
           className,
         )}
       >
         <div
           className={cn(
-            "relative w-full shrink-0 overflow-hidden bg-surface",
-            elevated
-              ? "aspect-[4/3] rounded-2xl shadow-[0_18px_40px_-14px_rgba(0,0,0,0.45),0_8px_18px_-10px_rgba(0,0,0,0.3)] transition-shadow group-hover:shadow-[0_22px_46px_-12px_rgba(0,0,0,0.5),0_10px_22px_-10px_rgba(0,0,0,0.35)]"
-              : "aspect-[5/4] rounded-xl",
+            "relative w-full shrink-0 overflow-hidden bg-muted",
+            elevated ? "aspect-[4/3]" : "aspect-[5/4]",
           )}
         >
           <img
@@ -70,11 +68,12 @@ export function DesktopSalonCard({ salon, variant = "grid", elevated = false, cl
               e.stopPropagation();
               toggle(salon.id);
             }}
-            className="absolute right-3 top-3 text-white drop-shadow-md transition-transform hover:scale-110"
+            className="absolute right-3 top-3 grid size-9 place-items-center rounded-full bg-black/25 backdrop-blur-md transition-transform hover:scale-105"
             aria-label="Sevimli"
           >
             <Heart
-              className={cn("h-6 w-6", fav ? "fill-white" : "fill-black/20 stroke-white stroke-[2px]")}
+              className={cn("size-4 text-white", fav ? "fill-white" : "fill-transparent")}
+              strokeWidth={2}
             />
           </button>
           {isGuestFavorite ? (
@@ -85,10 +84,8 @@ export function DesktopSalonCard({ salon, variant = "grid", elevated = false, cl
         </div>
         <div
           className={cn(
-            "space-y-0.5",
-            elevated
-              ? "flex min-h-0 flex-1 flex-col justify-start px-0.5 pb-0 pt-3"
-              : "mt-3 min-h-[4.75rem]",
+            "space-y-0.5 px-3.5 pb-3.5 pt-3",
+            elevated && "flex min-h-0 flex-1 flex-col justify-start",
           )}
         >
           <div className="flex items-start justify-between gap-2">
@@ -102,12 +99,15 @@ export function DesktopSalonCard({ salon, variant = "grid", elevated = false, cl
             </h3>
             <span
               className={cn(
-                "flex shrink-0 items-center gap-0.5 font-normal",
+                "flex shrink-0 items-center gap-0.5 font-semibold",
                 elevated ? "text-base" : "text-[15px]",
               )}
             >
               <Star className={cn("fill-foreground", elevated ? "h-4 w-4" : "h-3.5 w-3.5")} />
-              {salon.rating.toFixed(1)}
+              {salon.rating.toFixed(2)}
+              {salon.reviewCount > 0 ? (
+                <span className="font-semibold">({salon.reviewCount})</span>
+              ) : null}
             </span>
           </div>
           <p className={cn("truncate text-muted-foreground", elevated ? "text-base" : "text-[15px]")}>
@@ -115,7 +115,7 @@ export function DesktopSalonCard({ salon, variant = "grid", elevated = false, cl
           </p>
           <p className={elevated ? "text-base" : "text-[15px]"}>
             <span className="font-semibold">{shortPrice(salon.priceFrom)}</span>
-            <span className="font-normal text-muted-foreground"> dan</span>
+            <span className="font-semibold"> dan</span>
           </p>
         </div>
       </Link>

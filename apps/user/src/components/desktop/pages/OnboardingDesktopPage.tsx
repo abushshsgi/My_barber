@@ -18,7 +18,7 @@ export function OnboardingDesktopPage({ state }: Props) {
     <div className="relative bg-background">
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_20%_0%,oklch(0.94_0.02_85)_0%,transparent_55%),radial-gradient(ellipse_at_90%_30%,oklch(0.95_0.015_70)_0%,transparent_45%)]"
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_20%_0%,oklch(0.97_0_0)_0%,transparent_55%),radial-gradient(ellipse_at_90%_30%,oklch(0.95_0_0)_0%,transparent_45%)]"
       />
 
       <div

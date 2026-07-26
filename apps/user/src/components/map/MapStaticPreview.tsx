@@ -13,7 +13,7 @@ export function MapStaticPreview({ markers, className }: Props) {
   return (
     <div
       className={cn(
-        "relative h-full w-full overflow-hidden bg-[linear-gradient(145deg,oklch(0.94_0.02_85),oklch(0.88_0.03_240))]",
+        "relative h-full w-full overflow-hidden bg-[linear-gradient(145deg,oklch(0.96_0_0),oklch(0.9_0_0))]",
         className,
       )}
       aria-hidden

@@ -90,7 +90,7 @@ function ReceivedGiftCard({
   const amount = parseWalletBalance(gift.gift_amount ?? gift.amount);
   const from = gift.design?.preview.from ?? "oklch(0.18 0 0)";
   const to = gift.design?.preview.to ?? "oklch(0.32 0 0)";
-  const accent = gift.design?.preview.accent ?? "oklch(0.97 0.01 85)";
+  const accent = gift.design?.preview.accent ?? "oklch(0.96 0 0)";
   const designLabel = i18n.language?.startsWith("uz")
     ? gift.design?.name_uz || gift.design?.name || gift.design_id
     : gift.design?.name || gift.design?.name_uz || gift.design_id;

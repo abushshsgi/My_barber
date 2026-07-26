@@ -18,7 +18,7 @@ export function MapAreaSkeleton({ className }: { className?: string }) {
   return (
     <div
       className={cn(
-        "relative h-full w-full overflow-hidden bg-[oklch(0.94_0.012_85)]",
+        "relative h-full w-full overflow-hidden bg-[oklch(0.96_0_0)]",
         className,
       )}
       aria-hidden
