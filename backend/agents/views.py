@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from django.db.models import Count, Q
+from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import generics, status
 from rest_framework.permissions import AllowAny
@@ -229,3 +230,296 @@ class AdminAgentStatsView(APIView):
                 "leaderboard": leaderboard[:20],
             }
         )
+
+
+# ---- Agent finance ----
+
+
+class AgentWalletView(APIView):
+    permission_classes = [IsFieldAgent]
+
+    def get(self, request):
+        from agents.finance import (
+            AgentWalletService,
+            MIN_AGENT_PAYOUT_UZS,
+            agent_commission_amount,
+            salon_advance_amount,
+        )
+        from agents.finance_models import AgentCommissionEvent, AgentLedgerEntry, AgentPayout
+
+        agent: FieldAgent = request.user.agent
+        wallet = AgentWalletService.ensure_wallet(agent)
+        ledger = list(
+            AgentLedgerEntry.objects.filter(wallet=wallet).order_by("-created_at")[:50]
+        )
+        events = list(
+            AgentCommissionEvent.objects.filter(agent=agent)
+            .select_related("salon", "barber")
+            .order_by("-created_at")[:50]
+        )
+        payouts = list(AgentPayout.objects.filter(agent=agent).order_by("-created_at")[:30])
+        return Response(
+            {
+                "account_number": wallet.account_number,
+                "balance": float(wallet.balance),
+                "is_locked": wallet.is_locked,
+                "min_payout_uzs": float(MIN_AGENT_PAYOUT_UZS),
+                "salon_advance_uzs": float(salon_advance_amount()),
+                "commission_uzs": float(agent_commission_amount()),
+                "ledger": [
+                    {
+                        "id": str(e.id),
+                        "entry_type": e.entry_type,
+                        "amount": float(e.amount),
+                        "balance_after": float(e.balance_after),
+                        "reference_type": e.reference_type,
+                        "reference_id": e.reference_id,
+                        "created_at": e.created_at.isoformat(),
+                        "metadata": e.metadata,
+                    }
+                    for e in ledger
+                ],
+                "events": [
+                    {
+                        "id": ev.id,
+                        "kind": ev.kind,
+                        "amount_uzs": float(ev.amount_uzs),
+                        "salon_id": ev.salon_id,
+                        "salon_name": ev.salon.name if ev.salon else "",
+                        "barber_id": ev.barber_id,
+                        "barber_name": (ev.barber.full_name if ev.barber else "") or "",
+                        "created_at": ev.created_at.isoformat(),
+                    }
+                    for ev in events
+                ],
+                "payouts": [
+                    {
+                        "id": p.id,
+                        "amount": float(p.amount),
+                        "status": p.status,
+                        "holder_name": p.holder_name,
+                        "bank_name": p.bank_name,
+                        "card_last4": p.card_last4,
+                        "reference": p.reference,
+                        "notes": p.notes,
+                        "paid_at": p.paid_at.isoformat() if p.paid_at else None,
+                        "created_at": p.created_at.isoformat(),
+                    }
+                    for p in payouts
+                ],
+            }
+        )
+
+
+class AgentPayoutRequestView(APIView):
+    permission_classes = [IsFieldAgent]
+
+    def post(self, request):
+        from agents.finance import request_agent_payout
+
+        agent: FieldAgent = request.user.agent
+        try:
+            amount = request.data.get("amount")
+            payout = request_agent_payout(
+                agent=agent,
+                amount=amount,
+                holder_name=(request.data.get("holder_name") or "").strip(),
+                bank_name=(request.data.get("bank_name") or "").strip(),
+                card_last4=(request.data.get("card_last4") or "").strip(),
+                notes=(request.data.get("notes") or "").strip(),
+            )
+        except ValueError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except RuntimeError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(
+            {
+                "id": payout.id,
+                "amount": float(payout.amount),
+                "status": payout.status,
+                "created_at": payout.created_at.isoformat(),
+            },
+            status=status.HTTP_201_CREATED,
+        )
+
+
+class AdminFieldAgentDetailExtendedView(APIView):
+    """Agent batafsil: salonlar, barberlar, tranzaksiyalar, payoutlar."""
+
+    permission_classes = [IsAdmin]
+
+    def get(self, request, pk):
+        from agents.finance import AgentWalletService, agent_commission_amount, salon_advance_amount
+        from agents.finance_models import AgentCommissionEvent, AgentLedgerEntry, AgentPayout
+        from barbers.models import Barber
+
+        agent = get_object_or_404(FieldAgent, pk=pk)
+        ensure_agent_code(agent)
+        wallet = AgentWalletService.ensure_wallet(agent)
+        salons = (
+            Salon.objects.filter(referred_by_agent=agent)
+            .select_related("owner_barber")
+            .annotate(
+                members_count=Count(
+                    "memberships",
+                    filter=Q(memberships__invite_state=SalonMembership.InviteState.ACTIVE),
+                )
+            )
+            .order_by("-created_at")
+        )
+        barbers = Barber.objects.filter(referred_by_agent=agent).order_by("-date_joined")
+        events = AgentCommissionEvent.objects.filter(agent=agent).select_related(
+            "salon", "barber"
+        )[:100]
+        ledger = AgentLedgerEntry.objects.filter(wallet=wallet).order_by("-created_at")[:100]
+        payouts = AgentPayout.objects.filter(agent=agent).order_by("-created_at")[:50]
+
+        return Response(
+            {
+                "agent": FieldAgentAdminSerializer(agent).data,
+                "wallet": {
+                    "account_number": wallet.account_number,
+                    "balance": float(wallet.balance),
+                    "is_locked": wallet.is_locked,
+                },
+                "config": {
+                    "salon_advance_uzs": float(salon_advance_amount()),
+                    "commission_uzs": float(agent_commission_amount()),
+                },
+                "salons": [
+                    {
+                        "id": s.id,
+                        "name": s.name,
+                        "address": s.address,
+                        "phone": s.phone,
+                        "latitude": float(s.latitude) if s.latitude is not None else None,
+                        "longitude": float(s.longitude) if s.longitude is not None else None,
+                        "is_published": s.is_published,
+                        "subscription_status": s.subscription_status,
+                        "trial_ends_at": s.trial_ends_at.isoformat() if s.trial_ends_at else None,
+                        "created_at": s.created_at.isoformat(),
+                        "owner_name": (s.owner_barber.full_name if s.owner_barber else "") or "",
+                        "owner_phone": (s.owner_barber.phone if s.owner_barber else "") or "",
+                        "owner_email": (s.owner_barber.email if s.owner_barber else "") or "",
+                        "members_count": s.members_count or 0,
+                    }
+                    for s in salons
+                ],
+                "barbers": [
+                    {
+                        "id": b.id,
+                        "full_name": b.full_name,
+                        "email": b.email,
+                        "phone": b.phone or "",
+                        "onboarding_flow": b.onboarding_flow,
+                        "business_kind": b.business_kind,
+                        "date_joined": b.date_joined.isoformat() if b.date_joined else None,
+                        "is_active": b.is_active,
+                    }
+                    for b in barbers
+                ],
+                "events": [
+                    {
+                        "id": ev.id,
+                        "kind": ev.kind,
+                        "amount_uzs": float(ev.amount_uzs),
+                        "salon_name": ev.salon.name if ev.salon else "",
+                        "barber_name": (ev.barber.full_name if ev.barber else "") or "",
+                        "created_at": ev.created_at.isoformat(),
+                        "metadata": ev.metadata,
+                    }
+                    for ev in events
+                ],
+                "ledger": [
+                    {
+                        "id": str(e.id),
+                        "entry_type": e.entry_type,
+                        "amount": float(e.amount),
+                        "balance_after": float(e.balance_after),
+                        "created_at": e.created_at.isoformat(),
+                        "metadata": e.metadata,
+                    }
+                    for e in ledger
+                ],
+                "payouts": [
+                    {
+                        "id": p.id,
+                        "amount": float(p.amount),
+                        "status": p.status,
+                        "holder_name": p.holder_name,
+                        "bank_name": p.bank_name,
+                        "card_last4": p.card_last4,
+                        "reference": p.reference,
+                        "notes": p.notes,
+                        "paid_at": p.paid_at.isoformat() if p.paid_at else None,
+                        "created_at": p.created_at.isoformat(),
+                    }
+                    for p in payouts
+                ],
+            }
+        )
+
+
+class AdminAgentPayoutListView(APIView):
+    permission_classes = [IsAdmin]
+
+    def get(self, request):
+        from agents.finance_models import AgentPayout
+
+        status_f = (request.query_params.get("status") or "").strip()
+        qs = AgentPayout.objects.select_related("agent").order_by("-created_at")
+        if status_f:
+            qs = qs.filter(status=status_f)
+        rows = []
+        for p in qs[:100]:
+            rows.append(
+                {
+                    "id": p.id,
+                    "agent_id": p.agent_id,
+                    "agent_name": p.agent.full_name,
+                    "agent_code": p.agent.code,
+                    "amount": float(p.amount),
+                    "status": p.status,
+                    "holder_name": p.holder_name,
+                    "bank_name": p.bank_name,
+                    "card_last4": p.card_last4,
+                    "reference": p.reference,
+                    "notes": p.notes,
+                    "paid_at": p.paid_at.isoformat() if p.paid_at else None,
+                    "created_at": p.created_at.isoformat(),
+                }
+            )
+        return Response({"results": rows})
+
+
+class AdminAgentPayoutMarkPaidView(APIView):
+    permission_classes = [IsAdmin]
+
+    def post(self, request, pk):
+        from agents.finance import mark_agent_payout_paid
+        from agents.finance_models import AgentPayout
+
+        payout = get_object_or_404(AgentPayout, pk=pk)
+        if payout.status != AgentPayout.Status.PENDING:
+            return Response({"detail": "Faqat kutilayotgan payout."}, status=400)
+        mark_agent_payout_paid(
+            payout, reference=(request.data.get("reference") or "").strip()
+        )
+        return Response({"id": payout.id, "status": payout.status})
+
+
+class AdminAgentPayoutRejectView(APIView):
+    permission_classes = [IsAdmin]
+
+    def post(self, request, pk):
+        from agents.finance import reject_agent_payout
+        from agents.finance_models import AgentPayout
+
+        payout = get_object_or_404(AgentPayout, pk=pk)
+        try:
+            reject_agent_payout(
+                payout, reason=(request.data.get("reason") or "").strip()
+            )
+        except ValueError as e:
+            return Response({"detail": str(e)}, status=400)
+        return Response({"id": payout.id, "status": payout.status})

@@ -159,23 +159,28 @@ def attribute_salon_to_agent(*, salon, barber) -> AgentReferralAttribution | Non
                 attribution.salon = salon
                 attribution.salon_attributed_at = now
                 attribution.save(update_fields=["salon", "salon_attributed_at"])
-            return attribution
+        else:
+            try:
+                attribution = AgentReferralAttribution.objects.create(
+                    agent=agent,
+                    barber=barber,
+                    salon=salon,
+                    code_used=agent.code,
+                    salon_attributed_at=now,
+                )
+            except IntegrityError:
+                attribution = AgentReferralAttribution.objects.filter(barber=barber).first()
+                if attribution and not attribution.salon_id:
+                    attribution.salon = salon
+                    attribution.salon_attributed_at = now
+                    attribution.save(update_fields=["salon", "salon_attributed_at"])
         try:
-            return AgentReferralAttribution.objects.create(
-                agent=agent,
-                barber=barber,
-                salon=salon,
-                code_used=agent.code,
-                salon_attributed_at=now,
-            )
-        except IntegrityError:
-            attribution = AgentReferralAttribution.objects.filter(barber=barber).first()
-            if attribution and not attribution.salon_id:
-                attribution.salon = salon
-                attribution.salon_attributed_at = now
-                attribution.save(update_fields=["salon", "salon_attributed_at"])
-            return attribution
+            from agents.finance import credit_salon_advance
 
+            credit_salon_advance(agent=agent, salon=salon, barber=barber)
+        except Exception:
+            pass
+        return attribution
 
 def agent_stats_payload(agent: FieldAgent) -> dict:
     from django.db.models import Count, Q

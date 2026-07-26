@@ -1,6 +1,6 @@
 /** Field agent auth — barber JWT dan alohida. */
 
-import { apiFetch } from "@/lib/api";
+import { API_BASE, apiFetch } from "@/lib/api";
 
 const ACCESS_KEY = "mysaloon_agent_access";
 const REFRESH_KEY = "mysaloon_agent_refresh";
@@ -26,12 +26,13 @@ export async function agentApiJson<T>(
 ): Promise<T> {
   const access = getAgentAccessToken();
   const headers = new Headers(init?.headers);
-  if (!headers.has("Content-Type") && init?.body) {
+  if (!headers.has("Content-Type") && init?.body && !(init.body instanceof FormData)) {
     headers.set("Content-Type", "application/json");
   }
   if (access) headers.set("Authorization", `Bearer ${access}`);
 
-  const res = await apiFetch(path, { ...init, headers });
+  // omitAuth: apiFetch barber token bilan Agent Bearer ni ustiga yozmasin.
+  const res = await apiFetch(path, { ...init, headers, omitAuth: true });
   const text = await res.text();
   let data: unknown = null;
   try {
@@ -96,3 +97,50 @@ export type AgentInvite = {
   trial_days: number;
   trial_value_uzs: number;
 };
+
+export type AgentWalletPayload = {
+  account_number: string;
+  balance: number;
+  is_locked: boolean;
+  min_payout_uzs: number;
+  salon_advance_uzs: number;
+  commission_uzs: number;
+  ledger: Array<{
+    id: string;
+    entry_type: string;
+    amount: number;
+    balance_after: number;
+    reference_type: string;
+    reference_id: string;
+    created_at: string;
+    metadata: Record<string, unknown>;
+  }>;
+  events: Array<{
+    id: number;
+    kind: string;
+    amount_uzs: number;
+    salon_id: number | null;
+    salon_name: string;
+    barber_id: number | null;
+    barber_name: string;
+    created_at: string;
+  }>;
+  payouts: Array<{
+    id: number;
+    amount: number;
+    status: string;
+    holder_name: string;
+    bank_name: string;
+    card_last4: string;
+    reference: string;
+    notes: string;
+    paid_at: string | null;
+    created_at: string;
+  }>;
+};
+
+export function formatUzs(n: number): string {
+  return `${Math.round(n).toLocaleString("uz-UZ")} so'm`;
+}
+
+export { API_BASE };

@@ -3163,6 +3163,109 @@ export async function fetchAgentPlatformStats(): Promise<AgentPlatformStats> {
   return apiJson<AgentPlatformStats>("/api/v1/admin/agents/stats/");
 }
 
+export type AgentDetailPayload = {
+  agent: FieldAgent;
+  wallet: { account_number: string; balance: number; is_locked: boolean };
+  config: { salon_advance_uzs: number; commission_uzs: number };
+  salons: Array<{
+    id: number;
+    name: string;
+    address: string;
+    phone: string;
+    latitude: number | null;
+    longitude: number | null;
+    is_published: boolean;
+    subscription_status: string;
+    trial_ends_at: string | null;
+    created_at: string;
+    owner_name: string;
+    owner_phone: string;
+    owner_email: string;
+    members_count: number;
+  }>;
+  barbers: Array<{
+    id: number;
+    full_name: string;
+    email: string;
+    phone: string;
+    onboarding_flow: string;
+    business_kind: string;
+    date_joined: string | null;
+    is_active: boolean;
+  }>;
+  events: Array<{
+    id: number;
+    kind: string;
+    amount_uzs: number;
+    salon_name: string;
+    barber_name: string;
+    created_at: string;
+    metadata: Record<string, unknown>;
+  }>;
+  ledger: Array<{
+    id: string;
+    entry_type: string;
+    amount: number;
+    balance_after: number;
+    created_at: string;
+    metadata: Record<string, unknown>;
+  }>;
+  payouts: Array<{
+    id: number;
+    amount: number;
+    status: string;
+    holder_name: string;
+    bank_name: string;
+    card_last4: string;
+    reference: string;
+    notes: string;
+    paid_at: string | null;
+    created_at: string;
+  }>;
+};
+
+export async function fetchAgentDetail(id: number): Promise<AgentDetailPayload> {
+  return apiJson<AgentDetailPayload>(`/api/v1/admin/agents/${id}/detail/`);
+}
+
+export type AgentPayoutRow = {
+  id: number;
+  agent_id: number;
+  agent_name: string;
+  agent_code: string;
+  amount: number;
+  status: string;
+  holder_name: string;
+  bank_name: string;
+  card_last4: string;
+  reference: string;
+  notes: string;
+  paid_at: string | null;
+  created_at: string;
+};
+
+export async function fetchAgentPayouts(status?: string): Promise<AgentPayoutRow[]> {
+  const qs = status ? `?status=${encodeURIComponent(status)}` : "";
+  const j = await apiJson<{ results: AgentPayoutRow[] }>(
+    `/api/v1/admin/agents/payouts/${qs}`,
+  );
+  return j.results ?? [];
+}
+
+export async function markAgentPayoutPaid(id: number, reference = ""): Promise<void> {
+  await apiJson(`/api/v1/admin/agents/payouts/${id}/paid/`, {
+    method: "POST",
+    body: JSON.stringify({ reference }),
+  });
+}
+
+export async function rejectAgentPayout(id: number, reason = ""): Promise<void> {
+  await apiJson(`/api/v1/admin/agents/payouts/${id}/reject/`, {
+    method: "POST",
+    body: JSON.stringify({ reason }),
+  });
+}
+
 export type AdminProfile = { id: string; email: string; role: string };
 
 export async function fetchAdminProfile(): Promise<AdminProfile> {

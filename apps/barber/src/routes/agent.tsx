@@ -1,4 +1,5 @@
-import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
+import { createFileRoute, Outlet, redirect, useLocation } from "@tanstack/react-router";
+import { AgentShell } from "@/components/agent/AgentShell";
 import { getAgentAccessToken } from "@/lib/agent-api";
 
 export const Route = createFileRoute("/agent")({
@@ -10,5 +11,13 @@ export const Route = createFileRoute("/agent")({
       throw redirect({ to: "/agent/login" });
     }
   },
-  component: () => <Outlet />,
+  component: AgentLayout,
 });
+
+function AgentLayout() {
+  const { pathname } = useLocation();
+  if (pathname.startsWith("/agent/login")) {
+    return <Outlet />;
+  }
+  return <AgentShell />;
+}

@@ -17,7 +17,11 @@ import { Route as CheckEmailRouteImport } from './routes/check-email'
 import { Route as VerifyEmailRouteImport } from './routes/verify-email'
 import { Route as WelcomeRouteImport } from './routes/welcome'
 import { Route as AgentIndexRouteImport } from './routes/agent.index'
+import { Route as AgentAylanmaRouteImport } from './routes/agent.aylanma'
+import { Route as AgentInviteRouteImport } from './routes/agent.invite'
 import { Route as AgentLoginRouteImport } from './routes/agent.login'
+import { Route as AgentPayoutRouteImport } from './routes/agent.payout'
+import { Route as AgentSalonsRouteImport } from './routes/agent.salons'
 import { Route as BarberIndexRouteImport } from './routes/barber.index'
 import { Route as BarberActivationRouteImport } from './routes/barber.activation'
 import { Route as BarberAmenitiesRouteImport } from './routes/barber.amenities'
@@ -102,9 +106,29 @@ const AgentIndexRoute = AgentIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AgentRoute,
 } as any)
+const AgentAylanmaRoute = AgentAylanmaRouteImport.update({
+  id: '/aylanma',
+  path: '/aylanma',
+  getParentRoute: () => AgentRoute,
+} as any)
+const AgentInviteRoute = AgentInviteRouteImport.update({
+  id: '/invite',
+  path: '/invite',
+  getParentRoute: () => AgentRoute,
+} as any)
 const AgentLoginRoute = AgentLoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => AgentRoute,
+} as any)
+const AgentPayoutRoute = AgentPayoutRouteImport.update({
+  id: '/payout',
+  path: '/payout',
+  getParentRoute: () => AgentRoute,
+} as any)
+const AgentSalonsRoute = AgentSalonsRouteImport.update({
+  id: '/salons',
+  path: '/salons',
   getParentRoute: () => AgentRoute,
 } as any)
 const BarberIndexRoute = BarberIndexRouteImport.update({
@@ -334,7 +358,11 @@ export interface FileRoutesByFullPath {
   '/check-email': typeof CheckEmailRoute
   '/verify-email': typeof VerifyEmailRoute
   '/welcome': typeof WelcomeRoute
+  '/agent/aylanma': typeof AgentAylanmaRoute
+  '/agent/invite': typeof AgentInviteRoute
   '/agent/login': typeof AgentLoginRoute
+  '/agent/payout': typeof AgentPayoutRoute
+  '/agent/salons': typeof AgentSalonsRoute
   '/barber/activation': typeof BarberActivationRoute
   '/barber/amenities': typeof BarberAmenitiesRoute
   '/barber/bookings': typeof BarberBookingsRouteWithChildren
@@ -386,7 +414,11 @@ export interface FileRoutesByTo {
   '/check-email': typeof CheckEmailRoute
   '/verify-email': typeof VerifyEmailRoute
   '/welcome': typeof WelcomeRoute
+  '/agent/aylanma': typeof AgentAylanmaRoute
+  '/agent/invite': typeof AgentInviteRoute
   '/agent/login': typeof AgentLoginRoute
+  '/agent/payout': typeof AgentPayoutRoute
+  '/agent/salons': typeof AgentSalonsRoute
   '/barber/activation': typeof BarberActivationRoute
   '/barber/amenities': typeof BarberAmenitiesRoute
   '/barber/bookings': typeof BarberBookingsRouteWithChildren
@@ -438,7 +470,11 @@ export interface FileRoutesById {
   '/check-email': typeof CheckEmailRoute
   '/verify-email': typeof VerifyEmailRoute
   '/welcome': typeof WelcomeRoute
+  '/agent/aylanma': typeof AgentAylanmaRoute
+  '/agent/invite': typeof AgentInviteRoute
   '/agent/login': typeof AgentLoginRoute
+  '/agent/payout': typeof AgentPayoutRoute
+  '/agent/salons': typeof AgentSalonsRoute
   '/barber/activation': typeof BarberActivationRoute
   '/barber/amenities': typeof BarberAmenitiesRoute
   '/barber/bookings': typeof BarberBookingsRouteWithChildren
@@ -494,7 +530,11 @@ export interface FileRouteTypes {
     | '/check-email'
     | '/verify-email'
     | '/welcome'
+    | '/agent/aylanma'
+    | '/agent/invite'
     | '/agent/login'
+    | '/agent/payout'
+    | '/agent/salons'
     | '/barber/activation'
     | '/barber/amenities'
     | '/barber/bookings'
@@ -546,7 +586,11 @@ export interface FileRouteTypes {
     | '/check-email'
     | '/verify-email'
     | '/welcome'
+    | '/agent/aylanma'
+    | '/agent/invite'
     | '/agent/login'
+    | '/agent/payout'
+    | '/agent/salons'
     | '/barber/activation'
     | '/barber/amenities'
     | '/barber/bookings'
@@ -597,7 +641,11 @@ export interface FileRouteTypes {
     | '/check-email'
     | '/verify-email'
     | '/welcome'
+    | '/agent/aylanma'
+    | '/agent/invite'
     | '/agent/login'
+    | '/agent/payout'
+    | '/agent/salons'
     | '/barber/activation'
     | '/barber/amenities'
     | '/barber/bookings'
@@ -716,11 +764,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AgentIndexRouteImport
       parentRoute: typeof AgentRoute
     }
+    '/agent/aylanma': {
+      id: '/agent/aylanma'
+      path: '/aylanma'
+      fullPath: '/agent/aylanma'
+      preLoaderRoute: typeof AgentAylanmaRouteImport
+      parentRoute: typeof AgentRoute
+    }
+    '/agent/invite': {
+      id: '/agent/invite'
+      path: '/invite'
+      fullPath: '/agent/invite'
+      preLoaderRoute: typeof AgentInviteRouteImport
+      parentRoute: typeof AgentRoute
+    }
     '/agent/login': {
       id: '/agent/login'
       path: '/login'
       fullPath: '/agent/login'
       preLoaderRoute: typeof AgentLoginRouteImport
+      parentRoute: typeof AgentRoute
+    }
+    '/agent/payout': {
+      id: '/agent/payout'
+      path: '/payout'
+      fullPath: '/agent/payout'
+      preLoaderRoute: typeof AgentPayoutRouteImport
+      parentRoute: typeof AgentRoute
+    }
+    '/agent/salons': {
+      id: '/agent/salons'
+      path: '/salons'
+      fullPath: '/agent/salons'
+      preLoaderRoute: typeof AgentSalonsRouteImport
       parentRoute: typeof AgentRoute
     }
     '/barber/': {
@@ -1028,12 +1104,20 @@ declare module '@tanstack/react-router' {
 }
 
 interface AgentRouteChildren {
+  AgentAylanmaRoute: typeof AgentAylanmaRoute
+  AgentInviteRoute: typeof AgentInviteRoute
   AgentLoginRoute: typeof AgentLoginRoute
+  AgentPayoutRoute: typeof AgentPayoutRoute
+  AgentSalonsRoute: typeof AgentSalonsRoute
   AgentIndexRoute: typeof AgentIndexRoute
 }
 
 const AgentRouteChildren: AgentRouteChildren = {
+  AgentAylanmaRoute: AgentAylanmaRoute,
+  AgentInviteRoute: AgentInviteRoute,
   AgentLoginRoute: AgentLoginRoute,
+  AgentPayoutRoute: AgentPayoutRoute,
+  AgentSalonsRoute: AgentSalonsRoute,
   AgentIndexRoute: AgentIndexRoute,
 }
 

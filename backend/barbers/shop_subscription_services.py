@@ -177,6 +177,12 @@ def activate_subscription(
         },
         request=request,
     )
+    try:
+        from agents.finance import grant_agent_commission_on_paid
+
+        grant_agent_commission_on_paid(barber=barber, subscription=sub)
+    except Exception:
+        pass
     return sub
 
 

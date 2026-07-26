@@ -63,3 +63,21 @@ class AgentReferralAttribution(models.Model):
 
     def __str__(self) -> str:
         return f"{self.code_used} → barber#{self.barber_id}"
+
+
+# Finance models (wallet / payout / commission audit)
+from agents.finance_models import (  # noqa: E402
+    AgentCommissionEvent,
+    AgentLedgerEntry,
+    AgentPayout,
+    AgentWallet,
+)
+
+__all__ = [
+    "FieldAgent",
+    "AgentReferralAttribution",
+    "AgentWallet",
+    "AgentLedgerEntry",
+    "AgentPayout",
+    "AgentCommissionEvent",
+]

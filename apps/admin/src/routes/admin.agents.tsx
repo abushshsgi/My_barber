@@ -113,7 +113,13 @@ function AdminAgentsPage() {
             trial (99.990 so&apos;m) avtomatik beriladi.
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2">
+          <Link
+            to="/admin/agents/payouts"
+            className="inline-flex items-center rounded-lg border border-border bg-card px-3 py-2 text-sm font-medium shadow-card hover:bg-muted"
+          >
+            Payoutlar →
+          </Link>
           <Link
             to="/admin/statistics/agents"
             className="inline-flex items-center rounded-lg border border-border bg-card px-3 py-2 text-sm font-medium shadow-card hover:bg-muted"
@@ -175,7 +181,13 @@ function AdminAgentsPage() {
                 {agents.map((a) => (
                   <tr key={a.id} className="hover:bg-background/50">
                     <td className="px-6 py-4">
-                      <div className="font-medium">{a.full_name}</div>
+                      <Link
+                        to="/admin/agents/$agentId"
+                        params={{ agentId: String(a.id) }}
+                        className="font-medium hover:underline"
+                      >
+                        {a.full_name}
+                      </Link>
                       <div className="text-xs text-muted-foreground">{a.email}</div>
                       {a.phone ? (
                         <div className="text-xs text-muted-foreground">{a.phone}</div>
