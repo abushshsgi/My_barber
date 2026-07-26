@@ -3163,6 +3163,134 @@ export async function fetchAgentPlatformStats(): Promise<AgentPlatformStats> {
   return apiJson<AgentPlatformStats>("/api/v1/admin/agents/stats/");
 }
 
+export type AgentHubOverview = {
+  summary: {
+    agents_total: number;
+    agents_active: number;
+    salons_referred: number;
+    salons_trial: number;
+    salons_active: number;
+    salons_expired: number;
+    barbers_referred: number;
+    advance_total_uzs: number;
+    commission_total_uzs: number;
+    payout_pending_uzs: number;
+    payout_paid_uzs: number;
+    agent_wallets_balance_uzs: number;
+    referred_salons_gmv_uzs: number;
+    trial_days: number;
+    trial_value_uzs: number;
+    salon_advance_uzs: number;
+    commission_uzs: number;
+  };
+  leaderboard: Array<{
+    id: number;
+    full_name: string;
+    code: string;
+    email: string;
+    phone: string;
+    is_active: boolean;
+    last_login: string | null;
+    salons_referred: number;
+    barbers_referred: number;
+    salons_trial: number;
+    salons_active: number;
+    advance_sum: number;
+    commission_sum: number;
+    wallet_balance: number;
+    payouts_pending: number;
+  }>;
+  recent_events: Array<{
+    id: number;
+    kind: string;
+    amount_uzs: number;
+    created_at: string;
+    agent_id: number;
+    agent_name: string;
+    agent_code: string;
+    salon_id: number | null;
+    salon_name: string;
+    barber_id: number | null;
+    barber_name: string;
+  }>;
+};
+
+export async function fetchAgentHubOverview(): Promise<AgentHubOverview> {
+  return apiJson<AgentHubOverview>("/api/v1/admin/agents/hub/");
+}
+
+export type AgentSalonHubRow = {
+  id: number;
+  name: string;
+  address: string;
+  phone: string;
+  latitude: number | null;
+  longitude: number | null;
+  is_published: boolean;
+  subscription_status: string;
+  trial_ends_at: string | null;
+  created_at: string;
+  members_count: number;
+  bookings_completed: number;
+  gmv_uzs: number;
+  agent_id: number | null;
+  agent_name: string;
+  agent_code: string;
+  owner_name: string;
+  owner_phone: string;
+  owner_email: string;
+  trial_active: boolean;
+};
+
+export async function fetchAgentSalonsHub(params?: {
+  limit?: number;
+  agent_id?: number;
+}): Promise<{ results: AgentSalonHubRow[]; totals: { count: number; gmv_uzs: number; bookings_completed: number } }> {
+  const sp = new URLSearchParams();
+  if (params?.limit) sp.set("limit", String(params.limit));
+  if (params?.agent_id) sp.set("agent_id", String(params.agent_id));
+  const qs = sp.toString();
+  return apiJson(`/api/v1/admin/agents/salons-hub/${qs ? `?${qs}` : ""}`);
+}
+
+export type AgentAylanmaHub = {
+  advances: Array<{
+    id: number;
+    amount_uzs: number;
+    created_at: string;
+    agent_id: number;
+    agent_name: string;
+    agent_code: string;
+    salon_id: number | null;
+    salon_name: string;
+  }>;
+  commissions: Array<{
+    id: number;
+    amount_uzs: number;
+    created_at: string;
+    agent_id: number;
+    agent_name: string;
+    agent_code: string;
+    salon_id: number | null;
+    salon_name: string;
+  }>;
+  ledger: Array<{
+    id: string;
+    entry_type: string;
+    amount: number;
+    balance_after: number;
+    created_at: string;
+    agent_id: number;
+    agent_name: string;
+    agent_code: string;
+  }>;
+  totals: { advance_uzs: number; commission_uzs: number };
+};
+
+export async function fetchAgentAylanmaHub(): Promise<AgentAylanmaHub> {
+  return apiJson<AgentAylanmaHub>("/api/v1/admin/agents/aylanma/");
+}
+
 export type AgentDetailPayload = {
   agent: FieldAgent;
   wallet: { account_number: string; balance: number; is_locked: boolean };

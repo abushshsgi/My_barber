@@ -136,7 +136,6 @@ const SECTIONS: Section[] = [
     items: [
       { to: "/admin/statistics/live", label: "Real vaqt", icon: Radio },
       { to: "/admin/statistics", label: "Umumiy", icon: BarChart3 },
-      { to: "/admin/statistics/agents", label: "Agentlar", icon: UserCog },
       { to: "/admin/statistics/barbers", label: "Sartaroshlar", icon: Scissors },
       { to: "/admin/statistics/users", label: "Mijozlar", icon: Users },
       { to: "/admin/statistics/subscriptions", label: "Obunalar", icon: Repeat },
@@ -164,15 +163,26 @@ const SECTIONS: Section[] = [
     ],
   },
   {
+    key: "agents",
+    label: "Agentlar",
+    icon: UserCog,
+    matchPrefixes: ["/admin/agents"],
+    items: [
+      { to: "/admin/agents", label: "Umumiy", icon: LayoutDashboard },
+      { to: "/admin/agents/team", label: "Jamoa", icon: Users },
+      { to: "/admin/agents/salons", label: "Salonlar", icon: Building2 },
+      { to: "/admin/agents/aylanma", label: "Aylanma", icon: ArrowLeftRight },
+      { to: "/admin/agents/payouts", label: "Payout", icon: Banknote },
+    ],
+  },
+  {
     key: "network",
     label: "Tarmoq",
     icon: Building2,
-    matchPrefixes: ["/admin/salons", "/admin/barbers", "/admin/users", "/admin/reviews", "/admin/agents"],
+    matchPrefixes: ["/admin/salons", "/admin/barbers", "/admin/users", "/admin/reviews"],
     items: [
       { to: "/admin/salons", label: "Salonlar", icon: Building2 },
       { to: "/admin/barbers", label: "Sartaroshlar", icon: Scissors },
-      { to: "/admin/agents", label: "Agentlar", icon: UserCog },
-      { to: "/admin/agents/payouts", label: "Agent payout", icon: Banknote },
       { to: "/admin/reviews", label: "Sharhlar", icon: Star },
       { to: "/admin/users", label: "Mijozlar", icon: Users },
     ],

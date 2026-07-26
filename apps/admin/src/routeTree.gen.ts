@@ -36,7 +36,10 @@ import { Route as AdminSubscriptionsRouteImport } from './routes/admin.subscript
 import { Route as AdminSupportRouteImport } from './routes/admin.support'
 import { Route as AdminUsersRouteImport } from './routes/admin.users'
 import { Route as AdminAgentsAgentIdRouteImport } from './routes/admin.agents.$agentId'
+import { Route as AdminAgentsAylanmaRouteImport } from './routes/admin.agents.aylanma'
 import { Route as AdminAgentsPayoutsRouteImport } from './routes/admin.agents.payouts'
+import { Route as AdminAgentsSalonsRouteImport } from './routes/admin.agents.salons'
+import { Route as AdminAgentsTeamRouteImport } from './routes/admin.agents.team'
 import { Route as AdminAylanmaIndexRouteImport } from './routes/admin.aylanma.index'
 import { Route as AdminBarbersBarberIdRouteImport } from './routes/admin.barbers.$barberId'
 import { Route as AdminBookingsBookingIdRouteImport } from './routes/admin.bookings.$bookingId'
@@ -225,9 +228,24 @@ const AdminAgentsAgentIdRoute = AdminAgentsAgentIdRouteImport.update({
   path: '/$agentId',
   getParentRoute: () => AdminAgentsRoute,
 } as any)
+const AdminAgentsAylanmaRoute = AdminAgentsAylanmaRouteImport.update({
+  id: '/aylanma',
+  path: '/aylanma',
+  getParentRoute: () => AdminAgentsRoute,
+} as any)
 const AdminAgentsPayoutsRoute = AdminAgentsPayoutsRouteImport.update({
   id: '/payouts',
   path: '/payouts',
+  getParentRoute: () => AdminAgentsRoute,
+} as any)
+const AdminAgentsSalonsRoute = AdminAgentsSalonsRouteImport.update({
+  id: '/salons',
+  path: '/salons',
+  getParentRoute: () => AdminAgentsRoute,
+} as any)
+const AdminAgentsTeamRoute = AdminAgentsTeamRouteImport.update({
+  id: '/team',
+  path: '/team',
   getParentRoute: () => AdminAgentsRoute,
 } as any)
 const AdminAylanmaIndexRoute = AdminAylanmaIndexRouteImport.update({
@@ -530,7 +548,10 @@ export interface FileRoutesByFullPath {
   '/admin/users': typeof AdminUsersRouteWithChildren
   '/admin/': typeof AdminIndexRoute
   '/admin/agents/$agentId': typeof AdminAgentsAgentIdRoute
+  '/admin/agents/aylanma': typeof AdminAgentsAylanmaRoute
   '/admin/agents/payouts': typeof AdminAgentsPayoutsRoute
+  '/admin/agents/salons': typeof AdminAgentsSalonsRoute
+  '/admin/agents/team': typeof AdminAgentsTeamRoute
   '/admin/barbers/$barberId': typeof AdminBarbersBarberIdRouteWithChildren
   '/admin/bookings/$bookingId': typeof AdminBookingsBookingIdRoute
   '/admin/finance/deposits': typeof AdminFinanceDepositsRoute
@@ -605,7 +626,10 @@ export interface FileRoutesByTo {
   '/admin/users': typeof AdminUsersRouteWithChildren
   '/admin': typeof AdminIndexRoute
   '/admin/agents/$agentId': typeof AdminAgentsAgentIdRoute
+  '/admin/agents/aylanma': typeof AdminAgentsAylanmaRoute
   '/admin/agents/payouts': typeof AdminAgentsPayoutsRoute
+  '/admin/agents/salons': typeof AdminAgentsSalonsRoute
+  '/admin/agents/team': typeof AdminAgentsTeamRoute
   '/admin/bookings/$bookingId': typeof AdminBookingsBookingIdRoute
   '/admin/finance/deposits': typeof AdminFinanceDepositsRoute
   '/admin/finance/gift-designs': typeof AdminFinanceGiftDesignsRoute
@@ -684,7 +708,10 @@ export interface FileRoutesById {
   '/admin/users': typeof AdminUsersRouteWithChildren
   '/admin/': typeof AdminIndexRoute
   '/admin/agents/$agentId': typeof AdminAgentsAgentIdRoute
+  '/admin/agents/aylanma': typeof AdminAgentsAylanmaRoute
   '/admin/agents/payouts': typeof AdminAgentsPayoutsRoute
+  '/admin/agents/salons': typeof AdminAgentsSalonsRoute
+  '/admin/agents/team': typeof AdminAgentsTeamRoute
   '/admin/barbers/$barberId': typeof AdminBarbersBarberIdRouteWithChildren
   '/admin/bookings/$bookingId': typeof AdminBookingsBookingIdRoute
   '/admin/finance/deposits': typeof AdminFinanceDepositsRoute
@@ -768,7 +795,10 @@ export interface FileRouteTypes {
     | '/admin/users'
     | '/admin/'
     | '/admin/agents/$agentId'
+    | '/admin/agents/aylanma'
     | '/admin/agents/payouts'
+    | '/admin/agents/salons'
+    | '/admin/agents/team'
     | '/admin/barbers/$barberId'
     | '/admin/bookings/$bookingId'
     | '/admin/finance/deposits'
@@ -843,7 +873,10 @@ export interface FileRouteTypes {
     | '/admin/users'
     | '/admin'
     | '/admin/agents/$agentId'
+    | '/admin/agents/aylanma'
     | '/admin/agents/payouts'
+    | '/admin/agents/salons'
+    | '/admin/agents/team'
     | '/admin/bookings/$bookingId'
     | '/admin/finance/deposits'
     | '/admin/finance/gift-designs'
@@ -921,7 +954,10 @@ export interface FileRouteTypes {
     | '/admin/users'
     | '/admin/'
     | '/admin/agents/$agentId'
+    | '/admin/agents/aylanma'
     | '/admin/agents/payouts'
+    | '/admin/agents/salons'
+    | '/admin/agents/team'
     | '/admin/barbers/$barberId'
     | '/admin/bookings/$bookingId'
     | '/admin/finance/deposits'
@@ -1173,11 +1209,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAgentsAgentIdRouteImport
       parentRoute: typeof AdminAgentsRoute
     }
+    '/admin/agents/aylanma': {
+      id: '/admin/agents/aylanma'
+      path: '/aylanma'
+      fullPath: '/admin/agents/aylanma'
+      preLoaderRoute: typeof AdminAgentsAylanmaRouteImport
+      parentRoute: typeof AdminAgentsRoute
+    }
     '/admin/agents/payouts': {
       id: '/admin/agents/payouts'
       path: '/payouts'
       fullPath: '/admin/agents/payouts'
       preLoaderRoute: typeof AdminAgentsPayoutsRouteImport
+      parentRoute: typeof AdminAgentsRoute
+    }
+    '/admin/agents/salons': {
+      id: '/admin/agents/salons'
+      path: '/salons'
+      fullPath: '/admin/agents/salons'
+      preLoaderRoute: typeof AdminAgentsSalonsRouteImport
+      parentRoute: typeof AdminAgentsRoute
+    }
+    '/admin/agents/team': {
+      id: '/admin/agents/team'
+      path: '/team'
+      fullPath: '/admin/agents/team'
+      preLoaderRoute: typeof AdminAgentsTeamRouteImport
       parentRoute: typeof AdminAgentsRoute
     }
     '/admin/aylanma/': {
@@ -1549,12 +1606,18 @@ declare module '@tanstack/react-router' {
 
 interface AdminAgentsRouteChildren {
   AdminAgentsAgentIdRoute: typeof AdminAgentsAgentIdRoute
+  AdminAgentsAylanmaRoute: typeof AdminAgentsAylanmaRoute
   AdminAgentsPayoutsRoute: typeof AdminAgentsPayoutsRoute
+  AdminAgentsSalonsRoute: typeof AdminAgentsSalonsRoute
+  AdminAgentsTeamRoute: typeof AdminAgentsTeamRoute
 }
 
 const AdminAgentsRouteChildren: AdminAgentsRouteChildren = {
   AdminAgentsAgentIdRoute: AdminAgentsAgentIdRoute,
+  AdminAgentsAylanmaRoute: AdminAgentsAylanmaRoute,
   AdminAgentsPayoutsRoute: AdminAgentsPayoutsRoute,
+  AdminAgentsSalonsRoute: AdminAgentsSalonsRoute,
+  AdminAgentsTeamRoute: AdminAgentsTeamRoute,
 }
 
 const AdminAgentsRouteWithChildren = AdminAgentsRoute._addFileChildren(

@@ -71,9 +71,12 @@ from control_panel.statistics_views import (
     AdminStatisticsWalletView,
 )
 from agents.views import (
+    AdminAgentAylanmaHubView,
+    AdminAgentHubView,
     AdminAgentPayoutListView,
     AdminAgentPayoutMarkPaidView,
     AdminAgentPayoutRejectView,
+    AdminAgentSalonsHubView,
     AdminAgentStatsView,
     AdminFieldAgentDetailExtendedView,
     AdminFieldAgentDetailView,
@@ -453,6 +456,9 @@ api_routes = [
     path("admin/admins/<int:pk>/", AdminAdminAccountDetailView.as_view()),
     path("admin/agents/", AdminFieldAgentListCreateView.as_view()),
     path("admin/agents/stats/", AdminAgentStatsView.as_view()),
+    path("admin/agents/hub/", AdminAgentHubView.as_view()),
+    path("admin/agents/salons-hub/", AdminAgentSalonsHubView.as_view()),
+    path("admin/agents/aylanma/", AdminAgentAylanmaHubView.as_view()),
     path("admin/agents/payouts/", AdminAgentPayoutListView.as_view()),
     path("admin/agents/payouts/<int:pk>/paid/", AdminAgentPayoutMarkPaidView.as_view()),
     path("admin/agents/payouts/<int:pk>/reject/", AdminAgentPayoutRejectView.as_view()),

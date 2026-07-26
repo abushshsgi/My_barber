@@ -188,48 +188,76 @@ class AdminAgentStatsView(APIView):
     permission_classes = [IsAdmin]
 
     def get(self, request):
-        now = timezone.now()
-        agents_total = FieldAgent.objects.count()
-        agents_active = FieldAgent.objects.filter(is_active=True).count()
-        salons_qs = Salon.objects.filter(referred_by_agent__isnull=False)
-        salons_total = salons_qs.count()
-        salons_trial = salons_qs.filter(
-            subscription_status="trial", trial_ends_at__gt=now
-        ).count()
-        salons_expired = salons_qs.filter(
-            Q(subscription_status="expired")
-            | Q(subscription_status="trial", trial_ends_at__lte=now)
-        ).count()
-        barbers_referred = AgentReferralAttribution.objects.count()
+        from agents.admin_analytics import build_agent_hub_overview
 
-        leaderboard = []
-        for agent in FieldAgent.objects.filter(is_active=True).order_by("full_name")[:50]:
-            stats = agent_stats_payload(agent)
-            leaderboard.append(
-                {
-                    "id": agent.id,
-                    "full_name": agent.full_name,
-                    "code": agent.code,
-                    "email": agent.email,
-                    "phone": agent.phone,
-                    **stats,
-                }
-            )
-        leaderboard.sort(key=lambda r: r["salons_referred"], reverse=True)
-
+        data = build_agent_hub_overview()
+        s = data["summary"]
         return Response(
             {
-                "agents_total": agents_total,
-                "agents_active": agents_active,
-                "barbers_referred": barbers_referred,
-                "salons_referred": salons_total,
-                "salons_trial": salons_trial,
-                "salons_expired": salons_expired,
-                "trial_days": TRIAL_DAYS,
-                "trial_value_uzs": TRIAL_VALUE_UZS,
-                "leaderboard": leaderboard[:20],
+                "agents_total": s["agents_total"],
+                "agents_active": s["agents_active"],
+                "barbers_referred": s["barbers_referred"],
+                "salons_referred": s["salons_referred"],
+                "salons_trial": s["salons_trial"],
+                "salons_expired": s["salons_expired"],
+                "trial_days": s["trial_days"],
+                "trial_value_uzs": s["trial_value_uzs"],
+                "leaderboard": [
+                    {
+                        "id": r["id"],
+                        "full_name": r["full_name"],
+                        "code": r["code"],
+                        "email": r["email"],
+                        "phone": r["phone"] or "",
+                        "barbers_referred": r["barbers_referred"],
+                        "salons_referred": r["salons_referred"],
+                        "salons_trial": r["salons_trial"],
+                        "salons_expired": 0,
+                        "salons_active": r["salons_active"],
+                        "salons_published": r["salons_referred"],
+                        "trial_days": s["trial_days"],
+                        "trial_value_uzs": s["trial_value_uzs"],
+                        "advance_sum": r["advance_sum"],
+                        "commission_sum": r["commission_sum"],
+                        "wallet_balance": r["wallet_balance"],
+                    }
+                    for r in data["leaderboard"]
+                ],
+                "hub": data,
             }
         )
+
+
+class AdminAgentHubView(APIView):
+    """Bitta optimallashtirilgan hub payload."""
+
+    permission_classes = [IsAdmin]
+
+    def get(self, request):
+        from agents.admin_analytics import build_agent_hub_overview
+
+        return Response(build_agent_hub_overview())
+
+
+class AdminAgentSalonsHubView(APIView):
+    permission_classes = [IsAdmin]
+
+    def get(self, request):
+        from agents.admin_analytics import build_agent_salons_page
+
+        limit = int(request.query_params.get("limit") or 100)
+        agent_raw = request.query_params.get("agent_id")
+        agent_id = int(agent_raw) if agent_raw and str(agent_raw).isdigit() else None
+        return Response(build_agent_salons_page(limit=limit, agent_id=agent_id))
+
+
+class AdminAgentAylanmaHubView(APIView):
+    permission_classes = [IsAdmin]
+
+    def get(self, request):
+        from agents.admin_analytics import build_agent_aylanma
+
+        return Response(build_agent_aylanma())
 
 
 # ---- Agent finance ----
