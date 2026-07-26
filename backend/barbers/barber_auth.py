@@ -35,6 +35,10 @@ class BarberPrincipal:
 
 
 class BarberJWTAuthentication(BaseAuthentication):
+    def authenticate_header(self, request):
+        # DRF: WWW-Authenticate bo‘lmasa NotAuthenticated 403 ga aylanadi.
+        return 'Bearer realm="barber"'
+
     def authenticate(self, request):
         auth = request.META.get("HTTP_AUTHORIZATION", "")
         if not auth.startswith("Bearer "):

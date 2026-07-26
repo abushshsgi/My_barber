@@ -68,6 +68,16 @@ class BarberActivationReadinessTests(TestCase):
         self.assertTrue(body["email_verified"])
         self.assertNotIn("email", body["booking_missing"])
 
+    def test_onboarding_status_anonymous_returns_401(self):
+        """Auth sahifasida stale JWT bo‘lmasa GET status 403 emas, 401 bo‘lishi kerak."""
+        self.client.credentials()
+        res = self.client.get("/api/v1/barber/onboarding/status/")
+        self.assertEqual(res.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_onboarding_status_me_anonymous_returns_401(self):
+        self.client.credentials()
+        res = self.client.get("/api/v1/barber/auth/me/")
+        self.assertEqual(res.status_code, status.HTTP_401_UNAUTHORIZED)
     def test_owner_services_ok_counts_barber_services_not_only_salon_service(self):
         """Barber panel BarberService yozadi; salon Service bo‘lmasa ham 5+ hisoblansin."""
         owner = Barber.objects.create(

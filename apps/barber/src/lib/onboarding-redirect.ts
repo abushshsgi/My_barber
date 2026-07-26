@@ -1,4 +1,9 @@
 import { apiFetch, clearBarberTokens, getBarberAccessToken } from "@/lib/api";
+import {
+  bootstrapBarberSession,
+  isBarberSessionRevokedResponse,
+  isBarberTokenExpired,
+} from "@/lib/barber-auth-session";
 import { writeOnboardingStatusCache } from "@/lib/onboarding-status-cache";
 
 export type OnboardingStatusLite = {
@@ -18,18 +23,43 @@ export function normalizeRequiredNextPath(st: OnboardingStatusLite): string | nu
   return path;
 }
 
+async function readErrorBody(res: Response): Promise<unknown> {
+  try {
+    return await res.clone().json();
+  } catch {
+    return undefined;
+  }
+}
+
 /** Login / root / onboarding tugagach qayerga yo‘naltirish kerakligini aniqlaydi. */
 export async function resolveBarberEntryPath(): Promise<string> {
-  if (!getBarberAccessToken()) return "/auth";
+  const access = getBarberAccessToken();
+  if (!access) return "/auth";
+
+  // Muddati o‘tgan access bilan anonim GET yubormaslik.
+  if (isBarberTokenExpired(access)) {
+    const ok = await bootstrapBarberSession();
+    if (!ok || !getBarberAccessToken()) return "/auth";
+  }
+
   try {
     const res = await apiFetch("/api/v1/barber/onboarding/status/");
     if (!res.ok) {
-      if (res.status === 401) {
+      const body = await readErrorBody(res);
+      if (res.status === 401 || isBarberSessionRevokedResponse(res.status, body)) {
         clearBarberTokens();
         return "/auth";
       }
-      // 403 activation gate — sessiyani o‘chirmaymiz
-      return "/barber";
+      if (res.status === 403) {
+        const token = getBarberAccessToken();
+        // Stale/anonim 403 (eski backend) yoki kutilmagan gate — panelga tashlamaymiz.
+        if (!token || isBarberTokenExpired(token)) {
+          clearBarberTokens();
+          return "/auth";
+        }
+        return "/barber/activation";
+      }
+      return "/auth";
     }
     const st = (await res.json()) as OnboardingStatusLite;
     writeOnboardingStatusCache(st);
@@ -38,6 +68,11 @@ export async function resolveBarberEntryPath(): Promise<string> {
     if (next) return next;
     return "/barber/activation";
   } catch {
+    const token = getBarberAccessToken();
+    if (!token || isBarberTokenExpired(token)) {
+      clearBarberTokens();
+      return "/auth";
+    }
     return "/barber";
   }
 }

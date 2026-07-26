@@ -27,6 +27,9 @@ class AgentPrincipal:
 
 
 class AgentJWTAuthentication(BaseAuthentication):
+    def authenticate_header(self, request):
+        return 'Bearer realm="agent"'
+
     def authenticate(self, request):
         auth = request.META.get("HTTP_AUTHORIZATION", "")
         if not auth.startswith("Bearer "):

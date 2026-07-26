@@ -49,7 +49,9 @@ export const Route = createFileRoute("/auth")({
     if (typeof window === "undefined") return;
     const { captureAgentRefFromSearch } = await import("@/lib/agent-ref");
     captureAgentRefFromSearch(search);
-    if (!getBarberAccessToken()) return;
+    const { bootstrapBarberSession } = await import("@/lib/barber-auth-session");
+    const sessionOk = await bootstrapBarberSession();
+    if (!sessionOk || !getBarberAccessToken()) return;
     const next = await resolveBarberEntryPath();
     if (next === "/auth") return;
     throw redirect({ to: next });

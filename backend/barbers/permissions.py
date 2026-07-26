@@ -12,10 +12,9 @@ class IsBarber(BasePermission):
     def has_permission(self, request, view):
         u = getattr(request, "user", None)
         if not isinstance(u, BarberPrincipal):
-            auth_header = (request.META.get("HTTP_AUTHORIZATION") or "").strip()
-            if auth_header.lower().startswith("bearer "):
-                raise NotAuthenticated("Barber token talab qilinadi.")
-            return False
+            # Anonim yoki yaroqsiz sessiya → 401 (403 emas). Frontend stale JWT ni
+            # activation gate deb o‘qimasligi uchun.
+            raise NotAuthenticated("Barber token talab qilinadi.")
 
         barber = u.barber
         ready = compute_barber_readiness(barber).fully_ready
@@ -27,7 +26,7 @@ class IsBarber(BasePermission):
         if not ready:
             if barber_activation_rel_allowed(rel) or barber_activation_rel_allowed(path):
                 return True
-            return False
+            raise PermissionDenied(detail="Avval aktivatsiyani yakunlang.")
 
         # fully_ready — obuna majburiy (subscription API lar bundan mustasno)
         from barbers.shop_subscription_gates import feature_blocked_reason, subscription_free_rel_allowed

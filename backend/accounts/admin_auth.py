@@ -29,6 +29,10 @@ class AdminPrincipal:
 
 
 class AdminJWTAuthentication(BaseAuthentication):
+    def authenticate_header(self, request):
+        # DRF birinchi authenticator headerini ishlatadi; yo‘q bo‘lsa 401→403.
+        return 'Bearer realm="api"'
+
     def authenticate(self, request):
         auth = request.META.get("HTTP_AUTHORIZATION", "")
         if not auth.startswith("Bearer "):

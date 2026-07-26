@@ -68,7 +68,21 @@ export function isBarberSessionRevokedResponse(status: number, body?: unknown): 
     else if (Array.isArray(d) && typeof d[0] === "string") detail = d[0];
   }
   const lower = detail.toLowerCase();
-  if (lower.includes("permission") || lower.includes("ruxsat")) return false;
+  // Anonim DRF 403 (eski backend) — token yo‘qligi; activation xabari emas.
+  if (
+    lower.includes("authentication credentials were not provided") ||
+    lower.includes("barber token talab")
+  ) {
+    return true;
+  }
+  if (
+    lower.includes("avval aktivatsiya") ||
+    lower.includes("obuna kerak") ||
+    lower.includes("permission") ||
+    lower.includes("ruxsat")
+  ) {
+    return false;
+  }
   return isBarberTokenErrorMessage(detail) || lower.includes("token");
 }
 

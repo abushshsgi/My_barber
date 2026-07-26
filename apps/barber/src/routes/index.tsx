@@ -9,7 +9,9 @@ export const Route = createFileRoute("/")({
     if (typeof window === "undefined") {
       throw redirect({ to: "/welcome" });
     }
-    if (getBarberAccessToken()) {
+    const { bootstrapBarberSession } = await import("@/lib/barber-auth-session");
+    const sessionOk = await bootstrapBarberSession();
+    if (sessionOk && getBarberAccessToken()) {
       const next = await resolveBarberEntryPath();
       if (next !== "/auth") {
         throw redirect({ to: next });

@@ -35,6 +35,13 @@ export const Route = createFileRoute("/barber")({
     if (typeof window === "undefined") return;
     if (!getBarberAccessToken()) return;
 
+    const { bootstrapBarberSession } = await import("@/lib/barber-auth-session");
+    const sessionOk = await bootstrapBarberSession();
+    if (!sessionOk || !getBarberAccessToken()) {
+      clearBarberTokens();
+      throw redirect({ to: "/auth" });
+    }
+
     const cached = readOnboardingStatusCache();
 
     // Setup phase (not fully ready)

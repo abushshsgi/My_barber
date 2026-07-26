@@ -9,7 +9,9 @@ const DEMO_PARTNER = "https://demo.partner.mysaloon.uz";
 export const Route = createFileRoute("/welcome")({
   beforeLoad: async () => {
     if (typeof window === "undefined") return;
-    if (!getBarberAccessToken()) return;
+    const { bootstrapBarberSession } = await import("@/lib/barber-auth-session");
+    const sessionOk = await bootstrapBarberSession();
+    if (!sessionOk || !getBarberAccessToken()) return;
     const next = await resolveBarberEntryPath();
     if (next !== "/auth" && next !== "/welcome") {
       throw redirect({ to: next });
