@@ -64,7 +64,7 @@ export function HomeMobilePage({ data }: Props) {
           </MotionSection>
 
           <MotionSection>
-            <HomeMobileFeaturedBarbers barbers={data.browseBarbers} />
+            <HomeMobileFeaturedBarbers barbers={data.browseBarbers} salons={data.filtered} />
           </MotionSection>
 
           <MotionSection>

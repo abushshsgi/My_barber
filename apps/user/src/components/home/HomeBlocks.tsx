@@ -1,17 +1,15 @@
 import { Link } from "@tanstack/react-router";
-import {
-  ChevronRight,
-  Search,
-  Star,
-  User,
-  Wand2,
-} from "lucide-react";
-import { useState } from "react";
+import { ChevronRight, Search, Wand2 } from "lucide-react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import type { HomeData } from "@/components/home/useHomeData";
 import { NoSalonsEmpty } from "@/components/NoSalonsEmpty";
-import { SalonCard } from "@/components/SalonCard";
+import {
+  HomeBarberListingCard,
+  HomeSalonListingCard,
+  resolveBarberSalonCover,
+} from "@/components/home/HomeListingCard";
 import { AudienceSwitch } from "@/components/AudienceSwitch";
 import { getHairstyleDisplayUrl, type TrendingHairstyle } from "@/lib/hairstyles/catalog";
 import type { Offer } from "@/lib/mock-data";
@@ -108,6 +106,8 @@ export function HomeUnifiedSearchResults({
   loading: boolean;
 }) {
   const { t } = useTranslation();
+  const salonById = useMemo(() => new Map(salons.map((s) => [s.id, s])), [salons]);
+
   if (!searchActive) return null;
 
   if (loading) {
@@ -125,66 +125,35 @@ export function HomeUnifiedSearchResults({
   }
 
   return (
-    <section className="mt-4 space-y-6 px-4">
+    <section className="mt-4 space-y-7 px-4">
       {salons.length > 0 ? (
         <div>
-          <h2 className="mb-4 text-lg font-bold tracking-tight">
+          <h2 className="mb-3.5 text-[15px] font-semibold tracking-tight">
             {t("map.tabSalons", { defaultValue: "Salonlar" })}
           </h2>
-          <div className="space-y-5">
+          <ul className="space-y-7">
             {salons.map((s) => (
-              <SalonCard key={s.id} salon={s} />
+              <li key={s.id}>
+                <HomeSalonListingCard salon={s} />
+              </li>
             ))}
-          </div>
+          </ul>
         </div>
       ) : null}
       {barbers.length > 0 ? (
         <div>
-          <h2 className="mb-4 text-lg font-bold tracking-tight">
+          <h2 className="mb-3.5 text-[15px] font-semibold tracking-tight">
             {t("map.tabBarbers", { defaultValue: "Ustalar" })}
           </h2>
-          <ul className="divide-y divide-border rounded-2xl border border-border">
-            {barbers.map((b) => {
-              const bookTo =
-                b.bookingKind === "salon" && b.salonId
-                  ? `/booking/${b.salonId}?barber=${b.barberId}`
-                  : `/booking/barber/${b.barberId}`;
-              return (
-                <li key={b.id} className="flex gap-3 p-4">
-                  <div className="grid size-12 shrink-0 place-items-center overflow-hidden rounded-xl bg-muted">
-                    {b.avatar ? (
-                      <img src={b.avatar} alt="" className="size-full object-cover" />
-                    ) : (
-                      <User className="size-5 text-muted-foreground" />
-                    )}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="font-bold truncate">{b.name}</p>
-                    {b.salonName ? (
-                      <p className="text-xs text-muted-foreground truncate">{b.salonName}</p>
-                    ) : null}
-                    {b.rating > 0 ? (
-                      <p className="mt-1 inline-flex items-center gap-0.5 text-xs font-semibold">
-                        <Star className="size-3 fill-foreground" />
-                        {b.rating.toFixed(1)}
-                      </p>
-                    ) : null}
-                    <div className="mt-2 flex gap-2">
-                      <Link to={bookTo} className="rounded-xl bg-foreground px-3 py-1.5 text-xs font-bold text-background">
-                        {t("map.bookBarber", { defaultValue: "Bron qilish" })}
-                      </Link>
-                      <Link
-                        to="/barber/$barberId"
-                        params={{ barberId: b.barberId }}
-                        className="rounded-xl border border-border px-3 py-1.5 text-xs font-bold"
-                      >
-                        {t("map.viewProfile", { defaultValue: "Profil" })}
-                      </Link>
-                    </div>
-                  </div>
-                </li>
-              );
-            })}
+          <ul className="space-y-7">
+            {barbers.map((b) => (
+              <li key={b.id}>
+                <HomeBarberListingCard
+                  barber={b}
+                  salonCover={resolveBarberSalonCover(b, salonById)}
+                />
+              </li>
+            ))}
           </ul>
         </div>
       ) : null}
@@ -284,9 +253,9 @@ export function HomeSalonList({ salons: list }: { salons: HomeData["filtered"] }
       {list.length === 0 ? (
         <NoSalonsEmpty compact />
       ) : (
-        <div className="space-y-5">
+        <div className="space-y-7">
           {list.map((s) => (
-            <SalonCard key={s.id} salon={s} />
+            <HomeSalonListingCard key={s.id} salon={s} />
           ))}
         </div>
       )}
@@ -303,10 +272,10 @@ export function HomeSalonCarousel({ salons: list, titleKey }: { salons: HomeData
       <div className="mb-4 px-5">
         <h2 className="text-lg font-bold tracking-tight">{t(titleKey)}</h2>
       </div>
-      <div className="no-scrollbar flex gap-4 overflow-x-auto px-5 pb-1">
+      <div className="no-scrollbar flex gap-3 overflow-x-auto px-5 pb-1">
         {list.map((s) => (
-          <div key={s.id} className="w-[280px] shrink-0">
-            <SalonCard salon={s} />
+          <div key={s.id} className="w-[min(88vw,22rem)] shrink-0">
+            <HomeSalonListingCard salon={s} />
           </div>
         ))}
       </div>
