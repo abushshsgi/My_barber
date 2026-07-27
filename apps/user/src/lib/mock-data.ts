@@ -10,6 +10,8 @@ export interface Service {
   price: number; // UZS
   barberId?: string | null;
   barberName?: string | null;
+  /** Partner katalog / Explore uslub rasmi */
+  imageUrl?: string;
 }
 
 export interface Barber {

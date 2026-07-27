@@ -25,13 +25,15 @@ export function SalonSectionNav({
     list.push({ id: "services", label: t("salon.tabs.services") });
     if (salon.staff.length) list.push({ id: "staff", label: t("salon.tabs.staff") });
     list.push({ id: "reviews", label: t("salon.tabs.reviews") });
-    list.push({ id: "location", label: t("salon.nav.location") });
-    if (salon.hours.length || salon.closedWeekdays.length) {
-      list.push({ id: "hours", label: t("salon.hours.title") });
+    if (!isMobile) {
+      list.push({ id: "location", label: t("salon.nav.location") });
+      if (salon.hours.length || salon.closedWeekdays.length) {
+        list.push({ id: "hours", label: t("salon.hours.title") });
+      }
     }
     if (salon.portfolio.length) list.push({ id: "portfolio", label: t("salon.tabs.portfolio") });
     return list;
-  }, [salon, t]);
+  }, [salon, t, isMobile]);
 
   useEffect(() => {
     const ids = items.map((i) => i.id);

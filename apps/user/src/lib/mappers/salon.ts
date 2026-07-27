@@ -99,6 +99,7 @@ export function mapApiServices(
     price: string | number;
     barber?: number | null;
     barber_name?: string | null;
+    image_url?: string | null;
   }[],
 ) {
   return services.map((s) => ({
@@ -108,6 +109,7 @@ export function mapApiServices(
     price: toNum(s.price),
     barberId: s.barber != null ? String(s.barber) : null,
     barberName: s.barber_name ?? null,
+    imageUrl: resolveMediaUrl(s.image_url) ?? (s.image_url?.trim() || undefined),
   }));
 }
 

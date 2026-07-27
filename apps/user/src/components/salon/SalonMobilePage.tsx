@@ -1,5 +1,5 @@
 import { Link, useRouter } from "@tanstack/react-router";
-import { Heart, MapPin, Share2, Star } from "lucide-react";
+import { ChevronRight, Heart, MapPin, Share2, Star } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { Salon } from "@/lib/mock-data";
 import { MobileBackButton } from "@/components/mobile/MobileBackButton";
@@ -34,7 +34,7 @@ export function SalonMobilePage({
   const router = useRouter();
 
   return (
-    <div className={cn("min-w-0 overflow-x-clip bg-muted/30", MOBILE_STICKY_CONTENT_PADDING_CLASS)}>
+    <div className={cn("min-w-0 overflow-x-clip bg-white", MOBILE_STICKY_CONTENT_PADDING_CLASS)}>
       <div className="relative">
         <SalonHeroGallery salon={salon} variant="mobile" />
 
@@ -72,7 +72,7 @@ export function SalonMobilePage({
         <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-24 bg-gradient-to-t from-black/35 to-transparent" />
       </div>
 
-      <div className="relative z-10 -mt-10 min-w-0 rounded-t-[1.75rem] bg-background px-4 pb-2 pt-3 shadow-[0_-18px_48px_-28px_rgba(0,0,0,0.35)]">
+      <div className="relative z-10 -mt-10 min-w-0 rounded-t-[1.75rem] bg-white px-4 pb-2 pt-3 shadow-[0_-18px_48px_-28px_rgba(0,0,0,0.35)]">
         <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-border" aria-hidden />
 
         <div className="min-w-0">
@@ -99,10 +99,17 @@ export function SalonMobilePage({
             ) : null}
           </div>
 
-          <p className="mt-2.5 flex items-start gap-1.5 text-sm text-muted-foreground">
-            <MapPin className="mt-0.5 size-4 shrink-0" />
-            <span>{salon.address}</span>
-          </p>
+          <Link
+            to="/salon/$id/location"
+            params={{ id: salon.id }}
+            className="mt-3 flex items-center justify-between gap-2 rounded-2xl border border-border bg-white px-3.5 py-3 active:bg-muted/40"
+          >
+            <div className="flex min-w-0 items-start gap-2">
+              <MapPin className="mt-0.5 size-4 shrink-0 text-foreground" />
+              <span className="line-clamp-2 text-left text-sm text-foreground">{salon.address}</span>
+            </div>
+            <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+          </Link>
         </div>
 
         <div className="mt-4">
@@ -112,10 +119,10 @@ export function SalonMobilePage({
         <div className="mt-1 min-w-0">
           <SalonPageSections
             salon={salon}
-            calendarMonths={1}
-            showCalendar
+            showCalendar={false}
             reviewsAreMock={reviewsAreMock}
             compact
+            variant="mobile"
           />
         </div>
       </div>

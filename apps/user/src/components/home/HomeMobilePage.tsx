@@ -25,7 +25,7 @@ export function HomeMobilePage({ data }: Props) {
     : t("home.nearby");
 
   return (
-    <div className="min-w-0 pt-[max(env(safe-area-inset-top),0.75rem)]">
+    <div className="min-w-0 bg-white pt-[max(env(safe-area-inset-top),0.75rem)]">
       {data.searchActive ? (
         <HomeUnifiedSearchResults
           searchActive={data.searchActive}
@@ -35,7 +35,7 @@ export function HomeMobilePage({ data }: Props) {
         />
       ) : (
         <motion.div
-          className="space-y-5 pb-4"
+          className="space-y-5 bg-white pb-4"
           variants={stagger}
           initial="hidden"
           animate="show"

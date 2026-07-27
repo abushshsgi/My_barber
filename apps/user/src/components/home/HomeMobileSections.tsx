@@ -108,9 +108,9 @@ export function HomeMobileFeatured({ salons }: { salons: Salon[] }) {
   if (preview.length === 0) return null;
 
   return (
-    <section className="min-w-0">
+    <section className="min-w-0 bg-white py-1">
       <SectionHead title={t("home.topSalons.title")} to="/top" linkLabel={t("common.viewAll")} />
-      <div className={H_SNAP}>
+      <div className={cn(H_SNAP, "bg-white")}>
         {preview.map((salon) => (
           <div key={salon.id} className={SLIDE}>
             <HomeSalonListingCard salon={salon} />
@@ -147,13 +147,13 @@ export function HomeMobileFeaturedBarbers({
   if (preview.length === 0) return null;
 
   return (
-    <section className="min-w-0">
+    <section className="min-w-0 bg-white py-1">
       <SectionHead
         title={t("home.topBarbers.title")}
         to="/map"
         linkLabel={t("common.viewAll")}
       />
-      <div className={H_SNAP}>
+      <div className={cn(H_SNAP, "bg-white")}>
         {preview.map((barber) => (
           <div key={barber.id} className={SLIDE}>
             <HomeBarberListingCard
@@ -219,7 +219,7 @@ export function HomeMobileNearby({
   }
 
   return (
-    <section className="px-4">
+    <section className="bg-white px-4">
       <div className="mb-3.5 flex items-baseline justify-between gap-3">
         <h2 className="text-[15px] font-semibold tracking-tight">{heading}</h2>
         <Link to="/map" className="flex items-center gap-0.5 text-[11px] font-medium text-muted-foreground">
