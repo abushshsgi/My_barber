@@ -12,6 +12,14 @@ LOCATION_MISMATCH_MSG = (
 )
 
 
+def bounding_box(lat: float, lng: float, radius_km: float) -> tuple[float, float, float, float]:
+    """Kenglik/balandlik diapazoni — haversine dan oldin DB filtri."""
+    lat_delta = radius_km / 111.0
+    cos_lat = max(math.cos(lat * math.pi / 180), 0.01)
+    lng_delta = radius_km / (111.0 * cos_lat)
+    return lat - lat_delta, lat + lat_delta, lng - lng_delta, lng + lng_delta
+
+
 def haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     r = 6371.0
     p = math.pi / 180

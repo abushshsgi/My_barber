@@ -23,6 +23,7 @@ from .geo_join import (
     JOIN_MAX_DISTANCE_KM,
     LOCATION_MISMATCH_MSG,
     assert_join_distance_ok,
+    bounding_box,
     haversine_km,
 )
 from .join_service import attach_worker_membership
@@ -96,11 +97,11 @@ def _delete_salon_catalog_service_for_owner(bp: Barber, service: Service) -> Non
 
 
 class SalonCatalogPagination(PageNumberPagination):
-    """Home/map — kichikroq default; ?page_size= (max 50)."""
+    """Home/map — ?page_size= (max 100)."""
 
-    page_size = 24
+    page_size = 50
     page_size_query_param = "page_size"
-    max_page_size = 50
+    max_page_size = 100
 
 
 class SalonViewSet(viewsets.ModelViewSet):
@@ -494,14 +495,42 @@ class SalonViewSet(viewsets.ModelViewSet):
                 {"detail": "lat, lng required; radius_km optional."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        salons = self._apply_public_salon_region(self._salon_public_list_qs())
-        result = []
-        for s in salons:
-            d = haversine_km(lat, lng, float(s.latitude), float(s.longitude))
-            if d <= radius:
-                result.append({"salon": SalonListSerializer(s, context={"request": request}).data, "distance_km": round(d, 3)})
-        result.sort(key=lambda x: x["distance_km"])
-        return Response(result)
+        from config.api_cache import cached_json
+
+        parts = {
+            "lat": round(lat, 4),
+            "lng": round(lng, 4),
+            "radius_km": round(radius, 2),
+            "catalog_region": customer_catalog_region(request) or "",
+            "audience": (request.query_params.get("audience") or "").strip(),
+        }
+
+        def produce():
+            lat_min, lat_max, lng_min, lng_max = bounding_box(lat, lng, radius)
+            salons = (
+                self._apply_public_salon_region(self._salon_public_list_qs())
+                .filter(
+                    latitude__gte=lat_min,
+                    latitude__lte=lat_max,
+                    longitude__gte=lng_min,
+                    longitude__lte=lng_max,
+                )
+            )
+            result = []
+            for s in salons:
+                d = haversine_km(lat, lng, float(s.latitude), float(s.longitude))
+                if d <= radius:
+                    result.append(
+                        {
+                            "salon": SalonListSerializer(s, context={"request": request}).data,
+                            "distance_km": round(d, 3),
+                        }
+                    )
+            result.sort(key=lambda x: x["distance_km"])
+            return result
+
+        payload = cached_json(prefix="salons_nearby", parts=parts, producer=produce, ttl=30)
+        return Response(payload)
 
     def _staff_row(self, request, barber, role, experience_years, *, is_bookable: bool):
         avatar = None

@@ -42,10 +42,16 @@ export async function fetchBarbersList(params?: {
   region?: string;
   scope?: string;
   audience?: string;
+  page_size?: number;
 }): Promise<import("./types").ApiBarberPublic[]> {
   const body = await apiJson<
     import("./types").ApiBarberPublic[] | import("./types").Paginated<import("./types").ApiBarberPublic>
-  >(`/api/v1/barbers/${qs({ region: params?.region, scope: params?.scope, audience: params?.audience })}`);
+  >(`/api/v1/barbers/${qs({
+    region: params?.region,
+    scope: params?.scope,
+    audience: params?.audience,
+    page_size: params?.page_size,
+  })}`);
   if (Array.isArray(body)) return body;
   return Array.isArray(body.results) ? body.results : [];
 }

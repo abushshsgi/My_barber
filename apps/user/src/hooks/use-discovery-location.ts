@@ -44,14 +44,20 @@ function fromStored(loc: DiscoveryLocation): DiscoveryLocationState {
 export function useDiscoveryLocation(enabled = true): DiscoveryLocationState {
   const [state, setState] = useState<DiscoveryLocationState>(() => {
     if (!enabled || typeof window === "undefined") return INITIAL;
-    if (hasValidUserSession()) return { ...INITIAL, ready: true };
     const stored = readDiscoveryLocation();
-    return stored ? fromStored(stored) : INITIAL;
+    if (stored) return fromStored(stored);
+    if (hasValidUserSession()) return { ...INITIAL, ready: true };
+    return INITIAL;
   });
 
   useEffect(() => {
     if (!enabled) return;
-    // Login user — profil coords ishlatiladi.
+    const stored = readDiscoveryLocation();
+    if (stored) {
+      setState(fromStored(stored));
+      return;
+    }
+    // Login user — profil coords useAutoLocationSync or useMe orqali keladi.
     if (hasValidUserSession()) {
       setState((s) => ({ ...s, ready: true }));
       return;

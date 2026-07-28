@@ -3,12 +3,12 @@ import { useMemo } from "react";
 import { fetchMe, updateMe, type UpdateMePayload } from "@/lib/api/user";
 import { birthYearToAgeGroup, type AgeGroup } from "@/lib/age-groups";
 import { getAuthUser, setSession } from "@/lib/auth";
-import { getAuthUserId } from "@/lib/auth-user";
-import { getUserAccessToken } from "@/lib/api/client";
+import { hasValidUserSession, getUserAccessToken } from "@/lib/api/client";
 import { authQueryEnabled } from "@/lib/auth-query";
 import { userQueryKey } from "@/lib/query-keys";
 import { needsOnboarding } from "@/lib/recommendations";
 import { addressesQueryKey } from "@/hooks/use-addresses";
+import { barbersQueryKey } from "@/hooks/use-barbers";
 import { salonsQueryKey } from "@/hooks/use-salons";
 
 export const meQueryKeyBase = ["users", "me"] as const;
@@ -18,11 +18,11 @@ export function meQueryKeyFor(userId: number | null) {
 }
 
 export function useMe() {
-  const userId = getAuthUserId();
+  const loggedIn = hasValidUserSession();
   return useQuery({
-    queryKey: meQueryKeyFor(userId),
+    queryKey: meQueryKeyFor(loggedIn ? getAuthUser()?.id ?? -1 : null),
     queryFn: fetchMe,
-    enabled: authQueryEnabled(!!userId),
+    enabled: authQueryEnabled(loggedIn),
     staleTime: 60_000,
     retry: 1,
   });
@@ -46,6 +46,7 @@ export function useUpdateMe() {
         "longitude" in variables;
       if (locationChanged) {
         void qc.invalidateQueries({ queryKey: salonsQueryKey });
+        void qc.invalidateQueries({ queryKey: barbersQueryKey });
       }
       if (variables.onboarding_completed) {
         void qc.invalidateQueries({ queryKey: userQueryKey(addressesQueryKey, user.id) });

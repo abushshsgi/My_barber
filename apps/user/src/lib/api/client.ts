@@ -265,9 +265,8 @@ async function refreshAccess(): Promise<RefreshResult> {
           body: JSON.stringify({ refresh }),
         });
         if (!res.ok) {
-          // 401/403 = yaroqsiz sessiya; 404/500 after wipe = o'chirilgan user token
-          const revoked =
-            isAuthFailureStatus(res.status) || res.status === 404 || res.status >= 500;
+          // 401/403 = yaroqsiz sessiya
+          const revoked = isAuthFailureStatus(res.status) || res.status === 404;
           return { access: null, revoked };
         }
         const data = (await parseJsonBody(res)) as { access?: string; refresh?: string } | null;

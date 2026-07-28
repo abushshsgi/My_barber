@@ -8,6 +8,7 @@ from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -76,8 +77,17 @@ def _haversine_km(lat1, lon1, lat2, lon2):
     return 2 * r * math.asin(math.sqrt(a))
 
 
+class BarberCatalogPagination(PageNumberPagination):
+    """Mijoz katalogi — ?page_size= (max 100)."""
+
+    page_size = 50
+    page_size_query_param = "page_size"
+    max_page_size = 100
+
+
 class BarberPublicViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [AllowAny]
+    pagination_class = BarberCatalogPagination
     queryset = BarberProfile.objects.select_related("barber").prefetch_related(
         "services",
         "services__catalog_service",
@@ -171,6 +181,33 @@ class BarberPublicViewSet(viewsets.ReadOnlyModelViewSet):
         if self.action == "list":
             return BarberPublicListSerializer
         return BarberPublicDetailSerializer
+
+    def list(self, request, *args, **kwargs):
+        """Ommaviy barber katalogi — qisqa TTL cache."""
+        from config.api_cache import cached_json
+
+        parts = {
+            "scope": (request.query_params.get("scope") or "").strip(),
+            "region": (request.query_params.get("region") or "").strip(),
+            "audience": (request.query_params.get("audience") or "").strip(),
+            "gender": (request.query_params.get("gender") or "").strip(),
+            "work_mode": (request.query_params.get("work_mode") or "").strip(),
+            "page": (request.query_params.get("page") or "1").strip(),
+            "page_size": (request.query_params.get("page_size") or "").strip(),
+            "catalog_region": customer_catalog_region(request) or "",
+        }
+
+        def produce():
+            queryset = self.filter_queryset(self.get_queryset())
+            page = self.paginate_queryset(queryset)
+            if page is not None:
+                serializer = self.get_serializer(page, many=True)
+                return self.get_paginated_response(serializer.data).data
+            serializer = self.get_serializer(queryset, many=True)
+            return serializer.data
+
+        payload = cached_json(prefix="barbers_list", parts=parts, producer=produce, ttl=45)
+        return Response(payload)
 
     @action(
         detail=False,

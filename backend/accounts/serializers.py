@@ -137,6 +137,11 @@ class UserSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {"latitude": "latitude va longitude birga berilishi kerak."}
             )
+        if lat is not None and lng is not None and "region" not in attrs:
+            resolved = resolve_region_from_coords(float(lat), float(lng))
+            if resolved.region_code:
+                attrs["region"] = resolved.region_code
+
         if attrs.get("onboarding_completed") is True:
             full_name = (
                 attrs.get("full_name")
@@ -183,10 +188,6 @@ class UserSerializer(serializers.ModelSerializer):
                         ),
                     }
                 )
-            # Viloyat tanlash shart emas: GPS dan har doim aniqlanadi.
-            resolved = resolve_region_from_coords(float(lat), float(lng))
-            if resolved.region_code:
-                attrs["region"] = resolved.region_code
         return attrs
 
     def _apply_name_fields(self, validated_data: dict, instance: User | None = None) -> dict:

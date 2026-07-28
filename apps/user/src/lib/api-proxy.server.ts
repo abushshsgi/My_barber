@@ -74,7 +74,7 @@ function applyPublicCacheHeaders(request: Request, pathname: string, headers: He
     );
     return;
   }
-  if (!pathname.startsWith("/api/v1/salons")) return;
+  if (!pathname.startsWith("/api/v1/salons") && !pathname.startsWith("/api/v1/barbers")) return;
   if (/\/(book|favorite|claim)/i.test(pathname)) return;
   headers.set(
     "Cache-Control",

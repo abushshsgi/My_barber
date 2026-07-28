@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
+import { useDiscoveryLocation } from "@/hooks/use-discovery-location";
 import { useMe } from "@/hooks/use-me";
 import { useRegions } from "@/hooks/use-regions";
 import { hasValidUserSession } from "@/lib/api/client";
@@ -34,6 +35,7 @@ export function useCatalogScope(): CatalogScopeState {
   const loggedIn = hasValidUserSession();
   const { data: me } = useMe();
   const { data: regions = [] } = useRegions();
+  const discovery = useDiscoveryLocation(loggedIn);
   const profileRegion = me?.region?.trim() || undefined;
 
   const [stored, setStored] = useState<CatalogScopeValue | null>(() => readCatalogScope());
@@ -41,8 +43,9 @@ export function useCatalogScope(): CatalogScopeState {
   const scope = useMemo((): CatalogScopeValue => {
     if (stored) return stored;
     if (loggedIn && profileRegion) return profileRegion;
+    if (loggedIn && discovery.region) return discovery.region;
     return CATALOG_SCOPE_ALL;
-  }, [stored, loggedIn, profileRegion]);
+  }, [stored, loggedIn, profileRegion, discovery.region]);
 
   const isNationwide = isCatalogScopeAll(scope);
 
@@ -60,7 +63,12 @@ export function useCatalogScope(): CatalogScopeState {
     scope,
     region: isNationwide ? undefined : scope,
     apiScope: isNationwide ? "all" : undefined,
-    useNearby: Boolean(loggedIn && !isNationwide && profileRegion && scope === profileRegion),
+    useNearby: Boolean(
+      loggedIn &&
+        !isNationwide &&
+        (profileRegion || discovery.region) &&
+        scope === (profileRegion || discovery.region),
+    ),
     scopeLabel,
     setScope,
     isNationwide,

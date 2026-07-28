@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Category, Offer } from "@/lib/mock-data";
+import { useAutoLocationSync } from "@/hooks/use-auto-location";
 import {
   pickHomeExploreRowStyles,
   pickTrendingStyles,
@@ -24,6 +25,7 @@ import { hasValidMapCoords } from "@/lib/map-utils";
 import { rankBarbersForUser, rankSalonsForUser } from "@/lib/recommendations";
 
 export function useHomeData() {
+  useAutoLocationSync();
   const { audience } = useAudience();
   const { personaId } = useExplorePersona();
   const ageGroup = useUserAgeGroup();
@@ -47,6 +49,7 @@ export function useHomeData() {
     hasCoords ? ctx.lat! : undefined,
     hasCoords ? ctx.lng! : undefined,
     40,
+    hasCoords,
   );
   const { data: listSalons = [], isLoading: listLoading, error } = useSalonsList(
     catalog.region,

@@ -29,18 +29,17 @@ export function useBarbersList(region?: string | null, enabled = true, scope?: s
   return useQuery({
     queryKey: [...barbersQueryKey, "list", regionKey, scopeKey],
     queryFn: async () => {
-      try {
-        const params: { region?: string; scope?: string } = {};
-        if (scope?.trim()) params.scope = scope.trim();
-        else if (region?.trim()) params.region = region.trim();
-        const data = await fetchBarbersList(Object.keys(params).length ? params : undefined);
-        return data.map(mapBarberDiscovery);
-      } catch {
-        return [];
-      }
+      const params: { region?: string; scope?: string; page_size?: number } = {
+        page_size: 100,
+      };
+      if (scope?.trim()) params.scope = scope.trim();
+      else if (region?.trim()) params.region = region.trim();
+      const data = await fetchBarbersList(params);
+      return data.map(mapBarberDiscovery);
     },
     enabled: catalogQueryEnabled(enabled),
     staleTime: 30_000,
+    placeholderData: (prev) => prev,
   });
 }
 
