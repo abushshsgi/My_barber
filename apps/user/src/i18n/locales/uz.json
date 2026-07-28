@@ -282,6 +282,7 @@
       "portfolio": "Portfolio"
     },
     "bookNow": "Hoziroq band qilish",
+    "startBooking": "Boshlash",
     "select": "Tanlash",
     "minutes": "daqiqa",
     "fromPrice": "{{price}} dan",
@@ -365,7 +366,9 @@
     "total": "Jami",
     "confirm": "Buyurtmani tasdiqlash",
     "noServices": "Bu usta uchun xizmatlar topilmadi",
-    "servicesError": "Xizmatlarni yuklab bo'lmadi."
+    "servicesError": "Xizmatlarni yuklab bo'lmadi.",
+    "continue": "Davom etish",
+    "cartItems": "{{count}} xizmat"
   },
   "bookings": {
     "title": "Buyurtmalarim",

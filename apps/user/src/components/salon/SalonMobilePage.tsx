@@ -1,5 +1,5 @@
 import { Link, useRouter } from "@tanstack/react-router";
-import { ChevronRight, Heart, MapPin, Share2, Star } from "lucide-react";
+import { Heart, MapPin, Share2, Star } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { Salon } from "@/lib/mock-data";
 import { MobileBackButton } from "@/components/mobile/MobileBackButton";
@@ -9,7 +9,6 @@ import { SalonPageSections } from "@/components/salon/SalonPageSections";
 import { SalonSectionNav } from "@/components/salon/SalonSectionNav";
 import { MOBILE_STICKY_CONTENT_PADDING_CLASS } from "@/lib/layout-constants";
 import { navigateBack } from "@/lib/mobile-back";
-import { shortPrice } from "@/lib/price-display";
 import { cn } from "@/lib/utils";
 
 const glassChrome =
@@ -99,21 +98,14 @@ export function SalonMobilePage({
             ) : null}
           </div>
 
-          <Link
-            to="/salon/$id/location"
-            params={{ id: salon.id }}
-            className="mt-3 flex items-center justify-between gap-2 rounded-2xl border border-border bg-white px-3.5 py-3 active:bg-muted/40"
-          >
-            <div className="flex min-w-0 items-start gap-2">
-              <MapPin className="mt-0.5 size-4 shrink-0 text-foreground" />
-              <span className="line-clamp-2 text-left text-sm text-foreground">{salon.address}</span>
-            </div>
-            <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
-          </Link>
+          <div className="mt-3 flex min-w-0 items-start gap-2">
+            <MapPin className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+            <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">{salon.address}</p>
+          </div>
         </div>
 
         <div className="mt-4">
-          <SalonSectionNav salon={salon} variant="mobile" />
+          <SalonSectionNav salon={salon} variant="mobile" infoOnly />
         </div>
 
         <div className="mt-1 min-w-0">
@@ -123,30 +115,21 @@ export function SalonMobilePage({
             reviewsAreMock={reviewsAreMock}
             compact
             variant="mobile"
+            infoOnly
           />
         </div>
       </div>
 
       <MobileStickyActionBar>
-        {salon.priceFrom > 0 ? (
-          <div className="min-w-0 shrink-0 pr-1">
-            <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-              {t("home.priceFromSuffix", { defaultValue: "dan" })}
-            </p>
-            <p className="text-sm font-bold tabular-nums leading-tight">
-              {shortPrice(salon.priceFrom)}+
-            </p>
-          </div>
-        ) : null}
         <Link
           to="/booking/$salonId"
           params={{ salonId: salon.id }}
           className={cn(
-            "flex min-w-0 flex-1 items-center justify-center rounded-xl bg-primary px-5 py-3",
+            "flex min-w-0 flex-1 items-center justify-center rounded-xl bg-primary px-5 py-3.5",
             "text-sm font-bold text-primary-foreground transition-opacity active:opacity-90",
           )}
         >
-          {t("salon.bookNow")}
+          {t("salon.startBooking", { defaultValue: "Boshlash" })}
         </Link>
       </MobileStickyActionBar>
     </div>

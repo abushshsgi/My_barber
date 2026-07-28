@@ -1,6 +1,7 @@
 import { useRouterState } from "@tanstack/react-router";
 import { Loader2, MapPin, Navigation } from "lucide-react";
 import { formatCancelCountdown } from "@mybarber/shared/booking-lifecycle";
+import { BookingLifecycleStepper } from "@/components/bookings/BookingLifecycleStepper";
 import { BookingBarberImpressions } from "@/components/bookings/BookingBarberImpressions";
 import { BookingChatButton } from "@/components/bookings/BookingChatButton";
 import { BookingStageHero } from "@/components/bookings/BookingStageHero";
@@ -156,6 +157,8 @@ function BookingProcessBody({
 
   return (
     <div className="space-y-6">
+      <BookingLifecycleStepper status={booking.status} checkedIn={!!booking.checkedInAt} />
+
       <BookingStageHero booking={booking} />
 
       <CustomerCancelNotice booking={booking} />

@@ -1,10 +1,11 @@
 import { createFileRoute, useParams, useRouter } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Check, Star } from "lucide-react";
+import { ShoppingBag, Star } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { BookingForPicker } from "@/components/booking/BookingForPicker";
 import { BookingPaymentPicker, type BookingPaymentMethod } from "@/components/booking/BookingPaymentPicker";
+import { BookingServiceSelectGrid } from "@/components/booking/BookingServiceSelectGrid";
 import { DesktopPageSplit } from "@/components/desktop/DesktopPageSplit";
 import { DesktopPageHeader } from "@/components/desktop/ui/DesktopPageHeader";
 import { BookingSummaryAside } from "@/components/booking/BookingSummaryAside";
@@ -19,6 +20,7 @@ import { useDisplayUser } from "@/hooks/use-me";
 import { useSalonBarberServices } from "@/hooks/use-salon-barber-services";
 import { useSalonPage } from "@/hooks/use-salon-page";
 import { resolveDefaultSalonBarberId } from "@/lib/salon-services";
+import { shortPrice } from "@/lib/price-display";
 import { MOBILE_STICKY_CONTENT_PADDING_CLASS } from "@/lib/layout-constants";
 import { cn } from "@/lib/utils";
 
@@ -258,61 +260,74 @@ function BookingStepContent({
 
   if (step === 1) {
     return (
-      <div className="space-y-8">
-        <BookingForPicker value={familyMemberId} onChange={setFamilyMemberId} />
+      <div className="space-y-6">
         <div>
           <h2 className="text-xl font-bold">{t("booking.selectBarber")}</h2>
-        <p className="mt-1 text-sm text-muted-foreground">{salon.name}</p>
-        <div className="mt-6 grid grid-cols-2 gap-3">
-          {salon.staff.map((b) => {
-            const bookable = b.isBookable !== false;
-            const isOwner = b.role === "Salon egasi";
-            return (
-            <button
-              key={b.id}
-              type="button"
-              disabled={!bookable}
-              onClick={() => bookable && setBarberId(b.id)}
-              className={cn(
-                "rounded-2xl border-2 p-4 text-left",
-                barberId === b.id ? "border-foreground bg-surface" : "border-transparent bg-surface",
-                !bookable && "cursor-not-allowed opacity-50",
-              )}
-            >
-              <div className="grid h-14 w-14 place-items-center rounded-full bg-foreground text-base font-bold text-background">
-                {b.name.split(" ").map((n) => n[0]).join("")}
-              </div>
-              <p className="mt-3 text-sm font-bold">{b.name}</p>
-              <p className="text-[11px] text-muted-foreground">{b.role}</p>
-              {!bookable ? (
-                <p className="mt-1 text-[10px] font-medium text-muted-foreground">
-                  {isOwner
-                    ? t("salon.staff.notBookableYet", { defaultValue: "Hozircha band qilib bo'lmaydi" })
-                    : t("salon.staff.comingSoon", { defaultValue: "Tez orada" })}
-                </p>
-              ) : (
-              <p className="flex items-center gap-1 text-[11px] font-bold">
-                <Star className="h-3 w-3 fill-foreground" /> {b.rating}
-              </p>
-              )}
-            </button>
-            );
-          })}
-        </div>
+          <p className="mt-1 text-sm text-muted-foreground">{salon.name}</p>
+          <div className="mt-5 grid grid-cols-2 gap-3">
+            {salon.staff.map((b) => {
+              const bookable = b.isBookable !== false;
+              const isOwner = b.role === "Salon egasi";
+              const selected = barberId === b.id;
+              return (
+                <button
+                  key={b.id}
+                  type="button"
+                  disabled={!bookable}
+                  onClick={() => bookable && setBarberId(b.id)}
+                  className={cn(
+                    "rounded-2xl border-2 p-4 text-left transition-all",
+                    selected
+                      ? "border-foreground bg-foreground/5 shadow-sm"
+                      : "border-border bg-white",
+                    !bookable && "cursor-not-allowed opacity-50",
+                  )}
+                >
+                  <div
+                    className={cn(
+                      "grid h-14 w-14 place-items-center rounded-full text-base font-bold",
+                      selected ? "bg-foreground text-background" : "bg-muted text-foreground",
+                    )}
+                  >
+                    {b.name
+                      .split(" ")
+                      .map((n) => n[0])
+                      .join("")}
+                  </div>
+                  <p className="mt-3 text-sm font-bold">{b.name}</p>
+                  <p className="text-[11px] text-muted-foreground">{b.role}</p>
+                  {!bookable ? (
+                    <p className="mt-1 text-[10px] font-medium text-muted-foreground">
+                      {isOwner
+                        ? t("salon.staff.notBookableYet", { defaultValue: "Hozircha band qilib bo'lmaydi" })
+                        : t("salon.staff.comingSoon", { defaultValue: "Tez orada" })}
+                    </p>
+                  ) : (
+                    <p className="mt-1 flex items-center gap-1 text-[11px] font-bold">
+                      <Star className="h-3 w-3 fill-foreground" /> {b.rating}
+                    </p>
+                  )}
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
     );
   }
 
   if (step === 2) {
+    const toggleService = (id: string) => {
+      setServiceIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+    };
     return (
       <div>
         <h2 className="text-xl font-bold">{t("booking.selectService")}</h2>
         <p className="mt-1 text-sm text-muted-foreground">{selectedBarber?.name}</p>
         {barberServicesLoading ? (
-          <div className="mt-6 space-y-2">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="h-[68px] animate-pulse rounded-2xl bg-surface" />
+          <div className="mt-6 grid grid-cols-2 gap-3">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="aspect-[4/5] animate-pulse rounded-[1.25rem] bg-muted" />
             ))}
           </div>
         ) : barberServicesError ? (
@@ -333,27 +348,13 @@ function BookingStepContent({
             {t("booking.noServices", { defaultValue: "Bu usta uchun xizmatlar topilmadi" })}
           </p>
         ) : (
-        <div className="mt-6 space-y-2">
-          {barberServiceOptions.map((s) => {
-            const sel = serviceIds.includes(s.id);
-            return (
-              <button
-                key={s.id}
-                type="button"
-                onClick={() => setServiceIds((prev) => (prev.includes(s.id) ? prev.filter((x) => x !== s.id) : [...prev, s.id]))}
-                className={cn("flex w-full items-center justify-between rounded-2xl border-2 p-4", sel ? "border-foreground bg-surface" : "border-transparent bg-surface")}
-              >
-                <div className="min-w-0 text-left">
-                  <h3 className="truncate text-sm font-bold">{s.name}</h3>
-                  <p className="text-xs text-muted-foreground">{s.duration} {t("salon.minutes")} · {formatPrice(s.price)}</p>
-                </div>
-                <div className={cn("grid h-6 w-6 place-items-center rounded-md border-2", sel ? "border-foreground bg-foreground" : "border-border")}>
-                  {sel ? <Check className="h-3.5 w-3.5 text-background" strokeWidth={3} /> : null}
-                </div>
-              </button>
-            );
-          })}
-        </div>
+          <div className="mt-5">
+            <BookingServiceSelectGrid
+              services={barberServiceOptions}
+              selectedIds={serviceIds}
+              onToggle={toggleService}
+            />
+          </div>
         )}
       </div>
     );
@@ -417,6 +418,7 @@ function BookingStepContent({
   return (
     <div className="space-y-6">
       <h2 className="text-xl font-bold">{t("booking.summary")}</h2>
+      <BookingForPicker value={familyMemberId} onChange={setFamilyMemberId} />
       <BookingPaymentPicker
         value={paymentMethod}
         onChange={setPaymentMethod}
@@ -477,6 +479,61 @@ function BookingNotesField({
   );
 }
 
+function BookingMobileNavButtons({
+  state,
+  t,
+}: {
+  state: ReturnType<typeof useBookingSalonState>;
+  t: ReturnType<typeof useTranslation>["t"];
+}) {
+  const { step, setStep, canAdvance, handleSubmit, isSubmitting, serviceIds, total } = state;
+
+  if (step === 2) {
+    const count = serviceIds.length;
+    return (
+      <div className="flex w-full items-center gap-3">
+        <button
+          type="button"
+          disabled={isSubmitting}
+          onClick={() => setStep((s) => s - 1)}
+          className="shrink-0 rounded-2xl border-2 border-foreground px-4 py-3.5 text-sm font-bold disabled:opacity-50"
+        >
+          {t("common.back")}
+        </button>
+        <div className="flex min-w-0 flex-1 items-center gap-2">
+          <div className="relative shrink-0">
+            <ShoppingBag className="size-5 text-foreground" />
+            {count > 0 ? (
+              <span className="absolute -right-1.5 -top-1.5 grid size-4 place-items-center rounded-full bg-foreground text-[9px] font-bold text-background">
+                {count}
+              </span>
+            ) : null}
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+              {t("booking.total")}
+            </p>
+            <p className="text-sm font-bold tabular-nums">{shortPrice(total)}</p>
+          </div>
+        </div>
+        <button
+          type="button"
+          disabled={!canAdvance}
+          onClick={() => canAdvance && setStep((s) => s + 1)}
+          className={cn(
+            "shrink-0 rounded-2xl px-5 py-3.5 text-sm font-bold",
+            canAdvance ? "bg-foreground text-background" : "bg-muted text-muted-foreground",
+          )}
+        >
+          {t("booking.continue", { defaultValue: "Davom etish" })}
+        </button>
+      </div>
+    );
+  }
+
+  return <BookingNavButtons state={state} t={t} />;
+}
+
 function BookingNavButtons({ state, t }: { state: ReturnType<typeof useBookingSalonState>; t: ReturnType<typeof useTranslation>["t"] }) {
   const { step, setStep, canAdvance, handleSubmit, isSubmitting } = state;
   return (
@@ -518,12 +575,12 @@ function BookingMobile() {
   return (
     <div>
       <PageHeader showBack sticky title={t("booking.title")} />
-      <div className="px-4 pt-2"><Stepper steps={stepLabels} current={state.step} /></div>
+      <div className="px-4 pt-2"><Stepper steps={stepLabels} current={state.step} showLabels /></div>
       <div className={cn("px-4 pt-5", MOBILE_STICKY_CONTENT_PADDING_CLASS)}>
         <BookingStepContent state={state} t={t} />
       </div>
       <MobileStickyActionBar>
-        <BookingNavButtons state={state} t={t} />
+        <BookingMobileNavButtons state={state} t={t} />
       </MobileStickyActionBar>
     </div>
   );

@@ -282,6 +282,7 @@
       "portfolio": "Портфолио"
     },
     "bookNow": "Забронировать",
+    "startBooking": "Начать",
     "select": "Выбрать",
     "minutes": "мин",
     "fromPrice": "От {{price}}",
@@ -365,7 +366,9 @@
     "total": "Итого",
     "confirm": "Подтвердить запись",
     "noServices": "У этого мастера нет услуг",
-    "servicesError": "Не удалось загрузить услуги."
+    "servicesError": "Не удалось загрузить услуги.",
+    "continue": "Продолжить",
+    "cartItems": "{{count}} услуг"
   },
   "bookings": {
     "title": "Мои записи",

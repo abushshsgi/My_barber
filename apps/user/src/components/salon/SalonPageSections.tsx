@@ -68,6 +68,7 @@ export function SalonPageSections({
   reviewsAreMock = false,
   compact = false,
   variant = "desktop",
+  infoOnly = false,
 }: {
   salon: Salon;
   calendarMonths?: 1 | 2;
@@ -75,6 +76,8 @@ export function SalonPageSections({
   reviewsAreMock?: boolean;
   compact?: boolean;
   variant?: "desktop" | "mobile";
+  /** Mobil: xizmatlar va ustalar bo'limlarini yashirish */
+  infoOnly?: boolean;
 }) {
   const { t } = useTranslation();
   const isMobile = variant === "mobile";
@@ -107,6 +110,7 @@ export function SalonPageSections({
         </div>
       ) : null}
 
+      {!infoOnly ? (
       <SectionBlock id="salon-services" title={t("salon.tabs.services")} compact={compact}>
         {isMobile ? (
           <SalonMobileServicesGrid salon={salon} />
@@ -162,8 +166,9 @@ export function SalonPageSections({
           </div>
         )}
       </SectionBlock>
+      ) : null}
 
-      {salon.staff.length > 0 ? (
+      {!infoOnly && salon.staff.length > 0 ? (
         isMobile ? (
           <SalonMobileStaffRow salon={salon} />
         ) : (

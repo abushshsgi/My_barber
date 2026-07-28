@@ -282,6 +282,7 @@
       "portfolio": "Portfolio"
     },
     "bookNow": "Book now",
+    "startBooking": "Get started",
     "select": "Select",
     "minutes": "min",
     "fromPrice": "From {{price}}",
@@ -365,7 +366,9 @@
     "total": "Total",
     "confirm": "Confirm booking",
     "noServices": "No services found for this specialist",
-    "servicesError": "Could not load services."
+    "servicesError": "Could not load services.",
+    "continue": "Continue",
+    "cartItems": "{{count}} services"
   },
   "bookings": {
     "title": "My bookings",
