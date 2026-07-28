@@ -15,3 +15,17 @@ export function formatUzLocalPhone(digits: string): string {
   }
   return parts.join("-");
 }
+
+/** 9 xonali mahalliy raqam → +998XXXXXXXXX */
+export function toUzE164Phone(localDigits: string): string {
+  const d = parseUzLocalPhone(localDigits);
+  if (d.length !== 9) return "";
+  return `+998${d}`;
+}
+
+/** Saqlangan +998… yoki mahalliy raqamdan 9 xonali qism */
+export function uzPhoneToLocalDigits(phone: string | null | undefined): string {
+  const digits = (phone ?? "").replace(/\D/g, "");
+  if (digits.startsWith("998") && digits.length >= 12) return digits.slice(3, 12);
+  return digits.slice(-9);
+}

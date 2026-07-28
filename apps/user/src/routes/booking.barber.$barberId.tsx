@@ -9,6 +9,7 @@ import { MobileStickyActionBar } from "@/components/mobile/MobileStickyActionBar
 import { Stepper } from "@/components/Stepper";
 import { BookingForPicker } from "@/components/booking/BookingForPicker";
 import { BookingPaymentPicker, type BookingPaymentMethod } from "@/components/booking/BookingPaymentPicker";
+import { BookingPhoneField, useBookingPhoneGate } from "@/components/booking/BookingPhoneField";
 import { BookingSummaryAside } from "@/components/booking/BookingSummaryAside";
 import {
   useBarberByBarberId,
@@ -46,6 +47,7 @@ function IndependentBookingFlow() {
   const [paymentMethod, setPaymentMethod] = useState<BookingPaymentMethod>("cash");
   const [notes, setNotes] = useState("");
   const { balance: walletBalance, isLoading: walletLoading } = useWalletBalance();
+  const phoneGate = useBookingPhoneGate(user.phone);
 
   const today = new Date();
   const days = Array.from({ length: 14 }).map((_, i) => {
@@ -123,7 +125,7 @@ function IndependentBookingFlow() {
   const canAdvance =
     (step === 1 && serviceIds.length > 0) ||
     (step === 2 && slot) ||
-    step === 3;
+    (step === 3 && (!phoneGate.needsPhone || phoneGate.phoneValid));
 
   const selected = services.filter((s) => serviceIds.includes(String(s.id)));
   const total = selected.reduce((sum, s) => sum + s.price, 0);
@@ -135,6 +137,10 @@ function IndependentBookingFlow() {
 
   const handleSubmit = async () => {
     if (!slot || serviceIds.length === 0) return;
+    if (phoneGate.needsPhone && !phoneGate.phoneValid) {
+      toast.error(t("booking.phoneRequired", { defaultValue: "Telefon raqamini kiriting." }));
+      return;
+    }
     if (paymentMethod === "online" && walletBalance < total) {
       toast.error("Hamyon balansi yetarli emas. Hamyonni to'ldiring yoki naqd tanlang.");
       return;
@@ -150,6 +156,7 @@ function IndependentBookingFlow() {
         family_member_id: familyMemberId,
         payment_method: paymentMethod,
         notes: notes.trim() || undefined,
+        customer_phone: phoneGate.customerPhonePayload,
       });
       toast.success("Buyurtma yuborildi!", {
         description: `${barber.name} · ${slot}. Sartarosh 5 daqiqa ichida javob berishi kerak.`,
@@ -299,6 +306,12 @@ function IndependentBookingFlow() {
         {step === 3 && (
           <div className="space-y-6">
             <h2 className="text-xl font-bold tracking-tight">{t("booking.summary")}</h2>
+            {phoneGate.needsPhone ? (
+              <BookingPhoneField
+                value={phoneGate.phoneDigits}
+                onChange={phoneGate.setPhoneDigits}
+              />
+            ) : null}
             <BookingPaymentPicker
               value={paymentMethod}
               onChange={setPaymentMethod}

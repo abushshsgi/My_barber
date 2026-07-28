@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { BookingForPicker } from "@/components/booking/BookingForPicker";
 import { BookingPaymentPicker, type BookingPaymentMethod } from "@/components/booking/BookingPaymentPicker";
+import { BookingPhoneField, useBookingPhoneGate } from "@/components/booking/BookingPhoneField";
 import { BookingServiceSelectGrid } from "@/components/booking/BookingServiceSelectGrid";
 import { DesktopPageSplit } from "@/components/desktop/DesktopPageSplit";
 import { DesktopPageHeader } from "@/components/desktop/ui/DesktopPageHeader";
@@ -75,6 +76,7 @@ function useBookingSalonState(
   const [paymentMethod, setPaymentMethod] = useState<BookingPaymentMethod>("cash");
   const [notes, setNotes] = useState("");
   const { balance: walletBalance, isLoading: walletLoading } = useWalletBalance();
+  const phoneGate = useBookingPhoneGate(user.phone);
 
   useEffect(() => {
     if (!salon?.staff.length) return;
@@ -170,10 +172,14 @@ function useBookingSalonState(
     (step === 1 && barberId) ||
     (step === 2 && serviceIds.length > 0) ||
     (step === 3 && slot) ||
-    step === 4;
+    (step === 4 && (!phoneGate.needsPhone || phoneGate.phoneValid));
 
   const handleSubmit = async () => {
     if (!salon || !barberId || !slot || serviceIds.length === 0) return;
+    if (phoneGate.needsPhone && !phoneGate.phoneValid) {
+      toast.error(t("booking.phoneRequired", { defaultValue: "Telefon raqamini kiriting." }));
+      return;
+    }
     if (paymentMethod === "online" && walletBalance < total) {
       toast.error("Hamyon balansi yetarli emas. Hamyonni to'ldiring yoki naqd tanlang.");
       return;
@@ -190,6 +196,7 @@ function useBookingSalonState(
         family_member_id: familyMemberId,
         payment_method: paymentMethod,
         notes: notes.trim() || undefined,
+        customer_phone: phoneGate.customerPhonePayload,
       });
       toast.success("Buyurtma yuborildi!", {
         description: `${salon.name} · ${slot}. Sartarosh 5 daqiqa ichida javob berishi kerak.`,
@@ -245,6 +252,7 @@ function useBookingSalonState(
     setNotes,
     walletBalance,
     walletLoading,
+    phoneGate,
   };
 }
 
@@ -255,7 +263,7 @@ function BookingStepContent({
   state: ReturnType<typeof useBookingSalonState>;
   t: ReturnType<typeof useTranslation>["t"];
 }) {
-  const { salon, step, familyMemberId, setFamilyMemberId, barberId, setBarberId, serviceIds, setServiceIds, dayIdx, setDayIdx, slot, setSlot, dayList, slotOptions, slotsLoading, slotsClosedReason, availableDates, monthLoaded, selectedServices, barberServiceOptions, barberServicesLoading, barberServicesError, retryBarberServices, selectedBarber, bookedForLabel, total, paymentMethod, setPaymentMethod, notes, setNotes, walletBalance, walletLoading } = state;
+  const { salon, step, familyMemberId, setFamilyMemberId, barberId, setBarberId, serviceIds, setServiceIds, dayIdx, setDayIdx, slot, setSlot, dayList, slotOptions, slotsLoading, slotsClosedReason, availableDates, monthLoaded, selectedServices, barberServiceOptions, barberServicesLoading, barberServicesError, retryBarberServices, selectedBarber, bookedForLabel, total, paymentMethod, setPaymentMethod, notes, setNotes, walletBalance, walletLoading, phoneGate } = state;
   if (!salon) return null;
 
   if (step === 1) {
@@ -418,6 +426,12 @@ function BookingStepContent({
   return (
     <div className="space-y-6">
       <h2 className="text-xl font-bold">{t("booking.summary")}</h2>
+      {phoneGate.needsPhone ? (
+        <BookingPhoneField
+          value={phoneGate.phoneDigits}
+          onChange={phoneGate.setPhoneDigits}
+        />
+      ) : null}
       <BookingForPicker value={familyMemberId} onChange={setFamilyMemberId} />
       <BookingPaymentPicker
         value={paymentMethod}

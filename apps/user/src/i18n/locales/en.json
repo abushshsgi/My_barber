@@ -368,7 +368,11 @@
     "noServices": "No services found for this specialist",
     "servicesError": "Could not load services.",
     "continue": "Continue",
-    "cartItems": "{{count}} services"
+    "cartItems": "{{count}} services",
+    "phoneLabel": "Phone number",
+    "phoneHint": "Required so the barber and salon can reach you.",
+    "phoneInvalid": "Enter a 9-digit number.",
+    "phoneRequired": "Please enter your phone number."
   },
   "bookings": {
     "title": "My bookings",

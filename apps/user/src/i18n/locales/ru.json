@@ -368,7 +368,11 @@
     "noServices": "У этого мастера нет услуг",
     "servicesError": "Не удалось загрузить услуги.",
     "continue": "Продолжить",
-    "cartItems": "{{count}} услуг"
+    "cartItems": "{{count}} услуг",
+    "phoneLabel": "Номер телефона",
+    "phoneHint": "Нужен, чтобы мастер и салон могли с вами связаться.",
+    "phoneInvalid": "Введите 9 цифр номера.",
+    "phoneRequired": "Введите номер телефона."
   },
   "bookings": {
     "title": "Мои записи",

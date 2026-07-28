@@ -96,6 +96,26 @@ class BookingCriticalTests(TestCase):
         )
         self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
 
+    def test_booking_accepts_customer_phone_for_user_without_phone(self):
+        self.client.force_authenticate(user=self.user_no_phone)
+        start = timezone.now() + timedelta(days=4)
+        start = start.replace(hour=10, minute=0, second=0, microsecond=0)
+        res = self.client.post(
+            "/api/v1/bookings/",
+            {
+                "barber": self.barber.id,
+                "start_at": start.isoformat(),
+                "barber_service_ids": [self.svc.id],
+                "customer_phone": "+998909998877",
+            },
+            format="json",
+        )
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        self.user_no_phone.refresh_from_db()
+        self.assertEqual(self.user_no_phone.phone, "+998909998877")
+        booking = Booking.objects.get(pk=res.json()["id"])
+        self.assertEqual(booking.customer_phone, "+998909998877")
+
     def test_booking_overlap_rejected(self):
         self.client.force_authenticate(user=self.user)
         t0 = timezone.now() + timedelta(days=2)

@@ -472,6 +472,31 @@ class BookingCreateSerializer(serializers.Serializer):
         allow_blank=True,
         trim_whitespace=True,
     )
+    customer_phone = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        trim_whitespace=True,
+    )
+
+    def _resolve_customer_phone(self, user, raw: str | None) -> str | None:
+        existing = (getattr(user, "phone", None) or "").strip()
+        if existing:
+            return existing
+        from accounts.phone_validation import validate_uz_mobile_phone
+
+        normalized, err = validate_uz_mobile_phone(raw)
+        if err:
+            raise serializers.ValidationError({"customer_phone": err})
+        assert normalized is not None
+        if User.objects.filter(phone=normalized).exists():
+            raise serializers.ValidationError(
+                {"customer_phone": "Bu telefon allaqachon mijozda ro'yxatdan o'tgan."}
+            )
+        if Barber.objects.filter(phone=normalized).exists():
+            raise serializers.ValidationError(
+                {"customer_phone": "Bu telefon sartarosh akkauntida band."}
+            )
+        return normalized
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -495,11 +520,15 @@ class BookingCreateSerializer(serializers.Serializer):
     def validate(self, attrs):
         request = self.context.get("request")
         if request and request.user.is_authenticated:
-            phone = (getattr(request.user, "phone", None) or "").strip()
-            if not phone:
+            incoming_phone = (attrs.pop("customer_phone", None) or "").strip() or None
+            resolved = self._resolve_customer_phone(request.user, incoming_phone)
+            if not resolved:
                 raise serializers.ValidationError(
-                    {"detail": "Bron qilish uchun profilda telefon raqamini kiriting."}
+                    {
+                        "customer_phone": "Bron qilish uchun telefon raqamini kiriting.",
+                    }
                 )
+            attrs["_save_customer_phone"] = resolved
 
         barber = attrs["barber"]
         from barbers.readiness import barber_is_publicly_visible
@@ -623,6 +652,11 @@ class BookingCreateSerializer(serializers.Serializer):
         end_at = validated_data.pop("_end_at")
         total_price = validated_data.pop("_total_price")
         payment_method = validated_data.pop("payment_method", Booking.PaymentMethod.CASH)
+
+        save_phone = validated_data.pop("_save_customer_phone", None)
+        if save_phone and not (getattr(customer, "phone", None) or "").strip():
+            customer.phone = save_phone
+            customer.save(update_fields=["phone"])
 
         phone_snap = (getattr(customer, "phone", None) or "").strip()
         family_member = validated_data.pop("family_member", None)

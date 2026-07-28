@@ -368,7 +368,11 @@
     "noServices": "Bu usta uchun xizmatlar topilmadi",
     "servicesError": "Xizmatlarni yuklab bo'lmadi.",
     "continue": "Davom etish",
-    "cartItems": "{{count}} xizmat"
+    "cartItems": "{{count}} xizmat",
+    "phoneLabel": "Telefon raqami",
+    "phoneHint": "Sartarosh va salon siz bilan bog'lanishi uchun kerak.",
+    "phoneInvalid": "9 xonali raqam kiriting.",
+    "phoneRequired": "Telefon raqamini kiriting."
   },
   "bookings": {
     "title": "Buyurtmalarim",

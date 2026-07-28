@@ -28,6 +28,8 @@ export type CreateBookingPayload = {
   family_member_id?: number | null;
   payment_method?: "cash" | "online";
   notes?: string;
+  /** Google login foydalanuvchilari uchun — profilga saqlanadi va bron snapshotiga yoziladi */
+  customer_phone?: string;
 };
 
 export async function createBooking(data: CreateBookingPayload): Promise<ApiBooking> {
