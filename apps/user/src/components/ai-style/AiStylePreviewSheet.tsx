@@ -15,6 +15,8 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import type { AiAnalysisResult } from "@/components/ai-style/ai-style-shared";
 import { isCatalogStyleId } from "@/components/ai-style/ai-style-shared";
+import { MorfAiShareNudge } from "@/components/ai-style/MorfAiShareNudge";
+import { useMorfAiStoryShare } from "@/components/ai-style/useMorfAiStoryShare";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 import type { ExplorePersonaId } from "@/lib/explore-personas";
 import { createMorphAiLookShare } from "@/lib/api";
@@ -86,6 +88,7 @@ export function AiStylePreviewSheet({
   const navigate = useNavigate();
   const [sharing, setSharing] = useState(false);
   const [downloading, setDownloading] = useState(false);
+  const { sharing: storySharing, shareToStory, storyModal } = useMorfAiStoryShare();
 
   if (!suggestion) return null;
 
@@ -174,150 +177,184 @@ export function AiStylePreviewSheet({
     onToggleSave(suggestion.id, { title: suggestion.title, previewImage: imageSrc });
   };
 
+  const handleStoryShare = () => {
+    if (!previewImage) return;
+    void shareToStory({
+      styleId: suggestion.id,
+      title: suggestion.title,
+      imageUrl: previewImage,
+    });
+  };
+
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent
-        side="bottom"
-        hideClose
-        className="max-h-[94dvh] overflow-y-auto rounded-t-[28px] border-0 px-0 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-0"
-      >
-        <SheetTitle className="sr-only">{suggestion.title}</SheetTitle>
-        <SheetDescription className="sr-only">
-          {t("aiStylePage.previewDesc", {
-            defaultValue: "Generatsiya qilingan uslubni ko‘rish, yuklab olish yoki ulashish",
-          })}
-        </SheetDescription>
+    <>
+      <Sheet open={open} onOpenChange={onOpenChange}>
+        <SheetContent
+          side="bottom"
+          hideClose
+          className="max-h-[94dvh] overflow-y-auto rounded-t-[28px] border-0 px-0 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-0"
+        >
+          <SheetTitle className="sr-only">{suggestion.title}</SheetTitle>
+          <SheetDescription className="sr-only">
+            {t("aiStylePage.previewDesc", {
+              defaultValue: "Generatsiya qilingan uslubni ko‘rish, yuklab olish yoki ulashish",
+            })}
+          </SheetDescription>
 
-        <div className="relative min-h-[min(52dvh,460px)] bg-neutral-100">
-          {imageSrc ? (
-            <img
-              src={imageSrc}
-              alt=""
-              className="h-full min-h-[min(52dvh,460px)] w-full object-cover object-top"
-            />
-          ) : (
-            <div className="flex min-h-[min(52dvh,460px)] items-center justify-center text-sm text-neutral-500">
-              {t("aiStylePage.previewNoImage")}
-            </div>
-          )}
+          <div className="relative min-h-[min(52dvh,460px)] bg-neutral-100">
+            {imageSrc ? (
+              <img
+                src={imageSrc}
+                alt=""
+                className="h-full min-h-[min(52dvh,460px)] w-full object-cover object-top"
+              />
+            ) : (
+              <div className="flex min-h-[min(52dvh,460px)] items-center justify-center text-sm text-neutral-500">
+                {t("aiStylePage.previewNoImage")}
+              </div>
+            )}
 
-          {tryOnLoading ? (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/50">
-              <Loader2 className="h-8 w-8 animate-spin text-white" />
-              <p className="text-sm font-semibold text-white">{t("aiStylePage.tryOnGenerating")}</p>
-            </div>
-          ) : null}
+            {tryOnLoading ? (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/50">
+                <Loader2 className="h-8 w-8 animate-spin text-white" />
+                <p className="text-sm font-semibold text-white">
+                  {t("aiStylePage.tryOnGenerating")}
+                </p>
+              </div>
+            ) : null}
 
-          <button
-            type="button"
-            onClick={goBack}
-            className="absolute left-4 z-20 inline-flex min-h-11 items-center gap-1.5 rounded-full bg-black/55 px-3.5 py-2 text-sm font-bold text-white shadow-lg backdrop-blur-md ring-1 ring-white/20 touch-manipulation active:scale-95"
-            style={{ top: "max(0.85rem, env(safe-area-inset-top))" }}
-            aria-label={t("common.back")}
-          >
-            <ChevronLeft className="h-5 w-5" strokeWidth={2.5} />
-            {t("common.back")}
-          </button>
-
-          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black via-black/60 to-transparent px-5 pb-5 pt-24">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-white/60">
-              {previewImage ? t("aiStylePage.tryOnBadge") : t("aiStylePage.viewStyle")}
-            </p>
-            <h2 className="mt-1 text-2xl font-bold text-white">{suggestion.title}</h2>
-            <p className="mt-1 text-sm text-white/80">
-              {t("aiStylePage.matchPct", { value: suggestion.match })}
-            </p>
-          </div>
-        </div>
-
-        <div className="space-y-4 px-5 pt-4">
-          {previewImage ? (
             <button
               type="button"
-              onClick={openStudio}
-              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-black py-3.5 text-sm font-bold text-white touch-manipulation active:opacity-90"
+              onClick={goBack}
+              className="absolute left-4 z-20 inline-flex min-h-11 items-center gap-1.5 rounded-full bg-black/55 px-3.5 py-2 text-sm font-bold text-white shadow-lg backdrop-blur-md ring-1 ring-white/20 touch-manipulation active:scale-95"
+              style={{ top: "max(0.85rem, env(safe-area-inset-top))" }}
+              aria-label={t("common.back")}
             >
-              <Palette className="h-4 w-4" />
-              {t("aiStylePage.studio.openCta", { defaultValue: "AI Studio" })}
+              <ChevronLeft className="h-5 w-5" strokeWidth={2.5} />
+              {t("common.back")}
             </button>
-          ) : null}
 
-          <button
-            type="button"
-            onClick={goBack}
-            className="flex w-full items-center justify-center gap-2 rounded-2xl border border-border bg-neutral-50 py-3.5 text-sm font-bold text-foreground touch-manipulation active:opacity-90"
-          >
-            <ChevronLeft className="h-4 w-4" strokeWidth={2.5} />
-            {t("aiStylePage.previewBack", { defaultValue: "Natijalarga qaytish" })}
-          </button>
-
-          <div className="grid grid-cols-4 gap-2">
-            <ActionRow
-              icon={downloading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-              label={t("aiStylePage.download")}
-              onClick={() => void handleDownload()}
-              disabled={!imageSrc || downloading}
-            />
-            <ActionRow
-              icon={sharing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Share2 className="h-4 w-4" />}
-              label={t("aiStylePage.share")}
-              onClick={() => void handleShare()}
-              disabled={!imageSrc || sharing}
-            />
-            <ActionRow
-              icon={<Bookmark className={cn("h-4 w-4", saved && "fill-current")} />}
-              label={saved ? t("aiStylePage.saved") : t("aiStylePage.save")}
-              onClick={handleSave}
-              active={saved}
-            />
-            <ActionRow
-              icon={<LayoutGrid className="h-4 w-4" />}
-              label={t("aiStylePage.tryMoreStyles")}
-              onClick={() => {
-                onOpenChange(false);
-                onTryMoreStyles?.();
-              }}
-            />
+            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black via-black/60 to-transparent px-5 pb-5 pt-24">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-white/60">
+                {previewImage ? t("aiStylePage.tryOnBadge") : t("aiStylePage.viewStyle")}
+              </p>
+              <h2 className="mt-1 text-2xl font-bold text-white">{suggestion.title}</h2>
+              <p className="mt-1 text-sm text-white/80">
+                {t("aiStylePage.matchPct", { value: suggestion.match })}
+              </p>
+            </div>
           </div>
 
-          {canTryOn && !previewImage ? (
+          <div className="space-y-4 px-5 pt-4">
+            {previewImage ? (
+              <MorfAiShareNudge
+                onShare={handleStoryShare}
+                sharing={storySharing}
+                disabled={tryOnLoading}
+              />
+            ) : null}
+
+            {previewImage ? (
+              <button
+                type="button"
+                onClick={openStudio}
+                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-black py-3.5 text-sm font-bold text-white touch-manipulation active:opacity-90"
+              >
+                <Palette className="h-4 w-4" />
+                {t("aiStylePage.studio.openCta", { defaultValue: "AI Studio" })}
+              </button>
+            ) : null}
+
             <button
               type="button"
-              disabled={tryOnLoading}
-              onClick={() => onGenerateTryOn?.(suggestion.id, undefined, suggestion.title)}
-              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-neutral-100 py-3.5 text-sm font-bold text-black active:opacity-90 disabled:opacity-50 touch-manipulation"
+              onClick={goBack}
+              className="flex w-full items-center justify-center gap-2 rounded-2xl border border-border bg-neutral-50 py-3.5 text-sm font-bold text-foreground touch-manipulation active:opacity-90"
             >
-              {tryOnLoading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Sparkles className="h-4 w-4" />
-              )}
-              {t("aiStylePage.tryOnMe")}
+              <ChevronLeft className="h-4 w-4" strokeWidth={2.5} />
+              {t("aiStylePage.previewBack", { defaultValue: "Natijalarga qaytish" })}
             </button>
-          ) : null}
 
-          {suggestion.salonId ? (
-            <Link
-              to="/booking/$salonId"
-              params={{ salonId: suggestion.salonId }}
-              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-black py-3.5 text-sm font-bold text-white active:opacity-90"
-            >
-              <CalendarPlus className="h-4 w-4" />
-              {t("aiStylePage.bookCta")}
-            </Link>
-          ) : null}
+            <div className="grid grid-cols-4 gap-2">
+              <ActionRow
+                icon={
+                  downloading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Download className="h-4 w-4" />
+                  )
+                }
+                label={t("aiStylePage.download")}
+                onClick={() => void handleDownload()}
+                disabled={!imageSrc || downloading}
+              />
+              <ActionRow
+                icon={
+                  sharing ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Share2 className="h-4 w-4" />
+                  )
+                }
+                label={t("aiStylePage.share")}
+                onClick={() => void handleShare()}
+                disabled={!imageSrc || sharing}
+              />
+              <ActionRow
+                icon={<Bookmark className={cn("h-4 w-4", saved && "fill-current")} />}
+                label={saved ? t("aiStylePage.saved") : t("aiStylePage.save")}
+                onClick={handleSave}
+                active={saved}
+              />
+              <ActionRow
+                icon={<LayoutGrid className="h-4 w-4" />}
+                label={t("aiStylePage.tryMoreStyles")}
+                onClick={() => {
+                  onOpenChange(false);
+                  onTryMoreStyles?.();
+                }}
+              />
+            </div>
 
-          {isCatalogStyleId(suggestion.id) ? (
-            <Link
-              to="/explore/$styleId"
-              params={{ styleId: suggestion.id }}
-              className="block text-center text-xs font-bold text-neutral-500 underline underline-offset-2"
-            >
-              {t("aiStylePage.viewStylePage")}
-            </Link>
-          ) : null}
-        </div>
-      </SheetContent>
-    </Sheet>
+            {canTryOn && !previewImage ? (
+              <button
+                type="button"
+                disabled={tryOnLoading}
+                onClick={() => onGenerateTryOn?.(suggestion.id, undefined, suggestion.title)}
+                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-neutral-100 py-3.5 text-sm font-bold text-black active:opacity-90 disabled:opacity-50 touch-manipulation"
+              >
+                {tryOnLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Sparkles className="h-4 w-4" />
+                )}
+                {t("aiStylePage.tryOnMe")}
+              </button>
+            ) : null}
+
+            {suggestion.salonId ? (
+              <Link
+                to="/booking/$salonId"
+                params={{ salonId: suggestion.salonId }}
+                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-black py-3.5 text-sm font-bold text-white active:opacity-90"
+              >
+                <CalendarPlus className="h-4 w-4" />
+                {t("aiStylePage.bookCta")}
+              </Link>
+            ) : null}
+
+            {isCatalogStyleId(suggestion.id) ? (
+              <Link
+                to="/explore/$styleId"
+                params={{ styleId: suggestion.id }}
+                className="block text-center text-xs font-bold text-neutral-500 underline underline-offset-2"
+              >
+                {t("aiStylePage.viewStylePage")}
+              </Link>
+            ) : null}
+          </div>
+        </SheetContent>
+      </Sheet>
+      {storyModal}
+    </>
   );
 }

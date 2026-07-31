@@ -1,21 +1,17 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { format, parseISO } from "date-fns";
-import { ChevronLeft, Download, Instagram, Loader2, Share2, Sparkles, X } from "lucide-react";
+import { ChevronLeft, Download, Loader2, Share2, Sparkles, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
+import { MorfAiShareNudge } from "@/components/ai-style/MorfAiShareNudge";
 import { MorphBeforeAfter } from "@/components/ai-style/MorphBeforeAfter";
-import {
-  handleInstagramStoryShare,
-  InstagramShareModal,
-  type InstagramStoryShareResult,
-} from "@/components/ai-style/InstagramShareModal";
+import { useMorfAiStoryShare } from "@/components/ai-style/useMorfAiStoryShare";
 import { createMorphAiLookShare } from "@/lib/api";
 import { shareAiStyleLink, downloadAiStyleImage } from "@/lib/ai-style-image";
 import { getActiveUserId } from "@/lib/face-profile";
 import { resolveMediaUrl, toShareImageSource } from "@/lib/media-url";
-import { composeMorfAiStoryImage } from "@/lib/morf-ai-story-image";
 import { pickMorphShareText } from "@/lib/morph-share-copy";
 import {
   loadMorphAiGenerations,
@@ -54,10 +50,7 @@ function AiStyleHistoryPage() {
   const [active, setActive] = useState<HistoryCard | null>(null);
   const [downloading, setDownloading] = useState(false);
   const [sharing, setSharing] = useState(false);
-  const [igSharing, setIgSharing] = useState(false);
-  const [igModalOpen, setIgModalOpen] = useState(false);
-  const [igShareMode, setIgShareMode] =
-    useState<InstagramStoryShareResult["mode"]>("download-fallback");
+  const { sharing: igSharing, shareToStory, storyModal } = useMorfAiStoryShare();
   const userId = getActiveUserId();
 
   useEffect(() => {
@@ -90,9 +83,7 @@ function AiStyleHistoryPage() {
       if (seen.has(key)) continue;
       seen.add(key);
       const after = resolveMediaUrl(g.previewImage) ?? g.previewImage;
-      const before = g.beforeImage
-        ? (resolveMediaUrl(g.beforeImage) ?? g.beforeImage)
-        : undefined;
+      const before = g.beforeImage ? (resolveMediaUrl(g.beforeImage) ?? g.beforeImage) : undefined;
       unique.push({
         id: `gen-${g.id}`,
         styleId: g.styleId,
@@ -153,57 +144,12 @@ function AiStyleHistoryPage() {
     }
   };
 
-  const handleInstagramShare = async () => {
+  const handleInstagramShare = () => {
     if (!active?.after) {
       toast.error(t("aiStylePage.previewNoImage"));
       return;
     }
-    setIgSharing(true);
-    try {
-      // Faqat tayyor natija (after) — before/after emas.
-      const afterSource = toShareImageSource(active.after);
-      let pageUrl = `${window.location.origin}/explore/${encodeURIComponent(active.styleId)}`;
-      try {
-        const created = await createMorphAiLookShare({
-          style_id: active.styleId,
-          title: active.title,
-          after_image: afterSource,
-          // before yuborilmaydi — share landing ham faqat natija
-        });
-        pageUrl =
-          created.share_page_url ||
-          `${window.location.origin}/morf-ai/share/${encodeURIComponent(created.id)}`;
-      } catch {
-        // Look-share xato bo‘lsa ham Story shablon + fallback havola ishlaydi.
-      }
-
-      const storyImage = await composeMorfAiStoryImage({
-        resultImageUrl: afterSource,
-        styleTitle: active.title,
-        brandLabel: "Morf AI",
-        siteLabel: "mysaloon.uz",
-        ctaLabel: t("aiStylePage.instagramStory.storyCta", {
-          defaultValue: "O‘zingizda sinab ko‘ring",
-        }),
-      });
-
-      const result = await handleInstagramStoryShare({
-        shareLink: pageUrl,
-        imageUrl: storyImage,
-        filename: "morf-ai-story.jpg",
-      });
-      if (result.mode === "cancelled") return;
-      setIgShareMode(result.mode);
-      setIgModalOpen(true);
-    } catch {
-      toast.error(
-        t("aiStylePage.instagramStory.failed", {
-          defaultValue: "Instagram Story uchun tayyorlab bo'lmadi",
-        }),
-      );
-    } finally {
-      setIgSharing(false);
-    }
+    void shareToStory({ styleId: active.styleId, title: active.title, imageUrl: active.after });
   };
 
   return (
@@ -250,7 +196,9 @@ function AiStyleHistoryPage() {
         ) : cards.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-border bg-surface/50 px-5 py-10 text-center">
             <p className="text-[15px] font-semibold">{t("aiStylePage.historyEmpty")}</p>
-            <p className="mt-1.5 text-[13px] text-muted-foreground">{t("aiStylePage.historyEmptyHint")}</p>
+            <p className="mt-1.5 text-[13px] text-muted-foreground">
+              {t("aiStylePage.historyEmptyHint")}
+            </p>
             <Link
               to="/ai-style"
               className="mt-5 inline-flex rounded-full bg-foreground px-5 py-2.5 text-[13px] font-bold text-background"
@@ -366,33 +314,17 @@ function AiStyleHistoryPage() {
                     {t("aiStylePage.share")}
                   </button>
                 </div>
-                <button
-                  type="button"
-                  disabled={igSharing}
-                  onClick={() => void handleInstagramShare()}
-                  className="inline-flex min-h-11 w-full items-center justify-center gap-1.5 rounded-2xl bg-gradient-to-r from-pink-500 via-fuchsia-500 to-purple-600 text-[13px] font-bold text-white touch-manipulation active:scale-[0.98] disabled:opacity-50"
-                >
-                  {igSharing ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Instagram className="h-4 w-4" />
-                  )}
-                  {t("aiStylePage.instagramStory.cta", {
-                    defaultValue: "Instagram Story'ga ulashish",
-                  })}
-                </button>
-                <p className="max-w-md text-center text-[11px] text-muted-foreground">
-                  {t("aiStylePage.shareLook.shareHint", {
-                    defaultValue:
-                      "Havola ulashiladi — do‘stingiz faqat natija rasmini ko‘radi va o‘zida sinab ko‘rishi mumkin.",
-                  })}
-                </p>
+                <MorfAiShareNudge
+                  onShare={handleInstagramShare}
+                  sharing={igSharing}
+                  className="w-full"
+                />
               </div>
             </div>,
             document.body,
           )
         : null}
-      <InstagramShareModal open={igModalOpen} onOpenChange={setIgModalOpen} mode={igShareMode} />
+      {storyModal}
     </div>
   );
 }
