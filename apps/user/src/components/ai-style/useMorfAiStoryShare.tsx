@@ -7,6 +7,7 @@ import {
   type InstagramStoryShareResult,
 } from "@/components/ai-style/InstagramShareModal";
 import { createMorphAiLookShare } from "@/lib/api";
+import { trackMorphShare, type MorphShareSurface } from "@/lib/ga";
 import { toShareImageSource } from "@/lib/media-url";
 import { composeMorfAiStoryImage } from "@/lib/morf-ai-story-image";
 import {
@@ -33,7 +34,7 @@ export type MorfAiStoryShareInput = {
  * Shablon: Mysaloon logo + «MORF AI» chip, ism bilan marketing sarlavha,
  * @morf.ai belgilash uchun bo‘sh joy va «o‘zingizda sinab ko‘ring» CTA.
  */
-export function useMorfAiStoryShare() {
+export function useMorfAiStoryShare(surface: MorphShareSurface) {
   const { t } = useTranslation();
   const [sharing, setSharing] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
@@ -46,11 +47,13 @@ export function useMorfAiStoryShare() {
         return;
       }
       setSharing(true);
+      trackMorphShare("story_start", { surface, styleId: input.styleId });
       try {
         // Faqat tayyor natija (after) — before/after emas.
         const afterSource = toShareImageSource(input.imageUrl);
         let pageUrl = `${window.location.origin}/explore/${encodeURIComponent(input.styleId)}`;
         let sharerName = "";
+        let shareId = "";
         try {
           const created = await createMorphAiLookShare({
             style_id: input.styleId,
@@ -61,6 +64,7 @@ export function useMorfAiStoryShare() {
             created.share_page_url ||
             `${window.location.origin}/morf-ai/share/${encodeURIComponent(created.id)}`;
           sharerName = created.sharer_name || "";
+          shareId = created.id;
         } catch {
           // Look-share xato bo‘lsa ham Story shablon + fallback havola ishlaydi.
         }
@@ -84,10 +88,19 @@ export function useMorfAiStoryShare() {
           imageUrl: storyImage,
           filename: "morf-ai-story.jpg",
         });
-        if (result.mode === "cancelled") return;
+        const tracking = { surface, styleId: input.styleId, shareId };
+        if (result.mode === "cancelled") {
+          trackMorphShare("story_cancelled", tracking);
+          return;
+        }
+        trackMorphShare(
+          result.mode === "native-share" ? "story_shared" : "story_downloaded",
+          tracking,
+        );
         setMode(result.mode);
         setModalOpen(true);
       } catch {
+        trackMorphShare("story_failed", { surface, styleId: input.styleId });
         toast.error(
           t("aiStylePage.instagramStory.failed", {
             defaultValue: "Instagram Story uchun tayyorlab bo‘lmadi",
@@ -97,7 +110,7 @@ export function useMorfAiStoryShare() {
         setSharing(false);
       }
     },
-    [t],
+    [surface, t],
   );
 
   const storyModal = (

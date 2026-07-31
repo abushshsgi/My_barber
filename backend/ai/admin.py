@@ -48,10 +48,10 @@ class AiGenerationUsageAdmin(admin.ModelAdmin):
 
 @admin.register(MorphAiLookShare)
 class MorphAiLookShareAdmin(admin.ModelAdmin):
-    list_display = ("id", "style_id", "title", "created_by", "created_at")
+    list_display = ("id", "style_id", "title", "created_by", "view_count", "created_at")
     search_fields = ("style_id", "title", "created_by__phone", "created_by__email")
     raw_id_fields = ("created_by",)
-    readonly_fields = ("created_at",)
+    readonly_fields = ("created_at", "view_count", "last_viewed_at")
 
 
 @admin.register(MorphAiSettings)

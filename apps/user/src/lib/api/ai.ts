@@ -41,7 +41,10 @@ export async function checkAiStyleFace(image: string): Promise<AiFaceCheckRespon
     method: "POST",
     body: JSON.stringify({ image }),
   });
-  const body = (await res.json().catch(() => null)) as AiFaceCheckResponse | { detail?: string } | null;
+  const body = (await res.json().catch(() => null)) as
+    | AiFaceCheckResponse
+    | { detail?: string }
+    | null;
   if (!res.ok) {
     const detail =
       body && typeof body === "object" && typeof body.detail === "string"
@@ -203,10 +206,13 @@ export async function generateMorphStudioEdit(
       style_title: meta?.styleTitle,
     }),
   });
-  const body = (await res.json().catch(() => null)) as MorphStudioEditResponse | {
-    detail?: string;
-    code?: string;
-  } | null;
+  const body = (await res.json().catch(() => null)) as
+    | MorphStudioEditResponse
+    | {
+        detail?: string;
+        code?: string;
+      }
+    | null;
   if (!res.ok) {
     throwFromMorphApiError(res, body, "Studio tahririda xatolik");
   }
@@ -277,6 +283,13 @@ export async function fetchMorphAiLookShare(shareId: string): Promise<MorphAiLoo
   return apiJson<MorphAiLookShareApi>(`/api/v1/ai/look-share/${encodeURIComponent(shareId)}/`);
 }
 
+/** Ulashish sahifasi ochilganini sanaydi — viral halqa o‘lchovi uchun. */
+export async function registerMorphAiLookShareView(shareId: string): Promise<void> {
+  await apiJson<void>(`/api/v1/ai/look-share/${encodeURIComponent(shareId)}/view/`, {
+    method: "POST",
+  });
+}
+
 export type MorphAiGenerationApi = {
   id: number;
   style_id: string;
@@ -332,9 +345,7 @@ export async function refreshAiStyleHistoryCache(): Promise<FaceProfileHistoryEn
   }
 }
 
-export async function persistAiStyleHistory(
-  payload: SaveAiStyleHistoryPayload,
-): Promise<void> {
+export async function persistAiStyleHistory(payload: SaveAiStyleHistoryPayload): Promise<void> {
   const userId = getActiveUserId();
   if (!userId) return;
   try {

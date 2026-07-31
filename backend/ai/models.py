@@ -219,6 +219,8 @@ class MorphAiLookShare(models.Model):
     )
     after_photo = models.ImageField(upload_to="ai-style/shares/%Y/%m/")
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    view_count = models.PositiveIntegerField(default=0)
+    last_viewed_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         ordering = ["-created_at"]

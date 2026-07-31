@@ -21,6 +21,7 @@ import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/
 import type { ExplorePersonaId } from "@/lib/explore-personas";
 import { createMorphAiLookShare } from "@/lib/api";
 import { downloadAiStyleImage, shareAiStyleLink } from "@/lib/ai-style-image";
+import { trackMorphShare } from "@/lib/ga";
 import { toShareImageSource } from "@/lib/media-url";
 import { pickMorphShareText } from "@/lib/morph-share-copy";
 import { stashMorphStudioDraft } from "@/lib/morph-ai-studio-session";
@@ -90,7 +91,7 @@ export function AiStylePreviewSheet({
   const navigate = useNavigate();
   const [sharing, setSharing] = useState(false);
   const [downloading, setDownloading] = useState(false);
-  const { sharing: storySharing, shareToStory, storyModal } = useMorfAiStoryShare();
+  const { sharing: storySharing, shareToStory, storyModal } = useMorfAiStoryShare("preview");
 
   if (!suggestion) return null;
 
@@ -154,6 +155,11 @@ export function AiStylePreviewSheet({
           name: created.sharer_name || "",
         });
         const result = await shareAiStyleLink(shareTitle, pageUrl);
+        trackMorphShare("link_shared", {
+          surface: "preview",
+          styleId: suggestion.id,
+          shareId: created.id,
+        });
         if (result === "copied") toast.success(t("aiStylePage.linkCopied"));
         else if (result === "shared") toast.success(t("aiStylePage.shared"));
         return;

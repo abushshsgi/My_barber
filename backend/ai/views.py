@@ -1,7 +1,9 @@
 from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+from django.db.models import F
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 import logging
 
 from accounts.models import User
@@ -522,6 +524,24 @@ class MorphAiLookShareDetailView(UnthrottledAPIView):
         share = get_object_or_404(MorphAiLookShare, pk=share_id)
         out = MorphAiLookShareSerializer(share, context={"request": request})
         return Response(out.data)
+
+
+class MorphAiLookShareViewPingView(UnthrottledAPIView):
+    """POST — count one landing view (no auth).
+
+    Kept separate from the detail GET so SSR meta fetches don't inflate the count.
+    """
+
+    permission_classes = [AllowAny]
+
+    def post(self, request, share_id):
+        updated = MorphAiLookShare.objects.filter(pk=share_id).update(
+            view_count=F("view_count") + 1,
+            last_viewed_at=timezone.now(),
+        )
+        if not updated:
+            return Response({"detail": "Topilmadi."}, status=status.HTTP_404_NOT_FOUND)
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 def _trim_user_generations(user: User) -> None:

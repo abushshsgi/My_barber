@@ -24,6 +24,7 @@ export {
   refreshAiStyleHistoryCache,
   createMorphAiLookShare,
   fetchMorphAiLookShare,
+  registerMorphAiLookShareView,
   type AiStyleAnalyzeResponse,
   type AiStyleTryOnResponse,
   type MorphAiLookShareApi,

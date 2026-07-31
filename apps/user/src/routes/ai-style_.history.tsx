@@ -11,6 +11,7 @@ import { useMorfAiStoryShare } from "@/components/ai-style/useMorfAiStoryShare";
 import { createMorphAiLookShare } from "@/lib/api";
 import { shareAiStyleLink, downloadAiStyleImage } from "@/lib/ai-style-image";
 import { getActiveUserId } from "@/lib/face-profile";
+import { trackMorphShare } from "@/lib/ga";
 import { resolveMediaUrl, toShareImageSource } from "@/lib/media-url";
 import { pickMorphShareText } from "@/lib/morph-share-copy";
 import {
@@ -50,7 +51,7 @@ function AiStyleHistoryPage() {
   const [active, setActive] = useState<HistoryCard | null>(null);
   const [downloading, setDownloading] = useState(false);
   const [sharing, setSharing] = useState(false);
-  const { sharing: igSharing, shareToStory, storyModal } = useMorfAiStoryShare();
+  const { sharing: igSharing, shareToStory, storyModal } = useMorfAiStoryShare("history");
   const userId = getActiveUserId();
 
   useEffect(() => {
@@ -135,6 +136,11 @@ function AiStyleHistoryPage() {
         name: created.sharer_name || "",
       });
       const result = await shareAiStyleLink(shareTitle, pageUrl);
+      trackMorphShare("link_shared", {
+        surface: "history",
+        styleId: active.styleId,
+        shareId: created.id,
+      });
       if (result === "copied") toast.success(t("aiStylePage.linkCopied"));
       else if (result === "shared") toast.success(t("aiStylePage.shared"));
     } catch {

@@ -270,6 +270,7 @@ from ai.views import (
     MorphAiGenerationListCreateView,
     MorphAiLookShareCreateView,
     MorphAiLookShareDetailView,
+    MorphAiLookShareViewPingView,
 )
 from chat.views import ConversationListCreateView, ConversationMarkReadView, ConversationMessagesView
 from geo.views import CurrencyRatesView, GeocodeView, MapConfigView, ReverseGeocodeView, ValidateLocationView
@@ -497,6 +498,7 @@ api_routes = [
     path("ai/generations/", MorphAiGenerationListCreateView.as_view()),
     path("ai/look-share/", MorphAiLookShareCreateView.as_view()),
     path("ai/look-share/<uuid:share_id>/", MorphAiLookShareDetailView.as_view()),
+    path("ai/look-share/<uuid:share_id>/view/", MorphAiLookShareViewPingView.as_view()),
     path("ai/dev/explore-gen/", ExploreGenStatusView.as_view()),
     path("ai/dev/explore-gen/generate/", ExploreGenGenerateView.as_view()),
     path("ai/dev/explore-gen/download/", ExploreGenDownloadView.as_view()),

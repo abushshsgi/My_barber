@@ -2,11 +2,12 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { Loader2, Sparkles, Wand2 } from "lucide-react";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { fetchMorphAiLookShare } from "@/lib/api";
+import { fetchMorphAiLookShare, registerMorphAiLookShareView } from "@/lib/api";
 import { hasValidUserSession } from "@/lib/api/client";
 import { getAiStyleHeroUrl } from "@/lib/cover-images";
+import { trackMorphShare } from "@/lib/ga";
 
 type Props = {
   shareId: string;
@@ -69,7 +70,21 @@ export function MorphPersonalShareLanding({ shareId }: Props) {
     personalSubtitleViral: "10 soniyada o‘z selfiengizda ko‘ring — Morf AI.",
   };
 
+  useEffect(() => {
+    if (!shareId) return;
+    trackMorphShare("landing_view", { surface: "landing", shareId });
+    void registerMorphAiLookShareView(shareId).catch(() => {
+      /* hisoblagich viral oqimni to‘xtatmasin */
+    });
+  }, [shareId]);
+
   const onTry = () => {
+    trackMorphShare("landing_try_click", {
+      surface: "landing",
+      shareId,
+      styleId,
+      authed: hasValidUserSession(),
+    });
     if (hasValidUserSession()) {
       if (styleId) {
         void navigate({ to: "/explore/$styleId/try", params: { styleId } });
