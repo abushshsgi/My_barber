@@ -3,65 +3,130 @@
 import { Check, Copy, Download, Instagram, Loader2, X } from "lucide-react";
 import { useCallback, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { copyTextToClipboard, downloadImageFile } from "@/lib/ai-style-image";
+import { copyTextToClipboard, downloadImageFile, imageUrlToFile } from "@/lib/ai-style-image";
 import { cn } from "@/lib/utils";
 
-const INSTAGRAM_URL = "https://instagram.com";
 const DEFAULT_FILENAME = "morf-ai-story.png";
 
+/** Instagram Story camera (app). Web API rasmni avtomatik qo‘ymaydi — native share kerak. */
+export function openInstagramStoryCamera() {
+  if (typeof window === "undefined") return;
+  const ua = navigator.userAgent || "";
+  const isAndroid = /Android/i.test(ua);
+  const isIOS = /iPhone|iPad|iPod/i.test(ua);
+
+  if (isAndroid) {
+    window.location.href =
+      "intent://story-camera#Intent;scheme=instagram;package=com.instagram.android;S.browser_fallback_url=https%3A%2F%2Fwww.instagram.com%2F;end";
+    return;
+  }
+
+  if (isIOS) {
+    window.location.href = "instagram://story-camera";
+    return;
+  }
+
+  window.open("https://www.instagram.com/", "_blank", "noopener,noreferrer");
+}
+
 export type InstagramStorySharePayload = {
-  /** Unique Morf AI result / look share URL */
   shareLink: string;
-  /** Story graphic (data URL or absolute image URL) */
   imageUrl: string;
-  /** Download filename — default morf-ai-story.png */
   filename?: string;
 };
+
+export type InstagramStoryShareResult =
+  | { mode: "native-share" }
+  | { mode: "download-fallback" }
+  | { mode: "cancelled" };
 
 type InstagramShareModalProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** native-share: rasm allaqachon share sheet orqali ketgan */
+  mode?: InstagramStoryShareResult["mode"];
   className?: string;
 };
 
 /**
- * Copy link + download story image, then open instructional modal.
- * Call from a button: `await handleInstagramStoryShare(...); setOpen(true)`.
+ * 1) Havolani nusxalash
+ * 2) Mobil: Web Share (fayl) → user Instagram Stories tanlaydi → rasm Story’ga tushadi
+ * 3) Aks holda: yuklab olish + Instagram Story camera ochish
  */
 export async function handleInstagramStoryShare({
   shareLink,
   imageUrl,
   filename = DEFAULT_FILENAME,
-}: InstagramStorySharePayload): Promise<void> {
+}: InstagramStorySharePayload): Promise<InstagramStoryShareResult> {
   const link = shareLink.trim();
   const image = imageUrl.trim();
   if (!link) throw new Error("shareLink required");
   if (!image) throw new Error("imageUrl required");
 
-  // Parallel: clipboard + download (download must stay in user-gesture tick where possible).
-  const copyPromise = copyTextToClipboard(link);
-  const downloadPromise = downloadImageFile(image, filename);
-  await Promise.all([copyPromise, downloadPromise]);
+  await copyTextToClipboard(link);
+
+  const file = await imageUrlToFile(image, filename);
+
+  // Eng to‘g‘ri yo‘l: OS share sheet → Instagram → Stories (rasm bilan).
+  if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
+    const canFiles =
+      typeof navigator.canShare === "function" ? navigator.canShare({ files: [file] }) : false;
+    if (canFiles) {
+      try {
+        await navigator.share({
+          files: [file],
+          title: "Morf AI",
+          text: link,
+        });
+        return { mode: "native-share" };
+      } catch (err) {
+        if (err instanceof DOMException && err.name === "AbortError") {
+          return { mode: "cancelled" };
+        }
+        /* fall through */
+      }
+    }
+  }
+
+  await downloadImageFile(image, filename);
+  openInstagramStoryCamera();
+  return { mode: "download-fallback" };
 }
 
-/** Dark glassmorphism instructional overlay for Instagram Story share. */
-export function InstagramShareModal({ open, onOpenChange, className }: InstagramShareModalProps) {
+/** Instructional overlay — native share yoki download fallback uchun. */
+export function InstagramShareModal({
+  open,
+  onOpenChange,
+  mode = "download-fallback",
+  className,
+}: InstagramShareModalProps) {
   const { t } = useTranslation();
 
   if (!open) return null;
 
-  const steps = [
-    t("aiStylePage.instagramStory.step1", {
-      defaultValue: "Tayyor natija shabloni qurilmangizga yuklab olindi.",
-    }),
-    t("aiStylePage.instagramStory.step2", {
-      defaultValue: "Shaxsiy havola buferga nusxalandi.",
-    }),
-    t("aiStylePage.instagramStory.step3", {
-      defaultValue:
-        "Instagram’da Story oching, yuklangan shablonni qo‘ying va «Link» sticker orqali havolani joylang.",
-    }),
-  ] as const;
+  const native = mode === "native-share";
+
+  const steps = native
+    ? [
+        t("aiStylePage.instagramStory.nativeStep1", {
+          defaultValue: "Rasm Instagram Stories’ga yuborildi (share sheet orqali).",
+        }),
+        t("aiStylePage.instagramStory.nativeStep2", {
+          defaultValue: "Havola buferda — Story’da «Link» sticker qo‘yib joylashtiring.",
+        }),
+      ]
+    : [
+        t("aiStylePage.instagramStory.step1", {
+          defaultValue: "Tayyor natija shabloni qurilmangizga yuklab olindi.",
+        }),
+        t("aiStylePage.instagramStory.step2", {
+          defaultValue: "Shaxsiy havola buferga nusxalandi.",
+        }),
+        t("aiStylePage.instagramStory.step3", {
+          defaultValue:
+            "Instagram Story’da galereyadan shablonni tanlang va «Link» sticker orqali havolani joylang.",
+        }),
+      ];
 
   return (
     <div
@@ -113,9 +178,15 @@ export function InstagramShareModal({ open, onOpenChange, className }: Instagram
             })}
           </h2>
           <p className="mt-1.5 text-sm leading-relaxed text-zinc-400">
-            {t("aiStylePage.instagramStory.subtitle", {
-              defaultValue: "Tayyor natija shabloni yuklandi — endi Instagram’da Story yarating.",
-            })}
+            {native
+              ? t("aiStylePage.instagramStory.nativeSubtitle", {
+                  defaultValue:
+                    "Share sheet’da Instagram Stories’ni tanlang. Keyin Link sticker qo‘shing.",
+                })
+              : t("aiStylePage.instagramStory.subtitle", {
+                  defaultValue:
+                    "Rasm yuklandi. Story camera ochiladi — galereyadan shablonni tanlang.",
+                })}
           </p>
 
           <ol className="mt-5 space-y-3">
@@ -126,7 +197,11 @@ export function InstagramShareModal({ open, onOpenChange, className }: Instagram
               >
                 <span className="grid size-7 shrink-0 place-items-center rounded-full bg-gradient-to-br from-pink-500 to-purple-600 text-[11px] font-bold text-white">
                   {index === 0 ? (
-                    <Download className="size-3.5" />
+                    native ? (
+                      <Instagram className="size-3.5" />
+                    ) : (
+                      <Download className="size-3.5" />
+                    )
                   ) : index === 1 ? (
                     <Copy className="size-3.5" />
                   ) : (
@@ -138,10 +213,12 @@ export function InstagramShareModal({ open, onOpenChange, className }: Instagram
             ))}
           </ol>
 
-          <a
-            href={INSTAGRAM_URL}
-            target="_blank"
-            rel="noopener noreferrer"
+          <button
+            type="button"
+            onClick={() => {
+              openInstagramStoryCamera();
+              onOpenChange(false);
+            }}
             className={cn(
               "mt-5 flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl",
               "bg-gradient-to-r from-pink-500 via-fuchsia-500 to-purple-600",
@@ -150,10 +227,10 @@ export function InstagramShareModal({ open, onOpenChange, className }: Instagram
             )}
           >
             <Instagram className="size-4" />
-            {t("aiStylePage.instagramStory.openInstagram", {
-              defaultValue: "Instagram’ni ochish",
+            {t("aiStylePage.instagramStory.openStory", {
+              defaultValue: "Instagram Story’ni ochish",
             })}
-          </a>
+          </button>
 
           <button
             type="button"
@@ -171,14 +248,10 @@ export function InstagramShareModal({ open, onOpenChange, className }: Instagram
 type InstagramStoryShareButtonProps = InstagramStorySharePayload & {
   className?: string;
   disabled?: boolean;
-  /** Called before share (e.g. create look-share URL). Return final payload. */
   resolvePayload?: () => Promise<InstagramStorySharePayload>;
   children?: ReactNode;
 };
 
-/**
- * One-shot button: prepare share → download + copy → open instructional modal.
- */
 export function InstagramStoryShareButton({
   shareLink,
   imageUrl,
@@ -190,6 +263,7 @@ export function InstagramStoryShareButton({
 }: InstagramStoryShareButtonProps) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
+  const [mode, setMode] = useState<InstagramStoryShareResult["mode"]>("download-fallback");
   const [busy, setBusy] = useState(false);
 
   const onClick = useCallback(async () => {
@@ -199,7 +273,9 @@ export function InstagramStoryShareButton({
       const payload = resolvePayload
         ? await resolvePayload()
         : { shareLink, imageUrl, filename };
-      await handleInstagramStoryShare(payload);
+      const result = await handleInstagramStoryShare(payload);
+      if (result.mode === "cancelled") return;
+      setMode(result.mode);
       setOpen(true);
     } finally {
       setBusy(false);
@@ -226,7 +302,7 @@ export function InstagramStoryShareButton({
             defaultValue: "Instagram Story'ga ulashish",
           })}
       </button>
-      <InstagramShareModal open={open} onOpenChange={setOpen} />
+      <InstagramShareModal open={open} onOpenChange={setOpen} mode={mode} />
     </>
   );
 }

@@ -1171,11 +1171,15 @@
     "instagramStory": {
       "cta": "Instagram Story'ga ulashish",
       "title": "Instagram Story'ga ulashish",
-      "subtitle": "Tayyor natija shabloni yuklandi — endi Instagram'da Story yarating.",
+      "subtitle": "Rasm yuklandi. Story camera ochiladi — galereyadan shablonni tanlang.",
+      "nativeSubtitle": "Share sheet'da Instagram Stories'ni tanlang. Keyin Link sticker qo'shing.",
       "step1": "Tayyor natija shabloni qurilmangizga yuklab olindi.",
       "step2": "Shaxsiy havola buferga nusxalandi.",
-      "step3": "Instagram'da Story oching, yuklangan shablonni qo'ying va «Link» sticker orqali havolani joylang.",
+      "step3": "Instagram Story'da galereyadan shablonni tanlang va «Link» sticker orqali havolani joylang.",
+      "nativeStep1": "Rasm Instagram Stories'ga yuborildi (share sheet orqali).",
+      "nativeStep2": "Havola buferda — Story'da «Link» sticker qo'yib joylashtiring.",
       "openInstagram": "Instagram'ni ochish",
+      "openStory": "Instagram Story'ni ochish",
       "failed": "Instagram Story uchun tayyorlab bo'lmadi",
       "storyCta": "O‘zingizda sinab ko‘ring"
     },

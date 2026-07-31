@@ -9,6 +9,7 @@ import { MorphBeforeAfter } from "@/components/ai-style/MorphBeforeAfter";
 import {
   handleInstagramStoryShare,
   InstagramShareModal,
+  type InstagramStoryShareResult,
 } from "@/components/ai-style/InstagramShareModal";
 import { createMorphAiLookShare } from "@/lib/api";
 import { shareAiStyleLink, downloadAiStyleImage } from "@/lib/ai-style-image";
@@ -55,6 +56,8 @@ function AiStyleHistoryPage() {
   const [sharing, setSharing] = useState(false);
   const [igSharing, setIgSharing] = useState(false);
   const [igModalOpen, setIgModalOpen] = useState(false);
+  const [igShareMode, setIgShareMode] =
+    useState<InstagramStoryShareResult["mode"]>("download-fallback");
   const userId = getActiveUserId();
 
   useEffect(() => {
@@ -184,11 +187,13 @@ function AiStyleHistoryPage() {
         }),
       });
 
-      await handleInstagramStoryShare({
+      const result = await handleInstagramStoryShare({
         shareLink: pageUrl,
         imageUrl: storyImage,
         filename: "morf-ai-story.png",
       });
+      if (result.mode === "cancelled") return;
+      setIgShareMode(result.mode);
       setIgModalOpen(true);
     } catch {
       toast.error(
@@ -387,7 +392,7 @@ function AiStyleHistoryPage() {
             document.body,
           )
         : null}
-      <InstagramShareModal open={igModalOpen} onOpenChange={setIgModalOpen} />
+      <InstagramShareModal open={igModalOpen} onOpenChange={setIgModalOpen} mode={igShareMode} />
     </div>
   );
 }

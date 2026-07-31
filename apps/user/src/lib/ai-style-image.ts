@@ -8,6 +8,13 @@ async function imageUrlToBlob(url: string): Promise<Blob> {
   return res.blob();
 }
 
+/** Export for Instagram Story native share. */
+export async function imageUrlToFile(url: string, filename: string): Promise<File> {
+  const blob = await imageUrlToBlob(url);
+  const type = blob.type || (filename.endsWith(".png") ? "image/png" : "image/jpeg");
+  return new File([blob], filename, { type });
+}
+
 function triggerAnchorDownload(objectUrl: string, filename: string) {
   const anchor = document.createElement("a");
   anchor.href = objectUrl;
@@ -20,7 +27,7 @@ function triggerAnchorDownload(objectUrl: string, filename: string) {
 }
 
 /**
- * Always trigger a file download (no Web Share sheet) — Instagram Story flow uchun.
+ * Always trigger a file download (no Web Share sheet) — Instagram Story fallback.
  */
 export async function downloadImageFile(url: string, filename: string) {
   const blob = await imageUrlToBlob(url);

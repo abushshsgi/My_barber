@@ -1171,11 +1171,15 @@
     "instagramStory": {
       "cta": "Share to Instagram Story",
       "title": "Share to Instagram Story",
-      "subtitle": "Your finished look template is ready — create a Story in Instagram.",
+      "subtitle": "Image saved. Story camera opens — pick the template from your gallery.",
+      "nativeSubtitle": "In the share sheet, choose Instagram Stories. Then add a Link sticker.",
       "step1": "The finished-look story template was downloaded.",
       "step2": "Your unique link was copied to the clipboard.",
-      "step3": "Open Instagram, create a Story with the template, and paste the link with the Link sticker.",
+      "step3": "In Instagram Story, pick the template from your gallery and paste the link with the Link sticker.",
+      "nativeStep1": "The image was sent toward Instagram Stories via the share sheet.",
+      "nativeStep2": "Link is on your clipboard — add it with the Link sticker in your Story.",
       "openInstagram": "Open Instagram",
+      "openStory": "Open Instagram Story",
       "failed": "Couldn’t prepare Instagram Story share",
       "storyCta": "Try it on yourself"
     },
