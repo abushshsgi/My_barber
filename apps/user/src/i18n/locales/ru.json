@@ -1196,9 +1196,7 @@
       "sublineStyled": "{{style}} · создано в Morf AI",
       "nudgeTitle": "Поделитесь своим фото",
       "nudgeText": "Выложите в Story и отметьте {{handle}} — друзья увидят ваш новый образ и примерят его на себе.",
-      "perkBrand": "Шаблон Mysaloon",
-      "perkMention": "Место для {{handle}}",
-      "perkLink": "Ссылка скопируется"
+      "nudgeFootnote": "Шаблон Mysaloon готовится, ссылка копируется автоматически."
     },
     "tryMoreStyles": "Другие стили",
     "viewStylePage": "Страница стиля",

@@ -1194,9 +1194,7 @@
       "sublineStyled": "{{style}} · created with Morf AI",
       "nudgeTitle": "Share your photo",
       "nudgeText": "Post it to your Story and tag {{handle}} — your friends will see the new look and try it on themselves.",
-      "perkBrand": "Mysaloon template",
-      "perkMention": "Space for {{handle}}",
-      "perkLink": "Link auto-copied"
+      "nudgeFootnote": "We build the Mysaloon template and copy the link for you."
     },
     "tryMoreStyles": "More styles",
     "viewStylePage": "Style page",

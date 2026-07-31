@@ -1194,9 +1194,7 @@
       "sublineStyled": "{{style}} · Morf AI bilan yaratildi",
       "nudgeTitle": "Rasmingizni ulashing",
       "nudgeText": "Story’ga qo‘ying va {{handle}} ni belgilang — do‘stlaringiz yangi obrazingizni ko‘radi va o‘zida sinab ko‘radi.",
-      "perkBrand": "Mysaloon shabloni",
-      "perkMention": "{{handle}} uchun joy",
-      "perkLink": "Havola nusxalanadi"
+      "nudgeFootnote": "Mysaloon shabloni tayyorlanadi, havola avtomatik nusxalanadi."
     },
     "tryMoreStyles": "Boshqa uslublar",
     "viewStylePage": "Uslub sahifasi",

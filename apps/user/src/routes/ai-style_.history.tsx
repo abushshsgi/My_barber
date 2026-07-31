@@ -213,7 +213,7 @@ function AiStyleHistoryPage() {
                 key={card.id}
                 type="button"
                 onClick={() => setActive(card)}
-                className="group overflow-hidden rounded-2xl border border-border bg-surface text-left touch-manipulation active:scale-[0.98]"
+                className="group cursor-pointer overflow-hidden rounded-2xl border border-border bg-surface text-left transition-colors duration-200 hover:border-foreground/25 touch-manipulation active:scale-[0.98]"
               >
                 <div className="aspect-[3/4] overflow-hidden bg-muted/40">
                   <img
@@ -266,7 +266,7 @@ function AiStyleHistoryPage() {
                   <X className="h-4 w-4" />
                 </button>
               </div>
-              <div className="mx-auto flex min-h-0 w-full max-w-lg flex-1 flex-col items-center justify-center gap-3 overflow-y-auto px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
+              <div className="mx-auto flex min-h-0 w-full max-w-lg flex-1 flex-col items-center justify-start gap-3 overflow-y-auto px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
                 {active.before ? (
                   <div className="w-full">
                     <MorphBeforeAfter
@@ -286,12 +286,17 @@ function AiStyleHistoryPage() {
                   </div>
                 )}
 
+                <MorfAiShareNudge
+                  onShare={handleInstagramShare}
+                  sharing={igSharing}
+                  className="w-full"
+                />
                 <div className="grid w-full grid-cols-2 gap-2">
                   <button
                     type="button"
                     disabled={downloading}
                     onClick={() => void handleDownload()}
-                    className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-2xl bg-foreground text-[13px] font-bold text-background touch-manipulation active:scale-[0.98] disabled:opacity-50"
+                    className="inline-flex min-h-11 cursor-pointer items-center justify-center gap-1.5 rounded-2xl bg-foreground text-[13px] font-bold text-background transition-opacity duration-200 hover:opacity-90 touch-manipulation active:scale-[0.98] disabled:opacity-50"
                   >
                     {downloading ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
@@ -304,7 +309,7 @@ function AiStyleHistoryPage() {
                     type="button"
                     disabled={sharing}
                     onClick={() => void handleShare()}
-                    className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-2xl border border-border bg-surface text-[13px] font-bold touch-manipulation active:scale-[0.98] disabled:opacity-50"
+                    className="inline-flex min-h-11 cursor-pointer items-center justify-center gap-1.5 rounded-2xl border border-border bg-surface text-[13px] font-bold transition-colors duration-200 hover:border-foreground/25 touch-manipulation active:scale-[0.98] disabled:opacity-50"
                   >
                     {sharing ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
@@ -314,11 +319,6 @@ function AiStyleHistoryPage() {
                     {t("aiStylePage.share")}
                   </button>
                 </div>
-                <MorfAiShareNudge
-                  onShare={handleInstagramShare}
-                  sharing={igSharing}
-                  className="w-full"
-                />
               </div>
             </div>,
             document.body,

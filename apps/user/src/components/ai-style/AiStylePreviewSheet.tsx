@@ -61,9 +61,11 @@ function ActionRow({
       disabled={disabled}
       onClick={onClick}
       className={cn(
-        "flex min-w-0 flex-1 flex-col items-center gap-1.5 rounded-2xl px-2 py-3 text-[10px] font-bold transition-colors touch-manipulation",
-        active ? "bg-black text-white" : "bg-neutral-100 text-black",
-        disabled && "opacity-50",
+        "flex min-w-0 flex-1 cursor-pointer flex-col items-center gap-1.5 rounded-2xl px-2 py-3 text-[10px] font-bold transition-colors duration-200 touch-manipulation",
+        active
+          ? "bg-black text-white hover:bg-neutral-800"
+          : "bg-neutral-100 text-black hover:bg-neutral-200",
+        disabled && "cursor-not-allowed opacity-50",
       )}
     >
       {icon}

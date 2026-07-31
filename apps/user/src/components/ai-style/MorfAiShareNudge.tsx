@@ -1,4 +1,4 @@
-import { AtSign, Instagram, Link2, Loader2, Sparkles } from "lucide-react";
+import { Instagram, Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { MORF_AI_INSTAGRAM } from "@/lib/morph-share-copy";
 import { cn } from "@/lib/utils";
@@ -10,34 +10,9 @@ type Props = {
   className?: string;
 };
 
-/**
- * «Rasmingizni ulashing» bloki — Instagram Story ulashishni asosiy harakatga aylantiradi.
- * Story shabloniga nima kirishini oldindan ko‘rsatadi: brend, @morf.ai belgi va havola.
- */
+/** «Rasmingizni ulashing» bloki — Instagram Story ulashishni asosiy harakatga aylantiradi. */
 export function MorfAiShareNudge({ onShare, sharing, disabled, className }: Props) {
   const { t } = useTranslation();
-
-  const perks = [
-    {
-      icon: <Sparkles className="h-3.5 w-3.5" strokeWidth={2.25} />,
-      label: t("aiStylePage.instagramStory.perkBrand", {
-        defaultValue: "Mysaloon shabloni",
-      }),
-    },
-    {
-      icon: <AtSign className="h-3.5 w-3.5" strokeWidth={2.25} />,
-      label: t("aiStylePage.instagramStory.perkMention", {
-        handle: MORF_AI_INSTAGRAM,
-        defaultValue: "{{handle}} uchun joy",
-      }),
-    },
-    {
-      icon: <Link2 className="h-3.5 w-3.5" strokeWidth={2.25} />,
-      label: t("aiStylePage.instagramStory.perkLink", {
-        defaultValue: "Havola nusxalanadi",
-      }),
-    },
-  ];
 
   return (
     <div
@@ -66,18 +41,6 @@ export function MorfAiShareNudge({ onShare, sharing, disabled, className }: Prop
         </div>
       </div>
 
-      <ul className="mt-3 flex flex-wrap gap-1.5">
-        {perks.map((perk) => (
-          <li
-            key={perk.label}
-            className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-2.5 py-1 text-[11px] font-semibold text-muted-foreground"
-          >
-            {perk.icon}
-            {perk.label}
-          </li>
-        ))}
-      </ul>
-
       <button
         type="button"
         disabled={disabled || sharing}
@@ -99,6 +62,12 @@ export function MorfAiShareNudge({ onShare, sharing, disabled, className }: Prop
           defaultValue: "Instagram Story’ga ulashish",
         })}
       </button>
+
+      <p className="mt-2 text-center text-[11px] leading-snug text-muted-foreground">
+        {t("aiStylePage.instagramStory.nudgeFootnote", {
+          defaultValue: "Mysaloon shabloni tayyorlanadi, havola avtomatik nusxalanadi.",
+        })}
+      </p>
     </div>
   );
 }
