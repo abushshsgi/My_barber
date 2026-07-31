@@ -16,6 +16,15 @@ export const Route = createFileRoute("/explore_/$styleId")({
   component: ExploreStyleDetailPage,
 });
 
+const ctaPrimaryClass =
+  "inline-flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-full bg-foreground px-3 py-2.5 text-[13px] font-bold text-background transition-opacity active:opacity-90 sm:gap-2 sm:text-sm";
+const ctaSecondaryClass =
+  "inline-flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-full border border-border bg-surface px-3 py-2.5 text-[13px] font-bold text-foreground transition-opacity active:opacity-90 sm:gap-2 sm:text-sm";
+const ctaDesktopPrimaryClass =
+  "inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-4 py-3 text-sm font-bold text-background transition-opacity hover:opacity-90";
+const ctaDesktopSecondaryClass =
+  "inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full border border-border bg-background px-4 py-3 text-sm font-bold text-foreground transition-opacity hover:opacity-90";
+
 function ExploreStyleDetailPage() {
   const { t } = useTranslation();
   const { styleId } = Route.useParams();
@@ -38,121 +47,103 @@ function ExploreStyleDetailPage() {
   const imageUrl = getHairstyleDisplayUrl(entry);
   const galleryItems = entry.gallery.length > 0 ? entry.gallery : [{ view: "front", label: "Old", url: imageUrl }];
 
+  const tryOnLink = (
+    <Link to="/explore/$styleId/try" params={{ styleId: entry.id }} className={ctaPrimaryClass}>
+      <ScanFace className="h-4 w-4 shrink-0" strokeWidth={2.25} />
+      <span className="min-w-0 truncate">{t("explorePage.tryOnMe")}</span>
+    </Link>
+  );
+
+  const findSalonLink = (
+    <Link to="/" className={ctaSecondaryClass}>
+      <MapPin className="h-4 w-4 shrink-0" strokeWidth={2.25} />
+      <span className="min-w-0 truncate">{t("explorePage.findSalon")}</span>
+    </Link>
+  );
+
   return (
-    <div className={cn(MOBILE_STICKY_CONTENT_PADDING_CLASS, "min-w-0 overflow-x-clip lg:px-6 lg:pb-8")}>
-      {/* Mobile */}
-      <div className="lg:hidden">
-        <PageHeader showBack sticky title={entry.titleUz} />
-        <div className="px-4 pb-2">
-          <ExploreStyleGallery
-            items={galleryItems}
-            title={entry.titleUz}
-            variant="mobileHero"
-            showThumbs
-            autoPlay={false}
-            description={entry.descriptionUz}
-          />
-        </div>
-      </div>
-
-      {/* Desktop */}
-      <div className="hidden lg:grid lg:grid-cols-[1fr_320px] lg:items-start lg:gap-8 lg:pt-4">
-        <div className="lg:px-0">
-          <h2 className="text-lg font-bold tracking-tight">{t("aiStylePage.uploadTitle")}</h2>
-          <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">{t("explorePage.tryOnDesc")}</p>
-
-          <HairstylePreviewFrame className="mt-4">
+    <>
+      <div className={cn(MOBILE_STICKY_CONTENT_PADDING_CLASS, "min-w-0 lg:px-6 lg:pb-10")}>
+        {/* Mobile */}
+        <div className="lg:hidden">
+          <PageHeader showBack sticky title={entry.titleUz} backFallback="/explore" />
+          <div className="px-4 pb-3 pt-1">
             <ExploreStyleGallery
               items={galleryItems}
               title={entry.titleUz}
-              badge={
-                <span className="rounded-full bg-background/90 px-2.5 py-1 text-[10px] font-bold backdrop-blur-sm">
-                  {t("explorePage.sampleBadge")}
-                </span>
-              }
+              variant="mobileHero"
+              showThumbs
+              autoPlay={false}
+              description={entry.descriptionUz}
+              priority
             />
-            <div className="mt-3 overflow-hidden rounded-3xl border border-border bg-surface shadow-sm">
-              <div className="border-t border-border/70 bg-surface px-4 py-3">
-                <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
-                  {t("styleTryOnPage.selectedStyle")}
-                </p>
-                <p className="mt-0.5 text-base font-bold leading-tight">{entry.titleUz}</p>
+
+            {entry.faceShapes.length > 0 ? (
+              <div className="mt-4 flex flex-wrap gap-1.5">
+                {entry.faceShapes.slice(0, 4).map((shape) => (
+                  <span
+                    key={shape}
+                    className="rounded-full bg-surface px-2.5 py-1 text-[11px] font-semibold text-muted-foreground"
+                  >
+                    {t(`aiStylePage.faceShapes.${shape}`)}
+                  </span>
+                ))}
               </div>
-            </div>
-          </HairstylePreviewFrame>
-
-          <div className="mt-4 flex flex-wrap gap-2">
-            {entry.faceShapes.map((shape) => (
-              <span
-                key={shape}
-                className="rounded-full bg-surface px-3 py-1.5 text-xs font-bold text-foreground"
-              >
-                {t(`aiStylePage.faceShapes.${shape}`)}
-              </span>
-            ))}
-            <span className="rounded-full bg-surface px-3 py-1.5 text-xs font-bold text-foreground">
-              {t(`aiStylePage.hairTypes.${entry.hairLength}`)}
-            </span>
+            ) : null}
           </div>
-
-          <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{entry.descriptionUz}</p>
-
-          {entry.tags.length > 0 ? (
-            <div className="mt-3 flex flex-wrap gap-1.5">
-              {entry.tags.map((tag) => (
-                <span
-                  key={tag}
-                  className={cn(
-                    "rounded-md border border-border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground",
-                  )}
-                >
-                  {tag}
-                </span>
-              ))}
-            </div>
-          ) : null}
         </div>
 
-        <div className="sticky top-20 block self-start">
-          <h2 className="text-xl font-bold tracking-tight">{entry.titleUz}</h2>
-          <p className="mt-2 text-sm text-muted-foreground">{entry.descriptionUz}</p>
-          <div className="mt-6 grid grid-cols-2 gap-2">
-            <Link
-              to="/explore/$styleId/try"
-              params={{ styleId: entry.id }}
-              className="col-span-2 inline-flex items-center justify-center gap-2 rounded-2xl bg-foreground py-3.5 text-xs font-bold text-background"
-            >
-              <ScanFace className="h-4 w-4" />
-              {t("explorePage.tryOnMe")}
-            </Link>
-            <Link
-              to="/"
-              className="col-span-2 inline-flex items-center justify-center gap-2 rounded-2xl border-2 border-border bg-background py-3.5 text-xs font-bold text-foreground"
-            >
-              <MapPin className="h-4 w-4" />
-              {t("explorePage.findSalon")}
-            </Link>
+        {/* Desktop */}
+        <div className="hidden lg:grid lg:grid-cols-[minmax(0,1fr)_300px] lg:items-start lg:gap-10 lg:pt-2">
+          <div className="min-w-0">
+            <HairstylePreviewFrame>
+              <ExploreStyleGallery items={galleryItems} title={entry.titleUz} />
+            </HairstylePreviewFrame>
+
+            {entry.faceShapes.length > 0 || entry.hairLength ? (
+              <div className="mt-4 flex flex-wrap gap-2">
+                {entry.faceShapes.map((shape) => (
+                  <span
+                    key={shape}
+                    className="rounded-full bg-surface px-3 py-1.5 text-xs font-bold text-foreground"
+                  >
+                    {t(`aiStylePage.faceShapes.${shape}`)}
+                  </span>
+                ))}
+                <span className="rounded-full bg-surface px-3 py-1.5 text-xs font-bold text-foreground">
+                  {t(`aiStylePage.hairTypes.${entry.hairLength}`)}
+                </span>
+              </div>
+            ) : null}
           </div>
+
+          <aside className="sticky top-20 self-start rounded-3xl border border-border bg-surface/60 p-5">
+            <h1 className="text-2xl font-bold tracking-tight">{entry.titleUz}</h1>
+            {entry.descriptionUz ? (
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{entry.descriptionUz}</p>
+            ) : null}
+            <div className="mt-6 flex flex-col gap-2.5">
+              <Link
+                to="/explore/$styleId/try"
+                params={{ styleId: entry.id }}
+                className={ctaDesktopPrimaryClass}
+              >
+                <ScanFace className="h-4 w-4 shrink-0" strokeWidth={2.25} />
+                {t("explorePage.tryOnMe")}
+              </Link>
+              <Link to="/" className={ctaDesktopSecondaryClass}>
+                <MapPin className="h-4 w-4 shrink-0" strokeWidth={2.25} />
+                {t("explorePage.findSalon")}
+              </Link>
+            </div>
+          </aside>
         </div>
       </div>
 
       <MobileStickyActionBar>
-        <Link
-          to="/explore/$styleId/try"
-          params={{ styleId: entry.id }}
-          className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-foreground px-3 py-2.5 text-[13px] font-bold text-background active:opacity-90"
-        >
-          <ScanFace className="h-4 w-4 shrink-0" strokeWidth={2.25} />
-          <span className="truncate">{t("explorePage.tryOnMe")}</span>
-        </Link>
-        <Link
-          to="/"
-          className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-surface px-3 py-2.5 text-[13px] font-bold text-foreground active:opacity-90"
-        >
-          <MapPin className="h-4 w-4 shrink-0" strokeWidth={2.25} />
-          <span className="truncate">{t("explorePage.findSalon")}</span>
-        </Link>
+        {tryOnLink}
+        {findSalonLink}
       </MobileStickyActionBar>
-    </div>
+    </>
   );
 }

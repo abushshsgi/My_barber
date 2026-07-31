@@ -49,7 +49,7 @@ export function ExploreStyleGallery({
         className={cn(
           "grid gap-2",
           isMobileHero
-            ? "mt-4 grid-cols-4"
+            ? "mt-3 grid-cols-4 gap-1.5"
             : slides.length > 1
               ? "grid-cols-4"
               : "hidden",
@@ -108,7 +108,7 @@ export function ExploreStyleGallery({
         <div
           className={cn(
             isMobileHero
-              ? "relative aspect-[3/4] w-full max-h-[min(52dvh,460px)]"
+              ? "relative aspect-[3/4] w-full max-h-[min(48dvh,420px)]"
               : "relative aspect-[3/4]",
           )}
         >
@@ -147,7 +147,7 @@ export function ExploreStyleGallery({
       </div>
 
       {isMobileHero && description ? (
-        <p className="mt-4 text-sm leading-relaxed text-muted-foreground">{description}</p>
+        <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-muted-foreground">{description}</p>
       ) : null}
 
       {thumbRow}

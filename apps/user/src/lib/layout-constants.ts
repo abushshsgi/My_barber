@@ -22,8 +22,7 @@ export const MOBILE_CONTENT_PADDING_CLASS =
 export const MOBILE_STICKY_ACTIONS_OFFSET =
   "calc(5.5rem + env(safe-area-inset-bottom, 0px))" as const;
 
-/**
- * Sticky action bar ustidagi kontent uchun pastki padding.
+/** Sticky action bar ustidagi kontent uchun pastki padding.
  * Dock bo'lsa UserLayout allaqachon dock+safe-area beradi — faqat action bar balandligi.
  */
 export const MOBILE_STICKY_CONTENT_PADDING_CLASS = "pb-[5.5rem]" as const;
