@@ -72,6 +72,23 @@ export const MEN_NEW_STYLE_SLUGS = [
   "messy-fringe",
   "disconnected-crop",
   "wet-curl-taper",
+  "curly-two-block",
+  "long-curly-hair",
+  "drop-fade-curly",
+  "curly-wolf-cut",
+  "curly-flow",
+  "curly-fringe",
+  "curly-shag",
+  "curly-undercut-style",
+  "curly-ponytail",
+  "curly-afro",
+  "layered-curly",
+  "curly-curtain-bangs",
+  "curly-middle-part",
+  "natural-curly",
+  "medium-curly",
+  "curly-slick-back",
+  "curly-bowl-cut",
 ] as const;
 
 export const MEN_CATALOG_STYLE_SLUGS = [

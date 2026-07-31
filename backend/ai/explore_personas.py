@@ -112,9 +112,10 @@ MEN_CLASSIC_STYLE_SLUGS = frozenset(
     }
 )
 
+from ai.hairstyle_seed_curly_batch import CURLY_BATCH_SLUGS  # noqa: E402
 from ai.hairstyle_seed_new20 import NEW_MEN_STYLE_SLUGS  # noqa: E402
 
-MEN_NEW_STYLE_SLUGS = frozenset(NEW_MEN_STYLE_SLUGS)
+MEN_NEW_STYLE_SLUGS = frozenset(NEW_MEN_STYLE_SLUGS) | frozenset(CURLY_BATCH_SLUGS)
 
 MEN_CATALOG_STYLE_SLUGS = frozenset(MEN_CLASSIC_STYLE_SLUGS | MEN_NEW_STYLE_SLUGS)
 

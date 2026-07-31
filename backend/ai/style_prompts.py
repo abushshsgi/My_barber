@@ -17,10 +17,12 @@ MEN_STYLE_PROMPTS: dict[str, str] = {
     "modern-mullet": "modern mullet short front faded sides longer back",
 }
 
-# Yangi 20 uslub promptlari
+# Yangi 20 uslub + curly batch promptlari
+from ai.hairstyle_seed_curly_batch import CURLY_BATCH_PROMPTS  # noqa: E402
 from ai.hairstyle_seed_new20 import NEW_MEN_STYLE_PROMPTS  # noqa: E402
 
 MEN_STYLE_PROMPTS.update(NEW_MEN_STYLE_PROMPTS)
+MEN_STYLE_PROMPTS.update(CURLY_BATCH_PROMPTS)
 
 WOMEN_STYLE_PROMPTS: dict[str, str] = {
     "soft-bob": "soft bob haircut shoulder length",

@@ -1,7 +1,8 @@
-"""Boshlang'ich Explore soch uslublari — Irland klassik 12 + yangi 20 uslub."""
+"""Boshlang'ich Explore soch uslublari — Irland klassik 12 + yangi to'lqinlar."""
 
 from __future__ import annotations
 
+from ai.hairstyle_seed_curly_batch import curly_batch_hairstyle_rows
 from ai.hairstyle_seed_new20 import NEW_MEN_HAIRSTYLE_SEED
 
 # Yosh guruhlari: kids (10–12), teen (13–17), young (18–29), adult (30–44), mature (45+)
@@ -189,4 +190,8 @@ _CLASSIC_HAIRSTYLE_SEED: list[dict] = [
     },
 ]
 
-HAIRSTYLE_SEED: list[dict] = [*_CLASSIC_HAIRSTYLE_SEED, *NEW_MEN_HAIRSTYLE_SEED]
+HAIRSTYLE_SEED: list[dict] = [
+    *_CLASSIC_HAIRSTYLE_SEED,
+    *NEW_MEN_HAIRSTYLE_SEED,
+    *curly_batch_hairstyle_rows(),
+]

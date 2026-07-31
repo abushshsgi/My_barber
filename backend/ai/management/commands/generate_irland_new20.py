@@ -8,21 +8,28 @@ from django.core.management.base import BaseCommand, CommandError
 
 from ai.explore_published import publish_explore_asset
 from ai.explore_views import EXPLORE_VIEW_IDS
+from ai.hairstyle_seed_curly_batch import CURLY_BATCH_SLUGS
 from ai.hairstyle_seed_new20 import NEW_MEN_STYLE_SLUGS
 from ai.services.explore_image_gen import explore_gen_configured, generate_explore_asset
 from ai.services.gemini_style import AiStyleError
 
 
 class Command(BaseCommand):
-    help = "Yangi 20 uslubni Irland personaji uchun generatsiya + publish (front → sides)."
+    help = "Yangi uslublarni Irland personaji uchun generatsiya + publish (front → sides)."
 
     def add_arguments(self, parser):
         parser.add_argument("--persona", default="irland")
         parser.add_argument(
             "--slugs",
             nargs="*",
-            default=list(NEW_MEN_STYLE_SLUGS),
-            help="Faqat shu sluglar (default: barcha yangi 20)",
+            default=None,
+            help="Faqat shu sluglar",
+        )
+        parser.add_argument(
+            "--batch",
+            choices=["new20", "curly", "all"],
+            default="all",
+            help="Default slug to'plami (--slugs bo'lmasa)",
         )
         parser.add_argument(
             "--views",
@@ -50,7 +57,14 @@ class Command(BaseCommand):
             raise CommandError(f"Image gen sozlanmagan: {cfg}")
 
         persona = options["persona"]
-        slugs = options["slugs"] or list(NEW_MEN_STYLE_SLUGS)
+        if options["slugs"]:
+            slugs = list(options["slugs"])
+        elif options["batch"] == "curly":
+            slugs = list(CURLY_BATCH_SLUGS)
+        elif options["batch"] == "new20":
+            slugs = list(NEW_MEN_STYLE_SLUGS)
+        else:
+            slugs = list(dict.fromkeys([*NEW_MEN_STYLE_SLUGS, *CURLY_BATCH_SLUGS]))
         views = ["front"] if options["front_only"] else list(options["views"] or EXPLORE_VIEW_IDS)
         if "front" in views:
             views = ["front", *[v for v in views if v != "front"]]
