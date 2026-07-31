@@ -12,9 +12,9 @@ from django.db.models.functions import TruncDate
 from django.http import HttpResponse
 from django.utils import timezone
 
-from ai.models import AiGenerationUsage, AiStyleHistoryEntry, MorphAiSettings
+from ai.models import AiGenerationUsage, AiStyleHistoryEntry, MorphAiGenerationEntry, MorphAiSettings
 from ai.morph_analytics import _user_label
-from ai.morph_ops import _money
+from ai.morph_ops import _gallery_generation_item, _gallery_history_item, _money
 from control_panel.platform_analytics import resolve_range
 
 LIST_KINDS = (
@@ -324,47 +324,27 @@ def _list_daily(start_raw, end_raw, page, page_size) -> dict[str, Any]:
 
 
 def _list_gallery(page, page_size, request=None) -> dict[str, Any]:
-    qs = (
+    history_rows = list(
         AiStyleHistoryEntry.objects.filter(photo__isnull=False)
         .exclude(photo="")
         .select_related("user")
-        .order_by("-created_at")
+        .order_by("-created_at")[:500]
     )
-    count = qs.count()
+    generation_rows = list(
+        MorphAiGenerationEntry.objects.filter(after_photo__isnull=False)
+        .exclude(after_photo="")
+        .select_related("user")
+        .order_by("-created_at")[:500]
+    )
+    items = [_gallery_history_item(row) for row in history_rows] + [
+        _gallery_generation_item(row) for row in generation_rows
+    ]
+    items.sort(key=lambda item: item["created_at"], reverse=True)
+    count = len(items)
     start = (page - 1) * page_size
-    items = []
-    missing = 0
-    for row in qs[start : start + page_size]:
-        photo_url = None
-        if row.photo:
-            try:
-                from media_store.utils import media_field_exists
-
-                if media_field_exists(row.photo):
-                    photo_url = row.photo.url
-                    if photo_url and photo_url.startswith("http"):
-                        marker = "/media/"
-                        idx = photo_url.find(marker)
-                        if idx >= 0:
-                            photo_url = photo_url[idx:]
-                else:
-                    missing += 1
-            except Exception:
-                missing += 1
-        items.append(
-            {
-                "id": row.id,
-                "user_id": row.user_id,
-                "user_name": row.user.full_name or row.user.phone or row.user.email,
-                "source": row.source,
-                "face_shape_key": row.face_shape_key,
-                "hair_type_key": row.hair_type_key,
-                "photo_url": photo_url,
-                "photo_missing": photo_url is None,
-                "created_at": row.created_at.isoformat(),
-            }
-        )
-    payload = _paginate(items, page=page, page_size=page_size, count=count)
+    page_items = items[start : start + page_size]
+    missing = sum(1 for item in page_items if item.get("photo_missing"))
+    payload = _paginate(page_items, page=page, page_size=page_size, count=count)
     payload["kind"] = "gallery"
     payload["media_note"] = (
         "Ba'zi rasmlar diskda topilmadi. Productionda doimiy saqlash uchun USE_S3_MEDIA yoqing."

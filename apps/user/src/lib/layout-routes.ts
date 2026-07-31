@@ -1,4 +1,4 @@
-/** Auth / onboarding / Morf AI — pastki dock yo‘q. */
+/** Auth / onboarding / Morf AI / explore style detail — pastki dock yo‘q. */
 export function shouldShowMobileDock(pathname: string): boolean {
   if (pathname === "/auth" || pathname === "/onboarding") {
     return false;
@@ -7,6 +7,10 @@ export function shouldShowMobileDock(pathname: string): boolean {
     return false;
   }
   if (pathname === "/morf-ai" || pathname.startsWith("/morf-ai/")) {
+    return false;
+  }
+  // /explore/:styleId va /explore/:styleId/try — faqat back, dock yo'q
+  if (/^\/explore\/[^/]+/.test(pathname)) {
     return false;
   }
   return true;

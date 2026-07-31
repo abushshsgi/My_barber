@@ -49,7 +49,7 @@ function MorphGalleryPage() {
         <div>
           <h1 className="font-heading text-2xl font-semibold">Preview gallery</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Eng oxirgi 10 ta selfi — to&apos;liq gallery va yuklab olish uchun Barchasi.
+            Eng oxirgi 10 ta — selfie history + try-on generatsiyalar (Explore/Morf AI).
           </p>
         </div>
         <Link
@@ -85,7 +85,10 @@ function MorphGalleryPage() {
           ))}
         </div>
       ) : items.length === 0 ? (
-        <EmptyState title="Gallery bo'sh" description="History yozuvlari paydo bo'lganda shu yerda." />
+        <EmptyState
+          title="Gallery bo'sh"
+          description="History yoki try-on generatsiyalar paydo bo'lganda shu yerda."
+        />
       ) : (
         <>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -93,14 +96,20 @@ function MorphGalleryPage() {
               const src = item.photo_missing ? null : resolveMediaUrl(item.photo_url);
               return (
                 <figure
-                  key={item.id}
+                  key={String(item.id)}
                   className="overflow-hidden rounded-2xl border border-border bg-card shadow-card"
                 >
                   <GalleryImage src={src} alt={item.user_name} />
                   <figcaption className="space-y-1 p-3">
                     <div className="truncate text-sm font-medium">{item.user_name}</div>
+                    {item.title ? (
+                      <div className="truncate text-xs text-muted-foreground">{item.title}</div>
+                    ) : null}
                     <div className="flex flex-wrap gap-1">
                       <Badge variant="secondary">{item.source}</Badge>
+                      {item.kind === "generation" ? (
+                        <Badge variant="outline">try-on</Badge>
+                      ) : null}
                       {item.face_shape_key ? (
                         <Badge variant="outline">{item.face_shape_key}</Badge>
                       ) : null}

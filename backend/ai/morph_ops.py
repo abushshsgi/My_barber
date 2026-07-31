@@ -14,7 +14,7 @@ from django.db.models.functions import TruncDate
 from django.http import HttpResponse
 from django.utils import timezone
 
-from ai.models import AiGenerationUsage, AiStyleHistoryEntry, Hairstyle, MorphAiSettings
+from ai.models import AiGenerationUsage, AiStyleHistoryEntry, Hairstyle, MorphAiGenerationEntry, MorphAiSettings
 from control_panel.platform_analytics import resolve_range
 
 
@@ -444,46 +444,84 @@ def clear_tryon_queue() -> dict[str, Any]:
     return {"ok": True, "cleared": depth}
 
 
+def _media_field_url(field) -> tuple[str | None, bool]:
+    """Returns (url, missing). Prefer relative /media/… paths."""
+    if not field:
+        return None, True
+    try:
+        from media_store.utils import media_field_exists
+
+        if not media_field_exists(field):
+            return None, True
+        photo_url = field.url
+        if photo_url and photo_url.startswith("http"):
+            marker = "/media/"
+            idx = photo_url.find(marker)
+            if idx >= 0:
+                photo_url = photo_url[idx:]
+        return photo_url, False
+    except Exception:
+        return None, True
+
+
+def _gallery_history_item(row: AiStyleHistoryEntry) -> dict[str, Any]:
+    photo_url, missing = _media_field_url(row.photo)
+    return {
+        "id": f"h-{row.id}",
+        "entry_id": row.id,
+        "kind": "history",
+        "user_id": row.user_id,
+        "user_name": row.user.full_name or row.user.phone or row.user.email,
+        "source": row.source,
+        "face_shape_key": row.face_shape_key,
+        "hair_type_key": row.hair_type_key,
+        "style_id": "",
+        "title": "",
+        "photo_url": photo_url,
+        "photo_missing": missing,
+        "created_at": row.created_at.isoformat(),
+    }
+
+
+def _gallery_generation_item(row: MorphAiGenerationEntry) -> dict[str, Any]:
+    photo_url, missing = _media_field_url(row.after_photo)
+    return {
+        "id": f"g-{row.id}",
+        "entry_id": row.id,
+        "kind": "generation",
+        "user_id": row.user_id,
+        "user_name": row.user.full_name or row.user.phone or row.user.email,
+        "source": "tryon",
+        "face_shape_key": "",
+        "hair_type_key": "",
+        "style_id": row.style_id or "",
+        "title": row.title or row.style_id or "",
+        "photo_url": photo_url,
+        "photo_missing": missing,
+        "created_at": row.created_at.isoformat(),
+    }
+
+
 def build_gallery(*, limit: int = 40, request=None) -> dict[str, Any]:
-    qs = (
+    cap = max(1, min(100, limit))
+    history_rows = list(
         AiStyleHistoryEntry.objects.filter(photo__isnull=False)
         .exclude(photo="")
         .select_related("user")
-        .order_by("-created_at")[: max(1, min(100, limit))]
+        .order_by("-created_at")[:cap]
     )
-    items = []
-    missing = 0
-    for row in qs:
-        photo_url = None
-        if row.photo:
-            try:
-                from media_store.utils import media_field_exists
-
-                if media_field_exists(row.photo):
-                    photo_url = row.photo.url
-                    # Prefer relative /media/… so admin/user same-origin proxies work.
-                    if photo_url and photo_url.startswith("http"):
-                        marker = "/media/"
-                        idx = photo_url.find(marker)
-                        if idx >= 0:
-                            photo_url = photo_url[idx:]
-                else:
-                    missing += 1
-            except Exception:
-                missing += 1
-        items.append(
-            {
-                "id": row.id,
-                "user_id": row.user_id,
-                "user_name": row.user.full_name or row.user.phone or row.user.email,
-                "source": row.source,
-                "face_shape_key": row.face_shape_key,
-                "hair_type_key": row.hair_type_key,
-                "photo_url": photo_url,
-                "photo_missing": photo_url is None,
-                "created_at": row.created_at.isoformat(),
-            }
-        )
+    generation_rows = list(
+        MorphAiGenerationEntry.objects.filter(after_photo__isnull=False)
+        .exclude(after_photo="")
+        .select_related("user")
+        .order_by("-created_at")[:cap]
+    )
+    items = [_gallery_history_item(row) for row in history_rows] + [
+        _gallery_generation_item(row) for row in generation_rows
+    ]
+    items.sort(key=lambda item: item["created_at"], reverse=True)
+    items = items[:cap]
+    missing = sum(1 for item in items if item.get("photo_missing"))
     return {
         "items": items,
         "media_note": (

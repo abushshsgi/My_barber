@@ -230,7 +230,13 @@ function MorphAiListPage() {
                   <GalleryThumb src={src} alt={String(item.user_name || "")} />
                   <figcaption className="space-y-1 p-3">
                     <div className="truncate text-sm font-medium">{String(item.user_name || "—")}</div>
-                    <Badge variant="secondary">{String(item.source || "—")}</Badge>
+                    {item.title ? (
+                      <div className="truncate text-xs text-muted-foreground">{String(item.title)}</div>
+                    ) : null}
+                    <div className="flex flex-wrap gap-1">
+                      <Badge variant="secondary">{String(item.source || "—")}</Badge>
+                      {item.kind === "generation" ? <Badge variant="outline">try-on</Badge> : null}
+                    </div>
                     <div className="text-xs text-muted-foreground">
                       {item.created_at
                         ? format(parseISO(String(item.created_at)), "dd.MM.yyyy HH:mm")

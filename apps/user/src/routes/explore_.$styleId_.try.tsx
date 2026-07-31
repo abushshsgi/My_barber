@@ -27,6 +27,7 @@ function ExploreStyleTryPage() {
   const { data: entry, isLoading, isError } = useHairstyle(styleId, personaId);
   const flow = useStyleTryOnFlow({
     styleId,
+    styleTitle: entry?.titleUz,
     personaId,
     beforeTryOn,
     onPlanLimit,
@@ -36,7 +37,12 @@ function ExploreStyleTryPage() {
   if (isLoading) {
     return (
       <div className="pb-10">
-        <PageHeader showBack sticky title={t("styleTryOnPage.loadingTitle")} />
+        <PageHeader
+          showBack
+          sticky
+          title={t("styleTryOnPage.loadingTitle")}
+          backFallback={`/explore/${styleId}`}
+        />
         <p className="mt-8 px-5 text-center text-sm text-muted-foreground">{t("common.loading")}</p>
       </div>
     );
@@ -49,7 +55,12 @@ function ExploreStyleTryPage() {
   return (
     <div>
       {!flow.tryOnPreview && !flow.photo ? (
-        <PageHeader showBack sticky title={t("styleTryOnPage.title", { style: entry.titleUz })} />
+        <PageHeader
+          showBack
+          sticky
+          title={t("styleTryOnPage.title", { style: entry.titleUz })}
+          backFallback={`/explore/${styleId}`}
+        />
       ) : null}
       <StyleTryOnFlow flow={flow} entry={entry} />
       <MorphLimitUpsell

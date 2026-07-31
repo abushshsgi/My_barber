@@ -227,7 +227,7 @@ function ResultView({
             {t("styleTryOnPage.retry")}
           </button>
           <Link
-            to="/"
+            to="/map"
             className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/20 bg-white/10 py-3.5 text-xs font-bold text-white backdrop-blur-md"
           >
             <CalendarPlus className="h-4 w-4" />

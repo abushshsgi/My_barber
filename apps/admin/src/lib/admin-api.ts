@@ -3971,12 +3971,16 @@ export async function clearMorphAiQueue() {
 export async function fetchMorphAiGallery(limit = 40) {
   return apiJson<{
     items: Array<{
-      id: number;
+      id: string | number;
+      entry_id?: number;
+      kind?: "history" | "generation";
       user_id: number;
       user_name: string;
       source: string;
       face_shape_key: string;
       hair_type_key: string;
+      style_id?: string;
+      title?: string;
       photo_url: string | null;
       photo_missing?: boolean;
       created_at: string;

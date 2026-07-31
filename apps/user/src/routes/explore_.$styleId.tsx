@@ -7,7 +7,7 @@ import { MobileStickyActionBar } from "@/components/mobile/MobileStickyActionBar
 import { PageHeader } from "@/components/PageHeader";
 import { useExplorePersona } from "@/hooks/use-explore-persona";
 import { useHairstyle } from "@/hooks/use-hairstyles";
-import { MOBILE_STICKY_CONTENT_PADDING_CLASS } from "@/lib/layout-constants";
+import { MOBILE_STICKY_CONTENT_PADDING_NO_DOCK_CLASS } from "@/lib/layout-constants";
 import { getHairstyleDisplayUrl } from "@/lib/hairstyles/catalog";
 import { cn } from "@/lib/utils";
 
@@ -17,9 +17,9 @@ export const Route = createFileRoute("/explore_/$styleId")({
 });
 
 const ctaPrimaryClass =
-  "inline-flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-full bg-foreground px-3 py-2.5 text-[13px] font-bold text-background transition-opacity active:opacity-90 sm:gap-2 sm:text-sm";
+  "inline-flex min-h-12 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-full bg-foreground px-3 py-3 text-[13px] font-bold text-background transition-opacity active:opacity-90 sm:gap-2 sm:text-sm";
 const ctaSecondaryClass =
-  "inline-flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-full border border-border bg-surface px-3 py-2.5 text-[13px] font-bold text-foreground transition-opacity active:opacity-90 sm:gap-2 sm:text-sm";
+  "inline-flex min-h-12 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-full border border-border bg-surface px-3 py-3 text-[13px] font-bold text-foreground transition-opacity active:opacity-90 sm:gap-2 sm:text-sm";
 const ctaDesktopPrimaryClass =
   "inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-4 py-3 text-sm font-bold text-background transition-opacity hover:opacity-90";
 const ctaDesktopSecondaryClass =
@@ -34,7 +34,7 @@ function ExploreStyleDetailPage() {
   if (isLoading) {
     return (
       <div className="pb-10">
-        <PageHeader showBack sticky title={t("explorePage.title")} />
+        <PageHeader showBack sticky title={t("explorePage.title")} backFallback="/explore" />
         <p className="mt-8 px-5 text-center text-sm text-muted-foreground">{t("common.loading")}</p>
       </div>
     );
@@ -55,7 +55,7 @@ function ExploreStyleDetailPage() {
   );
 
   const findSalonLink = (
-    <Link to="/" className={ctaSecondaryClass}>
+    <Link to="/map" className={ctaSecondaryClass}>
       <MapPin className="h-4 w-4 shrink-0" strokeWidth={2.25} />
       <span className="min-w-0 truncate">{t("explorePage.findSalon")}</span>
     </Link>
@@ -63,7 +63,7 @@ function ExploreStyleDetailPage() {
 
   return (
     <>
-      <div className={cn(MOBILE_STICKY_CONTENT_PADDING_CLASS, "min-w-0 lg:px-6 lg:pb-10")}>
+      <div className={cn(MOBILE_STICKY_CONTENT_PADDING_NO_DOCK_CLASS, "min-w-0 lg:px-6 lg:pb-10")}>
         {/* Mobile */}
         <div className="lg:hidden">
           <PageHeader showBack sticky title={entry.titleUz} backFallback="/explore" />
@@ -131,7 +131,7 @@ function ExploreStyleDetailPage() {
                 <ScanFace className="h-4 w-4 shrink-0" strokeWidth={2.25} />
                 {t("explorePage.tryOnMe")}
               </Link>
-              <Link to="/" className={ctaDesktopSecondaryClass}>
+              <Link to="/map" className={ctaDesktopSecondaryClass}>
                 <MapPin className="h-4 w-4 shrink-0" strokeWidth={2.25} />
                 {t("explorePage.findSalon")}
               </Link>

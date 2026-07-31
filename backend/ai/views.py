@@ -274,6 +274,7 @@ class AiStyleTryOnView(UnthrottledAPIView):
                     audience=style.audience,
                     slug=style.slug,
                     reference_image_url=reference_url,
+                    persona_id=persona_id or "",
                 )
                 return Response(
                     {
@@ -308,6 +309,16 @@ class AiStyleTryOnView(UnthrottledAPIView):
                 cost_usd=result.cost_usd,
                 tokens_estimated=result.tokens_estimated,
                 latency_ms=result.latency_ms,
+            )
+            from ai.tryon_persist import persist_tryon_generation
+
+            persist_tryon_generation(
+                user=user,
+                after_image=result.preview_image,
+                before_image=str(image),
+                style_id=style.style_id,
+                title=style.title_uz,
+                persona_id=persona_id or "",
             )
             return Response(
                 {

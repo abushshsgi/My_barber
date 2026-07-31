@@ -1,12 +1,18 @@
 import { useEffect, useRef, useState } from "react";
 import type { CameraCapturePayload } from "@/components/ai-style/AiStyleCamera";
-import { generateAiStyleTryOn } from "@/lib/api";
+import { generateAiStyleTryOn, persistAiStyleHistory } from "@/lib/api";
 import type { ExplorePersonaId } from "@/lib/explore-personas";
 import { isMorphPlanLimitError } from "@/lib/morph-plan-limit";
+import {
+  refreshMorphAiGenerationsCache,
+  saveMorphAiGeneration,
+} from "@/lib/morph-ai-gallery";
+import { markMorphAiOnboarded } from "@/lib/morph-ai-session";
 import { prepareSelfieDataUrl, prepareSelfieFromFile } from "@/lib/selfie-image";
 
 type UseStyleTryOnFlowOptions = {
   styleId: string;
+  styleTitle?: string;
   personaId?: ExplorePersonaId | null;
   beforeTryOn?: (source: "auto" | "manual") => Promise<boolean>;
   onPlanLimit?: () => void;
@@ -20,8 +26,34 @@ function styleTryOnFlightKey(styleId: string, personaId: string | null | undefin
   return `${styleId}:${personaId ?? ""}:${photo.length}:${photo.slice(32, 64)}:${photo.slice(-48)}`;
 }
 
+function persistExploreTryOnResult(opts: {
+  styleId: string;
+  styleTitle: string;
+  previewImage: string;
+  beforeImage: string;
+  personaId?: ExplorePersonaId | null;
+}) {
+  saveMorphAiGeneration({
+    styleId: opts.styleId,
+    title: opts.styleTitle,
+    previewImage: opts.previewImage,
+    beforeImage: opts.beforeImage,
+    personaId: opts.personaId ?? undefined,
+  });
+  markMorphAiOnboarded();
+  void persistAiStyleHistory({
+    image: opts.beforeImage,
+    source: "ai_analysis",
+  });
+  // Server ham saqlaydi — local cache ni DB bilan sinxronlash.
+  window.setTimeout(() => {
+    void refreshMorphAiGenerationsCache();
+  }, 1200);
+}
+
 export function useStyleTryOnFlow({
   styleId,
+  styleTitle,
   personaId,
   beforeTryOn,
   onPlanLimit,
@@ -36,6 +68,8 @@ export function useStyleTryOnFlow({
   const [cameraOpen, setCameraOpen] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const autoTriggeredRef = useRef(false);
+  const titleRef = useRef(styleTitle ?? styleId);
+  titleRef.current = styleTitle ?? styleId;
 
   useEffect(() => {
     autoTriggeredRef.current = false;
@@ -68,7 +102,16 @@ export function useStyleTryOnFlow({
     try {
       const preview = await run;
       setTryOnPreview(preview);
-      if (!joinedExisting) onTryOnSuccess?.();
+      if (!joinedExisting) {
+        persistExploreTryOnResult({
+          styleId,
+          styleTitle: titleRef.current,
+          previewImage: preview,
+          beforeImage: dataUrl,
+          personaId,
+        });
+        onTryOnSuccess?.();
+      }
     } catch (e) {
       if (joinedExisting) return;
       if (e instanceof Error && e.message === "__tryon_gate_blocked__") {

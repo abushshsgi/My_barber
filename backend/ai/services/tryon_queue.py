@@ -87,6 +87,7 @@ def enqueue_tryon_job(
     audience: str,
     slug: str,
     reference_image_url: str | None,
+    persona_id: str | None = None,
 ) -> str:
     client = _redis_client()
     if client is None:
@@ -107,6 +108,7 @@ def enqueue_tryon_job(
         "user_id": user_id,
         "style_id": style_id,
         "style_title": style_title,
+        "persona_id": (persona_id or "").strip(),
         "created_at": now,
         "updated_at": now,
         "queue_position": depth + 1,
@@ -240,6 +242,24 @@ def process_next_tryon_job(*, block_seconds: int = 5) -> bool:
             tokens_estimated=result.tokens_estimated,
             latency_ms=result.latency_ms,
         )
+        user_id = int(meta.get("user_id") or 0) or None
+        if user_id and result.preview_image:
+            try:
+                from accounts.models import User
+                from ai.tryon_persist import persist_tryon_generation
+
+                user = User.objects.filter(pk=user_id).first()
+                if user:
+                    persist_tryon_generation(
+                        user=user,
+                        after_image=result.preview_image,
+                        before_image=str(payload.get("image") or ""),
+                        style_id=str(meta.get("style_id") or ""),
+                        title=str(meta.get("style_title") or ""),
+                        persona_id=str(meta.get("persona_id") or ""),
+                    )
+            except Exception:
+                logger.exception("Try-on generation persist failed job=%s", job_id)
     except AiStyleError as exc:
         meta["status"] = STATUS_FAILED
         meta["detail"] = exc.message
