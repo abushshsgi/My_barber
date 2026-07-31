@@ -20,6 +20,35 @@ function triggerAnchorDownload(objectUrl: string, filename: string) {
 }
 
 /**
+ * Always trigger a file download (no Web Share sheet) — Instagram Story flow uchun.
+ */
+export async function downloadImageFile(url: string, filename: string) {
+  const blob = await imageUrlToBlob(url);
+  const objectUrl = URL.createObjectURL(blob);
+  try {
+    triggerAnchorDownload(objectUrl, filename);
+  } finally {
+    window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1500);
+  }
+}
+
+export async function copyTextToClipboard(text: string) {
+  if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(text);
+    return;
+  }
+  const ta = document.createElement("textarea");
+  ta.value = text;
+  ta.setAttribute("readonly", "");
+  ta.style.position = "fixed";
+  ta.style.left = "-9999px";
+  document.body.appendChild(ta);
+  ta.select();
+  document.execCommand("copy");
+  ta.remove();
+}
+
+/**
  * Download try-on result to device Photos/Downloads gallery.
  * Prefers Web Share Level 2 (files) on mobile so the image lands in Photos.
  */

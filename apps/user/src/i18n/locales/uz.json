@@ -1168,6 +1168,16 @@
     "shared": "Ulashildi",
     "shareFailed": "Ulashishda xatolik",
     "linkCopied": "Havola nusxalandi",
+    "instagramStory": {
+      "cta": "Instagram Story'ga ulashish",
+      "title": "Instagram Story'ga ulashish",
+      "subtitle": "Ikki qadam tayyor — endi Instagram'da Story yarating.",
+      "step1": "Story rasmi qurilmangizga yuklab olindi.",
+      "step2": "Shaxsiy havola buferga nusxalandi.",
+      "step3": "Instagram'da Story oching, yuklangan rasmni qo'ying va «Link» sticker orqali havolani joylang.",
+      "openInstagram": "Instagram'ni ochish",
+      "failed": "Instagram Story uchun tayyorlab bo'lmadi"
+    },
     "tryMoreStyles": "Boshqa uslublar",
     "viewStylePage": "Uslub sahifasi",
     "previewNoImage": "Rasm mavjud emas",
