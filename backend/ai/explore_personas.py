@@ -94,8 +94,8 @@ MEN_ARCHIVED_STYLE_SLUGS = frozenset(
     }
 )
 
-# Faol katalog — klassik 12 uslub (Irland rasmlari DB StoredMedia da).
-MEN_CATALOG_STYLE_SLUGS = frozenset(
+# Faol katalog — klassik 12 + yangi 20 uslub.
+MEN_CLASSIC_STYLE_SLUGS = frozenset(
     {
         "mid-fade",
         "low-fade",
@@ -112,10 +112,16 @@ MEN_CATALOG_STYLE_SLUGS = frozenset(
     }
 )
 
+from ai.hairstyle_seed_new20 import NEW_MEN_STYLE_SLUGS  # noqa: E402
+
+MEN_NEW_STYLE_SLUGS = frozenset(NEW_MEN_STYLE_SLUGS)
+
+MEN_CATALOG_STYLE_SLUGS = frozenset(MEN_CLASSIC_STYLE_SLUGS | MEN_NEW_STYLE_SLUGS)
+
 # Yangi uslublar generate/publish qilinmaguncha faqat reference tayyor.
 NIKI_READY_SLUGS: frozenset[str] = frozenset()
 
-# Irland klassik 12 uslub (front + left/right/back) — DB StoredMedia da.
+# Irland — klassik 12 + yangi 20 (front); multi-view faqat klassikda git'da.
 IRLAND_READY_SLUGS: frozenset[str] = frozenset(MEN_CATALOG_STYLE_SLUGS)
 
 PERSONA_READY_ASSETS: dict[str, frozenset[str]] = {
@@ -127,8 +133,9 @@ PERSONA_READY_ASSETS: dict[str, frozenset[str]] = {
 # Git (public) ga qo'yilgan qo'shimcha ko'rinishlar. Front doim ready deb hisoblanadi;
 # bu yerda faqat chap/o'ng/orqa kabi qo'shimcha ko'rinishlar e'lon qilinadi. Production
 # backend (Railway) da public papka bo'lmagani uchun fayl tizimiga tayanmaymiz.
+# Yangi 20 uslub — hozircha faqat front; left/right/back fayl bo'lsa explore_published topadi.
 PERSONA_READY_VIEWS: dict[str, dict[str, tuple[str, ...]]] = {
-    "irland": {slug: ("left", "right", "back") for slug in sorted(IRLAND_READY_SLUGS)},
+    "irland": {slug: ("left", "right", "back") for slug in sorted(MEN_CLASSIC_STYLE_SLUGS)},
 }
 
 

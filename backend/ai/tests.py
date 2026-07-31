@@ -204,7 +204,7 @@ class HairstyleApiTests(TestCase):
         res = self.client.get("/api/v1/hairstyles/")
         self.assertEqual(res.status_code, 200)
         body = res.json()
-        self.assertEqual(len(body), 12)
+        self.assertEqual(len(body), 32)
         self.assertEqual(body[0]["id"], "men-mid-fade")
         self.assertIn("image_url", body[0])
 
@@ -218,8 +218,9 @@ class HairstyleApiTests(TestCase):
         res = self.client.get("/api/v1/hairstyles/", {"audience": "men"})
         self.assertEqual(res.status_code, 200)
         slugs = {item["slug"] for item in res.json()}
-        self.assertEqual(len(slugs), 12)
+        self.assertEqual(len(slugs), 32)
         self.assertIn("buzz-cut", slugs)
+        self.assertIn("crew-cut", slugs)
 
     def test_hairstyles_detail(self):
         res = self.client.get("/api/v1/hairstyles/men-buzz-cut/")
@@ -237,7 +238,7 @@ class HairstyleApiTests(TestCase):
         )
         self.assertEqual(res.status_code, 200)
         body = res.json()
-        self.assertEqual(len(body), 12)
+        self.assertEqual(len(body), 32)
         self.assertTrue(
             any("/media/hairstyles/men/personas/irland/" in (item.get("image_url") or "") for item in body)
             or any("/hairstyles/men/personas/irland/" in (item.get("image_url") or "") for item in body)

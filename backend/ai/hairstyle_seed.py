@@ -1,10 +1,12 @@
-"""Boshlang'ich Explore soch uslublari — Irland klassik 12 uslub (DB /media)."""
+"""Boshlang'ich Explore soch uslublari — Irland klassik 12 + yangi 20 uslub."""
 
 from __future__ import annotations
 
+from ai.hairstyle_seed_new20 import NEW_MEN_HAIRSTYLE_SEED
+
 # Yosh guruhlari: kids (10–12), teen (13–17), young (18–29), adult (30–44), mature (45+)
 
-HAIRSTYLE_SEED: list[dict] = [
+_CLASSIC_HAIRSTYLE_SEED: list[dict] = [
     {
         "style_id": "men-mid-fade",
         "slug": "mid-fade",
@@ -186,3 +188,5 @@ HAIRSTYLE_SEED: list[dict] = [
         "sort_order": 11,
     },
 ]
+
+HAIRSTYLE_SEED: list[dict] = [*_CLASSIC_HAIRSTYLE_SEED, *NEW_MEN_HAIRSTYLE_SEED]

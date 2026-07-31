@@ -798,6 +798,26 @@ def generate_explore_asset(
             "message": "Fayl allaqachon mavjud (--force yo'q).",
         }
 
+    live = live_asset_path(persona_id=pid, slug=slug, view=normalized_view)
+    if live.is_file() and not force:
+        return {
+            "status": "skipped",
+            "persona_id": pid,
+            "slug": slug,
+            "view": normalized_view,
+            "relative_path": rel,
+            "public_url": _public_url_for(
+                persona_id=pid,
+                slug=slug,
+                path=dest,
+                view=normalized_view,
+            )
+            or None,
+            "download_path": _download_path(persona_id=pid, slug=slug, view=normalized_view),
+            "output_mode": output_mode(),
+            "message": "Live/public fayl allaqachon mavjud (--force yo'q).",
+        }
+
     prompt = build_explore_gen_prompt(persona_id=pid, slug=slug, view=normalized_view)
     started = time.monotonic()
 

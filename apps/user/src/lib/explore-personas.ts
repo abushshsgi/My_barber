@@ -34,8 +34,8 @@ export const MEN_ARCHIVED_STYLE_SLUGS = [
   "old-money-tousled-curl",
 ] as const;
 
-/** Faol katalog — klassik 12 uslub (Irland rasmlari Vercel static `/hairstyles/`). */
-export const MEN_CATALOG_STYLE_SLUGS = [
+/** Faol katalog — klassik 12 + yangi 20 uslub. */
+export const MEN_CLASSIC_STYLE_SLUGS = [
   "mid-fade",
   "low-fade",
   "skin-fade",
@@ -50,14 +50,45 @@ export const MEN_CATALOG_STYLE_SLUGS = [
   "modern-mullet",
 ] as const;
 
+export const MEN_NEW_STYLE_SLUGS = [
+  "crew-cut",
+  "high-fade",
+  "taper-cut",
+  "quiff",
+  "ivy-league",
+  "caesar-cut",
+  "bro-flow",
+  "curtain-fringe",
+  "textured-fringe",
+  "drop-fade",
+  "burst-fade",
+  "high-and-tight",
+  "classic-taper",
+  "soft-quiff",
+  "forward-fringe",
+  "layered-medium",
+  "comb-over-fade",
+  "faux-hawk",
+  "messy-fringe",
+  "disconnected-crop",
+] as const;
+
+export const MEN_CATALOG_STYLE_SLUGS = [
+  ...MEN_CLASSIC_STYLE_SLUGS,
+  ...MEN_NEW_STYLE_SLUGS,
+] as const;
+
 /** Yangi uslublar generate/publish qilinmaguncha bo'sh. */
 export const NIKI_READY_SLUGS: readonly string[] = [];
+
+/** Irland — barcha katalog uslublari (front). Multi-view klassik 12 da. */
+export const IRLAND_READY_SLUGS: readonly string[] = [...MEN_CATALOG_STYLE_SLUGS];
 
 export const PERSONA_READY_ASSETS: Record<
   ExplorePersonaId,
   { reference: boolean; slugs: readonly string[] }
 > = {
-  irland: { reference: true, slugs: MEN_CATALOG_STYLE_SLUGS },
+  irland: { reference: true, slugs: IRLAND_READY_SLUGS },
   slavyan: { reference: true, slugs: [] },
   niki: { reference: true, slugs: [] },
 };
