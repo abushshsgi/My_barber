@@ -13,7 +13,7 @@ import {
 import { createMorphAiLookShare } from "@/lib/api";
 import { shareAiStyleLink, downloadAiStyleImage } from "@/lib/ai-style-image";
 import { getActiveUserId } from "@/lib/face-profile";
-import { resolveMediaUrl } from "@/lib/media-url";
+import { resolveMediaUrl, toShareImageSource } from "@/lib/media-url";
 import { pickMorphShareText } from "@/lib/morph-share-copy";
 import {
   loadMorphAiGenerations,
@@ -130,7 +130,7 @@ function AiStyleHistoryPage() {
       const created = await createMorphAiLookShare({
         style_id: active.styleId,
         title: active.title,
-        after_image: active.after,
+        after_image: toShareImageSource(active.after),
       });
       const pageUrl =
         created.share_page_url ||
@@ -156,17 +156,18 @@ function AiStyleHistoryPage() {
     }
     setIgSharing(true);
     try {
+      const afterSource = toShareImageSource(active.after);
       const created = await createMorphAiLookShare({
         style_id: active.styleId,
         title: active.title,
-        after_image: active.after,
+        after_image: afterSource,
       });
       const pageUrl =
         created.share_page_url ||
         `${typeof window !== "undefined" ? window.location.origin : "https://mysaloon.uz"}/morf-ai/share/${encodeURIComponent(created.id)}`;
       await handleInstagramStoryShare({
         shareLink: pageUrl,
-        imageUrl: active.after,
+        imageUrl: afterSource,
         filename: "morf-ai-story.png",
       });
       setIgModalOpen(true);

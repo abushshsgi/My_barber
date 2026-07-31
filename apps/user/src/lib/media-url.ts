@@ -29,3 +29,23 @@ export function resolveMediaUrl(path: string | null | undefined): string | null 
   const base = API_BASE.replace(/\/+$/, "");
   return base ? `${base}/${raw}` : `/${raw}`;
 }
+
+/**
+ * Look-share / Instagram POST uchun: nisbiy /media/… ni absolute URL ga aylantiradi.
+ * Backend storage + http(s) ikkalasini ham qabul qiladi.
+ */
+export function toShareImageSource(path: string | null | undefined): string {
+  const resolved = resolveMediaUrl(path) ?? (path || "").trim();
+  if (!resolved) return "";
+  if (
+    resolved.startsWith("data:") ||
+    resolved.startsWith("http://") ||
+    resolved.startsWith("https://")
+  ) {
+    return resolved;
+  }
+  if (typeof window !== "undefined" && resolved.startsWith("/")) {
+    return `${window.location.origin}${resolved}`;
+  }
+  return resolved;
+}

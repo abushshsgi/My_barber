@@ -2,6 +2,7 @@ from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
+import logging
 
 from accounts.models import User
 
@@ -43,6 +44,8 @@ from .services.gemini_style import (
 from .unthrottled import UnthrottledAPIView
 from .usage_log import record_ai_generation
 from .morph_ops import check_user_can_generate, morph_generation_blocked_response
+
+logger = logging.getLogger(__name__)
 
 
 def _require_customer_user(request) -> User | Response:
@@ -498,6 +501,11 @@ class MorphAiLookShareCreateView(UnthrottledAPIView):
                     save=False,
                 )
         except Exception:
+            logger.exception(
+                "Look-share rasm saqlanmadi (user=%s style=%s)",
+                user.pk,
+                (data.get("style_id") or "")[:64],
+            )
             return Response({"detail": "Rasmni saqlab bo‘lmadi."}, status=400)
 
         share.save()

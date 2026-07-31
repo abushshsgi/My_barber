@@ -19,6 +19,7 @@ import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/
 import type { ExplorePersonaId } from "@/lib/explore-personas";
 import { createMorphAiLookShare } from "@/lib/api";
 import { downloadAiStyleImage, shareAiStyleLink } from "@/lib/ai-style-image";
+import { toShareImageSource } from "@/lib/media-url";
 import { pickMorphShareText } from "@/lib/morph-share-copy";
 import { stashMorphStudioDraft } from "@/lib/morph-ai-studio-session";
 import { cn } from "@/lib/utils";
@@ -138,7 +139,7 @@ export function AiStylePreviewSheet({
         const created = await createMorphAiLookShare({
           style_id: suggestion.id,
           title: suggestion.title,
-          after_image: previewImage,
+          after_image: toShareImageSource(previewImage),
         });
         const pageUrl =
           created.share_page_url ||
