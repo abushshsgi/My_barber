@@ -9,7 +9,12 @@ import { MapDesktopPanel } from "@/components/map/MapDesktopPanel";
 import { MapErrorBoundary } from "@/components/map/MapErrorBoundary";
 import { MapSalonSheet } from "@/components/map/MapSalonSheet";
 import { MapAreaSkeleton, MapMobileSheetSkeleton } from "@/components/map/MapLoadingSkeleton";
-import { SalonMap, type SalonMapHandle, type SalonMapMarker, type SalonMapViewport } from "@/components/map/SalonMap";
+import {
+  SalonMap,
+  type SalonMapHandle,
+  type SalonMapMarker,
+  type SalonMapViewport,
+} from "@/components/map/SalonMap";
 import { resolveMapAudienceFilter, matchBarberGender, useAudience } from "@/hooks/use-audience";
 import { useIsLgUp } from "@/hooks/use-mobile";
 import { useCatalogScope } from "@/hooks/use-catalog-scope";
@@ -164,7 +169,7 @@ function MapCanvas({
 function MapView() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { q: routeQ, category: routeCategory } = Route.useSearch();
+  const { q: routeQ = "", category: routeCategory = "all" } = Route.useSearch();
   const { audience, profileDefault } = useAudience();
   const mapAudience = useMemo(() => {
     if (audience !== "all") return audience;
@@ -196,11 +201,7 @@ function MapView() {
     isLoading: nearbyLoading,
     isError: nearbyError,
     refetch: refetchNearby,
-  } = useSalonsNearby(
-    hasCoords ? ctx.lat! : undefined,
-    hasCoords ? ctx.lng! : undefined,
-    40,
-  );
+  } = useSalonsNearby(hasCoords ? ctx.lat! : undefined, hasCoords ? ctx.lng! : undefined, 40);
   const {
     data: listSalons = [],
     isLoading: listLoading,
@@ -226,8 +227,7 @@ function MapView() {
   } = useBarbersList(catalog.region, discoveryTab === "barbers", catalog.apiScope);
 
   const baseSalons = useMemo(() => {
-    let base =
-      hasCoords && nearbySalons.length > 0 ? nearbySalons : listSalons;
+    let base = hasCoords && nearbySalons.length > 0 ? nearbySalons : listSalons;
     if (apiSearchActive && apiSearchSalons.length > 0) {
       const byId = new Map(base.map((s) => [s.id, s]));
       for (const s of apiSearchSalons) byId.set(s.id, s);
@@ -310,7 +310,11 @@ function MapView() {
         : nearbyBarbers.length > 0
           ? nearbyBarbers
           : listBarbers;
-    if (apiSearchActive && apiSearchBarbers.length > 0 && (nearbyBarbers.length > 0 || listBarbers.length > 0)) {
+    if (
+      apiSearchActive &&
+      apiSearchBarbers.length > 0 &&
+      (nearbyBarbers.length > 0 || listBarbers.length > 0)
+    ) {
       const byId = new Map(
         (nearbyBarbers.length > 0 ? nearbyBarbers : listBarbers).map((b) => [b.id, b]),
       );
@@ -341,10 +345,7 @@ function MapView() {
     const q = query.trim().toLowerCase();
     const searchFiltered = genderFiltered.filter((b) => {
       if (!q) return true;
-      return (
-        b.name.toLowerCase().includes(q) ||
-        (b.salonName?.toLowerCase().includes(q) ?? false)
-      );
+      return b.name.toLowerCase().includes(q) || (b.salonName?.toLowerCase().includes(q) ?? false);
     });
     return applyMapBarberFilters(searchFiltered, filters);
   }, [query, baseBarbers, filters, apiSearchActive, mapAudience]);
@@ -355,7 +356,9 @@ function MapView() {
   }, [filteredBarbers, viewport]);
 
   const filtered = useMemo(() => {
-    const audienceFiltered = salonsWithCoords.filter((s) => salonMatchesMapAudience(s, mapAudience));
+    const audienceFiltered = salonsWithCoords.filter((s) =>
+      salonMatchesMapAudience(s, mapAudience),
+    );
     if (apiSearchActive) {
       return applyMapSalonFilters(audienceFiltered, filters);
     }
@@ -585,110 +588,76 @@ function MapView() {
   return (
     <>
       {!isLgUp ? (
-      <div className="relative h-full min-h-0 overflow-hidden bg-surface">
-        <div className="absolute inset-0">
-          {mapCanvas}
-        </div>
+        <div className="relative h-full min-h-0 overflow-hidden bg-surface">
+          <div className="absolute inset-0">{mapCanvas}</div>
 
-        {!listLoadingAny && catalogError ? (
-          <div className="absolute inset-x-0 bottom-0 z-30 rounded-t-[22px] border-t border-border/50 bg-background p-4 text-center">
-            <p className="text-sm font-medium text-muted-foreground">{emptyMessage}</p>
-            <button
-              type="button"
-              onClick={retryCatalog}
-              className="mt-3 rounded-2xl bg-foreground px-4 py-2 text-sm font-bold text-background"
-            >
-              {t("common.retry", { defaultValue: "Qayta urinish" })}
-            </button>
-          </div>
-        ) : !listLoadingAny &&
-          (discoveryTab === "salons" ? filtered.length === 0 : filteredBarbers.length === 0) ? (
-          <div className="absolute inset-x-0 bottom-0 z-30 max-h-[48%] overflow-y-auto rounded-t-[22px] border-t border-border/50 bg-background p-4">
-            {discoveryTab === "salons" ? (
-              <NoSalonsEmpty compact hideStyleCtas />
-            ) : (
-              <p className="text-center text-sm font-medium text-muted-foreground">{emptyMessage}</p>
-            )}
-          </div>
-        ) : null}
-
-        {viewportEmpty ? (
-          <div className="absolute inset-x-4 top-20 z-30 rounded-2xl border border-border bg-background/95 px-4 py-3 text-center shadow-sm">
-            <p className="text-sm font-medium text-muted-foreground">
-              {discoveryTab === "barbers"
-                ? t("map.emptyViewportBarbers", { defaultValue: "Bu hududda usta yo'q — xaritani siljiting." })
-                : t("map.emptyViewport", { defaultValue: "Bu hududda salon yo'q — xaritani siljiting." })}
-            </p>
-          </div>
-        ) : null}
-
-        {listLoadingAny ? (
-          <MapMobileSheetSkeleton />
-        ) : discoveryTab === "salons" ? (
-          <MapSalonSheet
-            salons={sidebarSalons}
-            activeId={active}
-            onActiveChange={focusSalon}
-            query={query}
-            onQueryChange={setQuery}
-            filters={filters}
-            onFiltersChange={setFilters}
-            mapAudience={mapAudience}
-            onExpandedChange={setSheetExpanded}
-            headerSlot={
-              <MapDiscoveryTabs value={discoveryTab} onChange={setDiscoveryTab} className="w-full justify-center" />
-            }
-          />
-        ) : (
-          <div className="absolute inset-x-0 bottom-0 z-30 max-h-[55vh] overflow-hidden rounded-t-[22px] border-t border-border bg-background shadow-lg">
-            <div className="border-b border-border px-4 py-3 space-y-3">
-              <MapDiscoveryTabs value={discoveryTab} onChange={setDiscoveryTab} className="w-full justify-center" />
-              <input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder={t("common.search")}
-                className="w-full rounded-xl border border-border bg-surface px-4 py-2.5 text-sm"
-              />
+          {!listLoadingAny && catalogError ? (
+            <div className="absolute inset-x-0 bottom-0 z-30 rounded-t-[22px] border-t border-border/50 bg-background p-4 text-center">
+              <p className="text-sm font-medium text-muted-foreground">{emptyMessage}</p>
+              <button
+                type="button"
+                onClick={retryCatalog}
+                className="mt-3 rounded-2xl bg-foreground px-4 py-2 text-sm font-bold text-background"
+              >
+                {t("common.retry", { defaultValue: "Qayta urinish" })}
+              </button>
             </div>
-            <div className="max-h-[calc(55vh-88px)] overflow-y-auto">
-              <MapBarberList
-                barbers={sidebarBarbers}
-                activeId={active}
-                onActiveChange={focusSalon}
-                emptyMessage={emptyMessage}
-              />
+          ) : !listLoadingAny &&
+            (discoveryTab === "salons" ? filtered.length === 0 : filteredBarbers.length === 0) ? (
+            <div className="absolute inset-x-0 bottom-0 z-30 max-h-[48%] overflow-y-auto rounded-t-[22px] border-t border-border/50 bg-background p-4">
+              {discoveryTab === "salons" ? (
+                <NoSalonsEmpty compact hideStyleCtas />
+              ) : (
+                <p className="text-center text-sm font-medium text-muted-foreground">
+                  {emptyMessage}
+                </p>
+              )}
             </div>
-          </div>
-        )}
-      </div>
-      ) : (
-      <div className="relative flex h-full min-h-0 w-full overflow-hidden">
-        {!desktopMapExpanded ? (
-          discoveryTab === "salons" ? (
-            <MapDesktopPanel
+          ) : null}
+
+          {viewportEmpty ? (
+            <div className="absolute inset-x-4 top-20 z-30 rounded-2xl border border-border bg-background/95 px-4 py-3 text-center shadow-sm">
+              <p className="text-sm font-medium text-muted-foreground">
+                {discoveryTab === "barbers"
+                  ? t("map.emptyViewportBarbers", {
+                      defaultValue: "Bu hududda usta yo'q — xaritani siljiting.",
+                    })
+                  : t("map.emptyViewport", {
+                      defaultValue: "Bu hududda salon yo'q — xaritani siljiting.",
+                    })}
+              </p>
+            </div>
+          ) : null}
+
+          {listLoadingAny ? (
+            <MapMobileSheetSkeleton />
+          ) : discoveryTab === "salons" ? (
+            <MapSalonSheet
               salons={sidebarSalons}
-              highlightedId={selected || hovered || active}
-              scrollToId={selected ?? undefined}
+              activeId={active}
+              onActiveChange={focusSalon}
               query={query}
               onQueryChange={setQuery}
               filters={filters}
               onFiltersChange={setFilters}
               mapAudience={mapAudience}
-              onSalonHover={onMarkerHover}
-              loading={listLoadingAny}
-              emptyMessage={emptyMessage}
-              viewportEmpty={viewportEmpty}
+              onExpandedChange={setSheetExpanded}
               headerSlot={
-                <MapDiscoveryTabs value={discoveryTab} onChange={setDiscoveryTab} />
+                <MapDiscoveryTabs
+                  value={discoveryTab}
+                  onChange={setDiscoveryTab}
+                  className="w-full justify-center"
+                />
               }
             />
           ) : (
-            <div
-              className="flex h-full shrink-0 flex-col overflow-hidden border-r border-border bg-background"
-              style={{ width: 380 }}
-            >
-              <div className="border-b border-border px-4 py-4 space-y-3">
-                <MapDiscoveryTabs value={discoveryTab} onChange={setDiscoveryTab} />
+            <div className="absolute inset-x-0 bottom-0 z-30 max-h-[55vh] overflow-hidden rounded-t-[22px] border-t border-border bg-background shadow-lg">
+              <div className="border-b border-border px-4 py-3 space-y-3">
+                <MapDiscoveryTabs
+                  value={discoveryTab}
+                  onChange={setDiscoveryTab}
+                  className="w-full justify-center"
+                />
                 <input
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
@@ -696,32 +665,76 @@ function MapView() {
                   className="w-full rounded-xl border border-border bg-surface px-4 py-2.5 text-sm"
                 />
               </div>
-              <div className="flex-1 overflow-y-auto">
+              <div className="max-h-[calc(55vh-88px)] overflow-y-auto">
                 <MapBarberList
                   barbers={sidebarBarbers}
                   activeId={active}
                   onActiveChange={focusSalon}
-                  onHover={onMarkerHover}
-                  loading={listLoadingAny}
                   emptyMessage={emptyMessage}
                 />
               </div>
             </div>
-          )
-        ) : null}
-        <MapDesktopMapFrame expanded={desktopMapExpanded}>
-          <div className="relative h-full w-full">
-            {mapCanvas}
-            <MapDesktopMapControls
-              expanded={desktopMapExpanded}
-              getMapHandle={getMapHandle}
-              mapReady={mapReady}
-              onExpand={expandDesktopMap}
-              onCollapse={collapseDesktopMap}
-            />
-          </div>
-        </MapDesktopMapFrame>
-      </div>
+          )}
+        </div>
+      ) : (
+        <div className="relative flex h-full min-h-0 w-full overflow-hidden">
+          {!desktopMapExpanded ? (
+            discoveryTab === "salons" ? (
+              <MapDesktopPanel
+                salons={sidebarSalons}
+                highlightedId={selected || hovered || active}
+                scrollToId={selected ?? undefined}
+                query={query}
+                onQueryChange={setQuery}
+                filters={filters}
+                onFiltersChange={setFilters}
+                mapAudience={mapAudience}
+                onSalonHover={onMarkerHover}
+                loading={listLoadingAny}
+                emptyMessage={emptyMessage}
+                viewportEmpty={viewportEmpty}
+                headerSlot={<MapDiscoveryTabs value={discoveryTab} onChange={setDiscoveryTab} />}
+              />
+            ) : (
+              <div
+                className="flex h-full shrink-0 flex-col overflow-hidden border-r border-border bg-background"
+                style={{ width: 380 }}
+              >
+                <div className="border-b border-border px-4 py-4 space-y-3">
+                  <MapDiscoveryTabs value={discoveryTab} onChange={setDiscoveryTab} />
+                  <input
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder={t("common.search")}
+                    className="w-full rounded-xl border border-border bg-surface px-4 py-2.5 text-sm"
+                  />
+                </div>
+                <div className="flex-1 overflow-y-auto">
+                  <MapBarberList
+                    barbers={sidebarBarbers}
+                    activeId={active}
+                    onActiveChange={focusSalon}
+                    onHover={onMarkerHover}
+                    loading={listLoadingAny}
+                    emptyMessage={emptyMessage}
+                  />
+                </div>
+              </div>
+            )
+          ) : null}
+          <MapDesktopMapFrame expanded={desktopMapExpanded}>
+            <div className="relative h-full w-full">
+              {mapCanvas}
+              <MapDesktopMapControls
+                expanded={desktopMapExpanded}
+                getMapHandle={getMapHandle}
+                mapReady={mapReady}
+                onExpand={expandDesktopMap}
+                onCollapse={collapseDesktopMap}
+              />
+            </div>
+          </MapDesktopMapFrame>
+        </div>
       )}
     </>
   );

@@ -4,7 +4,7 @@ import { SettingsSupportPanel } from "@/components/settings/panels/SettingsSuppo
 import { parseSubpageBackTo } from "@/lib/subpage-back";
 
 export const Route = createFileRoute("/support")({
-  validateSearch: (search: Record<string, unknown>) => ({
+  validateSearch: (search: Record<string, unknown>): { backTo?: string } => ({
     backTo: typeof search.backTo === "string" ? search.backTo : undefined,
   }),
   head: () => ({
@@ -24,11 +24,7 @@ function Support() {
   const backTo = parseSubpageBackTo({ backTo: backToParam }, "/settings?section=help");
 
   return (
-    <ProfileSubpageLayout
-      title="Yordam"
-      subtitle="FAQ, shikoyat va support chat"
-      backTo={backTo}
-    >
+    <ProfileSubpageLayout title="Yordam" subtitle="FAQ, shikoyat va support chat" backTo={backTo}>
       <SettingsSupportPanel />
     </ProfileSubpageLayout>
   );

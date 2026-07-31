@@ -4,7 +4,7 @@ import { SettingsPrivacyPanel } from "@/components/settings/panels/SettingsPriva
 import { parseSubpageBackTo } from "@/lib/subpage-back";
 
 export const Route = createFileRoute("/privacy")({
-  validateSearch: (search: Record<string, unknown>) => ({
+  validateSearch: (search: Record<string, unknown>): { backTo?: string } => ({
     backTo: typeof search.backTo === "string" ? search.backTo : undefined,
   }),
   head: () => ({

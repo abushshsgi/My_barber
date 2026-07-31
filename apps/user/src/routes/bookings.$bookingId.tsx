@@ -7,7 +7,7 @@ import { DesktopPageSplit } from "@/components/desktop/DesktopPageSplit";
 import { useBookingProcessPage } from "@/hooks/use-booking-process-page";
 
 export const Route = createFileRoute("/bookings/$bookingId")({
-  validateSearch: (search: Record<string, unknown>) => ({
+  validateSearch: (search: Record<string, unknown>): { survey?: number } => ({
     survey: search.survey === 1 || search.survey === "1" ? 1 : undefined,
   }),
   head: ({ params }) => ({

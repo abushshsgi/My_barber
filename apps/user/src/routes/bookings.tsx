@@ -4,7 +4,7 @@ import { BookingsDesktopPage } from "@/components/desktop/pages/BookingsDesktopP
 import { BookingsMobile } from "@/components/bookings/BookingsMobile";
 
 export const Route = createFileRoute("/bookings")({
-  validateSearch: (search: Record<string, unknown>) => ({
+  validateSearch: (search: Record<string, unknown>): { focus?: string } => ({
     focus: typeof search.focus === "string" ? search.focus : undefined,
   }),
   head: () => ({ meta: [{ title: "Buyurtmalarim — mysaloon.uz" }] }),

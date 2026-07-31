@@ -9,226 +9,71 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as WalletRouteImport } from './routes/wallet'
-import { Route as VerifyEmailRouteImport } from './routes/verify-email'
-import { Route as TopRouteImport } from './routes/top'
-import { Route as TodayRouteImport } from './routes/today'
-import { Route as SupportRouteImport } from './routes/support'
-import { Route as SubscriptionsRouteImport } from './routes/subscriptions'
-import { Route as StoriesRouteImport } from './routes/stories'
-import { Route as SettingsRouteImport } from './routes/settings'
-import { Route as SessionsRouteImport } from './routes/sessions'
-import { Route as ReviewsRouteImport } from './routes/reviews'
-import { Route as ReferralsRouteImport } from './routes/referrals'
-import { Route as ReelsRouteImport } from './routes/reels'
-import { Route as ProfileRouteImport } from './routes/profile'
-import { Route as PrivacyRouteImport } from './routes/privacy'
-import { Route as PaymentMethodsRouteImport } from './routes/payment-methods'
-import { Route as OnboardingRouteImport } from './routes/onboarding'
-import { Route as OffersRouteImport } from './routes/offers'
-import { Route as NotificationsRouteImport } from './routes/notifications'
-import { Route as MapRouteImport } from './routes/map'
-import { Route as LoyaltyRouteImport } from './routes/loyalty'
-import { Route as GiftcardRouteImport } from './routes/giftcard'
-import { Route as ForSalonsRouteImport } from './routes/for-salons'
-import { Route as FavoritesRouteImport } from './routes/favorites'
-import { Route as FavoriteStylistsRouteImport } from './routes/favorite-stylists'
-import { Route as FamilyRouteImport } from './routes/family'
-import { Route as ExploreGenRouteImport } from './routes/explore-gen'
-import { Route as ExploreRouteImport } from './routes/explore'
-import { Route as CompareRouteImport } from './routes/compare'
-import { Route as ChatRouteImport } from './routes/chat'
-import { Route as BookingsRouteImport } from './routes/bookings'
-import { Route as AuthRouteImport } from './routes/auth'
-import { Route as AiStyleRouteImport } from './routes/ai-style'
-import { Route as AddressesRouteImport } from './routes/addresses'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as WalletTopUpRouteImport } from './routes/wallet_.top-up'
-import { Route as WalletQrPayRouteImport } from './routes/wallet_.qr-pay'
-import { Route as WalletHistoryRouteImport } from './routes/wallet_.history'
-import { Route as WalletGiftsRouteImport } from './routes/wallet_.gifts'
-import { Route as StoriesSalonIdRouteImport } from './routes/stories.$salonId'
-import { Route as SalonIdRouteImport } from './routes/salon.$id'
-import { Route as ExploreStyleIdRouteImport } from './routes/explore_.$styleId'
-import { Route as DevExploreGenRouteImport } from './routes/dev.explore-gen'
-import { Route as ChatIdRouteImport } from './routes/chat.$id'
-import { Route as CategoryCategoryRouteImport } from './routes/category.$category'
-import { Route as BookingsBookingIdRouteImport } from './routes/bookings.$bookingId'
-import { Route as BookingSalonIdRouteImport } from './routes/booking.$salonId'
-import { Route as BarberBarberIdRouteImport } from './routes/barber.$barberId'
-import { Route as AiStyleStudioRouteImport } from './routes/ai-style_.studio'
-import { Route as AiStyleHistoryRouteImport } from './routes/ai-style_.history'
-import { Route as AiStyleCareRouteImport } from './routes/ai-style_.care'
-import { Route as AccountPreferencesRouteImport } from './routes/account.preferences'
-import { Route as AccountPaymentsRouteImport } from './routes/account.payments'
-import { Route as AccountHouseholdRouteImport } from './routes/account.household'
+import { Route as AddressesRouteImport } from './routes/addresses'
+import { Route as AiStyleRouteImport } from './routes/ai-style'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as BookingsRouteImport } from './routes/bookings'
+import { Route as ChatRouteImport } from './routes/chat'
+import { Route as CompareRouteImport } from './routes/compare'
+import { Route as ExploreRouteImport } from './routes/explore'
+import { Route as ExploreGenRouteImport } from './routes/explore-gen'
+import { Route as FamilyRouteImport } from './routes/family'
+import { Route as FavoriteStylistsRouteImport } from './routes/favorite-stylists'
+import { Route as FavoritesRouteImport } from './routes/favorites'
+import { Route as ForSalonsRouteImport } from './routes/for-salons'
+import { Route as GiftcardRouteImport } from './routes/giftcard'
+import { Route as LoyaltyRouteImport } from './routes/loyalty'
+import { Route as MapRouteImport } from './routes/map'
+import { Route as NotificationsRouteImport } from './routes/notifications'
+import { Route as OffersRouteImport } from './routes/offers'
+import { Route as OnboardingRouteImport } from './routes/onboarding'
+import { Route as PaymentMethodsRouteImport } from './routes/payment-methods'
+import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as ProfileRouteImport } from './routes/profile'
+import { Route as ReelsRouteImport } from './routes/reels'
+import { Route as ReferralsRouteImport } from './routes/referrals'
+import { Route as ReviewsRouteImport } from './routes/reviews'
+import { Route as SessionsRouteImport } from './routes/sessions'
+import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as StoriesRouteImport } from './routes/stories'
+import { Route as SubscriptionsRouteImport } from './routes/subscriptions'
+import { Route as SupportRouteImport } from './routes/support'
+import { Route as TodayRouteImport } from './routes/today'
+import { Route as TopRouteImport } from './routes/top'
+import { Route as VerifyEmailRouteImport } from './routes/verify-email'
+import { Route as WalletRouteImport } from './routes/wallet'
 import { Route as AccountActivityRouteImport } from './routes/account.activity'
-import { Route as DevExploreGenIndexRouteImport } from './routes/dev.explore-gen.index'
-import { Route as SalonIdLocationRouteImport } from './routes/salon.$id.location'
-import { Route as MorfAiShareShareIdRouteImport } from './routes/morf-ai.share.$shareId'
-import { Route as MorfAiLookStyleIdRouteImport } from './routes/morf-ai.look.$styleId'
-import { Route as ExploreStyleIdTryRouteImport } from './routes/explore_.$styleId_.try'
-import { Route as DevExploreGenAssetsRouteImport } from './routes/dev.explore-gen.assets'
+import { Route as AccountHouseholdRouteImport } from './routes/account.household'
+import { Route as AccountPaymentsRouteImport } from './routes/account.payments'
+import { Route as AccountPreferencesRouteImport } from './routes/account.preferences'
+import { Route as AiStyleCareRouteImport } from './routes/ai-style_.care'
+import { Route as AiStyleHistoryRouteImport } from './routes/ai-style_.history'
+import { Route as AiStyleStudioRouteImport } from './routes/ai-style_.studio'
+import { Route as BarberBarberIdRouteImport } from './routes/barber.$barberId'
+import { Route as BookingSalonIdRouteImport } from './routes/booking.$salonId'
+import { Route as BookingsBookingIdRouteImport } from './routes/bookings.$bookingId'
+import { Route as CategoryCategoryRouteImport } from './routes/category.$category'
+import { Route as ChatIdRouteImport } from './routes/chat.$id'
+import { Route as DevExploreGenRouteImport } from './routes/dev.explore-gen'
+import { Route as ExploreStyleIdRouteImport } from './routes/explore_.$styleId'
+import { Route as SalonIdRouteImport } from './routes/salon.$id'
+import { Route as StoriesSalonIdRouteImport } from './routes/stories.$salonId'
+import { Route as WalletGiftsRouteImport } from './routes/wallet_.gifts'
+import { Route as WalletHistoryRouteImport } from './routes/wallet_.history'
+import { Route as WalletQrPayRouteImport } from './routes/wallet_.qr-pay'
+import { Route as WalletTopUpRouteImport } from './routes/wallet_.top-up'
 import { Route as BookingBarberBarberIdRouteImport } from './routes/booking.barber.$barberId'
+import { Route as DevExploreGenIndexRouteImport } from './routes/dev.explore-gen.index'
+import { Route as DevExploreGenAssetsRouteImport } from './routes/dev.explore-gen.assets'
+import { Route as ExploreStyleIdTryRouteImport } from './routes/explore_.$styleId_.try'
+import { Route as MorfAiLookStyleIdRouteImport } from './routes/morf-ai.look.$styleId'
+import { Route as MorfAiShareShareIdRouteImport } from './routes/morf-ai.share.$shareId'
+import { Route as SalonIdLocationRouteImport } from './routes/salon.$id.location'
 
-const WalletRoute = WalletRouteImport.update({
-  id: '/wallet',
-  path: '/wallet',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const VerifyEmailRoute = VerifyEmailRouteImport.update({
-  id: '/verify-email',
-  path: '/verify-email',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const TopRoute = TopRouteImport.update({
-  id: '/top',
-  path: '/top',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const TodayRoute = TodayRouteImport.update({
-  id: '/today',
-  path: '/today',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SupportRoute = SupportRouteImport.update({
-  id: '/support',
-  path: '/support',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SubscriptionsRoute = SubscriptionsRouteImport.update({
-  id: '/subscriptions',
-  path: '/subscriptions',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const StoriesRoute = StoriesRouteImport.update({
-  id: '/stories',
-  path: '/stories',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SettingsRoute = SettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SessionsRoute = SessionsRouteImport.update({
-  id: '/sessions',
-  path: '/sessions',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ReviewsRoute = ReviewsRouteImport.update({
-  id: '/reviews',
-  path: '/reviews',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ReferralsRoute = ReferralsRouteImport.update({
-  id: '/referrals',
-  path: '/referrals',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ReelsRoute = ReelsRouteImport.update({
-  id: '/reels',
-  path: '/reels',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ProfileRoute = ProfileRouteImport.update({
-  id: '/profile',
-  path: '/profile',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PrivacyRoute = PrivacyRouteImport.update({
-  id: '/privacy',
-  path: '/privacy',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PaymentMethodsRoute = PaymentMethodsRouteImport.update({
-  id: '/payment-methods',
-  path: '/payment-methods',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const OnboardingRoute = OnboardingRouteImport.update({
-  id: '/onboarding',
-  path: '/onboarding',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const OffersRoute = OffersRouteImport.update({
-  id: '/offers',
-  path: '/offers',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const NotificationsRoute = NotificationsRouteImport.update({
-  id: '/notifications',
-  path: '/notifications',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const MapRoute = MapRouteImport.update({
-  id: '/map',
-  path: '/map',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LoyaltyRoute = LoyaltyRouteImport.update({
-  id: '/loyalty',
-  path: '/loyalty',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const GiftcardRoute = GiftcardRouteImport.update({
-  id: '/giftcard',
-  path: '/giftcard',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ForSalonsRoute = ForSalonsRouteImport.update({
-  id: '/for-salons',
-  path: '/for-salons',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const FavoritesRoute = FavoritesRouteImport.update({
-  id: '/favorites',
-  path: '/favorites',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const FavoriteStylistsRoute = FavoriteStylistsRouteImport.update({
-  id: '/favorite-stylists',
-  path: '/favorite-stylists',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const FamilyRoute = FamilyRouteImport.update({
-  id: '/family',
-  path: '/family',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ExploreGenRoute = ExploreGenRouteImport.update({
-  id: '/explore-gen',
-  path: '/explore-gen',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ExploreRoute = ExploreRouteImport.update({
-  id: '/explore',
-  path: '/explore',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CompareRoute = CompareRouteImport.update({
-  id: '/compare',
-  path: '/compare',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ChatRoute = ChatRouteImport.update({
-  id: '/chat',
-  path: '/chat',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const BookingsRoute = BookingsRouteImport.update({
-  id: '/bookings',
-  path: '/bookings',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthRoute = AuthRouteImport.update({
-  id: '/auth',
-  path: '/auth',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AiStyleRoute = AiStyleRouteImport.update({
-  id: '/ai-style',
-  path: '/ai-style',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AddressesRoute = AddressesRouteImport.update({
@@ -236,104 +81,164 @@ const AddressesRoute = AddressesRouteImport.update({
   path: '/addresses',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const AiStyleRoute = AiStyleRouteImport.update({
+  id: '/ai-style',
+  path: '/ai-style',
   getParentRoute: () => rootRouteImport,
 } as any)
-const WalletTopUpRoute = WalletTopUpRouteImport.update({
-  id: '/wallet_/top-up',
-  path: '/wallet/top-up',
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
-const WalletQrPayRoute = WalletQrPayRouteImport.update({
-  id: '/wallet_/qr-pay',
-  path: '/wallet/qr-pay',
+const BookingsRoute = BookingsRouteImport.update({
+  id: '/bookings',
+  path: '/bookings',
   getParentRoute: () => rootRouteImport,
 } as any)
-const WalletHistoryRoute = WalletHistoryRouteImport.update({
-  id: '/wallet_/history',
-  path: '/wallet/history',
+const ChatRoute = ChatRouteImport.update({
+  id: '/chat',
+  path: '/chat',
   getParentRoute: () => rootRouteImport,
 } as any)
-const WalletGiftsRoute = WalletGiftsRouteImport.update({
-  id: '/wallet_/gifts',
-  path: '/wallet/gifts',
+const CompareRoute = CompareRouteImport.update({
+  id: '/compare',
+  path: '/compare',
   getParentRoute: () => rootRouteImport,
 } as any)
-const StoriesSalonIdRoute = StoriesSalonIdRouteImport.update({
-  id: '/$salonId',
-  path: '/$salonId',
-  getParentRoute: () => StoriesRoute,
-} as any)
-const SalonIdRoute = SalonIdRouteImport.update({
-  id: '/salon/$id',
-  path: '/salon/$id',
+const ExploreRoute = ExploreRouteImport.update({
+  id: '/explore',
+  path: '/explore',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ExploreStyleIdRoute = ExploreStyleIdRouteImport.update({
-  id: '/explore_/$styleId',
-  path: '/explore/$styleId',
+const ExploreGenRoute = ExploreGenRouteImport.update({
+  id: '/explore-gen',
+  path: '/explore-gen',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DevExploreGenRoute = DevExploreGenRouteImport.update({
-  id: '/dev/explore-gen',
-  path: '/dev/explore-gen',
+const FamilyRoute = FamilyRouteImport.update({
+  id: '/family',
+  path: '/family',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ChatIdRoute = ChatIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => ChatRoute,
-} as any)
-const CategoryCategoryRoute = CategoryCategoryRouteImport.update({
-  id: '/category/$category',
-  path: '/category/$category',
+const FavoriteStylistsRoute = FavoriteStylistsRouteImport.update({
+  id: '/favorite-stylists',
+  path: '/favorite-stylists',
   getParentRoute: () => rootRouteImport,
 } as any)
-const BookingsBookingIdRoute = BookingsBookingIdRouteImport.update({
-  id: '/$bookingId',
-  path: '/$bookingId',
-  getParentRoute: () => BookingsRoute,
-} as any)
-const BookingSalonIdRoute = BookingSalonIdRouteImport.update({
-  id: '/booking/$salonId',
-  path: '/booking/$salonId',
+const FavoritesRoute = FavoritesRouteImport.update({
+  id: '/favorites',
+  path: '/favorites',
   getParentRoute: () => rootRouteImport,
 } as any)
-const BarberBarberIdRoute = BarberBarberIdRouteImport.update({
-  id: '/barber/$barberId',
-  path: '/barber/$barberId',
+const ForSalonsRoute = ForSalonsRouteImport.update({
+  id: '/for-salons',
+  path: '/for-salons',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AiStyleStudioRoute = AiStyleStudioRouteImport.update({
-  id: '/ai-style_/studio',
-  path: '/ai-style/studio',
+const GiftcardRoute = GiftcardRouteImport.update({
+  id: '/giftcard',
+  path: '/giftcard',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AiStyleHistoryRoute = AiStyleHistoryRouteImport.update({
-  id: '/ai-style_/history',
-  path: '/ai-style/history',
+const LoyaltyRoute = LoyaltyRouteImport.update({
+  id: '/loyalty',
+  path: '/loyalty',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AiStyleCareRoute = AiStyleCareRouteImport.update({
-  id: '/ai-style_/care',
-  path: '/ai-style/care',
+const MapRoute = MapRouteImport.update({
+  id: '/map',
+  path: '/map',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AccountPreferencesRoute = AccountPreferencesRouteImport.update({
-  id: '/account/preferences',
-  path: '/account/preferences',
+const NotificationsRoute = NotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AccountPaymentsRoute = AccountPaymentsRouteImport.update({
-  id: '/account/payments',
-  path: '/account/payments',
+const OffersRoute = OffersRouteImport.update({
+  id: '/offers',
+  path: '/offers',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AccountHouseholdRoute = AccountHouseholdRouteImport.update({
-  id: '/account/household',
-  path: '/account/household',
+const OnboardingRoute = OnboardingRouteImport.update({
+  id: '/onboarding',
+  path: '/onboarding',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PaymentMethodsRoute = PaymentMethodsRouteImport.update({
+  id: '/payment-methods',
+  path: '/payment-methods',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProfileRoute = ProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReelsRoute = ReelsRouteImport.update({
+  id: '/reels',
+  path: '/reels',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReferralsRoute = ReferralsRouteImport.update({
+  id: '/referrals',
+  path: '/referrals',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReviewsRoute = ReviewsRouteImport.update({
+  id: '/reviews',
+  path: '/reviews',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SessionsRoute = SessionsRouteImport.update({
+  id: '/sessions',
+  path: '/sessions',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StoriesRoute = StoriesRouteImport.update({
+  id: '/stories',
+  path: '/stories',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SubscriptionsRoute = SubscriptionsRouteImport.update({
+  id: '/subscriptions',
+  path: '/subscriptions',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SupportRoute = SupportRouteImport.update({
+  id: '/support',
+  path: '/support',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TodayRoute = TodayRouteImport.update({
+  id: '/today',
+  path: '/today',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TopRoute = TopRouteImport.update({
+  id: '/top',
+  path: '/top',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VerifyEmailRoute = VerifyEmailRouteImport.update({
+  id: '/verify-email',
+  path: '/verify-email',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WalletRoute = WalletRouteImport.update({
+  id: '/wallet',
+  path: '/wallet',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AccountActivityRoute = AccountActivityRouteImport.update({
@@ -341,19 +246,119 @@ const AccountActivityRoute = AccountActivityRouteImport.update({
   path: '/account/activity',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AccountHouseholdRoute = AccountHouseholdRouteImport.update({
+  id: '/account/household',
+  path: '/account/household',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AccountPaymentsRoute = AccountPaymentsRouteImport.update({
+  id: '/account/payments',
+  path: '/account/payments',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AccountPreferencesRoute = AccountPreferencesRouteImport.update({
+  id: '/account/preferences',
+  path: '/account/preferences',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AiStyleCareRoute = AiStyleCareRouteImport.update({
+  id: '/ai-style_/care',
+  path: '/ai-style/care',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AiStyleHistoryRoute = AiStyleHistoryRouteImport.update({
+  id: '/ai-style_/history',
+  path: '/ai-style/history',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AiStyleStudioRoute = AiStyleStudioRouteImport.update({
+  id: '/ai-style_/studio',
+  path: '/ai-style/studio',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BarberBarberIdRoute = BarberBarberIdRouteImport.update({
+  id: '/barber/$barberId',
+  path: '/barber/$barberId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BookingSalonIdRoute = BookingSalonIdRouteImport.update({
+  id: '/booking/$salonId',
+  path: '/booking/$salonId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BookingsBookingIdRoute = BookingsBookingIdRouteImport.update({
+  id: '/$bookingId',
+  path: '/$bookingId',
+  getParentRoute: () => BookingsRoute,
+} as any)
+const CategoryCategoryRoute = CategoryCategoryRouteImport.update({
+  id: '/category/$category',
+  path: '/category/$category',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ChatIdRoute = ChatIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => ChatRoute,
+} as any)
+const DevExploreGenRoute = DevExploreGenRouteImport.update({
+  id: '/dev/explore-gen',
+  path: '/dev/explore-gen',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ExploreStyleIdRoute = ExploreStyleIdRouteImport.update({
+  id: '/explore_/$styleId',
+  path: '/explore/$styleId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SalonIdRoute = SalonIdRouteImport.update({
+  id: '/salon/$id',
+  path: '/salon/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StoriesSalonIdRoute = StoriesSalonIdRouteImport.update({
+  id: '/$salonId',
+  path: '/$salonId',
+  getParentRoute: () => StoriesRoute,
+} as any)
+const WalletGiftsRoute = WalletGiftsRouteImport.update({
+  id: '/wallet_/gifts',
+  path: '/wallet/gifts',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WalletHistoryRoute = WalletHistoryRouteImport.update({
+  id: '/wallet_/history',
+  path: '/wallet/history',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WalletQrPayRoute = WalletQrPayRouteImport.update({
+  id: '/wallet_/qr-pay',
+  path: '/wallet/qr-pay',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WalletTopUpRoute = WalletTopUpRouteImport.update({
+  id: '/wallet_/top-up',
+  path: '/wallet/top-up',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BookingBarberBarberIdRoute = BookingBarberBarberIdRouteImport.update({
+  id: '/booking/barber/$barberId',
+  path: '/booking/barber/$barberId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DevExploreGenIndexRoute = DevExploreGenIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => DevExploreGenRoute,
 } as any)
-const SalonIdLocationRoute = SalonIdLocationRouteImport.update({
-  id: '/location',
-  path: '/location',
-  getParentRoute: () => SalonIdRoute,
+const DevExploreGenAssetsRoute = DevExploreGenAssetsRouteImport.update({
+  id: '/assets',
+  path: '/assets',
+  getParentRoute: () => DevExploreGenRoute,
 } as any)
-const MorfAiShareShareIdRoute = MorfAiShareShareIdRouteImport.update({
-  id: '/morf-ai/share/$shareId',
-  path: '/morf-ai/share/$shareId',
+const ExploreStyleIdTryRoute = ExploreStyleIdTryRouteImport.update({
+  id: '/explore_/$styleId_/try',
+  path: '/explore/$styleId/try',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MorfAiLookStyleIdRoute = MorfAiLookStyleIdRouteImport.update({
@@ -361,20 +366,15 @@ const MorfAiLookStyleIdRoute = MorfAiLookStyleIdRouteImport.update({
   path: '/morf-ai/look/$styleId',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ExploreStyleIdTryRoute = ExploreStyleIdTryRouteImport.update({
-  id: '/explore_/$styleId_/try',
-  path: '/explore/$styleId/try',
+const MorfAiShareShareIdRoute = MorfAiShareShareIdRouteImport.update({
+  id: '/morf-ai/share/$shareId',
+  path: '/morf-ai/share/$shareId',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DevExploreGenAssetsRoute = DevExploreGenAssetsRouteImport.update({
-  id: '/assets',
-  path: '/assets',
-  getParentRoute: () => DevExploreGenRoute,
-} as any)
-const BookingBarberBarberIdRoute = BookingBarberBarberIdRouteImport.update({
-  id: '/booking/barber/$barberId',
-  path: '/booking/barber/$barberId',
-  getParentRoute: () => rootRouteImport,
+const SalonIdLocationRoute = SalonIdLocationRouteImport.update({
+  id: '/location',
+  path: '/location',
+  getParentRoute: () => SalonIdRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -817,228 +817,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/wallet': {
-      id: '/wallet'
-      path: '/wallet'
-      fullPath: '/wallet'
-      preLoaderRoute: typeof WalletRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/verify-email': {
-      id: '/verify-email'
-      path: '/verify-email'
-      fullPath: '/verify-email'
-      preLoaderRoute: typeof VerifyEmailRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/top': {
-      id: '/top'
-      path: '/top'
-      fullPath: '/top'
-      preLoaderRoute: typeof TopRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/today': {
-      id: '/today'
-      path: '/today'
-      fullPath: '/today'
-      preLoaderRoute: typeof TodayRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/support': {
-      id: '/support'
-      path: '/support'
-      fullPath: '/support'
-      preLoaderRoute: typeof SupportRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/subscriptions': {
-      id: '/subscriptions'
-      path: '/subscriptions'
-      fullPath: '/subscriptions'
-      preLoaderRoute: typeof SubscriptionsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/stories': {
-      id: '/stories'
-      path: '/stories'
-      fullPath: '/stories'
-      preLoaderRoute: typeof StoriesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/settings': {
-      id: '/settings'
-      path: '/settings'
-      fullPath: '/settings'
-      preLoaderRoute: typeof SettingsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/sessions': {
-      id: '/sessions'
-      path: '/sessions'
-      fullPath: '/sessions'
-      preLoaderRoute: typeof SessionsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/reviews': {
-      id: '/reviews'
-      path: '/reviews'
-      fullPath: '/reviews'
-      preLoaderRoute: typeof ReviewsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/referrals': {
-      id: '/referrals'
-      path: '/referrals'
-      fullPath: '/referrals'
-      preLoaderRoute: typeof ReferralsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/reels': {
-      id: '/reels'
-      path: '/reels'
-      fullPath: '/reels'
-      preLoaderRoute: typeof ReelsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/profile': {
-      id: '/profile'
-      path: '/profile'
-      fullPath: '/profile'
-      preLoaderRoute: typeof ProfileRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/privacy': {
-      id: '/privacy'
-      path: '/privacy'
-      fullPath: '/privacy'
-      preLoaderRoute: typeof PrivacyRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/payment-methods': {
-      id: '/payment-methods'
-      path: '/payment-methods'
-      fullPath: '/payment-methods'
-      preLoaderRoute: typeof PaymentMethodsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/onboarding': {
-      id: '/onboarding'
-      path: '/onboarding'
-      fullPath: '/onboarding'
-      preLoaderRoute: typeof OnboardingRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/offers': {
-      id: '/offers'
-      path: '/offers'
-      fullPath: '/offers'
-      preLoaderRoute: typeof OffersRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/notifications': {
-      id: '/notifications'
-      path: '/notifications'
-      fullPath: '/notifications'
-      preLoaderRoute: typeof NotificationsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/map': {
-      id: '/map'
-      path: '/map'
-      fullPath: '/map'
-      preLoaderRoute: typeof MapRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/loyalty': {
-      id: '/loyalty'
-      path: '/loyalty'
-      fullPath: '/loyalty'
-      preLoaderRoute: typeof LoyaltyRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/giftcard': {
-      id: '/giftcard'
-      path: '/giftcard'
-      fullPath: '/giftcard'
-      preLoaderRoute: typeof GiftcardRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/for-salons': {
-      id: '/for-salons'
-      path: '/for-salons'
-      fullPath: '/for-salons'
-      preLoaderRoute: typeof ForSalonsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/favorites': {
-      id: '/favorites'
-      path: '/favorites'
-      fullPath: '/favorites'
-      preLoaderRoute: typeof FavoritesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/favorite-stylists': {
-      id: '/favorite-stylists'
-      path: '/favorite-stylists'
-      fullPath: '/favorite-stylists'
-      preLoaderRoute: typeof FavoriteStylistsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/family': {
-      id: '/family'
-      path: '/family'
-      fullPath: '/family'
-      preLoaderRoute: typeof FamilyRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/explore-gen': {
-      id: '/explore-gen'
-      path: '/explore-gen'
-      fullPath: '/explore-gen'
-      preLoaderRoute: typeof ExploreGenRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/explore': {
-      id: '/explore'
-      path: '/explore'
-      fullPath: '/explore'
-      preLoaderRoute: typeof ExploreRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/compare': {
-      id: '/compare'
-      path: '/compare'
-      fullPath: '/compare'
-      preLoaderRoute: typeof CompareRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/chat': {
-      id: '/chat'
-      path: '/chat'
-      fullPath: '/chat'
-      preLoaderRoute: typeof ChatRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/bookings': {
-      id: '/bookings'
-      path: '/bookings'
-      fullPath: '/bookings'
-      preLoaderRoute: typeof BookingsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/auth': {
-      id: '/auth'
-      path: '/auth'
-      fullPath: '/auth'
-      preLoaderRoute: typeof AuthRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/ai-style': {
-      id: '/ai-style'
-      path: '/ai-style'
-      fullPath: '/ai-style'
-      preLoaderRoute: typeof AiStyleRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/addresses': {
@@ -1048,144 +831,228 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AddressesRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/ai-style': {
+      id: '/ai-style'
+      path: '/ai-style'
+      fullPath: '/ai-style'
+      preLoaderRoute: typeof AiStyleRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/wallet_/top-up': {
-      id: '/wallet_/top-up'
-      path: '/wallet/top-up'
-      fullPath: '/wallet/top-up'
-      preLoaderRoute: typeof WalletTopUpRouteImport
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/wallet_/qr-pay': {
-      id: '/wallet_/qr-pay'
-      path: '/wallet/qr-pay'
-      fullPath: '/wallet/qr-pay'
-      preLoaderRoute: typeof WalletQrPayRouteImport
+    '/bookings': {
+      id: '/bookings'
+      path: '/bookings'
+      fullPath: '/bookings'
+      preLoaderRoute: typeof BookingsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/wallet_/history': {
-      id: '/wallet_/history'
-      path: '/wallet/history'
-      fullPath: '/wallet/history'
-      preLoaderRoute: typeof WalletHistoryRouteImport
+    '/chat': {
+      id: '/chat'
+      path: '/chat'
+      fullPath: '/chat'
+      preLoaderRoute: typeof ChatRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/wallet_/gifts': {
-      id: '/wallet_/gifts'
-      path: '/wallet/gifts'
-      fullPath: '/wallet/gifts'
-      preLoaderRoute: typeof WalletGiftsRouteImport
+    '/compare': {
+      id: '/compare'
+      path: '/compare'
+      fullPath: '/compare'
+      preLoaderRoute: typeof CompareRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/stories/$salonId': {
-      id: '/stories/$salonId'
-      path: '/$salonId'
-      fullPath: '/stories/$salonId'
-      preLoaderRoute: typeof StoriesSalonIdRouteImport
-      parentRoute: typeof StoriesRoute
-    }
-    '/salon/$id': {
-      id: '/salon/$id'
-      path: '/salon/$id'
-      fullPath: '/salon/$id'
-      preLoaderRoute: typeof SalonIdRouteImport
+    '/explore': {
+      id: '/explore'
+      path: '/explore'
+      fullPath: '/explore'
+      preLoaderRoute: typeof ExploreRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/explore_/$styleId': {
-      id: '/explore_/$styleId'
-      path: '/explore/$styleId'
-      fullPath: '/explore/$styleId'
-      preLoaderRoute: typeof ExploreStyleIdRouteImport
+    '/explore-gen': {
+      id: '/explore-gen'
+      path: '/explore-gen'
+      fullPath: '/explore-gen'
+      preLoaderRoute: typeof ExploreGenRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/dev/explore-gen': {
-      id: '/dev/explore-gen'
-      path: '/dev/explore-gen'
-      fullPath: '/dev/explore-gen'
-      preLoaderRoute: typeof DevExploreGenRouteImport
+    '/family': {
+      id: '/family'
+      path: '/family'
+      fullPath: '/family'
+      preLoaderRoute: typeof FamilyRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/chat/$id': {
-      id: '/chat/$id'
-      path: '/$id'
-      fullPath: '/chat/$id'
-      preLoaderRoute: typeof ChatIdRouteImport
-      parentRoute: typeof ChatRoute
-    }
-    '/category/$category': {
-      id: '/category/$category'
-      path: '/category/$category'
-      fullPath: '/category/$category'
-      preLoaderRoute: typeof CategoryCategoryRouteImport
+    '/favorite-stylists': {
+      id: '/favorite-stylists'
+      path: '/favorite-stylists'
+      fullPath: '/favorite-stylists'
+      preLoaderRoute: typeof FavoriteStylistsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/bookings/$bookingId': {
-      id: '/bookings/$bookingId'
-      path: '/$bookingId'
-      fullPath: '/bookings/$bookingId'
-      preLoaderRoute: typeof BookingsBookingIdRouteImport
-      parentRoute: typeof BookingsRoute
-    }
-    '/booking/$salonId': {
-      id: '/booking/$salonId'
-      path: '/booking/$salonId'
-      fullPath: '/booking/$salonId'
-      preLoaderRoute: typeof BookingSalonIdRouteImport
+    '/favorites': {
+      id: '/favorites'
+      path: '/favorites'
+      fullPath: '/favorites'
+      preLoaderRoute: typeof FavoritesRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/barber/$barberId': {
-      id: '/barber/$barberId'
-      path: '/barber/$barberId'
-      fullPath: '/barber/$barberId'
-      preLoaderRoute: typeof BarberBarberIdRouteImport
+    '/for-salons': {
+      id: '/for-salons'
+      path: '/for-salons'
+      fullPath: '/for-salons'
+      preLoaderRoute: typeof ForSalonsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/ai-style_/studio': {
-      id: '/ai-style_/studio'
-      path: '/ai-style/studio'
-      fullPath: '/ai-style/studio'
-      preLoaderRoute: typeof AiStyleStudioRouteImport
+    '/giftcard': {
+      id: '/giftcard'
+      path: '/giftcard'
+      fullPath: '/giftcard'
+      preLoaderRoute: typeof GiftcardRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/ai-style_/history': {
-      id: '/ai-style_/history'
-      path: '/ai-style/history'
-      fullPath: '/ai-style/history'
-      preLoaderRoute: typeof AiStyleHistoryRouteImport
+    '/loyalty': {
+      id: '/loyalty'
+      path: '/loyalty'
+      fullPath: '/loyalty'
+      preLoaderRoute: typeof LoyaltyRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/ai-style_/care': {
-      id: '/ai-style_/care'
-      path: '/ai-style/care'
-      fullPath: '/ai-style/care'
-      preLoaderRoute: typeof AiStyleCareRouteImport
+    '/map': {
+      id: '/map'
+      path: '/map'
+      fullPath: '/map'
+      preLoaderRoute: typeof MapRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/account/preferences': {
-      id: '/account/preferences'
-      path: '/account/preferences'
-      fullPath: '/account/preferences'
-      preLoaderRoute: typeof AccountPreferencesRouteImport
+    '/notifications': {
+      id: '/notifications'
+      path: '/notifications'
+      fullPath: '/notifications'
+      preLoaderRoute: typeof NotificationsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/account/payments': {
-      id: '/account/payments'
-      path: '/account/payments'
-      fullPath: '/account/payments'
-      preLoaderRoute: typeof AccountPaymentsRouteImport
+    '/offers': {
+      id: '/offers'
+      path: '/offers'
+      fullPath: '/offers'
+      preLoaderRoute: typeof OffersRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/account/household': {
-      id: '/account/household'
-      path: '/account/household'
-      fullPath: '/account/household'
-      preLoaderRoute: typeof AccountHouseholdRouteImport
+    '/onboarding': {
+      id: '/onboarding'
+      path: '/onboarding'
+      fullPath: '/onboarding'
+      preLoaderRoute: typeof OnboardingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/payment-methods': {
+      id: '/payment-methods'
+      path: '/payment-methods'
+      fullPath: '/payment-methods'
+      preLoaderRoute: typeof PaymentMethodsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/profile': {
+      id: '/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof ProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reels': {
+      id: '/reels'
+      path: '/reels'
+      fullPath: '/reels'
+      preLoaderRoute: typeof ReelsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/referrals': {
+      id: '/referrals'
+      path: '/referrals'
+      fullPath: '/referrals'
+      preLoaderRoute: typeof ReferralsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reviews': {
+      id: '/reviews'
+      path: '/reviews'
+      fullPath: '/reviews'
+      preLoaderRoute: typeof ReviewsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sessions': {
+      id: '/sessions'
+      path: '/sessions'
+      fullPath: '/sessions'
+      preLoaderRoute: typeof SessionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/stories': {
+      id: '/stories'
+      path: '/stories'
+      fullPath: '/stories'
+      preLoaderRoute: typeof StoriesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/subscriptions': {
+      id: '/subscriptions'
+      path: '/subscriptions'
+      fullPath: '/subscriptions'
+      preLoaderRoute: typeof SubscriptionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/support': {
+      id: '/support'
+      path: '/support'
+      fullPath: '/support'
+      preLoaderRoute: typeof SupportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/today': {
+      id: '/today'
+      path: '/today'
+      fullPath: '/today'
+      preLoaderRoute: typeof TodayRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/top': {
+      id: '/top'
+      path: '/top'
+      fullPath: '/top'
+      preLoaderRoute: typeof TopRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/verify-email': {
+      id: '/verify-email'
+      path: '/verify-email'
+      fullPath: '/verify-email'
+      preLoaderRoute: typeof VerifyEmailRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/wallet': {
+      id: '/wallet'
+      path: '/wallet'
+      fullPath: '/wallet'
+      preLoaderRoute: typeof WalletRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/account/activity': {
@@ -1195,6 +1062,146 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AccountActivityRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/account/household': {
+      id: '/account/household'
+      path: '/account/household'
+      fullPath: '/account/household'
+      preLoaderRoute: typeof AccountHouseholdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/account/payments': {
+      id: '/account/payments'
+      path: '/account/payments'
+      fullPath: '/account/payments'
+      preLoaderRoute: typeof AccountPaymentsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/account/preferences': {
+      id: '/account/preferences'
+      path: '/account/preferences'
+      fullPath: '/account/preferences'
+      preLoaderRoute: typeof AccountPreferencesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ai-style_/care': {
+      id: '/ai-style_/care'
+      path: '/ai-style/care'
+      fullPath: '/ai-style/care'
+      preLoaderRoute: typeof AiStyleCareRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ai-style_/history': {
+      id: '/ai-style_/history'
+      path: '/ai-style/history'
+      fullPath: '/ai-style/history'
+      preLoaderRoute: typeof AiStyleHistoryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ai-style_/studio': {
+      id: '/ai-style_/studio'
+      path: '/ai-style/studio'
+      fullPath: '/ai-style/studio'
+      preLoaderRoute: typeof AiStyleStudioRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/barber/$barberId': {
+      id: '/barber/$barberId'
+      path: '/barber/$barberId'
+      fullPath: '/barber/$barberId'
+      preLoaderRoute: typeof BarberBarberIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/booking/$salonId': {
+      id: '/booking/$salonId'
+      path: '/booking/$salonId'
+      fullPath: '/booking/$salonId'
+      preLoaderRoute: typeof BookingSalonIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/bookings/$bookingId': {
+      id: '/bookings/$bookingId'
+      path: '/$bookingId'
+      fullPath: '/bookings/$bookingId'
+      preLoaderRoute: typeof BookingsBookingIdRouteImport
+      parentRoute: typeof BookingsRoute
+    }
+    '/category/$category': {
+      id: '/category/$category'
+      path: '/category/$category'
+      fullPath: '/category/$category'
+      preLoaderRoute: typeof CategoryCategoryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/chat/$id': {
+      id: '/chat/$id'
+      path: '/$id'
+      fullPath: '/chat/$id'
+      preLoaderRoute: typeof ChatIdRouteImport
+      parentRoute: typeof ChatRoute
+    }
+    '/dev/explore-gen': {
+      id: '/dev/explore-gen'
+      path: '/dev/explore-gen'
+      fullPath: '/dev/explore-gen'
+      preLoaderRoute: typeof DevExploreGenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/explore_/$styleId': {
+      id: '/explore_/$styleId'
+      path: '/explore/$styleId'
+      fullPath: '/explore/$styleId'
+      preLoaderRoute: typeof ExploreStyleIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/salon/$id': {
+      id: '/salon/$id'
+      path: '/salon/$id'
+      fullPath: '/salon/$id'
+      preLoaderRoute: typeof SalonIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/stories/$salonId': {
+      id: '/stories/$salonId'
+      path: '/$salonId'
+      fullPath: '/stories/$salonId'
+      preLoaderRoute: typeof StoriesSalonIdRouteImport
+      parentRoute: typeof StoriesRoute
+    }
+    '/wallet_/gifts': {
+      id: '/wallet_/gifts'
+      path: '/wallet/gifts'
+      fullPath: '/wallet/gifts'
+      preLoaderRoute: typeof WalletGiftsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/wallet_/history': {
+      id: '/wallet_/history'
+      path: '/wallet/history'
+      fullPath: '/wallet/history'
+      preLoaderRoute: typeof WalletHistoryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/wallet_/qr-pay': {
+      id: '/wallet_/qr-pay'
+      path: '/wallet/qr-pay'
+      fullPath: '/wallet/qr-pay'
+      preLoaderRoute: typeof WalletQrPayRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/wallet_/top-up': {
+      id: '/wallet_/top-up'
+      path: '/wallet/top-up'
+      fullPath: '/wallet/top-up'
+      preLoaderRoute: typeof WalletTopUpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/booking/barber/$barberId': {
+      id: '/booking/barber/$barberId'
+      path: '/booking/barber/$barberId'
+      fullPath: '/booking/barber/$barberId'
+      preLoaderRoute: typeof BookingBarberBarberIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/dev/explore-gen/': {
       id: '/dev/explore-gen/'
       path: '/'
@@ -1202,18 +1209,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DevExploreGenIndexRouteImport
       parentRoute: typeof DevExploreGenRoute
     }
-    '/salon/$id/location': {
-      id: '/salon/$id/location'
-      path: '/location'
-      fullPath: '/salon/$id/location'
-      preLoaderRoute: typeof SalonIdLocationRouteImport
-      parentRoute: typeof SalonIdRoute
+    '/dev/explore-gen/assets': {
+      id: '/dev/explore-gen/assets'
+      path: '/assets'
+      fullPath: '/dev/explore-gen/assets'
+      preLoaderRoute: typeof DevExploreGenAssetsRouteImport
+      parentRoute: typeof DevExploreGenRoute
     }
-    '/morf-ai/share/$shareId': {
-      id: '/morf-ai/share/$shareId'
-      path: '/morf-ai/share/$shareId'
-      fullPath: '/morf-ai/share/$shareId'
-      preLoaderRoute: typeof MorfAiShareShareIdRouteImport
+    '/explore_/$styleId_/try': {
+      id: '/explore_/$styleId_/try'
+      path: '/explore/$styleId/try'
+      fullPath: '/explore/$styleId/try'
+      preLoaderRoute: typeof ExploreStyleIdTryRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/morf-ai/look/$styleId': {
@@ -1223,26 +1230,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MorfAiLookStyleIdRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/explore_/$styleId_/try': {
-      id: '/explore_/$styleId_/try'
-      path: '/explore/$styleId/try'
-      fullPath: '/explore/$styleId/try'
-      preLoaderRoute: typeof ExploreStyleIdTryRouteImport
+    '/morf-ai/share/$shareId': {
+      id: '/morf-ai/share/$shareId'
+      path: '/morf-ai/share/$shareId'
+      fullPath: '/morf-ai/share/$shareId'
+      preLoaderRoute: typeof MorfAiShareShareIdRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/dev/explore-gen/assets': {
-      id: '/dev/explore-gen/assets'
-      path: '/assets'
-      fullPath: '/dev/explore-gen/assets'
-      preLoaderRoute: typeof DevExploreGenAssetsRouteImport
-      parentRoute: typeof DevExploreGenRoute
-    }
-    '/booking/barber/$barberId': {
-      id: '/booking/barber/$barberId'
-      path: '/booking/barber/$barberId'
-      fullPath: '/booking/barber/$barberId'
-      preLoaderRoute: typeof BookingBarberBarberIdRouteImport
-      parentRoute: typeof rootRouteImport
+    '/salon/$id/location': {
+      id: '/salon/$id/location'
+      path: '/location'
+      fullPath: '/salon/$id/location'
+      preLoaderRoute: typeof SalonIdLocationRouteImport
+      parentRoute: typeof SalonIdRoute
     }
   }
 }

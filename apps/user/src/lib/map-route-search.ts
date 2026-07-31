@@ -1,9 +1,10 @@
 import type { Category } from "@/lib/mock-data";
 import type { MapCategoryFilter } from "@/lib/map-filters";
 
+/** Ikkalasi ham ixtiyoriy — `/map` ga oddiy havolalar parametrsiz ochiladi. */
 export type MapRouteSearch = {
-  q: string;
-  category: MapCategoryFilter;
+  q?: string;
+  category?: MapCategoryFilter;
 };
 
 const CATEGORIES: Category[] = ["barber", "beauty", "nails"];
