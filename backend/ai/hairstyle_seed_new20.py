@@ -304,6 +304,24 @@ NEW_MEN_HAIRSTYLE_SEED: list[dict] = [
         "age_groups": ["teen", "young", "adult"],
         "sort_order": 31,
     },
+    {
+        "style_id": "men-wet-curl-taper",
+        "slug": "wet-curl-taper",
+        "audience": "men",
+        "category": "barber",
+        "title": "Wet Curl Taper",
+        "title_uz": "Wet Curl Taper",
+        "face_shapes": ["oval", "round", "square"],
+        "hair_length": "medium",
+        "image_path": "/hairstyles/men/personas/irland/wet-curl-taper.webp",
+        "description_uz": (
+            "Yaltiroq wet-look jingalaklar — tepada va orqada hajm, quloq atrofida "
+            "toza low taper, aniq curl definition."
+        ),
+        "tags": ["curly", "wet-look", "taper", "modern"],
+        "age_groups": ["teen", "young", "adult"],
+        "sort_order": 32,
+    },
 ]
 
 NEW_MEN_STYLE_SLUGS: tuple[str, ...] = tuple(row["slug"] for row in NEW_MEN_HAIRSTYLE_SEED)
@@ -329,4 +347,10 @@ NEW_MEN_STYLE_PROMPTS: dict[str, str] = {
     "faux-hawk": "faux hawk ridge of longer hair down the center short tapered sides edgy",
     "messy-fringe": "messy fringe tousled forward fringe textured top casual matte finish",
     "disconnected-crop": "disconnected crop textured crop on top hard disconnect to short sides",
+    "wet-curl-taper": (
+        "modern wet-look defined tight curls with high shine gel finish, "
+        "voluminous curly mop on top and back, longer curls over nape, "
+        "clean low taper fade around the ears with sharp temple line-up, "
+        "glossy coiled ringlets, barber-fresh curly taper — NOT straight hair, NOT matte frizz"
+    ),
 }

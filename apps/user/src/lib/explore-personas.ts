@@ -71,6 +71,7 @@ export const MEN_NEW_STYLE_SLUGS = [
   "faux-hawk",
   "messy-fringe",
   "disconnected-crop",
+  "wet-curl-taper",
 ] as const;
 
 export const MEN_CATALOG_STYLE_SLUGS = [
