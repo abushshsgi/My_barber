@@ -1,7 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { DesktopPageSplit } from "@/components/desktop/DesktopPageSplit";
-import { ExploreDesktopPage, MorfAiExploreCard } from "@/components/desktop/pages/ExploreDesktopPage";
+import {
+  ExploreDesktopPage,
+  MorfAiExploreCard,
+} from "@/components/desktop/pages/ExploreDesktopPage";
 import { ExploreStyleGrid } from "@/components/explore/ExploreStyleGrid";
 import { PageHeader } from "@/components/PageHeader";
 import { PersonaPicker } from "@/components/PersonaPicker";
@@ -22,6 +25,8 @@ function ExploreMobile() {
     visibleList,
     isLoading,
     isError,
+    isRetrying,
+    retry,
   } = useExplorePageData();
 
   return (
@@ -39,6 +44,8 @@ function ExploreMobile() {
           personaKey={menPersona}
           isLoading={isLoading}
           isError={isError}
+          isRetrying={isRetrying}
+          onRetry={retry}
           compact
           className={audience === "men" ? "mt-3" : "mt-1"}
         />

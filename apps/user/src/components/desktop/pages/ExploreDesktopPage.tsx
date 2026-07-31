@@ -21,6 +21,8 @@ export function ExploreDesktopPage() {
     visibleList,
     isLoading,
     isError,
+    isRetrying,
+    retry,
   } = useExplorePageData();
 
   return (
@@ -56,6 +58,8 @@ export function ExploreDesktopPage() {
         personaKey={menPersona}
         isLoading={isLoading}
         isError={isError}
+        isRetrying={isRetrying}
+        onRetry={retry}
         className="mt-10 !grid-cols-2 sm:!grid-cols-3 lg:!grid-cols-3 xl:!grid-cols-4 2xl:!grid-cols-5"
       />
     </div>
@@ -70,7 +74,7 @@ export function MorfAiExploreCard({ className }: { className?: string }) {
       to="/ai-style"
       preload="intent"
       className={cn(
-        "group relative flex min-h-[220px] flex-col justify-between overflow-hidden rounded-[1.75rem] bg-foreground p-6 text-background shadow-[0_20px_50px_-28px_rgba(0,0,0,0.55)] transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_28px_60px_-24px_rgba(0,0,0,0.6)]",
+        "group relative flex min-h-[220px] cursor-pointer flex-col justify-between overflow-hidden rounded-[1.75rem] bg-foreground p-6 text-background shadow-[0_20px_50px_-28px_rgba(0,0,0,0.55)] transition-[box-shadow,filter] duration-200 hover:brightness-110 hover:shadow-[0_28px_60px_-24px_rgba(0,0,0,0.6)]",
         className,
       )}
     >

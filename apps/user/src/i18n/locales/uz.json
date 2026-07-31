@@ -37,6 +37,7 @@
     "logout": "Chiqish",
     "loading": "Yuklanmoqda...",
     "loadError": "Ma'lumot yuklanmadi. Qayta urinib ko'ring.",
+    "retry": "Qayta urinish",
     "empty": "Hozircha bo'sh"
   },
   "scrollToTop": {
@@ -994,6 +995,8 @@
     "aiStyleCtaTitle": "Selfieda sinab ko'ring",
     "aiStyleCtaDesc": "Morf AI yuzingizga mos uslubni tavsiya qiladi.",
     "empty": "Bu filtr uchun uslub topilmadi.",
+    "emptyHint": "Boshqa model yoki filtrni tanlab ko'ring.",
+    "loadErrorHint": "Internetni tekshiring va qayta urinib ko'ring.",
     "sampleBadge": "Morf namuna",
     "personaLabel": "Model",
     "personaActive": "{{name}} ({{code}}) — uslub rasmlari shu modelda",

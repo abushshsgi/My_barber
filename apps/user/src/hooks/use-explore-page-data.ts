@@ -9,7 +9,13 @@ export function useExplorePageData() {
   const ageGroup = useUserAgeGroup();
   const { personaId, setPersonaId } = useExplorePersona();
   const menPersona = audience === "men" ? personaId : null;
-  const { data: list = [], isLoading, isError } = useHairstyles(audience, menPersona);
+  const {
+    data: list = [],
+    isLoading,
+    isError,
+    isFetching,
+    refetch,
+  } = useHairstyles(audience, menPersona);
 
   return {
     audience,
@@ -20,5 +26,7 @@ export function useExplorePageData() {
     visibleList: list,
     isLoading,
     isError,
+    isRetrying: isFetching && isError,
+    retry: () => void refetch(),
   };
 }

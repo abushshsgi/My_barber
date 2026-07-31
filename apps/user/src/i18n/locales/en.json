@@ -37,6 +37,7 @@
     "logout": "Log out",
     "loading": "Loading...",
     "loadError": "Could not load data. Please try again.",
+    "retry": "Try again",
     "empty": "Nothing here yet"
   },
   "scrollToTop": {
@@ -994,6 +995,8 @@
     "aiStyleCtaTitle": "Try on your selfie",
     "aiStyleCtaDesc": "Morf AI suggests looks tailored to your face.",
     "empty": "No styles for this filter.",
+    "emptyHint": "Try a different model or filter.",
+    "loadErrorHint": "Check your connection and try again.",
     "sampleBadge": "Morf sample",
     "personaLabel": "Model",
     "personaActive": "{{name}} ({{code}}) — styles shown on this model",

@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Sparkles } from "lucide-react";
+import { Loader2, RotateCw, Scissors, Sparkles, WifiOff } from "lucide-react";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { ExploreStyleGallery } from "@/components/explore/ExploreStyleGallery";
@@ -29,7 +29,7 @@ function ExploreStyleCard({
     <Link
       to="/explore/$styleId"
       params={{ styleId: entry.id }}
-      className="group block min-w-0 transition-opacity hover:opacity-95 active:opacity-90"
+      className="group block min-w-0 cursor-pointer transition-opacity duration-200 hover:opacity-95 active:opacity-90"
     >
       <ExploreStyleGallery
         items={galleryItems}
@@ -40,7 +40,12 @@ function ExploreStyleCard({
         priority={priority}
         className="pointer-events-none space-y-0"
       />
-      <p className={cn("mt-2 truncate font-bold leading-tight", compact ? "text-sm" : "text-sm lg:text-[15px]")}>
+      <p
+        className={cn(
+          "mt-2 truncate font-bold leading-tight",
+          compact ? "text-sm" : "text-sm lg:text-[15px]",
+        )}
+      >
         {entry.titleUz}
       </p>
       {!compact ? (
@@ -67,6 +72,8 @@ type GridProps = {
   personaKey?: string | null;
   isLoading?: boolean;
   isError?: boolean;
+  isRetrying?: boolean;
+  onRetry?: () => void;
   compact?: boolean;
   className?: string;
 };
@@ -76,6 +83,8 @@ export function ExploreStyleGrid({
   personaKey,
   isLoading,
   isError,
+  isRetrying,
+  onRetry,
   compact,
   className,
 }: GridProps) {
@@ -101,17 +110,58 @@ export function ExploreStyleGrid({
 
   if (isError) {
     return (
-      <p className={cn("text-center text-sm text-destructive", className)}>
-        {t("common.loadError")}
-      </p>
+      <div
+        className={cn(
+          "rounded-3xl border border-border bg-surface/60 px-5 py-8 text-center",
+          className,
+        )}
+      >
+        <span className="mx-auto grid size-11 place-items-center rounded-2xl bg-destructive/10 text-destructive">
+          <WifiOff className="size-5" strokeWidth={2.25} />
+        </span>
+        <p className="mt-3 text-[15px] font-bold">{t("common.loadError")}</p>
+        <p className="mx-auto mt-1.5 max-w-xs text-[13px] leading-snug text-muted-foreground">
+          {t("explorePage.loadErrorHint", {
+            defaultValue: "Internetni tekshiring va qayta urinib ko‘ring.",
+          })}
+        </p>
+        {onRetry ? (
+          <button
+            type="button"
+            disabled={isRetrying}
+            onClick={onRetry}
+            className="mt-5 inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-full bg-foreground px-5 text-[13px] font-bold text-background transition-opacity duration-200 hover:opacity-90 touch-manipulation active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {isRetrying ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <RotateCw className="size-4" strokeWidth={2.25} />
+            )}
+            {t("common.retry", { defaultValue: "Qayta urinish" })}
+          </button>
+        ) : null}
+      </div>
     );
   }
 
   if (items.length === 0) {
     return (
-      <p className={cn("text-center text-sm text-muted-foreground", className)}>
-        {t("explorePage.empty")}
-      </p>
+      <div
+        className={cn(
+          "rounded-3xl border border-dashed border-border bg-surface/40 px-5 py-8 text-center",
+          className,
+        )}
+      >
+        <span className="mx-auto grid size-11 place-items-center rounded-2xl bg-muted text-muted-foreground">
+          <Scissors className="size-5" strokeWidth={2.25} />
+        </span>
+        <p className="mt-3 text-[15px] font-bold">{t("explorePage.empty")}</p>
+        <p className="mx-auto mt-1.5 max-w-xs text-[13px] leading-snug text-muted-foreground">
+          {t("explorePage.emptyHint", {
+            defaultValue: "Boshqa model yoki filtrni tanlab ko‘ring.",
+          })}
+        </p>
+      </div>
     );
   }
 
@@ -153,7 +203,9 @@ export function ExploreAiStyleBanner({ className }: { className?: string }) {
         <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-background/55">
           Morf AI
         </span>
-        <span className="text-sm font-extrabold leading-tight">{t("explorePage.aiStyleCtaTitle")}</span>
+        <span className="text-sm font-extrabold leading-tight">
+          {t("explorePage.aiStyleCtaTitle")}
+        </span>
         <span className="text-xs text-background/70">{t("explorePage.tryAiStyle")}</span>
       </div>
       <span className="flex shrink-0 items-center justify-center border-l border-background/15 px-4">
