@@ -190,7 +190,7 @@ function AiStyleHistoryPage() {
       const result = await handleInstagramStoryShare({
         shareLink: pageUrl,
         imageUrl: storyImage,
-        filename: "morf-ai-story.png",
+        filename: "morf-ai-story.jpg",
       });
       if (result.mode === "cancelled") return;
       setIgShareMode(result.mode);

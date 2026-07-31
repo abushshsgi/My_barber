@@ -1,13 +1,12 @@
 /**
- * Instagram Story (9:16) — faqat tayyor natija + Morf AI shablon.
- * Before/after emas.
+ * Instagram Story (9:16) — full-bleed tayyor natija + engil Morf AI overlay.
+ * Preview’da yuz katta ko‘rinsin (kichik thumbnail uchun).
  */
 
 const STORY_W = 1080;
 const STORY_H = 1920;
 
 export type MorfAiStoryComposeOptions = {
-  /** Tayyor try-on natija (after) — data URL yoki absolute/relative URL */
   resultImageUrl: string;
   styleTitle?: string;
   brandLabel?: string;
@@ -47,18 +46,18 @@ async function loadImage(src: string): Promise<HTMLImageElement> {
   const blob = await blobFromUrl(src);
   const objectUrl = URL.createObjectURL(blob);
   try {
-    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+    return await new Promise<HTMLImageElement>((resolve, reject) => {
       const el = new Image();
       el.onload = () => resolve(el);
       el.onerror = () => reject(new Error("Rasm ochilmadi"));
       el.src = objectUrl;
     });
-    return img;
   } finally {
     URL.revokeObjectURL(objectUrl);
   }
 }
 
+/** Cover fill — yuz yuqoriroq (hairstyle). */
 function drawCover(
   ctx: CanvasRenderingContext2D,
   img: HTMLImageElement,
@@ -66,14 +65,13 @@ function drawCover(
   y: number,
   w: number,
   h: number,
-  /** Prefer top of head for hairstyle shots */
-  focus: "top" | "center" = "top",
 ) {
   const scale = Math.max(w / img.naturalWidth, h / img.naturalHeight);
   const dw = img.naturalWidth * scale;
   const dh = img.naturalHeight * scale;
   const dx = x + (w - dw) / 2;
-  const dy = focus === "top" ? y : y + (h - dh) / 2;
+  // Slight top bias so hair stays in frame when cropping tall.
+  const dy = y + Math.min(0, (h - dh) * 0.15);
   ctx.drawImage(img, dx, dy, dw, dh);
 }
 
@@ -96,7 +94,7 @@ function fitText(
 }
 
 /**
- * 1080×1920 PNG data URL — Instagram Story uchun tayyor shablon.
+ * 1080×1920 — full-bleed after image (Instagram Stories preview’da katta ko‘rinadi).
  */
 export async function composeMorfAiStoryImage(
   opts: MorfAiStoryComposeOptions,
@@ -112,87 +110,60 @@ export async function composeMorfAiStoryImage(
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("Canvas mavjud emas");
 
-  // Background
-  const bg = ctx.createLinearGradient(0, 0, 0, STORY_H);
-  bg.addColorStop(0, "#141414");
-  bg.addColorStop(0.45, "#0a0a0a");
-  bg.addColorStop(1, "#111111");
-  ctx.fillStyle = bg;
-  ctx.fillRect(0, 0, STORY_W, STORY_H);
+  const result = await loadImage(opts.resultImageUrl);
 
-  // Soft accent glow (top)
-  const glow = ctx.createRadialGradient(STORY_W * 0.5, 0, 40, STORY_W * 0.5, 120, 700);
-  glow.addColorStop(0, "rgba(244, 114, 182, 0.22)");
-  glow.addColorStop(0.5, "rgba(168, 85, 247, 0.1)");
-  glow.addColorStop(1, "rgba(0,0,0,0)");
-  ctx.fillStyle = glow;
-  ctx.fillRect(0, 0, STORY_W, 900);
+  // Full-bleed photo (edge-to-edge) — Instagram tanlash preview’da katta yuz.
+  ctx.fillStyle = "#0a0a0a";
+  ctx.fillRect(0, 0, STORY_W, STORY_H);
+  drawCover(ctx, result, 0, 0, STORY_W, STORY_H);
 
   const font = "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif";
 
-  // Brand chip
-  ctx.fillStyle = "rgba(255,255,255,0.08)";
-  roundRect(ctx, 72, 96, 320, 64, 32);
+  // Top gradient for brand readability
+  const topFade = ctx.createLinearGradient(0, 0, 0, 280);
+  topFade.addColorStop(0, "rgba(0,0,0,0.55)");
+  topFade.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = topFade;
+  ctx.fillRect(0, 0, STORY_W, 280);
+
+  // Bottom gradient for title / CTA
+  const bottomFade = ctx.createLinearGradient(0, STORY_H - 520, 0, STORY_H);
+  bottomFade.addColorStop(0, "rgba(0,0,0,0)");
+  bottomFade.addColorStop(0.35, "rgba(0,0,0,0.45)");
+  bottomFade.addColorStop(1, "rgba(0,0,0,0.82)");
+  ctx.fillStyle = bottomFade;
+  ctx.fillRect(0, STORY_H - 520, STORY_W, 520);
+
+  // Brand row
+  ctx.fillStyle = "rgba(255,255,255,0.14)";
+  roundRect(ctx, 48, 72, 280, 56, 28);
   ctx.fill();
   ctx.fillStyle = "#ffffff";
-  ctx.font = `700 28px ${font}`;
-  ctx.fillText(brand, 108, 138);
-  ctx.fillStyle = "rgba(255,255,255,0.55)";
+  ctx.font = `800 26px ${font}`;
+  ctx.fillText(brand, 78, 108);
+  ctx.fillStyle = "rgba(255,255,255,0.75)";
   ctx.font = `600 22px ${font}`;
-  ctx.fillText(site, STORY_W - 72 - ctx.measureText(site).width, 138);
+  const siteW = ctx.measureText(site).width;
+  ctx.fillText(site, STORY_W - 48 - siteW, 108);
 
-  // Photo frame
-  const frameX = 64;
-  const frameY = 220;
-  const frameW = STORY_W - 128;
-  const frameH = 1280;
-  const frameR = 48;
-
-  ctx.save();
-  roundRect(ctx, frameX, frameY, frameW, frameH, frameR);
-  ctx.clip();
-  ctx.fillStyle = "#1a1a1a";
-  ctx.fillRect(frameX, frameY, frameW, frameH);
-
-  const result = await loadImage(opts.resultImageUrl);
-  drawCover(ctx, result, frameX, frameY, frameW, frameH, "top");
-
-  // Bottom gradient on photo
-  const fade = ctx.createLinearGradient(0, frameY + frameH * 0.55, 0, frameY + frameH);
-  fade.addColorStop(0, "rgba(0,0,0,0)");
-  fade.addColorStop(1, "rgba(0,0,0,0.72)");
-  ctx.fillStyle = fade;
-  ctx.fillRect(frameX, frameY, frameW, frameH);
-  ctx.restore();
-
-  // Frame border
-  ctx.strokeStyle = "rgba(255,255,255,0.14)";
-  ctx.lineWidth = 3;
-  roundRect(ctx, frameX, frameY, frameW, frameH, frameR);
-  ctx.stroke();
-
-  // Title over photo bottom
-  const titleSize = fitText(ctx, title, frameW - 80, font, 56, 32);
+  // Style title — large
+  const titleSize = fitText(ctx, title, STORY_W - 96, font, 72, 40, "800");
   ctx.fillStyle = "#ffffff";
   ctx.font = `800 ${titleSize}px ${font}`;
-  ctx.fillText(title, frameX + 40, frameY + frameH - 56);
+  ctx.fillText(title, 48, STORY_H - 220);
 
-  // CTA block
-  const ctaY = frameY + frameH + 56;
+  // CTA pill
+  const pillH = 84;
+  const pillY = STORY_H - 160;
   ctx.fillStyle = "#ffffff";
-  roundRect(ctx, 64, ctaY, STORY_W - 128, 88, 44);
+  roundRect(ctx, 48, pillY, STORY_W - 96, pillH, 42);
   ctx.fill();
   ctx.fillStyle = "#0a0a0a";
-  const ctaSize = fitText(ctx, cta, STORY_W - 200, font, 34, 24, "700");
+  const ctaSize = fitText(ctx, cta, STORY_W - 160, font, 34, 24, "700");
   ctx.font = `700 ${ctaSize}px ${font}`;
   const ctaW = ctx.measureText(cta).width;
-  ctx.fillText(cta, (STORY_W - ctaW) / 2, ctaY + 54);
+  ctx.fillText(cta, (STORY_W - ctaW) / 2, pillY + 52);
 
-  ctx.fillStyle = "rgba(255,255,255,0.5)";
-  ctx.font = `600 24px ${font}`;
-  const hint = "Link sticker bilan havolani qo‘shing";
-  const hintW = ctx.measureText(hint).width;
-  ctx.fillText(hint, (STORY_W - hintW) / 2, ctaY + 140);
-
-  return canvas.toDataURL("image/png");
+  // High-quality JPEG — Instagram Stories uchun yaxshiroq / kichikroq fayl
+  return canvas.toDataURL("image/jpeg", 0.92);
 }

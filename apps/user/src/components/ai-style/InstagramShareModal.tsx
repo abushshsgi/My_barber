@@ -6,9 +6,27 @@ import { useTranslation } from "react-i18next";
 import { copyTextToClipboard, downloadImageFile, imageUrlToFile } from "@/lib/ai-style-image";
 import { cn } from "@/lib/utils";
 
-const DEFAULT_FILENAME = "morf-ai-story.png";
+const DEFAULT_FILENAME = "morf-ai-story.jpg";
 
-/** Instagram Story camera (app). Web API rasmni avtomatik qo‘ymaydi — native share kerak. */
+export type InstagramStorySharePayload = {
+  shareLink: string;
+  imageUrl: string;
+  filename?: string;
+};
+
+export type InstagramStoryShareResult =
+  | { mode: "native-share" }
+  | { mode: "download-fallback" }
+  | { mode: "cancelled" };
+
+type InstagramShareModalProps = {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  mode?: InstagramStoryShareResult["mode"];
+  className?: string;
+};
+
+/** Instagram Story camera (fallback). */
 export function openInstagramStoryCamera() {
   if (typeof window === "undefined") return;
   const ua = navigator.userAgent || "";
@@ -29,29 +47,9 @@ export function openInstagramStoryCamera() {
   window.open("https://www.instagram.com/", "_blank", "noopener,noreferrer");
 }
 
-export type InstagramStorySharePayload = {
-  shareLink: string;
-  imageUrl: string;
-  filename?: string;
-};
-
-export type InstagramStoryShareResult =
-  | { mode: "native-share" }
-  | { mode: "download-fallback" }
-  | { mode: "cancelled" };
-
-type InstagramShareModalProps = {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  /** native-share: rasm allaqachon share sheet orqali ketgan */
-  mode?: InstagramStoryShareResult["mode"];
-  className?: string;
-};
-
 /**
- * 1) Havolani nusxalash
- * 2) Mobil: Web Share (fayl) → user Instagram Stories tanlaydi → rasm Story’ga tushadi
- * 3) Aks holda: yuklab olish + Instagram Story camera ochish
+ * Instagram’ning Reels / Post / Story / Message tanlash oynasini ochish uchun
+ * faqat rasm faylini share qilamiz (havola alohida clipboard’da).
  */
 export async function handleInstagramStoryShare({
   shareLink,
@@ -65,19 +63,16 @@ export async function handleInstagramStoryShare({
 
   await copyTextToClipboard(link);
 
-  const file = await imageUrlToFile(image, filename);
+  const file = await imageUrlToFile(image, filename.endsWith(".png") ? "morf-ai-story.jpg" : filename);
 
-  // Eng to‘g‘ri yo‘l: OS share sheet → Instagram → Stories (rasm bilan).
+  // iOS/Android: Instagram app → «История / Story» tanlash ekrani (rasmdagidek).
   if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
     const canFiles =
       typeof navigator.canShare === "function" ? navigator.canShare({ files: [file] }) : false;
     if (canFiles) {
       try {
-        await navigator.share({
-          files: [file],
-          title: "Morf AI",
-          text: link,
-        });
+        // Faqat files — Instagram content chooser ochiladi (Reels/Post/Story/DM).
+        await navigator.share({ files: [file] });
         return { mode: "native-share" };
       } catch (err) {
         if (err instanceof DOMException && err.name === "AbortError") {
@@ -88,7 +83,7 @@ export async function handleInstagramStoryShare({
     }
   }
 
-  await downloadImageFile(image, filename);
+  await downloadImageFile(image, file.name);
   openInstagramStoryCamera();
   return { mode: "download-fallback" };
 }
@@ -109,10 +104,10 @@ export function InstagramShareModal({
   const steps = native
     ? [
         t("aiStylePage.instagramStory.nativeStep1", {
-          defaultValue: "Rasm Instagram Stories’ga yuborildi (share sheet orqali).",
+          defaultValue: "Instagram ochildi — «История» / Story ni bosing.",
         }),
         t("aiStylePage.instagramStory.nativeStep2", {
-          defaultValue: "Havola buferda — Story’da «Link» sticker qo‘yib joylashtiring.",
+          defaultValue: "Havola buferda — Story’da «Link» sticker qo‘ying.",
         }),
       ]
     : [
@@ -181,7 +176,7 @@ export function InstagramShareModal({
             {native
               ? t("aiStylePage.instagramStory.nativeSubtitle", {
                   defaultValue:
-                    "Share sheet’da Instagram Stories’ni tanlang. Keyin Link sticker qo‘shing.",
+                    "Instagram’da Reels / Post / Story / Message dan «Story» ni tanlang.",
                 })
               : t("aiStylePage.instagramStory.subtitle", {
                   defaultValue:
