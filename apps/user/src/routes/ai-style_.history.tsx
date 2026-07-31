@@ -14,6 +14,7 @@ import { createMorphAiLookShare } from "@/lib/api";
 import { shareAiStyleLink, downloadAiStyleImage } from "@/lib/ai-style-image";
 import { getActiveUserId } from "@/lib/face-profile";
 import { resolveMediaUrl, toShareImageSource } from "@/lib/media-url";
+import { composeMorfAiStoryImage } from "@/lib/morf-ai-story-image";
 import { pickMorphShareText } from "@/lib/morph-share-copy";
 import {
   loadMorphAiGenerations,
@@ -156,18 +157,36 @@ function AiStyleHistoryPage() {
     }
     setIgSharing(true);
     try {
+      // Faqat tayyor natija (after) — before/after emas.
       const afterSource = toShareImageSource(active.after);
-      const created = await createMorphAiLookShare({
-        style_id: active.styleId,
-        title: active.title,
-        after_image: afterSource,
+      let pageUrl = `${window.location.origin}/explore/${encodeURIComponent(active.styleId)}`;
+      try {
+        const created = await createMorphAiLookShare({
+          style_id: active.styleId,
+          title: active.title,
+          after_image: afterSource,
+          // before yuborilmaydi — share landing ham faqat natija
+        });
+        pageUrl =
+          created.share_page_url ||
+          `${window.location.origin}/morf-ai/share/${encodeURIComponent(created.id)}`;
+      } catch {
+        // Look-share xato bo‘lsa ham Story shablon + fallback havola ishlaydi.
+      }
+
+      const storyImage = await composeMorfAiStoryImage({
+        resultImageUrl: afterSource,
+        styleTitle: active.title,
+        brandLabel: "Morf AI",
+        siteLabel: "mysaloon.uz",
+        ctaLabel: t("aiStylePage.instagramStory.storyCta", {
+          defaultValue: "O‘zingizda sinab ko‘ring",
+        }),
       });
-      const pageUrl =
-        created.share_page_url ||
-        `${typeof window !== "undefined" ? window.location.origin : "https://mysaloon.uz"}/morf-ai/share/${encodeURIComponent(created.id)}`;
+
       await handleInstagramStoryShare({
         shareLink: pageUrl,
-        imageUrl: afterSource,
+        imageUrl: storyImage,
         filename: "morf-ai-story.png",
       });
       setIgModalOpen(true);

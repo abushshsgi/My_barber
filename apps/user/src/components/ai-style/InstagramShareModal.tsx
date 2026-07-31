@@ -52,14 +52,14 @@ export function InstagramShareModal({ open, onOpenChange, className }: Instagram
 
   const steps = [
     t("aiStylePage.instagramStory.step1", {
-      defaultValue: "Story rasmi qurilmangizga yuklab olindi.",
+      defaultValue: "Tayyor natija shabloni qurilmangizga yuklab olindi.",
     }),
     t("aiStylePage.instagramStory.step2", {
       defaultValue: "Shaxsiy havola buferga nusxalandi.",
     }),
     t("aiStylePage.instagramStory.step3", {
       defaultValue:
-        "Instagram’da Story oching, yuklangan rasmni qo‘ying va «Link» sticker orqali havolani joylang.",
+        "Instagram’da Story oching, yuklangan shablonni qo‘ying va «Link» sticker orqali havolani joylang.",
     }),
   ] as const;
 
@@ -114,7 +114,7 @@ export function InstagramShareModal({ open, onOpenChange, className }: Instagram
           </h2>
           <p className="mt-1.5 text-sm leading-relaxed text-zinc-400">
             {t("aiStylePage.instagramStory.subtitle", {
-              defaultValue: "Ikki qadam tayyor — endi Instagram’da Story yarating.",
+              defaultValue: "Tayyor natija shabloni yuklandi — endi Instagram’da Story yarating.",
             })}
           </p>
 

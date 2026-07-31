@@ -1171,12 +1171,13 @@
     "instagramStory": {
       "cta": "Share to Instagram Story",
       "title": "Share to Instagram Story",
-      "subtitle": "Two steps done — now create your Story in Instagram.",
-      "step1": "The story graphic was downloaded to your device.",
+      "subtitle": "Your finished look template is ready — create a Story in Instagram.",
+      "step1": "The finished-look story template was downloaded.",
       "step2": "Your unique link was copied to the clipboard.",
-      "step3": "Open Instagram, create a Story with the downloaded image, and paste the link with the Link sticker.",
+      "step3": "Open Instagram, create a Story with the template, and paste the link with the Link sticker.",
       "openInstagram": "Open Instagram",
-      "failed": "Couldn’t prepare Instagram Story share"
+      "failed": "Couldn’t prepare Instagram Story share",
+      "storyCta": "Try it on yourself"
     },
     "tryMoreStyles": "More styles",
     "viewStylePage": "Style page",
