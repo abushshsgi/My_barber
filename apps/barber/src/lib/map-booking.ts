@@ -29,6 +29,9 @@ export type ApiBookingRow = {
   check_in_code?: string | null;
   check_in_short_code?: string | null;
   notes?: string | null;
+  master_card_json?: Record<string, unknown> | null;
+  style_preview_url?: string | null;
+  viewer_camera_state?: Record<string, unknown> | null;
   created_at?: string;
   status_history?: Array<{ key: string; label: string; at: string }>;
   customer_impression_stats?: Record<string, number>;
@@ -98,6 +101,9 @@ export function mapApiBooking(b: ApiBookingRow): Booking {
     order_number: b.order_number ?? `MS-${b.id}`,
     check_in_code: b.check_in_code ?? undefined,
     notes: (b.notes ?? "").trim() || undefined,
+    master_card_json: b.master_card_json ?? null,
+    style_preview_url: (b.style_preview_url ?? "").trim() || null,
+    viewer_camera_state: b.viewer_camera_state ?? null,
     created_at: b.created_at,
     status_history: b.status_history ?? [],
     customer_impression_stats: b.customer_impression_stats ?? {},

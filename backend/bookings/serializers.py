@@ -15,6 +15,7 @@ from bookings.db_compat import (
     bookings_has_check_in_token_column,
     bookings_has_checked_in_column,
     bookings_has_family_member_column,
+    bookings_has_master_card_columns,
     bookings_has_notes_column,
     bookings_has_order_number_column,
     bookings_has_portfolio_consent_column,
@@ -98,6 +99,9 @@ class BookingSerializer(serializers.ModelSerializer):
             "customer_impression_stats",
             "booking_client_impressions",
             "notes",
+            "master_card_json",
+            "style_preview_url",
+            "viewer_camera_state",
             "lines",
             "has_review",
             "review_id",
@@ -116,6 +120,9 @@ class BookingSerializer(serializers.ModelSerializer):
             "paid_at",
             "portfolio_consent",
             "notes",
+            "master_card_json",
+            "style_preview_url",
+            "viewer_camera_state",
             "created_at",
         )
 
@@ -132,6 +139,10 @@ class BookingSerializer(serializers.ModelSerializer):
             self.fields.pop("check_in_short_code", None)
         if not bookings_has_notes_column():
             self.fields.pop("notes", None)
+        if not bookings_has_master_card_columns():
+            self.fields.pop("master_card_json", None)
+            self.fields.pop("style_preview_url", None)
+            self.fields.pop("viewer_camera_state", None)
 
     def _is_request_barber(self) -> bool:
         request = self.context.get("request")
@@ -472,6 +483,14 @@ class BookingCreateSerializer(serializers.Serializer):
         allow_blank=True,
         trim_whitespace=True,
     )
+    master_card_json = serializers.JSONField(required=False, allow_null=True)
+    style_preview_url = serializers.CharField(
+        max_length=2000,
+        required=False,
+        allow_blank=True,
+        trim_whitespace=True,
+    )
+    viewer_camera_state = serializers.JSONField(required=False, allow_null=True)
     customer_phone = serializers.CharField(
         required=False,
         allow_blank=True,
@@ -661,6 +680,21 @@ class BookingCreateSerializer(serializers.Serializer):
         phone_snap = (getattr(customer, "phone", None) or "").strip()
         family_member = validated_data.pop("family_member", None)
         notes = (validated_data.pop("notes", "") or "").strip()
+        master_card_json = validated_data.pop("master_card_json", None)
+        style_preview_url = (validated_data.pop("style_preview_url", "") or "").strip()
+        viewer_camera_state = validated_data.pop("viewer_camera_state", None)
+        if master_card_json is not None and not isinstance(master_card_json, dict):
+            master_card_json = None
+        if viewer_camera_state is not None and not isinstance(viewer_camera_state, dict):
+            viewer_camera_state = None
+        if master_card_json and not notes:
+            style_name = ""
+            overview = master_card_json.get("style_overview")
+            if isinstance(overview, dict):
+                style_name = str(overview.get("name") or "").strip()
+            notes = (
+                f"Morf AI Master Card biriktirilgan{': ' + style_name if style_name else ''}."
+            )[:500]
 
         create_kwargs = {
             "customer": customer,
@@ -676,6 +710,13 @@ class BookingCreateSerializer(serializers.Serializer):
             create_kwargs["family_member"] = family_member
         if notes and bookings_has_notes_column():
             create_kwargs["notes"] = notes
+        if bookings_has_master_card_columns():
+            if master_card_json is not None:
+                create_kwargs["master_card_json"] = master_card_json
+            if style_preview_url:
+                create_kwargs["style_preview_url"] = style_preview_url[:2000]
+            if viewer_camera_state is not None:
+                create_kwargs["viewer_camera_state"] = viewer_camera_state
 
         with booking_slot_lock(barber.id, start_at, end_at) as acquired:
             if not acquired:

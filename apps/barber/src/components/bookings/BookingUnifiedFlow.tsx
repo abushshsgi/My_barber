@@ -18,6 +18,7 @@ import {
 import type { Booking } from "@/components/barber/BarberContext";
 import { formatUZS } from "@/components/barber/BarberContext";
 import { UserAvatar } from "@/components/barber/primitives";
+import { MasterCardPanel } from "@/components/bookings/MasterCardPanel";
 import type { CompleteBookingOptions } from "@/lib/map-booking";
 import { formatUzPhoneE164 } from "@/lib/phone";
 
@@ -143,6 +144,11 @@ export function BookingUnifiedFlow({
                   <BookingPaymentCard booking={booking} />
                   <BookingOrderNumberBanner orderNumber={booking.order_number} />
                   <BookingNotesCard notes={booking.notes} />
+                  <MasterCardPanel
+                    masterCardJson={booking.master_card_json}
+                    stylePreviewUrl={booking.style_preview_url}
+                    viewerCameraState={booking.viewer_camera_state}
+                  />
                 </div>
                 <BookingQrCheckInPanel wide />
               </div>
@@ -227,6 +233,11 @@ export function BookingUnifiedFlow({
                 </div>
                 <BookingOrderNumberBanner orderNumber={booking.order_number} />
                 <BookingNotesCard notes={booking.notes} />
+                <MasterCardPanel
+                  masterCardJson={booking.master_card_json}
+                  stylePreviewUrl={booking.style_preview_url}
+                  viewerCameraState={booking.viewer_camera_state}
+                />
               </div>
               <div className="space-y-4">
                 <BookingServiceTimer booking={booking} className="w-full" />

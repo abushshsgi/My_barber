@@ -28,6 +28,9 @@ export type CreateBookingPayload = {
   family_member_id?: number | null;
   payment_method?: "cash" | "online";
   notes?: string;
+  master_card_json?: Record<string, unknown>;
+  style_preview_url?: string;
+  viewer_camera_state?: Record<string, unknown>;
   /** Google login foydalanuvchilari uchun — profilga saqlanadi va bron snapshotiga yoziladi */
   customer_phone?: string;
 };

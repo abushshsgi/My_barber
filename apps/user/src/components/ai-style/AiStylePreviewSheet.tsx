@@ -25,6 +25,7 @@ import { downloadAiStyleImage, shareAiStyleLink } from "@/lib/ai-style-image";
 import { trackMorphShare } from "@/lib/ga";
 import { toShareImageSource } from "@/lib/media-url";
 import { buildTelegramShareUrl, pickMorphShareText } from "@/lib/morph-share-copy";
+import { stashBarberConsultDraft } from "@/lib/barber-consult-session";
 import { stashMorphStudioDraft } from "@/lib/morph-ai-studio-session";
 import { cn } from "@/lib/utils";
 
@@ -116,6 +117,25 @@ export function AiStylePreviewSheet({
     });
     onOpenChange(false);
     void navigate({ to: "/ai-style/studio" });
+  };
+
+  const openBarberConsult = () => {
+    const image = previewImage || suggestion.imageUrl;
+    if (!image) {
+      toast.error(t("aiStylePage.previewNoImage"));
+      return;
+    }
+    stashBarberConsultDraft({
+      image,
+      styleId: suggestion.id,
+      styleName: suggestion.title,
+      salonId: suggestion.salonId || null,
+    });
+    onOpenChange(false);
+    void navigate({
+      to: "/ai-style/consult",
+      search: { styleId: suggestion.id, styleName: suggestion.title },
+    });
   };
 
   const handleDownload = async () => {
@@ -297,6 +317,15 @@ export function AiStylePreviewSheet({
                 {t("aiStylePage.studio.openCta", { defaultValue: "AI Studio" })}
               </button>
             ) : null}
+
+            <button
+              type="button"
+              onClick={openBarberConsult}
+              className="flex w-full items-center justify-center gap-2 rounded-2xl border border-border bg-white py-3.5 text-sm font-bold text-foreground touch-manipulation active:opacity-90"
+            >
+              <Sparkles className="h-4 w-4" />
+              {t("barberConsult.openCta", { defaultValue: "AI Barber Consult" })}
+            </button>
 
             <button
               type="button"

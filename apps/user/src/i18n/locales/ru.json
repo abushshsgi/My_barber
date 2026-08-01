@@ -1680,5 +1680,57 @@
       "featureBook": "Забронируйте онлайн за несколько секунд",
       "featureAi": "Подберите стиль с помощью AI"
     }
+  },
+  "barberConsult": {
+    "title": "Hair Trends & AI Barber Consult",
+    "subtitle": "360° превью + техническая Barber Master Card",
+    "openCta": "AI Barber Consult",
+    "goAiStyle": "Перейти в Morf AI",
+    "empty": "Сначала сделайте try-on, затем откройте Barber Consult.",
+    "noImage": "Изображение try-on или стиля не найдено.",
+    "loadFailed": "Не удалось загрузить Master Card",
+    "retry": "Создать снова",
+    "prescription": "Barber Master Card",
+    "bookCta": "Записаться к барберу",
+    "shareCta": "Поделиться с барбером",
+    "shareText": "Morf AI Barber Master Card",
+    "shareSaved": "Master Card сохранена",
+    "shareFailed": "Не удалось поделиться",
+    "fallbackNotice": "Ответ AI неполный — показан безопасный fallback-рецепт.",
+    "mode2d": "Multi-angle",
+    "mode3d": "3D",
+    "webglFallback": "3D недоступен — показан multi-angle",
+    "viewerAlt": "Превью причёски",
+    "showBarberPreview": "Превью кабинета барбера",
+    "hideBarberPreview": "Скрыть превью барбера",
+    "views": {
+      "front": "Спереди",
+      "left": "Слева",
+      "right": "Справа",
+      "back": "Сзади"
+    },
+    "zones": {
+      "sides": "Бока / Затылок",
+      "top": "Верх",
+      "beard": "Борода"
+    },
+    "fields": {
+      "fade": "Фейд",
+      "neckline": "Линия шеи",
+      "top": "Верх",
+      "texture": "Текстура",
+      "beard": "Борода",
+      "beardNone": "Нет"
+    },
+    "booking": {
+      "title": "Запись с Master Card",
+      "desc": "Выберите салон — превью и технический рецепт прикрепятся к записи.",
+      "openMap": "Выбрать салон",
+      "hint": "При бронировании Master Card JSON отправляется автоматически. Барбер видит рецепт в кабинете."
+    },
+    "barberPreview": {
+      "badge": "Превью кабинета барбера",
+      "camera": "Камера"
+    }
   }
 }

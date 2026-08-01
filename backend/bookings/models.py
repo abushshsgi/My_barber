@@ -67,6 +67,22 @@ class Booking(models.Model):
         default="",
         help_text="Mijozning izohi yoki maxsus so'rovi (ixtiyoriy).",
     )
+    master_card_json = models.JSONField(
+        null=True,
+        blank=True,
+        help_text="Morf AI Barber Master Card (texnik retsept JSON).",
+    )
+    style_preview_url = models.URLField(
+        max_length=2000,
+        blank=True,
+        default="",
+        help_text="Try-on / style preview URL for barber dashboard.",
+    )
+    viewer_camera_state = models.JSONField(
+        null=True,
+        blank=True,
+        help_text="Multi-angle / 3D viewer camera state at booking time.",
+    )
     reminder_1h_sent = models.BooleanField(default=False)
     appointment_reminder_sent = models.BooleanField(default=False)
     family_member = models.ForeignKey(

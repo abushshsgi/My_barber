@@ -14,6 +14,7 @@ import {
   BookingProcessSection,
   BookingServiceTimer,
 } from "@/components/bookings/BookingProcessParts";
+import { MasterCardPanel } from "@/components/bookings/MasterCardPanel";
 import type { Booking } from "@/components/barber/BarberContext";
 import { formatUZS } from "@/components/barber/BarberContext";
 import { UserAvatar } from "@/components/barber/primitives";
@@ -154,6 +155,11 @@ export function BookingSessionFlow({
           <BookingServiceTimer booking={booking} className="w-full" />
           <BookingProcessSection status={booking.status} checkedIn={!!booking.checked_in_at} />
           <BookingNotesCard notes={booking.notes} />
+          <MasterCardPanel
+            masterCardJson={booking.master_card_json}
+            stylePreviewUrl={booking.style_preview_url}
+            viewerCameraState={booking.viewer_camera_state}
+          />
         </div>
       </motion.div>
 

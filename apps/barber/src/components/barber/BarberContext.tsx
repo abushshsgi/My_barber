@@ -124,6 +124,9 @@ export type Booking = {
   order_number?: string;
   check_in_code?: string;
   notes?: string;
+  master_card_json?: Record<string, unknown> | null;
+  style_preview_url?: string | null;
+  viewer_camera_state?: Record<string, unknown> | null;
   booked_for_name?: string | null;
   salon_address?: string | null;
   salon_latitude?: number | null;

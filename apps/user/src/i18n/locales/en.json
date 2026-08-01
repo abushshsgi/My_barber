@@ -1686,5 +1686,57 @@
       "featureBook": "Book online in just a few seconds",
       "featureAi": "Pick your look with AI style advice"
     }
+  },
+  "barberConsult": {
+    "title": "Hair Trends & AI Barber Consult",
+    "subtitle": "360° preview + technical Barber Master Card",
+    "openCta": "AI Barber Consult",
+    "goAiStyle": "Go to Morf AI",
+    "empty": "Try a style first, then open Barber Consult.",
+    "noImage": "Try-on or style image not found.",
+    "loadFailed": "Could not load Master Card",
+    "retry": "Regenerate",
+    "prescription": "Barber Master Card",
+    "bookCta": "Book Barber Appointment",
+    "shareCta": "Share with Barber",
+    "shareText": "Morf AI Barber Master Card",
+    "shareSaved": "Master Card saved",
+    "shareFailed": "Could not share",
+    "fallbackNotice": "AI response incomplete — showing a safe fallback recipe.",
+    "mode2d": "Multi-angle",
+    "mode3d": "3D",
+    "webglFallback": "3D unavailable — showing multi-angle",
+    "viewerAlt": "Hairstyle preview",
+    "showBarberPreview": "Barber dashboard preview",
+    "hideBarberPreview": "Hide barber preview",
+    "views": {
+      "front": "Front",
+      "left": "Left Side",
+      "right": "Right Side",
+      "back": "Back View"
+    },
+    "zones": {
+      "sides": "Sides / Back",
+      "top": "Top",
+      "beard": "Beard"
+    },
+    "fields": {
+      "fade": "Fade",
+      "neckline": "Neckline",
+      "top": "Top",
+      "texture": "Texture",
+      "beard": "Beard",
+      "beardNone": "None"
+    },
+    "booking": {
+      "title": "Book with Master Card",
+      "desc": "Pick a salon — preview and technical recipe attach to the booking.",
+      "openMap": "Choose salon",
+      "hint": "When you book, the Master Card JSON is sent automatically. The barber sees the recipe on their dashboard."
+    },
+    "barberPreview": {
+      "badge": "Barber dashboard preview",
+      "camera": "Camera"
+    }
   }
 }

@@ -37,6 +37,7 @@ from .style_recommend import (
 )
 from .services.gemini_tryon import generate_tryon_preview
 from .services.tryon_queue import enqueue_tryon_job, get_tryon_job, is_queue_enabled
+from .services.gemini_barber_card import generate_barber_master_card
 from .services.gemini_style import (
     NO_FACE_MESSAGE,
     AiStyleError,
@@ -405,6 +406,64 @@ class AiFaceCheckView(UnthrottledAPIView):
                 error_detail=exc.message,
             )
             return Response({"has_face": False, "detail": exc.message}, status=exc.status)
+
+
+class AiBarberCardView(UnthrottledAPIView):
+    """POST { image, style_name? } — Gemini Barber Master Card JSON."""
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user = _require_customer_user(request)
+        if isinstance(user, Response):
+            return user
+        blocked = check_user_can_generate(user_id=user.pk, kind="analyze")
+        if blocked:
+            return morph_generation_blocked_response(blocked)
+
+        image = request.data.get("image")
+        style_name = request.data.get("style_name")
+        if not image:
+            return Response({"detail": "Uslub yoki try-on rasmini yuboring."}, status=400)
+
+        try:
+            result = generate_barber_master_card(
+                str(image),
+                style_name=str(style_name).strip() if style_name else None,
+            )
+            usage = result.pop("_usage", None) or {}
+            record_ai_generation(
+                user_id=user.pk,
+                kind="analyze",
+                status="success",
+                prompt=str(usage.get("prompt") or "barber_master_card"),
+                model=str(usage.get("model") or ""),
+                provider=str(usage.get("provider") or ""),
+                prompt_tokens=int(usage.get("prompt_tokens") or 0),
+                candidates_tokens=int(usage.get("candidates_tokens") or 0),
+                thoughts_tokens=int(usage.get("thoughts_tokens") or 0),
+                total_tokens=int(usage.get("total_tokens") or 0),
+                cost_usd=usage.get("cost_usd") or 0,
+                tokens_estimated=bool(usage.get("tokens_estimated")),
+                latency_ms=int(usage.get("latency_ms") or 0),
+                style_title=str(style_name or "")[:120],
+            )
+            return Response(
+                {
+                    "master_card": result["master_card"],
+                    "fallback": bool(result.get("fallback")),
+                    "detail": result.get("detail") or "",
+                }
+            )
+        except AiStyleError as exc:
+            record_ai_generation(
+                user_id=user.pk,
+                kind="analyze",
+                status="failed",
+                error_detail=exc.message,
+                style_title=str(style_name or "")[:120],
+            )
+            return Response({"detail": exc.message}, status=exc.status)
 
 
 class AiStyleHistoryListCreateView(UnthrottledAPIView):

@@ -9,6 +9,7 @@ import {
   BookingOrderNumberBanner,
   BookingPaymentCard,
 } from "@/components/bookings/BookingProcessParts";
+import { MasterCardPanel } from "@/components/bookings/MasterCardPanel";
 import type { Booking } from "@/components/barber/BarberContext";
 
 type Props = {
@@ -68,6 +69,11 @@ export function BookingConfirmFlow({
             onChat={onChat}
           />
           <BookingNotesCard notes={booking.notes} />
+          <MasterCardPanel
+            masterCardJson={booking.master_card_json}
+            stylePreviewUrl={booking.style_preview_url}
+            viewerCameraState={booking.viewer_camera_state}
+          />
           <BookingLocationCard booking={booking} />
           <BookingPaymentCard booking={booking} />
           <BookingOrderNumberBanner orderNumber={booking.order_number} />

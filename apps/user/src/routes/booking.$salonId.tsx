@@ -23,6 +23,7 @@ import { useSalonPage } from "@/hooks/use-salon-page";
 import { resolveDefaultSalonBarberId } from "@/lib/salon-services";
 import { shortPrice } from "@/lib/price-display";
 import { MOBILE_STICKY_CONTENT_PADDING_CLASS } from "@/lib/layout-constants";
+import { withMasterCardBookingFields } from "@/lib/master-card-booking";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/booking/$salonId")({
@@ -188,16 +189,18 @@ function useBookingSalonState(
     const [h, m] = slot.split(":");
     d.setHours(parseInt(h, 10), parseInt(m, 10), 0, 0);
     try {
-      const created = await createBooking.mutateAsync({
-        salon: parseInt(salonId, 10),
-        barber: parseInt(barberId, 10),
-        start_at: d.toISOString(),
-        service_ids: serviceIds.map((id) => parseInt(id, 10)),
-        family_member_id: familyMemberId,
-        payment_method: paymentMethod,
-        notes: notes.trim() || undefined,
-        customer_phone: phoneGate.customerPhonePayload,
-      });
+      const created = await createBooking.mutateAsync(
+        withMasterCardBookingFields({
+          salon: parseInt(salonId, 10),
+          barber: parseInt(barberId, 10),
+          start_at: d.toISOString(),
+          service_ids: serviceIds.map((id) => parseInt(id, 10)),
+          family_member_id: familyMemberId,
+          payment_method: paymentMethod,
+          notes: notes.trim() || undefined,
+          customer_phone: phoneGate.customerPhonePayload,
+        }),
+      );
       toast.success(t("booking.submitted"), {
         description: t("booking.submittedDesc", { name: salon.name, slot }),
       });

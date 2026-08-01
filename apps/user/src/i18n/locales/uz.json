@@ -1686,5 +1686,57 @@
       "featureBook": "Bir necha soniyada onlayn bron qiling",
       "featureAi": "AI yordamida o'zingizga mos uslub tanlang"
     }
+  },
+  "barberConsult": {
+    "title": "Hair Trends & AI Barber Consult",
+    "subtitle": "360° preview + texnik Barber Master Card",
+    "openCta": "AI Barber Consult",
+    "goAiStyle": "Morf AI ga o‘tish",
+    "empty": "Avval try-on qiling, keyin Barber Consult ochiladi.",
+    "noImage": "Try-on yoki uslub rasmi topilmadi.",
+    "loadFailed": "Master Card yuklanmadi",
+    "retry": "Qayta yaratish",
+    "prescription": "Barber Master Card",
+    "bookCta": "Barberga yozilish",
+    "shareCta": "Barber bilan ulashish",
+    "shareText": "Morf AI Barber Master Card",
+    "shareSaved": "Master Card saqlandi",
+    "shareFailed": "Ulashib bo‘lmadi",
+    "fallbackNotice": "AI javobi to‘liq emas — xavfsiz fallback retsept ko‘rsatilmoqda.",
+    "mode2d": "Multi-angle",
+    "mode3d": "3D",
+    "webglFallback": "3D mavjud emas — multi-angle ko‘rsatilmoqda",
+    "viewerAlt": "Soch turmagi preview",
+    "showBarberPreview": "Barber dashboard preview",
+    "hideBarberPreview": "Barber previewni yashirish",
+    "views": {
+      "front": "Old",
+      "left": "Chap",
+      "right": "O‘ng",
+      "back": "Orqa"
+    },
+    "zones": {
+      "sides": "Yon / Orqa",
+      "top": "Yuqori",
+      "beard": "Soqol"
+    },
+    "fields": {
+      "fade": "Fade",
+      "neckline": "Bo‘yin chizig‘i",
+      "top": "Yuqori",
+      "texture": "Tekstura",
+      "beard": "Soqol",
+      "beardNone": "Yo‘q"
+    },
+    "booking": {
+      "title": "Master Card bilan bron",
+      "desc": "Salon tanlang — preview va texnik retsept bronga biriktiriladi.",
+      "openMap": "Salon tanlash",
+      "hint": "Bron yaratilganda Master Card JSON avtomatik yuboriladi. Barber dashboardda retsept ko‘rinadi."
+    },
+    "barberPreview": {
+      "badge": "Barber dashboard preview",
+      "camera": "Kamera"
+    }
   }
 }

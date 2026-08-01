@@ -204,6 +204,7 @@ export function useStyleTryOnFlow({
     error,
     cameraOpen,
     fileRef,
+    personaId,
     onFile,
     onCameraCapture,
     openFile,

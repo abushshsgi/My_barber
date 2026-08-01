@@ -21,6 +21,7 @@ import { useWalletBalance } from "@/hooks/use-wallet";
 import { useFamilyMembers } from "@/hooks/use-family";
 import { useDisplayUser } from "@/hooks/use-me";
 import { MOBILE_STICKY_CONTENT_PADDING_CLASS } from "@/lib/layout-constants";
+import { withMasterCardBookingFields } from "@/lib/master-card-booking";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/booking/barber/$barberId")({
@@ -149,15 +150,17 @@ function IndependentBookingFlow() {
     const [h, m] = slot.split(":");
     d.setHours(parseInt(h, 10), parseInt(m, 10), 0, 0);
     try {
-      const created = await createBooking.mutateAsync({
-        barber: barber.barber_id,
-        start_at: d.toISOString(),
-        barber_service_ids: serviceIds.map((id) => parseInt(id, 10)),
-        family_member_id: familyMemberId,
-        payment_method: paymentMethod,
-        notes: notes.trim() || undefined,
-        customer_phone: phoneGate.customerPhonePayload,
-      });
+      const created = await createBooking.mutateAsync(
+        withMasterCardBookingFields({
+          barber: barber.barber_id,
+          start_at: d.toISOString(),
+          barber_service_ids: serviceIds.map((id) => parseInt(id, 10)),
+          family_member_id: familyMemberId,
+          payment_method: paymentMethod,
+          notes: notes.trim() || undefined,
+          customer_phone: phoneGate.customerPhonePayload,
+        }),
+      );
       toast.success(t("booking.submitted"), {
         description: t("booking.submittedDesc", { name: barber.name, slot }),
       });

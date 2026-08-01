@@ -115,6 +115,15 @@ def bookings_has_notes_column() -> bool:
     return "notes" in _booking_column_names()
 
 
+def bookings_has_master_card_columns() -> bool:
+    cols = _booking_column_names()
+    return (
+        "master_card_json" in cols
+        and "style_preview_url" in cols
+        and "viewer_camera_state" in cols
+    )
+
+
 def booking_queryset_compat(qs: QuerySet) -> QuerySet:
     cols = _booking_column_names()
     defer: list[str] = []
@@ -135,6 +144,12 @@ def booking_queryset_compat(qs: QuerySet) -> QuerySet:
         )
     if "notes" not in cols:
         defer.append("notes")
+    if "master_card_json" not in cols:
+        defer.append("master_card_json")
+    if "style_preview_url" not in cols:
+        defer.append("style_preview_url")
+    if "viewer_camera_state" not in cols:
+        defer.append("viewer_camera_state")
     if defer:
         qs = qs.defer(*defer)
     return qs

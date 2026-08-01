@@ -177,6 +177,10 @@ export type ApiBooking = {
   review_id: number | null;
   created_at: string;
   booking_client_impressions?: string[];
+  notes?: string;
+  master_card_json?: Record<string, unknown> | null;
+  style_preview_url?: string | null;
+  viewer_camera_state?: Record<string, unknown> | null;
 };
 
 export type ApiReview = {

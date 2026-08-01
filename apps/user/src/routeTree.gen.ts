@@ -48,6 +48,7 @@ import { Route as AccountHouseholdRouteImport } from './routes/account.household
 import { Route as AccountPaymentsRouteImport } from './routes/account.payments'
 import { Route as AccountPreferencesRouteImport } from './routes/account.preferences'
 import { Route as AiStyleCareRouteImport } from './routes/ai-style_.care'
+import { Route as AiStyleConsultRouteImport } from './routes/ai-style_.consult'
 import { Route as AiStyleHistoryRouteImport } from './routes/ai-style_.history'
 import { Route as AiStyleStudioRouteImport } from './routes/ai-style_.studio'
 import { Route as BarberBarberIdRouteImport } from './routes/barber.$barberId'
@@ -266,6 +267,11 @@ const AiStyleCareRoute = AiStyleCareRouteImport.update({
   path: '/ai-style/care',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AiStyleConsultRoute = AiStyleConsultRouteImport.update({
+  id: '/ai-style_/consult',
+  path: '/ai-style/consult',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AiStyleHistoryRoute = AiStyleHistoryRouteImport.update({
   id: '/ai-style_/history',
   path: '/ai-style/history',
@@ -417,6 +423,7 @@ export interface FileRoutesByFullPath {
   '/account/payments': typeof AccountPaymentsRoute
   '/account/preferences': typeof AccountPreferencesRoute
   '/ai-style/care': typeof AiStyleCareRoute
+  '/ai-style/consult': typeof AiStyleConsultRoute
   '/ai-style/history': typeof AiStyleHistoryRoute
   '/ai-style/studio': typeof AiStyleStudioRoute
   '/barber/$barberId': typeof BarberBarberIdRoute
@@ -480,6 +487,7 @@ export interface FileRoutesByTo {
   '/account/payments': typeof AccountPaymentsRoute
   '/account/preferences': typeof AccountPreferencesRoute
   '/ai-style/care': typeof AiStyleCareRoute
+  '/ai-style/consult': typeof AiStyleConsultRoute
   '/ai-style/history': typeof AiStyleHistoryRoute
   '/ai-style/studio': typeof AiStyleStudioRoute
   '/barber/$barberId': typeof BarberBarberIdRoute
@@ -543,6 +551,7 @@ export interface FileRoutesById {
   '/account/payments': typeof AccountPaymentsRoute
   '/account/preferences': typeof AccountPreferencesRoute
   '/ai-style_/care': typeof AiStyleCareRoute
+  '/ai-style_/consult': typeof AiStyleConsultRoute
   '/ai-style_/history': typeof AiStyleHistoryRoute
   '/ai-style_/studio': typeof AiStyleStudioRoute
   '/barber/$barberId': typeof BarberBarberIdRoute
@@ -608,6 +617,7 @@ export interface FileRouteTypes {
     | '/account/payments'
     | '/account/preferences'
     | '/ai-style/care'
+    | '/ai-style/consult'
     | '/ai-style/history'
     | '/ai-style/studio'
     | '/barber/$barberId'
@@ -671,6 +681,7 @@ export interface FileRouteTypes {
     | '/account/payments'
     | '/account/preferences'
     | '/ai-style/care'
+    | '/ai-style/consult'
     | '/ai-style/history'
     | '/ai-style/studio'
     | '/barber/$barberId'
@@ -733,6 +744,7 @@ export interface FileRouteTypes {
     | '/account/payments'
     | '/account/preferences'
     | '/ai-style_/care'
+    | '/ai-style_/consult'
     | '/ai-style_/history'
     | '/ai-style_/studio'
     | '/barber/$barberId'
@@ -797,6 +809,7 @@ export interface RootRouteChildren {
   AccountPaymentsRoute: typeof AccountPaymentsRoute
   AccountPreferencesRoute: typeof AccountPreferencesRoute
   AiStyleCareRoute: typeof AiStyleCareRoute
+  AiStyleConsultRoute: typeof AiStyleConsultRoute
   AiStyleHistoryRoute: typeof AiStyleHistoryRoute
   AiStyleStudioRoute: typeof AiStyleStudioRoute
   BarberBarberIdRoute: typeof BarberBarberIdRoute
@@ -1090,6 +1103,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AiStyleCareRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/ai-style_/consult': {
+      id: '/ai-style_/consult'
+      path: '/ai-style/consult'
+      fullPath: '/ai-style/consult'
+      preLoaderRoute: typeof AiStyleConsultRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/ai-style_/history': {
       id: '/ai-style_/history'
       path: '/ai-style/history'
@@ -1345,6 +1365,7 @@ const rootRouteChildren: RootRouteChildren = {
   AccountPaymentsRoute: AccountPaymentsRoute,
   AccountPreferencesRoute: AccountPreferencesRoute,
   AiStyleCareRoute: AiStyleCareRoute,
+  AiStyleConsultRoute: AiStyleConsultRoute,
   AiStyleHistoryRoute: AiStyleHistoryRoute,
   AiStyleStudioRoute: AiStyleStudioRoute,
   BarberBarberIdRoute: BarberBarberIdRoute,
@@ -1365,13 +1386,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

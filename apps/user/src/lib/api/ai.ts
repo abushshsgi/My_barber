@@ -355,3 +355,60 @@ export async function persistAiStyleHistory(payload: SaveAiStyleHistoryPayload):
     /* local cache already updated */
   }
 }
+
+export type BarberMasterCardApi = {
+  style_overview: {
+    name: string;
+    category: string;
+    face_shape: string;
+  };
+  sides_and_back: {
+    fade_type: "Skin" | "Low" | "Mid" | "High";
+    starting_guard: number;
+    transition_guard: number;
+    neckline: string;
+  };
+  top_section: {
+    estimated_length_cm: number;
+    cutting_technique: "Point cut" | "Blunt";
+    texturizing_level: string;
+    styling_product: string;
+  };
+  beard_and_facial_hair: {
+    present: boolean;
+    style: string;
+    cheek_line: string;
+    length_mm: number;
+  };
+  notes_for_barber?: string;
+};
+
+export type BarberMasterCardResponse = {
+  master_card: BarberMasterCardApi;
+  fallback?: boolean;
+  detail?: string;
+};
+
+export async function generateBarberMasterCard(payload: {
+  image: string;
+  style_name?: string;
+}): Promise<BarberMasterCardResponse> {
+  const res = await apiFetch("/api/v1/ai/barber-card/", {
+    method: "POST",
+    body: JSON.stringify({
+      image: payload.image,
+      style_name: payload.style_name,
+    }),
+  });
+  const body = (await res.json().catch(() => null)) as
+    | BarberMasterCardResponse
+    | { detail?: string }
+    | null;
+  if (!res.ok) {
+    throwFromMorphApiError(res, body, "Barber Master Card yaratilmadi.");
+  }
+  if (!body || typeof body !== "object" || !("master_card" in body) || !body.master_card) {
+    throw new Error("Barber Master Card javobi noto'g'ri.");
+  }
+  return body as BarberMasterCardResponse;
+}
