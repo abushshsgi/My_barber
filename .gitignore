@@ -15,7 +15,8 @@ packages/**/node_modules/
 .env.local
 .env.production
 backend/secrets/
-.cursor/
+.cursor/*
+!.cursor/skills/
 .git.broken-*/
 *.tsbuildinfo
 _upstream_salon_creator_suite/
