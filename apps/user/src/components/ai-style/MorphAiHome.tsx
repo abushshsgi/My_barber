@@ -168,7 +168,9 @@ export function MorphAiHome({
       <div className="relative z-[1] mx-auto w-full max-w-3xl px-5 pb-[max(2rem,env(safe-area-inset-bottom))] pt-2 md:max-w-5xl md:px-8">
         {/* Hero — brand first */}
         <motion.section {...fadeUp(0, !!reduceMotion)} className="pt-4 md:pt-8">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[#CA8A04]/t("aiStylePage.home.studioTag")}</p>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[#CA8A04]">
+            {t("aiStylePage.home.studioTag")}
+          </p>
           <h1 className="mt-3 font-display text-[clamp(3.4rem,14vw,5.5rem)] font-extrabold leading-[0.88] tracking-[-0.06em]">
             MORF
           </h1>
@@ -383,7 +385,9 @@ export function MorphAiHome({
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" />
                       <div className="absolute inset-x-0 bottom-0 px-3.5 pb-3.5 pt-10">
-                        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#CA8A04]/index === 0 ? "01" : String(index + 1).padStart(2, "0")}</p>
+                        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#CA8A04]">
+                          {index === 0 ? "01" : String(index + 1).padStart(2, "0")}
+                        </p>
                         <p className="mt-1 truncate text-[14px] font-bold text-white md:text-[15px]">
                           {entry.titleUz || entry.title}
                         </p>
