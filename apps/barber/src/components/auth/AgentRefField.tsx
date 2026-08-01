@@ -12,31 +12,8 @@ import {
   parseAgentCodeFromPayload,
   setStoredAgentRef,
 } from "@/lib/agent-ref";
-import { API_BASE } from "@/lib/api";
+import { checkAgentCode } from "@/lib/api";
 import { cn } from "@/lib/utils";
-
-type CheckResult = {
-  valid: boolean;
-  code?: string;
-  agent_label?: string;
-  detail?: string;
-};
-
-async function checkAgentCode(code: string): Promise<CheckResult> {
-  const url = `${API_BASE}/api/v1/auth/agent-code-check/?code=${encodeURIComponent(code)}`;
-  const res = await fetch(url, { method: "GET", headers: { Accept: "application/json" } });
-  const body = (await res.json().catch(() => ({}))) as CheckResult & { detail?: string };
-  if (!res.ok) {
-    return {
-      valid: false,
-      detail:
-        typeof body.detail === "string"
-          ? body.detail
-          : "Tekshiruv amalga oshmadi. Qayta urinib ko‘ring.",
-    };
-  }
-  return body;
-}
 
 export function AgentRefField({ className }: { className?: string }) {
   const [value, setValue] = useState(() => getStoredAgentRef() ?? "");

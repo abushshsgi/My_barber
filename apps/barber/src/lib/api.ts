@@ -278,3 +278,25 @@ export async function apiList<T>(path: string, options: RequestInit = {}): Promi
   const body = await apiJson<T[] | PaginatedResponse<T>>(path, options);
   return unwrapList(body);
 }
+
+export type AgentCodeCheckResult = {
+  valid: boolean;
+  code?: string;
+  agent_label?: string;
+  detail?: string;
+};
+
+/** Agent referral kodini tekshiradi (auth talab qilinmaydi). */
+export async function checkAgentCode(code: string): Promise<AgentCodeCheckResult> {
+  try {
+    return await apiJson<AgentCodeCheckResult>(
+      `/api/v1/auth/agent-code-check/?code=${encodeURIComponent(code)}`,
+    );
+  } catch (e) {
+    return {
+      valid: false,
+      detail:
+        e instanceof Error ? e.message : "Tekshiruv amalga oshmadi. Qayta urinib ko‘ring.",
+    };
+  }
+}
