@@ -15,6 +15,7 @@ import { useMorphLimitGate } from "@/hooks/use-morph-limit-gate";
 import { useExplorePersona } from "@/hooks/use-explore-persona";
 import { useHairstyle } from "@/hooks/use-hairstyles";
 import { getHairstyleImageUrl } from "@/lib/hairstyles/catalog";
+import { prefetchFaceLandmarker } from "@/components/ai-style/useFaceLandmarker";
 import { prefetchMorphAiIntroVideo } from "@/lib/morph-ai-intro";
 import { isMorphPlanLimitMessage } from "@/lib/morph-plan-limit";
 import {
@@ -120,6 +121,10 @@ export function AiStyleFlow({ audience, menPersonaId: menPersonaIdProp, focusSty
   useEffect(() => {
     if (showIntro) prefetchMorphAiIntroVideo();
   }, [showIntro]);
+
+  useEffect(() => {
+    prefetchFaceLandmarker();
+  }, []);
 
   const displayResult = useMemo(() => {
     if (!result || !focusStyleId || !focusHairstyle) return result;

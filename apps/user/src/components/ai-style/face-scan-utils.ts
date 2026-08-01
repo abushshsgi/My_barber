@@ -168,3 +168,69 @@ export function nextPhase(phase: ScanPhase): ScanPhase {
 export function canCapturePhoto(phase: ScanPhase, metrics: FaceFrameMetrics | null): boolean {
   return phase === "center" && metrics !== null && phaseSatisfied("center", metrics);
 }
+
+export type FaceQualityLevel = "none" | "weak" | "ok" | "good";
+
+export type FaceQuality = {
+  level: FaceQualityLevel;
+  score: number;
+  /** 0–1: yuz kadrdagi ulushi */
+  fill: number;
+  centered: boolean;
+  facingCamera: boolean;
+  reason:
+    | "no_face"
+    | "too_far"
+    | "too_close"
+    | "off_center"
+    | "turn_face"
+    | "good";
+};
+
+/** MediaPipe metrikasidan selfie sifat bahosi — capture oldidan. */
+export function evaluateFaceQuality(metrics: FaceFrameMetrics | null): FaceQuality {
+  if (!metrics) {
+    return {
+      level: "none",
+      score: 0,
+      fill: 0,
+      centered: false,
+      facingCamera: false,
+      reason: "no_face",
+    };
+  }
+
+  const fill = Math.min(1, Math.max(metrics.box.width, metrics.box.height) * 1.15);
+  const centerX = metrics.box.x + metrics.box.width / 2;
+  const centerY = metrics.box.y + metrics.box.height / 2;
+  const centered = Math.abs(centerX - 0.5) < 0.16 && Math.abs(centerY - 0.42) < 0.18;
+  const facingCamera = Math.abs(metrics.yaw) < 14 && Math.abs(metrics.pitch) < 12;
+
+  if (fill < 0.28) {
+    return { level: "weak", score: 0.25, fill, centered, facingCamera, reason: "too_far" };
+  }
+  if (fill > 0.92) {
+    return { level: "weak", score: 0.3, fill, centered, facingCamera, reason: "too_close" };
+  }
+  if (!facingCamera) {
+    return { level: "weak", score: 0.4, fill, centered, facingCamera, reason: "turn_face" };
+  }
+  if (!centered) {
+    return { level: "ok", score: 0.65, fill, centered, facingCamera, reason: "off_center" };
+  }
+
+  const score = Math.min(1, 0.55 + fill * 0.35 + (facingCamera ? 0.1 : 0));
+  return {
+    level: score >= 0.8 ? "good" : "ok",
+    score,
+    fill,
+    centered,
+    facingCamera,
+    reason: "good",
+  };
+}
+
+export function isFaceReadyForCapture(metrics: FaceFrameMetrics | null): boolean {
+  const q = evaluateFaceQuality(metrics);
+  return q.level === "good" || (q.level === "ok" && q.facingCamera && q.fill >= 0.32);
+}

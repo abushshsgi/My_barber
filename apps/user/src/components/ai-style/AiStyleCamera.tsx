@@ -3,9 +3,13 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import {
+  evaluateFaceQuality,
+  isFaceReadyForCapture,
   metricsFromLandmarks,
+  mirrorX,
   smoothMetrics,
   type FaceFrameMetrics,
+  type FaceQuality,
 } from "@/components/ai-style/face-scan-utils";
 import { useFaceLandmarker } from "@/components/ai-style/useFaceLandmarker";
 import type { FaceShapeKey } from "@/components/ai-style/ai-style-shared";
@@ -60,6 +64,27 @@ async function openSelfieStream(): Promise<MediaStream> {
   throw lastError instanceof Error ? lastError : new Error("Camera unavailable");
 }
 
+function ContourOverlay({ metrics }: { metrics: FaceFrameMetrics | null }) {
+  if (!metrics?.contour.length) return null;
+  const points = metrics.contour
+    .map((p) => {
+      const m = mirrorX(p);
+      return `${(m.x * 100).toFixed(2)}% ${(m.y * 100).toFixed(2)}%`;
+    })
+    .join(", ");
+  return (
+    <div
+      className="pointer-events-none absolute inset-0 z-[2]"
+      aria-hidden
+      style={{
+        clipPath: `polygon(${points})`,
+        boxShadow: "inset 0 0 0 2px rgba(255,255,255,0.85)",
+        background: "rgba(255,255,255,0.06)",
+      }}
+    />
+  );
+}
+
 export function AiStyleCamera({ open, onClose, onCapture }: Props) {
   const { t } = useTranslation();
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -73,9 +98,11 @@ export function AiStyleCamera({ open, onClose, onCapture }: Props) {
 
   const [ready, setReady] = useState(false);
   const [faceDetected, setFaceDetected] = useState(false);
+  const [quality, setQuality] = useState<FaceQuality>(() => evaluateFaceQuality(null));
   const [cameraError, setCameraError] = useState<string | null>(null);
 
-  const { landmarkerRef, ready: landmarkerReady } = useFaceLandmarker(open);
+  const { landmarkerRef, ready: landmarkerReady, error: landmarkerError } =
+    useFaceLandmarker(open);
 
   const handleClose = useCallback((event?: React.SyntheticEvent) => {
     event?.preventDefault();
@@ -90,6 +117,10 @@ export function AiStyleCamera({ open, onClose, onCapture }: Props) {
     if (capturingRef.current) return;
     const video = videoRef.current;
     if (!video || video.videoWidth <= 0) return;
+    // MediaPipe ishlayotganda sifat past bo‘lsa to‘xtatamiz; model yuklanmasa ruxsat.
+    if (!landmarkerError && landmarkerReady && !isFaceReadyForCapture(metricsRef.current)) {
+      return;
+    }
 
     capturingRef.current = true;
 
@@ -113,7 +144,7 @@ export function AiStyleCamera({ open, onClose, onCapture }: Props) {
       ratios: metrics?.ratios,
     });
     handleClose();
-  }, [onCapture, handleClose]);
+  }, [onCapture, handleClose, landmarkerError, landmarkerReady]);
 
   useEffect(() => {
     if (!open) {
@@ -127,6 +158,7 @@ export function AiStyleCamera({ open, onClose, onCapture }: Props) {
 
     setReady(false);
     setFaceDetected(false);
+    setQuality(evaluateFaceQuality(null));
     setCameraError(null);
     metricsRef.current = null;
     smoothRef.current = null;
@@ -181,10 +213,12 @@ export function AiStyleCamera({ open, onClose, onCapture }: Props) {
           smoothRef.current = frame;
           metricsRef.current = frame;
           setFaceDetected(frame !== null);
+          setQuality(evaluateFaceQuality(frame));
         } else {
           smoothRef.current = null;
           metricsRef.current = null;
           setFaceDetected(false);
+          setQuality(evaluateFaceQuality(null));
         }
       }
       rafRef.current = requestAnimationFrame(loop);
@@ -198,11 +232,24 @@ export function AiStyleCamera({ open, onClose, onCapture }: Props) {
 
   if (!open || typeof document === "undefined") return null;
 
+  const canShoot = ready && isFaceReadyForCapture(metricsRef.current);
   const statusText = !ready
     ? t("aiStylePage.scanLoading")
-    : faceDetected
-      ? t("aiStylePage.cameraReadyHint", { defaultValue: "Tayyor — rasmga oling" })
-      : t("aiStylePage.scanCenter");
+    : landmarkerError
+      ? t("aiStylePage.scanLoadFailed", {
+          defaultValue: "Yuz skaneri yuklanmadi — baribir rasmga olishingiz mumkin",
+        })
+      : quality.reason === "no_face"
+        ? t("aiStylePage.scanCenter")
+        : quality.reason === "too_far"
+          ? t("aiStylePage.scanTooFar", { defaultValue: "Yuzni yaqinroq tuting" })
+          : quality.reason === "too_close"
+            ? t("aiStylePage.scanTooClose", { defaultValue: "Biroz uzoqlashing" })
+            : quality.reason === "turn_face"
+              ? t("aiStylePage.scanTurnFace", { defaultValue: "Yuzni to‘g‘ri kameraga qarang" })
+              : quality.reason === "off_center"
+                ? t("aiStylePage.scanOffCenter", { defaultValue: "Yuzni oval ichiga joylashtiring" })
+                : t("aiStylePage.cameraReadyHint", { defaultValue: "Tayyor — rasmga oling" });
 
   return createPortal(
     <div
@@ -240,7 +287,11 @@ export function AiStyleCamera({ open, onClose, onCapture }: Props) {
                 <div
                   className={cn(
                     "rounded-[48%] border-2 transition-colors duration-200",
-                    faceDetected ? "border-white" : "border-white/35",
+                    quality.level === "good"
+                      ? "border-emerald-300"
+                      : faceDetected
+                        ? "border-white"
+                        : "border-white/35",
                   )}
                   style={{
                     width: "min(72vw, 280px)",
@@ -250,6 +301,8 @@ export function AiStyleCamera({ open, onClose, onCapture }: Props) {
                 />
               </div>
             </div>
+
+            <ContourOverlay metrics={smoothRef.current} />
 
             <button
               type="button"
@@ -269,11 +322,26 @@ export function AiStyleCamera({ open, onClose, onCapture }: Props) {
               className="pointer-events-none absolute inset-x-0 z-20 flex flex-col items-center gap-3 px-6 text-center"
               style={{ bottom: "max(2rem, env(safe-area-inset-bottom))" }}
             >
-              {!ready ? <Loader2 className="h-5 w-5 animate-spin text-white/70" /> : null}
+              {!ready || !landmarkerReady ? (
+                <Loader2 className="h-5 w-5 animate-spin text-white/70" />
+              ) : null}
               <p className="text-sm font-medium text-white/90">{statusText}</p>
+              <div className="h-1.5 w-40 overflow-hidden rounded-full bg-white/20">
+                <div
+                  className={cn(
+                    "h-full rounded-full transition-all duration-200",
+                    quality.level === "good"
+                      ? "bg-emerald-400"
+                      : quality.level === "ok"
+                        ? "bg-amber-300"
+                        : "bg-white/50",
+                  )}
+                  style={{ width: `${Math.round(quality.score * 100)}%` }}
+                />
+              </div>
               <button
                 type="button"
-                disabled={!ready}
+                disabled={!ready || (!canShoot && !landmarkerError)}
                 onClick={captureFrame}
                 onPointerDown={(event) => event.stopPropagation()}
                 className="pointer-events-auto grid size-[76px] place-items-center rounded-full border-[3px] border-white bg-white/15 shadow-[0_8px_28px_-8px_rgba(0,0,0,0.55)] transition active:scale-95 disabled:opacity-40"

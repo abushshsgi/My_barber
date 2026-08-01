@@ -15,6 +15,7 @@ import {
 } from "@/lib/explore-personas";
 import { EXPLORE_VIEW_IDS, type ExploreViewId } from "@/lib/explore-views";
 import { loadBarberConsultDraft } from "@/lib/barber-consult-session";
+import { loadFaceProfile } from "@/lib/face-profile";
 import { MorphPlanLimitError } from "@/lib/morph-plan-limit";
 import {
   defaultBarberMasterCard,
@@ -78,7 +79,16 @@ export function MorphAiConsultPage() {
     try {
       const res = await generateBarberMasterCard({ image, style_name: styleName });
       const parsed = parseBarberMasterCard(res.master_card, styleName);
-      setCard(parsed.card);
+      // MediaPipe kameradan saqlangan yuz shakli Master Cardga ustuvor.
+      const profile = loadFaceProfile();
+      const card = parsed.card;
+      if (profile?.faceShapeKey) {
+        card.style_overview = {
+          ...card.style_overview,
+          face_shape: profile.faceShapeKey,
+        };
+      }
+      setCard(card);
       setFallback(Boolean(res.fallback) || !parsed.success);
     } catch (err) {
       if (err instanceof MorphPlanLimitError) {

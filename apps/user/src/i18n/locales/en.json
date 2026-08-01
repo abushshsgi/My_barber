@@ -1340,7 +1340,12 @@
       "t4": "Balanced light and volume",
       "t5": "Volume on top, short sides — ideal for oval faces",
       "t6": "Clean classic look"
-    }
+    },
+    "scanTooFar": "Move your face closer",
+    "scanTooClose": "Move a bit farther",
+    "scanTurnFace": "Look straight at the camera",
+    "scanOffCenter": "Center your face in the oval",
+    "scanLoadFailed": "Face scanner failed to load — you can still take a photo"
   },
   "todayPage": {
     "title": "Today's slots",

@@ -15,6 +15,7 @@ import type { FaceShapeKey } from "@/components/ai-style/ai-style-shared";
 import { saveMorphAiGeneration } from "@/lib/morph-ai-gallery";
 import { markMorphAiOnboarded } from "@/lib/morph-ai-session";
 import type { ExplorePersonaId } from "@/lib/explore-personas";
+import { detectFaceMetricsFromDataUrl } from "@/components/ai-style/useFaceLandmarker";
 import { prepareSelfieDataUrl, prepareSelfieFromFile } from "@/lib/selfie-image";
 import {
   isMorphPlanLimitError,
@@ -121,8 +122,40 @@ export function useAiStyleFlow(options: UseAiStyleFlowOptions = {}) {
     setPreparingPhoto(true);
     setError(null);
     try {
-      await storePhoto(dataUrl, "gallery");
-      setFaceHint(null);
+      const prepared = await prepareSelfieDataUrl(dataUrl);
+      // Galereya selfiesida ham MediaPipe — face_hint Gemini analyze ga ketadi.
+      let metricsFace: Awaited<ReturnType<typeof detectFaceMetricsFromDataUrl>> = null;
+      try {
+        metricsFace = await detectFaceMetricsFromDataUrl(prepared);
+      } catch {
+        metricsFace = null;
+      }
+
+      if (metricsFace) {
+        const scannedAt = new Date().toISOString();
+        setFaceHint({
+          shape: metricsFace.faceShapeKey,
+          width_to_height: metricsFace.ratios.widthToHeight,
+          jaw_to_forehead: metricsFace.ratios.jawToForehead,
+          source: "camera_scan",
+        });
+        saveFaceProfile({
+          faceShapeKey: metricsFace.faceShapeKey,
+          ratios: {
+            widthToHeight: metricsFace.ratios.widthToHeight,
+            jawToForehead: metricsFace.ratios.jawToForehead,
+          },
+          scannedAt,
+          source: "camera_scan",
+        });
+        await storePhoto(prepared, "gallery", {
+          faceShapeKey: metricsFace.faceShapeKey,
+          scannedAt,
+        });
+      } else {
+        setFaceHint(null);
+        await storePhoto(prepared, "gallery");
+      }
     } catch (e) {
       const message = e instanceof Error ? e.message : "Rasm yuklanmadi.";
       setError(message);

@@ -1340,7 +1340,12 @@
       "t4": "Yorug'lik va hajm muvozanati",
       "t5": "Tepada hajm, yonlar qisqa — oval yuz uchun ideal",
       "t6": "Toza va klassik ko'rinish"
-    }
+    },
+    "scanTooFar": "Yuzni yaqinroq tuting",
+    "scanTooClose": "Biroz uzoqlashing",
+    "scanTurnFace": "Yuzni to‘g‘ri kameraga qarang",
+    "scanOffCenter": "Yuzni oval ichiga joylashtiring",
+    "scanLoadFailed": "Yuz skaneri yuklanmadi — baribir rasmga olishingiz mumkin"
   },
   "todayPage": {
     "title": "Bugungi vaqtlar",
