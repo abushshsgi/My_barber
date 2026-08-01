@@ -33,11 +33,7 @@ export type CarePlan = {
 
 const CARE_QUIZ_KEY = "mysaloon.morphAi.careQuiz";
 
-/** Visual references for quiz options (local hairstyle assets). */
-export const CARE_OPTION_IMAGES: Record<
-  HairCondition | HairTexture | ColorStatus,
-  string
-> = {
+export const CARE_OPTION_IMAGES: Record<HairCondition | HairTexture | ColorStatus, string> = {
   oily: "/hairstyles/men/personas/niki/slick-back.webp",
   dry: "/hairstyles/men/personas/irland/bro-flow.webp",
   normal: "/hairstyles/men/personas/niki/mid-fade.webp",
@@ -50,9 +46,7 @@ export const CARE_OPTION_IMAGES: Record<
   bleached: "/hairstyles/men/personas/niki/curly-top-fade.webp",
 };
 
-export function careOptionImage(
-  key: HairCondition | HairTexture | ColorStatus,
-): string {
+export function careOptionImage(key: HairCondition | HairTexture | ColorStatus): string {
   return CARE_OPTION_IMAGES[key] ?? "/hairstyles/men/personas/niki/mid-fade.webp";
 }
 
@@ -107,91 +101,38 @@ function pickDensity(hair?: HairTypeKey): "fine" | "medium" | "thick" {
 }
 
 function buildProducts(condition: HairCondition, colorStatus: ColorStatus): CareProduct[] {
-  const base: CareProduct[] =
-    condition === "oily"
-      ? [
-          {
-            name: "Balanslash shampuni",
-            role: "Yuvish",
-            tip: "Faqat ildizga surting, uchlarga kamroq tushiring.",
-          },
-          {
-            name: "Yengil konditsioner",
-            role: "Uchlar",
-            tip: "Faqat soch uchlariga 1–2 daqiqa ushlang, keyin yuving.",
-          },
-          {
-            name: "Volume cream / paste",
-            role: "Styling",
-            tip: "No‘xatdek miqdor — nam sochga, keyin fen bilan shakl bering.",
-          },
-        ]
-      : condition === "dry"
-        ? [
-            {
-              name: "Namlantiruvchi shampun",
-              role: "Yuvish",
-              tip: "Iliq suvda yuving — issiq suv quruqlikni kuchaytiradi.",
-            },
-            {
-              name: "Repair maska",
-              role: "Parvarish",
-              tip: "Haftada 1 marta 8–10 daqiqa, faqat uzunlikka.",
-            },
-            {
-              name: "Leave-in krem",
-              role: "Kundalik",
-              tip: "Soch quritgandan keyin uchlarga yupqa qatlam.",
-            },
-          ]
-        : condition === "damaged"
-          ? [
-              {
-                name: "Bond / repair shampun",
-                role: "Yuvish",
-                tip: "Yumshoq massaj — tirnoq bilan ishqalamang.",
-              },
-              {
-                name: "Protein maska",
-                role: "Parvarish",
-                tip: "Haftada 1 marta; ortiqcha qoldirmang — soch qotib qolishi mumkin.",
-              },
-              {
-                name: "Issiqlik himoyasi",
-                role: "Himoya",
-                tip: "Fen/to‘g‘rilagichdan oldin har doim surting.",
-              },
-            ]
-          : [
-              {
-                name: "Yumshoq shampun",
-                role: "Yuvish",
-                tip: "Kunora emas — 2–3 kunda bir marta yetarli.",
-              },
-              {
-                name: "Kundalik konditsioner",
-                role: "Parvarish",
-                tip: "Uchlardan o‘rtagacha, ildizga emas.",
-              },
-              {
-                name: "Matte paste / cream",
-                role: "Styling",
-                tip: "Quruq sochga ishqalang, keyin barmoq bilan shakl bering.",
-              },
-            ];
+  let base: CareProduct[];
+
+  if (condition === "oily") {
+    base = [
+      { name: "Balanslash shampuni", role: "Yuvish", tip: "Faqat ildizga." },
+      { name: "Yengil konditsioner", role: "Uchlar", tip: "1–2 daqiqa, keyin yuving." },
+      { name: "Volume cream", role: "Styling", tip: "No‘xatdek, nam sochga." },
+    ];
+  } else if (condition === "dry") {
+    base = [
+      { name: "Namlantiruvchi shampun", role: "Yuvish", tip: "Iliq suvda." },
+      { name: "Repair maska", role: "Parvarish", tip: "Haftada 1 × 10 daqiqa." },
+      { name: "Leave-in krem", role: "Kundalik", tip: "Uchlarga yupqa qatlam." },
+    ];
+  } else if (condition === "damaged") {
+    base = [
+      { name: "Repair shampun", role: "Yuvish", tip: "Yumshoq massaj." },
+      { name: "Protein maska", role: "Parvarish", tip: "Haftada 1 marta." },
+      { name: "Issiqlik himoyasi", role: "Himoya", tip: "Fen oldidan." },
+    ];
+  } else {
+    base = [
+      { name: "Yumshoq shampun", role: "Yuvish", tip: "2–3 kunda bir." },
+      { name: "Konditsioner", role: "Parvarish", tip: "Uchlardan o‘rtagacha." },
+      { name: "Matte paste", role: "Styling", tip: "Quruq sochga, kam miqdor." },
+    ];
+  }
 
   if (colorStatus === "bleached") {
-    base.push({
-      name: "Purple / tone shampun",
-      role: "Rang",
-      tip: "Haftada 1 marta — sariqlikni kamaytiradi.",
-    });
+    base.push({ name: "Purple shampun", role: "Rang", tip: "Haftada 1 marta." });
   } else if (colorStatus === "colored") {
-    base.push({
-      name: "Color-safe shampun",
-      role: "Rang",
-      tip: "Sulfatsiz turini tanlang — rang uzoqroq turadi.",
-    });
+    base.push({ name: "Color-safe shampun", role: "Rang", tip: "Sulfatsiz tur." });
   }
 
   return base;
@@ -199,26 +140,25 @@ function buildProducts(condition: HairCondition, colorStatus: ColorStatus): Care
 
 function buildStylingTips(texture: HairTexture, condition: HairCondition): string[] {
   const tips: string[] = [
-    "Gel/paste ni avval kaftlarda eriting, keyin sochga surting.",
-    "Ko‘p mahsulot emas — kamroq bilan boshlang, kerak bo‘lsa qo‘shing.",
+    "Paste/gel ni avval kaftlarda eriting.",
+    "Kam mahsulot bilan boshlang.",
   ];
 
   if (texture === "curly") {
-    tips.push("Jingalak soch: taroq o‘rniga barmoq yoki diffuzer ishlating.");
-    tips.push("Curl cream ni nam sochga, yuqoridan pastga qarab.");
+    tips.push("Diffuzer yoki barmoq — taroq emas.");
   } else if (texture === "wavy") {
-    tips.push("To‘lqin: yengil cream + pastga qarab siqib quritish.");
+    tips.push("Yengil cream, pastga qarab siqing.");
   } else {
-    tips.push("To‘g‘ri soch: matte paste bilan tartib, yaltiroq pomade bilan slick.");
+    tips.push("Matte paste — tartib; pomade — slick.");
   }
 
   if (condition === "oily") {
-    tips.push("Og‘ir oil va thick pomade dan saqlaning — ildiz tez yog‘lanadi.");
+    tips.push("Og‘ir oil va thick pomade dan saqlaning.");
   } else if (condition === "damaged" || condition === "dry") {
-    tips.push("Issiq fenni past/o‘rta rejimda ishlating.");
+    tips.push("Fen past/o‘rta rejimda.");
   }
 
-  return tips;
+  return tips.slice(0, 4);
 }
 
 export function defaultQuizFromProfile(profile?: SavedFaceProfile | null): CareQuizAnswers {
@@ -243,63 +183,57 @@ export function buildCarePlan(
     condition === "oily" ? "oily" : condition === "dry" || condition === "damaged" ? "dry" : "sensitive";
   const colorStatus: ColorStatus = answers?.colorStatus ?? "natural";
 
-  const textureLabel =
-    texture === "curly" ? "jingalak" : texture === "wavy" ? "to‘lqinsimon" : "to‘g‘ri";
-
   const summaryByCondition: Record<HairCondition, string> = {
-    oily:
-      `Sizning so‘rovingizga asosan soch ildizi tez yog‘lanadi (${textureLabel}). Yengil yuvish va kam mahsulot — uslub shakli uzoqroq turadi.`,
-    dry:
-      `Sizning so‘rovingizga asosan uchlar quruqroq (${textureLabel}). Namlantirish + leave-in — crop/fade ham silliqroq ko‘rinadi.`,
-    normal:
-      `Sizning so‘rovingizga asosan balans yaxshi (${textureLabel}). Oddiy rejim va yengil styling yetarli — shaklni saqlash oson.`,
-    damaged:
-      `Sizning so‘rovingizga asosan uchlar sinuvchan (${textureLabel}). Repair + issiqlik himoyasi; trimni kechiktirmang.`,
+    oily: "Ildiz tez yog‘lanadi. Yengil yuvish va kam mahsulot.",
+    dry: "Uchlar quruqroq. Namlantirish + leave-in.",
+    normal: "Balans yaxshi. Oddiy rejim va yengil styling.",
+    damaged: "Uchlar sinuvchan. Repair + issiqlik himoyasi.",
   };
 
-  const colorNote =
-    colorStatus === "bleached"
-      ? " Ochilgan sochni esladik: tonal shampun va UV himoya qo‘shing."
-      : colorStatus === "colored"
-        ? " Bo‘yalgan sochni esladik: color-safe mahsulotlar tanlang."
-        : " Tabiiy rangni esladik — yumshoq parvarish yetarli.";
+  let colorNote = "";
+  if (colorStatus === "bleached") colorNote = " Ochilgan soch: tonal shampun.";
+  else if (colorStatus === "colored") colorNote = " Bo‘yalgan soch: color-safe.";
 
-  const weekly =
-    condition === "oily"
-      ? [
-          { day: "Du", task: "Yengil shampun" },
-          { day: "Chor", task: "Faqat ildizni yuvish" },
-          { day: "Jum", task: "Yuvish + yengil leave-in" },
-          { day: "Yak", task: "Bosh terisi massaji 3 daqiqa" },
-        ]
-      : condition === "dry" || condition === "damaged"
-        ? [
-            { day: "Du", task: "Namlantiruvchi shampun" },
-            { day: "Chor", task: "Deep maska 10 daqiqa" },
-            { day: "Jum", task: "Yuvish + leave-in" },
-            { day: "Yak", task: "Uchlarga oil (1–2 tomchi)" },
-          ]
-        : [
-            { day: "Du", task: "Oddiy yuvish" },
-            { day: "Chor", task: "Yengil conditioning" },
-            { day: "Jum", task: "Yuvish + styling" },
-            { day: "Yak", task: "Maska (ixtiyoriy)" },
-          ];
+  let weekly: { day: string; task: string }[];
+  if (condition === "oily") {
+    weekly = [
+      { day: "Du", task: "Yengil shampun" },
+      { day: "Chor", task: "Faqat ildiz" },
+      { day: "Jum", task: "Yuvish + leave-in" },
+      { day: "Yak", task: "Scalp massaj" },
+    ];
+  } else if (condition === "dry" || condition === "damaged") {
+    weekly = [
+      { day: "Du", task: "Namlantiruvchi shampun" },
+      { day: "Chor", task: "Deep maska" },
+      { day: "Jum", task: "Yuvish + leave-in" },
+      { day: "Yak", task: "Uchlarga oil" },
+    ];
+  } else {
+    weekly = [
+      { day: "Du", task: "Oddiy yuvish" },
+      { day: "Chor", task: "Conditioning" },
+      { day: "Jum", task: "Yuvish + styling" },
+      { day: "Yak", task: "Maska (ixtiyoriy)" },
+    ];
+  }
 
-  const avoid =
-    condition === "oily"
-      ? ["Har kuni og‘ir oil", "Issiq suvda uzoq yuvish", "Silikonli og‘ir serum"]
-      : condition === "dry" || condition === "damaged"
-        ? ["Har kuni shampun", "Yuqori temperatura fen", "Qattiq soch bog‘ich"]
-        : ["Har kuni to‘liq yuvish", "Ortiqcha wax", "Quruq sochda kuchli tarash"];
+  let avoid: string[];
+  if (condition === "oily") {
+    avoid = ["Har kuni oil", "Issiq suv", "Og‘ir serum"];
+  } else if (condition === "dry" || condition === "damaged") {
+    avoid = ["Har kuni shampun", "Issiq fen", "Qattiq bog‘ich"];
+  } else {
+    avoid = ["Har kuni yuvish", "Ortiqcha wax", "Quruq tarash"];
+  }
 
   if (colorStatus !== "natural") {
-    avoid.push("Sulfatli kuchli shampun");
+    avoid.push("Sulfatli shampun");
   }
 
   const stylingTips = buildStylingTips(texture, condition);
   if (density === "fine") {
-    stylingTips.push("Yupqa soch: og‘ir krem o‘rniga yengil paste tanlang.");
+    stylingTips[stylingTips.length - 1] = "Yupqa soch: yengil paste.";
   }
 
   return {
