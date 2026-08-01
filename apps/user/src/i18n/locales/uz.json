@@ -1112,6 +1112,9 @@
       "toolsTitle": "Nima qilmoqchisiz?",
       "samplesLabel": "Ilhom",
       "samplesTitle": "Namuna uslublar",
+      "lastLook": "Oxirgi natija",
+      "restyle": "Yana sinab ko‘r",
+      "trendingTitle": "Bugun mashhur",
       "tools": {
         "styles": "Uslublar",
         "stylesDesc": "Yuzingizga mos soch turmaklari",
@@ -1273,12 +1276,24 @@
       "texture": "Tekstura",
       "density": "Qalinlik",
       "scalp": "Bosh terisi",
+      "colorStatus": "Rang",
       "weeklyTitle": "Haftalik reja",
       "productsTitle": "Mahsulotlar",
+      "productsHint": "Uzum’da qidiruv ochiladi — mahsulotni o‘zingiz tanlaysiz",
       "avoidTitle": "Nima qilmaslik",
       "salonTitle": "Salon maslahati",
       "nextCut": "Keyingi soch olish: ~{{days}} kun ichida",
       "exploreCta": "Uslub tanlash",
+      "bookNearby": "Yaqin salonlarni ko‘rish",
+      "quiz": {
+        "progress": "{{step}} / 4",
+        "conditionQ": "Sochingiz qanday holatda?",
+        "textureQ": "Tekstura qanday?",
+        "colorQ": "Rang / bo‘yoq holati?",
+        "budgetQ": "Mahsulot byudjeti?",
+        "seePlan": "Rejani ko‘rish",
+        "retake": "Qayta so‘rov"
+      },
       "conditions": {
         "oily": "Yog‘li",
         "dry": "Quruq",
@@ -1300,12 +1315,27 @@
         "dry": "Quruq",
         "sensitive": "Sezgir"
       },
+      "colors": {
+        "natural": "Tabiiy",
+        "colored": "Bo‘yalgan",
+        "bleached": "Ochilgan / bleached"
+      },
       "budgets": {
         "all": "Hammasi",
         "budget": "Arzon",
         "mid": "O‘rta",
         "premium": "Premium"
       }
+    },
+    "nearbyBook": {
+      "title": "Yaqin salonlarda kesib oling",
+      "empty": "Yaqin salonlarni ko‘rish uchun xaritani oching",
+      "openMap": "Xaritani ochish"
+    },
+    "shareNudge": {
+      "title": "Do‘stlarga ulashing",
+      "text": "Telegram yoki Instagram Story orqali yuboring — do‘stlaringiz ham o‘zida sinab ko‘radi.",
+      "telegram": "Telegram"
     },
     "tryOnHint": "Selfie + tanlangan uslub — AI sizning yuzingizda ko'rsatadi",
     "exploreStyles": "Trend uslublar",

@@ -1112,6 +1112,9 @@
       "toolsTitle": "What do you want to do?",
       "samplesLabel": "Inspiration",
       "samplesTitle": "Sample styles",
+      "lastLook": "Latest result",
+      "restyle": "Try again",
+      "trendingTitle": "Trending today",
       "tools": {
         "styles": "Styles",
         "stylesDesc": "Cuts tailored to your face",
@@ -1273,12 +1276,24 @@
       "texture": "Texture",
       "density": "Density",
       "scalp": "Scalp",
+      "colorStatus": "Color",
       "weeklyTitle": "Weekly plan",
       "productsTitle": "Products",
+      "productsHint": "Opens Uzum search — pick the product yourself",
       "avoidTitle": "What to avoid",
       "salonTitle": "Salon tips",
       "nextCut": "Next cut: in about {{days}} days",
       "exploreCta": "Pick a style",
+      "bookNearby": "See nearby salons",
+      "quiz": {
+        "progress": "{{step}} / 4",
+        "conditionQ": "How does your hair feel?",
+        "textureQ": "What’s your texture?",
+        "colorQ": "Color / dye status?",
+        "budgetQ": "Product budget?",
+        "seePlan": "See my plan",
+        "retake": "Retake quiz"
+      },
       "conditions": {
         "oily": "Oily",
         "dry": "Dry",
@@ -1300,12 +1315,27 @@
         "dry": "Dry",
         "sensitive": "Sensitive"
       },
+      "colors": {
+        "natural": "Natural",
+        "colored": "Colored",
+        "bleached": "Bleached"
+      },
       "budgets": {
         "all": "All",
         "budget": "Budget",
         "mid": "Mid",
         "premium": "Premium"
       }
+    },
+    "nearbyBook": {
+      "title": "Get this cut at a nearby salon",
+      "empty": "Open the map to browse nearby salons",
+      "openMap": "Open map"
+    },
+    "shareNudge": {
+      "title": "Share with friends",
+      "text": "Send via Telegram or Instagram Story — friends can try it on themselves.",
+      "telegram": "Telegram"
     },
     "tryOnHint": "Selfie + selected style — AI shows it on your face",
     "exploreStyles": "Trending styles",

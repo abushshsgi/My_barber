@@ -13,7 +13,7 @@ import { shareAiStyleLink, downloadAiStyleImage } from "@/lib/ai-style-image";
 import { getActiveUserId } from "@/lib/face-profile";
 import { trackMorphShare } from "@/lib/ga";
 import { resolveMediaUrl, toShareImageSource } from "@/lib/media-url";
-import { pickMorphShareText } from "@/lib/morph-share-copy";
+import { buildTelegramShareUrl, pickMorphShareText } from "@/lib/morph-share-copy";
 import {
   loadMorphAiGenerations,
   MORPH_AI_GALLERY_UPDATED_EVENT,
@@ -158,6 +158,38 @@ function AiStyleHistoryPage() {
     void shareToStory({ styleId: active.styleId, title: active.title, imageUrl: active.after });
   };
 
+  const handleTelegramShare = async () => {
+    if (!active?.after) {
+      toast.error(t("aiStylePage.previewNoImage"));
+      return;
+    }
+    setSharing(true);
+    try {
+      const created = await createMorphAiLookShare({
+        style_id: active.styleId,
+        title: active.title,
+        after_image: toShareImageSource(active.after),
+      });
+      const pageUrl =
+        created.share_page_url ||
+        `${typeof window !== "undefined" ? window.location.origin : "https://mysaloon.uz"}/morf-ai/share/${encodeURIComponent(created.id)}`;
+      const shareTitle = pickMorphShareText(t, {
+        style: active.title,
+        name: created.sharer_name || "",
+      });
+      trackMorphShare("telegram_shared", {
+        surface: "history",
+        styleId: active.styleId,
+        shareId: created.id,
+      });
+      window.open(buildTelegramShareUrl(pageUrl, shareTitle), "_blank", "noopener,noreferrer");
+    } catch {
+      toast.error(t("aiStylePage.shareFailed"));
+    } finally {
+      setSharing(false);
+    }
+  };
+
   return (
     <div
       className="min-h-[100dvh] bg-background text-foreground"
@@ -294,7 +326,8 @@ function AiStyleHistoryPage() {
 
                 <MorfAiShareNudge
                   onShare={handleInstagramShare}
-                  sharing={igSharing}
+                  onTelegramShare={() => void handleTelegramShare()}
+                  sharing={igSharing || sharing}
                   className="w-full"
                 />
                 <div className="grid w-full grid-cols-2 gap-2">

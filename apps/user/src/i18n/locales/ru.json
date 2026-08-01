@@ -1114,6 +1114,9 @@
       "toolsTitle": "Что хотите сделать?",
       "samplesLabel": "Вдохновение",
       "samplesTitle": "Примеры стилей",
+      "lastLook": "Последний результат",
+      "restyle": "Попробовать снова",
+      "trendingTitle": "Сегодня популярно",
       "tools": {
         "styles": "Стили",
         "stylesDesc": "Стрижки под форму лица",
@@ -1267,12 +1270,24 @@
       "texture": "Текстура",
       "density": "Плотность",
       "scalp": "Кожа головы",
+      "colorStatus": "Цвет",
       "weeklyTitle": "План на неделю",
       "productsTitle": "Средства",
+      "productsHint": "Откроется поиск Uzum — выберите средство сами",
       "avoidTitle": "Чего избегать",
       "salonTitle": "Советы салона",
       "nextCut": "Следующая стрижка: через ~{{days}} дн.",
       "exploreCta": "Выбрать стиль",
+      "bookNearby": "Салоны рядом",
+      "quiz": {
+        "progress": "{{step}} / 4",
+        "conditionQ": "Какое состояние волос?",
+        "textureQ": "Какая текстура?",
+        "colorQ": "Цвет / окрашивание?",
+        "budgetQ": "Бюджет на средства?",
+        "seePlan": "Показать план",
+        "retake": "Пройти снова"
+      },
       "conditions": {
         "oily": "Жирные",
         "dry": "Сухие",
@@ -1294,12 +1309,27 @@
         "dry": "Сухая",
         "sensitive": "Чувствительная"
       },
+      "colors": {
+        "natural": "Натуральные",
+        "colored": "Окрашенные",
+        "bleached": "Осветлённые"
+      },
       "budgets": {
         "all": "Все",
         "budget": "Бюджет",
         "mid": "Средний",
         "premium": "Премиум"
       }
+    },
+    "nearbyBook": {
+      "title": "Сделайте эту стрижку рядом",
+      "empty": "Откройте карту, чтобы найти салоны рядом",
+      "openMap": "Открыть карту"
+    },
+    "shareNudge": {
+      "title": "Поделитесь с друзьями",
+      "text": "Отправьте в Telegram или Instagram Story — друзья смогут примерить на себе.",
+      "telegram": "Telegram"
     },
     "tryOnHint": "Селфи + выбранный стиль — AI покажет на вашем лице",
     "exploreStyles": "Трендовые стили",

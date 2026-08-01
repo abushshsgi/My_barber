@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import type { AiAnalysisResult } from "@/components/ai-style/ai-style-shared";
 import { isCatalogStyleId } from "@/components/ai-style/ai-style-shared";
 import { MorfAiShareNudge } from "@/components/ai-style/MorfAiShareNudge";
+import { MorphNearbySalons } from "@/components/ai-style/MorphNearbySalons";
 import { useMorfAiStoryShare } from "@/components/ai-style/useMorfAiStoryShare";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 import type { ExplorePersonaId } from "@/lib/explore-personas";
@@ -23,7 +24,7 @@ import { createMorphAiLookShare } from "@/lib/api";
 import { downloadAiStyleImage, shareAiStyleLink } from "@/lib/ai-style-image";
 import { trackMorphShare } from "@/lib/ga";
 import { toShareImageSource } from "@/lib/media-url";
-import { pickMorphShareText } from "@/lib/morph-share-copy";
+import { buildTelegramShareUrl, pickMorphShareText } from "@/lib/morph-share-copy";
 import { stashMorphStudioDraft } from "@/lib/morph-ai-studio-session";
 import { cn } from "@/lib/utils";
 
@@ -134,6 +135,30 @@ export function AiStylePreviewSheet({
     }
   };
 
+  const resolveSharePage = async () => {
+    if (previewImage) {
+      const created = await createMorphAiLookShare({
+        style_id: suggestion.id,
+        title: suggestion.title,
+        after_image: toShareImageSource(previewImage),
+      });
+      const pageUrl =
+        created.share_page_url ||
+        `${window.location.origin}/morf-ai/share/${encodeURIComponent(created.id)}`;
+      const shareTitle = pickMorphShareText(t, {
+        style: suggestion.title,
+        name: created.sharer_name || "",
+      });
+      return { pageUrl, shareTitle, shareId: created.id };
+    }
+    if (!lookUrl) throw new Error("no_share_url");
+    return {
+      pageUrl: lookUrl,
+      shareTitle: pickMorphShareText(t, { style: suggestion.title }),
+      shareId: undefined as string | undefined,
+    };
+  };
+
   const handleShare = async () => {
     if (!imageSrc) {
       toast.error(t("aiStylePage.previewNoImage"));
@@ -141,37 +166,13 @@ export function AiStylePreviewSheet({
     }
     setSharing(true);
     try {
-      if (previewImage) {
-        const created = await createMorphAiLookShare({
-          style_id: suggestion.id,
-          title: suggestion.title,
-          after_image: toShareImageSource(previewImage),
-        });
-        const pageUrl =
-          created.share_page_url ||
-          `${window.location.origin}/morf-ai/share/${encodeURIComponent(created.id)}`;
-        const shareTitle = pickMorphShareText(t, {
-          style: suggestion.title,
-          name: created.sharer_name || "",
-        });
-        const result = await shareAiStyleLink(shareTitle, pageUrl);
-        trackMorphShare("link_shared", {
-          surface: "preview",
-          styleId: suggestion.id,
-          shareId: created.id,
-        });
-        if (result === "copied") toast.success(t("aiStylePage.linkCopied"));
-        else if (result === "shared") toast.success(t("aiStylePage.shared"));
-        return;
-      }
-
-      // Fallback: viral style look page (no personal result yet).
-      if (!lookUrl) {
-        toast.error(t("aiStylePage.shareFailed"));
-        return;
-      }
-      const lookShareTitle = pickMorphShareText(t, { style: suggestion.title });
-      const result = await shareAiStyleLink(lookShareTitle, lookUrl);
+      const { pageUrl, shareTitle, shareId } = await resolveSharePage();
+      const result = await shareAiStyleLink(shareTitle, pageUrl);
+      trackMorphShare("link_shared", {
+        surface: "preview",
+        styleId: suggestion.id,
+        shareId,
+      });
       if (result === "copied") toast.success(t("aiStylePage.linkCopied"));
       else if (result === "shared") toast.success(t("aiStylePage.shared"));
     } catch {
@@ -192,6 +193,27 @@ export function AiStylePreviewSheet({
       title: suggestion.title,
       imageUrl: previewImage,
     });
+  };
+
+  const handleTelegramShare = async () => {
+    if (!imageSrc) {
+      toast.error(t("aiStylePage.previewNoImage"));
+      return;
+    }
+    setSharing(true);
+    try {
+      const { pageUrl, shareTitle, shareId } = await resolveSharePage();
+      trackMorphShare("telegram_shared", {
+        surface: "preview",
+        styleId: suggestion.id,
+        shareId,
+      });
+      window.open(buildTelegramShareUrl(pageUrl, shareTitle), "_blank", "noopener,noreferrer");
+    } catch {
+      toast.error(t("aiStylePage.shareFailed"));
+    } finally {
+      setSharing(false);
+    }
   };
 
   return (
@@ -257,10 +279,13 @@ export function AiStylePreviewSheet({
             {previewImage ? (
               <MorfAiShareNudge
                 onShare={handleStoryShare}
-                sharing={storySharing}
+                onTelegramShare={() => void handleTelegramShare()}
+                sharing={storySharing || sharing}
                 disabled={tryOnLoading}
               />
             ) : null}
+
+            {previewImage ? <MorphNearbySalons preferredSalonId={suggestion.salonId || undefined} /> : null}
 
             {previewImage ? (
               <button

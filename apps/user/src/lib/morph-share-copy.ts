@@ -4,6 +4,13 @@ import type { TFunction } from "i18next";
 export const MORF_AI_INSTAGRAM = "@morf.ai";
 export const MORF_AI_INSTAGRAM_URL = "https://instagram.com/morf.ai";
 export const MORF_AI_SITE = "mysaloon.uz";
+export const MORF_AI_TELEGRAM = "@morfai";
+
+/** Telegram share URL (opens TG share sheet with text + link). */
+export function buildTelegramShareUrl(url: string, text: string): string {
+  const params = new URLSearchParams({ url, text });
+  return `https://t.me/share/url?${params.toString()}`;
+}
 
 /** Ism o‘rniga qo‘yiladigan generik qiymatlar — sarlavhaga tushmasin. */
 const GENERIC_NAMES = new Set(["foydalanuvchi", "user", "пользователь", "do‘stingiz", "dostingiz"]);

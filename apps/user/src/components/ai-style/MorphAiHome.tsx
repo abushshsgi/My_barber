@@ -5,19 +5,25 @@ import {
   Camera,
   ChevronLeft,
   Clock3,
+  Droplets,
+  Flame,
   Images,
   Sparkles,
   UserRound,
   Wand2,
-  Droplets,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { MorphBeforeAfter } from "@/components/ai-style/MorphBeforeAfter";
 import { MorphSoftPaywall } from "@/components/ai-style/MorphSoftPaywall";
 import { useSubscriptionMe } from "@/hooks/use-subscription";
 import { useExplorePersona } from "@/hooks/use-explore-persona";
 import { useHairstyles } from "@/hooks/use-hairstyles";
 import { getHairstyleDisplayUrl } from "@/lib/hairstyles/catalog";
+import {
+  pickTrendingStyles,
+  readTrendingFaceHints,
+} from "@/lib/hairstyles/trending";
 import {
   loadMorphAiGenerations,
   MORPH_AI_GALLERY_UPDATED_EVENT,
@@ -101,6 +107,23 @@ function MarqueeRow({
   );
 }
 
+function LimitBadge({ remaining, limit }: { remaining: number; limit: number }) {
+  const low = remaining <= Math.max(1, Math.floor(limit * 0.2));
+  return (
+    <Link
+      to="/wallet"
+      search={{ section: "subscriptions", plan: "plus", returnTo: "/ai-style" }}
+      className={cn(
+        "absolute -right-1 -top-1 grid min-w-7 cursor-pointer place-items-center rounded-full px-1.5 py-0.5 text-[10px] font-bold tabular-nums ring-2 ring-[#050505]",
+        low ? "bg-[#CA8A04] text-black" : "bg-white text-black",
+      )}
+      aria-label={`${remaining}/${limit}`}
+    >
+      {remaining}
+    </Link>
+  );
+}
+
 export function MorphAiHome({
   audience,
   onStartNew,
@@ -115,6 +138,9 @@ export function MorphAiHome({
   const reduceMotion = useReducedMotion();
   const meQ = useSubscriptionMe();
   const morphLocked = Boolean(meQ.data && !meQ.data.has_active);
+  const usage = meQ.data?.has_active ? meQ.data.usage : null;
+  const remaining = usage?.morph_ai_remaining;
+  const limit = usage?.morph_ai_limit;
   const { personaId } = useExplorePersona();
   const { data: styles = [], isLoading } = useHairstyles(
     audience === "women" ? "women" : "men",
@@ -138,6 +164,18 @@ export function MorphAiHome({
     };
   }, []);
 
+  const faceHints = useMemo(() => readTrendingFaceHints(), []);
+
+  const trending = useMemo(
+    () =>
+      pickTrendingStyles(styles, {
+        ...faceHints,
+        preferredPersonaId: personaId,
+        limit: 8,
+      }),
+    [styles, faceHints, personaId],
+  );
+
   const sampleCards = useMemo<SampleCard[]>(
     () =>
       styles.slice(0, 12).map((entry) => ({
@@ -153,7 +191,7 @@ export function MorphAiHome({
 
   const myLooks = useMemo(() => {
     const seen = new Set<string>();
-    const out: { id: string; title: string; image: string }[] = [];
+    const out: { id: string; title: string; image: string; styleId: string; beforeImage?: string }[] = [];
     for (const g of generations) {
       if (!g.previewImage) continue;
       const fingerprint = `${g.styleId}::${g.previewImage.slice(0, 96)}`;
@@ -164,14 +202,29 @@ export function MorphAiHome({
         id: g.id,
         title: prettyLookTitle(g.title),
         image: g.previewImage,
+        styleId: g.styleId,
+        beforeImage: g.beforeImage,
       });
       if (out.length >= 8) break;
     }
     return out;
   }, [generations]);
 
+  const latestCompare = useMemo(() => {
+    const withBefore = myLooks.find((l) => l.beforeImage && l.image);
+    return withBefore ?? null;
+  }, [myLooks]);
+
   const openHistory = () => {
     void navigate({ to: "/ai-style/history" });
+  };
+
+  const openRestyle = (styleId: string) => {
+    if (!styleId) {
+      openHistory();
+      return;
+    }
+    void navigate({ to: "/explore/$styleId/try", params: { styleId } });
   };
 
   const openStudio = () => {
@@ -274,7 +327,6 @@ export function MorphAiHome({
       </header>
 
       <div className="relative z-[1] mx-auto flex w-full max-w-lg flex-col px-5 pb-[max(2rem,env(safe-area-inset-bottom))] pt-6 md:max-w-2xl md:px-8 md:pt-10">
-        {/* Composer-style primary action */}
         <motion.section
           initial={reduceMotion ? false : { opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
@@ -283,7 +335,7 @@ export function MorphAiHome({
         >
           <motion.div
             aria-hidden
-            className="mb-5 grid size-14 place-items-center rounded-[22px] bg-white text-[#050505] shadow-[0_0_40px_-8px_rgba(255,255,255,0.35)]"
+            className="relative mb-5 grid size-14 place-items-center rounded-[22px] bg-white text-[#050505] shadow-[0_0_40px_-8px_rgba(255,255,255,0.35)]"
             animate={
               reduceMotion
                 ? undefined
@@ -298,6 +350,9 @@ export function MorphAiHome({
             transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut" }}
           >
             <Sparkles className="size-6" strokeWidth={1.75} />
+            {!morphLocked && remaining != null && limit != null && limit > 0 ? (
+              <LimitBadge remaining={remaining} limit={limit} />
+            ) : null}
           </motion.div>
 
           <p className="max-w-[18rem] text-[15px] leading-snug text-white/55 md:text-[16px]">
@@ -307,7 +362,7 @@ export function MorphAiHome({
           <button
             type="button"
             onClick={onStartNew}
-            className="mt-6 flex h-12 w-full max-w-sm cursor-pointer items-center gap-3 rounded-full bg-white px-2 pl-5 text-left text-[#050505] transition-opacity duration-200 active:opacity-90 md:h-14"
+            className="relative mt-6 flex h-12 w-full max-w-sm cursor-pointer items-center gap-3 rounded-full bg-white px-2 pl-5 text-left text-[#050505] transition-opacity duration-200 active:opacity-90 md:h-14"
           >
             <span className="min-w-0 flex-1 truncate text-[14px] font-semibold">
               {t("aiStylePage.home.newLook")}
@@ -318,7 +373,6 @@ export function MorphAiHome({
           </button>
         </motion.section>
 
-        {/* AI tool icons */}
         <motion.section
           initial={reduceMotion ? false : { opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
@@ -359,7 +413,42 @@ export function MorphAiHome({
           </motion.div>
         ) : null}
 
-        {/* Recent looks — compact */}
+        {/* Latest before/after teaser */}
+        {latestCompare?.beforeImage ? (
+          <motion.section
+            initial={reduceMotion ? false : { opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.16, duration: 0.35, ease: "easeOut" }}
+            className="mt-8"
+          >
+            <div className="mb-3 flex items-center justify-between">
+              <p className="text-[13px] font-semibold text-white/80">
+                {t("aiStylePage.home.lastLook", { defaultValue: "Oxirgi natija" })}
+              </p>
+              <button
+                type="button"
+                onClick={() => openRestyle(latestCompare.styleId)}
+                className="cursor-pointer text-[12px] font-medium text-white/40 transition-colors duration-200 hover:text-white/70"
+              >
+                {t("aiStylePage.home.restyle", { defaultValue: "Yana sinab ko‘r" })}
+              </button>
+            </div>
+            <button
+              type="button"
+              onClick={openHistory}
+              className="w-full cursor-pointer text-left"
+            >
+              <MorphBeforeAfter
+                beforeSrc={latestCompare.beforeImage}
+                afterSrc={latestCompare.image}
+                title={latestCompare.title}
+                className="overflow-hidden rounded-[22px]"
+              />
+            </button>
+          </motion.section>
+        ) : null}
+
+        {/* Recent looks — tap to restyle */}
         {myLooks.length > 0 ? (
           <motion.section
             initial={reduceMotion ? false : { opacity: 0, y: 10 }}
@@ -384,7 +473,7 @@ export function MorphAiHome({
                 <motion.button
                   key={look.id}
                   type="button"
-                  onClick={openHistory}
+                  onClick={() => openRestyle(look.styleId)}
                   initial={reduceMotion ? false : { opacity: 0, scale: 0.92 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: 0.05 * i, duration: 0.25 }}
@@ -393,6 +482,53 @@ export function MorphAiHome({
                 >
                   <img src={look.image} alt="" className="h-full w-full object-cover object-top" />
                 </motion.button>
+              ))}
+            </div>
+          </motion.section>
+        ) : null}
+
+        {/* Trending strip */}
+        {trending.length > 0 ? (
+          <motion.section
+            initial={reduceMotion ? false : { opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2, duration: 0.35, ease: "easeOut" }}
+            className="mt-9"
+          >
+            <div className="mb-3 flex items-center justify-between px-0.5">
+              <p className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-white/80">
+                <Flame className="size-3.5 text-[#CA8A04]" />
+                {t("aiStylePage.home.trendingTitle", { defaultValue: "Bugun mashhur" })}
+              </p>
+              <Link
+                to="/explore"
+                className="inline-flex cursor-pointer items-center gap-0.5 text-[12px] font-medium text-white/40 transition-colors duration-200 hover:text-white/70"
+              >
+                {t("nav.explore")}
+                <ArrowUpRight className="size-3.5" />
+              </Link>
+            </div>
+            <div className="no-scrollbar -mx-5 flex gap-2.5 overflow-x-auto px-5">
+              {trending.map((entry, i) => (
+                <Link
+                  key={entry.id}
+                  to="/explore/$styleId/try"
+                  params={{ styleId: entry.id }}
+                  className="relative h-[7.5rem] w-[5.75rem] shrink-0 cursor-pointer overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] active:opacity-90"
+                >
+                  <img
+                    src={entry.imageUrl}
+                    alt=""
+                    className="h-full w-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+                  <span className="absolute left-1.5 top-1.5 rounded-full bg-black/55 px-1.5 py-0.5 text-[9px] font-bold text-[#CA8A04]">
+                    #{i + 1}
+                  </span>
+                  <p className="absolute inset-x-0 bottom-0 truncate px-1.5 pb-1.5 text-[10px] font-semibold text-white">
+                    {entry.title}
+                  </p>
+                </Link>
               ))}
             </div>
           </motion.section>

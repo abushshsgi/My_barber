@@ -71,6 +71,7 @@ export type MorphShareStep =
   | "story_cancelled"
   | "story_failed"
   | "link_shared"
+  | "telegram_shared"
   | "landing_view"
   | "landing_try_click";
 
