@@ -10,7 +10,6 @@ function StatisticsLayout() {
   // Hamyon → Aylanma; agent statistikasi → Agentlar — yuqori tablar chalkashmasin.
   const hideSubNav =
     pathname.startsWith("/admin/statistics/wallet") ||
-    pathname.startsWith("/admin/statistics/revenue") ||
     pathname.startsWith("/admin/statistics/agents");
 
   return (
