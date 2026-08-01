@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useMemo, useEffect, type ReactNode } from "react";
 import { Check, Plus, X, Star, MapPin, ArrowRight } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { DesktopPageSplit } from "@/components/desktop/DesktopPageSplit";
 import { MobileListPage } from "@/components/mobile/MobileListPage";
 import { useSalonsList } from "@/hooks/use-salons";
@@ -15,6 +16,7 @@ export const Route = createFileRoute("/compare")({
 const MAX = 3;
 
 function CompareContent({ variant }: { variant: "mobile" | "desktop" }) {
+  const { t } = useTranslation();
   const { data: salons = [], isLoading } = useSalonsList();
   const [selected, setSelected] = useState<string[]>([]);
 
@@ -245,9 +247,12 @@ function CompareContent({ variant }: { variant: "mobile" | "desktop" }) {
     </>
   );
 
+  const title = t("home.quick.compare");
+  const subtitle = t("comparePage.selected", { count: chosen.length, max: MAX });
+
   if (variant === "mobile") {
     return (
-      <MobileListPage title="Taqqoslash" subtitle={`Tanlangan ${chosen.length}/${MAX}`}>
+      <MobileListPage title={title} subtitle={subtitle}>
         {body}
       </MobileListPage>
     );
@@ -255,8 +260,8 @@ function CompareContent({ variant }: { variant: "mobile" | "desktop" }) {
 
   return (
     <div className="mx-auto max-w-4xl px-6 py-10">
-      <h1 className="text-3xl font-bold">Taqqoslash</h1>
-      <p className="mt-1 text-sm text-muted-foreground">Tanlangan {chosen.length}/{MAX}</p>
+      <h1 className="text-3xl font-bold">{title}</h1>
+      <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>
       <div className="mt-8">{body}</div>
     </div>
   );

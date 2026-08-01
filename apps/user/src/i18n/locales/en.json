@@ -373,7 +373,14 @@
     "phoneLabel": "Phone number",
     "phoneHint": "Required so the barber and salon can reach you.",
     "phoneInvalid": "Enter a 9-digit number.",
-    "phoneRequired": "Please enter your phone number."
+    "phoneRequired": "Please enter your phone number.",
+    "insufficientWallet": "Insufficient wallet balance. Top up or choose cash.",
+    "submitted": "Booking submitted!",
+    "submittedDesc": "{{name}} · {{slot}}. The barber should reply within 5 minutes.",
+    "errorGeneric": "Something went wrong"
+  },
+  "comparePage": {
+    "selected": "Selected {{count}}/{{max}}"
   },
   "bookings": {
     "title": "My bookings",
@@ -456,6 +463,7 @@
     "settings": "Settings",
     "language": "Language",
     "support": "Support",
+    "supportSubtitle": "FAQ, complaints, and support chat",
     "privacy": "Privacy",
     "preferredAudience": "Search preference",
     "wallet": "Wallet",

@@ -21,9 +21,14 @@ export const Route = createFileRoute("/category/$category")({
   component: CategorySalonsRoute,
 });
 
-function CategorySalonsMobile({ category }: { category: Category }) {
+type MobileProps = {
+  category: Category;
+  salons: ReturnType<typeof useCategorySalons>["salons"];
+  loading: boolean;
+};
+
+function CategorySalonsMobile({ category, salons, loading }: MobileProps) {
   const { t } = useTranslation();
-  const { salons, loading } = useCategorySalons(category);
 
   return (
     <MobileListPage
@@ -58,7 +63,7 @@ function CategorySalonsRoute() {
 
   return (
     <DesktopPageSplit
-      mobile={<CategorySalonsMobile category={category} />}
+      mobile={<CategorySalonsMobile category={category} salons={salons} loading={loading} />}
       desktop={<CategorySalonsDesktopPage category={category} salons={salons} loading={loading} />}
     />
   );

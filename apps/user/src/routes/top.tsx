@@ -6,6 +6,7 @@ import { MobileListPage } from "@/components/mobile/MobileListPage";
 import { MobileSalonCard } from "@/components/mobile/MobileSalonCard";
 import { NoSalonsEmpty } from "@/components/NoSalonsEmpty";
 import { useTopSalons } from "@/hooks/use-top-salons";
+import type { Salon } from "@/lib/mock-data";
 
 export const Route = createFileRoute("/top")({
   head: () => ({
@@ -17,9 +18,13 @@ export const Route = createFileRoute("/top")({
   component: TopSalonsRoute,
 });
 
-function TopSalonsMobile() {
+type MobileProps = {
+  salons: Salon[];
+  loading: boolean;
+};
+
+function TopSalonsMobile({ salons, loading }: MobileProps) {
   const { t } = useTranslation();
-  const { salons, loading } = useTopSalons();
 
   return (
     <MobileListPage title={t("topSalonsPage.title")} subtitle={t("topSalonsPage.subtitle")}>
@@ -43,7 +48,7 @@ function TopSalonsRoute() {
 
   return (
     <DesktopPageSplit
-      mobile={<TopSalonsMobile />}
+      mobile={<TopSalonsMobile salons={salons} loading={loading} />}
       desktop={<TopSalonsDesktopPage salons={salons} loading={loading} />}
     />
   );

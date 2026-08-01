@@ -21,9 +21,9 @@ export type DesktopContentProfile = "discovery" | "standard" | "compact";
 const FOOTER_HIDDEN_EXACT = new Set(["/auth", "/onboarding", "/map", "/ai-style"]);
 const FOOTER_HIDDEN_PREFIX = ["/stories/", "/booking/"];
 
-const DISCOVERY_EXACT = new Set(["/", "/explore", "/offers", "/map", "/today", "/compare"]);
+const DISCOVERY_EXACT = new Set(["/", "/explore", "/offers", "/map", "/today", "/compare", "/top"]);
 
-const DISCOVERY_PREFIX = ["/salon/"];
+const DISCOVERY_PREFIX = ["/salon/", "/category/"];
 
 const STANDARD_PREFIX = [
   "/bookings",
@@ -53,7 +53,7 @@ const STANDARD_PREFIX = [
 
 const COMPACT_EXACT = new Set(["/auth"]);
 
-const AUDIENCE_TOPBAR_EXACT = new Set(["/", "/explore", "/map", "/today", "/offers"]);
+const AUDIENCE_TOPBAR_EXACT = new Set(["/", "/explore", "/map", "/today", "/offers", "/top"]);
 
 export function showsSiteFooter(pathname: string): boolean {
   if (FOOTER_HIDDEN_EXACT.has(pathname)) return false;
@@ -109,12 +109,15 @@ export function getPageTitleKey(pathname: string): string | null {
   if (pathname === "/offers") return "home.quick.offers";
   if (pathname === "/today") return "home.quick.today";
   if (pathname === "/compare") return "home.quick.compare";
+  if (pathname === "/top") return "topSalonsPage.title";
+  if (pathname.startsWith("/category/")) return "home.sections.browseCategories";
   if (pathname === "/wallet" || pathname.startsWith("/wallet/")) return "nav.wallet";
   if (pathname === "/ai-style" || pathname.startsWith("/ai-style/")) return "home.quick.aiStyle";
   if (pathname === "/notifications") return "nav.notifications";
   if (pathname === "/settings") return "profile.settings";
   if (pathname === "/favorites") return "profile.favorites";
   if (pathname === "/support") return "profile.support";
+  if (pathname === "/privacy") return "profile.privacy";
   if (pathname.startsWith("/salon/")) return "common.salon";
   return null;
 }

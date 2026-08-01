@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useTranslation } from "react-i18next";
 import { ProfileSubpageLayout } from "@/components/profile/ProfileSubpageLayout";
 import { SettingsPrivacyPanel } from "@/components/settings/panels/SettingsPrivacyPanel";
 import { parseSubpageBackTo } from "@/lib/subpage-back";
@@ -17,11 +18,12 @@ export const Route = createFileRoute("/privacy")({
 });
 
 function Privacy() {
+  const { t } = useTranslation();
   const { backTo: backToParam } = Route.useSearch();
   const backTo = parseSubpageBackTo({ backTo: backToParam }, "/settings?section=privacy");
 
   return (
-    <ProfileSubpageLayout title="Maxfiylik" backTo={backTo}>
+    <ProfileSubpageLayout title={t("profile.privacy")} backTo={backTo}>
       <SettingsPrivacyPanel />
     </ProfileSubpageLayout>
   );

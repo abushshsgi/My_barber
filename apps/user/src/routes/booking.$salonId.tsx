@@ -181,7 +181,7 @@ function useBookingSalonState(
       return;
     }
     if (paymentMethod === "online" && walletBalance < total) {
-      toast.error("Hamyon balansi yetarli emas. Hamyonni to'ldiring yoki naqd tanlang.");
+      toast.error(t("booking.insufficientWallet"));
       return;
     }
     const d = new Date(dayList[dayIdx].full);
@@ -198,8 +198,8 @@ function useBookingSalonState(
         notes: notes.trim() || undefined,
         customer_phone: phoneGate.customerPhonePayload,
       });
-      toast.success("Buyurtma yuborildi!", {
-        description: `${salon.name} · ${slot}. Sartarosh 5 daqiqa ichida javob berishi kerak.`,
+      toast.success(t("booking.submitted"), {
+        description: t("booking.submittedDesc", { name: salon.name, slot }),
       });
       setTimeout(
         () =>
@@ -210,7 +210,7 @@ function useBookingSalonState(
         700,
       );
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Xatolik");
+      toast.error(e instanceof Error ? e.message : t("booking.errorGeneric"));
     }
   };
 
