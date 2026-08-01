@@ -1,19 +1,18 @@
 import { Link, useNavigate, useRouter } from "@tanstack/react-router";
 import { motion, useReducedMotion } from "framer-motion";
 import {
+  ArrowUpRight,
+  Camera,
   ChevronLeft,
-  ChevronRight,
   Clock3,
-  Droplets,
-  ImagePlus,
-  ScanFace,
+  Images,
+  Sparkles,
   UserRound,
   Wand2,
+  Droplets,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { SubscriptionPromoBanner } from "@/components/subscriptions/SubscriptionPlanAds";
-import { MorphLimitMeter } from "@/components/subscriptions/MorphLimitMeter";
 import { MorphSoftPaywall } from "@/components/ai-style/MorphSoftPaywall";
 import { useSubscriptionMe } from "@/hooks/use-subscription";
 import { useExplorePersona } from "@/hooks/use-explore-persona";
@@ -38,6 +37,12 @@ type Props = {
   ensureMorphStudio?: () => Promise<boolean>;
 };
 
+type SampleCard = {
+  id: string;
+  title: string;
+  image: string;
+};
+
 function prettyLookTitle(title: string) {
   const raw = title.trim();
   if (!raw) return "Try-on";
@@ -48,14 +53,53 @@ function prettyLookTitle(title: string) {
     .replace(/\b\w/g, (ch) => ch.toUpperCase());
 }
 
-const fadeUp = (delay = 0, reduce = false) =>
-  reduce
-    ? { initial: { opacity: 1 }, animate: { opacity: 1 } }
-    : {
-        initial: { opacity: 0, y: 14 },
-        animate: { opacity: 1, y: 0 },
-        transition: { delay, duration: 0.35, ease: [0.22, 1, 0.36, 1] as const },
-      };
+function MarqueeRow({
+  items,
+  direction,
+  duration = 42,
+  paused,
+}: {
+  items: SampleCard[];
+  direction: "left" | "right";
+  duration?: number;
+  paused: boolean;
+}) {
+  if (items.length === 0) return null;
+  const loop = [...items, ...items];
+
+  return (
+    <div className="relative overflow-hidden">
+      <div
+        className={cn(
+          "flex w-max gap-2.5 will-change-transform",
+          direction === "left" ? "morf-marquee-left" : "morf-marquee-right",
+          paused && "morf-marquee-paused",
+        )}
+        style={{ ["--morf-marquee-duration" as string]: `${duration}s` }}
+      >
+        {loop.map((entry, i) => (
+          <Link
+            key={`${entry.id}-${i}`}
+            to="/explore/$styleId"
+            params={{ styleId: entry.id }}
+            className="group relative h-[8.75rem] w-[6.5rem] shrink-0 cursor-pointer overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.03] md:h-40 md:w-[7.5rem]"
+          >
+            <img
+              src={entry.image}
+              alt=""
+              className="h-full w-full object-cover transition duration-500 group-active:scale-[1.04]"
+              draggable={false}
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent" />
+            <p className="absolute inset-x-0 bottom-0 truncate px-2 pb-2 text-[10px] font-semibold text-white/90">
+              {entry.title}
+            </p>
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export function MorphAiHome({
   audience,
@@ -94,10 +138,22 @@ export function MorphAiHome({
     };
   }, []);
 
-  const samples = useMemo(() => styles.slice(0, 8), [styles]);
+  const sampleCards = useMemo<SampleCard[]>(
+    () =>
+      styles.slice(0, 12).map((entry) => ({
+        id: entry.id,
+        title: entry.titleUz || entry.title,
+        image: getHairstyleDisplayUrl(entry),
+      })),
+    [styles],
+  );
+
+  const rowA = useMemo(() => sampleCards.filter((_, i) => i % 2 === 0), [sampleCards]);
+  const rowB = useMemo(() => sampleCards.filter((_, i) => i % 2 === 1), [sampleCards]);
+
   const myLooks = useMemo(() => {
     const seen = new Set<string>();
-    const out: { id: string; title: string; image: string; styleId: string }[] = [];
+    const out: { id: string; title: string; image: string }[] = [];
     for (const g of generations) {
       if (!g.previewImage) continue;
       const fingerprint = `${g.styleId}::${g.previewImage.slice(0, 96)}`;
@@ -108,9 +164,8 @@ export function MorphAiHome({
         id: g.id,
         title: prettyLookTitle(g.title),
         image: g.previewImage,
-        styleId: g.styleId,
       });
-      if (out.length >= 10) break;
+      if (out.length >= 8) break;
     }
     return out;
   }, [generations]);
@@ -119,28 +174,86 @@ export function MorphAiHome({
     void navigate({ to: "/ai-style/history" });
   };
 
+  const openStudio = () => {
+    void (async () => {
+      const gate = ensureMorphStudio ?? ensureMorphAccess;
+      if (gate && !(await gate())) return;
+      void navigate({ to: "/ai-style/studio" });
+    })();
+  };
+
+  const openCare = () => {
+    void (async () => {
+      if (ensureMorphAccess && !(await ensureMorphAccess())) return;
+      void navigate({ to: "/ai-style/care" });
+    })();
+  };
+
+  const toolActions = [
+    {
+      key: "camera",
+      label: t("aiStylePage.openCamera"),
+      icon: Camera,
+      onClick: onOpenCamera,
+    },
+    {
+      key: "gallery",
+      label: t("aiStylePage.pickFromGallery"),
+      icon: Images,
+      onClick: onOpenGallery,
+    },
+    {
+      key: "studio",
+      label: t("aiStylePage.home.tools.studio"),
+      icon: Wand2,
+      onClick: openStudio,
+    },
+    {
+      key: "care",
+      label: t("aiStylePage.home.tools.care"),
+      icon: Droplets,
+      onClick: openCare,
+    },
+  ] as const;
+
   const iconBtn =
-    "grid size-10 place-items-center rounded-full border border-white/10 bg-white/[0.06] text-white backdrop-blur-md transition-colors duration-200 cursor-pointer active:bg-white/12";
+    "grid size-10 place-items-center rounded-full bg-white/[0.06] text-white/90 ring-1 ring-white/10 transition-colors duration-200 cursor-pointer active:bg-white/12";
 
   return (
-    <div className="relative min-h-0 flex-1 touch-pan-y overflow-y-auto overscroll-y-contain bg-[#050505] text-white [-webkit-overflow-scrolling:touch]">
-      {/* Atmosphere — not flat black */}
+    <div className="relative min-h-0 flex-1 touch-pan-y overflow-y-auto overscroll-y-contain bg-[#050505] text-white no-scrollbar [-webkit-overflow-scrolling:touch]">
+      <style>{`
+        @keyframes morf-marquee-left {
+          from { transform: translate3d(0, 0, 0); }
+          to { transform: translate3d(-50%, 0, 0); }
+        }
+        @keyframes morf-marquee-right {
+          from { transform: translate3d(-50%, 0, 0); }
+          to { transform: translate3d(0, 0, 0); }
+        }
+        .morf-marquee-left {
+          animation: morf-marquee-left var(--morf-marquee-duration, 42s) linear infinite;
+        }
+        .morf-marquee-right {
+          animation: morf-marquee-right var(--morf-marquee-duration, 48s) linear infinite;
+        }
+        .morf-marquee-paused {
+          animation-play-state: paused;
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .morf-marquee-left,
+          .morf-marquee-right {
+            animation: none !important;
+            transform: none !important;
+          }
+        }
+      `}</style>
+
       <div
         aria-hidden
         className="pointer-events-none fixed inset-0 z-0"
         style={{
           background:
-            "radial-gradient(ellipse 90% 55% at 50% -10%, rgba(202,138,4,0.14), transparent 55%), radial-gradient(ellipse 60% 40% at 100% 30%, rgba(255,255,255,0.04), transparent 50%), radial-gradient(ellipse 50% 35% at 0% 70%, rgba(255,255,255,0.03), transparent 45%)",
-        }}
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none fixed inset-0 z-0 opacity-[0.35]"
-        style={{
-          backgroundImage:
-            "linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)",
-          backgroundSize: "48px 48px",
-          maskImage: "radial-gradient(ellipse 80% 60% at 50% 20%, black, transparent)",
+            "radial-gradient(ellipse 70% 45% at 50% 0%, rgba(255,255,255,0.07), transparent 55%), radial-gradient(ellipse 40% 30% at 85% 40%, rgba(202,138,4,0.08), transparent 50%)",
         }}
       />
 
@@ -148,12 +261,7 @@ export function MorphAiHome({
         className="sticky top-0 z-20 flex items-center gap-1.5 px-4 pb-2"
         style={{ paddingTop: "max(0.65rem, env(safe-area-inset-top))" }}
       >
-        <button
-          type="button"
-          onClick={() => navigateBack(router, "/")}
-          className={iconBtn}
-          aria-label={t("nav.home")}
-        >
+        <button type="button" onClick={() => navigateBack(router, "/")} className={iconBtn} aria-label={t("nav.home")}>
           <ChevronLeft className="size-5" strokeWidth={2.25} />
         </button>
         <div className="min-w-0 flex-1" />
@@ -165,237 +273,180 @@ export function MorphAiHome({
         </Link>
       </header>
 
-      <div className="relative z-[1] mx-auto w-full max-w-3xl px-5 pb-[max(2rem,env(safe-area-inset-bottom))] pt-2 md:max-w-5xl md:px-8">
-        {/* Hero — brand first */}
-        <motion.section {...fadeUp(0, !!reduceMotion)} className="pt-4 md:pt-8">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[#CA8A04]">
-            {t("aiStylePage.home.studioTag")}
-          </p>
-          <h1 className="mt-3 font-display text-[clamp(3.4rem,14vw,5.5rem)] font-extrabold leading-[0.88] tracking-[-0.06em]">
-            MORF
-          </h1>
-          <p className="mt-1 font-display text-[clamp(1.35rem,5vw,2rem)] font-medium leading-none tracking-[-0.03em] text-white/35">
-            AI
-          </p>
-          <p className="mt-4 max-w-[20rem] text-[14px] leading-relaxed text-white/55 md:max-w-sm md:text-[15px]">
+      <div className="relative z-[1] mx-auto flex w-full max-w-lg flex-col px-5 pb-[max(2rem,env(safe-area-inset-bottom))] pt-6 md:max-w-2xl md:px-8 md:pt-10">
+        {/* Composer-style primary action */}
+        <motion.section
+          initial={reduceMotion ? false : { opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+          className="flex flex-col items-center text-center"
+        >
+          <motion.div
+            aria-hidden
+            className="mb-5 grid size-14 place-items-center rounded-[22px] bg-white text-[#050505] shadow-[0_0_40px_-8px_rgba(255,255,255,0.35)]"
+            animate={
+              reduceMotion
+                ? undefined
+                : {
+                    boxShadow: [
+                      "0 0 36px -10px rgba(255,255,255,0.25)",
+                      "0 0 52px -8px rgba(202,138,4,0.35)",
+                      "0 0 36px -10px rgba(255,255,255,0.25)",
+                    ],
+                  }
+            }
+            transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut" }}
+          >
+            <Sparkles className="size-6" strokeWidth={1.75} />
+          </motion.div>
+
+          <p className="max-w-[18rem] text-[15px] leading-snug text-white/55 md:text-[16px]">
             {t("aiStylePage.home.subtitle")}
           </p>
 
           <button
             type="button"
             onClick={onStartNew}
-            className="mt-7 flex h-12 w-full cursor-pointer items-center justify-between gap-3 rounded-2xl bg-white px-5 text-[15px] font-bold text-[#050505] transition-opacity duration-200 active:opacity-90 md:h-14"
+            className="mt-6 flex h-12 w-full max-w-sm cursor-pointer items-center gap-3 rounded-full bg-white px-2 pl-5 text-left text-[#050505] transition-opacity duration-200 active:opacity-90 md:h-14"
           >
-            <span>{t("aiStylePage.home.newLook")}</span>
-            <ChevronRight className="size-5 shrink-0 opacity-50" strokeWidth={2.5} />
-          </button>
-        </motion.section>
-
-        {/* Capture + tools — bento */}
-        <motion.section {...fadeUp(0.06, !!reduceMotion)} className="mt-4 grid grid-cols-2 gap-2.5">
-          <button
-            type="button"
-            onClick={onOpenCamera}
-            className="group relative flex min-h-[7.5rem] cursor-pointer flex-col justify-between overflow-hidden rounded-[22px] border border-white/10 bg-white/[0.05] p-4 text-left transition-colors duration-200 active:bg-white/[0.08] md:min-h-[8.5rem]"
-          >
-            <span className="grid size-10 place-items-center rounded-2xl bg-white/10">
-              <ScanFace className="size-5 text-white" strokeWidth={1.75} />
+            <span className="min-w-0 flex-1 truncate text-[14px] font-semibold">
+              {t("aiStylePage.home.newLook")}
             </span>
-            <div>
-              <p className="text-[14px] font-bold tracking-tight">{t("aiStylePage.openCamera")}</p>
-              <p className="mt-0.5 text-[11px] text-white/40">{t("aiStylePage.home.tools.galleryDesc")}</p>
-            </div>
-          </button>
-          <button
-            type="button"
-            onClick={onOpenGallery}
-            className="group relative flex min-h-[7.5rem] cursor-pointer flex-col justify-between overflow-hidden rounded-[22px] border border-white/10 bg-white/[0.05] p-4 text-left transition-colors duration-200 active:bg-white/[0.08] md:min-h-[8.5rem]"
-          >
-            <span className="grid size-10 place-items-center rounded-2xl bg-white/10">
-              <ImagePlus className="size-5 text-white" strokeWidth={1.75} />
-            </span>
-            <div>
-              <p className="text-[14px] font-bold tracking-tight">{t("aiStylePage.pickFromGallery")}</p>
-              <p className="mt-0.5 text-[11px] text-white/40">{t("aiStylePage.home.tools.stylesDesc")}</p>
-            </div>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              void (async () => {
-                const gate = ensureMorphStudio ?? ensureMorphAccess;
-                if (gate && !(await gate())) return;
-                void navigate({ to: "/ai-style/studio" });
-              })();
-            }}
-            className="flex cursor-pointer items-center gap-3 rounded-[18px] border border-white/10 bg-white/[0.035] px-3.5 py-3.5 text-left transition-colors duration-200 active:bg-white/[0.07]"
-          >
-            <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-[#CA8A04]/15 text-[#CA8A04]">
-              <Wand2 className="size-4" strokeWidth={2} />
-            </span>
-            <span className="min-w-0">
-              <span className="block truncate text-[13px] font-bold">{t("aiStylePage.home.tools.studio")}</span>
-              <span className="mt-0.5 block truncate text-[10px] text-white/40">
-                {t("aiStylePage.home.tools.studioDesc")}
-              </span>
-            </span>
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              void (async () => {
-                if (ensureMorphAccess && !(await ensureMorphAccess())) return;
-                void navigate({ to: "/ai-style/care" });
-              })();
-            }}
-            className="flex cursor-pointer items-center gap-3 rounded-[18px] border border-white/10 bg-white/[0.035] px-3.5 py-3.5 text-left transition-colors duration-200 active:bg-white/[0.07]"
-          >
-            <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-white/10 text-white/80">
-              <Droplets className="size-4" strokeWidth={2} />
-            </span>
-            <span className="min-w-0">
-              <span className="block truncate text-[13px] font-bold">{t("aiStylePage.home.tools.care")}</span>
-              <span className="mt-0.5 block truncate text-[10px] text-white/40">
-                {t("aiStylePage.home.tools.careDesc")}
-              </span>
+            <span className="grid size-9 shrink-0 place-items-center rounded-full bg-[#050505] text-white">
+              <ArrowUpRight className="size-4" strokeWidth={2.25} />
             </span>
           </button>
         </motion.section>
 
-        <motion.div {...fadeUp(0.1, !!reduceMotion)} className="mt-4 space-y-2.5">
-          {morphLocked ? (
+        {/* AI tool icons */}
+        <motion.section
+          initial={reduceMotion ? false : { opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.08, duration: 0.35, ease: "easeOut" }}
+          className="mt-8 grid grid-cols-4 gap-2"
+        >
+          {toolActions.map((action, i) => {
+            const Icon = action.icon;
+            return (
+              <motion.button
+                key={action.key}
+                type="button"
+                onClick={action.onClick}
+                initial={reduceMotion ? false : { opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 + i * 0.05, duration: 0.3, ease: "easeOut" }}
+                className="flex cursor-pointer flex-col items-center gap-2 rounded-2xl px-1 py-2 transition-colors duration-200 active:bg-white/[0.05]"
+              >
+                <span className="grid size-12 place-items-center rounded-2xl bg-white/[0.06] ring-1 ring-white/10">
+                  <Icon className="size-[18px] text-white" strokeWidth={1.75} />
+                </span>
+                <span className="line-clamp-2 text-center text-[10px] font-medium leading-tight text-white/50">
+                  {action.label}
+                </span>
+              </motion.button>
+            );
+          })}
+        </motion.section>
+
+        {morphLocked ? (
+          <motion.div
+            initial={reduceMotion ? false : { opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.15, duration: 0.3 }}
+            className="mt-6"
+          >
             <MorphSoftPaywall className="[&_a]:border-white/15 [&_a]:text-white/55 [&_a:hover]:bg-white/5" />
-          ) : (
-            <MorphLimitMeter tone="oled" />
-          )}
-          {!morphLocked ? <SubscriptionPromoBanner className="border-white/10" /> : null}
-        </motion.div>
+          </motion.div>
+        ) : null}
 
-        {/* My looks — filmstrip */}
-        <motion.section {...fadeUp(0.14, !!reduceMotion)} className="mt-9">
-          <div className="mb-3 flex items-end justify-between gap-2">
-            <div>
-              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/35">
-                {t("aiStylePage.home.myLooksLabel")}
-              </p>
-              <h2 className="mt-1 font-display text-[1.35rem] font-bold tracking-[-0.03em] md:text-[1.5rem]">
+        {/* Recent looks — compact */}
+        {myLooks.length > 0 ? (
+          <motion.section
+            initial={reduceMotion ? false : { opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.18, duration: 0.35, ease: "easeOut" }}
+            className="mt-8"
+          >
+            <div className="mb-3 flex items-center justify-between">
+              <p className="text-[13px] font-semibold text-white/80">
                 {t("aiStylePage.home.myLooksTitle")}
-              </h2>
+              </p>
+              <button
+                type="button"
+                onClick={openHistory}
+                className="cursor-pointer text-[12px] font-medium text-white/40 transition-colors duration-200 hover:text-white/70"
+              >
+                {t("aiStylePage.historyViewAll")}
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={openHistory}
-              className="mb-0.5 inline-flex cursor-pointer items-center gap-0.5 text-[12px] font-semibold text-white/45 transition-colors duration-200 hover:text-white/70"
-            >
-              {t("aiStylePage.historyViewAll")}
-              <ChevronRight className="size-3.5" />
-            </button>
-          </div>
-
-          {myLooks.length > 0 ? (
-            <div className="no-scrollbar -mx-5 flex gap-3 overflow-x-auto px-5 pb-1 md:mx-0 md:px-0">
+            <div className="no-scrollbar -mx-5 flex gap-2.5 overflow-x-auto px-5">
               {myLooks.map((look, i) => (
-                <button
+                <motion.button
                   key={look.id}
                   type="button"
                   onClick={openHistory}
-                  className={cn(
-                    "relative shrink-0 cursor-pointer overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] transition-opacity duration-200 active:opacity-85",
-                    i === 0 ? "h-[9.5rem] w-[7rem] md:h-44 md:w-32" : "h-[9.5rem] w-[6.25rem] md:h-44 md:w-[7.25rem]",
-                  )}
+                  initial={reduceMotion ? false : { opacity: 0, scale: 0.92 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.05 * i, duration: 0.25 }}
+                  className="relative h-[4.5rem] w-[4.5rem] shrink-0 cursor-pointer overflow-hidden rounded-full ring-1 ring-white/15 active:opacity-85"
                   aria-label={look.title}
                 >
                   <img src={look.image} alt="" className="h-full w-full object-cover object-top" />
-                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-2 pb-2 pt-8">
-                    <p className="truncate text-[11px] font-semibold text-white/90">{look.title}</p>
-                  </div>
-                </button>
+                </motion.button>
               ))}
             </div>
-          ) : (
-            <button
-              type="button"
-              onClick={onStartNew}
-              className="w-full cursor-pointer rounded-[22px] border border-dashed border-white/15 bg-white/[0.03] px-5 py-7 text-left transition-colors duration-200 active:bg-white/[0.06]"
-            >
-              <p className="text-[14px] font-semibold text-white/90">{t("aiStylePage.historyEmpty")}</p>
-              <p className="mt-1 max-w-xs text-[12px] leading-relaxed text-white/40">
-                {t("aiStylePage.home.myLooksEmptyHint", {
-                  defaultValue: "Try-on qiling — natijalar shu yerda va Historyda chiqadi",
-                })}
-              </p>
-            </button>
-          )}
-        </motion.section>
+          </motion.section>
+        ) : null}
 
-        {/* Lookbook — horizontal journey */}
-        <motion.section {...fadeUp(0.18, !!reduceMotion)} className="mt-10 mb-4">
-          <div className="mb-3 flex items-end justify-between gap-2">
-            <div>
-              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/35">
-                {t("aiStylePage.home.samplesLabel")}
-              </p>
-              <h2 className="mt-1 font-display text-[1.35rem] font-bold tracking-[-0.03em] md:text-[1.5rem]">
-                {t("aiStylePage.home.samplesTitle")}
-              </h2>
-            </div>
+        {/* Dual marquee lookbook */}
+        <motion.section
+          initial={reduceMotion ? false : { opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.22, duration: 0.4, ease: "easeOut" }}
+          className="mt-9"
+        >
+          <div className="mb-3 flex items-center justify-between px-0.5">
+            <p className="text-[13px] font-semibold text-white/80">
+              {t("aiStylePage.home.samplesTitle")}
+            </p>
             <Link
               to="/explore"
-              className="mb-0.5 inline-flex cursor-pointer items-center gap-0.5 text-[12px] font-semibold text-white/45 transition-colors duration-200 hover:text-white/70"
+              className="inline-flex cursor-pointer items-center gap-0.5 text-[12px] font-medium text-white/40 transition-colors duration-200 hover:text-white/70"
             >
               {t("nav.explore")}
-              <ChevronRight className="size-3.5" />
+              <ArrowUpRight className="size-3.5" />
             </Link>
           </div>
 
-          <div className="no-scrollbar -mx-5 flex gap-3 overflow-x-auto px-5 pb-2 md:mx-0 md:gap-3.5 md:px-0">
-            {isLoading
-              ? Array.from({ length: 4 }).map((_, i) => (
-                  <div
-                    key={i}
-                    className={cn(
-                      "shrink-0 animate-pulse rounded-[22px] bg-white/[0.06]",
-                      i === 0 ? "h-[17rem] w-[13rem] md:h-[20rem] md:w-[15rem]" : "h-[17rem] w-[11rem] md:h-[20rem] md:w-[13rem]",
-                    )}
-                  />
-                ))
-              : samples.map((entry, index) => (
-                  <motion.div
-                    key={entry.id}
-                    initial={reduceMotion ? false : { opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.04 * index, duration: 0.3, ease: "easeOut" }}
-                    className="shrink-0"
-                  >
-                    <Link
-                      to="/explore/$styleId"
-                      params={{ styleId: entry.id }}
-                      className={cn(
-                        "group relative block cursor-pointer overflow-hidden rounded-[22px] border border-white/10 bg-white/[0.04] transition-opacity duration-200 active:opacity-90",
-                        index === 0
-                          ? "h-[17rem] w-[13rem] md:h-[20rem] md:w-[15rem]"
-                          : "h-[17rem] w-[11rem] md:h-[20rem] md:w-[13rem]",
-                      )}
-                    >
-                      <img
-                        src={getHairstyleDisplayUrl(entry)}
-                        alt={entry.titleUz || entry.title}
-                        className="h-full w-full object-cover transition duration-500 group-active:scale-[1.03]"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" />
-                      <div className="absolute inset-x-0 bottom-0 px-3.5 pb-3.5 pt-10">
-                        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#CA8A04]">
-                          {index === 0 ? "01" : String(index + 1).padStart(2, "0")}
-                        </p>
-                        <p className="mt-1 truncate text-[14px] font-bold text-white md:text-[15px]">
-                          {entry.titleUz || entry.title}
-                        </p>
-                      </div>
-                    </Link>
-                  </motion.div>
-                ))}
-          </div>
+          {isLoading ? (
+            <div className="space-y-2.5">
+              {[0, 1].map((row) => (
+                <div key={row} className="no-scrollbar flex gap-2.5 overflow-hidden">
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <div
+                      key={i}
+                      className="h-[8.75rem] w-[6.5rem] shrink-0 animate-pulse rounded-2xl bg-white/[0.06]"
+                    />
+                  ))}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="space-y-2.5">
+              <MarqueeRow
+                items={rowA.length >= 3 ? rowA : sampleCards}
+                direction="right"
+                duration={40}
+                paused={!!reduceMotion}
+              />
+              <MarqueeRow
+                items={rowB.length >= 3 ? rowB : [...sampleCards].reverse()}
+                direction="left"
+                duration={46}
+                paused={!!reduceMotion}
+              />
+            </div>
+          )}
         </motion.section>
       </div>
     </div>
