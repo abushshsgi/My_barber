@@ -1,8 +1,8 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ViewPresets } from "@/components/barber-consult/ViewPresets";
 import { ZoneChips } from "@/components/barber-consult/ZoneChips";
-import type { ExploreViewId } from "@/lib/explore-views";
+import { EXPLORE_VIEW_IDS, type ExploreViewId } from "@/lib/explore-views";
 import type { MasterCardZoneKey, MasterCardZones } from "@/types/barber-master-card";
 import { cn } from "@/lib/utils";
 
@@ -34,20 +34,50 @@ export function MultiAngleViewer({
   className,
 }: Props) {
   const { t } = useTranslation();
-  const src = useMemo(
-    () => images[activeView] || images.front || fallbackImage,
-    [activeView, fallbackImage, images],
-  );
+  const [broken, setBroken] = useState<Partial<Record<ExploreViewId, boolean>>>({});
+
+  const availableViews = useMemo(() => {
+    const list = EXPLORE_VIEW_IDS.filter((view) => {
+      const url = images[view];
+      if (!url || broken[view]) return false;
+      return true;
+    });
+    if (list.length === 0 && (fallbackImage || images.front)) return ["front"] as ExploreViewId[];
+    return list;
+  }, [broken, fallbackImage, images]);
+
+  useEffect(() => {
+    if (!availableViews.includes(activeView) && availableViews[0]) {
+      onViewChange(availableViews[0]);
+    }
+  }, [activeView, availableViews, onViewChange]);
+
+  const src = useMemo(() => {
+    const preferred = images[activeView];
+    if (preferred && !broken[activeView]) return preferred;
+    if (images.front && !broken.front) return images.front;
+    return fallbackImage;
+  }, [activeView, broken, fallbackImage, images]);
 
   return (
     <div className={cn("space-y-3", className)}>
       <div className="relative aspect-[3/4] overflow-hidden rounded-2xl bg-neutral-100 ring-1 ring-border">
-        <img
-          src={src}
-          alt={t("barberConsult.viewerAlt", { defaultValue: "Hairstyle preview" })}
-          className="h-full w-full object-cover"
-          draggable={false}
-        />
+        {src ? (
+          <img
+            key={src}
+            src={src}
+            alt={t("barberConsult.viewerAlt", { defaultValue: "Hairstyle preview" })}
+            className="h-full w-full object-cover"
+            draggable={false}
+            onError={() => {
+              setBroken((prev) => ({ ...prev, [activeView]: true }));
+            }}
+          />
+        ) : (
+          <div className="grid h-full place-items-center px-4 text-center text-sm text-muted-foreground">
+            {t("barberConsult.viewerAlt", { defaultValue: "Hairstyle preview" })}
+          </div>
+        )}
         {activeZone ? (
           <div
             className={cn(
@@ -57,7 +87,19 @@ export function MultiAngleViewer({
           />
         ) : null}
       </div>
-      <ViewPresets activeView={activeView} onViewChange={onViewChange} />
+      <ViewPresets
+        activeView={activeView}
+        onViewChange={onViewChange}
+        availableViews={availableViews}
+      />
+      {availableViews.length <= 1 ? (
+        <p className="text-[11px] text-muted-foreground">
+          {t("barberConsult.singleViewHint", {
+            defaultValue:
+              "Bu uslub uchun chap/o‘ng/orqa rasmlar hali yo‘q — try-on / old ko‘rinish ko‘rsatilmoqda.",
+          })}
+        </p>
+      ) : null}
       <ZoneChips zones={zones} activeZone={activeZone} onZoneChange={onZoneChange} />
     </div>
   );

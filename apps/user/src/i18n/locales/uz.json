@@ -1707,6 +1707,7 @@
     "mode3d": "3D",
     "webglFallback": "3D mavjud emas — multi-angle ko‘rsatilmoqda",
     "viewerAlt": "Soch turmagi preview",
+    "singleViewHint": "Bu uslub uchun chap/o‘ng/orqa rasmlar hali yo‘q — try-on / old ko‘rinish ko‘rsatilmoqda.",
     "showBarberPreview": "Barber dashboard preview",
     "hideBarberPreview": "Barber previewni yashirish",
     "views": {

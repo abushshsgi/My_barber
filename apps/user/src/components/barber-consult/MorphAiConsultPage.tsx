@@ -10,9 +10,10 @@ import { MasterCardSkeleton } from "@/components/barber-consult/MasterCardSkelet
 import { generateBarberMasterCard } from "@/lib/api/ai";
 import {
   getPersonaStyleViewImageUrl,
+  hasPersonaStyleViewAsset,
   type ExplorePersonaId,
 } from "@/lib/explore-personas";
-import type { ExploreViewId } from "@/lib/explore-views";
+import { EXPLORE_VIEW_IDS, type ExploreViewId } from "@/lib/explore-views";
 import { loadBarberConsultDraft } from "@/lib/barber-consult-session";
 import { MorphPlanLimitError } from "@/lib/morph-plan-limit";
 import {
@@ -21,6 +22,10 @@ import {
   zonesFromMasterCard,
   type BarberMasterCard,
 } from "@/types/barber-master-card";
+
+function styleSlugFromId(styleId: string): string {
+  return styleId.replace(/^men-/, "").trim();
+}
 
 export function MorphAiConsultPage() {
   const { t } = useTranslation();
@@ -35,15 +40,22 @@ export function MorphAiConsultPage() {
   const styleId = draft?.styleId || search.styleId || "";
 
   const gallery = useMemo(() => {
-    if (draft?.gallery) return draft.gallery;
-    if (!styleId) return { front: image } as Partial<Record<ExploreViewId, string>>;
-    const slug = styleId.replace(/^men-/, "");
-    return {
-      front: image || getPersonaStyleViewImageUrl(personaId, slug, "front"),
-      left: getPersonaStyleViewImageUrl(personaId, slug, "left"),
-      right: getPersonaStyleViewImageUrl(personaId, slug, "right"),
-      back: getPersonaStyleViewImageUrl(personaId, slug, "back"),
-    };
+    if (draft?.gallery && Object.keys(draft.gallery).length) {
+      return draft.gallery;
+    }
+    const slug = styleSlugFromId(styleId);
+    const front =
+      image ||
+      (slug ? getPersonaStyleViewImageUrl(personaId, slug, "front") : "");
+    const next: Partial<Record<ExploreViewId, string>> = {};
+    if (front) next.front = front;
+    if (!slug) return next;
+    for (const view of EXPLORE_VIEW_IDS) {
+      if (view === "front") continue;
+      if (!hasPersonaStyleViewAsset(personaId, slug, view)) continue;
+      next[view] = getPersonaStyleViewImageUrl(personaId, slug, view);
+    }
+    return next;
   }, [draft?.gallery, image, personaId, styleId]);
 
   const [card, setCard] = useState<BarberMasterCard | null>(null);

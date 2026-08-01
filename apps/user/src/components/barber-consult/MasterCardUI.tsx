@@ -141,6 +141,7 @@ export function MasterCardUI({
             zones={zones}
             activeZone={activeZone}
             onZoneChange={setActiveZone}
+            previewImage={previewImage}
             onWebglError={() => {
               setForce2d(true);
               onViewerModeChange("2d");

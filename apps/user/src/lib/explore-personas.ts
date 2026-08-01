@@ -119,6 +119,52 @@ export function hasPersonaStyleAsset(personaId: ExplorePersonaId, slug: string):
   return PERSONA_READY_ASSETS[personaId].slugs.includes(slug);
 }
 
+/** Irland slugs that ship left/right/back static assets (not front-only). */
+export const IRLAND_MULTI_VIEW_SLUGS = new Set([
+  "buzz-cut",
+  "crew-cut",
+  "curly-afro",
+  "curly-bowl-cut",
+  "curly-curtain-bangs",
+  "curly-flow",
+  "curly-fringe",
+  "curly-middle-part",
+  "curly-ponytail",
+  "curly-shag",
+  "curly-slick-back",
+  "curly-top-fade",
+  "curly-two-block",
+  "curly-undercut-style",
+  "curly-wolf-cut",
+  "drop-fade-curly",
+  "french-crop",
+  "layered-curly",
+  "long-curly-hair",
+  "low-fade",
+  "medium-curly",
+  "mid-fade",
+  "modern-mullet",
+  "natural-curly",
+  "pompadour",
+  "side-part",
+  "skin-fade",
+  "slick-back",
+  "textured-crop",
+  "undercut",
+  "wet-curl-taper",
+]);
+
+export function hasPersonaStyleViewAsset(
+  personaId: ExplorePersonaId,
+  slug: string,
+  view: "front" | "left" | "right" | "back",
+): boolean {
+  if (!hasPersonaStyleAsset(personaId, slug)) return false;
+  if (view === "front") return true;
+  if (personaId === "irland") return IRLAND_MULTI_VIEW_SLUGS.has(slug);
+  return false;
+}
+
 /** Explore UI — faqat reference rasmi tayyor personajlar */
 export function listReadyExplorePersonas(): ExplorePersona[] {
   return EXPLORE_PERSONAS.filter((persona) => hasPersonaReference(persona.id));
@@ -187,7 +233,7 @@ export function getPersonaStyleViewImageUrl(
   if (!hasPersonaStyleAsset(personaId, slug)) {
     return getPersonaStyleImageUrl(personaId, slug);
   }
-  if (view === "front") {
+  if (view === "front" || !hasPersonaStyleViewAsset(personaId, slug, view)) {
     return `/hairstyles/men/personas/${personaId}/${slug}.webp`;
   }
   return `/hairstyles/men/personas/${personaId}/${slug}__${view}.webp`;

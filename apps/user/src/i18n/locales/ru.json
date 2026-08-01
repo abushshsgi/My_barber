@@ -1701,6 +1701,7 @@
     "mode3d": "3D",
     "webglFallback": "3D недоступен — показан multi-angle",
     "viewerAlt": "Превью причёски",
+    "singleViewHint": "Для этого стиля пока нет боковых/задних фото — показан try-on / вид спереди.",
     "showBarberPreview": "Превью кабинета барбера",
     "hideBarberPreview": "Скрыть превью барбера",
     "views": {

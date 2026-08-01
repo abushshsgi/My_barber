@@ -1707,6 +1707,7 @@
     "mode3d": "3D",
     "webglFallback": "3D unavailable — showing multi-angle",
     "viewerAlt": "Hairstyle preview",
+    "singleViewHint": "Side/back photos are not available for this style yet — showing the try-on / front view.",
     "showBarberPreview": "Barber dashboard preview",
     "hideBarberPreview": "Hide barber preview",
     "views": {
