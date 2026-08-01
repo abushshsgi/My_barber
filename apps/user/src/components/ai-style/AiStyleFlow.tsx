@@ -268,16 +268,14 @@ export function AiStyleFlow({ audience, menPersonaId: menPersonaIdProp, focusSty
   return (
     <>
       {showHome ? (
-        <div className="h-full min-h-0">
-          <MorphAiHome
-            audience={audience}
-            onStartNew={() => void gatedStartNew()}
-            onOpenCamera={() => void gatedOpenCamera()}
-            onOpenGallery={() => void gatedOpenGallery()}
-            ensureMorphAccess={limitGate.ensureTryOn}
-            ensureMorphStudio={limitGate.ensureStudio}
-          />
-        </div>
+        <MorphAiHome
+          audience={audience}
+          onStartNew={() => void gatedStartNew()}
+          onOpenCamera={() => void gatedOpenCamera()}
+          onOpenGallery={() => void gatedOpenGallery()}
+          ensureMorphAccess={limitGate.ensureTryOn}
+          ensureMorphStudio={limitGate.ensureStudio}
+        />
       ) : (
         <DesktopPageSplit
           mobile={<AiStyleSplitLayout {...layoutProps} />}

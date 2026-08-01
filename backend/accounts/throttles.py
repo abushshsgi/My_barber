@@ -1,10 +1,30 @@
 """DRF throttles for auth and salon MVP endpoints (IP or user scoped)."""
 
+import logging
 import math
 
 from accounts.phone_auth import normalize_uz_phone
 from rest_framework.exceptions import Throttled
 from rest_framework.throttling import AnonRateThrottle, SimpleRateThrottle, UserRateThrottle
+
+logger = logging.getLogger(__name__)
+
+
+class CacheFailOpenMixin:
+    """Kesh (Redis) uzilsa umumiy DDoS limiti butun API ni 500 ga tushirmasin."""
+
+    def allow_request(self, request, view):
+        try:
+            return super().allow_request(request, view)
+        except Throttled:
+            raise
+        except Exception:
+            logger.warning(
+                "Throttle cache unavailable (scope=%s) — so'rov o'tkazildi",
+                getattr(self, "scope", "?"),
+                exc_info=True,
+            )
+            return True
 
 
 def raise_friendly_throttled(wait: float | None, message: str) -> None:
@@ -131,13 +151,13 @@ class SalonJoinThrottle(SimpleRateThrottle):
         return self.cache_format % {"scope": self.scope, "ident": ident}
 
 
-class ApiAnonRateThrottle(AnonRateThrottle):
+class ApiAnonRateThrottle(CacheFailOpenMixin, AnonRateThrottle):
     """Anonim so'rovlar — umumiy DDoS himoya."""
 
     scope = "anon"
 
 
-class ApiUserRateThrottle(UserRateThrottle):
+class ApiUserRateThrottle(CacheFailOpenMixin, UserRateThrottle):
     """Autentifikatsiyalangan foydalanuvchi — umumiy limit."""
 
     scope = "user"

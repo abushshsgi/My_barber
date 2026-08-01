@@ -102,7 +102,7 @@ export function MorphAiHome({
   };
 
   return (
-    <div className="relative h-full min-h-0 touch-pan-y overflow-y-auto overscroll-y-contain bg-background text-foreground [-webkit-overflow-scrolling:touch]">
+    <div className="relative min-h-0 flex-1 touch-pan-y overflow-y-auto overscroll-y-contain bg-background text-foreground [-webkit-overflow-scrolling:touch]">
       <header
         className="sticky top-0 z-20 flex items-center gap-2 border-b border-border/60 bg-background/95 px-4 backdrop-blur-md"
         style={{ paddingTop: "max(0.55rem, env(safe-area-inset-top))" }}

@@ -112,11 +112,8 @@ export function UserLayout({ children }: { children: React.ReactNode }) {
             pathname === "/onboarding" && "lg:pt-3",
             flags.isMap &&
               "fixed inset-x-0 top-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom,0px))] z-10 max-w-none flex-none overflow-hidden overscroll-none lg:static lg:inset-auto lg:z-auto lg:h-[calc(100dvh-4.5rem)] lg:max-w-none lg:overflow-hidden",
-            flags.isViewportLocked &&
-              !flags.isMap &&
-              "fixed inset-x-0 top-0 z-10 h-[100dvh] overflow-hidden overscroll-none lg:static lg:z-auto lg:h-auto lg:overflow-visible",
             flags.isAiStyle &&
-              "h-[100dvh] max-h-[100dvh] lg:h-[calc(100dvh-4.5rem)] lg:max-h-[calc(100dvh-4.5rem)]",
+              "fixed inset-x-0 top-0 z-10 h-[100dvh] max-h-[100dvh] overflow-hidden overscroll-none lg:static lg:z-auto lg:h-[calc(100dvh-4.5rem)] lg:max-h-[calc(100dvh-4.5rem)] lg:overflow-hidden",
             flags.isFullBleed && !flags.isViewportLocked && "pb-0",
             !flags.isFullBleed && getMobileContentPaddingClass(pathname),
             !flags.isFullBleed && "lg:pb-12",
@@ -131,7 +128,7 @@ export function UserLayout({ children }: { children: React.ReactNode }) {
             <div
               className={cn(
                 (flags.isMap || flags.isAiStyle) &&
-                  "flex h-full min-h-0 flex-1 flex-col overflow-hidden lg:h-full",
+                  "flex min-h-0 flex-1 flex-col overflow-hidden",
               )}
             >
               {children}
