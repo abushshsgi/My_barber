@@ -13,7 +13,7 @@ from django.conf import settings
 from config.redis_url import get_redis_url, redis_blocking_client_kwargs, redis_client_kwargs
 
 from .gemini_style import AiStyleError
-from .gemini_tryon import generate_tryon_preview
+from .gemini_tryon import generate_tryon_multiview, generate_tryon_preview
 from ..usage_log import record_ai_generation
 
 logger = logging.getLogger(__name__)
@@ -88,6 +88,7 @@ def enqueue_tryon_job(
     slug: str,
     reference_image_url: str | None,
     persona_id: str | None = None,
+    job_kind: str = "tryon",
 ) -> str:
     client = _redis_client()
     if client is None:
@@ -100,6 +101,7 @@ def enqueue_tryon_job(
             503,
         )
 
+    kind = (job_kind or "tryon").strip() or "tryon"
     job_id = uuid.uuid4().hex
     now = datetime.now(UTC).isoformat()
     meta = {
@@ -109,6 +111,7 @@ def enqueue_tryon_job(
         "style_id": style_id,
         "style_title": style_title,
         "persona_id": (persona_id or "").strip(),
+        "job_kind": kind,
         "created_at": now,
         "updated_at": now,
         "queue_position": depth + 1,
@@ -119,6 +122,7 @@ def enqueue_tryon_job(
         "slug": slug,
         "title": style_title,
         "reference_image_url": reference_image_url,
+        "job_kind": kind,
     }
 
     pipe = client.pipeline()
@@ -126,8 +130,29 @@ def enqueue_tryon_job(
     pipe.setex(_job_key(job_id), _job_ttl(), json.dumps(meta, ensure_ascii=False))
     pipe.rpush(QUEUE_KEY, job_id)
     pipe.execute()
-    logger.info("Try-on job queued: %s (depth=%s)", job_id, depth + 1)
+    logger.info("Try-on job queued: %s kind=%s (depth=%s)", job_id, kind, depth + 1)
     return job_id
+
+
+def enqueue_tryon_multiview_job(
+    *,
+    user_id: int,
+    front_image: str,
+    style_id: str,
+    style_title: str,
+    audience: str,
+    slug: str,
+) -> str:
+    return enqueue_tryon_job(
+        user_id=user_id,
+        image=front_image,
+        style_id=style_id,
+        style_title=style_title,
+        audience=audience,
+        slug=slug,
+        reference_image_url=None,
+        job_kind="multiview",
+    )
 
 
 def get_tryon_job(job_id: str, *, user_id: int) -> dict[str, Any] | None:
@@ -214,6 +239,42 @@ def process_next_tryon_job(*, block_seconds: int = 5) -> bool:
             return True
 
     try:
+        job_kind = str(payload.get("job_kind") or meta.get("job_kind") or "tryon")
+        if job_kind == "multiview":
+            multi = generate_tryon_multiview(
+                front_data_url=str(payload.get("image") or ""),
+                audience=str(payload.get("audience") or "unisex"),
+                slug=str(payload.get("slug") or ""),
+                title=str(payload.get("title") or ""),
+            )
+            views = multi.get("views") or {}
+            meta["status"] = STATUS_COMPLETED
+            meta["preview_image"] = views.get("front") or str(payload.get("image") or "")
+            meta["views"] = views
+            meta.pop("detail", None)
+            record_ai_generation(
+                user_id=int(meta.get("user_id") or 0) or None,
+                kind="tryon",
+                status="success",
+                prompt=str(multi.get("prompt") or "tryon_multiview"),
+                style_id=str(meta.get("style_id") or ""),
+                style_title=str(meta.get("style_title") or ""),
+                model=str(multi.get("model") or ""),
+                provider=str(multi.get("provider") or ""),
+                job_id=job_id,
+                prompt_tokens=int(multi.get("prompt_tokens") or 0),
+                candidates_tokens=int(multi.get("candidates_tokens") or 0),
+                thoughts_tokens=int(multi.get("thoughts_tokens") or 0),
+                total_tokens=int(multi.get("total_tokens") or 0),
+                cost_usd=multi.get("cost_usd") or 0,
+                tokens_estimated=bool(multi.get("tokens_estimated")),
+                latency_ms=int(multi.get("latency_ms") or 0),
+            )
+            meta["updated_at"] = datetime.now(UTC).isoformat()
+            _save_job(client, job_id, meta)
+            client.delete(_payload_key(job_id))
+            return True
+
         result = generate_tryon_preview(
             selfie_data_url=str(payload.get("image") or ""),
             audience=str(payload.get("audience") or "unisex"),

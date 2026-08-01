@@ -137,11 +137,11 @@ export function MasterCardUI({
           {mode === "2d"
             ? t("barberConsult.mode2dHint", {
                 defaultValue:
-                  "Bu sizning try-on rasmingiz. Haqiqiy 360° (chap/o‘ng/orqa) uchun alohida AI multi-view generatsiya kerak — hozir ko‘p uslublarda faqat old bor.",
+                  "Try-on 360°: Old, Chap, O‘ng, Orqa — AI sizning yuzingizdan yaratadi. Tayyor bo‘lguncha Old ko‘rinadi.",
               })
             : t("barberConsult.mode3dHint", {
                 defaultValue:
-                  "Bu abstrakt bosh: fade / yuqori / soqol zonalarini ko‘rsatadi. Sizning yuzingizning 360° modeli emas.",
+                  "Bu abstrakt bosh: fade / yuqori / soqol zonalarini ko‘rsatadi. 360° try-on uchun «Try-on ko‘rinish»ga o‘ting.",
               })}
         </p>
       </div>

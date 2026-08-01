@@ -7,14 +7,12 @@ import { BarberMockPreview } from "@/components/barber-consult/BarberMockPreview
 import { BookingModal } from "@/components/barber-consult/BookingModal";
 import { cameraStateFromUi, MasterCardUI } from "@/components/barber-consult/MasterCardUI";
 import { MasterCardSkeleton } from "@/components/barber-consult/MasterCardSkeleton";
-import { generateBarberMasterCard } from "@/lib/api/ai";
+import { generateAiStyleTryOnViews, generateBarberMasterCard } from "@/lib/api/ai";
+import type { ExploreViewId } from "@/lib/explore-views";
 import {
-  getPersonaStyleViewImageUrl,
-  hasPersonaStyleViewAsset,
-  type ExplorePersonaId,
-} from "@/lib/explore-personas";
-import { EXPLORE_VIEW_IDS, type ExploreViewId } from "@/lib/explore-views";
-import { loadBarberConsultDraft } from "@/lib/barber-consult-session";
+  loadBarberConsultDraft,
+  stashBarberConsultDraft,
+} from "@/lib/barber-consult-session";
 import { loadFaceProfile } from "@/lib/face-profile";
 import { MorphPlanLimitError } from "@/lib/morph-plan-limit";
 import {
@@ -24,8 +22,16 @@ import {
   type BarberMasterCard,
 } from "@/types/barber-master-card";
 
-function styleSlugFromId(styleId: string): string {
-  return styleId.replace(/^men-/, "").trim();
+function hasUserMultiView(gallery: Partial<Record<ExploreViewId, string>> | undefined): boolean {
+  if (!gallery?.front) return false;
+  return Boolean(gallery.left && gallery.right && gallery.back);
+}
+
+function toApiStyleId(styleId: string): string {
+  const raw = (styleId || "").trim();
+  if (!raw) return "";
+  if (raw.startsWith("men-") || raw.startsWith("women-")) return raw;
+  return `men-${raw}`;
 }
 
 export function MorphAiConsultPage() {
@@ -37,31 +43,17 @@ export function MorphAiConsultPage() {
   const draft = useMemo(() => loadBarberConsultDraft(), []);
   const image = draft?.image || "";
   const styleName = draft?.styleName || search.styleName || "Custom cut";
-  const personaId = (draft?.personaId || "irland") as ExplorePersonaId;
   const styleId = draft?.styleId || search.styleId || "";
+  const apiStyleId = toApiStyleId(styleId);
 
-  const gallery = useMemo(() => {
-    if (draft?.gallery && Object.keys(draft.gallery).length) {
-      return draft.gallery;
-    }
-    const slug = styleSlugFromId(styleId);
-    const front =
-      image ||
-      (slug ? getPersonaStyleViewImageUrl(personaId, slug, "front") : "");
-    const next: Partial<Record<ExploreViewId, string>> = {};
-    if (front) next.front = front;
-    if (!slug) return next;
-    for (const view of EXPLORE_VIEW_IDS) {
-      if (view === "front") continue;
-      if (!hasPersonaStyleViewAsset(personaId, slug, view)) continue;
-      next[view] = getPersonaStyleViewImageUrl(personaId, slug, view);
-    }
-    return next;
-  }, [draft?.gallery, image, personaId, styleId]);
-
+  const [gallery, setGallery] = useState<Partial<Record<ExploreViewId, string>>>(() => {
+    if (draft?.gallery && Object.keys(draft.gallery).length) return draft.gallery;
+    return image ? { front: image } : {};
+  });
   const [card, setCard] = useState<BarberMasterCard | null>(null);
   const [fallback, setFallback] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [viewsLoading, setViewsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeView, setActiveView] = useState<ExploreViewId>("front");
   const [viewerMode, setViewerMode] = useState<"2d" | "3d">("2d");
@@ -79,16 +71,15 @@ export function MorphAiConsultPage() {
     try {
       const res = await generateBarberMasterCard({ image, style_name: styleName });
       const parsed = parseBarberMasterCard(res.master_card, styleName);
-      // MediaPipe kameradan saqlangan yuz shakli Master Cardga ustuvor.
       const profile = loadFaceProfile();
-      const card = parsed.card;
+      const nextCard = parsed.card;
       if (profile?.faceShapeKey) {
-        card.style_overview = {
-          ...card.style_overview,
+        nextCard.style_overview = {
+          ...nextCard.style_overview,
           face_shape: profile.faceShapeKey,
         };
       }
-      setCard(card);
+      setCard(nextCard);
       setFallback(Boolean(res.fallback) || !parsed.success);
     } catch (err) {
       if (err instanceof MorphPlanLimitError) {
@@ -108,8 +99,55 @@ export function MorphAiConsultPage() {
     }
   };
 
+  const loadMultiView = async () => {
+    if (!image || !apiStyleId) return;
+    if (hasUserMultiView(gallery)) return;
+
+    setViewsLoading(true);
+    try {
+      const res = await generateAiStyleTryOnViews({
+        image,
+        style_id: apiStyleId,
+      });
+      const views = res.views || {};
+      const next: Partial<Record<ExploreViewId, string>> = {
+        front: views.front || res.preview_image || image,
+        left: views.left,
+        right: views.right,
+        back: views.back,
+      };
+      setGallery(next);
+      stashBarberConsultDraft({
+        image: next.front || image,
+        styleId,
+        styleName,
+        personaId: draft?.personaId,
+        salonId: draft?.salonId,
+        gallery: next,
+      });
+      toast.success(
+        t("barberConsult.multiviewReady", {
+          defaultValue: "360° ko‘rinishlar tayyor — Old / Chap / O‘ng / Orqa",
+        }),
+      );
+    } catch (err) {
+      if (err instanceof MorphPlanLimitError) {
+        toast.error(err.message);
+      } else {
+        toast.message(
+          t("barberConsult.multiviewFailed", {
+            defaultValue: "360° hozir yaratilmadi — old try-on ko‘rsatilmoqda",
+          }),
+        );
+      }
+    } finally {
+      setViewsLoading(false);
+    }
+  };
+
   useEffect(() => {
     void loadCard();
+    void loadMultiView();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- mount once per draft
   }, []);
 
@@ -146,15 +184,26 @@ export function MorphAiConsultPage() {
           <ArrowLeft className="size-4" />
           {t("common.back", { defaultValue: "Orqaga" })}
         </button>
-        <button
-          type="button"
-          onClick={() => void loadCard()}
-          disabled={loading}
-          className="inline-flex min-h-10 items-center gap-1.5 rounded-full bg-neutral-100 px-3 text-[12px] font-bold ring-1 ring-border"
-        >
-          <RefreshCw className={`size-3.5 ${loading ? "animate-spin" : ""}`} />
-          {t("barberConsult.retry", { defaultValue: "Qayta yaratish" })}
-        </button>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => void loadMultiView()}
+            disabled={viewsLoading || !apiStyleId}
+            className="inline-flex min-h-10 items-center gap-1.5 rounded-full bg-neutral-100 px-3 text-[12px] font-bold ring-1 ring-border disabled:opacity-50"
+          >
+            <RefreshCw className={`size-3.5 ${viewsLoading ? "animate-spin" : ""}`} />
+            {t("barberConsult.multiviewRetry", { defaultValue: "360° qayta" })}
+          </button>
+          <button
+            type="button"
+            onClick={() => void loadCard()}
+            disabled={loading}
+            className="inline-flex min-h-10 items-center gap-1.5 rounded-full bg-neutral-100 px-3 text-[12px] font-bold ring-1 ring-border"
+          >
+            <RefreshCw className={`size-3.5 ${loading ? "animate-spin" : ""}`} />
+            {t("barberConsult.retry", { defaultValue: "Qayta yaratish" })}
+          </button>
+        </div>
       </div>
 
       <header className="mb-5">
@@ -169,6 +218,13 @@ export function MorphAiConsultPage() {
             defaultValue: "360° preview + texnik Barber Master Card",
           })}
         </p>
+        {viewsLoading ? (
+          <p className="mt-2 text-[12px] font-semibold text-sky-700">
+            {t("barberConsult.multiviewLoading", {
+              defaultValue: "AI sizning yuzingizdan chap / o‘ng / orqa 360° yaratmoqda…",
+            })}
+          </p>
+        ) : null}
       </header>
 
       {loading ? <MasterCardSkeleton /> : null}

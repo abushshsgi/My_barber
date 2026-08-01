@@ -167,3 +167,230 @@ def generate_tryon_preview(
         tokens_estimated=usage["tokens_estimated"],
         latency_ms=latency_ms,
     )
+
+
+def _side_consistency_hint(*, slug: str, view: str) -> str:
+    if "curl" in slug or "wave" in slug:
+        if view == "back":
+            return (
+                "CRITICAL: back-of-head curl/wave pattern must stay readable — "
+                "same curl size and length as the front try-on."
+            )
+        return (
+            "CRITICAL: keep the same curl/wave texture and length on the visible side "
+            "as in the front try-on."
+        )
+    if "fade" not in slug and slug != "undercut":
+        return ""
+    if view == "back":
+        return (
+            "CRITICAL: nape and side fade must continue cleanly around the back — "
+            "same fade depth as the front try-on."
+        )
+    return (
+        "CRITICAL fade symmetry: temple taper/fade on the visible side must match "
+        "the front try-on — same clipper depth and line-up."
+    )
+
+
+def _build_tryon_rotation_prompt(*, title: str, style_detail: str, slug: str, view: str) -> str:
+    from ai.explore_views import view_pose_line
+
+    pose = view_pose_line(view)
+    side = _side_consistency_hint(slug=slug, view=view)
+    side_block = f"\n{side}\n" if side else ""
+    return f"""You are a professional barber/salon AI for mysaloon.uz.
+
+The attached photo(s) show the SAME client with their FINAL try-on hairstyle: "{title}" — {style_detail}.
+Re-render THIS EXACT person with THIS EXACT hairstyle, changing ONLY the camera/head angle.
+
+Pose / camera angle (CRITICAL — must match exactly):
+{pose}
+{side_block}
+KEEP 100% IDENTICAL:
+- Same face, identity, skin tone, age, and facial features
+- Same haircut on all sides: length, fade/taper, parting, texture, hair color
+- Same clothing and background as much as possible
+- ONLY the head rotation / camera angle changes
+- Photorealistic salon result, no text, watermarks, or extra people
+- 3:4 vertical portrait
+
+Output a single photo of the SAME person and SAME hairstyle from the new angle only."""
+
+
+def generate_tryon_rotated_view(
+    *,
+    front_data_url: str,
+    view: str,
+    audience: str,
+    slug: str,
+    title: str,
+    side_anchor_data_urls: list[str] | None = None,
+) -> TryOnResult:
+    """Front try-on natijasidan left/right/back burchakni yaratish."""
+    from ai.explore_views import normalize_explore_view
+
+    if not vertex_image_configured():
+        raise AiStyleError(
+            "AI rasm xizmati hozircha ulanmagan. "
+            "VERTEX_PROJECT_ID + VERTEX_SERVICE_ACCOUNT_JSON qo'ying "
+            "(yoki zaxira sifatida GEMINI_API_KEY).",
+            503,
+        )
+
+    normalized = normalize_explore_view(view)
+    if normalized == "front":
+        mime, raw = parse_data_url(front_data_url)
+        return TryOnResult(
+            preview_image=to_data_url(mime, raw),
+            prompt="front_passthrough",
+            model=_resolve_model_provider()[0],
+            provider=_resolve_model_provider()[1],
+            prompt_tokens=0,
+            candidates_tokens=0,
+            thoughts_tokens=0,
+            total_tokens=0,
+            cost_usd=Decimal("0"),
+            tokens_estimated=True,
+            latency_ms=0,
+        )
+
+    style_detail = style_detail_for(audience, slug)
+    prompt = _build_tryon_rotation_prompt(
+        title=title,
+        style_detail=style_detail,
+        slug=slug,
+        view=normalized,
+    )
+
+    parts: list[dict[str, Any]] = [{"text": prompt}]
+    input_images = 0
+    for idx, source in enumerate([front_data_url, *(side_anchor_data_urls or [])]):
+        if not source:
+            continue
+        mime, payload = parse_data_url(source)
+        label = "Front try-on (primary identity + hairstyle anchor)" if idx == 0 else f"Side anchor {idx}"
+        parts.append({"text": label})
+        parts.append(
+            {
+                "inline_data": {
+                    "mime_type": mime,
+                    "data": base64.b64encode(payload).decode("ascii"),
+                }
+            }
+        )
+        input_images += 1
+
+    body = {
+        "contents": [{"role": "user", "parts": parts}],
+        "generationConfig": {
+            "responseModalities": ["IMAGE"],
+            "imageConfig": {"aspectRatio": "3:4"},
+        },
+    }
+
+    model, provider = _resolve_model_provider()
+    started = time.perf_counter()
+    payload = generate_image_content(body)
+    latency_ms = int((time.perf_counter() - started) * 1000)
+    out_mime, out_bytes = extract_image_bytes(payload)
+    usage = finalize_usage(payload, kind="tryon", input_images=max(1, input_images))
+
+    return TryOnResult(
+        preview_image=to_data_url(out_mime, out_bytes),
+        prompt=prompt,
+        model=model,
+        provider=provider,
+        prompt_tokens=usage["prompt_tokens"],
+        candidates_tokens=usage["candidates_tokens"],
+        thoughts_tokens=usage["thoughts_tokens"],
+        total_tokens=usage["total_tokens"],
+        cost_usd=usage["cost_usd"],
+        tokens_estimated=usage["tokens_estimated"],
+        latency_ms=latency_ms,
+    )
+
+
+def generate_tryon_multiview(
+    *,
+    front_data_url: str,
+    audience: str,
+    slug: str,
+    title: str,
+) -> dict[str, Any]:
+    """Front + left + right + back. Returns views dict + aggregated usage fields."""
+    views: dict[str, str] = {"front": front_data_url}
+    total_prompt = 0
+    total_candidates = 0
+    total_thoughts = 0
+    total_tokens = 0
+    total_cost = Decimal("0")
+    total_latency = 0
+    model = ""
+    provider = ""
+    prompts: list[str] = []
+
+    left = generate_tryon_rotated_view(
+        front_data_url=front_data_url,
+        view="left",
+        audience=audience,
+        slug=slug,
+        title=title,
+    )
+    views["left"] = left.preview_image
+    total_prompt += left.prompt_tokens
+    total_candidates += left.candidates_tokens
+    total_thoughts += left.thoughts_tokens
+    total_tokens += left.total_tokens
+    total_cost += left.cost_usd
+    total_latency += left.latency_ms
+    model, provider = left.model, left.provider
+    prompts.append(left.prompt)
+
+    right = generate_tryon_rotated_view(
+        front_data_url=front_data_url,
+        view="right",
+        audience=audience,
+        slug=slug,
+        title=title,
+        side_anchor_data_urls=[left.preview_image],
+    )
+    views["right"] = right.preview_image
+    total_prompt += right.prompt_tokens
+    total_candidates += right.candidates_tokens
+    total_thoughts += right.thoughts_tokens
+    total_tokens += right.total_tokens
+    total_cost += right.cost_usd
+    total_latency += right.latency_ms
+    prompts.append(right.prompt)
+
+    back = generate_tryon_rotated_view(
+        front_data_url=front_data_url,
+        view="back",
+        audience=audience,
+        slug=slug,
+        title=title,
+        side_anchor_data_urls=[left.preview_image, right.preview_image],
+    )
+    views["back"] = back.preview_image
+    total_prompt += back.prompt_tokens
+    total_candidates += back.candidates_tokens
+    total_thoughts += back.thoughts_tokens
+    total_tokens += back.total_tokens
+    total_cost += back.cost_usd
+    total_latency += back.latency_ms
+    prompts.append(back.prompt)
+
+    return {
+        "views": views,
+        "prompt": "\n---\n".join(prompts)[:4000],
+        "model": model,
+        "provider": provider,
+        "prompt_tokens": total_prompt,
+        "candidates_tokens": total_candidates,
+        "thoughts_tokens": total_thoughts,
+        "total_tokens": total_tokens,
+        "cost_usd": total_cost,
+        "tokens_estimated": False,
+        "latency_ms": total_latency,
+    }

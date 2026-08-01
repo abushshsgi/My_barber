@@ -1744,8 +1744,12 @@
       "badge": "Barber dashboard preview",
       "camera": "Camera"
     },
-    "mode2dHint": "This is your try-on photo. A real 360° (left/right/back) needs separate AI multi-view generation — many styles only have a front image for now.",
-    "mode3dHint": "This is an abstract head that highlights fade / top / beard zones. It is not a 360° model of your face.",
-    "zoneViewerHint": "Cut zones — not your 360° try-on"
+    "mode2dHint": "Try-on 360°: Front, Left, Right, Back — AI builds these from your face. Front shows until ready.",
+    "mode3dHint": "Abstract head for fade / top / beard zones. For 360° try-on, use Try-on view.",
+    "zoneViewerHint": "Cut zones — not your 360° try-on",
+    "multiviewLoading": "AI is creating left / right / back 360° from your face…",
+    "multiviewReady": "360° views ready — Front / Left / Right / Back",
+    "multiviewFailed": "360° could not be created now — showing front try-on",
+    "multiviewRetry": "360° again"
   }
 }

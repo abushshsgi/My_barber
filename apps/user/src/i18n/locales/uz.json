@@ -1744,8 +1744,12 @@
       "badge": "Barber dashboard preview",
       "camera": "Kamera"
     },
-    "mode2dHint": "Bu sizning try-on rasmingiz. Haqiqiy 360° (chap/o‘ng/orqa) uchun alohida AI multi-view generatsiya kerak — hozir ko‘p uslublarda faqat old bor.",
-    "mode3dHint": "Bu abstrakt bosh: fade / yuqori / soqol zonalarini ko‘rsatadi. Sizning yuzingizning 360° modeli emas.",
-    "zoneViewerHint": "Kesish zonasi — bu sizning 360° try-oningiz emas"
+    "mode2dHint": "Try-on 360°: Old, Chap, O‘ng, Orqa — AI sizning yuzingizdan yaratadi. Tayyor bo‘lguncha Old ko‘rinadi.",
+    "mode3dHint": "Bu abstrakt bosh: fade / yuqori / soqol zonalarini ko‘rsatadi. 360° try-on uchun «Try-on ko‘rinish»ga o‘ting.",
+    "zoneViewerHint": "Kesish zonasi — bu sizning 360° try-oningiz emas",
+    "multiviewLoading": "AI sizning yuzingizdan chap / o‘ng / orqa 360° yaratmoqda…",
+    "multiviewReady": "360° ko‘rinishlar tayyor — Old / Chap / O‘ng / Orqa",
+    "multiviewFailed": "360° hozir yaratilmadi — old try-on ko‘rsatilmoqda",
+    "multiviewRetry": "360° qayta"
   }
 }

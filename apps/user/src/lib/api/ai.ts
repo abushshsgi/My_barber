@@ -79,10 +79,13 @@ export async function analyzeAiStyle(
   });
 }
 
+export type TryOnViewId = "front" | "left" | "right" | "back";
+
 export type AiStyleTryOnResponse = {
   preview_image: string;
   style_id: string;
   style_title: string;
+  views?: Partial<Record<TryOnViewId, string>>;
 };
 
 type AiStyleTryOnJobResponse = {
@@ -91,19 +94,25 @@ type AiStyleTryOnJobResponse = {
   style_id: string;
   style_title: string;
   preview_image?: string;
+  views?: Partial<Record<TryOnViewId, string>>;
   detail?: string;
   queue_position?: number;
 };
 
 const TRYON_POLL_MS = 2000;
 const TRYON_POLL_TIMEOUT_MS = 120_000;
+const MULTIVIEW_POLL_TIMEOUT_MS = 240_000;
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function pollAiStyleTryOnJob(jobId: string): Promise<AiStyleTryOnResponse> {
-  const deadline = Date.now() + TRYON_POLL_TIMEOUT_MS;
+async function pollAiStyleTryOnJob(
+  jobId: string,
+  *,
+  timeoutMs = TRYON_POLL_TIMEOUT_MS,
+): Promise<AiStyleTryOnResponse> {
+  const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
     await sleep(TRYON_POLL_MS);
     const job = await apiJson<AiStyleTryOnJobResponse>(`/api/v1/ai/style-tryon/${jobId}/`);
@@ -112,6 +121,7 @@ async function pollAiStyleTryOnJob(jobId: string): Promise<AiStyleTryOnResponse>
         preview_image: job.preview_image,
         style_id: job.style_id,
         style_title: job.style_title,
+        views: job.views,
       };
     }
     if (job.status === "failed") {
@@ -160,6 +170,57 @@ export async function generateAiStyleTryOn(
   }
 
   throw new Error("Rasm yaratishda xatolik");
+}
+
+/** Front try-on → left/right/back (foydalanuvchi yuzi 360°). */
+export async function generateAiStyleTryOnViews(payload: {
+  image: string;
+  style_id: string;
+}): Promise<AiStyleTryOnResponse> {
+  const res = await apiFetch("/api/v1/ai/style-tryon-views/", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+  const body = (await res.json().catch(() => null)) as
+    | AiStyleTryOnResponse
+    | AiStyleTryOnJobResponse
+    | { detail?: string; code?: string }
+    | null;
+
+  if (!res.ok) {
+    throwFromMorphApiError(res, body, "360° ko‘rinishlar yaratilmadi");
+  }
+
+  if (
+    res.status === 202 &&
+    body &&
+    typeof body === "object" &&
+    "job_id" in body &&
+    typeof body.job_id === "string"
+  ) {
+    return pollAiStyleTryOnJob(body.job_id, { timeoutMs: MULTIVIEW_POLL_TIMEOUT_MS });
+  }
+
+  if (
+    body &&
+    typeof body === "object" &&
+    "views" in body &&
+    body.views &&
+    typeof body.views === "object"
+  ) {
+    const views = body.views as Partial<Record<TryOnViewId, string>>;
+    return {
+      preview_image:
+        (body as AiStyleTryOnResponse).preview_image ||
+        views.front ||
+        payload.image,
+      style_id: (body as AiStyleTryOnResponse).style_id || payload.style_id,
+      style_title: (body as AiStyleTryOnResponse).style_title || "",
+      views,
+    };
+  }
+
+  throw new Error("360° ko‘rinishlar yaratilmadi");
 }
 
 export type MorphStudioOption = {

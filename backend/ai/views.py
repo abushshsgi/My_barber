@@ -35,8 +35,13 @@ from .style_recommend import (
     normalize_request_audience,
     resolve_ai_style_audience,
 )
-from .services.gemini_tryon import generate_tryon_preview
-from .services.tryon_queue import enqueue_tryon_job, get_tryon_job, is_queue_enabled
+from .services.gemini_tryon import generate_tryon_multiview, generate_tryon_preview
+from .services.tryon_queue import (
+    enqueue_tryon_job,
+    enqueue_tryon_multiview_job,
+    get_tryon_job,
+    is_queue_enabled,
+)
 from .services.gemini_barber_card import generate_barber_master_card
 from .services.gemini_style import (
     NO_FACE_MESSAGE,
@@ -359,6 +364,92 @@ class AiStyleTryOnJobView(UnthrottledAPIView):
         if job is None:
             return Response({"detail": "Topilmadi yoki muddati tugagan."}, status=404)
         return Response(job)
+
+
+class AiStyleTryOnViewsView(UnthrottledAPIView):
+    """POST { image, style_id } — front try-on dan left/right/back 360° viewlar."""
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user = _require_customer_user(request)
+        if isinstance(user, Response):
+            return user
+        blocked = check_user_can_generate(user_id=user.pk, kind="tryon")
+        if blocked:
+            return morph_generation_blocked_response(blocked)
+
+        image = request.data.get("image")
+        style_id = (request.data.get("style_id") or "").strip()
+        if not image:
+            return Response({"detail": "Front try-on rasmini yuboring."}, status=400)
+        if not style_id:
+            return Response({"detail": "Uslub tanlang."}, status=400)
+
+        style = get_object_or_404(Hairstyle, style_id=style_id, is_published=True)
+
+        try:
+            if is_queue_enabled():
+                job_id = enqueue_tryon_multiview_job(
+                    user_id=user.pk,
+                    front_image=str(image),
+                    style_id=style.style_id,
+                    style_title=style.title_uz,
+                    audience=style.audience,
+                    slug=style.slug,
+                )
+                return Response(
+                    {
+                        "job_id": job_id,
+                        "status": "queued",
+                        "style_id": style.style_id,
+                        "style_title": style.title_uz,
+                    },
+                    status=status.HTTP_202_ACCEPTED,
+                )
+
+            multi = generate_tryon_multiview(
+                front_data_url=str(image),
+                audience=style.audience,
+                slug=style.slug,
+                title=style.title_uz,
+            )
+            record_ai_generation(
+                user_id=user.pk,
+                kind="tryon",
+                status="success",
+                prompt=str(multi.get("prompt") or "tryon_multiview"),
+                style_id=style.style_id,
+                style_title=style.title_uz,
+                model=str(multi.get("model") or ""),
+                provider=str(multi.get("provider") or ""),
+                prompt_tokens=int(multi.get("prompt_tokens") or 0),
+                candidates_tokens=int(multi.get("candidates_tokens") or 0),
+                thoughts_tokens=int(multi.get("thoughts_tokens") or 0),
+                total_tokens=int(multi.get("total_tokens") or 0),
+                cost_usd=multi.get("cost_usd") or 0,
+                tokens_estimated=bool(multi.get("tokens_estimated")),
+                latency_ms=int(multi.get("latency_ms") or 0),
+            )
+            views = multi.get("views") or {}
+            return Response(
+                {
+                    "preview_image": views.get("front") or str(image),
+                    "views": views,
+                    "style_id": style.style_id,
+                    "style_title": style.title_uz,
+                }
+            )
+        except AiStyleError as exc:
+            record_ai_generation(
+                user_id=user.pk,
+                kind="tryon",
+                status="failed",
+                style_id=style.style_id,
+                style_title=style.title_uz,
+                error_detail=exc.message,
+            )
+            return Response({"detail": exc.message}, status=exc.status)
 
 
 class AiFaceCheckView(UnthrottledAPIView):
