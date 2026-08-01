@@ -1121,7 +1121,7 @@
         "studio": "AI Studio",
         "studioDesc": "Color, beard, and finish edits",
         "care": "Care",
-        "careDesc": "Hair health and care directions",
+        "careDesc": "Wash routine, product types, and styling tips",
         "gallery": "Gallery",
         "galleryDesc": "Upload a selfie to start a try-on"
       }
@@ -1271,26 +1271,31 @@
     },
     "care": {
       "badge": "Care",
-      "title": "Your personal hair care plan",
+      "title": "Keep your look at home",
+      "subtitle": "Not a how-to cut — a personal guide for washing, product types, and styling.",
       "condition": "Condition",
       "texture": "Texture",
-      "density": "Density",
-      "scalp": "Scalp",
       "colorStatus": "Color",
       "weeklyTitle": "Weekly plan",
-      "productsTitle": "Products",
-      "productsHint": "Opens Uzum search — pick the product yourself",
+      "productsTitle": "Product types",
+      "productsHint": "Not brands — use products in these categories",
+      "stylingTitle": "How to style",
+      "stylingHint": "To rebuild the look at home",
       "avoidTitle": "What to avoid",
-      "salonTitle": "Salon tips",
+      "trimLabel": "Trim",
       "nextCut": "Next cut: in about {{days}} days",
+      "trimHint": "Shape stays with a stylist. Try the look in Morph first.",
       "exploreCta": "Pick a style",
-      "bookNearby": "See nearby salons",
+      "proOnly": "This feature is available on Pro.",
+      "seePlans": "See plans",
       "quiz": {
-        "progress": "{{step}} / 4",
+        "progress": "{{step}} / 3",
         "conditionQ": "How does your hair feel?",
+        "conditionHint": "This sets your wash and product types",
         "textureQ": "What’s your texture?",
+        "textureHint": "Styling tips adapt to this",
         "colorQ": "Color / dye status?",
-        "budgetQ": "Product budget?",
+        "colorHint": "Extra care if dyed or bleached",
         "seePlan": "See my plan",
         "retake": "Retake quiz"
       },
@@ -1305,26 +1310,10 @@
         "wavy": "Wavy",
         "curly": "Curly"
       },
-      "densities": {
-        "fine": "Fine",
-        "medium": "Medium",
-        "thick": "Thick"
-      },
-      "scalps": {
-        "oily": "Oily",
-        "dry": "Dry",
-        "sensitive": "Sensitive"
-      },
       "colors": {
         "natural": "Natural",
         "colored": "Colored",
         "bleached": "Bleached"
-      },
-      "budgets": {
-        "all": "All",
-        "budget": "Budget",
-        "mid": "Mid",
-        "premium": "Premium"
       }
     },
     "nearbyBook": {

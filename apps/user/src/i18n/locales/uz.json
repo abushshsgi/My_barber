@@ -1121,7 +1121,7 @@
         "studio": "AI Studio",
         "studioDesc": "Rang, soqol va finish — tahrir",
         "care": "Parvarish",
-        "careDesc": "Soch holati va parvarish yo'nalishi",
+        "careDesc": "Yuvish, mahsulot turi va styling yo'riqnomasi",
         "gallery": "Galereya",
         "galleryDesc": "Selfie yuklab yangi try-on boshlang"
       }
@@ -1271,26 +1271,31 @@
     },
     "care": {
       "badge": "Parvarish",
-      "title": "Sochingiz uchun shaxsiy reja",
+      "title": "Uslubingizni uyda saqlang",
+      "subtitle": "Soch olishni o‘rgatmaydi — yuvish, mahsulot turi va styling bo‘yicha shaxsiy yo‘riqnoma.",
       "condition": "Holat",
       "texture": "Tekstura",
-      "density": "Qalinlik",
-      "scalp": "Bosh terisi",
       "colorStatus": "Rang",
       "weeklyTitle": "Haftalik reja",
-      "productsTitle": "Mahsulotlar",
-      "productsHint": "Uzum’da qidiruv ochiladi — mahsulotni o‘zingiz tanlaysiz",
+      "productsTitle": "Mahsulot turlari",
+      "productsHint": "Brand emas — shu turdagi mahsulotlardan foydalaning",
+      "stylingTitle": "Styling — qanday",
+      "stylingHint": "Uslubni uyda qayta yig‘ish uchun",
       "avoidTitle": "Nima qilmaslik",
-      "salonTitle": "Salon maslahati",
+      "trimLabel": "Trim",
       "nextCut": "Keyingi soch olish: ~{{days}} kun ichida",
+      "trimHint": "Shakl saqlanishi uchun — stilist salonida. Uslubni avval Morph da sinab ko‘ring.",
       "exploreCta": "Uslub tanlash",
-      "bookNearby": "Yaqin salonlarni ko‘rish",
+      "proOnly": "Bu funksiya Pro obunasida mavjud.",
+      "seePlans": "Obunalarni ko‘rish",
       "quiz": {
-        "progress": "{{step}} / 4",
+        "progress": "{{step}} / 3",
         "conditionQ": "Sochingiz qanday holatda?",
+        "conditionHint": "Shu javob yuvish va mahsulot turini belgilaydi",
         "textureQ": "Tekstura qanday?",
+        "textureHint": "Styling usuli shunga moslanadi",
         "colorQ": "Rang / bo‘yoq holati?",
-        "budgetQ": "Mahsulot byudjeti?",
+        "colorHint": "Bo‘yalgan soch uchun alohida ehtiyot",
         "seePlan": "Rejani ko‘rish",
         "retake": "Qayta so‘rov"
       },
@@ -1305,26 +1310,10 @@
         "wavy": "To‘lqinsimon",
         "curly": "Jingalak"
       },
-      "densities": {
-        "fine": "Yupqa",
-        "medium": "O‘rtacha",
-        "thick": "Qalin"
-      },
-      "scalps": {
-        "oily": "Yog‘li",
-        "dry": "Quruq",
-        "sensitive": "Sezgir"
-      },
       "colors": {
         "natural": "Tabiiy",
         "colored": "Bo‘yalgan",
         "bleached": "Ochilgan / bleached"
-      },
-      "budgets": {
-        "all": "Hammasi",
-        "budget": "Arzon",
-        "mid": "O‘rta",
-        "premium": "Premium"
       }
     },
     "nearbyBook": {
