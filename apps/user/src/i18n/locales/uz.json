@@ -1276,6 +1276,7 @@
       "condition": "Holat",
       "texture": "Tekstura",
       "colorStatus": "Rang",
+      "rememberedBadge": "AI eslab qoldi",
       "weeklyTitle": "Haftalik reja",
       "productsTitle": "Mahsulot turlari",
       "productsHint": "Brand emas — shu turdagi mahsulotlardan foydalaning",

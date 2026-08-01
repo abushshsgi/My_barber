@@ -262,7 +262,7 @@ export function buildCarePlan(
       ? " Ochilgan sochni esladik: tonal shampun va UV himoya qo‘shing."
       : colorStatus === "colored"
         ? " Bo‘yalgan sochni esladik: color-safe mahsulotlar tanlang."
-        : " Tabiiy rangni esladik — yumshoq parvarish yetarli.";}
+        : " Tabiiy rangni esladik — yumshoq parvarish yetarli.";
 
   const weekly =
     condition === "oily"

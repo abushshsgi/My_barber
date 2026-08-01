@@ -6,7 +6,6 @@ import {
   ChevronLeft,
   Clock3,
   Droplets,
-  Flame,
   Images,
   Sparkles,
   UserRound,
@@ -14,16 +13,11 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { MorphBeforeAfter } from "@/components/ai-style/MorphBeforeAfter";
 import { MorphSoftPaywall } from "@/components/ai-style/MorphSoftPaywall";
 import { useSubscriptionMe } from "@/hooks/use-subscription";
 import { useExplorePersona } from "@/hooks/use-explore-persona";
 import { useHairstyles } from "@/hooks/use-hairstyles";
 import { getHairstyleDisplayUrl } from "@/lib/hairstyles/catalog";
-import {
-  pickTrendingStyles,
-  readTrendingFaceHints,
-} from "@/lib/hairstyles/trending";
 import {
   loadMorphAiGenerations,
   MORPH_AI_GALLERY_UPDATED_EVENT,
@@ -164,18 +158,6 @@ export function MorphAiHome({
     };
   }, []);
 
-  const faceHints = useMemo(() => readTrendingFaceHints(), []);
-
-  const trending = useMemo(
-    () =>
-      pickTrendingStyles(styles, {
-        ...faceHints,
-        preferredPersonaId: personaId,
-        limit: 8,
-      }),
-    [styles, faceHints, personaId],
-  );
-
   const sampleCards = useMemo<SampleCard[]>(
     () =>
       styles.slice(0, 12).map((entry) => ({
@@ -191,7 +173,7 @@ export function MorphAiHome({
 
   const myLooks = useMemo(() => {
     const seen = new Set<string>();
-    const out: { id: string; title: string; image: string; styleId: string; beforeImage?: string }[] = [];
+    const out: { id: string; title: string; image: string; styleId: string }[] = [];
     for (const g of generations) {
       if (!g.previewImage) continue;
       const fingerprint = `${g.styleId}::${g.previewImage.slice(0, 96)}`;
@@ -203,17 +185,11 @@ export function MorphAiHome({
         title: prettyLookTitle(g.title),
         image: g.previewImage,
         styleId: g.styleId,
-        beforeImage: g.beforeImage,
       });
       if (out.length >= 8) break;
     }
     return out;
   }, [generations]);
-
-  const latestCompare = useMemo(() => {
-    const withBefore = myLooks.find((l) => l.beforeImage && l.image);
-    return withBefore ?? null;
-  }, [myLooks]);
 
   const openHistory = () => {
     void navigate({ to: "/ai-style/history" });
@@ -413,42 +389,6 @@ export function MorphAiHome({
           </motion.div>
         ) : null}
 
-        {/* Latest before/after teaser */}
-        {latestCompare?.beforeImage ? (
-          <motion.section
-            initial={reduceMotion ? false : { opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.16, duration: 0.35, ease: "easeOut" }}
-            className="mt-8"
-          >
-            <div className="mb-3 flex items-center justify-between">
-              <p className="text-[13px] font-semibold text-white/80">
-                {t("aiStylePage.home.lastLook", { defaultValue: "Oxirgi natija" })}
-              </p>
-              <button
-                type="button"
-                onClick={() => openRestyle(latestCompare.styleId)}
-                className="cursor-pointer text-[12px] font-medium text-white/40 transition-colors duration-200 hover:text-white/70"
-              >
-                {t("aiStylePage.home.restyle", { defaultValue: "Yana sinab ko‘r" })}
-              </button>
-            </div>
-            <button
-              type="button"
-              onClick={openHistory}
-              className="w-full cursor-pointer text-left"
-            >
-              <MorphBeforeAfter
-                beforeSrc={latestCompare.beforeImage}
-                afterSrc={latestCompare.image}
-                title={latestCompare.title}
-                className="overflow-hidden rounded-[22px]"
-              />
-            </button>
-          </motion.section>
-        ) : null}
-
-        {/* Recent looks — tap to restyle */}
         {myLooks.length > 0 ? (
           <motion.section
             initial={reduceMotion ? false : { opacity: 0, y: 10 }}
@@ -487,54 +427,6 @@ export function MorphAiHome({
           </motion.section>
         ) : null}
 
-        {/* Trending strip */}
-        {trending.length > 0 ? (
-          <motion.section
-            initial={reduceMotion ? false : { opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2, duration: 0.35, ease: "easeOut" }}
-            className="mt-9"
-          >
-            <div className="mb-3 flex items-center justify-between px-0.5">
-              <p className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-white/80">
-                <Flame className="size-3.5 text-[#CA8A04]" />
-                {t("aiStylePage.home.trendingTitle", { defaultValue: "Bugun mashhur" })}
-              </p>
-              <Link
-                to="/explore"
-                className="inline-flex cursor-pointer items-center gap-0.5 text-[12px] font-medium text-white/40 transition-colors duration-200 hover:text-white/70"
-              >
-                {t("nav.explore")}
-                <ArrowUpRight className="size-3.5" />
-              </Link>
-            </div>
-            <div className="no-scrollbar -mx-5 flex gap-2.5 overflow-x-auto px-5">
-              {trending.map((entry, i) => (
-                <Link
-                  key={entry.id}
-                  to="/explore/$styleId/try"
-                  params={{ styleId: entry.id }}
-                  className="relative h-[7.5rem] w-[5.75rem] shrink-0 cursor-pointer overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] active:opacity-90"
-                >
-                  <img
-                    src={entry.imageUrl}
-                    alt=""
-                    className="h-full w-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
-                  <span className="absolute left-1.5 top-1.5 rounded-full bg-black/55 px-1.5 py-0.5 text-[9px] font-bold text-[#CA8A04]">
-                    #{i + 1}
-                  </span>
-                  <p className="absolute inset-x-0 bottom-0 truncate px-1.5 pb-1.5 text-[10px] font-semibold text-white">
-                    {entry.title}
-                  </p>
-                </Link>
-              ))}
-            </div>
-          </motion.section>
-        ) : null}
-
-        {/* Dual marquee lookbook */}
         <motion.section
           initial={reduceMotion ? false : { opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}

@@ -1276,6 +1276,7 @@
       "condition": "Condition",
       "texture": "Texture",
       "colorStatus": "Color",
+      "rememberedBadge": "AI remembered",
       "weeklyTitle": "Weekly plan",
       "productsTitle": "Product types",
       "productsHint": "Not brands — use products in these categories",

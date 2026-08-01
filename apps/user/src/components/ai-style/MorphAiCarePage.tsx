@@ -13,6 +13,7 @@ import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import {
   buildCarePlan,
+  careOptionImage,
   defaultQuizFromProfile,
   loadCareQuiz,
   saveCareQuiz,
@@ -188,23 +189,45 @@ export function MorphAiCarePage() {
             <p className="mt-2 max-w-sm text-sm text-white/50">{current.hint}</p>
           </motion.div>
 
-          <div className="mt-7 space-y-2.5">
-            {current.options.map((opt, i) => (
-              <motion.button
-                key={opt}
-                type="button"
-                {...fadeUp(i + 1, reduceMotion)}
-                onClick={() => current.onPick(opt)}
-                className={cn(
-                  "flex w-full cursor-pointer items-center justify-between rounded-2xl border px-4 py-4 text-left text-sm font-bold transition-colors duration-200 touch-manipulation",
-                  current.value === opt
-                    ? "border-white bg-white text-black"
-                    : "border-white/12 bg-white/[0.03] text-white active:bg-white/[0.07]",
-                )}
-              >
-                {t(`${current.labelKey}.${opt}`, { defaultValue: opt })}
-              </motion.button>
-            ))}
+          <div className="mt-7 grid grid-cols-2 gap-2.5">
+            {current.options.map((opt, i) => {
+              const selected = current.value === opt;
+              const image = careOptionImage(opt as HairCondition | HairTexture | ColorStatus);
+              return (
+                <motion.button
+                  key={opt}
+                  type="button"
+                  {...fadeUp(i + 1, reduceMotion)}
+                  onClick={() => current.onPick(opt)}
+                  className={cn(
+                    "group relative cursor-pointer overflow-hidden rounded-[22px] border text-left transition-colors duration-200 touch-manipulation",
+                    selected
+                      ? "border-white ring-2 ring-white"
+                      : "border-white/12 active:border-white/30",
+                  )}
+                >
+                  <div className="relative aspect-[4/5] w-full bg-white/[0.04]">
+                    <img
+                      src={image}
+                      alt=""
+                      className="h-full w-full object-cover object-top"
+                      draggable={false}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent" />
+                    <div className="absolute inset-x-0 bottom-0 px-3 pb-3">
+                      <p className="text-[13px] font-bold leading-tight text-white">
+                        {t(`${current.labelKey}.${opt}`, { defaultValue: opt })}
+                      </p>
+                    </div>
+                    {selected ? (
+                      <span className="absolute right-2 top-2 rounded-full bg-white px-2 py-0.5 text-[10px] font-bold text-black">
+                        ✓
+                      </span>
+                    ) : null}
+                  </div>
+                </motion.button>
+              );
+            })}
           </div>
 
           <div className="mt-8 flex gap-2.5">
@@ -235,18 +258,25 @@ export function MorphAiCarePage() {
     );
   }
 
-  const traits = [
+  const traits: {
+    label: string;
+    value: string;
+    imageKey: HairCondition | HairTexture | ColorStatus;
+  }[] = [
     {
       label: t("aiStylePage.care.condition", { defaultValue: "Holat" }),
       value: t(`aiStylePage.care.conditions.${plan.condition}`, { defaultValue: plan.condition }),
+      imageKey: plan.condition,
     },
     {
       label: t("aiStylePage.care.texture", { defaultValue: "Tekstura" }),
       value: t(`aiStylePage.care.textures.${plan.texture}`, { defaultValue: plan.texture }),
+      imageKey: plan.texture,
     },
     {
       label: t("aiStylePage.care.colorStatus", { defaultValue: "Rang" }),
       value: t(`aiStylePage.care.colors.${plan.colorStatus}`, { defaultValue: plan.colorStatus }),
+      imageKey: plan.colorStatus,
     },
   ];
 
@@ -289,18 +319,36 @@ export function MorphAiCarePage() {
                 "Soch olishni o‘rgatmaydi — yuvish, mahsulot turi va styling bo‘yicha shaxsiy yo‘riqnoma.",
             })}
           </p>
-          <p className="mt-4 max-w-[22rem] text-sm leading-relaxed text-white/80">{plan.summary}</p>
+          <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.04] px-3.5 py-3">
+            <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#CA8A04]">
+              {t("aiStylePage.care.rememberedBadge", {
+                defaultValue: "AI eslab qoldi",
+              })}
+            </p>
+            <p className="mt-1.5 text-sm leading-relaxed text-white/85">{plan.summary}</p>
+          </div>
         </motion.header>
 
-        <motion.div {...fadeUp(1, reduceMotion)} className="mt-5 flex flex-wrap gap-2">
+        <motion.div {...fadeUp(1, reduceMotion)} className="mt-5 grid grid-cols-3 gap-2">
           {traits.map((item) => (
-            <span
+            <div
               key={item.label}
-              className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[12px]"
+              className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03]"
             >
-              <span className="text-white/40">{item.label}</span>
-              <span className="font-semibold text-white/90">{item.value}</span>
-            </span>
+              <img
+                src={careOptionImage(item.imageKey)}
+                alt=""
+                className="aspect-square w-full object-cover object-top"
+              />
+              <div className="px-2 py-2">
+                <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-white/40">
+                  {item.label}
+                </p>
+                <p className="mt-0.5 truncate text-[11px] font-semibold text-white/90">
+                  {item.value}
+                </p>
+              </div>
+            </div>
           ))}
         </motion.div>
 

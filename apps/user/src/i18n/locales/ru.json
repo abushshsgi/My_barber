@@ -1270,6 +1270,7 @@
       "condition": "Состояние",
       "texture": "Текстура",
       "colorStatus": "Цвет",
+      "rememberedBadge": "AI запомнил",
       "weeklyTitle": "План на неделю",
       "productsTitle": "Типы средств",
       "productsHint": "Не бренды — используйте средства этих типов",
