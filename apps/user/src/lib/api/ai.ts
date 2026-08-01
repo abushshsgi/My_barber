@@ -109,9 +109,9 @@ function sleep(ms: number): Promise<void> {
 
 async function pollAiStyleTryOnJob(
   jobId: string,
-  *,
-  timeoutMs = TRYON_POLL_TIMEOUT_MS,
+  options?: { timeoutMs?: number },
 ): Promise<AiStyleTryOnResponse> {
+  const timeoutMs = options?.timeoutMs ?? TRYON_POLL_TIMEOUT_MS;
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
     await sleep(TRYON_POLL_MS);
