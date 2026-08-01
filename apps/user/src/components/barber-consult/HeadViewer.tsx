@@ -2,6 +2,7 @@ import { Canvas, useThree } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import { Component, Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import * as THREE from "three";
+import { useTranslation } from "react-i18next";
 import { ViewPresets } from "@/components/barber-consult/ViewPresets";
 import { ZoneChips } from "@/components/barber-consult/ZoneChips";
 import type { ExploreViewId } from "@/lib/explore-views";
@@ -14,8 +15,6 @@ type Props = {
   zones: MasterCardZones;
   activeZone: MasterCardZoneKey | null;
   onZoneChange: (zone: MasterCardZoneKey | null) => void;
-  /** Try-on / front preview — bosh meshga texture sifatida. */
-  previewImage?: string;
   onWebglError?: () => void;
   className?: string;
 };
@@ -93,60 +92,17 @@ function CameraRig({ view }: { view: ExploreViewId }) {
   return null;
 }
 
-function HeadMesh({
-  activeZone,
-  previewImage,
-}: {
-  activeZone: MasterCardZoneKey | null;
-  previewImage?: string;
-}) {
-  const [texture, setTexture] = useState<THREE.Texture | null>(null);
-
-  useEffect(() => {
-    if (!previewImage) {
-      setTexture(null);
-      return;
-    }
-    let cancelled = false;
-    const loader = new THREE.TextureLoader();
-    loader.setCrossOrigin("anonymous");
-    loader.load(
-      previewImage,
-      (tex) => {
-        if (cancelled) {
-          tex.dispose();
-          return;
-        }
-        tex.colorSpace = THREE.SRGBColorSpace;
-        setTexture(tex);
-      },
-      undefined,
-      () => {
-        if (!cancelled) setTexture(null);
-      },
-    );
-    return () => {
-      cancelled = true;
-    };
-  }, [previewImage]);
-
-  useEffect(() => {
-    return () => {
-      texture?.dispose();
-    };
-  }, [texture]);
-
+/**
+ * Abstrakt bosh — kesish zonalarini ko‘rsatish uchun.
+ * Foydalanuvchi selfiesini sharga yopishtirmaymiz (bu 360° emas, buzilgan texture).
+ */
+function ZoneHeadMesh({ activeZone }: { activeZone: MasterCardZoneKey | null }) {
   const skin = useMemo(
-    () =>
-      new THREE.MeshStandardMaterial({
-        color: texture ? "#ffffff" : "#e8c4a8",
-        map: texture ?? null,
-        roughness: 0.7,
-      }),
-    [texture],
+    () => new THREE.MeshStandardMaterial({ color: "#d8b49a", roughness: 0.72 }),
+    [],
   );
   const hair = useMemo(
-    () => new THREE.MeshStandardMaterial({ color: "#1f1a17", roughness: 0.85 }),
+    () => new THREE.MeshStandardMaterial({ color: "#2a221c", roughness: 0.9 }),
     [],
   );
   const highlight = useMemo(() => {
@@ -154,8 +110,8 @@ function HeadMesh({
     return new THREE.MeshStandardMaterial({
       color: ZONE_COLOR[activeZone],
       transparent: true,
-      opacity: 0.55,
-      roughness: 0.4,
+      opacity: 0.62,
+      roughness: 0.35,
     });
   }, [activeZone]);
 
@@ -169,20 +125,18 @@ function HeadMesh({
 
   return (
     <group>
-      <mesh material={skin} position={[0, 0, 0]}>
+      <mesh material={skin}>
         <sphereGeometry args={[0.72, 32, 32]} />
       </mesh>
-      {!texture ? (
-        <mesh material={hair} position={[0, 0.42, 0]} scale={[0.95, 0.55, 0.9]}>
-          <sphereGeometry args={[0.55, 24, 24]} />
-        </mesh>
-      ) : null}
+      <mesh material={hair} position={[0, 0.4, 0]} scale={[0.92, 0.52, 0.88]}>
+        <sphereGeometry args={[0.55, 24, 24]} />
+      </mesh>
       {activeZone === "sides" && highlight ? (
         <>
-          <mesh material={highlight} position={[-0.62, 0.05, 0]} rotation={[0, 0, 0.2]}>
+          <mesh material={highlight} position={[-0.62, 0.05, 0]}>
             <cylinderGeometry args={[0.16, 0.18, 0.7, 12]} />
           </mesh>
-          <mesh material={highlight} position={[0.62, 0.05, 0]} rotation={[0, 0, -0.2]}>
+          <mesh material={highlight} position={[0.62, 0.05, 0]}>
             <cylinderGeometry args={[0.16, 0.18, 0.7, 12]} />
           </mesh>
           <mesh material={highlight} position={[0, -0.05, -0.55]}>
@@ -207,12 +161,10 @@ function HeadMesh({
 function Scene({
   activeView,
   activeZone,
-  previewImage,
   onLost,
 }: {
   activeView: ExploreViewId;
   activeZone: MasterCardZoneKey | null;
-  previewImage?: string;
   onLost: () => void;
 }) {
   return (
@@ -222,7 +174,7 @@ function Scene({
       <directionalLight position={[3, 4, 2]} intensity={1} />
       <directionalLight position={[-2, 1, -2]} intensity={0.3} />
       <CameraRig view={activeView} />
-      <HeadMesh activeZone={activeZone} previewImage={previewImage} />
+      <ZoneHeadMesh activeZone={activeZone} />
       <OrbitControls enablePan={false} minDistance={1.8} maxDistance={4} target={[0, 0.1, 0]} />
     </>
   );
@@ -234,10 +186,10 @@ export function HeadViewer({
   zones,
   activeZone,
   onZoneChange,
-  previewImage,
   onWebglError,
   className,
 }: Props) {
+  const { t } = useTranslation();
   const [failed, setFailed] = useState(() => !canCreateWebgl());
   const reported = useRef(false);
 
@@ -273,15 +225,15 @@ export function HeadViewer({
             }}
           >
             <Suspense fallback={null}>
-              <Scene
-                activeView={activeView}
-                activeZone={activeZone}
-                previewImage={previewImage}
-                onLost={fail}
-              />
+              <Scene activeView={activeView} activeZone={activeZone} onLost={fail} />
             </Suspense>
           </Canvas>
         </WebglErrorBoundary>
+        <p className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/55 to-transparent px-3 pb-3 pt-8 text-[11px] font-semibold text-white">
+          {t("barberConsult.zoneViewerHint", {
+            defaultValue: "Kesish zonasi — bu sizning 360° try-oningiz emas",
+          })}
+        </p>
       </div>
       <ViewPresets activeView={activeView} onViewChange={onViewChange} />
       <ZoneChips zones={zones} activeZone={activeZone} onZoneChange={onZoneChange} />

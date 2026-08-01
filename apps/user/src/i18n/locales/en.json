@@ -1708,9 +1708,9 @@
     "shareSaved": "Master Card saved",
     "shareFailed": "Could not share",
     "fallbackNotice": "AI response incomplete — showing a safe fallback recipe.",
-    "mode2d": "Multi-angle",
-    "mode3d": "3D",
-    "webglFallback": "3D unavailable — showing multi-angle",
+    "mode2d": "Try-on view",
+    "mode3d": "Cut zones",
+    "webglFallback": "Zone viewer failed — back to try-on view",
     "viewerAlt": "Hairstyle preview",
     "singleViewHint": "Side/back photos are not available for this style yet — showing the try-on / front view.",
     "showBarberPreview": "Barber dashboard preview",
@@ -1743,6 +1743,9 @@
     "barberPreview": {
       "badge": "Barber dashboard preview",
       "camera": "Camera"
-    }
+    },
+    "mode2dHint": "This is your try-on photo. A real 360° (left/right/back) needs separate AI multi-view generation — many styles only have a front image for now.",
+    "mode3dHint": "This is an abstract head that highlights fade / top / beard zones. It is not a 360° model of your face.",
+    "zoneViewerHint": "Cut zones — not your 360° try-on"
   }
 }

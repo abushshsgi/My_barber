@@ -1702,9 +1702,9 @@
     "shareSaved": "Master Card сохранена",
     "shareFailed": "Не удалось поделиться",
     "fallbackNotice": "Ответ AI неполный — показан безопасный fallback-рецепт.",
-    "mode2d": "Multi-angle",
-    "mode3d": "3D",
-    "webglFallback": "3D недоступен — показан multi-angle",
+    "mode2d": "Try-on вид",
+    "mode3d": "Зоны стрижки",
+    "webglFallback": "Зоны 3D недоступны — вернулись к try-on",
     "viewerAlt": "Превью причёски",
     "singleViewHint": "Для этого стиля пока нет боковых/задних фото — показан try-on / вид спереди.",
     "showBarberPreview": "Превью кабинета барбера",
@@ -1737,6 +1737,9 @@
     "barberPreview": {
       "badge": "Превью кабинета барбера",
       "camera": "Камера"
-    }
+    },
+    "mode2dHint": "Это ваше try-on фото. Настоящий 360° (лево/право/зад) требует отдельной AI multi-view генерации — у многих стилей пока только вид спереди.",
+    "mode3dHint": "Это абстрактная голова для зон fade / верх / борода. Это не 360° модель вашего лица.",
+    "zoneViewerHint": "Зоны стрижки — не ваш 360° try-on"
   }
 }

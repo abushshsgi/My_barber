@@ -103,34 +103,47 @@ export function MasterCardUI({
         </p>
       ) : null}
 
-      <div className="flex gap-2">
-        <button
-          type="button"
-          onClick={() => onViewerModeChange("2d")}
-          className={cn(
-            "inline-flex min-h-9 items-center gap-1.5 rounded-xl px-3 text-[12px] font-bold",
-            mode === "2d" ? "bg-foreground text-background" : "bg-neutral-100 ring-1 ring-border",
-          )}
-        >
-          <Images className="size-3.5" />
-          {t("barberConsult.mode2d", { defaultValue: "Multi-angle" })}
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            setForce2d(false);
-            onViewerModeChange("3d");
-          }}
-          disabled={force2d}
-          className={cn(
-            "inline-flex min-h-9 items-center gap-1.5 rounded-xl px-3 text-[12px] font-bold",
-            mode === "3d" ? "bg-foreground text-background" : "bg-neutral-100 ring-1 ring-border",
-            force2d && "opacity-50",
-          )}
-        >
-          <Cuboid className="size-3.5" />
-          {t("barberConsult.mode3d", { defaultValue: "3D" })}
-        </button>
+      <div className="space-y-2">
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => onViewerModeChange("2d")}
+            className={cn(
+              "inline-flex min-h-9 items-center gap-1.5 rounded-xl px-3 text-[12px] font-bold",
+              mode === "2d" ? "bg-foreground text-background" : "bg-neutral-100 ring-1 ring-border",
+            )}
+          >
+            <Images className="size-3.5" />
+            {t("barberConsult.mode2d", { defaultValue: "Try-on ko‘rinish" })}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setForce2d(false);
+              onViewerModeChange("3d");
+            }}
+            disabled={force2d}
+            className={cn(
+              "inline-flex min-h-9 items-center gap-1.5 rounded-xl px-3 text-[12px] font-bold",
+              mode === "3d" ? "bg-foreground text-background" : "bg-neutral-100 ring-1 ring-border",
+              force2d && "opacity-50",
+            )}
+          >
+            <Cuboid className="size-3.5" />
+            {t("barberConsult.mode3d", { defaultValue: "Kesish zonasi" })}
+          </button>
+        </div>
+        <p className="text-[11px] leading-relaxed text-muted-foreground">
+          {mode === "2d"
+            ? t("barberConsult.mode2dHint", {
+                defaultValue:
+                  "Bu sizning try-on rasmingiz. Haqiqiy 360° (chap/o‘ng/orqa) uchun alohida AI multi-view generatsiya kerak — hozir ko‘p uslublarda faqat old bor.",
+              })
+            : t("barberConsult.mode3dHint", {
+                defaultValue:
+                  "Bu abstrakt bosh: fade / yuqori / soqol zonalarini ko‘rsatadi. Sizning yuzingizning 360° modeli emas.",
+              })}
+        </p>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
@@ -141,13 +154,12 @@ export function MasterCardUI({
             zones={zones}
             activeZone={activeZone}
             onZoneChange={setActiveZone}
-            previewImage={previewImage}
             onWebglError={() => {
               setForce2d(true);
               onViewerModeChange("2d");
               toast.message(
                 t("barberConsult.webglFallback", {
-                  defaultValue: "3D mavjud emas — multi-angle ko‘rsatilmoqda",
+                  defaultValue: "3D zonalar ishlamadi — try-on ko‘rinishiga qaytdik",
                 }),
               );
             }}

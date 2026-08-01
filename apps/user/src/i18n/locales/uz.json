@@ -1708,9 +1708,9 @@
     "shareSaved": "Master Card saqlandi",
     "shareFailed": "Ulashib bo‘lmadi",
     "fallbackNotice": "AI javobi to‘liq emas — xavfsiz fallback retsept ko‘rsatilmoqda.",
-    "mode2d": "Multi-angle",
-    "mode3d": "3D",
-    "webglFallback": "3D mavjud emas — multi-angle ko‘rsatilmoqda",
+    "mode2d": "Try-on ko‘rinish",
+    "mode3d": "Kesish zonasi",
+    "webglFallback": "3D zonalar ishlamadi — try-on ko‘rinishiga qaytdik",
     "viewerAlt": "Soch turmagi preview",
     "singleViewHint": "Bu uslub uchun chap/o‘ng/orqa rasmlar hali yo‘q — try-on / old ko‘rinish ko‘rsatilmoqda.",
     "showBarberPreview": "Barber dashboard preview",
@@ -1743,6 +1743,9 @@
     "barberPreview": {
       "badge": "Barber dashboard preview",
       "camera": "Kamera"
-    }
+    },
+    "mode2dHint": "Bu sizning try-on rasmingiz. Haqiqiy 360° (chap/o‘ng/orqa) uchun alohida AI multi-view generatsiya kerak — hozir ko‘p uslublarda faqat old bor.",
+    "mode3dHint": "Bu abstrakt bosh: fade / yuqori / soqol zonalarini ko‘rsatadi. Sizning yuzingizning 360° modeli emas.",
+    "zoneViewerHint": "Kesish zonasi — bu sizning 360° try-oningiz emas"
   }
 }
