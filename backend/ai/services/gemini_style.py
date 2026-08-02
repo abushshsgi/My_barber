@@ -62,13 +62,60 @@ def parse_data_url(data_url: str) -> tuple[str, bytes]:
     return mime, payload
 
 
+def _sniff_image_mime(payload: bytes, content_type: str = "") -> str:
+    mime = (content_type or "").split(";")[0].strip().lower()
+    if mime in ALLOWED_MIME:
+        return mime
+    if payload[:3] == b"\xff\xd8\xff":
+        return "image/jpeg"
+    if payload[:8] == b"\x89PNG\r\n\x1a\n":
+        return "image/png"
+    if payload[:4] == b"RIFF" and payload[8:12] == b"WEBP":
+        return "image/webp"
+    raise AiStyleError("Faqat JPEG, PNG yoki WebP qabul qilinadi.", 400)
+
+
+def _load_media_storage_bytes(source: str) -> tuple[str, bytes] | None:
+    """Same-origin `/media/…` — storage'dan o'qish (studio/history)."""
+    try:
+        from ai.history_storage import extract_media_relative_path
+    except Exception:
+        return None
+
+    media_rel = extract_media_relative_path(source)
+    if not media_rel:
+        return None
+
+    try:
+        from django.core.files.storage import default_storage
+
+        if not default_storage.exists(media_rel):
+            raise AiStyleError("Rasmni yuklab bo'lmadi.", 400)
+        with default_storage.open(media_rel, "rb") as fh:
+            payload = fh.read(MAX_IMAGE_BYTES + 1)
+    except AiStyleError:
+        raise
+    except Exception as exc:
+        raise AiStyleError("Rasmni yuklab bo'lmadi.", 400) from exc
+
+    if not payload:
+        raise AiStyleError("Rasm bo'sh.", 400)
+    if len(payload) > MAX_IMAGE_BYTES:
+        raise AiStyleError("Rasm hajmi 5 MB dan oshmasligi kerak.", 400)
+    return _sniff_image_mime(payload), payload
+
+
 def load_image_bytes(source: str) -> tuple[str, bytes]:
-    """Accept data URL or http(s) image URL (history sync / studio)."""
+    """Accept data URL, /media/ path, or http(s) image URL (history sync / studio)."""
     raw = (source or "").strip()
     if not raw:
         raise AiStyleError("Rasmni yuboring.", 400)
     if raw.startswith("data:"):
         return parse_data_url(raw)
+
+    stored = _load_media_storage_bytes(raw)
+    if stored is not None:
+        return stored
 
     from urllib.parse import urlparse
 
@@ -89,18 +136,7 @@ def load_image_bytes(source: str) -> tuple[str, bytes]:
     if len(payload) > MAX_IMAGE_BYTES:
         raise AiStyleError("Rasm hajmi 5 MB dan oshmasligi kerak.", 400)
 
-    mime = content_type if content_type in ALLOWED_MIME else "image/jpeg"
-    if mime not in ALLOWED_MIME:
-        # Sniff from magic bytes when CDN omits a useful Content-Type.
-        if payload[:3] == b"\xff\xd8\xff":
-            mime = "image/jpeg"
-        elif payload[:8] == b"\x89PNG\r\n\x1a\n":
-            mime = "image/png"
-        elif payload[:4] == b"RIFF" and payload[8:12] == b"WEBP":
-            mime = "image/webp"
-        else:
-            raise AiStyleError("Faqat JPEG, PNG yoki WebP qabul qilinadi.", 400)
-    return mime, payload
+    return _sniff_image_mime(payload, content_type), payload
 
 
 def _build_face_check_prompt() -> str:

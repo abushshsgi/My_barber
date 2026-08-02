@@ -105,7 +105,14 @@ def generate_content(
                 continue
             logger.warning("Vertex HTTP %s (%s): %s", exc.code, model, err_body[:800])
             message = _map_vertex_http_error(exc.code, err_body, kind=kind)
-            http_status = 429 if exc.code == 429 else (502 if exc.code >= 500 else 400)
+            if exc.code == 429:
+                http_status = 429
+            elif exc.code == 404:
+                http_status = 404
+            elif exc.code >= 500:
+                http_status = 502
+            else:
+                http_status = 400
             raise AiStyleError(message, http_status) from exc
         except urllib.error.URLError as exc:
             logger.warning("Vertex network error (%s): %s", model, exc)

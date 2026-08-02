@@ -7,6 +7,7 @@ import {
   type FaceProfileHistoryEntry,
 } from "@/lib/face-profile";
 import type { ExplorePersonaId } from "@/lib/explore-personas";
+import { toShareImageSource } from "@/lib/media-url";
 import { throwFromMorphApiError } from "@/lib/morph-plan-limit";
 import { apiFetch, apiJson } from "./client";
 
@@ -258,10 +259,12 @@ export async function generateMorphStudioEdit(
   presetId: string,
   meta?: { styleId?: string; styleTitle?: string },
 ): Promise<MorphStudioEditResponse> {
+  // History/gallery often stores same-origin `/media/…` — backend needs absolute or data URL.
+  const imageSource = toShareImageSource(image);
   const res = await apiFetch("/api/v1/ai/style-studio/", {
     method: "POST",
     body: JSON.stringify({
-      image,
+      image: imageSource,
       preset_id: presetId,
       style_id: meta?.styleId,
       style_title: meta?.styleTitle,

@@ -53,12 +53,13 @@ def _generate_via_vertex(body: dict[str, Any], *, model: str | None = None) -> d
 
 
 def generate_image_content(body: dict[str, Any], *, model: str | None = None) -> dict[str, Any]:
-    """Vertex birinchi (GCP kvota). Studio faqat zaxira / 429 fallback."""
+    """Vertex birinchi (GCP kvota). Studio — 429/5xx va model/config 400/404 zaxirasi."""
     if vertex_credentials_configured():
         try:
             return _generate_via_vertex(body, model=model)
         except AiStyleError as exc:
-            if studio_image_configured() and exc.status in (429, 502, 503):
+            # 400/404: pro-image model Vertexda yo'q yoki imageConfig rad etilgan bo'lishi mumkin.
+            if studio_image_configured() and exc.status in (400, 404, 429, 502, 503, 504):
                 logger.warning(
                     "Vertex image failed (%s), falling back to AI Studio",
                     exc.status,
