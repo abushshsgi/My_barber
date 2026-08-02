@@ -1688,7 +1688,7 @@
   },
   "barberConsult": {
     "title": "Hair Trends & AI Barber Consult",
-    "subtitle": "360° превью + техническая Barber Master Card",
+    "subtitle": "Try-on превью + техническая Barber Master Card",
     "openCta": "AI Barber Consult",
     "goAiStyle": "Перейти в Morf AI",
     "empty": "Сначала сделайте try-on, затем откройте Barber Consult.",
@@ -1738,8 +1738,8 @@
       "badge": "Превью кабинета барбера",
       "camera": "Камера"
     },
-    "mode2dHint": "Try-on 360°: спереди, слева, справа, сзади — AI строит с вашего лица. Пока готов только вид спереди.",
-    "mode3dHint": "Абстрактная голова для зон fade / верх / борода. Для 360° try-on откройте Try-on вид.",
+    "mode2dHint": "Try-on превью — пока только вид спереди.",
+    "mode3dHint": "Абстрактная голова для зон fade / верх / борода.",
     "zoneViewerHint": "Зоны стрижки — не ваш 360° try-on",
     "multiviewLoading": "AI создаёт лево / право / зад 360° с вашего лица…",
     "multiviewReady": "360° готово — Спереди / Слева / Справа / Сзади",

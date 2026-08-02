@@ -22,6 +22,9 @@ import {
   type BarberMasterCard,
 } from "@/types/barber-master-card";
 
+/** Vaqtinchalik o‘chirilgan — AI left/right/back 360 hali kerak emas. */
+const ENABLE_USER_MULTIVIEW_360 = false;
+
 function hasUserMultiView(gallery: Partial<Record<ExploreViewId, string>> | undefined): boolean {
   if (!gallery?.front) return false;
   return Boolean(gallery.left && gallery.right && gallery.back);
@@ -100,6 +103,7 @@ export function MorphAiConsultPage() {
   };
 
   const loadMultiView = async () => {
+    if (!ENABLE_USER_MULTIVIEW_360) return;
     if (!image || !apiStyleId) return;
     if (hasUserMultiView(gallery)) return;
 
@@ -147,7 +151,6 @@ export function MorphAiConsultPage() {
 
   useEffect(() => {
     void loadCard();
-    void loadMultiView();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- mount once per draft
   }, []);
 
@@ -185,15 +188,17 @@ export function MorphAiConsultPage() {
           {t("common.back", { defaultValue: "Orqaga" })}
         </button>
         <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={() => void loadMultiView()}
-            disabled={viewsLoading || !apiStyleId}
-            className="inline-flex min-h-10 items-center gap-1.5 rounded-full bg-neutral-100 px-3 text-[12px] font-bold ring-1 ring-border disabled:opacity-50"
-          >
-            <RefreshCw className={`size-3.5 ${viewsLoading ? "animate-spin" : ""}`} />
-            {t("barberConsult.multiviewRetry", { defaultValue: "360° qayta" })}
-          </button>
+          {ENABLE_USER_MULTIVIEW_360 ? (
+            <button
+              type="button"
+              onClick={() => void loadMultiView()}
+              disabled={viewsLoading || !apiStyleId}
+              className="inline-flex min-h-10 items-center gap-1.5 rounded-full bg-neutral-100 px-3 text-[12px] font-bold ring-1 ring-border disabled:opacity-50"
+            >
+              <RefreshCw className={`size-3.5 ${viewsLoading ? "animate-spin" : ""}`} />
+              {t("barberConsult.multiviewRetry", { defaultValue: "360° qayta" })}
+            </button>
+          ) : null}
           <button
             type="button"
             onClick={() => void loadCard()}
@@ -215,10 +220,10 @@ export function MorphAiConsultPage() {
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
           {t("barberConsult.subtitle", {
-            defaultValue: "360° preview + texnik Barber Master Card",
+            defaultValue: "Try-on preview + texnik Barber Master Card",
           })}
         </p>
-        {viewsLoading ? (
+        {ENABLE_USER_MULTIVIEW_360 && viewsLoading ? (
           <p className="mt-2 text-[12px] font-semibold text-sky-700">
             {t("barberConsult.multiviewLoading", {
               defaultValue: "AI sizning yuzingizdan chap / o‘ng / orqa 360° yaratmoqda…",

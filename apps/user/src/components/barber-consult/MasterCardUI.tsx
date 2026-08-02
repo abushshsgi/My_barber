@@ -136,12 +136,11 @@ export function MasterCardUI({
         <p className="text-[11px] leading-relaxed text-muted-foreground">
           {mode === "2d"
             ? t("barberConsult.mode2dHint", {
-                defaultValue:
-                  "Try-on 360°: Old, Chap, O‘ng, Orqa — AI sizning yuzingizdan yaratadi. Tayyor bo‘lguncha Old ko‘rinadi.",
+                defaultValue: "Try-on preview — hozircha old (front) ko‘rinish.",
               })
             : t("barberConsult.mode3dHint", {
                 defaultValue:
-                  "Bu abstrakt bosh: fade / yuqori / soqol zonalarini ko‘rsatadi. 360° try-on uchun «Try-on ko‘rinish»ga o‘ting.",
+                  "Bu abstrakt bosh: fade / yuqori / soqol zonalarini ko‘rsatadi.",
               })}
         </p>
       </div>

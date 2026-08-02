@@ -1694,7 +1694,7 @@
   },
   "barberConsult": {
     "title": "Hair Trends & AI Barber Consult",
-    "subtitle": "360° preview + texnik Barber Master Card",
+    "subtitle": "Try-on preview + texnik Barber Master Card",
     "openCta": "AI Barber Consult",
     "goAiStyle": "Morf AI ga o‘tish",
     "empty": "Avval try-on qiling, keyin Barber Consult ochiladi.",
@@ -1744,8 +1744,8 @@
       "badge": "Barber dashboard preview",
       "camera": "Kamera"
     },
-    "mode2dHint": "Try-on 360°: Old, Chap, O‘ng, Orqa — AI sizning yuzingizdan yaratadi. Tayyor bo‘lguncha Old ko‘rinadi.",
-    "mode3dHint": "Bu abstrakt bosh: fade / yuqori / soqol zonalarini ko‘rsatadi. 360° try-on uchun «Try-on ko‘rinish»ga o‘ting.",
+    "mode2dHint": "Try-on preview — hozircha old (front) ko‘rinish.",
+    "mode3dHint": "Bu abstrakt bosh: fade / yuqori / soqol zonalarini ko‘rsatadi.",
     "zoneViewerHint": "Kesish zonasi — bu sizning 360° try-oningiz emas",
     "multiviewLoading": "AI sizning yuzingizdan chap / o‘ng / orqa 360° yaratmoqda…",
     "multiviewReady": "360° ko‘rinishlar tayyor — Old / Chap / O‘ng / Orqa",
