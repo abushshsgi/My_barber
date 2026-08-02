@@ -9,6 +9,7 @@ import {
 import type { ExplorePersonaId } from "@/lib/explore-personas";
 import { toShareImageSource } from "@/lib/media-url";
 import { throwFromMorphApiError } from "@/lib/morph-plan-limit";
+import { prepareStudioImagePayload } from "@/lib/selfie-image";
 import { apiFetch, apiJson } from "./client";
 
 export type AiStyleSuggestionApi = {
@@ -259,8 +260,8 @@ export async function generateMorphStudioEdit(
   presetId: string,
   meta?: { styleId?: string; styleTitle?: string },
 ): Promise<MorphStudioEditResponse> {
-  // History/gallery often stores same-origin `/media/…` — backend needs absolute or data URL.
-  const imageSource = toShareImageSource(image);
+  // History/gallery: same-origin `/media/…` → absolute. Data URL: 2K → siqiladi (413 oldini olish).
+  const imageSource = await prepareStudioImagePayload(toShareImageSource(image));
   const res = await apiFetch("/api/v1/ai/style-studio/", {
     method: "POST",
     body: JSON.stringify({
@@ -278,12 +279,26 @@ export async function generateMorphStudioEdit(
       }
     | null;
   if (!res.ok) {
+    if (res.status === 413) {
+      throw new Error(
+        "Rasm juda katta. Undo qilib qayta urinib ko‘ring yoki asl rasmni tanlang.",
+      );
+    }
     throwFromMorphApiError(res, body, "Studio tahririda xatolik");
   }
   if (!body || typeof body !== "object" || !("preview_image" in body)) {
     throw new Error("Studio tahririda xatolik");
   }
-  return body as MorphStudioEditResponse;
+  const result = body as MorphStudioEditResponse;
+  // Keyingi tahrir uchun ham kichik payload saqlaymiz.
+  if (result.preview_image?.startsWith("data:")) {
+    try {
+      result.preview_image = await prepareStudioImagePayload(result.preview_image);
+    } catch {
+      /* keep original preview */
+    }
+  }
+  return result;
 }
 
 export type AiStyleHistoryEntryApi = {

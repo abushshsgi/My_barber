@@ -16,7 +16,7 @@ from ai.studio_presets import get_studio_option
 from ai.usage_pricing import finalize_usage
 
 from .gemini_style import AiStyleError, load_image_bytes
-from .image_response import extract_image_bytes, to_data_url
+from .image_response import extract_image_bytes, to_studio_response_data_url
 from .studio_image import (
     generate_image_content as studio_generate_image_content,
     studio_edit_image_model,
@@ -317,7 +317,8 @@ def generate_studio_edit(
     usage = finalize_usage(payload, kind="studio", input_images=1)
 
     return StudioEditResult(
-        preview_image=to_data_url(out_mime, out_bytes),
+        # 2K PNG data URL keyingi tahrirda proxy 413 beradi — siqilgan JPEG qaytaramiz.
+        preview_image=to_studio_response_data_url(out_mime, out_bytes),
         prompt=prompt,
         preset_id=option["id"],
         preset_label=option["label_uz"],

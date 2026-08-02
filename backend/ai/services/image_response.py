@@ -3,9 +3,14 @@
 from __future__ import annotations
 
 import base64
+import io
 from typing import Any
 
 from .gemini_style import AiStyleError
+
+# Studio ketma-ket tahrir: katta PNG/2K data URL → proxy 413.
+STUDIO_RESPONSE_MAX_SIDE = 1280
+STUDIO_JPEG_QUALITY = 88
 
 
 def extract_image_bytes(payload: dict[str, Any]) -> tuple[str, bytes]:
@@ -35,3 +40,22 @@ def extract_image_bytes(payload: dict[str, Any]) -> tuple[str, bytes]:
 def to_data_url(mime: str, raw: bytes) -> str:
     b64 = base64.b64encode(raw).decode("ascii")
     return f"data:{mime};base64,{b64}"
+
+
+def to_studio_response_data_url(mime: str, raw: bytes) -> str:
+    """Studio API javobi — JPEG ga siqib, keyingi POST 413 bermasin."""
+    try:
+        from PIL import Image
+
+        image = Image.open(io.BytesIO(raw))
+        if image.mode not in ("RGB", "L"):
+            image = image.convert("RGB")
+        image.thumbnail(
+            (STUDIO_RESPONSE_MAX_SIDE, STUDIO_RESPONSE_MAX_SIDE),
+            Image.Resampling.LANCZOS,
+        )
+        buf = io.BytesIO()
+        image.save(buf, format="JPEG", quality=STUDIO_JPEG_QUALITY, optimize=True)
+        return to_data_url("image/jpeg", buf.getvalue())
+    except Exception:
+        return to_data_url(mime, raw)

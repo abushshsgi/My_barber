@@ -56,3 +56,14 @@ export async function prepareSelfieFromFile(file: File): Promise<string> {
 export async function prepareSelfieDataUrl(dataUrl: string): Promise<string> {
   return compressSelfieDataUrl(dataUrl);
 }
+
+/** Studio ketma-ket tahrir — 2K data URL 413 bermasligi uchun. */
+const STUDIO_MAX_SIDE = 1280;
+
+export async function prepareStudioImagePayload(image: string): Promise<string> {
+  const raw = (image || "").trim();
+  if (!raw) return raw;
+  // Absolute / relative media URL — kichik, siqish shart emas.
+  if (!raw.startsWith("data:")) return raw;
+  return compressSelfieDataUrl(raw, STUDIO_MAX_SIDE);
+}

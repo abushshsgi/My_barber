@@ -6,10 +6,11 @@ from django.test import SimpleTestCase
 from ai.services.gemini_studio_edit import _nearest_aspect_ratio
 from ai.studio_presets import get_studio_option, list_studio_catalog
 
+# 1x1 red PNG (valid)
 _TINY_PNG = (
     b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01"
-    b"\x08\x02\x00\x00\x00\x90wS\xde\x00\x00\x00\x0cIDATx\x9cc\xf8\x0f\x00"
-    b"\x00\x01\x01\x00\x05\x18\xd8N\x00\x00\x00\x00IEND\xaeB`\x82"
+    b"\x08\x02\x00\x00\x00\x90wS\xde\x00\x00\x00\x0cIDATx\x9cc\xf8\xcf\xc0"
+    b"\x00\x00\x03\x01\x01\x00\xc9\xfe\x92\xef\x00\x00\x00\x00IEND\xaeB`\x82"
 )
 
 
@@ -42,6 +43,15 @@ class StudioPresetsTests(SimpleTestCase):
         self.assertEqual(_nearest_aspect_ratio(768, 1024), "3:4")
         self.assertEqual(_nearest_aspect_ratio(1024, 1024), "1:1")
         self.assertEqual(_nearest_aspect_ratio(1920, 1080), "16:9")
+
+
+class StudioResponseCompressTests(SimpleTestCase):
+    def test_studio_response_is_jpeg_data_url(self):
+        from ai.services.image_response import to_studio_response_data_url
+
+        url = to_studio_response_data_url("image/png", _TINY_PNG)
+        self.assertTrue(url.startswith("data:image/jpeg;base64,"))
+        self.assertLess(len(url), 20_000)
 
 
 class StudioImageSourceTests(SimpleTestCase):
@@ -110,7 +120,7 @@ class StudioEditFallbackTests(SimpleTestCase):
                 preset_id="beard_clean",
             )
 
-        self.assertTrue(result.preview_image.startswith("data:image/png;base64,"))
+        self.assertTrue(result.preview_image.startswith("data:image/jpeg;base64,"))
         self.assertEqual(result.model, "gemini-3.1-flash-lite-image")
         used_models = [call.kwargs.get("model") for call in mock_gen.call_args_list]
         self.assertTrue(any(m and "pro-image" in m for m in used_models))
