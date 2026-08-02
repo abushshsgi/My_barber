@@ -33,19 +33,21 @@ function persistExploreTryOnResult(opts: {
   beforeImage: string;
   personaId?: ExplorePersonaId | null;
 }) {
+  // Server try-on tugaganda MorphAiGenerationEntry yozadi — remote POST = duplicate.
   saveMorphAiGeneration({
     styleId: opts.styleId,
     title: opts.styleTitle,
     previewImage: opts.previewImage,
     beforeImage: opts.beforeImage,
     personaId: opts.personaId ?? undefined,
+    syncRemote: false,
   });
   markMorphAiOnboarded();
   void persistAiStyleHistory({
     image: opts.beforeImage,
     source: "ai_analysis",
   });
-  // Server ham saqlaydi — local cache ni DB bilan sinxronlash.
+  // Local cache ni DB dagi yagona yozuv bilan sinxronlash.
   window.setTimeout(() => {
     void refreshMorphAiGenerationsCache();
   }, 1200);

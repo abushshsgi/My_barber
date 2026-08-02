@@ -12,7 +12,7 @@ import {
   saveFaceProfile,
 } from "@/lib/face-profile";
 import type { FaceShapeKey } from "@/components/ai-style/ai-style-shared";
-import { saveMorphAiGeneration } from "@/lib/morph-ai-gallery";
+import { refreshMorphAiGenerationsCache, saveMorphAiGeneration } from "@/lib/morph-ai-gallery";
 import { markMorphAiOnboarded } from "@/lib/morph-ai-session";
 import type { ExplorePersonaId } from "@/lib/explore-personas";
 import { detectFaceMetricsFromDataUrl } from "@/components/ai-style/useFaceLandmarker";
@@ -315,13 +315,18 @@ export function useAiStyleFlow(options: UseAiStyleFlowOptions = {}) {
             title ??
             result?.suggestions.find((s) => s.id === styleId)?.title ??
             styleId;
+          // Server try-on tugaganda historyga yozadi — remote POST qilmaslik (duplicate).
           saveMorphAiGeneration({
             styleId,
             title: resolvedTitle,
             previewImage,
             beforeImage: photo,
             personaId: effectivePersona,
+            syncRemote: false,
           });
+          window.setTimeout(() => {
+            void refreshMorphAiGenerationsCache();
+          }, 1200);
           markMorphAiOnboarded();
           onTryOnSuccess?.();
         }
@@ -356,7 +361,11 @@ export function useAiStyleFlow(options: UseAiStyleFlowOptions = {}) {
       previewImage,
       beforeImage: photo ?? undefined,
       personaId: menPersonaId ?? undefined,
+      syncRemote: false,
     });
+    window.setTimeout(() => {
+      void refreshMorphAiGenerationsCache();
+    }, 1200);
   }, [photo, result, menPersonaId]);
 
   useEffect(() => {

@@ -124,12 +124,20 @@ export async function refreshMorphAiGenerationsCache(): Promise<MorphAiGeneratio
 }
 
 /**
- * Optimistic local save + async DB persist (media via Postgres storage).
+ * Optimistic local save + optional async DB persist.
+ * Try-on: server allaqachon `persist_tryon_generation` yozadi — `syncRemote: false` qiling,
+ * aks holda historyda bir generatsiya ikki marta chiqadi.
+ * Studio: backend history yozmaydi — `syncRemote` default `true` qoladi.
  */
-export function saveMorphAiGeneration(entry: Omit<MorphAiGeneration, "id" | "createdAt"> & {
-  id?: string;
-  createdAt?: string;
-}) {
+export function saveMorphAiGeneration(
+  entry: Omit<MorphAiGeneration, "id" | "createdAt"> & {
+    id?: string;
+    createdAt?: string;
+    /** false = faqat local cache (try-on). Default true = POST /ai/generations/ */
+    syncRemote?: boolean;
+  },
+) {
+  const syncRemote = entry.syncRemote !== false;
   const next: MorphAiGeneration = {
     id: entry.id ?? `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     styleId: entry.styleId,
@@ -144,7 +152,7 @@ export function saveMorphAiGeneration(entry: Omit<MorphAiGeneration, "id" | "cre
   );
   writeAll([next, ...rest]);
 
-  if (getActiveUserId() && next.previewImage) {
+  if (syncRemote && getActiveUserId() && next.previewImage) {
     void saveMorphAiGenerationRemote({
       style_id: next.styleId,
       title: next.title,

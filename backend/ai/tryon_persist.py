@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 # Client + server may both persist the same try-on within a short window.
-_DEDUPE_SECONDS = 45
+_DEDUPE_SECONDS = 120
 
 
 def persist_tryon_generation(
@@ -41,15 +41,16 @@ def persist_tryon_generation(
     before_raw = (before_image or "").strip()
 
     since = timezone.now() - timedelta(seconds=_DEDUPE_SECONDS)
-    recent = (
-        MorphAiGenerationEntry.objects.filter(
-            user=user,
-            style_id=style_id,
-            created_at__gte=since,
-        )
-        .order_by("-created_at")
-        .first()
+    # Title bilan dedupe: try-on juft saqlashni to‘xtatadi, studio presetlari
+    # (turli title) esa bir-birini yopib qo‘ymaydi.
+    recent_qs = MorphAiGenerationEntry.objects.filter(
+        user=user,
+        style_id=style_id,
+        created_at__gte=since,
     )
+    if title:
+        recent_qs = recent_qs.filter(title=title)
+    recent = recent_qs.order_by("-created_at").first()
     if recent and recent.after_photo:
         return recent
 

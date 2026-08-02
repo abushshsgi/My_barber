@@ -694,16 +694,6 @@ class MorphAiLookShareViewPingView(UnthrottledAPIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-def _trim_user_generations(user: User) -> None:
-    ids = list(
-        MorphAiGenerationEntry.objects.filter(user=user)
-        .order_by("-created_at")
-        .values_list("id", flat=True)[GENERATION_HISTORY_MAX_PER_USER:]
-    )
-    if ids:
-        MorphAiGenerationEntry.objects.filter(id__in=ids).delete()
-
-
 class MorphAiGenerationListCreateView(UnthrottledAPIView):
     """GET/POST — try-on & studio generation history (DB-backed media)."""
 
@@ -732,29 +722,20 @@ class MorphAiGenerationListCreateView(UnthrottledAPIView):
         if not after_raw:
             return Response({"detail": "After rasm kerak."}, status=400)
 
-        entry = MorphAiGenerationEntry(
+        from ai.tryon_persist import persist_tryon_generation
+
+        # Try-on allaqachon serverda saqlangan bo‘lishi mumkin — dedupe bilan yozamiz.
+        entry = persist_tryon_generation(
             user=user,
+            after_image=after_raw,
+            before_image=before_raw or None,
             style_id=(data.get("style_id") or "").strip()[:64],
             title=(data.get("title") or "").strip()[:160],
             persona_id=(data.get("persona_id") or "").strip()[:64],
         )
-        try:
-            entry.after_photo.save(
-                "after.jpg",
-                image_file_from_source(after_raw, f"gen-after-{user.pk}"),
-                save=False,
-            )
-            if before_raw:
-                entry.before_photo.save(
-                    "before.jpg",
-                    image_file_from_source(before_raw, f"gen-before-{user.pk}"),
-                    save=False,
-                )
-        except Exception:
+        if entry is None:
             return Response({"detail": "Rasmni saqlab bo‘lmadi."}, status=400)
 
-        entry.save()
-        _trim_user_generations(user)
         out = MorphAiGenerationSerializer(entry, context={"request": request})
         return Response(out.data, status=status.HTTP_201_CREATED)
 
