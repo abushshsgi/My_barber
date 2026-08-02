@@ -146,6 +146,6 @@ class ImageProviderPriorityTests(SimpleTestCase):
 
         mock_vertex.side_effect = AiStyleError("model missing", 404)
         mock_studio.return_value = {"from": "studio"}
-        out = generate_image_content({"contents": []}, model="gemini-3-pro-image-preview")
+        out = generate_image_content({"contents": []}, model="gemini-3-pro-image")
         self.assertEqual(out, {"from": "studio"})
         mock_studio.assert_called_once()

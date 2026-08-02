@@ -17,8 +17,8 @@ from .errors import AiStyleError, map_gemini_http_error, read_http_error_body
 logger = logging.getLogger(__name__)
 
 STUDIO_IMAGE_MODEL = "gemini-3.1-flash-lite-image"
-# Studio tahrir — try-on lite emas; pro/flash-image (GEMINI_API_KEY orqali).
-STUDIO_EDIT_IMAGE_MODEL = "gemini-3-pro-image-preview"
+# Studio tahrir — stable model ID (eski …-preview endi yo'q).
+STUDIO_EDIT_IMAGE_MODEL = "gemini-3-pro-image"
 STUDIO_API_BASE = "https://generativelanguage.googleapis.com/v1beta/models"
 
 
@@ -31,17 +31,32 @@ def studio_image_model() -> str:
     return configured or STUDIO_IMAGE_MODEL
 
 
+# Eski preview / noto'g'ri env qiymatlari → hozirgi stable ID.
+_STUDIO_EDIT_MODEL_ALIASES = {
+    "gemini-3-pro-image-preview": "gemini-3-pro-image",
+    "gemini-3.1-flash-image-preview": "gemini-3.1-flash-image",
+    "gemini-2.5-flash-image-preview": "gemini-2.5-flash-image",
+}
+
+
+def _normalize_studio_edit_model(model: str) -> str:
+    raw = (model or "").strip()
+    if not raw:
+        return STUDIO_EDIT_IMAGE_MODEL
+    return _STUDIO_EDIT_MODEL_ALIASES.get(raw, raw)
+
+
 def studio_edit_image_model() -> str:
     """Morf Studio tahrir — try-on (lite) dan alohida, sifatliroq model."""
     configured = (getattr(settings, "STUDIO_EDIT_IMAGE_MODEL", None) or "").strip()
     if configured:
-        return configured
+        return _normalize_studio_edit_model(configured)
     try:
         from ai.models import MorphAiSettings
 
         preferred = (MorphAiSettings.load().preferred_model or "").strip()
-        if preferred:
-            return preferred
+        if preferred and "lite" not in preferred.lower():
+            return _normalize_studio_edit_model(preferred)
     except Exception:
         pass
     return STUDIO_EDIT_IMAGE_MODEL

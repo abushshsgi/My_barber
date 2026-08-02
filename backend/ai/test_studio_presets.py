@@ -100,7 +100,7 @@ class StudioEditFallbackTests(SimpleTestCase):
         mock_gen.side_effect = _gen
         with patch(
             "ai.services.gemini_studio_edit.studio_edit_image_model",
-            return_value="gemini-3-pro-image-preview",
+            return_value="gemini-3-pro-image",
         ), patch(
             "ai.services.gemini_studio_edit.vertex_image_model",
             return_value="gemini-3.1-flash-lite-image",
@@ -121,12 +121,13 @@ class StudioEditFallbackTests(SimpleTestCase):
 
         with patch(
             "ai.services.gemini_studio_edit.studio_edit_image_model",
-            return_value="gemini-3-pro-image-preview",
+            return_value="gemini-3-pro-image",
         ), patch(
             "ai.services.gemini_studio_edit.vertex_image_model",
             return_value="gemini-3.1-flash-lite-image",
         ):
             models = _studio_models_to_try()
-        self.assertEqual(models[0], "gemini-3-pro-image-preview")
+        self.assertEqual(models[0], "gemini-3-pro-image")
+        self.assertIn("gemini-3.1-flash-image", models)
         self.assertTrue(any("lite" in m for m in models))
         self.assertGreater(models.index("gemini-3.1-flash-lite-image"), 0)

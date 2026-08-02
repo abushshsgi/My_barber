@@ -46,9 +46,11 @@ _SUPPORTED_RATIOS: tuple[tuple[float, str], ...] = (
     (21 / 9, "21:9"),
 )
 
-# Edit fidelity: pro/flash-image. flash-lite — faqat oxirgi zaxira (butun rasmni qayta chizadi).
-_FLASH_IMAGE_MODEL = "gemini-3.1-flash-image-preview"
-_PRO_IMAGE_MODEL = "gemini-3-pro-image-preview"
+# Edit fidelity (stable IDs). flash-lite — faqat oxirgi zaxira.
+# Eski preview nomlar (…-preview) endi 404 beradi.
+_PRO_IMAGE_MODEL = "gemini-3-pro-image"
+_FLASH_IMAGE_MODEL = "gemini-3.1-flash-image"
+_FLASH_IMAGE_25_MODEL = "gemini-2.5-flash-image"
 
 
 @dataclass(frozen=True)
@@ -144,6 +146,7 @@ def _studio_models_to_try() -> list[str]:
         primary,
         _PRO_IMAGE_MODEL,
         _FLASH_IMAGE_MODEL,
+        _FLASH_IMAGE_25_MODEL,
         lite,
         "gemini-3.1-flash-lite-image",
     ):
