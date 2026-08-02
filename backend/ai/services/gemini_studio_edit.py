@@ -8,7 +8,7 @@ import logging
 import time
 from dataclasses import dataclass
 from decimal import Decimal
-from typing import Any
+from typing import Any, Literal
 
 from PIL import Image
 
@@ -17,10 +17,20 @@ from ai.usage_pricing import finalize_usage
 
 from .gemini_style import AiStyleError, load_image_bytes
 from .image_response import extract_image_bytes, to_data_url
-from .studio_image import image_generation_provider, studio_edit_image_model
-from .vertex_image import generate_image_content, vertex_image_configured, vertex_image_model
+from .studio_image import (
+    generate_image_content as studio_generate_image_content,
+    studio_edit_image_model,
+    studio_image_configured,
+)
+from .vertex_image import (
+    generate_image_content as vertex_first_generate_image_content,
+    vertex_image_configured,
+    vertex_image_model,
+)
 
 logger = logging.getLogger(__name__)
+
+ProviderName = Literal["studio", "vertex"]
 
 # Gemini imageConfig aspectRatio — eng yaqin qiymat
 _SUPPORTED_RATIOS: tuple[tuple[float, str], ...] = (
@@ -35,6 +45,10 @@ _SUPPORTED_RATIOS: tuple[tuple[float, str], ...] = (
     (16 / 9, "16:9"),
     (21 / 9, "21:9"),
 )
+
+# Edit fidelity: pro/flash-image. flash-lite — faqat oxirgi zaxira (butun rasmni qayta chizadi).
+_FLASH_IMAGE_MODEL = "gemini-3.1-flash-image-preview"
+_PRO_IMAGE_MODEL = "gemini-3-pro-image-preview"
 
 
 @dataclass(frozen=True)
@@ -104,36 +118,44 @@ FIDELITY RULES (must follow):
 4) Forbidden: changing identity, age, ethnicity, expression, pose, crop, clothing logos/text, or background content.
 5) Hair edits must blend at the hairline with natural lighting; no sticker/halo edges.
 6) If unsure, change LESS rather than redrawing.
+7) Do not invent new objects, accessories, logos, jewelry, tattoos, or background details.
 
 Return ONE edited photo only."""
 
 
-def _resolve_model_provider(model: str) -> tuple[str, str]:
-    provider = image_generation_provider() or "studio"
-    return model, provider
-
-
-def _studio_models_to_try() -> list[str]:
-    """Pro edit birinchi; Vertexda ishlaydigan lite — zaxira (404 dan qutulish)."""
-    primary = (studio_edit_image_model() or "").strip()
-    lite = (vertex_image_model() or "").strip()
-    models: list[str] = []
-    for item in (primary, lite, "gemini-3.1-flash-lite-image"):
-        if item and item not in models:
-            models.append(item)
-    return models
+def _is_lite_model(model: str) -> bool:
+    return "lite" in (model or "").lower()
 
 
 def _model_supports_pro_image_config(model: str) -> bool:
     """flash-lite Vertexda imageSize/TEXT+IMAGE ni INVALID_ARGUMENT bilan rad etadi."""
-    name = (model or "").lower()
-    if "lite" in name:
+    if _is_lite_model(model):
         return False
+    name = (model or "").lower()
     return "pro-image" in name or "flash-image" in name
 
 
+def _studio_models_to_try() -> list[str]:
+    """Sifatli edit modellari birinchi; lite — faqat oxirgi zaxira."""
+    primary = (studio_edit_image_model() or "").strip()
+    lite = (vertex_image_model() or "").strip() or "gemini-3.1-flash-lite-image"
+    models: list[str] = []
+    for item in (
+        primary,
+        _PRO_IMAGE_MODEL,
+        _FLASH_IMAGE_MODEL,
+        lite,
+        "gemini-3.1-flash-lite-image",
+    ):
+        if item and item not in models:
+            models.append(item)
+    # Lite ni oxiriga suramiz — sifat uchun.
+    quality = [m for m in models if not _is_lite_model(m)]
+    fallback = [m for m in models if _is_lite_model(m)]
+    return quality + fallback
+
+
 def _studio_generation_configs(aspect_ratio: str, *, model: str) -> list[dict[str, Any]]:
-    # Try-on bilan bir xil format — lite uchun ishonchli.
     lite_configs: list[dict[str, Any]] = [
         {
             "responseModalities": ["IMAGE"],
@@ -150,8 +172,60 @@ def _studio_generation_configs(aspect_ratio: str, *, model: str) -> list[dict[st
             "responseModalities": ["TEXT", "IMAGE"],
             "imageConfig": {"aspectRatio": aspect_ratio, "imageSize": "2K"},
         },
-        *lite_configs,
+        {
+            "responseModalities": ["IMAGE"],
+            "imageConfig": {"aspectRatio": aspect_ratio},
+        },
+        *lite_configs[1:],
     ]
+
+
+def _generate_for_studio_edit(
+    body: dict[str, Any],
+    *,
+    model: str,
+) -> tuple[dict[str, Any], ProviderName]:
+    """
+    Studio tahrir: AI Studio (GEMINI_API_KEY) + edit model birinchi.
+    Vertex/lite — faqat zaxira. Lite butun portretni qayta chizib sifatni buzadi.
+    """
+    last_exc: AiStyleError | None = None
+
+    # 1) Edit-sifatli model → avvalo Google AI Studio
+    if studio_image_configured() and not _is_lite_model(model):
+        try:
+            return studio_generate_image_content(body, model=model), "studio"
+        except AiStyleError as exc:
+            last_exc = exc
+            logger.warning(
+                "AI Studio edit failed model=%s status=%s: %s",
+                model,
+                getattr(exc, "status", "?"),
+                exc,
+            )
+
+    # 2) Vertex (yoki umumiy zanjir) — lite yoki Studio yo'q/bo'lmaganda
+    try:
+        return vertex_first_generate_image_content(body, model=model), "vertex"
+    except AiStyleError as exc:
+        last_exc = exc
+        logger.warning(
+            "Vertex/edit chain failed model=%s status=%s: %s",
+            model,
+            getattr(exc, "status", "?"),
+            exc,
+        )
+
+    # 3) Lite model uchun ham AI Studio zaxira
+    if studio_image_configured() and _is_lite_model(model):
+        try:
+            return studio_generate_image_content(body, model=model), "studio"
+        except AiStyleError as exc:
+            last_exc = exc
+
+    if last_exc is not None:
+        raise last_exc
+    raise AiStyleError("Studio tahriri muvaffaqiyatsiz tugadi.", 502)
 
 
 def generate_studio_edit(
@@ -199,14 +273,20 @@ def generate_studio_edit(
     started = time.perf_counter()
     payload: dict[str, Any] | None = None
     used_model = models[0]
+    used_provider: ProviderName = "studio"
     last_exc: AiStyleError | None = None
 
     for model in models:
         for config in _studio_generation_configs(aspect_ratio, model=model):
             body["generationConfig"] = config
             try:
-                payload = generate_image_content(body, model=model)
+                payload, used_provider = _generate_for_studio_edit(body, model=model)
                 used_model = model
+                if _is_lite_model(model):
+                    logger.warning(
+                        "Studio edit used lite fallback model=%s — fidelity may be low",
+                        model,
+                    )
                 break
             except AiStyleError as exc:
                 last_exc = exc
@@ -222,7 +302,6 @@ def generate_studio_edit(
 
     if payload is None:
         if last_exc is not None:
-            # API route 404 bo'lib ko'rinmasin — bu model xatosi.
             status = 502 if last_exc.status in (404, 400) else last_exc.status
             raise AiStyleError(
                 "Studio tahriri hozir ishlamayapti. Keyinroq urinib ko'ring.",
@@ -233,15 +312,14 @@ def generate_studio_edit(
     latency_ms = int((time.perf_counter() - started) * 1000)
     out_mime, out_bytes = extract_image_bytes(payload)
     usage = finalize_usage(payload, kind="studio", input_images=1)
-    model, provider = _resolve_model_provider(used_model)
 
     return StudioEditResult(
         preview_image=to_data_url(out_mime, out_bytes),
         prompt=prompt,
         preset_id=option["id"],
         preset_label=option["label_uz"],
-        model=model,
-        provider=provider,
+        model=used_model,
+        provider=used_provider,
         prompt_tokens=usage["prompt_tokens"],
         candidates_tokens=usage["candidates_tokens"],
         thoughts_tokens=usage["thoughts_tokens"],
