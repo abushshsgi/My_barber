@@ -41,7 +41,12 @@ def vertex_image_configured() -> bool:
     return image_generation_configured()
 
 
-def _generate_via_vertex(body: dict[str, Any], *, model: str | None = None) -> dict[str, Any]:
+def _generate_via_vertex(
+    body: dict[str, Any],
+    *,
+    model: str | None = None,
+    max_retries: int | None = None,
+) -> dict[str, Any]:
     resolved = (model or "").strip() or vertex_image_model()
     return generate_content(
         resolved,
@@ -49,14 +54,17 @@ def _generate_via_vertex(body: dict[str, Any], *, model: str | None = None) -> d
         timeout=180,
         kind="image",
         location=vertex_image_location(),
+        max_retries=max_retries,
     )
 
 
 def generate_image_content(body: dict[str, Any], *, model: str | None = None) -> dict[str, Any]:
     """Vertex birinchi (GCP kvota). Studio — 429/5xx va model/config 400/404 zaxirasi."""
+    # AI Studio zaxirasi bor bo'lsa 429 da uzoq kutmasdan tez o'tamiz.
+    vertex_retries = 1 if studio_image_configured() else None
     if vertex_credentials_configured():
         try:
-            return _generate_via_vertex(body, model=model)
+            return _generate_via_vertex(body, model=model, max_retries=vertex_retries)
         except AiStyleError as exc:
             # 400/404: pro-image model Vertexda yo'q yoki imageConfig rad etilgan bo'lishi mumkin.
             if studio_image_configured() and exc.status in (400, 404, 429, 502, 503, 504):

@@ -61,6 +61,14 @@ class StudioImageSourceTests(SimpleTestCase):
 
 
 class StudioEditFallbackTests(SimpleTestCase):
+    def test_lite_model_skips_2k_config(self):
+        from ai.services.gemini_studio_edit import _studio_generation_configs
+
+        configs = _studio_generation_configs("3:4", model="gemini-3.1-flash-lite-image")
+        self.assertEqual(len(configs), 2)
+        self.assertNotIn("imageSize", str(configs))
+        self.assertEqual(configs[0]["responseModalities"], ["IMAGE"])
+
     @patch("ai.services.gemini_studio_edit.generate_image_content")
     @patch("ai.services.gemini_studio_edit.load_image_bytes")
     @patch("ai.services.gemini_studio_edit.vertex_image_configured", return_value=True)

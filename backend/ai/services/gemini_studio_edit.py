@@ -124,19 +124,33 @@ def _studio_models_to_try() -> list[str]:
     return models
 
 
-def _studio_generation_configs(aspect_ratio: str) -> list[dict[str, Any]]:
+def _model_supports_pro_image_config(model: str) -> bool:
+    """flash-lite Vertexda imageSize/TEXT+IMAGE ni INVALID_ARGUMENT bilan rad etadi."""
+    name = (model or "").lower()
+    if "lite" in name:
+        return False
+    return "pro-image" in name or "flash-image" in name
+
+
+def _studio_generation_configs(aspect_ratio: str, *, model: str) -> list[dict[str, Any]]:
+    # Try-on bilan bir xil format — lite uchun ishonchli.
+    lite_configs: list[dict[str, Any]] = [
+        {
+            "responseModalities": ["IMAGE"],
+            "imageConfig": {"aspectRatio": aspect_ratio or "3:4"},
+        },
+        {
+            "responseModalities": ["IMAGE"],
+        },
+    ]
+    if not _model_supports_pro_image_config(model):
+        return lite_configs
     return [
         {
             "responseModalities": ["TEXT", "IMAGE"],
             "imageConfig": {"aspectRatio": aspect_ratio, "imageSize": "2K"},
         },
-        {
-            "responseModalities": ["IMAGE"],
-            "imageConfig": {"aspectRatio": aspect_ratio},
-        },
-        {
-            "responseModalities": ["IMAGE"],
-        },
+        *lite_configs,
     ]
 
 
@@ -176,18 +190,19 @@ def generate_studio_edit(
         {"text": prompt},
     ]
 
+    models = _studio_models_to_try()
     body: dict[str, Any] = {
         "contents": [{"role": "user", "parts": parts}],
-        "generationConfig": _studio_generation_configs(aspect_ratio)[0],
+        "generationConfig": _studio_generation_configs(aspect_ratio, model=models[0])[0],
     }
 
     started = time.perf_counter()
     payload: dict[str, Any] | None = None
-    used_model = _studio_models_to_try()[0]
+    used_model = models[0]
     last_exc: AiStyleError | None = None
 
-    for model in _studio_models_to_try():
-        for config in _studio_generation_configs(aspect_ratio):
+    for model in models:
+        for config in _studio_generation_configs(aspect_ratio, model=model):
             body["generationConfig"] = config
             try:
                 payload = generate_image_content(body, model=model)

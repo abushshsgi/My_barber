@@ -251,7 +251,10 @@ class MorphAiGenerationEntry(models.Model):
     class Meta:
         ordering = ["-created_at"]
         indexes = [
-            models.Index(fields=["user", "-created_at"]),
+            models.Index(
+                fields=["user", "-created_at"],
+                name="ai_morphgen_user_created_idx",
+            ),
         ]
 
     def __str__(self) -> str:

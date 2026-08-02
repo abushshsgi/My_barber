@@ -63,6 +63,7 @@ def generate_content(
     timeout: int = 60,
     kind: str = "general",
     location: str | None = None,
+    max_retries: int | None = None,
 ) -> dict[str, Any]:
     if not vertex_configured():
         raise AiStyleError(
@@ -73,7 +74,10 @@ def generate_content(
     token = get_vertex_access_token()
     url = _vertex_generate_url(model, location=location)
     payload_bytes = json.dumps(body).encode("utf-8")
-    max_attempts = 15 if kind == "image" else 1
+    if max_retries is not None:
+        max_attempts = max(1, int(max_retries) + 1)
+    else:
+        max_attempts = 15 if kind == "image" else 1
 
     for attempt in range(max_attempts):
         req = urllib.request.Request(
