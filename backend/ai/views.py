@@ -825,4 +825,10 @@ class AiStyleStudioEditView(UnthrottledAPIView):
                 style_title=title_for_log[:120],
                 error_detail=exc.message,
             )
-            return Response({"detail": exc.message}, status=exc.status)
+            # Model 404 ni route 404 qilib ko'rsatmaslik.
+            http_status = (
+                status.HTTP_502_BAD_GATEWAY
+                if exc.status in (404,)
+                else exc.status
+            )
+            return Response({"detail": exc.message}, status=http_status)

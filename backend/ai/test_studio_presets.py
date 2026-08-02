@@ -58,3 +58,51 @@ class StudioImageSourceTests(SimpleTestCase):
         self.assertEqual(mime, "image/png")
         self.assertTrue(raw.startswith(b"\x89PNG"))
         storage.exists.assert_called_once_with("ai-style/generations/2026/08/after.jpg")
+
+
+class StudioEditFallbackTests(SimpleTestCase):
+    @patch("ai.services.gemini_studio_edit.generate_image_content")
+    @patch("ai.services.gemini_studio_edit.load_image_bytes")
+    @patch("ai.services.gemini_studio_edit.vertex_image_configured", return_value=True)
+    def test_falls_back_to_lite_model_on_404(self, _cfg, mock_load, mock_gen):
+        from ai.services.gemini_style import AiStyleError
+        from ai.services.gemini_studio_edit import generate_studio_edit
+
+        mock_load.return_value = ("image/png", _TINY_PNG)
+        fake_png_b64 = (
+            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
+        )
+
+        def _gen(body, model=None):
+            if model == "gemini-3-pro-image-preview":
+                raise AiStyleError("Rasm modeli topilmadi.", 404)
+            return {
+                "candidates": [
+                    {
+                        "content": {
+                            "parts": [
+                                {"inlineData": {"mimeType": "image/png", "data": fake_png_b64}},
+                            ]
+                        }
+                    }
+                ]
+            }
+
+        mock_gen.side_effect = _gen
+        with patch(
+            "ai.services.gemini_studio_edit.studio_edit_image_model",
+            return_value="gemini-3-pro-image-preview",
+        ), patch(
+            "ai.services.gemini_studio_edit.vertex_image_model",
+            return_value="gemini-3.1-flash-lite-image",
+        ):
+            result = generate_studio_edit(
+                image_data_url="data:image/png;base64," + fake_png_b64,
+                preset_id="beard_clean",
+            )
+
+        self.assertTrue(result.preview_image.startswith("data:image/png;base64,"))
+        self.assertEqual(result.model, "gemini-3.1-flash-lite-image")
+        used_models = [call.kwargs.get("model") for call in mock_gen.call_args_list]
+        self.assertIn("gemini-3-pro-image-preview", used_models)
+        self.assertIn("gemini-3.1-flash-lite-image", used_models)

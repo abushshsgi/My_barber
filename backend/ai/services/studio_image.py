@@ -17,7 +17,8 @@ from .errors import AiStyleError, map_gemini_http_error, read_http_error_body
 logger = logging.getLogger(__name__)
 
 STUDIO_IMAGE_MODEL = "gemini-3.1-flash-lite-image"
-STUDIO_EDIT_IMAGE_MODEL = "gemini-3-pro-image-preview"
+# Vertex global endpoint da ishonchli; pro-preview alohida GEMINI_API_KEY bilan.
+STUDIO_EDIT_IMAGE_MODEL = "gemini-3.1-flash-lite-image"
 STUDIO_API_BASE = "https://generativelanguage.googleapis.com/v1beta/models"
 
 

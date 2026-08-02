@@ -18,7 +18,7 @@ from ai.usage_pricing import finalize_usage
 from .gemini_style import AiStyleError, load_image_bytes
 from .image_response import extract_image_bytes, to_data_url
 from .studio_image import image_generation_provider, studio_edit_image_model
-from .vertex_image import generate_image_content, vertex_image_configured
+from .vertex_image import generate_image_content, vertex_image_configured, vertex_image_model
 
 logger = logging.getLogger(__name__)
 
@@ -108,14 +108,36 @@ FIDELITY RULES (must follow):
 Return ONE edited photo only."""
 
 
-def _resolve_model_provider() -> tuple[str, str]:
+def _resolve_model_provider(model: str) -> tuple[str, str]:
     provider = image_generation_provider() or "studio"
-    return studio_edit_image_model(), provider
+    return model, provider
 
 
-def _studio_image_config(aspect_ratio: str) -> dict[str, Any]:
-    """Match source aspect; prefer 2K when the model supports it."""
-    return {"aspectRatio": aspect_ratio, "imageSize": "2K"}
+def _studio_models_to_try() -> list[str]:
+    """Pro edit birinchi; Vertexda ishlaydigan lite — zaxira (404 dan qutulish)."""
+    primary = (studio_edit_image_model() or "").strip()
+    lite = (vertex_image_model() or "").strip()
+    models: list[str] = []
+    for item in (primary, lite, "gemini-3.1-flash-lite-image"):
+        if item and item not in models:
+            models.append(item)
+    return models
+
+
+def _studio_generation_configs(aspect_ratio: str) -> list[dict[str, Any]]:
+    return [
+        {
+            "responseModalities": ["TEXT", "IMAGE"],
+            "imageConfig": {"aspectRatio": aspect_ratio, "imageSize": "2K"},
+        },
+        {
+            "responseModalities": ["IMAGE"],
+            "imageConfig": {"aspectRatio": aspect_ratio},
+        },
+        {
+            "responseModalities": ["IMAGE"],
+        },
+    ]
 
 
 def generate_studio_edit(
@@ -154,33 +176,49 @@ def generate_studio_edit(
         {"text": prompt},
     ]
 
-    # Pro Image edit: TEXT+IMAGE modalities; lite may accept IMAGE-only.
-    body = {
+    body: dict[str, Any] = {
         "contents": [{"role": "user", "parts": parts}],
-        "generationConfig": {
-            "responseModalities": ["TEXT", "IMAGE"],
-            "imageConfig": _studio_image_config(aspect_ratio),
-        },
+        "generationConfig": _studio_generation_configs(aspect_ratio)[0],
     }
 
-    model, provider = _resolve_model_provider()
     started = time.perf_counter()
-    try:
-        payload = generate_image_content(body, model=model)
-    except AiStyleError as exc:
-        # Fallback: IMAGE-only and/or without imageSize for stricter endpoints.
-        if getattr(exc, "status", 0) == 400:
-            logger.info("Studio imageConfig/modalities fallback: %s", exc)
-            body["generationConfig"] = {
-                "responseModalities": ["IMAGE"],
-                "imageConfig": {"aspectRatio": aspect_ratio},
-            }
-            payload = generate_image_content(body, model=model)
-        else:
-            raise
+    payload: dict[str, Any] | None = None
+    used_model = _studio_models_to_try()[0]
+    last_exc: AiStyleError | None = None
+
+    for model in _studio_models_to_try():
+        for config in _studio_generation_configs(aspect_ratio):
+            body["generationConfig"] = config
+            try:
+                payload = generate_image_content(body, model=model)
+                used_model = model
+                break
+            except AiStyleError as exc:
+                last_exc = exc
+                logger.warning(
+                    "Studio edit attempt failed model=%s status=%s: %s",
+                    model,
+                    getattr(exc, "status", "?"),
+                    exc,
+                )
+                continue
+        if payload is not None:
+            break
+
+    if payload is None:
+        if last_exc is not None:
+            # API route 404 bo'lib ko'rinmasin — bu model xatosi.
+            status = 502 if last_exc.status in (404, 400) else last_exc.status
+            raise AiStyleError(
+                "Studio tahriri hozir ishlamayapti. Keyinroq urinib ko'ring.",
+                status,
+            ) from last_exc
+        raise AiStyleError("Studio tahriri muvaffaqiyatsiz tugadi.", 502)
+
     latency_ms = int((time.perf_counter() - started) * 1000)
     out_mime, out_bytes = extract_image_bytes(payload)
     usage = finalize_usage(payload, kind="studio", input_images=1)
+    model, provider = _resolve_model_provider(used_model)
 
     return StudioEditResult(
         preview_image=to_data_url(out_mime, out_bytes),
