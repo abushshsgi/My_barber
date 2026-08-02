@@ -1122,6 +1122,8 @@
         "studioDesc": "Color, beard, and finish edits",
         "care": "Care",
         "careDesc": "Wash routine, product types, and styling tips",
+        "ingredient": "Ingredients",
+        "ingredientDesc": "Scan cosmetic INCI with AI",
         "gallery": "Gallery",
         "galleryDesc": "Upload a selfie to start a try-on"
       }
@@ -1305,6 +1307,39 @@
         "natural": "Natural",
         "colored": "Colored",
         "bleached": "Bleached"
+      },
+      "ingredientScan": {
+        "badge": "Ingredient scan",
+        "title": "Check product ingredients",
+        "subtitle": "Photograph the Ingredients (INCI) list on a cream, lotion, or shampoo — AI flags helpful and risky compounds for your skin.",
+        "cta": "Ingredient scan",
+        "placeholder": "Make the Ingredients text clear",
+        "analyzing": "Analyzing ingredients…",
+        "scanAgain": "Scan again",
+        "alertsTitle": "Warnings",
+        "beneficialTitle": "Beneficial ingredients",
+        "ingredientsCount": "{{count}} ingredients",
+        "profileSaved": "Skin profile saved",
+        "editProfile": "Profile",
+        "quiz": {
+          "skinTypeQ": "Skin type?",
+          "acneQ": "Acne-prone?",
+          "acneYes": "Yes, acne-prone",
+          "acneNo": "No",
+          "sensitivityQ": "Sensitivity?",
+          "save": "Save"
+        },
+        "skinTypes": {
+          "dry": "Dry",
+          "oily": "Oily",
+          "combination": "Combination",
+          "normal": "Normal"
+        },
+        "sensitivity": {
+          "low": "Low",
+          "medium": "Medium",
+          "high": "High"
+        }
       }
     },
     "nearbyBook": {

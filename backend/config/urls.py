@@ -135,6 +135,7 @@ from accounts.views import (
     BarberRegisterJoinSalonView,
     BarberRegisterView,
     MeView,
+    SkinProfileMeView,
     UserSearchView,
     UzRegionsView,
 )
@@ -259,6 +260,7 @@ from ai.admin_views import (
 from ai.views import (
     AiBarberCardView,
     AiFaceCheckView,
+    AiIngredientScanView,
     AiStyleAnalyzeView,
     AiStyleHistoryListCreateView,
     AiStyleStudioCatalogView,
@@ -497,6 +499,7 @@ api_routes = [
     path("ai/style-studio/", AiStyleStudioEditView.as_view()),
     path("ai/style-studio/catalog/", AiStyleStudioCatalogView.as_view()),
     path("ai/face-check/", AiFaceCheckView.as_view()),
+    path("ai/ingredient-scan/", AiIngredientScanView.as_view()),
     path("ai/barber-card/", AiBarberCardView.as_view()),
     path("ai/style-history/", AiStyleHistoryListCreateView.as_view()),
     path("ai/generations/", MorphAiGenerationListCreateView.as_view()),
@@ -539,6 +542,7 @@ api_routes = [
     path("subscriptions/confirm/", SubscriptionConfirmView.as_view()),
     path("subscriptions/care-access/", SubscriptionCareAccessView.as_view()),
     path("users/me/", MeView.as_view()),
+    path("users/me/skin-profile/", SkinProfileMeView.as_view()),
     path("users/addresses/", UserAddressListCreateView.as_view()),
     path("users/addresses/<int:pk>/", UserAddressDetailView.as_view()),
     path("users/addresses/<int:pk>/set-default/", UserAddressSetDefaultView.as_view()),

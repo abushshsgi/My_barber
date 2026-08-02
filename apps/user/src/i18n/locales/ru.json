@@ -1124,6 +1124,8 @@
         "studioDesc": "Цвет, борода и finish",
         "care": "Уход",
         "careDesc": "Мытьё, типы средств и styling",
+        "ingredient": "Состав",
+        "ingredientDesc": "Проверка INCI состава с помощью AI",
         "gallery": "Галерея",
         "galleryDesc": "Загрузите селфи для нового try-on"
       }
@@ -1299,6 +1301,39 @@
         "natural": "Натуральные",
         "colored": "Окрашенные",
         "bleached": "Осветлённые"
+      },
+      "ingredientScan": {
+        "badge": "Скан состава",
+        "title": "Проверьте состав средства",
+        "subtitle": "Сфотографируйте Ingredients (INCI) на креме, лосьоне или шампуне — AI подскажет полезные и рискованные вещества для вашей кожи.",
+        "cta": "Скан состава",
+        "placeholder": "Текст Ingredients должен быть читаемым",
+        "analyzing": "Анализируем состав…",
+        "scanAgain": "Сканировать снова",
+        "alertsTitle": "Предупреждения",
+        "beneficialTitle": "Полезные вещества",
+        "ingredientsCount": "{{count}} веществ",
+        "profileSaved": "Профиль кожи сохранён",
+        "editProfile": "Профиль",
+        "quiz": {
+          "skinTypeQ": "Тип кожи?",
+          "acneQ": "Есть акне?",
+          "acneYes": "Да, склонна к акне",
+          "acneNo": "Нет",
+          "sensitivityQ": "Чувствительность?",
+          "save": "Сохранить"
+        },
+        "skinTypes": {
+          "dry": "Сухая",
+          "oily": "Жирная",
+          "combination": "Комбинированная",
+          "normal": "Нормальная"
+        },
+        "sensitivity": {
+          "low": "Низкая",
+          "medium": "Средняя",
+          "high": "Высокая"
+        }
       }
     },
     "nearbyBook": {

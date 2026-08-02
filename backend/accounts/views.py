@@ -12,11 +12,12 @@ from barbers.models import Barber
 from salons.models import SalonMembership
 
 from .barber_availability import BarberCheckAvailabilityView
-from .models import User
+from .models import SkinProfile, User
 from .uz_regions import UzRegion
 from .serializers import (
     BarberRegisterJoinSalonSerializer,
     BarberSignupSerializer,
+    SkinProfileSerializer,
     UserSearchSerializer,
     UserSerializer,
 )
@@ -27,6 +28,7 @@ __all__ = [
     "BarberRegisterJoinSalonView",
     "BarberRegisterView",
     "MeView",
+    "SkinProfileMeView",
     "UserSearchView",
     "UzRegionsView",
 ]
@@ -114,6 +116,32 @@ class MeView(generics.RetrieveUpdateAPIView):
 
     def get_object(self):
         return self.request.user
+
+
+class SkinProfileMeView(APIView):
+    """GET/PATCH users/me/skin-profile/ — Morph AI INCI skani uchun teri profili."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        profile, _ = SkinProfile.objects.get_or_create(user=request.user)
+        return Response(SkinProfileSerializer(profile).data)
+
+    def patch(self, request):
+        profile, _ = SkinProfile.objects.get_or_create(user=request.user)
+        ser = SkinProfileSerializer(instance=profile, data=request.data, partial=True)
+        ser.is_valid(raise_exception=True)
+        # Birinchi to'liq saqlashda skin_type + sensitivity majburiy
+        skin_type = ser.validated_data.get("skin_type", profile.skin_type)
+        sensitivity = ser.validated_data.get("sensitivity", profile.sensitivity)
+        if not skin_type or not sensitivity:
+            return Response(
+                {"detail": "Teri turi va sezgirlikni kiriting."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        ser.save()
+        profile.refresh_from_db()
+        return Response(SkinProfileSerializer(profile).data)
 
 
 class UserSearchView(generics.ListAPIView):

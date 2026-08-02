@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from accounts.models import LaunchInterest, User, UserAddress
+from accounts.models import LaunchInterest, SkinProfile, User, UserAddress
 
 
 @admin.register(User)
@@ -23,3 +23,19 @@ class LaunchInterestAdmin(admin.ModelAdmin):
     list_filter = ("region", "source", "created_at")
     search_fields = ("user__email", "user__phone", "city_label", "message")
     readonly_fields = ("created_at",)
+
+
+@admin.register(SkinProfile)
+class SkinProfileAdmin(admin.ModelAdmin):
+    list_display = (
+        "id",
+        "user",
+        "skin_type",
+        "acne_prone",
+        "sensitivity",
+        "completed_at",
+        "updated_at",
+    )
+    list_filter = ("skin_type", "acne_prone", "sensitivity")
+    search_fields = ("user__email", "user__phone")
+    readonly_fields = ("completed_at", "updated_at")

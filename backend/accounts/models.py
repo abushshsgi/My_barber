@@ -136,6 +136,48 @@ class FamilyMember(models.Model):
         return f"{self.user_id}: {self.name}"
 
 
+class SkinProfile(models.Model):
+    """Mijoz teri profili — Morph AI kosmetika INCI skani uchun."""
+
+    class SkinType(models.TextChoices):
+        DRY = "dry", "Dry"
+        OILY = "oily", "Oily"
+        COMBINATION = "combination", "Combination"
+        NORMAL = "normal", "Normal"
+
+    class Sensitivity(models.TextChoices):
+        LOW = "low", "Low"
+        MEDIUM = "medium", "Medium"
+        HIGH = "high", "High"
+
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="skin_profile")
+    skin_type = models.CharField(max_length=16, choices=SkinType.choices, blank=True, default="")
+    acne_prone = models.BooleanField(default=False)
+    sensitivity = models.CharField(
+        max_length=16, choices=Sensitivity.choices, blank=True, default=""
+    )
+    completed_at = models.DateTimeField(null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-updated_at"]
+
+    def __str__(self) -> str:
+        return f"SkinProfile(user={self.user_id}, {self.skin_type})"
+
+    @property
+    def is_complete(self) -> bool:
+        return bool(self.skin_type and self.sensitivity and self.completed_at)
+
+    def profile_label(self) -> str:
+        """Gemini USER PROFILE uchun qisqa matn."""
+        skin = self.get_skin_type_display() if self.skin_type else "Unknown"
+        if self.acne_prone:
+            skin = f"{skin} / Acne-Prone"
+        sens = self.get_sensitivity_display() if self.sensitivity else "Unknown"
+        return f"Skin Type: {skin}\nSensitivity: {sens}"
+
+
 class ReferralAttribution(models.Model):
     """Kim kimni taklif qilgani — bonussiz, faqat attribution (kelajakda mukofot uchun tayyor)."""
 

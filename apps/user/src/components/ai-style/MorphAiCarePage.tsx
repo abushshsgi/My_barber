@@ -373,8 +373,16 @@ export function MorphAiCarePage() {
             })}
           </p>
           <Link
+            to="/ai-style/care/ingredient"
+            className="mt-4 flex h-12 w-full items-center justify-center rounded-full bg-white/[0.08] text-sm font-semibold text-white ring-1 ring-white/15 active:scale-[0.98]"
+          >
+            {t("aiStylePage.care.ingredientScan.cta", {
+              defaultValue: "Tarkib skani",
+            })}
+          </Link>
+          <Link
             to="/explore"
-            className="mt-4 flex h-12 w-full items-center justify-center rounded-full bg-white text-sm font-semibold text-black active:scale-[0.98]"
+            className="mt-3 flex h-12 w-full items-center justify-center rounded-full bg-white text-sm font-semibold text-black active:scale-[0.98]"
           >
             {t("aiStylePage.care.exploreCta", { defaultValue: "Uslub tanlash" })}
           </Link>

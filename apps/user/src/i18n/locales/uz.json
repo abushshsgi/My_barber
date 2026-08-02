@@ -1122,6 +1122,8 @@
         "studioDesc": "Rang, soqol va finish — tahrir",
         "care": "Parvarish",
         "careDesc": "Yuvish, mahsulot turi va styling yo'riqnomasi",
+        "ingredient": "Tarkib",
+        "ingredientDesc": "Kosmetika INCI tarkibini AI bilan tekshirish",
         "gallery": "Galereya",
         "galleryDesc": "Selfie yuklab yangi try-on boshlang"
       }
@@ -1305,6 +1307,39 @@
         "natural": "Tabiiy",
         "colored": "Bo‘yalgan",
         "bleached": "Ochilgan / bleached"
+      },
+      "ingredientScan": {
+        "badge": "Tarkib skani",
+        "title": "Mahsulot tarkibini tekshiring",
+        "subtitle": "Krem, loson yoki shampun orqasidagi Ingredients yozuvini suratga oling — AI foydali va zararli moddalarni aytadi.",
+        "cta": "Tarkib skani",
+        "placeholder": "Ingredients yozuvi aniq ko‘rinsin",
+        "analyzing": "Tarkib tahlil qilinmoqda…",
+        "scanAgain": "Yana skanerlash",
+        "alertsTitle": "Ogohlantirishlar",
+        "beneficialTitle": "Foydali moddalar",
+        "ingredientsCount": "{{count}} ta modda",
+        "profileSaved": "Teri profilingiz saqlandi",
+        "editProfile": "Profil",
+        "quiz": {
+          "skinTypeQ": "Teri turi?",
+          "acneQ": "Akne chiqadimi?",
+          "acneYes": "Ha, akne chiqadi",
+          "acneNo": "Yo‘q",
+          "sensitivityQ": "Sezgirlik?",
+          "save": "Saqlash"
+        },
+        "skinTypes": {
+          "dry": "Quruq",
+          "oily": "Yog‘li",
+          "combination": "Aralash",
+          "normal": "Normal"
+        },
+        "sensitivity": {
+          "low": "Past",
+          "medium": "O‘rtacha",
+          "high": "Yuqori"
+        }
       }
     },
     "nearbyBook": {

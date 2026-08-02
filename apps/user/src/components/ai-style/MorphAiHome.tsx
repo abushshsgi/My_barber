@@ -6,6 +6,7 @@ import {
   ChevronLeft,
   Clock3,
   Droplets,
+  FlaskConical,
   Images,
   Sparkles,
   UserRound,
@@ -218,6 +219,13 @@ export function MorphAiHome({
     })();
   };
 
+  const openIngredientScan = () => {
+    void (async () => {
+      if (ensureMorphAccess && !(await ensureMorphAccess())) return;
+      void navigate({ to: "/ai-style/care/ingredient" });
+    })();
+  };
+
   const toolActions = [
     {
       key: "camera",
@@ -242,6 +250,12 @@ export function MorphAiHome({
       label: t("aiStylePage.home.tools.care"),
       icon: Droplets,
       onClick: openCare,
+    },
+    {
+      key: "ingredient",
+      label: t("aiStylePage.home.tools.ingredient", { defaultValue: "Tarkib" }),
+      icon: FlaskConical,
+      onClick: openIngredientScan,
     },
   ] as const;
 
@@ -353,7 +367,7 @@ export function MorphAiHome({
           initial={reduceMotion ? false : { opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.08, duration: 0.35, ease: "easeOut" }}
-          className="mt-8 grid grid-cols-4 gap-2"
+          className="mt-8 grid grid-cols-5 gap-1.5"
         >
           {toolActions.map((action, i) => {
             const Icon = action.icon;

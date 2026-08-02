@@ -476,3 +476,52 @@ export async function generateBarberMasterCard(payload: {
   }
   return body as BarberMasterCardResponse;
 }
+
+export type IngredientAlertType =
+  | "comedogenic_warning"
+  | "skin_type_mismatch"
+  | "drying_alcohol"
+  | "fragrance_warning"
+  | "irritant_warning"
+  | "general_warning";
+
+export type IngredientScanAlert = {
+  type: IngredientAlertType | string;
+  ingredient: string;
+  severity: "low" | "medium" | "high" | string;
+  message_uz: string;
+};
+
+export type IngredientScanBeneficial = {
+  ingredient: string;
+  reason_uz: string;
+};
+
+export type IngredientScanResponse = {
+  product_analysis: {
+    safety_score: number;
+    verdict: string;
+    total_ingredients_count: number;
+  };
+  ingredients: string[];
+  critical_alerts: IngredientScanAlert[];
+  beneficial_ingredients: IngredientScanBeneficial[];
+};
+
+export async function scanIngredient(image: string): Promise<IngredientScanResponse> {
+  const res = await apiFetch("/api/v1/ai/ingredient-scan/", {
+    method: "POST",
+    body: JSON.stringify({ image }),
+  });
+  const body = (await res.json().catch(() => null)) as
+    | IngredientScanResponse
+    | { detail?: string }
+    | null;
+  if (!res.ok) {
+    throwFromMorphApiError(res, body, "Tarkib tahlili muvaffaqiyatsiz.");
+  }
+  if (!body || typeof body !== "object" || !("product_analysis" in body)) {
+    throw new Error("Tarkib tahlili javobi noto'g'ri.");
+  }
+  return body as IngredientScanResponse;
+}

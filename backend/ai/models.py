@@ -90,6 +90,7 @@ class AiGenerationUsage(models.Model):
         ANALYZE = "analyze", "Style analyze"
         FACE_CHECK = "face_check", "Face check"
         STUDIO = "studio", "Studio edit"
+        INGREDIENT = "ingredient", "Ingredient scan"
 
     class Status(models.TextChoices):
         SUCCESS = "success", "Success"

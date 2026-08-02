@@ -6,10 +6,11 @@ from django.shortcuts import get_object_or_404
 from django.utils import timezone
 import logging
 
-from accounts.models import User
+from accounts.models import SkinProfile, User
 
 from ai.age_groups import birth_year_to_group, normalize_age_group, resolve_hairstyle_image_path
 from ai.explore_personas import has_persona_style_asset, list_explore_personas, normalize_persona_id
+from subscriptions.services import can_use_morph_care
 
 from .history_storage import image_file_from_source, save_history_photo, trim_user_history
 from .models import (
@@ -43,6 +44,7 @@ from .services.tryon_queue import (
     is_queue_enabled,
 )
 from .services.gemini_barber_card import generate_barber_master_card
+from .services.gemini_ingredient import analyze_ingredient_from_data_url
 from .services.gemini_style import (
     NO_FACE_MESSAGE,
     AiStyleError,
@@ -497,6 +499,70 @@ class AiFaceCheckView(UnthrottledAPIView):
                 error_detail=exc.message,
             )
             return Response({"has_face": False, "detail": exc.message}, status=exc.status)
+
+
+class AiIngredientScanView(UnthrottledAPIView):
+    """POST { image } — kosmetika INCI skani (Pro / morph_care)."""
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user = _require_customer_user(request)
+        if isinstance(user, Response):
+            return user
+
+        if not can_use_morph_care(user):
+            return Response(
+                {"detail": "Morph AI Parvarish Pro obunasida mavjud."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        # Kvotada analyze bilan bir xil Morph AI oylik limit
+        blocked = check_user_can_generate(user_id=user.pk, kind="analyze")
+        if blocked:
+            return morph_generation_blocked_response(blocked)
+
+        image = request.data.get("image")
+        if not image:
+            return Response(
+                {"detail": "Mahsulot tarkibi (Ingredients) rasmini yuboring."},
+                status=400,
+            )
+
+        profile = SkinProfile.objects.filter(user=user).first()
+        if profile is None or not profile.is_complete:
+            return Response(
+                {"detail": "Avval teri profilingizni to'ldiring."},
+                status=400,
+            )
+
+        try:
+            result = analyze_ingredient_from_data_url(str(image), profile)
+            usage = result.pop("_usage", None) or {}
+            record_ai_generation(
+                user_id=user.pk,
+                kind="ingredient",
+                status="success",
+                prompt=str(usage.get("prompt") or ""),
+                model=str(usage.get("model") or ""),
+                provider=str(usage.get("provider") or ""),
+                prompt_tokens=int(usage.get("prompt_tokens") or 0),
+                candidates_tokens=int(usage.get("candidates_tokens") or 0),
+                thoughts_tokens=int(usage.get("thoughts_tokens") or 0),
+                total_tokens=int(usage.get("total_tokens") or 0),
+                cost_usd=usage.get("cost_usd") or 0,
+                tokens_estimated=bool(usage.get("tokens_estimated")),
+                latency_ms=int(usage.get("latency_ms") or 0),
+            )
+            return Response(result)
+        except AiStyleError as exc:
+            record_ai_generation(
+                user_id=user.pk,
+                kind="ingredient",
+                status="failed",
+                error_detail=exc.message,
+            )
+            return Response({"detail": exc.message}, status=exc.status)
 
 
 class AiBarberCardView(UnthrottledAPIView):

@@ -11,12 +11,52 @@ from salons.geo_join import assert_join_distance_ok
 from salons.join_service import attach_worker_membership
 from salons.models import Salon
 
-from .models import User
+from .models import SkinProfile, User
 from .email_utils import is_internal_email
 from .name_validation import validate_display_name
 from .phone_utils import normalize_phone_field
 from .uz_regions import UzRegion
 from geo.region_resolver import resolve_region_from_coords
+
+
+class SkinProfileSerializer(serializers.ModelSerializer):
+    complete = serializers.BooleanField(source="is_complete", read_only=True)
+
+    class Meta:
+        model = SkinProfile
+        fields = (
+            "skin_type",
+            "acne_prone",
+            "sensitivity",
+            "complete",
+            "completed_at",
+            "updated_at",
+        )
+        read_only_fields = ("complete", "completed_at", "updated_at")
+
+    def validate_skin_type(self, value: str) -> str:
+        value = (value or "").strip().lower()
+        valid = {c[0] for c in SkinProfile.SkinType.choices}
+        if value not in valid:
+            raise serializers.ValidationError("Noto'g'ri teri turi.")
+        return value
+
+    def validate_sensitivity(self, value: str) -> str:
+        value = (value or "").strip().lower()
+        valid = {c[0] for c in SkinProfile.Sensitivity.choices}
+        if value not in valid:
+            raise serializers.ValidationError("Noto'g'ri sezgirlik darajasi.")
+        return value
+
+    def update(self, instance: SkinProfile, validated_data: dict) -> SkinProfile:
+        from django.utils import timezone
+
+        for key, value in validated_data.items():
+            setattr(instance, key, value)
+        if instance.skin_type and instance.sensitivity and not instance.completed_at:
+            instance.completed_at = timezone.now()
+        instance.save()
+        return instance
 
 
 class UserSerializer(serializers.ModelSerializer):
