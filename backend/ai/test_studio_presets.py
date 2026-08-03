@@ -90,8 +90,7 @@ class StudioEditFallbackTests(SimpleTestCase):
     @patch("ai.services.gemini_studio_edit._generate_for_studio_edit")
     @patch("ai.services.gemini_studio_edit.load_image_bytes")
     @patch("ai.services.gemini_studio_edit.vertex_image_configured", return_value=True)
-    def test_falls_back_to_lite_model_on_404(self, _cfg, mock_load, mock_gen):
-        from ai.services.gemini_style import AiStyleError
+    def test_uses_lite_model_by_default(self, _cfg, mock_load, mock_gen):
         from ai.services.gemini_studio_edit import generate_studio_edit
 
         mock_load.return_value = ("image/png", _TINY_PNG)
@@ -109,16 +108,10 @@ class StudioEditFallbackTests(SimpleTestCase):
                 }
             ]
         }
-
-        def _gen(body, model=None):
-            if model and "lite" not in model:
-                raise AiStyleError("Rasm modeli topilmadi.", 404)
-            return ok_payload, "vertex"
-
-        mock_gen.side_effect = _gen
+        mock_gen.return_value = (ok_payload, "vertex")
         with patch(
             "ai.services.gemini_studio_edit.studio_edit_image_model",
-            return_value="gemini-3.1-flash-image",
+            return_value="gemini-3.1-flash-lite-image",
         ), patch(
             "ai.services.gemini_studio_edit.vertex_image_model",
             return_value="gemini-3.1-flash-lite-image",
@@ -131,22 +124,19 @@ class StudioEditFallbackTests(SimpleTestCase):
         self.assertTrue(result.preview_image.startswith("data:image/jpeg;base64,"))
         self.assertEqual(result.model, "gemini-3.1-flash-lite-image")
         used_models = [call.kwargs.get("model") for call in mock_gen.call_args_list]
-        self.assertTrue(any(m and "flash-image" in m for m in used_models))
-        self.assertIn("gemini-3.1-flash-lite-image", used_models)
+        self.assertEqual(used_models, ["gemini-3.1-flash-lite-image"])
 
-    def test_flash_models_before_lite(self):
+    def test_lite_is_only_default_model(self):
         from ai.services.gemini_studio_edit import _studio_models_to_try
 
         with patch(
             "ai.services.gemini_studio_edit.studio_edit_image_model",
-            return_value="gemini-3.1-flash-image",
+            return_value="gemini-3.1-flash-lite-image",
         ), patch(
             "ai.services.gemini_studio_edit.vertex_image_model",
             return_value="gemini-3.1-flash-lite-image",
         ):
             models = _studio_models_to_try()
-        self.assertEqual(models[0], "gemini-3.1-flash-image")
-        self.assertIn("gemini-2.5-flash-image", models)
+        self.assertEqual(models, ["gemini-3.1-flash-lite-image"])
+        self.assertNotIn("gemini-3.1-flash-image", models)
         self.assertNotIn("gemini-3-pro-image", models)
-        self.assertTrue(any("lite" in m for m in models))
-        self.assertGreater(models.index("gemini-3.1-flash-lite-image"), 0)

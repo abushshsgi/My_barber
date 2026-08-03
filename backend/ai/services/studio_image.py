@@ -17,8 +17,8 @@ from .errors import AiStyleError, map_gemini_http_error, read_http_error_body
 logger = logging.getLogger(__name__)
 
 STUDIO_IMAGE_MODEL = "gemini-3.1-flash-lite-image"
-# Studio tahrir — arzon/tez flash-image (1K). Pro/2K default emas.
-STUDIO_EDIT_IMAGE_MODEL = "gemini-3.1-flash-image"
+# Studio tahrir — eng arzon flash-lite (~$0.03), try-on bilan bir xil.
+STUDIO_EDIT_IMAGE_MODEL = "gemini-3.1-flash-lite-image"
 STUDIO_API_BASE = "https://generativelanguage.googleapis.com/v1beta/models"
 
 
@@ -47,18 +47,10 @@ def _normalize_studio_edit_model(model: str) -> str:
 
 
 def studio_edit_image_model() -> str:
-    """Morf Studio tahrir — default flash-image (Pro dan arzonroq)."""
+    """Morf Studio tahrir — default flash-lite (~$0.03 / tahrir)."""
     configured = (getattr(settings, "STUDIO_EDIT_IMAGE_MODEL", None) or "").strip()
     if configured:
         return _normalize_studio_edit_model(configured)
-    try:
-        from ai.models import MorphAiSettings
-
-        preferred = (MorphAiSettings.load().preferred_model or "").strip()
-        if preferred and "lite" not in preferred.lower():
-            return _normalize_studio_edit_model(preferred)
-    except Exception:
-        pass
     return STUDIO_EDIT_IMAGE_MODEL
 
 

@@ -46,10 +46,8 @@ _SUPPORTED_RATIOS: tuple[tuple[float, str], ...] = (
     (21 / 9, "21:9"),
 )
 
-# Edit fidelity (stable IDs). Default — arzon flash-image (1K); Pro/2K yo'q.
-# flash-lite — faqat oxirgi zaxira (butun portretni qayta chizishi mumkin).
-_FLASH_IMAGE_MODEL = "gemini-3.1-flash-image"
-_FLASH_IMAGE_25_MODEL = "gemini-2.5-flash-image"
+# Default — eng arzon flash-lite (~$0.03 / tahrir), try-on bilan bir xil model.
+_LITE_IMAGE_MODEL = "gemini-3.1-flash-lite-image"
 
 
 @dataclass(frozen=True)
@@ -137,23 +135,14 @@ def _model_supports_image_config(model: str) -> bool:
 
 
 def _studio_models_to_try() -> list[str]:
-    """Arzon flash-image birinchi; Pro zanjirda yo'q; lite — oxirgi zaxira."""
-    primary = (studio_edit_image_model() or "").strip()
-    lite = (vertex_image_model() or "").strip() or "gemini-3.1-flash-lite-image"
+    """Faqat arzon flash-lite — flash/Pro fallback yo'q (narx uchun)."""
+    primary = (studio_edit_image_model() or "").strip() or _LITE_IMAGE_MODEL
+    lite = (vertex_image_model() or "").strip() or _LITE_IMAGE_MODEL
     models: list[str] = []
-    for item in (
-        primary,
-        _FLASH_IMAGE_MODEL,
-        _FLASH_IMAGE_25_MODEL,
-        lite,
-        "gemini-3.1-flash-lite-image",
-    ):
+    for item in (primary, lite, _LITE_IMAGE_MODEL):
         if item and item not in models:
             models.append(item)
-    # Lite ni oxiriga suramiz — sifat uchun.
-    quality = [m for m in models if not _is_lite_model(m)]
-    fallback = [m for m in models if _is_lite_model(m)]
-    return quality + fallback
+    return models
 
 
 def _studio_generation_configs(aspect_ratio: str, *, model: str) -> list[dict[str, Any]]:
@@ -188,8 +177,8 @@ def _generate_for_studio_edit(
     model: str,
 ) -> tuple[dict[str, Any], ProviderName]:
     """
-    Studio tahrir: AI Studio (GEMINI_API_KEY) + edit model birinchi.
-    Vertex/lite — faqat zaxira. Lite butun portretni qayta chizib sifatni buzadi.
+    Studio tahrir: default flash-lite.
+    AI Studio (GEMINI_API_KEY) → Vertex zanjiri.
     """
     last_exc: AiStyleError | None = None
 
@@ -284,11 +273,6 @@ def generate_studio_edit(
             try:
                 payload, used_provider = _generate_for_studio_edit(body, model=model)
                 used_model = model
-                if _is_lite_model(model):
-                    logger.warning(
-                        "Studio edit used lite fallback model=%s — fidelity may be low",
-                        model,
-                    )
                 break
             except AiStyleError as exc:
                 last_exc = exc
