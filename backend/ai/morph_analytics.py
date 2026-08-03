@@ -117,6 +117,10 @@ def build_morph_ai_analytics(
         created_at__gte=active_since,
         kind=AiGenerationUsage.Kind.TRYON,
     ).count()
+    studio_15m = AiGenerationUsage.objects.filter(
+        created_at__gte=active_since,
+        kind=AiGenerationUsage.Kind.STUDIO,
+    ).count()
 
     daily = list(
         qs.annotate(day=TruncDate("created_at"))
@@ -125,6 +129,7 @@ def build_morph_ai_analytics(
             generations=Count("id"),
             tryon=Count("id", filter=Q(kind=AiGenerationUsage.Kind.TRYON)),
             analyze=Count("id", filter=Q(kind=AiGenerationUsage.Kind.ANALYZE)),
+            studio=Count("id", filter=Q(kind=AiGenerationUsage.Kind.STUDIO)),
             tokens=Sum("total_tokens"),
             cost_usd=Sum("cost_usd"),
             users=Count("user_id", distinct=True),
@@ -177,6 +182,7 @@ def build_morph_ai_analytics(
             "active_users_15m": active_users,
             "generations_15m": gens_15m,
             "tryon_15m": tryon_15m,
+            "studio_15m": studio_15m,
             "queue": _queue_snapshot(),
         },
         "summary": {
@@ -208,6 +214,7 @@ def build_morph_ai_analytics(
                 "generations": int(row["generations"] or 0),
                 "tryon": int(row["tryon"] or 0),
                 "analyze": int(row["analyze"] or 0),
+                "studio": int(row["studio"] or 0),
                 "tokens": int(row["tokens"] or 0),
                 "cost_usd": _money(row["cost_usd"]),
                 "users": int(row["users"] or 0),

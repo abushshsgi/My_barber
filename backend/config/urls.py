@@ -256,6 +256,7 @@ from ai.admin_views import (
     AdminMorphAiPopularityView,
     AdminMorphAiQueueView,
     AdminMorphAiSettingsView,
+    AdminMorphAiStudioView,
 )
 from ai.views import (
     AiBarberCardView,
@@ -377,6 +378,7 @@ api_routes = [
     path("admin/morph-ai/errors/", AdminMorphAiErrorsView.as_view()),
     path("admin/morph-ai/popularity/", AdminMorphAiPopularityView.as_view()),
     path("admin/morph-ai/conversion/", AdminMorphAiConversionView.as_view()),
+    path("admin/morph-ai/studio/", AdminMorphAiStudioView.as_view()),
     path("admin/morph-ai/budget/", AdminMorphAiBudgetView.as_view()),
     path("admin/morph-ai/limits/", AdminMorphAiLimitsView.as_view()),
     path("admin/morph-ai/queue/", AdminMorphAiQueueView.as_view()),

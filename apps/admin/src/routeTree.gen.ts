@@ -63,6 +63,7 @@ import { Route as AdminMorphAiLimitsRouteImport } from './routes/admin.morph-ai.
 import { Route as AdminMorphAiPopularityRouteImport } from './routes/admin.morph-ai.popularity'
 import { Route as AdminMorphAiQueueRouteImport } from './routes/admin.morph-ai.queue'
 import { Route as AdminMorphAiSettingsRouteImport } from './routes/admin.morph-ai.settings'
+import { Route as AdminMorphAiStudioRouteImport } from './routes/admin.morph-ai.studio'
 import { Route as AdminPayoutsIndexRouteImport } from './routes/admin.payouts.index'
 import { Route as AdminSalonsSalonIdRouteImport } from './routes/admin.salons.$salonId'
 import { Route as AdminServicesAnalyticsRouteImport } from './routes/admin.services.analytics'
@@ -365,6 +366,11 @@ const AdminMorphAiSettingsRoute = AdminMorphAiSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => AdminMorphAiRoute,
 } as any)
+const AdminMorphAiStudioRoute = AdminMorphAiStudioRouteImport.update({
+  id: '/studio',
+  path: '/studio',
+  getParentRoute: () => AdminMorphAiRoute,
+} as any)
 const AdminPayoutsIndexRoute = AdminPayoutsIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -576,6 +582,7 @@ export interface FileRoutesByFullPath {
   '/admin/morph-ai/popularity': typeof AdminMorphAiPopularityRoute
   '/admin/morph-ai/queue': typeof AdminMorphAiQueueRoute
   '/admin/morph-ai/settings': typeof AdminMorphAiSettingsRoute
+  '/admin/morph-ai/studio': typeof AdminMorphAiStudioRoute
   '/admin/salons/$salonId': typeof AdminSalonsSalonIdRouteWithChildren
   '/admin/services/analytics': typeof AdminServicesAnalyticsRoute
   '/admin/statistics/agents': typeof AdminStatisticsAgentsRoute
@@ -653,6 +660,7 @@ export interface FileRoutesByTo {
   '/admin/morph-ai/popularity': typeof AdminMorphAiPopularityRoute
   '/admin/morph-ai/queue': typeof AdminMorphAiQueueRoute
   '/admin/morph-ai/settings': typeof AdminMorphAiSettingsRoute
+  '/admin/morph-ai/studio': typeof AdminMorphAiStudioRoute
   '/admin/services/analytics': typeof AdminServicesAnalyticsRoute
   '/admin/statistics/agents': typeof AdminStatisticsAgentsRoute
   '/admin/statistics/barbers': typeof AdminStatisticsBarbersRoute
@@ -737,6 +745,7 @@ export interface FileRoutesById {
   '/admin/morph-ai/popularity': typeof AdminMorphAiPopularityRoute
   '/admin/morph-ai/queue': typeof AdminMorphAiQueueRoute
   '/admin/morph-ai/settings': typeof AdminMorphAiSettingsRoute
+  '/admin/morph-ai/studio': typeof AdminMorphAiStudioRoute
   '/admin/salons/$salonId': typeof AdminSalonsSalonIdRouteWithChildren
   '/admin/services/analytics': typeof AdminServicesAnalyticsRoute
   '/admin/statistics/agents': typeof AdminStatisticsAgentsRoute
@@ -825,6 +834,7 @@ export interface FileRouteTypes {
     | '/admin/morph-ai/popularity'
     | '/admin/morph-ai/queue'
     | '/admin/morph-ai/settings'
+    | '/admin/morph-ai/studio'
     | '/admin/salons/$salonId'
     | '/admin/services/analytics'
     | '/admin/statistics/agents'
@@ -902,6 +912,7 @@ export interface FileRouteTypes {
     | '/admin/morph-ai/popularity'
     | '/admin/morph-ai/queue'
     | '/admin/morph-ai/settings'
+    | '/admin/morph-ai/studio'
     | '/admin/services/analytics'
     | '/admin/statistics/agents'
     | '/admin/statistics/barbers'
@@ -985,6 +996,7 @@ export interface FileRouteTypes {
     | '/admin/morph-ai/popularity'
     | '/admin/morph-ai/queue'
     | '/admin/morph-ai/settings'
+    | '/admin/morph-ai/studio'
     | '/admin/salons/$salonId'
     | '/admin/services/analytics'
     | '/admin/statistics/agents'
@@ -1408,6 +1420,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminMorphAiSettingsRouteImport
       parentRoute: typeof AdminMorphAiRoute
     }
+    '/admin/morph-ai/studio': {
+      id: '/admin/morph-ai/studio'
+      path: '/studio'
+      fullPath: '/admin/morph-ai/studio'
+      preLoaderRoute: typeof AdminMorphAiStudioRouteImport
+      parentRoute: typeof AdminMorphAiRoute
+    }
     '/admin/payouts/': {
       id: '/admin/payouts/'
       path: '/'
@@ -1760,6 +1779,7 @@ interface AdminMorphAiRouteChildren {
   AdminMorphAiPopularityRoute: typeof AdminMorphAiPopularityRoute
   AdminMorphAiQueueRoute: typeof AdminMorphAiQueueRoute
   AdminMorphAiSettingsRoute: typeof AdminMorphAiSettingsRoute
+  AdminMorphAiStudioRoute: typeof AdminMorphAiStudioRoute
   AdminMorphAiIndexRoute: typeof AdminMorphAiIndexRoute
   AdminMorphAiListKindRoute: typeof AdminMorphAiListKindRoute
 }
@@ -1774,6 +1794,7 @@ const AdminMorphAiRouteChildren: AdminMorphAiRouteChildren = {
   AdminMorphAiPopularityRoute: AdminMorphAiPopularityRoute,
   AdminMorphAiQueueRoute: AdminMorphAiQueueRoute,
   AdminMorphAiSettingsRoute: AdminMorphAiSettingsRoute,
+  AdminMorphAiStudioRoute: AdminMorphAiStudioRoute,
   AdminMorphAiIndexRoute: AdminMorphAiIndexRoute,
   AdminMorphAiListKindRoute: AdminMorphAiListKindRoute,
 }

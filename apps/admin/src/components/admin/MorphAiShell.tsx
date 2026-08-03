@@ -3,6 +3,7 @@ import { cn } from "@/lib/utils";
 
 const TABS = [
   { to: "/admin/morph-ai" as const, label: "Analytics", exact: true },
+  { to: "/admin/morph-ai/studio" as const, label: "Studio" },
   {
     to: "/admin/morph-ai/list/$kind" as const,
     params: { kind: "generations" as const },

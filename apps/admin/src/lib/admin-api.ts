@@ -3621,6 +3621,7 @@ export type MorphAiAnalytics = {
     active_users_15m: number;
     generations_15m: number;
     tryon_15m: number;
+    studio_15m?: number;
     queue: { enabled: boolean; depth: number };
   };
   summary: {
@@ -3651,6 +3652,7 @@ export type MorphAiAnalytics = {
     generations: number;
     tryon: number;
     analyze: number;
+    studio?: number;
     tokens: number;
     cost_usd: string;
     users: number;
@@ -3906,6 +3908,108 @@ export async function fetchMorphAiConversion(params?: { range?: StatDateRange })
       same_day_bookings: number;
     };
   }>(`/api/v1/admin/morph-ai/conversion/${morphRangeQs(params?.range)}`);
+}
+
+export type MorphAiStudioOps = {
+  generated_at: string;
+  range: { start: string; end: string };
+  billing_period: {
+    start: string;
+    end: string;
+    morph_studio_used_total: number;
+    users_with_studio_usage: number;
+  };
+  live: { edits_15m: number; active_users_15m: number };
+  summary: {
+    edits: number;
+    success: number;
+    failed: number;
+    success_rate: number;
+    unique_users: number;
+    total_tokens: number;
+    prompt_tokens: number;
+    candidates_tokens: number;
+    total_cost_usd: string;
+    avg_cost_usd: string;
+    avg_latency_ms: number;
+  };
+  daily: Array<{
+    date: string;
+    edits: number;
+    success: number;
+    failed: number;
+    users: number;
+    tokens: number;
+    cost_usd: string;
+  }>;
+  top_users: Array<{
+    user_id: number;
+    name: string;
+    phone: string;
+    email: string;
+    edits: number;
+    success: number;
+    failed: number;
+    tokens: number;
+    cost_usd: string;
+    last_at: string | null;
+    plan_code: string;
+    subscription_status: string;
+    subscription_id: string | null;
+    ends_at: string | null;
+    morph_studio_used: number;
+    morph_studio_limit: number;
+    morph_ai_used: number;
+    morph_ai_limit: number;
+  }>;
+  top_presets: Array<{
+    style_id: string;
+    style_title: string;
+    edits: number;
+    success: number;
+    users: number;
+    cost_usd: string;
+  }>;
+  recent: Array<{
+    id: number;
+    user_id: number | null;
+    user_name: string;
+    status: string;
+    style_id: string;
+    style_title: string;
+    prompt: string;
+    model: string;
+    provider: string;
+    prompt_tokens: number;
+    candidates_tokens: number;
+    total_tokens: number;
+    cost_usd: string;
+    latency_ms: number;
+    error_detail: string;
+    created_at: string;
+    plan_code: string;
+    subscription_status: string;
+    subscription_id: string | null;
+    ends_at: string | null;
+    morph_studio_used: number;
+    morph_studio_limit: number;
+    morph_ai_used: number;
+    morph_ai_limit: number;
+  }>;
+};
+
+export async function fetchMorphAiStudio(params?: {
+  range?: StatDateRange;
+  limit?: number;
+  top?: number;
+}): Promise<MorphAiStudioOps> {
+  const sp = new URLSearchParams();
+  if (params?.range?.start) sp.set("start", params.range.start);
+  if (params?.range?.end) sp.set("end", params.range.end);
+  if (params?.limit) sp.set("limit", String(params.limit));
+  if (params?.top) sp.set("top", String(params.top));
+  const q = sp.toString();
+  return apiJson<MorphAiStudioOps>(`/api/v1/admin/morph-ai/studio/${q ? `?${q}` : ""}`);
 }
 
 export async function fetchMorphAiBudget(params?: { range?: StatDateRange }) {

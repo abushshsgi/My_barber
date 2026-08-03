@@ -156,7 +156,7 @@ function MorphAiPage() {
               label="15 daqiqada chaqiruv"
               value={d.live.generations_15m.toLocaleString()}
               icon={Zap}
-              hint={`Try-on: ${d.live.tryon_15m}`}
+              hint={`Try-on: ${d.live.tryon_15m} · Studio: ${d.live.studio_15m ?? 0}`}
             />
             <KPICard
               label="Navbat chuqurligi"

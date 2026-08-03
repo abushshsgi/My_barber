@@ -23,6 +23,7 @@ from ai.morph_ops import (
     queue_snapshot_admin,
     update_settings,
 )
+from ai.morph_studio import build_morph_studio_ops
 
 
 def _int_param(raw, default: int, *, lo: int = 1, hi: int = 200) -> int:
@@ -80,6 +81,20 @@ class AdminMorphAiConversionView(UnthrottledAPIView):
             build_conversion(
                 request.query_params.get("start"),
                 request.query_params.get("end"),
+            )
+        )
+
+
+class AdminMorphAiStudioView(UnthrottledAPIView):
+    permission_classes = [IsAdmin]
+
+    def get(self, request):
+        return Response(
+            build_morph_studio_ops(
+                request.query_params.get("start"),
+                request.query_params.get("end"),
+                recent_limit=_int_param(request.query_params.get("limit"), 50),
+                top_limit=_int_param(request.query_params.get("top"), 40, hi=100),
             )
         )
 
