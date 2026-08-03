@@ -3,11 +3,12 @@ import { useQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Camera,
+  Check,
   ChevronLeft,
   Download,
   ImagePlus,
+  Images,
   Loader2,
-  Palette,
   RotateCcw,
   Sparkles,
   Undo2,
@@ -102,6 +103,9 @@ type SourceItem = {
   kind: "generation" | "selfie";
 };
 
+const glassBtn =
+  "grid size-10 place-items-center rounded-full border border-white/15 bg-black/35 text-white shadow-[0_8px_24px_rgba(0,0,0,0.35)] backdrop-blur-xl transition active:scale-95 disabled:opacity-35 touch-manipulation cursor-pointer";
+
 export function MorphAiStudioPage() {
   const { t, i18n } = useTranslation();
   const limitGate = useMorphLimitGate();
@@ -116,6 +120,7 @@ export function MorphAiStudioPage() {
   const [current, setCurrent] = useState<string | null>(null);
   const [history, setHistory] = useState<string[]>([]);
   const [loadingId, setLoadingId] = useState<string | null>(null);
+  const [activePresetId, setActivePresetId] = useState<string | null>(null);
   const [downloading, setDownloading] = useState(false);
   const [activeCategory, setActiveCategory] = useState("hair_color");
   const [generations, setGenerations] = useState<MorphAiGeneration[]>(() =>
@@ -221,6 +226,7 @@ export function MorphAiStudioPage() {
     setCurrent(image);
     setHistory([image]);
     setBeforeImage(before);
+    setActivePresetId(null);
     setDraftMeta({
       styleId: meta?.styleId,
       styleTitle: meta?.styleTitle,
@@ -242,6 +248,7 @@ export function MorphAiStudioPage() {
     if (!original || loadingId) return;
     if (!(await limitGate.ensureStudio())) return;
     setLoadingId(presetId);
+    setActivePresetId(presetId);
     try {
       const result = await generateMorphStudioEdit(original, presetId, {
         styleId: draftMeta.styleId,
@@ -288,12 +295,14 @@ export function MorphAiStudioPage() {
     const next = history.slice(0, -1);
     setHistory(next);
     setCurrent(next[next.length - 1] ?? original);
+    if (next.length <= 1) setActivePresetId(null);
   };
 
   const resetOriginal = () => {
     if (!original) return;
     setCurrent(original);
     setHistory([original]);
+    setActivePresetId(null);
     stashMorphStudioDraft({
       image: original,
       baseImage: original,
@@ -332,131 +341,181 @@ export function MorphAiStudioPage() {
   };
 
   const showPicker = !current || pickerOpen;
+  const hasEdits = history.length > 1;
 
   return (
-    <div className="flex min-h-[100dvh] flex-col bg-[#070707] text-white">
-      <header
-        className="relative z-20 flex items-center justify-between gap-3 px-4 pb-3"
-        style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}
-      >
-        <Link
-          to="/ai-style"
-          className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-white/12 bg-white/10 px-3.5 py-2 text-sm font-bold backdrop-blur-md touch-manipulation"
-        >
-          <ChevronLeft className="h-4 w-4" strokeWidth={2.5} />
-          {t("common.back")}
-        </Link>
-        <div className="min-w-0 text-center">
-          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/45">Morf AI</p>
-          <h1 className="truncate text-sm font-bold">
-            {t("aiStylePage.studio.title", { defaultValue: "AI Studio" })}
-          </h1>
-        </div>
-        <button
-          type="button"
-          onClick={() => setPickerOpen(true)}
-          className="inline-flex min-h-11 items-center rounded-full border border-white/12 bg-white/10 px-3 text-xs font-bold backdrop-blur-md touch-manipulation"
-        >
-          {t("aiStylePage.studio.changePhoto", { defaultValue: "Rasm" })}
-        </button>
-      </header>
+    <div className="relative flex min-h-[100dvh] flex-col overflow-hidden bg-black text-white">
+      <style>{`
+        @keyframes morf-studio-scan {
+          0% { transform: translateY(-120%); opacity: 0; }
+          15% { opacity: 1; }
+          85% { opacity: 1; }
+          100% { transform: translateY(120%); opacity: 0; }
+        }
+        @keyframes morf-studio-pulse {
+          0%, 100% { opacity: 0.35; }
+          50% { opacity: 0.85; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .morf-studio-scan,
+          .morf-studio-pulse { animation: none !important; }
+        }
+        .morf-studio-scan {
+          animation: morf-studio-scan 2.4s ease-in-out infinite;
+        }
+        .morf-studio-pulse {
+          animation: morf-studio-pulse 1.8s ease-in-out infinite;
+        }
+      `}</style>
+
+      {/* Atmospheric backdrop when picker / empty */}
+      {showPicker ? (
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_0%,rgba(255,255,255,0.08),transparent_55%),radial-gradient(ellipse_at_80%_100%,rgba(180,180,180,0.06),transparent_45%)]"
+        />
+      ) : null}
 
       <AnimatePresence mode="wait">
         {showPicker ? (
           <motion.div
             key="picker"
-            initial={{ opacity: 0, y: 12 }}
+            initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            className="flex min-h-0 flex-1 flex-col px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))]"
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+            className="relative z-10 flex min-h-[100dvh] flex-col"
           >
-            <div className="mb-4">
-              <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-white/40">
-                {t("aiStylePage.studio.pickLabel", { defaultValue: "Rasm tanlang" })}
-              </p>
-              <p className="mt-1 text-lg font-bold leading-tight">
-                {t("aiStylePage.studio.pickTitle", {
-                  defaultValue: "History, try-on yoki yangi selfie",
-                })}
-              </p>
-            </div>
-
-            <div className="mb-4 grid grid-cols-2 gap-2.5">
-              <button
-                type="button"
-                onClick={() => setCameraOpen(true)}
-                className="flex min-h-[52px] items-center justify-center gap-2 rounded-2xl bg-white text-sm font-bold text-black touch-manipulation active:scale-[0.98]"
+            <header
+              className="flex items-center justify-between gap-3 px-4 pb-2"
+              style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}
+            >
+              <Link
+                to="/ai-style"
+                className={glassBtn}
+                aria-label={t("common.back")}
               >
-                <Camera className="h-4 w-4" />
-                {t("aiStylePage.openCamera")}
-              </button>
-              <button
-                type="button"
-                onClick={() => fileRef.current?.click()}
-                className="flex min-h-[52px] items-center justify-center gap-2 rounded-2xl border border-white/15 bg-white/10 text-sm font-bold touch-manipulation active:scale-[0.98]"
-              >
-                <ImagePlus className="h-4 w-4" />
-                {t("aiStylePage.pickFromGallery")}
-              </button>
-            </div>
-
-            {sources.length > 0 ? (
-              <div className="min-h-0 flex-1 overflow-y-auto">
-                <p className="mb-2.5 text-[11px] font-bold uppercase tracking-[0.14em] text-white/40">
-                  {t("aiStylePage.studio.fromHistory", { defaultValue: "History / Try-on" })}
+                <ChevronLeft className="h-5 w-5" strokeWidth={2.25} />
+              </Link>
+              <div className="min-w-0 text-center">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-white/40">
+                  Morf AI
                 </p>
-                <div className="grid grid-cols-3 gap-2 pb-4">
-                  {sources.map((item) => (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={() =>
-                        selectImage(item.image, {
-                          styleId: item.styleId,
-                          styleTitle: item.title,
-                          source: item.kind === "generation" ? "generation" : "history",
-                          beforeImage: item.beforeImage || item.image,
-                        })
-                      }
-                      className="relative aspect-[3/4] overflow-hidden rounded-2xl bg-white/5 touch-manipulation active:scale-[0.98]"
-                    >
-                      <img
-                        src={item.image}
-                        alt=""
-                        className="h-full w-full object-cover object-top"
-                      />
-                      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-1.5 pb-1.5 pt-6">
-                        <p className="truncate text-[10px] font-bold">{item.title}</p>
-                      </div>
-                    </button>
-                  ))}
+                <h1 className="truncate text-[15px] font-semibold tracking-tight">
+                  {t("aiStylePage.studio.title", { defaultValue: "AI Studio" })}
+                </h1>
+              </div>
+              <div className="size-10" aria-hidden />
+            </header>
+
+            <div className="flex min-h-0 flex-1 flex-col px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
+              <div className="mb-5 mt-2 max-w-md">
+                <h2 className="text-[1.65rem] font-semibold leading-[1.15] tracking-tight">
+                  {t("aiStylePage.studio.pickTitle", {
+                    defaultValue: "Lookni tanlang",
+                  })}
+                </h2>
+                <p className="mt-1.5 text-sm leading-relaxed text-white/45">
+                  {t("aiStylePage.studio.pickLabel", {
+                    defaultValue: "History, try-on yoki yangi selfie bilan boshlang",
+                  })}
+                </p>
+              </div>
+
+              <div className="mb-5 grid grid-cols-2 gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setCameraOpen(true)}
+                  className="group relative flex min-h-[88px] flex-col items-start justify-between overflow-hidden rounded-[22px] bg-white px-4 py-3.5 text-left text-black shadow-[0_12px_40px_rgba(255,255,255,0.08)] touch-manipulation cursor-pointer active:scale-[0.98]"
+                >
+                  <span className="grid size-9 place-items-center rounded-full bg-black/8">
+                    <Camera className="h-4 w-4" />
+                  </span>
+                  <span className="text-sm font-semibold tracking-tight">
+                    {t("aiStylePage.openCamera")}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => fileRef.current?.click()}
+                  className="group relative flex min-h-[88px] flex-col items-start justify-between overflow-hidden rounded-[22px] border border-white/12 bg-white/[0.06] px-4 py-3.5 text-left backdrop-blur-md touch-manipulation cursor-pointer active:scale-[0.98]"
+                >
+                  <span className="grid size-9 place-items-center rounded-full bg-white/10">
+                    <ImagePlus className="h-4 w-4" />
+                  </span>
+                  <span className="text-sm font-semibold tracking-tight text-white/90">
+                    {t("aiStylePage.pickFromGallery")}
+                  </span>
+                </button>
+              </div>
+
+              {sources.length > 0 ? (
+                <div className="min-h-0 flex-1 overflow-y-auto">
+                  <div className="mb-3 flex items-center justify-between">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/35">
+                      {t("aiStylePage.studio.fromHistory", { defaultValue: "Recent" })}
+                    </p>
+                    <span className="text-[11px] text-white/30">{sources.length}</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 pb-4 sm:grid-cols-4">
+                    {sources.map((item, index) => (
+                      <motion.button
+                        key={item.id}
+                        type="button"
+                        initial={{ opacity: 0, scale: 0.96 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: Math.min(index * 0.03, 0.24), duration: 0.28 }}
+                        onClick={() =>
+                          selectImage(item.image, {
+                            styleId: item.styleId,
+                            styleTitle: item.title,
+                            source: item.kind === "generation" ? "generation" : "history",
+                            beforeImage: item.beforeImage || item.image,
+                          })
+                        }
+                        className="group relative aspect-[3/4] overflow-hidden rounded-[18px] bg-white/[0.04] ring-1 ring-white/10 touch-manipulation cursor-pointer active:scale-[0.97]"
+                      >
+                        <img
+                          src={item.image}
+                          alt=""
+                          className="h-full w-full object-cover object-top transition duration-500 group-hover:scale-[1.04]"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
+                        <p className="absolute inset-x-0 bottom-0 truncate px-2 pb-2 text-[10px] font-medium text-white/85">
+                          {item.title}
+                        </p>
+                      </motion.button>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ) : (
-              <div className="flex flex-1 flex-col items-center justify-center rounded-[24px] border border-dashed border-white/15 px-6 text-center">
-                <Palette className="mb-3 h-8 w-8 text-white/35" />
-                <p className="text-sm font-bold text-white/80">
-                  {t("aiStylePage.studio.emptyHistory", {
-                    defaultValue: "Hali try-on yoki selfie yo‘q",
-                  })}
-                </p>
-                <p className="mt-1 text-xs text-white/45">
-                  {t("aiStylePage.studio.emptyHint", {
-                    defaultValue: "Kamera yoki galereyadan rasm yuklang",
-                  })}
-                </p>
-              </div>
-            )}
+              ) : (
+                <div className="flex flex-1 flex-col items-center justify-center rounded-[28px] border border-dashed border-white/12 bg-white/[0.02] px-8 text-center">
+                  <div className="mb-4 grid size-14 place-items-center rounded-full bg-white/[0.06] ring-1 ring-white/10">
+                    <Images className="h-6 w-6 text-white/40" />
+                  </div>
+                  <p className="text-sm font-semibold text-white/80">
+                    {t("aiStylePage.studio.emptyHistory", {
+                      defaultValue: "Hali try-on yoki selfie yo‘q",
+                    })}
+                  </p>
+                  <p className="mt-1.5 max-w-[220px] text-xs leading-relaxed text-white/40">
+                    {t("aiStylePage.studio.emptyHint", {
+                      defaultValue: "Kamera yoki galereyadan rasm yuklang",
+                    })}
+                  </p>
+                </div>
+              )}
 
-            {current && pickerOpen ? (
-              <button
-                type="button"
-                onClick={() => setPickerOpen(false)}
-                className="mt-3 w-full rounded-2xl border border-white/15 py-3.5 text-sm font-bold"
-              >
-                {t("aiStylePage.studio.keepEditing", { defaultValue: "Tahrirni davom ettirish" })}
-              </button>
-            ) : null}
+              {current && pickerOpen ? (
+                <button
+                  type="button"
+                  onClick={() => setPickerOpen(false)}
+                  className="mt-3 w-full rounded-2xl border border-white/12 bg-white/[0.06] py-3.5 text-sm font-semibold backdrop-blur-md cursor-pointer"
+                >
+                  {t("aiStylePage.studio.keepEditing", { defaultValue: "Tahrirni davom ettirish" })}
+                </button>
+              ) : null}
+            </div>
           </motion.div>
         ) : (
           <motion.div
@@ -464,124 +523,213 @@ export function MorphAiStudioPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="flex min-h-0 flex-1 flex-col"
+            transition={{ duration: 0.25 }}
+            className="relative flex min-h-[100dvh] flex-col"
           >
-            <div className="relative mx-4 min-h-0 flex-1 overflow-hidden rounded-[28px] bg-neutral-900">
+            {/* Full-bleed canvas */}
+            <div className="absolute inset-0">
               {current ? (
-                <img src={current} alt="" className="h-full w-full object-cover object-top" />
+                <img
+                  src={current}
+                  alt=""
+                  className="h-full w-full object-cover object-top"
+                />
               ) : null}
-              {loadingId ? (
-                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/55 backdrop-blur-[2px]">
-                  <Loader2 className="h-9 w-9 animate-spin text-white" />
-                  <p className="text-sm font-semibold text-white">
-                    {t("aiStylePage.studio.generating", {
-                      defaultValue: "AI tahrir qo‘llanmoqda…",
-                    })}
-                  </p>
-                </div>
-              ) : null}
-              <div className="pointer-events-none absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-black/50 to-transparent" />
-              <div className="absolute right-3 top-3 flex gap-1.5">
-                <button
-                  type="button"
-                  onClick={undo}
-                  disabled={Boolean(loadingId) || history.length <= 1}
-                  className="pointer-events-auto grid size-10 place-items-center rounded-full border border-white/15 bg-black/45 text-white backdrop-blur-md disabled:opacity-35"
-                  aria-label={t("aiStylePage.studio.undo")}
-                >
-                  <Undo2 className="h-4 w-4" />
-                </button>
-                <button
-                  type="button"
-                  onClick={resetOriginal}
-                  disabled={Boolean(loadingId) || current === original}
-                  className="pointer-events-auto grid size-10 place-items-center rounded-full border border-white/15 bg-black/45 text-white backdrop-blur-md disabled:opacity-35"
-                  aria-label={t("aiStylePage.studio.reset")}
-                >
-                  <RotateCcw className="h-4 w-4" />
-                </button>
-              </div>
+              <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/55 via-transparent to-black/80" />
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[42%] bg-gradient-to-t from-black via-black/70 to-transparent" />
             </div>
 
-            <div
-              className="shrink-0 space-y-3 px-4 pt-3"
-              style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}
+            {/* AI generating overlay */}
+            <AnimatePresence>
+              {loadingId ? (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-black/45 backdrop-blur-[3px]"
+                >
+                  <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 morf-studio-scan bg-gradient-to-b from-transparent via-white/25 to-transparent" />
+                  <div className="relative flex flex-col items-center gap-3 rounded-3xl border border-white/15 bg-black/50 px-7 py-6 shadow-[0_20px_60px_rgba(0,0,0,0.45)] backdrop-blur-2xl">
+                    <div className="relative grid size-12 place-items-center">
+                      <span className="absolute inset-0 rounded-full border border-white/20 morf-studio-pulse" />
+                      <Sparkles className="h-5 w-5 text-white" />
+                    </div>
+                    <p className="text-sm font-semibold tracking-tight">
+                      {t("aiStylePage.studio.generating", {
+                        defaultValue: "AI tahrir qo‘llanmoqda…",
+                      })}
+                    </p>
+                    <p className="text-[11px] text-white/45">Morf AI Studio</p>
+                  </div>
+                </motion.div>
+              ) : null}
+            </AnimatePresence>
+
+            {/* Floating top chrome */}
+            <header
+              className="relative z-30 flex items-center justify-between gap-2 px-4"
+              style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}
             >
-              <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 no-scrollbar">
-                {categories.map((cat) => {
-                  const active = cat.id === (currentCat?.id ?? activeCategory);
-                  return (
-                    <button
-                      key={cat.id}
-                      type="button"
-                      onClick={() => setActiveCategory(cat.id)}
-                      className={cn(
-                        "shrink-0 rounded-full px-3.5 py-2 text-[11px] font-bold transition-colors touch-manipulation",
-                        active ? "bg-white text-black" : "bg-white/10 text-white/75",
-                      )}
-                    >
-                      {labelFor(cat, i18n.language)}
-                    </button>
-                  );
-                })}
+              <Link to="/ai-style" className={glassBtn} aria-label={t("common.back")}>
+                <ChevronLeft className="h-5 w-5" strokeWidth={2.25} />
+              </Link>
+
+              <div className="flex min-w-0 items-center gap-2 rounded-full border border-white/12 bg-black/35 px-3.5 py-1.5 shadow-[0_8px_24px_rgba(0,0,0,0.3)] backdrop-blur-xl">
+                <Sparkles className="h-3.5 w-3.5 shrink-0 text-white/70" />
+                <div className="min-w-0 text-center">
+                  <p className="truncate text-[12px] font-semibold tracking-tight">
+                    {t("aiStylePage.studio.title", { defaultValue: "AI Studio" })}
+                  </p>
+                </div>
               </div>
 
-              <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-0.5 no-scrollbar">
-                {(currentCat?.options ?? []).map((opt) => {
-                  const busy = loadingId === opt.id;
-                  const swatch = "swatch" in opt ? (opt.swatch as string | undefined) : undefined;
-                  return (
-                    <button
-                      key={opt.id}
-                      type="button"
-                      disabled={Boolean(loadingId)}
-                      onClick={() => void applyPreset(opt.id)}
-                      className={cn(
-                        "flex w-[4.75rem] shrink-0 flex-col items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.06] px-2 py-2.5 touch-manipulation active:scale-[0.97] disabled:opacity-50",
-                      )}
-                    >
-                      <span
-                        className="relative grid size-11 place-items-center overflow-hidden rounded-full ring-2 ring-white/15"
-                        style={{
-                          background: swatch
-                            ? `linear-gradient(145deg, ${swatch}, #1a1a1a)`
-                            : "linear-gradient(145deg, #2a2a2a, #111)",
-                        }}
-                      >
-                        {busy ? (
-                          <Loader2 className="h-4 w-4 animate-spin text-white" />
-                        ) : (
-                          <Sparkles className="h-3.5 w-3.5 text-white/80" />
-                        )}
-                      </span>
-                      <span className="w-full truncate text-center text-[10px] font-bold leading-tight">
-                        {labelFor(opt, i18n.language)}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
+              <button
+                type="button"
+                onClick={() => setPickerOpen(true)}
+                className={cn(glassBtn, "text-[11px] font-semibold")}
+                aria-label={t("aiStylePage.studio.changePhoto", { defaultValue: "Rasm" })}
+              >
+                <Images className="h-4 w-4" />
+              </button>
+            </header>
 
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => void handleDownload()}
-                  disabled={!current || downloading || Boolean(loadingId)}
-                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-white/15 bg-white/10 text-sm font-bold disabled:opacity-40"
-                >
-                  {downloading ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Download className="h-4 w-4" />
-                  )}
-                  {t("aiStylePage.download")}
-                </button>
-                <Link
-                  to="/ai-style"
-                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-white text-sm font-bold text-black"
-                >
-                  {t("aiStylePage.studio.done", { defaultValue: "Tayyor" })}
-                </Link>
+            {/* Floating edit tools */}
+            <div className="relative z-30 mt-3 flex justify-end gap-1.5 px-4">
+              <button
+                type="button"
+                onClick={undo}
+                disabled={Boolean(loadingId) || !hasEdits}
+                className={glassBtn}
+                aria-label={t("aiStylePage.studio.undo")}
+              >
+                <Undo2 className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={resetOriginal}
+                disabled={Boolean(loadingId) || current === original}
+                className={glassBtn}
+                aria-label={t("aiStylePage.studio.reset")}
+              >
+                <RotateCcw className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Spacer keeps canvas visible */}
+            <div className="relative z-10 min-h-0 flex-1" />
+
+            {/* Bottom glass dock */}
+            <div
+              className="relative z-30 px-3"
+              style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
+            >
+              <div className="overflow-hidden rounded-[28px] border border-white/12 bg-black/45 shadow-[0_-8px_48px_rgba(0,0,0,0.45)] backdrop-blur-2xl">
+                <div className="space-y-3 px-3.5 pb-3.5 pt-3.5">
+                  {/* Category segmented control */}
+                  <div className="flex gap-1 rounded-2xl bg-white/[0.06] p-1">
+                    {categories.map((cat) => {
+                      const active = cat.id === (currentCat?.id ?? activeCategory);
+                      return (
+                        <button
+                          key={cat.id}
+                          type="button"
+                          onClick={() => setActiveCategory(cat.id)}
+                          className={cn(
+                            "relative min-h-9 flex-1 rounded-[14px] px-2 text-[12px] font-semibold tracking-tight transition-colors duration-200 touch-manipulation cursor-pointer",
+                            active ? "text-black" : "text-white/55 hover:text-white/80",
+                          )}
+                        >
+                          {active ? (
+                            <motion.span
+                              layoutId="studio-cat-pill"
+                              className="absolute inset-0 rounded-[14px] bg-white shadow-sm"
+                              transition={{ type: "spring", stiffness: 420, damping: 34 }}
+                            />
+                          ) : null}
+                          <span className="relative z-10">
+                            {labelFor(cat, i18n.language)}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Preset scroller */}
+                  <div className="-mx-0.5 flex gap-2.5 overflow-x-auto px-0.5 pb-0.5 no-scrollbar">
+                    {(currentCat?.options ?? []).map((opt) => {
+                      const busy = loadingId === opt.id;
+                      const selected = activePresetId === opt.id && !loadingId;
+                      const swatch =
+                        "swatch" in opt ? (opt.swatch as string | undefined) : undefined;
+                      return (
+                        <button
+                          key={opt.id}
+                          type="button"
+                          disabled={Boolean(loadingId)}
+                          onClick={() => void applyPreset(opt.id)}
+                          className={cn(
+                            "flex w-[4.5rem] shrink-0 flex-col items-center gap-1.5 rounded-2xl px-1 py-1.5 transition duration-200 touch-manipulation cursor-pointer active:scale-[0.96] disabled:opacity-50",
+                            selected && "bg-white/[0.08]",
+                          )}
+                        >
+                          <span
+                            className={cn(
+                              "relative grid size-[3.25rem] place-items-center overflow-hidden rounded-full transition duration-200",
+                              selected
+                                ? "ring-[2.5px] ring-white ring-offset-2 ring-offset-black/60"
+                                : "ring-1 ring-white/20",
+                            )}
+                            style={{
+                              background: swatch
+                                ? `linear-gradient(145deg, ${swatch} 0%, ${swatch} 55%, #1a1a1a 100%)`
+                                : "linear-gradient(145deg, #3a3a3a, #141414)",
+                            }}
+                          >
+                            {busy ? (
+                              <Loader2 className="h-4 w-4 animate-spin text-white drop-shadow" />
+                            ) : selected ? (
+                              <Check className="h-4 w-4 text-white drop-shadow" strokeWidth={2.5} />
+                            ) : !swatch ? (
+                              <Sparkles className="h-3.5 w-3.5 text-white/85 drop-shadow" />
+                            ) : null}
+                          </span>
+                          <span
+                            className={cn(
+                              "w-full truncate text-center text-[10px] font-semibold leading-tight",
+                              selected ? "text-white" : "text-white/65",
+                            )}
+                          >
+                            {labelFor(opt, i18n.language)}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Actions */}
+                  <div className="grid grid-cols-[1fr_1.35fr] gap-2 pt-0.5">
+                    <button
+                      type="button"
+                      onClick={() => void handleDownload()}
+                      disabled={!current || downloading || Boolean(loadingId)}
+                      className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-white/12 bg-white/[0.08] text-sm font-semibold tracking-tight disabled:opacity-40 cursor-pointer touch-manipulation"
+                    >
+                      {downloading ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Download className="h-4 w-4" />
+                      )}
+                      {t("aiStylePage.download")}
+                    </button>
+                    <Link
+                      to="/ai-style"
+                      className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-white text-sm font-semibold tracking-tight text-black shadow-[0_8px_28px_rgba(255,255,255,0.18)] cursor-pointer touch-manipulation active:scale-[0.98]"
+                    >
+                      <Check className="h-4 w-4" strokeWidth={2.5} />
+                      {t("aiStylePage.studio.done", { defaultValue: "Tayyor" })}
+                    </Link>
+                  </div>
+                </div>
               </div>
             </div>
           </motion.div>
