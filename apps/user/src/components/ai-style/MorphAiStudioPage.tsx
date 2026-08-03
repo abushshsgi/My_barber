@@ -1,15 +1,20 @@
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import {
   Camera,
   Check,
   ChevronLeft,
   Download,
+  Droplets,
+  Eye,
   ImagePlus,
   Images,
   Loader2,
+  Newspaper,
+  Palette,
   RotateCcw,
+  Scissors,
   Sparkles,
   Undo2,
 } from "lucide-react";
@@ -19,6 +24,10 @@ import { toast } from "sonner";
 import { AiStyleCamera } from "@/components/ai-style/AiStyleCamera";
 import { AiStylePhotoInput } from "@/components/ai-style/AiStyleUi";
 import { MorphLimitUpsell } from "@/components/ai-style/MorphLimitUpsell";
+import {
+  studioCategoryIcon,
+  studioPresetIcon,
+} from "@/components/ai-style/studio-preset-icons";
 import { useMorphLimitGate } from "@/hooks/use-morph-limit-gate";
 import {
   fetchMorphStudioCatalog,
@@ -90,6 +99,19 @@ const FALLBACK_CATEGORIES: MorphStudioCategory[] = [
   },
 ];
 
+type NewsAction = "finish" | "beard" | "compare" | "plan";
+
+const NEWS_ITEMS: {
+  id: NewsAction;
+  categoryId?: string;
+  Icon: typeof Palette;
+}[] = [
+  { id: "finish", categoryId: "finish", Icon: Droplets },
+  { id: "beard", categoryId: "beard", Icon: Scissors },
+  { id: "compare", Icon: Eye },
+  { id: "plan", Icon: Sparkles },
+];
+
 function labelFor(item: { label_uz: string; label_en: string }, lang: string): string {
   return lang.startsWith("en") ? item.label_en : item.label_uz;
 }
@@ -104,10 +126,11 @@ type SourceItem = {
 };
 
 const glassBtn =
-  "grid size-10 place-items-center rounded-full border border-white/15 bg-black/35 text-white shadow-[0_8px_24px_rgba(0,0,0,0.35)] backdrop-blur-xl transition active:scale-95 disabled:opacity-35 touch-manipulation cursor-pointer";
+  "grid size-10 place-items-center rounded-full border border-white/15 bg-black/40 text-white shadow-lg shadow-black/40 backdrop-blur-xl transition active:scale-95 disabled:opacity-35 touch-manipulation cursor-pointer";
 
 export function MorphAiStudioPage() {
   const { t, i18n } = useTranslation();
+  const reduceMotion = useReducedMotion();
   const limitGate = useMorphLimitGate();
   const fileRef = useRef<HTMLInputElement>(null);
   const [cameraOpen, setCameraOpen] = useState(false);
@@ -121,8 +144,11 @@ export function MorphAiStudioPage() {
   const [history, setHistory] = useState<string[]>([]);
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [activePresetId, setActivePresetId] = useState<string | null>(null);
+  const [activePresetLabel, setActivePresetLabel] = useState<string | null>(null);
   const [downloading, setDownloading] = useState(false);
   const [activeCategory, setActiveCategory] = useState("hair_color");
+  const [comparing, setComparing] = useState(false);
+  const [newsPulse, setNewsPulse] = useState<NewsAction | null>(null);
   const [generations, setGenerations] = useState<MorphAiGeneration[]>(() =>
     loadMorphAiGenerations(),
   );
@@ -181,6 +207,12 @@ export function MorphAiStudioPage() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!newsPulse) return;
+    const timer = window.setTimeout(() => setNewsPulse(null), 2200);
+    return () => window.clearTimeout(timer);
+  }, [newsPulse]);
+
   const sources: SourceItem[] = useMemo(() => {
     const fromGen = generations.map((g) => ({
       id: `gen-${g.id}`,
@@ -227,6 +259,8 @@ export function MorphAiStudioPage() {
     setHistory([image]);
     setBeforeImage(before);
     setActivePresetId(null);
+    setActivePresetLabel(null);
+    setComparing(false);
     setDraftMeta({
       styleId: meta?.styleId,
       styleTitle: meta?.styleTitle,
@@ -249,6 +283,7 @@ export function MorphAiStudioPage() {
     if (!(await limitGate.ensureStudio())) return;
     setLoadingId(presetId);
     setActivePresetId(presetId);
+    setComparing(false);
     try {
       const result = await generateMorphStudioEdit(original, presetId, {
         styleId: draftMeta.styleId,
@@ -256,6 +291,7 @@ export function MorphAiStudioPage() {
       });
       setHistory((prev) => [...prev, result.preview_image]);
       setCurrent(result.preview_image);
+      setActivePresetLabel(result.preset_label);
       stashMorphStudioDraft({
         image: result.preview_image,
         baseImage: original,
@@ -295,7 +331,11 @@ export function MorphAiStudioPage() {
     const next = history.slice(0, -1);
     setHistory(next);
     setCurrent(next[next.length - 1] ?? original);
-    if (next.length <= 1) setActivePresetId(null);
+    setComparing(false);
+    if (next.length <= 1) {
+      setActivePresetId(null);
+      setActivePresetLabel(null);
+    }
   };
 
   const resetOriginal = () => {
@@ -303,6 +343,8 @@ export function MorphAiStudioPage() {
     setCurrent(original);
     setHistory([original]);
     setActivePresetId(null);
+    setActivePresetLabel(null);
+    setComparing(false);
     stashMorphStudioDraft({
       image: original,
       baseImage: original,
@@ -340,8 +382,41 @@ export function MorphAiStudioPage() {
     }
   };
 
+  const compareSrc = beforeImage || original;
+  const canCompare = Boolean(hasEditsReady(history, current, compareSrc));
+  const displaySrc = comparing && compareSrc ? compareSrc : current;
+
+  const onNewsTap = (item: (typeof NEWS_ITEMS)[number]) => {
+    setNewsPulse(item.id);
+    if (item.categoryId) {
+      setActiveCategory(item.categoryId);
+      if (current && !pickerOpen) {
+        toast.message(
+          t(`aiStylePage.studio.news.${item.id}.title`, {
+            defaultValue: item.id,
+          }),
+        );
+      } else if (item.categoryId) {
+        toast.message(
+          t(`aiStylePage.studio.news.${item.id}.body`, {
+            defaultValue: "",
+          }),
+        );
+      }
+      return;
+    }
+    if (item.id === "compare") {
+      toast.message(t("aiStylePage.studio.holdToCompare"));
+      return;
+    }
+    if (item.id === "plan") {
+      void limitGate.ensureStudio();
+    }
+  };
+
   const showPicker = !current || pickerOpen;
   const hasEdits = history.length > 1;
+  const motionDur = reduceMotion ? 0 : undefined;
 
   return (
     <div className="relative flex min-h-[100dvh] flex-col overflow-hidden bg-black text-white">
@@ -356,9 +431,14 @@ export function MorphAiStudioPage() {
           0%, 100% { opacity: 0.35; }
           50% { opacity: 0.85; }
         }
+        @keyframes morf-studio-chip-in {
+          from { opacity: 0; transform: translateY(6px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
         @media (prefers-reduced-motion: reduce) {
           .morf-studio-scan,
-          .morf-studio-pulse { animation: none !important; }
+          .morf-studio-pulse,
+          .morf-studio-chip-in { animation: none !important; }
         }
         .morf-studio-scan {
           animation: morf-studio-scan 2.4s ease-in-out infinite;
@@ -366,13 +446,15 @@ export function MorphAiStudioPage() {
         .morf-studio-pulse {
           animation: morf-studio-pulse 1.8s ease-in-out infinite;
         }
+        .morf-studio-chip-in {
+          animation: morf-studio-chip-in 0.35s ease-out both;
+        }
       `}</style>
 
-      {/* Atmospheric backdrop when picker / empty */}
       {showPicker ? (
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_0%,rgba(255,255,255,0.08),transparent_55%),radial-gradient(ellipse_at_80%_100%,rgba(180,180,180,0.06),transparent_45%)]"
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_0%,rgba(255,255,255,0.09),transparent_55%),radial-gradient(ellipse_at_20%_80%,rgba(200,200,200,0.05),transparent_40%),radial-gradient(ellipse_at_90%_100%,rgba(160,160,160,0.06),transparent_45%)]"
         />
       ) : null}
 
@@ -380,21 +462,17 @@ export function MorphAiStudioPage() {
         {showPicker ? (
           <motion.div
             key="picker"
-            initial={{ opacity: 0, y: 16 }}
+            initial={reduceMotion ? false : { opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+            exit={reduceMotion ? undefined : { opacity: 0, y: -10 }}
+            transition={{ duration: motionDur ?? 0.28, ease: [0.22, 1, 0.36, 1] }}
             className="relative z-10 flex min-h-[100dvh] flex-col"
           >
             <header
               className="flex items-center justify-between gap-3 px-4 pb-2"
               style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}
             >
-              <Link
-                to="/ai-style"
-                className={glassBtn}
-                aria-label={t("common.back")}
-              >
+              <Link to="/ai-style" className={glassBtn} aria-label={t("common.back")}>
                 <ChevronLeft className="h-5 w-5" strokeWidth={2.25} />
               </Link>
               <div className="min-w-0 text-center">
@@ -409,24 +487,67 @@ export function MorphAiStudioPage() {
             </header>
 
             <div className="flex min-h-0 flex-1 flex-col px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
-              <div className="mb-5 mt-2 max-w-md">
+              <div className="mb-4 mt-2 max-w-md">
                 <h2 className="text-[1.65rem] font-semibold leading-[1.15] tracking-tight">
-                  {t("aiStylePage.studio.pickTitle", {
-                    defaultValue: "Lookni tanlang",
-                  })}
+                  {t("aiStylePage.studio.pickTitle")}
                 </h2>
                 <p className="mt-1.5 text-sm leading-relaxed text-white/45">
-                  {t("aiStylePage.studio.pickLabel", {
-                    defaultValue: "History, try-on yoki yangi selfie bilan boshlang",
-                  })}
+                  {t("aiStylePage.studio.pickLabel")}
                 </p>
+              </div>
+
+              {/* Yangiliklar */}
+              <div className="mb-5">
+                <div className="mb-2.5 flex items-center gap-2">
+                  <Newspaper className="h-3.5 w-3.5 text-white/40" />
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/35">
+                    {t("aiStylePage.studio.newsTitle")}
+                  </p>
+                </div>
+                <div className="-mx-1 flex gap-2.5 overflow-x-auto px-1 pb-1 no-scrollbar">
+                  {NEWS_ITEMS.map((item, index) => {
+                    const Icon = item.Icon;
+                    const pulsed = newsPulse === item.id;
+                    return (
+                      <motion.button
+                        key={item.id}
+                        type="button"
+                        initial={reduceMotion ? false : { opacity: 0, x: 12 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{
+                          delay: reduceMotion ? 0 : Math.min(index * 0.05, 0.2),
+                          duration: 0.3,
+                        }}
+                        onClick={() => onNewsTap(item)}
+                        className={cn(
+                          "flex w-[9.75rem] shrink-0 flex-col gap-2 rounded-[20px] border px-3.5 py-3 text-left touch-manipulation cursor-pointer active:scale-[0.98] transition duration-200",
+                          pulsed
+                            ? "border-white/35 bg-white/[0.12]"
+                            : "border-white/10 bg-white/[0.05] hover:bg-white/[0.08]",
+                        )}
+                      >
+                        <span className="grid size-8 place-items-center rounded-full bg-white/10">
+                          <Icon className="h-3.5 w-3.5 text-white/85" />
+                        </span>
+                        <span>
+                          <span className="block text-[12px] font-semibold tracking-tight text-white/95">
+                            {t(`aiStylePage.studio.news.${item.id}.title`)}
+                          </span>
+                          <span className="mt-0.5 block text-[10px] leading-snug text-white/45">
+                            {t(`aiStylePage.studio.news.${item.id}.body`)}
+                          </span>
+                        </span>
+                      </motion.button>
+                    );
+                  })}
+                </div>
               </div>
 
               <div className="mb-5 grid grid-cols-2 gap-2.5">
                 <button
                   type="button"
                   onClick={() => setCameraOpen(true)}
-                  className="group relative flex min-h-[88px] flex-col items-start justify-between overflow-hidden rounded-[22px] bg-white px-4 py-3.5 text-left text-black shadow-[0_12px_40px_rgba(255,255,255,0.08)] touch-manipulation cursor-pointer active:scale-[0.98]"
+                  className="group relative flex min-h-[92px] flex-col items-start justify-between overflow-hidden rounded-[22px] bg-white px-4 py-3.5 text-left text-black shadow-lg shadow-white/10 touch-manipulation cursor-pointer active:scale-[0.98]"
                 >
                   <span className="grid size-9 place-items-center rounded-full bg-black/8">
                     <Camera className="h-4 w-4" />
@@ -438,7 +559,7 @@ export function MorphAiStudioPage() {
                 <button
                   type="button"
                   onClick={() => fileRef.current?.click()}
-                  className="group relative flex min-h-[88px] flex-col items-start justify-between overflow-hidden rounded-[22px] border border-white/12 bg-white/[0.06] px-4 py-3.5 text-left backdrop-blur-md touch-manipulation cursor-pointer active:scale-[0.98]"
+                  className="group relative flex min-h-[92px] flex-col items-start justify-between overflow-hidden rounded-[22px] border border-white/12 bg-white/[0.06] px-4 py-3.5 text-left backdrop-blur-md touch-manipulation cursor-pointer active:scale-[0.98]"
                 >
                   <span className="grid size-9 place-items-center rounded-full bg-white/10">
                     <ImagePlus className="h-4 w-4" />
@@ -453,7 +574,7 @@ export function MorphAiStudioPage() {
                 <div className="min-h-0 flex-1 overflow-y-auto">
                   <div className="mb-3 flex items-center justify-between">
                     <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/35">
-                      {t("aiStylePage.studio.fromHistory", { defaultValue: "Recent" })}
+                      {t("aiStylePage.studio.fromHistory")}
                     </p>
                     <span className="text-[11px] text-white/30">{sources.length}</span>
                   </div>
@@ -462,9 +583,12 @@ export function MorphAiStudioPage() {
                       <motion.button
                         key={item.id}
                         type="button"
-                        initial={{ opacity: 0, scale: 0.96 }}
+                        initial={reduceMotion ? false : { opacity: 0, scale: 0.94 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: Math.min(index * 0.03, 0.24), duration: 0.28 }}
+                        transition={{
+                          delay: reduceMotion ? 0 : Math.min(index * 0.03, 0.24),
+                          duration: 0.28,
+                        }}
                         onClick={() =>
                           selectImage(item.image, {
                             styleId: item.styleId,
@@ -494,14 +618,10 @@ export function MorphAiStudioPage() {
                     <Images className="h-6 w-6 text-white/40" />
                   </div>
                   <p className="text-sm font-semibold text-white/80">
-                    {t("aiStylePage.studio.emptyHistory", {
-                      defaultValue: "Hali try-on yoki selfie yo‘q",
-                    })}
+                    {t("aiStylePage.studio.emptyHistory")}
                   </p>
                   <p className="mt-1.5 max-w-[220px] text-xs leading-relaxed text-white/40">
-                    {t("aiStylePage.studio.emptyHint", {
-                      defaultValue: "Kamera yoki galereyadan rasm yuklang",
-                    })}
+                    {t("aiStylePage.studio.emptyHint")}
                   </p>
                 </div>
               )}
@@ -512,7 +632,7 @@ export function MorphAiStudioPage() {
                   onClick={() => setPickerOpen(false)}
                   className="mt-3 w-full rounded-2xl border border-white/12 bg-white/[0.06] py-3.5 text-sm font-semibold backdrop-blur-md cursor-pointer"
                 >
-                  {t("aiStylePage.studio.keepEditing", { defaultValue: "Tahrirni davom ettirish" })}
+                  {t("aiStylePage.studio.keepEditing")}
                 </button>
               ) : null}
             </div>
@@ -520,44 +640,50 @@ export function MorphAiStudioPage() {
         ) : (
           <motion.div
             key="editor"
-            initial={{ opacity: 0 }}
+            initial={reduceMotion ? false : { opacity: 0 }}
             animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.25 }}
+            exit={reduceMotion ? undefined : { opacity: 0 }}
+            transition={{ duration: motionDur ?? 0.25 }}
             className="relative flex min-h-[100dvh] flex-col"
           >
-            {/* Full-bleed canvas */}
+            {/* Full-bleed canvas with crossfade */}
             <div className="absolute inset-0">
-              {current ? (
-                <img
-                  src={current}
-                  alt=""
-                  className="h-full w-full object-cover object-top"
-                />
-              ) : null}
+              <AnimatePresence mode="sync" initial={false}>
+                {displaySrc ? (
+                  <motion.img
+                    key={`${displaySrc}-${comparing ? "before" : "after"}`}
+                    src={displaySrc}
+                    alt=""
+                    initial={reduceMotion ? false : { opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={reduceMotion ? undefined : { opacity: 0 }}
+                    transition={{ duration: motionDur ?? 0.35 }}
+                    className="absolute inset-0 h-full w-full object-cover object-top"
+                  />
+                ) : null}
+              </AnimatePresence>
               <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/55 via-transparent to-black/80" />
               <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[42%] bg-gradient-to-t from-black via-black/70 to-transparent" />
             </div>
 
-            {/* AI generating overlay */}
             <AnimatePresence>
               {loadingId ? (
                 <motion.div
-                  initial={{ opacity: 0 }}
+                  initial={reduceMotion ? false : { opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
+                  exit={reduceMotion ? undefined : { opacity: 0 }}
                   className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-black/45 backdrop-blur-[3px]"
                 >
-                  <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 morf-studio-scan bg-gradient-to-b from-transparent via-white/25 to-transparent" />
-                  <div className="relative flex flex-col items-center gap-3 rounded-3xl border border-white/15 bg-black/50 px-7 py-6 shadow-[0_20px_60px_rgba(0,0,0,0.45)] backdrop-blur-2xl">
+                  {!reduceMotion ? (
+                    <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 morf-studio-scan bg-gradient-to-b from-transparent via-white/25 to-transparent" />
+                  ) : null}
+                  <div className="relative flex flex-col items-center gap-3 rounded-3xl border border-white/15 bg-black/50 px-7 py-6 shadow-2xl shadow-black/50 backdrop-blur-2xl">
                     <div className="relative grid size-12 place-items-center">
                       <span className="absolute inset-0 rounded-full border border-white/20 morf-studio-pulse" />
                       <Sparkles className="h-5 w-5 text-white" />
                     </div>
                     <p className="text-sm font-semibold tracking-tight">
-                      {t("aiStylePage.studio.generating", {
-                        defaultValue: "AI tahrir qo‘llanmoqda…",
-                      })}
+                      {t("aiStylePage.studio.generating")}
                     </p>
                     <p className="text-[11px] text-white/45">Morf AI Studio</p>
                   </div>
@@ -565,7 +691,6 @@ export function MorphAiStudioPage() {
               ) : null}
             </AnimatePresence>
 
-            {/* Floating top chrome */}
             <header
               className="relative z-30 flex items-center justify-between gap-2 px-4"
               style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}
@@ -574,20 +699,18 @@ export function MorphAiStudioPage() {
                 <ChevronLeft className="h-5 w-5" strokeWidth={2.25} />
               </Link>
 
-              <div className="flex min-w-0 items-center gap-2 rounded-full border border-white/12 bg-black/35 px-3.5 py-1.5 shadow-[0_8px_24px_rgba(0,0,0,0.3)] backdrop-blur-xl">
+              <div className="flex min-w-0 items-center gap-2 rounded-full border border-white/12 bg-black/40 px-3.5 py-1.5 shadow-lg shadow-black/30 backdrop-blur-xl">
                 <Sparkles className="h-3.5 w-3.5 shrink-0 text-white/70" />
-                <div className="min-w-0 text-center">
-                  <p className="truncate text-[12px] font-semibold tracking-tight">
-                    {t("aiStylePage.studio.title", { defaultValue: "AI Studio" })}
-                  </p>
-                </div>
+                <p className="truncate text-[12px] font-semibold tracking-tight">
+                  {t("aiStylePage.studio.title")}
+                </p>
               </div>
 
               <button
                 type="button"
                 onClick={() => setPickerOpen(true)}
                 className={cn(glassBtn, "text-[11px] font-semibold")}
-                aria-label={t("aiStylePage.studio.changePhoto", { defaultValue: "Rasm" })}
+                aria-label={t("aiStylePage.studio.changePhoto")}
               >
                 <Images className="h-4 w-4" />
               </button>
@@ -595,6 +718,20 @@ export function MorphAiStudioPage() {
 
             {/* Floating edit tools */}
             <div className="relative z-30 mt-3 flex justify-end gap-1.5 px-4">
+              <button
+                type="button"
+                disabled={Boolean(loadingId) || !canCompare}
+                onPointerDown={() => canCompare && setComparing(true)}
+                onPointerUp={() => setComparing(false)}
+                onPointerLeave={() => setComparing(false)}
+                onPointerCancel={() => setComparing(false)}
+                onContextMenu={(e) => e.preventDefault()}
+                className={cn(glassBtn, comparing && "bg-white text-black border-white")}
+                aria-label={t("aiStylePage.studio.holdToCompare")}
+                title={t("aiStylePage.studio.holdToCompare")}
+              >
+                <Eye className="h-4 w-4" />
+              </button>
               <button
                 type="button"
                 onClick={undo}
@@ -615,7 +752,30 @@ export function MorphAiStudioPage() {
               </button>
             </div>
 
-            {/* Spacer keeps canvas visible */}
+            <AnimatePresence>
+              {comparing ? (
+                <motion.div
+                  initial={reduceMotion ? false : { opacity: 0, y: -4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={reduceMotion ? undefined : { opacity: 0 }}
+                  className="pointer-events-none relative z-30 mt-3 flex justify-center"
+                >
+                  <span className="rounded-full border border-white/15 bg-black/50 px-3 py-1 text-[11px] font-semibold tracking-tight text-white/90 backdrop-blur-xl">
+                    {t("aiStylePage.studio.comparing")}
+                  </span>
+                </motion.div>
+              ) : activePresetLabel && hasEdits ? (
+                <div className="pointer-events-none relative z-30 mt-3 flex justify-center">
+                  <span className="morf-studio-chip-in rounded-full border border-white/15 bg-black/50 px-3 py-1 text-[11px] font-semibold tracking-tight text-white/90 backdrop-blur-xl">
+                    {t("aiStylePage.studio.appliedChip", {
+                      name: activePresetLabel,
+                      defaultValue: "{{name}} · qo‘llandi",
+                    })}
+                  </span>
+                </div>
+              ) : null}
+            </AnimatePresence>
+
             <div className="relative z-10 min-h-0 flex-1" />
 
             {/* Bottom glass dock */}
@@ -623,90 +783,105 @@ export function MorphAiStudioPage() {
               className="relative z-30 px-3"
               style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
             >
-              <div className="overflow-hidden rounded-[28px] border border-white/12 bg-black/45 shadow-[0_-8px_48px_rgba(0,0,0,0.45)] backdrop-blur-2xl">
+              <div className="overflow-hidden rounded-[28px] border border-white/12 bg-black/50 shadow-2xl shadow-black/50 backdrop-blur-2xl">
                 <div className="space-y-3 px-3.5 pb-3.5 pt-3.5">
-                  {/* Category segmented control */}
                   <div className="flex gap-1 rounded-2xl bg-white/[0.06] p-1">
                     {categories.map((cat) => {
                       const active = cat.id === (currentCat?.id ?? activeCategory);
+                      const CatIcon = studioCategoryIcon(cat.id);
                       return (
                         <button
                           key={cat.id}
                           type="button"
                           onClick={() => setActiveCategory(cat.id)}
                           className={cn(
-                            "relative min-h-9 flex-1 rounded-[14px] px-2 text-[12px] font-semibold tracking-tight transition-colors duration-200 touch-manipulation cursor-pointer",
+                            "relative flex min-h-10 flex-1 items-center justify-center gap-1 rounded-[14px] px-1.5 text-[11px] font-semibold tracking-tight transition-colors duration-200 touch-manipulation cursor-pointer sm:text-[12px]",
                             active ? "text-black" : "text-white/55 hover:text-white/80",
                           )}
                         >
                           {active ? (
                             <motion.span
-                              layoutId="studio-cat-pill"
+                              layoutId={reduceMotion ? undefined : "studio-cat-pill"}
                               className="absolute inset-0 rounded-[14px] bg-white shadow-sm"
                               transition={{ type: "spring", stiffness: 420, damping: 34 }}
                             />
                           ) : null}
-                          <span className="relative z-10">
-                            {labelFor(cat, i18n.language)}
+                          <span className="relative z-10 inline-flex items-center gap-1">
+                            <CatIcon className="h-3.5 w-3.5 shrink-0" strokeWidth={2.25} />
+                            <span className="truncate">{labelFor(cat, i18n.language)}</span>
                           </span>
                         </button>
                       );
                     })}
                   </div>
 
-                  {/* Preset scroller */}
-                  <div className="-mx-0.5 flex gap-2.5 overflow-x-auto px-0.5 pb-0.5 no-scrollbar">
-                    {(currentCat?.options ?? []).map((opt) => {
-                      const busy = loadingId === opt.id;
-                      const selected = activePresetId === opt.id && !loadingId;
-                      const swatch =
-                        "swatch" in opt ? (opt.swatch as string | undefined) : undefined;
-                      return (
-                        <button
-                          key={opt.id}
-                          type="button"
-                          disabled={Boolean(loadingId)}
-                          onClick={() => void applyPreset(opt.id)}
-                          className={cn(
-                            "flex w-[4.5rem] shrink-0 flex-col items-center gap-1.5 rounded-2xl px-1 py-1.5 transition duration-200 touch-manipulation cursor-pointer active:scale-[0.96] disabled:opacity-50",
-                            selected && "bg-white/[0.08]",
-                          )}
-                        >
-                          <span
-                            className={cn(
-                              "relative grid size-[3.25rem] place-items-center overflow-hidden rounded-full transition duration-200",
-                              selected
-                                ? "ring-[2.5px] ring-white ring-offset-2 ring-offset-black/60"
-                                : "ring-1 ring-white/20",
-                            )}
-                            style={{
-                              background: swatch
-                                ? `linear-gradient(145deg, ${swatch} 0%, ${swatch} 55%, #1a1a1a 100%)`
-                                : "linear-gradient(145deg, #3a3a3a, #141414)",
+                  <AnimatePresence mode="wait">
+                    <motion.div
+                      key={currentCat?.id ?? activeCategory}
+                      initial={reduceMotion ? false : { opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={reduceMotion ? undefined : { opacity: 0, y: -6 }}
+                      transition={{ duration: motionDur ?? 0.22 }}
+                      className="-mx-0.5 flex gap-2.5 overflow-x-auto px-0.5 pb-0.5 no-scrollbar"
+                    >
+                      {(currentCat?.options ?? []).map((opt, index) => {
+                        const busy = loadingId === opt.id;
+                        const selected = activePresetId === opt.id && !loadingId;
+                        const swatch =
+                          "swatch" in opt ? (opt.swatch as string | undefined) : undefined;
+                        const PresetIcon = studioPresetIcon(opt.id);
+                        return (
+                          <motion.button
+                            key={opt.id}
+                            type="button"
+                            disabled={Boolean(loadingId)}
+                            initial={reduceMotion ? false : { opacity: 0, scale: 0.92 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{
+                              delay: reduceMotion ? 0 : Math.min(index * 0.03, 0.18),
+                              duration: 0.22,
                             }}
-                          >
-                            {busy ? (
-                              <Loader2 className="h-4 w-4 animate-spin text-white drop-shadow" />
-                            ) : selected ? (
-                              <Check className="h-4 w-4 text-white drop-shadow" strokeWidth={2.5} />
-                            ) : !swatch ? (
-                              <Sparkles className="h-3.5 w-3.5 text-white/85 drop-shadow" />
-                            ) : null}
-                          </span>
-                          <span
+                            onClick={() => void applyPreset(opt.id)}
                             className={cn(
-                              "w-full truncate text-center text-[10px] font-semibold leading-tight",
-                              selected ? "text-white" : "text-white/65",
+                              "flex w-[4.5rem] shrink-0 flex-col items-center gap-1.5 rounded-2xl px-1 py-1.5 transition duration-200 touch-manipulation cursor-pointer active:scale-[0.96] disabled:opacity-50",
+                              selected && "bg-white/[0.08]",
                             )}
                           >
-                            {labelFor(opt, i18n.language)}
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
+                            <span
+                              className={cn(
+                                "relative grid size-[3.25rem] place-items-center overflow-hidden rounded-full transition duration-200",
+                                selected
+                                  ? "ring-[2.5px] ring-white ring-offset-2 ring-offset-black/60"
+                                  : "ring-1 ring-white/20",
+                              )}
+                              style={{
+                                background: swatch
+                                  ? `linear-gradient(145deg, ${swatch} 0%, ${swatch} 55%, #1a1a1a 100%)`
+                                  : "linear-gradient(145deg, #3a3a3a, #141414)",
+                              }}
+                            >
+                              {busy ? (
+                                <Loader2 className="h-4 w-4 animate-spin text-white drop-shadow" />
+                              ) : selected ? (
+                                <Check className="h-4 w-4 text-white drop-shadow" strokeWidth={2.5} />
+                              ) : !swatch ? (
+                                <PresetIcon className="h-4 w-4 text-white/90 drop-shadow" />
+                              ) : null}
+                            </span>
+                            <span
+                              className={cn(
+                                "w-full truncate text-center text-[10px] font-semibold leading-tight",
+                                selected ? "text-white" : "text-white/65",
+                              )}
+                            >
+                              {labelFor(opt, i18n.language)}
+                            </span>
+                          </motion.button>
+                        );
+                      })}
+                    </motion.div>
+                  </AnimatePresence>
 
-                  {/* Actions */}
                   <div className="grid grid-cols-[1fr_1.35fr] gap-2 pt-0.5">
                     <button
                       type="button"
@@ -723,10 +898,10 @@ export function MorphAiStudioPage() {
                     </button>
                     <Link
                       to="/ai-style"
-                      className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-white text-sm font-semibold tracking-tight text-black shadow-[0_8px_28px_rgba(255,255,255,0.18)] cursor-pointer touch-manipulation active:scale-[0.98]"
+                      className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-white text-sm font-semibold tracking-tight text-black shadow-lg shadow-white/15 cursor-pointer touch-manipulation active:scale-[0.98]"
                     >
                       <Check className="h-4 w-4" strokeWidth={2.5} />
-                      {t("aiStylePage.studio.done", { defaultValue: "Tayyor" })}
+                      {t("aiStylePage.studio.done")}
                     </Link>
                   </div>
                 </div>
@@ -760,4 +935,14 @@ export function MorphAiStudioPage() {
       />
     </div>
   );
+}
+
+function hasEditsReady(
+  history: string[],
+  current: string | null,
+  compareSrc: string | null,
+): boolean {
+  if (!current || !compareSrc) return false;
+  if (history.length > 1) return current !== compareSrc;
+  return current !== compareSrc;
 }

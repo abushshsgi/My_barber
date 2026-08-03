@@ -1224,9 +1224,9 @@
       "subtitle": "Цвет, борода и finish",
       "openCta": "AI Studio",
       "changePhoto": "Фото",
-      "pickLabel": "Выберите фото",
-      "pickTitle": "История, try-on или новое селфи",
-      "fromHistory": "История / Try-on",
+      "pickLabel": "Начните с истории, try-on или нового селфи",
+      "pickTitle": "Выберите образ",
+      "fromHistory": "Недавние",
       "emptyHistory": "Пока нет try-on или селфи",
       "emptyHint": "Загрузите с камеры или из галереи",
       "keepEditing": "Продолжить правку",
@@ -1234,10 +1234,32 @@
       "reset": "Оригинал",
       "generating": "Применяется AI-правка…",
       "applied": "{{name}} применено",
+      "appliedChip": "{{name}} · применено",
       "failed": "Не удалось применить Studio",
       "pickFailed": "Не удалось загрузить фото",
       "selfie": "Селфи",
-      "done": "Готово"
+      "done": "Готово",
+      "holdToCompare": "Удерживайте для сравнения",
+      "comparing": "Оригинал",
+      "newsTitle": "Новости",
+      "news": {
+        "finish": {
+          "title": "Новые finish",
+          "body": "Мокрый, matte, глянец и мягкий свет"
+        },
+        "beard": {
+          "title": "Пресеты бороды",
+          "body": "Чистый, щетина, полная или форма"
+        },
+        "compare": {
+          "title": "Before / After",
+          "body": "После правки удерживайте кнопку глаза"
+        },
+        "plan": {
+          "title": "Лимит Studio",
+          "body": "Число правок зависит от вашего плана"
+        }
+      }
     },
     "beforeAfter": {
       "before": "Before",

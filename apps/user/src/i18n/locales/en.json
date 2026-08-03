@@ -1222,9 +1222,9 @@
       "subtitle": "Color, beard, and finish",
       "openCta": "AI Studio",
       "changePhoto": "Photo",
-      "pickLabel": "Choose a photo",
-      "pickTitle": "History, try-on, or a new selfie",
-      "fromHistory": "History / Try-on",
+      "pickLabel": "Start with history, a try-on, or a new selfie",
+      "pickTitle": "Choose a look",
+      "fromHistory": "Recent",
       "emptyHistory": "No try-on or selfie yet",
       "emptyHint": "Upload from camera or gallery",
       "keepEditing": "Keep editing",
@@ -1232,10 +1232,32 @@
       "reset": "Original",
       "generating": "Applying AI edit…",
       "applied": "{{name}} applied",
+      "appliedChip": "{{name}} · applied",
       "failed": "Studio edit failed",
       "pickFailed": "Could not load photo",
       "selfie": "Selfie",
-      "done": "Done"
+      "done": "Done",
+      "holdToCompare": "Hold to compare",
+      "comparing": "Original",
+      "newsTitle": "What's new",
+      "news": {
+        "finish": {
+          "title": "New finishes",
+          "body": "Wet, matte, gloss, and soft light"
+        },
+        "beard": {
+          "title": "Beard presets",
+          "body": "Clean, stubble, full, or shaped"
+        },
+        "compare": {
+          "title": "Before / After",
+          "body": "Hold the eye button after an edit"
+        },
+        "plan": {
+          "title": "Studio limit",
+          "body": "Edits are limited by your plan"
+        }
+      }
     },
     "beforeAfter": {
       "before": "Before",

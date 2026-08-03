@@ -1222,9 +1222,9 @@
       "subtitle": "Rang, soqol va finish",
       "openCta": "AI Studio",
       "changePhoto": "Rasm",
-      "pickLabel": "Rasm tanlang",
-      "pickTitle": "History, try-on yoki yangi selfie",
-      "fromHistory": "History / Try-on",
+      "pickLabel": "History, try-on yoki yangi selfie bilan boshlang",
+      "pickTitle": "Lookni tanlang",
+      "fromHistory": "Recent",
       "emptyHistory": "Hali try-on yoki selfie yo‘q",
       "emptyHint": "Kamera yoki galereyadan rasm yuklang",
       "keepEditing": "Tahrirni davom ettirish",
@@ -1232,10 +1232,32 @@
       "reset": "Asliga",
       "generating": "AI tahrir qo‘llanmoqda…",
       "applied": "{{name}} qo‘llandi",
+      "appliedChip": "{{name}} · qo‘llandi",
       "failed": "Studio tahriri amalga oshmadi",
       "pickFailed": "Rasm yuklanmadi",
       "selfie": "Selfie",
-      "done": "Tayyor"
+      "done": "Tayyor",
+      "holdToCompare": "Ushlab solishtirish",
+      "comparing": "Asl rasm",
+      "newsTitle": "Yangiliklar",
+      "news": {
+        "finish": {
+          "title": "Yangi finish",
+          "body": "Nam, matte, yaltiroq va yumshoq yorug‘"
+        },
+        "beard": {
+          "title": "Soqol presetlari",
+          "body": "Toza, qisqa, to‘liq yoki shakllangan"
+        },
+        "compare": {
+          "title": "Before / After",
+          "body": "Tahrirdan keyin ko‘zni bosib ushlang"
+        },
+        "plan": {
+          "title": "Studio limit",
+          "body": "Planingizga qarab tahrir soni cheklangan"
+        }
+      }
     },
     "beforeAfter": {
       "before": "Before",
