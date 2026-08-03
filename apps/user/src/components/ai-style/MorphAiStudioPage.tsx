@@ -89,10 +89,7 @@ const FALLBACK_CATEGORIES: MorphStudioCategory[] = [
   },
 ];
 
-function labelFor(
-  item: { label_uz: string; label_en: string },
-  lang: string,
-): string {
+function labelFor(item: { label_uz: string; label_en: string }, lang: string): string {
   return lang.startsWith("en") ? item.label_en : item.label_uz;
 }
 
@@ -111,7 +108,9 @@ export function MorphAiStudioPage() {
   const fileRef = useRef<HTMLInputElement>(null);
   const [cameraOpen, setCameraOpen] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
-  const [draftMeta, setDraftMeta] = useState<Pick<MorphStudioDraft, "styleId" | "styleTitle" | "source">>({});
+  const [draftMeta, setDraftMeta] = useState<
+    Pick<MorphStudioDraft, "styleId" | "styleTitle" | "source">
+  >({});
   const [original, setOriginal] = useState<string | null>(null);
   const [beforeImage, setBeforeImage] = useState<string | null>(null);
   const [current, setCurrent] = useState<string | null>(null);
@@ -119,7 +118,9 @@ export function MorphAiStudioPage() {
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [downloading, setDownloading] = useState(false);
   const [activeCategory, setActiveCategory] = useState("hair_color");
-  const [generations, setGenerations] = useState<MorphAiGeneration[]>(() => loadMorphAiGenerations());
+  const [generations, setGenerations] = useState<MorphAiGeneration[]>(() =>
+    loadMorphAiGenerations(),
+  );
   const [selfies, setSelfies] = useState<FaceProfileHistoryEntry[]>(() => loadFaceProfileHistory());
 
   const catalogQ = useQuery({
@@ -140,10 +141,11 @@ export function MorphAiStudioPage() {
   useEffect(() => {
     const draft = peekMorphStudioDraft();
     if (draft?.image) {
-      setOriginal(draft.image);
+      const base = draft.baseImage || draft.image;
+      setOriginal(base);
       setCurrent(draft.image);
-      setHistory([draft.image]);
-      setBeforeImage(draft.beforeImage || draft.image);
+      setHistory(draft.image !== base ? [base, draft.image] : [base]);
+      setBeforeImage(draft.beforeImage || base);
       setDraftMeta({
         styleId: draft.styleId,
         styleTitle: draft.styleTitle,
@@ -226,6 +228,7 @@ export function MorphAiStudioPage() {
     });
     stashMorphStudioDraft({
       image,
+      baseImage: image,
       beforeImage: before,
       styleId: meta?.styleId,
       styleTitle: meta?.styleTitle,
@@ -235,11 +238,12 @@ export function MorphAiStudioPage() {
   };
 
   const applyPreset = async (presetId: string) => {
-    if (!current || loadingId) return;
+    // Har tahrir asl (original) rasmga qo'llanadi — tahrir ustiga tahrir yo'q.
+    if (!original || loadingId) return;
     if (!(await limitGate.ensureStudio())) return;
     setLoadingId(presetId);
     try {
-      const result = await generateMorphStudioEdit(current, presetId, {
+      const result = await generateMorphStudioEdit(original, presetId, {
         styleId: draftMeta.styleId,
         styleTitle: draftMeta.styleTitle,
       });
@@ -247,6 +251,7 @@ export function MorphAiStudioPage() {
       setCurrent(result.preview_image);
       stashMorphStudioDraft({
         image: result.preview_image,
+        baseImage: original,
         beforeImage: beforeImage || original || undefined,
         styleId: draftMeta.styleId,
         styleTitle: draftMeta.styleTitle ?? result.preset_label,
@@ -289,6 +294,14 @@ export function MorphAiStudioPage() {
     if (!original) return;
     setCurrent(original);
     setHistory([original]);
+    stashMorphStudioDraft({
+      image: original,
+      baseImage: original,
+      beforeImage: beforeImage || original || undefined,
+      styleId: draftMeta.styleId,
+      styleTitle: draftMeta.styleTitle,
+      source: draftMeta.source,
+    });
   };
 
   const onFile = async (file: File | null | undefined) => {
@@ -334,9 +347,7 @@ export function MorphAiStudioPage() {
           {t("common.back")}
         </Link>
         <div className="min-w-0 text-center">
-          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/45">
-            Morf AI
-          </p>
+          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/45">Morf AI</p>
           <h1 className="truncate text-sm font-bold">
             {t("aiStylePage.studio.title", { defaultValue: "AI Studio" })}
           </h1>
@@ -409,7 +420,11 @@ export function MorphAiStudioPage() {
                       }
                       className="relative aspect-[3/4] overflow-hidden rounded-2xl bg-white/5 touch-manipulation active:scale-[0.98]"
                     >
-                      <img src={item.image} alt="" className="h-full w-full object-cover object-top" />
+                      <img
+                        src={item.image}
+                        alt=""
+                        className="h-full w-full object-cover object-top"
+                      />
                       <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-1.5 pb-1.5 pt-6">
                         <p className="truncate text-[10px] font-bold">{item.title}</p>
                       </div>
@@ -453,11 +468,7 @@ export function MorphAiStudioPage() {
           >
             <div className="relative mx-4 min-h-0 flex-1 overflow-hidden rounded-[28px] bg-neutral-900">
               {current ? (
-                <img
-                  src={current}
-                  alt=""
-                  className="h-full w-full object-cover object-top"
-                />
+                <img src={current} alt="" className="h-full w-full object-cover object-top" />
               ) : null}
               {loadingId ? (
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/55 backdrop-blur-[2px]">

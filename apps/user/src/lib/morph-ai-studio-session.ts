@@ -1,7 +1,13 @@
 const KEY = "mysaloon.morphAi.studioDraft";
 
 export type MorphStudioDraft = {
+  /** Hozirgi preview (tahrirlangan bo'lishi mumkin). */
   image: string;
+  /**
+   * Studio tahrirlari shu asosdan chiqadi — o'zgarmas manba.
+   * Yo'q bo'lsa `image` asos deb olinadi.
+   */
+  baseImage?: string;
   /** Original selfie for before/after (not the try-on output). */
   beforeImage?: string;
   styleId?: string;
@@ -15,6 +21,7 @@ export function stashMorphStudioDraft(
 ) {
   const next: MorphStudioDraft = {
     image: draft.image,
+    baseImage: draft.baseImage,
     beforeImage: draft.beforeImage,
     styleId: draft.styleId,
     styleTitle: draft.styleTitle,

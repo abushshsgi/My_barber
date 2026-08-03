@@ -110,6 +110,7 @@ export function AiStylePreviewSheet({
     if (!previewImage) return;
     stashMorphStudioDraft({
       image: previewImage,
+      baseImage: previewImage,
       beforeImage: selfiePhoto || undefined,
       styleId: suggestion.id,
       styleTitle: suggestion.title,
@@ -305,7 +306,9 @@ export function AiStylePreviewSheet({
               />
             ) : null}
 
-            {previewImage ? <MorphNearbySalons preferredSalonId={suggestion.salonId || undefined} /> : null}
+            {previewImage ? (
+              <MorphNearbySalons preferredSalonId={suggestion.salonId || undefined} />
+            ) : null}
 
             {previewImage ? (
               <button

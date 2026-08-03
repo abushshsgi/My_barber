@@ -1,12 +1,24 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { motion } from "framer-motion";
-import { CalendarPlus, Camera, Check, ImagePlus, Loader2, Palette, RotateCcw, Sparkles } from "lucide-react";
+import {
+  CalendarPlus,
+  Camera,
+  Check,
+  ImagePlus,
+  Loader2,
+  Palette,
+  RotateCcw,
+  Sparkles,
+} from "lucide-react";
 import { Fragment, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { AiStyleCamera } from "@/components/ai-style/AiStyleCamera";
 import { AiStylePhotoInput, AiStyleScanLine } from "@/components/ai-style/AiStyleUi";
-import { HairstylePreviewFrame, HairstylePreviewImage } from "@/components/hairstyles/HairstylePreviewImage";
+import {
+  HairstylePreviewFrame,
+  HairstylePreviewImage,
+} from "@/components/hairstyles/HairstylePreviewImage";
 import type { useStyleTryOnFlow } from "@/components/style-try-on/useStyleTryOnFlow";
 import type { HairstyleEntry } from "@/lib/hairstyles/catalog";
 import { getHairstyleImageUrl } from "@/lib/hairstyles/catalog";
@@ -63,7 +75,11 @@ function StepRail({ step }: { step: Step }) {
               <p
                 className={cn(
                   "max-w-[72px] text-center text-[10px] font-bold leading-tight",
-                  current ? "text-foreground" : reached ? "text-foreground/70" : "text-muted-foreground",
+                  current
+                    ? "text-foreground"
+                    : reached
+                      ? "text-foreground/70"
+                      : "text-muted-foreground",
                 )}
               >
                 {label}
@@ -129,7 +145,11 @@ function GeneratingOverlay({
 
   return (
     <div className="relative h-[100dvh] overflow-hidden bg-black">
-      <img src={photo} alt="" className="absolute inset-0 h-full w-full object-cover object-top opacity-80" />
+      <img
+        src={photo}
+        alt=""
+        className="absolute inset-0 h-full w-full object-cover object-top opacity-80"
+      />
       <AiStyleScanLine />
       <div className="absolute inset-0 bg-black/35" />
       <div className="absolute inset-x-0 bottom-0 h-[45%] bg-gradient-to-t from-black/90 via-black/50 to-transparent" />
@@ -157,7 +177,9 @@ function GeneratingOverlay({
             <div className="h-1 overflow-hidden rounded-full bg-white/12">
               <motion.div
                 className="h-full rounded-full bg-white"
-                animate={{ width: validating ? "35%" : generating ? ["35%", "85%", "60%"] : "100%" }}
+                animate={{
+                  width: validating ? "35%" : generating ? ["35%", "85%", "60%"] : "100%",
+                }}
                 transition={{
                   duration: validating ? 0.4 : 2.2,
                   repeat: generating ? Infinity : 0,
@@ -190,6 +212,7 @@ function ResultView({
   const openStudio = () => {
     stashMorphStudioDraft({
       image: preview,
+      baseImage: preview,
       styleId: entry.id,
       styleTitle: entry.titleUz,
       source: "tryon",
@@ -220,7 +243,11 @@ function ResultView({
 
   return (
     <div className="relative h-[100dvh] overflow-hidden bg-black">
-      <img src={preview} alt={entry.titleUz} className="absolute inset-0 h-full w-full object-cover object-top" />
+      <img
+        src={preview}
+        alt={entry.titleUz}
+        className="absolute inset-0 h-full w-full object-cover object-top"
+      />
       <div className="absolute inset-x-0 bottom-0 h-[48%] bg-gradient-to-t from-black via-black/55 to-transparent" />
 
       <div
@@ -337,7 +364,11 @@ export function StyleTryOnFlow({ flow, entry }: Props) {
           onReset={flow.reset}
         />
         <AiStylePhotoInput fileRef={flow.fileRef} onFile={flow.onFile} />
-        <AiStyleCamera open={flow.cameraOpen} onClose={flow.closeCamera} onCapture={flow.onCameraCapture} />
+        <AiStyleCamera
+          open={flow.cameraOpen}
+          onClose={flow.closeCamera}
+          onCapture={flow.onCameraCapture}
+        />
       </>
     );
   }
@@ -352,7 +383,11 @@ export function StyleTryOnFlow({ flow, entry }: Props) {
           generating={flow.generating}
         />
         <AiStylePhotoInput fileRef={flow.fileRef} onFile={flow.onFile} />
-        <AiStyleCamera open={flow.cameraOpen} onClose={flow.closeCamera} onCapture={flow.onCameraCapture} />
+        <AiStyleCamera
+          open={flow.cameraOpen}
+          onClose={flow.closeCamera}
+          onCapture={flow.onCameraCapture}
+        />
       </>
     );
   }
@@ -370,7 +405,11 @@ export function StyleTryOnFlow({ flow, entry }: Props) {
           </div>
         </div>
         <AiStylePhotoInput fileRef={flow.fileRef} onFile={flow.onFile} />
-        <AiStyleCamera open={flow.cameraOpen} onClose={flow.closeCamera} onCapture={flow.onCameraCapture} />
+        <AiStyleCamera
+          open={flow.cameraOpen}
+          onClose={flow.closeCamera}
+          onCapture={flow.onCameraCapture}
+        />
       </div>
     );
   }
@@ -409,7 +448,11 @@ export function StyleTryOnFlow({ flow, entry }: Props) {
       </div>
 
       <AiStylePhotoInput fileRef={flow.fileRef} onFile={flow.onFile} />
-      <AiStyleCamera open={flow.cameraOpen} onClose={flow.closeCamera} onCapture={flow.onCameraCapture} />
+      <AiStyleCamera
+        open={flow.cameraOpen}
+        onClose={flow.closeCamera}
+        onCapture={flow.onCameraCapture}
+      />
     </div>
   );
 }
