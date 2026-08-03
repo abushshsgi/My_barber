@@ -46,9 +46,8 @@ _SUPPORTED_RATIOS: tuple[tuple[float, str], ...] = (
     (21 / 9, "21:9"),
 )
 
-# Edit fidelity (stable IDs). flash-lite — faqat oxirgi zaxira.
-# Eski preview nomlar (…-preview) endi 404 beradi.
-_PRO_IMAGE_MODEL = "gemini-3-pro-image"
+# Edit fidelity (stable IDs). Default — arzon flash-image (1K); Pro/2K yo'q.
+# flash-lite — faqat oxirgi zaxira (butun portretni qayta chizishi mumkin).
 _FLASH_IMAGE_MODEL = "gemini-3.1-flash-image"
 _FLASH_IMAGE_25_MODEL = "gemini-2.5-flash-image"
 
@@ -129,8 +128,8 @@ def _is_lite_model(model: str) -> bool:
     return "lite" in (model or "").lower()
 
 
-def _model_supports_pro_image_config(model: str) -> bool:
-    """flash-lite Vertexda imageSize/TEXT+IMAGE ni INVALID_ARGUMENT bilan rad etadi."""
+def _model_supports_image_config(model: str) -> bool:
+    """flash-lite Vertexda imageConfig/TEXT+IMAGE ni INVALID_ARGUMENT bilan rad etadi."""
     if _is_lite_model(model):
         return False
     name = (model or "").lower()
@@ -138,13 +137,12 @@ def _model_supports_pro_image_config(model: str) -> bool:
 
 
 def _studio_models_to_try() -> list[str]:
-    """Sifatli edit modellari birinchi; lite — faqat oxirgi zaxira."""
+    """Arzon flash-image birinchi; Pro zanjirda yo'q; lite — oxirgi zaxira."""
     primary = (studio_edit_image_model() or "").strip()
     lite = (vertex_image_model() or "").strip() or "gemini-3.1-flash-lite-image"
     models: list[str] = []
     for item in (
         primary,
-        _PRO_IMAGE_MODEL,
         _FLASH_IMAGE_MODEL,
         _FLASH_IMAGE_25_MODEL,
         lite,
@@ -159,6 +157,7 @@ def _studio_models_to_try() -> list[str]:
 
 
 def _studio_generation_configs(aspect_ratio: str, *, model: str) -> list[dict[str, Any]]:
+    # 1K default — 2K qimmat va sekin; UI baribir ~1280 ga siqadi.
     lite_configs: list[dict[str, Any]] = [
         {
             "responseModalities": ["IMAGE"],
@@ -168,12 +167,12 @@ def _studio_generation_configs(aspect_ratio: str, *, model: str) -> list[dict[st
             "responseModalities": ["IMAGE"],
         },
     ]
-    if not _model_supports_pro_image_config(model):
+    if not _model_supports_image_config(model):
         return lite_configs
     return [
         {
-            "responseModalities": ["TEXT", "IMAGE"],
-            "imageConfig": {"aspectRatio": aspect_ratio, "imageSize": "2K"},
+            "responseModalities": ["IMAGE"],
+            "imageConfig": {"aspectRatio": aspect_ratio, "imageSize": "1K"},
         },
         {
             "responseModalities": ["IMAGE"],
@@ -317,7 +316,7 @@ def generate_studio_edit(
     usage = finalize_usage(payload, kind="studio", input_images=1)
 
     return StudioEditResult(
-        # 2K PNG data URL keyingi tahrirda proxy 413 beradi — siqilgan JPEG qaytaramiz.
+        # PNG data URL keyingi tahrirda proxy 413 beradi — siqilgan JPEG qaytaramiz.
         preview_image=to_studio_response_data_url(out_mime, out_bytes),
         prompt=prompt,
         preset_id=option["id"],

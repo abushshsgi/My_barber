@@ -146,12 +146,12 @@ VERTEX_IMAGE_MODEL = (
     os.environ.get("VERTEX_IMAGE_MODEL", "gemini-3.1-flash-lite-image").strip()
     or "gemini-3.1-flash-lite-image"
 )
-# Morf AI Studio tahrir — stable IDs (preview nomlar 404).
-# Pro: gemini-3-pro-image | Flash: gemini-3.1-flash-image | Zaxira: gemini-2.5-flash-image
+# Morf AI Studio tahrir — default arzon flash-image (1K). Pro/2K kerak bo'lsa env.
+# Flash: gemini-3.1-flash-image | Zaxira: gemini-2.5-flash-image | Pro (qimmat): gemini-3-pro-image
 # flash-lite ni qo'ymang — butun rasmni qayta chizib sifatni buzadi.
 STUDIO_EDIT_IMAGE_MODEL = (
-    os.environ.get("STUDIO_EDIT_IMAGE_MODEL", "gemini-3-pro-image").strip()
-    or "gemini-3-pro-image"
+    os.environ.get("STUDIO_EDIT_IMAGE_MODEL", "gemini-3.1-flash-image").strip()
+    or "gemini-3.1-flash-image"
 )
 # gemini-3.1-flash-lite-image faqat global endpoint da (us-central1 da 404)
 VERTEX_IMAGE_LOCATION = os.environ.get("VERTEX_IMAGE_LOCATION", "global").strip() or "global"

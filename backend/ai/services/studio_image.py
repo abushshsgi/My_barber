@@ -17,8 +17,8 @@ from .errors import AiStyleError, map_gemini_http_error, read_http_error_body
 logger = logging.getLogger(__name__)
 
 STUDIO_IMAGE_MODEL = "gemini-3.1-flash-lite-image"
-# Studio tahrir — stable model ID (eski …-preview endi yo'q).
-STUDIO_EDIT_IMAGE_MODEL = "gemini-3-pro-image"
+# Studio tahrir — arzon/tez flash-image (1K). Pro/2K default emas.
+STUDIO_EDIT_IMAGE_MODEL = "gemini-3.1-flash-image"
 STUDIO_API_BASE = "https://generativelanguage.googleapis.com/v1beta/models"
 
 
@@ -47,7 +47,7 @@ def _normalize_studio_edit_model(model: str) -> str:
 
 
 def studio_edit_image_model() -> str:
-    """Morf Studio tahrir — try-on (lite) dan alohida, sifatliroq model."""
+    """Morf Studio tahrir — default flash-image (Pro dan arzonroq)."""
     configured = (getattr(settings, "STUDIO_EDIT_IMAGE_MODEL", None) or "").strip()
     if configured:
         return _normalize_studio_edit_model(configured)
