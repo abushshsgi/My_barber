@@ -681,95 +681,92 @@ export function MorphAiStudioPage() {
             transition={{ duration: motionDur ?? 0.25 }}
             className="relative flex min-h-[100dvh] flex-col"
           >
-            {/* Contained portrait — no aggressive zoom/crop */}
+            {/* Full-viewport canvas — object-contain = zoom emas, butun rasm */}
+            <div className="pointer-events-none absolute inset-0 z-0 bg-[#070707]">
+              <AnimatePresence mode="sync" initial={false}>
+                {displaySrc ? (
+                  <motion.img
+                    key={`${displaySrc}-${comparing ? "before" : "after"}`}
+                    src={displaySrc}
+                    alt=""
+                    initial={reduceMotion ? false : { opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={reduceMotion ? undefined : { opacity: 0 }}
+                    transition={{ duration: motionDur ?? 0.28 }}
+                    className="absolute inset-0 h-full w-full object-contain object-center"
+                    decoding="async"
+                  />
+                ) : null}
+              </AnimatePresence>
+              <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/75" />
+            </div>
+
+            <AnimatePresence>
+              {busy ? (
+                <motion.div
+                  initial={reduceMotion ? false : { opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={reduceMotion ? undefined : { opacity: 0 }}
+                  className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center"
+                >
+                  {!reduceMotion ? (
+                    <div className="absolute inset-x-0 top-0 h-1/2 morf-studio-scan bg-gradient-to-b from-transparent via-white/12 to-transparent" />
+                  ) : null}
+                  <div className="relative inline-flex items-center gap-2 rounded-full border border-white/20 bg-black/30 px-3.5 py-2 backdrop-blur-md">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin text-white/90" />
+                    <span className="text-[11px] font-semibold tracking-tight text-white/90">
+                      {t("aiStylePage.studio.generating")}
+                    </span>
+                  </div>
+                </motion.div>
+              ) : null}
+            </AnimatePresence>
+
             <div
-              className="relative z-0 flex min-h-0 flex-1 items-center justify-center px-3"
-              style={{ paddingTop: "max(0.5rem, env(safe-area-inset-top))" }}
+              className="pointer-events-none relative z-10 flex justify-center"
+              style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}
             >
-              <div className="relative h-full max-h-full w-full max-w-lg overflow-hidden rounded-[28px] bg-[#0c0c0c] ring-1 ring-white/10">
-                <AnimatePresence mode="sync" initial={false}>
-                  {displaySrc ? (
-                    <motion.img
-                      key={`${displaySrc}-${comparing ? "before" : "after"}`}
-                      src={displaySrc}
-                      alt=""
-                      initial={reduceMotion ? false : { opacity: 0.35 }}
-                      animate={{ opacity: 1 }}
-                      exit={reduceMotion ? undefined : { opacity: 0 }}
-                      transition={{ duration: motionDur ?? 0.3 }}
-                      className="absolute inset-0 h-full w-full object-contain object-center"
-                      decoding="async"
-                    />
-                  ) : null}
-                </AnimatePresence>
+              <span className="rounded-full border border-white/10 bg-black/35 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/70 backdrop-blur-md">
+                Morf · Studio
+              </span>
+            </div>
 
-                {/* Soft vignette — does not hide the face */}
-                <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/25 via-transparent to-black/35" />
-
-                {/* Transparent loading — photo stays visible */}
-                <AnimatePresence>
-                  {busy ? (
-                    <motion.div
-                      initial={reduceMotion ? false : { opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={reduceMotion ? undefined : { opacity: 0 }}
-                      className="absolute inset-0 z-20 flex items-end justify-center pb-5"
-                    >
-                      {!reduceMotion ? (
-                        <div className="pointer-events-none absolute inset-x-0 top-0 h-full morf-studio-scan bg-gradient-to-b from-transparent via-white/15 to-transparent" />
-                      ) : null}
-                      <div className="relative inline-flex items-center gap-2 rounded-full border border-white/20 bg-black/25 px-3.5 py-2 backdrop-blur-md">
-                        <Loader2 className="h-3.5 w-3.5 animate-spin text-white/90" />
-                        <span className="text-[11px] font-semibold tracking-tight text-white/90">
-                          {t("aiStylePage.studio.generating")}
-                        </span>
-                      </div>
-                    </motion.div>
-                  ) : null}
-                </AnimatePresence>
-
-                <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex justify-center pt-3">
-                  <span className="rounded-full border border-white/10 bg-black/30 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/70 backdrop-blur-md">
-                    Morf · Studio
+            <AnimatePresence>
+              {comparing ? (
+                <motion.div
+                  initial={reduceMotion ? false : { opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={reduceMotion ? undefined : { opacity: 0 }}
+                  className="pointer-events-none relative z-10 mt-3 flex justify-center"
+                >
+                  <span className="rounded-full border border-white/15 bg-black/45 px-3 py-1 text-[11px] font-semibold text-white backdrop-blur-md">
+                    {t("aiStylePage.studio.comparing")}
+                  </span>
+                </motion.div>
+              ) : shareNudge && hasEdits ? (
+                <motion.div
+                  initial={reduceMotion ? false : { opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={reduceMotion ? undefined : { opacity: 0 }}
+                  className="pointer-events-none relative z-10 mt-3 flex justify-center px-4"
+                >
+                  <span className="morf-studio-chip-in max-w-[92%] truncate rounded-full border border-white/20 bg-white/90 px-3.5 py-1.5 text-center text-[11px] font-semibold text-black shadow-lg">
+                    {t("aiStylePage.studio.shareNudge")}
+                  </span>
+                </motion.div>
+              ) : activePresetLabel && hasEdits ? (
+                <div className="pointer-events-none relative z-10 mt-3 flex justify-center">
+                  <span className="morf-studio-chip-in rounded-full border border-white/15 bg-black/45 px-3 py-1 text-[11px] font-semibold text-white backdrop-blur-md">
+                    {t("aiStylePage.studio.appliedChip", {
+                      name: activePresetLabel,
+                      defaultValue: "{{name}} · qo‘llandi",
+                    })}
                   </span>
                 </div>
+              ) : null}
+            </AnimatePresence>
 
-                <AnimatePresence>
-                  {comparing ? (
-                    <motion.div
-                      initial={reduceMotion ? false : { opacity: 0, y: 6 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={reduceMotion ? undefined : { opacity: 0 }}
-                      className="pointer-events-none absolute inset-x-0 bottom-4 z-10 flex justify-center"
-                    >
-                      <span className="rounded-full border border-white/15 bg-black/40 px-3 py-1 text-[11px] font-semibold text-white backdrop-blur-md">
-                        {t("aiStylePage.studio.comparing")}
-                      </span>
-                    </motion.div>
-                  ) : shareNudge && hasEdits ? (
-                    <motion.div
-                      initial={reduceMotion ? false : { opacity: 0, y: 8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={reduceMotion ? undefined : { opacity: 0 }}
-                      className="pointer-events-none absolute inset-x-3 bottom-4 z-10 flex justify-center"
-                    >
-                      <span className="morf-studio-chip-in max-w-[92%] truncate rounded-full border border-white/20 bg-white/90 px-3.5 py-1.5 text-center text-[11px] font-semibold text-black shadow-lg">
-                        {t("aiStylePage.studio.shareNudge")}
-                      </span>
-                    </motion.div>
-                  ) : activePresetLabel && hasEdits ? (
-                    <div className="pointer-events-none absolute inset-x-0 bottom-4 z-10 flex justify-center">
-                      <span className="morf-studio-chip-in rounded-full border border-white/15 bg-black/40 px-3 py-1 text-[11px] font-semibold text-white backdrop-blur-md">
-                        {t("aiStylePage.studio.appliedChip", {
-                          name: activePresetLabel,
-                          defaultValue: "{{name}} · qo‘llandi",
-                        })}
-                      </span>
-                    </div>
-                  ) : null}
-                </AnimatePresence>
-              </div>
-            </div>
+            <div className="relative z-10 min-h-0 flex-1" />
 
             {/* Bottom control deck — back + tools live here */}
             <div
