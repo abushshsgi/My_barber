@@ -74,7 +74,7 @@ class Command(BaseCommand):
         from barbers.models import Barber
         from bookings.models import Booking
         from chat.models import Conversation
-        from notifications.models import BarberPushToken, Notification
+        from notifications.models import BarberPushToken, Notification, UserPushToken
         from salons.models import Salon
         from wallet.models import GiftTransfer, LedgerEntry, Wallet
 
@@ -87,6 +87,7 @@ class Command(BaseCommand):
             "conversations": Conversation.objects.count(),
             "notifications": Notification.objects.count(),
             "barber_push_tokens": BarberPushToken.objects.count(),
+            "user_push_tokens": UserPushToken.objects.count(),
             "wallets": Wallet.objects.count(),
             "ledger_entries": LedgerEntry.objects.count(),
             "gift_transfers": GiftTransfer.objects.count(),
@@ -115,7 +116,7 @@ class Command(BaseCommand):
             SupportReply,
             SupportTicket,
         )
-        from notifications.models import BarberPushToken, Notification
+        from notifications.models import BarberPushToken, Notification, UserPushToken
         from salons.models import Salon
         from wallet.models import GiftTransfer, LedgerEntry, Wallet, WalletCard
 
@@ -141,6 +142,7 @@ class Command(BaseCommand):
         zap(Conversation.objects.all(), "conversations")
         zap(Notification.objects.all(), "notifications")
         zap(BarberPushToken.objects.all(), "barber_push_tokens")
+        zap(UserPushToken.objects.all(), "user_push_tokens")
         zap(SupportReply.objects.all(), "support_replies")
         zap(SupportTicket.objects.all(), "support_tickets")
         zap(FinanceTransaction.objects.all(), "finance_transactions")

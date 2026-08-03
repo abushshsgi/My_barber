@@ -44,3 +44,21 @@ class BarberPushToken(models.Model):
 
     class Meta:
         ordering = ["-updated_at"]
+
+
+class UserPushToken(models.Model):
+    """FCM registration token — user Capacitor Android ilova."""
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="push_tokens",
+    )
+    token = models.CharField(max_length=512, unique=True, db_index=True)
+    platform = models.CharField(max_length=16, blank=True)
+    device_name = models.CharField(max_length=128, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-updated_at"]

@@ -3,6 +3,7 @@ import { refreshAiStyleHistoryCache } from "@/lib/api/ai";
 import { bootstrapUserSession, handleAuthFailure, hasValidUserSession } from "@/lib/api/client";
 import { getActiveUserId, prepareFaceProfileStorageForUser } from "@/lib/face-profile";
 import { useNotificationsWebSocket } from "@/hooks/use-notifications-websocket";
+import { registerPushNotifications } from "@/lib/native-push";
 import { clearQueryClientCache } from "@/lib/query-client";
 import { prepareUserPrefsStorageForUser } from "@/lib/user-prefs";
 
@@ -35,15 +36,20 @@ export function AuthSessionGuard({ children }: { children: ReactNode }) {
           prepareUserPrefsStorageForUser(uid, { allowLegacyClaim: true });
           void refreshAiStyleHistoryCache();
         }
+        window.dispatchEvent(new CustomEvent("mysaloon:auth-ready"));
+        void registerPushNotifications();
       });
     };
 
     verify();
     window.addEventListener("focus", verify);
     document.addEventListener("visibilitychange", verify);
+    const onForeground = () => verify();
+    window.addEventListener("mysaloon:app-foreground", onForeground);
     return () => {
       window.removeEventListener("focus", verify);
       document.removeEventListener("visibilitychange", verify);
+      window.removeEventListener("mysaloon:app-foreground", onForeground);
     };
   }, []);
 

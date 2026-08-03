@@ -1,4 +1,5 @@
 import type { Salon } from "@/lib/mock-data";
+import { nativeShare } from "@/lib/native-share";
 
 export function salonPublicUrl(salonId: string): string {
   if (typeof window !== "undefined") {
@@ -9,18 +10,18 @@ export function salonPublicUrl(salonId: string): string {
 
 export type ShareSalonResult = "shared" | "copied";
 
-export async function shareSalon(salon: Pick<Salon, "id" | "name" | "address">): Promise<ShareSalonResult> {
+export async function shareSalon(
+  salon: Pick<Salon, "id" | "name" | "address">,
+): Promise<ShareSalonResult> {
   const url = salonPublicUrl(salon.id);
   const text = salon.address ? `${salon.name} — ${salon.address}` : salon.name;
 
-  if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
-    try {
-      await navigator.share({ title: salon.name, text, url });
-      return "shared";
-    } catch (err) {
-      if (err instanceof DOMException && err.name === "AbortError") {
-        throw err;
-      }
+  try {
+    const result = await nativeShare({ title: salon.name, text, url });
+    if (result === "shared") return "shared";
+  } catch (err) {
+    if (err instanceof DOMException && err.name === "AbortError") {
+      throw err;
     }
   }
 

@@ -24,6 +24,7 @@ import { resolveDefaultSalonBarberId } from "@/lib/salon-services";
 import { shortPrice } from "@/lib/price-display";
 import { MOBILE_STICKY_CONTENT_PADDING_CLASS } from "@/lib/layout-constants";
 import { withMasterCardBookingFields } from "@/lib/master-card-booking";
+import { hapticSuccess } from "@/lib/native-haptics";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/booking/$salonId")({
@@ -204,6 +205,7 @@ function useBookingSalonState(
       toast.success(t("booking.submitted"), {
         description: t("booking.submittedDesc", { name: salon.name, slot }),
       });
+      void hapticSuccess();
       setTimeout(
         () =>
           router.navigate({

@@ -6,13 +6,18 @@ import {
   type ApiUser,
 } from "@/lib/api";
 import { refreshAiStyleHistoryCache } from "@/lib/api/ai";
+import { migrateFaceProfileOnLogout, prepareFaceProfileStorageForUser } from "@/lib/face-profile";
 import {
-  migrateFaceProfileOnLogout,
-  prepareFaceProfileStorageForUser,
-} from "@/lib/face-profile";
-import { migrateGuestMorphAiGenerations, refreshMorphAiGenerationsCache } from "@/lib/morph-ai-gallery";
+  migrateGuestMorphAiGenerations,
+  refreshMorphAiGenerationsCache,
+} from "@/lib/morph-ai-gallery";
+import { unregisterPushToken } from "@/lib/native-push";
 import { clearQueryClientCache, getQueryClient } from "@/lib/query-client";
-import { notifyAudienceReset, migrateUserPrefsOnLogout, prepareUserPrefsStorageForUser } from "@/lib/user-prefs";
+import {
+  notifyAudienceReset,
+  migrateUserPrefsOnLogout,
+  prepareUserPrefsStorageForUser,
+} from "@/lib/user-prefs";
 
 const USER_KEY = "mysaloon.auth.user";
 const LAST_PHONE_KEY = "mysaloon.auth.lastPhone";
@@ -52,12 +57,7 @@ export function getToken(): string | null {
   return getUserAccessToken();
 }
 
-export function setSession(
-  access: string,
-  refresh: string,
-  user: ApiUser,
-  sessionId?: number,
-) {
+export function setSession(access: string, refresh: string, user: ApiUser, sessionId?: number) {
   setUserTokens(access, refresh, sessionId ?? null);
   localStorage.setItem(USER_KEY, JSON.stringify(userFromApi(user)));
   if (user.phone) rememberPhone(user.phone);
@@ -73,6 +73,9 @@ export function setSession(
 
   clearQueryClientCache();
   void getQueryClient()?.invalidateQueries();
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("mysaloon:auth-ready"));
+  }
 }
 
 export function getAuthUser(): AuthUser | null {
@@ -94,6 +97,7 @@ export function logout() {
     migrateFaceProfileOnLogout(user.id);
     migrateUserPrefsOnLogout(user.id);
   }
+  void unregisterPushToken();
   clearUserTokens();
   clearQueryClientCache();
   try {

@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { GeolocationError, getAccuratePosition } from "@mybarber/shared/geolocation";
+import { GeolocationError, getAccuratePosition } from "@/lib/native-geolocation";
 import { geocodeAddress, reverseGeocodeAddress, validateLocation } from "@/lib/api/geo";
 import { cn } from "@/lib/utils";
 

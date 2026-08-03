@@ -1,4 +1,4 @@
-import { getAccuratePosition } from "@mybarber/shared/geolocation";
+import { getAccuratePosition } from "@/lib/native-geolocation";
 import { useEffect, useRef } from "react";
 import { useMe, useUpdateMe } from "@/hooks/use-me";
 import { validateLocation } from "@/lib/api/geo";

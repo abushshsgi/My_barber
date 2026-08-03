@@ -3,7 +3,6 @@ import { motion, useReducedMotion } from "framer-motion";
 import {
   ArrowUpRight,
   Camera,
-  ChevronLeft,
   Clock3,
   Droplets,
   FlaskConical,
@@ -25,6 +24,7 @@ import {
   refreshMorphAiGenerationsCache,
   type MorphAiGeneration,
 } from "@/lib/morph-ai-gallery";
+import { MobileBackButton } from "@/components/mobile/MobileBackButton";
 import { navigateBack } from "@/lib/mobile-back";
 import type { Audience } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
@@ -142,7 +142,9 @@ export function MorphAiHome({
     personaId,
     { ignoreAgeGroup: true },
   );
-  const [generations, setGenerations] = useState<MorphAiGeneration[]>(() => loadMorphAiGenerations());
+  const [generations, setGenerations] = useState<MorphAiGeneration[]>(() =>
+    loadMorphAiGenerations(),
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -304,11 +306,17 @@ export function MorphAiHome({
         className="sticky top-0 z-20 flex items-center gap-1.5 px-4 pb-2"
         style={{ paddingTop: "max(0.65rem, env(safe-area-inset-top))" }}
       >
-        <button type="button" onClick={() => navigateBack(router, "/")} className={iconBtn} aria-label={t("nav.home")}>
-          <ChevronLeft className="size-5" strokeWidth={2.25} />
-        </button>
+        <MobileBackButton
+          onClick={() => navigateBack(router, "/")}
+          className="border-white/15 bg-white/10 text-white hover:bg-white/15"
+          aria-label={t("nav.home")}
+        />
         <div className="min-w-0 flex-1" />
-        <Link to="/ai-style/history" className={iconBtn} aria-label={t("aiStylePage.historyButton")}>
+        <Link
+          to="/ai-style/history"
+          className={iconBtn}
+          aria-label={t("aiStylePage.historyButton")}
+        >
           <Clock3 className="size-[17px]" strokeWidth={2} />
         </Link>
         <Link to="/profile" className={iconBtn} aria-label={t("nav.profile")}>

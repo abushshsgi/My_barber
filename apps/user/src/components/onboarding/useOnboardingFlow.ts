@@ -1,7 +1,7 @@
 import { useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { GeolocationError, getAccuratePosition } from "@mybarber/shared/geolocation";
+import { GeolocationError, getAccuratePosition } from "@/lib/native-geolocation";
 import { useUpdateMe } from "@/hooks/use-me";
 import { roundCoord } from "@/lib/api/list-utils";
 import {

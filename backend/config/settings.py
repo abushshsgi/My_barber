@@ -157,6 +157,11 @@ VERTEX_IMAGE_LOCATION = os.environ.get("VERTEX_IMAGE_LOCATION", "global").strip(
 VERTEX_SERVICE_ACCOUNT_JSON = os.environ.get("VERTEX_SERVICE_ACCOUNT_JSON", "").strip()
 GOOGLE_APPLICATION_CREDENTIALS = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS", "").strip()
 
+# User Capacitor FCM (legacy key yoki HTTP v1 service account).
+FCM_SERVER_KEY = os.environ.get("FCM_SERVER_KEY", "").strip()
+FCM_PROJECT_ID = os.environ.get("FCM_PROJECT_ID", "").strip()
+FIREBASE_SERVICE_ACCOUNT_JSON = os.environ.get("FIREBASE_SERVICE_ACCOUNT_JSON", "").strip()
+
 # Try-on Redis navbat (REDIS_URL bo'lsa yoqiladi)
 TRYON_QUEUE_ENABLED = os.environ.get("TRYON_QUEUE_ENABLED", "true").lower() in (
     "1",

@@ -22,6 +22,7 @@ import { useFamilyMembers } from "@/hooks/use-family";
 import { useDisplayUser } from "@/hooks/use-me";
 import { MOBILE_STICKY_CONTENT_PADDING_CLASS } from "@/lib/layout-constants";
 import { withMasterCardBookingFields } from "@/lib/master-card-booking";
+import { hapticSuccess } from "@/lib/native-haptics";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/booking/barber/$barberId")({
@@ -164,6 +165,7 @@ function IndependentBookingFlow() {
       toast.success(t("booking.submitted"), {
         description: t("booking.submittedDesc", { name: barber.name, slot }),
       });
+      void hapticSuccess();
       setTimeout(
         () =>
           router.navigate({

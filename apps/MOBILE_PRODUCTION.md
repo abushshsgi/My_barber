@@ -91,6 +91,30 @@ Android Studio → **Build → Generate Signed Bundle (.aab)** → Play Console.
 | Mijoz | `uz.mysaloon.app` | MySaloon |
 | Barber | `uz.mysaloon.partner` | MySaloon Partner |
 
+#### User native qatlam (FCM, GPS, kamera, back, deep link)
+
+1. **Firebase:** Console → Android app `uz.mysaloon.app` → `google-services.json` ni `apps/user/android/app/` ga qo‘ying (gitignore).
+2. **Backend env (Railway):**
+   - `FIREBASE_SERVICE_ACCOUNT_JSON=...` (yoki `FCM_SERVER_KEY` legacy)
+   - ixtiyoriy: `FCM_PROJECT_ID=...` (JSON `project_id` dan olinadi)
+3. **Migration:** `python manage.py migrate` (`UserPushToken`)
+4. **App Links:** `apps/user/public/.well-known/assetlinks.json` ichida upload keystore SHA-256 ni qo‘ying; Vercel deploydan keyin `https://www.mysaloon.uz/.well-known/assetlinks.json` ochilishi kerak.
+5. **SHA-256 olish:**
+   ```bash
+   keytool -list -v -keystore your-upload.jks -alias your-alias
+   ```
+
+Native pluginlar: App (hardware back + deep link), PushNotifications, Geolocation, Camera, Keyboard, Haptics, Share, StatusBar (edge-to-edge overlay), SplashScreen.
+
+| Ruxsat | Nima uchun |
+|--------|------------|
+| `ACCESS_FINE/COARSE_LOCATION` | Map, onboarding, manzil |
+| `CAMERA` | AI try-on, QR pay |
+| `POST_NOTIFICATIONS` | FCM (Android 13+) |
+| `VIBRATE` | Haptics / push channel |
+
+Hardware back: overlay/sheet yopiladi → `navigateBack` → root tabda ikki marta = `exitApp`.
+
 ---
 
 ## Lokal production test
@@ -120,3 +144,9 @@ Chrome DevTools → Application → Manifest / Service Workers tekshiring.
 - [ ] iOS: Add to Home Screen → standalone rejim
 - [ ] Android: Capacitor APK login + dashboard
 - [ ] Chat WebSocket (REDIS_URL production'da yoqilgan)
+- [ ] Android: hardware back (sheet → orqaga → exit)
+- [ ] Android: joylashuv ruxsati + map/onboarding GPS
+- [ ] Android: kamera (AI / QR)
+- [ ] Android: FCM — ilova yopiq holatda bron push + tap → deep link
+- [ ] App Links: `https://www.mysaloon.uz/salon/<id>` ilovani ochadi
+- [ ] `google-services.json` + Railway `FIREBASE_SERVICE_ACCOUNT_JSON`

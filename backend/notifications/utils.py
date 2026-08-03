@@ -4,6 +4,7 @@ from django.core.mail import send_mail
 from barbers.models import Barber
 
 from .expo_push import send_barber_expo_push
+from .fcm_push import send_user_fcm_push
 from .models import Notification
 from .ws_broadcast import push_ws_barber, push_ws_user
 
@@ -30,6 +31,13 @@ def notify_user(user, type_: str, title: str, body: str = "", payload=None, send
         payload=payload or {},
     )
     push_ws_user(user.id, _ws_payload(n))
+    push_payload = {**(payload or {}), "notification_id": n.id, "type": type_}
+    send_user_fcm_push(
+        user,
+        title=title,
+        body=body or title,
+        payload=push_payload,
+    )
     if send_email and user.email:
         try:
             send_mail(
@@ -77,4 +85,3 @@ def notify_barber(
             )
         except Exception:
             pass
-

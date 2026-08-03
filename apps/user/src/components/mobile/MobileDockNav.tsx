@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { isNavTabActive, isNavTabCurrent } from "@/lib/navigation";
 import { shouldShowMobileDock } from "@/lib/layout-routes";
 import { prefetchMorphAiIntroVideo } from "@/lib/morph-ai-intro";
+import { hapticLight } from "@/lib/native-haptics";
 import { cn } from "@/lib/utils";
 
 const leftTabs = [
@@ -105,6 +106,7 @@ export function MobileDockNav({ unreadCount: _unreadCount = 0 }: Props) {
   }
 
   const handleTabClick = (to: string) => (event: React.MouseEvent<HTMLAnchorElement>) => {
+    void hapticLight();
     if (isNavTabCurrent(pathname, to)) {
       event.preventDefault();
       window.scrollTo({ top: 0, behavior: "smooth" });

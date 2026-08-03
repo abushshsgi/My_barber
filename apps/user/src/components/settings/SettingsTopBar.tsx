@@ -1,5 +1,5 @@
 import { useRouter } from "@tanstack/react-router";
-import { ChevronLeft } from "lucide-react";
+import { MobileBackButton } from "@/components/mobile/MobileBackButton";
 import { navigateBack } from "@/lib/mobile-back";
 
 type Props = {
@@ -15,14 +15,13 @@ export function SettingsTopBar({ backTo = "/profile", backLabel, doneLabel, clas
   return (
     <div className={className}>
       <div className="flex items-center justify-between gap-4">
-        <button
-          type="button"
-          onClick={() => navigateBack(router, backTo, true)}
-          className="inline-flex items-center gap-1.5 rounded-lg py-1.5 text-sm font-semibold text-foreground transition-colors hover:opacity-80"
-        >
-          <ChevronLeft className="h-5 w-5" strokeWidth={2} />
-          {backLabel}
-        </button>
+        <div className="flex min-w-0 items-center gap-2">
+          <MobileBackButton
+            onClick={() => navigateBack(router, backTo, true)}
+            aria-label={backLabel}
+          />
+          <span className="truncate text-sm font-semibold text-foreground">{backLabel}</span>
+        </div>
         <button
           type="button"
           onClick={() => void router.navigate({ to: "/profile" })}

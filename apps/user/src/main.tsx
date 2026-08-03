@@ -4,7 +4,7 @@ import { RouterProvider } from "@tanstack/react-router";
 
 import { getRouter } from "./router";
 import { installChunkReloadGuard } from "./lib/chunk-reload";
-import { initNativeShell } from "./lib/native-shell";
+import { attachNativeAppBridge, initNativeShell } from "./lib/native-shell";
 import "./styles.css";
 
 const root = document.getElementById("root");
@@ -16,8 +16,11 @@ if (!root) {
 void initNativeShell();
 installChunkReloadGuard();
 
+const router = getRouter();
+attachNativeAppBridge(router);
+
 createRoot(root).render(
   <React.StrictMode>
-    <RouterProvider router={getRouter()} />
+    <RouterProvider router={router} />
   </React.StrictMode>,
 );

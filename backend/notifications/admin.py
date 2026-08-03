@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import BarberPushToken, Notification
+from .models import BarberPushToken, Notification, UserPushToken
 
 
 @admin.register(Notification)
@@ -19,3 +19,10 @@ class BarberPushTokenAdmin(admin.ModelAdmin):
     list_display = ("barber", "platform", "token", "updated_at")
     search_fields = ("token", "barber__email", "barber__full_name")
     autocomplete_fields = ("barber",)
+
+
+@admin.register(UserPushToken)
+class UserPushTokenAdmin(admin.ModelAdmin):
+    list_display = ("user", "platform", "token", "updated_at")
+    search_fields = ("token", "user__email", "user__phone", "user__full_name")
+    autocomplete_fields = ("user",)

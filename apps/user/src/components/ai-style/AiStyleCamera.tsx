@@ -13,6 +13,7 @@ import {
 } from "@/components/ai-style/face-scan-utils";
 import { useFaceLandmarker } from "@/components/ai-style/useFaceLandmarker";
 import type { FaceShapeKey } from "@/components/ai-style/ai-style-shared";
+import { ensureCameraPermission } from "@/lib/native-camera";
 import { cn } from "@/lib/utils";
 
 const FACE_CAMERA_ATTR = "data-face-camera";
@@ -101,8 +102,7 @@ export function AiStyleCamera({ open, onClose, onCapture }: Props) {
   const [quality, setQuality] = useState<FaceQuality>(() => evaluateFaceQuality(null));
   const [cameraError, setCameraError] = useState<string | null>(null);
 
-  const { landmarkerRef, ready: landmarkerReady, error: landmarkerError } =
-    useFaceLandmarker(open);
+  const { landmarkerRef, ready: landmarkerReady, error: landmarkerError } = useFaceLandmarker(open);
 
   const handleClose = useCallback((event?: React.SyntheticEvent) => {
     event?.preventDefault();
@@ -167,6 +167,17 @@ export function AiStyleCamera({ open, onClose, onCapture }: Props) {
     let cancelled = false;
     const start = async () => {
       try {
+        const allowed = await ensureCameraPermission();
+        if (!allowed) {
+          if (!cancelled) {
+            setCameraError(
+              t("aiStylePage.cameraPermissionDenied", {
+                defaultValue: "Kameraga ruxsat berilmadi. Sozlamalardan yoqing.",
+              }),
+            );
+          }
+          return;
+        }
         const stream = await openSelfieStream();
         if (cancelled) {
           stream.getTracks().forEach((track) => track.stop());
@@ -248,7 +259,9 @@ export function AiStyleCamera({ open, onClose, onCapture }: Props) {
             : quality.reason === "turn_face"
               ? t("aiStylePage.scanTurnFace", { defaultValue: "Yuzni to‘g‘ri kameraga qarang" })
               : quality.reason === "off_center"
-                ? t("aiStylePage.scanOffCenter", { defaultValue: "Yuzni oval ichiga joylashtiring" })
+                ? t("aiStylePage.scanOffCenter", {
+                    defaultValue: "Yuzni oval ichiga joylashtiring",
+                  })
                 : t("aiStylePage.cameraReadyHint", { defaultValue: "Tayyor — rasmga oling" });
 
   return createPortal(

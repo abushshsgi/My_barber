@@ -5,7 +5,7 @@ import {
   type DiscoveryLocation,
 } from "@/lib/discovery-location";
 import { validateLocation } from "@/lib/api/geo";
-import { getAccuratePosition } from "@mybarber/shared/geolocation";
+import { getAccuratePosition } from "@/lib/native-geolocation";
 import { useEffect, useState } from "react";
 
 export type DiscoveryLocationState = {

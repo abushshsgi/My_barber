@@ -279,7 +279,7 @@ from ai.views import (
 )
 from chat.views import ConversationListCreateView, ConversationMarkReadView, ConversationMessagesView
 from geo.views import CurrencyRatesView, GeocodeView, MapConfigView, ReverseGeocodeView, ValidateLocationView
-from notifications.push_views import BarberPushTokenView
+from notifications.push_views import BarberPushTokenView, UserPushTokenView
 from wallet.card_deposit_views import (
     AdminWalletDepositApproveView,
     AdminWalletDepositRejectView,
@@ -592,6 +592,7 @@ api_routes = [
     path("notifications/", NotificationListView.as_view()),
     path("notifications/<int:pk>/read/", NotificationMarkReadView.as_view()),
     path("notifications/mark-all-read/", NotificationMarkAllReadView.as_view()),
+    path("notifications/push-token/", UserPushTokenView.as_view()),
     path("analytics/", AnalyticsView.as_view()),
     path("analytics/clients/", SalonClientsView.as_view()),
     path("analytics/clients/independent/", IndependentClientsView.as_view()),

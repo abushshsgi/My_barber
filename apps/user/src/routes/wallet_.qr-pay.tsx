@@ -118,6 +118,13 @@ function QrPayPanel() {
     const detector = new Detector({ formats: ["qr_code"] });
     const start = async () => {
       try {
+        const { ensureCameraPermission } = await import("@/lib/native-camera");
+        const allowed = await ensureCameraPermission();
+        if (!allowed) {
+          toast.error("Kameraga ruxsat berilmadi. Sozlamalardan yoqing.");
+          setScanning(false);
+          return;
+        }
         const stream = await navigator.mediaDevices.getUserMedia({
           video: { facingMode: { ideal: "environment" } },
           audio: false,
