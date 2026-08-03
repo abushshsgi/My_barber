@@ -21,7 +21,11 @@ export function readFileAsDataUrl(file: File): Promise<string> {
   });
 }
 
-export async function compressSelfieDataUrl(dataUrl: string, maxSide = MAX_SELFIE_SIDE): Promise<string> {
+export async function compressSelfieDataUrl(
+  dataUrl: string,
+  maxSide = MAX_SELFIE_SIDE,
+  quality = 0.88,
+): Promise<string> {
   if (typeof document === "undefined") return dataUrl;
 
   return new Promise((resolve, reject) => {
@@ -38,8 +42,10 @@ export async function compressSelfieDataUrl(dataUrl: string, maxSide = MAX_SELFI
         resolve(dataUrl);
         return;
       }
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = "high";
       ctx.drawImage(img, 0, 0, width, height);
-      resolve(canvas.toDataURL("image/jpeg", 0.88));
+      resolve(canvas.toDataURL("image/jpeg", quality));
     };
     img.onerror = () => reject(new Error("Rasm yuklanmadi."));
     img.src = dataUrl;
@@ -57,13 +63,14 @@ export async function prepareSelfieDataUrl(dataUrl: string): Promise<string> {
   return compressSelfieDataUrl(dataUrl);
 }
 
-/** Studio ketma-ket tahrir — 2K data URL 413 bermasligi uchun. */
-const STUDIO_MAX_SIDE = 1280;
+/** Studio ketma-ket tahrir — 2K data URL 413 bermasligi uchun; sifat uchun 1536 + yuqori JPEG. */
+const STUDIO_MAX_SIDE = 1536;
+const STUDIO_JPEG_QUALITY = 0.92;
 
 export async function prepareStudioImagePayload(image: string): Promise<string> {
   const raw = (image || "").trim();
   if (!raw) return raw;
   // Absolute / relative media URL — kichik, siqish shart emas.
   if (!raw.startsWith("data:")) return raw;
-  return compressSelfieDataUrl(raw, STUDIO_MAX_SIDE);
+  return compressSelfieDataUrl(raw, STUDIO_MAX_SIDE, STUDIO_JPEG_QUALITY);
 }

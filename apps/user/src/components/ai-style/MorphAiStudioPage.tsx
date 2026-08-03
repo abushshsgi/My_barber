@@ -5,6 +5,7 @@ import {
   Camera,
   Check,
   ChevronLeft,
+  Dices,
   Download,
   Droplets,
   Eye,
@@ -15,8 +16,10 @@ import {
   Palette,
   RotateCcw,
   Scissors,
+  Share2,
   Sparkles,
   Undo2,
+  Users,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -28,6 +31,7 @@ import {
   studioCategoryIcon,
   studioPresetIcon,
 } from "@/components/ai-style/studio-preset-icons";
+import { useMorfAiStoryShare } from "@/components/ai-style/useMorfAiStoryShare";
 import { useMorphLimitGate } from "@/hooks/use-morph-limit-gate";
 import {
   fetchMorphStudioCatalog,
@@ -125,13 +129,14 @@ type SourceItem = {
   kind: "generation" | "selfie";
 };
 
-const glassBtn =
-  "grid size-10 place-items-center rounded-full border border-white/15 bg-black/40 text-white shadow-lg shadow-black/40 backdrop-blur-xl transition active:scale-95 disabled:opacity-35 touch-manipulation cursor-pointer";
+const toolBtn =
+  "inline-flex h-9 items-center justify-center gap-1.5 rounded-full border border-white/12 bg-white/[0.07] px-3 text-[11px] font-semibold tracking-tight text-white/90 transition active:scale-95 disabled:opacity-35 touch-manipulation cursor-pointer";
 
 export function MorphAiStudioPage() {
   const { t, i18n } = useTranslation();
   const reduceMotion = useReducedMotion();
   const limitGate = useMorphLimitGate();
+  const { sharing: storySharing, shareToStory, storyModal } = useMorfAiStoryShare("studio");
   const fileRef = useRef<HTMLInputElement>(null);
   const [cameraOpen, setCameraOpen] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -148,6 +153,7 @@ export function MorphAiStudioPage() {
   const [downloading, setDownloading] = useState(false);
   const [activeCategory, setActiveCategory] = useState("hair_color");
   const [comparing, setComparing] = useState(false);
+  const [shareNudge, setShareNudge] = useState(false);
   const [newsPulse, setNewsPulse] = useState<NewsAction | null>(null);
   const [generations, setGenerations] = useState<MorphAiGeneration[]>(() =>
     loadMorphAiGenerations(),
@@ -167,6 +173,11 @@ export function MorphAiStudioPage() {
   const currentCat = useMemo(
     () => categories.find((c) => c.id === activeCategory) ?? categories[0],
     [categories, activeCategory],
+  );
+
+  const allPresets = useMemo(
+    () => categories.flatMap((c) => c.options.map((o) => ({ ...o, categoryId: c.id }))),
+    [categories],
   );
 
   useEffect(() => {
@@ -212,6 +223,12 @@ export function MorphAiStudioPage() {
     const timer = window.setTimeout(() => setNewsPulse(null), 2200);
     return () => window.clearTimeout(timer);
   }, [newsPulse]);
+
+  useEffect(() => {
+    if (!shareNudge) return;
+    const timer = window.setTimeout(() => setShareNudge(false), 5200);
+    return () => window.clearTimeout(timer);
+  }, [shareNudge]);
 
   const sources: SourceItem[] = useMemo(() => {
     const fromGen = generations.map((g) => ({
@@ -261,6 +278,7 @@ export function MorphAiStudioPage() {
     setActivePresetId(null);
     setActivePresetLabel(null);
     setComparing(false);
+    setShareNudge(false);
     setDraftMeta({
       styleId: meta?.styleId,
       styleTitle: meta?.styleTitle,
@@ -278,9 +296,10 @@ export function MorphAiStudioPage() {
   };
 
   const applyPreset = async (presetId: string) => {
-    // Har tahrir asl (original) rasmga qo'llanadi — tahrir ustiga tahrir yo'q.
     if (!original || loadingId) return;
     if (!(await limitGate.ensureStudio())) return;
+    const presetMeta = allPresets.find((p) => p.id === presetId);
+    if (presetMeta?.categoryId) setActiveCategory(presetMeta.categoryId);
     setLoadingId(presetId);
     setActivePresetId(presetId);
     setComparing(false);
@@ -292,6 +311,7 @@ export function MorphAiStudioPage() {
       setHistory((prev) => [...prev, result.preview_image]);
       setCurrent(result.preview_image);
       setActivePresetLabel(result.preset_label);
+      setShareNudge(true);
       stashMorphStudioDraft({
         image: result.preview_image,
         baseImage: original,
@@ -326,6 +346,15 @@ export function MorphAiStudioPage() {
     }
   };
 
+  const surpriseLook = () => {
+    if (!allPresets.length || loadingId) return;
+    const pool = allPresets.filter((p) => p.id !== activePresetId);
+    const pick = (pool.length ? pool : allPresets)[
+      Math.floor(Math.random() * (pool.length ? pool.length : allPresets.length))
+    ];
+    if (pick) void applyPreset(pick.id);
+  };
+
   const undo = () => {
     if (history.length <= 1) return;
     const next = history.slice(0, -1);
@@ -335,6 +364,7 @@ export function MorphAiStudioPage() {
     if (next.length <= 1) {
       setActivePresetId(null);
       setActivePresetLabel(null);
+      setShareNudge(false);
     }
   };
 
@@ -345,6 +375,7 @@ export function MorphAiStudioPage() {
     setActivePresetId(null);
     setActivePresetLabel(null);
     setComparing(false);
+    setShareNudge(false);
     stashMorphStudioDraft({
       image: original,
       baseImage: original,
@@ -382,6 +413,18 @@ export function MorphAiStudioPage() {
     }
   };
 
+  const handleShareStory = () => {
+    if (!current) return;
+    void shareToStory({
+      styleId: draftMeta.styleId || activePresetId || "studio",
+      title:
+        draftMeta.styleTitle ||
+        activePresetLabel ||
+        t("aiStylePage.studio.title", { defaultValue: "AI Studio" }),
+      imageUrl: current,
+    });
+  };
+
   const compareSrc = beforeImage || original;
   const canCompare = Boolean(hasEditsReady(history, current, compareSrc));
   const displaySrc = comparing && compareSrc ? compareSrc : current;
@@ -390,19 +433,11 @@ export function MorphAiStudioPage() {
     setNewsPulse(item.id);
     if (item.categoryId) {
       setActiveCategory(item.categoryId);
-      if (current && !pickerOpen) {
-        toast.message(
-          t(`aiStylePage.studio.news.${item.id}.title`, {
-            defaultValue: item.id,
-          }),
-        );
-      } else if (item.categoryId) {
-        toast.message(
-          t(`aiStylePage.studio.news.${item.id}.body`, {
-            defaultValue: "",
-          }),
-        );
-      }
+      toast.message(
+        t(`aiStylePage.studio.news.${item.id}.body`, {
+          defaultValue: "",
+        }),
+      );
       return;
     }
     if (item.id === "compare") {
@@ -417,44 +452,37 @@ export function MorphAiStudioPage() {
   const showPicker = !current || pickerOpen;
   const hasEdits = history.length > 1;
   const motionDur = reduceMotion ? 0 : undefined;
+  const busy = Boolean(loadingId);
 
   return (
-    <div className="relative flex min-h-[100dvh] flex-col overflow-hidden bg-black text-white">
+    <div className="relative flex min-h-[100dvh] flex-col overflow-hidden bg-[#070707] text-white">
       <style>{`
         @keyframes morf-studio-scan {
-          0% { transform: translateY(-120%); opacity: 0; }
-          15% { opacity: 1; }
-          85% { opacity: 1; }
-          100% { transform: translateY(120%); opacity: 0; }
-        }
-        @keyframes morf-studio-pulse {
-          0%, 100% { opacity: 0.35; }
-          50% { opacity: 0.85; }
+          0% { transform: translateY(-100%); opacity: 0; }
+          20% { opacity: 0.55; }
+          80% { opacity: 0.55; }
+          100% { transform: translateY(100%); opacity: 0; }
         }
         @keyframes morf-studio-chip-in {
-          from { opacity: 0; transform: translateY(6px); }
-          to { opacity: 1; transform: translateY(0); }
+          from { opacity: 0; transform: translateY(8px) scale(0.98); }
+          to { opacity: 1; transform: translateY(0) scale(1); }
         }
         @media (prefers-reduced-motion: reduce) {
           .morf-studio-scan,
-          .morf-studio-pulse,
           .morf-studio-chip-in { animation: none !important; }
         }
         .morf-studio-scan {
-          animation: morf-studio-scan 2.4s ease-in-out infinite;
-        }
-        .morf-studio-pulse {
-          animation: morf-studio-pulse 1.8s ease-in-out infinite;
+          animation: morf-studio-scan 2.8s ease-in-out infinite;
         }
         .morf-studio-chip-in {
-          animation: morf-studio-chip-in 0.35s ease-out both;
+          animation: morf-studio-chip-in 0.4s ease-out both;
         }
       `}</style>
 
       {showPicker ? (
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_0%,rgba(255,255,255,0.09),transparent_55%),radial-gradient(ellipse_at_20%_80%,rgba(200,200,200,0.05),transparent_40%),radial-gradient(ellipse_at_90%_100%,rgba(160,160,160,0.06),transparent_45%)]"
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_-10%,rgba(255,255,255,0.1),transparent_50%),radial-gradient(ellipse_at_100%_80%,rgba(180,180,180,0.05),transparent_40%)]"
         />
       ) : null}
 
@@ -472,7 +500,11 @@ export function MorphAiStudioPage() {
               className="flex items-center justify-between gap-3 px-4 pb-2"
               style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}
             >
-              <Link to="/ai-style" className={glassBtn} aria-label={t("common.back")}>
+              <Link
+                to="/ai-style"
+                className="grid size-10 place-items-center rounded-full border border-white/12 bg-white/[0.06] text-white touch-manipulation cursor-pointer active:scale-95"
+                aria-label={t("common.back")}
+              >
                 <ChevronLeft className="h-5 w-5" strokeWidth={2.25} />
               </Link>
               <div className="min-w-0 text-center">
@@ -480,24 +512,27 @@ export function MorphAiStudioPage() {
                   Morf AI
                 </p>
                 <h1 className="truncate text-[15px] font-semibold tracking-tight">
-                  {t("aiStylePage.studio.title", { defaultValue: "AI Studio" })}
+                  {t("aiStylePage.studio.title")}
                 </h1>
               </div>
               <div className="size-10" aria-hidden />
             </header>
 
             <div className="flex min-h-0 flex-1 flex-col px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
-              <div className="mb-4 mt-2 max-w-md">
-                <h2 className="text-[1.65rem] font-semibold leading-[1.15] tracking-tight">
+              <div className="mb-3 mt-1 max-w-md">
+                <h2 className="text-[1.7rem] font-semibold leading-[1.12] tracking-tight">
                   {t("aiStylePage.studio.pickTitle")}
                 </h2>
                 <p className="mt-1.5 text-sm leading-relaxed text-white/45">
                   {t("aiStylePage.studio.pickLabel")}
                 </p>
+                <p className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[10px] font-semibold tracking-wide text-white/50">
+                  <Users className="h-3 w-3" />
+                  {t("aiStylePage.studio.socialProof")}
+                </p>
               </div>
 
-              {/* Yangiliklar */}
-              <div className="mb-5">
+              <div className="mb-4">
                 <div className="mb-2.5 flex items-center gap-2">
                   <Newspaper className="h-3.5 w-3.5 text-white/40" />
                   <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/35">
@@ -543,7 +578,7 @@ export function MorphAiStudioPage() {
                 </div>
               </div>
 
-              <div className="mb-5 grid grid-cols-2 gap-2.5">
+              <div className="mb-4 grid grid-cols-2 gap-2.5">
                 <button
                   type="button"
                   onClick={() => setCameraOpen(true)}
@@ -602,7 +637,7 @@ export function MorphAiStudioPage() {
                         <img
                           src={item.image}
                           alt=""
-                          className="h-full w-full object-cover object-top transition duration-500 group-hover:scale-[1.04]"
+                          className="h-full w-full object-cover object-center transition duration-500 group-hover:scale-[1.03]"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
                         <p className="absolute inset-x-0 bottom-0 truncate px-2 pb-2 text-[10px] font-medium text-white/85">
@@ -646,146 +681,173 @@ export function MorphAiStudioPage() {
             transition={{ duration: motionDur ?? 0.25 }}
             className="relative flex min-h-[100dvh] flex-col"
           >
-            {/* Full-bleed canvas with crossfade */}
-            <div className="absolute inset-0">
-              <AnimatePresence mode="sync" initial={false}>
-                {displaySrc ? (
-                  <motion.img
-                    key={`${displaySrc}-${comparing ? "before" : "after"}`}
-                    src={displaySrc}
-                    alt=""
-                    initial={reduceMotion ? false : { opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={reduceMotion ? undefined : { opacity: 0 }}
-                    transition={{ duration: motionDur ?? 0.35 }}
-                    className="absolute inset-0 h-full w-full object-cover object-top"
-                  />
-                ) : null}
-              </AnimatePresence>
-              <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/55 via-transparent to-black/80" />
-              <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[42%] bg-gradient-to-t from-black via-black/70 to-transparent" />
-            </div>
-
-            <AnimatePresence>
-              {loadingId ? (
-                <motion.div
-                  initial={reduceMotion ? false : { opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={reduceMotion ? undefined : { opacity: 0 }}
-                  className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-black/45 backdrop-blur-[3px]"
-                >
-                  {!reduceMotion ? (
-                    <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 morf-studio-scan bg-gradient-to-b from-transparent via-white/25 to-transparent" />
-                  ) : null}
-                  <div className="relative flex flex-col items-center gap-3 rounded-3xl border border-white/15 bg-black/50 px-7 py-6 shadow-2xl shadow-black/50 backdrop-blur-2xl">
-                    <div className="relative grid size-12 place-items-center">
-                      <span className="absolute inset-0 rounded-full border border-white/20 morf-studio-pulse" />
-                      <Sparkles className="h-5 w-5 text-white" />
-                    </div>
-                    <p className="text-sm font-semibold tracking-tight">
-                      {t("aiStylePage.studio.generating")}
-                    </p>
-                    <p className="text-[11px] text-white/45">Morf AI Studio</p>
-                  </div>
-                </motion.div>
-              ) : null}
-            </AnimatePresence>
-
-            <header
-              className="relative z-30 flex items-center justify-between gap-2 px-4"
-              style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}
+            {/* Contained portrait — no aggressive zoom/crop */}
+            <div
+              className="relative z-0 flex min-h-0 flex-1 items-center justify-center px-3"
+              style={{ paddingTop: "max(0.5rem, env(safe-area-inset-top))" }}
             >
-              <Link to="/ai-style" className={glassBtn} aria-label={t("common.back")}>
-                <ChevronLeft className="h-5 w-5" strokeWidth={2.25} />
-              </Link>
+              <div className="relative h-full max-h-full w-full max-w-lg overflow-hidden rounded-[28px] bg-[#0c0c0c] ring-1 ring-white/10">
+                <AnimatePresence mode="sync" initial={false}>
+                  {displaySrc ? (
+                    <motion.img
+                      key={`${displaySrc}-${comparing ? "before" : "after"}`}
+                      src={displaySrc}
+                      alt=""
+                      initial={reduceMotion ? false : { opacity: 0.35 }}
+                      animate={{ opacity: 1 }}
+                      exit={reduceMotion ? undefined : { opacity: 0 }}
+                      transition={{ duration: motionDur ?? 0.3 }}
+                      className="absolute inset-0 h-full w-full object-contain object-center"
+                      decoding="async"
+                    />
+                  ) : null}
+                </AnimatePresence>
 
-              <div className="flex min-w-0 items-center gap-2 rounded-full border border-white/12 bg-black/40 px-3.5 py-1.5 shadow-lg shadow-black/30 backdrop-blur-xl">
-                <Sparkles className="h-3.5 w-3.5 shrink-0 text-white/70" />
-                <p className="truncate text-[12px] font-semibold tracking-tight">
-                  {t("aiStylePage.studio.title")}
-                </p>
-              </div>
+                {/* Soft vignette — does not hide the face */}
+                <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/25 via-transparent to-black/35" />
 
-              <button
-                type="button"
-                onClick={() => setPickerOpen(true)}
-                className={cn(glassBtn, "text-[11px] font-semibold")}
-                aria-label={t("aiStylePage.studio.changePhoto")}
-              >
-                <Images className="h-4 w-4" />
-              </button>
-            </header>
+                {/* Transparent loading — photo stays visible */}
+                <AnimatePresence>
+                  {busy ? (
+                    <motion.div
+                      initial={reduceMotion ? false : { opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={reduceMotion ? undefined : { opacity: 0 }}
+                      className="absolute inset-0 z-20 flex items-end justify-center pb-5"
+                    >
+                      {!reduceMotion ? (
+                        <div className="pointer-events-none absolute inset-x-0 top-0 h-full morf-studio-scan bg-gradient-to-b from-transparent via-white/15 to-transparent" />
+                      ) : null}
+                      <div className="relative inline-flex items-center gap-2 rounded-full border border-white/20 bg-black/25 px-3.5 py-2 backdrop-blur-md">
+                        <Loader2 className="h-3.5 w-3.5 animate-spin text-white/90" />
+                        <span className="text-[11px] font-semibold tracking-tight text-white/90">
+                          {t("aiStylePage.studio.generating")}
+                        </span>
+                      </div>
+                    </motion.div>
+                  ) : null}
+                </AnimatePresence>
 
-            {/* Floating edit tools */}
-            <div className="relative z-30 mt-3 flex justify-end gap-1.5 px-4">
-              <button
-                type="button"
-                disabled={Boolean(loadingId) || !canCompare}
-                onPointerDown={() => canCompare && setComparing(true)}
-                onPointerUp={() => setComparing(false)}
-                onPointerLeave={() => setComparing(false)}
-                onPointerCancel={() => setComparing(false)}
-                onContextMenu={(e) => e.preventDefault()}
-                className={cn(glassBtn, comparing && "bg-white text-black border-white")}
-                aria-label={t("aiStylePage.studio.holdToCompare")}
-                title={t("aiStylePage.studio.holdToCompare")}
-              >
-                <Eye className="h-4 w-4" />
-              </button>
-              <button
-                type="button"
-                onClick={undo}
-                disabled={Boolean(loadingId) || !hasEdits}
-                className={glassBtn}
-                aria-label={t("aiStylePage.studio.undo")}
-              >
-                <Undo2 className="h-4 w-4" />
-              </button>
-              <button
-                type="button"
-                onClick={resetOriginal}
-                disabled={Boolean(loadingId) || current === original}
-                className={glassBtn}
-                aria-label={t("aiStylePage.studio.reset")}
-              >
-                <RotateCcw className="h-4 w-4" />
-              </button>
-            </div>
-
-            <AnimatePresence>
-              {comparing ? (
-                <motion.div
-                  initial={reduceMotion ? false : { opacity: 0, y: -4 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={reduceMotion ? undefined : { opacity: 0 }}
-                  className="pointer-events-none relative z-30 mt-3 flex justify-center"
-                >
-                  <span className="rounded-full border border-white/15 bg-black/50 px-3 py-1 text-[11px] font-semibold tracking-tight text-white/90 backdrop-blur-xl">
-                    {t("aiStylePage.studio.comparing")}
-                  </span>
-                </motion.div>
-              ) : activePresetLabel && hasEdits ? (
-                <div className="pointer-events-none relative z-30 mt-3 flex justify-center">
-                  <span className="morf-studio-chip-in rounded-full border border-white/15 bg-black/50 px-3 py-1 text-[11px] font-semibold tracking-tight text-white/90 backdrop-blur-xl">
-                    {t("aiStylePage.studio.appliedChip", {
-                      name: activePresetLabel,
-                      defaultValue: "{{name}} · qo‘llandi",
-                    })}
+                <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex justify-center pt-3">
+                  <span className="rounded-full border border-white/10 bg-black/30 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/70 backdrop-blur-md">
+                    Morf · Studio
                   </span>
                 </div>
-              ) : null}
-            </AnimatePresence>
 
-            <div className="relative z-10 min-h-0 flex-1" />
+                <AnimatePresence>
+                  {comparing ? (
+                    <motion.div
+                      initial={reduceMotion ? false : { opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={reduceMotion ? undefined : { opacity: 0 }}
+                      className="pointer-events-none absolute inset-x-0 bottom-4 z-10 flex justify-center"
+                    >
+                      <span className="rounded-full border border-white/15 bg-black/40 px-3 py-1 text-[11px] font-semibold text-white backdrop-blur-md">
+                        {t("aiStylePage.studio.comparing")}
+                      </span>
+                    </motion.div>
+                  ) : shareNudge && hasEdits ? (
+                    <motion.div
+                      initial={reduceMotion ? false : { opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={reduceMotion ? undefined : { opacity: 0 }}
+                      className="pointer-events-none absolute inset-x-3 bottom-4 z-10 flex justify-center"
+                    >
+                      <span className="morf-studio-chip-in max-w-[92%] truncate rounded-full border border-white/20 bg-white/90 px-3.5 py-1.5 text-center text-[11px] font-semibold text-black shadow-lg">
+                        {t("aiStylePage.studio.shareNudge")}
+                      </span>
+                    </motion.div>
+                  ) : activePresetLabel && hasEdits ? (
+                    <div className="pointer-events-none absolute inset-x-0 bottom-4 z-10 flex justify-center">
+                      <span className="morf-studio-chip-in rounded-full border border-white/15 bg-black/40 px-3 py-1 text-[11px] font-semibold text-white backdrop-blur-md">
+                        {t("aiStylePage.studio.appliedChip", {
+                          name: activePresetLabel,
+                          defaultValue: "{{name}} · qo‘llandi",
+                        })}
+                      </span>
+                    </div>
+                  ) : null}
+                </AnimatePresence>
+              </div>
+            </div>
 
-            {/* Bottom glass dock */}
+            {/* Bottom control deck — back + tools live here */}
             <div
-              className="relative z-30 px-3"
+              className="relative z-30 px-3 pt-2"
               style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
             >
-              <div className="overflow-hidden rounded-[28px] border border-white/12 bg-black/50 shadow-2xl shadow-black/50 backdrop-blur-2xl">
-                <div className="space-y-3 px-3.5 pb-3.5 pt-3.5">
-                  <div className="flex gap-1 rounded-2xl bg-white/[0.06] p-1">
+              <div className="overflow-hidden rounded-[26px] border border-white/12 bg-[#101010]/0.92 shadow-2xl shadow-black/50 backdrop-blur-xl">
+                <div className="space-y-2.5 px-3 pb-3 pt-3">
+                  {/* Tools row: back, compare, undo, reset, change, surprise */}
+                  <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+                    <Link
+                      to="/ai-style"
+                      className={cn(toolBtn, "shrink-0 size-9 px-0")}
+                      aria-label={t("common.back")}
+                    >
+                      <ChevronLeft className="h-4 w-4" strokeWidth={2.5} />
+                    </Link>
+                    <button
+                      type="button"
+                      disabled={busy || !canCompare}
+                      onPointerDown={() => canCompare && setComparing(true)}
+                      onPointerUp={() => setComparing(false)}
+                      onPointerLeave={() => setComparing(false)}
+                      onPointerCancel={() => setComparing(false)}
+                      onContextMenu={(e) => e.preventDefault()}
+                      className={cn(
+                        toolBtn,
+                        "shrink-0",
+                        comparing && "border-white bg-white text-black",
+                      )}
+                      aria-label={t("aiStylePage.studio.holdToCompare")}
+                    >
+                      <Eye className="h-3.5 w-3.5" />
+                      <span>{t("aiStylePage.beforeAfter.before", { defaultValue: "Before" })}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={undo}
+                      disabled={busy || !hasEdits}
+                      className={cn(toolBtn, "shrink-0")}
+                      aria-label={t("aiStylePage.studio.undo")}
+                    >
+                      <Undo2 className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={resetOriginal}
+                      disabled={busy || current === original}
+                      className={cn(toolBtn, "shrink-0")}
+                      aria-label={t("aiStylePage.studio.reset")}
+                    >
+                      <RotateCcw className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPickerOpen(true)}
+                      disabled={busy}
+                      className={cn(toolBtn, "shrink-0")}
+                      aria-label={t("aiStylePage.studio.changePhoto")}
+                    >
+                      <Images className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={surpriseLook}
+                      disabled={busy}
+                      className={cn(
+                        toolBtn,
+                        "ml-auto shrink-0 border-white/20 bg-white text-black hover:bg-white/90",
+                      )}
+                      title={t("aiStylePage.studio.surpriseHint")}
+                    >
+                      <Dices className="h-3.5 w-3.5" />
+                      {t("aiStylePage.studio.surprise")}
+                    </button>
+                  </div>
+
+                  <div className="flex gap-1 rounded-2xl bg-white/[0.05] p-1">
                     {categories.map((cat) => {
                       const active = cat.id === (currentCat?.id ?? activeCategory);
                       const CatIcon = studioCategoryIcon(cat.id);
@@ -795,14 +857,14 @@ export function MorphAiStudioPage() {
                           type="button"
                           onClick={() => setActiveCategory(cat.id)}
                           className={cn(
-                            "relative flex min-h-10 flex-1 items-center justify-center gap-1 rounded-[14px] px-1.5 text-[11px] font-semibold tracking-tight transition-colors duration-200 touch-manipulation cursor-pointer sm:text-[12px]",
+                            "relative flex min-h-9 flex-1 items-center justify-center gap-1 rounded-[12px] px-1.5 text-[11px] font-semibold tracking-tight transition-colors duration-200 touch-manipulation cursor-pointer sm:text-[12px]",
                             active ? "text-black" : "text-white/55 hover:text-white/80",
                           )}
                         >
                           {active ? (
                             <motion.span
                               layoutId={reduceMotion ? undefined : "studio-cat-pill"}
-                              className="absolute inset-0 rounded-[14px] bg-white shadow-sm"
+                              className="absolute inset-0 rounded-[12px] bg-white shadow-sm"
                               transition={{ type: "spring", stiffness: 420, damping: 34 }}
                             />
                           ) : null}
@@ -825,7 +887,7 @@ export function MorphAiStudioPage() {
                       className="-mx-0.5 flex gap-2.5 overflow-x-auto px-0.5 pb-0.5 no-scrollbar"
                     >
                       {(currentCat?.options ?? []).map((opt, index) => {
-                        const busy = loadingId === opt.id;
+                        const optBusy = loadingId === opt.id;
                         const selected = activePresetId === opt.id && !loadingId;
                         const swatch =
                           "swatch" in opt ? (opt.swatch as string | undefined) : undefined;
@@ -834,7 +896,7 @@ export function MorphAiStudioPage() {
                           <motion.button
                             key={opt.id}
                             type="button"
-                            disabled={Boolean(loadingId)}
+                            disabled={busy}
                             initial={reduceMotion ? false : { opacity: 0, scale: 0.92 }}
                             animate={{ opacity: 1, scale: 1 }}
                             transition={{
@@ -843,15 +905,15 @@ export function MorphAiStudioPage() {
                             }}
                             onClick={() => void applyPreset(opt.id)}
                             className={cn(
-                              "flex w-[4.5rem] shrink-0 flex-col items-center gap-1.5 rounded-2xl px-1 py-1.5 transition duration-200 touch-manipulation cursor-pointer active:scale-[0.96] disabled:opacity-50",
+                              "flex w-[4.35rem] shrink-0 flex-col items-center gap-1.5 rounded-2xl px-1 py-1 transition duration-200 touch-manipulation cursor-pointer active:scale-[0.96] disabled:opacity-50",
                               selected && "bg-white/[0.08]",
                             )}
                           >
                             <span
                               className={cn(
-                                "relative grid size-[3.25rem] place-items-center overflow-hidden rounded-full transition duration-200",
+                                "relative grid size-[3.1rem] place-items-center overflow-hidden rounded-full transition duration-200",
                                 selected
-                                  ? "ring-[2.5px] ring-white ring-offset-2 ring-offset-black/60"
+                                  ? "ring-[2.5px] ring-white ring-offset-2 ring-offset-[#101010]"
                                   : "ring-1 ring-white/20",
                               )}
                               style={{
@@ -860,7 +922,7 @@ export function MorphAiStudioPage() {
                                   : "linear-gradient(145deg, #3a3a3a, #141414)",
                               }}
                             >
-                              {busy ? (
+                              {optBusy ? (
                                 <Loader2 className="h-4 w-4 animate-spin text-white drop-shadow" />
                               ) : selected ? (
                                 <Check className="h-4 w-4 text-white drop-shadow" strokeWidth={2.5} />
@@ -882,12 +944,17 @@ export function MorphAiStudioPage() {
                     </motion.div>
                   </AnimatePresence>
 
-                  <div className="grid grid-cols-[1fr_1.35fr] gap-2 pt-0.5">
+                  <div
+                    className={cn(
+                      "grid gap-2 pt-0.5",
+                      hasEdits ? "grid-cols-[1fr_1fr_1.2fr]" : "grid-cols-[1fr_1.35fr]",
+                    )}
+                  >
                     <button
                       type="button"
                       onClick={() => void handleDownload()}
-                      disabled={!current || downloading || Boolean(loadingId)}
-                      className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-white/12 bg-white/[0.08] text-sm font-semibold tracking-tight disabled:opacity-40 cursor-pointer touch-manipulation"
+                      disabled={!current || downloading || busy}
+                      className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-2xl border border-white/12 bg-white/[0.07] text-[13px] font-semibold tracking-tight disabled:opacity-40 cursor-pointer touch-manipulation"
                     >
                       {downloading ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
@@ -896,9 +963,24 @@ export function MorphAiStudioPage() {
                       )}
                       {t("aiStylePage.download")}
                     </button>
+                    {hasEdits ? (
+                      <button
+                        type="button"
+                        onClick={handleShareStory}
+                        disabled={busy || storySharing || !current}
+                        className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-2xl border border-white/20 bg-white/15 text-[13px] font-semibold tracking-tight disabled:opacity-40 cursor-pointer touch-manipulation"
+                      >
+                        {storySharing ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Share2 className="h-4 w-4" />
+                        )}
+                        {t("aiStylePage.studio.shareStory")}
+                      </button>
+                    ) : null}
                     <Link
                       to="/ai-style"
-                      className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-white text-sm font-semibold tracking-tight text-black shadow-lg shadow-white/15 cursor-pointer touch-manipulation active:scale-[0.98]"
+                      className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-2xl bg-white text-[13px] font-semibold tracking-tight text-black shadow-lg shadow-white/10 cursor-pointer touch-manipulation active:scale-[0.98]"
                     >
                       <Check className="h-4 w-4" strokeWidth={2.5} />
                       {t("aiStylePage.studio.done")}
@@ -933,6 +1015,7 @@ export function MorphAiStudioPage() {
         kind={limitGate.kind}
         me={limitGate.me}
       />
+      {storyModal}
     </div>
   );
 }

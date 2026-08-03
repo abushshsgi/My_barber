@@ -58,7 +58,7 @@ export function trackAuthFunnel(
 }
 
 /** Morf AI natijasi qayerdan ulashilgani. */
-export type MorphShareSurface = "history" | "preview" | "landing";
+export type MorphShareSurface = "history" | "preview" | "landing" | "studio";
 
 /**
  * Viral halqa funneli: ulashish → havola ochilishi → try-on bosilishi.

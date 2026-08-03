@@ -1239,6 +1239,12 @@
       "done": "Done",
       "holdToCompare": "Hold to compare",
       "comparing": "Original",
+      "surprise": "Surprise",
+      "surpriseHint": "Random look",
+      "shareStory": "Story",
+      "shareNudge": "Share to Story — friends can try it too",
+      "socialProof": "12k+ looks · Morf AI Studio",
+      "tools": "Tools",
       "newsTitle": "What's new",
       "news": {
         "finish": {

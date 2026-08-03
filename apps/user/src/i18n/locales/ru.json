@@ -1241,6 +1241,12 @@
       "done": "Готово",
       "holdToCompare": "Удерживайте для сравнения",
       "comparing": "Оригинал",
+      "surprise": "Сюрприз",
+      "surpriseHint": "Случайный look",
+      "shareStory": "Story",
+      "shareNudge": "В Story — пусть друзья тоже попробуют",
+      "socialProof": "12k+ look · Morf AI Studio",
+      "tools": "Инструменты",
       "newsTitle": "Новости",
       "news": {
         "finish": {
