@@ -20,6 +20,8 @@ class UserSessionSerializerMixin:
             "id": session.id,
             "device_name": session.device_name or "Noma'lum qurilma",
             "platform": session.platform or "unknown",
+            "client_kind": session.client_kind or "web",
+            "app_version": session.app_version or "",
             "ip_address": session.ip_address,
             "last_seen_at": session.last_seen_at.isoformat(),
             "created_at": session.created_at.isoformat(),

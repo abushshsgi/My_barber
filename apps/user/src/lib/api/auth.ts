@@ -1,4 +1,5 @@
 import { getStashedBarberInviteCode, getStashedReferralCode } from "@/lib/referral-storage";
+import { getAuthClientMeta } from "@/lib/client-meta";
 import { apiFetch, apiJson } from "./client";
 import type {
   ApiUser,
@@ -94,6 +95,7 @@ export async function verifyPhoneCode(
       phone,
       code,
       intent,
+      ...getAuthClientMeta(),
       ...(referralCode ? { referral_code: referralCode } : {}),
       ...(barberInviteCode ? { barber_invite_code: barberInviteCode } : {}),
     }),
@@ -106,7 +108,7 @@ export async function loginWithPassword(
 ): Promise<PhoneVerifyResponse> {
   const res = await apiFetch("/api/v1/auth/phone/password-login/", {
     method: "POST",
-    body: JSON.stringify({ phone, password }),
+    body: JSON.stringify({ phone, password, ...getAuthClientMeta() }),
   });
   const body = await res.json().catch(() => null);
   if (!res.ok) {
@@ -132,6 +134,7 @@ export async function loginWithGoogle(idToken: string): Promise<PhoneVerifyRespo
     method: "POST",
     body: JSON.stringify({
       id_token: idToken,
+      ...getAuthClientMeta(),
       ...(referralCode ? { referral_code: referralCode } : {}),
       ...(barberInviteCode ? { barber_invite_code: barberInviteCode } : {}),
     }),

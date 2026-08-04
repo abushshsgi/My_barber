@@ -52,6 +52,19 @@ export type UserSignupMethod = "google" | "phone" | "email" | "unknown";
 
 export type AdminUserDetail = AdminUser & {
   signupMethod: UserSignupMethod;
+  lastClientKind: "web" | "capacitor" | "unknown" | string;
+  hasPushToken: boolean;
+  sessions: Array<{
+    id: number;
+    deviceName: string;
+    platform: string;
+    clientKind: string;
+    appVersion: string;
+    ipAddress: string | null;
+    lastSeenAt: string;
+    createdAt: string;
+    revoked: boolean;
+  }>;
   bookingsSummary: {
     total: number;
     byStatus: Record<string, number>;
@@ -585,6 +598,19 @@ type BackendUserRow = {
     relation_label?: string;
     phone?: string;
   }>;
+  sessions?: Array<{
+    id?: number;
+    device_name?: string;
+    platform?: string;
+    client_kind?: string;
+    app_version?: string;
+    ip_address?: string | null;
+    last_seen_at?: string;
+    created_at?: string;
+    revoked?: boolean;
+  }>;
+  last_client_kind?: string;
+  has_push_token?: boolean;
 };
 
 type BackendBarberSignupSnapshot = {
@@ -830,6 +856,19 @@ function mapUserDetail(u: BackendUserRow): AdminUserDetail {
   return {
     ...base,
     signupMethod: mapSignupMethod(u.signup_method),
+    lastClientKind: (u.last_client_kind || "unknown").trim() || "unknown",
+    hasPushToken: Boolean(u.has_push_token),
+    sessions: (u.sessions ?? []).map((s) => ({
+      id: toInt(s.id, 0),
+      deviceName: s.device_name || "Noma'lum qurilma",
+      platform: s.platform || "unknown",
+      clientKind: s.client_kind || "web",
+      appVersion: s.app_version || "",
+      ipAddress: s.ip_address ?? null,
+      lastSeenAt: s.last_seen_at || "",
+      createdAt: s.created_at || "",
+      revoked: Boolean(s.revoked),
+    })),
     bookingsSummary: {
       total: toInt(summary.total, base.bookings_count),
       byStatus: summary.by_status ?? {},

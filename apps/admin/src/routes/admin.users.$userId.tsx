@@ -108,9 +108,7 @@ function UserDetailPage() {
                 <span className="tabular-nums">{u.phone || "—"}</span>
               </Info>
               <Info term="Viloyat (joylashuv)">{u.regionLabel || uzRegionLabel(u.region)}</Info>
-              <Info term="Shahar / joy">
-                {u.locationCity || u.defaultAddress || "—"}
-              </Info>
+              <Info term="Shahar / joy">{u.locationCity || u.defaultAddress || "—"}</Info>
               <Info term="GPS koordinatalar">
                 {u.latitude && u.longitude ? (
                   <span className="tabular-nums">
@@ -125,6 +123,14 @@ function UserDetailPage() {
                 <span className="tabular-nums">{u.birthYear ?? "—"}</span>
               </Info>
               <Info term="Ro'yxat usuli">{SIGNUP_LABEL[u.signupMethod] ?? u.signupMethod}</Info>
+              <Info term="Oxirgi kirish">
+                {u.lastClientKind === "capacitor"
+                  ? "Android ilova"
+                  : u.lastClientKind === "web"
+                    ? "Web"
+                    : "Noma'lum"}
+                {u.hasPushToken ? " · Push yoqilgan" : ""}
+              </Info>
               <Info term="Ro'yxatdan o'tgan">
                 {format(new Date(u.created_at), "dd MMM yyyy HH:mm")}
               </Info>
@@ -144,6 +150,48 @@ function UserDetailPage() {
               />
             </div>
           </div>
+
+          <Section title="Kirish sessiyalari" subtitle="Web yoki Android ilova — oxirgi 20 ta">
+            {u.sessions.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                Sessiya yo&apos;q. Foydalanuvchi keyingi login&apos;dan keyin bu yerda
+                ko&apos;rinadi.
+              </p>
+            ) : (
+              <ul className="divide-y divide-border">
+                {u.sessions.map((s) => (
+                  <li
+                    key={s.id}
+                    className="flex flex-wrap items-start justify-between gap-2 py-3 first:pt-0 last:pb-0"
+                  >
+                    <div className="min-w-0">
+                      <p className="font-medium text-foreground">{s.deviceName}</p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        {s.clientKind === "capacitor" ? "Android ilova" : "Web"}
+                        {s.platform && s.platform !== "unknown" ? ` · ${s.platform}` : ""}
+                        {s.appVersion ? ` · build ${s.appVersion}` : ""}
+                        {s.ipAddress ? ` · ${s.ipAddress}` : ""}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      {s.revoked ? (
+                        <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-bold uppercase text-muted-foreground">
+                          Bekor
+                        </span>
+                      ) : (
+                        <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold uppercase text-emerald-800">
+                          Faol
+                        </span>
+                      )}
+                      <p className="mt-1 text-xs tabular-nums text-muted-foreground">
+                        {s.lastSeenAt ? format(new Date(s.lastSeenAt), "dd MMM yyyy HH:mm") : "—"}
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Section>
 
           <div className="grid gap-6 lg:grid-cols-3">
             <Section title="Bronlar" subtitle="Xizmatlar va summasi">
@@ -230,9 +278,7 @@ function UserDetailPage() {
               </p>
               <p className="mb-3 text-xs text-muted-foreground">
                 Oxirgi foydalanish:{" "}
-                {u.morphAi.lastAt
-                  ? format(new Date(u.morphAi.lastAt), "dd MMM yyyy HH:mm")
-                  : "—"}
+                {u.morphAi.lastAt ? format(new Date(u.morphAi.lastAt), "dd MMM yyyy HH:mm") : "—"}
               </p>
               {u.recentStyles.length === 0 ? (
                 <p className="text-sm text-muted-foreground">Uslublar tarixi yo'q.</p>
@@ -294,9 +340,7 @@ function UserDetailPage() {
                           <span>
                             {e.entryType}
                             <span className="ml-2 text-xs text-muted-foreground">
-                              {e.createdAt
-                                ? format(new Date(e.createdAt), "dd MMM yyyy")
-                                : ""}
+                              {e.createdAt ? format(new Date(e.createdAt), "dd MMM yyyy") : ""}
                             </span>
                           </span>
                           <span className="tabular-nums font-medium">
@@ -380,8 +424,8 @@ function UserDetailPage() {
           </div>
 
           <div className="rounded-2xl border border-dashed border-border bg-muted/20 px-5 py-4 text-sm text-muted-foreground">
-            Obuna turlari va referal chaqirishlar hozircha backendda saqlanmaydi — qo'shilganda
-            shu yerda ko'rinadi.
+            Obuna turlari va referal chaqirishlar hozircha backendda saqlanmaydi — qo'shilganda shu
+            yerda ko'rinadi.
           </div>
         </>
       ) : null}
@@ -425,9 +469,7 @@ function Stat({ label, value }: { label: string; value: string }) {
   );
 }
 
-function bookingBadge(
-  s: string,
-): "pending" | "confirmed" | "in_chair" | "completed" | "cancelled" {
+function bookingBadge(s: string): "pending" | "confirmed" | "in_chair" | "completed" | "cancelled" {
   if (s === "accepted") return "confirmed";
   if (s === "in_progress") return "in_chair";
   if (s === "completed") return "completed";

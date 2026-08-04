@@ -214,6 +214,9 @@ class AdminUserDetailSerializer(AdminUserSerializer):
     wallet = serializers.SerializerMethodField()
     family_members = serializers.SerializerMethodField()
     booking_regions = serializers.SerializerMethodField()
+    sessions = serializers.SerializerMethodField()
+    last_client_kind = serializers.SerializerMethodField()
+    has_push_token = serializers.SerializerMethodField()
 
     class Meta(AdminUserSerializer.Meta):
         fields = AdminUserSerializer.Meta.fields + (
@@ -225,6 +228,9 @@ class AdminUserDetailSerializer(AdminUserSerializer):
             "wallet",
             "family_members",
             "booking_regions",
+            "sessions",
+            "last_client_kind",
+            "has_push_token",
         )
         read_only_fields = AdminUserSerializer.Meta.read_only_fields + (
             "signup_method",
@@ -235,6 +241,9 @@ class AdminUserDetailSerializer(AdminUserSerializer):
             "wallet",
             "family_members",
             "booking_regions",
+            "sessions",
+            "last_client_kind",
+            "has_push_token",
         )
 
     def __init__(self, *args, **kwargs):
@@ -453,6 +462,45 @@ class AdminUserDetailSerializer(AdminUserSerializer):
                 :30
             ]
         ]
+
+    def get_sessions(self, obj: User):
+        from accounts.models import UserSession
+
+        rows = UserSession.objects.filter(user=obj).order_by("-last_seen_at", "-id")[:20]
+        out = []
+        for s in rows:
+            out.append(
+                {
+                    "id": s.id,
+                    "device_name": s.device_name or "Noma'lum qurilma",
+                    "platform": s.platform or "unknown",
+                    "client_kind": s.client_kind or "web",
+                    "app_version": s.app_version or "",
+                    "ip_address": s.ip_address,
+                    "last_seen_at": s.last_seen_at,
+                    "created_at": s.created_at,
+                    "revoked": bool(s.revoked_at),
+                }
+            )
+        return out
+
+    def get_last_client_kind(self, obj: User) -> str:
+        from accounts.models import UserSession
+
+        latest = (
+            UserSession.objects.filter(user=obj)
+            .order_by("-last_seen_at", "-id")
+            .values_list("client_kind", flat=True)
+            .first()
+        )
+        return (latest or "").strip() or "unknown"
+
+    def get_has_push_token(self, obj: User) -> bool:
+        try:
+            from notifications.models import UserPushToken
+        except Exception:
+            return False
+        return UserPushToken.objects.filter(user=obj).exists()
 
 
 class AdminSalonListSerializer(serializers.ModelSerializer):

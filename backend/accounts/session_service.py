@@ -52,6 +52,33 @@ def _parse_platform(user_agent: str) -> str:
     return "unknown"
 
 
+def _client_meta_from_request(request: Request | None) -> tuple[str, str, str]:
+    """Returns (client_kind, app_version, device_name_override)."""
+    if request is None:
+        return "web", "", ""
+    data = getattr(request, "data", None)
+    raw_kind = ""
+    raw_version = ""
+    raw_device = ""
+    if isinstance(data, dict):
+        raw_kind = str(data.get("client_kind") or data.get("clientKind") or "").strip().lower()
+        raw_version = str(data.get("app_version") or data.get("appVersion") or "").strip()
+        raw_device = str(data.get("device_name") or data.get("deviceName") or "").strip()
+    if not raw_kind:
+        raw_kind = str(request.META.get("HTTP_X_CLIENT_KIND") or "").strip().lower()
+    if not raw_version:
+        raw_version = str(request.META.get("HTTP_X_APP_VERSION") or "").strip()
+
+    if raw_kind in ("capacitor", "android_app", "ios_app", "native", "app"):
+        kind = "capacitor"
+    elif raw_kind in ("web", "pwa", "browser"):
+        kind = "web"
+    else:
+        kind = "web"
+
+    return kind, raw_version[:64], raw_device[:128]
+
+
 def is_refresh_jti_revoked(jti: str | None) -> bool:
     if not jti:
         return False
@@ -71,21 +98,42 @@ def record_user_session(
     *,
     device_name: str = "",
     platform: str = "",
+    client_kind: str = "",
+    app_version: str = "",
 ) -> UserSession:
     jti = str(refresh.get("jti", "") or "")
     user_agent = ""
     if request is not None:
         user_agent = request.META.get("HTTP_USER_AGENT", "") or ""
+
+    meta_kind, meta_version, meta_device = _client_meta_from_request(request)
+    if not client_kind:
+        client_kind = meta_kind
+    if not app_version:
+        app_version = meta_version
     if not device_name:
-        device_name = _parse_device_name(user_agent)
+        device_name = meta_device or _parse_device_name(user_agent)
+        if client_kind == "capacitor" and not meta_device:
+            os_label = _parse_platform(user_agent)
+            if os_label == "ios":
+                device_name = "MySaloon App (iOS)"
+            elif os_label == "android":
+                device_name = "MySaloon App (Android)"
+            else:
+                device_name = "MySaloon App"
     if not platform:
         platform = _parse_platform(user_agent)
+    if client_kind == "capacitor" and platform in ("unknown", "web"):
+        # Capacitor WebView ba'zan oddiy UA beradi — OS noma'lum bo'lsa android deb belgilaymiz.
+        platform = "android"
 
     session = UserSession.objects.create(
         user=user,
         refresh_jti=jti,
         device_name=device_name[:128],
         platform=platform[:32],
+        client_kind=(client_kind or "web")[:16],
+        app_version=(app_version or "")[:64],
         user_agent=user_agent[:512],
         ip_address=_client_ip(request),
         last_seen_at=timezone.now(),

@@ -211,6 +211,9 @@ class UserSession(models.Model):
     refresh_jti = models.CharField(max_length=64, blank=True, default="", db_index=True)
     device_name = models.CharField(max_length=128, blank=True, default="")
     platform = models.CharField(max_length=32, blank=True, default="")
+    # web = brauzer / PWA; capacitor = Android (yoki kelajakda iOS) native shell
+    client_kind = models.CharField(max_length=16, blank=True, default="web", db_index=True)
+    app_version = models.CharField(max_length=64, blank=True, default="")
     user_agent = models.CharField(max_length=512, blank=True, default="")
     ip_address = models.GenericIPAddressField(null=True, blank=True)
     last_seen_at = models.DateTimeField()
