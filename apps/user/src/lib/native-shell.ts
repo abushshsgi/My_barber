@@ -27,15 +27,10 @@ async function configureChrome() {
     /* Keyboard plugin optional on some builds */
   }
 
-  try {
-    const { SplashScreen } = await import("@capacitor/splash-screen");
-    await SplashScreen.hide();
-  } catch {
-    /* Splash auto-hides on some platforms */
-  }
+  // SplashScreen.hide — NativeBootSplash qiladi (flash oldini olish).
 }
 
-/** StatusBar / Splash / Keyboard — router oldidan chaqiriladi. */
+/** StatusBar / Keyboard — router oldidan. Splash React intro yashiradi. */
 export async function initNativeShell() {
   if (!Capacitor.isNativePlatform() || shellReady) return;
   shellReady = true;

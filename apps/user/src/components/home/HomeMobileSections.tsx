@@ -12,6 +12,7 @@ import {
 } from "@/components/home/HomeListingCard";
 import type { CatalogScopeValue } from "@/lib/catalog-scope";
 import { NoSalonsEmpty } from "@/components/NoSalonsEmpty";
+import { useIsNativeApp } from "@/lib/native-app";
 import { HOME_CATEGORY_KEYS } from "@/lib/home-sections";
 import { filterTopSalons } from "@/lib/salon-top";
 import type { BarberDiscovery } from "@/lib/mappers/barber";
@@ -36,7 +37,13 @@ const stagger = {
   show: { transition: { staggerChildren: 0.05, delayChildren: 0.02 } },
 };
 
-export function MotionSection({ children, className }: { children: React.ReactNode; className?: string }) {
+export function MotionSection({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
   return (
     <motion.section variants={fadeUp} className={className}>
       {children}
@@ -51,23 +58,36 @@ export function HomeMobileWordmark({
   catalogScope: CatalogScopeValue;
   onCatalogScopeChange: (value: CatalogScopeValue) => void;
 }) {
+  const isNative = useIsNativeApp();
+
   return (
-    <div className="flex items-center justify-between gap-3 px-4">
-      <div className="flex min-w-0 flex-1 items-center gap-2">
+    <div
+      className={cn(
+        "flex items-center justify-between gap-3 px-4",
+        isNative && "native-home-wordmark pt-1",
+      )}
+    >
+      <div className="flex min-w-0 flex-1 items-center gap-2.5">
         <Link to="/" className="shrink-0" aria-label="Mysaloon">
-          <MysaloonLogo size="sm" />
+          <MysaloonLogo size="sm" withAppMark={isNative} />
         </Link>
         <CatalogScopeSelect
           compact
           value={catalogScope}
           onChange={onCatalogScopeChange}
-          className="min-w-0 rounded-full bg-surface px-2.5 py-1.5"
+          className={cn(
+            "min-w-0 rounded-full bg-surface px-2.5 py-1.5",
+            isNative && "border border-border/80 shadow-none",
+          )}
         />
       </div>
       <Link
         to="/map"
         preload="intent"
-        className="grid size-9 shrink-0 place-items-center rounded-full text-foreground active:bg-surface"
+        className={cn(
+          "grid size-9 shrink-0 place-items-center rounded-full text-foreground active:bg-surface",
+          isNative && "size-10 border border-border bg-surface/80",
+        )}
         aria-label="Xarita"
       >
         <MapIcon className="size-[18px]" strokeWidth={2} />
@@ -76,15 +96,7 @@ export function HomeMobileWordmark({
   );
 }
 
-function SectionHead({
-  title,
-  to,
-  linkLabel,
-}: {
-  title: string;
-  to?: string;
-  linkLabel?: string;
-}) {
+function SectionHead({ title, to, linkLabel }: { title: string; to?: string; linkLabel?: string }) {
   return (
     <div className="mb-3.5 flex items-baseline justify-between gap-3 px-4">
       <h2 className="text-[15px] font-semibold tracking-tight text-foreground">{title}</h2>
@@ -148,11 +160,7 @@ export function HomeMobileFeaturedBarbers({
 
   return (
     <section className="min-w-0 bg-white py-1">
-      <SectionHead
-        title={t("home.topBarbers.title")}
-        to="/map"
-        linkLabel={t("common.viewAll")}
-      />
+      <SectionHead title={t("home.topBarbers.title")} to="/map" linkLabel={t("common.viewAll")} />
       <div className={cn(H_SNAP, "bg-white")}>
         {preview.map((barber) => (
           <div key={barber.id} className={SLIDE}>
@@ -200,13 +208,7 @@ export function HomeMobileCategories() {
   );
 }
 
-export function HomeMobileNearby({
-  salons,
-  title,
-}: {
-  salons: Salon[];
-  title?: string;
-}) {
+export function HomeMobileNearby({ salons, title }: { salons: Salon[]; title?: string }) {
   const { t } = useTranslation();
   const heading = title || t("home.nearby");
 
@@ -222,7 +224,10 @@ export function HomeMobileNearby({
     <section className="bg-white px-4">
       <div className="mb-3.5 flex items-baseline justify-between gap-3">
         <h2 className="text-[15px] font-semibold tracking-tight">{heading}</h2>
-        <Link to="/map" className="flex items-center gap-0.5 text-[11px] font-medium text-muted-foreground">
+        <Link
+          to="/map"
+          className="flex items-center gap-0.5 text-[11px] font-medium text-muted-foreground"
+        >
           {t("common.viewMap")}
           <ChevronRight className="size-3.5 opacity-70" />
         </Link>

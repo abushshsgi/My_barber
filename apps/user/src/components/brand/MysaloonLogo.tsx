@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { MysaloonAppMark } from "@/components/brand/MysaloonAppMark";
 
 /** Period accent from official wordmark. */
 export const MYSALOON_DOT = "#ff5c5c";
@@ -21,6 +22,8 @@ type Props = {
   /** Optional trailing label, e.g. Partner / Admin */
   subtitle?: string;
   alt?: string;
+  /** Capacitor: oldinda monogram mark. */
+  withAppMark?: boolean;
 };
 
 /** Official Mysaloon wordmark: Mysaloon. */
@@ -30,27 +33,33 @@ export function MysaloonLogo({
   tone = "onLight",
   subtitle,
   alt = "Mysaloon",
+  withAppMark = false,
 }: Props) {
   const letter =
-    tone === "onDark"
-      ? "text-white"
-      : tone === "inherit"
-        ? "text-current"
-        : "text-foreground";
+    tone === "onDark" ? "text-white" : tone === "inherit" ? "text-current" : "text-foreground";
+
+  const markSize =
+    size === "xs" ? 22 : size === "sm" ? 28 : size === "md" ? 34 : size === "lg" ? 40 : 48;
 
   return (
     <span
       className={cn(
-        "inline-flex items-baseline font-extrabold tracking-tight",
+        "inline-flex items-center font-extrabold tracking-tight",
+        withAppMark ? "gap-2" : "items-baseline",
         WORD_SIZE[size],
         letter,
         className,
       )}
       aria-label={alt}
     >
-      <span>Mysaloon</span>
-      <span style={{ color: MYSALOON_DOT }} aria-hidden>
-        .
+      {withAppMark ? (
+        <MysaloonAppMark size={markSize} tone={tone === "onDark" ? "onDark" : "onLight"} useImage />
+      ) : null}
+      <span className={cn(withAppMark && "inline-flex items-baseline")}>
+        <span>Mysaloon</span>
+        <span style={{ color: MYSALOON_DOT }} aria-hidden>
+          .
+        </span>
       </span>
       {subtitle ? (
         <span

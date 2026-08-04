@@ -10,6 +10,7 @@ import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
 import { AuthMethodDivider, PhoneSignInComingSoon } from "@/components/auth/PhoneSignInComingSoon";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
+import { useIsNativeApp } from "@/lib/native-app";
 import { cn } from "@/lib/utils";
 import {
   AuthRateLimitError,
@@ -71,6 +72,7 @@ const googleClientId = (
 
 function Auth() {
   const { t } = useTranslation();
+  const isNative = useIsNativeApp();
   const router = useRouter();
   const queryClient = useQueryClient();
   const { ref: refFromSearch, bref: brefFromSearch, redirect: redirectTo } = Route.useSearch();
@@ -387,7 +389,7 @@ function Auth() {
 
         <div className="relative mx-auto w-full max-w-md">
           <div className="mb-9 lg:hidden">
-            <MysaloonLogo size="xl" />
+            <MysaloonLogo size="xl" withAppMark={isNative} />
             <div className="mt-3 h-px w-12 bg-foreground/20" aria-hidden />
           </div>
 
@@ -484,7 +486,11 @@ function Auth() {
                         className="flex shrink-0 cursor-pointer items-center px-4 text-muted-foreground transition-colors hover:text-foreground"
                         aria-label="Toggle password"
                       >
-                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        {showPassword ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
                       </button>
                     </div>
                   </div>
@@ -512,7 +518,9 @@ function Auth() {
                       <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
                         {t("auth.debugCode")}
                       </p>
-                      <p className="mt-2 font-mono text-3xl font-bold tracking-[0.35em]">{appDeliveryCode}</p>
+                      <p className="mt-2 font-mono text-3xl font-bold tracking-[0.35em]">
+                        {appDeliveryCode}
+                      </p>
                     </div>
                   ) : null}
                   <div className="flex justify-center gap-3">
@@ -583,10 +591,16 @@ function Auth() {
                         onClick={() => setShowNewPassword((s) => !s)}
                         className="flex shrink-0 cursor-pointer items-center px-4 text-muted-foreground transition-colors hover:text-foreground"
                       >
-                        {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        {showNewPassword ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
                       </button>
                     </div>
-                    <p className="mt-2 text-[11px] text-muted-foreground">{t("auth.passwordHint")}</p>
+                    <p className="mt-2 text-[11px] text-muted-foreground">
+                      {t("auth.passwordHint")}
+                    </p>
                   </div>
                   <button
                     type="button"

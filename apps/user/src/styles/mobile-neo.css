@@ -38,26 +38,66 @@
     color: var(--foreground);
   }
 
-  .mobile-neo .bg-background { background-color: var(--background); }
-  .mobile-neo .bg-surface { background-color: var(--surface); }
-  .mobile-neo .bg-surface-2 { background-color: var(--surface-2); }
-  .mobile-neo .bg-card { background-color: var(--card); }
-  .mobile-neo .bg-primary { background-color: var(--primary); }
-  .mobile-neo .bg-muted { background-color: var(--muted); }
-  .mobile-neo .bg-accent { background-color: var(--accent); }
-  .mobile-neo .bg-gold { background-color: var(--gold); }
-  .mobile-neo .text-foreground { color: var(--foreground); }
-  .mobile-neo .text-background { color: var(--background); }
-  .mobile-neo .text-muted-foreground { color: var(--muted-foreground); }
-  .mobile-neo .text-primary { color: var(--primary); }
-  .mobile-neo .text-primary-foreground { color: var(--primary-foreground); }
-  .mobile-neo .text-accent-foreground { color: var(--accent-foreground); }
-  .mobile-neo .text-gold { color: var(--gold); }
-  .mobile-neo .fill-gold { fill: var(--gold); }
-  .mobile-neo .fill-primary { fill: var(--primary); }
-  .mobile-neo .fill-amber-400 { fill: var(--foreground); }
-  .mobile-neo .text-amber-400 { color: var(--foreground); }
-  .mobile-neo .border-border { border-color: var(--border); }
+  .mobile-neo .bg-background {
+    background-color: var(--background);
+  }
+  .mobile-neo .bg-surface {
+    background-color: var(--surface);
+  }
+  .mobile-neo .bg-surface-2 {
+    background-color: var(--surface-2);
+  }
+  .mobile-neo .bg-card {
+    background-color: var(--card);
+  }
+  .mobile-neo .bg-primary {
+    background-color: var(--primary);
+  }
+  .mobile-neo .bg-muted {
+    background-color: var(--muted);
+  }
+  .mobile-neo .bg-accent {
+    background-color: var(--accent);
+  }
+  .mobile-neo .bg-gold {
+    background-color: var(--gold);
+  }
+  .mobile-neo .text-foreground {
+    color: var(--foreground);
+  }
+  .mobile-neo .text-background {
+    color: var(--background);
+  }
+  .mobile-neo .text-muted-foreground {
+    color: var(--muted-foreground);
+  }
+  .mobile-neo .text-primary {
+    color: var(--primary);
+  }
+  .mobile-neo .text-primary-foreground {
+    color: var(--primary-foreground);
+  }
+  .mobile-neo .text-accent-foreground {
+    color: var(--accent-foreground);
+  }
+  .mobile-neo .text-gold {
+    color: var(--gold);
+  }
+  .mobile-neo .fill-gold {
+    fill: var(--gold);
+  }
+  .mobile-neo .fill-primary {
+    fill: var(--primary);
+  }
+  .mobile-neo .fill-amber-400 {
+    fill: var(--foreground);
+  }
+  .mobile-neo .text-amber-400 {
+    color: var(--foreground);
+  }
+  .mobile-neo .border-border {
+    border-color: var(--border);
+  }
 
   .mobile-neo .pb-safe {
     padding-bottom: max(env(safe-area-inset-bottom), 1rem);
@@ -76,10 +116,18 @@
     background: var(--border);
     height: 1px;
   }
-  .mobile-neo .shadow-dock { box-shadow: var(--shadow-dock); }
-  .mobile-neo .shadow-card { box-shadow: var(--shadow-card); }
-  .mobile-neo .shadow-soft { box-shadow: var(--shadow-soft); }
-  .mobile-neo .shadow-luxury { box-shadow: var(--shadow-luxury); }
+  .mobile-neo .shadow-dock {
+    box-shadow: var(--shadow-dock);
+  }
+  .mobile-neo .shadow-card {
+    box-shadow: var(--shadow-card);
+  }
+  .mobile-neo .shadow-soft {
+    box-shadow: var(--shadow-soft);
+  }
+  .mobile-neo .shadow-luxury {
+    box-shadow: var(--shadow-luxury);
+  }
 
   /* Oddiy bej fon — qizil/to'q sariq gradient yo'q */
   .mobile-neo.texture-grid {
@@ -105,7 +153,9 @@
     border: 1px solid var(--border);
     border-radius: calc(var(--radius) + 2px);
     box-shadow: var(--shadow-soft);
-    transition: transform 120ms ease, opacity 120ms ease;
+    transition:
+      transform 120ms ease,
+      opacity 120ms ease;
   }
   .mobile-neo .neo-cta:active {
     transform: scale(0.98);
@@ -116,5 +166,55 @@
   }
   .mobile-neo .scrollbar-none::-webkit-scrollbar {
     display: none;
+  }
+}
+
+/* ——— Capacitor native app (html[data-native-app="true"]) ——— */
+html[data-native-app="true"] {
+  --native-accent: #ff5c5c;
+  --native-ink: #171512;
+}
+
+html[data-native-app="true"] body {
+  overscroll-behavior-y: none;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+html[data-native-app="true"] input,
+html[data-native-app="true"] textarea,
+html[data-native-app="true"] [contenteditable="true"] {
+  user-select: text;
+}
+
+html[data-native-app="true"] .native-app-shell--booting {
+  opacity: 0;
+  pointer-events: none;
+}
+
+html[data-native-app="true"] .mobile-neo {
+  --radius: 1rem;
+  --shadow-dock: 0 -8px 32px oklch(0.145 0 0 / 0.1);
+  --shadow-card: 0 10px 32px -14px oklch(0 0 0 / 0.18);
+}
+
+/* Dock: yuqoriroq, yumshoqroq — app his */
+html[data-native-app="true"] nav[aria-label="Asosiy navigatsiya"] {
+  border-top-width: 0;
+  background: color-mix(in oklab, var(--surface) 92%, transparent);
+  box-shadow: var(--shadow-dock);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+html[data-native-app="true"] .native-home-wordmark {
+  min-height: 2.75rem;
+}
+
+/* Web footer / desktop-only chrome — appda yashirish */
+@media (max-width: 1023px) {
+  html[data-native-app="true"] footer.site-footer,
+  html[data-native-app="true"] .site-footer {
+    display: none !important;
   }
 }
