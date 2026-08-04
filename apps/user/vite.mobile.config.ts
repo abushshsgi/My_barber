@@ -64,6 +64,8 @@ export default defineConfig(({ mode }) => {
           ],
         },
         workbox: {
+          // Mobile SPA bundle can exceed default 2 MiB workbox precache limit.
+          maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
           globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2,woff,webmanifest}"],
           navigateFallback: "/index.html",
           navigateFallbackDenylist: [/^\/api/],
