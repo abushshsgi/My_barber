@@ -93,18 +93,21 @@ Android Studio → **Build → Generate Signed Bundle (.aab)** → Play Console.
 
 #### User native qatlam (FCM, GPS, kamera, back, deep link)
 
-1. **Firebase:** Console → Android app `uz.mysaloon.app` → `google-services.json` ni `apps/user/android/app/` ga qo‘ying (gitignore).
+1. **Firebase:** Console → Android app `uz.mysaloon.app` → `google-services.json` ni `apps/user/android/app/` ga qo‘ying (gitignore — commit qilinmaydi).
+   Package **`uz.mysaloon.app`** bo‘lishi shart (`mysaloon.uz` emas).
 2. **Backend env (Railway):**
    - `FIREBASE_SERVICE_ACCOUNT_JSON=...` (yoki `FCM_SERVER_KEY` legacy)
-   - ixtiyoriy: `FCM_PROJECT_ID=...` (JSON `project_id` dan olinadi)
-3. **Migration:** `python manage.py migrate` (`UserPushToken`)
+   - ixtiyoriy: `FCM_PROJECT_ID=mysaloon-cb921` (yoki JSON `project_id`)
+3. **Migration:** `python manage.py migrate` (`UserPushToken`, `UserSession.client_kind`)
 4. **App Links:** `apps/user/public/.well-known/assetlinks.json` ichida upload keystore SHA-256 ni qo‘ying; Vercel deploydan keyin `https://www.mysaloon.uz/.well-known/assetlinks.json` ochilishi kerak.
 5. **SHA-256 olish:**
    ```bash
    keytool -list -v -keystore your-upload.jks -alias your-alias
    ```
 
-Native pluginlar: App (hardware back + deep link), PushNotifications, Geolocation, Camera, Keyboard, Haptics, Share, StatusBar (edge-to-edge overlay), SplashScreen.
+**Hozirgi app versiya:** `versionCode 3` / `versionName 1.2.0`
+
+Native pluginlar: App (hardware back + deep link), PushNotifications, Geolocation, Camera, Keyboard, Haptics, Share, StatusBar (edge-to-edge overlay), SplashScreen + React `NativeBootSplash`.
 
 | Ruxsat | Nima uchun |
 |--------|------------|
