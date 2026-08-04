@@ -21,11 +21,22 @@ export default defineConfig(({ mode }) => {
   const appDir = __dirname;
   const mobileRoot = path.resolve(appDir, "mobile");
 
+  // Public Vite keys (already in production web bundle). Override via env when needed.
+  const googleClientId =
+    env.VITE_GOOGLE_CLIENT_ID?.trim() ||
+    "213512364034-95h09fmo8uiidbfgd66735hqucokn75a.apps.googleusercontent.com";
+  const mapsApiKey =
+    env.VITE_GOOGLE_MAPS_API_KEY?.trim() ||
+    env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY?.trim() ||
+    "AIzaSyDGcZoBrXu2vT9DejECAOfCm7PXcIFUDac";
+
   return {
     root: mobileRoot,
     publicDir: path.resolve(appDir, "public"),
     define: {
       "import.meta.env.VITE_MOBILE_SPA": JSON.stringify("true"),
+      "import.meta.env.VITE_GOOGLE_CLIENT_ID": JSON.stringify(googleClientId),
+      "import.meta.env.VITE_GOOGLE_MAPS_API_KEY": JSON.stringify(mapsApiKey),
     },
     plugins: [
       TanStackRouterVite({
@@ -35,7 +46,10 @@ export default defineConfig(({ mode }) => {
       react(),
       tailwindcss(),
       tsconfigPaths(),
+      // Capacitor WebView — PWA SW lag + katta precache; native da kerak emas.
       VitePWA({
+        disable: true,
+        injectRegister: false,
         registerType: "autoUpdate",
         includeAssets: [
           "brand-logo.png",
@@ -51,8 +65,8 @@ export default defineConfig(({ mode }) => {
           name: "MySaloon",
           short_name: "MySaloon",
           description: "Online salon va sartaroshxona bron platformasi",
-          theme_color: "#000000",
-          background_color: "#000000",
+          theme_color: "#ffffff",
+          background_color: "#ffffff",
           display: "standalone",
           orientation: "portrait",
           start_url: "/",
@@ -62,13 +76,6 @@ export default defineConfig(({ mode }) => {
             { src: "icon-512.png", sizes: "512x512", type: "image/png" },
             { src: "icon-512-maskable.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
           ],
-        },
-        workbox: {
-          // Mobile SPA bundle can exceed default 2 MiB workbox precache limit.
-          maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
-          globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2,woff,webmanifest}"],
-          navigateFallback: "/index.html",
-          navigateFallbackDenylist: [/^\/api/],
         },
       }),
     ],
@@ -80,6 +87,9 @@ export default defineConfig(({ mode }) => {
     build: {
       outDir: path.resolve(appDir, "dist/client"),
       emptyOutDir: true,
+      cssCodeSplit: true,
+      sourcemap: false,
+      chunkSizeWarningLimit: 3500,
     },
   };
 });

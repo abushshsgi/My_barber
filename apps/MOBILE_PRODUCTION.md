@@ -107,9 +107,21 @@ Android Studio → **Run** (yoki Build → Generate Signed Bundle (.aab) → Pla
    keytool -list -v -keystore your-upload.jks -alias your-alias
    ```
 
-**Hozirgi app versiya:** `versionCode 3` / `versionName 1.2.0`
+**Hozirgi app versiya:** `versionCode 4` / `versionName 1.2.1`
 
-Native pluginlar: App (hardware back + deep link), PushNotifications, Geolocation, Camera, Keyboard, Haptics, Share, StatusBar (edge-to-edge overlay), SplashScreen + React `NativeBootSplash`.
+Native pluginlar: App (hardware back + deep link), PushNotifications, Geolocation, Camera, Keyboard, Haptics, Share, StatusBar (edge-to-edge, **Light** icons on light UI), SplashScreen + React `NativeBootSplash`, Capgo `SocialLogin` (Google).
+
+#### Google Sign-In (Android, majburiy qo‘lda)
+
+1. Google Cloud Console → Credentials → **Android** OAuth client yarating:
+   - Package: `uz.mysaloon.app`
+   - SHA-1: debug yoki upload key
+2. SHA-1 olish (debug):
+   ```bash
+   cd apps/user/android && ./gradlew :app:signingReport
+   ```
+3. Web client ID allaqachon kodda (`server_client_id` + `VITE_GOOGLE_CLIENT_ID`). Android client ID ni `webClientId` ga **qo‘ymang**.
+4. Maps JS: Cloud Console da kalitga HTTP referrer sifatida `https://localhost/*` qo‘shing (Capacitor `androidScheme: https`).
 
 | Ruxsat | Nima uchun |
 |--------|------------|

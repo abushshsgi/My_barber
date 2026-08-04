@@ -9,12 +9,13 @@ let shellReady = false;
 async function configureChrome() {
   try {
     const { StatusBar, Style } = await import("@capacitor/status-bar");
+    // Style.Light = qora ikonkalar (och fon / auth). Style.Dark = oq ikonkalar (to‘q fon).
     try {
       await StatusBar.setOverlaysWebView({ overlay: true });
-      await StatusBar.setStyle({ style: Style.Dark });
+      await StatusBar.setStyle({ style: Style.Light });
     } catch {
-      await StatusBar.setStyle({ style: Style.Dark });
-      await StatusBar.setBackgroundColor({ color: "#171512" });
+      await StatusBar.setStyle({ style: Style.Light });
+      await StatusBar.setBackgroundColor({ color: "#ffffff" });
     }
   } catch {
     /* Status bar plugin may be unavailable */

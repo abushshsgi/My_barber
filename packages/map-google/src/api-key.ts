@@ -27,7 +27,15 @@ export async function resolveGoogleMapsApiKey(): Promise<string> {
 
   remoteKeyPromise = (async () => {
     try {
-      const res = await fetch("/api/v1/geo/map-config/", { cache: "no-store" });
+      // Capacitor WebView da relative `/api/...` ishlamaydi — VITE_API_URL kerak.
+      const env = import.meta.env as Record<string, string | undefined>;
+      const apiBase = (env.VITE_API_URL ?? env.NEXT_PUBLIC_API_URL ?? "")
+        .trim()
+        .replace(/\/+$/, "");
+      const configUrl = apiBase
+        ? `${apiBase}/api/v1/geo/map-config/`
+        : "/api/v1/geo/map-config/";
+      const res = await fetch(configUrl, { cache: "no-store" });
       if (!res.ok) {
         cachedRemoteKey = null;
         return "";

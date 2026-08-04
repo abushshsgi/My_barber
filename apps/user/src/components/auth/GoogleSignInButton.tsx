@@ -1,9 +1,11 @@
 import { GoogleLogin, GoogleOAuthProvider } from "@react-oauth/google";
-import { useEffect, useRef, useState } from "react";
+import { Capacitor } from "@capacitor/core";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { loginWithGoogle } from "@/lib/api";
 import type { PhoneVerifyResponse } from "@/lib/api/types";
+import { nativeGoogleIdToken } from "@/lib/native-google-auth";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -35,6 +37,95 @@ function GoogleGlyph({ className }: { className?: string }) {
       />
     </svg>
   );
+}
+
+function EmphasizedChrome({
+  children,
+  busy,
+}: {
+  children: ReactNode;
+  busy?: boolean;
+}) {
+  const { t } = useTranslation();
+  return (
+    <div
+      className={cn(
+        "auth-google-card relative overflow-hidden rounded-[1.65rem] border border-foreground/[0.08] bg-background/90 p-5 shadow-[0_24px_60px_-36px_rgba(15,23,42,0.35)] ring-1 ring-inset ring-white/60 backdrop-blur-sm sm:p-6",
+        busy && "pointer-events-none opacity-70",
+      )}
+    >
+      <div
+        className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-[#1a73e8]/[0.07] to-transparent"
+        aria-hidden
+      />
+      <div
+        className="pointer-events-none absolute -right-10 -top-10 h-28 w-28 rounded-full bg-[#1a73e8]/[0.08] blur-2xl"
+        aria-hidden
+      />
+
+      <div className="relative">
+        <div className="flex justify-center">
+          <span className="inline-flex items-center rounded-full bg-[#1a73e8]/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-[#1a73e8]">
+            {t("auth.googleRecommended")}
+          </span>
+        </div>
+        <p className="mt-3 text-center text-lg font-bold tracking-tight text-foreground sm:text-xl">
+          {t("auth.googleContinue")}
+        </p>
+        <p className="mt-1 text-center text-xs leading-relaxed text-muted-foreground sm:text-sm">
+          {t("auth.googleContinueHint")}
+        </p>
+        <div className="relative mt-5 w-full">{children}</div>
+      </div>
+    </div>
+  );
+}
+
+function NativeGoogleButton({
+  busy = false,
+  emphasized = false,
+  onBusyChange,
+  onSuccess,
+}: Omit<Props, "clientId">) {
+  const { t } = useTranslation();
+
+  const run = async () => {
+    onBusyChange?.(true);
+    try {
+      const credential = await nativeGoogleIdToken();
+      const data = await loginWithGoogle(credential);
+      onSuccess(data);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : t("auth.googleErrGeneric");
+      if (!/cancel|bekor|dismiss/i.test(message)) {
+        toast.error(message);
+      }
+    } finally {
+      onBusyChange?.(false);
+    }
+  };
+
+  const cta = (
+    <button
+      type="button"
+      disabled={busy}
+      onClick={() => void run()}
+      className="auth-google-cta flex min-h-[58px] w-full items-center justify-center gap-3 rounded-2xl bg-[#1a73e8] px-5 text-white shadow-[0_14px_28px_-12px_rgba(26,115,232,0.55)] transition-transform active:scale-[0.98] disabled:opacity-60"
+    >
+      <span className="flex size-9 items-center justify-center rounded-full bg-white shadow-sm">
+        <GoogleGlyph className="size-[18px]" />
+      </span>
+      <span className="text-[15px] font-bold sm:text-base">{t("auth.googleContinue")}</span>
+    </button>
+  );
+
+  if (!emphasized) {
+    return (
+      <div className={cn("w-full", busy && "pointer-events-none opacity-60")}>{cta}</div>
+    );
+  }
+
+  return <EmphasizedChrome busy={busy}>{cta}</EmphasizedChrome>;
 }
 
 function GoogleSignInButtonInner({
@@ -98,54 +189,30 @@ function GoogleSignInButtonInner({
   }
 
   return (
-    <div
-      className={cn(
-        "auth-google-card relative overflow-hidden rounded-[1.65rem] border border-foreground/[0.08] bg-background/90 p-5 shadow-[0_24px_60px_-36px_rgba(15,23,42,0.35)] ring-1 ring-inset ring-white/60 backdrop-blur-sm sm:p-6",
-        busy && "pointer-events-none opacity-70",
-      )}
-    >
-      <div
-        className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-[#1a73e8]/[0.07] to-transparent"
-        aria-hidden
-      />
-      <div
-        className="pointer-events-none absolute -right-10 -top-10 h-28 w-28 rounded-full bg-[#1a73e8]/[0.08] blur-2xl"
-        aria-hidden
-      />
-
-      <div className="relative">
-        <div className="flex justify-center">
-          <span className="inline-flex items-center rounded-full bg-[#1a73e8]/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-[#1a73e8]">
-            {t("auth.googleRecommended")}
+    <EmphasizedChrome busy={busy}>
+      <div ref={containerRef} className="relative w-full">
+        <div
+          aria-hidden
+          className="auth-google-cta pointer-events-none flex min-h-[58px] items-center justify-center gap-3 rounded-2xl bg-[#1a73e8] px-5 text-white shadow-[0_14px_28px_-12px_rgba(26,115,232,0.55)]"
+        >
+          <span className="flex size-9 items-center justify-center rounded-full bg-white shadow-sm">
+            <GoogleGlyph className="size-[18px]" />
           </span>
+          <span className="text-[15px] font-bold sm:text-base">{t("auth.googleContinue")}</span>
         </div>
-        <p className="mt-3 text-center text-lg font-bold tracking-tight text-foreground sm:text-xl">
-          {t("auth.googleContinue")}
-        </p>
-        <p className="mt-1 text-center text-xs leading-relaxed text-muted-foreground sm:text-sm">
-          {t("auth.googleContinueHint")}
-        </p>
-
-        <div ref={containerRef} className="relative mt-5 w-full">
-          <div
-            aria-hidden
-            className="auth-google-cta pointer-events-none flex min-h-[58px] items-center justify-center gap-3 rounded-2xl bg-[#1a73e8] px-5 text-white shadow-[0_14px_28px_-12px_rgba(26,115,232,0.55)]"
-          >
-            <span className="flex size-9 items-center justify-center rounded-full bg-white shadow-sm">
-              <GoogleGlyph className="size-[18px]" />
-            </span>
-            <span className="text-[15px] font-bold sm:text-base">{t("auth.googleContinue")}</span>
-          </div>
-          <div className="absolute inset-0 overflow-hidden rounded-2xl opacity-[0.01] [&_iframe]:!h-full [&_iframe]:!min-h-[58px] [&_iframe]:!w-full">
-            {button}
-          </div>
+        <div className="absolute inset-0 overflow-hidden rounded-2xl opacity-[0.01] [&_iframe]:!h-full [&_iframe]:!min-h-[58px] [&_iframe]:!w-full">
+          {button}
         </div>
       </div>
-    </div>
+    </EmphasizedChrome>
   );
 }
 
 export function GoogleSignInButton(props: Props) {
+  if (Capacitor.isNativePlatform()) {
+    return <NativeGoogleButton {...props} />;
+  }
+
   return (
     <GoogleOAuthProvider clientId={props.clientId}>
       <GoogleSignInButtonInner {...props} />

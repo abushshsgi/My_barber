@@ -179,12 +179,20 @@ html[data-native-app="true"] body {
   overscroll-behavior-y: none;
   -webkit-tap-highlight-color: transparent;
   user-select: none;
+  /* Scroll / paint silliqroq */
+  -webkit-overflow-scrolling: touch;
+  text-rendering: optimizeLegibility;
 }
 
 html[data-native-app="true"] input,
 html[data-native-app="true"] textarea,
 html[data-native-app="true"] [contenteditable="true"] {
   user-select: text;
+}
+
+html[data-native-app="true"] .native-app-shell {
+  min-height: 100dvh;
+  transform: translateZ(0);
 }
 
 html[data-native-app="true"] .native-app-shell--booting {
@@ -194,21 +202,31 @@ html[data-native-app="true"] .native-app-shell--booting {
 
 html[data-native-app="true"] .mobile-neo {
   --radius: 1rem;
-  --shadow-dock: 0 -8px 32px oklch(0.145 0 0 / 0.1);
-  --shadow-card: 0 10px 32px -14px oklch(0 0 0 / 0.18);
+  --shadow-dock: 0 -6px 24px oklch(0.145 0 0 / 0.08);
+  --shadow-card: 0 8px 24px -14px oklch(0 0 0 / 0.14);
 }
 
-/* Dock: yuqoriroq, yumshoqroq — app his */
+/* Dock: blur pastroq — past darajali GPU da qotish kamayadi */
 html[data-native-app="true"] nav[aria-label="Asosiy navigatsiya"] {
   border-top-width: 0;
-  background: color-mix(in oklab, var(--surface) 92%, transparent);
+  background: color-mix(in oklab, var(--surface) 96%, transparent);
   box-shadow: var(--shadow-dock);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
 html[data-native-app="true"] .native-home-wordmark {
   min-height: 2.75rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-native-app="true"] *,
+  html[data-native-app="true"] *::before,
+  html[data-native-app="true"] *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 /* Web footer / desktop-only chrome — appda yashirish */

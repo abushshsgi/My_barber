@@ -19,6 +19,13 @@ applyNativeAppDocumentFlag();
 void initNativeShell();
 installChunkReloadGuard();
 
+// Old PWA SW Capacitor WebView da qotishga olib keladi — o‘chirish.
+if (isNativeApp() && "serviceWorker" in navigator) {
+  void navigator.serviceWorker.getRegistrations().then((regs) => {
+    for (const reg of regs) void reg.unregister();
+  });
+}
+
 const router = getRouter();
 attachNativeAppBridge(router);
 
