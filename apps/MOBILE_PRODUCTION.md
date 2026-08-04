@@ -75,8 +75,8 @@ REDIS_URL=redis://...
 ### 3. Capacitor (Android Play Market)
 
 ```bash
-# Mijoz ilovasi
-npm run cap:android
+# Mijoz ilovasi — to‘liq Vite build + cap sync (VITE_API_URL majburiy)
+VITE_API_URL=https://api.mysaloon.uz npm run cap:android
 npm run cap:open -w user-web
 
 # Barber ilovasi
@@ -84,7 +84,9 @@ npm run cap:barber
 npm run cap:open -w tanstack_start_ts
 ```
 
-Android Studio → **Build → Generate Signed Bundle (.aab)** → Play Console.
+`npx cap sync` ni **faqat** `build:mobile` dan keyin ishlating. Stub `dist/client` bilan sync qilsangiz telefonda oq ekran / `cap-sync` matni chiqadi.
+
+Android Studio → **Run** (yoki Build → Generate Signed Bundle (.aab) → Play Console).
 
 | Ilova | App ID | Listing nomi |
 |-------|--------|--------------|
