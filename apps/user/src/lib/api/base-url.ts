@@ -12,7 +12,7 @@ export function resolveApiUpstream(requestHost?: string | null): string {
 /**
  * REST fetch bazasi:
  * - Web brauzer: bo'sh (same-origin /api/v1 proxy)
- * - Capacitor / to'g'ridan-to'g'ri API: ENV bazasi
+ * - To'g'ridan-to'g'ri API: ENV bazasi
  * - SSR / server loader: upstream API
  */
 export function resolveFetchBase(apiBase: string, requestHost?: string | null): string {

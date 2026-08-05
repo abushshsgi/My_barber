@@ -5,7 +5,6 @@ import { RouterProvider } from "@tanstack/react-router";
 import { getRouter } from "./router";
 import { CLIENT_BOOT_SCRIPT } from "./lib/client-boot-script";
 import { installChunkReloadGuard } from "./lib/chunk-reload";
-import { initNativeShell } from "./lib/native-shell";
 import "./styles.css";
 
 const root = document.getElementById("root");
@@ -21,7 +20,6 @@ try {
   /* ignore */
 }
 
-void initNativeShell();
 installChunkReloadGuard();
 
 createRoot(root).render(

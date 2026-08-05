@@ -70,7 +70,7 @@ npm run build:frontends
 
 | mijoz | `https://www.mysaloon.uz` | `VITE_API_URL` **o‘chirish** (same-origin `/api/v1` proxy) |
 | admin | `https://admin.mysaloon.uz` | `VITE_API_URL` **o‘chirish** (same-origin `/api/v1` proxy; CORS yo‘q) |
-| barber | `https://partner.mysaloon.uz` | Web: `VITE_API_URL` **o‘chirish**; Capacitor: `VITE_API_URL=https://api.mysaloon.uz` |
+| barber | `https://partner.mysaloon.uz` | `VITE_API_URL=https://api.mysaloon.uz` (yoki same-origin proxy) |
 
 
 
@@ -120,20 +120,17 @@ Monorepo: Vercelda “Include source files outside root” yoki workspace sozlam
 
 
 
-## Mobil (PWA + Capacitor)
+## Mobil (Expo React Native)
 
+| Ilova | Web | Native |
+|--------|-----|--------|
+| mijoz | `apps/user` — `www.mysaloon.uz` (PWA) | `apps/mobile` (Expo) |
+| barber | `apps/barber` — `partner.mysaloon.uz` (PWA) | — |
 
+```bash
+npm run dev:mobile
+```
 
-| Ilova | iOS | Android Play Market | Script |
-
-|--------|-----|---------------------|--------|
-
-| mijoz (`apps/user`) | PWA — `www.mysaloon.uz` | Capacitor `uz.mysaloon.app` | `npm run cap:android` |
-
-| barber (`apps/barber`) | PWA — `partner.mysaloon.uz` | Capacitor `uz.mysaloon.partner` | `npm run cap:barber` |
-
-
-
-Batafsil: [`user/README.md`](user/README.md), [`barber/README.md`](barber/README.md).
+Batafsil: [`MOBILE_PRODUCTION.md`](MOBILE_PRODUCTION.md), [`mobile/README.md`](mobile/README.md).
 
 

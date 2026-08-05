@@ -1,6 +1,6 @@
 # Mysaloon — React Native (Expo)
 
-Haqiqiy React Native ilova (`apps/user` Capacitor emas).
+Haqiqiy React Native (Expo) ilova. Web frontendlardan alohida.
 
 ## Ishga tushirish
 

@@ -11,17 +11,9 @@ function isStockOrPlaceholder(url: string): boolean {
   );
 }
 
-function isMobileSpa(): boolean {
-  return (
-    (import.meta as unknown as { env?: Record<string, string | undefined> }).env
-      ?.VITE_MOBILE_SPA === "true"
-  );
-}
-
 /**
  * Cover yuklash variantlari.
  * Web: avval same-origin `/media` (Vercel proxy), keyin absolute API.
- * Capacitor: faqat absolute API (localhost da /media yo‘q).
  */
 export function mediaUrlCandidates(url: string): string[] {
   const trimmed = url.trim();
@@ -36,13 +28,7 @@ export function mediaUrlCandidates(url: string): string[] {
     /^https?:\/\/(?:api\.mysaloon\.uz|[a-z0-9-]+\.up\.railway\.app)(\/media\/.+)$/i,
   );
 
-  if (isMobileSpa()) {
-    // Absolute birinchi — Capacitor WebView.
-    if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
-      push(trimmed);
-    }
-    push(resolved);
-  } else if (apiMatch?.[1]) {
+  if (apiMatch?.[1]) {
     push(apiMatch[1]);
     push(trimmed);
     push(resolved);

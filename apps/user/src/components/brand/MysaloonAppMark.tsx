@@ -6,12 +6,12 @@ type Props = {
   className?: string;
   /** Dark mark on light surface (header). */
   tone?: "onDark" | "onLight";
-  /** Brand PNG (`/app-icon.png`) — Capacitor splash/header. */
+  /** Brand PNG (`/app-icon.png`) — splash/header. */
   useImage?: boolean;
 };
 
 /**
- * Capacitor ilova uchun monogram — web wordmarkdan farqli.
+ * App monogram — web wordmarkdan farqli.
  * PNG (`/app-icon.png`) yoki CSS M+dot.
  */
 export function MysaloonAppMark({

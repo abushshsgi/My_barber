@@ -15,12 +15,11 @@
     "dev:user": "npm run dev -w user-web -- --port 3000",
     "dev:admin": "npm run dev -w admin-web -- --port 3001",
     "dev:barber": "npm run dev -w tanstack_start_ts -- --port 3003",
+    "dev:mobile": "npm --prefix apps/mobile start",
     "build:user": "npm run build -w user-web",
     "build:admin": "npm run build -w admin-web",
     "build:barber": "npm run build -w tanstack_start_ts",
     "build:frontends": "npm run build:user && npm run build:admin && npm run build:barber",
-    "cap:barber": "npm run cap:sync -w tanstack_start_ts",
-    "dev:mobile": "npm --prefix apps/mobile start",
     "lint": "npm run lint -w user-web && npm run lint -w admin-web && npm run lint -w tanstack_start_ts",
     "verify:mobile": "bash scripts/verify-mobile-production.sh"
   },

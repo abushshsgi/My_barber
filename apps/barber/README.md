@@ -39,17 +39,9 @@ Railway:
 FRONTEND_BARBER_ORIGIN=https://partner.mysaloon.uz
 ```
 
-## Capacitor (Android / Play Market)
+## Capacitor o‘chirilgan
 
-```bash
-npm run cap:barber          # root — build + sync
-npm run cap:open -w tanstack_start_ts   # Android Studio
-```
-
-- App ID: `uz.mysaloon.partner`
-- App nomi: **MySaloon Partner**
-
-Android Studio’da signed `.aab` yig‘ib Play Console’ga yuklang (mijoz ilovasidan alohida listing).
+Barber panel faqat web/PWA (`partner.mysaloon.uz`). Native mijoz ilova: `apps/mobile` (Expo).
 
 ## Build
 

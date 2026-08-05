@@ -69,7 +69,7 @@ def _client_meta_from_request(request: Request | None) -> tuple[str, str, str]:
     if not raw_version:
         raw_version = str(request.META.get("HTTP_X_APP_VERSION") or "").strip()
 
-    if raw_kind in ("capacitor", "android_app", "ios_app", "native", "app"):
+    if raw_kind in ("capacitor", "android_app", "ios_app", "native", "app", "expo", "mobile"):
         kind = "capacitor"
     elif raw_kind in ("web", "pwa", "browser"):
         kind = "web"
@@ -124,7 +124,7 @@ def record_user_session(
     if not platform:
         platform = _parse_platform(user_agent)
     if client_kind == "capacitor" and platform in ("unknown", "web"):
-        # Capacitor WebView ba'zan oddiy UA beradi — OS noma'lum bo'lsa android deb belgilaymiz.
+        # Native (Expo) ba'zan oddiy UA beradi — OS noma'lum bo'lsa android deb belgilaymiz.
         platform = "android"
 
     session = UserSession.objects.create(

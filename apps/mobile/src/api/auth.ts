@@ -23,7 +23,7 @@ export type PhoneSendCodeResponse = {
 
 function clientMeta() {
   return {
-    client_kind: Platform.OS === "web" ? "web" : "capacitor",
+    client_kind: Platform.OS === "web" ? "web" : "expo",
     app_version: "1.0.0",
     device_name: `MySaloon App (${Platform.OS})`,
   };

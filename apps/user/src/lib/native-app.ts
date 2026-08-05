@@ -12,7 +12,7 @@ function getServerSnapshot(): boolean {
   return false;
 }
 
-/** Eski Capacitor flag — endi faqat web; Expo `apps/mobile` da. */
+/** Web flag — native Expo `apps/mobile` da. */
 export function useIsNativeApp(): boolean {
   return useSyncExternalStore(subscribeNative, getNativeSnapshot, getServerSnapshot);
 }

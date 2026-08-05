@@ -8,16 +8,9 @@ const API_MEDIA_RE =
 
 const DEFAULT_API_ORIGIN = "https://api.mysaloon.uz";
 
-function isMobileSpa(): boolean {
-  return (
-    (import.meta as unknown as { env?: Record<string, string | undefined> }).env
-      ?.VITE_MOBILE_SPA === "true"
-  );
-}
-
-/** Capacitor / to‘g‘ridan-to‘g‘ri API — same-origin `/media` proxy yo‘q. */
+/** Absolute media kerak bo‘lsa (to‘g‘ridan-to‘g‘ri API base). */
 function needsAbsoluteMedia(): boolean {
-  return Boolean(API_BASE.trim()) || isMobileSpa();
+  return Boolean(API_BASE.trim());
 }
 
 function apiOrigin(): string {
@@ -25,9 +18,8 @@ function apiOrigin(): string {
 }
 
 /**
- * API yoki nisbiy media yo‘lini brauzer/Capacitor uchun yuklanadigan URL ga aylantiradi.
+ * API yoki nisbiy media yo‘lini yuklanadigan URL ga aylantiradi.
  * Web (Vercel): `/media/…` same-origin proxy.
- * Capacitor: `https://api.mysaloon.uz/media/…` absolute.
  */
 export function resolveMediaUrl(path: string | null | undefined): string | null {
   const raw = path?.trim();

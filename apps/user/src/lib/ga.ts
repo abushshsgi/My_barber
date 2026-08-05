@@ -2,9 +2,9 @@
 export const GA_MEASUREMENT_ID =
   (import.meta.env.VITE_GA_MEASUREMENT_ID as string | undefined)?.trim() || "G-38QNBFBNZG";
 
-/** Production web only — skip local/dev and Capacitor mobile SPA. */
+/** Production web only — skip local/dev. */
 export const GA_ENABLED =
-  import.meta.env.PROD && import.meta.env.VITE_MOBILE_SPA !== "true" && Boolean(GA_MEASUREMENT_ID);
+  import.meta.env.PROD && Boolean(GA_MEASUREMENT_ID);
 
 declare global {
   interface Window {

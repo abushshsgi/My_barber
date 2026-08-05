@@ -1,6 +1,6 @@
 import { APP_BUILD_ID } from "@/lib/app-build-id";
 
-export type ClientKind = "web" | "capacitor";
+export type ClientKind = "web";
 
 /** Login / auth so‘rovlariga qo‘shiladigan mijoz metadatalari. */
 export function getAuthClientMeta(): {

@@ -13,17 +13,12 @@ const ENV_API_BASE =
     ?.NEXT_PUBLIC_API_URL ||
   "";
 
-const IS_MOBILE_SPA =
-  (import.meta as unknown as { env?: Record<string, string | undefined> }).env
-    ?.VITE_MOBILE_SPA === "true";
-
 /** Production fallback when Vercel /api rewrite is missing (POST → 405 HTML). */
 const PROD_API_FALLBACK = "https://api.mysaloon.uz";
 
 function resolveWebApiBase(envBase: string): string {
   const trimmed = envBase.trim().replace(/\/+$/, "");
-  if (IS_MOBILE_SPA) return trimmed;
-  // Explicit env always wins (Capacitor + web).
+  // Explicit env always wins.
   if (trimmed) return trimmed;
   if (typeof window !== "undefined") {
     const demo = resolveDemoApiOrigin(window.location.hostname);

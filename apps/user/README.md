@@ -36,7 +36,7 @@ Agar brauzer `Failed to load module script … main.tsx` yoki `main.jsx` ko'rsat
 2. **Output Directory** bo'sh — `dist` yoki `dist/static` qo'ymang (Build Output API ishlatiladi).
 3. **Framework Preset** — **Other**, Vite emas.
 4. Dashboard'dagi **SPA rewrites** (`/(.*) → /index.html`) o'chirilgan bo'lishi kerak — ular `/assets/*.js` ni ham HTML qaytaradi.
-5. `apps/user/index.html` bo'lmasligi kerak — faqat `mobile/index.html` (Capacitor). Dev HTML Vercel'da SSR o'rniga statik fayl sifatida chiqadi.
+5. `apps/user/index.html` bo'lmasligi kerak — Vercel'da SSR o'rniga statik fayl sifatida chiqadi.
 
 Qayta deploy: `npm run build` (`.vercel/output` yaratiladi) → Vercel redeploy.
 
@@ -44,7 +44,7 @@ Qayta deploy: `npm run build` (`.vercel/output` yaratiladi) → Vercel redeploy.
 
 | O'zgaruvchi | Qiymat |
 |-------------|--------|
-| `VITE_API_URL` | `https://api.mysaloon.uz` (production / Capacitor) |
+| `VITE_API_URL` | `https://api.mysaloon.uz` (production) |
 | `VITE_GOOGLE_MAPS_API_KEY` | Google Maps JS (xarita) — [Cloud Console](https://console.cloud.google.com/google/maps-apis) |
 | `NEXT_PUBLIC_BARBER_WEB_ORIGIN` | `https://partner.mysaloon.uz` (ixtiyoriy) |
 

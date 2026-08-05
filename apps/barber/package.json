@@ -6,20 +6,12 @@
   "scripts": {
     "dev": "node scripts/write-build-version.mjs && vite dev",
     "build": "node scripts/write-build-version.mjs && vite build",
-    "build:mobile": "vite build",
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
-    "cap:sync": "npm run build:mobile && npx cap sync android",
-    "cap:open": "npx cap open android",
     "lint": "eslint .",
     "format": "prettier --write ."
   },
   "dependencies": {
-    "@capacitor/android": "^8.3.4",
-    "@capacitor/cli": "^8.3.4",
-    "@capacitor/core": "^8.3.4",
-    "@capacitor/splash-screen": "^8.0.1",
-    "@capacitor/status-bar": "^8.0.2",
     "@cloudflare/vite-plugin": "^1.39.0",
     "@fontsource/manrope": "^5.2.8",
     "@fontsource/outfit": "^5.2.8",

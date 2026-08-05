@@ -12,20 +12,9 @@ const ENV_API_BASE =
     ?.NEXT_PUBLIC_API_URL ||
   "";
 
-const IS_MOBILE_SPA =
-  (import.meta as unknown as { env?: Record<string, string | undefined> }).env
-    ?.VITE_MOBILE_SPA === "true";
-
-/** Web (Vercel): bo'sh = joriy origin (/api/v1 proxy). Capacitor: VITE_API_URL majburiy. */
-if (import.meta.env.PROD && !ENV_API_BASE.trim() && IS_MOBILE_SPA) {
-  throw new Error(
-    "Mobile production build requires VITE_API_URL or NEXT_PUBLIC_API_URL (e.g. https://api.mysaloon.uz).",
-  );
-}
-
+/** Web (Vercel): bo'sh = joriy origin (/api/v1 proxy). */
 function resolveWebApiBase(envBase: string): string {
   const trimmed = envBase.trim().replace(/\/+$/, "");
-  if (IS_MOBILE_SPA) return trimmed;
   // Web production: same-origin proxy — to‘g‘ridan-to‘g‘ri api.mysaloon.uz Cloudflare cookie xatolarini keltiradi.
   if (import.meta.env.PROD) return "";
   return trimmed;

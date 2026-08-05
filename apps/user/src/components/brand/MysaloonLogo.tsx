@@ -22,7 +22,7 @@ type Props = {
   /** Optional trailing label, e.g. Partner / Admin */
   subtitle?: string;
   alt?: string;
-  /** Capacitor: oldinda monogram mark. */
+  /** Native mark: oldinda monogram. */
   withAppMark?: boolean;
 };
 

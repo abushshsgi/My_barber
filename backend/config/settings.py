@@ -476,13 +476,11 @@ def _cors_allowed_origins():
         "https://admin.mysaloon.uz",
     ):
         chunks.append(prod_origin)
-    # Capacitor Android/iOS WebView originlari — productionda ham REST fetch ishlashi uchun.
+    # Lokal / Expo web preview originlari.
     chunks.extend(
         [
             "https://localhost",
             "http://localhost",
-            "capacitor://localhost",
-            "ionic://localhost",
         ]
     )
     seen: set[str] = set()
