@@ -1,4 +1,4 @@
-import { API_BASE } from "./config";
+import { API_BASE, API_ORIGIN } from "./config";
 
 const PEXELS_RE = /(?:https?:\/\/)?images\.pexels\.com\/photos\/(\d+)/i;
 const API_MEDIA_RE =
@@ -7,7 +7,7 @@ const API_MEDIA_RE =
 function withWidthParam(url: string, width?: number): string {
   if (!width || width <= 0) return url;
   try {
-    const u = new URL(url);
+    const u = new URL(url, "https://api.mysaloon.uz");
     if (u.hostname.includes("pexels.com") || u.pathname.includes("/covers/pexels/")) {
       u.searchParams.set("w", String(width));
       if (u.hostname.includes("pexels.com")) {
@@ -22,7 +22,17 @@ function withWidthParam(url: string, width?: number): string {
   return url;
 }
 
-/** RN uchun absolyut media URL (+ ixtiyoriy responsive width). */
+function toAppMediaUrl(absoluteOrPath: string): string {
+  // Web proxy: absolute api hostni same-origin /media ga aylantirish.
+  if (!API_BASE) {
+    const m = absoluteOrPath.match(API_MEDIA_RE);
+    if (m) return m[1];
+    if (absoluteOrPath.startsWith("/media/")) return absoluteOrPath;
+  }
+  return absoluteOrPath;
+}
+
+/** RN / web uchun yuklanadigan media URL. */
 export function resolveMediaUrl(
   path: string | null | undefined,
   opts?: { width?: number },
@@ -37,21 +47,27 @@ export function resolveMediaUrl(
 
   const apiMedia = raw.match(API_MEDIA_RE);
   if (apiMedia) {
+    const local = toAppMediaUrl(`${API_ORIGIN}${apiMedia[1]}`);
+    if (!API_BASE) return local;
     return withWidthParam(`${API_BASE}${apiMedia[1]}`, opts?.width);
   }
 
   if (raw.startsWith("http://") || raw.startsWith("https://") || raw.startsWith("data:")) {
-    return withWidthParam(raw, opts?.width);
+    return withWidthParam(toAppMediaUrl(raw), opts?.width);
   }
 
   if (raw.startsWith("/")) {
+    if (!API_BASE) return raw.startsWith("/media/") ? raw : `${API_ORIGIN}${raw}`;
     return withWidthParam(`${API_BASE}${raw}`, opts?.width);
   }
 
   if (raw.startsWith("media/")) {
-    return withWidthParam(`${API_BASE}/${raw}`, opts?.width);
+    const pathWithSlash = `/${raw}`;
+    if (!API_BASE) return pathWithSlash;
+    return withWidthParam(`${API_BASE}${pathWithSlash}`, opts?.width);
   }
 
+  if (!API_BASE) return `/${raw}`;
   return withWidthParam(`${API_BASE}/${raw}`, opts?.width);
 }
 

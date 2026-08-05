@@ -26,24 +26,31 @@ export function qs(params: Record<string, string | number | undefined>): string 
 
 function buildUrl(path: string): string {
   if (path.startsWith("http://") || path.startsWith("https://")) return path;
-  return `${API_BASE}${path.startsWith("/") ? path : `/${path}`}`;
+  const normalized = path.startsWith("/") ? path : `/${path}`;
+  return `${API_BASE}${normalized}`;
 }
 
-/** Backend REST — Accept + cache-bust yo‘q, keyin auth token ulanadi. */
+/** Backend REST. GET da Content-Type yuborilmaydi (CORS preflight). */
 export async function apiJson<T>(path: string, init?: RequestInit): Promise<T> {
   const url = buildUrl(path);
+  const method = (init?.method || "GET").toUpperCase();
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 25_000);
+
+  const headers: Record<string, string> = {
+    Accept: "application/json",
+    ...(init?.headers as Record<string, string> | undefined),
+  };
+  if (method !== "GET" && method !== "HEAD" && !headers["Content-Type"]) {
+    headers["Content-Type"] = "application/json";
+  }
 
   try {
     const res = await fetch(url, {
       ...init,
+      method,
       signal: init?.signal ?? controller.signal,
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-        ...(init?.headers ?? {}),
-      },
+      headers,
     });
 
     if (!res.ok) {
@@ -56,6 +63,9 @@ export async function apiJson<T>(path: string, init?: RequestInit): Promise<T> {
   } catch (err) {
     if (err instanceof Error && err.name === "AbortError") {
       throw new Error("Backend javob bermadi (timeout). Internetni tekshiring.");
+    }
+    if (err instanceof TypeError) {
+      throw new Error(`Failed to fetch (${API_BASE || "proxy→api.mysaloon.uz"})`);
     }
     throw err;
   } finally {
