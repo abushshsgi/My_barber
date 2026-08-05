@@ -1,0 +1,34 @@
+{
+  "expo": {
+    "name": "Mysaloon",
+    "slug": "mysaloon",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "scheme": "mysaloon",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "uz.mysaloon.app"
+    },
+    "android": {
+      "package": "uz.mysaloon.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#FFFFFF",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-image"
+    ],
+    "extra": {
+      "apiUrl": "https://api.mysaloon.uz"
+    }
+  }
+}

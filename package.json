@@ -21,6 +21,7 @@
     "build:frontends": "npm run build:user && npm run build:admin && npm run build:barber",
     "cap:android": "npm run cap:sync -w user-web",
     "cap:barber": "npm run cap:sync -w tanstack_start_ts",
+    "dev:mobile": "npm --prefix apps/mobile start",
     "lint": "npm run lint -w user-web && npm run lint -w admin-web && npm run lint -w tanstack_start_ts",
     "verify:mobile": "bash scripts/verify-mobile-production.sh"
   },

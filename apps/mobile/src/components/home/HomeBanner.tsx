@@ -1,0 +1,250 @@
+import { Feather } from "@expo/vector-icons";
+import { Image } from "expo-image";
+import { LinearGradient } from "expo-linear-gradient";
+import { useEffect, useRef, useState } from "react";
+import {
+  Dimensions,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+import { pexelsPhotoUrl } from "../../api/media";
+import { colors } from "../../theme/colors";
+
+const AUTOPLAY_MS = 4500;
+const H_PAD = 16;
+const WIDTH = Dimensions.get("window").width - H_PAD * 2;
+
+const SLIDES = [
+  {
+    id: "today",
+    photoId: 3992860,
+    badge: "TEZKOR TAKLIFLAR",
+    title: "Bugun bo'sh qolgan vaqtlarga 30% gacha chegirma",
+    cta: "Bron qilish",
+    promo: "-30%",
+  },
+  {
+    id: "sub",
+    photoId: 3993448,
+    badge: "OBUNA",
+    title: "Morf AI va chegirmalar — obuna bilan arzonroq",
+    cta: "Obuna bo'lish",
+    promo: "AI",
+  },
+  {
+    id: "offers",
+    photoId: 3288365,
+    badge: "AKSIYALAR",
+    title: "Salon aksiyalari va maxsus takliflar",
+    cta: "Hammasi",
+    promo: "-20%",
+  },
+  {
+    id: "ai",
+    photoId: 3785147,
+    badge: "MORF AI",
+    title: "Yangi soch uslubini AI bilan sinab ko'ring",
+    cta: "Boshlash",
+  },
+  {
+    id: "explore",
+    photoId: 1319460,
+    badge: "EXPLORE",
+    title: "Trend uslublar va yangi salonlar",
+    cta: "Ko'rish",
+  },
+] as const;
+
+type Props = {
+  onPressSlide?: (id: string) => void;
+};
+
+/** Promo carousel — web `HomeMobileBanner` bilan bir xil slide'lar. */
+export function HomeBanner({ onPressSlide }: Props) {
+  const scrollRef = useRef<ScrollView>(null);
+  const [index, setIndex] = useState(0);
+  const indexRef = useRef(0);
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      const next = (indexRef.current + 1) % SLIDES.length;
+      indexRef.current = next;
+      setIndex(next);
+      scrollRef.current?.scrollTo({ x: next * WIDTH, animated: true });
+    }, AUTOPLAY_MS);
+    return () => clearInterval(id);
+  }, []);
+
+  const onScrollEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const next = Math.round(e.nativeEvent.contentOffset.x / WIDTH);
+    indexRef.current = next;
+    setIndex(next);
+  };
+
+  return (
+    <View style={styles.wrap}>
+      <ScrollView
+        ref={scrollRef}
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        decelerationRate="fast"
+        onMomentumScrollEnd={onScrollEnd}
+        style={styles.carousel}
+      >
+        {SLIDES.map((slide) => (
+          <Pressable
+            key={slide.id}
+            style={styles.slide}
+            onPress={() => onPressSlide?.(slide.id)}
+          >
+            <Image
+              source={{ uri: pexelsPhotoUrl(slide.photoId, 900) }}
+              style={StyleSheet.absoluteFill}
+              contentFit="cover"
+              transition={200}
+            />
+            <LinearGradient
+              colors={["rgba(0,0,0,0.72)", "rgba(0,0,0,0.35)", "rgba(0,0,0,0.12)"]}
+              start={{ x: 0, y: 0.5 }}
+              end={{ x: 1, y: 0.5 }}
+              style={StyleSheet.absoluteFill}
+            />
+            <LinearGradient
+              colors={["transparent", "rgba(0,0,0,0.5)"]}
+              style={StyleSheet.absoluteFill}
+            />
+
+            {"promo" in slide && slide.promo ? (
+              <View style={styles.promoBadge}>
+                <Text style={styles.promoText}>{slide.promo}</Text>
+              </View>
+            ) : null}
+
+            <View style={styles.content}>
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>{slide.badge}</Text>
+              </View>
+              <View>
+                <Text style={styles.title}>{slide.title}</Text>
+                <View style={styles.cta}>
+                  <Text style={styles.ctaText}>{slide.cta}</Text>
+                  <Feather name="arrow-up-right" size={14} color={colors.fg} />
+                </View>
+              </View>
+            </View>
+          </Pressable>
+        ))}
+      </ScrollView>
+
+      <View style={styles.dots} pointerEvents="none">
+        {SLIDES.map((slide, i) => (
+          <View
+            key={slide.id}
+            style={[styles.dot, i === index ? styles.dotActive : styles.dotIdle]}
+          />
+        ))}
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  wrap: {
+    paddingHorizontal: H_PAD,
+  },
+  carousel: {
+    borderRadius: 20,
+    overflow: "hidden",
+  },
+  slide: {
+    width: WIDTH,
+    aspectRatio: 2.15,
+    overflow: "hidden",
+    backgroundColor: colors.surface,
+  },
+  promoBadge: {
+    position: "absolute",
+    top: 12,
+    right: 12,
+    zIndex: 2,
+    backgroundColor: colors.promo,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  promoText: {
+    fontSize: 11,
+    fontWeight: "800",
+    color: colors.fg,
+  },
+  content: {
+    flex: 1,
+    justifyContent: "space-between",
+    padding: 14,
+    zIndex: 2,
+  },
+  badge: {
+    alignSelf: "flex-start",
+    backgroundColor: "rgba(255,255,255,0.95)",
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  badgeText: {
+    fontSize: 10,
+    fontWeight: "800",
+    letterSpacing: 1,
+    color: colors.fg,
+    textTransform: "uppercase",
+  },
+  title: {
+    maxWidth: "88%",
+    fontSize: 15,
+    fontWeight: "800",
+    lineHeight: 20,
+    color: "#FFFFFF",
+  },
+  cta: {
+    marginTop: 8,
+    alignSelf: "flex-start",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+  },
+  ctaText: {
+    fontSize: 11,
+    fontWeight: "800",
+    color: colors.fg,
+  },
+  dots: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 10,
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 4,
+  },
+  dot: {
+    height: 4,
+    borderRadius: 999,
+  },
+  dotActive: {
+    width: 16,
+    backgroundColor: "#FFFFFF",
+  },
+  dotIdle: {
+    width: 4,
+    backgroundColor: "rgba(255,255,255,0.45)",
+  },
+});
