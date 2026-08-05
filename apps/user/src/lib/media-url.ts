@@ -1,33 +1,73 @@
 import { API_BASE } from "@/lib/api/client";
 
 const PEXELS_RE = /(?:https?:\/\/)?images\.pexels\.com\/photos\/(\d+)/i;
-/** api.mysaloon.uz yoki *.railway.app dagi /media/ → same-origin proxy. */
+/** api.mysaloon.uz yoki *.railway.app dagi /media/ */
 const API_MEDIA_RE =
   /^https?:\/\/(?:api\.mysaloon\.uz|[a-z0-9-]+\.up\.railway\.app)(\/media\/.+)$/i;
 
-/** API yoki nisbiy media yo‘lini same-origin URL ga aylantiradi. */
+const SITE_ORIGIN = "https://www.mysaloon.uz";
+const DEFAULT_API_ORIGIN = "https://api.mysaloon.uz";
+
+function isMobileSpa(): boolean {
+  return (
+    (import.meta as unknown as { env?: Record<string, string | undefined> }).env
+      ?.VITE_MOBILE_SPA === "true"
+  );
+}
+
+/** Capacitor / to‘g‘ridan-to‘g‘ri API — same-origin `/media` proxy yo‘q. */
+function needsAbsoluteMedia(): boolean {
+  return Boolean(API_BASE.trim()) || isMobileSpa();
+}
+
+function apiOrigin(): string {
+  return (API_BASE.trim() || DEFAULT_API_ORIGIN).replace(/\/+$/, "");
+}
+
+/**
+ * API yoki nisbiy media yo‘lini brauzer/Capacitor uchun yuklanadigan URL ga aylantiradi.
+ * Web (Vercel): `/media/…` same-origin proxy.
+ * Capacitor: `https://api.mysaloon.uz/media/…` absolute.
+ */
 export function resolveMediaUrl(path: string | null | undefined): string | null {
   const raw = path?.trim();
   if (!raw) return null;
 
+  const absolute = needsAbsoluteMedia();
+  const origin = apiOrigin();
+
   const pexels = raw.match(PEXELS_RE);
-  if (pexels) return `/covers/pexels/${pexels[1]}?w=900`;
+  if (pexels) {
+    // Web: Vercel `/covers/pexels` proxy. App: sayt origin (Capacitor da lokal proxy yo‘q).
+    return absolute
+      ? `${SITE_ORIGIN}/covers/pexels/${pexels[1]}?w=900`
+      : `/covers/pexels/${pexels[1]}?w=900`;
+  }
 
   const apiMedia = raw.match(API_MEDIA_RE);
-  if (apiMedia) return apiMedia[1];
+  if (apiMedia) {
+    return absolute ? `${origin}${apiMedia[1]}` : apiMedia[1];
+  }
 
   if (raw.startsWith("http://") || raw.startsWith("https://") || raw.startsWith("data:")) {
     return raw;
   }
+
   if (raw.startsWith("/")) {
+    if (absolute) {
+      if (raw.startsWith("/media/")) return `${origin}${raw}`;
+      if (raw.startsWith("/covers/")) return `${SITE_ORIGIN}${raw}`;
+    }
     return raw;
   }
+
   // "media/salons/..." yoki "salons/gallery/..."
   if (raw.startsWith("media/")) {
-    return `/${raw}`;
+    const pathWithSlash = `/${raw}`;
+    return absolute ? `${origin}${pathWithSlash}` : pathWithSlash;
   }
-  const base = API_BASE.replace(/\/+$/, "");
-  return base ? `${base}/${raw}` : `/${raw}`;
+
+  return absolute ? `${origin}/${raw}` : `/${raw}`;
 }
 
 /**
@@ -45,6 +85,9 @@ export function toShareImageSource(path: string | null | undefined): string {
     return resolved;
   }
   if (typeof window !== "undefined" && resolved.startsWith("/")) {
+    if (needsAbsoluteMedia() && resolved.startsWith("/media/")) {
+      return `${apiOrigin()}${resolved}`;
+    }
     return `${window.location.origin}${resolved}`;
   }
   return resolved;

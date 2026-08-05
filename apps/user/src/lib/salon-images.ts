@@ -11,11 +11,18 @@ function isStockOrPlaceholder(url: string): boolean {
   );
 }
 
-/** Bir xil rasmning same-origin va (zaruratda) api variantlari.
+function isMobileSpa(): boolean {
+  return (
+    (import.meta as unknown as { env?: Record<string, string | undefined> }).env
+      ?.VITE_MOBILE_SPA === "true"
+  );
+}
 
-  Avval same-origin /media — Vercel proxy orqali; api.mysaloon.uz ni
-  birinchi urinishda qo‘shmaslik (ketma-ket timeout sekin).
-*/
+/**
+ * Cover yuklash variantlari.
+ * Web: avval same-origin `/media` (Vercel proxy), keyin absolute API.
+ * Capacitor: faqat absolute API (localhost da /media yo‘q).
+ */
 export function mediaUrlCandidates(url: string): string[] {
   const trimmed = url.trim();
   if (!trimmed) return [];
@@ -28,14 +35,21 @@ export function mediaUrlCandidates(url: string): string[] {
   const apiMatch = trimmed.match(
     /^https?:\/\/(?:api\.mysaloon\.uz|[a-z0-9-]+\.up\.railway\.app)(\/media\/.+)$/i,
   );
-  if (apiMatch?.[1]) {
-    push(apiMatch[1]);
-    push(resolved);
-    return out.filter((u) => !isStockOrPlaceholder(u) || u === PLACEHOLDER_SALON);
-  }
 
-  push(resolved);
-  if (resolved !== trimmed) push(trimmed);
+  if (isMobileSpa()) {
+    // Absolute birinchi — Capacitor WebView.
+    if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+      push(trimmed);
+    }
+    push(resolved);
+  } else if (apiMatch?.[1]) {
+    push(apiMatch[1]);
+    push(trimmed);
+    push(resolved);
+  } else {
+    push(resolved);
+    if (resolved !== trimmed) push(trimmed);
+  }
 
   return out.filter((u) => !isStockOrPlaceholder(u) || u === PLACEHOLDER_SALON);
 }
