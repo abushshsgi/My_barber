@@ -31,10 +31,11 @@ export async function nativeGoogleIdToken(): Promise<string> {
     initialized = true;
   }
 
+  // scopes bermang — Capgo Android da custom scopes ModifiedMainActivity talab qiladi.
+  // email/profile/openid default qo‘shiladi; bizga idToken yetadi.
   const login = await SocialLogin.login({
     provider: "google",
     options: {
-      scopes: ["email", "profile"],
       style: "bottom",
       filterByAuthorizedAccounts: false,
     },
