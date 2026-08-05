@@ -1,23 +1,10 @@
-import { Capacitor } from "@capacitor/core";
-
-/** Brauzer/PWA: joriy origin. Capacitor: www.mysaloon.uz (localhost emas). */
+/** Brauzer/PWA: joriy origin. Ulashish uchun fallback. */
 export const PUBLIC_SITE_ORIGIN = "https://www.mysaloon.uz";
-
-function isMobileSpa(): boolean {
-  return (
-    (import.meta as unknown as { env?: Record<string, string | undefined> }).env
-      ?.VITE_MOBILE_SPA === "true"
-  );
-}
 
 /** Ulashish, to‘lov return_url, deep link uchun public sayt origin. */
 export function getPublicSiteOrigin(): string {
-  if (isMobileSpa() || (typeof window !== "undefined" && Capacitor.isNativePlatform())) {
-    return PUBLIC_SITE_ORIGIN;
-  }
   if (typeof window !== "undefined" && window.location?.origin) {
     const origin = window.location.origin;
-    // Capacitor androidScheme https → https://localhost
     if (/^https?:\/\/localhost(?::\d+)?$/i.test(origin)) {
       return PUBLIC_SITE_ORIGIN;
     }

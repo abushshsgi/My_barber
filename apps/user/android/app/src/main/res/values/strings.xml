@@ -1,9 +1,0 @@
-<?xml version='1.0' encoding='utf-8'?>
-<resources>
-    <string name="app_name">MySaloon</string>
-    <string name="title_activity_main">MySaloon</string>
-    <string name="package_name">uz.mysaloon.app</string>
-    <string name="custom_url_scheme">uz.mysaloon.app</string>
-    <!-- Google Sign-In (Capgo) — Web OAuth client ID -->
-    <string name="server_client_id">213512364034-95h09fmo8uiidbfgd66735hqucokn75a.apps.googleusercontent.com</string>
-</resources>

@@ -1,11 +1,9 @@
 import { GoogleLogin, GoogleOAuthProvider } from "@react-oauth/google";
-import { Capacitor } from "@capacitor/core";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { loginWithGoogle } from "@/lib/api";
 import type { PhoneVerifyResponse } from "@/lib/api/types";
-import { nativeGoogleIdToken } from "@/lib/native-google-auth";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -79,53 +77,6 @@ function EmphasizedChrome({
       </div>
     </div>
   );
-}
-
-function NativeGoogleButton({
-  busy = false,
-  emphasized = false,
-  onBusyChange,
-  onSuccess,
-}: Omit<Props, "clientId">) {
-  const { t } = useTranslation();
-
-  const run = async () => {
-    onBusyChange?.(true);
-    try {
-      const credential = await nativeGoogleIdToken();
-      const data = await loginWithGoogle(credential);
-      onSuccess(data);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : t("auth.googleErrGeneric");
-      if (!/cancel|bekor|dismiss/i.test(message)) {
-        toast.error(message);
-      }
-    } finally {
-      onBusyChange?.(false);
-    }
-  };
-
-  const cta = (
-    <button
-      type="button"
-      disabled={busy}
-      onClick={() => void run()}
-      className="auth-google-cta flex min-h-[58px] w-full items-center justify-center gap-3 rounded-2xl bg-[#1a73e8] px-5 text-white shadow-[0_14px_28px_-12px_rgba(26,115,232,0.55)] transition-transform active:scale-[0.98] disabled:opacity-60"
-    >
-      <span className="flex size-9 items-center justify-center rounded-full bg-white shadow-sm">
-        <GoogleGlyph className="size-[18px]" />
-      </span>
-      <span className="text-[15px] font-bold sm:text-base">{t("auth.googleContinue")}</span>
-    </button>
-  );
-
-  if (!emphasized) {
-    return (
-      <div className={cn("w-full", busy && "pointer-events-none opacity-60")}>{cta}</div>
-    );
-  }
-
-  return <EmphasizedChrome busy={busy}>{cta}</EmphasizedChrome>;
 }
 
 function GoogleSignInButtonInner({
@@ -209,10 +160,6 @@ function GoogleSignInButtonInner({
 }
 
 export function GoogleSignInButton(props: Props) {
-  if (Capacitor.isNativePlatform()) {
-    return <NativeGoogleButton {...props} />;
-  }
-
   return (
     <GoogleOAuthProvider clientId={props.clientId}>
       <GoogleSignInButtonInner {...props} />

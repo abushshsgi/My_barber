@@ -56,11 +56,6 @@ To'liq ro'yxat: `.env.example`
 - **Mock/demo:** offers, loyalty, reels va boshqalar hali `mock-data.ts` da
 - **WebSocket:** chat va bildirishnomalar (productionda `REDIS_URL` kerak)
 
-## Android (Capacitor)
+## Mobil (Expo React Native)
 
-```bash
-npm run cap:android          # ildizdan
-npm run cap:open -w user-web
-```
-
-App ID: `uz.mysaloon.app` — batafsil: `apps/MOBILE_PRODUCTION.md`
+Native ilova: `apps/mobile` (`npm run dev:mobile` ildizdan).
