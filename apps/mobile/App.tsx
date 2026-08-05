@@ -1,6 +1,10 @@
 import { useCallback, useState } from "react";
-import { ActivityIndicator, StyleSheet, View } from "react-native";
+import { ActivityIndicator, Platform, StyleSheet, View } from "react-native";
 import { AuthProvider, useAuth } from "./src/auth/AuthContext";
+import {
+  GoogleAuthSessionProvider,
+  shouldSkipSplashForOAuth,
+} from "./src/auth/GoogleAuthSession";
 import { RootTabs } from "./src/navigation/RootTabs";
 import { LoginScreen } from "./src/screens/LoginScreen";
 import { SplashScreen } from "./src/screens/SplashScreen";
@@ -12,7 +16,9 @@ import "react-native-gesture-handler";
 
 function AppGate() {
   const { loading, isAuthenticated } = useAuth();
-  const [splashDone, setSplashDone] = useState(false);
+  const [splashDone, setSplashDone] = useState(
+    () => Platform.OS === "web" && shouldSkipSplashForOAuth(),
+  );
   const onSplashFinish = useCallback(() => setSplashDone(true), []);
 
   if (!splashDone) {
@@ -38,10 +44,12 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <AuthProvider>
-        <NavigationContainer>
-          <StatusBar style="dark" />
-          <AppGate />
-        </NavigationContainer>
+        <GoogleAuthSessionProvider>
+          <NavigationContainer>
+            <StatusBar style="dark" />
+            <AppGate />
+          </NavigationContainer>
+        </GoogleAuthSessionProvider>
       </AuthProvider>
     </SafeAreaProvider>
   );

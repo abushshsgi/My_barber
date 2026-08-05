@@ -1,8 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import * as AuthSession from "expo-auth-session";
-import * as Google from "expo-auth-session/providers/google";
-import * as WebBrowser from "expo-web-browser";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -18,21 +15,19 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   checkPhone,
   formatUzPhoneDisplay,
-  getGoogleClientId,
   normalizeUzPhone,
 } from "../api/auth";
 import { useAuth } from "../auth/AuthContext";
+import { useGoogleAuth } from "../auth/GoogleAuthSession";
 import { getLastPhone } from "../auth/storage";
 import { colors } from "../theme/colors";
-
-WebBrowser.maybeCompleteAuthSession();
 
 type Step = "choose" | "phone" | "password" | "code";
 
 export function LoginScreen() {
   const insets = useSafeAreaInsets();
   const auth = useAuth();
-  const googleClientId = getGoogleClientId();
+  const google = useGoogleAuth();
 
   const [step, setStep] = useState<Step>("choose");
   const [phone, setPhone] = useState("");
@@ -43,32 +38,8 @@ export function LoginScreen() {
   const [error, setError] = useState<string | null>(null);
   const [hint, setHint] = useState<string | null>(null);
 
-  const redirectUri = useMemo(
-    () =>
-      AuthSession.makeRedirectUri({
-        scheme: "mysaloon",
-        preferLocalhost: true,
-      }),
-    [],
-  );
-
-  const [request, response, promptAsync] = Google.useIdTokenAuthRequest(
-    googleClientId
-      ? {
-          clientId: googleClientId,
-          iosClientId: googleClientId,
-          androidClientId: googleClientId,
-          webClientId: googleClientId,
-          redirectUri,
-        }
-      : { clientId: "unused.apps.googleusercontent.com", redirectUri },
-  );
-
-  useEffect(() => {
-    if (__DEV__) {
-      console.log("[google-auth] redirectUri =", redirectUri);
-    }
-  }, [redirectUri]);
+  const showError = error || google.error;
+  const showBusy = busy || google.busy;
 
   useEffect(() => {
     void getLastPhone().then((p) => {
@@ -76,44 +47,10 @@ export function LoginScreen() {
     });
   }, []);
 
-  useEffect(() => {
-    if (response?.type !== "success") return;
-    const idToken =
-      response.params.id_token ||
-      (response as { authentication?: { idToken?: string } }).authentication?.idToken;
-    if (!idToken) {
-      setError("Google token olinmadi.");
-      return;
-    }
-    setBusy(true);
-    setError(null);
-    void auth
-      .signInWithGoogle(idToken)
-      .catch((err) => setError(err instanceof Error ? err.message : "Google kirish xato"))
-      .finally(() => setBusy(false));
-  }, [response, auth]);
-
   const onGoogle = async () => {
     setError(null);
-    if (!googleClientId) {
-      setError(
-        "Google Client ID sozlanmagan. EXPO_PUBLIC_GOOGLE_CLIENT_ID yoki app.json extra.googleClientId qo'shing.",
-      );
-      return;
-    }
-    setBusy(true);
-    try {
-      await promptAsync({ useProxy: false, showInRecents: true } as never);
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Google ochilmadi";
-      setError(
-        /redirect/i.test(msg)
-          ? `${msg}\n\nGoogle Console → Authorized redirect URIs ga qo'shing:\n${redirectUri}`
-          : msg,
-      );
-    } finally {
-      setBusy(false);
-    }
+    google.clearError();
+    await google.promptGoogle();
   };
 
   const onContinuePhone = async () => {
@@ -212,11 +149,11 @@ export function LoginScreen() {
         {step === "choose" ? (
           <View style={styles.stack}>
             <Pressable
-              style={[styles.googleBtn, busy && styles.disabled]}
-              onPress={onGoogle}
-              disabled={busy || (!!googleClientId && !request)}
+              style={[styles.googleBtn, showBusy && styles.disabled]}
+              onPress={() => void onGoogle()}
+              disabled={showBusy || !google.ready}
             >
-              {busy ? (
+              {showBusy ? (
                 <ActivityIndicator color={colors.fg} />
               ) : (
                 <>
@@ -333,7 +270,7 @@ export function LoginScreen() {
           </View>
         ) : null}
 
-        {error ? <Text style={styles.error}>{error}</Text> : null}
+        {showError ? <Text style={styles.error}>{showError}</Text> : null}
       </ScrollView>
     </KeyboardAvoidingView>
   );
