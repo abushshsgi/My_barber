@@ -1,7 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
+import * as AuthSession from "expo-auth-session";
 import * as Google from "expo-auth-session/providers/google";
 import * as WebBrowser from "expo-web-browser";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -42,6 +43,15 @@ export function LoginScreen() {
   const [error, setError] = useState<string | null>(null);
   const [hint, setHint] = useState<string | null>(null);
 
+  const redirectUri = useMemo(
+    () =>
+      AuthSession.makeRedirectUri({
+        scheme: "mysaloon",
+        preferLocalhost: true,
+      }),
+    [],
+  );
+
   const [request, response, promptAsync] = Google.useIdTokenAuthRequest(
     googleClientId
       ? {
@@ -49,9 +59,16 @@ export function LoginScreen() {
           iosClientId: googleClientId,
           androidClientId: googleClientId,
           webClientId: googleClientId,
+          redirectUri,
         }
-      : { clientId: "unused.apps.googleusercontent.com" },
+      : { clientId: "unused.apps.googleusercontent.com", redirectUri },
   );
+
+  useEffect(() => {
+    if (__DEV__) {
+      console.log("[google-auth] redirectUri =", redirectUri);
+    }
+  }, [redirectUri]);
 
   useEffect(() => {
     void getLastPhone().then((p) => {
@@ -86,9 +103,14 @@ export function LoginScreen() {
     }
     setBusy(true);
     try {
-      await promptAsync();
+      await promptAsync({ useProxy: false, showInRecents: true } as never);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Google ochilmadi");
+      const msg = err instanceof Error ? err.message : "Google ochilmadi";
+      setError(
+        /redirect/i.test(msg)
+          ? `${msg}\n\nGoogle Console → Authorized redirect URIs ga qo'shing:\n${redirectUri}`
+          : msg,
+      );
     } finally {
       setBusy(false);
     }
