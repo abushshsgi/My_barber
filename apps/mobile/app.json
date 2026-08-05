@@ -25,7 +25,9 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-image"
+      "expo-image",
+      "expo-asset",
+      "expo-font"
     ],
     "extra": {
       "apiUrl": "https://api.mysaloon.uz"

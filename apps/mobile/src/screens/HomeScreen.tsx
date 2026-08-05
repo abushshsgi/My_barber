@@ -27,7 +27,7 @@ type Props = {
 export function HomeScreen({ onOpenMap, onOpenExplore }: Props) {
   const insets = useSafeAreaInsets();
   const { cardW, cardImageW } = useHomeLayout();
-  const { topSalons, topBarbers, loading, error, refresh } = useHomeCatalog();
+  const { topSalons, topBarbers, locationLabel, loading, error, refresh } = useHomeCatalog();
   const [category, setCategory] = useState<HomeCategoryKey>("all");
   const [favorites, setFavorites] = useState<Record<string, boolean>>({});
 
@@ -54,7 +54,7 @@ export function HomeScreen({ onOpenMap, onOpenExplore }: Props) {
           <RefreshControl refreshing={loading} onRefresh={refresh} tintColor={colors.fg} />
         }
       >
-        <HomeHeader locationLabel="O'zbekiston" onPressMap={onOpenMap} />
+        <HomeHeader locationLabel={locationLabel} onPressMap={onOpenMap} />
 
         <HomeBanner />
 

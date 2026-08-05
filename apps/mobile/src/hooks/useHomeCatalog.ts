@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { API_BASE } from "../api/client";
-import { fetchBarbers, fetchSalons } from "../api/catalog";
+import { fetchBarbers, fetchRegions, fetchSalons, type ApiRegion } from "../api/catalog";
 import type { ApiBarberPublic, ApiSalonList, HomeListing } from "../api/types";
 import { filterTopSalons, mapBarber, mapSalon } from "../lib/mappers";
 import { useHomeLayout } from "../theme/layout";
@@ -9,17 +9,20 @@ type HomeCatalogState = {
   salons: HomeListing[];
   topSalons: HomeListing[];
   topBarbers: HomeListing[];
+  regions: ApiRegion[];
+  locationLabel: string;
   loading: boolean;
   error: string | null;
   apiBase: string;
   refresh: () => void;
 };
 
-/** Home katalog — `api.mysaloon.uz` backend. */
+/** Home — salons + barbers + regions backenddan. */
 export function useHomeCatalog(): HomeCatalogState {
   const { cardImageW } = useHomeLayout();
   const [rawSalons, setRawSalons] = useState<ApiSalonList[]>([]);
   const [rawBarbers, setRawBarbers] = useState<ApiBarberPublic[]>([]);
+  const [regions, setRegions] = useState<ApiRegion[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [tick, setTick] = useState(0);
@@ -33,13 +36,15 @@ export function useHomeCatalog(): HomeCatalogState {
 
     (async () => {
       try {
-        const [salons, barbers] = await Promise.all([
+        const [salons, barbers, regionList] = await Promise.all([
           fetchSalons({ scope: "nationwide", page_size: 100 }),
           fetchBarbers({ scope: "nationwide", page_size: 100 }),
+          fetchRegions().catch(() => [] as ApiRegion[]),
         ]);
         if (cancelled) return;
         setRawSalons(salons);
         setRawBarbers(barbers);
+        setRegions(regionList);
       } catch (err) {
         if (cancelled) return;
         const msg = err instanceof Error ? err.message : "Yuklashda xato";
@@ -77,10 +82,19 @@ export function useHomeCatalog(): HomeCatalogState {
       .map((b) => mapBarber(b, cardImageW));
   }, [rawBarbers, cardImageW]);
 
+  const locationLabel = useMemo(() => {
+    const uz = regions.find((r) => /o['’]?zbekiston/i.test(r.name_uz || r.name || ""));
+    if (uz) return uz.name_uz || uz.name;
+    if (regions.length > 1) return "O'zbekiston";
+    return regions[0]?.name_uz || regions[0]?.name || "O'zbekiston";
+  }, [regions]);
+
   return {
     salons,
     topSalons,
     topBarbers,
+    regions,
+    locationLabel,
     loading,
     error,
     apiBase: API_BASE,
