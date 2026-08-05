@@ -1,6 +1,7 @@
-import { useEffect, useRef } from "react";
-import { Platform, StyleSheet } from "react-native";
+import { useEffect, useRef, useState } from "react";
+import { Appearance, Platform, StyleSheet, useColorScheme } from "react-native";
 import MapView, { Marker, PROVIDER_GOOGLE, type Region } from "react-native-maps";
+import { mapStyleForScheme } from "./mapStyles";
 
 export const DEFAULT_MAP_REGION: Region = {
   latitude: 41.3111,
@@ -14,11 +15,28 @@ type Props = {
   longitude: number | null;
 };
 
-/** Native — Android Google Maps / iOS Apple Maps. */
+/** Native — faqat joylashuv: POI/kartochka yo'q, Google UI yo'q, dark/light tema. */
 export function OnboardingMap({ latitude, longitude }: Props) {
   const mapRef = useRef<MapView | null>(null);
+  const systemScheme = useColorScheme();
+  const [scheme, setScheme] = useState<"light" | "dark">(
+    () => (Appearance.getColorScheme() === "dark" ? "dark" : "light"),
+  );
+
+  useEffect(() => {
+    setScheme(systemScheme === "dark" ? "dark" : "light");
+  }, [systemScheme]);
+
+  useEffect(() => {
+    const sub = Appearance.addChangeListener(({ colorScheme }) => {
+      setScheme(colorScheme === "dark" ? "dark" : "light");
+    });
+    return () => sub.remove();
+  }, []);
+
   const lat = latitude ?? DEFAULT_MAP_REGION.latitude;
   const lng = longitude ?? DEFAULT_MAP_REGION.longitude;
+  const customMapStyle = mapStyleForScheme(scheme);
 
   useEffect(() => {
     if (latitude == null || longitude == null) return;
@@ -43,12 +61,29 @@ export function OnboardingMap({ latitude, longitude }: Props) {
         latitude: lat,
         longitude: lng,
       }}
+      customMapStyle={customMapStyle}
+      userInterfaceStyle={scheme}
       showsUserLocation
       showsMyLocationButton={false}
+      showsCompass={false}
+      showsScale={false}
+      showsTraffic={false}
+      showsBuildings={false}
+      showsIndoors={false}
+      showsPointsOfInterests={false}
       toolbarEnabled={false}
+      rotateEnabled
+      scrollEnabled
+      zoomEnabled
+      pitchEnabled={false}
+      moveOnMarkerPress={false}
     >
       {latitude != null && longitude != null ? (
-        <Marker coordinate={{ latitude, longitude }} pinColor="#FF5C5C" />
+        <Marker
+          coordinate={{ latitude, longitude }}
+          pinColor="#FF5C5C"
+          tappable={false}
+        />
       ) : null}
     </MapView>
   );
