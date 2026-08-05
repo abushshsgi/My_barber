@@ -29,6 +29,9 @@ export type StoredUser = {
   email?: string;
   first_name?: string;
   last_name?: string;
+  birth_year?: number | null;
+  latitude?: string | number | null;
+  longitude?: string | number | null;
   onboarding_completed?: boolean;
 };
 

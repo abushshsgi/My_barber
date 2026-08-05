@@ -17,7 +17,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import "react-native-gesture-handler";
 
 function AppGate() {
-  const { loading, isAuthenticated, user } = useAuth();
+  const { loading, isAuthenticated, user, needsOnboarding: mustOnboard } = useAuth();
   const [splashDone, setSplashDone] = useState(
     () => Platform.OS === "web" && shouldSkipSplashForOAuth(),
   );
@@ -39,7 +39,7 @@ function AppGate() {
     return <LoginScreen />;
   }
 
-  if (needsOnboarding(user)) {
+  if (mustOnboard || needsOnboarding(user)) {
     return <OnboardingScreen />;
   }
 
