@@ -1,5 +1,3 @@
-import { Platform } from "react-native";
-import * as SecureStore from "expo-secure-store";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const ACCESS_KEY = "mybarber_user_access";
@@ -8,27 +6,20 @@ const SESSION_KEY = "mybarber_user_session_id";
 const USER_KEY = "mysaloon.auth.user";
 const LAST_PHONE_KEY = "mysaloon.auth.lastPhone";
 
+/**
+ * Tokenlar AsyncStorage da (Expo Go / SecureStore 2048 limit muammosiz).
+ * Reload / app qayta ochilganda sessiya saqlanadi.
+ */
 async function setItem(key: string, value: string) {
-  if (Platform.OS === "web") {
-    await AsyncStorage.setItem(key, value);
-    return;
-  }
-  await SecureStore.setItemAsync(key, value);
+  await AsyncStorage.setItem(key, value);
 }
 
 async function getItem(key: string): Promise<string | null> {
-  if (Platform.OS === "web") {
-    return AsyncStorage.getItem(key);
-  }
-  return SecureStore.getItemAsync(key);
+  return AsyncStorage.getItem(key);
 }
 
 async function deleteItem(key: string) {
-  if (Platform.OS === "web") {
-    await AsyncStorage.removeItem(key);
-    return;
-  }
-  await SecureStore.deleteItemAsync(key);
+  await AsyncStorage.removeItem(key);
 }
 
 export type StoredUser = {
