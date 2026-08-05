@@ -1,21 +1,34 @@
 import { Ionicons } from "@expo/vector-icons";
-import { Image } from "expo-image";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import type { HomeListing } from "../../api/types";
 import { shortPrice } from "../../lib/price";
+import { CARD_MEDIA_ASPECT, useHomeLayout } from "../../theme/layout";
 import { colors } from "../../theme/colors";
-
-const CARD_WIDTH = 280;
+import { ResponsiveImage } from "../ResponsiveImage";
 
 type Props = {
   item: HomeListing;
   onPress?: () => void;
   onToggleFavorite?: () => void;
   favorited?: boolean;
+  /** Parentdan berilsa snap aniqroq. */
+  cardWidth?: number;
+  imageWidth?: number;
 };
 
-/** Salon / usta kartasi — rasm + meta + narx. */
-export function ListingCard({ item, onPress, onToggleFavorite, favorited }: Props) {
+/** Salon / usta kartasi — ekranga mos kenglik + 4:3 cover. */
+export function ListingCard({
+  item,
+  onPress,
+  onToggleFavorite,
+  favorited,
+  cardWidth,
+  imageWidth,
+}: Props) {
+  const layout = useHomeLayout();
+  const width = cardWidth ?? layout.cardW;
+  const imgW = imageWidth ?? layout.cardImageW;
+
   const meta = [
     item.categoryLabel,
     item.distanceKm > 0 ? `${item.distanceKm.toFixed(1)} km` : "",
@@ -28,18 +41,13 @@ export function ListingCard({ item, onPress, onToggleFavorite, favorited }: Prop
   const price = shortPrice(item.priceFrom);
 
   return (
-    <Pressable onPress={onPress} style={styles.card}>
+    <Pressable onPress={onPress} style={[styles.card, { width }]}>
       <View style={styles.media}>
-        {item.coverUrl ? (
-          <Image
-            source={{ uri: item.coverUrl }}
-            style={StyleSheet.absoluteFill}
-            contentFit="cover"
-            transition={180}
-          />
-        ) : (
-          <View style={[StyleSheet.absoluteFill, styles.placeholder]} />
-        )}
+        <ResponsiveImage
+          uri={item.coverUrl}
+          style={StyleSheet.absoluteFill}
+          recyclingKey={`${item.id}-${imgW}`}
+        />
         <Pressable
           onPress={onToggleFavorite}
           style={styles.heart}
@@ -77,14 +85,12 @@ export function ListingCard({ item, onPress, onToggleFavorite, favorited }: Prop
   );
 }
 
-export const LISTING_CARD_WIDTH = CARD_WIDTH;
-
 const styles = StyleSheet.create({
   card: {
-    width: CARD_WIDTH,
     backgroundColor: colors.bg,
     borderRadius: 28,
     overflow: "hidden",
+    // RN native shadow
     shadowColor: "#000",
     shadowOpacity: 0.12,
     shadowRadius: 16,
@@ -93,10 +99,7 @@ const styles = StyleSheet.create({
   },
   media: {
     width: "100%",
-    aspectRatio: 4 / 3,
-    backgroundColor: colors.surface,
-  },
-  placeholder: {
+    aspectRatio: CARD_MEDIA_ASPECT,
     backgroundColor: colors.surface,
   },
   heart: {

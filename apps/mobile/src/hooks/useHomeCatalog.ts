@@ -1,7 +1,9 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { API_BASE } from "../api/client";
 import { fetchBarbers, fetchSalons } from "../api/catalog";
 import type { ApiBarberPublic, ApiSalonList, HomeListing } from "../api/types";
 import { filterTopSalons, mapBarber, mapSalon } from "../lib/mappers";
+import { useHomeLayout } from "../theme/layout";
 
 type HomeCatalogState = {
   salons: HomeListing[];
@@ -9,11 +11,13 @@ type HomeCatalogState = {
   topBarbers: HomeListing[];
   loading: boolean;
   error: string | null;
+  apiBase: string;
   refresh: () => void;
 };
 
-/** Home katalog — scope/region keyin GPS bilan boyitiladi. */
+/** Home katalog — `api.mysaloon.uz` backend. */
 export function useHomeCatalog(): HomeCatalogState {
+  const { cardImageW } = useHomeLayout();
   const [rawSalons, setRawSalons] = useState<ApiSalonList[]>([]);
   const [rawBarbers, setRawBarbers] = useState<ApiBarberPublic[]>([]);
   const [loading, setLoading] = useState(true);
@@ -38,7 +42,8 @@ export function useHomeCatalog(): HomeCatalogState {
         setRawBarbers(barbers);
       } catch (err) {
         if (cancelled) return;
-        setError(err instanceof Error ? err.message : "Yuklashda xato");
+        const msg = err instanceof Error ? err.message : "Yuklashda xato";
+        setError(`${msg} (${API_BASE})`);
         setRawSalons([]);
         setRawBarbers([]);
       } finally {
@@ -51,15 +56,34 @@ export function useHomeCatalog(): HomeCatalogState {
     };
   }, [tick]);
 
-  const salons = rawSalons.map((s) => mapSalon(s));
-  const topSalons = filterTopSalons(salons, rawSalons);
-  const topBarbers = [...rawBarbers]
-    .sort((a, b) => {
-      const score = (x: ApiBarberPublic) => (x.avatar?.trim() ? 2 : x.work_photos?.length ? 1 : 0);
-      return score(b) - score(a);
-    })
-    .slice(0, 8)
-    .map(mapBarber);
+  const salons = useMemo(
+    () => rawSalons.map((s) => mapSalon(s, 0, cardImageW)),
+    [rawSalons, cardImageW],
+  );
 
-  return { salons, topSalons, topBarbers, loading, error, refresh };
+  const topSalons = useMemo(
+    () => filterTopSalons(salons, rawSalons),
+    [salons, rawSalons],
+  );
+
+  const topBarbers = useMemo(() => {
+    return [...rawBarbers]
+      .sort((a, b) => {
+        const score = (x: ApiBarberPublic) =>
+          x.avatar?.trim() ? 2 : x.work_photos?.length ? 1 : 0;
+        return score(b) - score(a);
+      })
+      .slice(0, 8)
+      .map((b) => mapBarber(b, cardImageW));
+  }, [rawBarbers, cardImageW]);
+
+  return {
+    salons,
+    topSalons,
+    topBarbers,
+    loading,
+    error,
+    apiBase: API_BASE,
+    refresh,
+  };
 }

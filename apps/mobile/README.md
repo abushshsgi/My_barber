@@ -13,13 +13,15 @@ Keyin Expo Go (Android/iOS) yoki emulator.
 
 ## API
 
-Default: `https://api.mysaloon.uz`
+Default: `https://api.mysaloon.uz` (`app.json` → `extra.apiUrl`)
 
 Override:
 
 ```bash
 EXPO_PUBLIC_API_URL=http://10.0.2.2:8000 npm start
 ```
+
+Rasmlar (`/media/…`) avtomatik absolute URL ga aylanadi; banner va salon cover ekran kengligi + PixelRatio bo‘yicha responsive yuklanadi.
 
 ## Holat
 

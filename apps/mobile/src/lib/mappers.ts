@@ -21,11 +21,17 @@ function businessKindLabel(kind?: string): string {
 export function mapSalon(
   salon: ApiSalonList,
   distanceKm = 0,
+  imageWidth?: number,
 ): HomeListing {
+  const gallery = salon.images?.length
+    ? resolveMediaUrl(salon.images[0]?.image, { width: imageWidth })
+    : null;
+
   return {
     id: String(salon.id),
     title: salon.name,
-    coverUrl: resolveMediaUrl(salon.cover_image),
+    coverUrl:
+      resolveMediaUrl(salon.cover_image, { width: imageWidth }) || gallery,
     categoryLabel: businessKindLabel(salon.business_kind),
     distanceKm,
     address: salon.address || "",
@@ -34,11 +40,11 @@ export function mapSalon(
   };
 }
 
-export function mapNearbySalon(row: ApiNearbySalon): HomeListing {
-  return mapSalon(row.salon, row.distance_km ?? 0);
+export function mapNearbySalon(row: ApiNearbySalon, imageWidth?: number): HomeListing {
+  return mapSalon(row.salon, row.distance_km ?? 0, imageWidth);
 }
 
-export function mapBarber(barber: ApiBarberPublic): HomeListing {
+export function mapBarber(barber: ApiBarberPublic, imageWidth?: number): HomeListing {
   const services = barber.active_services?.length
     ? barber.active_services
     : barber.services ?? [];
@@ -48,8 +54,8 @@ export function mapBarber(barber: ApiBarberPublic): HomeListing {
   }, 0);
 
   const cover =
-    resolveMediaUrl(barber.avatar) ||
-    resolveMediaUrl(barber.work_photos?.[0]?.image) ||
+    resolveMediaUrl(barber.avatar, { width: imageWidth }) ||
+    resolveMediaUrl(barber.work_photos?.[0]?.image, { width: imageWidth }) ||
     null;
 
   return {

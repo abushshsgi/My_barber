@@ -13,9 +13,10 @@ import type { HomeCategoryKey } from "../api/types";
 import { HomeBanner } from "../components/home/HomeBanner";
 import { HomeCategories } from "../components/home/HomeCategories";
 import { HomeHeader } from "../components/home/HomeHeader";
-import { LISTING_CARD_WIDTH, ListingCard } from "../components/home/ListingCard";
+import { ListingCard } from "../components/home/ListingCard";
 import { SectionHeader } from "../components/home/SectionHeader";
 import { useHomeCatalog } from "../hooks/useHomeCatalog";
+import { CARD_GAP, H_PAD, useHomeLayout } from "../theme/layout";
 import { colors } from "../theme/colors";
 
 type Props = {
@@ -25,6 +26,7 @@ type Props = {
 
 export function HomeScreen({ onOpenMap, onOpenExplore }: Props) {
   const insets = useSafeAreaInsets();
+  const { cardW, cardImageW } = useHomeLayout();
   const { topSalons, topBarbers, loading, error, refresh } = useHomeCatalog();
   const [category, setCategory] = useState<HomeCategoryKey>("all");
   const [favorites, setFavorites] = useState<Record<string, boolean>>({});
@@ -40,6 +42,8 @@ export function HomeScreen({ onOpenMap, onOpenExplore }: Props) {
   const toggleFav = (id: string) => {
     setFavorites((prev) => ({ ...prev, [id]: !prev[id] }));
   };
+
+  const snap = cardW + CARD_GAP;
 
   return (
     <View style={[styles.root, { paddingTop: Math.max(insets.top, 12) }]}>
@@ -78,13 +82,16 @@ export function HomeScreen({ onOpenMap, onOpenExplore }: Props) {
               horizontal
               showsHorizontalScrollIndicator={false}
               decelerationRate="fast"
-              snapToInterval={LISTING_CARD_WIDTH + 12}
+              snapToInterval={snap}
+              snapToAlignment="start"
               contentContainerStyle={styles.hRow}
             >
               {filteredSalons.map((item) => (
                 <ListingCard
                   key={item.id}
                   item={item}
+                  cardWidth={cardW}
+                  imageWidth={cardImageW}
                   favorited={Boolean(favorites[item.id])}
                   onToggleFavorite={() => toggleFav(item.id)}
                 />
@@ -100,13 +107,16 @@ export function HomeScreen({ onOpenMap, onOpenExplore }: Props) {
               horizontal
               showsHorizontalScrollIndicator={false}
               decelerationRate="fast"
-              snapToInterval={LISTING_CARD_WIDTH + 12}
+              snapToInterval={snap}
+              snapToAlignment="start"
               contentContainerStyle={styles.hRow}
             >
               {topBarbers.map((item) => (
                 <ListingCard
                   key={item.id}
                   item={item}
+                  cardWidth={cardW}
+                  imageWidth={cardImageW}
                   favorited={Boolean(favorites[item.id])}
                   onToggleFavorite={() => toggleFav(item.id)}
                 />
@@ -132,8 +142,8 @@ const styles = StyleSheet.create({
     gap: 0,
   },
   hRow: {
-    gap: 12,
-    paddingHorizontal: 16,
+    gap: CARD_GAP,
+    paddingHorizontal: H_PAD,
     paddingBottom: 2,
   },
   loader: {

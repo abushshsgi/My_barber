@@ -1,9 +1,7 @@
 import { Feather } from "@expo/vector-icons";
-import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { useEffect, useRef, useState } from "react";
 import {
-  Dimensions,
   NativeScrollEvent,
   NativeSyntheticEvent,
   Pressable,
@@ -13,11 +11,11 @@ import {
   View,
 } from "react-native";
 import { pexelsPhotoUrl } from "../../api/media";
+import { BANNER_ASPECT, H_PAD, useHomeLayout } from "../../theme/layout";
 import { colors } from "../../theme/colors";
+import { ResponsiveImage } from "../ResponsiveImage";
 
 const AUTOPLAY_MS = 4500;
-const H_PAD = 16;
-const WIDTH = Dimensions.get("window").width - H_PAD * 2;
 
 const SLIDES = [
   {
@@ -64,24 +62,32 @@ type Props = {
   onPressSlide?: (id: string) => void;
 };
 
-/** Promo carousel — web `HomeMobileBanner` bilan bir xil slide'lar. */
+/** Promo carousel — ekran kengligiga mos banner + responsive rasm. */
 export function HomeBanner({ onPressSlide }: Props) {
+  const { bannerW, bannerImageW } = useHomeLayout();
   const scrollRef = useRef<ScrollView>(null);
   const [index, setIndex] = useState(0);
   const indexRef = useRef(0);
+  const widthRef = useRef(bannerW);
+  widthRef.current = bannerW;
 
   useEffect(() => {
     const id = setInterval(() => {
       const next = (indexRef.current + 1) % SLIDES.length;
       indexRef.current = next;
       setIndex(next);
-      scrollRef.current?.scrollTo({ x: next * WIDTH, animated: true });
+      scrollRef.current?.scrollTo({ x: next * widthRef.current, animated: true });
     }, AUTOPLAY_MS);
     return () => clearInterval(id);
   }, []);
 
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ x: indexRef.current * bannerW, animated: false });
+  }, [bannerW]);
+
   const onScrollEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const next = Math.round(e.nativeEvent.contentOffset.x / WIDTH);
+    const w = widthRef.current || 1;
+    const next = Math.round(e.nativeEvent.contentOffset.x / w);
     indexRef.current = next;
     setIndex(next);
   };
@@ -95,18 +101,18 @@ export function HomeBanner({ onPressSlide }: Props) {
         showsHorizontalScrollIndicator={false}
         decelerationRate="fast"
         onMomentumScrollEnd={onScrollEnd}
-        style={styles.carousel}
+        style={[styles.carousel, { width: bannerW }]}
       >
         {SLIDES.map((slide) => (
           <Pressable
             key={slide.id}
-            style={styles.slide}
+            style={[styles.slide, { width: bannerW }]}
             onPress={() => onPressSlide?.(slide.id)}
           >
-            <Image
-              source={{ uri: pexelsPhotoUrl(slide.photoId, 900) }}
+            <ResponsiveImage
+              uri={pexelsPhotoUrl(slide.photoId, bannerImageW)}
               style={StyleSheet.absoluteFill}
-              contentFit="cover"
+              recyclingKey={`banner-${slide.id}-${bannerImageW}`}
               transition={200}
             />
             <LinearGradient
@@ -142,7 +148,7 @@ export function HomeBanner({ onPressSlide }: Props) {
         ))}
       </ScrollView>
 
-      <View style={styles.dots} pointerEvents="none">
+      <View style={styles.dots} pointerEvents="box-none">
         {SLIDES.map((slide, i) => (
           <View
             key={slide.id}
@@ -161,10 +167,10 @@ const styles = StyleSheet.create({
   carousel: {
     borderRadius: 20,
     overflow: "hidden",
+    alignSelf: "center",
   },
   slide: {
-    width: WIDTH,
-    aspectRatio: 2.15,
+    aspectRatio: BANNER_ASPECT,
     overflow: "hidden",
     backgroundColor: colors.surface,
   },
