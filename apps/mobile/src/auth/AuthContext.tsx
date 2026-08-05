@@ -38,6 +38,21 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+function storedToApiUser(stored: StoredUser): ApiUser {
+  return {
+    id: stored.id,
+    email: stored.email || "",
+    phone: stored.phone,
+    full_name: stored.name,
+    first_name: stored.name,
+  };
+}
+
+function isUnauthorizedError(err: unknown): boolean {
+  const msg = err instanceof Error ? err.message : String(err ?? "");
+  return /\b401\b|token|credentials|authenticated|авториз/i.test(msg);
+}
+
 async function persistAuth(data: AuthSuccess) {
   const stored: StoredUser = {
     id: data.user.id,
@@ -70,9 +85,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const me = await fetchMe();
       setUser(me);
-    } catch {
-      await clearSession();
-      setUser(null);
+    } catch (err) {
+      // Tarmoq xatosida sessiyani o'chirmaymiz — faqat 401.
+      if (isUnauthorizedError(err)) {
+        await clearSession();
+        setUser(null);
+      }
     }
   }, []);
 
@@ -81,18 +99,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     (async () => {
       try {
         const token = await getAccessToken();
+        const cached = await getStoredUser();
+
         if (!token) {
-          const cached = await getStoredUser();
-          if (!cancelled && cached) {
-            // Token yo'q — cached user ishonchsiz
-          }
           if (!cancelled) setUser(null);
           return;
         }
-        const me = await fetchMe();
-        if (!cancelled) setUser(me);
+
+        // Avval cache — splash/login flash bo'lmasin
+        if (cached && !cancelled) {
+          setUser(storedToApiUser(cached));
+        }
+
+        try {
+          const me = await fetchMe();
+          if (!cancelled) setUser(me);
+        } catch (err) {
+          if (isUnauthorizedError(err)) {
+            await clearSession();
+            if (!cancelled) setUser(null);
+          }
+          // Boshqa xato: token + cache bilan davom etamiz
+        }
       } catch {
-        await clearSession();
         if (!cancelled) setUser(null);
       } finally {
         if (!cancelled) setLoading(false);
