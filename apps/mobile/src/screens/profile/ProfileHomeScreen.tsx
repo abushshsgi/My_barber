@@ -48,7 +48,7 @@ export function ProfileHomeScreen({ navigation }: Props) {
             label="Obuna"
             dark
             icon={<Ionicons name="diamond" size={13} color="#FFF" />}
-            onPress={() => navigation.navigate("Settings")}
+            onPress={() => navigation.navigate("Subscriptions")}
           />
         </View>
 

@@ -6,6 +6,7 @@ import { PersonalInfoScreen } from "../screens/profile/PersonalInfoScreen";
 import { ProfileHomeScreen } from "../screens/profile/ProfileHomeScreen";
 import { SecurityScreen } from "../screens/profile/SecurityScreen";
 import { SettingsScreen } from "../screens/profile/SettingsScreen";
+import { SubscriptionsScreen } from "../screens/profile/SubscriptionsScreen";
 
 export type ProfileStackParamList = {
   ProfileHome: undefined;
@@ -15,6 +16,7 @@ export type ProfileStackParamList = {
   Security: undefined;
   NotificationPrefs: undefined;
   Notifications: undefined;
+  Subscriptions: undefined;
 };
 
 const Stack = createNativeStackNavigator<ProfileStackParamList>();
@@ -38,6 +40,7 @@ export function ProfileStack() {
       <Stack.Screen name="Security" component={SecurityScreen} />
       <Stack.Screen name="NotificationPrefs" component={NotificationPrefsScreen} />
       <Stack.Screen name="Notifications" component={NotificationsScreen} />
+      <Stack.Screen name="Subscriptions" component={SubscriptionsScreen} />
     </Stack.Navigator>
   );
 }

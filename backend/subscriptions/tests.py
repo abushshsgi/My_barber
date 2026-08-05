@@ -132,7 +132,11 @@ class SubscriptionAPITests(TestCase):
             metadata={"source": "test"},
         )
 
-    def test_plans_and_wallet_checkout(self):
+    def test_plans_public_without_auth(self):
+        anon = APIClient()
+        r = anon.get("/api/v1/subscriptions/plans/")
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(len(r.data["plans"]), 3)
         r = self.client.get("/api/v1/subscriptions/plans/")
         self.assertEqual(r.status_code, 200)
         self.assertEqual(len(r.data["plans"]), 3)

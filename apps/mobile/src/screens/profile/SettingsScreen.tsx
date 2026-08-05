@@ -19,6 +19,7 @@ export function SettingsScreen({ navigation }: Props) {
             label="Obuna"
             dark
             icon={<Ionicons name="sparkles" size={12} color="#FFF" />}
+            onPress={() => navigation.navigate("Subscriptions")}
           />
         }
       />
@@ -64,7 +65,7 @@ export function SettingsScreen({ navigation }: Props) {
           <SettingsRow
             title="Obunalar"
             icon="sync-outline"
-            onPress={() => undefined}
+            onPress={() => navigation.navigate("Subscriptions")}
             last
           />
         </SettingsGroup>
