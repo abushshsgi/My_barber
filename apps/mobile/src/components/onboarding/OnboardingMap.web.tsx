@@ -5,6 +5,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { resolveMapsApiKey } from "../../lib/maps-key";
 import { LIGHT_MAP_STYLE } from "./mapStyles";
 
 export const DEFAULT_MAP_REGION = {
@@ -44,27 +45,6 @@ declare global {
   interface Window {
     google?: { maps?: GoogleMapsNs };
     __mysaloonMapsReady?: Promise<GoogleMapsNs>;
-  }
-}
-
-function looksLikeKey(key: string): boolean {
-  return key.startsWith("AIza") && key.length >= 30;
-}
-
-async function resolveMapsApiKey(): Promise<string> {
-  const fromEnv = (process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY || "").trim();
-  if (looksLikeKey(fromEnv)) return fromEnv;
-  try {
-    const res = await fetch("/api/v1/geo/map-config/", { cache: "no-store" });
-    if (!res.ok) return "";
-    const data = (await res.json()) as {
-      google_maps_api_key?: string;
-      dgis_api_key?: string;
-    };
-    const key = (data.google_maps_api_key || data.dgis_api_key || "").trim();
-    return looksLikeKey(key) ? key : "";
-  } catch {
-    return "";
   }
 }
 

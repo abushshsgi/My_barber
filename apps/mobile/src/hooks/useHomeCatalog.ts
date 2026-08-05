@@ -10,6 +10,7 @@ import {
 } from "../api/catalog";
 import type { ApiBarberPublic, ApiSalonList, HomeListing } from "../api/types";
 import { useAuth } from "../auth/AuthContext";
+import { getGuestLocation, type GuestLocation } from "../lib/guest";
 import { filterTopSalons, mapBarber, mapSalon } from "../lib/mappers";
 import { useHomeLayout } from "../theme/layout";
 
@@ -50,12 +51,23 @@ export function useHomeCatalog(): HomeCatalogState {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [tick, setTick] = useState(0);
+  const [guest, setGuest] = useState<GuestLocation | null>(null);
 
   const refresh = useCallback(() => setTick((n) => n + 1), []);
 
-  const lat = parseCoord(user?.latitude);
-  const lng = parseCoord(user?.longitude);
-  const profileRegion = user?.region?.trim() || "";
+  useEffect(() => {
+    let alive = true;
+    void getGuestLocation().then((loc) => {
+      if (alive) setGuest(loc);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [tick]);
+
+  const lat = parseCoord(user?.latitude) ?? guest?.latitude ?? null;
+  const lng = parseCoord(user?.longitude) ?? guest?.longitude ?? null;
+  const profileRegion = user?.region?.trim() || guest?.region?.trim() || "";
 
   useEffect(() => {
     let cancelled = false;

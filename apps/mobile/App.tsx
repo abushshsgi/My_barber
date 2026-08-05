@@ -5,11 +5,18 @@ import {
   GoogleAuthSessionProvider,
   shouldSkipSplashForOAuth,
 } from "./src/auth/GoogleAuthSession";
+import {
+  getAppLang,
+  getGuestLocation,
+  getWelcomeSeen,
+  type AppLang,
+  type GuestLocation,
+} from "./src/lib/guest";
 import { needsOnboarding } from "./src/lib/onboarding";
-import { getWelcomeSeen } from "./src/lib/welcome";
 import { RootTabs } from "./src/navigation/RootTabs";
 import { GetStartedScreen } from "./src/screens/GetStartedScreen";
-import { LoginScreen } from "./src/screens/LoginScreen";
+import { LanguageScreen } from "./src/screens/LanguageScreen";
+import { LocationPickerScreen } from "./src/screens/LocationPickerScreen";
 import { OnboardingScreen } from "./src/screens/OnboardingScreen";
 import { SplashScreen } from "./src/screens/SplashScreen";
 import { colors } from "./src/theme/colors";
@@ -18,23 +25,58 @@ import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import "react-native-gesture-handler";
 
+function userHasCoords(user: {
+  latitude?: string | number | null;
+  longitude?: string | number | null;
+} | null): boolean {
+  if (!user) return false;
+  const lat = user.latitude;
+  const lng = user.longitude;
+  return (
+    lat != null &&
+    lat !== "" &&
+    lng != null &&
+    lng !== "" &&
+    Number.isFinite(Number(lat)) &&
+    Number.isFinite(Number(lng))
+  );
+}
+
 function AppGate() {
   const { loading, isAuthenticated, user, needsOnboarding: mustOnboard } = useAuth();
   const skipIntro = Platform.OS === "web" && shouldSkipSplashForOAuth();
+
   const [splashDone, setSplashDone] = useState(skipIntro);
-  const [welcomeReady, setWelcomeReady] = useState(skipIntro);
+  const [bootReady, setBootReady] = useState(skipIntro);
+  const [lang, setLang] = useState<AppLang | null>(skipIntro ? "uz" : null);
   const [welcomeSeen, setWelcomeSeenState] = useState(skipIntro);
+  const [guestLocation, setGuestLocationState] = useState<GuestLocation | null>(null);
+
   const onSplashFinish = useCallback(() => setSplashDone(true), []);
+  const onLangFinish = useCallback((picked: AppLang) => setLang(picked), []);
   const onWelcomeFinish = useCallback(() => setWelcomeSeenState(true), []);
+  const onLocationFinish = useCallback(() => {
+    void getGuestLocation().then((loc) => setGuestLocationState(loc));
+  }, []);
 
   useEffect(() => {
-    if (skipIntro) return;
+    if (skipIntro) {
+      void getGuestLocation().then((loc) => {
+        setGuestLocationState(loc);
+        setBootReady(true);
+      });
+      return;
+    }
     let alive = true;
-    void getWelcomeSeen().then((seen) => {
-      if (!alive) return;
-      setWelcomeSeenState(seen);
-      setWelcomeReady(true);
-    });
+    void Promise.all([getAppLang(), getWelcomeSeen(), getGuestLocation()]).then(
+      ([appLang, seen, loc]) => {
+        if (!alive) return;
+        setLang(appLang);
+        setWelcomeSeenState(seen);
+        setGuestLocationState(loc);
+        setBootReady(true);
+      },
+    );
     return () => {
       alive = false;
     };
@@ -44,7 +86,7 @@ function AppGate() {
     return <SplashScreen onFinish={onSplashFinish} />;
   }
 
-  if (!welcomeReady || loading) {
+  if (!bootReady || loading) {
     return (
       <View style={styles.boot}>
         <ActivityIndicator color={colors.fg} size="large" />
@@ -52,15 +94,20 @@ function AppGate() {
     );
   }
 
-  if (!welcomeSeen && !isAuthenticated) {
+  if (!lang) {
+    return <LanguageScreen onFinish={onLangFinish} />;
+  }
+
+  if (!welcomeSeen) {
     return <GetStartedScreen onFinish={onWelcomeFinish} />;
   }
 
-  if (!isAuthenticated) {
-    return <LoginScreen />;
+  const hasLocation = !!guestLocation || (isAuthenticated && userHasCoords(user));
+  if (!hasLocation) {
+    return <LocationPickerScreen onFinish={onLocationFinish} />;
   }
 
-  if (mustOnboard || needsOnboarding(user)) {
+  if (isAuthenticated && (mustOnboard || needsOnboarding(user))) {
     return <OnboardingScreen />;
   }
 

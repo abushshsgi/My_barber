@@ -7,7 +7,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AnimatedImageColumns } from "../components/welcome/AnimatedImageColumns";
-import { setWelcomeSeen } from "../lib/welcome";
+import { setWelcomeSeen } from "../lib/guest";
 import { colors } from "../theme/colors";
 
 type Props = {

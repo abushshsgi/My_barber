@@ -1,4 +1,6 @@
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { useAuth } from "../auth/AuthContext";
+import { LoginScreen } from "../screens/LoginScreen";
 import { NotificationPrefsScreen } from "../screens/profile/NotificationPrefsScreen";
 import { NotificationsScreen } from "../screens/profile/NotificationsScreen";
 import { OrdersScreen } from "../screens/profile/OrdersScreen";
@@ -21,8 +23,14 @@ export type ProfileStackParamList = {
 
 const Stack = createNativeStackNavigator<ProfileStackParamList>();
 
-/** Profil oqimi — native stack + orqaga tugmalar. */
+/** Profil oqimi — mehmon uchun login; autentifikatsiyadan keyin stack. */
 export function ProfileStack() {
+  const { isAuthenticated } = useAuth();
+
+  if (!isAuthenticated) {
+    return <LoginScreen />;
+  }
+
   return (
     <Stack.Navigator
       screenOptions={{
