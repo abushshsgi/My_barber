@@ -1,13 +1,7 @@
-import {
-  forwardRef,
-  useEffect,
-  useImperativeHandle,
-  useRef,
-  useState,
-} from "react";
-import { Appearance, Platform, StyleSheet, useColorScheme } from "react-native";
+import { forwardRef, useImperativeHandle, useRef } from "react";
+import { Platform, StyleSheet } from "react-native";
 import MapView, { PROVIDER_GOOGLE, type Region } from "react-native-maps";
-import { mapStyleForScheme } from "./mapStyles";
+import { LIGHT_MAP_STYLE } from "./mapStyles";
 
 export const DEFAULT_MAP_REGION: Region = {
   latitude: 41.3111,
@@ -28,7 +22,7 @@ type Props = {
   onCoordsChange: (lat: number, lng: number) => void;
 };
 
-/** Native — markaz pin tashqarida; xarita surilganda markaz coords. */
+/** Native — doim ochiq xarita; markaz pin tashqarida. */
 export const OnboardingMap = forwardRef<OnboardingMapHandle, Props>(
   function OnboardingMap({ latitude, longitude, onCoordsChange }, ref) {
     const mapRef = useRef<MapView | null>(null);
@@ -37,22 +31,6 @@ export const OnboardingMap = forwardRef<OnboardingMapHandle, Props>(
     const centerRef = useRef({ lat: latitude, lng: longitude });
     const onCoordsRef = useRef(onCoordsChange);
     onCoordsRef.current = onCoordsChange;
-
-    const systemScheme = useColorScheme();
-    const [scheme, setScheme] = useState<"light" | "dark">(
-      () => (Appearance.getColorScheme() === "dark" ? "dark" : "light"),
-    );
-
-    useEffect(() => {
-      setScheme(systemScheme === "dark" ? "dark" : "light");
-    }, [systemScheme]);
-
-    useEffect(() => {
-      const sub = Appearance.addChangeListener(({ colorScheme }) => {
-        setScheme(colorScheme === "dark" ? "dark" : "light");
-      });
-      return () => sub.remove();
-    }, []);
 
     useImperativeHandle(ref, () => ({
       zoomIn: () => {
@@ -109,8 +87,8 @@ export const OnboardingMap = forwardRef<OnboardingMapHandle, Props>(
           latitudeDelta: deltaRef.current,
           longitudeDelta: deltaRef.current,
         }}
-        customMapStyle={mapStyleForScheme(scheme)}
-        userInterfaceStyle={scheme}
+        customMapStyle={LIGHT_MAP_STYLE}
+        userInterfaceStyle="light"
         onRegionChangeComplete={(region) => {
           deltaRef.current = region.latitudeDelta;
           centerRef.current = { lat: region.latitude, lng: region.longitude };

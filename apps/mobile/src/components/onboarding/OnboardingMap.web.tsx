@@ -5,7 +5,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { DARK_MAP_STYLE, LIGHT_MAP_STYLE } from "./mapStyles";
+import { LIGHT_MAP_STYLE } from "./mapStyles";
 
 export const DEFAULT_MAP_REGION = {
   latitude: 41.3111,
@@ -38,7 +38,6 @@ type GoogleMapInstance = {
 
 type GoogleMapsNs = {
   Map: new (el: HTMLElement, opts: Record<string, unknown>) => GoogleMapInstance;
-  event?: { removeListener: (l: { remove: () => void }) => void };
 };
 
 declare global {
@@ -98,22 +97,7 @@ function loadGoogleMaps(apiKey: string): Promise<GoogleMapsNs> {
   return window.__mysaloonMapsReady;
 }
 
-function useSystemDark(): boolean {
-  const [dark, setDark] = useState(() =>
-    typeof window !== "undefined"
-      ? window.matchMedia("(prefers-color-scheme: dark)").matches
-      : false,
-  );
-  useEffect(() => {
-    const mq = window.matchMedia("(prefers-color-scheme: dark)");
-    const onChange = () => setDark(mq.matches);
-    mq.addEventListener("change", onChange);
-    return () => mq.removeEventListener("change", onChange);
-  }, []);
-  return dark;
-}
-
-/** Web — markaz pin tashqi overlay; greedy zoom; POI yo'q. */
+/** Web — doim ochiq (light) xarita; POI bosilmaydi. */
 export const OnboardingMap = forwardRef<OnboardingMapHandle, Props>(
   function OnboardingMap({ latitude, longitude, onCoordsChange }, ref) {
     const containerRef = useRef<HTMLDivElement>(null);
@@ -122,20 +106,17 @@ export const OnboardingMap = forwardRef<OnboardingMapHandle, Props>(
     const onCoordsRef = useRef(onCoordsChange);
     onCoordsRef.current = onCoordsChange;
     const [error, setError] = useState<string | null>(null);
-    const dark = useSystemDark();
 
     useImperativeHandle(ref, () => ({
       zoomIn: () => {
         const map = mapRef.current;
         if (!map) return;
-        const z = map.getZoom() ?? 15;
-        map.setZoom(Math.min(z + 1, 20));
+        map.setZoom(Math.min((map.getZoom() ?? 15) + 1, 20));
       },
       zoomOut: () => {
         const map = mapRef.current;
         if (!map) return;
-        const z = map.getZoom() ?? 15;
-        map.setZoom(Math.max(z - 1, 3));
+        map.setZoom(Math.max((map.getZoom() ?? 15) - 1, 3));
       },
       panTo: (lat, lng) => {
         const map = mapRef.current;
@@ -175,8 +156,8 @@ export const OnboardingMap = forwardRef<OnboardingMapHandle, Props>(
             keyboardShortcuts: false,
             gestureHandling: "greedy",
             clickableIcons: false,
-            styles: dark ? DARK_MAP_STYLE : LIGHT_MAP_STYLE,
-            backgroundColor: dark ? "#0e1626" : "#E8EEF4",
+            styles: LIGHT_MAP_STYLE,
+            backgroundColor: "#f5f5f5",
           });
 
           if (!document.getElementById("mysaloon-map-ui-hide")) {
@@ -233,13 +214,6 @@ export const OnboardingMap = forwardRef<OnboardingMapHandle, Props>(
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    useEffect(() => {
-      mapRef.current?.setOptions({
-        styles: dark ? DARK_MAP_STYLE : LIGHT_MAP_STYLE,
-        backgroundColor: dark ? "#0e1626" : "#E8EEF4",
-      });
-    }, [dark]);
-
     return (
       <div
         style={{
@@ -247,7 +221,7 @@ export const OnboardingMap = forwardRef<OnboardingMapHandle, Props>(
           inset: 0,
           width: "100%",
           height: "100%",
-          backgroundColor: dark ? "#0e1626" : "#E8EEF4",
+          backgroundColor: "#f5f5f5",
         }}
       >
         <div ref={containerRef} style={{ width: "100%", height: "100%" }} />
@@ -260,7 +234,7 @@ export const OnboardingMap = forwardRef<OnboardingMapHandle, Props>(
               alignItems: "center",
               justifyContent: "center",
               padding: 24,
-              color: dark ? "#ccc" : "#444",
+              color: "#444",
               fontSize: 14,
               fontWeight: 600,
               textAlign: "center",

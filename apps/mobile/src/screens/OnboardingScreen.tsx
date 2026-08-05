@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Animated,
+  Dimensions,
   Easing,
   FlatList,
   KeyboardAvoidingView,
@@ -46,7 +47,7 @@ const NAME_ERRORS: Record<DisplayNameErrorKey, string> = {
   nameTooManyParts: "Ismda so'zlar soni juda ko'p",
 };
 
-const ACCENT = colors.brandDot;
+const SCREEN_W = Dimensions.get("window").width;
 
 function splitPrefillName(user: {
   first_name?: string;
@@ -276,7 +277,7 @@ export function OnboardingScreen() {
       Animated.spring(searchSlide, {
         toValue: 1,
         friction: 9,
-        tension: 65,
+        tension: 68,
         useNativeDriver: true,
       }),
     ]).start();
@@ -292,8 +293,8 @@ export function OnboardingScreen() {
       }),
       Animated.timing(searchSlide, {
         toValue: 0,
-        duration: 220,
-        easing: Easing.in(Easing.cubic),
+        duration: 240,
+        easing: Easing.inOut(Easing.cubic),
         useNativeDriver: true,
       }),
     ]).start(({ finished }) => {
@@ -355,10 +356,16 @@ export function OnboardingScreen() {
           onCoordsChange={onMapCoords}
         />
 
-        {/* Markaz pin — xarita suriladi, pin o'rtada qoladi */}
+        {/* Qora-oq markaz pin (uy ikonkasi) */}
         <View pointerEvents="none" style={styles.centerPinWrap}>
+          <View style={styles.pinHint}>
+            <Text style={styles.pinHintTitle}>Hammasi to'g'ri?</Text>
+            <Text style={styles.pinHintSub}>
+              Marker kerakli joyda ekanligiga ishonch hosil qiling
+            </Text>
+          </View>
           <View style={styles.centerPinHead}>
-            <View style={styles.centerPinDot} />
+            <Ionicons name="home" size={18} color="#FFF" />
           </View>
           <View style={styles.centerPinStem} />
         </View>
@@ -370,23 +377,17 @@ export function OnboardingScreen() {
             disabled={busy}
             hitSlop={8}
           >
-            <Ionicons name="chevron-back" size={22} color="#FFF" />
+            <Ionicons name="close" size={22} color={colors.fg} />
           </Pressable>
-
-          <View style={styles.addressPill}>
-            <Text style={styles.addressText} numberOfLines={2}>
-              {addressLabel}
-            </Text>
-          </View>
 
           <Pressable
             onPress={openSearch}
-            style={styles.roundBtn}
+            style={styles.searchPill}
             disabled={busy}
-            hitSlop={8}
             accessibilityLabel="Qidiruv"
           >
-            <Ionicons name="search" size={20} color="#FFF" />
+            <Ionicons name="search" size={18} color={colors.fg} />
+            <Text style={styles.searchPillText}>Qidiruv</Text>
           </Pressable>
         </View>
 
@@ -397,7 +398,7 @@ export function OnboardingScreen() {
               onPress={() => mapRef.current?.zoomIn()}
               hitSlop={6}
             >
-              <Ionicons name="add" size={24} color="#FFF" />
+              <Ionicons name="add" size={24} color={colors.fg} />
             </Pressable>
             <View style={styles.zoomDivider} />
             <Pressable
@@ -405,7 +406,7 @@ export function OnboardingScreen() {
               onPress={() => mapRef.current?.zoomOut()}
               hitSlop={6}
             >
-              <Ionicons name="remove" size={24} color="#FFF" />
+              <Ionicons name="remove" size={24} color={colors.fg} />
             </Pressable>
           </View>
 
@@ -416,15 +417,26 @@ export function OnboardingScreen() {
             accessibilityLabel="GPS"
           >
             {locating ? (
-              <ActivityIndicator color="#FFF" />
+              <ActivityIndicator color={colors.fg} />
             ) : (
-              <Ionicons name="navigate" size={22} color="#FFF" />
+              <Ionicons name="navigate" size={22} color={colors.fg} />
             )}
           </Pressable>
         </View>
 
         <View style={[styles.mapBottom, { paddingBottom: Math.max(insets.bottom, 16) + 8 }]}>
           {error ? <Text style={styles.mapError}>{error}</Text> : null}
+          <View style={styles.addressCard}>
+            <Ionicons name="home-outline" size={18} color={colors.muted} />
+            <View style={styles.addressCardBody}>
+              <Text style={styles.addressCardTitle} numberOfLines={1}>
+                {addressLabel.split(",")[0] || addressLabel}
+              </Text>
+              <Text style={styles.addressCardSub} numberOfLines={1}>
+                {addressLabel}
+              </Text>
+            </View>
+          </View>
           <Pressable
             style={styles.readyBtn}
             onPress={onConfirmLocation}
@@ -439,81 +451,96 @@ export function OnboardingScreen() {
             <Animated.View style={[styles.searchBackdrop, { opacity: searchBackdropOp }]}>
               <Pressable style={StyleSheet.absoluteFill} onPress={closeSearch} />
             </Animated.View>
-            <KeyboardAvoidingView
-              behavior={Platform.OS === "ios" ? "padding" : undefined}
-              style={styles.searchSheetWrap}
-              pointerEvents="box-none"
+            <Animated.View
+              style={[
+                styles.searchPanel,
+                {
+                  paddingTop: insets.top + 8,
+                  paddingBottom: insets.bottom + 12,
+                  transform: [
+                    {
+                      translateX: searchSlide.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [SCREEN_W, 0],
+                      }),
+                    },
+                  ],
+                },
+              ]}
             >
-              <Animated.View
-                style={[
-                  styles.searchSheet,
-                  {
-                    paddingBottom: insets.bottom + 16,
-                    transform: [
-                      {
-                        translateY: searchSlide.interpolate({
-                          inputRange: [0, 1],
-                          outputRange: [420, 0],
-                        }),
-                      },
-                    ],
-                  },
-                ]}
-              >
-                <View style={styles.searchHandle} />
-                <View style={styles.searchHeader}>
-                  <TextInput
-                    value={searchQuery}
-                    onChangeText={setSearchQuery}
-                    placeholder="Ko'cha, mahalla yoki manzil"
-                    placeholderTextColor={colors.muted}
-                    autoFocus
-                    style={styles.searchInput}
-                    returnKeyType="search"
-                  />
-                  <Pressable onPress={closeSearch} hitSlop={8}>
-                    <Text style={styles.searchCancel}>Yopish</Text>
+              <View style={styles.searchNav}>
+                <Pressable onPress={closeSearch} hitSlop={10} style={styles.searchNavBack}>
+                  <Ionicons name="arrow-back" size={24} color={colors.fg} />
+                </Pressable>
+                <Text style={styles.searchNavTitle}>Joylashuvni tanlang</Text>
+                <View style={{ width: 40 }} />
+              </View>
+
+              <View style={styles.searchField}>
+                <Ionicons name="search" size={18} color={colors.muted} />
+                <TextInput
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                  placeholder="Ko'cha, mahalla yoki manzil"
+                  placeholderTextColor={colors.muted}
+                  autoFocus
+                  style={styles.searchFieldInput}
+                  returnKeyType="search"
+                />
+                {searchQuery.length > 0 ? (
+                  <Pressable onPress={() => setSearchQuery("")} hitSlop={8}>
+                    <Ionicons name="close-circle" size={20} color={colors.muted} />
                   </Pressable>
-                </View>
-                {searching ? (
-                  <ActivityIndicator style={{ marginTop: 16 }} color={ACCENT} />
-                ) : (
-                  <FlatList
-                    data={searchResults}
-                    keyExtractor={(item, i) => `${item.lat},${item.lng},${i}`}
-                    keyboardShouldPersistTaps="handled"
-                    style={styles.searchList}
-                    ListEmptyComponent={
-                      searchQuery.trim().length >= 2 ? (
-                        <Text style={styles.searchEmpty}>Natija topilmadi</Text>
-                      ) : (
-                        <Text style={styles.searchEmpty}>
-                          Ko'cha yoki joy nomini yozing
+                ) : null}
+              </View>
+
+              {searching ? (
+                <ActivityIndicator style={{ marginTop: 24 }} color={colors.fg} />
+              ) : (
+                <FlatList
+                  data={searchResults}
+                  keyExtractor={(item, i) => `${item.lat},${item.lng},${i}`}
+                  keyboardShouldPersistTaps="handled"
+                  style={styles.searchList}
+                  contentContainerStyle={{ paddingBottom: 24 }}
+                  ListEmptyComponent={
+                    searchQuery.trim().length >= 2 ? (
+                      <Text style={styles.searchEmpty}>Natija topilmadi</Text>
+                    ) : (
+                      <Text style={styles.searchEmpty}>
+                        Ko'cha yoki joy nomini yozing
+                      </Text>
+                    )
+                  }
+                  ListFooterComponent={
+                    <Pressable style={styles.mapPickRow} onPress={closeSearch}>
+                      <View style={styles.searchIconWrap}>
+                        <Ionicons name="map-outline" size={18} color={colors.fg} />
+                      </View>
+                      <Text style={styles.mapPickText}>Kartada tanlash</Text>
+                    </Pressable>
+                  }
+                  renderItem={({ item }) => (
+                    <Pressable
+                      style={styles.searchRow}
+                      onPress={() => pickSearchResult(item)}
+                    >
+                      <View style={styles.searchIconWrap}>
+                        <Ionicons name="location" size={18} color={colors.fg} />
+                      </View>
+                      <View style={styles.searchRowBody}>
+                        <Text style={styles.searchRowTitle} numberOfLines={1}>
+                          {item.address || item.city || "Manzil"}
                         </Text>
-                      )
-                    }
-                    renderItem={({ item }) => (
-                      <Pressable
-                        style={styles.searchRow}
-                        onPress={() => pickSearchResult(item)}
-                      >
-                        <View style={styles.searchIconWrap}>
-                          <Ionicons name="location" size={18} color={ACCENT} />
-                        </View>
-                        <View style={styles.searchRowBody}>
-                          <Text style={styles.searchRowTitle} numberOfLines={1}>
-                            {item.address || item.city || "Manzil"}
-                          </Text>
-                          <Text style={styles.searchRowSub} numberOfLines={2}>
-                            {item.full_name || item.city}
-                          </Text>
-                        </View>
-                      </Pressable>
-                    )}
-                  />
-                )}
-              </Animated.View>
-            </KeyboardAvoidingView>
+                        <Text style={styles.searchRowSub} numberOfLines={2}>
+                          {item.full_name || item.city}
+                        </Text>
+                      </View>
+                    </Pressable>
+                  )}
+                />
+              )}
+            </Animated.View>
           </View>
         ) : null}
       </View>
@@ -645,49 +672,51 @@ const styles = StyleSheet.create({
   primaryText: { color: "#FFF", fontSize: 16, fontWeight: "800" },
   disabled: { opacity: 0.5 },
 
-  mapRoot: { flex: 1, backgroundColor: "#0e1626", position: "relative" },
+  mapRoot: { flex: 1, backgroundColor: "#f5f5f5", position: "relative" },
   mapTopBar: {
     position: "absolute",
     left: 0,
     right: 0,
     top: 0,
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
     zIndex: 3,
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+    justifyContent: "space-between",
   },
   mapBack: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: "rgba(20,20,20,0.72)",
+    backgroundColor: "#FFF",
     alignItems: "center",
     justifyContent: "center",
+    shadowColor: "#000",
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 3,
   },
-  addressPill: {
-    flex: 1,
+  searchPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
     minHeight: 44,
-    borderRadius: 14,
-    backgroundColor: "rgba(20,20,20,0.55)",
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    justifyContent: "center",
+    paddingHorizontal: 16,
+    borderRadius: 22,
+    backgroundColor: "#FFF",
+    shadowColor: "#000",
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 3,
   },
-  addressText: {
-    color: "#FFF",
-    fontSize: 15,
-    fontWeight: "700",
-    textAlign: "center",
-    textShadowColor: "rgba(0,0,0,0.45)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
-  },
+  searchPillText: { fontSize: 15, fontWeight: "700", color: colors.fg },
   roundBtn: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: "rgba(20,20,20,0.72)",
+    backgroundColor: "#FFF",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -700,8 +729,13 @@ const styles = StyleSheet.create({
   },
   zoomStack: {
     borderRadius: 22,
-    backgroundColor: "rgba(20,20,20,0.72)",
+    backgroundColor: "#FFF",
     overflow: "hidden",
+    shadowColor: "#000",
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 3,
   },
   zoomBtn: {
     width: 44,
@@ -711,53 +745,71 @@ const styles = StyleSheet.create({
   },
   zoomDivider: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: "rgba(255,255,255,0.25)",
+    backgroundColor: colors.border,
     marginHorizontal: 10,
   },
   gpsFab: {
-    backgroundColor: ACCENT,
-    shadowColor: ACCENT,
-    shadowOpacity: 0.4,
+    shadowColor: "#000",
+    shadowOpacity: 0.14,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 2 },
     elevation: 4,
   },
   centerPinWrap: {
     position: "absolute",
-    left: "50%",
-    top: "50%",
-    marginLeft: -18,
-    marginTop: -44,
-    width: 36,
-    height: 48,
+    left: 0,
+    right: 0,
+    top: "42%",
     alignItems: "center",
     zIndex: 2,
+    marginTop: -52,
+  },
+  pinHint: {
+    maxWidth: 280,
+    backgroundColor: "#FFF",
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    marginBottom: 10,
+    shadowColor: "#000",
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 4,
+  },
+  pinHintTitle: {
+    fontSize: 15,
+    fontWeight: "800",
+    color: colors.fg,
+    textAlign: "center",
+  },
+  pinHintSub: {
+    marginTop: 4,
+    fontSize: 12,
+    lineHeight: 16,
+    fontWeight: "500",
+    color: colors.muted,
+    textAlign: "center",
   },
   centerPinHead: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: ACCENT,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: colors.fg,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 3,
     borderColor: "#FFF",
     shadowColor: "#000",
-    shadowOpacity: 0.35,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.28,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
     elevation: 5,
-  },
-  centerPinDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: "#FFF",
   },
   centerPinStem: {
     width: 3,
     height: 14,
-    backgroundColor: ACCENT,
+    backgroundColor: colors.fg,
     borderRadius: 2,
     marginTop: -2,
   },
@@ -770,6 +822,23 @@ const styles = StyleSheet.create({
     zIndex: 3,
     gap: 10,
   },
+  addressCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    backgroundColor: "#FFF",
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 3,
+  },
+  addressCardBody: { flex: 1, gap: 2 },
+  addressCardTitle: { fontSize: 15, fontWeight: "800", color: colors.fg },
+  addressCardSub: { fontSize: 12, fontWeight: "500", color: colors.muted },
   mapError: {
     textAlign: "center",
     backgroundColor: "rgba(255,255,255,0.95)",
@@ -784,11 +853,11 @@ const styles = StyleSheet.create({
   readyBtn: {
     minHeight: 56,
     borderRadius: 16,
-    backgroundColor: ACCENT,
+    backgroundColor: colors.fg,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: ACCENT,
-    shadowOpacity: 0.35,
+    shadowColor: "#000",
+    shadowOpacity: 0.2,
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 4 },
     elevation: 4,
@@ -797,60 +866,57 @@ const styles = StyleSheet.create({
   searchOverlay: {
     ...StyleSheet.absoluteFill,
     zIndex: 20,
-    justifyContent: "flex-end",
   },
   searchBackdrop: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: "rgba(0,0,0,0.45)",
+    backgroundColor: "rgba(0,0,0,0.28)",
   },
-  searchSheetWrap: {
-    width: "100%",
-    justifyContent: "flex-end",
-  },
-  searchSheet: {
+  searchPanel: {
+    ...StyleSheet.absoluteFill,
     backgroundColor: "#FFF",
-    borderTopLeftRadius: 22,
-    borderTopRightRadius: 22,
-    maxHeight: "72%",
-    paddingTop: 8,
     paddingHorizontal: 16,
-    shadowColor: "#000",
-    shadowOpacity: 0.18,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: -4 },
-    elevation: 12,
   },
-  searchHandle: {
-    alignSelf: "center",
-    width: 40,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: colors.border,
-    marginBottom: 10,
-  },
-  searchHeader: {
+  searchNav: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
-    marginBottom: 8,
-  },
-  searchInput: {
-    flex: 1,
+    justifyContent: "space-between",
     minHeight: 48,
-    borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: ACCENT,
-    backgroundColor: colors.surface,
-    paddingHorizontal: 14,
-    fontSize: 16,
+    marginBottom: 12,
+  },
+  searchNavBack: {
+    width: 40,
+    height: 40,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  searchNavTitle: {
+    flex: 1,
+    textAlign: "center",
+    fontSize: 17,
+    fontWeight: "800",
     color: colors.fg,
   },
-  searchCancel: { fontSize: 15, fontWeight: "700", color: ACCENT },
-  searchList: { maxHeight: 360 },
+  searchField: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    minHeight: 48,
+    borderRadius: 14,
+    backgroundColor: colors.surface,
+    paddingHorizontal: 14,
+    marginBottom: 8,
+  },
+  searchFieldInput: {
+    flex: 1,
+    fontSize: 16,
+    color: colors.fg,
+    paddingVertical: 10,
+  },
+  searchList: { flex: 1 },
   searchEmpty: {
     textAlign: "center",
     color: colors.muted,
-    paddingVertical: 24,
+    paddingVertical: 28,
     fontSize: 14,
   },
   searchRow: {
@@ -862,10 +928,10 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
   },
   searchIconWrap: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: "rgba(255,92,92,0.12)",
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.surface,
     alignItems: "center",
     justifyContent: "center",
     marginTop: 2,
@@ -873,4 +939,12 @@ const styles = StyleSheet.create({
   searchRowBody: { flex: 1, gap: 2 },
   searchRowTitle: { fontSize: 15, color: colors.fg, fontWeight: "700" },
   searchRowSub: { fontSize: 13, color: colors.muted, fontWeight: "500", lineHeight: 18 },
+  mapPickRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingVertical: 16,
+    marginTop: 4,
+  },
+  mapPickText: { fontSize: 15, fontWeight: "700", color: colors.fg },
 });
