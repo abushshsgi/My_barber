@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { RouterProvider } from "@tanstack/react-router";
 
@@ -29,16 +29,32 @@ if (isNativeApp() && "serviceWorker" in navigator) {
 const router = getRouter();
 attachNativeAppBridge(router);
 
+const BOOT_FAILSAFE_MS = 3200;
+
 function MobileRoot() {
-  const [splashDone, setSplashDone] = useState(() => !isNativeApp());
+  const native = isNativeApp();
+  const [splashDone, setSplashDone] = useState(() => !native);
+  const finishedRef = useRef(false);
+
+  const finishSplash = () => {
+    if (finishedRef.current) return;
+    finishedRef.current = true;
+    setSplashDone(true);
+    if (typeof document !== "undefined") {
+      document.documentElement.dataset.nativeBoot = "done";
+    }
+  };
+
+  useEffect(() => {
+    if (!native || splashDone) return;
+    const t = window.setTimeout(finishSplash, BOOT_FAILSAFE_MS);
+    return () => window.clearTimeout(t);
+  }, [native, splashDone]);
 
   return (
     <>
-      {!splashDone ? <NativeBootSplash onFinished={() => setSplashDone(true)} /> : null}
-      <div
-        className={splashDone ? "native-app-shell" : "native-app-shell native-app-shell--booting"}
-        aria-hidden={!splashDone}
-      >
+      {!splashDone ? <NativeBootSplash onFinished={finishSplash} /> : null}
+      <div className="native-app-shell">
         <RouterProvider router={router} />
       </div>
     </>

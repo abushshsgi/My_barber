@@ -28,7 +28,12 @@ export function applyNativeAppDocumentFlag() {
   if (typeof document === "undefined") return;
   if (Capacitor.isNativePlatform()) {
     document.documentElement.dataset.nativeApp = "true";
+    // Boot tugaguncha oq flash oldini olish
+    if (!document.documentElement.dataset.nativeBoot) {
+      document.documentElement.dataset.nativeBoot = "pending";
+    }
   } else {
     delete document.documentElement.dataset.nativeApp;
+    delete document.documentElement.dataset.nativeBoot;
   }
 }

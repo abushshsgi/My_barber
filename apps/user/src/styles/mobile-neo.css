@@ -175,11 +175,16 @@ html[data-native-app="true"] {
   --native-ink: #171512;
 }
 
+/* Boot tugaguncha oq flash emas — to‘q fon */
+html[data-native-app="true"][data-native-boot="pending"],
+html[data-native-app="true"][data-native-boot="pending"] body {
+  background-color: #171512 !important;
+}
+
 html[data-native-app="true"] body {
   overscroll-behavior-y: none;
   -webkit-tap-highlight-color: transparent;
   user-select: none;
-  /* Scroll / paint silliqroq */
   -webkit-overflow-scrolling: touch;
   text-rendering: optimizeLegibility;
 }
@@ -192,12 +197,6 @@ html[data-native-app="true"] [contenteditable="true"] {
 
 html[data-native-app="true"] .native-app-shell {
   min-height: 100dvh;
-  transform: translateZ(0);
-}
-
-html[data-native-app="true"] .native-app-shell--booting {
-  opacity: 0;
-  pointer-events: none;
 }
 
 html[data-native-app="true"] .mobile-neo {
@@ -217,16 +216,6 @@ html[data-native-app="true"] nav[aria-label="Asosiy navigatsiya"] {
 
 html[data-native-app="true"] .native-home-wordmark {
   min-height: 2.75rem;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  html[data-native-app="true"] *,
-  html[data-native-app="true"] *::before,
-  html[data-native-app="true"] *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
 }
 
 /* Web footer / desktop-only chrome — appda yashirish */

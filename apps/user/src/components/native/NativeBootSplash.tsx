@@ -1,5 +1,5 @@
 import { motion, useReducedMotion } from "framer-motion";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { MYSALOON_DOT, MysaloonLogo } from "@/components/brand/MysaloonLogo";
 import { isNativeApp } from "@/lib/native-app";
 import { cn } from "@/lib/utils";
@@ -8,7 +8,7 @@ type Props = {
   onFinished?: () => void;
 };
 
-const SHOW_MS = 2400;
+const SHOW_MS = 1800;
 
 /**
  * Capacitor ochilish ekrani — M mark + wordmark animatsiyasi.
@@ -18,28 +18,30 @@ export function NativeBootSplash({ onFinished }: Props) {
   const reduceMotion = useReducedMotion();
   const [visible, setVisible] = useState(() => isNativeApp());
   const [leaving, setLeaving] = useState(false);
+  const onFinishedRef = useRef(onFinished);
+  onFinishedRef.current = onFinished;
+  const doneRef = useRef(false);
 
   useEffect(() => {
-    if (!visible) {
-      onFinished?.();
-      return;
-    }
+    if (!visible) return;
 
     void import("@capacitor/splash-screen").then(({ SplashScreen }) => {
       void SplashScreen.hide().catch(() => undefined);
     });
 
-    const leaveAt = window.setTimeout(() => setLeaving(true), SHOW_MS - 480);
+    const leaveAt = window.setTimeout(() => setLeaving(true), Math.max(200, SHOW_MS - 320));
     const doneAt = window.setTimeout(() => {
+      if (doneRef.current) return;
+      doneRef.current = true;
       setVisible(false);
-      onFinished?.();
+      onFinishedRef.current?.();
     }, SHOW_MS);
 
     return () => {
       window.clearTimeout(leaveAt);
       window.clearTimeout(doneAt);
     };
-  }, [visible, onFinished]);
+  }, [visible]);
 
   if (!visible) return null;
 
@@ -51,10 +53,9 @@ export function NativeBootSplash({ onFinished }: Props) {
       )}
       initial={{ opacity: 1 }}
       animate={{ opacity: leaving ? 0 : 1 }}
-      transition={{ duration: reduceMotion ? 0.12 : 0.45, ease: [0.22, 1, 0.36, 1] }}
+      transition={{ duration: reduceMotion ? 0.08 : 0.32, ease: [0.22, 1, 0.36, 1] }}
       aria-hidden
     >
-      {/* Soft radial glow */}
       <div
         className="pointer-events-none absolute inset-0 opacity-70"
         style={{
@@ -65,15 +66,15 @@ export function NativeBootSplash({ onFinished }: Props) {
 
       <motion.div
         className="relative flex flex-col items-center gap-6"
-        initial={reduceMotion ? false : { opacity: 0, scale: 0.88, y: 16 }}
+        initial={reduceMotion ? false : { opacity: 0, scale: 0.92, y: 10 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+        transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
       >
         <motion.div
           className="relative"
-          initial={reduceMotion ? false : { scale: 0.72, rotate: -10 }}
-          animate={{ scale: 1, rotate: 0 }}
-          transition={{ type: "spring", stiffness: 240, damping: 16, delay: 0.04 }}
+          initial={reduceMotion ? false : { scale: 0.8 }}
+          animate={{ scale: 1 }}
+          transition={{ type: "spring", stiffness: 260, damping: 18, delay: 0.02 }}
         >
           <img
             src="/splash-mark.png"
@@ -96,15 +97,15 @@ export function NativeBootSplash({ onFinished }: Props) {
               }}
               initial={{ scale: 0, opacity: 0 }}
               animate={{ scale: [0, 1.25, 1], opacity: 1 }}
-              transition={{ delay: 0.35, duration: 0.45, ease: "easeOut" }}
+              transition={{ delay: 0.25, duration: 0.4, ease: "easeOut" }}
             />
           ) : null}
         </motion.div>
 
         <motion.div
-          initial={reduceMotion ? false : { opacity: 0, y: 12 }}
+          initial={reduceMotion ? false : { opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.32, duration: 0.42 }}
+          transition={{ delay: 0.2, duration: 0.35 }}
         >
           <MysaloonLogo size="xl" tone="onDark" className="tracking-[-0.03em]" />
         </motion.div>
@@ -113,30 +114,10 @@ export function NativeBootSplash({ onFinished }: Props) {
           className="text-[11px] font-semibold uppercase tracking-[0.28em] text-white/45"
           initial={reduceMotion ? false : { opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.5, duration: 0.35 }}
+          transition={{ delay: 0.35, duration: 0.3 }}
         >
           Salon &amp; style
         </motion.p>
-
-        <motion.div
-          className="mt-3 h-1 w-12 overflow-hidden rounded-full bg-white/12"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.55 }}
-        >
-          <motion.div
-            className="h-full rounded-full"
-            style={{ backgroundColor: MYSALOON_DOT }}
-            initial={{ x: "-110%" }}
-            animate={{ x: leaving ? "110%" : ["-110%", "0%", "110%"] }}
-            transition={{
-              duration: reduceMotion ? 0.2 : 1.35,
-              ease: "easeInOut",
-              repeat: reduceMotion || leaving ? 0 : Infinity,
-              repeatDelay: 0.15,
-            }}
-          />
-        </motion.div>
       </motion.div>
     </motion.div>
   );
