@@ -3,7 +3,9 @@ import * as Location from "expo-location";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  FlatList,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   Pressable,
   StyleSheet,
@@ -12,9 +14,18 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import {
+  geocodeAddress,
+  reverseGeocodeAddress,
+  type GeocodeResult,
+} from "../api/geo";
 import { updateMe } from "../api/user";
 import { useAuth } from "../auth/AuthContext";
-import { OnboardingMap } from "../components/onboarding/OnboardingMap";
+import {
+  DEFAULT_MAP_REGION,
+  OnboardingMap,
+  type OnboardingMapHandle,
+} from "../components/onboarding/OnboardingMap";
 import { roundCoord } from "../lib/onboarding";
 import {
   sanitizeDisplayNameInput,
@@ -31,6 +42,8 @@ const NAME_ERRORS: Record<DisplayNameErrorKey, string> = {
   nameTooLong: "Ism juda uzun",
   nameTooManyParts: "Ismda so'zlar soni juda ko'p",
 };
+
+const YELLOW = "#F5C400";
 
 function splitPrefillName(user: {
   first_name?: string;
@@ -56,25 +69,33 @@ function splitPrefillName(user: {
 
 /**
  * Yangi user onboarding:
- * 1) Ism-sharif (alohida sahifa)
- * 2) Yosh (alohida sahifa)
- * 3) To'liq ekran Google Maps + GPS — joylashuv aniqlanganda akkaunt yaratiladi
+ * 1) Ism-sharif
+ * 2) Yosh
+ * 3) Xarita picker (GPS / qidiruv / zoom) → Tayyor → akkaunt
  */
 export function OnboardingScreen() {
   const insets = useSafeAreaInsets();
   const { user, refreshMe } = useAuth();
+  const mapRef = useRef<OnboardingMapHandle | null>(null);
+  const reverseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const gpsOnceRef = useRef(false);
 
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [firstName, setFirstNameRaw] = useState("");
   const [lastName, setLastNameRaw] = useState("");
   const [age, setAge] = useState("");
-  const [lat, setLat] = useState<number | null>(null);
-  const [lng, setLng] = useState<number | null>(null);
+  const [lat, setLat] = useState(DEFAULT_MAP_REGION.latitude);
+  const [lng, setLng] = useState(DEFAULT_MAP_REGION.longitude);
+  const [addressLabel, setAddressLabel] = useState("Joylashuvni tanlang");
   const [locating, setLocating] = useState(false);
   const [nameTouched, setNameTouched] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [prefilled, setPrefilled] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<GeocodeResult[]>([]);
+  const [searching, setSearching] = useState(false);
   const finishingRef = useRef(false);
 
   useEffect(() => {
@@ -174,14 +195,73 @@ export function OnboardingScreen() {
       const nextLng = pos.coords.longitude;
       setLat(nextLat);
       setLng(nextLng);
-      // Joylashuv aniqlandi → akkaunt yaratiladi
-      await finish(nextLat, nextLng);
+      mapRef.current?.panTo(nextLat, nextLng);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Joylashuvni aniqlab bo'lmadi");
     } finally {
       setLocating(false);
     }
-  }, [finish]);
+  }, []);
+
+  const onMapCoords = useCallback((nextLat: number, nextLng: number) => {
+    setLat(nextLat);
+    setLng(nextLng);
+  }, []);
+
+  useEffect(() => {
+    if (reverseTimerRef.current) clearTimeout(reverseTimerRef.current);
+    reverseTimerRef.current = setTimeout(() => {
+      void reverseGeocodeAddress(lat, lng).then((r) => {
+        if (!r) return;
+        setAddressLabel(r.full_name || r.address || r.city || "Tanlangan joy");
+      });
+    }, 450);
+    return () => {
+      if (reverseTimerRef.current) clearTimeout(reverseTimerRef.current);
+    };
+  }, [lat, lng]);
+
+  useEffect(() => {
+    if (step !== 3 || gpsOnceRef.current) return;
+    gpsOnceRef.current = true;
+    void detectLocation();
+  }, [step, detectLocation]);
+
+  useEffect(() => {
+    const q = searchQuery.trim();
+    if (!searchOpen || q.length < 3) {
+      setSearchResults([]);
+      return;
+    }
+    let alive = true;
+    setSearching(true);
+    const t = setTimeout(() => {
+      void geocodeAddress(q).then((rows) => {
+        if (!alive) return;
+        setSearchResults(rows);
+        setSearching(false);
+      });
+    }, 400);
+    return () => {
+      alive = false;
+      clearTimeout(t);
+    };
+  }, [searchQuery, searchOpen]);
+
+  const pickSearchResult = (item: GeocodeResult) => {
+    setLat(item.lat);
+    setLng(item.lng);
+    setAddressLabel(item.full_name || item.address || item.city);
+    mapRef.current?.panTo(item.lat, item.lng);
+    setSearchOpen(false);
+    setSearchQuery("");
+    setSearchResults([]);
+  };
+
+  const onConfirmLocation = () => {
+    setError(null);
+    void finish(lat, lng);
+  };
 
   const goNextFromName = () => {
     setError(null);
@@ -204,37 +284,96 @@ export function OnboardingScreen() {
 
   const busy = saving || locating;
 
-  // ——— 3-sahifa: to'liq ekran xarita ———
+  // ——— 3-sahifa: joylashuv picker ———
   if (step === 3) {
     return (
       <View style={styles.mapRoot}>
-        <OnboardingMap latitude={lat} longitude={lng} />
+        <OnboardingMap
+          ref={mapRef}
+          latitude={lat}
+          longitude={lng}
+          onCoordsChange={onMapCoords}
+        />
 
-        <View style={[styles.mapTopBar, { paddingTop: insets.top + 8 }]}>
+        {/* Markaz pin — xarita suriladi, pin o'rtada qoladi */}
+        <View pointerEvents="none" style={styles.centerPinWrap}>
+          <View style={styles.centerPinHead}>
+            <View style={styles.centerPinDot} />
+          </View>
+          <View style={styles.centerPinStem} />
+        </View>
+
+        <View style={[styles.mapTopBar, { paddingTop: insets.top + 10 }]}>
           <Pressable
             onPress={() => setStep(2)}
             style={styles.mapBack}
             disabled={busy}
             hitSlop={8}
           >
-            <Ionicons name="chevron-back" size={22} color={colors.fg} />
+            <Ionicons name="chevron-back" size={22} color="#FFF" />
+          </Pressable>
+
+          <View style={styles.addressPill}>
+            <Text style={styles.addressText} numberOfLines={2}>
+              {addressLabel}
+            </Text>
+          </View>
+
+          <Pressable
+            onPress={() => setSearchOpen(true)}
+            style={styles.roundBtn}
+            disabled={busy}
+            hitSlop={8}
+            accessibilityLabel="Qidiruv"
+          >
+            <Ionicons name="search" size={20} color="#FFF" />
+          </Pressable>
+        </View>
+
+        <View style={[styles.sideControls, { bottom: Math.max(insets.bottom, 16) + 88 }]}>
+          <View style={styles.zoomStack}>
+            <Pressable
+              style={styles.zoomBtn}
+              onPress={() => mapRef.current?.zoomIn()}
+              hitSlop={6}
+            >
+              <Ionicons name="add" size={24} color="#FFF" />
+            </Pressable>
+            <View style={styles.zoomDivider} />
+            <Pressable
+              style={styles.zoomBtn}
+              onPress={() => mapRef.current?.zoomOut()}
+              hitSlop={6}
+            >
+              <Ionicons name="remove" size={24} color="#FFF" />
+            </Pressable>
+          </View>
+
+          <Pressable
+            style={[styles.roundBtn, styles.gpsFab, locating && styles.disabled]}
+            onPress={() => void detectLocation()}
+            disabled={busy}
+            accessibilityLabel="GPS"
+          >
+            {locating ? (
+              <ActivityIndicator color="#FFF" />
+            ) : (
+              <Ionicons name="navigate" size={22} color="#FFF" />
+            )}
           </Pressable>
         </View>
 
         <View style={[styles.mapBottom, { paddingBottom: Math.max(insets.bottom, 16) + 8 }]}>
           {error ? <Text style={styles.mapError}>{error}</Text> : null}
           <Pressable
-            style={[styles.gpsPrimary, busy && styles.disabled]}
-            onPress={() => void detectLocation()}
-            disabled={busy}
+            style={[styles.readyBtn, saving && styles.disabled]}
+            onPress={onConfirmLocation}
+            disabled={saving}
           >
-            {busy ? (
-              <ActivityIndicator color="#FFF" />
+            {saving ? (
+              <ActivityIndicator color="#111" />
             ) : (
-              <>
-                <Ionicons name="navigate" size={20} color="#FFF" />
-                <Text style={styles.gpsPrimaryText}>Joylashuvni aniqlash</Text>
-              </>
+              <Text style={styles.readyText}>Tayyor</Text>
             )}
           </Pressable>
         </View>
@@ -245,6 +384,63 @@ export function OnboardingScreen() {
             <Text style={styles.savingText}>Akkaunt yaratilmoqda…</Text>
           </View>
         ) : null}
+
+        <Modal
+          visible={searchOpen}
+          animationType="slide"
+          transparent
+          onRequestClose={() => setSearchOpen(false)}
+        >
+          <KeyboardAvoidingView
+            style={styles.searchOverlay}
+            behavior={Platform.OS === "ios" ? "padding" : undefined}
+          >
+            <Pressable style={styles.searchBackdrop} onPress={() => setSearchOpen(false)} />
+            <View style={[styles.searchSheet, { paddingBottom: insets.bottom + 16 }]}>
+              <View style={styles.searchHeader}>
+                <TextInput
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                  placeholder="Manzil yoki ko'cha qidiring"
+                  placeholderTextColor={colors.muted}
+                  autoFocus
+                  style={styles.searchInput}
+                  returnKeyType="search"
+                />
+                <Pressable onPress={() => setSearchOpen(false)} hitSlop={8}>
+                  <Text style={styles.searchCancel}>Yopish</Text>
+                </Pressable>
+              </View>
+              {searching ? (
+                <ActivityIndicator style={{ marginTop: 16 }} color={colors.fg} />
+              ) : (
+                <FlatList
+                  data={searchResults}
+                  keyExtractor={(item, i) => `${item.lat},${item.lng},${i}`}
+                  keyboardShouldPersistTaps="handled"
+                  ListEmptyComponent={
+                    searchQuery.trim().length >= 3 ? (
+                      <Text style={styles.searchEmpty}>Natija topilmadi</Text>
+                    ) : (
+                      <Text style={styles.searchEmpty}>Kamida 3 ta belgi yozing</Text>
+                    )
+                  }
+                  renderItem={({ item }) => (
+                    <Pressable
+                      style={styles.searchRow}
+                      onPress={() => pickSearchResult(item)}
+                    >
+                      <Ionicons name="location-outline" size={18} color={colors.muted} />
+                      <Text style={styles.searchRowText} numberOfLines={2}>
+                        {item.full_name || item.address}
+                      </Text>
+                    </Pressable>
+                  )}
+                />
+              )}
+            </View>
+          </KeyboardAvoidingView>
+        </Modal>
       </View>
     );
   }
@@ -374,35 +570,128 @@ const styles = StyleSheet.create({
   primaryText: { color: "#FFF", fontSize: 16, fontWeight: "800" },
   disabled: { opacity: 0.5 },
 
-  mapRoot: { flex: 1, backgroundColor: colors.surface, position: "relative" },
+  mapRoot: { flex: 1, backgroundColor: "#0e1626", position: "relative" },
   mapTopBar: {
     position: "absolute",
     left: 0,
     right: 0,
     top: 0,
     paddingHorizontal: 12,
-    zIndex: 2,
+    zIndex: 3,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
   },
   mapBack: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: "#FFF",
+    backgroundColor: "rgba(20,20,20,0.72)",
     alignItems: "center",
     justifyContent: "center",
+  },
+  addressPill: {
+    flex: 1,
+    minHeight: 44,
+    borderRadius: 14,
+    backgroundColor: "rgba(20,20,20,0.55)",
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    justifyContent: "center",
+  },
+  addressText: {
+    color: "#FFF",
+    fontSize: 15,
+    fontWeight: "700",
+    textAlign: "center",
+    textShadowColor: "rgba(0,0,0,0.45)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
+  },
+  roundBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "rgba(20,20,20,0.72)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  sideControls: {
+    position: "absolute",
+    right: 14,
+    zIndex: 3,
+    alignItems: "center",
+    gap: 12,
+  },
+  zoomStack: {
+    borderRadius: 22,
+    backgroundColor: "rgba(20,20,20,0.72)",
+    overflow: "hidden",
+  },
+  zoomBtn: {
+    width: 44,
+    height: 44,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  zoomDivider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: "rgba(255,255,255,0.25)",
+    marginHorizontal: 10,
+  },
+  gpsFab: {
     shadowColor: "#000",
-    shadowOpacity: 0.12,
+    shadowOpacity: 0.25,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 2 },
-    elevation: 3,
+    elevation: 4,
+  },
+  centerPinWrap: {
+    position: "absolute",
+    left: "50%",
+    top: "50%",
+    marginLeft: -18,
+    marginTop: -44,
+    width: 36,
+    height: 48,
+    alignItems: "center",
+    zIndex: 2,
+  },
+  centerPinHead: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#FF7A00",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 3,
+    borderColor: "#FFF",
+    shadowColor: "#000",
+    shadowOpacity: 0.35,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 5,
+  },
+  centerPinDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: "#FFF",
+  },
+  centerPinStem: {
+    width: 3,
+    height: 14,
+    backgroundColor: "#FF7A00",
+    borderRadius: 2,
+    marginTop: -2,
   },
   mapBottom: {
     position: "absolute",
     left: 0,
     right: 0,
     bottom: 0,
-    paddingHorizontal: 20,
-    zIndex: 2,
+    paddingHorizontal: 16,
+    zIndex: 3,
     gap: 10,
   },
   mapError: {
@@ -416,21 +705,65 @@ const styles = StyleSheet.create({
     color: "#FF3B30",
     overflow: "hidden",
   },
-  gpsPrimary: {
+  readyBtn: {
     minHeight: 56,
     borderRadius: 16,
-    backgroundColor: colors.fg,
-    flexDirection: "row",
+    backgroundColor: YELLOW,
     alignItems: "center",
     justifyContent: "center",
-    gap: 10,
     shadowColor: "#000",
-    shadowOpacity: 0.18,
-    shadowRadius: 12,
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
     shadowOffset: { width: 0, height: 4 },
     elevation: 4,
   },
-  gpsPrimaryText: { color: "#FFF", fontSize: 16, fontWeight: "800" },
+  readyText: { color: "#111", fontSize: 17, fontWeight: "800" },
+  searchOverlay: { flex: 1, justifyContent: "flex-end" },
+  searchBackdrop: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: "rgba(0,0,0,0.45)",
+  },
+  searchSheet: {
+    backgroundColor: "#FFF",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: "70%",
+    paddingTop: 14,
+    paddingHorizontal: 16,
+  },
+  searchHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginBottom: 8,
+  },
+  searchInput: {
+    flex: 1,
+    minHeight: 48,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    paddingHorizontal: 14,
+    fontSize: 16,
+    color: colors.fg,
+  },
+  searchCancel: { fontSize: 15, fontWeight: "700", color: colors.muted },
+  searchEmpty: {
+    textAlign: "center",
+    color: colors.muted,
+    paddingVertical: 24,
+    fontSize: 14,
+  },
+  searchRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingVertical: 14,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
+  },
+  searchRowText: { flex: 1, fontSize: 15, color: colors.fg, fontWeight: "600" },
   savingOverlay: {
     ...StyleSheet.absoluteFill,
     backgroundColor: "rgba(0,0,0,0.45)",

@@ -1,31 +1,44 @@
-import { useEffect, useRef, useState } from "react";
+import {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from "react";
 import { DARK_MAP_STYLE, LIGHT_MAP_STYLE } from "./mapStyles";
 
 export const DEFAULT_MAP_REGION = {
   latitude: 41.3111,
   longitude: 69.2797,
-  latitudeDelta: 0.04,
-  longitudeDelta: 0.04,
+  latitudeDelta: 0.012,
+  longitudeDelta: 0.012,
+};
+
+export type OnboardingMapHandle = {
+  zoomIn: () => void;
+  zoomOut: () => void;
+  panTo: (lat: number, lng: number) => void;
 };
 
 type Props = {
-  latitude: number | null;
-  longitude: number | null;
+  latitude: number;
+  longitude: number;
+  onCoordsChange: (lat: number, lng: number) => void;
 };
 
 type GoogleMapInstance = {
   setCenter: (c: { lat: number; lng: number }) => void;
+  panTo: (c: { lat: number; lng: number }) => void;
   setOptions: (opts: Record<string, unknown>) => void;
-};
-
-type GoogleMarkerInstance = {
-  setMap: (map: unknown) => void;
-  setPosition: (c: { lat: number; lng: number }) => void;
+  getZoom: () => number | undefined;
+  setZoom: (z: number) => void;
+  getCenter: () => { lat: () => number; lng: () => number } | undefined;
+  addListener: (event: string, fn: () => void) => { remove: () => void };
 };
 
 type GoogleMapsNs = {
   Map: new (el: HTMLElement, opts: Record<string, unknown>) => GoogleMapInstance;
-  Marker: new (opts: Record<string, unknown>) => GoogleMarkerInstance;
+  event?: { removeListener: (l: { remove: () => void }) => void };
 };
 
 declare global {
@@ -57,9 +70,7 @@ async function resolveMapsApiKey(): Promise<string> {
 }
 
 function loadGoogleMaps(apiKey: string): Promise<GoogleMapsNs> {
-  if (window.google?.maps?.Map) {
-    return Promise.resolve(window.google.maps);
-  }
+  if (window.google?.maps?.Map) return Promise.resolve(window.google.maps);
   if (window.__mysaloonMapsReady) return window.__mysaloonMapsReady;
 
   window.__mysaloonMapsReady = new Promise<GoogleMapsNs>((resolve, reject) => {
@@ -69,7 +80,6 @@ function loadGoogleMaps(apiKey: string): Promise<GoogleMapsNs> {
         if (window.google?.maps) resolve(window.google.maps);
         else reject(new Error("Maps load failed"));
       });
-      existing.addEventListener("error", () => reject(new Error("Maps script error")));
       return;
     }
     const script = document.createElement("script");
@@ -94,163 +104,172 @@ function useSystemDark(): boolean {
       ? window.matchMedia("(prefers-color-scheme: dark)").matches
       : false,
   );
-
   useEffect(() => {
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
     const onChange = () => setDark(mq.matches);
-    onChange();
     mq.addEventListener("change", onChange);
     return () => mq.removeEventListener("change", onChange);
   }, []);
-
   return dark;
 }
 
-/**
- * Web — Google Maps JS (iframe emas):
- * - scroll/pinch zoom (CTRL shart emas)
- * - Google UI tugmalari o'chiq
- * - restoran/kafe POI bosilmaydi, kartochka yo'q
- * - telefon dark/light temasi
- */
-export function OnboardingMap({ latitude, longitude }: Props) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<GoogleMapInstance | null>(null);
-  const markerRef = useRef<GoogleMarkerInstance | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const dark = useSystemDark();
+/** Web — markaz pin tashqi overlay; greedy zoom; POI yo'q. */
+export const OnboardingMap = forwardRef<OnboardingMapHandle, Props>(
+  function OnboardingMap({ latitude, longitude, onCoordsChange }, ref) {
+    const containerRef = useRef<HTMLDivElement>(null);
+    const mapRef = useRef<GoogleMapInstance | null>(null);
+    const skipRef = useRef(false);
+    const onCoordsRef = useRef(onCoordsChange);
+    onCoordsRef.current = onCoordsChange;
+    const [error, setError] = useState<string | null>(null);
+    const dark = useSystemDark();
 
-  const lat = latitude ?? DEFAULT_MAP_REGION.latitude;
-  const lng = longitude ?? DEFAULT_MAP_REGION.longitude;
+    useImperativeHandle(ref, () => ({
+      zoomIn: () => {
+        const map = mapRef.current;
+        if (!map) return;
+        const z = map.getZoom() ?? 15;
+        map.setZoom(Math.min(z + 1, 20));
+      },
+      zoomOut: () => {
+        const map = mapRef.current;
+        if (!map) return;
+        const z = map.getZoom() ?? 15;
+        map.setZoom(Math.max(z - 1, 3));
+      },
+      panTo: (lat, lng) => {
+        const map = mapRef.current;
+        if (!map) return;
+        skipRef.current = true;
+        map.panTo({ lat, lng });
+      },
+    }));
 
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    let cancelled = false;
+    useEffect(() => {
+      const el = containerRef.current;
+      if (!el) return;
+      let cancelled = false;
+      const listeners: Array<{ remove: () => void }> = [];
 
-    void (async () => {
-      try {
-        const apiKey = await resolveMapsApiKey();
-        if (cancelled) return;
-        if (!apiKey) {
-          setError("Xarita kaliti topilmadi");
-          return;
+      void (async () => {
+        try {
+          const apiKey = await resolveMapsApiKey();
+          if (cancelled) return;
+          if (!apiKey) {
+            setError("Xarita kaliti topilmadi");
+            return;
+          }
+          const maps = await loadGoogleMaps(apiKey);
+          if (cancelled || !containerRef.current) return;
+
+          const map = new maps.Map(containerRef.current, {
+            center: { lat: latitude, lng: longitude },
+            zoom: 16,
+            disableDefaultUI: true,
+            zoomControl: false,
+            mapTypeControl: false,
+            streetViewControl: false,
+            fullscreenControl: false,
+            scaleControl: false,
+            rotateControl: false,
+            keyboardShortcuts: false,
+            gestureHandling: "greedy",
+            clickableIcons: false,
+            styles: dark ? DARK_MAP_STYLE : LIGHT_MAP_STYLE,
+            backgroundColor: dark ? "#0e1626" : "#E8EEF4",
+          });
+
+          if (!document.getElementById("mysaloon-map-ui-hide")) {
+            const style = document.createElement("style");
+            style.id = "mysaloon-map-ui-hide";
+            style.textContent = `
+              .gm-bundled-control,
+              .gm-fullscreen-control,
+              button[title="Keyboard shortcuts"],
+              button[aria-label="Keyboard shortcuts"],
+              .gm-style-mtc,
+              .gm-svpc { display: none !important; }
+            `;
+            document.head.appendChild(style);
+          }
+
+          listeners.push(
+            map.addListener("dragstart", () => {
+              skipRef.current = false;
+            }),
+          );
+          listeners.push(
+            map.addListener("idle", () => {
+              if (skipRef.current) {
+                skipRef.current = false;
+                return;
+              }
+              const c = map.getCenter();
+              if (!c) return;
+              onCoordsRef.current(c.lat(), c.lng());
+            }),
+          );
+
+          mapRef.current = map;
+          setError(null);
+        } catch (e) {
+          if (!cancelled) {
+            setError(e instanceof Error ? e.message : "Xarita yuklanmadi");
+          }
         }
-        const maps = await loadGoogleMaps(apiKey);
-        if (cancelled || !containerRef.current) return;
+      })();
 
-        const map = new maps.Map(containerRef.current, {
-          center: { lat, lng },
-          zoom: 15,
-          disableDefaultUI: true,
-          zoomControl: false,
-          mapTypeControl: false,
-          streetViewControl: false,
-          fullscreenControl: false,
-          scaleControl: false,
-          rotateControl: false,
-          keyboardShortcuts: false,
-          gestureHandling: "greedy",
-          clickableIcons: false,
-          styles: dark ? DARK_MAP_STYLE : LIGHT_MAP_STYLE,
-          backgroundColor: dark ? "#0e1626" : "#E8EEF4",
-        });
-
-        // Ortiqcha Google UI (klaviatura yordami va h.k.) — attribution qoladi.
-        if (!document.getElementById("mysaloon-map-ui-hide")) {
-          const style = document.createElement("style");
-          style.id = "mysaloon-map-ui-hide";
-          style.textContent = `
-            .gm-bundled-control,
-            .gm-fullscreen-control,
-            button[title="Keyboard shortcuts"],
-            button[aria-label="Keyboard shortcuts"],
-            .gm-style-mtc,
-            .gm-svpc { display: none !important; }
-          `;
-          document.head.appendChild(style);
+      return () => {
+        cancelled = true;
+        for (const l of listeners) {
+          try {
+            l.remove();
+          } catch {
+            /* ignore */
+          }
         }
+        mapRef.current = null;
+      };
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
-        mapRef.current = map;
-        setError(null);
-      } catch (e) {
-        if (!cancelled) {
-          setError(e instanceof Error ? e.message : "Xarita yuklanmadi");
-        }
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-      markerRef.current?.setMap(null);
-      markerRef.current = null;
-      mapRef.current = null;
-    };
-    // Map bir marta yaratiladi; tema/coords alohida effectlarda.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map) return;
-    map.setOptions({
-      styles: dark ? DARK_MAP_STYLE : LIGHT_MAP_STYLE,
-      backgroundColor: dark ? "#0e1626" : "#E8EEF4",
-    });
-  }, [dark]);
-
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map || !window.google?.maps) return;
-    map.setCenter({ lat, lng });
-
-    if (latitude == null || longitude == null) {
-      markerRef.current?.setMap(null);
-      markerRef.current = null;
-      return;
-    }
-
-    if (!markerRef.current) {
-      markerRef.current = new window.google.maps.Marker({
-        map,
-        position: { lat, lng },
-        clickable: false,
-      });
-    } else {
-      markerRef.current.setPosition({ lat, lng });
-      markerRef.current.setMap(map);
-    }
-  }, [lat, lng, latitude, longitude]);
-
-  return (
-    <div
-      style={{
-        position: "absolute",
-        inset: 0,
-        width: "100%",
-        height: "100%",
+    useEffect(() => {
+      mapRef.current?.setOptions({
+        styles: dark ? DARK_MAP_STYLE : LIGHT_MAP_STYLE,
         backgroundColor: dark ? "#0e1626" : "#E8EEF4",
-      }}
-    >
-      <div ref={containerRef} style={{ width: "100%", height: "100%" }} />
-      {error ? (
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: 24,
-            color: dark ? "#ccc" : "#444",
-            fontSize: 14,
-            fontWeight: 600,
-            textAlign: "center",
-          }}
-        >
-          {error}
-        </div>
-      ) : null}
-    </div>
-  );
-}
+      });
+    }, [dark]);
+
+    return (
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          width: "100%",
+          height: "100%",
+          backgroundColor: dark ? "#0e1626" : "#E8EEF4",
+        }}
+      >
+        <div ref={containerRef} style={{ width: "100%", height: "100%" }} />
+        {error ? (
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: 24,
+              color: dark ? "#ccc" : "#444",
+              fontSize: 14,
+              fontWeight: 600,
+              textAlign: "center",
+            }}
+          >
+            {error}
+          </div>
+        ) : null}
+      </div>
+    );
+  },
+);

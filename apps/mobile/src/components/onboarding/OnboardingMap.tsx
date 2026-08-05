@@ -1,93 +1,143 @@
-import { useEffect, useRef, useState } from "react";
+import {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from "react";
 import { Appearance, Platform, StyleSheet, useColorScheme } from "react-native";
-import MapView, { Marker, PROVIDER_GOOGLE, type Region } from "react-native-maps";
+import MapView, { PROVIDER_GOOGLE, type Region } from "react-native-maps";
 import { mapStyleForScheme } from "./mapStyles";
 
 export const DEFAULT_MAP_REGION: Region = {
   latitude: 41.3111,
   longitude: 69.2797,
-  latitudeDelta: 0.04,
-  longitudeDelta: 0.04,
+  latitudeDelta: 0.012,
+  longitudeDelta: 0.012,
+};
+
+export type OnboardingMapHandle = {
+  zoomIn: () => void;
+  zoomOut: () => void;
+  panTo: (lat: number, lng: number) => void;
 };
 
 type Props = {
-  latitude: number | null;
-  longitude: number | null;
+  latitude: number;
+  longitude: number;
+  onCoordsChange: (lat: number, lng: number) => void;
 };
 
-/** Native — faqat joylashuv: POI/kartochka yo'q, Google UI yo'q, dark/light tema. */
-export function OnboardingMap({ latitude, longitude }: Props) {
-  const mapRef = useRef<MapView | null>(null);
-  const systemScheme = useColorScheme();
-  const [scheme, setScheme] = useState<"light" | "dark">(
-    () => (Appearance.getColorScheme() === "dark" ? "dark" : "light"),
-  );
+/** Native — markaz pin tashqarida; xarita surilganda markaz coords. */
+export const OnboardingMap = forwardRef<OnboardingMapHandle, Props>(
+  function OnboardingMap({ latitude, longitude, onCoordsChange }, ref) {
+    const mapRef = useRef<MapView | null>(null);
+    const skipRef = useRef(false);
+    const deltaRef = useRef(DEFAULT_MAP_REGION.latitudeDelta);
+    const centerRef = useRef({ lat: latitude, lng: longitude });
+    const onCoordsRef = useRef(onCoordsChange);
+    onCoordsRef.current = onCoordsChange;
 
-  useEffect(() => {
-    setScheme(systemScheme === "dark" ? "dark" : "light");
-  }, [systemScheme]);
-
-  useEffect(() => {
-    const sub = Appearance.addChangeListener(({ colorScheme }) => {
-      setScheme(colorScheme === "dark" ? "dark" : "light");
-    });
-    return () => sub.remove();
-  }, []);
-
-  const lat = latitude ?? DEFAULT_MAP_REGION.latitude;
-  const lng = longitude ?? DEFAULT_MAP_REGION.longitude;
-  const customMapStyle = mapStyleForScheme(scheme);
-
-  useEffect(() => {
-    if (latitude == null || longitude == null) return;
-    mapRef.current?.animateToRegion(
-      {
-        latitude,
-        longitude,
-        latitudeDelta: 0.012,
-        longitudeDelta: 0.012,
-      },
-      450,
+    const systemScheme = useColorScheme();
+    const [scheme, setScheme] = useState<"light" | "dark">(
+      () => (Appearance.getColorScheme() === "dark" ? "dark" : "light"),
     );
-  }, [latitude, longitude]);
 
-  return (
-    <MapView
-      ref={mapRef}
-      style={styles.fill}
-      provider={Platform.OS === "android" ? PROVIDER_GOOGLE : undefined}
-      initialRegion={{
-        ...DEFAULT_MAP_REGION,
-        latitude: lat,
-        longitude: lng,
-      }}
-      customMapStyle={customMapStyle}
-      userInterfaceStyle={scheme}
-      showsUserLocation
-      showsMyLocationButton={false}
-      showsCompass={false}
-      showsScale={false}
-      showsTraffic={false}
-      showsBuildings={false}
-      showsIndoors={false}
-      showsPointsOfInterests={false}
-      toolbarEnabled={false}
-      rotateEnabled
-      scrollEnabled
-      zoomEnabled
-      pitchEnabled={false}
-      moveOnMarkerPress={false}
-    >
-      {latitude != null && longitude != null ? (
-        <Marker
-          coordinate={{ latitude, longitude }}
-          pinColor="#FF5C5C"
-          tappable={false}
-        />
-      ) : null}
-    </MapView>
-  );
-}
+    useEffect(() => {
+      setScheme(systemScheme === "dark" ? "dark" : "light");
+    }, [systemScheme]);
+
+    useEffect(() => {
+      const sub = Appearance.addChangeListener(({ colorScheme }) => {
+        setScheme(colorScheme === "dark" ? "dark" : "light");
+      });
+      return () => sub.remove();
+    }, []);
+
+    useImperativeHandle(ref, () => ({
+      zoomIn: () => {
+        const { lat, lng } = centerRef.current;
+        deltaRef.current = Math.max(deltaRef.current * 0.55, 0.002);
+        skipRef.current = true;
+        mapRef.current?.animateToRegion(
+          {
+            latitude: lat,
+            longitude: lng,
+            latitudeDelta: deltaRef.current,
+            longitudeDelta: deltaRef.current,
+          },
+          220,
+        );
+      },
+      zoomOut: () => {
+        const { lat, lng } = centerRef.current;
+        deltaRef.current = Math.min(deltaRef.current * 1.8, 0.4);
+        skipRef.current = true;
+        mapRef.current?.animateToRegion(
+          {
+            latitude: lat,
+            longitude: lng,
+            latitudeDelta: deltaRef.current,
+            longitudeDelta: deltaRef.current,
+          },
+          220,
+        );
+      },
+      panTo: (nextLat, nextLng) => {
+        centerRef.current = { lat: nextLat, lng: nextLng };
+        skipRef.current = true;
+        mapRef.current?.animateToRegion(
+          {
+            latitude: nextLat,
+            longitude: nextLng,
+            latitudeDelta: deltaRef.current,
+            longitudeDelta: deltaRef.current,
+          },
+          450,
+        );
+      },
+    }));
+
+    return (
+      <MapView
+        ref={mapRef}
+        style={styles.fill}
+        provider={Platform.OS === "android" ? PROVIDER_GOOGLE : undefined}
+        initialRegion={{
+          latitude,
+          longitude,
+          latitudeDelta: deltaRef.current,
+          longitudeDelta: deltaRef.current,
+        }}
+        customMapStyle={mapStyleForScheme(scheme)}
+        userInterfaceStyle={scheme}
+        onRegionChangeComplete={(region) => {
+          deltaRef.current = region.latitudeDelta;
+          centerRef.current = { lat: region.latitude, lng: region.longitude };
+          if (skipRef.current) {
+            skipRef.current = false;
+            return;
+          }
+          onCoordsRef.current(region.latitude, region.longitude);
+        }}
+        showsUserLocation
+        showsMyLocationButton={false}
+        showsCompass={false}
+        showsScale={false}
+        showsTraffic={false}
+        showsBuildings={false}
+        showsIndoors={false}
+        showsPointsOfInterests={false}
+        toolbarEnabled={false}
+        rotateEnabled={false}
+        pitchEnabled={false}
+        moveOnMarkerPress={false}
+        zoomEnabled
+        scrollEnabled
+      />
+    );
+  },
+);
 
 const styles = StyleSheet.create({
   fill: { ...StyleSheet.absoluteFill },
