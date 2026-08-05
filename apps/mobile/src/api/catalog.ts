@@ -2,8 +2,10 @@ import { apiJson, apiList, qs } from "./client";
 import type { ApiBarberPublic, ApiNearbySalon, ApiSalonList } from "./types";
 
 export type ApiRegion = {
-  code: string;
-  name: string;
+  value?: string;
+  label?: string;
+  code?: string;
+  name?: string;
   name_uz?: string;
 };
 
