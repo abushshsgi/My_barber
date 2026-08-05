@@ -41,6 +41,8 @@ export type AdminUser = {
   longitude: string;
   locationCity: string;
   birthYear: number | null;
+  age: number | null;
+  onboardingCompleted: boolean;
   defaultAddress: string;
   familyMembersCount: number;
   is_active: boolean;
@@ -525,6 +527,8 @@ type BackendUserRow = {
   longitude?: string;
   location_city?: string;
   birth_year?: number | null;
+  age?: number | null;
+  onboarding_completed?: boolean;
   default_address?: string;
   family_members_count?: number;
   is_active: boolean;
@@ -841,6 +845,8 @@ function mapUser(u: BackendUserRow): AdminUser {
     longitude: (u.longitude || "").trim(),
     locationCity: (u.location_city || "").trim(),
     birthYear: u.birth_year ?? null,
+    age: u.age ?? null,
+    onboardingCompleted: Boolean(u.onboarding_completed),
     defaultAddress: u.default_address?.trim() || "",
     familyMembersCount: toInt(u.family_members_count, 0),
     is_active: !!u.is_active,

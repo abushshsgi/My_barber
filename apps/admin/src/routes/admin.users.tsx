@@ -79,7 +79,7 @@ function UsersPage() {
 
       <div className="bg-card rounded-2xl border border-border shadow-card overflow-hidden">
         {usersQ.isLoading ? (
-          <TableSkeleton rows={8} cols={6} />
+          <TableSkeleton rows={8} cols={8} />
         ) : !data || data.results.length === 0 ? (
           <EmptyState
             title="Mijozlar topilmadi"
@@ -94,6 +94,8 @@ function UsersPage() {
                     <th className="px-6 py-3 font-medium">Mijoz</th>
                     <th className="px-6 py-3 font-medium">Telefon</th>
                     <th className="px-6 py-3 font-medium">Hudud</th>
+                    <th className="px-6 py-3 font-medium">Yosh</th>
+                    <th className="px-6 py-3 font-medium">Profil</th>
                     <th className="px-6 py-3 font-medium text-right">Bronlar</th>
                     <th className="px-6 py-3 font-medium">Ro&apos;yxatdan o&apos;tdi</th>
                     <th className="px-6 py-3 font-medium">Holat</th>
@@ -117,6 +119,25 @@ function UsersPage() {
                       <td className="px-6 py-4 text-foreground tabular-nums">{u.phone}</td>
                       <td className="px-6 py-4 text-foreground">
                         {u.regionLabel || uzRegionLabel(u.region)}
+                        {u.latitude && u.longitude ? (
+                          <div className="mt-0.5 text-[10px] text-muted-foreground tabular-nums">
+                            GPS bor
+                          </div>
+                        ) : null}
+                      </td>
+                      <td className="px-6 py-4 text-foreground tabular-nums">
+                        {u.age != null ? u.age : u.birthYear != null ? u.birthYear : "—"}
+                      </td>
+                      <td className="px-6 py-4">
+                        {u.onboardingCompleted ? (
+                          <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold uppercase text-emerald-800">
+                            Tayyor
+                          </span>
+                        ) : (
+                          <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold uppercase text-amber-900">
+                            To&apos;liq emas
+                          </span>
+                        )}
                       </td>
                       <td className="px-6 py-4 text-right tabular-nums text-foreground">
                         {u.bookings_count}

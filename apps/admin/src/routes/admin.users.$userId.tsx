@@ -119,8 +119,23 @@ function UserDetailPage() {
                 )}
               </Info>
               <Info term="Asosiy manzil">{u.defaultAddress || "—"}</Info>
-              <Info term="Tug'ilgan yil">
-                <span className="tabular-nums">{u.birthYear ?? "—"}</span>
+              <Info term="Tug'ilgan yil / Yosh">
+                <span className="tabular-nums">
+                  {u.birthYear != null
+                    ? `${u.birthYear}${u.age != null ? ` · ${u.age} yosh` : ""}`
+                    : "—"}
+                </span>
+              </Info>
+              <Info term="Onboarding">
+                {u.onboardingCompleted ? (
+                  <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold uppercase text-emerald-800">
+                    Tugallangan
+                  </span>
+                ) : (
+                  <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold uppercase text-amber-900">
+                    Kutilmoqda
+                  </span>
+                )}
               </Info>
               <Info term="Ro'yxat usuli">{SIGNUP_LABEL[u.signupMethod] ?? u.signupMethod}</Info>
               <Info term="Oxirgi kirish">
