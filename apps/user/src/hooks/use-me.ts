@@ -80,10 +80,23 @@ export function useUserAgeGroup(): AgeGroup | null {
 }
 
 export function useOnboardingRequired() {
-  const { data: me, isLoading } = useMe();
+  const loggedIn = hasValidUserSession();
+  const { data: me, isLoading, isFetching, isPending, isError } = useMe();
+  const cached = getAuthUser();
+
+  // Session bor, /me hali yo'q — home ga o'tkazmaslik.
+  const waitingForMe = loggedIn && !me && (isLoading || isPending || isFetching) && !isError;
+
+  const required = me
+    ? needsOnboarding(me)
+    : cached
+      ? needsOnboarding(cached)
+      : false;
+
   return {
-    required: me ? needsOnboarding(me) : false,
-    isLoading,
+    required: waitingForMe ? true : required,
+    isLoading: waitingForMe || isLoading,
+    isPending: waitingForMe || isPending,
     user: me,
   };
 }

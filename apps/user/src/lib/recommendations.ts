@@ -163,7 +163,23 @@ export function userRecommendContext(user?: {
 
 export function needsOnboarding(user?: {
   onboarding_completed?: boolean;
+  birth_year?: number | null;
+  latitude?: string | number | null;
+  longitude?: string | number | null;
 } | null): boolean {
   if (!user) return true;
-  return user.onboarding_completed !== true;
+
+  const hasBirth = user.birth_year != null && Number(user.birth_year) > 1900;
+  const lat = user.latitude;
+  const lng = user.longitude;
+  const hasLoc =
+    lat != null &&
+    lat !== "" &&
+    lng != null &&
+    lng !== "" &&
+    Number.isFinite(Number(lat)) &&
+    Number.isFinite(Number(lng));
+
+  if (user.onboarding_completed !== true) return true;
+  return !hasBirth || !hasLoc;
 }

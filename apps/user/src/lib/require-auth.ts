@@ -21,6 +21,26 @@ export async function redirectIfAuthenticated() {
   if (!ok) return;
   const params = new URLSearchParams(window.location.search);
   const redirectTo = safeAuthRedirectPath(params.get("redirect"));
+
+  let mustOnboard = false;
+  try {
+    const { fetchMe } = await import("@/lib/api/user");
+    const { needsOnboarding } = await import("@/lib/recommendations");
+    const { getAuthUser } = await import("@/lib/auth");
+    try {
+      const me = await fetchMe();
+      mustOnboard = needsOnboarding(me);
+    } catch {
+      const cached = getAuthUser();
+      mustOnboard = cached ? needsOnboarding(cached) : false;
+    }
+  } catch {
+    mustOnboard = false;
+  }
+
+  if (mustOnboard) {
+    throw redirect({ to: "/onboarding" });
+  }
   if (redirectTo) {
     throw redirect({ href: redirectTo });
   }

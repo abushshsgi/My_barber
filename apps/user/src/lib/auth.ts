@@ -43,6 +43,10 @@ export type AuthUser = {
   phone: string;
   name?: string;
   id?: number;
+  onboarding_completed?: boolean;
+  birth_year?: number | null;
+  latitude?: string | number | null;
+  longitude?: string | number | null;
 };
 
 function userFromApi(user: ApiUser): AuthUser {
@@ -50,6 +54,10 @@ function userFromApi(user: ApiUser): AuthUser {
     id: user.id,
     phone: user.phone ?? "",
     name: user.full_name || undefined,
+    onboarding_completed: user.onboarding_completed,
+    birth_year: user.birth_year ?? null,
+    latitude: user.latitude ?? null,
+    longitude: user.longitude ?? null,
   };
 }
 
