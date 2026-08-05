@@ -80,6 +80,7 @@ class AdminUserSerializer(serializers.ModelSerializer):
     email_verified = serializers.SerializerMethodField()
     default_address = serializers.SerializerMethodField()
     family_members_count = serializers.SerializerMethodField()
+    age = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -101,6 +102,8 @@ class AdminUserSerializer(serializers.ModelSerializer):
             "longitude",
             "location_city",
             "birth_year",
+            "age",
+            "onboarding_completed",
             "is_active",
             "is_staff",
             "date_joined",
@@ -122,6 +125,8 @@ class AdminUserSerializer(serializers.ModelSerializer):
             "email_verified_at",
             "default_address",
             "family_members_count",
+            "age",
+            "onboarding_completed",
         )
 
     def _location_tuple(self, obj: User) -> tuple[str, str, str]:
@@ -187,6 +192,16 @@ class AdminUserSerializer(serializers.ModelSerializer):
 
     def get_bookings_count(self, obj: User) -> int:
         return int(getattr(obj, "bookings_count", obj.customer_bookings.count()))
+
+    def get_age(self, obj: User) -> int | None:
+        if obj.birth_year is None:
+            return None
+        from datetime import date
+
+        age = date.today().year - int(obj.birth_year)
+        if age < 10 or age > 120:
+            return None
+        return age
 
 
 class AdminUserUpdateSerializer(serializers.ModelSerializer):
