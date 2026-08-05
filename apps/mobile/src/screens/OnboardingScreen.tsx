@@ -17,6 +17,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   geocodeAddress,
   reverseGeocodeAddress,
+  validateLocation,
   type GeocodeResult,
 } from "../api/geo";
 import { updateMe } from "../api/user";
@@ -32,6 +33,7 @@ import {
   validateDisplayName,
   type DisplayNameErrorKey,
 } from "../lib/validate-display-name";
+import { AccountCreatingScreen } from "./AccountCreatingScreen";
 import { colors } from "../theme/colors";
 
 const NAME_ERRORS: Record<DisplayNameErrorKey, string> = {
@@ -151,21 +153,27 @@ export function OnboardingScreen() {
       setError(null);
       const birthYear = new Date().getFullYear() - ageValue;
       const [first, ...rest] = checked.value.split(" ");
+      const startedAt = Date.now();
       try {
+        const geo = await validateLocation(finishLat, finishLng).catch(() => null);
         await updateMe({
           first_name: first ?? "",
           last_name: rest.join(" "),
           birth_year: birthYear,
           latitude: roundCoord(finishLat),
           longitude: roundCoord(finishLng),
+          ...(geo?.region_from_gps ? { region: geo.region_from_gps } : {}),
           onboarding_completed: true,
         });
         await refreshMe();
+        // Logo ekrani kamida qisqa ko'rinsin; Home GPS bo'yicha yuklanadi.
+        const wait = Math.max(0, 900 - (Date.now() - startedAt));
+        if (wait > 0) await new Promise((r) => setTimeout(r, wait));
+        // Muvaffaqiyat: AppGate RootTabs ga o'tadi — saving ni o'chirmaymiz.
       } catch (e) {
         finishingRef.current = false;
-        setError(e instanceof Error ? e.message : "Saqlashda xatolik");
-      } finally {
         setSaving(false);
+        setError(e instanceof Error ? e.message : "Saqlashda xatolik");
       }
     },
     [age, firstName, lastName, refreshMe],
@@ -284,6 +292,11 @@ export function OnboardingScreen() {
 
   const busy = saving || locating;
 
+  // Tayyor → oq ekran + Mysaloon logo (xarita overlay emas)
+  if (saving) {
+    return <AccountCreatingScreen />;
+  }
+
   // ——— 3-sahifa: joylashuv picker ———
   if (step === 3) {
     return (
@@ -366,24 +379,13 @@ export function OnboardingScreen() {
         <View style={[styles.mapBottom, { paddingBottom: Math.max(insets.bottom, 16) + 8 }]}>
           {error ? <Text style={styles.mapError}>{error}</Text> : null}
           <Pressable
-            style={[styles.readyBtn, saving && styles.disabled]}
+            style={styles.readyBtn}
             onPress={onConfirmLocation}
-            disabled={saving}
+            disabled={locating}
           >
-            {saving ? (
-              <ActivityIndicator color="#111" />
-            ) : (
-              <Text style={styles.readyText}>Tayyor</Text>
-            )}
+            <Text style={styles.readyText}>Tayyor</Text>
           </Pressable>
         </View>
-
-        {saving ? (
-          <View style={styles.savingOverlay}>
-            <ActivityIndicator color="#FFF" size="large" />
-            <Text style={styles.savingText}>Akkaunt yaratilmoqda…</Text>
-          </View>
-        ) : null}
 
         <Modal
           visible={searchOpen}
@@ -764,13 +766,4 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
   },
   searchRowText: { flex: 1, fontSize: 15, color: colors.fg, fontWeight: "600" },
-  savingOverlay: {
-    ...StyleSheet.absoluteFill,
-    backgroundColor: "rgba(0,0,0,0.45)",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 12,
-    zIndex: 5,
-  },
-  savingText: { color: "#FFF", fontSize: 15, fontWeight: "700" },
 });

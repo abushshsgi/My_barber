@@ -162,6 +162,13 @@ export function useHomeCatalog(): HomeCatalogState {
   }, [rawBarbers, cardImageW]);
 
   const locationLabel = useMemo(() => {
+    if (lat != null && lng != null) {
+      if (profileRegion) {
+        const match = regions.find((r) => regionCode(r) === profileRegion);
+        if (match) return regionLabel(match);
+      }
+      return "Yaqiningizda";
+    }
     if (profileRegion) {
       const match = regions.find((r) => regionCode(r) === profileRegion);
       if (match) return regionLabel(match);
@@ -171,7 +178,7 @@ export function useHomeCatalog(): HomeCatalogState {
     if (uz) return regionLabel(uz);
     if (regions.length > 1) return "O'zbekiston";
     return regions[0] ? regionLabel(regions[0]) : "O'zbekiston";
-  }, [regions, profileRegion]);
+  }, [regions, profileRegion, lat, lng]);
 
   return {
     salons,

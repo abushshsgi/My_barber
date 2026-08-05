@@ -8,6 +8,13 @@ export type GeocodeResult = {
   full_name: string;
 };
 
+export type LocationValidation = {
+  region_from_gps: string;
+  region_from_gps_label: string;
+  city_label: string;
+  in_uzbekistan: boolean;
+};
+
 export async function geocodeAddress(q: string): Promise<GeocodeResult[]> {
   try {
     const data = await apiJson<{ results: GeocodeResult[] }>(
@@ -26,6 +33,19 @@ export async function reverseGeocodeAddress(
   try {
     return await apiJson<GeocodeResult>(
       `/api/v1/geo/reverse/?lat=${encodeURIComponent(String(lat))}&lng=${encodeURIComponent(String(lng))}`
+    );
+  } catch {
+    return null;
+  }
+}
+
+export async function validateLocation(
+  lat: number,
+  lng: number
+): Promise<LocationValidation | null> {
+  try {
+    return await apiJson<LocationValidation>(
+      `/api/v1/geo/validate/?lat=${encodeURIComponent(String(lat))}&lng=${encodeURIComponent(String(lng))}`
     );
   } catch {
     return null;
