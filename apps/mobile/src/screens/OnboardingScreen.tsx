@@ -156,12 +156,20 @@ export function OnboardingScreen() {
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== "granted") {
-        setError("Joylashuv ruxsati berilmadi");
+        setError("Joylashuv ruxsati berilmadi. Brauzerda ruxsatni yoqing.");
         return;
       }
-      const pos = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.High,
-      });
+      const pos = await Promise.race([
+        Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+        }),
+        new Promise<never>((_, reject) => {
+          setTimeout(
+            () => reject(new Error("GPS topilmadi (timeout). Qayta urinib ko'ring.")),
+            18_000,
+          );
+        }),
+      ]);
       const nextLat = pos.coords.latitude;
       const nextLng = pos.coords.longitude;
       setLat(nextLat);
@@ -366,7 +374,7 @@ const styles = StyleSheet.create({
   primaryText: { color: "#FFF", fontSize: 16, fontWeight: "800" },
   disabled: { opacity: 0.5 },
 
-  mapRoot: { flex: 1, backgroundColor: colors.surface },
+  mapRoot: { flex: 1, backgroundColor: colors.surface, position: "relative" },
   mapTopBar: {
     position: "absolute",
     left: 0,

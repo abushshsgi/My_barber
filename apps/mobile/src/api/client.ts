@@ -118,10 +118,20 @@ export async function apiJson<T>(path: string, init?: RequestInit): Promise<T> {
       const text = await res.text().catch(() => "");
       let detail = text.slice(0, 200) || res.statusText;
       try {
-        const j = JSON.parse(text) as { detail?: string };
+        const j = JSON.parse(text) as {
+          detail?: string;
+          message?: string;
+          status?: string;
+        };
         if (typeof j.detail === "string") detail = j.detail;
+        else if (typeof j.message === "string") detail = j.message;
       } catch {
         /* ignore */
+      }
+      if (res.status === 502 || res.status === 503 || res.status === 504) {
+        throw new Error(
+          "Server vaqtincha javob bermayapti (502). Bir necha soniyadan keyin qayta urinib ko'ring.",
+        );
       }
       throw new Error(detail.startsWith("API ") ? detail : `API ${res.status}: ${detail}`);
     }
