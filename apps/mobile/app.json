@@ -39,7 +39,8 @@
         {
           "locationWhenInUsePermission": "Yaqin salonlarni ko'rsatish uchun joylashuvingiz kerak."
         }
-      ]
+      ],
+      "react-native-maps"
     ],
     "extra": {
       "apiUrl": "https://api.mysaloon.uz",
