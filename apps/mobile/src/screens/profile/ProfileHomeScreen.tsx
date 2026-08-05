@@ -13,6 +13,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { HeaderPill } from "../../components/ui/NativeHeader";
 import { SettingsGroup, SettingsRow } from "../../components/ui/SettingsKit";
 import { useProfileData } from "../../hooks/useProfileData";
+import { useAuth } from "../../auth/AuthContext";
 import { formatSom, initials } from "../../api/user";
 import type { ProfileStackParamList } from "../../navigation/ProfileStack";
 import { colors } from "../../theme/colors";
@@ -29,6 +30,12 @@ const QUICK = [
 export function ProfileHomeScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
   const data = useProfileData();
+  const { signOut, user: authUser } = useAuth();
+  const display = authUser
+    ? authUser.full_name ||
+      [authUser.first_name, authUser.last_name].filter(Boolean).join(" ") ||
+      data.name
+    : data.name;
 
   return (
     <View style={[styles.root, { paddingTop: Math.max(insets.top, 10) }]}>
@@ -57,14 +64,14 @@ export function ProfileHomeScreen({ navigation }: Props) {
             {data.loading ? (
               <ActivityIndicator color={colors.fg} />
             ) : (
-              <Text style={styles.avatarText}>{initials(data.name)}</Text>
+              <Text style={styles.avatarText}>{initials(display)}</Text>
             )}
           </View>
           <Pressable
             style={styles.nameRow}
             onPress={() => navigation.navigate("PersonalInfo")}
           >
-            <Text style={styles.name}>{data.name}</Text>
+            <Text style={styles.name}>{display}</Text>
             <Ionicons name="checkmark-circle" size={18} color="#007AFF" />
             <Ionicons name="chevron-forward" size={16} color={colors.muted} />
           </Pressable>
@@ -159,16 +166,10 @@ export function ProfileHomeScreen({ navigation }: Props) {
           />
         </SettingsGroup>
 
-        <Pressable style={styles.logout}>
+        <Pressable style={styles.logout} onPress={() => void signOut()}>
           <Ionicons name="log-out-outline" size={18} color={colors.fg} />
           <Text style={styles.logoutText}>Chiqish</Text>
         </Pressable>
-
-        {!data.authed && !data.loading ? (
-          <Text style={styles.guestHint}>
-            Kirish qilingan emas — API ma'lumotlari token bilan keladi.
-          </Text>
-        ) : null}
       </ScrollView>
     </View>
   );

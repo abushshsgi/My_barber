@@ -27,10 +27,13 @@
     "plugins": [
       "expo-image",
       "expo-asset",
-      "expo-font"
+      "expo-font",
+      "expo-web-browser",
+      "expo-secure-store"
     ],
     "extra": {
-      "apiUrl": "https://api.mysaloon.uz"
+      "apiUrl": "https://api.mysaloon.uz",
+      "googleClientId": ""
     }
   }
 }

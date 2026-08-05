@@ -1,6 +1,6 @@
 # Mysaloon — React Native (Expo)
 
-Haqiqiy React Native ilova (`apps/user` Capacitor emas). Home sahifa web mobil UI bilan bir xil.
+Haqiqiy React Native ilova (`apps/user` Capacitor emas).
 
 ## Ishga tushirish
 
@@ -9,26 +9,23 @@ cd apps/mobile
 npm start
 ```
 
-Keyin Expo Go (Android/iOS) yoki emulator.
+## Auth
+
+- Splash animatsiya → Login (Google + telefon OTP / parol) → Home
+- Tokenlar: SecureStore / AsyncStorage (`mybarber_user_access`)
+- Google: `EXPO_PUBLIC_GOOGLE_CLIENT_ID` yoki `app.json` → `extra.googleClientId`
+  (web OAuth client ID — backend `GOOGLE_OAUTH_CLIENT_ID` bilan mos)
+
+```bash
+EXPO_PUBLIC_GOOGLE_CLIENT_ID=xxxx.apps.googleusercontent.com npm start
+```
 
 ## API
 
-Default: `https://api.mysaloon.uz` (`app.json` → `extra.apiUrl`)
-
-Override:
-
-```bash
-EXPO_PUBLIC_API_URL=http://10.0.2.2:8000 npm start
-```
-
-Rasmlar (`/media/…`) avtomatik absolute URL ga aylanadi; banner va salon cover ekran kengligi + PixelRatio bo‘yicha responsive yuklanadi.
+Default: `https://api.mysaloon.uz`  
+Web dev: Metro proxy (`/api`, `/media`)
 
 ## Holat
 
-- Home: header, banner, kategoriyalar, Top salonlar / Top ustalar, dock
-- Katalog API ulangan (`/api/v1/salons/`, `/api/v1/barbers/`)
-- Xarita, Morf AI, Explore, Profil — placeholder (keyingi sahifalar)
-
-## Eslatma
-
-Bu paket monorepo `workspaces` ichida emas — Expo React 19 va web React 18 konfliktini oldini olish uchun alohida `node_modules`.
+- Home, Profil stack, Obuna, Login/Splash
+- Auth Bearer + refresh ulangan

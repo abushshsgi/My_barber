@@ -1,4 +1,5 @@
-import { API_BASE } from "./config";
+﻿import { API_BASE, API_ORIGIN } from "./config";
+import { getAccessToken, getRefreshToken, saveSession, clearSession } from "../auth/storage";
 
 export type Paginated<T> = {
   count?: number;
@@ -30,7 +31,49 @@ function buildUrl(path: string): string {
   return `${API_BASE}${normalized}`;
 }
 
-/** Backend REST. GET da Content-Type yuborilmaydi (CORS preflight). */
+let refreshPromise: Promise<string | null> | null = null;
+
+async function tryRefresh(): Promise<string | null> {
+  if (refreshPromise) return refreshPromise;
+  refreshPromise = (async () => {
+    const refresh = await getRefreshToken();
+    if (!refresh) return null;
+    try {
+      const base = API_BASE || API_ORIGIN;
+      const res = await fetch(`${base}/api/v1/auth/token/refresh/`, {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ refresh }),
+      });
+      if (!res.ok) throw new Error("refresh failed");
+      const data = (await res.json()) as { access: string; refresh?: string };
+      await saveSession({
+        access: data.access,
+        refresh: data.refresh || refresh,
+      });
+      return data.access;
+    } catch {
+      await clearSession();
+      return null;
+    } finally {
+      refreshPromise = null;
+    }
+  })();
+  return refreshPromise;
+}
+
+function isAuthPath(path: string): boolean {
+  return (
+    path.includes("/auth/google") ||
+    path.includes("/auth/phone/") ||
+    path.includes("/auth/token/refresh")
+  );
+}
+
+/** Backend REST — Bearer token + 401 da refresh. */
 export async function apiJson<T>(path: string, init?: RequestInit): Promise<T> {
   const url = buildUrl(path);
   const method = (init?.method || "GET").toUpperCase();
@@ -45,17 +88,42 @@ export async function apiJson<T>(path: string, init?: RequestInit): Promise<T> {
     headers["Content-Type"] = "application/json";
   }
 
+  if (!isAuthPath(path) && !headers.Authorization) {
+    const token = await getAccessToken();
+    if (token) headers.Authorization = `Bearer ${token}`;
+  }
+
   try {
-    const res = await fetch(url, {
+    let res = await fetch(url, {
       ...init,
       method,
       signal: init?.signal ?? controller.signal,
       headers,
     });
 
+    if (res.status === 401 && !isAuthPath(path)) {
+      const next = await tryRefresh();
+      if (next) {
+        headers.Authorization = `Bearer ${next}`;
+        res = await fetch(url, {
+          ...init,
+          method,
+          signal: init?.signal ?? controller.signal,
+          headers,
+        });
+      }
+    }
+
     if (!res.ok) {
       const text = await res.text().catch(() => "");
-      throw new Error(`API ${res.status}: ${text.slice(0, 160) || res.statusText}`);
+      let detail = text.slice(0, 200) || res.statusText;
+      try {
+        const j = JSON.parse(text) as { detail?: string };
+        if (typeof j.detail === "string") detail = j.detail;
+      } catch {
+        /* ignore */
+      }
+      throw new Error(detail.startsWith("API ") ? detail : `API ${res.status}: ${detail}`);
     }
 
     if (res.status === 204) return undefined as T;
@@ -65,7 +133,7 @@ export async function apiJson<T>(path: string, init?: RequestInit): Promise<T> {
       throw new Error("Backend javob bermadi (timeout). Internetni tekshiring.");
     }
     if (err instanceof TypeError) {
-      throw new Error(`Failed to fetch (${API_BASE || "proxy→api.mysaloon.uz"})`);
+      throw new Error(`Failed to fetch (${API_BASE || API_ORIGIN})`);
     }
     throw err;
   } finally {
