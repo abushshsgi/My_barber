@@ -23,6 +23,7 @@ import type { ExplorePersonaId } from "@/lib/explore-personas";
 import { createMorphAiLookShare } from "@/lib/api";
 import { downloadAiStyleImage, shareAiStyleLink } from "@/lib/ai-style-image";
 import { trackMorphShare } from "@/lib/ga";
+import { publicAppUrl } from "@/lib/public-origin";
 import { toShareImageSource } from "@/lib/media-url";
 import { buildTelegramShareUrl, pickMorphShareText } from "@/lib/morph-share-copy";
 import { stashBarberConsultDraft } from "@/lib/barber-consult-session";
@@ -99,9 +100,8 @@ export function AiStylePreviewSheet({
 
   const imageSrc = previewImage || suggestion.imageUrl;
   const canTryOn = Boolean(onGenerateTryOn && isCatalogStyleId(suggestion.id));
-  const lookUrl =
-    typeof window !== "undefined" && isCatalogStyleId(suggestion.id)
-      ? `${window.location.origin}/morf-ai/look/${suggestion.id}`
+  const lookUrl = isCatalogStyleId(suggestion.id)
+      ? publicAppUrl(`/morf-ai/look/${suggestion.id}`)
       : undefined;
 
   const goBack = () => onOpenChange(false);
@@ -165,7 +165,7 @@ export function AiStylePreviewSheet({
       });
       const pageUrl =
         created.share_page_url ||
-        `${window.location.origin}/morf-ai/share/${encodeURIComponent(created.id)}`;
+        publicAppUrl(`/morf-ai/share/${encodeURIComponent(created.id)}`);
       const shareTitle = pickMorphShareText(t, {
         style: suggestion.title,
         name: created.sharer_name || "",

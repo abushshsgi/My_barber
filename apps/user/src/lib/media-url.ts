@@ -1,11 +1,11 @@
 import { API_BASE } from "@/lib/api/client";
+import { getPublicSiteOrigin } from "@/lib/public-origin";
 
 const PEXELS_RE = /(?:https?:\/\/)?images\.pexels\.com\/photos\/(\d+)/i;
 /** api.mysaloon.uz yoki *.railway.app dagi /media/ */
 const API_MEDIA_RE =
   /^https?:\/\/(?:api\.mysaloon\.uz|[a-z0-9-]+\.up\.railway\.app)(\/media\/.+)$/i;
 
-const SITE_ORIGIN = "https://www.mysaloon.uz";
 const DEFAULT_API_ORIGIN = "https://api.mysaloon.uz";
 
 function isMobileSpa(): boolean {
@@ -35,12 +35,12 @@ export function resolveMediaUrl(path: string | null | undefined): string | null 
 
   const absolute = needsAbsoluteMedia();
   const origin = apiOrigin();
+  const siteOrigin = getPublicSiteOrigin();
 
   const pexels = raw.match(PEXELS_RE);
   if (pexels) {
-    // Web: Vercel `/covers/pexels` proxy. App: sayt origin (Capacitor da lokal proxy yo‘q).
     return absolute
-      ? `${SITE_ORIGIN}/covers/pexels/${pexels[1]}?w=900`
+      ? `${siteOrigin}/covers/pexels/${pexels[1]}?w=900`
       : `/covers/pexels/${pexels[1]}?w=900`;
   }
 
@@ -56,12 +56,11 @@ export function resolveMediaUrl(path: string | null | undefined): string | null 
   if (raw.startsWith("/")) {
     if (absolute) {
       if (raw.startsWith("/media/")) return `${origin}${raw}`;
-      if (raw.startsWith("/covers/")) return `${SITE_ORIGIN}${raw}`;
+      if (raw.startsWith("/covers/")) return `${siteOrigin}${raw}`;
     }
     return raw;
   }
 
-  // "media/salons/..." yoki "salons/gallery/..."
   if (raw.startsWith("media/")) {
     const pathWithSlash = `/${raw}`;
     return absolute ? `${origin}${pathWithSlash}` : pathWithSlash;
@@ -72,7 +71,6 @@ export function resolveMediaUrl(path: string | null | undefined): string | null 
 
 /**
  * Look-share / Instagram POST uchun: nisbiy /media/… ni absolute URL ga aylantiradi.
- * Backend storage + http(s) ikkalasini ham qabul qiladi.
  */
 export function toShareImageSource(path: string | null | undefined): string {
   const resolved = resolveMediaUrl(path) ?? (path || "").trim();
@@ -84,11 +82,11 @@ export function toShareImageSource(path: string | null | undefined): string {
   ) {
     return resolved;
   }
-  if (typeof window !== "undefined" && resolved.startsWith("/")) {
-    if (needsAbsoluteMedia() && resolved.startsWith("/media/")) {
-      return `${apiOrigin()}${resolved}`;
-    }
-    return `${window.location.origin}${resolved}`;
+  if (resolved.startsWith("/")) {
+    if (resolved.startsWith("/media/")) return `${apiOrigin()}${resolved}`;
+    if (needsAbsoluteMedia()) return `${getPublicSiteOrigin()}${resolved}`;
+    if (typeof window !== "undefined") return `${window.location.origin}${resolved}`;
+    return `${getPublicSiteOrigin()}${resolved}`;
   }
   return resolved;
 }

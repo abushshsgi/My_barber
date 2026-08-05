@@ -22,6 +22,7 @@ import { MorphPromoUrgencyBanner } from "@/components/subscriptions/MorphPromoUr
 import { useSubscriptionCheckout, useSubscriptionMe, useSubscriptionPlans } from "@/hooks/use-subscription";
 import { useWalletMe } from "@/hooks/use-wallet";
 import { parseWalletBalance } from "@/lib/api/wallet";
+import { getPublicSiteOrigin } from "@/lib/public-origin";
 import {
   confirmSubscriptionPayment,
   previewSubscriptionPromo,
@@ -381,7 +382,7 @@ export function SettingsSubscriptionsPanel() {
     try {
       const return_url =
         typeof window !== "undefined"
-          ? `${window.location.origin}${returnTo || "/wallet?section=subscriptions"}`
+          ? `${getPublicSiteOrigin()}${returnTo || "/wallet?section=subscriptions"}`
           : undefined;
       const res = await checkout.mutateAsync({
         plan_code,

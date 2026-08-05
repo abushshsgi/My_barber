@@ -1,5 +1,6 @@
 import type { ApiConversation, ApiMessage } from "@/lib/api/types";
 import type { ChatMessage, ChatThread } from "@/lib/mock-data";
+import { resolveMediaUrl } from "@/lib/media-url";
 
 function formatRelativeTime(iso: string | null): string {
   if (!iso) return "";
@@ -22,7 +23,7 @@ export function mapConversation(api: ApiConversation): ChatThread {
     barberName: api.other.full_name,
     barberId: api.other.kind === "BARBER" ? api.other.id : undefined,
     avatarSeed: String(api.other.id),
-    avatarUrl: api.other.avatar || undefined,
+    avatarUrl: resolveMediaUrl(api.other.avatar) ?? api.other.avatar ?? undefined,
     lastMessage: api.last_message_text || "",
     lastTime: formatRelativeTime(api.last_message_at ?? api.updated_at),
     unread: api.unread_count ?? 0,

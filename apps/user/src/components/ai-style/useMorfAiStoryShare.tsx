@@ -10,6 +10,7 @@ import { createMorphAiLookShare } from "@/lib/api";
 import { trackMorphShare, type MorphShareSurface } from "@/lib/ga";
 import { toShareImageSource } from "@/lib/media-url";
 import { composeMorfAiStoryImage } from "@/lib/morf-ai-story-image";
+import { publicAppUrl } from "@/lib/public-origin";
 import {
   buildStoryCta,
   buildStoryEyebrow,
@@ -51,7 +52,7 @@ export function useMorfAiStoryShare(surface: MorphShareSurface) {
       try {
         // Faqat tayyor natija (after) — before/after emas.
         const afterSource = toShareImageSource(input.imageUrl);
-        let pageUrl = `${window.location.origin}/explore/${encodeURIComponent(input.styleId)}`;
+        let pageUrl = publicAppUrl(`/explore/${encodeURIComponent(input.styleId)}`);
         let sharerName = "";
         let shareId = "";
         try {
@@ -62,7 +63,7 @@ export function useMorfAiStoryShare(surface: MorphShareSurface) {
           });
           pageUrl =
             created.share_page_url ||
-            `${window.location.origin}/morf-ai/share/${encodeURIComponent(created.id)}`;
+            publicAppUrl(`/morf-ai/share/${encodeURIComponent(created.id)}`);
           sharerName = created.sharer_name || "";
           shareId = created.id;
         } catch {

@@ -1,4 +1,5 @@
 import type { Category } from "@/lib/mock-data";
+import { resolveMediaUrl } from "@/lib/media-url";
 
 const PLACEHOLDER_SALON = "/placeholder-salon.svg";
 
@@ -8,13 +9,11 @@ const CATEGORY_PHOTOS: Record<Category, number> = {
   nails: 4968391,
 };
 
-/** API yoki tashqi Pexels URL ni same-origin proxy yo‘liga aylantiradi. */
+/** API yoki tashqi Pexels URL ni appda yuklanadigan URL ga aylantiradi. */
 export function normalizeCoverUrl(url: string | null | undefined): string | null {
   const raw = url?.trim();
   if (!raw) return null;
-  const match = raw.match(/images\.pexels\.com\/photos\/(\d+)/);
-  if (match) return `/covers/pexels/${match[1]}?w=900`;
-  return raw;
+  return resolveMediaUrl(raw) ?? raw;
 }
 
 function isStockCoverUrl(url: string): boolean {
@@ -48,18 +47,18 @@ export function resolveCoverUrl(
   if (!raw || isStockCoverUrl(raw)) {
     return PLACEHOLDER_SALON;
   }
-  const normalized = normalizeCoverUrl(raw) ?? raw;
+  const normalized = resolveMediaUrl(raw) ?? raw;
   if (isStockCoverUrl(normalized)) {
     return PLACEHOLDER_SALON;
   }
   if (normalized.startsWith("/media/") && normalized.length > "/media/".length) {
-    return normalized;
+    return resolveMediaUrl(normalized) ?? PLACEHOLDER_SALON;
   }
   if (normalized.startsWith("http://") || normalized.startsWith("https://")) {
     return normalized;
   }
   if (normalized.startsWith("/")) {
-    return normalized;
+    return resolveMediaUrl(normalized) ?? normalized;
   }
   return PLACEHOLDER_SALON;
 }
@@ -78,7 +77,7 @@ const TREND_PHOTO_IDS = [
 
 export function pexelsCoverUrl(photoId: number, width = 560): string {
   const w = width >= 800 ? 1200 : 800;
-  return `/covers/pexels/${photoId}?w=${w}`;
+  return resolveMediaUrl(`/covers/pexels/${photoId}?w=${w}`) ?? `/covers/pexels/${photoId}?w=${w}`;
 }
 
 const TREND_COVERS: Record<string, string> = Object.fromEntries(

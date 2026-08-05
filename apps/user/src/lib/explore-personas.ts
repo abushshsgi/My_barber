@@ -207,6 +207,7 @@ export function getPersonaRefImageUrl(personaId: ExplorePersonaId): string {
 /**
  * Katalog persona rasmlari — Vercel CDN `/hairstyles/` (DB `/media` emas).
  * `/media/hairstyles/...` → `/hairstyles/...` (Explore tezligi uchun).
+ * Capacitor: static `/hairstyles` public bundle da bor; API hostni saqlamaymiz.
  */
 export function preferStaticHairstyleUrl(url: string): string {
   const trimmed = url.trim();

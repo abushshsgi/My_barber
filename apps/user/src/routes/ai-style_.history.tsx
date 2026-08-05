@@ -14,6 +14,7 @@ import { getActiveUserId } from "@/lib/face-profile";
 import { trackMorphShare } from "@/lib/ga";
 import { resolveMediaUrl, toShareImageSource } from "@/lib/media-url";
 import { buildTelegramShareUrl, pickMorphShareText } from "@/lib/morph-share-copy";
+import { publicAppUrl } from "@/lib/public-origin";
 import {
   loadMorphAiGenerations,
   MORPH_AI_GALLERY_UPDATED_EVENT,
@@ -130,7 +131,7 @@ function AiStyleHistoryPage() {
       });
       const pageUrl =
         created.share_page_url ||
-        `${typeof window !== "undefined" ? window.location.origin : "https://mysaloon.uz"}/morf-ai/share/${encodeURIComponent(created.id)}`;
+        publicAppUrl(`/morf-ai/share/${encodeURIComponent(created.id)}`);
       const shareTitle = pickMorphShareText(t, {
         style: active.title,
         name: created.sharer_name || "",
@@ -172,7 +173,7 @@ function AiStyleHistoryPage() {
       });
       const pageUrl =
         created.share_page_url ||
-        `${typeof window !== "undefined" ? window.location.origin : "https://mysaloon.uz"}/morf-ai/share/${encodeURIComponent(created.id)}`;
+        publicAppUrl(`/morf-ai/share/${encodeURIComponent(created.id)}`);
       const shareTitle = pickMorphShareText(t, {
         style: active.title,
         name: created.sharer_name || "",

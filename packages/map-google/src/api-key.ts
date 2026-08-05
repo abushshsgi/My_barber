@@ -34,7 +34,9 @@ export async function resolveGoogleMapsApiKey(): Promise<string> {
         .replace(/\/+$/, "");
       const configUrl = apiBase
         ? `${apiBase}/api/v1/geo/map-config/`
-        : "/api/v1/geo/map-config/";
+        : env.VITE_MOBILE_SPA === "true"
+          ? "https://api.mysaloon.uz/api/v1/geo/map-config/"
+          : "/api/v1/geo/map-config/";
       const res = await fetch(configUrl, { cache: "no-store" });
       if (!res.ok) {
         cachedRemoteKey = null;

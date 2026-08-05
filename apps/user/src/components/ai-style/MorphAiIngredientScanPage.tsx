@@ -494,7 +494,18 @@ export function MorphAiIngredientScanPage() {
           <button
             type="button"
             disabled={busy}
-            onClick={() => cameraInputRef.current?.click()}
+            onClick={() => {
+              void (async () => {
+                try {
+                  const { ensureCameraPermission } = await import("@/lib/native-camera");
+                  const ok = await ensureCameraPermission();
+                  if (!ok) return;
+                } catch {
+                  /* web */
+                }
+                cameraInputRef.current?.click();
+              })();
+            }}
             className="flex h-12 items-center justify-center gap-2 rounded-full bg-white text-sm font-semibold text-black disabled:opacity-50"
           >
             <Camera className="size-4" />

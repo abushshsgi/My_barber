@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { MorphNearbySalons } from "@/components/ai-style/MorphNearbySalons";
 import { stashMasterCardForBooking } from "@/lib/barber-consult-session";
+import { toShareImageSource } from "@/lib/media-url";
 import type { BarberMasterCard, ViewerCameraState } from "@/types/barber-master-card";
 
 type Props = {
@@ -34,11 +35,10 @@ export function BookingModal({
   const persistStash = () => {
     stashMasterCardForBooking({
       master_card_json: card,
-      style_preview_url: previewImage.startsWith("http") || previewImage.startsWith("data:")
-        ? previewImage
-        : typeof window !== "undefined"
-          ? new URL(previewImage, window.location.origin).href
-          : previewImage,
+      style_preview_url:
+        previewImage.startsWith("http") || previewImage.startsWith("data:")
+          ? previewImage
+          : toShareImageSource(previewImage) || previewImage,
       viewer_camera_state: cameraState,
       style_name: card.style_overview.name,
     });

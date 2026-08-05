@@ -188,7 +188,7 @@ export function mapStaffToBarber(
     role: roleLabel,
     rating: 4.8,
     avatarSeed: barberId,
-    avatarUrl: staff.avatar || undefined,
+    avatarUrl: resolveMediaUrl(staff.avatar) ?? staff.avatar ?? undefined,
     serviceIds,
     isBookable: staff.is_bookable !== false,
     salonId,

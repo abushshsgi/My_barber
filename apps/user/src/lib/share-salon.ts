@@ -1,11 +1,9 @@
 import type { Salon } from "@/lib/mock-data";
 import { nativeShare } from "@/lib/native-share";
+import { publicAppUrl } from "@/lib/public-origin";
 
 export function salonPublicUrl(salonId: string): string {
-  if (typeof window !== "undefined") {
-    return `${window.location.origin}/salon/${salonId}`;
-  }
-  return `https://mysaloon.uz/salon/${salonId}`;
+  return publicAppUrl(`/salon/${salonId}`);
 }
 
 export type ShareSalonResult = "shared" | "copied";

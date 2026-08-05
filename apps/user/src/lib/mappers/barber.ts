@@ -1,4 +1,5 @@
 import type { ApiBarberPublic } from "@/lib/api/types";
+import { resolveMediaUrl } from "@/lib/media-url";
 
 export type BarberDiscovery = {
   id: string;
@@ -36,7 +37,7 @@ export function mapBarberDiscovery(api: ApiBarberPublic): BarberDiscovery {
     barberId: String(api.barber_id),
     profileId: String(api.id),
     name: api.name,
-    avatar: api.avatar?.trim() || "",
+    avatar: resolveMediaUrl(api.avatar) ?? api.avatar?.trim() ?? "",
     rating: api.avg_rating ?? 0,
     reviewCount: api.review_count ?? 0,
     lat: toNum(api.latitude),
