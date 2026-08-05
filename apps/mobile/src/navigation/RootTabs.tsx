@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { HomeScreen } from "../screens/HomeScreen";
 import { PlaceholderScreen } from "../screens/PlaceholderScreen";
 import { colors } from "../theme/colors";
+import { ProfileStack } from "./ProfileStack";
 
 export type RootTabParamList = {
   Home: undefined;
@@ -37,6 +38,7 @@ const TABS: TabDef[] = [
 function CustomTabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
 
+  // Nested stack ichida root bo'lmasa ham dock ko'rinsin (rasmdagidek).
   return (
     <View style={[styles.dock, { paddingBottom: Math.max(insets.bottom, 8) }]}>
       {state.routes.map((route, index) => {
@@ -70,7 +72,15 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
           <Pressable key={route.key} onPress={onPress} style={styles.tab}>
             <View style={[styles.iconWrap, focused && styles.iconWrapOn]}>
               <Ionicons
-                name={focused && tab.icon === "home-outline" ? "home" : tab.icon}
+                name={
+                  focused
+                    ? tab.icon === "home-outline"
+                      ? "home"
+                      : tab.icon === "person-outline"
+                        ? "person"
+                        : tab.icon
+                    : tab.icon
+                }
                 size={20}
                 color={focused ? "#FFFFFF" : colors.muted}
               />
@@ -113,9 +123,7 @@ export function RootTabs() {
       <Tab.Screen name="Explore">
         {() => <PlaceholderScreen title="Explore" />}
       </Tab.Screen>
-      <Tab.Screen name="Profile">
-        {() => <PlaceholderScreen title="Profil" />}
-      </Tab.Screen>
+      <Tab.Screen name="Profile" component={ProfileStack} />
     </Tab.Navigator>
   );
 }
