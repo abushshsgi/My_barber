@@ -107,9 +107,11 @@ Android Studio → **Run** (yoki Build → Generate Signed Bundle (.aab) → Pla
    keytool -list -v -keystore your-upload.jks -alias your-alias
    ```
 
-**Hozirgi app versiya:** `versionCode 4` / `versionName 1.2.1`
+**Hozirgi app versiya:** `versionCode 5` / `versionName 1.2.2`
 
-Native pluginlar: App (hardware back + deep link), PushNotifications, Geolocation, Camera, Keyboard, Haptics, Share, StatusBar (edge-to-edge, **Light** icons on light UI), SplashScreen + React `NativeBootSplash`, Capgo `SocialLogin` (Google).
+Native pluginlar: App (hardware back + deep link), PushNotifications, Geolocation, Camera, Keyboard, Haptics, Share, StatusBar (edge-to-edge, Light icons), SplashScreen (auto-hide, oq fon), Capgo `SocialLogin` (Google).
+
+Android theme: `Theme.AppCompat.Light` + `forceDarkAllowed=false` (Oppo/system dark mode ilovani qorong‘i qilmasin).
 
 #### Google Sign-In (Android, majburiy qo‘lda)
 

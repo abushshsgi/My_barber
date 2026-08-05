@@ -1,8 +1,7 @@
-import React, { useEffect, useRef, useState } from "react";
+import React from "react";
 import { createRoot } from "react-dom/client";
 import { RouterProvider } from "@tanstack/react-router";
 
-import { NativeBootSplash } from "./components/native/NativeBootSplash";
 import { getRouter } from "./router";
 import { installChunkReloadGuard } from "./lib/chunk-reload";
 import { applyNativeAppDocumentFlag, isNativeApp } from "./lib/native-app";
@@ -16,7 +15,6 @@ if (!root) {
 }
 
 applyNativeAppDocumentFlag();
-void initNativeShell();
 installChunkReloadGuard();
 
 // Old PWA SW Capacitor WebView da qotishga olib keladi — o‘chirish.
@@ -29,40 +27,17 @@ if (isNativeApp() && "serviceWorker" in navigator) {
 const router = getRouter();
 attachNativeAppBridge(router);
 
-const BOOT_FAILSAFE_MS = 3200;
-
-function MobileRoot() {
-  const native = isNativeApp();
-  const [splashDone, setSplashDone] = useState(() => !native);
-  const finishedRef = useRef(false);
-
-  const finishSplash = () => {
-    if (finishedRef.current) return;
-    finishedRef.current = true;
-    setSplashDone(true);
-    if (typeof document !== "undefined") {
-      document.documentElement.dataset.nativeBoot = "done";
-    }
-  };
-
-  useEffect(() => {
-    if (!native || splashDone) return;
-    const t = window.setTimeout(finishSplash, BOOT_FAILSAFE_MS);
-    return () => window.clearTimeout(t);
-  }, [native, splashDone]);
-
-  return (
-    <>
-      {!splashDone ? <NativeBootSplash onFinished={finishSplash} /> : null}
-      <div className="native-app-shell">
-        <RouterProvider router={router} />
-      </div>
-    </>
-  );
-}
+/** Native splash yashirish + chrome — UI mount bilan parallel. */
+void initNativeShell().finally(() => {
+  document.documentElement.dataset.nativeBoot = "done";
+  document.documentElement.style.backgroundColor = "";
+  document.body.style.backgroundColor = "";
+});
 
 createRoot(root).render(
   <React.StrictMode>
-    <MobileRoot />
+    <div className="native-app-shell min-h-[100dvh] bg-background text-foreground">
+      <RouterProvider router={router} />
+    </div>
   </React.StrictMode>,
 );

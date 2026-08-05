@@ -173,15 +173,12 @@
 html[data-native-app="true"] {
   --native-accent: #ff5c5c;
   --native-ink: #171512;
-}
-
-/* Boot tugaguncha oq flash emas — to‘q fon */
-html[data-native-app="true"][data-native-boot="pending"],
-html[data-native-app="true"][data-native-boot="pending"] body {
-  background-color: #171512 !important;
+  background-color: #ffffff;
 }
 
 html[data-native-app="true"] body {
+  background-color: #ffffff;
+  color: var(--foreground);
   overscroll-behavior-y: none;
   -webkit-tap-highlight-color: transparent;
   user-select: none;
@@ -197,6 +194,8 @@ html[data-native-app="true"] [contenteditable="true"] {
 
 html[data-native-app="true"] .native-app-shell {
   min-height: 100dvh;
+  background-color: var(--background, #ffffff);
+  color: var(--foreground);
 }
 
 html[data-native-app="true"] .mobile-neo {

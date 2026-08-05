@@ -6,13 +6,23 @@ import { attachNativePush } from "@/lib/native-push";
 
 let shellReady = false;
 
+async function hideNativeSplash() {
+  try {
+    const { SplashScreen } = await import("@capacitor/splash-screen");
+    await SplashScreen.hide({ fadeOutDuration: 200 });
+  } catch {
+    /* optional */
+  }
+}
+
 async function configureChrome() {
   try {
     const { StatusBar, Style } = await import("@capacitor/status-bar");
-    // Style.Light = qora ikonkalar (och fon / auth). Style.Dark = oq ikonkalar (to‘q fon).
+    // Style.Light = qora ikonkalar (och fon).
     try {
       await StatusBar.setOverlaysWebView({ overlay: true });
       await StatusBar.setStyle({ style: Style.Light });
+      await StatusBar.setBackgroundColor({ color: "#ffffff" });
     } catch {
       await StatusBar.setStyle({ style: Style.Light });
       await StatusBar.setBackgroundColor({ color: "#ffffff" });
@@ -27,15 +37,18 @@ async function configureChrome() {
   } catch {
     /* Keyboard plugin optional on some builds */
   }
-
-  // SplashScreen.hide — NativeBootSplash qiladi (flash oldini olish).
 }
 
-/** StatusBar / Keyboard — router oldidan. Splash React intro yashiradi. */
+/** StatusBar / Keyboard / Splash hide — darhol, qorong‘i ekran qotib qolmasin. */
 export async function initNativeShell() {
-  if (!Capacitor.isNativePlatform() || shellReady) return;
+  if (!Capacitor.isNativePlatform()) return;
+  // Splashni birinchi yashiramiz — keyin chrome.
+  await hideNativeSplash();
+  if (shellReady) return;
   shellReady = true;
   await configureChrome();
+  // Ikkinchi marta (race) — ba'zi qurilmalarda hide kechikadi.
+  await hideNativeSplash();
 }
 
 /** Hardware back, deep link, push, appState — router bilan. */

@@ -12,10 +12,11 @@ const config: CapacitorConfig = {
   },
   plugins: {
     SplashScreen: {
-      launchShowDuration: 0,
-      launchAutoHide: false,
-      launchFadeOutDuration: 400,
-      backgroundColor: "#171512",
+      // Qisqa native splash — auto-hide; JS ham hide qiladi (qotib qolmasin).
+      launchShowDuration: 400,
+      launchAutoHide: true,
+      launchFadeOutDuration: 200,
+      backgroundColor: "#ffffff",
       showSpinner: false,
     },
     Keyboard: {
@@ -32,6 +33,11 @@ const config: CapacitorConfig = {
         apple: false,
         twitter: false,
       },
+    },
+    StatusBar: {
+      overlaysWebView: true,
+      style: "LIGHT",
+      backgroundColor: "#ffffff",
     },
   },
 };
