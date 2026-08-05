@@ -3,9 +3,10 @@ import * as Location from "expo-location";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Animated,
+  Easing,
   FlatList,
   KeyboardAvoidingView,
-  Modal,
   Platform,
   Pressable,
   StyleSheet,
@@ -45,7 +46,7 @@ const NAME_ERRORS: Record<DisplayNameErrorKey, string> = {
   nameTooManyParts: "Ismda so'zlar soni juda ko'p",
 };
 
-const YELLOW = "#F5C400";
+const ACCENT = colors.brandDot;
 
 function splitPrefillName(user: {
   first_name?: string;
@@ -81,6 +82,8 @@ export function OnboardingScreen() {
   const mapRef = useRef<OnboardingMapHandle | null>(null);
   const reverseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const gpsOnceRef = useRef(false);
+  const searchSlide = useRef(new Animated.Value(0)).current;
+  const searchBackdropOp = useRef(new Animated.Value(0)).current;
 
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [firstName, setFirstNameRaw] = useState("");
@@ -237,8 +240,9 @@ export function OnboardingScreen() {
 
   useEffect(() => {
     const q = searchQuery.trim();
-    if (!searchOpen || q.length < 3) {
+    if (!searchOpen || q.length < 2) {
       setSearchResults([]);
+      setSearching(false);
       return;
     }
     let alive = true;
@@ -249,21 +253,64 @@ export function OnboardingScreen() {
         setSearchResults(rows);
         setSearching(false);
       });
-    }, 400);
+    }, 350);
     return () => {
       alive = false;
       clearTimeout(t);
     };
   }, [searchQuery, searchOpen]);
 
+  const openSearch = useCallback(() => {
+    setSearchOpen(true);
+    setSearchQuery("");
+    setSearchResults([]);
+    searchSlide.setValue(0);
+    searchBackdropOp.setValue(0);
+    Animated.parallel([
+      Animated.timing(searchBackdropOp, {
+        toValue: 1,
+        duration: 220,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.spring(searchSlide, {
+        toValue: 1,
+        friction: 9,
+        tension: 65,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [searchBackdropOp, searchSlide]);
+
+  const closeSearch = useCallback(() => {
+    Animated.parallel([
+      Animated.timing(searchBackdropOp, {
+        toValue: 0,
+        duration: 180,
+        easing: Easing.in(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.timing(searchSlide, {
+        toValue: 0,
+        duration: 220,
+        easing: Easing.in(Easing.cubic),
+        useNativeDriver: true,
+      }),
+    ]).start(({ finished }) => {
+      if (finished) {
+        setSearchOpen(false);
+        setSearchQuery("");
+        setSearchResults([]);
+      }
+    });
+  }, [searchBackdropOp, searchSlide]);
+
   const pickSearchResult = (item: GeocodeResult) => {
     setLat(item.lat);
     setLng(item.lng);
     setAddressLabel(item.full_name || item.address || item.city);
     mapRef.current?.panTo(item.lat, item.lng);
-    setSearchOpen(false);
-    setSearchQuery("");
-    setSearchResults([]);
+    closeSearch();
   };
 
   const onConfirmLocation = () => {
@@ -333,7 +380,7 @@ export function OnboardingScreen() {
           </View>
 
           <Pressable
-            onPress={() => setSearchOpen(true)}
+            onPress={openSearch}
             style={styles.roundBtn}
             disabled={busy}
             hitSlop={8}
@@ -387,62 +434,88 @@ export function OnboardingScreen() {
           </Pressable>
         </View>
 
-        <Modal
-          visible={searchOpen}
-          animationType="slide"
-          transparent
-          onRequestClose={() => setSearchOpen(false)}
-        >
-          <KeyboardAvoidingView
-            style={styles.searchOverlay}
-            behavior={Platform.OS === "ios" ? "padding" : undefined}
-          >
-            <Pressable style={styles.searchBackdrop} onPress={() => setSearchOpen(false)} />
-            <View style={[styles.searchSheet, { paddingBottom: insets.bottom + 16 }]}>
-              <View style={styles.searchHeader}>
-                <TextInput
-                  value={searchQuery}
-                  onChangeText={setSearchQuery}
-                  placeholder="Manzil yoki ko'cha qidiring"
-                  placeholderTextColor={colors.muted}
-                  autoFocus
-                  style={styles.searchInput}
-                  returnKeyType="search"
-                />
-                <Pressable onPress={() => setSearchOpen(false)} hitSlop={8}>
-                  <Text style={styles.searchCancel}>Yopish</Text>
-                </Pressable>
-              </View>
-              {searching ? (
-                <ActivityIndicator style={{ marginTop: 16 }} color={colors.fg} />
-              ) : (
-                <FlatList
-                  data={searchResults}
-                  keyExtractor={(item, i) => `${item.lat},${item.lng},${i}`}
-                  keyboardShouldPersistTaps="handled"
-                  ListEmptyComponent={
-                    searchQuery.trim().length >= 3 ? (
-                      <Text style={styles.searchEmpty}>Natija topilmadi</Text>
-                    ) : (
-                      <Text style={styles.searchEmpty}>Kamida 3 ta belgi yozing</Text>
-                    )
-                  }
-                  renderItem={({ item }) => (
-                    <Pressable
-                      style={styles.searchRow}
-                      onPress={() => pickSearchResult(item)}
-                    >
-                      <Ionicons name="location-outline" size={18} color={colors.muted} />
-                      <Text style={styles.searchRowText} numberOfLines={2}>
-                        {item.full_name || item.address}
-                      </Text>
-                    </Pressable>
-                  )}
-                />
-              )}
-            </View>
-          </KeyboardAvoidingView>
-        </Modal>
+        {searchOpen ? (
+          <View style={styles.searchOverlay} pointerEvents="box-none">
+            <Animated.View style={[styles.searchBackdrop, { opacity: searchBackdropOp }]}>
+              <Pressable style={StyleSheet.absoluteFill} onPress={closeSearch} />
+            </Animated.View>
+            <KeyboardAvoidingView
+              behavior={Platform.OS === "ios" ? "padding" : undefined}
+              style={styles.searchSheetWrap}
+              pointerEvents="box-none"
+            >
+              <Animated.View
+                style={[
+                  styles.searchSheet,
+                  {
+                    paddingBottom: insets.bottom + 16,
+                    transform: [
+                      {
+                        translateY: searchSlide.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [420, 0],
+                        }),
+                      },
+                    ],
+                  },
+                ]}
+              >
+                <View style={styles.searchHandle} />
+                <View style={styles.searchHeader}>
+                  <TextInput
+                    value={searchQuery}
+                    onChangeText={setSearchQuery}
+                    placeholder="Ko'cha, mahalla yoki manzil"
+                    placeholderTextColor={colors.muted}
+                    autoFocus
+                    style={styles.searchInput}
+                    returnKeyType="search"
+                  />
+                  <Pressable onPress={closeSearch} hitSlop={8}>
+                    <Text style={styles.searchCancel}>Yopish</Text>
+                  </Pressable>
+                </View>
+                {searching ? (
+                  <ActivityIndicator style={{ marginTop: 16 }} color={ACCENT} />
+                ) : (
+                  <FlatList
+                    data={searchResults}
+                    keyExtractor={(item, i) => `${item.lat},${item.lng},${i}`}
+                    keyboardShouldPersistTaps="handled"
+                    style={styles.searchList}
+                    ListEmptyComponent={
+                      searchQuery.trim().length >= 2 ? (
+                        <Text style={styles.searchEmpty}>Natija topilmadi</Text>
+                      ) : (
+                        <Text style={styles.searchEmpty}>
+                          Ko'cha yoki joy nomini yozing
+                        </Text>
+                      )
+                    }
+                    renderItem={({ item }) => (
+                      <Pressable
+                        style={styles.searchRow}
+                        onPress={() => pickSearchResult(item)}
+                      >
+                        <View style={styles.searchIconWrap}>
+                          <Ionicons name="location" size={18} color={ACCENT} />
+                        </View>
+                        <View style={styles.searchRowBody}>
+                          <Text style={styles.searchRowTitle} numberOfLines={1}>
+                            {item.address || item.city || "Manzil"}
+                          </Text>
+                          <Text style={styles.searchRowSub} numberOfLines={2}>
+                            {item.full_name || item.city}
+                          </Text>
+                        </View>
+                      </Pressable>
+                    )}
+                  />
+                )}
+              </Animated.View>
+            </KeyboardAvoidingView>
+          </View>
+        ) : null}
       </View>
     );
   }
@@ -642,8 +715,9 @@ const styles = StyleSheet.create({
     marginHorizontal: 10,
   },
   gpsFab: {
-    shadowColor: "#000",
-    shadowOpacity: 0.25,
+    backgroundColor: ACCENT,
+    shadowColor: ACCENT,
+    shadowOpacity: 0.4,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 2 },
     elevation: 4,
@@ -663,7 +737,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: "#FF7A00",
+    backgroundColor: ACCENT,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 3,
@@ -683,7 +757,7 @@ const styles = StyleSheet.create({
   centerPinStem: {
     width: 3,
     height: 14,
-    backgroundColor: "#FF7A00",
+    backgroundColor: ACCENT,
     borderRadius: 2,
     marginTop: -2,
   },
@@ -710,28 +784,49 @@ const styles = StyleSheet.create({
   readyBtn: {
     minHeight: 56,
     borderRadius: 16,
-    backgroundColor: YELLOW,
+    backgroundColor: ACCENT,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#000",
-    shadowOpacity: 0.2,
+    shadowColor: ACCENT,
+    shadowOpacity: 0.35,
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 4 },
     elevation: 4,
   },
-  readyText: { color: "#111", fontSize: 17, fontWeight: "800" },
-  searchOverlay: { flex: 1, justifyContent: "flex-end" },
+  readyText: { color: "#FFF", fontSize: 17, fontWeight: "800" },
+  searchOverlay: {
+    ...StyleSheet.absoluteFill,
+    zIndex: 20,
+    justifyContent: "flex-end",
+  },
   searchBackdrop: {
     ...StyleSheet.absoluteFill,
     backgroundColor: "rgba(0,0,0,0.45)",
   },
+  searchSheetWrap: {
+    width: "100%",
+    justifyContent: "flex-end",
+  },
   searchSheet: {
     backgroundColor: "#FFF",
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: "70%",
-    paddingTop: 14,
+    borderTopLeftRadius: 22,
+    borderTopRightRadius: 22,
+    maxHeight: "72%",
+    paddingTop: 8,
     paddingHorizontal: 16,
+    shadowColor: "#000",
+    shadowOpacity: 0.18,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: -4 },
+    elevation: 12,
+  },
+  searchHandle: {
+    alignSelf: "center",
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: colors.border,
+    marginBottom: 10,
   },
   searchHeader: {
     flexDirection: "row",
@@ -743,14 +838,15 @@ const styles = StyleSheet.create({
     flex: 1,
     minHeight: 48,
     borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
+    borderWidth: 1.5,
+    borderColor: ACCENT,
     backgroundColor: colors.surface,
     paddingHorizontal: 14,
     fontSize: 16,
     color: colors.fg,
   },
-  searchCancel: { fontSize: 15, fontWeight: "700", color: colors.muted },
+  searchCancel: { fontSize: 15, fontWeight: "700", color: ACCENT },
+  searchList: { maxHeight: 360 },
   searchEmpty: {
     textAlign: "center",
     color: colors.muted,
@@ -759,11 +855,22 @@ const styles = StyleSheet.create({
   },
   searchRow: {
     flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
+    alignItems: "flex-start",
+    gap: 12,
     paddingVertical: 14,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border,
   },
-  searchRowText: { flex: 1, fontSize: 15, color: colors.fg, fontWeight: "600" },
+  searchIconWrap: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: "rgba(255,92,92,0.12)",
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 2,
+  },
+  searchRowBody: { flex: 1, gap: 2 },
+  searchRowTitle: { fontSize: 15, color: colors.fg, fontWeight: "700" },
+  searchRowSub: { fontSize: 13, color: colors.muted, fontWeight: "500", lineHeight: 18 },
 });
