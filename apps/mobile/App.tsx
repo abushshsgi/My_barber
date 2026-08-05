@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, Platform, StyleSheet, View } from "react-native";
 import { AuthProvider, useAuth } from "./src/auth/AuthContext";
 import {
@@ -6,7 +6,9 @@ import {
   shouldSkipSplashForOAuth,
 } from "./src/auth/GoogleAuthSession";
 import { needsOnboarding } from "./src/lib/onboarding";
+import { getWelcomeSeen } from "./src/lib/welcome";
 import { RootTabs } from "./src/navigation/RootTabs";
+import { GetStartedScreen } from "./src/screens/GetStartedScreen";
 import { LoginScreen } from "./src/screens/LoginScreen";
 import { OnboardingScreen } from "./src/screens/OnboardingScreen";
 import { SplashScreen } from "./src/screens/SplashScreen";
@@ -18,21 +20,40 @@ import "react-native-gesture-handler";
 
 function AppGate() {
   const { loading, isAuthenticated, user, needsOnboarding: mustOnboard } = useAuth();
-  const [splashDone, setSplashDone] = useState(
-    () => Platform.OS === "web" && shouldSkipSplashForOAuth(),
-  );
+  const skipIntro = Platform.OS === "web" && shouldSkipSplashForOAuth();
+  const [splashDone, setSplashDone] = useState(skipIntro);
+  const [welcomeReady, setWelcomeReady] = useState(skipIntro);
+  const [welcomeSeen, setWelcomeSeenState] = useState(skipIntro);
   const onSplashFinish = useCallback(() => setSplashDone(true), []);
+  const onWelcomeFinish = useCallback(() => setWelcomeSeenState(true), []);
+
+  useEffect(() => {
+    if (skipIntro) return;
+    let alive = true;
+    void getWelcomeSeen().then((seen) => {
+      if (!alive) return;
+      setWelcomeSeenState(seen);
+      setWelcomeReady(true);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [skipIntro]);
 
   if (!splashDone) {
     return <SplashScreen onFinish={onSplashFinish} />;
   }
 
-  if (loading) {
+  if (!welcomeReady || loading) {
     return (
       <View style={styles.boot}>
         <ActivityIndicator color={colors.fg} size="large" />
       </View>
     );
+  }
+
+  if (!welcomeSeen && !isAuthenticated) {
+    return <GetStartedScreen onFinish={onWelcomeFinish} />;
   }
 
   if (!isAuthenticated) {
