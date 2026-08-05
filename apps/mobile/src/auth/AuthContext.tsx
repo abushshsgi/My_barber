@@ -18,6 +18,7 @@ import { fetchMe, type ApiUser } from "../api/user";
 import {
   clearSession,
   getAccessToken,
+  getRefreshToken,
   getStoredUser,
   saveSession,
   setLastPhone,
@@ -44,7 +45,21 @@ function storedToApiUser(stored: StoredUser): ApiUser {
     email: stored.email || "",
     phone: stored.phone,
     full_name: stored.name,
-    first_name: stored.name,
+    first_name: stored.first_name || stored.name,
+    last_name: stored.last_name,
+    onboarding_completed: stored.onboarding_completed,
+  };
+}
+
+function apiUserToStored(user: ApiUser): StoredUser {
+  return {
+    id: user.id,
+    phone: user.phone,
+    name: user.full_name || [user.first_name, user.last_name].filter(Boolean).join(" "),
+    email: user.email,
+    first_name: user.first_name,
+    last_name: user.last_name,
+    onboarding_completed: user.onboarding_completed,
   };
 }
 
@@ -54,22 +69,27 @@ function isUnauthorizedError(err: unknown): boolean {
 }
 
 async function persistAuth(data: AuthSuccess) {
-  const stored: StoredUser = {
-    id: data.user.id,
-    phone: data.user.phone,
-    name: data.user.full_name || data.user.first_name,
-    email: data.user.email,
-  };
   await saveSession({
     access: data.access,
     refresh: data.refresh,
     session_id: data.session_id,
-    user: stored,
+    user: apiUserToStored(data.user),
   });
   if (data.user.phone) {
     const digits = data.user.phone.replace(/\D/g, "").slice(-9);
     if (digits) await setLastPhone(digits);
   }
+}
+
+async function persistUserCache(user: ApiUser) {
+  const access = await getAccessToken();
+  const refresh = await getRefreshToken();
+  if (!access || !refresh) return;
+  await saveSession({
+    access,
+    refresh,
+    user: apiUserToStored(user),
+  });
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -85,6 +105,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const me = await fetchMe();
       setUser(me);
+      await persistUserCache(me);
     } catch (err) {
       // Tarmoq xatosida sessiyani o'chirmaymiz — faqat 401.
       if (isUnauthorizedError(err)) {
@@ -113,7 +134,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         try {
           const me = await fetchMe();
-          if (!cancelled) setUser(me);
+          if (!cancelled) {
+            setUser(me);
+            await persistUserCache(me);
+          }
         } catch (err) {
           if (isUnauthorizedError(err)) {
             await clearSession();

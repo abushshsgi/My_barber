@@ -5,8 +5,10 @@ import {
   GoogleAuthSessionProvider,
   shouldSkipSplashForOAuth,
 } from "./src/auth/GoogleAuthSession";
+import { needsOnboarding } from "./src/lib/onboarding";
 import { RootTabs } from "./src/navigation/RootTabs";
 import { LoginScreen } from "./src/screens/LoginScreen";
+import { OnboardingScreen } from "./src/screens/OnboardingScreen";
 import { SplashScreen } from "./src/screens/SplashScreen";
 import { colors } from "./src/theme/colors";
 import { NavigationContainer } from "@react-navigation/native";
@@ -15,7 +17,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import "react-native-gesture-handler";
 
 function AppGate() {
-  const { loading, isAuthenticated } = useAuth();
+  const { loading, isAuthenticated, user } = useAuth();
   const [splashDone, setSplashDone] = useState(
     () => Platform.OS === "web" && shouldSkipSplashForOAuth(),
   );
@@ -35,6 +37,10 @@ function AppGate() {
 
   if (!isAuthenticated) {
     return <LoginScreen />;
+  }
+
+  if (needsOnboarding(user)) {
+    return <OnboardingScreen />;
   }
 
   return <RootTabs />;

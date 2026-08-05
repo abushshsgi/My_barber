@@ -27,6 +27,9 @@ export type StoredUser = {
   phone?: string | null;
   name?: string;
   email?: string;
+  first_name?: string;
+  last_name?: string;
+  onboarding_completed?: boolean;
 };
 
 export async function saveSession(payload: {

@@ -9,10 +9,14 @@
     "scheme": "mysaloon",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "uz.mysaloon.app"
+      "bundleIdentifier": "uz.mysaloon.app",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Yaqin salonlarni ko'rsatish uchun joylashuvingiz kerak."
+      }
     },
     "android": {
       "package": "uz.mysaloon.app",
+      "permissions": ["ACCESS_COARSE_LOCATION", "ACCESS_FINE_LOCATION"],
       "adaptiveIcon": {
         "backgroundColor": "#FFFFFF",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -29,7 +33,13 @@
       "expo-asset",
       "expo-font",
       "expo-web-browser",
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Yaqin salonlarni ko'rsatish uchun joylashuvingiz kerak."
+        }
+      ]
     ],
     "extra": {
       "apiUrl": "https://api.mysaloon.uz",

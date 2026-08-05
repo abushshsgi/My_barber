@@ -10,9 +10,36 @@ export type ApiUser = {
   last_name?: string;
   full_name?: string;
   region?: string;
+  birth_year?: number | null;
+  age?: number | null;
+  latitude?: string | number | null;
+  longitude?: string | number | null;
+  onboarding_completed?: boolean;
   avatar?: string | null;
   has_password?: boolean;
 };
+
+export type UpdateMePayload = Partial<
+  Pick<
+    ApiUser,
+    | "first_name"
+    | "last_name"
+    | "full_name"
+    | "phone"
+    | "region"
+    | "birth_year"
+    | "latitude"
+    | "longitude"
+    | "onboarding_completed"
+  >
+>;
+
+export async function updateMe(data: UpdateMePayload): Promise<ApiUser> {
+  return apiJson<ApiUser>("/api/v1/users/me/", {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
+}
 
 export type ApiWallet = {
   balance: number;
