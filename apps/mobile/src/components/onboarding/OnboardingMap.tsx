@@ -93,8 +93,23 @@ export const OnboardingMap = forwardRef<OnboardingMapHandle, Props>(
             latitudeDelta: deltaRef.current,
             longitudeDelta: deltaRef.current,
           }}
-          customMapStyle={LIGHT_MAP_STYLE}
+          // Android: custom style ba'zan tile yuklanishini yashiradi — faqat iOS.
+          customMapStyle={Platform.OS === "ios" ? LIGHT_MAP_STYLE : undefined}
           userInterfaceStyle="light"
+          onMapReady={() => {
+            // Markazni qayta qo'yish — ba'zi Android qurilmalarda bo'sh tile oldini oladi.
+            const { lat, lng } = centerRef.current;
+            skipRef.current = true;
+            mapRef.current?.animateToRegion(
+              {
+                latitude: lat,
+                longitude: lng,
+                latitudeDelta: deltaRef.current,
+                longitudeDelta: deltaRef.current,
+              },
+              0,
+            );
+          }}
           onRegionChangeComplete={(region) => {
             deltaRef.current = region.latitudeDelta;
             centerRef.current = { lat: region.latitude, lng: region.longitude };
@@ -119,7 +134,10 @@ export const OnboardingMap = forwardRef<OnboardingMapHandle, Props>(
           zoomEnabled
           scrollEnabled
           loadingEnabled
+          loadingIndicatorColor="#0A0A0A"
+          loadingBackgroundColor="#EEF0F3"
           liteMode={false}
+          mapType="standard"
         />
       </View>
     );

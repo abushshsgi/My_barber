@@ -68,21 +68,30 @@ def _parse_result(item: dict[str, Any]) -> GeocodeResult:
     location = geometry.get("location") or {}
     lat = float(location["lat"])
     lng = float(location["lng"])
-    full_name = str(item.get("formatted_address") or "").strip()
+    full_name = str(item.get("formatted_address") or item.get("name") or "").strip()
     components = item.get("address_components") or []
     if not isinstance(components, list):
         components = []
 
     street_number = _component(components, "street_number")
     route = _component(components, "route")
-    address = ", ".join(part for part in (route, street_number) if part) or full_name
+    # Ko'cha nomi birinchi — qidiruv UI da ko'rinadi.
+    if route:
+        address = ", ".join(part for part in (route, street_number) if part)
+    else:
+        # Places Text Search: name often is the street / place title.
+        place_name = str(item.get("name") or "").strip()
+        address = place_name or (full_name.split(",")[0].strip() if full_name else "")
     city = (
         _component(components, "locality")
         or _component(components, "administrative_area_level_2")
         or _component(components, "administrative_area_level_1")
     )
     if not city and full_name:
-        city = full_name.split(",")[0].strip()
+        parts = [p.strip() for p in full_name.split(",") if p.strip()]
+        city = parts[1] if len(parts) > 1 else parts[0]
+    if not full_name and address:
+        full_name = ", ".join(part for part in (address, city) if part)
     return GeocodeResult(lat=lat, lng=lng, address=address, city=city, full_name=full_name)
 
 
@@ -96,6 +105,12 @@ def geocode_query(q: str) -> list[GeocodeResult]:
             return results
     except GeocoderError:
         pass
+    try:
+        places = _places_text_search(q)
+        if places:
+            return places
+    except GeocoderError:
+        pass
     from geo.services.nominatim import geocode_query_nominatim
     from geo.services.photon import geocode_query_photon
 
@@ -106,17 +121,57 @@ def geocode_query(q: str) -> list[GeocodeResult]:
 
 
 def _geocode_query_google(q: str) -> list[GeocodeResult]:
-    data = _request(
-        {
-            "address": q,
-            "region": "uz",
-            "language": "uz",
-            "key": _api_key(),
-        }
+    # O'zbekiston ko'chalari ko'pincha RU/UZ — ikkala til bilan urinish.
+    for language in ("uz", "ru"):
+        data = _request(
+            {
+                "address": q,
+                "region": "uz",
+                "components": "country:UZ",
+                "language": language,
+                "key": _api_key(),
+            }
+        )
+        items = data.get("results") or []
+        out: list[GeocodeResult] = []
+        for item in items:
+            try:
+                out.append(_parse_result(item))
+            except (KeyError, TypeError, ValueError):
+                continue
+        if out:
+            return out
+    return []
+
+
+def _places_text_search(q: str) -> list[GeocodeResult]:
+    """Ko'cha / joy qidiruv — Geocoding bo'sh qaytarsa Places Text Search."""
+    url = (
+        "https://maps.googleapis.com/maps/api/place/textsearch/json?"
+        + urlencode(
+            {
+                "query": q,
+                "region": "uz",
+                "language": "uz",
+                "key": _api_key(),
+            }
+        )
     )
-    items = data.get("results") or []
+    try:
+        resp = requests.get(url, timeout=4)
+        resp.raise_for_status()
+    except requests.RequestException as exc:
+        raise GeocoderError("Google Places request failed.") from exc
+
+    data = resp.json()
+    status = str(data.get("status") or "")
+    if status in ("ZERO_RESULTS", "INVALID_REQUEST"):
+        return []
+    if status != "OK":
+        raise GeocoderError(f"Google Places returned {status or 'an error'}.", status_code=502)
+
     out: list[GeocodeResult] = []
-    for item in items:
+    for item in data.get("results") or []:
         try:
             out.append(_parse_result(item))
         except (KeyError, TypeError, ValueError):

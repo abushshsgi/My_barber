@@ -16,14 +16,26 @@ export type LocationValidation = {
 };
 
 export async function geocodeAddress(q: string): Promise<GeocodeResult[]> {
-  try {
-    const data = await apiJson<{ results: GeocodeResult[] }>(
-      `/api/v1/geo/geocode/?q=${encodeURIComponent(q)}`
-    );
-    return data.results ?? [];
-  } catch {
-    return [];
-  }
+  const data = await apiJson<{ results: GeocodeResult[] }>(
+    `/api/v1/geo/geocode/?q=${encodeURIComponent(q)}`,
+  );
+  return Array.isArray(data.results) ? data.results : [];
+}
+
+/** Qidiruv natijasida ko'cha / joy nomi. */
+export function geocodeResultTitle(item: GeocodeResult): string {
+  const address = (item.address || "").trim();
+  if (address) return address.split(",")[0]?.trim() || address;
+  const full = (item.full_name || "").trim();
+  if (full) return full.split(",")[0]?.trim() || full;
+  return (item.city || "").trim() || "Manzil";
+}
+
+export function geocodeResultSubtitle(item: GeocodeResult): string {
+  const full = (item.full_name || "").trim();
+  const title = geocodeResultTitle(item);
+  if (full && full !== title) return full;
+  return (item.city || "").trim();
 }
 
 export async function reverseGeocodeAddress(

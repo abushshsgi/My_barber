@@ -180,7 +180,7 @@ export function MapScreen() {
           style={StyleSheet.absoluteFill}
           provider={Platform.OS === "android" ? PROVIDER_GOOGLE : undefined}
           initialRegion={region}
-          customMapStyle={LIGHT_MAP_STYLE}
+          customMapStyle={Platform.OS === "ios" ? LIGHT_MAP_STYLE : undefined}
           userInterfaceStyle="light"
           showsUserLocation={showUser}
           showsMyLocationButton={false}

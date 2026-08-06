@@ -3,7 +3,7 @@ import {
   BottomTabBarProps,
   createBottomTabNavigator,
 } from "@react-navigation/bottom-tabs";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { HomeScreen } from "../screens/HomeScreen";
 import { MapScreen } from "../screens/MapScreen";
@@ -25,74 +25,83 @@ type TabDef = {
   name: keyof RootTabParamList;
   label: string;
   icon: keyof typeof Ionicons.glyphMap;
+  iconOn: keyof typeof Ionicons.glyphMap;
   center?: boolean;
 };
 
 const TABS: TabDef[] = [
-  { name: "Home", label: "Asosiy", icon: "home-outline" },
-  { name: "Map", label: "Xarita", icon: "map-outline" },
-  { name: "MorphAI", label: "Morf AI", icon: "sparkles", center: true },
-  { name: "Explore", label: "Explore", icon: "compass-outline" },
-  { name: "Profile", label: "Profil", icon: "person-outline" },
+  { name: "Home", label: "Asosiy", icon: "home-outline", iconOn: "home" },
+  { name: "Map", label: "Xarita", icon: "map-outline", iconOn: "map" },
+  { name: "MorphAI", label: "Morf AI", icon: "sparkles", iconOn: "sparkles", center: true },
+  { name: "Explore", label: "Explore", icon: "compass-outline", iconOn: "compass" },
+  { name: "Profile", label: "Profil", icon: "person-outline", iconOn: "person" },
 ];
 
 function CustomTabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
+  const bottomPad = Math.max(insets.bottom, 10);
 
   return (
-    <View style={[styles.dock, { paddingBottom: Math.max(insets.bottom, 6) }]}>
-      {state.routes.map((route, index) => {
-        const focused = state.index === index;
-        const tab = TABS.find((t) => t.name === route.name)!;
-        const onPress = () => {
-          const event = navigation.emit({
-            type: "tabPress",
-            target: route.key,
-            canPreventDefault: true,
-          });
-          if (!focused && !event.defaultPrevented) {
-            navigation.navigate(route.name);
-          }
-        };
+    <View style={[styles.dockOuter, { paddingBottom: bottomPad }]} pointerEvents="box-none">
+      <View style={styles.dock}>
+        {state.routes.map((route, index) => {
+          const focused = state.index === index;
+          const tab = TABS.find((t) => t.name === route.name)!;
+          const onPress = () => {
+            const event = navigation.emit({
+              type: "tabPress",
+              target: route.key,
+              canPreventDefault: true,
+            });
+            if (!focused && !event.defaultPrevented) {
+              navigation.navigate(route.name);
+            }
+          };
 
-        if (tab.center) {
+          if (tab.center) {
+            return (
+              <Pressable
+                key={route.key}
+                onPress={onPress}
+                style={styles.centerWrap}
+                accessibilityRole="button"
+                accessibilityState={{ selected: focused }}
+                accessibilityLabel={tab.label}
+              >
+                <View style={[styles.centerBtn, focused && styles.centerBtnOn]}>
+                  <Ionicons name={tab.icon} size={22} color="#FFFFFF" />
+                </View>
+                <Text style={[styles.label, focused ? styles.labelOn : styles.labelOff]}>
+                  {tab.label}
+                </Text>
+              </Pressable>
+            );
+          }
+
           return (
-            <Pressable key={route.key} onPress={onPress} style={styles.centerWrap}>
-              <View style={styles.centerBtn}>
-                <Ionicons name={tab.icon} size={20} color="#FFFFFF" />
+            <Pressable
+              key={route.key}
+              onPress={onPress}
+              style={styles.tab}
+              accessibilityRole="button"
+              accessibilityState={{ selected: focused }}
+              accessibilityLabel={tab.label}
+            >
+              <View style={styles.iconSlot}>
+                <Ionicons
+                  name={focused ? tab.iconOn : tab.icon}
+                  size={22}
+                  color={focused ? colors.fg : colors.muted}
+                />
+                {focused ? <View style={styles.activeDot} /> : <View style={styles.activeDotSpacer} />}
               </View>
               <Text style={[styles.label, focused ? styles.labelOn : styles.labelOff]}>
                 {tab.label}
               </Text>
             </Pressable>
           );
-        }
-
-        return (
-          <Pressable key={route.key} onPress={onPress} style={styles.tab}>
-            <View style={[styles.iconWrap, focused && styles.iconWrapOn]}>
-              <Ionicons
-                name={
-                  focused
-                    ? tab.icon === "home-outline"
-                      ? "home"
-                      : tab.icon === "person-outline"
-                        ? "person"
-                        : tab.icon === "map-outline"
-                          ? "map"
-                          : tab.icon
-                    : tab.icon
-                }
-                size={18}
-                color={focused ? "#FFFFFF" : colors.muted}
-              />
-            </View>
-            <Text style={[styles.label, focused ? styles.labelOn : styles.labelOff]}>
-              {tab.label}
-            </Text>
-          </Pressable>
-        );
-      })}
+        })}
+      </View>
     </View>
   );
 }
@@ -133,52 +142,92 @@ export function RootTabs() {
 }
 
 const styles = StyleSheet.create({
+  dockOuter: {
+    paddingHorizontal: 14,
+    paddingTop: 6,
+    backgroundColor: colors.bg,
+  },
   dock: {
     flexDirection: "row",
     alignItems: "flex-end",
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.border,
-    backgroundColor: "rgba(244,244,244,0.96)",
-    paddingTop: 4,
-    paddingHorizontal: 4,
+    minHeight: 62,
+    paddingTop: 8,
+    paddingBottom: 8,
+    paddingHorizontal: 6,
+    borderRadius: 28,
+    backgroundColor: "#FFFFFF",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(0,0,0,0.06)",
+    ...Platform.select({
+      web: { boxShadow: "0 8px 28px rgba(0,0,0,0.12)" },
+      default: {
+        shadowColor: "#000",
+        shadowOpacity: 0.12,
+        shadowRadius: 16,
+        shadowOffset: { width: 0, height: 6 },
+        elevation: 14,
+      },
+    }),
   },
   tab: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    gap: 2,
-    minHeight: 44,
-    paddingVertical: 3,
+    gap: 3,
+    minHeight: 48,
+    paddingVertical: 2,
   },
-  iconWrap: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+  iconSlot: {
+    height: 28,
     alignItems: "center",
     justifyContent: "center",
   },
-  iconWrapOn: {
+  activeDot: {
+    marginTop: 3,
+    width: 4,
+    height: 4,
+    borderRadius: 2,
     backgroundColor: colors.fg,
   },
+  activeDotSpacer: {
+    marginTop: 3,
+    width: 4,
+    height: 4,
+  },
   centerWrap: {
-    width: 58,
+    width: 64,
     alignItems: "center",
     justifyContent: "flex-end",
+    marginTop: -18,
     paddingBottom: 2,
   },
   centerBtn: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     backgroundColor: colors.fg,
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 2,
-    borderColor: colors.border,
+    borderWidth: 3,
+    borderColor: "#FFFFFF",
+    ...Platform.select({
+      web: { boxShadow: "0 6px 18px rgba(0,0,0,0.22)" },
+      default: {
+        shadowColor: "#000",
+        shadowOpacity: 0.22,
+        shadowRadius: 10,
+        shadowOffset: { width: 0, height: 4 },
+        elevation: 10,
+      },
+    }),
+  },
+  centerBtnOn: {
+    transform: [{ scale: 1.04 }],
   },
   label: {
-    fontSize: 9,
+    fontSize: 10,
     fontWeight: "700",
+    letterSpacing: -0.1,
   },
   labelOn: {
     color: colors.fg,

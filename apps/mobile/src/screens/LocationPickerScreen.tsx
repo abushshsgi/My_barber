@@ -14,6 +14,8 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   geocodeAddress,
+  geocodeResultSubtitle,
+  geocodeResultTitle,
   reverseGeocodeAddress,
   validateLocation,
   type GeocodeResult,
@@ -55,6 +57,7 @@ export function LocationPickerScreen({
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<GeocodeResult[]>([]);
   const [searching, setSearching] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
   /** Xarita ruxsatdan qat'i nazar ochiladi — permission hang mapni bloklamasin. */
   const [mapReady, setMapReady] = useState(true);
   const [hasLocationPerm, setHasLocationPerm] = useState(false);
@@ -159,17 +162,31 @@ export function LocationPickerScreen({
     if (q.length < 2) {
       setSearchResults([]);
       setSearching(false);
+      setSearchError(null);
       return;
     }
     let alive = true;
     setSearching(true);
+    setSearchError(null);
     const t = setTimeout(() => {
-      void geocodeAddress(q).then((rows) => {
-        if (!alive) return;
-        setSearchResults(rows);
-        setSearching(false);
-      });
-    }, 350);
+      void geocodeAddress(q)
+        .then((rows) => {
+          if (!alive) return;
+          setSearchResults(rows);
+          setSearching(false);
+          if (rows.length === 0) {
+            setSearchError("Natija topilmadi — boshqa nom yoki shahar bilan urinib ko'ring");
+          }
+        })
+        .catch((e) => {
+          if (!alive) return;
+          setSearchResults([]);
+          setSearching(false);
+          setSearchError(
+            e instanceof Error ? e.message : "Qidiruv xatosi. Internetni tekshiring.",
+          );
+        });
+    }, 320);
     return () => {
       alive = false;
       clearTimeout(t);
@@ -200,6 +217,7 @@ export function LocationPickerScreen({
     setMapReady(true);
     setSearchQuery("");
     setSearchResults([]);
+    setSearchError(null);
     requestAnimationFrame(() => {
       mapRef.current?.panTo(item.lat, item.lng);
     });
@@ -229,7 +247,8 @@ export function LocationPickerScreen({
   const busy = saving || locating;
   const streetLine = addressLabel.split(",")[0]?.trim() || addressLabel;
   const subLine = cityLabel && cityLabel !== streetLine ? cityLabel : "";
-  const gpsBottom = Math.max(insets.bottom, 12) + sheetH + 12;
+  // GPS FAB pastki sheetdan aniq ajralib tursin
+  const gpsBottom = Math.max(insets.bottom, 12) + sheetH + 28;
 
   if (mode === "search") {
     return (
@@ -286,7 +305,7 @@ export function LocationPickerScreen({
             ListEmptyComponent={
               <Text style={styles.searchEmpty}>
                 {searchQuery.trim().length >= 2
-                  ? "Natija topilmadi"
+                  ? searchError || "Natija topilmadi"
                   : "Ko'cha yoki joy nomini yozing"}
               </Text>
             }
@@ -312,11 +331,13 @@ export function LocationPickerScreen({
                 </View>
                 <View style={styles.searchRowBody}>
                   <Text style={styles.searchRowTitle} numberOfLines={1}>
-                    {item.address || item.city || "Manzil"}
+                    {geocodeResultTitle(item)}
                   </Text>
-                  <Text style={styles.searchRowSub} numberOfLines={2}>
-                    {item.full_name || item.city}
-                  </Text>
+                  {geocodeResultSubtitle(item) ? (
+                    <Text style={styles.searchRowSub} numberOfLines={2}>
+                      {geocodeResultSubtitle(item)}
+                    </Text>
+                  ) : null}
                 </View>
               </Pressable>
             )}
