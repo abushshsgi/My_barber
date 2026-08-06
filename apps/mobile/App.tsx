@@ -15,7 +15,6 @@ import {
 import { needsOnboarding } from "./src/lib/onboarding";
 import { RootTabs } from "./src/navigation/RootTabs";
 import { GetStartedScreen } from "./src/screens/GetStartedScreen";
-import { LanguageScreen } from "./src/screens/LanguageScreen";
 import { LocationPickerScreen } from "./src/screens/LocationPickerScreen";
 import { OnboardingScreen } from "./src/screens/OnboardingScreen";
 import { SplashScreen } from "./src/screens/SplashScreen";
@@ -42,6 +41,11 @@ function userHasCoords(user: {
   );
 }
 
+/**
+ * Birinchi ochilish:
+ * Splash+til → Get Started → Location → Home (mehmon)
+ * Profil → Login → ism/yosh → akkaunt
+ */
 function AppGate() {
   const { loading, isAuthenticated, user, needsOnboarding: mustOnboard } = useAuth();
   const skipIntro = Platform.OS === "web" && shouldSkipSplashForOAuth();
@@ -53,7 +57,7 @@ function AppGate() {
   const [guestLocation, setGuestLocationState] = useState<GuestLocation | null>(null);
 
   const onSplashFinish = useCallback(() => setSplashDone(true), []);
-  const onLangFinish = useCallback((picked: AppLang) => setLang(picked), []);
+  const onLanguagePick = useCallback((picked: AppLang) => setLang(picked), []);
   const onWelcomeFinish = useCallback(() => setWelcomeSeenState(true), []);
   const onLocationFinish = useCallback(() => {
     void getGuestLocation().then((loc) => setGuestLocationState(loc));
@@ -82,10 +86,6 @@ function AppGate() {
     };
   }, [skipIntro]);
 
-  if (!splashDone) {
-    return <SplashScreen onFinish={onSplashFinish} />;
-  }
-
   if (!bootReady || loading) {
     return (
       <View style={styles.boot}>
@@ -94,8 +94,14 @@ function AppGate() {
     );
   }
 
-  if (!lang) {
-    return <LanguageScreen onFinish={onLangFinish} />;
+  if (!splashDone) {
+    return (
+      <SplashScreen
+        showLanguage={!lang}
+        onFinish={onSplashFinish}
+        onLanguagePick={onLanguagePick}
+      />
+    );
   }
 
   if (!welcomeSeen) {

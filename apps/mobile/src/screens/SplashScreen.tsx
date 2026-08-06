@@ -1,75 +1,133 @@
-import { useEffect, useRef } from "react";
-import { Animated, Easing, StyleSheet, Text, View } from "react-native";
+import { useEffect, useRef, useState } from "react";
+import {
+  Animated,
+  Easing,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { type AppLang, setAppLang } from "../lib/guest";
 import { colors } from "../theme/colors";
 
 type Props = {
+  /** Til tanlash kerak (birinchi marta). */
+  showLanguage?: boolean;
   onFinish: () => void;
+  onLanguagePick?: (lang: AppLang) => void;
 };
 
-/** Ilova ochilganda Mysaloon brand animatsiyasi. */
-export function SplashScreen({ onFinish }: Props) {
-  const opacity = useRef(new Animated.Value(0)).current;
-  const scale = useRef(new Animated.Value(0.86)).current;
-  const dot = useRef(new Animated.Value(0)).current;
-  const bar = useRef(new Animated.Value(0)).current;
+/**
+ * Birinchi ochilish: Mysaloon logo (sodda) tepada,
+ * pastda O'zbek / Русский. Ortiqcha tag/progress yo'q.
+ */
+export function SplashScreen({
+  showLanguage = false,
+  onFinish,
+  onLanguagePick,
+}: Props) {
+  const insets = useSafeAreaInsets();
+  const logoOp = useRef(new Animated.Value(0)).current;
+  const logoY = useRef(new Animated.Value(16)).current;
+  const langOp = useRef(new Animated.Value(0)).current;
+  const langY = useRef(new Animated.Value(28)).current;
+  const [langReady, setLangReady] = useState(false);
 
   useEffect(() => {
-    Animated.sequence([
-      Animated.parallel([
-        Animated.timing(opacity, {
-          toValue: 1,
-          duration: 520,
-          easing: Easing.out(Easing.cubic),
-          useNativeDriver: true,
-        }),
-        Animated.spring(scale, {
-          toValue: 1,
-          friction: 7,
-          tension: 60,
-          useNativeDriver: true,
-        }),
-      ]),
-      Animated.timing(dot, {
+    Animated.parallel([
+      Animated.timing(logoOp, {
         toValue: 1,
-        duration: 280,
-        easing: Easing.out(Easing.quad),
+        duration: 560,
+        easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
       }),
-      Animated.timing(bar, {
-        toValue: 1,
-        duration: 700,
-        easing: Easing.inOut(Easing.quad),
-        useNativeDriver: false,
-      }),
-      Animated.delay(280),
-      Animated.timing(opacity, {
+      Animated.timing(logoY, {
         toValue: 0,
-        duration: 320,
-        easing: Easing.in(Easing.quad),
+        duration: 560,
+        easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
       }),
     ]).start(({ finished }) => {
-      if (finished) onFinish();
+      if (!finished) return;
+      if (showLanguage) {
+        setLangReady(true);
+        Animated.parallel([
+          Animated.timing(langOp, {
+            toValue: 1,
+            duration: 380,
+            easing: Easing.out(Easing.cubic),
+            useNativeDriver: true,
+          }),
+          Animated.timing(langY, {
+            toValue: 0,
+            duration: 380,
+            easing: Easing.out(Easing.cubic),
+            useNativeDriver: true,
+          }),
+        ]).start();
+        return;
+      }
+      // Til allaqachon tanlangan — qisqa ko'rsatib o'tkazamiz.
+      setTimeout(() => onFinish(), 420);
     });
-  }, [opacity, scale, dot, bar, onFinish]);
+  }, [logoOp, logoY, langOp, langY, showLanguage, onFinish]);
 
-  const barWidth = bar.interpolate({
-    inputRange: [0, 1],
-    outputRange: ["0%", "100%"],
-  });
+  const pick = async (lang: AppLang) => {
+    await setAppLang(lang);
+    onLanguagePick?.(lang);
+    onFinish();
+  };
 
   return (
-    <View style={styles.root}>
-      <Animated.View style={[styles.brand, { opacity, transform: [{ scale }] }]}>
+    <View
+      style={[
+        styles.root,
+        {
+          paddingTop: insets.top + 72,
+          paddingBottom: Math.max(insets.bottom, 16) + 20,
+        },
+      ]}
+    >
+      <Animated.View
+        style={[
+          styles.brand,
+          { opacity: logoOp, transform: [{ translateY: logoY }] },
+        ]}
+      >
         <Text style={styles.logo}>
-          Mysaloon
-          <Animated.Text style={[styles.dot, { opacity: dot }]}>.</Animated.Text>
+          Mysaloon<Text style={styles.dot}>.</Text>
         </Text>
-        <Text style={styles.tag}>Salon · Barber · Go'zallik</Text>
-        <View style={styles.track}>
-          <Animated.View style={[styles.fill, { width: barWidth }]} />
-        </View>
       </Animated.View>
+
+      {showLanguage ? (
+        <Animated.View
+          style={[
+            styles.langBlock,
+            {
+              opacity: langOp,
+              transform: [{ translateY: langY }],
+              pointerEvents: langReady ? "auto" : "none",
+            },
+          ]}
+        >
+          <Text style={styles.langHint}>Tilni tanlang · Выберите язык</Text>
+          <Pressable
+            style={({ pressed }) => [styles.langBtn, pressed && styles.langPressed]}
+            onPress={() => void pick("uz")}
+          >
+            <Text style={styles.langTitle}>O'zbekcha</Text>
+          </Pressable>
+          <Pressable
+            style={({ pressed }) => [styles.langBtn, pressed && styles.langPressed]}
+            onPress={() => void pick("ru")}
+          >
+            <Text style={styles.langTitle}>Русский</Text>
+          </Pressable>
+        </Animated.View>
+      ) : (
+        <View style={styles.langSpacer} />
+      )}
     </View>
   );
 }
@@ -78,40 +136,45 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: colors.bg,
-    alignItems: "center",
-    justifyContent: "center",
+    paddingHorizontal: 24,
+    justifyContent: "space-between",
   },
   brand: {
     alignItems: "center",
-    paddingHorizontal: 24,
   },
   logo: {
-    fontSize: 42,
+    fontSize: 44,
     fontWeight: "900",
     color: colors.fg,
-    letterSpacing: -1.2,
+    letterSpacing: -1.4,
   },
   dot: {
     color: colors.brandDot,
   },
-  tag: {
-    marginTop: 10,
+  langBlock: {
+    gap: 10,
+  },
+  langSpacer: {
+    height: 120,
+  },
+  langHint: {
+    textAlign: "center",
     fontSize: 13,
     fontWeight: "600",
     color: colors.muted,
-    letterSpacing: 0.3,
+    marginBottom: 6,
   },
-  track: {
-    marginTop: 28,
-    width: 120,
-    height: 3,
-    borderRadius: 999,
-    backgroundColor: colors.surface,
-    overflow: "hidden",
-  },
-  fill: {
-    height: "100%",
+  langBtn: {
+    minHeight: 54,
+    borderRadius: 16,
     backgroundColor: colors.fg,
-    borderRadius: 999,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  langPressed: { opacity: 0.88 },
+  langTitle: {
+    color: "#FFF",
+    fontSize: 16,
+    fontWeight: "800",
   },
 });
