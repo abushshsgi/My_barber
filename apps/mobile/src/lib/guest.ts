@@ -1,7 +1,8 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const LANG_KEY = "mysaloon.lang";
-const WELCOME_SEEN_KEY = "mysaloon.welcome.seen";
+/** v2 — 3 sahifali karusel (gallery / Morf AI / joylashuv). */
+const WELCOME_SEEN_KEY = "mysaloon.welcome.seen.v2";
 const LOCATION_KEY = "mysaloon.guest.location";
 
 export type AppLang = "uz" | "ru";

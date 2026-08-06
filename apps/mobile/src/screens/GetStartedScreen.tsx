@@ -1,12 +1,21 @@
+import { useCallback, useRef, useState } from "react";
 import {
+  FlatList,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
   Pressable,
   StyleSheet,
   Text,
   useWindowDimensions,
   View,
+  type ViewToken,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AnimatedImageColumns } from "../components/welcome/AnimatedImageColumns";
+import {
+  LocationIllustration,
+  MorphAiIllustration,
+} from "../components/welcome/OnboardingIllustrations";
 import { setWelcomeSeen } from "../lib/guest";
 import { colors } from "../theme/colors";
 
@@ -14,54 +23,156 @@ type Props = {
   onFinish: () => void;
 };
 
+type Slide = {
+  key: string;
+  title: string;
+  subtitle: string;
+  /** Oxirgi slide — joylashuvga o'tadi. */
+  isLocation?: boolean;
+};
+
+const SLIDES: Slide[] = [
+  {
+    key: "gallery",
+    title: "Sartaroshxonani\noson bron qiling",
+    subtitle: "Yaqin salonlar, usta va vaqt — bir necha bosishda.",
+  },
+  {
+    key: "morph",
+    title: "Morf AI bilan\nuslubni sinab ko'ring",
+    subtitle:
+      "O'z selfiingizda yangi soch turmaklarini ko'ring — saloniga borishdan oldin.",
+  },
+  {
+    key: "location",
+    title: "Qayerdasiz?",
+    subtitle:
+      "Yaqin atrofdagi eng yaxshi sartaroshxonalarni ko'rsatishimiz uchun joylashuvingizdan foydalanamiz.",
+    isLocation: true,
+  },
+];
+
 /**
- * Onboarding — Uzum Tezkor: markaziy kollaj, matn, pastida pill CTA.
+ * Til tanlangandan keyin 3 ta karusel:
+ * 1) rasmlar tepaga/pastga
+ * 2) Morf AI illustratsiya + matn
+ * 3) joylashuv matni → LocationPicker
  */
 export function GetStartedScreen({ onFinish }: Props) {
   const insets = useSafeAreaInsets();
-  const { height: winH } = useWindowDimensions();
-  const galleryH = Math.min(Math.max(winH * 0.42, 260), 380);
+  const { height: winH, width: winW } = useWindowDimensions();
+  const listRef = useRef<FlatList<Slide>>(null);
+  const [index, setIndex] = useState(0);
+  const galleryH = Math.min(Math.max(winH * 0.38, 240), 340);
 
-  const onGetStarted = async () => {
+  const onViewableItemsChanged = useRef(
+    ({ viewableItems }: { viewableItems: ViewToken[] }) => {
+      const i = viewableItems[0]?.index;
+      if (typeof i === "number") setIndex(i);
+    },
+  ).current;
+
+  const viewabilityConfig = useRef({ viewAreaCoveragePercentThreshold: 60 }).current;
+
+  const goNext = useCallback(async () => {
+    if (index < SLIDES.length - 1) {
+      listRef.current?.scrollToIndex({ index: index + 1, animated: true });
+      setIndex(index + 1);
+      return;
+    }
     await setWelcomeSeen();
     onFinish();
+  }, [index, onFinish]);
+
+  const goToMapManual = useCallback(async () => {
+    await setWelcomeSeen();
+    onFinish();
+  }, [onFinish]);
+
+  const onMomentumEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const x = e.nativeEvent.contentOffset.x;
+    const next = Math.round(x / winW);
+    if (next !== index) setIndex(next);
   };
+
+  const slide = SLIDES[index] ?? SLIDES[0];
+  const isLast = Boolean(slide.isLocation);
+
+  const renderItem = ({ item }: { item: Slide }) => (
+    <View style={[styles.page, { width: winW }]}>
+      <View style={styles.visual}>
+        {item.key === "gallery" ? (
+          <View style={styles.galleryWrap}>
+            <AnimatedImageColumns height={galleryH} />
+          </View>
+        ) : null}
+        {item.key === "morph" ? <MorphAiIllustration size={Math.min(winW * 0.62, 240)} /> : null}
+        {item.key === "location" ? (
+          <LocationIllustration size={Math.min(winW * 0.62, 240)} />
+        ) : null}
+      </View>
+
+      <Text style={styles.title}>{item.title}</Text>
+      <Text style={styles.subtitle}>{item.subtitle}</Text>
+    </View>
+  );
 
   return (
     <View
       style={[
         styles.root,
         {
-          paddingTop: insets.top + 12,
+          paddingTop: insets.top + 8,
           paddingBottom: Math.max(insets.bottom, 12) + 16,
         },
       ]}
     >
-      <View style={styles.top}>
-        <AnimatedImageColumns height={galleryH} />
+      <FlatList
+        ref={listRef}
+        data={SLIDES}
+        keyExtractor={(s) => s.key}
+        renderItem={renderItem}
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        bounces={false}
+        onMomentumScrollEnd={onMomentumEnd}
+        onViewableItemsChanged={onViewableItemsChanged}
+        viewabilityConfig={viewabilityConfig}
+        getItemLayout={(_, i) => ({
+          length: winW,
+          offset: winW * i,
+          index: i,
+        })}
+        style={styles.list}
+      />
 
+      <View style={styles.footer}>
         <View style={styles.dots}>
-          <View style={[styles.dot, styles.dotActive]} />
-          <View style={styles.dot} />
-          <View style={styles.dot} />
+          {SLIDES.map((s, i) => (
+            <View key={s.key} style={[styles.dot, i === index && styles.dotActive]} />
+          ))}
         </View>
 
-        <Text style={styles.title}>
-          Sartaroshxonani{"\n"}oson bron qiling
-        </Text>
-        <Text style={styles.subtitle}>
-          Morf AI uslublar, yaqin salonlar va bron — hammasi bir joyda.
-        </Text>
-      </View>
+        <Pressable
+          style={({ pressed }) => [styles.cta, pressed && styles.ctaPressed]}
+          onPress={() => void goNext()}
+          accessibilityRole="button"
+          accessibilityLabel={isLast ? "Joylashuvni aniqlash" : "Davom etish"}
+        >
+          <Text style={styles.ctaText}>
+            {isLast ? "Joylashuvni aniqlash" : "Davom etish"}
+          </Text>
+        </Pressable>
 
-      <Pressable
-        style={({ pressed }) => [styles.cta, pressed && styles.ctaPressed]}
-        onPress={() => void onGetStarted()}
-        accessibilityRole="button"
-        accessibilityLabel="Davom etish"
-      >
-        <Text style={styles.ctaText}>Davom etish</Text>
-      </Pressable>
+        {isLast ? (
+          <Pressable onPress={() => void goToMapManual()} hitSlop={8}>
+            <Text style={styles.secondary}>Manzilni qo'lda ko'rsatish</Text>
+          </Pressable>
+        ) : (
+          <View style={styles.secondarySpacer} />
+        )}
+      </View>
     </View>
   );
 }
@@ -70,36 +181,28 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: "#FFFFFF",
-    paddingHorizontal: 24,
-    justifyContent: "space-between",
   },
-  top: {
+  list: {
     flex: 1,
+  },
+  page: {
+    flex: 1,
+    paddingHorizontal: 24,
     alignItems: "center",
     justifyContent: "center",
-    gap: 16,
+    gap: 14,
   },
-  dots: {
-    flexDirection: "row",
+  visual: {
     alignItems: "center",
     justifyContent: "center",
-    gap: 8,
-    marginTop: 8,
+    marginBottom: 8,
+    minHeight: 240,
   },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: "#E5E5EA",
-  },
-  dotActive: {
-    backgroundColor: colors.fg,
-    width: 10,
-    height: 10,
-    borderRadius: 5,
+  galleryWrap: {
+    width: "100%",
+    alignSelf: "stretch",
   },
   title: {
-    marginTop: 8,
     fontSize: 26,
     lineHeight: 32,
     fontWeight: "800",
@@ -113,7 +216,30 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     color: colors.muted,
     textAlign: "center",
-    maxWidth: 300,
+    maxWidth: 320,
+  },
+  footer: {
+    paddingHorizontal: 24,
+    gap: 12,
+  },
+  dots: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    marginBottom: 4,
+  },
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#E5E5EA",
+  },
+  dotActive: {
+    backgroundColor: colors.fg,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
   },
   cta: {
     minHeight: 56,
@@ -127,5 +253,15 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 16,
     fontWeight: "800",
+  },
+  secondary: {
+    textAlign: "center",
+    fontSize: 15,
+    fontWeight: "700",
+    color: colors.fg,
+    paddingVertical: 8,
+  },
+  secondarySpacer: {
+    height: 36,
   },
 });
