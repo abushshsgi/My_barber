@@ -1,5 +1,5 @@
 import { forwardRef, useImperativeHandle, useRef } from "react";
-import { Platform, StyleSheet } from "react-native";
+import { Platform, StyleSheet, View } from "react-native";
 import MapView, { PROVIDER_GOOGLE, type Region } from "react-native-maps";
 import { LIGHT_MAP_STYLE } from "./mapStyles";
 
@@ -82,44 +82,46 @@ export const OnboardingMap = forwardRef<OnboardingMapHandle, Props>(
     }));
 
     return (
-      <MapView
-        ref={mapRef}
-        style={styles.fill}
-        provider={Platform.OS === "android" ? PROVIDER_GOOGLE : undefined}
-        initialRegion={{
-          latitude,
-          longitude,
-          latitudeDelta: deltaRef.current,
-          longitudeDelta: deltaRef.current,
-        }}
-        customMapStyle={Platform.OS === "android" ? LIGHT_MAP_STYLE : LIGHT_MAP_STYLE}
-        userInterfaceStyle="light"
-        onRegionChangeComplete={(region) => {
-          deltaRef.current = region.latitudeDelta;
-          centerRef.current = { lat: region.latitude, lng: region.longitude };
-          if (skipRef.current) {
-            skipRef.current = false;
-            return;
-          }
-          onCoordsRef.current(region.latitude, region.longitude);
-        }}
-        showsUserLocation={showUserLocation}
-        showsMyLocationButton={false}
-        showsCompass={false}
-        showsScale={false}
-        showsTraffic={false}
-        showsBuildings={false}
-        showsIndoors={false}
-        showsPointsOfInterests={false}
-        toolbarEnabled={false}
-        rotateEnabled={false}
-        pitchEnabled={false}
-        moveOnMarkerPress={false}
-        zoomEnabled
-        scrollEnabled
-        loadingEnabled
-        liteMode={false}
-      />
+      <View style={styles.fill}>
+        <MapView
+          ref={mapRef}
+          style={styles.fill}
+          provider={Platform.OS === "android" ? PROVIDER_GOOGLE : undefined}
+          initialRegion={{
+            latitude,
+            longitude,
+            latitudeDelta: deltaRef.current,
+            longitudeDelta: deltaRef.current,
+          }}
+          customMapStyle={LIGHT_MAP_STYLE}
+          userInterfaceStyle="light"
+          onRegionChangeComplete={(region) => {
+            deltaRef.current = region.latitudeDelta;
+            centerRef.current = { lat: region.latitude, lng: region.longitude };
+            if (skipRef.current) {
+              skipRef.current = false;
+              return;
+            }
+            onCoordsRef.current(region.latitude, region.longitude);
+          }}
+          showsUserLocation={showUserLocation}
+          showsMyLocationButton={false}
+          showsCompass={false}
+          showsScale={false}
+          showsTraffic={false}
+          showsBuildings={false}
+          showsIndoors={false}
+          showsPointsOfInterests={false}
+          toolbarEnabled={false}
+          rotateEnabled={false}
+          pitchEnabled={false}
+          moveOnMarkerPress={false}
+          zoomEnabled
+          scrollEnabled
+          loadingEnabled
+          liteMode={false}
+        />
+      </View>
     );
   },
 );

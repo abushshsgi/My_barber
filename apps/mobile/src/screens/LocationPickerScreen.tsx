@@ -55,9 +55,10 @@ export function LocationPickerScreen({
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<GeocodeResult[]>([]);
   const [searching, setSearching] = useState(false);
-  /** Xarita mount — ruxsat so'rovidan keyin (Android crash oldini olish). */
-  const [mapReady, setMapReady] = useState(false);
+  /** Xarita ruxsatdan qat'i nazar ochiladi — permission hang mapni bloklamasin. */
+  const [mapReady, setMapReady] = useState(true);
   const [hasLocationPerm, setHasLocationPerm] = useState(false);
+  const [sheetH, setSheetH] = useState(200);
 
   const detectLocation = useCallback(async () => {
     setLocating(true);
@@ -117,12 +118,9 @@ export function LocationPickerScreen({
     };
   }, [lat, lng]);
 
-  // Xarita: avval ruxsat → keyin MapView (kalitsiz / erta mount crash bermasin).
+  // Ruxsat fonida — xarita allaqachon ochiq.
   useEffect(() => {
-    if (mode !== "map") {
-      setMapReady(false);
-      return;
-    }
+    if (mode !== "map") return;
     let cancelled = false;
     (async () => {
       try {
@@ -146,7 +144,6 @@ export function LocationPickerScreen({
     };
   }, [mode]);
 
-  // GPS bir marta — xarita ochilgandan keyin.
   useEffect(() => {
     if (mode !== "map" || !mapReady) return;
     if (gpsOnceRef.current) return;
@@ -181,6 +178,7 @@ export function LocationPickerScreen({
 
   const openMap = useCallback(() => {
     setMode("map");
+    setMapReady(true);
     setSearchQuery("");
     setSearchResults([]);
     setError(null);
@@ -199,6 +197,7 @@ export function LocationPickerScreen({
     setAddressLabel(item.full_name || item.address || item.city);
     setCityLabel(item.city || "");
     setMode("map");
+    setMapReady(true);
     setSearchQuery("");
     setSearchResults([]);
     requestAnimationFrame(() => {
@@ -229,8 +228,9 @@ export function LocationPickerScreen({
 
   const busy = saving || locating;
   const streetLine = addressLabel.split(",")[0]?.trim() || addressLabel;
+  const subLine = cityLabel && cityLabel !== streetLine ? cityLabel : "";
+  const gpsBottom = Math.max(insets.bottom, 12) + sheetH + 12;
 
-  // ——— 4-chi ekran: qo'lda manzil qidiruv ———
   if (mode === "search") {
     return (
       <View
@@ -326,32 +326,26 @@ export function LocationPickerScreen({
     );
   }
 
-  // ——— Xarita ———
   return (
     <View style={styles.mapRoot}>
-      {mapReady ? (
-        <OnboardingMap
-          ref={mapRef}
-          latitude={lat}
-          longitude={lng}
-          onCoordsChange={onMapCoords}
-          showUserLocation={hasLocationPerm}
-        />
-      ) : (
-        <View style={styles.mapBoot}>
-          <ActivityIndicator size="large" color={colors.fg} />
-          <Text style={styles.mapBootText}>Xarita tayyorlanmoqda…</Text>
-        </View>
-      )}
+      <View style={styles.mapLayer}>
+        {mapReady ? (
+          <OnboardingMap
+            ref={mapRef}
+            latitude={lat}
+            longitude={lng}
+            onCoordsChange={onMapCoords}
+            showUserLocation={hasLocationPerm}
+          />
+        ) : (
+          <View style={styles.mapBoot}>
+            <ActivityIndicator size="large" color={colors.fg} />
+          </View>
+        )}
+      </View>
 
-      {/* Markaz pin + hint */}
+      {/* Faqat markaz pin — yonida matn yo'q */}
       <View pointerEvents="none" style={styles.centerPinWrap}>
-        <View style={styles.pinHint}>
-          <Text style={styles.pinHintTitle}>Kirish joyini belgilang</Text>
-          <Text style={styles.pinHintSub}>
-            Markerni kerakli joyga torting — yaqin salonlar aniqroq chiqadi
-          </Text>
-        </View>
         <View style={styles.centerPinHead}>
           <Ionicons name="home" size={18} color="#FFF" />
         </View>
@@ -378,15 +372,12 @@ export function LocationPickerScreen({
         </Pressable>
       </View>
 
+      {/* GPS — pastki sheet ustida, yashirmaslik */}
       <Pressable
-        style={[
-          styles.gpsFab,
-          { bottom: Math.max(insets.bottom, 16) + 200 },
-          locating && styles.disabled,
-        ]}
+        style={[styles.gpsFab, { bottom: gpsBottom }, locating && styles.disabled]}
         onPress={() => void detectLocation()}
         disabled={busy}
-        accessibilityLabel="GPS"
+        accessibilityLabel="Joylashuvni aniqlash"
       >
         {locating ? (
           <ActivityIndicator color={colors.fg} />
@@ -395,21 +386,29 @@ export function LocationPickerScreen({
         )}
       </Pressable>
 
-      <View style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, 14) + 8 }]}>
+      <View
+        style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, 14) + 8 }]}
+        onLayout={(e) => {
+          const h = e.nativeEvent.layout.height;
+          if (h > 80 && Math.abs(h - sheetH) > 2) setSheetH(h);
+        }}
+      >
         <View style={styles.sheetHandle} />
         <Text style={styles.sheetTitle}>Manzilni tasdiqlang</Text>
 
         <View style={styles.addressRow}>
           <View style={styles.addressIcon}>
-            <Ionicons name="home" size={18} color={colors.fg} />
+            <Ionicons name="location" size={18} color={colors.fg} />
           </View>
           <View style={styles.addressBody}>
-            <Text style={styles.addressTitle} numberOfLines={1}>
+            <Text style={styles.addressTitle} numberOfLines={2}>
               {streetLine}
             </Text>
-            <Text style={styles.addressSub} numberOfLines={1}>
-              {cityLabel || addressLabel}
-            </Text>
+            {subLine ? (
+              <Text style={styles.addressSub} numberOfLines={1}>
+                {subLine}
+              </Text>
+            ) : null}
           </View>
         </View>
 
@@ -436,7 +435,6 @@ export function LocationPickerScreen({
 }
 
 const styles = StyleSheet.create({
-  // Search (4th screen)
   searchRoot: {
     flex: 1,
     backgroundColor: "#FFFFFF",
@@ -452,7 +450,7 @@ const styles = StyleSheet.create({
   searchNavTitle: {
     flex: 1,
     textAlign: "center",
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: "800",
     color: colors.fg,
   },
@@ -489,7 +487,7 @@ const styles = StyleSheet.create({
   },
   searchFieldInput: {
     flex: 1,
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "600",
     color: colors.fg,
     paddingVertical: 12,
@@ -504,7 +502,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
     color: colors.muted,
     paddingVertical: 36,
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "500",
   },
   searchRow: {
@@ -524,12 +522,12 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   searchRowBody: { flex: 1, gap: 2, paddingTop: 2 },
-  searchRowTitle: { fontSize: 15, color: colors.fg, fontWeight: "700" },
+  searchRowTitle: { fontSize: 14, color: colors.fg, fontWeight: "700" },
   searchRowSub: {
-    fontSize: 13,
+    fontSize: 12,
     color: colors.muted,
     fontWeight: "500",
-    lineHeight: 18,
+    lineHeight: 17,
   },
   mapPickRow: {
     flexDirection: "row",
@@ -549,26 +547,27 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  mapPickTitle: { fontSize: 15, fontWeight: "800", color: colors.fg },
-  mapPickSub: { marginTop: 2, fontSize: 12, fontWeight: "500", color: colors.muted },
+  mapPickTitle: { fontSize: 14, fontWeight: "800", color: colors.fg },
+  mapPickSub: { marginTop: 2, fontSize: 11, fontWeight: "500", color: colors.muted },
 
-  // Map
-  mapRoot: { flex: 1, backgroundColor: "#EEF0F3", position: "relative" },
-  mapBoot: {
+  mapRoot: { flex: 1, backgroundColor: "#EEF0F3" },
+  mapLayer: {
     ...StyleSheet.absoluteFill,
+    zIndex: 0,
+  },
+  mapBoot: {
+    flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    gap: 12,
     backgroundColor: "#EEF0F3",
   },
-  mapBootText: { fontSize: 14, fontWeight: "600", color: colors.muted },
   mapTopBar: {
     position: "absolute",
     left: 0,
     right: 0,
     top: 0,
     paddingHorizontal: 14,
-    zIndex: 3,
+    zIndex: 5,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
@@ -592,11 +591,11 @@ const styles = StyleSheet.create({
       },
     }),
   },
-  searchPillText: { fontSize: 15, fontWeight: "700", color: colors.fg },
+  searchPillText: { fontSize: 14, fontWeight: "700", color: colors.fg },
   gpsFab: {
     position: "absolute",
     right: 16,
-    zIndex: 3,
+    zIndex: 6,
     width: 48,
     height: 48,
     borderRadius: 24,
@@ -610,7 +609,7 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.16,
         shadowRadius: 10,
         shadowOffset: { width: 0, height: 3 },
-        elevation: 5,
+        elevation: 8,
       },
     }),
   },
@@ -618,42 +617,10 @@ const styles = StyleSheet.create({
     position: "absolute",
     left: 0,
     right: 0,
-    top: "38%",
+    top: "42%",
     alignItems: "center",
     zIndex: 2,
-    marginTop: -64,
-  },
-  pinHint: {
-    maxWidth: 300,
-    backgroundColor: "#FFF",
-    borderRadius: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    marginBottom: 12,
-    ...Platform.select({
-      web: { boxShadow: "0 6px 20px rgba(0,0,0,0.12)" },
-      default: {
-        shadowColor: "#000",
-        shadowOpacity: 0.12,
-        shadowRadius: 12,
-        shadowOffset: { width: 0, height: 4 },
-        elevation: 4,
-      },
-    }),
-  },
-  pinHintTitle: {
-    fontSize: 15,
-    fontWeight: "800",
-    color: colors.fg,
-    textAlign: "center",
-  },
-  pinHintSub: {
-    marginTop: 4,
-    fontSize: 12,
-    lineHeight: 17,
-    fontWeight: "500",
-    color: colors.muted,
-    textAlign: "center",
+    marginTop: -28,
   },
   centerPinHead: {
     width: 46,
@@ -700,7 +667,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 28,
     paddingHorizontal: 20,
     paddingTop: 10,
-    gap: 14,
+    gap: 12,
     ...Platform.select({
       web: { boxShadow: "0 -8px 28px rgba(0,0,0,0.1)" },
       default: {
@@ -721,10 +688,10 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   sheetTitle: {
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: "800",
     color: colors.fg,
-    letterSpacing: -0.4,
+    letterSpacing: -0.3,
   },
   addressRow: {
     flexDirection: "row",
@@ -732,34 +699,34 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   addressIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: colors.surface,
     alignItems: "center",
     justifyContent: "center",
   },
   addressBody: { flex: 1, gap: 2 },
-  addressTitle: { fontSize: 16, fontWeight: "800", color: colors.fg },
-  addressSub: { fontSize: 13, fontWeight: "500", color: colors.muted },
+  addressTitle: { fontSize: 14, fontWeight: "800", color: colors.fg },
+  addressSub: { fontSize: 12, fontWeight: "500", color: colors.muted },
   mapError: {
     textAlign: "center",
     backgroundColor: "#FFF0F0",
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: "600",
     color: "#FF3B30",
   },
   confirmBtn: {
-    minHeight: 56,
-    borderRadius: 28,
+    minHeight: 52,
+    borderRadius: 26,
     backgroundColor: colors.fg,
     alignItems: "center",
     justifyContent: "center",
   },
-  confirmText: { color: "#FFF", fontSize: 16, fontWeight: "800" },
+  confirmText: { color: "#FFF", fontSize: 15, fontWeight: "800" },
   disabled: { opacity: 0.5 },
   pressed: { opacity: 0.88 },
 });
