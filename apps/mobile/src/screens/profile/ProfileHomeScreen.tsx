@@ -199,9 +199,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     marginBottom: 12,
   },
-  avatarText: { fontSize: 28, fontWeight: "800", color: colors.fg },
+  avatarText: { fontSize: 22, fontWeight: "800", color: colors.fg },
   nameRow: { flexDirection: "row", alignItems: "center", gap: 6 },
-  name: { fontSize: 20, fontWeight: "800", color: colors.fg, letterSpacing: -0.3 },
+  name: { fontSize: 17, fontWeight: "800", color: colors.fg, letterSpacing: -0.3 },
   audiencePill: {
     marginTop: 8,
     backgroundColor: colors.surface,

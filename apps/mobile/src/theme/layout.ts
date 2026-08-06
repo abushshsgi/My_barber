@@ -11,8 +11,8 @@ export const CARD_MEDIA_ASPECT = 4 / 3;
 
 /** Web: `min(88vw, 22rem)` ≈ ekranning ~78–88%. */
 export function listingCardWidth(windowWidth: number): number {
-  const ideal = Math.min(windowWidth * 0.78, 352);
-  const minW = 240;
+  const ideal = Math.min(windowWidth * 0.72, 300);
+  const minW = Math.min(200, windowWidth * 0.55);
   return Math.max(minW, Math.round(ideal));
 }
 
@@ -27,19 +27,32 @@ export function imageRequestWidth(layoutWidth: number, max = 1600): number {
   return Math.min(Math.max(stepped, 320), max);
 }
 
+/**
+ * Matn o‘lchami — kichik telefonlarda biroz mayda, katta ekranda ortiqcha o‘smaydi.
+ * Base 390pt (iPhone 14) ga nisbatan; umumiy 8% kichikroq.
+ */
+export function scaleFont(size: number, windowWidth?: number): number {
+  const w = windowWidth ?? 390;
+  const scale = Math.min(Math.max(w / 390, 0.82), 1.02);
+  return Math.max(10, Math.round(size * scale * 0.92));
+}
+
 export function useHomeLayout() {
   const { width, height } = useWindowDimensions();
   const bannerW = bannerWidth(width);
   const cardW = listingCardWidth(width);
+  const fs = (n: number) => scaleFont(n, width);
   return {
     windowWidth: width,
     windowHeight: height,
     bannerW,
-    bannerH: bannerW / BANNER_ASPECT,
+    bannerH: Math.min(bannerW / BANNER_ASPECT, height * 0.22),
     cardW,
     cardGap: CARD_GAP,
     hPad: H_PAD,
     bannerImageW: imageRequestWidth(bannerW),
     cardImageW: imageRequestWidth(cardW),
+    fs,
+    isCompact: width < 360,
   };
 }

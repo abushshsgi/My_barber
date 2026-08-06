@@ -247,16 +247,16 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.98)",
   },
   title: {
-    fontSize: 32,
+    fontSize: 26,
     fontWeight: "800",
     color: colors.fg,
     textAlign: "center",
-    letterSpacing: -0.8,
+    letterSpacing: -0.6,
   },
   body: {
-    marginTop: 14,
-    fontSize: 17,
-    lineHeight: 26,
+    marginTop: 12,
+    fontSize: 15,
+    lineHeight: 22,
     color: colors.fg,
     textAlign: "center",
     opacity: 0.72,
@@ -264,7 +264,7 @@ const styles = StyleSheet.create({
   },
   footer: {
     paddingHorizontal: 24,
-    gap: 20,
+    gap: 16,
   },
   dots: {
     flexDirection: "row",
@@ -273,20 +273,20 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   dot: {
-    height: 9,
-    borderRadius: 5,
+    height: 8,
+    borderRadius: 4,
   },
   dotActive: {
-    width: 32,
+    width: 28,
     backgroundColor: "#27272A",
   },
   dotIdle: {
-    width: 9,
+    width: 8,
     backgroundColor: "#D4D4D8",
   },
   cta: {
-    height: 60,
-    borderRadius: 18,
+    height: 52,
+    borderRadius: 16,
     backgroundColor: colors.fg,
     alignItems: "center",
     justifyContent: "center",
@@ -294,7 +294,7 @@ const styles = StyleSheet.create({
   ctaDisabled: { opacity: 0.6 },
   ctaText: {
     color: "#FFF",
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: "700",
   },
 });

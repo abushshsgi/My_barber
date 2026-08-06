@@ -6,6 +6,7 @@ import {
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { HomeScreen } from "../screens/HomeScreen";
+import { MapScreen } from "../screens/MapScreen";
 import { PlaceholderScreen } from "../screens/PlaceholderScreen";
 import { colors } from "../theme/colors";
 import { ProfileStack } from "./ProfileStack";
@@ -38,9 +39,8 @@ const TABS: TabDef[] = [
 function CustomTabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
 
-  // Nested stack ichida root bo'lmasa ham dock ko'rinsin (rasmdagidek).
   return (
-    <View style={[styles.dock, { paddingBottom: Math.max(insets.bottom, 8) }]}>
+    <View style={[styles.dock, { paddingBottom: Math.max(insets.bottom, 6) }]}>
       {state.routes.map((route, index) => {
         const focused = state.index === index;
         const tab = TABS.find((t) => t.name === route.name)!;
@@ -59,7 +59,7 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
           return (
             <Pressable key={route.key} onPress={onPress} style={styles.centerWrap}>
               <View style={styles.centerBtn}>
-                <Ionicons name={tab.icon} size={22} color="#FFFFFF" />
+                <Ionicons name={tab.icon} size={20} color="#FFFFFF" />
               </View>
               <Text style={[styles.label, focused ? styles.labelOn : styles.labelOff]}>
                 {tab.label}
@@ -78,10 +78,12 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
                       ? "home"
                       : tab.icon === "person-outline"
                         ? "person"
-                        : tab.icon
+                        : tab.icon === "map-outline"
+                          ? "map"
+                          : tab.icon
                     : tab.icon
                 }
-                size={20}
+                size={18}
                 color={focused ? "#FFFFFF" : colors.muted}
               />
             </View>
@@ -99,7 +101,11 @@ export function RootTabs() {
   return (
     <Tab.Navigator
       tabBar={(props) => <CustomTabBar {...props} />}
-      screenOptions={{ headerShown: false }}
+      screenOptions={{
+        headerShown: false,
+        lazy: true,
+        freezeOnBlur: true,
+      }}
     >
       <Tab.Screen name="Home">
         {({ navigation }) => (
@@ -109,9 +115,7 @@ export function RootTabs() {
           />
         )}
       </Tab.Screen>
-      <Tab.Screen name="Map">
-        {() => <PlaceholderScreen title="Xarita" />}
-      </Tab.Screen>
+      <Tab.Screen name="Map" component={MapScreen} />
       <Tab.Screen name="MorphAI">
         {() => (
           <PlaceholderScreen
@@ -135,21 +139,21 @@ const styles = StyleSheet.create({
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: colors.border,
     backgroundColor: "rgba(244,244,244,0.96)",
-    paddingTop: 6,
+    paddingTop: 4,
     paddingHorizontal: 4,
   },
   tab: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    gap: 3,
-    minHeight: 48,
-    paddingVertical: 4,
+    gap: 2,
+    minHeight: 44,
+    paddingVertical: 3,
   },
   iconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -157,15 +161,15 @@ const styles = StyleSheet.create({
     backgroundColor: colors.fg,
   },
   centerWrap: {
-    width: 62,
+    width: 58,
     alignItems: "center",
     justifyContent: "flex-end",
     paddingBottom: 2,
   },
   centerBtn: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
     backgroundColor: colors.fg,
     alignItems: "center",
     justifyContent: "center",
@@ -173,7 +177,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   label: {
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: "700",
   },
   labelOn: {

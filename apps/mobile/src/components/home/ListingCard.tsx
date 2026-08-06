@@ -26,8 +26,12 @@ export function ListingCard({
   imageWidth,
 }: Props) {
   const layout = useHomeLayout();
+  // Parent width bersa — qayta dimension subscribe qilmaslik uchun shu qiymat.
   const width = cardWidth ?? layout.cardW;
   const imgW = imageWidth ?? layout.cardImageW;
+  const titleSize = layout.fs(13);
+  const metaSize = layout.fs(11);
+  const priceSize = layout.fs(12);
 
   const meta = [
     item.categoryLabel,
@@ -63,18 +67,18 @@ export function ListingCard({
       </View>
 
       <View style={styles.body}>
-        <Text style={styles.title} numberOfLines={1}>
+        <Text style={[styles.title, { fontSize: titleSize }]} numberOfLines={1}>
           {item.title}
         </Text>
         {meta ? (
-          <Text style={styles.meta} numberOfLines={1}>
+          <Text style={[styles.meta, { fontSize: metaSize }]} numberOfLines={1}>
             {meta}
           </Text>
         ) : (
           <View style={styles.metaSpacer} />
         )}
         {price ? (
-          <Text style={styles.price}>
+          <Text style={[styles.price, { fontSize: priceSize }]}>
             {price} <Text style={styles.priceSuffix}>dan</Text>
           </Text>
         ) : (
@@ -114,29 +118,26 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   body: {
-    minHeight: 72,
-    paddingHorizontal: 14,
-    paddingTop: 12,
-    paddingBottom: 14,
+    minHeight: 64,
+    paddingHorizontal: 12,
+    paddingTop: 10,
+    paddingBottom: 12,
   },
   title: {
-    fontSize: 14,
     fontWeight: "700",
     color: colors.fg,
     letterSpacing: -0.2,
   },
   meta: {
     marginTop: 2,
-    fontSize: 12,
     color: colors.muted,
   },
   metaSpacer: {
     marginTop: 2,
-    height: 16,
+    height: 14,
   },
   price: {
-    marginTop: 6,
-    fontSize: 13,
+    marginTop: 4,
     fontWeight: "700",
     color: colors.fg,
   },
@@ -145,7 +146,7 @@ const styles = StyleSheet.create({
     color: colors.fg,
   },
   priceSpacer: {
-    marginTop: 6,
-    height: 18,
+    marginTop: 4,
+    height: 16,
   },
 });

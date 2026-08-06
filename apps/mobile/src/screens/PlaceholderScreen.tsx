@@ -27,15 +27,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   title: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: "800",
     color: colors.fg,
-    letterSpacing: -0.4,
+    letterSpacing: -0.3,
   },
   subtitle: {
-    marginTop: 8,
-    fontSize: 14,
-    lineHeight: 20,
+    marginTop: 6,
+    fontSize: 13,
+    lineHeight: 18,
     color: colors.muted,
   },
 });

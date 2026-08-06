@@ -1,6 +1,7 @@
-import { useMemo, useState } from "react";
+import { memo, useCallback, useMemo, useState } from "react";
 import {
   ActivityIndicator,
+  FlatList,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -9,7 +10,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import type { HomeCategoryKey } from "../api/types";
+import type { HomeCategoryKey, HomeListing } from "../api/types";
 import { HomeBanner } from "../components/home/HomeBanner";
 import { HomeCategories } from "../components/home/HomeCategories";
 import { HomeHeader } from "../components/home/HomeHeader";
@@ -24,9 +25,11 @@ type Props = {
   onOpenExplore?: () => void;
 };
 
+const MemoCard = memo(ListingCard);
+
 export function HomeScreen({ onOpenMap, onOpenExplore }: Props) {
   const insets = useSafeAreaInsets();
-  const { cardW, cardImageW } = useHomeLayout();
+  const { cardW, cardImageW, fs } = useHomeLayout();
   const { topSalons, topBarbers, locationLabel, loading, error, refresh } = useHomeCatalog();
   const [category, setCategory] = useState<HomeCategoryKey>("all");
   const [favorites, setFavorites] = useState<Record<string, boolean>>({});
@@ -39,20 +42,47 @@ export function HomeScreen({ onOpenMap, onOpenExplore }: Props) {
     return matched.length > 0 ? matched : topSalons;
   }, [category, topSalons]);
 
-  const toggleFav = (id: string) => {
+  const toggleFav = useCallback((id: string) => {
     setFavorites((prev) => ({ ...prev, [id]: !prev[id] }));
-  };
+  }, []);
 
   const snap = cardW + CARD_GAP;
 
+  const renderSalon = useCallback(
+    ({ item }: { item: HomeListing }) => (
+      <MemoCard
+        item={item}
+        cardWidth={cardW}
+        imageWidth={cardImageW}
+        favorited={Boolean(favorites[item.id])}
+        onToggleFavorite={() => toggleFav(item.id)}
+      />
+    ),
+    [cardW, cardImageW, favorites, toggleFav],
+  );
+
+  const renderBarber = useCallback(
+    ({ item }: { item: HomeListing }) => (
+      <MemoCard
+        item={item}
+        cardWidth={cardW}
+        imageWidth={cardImageW}
+        favorited={Boolean(favorites[item.id])}
+        onToggleFavorite={() => toggleFav(item.id)}
+      />
+    ),
+    [cardW, cardImageW, favorites, toggleFav],
+  );
+
   return (
-    <View style={[styles.root, { paddingTop: Math.max(insets.top, 12) }]}>
+    <View style={[styles.root, { paddingTop: Math.max(insets.top, 10) }]}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.content}
         refreshControl={
           <RefreshControl refreshing={loading} onRefresh={refresh} tintColor={colors.fg} />
         }
+        removeClippedSubviews
       >
         <HomeHeader locationLabel={locationLabel} onPressMap={onOpenMap} />
 
@@ -62,9 +92,9 @@ export function HomeScreen({ onOpenMap, onOpenExplore }: Props) {
 
         {error ? (
           <View style={styles.errorBox}>
-            <Text style={styles.errorText}>{error}</Text>
+            <Text style={[styles.errorText, { fontSize: fs(12) }]}>{error}</Text>
             <Pressable onPress={refresh} style={styles.retry}>
-              <Text style={styles.retryText}>Qayta urinish</Text>
+              <Text style={[styles.retryText, { fontSize: fs(12) }]}>Qayta urinish</Text>
             </Pressable>
           </View>
         ) : null}
@@ -78,50 +108,52 @@ export function HomeScreen({ onOpenMap, onOpenExplore }: Props) {
         {filteredSalons.length > 0 ? (
           <View style={styles.section}>
             <SectionHeader title="Top salonlar" onPressLink={onOpenExplore} />
-            <ScrollView
+            <FlatList
+              data={filteredSalons}
               horizontal
+              keyExtractor={(item) => item.id}
+              renderItem={renderSalon}
               showsHorizontalScrollIndicator={false}
               decelerationRate="fast"
               snapToInterval={snap}
               snapToAlignment="start"
               contentContainerStyle={styles.hRow}
-            >
-              {filteredSalons.map((item) => (
-                <ListingCard
-                  key={item.id}
-                  item={item}
-                  cardWidth={cardW}
-                  imageWidth={cardImageW}
-                  favorited={Boolean(favorites[item.id])}
-                  onToggleFavorite={() => toggleFav(item.id)}
-                />
-              ))}
-            </ScrollView>
+              initialNumToRender={4}
+              windowSize={5}
+              maxToRenderPerBatch={4}
+              removeClippedSubviews
+              getItemLayout={(_, index) => ({
+                length: snap,
+                offset: snap * index,
+                index,
+              })}
+            />
           </View>
         ) : null}
 
         {topBarbers.length > 0 ? (
           <View style={styles.section}>
             <SectionHeader title="Top ustalar" onPressLink={onOpenMap} />
-            <ScrollView
+            <FlatList
+              data={topBarbers}
               horizontal
+              keyExtractor={(item) => item.id}
+              renderItem={renderBarber}
               showsHorizontalScrollIndicator={false}
               decelerationRate="fast"
               snapToInterval={snap}
               snapToAlignment="start"
               contentContainerStyle={styles.hRow}
-            >
-              {topBarbers.map((item) => (
-                <ListingCard
-                  key={item.id}
-                  item={item}
-                  cardWidth={cardW}
-                  imageWidth={cardImageW}
-                  favorited={Boolean(favorites[item.id])}
-                  onToggleFavorite={() => toggleFav(item.id)}
-                />
-              ))}
-            </ScrollView>
+              initialNumToRender={4}
+              windowSize={5}
+              maxToRenderPerBatch={4}
+              removeClippedSubviews
+              getItemLayout={(_, index) => ({
+                length: snap,
+                offset: snap * index,
+                index,
+              })}
+            />
           </View>
         ) : null}
       </ScrollView>
@@ -135,8 +167,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bg,
   },
   content: {
-    gap: 20,
-    paddingBottom: 24,
+    gap: 16,
+    paddingBottom: 20,
   },
   section: {
     gap: 0,
@@ -147,7 +179,7 @@ const styles = StyleSheet.create({
     paddingBottom: 2,
   },
   loader: {
-    paddingVertical: 32,
+    paddingVertical: 28,
     alignItems: "center",
   },
   errorBox: {
@@ -158,7 +190,6 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   errorText: {
-    fontSize: 12,
     color: colors.muted,
   },
   retry: {
@@ -169,7 +200,6 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   retryText: {
-    fontSize: 12,
     fontWeight: "700",
     color: "#FFF",
   },
