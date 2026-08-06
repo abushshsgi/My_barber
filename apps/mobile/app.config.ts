@@ -56,6 +56,13 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       "expo-web-browser",
       "expo-secure-store",
       [
+        "expo-image-picker",
+        {
+          photosPermission:
+            "To'ldirish chekini yuklash uchun galereyaga ruxsat kerak.",
+        },
+      ],
+      [
         "expo-location",
         {
           locationWhenInUsePermission:

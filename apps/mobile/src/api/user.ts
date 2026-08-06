@@ -42,8 +42,14 @@ export async function updateMe(data: UpdateMePayload): Promise<ApiUser> {
 }
 
 export type ApiWallet = {
-  balance: number;
+  balance: number | string;
   wallet_number?: string;
+  card?: {
+    cardholder_name: string;
+    card_display: string;
+    issued_at: string;
+  };
+  created_at?: string;
 };
 
 export type ApiBooking = {
@@ -98,9 +104,10 @@ export function initials(name: string): string {
   return `${parts[0]![0] ?? ""}${parts[1]![0] ?? ""}`.toUpperCase();
 }
 
-export function formatSom(amount: number): string {
-  if (!Number.isFinite(amount)) return "0 so'm";
-  return `${Math.round(amount).toLocaleString("uz-UZ")} so'm`;
+export function formatSom(amount: number | string): string {
+  const n = typeof amount === "number" ? amount : parseFloat(String(amount));
+  if (!Number.isFinite(n)) return "0 so'm";
+  return `${Math.round(n).toLocaleString("uz-UZ")} so'm`;
 }
 
 export function timeAgo(iso: string): string {

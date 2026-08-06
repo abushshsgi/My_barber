@@ -84,8 +84,19 @@ export async function apiJson<T>(path: string, init?: RequestInit): Promise<T> {
     Accept: "application/json",
     ...(init?.headers as Record<string, string> | undefined),
   };
-  if (method !== "GET" && method !== "HEAD" && !headers["Content-Type"]) {
+  const isFormData =
+    typeof FormData !== "undefined" && init?.body instanceof FormData;
+  // FormData: browser/RN sets multipart boundary — do not force JSON Content-Type.
+  if (
+    method !== "GET" &&
+    method !== "HEAD" &&
+    !headers["Content-Type"] &&
+    !isFormData
+  ) {
     headers["Content-Type"] = "application/json";
+  }
+  if (isFormData) {
+    delete headers["Content-Type"];
   }
 
   if (!isAuthPath(path) && !headers.Authorization) {
