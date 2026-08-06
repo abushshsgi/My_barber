@@ -1,9 +1,25 @@
+const path = require("path");
 const { getDefaultConfig } = require("expo/metro-config");
 const http = require("http");
 const https = require("https");
 
 const projectRoot = __dirname;
 const config = getDefaultConfig(projectRoot);
+
+/** Web: react-native-maps native codegen — stub (MapScreen.web / OnboardingMap.web ishlatiladi). */
+const upstreamResolveRequest = config.resolver.resolveRequest;
+config.resolver.resolveRequest = (context, moduleName, platform) => {
+  if (platform === "web" && moduleName === "react-native-maps") {
+    return {
+      type: "sourceFile",
+      filePath: path.resolve(projectRoot, "src/shims/react-native-maps.web.js"),
+    };
+  }
+  if (upstreamResolveRequest) {
+    return upstreamResolveRequest(context, moduleName, platform);
+  }
+  return context.resolveRequest(context, moduleName, platform);
+};
 
 const UPSTREAM = (process.env.EXPO_PUBLIC_API_URL || "https://api.mysaloon.uz").replace(
   /\/+$/,
