@@ -110,7 +110,13 @@ export function ProfileHomeScreen({ navigation }: Props) {
             icon="wallet-outline"
             iconDark
             darkText
-            onPress={() => navigation.navigate("WalletGate")}
+            onPress={() => {
+              try {
+                navigation.navigate("WalletGate");
+              } catch {
+                navigation.navigate("WalletHome");
+              }
+            }}
             last
           />
         </SettingsGroup>
