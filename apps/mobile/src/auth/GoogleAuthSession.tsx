@@ -81,9 +81,19 @@ export function GoogleAuthSessionProvider({ children }: { children: ReactNode })
     }
   }, [redirectUri, response?.type]);
 
+  // Chiqish / dismiss / cancel dan keyin spinner qolib ketmasin (web popup).
   useEffect(() => {
-    if (response?.type !== "success") {
-      if (response?.type === "error") {
+    if (!auth.isAuthenticated) {
+      setBusy(false);
+    }
+  }, [auth.isAuthenticated]);
+
+  useEffect(() => {
+    if (!response) return;
+
+    if (response.type !== "success") {
+      setBusy(false);
+      if (response.type === "error") {
         setError(response.error?.message || "Google kirish bekor qilindi yoki xato.");
       }
       return;
@@ -94,9 +104,13 @@ export function GoogleAuthSessionProvider({ children }: { children: ReactNode })
       (response as { authentication?: { idToken?: string } }).authentication?.idToken;
 
     const key = idToken?.slice(0, 24) || "ok";
-    if (handled === key) return;
+    if (handled === key) {
+      setBusy(false);
+      return;
+    }
 
     if (!idToken) {
+      setBusy(false);
       setError("Google token olinmadi. Qayta urinib ko'ring.");
       return;
     }
@@ -128,20 +142,22 @@ export function GoogleAuthSessionProvider({ children }: { children: ReactNode })
     setBusy(true);
     try {
       const result = await promptAsync();
-      if (result.type === "dismiss" || result.type === "cancel") {
+      // success: API chaqiruvini useEffect boshqaradi (busy ni u yoqadi).
+      // dismiss/cancel/error yoki allaqachon handled — spinner qolmasin.
+      setBusy(false);
+      if (result.type === "error") {
+        setError(result.error?.message || "Google kirish xato");
+      } else if (result.type === "dismiss" || result.type === "cancel") {
         setError(null);
       }
     } catch (err) {
+      setBusy(false);
       const msg = err instanceof Error ? err.message : "Google ochilmadi";
       setError(
         /redirect|origin/i.test(msg)
           ? `${msg}\n\nGoogle Console → origins/redirect:\n${redirectUri}`
           : msg,
       );
-    } finally {
-      // Web redirect: sahifa reload — finally shu yerda ishlamasligi mumkin.
-      // Native popup: busy ni o'chiramiz; success useEffect ushlaydi.
-      if (Platform.OS !== "web") setBusy(false);
     }
   }, [googleClientId, request, promptAsync, redirectUri]);
 
