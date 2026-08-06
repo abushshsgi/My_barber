@@ -1,7 +1,6 @@
 import { Platform } from "react-native";
-import appJson from "../../app.json";
 import { apiJson } from "./client";
-import { API_BASE, API_ORIGIN } from "./config";
+import { API_BASE, API_ORIGIN, getExtraGoogleClientId } from "./config";
 import type { ApiUser } from "./user";
 
 export type AuthSuccess = {
@@ -110,11 +109,7 @@ export async function refreshAccessToken(refresh: string): Promise<{
 
 export function getGoogleClientId(): string {
   const fromEnv = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID?.trim() || "";
-  const fromExtra =
-    typeof appJson?.expo?.extra?.googleClientId === "string"
-      ? appJson.expo.extra.googleClientId.trim()
-      : "";
-  return fromEnv || fromExtra;
+  return fromEnv || getExtraGoogleClientId();
 }
 
 export function normalizeUzPhone(input: string): string {

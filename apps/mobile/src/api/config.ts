@@ -1,12 +1,15 @@
+import Constants from "expo-constants";
 import { Platform } from "react-native";
-import appJson from "../../app.json";
 
 const DEFAULT_API = "https://api.mysaloon.uz";
 
+const extra = (Constants.expoConfig?.extra ?? {}) as {
+  apiUrl?: string;
+  googleClientId?: string;
+};
+
 const fromExtra =
-  typeof appJson?.expo?.extra?.apiUrl === "string"
-    ? appJson.expo.extra.apiUrl.trim()
-    : "";
+  typeof extra.apiUrl === "string" ? extra.apiUrl.trim() : "";
 
 function resolveApiBase(): string {
   const env = process.env.EXPO_PUBLIC_API_URL?.trim() || fromExtra || "";
@@ -23,3 +26,7 @@ function resolveApiBase(): string {
 export const API_BASE = resolveApiBase();
 
 export const API_ORIGIN = (fromExtra || DEFAULT_API).replace(/\/+$/, "");
+
+export function getExtraGoogleClientId(): string {
+  return typeof extra.googleClientId === "string" ? extra.googleClientId.trim() : "";
+}

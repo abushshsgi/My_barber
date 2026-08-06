@@ -55,6 +55,9 @@ export function LocationPickerScreen({
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<GeocodeResult[]>([]);
   const [searching, setSearching] = useState(false);
+  /** Xarita mount — ruxsat so'rovidan keyin (Android crash oldini olish). */
+  const [mapReady, setMapReady] = useState(false);
+  const [hasLocationPerm, setHasLocationPerm] = useState(false);
 
   const detectLocation = useCallback(async () => {
     setLocating(true);
@@ -62,9 +65,15 @@ export function LocationPickerScreen({
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== "granted") {
-        setError("Joylashuv ruxsati berilmadi. Brauzerda ruxsatni yoqing.");
+        setHasLocationPerm(false);
+        setError(
+          Platform.OS === "web"
+            ? "Joylashuv ruxsati berilmadi. Brauzerda ruxsatni yoqing."
+            : "Joylashuv ruxsati berilmadi. Sozlamalardan joylashuvni yoqing.",
+        );
         return;
       }
+      setHasLocationPerm(true);
       const pos = await Promise.race([
         Location.getCurrentPositionAsync({
           accuracy: Location.Accuracy.Balanced,
@@ -108,13 +117,44 @@ export function LocationPickerScreen({
     };
   }, [lat, lng]);
 
-  // Faqat xarita rejimida bir marta GPS.
+  // Xarita: avval ruxsat → keyin MapView (kalitsiz / erta mount crash bermasin).
   useEffect(() => {
-    if (mode !== "map") return;
+    if (mode !== "map") {
+      setMapReady(false);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const current = await Location.getForegroundPermissionsAsync();
+        if (cancelled) return;
+        if (current.status === "granted") {
+          setHasLocationPerm(true);
+        } else {
+          const req = await Location.requestForegroundPermissionsAsync();
+          if (cancelled) return;
+          setHasLocationPerm(req.status === "granted");
+        }
+      } catch {
+        if (!cancelled) setHasLocationPerm(false);
+      } finally {
+        if (!cancelled) setMapReady(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [mode]);
+
+  // GPS bir marta — xarita ochilgandan keyin.
+  useEffect(() => {
+    if (mode !== "map" || !mapReady) return;
     if (gpsOnceRef.current) return;
     gpsOnceRef.current = true;
-    void detectLocation();
-  }, [mode, detectLocation]);
+    if (hasLocationPerm) {
+      void detectLocation();
+    }
+  }, [mode, mapReady, hasLocationPerm, detectLocation]);
 
   useEffect(() => {
     if (mode !== "search") return;
@@ -289,12 +329,20 @@ export function LocationPickerScreen({
   // ——— Xarita ———
   return (
     <View style={styles.mapRoot}>
-      <OnboardingMap
-        ref={mapRef}
-        latitude={lat}
-        longitude={lng}
-        onCoordsChange={onMapCoords}
-      />
+      {mapReady ? (
+        <OnboardingMap
+          ref={mapRef}
+          latitude={lat}
+          longitude={lng}
+          onCoordsChange={onMapCoords}
+          showUserLocation={hasLocationPerm}
+        />
+      ) : (
+        <View style={styles.mapBoot}>
+          <ActivityIndicator size="large" color={colors.fg} />
+          <Text style={styles.mapBootText}>Xarita tayyorlanmoqda…</Text>
+        </View>
+      )}
 
       {/* Markaz pin + hint */}
       <View pointerEvents="none" style={styles.centerPinWrap}>
@@ -506,6 +554,14 @@ const styles = StyleSheet.create({
 
   // Map
   mapRoot: { flex: 1, backgroundColor: "#EEF0F3", position: "relative" },
+  mapBoot: {
+    ...StyleSheet.absoluteFill,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 12,
+    backgroundColor: "#EEF0F3",
+  },
+  mapBootText: { fontSize: 14, fontWeight: "600", color: colors.muted },
   mapTopBar: {
     position: "absolute",
     left: 0,

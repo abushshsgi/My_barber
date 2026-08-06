@@ -20,11 +20,16 @@ type Props = {
   latitude: number;
   longitude: number;
   onCoordsChange: (lat: number, lng: number) => void;
+  /** GPS ruxsati berilgandan keyin yoqiladi — aks holda Android crash. */
+  showUserLocation?: boolean;
 };
 
-/** Native — doim ochiq xarita; markaz pin tashqarida. */
+/** Native xarita; markaz pin tashqarida. */
 export const OnboardingMap = forwardRef<OnboardingMapHandle, Props>(
-  function OnboardingMap({ latitude, longitude, onCoordsChange }, ref) {
+  function OnboardingMap(
+    { latitude, longitude, onCoordsChange, showUserLocation = false },
+    ref,
+  ) {
     const mapRef = useRef<MapView | null>(null);
     const skipRef = useRef(false);
     const deltaRef = useRef(DEFAULT_MAP_REGION.latitudeDelta);
@@ -87,7 +92,7 @@ export const OnboardingMap = forwardRef<OnboardingMapHandle, Props>(
           latitudeDelta: deltaRef.current,
           longitudeDelta: deltaRef.current,
         }}
-        customMapStyle={LIGHT_MAP_STYLE}
+        customMapStyle={Platform.OS === "android" ? LIGHT_MAP_STYLE : LIGHT_MAP_STYLE}
         userInterfaceStyle="light"
         onRegionChangeComplete={(region) => {
           deltaRef.current = region.latitudeDelta;
@@ -98,7 +103,7 @@ export const OnboardingMap = forwardRef<OnboardingMapHandle, Props>(
           }
           onCoordsRef.current(region.latitude, region.longitude);
         }}
-        showsUserLocation
+        showsUserLocation={showUserLocation}
         showsMyLocationButton={false}
         showsCompass={false}
         showsScale={false}
@@ -112,6 +117,8 @@ export const OnboardingMap = forwardRef<OnboardingMapHandle, Props>(
         moveOnMarkerPress={false}
         zoomEnabled
         scrollEnabled
+        loadingEnabled
+        liteMode={false}
       />
     );
   },
