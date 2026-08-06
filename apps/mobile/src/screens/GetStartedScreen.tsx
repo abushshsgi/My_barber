@@ -19,8 +19,10 @@ import {
 import { setWelcomeSeen } from "../lib/guest";
 import { colors } from "../theme/colors";
 
+export type LocationEntryMode = "map" | "search";
+
 type Props = {
-  onFinish: () => void;
+  onFinish: (mode: LocationEntryMode) => void;
 };
 
 type Slide = {
@@ -54,7 +56,7 @@ const SLIDES: Slide[] = [
 const H_PAD = 24;
 
 /**
- * Til → 3 ta karusel (rasmlar / Morf AI / joylashuv) → LocationPicker.
+ * Til → 3 ta karusel → LocationPicker (map yoki qo'lda qidiruv).
  */
 export function GetStartedScreen({ onFinish }: Props) {
   const insets = useSafeAreaInsets();
@@ -63,8 +65,10 @@ export function GetStartedScreen({ onFinish }: Props) {
   const [index, setIndex] = useState(0);
 
   const galleryW = Math.max(280, winW - H_PAD * 2);
-  const galleryH = Math.min(Math.max(winH * 0.42, 280), 400);
-  const illustSize = Math.min(galleryW * 0.72, 260);
+  const galleryH = Math.min(Math.max(winH * 0.34, 240), 320);
+  const illustSize = Math.min(galleryW * 0.62, 220);
+  /** Kontent biroz pastroq — tepada bo'sh joy. */
+  const pageTopPad = Math.max(winH * 0.1, 56);
 
   const onViewableItemsChanged = useRef(
     ({ viewableItems }: { viewableItems: ViewToken[] }) => {
@@ -75,20 +79,22 @@ export function GetStartedScreen({ onFinish }: Props) {
 
   const viewabilityConfig = useRef({ viewAreaCoveragePercentThreshold: 60 }).current;
 
+  const finish = useCallback(
+    async (mode: LocationEntryMode) => {
+      await setWelcomeSeen();
+      onFinish(mode);
+    },
+    [onFinish],
+  );
+
   const goNext = useCallback(async () => {
     if (index < SLIDES.length - 1) {
       listRef.current?.scrollToIndex({ index: index + 1, animated: true });
       setIndex(index + 1);
       return;
     }
-    await setWelcomeSeen();
-    onFinish();
-  }, [index, onFinish]);
-
-  const goToMapManual = useCallback(async () => {
-    await setWelcomeSeen();
-    onFinish();
-  }, [onFinish]);
+    await finish("map");
+  }, [index, finish]);
 
   const onMomentumEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const x = e.nativeEvent.contentOffset.x;
@@ -100,7 +106,7 @@ export function GetStartedScreen({ onFinish }: Props) {
   const isLast = Boolean(slide.isLocation);
 
   const renderItem = ({ item }: { item: Slide }) => (
-    <View style={[styles.page, { width: winW }]}>
+    <View style={[styles.page, { width: winW, paddingTop: pageTopPad }]}>
       <View style={[styles.visual, { height: galleryH, width: galleryW }]}>
         {item.key === "gallery" ? (
           <AnimatedImageColumns height={galleryH} width={galleryW} />
@@ -119,7 +125,7 @@ export function GetStartedScreen({ onFinish }: Props) {
       style={[
         styles.root,
         {
-          paddingTop: insets.top + 8,
+          paddingTop: insets.top + 4,
           paddingBottom: Math.max(insets.bottom, 12) + 16,
         },
       ]}
@@ -142,7 +148,6 @@ export function GetStartedScreen({ onFinish }: Props) {
           index: i,
         })}
         style={styles.list}
-        contentContainerStyle={styles.listContent}
       />
 
       <View style={styles.footer}>
@@ -164,7 +169,7 @@ export function GetStartedScreen({ onFinish }: Props) {
         </Pressable>
 
         {isLast ? (
-          <Pressable onPress={() => void goToMapManual()} hitSlop={8}>
+          <Pressable onPress={() => void finish("search")} hitSlop={8}>
             <Text style={styles.secondary}>Manzilni qo'lda ko'rsatish</Text>
           </Pressable>
         ) : (
@@ -183,22 +188,18 @@ const styles = StyleSheet.create({
   list: {
     flex: 1,
   },
-  listContent: {
-    alignItems: "stretch",
-  },
   page: {
     flexGrow: 1,
     paddingHorizontal: H_PAD,
     alignItems: "center",
     justifyContent: "flex-start",
-    paddingTop: 12,
-    gap: 14,
+    gap: 12,
   },
   visual: {
     alignItems: "center",
     justifyContent: "center",
     overflow: "hidden",
-    marginBottom: 4,
+    marginBottom: 8,
   },
   title: {
     fontSize: 26,

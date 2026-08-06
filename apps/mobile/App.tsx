@@ -14,7 +14,10 @@ import {
 } from "./src/lib/guest";
 import { needsOnboarding } from "./src/lib/onboarding";
 import { RootTabs } from "./src/navigation/RootTabs";
-import { GetStartedScreen } from "./src/screens/GetStartedScreen";
+import {
+  GetStartedScreen,
+  type LocationEntryMode,
+} from "./src/screens/GetStartedScreen";
 import { LocationPickerScreen } from "./src/screens/LocationPickerScreen";
 import { OnboardingScreen } from "./src/screens/OnboardingScreen";
 import { SplashScreen } from "./src/screens/SplashScreen";
@@ -54,11 +57,15 @@ function AppGate() {
   const [bootReady, setBootReady] = useState(skipIntro);
   const [lang, setLang] = useState<AppLang | null>(skipIntro ? "uz" : null);
   const [welcomeSeen, setWelcomeSeenState] = useState(skipIntro);
+  const [locationMode, setLocationMode] = useState<LocationEntryMode>("map");
   const [guestLocation, setGuestLocationState] = useState<GuestLocation | null>(null);
 
   const onSplashFinish = useCallback(() => setSplashDone(true), []);
   const onLanguagePick = useCallback((picked: AppLang) => setLang(picked), []);
-  const onWelcomeFinish = useCallback(() => setWelcomeSeenState(true), []);
+  const onWelcomeFinish = useCallback((mode: LocationEntryMode) => {
+    setLocationMode(mode);
+    setWelcomeSeenState(true);
+  }, []);
   const onLocationFinish = useCallback(() => {
     void getGuestLocation().then((loc) => setGuestLocationState(loc));
   }, []);
@@ -110,7 +117,12 @@ function AppGate() {
 
   const hasLocation = !!guestLocation || (isAuthenticated && userHasCoords(user));
   if (!hasLocation) {
-    return <LocationPickerScreen onFinish={onLocationFinish} />;
+    return (
+      <LocationPickerScreen
+        onFinish={onLocationFinish}
+        initialMode={locationMode}
+      />
+    );
   }
 
   if (isAuthenticated && (mustOnboard || needsOnboarding(user))) {
