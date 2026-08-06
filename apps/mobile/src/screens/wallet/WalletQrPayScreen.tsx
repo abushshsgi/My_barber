@@ -11,6 +11,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { useHideTabBar } from "../../hooks/useHideTabBar";
 import {
   MAX_QR_AMOUNT,
   MIN_QR_AMOUNT,
@@ -27,6 +28,7 @@ import { colors } from "../../theme/colors";
 type Props = NativeStackScreenProps<WalletStackParamList, "WalletQrPay">;
 
 export function WalletQrPayScreen({ navigation }: Props) {
+  useHideTabBar();
   const me = useWalletMe();
   const [code, setCode] = useState("");
   const [resolved, setResolved] = useState<QrResolveResult | null>(null);

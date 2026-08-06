@@ -12,6 +12,7 @@ import {
   Text,
   View,
 } from "react-native";
+import { useHideTabBar } from "../../hooks/useHideTabBar";
 import { parseWalletBalance, type ApiReceivedGift } from "../../api/wallet";
 import { NativeHeader } from "../../components/ui/NativeHeader";
 import { useAuth } from "../../auth/AuthContext";
@@ -27,6 +28,7 @@ function favKey(userId: number) {
 }
 
 export function WalletGiftsScreen({ navigation }: Props) {
+  useHideTabBar();
   const { user } = useAuth();
   const me = useWalletMe();
   const { gifts, loading, refresh } = useReceivedGifts();

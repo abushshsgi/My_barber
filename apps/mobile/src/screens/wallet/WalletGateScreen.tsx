@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 import { openWallet } from "../../api/wallet";
 import { useAuth } from "../../auth/AuthContext";
+import { useHideTabBar } from "../../hooks/useHideTabBar";
 import { isWalletOpened, markWalletOpened } from "../../lib/wallet-onboarding";
 import type { WalletStackParamList } from "../../navigation/WalletStack";
 import { colors } from "../../theme/colors";
@@ -10,11 +11,8 @@ import { WalletOnboardingScreen } from "./WalletOnboardingScreen";
 
 type Props = NativeStackScreenProps<WalletStackParamList, "WalletGate">;
 
-/**
- * Tez qaror: faqat local flag (AsyncStorage).
- * API kutish spinnerda qoldirmaydi — eski bug shu edi.
- */
 export function WalletGateScreen({ navigation }: Props) {
+  useHideTabBar();
   const { user } = useAuth();
   const [phase, setPhase] = useState<"boot" | "onboarding" | "done">("boot");
   const [opening, setOpening] = useState(false);

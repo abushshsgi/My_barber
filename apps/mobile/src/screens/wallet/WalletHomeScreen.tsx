@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -11,174 +11,181 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { WalletPlasticCard } from "../../components/wallet/WalletPlasticCard";
 import { NativeBackButton } from "../../components/ui/NativeBackButton";
-import { useWalletMe, useWalletTransactions } from "../../hooks/useWallet";
-import { formatSomLabel } from "../../lib/wallet-format";
+import { useHideTabBar } from "../../hooks/useHideTabBar";
+import { useReceivedGifts, useWalletMe, useWalletTransactions } from "../../hooks/useWallet";
+import { formatSomAmount, formatSomLabel } from "../../lib/wallet-format";
 import type { WalletStackParamList } from "../../navigation/WalletStack";
 import { colors } from "../../theme/colors";
 
 type Props = NativeStackScreenProps<WalletStackParamList, "WalletHome">;
 
-const QUICK = [
-  { id: "payments", label: "To'lov", icon: "card-outline" as const, route: "WalletTopUp" as const },
-  { id: "bonus", label: "Bonus", icon: "sparkles-outline" as const, route: null },
-  { id: "received", label: "Kelgan", icon: "file-tray-outline" as const, route: "WalletGifts" as const },
-  { id: "sub", label: "Obuna", icon: "diamond-outline" as const, route: null },
-] as const;
+const PINK = "#FF6B9D";
 
 export function WalletHomeScreen({ navigation }: Props) {
+  useHideTabBar();
   const insets = useSafeAreaInsets();
-  const [tab, setTab] = useState<"all" | "in" | "out">("all");
   const me = useWalletMe();
-  const tx = useWalletTransactions(tab);
+  const tx = useWalletTransactions("all");
+  const gifts = useReceivedGifts();
   const [refreshing, setRefreshing] = useState(false);
 
-  const onRefresh = useCallback(async () => {
+  const inSum = useMemo(
+    () => tx.items.filter((t) => t.kind === "in").reduce((s, t) => s + Math.abs(t.amount), 0),
+    [tx.items],
+  );
+  const outSum = useMemo(
+    () => tx.items.filter((t) => t.kind === "out").reduce((s, t) => s + Math.abs(t.amount), 0),
+    [tx.items],
+  );
+  const giftSum = useMemo(
+    () =>
+      gifts.gifts.reduce((s, g) => {
+        const n =
+          typeof g.gift_amount === "number"
+            ? g.gift_amount
+            : parseFloat(String(g.gift_amount ?? g.amount)) || 0;
+        return s + n;
+      }, 0),
+    [gifts.gifts],
+  );
+
+  const onRefresh = useCallback(() => {
     setRefreshing(true);
     me.refresh();
     tx.refresh();
-    setTimeout(() => setRefreshing(false), 600);
-  }, [me, tx]);
+    gifts.refresh();
+    setTimeout(() => setRefreshing(false), 700);
+  }, [me, tx, gifts]);
+
+  const recent = tx.items.slice(0, 6);
 
   return (
-    <View style={[styles.root, { paddingTop: Math.max(insets.top, 8) }]}>
-      <View style={styles.header}>
+    <View style={[styles.root, { paddingTop: Math.max(insets.top, 10) }]}>
+      <View style={styles.topBar}>
         <NativeBackButton onPress={() => navigation.goBack()} />
-        <View style={{ flex: 1 }}>
-          <Text style={styles.title}>Hamyon</Text>
-          <Text style={styles.hint}>Pastga tortib yangilang</Text>
-        </View>
+        <Text style={styles.logo}>
+          Mysaloon<Text style={styles.logoDot}>.</Text>
+        </Text>
+        <Pressable
+          style={styles.menuPill}
+          onPress={() => navigation.navigate("WalletTransactions")}
+          hitSlop={8}
+        >
+          <Ionicons name="search-outline" size={18} color={colors.fg} />
+          <Ionicons name="ellipsis-horizontal" size={18} color={colors.fg} />
+        </Pressable>
       </View>
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, { paddingBottom: Math.max(insets.bottom, 28) }]}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
-        <View style={styles.cardPad}>
-          {me.loading && !me.wallet ? (
-            <View style={styles.cardSkeleton}>
-              <ActivityIndicator color="#FFF" />
-            </View>
-          ) : (
-            <WalletPlasticCard
-              balance={me.balance}
-              cardholderName={me.card?.cardholder_name}
-              walletNumber={me.walletNumber}
-            />
-          )}
+        <Text style={styles.balanceLabel}>Sizning balansingiz</Text>
+        <View style={styles.currencyRow}>
+          <View style={styles.currencyBadge}>
+            <Ionicons name="wallet" size={14} color="#FFF" />
+          </View>
+          <Text style={styles.currencyText}>so'm</Text>
         </View>
 
-        <View style={styles.actions}>
-          <Pressable
-            style={styles.actionDark}
-            onPress={() => navigation.navigate("WalletTopUp")}
-          >
-            <View style={styles.actionIconDark}>
-              <Ionicons name="add" size={22} color="#FFF" />
+        {me.loading && !me.wallet ? (
+          <ActivityIndicator style={{ marginVertical: 28 }} color={colors.fg} />
+        ) : (
+          <Text style={styles.balance}>{formatSomAmount(me.balance)}</Text>
+        )}
+
+        {me.walletNumber ? (
+          <Text style={styles.walletNo}>{me.walletNumber.replace(/(.{4})/g, "$1 ").trim()}</Text>
+        ) : null}
+
+        <View style={styles.circles}>
+          <Pressable style={styles.circleItem} onPress={() => navigation.navigate("WalletGift")}>
+            <View style={[styles.circle, styles.circlePink]}>
+              <Ionicons name="heart" size={26} color={colors.fg} />
             </View>
-            <View>
-              <Text style={styles.actionTitleDark}>To'ldirish</Text>
-              <Text style={styles.actionHintDark}>Balansni to'ldiring</Text>
-            </View>
+            <Text style={styles.circleLabel}>Bonus</Text>
+            <Text style={styles.circleValue}>{formatSomAmount(inSum)}</Text>
           </Pressable>
-          <Pressable
-            style={styles.actionLight}
-            onPress={() => navigation.navigate("WalletGift")}
-          >
-            <View style={styles.actionIconLight}>
-              <Ionicons name="gift-outline" size={20} color={colors.fg} />
+          <Pressable style={styles.circleItem} onPress={() => navigation.navigate("WalletGifts")}>
+            <View style={[styles.circle, styles.circleDark]}>
+              <Ionicons name="bar-chart" size={24} color="#FFF" />
             </View>
-            <View>
-              <Text style={styles.actionTitle}>Sovg'a</Text>
-              <Text style={styles.actionHint}>Do'stingizga yuboring</Text>
+            <Text style={styles.circleLabel}>Sovg'alar</Text>
+            <Text style={styles.circleValue}>{formatSomAmount(giftSum || gifts.gifts.length)}</Text>
+          </Pressable>
+          <Pressable style={styles.circleItem} onPress={() => navigation.navigate("WalletTopUp")}>
+            <View style={[styles.circle, styles.circleDark]}>
+              <Ionicons name="cash-outline" size={26} color="#FFF" />
             </View>
+            <Text style={styles.circleLabel}>Naqd</Text>
+            <Text style={styles.circleValue}>{formatSomAmount(me.balance)}</Text>
           </Pressable>
         </View>
 
-        <View style={styles.quickRow}>
-          {QUICK.map((q) => (
-            <Pressable
-              key={q.id}
-              style={styles.quickItem}
-              onPress={() => {
-                if (q.route) navigation.navigate(q.route);
-                else if (q.id === "sub") navigation.getParent()?.navigate("Profile" as never);
-              }}
-            >
-              <View style={styles.quickIcon}>
-                <Ionicons name={q.icon} size={18} color={colors.fg} />
+        <Text style={styles.section}>Tezkor amallar</Text>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.orderRow}
+        >
+          <Pressable style={styles.orderCard} onPress={() => navigation.navigate("WalletTopUp")}>
+            <View style={styles.orderTop}>
+              <View style={styles.orderIcon}>
+                <Ionicons name="add" size={16} color="#FFF" />
               </View>
-              <Text style={styles.quickLabel}>{q.label}</Text>
-            </Pressable>
-          ))}
-        </View>
-
-        <Pressable style={styles.qrBar} onPress={() => navigation.navigate("WalletQrPay")}>
-          <View style={styles.qrIcon}>
-            <Ionicons name="qr-code-outline" size={20} color={colors.fg} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.qrTitle}>QR to'lov</Text>
-            <Text style={styles.qrHint}>Sartaroshga hamyondan to'lang</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={18} color={colors.muted} />
-        </Pressable>
-
-        <View style={styles.newsHead}>
-          <Text style={styles.sectionTitle}>Yangiliklar</Text>
-        </View>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.newsRow}>
-          <View style={[styles.newsCard, styles.newsDark]}>
-            <Ionicons name="calendar-outline" size={18} color="#FFF" />
-            <Text style={styles.newsTitleDark}>Balans bilan bron</Text>
-            <Text style={styles.newsBodyDark}>Yaqin atrofdagi ustani tanlang — hamyondan to'lang.</Text>
-          </View>
-          <View style={styles.newsCard}>
-            <Ionicons name="sparkles-outline" size={18} color={colors.fg} />
-            <Text style={styles.newsTitle}>Pro imtiyozlar</Text>
-            <Text style={styles.newsBody}>Obuna bilan AI stil va bonuslar ochiladi.</Text>
-          </View>
+              <Text style={styles.orderTitle}>To'ldirish</Text>
+            </View>
+            <Text style={styles.orderBody}>Balansni oshirish</Text>
+            <Text style={styles.orderMeta}>min 10 000 so'm</Text>
+          </Pressable>
+          <Pressable style={styles.orderCard} onPress={() => navigation.navigate("WalletGift")}>
+            <View style={styles.orderTop}>
+              <View style={[styles.orderIcon, styles.orderIconPink]}>
+                <Ionicons name="gift" size={14} color={colors.fg} />
+              </View>
+              <Text style={styles.orderTitle}>Sovg'a</Text>
+            </View>
+            <Text style={styles.orderBody}>Do'stga yuborish</Text>
+            <Text style={styles.orderMeta}>5k — 1M so'm</Text>
+          </Pressable>
+          <Pressable style={styles.orderCard} onPress={() => navigation.navigate("WalletQrPay")}>
+            <View style={styles.orderTop}>
+              <View style={styles.orderIcon}>
+                <Ionicons name="qr-code" size={14} color="#FFF" />
+              </View>
+              <Text style={styles.orderTitle}>QR to'lov</Text>
+            </View>
+            <Text style={styles.orderBody}>Sartaroshga to'lang</Text>
+            <Text style={styles.orderMeta}>imzolangan QR</Text>
+          </Pressable>
         </ScrollView>
 
         <View style={styles.txHead}>
-          <Text style={styles.sectionTitle}>Oxirgi harakatlar</Text>
+          <Text style={styles.section}>Oxirgi harakatlar</Text>
           <Pressable onPress={() => navigation.navigate("WalletTransactions")}>
-            <Text style={styles.link}>To'liq tarix</Text>
+            <Text style={styles.link}>Hammasi</Text>
           </Pressable>
         </View>
 
-        <View style={styles.tabs}>
-          {(
-            [
-              ["all", "Hammasi"],
-              ["in", "Kirim"],
-              ["out", "Chiqim"],
-            ] as const
-          ).map(([k, label]) => (
-            <Pressable
-              key={k}
-              style={[styles.tab, tab === k && styles.tabActive]}
-              onPress={() => setTab(k)}
-            >
-              <Text style={[styles.tabText, tab === k && styles.tabTextActive]}>{label}</Text>
-            </Pressable>
-          ))}
-        </View>
-
         {tx.loading ? (
-          <ActivityIndicator style={{ marginTop: 24 }} color={colors.fg} />
-        ) : tx.items.length === 0 ? (
-          <Text style={styles.empty}>Hali harakatlar yo'q</Text>
+          <ActivityIndicator style={{ marginTop: 20 }} color={colors.fg} />
+        ) : recent.length === 0 ? (
+          <View style={styles.emptyBox}>
+            <Text style={styles.empty}>Hali harakatlar yo'q</Text>
+            <Pressable style={styles.emptyCta} onPress={() => navigation.navigate("WalletTopUp")}>
+              <Text style={styles.emptyCtaText}>Birinchi to'ldirish</Text>
+            </Pressable>
+          </View>
         ) : (
-          tx.items.slice(0, 8).map((item) => (
+          recent.map((item) => (
             <View key={item.id} style={styles.txRow}>
-              <View style={styles.txIcon}>
+              <View style={[styles.txIcon, item.kind === "in" && styles.txIconIn]}>
                 <Ionicons
-                  name={item.kind === "in" ? "arrow-down-outline" : "arrow-up-outline"}
-                  size={18}
-                  color={colors.fg}
+                  name={item.kind === "in" ? "arrow-down" : "arrow-up"}
+                  size={16}
+                  color={item.kind === "in" ? "#FFF" : colors.fg}
                 />
               </View>
               <View style={{ flex: 1 }}>
@@ -194,186 +201,173 @@ export function WalletHomeScreen({ navigation }: Props) {
             </View>
           ))
         )}
+
+        {me.error ? <Text style={styles.err}>{me.error}</Text> : null}
       </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.bg },
-  header: {
+  root: { flex: 1, backgroundColor: "#FFFFFF" },
+  topBar: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+    justifyContent: "space-between",
     paddingHorizontal: 16,
-    paddingBottom: 8,
+    paddingBottom: 4,
   },
-  title: { fontSize: 18, fontWeight: "800", color: colors.fg },
-  hint: { fontSize: 11, color: colors.muted, marginTop: 1 },
-  content: { paddingBottom: 40 },
-  cardPad: { paddingHorizontal: 16, paddingTop: 4 },
-  cardSkeleton: {
-    aspectRatio: 1.586,
-    borderRadius: 28,
-    backgroundColor: "#1A1A1A",
-    alignItems: "center",
-    justifyContent: "center",
+  logo: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: colors.fg,
+    letterSpacing: -0.4,
   },
-  actions: {
-    flexDirection: "row",
-    gap: 10,
-    paddingHorizontal: 16,
-    marginTop: 16,
-  },
-  actionDark: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    backgroundColor: colors.fg,
-    borderRadius: 20,
-    paddingVertical: 14,
-    paddingHorizontal: 14,
-  },
-  actionLight: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    backgroundColor: colors.bg,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingVertical: 14,
-    paddingHorizontal: 14,
-  },
-  actionIconDark: {
-    width: 40,
-    height: 40,
-    borderRadius: 14,
-    backgroundColor: "rgba(255,255,255,0.15)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  actionIconLight: {
-    width: 40,
-    height: 40,
-    borderRadius: 14,
-    backgroundColor: colors.surface,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  actionTitleDark: { color: "#FFF", fontSize: 13, fontWeight: "800" },
-  actionHintDark: { color: "rgba(255,255,255,0.55)", fontSize: 10, marginTop: 2 },
-  actionTitle: { color: colors.fg, fontSize: 13, fontWeight: "800" },
-  actionHint: { color: colors.muted, fontSize: 10, marginTop: 2 },
-  quickRow: {
-    marginHorizontal: 16,
-    marginTop: 12,
-    flexDirection: "row",
-    backgroundColor: "rgba(242,242,242,0.85)",
-    borderRadius: 22,
-    padding: 6,
-  },
-  quickItem: { flex: 1, alignItems: "center", paddingVertical: 10, gap: 6 },
-  quickIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 14,
-    backgroundColor: colors.bg,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  quickLabel: { fontSize: 10, fontWeight: "700", color: colors.fg },
-  qrBar: {
-    marginHorizontal: 16,
-    marginTop: 12,
+  logoDot: { color: colors.brandDot },
+  menuPill: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 20,
-    padding: 12,
-  },
-  qrIcon: {
-    width: 40,
-    height: 40,
+    backgroundColor: colors.surface,
     borderRadius: 14,
-    backgroundColor: colors.surface,
-    alignItems: "center",
-    justifyContent: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 10,
   },
-  qrTitle: { fontSize: 13, fontWeight: "800", color: colors.fg },
-  qrHint: { fontSize: 11, color: colors.muted, marginTop: 2 },
-  newsHead: { paddingHorizontal: 16, marginTop: 28 },
-  sectionTitle: { fontSize: 15, fontWeight: "800", color: colors.fg },
-  newsRow: { paddingHorizontal: 16, gap: 10, paddingTop: 12 },
-  newsCard: {
-    width: 200,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: 16,
-    gap: 8,
-    backgroundColor: colors.bg,
-  },
-  newsDark: { backgroundColor: colors.fg, borderColor: colors.fg },
-  newsTitle: { fontSize: 14, fontWeight: "800", color: colors.fg },
-  newsBody: { fontSize: 12, color: colors.muted, lineHeight: 17 },
-  newsTitleDark: { fontSize: 14, fontWeight: "800", color: "#FFF" },
-  newsBodyDark: { fontSize: 12, color: "rgba(255,255,255,0.6)", lineHeight: 17 },
-  txHead: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-end",
-    paddingHorizontal: 16,
-    marginTop: 28,
-  },
-  link: { fontSize: 11, fontWeight: "700", color: colors.muted },
-  tabs: {
-    flexDirection: "row",
-    gap: 8,
-    paddingHorizontal: 16,
-    marginTop: 12,
-  },
-  tab: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 999,
-    backgroundColor: colors.surface,
-  },
-  tabActive: { backgroundColor: colors.fg },
-  tabText: { fontSize: 12, fontWeight: "700", color: colors.fg },
-  tabTextActive: { color: "#FFF" },
-  empty: {
+  content: { paddingHorizontal: 20, paddingTop: 18 },
+  balanceLabel: {
     textAlign: "center",
+    fontSize: 15,
     color: colors.muted,
-    marginTop: 24,
-    fontSize: 13,
+    fontWeight: "500",
   },
-  txRow: {
-    marginHorizontal: 16,
+  currencyRow: {
     marginTop: 10,
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  currencyBadge: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: colors.fg,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  currencyText: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: colors.fg,
+  },
+  balance: {
+    marginTop: 10,
+    textAlign: "center",
+    fontSize: 48,
+    fontWeight: "800",
+    color: colors.fg,
+    letterSpacing: -1.5,
+  },
+  walletNo: {
+    marginTop: 6,
+    textAlign: "center",
+    fontSize: 12,
+    color: colors.muted,
+    letterSpacing: 1.2,
+    fontVariant: ["tabular-nums"],
+  },
+  circles: {
+    marginTop: 32,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingHorizontal: 8,
+  },
+  circleItem: { alignItems: "center", flex: 1 },
+  circle: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  circlePink: { backgroundColor: PINK },
+  circleDark: { backgroundColor: colors.fg },
+  circleLabel: {
+    marginTop: 10,
+    fontSize: 14,
+    fontWeight: "700",
+    color: colors.fg,
+  },
+  circleValue: {
+    marginTop: 2,
+    fontSize: 13,
+    fontWeight: "600",
+    color: colors.muted,
+  },
+  section: {
+    marginTop: 32,
+    fontSize: 20,
+    fontWeight: "800",
+    color: colors.fg,
+    letterSpacing: -0.4,
+  },
+  orderRow: { gap: 12, paddingTop: 14, paddingRight: 8 },
+  orderCard: {
+    width: 168,
+    backgroundColor: colors.surface,
+    borderRadius: 22,
+    padding: 16,
+    gap: 8,
+  },
+  orderTop: { flexDirection: "row", alignItems: "center", gap: 8 },
+  orderIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: colors.fg,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  orderIconPink: { backgroundColor: PINK },
+  orderTitle: { fontSize: 15, fontWeight: "800", color: colors.fg },
+  orderBody: { fontSize: 13, color: colors.fg, fontWeight: "500" },
+  orderMeta: { fontSize: 12, color: colors.muted, marginTop: 4 },
+  txHead: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    justifyContent: "space-between",
+  },
+  link: { fontSize: 13, fontWeight: "700", color: colors.muted, marginBottom: 2 },
+  emptyBox: { alignItems: "center", marginTop: 28, gap: 14 },
+  empty: { color: colors.muted, fontSize: 14 },
+  emptyCta: {
+    backgroundColor: colors.fg,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 14,
+  },
+  emptyCtaText: { color: "#FFF", fontWeight: "700", fontSize: 14 },
+  txRow: {
+    marginTop: 12,
+    flexDirection: "row",
+    alignItems: "center",
     gap: 12,
+    backgroundColor: colors.surface,
     borderRadius: 18,
-    borderWidth: 1,
-    borderColor: colors.border,
     padding: 14,
-    backgroundColor: colors.bg,
   },
   txIcon: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: colors.surface,
+    backgroundColor: "#FFF",
     alignItems: "center",
     justifyContent: "center",
   },
+  txIconIn: { backgroundColor: colors.fg },
   txTitle: { fontSize: 14, fontWeight: "700", color: colors.fg },
   txDate: { fontSize: 11, color: colors.muted, marginTop: 2 },
   txAmt: { fontSize: 13, fontWeight: "700", color: colors.fg },
   txAmtIn: { fontWeight: "800" },
+  err: { marginTop: 16, color: "#EF4444", fontSize: 12, textAlign: "center" },
 });

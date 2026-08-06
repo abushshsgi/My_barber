@@ -13,6 +13,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { useHideTabBar } from "../../hooks/useHideTabBar";
 import {
   claimCardDeposit,
   initCardDeposit,
@@ -36,6 +37,7 @@ function parseDigits(raw: string) {
 }
 
 export function WalletTopUpScreen({ navigation }: Props) {
+  useHideTabBar();
   const me = useWalletMe();
   const [amount, setAmount] = useState(100_000);
   const [custom, setCustom] = useState("");

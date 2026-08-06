@@ -12,6 +12,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { useHideTabBar } from "../../hooks/useHideTabBar";
 import {
   MAX_GIFT_AMOUNT,
   MIN_GIFT_AMOUNT,
@@ -36,6 +37,7 @@ const PRESETS = [
 ] as const;
 
 export function WalletGiftScreen({ navigation }: Props) {
+  useHideTabBar();
   const me = useWalletMe();
   const { designs, loading: designsLoading } = useGiftDesigns();
   const [designId, setDesignId] = useState("classic");

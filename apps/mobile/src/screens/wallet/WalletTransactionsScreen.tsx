@@ -9,6 +9,7 @@ import {
   Text,
   View,
 } from "react-native";
+import { useHideTabBar } from "../../hooks/useHideTabBar";
 import { NativeHeader } from "../../components/ui/NativeHeader";
 import { useWalletTransactions } from "../../hooks/useWallet";
 import { formatSomLabel } from "../../lib/wallet-format";
@@ -18,6 +19,7 @@ import { colors } from "../../theme/colors";
 type Props = NativeStackScreenProps<WalletStackParamList, "WalletTransactions">;
 
 export function WalletTransactionsScreen({ navigation }: Props) {
+  useHideTabBar();
   const [tab, setTab] = useState<"all" | "in" | "out">("all");
   const { items, loading } = useWalletTransactions(tab);
 
