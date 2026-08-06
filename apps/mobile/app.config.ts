@@ -27,6 +27,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       infoPlist: {
         NSLocationWhenInUseUsageDescription:
           "Yaqin salonlarni ko'rsatish uchun joylashuvingiz kerak.",
+        ITSAppUsesNonExemptEncryption: false,
       },
       config: googleMapsApiKey
         ? { googleMapsApiKey }

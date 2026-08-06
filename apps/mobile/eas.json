@@ -23,6 +23,12 @@
         "ORG_GRADLE_PROJECT_reactNativeArchitectures": "armeabi-v7a,arm64-v8a"
       }
     },
+    "preview-ios-simulator": {
+      "distribution": "internal",
+      "ios": {
+        "simulator": true
+      }
+    },
     "production": {
       "android": {
         "buildType": "app-bundle"
