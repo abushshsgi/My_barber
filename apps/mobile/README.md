@@ -40,7 +40,31 @@ DevTools console da `[google-auth] redirectUri = ...` chiqadi — shu URLni ham 
 Default: `https://api.mysaloon.uz`  
 Web dev: Metro proxy (`/api`, `/media`)
 
-## Holat
+## APK (Android)
 
-- Home, Profil stack, Obuna, Login/Splash
-- Auth Bearer + refresh ulangan
+Expo cloud orqali APK:
+
+```bash
+cd apps/mobile
+npm i -g eas-cli
+eas login
+eas build:configure   # birinchi marta — Expo project bog'lash
+npm run build:apk      # preview APK
+```
+
+Build tugagach Expo saytda **Download** chiqadi — APK ni telefonga yuklab o'rnating.
+
+Play Store uchun AAB:
+
+```bash
+npm run build:aab
+```
+
+**Muhim:** `.env` dagi `EXPO_PUBLIC_*` qiymatlar cloud buildga avtomatik kirmaydi. EAS secrets:
+
+```bash
+eas secret:create --name EXPO_PUBLIC_GOOGLE_CLIENT_ID --value "...." --scope project
+eas secret:create --name EXPO_PUBLIC_GOOGLE_MAPS_API_KEY --value "...." --scope project
+```
+
+Yoki `eas.json` `env` bo'limiga yoziladi (maxfiy kalitlarni gitga qo'ymang).
