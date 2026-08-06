@@ -1,6 +1,6 @@
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 import { StyleSheet, View } from "react-native";
 import Animated, {
   Easing,
@@ -87,50 +87,42 @@ function AnimatedColumn({
   );
 }
 
-function ColumnSlot({
-  index,
-  upward,
-  durationMs,
-  startOffset,
-}: {
-  index: number;
-  upward: boolean;
-  durationMs: number;
-  startOffset: number;
-}) {
-  const [width, setWidth] = useState(0);
-  const tiles = WELCOME_COLUMNS[index] ?? WELCOME_COLUMNS[0];
-
-  return (
-    <View
-      style={styles.colFlex}
-      onLayout={(e) => setWidth(e.nativeEvent.layout.width)}
-    >
-      {width > 0 ? (
-        <AnimatedColumn
-          tiles={tiles}
-          width={width}
-          upward={upward}
-          durationMs={durationMs}
-          startOffset={startOffset}
-        />
-      ) : null}
-    </View>
-  );
-}
-
 type Props = {
   height: number;
+  /** Aniq kenglik — FlatList / web da onLayout 0 bo'lib qolmasin. */
+  width: number;
 };
 
 /** Uchta vertikal ustun — uzluksiz yuqoriga / pastga marquee. */
-export function AnimatedImageColumns({ height }: Props) {
+export function AnimatedImageColumns({ height, width }: Props) {
+  const colW = Math.max(40, Math.floor((width - GAP * 2) / 3));
+
+  if (width < 60 || height < 80) return null;
+
   return (
-    <View style={[styles.root, { height }]}>
+    <View style={[styles.root, { height, width }]}>
       <View style={styles.row}>
-        <ColumnSlot index={0} upward durationMs={22000} startOffset={28} />
-        <ColumnSlot index={1} upward={false} durationMs={18000} startOffset={-36} />
-        <ColumnSlot index={2} upward durationMs={25000} startOffset={12} />
+        <AnimatedColumn
+          tiles={WELCOME_COLUMNS[0]}
+          width={colW}
+          upward
+          durationMs={22000}
+          startOffset={28}
+        />
+        <AnimatedColumn
+          tiles={WELCOME_COLUMNS[1]}
+          width={colW}
+          upward={false}
+          durationMs={18000}
+          startOffset={-36}
+        />
+        <AnimatedColumn
+          tiles={WELCOME_COLUMNS[2]}
+          width={colW}
+          upward
+          durationMs={25000}
+          startOffset={12}
+        />
       </View>
       <LinearGradient
         pointerEvents="none"
@@ -150,14 +142,13 @@ const styles = StyleSheet.create({
   root: {
     overflow: "hidden",
     backgroundColor: "#FFFFFF",
+    alignSelf: "center",
   },
   row: {
     flex: 1,
     flexDirection: "row",
     gap: GAP,
-    paddingHorizontal: 2,
   },
-  colFlex: { flex: 1, overflow: "hidden" },
   colClip: {
     overflow: "hidden",
     height: "100%",

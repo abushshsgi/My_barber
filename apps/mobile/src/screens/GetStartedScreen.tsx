@@ -27,7 +27,6 @@ type Slide = {
   key: string;
   title: string;
   subtitle: string;
-  /** Oxirgi slide — joylashuvga o'tadi. */
   isLocation?: boolean;
 };
 
@@ -52,18 +51,20 @@ const SLIDES: Slide[] = [
   },
 ];
 
+const H_PAD = 24;
+
 /**
- * Til tanlangandan keyin 3 ta karusel:
- * 1) rasmlar tepaga/pastga
- * 2) Morf AI illustratsiya + matn
- * 3) joylashuv matni → LocationPicker
+ * Til → 3 ta karusel (rasmlar / Morf AI / joylashuv) → LocationPicker.
  */
 export function GetStartedScreen({ onFinish }: Props) {
   const insets = useSafeAreaInsets();
   const { height: winH, width: winW } = useWindowDimensions();
   const listRef = useRef<FlatList<Slide>>(null);
   const [index, setIndex] = useState(0);
-  const galleryH = Math.min(Math.max(winH * 0.38, 240), 340);
+
+  const galleryW = Math.max(280, winW - H_PAD * 2);
+  const galleryH = Math.min(Math.max(winH * 0.42, 280), 400);
+  const illustSize = Math.min(galleryW * 0.72, 260);
 
   const onViewableItemsChanged = useRef(
     ({ viewableItems }: { viewableItems: ViewToken[] }) => {
@@ -100,16 +101,12 @@ export function GetStartedScreen({ onFinish }: Props) {
 
   const renderItem = ({ item }: { item: Slide }) => (
     <View style={[styles.page, { width: winW }]}>
-      <View style={styles.visual}>
+      <View style={[styles.visual, { height: galleryH, width: galleryW }]}>
         {item.key === "gallery" ? (
-          <View style={styles.galleryWrap}>
-            <AnimatedImageColumns height={galleryH} />
-          </View>
+          <AnimatedImageColumns height={galleryH} width={galleryW} />
         ) : null}
-        {item.key === "morph" ? <MorphAiIllustration size={Math.min(winW * 0.62, 240)} /> : null}
-        {item.key === "location" ? (
-          <LocationIllustration size={Math.min(winW * 0.62, 240)} />
-        ) : null}
+        {item.key === "morph" ? <MorphAiIllustration size={illustSize} /> : null}
+        {item.key === "location" ? <LocationIllustration size={illustSize} /> : null}
       </View>
 
       <Text style={styles.title}>{item.title}</Text>
@@ -145,6 +142,7 @@ export function GetStartedScreen({ onFinish }: Props) {
           index: i,
         })}
         style={styles.list}
+        contentContainerStyle={styles.listContent}
       />
 
       <View style={styles.footer}>
@@ -185,22 +183,22 @@ const styles = StyleSheet.create({
   list: {
     flex: 1,
   },
+  listContent: {
+    alignItems: "stretch",
+  },
   page: {
-    flex: 1,
-    paddingHorizontal: 24,
+    flexGrow: 1,
+    paddingHorizontal: H_PAD,
     alignItems: "center",
-    justifyContent: "center",
+    justifyContent: "flex-start",
+    paddingTop: 12,
     gap: 14,
   },
   visual: {
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 8,
-    minHeight: 240,
-  },
-  galleryWrap: {
-    width: "100%",
-    alignSelf: "stretch",
+    overflow: "hidden",
+    marginBottom: 4,
   },
   title: {
     fontSize: 26,
@@ -219,7 +217,7 @@ const styles = StyleSheet.create({
     maxWidth: 320,
   },
   footer: {
-    paddingHorizontal: 24,
+    paddingHorizontal: H_PAD,
     gap: 12,
   },
   dots: {
