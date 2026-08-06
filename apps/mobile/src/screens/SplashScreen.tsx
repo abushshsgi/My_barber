@@ -8,6 +8,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { BrandLogo } from "../components/BrandLogo";
 import { type AppLang, setAppLang } from "../lib/guest";
 import { colors } from "../theme/colors";
 
@@ -19,8 +20,7 @@ type Props = {
 };
 
 /**
- * Birinchi ochilish: Mysaloon logo (sodda) tepada,
- * pastda O'zbek / Русский. Ortiqcha tag/progress yo'q.
+ * Uzum Tezkor uslubi: logo o'rtada, pastida outline pill til tugmalari.
  */
 export function SplashScreen({
   showLanguage = false,
@@ -29,9 +29,9 @@ export function SplashScreen({
 }: Props) {
   const insets = useSafeAreaInsets();
   const logoOp = useRef(new Animated.Value(0)).current;
-  const logoY = useRef(new Animated.Value(16)).current;
+  const logoY = useRef(new Animated.Value(20)).current;
   const langOp = useRef(new Animated.Value(0)).current;
-  const langY = useRef(new Animated.Value(28)).current;
+  const langY = useRef(new Animated.Value(24)).current;
   const [langReady, setLangReady] = useState(false);
 
   useEffect(() => {
@@ -68,7 +68,6 @@ export function SplashScreen({
         ]).start();
         return;
       }
-      // Til allaqachon tanlangan — qisqa ko'rsatib o'tkazamiz.
       setTimeout(() => onFinish(), 420);
     });
   }, [logoOp, logoY, langOp, langY, showLanguage, onFinish]);
@@ -84,21 +83,18 @@ export function SplashScreen({
       style={[
         styles.root,
         {
-          paddingTop: insets.top + 72,
-          paddingBottom: Math.max(insets.bottom, 16) + 20,
+          paddingTop: insets.top,
+          paddingBottom: Math.max(insets.bottom, 12) + 16,
         },
       ]}
     >
-      <Animated.View
-        style={[
-          styles.brand,
-          { opacity: logoOp, transform: [{ translateY: logoY }] },
-        ]}
-      >
-        <Text style={styles.logo}>
-          Mysaloon<Text style={styles.dot}>.</Text>
-        </Text>
-      </Animated.View>
+      <View style={styles.center}>
+        <Animated.View
+          style={{ opacity: logoOp, transform: [{ translateY: logoY }] }}
+        >
+          <BrandLogo size="xl" />
+        </Animated.View>
+      </View>
 
       {showLanguage ? (
         <Animated.View
@@ -111,18 +107,17 @@ export function SplashScreen({
             },
           ]}
         >
-          <Text style={styles.langHint}>Tilni tanlang · Выберите язык</Text>
           <Pressable
-            style={({ pressed }) => [styles.langBtn, pressed && styles.langPressed]}
-            onPress={() => void pick("uz")}
-          >
-            <Text style={styles.langTitle}>O'zbekcha</Text>
-          </Pressable>
-          <Pressable
-            style={({ pressed }) => [styles.langBtn, pressed && styles.langPressed]}
+            style={({ pressed }) => [styles.langBtn, pressed && styles.pressed]}
             onPress={() => void pick("ru")}
           >
             <Text style={styles.langTitle}>Русский</Text>
+          </Pressable>
+          <Pressable
+            style={({ pressed }) => [styles.langBtn, pressed && styles.pressed]}
+            onPress={() => void pick("uz")}
+          >
+            <Text style={styles.langTitle}>O'zbek</Text>
           </Pressable>
         </Animated.View>
       ) : (
@@ -135,46 +130,33 @@ export function SplashScreen({
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: colors.bg,
+    backgroundColor: "#FFFFFF",
     paddingHorizontal: 24,
-    justifyContent: "space-between",
   },
-  brand: {
-    alignItems: "center",
-  },
-  logo: {
-    fontSize: 44,
-    fontWeight: "900",
-    color: colors.fg,
-    letterSpacing: -1.4,
-  },
-  dot: {
-    color: colors.brandDot,
-  },
-  langBlock: {
-    gap: 10,
-  },
-  langSpacer: {
-    height: 120,
-  },
-  langHint: {
-    textAlign: "center",
-    fontSize: 13,
-    fontWeight: "600",
-    color: colors.muted,
-    marginBottom: 6,
-  },
-  langBtn: {
-    minHeight: 54,
-    borderRadius: 16,
-    backgroundColor: colors.fg,
+  center: {
+    flex: 1,
     alignItems: "center",
     justifyContent: "center",
   },
-  langPressed: { opacity: 0.88 },
+  langBlock: {
+    gap: 12,
+  },
+  langSpacer: {
+    height: 128,
+  },
+  langBtn: {
+    minHeight: 56,
+    borderRadius: 28,
+    borderWidth: 1.5,
+    borderColor: colors.fg,
+    backgroundColor: "#FFFFFF",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  pressed: { opacity: 0.88, transform: [{ scale: 0.985 }] },
   langTitle: {
-    color: "#FFF",
+    color: colors.fg,
     fontSize: 16,
-    fontWeight: "800",
+    fontWeight: "700",
   },
 });

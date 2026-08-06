@@ -15,13 +15,12 @@ type Props = {
 };
 
 /**
- * Ilova birinchi ochilganda — rasmdagi Get Started layout.
- * Sartarosh + Morf AI kollaj ustunlari yuqoriga/pastga aylanadi.
+ * Onboarding — Uzum Tezkor: markaziy kollaj, matn, pastida pill CTA.
  */
 export function GetStartedScreen({ onFinish }: Props) {
   const insets = useSafeAreaInsets();
   const { height: winH } = useWindowDimensions();
-  const galleryH = Math.min(Math.max(winH * 0.46, 280), 420);
+  const galleryH = Math.min(Math.max(winH * 0.42, 260), 380);
 
   const onGetStarted = async () => {
     await setWelcomeSeen();
@@ -29,84 +28,84 @@ export function GetStartedScreen({ onFinish }: Props) {
   };
 
   return (
-    <View style={[styles.outer, { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 12 }]}>
-      <View style={styles.card}>
+    <View
+      style={[
+        styles.root,
+        {
+          paddingTop: insets.top + 12,
+          paddingBottom: Math.max(insets.bottom, 12) + 16,
+        },
+      ]}
+    >
+      <View style={styles.top}>
         <AnimatedImageColumns height={galleryH} />
 
         <View style={styles.dots}>
-          <View style={styles.dot} />
           <View style={[styles.dot, styles.dotActive]} />
           <View style={styles.dot} />
+          <View style={styles.dot} />
         </View>
 
-        <View style={styles.copy}>
-          <Text style={styles.title}>Sartaroshxonani{"\n"}oson bron qiling!</Text>
-          <Text style={styles.subtitle}>
-            Morf AI uslublar, yaqin sartaroshlar va salonlar — hammasi bir joyda.
-          </Text>
-        </View>
-
-        <Pressable
-          style={({ pressed }) => [styles.cta, pressed && styles.ctaPressed]}
-          onPress={() => void onGetStarted()}
-          accessibilityRole="button"
-          accessibilityLabel="Boshlash"
-        >
-          <Text style={styles.ctaText}>Boshlash</Text>
-        </Pressable>
+        <Text style={styles.title}>
+          Sartaroshxonani{"\n"}oson bron qiling
+        </Text>
+        <Text style={styles.subtitle}>
+          Morf AI uslublar, yaqin salonlar va bron — hammasi bir joyda.
+        </Text>
       </View>
+
+      <Pressable
+        style={({ pressed }) => [styles.cta, pressed && styles.ctaPressed]}
+        onPress={() => void onGetStarted()}
+        accessibilityRole="button"
+        accessibilityLabel="Davom etish"
+      >
+        <Text style={styles.ctaText}>Davom etish</Text>
+      </Pressable>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  outer: {
-    flex: 1,
-    backgroundColor: "#EFEFEF",
-    paddingHorizontal: 10,
-  },
-  card: {
+  root: {
     flex: 1,
     backgroundColor: "#FFFFFF",
-    borderRadius: 36,
-    paddingHorizontal: 18,
-    paddingTop: 14,
-    paddingBottom: 20,
+    paddingHorizontal: 24,
     justifyContent: "space-between",
-    overflow: "hidden",
+  },
+  top: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 16,
   },
   dots: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    marginTop: 18,
+    marginTop: 8,
   },
   dot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: "#D8D8D8",
+    backgroundColor: "#E5E5EA",
   },
   dotActive: {
-    width: 22,
-    backgroundColor: "#FF8A3D",
+    backgroundColor: colors.fg,
+    width: 10,
+    height: 10,
     borderRadius: 5,
   },
-  copy: {
-    alignItems: "center",
-    paddingHorizontal: 8,
-    gap: 12,
-    marginTop: 8,
-    marginBottom: 8,
-  },
   title: {
-    fontSize: 28,
-    lineHeight: 34,
+    marginTop: 8,
+    fontSize: 26,
+    lineHeight: 32,
     fontWeight: "800",
     color: colors.fg,
     textAlign: "center",
-    letterSpacing: -0.6,
+    letterSpacing: -0.5,
   },
   subtitle: {
     fontSize: 15,
@@ -117,18 +116,16 @@ const styles = StyleSheet.create({
     maxWidth: 300,
   },
   cta: {
-    marginTop: 12,
     minHeight: 56,
     borderRadius: 28,
-    backgroundColor: "#4DA3FF",
+    backgroundColor: colors.fg,
     alignItems: "center",
     justifyContent: "center",
   },
-  ctaPressed: { opacity: 0.88 },
+  ctaPressed: { opacity: 0.88, transform: [{ scale: 0.985 }] },
   ctaText: {
     color: "#FFFFFF",
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: "800",
-    letterSpacing: 0.2,
   },
 });
