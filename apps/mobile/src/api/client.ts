@@ -167,4 +167,73 @@ export async function apiList<T>(path: string): Promise<T[]> {
   return unwrapList(body);
 }
 
+/**
+ * Raw fetch — 202 Accepted (try-on job) uchun.
+ * `timeoutMs` default 120s (AI uzoq ishlashi mumkin).
+ */
+export async function apiFetch(
+  path: string,
+  init?: RequestInit & { timeoutMs?: number },
+): Promise<Response> {
+  const url = buildUrl(path);
+  const method = (init?.method || "GET").toUpperCase();
+  const timeoutMs = init?.timeoutMs ?? 120_000;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+  const headers: Record<string, string> = {
+    Accept: "application/json",
+    ...(init?.headers as Record<string, string> | undefined),
+  };
+  const isFormData =
+    typeof FormData !== "undefined" && init?.body instanceof FormData;
+  if (
+    method !== "GET" &&
+    method !== "HEAD" &&
+    !headers["Content-Type"] &&
+    !isFormData
+  ) {
+    headers["Content-Type"] = "application/json";
+  }
+  if (isFormData) delete headers["Content-Type"];
+
+  if (!isAuthPath(path) && !headers.Authorization) {
+    const token = await getAccessToken();
+    if (token) headers.Authorization = `Bearer ${token}`;
+  }
+
+  try {
+    let res = await fetch(url, {
+      ...init,
+      method,
+      signal: init?.signal ?? controller.signal,
+      headers,
+    });
+
+    if (res.status === 401 && !isAuthPath(path)) {
+      const next = await tryRefresh();
+      if (next) {
+        headers.Authorization = `Bearer ${next}`;
+        res = await fetch(url, {
+          ...init,
+          method,
+          signal: init?.signal ?? controller.signal,
+          headers,
+        });
+      }
+    }
+    return res;
+  } catch (err) {
+    if (err instanceof Error && err.name === "AbortError") {
+      throw new Error("Backend javob bermadi (timeout). Internetni tekshiring.");
+    }
+    if (err instanceof TypeError) {
+      throw new Error(`Failed to fetch (${API_BASE || API_ORIGIN})`);
+    }
+    throw err;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export { API_BASE };

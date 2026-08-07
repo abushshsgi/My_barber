@@ -9,6 +9,7 @@ import { HomeScreen } from "../screens/HomeScreen";
 import { MapScreen } from "../screens/MapScreen";
 import { PlaceholderScreen } from "../screens/PlaceholderScreen";
 import { colors } from "../theme/colors";
+import { MorphStack } from "./MorphStack";
 import { ProfileStack } from "./ProfileStack";
 
 export type RootTabParamList = {
@@ -125,14 +126,7 @@ export function RootTabs() {
         )}
       </Tab.Screen>
       <Tab.Screen name="Map" component={MapScreen} />
-      <Tab.Screen name="MorphAI">
-        {() => (
-          <PlaceholderScreen
-            title="Morf AI"
-            subtitle="AI soch uslubi keyingi bosqichda ulanadi."
-          />
-        )}
-      </Tab.Screen>
+      <Tab.Screen name="MorphAI" component={MorphStack} />
       <Tab.Screen name="Explore">
         {() => <PlaceholderScreen title="Explore" />}
       </Tab.Screen>

@@ -1,0 +1,37 @@
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { MorphSessionProvider } from "../morph/MorphSessionContext";
+import { MorphHistoryScreen } from "../screens/morph/MorphHistoryScreen";
+import { MorphHomeScreen } from "../screens/morph/MorphHomeScreen";
+import { MorphPaywallScreen } from "../screens/morph/MorphPaywallScreen";
+import { MorphResultsScreen } from "../screens/morph/MorphResultsScreen";
+import { MorphStudioScreen } from "../screens/morph/MorphStudioScreen";
+
+export type MorphStackParamList = {
+  MorphHome: undefined;
+  MorphResults: undefined;
+  MorphHistory: undefined;
+  MorphStudio: undefined;
+  MorphPaywall: undefined;
+};
+
+const Stack = createNativeStackNavigator<MorphStackParamList>();
+
+export function MorphStack() {
+  return (
+    <MorphSessionProvider>
+      <Stack.Navigator
+        screenOptions={{
+          headerShown: false,
+          animation: "slide_from_right",
+          contentStyle: { backgroundColor: "#0A0A0A" },
+        }}
+      >
+        <Stack.Screen name="MorphHome" component={MorphHomeScreen} />
+        <Stack.Screen name="MorphResults" component={MorphResultsScreen} />
+        <Stack.Screen name="MorphHistory" component={MorphHistoryScreen} />
+        <Stack.Screen name="MorphStudio" component={MorphStudioScreen} />
+        <Stack.Screen name="MorphPaywall" component={MorphPaywallScreen} />
+      </Stack.Navigator>
+    </MorphSessionProvider>
+  );
+}
