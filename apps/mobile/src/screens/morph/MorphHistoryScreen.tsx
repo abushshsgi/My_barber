@@ -12,16 +12,15 @@ import {
   useWindowDimensions,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
 import {
   fetchMorphAiGenerations,
   type MorphAiGeneration,
 } from "../../api/ai";
-import { NativeHeader } from "../../components/ui/NativeHeader";
 import { useHideTabBar } from "../../hooks/useHideTabBar";
 import { useMorphSession } from "../../lib/morph-session";
 import type { MorphStackParamList } from "../../navigation/MorphStack";
 import { scaleFont } from "../../theme/layout";
-import { colors } from "../../theme/colors";
 
 type Props = NativeStackScreenProps<MorphStackParamList, "MorphHistory">;
 
@@ -57,10 +56,18 @@ export function MorphHistoryScreen({ navigation }: Props) {
 
   return (
     <View style={[styles.root, { paddingBottom: insets.bottom }]}>
-      <NativeHeader title="Tarix" onBack={() => navigation.goBack()} />
+      <View style={[styles.topBar, { paddingTop: Math.max(insets.top, 8) }]}>
+        <Pressable style={styles.iconBtn} onPress={() => navigation.goBack()}>
+          <Ionicons name="chevron-back" size={20} color="#FFF" />
+        </Pressable>
+        <Text style={[styles.topTitle, { fontSize: fs(16) }]}>
+          Saqlangan va yaratilgan
+        </Text>
+        <View style={{ width: 40 }} />
+      </View>
 
       {loading ? (
-        <ActivityIndicator style={{ marginTop: 40 }} color={colors.fg} />
+        <ActivityIndicator style={{ marginTop: 40 }} color="#FFF" />
       ) : error ? (
         <View style={styles.center}>
           <Text style={styles.err}>{error}</Text>
@@ -110,7 +117,7 @@ export function MorphHistoryScreen({ navigation }: Props) {
       <Modal visible={!!selected} transparent animationType="fade">
         <View style={styles.modal}>
           <Pressable style={styles.modalBg} onPress={() => setSelected(null)} />
-          <View style={styles.sheet}>
+          <View style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, 28) }]}>
             {selected?.after_url ? (
               <Image source={{ uri: selected.after_url }} style={styles.sheetImg} />
             ) : null}
@@ -139,7 +146,9 @@ export function MorphHistoryScreen({ navigation }: Props) {
                 style={[styles.sheetBtn, styles.sheetBtnGhost]}
                 onPress={() => setSelected(null)}
               >
-                <Text style={[styles.sheetBtnText, styles.sheetBtnGhostText]}>Yopish</Text>
+                <Text style={[styles.sheetBtnText, styles.sheetBtnGhostText]}>
+                  Yopish
+                </Text>
               </Pressable>
             </View>
           </View>
@@ -150,19 +159,39 @@ export function MorphHistoryScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.bg },
+  root: { flex: 1, backgroundColor: "#050505" },
+  topBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 14,
+    paddingBottom: 8,
+  },
+  iconBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(255,255,255,0.06)",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(255,255,255,0.12)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  topTitle: { color: "#FFF", fontWeight: "800" },
   list: { paddingHorizontal: 16, paddingBottom: 24, gap: 10 },
   row: { gap: 10 },
   card: {
     borderRadius: 16,
     overflow: "hidden",
-    backgroundColor: colors.surface,
+    backgroundColor: "#141414",
     marginBottom: 4,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(255,255,255,0.08)",
   },
-  img: { width: "100%", aspectRatio: 3 / 4, backgroundColor: colors.border },
+  img: { width: "100%", aspectRatio: 3 / 4, backgroundColor: "#1A1A1A" },
   cardTitle: {
     fontWeight: "700",
-    color: colors.fg,
+    color: "#FFF",
     paddingHorizontal: 8,
     paddingVertical: 8,
   },
@@ -173,51 +202,54 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
     gap: 8,
   },
-  emptyTitle: { fontWeight: "800", fontSize: 18, color: colors.fg },
-  emptySub: { textAlign: "center", color: colors.muted, fontSize: 13 },
-  err: { color: colors.muted, textAlign: "center" },
+  emptyTitle: { fontWeight: "800", fontSize: 18, color: "#FFF" },
+  emptySub: {
+    textAlign: "center",
+    color: "rgba(255,255,255,0.5)",
+    fontSize: 13,
+  },
+  err: { color: "rgba(255,255,255,0.55)", textAlign: "center" },
   retry: {
     marginTop: 10,
-    backgroundColor: colors.fg,
+    backgroundColor: "#FFF",
     borderRadius: 999,
     paddingHorizontal: 16,
     paddingVertical: 10,
   },
-  retryText: { color: "#FFF", fontWeight: "800" },
+  retryText: { color: "#050505", fontWeight: "800" },
   modal: { flex: 1, justifyContent: "flex-end" },
   modalBg: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: "rgba(0,0,0,0.5)",
+    backgroundColor: "rgba(0,0,0,0.55)",
   },
   sheet: {
-    backgroundColor: colors.bg,
+    backgroundColor: "#0A0A0A",
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 16,
-    paddingBottom: 28,
   },
   sheetImg: {
     width: "100%",
     aspectRatio: 3 / 4,
     borderRadius: 16,
-    backgroundColor: colors.surface,
+    backgroundColor: "#141414",
   },
   sheetTitle: {
     marginTop: 12,
     fontWeight: "800",
     fontSize: 17,
-    color: colors.fg,
+    color: "#FFF",
   },
   sheetActions: { flexDirection: "row", gap: 10, marginTop: 14 },
   sheetBtn: {
     flex: 1,
     minHeight: 48,
     borderRadius: 14,
-    backgroundColor: colors.fg,
+    backgroundColor: "#FFF",
     alignItems: "center",
     justifyContent: "center",
   },
-  sheetBtnGhost: { backgroundColor: colors.surface },
-  sheetBtnText: { color: "#FFF", fontWeight: "800" },
-  sheetBtnGhostText: { color: colors.fg },
+  sheetBtnGhost: { backgroundColor: "rgba(255,255,255,0.08)" },
+  sheetBtnText: { color: "#050505", fontWeight: "800" },
+  sheetBtnGhostText: { color: "#FFF" },
 });

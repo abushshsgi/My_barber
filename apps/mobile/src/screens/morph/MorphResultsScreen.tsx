@@ -18,6 +18,7 @@ import {
   checkAiStyleFace,
   generateAiStyleTryOn,
   saveAiStyleHistory,
+  saveMorphAiGeneration,
   type AiStyleSuggestion,
 } from "../../api/ai";
 import { NativeBackButton } from "../../components/ui/NativeBackButton";
@@ -68,7 +69,28 @@ export function MorphResultsScreen({ navigation }: Props) {
       }).catch(() => undefined);
       setPhase("ready");
 
-      const first = result.suggestions[0];
+      const preferredId = session.preferredStyleId;
+      const preferredFromList =
+        preferredId != null
+          ? result.suggestions.find((s) => s.id === preferredId)
+          : undefined;
+      const preferredFallback: AiStyleSuggestion | null =
+        preferredId && !preferredFromList
+          ? {
+              id: preferredId,
+              title: session.preferredStyleTitle || preferredId,
+              match: 100,
+              reason_uz: "",
+              category: "",
+              seed: preferredId,
+              image_url: "",
+              salon_id: null,
+              salon_name: null,
+              barber_name: null,
+            }
+          : null;
+      const first =
+        preferredFromList || preferredFallback || result.suggestions[0];
       if (first) {
         void runTryOn(first);
       }
@@ -95,6 +117,12 @@ export function MorphResultsScreen({ navigation }: Props) {
       try {
         const out = await generateAiStyleTryOn(session.selfieDataUrl, style.id);
         session.setTryOn(out.preview_image, out.style_id, out.style_title || style.title);
+        void saveMorphAiGeneration({
+          style_id: out.style_id || style.id,
+          title: out.style_title || style.title,
+          before_image: session.selfieDataUrl,
+          after_image: out.preview_image,
+        }).catch(() => undefined);
         gate.refresh();
         setPhase("ready");
       } catch (err) {

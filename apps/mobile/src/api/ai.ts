@@ -270,6 +270,19 @@ export async function fetchMorphAiGenerations(): Promise<MorphAiGeneration[]> {
   return apiJson("/api/v1/ai/generations/");
 }
 
+export async function saveMorphAiGeneration(payload: {
+  style_id?: string;
+  title?: string;
+  persona_id?: string;
+  before_image?: string;
+  after_image: string;
+}): Promise<MorphAiGeneration> {
+  return apiJson("/api/v1/ai/generations/", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
 export async function fetchAiStyleHistory(): Promise<AiStyleHistoryEntry[]> {
   return apiJson("/api/v1/ai/style-history/");
 }

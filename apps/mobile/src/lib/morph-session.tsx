@@ -7,9 +7,12 @@ type MorphSession = {
   tryOnPreview: string | null;
   tryOnStyleId: string | null;
   tryOnTitle: string | null;
+  preferredStyleId: string | null;
+  preferredStyleTitle: string | null;
   setSelfie: (uri: string | null) => void;
   setAnalyze: (data: AiStyleAnalyzeResponse | null) => void;
   setTryOn: (preview: string | null, styleId?: string | null, title?: string | null) => void;
+  setPreferredStyle: (styleId: string | null, title?: string | null) => void;
   clear: () => void;
 };
 
@@ -21,6 +24,8 @@ export function MorphSessionProvider({ children }: { children: ReactNode }) {
   const [tryOnPreview, setTryOnPreview] = useState<string | null>(null);
   const [tryOnStyleId, setTryOnStyleId] = useState<string | null>(null);
   const [tryOnTitle, setTryOnTitle] = useState<string | null>(null);
+  const [preferredStyleId, setPreferredStyleId] = useState<string | null>(null);
+  const [preferredStyleTitle, setPreferredStyleTitle] = useState<string | null>(null);
 
   const value = useMemo<MorphSession>(
     () => ({
@@ -29,6 +34,8 @@ export function MorphSessionProvider({ children }: { children: ReactNode }) {
       tryOnPreview,
       tryOnStyleId,
       tryOnTitle,
+      preferredStyleId,
+      preferredStyleTitle,
       setSelfie,
       setAnalyze,
       setTryOn: (preview, styleId = null, title = null) => {
@@ -36,15 +43,29 @@ export function MorphSessionProvider({ children }: { children: ReactNode }) {
         setTryOnStyleId(styleId);
         setTryOnTitle(title);
       },
+      setPreferredStyle: (styleId, title = null) => {
+        setPreferredStyleId(styleId);
+        setPreferredStyleTitle(title);
+      },
       clear: () => {
         setSelfie(null);
         setAnalyze(null);
         setTryOnPreview(null);
         setTryOnStyleId(null);
         setTryOnTitle(null);
+        setPreferredStyleId(null);
+        setPreferredStyleTitle(null);
       },
     }),
-    [selfieDataUrl, analyze, tryOnPreview, tryOnStyleId, tryOnTitle],
+    [
+      selfieDataUrl,
+      analyze,
+      tryOnPreview,
+      tryOnStyleId,
+      tryOnTitle,
+      preferredStyleId,
+      preferredStyleTitle,
+    ],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

@@ -1,8 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
+  Image,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -11,15 +13,47 @@ import {
   useWindowDimensions,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import {
+  fetchMorphAiGenerations,
+  type MorphAiGeneration,
+} from "../../api/ai";
+import { fetchHairstyles } from "../../api/hairstyles";
+import {
+  MorphSampleMarquee,
+  type MorphSampleCard,
+} from "../../components/morph/MorphSampleMarquee";
 import { useAuth } from "../../auth/AuthContext";
 import { useMorphLimitGate } from "../../hooks/useMorphLimitGate";
 import { pickSelfieFromCamera, pickSelfieFromGallery } from "../../lib/selfie";
 import { useMorphSession } from "../../lib/morph-session";
 import type { MorphStackParamList } from "../../navigation/MorphStack";
 import { scaleFont } from "../../theme/layout";
-import { colors } from "../../theme/colors";
 
 type Props = NativeStackScreenProps<MorphStackParamList, "MorphHome">;
+
+type ToolKey = "camera" | "gallery" | "studio" | "care" | "ingredient";
+
+const TOOLS: {
+  key: ToolKey;
+  label: string;
+  icon: keyof typeof Ionicons.glyphMap;
+}[] = [
+  { key: "camera", label: "Kameradan olish", icon: "camera-outline" },
+  { key: "gallery", label: "Galereyadan tanlash", icon: "images-outline" },
+  { key: "studio", label: "AI Studio", icon: "sparkles-outline" },
+  { key: "care", label: "Parvarish", icon: "water-outline" },
+  { key: "ingredient", label: "Tarkib", icon: "flask-outline" },
+];
+
+function prettyLookTitle(title: string) {
+  const raw = title.trim();
+  if (!raw) return "Try-on";
+  if (!/[-_]/.test(raw) && !/^(men|women)\b/i.test(raw)) return raw;
+  return raw
+    .replace(/^(men|women)[-_]/i, "")
+    .replace(/[-_]+/g, " ")
+    .replace(/\b\w/g, (ch) => ch.toUpperCase());
+}
 
 export function MorphHomeScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
@@ -29,9 +63,89 @@ export function MorphHomeScreen({ navigation }: Props) {
   const session = useMorphSession();
   const gate = useMorphLimitGate();
   const [busy, setBusy] = useState(false);
+  const [samplesLoading, setSamplesLoading] = useState(true);
+  const [samples, setSamples] = useState<MorphSampleCard[]>([]);
+  const [generations, setGenerations] = useState<MorphAiGeneration[]>([]);
+
+  const loadSamples = useCallback(async () => {
+    setSamplesLoading(true);
+    try {
+      const rows = await fetchHairstyles("men");
+      setSamples(
+        rows.slice(0, 12).map((entry) => ({
+          id: entry.id,
+          title: entry.title_uz || entry.title,
+          image: entry.image_url,
+        })),
+      );
+    } catch {
+      setSamples([]);
+    } finally {
+      setSamplesLoading(false);
+    }
+  }, []);
+
+  const loadGenerations = useCallback(async () => {
+    if (!isAuthenticated) {
+      setGenerations([]);
+      return;
+    }
+    try {
+      const rows = await fetchMorphAiGenerations();
+      setGenerations(rows);
+    } catch {
+      setGenerations([]);
+    }
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    void loadSamples();
+  }, [loadSamples]);
+
+  useEffect(() => {
+    void loadGenerations();
+    const unsub = navigation.addListener("focus", () => {
+      void loadGenerations();
+    });
+    return unsub;
+  }, [loadGenerations, navigation]);
+
+  const rowA = useMemo(
+    () => samples.filter((_, i) => i % 2 === 0),
+    [samples],
+  );
+  const rowB = useMemo(
+    () => samples.filter((_, i) => i % 2 === 1),
+    [samples],
+  );
+
+  const myLooks = useMemo(() => {
+    const seen = new Set<string>();
+    const out: { id: string; title: string; image: string; styleId: string }[] =
+      [];
+    for (const g of generations) {
+      const image = g.after_url || g.before_url;
+      if (!image) continue;
+      const fingerprint = `${g.style_id}::${image.slice(0, 96)}`;
+      if (seen.has(fingerprint) || seen.has(String(g.id))) continue;
+      seen.add(fingerprint);
+      seen.add(String(g.id));
+      out.push({
+        id: String(g.id),
+        title: prettyLookTitle(g.title),
+        image,
+        styleId: g.style_id,
+      });
+      if (out.length >= 8) break;
+    }
+    return out;
+  }, [generations]);
 
   const startWithImage = useCallback(
-    async (source: "camera" | "gallery") => {
+    async (
+      source: "camera" | "gallery",
+      preferred?: { styleId: string; title?: string },
+    ) => {
       if (!isAuthenticated) {
         navigation.getParent()?.navigate("Profile" as never);
         return;
@@ -50,6 +164,9 @@ export function MorphHomeScreen({ navigation }: Props) {
         if (!dataUrl) return;
         session.clear();
         session.setSelfie(dataUrl);
+        if (preferred?.styleId) {
+          session.setPreferredStyle(preferred.styleId, preferred.title ?? null);
+        }
         navigation.navigate("MorphResults");
       } finally {
         setBusy(false);
@@ -58,115 +175,283 @@ export function MorphHomeScreen({ navigation }: Props) {
     [gate, isAuthenticated, navigation, session],
   );
 
+  const onNewTryOn = useCallback(() => {
+    Alert.alert("Yangi try-on", "Selfie qayerdan olamiz?", [
+      {
+        text: "Kamera",
+        onPress: () => void startWithImage("camera"),
+      },
+      {
+        text: "Galereya",
+        onPress: () => void startWithImage("gallery"),
+      },
+      { text: "Bekor", style: "cancel" },
+    ]);
+  }, [startWithImage]);
+
+  const onTool = useCallback(
+    async (key: ToolKey) => {
+      if (key === "camera") {
+        void startWithImage("camera");
+        return;
+      }
+      if (key === "gallery") {
+        void startWithImage("gallery");
+        return;
+      }
+      if (key === "studio") {
+        if (!isAuthenticated) {
+          navigation.getParent()?.navigate("Profile" as never);
+          return;
+        }
+        const ok = await gate.ensureStudio();
+        if (!ok) {
+          navigation.navigate("MorphPaywall");
+          return;
+        }
+        navigation.navigate("MorphStudio");
+        return;
+      }
+      if (key === "care" || key === "ingredient") {
+        if (!isAuthenticated) {
+          navigation.getParent()?.navigate("Profile" as never);
+          return;
+        }
+        const ok = await gate.ensureAccess();
+        if (!ok) {
+          navigation.navigate("MorphPaywall");
+          return;
+        }
+        Alert.alert(
+          key === "care" ? "Parvarish" : "Tarkib",
+          "Bu bo'lim tez orada mobil ilovada ochiladi. Hozir web versiyadan foydalanishingiz mumkin.",
+        );
+      }
+    },
+    [gate, isAuthenticated, navigation, startWithImage],
+  );
+
+  const onSamplePress = useCallback(
+    (item: MorphSampleCard) => {
+      Alert.alert(item.title, "Bu uslubni o'zingizda sinab ko'rasizmi?", [
+        {
+          text: "Kamera",
+          onPress: () =>
+            void startWithImage("camera", {
+              styleId: item.id,
+              title: item.title,
+            }),
+        },
+        {
+          text: "Galereya",
+          onPress: () =>
+            void startWithImage("gallery", {
+              styleId: item.id,
+              title: item.title,
+            }),
+        },
+        { text: "Bekor", style: "cancel" },
+      ]);
+    },
+    [startWithImage],
+  );
+
+  const onLookPress = useCallback(
+    (look: { styleId: string; title: string; image: string }) => {
+      if (look.styleId) {
+        Alert.alert(look.title, "Yana sinab ko'rasizmi?", [
+          {
+            text: "Kamera",
+            onPress: () =>
+              void startWithImage("camera", {
+                styleId: look.styleId,
+                title: look.title,
+              }),
+          },
+          {
+            text: "Galereya",
+            onPress: () =>
+              void startWithImage("gallery", {
+                styleId: look.styleId,
+                title: look.title,
+              }),
+          },
+          {
+            text: "Studio",
+            onPress: () => {
+              session.setTryOn(look.image, look.styleId, look.title);
+              void (async () => {
+                const ok = await gate.ensureStudio();
+                if (!ok) {
+                  navigation.navigate("MorphPaywall");
+                  return;
+                }
+                navigation.navigate("MorphStudio");
+              })();
+            },
+          },
+          { text: "Bekor", style: "cancel" },
+        ]);
+      }
+    },
+    [gate, navigation, session, startWithImage],
+  );
+
+  const showLimit =
+    gate.allowed && gate.limit > 0 ? gate.remaining : null;
+
   return (
-    <View style={[styles.root, { paddingTop: Math.max(insets.top, 12) }]}>
+    <View style={[styles.root, { paddingTop: Math.max(insets.top, 10) }]}>
+      <View pointerEvents="none" style={styles.glow} />
+
+      <View style={styles.header}>
+        <Pressable
+          style={styles.iconBtn}
+          onPress={() => navigation.getParent()?.navigate("Home" as never)}
+          accessibilityLabel="Orqaga"
+        >
+          <Ionicons name="chevron-back" size={20} color="#FFF" />
+        </Pressable>
+        <View style={{ flex: 1 }} />
+      </View>
+
       <ScrollView
-        contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + 28 }]}
+        contentContainerStyle={[
+          styles.body,
+          { paddingBottom: insets.bottom + 28 },
+        ]}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.hero}>
-          <View style={styles.badgeRow}>
-            <View style={styles.brandPill}>
-              <Ionicons name="sparkles" size={14} color="#FFF" />
-              <Text style={styles.brandText}>Morf AI</Text>
+          <View style={styles.sparkWrap}>
+            <View style={styles.sparkIcon}>
+              <Ionicons name="sparkles" size={26} color="#050505" />
             </View>
-            {gate.allowed && gate.limit > 0 ? (
+            {showLimit != null ? (
               <Pressable
-                style={[styles.limitPill, gate.remaining <= 2 && styles.limitLow]}
+                style={[
+                  styles.limitBadge,
+                  gate.remaining <= Math.max(1, Math.floor(gate.limit * 0.2)) &&
+                    styles.limitLow,
+                ]}
                 onPress={() => navigation.navigate("MorphPaywall")}
               >
-                <Text style={styles.limitText}>
-                  {gate.remaining}/{gate.limit}
-                </Text>
+                <Text style={styles.limitText}>{showLimit}</Text>
               </Pressable>
             ) : null}
           </View>
-          <Text style={[styles.title, { fontSize: fs(28) }]}>
-            Yangi lookni{"\n"}sinab ko'ring
+
+          <Text style={[styles.subtitle, { fontSize: fs(15) }]}>
+            Selfie yuklang — yuzingizga mos uslubni bir zumda ko'ring, saqlang va
+            bron qiling.
           </Text>
-          <Text style={[styles.sub, { fontSize: fs(14) }]}>
-            Selfie yuklang — yuz shakliga mos uslublar va AI try-on.
-          </Text>
+
+          <Pressable
+            style={styles.cta}
+            disabled={busy}
+            onPress={onNewTryOn}
+          >
+            {busy ? (
+              <ActivityIndicator color="#050505" />
+            ) : (
+              <>
+                <Text style={styles.ctaText}>Yangi try-on</Text>
+                <View style={styles.ctaArrow}>
+                  <Ionicons name="arrow-up" size={16} color="#FFF" style={styles.arrowRot} />
+                </View>
+              </>
+            )}
+          </Pressable>
         </View>
 
         {!isAuthenticated ? (
-          <View style={styles.loginCard}>
-            <Text style={styles.loginTitle}>Kirish kerak</Text>
-            <Text style={styles.loginSub}>
+          <View style={styles.lockCard}>
+            <Text style={styles.lockTitle}>Kirish kerak</Text>
+            <Text style={styles.lockSub}>
               Morph AI obuna va tarix uchun akkauntga kiring.
             </Text>
             <Pressable
-              style={styles.primaryBtn}
+              style={styles.lockBtn}
               onPress={() => navigation.getParent()?.navigate("Profile" as never)}
             >
-              <Text style={styles.primaryText}>Kirish</Text>
+              <Text style={styles.lockBtnText}>Kirish</Text>
             </Pressable>
           </View>
         ) : !gate.allowed && !gate.loading ? (
-          <View style={styles.loginCard}>
-            <Text style={styles.loginTitle}>Obuna ochilmagan</Text>
-            <Text style={styles.loginSub}>
+          <View style={styles.lockCard}>
+            <Text style={styles.lockTitle}>Obuna ochilmagan</Text>
+            <Text style={styles.lockSub}>
               {gate.me?.access?.message ||
                 "Morph AI faqat obuna bilan ishlaydi. Tarif tanlang."}
             </Text>
             <Pressable
-              style={styles.primaryBtn}
+              style={styles.lockBtn}
               onPress={() => navigation.navigate("MorphPaywall")}
             >
-              <Text style={styles.primaryText}>Tariflar</Text>
+              <Text style={styles.lockBtnText}>Tariflar</Text>
             </Pressable>
           </View>
-        ) : (
-          <View style={styles.ctaRow}>
-            <Pressable
-              style={styles.bigCta}
-              disabled={busy}
-              onPress={() => void startWithImage("camera")}
-            >
-              {busy ? (
-                <ActivityIndicator color="#FFF" />
-              ) : (
-                <>
-                  <Ionicons name="camera" size={28} color="#FFF" />
-                  <Text style={styles.bigCtaText}>Kamera</Text>
-                </>
-              )}
-            </Pressable>
-            <Pressable
-              style={[styles.bigCta, styles.bigCtaAlt]}
-              disabled={busy}
-              onPress={() => void startWithImage("gallery")}
-            >
-              <Ionicons name="images" size={28} color={colors.fg} />
-              <Text style={[styles.bigCtaText, styles.bigCtaTextAlt]}>Galereya</Text>
-            </Pressable>
-          </View>
-        )}
+        ) : null}
 
-        <Text style={[styles.sectionLabel, { fontSize: fs(13) }]}>Yana</Text>
-        <View style={styles.grid}>
-          <ToolCard
-            icon="color-palette"
-            title="Studio"
-            sub={
-              gate.studioLimit > 0
-                ? `${gate.studioRemaining}/${gate.studioLimit}`
-                : "Plus / Pro"
-            }
-            onPress={async () => {
-              const ok = await gate.ensureStudio();
-              if (!ok) {
-                navigation.navigate("MorphPaywall");
-                return;
-              }
-              navigation.navigate("MorphStudio");
-            }}
-          />
-          <ToolCard
-            icon="time"
-            title="Tarix"
-            sub="Try-on lar"
-            onPress={() => navigation.navigate("MorphHistory")}
+        <View style={styles.tools}>
+          {TOOLS.map((tool) => (
+            <Pressable
+              key={tool.key}
+              style={styles.tool}
+              onPress={() => void onTool(tool.key)}
+            >
+              <View style={styles.toolIcon}>
+                <Ionicons name={tool.icon} size={18} color="#FFF" />
+              </View>
+              <Text style={styles.toolLabel} numberOfLines={2}>
+                {tool.label}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+
+        {myLooks.length > 0 ? (
+          <View style={styles.section}>
+            <View style={styles.sectionHead}>
+              <Text style={styles.sectionTitle}>Saqlangan va yaratilgan</Text>
+              <Pressable onPress={() => navigation.navigate("MorphHistory")}>
+                <Text style={styles.sectionLink}>Hammasi</Text>
+              </Pressable>
+            </View>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.looksRow}
+            >
+              {myLooks.map((look) => (
+                <Pressable
+                  key={look.id}
+                  style={styles.look}
+                  onPress={() => onLookPress(look)}
+                >
+                  <Image source={{ uri: look.image }} style={styles.lookImg} />
+                </Pressable>
+              ))}
+            </ScrollView>
+          </View>
+        ) : null}
+
+        <View style={styles.section}>
+          <View style={styles.sectionHead}>
+            <Text style={styles.sectionTitle}>Namuna uslublar</Text>
+            <Pressable
+              style={styles.exploreLink}
+              onPress={() => navigation.getParent()?.navigate("Explore" as never)}
+            >
+              <Text style={styles.sectionLink}>Explore</Text>
+              <Ionicons name="arrow-up" size={12} color="rgba(255,255,255,0.4)" style={styles.arrowRot} />
+            </Pressable>
+          </View>
+          <MorphSampleMarquee
+            rowA={rowA}
+            rowB={rowB}
+            loading={samplesLoading}
+            onPressStyle={onSamplePress}
           />
         </View>
       </ScrollView>
@@ -174,116 +459,163 @@ export function MorphHomeScreen({ navigation }: Props) {
   );
 }
 
-function ToolCard({
-  icon,
-  title,
-  sub,
-  onPress,
-}: {
-  icon: keyof typeof Ionicons.glyphMap;
-  title: string;
-  sub: string;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable style={styles.tool} onPress={onPress}>
-      <View style={styles.toolIcon}>
-        <Ionicons name={icon} size={20} color={colors.fg} />
-      </View>
-      <Text style={styles.toolTitle}>{title}</Text>
-      <Text style={styles.toolSub}>{sub}</Text>
-    </Pressable>
-  );
-}
-
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: "#0A0A0A" },
-  body: { paddingHorizontal: 20, gap: 18 },
-  hero: { gap: 10, paddingTop: 8 },
-  badgeRow: {
+  root: { flex: 1, backgroundColor: "#050505" },
+  glow: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: "transparent",
+  },
+  header: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingBottom: 4,
   },
-  brandPill: {
-    flexDirection: "row",
+  iconBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(255,255,255,0.06)",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(255,255,255,0.12)",
     alignItems: "center",
-    gap: 6,
-    backgroundColor: "rgba(255,255,255,0.12)",
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 999,
+    justifyContent: "center",
   },
-  brandText: { color: "#FFF", fontWeight: "800", fontSize: 12 },
-  limitPill: {
+  body: { paddingHorizontal: 20, gap: 8 },
+  hero: { alignItems: "center", paddingTop: 18, gap: 16 },
+  sparkWrap: { position: "relative", marginBottom: 4 },
+  sparkIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 22,
     backgroundColor: "#FFF",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  limitBadge: {
+    position: "absolute",
+    top: -4,
+    right: -4,
+    minWidth: 28,
+    height: 22,
+    paddingHorizontal: 6,
     borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    backgroundColor: "#FFF",
+    borderWidth: 2,
+    borderColor: "#050505",
+    alignItems: "center",
+    justifyContent: "center",
   },
-  limitLow: { backgroundColor: "#FACC15" },
-  limitText: { fontWeight: "800", fontSize: 12, color: "#0A0A0A" },
-  title: {
-    color: "#FFF",
-    fontWeight: "800",
-    letterSpacing: -0.6,
-    lineHeight: 34,
+  limitLow: { backgroundColor: "#CA8A04" },
+  limitText: { fontSize: 10, fontWeight: "800", color: "#050505" },
+  subtitle: {
+    maxWidth: 288,
+    textAlign: "center",
+    color: "rgba(255,255,255,0.55)",
+    lineHeight: 22,
   },
-  sub: { color: "rgba(255,255,255,0.62)", lineHeight: 20 },
-  loginCard: {
+  cta: {
+    flexDirection: "row",
+    alignItems: "center",
+    width: "100%",
+    maxWidth: 360,
+    minHeight: 48,
+    borderRadius: 999,
+    backgroundColor: "#FFF",
+    paddingLeft: 20,
+    paddingRight: 8,
+    paddingVertical: 8,
+    gap: 12,
+  },
+  ctaText: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#050505",
+  },
+  ctaArrow: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#050505",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  arrowRot: { transform: [{ rotate: "45deg" }] },
+  lockCard: {
+    marginTop: 12,
     backgroundColor: "rgba(255,255,255,0.06)",
     borderRadius: 20,
     padding: 18,
     gap: 10,
   },
-  loginTitle: { color: "#FFF", fontWeight: "800", fontSize: 17 },
-  loginSub: { color: "rgba(255,255,255,0.6)", fontSize: 13, lineHeight: 18 },
-  primaryBtn: {
-    marginTop: 6,
+  lockTitle: { color: "#FFF", fontWeight: "800", fontSize: 17 },
+  lockSub: { color: "rgba(255,255,255,0.6)", fontSize: 13, lineHeight: 18 },
+  lockBtn: {
+    marginTop: 4,
     backgroundColor: "#FFF",
     borderRadius: 14,
     minHeight: 48,
     alignItems: "center",
     justifyContent: "center",
   },
-  primaryText: { fontWeight: "800", color: "#0A0A0A" },
-  ctaRow: { flexDirection: "row", gap: 12 },
-  bigCta: {
-    flex: 1,
-    minHeight: 120,
-    borderRadius: 22,
-    backgroundColor: "#1F1F1F",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.08)",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 10,
+  lockBtnText: { fontWeight: "800", color: "#050505" },
+  tools: {
+    marginTop: 20,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 4,
   },
-  bigCtaAlt: { backgroundColor: "#FFF" },
-  bigCtaText: { color: "#FFF", fontWeight: "800", fontSize: 15 },
-  bigCtaTextAlt: { color: "#0A0A0A" },
-  sectionLabel: {
-    color: "rgba(255,255,255,0.5)",
-    fontWeight: "700",
-    marginTop: 4,
-  },
-  grid: { flexDirection: "row", gap: 12 },
   tool: {
     flex: 1,
-    backgroundColor: "rgba(255,255,255,0.06)",
-    borderRadius: 18,
-    padding: 14,
-    gap: 6,
+    alignItems: "center",
+    gap: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 2,
   },
   toolIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 12,
-    backgroundColor: "rgba(255,255,255,0.1)",
+    width: 48,
+    height: 48,
+    borderRadius: 16,
+    backgroundColor: "rgba(255,255,255,0.06)",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(255,255,255,0.1)",
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 4,
   },
-  toolTitle: { color: "#FFF", fontWeight: "800", fontSize: 15 },
-  toolSub: { color: "rgba(255,255,255,0.5)", fontSize: 12, fontWeight: "600" },
+  toolLabel: {
+    textAlign: "center",
+    fontSize: 10,
+    fontWeight: "600",
+    color: "rgba(255,255,255,0.5)",
+    lineHeight: 13,
+  },
+  section: { marginTop: 28 },
+  sectionHead: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 12,
+  },
+  sectionTitle: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "rgba(255,255,255,0.8)",
+  },
+  sectionLink: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "rgba(255,255,255,0.4)",
+  },
+  exploreLink: { flexDirection: "row", alignItems: "center", gap: 2 },
+  looksRow: { gap: 10, paddingRight: 8 },
+  look: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    overflow: "hidden",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(255,255,255,0.15)",
+  },
+  lookImg: { width: "100%", height: "100%" },
 });
