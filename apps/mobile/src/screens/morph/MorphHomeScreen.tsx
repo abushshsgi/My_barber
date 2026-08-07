@@ -18,7 +18,7 @@ import {
   type MorphAiGeneration,
 } from "../../api/ai";
 import { fetchHairstyles } from "../../api/hairstyles";
-import { morfMarkWhite, morfWordmarkWhite } from "../../branding/morf-logo";
+import { morfWordmarkWhite } from "../../branding/morf-logo";
 import {
   MorphSampleMarquee,
   type MorphSampleCard,
@@ -324,10 +324,10 @@ export function MorphHomeScreen({ navigation }: Props) {
       >
         <View style={styles.hero}>
           <View style={styles.brandBlock}>
-            <View style={styles.markWrap}>
+            <View style={styles.wordmarkWrap}>
               <Image
-                source={morfMarkWhite}
-                style={styles.markLogo}
+                source={morfWordmarkWhite}
+                style={styles.wordmarkLogo}
                 resizeMode="contain"
               />
               {showLimit != null ? (
@@ -344,11 +344,6 @@ export function MorphHomeScreen({ navigation }: Props) {
                 </Pressable>
               ) : null}
             </View>
-            <Image
-              source={morfWordmarkWhite}
-              style={styles.wordmarkLogo}
-              resizeMode="contain"
-            />
           </View>
 
           <Text style={[styles.subtitle, { fontSize: fs(15) }]}>
@@ -536,26 +531,21 @@ const styles = StyleSheet.create({
   hero: { alignItems: "center", paddingTop: 18, gap: 16 },
   brandBlock: {
     alignItems: "center",
-    gap: 12,
     marginBottom: 4,
   },
-  markWrap: {
+  wordmarkWrap: {
     position: "relative",
     alignItems: "center",
     justifyContent: "center",
   },
-  markLogo: {
-    width: 56,
-    height: 64,
-  },
   wordmarkLogo: {
-    width: 168,
-    height: 36,
+    width: 188,
+    height: 40,
   },
   limitBadge: {
     position: "absolute",
-    top: -4,
-    right: -10,
+    top: -6,
+    right: -14,
     minWidth: 28,
     height: 22,
     paddingHorizontal: 6,
