@@ -14,7 +14,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "../../auth/AuthContext";
 import { useMorphLimitGate } from "../../hooks/useMorphLimitGate";
 import { pickSelfieFromCamera, pickSelfieFromGallery } from "../../lib/selfie";
-import { useMorphSession } from "../../morph/MorphSessionContext";
+import { useMorphSession } from "../../lib/morph-session";
 import type { MorphStackParamList } from "../../navigation/MorphStack";
 import { scaleFont } from "../../theme/layout";
 import { colors } from "../../theme/colors";

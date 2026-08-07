@@ -19,7 +19,7 @@ import { NativeHeader } from "../../components/ui/NativeHeader";
 import { useHideTabBar } from "../../hooks/useHideTabBar";
 import { useMorphLimitGate } from "../../hooks/useMorphLimitGate";
 import { pickSelfieFromGallery } from "../../lib/selfie";
-import { useMorphSession } from "../../morph/MorphSessionContext";
+import { useMorphSession } from "../../lib/morph-session";
 import type { MorphStackParamList } from "../../navigation/MorphStack";
 import { colors } from "../../theme/colors";
 

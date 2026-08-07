@@ -23,7 +23,7 @@ import {
 import { NativeBackButton } from "../../components/ui/NativeBackButton";
 import { useHideTabBar } from "../../hooks/useHideTabBar";
 import { useMorphLimitGate } from "../../hooks/useMorphLimitGate";
-import { useMorphSession } from "../../morph/MorphSessionContext";
+import { useMorphSession } from "../../lib/morph-session";
 import type { MorphStackParamList } from "../../navigation/MorphStack";
 import { scaleFont } from "../../theme/layout";
 import { colors } from "../../theme/colors";

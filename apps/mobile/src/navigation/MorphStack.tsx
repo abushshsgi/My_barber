@@ -1,5 +1,5 @@
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { MorphSessionProvider } from "../morph/MorphSessionContext";
+import { MorphSessionProvider } from "../lib/morph-session";
 import { MorphHistoryScreen } from "../screens/morph/MorphHistoryScreen";
 import { MorphHomeScreen } from "../screens/morph/MorphHomeScreen";
 import { MorphPaywallScreen } from "../screens/morph/MorphPaywallScreen";
