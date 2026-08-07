@@ -31,7 +31,7 @@ import { scaleFont } from "../../theme/layout";
 
 type Props = NativeStackScreenProps<MorphStackParamList, "MorphHome">;
 
-type ToolKey = "camera" | "gallery" | "studio" | "care" | "ingredient";
+type ToolKey = "camera" | "gallery" | "studio";
 
 const TOOLS: {
   key: ToolKey;
@@ -41,8 +41,6 @@ const TOOLS: {
   { key: "camera", label: "Kameradan olish", icon: "camera-outline" },
   { key: "gallery", label: "Galereyadan tanlash", icon: "images-outline" },
   { key: "studio", label: "AI Studio", icon: "sparkles-outline" },
-  { key: "care", label: "Parvarish", icon: "water-outline" },
-  { key: "ingredient", label: "Tarkib", icon: "flask-outline" },
 ];
 
 function prettyLookTitle(title: string) {
@@ -189,6 +187,25 @@ export function MorphHomeScreen({ navigation }: Props) {
     ]);
   }, [startWithImage]);
 
+  const openCareOrIngredient = useCallback(
+    async (kind: "care" | "ingredient") => {
+      if (!isAuthenticated) {
+        navigation.getParent()?.navigate("Profile" as never);
+        return;
+      }
+      const ok = await gate.ensureAccess();
+      if (!ok) {
+        navigation.navigate("MorphPaywall");
+        return;
+      }
+      Alert.alert(
+        kind === "care" ? "Parvarish" : "Tarkib",
+        "Bu bo'lim tez orada mobil ilovada ochiladi. Hozir web versiyadan foydalanishingiz mumkin.",
+      );
+    },
+    [gate, isAuthenticated, navigation],
+  );
+
   const onTool = useCallback(
     async (key: ToolKey) => {
       if (key === "camera") {
@@ -199,34 +216,16 @@ export function MorphHomeScreen({ navigation }: Props) {
         void startWithImage("gallery");
         return;
       }
-      if (key === "studio") {
-        if (!isAuthenticated) {
-          navigation.getParent()?.navigate("Profile" as never);
-          return;
-        }
-        const ok = await gate.ensureStudio();
-        if (!ok) {
-          navigation.navigate("MorphPaywall");
-          return;
-        }
-        navigation.navigate("MorphStudio");
+      if (!isAuthenticated) {
+        navigation.getParent()?.navigate("Profile" as never);
         return;
       }
-      if (key === "care" || key === "ingredient") {
-        if (!isAuthenticated) {
-          navigation.getParent()?.navigate("Profile" as never);
-          return;
-        }
-        const ok = await gate.ensureAccess();
-        if (!ok) {
-          navigation.navigate("MorphPaywall");
-          return;
-        }
-        Alert.alert(
-          key === "care" ? "Parvarish" : "Tarkib",
-          "Bu bo'lim tez orada mobil ilovada ochiladi. Hozir web versiyadan foydalanishingiz mumkin.",
-        );
+      const ok = await gate.ensureStudio();
+      if (!ok) {
+        navigation.navigate("MorphPaywall");
+        return;
       }
+      navigation.navigate("MorphStudio");
     },
     [gate, isAuthenticated, navigation, startWithImage],
   );
@@ -357,41 +356,17 @@ export function MorphHomeScreen({ navigation }: Props) {
               <>
                 <Text style={styles.ctaText}>Yangi try-on</Text>
                 <View style={styles.ctaArrow}>
-                  <Ionicons name="arrow-up" size={16} color="#FFF" style={styles.arrowRot} />
+                  <Ionicons
+                    name="arrow-up"
+                    size={16}
+                    color="#FFF"
+                    style={styles.arrowRot}
+                  />
                 </View>
               </>
             )}
           </Pressable>
         </View>
-
-        {!isAuthenticated ? (
-          <View style={styles.lockCard}>
-            <Text style={styles.lockTitle}>Kirish kerak</Text>
-            <Text style={styles.lockSub}>
-              Morph AI obuna va tarix uchun akkauntga kiring.
-            </Text>
-            <Pressable
-              style={styles.lockBtn}
-              onPress={() => navigation.getParent()?.navigate("Profile" as never)}
-            >
-              <Text style={styles.lockBtnText}>Kirish</Text>
-            </Pressable>
-          </View>
-        ) : !gate.allowed && !gate.loading ? (
-          <View style={styles.lockCard}>
-            <Text style={styles.lockTitle}>Obuna ochilmagan</Text>
-            <Text style={styles.lockSub}>
-              {gate.me?.access?.message ||
-                "Morph AI faqat obuna bilan ishlaydi. Tarif tanlang."}
-            </Text>
-            <Pressable
-              style={styles.lockBtn}
-              onPress={() => navigation.navigate("MorphPaywall")}
-            >
-              <Text style={styles.lockBtnText}>Tariflar</Text>
-            </Pressable>
-          </View>
-        ) : null}
 
         <View style={styles.tools}>
           {TOOLS.map((tool) => (
@@ -401,7 +376,7 @@ export function MorphHomeScreen({ navigation }: Props) {
               onPress={() => void onTool(tool.key)}
             >
               <View style={styles.toolIcon}>
-                <Ionicons name={tool.icon} size={18} color="#FFF" />
+                <Ionicons name={tool.icon} size={20} color="#FFF" />
               </View>
               <Text style={styles.toolLabel} numberOfLines={2}>
                 {tool.label}
@@ -410,14 +385,17 @@ export function MorphHomeScreen({ navigation }: Props) {
           ))}
         </View>
 
-        {myLooks.length > 0 ? (
-          <View style={styles.section}>
-            <View style={styles.sectionHead}>
-              <Text style={styles.sectionTitle}>Saqlangan va yaratilgan</Text>
+        <View style={styles.section}>
+          <View style={styles.sectionHead}>
+            <Text style={styles.sectionTitle}>Saqlangan va yaratilgan</Text>
+            {myLooks.length > 0 ? (
               <Pressable onPress={() => navigation.navigate("MorphHistory")}>
                 <Text style={styles.sectionLink}>Hammasi</Text>
               </Pressable>
-            </View>
+            ) : null}
+          </View>
+
+          {myLooks.length > 0 ? (
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -433,8 +411,65 @@ export function MorphHomeScreen({ navigation }: Props) {
                 </Pressable>
               ))}
             </ScrollView>
-          </View>
-        ) : null}
+          ) : (
+            <View style={styles.emptyHistory}>
+              <View style={styles.emptyIcon}>
+                <Ionicons name="time-outline" size={22} color="rgba(255,255,255,0.55)" />
+              </View>
+              <Text style={styles.emptyTitle}>Hali saqlangan look yo'q</Text>
+              <Text style={styles.emptySub}>
+                Birinchi try-on qiling — natijalar shu yerda paydo bo'ladi.
+              </Text>
+              <Pressable style={styles.emptyCta} onPress={onNewTryOn} disabled={busy}>
+                <Text style={styles.emptyCtaText}>Yangi try-on</Text>
+              </Pressable>
+            </View>
+          )}
+        </View>
+
+        <View style={styles.careRow}>
+          <Pressable
+            style={styles.careCard}
+            onPress={() => void openCareOrIngredient("care")}
+          >
+            <View style={styles.careIcon}>
+              <Ionicons name="water-outline" size={18} color="#FFF" />
+            </View>
+            <View style={styles.careCopy}>
+              <Text style={styles.careTitle}>Parvarish</Text>
+              <Text style={styles.careSub} numberOfLines={2}>
+                Sochingiz uchun shaxsiy tavsiyalar
+              </Text>
+            </View>
+            <Ionicons
+              name="arrow-up"
+              size={14}
+              color="rgba(255,255,255,0.35)"
+              style={styles.arrowRot}
+            />
+          </Pressable>
+
+          <Pressable
+            style={styles.careCard}
+            onPress={() => void openCareOrIngredient("ingredient")}
+          >
+            <View style={styles.careIcon}>
+              <Ionicons name="flask-outline" size={18} color="#FFF" />
+            </View>
+            <View style={styles.careCopy}>
+              <Text style={styles.careTitle}>Tarkib</Text>
+              <Text style={styles.careSub} numberOfLines={2}>
+                Mahsulot tarkibini skan qiling
+              </Text>
+            </View>
+            <Ionicons
+              name="arrow-up"
+              size={14}
+              color="rgba(255,255,255,0.35)"
+              style={styles.arrowRot}
+            />
+          </Pressable>
+        </View>
 
         <View style={styles.section}>
           <View style={styles.sectionHead}>
@@ -444,7 +479,12 @@ export function MorphHomeScreen({ navigation }: Props) {
               onPress={() => navigation.getParent()?.navigate("Explore" as never)}
             >
               <Text style={styles.sectionLink}>Explore</Text>
-              <Ionicons name="arrow-up" size={12} color="rgba(255,255,255,0.4)" style={styles.arrowRot} />
+              <Ionicons
+                name="arrow-up"
+                size={12}
+                color="rgba(255,255,255,0.4)"
+                style={styles.arrowRot}
+              />
             </Pressable>
           </View>
           <MorphSampleMarquee
@@ -542,41 +582,23 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   arrowRot: { transform: [{ rotate: "45deg" }] },
-  lockCard: {
-    marginTop: 12,
-    backgroundColor: "rgba(255,255,255,0.06)",
-    borderRadius: 20,
-    padding: 18,
-    gap: 10,
-  },
-  lockTitle: { color: "#FFF", fontWeight: "800", fontSize: 17 },
-  lockSub: { color: "rgba(255,255,255,0.6)", fontSize: 13, lineHeight: 18 },
-  lockBtn: {
-    marginTop: 4,
-    backgroundColor: "#FFF",
-    borderRadius: 14,
-    minHeight: 48,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  lockBtnText: { fontWeight: "800", color: "#050505" },
   tools: {
     marginTop: 20,
     flexDirection: "row",
     justifyContent: "space-between",
-    gap: 4,
+    gap: 8,
   },
   tool: {
     flex: 1,
     alignItems: "center",
     gap: 8,
     paddingVertical: 8,
-    paddingHorizontal: 2,
+    paddingHorizontal: 4,
   },
   toolIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 16,
+    width: 56,
+    height: 56,
+    borderRadius: 18,
     backgroundColor: "rgba(255,255,255,0.06)",
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: "rgba(255,255,255,0.1)",
@@ -585,10 +607,10 @@ const styles = StyleSheet.create({
   },
   toolLabel: {
     textAlign: "center",
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: "600",
     color: "rgba(255,255,255,0.5)",
-    lineHeight: 13,
+    lineHeight: 14,
   },
   section: { marginTop: 28 },
   sectionHead: {
@@ -618,4 +640,83 @@ const styles = StyleSheet.create({
     borderColor: "rgba(255,255,255,0.15)",
   },
   lookImg: { width: "100%", height: "100%" },
+  emptyHistory: {
+    alignItems: "center",
+    paddingVertical: 22,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    backgroundColor: "rgba(255,255,255,0.04)",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(255,255,255,0.08)",
+    gap: 8,
+  },
+  emptyIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "rgba(255,255,255,0.06)",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 4,
+  },
+  emptyTitle: {
+    color: "#FFF",
+    fontWeight: "700",
+    fontSize: 14,
+  },
+  emptySub: {
+    textAlign: "center",
+    color: "rgba(255,255,255,0.45)",
+    fontSize: 12,
+    lineHeight: 17,
+    maxWidth: 260,
+  },
+  emptyCta: {
+    marginTop: 8,
+    backgroundColor: "#FFF",
+    borderRadius: 999,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+  },
+  emptyCtaText: {
+    color: "#050505",
+    fontWeight: "800",
+    fontSize: 12,
+  },
+  careRow: {
+    marginTop: 16,
+    flexDirection: "row",
+    gap: 10,
+  },
+  careCard: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingVertical: 14,
+    paddingHorizontal: 12,
+    borderRadius: 18,
+    backgroundColor: "rgba(255,255,255,0.05)",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(255,255,255,0.1)",
+  },
+  careIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    backgroundColor: "rgba(255,255,255,0.08)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  careCopy: { flex: 1, gap: 2 },
+  careTitle: {
+    color: "#FFF",
+    fontWeight: "700",
+    fontSize: 13,
+  },
+  careSub: {
+    color: "rgba(255,255,255,0.4)",
+    fontSize: 10,
+    lineHeight: 13,
+  },
 });
