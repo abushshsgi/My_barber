@@ -515,7 +515,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 16,
-    paddingBottom: 4,
+    paddingBottom: 0,
   },
   iconBtn: {
     width: 40,
@@ -528,10 +528,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   body: { paddingHorizontal: 20, gap: 8 },
-  hero: { alignItems: "center", paddingTop: 18, gap: 16 },
+  hero: { alignItems: "center", paddingTop: 2, gap: 14 },
   brandBlock: {
     alignItems: "center",
-    marginBottom: 4,
+    marginBottom: 0,
   },
   wordmarkWrap: {
     position: "relative",
