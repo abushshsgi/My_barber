@@ -10,7 +10,6 @@ import {
   StyleSheet,
   Text,
   View,
-  useWindowDimensions,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { fetchHairstyles } from "../../api/hairstyles";
@@ -24,7 +23,6 @@ import { useMorphLimitGate } from "../../hooks/useMorphLimitGate";
 import { pickSelfieFromCamera, pickSelfieFromGallery } from "../../lib/selfie";
 import { useMorphSession } from "../../lib/morph-session";
 import type { MorphStackParamList } from "../../navigation/MorphStack";
-import { scaleFont } from "../../theme/layout";
 
 type Props = NativeStackScreenProps<MorphStackParamList, "MorphHome">;
 
@@ -42,8 +40,6 @@ const TOOLS: {
 
 export function MorphHomeScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
-  const { width } = useWindowDimensions();
-  const fs = (n: number) => scaleFont(n, width);
   const { isAuthenticated } = useAuth();
   const session = useMorphSession();
   const gate = useMorphLimitGate();
@@ -243,11 +239,6 @@ export function MorphHomeScreen({ navigation }: Props) {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.hero}>
-          <Text style={[styles.subtitle, { fontSize: fs(15) }]}>
-            Selfie yuklang — yuzingizga mos uslubni bir zumda ko'ring, saqlang va
-            bron qiling.
-          </Text>
-
           <Pressable
             style={styles.cta}
             disabled={busy}
@@ -414,17 +405,10 @@ const styles = StyleSheet.create({
   body: { paddingHorizontal: 20, gap: 8 },
   hero: {
     alignItems: "center",
-    paddingTop: 10,
-    gap: 0,
-  },
-  subtitle: {
-    maxWidth: 288,
-    textAlign: "center",
-    color: "rgba(255,255,255,0.55)",
-    lineHeight: 22,
+    paddingTop: 18,
   },
   cta: {
-    marginTop: 28,
+    marginTop: 0,
     flexDirection: "row",
     alignItems: "center",
     width: "100%",

@@ -121,6 +121,17 @@ export function RootTabs() {
         headerShown: false,
         lazy: true,
         freezeOnBlur: true,
+        tabBarStyle: {
+          position: "absolute",
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: "transparent",
+          borderTopWidth: 0,
+          elevation: 0,
+          shadowOpacity: 0,
+        },
+        sceneStyle: { backgroundColor: "transparent" },
       }}
     >
       <Tab.Screen name="Home">
@@ -143,6 +154,10 @@ export function RootTabs() {
 
 const styles = StyleSheet.create({
   dockOuter: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
     paddingHorizontal: 14,
     paddingTop: 6,
     backgroundColor: "transparent",
