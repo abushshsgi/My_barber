@@ -18,6 +18,7 @@ import {
   type MorphAiGeneration,
 } from "../../api/ai";
 import { fetchHairstyles } from "../../api/hairstyles";
+import { morfMarkWhite, morfWordmarkWhite } from "../../branding/morf-logo";
 import {
   MorphSampleMarquee,
   type MorphSampleCard,
@@ -322,22 +323,32 @@ export function MorphHomeScreen({ navigation }: Props) {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.hero}>
-          <View style={styles.sparkWrap}>
-            <View style={styles.sparkIcon}>
-              <Ionicons name="sparkles" size={26} color="#050505" />
+          <View style={styles.brandBlock}>
+            <View style={styles.markWrap}>
+              <Image
+                source={morfMarkWhite}
+                style={styles.markLogo}
+                resizeMode="contain"
+              />
+              {showLimit != null ? (
+                <Pressable
+                  style={[
+                    styles.limitBadge,
+                    gate.remaining <=
+                      Math.max(1, Math.floor(gate.limit * 0.2)) &&
+                      styles.limitLow,
+                  ]}
+                  onPress={() => navigation.navigate("MorphPaywall")}
+                >
+                  <Text style={styles.limitText}>{showLimit}</Text>
+                </Pressable>
+              ) : null}
             </View>
-            {showLimit != null ? (
-              <Pressable
-                style={[
-                  styles.limitBadge,
-                  gate.remaining <= Math.max(1, Math.floor(gate.limit * 0.2)) &&
-                    styles.limitLow,
-                ]}
-                onPress={() => navigation.navigate("MorphPaywall")}
-              >
-                <Text style={styles.limitText}>{showLimit}</Text>
-              </Pressable>
-            ) : null}
+            <Image
+              source={morfWordmarkWhite}
+              style={styles.wordmarkLogo}
+              resizeMode="contain"
+            />
           </View>
 
           <Text style={[styles.subtitle, { fontSize: fs(15) }]}>
@@ -523,19 +534,28 @@ const styles = StyleSheet.create({
   },
   body: { paddingHorizontal: 20, gap: 8 },
   hero: { alignItems: "center", paddingTop: 18, gap: 16 },
-  sparkWrap: { position: "relative", marginBottom: 4 },
-  sparkIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 22,
-    backgroundColor: "#FFF",
+  brandBlock: {
+    alignItems: "center",
+    gap: 12,
+    marginBottom: 4,
+  },
+  markWrap: {
+    position: "relative",
     alignItems: "center",
     justifyContent: "center",
+  },
+  markLogo: {
+    width: 56,
+    height: 64,
+  },
+  wordmarkLogo: {
+    width: 168,
+    height: 36,
   },
   limitBadge: {
     position: "absolute",
     top: -4,
-    right: -4,
+    right: -10,
     minWidth: 28,
     height: 22,
     paddingHorizontal: 6,

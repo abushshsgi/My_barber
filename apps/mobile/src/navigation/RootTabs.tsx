@@ -3,8 +3,10 @@ import {
   BottomTabBarProps,
   createBottomTabNavigator,
 } from "@react-navigation/bottom-tabs";
+import { Image } from "expo-image";
 import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { morfMarkWhite } from "../branding/morf-logo";
 import { HomeScreen } from "../screens/HomeScreen";
 import { MapScreen } from "../screens/MapScreen";
 import { PlaceholderScreen } from "../screens/PlaceholderScreen";
@@ -70,7 +72,11 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
                 accessibilityLabel={tab.label}
               >
                 <View style={[styles.centerBtn, focused && styles.centerBtnOn]}>
-                  <Ionicons name={tab.icon} size={22} color="#FFFFFF" />
+                  <Image
+                    source={morfMarkWhite}
+                    style={styles.centerLogo}
+                    contentFit="contain"
+                  />
                 </View>
                 <Text style={[styles.label, focused ? styles.labelOn : styles.labelOff]}>
                   {tab.label}
@@ -217,6 +223,10 @@ const styles = StyleSheet.create({
   },
   centerBtnOn: {
     transform: [{ scale: 1.04 }],
+  },
+  centerLogo: {
+    width: 26,
+    height: 26,
   },
   label: {
     fontSize: 10,
