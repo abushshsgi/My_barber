@@ -1,5 +1,11 @@
 import { apiJson, apiList, qs } from "./client";
-import type { ApiBarberPublic, ApiNearbySalon, ApiSalonList } from "./types";
+import type {
+  ApiBarberPublic,
+  ApiNearbySalon,
+  ApiSalonDetail,
+  ApiSalonList,
+  ApiSalonStaff,
+} from "./types";
 
 export type ApiRegion = {
   value?: string;
@@ -69,4 +75,15 @@ export async function findBarbers(
 /** Hududlar — joylashuv pill. */
 export async function fetchRegions(): Promise<ApiRegion[]> {
   return apiList<ApiRegion>(`/api/v1/regions/`);
+}
+
+export async function fetchSalon(id: string | number): Promise<ApiSalonDetail> {
+  return apiJson<ApiSalonDetail>(`/api/v1/salons/${id}/`);
+}
+
+export async function fetchSalonStaff(
+  id: string | number,
+  params?: { audience?: string },
+): Promise<ApiSalonStaff[]> {
+  return apiList<ApiSalonStaff>(`/api/v1/salons/${id}/staff/${qs(params ?? {})}`);
 }

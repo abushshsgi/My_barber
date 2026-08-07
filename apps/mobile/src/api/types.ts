@@ -46,6 +46,110 @@ export type ApiBarberPublic = {
   gender?: "male" | "female" | "";
 };
 
+export type ApiSalonAmenity = {
+  code: string;
+  icon: string;
+  label: string;
+};
+
+export type ApiService = {
+  id: number;
+  barber: number | null;
+  barber_name?: string | null;
+  catalog_service: number | null;
+  name: string;
+  price: number;
+  duration_minutes: number;
+  image_url?: string;
+};
+
+export type ApiAvailabilitySlot = {
+  start: string;
+  end: string;
+};
+
+export type ApiBookingLine = {
+  id: number;
+  service: number | null;
+  barber_service: number | null;
+  service_name: string;
+  price: number;
+  duration_minutes: number;
+};
+
+export type ApiBooking = {
+  id: number;
+  customer: number;
+  customer_name: string;
+  customer_phone: string;
+  salon: number | null;
+  salon_name: string | null;
+  barber: number;
+  barber_name: string;
+  start_at: string;
+  end_at: string;
+  status: string;
+  total_price: number;
+  payment_method?: string;
+  lines: ApiBookingLine[];
+  order_number?: string | null;
+  check_in_code?: string | null;
+  created_at: string;
+};
+
+export type ApiSalonDetail = ApiSalonList & {
+  owner_id: number | null;
+  description: string;
+  phone: string;
+  languages: string[];
+  closed_weekdays: number[];
+  hours: { weekday: number; open_time: string; close_time: string }[];
+  images: { id: number; image: string; sort_order: number }[];
+  services: ApiService[];
+  amenities: ApiSalonAmenity[];
+  created_at: string;
+};
+
+export type ApiSalonStaff = {
+  id: number;
+  full_name: string;
+  avatar: string | null;
+  role: string;
+  experience_years: number;
+  is_bookable?: boolean;
+  gender?: "male" | "female" | "";
+};
+
+export type SalonDetail = {
+  id: string;
+  name: string;
+  categoryLabel: string;
+  address: string;
+  distanceKm: number;
+  rating: number;
+  reviewCount: number;
+  about: string;
+  priceFrom: number;
+  priceTo: number;
+  coverUrl: string | null;
+  portfolio: string[];
+  services: {
+    id: string;
+    name: string;
+    price: number;
+    duration: number;
+    barberName: string | null;
+  }[];
+  staff: {
+    id: string;
+    name: string;
+    avatarUrl: string | null;
+    role: string;
+  }[];
+  amenities: ApiSalonAmenity[];
+  hours: { weekday: number; openTime: string; closeTime: string }[];
+};
+
 export type HomeCategoryKey = "all" | "barber" | "beauty" | "nails";
 
 export type HomeListing = {

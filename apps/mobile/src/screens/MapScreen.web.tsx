@@ -11,12 +11,15 @@ import {
   useWindowDimensions,
 } from "react-native";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
+import { useNavigation } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { fetchSalonsNearby } from "../api/catalog";
 import type { ApiNearbySalon } from "../api/types";
 import { useAuth } from "../auth/AuthContext";
 import { DEFAULT_MAP_REGION } from "../components/onboarding/OnboardingMap";
 import { getGuestLocation } from "../lib/guest";
+import type { RootStackParamList } from "../navigation/RootNavigator";
 import { scaleFont } from "../theme/layout";
 import { colors } from "../theme/colors";
 
@@ -58,6 +61,7 @@ function toMapSalon(row: ApiNearbySalon): MapSalon | null {
 export function MapScreen() {
   const insets = useSafeAreaInsets();
   const tabBarH = useBottomTabBarHeight();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { width } = useWindowDimensions();
   const { user } = useAuth();
   const fs = (n: number) => scaleFont(n, width);
@@ -158,7 +162,13 @@ export function MapScreen() {
             return (
               <Pressable
                 style={[styles.card, active && styles.cardActive]}
-                onPress={() => setSelectedId(item.id)}
+                onPress={() => {
+                  setSelectedId(item.id);
+                  navigation.navigate("SalonDetail", {
+                    salonId: String(item.id),
+                    distanceKm: item.distanceKm,
+                  });
+                }}
               >
                 <Text style={[styles.cardName, { fontSize: fs(14) }]} numberOfLines={1}>
                   {item.name}

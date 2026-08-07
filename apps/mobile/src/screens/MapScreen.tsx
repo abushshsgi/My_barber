@@ -13,6 +13,8 @@ import {
 } from "react-native";
 import MapView, { Marker, PROVIDER_GOOGLE, type Region } from "react-native-maps";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
+import { useNavigation } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { fetchSalonsNearby } from "../api/catalog";
 import type { ApiNearbySalon } from "../api/types";
@@ -20,6 +22,7 @@ import { useAuth } from "../auth/AuthContext";
 import { LIGHT_MAP_STYLE } from "../components/onboarding/mapStyles";
 import { DEFAULT_MAP_REGION } from "../components/onboarding/OnboardingMap";
 import { getGuestLocation } from "../lib/guest";
+import type { RootStackParamList } from "../navigation/RootNavigator";
 import { scaleFont } from "../theme/layout";
 import { colors } from "../theme/colors";
 
@@ -58,6 +61,7 @@ function toMapSalon(row: ApiNearbySalon): MapSalon | null {
 export function MapScreen() {
   const insets = useSafeAreaInsets();
   const tabBarH = useBottomTabBarHeight();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { width, height } = useWindowDimensions();
   const { user } = useAuth();
   const mapRef = useRef<MapView | null>(null);
@@ -153,6 +157,16 @@ export function MapScreen() {
       setLocating(false);
     }
   }, [applyCenter]);
+
+  const onOpenSalon = useCallback(
+    (s: MapSalon) => {
+      navigation.navigate("SalonDetail", {
+        salonId: String(s.id),
+        distanceKm: s.distanceKm,
+      });
+    },
+    [navigation],
+  );
 
   const onSelectSalon = useCallback((s: MapSalon) => {
     setSelectedId(s.id);
@@ -272,7 +286,8 @@ export function MapScreen() {
               return (
                 <Pressable
                   style={[styles.card, active && styles.cardActive, { width: Math.min(width * 0.62, 220) }]}
-                  onPress={() => onSelectSalon(item)}
+                  onPress={() => onOpenSalon(item)}
+                  onLongPress={() => onSelectSalon(item)}
                 >
                   <Text style={[styles.cardName, { fontSize: fs(13) }]} numberOfLines={1}>
                     {item.name}

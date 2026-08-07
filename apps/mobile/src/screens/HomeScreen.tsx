@@ -9,6 +9,8 @@ import {
   Text,
   View,
 } from "react-native";
+import { useNavigation } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { HomeCategoryKey, HomeListing } from "../api/types";
 import { HomeBanner } from "../components/home/HomeBanner";
@@ -17,6 +19,7 @@ import { HomeHeader } from "../components/home/HomeHeader";
 import { ListingCard } from "../components/home/ListingCard";
 import { SectionHeader } from "../components/home/SectionHeader";
 import { useHomeCatalog } from "../hooks/useHomeCatalog";
+import type { RootStackParamList } from "../navigation/RootNavigator";
 import { CARD_GAP, H_PAD, useHomeLayout } from "../theme/layout";
 import { colors } from "../theme/colors";
 
@@ -29,10 +32,22 @@ const MemoCard = memo(ListingCard);
 
 export function HomeScreen({ onOpenMap, onOpenExplore }: Props) {
   const insets = useSafeAreaInsets();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { cardW, cardImageW, fs } = useHomeLayout();
   const { topSalons, topBarbers, locationLabel, loading, error, refresh } = useHomeCatalog();
   const [category, setCategory] = useState<HomeCategoryKey>("all");
   const [favorites, setFavorites] = useState<Record<string, boolean>>({});
+
+  const openListing = useCallback(
+    (item: HomeListing) => {
+      if (item.id.startsWith("barber-")) return;
+      navigation.navigate("SalonDetail", {
+        salonId: item.id,
+        distanceKm: item.distanceKm,
+      });
+    },
+    [navigation],
+  );
 
   const filteredSalons = useMemo(() => {
     if (category === "all") return topSalons;
@@ -56,9 +71,10 @@ export function HomeScreen({ onOpenMap, onOpenExplore }: Props) {
         imageWidth={cardImageW}
         favorited={Boolean(favorites[item.id])}
         onToggleFavorite={() => toggleFav(item.id)}
+        onPress={() => openListing(item)}
       />
     ),
-    [cardW, cardImageW, favorites, toggleFav],
+    [cardW, cardImageW, favorites, toggleFav, openListing],
   );
 
   const renderBarber = useCallback(
@@ -69,9 +85,10 @@ export function HomeScreen({ onOpenMap, onOpenExplore }: Props) {
         imageWidth={cardImageW}
         favorited={Boolean(favorites[item.id])}
         onToggleFavorite={() => toggleFav(item.id)}
+        onPress={() => openListing(item)}
       />
     ),
-    [cardW, cardImageW, favorites, toggleFav],
+    [cardW, cardImageW, favorites, toggleFav, openListing],
   );
 
   return (

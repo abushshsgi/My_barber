@@ -13,7 +13,7 @@ import {
   type GuestLocation,
 } from "./src/lib/guest";
 import { needsOnboarding } from "./src/lib/onboarding";
-import { RootTabs } from "./src/navigation/RootTabs";
+import { RootNavigator } from "./src/navigation/RootNavigator";
 import {
   GetStartedScreen,
   type LocationEntryMode,
@@ -129,7 +129,7 @@ function AppGate() {
     return <OnboardingScreen />;
   }
 
-  return <RootTabs />;
+  return <RootNavigator />;
 }
 
 export default function App() {
