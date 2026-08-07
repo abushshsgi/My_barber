@@ -13,10 +13,6 @@ import {
   useWindowDimensions,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import {
-  fetchMorphAiGenerations,
-  type MorphAiGeneration,
-} from "../../api/ai";
 import { fetchHairstyles } from "../../api/hairstyles";
 import { morfWordmarkWhite } from "../../branding/morf-logo";
 import {
@@ -44,16 +40,6 @@ const TOOLS: {
   { key: "studio", label: "AI Studio", icon: "sparkles-outline" },
 ];
 
-function prettyLookTitle(title: string) {
-  const raw = title.trim();
-  if (!raw) return "Try-on";
-  if (!/[-_]/.test(raw) && !/^(men|women)\b/i.test(raw)) return raw;
-  return raw
-    .replace(/^(men|women)[-_]/i, "")
-    .replace(/[-_]+/g, " ")
-    .replace(/\b\w/g, (ch) => ch.toUpperCase());
-}
-
 export function MorphHomeScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
@@ -64,7 +50,6 @@ export function MorphHomeScreen({ navigation }: Props) {
   const [busy, setBusy] = useState(false);
   const [samplesLoading, setSamplesLoading] = useState(true);
   const [samples, setSamples] = useState<MorphSampleCard[]>([]);
-  const [generations, setGenerations] = useState<MorphAiGeneration[]>([]);
 
   const loadSamples = useCallback(async () => {
     setSamplesLoading(true);
@@ -84,30 +69,9 @@ export function MorphHomeScreen({ navigation }: Props) {
     }
   }, []);
 
-  const loadGenerations = useCallback(async () => {
-    if (!isAuthenticated) {
-      setGenerations([]);
-      return;
-    }
-    try {
-      const rows = await fetchMorphAiGenerations();
-      setGenerations(rows);
-    } catch {
-      setGenerations([]);
-    }
-  }, [isAuthenticated]);
-
   useEffect(() => {
     void loadSamples();
   }, [loadSamples]);
-
-  useEffect(() => {
-    void loadGenerations();
-    const unsub = navigation.addListener("focus", () => {
-      void loadGenerations();
-    });
-    return unsub;
-  }, [loadGenerations, navigation]);
 
   const rowA = useMemo(
     () => samples.filter((_, i) => i % 2 === 0),
@@ -117,28 +81,6 @@ export function MorphHomeScreen({ navigation }: Props) {
     () => samples.filter((_, i) => i % 2 === 1),
     [samples],
   );
-
-  const myLooks = useMemo(() => {
-    const seen = new Set<string>();
-    const out: { id: string; title: string; image: string; styleId: string }[] =
-      [];
-    for (const g of generations) {
-      const image = g.after_url || g.before_url;
-      if (!image) continue;
-      const fingerprint = `${g.style_id}::${image.slice(0, 96)}`;
-      if (seen.has(fingerprint) || seen.has(String(g.id))) continue;
-      seen.add(fingerprint);
-      seen.add(String(g.id));
-      out.push({
-        id: String(g.id),
-        title: prettyLookTitle(g.title),
-        image,
-        styleId: g.style_id,
-      });
-      if (out.length >= 8) break;
-    }
-    return out;
-  }, [generations]);
 
   const startWithImage = useCallback(
     async (
@@ -256,52 +198,11 @@ export function MorphHomeScreen({ navigation }: Props) {
     [startWithImage],
   );
 
-  const onLookPress = useCallback(
-    (look: { styleId: string; title: string; image: string }) => {
-      if (look.styleId) {
-        Alert.alert(look.title, "Yana sinab ko'rasizmi?", [
-          {
-            text: "Kamera",
-            onPress: () =>
-              void startWithImage("camera", {
-                styleId: look.styleId,
-                title: look.title,
-              }),
-          },
-          {
-            text: "Galereya",
-            onPress: () =>
-              void startWithImage("gallery", {
-                styleId: look.styleId,
-                title: look.title,
-              }),
-          },
-          {
-            text: "Studio",
-            onPress: () => {
-              session.setTryOn(look.image, look.styleId, look.title);
-              void (async () => {
-                const ok = await gate.ensureStudio();
-                if (!ok) {
-                  navigation.navigate("MorphPaywall");
-                  return;
-                }
-                navigation.navigate("MorphStudio");
-              })();
-            },
-          },
-          { text: "Bekor", style: "cancel" },
-        ]);
-      }
-    },
-    [gate, navigation, session, startWithImage],
-  );
-
   const showLimit =
     gate.allowed && gate.limit > 0 ? gate.remaining : null;
 
   return (
-    <View style={[styles.root, { paddingTop: Math.max(insets.top, 10) }]}>
+    <View style={[styles.root, { paddingTop: Math.max(insets.top, 8) }]}>
       <View pointerEvents="none" style={styles.glow} />
 
       <View style={styles.header}>
@@ -312,40 +213,36 @@ export function MorphHomeScreen({ navigation }: Props) {
         >
           <Ionicons name="chevron-back" size={20} color="#FFF" />
         </Pressable>
-        <View style={{ flex: 1 }} />
+        <View style={styles.headerBrand}>
+          <Image
+            source={morfWordmarkWhite}
+            style={styles.wordmarkLogo}
+            resizeMode="contain"
+          />
+          {showLimit != null ? (
+            <Pressable
+              style={[
+                styles.limitBadge,
+                gate.remaining <= Math.max(1, Math.floor(gate.limit * 0.2)) &&
+                  styles.limitLow,
+              ]}
+              onPress={() => navigation.navigate("MorphPaywall")}
+            >
+              <Text style={styles.limitText}>{showLimit}</Text>
+            </Pressable>
+          ) : null}
+        </View>
+        <View style={styles.headerSpacer} />
       </View>
 
       <ScrollView
         contentContainerStyle={[
           styles.body,
-          { paddingBottom: insets.bottom + 28 },
+          { paddingBottom: insets.bottom + 100 },
         ]}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.hero}>
-          <View style={styles.brandBlock}>
-            <View style={styles.wordmarkWrap}>
-              <Image
-                source={morfWordmarkWhite}
-                style={styles.wordmarkLogo}
-                resizeMode="contain"
-              />
-              {showLimit != null ? (
-                <Pressable
-                  style={[
-                    styles.limitBadge,
-                    gate.remaining <=
-                      Math.max(1, Math.floor(gate.limit * 0.2)) &&
-                      styles.limitLow,
-                  ]}
-                  onPress={() => navigation.navigate("MorphPaywall")}
-                >
-                  <Text style={styles.limitText}>{showLimit}</Text>
-                </Pressable>
-              ) : null}
-            </View>
-          </View>
-
           <Text style={[styles.subtitle, { fontSize: fs(15) }]}>
             Selfie yuklang — yuzingizga mos uslubni bir zumda ko'ring, saqlang va
             bron qiling.
@@ -389,48 +286,6 @@ export function MorphHomeScreen({ navigation }: Props) {
               </Text>
             </Pressable>
           ))}
-        </View>
-
-        <View style={styles.section}>
-          <View style={styles.sectionHead}>
-            <Text style={styles.sectionTitle}>Saqlangan va yaratilgan</Text>
-            {myLooks.length > 0 ? (
-              <Pressable onPress={() => navigation.navigate("MorphHistory")}>
-                <Text style={styles.sectionLink}>Hammasi</Text>
-              </Pressable>
-            ) : null}
-          </View>
-
-          {myLooks.length > 0 ? (
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.looksRow}
-            >
-              {myLooks.map((look) => (
-                <Pressable
-                  key={look.id}
-                  style={styles.look}
-                  onPress={() => onLookPress(look)}
-                >
-                  <Image source={{ uri: look.image }} style={styles.lookImg} />
-                </Pressable>
-              ))}
-            </ScrollView>
-          ) : (
-            <View style={styles.emptyHistory}>
-              <View style={styles.emptyIcon}>
-                <Ionicons name="time-outline" size={22} color="rgba(255,255,255,0.55)" />
-              </View>
-              <Text style={styles.emptyTitle}>Hali saqlangan look yo'q</Text>
-              <Text style={styles.emptySub}>
-                Birinchi try-on qiling — natijalar shu yerda paydo bo'ladi.
-              </Text>
-              <Pressable style={styles.emptyCta} onPress={onNewTryOn} disabled={busy}>
-                <Text style={styles.emptyCtaText}>Yangi try-on</Text>
-              </Pressable>
-            </View>
-          )}
         </View>
 
         <View style={styles.careRow}>
@@ -515,7 +370,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 16,
-    paddingBottom: 0,
+    paddingBottom: 4,
+    minHeight: 44,
   },
   iconBtn: {
     width: 40,
@@ -526,26 +382,23 @@ const styles = StyleSheet.create({
     borderColor: "rgba(255,255,255,0.12)",
     alignItems: "center",
     justifyContent: "center",
+    zIndex: 2,
   },
-  body: { paddingHorizontal: 20, gap: 8 },
-  hero: { alignItems: "center", paddingTop: 2, gap: 14 },
-  brandBlock: {
-    alignItems: "center",
-    marginBottom: 0,
-  },
-  wordmarkWrap: {
-    position: "relative",
+  headerBrand: {
+    flex: 1,
     alignItems: "center",
     justifyContent: "center",
+    position: "relative",
   },
+  headerSpacer: { width: 40 },
   wordmarkLogo: {
-    width: 188,
-    height: 40,
+    width: 168,
+    height: 34,
   },
   limitBadge: {
     position: "absolute",
-    top: -6,
-    right: -14,
+    top: -4,
+    right: "18%",
     minWidth: 28,
     height: 22,
     paddingHorizontal: 6,
@@ -558,6 +411,12 @@ const styles = StyleSheet.create({
   },
   limitLow: { backgroundColor: "#CA8A04" },
   limitText: { fontSize: 10, fontWeight: "800", color: "#050505" },
+  body: { paddingHorizontal: 20, gap: 8 },
+  hero: {
+    alignItems: "center",
+    paddingTop: 10,
+    gap: 0,
+  },
   subtitle: {
     maxWidth: 288,
     textAlign: "center",
@@ -565,6 +424,7 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   cta: {
+    marginTop: 28,
     flexDirection: "row",
     alignItems: "center",
     width: "100%",
@@ -640,61 +500,8 @@ const styles = StyleSheet.create({
     color: "rgba(255,255,255,0.4)",
   },
   exploreLink: { flexDirection: "row", alignItems: "center", gap: 2 },
-  looksRow: { gap: 10, paddingRight: 8 },
-  look: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    overflow: "hidden",
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(255,255,255,0.15)",
-  },
-  lookImg: { width: "100%", height: "100%" },
-  emptyHistory: {
-    alignItems: "center",
-    paddingVertical: 22,
-    paddingHorizontal: 16,
-    borderRadius: 20,
-    backgroundColor: "rgba(255,255,255,0.04)",
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(255,255,255,0.08)",
-    gap: 8,
-  },
-  emptyIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: "rgba(255,255,255,0.06)",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 4,
-  },
-  emptyTitle: {
-    color: "#FFF",
-    fontWeight: "700",
-    fontSize: 14,
-  },
-  emptySub: {
-    textAlign: "center",
-    color: "rgba(255,255,255,0.45)",
-    fontSize: 12,
-    lineHeight: 17,
-    maxWidth: 260,
-  },
-  emptyCta: {
-    marginTop: 8,
-    backgroundColor: "#FFF",
-    borderRadius: 999,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-  },
-  emptyCtaText: {
-    color: "#050505",
-    fontWeight: "800",
-    fontSize: 12,
-  },
   careRow: {
-    marginTop: 16,
+    marginTop: 20,
     flexDirection: "row",
     gap: 10,
   },

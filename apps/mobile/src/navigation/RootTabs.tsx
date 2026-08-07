@@ -145,7 +145,7 @@ const styles = StyleSheet.create({
   dockOuter: {
     paddingHorizontal: 14,
     paddingTop: 6,
-    backgroundColor: colors.bg,
+    backgroundColor: "transparent",
   },
   dock: {
     flexDirection: "row",
