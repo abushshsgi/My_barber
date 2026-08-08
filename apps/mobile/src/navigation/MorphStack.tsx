@@ -1,5 +1,4 @@
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { MorphSessionProvider } from "../lib/morph-session";
 import { MorphHistoryScreen } from "../screens/morph/MorphHistoryScreen";
 import { MorphHomeScreen } from "../screens/morph/MorphHomeScreen";
 import { MorphPaywallScreen } from "../screens/morph/MorphPaywallScreen";
@@ -18,23 +17,22 @@ export type MorphStackParamList = {
 
 const Stack = createNativeStackNavigator<MorphStackParamList>();
 
+/** Try-on hub tab. MorphSessionProvider RootTabs da. */
 export function MorphStack() {
   return (
-    <MorphSessionProvider>
-      <Stack.Navigator
-        screenOptions={{
-          headerShown: false,
-          animation: "slide_from_right",
-          contentStyle: { backgroundColor: "#0A0A0A" },
-        }}
-      >
-        <Stack.Screen name="MorphHome" component={MorphHomeScreen} />
-        <Stack.Screen name="MorphTryOn" component={MorphTryOnScreen} />
-        <Stack.Screen name="MorphResults" component={MorphResultsScreen} />
-        <Stack.Screen name="MorphHistory" component={MorphHistoryScreen} />
-        <Stack.Screen name="MorphStudio" component={MorphStudioScreen} />
-        <Stack.Screen name="MorphPaywall" component={MorphPaywallScreen} />
-      </Stack.Navigator>
-    </MorphSessionProvider>
+    <Stack.Navigator
+      screenOptions={{
+        headerShown: false,
+        animation: "slide_from_right",
+        contentStyle: { backgroundColor: "#0A0A0A" },
+      }}
+    >
+      <Stack.Screen name="MorphHome" component={MorphHomeScreen} />
+      <Stack.Screen name="MorphTryOn" component={MorphTryOnScreen} />
+      <Stack.Screen name="MorphResults" component={MorphResultsScreen} />
+      <Stack.Screen name="MorphHistory" component={MorphHistoryScreen} />
+      <Stack.Screen name="MorphStudio" component={MorphStudioScreen} />
+      <Stack.Screen name="MorphPaywall" component={MorphPaywallScreen} />
+    </Stack.Navigator>
   );
 }

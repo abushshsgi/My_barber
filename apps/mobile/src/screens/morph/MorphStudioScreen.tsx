@@ -17,7 +17,6 @@ import {
   saveMorphAiGeneration,
   type MorphStudioCategory,
 } from "../../api/ai";
-import { useHideTabBar } from "../../hooks/useHideTabBar";
 import { useMorphLimitGate } from "../../hooks/useMorphLimitGate";
 import { pickSelfieFromCamera, pickSelfieFromGallery } from "../../lib/selfie";
 import { useMorphSession } from "../../lib/morph-session";
@@ -64,7 +63,6 @@ const FALLBACK_CATEGORIES: MorphStudioCategory[] = [
 ];
 
 export function MorphStudioScreen({ navigation }: Props) {
-  useHideTabBar();
   const insets = useSafeAreaInsets();
   const session = useMorphSession();
   const gate = useMorphLimitGate();
