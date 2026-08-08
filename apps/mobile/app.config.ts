@@ -60,7 +60,9 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         "expo-image-picker",
         {
           photosPermission:
-            "To'ldirish chekini yuklash uchun galereyaga ruxsat kerak.",
+            "Try-on va chek yuklash uchun galereyaga ruxsat kerak.",
+          cameraPermission:
+            "Yuz skani uchun kameraga ruxsat kerak.",
         },
       ],
       [

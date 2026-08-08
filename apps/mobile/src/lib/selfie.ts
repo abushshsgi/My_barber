@@ -7,47 +7,12 @@ export function toDataUrl(base64: string, mime = "image/jpeg"): string {
   return `data:${mime};base64,${base64}`;
 }
 
-export async function pickSelfieFromGallery(): Promise<string | null> {
-  const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-  if (!perm.granted) {
-    Alert.alert("Ruxsat", "Galereyaga ruxsat bering.");
-    return null;
+function notify(title: string, message: string) {
+  if (Platform.OS === "web" && typeof window !== "undefined") {
+    window.alert(`${title}\n${message}`);
+    return;
   }
-  const res = await ImagePicker.launchImageLibraryAsync({
-    mediaTypes: ["images"],
-    quality: 0.72,
-    base64: true,
-    allowsEditing: true,
-    aspect: [3, 4],
-  });
-  if (res.canceled || !res.assets[0]?.base64) return null;
-  const asset = res.assets[0];
-  const mime = asset.mimeType || "image/jpeg";
-  return toDataUrl(asset.base64!, mime);
-}
-
-export async function pickSelfieFromCamera(): Promise<string | null> {
-  const perm = await ImagePicker.requestCameraPermissionsAsync();
-  if (!perm.granted) {
-    Alert.alert("Ruxsat", "Kameraga ruxsat bering.");
-    return null;
-  }
-  const res = await ImagePicker.launchCameraAsync({
-    quality: 0.72,
-    base64: true,
-    allowsEditing: true,
-    aspect: [3, 4],
-    cameraType: ImagePicker.CameraType.front,
-  });
-  if (res.canceled || !res.assets[0]?.base64) {
-    // Web ba'zan base64 bermaydi — uri dan o'qiymiz.
-    if (!res.canceled && res.assets[0]?.uri && Platform.OS === "web") {
-      return fetchUriAsDataUrl(res.assets[0].uri);
-    }
-    return null;
-  }
-  const asset = res.assets[0];
-  return toDataUrl(asset.base64!, asset.mimeType || "image/jpeg");
+  Alert.alert(title, message);
 }
 
 async function fetchUriAsDataUrl(uri: string): Promise<string | null> {
@@ -62,6 +27,120 @@ async function fetchUriAsDataUrl(uri: string): Promise<string | null> {
       reader.readAsDataURL(blob);
     });
   } catch {
+    return null;
+  }
+}
+
+async function assetToDataUrl(
+  asset: ImagePicker.ImagePickerAsset,
+): Promise<string | null> {
+  if (asset.base64) {
+    return toDataUrl(asset.base64, asset.mimeType || "image/jpeg");
+  }
+  if (asset.uri) {
+    return fetchUriAsDataUrl(asset.uri);
+  }
+  return null;
+}
+
+/** Webda allowsEditing ko‘pincha picker’ni buzadi. */
+function pickerExtras() {
+  if (Platform.OS === "web") {
+    return {
+      quality: 0.72 as const,
+      base64: true,
+      allowsEditing: false,
+    };
+  }
+  return {
+    quality: 0.72 as const,
+    base64: true,
+    allowsEditing: true,
+    aspect: [3, 4] as [number, number],
+  };
+}
+
+export async function pickSelfieFromGallery(): Promise<string | null> {
+  try {
+    if (Platform.OS !== "web") {
+      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!perm.granted) {
+        notify("Ruxsat", "Galereyaga ruxsat bering.");
+        return null;
+      }
+    }
+
+    const res = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      ...pickerExtras(),
+    });
+
+    if (res.canceled || !res.assets?.[0]) return null;
+
+    const dataUrl = await assetToDataUrl(res.assets[0]);
+    if (!dataUrl) {
+      notify("Xato", "Rasmni o‘qib bo‘lmadi. Boshqa fayl tanlang.");
+      return null;
+    }
+    return dataUrl;
+  } catch (err) {
+    notify(
+      "Galereya",
+      err instanceof Error ? err.message : "Rasm tanlashda xatolik.",
+    );
+    return null;
+  }
+}
+
+export async function pickSelfieFromCamera(): Promise<string | null> {
+  try {
+    if (Platform.OS === "web") {
+      // Brauzerda kamera capture — ruxsat so‘raladi; muvaffaqiyatsiz bo‘lsa galereya.
+      try {
+        const res = await ImagePicker.launchCameraAsync({
+          mediaTypes: ["images"],
+          ...pickerExtras(),
+          cameraType: ImagePicker.CameraType.front,
+        });
+        if (!res.canceled && res.assets?.[0]) {
+          const dataUrl = await assetToDataUrl(res.assets[0]);
+          if (dataUrl) return dataUrl;
+        }
+        if (res.canceled) return null;
+      } catch {
+        /* fall through to gallery */
+      }
+      notify(
+        "Kamera",
+        "Brauzer kamerani ocholmadi. Galereyadan selfie tanlang.",
+      );
+      return pickSelfieFromGallery();
+    }
+
+    const perm = await ImagePicker.requestCameraPermissionsAsync();
+    if (!perm.granted) {
+      notify("Ruxsat", "Kameraga ruxsat bering.");
+      return null;
+    }
+
+    const res = await ImagePicker.launchCameraAsync({
+      ...pickerExtras(),
+      cameraType: ImagePicker.CameraType.front,
+    });
+
+    if (res.canceled || !res.assets?.[0]) return null;
+
+    const dataUrl = await assetToDataUrl(res.assets[0]);
+    if (!dataUrl) {
+      notify("Xato", "Selfie o‘qilmadi. Qayta urinib ko‘ring.");
+      return null;
+    }
+    return dataUrl;
+  } catch (err) {
+    notify(
+      "Kamera",
+      err instanceof Error ? err.message : "Kamerani ochib bo‘lmadi.",
+    );
     return null;
   }
 }

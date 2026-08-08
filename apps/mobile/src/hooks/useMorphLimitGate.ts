@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import { Alert } from "react-native";
+import { Alert, Platform } from "react-native";
 import { MorphPlanLimitError } from "../api/ai";
 import { useAuth } from "../auth/AuthContext";
 import { useSubscriptions } from "./useSubscriptions";
@@ -17,7 +17,11 @@ export function useMorphLimitGate() {
   const ensure = useCallback(
     async (kind: GateKind): Promise<boolean> => {
       if (!isAuthenticated) {
-        Alert.alert("Kirish kerak", "Morph AI uchun avval akkauntga kiring.");
+        if (Platform.OS === "web" && typeof window !== "undefined") {
+          window.alert("Kirish kerak\nMorph AI uchun avval akkauntga kiring.");
+        } else {
+          Alert.alert("Kirish kerak", "Morph AI uchun avval akkauntga kiring.");
+        }
         return false;
       }
       await refresh();
@@ -30,8 +34,16 @@ export function useMorphLimitGate() {
         /* keep me */
       }
 
+      const show = (title: string, message: string) => {
+        if (Platform.OS === "web" && typeof window !== "undefined") {
+          window.alert(`${title}\n${message}`);
+        } else {
+          Alert.alert(title, message);
+        }
+      };
+
       if (!latest?.has_active || latest.access?.morph_ai_allowed === false) {
-        Alert.alert(
+        show(
           "Obuna kerak",
           latest?.access?.message ||
             "Morph AI faqat obuna bilan ishlaydi. Tarif tanlang.",
@@ -42,7 +54,7 @@ export function useMorphLimitGate() {
       const usage = latest.usage;
       if (kind === "tryon" || kind === "access") {
         if ((usage?.morph_ai_remaining ?? 0) <= 0 && (usage?.morph_ai_limit ?? 0) > 0) {
-          Alert.alert(
+          show(
             "Limit tugadi",
             `Oylik Morph AI limiti tugagan (${usage.morph_ai_used}/${usage.morph_ai_limit}). Plus yoki Pro ga o'ting.`,
           );
@@ -51,14 +63,11 @@ export function useMorphLimitGate() {
       }
       if (kind === "studio") {
         if ((usage?.morph_studio_limit ?? 0) <= 0) {
-          Alert.alert(
-            "Studio yo'q",
-            "Studio Plus yoki Pro obunasida. Tarifni yangilang.",
-          );
+          show("Studio yo'q", "Studio Plus yoki Pro obunasida. Tarifni yangilang.");
           return false;
         }
         if ((usage?.morph_studio_remaining ?? 0) <= 0) {
-          Alert.alert(
+          show(
             "Studio limiti",
             `Studio oylik limiti tugagan (${usage.morph_studio_used}/${usage.morph_studio_limit}).`,
           );
