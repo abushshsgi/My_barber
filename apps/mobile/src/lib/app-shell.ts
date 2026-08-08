@@ -15,7 +15,6 @@ const MORPH_TABS = new Set([
   "MorphCare",
   "MorphIngredient",
   "MorphTryOn",
-  "MorphStudio",
   "Profile",
 ]);
 

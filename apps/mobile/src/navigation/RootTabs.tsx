@@ -17,7 +17,6 @@ import { MorphPlaceholderScreen } from "../screens/morph/MorphPlaceholderScreen"
 import { PlaceholderScreen } from "../screens/PlaceholderScreen";
 import { colors } from "../theme/colors";
 import { MorphStack } from "./MorphStack";
-import { MorphStudioStack } from "./MorphStudioStack";
 import { ProfileStack } from "./ProfileStack";
 
 export type RootTabParamList = {
@@ -29,7 +28,6 @@ export type RootTabParamList = {
   MorphCare: undefined;
   MorphIngredient: undefined;
   MorphTryOn: undefined;
-  MorphStudio: undefined;
 };
 
 const Tab = createBottomTabNavigator<RootTabParamList>();
@@ -59,7 +57,6 @@ const MORPH_LEFT: TabDef[] = [
 
 const MORPH_RIGHT: TabDef[] = [
   { name: "MorphTryOn", label: "Try-on", icon: "sparkles-outline", iconOn: "sparkles" },
-  { name: "MorphStudio", label: "Studio", icon: "color-palette-outline", iconOn: "color-palette" },
   { name: "Profile", label: "Profil", icon: "person-outline", iconOn: "person" },
 ];
 
@@ -80,8 +77,7 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
       activeName === "MorphChat" ||
       activeName === "MorphCare" ||
       activeName === "MorphIngredient" ||
-      activeName === "MorphTryOn" ||
-      activeName === "MorphStudio";
+      activeName === "MorphTryOn";
     if (isMorphTab && shell !== "morph") {
       setShell("morph");
       rememberTab("morph", activeName);
@@ -244,7 +240,6 @@ function RootTabsInner() {
           )}
         </Tab.Screen>
         <Tab.Screen name="MorphTryOn" component={MorphStack} />
-        <Tab.Screen name="MorphStudio" component={MorphStudioStack} />
       </Tab.Navigator>
     </MorphSessionProvider>
   );
