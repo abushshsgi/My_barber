@@ -26,15 +26,13 @@ import type { MorphStackParamList } from "../../navigation/MorphStack";
 
 type Props = NativeStackScreenProps<MorphStackParamList, "MorphHome">;
 
-type ToolKey = "camera" | "gallery" | "studio";
+type ToolKey = "studio";
 
 const TOOLS: {
   key: ToolKey;
   label: string;
   icon: keyof typeof Ionicons.glyphMap;
 }[] = [
-  { key: "camera", label: "Kameradan olish", icon: "camera-outline" },
-  { key: "gallery", label: "Galereyadan tanlash", icon: "images-outline" },
   { key: "studio", label: "AI Studio", icon: "sparkles-outline" },
 ];
 
@@ -145,29 +143,18 @@ export function MorphHomeScreen({ navigation }: Props) {
     [gate, isAuthenticated, navigation],
   );
 
-  const onTool = useCallback(
-    async (key: ToolKey) => {
-      if (key === "camera") {
-        void startWithImage("camera");
-        return;
-      }
-      if (key === "gallery") {
-        void startWithImage("gallery");
-        return;
-      }
-      if (!isAuthenticated) {
-        navigation.getParent()?.navigate("Profile" as never);
-        return;
-      }
-      const ok = await gate.ensureStudio();
-      if (!ok) {
-        navigation.navigate("MorphPaywall");
-        return;
-      }
-      navigation.navigate("MorphStudio");
-    },
-    [gate, isAuthenticated, navigation, startWithImage],
-  );
+  const onTool = useCallback(async () => {
+    if (!isAuthenticated) {
+      navigation.getParent()?.navigate("Profile" as never);
+      return;
+    }
+    const ok = await gate.ensureStudio();
+    if (!ok) {
+      navigation.navigate("MorphPaywall");
+      return;
+    }
+    navigation.navigate("MorphStudio");
+  }, [gate, isAuthenticated, navigation]);
 
   const onSamplePress = useCallback(
     (item: MorphSampleCard) => {
@@ -202,13 +189,6 @@ export function MorphHomeScreen({ navigation }: Props) {
       <View pointerEvents="none" style={styles.glow} />
 
       <View style={styles.header}>
-        <Pressable
-          style={styles.iconBtn}
-          onPress={() => navigation.getParent()?.navigate("Home" as never)}
-          accessibilityLabel="Orqaga"
-        >
-          <Ionicons name="chevron-back" size={20} color="#FFF" />
-        </Pressable>
         <View style={styles.headerBrand}>
           <Image
             source={morfWordmarkWhite}
@@ -228,7 +208,6 @@ export function MorphHomeScreen({ navigation }: Props) {
             </Pressable>
           ) : null}
         </View>
-        <View style={styles.headerSpacer} />
       </View>
 
       <ScrollView
@@ -267,7 +246,7 @@ export function MorphHomeScreen({ navigation }: Props) {
             <Pressable
               key={tool.key}
               style={styles.tool}
-              onPress={() => void onTool(tool.key)}
+              onPress={() => void onTool()}
             >
               <View style={styles.toolIcon}>
                 <Ionicons name={tool.icon} size={20} color="#FFF" />
@@ -358,30 +337,17 @@ const styles = StyleSheet.create({
     backgroundColor: "transparent",
   },
   header: {
-    flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
     paddingHorizontal: 16,
     paddingBottom: 4,
     minHeight: 44,
   },
-  iconBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "rgba(255,255,255,0.06)",
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(255,255,255,0.12)",
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: 2,
-  },
   headerBrand: {
-    flex: 1,
     alignItems: "center",
     justifyContent: "center",
     position: "relative",
   },
-  headerSpacer: { width: 40 },
   wordmarkLogo: {
     width: 168,
     height: 34,
@@ -389,7 +355,7 @@ const styles = StyleSheet.create({
   limitBadge: {
     position: "absolute",
     top: -4,
-    right: "18%",
+    right: -18,
     minWidth: 28,
     height: 22,
     paddingHorizontal: 6,
@@ -439,15 +405,15 @@ const styles = StyleSheet.create({
   tools: {
     marginTop: 20,
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent: "center",
     gap: 8,
   },
   tool: {
-    flex: 1,
     alignItems: "center",
     gap: 8,
     paddingVertical: 8,
-    paddingHorizontal: 4,
+    paddingHorizontal: 16,
+    minWidth: 96,
   },
   toolIcon: {
     width: 56,
