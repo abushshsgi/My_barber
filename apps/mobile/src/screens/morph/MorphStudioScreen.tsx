@@ -1,5 +1,4 @@
 import { Ionicons } from "@expo/vector-icons";
-import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -21,9 +20,15 @@ import { useHideTabBar } from "../../hooks/useHideTabBar";
 import { useMorphLimitGate } from "../../hooks/useMorphLimitGate";
 import { pickSelfieFromCamera, pickSelfieFromGallery } from "../../lib/selfie";
 import { useMorphSession } from "../../lib/morph-session";
-import type { MorphStackParamList } from "../../navigation/MorphStack";
 
-type Props = NativeStackScreenProps<MorphStackParamList, "MorphStudio">;
+type StudioNav = {
+  navigate: (name: "MorphPaywall", params?: undefined) => void;
+  goBack: () => void;
+};
+
+type Props = {
+  navigation: StudioNav;
+};
 
 const FALLBACK_CATEGORIES: MorphStudioCategory[] = [
   {

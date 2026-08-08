@@ -7,6 +7,8 @@ type MorphSession = {
   tryOnPreview: string | null;
   tryOnStyleId: string | null;
   tryOnTitle: string | null;
+  /** styleId → generated preview (web tryOnByStyle kabi). */
+  tryOnByStyle: Record<string, string>;
   preferredStyleId: string | null;
   preferredStyleTitle: string | null;
   setSelfie: (uri: string | null) => void;
@@ -24,6 +26,7 @@ export function MorphSessionProvider({ children }: { children: ReactNode }) {
   const [tryOnPreview, setTryOnPreview] = useState<string | null>(null);
   const [tryOnStyleId, setTryOnStyleId] = useState<string | null>(null);
   const [tryOnTitle, setTryOnTitle] = useState<string | null>(null);
+  const [tryOnByStyle, setTryOnByStyle] = useState<Record<string, string>>({});
   const [preferredStyleId, setPreferredStyleId] = useState<string | null>(null);
   const [preferredStyleTitle, setPreferredStyleTitle] = useState<string | null>(null);
 
@@ -34,6 +37,7 @@ export function MorphSessionProvider({ children }: { children: ReactNode }) {
       tryOnPreview,
       tryOnStyleId,
       tryOnTitle,
+      tryOnByStyle,
       preferredStyleId,
       preferredStyleTitle,
       setSelfie,
@@ -42,6 +46,9 @@ export function MorphSessionProvider({ children }: { children: ReactNode }) {
         setTryOnPreview(preview);
         setTryOnStyleId(styleId);
         setTryOnTitle(title);
+        if (preview && styleId) {
+          setTryOnByStyle((prev) => ({ ...prev, [styleId]: preview }));
+        }
       },
       setPreferredStyle: (styleId, title = null) => {
         setPreferredStyleId(styleId);
@@ -53,6 +60,7 @@ export function MorphSessionProvider({ children }: { children: ReactNode }) {
         setTryOnPreview(null);
         setTryOnStyleId(null);
         setTryOnTitle(null);
+        setTryOnByStyle({});
         setPreferredStyleId(null);
         setPreferredStyleTitle(null);
       },
@@ -63,6 +71,7 @@ export function MorphSessionProvider({ children }: { children: ReactNode }) {
       tryOnPreview,
       tryOnStyleId,
       tryOnTitle,
+      tryOnByStyle,
       preferredStyleId,
       preferredStyleTitle,
     ],

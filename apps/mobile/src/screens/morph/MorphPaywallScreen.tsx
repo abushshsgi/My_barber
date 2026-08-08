@@ -1,4 +1,3 @@
-import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { NativeHeader } from "../../components/ui/NativeHeader";
 import { useHideTabBar } from "../../hooks/useHideTabBar";
@@ -8,10 +7,13 @@ import {
   isPlanUpgrade,
   upgradeCtaLabel,
 } from "../../api/subscriptions";
-import type { MorphStackParamList } from "../../navigation/MorphStack";
 import { colors } from "../../theme/colors";
 
-type Props = NativeStackScreenProps<MorphStackParamList, "MorphPaywall">;
+type Props = {
+  navigation: {
+    goBack: () => void;
+  };
+};
 
 export function MorphPaywallScreen({ navigation }: Props) {
   useHideTabBar();

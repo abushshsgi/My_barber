@@ -12,9 +12,8 @@ export const APP_SHELL_DEFAULT_MORPH = "MorphTryOn" as const;
 const MYSALOON_TABS = new Set(["Home", "Map", "Explore", "Profile"]);
 const MORPH_TABS = new Set([
   "MorphChat",
-  "MorphCare",
-  "MorphIngredient",
   "MorphTryOn",
+  "MorphStudio",
   "Profile",
 ]);
 

@@ -3,8 +3,6 @@ import { useEffect, useState } from "react";
 import {
   Bot,
   Compass,
-  Droplets,
-  FlaskConical,
   Home,
   Map,
   Sparkles,
@@ -32,8 +30,6 @@ const mysaloonRightTabs = [
 
 const morphLeftTabs = [
   { to: "/ai-style/chat", icon: Bot, key: "morphChat" },
-  { to: "/ai-style/care", icon: Droplets, key: "morphCare" },
-  { to: "/ai-style/care/ingredient", icon: FlaskConical, key: "morphIngredient" },
 ] as const;
 
 const morphRightTabs = [

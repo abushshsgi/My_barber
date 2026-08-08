@@ -4,8 +4,6 @@ import {
   ArrowUpRight,
   Camera,
   Clock3,
-  Droplets,
-  FlaskConical,
   Images,
   Sparkles,
   UserRound,
@@ -213,20 +211,6 @@ export function MorphAiHome({
     })();
   };
 
-  const openCare = () => {
-    void (async () => {
-      if (ensureMorphAccess && !(await ensureMorphAccess())) return;
-      void navigate({ to: "/ai-style/care" });
-    })();
-  };
-
-  const openIngredientScan = () => {
-    void (async () => {
-      if (ensureMorphAccess && !(await ensureMorphAccess())) return;
-      void navigate({ to: "/ai-style/care/ingredient" });
-    })();
-  };
-
   const toolActions = [
     {
       key: "camera",
@@ -245,18 +229,6 @@ export function MorphAiHome({
       label: t("aiStylePage.home.tools.studio"),
       icon: Wand2,
       onClick: openStudio,
-    },
-    {
-      key: "care",
-      label: t("aiStylePage.home.tools.care"),
-      icon: Droplets,
-      onClick: openCare,
-    },
-    {
-      key: "ingredient",
-      label: t("aiStylePage.home.tools.ingredient", { defaultValue: "Tarkib" }),
-      icon: FlaskConical,
-      onClick: openIngredientScan,
     },
   ] as const;
 

@@ -2,7 +2,6 @@ import { Ionicons } from "@expo/vector-icons";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  Alert,
   Image,
   Pressable,
   ScrollView,
@@ -85,25 +84,6 @@ export function MorphHomeScreen({ navigation }: Props) {
     }
     navigation.navigate("MorphTryOn");
   }, [gate, isAuthenticated, navigation]);
-
-  const openCareOrIngredient = useCallback(
-    async (kind: "care" | "ingredient") => {
-      if (!isAuthenticated) {
-        navigation.getParent()?.navigate("Profile" as never);
-        return;
-      }
-      const ok = await gate.ensureAccess();
-      if (!ok) {
-        navigation.navigate("MorphPaywall");
-        return;
-      }
-      Alert.alert(
-        kind === "care" ? "Parvarish" : "Tarkib",
-        "Bu bo'lim tez orada mobil ilovada ochiladi. Hozir web versiyadan foydalanishingiz mumkin.",
-      );
-    },
-    [gate, isAuthenticated, navigation],
-  );
 
   const onTool = useCallback(async () => {
     if (!isAuthenticated) {
@@ -205,50 +185,6 @@ export function MorphHomeScreen({ navigation }: Props) {
               </Text>
             </Pressable>
           ))}
-        </View>
-
-        <View style={styles.careRow}>
-          <Pressable
-            style={styles.careCard}
-            onPress={() => void openCareOrIngredient("care")}
-          >
-            <View style={styles.careIcon}>
-              <Ionicons name="water-outline" size={18} color="#FFF" />
-            </View>
-            <View style={styles.careCopy}>
-              <Text style={styles.careTitle}>Parvarish</Text>
-              <Text style={styles.careSub} numberOfLines={2}>
-                Sochingiz uchun shaxsiy tavsiyalar
-              </Text>
-            </View>
-            <Ionicons
-              name="arrow-up"
-              size={14}
-              color="rgba(255,255,255,0.35)"
-              style={styles.arrowRot}
-            />
-          </Pressable>
-
-          <Pressable
-            style={styles.careCard}
-            onPress={() => void openCareOrIngredient("ingredient")}
-          >
-            <View style={styles.careIcon}>
-              <Ionicons name="flask-outline" size={18} color="#FFF" />
-            </View>
-            <View style={styles.careCopy}>
-              <Text style={styles.careTitle}>Tarkib</Text>
-              <Text style={styles.careSub} numberOfLines={2}>
-                Mahsulot tarkibini skan qiling
-              </Text>
-            </View>
-            <Ionicons
-              name="arrow-up"
-              size={14}
-              color="rgba(255,255,255,0.35)"
-              style={styles.arrowRot}
-            />
-          </Pressable>
         </View>
 
         <View style={styles.section}>
@@ -399,40 +335,4 @@ const styles = StyleSheet.create({
     color: "rgba(255,255,255,0.4)",
   },
   exploreLink: { flexDirection: "row", alignItems: "center", gap: 2 },
-  careRow: {
-    marginTop: 20,
-    flexDirection: "row",
-    gap: 10,
-  },
-  careCard: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    paddingVertical: 14,
-    paddingHorizontal: 12,
-    borderRadius: 18,
-    backgroundColor: "rgba(255,255,255,0.05)",
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(255,255,255,0.1)",
-  },
-  careIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 12,
-    backgroundColor: "rgba(255,255,255,0.08)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  careCopy: { flex: 1, gap: 2 },
-  careTitle: {
-    color: "#FFF",
-    fontWeight: "700",
-    fontSize: 13,
-  },
-  careSub: {
-    color: "rgba(255,255,255,0.4)",
-    fontSize: 10,
-    lineHeight: 13,
-  },
 });

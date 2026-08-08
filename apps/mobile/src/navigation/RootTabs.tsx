@@ -17,6 +17,7 @@ import { MorphPlaceholderScreen } from "../screens/morph/MorphPlaceholderScreen"
 import { PlaceholderScreen } from "../screens/PlaceholderScreen";
 import { colors } from "../theme/colors";
 import { MorphStack } from "./MorphStack";
+import { MorphStudioTab } from "./MorphStudioTab";
 import { ProfileStack } from "./ProfileStack";
 
 export type RootTabParamList = {
@@ -25,9 +26,8 @@ export type RootTabParamList = {
   Explore: undefined;
   Profile: undefined;
   MorphChat: undefined;
-  MorphCare: undefined;
-  MorphIngredient: undefined;
   MorphTryOn: undefined;
+  MorphStudio: undefined;
 };
 
 const Tab = createBottomTabNavigator<RootTabParamList>();
@@ -49,14 +49,14 @@ const MYSALOON_RIGHT: TabDef[] = [
   { name: "Profile", label: "Profil", icon: "person-outline", iconOn: "person" },
 ];
 
+/** Parvarish / Tarkib olib tashlandi — web Morph dock bilan bir xil. */
 const MORPH_LEFT: TabDef[] = [
   { name: "MorphChat", label: "Chatbot", icon: "chatbubble-ellipses-outline", iconOn: "chatbubble-ellipses" },
-  { name: "MorphCare", label: "Parvarish", icon: "water-outline", iconOn: "water" },
-  { name: "MorphIngredient", label: "Tarkib", icon: "flask-outline", iconOn: "flask" },
 ];
 
 const MORPH_RIGHT: TabDef[] = [
   { name: "MorphTryOn", label: "Try-on", icon: "sparkles-outline", iconOn: "sparkles" },
+  { name: "MorphStudio", label: "Studio", icon: "color-wand-outline", iconOn: "color-wand" },
   { name: "Profile", label: "Profil", icon: "person-outline", iconOn: "person" },
 ];
 
@@ -75,9 +75,8 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
     if (!activeName) return;
     const isMorphTab =
       activeName === "MorphChat" ||
-      activeName === "MorphCare" ||
-      activeName === "MorphIngredient" ||
-      activeName === "MorphTryOn";
+      activeName === "MorphTryOn" ||
+      activeName === "MorphStudio";
     if (isMorphTab && shell !== "morph") {
       setShell("morph");
       rememberTab("morph", activeName);
@@ -221,25 +220,8 @@ function RootTabsInner() {
             />
           )}
         </Tab.Screen>
-        <Tab.Screen name="MorphCare">
-          {() => (
-            <MorphPlaceholderScreen
-              title="Parvarish"
-              subtitle="Shaxsiy soch parvarishi rejasi tez orada."
-              icon="water-outline"
-            />
-          )}
-        </Tab.Screen>
-        <Tab.Screen name="MorphIngredient">
-          {() => (
-            <MorphPlaceholderScreen
-              title="Tarkib"
-              subtitle="Kosmetika tarkibini AI bilan tekshirish tez orada."
-              icon="flask-outline"
-            />
-          )}
-        </Tab.Screen>
         <Tab.Screen name="MorphTryOn" component={MorphStack} />
+        <Tab.Screen name="MorphStudio" component={MorphStudioTab} />
       </Tab.Navigator>
     </MorphSessionProvider>
   );
