@@ -3,6 +3,12 @@
     "home": "Asosiy",
     "map": "Xarita",
     "aiStyle": "Morf AI",
+    "mysaloon": "MySaloon",
+    "morphChat": "Chatbot",
+    "morphTryOn": "Try-on",
+    "morphCare": "Parvarish",
+    "morphIngredient": "Tarkib",
+    "morphStudio": "Studio",
     "bookings": "Buyurtma",
     "chat": "Chat",
     "notifications": "Xabar",
@@ -1039,6 +1045,10 @@
   "aiStylePage": {
     "title": "Morf AI",
     "subtitle": "Selfie · shaxsiy tavsiya",
+    "chat": {
+      "title": "AI Chatbot",
+      "comingSoon": "Tez orada — soch, parvarish va uslub bo‘yicha AI yordamchi."
+    },
     "steps": {
       "upload": "Selfie",
       "analyze": "Tahlil",

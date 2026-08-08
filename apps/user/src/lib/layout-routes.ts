@@ -1,9 +1,8 @@
-/** Auth / onboarding / Morf AI / explore style detail — pastki dock yo‘q. */
+/** Auth / onboarding / share / explore style detail — pastki dock yo‘q.
+ *  Morph AI (`/ai-style/*`) da dock ko‘rinadi (app shell switch).
+ */
 export function shouldShowMobileDock(pathname: string): boolean {
   if (pathname === "/auth" || pathname === "/onboarding") {
-    return false;
-  }
-  if (pathname === "/ai-style" || pathname.startsWith("/ai-style/")) {
     return false;
   }
   if (pathname === "/morf-ai" || pathname.startsWith("/morf-ai/")) {
@@ -112,6 +111,7 @@ export function getPageTitleKey(pathname: string): string | null {
   if (pathname === "/top") return "topSalonsPage.title";
   if (pathname.startsWith("/category/")) return "home.sections.browseCategories";
   if (pathname === "/wallet" || pathname.startsWith("/wallet/")) return "nav.wallet";
+  if (pathname === "/ai-style/chat") return "nav.morphChat";
   if (pathname === "/ai-style" || pathname.startsWith("/ai-style/")) return "home.quick.aiStyle";
   if (pathname === "/notifications") return "nav.notifications";
   if (pathname === "/settings") return "profile.settings";

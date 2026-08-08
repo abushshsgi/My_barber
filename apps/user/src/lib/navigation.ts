@@ -1,6 +1,10 @@
 /** Bottom nav / sidebar tab active state (exact parent routes, not nested siblings). */
 export function isNavTabActive(pathname: string, to: string): boolean {
   if (to === "/") return pathname === "/";
+  // Morph Try-on hub — nested /ai-style/* boshqa tablarga tegishli.
+  if (to === "/ai-style") return pathname === "/ai-style";
+  // Parvarish — Tarkib (/care/ingredient) alohida tab.
+  if (to === "/ai-style/care") return pathname === "/ai-style/care";
   if (to === "/bookings") {
     return pathname === "/bookings" || pathname.startsWith("/booking");
   }
@@ -24,6 +28,8 @@ export function isNavTabActive(pathname: string, to: string): boolean {
 /** True when the tab target is already shown (including nested child routes). */
 export function isNavTabCurrent(pathname: string, to: string): boolean {
   if (to === "/") return pathname === "/";
+  if (to === "/ai-style") return pathname === "/ai-style";
+  if (to === "/ai-style/care") return pathname === "/ai-style/care";
   if (to === "/bookings") {
     return pathname === "/bookings" || pathname.startsWith("/booking");
   }

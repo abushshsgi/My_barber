@@ -48,6 +48,7 @@ import { Route as AccountHouseholdRouteImport } from './routes/account.household
 import { Route as AccountPaymentsRouteImport } from './routes/account.payments'
 import { Route as AccountPreferencesRouteImport } from './routes/account.preferences'
 import { Route as AiStyleCareRouteImport } from './routes/ai-style_.care'
+import { Route as AiStyleChatRouteImport } from './routes/ai-style_.chat'
 import { Route as AiStyleConsultRouteImport } from './routes/ai-style_.consult'
 import { Route as AiStyleHistoryRouteImport } from './routes/ai-style_.history'
 import { Route as AiStyleStudioRouteImport } from './routes/ai-style_.studio'
@@ -268,6 +269,11 @@ const AiStyleCareRoute = AiStyleCareRouteImport.update({
   path: '/ai-style/care',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AiStyleChatRoute = AiStyleChatRouteImport.update({
+  id: '/ai-style_/chat',
+  path: '/ai-style/chat',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AiStyleConsultRoute = AiStyleConsultRouteImport.update({
   id: '/ai-style_/consult',
   path: '/ai-style/consult',
@@ -429,6 +435,7 @@ export interface FileRoutesByFullPath {
   '/account/payments': typeof AccountPaymentsRoute
   '/account/preferences': typeof AccountPreferencesRoute
   '/ai-style/care': typeof AiStyleCareRoute
+  '/ai-style/chat': typeof AiStyleChatRoute
   '/ai-style/consult': typeof AiStyleConsultRoute
   '/ai-style/history': typeof AiStyleHistoryRoute
   '/ai-style/studio': typeof AiStyleStudioRoute
@@ -494,6 +501,7 @@ export interface FileRoutesByTo {
   '/account/payments': typeof AccountPaymentsRoute
   '/account/preferences': typeof AccountPreferencesRoute
   '/ai-style/care': typeof AiStyleCareRoute
+  '/ai-style/chat': typeof AiStyleChatRoute
   '/ai-style/consult': typeof AiStyleConsultRoute
   '/ai-style/history': typeof AiStyleHistoryRoute
   '/ai-style/studio': typeof AiStyleStudioRoute
@@ -559,6 +567,7 @@ export interface FileRoutesById {
   '/account/payments': typeof AccountPaymentsRoute
   '/account/preferences': typeof AccountPreferencesRoute
   '/ai-style_/care': typeof AiStyleCareRoute
+  '/ai-style_/chat': typeof AiStyleChatRoute
   '/ai-style_/consult': typeof AiStyleConsultRoute
   '/ai-style_/history': typeof AiStyleHistoryRoute
   '/ai-style_/studio': typeof AiStyleStudioRoute
@@ -626,6 +635,7 @@ export interface FileRouteTypes {
     | '/account/payments'
     | '/account/preferences'
     | '/ai-style/care'
+    | '/ai-style/chat'
     | '/ai-style/consult'
     | '/ai-style/history'
     | '/ai-style/studio'
@@ -691,6 +701,7 @@ export interface FileRouteTypes {
     | '/account/payments'
     | '/account/preferences'
     | '/ai-style/care'
+    | '/ai-style/chat'
     | '/ai-style/consult'
     | '/ai-style/history'
     | '/ai-style/studio'
@@ -755,6 +766,7 @@ export interface FileRouteTypes {
     | '/account/payments'
     | '/account/preferences'
     | '/ai-style_/care'
+    | '/ai-style_/chat'
     | '/ai-style_/consult'
     | '/ai-style_/history'
     | '/ai-style_/studio'
@@ -821,6 +833,7 @@ export interface RootRouteChildren {
   AccountPaymentsRoute: typeof AccountPaymentsRoute
   AccountPreferencesRoute: typeof AccountPreferencesRoute
   AiStyleCareRoute: typeof AiStyleCareRoute
+  AiStyleChatRoute: typeof AiStyleChatRoute
   AiStyleConsultRoute: typeof AiStyleConsultRoute
   AiStyleHistoryRoute: typeof AiStyleHistoryRoute
   AiStyleStudioRoute: typeof AiStyleStudioRoute
@@ -1116,6 +1129,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AiStyleCareRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/ai-style_/chat': {
+      id: '/ai-style_/chat'
+      path: '/ai-style/chat'
+      fullPath: '/ai-style/chat'
+      preLoaderRoute: typeof AiStyleChatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/ai-style_/consult': {
       id: '/ai-style_/consult'
       path: '/ai-style/consult'
@@ -1385,6 +1405,7 @@ const rootRouteChildren: RootRouteChildren = {
   AccountPaymentsRoute: AccountPaymentsRoute,
   AccountPreferencesRoute: AccountPreferencesRoute,
   AiStyleCareRoute: AiStyleCareRoute,
+  AiStyleChatRoute: AiStyleChatRoute,
   AiStyleConsultRoute: AiStyleConsultRoute,
   AiStyleHistoryRoute: AiStyleHistoryRoute,
   AiStyleStudioRoute: AiStyleStudioRoute,

@@ -3,6 +3,12 @@
     "home": "Главная",
     "map": "Карта",
     "aiStyle": "Morf AI",
+    "mysaloon": "MySaloon",
+    "morphChat": "Чатбот",
+    "morphTryOn": "Try-on",
+    "morphCare": "Уход",
+    "morphIngredient": "Состав",
+    "morphStudio": "Studio",
     "bookings": "Записи",
     "chat": "Чат",
     "notifications": "Уведомления",
@@ -1042,6 +1048,10 @@
   "aiStylePage": {
     "title": "Morf AI",
     "subtitle": "Селфи · персональные советы",
+    "chat": {
+      "title": "AI-чатбот",
+      "comingSoon": "Скоро — ИИ-помощник по волосам, уходу и стилю."
+    },
     "steps": {
       "upload": "Фото",
       "analyze": "Анализ",

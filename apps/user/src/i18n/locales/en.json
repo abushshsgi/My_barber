@@ -3,6 +3,12 @@
     "home": "Home",
     "map": "Map",
     "aiStyle": "Morf AI",
+    "mysaloon": "MySaloon",
+    "morphChat": "Chatbot",
+    "morphTryOn": "Try-on",
+    "morphCare": "Care",
+    "morphIngredient": "Scan",
+    "morphStudio": "Studio",
     "bookings": "Bookings",
     "chat": "Chat",
     "notifications": "Inbox",
@@ -1039,6 +1045,10 @@
   "aiStylePage": {
     "title": "Morf AI",
     "subtitle": "Selfie · personal picks",
+    "chat": {
+      "title": "AI Chatbot",
+      "comingSoon": "Coming soon — an AI assistant for hair, care, and style."
+    },
     "steps": {
       "upload": "Photo",
       "analyze": "Scan",

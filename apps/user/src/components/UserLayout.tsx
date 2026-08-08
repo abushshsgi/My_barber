@@ -14,7 +14,10 @@ import {
   DESKTOP_SHELL_INSET,
 } from "@/lib/desktop-bazaar-layout";
 import { shouldShowMobileDock } from "@/lib/layout-routes";
-import { getMobileContentPaddingClass } from "@/lib/layout-constants";
+import {
+  MOBILE_CONTENT_PADDING_CLASS,
+  getMobileContentPaddingClass,
+} from "@/lib/layout-constants";
 import { prefetchMorphAiIntroVideo } from "@/lib/morph-ai-intro";
 import { shouldShowScrollToTop } from "@/lib/scroll-to-top";
 import { cn } from "@/lib/utils";
@@ -113,8 +116,15 @@ export function UserLayout({ children }: { children: React.ReactNode }) {
             flags.isMap &&
               "fixed inset-x-0 top-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom,0px))] z-10 max-w-none flex-none overflow-hidden overscroll-none lg:static lg:inset-auto lg:z-auto lg:h-[calc(100dvh-4.5rem)] lg:max-w-none lg:overflow-hidden",
             flags.isAiStyle &&
-              "fixed inset-x-0 top-0 z-10 h-[100dvh] max-h-[100dvh] overflow-hidden overscroll-none lg:static lg:z-auto lg:h-[calc(100dvh-4.5rem)] lg:max-h-[calc(100dvh-4.5rem)] lg:overflow-hidden",
-            flags.isFullBleed && !flags.isViewportLocked && "pb-0",
+              cn(
+                "fixed inset-x-0 top-0 z-10 overflow-hidden overscroll-none lg:static lg:z-auto lg:h-[calc(100dvh-4.5rem)] lg:max-h-[calc(100dvh-4.5rem)] lg:overflow-hidden",
+                showMobileDock
+                  ? "bottom-[calc(3.5rem+env(safe-area-inset-bottom,0px))] h-auto max-h-none"
+                  : "h-[100dvh] max-h-[100dvh]",
+              ),
+            flags.isFullBleed &&
+              !flags.isViewportLocked &&
+              (flags.isAiStyleSection && showMobileDock ? MOBILE_CONTENT_PADDING_CLASS : "pb-0"),
             !flags.isFullBleed && getMobileContentPaddingClass(pathname),
             !flags.isFullBleed && "lg:pb-12",
             flags.isHome ? "lg:pt-3" : "lg:pt-6",
