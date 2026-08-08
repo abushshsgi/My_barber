@@ -2,7 +2,6 @@ import { Ionicons } from "@expo/vector-icons";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  ActivityIndicator,
   Alert,
   Image,
   Pressable,
@@ -20,7 +19,6 @@ import {
 } from "../../components/morph/MorphSampleMarquee";
 import { useAuth } from "../../auth/AuthContext";
 import { useMorphLimitGate } from "../../hooks/useMorphLimitGate";
-import { pickSelfieFromCamera, pickSelfieFromGallery } from "../../lib/selfie";
 import { useMorphSession } from "../../lib/morph-session";
 import type { MorphStackParamList } from "../../navigation/MorphStack";
 
@@ -41,7 +39,6 @@ export function MorphHomeScreen({ navigation }: Props) {
   const { isAuthenticated } = useAuth();
   const session = useMorphSession();
   const gate = useMorphLimitGate();
-  const [busy, setBusy] = useState(false);
   const [samplesLoading, setSamplesLoading] = useState(true);
   const [samples, setSamples] = useState<MorphSampleCard[]>([]);
 
@@ -76,53 +73,18 @@ export function MorphHomeScreen({ navigation }: Props) {
     [samples],
   );
 
-  const startWithImage = useCallback(
-    async (
-      source: "camera" | "gallery",
-      preferred?: { styleId: string; title?: string },
-    ) => {
-      if (!isAuthenticated) {
-        navigation.getParent()?.navigate("Profile" as never);
-        return;
-      }
-      const ok = await gate.ensureAccess();
-      if (!ok) {
-        navigation.navigate("MorphPaywall");
-        return;
-      }
-      setBusy(true);
-      try {
-        const dataUrl =
-          source === "camera"
-            ? await pickSelfieFromCamera()
-            : await pickSelfieFromGallery();
-        if (!dataUrl) return;
-        session.clear();
-        session.setSelfie(dataUrl);
-        if (preferred?.styleId) {
-          session.setPreferredStyle(preferred.styleId, preferred.title ?? null);
-        }
-        navigation.navigate("MorphResults");
-      } finally {
-        setBusy(false);
-      }
-    },
-    [gate, isAuthenticated, navigation, session],
-  );
-
-  const onNewTryOn = useCallback(() => {
-    Alert.alert("Yangi try-on", "Selfie qayerdan olamiz?", [
-      {
-        text: "Kamera",
-        onPress: () => void startWithImage("camera"),
-      },
-      {
-        text: "Galereya",
-        onPress: () => void startWithImage("gallery"),
-      },
-      { text: "Bekor", style: "cancel" },
-    ]);
-  }, [startWithImage]);
+  const onNewTryOn = useCallback(async () => {
+    if (!isAuthenticated) {
+      navigation.getParent()?.navigate("Profile" as never);
+      return;
+    }
+    const ok = await gate.ensureAccess();
+    if (!ok) {
+      navigation.navigate("MorphPaywall");
+      return;
+    }
+    navigation.navigate("MorphTryOn");
+  }, [gate, isAuthenticated, navigation]);
 
   const openCareOrIngredient = useCallback(
     async (kind: "care" | "ingredient") => {
@@ -158,27 +120,21 @@ export function MorphHomeScreen({ navigation }: Props) {
 
   const onSamplePress = useCallback(
     (item: MorphSampleCard) => {
-      Alert.alert(item.title, "Bu uslubni o'zingizda sinab ko'rasizmi?", [
-        {
-          text: "Kamera",
-          onPress: () =>
-            void startWithImage("camera", {
-              styleId: item.id,
-              title: item.title,
-            }),
-        },
-        {
-          text: "Galereya",
-          onPress: () =>
-            void startWithImage("gallery", {
-              styleId: item.id,
-              title: item.title,
-            }),
-        },
-        { text: "Bekor", style: "cancel" },
-      ]);
+      void (async () => {
+        if (!isAuthenticated) {
+          navigation.getParent()?.navigate("Profile" as never);
+          return;
+        }
+        const ok = await gate.ensureAccess();
+        if (!ok) {
+          navigation.navigate("MorphPaywall");
+          return;
+        }
+        session.setPreferredStyle(item.id, item.title);
+        navigation.navigate("MorphTryOn");
+      })();
     },
-    [startWithImage],
+    [gate, isAuthenticated, navigation, session],
   );
 
   const showLimit =
@@ -220,24 +176,17 @@ export function MorphHomeScreen({ navigation }: Props) {
         <View style={styles.hero}>
           <Pressable
             style={styles.cta}
-            disabled={busy}
-            onPress={onNewTryOn}
+            onPress={() => void onNewTryOn()}
           >
-            {busy ? (
-              <ActivityIndicator color="#050505" />
-            ) : (
-              <>
-                <Text style={styles.ctaText}>Yangi try-on</Text>
-                <View style={styles.ctaArrow}>
-                  <Ionicons
-                    name="arrow-up"
-                    size={16}
-                    color="#FFF"
-                    style={styles.arrowRot}
-                  />
-                </View>
-              </>
-            )}
+            <Text style={styles.ctaText}>Yangi try-on</Text>
+            <View style={styles.ctaArrow}>
+              <Ionicons
+                name="arrow-up"
+                size={16}
+                color="#FFF"
+                style={styles.arrowRot}
+              />
+            </View>
           </Pressable>
         </View>
 

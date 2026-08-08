@@ -7,6 +7,7 @@ import { Image } from "expo-image";
 import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { morfMarkWhite } from "../branding/morf-logo";
+import { FLOATING_TAB_BAR_STYLE } from "../hooks/useHideTabBar";
 import { HomeScreen } from "../screens/HomeScreen";
 import { MapScreen } from "../screens/MapScreen";
 import { PlaceholderScreen } from "../screens/PlaceholderScreen";
@@ -121,16 +122,7 @@ export function RootTabs() {
         headerShown: false,
         lazy: true,
         freezeOnBlur: true,
-        tabBarStyle: {
-          position: "absolute",
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: "transparent",
-          borderTopWidth: 0,
-          elevation: 0,
-          shadowOpacity: 0,
-        },
+        tabBarStyle: FLOATING_TAB_BAR_STYLE,
         sceneStyle: { backgroundColor: "transparent" },
       }}
     >
