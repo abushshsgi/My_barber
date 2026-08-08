@@ -17,7 +17,6 @@ import { MorphPlaceholderScreen } from "../screens/morph/MorphPlaceholderScreen"
 import { PlaceholderScreen } from "../screens/PlaceholderScreen";
 import { colors } from "../theme/colors";
 import { MorphStack } from "./MorphStack";
-import { MorphStudioTab } from "./MorphStudioTab";
 import { ProfileStack } from "./ProfileStack";
 
 export type RootTabParamList = {
@@ -26,8 +25,9 @@ export type RootTabParamList = {
   Explore: undefined;
   Profile: undefined;
   MorphChat: undefined;
+  MorphCare: undefined;
+  MorphIngredient: undefined;
   MorphTryOn: undefined;
-  MorphStudio: undefined;
 };
 
 const Tab = createBottomTabNavigator<RootTabParamList>();
@@ -49,14 +49,15 @@ const MYSALOON_RIGHT: TabDef[] = [
   { name: "Profile", label: "Profil", icon: "person-outline", iconOn: "person" },
 ];
 
-/** Parvarish / Tarkib olib tashlandi — web Morph dock bilan bir xil. */
+/** Studio dockda yo‘q — faqat Morph home ichida. */
 const MORPH_LEFT: TabDef[] = [
   { name: "MorphChat", label: "Chatbot", icon: "chatbubble-ellipses-outline", iconOn: "chatbubble-ellipses" },
+  { name: "MorphCare", label: "Parvarish", icon: "water-outline", iconOn: "water" },
+  { name: "MorphIngredient", label: "Tarkib", icon: "flask-outline", iconOn: "flask" },
 ];
 
 const MORPH_RIGHT: TabDef[] = [
   { name: "MorphTryOn", label: "Try-on", icon: "sparkles-outline", iconOn: "sparkles" },
-  { name: "MorphStudio", label: "Studio", icon: "color-wand-outline", iconOn: "color-wand" },
   { name: "Profile", label: "Profil", icon: "person-outline", iconOn: "person" },
 ];
 
@@ -75,8 +76,9 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
     if (!activeName) return;
     const isMorphTab =
       activeName === "MorphChat" ||
-      activeName === "MorphTryOn" ||
-      activeName === "MorphStudio";
+      activeName === "MorphCare" ||
+      activeName === "MorphIngredient" ||
+      activeName === "MorphTryOn";
     if (isMorphTab && shell !== "morph") {
       setShell("morph");
       rememberTab("morph", activeName);
@@ -95,6 +97,11 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
   }, [activeName, rememberTab, setShell, shell]);
 
   const pressTab = (name: keyof RootTabParamList) => {
+    // Try-on tabi — stack paywall/results da qolib ketmasin, home ga qaytadi.
+    if (name === "MorphTryOn") {
+      navigation.navigate("MorphTryOn", { screen: "MorphHome" } as never);
+      return;
+    }
     const route = state.routes.find((r) => r.name === name);
     if (!route) {
       navigation.navigate(name);
@@ -114,7 +121,12 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
     void (async () => {
       if (shell === "mysaloon") {
         const target = await switchToMorphTarget();
-        navigation.navigate(target as keyof RootTabParamList);
+        const tab = (target === "MorphStudio" ? "MorphTryOn" : target) as keyof RootTabParamList;
+        if (tab === "MorphTryOn") {
+          navigation.navigate("MorphTryOn", { screen: "MorphHome" } as never);
+        } else {
+          navigation.navigate(tab);
+        }
       } else {
         const target = await switchToMysaloonTarget();
         navigation.navigate(target as keyof RootTabParamList);
@@ -220,8 +232,25 @@ function RootTabsInner() {
             />
           )}
         </Tab.Screen>
+        <Tab.Screen name="MorphCare">
+          {() => (
+            <MorphPlaceholderScreen
+              title="Parvarish"
+              subtitle="Shaxsiy soch parvarishi rejasi tez orada."
+              icon="water-outline"
+            />
+          )}
+        </Tab.Screen>
+        <Tab.Screen name="MorphIngredient">
+          {() => (
+            <MorphPlaceholderScreen
+              title="Tarkib"
+              subtitle="Kosmetika tarkibini AI bilan tekshirish tez orada."
+              icon="flask-outline"
+            />
+          )}
+        </Tab.Screen>
         <Tab.Screen name="MorphTryOn" component={MorphStack} />
-        <Tab.Screen name="MorphStudio" component={MorphStudioTab} />
       </Tab.Navigator>
     </MorphSessionProvider>
   );

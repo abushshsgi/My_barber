@@ -12,8 +12,9 @@ export const APP_SHELL_DEFAULT_MORPH = "MorphTryOn" as const;
 const MYSALOON_TABS = new Set(["Home", "Map", "Explore", "Profile"]);
 const MORPH_TABS = new Set([
   "MorphChat",
+  "MorphCare",
+  "MorphIngredient",
   "MorphTryOn",
-  "MorphStudio",
   "Profile",
 ]);
 
@@ -61,6 +62,6 @@ export async function writeLastShellTab(shell: AppShell, tab: string): Promise<v
 /** Morph shellga o‘tganda Profile emas, oxirgi AI tab. */
 export async function readLastMorphContentTab(): Promise<string> {
   const last = await readLastShellTab("morph");
-  if (last === "Profile") return APP_SHELL_DEFAULT_MORPH;
+  if (last === "Profile" || last === "MorphStudio") return APP_SHELL_DEFAULT_MORPH;
   return last;
 }

@@ -67,7 +67,7 @@ export function MorphTryOnScreen({ navigation }: Props) {
       }
       const ok = await gate.ensureAccess();
       if (!ok) {
-        navigation.navigate("MorphPaywall");
+        // ensureAccess allaqachon alert ko‘rsatadi — to‘g‘ridan-to‘g‘ri paywall ochilmaydi.
         return;
       }
       setBusy(source);

@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 import {
   Bot,
   Compass,
+  Droplets,
+  FlaskConical,
   Home,
   Map,
   Sparkles,
@@ -30,11 +32,13 @@ const mysaloonRightTabs = [
 
 const morphLeftTabs = [
   { to: "/ai-style/chat", icon: Bot, key: "morphChat" },
+  { to: "/ai-style/care", icon: Droplets, key: "morphCare" },
+  { to: "/ai-style/care/ingredient", icon: FlaskConical, key: "morphIngredient" },
 ] as const;
 
+/** Studio faqat Morph home / ichki route — dockda yo‘q. */
 const morphRightTabs = [
   { to: "/ai-style", icon: Sparkles, key: "morphTryOn" },
-  { to: "/ai-style/studio", icon: Wand2, key: "morphStudio" },
   { to: "/profile", icon: User, key: "profile" },
 ] as const;
 
