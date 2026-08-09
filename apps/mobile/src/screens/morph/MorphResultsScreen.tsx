@@ -347,8 +347,21 @@ export function MorphResultsScreen({ navigation }: Props) {
     await Linking.openURL(`${WEB_ORIGIN}/booking/${salonId}`);
   }, []);
 
-  /** Analiz / xato — selfie ustida scan UI. */
-  if (analyzing || (phase === "error" && !session.analyze)) {
+  const frameW = SCREEN_W * 0.72;
+  const showScanShell =
+    analyzing || summaryBusy || (phase === "error" && !session.analyze);
+
+  /** Analiz / summary / xato — selfie ustida scan frame (orasi shaffof). */
+  if (showScanShell) {
+    const statusPill =
+      phase === "error"
+        ? "Yuz topilmadi"
+        : phase === "checking"
+          ? "Yuz tekshirilmoqda…"
+          : phase === "analyzing"
+            ? "Yuz topildi. Tahlil…"
+            : "O‘lchov chizilmoqda…";
+
     return (
       <View style={styles.root}>
         {session.selfieDataUrl ? (
@@ -356,11 +369,20 @@ export function MorphResultsScreen({ navigation }: Props) {
         ) : (
           <View style={[StyleSheet.absoluteFill, { backgroundColor: "#111" }]} />
         )}
-        <LinearGradient
-          colors={["rgba(0,0,0,0.55)", "rgba(0,0,0,0.2)", "rgba(0,0,0,0.7)"]}
-          locations={[0, 0.45, 1]}
-          style={StyleSheet.absoluteFill}
-        />
+
+        {/* Cutout: tashqari qorong‘i, frame ichi shaffof */}
+        <View style={styles.dimTop} />
+        <View style={styles.dimBottom} />
+        <View
+          style={[
+            styles.dimMidRow,
+            { top: "50%", marginTop: -frameH / 2 - 40, height: frameH + 80 },
+          ]}
+        >
+          <View style={[styles.dimSide, { width: (SCREEN_W - frameW) / 2 }]} />
+          <View style={{ width: frameW, height: frameH + 80 }} />
+          <View style={[styles.dimSide, { width: (SCREEN_W - frameW) / 2 }]} />
+        </View>
 
         <View style={[styles.scanChrome, { paddingTop: Math.max(insets.top, 10) }]}>
           <Pressable
@@ -376,95 +398,79 @@ export function MorphResultsScreen({ navigation }: Props) {
               color={analyzingBusy ? "rgba(255,255,255,0.35)" : "#FFF"}
             />
           </Pressable>
-          <Text style={styles.scanChromeTitle}>Morf AI</Text>
+          <View style={styles.statusPill}>
+            <Ionicons name="information-circle-outline" size={14} color="#FFF" />
+            <Text style={styles.statusPillText}>{statusPill}</Text>
+          </View>
           <View style={styles.scanBackBtn} />
         </View>
 
         <View style={styles.scanStage}>
-          <Animated.View
-            style={[
-              styles.faceFrame,
-              {
-                width: SCREEN_W * 0.72,
-                height: frameH,
-                opacity: analyzing ? pulseOpacity : 1,
-                transform: analyzing ? [{ scale: pulseScale }] : undefined,
-              },
-            ]}
-          >
-            <View style={[styles.frameCorner, styles.frameTL]} />
-            <View style={[styles.frameCorner, styles.frameTR]} />
-            <View style={[styles.frameCorner, styles.frameBL]} />
-            <View style={[styles.frameCorner, styles.frameBR]} />
-            {analyzing ? (
-              <Animated.View
-                style={[styles.scanLine, { transform: [{ translateY: scanTranslate }] }]}
-              />
-            ) : (
-              <View style={styles.frameErrorBadge}>
-                <Ionicons name="alert-circle" size={22} color="#FFF" />
-              </View>
-            )}
-          </Animated.View>
-          <Text style={styles.scanHint}>
-            {phase === "error"
-              ? "Yuz aniq ko‘rinadigan selfie yuklang"
-              : phase === "checking"
-                ? "Yuz qidirilmoqda…"
-                : "Yuz shakli tahlil qilinmoqda…"}
-          </Text>
-        </View>
-
-        <View style={[styles.scanBottom, { paddingBottom: Math.max(insets.bottom, 16) + 12 }]}>
-          {phase === "error" ? (
-            <Pressable style={styles.analyzeBtn} onPress={onNewPhoto}>
-              <Ionicons name="camera-outline" size={18} color="#FFF" />
-              <Text style={styles.analyzeBtnText}>Yangi rasm yuklash</Text>
-            </Pressable>
+          {summaryBusy && session.analyze ? (
+            <FaceAnalysisSummary
+              analyze={session.analyze}
+              frameW={frameW}
+              frameH={frameH}
+              onStartGenerate={onStartGenerate}
+              generating={false}
+            />
           ) : (
-            <View style={styles.analyzeBtn}>
-              <ActivityIndicator color="#FFF" />
-              <Text style={styles.analyzeBtnText}>
-                {phase === "checking" ? "Yuz tekshirilmoqda…" : "Tahlil qilinmoqda…"}
+            <>
+              <Animated.View
+                style={[
+                  styles.faceFrame,
+                  {
+                    width: frameW,
+                    height: frameH,
+                    opacity: analyzing ? pulseOpacity : 1,
+                    transform: analyzing ? [{ scale: pulseScale }] : undefined,
+                  },
+                ]}
+              >
+                <View style={[styles.frameCorner, styles.frameTL]} />
+                <View style={[styles.frameCorner, styles.frameTR]} />
+                <View style={[styles.frameCorner, styles.frameBL]} />
+                <View style={[styles.frameCorner, styles.frameBR]} />
+                {analyzing ? (
+                  <Animated.View
+                    style={[styles.scanLine, { transform: [{ translateY: scanTranslate }] }]}
+                  />
+                ) : (
+                  <View style={styles.frameErrorBadge}>
+                    <Ionicons name="alert-circle" size={22} color="#FFF" />
+                  </View>
+                )}
+              </Animated.View>
+              <Text style={styles.scanHint}>
+                {phase === "error"
+                  ? "Yuz aniq ko‘rinadigan selfie yuklang"
+                  : phase === "checking"
+                    ? "Yuz qidirilmoqda…"
+                    : "Yuz shakli tahlil qilinmoqda…"}
               </Text>
-            </View>
+            </>
           )}
         </View>
-      </View>
-    );
-  }
 
-  /** Tahlil natijasi — Skin Summary + Start Generate. */
-  if (summaryBusy && session.analyze) {
-    return (
-      <View style={styles.rootSummary}>
-        {session.selfieDataUrl ? (
-          <Image
-            source={{ uri: session.selfieDataUrl }}
-            style={styles.bgPhoto}
-            blurRadius={22}
-          />
-        ) : null}
-        <LinearGradient
-          colors={["rgba(255,220,200,0.55)", "rgba(255,200,210,0.45)", "rgba(255,255,255,0.35)"]}
-          style={StyleSheet.absoluteFill}
-        />
-
-        <View style={[styles.scanChrome, { paddingTop: Math.max(insets.top, 10) }]}>
-          <Pressable style={styles.summaryBackBtn} onPress={onBack} accessibilityLabel="Orqaga">
-            <Ionicons name="chevron-back" size={22} color="#111" />
-          </Pressable>
-          <Text style={styles.summaryChromeTitle}>Morf AI</Text>
-          <View style={styles.summaryBackBtn} />
-        </View>
-
-        <View style={styles.summaryStage}>
-          <FaceAnalysisSummary
-            analyze={session.analyze}
-            onStartGenerate={onStartGenerate}
-            generating={false}
-          />
-        </View>
+        {!summaryBusy ? (
+          <View style={[styles.scanBottom, { paddingBottom: Math.max(insets.bottom, 16) + 12 }]}>
+            {phase === "error" ? (
+              <Pressable style={styles.analyzeBtn} onPress={onNewPhoto}>
+                <Ionicons name="camera-outline" size={18} color="#FFF" />
+                <Text style={styles.analyzeBtnText}>Yangi rasm yuklash</Text>
+              </Pressable>
+            ) : (
+              <View style={styles.analyzeBtn}>
+                <ActivityIndicator color="#FFF" />
+                <Text style={styles.analyzeBtnText}>
+                  {phase === "checking" ? "Yuz tekshirilmoqda…" : "Tahlil qilinmoqda…"}
+                </Text>
+              </View>
+            )}
+          </View>
+        ) : (
+          <View style={{ height: Math.max(insets.bottom, 16) + 8 }} />
+        )}
       </View>
     );
   }
@@ -785,7 +791,6 @@ export function MorphResultsScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: "#0A0A0A" },
   rootLight: { flex: 1, backgroundColor: "#EDE6DF" },
-  rootSummary: { flex: 1, backgroundColor: "#F3B7C2" },
   bgPhoto: {
     ...StyleSheet.absoluteFill,
     width: "100%",
@@ -796,26 +801,31 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFill,
     backgroundColor: "rgba(255,255,255,0.28)",
   },
-  summaryStage: {
-    flex: 1,
-    justifyContent: "center",
-    paddingBottom: 24,
+  dimTop: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    height: "28%",
+    backgroundColor: "rgba(0,0,0,0.48)",
   },
-  summaryBackBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(255,255,255,0.55)",
+  dimBottom: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: "28%",
+    backgroundColor: "rgba(0,0,0,0.55)",
   },
-  summaryChromeTitle: {
-    flex: 1,
-    textAlign: "center",
-    color: "#111",
-    fontSize: 16,
-    fontWeight: "800",
-    letterSpacing: -0.2,
+  dimMidRow: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    flexDirection: "row",
+  },
+  dimSide: {
+    height: "100%",
+    backgroundColor: "rgba(0,0,0,0.48)",
   },
   scanChrome: {
     flexDirection: "row",
@@ -834,13 +844,25 @@ const styles = StyleSheet.create({
   scanBackBtnDisabled: {
     backgroundColor: "rgba(255,255,255,0.05)",
   },
-  scanChromeTitle: {
+  statusPill: {
     flex: 1,
-    textAlign: "center",
+    marginHorizontal: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    alignSelf: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+    backgroundColor: "rgba(0,0,0,0.45)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.12)",
+  },
+  statusPillText: {
     color: "#FFF",
-    fontSize: 16,
-    fontWeight: "800",
-    letterSpacing: -0.2,
+    fontSize: 12,
+    fontWeight: "700",
   },
   scanStage: {
     flex: 1,
@@ -848,13 +870,14 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 18,
     paddingHorizontal: 24,
+    zIndex: 1,
   },
   faceFrame: {
     borderRadius: 28,
     borderWidth: 1.5,
     borderColor: "rgba(255,255,255,0.35)",
     overflow: "hidden",
-    backgroundColor: "rgba(255,255,255,0.04)",
+    backgroundColor: "transparent",
   },
   frameCorner: {
     position: "absolute",
@@ -867,7 +890,7 @@ const styles = StyleSheet.create({
   frameBL: { bottom: 10, left: 10, borderBottomWidth: 3, borderLeftWidth: 3, borderBottomLeftRadius: 6 },
   frameBR: { bottom: 10, right: 10, borderBottomWidth: 3, borderRightWidth: 3, borderBottomRightRadius: 6 },
   frameErrorBadge: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "rgba(220,38,38,0.25)",
