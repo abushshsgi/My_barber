@@ -20,12 +20,15 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   analyzeAiStyle,
   checkAiStyleFace,
+  formatMorphUserError,
   generateAiStyleTryOn,
+  NO_FACE_MESSAGE,
   saveAiStyleHistory,
   saveMorphAiGeneration,
   type AiStyleSuggestion,
 } from "../../api/ai";
 import { fetchHairstyles, type ApiHairstyle } from "../../api/hairstyles";
+import { AppToast } from "../../components/ui/AppToast";
 import { useHideTabBar } from "../../hooks/useHideTabBar";
 import { useMorphLimitGate } from "../../hooks/useMorphLimitGate";
 import { faceShapeLabel, hairTypeLabel } from "../../lib/morph-labels";
@@ -107,7 +110,12 @@ export function MorphResultsScreen({ navigation }: Props) {
           navigation.navigate("MorphPaywall");
           return;
         }
-        setError(err instanceof Error ? err.message : "Try-on xatosi");
+        setError(
+          formatMorphUserError(
+            err instanceof Error ? err.message : "Try-on xatosi",
+            "Try-on xatosi",
+          ),
+        );
       } finally {
         setActiveStyleId(null);
       }
@@ -126,10 +134,8 @@ export function MorphResultsScreen({ navigation }: Props) {
       setPhase("checking");
       setError(null);
       try {
-        const face = await checkAiStyleFace(photo);
-        if (!face.has_face) {
-          throw new Error(face.detail || "Iltimos yuz shaklini yuboring!");
-        }
+        // Yuzdan boshqa narsa (obyekt, landscape, …) — darhol to‘xtatiladi.
+        await checkAiStyleFace(photo);
         setPhase("analyzing");
         const result = await analyzeAiStyle(photo, "men");
         session.setAnalyze(result);
@@ -169,7 +175,12 @@ export function MorphResultsScreen({ navigation }: Props) {
           navigation.navigate("MorphPaywall");
           return;
         }
-        setError(err instanceof Error ? err.message : "Tahlil xatosi");
+        setError(
+          formatMorphUserError(
+            err instanceof Error ? err.message : NO_FACE_MESSAGE,
+            NO_FACE_MESSAGE,
+          ),
+        );
         setPhase("error");
       }
     },
@@ -280,17 +291,13 @@ export function MorphResultsScreen({ navigation }: Props) {
 
         <View style={[styles.scanTop, { paddingTop: Math.max(insets.top, 12) }]}>
           {phase === "error" ? (
-            <View style={styles.toastError}>
-              <Ionicons name="alert-circle" size={18} color="#FFF" />
-              <Text style={styles.toastText}>{error || "Xatolik"}</Text>
-            </View>
+            <AppToast
+              message={error || NO_FACE_MESSAGE}
+              tone="error"
+              durationMs={4500}
+            />
           ) : (
-            <View style={styles.toastOk}>
-              <View style={styles.toastCheck}>
-                <Ionicons name="checkmark" size={14} color="#FFF" />
-              </View>
-              <Text style={styles.toastTextDark}>Yuz shakli saqlandi</Text>
-            </View>
+            <AppToast message="Yuz shakli saqlandi" tone="success" durationMs={3200} />
           )}
         </View>
 
@@ -635,35 +642,6 @@ const styles = StyleSheet.create({
   scanTop: {
     paddingHorizontal: 16,
   },
-  toastOk: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    alignSelf: "stretch",
-    backgroundColor: "#FFF",
-    borderRadius: 16,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-  },
-  toastCheck: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: "#0A0A0A",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  toastTextDark: { color: "#0A0A0A", fontWeight: "700", fontSize: 14 },
-  toastError: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    backgroundColor: "rgba(185,28,28,0.92)",
-    borderRadius: 16,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-  },
-  toastText: { color: "#FFF", fontWeight: "700", fontSize: 13, flex: 1 },
   scanBottom: {
     position: "absolute",
     left: 16,

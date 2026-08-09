@@ -8,6 +8,24 @@ export class MorphPlanLimitError extends Error {
   }
 }
 
+/** Yuz yo‘q / yuzsiz rasm — foydalanuvchiga ko‘rinadigan yagona matn. */
+export const NO_FACE_MESSAGE = "Iltimos yuz shaklini yuboring!";
+
+export function isNoFaceMessage(message: string): boolean {
+  return /yuz shaklini yuboring|yuz shakli rasmini yuklang|yuz topilmadi|no face|upload.*face|лицо/i.test(
+    message,
+  );
+}
+
+/** API status prefiksini olib, yuz xatosini bir xil matnga keltiradi. */
+export function formatMorphUserError(message: string, fallback: string): string {
+  const cleaned = message.replace(/^API\s+\d+:\s*/i, "").trim();
+  if (isNoFaceMessage(cleaned) || isNoFaceMessage(message)) {
+    return NO_FACE_MESSAGE;
+  }
+  return cleaned || fallback;
+}
+
 function throwFromMorphApiError(
   res: Response,
   body: unknown,
@@ -24,7 +42,7 @@ function throwFromMorphApiError(
   if (res.status === 403 && obj?.code === "morph_plan_limit") {
     throw new MorphPlanLimitError(detail);
   }
-  throw new Error(detail.startsWith("API ") ? detail : `API ${res.status}: ${detail}`);
+  throw new Error(formatMorphUserError(detail, fallback));
 }
 
 export type AiStyleSuggestion = {
@@ -161,9 +179,15 @@ export async function checkAiStyleFace(image: string): Promise<AiFaceCheckRespon
     | { detail?: string; code?: string }
     | null;
   if (!res.ok) {
-    throwFromMorphApiError(res, body, "Iltimos yuz shaklini yuboring!");
+    throwFromMorphApiError(res, body, NO_FACE_MESSAGE);
   }
-  return (body ?? { has_face: false }) as AiFaceCheckResponse;
+  const parsed = (body ?? { has_face: false }) as AiFaceCheckResponse;
+  if (!parsed.has_face) {
+    throw new Error(
+      formatMorphUserError(parsed.detail || NO_FACE_MESSAGE, NO_FACE_MESSAGE),
+    );
+  }
+  return parsed;
 }
 
 export async function analyzeAiStyle(
