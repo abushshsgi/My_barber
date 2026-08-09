@@ -23,6 +23,7 @@ import {
   shareMorphLook,
   WEB_ORIGIN,
 } from "../../lib/morph-share";
+import { useHideTabBar } from "../../hooks/useHideTabBar";
 import { useMorphLimitGate } from "../../hooks/useMorphLimitGate";
 import { useMorphSession } from "../../lib/morph-session";
 import type { MorphStackParamList } from "../../navigation/MorphStack";
@@ -33,6 +34,7 @@ type Props = NativeStackScreenProps<MorphStackParamList, "MorphPreview">;
  * Web `AiStylePreviewSheet` — generatsiya qilingan rasm ustiga bosilganda.
  */
 export function MorphPreviewScreen({ navigation, route }: Props) {
+  useHideTabBar();
   const insets = useSafeAreaInsets();
   const session = useMorphSession();
   const gate = useMorphLimitGate();

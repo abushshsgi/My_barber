@@ -26,6 +26,7 @@ import {
   type AiStyleSuggestion,
 } from "../../api/ai";
 import { fetchHairstyles, type ApiHairstyle } from "../../api/hairstyles";
+import { useHideTabBar } from "../../hooks/useHideTabBar";
 import { useMorphLimitGate } from "../../hooks/useMorphLimitGate";
 import { faceShapeLabel, hairTypeLabel } from "../../lib/morph-labels";
 import { WEB_ORIGIN } from "../../lib/morph-share";
@@ -41,6 +42,7 @@ const { width: SCREEN_W } = Dimensions.get("window");
 const CARD_W = SCREEN_W - 40;
 
 export function MorphResultsScreen({ navigation }: Props) {
+  useHideTabBar();
   const insets = useSafeAreaInsets();
   const session = useMorphSession();
   const gate = useMorphLimitGate();
@@ -292,7 +294,7 @@ export function MorphResultsScreen({ navigation }: Props) {
           )}
         </View>
 
-        <View style={[styles.scanBottom, { paddingBottom: Math.max(insets.bottom, 16) + 88 }]}>
+        <View style={[styles.scanBottom, { paddingBottom: Math.max(insets.bottom, 16) + 12 }]}>
           {phase === "error" ? (
             <Pressable style={styles.analyzeBtn} onPress={() => void runAnalyze()}>
               <Ionicons name="refresh" size={18} color="#FFF" />
@@ -348,7 +350,7 @@ export function MorphResultsScreen({ navigation }: Props) {
 
       <ScrollView
         contentContainerStyle={{
-          paddingBottom: Math.max(insets.bottom, 16) + 110,
+          paddingBottom: Math.max(insets.bottom, 16) + 24,
           paddingHorizontal: 14,
           gap: 14,
         }}
