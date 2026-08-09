@@ -26,6 +26,19 @@ const UPSTREAM = (process.env.EXPO_PUBLIC_API_URL || "https://api.mysaloon.uz").
   "",
 );
 
+function sendProxyError(res, err) {
+  if (res.headersSent || res.writableEnded) {
+    try {
+      res.destroy();
+    } catch {
+      /* ignore */
+    }
+    return;
+  }
+  res.writeHead(502, { "Content-Type": "application/json" });
+  res.end(JSON.stringify({ error: "proxy_failed", message: String(err?.message || err) }));
+}
+
 /** Expo web CORS yo‘qotish: /api va /media → backend. */
 function proxyToUpstream(req, res) {
   const target = new URL(req.url, UPSTREAM);
@@ -34,21 +47,35 @@ function proxyToUpstream(req, res) {
   delete headers["origin"];
   delete headers["referer"];
 
+  // AI face-check / analyze uzoq davom etishi mumkin.
+  const isAi = target.pathname.includes("/api/v1/ai/");
+  const timeoutMs = isAi ? 120_000 : 30_000;
+
   const proxyReq = lib.request(
     target,
-    { method: req.method, headers },
+    { method: req.method, headers, timeout: timeoutMs },
     (proxyRes) => {
+      proxyRes.on("error", (err) => sendProxyError(res, err));
+      if (res.headersSent || res.writableEnded) {
+        proxyRes.resume();
+        return;
+      }
       const outHeaders = { ...proxyRes.headers };
-      // Same-origin proxy — CORS kerak emas, lekin cache chalkashmasin.
       delete outHeaders["access-control-allow-origin"];
       res.writeHead(proxyRes.statusCode || 502, outHeaders);
       proxyRes.pipe(res);
     },
   );
 
-  proxyReq.on("error", (err) => {
-    res.writeHead(502, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ error: "proxy_failed", message: String(err.message) }));
+  proxyReq.on("timeout", () => {
+    proxyReq.destroy(new Error("upstream_timeout"));
+  });
+  proxyReq.on("error", (err) => sendProxyError(res, err));
+  req.on("aborted", () => {
+    proxyReq.destroy();
+  });
+  res.on("close", () => {
+    if (!res.writableEnded) proxyReq.destroy();
   });
 
   req.pipe(proxyReq);
