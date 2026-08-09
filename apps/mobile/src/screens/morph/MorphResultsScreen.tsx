@@ -40,7 +40,10 @@ type Props = NativeStackScreenProps<MorphStackParamList, "MorphResults">;
 type Phase = "checking" | "analyzing" | "ready" | "error";
 
 const { width: SCREEN_W } = Dimensions.get("window");
-const CARD_W = SCREEN_W - 40;
+const H_PAD = 18;
+const CARD_GAP = 14;
+/** ScrollView padding ichida to‘liq eni — snap aniq ishlashi uchun. */
+const CARD_W = SCREEN_W - H_PAD * 2;
 
 export function MorphResultsScreen({ navigation }: Props) {
   useHideTabBar();
@@ -56,6 +59,7 @@ export function MorphResultsScreen({ navigation }: Props) {
   const [savedIds, setSavedIds] = useState<string[]>([]);
   const scanAnim = useRef(new Animated.Value(0)).current;
   const pulseAnim = useRef(new Animated.Value(0)).current;
+  const carouselRef = useRef<FlatList<AiStyleSuggestion>>(null);
   const analyzingBusy = phase === "checking" || phase === "analyzing";
 
   useEffect(() => {
@@ -266,6 +270,19 @@ export function MorphResultsScreen({ navigation }: Props) {
     [moreStyles, suggestionIds],
   );
 
+  const goToSuggestion = useCallback(
+    (index: number) => {
+      if (suggestions.length === 0) return;
+      const next = Math.max(0, Math.min(index, suggestions.length - 1));
+      setSpotlightIndex(next);
+      carouselRef.current?.scrollToOffset({
+        offset: next * (CARD_W + CARD_GAP),
+        animated: true,
+      });
+    },
+    [suggestions.length],
+  );
+
   const openPreview = useCallback(
     (style: AiStyleSuggestion) => {
       const preview = session.tryOnByStyle[style.id] || undefined;
@@ -411,99 +428,102 @@ export function MorphResultsScreen({ navigation }: Props) {
       ) : null}
       <View style={styles.bgDim} />
 
-      <View style={[styles.chrome, { paddingTop: Math.max(insets.top, 8) }]}>
-        <Pressable style={styles.chromeBtn} onPress={onBack}>
+      <View style={[styles.topBar, { paddingTop: Math.max(insets.top, 8) }]}>
+        <Pressable style={styles.topBtn} onPress={onBack} accessibilityLabel="Orqaga">
           <Ionicons name="chevron-back" size={20} color="#0A0A0A" />
         </Pressable>
-        <Text style={styles.chromeTitle}>Morf AI</Text>
-        <View style={styles.chromeRight}>
-          <Pressable
-            style={styles.chromeBtn}
-            onPress={() => navigation.getParent()?.navigate("Explore" as never)}
-          >
-            <Ionicons name="compass-outline" size={18} color="#0A0A0A" />
-          </Pressable>
-          <Pressable style={styles.chromeBtn} onPress={() => navigation.navigate("MorphHistory")}>
-            <Ionicons name="time-outline" size={18} color="#0A0A0A" />
-          </Pressable>
-          <Pressable
-            style={styles.chromeBtn}
-            onPress={() => navigation.getParent()?.navigate("Profile" as never)}
-          >
-            <Ionicons name="person-outline" size={18} color="#0A0A0A" />
-          </Pressable>
-        </View>
+        <Text style={styles.topCounter}>
+          {suggestions.length > 0
+            ? `${spotlightIndex + 1} / ${suggestions.length}`
+            : "Natija"}
+        </Text>
+        <Pressable style={styles.topLink} onPress={onNewPhoto}>
+          <Ionicons name="camera-outline" size={15} color="#0A0A0A" />
+          <Text style={styles.topLinkText}>Yangi</Text>
+        </Pressable>
       </View>
 
       <ScrollView
         contentContainerStyle={{
-          paddingBottom: Math.max(insets.bottom, 16) + 24,
-          paddingHorizontal: 14,
+          paddingBottom: Math.max(insets.bottom, 16) + 28,
+          paddingHorizontal: H_PAD,
           gap: 14,
         }}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.panel}>
-          <Pressable style={styles.homeLink} onPress={() => navigation.navigate("MorphCapture")}>
-            <Ionicons name="chevron-back" size={14} color="#0A0A0A" />
-            <Text style={styles.homeLinkText}>Morf AI Home</Text>
-          </Pressable>
-
-          {session.analyze ? (
-            <View style={styles.analysisBlock}>
-              <Text style={styles.analysisEyebrow}>TAHLIL NATIJASI</Text>
-              <View style={styles.chipRow}>
-                <View style={styles.chip}>
-                  <Text style={styles.chipText}>{faceShapeLabel(session.analyze.face_shape)}</Text>
-                </View>
-                <View style={styles.chip}>
-                  <Text style={styles.chipText}>{hairTypeLabel(session.analyze.hair_type)}</Text>
-                </View>
+        {session.analyze ? (
+          <View style={styles.analysisCompact}>
+            <View style={styles.chipRow}>
+              <View style={styles.chip}>
+                <Text style={styles.chipText}>{faceShapeLabel(session.analyze.face_shape)}</Text>
               </View>
-              <Text style={styles.summary}>{session.analyze.summary_uz}</Text>
+              <View style={styles.chip}>
+                <Text style={styles.chipText}>{hairTypeLabel(session.analyze.hair_type)}</Text>
+              </View>
             </View>
-          ) : null}
-
-          {error ? (
-            <View style={styles.errorInline}>
-              <Text style={styles.errorInlineText}>{error}</Text>
-            </View>
-          ) : null}
-
-          <View style={styles.recsHead}>
-            <Text style={styles.recsTitle}>
-              {suggestions.length} ta tavsiya
-            </Text>
-            <Pressable onPress={onNewPhoto}>
-              <Text style={styles.newPhoto}>Yangi rasm</Text>
-            </Pressable>
+            {session.analyze.summary_uz ? (
+              <Text style={styles.summary} numberOfLines={2}>
+                {session.analyze.summary_uz}
+              </Text>
+            ) : null}
           </View>
+        ) : null}
 
-          {suggestions.length > 0 ? (
-            <>
+        {error ? (
+          <View style={styles.errorInline}>
+            <Text style={styles.errorInlineText}>{error}</Text>
+          </View>
+        ) : null}
+
+        {suggestions.length > 0 ? (
+          <View style={styles.recsBlock}>
+            <Text style={styles.recsTitle}>{suggestions.length} ta tavsiya</Text>
+            <Text style={styles.recsHint}>Chap yoki o‘ngga suring · tugmalar bilan ham</Text>
+
+            <View style={styles.carouselWrap}>
               <FlatList
+                ref={carouselRef}
                 data={suggestions}
                 horizontal
-                pagingEnabled
+                pagingEnabled={false}
                 decelerationRate="fast"
-                snapToInterval={CARD_W + 12}
+                snapToInterval={CARD_W + CARD_GAP}
+                snapToAlignment="start"
+                disableIntervalMomentum
                 showsHorizontalScrollIndicator={false}
                 keyExtractor={(item) => item.id}
+                getItemLayout={(_, index) => ({
+                  length: CARD_W + CARD_GAP,
+                  offset: (CARD_W + CARD_GAP) * index,
+                  index,
+                })}
                 onMomentumScrollEnd={(e) => {
-                  const idx = Math.round(e.nativeEvent.contentOffset.x / (CARD_W + 12));
+                  const idx = Math.round(
+                    e.nativeEvent.contentOffset.x / (CARD_W + CARD_GAP),
+                  );
                   setSpotlightIndex(Math.max(0, Math.min(idx, suggestions.length - 1)));
                 }}
-                contentContainerStyle={{ gap: 12 }}
+                contentContainerStyle={undefined}
                 renderItem={({ item, index }) => {
                   const preview = session.tryOnByStyle[item.id];
                   const loading = activeStyleId === item.id;
+                  const isLast = index === suggestions.length - 1;
                   return (
                     <Pressable
-                      style={[styles.spotlight, { width: CARD_W }]}
+                      style={[
+                        styles.spotlight,
+                        { width: CARD_W, marginRight: isLast ? 0 : CARD_GAP },
+                      ]}
                       onPress={() => openPreview(item)}
                     >
                       <Image
-                        source={{ uri: preview || item.image_url || session.selfieDataUrl || undefined }}
+                        source={{
+                          uri:
+                            preview ||
+                            item.image_url ||
+                            session.selfieDataUrl ||
+                            undefined,
+                        }}
                         style={styles.spotlightImg}
                       />
                       {loading ? (
@@ -529,7 +549,9 @@ export function MorphResultsScreen({ navigation }: Props) {
                             </Text>
                           </View>
                           <View style={styles.matchPill}>
-                            <Text style={styles.matchPillText}>{Math.round(item.match)}% mos</Text>
+                            <Text style={styles.matchPillText}>
+                              {Math.round(item.match)}% mos
+                            </Text>
                           </View>
                         </View>
                       </LinearGradient>
@@ -538,88 +560,113 @@ export function MorphResultsScreen({ navigation }: Props) {
                 }}
               />
 
-              {activeSuggestion?.reason_uz ? (
-                <Text style={styles.reason} numberOfLines={2}>
-                  {activeSuggestion.reason_uz}
-                </Text>
+              {suggestions.length > 1 ? (
+                <>
+                  <Pressable
+                    style={[
+                      styles.navArrow,
+                      styles.navArrowLeft,
+                      spotlightIndex === 0 && styles.navArrowDisabled,
+                    ]}
+                    disabled={spotlightIndex === 0}
+                    onPress={() => goToSuggestion(spotlightIndex - 1)}
+                    accessibilityLabel="Oldingi tavsiya"
+                  >
+                    <Ionicons name="chevron-back" size={22} color="#0A0A0A" />
+                  </Pressable>
+                  <Pressable
+                    style={[
+                      styles.navArrow,
+                      styles.navArrowRight,
+                      spotlightIndex >= suggestions.length - 1 && styles.navArrowDisabled,
+                    ]}
+                    disabled={spotlightIndex >= suggestions.length - 1}
+                    onPress={() => goToSuggestion(spotlightIndex + 1)}
+                    accessibilityLabel="Keyingi tavsiya"
+                  >
+                    <Ionicons name="chevron-forward" size={22} color="#0A0A0A" />
+                  </Pressable>
+                </>
               ) : null}
+            </View>
 
+            {suggestions.length > 1 ? (
+              <View style={styles.dots}>
+                {suggestions.map((s, i) => (
+                  <Pressable
+                    key={s.id}
+                    onPress={() => goToSuggestion(i)}
+                    hitSlop={8}
+                    style={[styles.dot, i === spotlightIndex && styles.dotOn]}
+                  />
+                ))}
+              </View>
+            ) : null}
+
+            {activeSuggestion?.reason_uz ? (
+              <Text style={styles.reason} numberOfLines={3}>
+                {activeSuggestion.reason_uz}
+              </Text>
+            ) : null}
+
+            <Pressable
+              style={styles.bookBtn}
+              onPress={() => void bookSalon(activeSuggestion?.salon_id ?? null)}
+            >
+              <Ionicons name="calendar-outline" size={18} color="#FFF" />
+              <Text style={styles.bookBtnText}>Bron qilish</Text>
+            </Pressable>
+
+            <View style={styles.iconActions}>
+              <Pressable
+                style={[styles.iconAction, activePreview ? styles.iconActionOn : null]}
+                disabled={!!activeStyleId || !!activePreview}
+                onPress={() => {
+                  if (activeSuggestion) void runTryOn(activeSuggestion);
+                }}
+              >
+                {activeStyleId === activeSuggestion?.id ? (
+                  <ActivityIndicator color={activePreview ? "#FFF" : "#0A0A0A"} />
+                ) : (
+                  <Ionicons
+                    name="sparkles"
+                    size={18}
+                    color={activePreview ? "#FFF" : "#0A0A0A"}
+                  />
+                )}
+              </Pressable>
               <Pressable
                 style={[
-                  styles.bookBtn,
-                  !activeSuggestion?.salon_id && styles.bookBtnDisabled,
+                  styles.iconAction,
+                  activeSuggestion && savedIds.includes(activeSuggestion.id)
+                    ? styles.iconActionOn
+                    : null,
                 ]}
-                onPress={() => void bookSalon(activeSuggestion?.salon_id ?? null)}
+                onPress={() => activeSuggestion && toggleSave(activeSuggestion.id)}
               >
-                <Ionicons name="calendar-outline" size={18} color="#FFF" />
-                <Text style={styles.bookBtnText}>Bron qilish</Text>
-              </Pressable>
-
-              <View style={styles.iconActions}>
-                <Pressable
-                  style={[
-                    styles.iconAction,
-                    activePreview ? styles.iconActionOn : null,
-                  ]}
-                  disabled={!!activeStyleId || !!activePreview}
-                  onPress={() => {
-                    if (activeSuggestion) void runTryOn(activeSuggestion);
-                  }}
-                >
-                  {activeStyleId === activeSuggestion?.id ? (
-                    <ActivityIndicator color={activePreview ? "#FFF" : "#0A0A0A"} />
-                  ) : (
-                    <Ionicons
-                      name="sparkles"
-                      size={18}
-                      color={activePreview ? "#FFF" : "#0A0A0A"}
-                    />
-                  )}
-                </Pressable>
-                <Pressable
-                  style={[
-                    styles.iconAction,
+                <Ionicons
+                  name={
                     activeSuggestion && savedIds.includes(activeSuggestion.id)
-                      ? styles.iconActionOn
-                      : null,
-                  ]}
-                  onPress={() => activeSuggestion && toggleSave(activeSuggestion.id)}
-                >
-                  <Ionicons
-                    name={
-                      activeSuggestion && savedIds.includes(activeSuggestion.id)
-                        ? "bookmark"
-                        : "bookmark-outline"
-                    }
-                    size={18}
-                    color={
-                      activeSuggestion && savedIds.includes(activeSuggestion.id)
-                        ? "#FFF"
-                        : "#0A0A0A"
-                    }
-                  />
-                </Pressable>
-                <Pressable
-                  style={styles.iconAction}
-                  onPress={() => activeSuggestion && openPreview(activeSuggestion)}
-                >
-                  <Ionicons name="share-outline" size={18} color="#0A0A0A" />
-                </Pressable>
-              </View>
-
-              {suggestions.length > 1 ? (
-                <View style={styles.dots}>
-                  {suggestions.map((s, i) => (
-                    <View
-                      key={s.id}
-                      style={[styles.dot, i === spotlightIndex && styles.dotOn]}
-                    />
-                  ))}
-                </View>
-              ) : null}
-            </>
-          ) : null}
-        </View>
+                      ? "bookmark"
+                      : "bookmark-outline"
+                  }
+                  size={18}
+                  color={
+                    activeSuggestion && savedIds.includes(activeSuggestion.id)
+                      ? "#FFF"
+                      : "#0A0A0A"
+                  }
+                />
+              </Pressable>
+              <Pressable
+                style={styles.iconAction}
+                onPress={() => activeSuggestion && openPreview(activeSuggestion)}
+              >
+                <Ionicons name="share-outline" size={18} color="#0A0A0A" />
+              </Pressable>
+            </View>
+          </View>
+        ) : null}
 
         {otherStyles.length > 0 ? (
           <View style={styles.morePanel}>
@@ -802,52 +849,45 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(30,30,30,0.92)",
   },
   analyzeBtnText: { color: "#FFF", fontWeight: "800", fontSize: 15 },
-  chrome: {
+  topBar: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 12,
-    marginBottom: 8,
-    gap: 8,
+    paddingHorizontal: 14,
+    marginBottom: 10,
+    gap: 10,
   },
-  chromeBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: "rgba(255,255,255,0.92)",
+  topBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(255,255,255,0.94)",
     alignItems: "center",
     justifyContent: "center",
   },
-  chromeTitle: {
+  topCounter: {
     flex: 1,
     textAlign: "center",
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "800",
     color: "#0A0A0A",
+    letterSpacing: -0.2,
   },
-  chromeRight: { flexDirection: "row", gap: 6 },
-  panel: {
-    backgroundColor: "#FFF",
-    borderRadius: 28,
-    padding: 18,
-    gap: 14,
-  },
-  homeLink: {
+  topLink: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
-    alignSelf: "flex-start",
-    backgroundColor: "#F3F3F3",
+    gap: 5,
+    backgroundColor: "rgba(255,255,255,0.94)",
     borderRadius: 999,
     paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingVertical: 10,
   },
-  homeLinkText: { fontSize: 12, fontWeight: "700", color: "#0A0A0A" },
-  analysisBlock: { gap: 10 },
-  analysisEyebrow: {
-    fontSize: 10,
-    fontWeight: "800",
-    letterSpacing: 1.6,
-    color: "#A3A3A3",
+  topLinkText: { fontSize: 12, fontWeight: "800", color: "#0A0A0A" },
+  analysisCompact: {
+    backgroundColor: "rgba(255,255,255,0.94)",
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    gap: 8,
   },
   chipRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   chip: {
@@ -859,7 +899,7 @@ const styles = StyleSheet.create({
   chipText: { color: "#FFF", fontSize: 12, fontWeight: "800" },
   summary: {
     fontSize: 13,
-    lineHeight: 19,
+    lineHeight: 18,
     color: "#525252",
   },
   errorInline: {
@@ -868,15 +908,51 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   errorInlineText: { color: "#B91C1C", fontSize: 13 },
-  recsHead: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  recsTitle: { fontSize: 16, fontWeight: "800", color: "#0A0A0A" },
-  newPhoto: { fontSize: 13, fontWeight: "700", color: "#0A0A0A", textDecorationLine: "underline" },
-  spotlight: {
+  recsBlock: {
+    backgroundColor: "rgba(255,255,255,0.96)",
     borderRadius: 24,
+    paddingVertical: 16,
+    gap: 12,
+    overflow: "hidden",
+  },
+  recsTitle: {
+    fontSize: 17,
+    fontWeight: "800",
+    color: "#0A0A0A",
+    paddingHorizontal: 16,
+  },
+  recsHint: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#8E8E93",
+    paddingHorizontal: 16,
+    marginTop: -6,
+  },
+  carouselWrap: {
+    position: "relative",
+  },
+  navArrow: {
+    position: "absolute",
+    top: "42%",
+    marginTop: -22,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "rgba(255,255,255,0.95)",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 3,
+    shadowColor: "#000",
+    shadowOpacity: 0.14,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 6,
+  },
+  navArrowLeft: { left: 6 },
+  navArrowRight: { right: 6 },
+  navArrowDisabled: { opacity: 0.35 },
+  spotlight: {
+    borderRadius: 22,
     overflow: "hidden",
     backgroundColor: "#111",
     aspectRatio: 3 / 4,
@@ -897,64 +973,60 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFF",
     borderRadius: 999,
     paddingHorizontal: 10,
-    paddingVertical: 5,
+    paddingVertical: 6,
   },
-  previewBadgeText: { fontSize: 10, fontWeight: "800", color: "#0A0A0A" },
+  previewBadgeText: { fontSize: 11, fontWeight: "800", color: "#0A0A0A" },
   spotlightGrad: {
     position: "absolute",
     left: 0,
     right: 0,
     bottom: 0,
-    paddingHorizontal: 16,
-    paddingBottom: 16,
+    paddingHorizontal: 14,
+    paddingBottom: 14,
     paddingTop: 48,
   },
   spotlightMeta: {
     flexDirection: "row",
     alignItems: "flex-end",
-    justifyContent: "space-between",
     gap: 10,
   },
-  spotlightIndex: {
-    color: "rgba(255,255,255,0.55)",
-    fontSize: 10,
-    fontWeight: "800",
-    letterSpacing: 1,
-  },
-  spotlightTitle: { color: "#FFF", fontSize: 20, fontWeight: "800", marginTop: 2 },
+  spotlightIndex: { color: "rgba(255,255,255,0.7)", fontSize: 12, fontWeight: "700" },
+  spotlightTitle: { color: "#FFF", fontSize: 18, fontWeight: "800", letterSpacing: -0.3 },
   matchPill: {
     backgroundColor: "#FFF",
     borderRadius: 999,
     paddingHorizontal: 10,
-    paddingVertical: 5,
+    paddingVertical: 6,
   },
   matchPillText: { fontSize: 11, fontWeight: "800", color: "#0A0A0A" },
   reason: {
     fontSize: 13,
     lineHeight: 19,
     color: "#525252",
+    paddingHorizontal: 16,
   },
   bookBtn: {
+    marginHorizontal: 16,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    minHeight: 50,
-    borderRadius: 18,
+    minHeight: 52,
+    borderRadius: 16,
     backgroundColor: "#0A0A0A",
   },
-  bookBtnDisabled: { opacity: 0.45 },
-  bookBtnText: { color: "#FFF", fontWeight: "800", fontSize: 14 },
+  bookBtnText: { color: "#FFF", fontWeight: "800", fontSize: 15 },
   iconActions: {
     flexDirection: "row",
     justifyContent: "center",
     gap: 12,
+    paddingHorizontal: 16,
   },
   iconAction: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: "#F5F5F5",
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    backgroundColor: "#F3F3F3",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -962,16 +1034,20 @@ const styles = StyleSheet.create({
   dots: {
     flexDirection: "row",
     justifyContent: "center",
-    gap: 6,
-    marginTop: 4,
+    alignItems: "center",
+    gap: 8,
+    paddingVertical: 2,
   },
   dot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
+    width: 7,
+    height: 7,
+    borderRadius: 4,
     backgroundColor: "#D4D4D4",
   },
-  dotOn: { width: 18, backgroundColor: "#0A0A0A" },
+  dotOn: {
+    width: 18,
+    backgroundColor: "#0A0A0A",
+  },
   morePanel: {
     backgroundColor: "#FFF",
     borderRadius: 28,
