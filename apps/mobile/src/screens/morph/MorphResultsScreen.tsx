@@ -27,10 +27,10 @@ import {
   type AiStyleSuggestion,
 } from "../../api/ai";
 import { fetchHairstyles, type ApiHairstyle } from "../../api/hairstyles";
+import { FaceAnalysisRing } from "../../components/morph/FaceAnalysisRing";
 import { useAppToast } from "../../components/ui/ToastProvider";
 import { useHideTabBar } from "../../hooks/useHideTabBar";
 import { useMorphLimitGate } from "../../hooks/useMorphLimitGate";
-import { faceShapeLabel, hairTypeLabel } from "../../lib/morph-labels";
 import { WEB_ORIGIN } from "../../lib/morph-share";
 import { useMorphSession } from "../../lib/morph-session";
 import type { MorphStackParamList } from "../../navigation/MorphStack";
@@ -171,6 +171,9 @@ export function MorphResultsScreen({ navigation }: Props) {
           image: photo,
           face_shape_key: result.face_shape,
           hair_type_key: result.hair_type,
+          hair_color_key: result.hair_color,
+          hair_texture_key: result.hair_texture,
+          beard_key: result.beard,
           source: "camera_scan",
           replace_latest: true,
         }).catch(() => undefined);
@@ -451,24 +454,6 @@ export function MorphResultsScreen({ navigation }: Props) {
         }}
         showsVerticalScrollIndicator={false}
       >
-        {session.analyze ? (
-          <View style={styles.analysisCompact}>
-            <View style={styles.chipRow}>
-              <View style={styles.chip}>
-                <Text style={styles.chipText}>{faceShapeLabel(session.analyze.face_shape)}</Text>
-              </View>
-              <View style={styles.chip}>
-                <Text style={styles.chipText}>{hairTypeLabel(session.analyze.hair_type)}</Text>
-              </View>
-            </View>
-            {session.analyze.summary_uz ? (
-              <Text style={styles.summary} numberOfLines={2}>
-                {session.analyze.summary_uz}
-              </Text>
-            ) : null}
-          </View>
-        ) : null}
-
         {error ? (
           <View style={styles.errorInline}>
             <Text style={styles.errorInlineText}>{error}</Text>
@@ -667,6 +652,8 @@ export function MorphResultsScreen({ navigation }: Props) {
             </View>
           </View>
         ) : null}
+
+        {session.analyze ? <FaceAnalysisRing analyze={session.analyze} /> : null}
 
         {otherStyles.length > 0 ? (
           <View style={styles.morePanel}>
@@ -880,27 +867,6 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     paddingHorizontal: 12,
     paddingVertical: 10,
-  },
-  topLinkText: { fontSize: 12, fontWeight: "800", color: "#0A0A0A" },
-  analysisCompact: {
-    backgroundColor: "rgba(255,255,255,0.94)",
-    borderRadius: 20,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    gap: 8,
-  },
-  chipRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  chip: {
-    backgroundColor: "#0A0A0A",
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-  },
-  chipText: { color: "#FFF", fontSize: 12, fontWeight: "800" },
-  summary: {
-    fontSize: 13,
-    lineHeight: 18,
-    color: "#525252",
   },
   errorInline: {
     backgroundColor: "rgba(239,68,68,0.1)",

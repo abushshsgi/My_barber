@@ -69,6 +69,9 @@ class AiStyleHistoryEntry(models.Model):
     photo = models.ImageField(upload_to="ai-style/history/%Y/%m/", blank=True, null=True)
     face_shape_key = models.CharField(max_length=16, blank=True, default="")
     hair_type_key = models.CharField(max_length=16, blank=True, default="")
+    hair_color_key = models.CharField(max_length=16, blank=True, default="")
+    hair_texture_key = models.CharField(max_length=16, blank=True, default="")
+    beard_key = models.CharField(max_length=16, blank=True, default="")
     source = models.CharField(max_length=16, choices=Source.choices)
     created_at = models.DateTimeField(auto_now_add=True)
 

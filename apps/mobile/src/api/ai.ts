@@ -88,6 +88,18 @@ export type AiStyleSuggestion = {
 export type AiStyleAnalyzeResponse = {
   face_shape: "oval" | "round" | "square";
   hair_type: "short" | "medium" | "long";
+  hair_color?:
+    | "black"
+    | "dark_brown"
+    | "brown"
+    | "light_brown"
+    | "blonde"
+    | "red"
+    | "gray"
+    | "other";
+  hair_color_hex?: string;
+  hair_texture?: "straight" | "wavy" | "curly" | "coily";
+  beard?: "none" | "light" | "full";
   summary_uz: string;
   detected_gender?: "male" | "female" | "unclear";
   suggestions: AiStyleSuggestion[];
@@ -152,6 +164,9 @@ export type AiStyleHistoryEntry = {
   photo_url: string | null;
   face_shape_key: string;
   hair_type_key: string;
+  hair_color_key?: string;
+  hair_texture_key?: string;
+  beard_key?: string;
   source: "camera_scan" | "gallery" | "ai_analysis";
   scanned_at: string;
 };
@@ -342,6 +357,9 @@ export async function saveAiStyleHistory(payload: {
   image?: string;
   face_shape_key?: string;
   hair_type_key?: string;
+  hair_color_key?: string;
+  hair_texture_key?: string;
+  beard_key?: string;
   source: "camera_scan" | "gallery" | "ai_analysis";
   replace_latest?: boolean;
 }): Promise<AiStyleHistoryEntry> {

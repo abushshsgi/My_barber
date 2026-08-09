@@ -231,6 +231,10 @@ class AiStyleAnalyzeView(UnthrottledAPIView):
                 {
                     "face_shape": analysis["face_shape"],
                     "hair_type": analysis["hair_type"],
+                    "hair_color": analysis.get("hair_color") or "other",
+                    "hair_color_hex": analysis.get("hair_color_hex") or "#5C5C5C",
+                    "hair_texture": analysis.get("hair_texture") or "straight",
+                    "beard": analysis.get("beard") or "none",
                     "summary_uz": analysis["summary_uz"],
                     "detected_gender": analysis["detected_gender"],
                     "suggestions": suggestions,
@@ -661,9 +665,19 @@ class AiStyleHistoryListCreateView(UnthrottledAPIView):
                 save_history_photo(entry, image)
             entry.face_shape_key = data.get("face_shape_key") or entry.face_shape_key
             entry.hair_type_key = data.get("hair_type_key") or entry.hair_type_key
+            entry.hair_color_key = data.get("hair_color_key") or entry.hair_color_key
+            entry.hair_texture_key = data.get("hair_texture_key") or entry.hair_texture_key
+            entry.beard_key = data.get("beard_key") or entry.beard_key
             entry.source = data["source"]
             entry.save(
-                update_fields=["face_shape_key", "hair_type_key", "source"],
+                update_fields=[
+                    "face_shape_key",
+                    "hair_type_key",
+                    "hair_color_key",
+                    "hair_texture_key",
+                    "beard_key",
+                    "source",
+                ],
             )
             out = AiStyleHistoryEntrySerializer(entry, context={"request": request})
             return Response(out.data)
@@ -675,6 +689,9 @@ class AiStyleHistoryListCreateView(UnthrottledAPIView):
             user=user,
             face_shape_key=data.get("face_shape_key") or "",
             hair_type_key=data.get("hair_type_key") or "",
+            hair_color_key=data.get("hair_color_key") or "",
+            hair_texture_key=data.get("hair_texture_key") or "",
+            beard_key=data.get("beard_key") or "",
             source=data["source"],
         )
         save_history_photo(entry, image)

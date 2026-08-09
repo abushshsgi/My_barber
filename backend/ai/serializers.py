@@ -1,7 +1,13 @@
 from rest_framework import serializers
 
 from ai.age_groups import resolve_hairstyle_image_path
-from ai.services.gemini_style import FACE_SHAPES, HAIR_TYPES
+from ai.services.gemini_style import (
+    BEARD_LEVELS,
+    FACE_SHAPES,
+    HAIR_COLORS,
+    HAIR_TEXTURES,
+    HAIR_TYPES,
+)
 
 from .models import AiStyleHistoryEntry, Hairstyle, MorphAiGenerationEntry, MorphAiLookShare
 
@@ -94,6 +100,9 @@ class AiStyleHistoryEntrySerializer(serializers.ModelSerializer):
             "photo_url",
             "face_shape_key",
             "hair_type_key",
+            "hair_color_key",
+            "hair_texture_key",
+            "beard_key",
             "source",
             "scanned_at",
         )
@@ -117,6 +126,9 @@ class AiStyleHistoryCreateSerializer(serializers.Serializer):
     image = serializers.CharField(required=False, allow_blank=True)
     face_shape_key = serializers.CharField(required=False, allow_blank=True, default="")
     hair_type_key = serializers.CharField(required=False, allow_blank=True, default="")
+    hair_color_key = serializers.CharField(required=False, allow_blank=True, default="")
+    hair_texture_key = serializers.CharField(required=False, allow_blank=True, default="")
+    beard_key = serializers.CharField(required=False, allow_blank=True, default="")
     source = serializers.ChoiceField(choices=AiStyleHistoryEntry.Source.choices)
     replace_latest = serializers.BooleanField(required=False, default=False)
 
@@ -130,6 +142,24 @@ class AiStyleHistoryCreateSerializer(serializers.Serializer):
         value = (value or "").strip().lower()
         if value and value not in HAIR_TYPES:
             raise serializers.ValidationError("Noto'g'ri soch turi.")
+        return value
+
+    def validate_hair_color_key(self, value: str) -> str:
+        value = (value or "").strip().lower()
+        if value and value not in HAIR_COLORS:
+            raise serializers.ValidationError("Noto'g'ri soch rangi.")
+        return value
+
+    def validate_hair_texture_key(self, value: str) -> str:
+        value = (value or "").strip().lower()
+        if value and value not in HAIR_TEXTURES:
+            raise serializers.ValidationError("Noto'g'ri soch teksturasi.")
+        return value
+
+    def validate_beard_key(self, value: str) -> str:
+        value = (value or "").strip().lower()
+        if value and value not in BEARD_LEVELS:
+            raise serializers.ValidationError("Noto'g'ri soqol holati.")
         return value
 
 

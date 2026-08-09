@@ -25,9 +25,34 @@ MAX_IMAGE_BYTES = 5 * 1024 * 1024
 ALLOWED_MIME = frozenset({"image/jpeg", "image/png", "image/webp"})
 FACE_SHAPES = frozenset({"oval", "round", "square"})
 HAIR_TYPES = frozenset({"short", "medium", "long"})
+HAIR_COLORS = frozenset(
+    {
+        "black",
+        "dark_brown",
+        "brown",
+        "light_brown",
+        "blonde",
+        "red",
+        "gray",
+        "other",
+    }
+)
+HAIR_TEXTURES = frozenset({"straight", "wavy", "curly", "coily"})
+BEARD_LEVELS = frozenset({"none", "light", "full"})
 DETECTED_GENDERS = frozenset({"male", "female", "unclear"})
 GEMINI_VISION_MODEL = "gemini-2.5-flash"
 NO_FACE_MESSAGE = "Yuzdan boshqa narsa yuklandi. Iltimos, yuz shaklingizni yuboring!"
+
+HAIR_COLOR_HEX = {
+    "black": "#1A1A1A",
+    "dark_brown": "#3B2314",
+    "brown": "#6B3F2A",
+    "light_brown": "#A67C52",
+    "blonde": "#D4B483",
+    "red": "#8B3A2F",
+    "gray": "#8A8A8A",
+    "other": "#5C5C5C",
+}
 
 
 def _vision_model() -> str:
@@ -188,13 +213,18 @@ Return ONLY valid JSON, no markdown, no extra text:
   "gender_confidence": 0.0-1.0,
   "face_shape": "oval" | "round" | "square",
   "hair_type": "short" | "medium" | "long",
-  "summary_uz": "1-2 short sentences in Uzbek: yuz shakli, soch uzunligi/turi, soqol (agar ko'rinsa), soch rangi (agar aniq bo'lsa)"
+  "hair_color": "black" | "dark_brown" | "brown" | "light_brown" | "blonde" | "red" | "gray" | "other",
+  "hair_texture": "straight" | "wavy" | "curly" | "coily",
+  "beard": "none" | "light" | "full",
+  "summary_uz": "1-2 short sentences in Uzbek: yuz shakli, soch uzunligi/turi/rangi, soqol (agar ko'rinsa)"
 }}
 
 Rules:
 - If no clear single human face is visible, set has_face to false and leave other fields empty.
 - detected_gender: perceived gender presentation of the person in the photo (not the app setting).
 - gender_confidence: how sure you are about detected_gender (0.0 = guess, 1.0 = very sure).
+- hair_color / hair_texture describe the CURRENT selfie hair (before any try-on).
+- beard: none if clean-shaven or not visible; light for stubble; full for beard.
 - Do NOT recommend hairstyle names — analysis only.
 - Be realistic; if face is unclear, set has_face to false."""
 
@@ -246,14 +276,38 @@ def _normalize_gender_confidence(value: Any) -> float:
     return max(0.0, min(1.0, confidence))
 
 
+def _normalize_enum(value: Any, allowed: frozenset[str], fallback: str) -> str:
+    raw = str(value or "").strip().lower().replace("-", "_").replace(" ", "_")
+    aliases = {
+        "darkbrown": "dark_brown",
+        "lightbrown": "light_brown",
+        "ginger": "red",
+        "auburn": "red",
+        "grey": "gray",
+        "silver": "gray",
+        "wave": "wavy",
+        "waves": "wavy",
+        "curl": "curly",
+        "coils": "coily",
+        "kinky": "coily",
+        "stubble": "light",
+        "beard": "full",
+        "clean": "none",
+        "clean_shaven": "none",
+    }
+    raw = aliases.get(raw, raw)
+    if raw in allowed:
+        return raw
+    return fallback
+
+
 def _normalize_analysis(data: dict[str, Any]) -> dict[str, Any]:
     _ensure_has_face(data)
-    face_shape = str(data.get("face_shape", "oval")).lower()
-    hair_type = str(data.get("hair_type", "medium")).lower()
-    if face_shape not in FACE_SHAPES:
-        face_shape = "oval"
-    if hair_type not in HAIR_TYPES:
-        hair_type = "medium"
+    face_shape = _normalize_enum(data.get("face_shape"), FACE_SHAPES, "oval")
+    hair_type = _normalize_enum(data.get("hair_type"), HAIR_TYPES, "medium")
+    hair_color = _normalize_enum(data.get("hair_color"), HAIR_COLORS, "other")
+    hair_texture = _normalize_enum(data.get("hair_texture"), HAIR_TEXTURES, "straight")
+    beard = _normalize_enum(data.get("beard"), BEARD_LEVELS, "none")
 
     summary_uz = str(data.get("summary_uz", "")).strip()[:400]
     detected_gender = _normalize_detected_gender(data.get("detected_gender"))
@@ -262,6 +316,10 @@ def _normalize_analysis(data: dict[str, Any]) -> dict[str, Any]:
     return {
         "face_shape": face_shape,
         "hair_type": hair_type,
+        "hair_color": hair_color,
+        "hair_color_hex": HAIR_COLOR_HEX.get(hair_color, HAIR_COLOR_HEX["other"]),
+        "hair_texture": hair_texture,
+        "beard": beard,
         "summary_uz": summary_uz,
         "detected_gender": detected_gender,
         "gender_confidence": gender_confidence,
