@@ -28,7 +28,7 @@ import {
   type AiStyleSuggestion,
 } from "../../api/ai";
 import { fetchHairstyles, type ApiHairstyle } from "../../api/hairstyles";
-import { AppToast } from "../../components/ui/AppToast";
+import { useAppToast } from "../../components/ui/ToastProvider";
 import { useHideTabBar } from "../../hooks/useHideTabBar";
 import { useMorphLimitGate } from "../../hooks/useMorphLimitGate";
 import { faceShapeLabel, hairTypeLabel } from "../../lib/morph-labels";
@@ -49,6 +49,7 @@ export function MorphResultsScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
   const session = useMorphSession();
   const gate = useMorphLimitGate();
+  const toast = useAppToast();
   const [phase, setPhase] = useState<Phase>("checking");
   const [error, setError] = useState<string | null>(null);
   const [activeStyleId, setActiveStyleId] = useState<string | null>(null);
@@ -110,17 +111,17 @@ export function MorphResultsScreen({ navigation }: Props) {
           navigation.navigate("MorphPaywall");
           return;
         }
-        setError(
-          formatMorphUserError(
-            err instanceof Error ? err.message : "Try-on xatosi",
-            "Try-on xatosi",
-          ),
+        const msg = formatMorphUserError(
+          err instanceof Error ? err.message : "Try-on xatosi",
+          "Try-on xatosi",
         );
+        setError(msg);
+        toast.show(msg, { tone: "error", durationMs: 4200 });
       } finally {
         setActiveStyleId(null);
       }
     },
-    [session, gate, navigation],
+    [session, gate, navigation, toast],
   );
 
   const runAnalyze = useCallback(
@@ -191,6 +192,29 @@ export function MorphResultsScreen({ navigation }: Props) {
     void runAnalyze();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- bir marta selfie bilan
   }, []);
+
+  useEffect(() => {
+    if (phase === "error" && !session.analyze) {
+      toast.show(error || NO_FACE_MESSAGE, { tone: "error", durationMs: 5200 });
+      return;
+    }
+    if (phase === "checking") {
+      toast.show("Yuz tekshirilmoqda…", { tone: "loading", durationMs: 0 });
+      return;
+    }
+    if (phase === "analyzing") {
+      toast.show("Yuz topildi. Tahlil qilinmoqda…", {
+        tone: "success",
+        durationMs: 3600,
+      });
+      return;
+    }
+    toast.hide();
+  }, [phase, error, session.analyze, toast]);
+
+  useEffect(() => {
+    return () => toast.hide();
+  }, [toast]);
 
   const suggestions = session.analyze?.suggestions ?? [];
   const activeSuggestion = suggestions[spotlightIndex] ?? suggestions[0] ?? null;
@@ -288,31 +312,6 @@ export function MorphResultsScreen({ navigation }: Props) {
             style={[styles.scanLine, { transform: [{ translateY: scanTranslate }] }]}
           />
         ) : null}
-
-        <View style={[styles.scanTop, { paddingTop: Math.max(insets.top, 12) }]}>
-          {phase === "error" ? (
-            <AppToast
-              key={`err-${error || "xato"}`}
-              message={error || NO_FACE_MESSAGE}
-              tone="error"
-              durationMs={5200}
-            />
-          ) : phase === "checking" ? (
-            <AppToast
-              key="checking"
-              message="Yuz tekshirilmoqda…"
-              tone="info"
-              durationMs={0}
-            />
-          ) : (
-            <AppToast
-              key="analyzing"
-              message="Yuz topildi. Tahlil qilinmoqda…"
-              tone="success"
-              durationMs={3600}
-            />
-          )}
-        </View>
 
         <View style={[styles.scanBottom, { paddingBottom: Math.max(insets.bottom, 16) + 12 }]}>
           {phase === "error" ? (
@@ -651,9 +650,6 @@ const styles = StyleSheet.create({
     right: 0,
     height: 2,
     backgroundColor: "rgba(255,255,255,0.85)",
-  },
-  scanTop: {
-    paddingHorizontal: 16,
   },
   scanBottom: {
     position: "absolute",
