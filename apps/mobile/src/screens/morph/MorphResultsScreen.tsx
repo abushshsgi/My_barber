@@ -735,16 +735,16 @@ export function MorphResultsScreen({ navigation }: Props) {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: "#0A0A0A" },
-  rootLight: { flex: 1, backgroundColor: "#F5F5F5" },
+  rootLight: { flex: 1, backgroundColor: "#EDE6DF" },
   bgPhoto: {
     ...StyleSheet.absoluteFill,
     width: "100%",
     height: "100%",
-    opacity: 0.55,
+    opacity: 0.85,
   },
   bgDim: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: "rgba(245,245,245,0.72)",
+    backgroundColor: "rgba(255,255,255,0.28)",
   },
   scanChrome: {
     flexDirection: "row",
