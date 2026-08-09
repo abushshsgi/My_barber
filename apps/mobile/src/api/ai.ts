@@ -100,6 +100,9 @@ export type AiStyleAnalyzeResponse = {
   hair_color_hex?: string;
   hair_texture?: "straight" | "wavy" | "curly" | "coily";
   beard?: "none" | "light" | "full";
+  face_confidence?: number;
+  hair_type_confidence?: number;
+  hair_color_confidence?: number;
   summary_uz: string;
   detected_gender?: "male" | "female" | "unclear";
   suggestions: AiStyleSuggestion[];

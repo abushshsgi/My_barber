@@ -216,6 +216,9 @@ Return ONLY valid JSON, no markdown, no extra text:
   "hair_color": "black" | "dark_brown" | "brown" | "light_brown" | "blonde" | "red" | "gray" | "other",
   "hair_texture": "straight" | "wavy" | "curly" | "coily",
   "beard": "none" | "light" | "full",
+  "face_confidence": 0.0-1.0,
+  "hair_type_confidence": 0.0-1.0,
+  "hair_color_confidence": 0.0-1.0,
   "summary_uz": "1-2 short sentences in Uzbek: yuz shakli, soch uzunligi/turi/rangi, soqol (agar ko'rinsa)"
 }}
 
@@ -223,6 +226,7 @@ Rules:
 - If no clear single human face is visible, set has_face to false and leave other fields empty.
 - detected_gender: perceived gender presentation of the person in the photo (not the app setting).
 - gender_confidence: how sure you are about detected_gender (0.0 = guess, 1.0 = very sure).
+- face_confidence / hair_type_confidence / hair_color_confidence: how sure you are about each trait (0.0–1.0).
 - hair_color / hair_texture describe the CURRENT selfie hair (before any try-on).
 - beard: none if clean-shaven or not visible; light for stubble; full for beard.
 - Do NOT recommend hairstyle names — analysis only.
@@ -276,6 +280,16 @@ def _normalize_gender_confidence(value: Any) -> float:
     return max(0.0, min(1.0, confidence))
 
 
+def _normalize_trait_confidence(value: Any, *, fallback: float = 0.72) -> float:
+    try:
+        confidence = float(value)
+    except (TypeError, ValueError):
+        return fallback
+    if confidence <= 0:
+        return fallback
+    return max(0.05, min(1.0, confidence))
+
+
 def _normalize_enum(value: Any, allowed: frozenset[str], fallback: str) -> str:
     raw = str(value or "").strip().lower().replace("-", "_").replace(" ", "_")
     aliases = {
@@ -312,6 +326,15 @@ def _normalize_analysis(data: dict[str, Any]) -> dict[str, Any]:
     summary_uz = str(data.get("summary_uz", "")).strip()[:400]
     detected_gender = _normalize_detected_gender(data.get("detected_gender"))
     gender_confidence = _normalize_gender_confidence(data.get("gender_confidence"))
+    face_confidence = _normalize_trait_confidence(data.get("face_confidence"), fallback=0.86)
+    hair_type_confidence = _normalize_trait_confidence(
+        data.get("hair_type_confidence"),
+        fallback=0.78,
+    )
+    hair_color_confidence = _normalize_trait_confidence(
+        data.get("hair_color_confidence"),
+        fallback=0.74,
+    )
 
     return {
         "face_shape": face_shape,
@@ -320,6 +343,9 @@ def _normalize_analysis(data: dict[str, Any]) -> dict[str, Any]:
         "hair_color_hex": HAIR_COLOR_HEX.get(hair_color, HAIR_COLOR_HEX["other"]),
         "hair_texture": hair_texture,
         "beard": beard,
+        "face_confidence": face_confidence,
+        "hair_type_confidence": hair_type_confidence,
+        "hair_color_confidence": hair_color_confidence,
         "summary_uz": summary_uz,
         "detected_gender": detected_gender,
         "gender_confidence": gender_confidence,
