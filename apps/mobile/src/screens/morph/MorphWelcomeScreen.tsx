@@ -102,7 +102,8 @@ export function MorphWelcomeScreen({ navigation }: Props) {
       withSpring(1.05, { damping: 10 }),
       withSpring(1, { damping: 12 }),
     );
-    navigation.navigate("MorphGuide");
+    // Welcome → Guide (ikkalasi ham birinchi marta; tab yashirin).
+    navigation.replace("MorphGuide");
   };
 
   const bottomSafe = Math.max(insets.bottom, 16);

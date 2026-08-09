@@ -126,6 +126,8 @@ export function MorphGuideCarouselScreen({ navigation }: Props) {
       navigation.getParent()?.navigate("Profile" as never);
       return;
     }
+    // Intro tugadi — keyingi Try-on kirishlarda Welcome/Guide chiqmaydi.
+    await markMorphTryOnIntroDone();
     setError(null);
     setBusy(true);
     btnScale.value = withSequence(
@@ -136,15 +138,15 @@ export function MorphGuideCarouselScreen({ navigation }: Props) {
     try {
       const dataUrl = await pickSelfieFromCamera();
       if (!dataUrl) {
-        setError("Selfie olinmadi. Ruxsat bering yoki qayta urinib ko‘ring.");
+        // Intro allaqachon yozilgan — keyingi marta Capture UI.
+        navigation.replace("MorphCapture");
         return;
       }
       const ok = await gate.ensureAccess();
       if (!ok) {
-        setError("Morph AI uchun obuna kerak — tarifni tanlang.");
+        navigation.replace("MorphCapture");
         return;
       }
-      await markMorphTryOnIntroDone();
       session.clear();
       session.setSelfie(dataUrl);
       navigation.replace("MorphResults");
@@ -201,7 +203,10 @@ export function MorphGuideCarouselScreen({ navigation }: Props) {
       <View style={[styles.topBar, { paddingTop: Math.max(insets.top, 10) }]}>
         <Pressable
           style={styles.iconBtn}
-          onPress={() => navigation.goBack()}
+          onPress={() => {
+            if (navigation.canGoBack()) navigation.goBack();
+            else navigation.replace("MorphCapture");
+          }}
           accessibilityLabel="Orqaga"
         >
           <Ionicons name="chevron-back" size={18} color="#FFF" />

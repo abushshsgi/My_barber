@@ -10,6 +10,10 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { morfMarkWhite } from "../branding/morf-logo";
 import { FLOATING_TAB_BAR_STYLE } from "../hooks/useHideTabBar";
 import { AppShellProvider, useAppShell } from "../lib/AppShellContext";
+import {
+  TabBarVisibilityProvider,
+  useTabBarHidden,
+} from "../lib/TabBarVisibility";
 import { MorphSessionProvider } from "../lib/morph-session";
 import { HomeScreen } from "../screens/HomeScreen";
 import { MapScreen } from "../screens/MapScreen";
@@ -63,27 +67,15 @@ const MORPH_RIGHT: TabDef[] = [
 
 const mysaloonIcon = require("../../assets/icon.png");
 
-function CustomTabBar({ state, navigation, descriptors }: BottomTabBarProps) {
+function CustomTabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
   const bottomPad = Math.max(insets.bottom, 10);
+  const tabBarHidden = useTabBarHidden();
   const { shell, rememberTab, setShell, switchToMorphTarget, switchToMysaloonTarget } = useAppShell();
   const compact = shell === "morph";
   const leftTabs = shell === "morph" ? MORPH_LEFT : MYSALOON_LEFT;
   const rightTabs = shell === "morph" ? MORPH_RIGHT : MYSALOON_RIGHT;
   const activeName = state.routes[state.index]?.name as keyof RootTabParamList | undefined;
-
-  // useHideTabBar → tabBarStyle.display: 'none' — custom dock ham yashirinadi.
-  const focusedKey = state.routes[state.index]?.key;
-  const tabBarStyle = focusedKey
-    ? descriptors[focusedKey]?.options?.tabBarStyle
-    : undefined;
-  const styleObj =
-    tabBarStyle && typeof tabBarStyle === "object" && !Array.isArray(tabBarStyle)
-      ? (tabBarStyle as Record<string, unknown>)
-      : null;
-  if (styleObj?.display === "none") {
-    return null;
-  }
 
   useEffect(() => {
     if (!activeName) return;
@@ -110,9 +102,9 @@ function CustomTabBar({ state, navigation, descriptors }: BottomTabBarProps) {
   }, [activeName, rememberTab, setShell, shell]);
 
   const pressTab = (name: keyof RootTabParamList) => {
-    // Try-on tabi — stack ichida Welcome/Results da qolib ketmasin.
+    // Try-on tabi — stack capture ga qaytadi (intro flag bo‘yicha Welcome/Capture).
     if (name === "MorphTryOn") {
-      navigation.navigate("MorphTryOn", { screen: "MorphTryOn" } as never);
+      navigation.navigate("MorphTryOn", { screen: "MorphCapture" } as never);
       return;
     }
     const route = state.routes.find((r) => r.name === name);
@@ -136,7 +128,7 @@ function CustomTabBar({ state, navigation, descriptors }: BottomTabBarProps) {
         const target = await switchToMorphTarget();
         const tab = (target === "MorphStudio" ? "MorphTryOn" : target) as keyof RootTabParamList;
         if (tab === "MorphTryOn") {
-          navigation.navigate("MorphTryOn", { screen: "MorphTryOn" } as never);
+          navigation.navigate("MorphTryOn", { screen: "MorphCapture" } as never);
         } else {
           navigation.navigate(tab);
         }
@@ -180,6 +172,10 @@ function CustomTabBar({ state, navigation, descriptors }: BottomTabBarProps) {
     );
   };
 
+  if (tabBarHidden) {
+    return null;
+  }
+
   return (
     <View style={[styles.dockOuter, { paddingBottom: bottomPad }]} pointerEvents="box-none">
       <View style={[styles.dock, compact && styles.dockCompact]}>
@@ -211,61 +207,63 @@ function CustomTabBar({ state, navigation, descriptors }: BottomTabBarProps) {
 
 function RootTabsInner() {
   return (
-    <MorphSessionProvider>
-      <Tab.Navigator
-        tabBar={(props) => <CustomTabBar {...props} />}
-        screenOptions={{
-          headerShown: false,
-          lazy: true,
-          freezeOnBlur: true,
-          tabBarStyle: FLOATING_TAB_BAR_STYLE,
-          sceneStyle: { backgroundColor: "transparent" },
-        }}
-      >
-        <Tab.Screen name="Home">
-          {({ navigation }) => (
-            <HomeScreen
-              onOpenMap={() => navigation.navigate("Map")}
-              onOpenExplore={() => navigation.navigate("Explore")}
-            />
-          )}
-        </Tab.Screen>
-        <Tab.Screen name="Map" component={MapScreen} />
-        <Tab.Screen name="Explore">
-          {() => <PlaceholderScreen title="Explore" />}
-        </Tab.Screen>
-        <Tab.Screen name="Profile" component={ProfileStack} />
+    <TabBarVisibilityProvider>
+      <MorphSessionProvider>
+        <Tab.Navigator
+          tabBar={(props) => <CustomTabBar {...props} />}
+          screenOptions={{
+            headerShown: false,
+            lazy: true,
+            freezeOnBlur: true,
+            tabBarStyle: FLOATING_TAB_BAR_STYLE,
+            sceneStyle: { backgroundColor: "transparent" },
+          }}
+        >
+          <Tab.Screen name="Home">
+            {({ navigation }) => (
+              <HomeScreen
+                onOpenMap={() => navigation.navigate("Map")}
+                onOpenExplore={() => navigation.navigate("Explore")}
+              />
+            )}
+          </Tab.Screen>
+          <Tab.Screen name="Map" component={MapScreen} />
+          <Tab.Screen name="Explore">
+            {() => <PlaceholderScreen title="Explore" />}
+          </Tab.Screen>
+          <Tab.Screen name="Profile" component={ProfileStack} />
 
-        <Tab.Screen name="MorphChat">
-          {() => (
-            <MorphPlaceholderScreen
-              title="AI Chatbot"
-              subtitle="Tez orada — soch, parvarish va uslub bo‘yicha AI yordamchi."
-              icon="chatbubble-ellipses-outline"
-            />
-          )}
-        </Tab.Screen>
-        <Tab.Screen name="MorphCare">
-          {() => (
-            <MorphPlaceholderScreen
-              title="Parvarish"
-              subtitle="Shaxsiy soch parvarishi rejasi tez orada."
-              icon="water-outline"
-            />
-          )}
-        </Tab.Screen>
-        <Tab.Screen name="MorphIngredient">
-          {() => (
-            <MorphPlaceholderScreen
-              title="Tarkib"
-              subtitle="Kosmetika tarkibini AI bilan tekshirish tez orada."
-              icon="flask-outline"
-            />
-          )}
-        </Tab.Screen>
-        <Tab.Screen name="MorphTryOn" component={MorphStack} />
-      </Tab.Navigator>
-    </MorphSessionProvider>
+          <Tab.Screen name="MorphChat">
+            {() => (
+              <MorphPlaceholderScreen
+                title="AI Chatbot"
+                subtitle="Tez orada — soch, parvarish va uslub bo‘yicha AI yordamchi."
+                icon="chatbubble-ellipses-outline"
+              />
+            )}
+          </Tab.Screen>
+          <Tab.Screen name="MorphCare">
+            {() => (
+              <MorphPlaceholderScreen
+                title="Parvarish"
+                subtitle="Shaxsiy soch parvarishi rejasi tez orada."
+                icon="water-outline"
+              />
+            )}
+          </Tab.Screen>
+          <Tab.Screen name="MorphIngredient">
+            {() => (
+              <MorphPlaceholderScreen
+                title="Tarkib"
+                subtitle="Kosmetika tarkibini AI bilan tekshirish tez orada."
+                icon="flask-outline"
+              />
+            )}
+          </Tab.Screen>
+          <Tab.Screen name="MorphTryOn" component={MorphStack} />
+        </Tab.Navigator>
+      </MorphSessionProvider>
+    </TabBarVisibilityProvider>
   );
 }
 

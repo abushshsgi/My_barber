@@ -30,7 +30,7 @@ import { pickSelfieFromCamera, pickSelfieFromGallery } from "../../lib/selfie";
 import { useMorphSession } from "../../lib/morph-session";
 import type { MorphStackParamList } from "../../navigation/MorphStack";
 
-type Props = NativeStackScreenProps<MorphStackParamList, "MorphTryOn">;
+type Props = NativeStackScreenProps<MorphStackParamList, "MorphCapture">;
 
 const FALLBACK_HERO = pexelsPhotoUrl(3998429, 1400);
 

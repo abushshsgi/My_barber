@@ -78,7 +78,7 @@ export function MorphHomeScreen({ navigation }: Props) {
       navigation.getParent()?.navigate("Profile" as never);
       return;
     }
-    navigation.navigate("MorphTryOn");
+    navigation.navigate("MorphCapture");
   }, [isAuthenticated, navigation]);
 
   const onTool = useCallback(async () => {
@@ -110,7 +110,7 @@ export function MorphHomeScreen({ navigation }: Props) {
         return;
       }
       session.setPreferredStyle(item.id, item.title);
-      navigation.navigate("MorphTryOn");
+      navigation.navigate("MorphCapture");
     },
     [isAuthenticated, navigation, session],
   );

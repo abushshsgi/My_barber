@@ -1,6 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const INTRO_KEY = "mysaloon.morph.tryon.intro.v1";
+/** v2 — Welcome/Guide faqat birinchi marta. */
+const INTRO_KEY = "mysaloon.morph.tryon.intro.v2";
 
 /** Birinchi marta Try-on marketing + carousel ko‘rilganmi. */
 export async function hasCompletedMorphTryOnIntro(): Promise<boolean> {

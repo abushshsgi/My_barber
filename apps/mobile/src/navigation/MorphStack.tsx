@@ -10,7 +10,8 @@ import { MorphTryOnScreen } from "../screens/morph/MorphTryOnScreen";
 import { MorphWelcomeScreen } from "../screens/morph/MorphWelcomeScreen";
 
 export type MorphStackParamList = {
-  MorphTryOn: undefined;
+  /** Selfie capture (qayta kirish). Tab nomi MorphTryOn dan farq qiladi. */
+  MorphCapture: undefined;
   MorphWelcome: undefined;
   MorphGuide: undefined;
   /** Legacy hub — Try-on tab emas; Studio / namuna uchun. */
@@ -32,27 +33,31 @@ export type MorphStackParamList = {
 
 const Stack = createNativeStackNavigator<MorphStackParamList>();
 
-/** Try-on tab: birinchi marta Welcome → Guide; keyin MorphTryOn. */
+/** Try-on tab: birinchi marta Welcome → Guide; keyin MorphCapture. */
 export function MorphStack() {
   return (
     <Stack.Navigator
-      initialRouteName="MorphTryOn"
+      initialRouteName="MorphCapture"
       screenOptions={{
         headerShown: false,
         animation: "slide_from_right",
         contentStyle: { backgroundColor: "#0A0A0A" },
       }}
     >
-      <Stack.Screen name="MorphTryOn" component={MorphTryOnScreen} />
+      <Stack.Screen name="MorphCapture" component={MorphTryOnScreen} />
       <Stack.Screen
         name="MorphWelcome"
         component={MorphWelcomeScreen}
-        options={{ animation: "fade", contentStyle: { backgroundColor: "#1A120E" } }}
+        options={{
+          animation: "fade",
+          contentStyle: { backgroundColor: "#1A120E" },
+          gestureEnabled: false,
+        }}
       />
       <Stack.Screen
         name="MorphGuide"
         component={MorphGuideCarouselScreen}
-        options={{ animation: "slide_from_bottom" }}
+        options={{ animation: "slide_from_bottom", gestureEnabled: false }}
       />
       <Stack.Screen name="MorphHome" component={MorphHomeScreen} />
       <Stack.Screen name="MorphResults" component={MorphResultsScreen} />

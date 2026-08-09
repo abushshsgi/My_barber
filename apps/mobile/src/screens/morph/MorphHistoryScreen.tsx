@@ -83,7 +83,7 @@ export function MorphHistoryScreen({ navigation }: Props) {
           </Text>
           <Pressable
             style={styles.retry}
-            onPress={() => navigation.navigate("MorphTryOn")}
+            onPress={() => navigation.navigate("MorphCapture")}
           >
             <Text style={styles.retryText}>Boshlash</Text>
           </Pressable>
