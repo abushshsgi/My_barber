@@ -8,11 +8,20 @@ export class MorphPlanLimitError extends Error {
   }
 }
 
-/** Yuz yo‘q / yuzsiz rasm — foydalanuvchiga ko‘rinadigan yagona matn. */
-export const NO_FACE_MESSAGE = "Iltimos yuz shaklini yuboring!";
+/** Yuz emas rasm yuklanganda foydalanuvchiga ko‘rinadigan yagona matn. */
+export const NO_FACE_MESSAGE =
+  "Yuzdan boshqa narsa yuklandi. Iltimos, yuz shaklingizni yuboring!";
+
+export class MorphNoFaceError extends Error {
+  code = "no_face" as const;
+  constructor(message: string = NO_FACE_MESSAGE) {
+    super(message);
+    this.name = "MorphNoFaceError";
+  }
+}
 
 export function isNoFaceMessage(message: string): boolean {
-  return /yuz shaklini yuboring|yuz shakli rasmini yuklang|yuz topilmadi|no face|upload.*face|лицо/i.test(
+  return /yuzdan boshqa|yuz shaklini yuboring|yuz shakli rasmini yuklang|yuz topilmadi|has_face|no face|upload.*face|лицо/i.test(
     message,
   );
 }
@@ -26,21 +35,39 @@ export function formatMorphUserError(message: string, fallback: string): string 
   return cleaned || fallback;
 }
 
-function throwFromMorphApiError(
-  res: Response,
-  body: unknown,
-  fallback: string,
-): never {
+function morphErrorDetail(body: unknown, fallback: string): {
+  detail: string;
+  code?: string;
+  noFace: boolean;
+} {
   const obj =
     body && typeof body === "object"
-      ? (body as { detail?: string; code?: string; message?: string })
+      ? (body as {
+          detail?: string;
+          code?: string;
+          message?: string;
+          has_face?: boolean;
+        })
       : null;
   const detail =
     (obj && typeof obj.detail === "string" && obj.detail) ||
     (obj && typeof obj.message === "string" && obj.message) ||
     fallback;
-  if (res.status === 403 && obj?.code === "morph_plan_limit") {
+  const noFace = obj?.has_face === false || isNoFaceMessage(detail);
+  return { detail, code: obj?.code, noFace };
+}
+
+function throwFromMorphApiError(
+  res: Response,
+  body: unknown,
+  fallback: string,
+): never {
+  const { detail, code, noFace } = morphErrorDetail(body, fallback);
+  if (res.status === 403 && code === "morph_plan_limit") {
     throw new MorphPlanLimitError(detail);
+  }
+  if (noFace) {
+    throw new MorphNoFaceError(NO_FACE_MESSAGE);
   }
   throw new Error(formatMorphUserError(detail, fallback));
 }
@@ -176,14 +203,14 @@ export async function checkAiStyleFace(image: string): Promise<AiFaceCheckRespon
   });
   const body = (await res.json().catch(() => null)) as
     | AiFaceCheckResponse
-    | { detail?: string; code?: string }
+    | { detail?: string; code?: string; has_face?: boolean }
     | null;
   if (!res.ok) {
     throwFromMorphApiError(res, body, NO_FACE_MESSAGE);
   }
   const parsed = (body ?? { has_face: false }) as AiFaceCheckResponse;
   if (!parsed.has_face) {
-    throw new Error(
+    throw new MorphNoFaceError(
       formatMorphUserError(parsed.detail || NO_FACE_MESSAGE, NO_FACE_MESSAGE),
     );
   }

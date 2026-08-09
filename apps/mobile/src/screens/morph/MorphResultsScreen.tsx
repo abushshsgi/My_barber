@@ -292,12 +292,25 @@ export function MorphResultsScreen({ navigation }: Props) {
         <View style={[styles.scanTop, { paddingTop: Math.max(insets.top, 12) }]}>
           {phase === "error" ? (
             <AppToast
+              key={`err-${error || "xato"}`}
               message={error || NO_FACE_MESSAGE}
               tone="error"
-              durationMs={4500}
+              durationMs={5200}
+            />
+          ) : phase === "checking" ? (
+            <AppToast
+              key="checking"
+              message="Yuz tekshirilmoqda…"
+              tone="info"
+              durationMs={0}
             />
           ) : (
-            <AppToast message="Yuz shakli saqlandi" tone="success" durationMs={3200} />
+            <AppToast
+              key="analyzing"
+              message="Yuz topildi. Tahlil qilinmoqda…"
+              tone="success"
+              durationMs={3600}
+            />
           )}
         </View>
 

@@ -27,7 +27,7 @@ FACE_SHAPES = frozenset({"oval", "round", "square"})
 HAIR_TYPES = frozenset({"short", "medium", "long"})
 DETECTED_GENDERS = frozenset({"male", "female", "unclear"})
 GEMINI_VISION_MODEL = "gemini-2.5-flash"
-NO_FACE_MESSAGE = "Iltimos yuz shaklini yuboring!"
+NO_FACE_MESSAGE = "Yuzdan boshqa narsa yuklandi. Iltimos, yuz shaklingizni yuboring!"
 
 
 def _vision_model() -> str:
@@ -140,18 +140,21 @@ def load_image_bytes(source: str) -> tuple[str, bytes]:
 
 
 def _build_face_check_prompt() -> str:
-    return """Does this image clearly show ONE human face suitable for a hairstyle try-on selfie?
+    return """You are a gatekeeper for a hairstyle try-on app.
+Does this image clearly show ONE real human face suitable for a selfie / face-shape analysis?
+
 Return ONLY JSON: {"has_face": true} or {"has_face": false}
 
-Set has_face to true ONLY when a single clear human face fills a meaningful part of the frame
-(front or slight three-quarter view), with visible eyes/nose/mouth.
+Set has_face to true ONLY when:
+- a single person's face is clearly visible (front or slight angle)
+- eyes / nose / mouth area can be analyzed for face shape
 
-Set has_face to false when:
-- no human face is visible
-- only objects, cars, food, landscapes, animals, text, memes, screenshots, or products
-- mannequin, statue, cartoon, anime, or AI-generated non-photo face
+Set has_face to false when ANY of these apply:
+- no human face (objects, UI screenshots, landscapes, animals, food, text, products)
+- only hair / body / hands without a readable face
 - group photo without one clear main face
-- face is too small, cropped away, fully hidden, heavily occluded, or too blurry to analyze"""
+- face is too small, cropped, covered, heavily filtered, or too blurry
+- cartoon, anime, drawing, or AI avatar instead of a real photo"""
 
 
 def _format_face_hint(face_hint: dict[str, Any] | None) -> str:
@@ -189,12 +192,11 @@ Return ONLY valid JSON, no markdown, no extra text:
 }}
 
 Rules:
-- If the photo is not a clear single human face selfie (objects, animals, landscapes, text, group shots,
-  tiny/blurry/cropped faces, cartoons), set has_face to false and leave other fields empty.
+- If no clear single human face is visible, set has_face to false and leave other fields empty.
 - detected_gender: perceived gender presentation of the person in the photo (not the app setting).
 - gender_confidence: how sure you are about detected_gender (0.0 = guess, 1.0 = very sure).
 - Do NOT recommend hairstyle names — analysis only.
-- Be strict: when unsure whether a usable face is present, set has_face to false."""
+- Be realistic; if face is unclear, set has_face to false."""
 
 
 def _parse_has_face(data: dict[str, Any]) -> bool:
