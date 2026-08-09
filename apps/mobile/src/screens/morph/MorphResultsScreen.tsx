@@ -58,34 +58,10 @@ export function MorphResultsScreen({ navigation }: Props) {
   const [spotlightIndex, setSpotlightIndex] = useState(0);
   const [moreStyles, setMoreStyles] = useState<ApiHairstyle[]>([]);
   const [savedIds, setSavedIds] = useState<string[]>([]);
-  const scanAnim = useRef(new Animated.Value(0)).current;
-  const pulseAnim = useRef(new Animated.Value(0)).current;
   const carouselRef = useRef<FlatList<AiStyleSuggestion>>(null);
   const pendingTryOnRef = useRef<AiStyleSuggestion | null>(null);
   const analyzingBusy = phase === "checking" || phase === "analyzing";
   const summaryBusy = phase === "summary";
-
-  useEffect(() => {
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(scanAnim, { toValue: 1, duration: 1600, useNativeDriver: true }),
-        Animated.timing(scanAnim, { toValue: 0, duration: 1600, useNativeDriver: true }),
-      ]),
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [scanAnim]);
-
-  useEffect(() => {
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulseAnim, { toValue: 1, duration: 900, useNativeDriver: true }),
-        Animated.timing(pulseAnim, { toValue: 0, duration: 900, useNativeDriver: true }),
-      ]),
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [pulseAnim]);
 
   useEffect(() => {
     navigation.setOptions({ gestureEnabled: !analyzingBusy });
@@ -266,21 +242,6 @@ export function MorphResultsScreen({ navigation }: Props) {
     ? session.tryOnByStyle[activeSuggestion.id] ||
       (session.tryOnStyleId === activeSuggestion.id ? session.tryOnPreview : null)
     : session.tryOnPreview;
-  const analyzing = analyzingBusy;
-  const frameH = Math.min(SCREEN_W * 0.72, 340);
-  const scanTranslate = scanAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [12, frameH - 28],
-  });
-  const pulseOpacity = pulseAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0.35, 0.9],
-  });
-  const pulseScale = pulseAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0.98, 1.02],
-  });
-
   const suggestionIds = useMemo(() => new Set(suggestions.map((s) => s.id)), [suggestions]);
   const otherStyles = useMemo(
     () => moreStyles.filter((s) => !suggestionIds.has(s.id)),
@@ -347,21 +308,8 @@ export function MorphResultsScreen({ navigation }: Props) {
     await Linking.openURL(`${WEB_ORIGIN}/booking/${salonId}`);
   }, []);
 
-  const frameW = SCREEN_W * 0.72;
-  const showScanShell =
-    analyzing || summaryBusy || (phase === "error" && !session.analyze);
-
-  /** Analiz / summary / xato — selfie ustida scan frame (orasi shaffof). */
-  if (showScanShell) {
-    const statusPill =
-      phase === "error"
-        ? "Yuz topilmadi"
-        : phase === "checking"
-          ? "Yuz tekshirilmoqda…"
-          : phase === "analyzing"
-            ? "Yuz topildi. Tahlil…"
-            : "O‘lchov chizilmoqda…";
-
+  /** Summary — yuzga hech narsa yo‘q; pastda glass card + aylanalar. */
+  if (summaryBusy && session.analyze) {
     return (
       <View style={styles.root}>
         {session.selfieDataUrl ? (
@@ -369,20 +317,38 @@ export function MorphResultsScreen({ navigation }: Props) {
         ) : (
           <View style={[StyleSheet.absoluteFill, { backgroundColor: "#111" }]} />
         )}
+        <View style={styles.summaryScrim} />
 
-        {/* Cutout: tashqari qorong‘i, frame ichi shaffof */}
-        <View style={styles.dimTop} />
-        <View style={styles.dimBottom} />
-        <View
-          style={[
-            styles.dimMidRow,
-            { top: "50%", marginTop: -frameH / 2 - 40, height: frameH + 80 },
-          ]}
-        >
-          <View style={[styles.dimSide, { width: (SCREEN_W - frameW) / 2 }]} />
-          <View style={{ width: frameW, height: frameH + 80 }} />
-          <View style={[styles.dimSide, { width: (SCREEN_W - frameW) / 2 }]} />
+        <View style={[styles.scanChrome, { paddingTop: Math.max(insets.top, 10) }]}>
+          <Pressable style={styles.scanBackBtn} onPress={onBack} accessibilityLabel="Orqaga">
+            <Ionicons name="chevron-back" size={22} color="#FFF" />
+          </Pressable>
+          <View style={{ flex: 1 }} />
+          <View style={styles.scanBackBtn} />
         </View>
+
+        <View style={styles.summaryBottom}>
+          <FaceAnalysisSummary
+            analyze={session.analyze}
+            onStartGenerate={onStartGenerate}
+            generating={false}
+            bottomInset={Math.max(insets.bottom, 12)}
+          />
+        </View>
+      </View>
+    );
+  }
+
+  /** Checking / analyzing / xato — selfie to‘liq, frame yo‘q. */
+  if (analyzing || (phase === "error" && !session.analyze)) {
+    return (
+      <View style={styles.root}>
+        {session.selfieDataUrl ? (
+          <Image source={{ uri: session.selfieDataUrl }} style={StyleSheet.absoluteFill} />
+        ) : (
+          <View style={[StyleSheet.absoluteFill, { backgroundColor: "#111" }]} />
+        )}
+        <View style={styles.summaryScrim} />
 
         <View style={[styles.scanChrome, { paddingTop: Math.max(insets.top, 10) }]}>
           <Pressable
@@ -398,79 +364,28 @@ export function MorphResultsScreen({ navigation }: Props) {
               color={analyzingBusy ? "rgba(255,255,255,0.35)" : "#FFF"}
             />
           </Pressable>
-          <View style={styles.statusPill}>
-            <Ionicons name="information-circle-outline" size={14} color="#FFF" />
-            <Text style={styles.statusPillText}>{statusPill}</Text>
-          </View>
+          <View style={{ flex: 1 }} />
           <View style={styles.scanBackBtn} />
         </View>
 
-        <View style={styles.scanStage}>
-          {summaryBusy && session.analyze ? (
-            <FaceAnalysisSummary
-              analyze={session.analyze}
-              frameW={frameW}
-              frameH={frameH}
-              onStartGenerate={onStartGenerate}
-              generating={false}
-            />
-          ) : (
+        <View style={[styles.scanBottom, { paddingBottom: Math.max(insets.bottom, 16) + 12 }]}>
+          {phase === "error" ? (
             <>
-              <Animated.View
-                style={[
-                  styles.faceFrame,
-                  {
-                    width: frameW,
-                    height: frameH,
-                    opacity: analyzing ? pulseOpacity : 1,
-                    transform: analyzing ? [{ scale: pulseScale }] : undefined,
-                  },
-                ]}
-              >
-                <View style={[styles.frameCorner, styles.frameTL]} />
-                <View style={[styles.frameCorner, styles.frameTR]} />
-                <View style={[styles.frameCorner, styles.frameBL]} />
-                <View style={[styles.frameCorner, styles.frameBR]} />
-                {analyzing ? (
-                  <Animated.View
-                    style={[styles.scanLine, { transform: [{ translateY: scanTranslate }] }]}
-                  />
-                ) : (
-                  <View style={styles.frameErrorBadge}>
-                    <Ionicons name="alert-circle" size={22} color="#FFF" />
-                  </View>
-                )}
-              </Animated.View>
-              <Text style={styles.scanHint}>
-                {phase === "error"
-                  ? "Yuz aniq ko‘rinadigan selfie yuklang"
-                  : phase === "checking"
-                    ? "Yuz qidirilmoqda…"
-                    : "Yuz shakli tahlil qilinmoqda…"}
-              </Text>
-            </>
-          )}
-        </View>
-
-        {!summaryBusy ? (
-          <View style={[styles.scanBottom, { paddingBottom: Math.max(insets.bottom, 16) + 12 }]}>
-            {phase === "error" ? (
+              <Text style={styles.scanHintAbove}>Yuz aniq ko‘rinadigan selfie yuklang</Text>
               <Pressable style={styles.analyzeBtn} onPress={onNewPhoto}>
                 <Ionicons name="camera-outline" size={18} color="#FFF" />
                 <Text style={styles.analyzeBtnText}>Yangi rasm yuklash</Text>
               </Pressable>
-            ) : (
-              <View style={styles.analyzeBtn}>
-                <ActivityIndicator color="#FFF" />
-                <Text style={styles.analyzeBtnText}>
-                  {phase === "checking" ? "Yuz tekshirilmoqda…" : "Tahlil qilinmoqda…"}
-                </Text>
-              </View>
-            )}
-          </View>
-        ) : (
-          <View style={{ height: Math.max(insets.bottom, 16) + 8 }} />
-        )}
+            </>
+          ) : (
+            <View style={styles.analyzeBtn}>
+              <ActivityIndicator color="#FFF" />
+              <Text style={styles.analyzeBtnText}>
+                {phase === "checking" ? "Yuz tekshirilmoqda…" : "Tahlil qilinmoqda…"}
+              </Text>
+            </View>
+          )}
+        </View>
       </View>
     );
   }
@@ -801,31 +716,23 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFill,
     backgroundColor: "rgba(255,255,255,0.28)",
   },
-  dimTop: {
+  summaryScrim: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: "rgba(0,0,0,0.22)",
+  },
+  summaryBottom: {
     position: "absolute",
-    top: 0,
     left: 0,
     right: 0,
-    height: "28%",
-    backgroundColor: "rgba(0,0,0,0.48)",
-  },
-  dimBottom: {
-    position: "absolute",
     bottom: 0,
-    left: 0,
-    right: 0,
-    height: "28%",
-    backgroundColor: "rgba(0,0,0,0.55)",
+    zIndex: 3,
   },
-  dimMidRow: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    flexDirection: "row",
-  },
-  dimSide: {
-    height: "100%",
-    backgroundColor: "rgba(0,0,0,0.48)",
+  scanHintAbove: {
+    color: "rgba(255,255,255,0.9)",
+    fontSize: 14,
+    fontWeight: "600",
+    textAlign: "center",
+    marginBottom: 12,
   },
   scanChrome: {
     flexDirection: "row",
@@ -843,76 +750,6 @@ const styles = StyleSheet.create({
   },
   scanBackBtnDisabled: {
     backgroundColor: "rgba(255,255,255,0.05)",
-  },
-  statusPill: {
-    flex: 1,
-    marginHorizontal: 8,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    alignSelf: "center",
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 999,
-    backgroundColor: "rgba(0,0,0,0.45)",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.12)",
-  },
-  statusPillText: {
-    color: "#FFF",
-    fontSize: 12,
-    fontWeight: "700",
-  },
-  scanStage: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 18,
-    paddingHorizontal: 24,
-    zIndex: 1,
-  },
-  faceFrame: {
-    borderRadius: 28,
-    borderWidth: 1.5,
-    borderColor: "rgba(255,255,255,0.35)",
-    overflow: "hidden",
-    backgroundColor: "transparent",
-  },
-  frameCorner: {
-    position: "absolute",
-    width: 22,
-    height: 22,
-    borderColor: "#FFF",
-  },
-  frameTL: { top: 10, left: 10, borderTopWidth: 3, borderLeftWidth: 3, borderTopLeftRadius: 6 },
-  frameTR: { top: 10, right: 10, borderTopWidth: 3, borderRightWidth: 3, borderTopRightRadius: 6 },
-  frameBL: { bottom: 10, left: 10, borderBottomWidth: 3, borderLeftWidth: 3, borderBottomLeftRadius: 6 },
-  frameBR: { bottom: 10, right: 10, borderBottomWidth: 3, borderRightWidth: 3, borderBottomRightRadius: 6 },
-  frameErrorBadge: {
-    ...StyleSheet.absoluteFill,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(220,38,38,0.25)",
-  },
-  scanLine: {
-    position: "absolute",
-    left: 10,
-    right: 10,
-    height: 2,
-    borderRadius: 2,
-    backgroundColor: "rgba(255,255,255,0.95)",
-    shadowColor: "#FFF",
-    shadowOpacity: 0.8,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 0 },
-  },
-  scanHint: {
-    color: "rgba(255,255,255,0.85)",
-    fontSize: 14,
-    fontWeight: "600",
-    textAlign: "center",
-    letterSpacing: -0.2,
   },
   scanBottom: {
     position: "absolute",
