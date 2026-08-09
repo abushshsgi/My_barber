@@ -13,8 +13,8 @@ export const FLOATING_TAB_BAR_STYLE = {
   shadowOpacity: 0,
 };
 
-/** Custom dock balandligi — kontent ostida bo‘sh joy. */
-export const TAB_DOCK_CLEARANCE = 78;
+/** Custom dock balandligi — kontent ostida bo‘sh joy (markaz bump bilan). */
+export const TAB_DOCK_CLEARANCE = 92;
 
 /** Ichki Morph ekranlarida pastki tab bar ni yashirish. */
 export function useHideTabBar() {

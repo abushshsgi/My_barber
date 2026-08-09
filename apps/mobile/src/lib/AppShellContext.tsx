@@ -54,13 +54,13 @@ export function AppShellProvider({ children }: { children: ReactNode }) {
 
   const switchToMorphTarget = useCallback(async () => {
     setShellState("morph");
-    await writeAppShell("morph");
+    void writeAppShell("morph");
     return readLastMorphContentTab();
   }, []);
 
   const switchToMysaloonTarget = useCallback(async () => {
     setShellState("mysaloon");
-    await writeAppShell("mysaloon");
+    void writeAppShell("mysaloon");
     return readLastShellTab("mysaloon");
   }, []);
 

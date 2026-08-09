@@ -4,7 +4,6 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Animated,
   Dimensions,
   FlatList,
@@ -34,7 +33,6 @@ import { useMorphLimitGate } from "../../hooks/useMorphLimitGate";
 import { faceShapeLabel, hairTypeLabel } from "../../lib/morph-labels";
 import { WEB_ORIGIN } from "../../lib/morph-share";
 import { useMorphSession } from "../../lib/morph-session";
-import { pickSelfieFromCamera, pickSelfieFromGallery } from "../../lib/selfie";
 import type { MorphStackParamList } from "../../navigation/MorphStack";
 
 type Props = NativeStackScreenProps<MorphStackParamList, "MorphResults">;
@@ -57,17 +55,42 @@ export function MorphResultsScreen({ navigation }: Props) {
   const [moreStyles, setMoreStyles] = useState<ApiHairstyle[]>([]);
   const [savedIds, setSavedIds] = useState<string[]>([]);
   const scanAnim = useRef(new Animated.Value(0)).current;
+  const pulseAnim = useRef(new Animated.Value(0)).current;
+  const analyzingBusy = phase === "checking" || phase === "analyzing";
 
   useEffect(() => {
     const loop = Animated.loop(
       Animated.sequence([
-        Animated.timing(scanAnim, { toValue: 1, duration: 1800, useNativeDriver: true }),
-        Animated.timing(scanAnim, { toValue: 0, duration: 1800, useNativeDriver: true }),
+        Animated.timing(scanAnim, { toValue: 1, duration: 1600, useNativeDriver: true }),
+        Animated.timing(scanAnim, { toValue: 0, duration: 1600, useNativeDriver: true }),
       ]),
     );
     loop.start();
     return () => loop.stop();
   }, [scanAnim]);
+
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, { toValue: 1, duration: 900, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 0, duration: 900, useNativeDriver: true }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [pulseAnim]);
+
+  useEffect(() => {
+    navigation.setOptions({ gestureEnabled: !analyzingBusy });
+  }, [navigation, analyzingBusy]);
+
+  useEffect(() => {
+    const sub = navigation.addListener("beforeRemove", (e) => {
+      if (!analyzingBusy) return;
+      e.preventDefault();
+    });
+    return sub;
+  }, [navigation, analyzingBusy]);
 
   useEffect(() => {
     let cancelled = false;
@@ -222,10 +245,19 @@ export function MorphResultsScreen({ navigation }: Props) {
     ? session.tryOnByStyle[activeSuggestion.id] ||
       (session.tryOnStyleId === activeSuggestion.id ? session.tryOnPreview : null)
     : session.tryOnPreview;
-  const analyzing = phase === "checking" || phase === "analyzing";
+  const analyzing = analyzingBusy;
+  const frameH = Math.min(SCREEN_W * 0.72, 340);
   const scanTranslate = scanAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [40, 220],
+    outputRange: [12, frameH - 28],
+  });
+  const pulseOpacity = pulseAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.35, 0.9],
+  });
+  const pulseScale = pulseAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.98, 1.02],
   });
 
   const suggestionIds = useMemo(() => new Set(suggestions.map((s) => s.id)), [suggestions]);
@@ -250,41 +282,24 @@ export function MorphResultsScreen({ navigation }: Props) {
     [navigation, session.tryOnByStyle],
   );
 
+  const goCapture = useCallback(() => {
+    toast.hide();
+    session.clear();
+    setError(null);
+    setSpotlightIndex(0);
+    navigation.replace("MorphCapture");
+  }, [navigation, session, toast]);
+
+  const onBack = useCallback(() => {
+    if (analyzingBusy) return;
+    goCapture();
+  }, [analyzingBusy, goCapture]);
+
+  /** Alert.alert webda ishlamaydi — capture sahifasiga qaytaramiz. */
   const onNewPhoto = useCallback(() => {
-    Alert.alert("Yangi rasm", "Yuz shaklingizni aniq selfie qilib yuklang.", [
-      {
-        text: "Kamera",
-        onPress: () => {
-          void (async () => {
-            const dataUrl = await pickSelfieFromCamera();
-            if (!dataUrl) return;
-            toast.hide();
-            session.clear();
-            session.setSelfie(dataUrl);
-            setError(null);
-            setSpotlightIndex(0);
-            void runAnalyze(dataUrl);
-          })();
-        },
-      },
-      {
-        text: "Galereya",
-        onPress: () => {
-          void (async () => {
-            const dataUrl = await pickSelfieFromGallery();
-            if (!dataUrl) return;
-            toast.hide();
-            session.clear();
-            session.setSelfie(dataUrl);
-            setError(null);
-            setSpotlightIndex(0);
-            void runAnalyze(dataUrl);
-          })();
-        },
-      },
-      { text: "Bekor", style: "cancel" },
-    ]);
-  }, [runAnalyze, session, toast]);
+    if (analyzingBusy) return;
+    goCapture();
+  }, [analyzingBusy, goCapture]);
 
   const toggleSave = useCallback((id: string) => {
     setSavedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
@@ -298,7 +313,7 @@ export function MorphResultsScreen({ navigation }: Props) {
     await Linking.openURL(`${WEB_ORIGIN}/booking/${salonId}`);
   }, []);
 
-  /** Analiz bosqichi — web kameradagi "Tahlil qilinmoqda…" holati. */
+  /** Analiz / xato — selfie ustida scan UI. */
   if (analyzing || (phase === "error" && !session.analyze)) {
     return (
       <View style={styles.root}>
@@ -308,14 +323,63 @@ export function MorphResultsScreen({ navigation }: Props) {
           <View style={[StyleSheet.absoluteFill, { backgroundColor: "#111" }]} />
         )}
         <LinearGradient
-          colors={["rgba(0,0,0,0.35)", "transparent", "rgba(0,0,0,0.55)"]}
+          colors={["rgba(0,0,0,0.55)", "rgba(0,0,0,0.2)", "rgba(0,0,0,0.7)"]}
+          locations={[0, 0.45, 1]}
           style={StyleSheet.absoluteFill}
         />
-        {analyzing ? (
+
+        <View style={[styles.scanChrome, { paddingTop: Math.max(insets.top, 10) }]}>
+          <Pressable
+            style={[styles.scanBackBtn, analyzingBusy && styles.scanBackBtnDisabled]}
+            onPress={onBack}
+            disabled={analyzingBusy}
+            accessibilityLabel="Orqaga"
+            accessibilityState={{ disabled: analyzingBusy }}
+          >
+            <Ionicons
+              name="chevron-back"
+              size={22}
+              color={analyzingBusy ? "rgba(255,255,255,0.35)" : "#FFF"}
+            />
+          </Pressable>
+          <Text style={styles.scanChromeTitle}>Morf AI</Text>
+          <View style={styles.scanBackBtn} />
+        </View>
+
+        <View style={styles.scanStage}>
           <Animated.View
-            style={[styles.scanLine, { transform: [{ translateY: scanTranslate }] }]}
-          />
-        ) : null}
+            style={[
+              styles.faceFrame,
+              {
+                width: SCREEN_W * 0.72,
+                height: frameH,
+                opacity: analyzing ? pulseOpacity : 1,
+                transform: analyzing ? [{ scale: pulseScale }] : undefined,
+              },
+            ]}
+          >
+            <View style={[styles.frameCorner, styles.frameTL]} />
+            <View style={[styles.frameCorner, styles.frameTR]} />
+            <View style={[styles.frameCorner, styles.frameBL]} />
+            <View style={[styles.frameCorner, styles.frameBR]} />
+            {analyzing ? (
+              <Animated.View
+                style={[styles.scanLine, { transform: [{ translateY: scanTranslate }] }]}
+              />
+            ) : (
+              <View style={styles.frameErrorBadge}>
+                <Ionicons name="alert-circle" size={22} color="#FFF" />
+              </View>
+            )}
+          </Animated.View>
+          <Text style={styles.scanHint}>
+            {phase === "error"
+              ? "Yuz aniq ko‘rinadigan selfie yuklang"
+              : phase === "checking"
+                ? "Yuz qidirilmoqda…"
+                : "Yuz shakli tahlil qilinmoqda…"}
+          </Text>
+        </View>
 
         <View style={[styles.scanBottom, { paddingBottom: Math.max(insets.bottom, 16) + 12 }]}>
           {phase === "error" ? (
@@ -348,7 +412,7 @@ export function MorphResultsScreen({ navigation }: Props) {
       <View style={styles.bgDim} />
 
       <View style={[styles.chrome, { paddingTop: Math.max(insets.top, 8) }]}>
-        <Pressable style={styles.chromeBtn} onPress={() => navigation.navigate("MorphCapture")}>
+        <Pressable style={styles.chromeBtn} onPress={onBack}>
           <Ionicons name="chevron-back" size={20} color="#0A0A0A" />
         </Pressable>
         <Text style={styles.chromeTitle}>Morf AI</Text>
@@ -648,12 +712,79 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFill,
     backgroundColor: "rgba(245,245,245,0.72)",
   },
+  scanChrome: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    zIndex: 2,
+  },
+  scanBackBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255,255,255,0.12)",
+  },
+  scanBackBtnDisabled: {
+    backgroundColor: "rgba(255,255,255,0.05)",
+  },
+  scanChromeTitle: {
+    flex: 1,
+    textAlign: "center",
+    color: "#FFF",
+    fontSize: 16,
+    fontWeight: "800",
+    letterSpacing: -0.2,
+  },
+  scanStage: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 18,
+    paddingHorizontal: 24,
+  },
+  faceFrame: {
+    borderRadius: 28,
+    borderWidth: 1.5,
+    borderColor: "rgba(255,255,255,0.35)",
+    overflow: "hidden",
+    backgroundColor: "rgba(255,255,255,0.04)",
+  },
+  frameCorner: {
+    position: "absolute",
+    width: 22,
+    height: 22,
+    borderColor: "#FFF",
+  },
+  frameTL: { top: 10, left: 10, borderTopWidth: 3, borderLeftWidth: 3, borderTopLeftRadius: 6 },
+  frameTR: { top: 10, right: 10, borderTopWidth: 3, borderRightWidth: 3, borderTopRightRadius: 6 },
+  frameBL: { bottom: 10, left: 10, borderBottomWidth: 3, borderLeftWidth: 3, borderBottomLeftRadius: 6 },
+  frameBR: { bottom: 10, right: 10, borderBottomWidth: 3, borderRightWidth: 3, borderBottomRightRadius: 6 },
+  frameErrorBadge: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(220,38,38,0.25)",
+  },
   scanLine: {
     position: "absolute",
-    left: 0,
-    right: 0,
+    left: 10,
+    right: 10,
     height: 2,
-    backgroundColor: "rgba(255,255,255,0.85)",
+    borderRadius: 2,
+    backgroundColor: "rgba(255,255,255,0.95)",
+    shadowColor: "#FFF",
+    shadowOpacity: 0.8,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 0 },
+  },
+  scanHint: {
+    color: "rgba(255,255,255,0.85)",
+    fontSize: 14,
+    fontWeight: "600",
+    textAlign: "center",
+    letterSpacing: -0.2,
   },
   scanBottom: {
     position: "absolute",
