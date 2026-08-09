@@ -28,6 +28,7 @@ import {
 } from "../../api/ai";
 import { fetchHairstyles, type ApiHairstyle } from "../../api/hairstyles";
 import { FaceAnalysisRing } from "../../components/morph/FaceAnalysisRing";
+import { FaceAnalysisSummary } from "../../components/morph/FaceAnalysisSummary";
 import { useAppToast } from "../../components/ui/ToastProvider";
 import { useHideTabBar } from "../../hooks/useHideTabBar";
 import { useMorphLimitGate } from "../../hooks/useMorphLimitGate";
@@ -37,7 +38,7 @@ import type { MorphStackParamList } from "../../navigation/MorphStack";
 
 type Props = NativeStackScreenProps<MorphStackParamList, "MorphResults">;
 
-type Phase = "checking" | "analyzing" | "ready" | "error";
+type Phase = "checking" | "analyzing" | "summary" | "ready" | "error";
 
 const { width: SCREEN_W } = Dimensions.get("window");
 const H_PAD = 18;
@@ -60,7 +61,9 @@ export function MorphResultsScreen({ navigation }: Props) {
   const scanAnim = useRef(new Animated.Value(0)).current;
   const pulseAnim = useRef(new Animated.Value(0)).current;
   const carouselRef = useRef<FlatList<AiStyleSuggestion>>(null);
+  const pendingTryOnRef = useRef<AiStyleSuggestion | null>(null);
   const analyzingBusy = phase === "checking" || phase === "analyzing";
+  const summaryBusy = phase === "summary";
 
   useEffect(() => {
     const loop = Animated.loop(
@@ -177,7 +180,6 @@ export function MorphResultsScreen({ navigation }: Props) {
           source: "camera_scan",
           replace_latest: true,
         }).catch(() => undefined);
-        setPhase("ready");
 
         const preferredId = session.preferredStyleId;
         const preferredFromList =
@@ -197,10 +199,9 @@ export function MorphResultsScreen({ navigation }: Props) {
                 barber_name: null,
               }
             : null;
-        const first = preferredFromList || preferredFallback || result.suggestions[0];
-        if (first) {
-          void runTryOn(first, photo);
-        }
+        pendingTryOnRef.current =
+          preferredFromList || preferredFallback || result.suggestions[0] || null;
+        setPhase("summary");
       } catch (err) {
         if (gate.handleError(err)) {
           navigation.navigate("MorphPaywall");
@@ -239,8 +240,21 @@ export function MorphResultsScreen({ navigation }: Props) {
       });
       return;
     }
+    if (phase === "summary") {
+      toast.hide();
+      return;
+    }
     toast.hide();
   }, [phase, error, session.analyze, toast]);
+
+  const onStartGenerate = useCallback(() => {
+    if (phase !== "summary") return;
+    setPhase("ready");
+    const first = pendingTryOnRef.current;
+    if (first) {
+      void runTryOn(first);
+    }
+  }, [phase, runTryOn]);
 
   useEffect(() => {
     return () => toast.hide();
@@ -415,6 +429,41 @@ export function MorphResultsScreen({ navigation }: Props) {
               </Text>
             </View>
           )}
+        </View>
+      </View>
+    );
+  }
+
+  /** Tahlil natijasi — Skin Summary + Start Generate. */
+  if (summaryBusy && session.analyze) {
+    return (
+      <View style={styles.rootSummary}>
+        {session.selfieDataUrl ? (
+          <Image
+            source={{ uri: session.selfieDataUrl }}
+            style={styles.bgPhoto}
+            blurRadius={22}
+          />
+        ) : null}
+        <LinearGradient
+          colors={["rgba(255,220,200,0.55)", "rgba(255,200,210,0.45)", "rgba(255,255,255,0.35)"]}
+          style={StyleSheet.absoluteFill}
+        />
+
+        <View style={[styles.scanChrome, { paddingTop: Math.max(insets.top, 10) }]}>
+          <Pressable style={styles.summaryBackBtn} onPress={onBack} accessibilityLabel="Orqaga">
+            <Ionicons name="chevron-back" size={22} color="#111" />
+          </Pressable>
+          <Text style={styles.summaryChromeTitle}>Morf AI</Text>
+          <View style={styles.summaryBackBtn} />
+        </View>
+
+        <View style={styles.summaryStage}>
+          <FaceAnalysisSummary
+            analyze={session.analyze}
+            onStartGenerate={onStartGenerate}
+            generating={false}
+          />
         </View>
       </View>
     );
@@ -736,6 +785,7 @@ export function MorphResultsScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: "#0A0A0A" },
   rootLight: { flex: 1, backgroundColor: "#EDE6DF" },
+  rootSummary: { flex: 1, backgroundColor: "#F3B7C2" },
   bgPhoto: {
     ...StyleSheet.absoluteFill,
     width: "100%",
@@ -745,6 +795,27 @@ const styles = StyleSheet.create({
   bgDim: {
     ...StyleSheet.absoluteFill,
     backgroundColor: "rgba(255,255,255,0.28)",
+  },
+  summaryStage: {
+    flex: 1,
+    justifyContent: "center",
+    paddingBottom: 24,
+  },
+  summaryBackBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255,255,255,0.55)",
+  },
+  summaryChromeTitle: {
+    flex: 1,
+    textAlign: "center",
+    color: "#111",
+    fontSize: 16,
+    fontWeight: "800",
+    letterSpacing: -0.2,
   },
   scanChrome: {
     flexDirection: "row",
