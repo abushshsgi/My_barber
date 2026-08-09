@@ -366,19 +366,18 @@ export function MorphResultsScreen({ navigation }: Props) {
           <View style={styles.scanBackBtn} />
         </View>
 
-        <View style={[styles.scanBottom, { paddingBottom: Math.max(insets.bottom, 16) + 12 }]}>
+        <View style={[styles.summaryBottom, { paddingBottom: Math.max(insets.bottom, 12) }]}>
           {phase === "error" ? (
-            <>
+            <View style={[styles.scanBottom, { paddingBottom: 0 }]}>
               <Text style={styles.scanHintAbove}>Yuz aniq ko‘rinadigan selfie yuklang</Text>
               <Pressable style={styles.analyzeBtn} onPress={onNewPhoto}>
                 <Ionicons name="camera-outline" size={18} color="#FFF" />
                 <Text style={styles.analyzeBtnText}>Yangi rasm yuklash</Text>
               </Pressable>
-            </>
+            </View>
           ) : (
-            <View style={styles.analyzeBtn}>
-              <ActivityIndicator color="#FFF" />
-                <Text style={styles.analyzeBtnText}>Tahlil qilinmoqda…</Text>
+            <View style={styles.analyzeCardPad}>
+              <FaceAnalysisRing loading />
             </View>
           )}
         </View>
@@ -727,6 +726,9 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     zIndex: 3,
+  },
+  analyzeCardPad: {
+    paddingHorizontal: 14,
   },
   scanHintAbove: {
     color: "rgba(255,255,255,0.9)",
