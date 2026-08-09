@@ -20,6 +20,9 @@ import {
   checkAiStyleFace,
   formatMorphUserError,
   generateAiStyleTryOn,
+  isAiGatewayMessage,
+  MorphNoFaceError,
+  MorphPlanLimitError,
   NO_FACE_MESSAGE,
   saveAiStyleHistory,
   saveMorphAiGeneration,
@@ -140,8 +143,18 @@ export function MorphResultsScreen({ navigation }: Props) {
       setPhase("checking");
       setError(null);
       try {
-        // Yuzdan boshqa narsa (obyekt, landscape, …) — darhol to‘xtatiladi.
-        await checkAiStyleFace(photo);
+        // Yuzdan boshqa narsa — darhol to‘xtatiladi.
+        // 502/Railway timeout bo‘lsa analyze o‘zi yuzni tekshiradi.
+        try {
+          await checkAiStyleFace(photo);
+        } catch (faceErr) {
+          if (faceErr instanceof MorphPlanLimitError) throw faceErr;
+          if (faceErr instanceof MorphNoFaceError) throw faceErr;
+          const msg = faceErr instanceof Error ? faceErr.message : "";
+          if (!isAiGatewayMessage(msg) && !/vaqtincha ishlamayapti/i.test(msg)) {
+            throw faceErr;
+          }
+        }
         setPhase("analyzing");
         const result = await analyzeAiStyle(photo, "men");
         session.setAnalyze(result);

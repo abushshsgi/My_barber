@@ -26,11 +26,21 @@ export function isNoFaceMessage(message: string): boolean {
   );
 }
 
+const AI_GATEWAY_RE =
+  /application failed to respond|bad gateway|proxy_failed|upstream_timeout|gateway timeout|service unavailable|502|503|504/i;
+
+export function isAiGatewayMessage(message: string): boolean {
+  return AI_GATEWAY_RE.test(message);
+}
+
 /** API status prefiksini olib, yuz xatosini bir xil matnga keltiradi. */
 export function formatMorphUserError(message: string, fallback: string): string {
   const cleaned = message.replace(/^API\s+\d+:\s*/i, "").trim();
   if (isNoFaceMessage(cleaned) || isNoFaceMessage(message)) {
     return NO_FACE_MESSAGE;
+  }
+  if (isAiGatewayMessage(cleaned) || isAiGatewayMessage(message)) {
+    return "AI vaqtincha ishlamayapti. Bir ozdan keyin qayta urinib ko‘ring.";
   }
   return cleaned || fallback;
 }
@@ -213,17 +223,57 @@ async function pollTryOnJob(jobId: string): Promise<AiStyleTryOnResponse> {
   throw new Error("Rasm yaratish juda uzoq davom etdi. Qayta urinib ko'ring.");
 }
 
+/** Face-check uchun rasmni kichiklashtirish — Railway/Gemini 502 kamayadi. */
+async function shrinkImageForFaceCheck(image: string): Promise<string> {
+  if (typeof document === "undefined" || !image.startsWith("data:")) return image;
+  try {
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const el = new Image();
+      el.onload = () => resolve(el);
+      el.onerror = () => reject(new Error("decode"));
+      el.src = image;
+    });
+    const maxEdge = 720;
+    const scale = Math.min(1, maxEdge / Math.max(img.width, img.height));
+    if (scale >= 0.98) return image;
+    const w = Math.max(1, Math.round(img.width * scale));
+    const h = Math.max(1, Math.round(img.height * scale));
+    const canvas = document.createElement("canvas");
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return image;
+    ctx.drawImage(img, 0, 0, w, h);
+    return canvas.toDataURL("image/jpeg", 0.72);
+  } catch {
+    return image;
+  }
+}
+
 export async function checkAiStyleFace(image: string): Promise<AiFaceCheckResponse> {
+  const payload = await shrinkImageForFaceCheck(image);
   const res = await apiFetch("/api/v1/ai/face-check/", {
     method: "POST",
-    body: JSON.stringify({ image }),
+    body: JSON.stringify({ image: payload }),
     timeoutMs: 60_000,
   });
   const body = (await res.json().catch(() => null)) as
     | AiFaceCheckResponse
-    | { detail?: string; code?: string; has_face?: boolean }
+    | { detail?: string; code?: string; has_face?: boolean; error?: string; message?: string }
     | null;
   if (!res.ok) {
+    // 5xx / Railway timeout — yuz yo‘q deb emas, gateway deb tashlaymiz.
+    if (res.status >= 500) {
+      const detail =
+        (body && typeof body === "object" && typeof (body as { detail?: string }).detail === "string"
+          ? (body as { detail: string }).detail
+          : "") ||
+        (body && typeof body === "object" && typeof (body as { message?: string }).message === "string"
+          ? (body as { message: string }).message
+          : "") ||
+        "Application failed to respond";
+      throw new Error(formatMorphUserError(detail, "AI vaqtincha ishlamayapti."));
+    }
     throwFromMorphApiError(res, body, NO_FACE_MESSAGE);
   }
   const parsed = (body ?? { has_face: false }) as AiFaceCheckResponse;
@@ -239,9 +289,10 @@ export async function analyzeAiStyle(
   image: string,
   audience: "men" | "women" | "unisex" = "men",
 ): Promise<AiStyleAnalyzeResponse> {
+  const payload = await shrinkImageForFaceCheck(image);
   const res = await apiFetch("/api/v1/ai/style-analyze/", {
     method: "POST",
-    body: JSON.stringify({ image, audience }),
+    body: JSON.stringify({ image: payload, audience }),
     timeoutMs: 90_000,
   });
   const body = (await res.json().catch(() => null)) as
@@ -249,6 +300,16 @@ export async function analyzeAiStyle(
     | { detail?: string; code?: string }
     | null;
   if (!res.ok) {
+    if (res.status >= 500) {
+      throw new Error(
+        formatMorphUserError(
+          (body && typeof body === "object" && typeof (body as { detail?: string }).detail === "string"
+            ? (body as { detail: string }).detail
+            : "") || "Application failed to respond",
+          "AI vaqtincha ishlamayapti.",
+        ),
+      );
+    }
     throwFromMorphApiError(res, body, "Tahlil muvaffaqiyatsiz");
   }
   if (!body || !("suggestions" in body)) {
