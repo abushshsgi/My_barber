@@ -226,7 +226,11 @@ Rules:
 - If no clear single human face is visible, set has_face to false and leave other fields empty.
 - detected_gender: perceived gender presentation of the person in the photo (not the app setting).
 - gender_confidence: how sure you are about detected_gender (0.0 = guess, 1.0 = very sure).
-- face_confidence / hair_type_confidence / hair_color_confidence: how sure you are about each trait (0.0–1.0).
+- face_confidence / hair_type_confidence / hair_color_confidence MUST be calibrated 0.0–1.0 floats:
+  - typical honest range is 0.55–0.92
+  - use ~0.95+ only when the trait is unmistakably clear
+  - NEVER default every trait to 1.0 / 100
+  - lower scores when lighting is poor, hair is covered/tied, color is dyed unevenly, face angle is extreme, or the trait is ambiguous
 - hair_color / hair_texture describe the CURRENT selfie hair (before any try-on).
 - beard: none if clean-shaven or not visible; light for stubble; full for beard.
 - Do NOT recommend hairstyle names — analysis only.
@@ -281,13 +285,113 @@ def _normalize_gender_confidence(value: Any) -> float:
 
 
 def _normalize_trait_confidence(value: Any, *, fallback: float = 0.72) -> float:
+    """0–1 yoki 0–100 foizni 0–1 ga normalizatsiya qiladi (100% bugini to‘xtatadi)."""
     try:
         confidence = float(value)
     except (TypeError, ValueError):
         return fallback
+    if confidence > 1.0:
+        # Model ba'zan 86 yoki 100 qaytaradi — foiz deb o‘qiymiz.
+        confidence = confidence / 100.0
     if confidence <= 0:
         return fallback
-    return max(0.05, min(1.0, confidence))
+    # Mukammal 1.0 ni yumshatamiz — UI da doim 100% chiqmasin.
+    return max(0.08, min(0.97, confidence))
+
+
+def _classify_face_from_ratios(width_to_height: float, jaw_to_forehead: float) -> str:
+    """MediaPipe ratio → face shape (web/mobile face-scan bilan mos)."""
+    if width_to_height >= 0.9:
+        return "round"
+    if jaw_to_forehead >= 1.02 and width_to_height <= 0.84:
+        return "square"
+    return "oval"
+
+
+def _face_hint_shape_score(face_hint: dict[str, Any] | None) -> tuple[str | None, float]:
+    """Hint ratio aniqligidan yuz shakli + ishonch (0–1)."""
+    if not face_hint:
+        return None, 0.0
+    try:
+        w_h = float(face_hint.get("width_to_height"))
+        j_f = float(face_hint.get("jaw_to_forehead"))
+    except (TypeError, ValueError):
+        shape = face_hint.get("shape")
+        if shape in FACE_SHAPES:
+            return str(shape), 0.72
+        return None, 0.0
+
+    shape = _classify_face_from_ratios(w_h, j_f)
+    # Chegara yaqinligi — qancha uzoq bo‘lsa, shuncha ishonchli.
+    round_margin = abs(w_h - 0.9)
+    square_margin = min(abs(j_f - 1.02), abs(w_h - 0.84))
+    if shape == "round":
+        clarity = min(1.0, round_margin / 0.12)
+    elif shape == "square":
+        clarity = min(1.0, square_margin / 0.1)
+    else:
+        # Oval: 0.9 va square zonadan uzoqlik
+        clarity = min(1.0, min(0.9 - w_h, 1.02 - j_f + 0.05) / 0.12 + 0.35)
+        clarity = max(0.0, clarity)
+    score = 0.58 + 0.34 * clarity
+    return shape, max(0.55, min(0.94, score))
+
+
+def _blend(a: float, b: float, weight_b: float) -> float:
+    w = max(0.0, min(1.0, weight_b))
+    return a * (1.0 - w) + b * w
+
+
+def _calibrate_trait_scores(
+    analysis: dict[str, Any],
+    face_hint: dict[str, Any] | None,
+    *,
+    ai_face_shape: str,
+) -> dict[str, Any]:
+    """AI confidence + MediaPipe hint bo‘yicha foizlarni haqiqiy hisoblash."""
+    face_conf = float(analysis.get("face_confidence") or 0.72)
+    hair_type_conf = float(analysis.get("hair_type_confidence") or 0.7)
+    hair_color_conf = float(analysis.get("hair_color_confidence") or 0.68)
+    gender_conf = float(analysis.get("gender_confidence") or 0.0)
+
+    hint_shape, hint_score = _face_hint_shape_score(face_hint)
+    final_face_shape = str(analysis.get("face_shape") or "oval")
+
+    if hint_shape:
+        if hint_shape == ai_face_shape:
+            face_conf = _blend(face_conf, hint_score, 0.55)
+            face_conf = min(0.96, face_conf + 0.04)
+        elif hint_shape == final_face_shape:
+            # Hint ustun — AI boshqa shakl dedi → ishonchni pasaytiramiz.
+            face_conf = _blend(hint_score, face_conf, 0.25) * 0.9
+        else:
+            face_conf = _blend(face_conf, hint_score, 0.4) * 0.85
+    else:
+        # Hint yo‘q — AI ni yumshoq cheklaymiz.
+        face_conf = min(face_conf, 0.9)
+
+    # Soch uzunligi: gender noaniq yoki yuz ishonchi past bo‘lsa, biroz pasaytiramiz.
+    if gender_conf and gender_conf < 0.45:
+        hair_type_conf *= 0.92
+    if face_conf < 0.65:
+        hair_type_conf *= 0.94
+        hair_color_conf *= 0.94
+
+    # "other" rang — pastroq ishonch.
+    if analysis.get("hair_color") == "other":
+        hair_color_conf = min(hair_color_conf, 0.62)
+
+    # Uchala foiz ham 0.95+ bo‘lib ketmasin — spread.
+    scores = [face_conf, hair_type_conf, hair_color_conf]
+    if min(scores) > 0.93:
+        face_conf *= 0.92
+        hair_type_conf *= 0.9
+        hair_color_conf *= 0.88
+
+    analysis["face_confidence"] = round(max(0.12, min(0.97, face_conf)), 3)
+    analysis["hair_type_confidence"] = round(max(0.12, min(0.97, hair_type_conf)), 3)
+    analysis["hair_color_confidence"] = round(max(0.12, min(0.97, hair_color_conf)), 3)
+    return analysis
 
 
 def _normalize_enum(value: Any, allowed: frozenset[str], fallback: str) -> str:
@@ -326,14 +430,14 @@ def _normalize_analysis(data: dict[str, Any]) -> dict[str, Any]:
     summary_uz = str(data.get("summary_uz", "")).strip()[:400]
     detected_gender = _normalize_detected_gender(data.get("detected_gender"))
     gender_confidence = _normalize_gender_confidence(data.get("gender_confidence"))
-    face_confidence = _normalize_trait_confidence(data.get("face_confidence"), fallback=0.86)
+    face_confidence = _normalize_trait_confidence(data.get("face_confidence"), fallback=0.74)
     hair_type_confidence = _normalize_trait_confidence(
         data.get("hair_type_confidence"),
-        fallback=0.78,
+        fallback=0.7,
     )
     hair_color_confidence = _normalize_trait_confidence(
         data.get("hair_color_confidence"),
-        fallback=0.74,
+        fallback=0.68,
     )
 
     return {
@@ -379,8 +483,18 @@ def call_gemini_style_analysis(
     prompt = _build_prompt(audience, face_hint)
     data, usage = _gemini_vision_json(prompt, mime, image_bytes)
     normalized = _normalize_analysis(data)
-    if face_hint and face_hint.get("shape") in FACE_SHAPES:
+    ai_face_shape = str(normalized["face_shape"])
+    hint_shape, _ = _face_hint_shape_score(face_hint)
+    # MediaPipe ratio/shape bo‘lsa — yuz shaklida uni afzal ko‘ramiz.
+    if hint_shape in FACE_SHAPES:
+        normalized["face_shape"] = hint_shape
+    elif face_hint and face_hint.get("shape") in FACE_SHAPES:
         normalized["face_shape"] = str(face_hint["shape"])
+    normalized = _calibrate_trait_scores(
+        normalized,
+        face_hint,
+        ai_face_shape=ai_face_shape,
+    )
     normalized["_usage"] = usage
     return normalized
 

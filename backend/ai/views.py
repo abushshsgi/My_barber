@@ -235,9 +235,21 @@ class AiStyleAnalyzeView(UnthrottledAPIView):
                     "hair_color_hex": analysis.get("hair_color_hex") or "#5C5C5C",
                     "hair_texture": analysis.get("hair_texture") or "straight",
                     "beard": analysis.get("beard") or "none",
-                    "face_confidence": analysis.get("face_confidence") or 0.86,
-                    "hair_type_confidence": analysis.get("hair_type_confidence") or 0.78,
-                    "hair_color_confidence": analysis.get("hair_color_confidence") or 0.74,
+                    "face_confidence": (
+                        analysis["face_confidence"]
+                        if isinstance(analysis.get("face_confidence"), (int, float))
+                        else 0.74
+                    ),
+                    "hair_type_confidence": (
+                        analysis["hair_type_confidence"]
+                        if isinstance(analysis.get("hair_type_confidence"), (int, float))
+                        else 0.7
+                    ),
+                    "hair_color_confidence": (
+                        analysis["hair_color_confidence"]
+                        if isinstance(analysis.get("hair_color_confidence"), (int, float))
+                        else 0.68
+                    ),
                     "summary_uz": analysis["summary_uz"],
                     "detected_gender": analysis["detected_gender"],
                     "suggestions": suggestions,

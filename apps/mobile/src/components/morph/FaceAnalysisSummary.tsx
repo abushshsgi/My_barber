@@ -1,5 +1,4 @@
 import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Animated,
@@ -252,15 +251,10 @@ export function FaceAnalysisSummary({
 
   return (
     <View style={[styles.sheet, { paddingBottom: Math.max(bottomInset, 12) }]}>
-      <LinearGradient
-        colors={["rgba(247,201,168,0.82)", "rgba(243,183,194,0.78)", "rgba(239,176,200,0.75)"]}
-        start={{ x: 0.1, y: 0 }}
-        end={{ x: 0.9, y: 1 }}
-        style={styles.card}
-      >
-        <Text style={styles.title}>Skin Summary</Text>
+      <View style={styles.card}>
+        <Text style={styles.title}>Morf tahlil</Text>
         <Text style={styles.subtitle}>
-          {ready ? "Tahlil tayyor" : "Tahlil qilinmoqda…"}
+          {ready ? "Yuz tahlili tayyor" : "Yuz tahlil qilinmoqda…"}
         </Text>
 
         <View style={styles.pillsRow}>
@@ -303,7 +297,7 @@ export function FaceAnalysisSummary({
             ))}
           </View>
         </Pressable>
-      </LinearGradient>
+      </View>
     </View>
   );
 }
@@ -319,18 +313,18 @@ const styles = StyleSheet.create({
     paddingTop: 18,
     paddingBottom: 14,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.65)",
-    backgroundColor: "rgba(255,255,255,0.28)",
+    borderColor: "rgba(255,255,255,0.55)",
+    backgroundColor: "rgba(255,255,255,0.22)",
     shadowColor: "#000",
-    shadowOpacity: 0.22,
-    shadowRadius: 28,
-    shadowOffset: { width: 0, height: 14 },
-    elevation: 12,
+    shadowOpacity: 0.28,
+    shadowRadius: 32,
+    shadowOffset: { width: 0, height: 16 },
+    elevation: 14,
   },
   title: {
     fontSize: 24,
     fontWeight: "800",
-    color: "#111",
+    color: "#0A0A0A",
     letterSpacing: -0.5,
   },
   subtitle: {
@@ -338,7 +332,7 @@ const styles = StyleSheet.create({
     marginBottom: 14,
     fontSize: 13,
     fontWeight: "600",
-    color: "rgba(20,20,20,0.55)",
+    color: "rgba(10,10,10,0.58)",
   },
   pillsRow: {
     flexDirection: "row",
@@ -352,27 +346,27 @@ const styles = StyleSheet.create({
     paddingTop: 14,
     paddingBottom: 14,
     paddingHorizontal: 4,
-    backgroundColor: "rgba(255,255,255,0.42)",
+    backgroundColor: "rgba(255,255,255,0.34)",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.7)",
+    borderColor: "rgba(255,255,255,0.62)",
     shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 3,
+    shadowOpacity: 0.14,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 4,
     gap: 8,
     minHeight: 188,
   },
   pillLabel: {
     fontSize: 12,
     fontWeight: "700",
-    color: "#111",
+    color: "#0A0A0A",
     textAlign: "center",
   },
   pillDetail: {
     fontSize: 11,
     fontWeight: "600",
-    color: "rgba(20,20,20,0.62)",
+    color: "rgba(10,10,10,0.62)",
     textAlign: "center",
     paddingHorizontal: 2,
     lineHeight: 14,
@@ -385,7 +379,7 @@ const styles = StyleSheet.create({
   gaugePct: {
     fontSize: 15,
     fontWeight: "800",
-    color: "#111",
+    color: "#0A0A0A",
     letterSpacing: -0.3,
   },
   cta: {
@@ -395,14 +389,14 @@ const styles = StyleSheet.create({
     paddingVertical: 9,
     paddingLeft: 9,
     paddingRight: 14,
-    backgroundColor: "rgba(255,255,255,0.48)",
+    backgroundColor: "rgba(255,255,255,0.38)",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.75)",
-    shadowColor: "#C026A0",
-    shadowOpacity: 0.14,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 4,
+    borderColor: "rgba(255,255,255,0.65)",
+    shadowColor: "#000",
+    shadowOpacity: 0.16,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 5,
     gap: 10,
   },
   ctaBusy: {
@@ -412,11 +406,11 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 21,
-    backgroundColor: "#FFF",
+    backgroundColor: "rgba(255,255,255,0.95)",
     alignItems: "center",
     justifyContent: "center",
     shadowColor: "#000",
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.12,
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 2 },
     elevation: 2,
@@ -425,7 +419,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 15,
     fontWeight: "700",
-    color: "#111",
+    color: "#0A0A0A",
   },
   ctaArrows: {
     flexDirection: "row",
