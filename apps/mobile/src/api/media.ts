@@ -3,6 +3,10 @@ import { API_BASE, API_ORIGIN } from "./config";
 const PEXELS_RE = /(?:https?:\/\/)?images\.pexels\.com\/photos\/(\d+)/i;
 const API_MEDIA_RE =
   /^https?:\/\/(?:api\.mysaloon\.uz|[a-z0-9-]+\.up\.railway\.app)(\/media\/.+)$/i;
+/** Static Explore assets — Vercel CDN (api hostda emas). */
+const SITE_STATIC_RE =
+  /^https?:\/\/(?:api\.mysaloon\.uz|[a-z0-9-]+\.up\.railway\.app)(\/hairstyles\/.+)$/i;
+const SITE_ORIGIN = "https://www.mysaloon.uz";
 
 function withWidthParam(url: string, width?: number): string {
   if (!width || width <= 0) return url;
@@ -32,6 +36,10 @@ function toAppMediaUrl(absoluteOrPath: string): string {
   return absoluteOrPath;
 }
 
+function siteStaticUrl(path: string): string {
+  return `${SITE_ORIGIN}${path.startsWith("/") ? path : `/${path}`}`;
+}
+
 /** RN / web uchun yuklanadigan media URL. */
 export function resolveMediaUrl(
   path: string | null | undefined,
@@ -45,6 +53,11 @@ export function resolveMediaUrl(
     return pexelsPhotoUrl(Number(pexels[1]), opts?.width ?? 900);
   }
 
+  const misplacedStatic = raw.match(SITE_STATIC_RE);
+  if (misplacedStatic) {
+    return siteStaticUrl(misplacedStatic[1]);
+  }
+
   const apiMedia = raw.match(API_MEDIA_RE);
   if (apiMedia) {
     const local = toAppMediaUrl(`${API_ORIGIN}${apiMedia[1]}`);
@@ -54,6 +67,10 @@ export function resolveMediaUrl(
 
   if (raw.startsWith("http://") || raw.startsWith("https://") || raw.startsWith("data:")) {
     return withWidthParam(toAppMediaUrl(raw), opts?.width);
+  }
+
+  if (raw.startsWith("/hairstyles/") || raw.startsWith("/covers/")) {
+    return siteStaticUrl(raw);
   }
 
   if (raw.startsWith("/")) {

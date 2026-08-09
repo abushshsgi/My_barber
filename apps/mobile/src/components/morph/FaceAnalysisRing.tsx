@@ -56,7 +56,8 @@ function MiniProgressRing({
 
   return (
     <Svg width={size} height={size}>
-      <G rotation="-90" origin={`${cx}, ${cy}`}>
+      {/* Web: `origin` → invalid `transform-origin`; SVG transform ishlatiladi. */}
+      <G transform={`rotate(-90 ${cx} ${cy})`}>
         <Circle
           cx={cx}
           cy={cy}

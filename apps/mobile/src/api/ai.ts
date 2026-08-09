@@ -27,7 +27,7 @@ export function isNoFaceMessage(message: string): boolean {
 }
 
 const AI_GATEWAY_RE =
-  /application failed to respond|bad gateway|proxy_failed|upstream_timeout|gateway timeout|service unavailable|502|503|504/i;
+  /application failed to respond|bad gateway|proxy_failed|upstream_timeout|gateway timeout|service unavailable|resource exhausted|too many requests|429|502|503|504/i;
 
 export function isAiGatewayMessage(message: string): boolean {
   return AI_GATEWAY_RE.test(message);
@@ -262,8 +262,8 @@ export async function checkAiStyleFace(image: string): Promise<AiFaceCheckRespon
     | { detail?: string; code?: string; has_face?: boolean; error?: string; message?: string }
     | null;
   if (!res.ok) {
-    // 5xx / Railway timeout — yuz yo‘q deb emas, gateway deb tashlaymiz.
-    if (res.status >= 500) {
+    // 429/5xx — yuz yo‘q deb emas, AI band deb tashlaymiz.
+    if (res.status === 429 || res.status >= 500) {
       const detail =
         (body && typeof body === "object" && typeof (body as { detail?: string }).detail === "string"
           ? (body as { detail: string }).detail
@@ -271,7 +271,7 @@ export async function checkAiStyleFace(image: string): Promise<AiFaceCheckRespon
         (body && typeof body === "object" && typeof (body as { message?: string }).message === "string"
           ? (body as { message: string }).message
           : "") ||
-        "Application failed to respond";
+        (res.status === 429 ? "Too Many Requests" : "Application failed to respond");
       throw new Error(formatMorphUserError(detail, "AI vaqtincha ishlamayapti."));
     }
     throwFromMorphApiError(res, body, NO_FACE_MESSAGE);
@@ -300,12 +300,13 @@ export async function analyzeAiStyle(
     | { detail?: string; code?: string }
     | null;
   if (!res.ok) {
-    if (res.status >= 500) {
+    if (res.status === 429 || res.status >= 500) {
       throw new Error(
         formatMorphUserError(
           (body && typeof body === "object" && typeof (body as { detail?: string }).detail === "string"
             ? (body as { detail: string }).detail
-            : "") || "Application failed to respond",
+            : "") ||
+            (res.status === 429 ? "Too Many Requests" : "Application failed to respond"),
           "AI vaqtincha ishlamayapti.",
         ),
       );
@@ -322,9 +323,10 @@ export async function generateAiStyleTryOn(
   image: string,
   styleId: string,
 ): Promise<AiStyleTryOnResponse> {
+  const payload = await shrinkImageForFaceCheck(image);
   const res = await apiFetch("/api/v1/ai/style-tryon/", {
     method: "POST",
-    body: JSON.stringify({ image, style_id: styleId }),
+    body: JSON.stringify({ image: payload, style_id: styleId }),
     timeoutMs: 120_000,
   });
   const body = (await res.json().catch(() => null)) as
@@ -334,6 +336,17 @@ export async function generateAiStyleTryOn(
     | null;
 
   if (!res.ok) {
+    if (res.status === 429 || res.status >= 500) {
+      throw new Error(
+        formatMorphUserError(
+          (body && typeof body === "object" && typeof (body as { detail?: string }).detail === "string"
+            ? (body as { detail: string }).detail
+            : "") ||
+            (res.status === 429 ? "Too Many Requests" : "Application failed to respond"),
+          "AI vaqtincha ishlamayapti.",
+        ),
+      );
+    }
     throwFromMorphApiError(res, body, "Rasm yaratishda xatolik");
   }
 

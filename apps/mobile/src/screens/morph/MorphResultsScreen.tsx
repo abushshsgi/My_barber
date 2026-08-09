@@ -17,18 +17,15 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   analyzeAiStyle,
-  checkAiStyleFace,
   formatMorphUserError,
   generateAiStyleTryOn,
-  isAiGatewayMessage,
-  MorphNoFaceError,
-  MorphPlanLimitError,
   NO_FACE_MESSAGE,
   saveAiStyleHistory,
   saveMorphAiGeneration,
   type AiStyleSuggestion,
 } from "../../api/ai";
 import { fetchHairstyles, type ApiHairstyle } from "../../api/hairstyles";
+import { resolveMediaUrl } from "../../api/media";
 import { FaceAnalysisRing } from "../../components/morph/FaceAnalysisRing";
 import { FaceAnalysisSummary } from "../../components/morph/FaceAnalysisSummary";
 import { useAppToast } from "../../components/ui/ToastProvider";
@@ -40,7 +37,7 @@ import type { MorphStackParamList } from "../../navigation/MorphStack";
 
 type Props = NativeStackScreenProps<MorphStackParamList, "MorphResults">;
 
-type Phase = "checking" | "analyzing" | "summary" | "ready" | "error";
+type Phase = "analyzing" | "summary" | "ready" | "error";
 
 const { width: SCREEN_W } = Dimensions.get("window");
 const H_PAD = 18;
@@ -54,7 +51,7 @@ export function MorphResultsScreen({ navigation }: Props) {
   const session = useMorphSession();
   const gate = useMorphLimitGate();
   const toast = useAppToast();
-  const [phase, setPhase] = useState<Phase>("checking");
+  const [phase, setPhase] = useState<Phase>("analyzing");
   const [error, setError] = useState<string | null>(null);
   const [activeStyleId, setActiveStyleId] = useState<string | null>(null);
   const [spotlightIndex, setSpotlightIndex] = useState(0);
@@ -62,7 +59,7 @@ export function MorphResultsScreen({ navigation }: Props) {
   const [savedIds, setSavedIds] = useState<string[]>([]);
   const carouselRef = useRef<FlatList<AiStyleSuggestion>>(null);
   const pendingTryOnRef = useRef<AiStyleSuggestion | null>(null);
-  const analyzingBusy = phase === "checking" || phase === "analyzing";
+  const analyzingBusy = phase === "analyzing";
   const summaryBusy = phase === "summary";
 
   useEffect(() => {
@@ -123,8 +120,12 @@ export function MorphResultsScreen({ navigation }: Props) {
           err instanceof Error ? err.message : "Try-on xatosi",
           "Try-on xatosi",
         );
-        setError(msg);
+        // Katalog rasmi qoladi — banner sticky bo‘lmasin.
         toast.show(msg, { tone: "error", durationMs: 4200 });
+        setError(msg);
+        setTimeout(() => {
+          setError((cur) => (cur === msg ? null : cur));
+        }, 4500);
       } finally {
         setActiveStyleId(null);
       }
@@ -140,24 +141,14 @@ export function MorphResultsScreen({ navigation }: Props) {
         setPhase("error");
         return;
       }
-      setPhase("checking");
+      setPhase("analyzing");
       setError(null);
       try {
-        // Yuzdan boshqa narsa — darhol to‘xtatiladi.
-        // 502/Railway timeout bo‘lsa analyze o‘zi yuzni tekshiradi.
-        try {
-          await checkAiStyleFace(photo);
-        } catch (faceErr) {
-          if (faceErr instanceof MorphPlanLimitError) throw faceErr;
-          if (faceErr instanceof MorphNoFaceError) throw faceErr;
-          const msg = faceErr instanceof Error ? faceErr.message : "";
-          if (!isAiGatewayMessage(msg) && !/vaqtincha ishlamayapti/i.test(msg)) {
-            throw faceErr;
-          }
-        }
-        setPhase("analyzing");
+        // Face-check alohida Vertex chaqiruv — 429 beradi.
+        // Analyze ichida has_face tekshiruvi bor.
         const result = await analyzeAiStyle(photo, "men");
         session.setAnalyze(result);
+        setError(null);
         void saveAiStyleHistory({
           image: photo,
           face_shape_key: result.face_shape,
@@ -166,7 +157,7 @@ export function MorphResultsScreen({ navigation }: Props) {
           hair_texture_key: result.hair_texture,
           beard_key: result.beard,
           source: "camera_scan",
-          replace_latest: true,
+          replace_latest: false,
         }).catch(() => undefined);
 
         const preferredId = session.preferredStyleId;
@@ -217,18 +208,11 @@ export function MorphResultsScreen({ navigation }: Props) {
       toast.show(error || NO_FACE_MESSAGE, { tone: "error", durationMs: 5200 });
       return;
     }
-    if (phase === "checking") {
-      toast.show("Yuz tekshirilmoqda…", { tone: "loading", durationMs: 0 });
-      return;
-    }
     if (phase === "analyzing") {
-      toast.show("Yuz topildi. Tahlil qilinmoqda…", {
-        tone: "success",
-        durationMs: 3600,
-      });
+      toast.show("Tahlil qilinmoqda…", { tone: "loading", durationMs: 0 });
       return;
     }
-    if (phase === "summary") {
+    if (phase === "summary" || phase === "ready") {
       toast.hide();
       return;
     }
@@ -237,12 +221,14 @@ export function MorphResultsScreen({ navigation }: Props) {
 
   const onStartGenerate = useCallback(() => {
     if (phase !== "summary") return;
+    setError(null);
+    toast.hide();
     setPhase("ready");
     const first = pendingTryOnRef.current;
     if (first) {
       void runTryOn(first);
     }
-  }, [phase, runTryOn]);
+  }, [phase, runTryOn, toast]);
 
   useEffect(() => {
     return () => toast.hide();
@@ -280,7 +266,7 @@ export function MorphResultsScreen({ navigation }: Props) {
         styleId: style.id,
         title: style.title,
         match: style.match,
-        imageUrl: style.image_url,
+        imageUrl: resolveMediaUrl(style.image_url, { width: 900 }) || style.image_url,
         previewImage: preview,
         salonId: style.salon_id,
         reason: style.reason_uz,
@@ -392,9 +378,7 @@ export function MorphResultsScreen({ navigation }: Props) {
           ) : (
             <View style={styles.analyzeBtn}>
               <ActivityIndicator color="#FFF" />
-              <Text style={styles.analyzeBtnText}>
-                {phase === "checking" ? "Yuz tekshirilmoqda…" : "Tahlil qilinmoqda…"}
-              </Text>
+                <Text style={styles.analyzeBtnText}>Tahlil qilinmoqda…</Text>
             </View>
           )}
         </View>
@@ -487,7 +471,7 @@ export function MorphResultsScreen({ navigation }: Props) {
                         source={{
                           uri:
                             preview ||
-                            item.image_url ||
+                            resolveMediaUrl(item.image_url, { width: 900 }) ||
                             session.selfieDataUrl ||
                             undefined,
                         }}
@@ -685,7 +669,12 @@ export function MorphResultsScreen({ navigation }: Props) {
                   >
                     <View style={styles.moreImgWrap}>
                       <Image
-                        source={{ uri: preview || item.image_url }}
+                        source={{
+                          uri:
+                            preview ||
+                            resolveMediaUrl(item.image_url, { width: 600 }) ||
+                            undefined,
+                        }}
                         style={styles.moreImg}
                       />
                       {loading ? (
