@@ -674,28 +674,28 @@ class AiStyleHistoryListCreateView(UnthrottledAPIView):
 
         if data.get("replace_latest"):
             entry = AiStyleHistoryEntry.objects.filter(user=user).order_by("-created_at").first()
-            if entry is None:
-                return Response({"detail": "Yangilash uchun tarix topilmadi."}, status=400)
-            if image:
-                save_history_photo(entry, image)
-            entry.face_shape_key = data.get("face_shape_key") or entry.face_shape_key
-            entry.hair_type_key = data.get("hair_type_key") or entry.hair_type_key
-            entry.hair_color_key = data.get("hair_color_key") or entry.hair_color_key
-            entry.hair_texture_key = data.get("hair_texture_key") or entry.hair_texture_key
-            entry.beard_key = data.get("beard_key") or entry.beard_key
-            entry.source = data["source"]
-            entry.save(
-                update_fields=[
-                    "face_shape_key",
-                    "hair_type_key",
-                    "hair_color_key",
-                    "hair_texture_key",
-                    "beard_key",
-                    "source",
-                ],
-            )
-            out = AiStyleHistoryEntrySerializer(entry, context={"request": request})
-            return Response(out.data)
+            if entry is not None:
+                if image:
+                    save_history_photo(entry, image)
+                entry.face_shape_key = data.get("face_shape_key") or entry.face_shape_key
+                entry.hair_type_key = data.get("hair_type_key") or entry.hair_type_key
+                entry.hair_color_key = data.get("hair_color_key") or entry.hair_color_key
+                entry.hair_texture_key = data.get("hair_texture_key") or entry.hair_texture_key
+                entry.beard_key = data.get("beard_key") or entry.beard_key
+                entry.source = data["source"]
+                entry.save(
+                    update_fields=[
+                        "face_shape_key",
+                        "hair_type_key",
+                        "hair_color_key",
+                        "hair_texture_key",
+                        "beard_key",
+                        "source",
+                    ],
+                )
+                out = AiStyleHistoryEntrySerializer(entry, context={"request": request})
+                return Response(out.data)
+            # Tarix bo‘sh — pastda yangi yozuv yaratamiz.
 
         if not image:
             return Response({"detail": "Selfie rasmini yuboring."}, status=400)

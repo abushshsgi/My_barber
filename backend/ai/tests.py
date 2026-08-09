@@ -332,6 +332,23 @@ class AiStyleHistoryTests(TestCase):
         listed = self.client.get("/api/v1/ai/style-history/")
         self.assertEqual(len(listed.json()), 1)
 
+    def test_history_replace_latest_creates_when_empty(self):
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {_user_token(self.user_a)}")
+        created = self.client.post(
+            "/api/v1/ai/style-history/",
+            {
+                "replace_latest": True,
+                "image": self.tiny_png,
+                "source": "camera_scan",
+                "face_shape_key": "oval",
+            },
+            format="json",
+        )
+        self.assertEqual(created.status_code, 201)
+        self.assertEqual(created.json()["source"], "camera_scan")
+        listed = self.client.get("/api/v1/ai/style-history/")
+        self.assertEqual(len(listed.json()), 1)
+
     def test_history_requires_auth(self):
         res = APIClient().get("/api/v1/ai/style-history/")
         self.assertIn(res.status_code, (401, 403))
