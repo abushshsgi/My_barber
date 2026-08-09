@@ -1,9 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  ActivityIndicator,
   Animated,
   Easing,
-  Pressable,
+  LayoutChangeEvent,
+  PanResponder,
   StyleSheet,
   Text,
   View,
@@ -30,13 +32,16 @@ type Metric = {
   percent: number;
 };
 
-const TICK_COUNT = 48;
+const TICK_COUNT = 40;
 const ACCENT = "#C026A0";
+const CIRCLE = 92;
+const THUMB = 40;
+const SLIDE_THRESHOLD = 0.82;
 
 function toPercent(value: number | undefined, fallback: number): number {
   const raw = typeof value === "number" && Number.isFinite(value) ? value : fallback;
   const pct = raw <= 1 ? raw * 100 : raw;
-  return Math.max(8, Math.min(100, Math.round(pct)));
+  return Math.max(1, Math.min(100, Math.round(pct)));
 }
 
 function TickGauge({
@@ -50,9 +55,9 @@ function TickGauge({
 }) {
   const cx = size / 2;
   const cy = size / 2;
-  const outer = size * 0.42;
-  const inner = size * 0.3;
-  const activeTicks = Math.max(1, Math.round((percent / 100) * TICK_COUNT));
+  const outer = size * 0.44;
+  const inner = size * 0.32;
+  const activeTicks = Math.max(0, Math.round((percent / 100) * TICK_COUNT));
   const [drawn, setDrawn] = useState(0);
   const [displayPct, setDisplayPct] = useState(0);
 
@@ -90,22 +95,23 @@ function TickGauge({
               y1={tick.y1}
               x2={tick.x2}
               y2={tick.y2}
-              stroke={on ? ACCENT : "rgba(255,255,255,0.55)"}
-              strokeWidth={2.4}
+              stroke={on ? ACCENT : "rgba(0,0,0,0.14)"}
+              strokeWidth={2.2}
               strokeLinecap="round"
-              opacity={on ? 1 : 0.75}
+              opacity={on ? 1 : 0.85}
             />
           );
         })}
       </Svg>
       <View style={styles.gaugeCenter} pointerEvents="none">
-        <Text style={styles.gaugePct}>{displayPct}%</Text>
+        <Text style={styles.gaugePct}>{displayPct}</Text>
+        <Text style={styles.gaugePctUnit}>%</Text>
       </View>
     </View>
   );
 }
 
-function MetricPill({
+function MetricCircle({
   metric,
   progress,
   visible,
@@ -132,31 +138,27 @@ function MetricPill({
   return (
     <Animated.View
       style={[
-        styles.pill,
+        styles.metricCol,
         {
           opacity: enter,
           transform: [
             {
-              translateY: enter.interpolate({
-                inputRange: [0, 1],
-                outputRange: [16, 0],
-              }),
-            },
-            {
               scale: enter.interpolate({
                 inputRange: [0, 1],
-                outputRange: [0.9, 1],
+                outputRange: [0.88, 1],
               }),
             },
           ],
         },
       ]}
     >
-      <Text style={styles.pillLabel} numberOfLines={1}>
+      <Text style={styles.metricLabel} numberOfLines={1}>
         {metric.label}
       </Text>
-      <TickGauge size={78} percent={metric.percent} progress={progress} />
-      <Text style={styles.pillDetail} numberOfLines={2}>
+      <View style={styles.circle}>
+        <TickGauge size={CIRCLE - 10} percent={metric.percent} progress={progress} />
+      </View>
+      <Text style={styles.metricDetail} numberOfLines={1}>
         {metric.detail}
       </Text>
     </Animated.View>
@@ -174,9 +176,139 @@ function animateTo(value: Animated.Value, toValue: number, duration: number) {
   });
 }
 
+function GenerateSlider({
+  enabled,
+  generating,
+  onComplete,
+}: {
+  enabled: boolean;
+  generating: boolean;
+  onComplete: () => void;
+}) {
+  const [trackW, setTrackW] = useState(0);
+  const dragX = useRef(new Animated.Value(0)).current;
+  const arrowPulse = useRef(new Animated.Value(0)).current;
+  const doneRef = useRef(false);
+  const maxTravel = Math.max(0, trackW - THUMB - 8);
+
+  useEffect(() => {
+    if (!enabled || generating) {
+      arrowPulse.stopAnimation();
+      return;
+    }
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(arrowPulse, {
+          toValue: 1,
+          duration: 900,
+          easing: Easing.inOut(Easing.quad),
+          useNativeDriver: true,
+        }),
+        Animated.timing(arrowPulse, {
+          toValue: 0,
+          duration: 900,
+          easing: Easing.inOut(Easing.quad),
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [arrowPulse, enabled, generating]);
+
+  useEffect(() => {
+    if (!enabled) {
+      doneRef.current = false;
+      dragX.setValue(0);
+    }
+  }, [dragX, enabled]);
+
+  const pan = useMemo(
+    () =>
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => enabled && !generating && !doneRef.current,
+        onMoveShouldSetPanResponder: (_, g) =>
+          enabled && !generating && !doneRef.current && Math.abs(g.dx) > 4,
+        onPanResponderGrant: () => {
+          dragX.stopAnimation();
+        },
+        onPanResponderMove: (_, g) => {
+          if (!enabled || generating || doneRef.current) return;
+          const next = Math.max(0, Math.min(maxTravel, g.dx));
+          dragX.setValue(next);
+        },
+        onPanResponderRelease: (_, g) => {
+          if (!enabled || generating || doneRef.current) return;
+          const next = Math.max(0, Math.min(maxTravel, g.dx));
+          const ratio = maxTravel > 0 ? next / maxTravel : 0;
+          if (ratio >= SLIDE_THRESHOLD) {
+            doneRef.current = true;
+            Animated.timing(dragX, {
+              toValue: maxTravel,
+              duration: 140,
+              useNativeDriver: false,
+            }).start(() => onComplete());
+            return;
+          }
+          Animated.spring(dragX, {
+            toValue: 0,
+            friction: 7,
+            tension: 80,
+            useNativeDriver: false,
+          }).start();
+        },
+      }),
+    [dragX, enabled, generating, maxTravel, onComplete],
+  );
+
+  const onTrackLayout = (e: LayoutChangeEvent) => {
+    setTrackW(e.nativeEvent.layout.width);
+  };
+
+  const arrowShift = arrowPulse.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 8],
+  });
+
+  return (
+    <View
+      style={[styles.sliderTrack, (!enabled || generating) && styles.sliderDisabled]}
+      onLayout={onTrackLayout}
+    >
+      <Text style={styles.sliderHint} pointerEvents="none">
+        {generating ? "Generate…" : enabled ? "Generate" : "…"}
+      </Text>
+
+      <Animated.View
+        style={[styles.sliderArrows, { transform: [{ translateX: arrowShift }] }]}
+        pointerEvents="none"
+      >
+        {[0, 1, 2, 3].map((i) => (
+          <Text
+            key={i}
+            style={[styles.sliderChevron, { opacity: 0.35 + i * 0.15 }]}
+          >
+            ›
+          </Text>
+        ))}
+      </Animated.View>
+
+      <Animated.View
+        style={[styles.sliderThumb, { transform: [{ translateX: dragX }] }]}
+        {...(enabled && !generating ? pan.panHandlers : {})}
+      >
+        {generating ? (
+          <ActivityIndicator color="#111" size="small" />
+        ) : (
+          <Ionicons name="sparkles" size={18} color="#111" />
+        )}
+      </Animated.View>
+    </View>
+  );
+}
+
 /**
- * Pastdagi glass card: 3 ta aylana ketma-ket, keyin Generate.
- * Yuz ustiga hech narsa chizilmaydi.
+ * Ixcham glass card: 3 ta aylana + suriladigan Generate.
  */
 export function FaceAnalysisSummary({
   analyze,
@@ -197,19 +329,19 @@ export function FaceAnalysisSummary({
         key: "face",
         label: "Yuz",
         detail: faceShapeLabel(analyze.face_shape),
-        percent: toPercent(analyze.face_confidence, 0.86),
+        percent: toPercent(analyze.face_confidence, 0.74),
       },
       {
         key: "length",
         label: "Uzunlik",
         detail: hairTypeLabel(analyze.hair_type),
-        percent: toPercent(analyze.hair_type_confidence, 0.78),
+        percent: toPercent(analyze.hair_type_confidence, 0.7),
       },
       {
         key: "color",
         label: "Rang",
         detail: hairColorLabel(colorKey),
-        percent: toPercent(analyze.hair_color_confidence, 0.74),
+        percent: toPercent(analyze.hair_color_confidence, 0.68),
       },
     ];
   }, [analyze]);
@@ -228,9 +360,9 @@ export function FaceAnalysisSummary({
       for (let i = 0; i < 3; i += 1) {
         if (cancelled) return;
         setVisibleCount(i + 1);
-        await animateTo(progresses[i], 1, 1000);
+        await animateTo(progresses[i], 1, 900);
         if (cancelled) return;
-        await new Promise((r) => setTimeout(r, 180));
+        await new Promise((r) => setTimeout(r, 140));
       }
       if (!cancelled) setReady(true);
     };
@@ -250,16 +382,11 @@ export function FaceAnalysisSummary({
   ]);
 
   return (
-    <View style={[styles.sheet, { paddingBottom: Math.max(bottomInset, 12) }]}>
+    <View style={[styles.sheet, { paddingBottom: Math.max(bottomInset, 10) }]}>
       <View style={styles.card}>
-        <Text style={styles.title}>Morf tahlil</Text>
-        <Text style={styles.subtitle}>
-          {ready ? "Yuz tahlili tayyor" : "Yuz tahlil qilinmoqda…"}
-        </Text>
-
-        <View style={styles.pillsRow}>
+        <View style={styles.row}>
           {metrics.map((metric, index) => (
-            <MetricPill
+            <MetricCircle
               key={metric.key}
               metric={metric}
               progress={progresses[index]}
@@ -268,35 +395,11 @@ export function FaceAnalysisSummary({
           ))}
         </View>
 
-        <Pressable
-          style={[styles.cta, (!ready || generating) && styles.ctaBusy]}
-          disabled={!ready || generating}
-          onPress={onStartGenerate}
-          accessibilityRole="button"
-          accessibilityLabel={ready ? "Generate" : "Tahlil qilinmoqda"}
-        >
-          <View style={styles.ctaIcon}>
-            {ready && !generating ? (
-              <Ionicons name="sparkles" size={18} color="#111" />
-            ) : (
-              <Ionicons name="scan-outline" size={18} color="#111" />
-            )}
-          </View>
-          <Text style={styles.ctaText}>
-            {generating ? "Generate…" : ready ? "Generate" : "Tahlil qilinmoqda…"}
-          </Text>
-          <View style={styles.ctaArrows}>
-            {[0, 1, 2, 3].map((i) => (
-              <Ionicons
-                key={i}
-                name="chevron-forward"
-                size={14}
-                color={ACCENT}
-                style={{ marginLeft: i === 0 ? 0 : -6, opacity: ready ? 0.45 + i * 0.15 : 0.25 }}
-              />
-            ))}
-          </View>
-        </Pressable>
+        <GenerateSlider
+          enabled={ready}
+          generating={generating}
+          onComplete={onStartGenerate}
+        />
       </View>
     </View>
   );
@@ -308,121 +411,128 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
   },
   card: {
-    borderRadius: 34,
-    paddingHorizontal: 14,
-    paddingTop: 18,
-    paddingBottom: 14,
+    borderRadius: 28,
+    paddingHorizontal: 12,
+    paddingTop: 12,
+    paddingBottom: 10,
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.55)",
     backgroundColor: "rgba(255,255,255,0.22)",
     shadowColor: "#000",
-    shadowOpacity: 0.28,
-    shadowRadius: 32,
-    shadowOffset: { width: 0, height: 16 },
-    elevation: 14,
+    shadowOpacity: 0.26,
+    shadowRadius: 24,
+    shadowOffset: { width: 0, height: 12 },
+    elevation: 12,
+    gap: 12,
   },
-  title: {
-    fontSize: 24,
-    fontWeight: "800",
-    color: "#0A0A0A",
-    letterSpacing: -0.5,
-  },
-  subtitle: {
-    marginTop: 2,
-    marginBottom: 14,
-    fontSize: 13,
-    fontWeight: "600",
-    color: "rgba(10,10,10,0.58)",
-  },
-  pillsRow: {
+  row: {
     flexDirection: "row",
-    gap: 8,
-    marginBottom: 14,
+    justifyContent: "space-between",
+    gap: 6,
   },
-  pill: {
+  metricCol: {
     flex: 1,
     alignItems: "center",
-    borderRadius: 999,
-    paddingTop: 14,
-    paddingBottom: 14,
-    paddingHorizontal: 4,
-    backgroundColor: "rgba(255,255,255,0.34)",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.62)",
-    shadowColor: "#000",
-    shadowOpacity: 0.14,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 4,
-    gap: 8,
-    minHeight: 188,
+    gap: 4,
   },
-  pillLabel: {
-    fontSize: 12,
+  metricLabel: {
+    fontSize: 11,
     fontWeight: "700",
     color: "#0A0A0A",
-    textAlign: "center",
   },
-  pillDetail: {
-    fontSize: 11,
+  circle: {
+    width: CIRCLE,
+    height: CIRCLE,
+    borderRadius: CIRCLE / 2,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255,255,255,0.4)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.7)",
+    shadowColor: "#000",
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 5 },
+    elevation: 3,
+  },
+  metricDetail: {
+    fontSize: 10,
     fontWeight: "600",
     color: "rgba(10,10,10,0.62)",
     textAlign: "center",
-    paddingHorizontal: 2,
-    lineHeight: 14,
+    maxWidth: CIRCLE + 8,
   },
   gaugeCenter: {
     ...StyleSheet.absoluteFill,
     alignItems: "center",
     justifyContent: "center",
+    flexDirection: "row",
   },
   gaugePct: {
-    fontSize: 15,
+    fontSize: 18,
     fontWeight: "800",
     color: "#0A0A0A",
-    letterSpacing: -0.3,
+    letterSpacing: -0.4,
   },
-  cta: {
-    flexDirection: "row",
-    alignItems: "center",
+  gaugePctUnit: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "rgba(10,10,10,0.55)",
+    marginTop: 4,
+    marginLeft: 1,
+  },
+  sliderTrack: {
+    height: 48,
     borderRadius: 999,
-    paddingVertical: 9,
-    paddingLeft: 9,
-    paddingRight: 14,
-    backgroundColor: "rgba(255,255,255,0.38)",
+    backgroundColor: "rgba(255,255,255,0.36)",
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.65)",
-    shadowColor: "#000",
-    shadowOpacity: 0.16,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 5,
-    gap: 10,
-  },
-  ctaBusy: {
-    opacity: 0.85,
-  },
-  ctaIcon: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: "rgba(255,255,255,0.95)",
-    alignItems: "center",
     justifyContent: "center",
+    overflow: "hidden",
     shadowColor: "#000",
     shadowOpacity: 0.12,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 3,
   },
-  ctaText: {
-    flex: 1,
-    fontSize: 15,
+  sliderDisabled: {
+    opacity: 0.7,
+  },
+  sliderHint: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    textAlign: "center",
+    fontSize: 14,
     fontWeight: "700",
     color: "#0A0A0A",
   },
-  ctaArrows: {
+  sliderArrows: {
+    position: "absolute",
+    right: 14,
     flexDirection: "row",
     alignItems: "center",
+  },
+  sliderChevron: {
+    fontSize: 22,
+    fontWeight: "700",
+    color: ACCENT,
+    marginLeft: -4,
+    lineHeight: 24,
+  },
+  sliderThumb: {
+    position: "absolute",
+    left: 4,
+    width: THUMB,
+    height: THUMB,
+    borderRadius: THUMB / 2,
+    backgroundColor: "#FFF",
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOpacity: 0.18,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 4,
   },
 });
