@@ -7,6 +7,12 @@ import { useSubscriptions } from "./useSubscriptions";
 type GateKind = "access" | "tryon" | "studio";
 
 /**
+ * TEMP test: obuna/limit majburiy emas.
+ * Qayta yoqish: `false` qiling.
+ */
+const TEMP_SKIP_MORPH_SUBSCRIPTION = true;
+
+/**
  * Morph AI limit gate — web `useMorphLimitGate` bilan mos.
  * analyze/face_check usage oshirmaydi; tryon/studio oshiradi (serverda).
  */
@@ -24,6 +30,11 @@ export function useMorphLimitGate() {
         }
         return false;
       }
+
+      if (TEMP_SKIP_MORPH_SUBSCRIPTION) {
+        return true;
+      }
+
       await refresh();
       // refresh async state — me eski bo'lishi mumkin, shuning uchun API dan qayta olamiz
       const { fetchSubscriptionMe } = await import("../api/subscriptions");
@@ -80,6 +91,9 @@ export function useMorphLimitGate() {
   );
 
   const handleError = useCallback((err: unknown): boolean => {
+    if (TEMP_SKIP_MORPH_SUBSCRIPTION) {
+      return false;
+    }
     if (err instanceof MorphPlanLimitError) {
       Alert.alert("Limit", err.message);
       return true;
@@ -99,6 +113,8 @@ export function useMorphLimitGate() {
     limit: me?.usage?.morph_ai_limit ?? 0,
     studioRemaining: me?.usage?.morph_studio_remaining ?? 0,
     studioLimit: me?.usage?.morph_studio_limit ?? 0,
-    allowed: Boolean(me?.has_active && me?.access?.morph_ai_allowed !== false),
+    allowed: TEMP_SKIP_MORPH_SUBSCRIPTION
+      ? isAuthenticated
+      : Boolean(me?.has_active && me?.access?.morph_ai_allowed !== false),
   };
 }

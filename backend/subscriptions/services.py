@@ -432,6 +432,12 @@ def check_morph_entitlement(*, user: User, kind: str) -> str | None:
     if kind not in ("tryon", "studio", "analyze", "face_check"):
         return None
 
+    from django.conf import settings
+
+    # TEMP test — MORPH_ENTITLEMENT_BYPASS=false qilib qayta yoqing.
+    if getattr(settings, "MORPH_ENTITLEMENT_BYPASS", False):
+        return None
+
     sub = get_active_subscription(user)
     if not sub:
         return _no_subscription_message()
