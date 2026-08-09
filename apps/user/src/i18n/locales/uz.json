@@ -1142,7 +1142,7 @@
     "preparingPhoto": "Rasm tayyorlanmoqda…",
     "preparingPhotoHint": "Tezroq tahlil uchun rasm siqilmoqda",
     "galleryValidatingHint": "Rasmda yuz bor-yo'qligi aniqlanmoqda",
-    "errNoFace": "Iltimos, yuz shakli rasmini yuklang.",
+    "errNoFace": "Iltimos yuz shaklini yuboring!",
     "selfieAlt": "Selfie",
     "resetPhoto": "Rasmni almashtirish",
     "privacyNote": "Faqat tahlil uchun · serverda saqlanmaydi",

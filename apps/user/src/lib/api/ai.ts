@@ -38,6 +38,15 @@ export type AiFaceCheckResponse = {
   detail?: string;
 };
 
+/** Server va client uchun yagona "yuz yo'q" xabari. */
+export const NO_FACE_MESSAGE = "Iltimos yuz shaklini yuboring!";
+
+export function isNoFaceMessage(message: string): boolean {
+  return /yuz shaklini yuboring|yuz shakli rasmini yuklang|yuz topilmadi|no face|upload.*face|лицо/i.test(
+    message,
+  );
+}
+
 export async function checkAiStyleFace(image: string): Promise<AiFaceCheckResponse> {
   const res = await apiFetch("/api/v1/ai/face-check/", {
     method: "POST",
@@ -51,10 +60,20 @@ export async function checkAiStyleFace(image: string): Promise<AiFaceCheckRespon
     const detail =
       body && typeof body === "object" && typeof body.detail === "string"
         ? body.detail
-        : "Iltimos, yuz shakli rasmini yuklang.";
-    throw new Error(detail);
+        : NO_FACE_MESSAGE;
+    throw new Error(isNoFaceMessage(detail) ? NO_FACE_MESSAGE : detail);
   }
-  return (body ?? { has_face: false }) as AiFaceCheckResponse;
+  const parsed = (body ?? { has_face: false }) as AiFaceCheckResponse;
+  if (!parsed.has_face) {
+    throw new Error(
+      typeof parsed.detail === "string" && parsed.detail.trim()
+        ? isNoFaceMessage(parsed.detail)
+          ? NO_FACE_MESSAGE
+          : parsed.detail
+        : NO_FACE_MESSAGE,
+    );
+  }
+  return parsed;
 }
 
 export type AiFaceHint = {

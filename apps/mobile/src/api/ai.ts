@@ -161,7 +161,7 @@ export async function checkAiStyleFace(image: string): Promise<AiFaceCheckRespon
     | { detail?: string; code?: string }
     | null;
   if (!res.ok) {
-    throwFromMorphApiError(res, body, "Yuz topilmadi. Boshqa rasm yuklang.");
+    throwFromMorphApiError(res, body, "Iltimos yuz shaklini yuboring!");
   }
   return (body ?? { has_face: false }) as AiFaceCheckResponse;
 }

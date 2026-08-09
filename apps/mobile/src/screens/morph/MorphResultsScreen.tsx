@@ -128,7 +128,7 @@ export function MorphResultsScreen({ navigation }: Props) {
       try {
         const face = await checkAiStyleFace(photo);
         if (!face.has_face) {
-          throw new Error(face.detail || "Yuz topilmadi. Aniqroq selfie yuklang.");
+          throw new Error(face.detail || "Iltimos yuz shaklini yuboring!");
         }
         setPhase("analyzing");
         const result = await analyzeAiStyle(photo, "men");

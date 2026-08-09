@@ -1,18 +1,5 @@
 import type { FaceShapeKey } from "@/components/ai-style/ai-style-shared";
 
-export type ScanPhase =
-  | "loading"
-  | "searching"
-  | "turn_left"
-  | "turn_right"
-  | "turn_up"
-  | "turn_down"
-  | "center"
-  | "countdown"
-  | "capture";
-
-export const SCAN_SEQUENCE: ScanPhase[] = ["center"];
-
 export type FaceLandmark = { x: number; y: number; z?: number };
 
 /** MediaPipe face oval — yuz konturi. */
@@ -142,31 +129,6 @@ export function smoothMetrics(
     faceShapeKey: next.faceShapeKey,
     ratios: next.ratios,
   };
-}
-
-export function phaseSatisfied(phase: ScanPhase, metrics: FaceFrameMetrics): boolean {
-  if (metrics.contour.length < 12) return false;
-
-  if (phase === "turn_left") return metrics.yaw < -11;
-  if (phase === "turn_right") return metrics.yaw > 11;
-  if (phase === "turn_up") return metrics.pitch < -9;
-  if (phase === "turn_down") return metrics.pitch > 9;
-  if (phase === "center") {
-    return Math.abs(metrics.yaw) < 14 && Math.abs(metrics.pitch) < 10;
-  }
-  return true;
-}
-
-export function nextPhase(phase: ScanPhase): ScanPhase {
-  if (phase === "searching") return SCAN_SEQUENCE[0] ?? "center";
-  const idx = SCAN_SEQUENCE.indexOf(phase as (typeof SCAN_SEQUENCE)[number]);
-  if (idx >= 0 && idx < SCAN_SEQUENCE.length - 1) return SCAN_SEQUENCE[idx + 1]!;
-  if (phase === "center" || idx === SCAN_SEQUENCE.length - 1) return "capture";
-  return phase;
-}
-
-export function canCapturePhoto(phase: ScanPhase, metrics: FaceFrameMetrics | null): boolean {
-  return phase === "center" && metrics !== null && phaseSatisfied("center", metrics);
 }
 
 export type FaceQualityLevel = "none" | "weak" | "ok" | "good";

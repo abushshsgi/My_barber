@@ -1142,7 +1142,7 @@
     "preparingPhoto": "Preparing photo…",
     "preparingPhotoHint": "Compressing image for faster analysis",
     "galleryValidatingHint": "Detecting a face in your photo",
-    "errNoFace": "Please upload a clear face photo.",
+    "errNoFace": "Please send a clear face photo!",
     "selfieAlt": "Selfie",
     "resetPhoto": "Change photo",
     "privacyNote": "For analysis only · not stored on server",

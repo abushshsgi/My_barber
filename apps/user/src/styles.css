@@ -428,3 +428,52 @@
   }
 
 }
+
+/* Sonner — yuqoridan tushish / yuqoriga yo‘qolish */
+@keyframes app-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(-120%) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes app-toast-out {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-110%) scale(0.96);
+  }
+}
+
+[data-sonner-toaster][data-y-position="top"] {
+  --offset-top: max(1rem, env(safe-area-inset-top, 0px));
+}
+
+[data-sonner-toaster][data-y-position="top"] [data-sonner-toast] {
+  animation: app-toast-in 0.38s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+[data-sonner-toaster][data-y-position="top"] [data-sonner-toast][data-removed="true"] {
+  animation: app-toast-out 0.28s cubic-bezier(0.4, 0, 1, 1) both;
+}
+
+[data-sonner-toaster] [data-sonner-toast].app-toast {
+  border-radius: 999px;
+  padding: 0.7rem 1.1rem;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-sonner-toaster][data-y-position="top"] [data-sonner-toast],
+  [data-sonner-toaster][data-y-position="top"] [data-sonner-toast][data-removed="true"] {
+    animation: none;
+  }
+}

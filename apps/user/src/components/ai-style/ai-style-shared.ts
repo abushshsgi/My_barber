@@ -34,8 +34,6 @@ export function styleCoverGradient(seed: string) {
   return `linear-gradient(145deg, oklch(${light} 0 0) 0%, oklch(${dark} 0 0) 100%)`;
 }
 
-export const ANALYZE_MS = 1800;
-
 /** Backend katalog style_id: masalan men-mid-fade */
 export function isCatalogStyleId(id: string): boolean {
   return /^(men|women)-/.test(id);

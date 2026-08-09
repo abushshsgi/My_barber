@@ -15,7 +15,7 @@ import type { FaceShapeKey } from "@/components/ai-style/ai-style-shared";
 import { refreshMorphAiGenerationsCache, saveMorphAiGeneration } from "@/lib/morph-ai-gallery";
 import { markMorphAiOnboarded } from "@/lib/morph-ai-session";
 import type { ExplorePersonaId } from "@/lib/explore-personas";
-import { detectFaceMetricsFromDataUrl } from "@/components/ai-style/useFaceLandmarker";
+import { requireFaceInDataUrl } from "@/components/ai-style/useFaceLandmarker";
 import { prepareSelfieDataUrl, prepareSelfieFromFile } from "@/lib/selfie-image";
 import {
   isMorphPlanLimitError,
@@ -23,7 +23,7 @@ import {
   isMorphRateLimitMessage,
 } from "@/lib/morph-plan-limit";
 import type { Audience } from "@/lib/mock-data";
-import type { AiFaceHint } from "@/lib/api/ai";
+import { isNoFaceMessage, NO_FACE_MESSAGE, type AiFaceHint } from "@/lib/api/ai";
 
 type UseAiStyleFlowOptions = {
   menPersonaId?: ExplorePersonaId | null;
@@ -42,13 +42,20 @@ function formatAiRequestError(error: unknown, fallback: string): string {
     return error.message;
   }
   const raw = error instanceof Error ? error.message : fallback;
-  if (isMorphPlanLimitMessage(raw)) {
-    return raw;
+  const cleaned = raw
+    .replace(/^API\s+\d+:\s*/i, "")
+    .replace(/\s*Expected available in \d+ seconds?\./gi, "")
+    .trim();
+  if (isNoFaceMessage(cleaned) || isNoFaceMessage(raw)) {
+    return NO_FACE_MESSAGE;
   }
-  if (isMorphRateLimitMessage(raw)) {
+  if (isMorphPlanLimitMessage(cleaned)) {
+    return cleaned;
+  }
+  if (isMorphRateLimitMessage(cleaned)) {
     return "Morph AI hozir ishlamayapti. Keyinroq urinib ko'ring.";
   }
-  return raw.replace(/\s*Expected available in \d+ seconds?\./gi, "").trim() || raw;
+  return cleaned || raw || fallback;
 }
 
 /** Strict Mode remount / parallel effects — bir xil try-onni ikki marta API ga yubormaslik. */
@@ -123,16 +130,11 @@ export function useAiStyleFlow(options: UseAiStyleFlowOptions = {}) {
     setError(null);
     try {
       const prepared = await prepareSelfieDataUrl(dataUrl);
-      // Galereya selfiesida ham MediaPipe — face_hint Gemini analyze ga ketadi.
-      let metricsFace: Awaited<ReturnType<typeof detectFaceMetricsFromDataUrl>> = null;
-      try {
-        metricsFace = await detectFaceMetricsFromDataUrl(prepared);
-      } catch {
-        metricsFace = null;
-      }
+      // Yuz yo‘q / obyekt / landscape — tahlilga yuborilmasin.
+      const metricsFace = await requireFaceInDataUrl(prepared);
+      const scannedAt = new Date().toISOString();
 
       if (metricsFace) {
-        const scannedAt = new Date().toISOString();
         setFaceHint({
           shape: metricsFace.faceShapeKey,
           width_to_height: metricsFace.ratios.widthToHeight,
@@ -154,12 +156,12 @@ export function useAiStyleFlow(options: UseAiStyleFlowOptions = {}) {
         });
       } else {
         setFaceHint(null);
-        await storePhoto(prepared, "gallery");
+        await storePhoto(prepared, "gallery", { scannedAt });
       }
     } catch (e) {
-      const message = e instanceof Error ? e.message : "Rasm yuklanmadi.";
-      setError(message);
+      setError(formatAiRequestError(e, "Rasm yuklanmadi."));
       setPhoto(null);
+      setFaceHint(null);
       setDone(false);
       setResult(null);
     } finally {
@@ -174,7 +176,7 @@ export function useAiStyleFlow(options: UseAiStyleFlowOptions = {}) {
       const dataUrl = await prepareSelfieFromFile(file);
       await applyPhoto(dataUrl);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Rasm yuklanmadi.");
+      setError(formatAiRequestError(e, "Rasm yuklanmadi."));
     } finally {
       if (fileRef.current) fileRef.current.value = "";
     }
@@ -182,34 +184,58 @@ export function useAiStyleFlow(options: UseAiStyleFlowOptions = {}) {
 
   const onCameraCapture = async (payload: CameraCapturePayload) => {
     setError(null);
-    const scannedAt = new Date().toISOString();
-    if (payload.faceShapeKey && payload.ratios) {
-      setFaceHint({
-        shape: payload.faceShapeKey,
-        width_to_height: payload.ratios.widthToHeight,
-        jaw_to_forehead: payload.ratios.jawToForehead,
-        source: "camera_scan",
-      });
-      saveFaceProfile({
-        faceShapeKey: payload.faceShapeKey,
-        ratios: {
-          widthToHeight: payload.ratios.widthToHeight,
-          jawToForehead: payload.ratios.jawToForehead,
-        },
-        scannedAt,
-        source: "camera_scan",
-      });
-    } else {
-      setFaceHint(null);
-    }
     setCameraOpen(false);
+    setPreparingPreview(payload.dataUrl);
+    setPreparingPhoto(true);
     try {
-      await storePhoto(payload.dataUrl, "camera_scan", {
-        faceShapeKey: payload.faceShapeKey,
+      const prepared = await prepareSelfieDataUrl(payload.dataUrl);
+      let faceShapeKey = payload.faceShapeKey;
+      let ratios = payload.ratios;
+
+      // Landmarker ishlamagan / yuzsiz kadr — server yoki MediaPipe qayta tekshiradi.
+      if (!faceShapeKey || !ratios) {
+        const metricsFace = await requireFaceInDataUrl(prepared);
+        if (metricsFace) {
+          faceShapeKey = metricsFace.faceShapeKey;
+          ratios = {
+            widthToHeight: metricsFace.ratios.widthToHeight,
+            jawToForehead: metricsFace.ratios.jawToForehead,
+          };
+        }
+      }
+
+      const scannedAt = new Date().toISOString();
+      if (faceShapeKey && ratios) {
+        setFaceHint({
+          shape: faceShapeKey,
+          width_to_height: ratios.widthToHeight,
+          jaw_to_forehead: ratios.jawToForehead,
+          source: "camera_scan",
+        });
+        saveFaceProfile({
+          faceShapeKey,
+          ratios: {
+            widthToHeight: ratios.widthToHeight,
+            jawToForehead: ratios.jawToForehead,
+          },
+          scannedAt,
+          source: "camera_scan",
+        });
+      } else {
+        setFaceHint(null);
+      }
+
+      await storePhoto(prepared, "camera_scan", {
+        faceShapeKey,
         scannedAt,
       });
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Rasm yuklanmadi.");
+      setError(formatAiRequestError(e, "Rasm yuklanmadi."));
+      setPhoto(null);
+      setFaceHint(null);
+    } finally {
+      setPreparingPhoto(false);
+      setPreparingPreview(null);
     }
   };
 
