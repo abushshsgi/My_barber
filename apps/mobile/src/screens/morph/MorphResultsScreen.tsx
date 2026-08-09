@@ -251,15 +251,17 @@ export function MorphResultsScreen({ navigation }: Props) {
   );
 
   const onNewPhoto = useCallback(() => {
-    Alert.alert("Yangi rasm", "Qayerdan yuklaysiz?", [
+    Alert.alert("Yangi rasm", "Yuz shaklingizni aniq selfie qilib yuklang.", [
       {
         text: "Kamera",
         onPress: () => {
           void (async () => {
             const dataUrl = await pickSelfieFromCamera();
             if (!dataUrl) return;
+            toast.hide();
             session.clear();
             session.setSelfie(dataUrl);
+            setError(null);
             setSpotlightIndex(0);
             void runAnalyze(dataUrl);
           })();
@@ -271,8 +273,10 @@ export function MorphResultsScreen({ navigation }: Props) {
           void (async () => {
             const dataUrl = await pickSelfieFromGallery();
             if (!dataUrl) return;
+            toast.hide();
             session.clear();
             session.setSelfie(dataUrl);
+            setError(null);
             setSpotlightIndex(0);
             void runAnalyze(dataUrl);
           })();
@@ -280,7 +284,7 @@ export function MorphResultsScreen({ navigation }: Props) {
       },
       { text: "Bekor", style: "cancel" },
     ]);
-  }, [runAnalyze, session]);
+  }, [runAnalyze, session, toast]);
 
   const toggleSave = useCallback((id: string) => {
     setSavedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
@@ -315,9 +319,9 @@ export function MorphResultsScreen({ navigation }: Props) {
 
         <View style={[styles.scanBottom, { paddingBottom: Math.max(insets.bottom, 16) + 12 }]}>
           {phase === "error" ? (
-            <Pressable style={styles.analyzeBtn} onPress={() => void runAnalyze()}>
-              <Ionicons name="refresh" size={18} color="#FFF" />
-              <Text style={styles.analyzeBtnText}>Qayta urinish</Text>
+            <Pressable style={styles.analyzeBtn} onPress={onNewPhoto}>
+              <Ionicons name="camera-outline" size={18} color="#FFF" />
+              <Text style={styles.analyzeBtnText}>Yangi rasm yuklash</Text>
             </Pressable>
           ) : (
             <View style={styles.analyzeBtn}>
