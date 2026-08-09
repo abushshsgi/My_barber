@@ -323,7 +323,7 @@ export function MorphResultsScreen({ navigation }: Props) {
       <View style={styles.bgDim} />
 
       <View style={[styles.chrome, { paddingTop: Math.max(insets.top, 8) }]}>
-        <Pressable style={styles.chromeBtn} onPress={() => navigation.navigate("MorphHome")}>
+        <Pressable style={styles.chromeBtn} onPress={() => navigation.navigate("MorphTryOn")}>
           <Ionicons name="chevron-back" size={20} color="#0A0A0A" />
         </Pressable>
         <Text style={styles.chromeTitle}>Morf AI</Text>
@@ -355,7 +355,7 @@ export function MorphResultsScreen({ navigation }: Props) {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.panel}>
-          <Pressable style={styles.homeLink} onPress={() => navigation.navigate("MorphHome")}>
+          <Pressable style={styles.homeLink} onPress={() => navigation.navigate("MorphTryOn")}>
             <Ionicons name="chevron-back" size={14} color="#0A0A0A" />
             <Text style={styles.homeLinkText}>Morf AI Home</Text>
           </Pressable>

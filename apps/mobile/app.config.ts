@@ -93,10 +93,12 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       ],
     ],
     extra: {
-      apiUrl: "https://api.mysaloon.uz",
+      apiUrl:
+        process.env.EXPO_PUBLIC_API_URL?.trim() || "https://api.mysaloon.uz",
       googleClientId:
         process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID ||
         "990469146793-ep627vhgbidpuojfrv0crlsh3a5o52tn.apps.googleusercontent.com",
+      googleMapsApiKey: googleMapsApiKey || undefined,
       eas: {
         projectId: "7a541b52-f3c6-4bef-a463-8feaf27eba52",
       },

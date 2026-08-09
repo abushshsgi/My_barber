@@ -97,9 +97,9 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
   }, [activeName, rememberTab, setShell, shell]);
 
   const pressTab = (name: keyof RootTabParamList) => {
-    // Try-on tabi — stack paywall/results da qolib ketmasin, home ga qaytadi.
+    // Try-on tabi — stack ichida Welcome/Results da qolib ketmasin.
     if (name === "MorphTryOn") {
-      navigation.navigate("MorphTryOn", { screen: "MorphHome" } as never);
+      navigation.navigate("MorphTryOn", { screen: "MorphTryOn" } as never);
       return;
     }
     const route = state.routes.find((r) => r.name === name);
@@ -123,7 +123,7 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
         const target = await switchToMorphTarget();
         const tab = (target === "MorphStudio" ? "MorphTryOn" : target) as keyof RootTabParamList;
         if (tab === "MorphTryOn") {
-          navigation.navigate("MorphTryOn", { screen: "MorphHome" } as never);
+          navigation.navigate("MorphTryOn", { screen: "MorphTryOn" } as never);
         } else {
           navigation.navigate(tab);
         }

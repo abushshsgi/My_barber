@@ -2,51 +2,76 @@ import { Ionicons } from "@expo/vector-icons";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  PanResponder,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   View,
 } from "react-native";
+import Animated, {
+  FadeIn,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { fetchHairstyles } from "../../api/hairstyles";
-import { morfMark } from "../../branding/morf-logo";
+import { pexelsPhotoUrl } from "../../api/media";
 import { useAuth } from "../../auth/AuthContext";
 import { useHideTabBar } from "../../hooks/useHideTabBar";
 import { useMorphLimitGate } from "../../hooks/useMorphLimitGate";
+import { hasCompletedMorphTryOnIntro } from "../../lib/morph-onboarding";
 import { pickSelfieFromCamera, pickSelfieFromGallery } from "../../lib/selfie";
 import { useMorphSession } from "../../lib/morph-session";
 import type { MorphStackParamList } from "../../navigation/MorphStack";
 
 type Props = NativeStackScreenProps<MorphStackParamList, "MorphTryOn">;
 
-type RecCard = { id: string; title: string; image: string };
+const FALLBACK_HERO = pexelsPhotoUrl(3998429, 1400);
 
+/**
+ * Try-on (qayta kirish) — selfie kamera / galereya + tarix swipe.
+ * Birinchi marta: MorphWelcome ga yo‘naltiradi.
+ */
 export function MorphTryOnScreen({ navigation }: Props) {
   useHideTabBar();
   const insets = useSafeAreaInsets();
   const { isAuthenticated } = useAuth();
   const session = useMorphSession();
   const gate = useMorphLimitGate();
+  const [ready, setReady] = useState(false);
   const [busy, setBusy] = useState<"camera" | "gallery" | null>(null);
-  const [recs, setRecs] = useState<RecCard[]>([]);
+  const [heroUri, setHeroUri] = useState(FALLBACK_HERO);
   const [error, setError] = useState<string | null>(null);
+  const hintY = useSharedValue(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    void hasCompletedMorphTryOnIntro().then((done) => {
+      if (cancelled) return;
+      if (!done) {
+        navigation.replace("MorphWelcome");
+        return;
+      }
+      setReady(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [navigation]);
 
   useEffect(() => {
     let cancelled = false;
     void fetchHairstyles("men")
       .then((rows) => {
         if (cancelled) return;
-        setRecs(
-          rows.slice(0, 8).map((r) => ({
-            id: r.id,
-            title: r.title_uz || r.title,
-            image: r.image_url,
-          })),
-        );
+        const uri = rows[0]?.image_url?.trim();
+        if (uri) setHeroUri(uri);
       })
       .catch(() => undefined);
     return () => {
@@ -54,10 +79,37 @@ export function MorphTryOnScreen({ navigation }: Props) {
     };
   }, []);
 
-  const heroImage = recs[0]?.image ?? null;
+  useEffect(() => {
+    hintY.value = withRepeat(
+      withSequence(
+        withTiming(-6, { duration: 700 }),
+        withTiming(0, { duration: 700 }),
+      ),
+      -1,
+      false,
+    );
+  }, [hintY]);
+
+  const hintAnim = useAnimatedStyle(() => ({
+    transform: [{ translateY: hintY.value }],
+  }));
+
+  const openHistory = useCallback(() => {
+    navigation.navigate("MorphHistory");
+  }, [navigation]);
+
+  const panRef = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, g) =>
+        g.dy < -18 && Math.abs(g.dy) > Math.abs(g.dx),
+      onPanResponderRelease: (_, g) => {
+        if (g.dy < -60 || g.vy < -0.6) openHistory();
+      },
+    }),
+  ).current;
 
   const startWith = useCallback(
-    async (source: "camera" | "gallery", preferred?: RecCard) => {
+    async (source: "camera" | "gallery") => {
       if (!isAuthenticated) {
         navigation.getParent()?.navigate("Profile" as never);
         return;
@@ -65,7 +117,6 @@ export function MorphTryOnScreen({ navigation }: Props) {
       setError(null);
       setBusy(source);
       try {
-        // Avval picker — webda gate + Alert tufayli "hech narsa bo‘lmaydi" holatini oldini oladi.
         const dataUrl =
           source === "camera"
             ? await pickSelfieFromCamera()
@@ -87,9 +138,6 @@ export function MorphTryOnScreen({ navigation }: Props) {
 
         session.clear();
         session.setSelfie(dataUrl);
-        if (preferred) {
-          session.setPreferredStyle(preferred.id, preferred.title);
-        }
         navigation.replace("MorphResults");
       } catch (err) {
         setError(err instanceof Error ? err.message : "Rasm yuklashda xato");
@@ -100,88 +148,70 @@ export function MorphTryOnScreen({ navigation }: Props) {
     [gate, isAuthenticated, navigation, session],
   );
 
+  if (!ready) {
+    return <View style={styles.root} />;
+  }
+
   return (
-    <View style={[styles.root, { paddingTop: Math.max(insets.top, 8) }]}>
-      <View style={styles.header}>
-        <Pressable
-          style={styles.iconBtn}
-          onPress={() => navigation.goBack()}
-          accessibilityLabel="Orqaga"
-        >
-          <Ionicons name="chevron-back" size={16} color="#0A0A0A" />
-        </Pressable>
-        <Text style={styles.headerTitle}>Try-on</Text>
-        <View style={styles.iconBtnGhost} />
-      </View>
+    <View style={styles.root} {...panRef.panHandlers}>
+      <Image
+        source={{ uri: heroUri }}
+        style={StyleSheet.absoluteFill}
+        contentFit="cover"
+        transition={300}
+      />
+      <LinearGradient
+        colors={["rgba(10,10,10,0.15)", "rgba(10,10,10,0.55)", "#1A1A1A"]}
+        locations={[0, 0.42, 0.72]}
+        style={StyleSheet.absoluteFill}
+      />
 
-      <ScrollView
-        contentContainerStyle={[
-          styles.body,
-          { paddingBottom: Math.max(insets.bottom, 12) + 20 },
-        ]}
-        showsVerticalScrollIndicator={false}
+      <Animated.View
+        entering={FadeIn.duration(400)}
+        style={[styles.centerCopy, { paddingTop: insets.top + 48 }]}
       >
-        <Text style={styles.headline}>Mukammal uslubingizni toping</Text>
-        <Text style={styles.sub}>
-          Selfie yuklang — AI yuz shakliga mos look yaratadi.
-        </Text>
+        <Text style={styles.headline}>Selfie yuklang</Text>
+        <Text style={styles.sub}>Yuz aniq ko‘rinsin · yaxshi yorug‘lik</Text>
+      </Animated.View>
 
-        {recs.length > 0 ? (
-          <View style={styles.recs}>
-            <Text style={styles.recsTitle}>Sizga tavsiya</Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.recsRow}
-            >
-              {recs.map((item) => (
-                <Pressable
-                  key={item.id}
-                  style={styles.recCard}
-                  disabled={!!busy}
-                  onPress={() => void startWith("gallery", item)}
-                >
-                  <Image
-                    source={{ uri: item.image }}
-                    style={styles.recImg}
-                    contentFit="cover"
-                  />
-                  <Text style={styles.recTitle} numberOfLines={1}>
-                    {item.title}
-                  </Text>
-                </Pressable>
-              ))}
-            </ScrollView>
-          </View>
-        ) : null}
-
-        <View style={styles.heroCard}>
-          {heroImage ? (
-            <Image
-              source={{ uri: heroImage }}
-              style={StyleSheet.absoluteFill}
-              contentFit="cover"
-            />
-          ) : (
-            <LinearGradient
-              colors={["#1A1A1A", "#0A0A0A"]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={StyleSheet.absoluteFill}
-            />
-          )}
-          <LinearGradient
-            colors={["transparent", "rgba(0,0,0,0.75)"]}
-            style={StyleSheet.absoluteFill}
+      <Pressable
+        style={[styles.historyHint, { bottom: 250 + Math.max(insets.bottom, 8) }]}
+        onPress={openHistory}
+        accessibilityLabel="Tarix"
+      >
+        <Animated.View style={[styles.historyInner, hintAnim]}>
+          <Ionicons name="chevron-up" size={16} color="rgba(255,255,255,0.75)" />
+          <Ionicons
+            name="chevron-up"
+            size={16}
+            color="rgba(255,255,255,0.45)"
+            style={{ marginTop: -10 }}
           />
-          <View style={styles.heroContent}>
-            <View style={styles.heroBadge}>
-              <Image source={morfMark} style={styles.heroMark} contentFit="contain" />
-              <Text style={styles.heroBadgeText}>Morf AI skaner</Text>
+          <View style={styles.historyLine} />
+          <Text style={styles.historyText}>Tarix uchun yuqoriga siljiting</Text>
+        </Animated.View>
+      </Pressable>
+
+      <View
+        style={[
+          styles.sheet,
+          { paddingBottom: Math.max(insets.bottom, 12) + 10 },
+        ]}
+      >
+        <View style={styles.steps}>
+          {(["Selfie", "Tahlil", "Natija"] as const).map((label, i) => (
+            <View key={label} style={styles.stepCol}>
+              {i > 0 ? <View style={styles.stepLine} /> : null}
+              <View style={[styles.stepDot, i === 0 && styles.stepDotOn]}>
+                <Text style={[styles.stepNum, i === 0 && styles.stepNumOn]}>
+                  {i + 1}
+                </Text>
+              </View>
+              <Text style={[styles.stepLabel, i === 0 && styles.stepLabelOn]}>
+                {label}
+              </Text>
             </View>
-            <Text style={styles.heroTitle}>Shaxsiy lookingiz</Text>
-            <Text style={styles.heroHint}>Yuz aniq · yaxshi yorug‘lik</Text>
-          </View>
+          ))}
         </View>
 
         {error ? (
@@ -208,11 +238,8 @@ export function MorphTryOnScreen({ navigation }: Props) {
               <ActivityIndicator color="#FFF" />
             ) : (
               <>
-                <View style={styles.gridIconDark}>
-                  <Ionicons name="camera" size={18} color="#FFF" />
-                </View>
-                <Text style={styles.gridTitleLight}>Kamera</Text>
-                <Text style={styles.gridSubLight}>Selfie skan</Text>
+                <Ionicons name="scan-outline" size={26} color="#FFF" />
+                <Text style={styles.gridTitleLight}>Kameradan olish</Text>
               </>
             )}
           </Pressable>
@@ -226,144 +253,100 @@ export function MorphTryOnScreen({ navigation }: Props) {
               <ActivityIndicator color="#0A0A0A" />
             ) : (
               <>
-                <View style={styles.gridIconLight}>
-                  <Ionicons name="images-outline" size={18} color="#0A0A0A" />
-                </View>
-                <Text style={styles.gridTitleDark}>Galereya</Text>
-                <Text style={styles.gridSubDark}>Rasm yuklash</Text>
+                <Ionicons name="images-outline" size={26} color="#6B6B6B" />
+                <Text style={styles.gridTitleDark}>Galereyadan tanlash</Text>
               </>
             )}
           </Pressable>
         </View>
-
-        <View style={styles.steps}>
-          {(["Selfie", "Tahlil", "Natija"] as const).map((label, i) => (
-            <View key={label} style={styles.stepItem}>
-              <View style={[styles.stepDot, i === 0 && styles.stepDotOn]}>
-                <Text style={[styles.stepNum, i === 0 && styles.stepNumOn]}>
-                  {i + 1}
-                </Text>
-              </View>
-              <Text style={[styles.stepLabel, i === 0 && styles.stepLabelOn]}>
-                {label}
-              </Text>
-            </View>
-          ))}
-        </View>
-      </ScrollView>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: "#FAFAFA",
-  },
-  header: {
-    flexDirection: "row",
+  root: { flex: 1, backgroundColor: "#1A1A1A" },
+  centerCopy: {
     alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 14,
-    marginBottom: 4,
+    paddingHorizontal: 24,
+    gap: 8,
   },
-  headerTitle: {
-    fontSize: 14,
+  headline: {
+    color: "#FFF",
+    fontSize: 28,
     fontWeight: "800",
-    color: "#0A0A0A",
-    letterSpacing: -0.2,
+    letterSpacing: -0.5,
+    textAlign: "center",
   },
-  iconBtn: {
+  sub: {
+    color: "rgba(255,255,255,0.72)",
+    fontSize: 14,
+    fontWeight: "500",
+    textAlign: "center",
+  },
+  historyHint: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    alignItems: "center",
+  },
+  historyInner: { alignItems: "center", gap: 2 },
+  historyLine: {
+    width: 28,
+    height: 3,
+    borderRadius: 2,
+    backgroundColor: "rgba(255,255,255,0.35)",
+    marginTop: 2,
+    marginBottom: 6,
+  },
+  historyText: {
+    color: "rgba(255,255,255,0.7)",
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  sheet: {
+    marginTop: "auto",
+    backgroundColor: "#FFF",
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    paddingHorizontal: 18,
+    paddingTop: 22,
+    gap: 16,
+  },
+  steps: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    paddingHorizontal: 8,
+  },
+  stepCol: {
+    flex: 1,
+    alignItems: "center",
+    gap: 8,
+    position: "relative",
+  },
+  stepLine: {
+    position: "absolute",
+    left: -50,
+    right: "50%",
+    top: 15,
+    height: 2,
+    backgroundColor: "#E8E8E8",
+  },
+  stepDot: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: "#FFFFFF",
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(0,0,0,0.08)",
+    backgroundColor: "#F0F0F0",
     alignItems: "center",
     justifyContent: "center",
-  },
-  iconBtnGhost: { width: 32, height: 32 },
-  body: {
-    paddingHorizontal: 14,
-    gap: 10,
-  },
-  headline: {
-    fontSize: 20,
-    fontWeight: "800",
-    color: "#0A0A0A",
-    letterSpacing: -0.4,
-    lineHeight: 24,
-  },
-  sub: {
-    fontSize: 12,
-    lineHeight: 16,
-    color: "rgba(10,10,10,0.45)",
-    maxWidth: 300,
-  },
-  recs: { gap: 8, marginTop: 2 },
-  recsTitle: { fontSize: 12, fontWeight: "800", color: "#0A0A0A" },
-  recsRow: { gap: 8, paddingRight: 4 },
-  recCard: {
-    width: 88,
-    backgroundColor: "#FFF",
-    borderRadius: 14,
-    overflow: "hidden",
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(0,0,0,0.06)",
-    paddingBottom: 6,
-  },
-  recImg: {
-    width: "100%",
-    aspectRatio: 3 / 4,
-    backgroundColor: "#EEE",
-  },
-  recTitle: {
-    marginTop: 5,
-    paddingHorizontal: 6,
-    fontSize: 10,
-    fontWeight: "700",
-    color: "#0A0A0A",
-  },
-  heroCard: {
-    borderRadius: 20,
-    overflow: "hidden",
-    minHeight: 160,
-    justifyContent: "flex-end",
-    backgroundColor: "#111",
-  },
-  heroContent: {
     zIndex: 1,
-    gap: 4,
-    padding: 14,
   },
-  heroBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    alignSelf: "flex-start",
-    backgroundColor: "rgba(255,255,255,0.14)",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 999,
-  },
-  heroMark: { width: 11, height: 13 },
-  heroBadgeText: {
-    color: "rgba(255,255,255,0.85)",
-    fontSize: 9,
-    fontWeight: "700",
-  },
-  heroTitle: {
-    color: "#FFF",
-    fontSize: 16,
-    fontWeight: "800",
-    letterSpacing: -0.3,
-  },
-  heroHint: {
-    color: "rgba(255,255,255,0.55)",
-    fontSize: 10,
-    fontWeight: "600",
-  },
+  stepDotOn: { backgroundColor: "#0A0A0A" },
+  stepNum: { fontSize: 13, fontWeight: "800", color: "#9A9A9A" },
+  stepNumOn: { color: "#FFF" },
+  stepLabel: { fontSize: 12, fontWeight: "600", color: "#A0A0A0" },
+  stepLabelOn: { color: "#0A0A0A", fontWeight: "800" },
   errorBox: {
     backgroundColor: "rgba(185,28,28,0.08)",
     borderRadius: 12,
@@ -379,85 +362,42 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   errorCtaText: { color: "#FFF", fontSize: 11, fontWeight: "800" },
-  actionGrid: {
-    flexDirection: "row",
-    gap: 8,
-  },
+  actionGrid: { flexDirection: "row", gap: 12 },
   gridBtnDark: {
     flex: 1,
     alignItems: "center",
-    gap: 6,
-    backgroundColor: "#0A0A0A",
-    borderRadius: 16,
-    paddingVertical: 14,
-    paddingHorizontal: 10,
-    minHeight: 96,
     justifyContent: "center",
+    gap: 10,
+    backgroundColor: "#0A0A0A",
+    borderRadius: 18,
+    minHeight: 112,
+    paddingHorizontal: 10,
+    paddingVertical: 16,
   },
   gridBtnLight: {
     flex: 1,
     alignItems: "center",
-    gap: 6,
-    backgroundColor: "#FFF",
-    borderRadius: 16,
-    paddingVertical: 14,
-    paddingHorizontal: 10,
-    minHeight: 96,
     justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "rgba(0,0,0,0.08)",
+    gap: 10,
+    backgroundColor: "#FFF",
+    borderRadius: 18,
+    minHeight: 112,
+    paddingHorizontal: 10,
+    paddingVertical: 16,
+    borderWidth: 1.5,
+    borderColor: "#D4D4D4",
     borderStyle: "dashed",
   },
-  gridIconDark: {
-    width: 36,
-    height: 36,
-    borderRadius: 12,
-    backgroundColor: "rgba(255,255,255,0.12)",
-    alignItems: "center",
-    justifyContent: "center",
+  gridTitleLight: {
+    color: "#FFF",
+    fontWeight: "700",
+    fontSize: 13,
+    textAlign: "center",
   },
-  gridIconLight: {
-    width: 36,
-    height: 36,
-    borderRadius: 12,
-    backgroundColor: "#F2F2F2",
-    alignItems: "center",
-    justifyContent: "center",
+  gridTitleDark: {
+    color: "#0A0A0A",
+    fontWeight: "700",
+    fontSize: 13,
+    textAlign: "center",
   },
-  gridTitleLight: { color: "#FFF", fontWeight: "800", fontSize: 12 },
-  gridSubLight: { color: "rgba(255,255,255,0.45)", fontSize: 10, fontWeight: "600" },
-  gridTitleDark: { color: "#0A0A0A", fontWeight: "800", fontSize: 12 },
-  gridSubDark: { color: "rgba(10,10,10,0.4)", fontSize: 10, fontWeight: "600" },
-  steps: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    backgroundColor: "#FFF",
-    borderRadius: 14,
-    paddingHorizontal: 10,
-    paddingVertical: 10,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(0,0,0,0.06)",
-    gap: 4,
-  },
-  stepItem: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 5,
-  },
-  stepDot: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: "#F0F0F0",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  stepDotOn: { backgroundColor: "#0A0A0A" },
-  stepNum: { fontSize: 10, fontWeight: "800", color: "#8E8E93" },
-  stepNumOn: { color: "#FFF" },
-  stepLabel: { fontSize: 10, fontWeight: "700", color: "#8E8E93" },
-  stepLabelOn: { color: "#0A0A0A" },
 });
