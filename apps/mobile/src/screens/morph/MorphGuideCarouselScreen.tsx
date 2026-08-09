@@ -178,7 +178,7 @@ export function MorphGuideCarouselScreen({ navigation }: Props) {
         />
       </View>
 
-      <View style={[styles.copy, { paddingBottom: insets.bottom + 110 }]}>
+      <View style={[styles.copy, { paddingBottom: insets.bottom + 130 }]}>
         <View style={styles.badge}>
           <Text style={styles.badgeText}>{item.badge}</Text>
         </View>
@@ -226,7 +226,10 @@ export function MorphGuideCarouselScreen({ navigation }: Props) {
 
       <Animated.View
         entering={FadeInDown.duration(400)}
-        style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 12) + 8 }]}
+        style={[
+          styles.footer,
+          { paddingBottom: Math.max(insets.bottom, 16) + 12 },
+        ]}
       >
         <View style={styles.dots}>
           {SLIDES.map((s, i) => (
@@ -358,6 +361,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
+    zIndex: 8,
     paddingHorizontal: 18,
     gap: 12,
     backgroundColor: "transparent",

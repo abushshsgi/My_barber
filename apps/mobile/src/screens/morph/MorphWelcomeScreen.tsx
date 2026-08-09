@@ -26,6 +26,7 @@ const HERO_URI = pexelsPhotoUrl(3998445, 1400);
 
 /**
  * Try-on birinchi kirish — marketing hero (Get Started).
+ * Tab bar yashirin — CTA pastki qatlamda to‘liq ko‘rinadi.
  */
 export function MorphWelcomeScreen({ navigation }: Props) {
   useHideTabBar();
@@ -104,6 +105,8 @@ export function MorphWelcomeScreen({ navigation }: Props) {
     navigation.navigate("MorphGuide");
   };
 
+  const bottomSafe = Math.max(insets.bottom, 16);
+
   return (
     <View style={styles.root}>
       <Image
@@ -113,33 +116,29 @@ export function MorphWelcomeScreen({ navigation }: Props) {
         transition={400}
       />
       <LinearGradient
-        colors={["rgba(20,12,8,0.15)", "rgba(18,10,6,0.55)", "rgba(12,8,6,0.92)"]}
-        locations={[0, 0.45, 1]}
+        colors={["rgba(20,12,8,0.1)", "rgba(18,10,6,0.45)", "rgba(12,8,6,0.88)"]}
+        locations={[0, 0.4, 0.78]}
         style={StyleSheet.absoluteFill}
       />
 
-      <Animated.View
-        style={[
-          styles.sheet,
-          cardStyle,
-          { paddingBottom: Math.max(insets.bottom, 14) + 8 },
-        ]}
-      >
-        <View style={styles.glass}>
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>Morf AI</Text>
+      <View style={styles.content}>
+        <Animated.View style={[styles.glassWrap, cardStyle]}>
+          <View style={styles.glass}>
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>Morf AI</Text>
+            </View>
+            <Text style={styles.title}>
+              Look yaratish{"\n"}
+              <Text style={styles.titleEm}>AI BILAN</Text>
+            </Text>
+            <Text style={styles.sub}>
+              Selfie yuklang — Morf AI yuz shaklingizga mos soch uslublarini bir necha
+              soniyada yaratadi.
+            </Text>
           </View>
-          <Text style={styles.title}>
-            Look yaratish{"\n"}
-            <Text style={styles.titleEm}>AI BILAN</Text>
-          </Text>
-          <Text style={styles.sub}>
-            Selfie yuklang — Morf AI yuz shaklingizga mos soch uslublarini bir necha
-            soniyada yaratadi.
-          </Text>
-        </View>
+        </Animated.View>
 
-        <View style={styles.bar}>
+        <View style={[styles.bar, { paddingBottom: bottomSafe }]}>
           <Animated.View style={backAnimStyle}>
             <Pressable
               style={styles.backBtn}
@@ -154,6 +153,7 @@ export function MorphWelcomeScreen({ navigation }: Props) {
             style={styles.ctaRow}
             onPress={onGetStarted}
             accessibilityLabel="Get Started"
+            accessibilityRole="button"
           >
             <Animated.View style={[styles.ctaCircle, ctaGlowStyle]}>
               <Ionicons name="arrow-forward" size={20} color="#1A120E" />
@@ -166,25 +166,27 @@ export function MorphWelcomeScreen({ navigation }: Props) {
             </Animated.View>
           </Pressable>
         </View>
-      </Animated.View>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: "#1A120E" },
-  sheet: {
+  content: {
     flex: 1,
     justifyContent: "flex-end",
+  },
+  glassWrap: {
     paddingHorizontal: 16,
-    gap: 14,
+    marginBottom: 12,
   },
   glass: {
     borderRadius: 28,
     paddingHorizontal: 22,
     paddingTop: 22,
     paddingBottom: 26,
-    backgroundColor: "rgba(42, 28, 20, 0.55)",
+    backgroundColor: "rgba(42, 28, 20, 0.58)",
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: "rgba(255,255,255,0.14)",
     gap: 10,
@@ -223,11 +225,12 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 14,
-    minHeight: 64,
-    borderRadius: 22,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    backgroundColor: "rgba(28, 18, 14, 0.92)",
+    minHeight: 72,
+    paddingHorizontal: 18,
+    paddingTop: 12,
+    backgroundColor: "rgba(28, 18, 14, 0.96)",
+    borderTopLeftRadius: 0,
+    borderTopRightRadius: 0,
   },
   backBtn: {
     width: 48,
@@ -243,6 +246,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
+    minHeight: 52,
   },
   ctaCircle: {
     width: 52,

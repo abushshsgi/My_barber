@@ -63,7 +63,7 @@ const MORPH_RIGHT: TabDef[] = [
 
 const mysaloonIcon = require("../../assets/icon.png");
 
-function CustomTabBar({ state, navigation }: BottomTabBarProps) {
+function CustomTabBar({ state, navigation, descriptors }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
   const bottomPad = Math.max(insets.bottom, 10);
   const { shell, rememberTab, setShell, switchToMorphTarget, switchToMysaloonTarget } = useAppShell();
@@ -71,6 +71,19 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
   const leftTabs = shell === "morph" ? MORPH_LEFT : MYSALOON_LEFT;
   const rightTabs = shell === "morph" ? MORPH_RIGHT : MYSALOON_RIGHT;
   const activeName = state.routes[state.index]?.name as keyof RootTabParamList | undefined;
+
+  // useHideTabBar → tabBarStyle.display: 'none' — custom dock ham yashirinadi.
+  const focusedKey = state.routes[state.index]?.key;
+  const tabBarStyle = focusedKey
+    ? descriptors[focusedKey]?.options?.tabBarStyle
+    : undefined;
+  const styleObj =
+    tabBarStyle && typeof tabBarStyle === "object" && !Array.isArray(tabBarStyle)
+      ? (tabBarStyle as Record<string, unknown>)
+      : null;
+  if (styleObj?.display === "none") {
+    return null;
+  }
 
   useEffect(() => {
     if (!activeName) return;

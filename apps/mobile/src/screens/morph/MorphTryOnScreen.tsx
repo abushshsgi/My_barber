@@ -23,7 +23,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { fetchHairstyles } from "../../api/hairstyles";
 import { pexelsPhotoUrl } from "../../api/media";
 import { useAuth } from "../../auth/AuthContext";
-import { useHideTabBar } from "../../hooks/useHideTabBar";
+import { TAB_DOCK_CLEARANCE } from "../../hooks/useHideTabBar";
 import { useMorphLimitGate } from "../../hooks/useMorphLimitGate";
 import { hasCompletedMorphTryOnIntro } from "../../lib/morph-onboarding";
 import { pickSelfieFromCamera, pickSelfieFromGallery } from "../../lib/selfie";
@@ -36,10 +36,9 @@ const FALLBACK_HERO = pexelsPhotoUrl(3998429, 1400);
 
 /**
  * Try-on (qayta kirish) — selfie kamera / galereya + tarix swipe.
- * Birinchi marta: MorphWelcome ga yo‘naltiradi.
+ * Tab dock ko‘rinadi — sheet uning ustida. Birinchi marta: MorphWelcome.
  */
 export function MorphTryOnScreen({ navigation }: Props) {
-  useHideTabBar();
   const insets = useSafeAreaInsets();
   const { isAuthenticated } = useAuth();
   const session = useMorphSession();
@@ -175,7 +174,13 @@ export function MorphTryOnScreen({ navigation }: Props) {
       </Animated.View>
 
       <Pressable
-        style={[styles.historyHint, { bottom: 250 + Math.max(insets.bottom, 8) }]}
+        style={[
+          styles.historyHint,
+          {
+            bottom:
+              220 + TAB_DOCK_CLEARANCE + Math.max(insets.bottom, 8),
+          },
+        ]}
         onPress={openHistory}
         accessibilityLabel="Tarix"
       >
@@ -195,7 +200,10 @@ export function MorphTryOnScreen({ navigation }: Props) {
       <View
         style={[
           styles.sheet,
-          { paddingBottom: Math.max(insets.bottom, 12) + 10 },
+          {
+            marginBottom: TAB_DOCK_CLEARANCE + Math.max(insets.bottom, 8),
+            paddingBottom: 18,
+          },
         ]}
       >
         <View style={styles.steps}>
