@@ -339,7 +339,7 @@ export function MorphResultsScreen({ navigation }: Props) {
   }
 
   /** Checking / analyzing / xato — selfie to‘liq, frame yo‘q. */
-  if (analyzing || (phase === "error" && !session.analyze)) {
+  if (analyzingBusy || (phase === "error" && !session.analyze)) {
     return (
       <View style={styles.root}>
         {session.selfieDataUrl ? (
