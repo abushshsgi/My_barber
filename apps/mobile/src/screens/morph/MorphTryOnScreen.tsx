@@ -185,13 +185,15 @@ export function MorphTryOnScreen({ navigation }: Props) {
         accessibilityLabel="Tarix"
       >
         <Animated.View style={[styles.historyInner, hintAnim]}>
-          <Ionicons name="chevron-up" size={16} color="rgba(255,255,255,0.75)" />
-          <Ionicons
-            name="chevron-up"
-            size={16}
-            color="rgba(255,255,255,0.45)"
-            style={{ marginTop: -10 }}
-          />
+          <View style={styles.historyChevrons}>
+            <Ionicons name="chevron-up" size={16} color="rgba(255,255,255,0.75)" />
+            <Ionicons
+              name="chevron-up"
+              size={16}
+              color="rgba(255,255,255,0.4)"
+              style={styles.historyChevronFade}
+            />
+          </View>
           <View style={styles.historyLine} />
           <Text style={styles.historyText}>Tarix uchun yuqoriga siljiting</Text>
         </Animated.View>
@@ -207,9 +209,9 @@ export function MorphTryOnScreen({ navigation }: Props) {
         ]}
       >
         <View style={styles.steps}>
+          <View style={styles.stepTrack} />
           {(["Selfie", "Tahlil", "Natija"] as const).map((label, i) => (
             <View key={label} style={styles.stepCol}>
-              {i > 0 ? <View style={styles.stepLine} /> : null}
               <View style={[styles.stepDot, i === 0 && styles.stepDotOn]}>
                 <Text style={[styles.stepNum, i === 0 && styles.stepNumOn]}>
                   {i + 1}
@@ -246,7 +248,7 @@ export function MorphTryOnScreen({ navigation }: Props) {
               <ActivityIndicator color="#FFF" />
             ) : (
               <>
-                <Ionicons name="scan-outline" size={26} color="#FFF" />
+                <Ionicons name="camera-outline" size={26} color="#FFF" />
                 <Text style={styles.gridTitleLight}>Kameradan olish</Text>
               </>
             )}
@@ -299,6 +301,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   historyInner: { alignItems: "center", gap: 2 },
+  historyChevrons: {
+    height: 28,
+    width: 24,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  historyChevronFade: {
+    position: "absolute",
+    top: 10,
+  },
   historyLine: {
     width: 28,
     height: 3,
@@ -311,6 +323,7 @@ const styles = StyleSheet.create({
     color: "rgba(255,255,255,0.7)",
     fontSize: 12,
     fontWeight: "600",
+    includeFontPadding: false,
   },
   sheet: {
     marginTop: "auto",
@@ -326,20 +339,21 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
     justifyContent: "space-between",
     paddingHorizontal: 8,
+    position: "relative",
+  },
+  stepTrack: {
+    position: "absolute",
+    left: 40,
+    right: 40,
+    top: 15,
+    height: 2,
+    backgroundColor: "#E8E8E8",
   },
   stepCol: {
     flex: 1,
     alignItems: "center",
     gap: 8,
-    position: "relative",
-  },
-  stepLine: {
-    position: "absolute",
-    left: -50,
-    right: "50%",
-    top: 15,
-    height: 2,
-    backgroundColor: "#E8E8E8",
+    zIndex: 1,
   },
   stepDot: {
     width: 32,
@@ -348,13 +362,12 @@ const styles = StyleSheet.create({
     backgroundColor: "#F0F0F0",
     alignItems: "center",
     justifyContent: "center",
-    zIndex: 1,
   },
   stepDotOn: { backgroundColor: "#0A0A0A" },
-  stepNum: { fontSize: 13, fontWeight: "800", color: "#9A9A9A" },
+  stepNum: { fontSize: 13, fontWeight: "700", color: "#9A9A9A", includeFontPadding: false },
   stepNumOn: { color: "#FFF" },
-  stepLabel: { fontSize: 12, fontWeight: "600", color: "#A0A0A0" },
-  stepLabelOn: { color: "#0A0A0A", fontWeight: "800" },
+  stepLabel: { fontSize: 12, fontWeight: "600", color: "#A0A0A0", includeFontPadding: false },
+  stepLabelOn: { color: "#0A0A0A", fontWeight: "700" },
   errorBox: {
     backgroundColor: "rgba(185,28,28,0.08)",
     borderRadius: 12,
@@ -369,7 +382,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
   },
-  errorCtaText: { color: "#FFF", fontSize: 11, fontWeight: "800" },
+  errorCtaText: { color: "#FFF", fontSize: 11, fontWeight: "700" },
   actionGrid: { flexDirection: "row", gap: 12 },
   gridBtnDark: {
     flex: 1,
@@ -381,6 +394,7 @@ const styles = StyleSheet.create({
     minHeight: 112,
     paddingHorizontal: 10,
     paddingVertical: 16,
+    overflow: "hidden",
   },
   gridBtnLight: {
     flex: 1,
@@ -394,18 +408,19 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderWidth: 1.5,
     borderColor: "#D4D4D4",
-    borderStyle: "dashed",
   },
   gridTitleLight: {
     color: "#FFF",
     fontWeight: "700",
     fontSize: 13,
     textAlign: "center",
+    includeFontPadding: false,
   },
   gridTitleDark: {
     color: "#0A0A0A",
     fontWeight: "700",
     fontSize: 13,
     textAlign: "center",
+    includeFontPadding: false,
   },
 });

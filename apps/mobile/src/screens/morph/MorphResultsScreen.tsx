@@ -311,7 +311,11 @@ export function MorphResultsScreen({ navigation }: Props) {
     return (
       <View style={styles.root}>
         {session.selfieDataUrl ? (
-          <Image source={{ uri: session.selfieDataUrl }} style={StyleSheet.absoluteFill} />
+          <Image
+            source={{ uri: session.selfieDataUrl }}
+            style={StyleSheet.absoluteFill}
+            resizeMode="cover"
+          />
         ) : (
           <View style={[StyleSheet.absoluteFill, { backgroundColor: "#111" }]} />
         )}
@@ -342,7 +346,11 @@ export function MorphResultsScreen({ navigation }: Props) {
     return (
       <View style={styles.root}>
         {session.selfieDataUrl ? (
-          <Image source={{ uri: session.selfieDataUrl }} style={StyleSheet.absoluteFill} />
+          <Image
+            source={{ uri: session.selfieDataUrl }}
+            style={StyleSheet.absoluteFill}
+            resizeMode="cover"
+          />
         ) : (
           <View style={[StyleSheet.absoluteFill, { backgroundColor: "#111" }]} />
         )}
@@ -368,15 +376,19 @@ export function MorphResultsScreen({ navigation }: Props) {
 
         <View style={[styles.summaryBottom, { paddingBottom: Math.max(insets.bottom, 12) }]}>
           {phase === "error" ? (
-            <View style={[styles.scanBottom, { paddingBottom: 0 }]}>
+            <View style={styles.scanBottom}>
               <Text style={styles.scanHintAbove}>Yuz aniq ko‘rinadigan selfie yuklang</Text>
-              <Pressable style={styles.analyzeBtn} onPress={onNewPhoto}>
+              <Pressable
+                style={({ pressed }) => [styles.analyzeBtn, pressed && { opacity: 0.88 }]}
+                android_ripple={{ color: "rgba(255,255,255,0.15)" }}
+                onPress={onNewPhoto}
+              >
                 <Ionicons name="camera-outline" size={18} color="#FFF" />
                 <Text style={styles.analyzeBtnText}>Yangi rasm yuklash</Text>
               </Pressable>
             </View>
           ) : (
-            <View style={[styles.scanBottom, { paddingBottom: 0 }]}>
+            <View style={styles.scanBottom}>
               <View style={styles.analyzeBtn}>
                 <ActivityIndicator color="#FFF" />
                 <Text style={styles.analyzeBtnText}>Tahlil qilinmoqda…</Text>
@@ -421,6 +433,7 @@ export function MorphResultsScreen({ navigation }: Props) {
           gap: 0,
         }}
         showsVerticalScrollIndicator={false}
+        nestedScrollEnabled
       >
         {error ? (
           <View style={[styles.errorInline, { marginHorizontal: H_PAD, marginTop: 8 }]}>
@@ -439,6 +452,7 @@ export function MorphResultsScreen({ navigation }: Props) {
                 data={suggestions}
                 horizontal
                 pagingEnabled
+                nestedScrollEnabled
                 decelerationRate="fast"
                 snapToInterval={cardW + CARD_GAP}
                 snapToAlignment="start"
@@ -518,27 +532,33 @@ export function MorphResultsScreen({ navigation }: Props) {
                 <>
                   <Pressable
                     style={[
-                      styles.navArrow,
+                      styles.navArrowHit,
                       styles.navArrowLeft,
                       spotlightIndex === 0 && styles.navArrowDisabled,
                     ]}
                     disabled={spotlightIndex === 0}
                     onPress={() => goToSuggestion(spotlightIndex - 1)}
                     accessibilityLabel="Oldingi tavsiya"
+                    android_ripple={{ color: "rgba(0,0,0,0.08)", borderless: true, radius: 24 }}
                   >
-                    <Ionicons name="chevron-back" size={22} color="#0A0A0A" />
+                    <View style={styles.navArrowBtn}>
+                      <Ionicons name="chevron-back" size={22} color="#0A0A0A" />
+                    </View>
                   </Pressable>
                   <Pressable
                     style={[
-                      styles.navArrow,
+                      styles.navArrowHit,
                       styles.navArrowRight,
                       spotlightIndex >= suggestions.length - 1 && styles.navArrowDisabled,
                     ]}
                     disabled={spotlightIndex >= suggestions.length - 1}
                     onPress={() => goToSuggestion(spotlightIndex + 1)}
                     accessibilityLabel="Keyingi tavsiya"
+                    android_ripple={{ color: "rgba(0,0,0,0.08)", borderless: true, radius: 24 }}
                   >
-                    <Ionicons name="chevron-forward" size={22} color="#0A0A0A" />
+                    <View style={styles.navArrowBtn}>
+                      <Ionicons name="chevron-forward" size={22} color="#0A0A0A" />
+                    </View>
                   </Pressable>
                 </>
               ) : null}
@@ -564,7 +584,8 @@ export function MorphResultsScreen({ navigation }: Props) {
             ) : null}
 
             <Pressable
-              style={styles.bookBtn}
+              style={({ pressed }) => [styles.bookBtn, pressed && { opacity: 0.9 }]}
+              android_ripple={{ color: "rgba(255,255,255,0.12)" }}
               onPress={() => void bookSalon(activeSuggestion?.salon_id ?? null)}
             >
               <Ionicons name="calendar-outline" size={18} color="#FFF" />
@@ -573,7 +594,12 @@ export function MorphResultsScreen({ navigation }: Props) {
 
             <View style={styles.iconActions}>
               <Pressable
-                style={[styles.iconAction, activePreview ? styles.iconActionOn : null]}
+                style={({ pressed }) => [
+                  styles.iconAction,
+                  activePreview ? styles.iconActionOn : null,
+                  pressed && { opacity: 0.85 },
+                ]}
+                android_ripple={{ color: "rgba(0,0,0,0.1)", borderless: true, radius: 23 }}
                 disabled={!!activeStyleId || !!activePreview}
                 onPress={() => {
                   if (activeSuggestion) void runTryOn(activeSuggestion);
@@ -624,7 +650,7 @@ export function MorphResultsScreen({ navigation }: Props) {
 
         {session.analyze ? (
           <View style={styles.sectionPad}>
-            <FaceAnalysisRing analyze={session.analyze} />
+            <FaceAnalysisRing analyze={session.analyze} tone="onLight" />
           </View>
         ) : null}
 
@@ -770,10 +796,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.05)",
   },
   scanBottom: {
-    position: "absolute",
-    left: 16,
-    right: 16,
-    bottom: 0,
+    paddingHorizontal: 16,
   },
   analyzeBtn: {
     flexDirection: "row",
@@ -781,12 +804,18 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 10,
     minHeight: 54,
-    marginTop: 25,
-    marginBottom: 25,
+    marginTop: 16,
+    marginBottom: 8,
     borderRadius: 18,
     backgroundColor: "rgba(30,30,30,0.92)",
+    overflow: "hidden",
   },
-  analyzeBtnText: { color: "#FFF", fontWeight: "800", fontSize: 15 },
+  analyzeBtnText: {
+    color: "#FFF",
+    fontWeight: "700",
+    fontSize: 15,
+    includeFontPadding: false,
+  },
   topBar: {
     flexDirection: "row",
     alignItems: "center",
@@ -853,25 +882,30 @@ const styles = StyleSheet.create({
     width: "100%",
     marginHorizontal: 0,
   },
-  navArrow: {
+  navArrowHit: {
     position: "absolute",
-    top: "42%",
-    marginTop: -22,
+    top: 0,
+    bottom: 0,
+    width: 56,
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 3,
+  },
+  navArrowBtn: {
     width: 44,
     height: 44,
     borderRadius: 22,
     backgroundColor: "rgba(255,255,255,0.95)",
     alignItems: "center",
     justifyContent: "center",
-    zIndex: 3,
     shadowColor: "#000",
     shadowOpacity: 0.14,
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 4 },
     elevation: 6,
   },
-  navArrowLeft: { left: 10 },
-  navArrowRight: { right: 10 },
+  navArrowLeft: { left: 4 },
+  navArrowRight: { right: 4 },
   navArrowDisabled: { opacity: 0.35 },
   spotlight: {
     overflow: "hidden",
@@ -936,8 +970,9 @@ const styles = StyleSheet.create({
     minHeight: 52,
     borderRadius: 16,
     backgroundColor: "#0A0A0A",
+    overflow: "hidden",
   },
-  bookBtnText: { color: "#FFF", fontWeight: "800", fontSize: 15 },
+  bookBtnText: { color: "#FFF", fontWeight: "700", fontSize: 15, includeFontPadding: false },
   iconActions: {
     flexDirection: "row",
     justifyContent: "center",
@@ -951,6 +986,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#F3F3F3",
     alignItems: "center",
     justifyContent: "center",
+    overflow: "hidden",
   },
   iconActionOn: { backgroundColor: "#0A0A0A" },
   dots: {
@@ -978,14 +1014,19 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
     gap: 8,
   },
-  moreTitle: { fontSize: 17, fontWeight: "800", color: "#0A0A0A" },
+  moreTitle: { fontSize: 17, fontWeight: "700", color: "#0A0A0A" },
   moreSub: { fontSize: 12, color: "#737373", marginBottom: 8 },
   moreGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 12,
   },
-  moreCard: { width: "47.5%", gap: 6 },
+  moreCard: {
+    flexGrow: 1,
+    flexBasis: "47%",
+    maxWidth: "48%",
+    gap: 6,
+  },
   moreImgWrap: {
     borderRadius: 18,
     overflow: "hidden",

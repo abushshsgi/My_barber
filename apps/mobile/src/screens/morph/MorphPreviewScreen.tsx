@@ -481,7 +481,13 @@ const styles = StyleSheet.create({
     backgroundColor: "#F5F5F5",
   },
   utilBtnOn: { backgroundColor: "#0A0A0A" },
-  utilLabel: { fontSize: 9, fontWeight: "800", color: "#0A0A0A", textAlign: "center" },
+  utilLabel: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#0A0A0A",
+    textAlign: "center",
+    includeFontPadding: false,
+  },
   utilLabelOn: { color: "#FFF" },
   stylePage: {
     textAlign: "center",

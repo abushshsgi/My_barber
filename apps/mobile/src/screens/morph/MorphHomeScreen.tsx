@@ -278,8 +278,8 @@ const styles = StyleSheet.create({
   },
   limitBadge: {
     position: "absolute",
-    top: -4,
-    right: -18,
+    top: -2,
+    right: -8,
     minWidth: 28,
     height: 22,
     paddingHorizontal: 6,

@@ -70,7 +70,6 @@ export function MorphWelcomeScreen({ navigation }: Props) {
     transform: [
       { scale: ctaScale.value * interpolate(pulse.value, [0, 1], [1, 1.06]) },
     ],
-    shadowOpacity: interpolate(pulse.value, [0, 1], [0.15, 0.35]),
   }));
 
   const backAnimStyle = useAnimatedStyle(() => ({

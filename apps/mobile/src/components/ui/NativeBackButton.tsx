@@ -18,6 +18,7 @@ export function NativeBackButton({
       hitSlop={8}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
+      android_ripple={{ color: "rgba(0,0,0,0.1)", borderless: true, radius: 22 }}
       style={({ pressed }) => [styles.btn, pressed && styles.pressed]}
     >
       <Ionicons name="chevron-back" size={22} color={colors.fg} />

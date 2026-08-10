@@ -199,6 +199,7 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
         key={tab.name}
         onPress={() => pressTab(tab.name)}
         style={styles.tab}
+        android_ripple={{ color: "rgba(0,0,0,0.08)", borderless: true, radius: 28 }}
         accessibilityRole="button"
         accessibilityState={{ selected: focused }}
         accessibilityLabel={tab.label}
@@ -249,15 +250,18 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
           <Pressable
             onPress={onCenterPress}
             style={styles.centerWrap}
+            android_ripple={{ color: "rgba(255,255,255,0.2)", borderless: true, radius: 30 }}
             accessibilityRole="button"
             accessibilityLabel={centerIsMorphEntry ? "Morf AI" : "MySaloon"}
           >
-            <View style={styles.centerBtn}>
-              {centerIsMorphEntry ? (
-                <Image source={morfMarkWhite} style={styles.centerLogo} contentFit="contain" />
-              ) : (
-                <Image source={mysaloonIcon} style={styles.centerAppIcon} contentFit="cover" />
-              )}
+            <View style={styles.centerBtnShadow}>
+              <View style={styles.centerBtn}>
+                {centerIsMorphEntry ? (
+                  <Image source={morfMarkWhite} style={styles.centerLogo} contentFit="contain" />
+                ) : (
+                  <Image source={mysaloonIcon} style={styles.centerAppIcon} contentFit="cover" />
+                )}
+              </View>
             </View>
             <Text style={[styles.label, styles.centerLabel]} numberOfLines={1}>
               {centerIsMorphEntry ? "Morf AI" : "MySaloon"}
@@ -420,16 +424,8 @@ const styles = StyleSheet.create({
     width: CENTER_SLOT,
     alignItems: "center",
   },
-  centerBtn: {
-    width: 52,
-    height: 52,
+  centerBtnShadow: {
     borderRadius: 26,
-    backgroundColor: colors.fg,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 3,
-    borderColor: "#FFFFFF",
-    overflow: "hidden",
     ...Platform.select({
       web: { boxShadow: "0 6px 16px rgba(0,0,0,0.22)" },
       default: {
@@ -440,6 +436,17 @@ const styles = StyleSheet.create({
         elevation: 10,
       },
     }),
+  },
+  centerBtn: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: colors.fg,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 3,
+    borderColor: "#FFFFFF",
+    overflow: "hidden",
   },
   centerLogo: {
     width: 26,

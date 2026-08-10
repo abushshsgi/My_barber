@@ -121,46 +121,48 @@ function GenerateSlider({
 
   return (
     <View
-      style={[styles.sliderTrack, (!enabled || generating) && styles.sliderDisabled]}
+      style={[styles.sliderOuter, (!enabled || generating) && styles.sliderDisabled]}
       onLayout={onTrackLayout}
     >
-      <Text style={styles.sliderHint} pointerEvents="none">
-        {generating ? "Generate…" : enabled ? "Generate" : "…"}
-      </Text>
+      <View style={styles.sliderTrack}>
+        <Text style={styles.sliderHint} pointerEvents="none">
+          {generating ? "Generate…" : enabled ? "Generate" : "…"}
+        </Text>
 
-      {enabled && !generating && trackW > 0 ? (
+        {enabled && !generating && trackW > 0 ? (
+          <Animated.View
+            style={[
+              styles.sliderArrows,
+              {
+                opacity: arrowOpacity,
+                transform: [{ translateX: arrowShift }],
+              },
+            ]}
+            pointerEvents="none"
+          >
+            {[0, 1, 2, 3].map((i) => (
+              <Ionicons
+                key={i}
+                name="chevron-forward"
+                size={18}
+                color={ACCENT}
+                style={{ opacity: 0.35 + i * 0.18, marginLeft: i === 0 ? 0 : -6 }}
+              />
+            ))}
+          </Animated.View>
+        ) : null}
+
         <Animated.View
-          style={[
-            styles.sliderArrows,
-            {
-              left: trackW * 0.5 - 10,
-              opacity: arrowOpacity,
-              transform: [{ translateX: arrowShift }],
-            },
-          ]}
-          pointerEvents="none"
+          style={[styles.sliderThumb, { transform: [{ translateX: dragX }] }]}
+          {...(enabled && !generating ? pan.panHandlers : {})}
         >
-          {[0, 1, 2, 3].map((i) => (
-            <Text
-              key={i}
-              style={[styles.sliderChevron, { opacity: 0.35 + i * 0.18 }]}
-            >
-              ›
-            </Text>
-          ))}
+          {generating ? (
+            <ActivityIndicator color="#111" size="small" />
+          ) : (
+            <Ionicons name="sparkles" size={20} color="#111" />
+          )}
         </Animated.View>
-      ) : null}
-
-      <Animated.View
-        style={[styles.sliderThumb, { transform: [{ translateX: dragX }] }]}
-        {...(enabled && !generating ? pan.panHandlers : {})}
-      >
-        {generating ? (
-          <ActivityIndicator color="#111" size="small" />
-        ) : (
-          <Ionicons name="sparkles" size={20} color="#111" />
-        )}
-      </Animated.View>
+      </View>
     </View>
   );
 }
@@ -207,6 +209,7 @@ export function FaceAnalysisSummary({
         analyze={analyze}
         sequential
         compact
+        tone="onDark"
         onRevealComplete={() => setReady(true)}
       />
       {ready ? (
@@ -252,19 +255,22 @@ const styles = StyleSheet.create({
   sliderWrap: {
     borderRadius: 999,
   },
+  sliderOuter: {
+    borderRadius: 999,
+    shadowColor: "#000",
+    shadowOpacity: 0.14,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 5,
+  },
   sliderTrack: {
     height: TRACK_H,
     borderRadius: 999,
-    backgroundColor: "rgba(255,255,255,0.4)",
+    backgroundColor: "rgba(255,255,255,0.42)",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.7)",
+    borderColor: "rgba(255,255,255,0.72)",
     justifyContent: "center",
     overflow: "hidden",
-    shadowColor: "#000",
-    shadowOpacity: 0.12,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 3,
   },
   sliderDisabled: {
     opacity: 0.7,
@@ -275,21 +281,18 @@ const styles = StyleSheet.create({
     right: 0,
     textAlign: "center",
     fontSize: 16,
-    fontWeight: "800",
+    fontWeight: "700",
     color: "#0A0A0A",
     letterSpacing: 0.2,
+    includeFontPadding: false,
   },
   sliderArrows: {
     position: "absolute",
+    left: 0,
+    right: 0,
     flexDirection: "row",
     alignItems: "center",
-  },
-  sliderChevron: {
-    fontSize: 24,
-    fontWeight: "800",
-    color: ACCENT,
-    marginLeft: -5,
-    lineHeight: 26,
+    justifyContent: "center",
   },
   sliderThumb: {
     position: "absolute",
@@ -304,6 +307,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.18,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 3 },
-    elevation: 4,
+    elevation: 3,
   },
 });

@@ -17,6 +17,8 @@ type Props = {
   /** Ketma-ket animatsiya tugaganda. */
   onRevealComplete?: () => void;
   compact?: boolean;
+  /** Selfie ustida (onDark) yoki ochiq sahifada (onLight). */
+  tone?: "onDark" | "onLight";
 };
 
 type MetricCard = {
@@ -127,16 +129,20 @@ function MetricTile({
   fill,
   displayPercent,
   enter,
+  tone,
 }: {
   card: MetricCard;
   fill: number;
   displayPercent: number;
   enter: Animated.Value;
+  tone: "onDark" | "onLight";
 }) {
+  const onDark = tone === "onDark";
   return (
     <Animated.View
       style={[
         styles.card,
+        onDark ? styles.cardOnDark : styles.cardOnLight,
         {
           opacity: enter,
           transform: [
@@ -157,18 +163,24 @@ function MetricTile({
       ]}
       accessibilityLabel={`${card.label}: ${card.detail}, ${displayPercent} foiz`}
     >
-      <Text style={styles.cardLabel} numberOfLines={1}>
+      <Text
+        style={[styles.cardLabel, onDark ? styles.cardLabelOnDark : styles.cardLabelOnLight]}
+        numberOfLines={1}
+      >
         {card.label}
       </Text>
       <MiniProgressRing
         percent={card.percent}
         color={card.color}
-        track={card.track}
+        track={onDark ? "rgba(255,255,255,0.28)" : card.track}
         fill={fill}
         displayPercent={displayPercent}
       />
       {card.detail ? (
-        <Text style={styles.cardDetail} numberOfLines={2}>
+        <Text
+          style={[styles.cardDetail, onDark ? styles.cardDetailOnDark : styles.cardDetailOnLight]}
+          numberOfLines={2}
+        >
           {card.detail}
         </Text>
       ) : null}
@@ -218,6 +230,7 @@ export function FaceAnalysisRing({
   sequential = false,
   onRevealComplete,
   compact = false,
+  tone = "onDark",
 }: Props) {
   const enters = useRef([
     new Animated.Value(0),
@@ -342,7 +355,7 @@ export function FaceAnalysisRing({
   if (!analyze || cards.length === 0) return null;
 
   return (
-    <View style={styles.shell}>
+    <View style={[styles.shell, tone === "onLight" ? styles.shellOnLight : styles.shellOnDark]}>
       <View style={styles.row}>
         {cards.map((card, index) =>
           index < visibleCount ? (
@@ -352,6 +365,7 @@ export function FaceAnalysisRing({
               fill={fills[index] ?? 0}
               displayPercent={displayPcts[index] ?? 0}
               enter={enters[index]}
+              tone={tone}
             />
           ) : (
             <View key={card.key} style={styles.cardSlot} />
@@ -359,7 +373,10 @@ export function FaceAnalysisRing({
         )}
       </View>
       {!compact && analyze.summary_uz && visibleCount >= cards.length ? (
-        <Text style={styles.summary} numberOfLines={3}>
+        <Text
+          style={[styles.summary, tone === "onLight" ? styles.summaryOnLight : null]}
+          numberOfLines={3}
+        >
           {analyze.summary_uz}
         </Text>
       ) : null}
@@ -371,17 +388,28 @@ const styles = StyleSheet.create({
   shell: {
     borderRadius: 24,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.55)",
-    backgroundColor: "rgba(255,255,255,0.22)",
     paddingHorizontal: 8,
     paddingTop: 10,
     paddingBottom: 10,
     gap: 8,
+  },
+  shellOnDark: {
+    borderColor: "rgba(255,255,255,0.55)",
+    backgroundColor: "rgba(255,255,255,0.22)",
     shadowColor: "#0A0A0A",
     shadowOpacity: 0.12,
     shadowRadius: 18,
     shadowOffset: { width: 0, height: 8 },
     elevation: 5,
+  },
+  shellOnLight: {
+    borderColor: "rgba(0,0,0,0.06)",
+    backgroundColor: "#FFFFFF",
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
   },
   /** 3 ta metrika — flex qator, grid emas. */
   row: {
@@ -396,49 +424,73 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "flex-start",
     gap: 8,
-    backgroundColor: "rgba(255,255,255,0.28)",
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.45)",
     paddingVertical: 14,
     paddingHorizontal: 6,
+  },
+  cardOnDark: {
+    backgroundColor: "rgba(255,255,255,0.28)",
+    borderColor: "rgba(255,255,255,0.45)",
     shadowColor: "#000000",
     shadowOpacity: 0.28,
     shadowRadius: 18,
     shadowOffset: { width: 0, height: 8 },
     elevation: 8,
   },
+  cardOnLight: {
+    backgroundColor: "#F7F7F8",
+    borderColor: "rgba(0,0,0,0.06)",
+    shadowColor: "#000",
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 2,
+  },
   cardSlot: {
     flex: 1,
     minWidth: 0,
   },
   cardLabel: {
-    fontSize: 13,
-    fontWeight: "800",
-    color: "#FFFFFF",
-    letterSpacing: 0.2,
+    fontSize: 12,
+    fontWeight: "700",
+    letterSpacing: 0.3,
     textAlign: "center",
     textTransform: "uppercase",
+    includeFontPadding: false,
+  },
+  cardLabelOnDark: {
+    color: "#FFFFFF",
     textShadowColor: "rgba(0,0,0,0.35)",
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 3,
   },
+  cardLabelOnLight: {
+    color: "#525252",
+  },
   ringPct: {
     fontSize: 14,
-    fontWeight: "900",
+    fontWeight: "700",
     letterSpacing: -0.5,
     textAlign: "center",
+    includeFontPadding: false,
   },
   cardDetail: {
     fontSize: 11,
-    fontWeight: "800",
-    color: "rgba(255,255,255,0.92)",
+    fontWeight: "700",
     textAlign: "center",
     lineHeight: 14,
     paddingHorizontal: 2,
+    includeFontPadding: false,
+  },
+  cardDetailOnDark: {
+    color: "rgba(255,255,255,0.92)",
     textShadowColor: "rgba(0,0,0,0.3)",
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
+  },
+  cardDetailOnLight: {
+    color: "#0A0A0A",
   },
   summary: {
     fontSize: 13,
@@ -446,5 +498,8 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "rgba(20,20,20,0.72)",
     paddingHorizontal: 4,
+  },
+  summaryOnLight: {
+    color: "#525252",
   },
 });
