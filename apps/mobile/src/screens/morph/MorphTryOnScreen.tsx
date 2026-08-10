@@ -43,6 +43,149 @@ const FALLBACK_HERO = pexelsPhotoUrl(3998429, 1400);
 const SPRING = { damping: 22, stiffness: 220, mass: 0.85 };
 const PREVIEW_LIMIT = 6;
 
+/** Viewfinder + yuz — kamera tugmasi uchun. */
+function FaceScanIcon({ color = "#FFF", size = 28 }: { color?: string; size?: number }) {
+  const s = size;
+  const c = Math.max(5, Math.round(s * 0.22));
+  const stroke = Math.max(1.5, s * 0.07);
+  return (
+    <View style={{ width: s, height: s }}>
+      {/* 4 burchak */}
+      <View
+        style={{
+          position: "absolute",
+          left: 0,
+          top: 0,
+          width: c,
+          height: c,
+          borderTopWidth: stroke,
+          borderLeftWidth: stroke,
+          borderColor: color,
+          borderTopLeftRadius: 2,
+        }}
+      />
+      <View
+        style={{
+          position: "absolute",
+          right: 0,
+          top: 0,
+          width: c,
+          height: c,
+          borderTopWidth: stroke,
+          borderRightWidth: stroke,
+          borderColor: color,
+          borderTopRightRadius: 2,
+        }}
+      />
+      <View
+        style={{
+          position: "absolute",
+          left: 0,
+          bottom: 0,
+          width: c,
+          height: c,
+          borderBottomWidth: stroke,
+          borderLeftWidth: stroke,
+          borderColor: color,
+          borderBottomLeftRadius: 2,
+        }}
+      />
+      <View
+        style={{
+          position: "absolute",
+          right: 0,
+          bottom: 0,
+          width: c,
+          height: c,
+          borderBottomWidth: stroke,
+          borderRightWidth: stroke,
+          borderColor: color,
+          borderBottomRightRadius: 2,
+        }}
+      />
+      {/* Yuz */}
+      <View
+        style={{
+          position: "absolute",
+          left: s * 0.28,
+          top: s * 0.32,
+          width: s * 0.14,
+          height: s * 0.14,
+          borderRadius: 99,
+          backgroundColor: color,
+        }}
+      />
+      <View
+        style={{
+          position: "absolute",
+          right: s * 0.28,
+          top: s * 0.32,
+          width: s * 0.14,
+          height: s * 0.14,
+          borderRadius: 99,
+          backgroundColor: color,
+        }}
+      />
+      <View
+        style={{
+          position: "absolute",
+          left: s * 0.3,
+          top: s * 0.58,
+          width: s * 0.4,
+          height: s * 0.22,
+          borderBottomWidth: stroke * 1.2,
+          borderLeftWidth: stroke * 0.9,
+          borderRightWidth: stroke * 0.9,
+          borderColor: color,
+          borderBottomLeftRadius: s * 0.22,
+          borderBottomRightRadius: s * 0.22,
+        }}
+      />
+    </View>
+  );
+}
+
+/** Uchta ustma-ust kartochka — galereya tugmasi uchun. */
+function GalleryStackIcon({ size = 28 }: { size?: number }) {
+  const w = size * 0.52;
+  const h = size * 0.62;
+  const r = 4;
+  return (
+    <View style={{ width: size, height: size, alignItems: "center", justifyContent: "center" }}>
+      <View
+        style={{
+          position: "absolute",
+          width: w,
+          height: h,
+          borderRadius: r,
+          backgroundColor: "#D8D8D8",
+          transform: [{ rotate: "-14deg" }, { translateX: -size * 0.16 }],
+        }}
+      />
+      <View
+        style={{
+          position: "absolute",
+          width: w,
+          height: h,
+          borderRadius: r,
+          backgroundColor: "#BDBDBD",
+          transform: [{ rotate: "10deg" }, { translateX: size * 0.14 }],
+        }}
+      />
+      <View
+        style={{
+          width: w,
+          height: h,
+          borderRadius: r,
+          backgroundColor: "#9A9A9A",
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: "#7A7A7A",
+        }}
+      />
+    </View>
+  );
+}
+
 /**
  * Try-on — ixcham sheet + yuqoriga swipe bilan oq history panel.
  * Ochilganda capture UI yashirinadi; oxirgi 6 ta look 2 ustunli gridda.
@@ -182,7 +325,7 @@ export function MorphTryOnScreen({ navigation }: Props) {
       maxHeight: interpolate(
         lift.value,
         [0, historyH * 0.55],
-        [220, 0],
+        [200, 0],
         Extrapolation.CLAMP,
       ),
       marginBottom: interpolate(
@@ -383,7 +526,7 @@ export function MorphTryOnScreen({ navigation }: Props) {
                     <ActivityIndicator color="#FFF" />
                   ) : (
                     <>
-                      <Ionicons name="camera-outline" size={22} color="#FFF" />
+                      <FaceScanIcon color="#FFF" size={26} />
                       <Text style={styles.gridTitleLight}>Kameradan olish</Text>
                     </>
                   )}
@@ -398,7 +541,7 @@ export function MorphTryOnScreen({ navigation }: Props) {
                     <ActivityIndicator color="#0A0A0A" />
                   ) : (
                     <>
-                      <Ionicons name="images-outline" size={22} color="#6B6B6B" />
+                      <GalleryStackIcon size={26} />
                       <Text style={styles.gridTitleDark}>Galereyadan tanlash</Text>
                     </>
                   )}
@@ -633,43 +776,51 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
   },
   errorCtaText: { color: "#FFF", fontSize: 11, fontWeight: "700" },
-  actionGrid: { flexDirection: "row", gap: 10, marginTop: 12 },
+  actionGrid: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 18,
+    marginBottom: 2,
+    paddingHorizontal: 18,
+    justifyContent: "center",
+  },
   gridBtnDark: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    gap: 8,
+    gap: 6,
     backgroundColor: "#0A0A0A",
-    borderRadius: 16,
-    minHeight: 88,
-    paddingHorizontal: 10,
-    paddingVertical: 14,
+    borderRadius: 28,
+    minHeight: 72,
+    paddingHorizontal: 8,
+    paddingVertical: 12,
     overflow: "hidden",
   },
   gridBtnLight: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    gap: 8,
+    gap: 6,
     backgroundColor: "#FFF",
-    borderRadius: 16,
-    minHeight: 88,
-    paddingHorizontal: 10,
-    paddingVertical: 14,
+    borderRadius: 28,
+    minHeight: 72,
+    paddingHorizontal: 8,
+    paddingVertical: 12,
     borderWidth: 1.5,
-    borderColor: "#D4D4D4",
+    borderColor: "#D0D0D0",
+    borderStyle: "dashed",
   },
   gridTitleLight: {
     color: "#FFF",
     fontWeight: "700",
-    fontSize: 13,
+    fontSize: 12,
     textAlign: "center",
     includeFontPadding: false,
   },
   gridTitleDark: {
     color: "#0A0A0A",
     fontWeight: "700",
-    fontSize: 13,
+    fontSize: 12,
     textAlign: "center",
     includeFontPadding: false,
   },
