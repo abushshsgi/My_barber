@@ -4,7 +4,6 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
-  Dimensions,
   FlatList,
   Image,
   Linking,
@@ -12,6 +11,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -39,15 +39,15 @@ type Props = NativeStackScreenProps<MorphStackParamList, "MorphResults">;
 
 type Phase = "analyzing" | "summary" | "ready" | "error";
 
-const { width: SCREEN_W } = Dimensions.get("window");
-const H_PAD = 18;
-const CARD_GAP = 14;
-/** ScrollView padding ichida to‘liq eni — snap aniq ishlashi uchun. */
-const CARD_W = SCREEN_W - H_PAD * 2;
+const H_PAD = 16;
+const CARD_GAP = 0;
 
 export function MorphResultsScreen({ navigation }: Props) {
   useHideTabBar();
   const insets = useSafeAreaInsets();
+  const { width: screenW } = useWindowDimensions();
+  /** To‘liq ekran — chap/o‘ng bo‘sh joy yo‘q. */
+  const cardW = Math.max(1, Math.round(screenW));
   const session = useMorphSession();
   const gate = useMorphLimitGate();
   const toast = useAppToast();
@@ -252,11 +252,11 @@ export function MorphResultsScreen({ navigation }: Props) {
       const next = Math.max(0, Math.min(index, suggestions.length - 1));
       setSpotlightIndex(next);
       carouselRef.current?.scrollToOffset({
-        offset: next * (CARD_W + CARD_GAP),
+        offset: next * (cardW + CARD_GAP),
         animated: true,
       });
     },
-    [suggestions.length],
+    [suggestions.length, cardW],
   );
 
   const openPreview = useCallback(
@@ -412,15 +412,15 @@ export function MorphResultsScreen({ navigation }: Props) {
       </View>
 
       <ScrollView
+        style={styles.scroll}
         contentContainerStyle={{
           paddingBottom: Math.max(insets.bottom, 16) + 28,
-          paddingHorizontal: H_PAD,
-          gap: 14,
+          gap: 0,
         }}
         showsVerticalScrollIndicator={false}
       >
         {error ? (
-          <View style={styles.errorInline}>
+          <View style={[styles.errorInline, { marginHorizontal: H_PAD, marginTop: 8 }]}>
             <Text style={styles.errorInlineText}>{error}</Text>
           </View>
         ) : null}
@@ -435,21 +435,21 @@ export function MorphResultsScreen({ navigation }: Props) {
                 ref={carouselRef}
                 data={suggestions}
                 horizontal
-                pagingEnabled={false}
+                pagingEnabled
                 decelerationRate="fast"
-                snapToInterval={CARD_W + CARD_GAP}
+                snapToInterval={cardW + CARD_GAP}
                 snapToAlignment="start"
                 disableIntervalMomentum
                 showsHorizontalScrollIndicator={false}
                 keyExtractor={(item) => item.id}
                 getItemLayout={(_, index) => ({
-                  length: CARD_W + CARD_GAP,
-                  offset: (CARD_W + CARD_GAP) * index,
+                  length: cardW + CARD_GAP,
+                  offset: (cardW + CARD_GAP) * index,
                   index,
                 })}
                 onMomentumScrollEnd={(e) => {
                   const idx = Math.round(
-                    e.nativeEvent.contentOffset.x / (CARD_W + CARD_GAP),
+                    e.nativeEvent.contentOffset.x / Math.max(1, cardW + CARD_GAP),
                   );
                   setSpotlightIndex(Math.max(0, Math.min(idx, suggestions.length - 1)));
                 }}
@@ -462,7 +462,7 @@ export function MorphResultsScreen({ navigation }: Props) {
                     <Pressable
                       style={[
                         styles.spotlight,
-                        { width: CARD_W, marginRight: isLast ? 0 : CARD_GAP },
+                        { width: cardW, marginRight: isLast ? 0 : CARD_GAP },
                       ]}
                       onPress={() => openPreview(item)}
                     >
@@ -475,6 +475,7 @@ export function MorphResultsScreen({ navigation }: Props) {
                             undefined,
                         }}
                         style={styles.spotlightImg}
+                        resizeMode="cover"
                       />
                       {loading ? (
                         <View style={styles.spotlightBusy}>
@@ -618,7 +619,11 @@ export function MorphResultsScreen({ navigation }: Props) {
           </View>
         ) : null}
 
-        {session.analyze ? <FaceAnalysisRing analyze={session.analyze} /> : null}
+        {session.analyze ? (
+          <View style={styles.sectionPad}>
+            <FaceAnalysisRing analyze={session.analyze} />
+          </View>
+        ) : null}
 
         {otherStyles.length > 0 ? (
           <View style={styles.morePanel}>
@@ -675,6 +680,7 @@ export function MorphResultsScreen({ navigation }: Props) {
                             undefined,
                         }}
                         style={styles.moreImg}
+                        resizeMode="cover"
                       />
                       {loading ? (
                         <View style={styles.moreBusy}>
@@ -705,16 +711,17 @@ export function MorphResultsScreen({ navigation }: Props) {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: "#0A0A0A" },
-  rootLight: { flex: 1, backgroundColor: "#EDE6DF" },
+  rootLight: { flex: 1, backgroundColor: "#F5F5F5", width: "100%" },
+  scroll: { flex: 1, width: "100%" },
   bgPhoto: {
     ...StyleSheet.absoluteFill,
     width: "100%",
     height: "100%",
-    opacity: 0.85,
+    opacity: 0.35,
   },
   bgDim: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: "rgba(255,255,255,0.28)",
+    backgroundColor: "rgba(245,245,245,0.88)",
   },
   summaryScrim: {
     ...StyleSheet.absoluteFill,
@@ -729,6 +736,11 @@ const styles = StyleSheet.create({
   },
   analyzeCardPad: {
     paddingHorizontal: 14,
+  },
+  sectionPad: {
+    paddingHorizontal: H_PAD,
+    paddingVertical: 12,
+    backgroundColor: "#F5F5F5",
   },
   scanHintAbove: {
     color: "rgba(255,255,255,0.9)",
@@ -773,15 +785,17 @@ const styles = StyleSheet.create({
   topBar: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 14,
-    marginBottom: 10,
+    paddingHorizontal: H_PAD,
+    paddingBottom: 8,
     gap: 10,
+    backgroundColor: "#F5F5F5",
+    zIndex: 2,
   },
   topBtn: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "rgba(255,255,255,0.94)",
+    backgroundColor: "#FFF",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -797,7 +811,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 5,
-    backgroundColor: "rgba(255,255,255,0.94)",
+    backgroundColor: "#FFF",
     borderRadius: 999,
     paddingHorizontal: 12,
     paddingVertical: 10,
@@ -809,27 +823,29 @@ const styles = StyleSheet.create({
   },
   errorInlineText: { color: "#B91C1C", fontSize: 13 },
   recsBlock: {
-    backgroundColor: "rgba(255,255,255,0.96)",
-    borderRadius: 24,
-    paddingVertical: 16,
+    width: "100%",
+    backgroundColor: "#FFF",
+    paddingTop: 14,
+    paddingBottom: 18,
     gap: 12,
-    overflow: "hidden",
   },
   recsTitle: {
     fontSize: 17,
     fontWeight: "800",
     color: "#0A0A0A",
-    paddingHorizontal: 16,
+    paddingHorizontal: H_PAD,
   },
   recsHint: {
     fontSize: 12,
     fontWeight: "600",
     color: "#8E8E93",
-    paddingHorizontal: 16,
+    paddingHorizontal: H_PAD,
     marginTop: -6,
   },
   carouselWrap: {
     position: "relative",
+    width: "100%",
+    marginHorizontal: 0,
   },
   navArrow: {
     position: "absolute",
@@ -848,14 +864,14 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     elevation: 6,
   },
-  navArrowLeft: { left: 6 },
-  navArrowRight: { right: 6 },
+  navArrowLeft: { left: 10 },
+  navArrowRight: { right: 10 },
   navArrowDisabled: { opacity: 0.35 },
   spotlight: {
-    borderRadius: 22,
     overflow: "hidden",
     backgroundColor: "#111",
     aspectRatio: 3 / 4,
+    borderRadius: 0,
   },
   spotlightImg: { width: "100%", height: "100%" },
   spotlightBusy: {
@@ -881,8 +897,8 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    paddingHorizontal: 14,
-    paddingBottom: 14,
+    paddingHorizontal: H_PAD,
+    paddingBottom: 16,
     paddingTop: 48,
   },
   spotlightMeta: {
@@ -903,10 +919,10 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 19,
     color: "#525252",
-    paddingHorizontal: 16,
+    paddingHorizontal: H_PAD,
   },
   bookBtn: {
-    marginHorizontal: 16,
+    marginHorizontal: H_PAD,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -920,7 +936,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "center",
     gap: 12,
-    paddingHorizontal: 16,
+    paddingHorizontal: H_PAD,
   },
   iconAction: {
     width: 46,
@@ -949,9 +965,11 @@ const styles = StyleSheet.create({
     backgroundColor: "#0A0A0A",
   },
   morePanel: {
+    width: "100%",
     backgroundColor: "#FFF",
-    borderRadius: 28,
-    padding: 18,
+    paddingHorizontal: H_PAD,
+    paddingTop: 18,
+    paddingBottom: 24,
     gap: 8,
   },
   moreTitle: { fontSize: 17, fontWeight: "800", color: "#0A0A0A" },
