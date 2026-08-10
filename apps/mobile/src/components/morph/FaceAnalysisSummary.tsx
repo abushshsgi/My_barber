@@ -175,10 +175,14 @@ export function FaceAnalysisSummary({
   bottomInset = 16,
 }: Props) {
   const [ready, setReady] = useState(false);
+  const sliderEnter = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     setReady(false);
+    sliderEnter.stopAnimation();
+    sliderEnter.setValue(0);
   }, [
+    sliderEnter,
     analyze.face_shape,
     analyze.hair_type,
     analyze.hair_color,
@@ -186,6 +190,16 @@ export function FaceAnalysisSummary({
     analyze.hair_type_confidence,
     analyze.hair_color_confidence,
   ]);
+
+  useEffect(() => {
+    if (!ready) return;
+    Animated.spring(sliderEnter, {
+      toValue: 1,
+      friction: 8,
+      tension: 55,
+      useNativeDriver: true,
+    }).start();
+  }, [ready, sliderEnter]);
 
   return (
     <View style={[styles.sheet, { paddingBottom: Math.max(bottomInset, 10) }]}>
@@ -195,13 +209,36 @@ export function FaceAnalysisSummary({
         compact
         onRevealComplete={() => setReady(true)}
       />
-      <View style={styles.sliderWrap}>
-        <GenerateSlider
-          enabled={ready}
-          generating={generating}
-          onComplete={onStartGenerate}
-        />
-      </View>
+      {ready ? (
+        <Animated.View
+          style={[
+            styles.sliderWrap,
+            {
+              opacity: sliderEnter,
+              transform: [
+                {
+                  translateY: sliderEnter.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [18, 0],
+                  }),
+                },
+                {
+                  scale: sliderEnter.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0.94, 1],
+                  }),
+                },
+              ],
+            },
+          ]}
+        >
+          <GenerateSlider
+            enabled
+            generating={generating}
+            onComplete={onStartGenerate}
+          />
+        </Animated.View>
+      ) : null}
     </View>
   );
 }
