@@ -5,8 +5,8 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  FlatList,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   useWindowDimensions,
@@ -41,20 +41,24 @@ type Props = NativeStackScreenProps<MorphStackParamList, "MorphCapture">;
 
 const FALLBACK_HERO = pexelsPhotoUrl(3998429, 1400);
 const SPRING = { damping: 22, stiffness: 220, mass: 0.85 };
+const PREVIEW_LIMIT = 6;
 
 /**
- * Try-on — ixcham sheet + yuqoriga swipe bilan history panel.
- * History faqat sheet gesture / history icon orqali; root bosish ochmaydi.
+ * Try-on — ixcham sheet + yuqoriga swipe bilan oq history panel.
+ * Ochilganda capture UI yashirinadi; oxirgi 6 ta look 2 ustunli gridda.
  */
 export function MorphTryOnScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
-  const { height: winH } = useWindowDimensions();
+  const { height: winH, width: winW } = useWindowDimensions();
   const { isAuthenticated } = useAuth();
   const session = useMorphSession();
   const gate = useMorphLimitGate();
 
   const dockPad = TAB_DOCK_CLEARANCE + Math.max(insets.bottom, 8);
-  const historyH = Math.min(Math.round(winH * 0.48), 360);
+  const historyH = Math.min(Math.round(winH * 0.58), 480);
+  const gridGap = 10;
+  const gridPad = 16;
+  const cardW = (winW - gridPad * 2 - gridGap) / 2;
 
   const [ready, setReady] = useState(false);
   const [busy, setBusy] = useState<"camera" | "gallery" | null>(null);
@@ -165,17 +169,48 @@ export function MorphTryOnScreen({ navigation }: Props) {
       runOnJS(setOpenProgress)(open);
     });
 
-  const sheetAnim = useAnimatedStyle(() => ({
-    transform: [{ translateY: -lift.value }],
-  }));
+  /** Sheet pastidan o‘sadi — translate kerak emas. */
+  const captureAnim = useAnimatedStyle(() => {
+    const t = interpolate(
+      lift.value,
+      [0, historyH * 0.45],
+      [1, 0],
+      Extrapolation.CLAMP,
+    );
+    return {
+      opacity: t,
+      maxHeight: interpolate(
+        lift.value,
+        [0, historyH * 0.55],
+        [220, 0],
+        Extrapolation.CLAMP,
+      ),
+      marginBottom: interpolate(
+        lift.value,
+        [0, historyH * 0.4],
+        [0, -12],
+        Extrapolation.CLAMP,
+      ),
+      overflow: "hidden" as const,
+    };
+  });
 
-  const historyAnim = useAnimatedStyle(() => ({
-    transform: [{ translateY: historyH - lift.value }],
-    opacity: interpolate(lift.value, [0, historyH * 0.25, historyH], [0, 0.85, 1], Extrapolation.CLAMP),
-  }));
+  const historyAnim = useAnimatedStyle(() => {
+    const t = interpolate(
+      lift.value,
+      [historyH * 0.15, historyH * 0.5],
+      [0, 1],
+      Extrapolation.CLAMP,
+    );
+    return {
+      opacity: t,
+      height: lift.value,
+      overflow: "hidden" as const,
+    };
+  });
 
   const handleOpacity = useAnimatedStyle(() => ({
-    opacity: interpolate(lift.value, [0, historyH * 0.4], [1, 0.35], Extrapolation.CLAMP),
+    opacity: interpolate(lift.value, [0, historyH * 0.4], [1, 0.55], Extrapolation.CLAMP),
   }));
 
   const startWith = useCallback(
@@ -235,7 +270,7 @@ export function MorphTryOnScreen({ navigation }: Props) {
     return <View style={styles.root} />;
   }
 
-  const thumb = Math.max(96, Math.floor((winH > 0 ? winH : 700) * 0.11));
+  const previewItems = historyItems.slice(0, PREVIEW_LIMIT);
 
   return (
     <View style={styles.root}>
@@ -260,99 +295,25 @@ export function MorphTryOnScreen({ navigation }: Props) {
         <Text style={styles.sub}>Yuz aniq ko‘rinsin · yaxshi yorug‘lik</Text>
       </Animated.View>
 
-      {/* History — pastdan ko‘tariladi; sheet yuqoriga siljisa ochiladi */}
-      <Animated.View
-        style={[
-          styles.historyPanel,
-          {
-            height: historyH + dockPad,
-            bottom: 0,
-            paddingBottom: dockPad + 8,
-          },
-          historyAnim,
-        ]}
-        pointerEvents={historyOpen ? "auto" : "none"}
-      >
-        <View style={styles.historyHeader}>
-          <View>
-            <Text style={styles.historyTitle}>Saqlangan va yaratilgan</Text>
-            <Text style={styles.historySub}>
-              {historyLoading
-                ? "Yuklanmoqda…"
-                : historyItems.length > 0
-                  ? `${historyItems.length} ta look`
-                  : "Try-on tarixi"}
-            </Text>
-          </View>
-          <Pressable
-            style={styles.historyClose}
-            onPress={closeHistoryPanel}
-            accessibilityLabel="Yopish"
-          >
-            <Ionicons name="chevron-down" size={18} color="#FFF" />
-          </Pressable>
-        </View>
-
-        {historyLoading && !historyFetched ? (
-          <ActivityIndicator color="#FFF" style={{ marginTop: 28 }} />
-        ) : historyError ? (
-          <View style={styles.historyEmpty}>
-            <Text style={styles.historyEmptyText}>{historyError}</Text>
-            <Pressable style={styles.historyRetry} onPress={() => void loadHistory()}>
-              <Text style={styles.historyRetryText}>Qayta</Text>
-            </Pressable>
-          </View>
-        ) : historyItems.length === 0 ? (
-          <View style={styles.historyEmpty}>
-            <Text style={styles.historyEmptyTitle}>Hali try-on yo‘q</Text>
-            <Text style={styles.historyEmptyText}>
-              Yangi look yarating — bu yerda saqlanadi.
-            </Text>
-          </View>
-        ) : (
-          <FlatList
-            data={historyItems}
-            keyExtractor={(item) => String(item.id)}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.historyList}
-            renderItem={({ item }) => (
-              <Pressable
-                style={[styles.historyCard, { width: thumb }]}
-                onPress={() => openGeneration(item)}
-              >
-                <Image
-                  source={{ uri: item.after_url || item.before_url || undefined }}
-                  style={styles.historyImg}
-                  contentFit="cover"
-                />
-                <Text style={styles.historyCardTitle} numberOfLines={1}>
-                  {item.title || item.style_id}
-                </Text>
-              </Pressable>
-            )}
-          />
-        )}
-      </Animated.View>
-
-      {/* Nav ostidagi oq fon — qora bo‘shliq bo‘lmasin, page + dock bir butun */}
+      {/* Nav ostidagi oq fon — qora bo‘shliq bo‘lmasin */}
       <View style={[styles.dockBleed, { height: dockPad }]} pointerEvents="none" />
 
-      <GestureDetector gesture={pan}>
-        <Animated.View
-          style={[
-            styles.sheet,
-            {
-              paddingBottom: dockPad + 14,
-            },
-            sheetAnim,
-          ]}
-        >
+      <Animated.View
+        style={[
+          styles.sheet,
+          {
+            paddingBottom: dockPad + 14,
+          },
+        ]}
+      >
+        <GestureDetector gesture={pan}>
           <View style={styles.handleRow}>
             <View style={styles.handleSpacer} />
             <Animated.View style={[styles.handleCluster, handleOpacity]}>
               <View style={styles.handle} />
-              <Text style={styles.handleHint}>Tarix · yuqoriga</Text>
+              <Text style={styles.handleHint}>
+                {historyOpen ? "Yopish · pastga" : "Tarix · yuqoriga"}
+              </Text>
             </Animated.View>
             <Pressable
               style={[
@@ -373,70 +334,162 @@ export function MorphTryOnScreen({ navigation }: Props) {
               />
             </Pressable>
           </View>
+        </GestureDetector>
 
-          <View style={styles.steps}>
-            <View style={styles.stepTrack} />
-            {(["Selfie", "Tahlil", "Natija"] as const).map((label, i) => (
-              <View key={label} style={styles.stepCol}>
-                <View style={[styles.stepDot, i === 0 && styles.stepDotOn]}>
-                  <Text style={[styles.stepNum, i === 0 && styles.stepNumOn]}>
-                    {i + 1}
-                  </Text>
-                </View>
-                <Text style={[styles.stepLabel, i === 0 && styles.stepLabelOn]}>
-                  {label}
-                </Text>
+        {/* Capture — yopiq holat */}
+        <Animated.View
+          style={captureAnim}
+          pointerEvents={historyOpen ? "none" : "auto"}
+        >
+          <GestureDetector gesture={pan}>
+            <View>
+              <View style={styles.steps}>
+                <View style={styles.stepTrack} />
+                {(["Selfie", "Tahlil", "Natija"] as const).map((label, i) => (
+                  <View key={label} style={styles.stepCol}>
+                    <View style={[styles.stepDot, i === 0 && styles.stepDotOn]}>
+                      <Text style={[styles.stepNum, i === 0 && styles.stepNumOn]}>
+                        {i + 1}
+                      </Text>
+                    </View>
+                    <Text style={[styles.stepLabel, i === 0 && styles.stepLabelOn]}>
+                      {label}
+                    </Text>
+                  </View>
+                ))}
               </View>
-            ))}
-          </View>
 
-          {error ? (
-            <View style={styles.errorBox}>
-              <Text style={styles.errorText}>{error}</Text>
-              {error.includes("obuna") ? (
-                <Pressable
-                  style={styles.errorCta}
-                  onPress={() => navigation.navigate("MorphPaywall")}
-                >
-                  <Text style={styles.errorCtaText}>Tariflar</Text>
-                </Pressable>
+              {error ? (
+                <View style={styles.errorBox}>
+                  <Text style={styles.errorText}>{error}</Text>
+                  {error.includes("obuna") ? (
+                    <Pressable
+                      style={styles.errorCta}
+                      onPress={() => navigation.navigate("MorphPaywall")}
+                    >
+                      <Text style={styles.errorCtaText}>Tariflar</Text>
+                    </Pressable>
+                  ) : null}
+                </View>
               ) : null}
+
+              <View style={styles.actionGrid}>
+                <Pressable
+                  style={styles.gridBtnDark}
+                  disabled={!!busy}
+                  onPress={() => void startWith("camera")}
+                >
+                  {busy === "camera" ? (
+                    <ActivityIndicator color="#FFF" />
+                  ) : (
+                    <>
+                      <Ionicons name="camera-outline" size={22} color="#FFF" />
+                      <Text style={styles.gridTitleLight}>Kameradan olish</Text>
+                    </>
+                  )}
+                </Pressable>
+
+                <Pressable
+                  style={styles.gridBtnLight}
+                  disabled={!!busy}
+                  onPress={() => void startWith("gallery")}
+                >
+                  {busy === "gallery" ? (
+                    <ActivityIndicator color="#0A0A0A" />
+                  ) : (
+                    <>
+                      <Ionicons name="images-outline" size={22} color="#6B6B6B" />
+                      <Text style={styles.gridTitleDark}>Galereyadan tanlash</Text>
+                    </>
+                  )}
+                </Pressable>
+              </View>
             </View>
-          ) : null}
+          </GestureDetector>
+        </Animated.View>
 
-          <View style={styles.actionGrid}>
+        {/* History — ochiq holat: oq sheet ichida 2 ustunli grid */}
+        <Animated.View
+          style={[styles.historyBody, historyAnim]}
+          pointerEvents={historyOpen ? "auto" : "none"}
+        >
+          <View style={styles.historyHeader}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.historyTitle}>Saqlangan va yaratilgan</Text>
+              <Text style={styles.historySub}>
+                {historyLoading
+                  ? "Yuklanmoqda…"
+                  : historyItems.length > 0
+                    ? `Oxirgi ${Math.min(previewItems.length, PREVIEW_LIMIT)} ta · jami ${historyItems.length}`
+                    : "Try-on tarixi"}
+              </Text>
+            </View>
             <Pressable
-              style={styles.gridBtnDark}
-              disabled={!!busy}
-              onPress={() => void startWith("camera")}
+              style={styles.seeAllBtn}
+              onPress={() => navigation.navigate("MorphHistory")}
+              accessibilityLabel="Barcha tarix"
             >
-              {busy === "camera" ? (
-                <ActivityIndicator color="#FFF" />
-              ) : (
-                <>
-                  <Ionicons name="camera-outline" size={22} color="#FFF" />
-                  <Text style={styles.gridTitleLight}>Kameradan olish</Text>
-                </>
-              )}
-            </Pressable>
-
-            <Pressable
-              style={styles.gridBtnLight}
-              disabled={!!busy}
-              onPress={() => void startWith("gallery")}
-            >
-              {busy === "gallery" ? (
-                <ActivityIndicator color="#0A0A0A" />
-              ) : (
-                <>
-                  <Ionicons name="images-outline" size={22} color="#6B6B6B" />
-                  <Text style={styles.gridTitleDark}>Galereyadan tanlash</Text>
-                </>
-              )}
+              <Text style={styles.seeAllText}>Barchasi</Text>
+              <Ionicons name="chevron-forward" size={14} color="#0A0A0A" />
             </Pressable>
           </View>
+
+          {historyLoading && !historyFetched ? (
+            <ActivityIndicator color="#0A0A0A" style={{ marginTop: 28 }} />
+          ) : historyError ? (
+            <View style={styles.historyEmpty}>
+              <Text style={styles.historyEmptyText}>{historyError}</Text>
+              <Pressable
+                style={styles.historyRetry}
+                onPress={() => void loadHistory()}
+              >
+                <Text style={styles.historyRetryText}>Qayta</Text>
+              </Pressable>
+            </View>
+          ) : previewItems.length === 0 ? (
+            <View style={styles.historyEmpty}>
+              <Text style={styles.historyEmptyTitle}>Hali try-on yo‘q</Text>
+              <Text style={styles.historyEmptyText}>
+                Yangi look yarating — bu yerda saqlanadi.
+              </Text>
+            </View>
+          ) : (
+            <ScrollView
+              style={styles.historyScroll}
+              contentContainerStyle={[styles.historyGrid, { gap: gridGap }]}
+              showsVerticalScrollIndicator={false}
+              nestedScrollEnabled
+            >
+              {previewItems.map((item) => (
+                <Pressable
+                  key={item.id}
+                  style={[styles.historyCard, { width: cardW }]}
+                  onPress={() => openGeneration(item)}
+                >
+                  <Image
+                    source={{
+                      uri: item.after_url || item.before_url || undefined,
+                    }}
+                    style={styles.historyImg}
+                    contentFit="cover"
+                  />
+                  <Text style={styles.historyCardTitle} numberOfLines={1}>
+                    {item.title || item.style_id}
+                  </Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+          )}
+
+          <Pressable
+            style={styles.fullHistoryCta}
+            onPress={() => navigation.navigate("MorphHistory")}
+          >
+            <Text style={styles.fullHistoryCtaText}>To‘liq tarixni ko‘rish</Text>
+            <Ionicons name="arrow-forward" size={16} color="#FFF" />
+          </Pressable>
         </Animated.View>
-      </GestureDetector>
+      </Animated.View>
     </View>
   );
 }
@@ -461,96 +514,6 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     textAlign: "center",
   },
-  historyPanel: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    backgroundColor: "#0A0A0A",
-    borderTopLeftRadius: 22,
-    borderTopRightRadius: 22,
-    paddingTop: 14,
-    paddingHorizontal: 14,
-    zIndex: 1,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(255,255,255,0.08)",
-  },
-  historyHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 12,
-    paddingHorizontal: 2,
-  },
-  historyTitle: {
-    color: "#FFF",
-    fontSize: 15,
-    fontWeight: "800",
-    letterSpacing: -0.2,
-  },
-  historySub: {
-    marginTop: 2,
-    color: "rgba(255,255,255,0.45)",
-    fontSize: 11,
-    fontWeight: "600",
-  },
-  historyClose: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: "rgba(255,255,255,0.08)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  historyList: {
-    gap: 10,
-    paddingRight: 8,
-    paddingBottom: 8,
-  },
-  historyCard: {
-    borderRadius: 14,
-    overflow: "hidden",
-    backgroundColor: "#161616",
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(255,255,255,0.08)",
-  },
-  historyImg: {
-    width: "100%",
-    aspectRatio: 3 / 4,
-    backgroundColor: "#1A1A1A",
-  },
-  historyCardTitle: {
-    color: "#FFF",
-    fontSize: 11,
-    fontWeight: "700",
-    paddingHorizontal: 8,
-    paddingVertical: 7,
-  },
-  historyEmpty: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 24,
-    gap: 6,
-  },
-  historyEmptyTitle: {
-    color: "#FFF",
-    fontSize: 16,
-    fontWeight: "800",
-  },
-  historyEmptyText: {
-    color: "rgba(255,255,255,0.5)",
-    fontSize: 12,
-    textAlign: "center",
-    lineHeight: 17,
-  },
-  historyRetry: {
-    marginTop: 10,
-    backgroundColor: "#FFF",
-    borderRadius: 999,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-  },
-  historyRetryText: { color: "#0A0A0A", fontWeight: "800", fontSize: 12 },
   dockBleed: {
     position: "absolute",
     left: 0,
@@ -568,6 +531,7 @@ const styles = StyleSheet.create({
     paddingTop: 10,
     gap: 12,
     zIndex: 2,
+    overflow: "hidden",
   },
   handleRow: {
     flexDirection: "row",
@@ -653,6 +617,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 8,
     gap: 6,
+    marginTop: 12,
   },
   errorText: {
     color: "#B91C1C",
@@ -668,7 +633,7 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
   },
   errorCtaText: { color: "#FFF", fontSize: 11, fontWeight: "700" },
-  actionGrid: { flexDirection: "row", gap: 10 },
+  actionGrid: { flexDirection: "row", gap: 10, marginTop: 12 },
   gridBtnDark: {
     flex: 1,
     alignItems: "center",
@@ -707,5 +672,109 @@ const styles = StyleSheet.create({
     fontSize: 13,
     textAlign: "center",
     includeFontPadding: false,
+  },
+  historyBody: {
+    gap: 10,
+  },
+  historyScroll: {
+    flex: 1,
+  },
+  historyHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 10,
+  },
+  historyTitle: {
+    color: "#0A0A0A",
+    fontSize: 15,
+    fontWeight: "800",
+    letterSpacing: -0.2,
+  },
+  historySub: {
+    marginTop: 2,
+    color: "#8A8A8A",
+    fontSize: 11,
+    fontWeight: "600",
+  },
+  seeAllBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 2,
+    backgroundColor: "#F2F2F2",
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+  },
+  seeAllText: {
+    color: "#0A0A0A",
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  historyGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    paddingBottom: 4,
+  },
+  historyCard: {
+    borderRadius: 14,
+    overflow: "hidden",
+    backgroundColor: "#F5F5F5",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "#E8E8E8",
+  },
+  historyImg: {
+    width: "100%",
+    aspectRatio: 3 / 4,
+    backgroundColor: "#EFEFEF",
+  },
+  historyCardTitle: {
+    color: "#0A0A0A",
+    fontSize: 11,
+    fontWeight: "700",
+    paddingHorizontal: 8,
+    paddingVertical: 7,
+  },
+  historyEmpty: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 24,
+    gap: 6,
+    minHeight: 120,
+  },
+  historyEmptyTitle: {
+    color: "#0A0A0A",
+    fontSize: 16,
+    fontWeight: "800",
+  },
+  historyEmptyText: {
+    color: "#8A8A8A",
+    fontSize: 12,
+    textAlign: "center",
+    lineHeight: 17,
+  },
+  historyRetry: {
+    marginTop: 10,
+    backgroundColor: "#0A0A0A",
+    borderRadius: 999,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
+  historyRetryText: { color: "#FFF", fontWeight: "800", fontSize: 12 },
+  fullHistoryCta: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: "#0A0A0A",
+    borderRadius: 14,
+    minHeight: 46,
+    paddingHorizontal: 14,
+  },
+  fullHistoryCtaText: {
+    color: "#FFF",
+    fontWeight: "800",
+    fontSize: 13,
   },
 });
