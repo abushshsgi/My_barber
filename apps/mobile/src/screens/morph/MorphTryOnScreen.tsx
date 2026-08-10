@@ -411,15 +411,9 @@ export function MorphTryOnScreen({ navigation }: Props) {
 
   const openGeneration = useCallback(
     (item: MorphAiGeneration) => {
-      if (item.after_url) {
-        session.setTryOn(item.after_url, item.style_id, item.title);
-      }
-      if (item.before_url) {
-        session.setSelfie(item.before_url);
-      }
-      navigation.navigate("MorphStudio");
+      navigation.navigate("MorphHistory", { generationId: item.id });
     },
-    [navigation, session],
+    [navigation],
   );
 
   if (!ready) {
@@ -566,19 +560,19 @@ export function MorphTryOnScreen({ navigation }: Props) {
           </GestureDetector>
         </Animated.View>
 
-        {/* History — ochiq holat: oq sheet ichida 2 ustunli grid */}
+        {/* History — ochiq holat: ixcham kartalar, rasm to‘liq (contain) */}
         <Animated.View
           style={[styles.historyBody, historyAnim]}
           pointerEvents={historyOpen ? "auto" : "none"}
         >
           <View style={styles.historyHeader}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.historyTitle}>Saqlangan va yaratilgan</Text>
+              <Text style={styles.historyTitle}>So‘nggi looklar</Text>
               <Text style={styles.historySub}>
                 {historyLoading
                   ? "Yuklanmoqda…"
                   : historyItems.length > 0
-                    ? `Oxirgi ${Math.min(previewItems.length, PREVIEW_LIMIT)} ta · jami ${historyItems.length}`
+                    ? `${Math.min(previewItems.length, PREVIEW_LIMIT)} / ${historyItems.length}`
                     : "Try-on tarixi"}
               </Text>
             </View>
@@ -627,13 +621,15 @@ export function MorphTryOnScreen({ navigation }: Props) {
                   style={[styles.historyCard, { width: cardW }]}
                   onPress={() => openGeneration(item)}
                 >
-                  <Image
-                    source={{
-                      uri: item.after_url || item.before_url || undefined,
-                    }}
-                    style={styles.historyImg}
-                    contentFit="cover"
-                  />
+                  <View style={styles.historyImgWrap}>
+                    <Image
+                      source={{
+                        uri: item.after_url || item.before_url || undefined,
+                      }}
+                      style={styles.historyImg}
+                      contentFit="contain"
+                    />
+                  </View>
                   <Text style={styles.historyCardTitle} numberOfLines={1}>
                     {item.title || item.style_id}
                   </Text>
@@ -893,16 +889,22 @@ const styles = StyleSheet.create({
     paddingBottom: 4,
   },
   historyCard: {
-    borderRadius: 14,
+    borderRadius: 16,
     overflow: "hidden",
-    backgroundColor: "#F5F5F5",
+    backgroundColor: "#F3F3F3",
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#E8E8E8",
+    borderColor: "#E6E6E6",
+  },
+  historyImgWrap: {
+    width: "100%",
+    aspectRatio: 1,
+    backgroundColor: "#EBEBEB",
+    alignItems: "center",
+    justifyContent: "center",
   },
   historyImg: {
     width: "100%",
-    aspectRatio: 1,
-    backgroundColor: "#EFEFEF",
+    height: "100%",
   },
   historyCardTitle: {
     color: "#0A0A0A",

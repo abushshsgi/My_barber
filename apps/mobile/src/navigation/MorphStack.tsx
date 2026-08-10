@@ -26,7 +26,7 @@ export type MorphStackParamList = {
     salonId?: number | null;
     reason?: string;
   };
-  MorphHistory: undefined;
+  MorphHistory: { generationId?: number } | undefined;
   MorphStudio: undefined;
   MorphPaywall: undefined;
 };
