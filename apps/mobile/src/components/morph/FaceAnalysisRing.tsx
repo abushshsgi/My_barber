@@ -14,7 +14,7 @@ const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 type Props = {
   /** Natija — haqiqiy foizlar. Loadingda ixtiyoriy. */
   analyze?: AiStyleAnalyzeResponse | null;
-  /** Tahlil jarayoni — pulse + aylanuvchi progress. */
+  /** Tahlil jarayoni — 3 ta card ketma-ket chiqadi. */
   loading?: boolean;
   /** Summary matnini yashirish (pastdagi Generate uchun). */
   compact?: boolean;
@@ -29,12 +29,13 @@ type MetricCard = {
   track: string;
 };
 
-const PLACEHOLDER_CARDS: MetricCard[] = [
+/** Analiz paytida faqat 3 ta. */
+const LOADING_CARDS: MetricCard[] = [
   {
     key: "face",
     label: "Yuz",
     detail: "…",
-    percent: 62,
+    percent: 78,
     color: "#FF4D8D",
     track: "#F0E4EA",
   },
@@ -42,23 +43,15 @@ const PLACEHOLDER_CARDS: MetricCard[] = [
     key: "length",
     label: "Uzunlik",
     detail: "…",
-    percent: 48,
+    percent: 72,
     color: "#6B8CFF",
     track: "#E4E8F5",
-  },
-  {
-    key: "texture",
-    label: "Tekstura",
-    detail: "…",
-    percent: 36,
-    color: "#3DCC7A",
-    track: "#E0F2E8",
   },
   {
     key: "color",
     label: "Rang",
     detail: "…",
-    percent: 54,
+    percent: 68,
     color: "#FF7A59",
     track: "#F5E6E2",
   },
@@ -141,7 +134,7 @@ function MiniProgressRing({
     outputRange: [circumference, circumference * (1 - percent / 100)],
   });
 
-  const ring = (
+  return (
     <Svg width={size} height={size}>
       <G transform={`rotate(-90 ${cx} ${cy})`}>
         <Circle
@@ -166,8 +159,6 @@ function MiniProgressRing({
       </G>
     </Svg>
   );
-
-  return ring;
 }
 
 function MetricTile({
@@ -187,19 +178,20 @@ function MetricTile({
     <Animated.View
       style={[
         styles.card,
+        loading && styles.cardLoading,
         {
           opacity: enter,
           transform: [
             {
               translateY: enter.interpolate({
                 inputRange: [0, 1],
-                outputRange: [10, 0],
+                outputRange: [14, 0],
               }),
             },
             {
               scale: enter.interpolate({
                 inputRange: [0, 1],
-                outputRange: [0.96, 1],
+                outputRange: [0.92, 1],
               }),
             },
           ],
@@ -211,9 +203,7 @@ function MetricTile({
         <Text style={styles.cardLabel} numberOfLines={1}>
           {card.label}
         </Text>
-        <Text style={[styles.cardPct, loading && styles.cardPctLoading]}>
-          {displayPercent}%
-        </Text>
+        <Text style={styles.cardPct}>{displayPercent}%</Text>
         {!loading && card.detail && card.detail !== "…" ? (
           <Text style={styles.cardDetail} numberOfLines={1}>
             {card.detail}
@@ -230,17 +220,42 @@ function MetricTile({
   );
 }
 
+function animateTo(value: Animated.Value, toValue: number, duration: number) {
+  return new Promise<void>((resolve) => {
+    Animated.timing(value, {
+      toValue,
+      duration,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: false,
+    }).start(() => resolve());
+  });
+}
+
+function springIn(value: Animated.Value) {
+  return new Promise<void>((resolve) => {
+    Animated.spring(value, {
+      toValue: 1,
+      friction: 8,
+      tension: 64,
+      useNativeDriver: true,
+    }).start(() => resolve());
+  });
+}
+
 /**
- * Selfie tahlili — 2×2 glass card (dizayn referens).
- * `loading` — tahlil animatsiyasi; natija — haqiqiy foizlar.
+ * Selfie tahlili — glass 2×2 (natija) / 3 ta ketma-ket (analiz).
  */
 export function FaceAnalysisRing({
   analyze = null,
   loading = false,
   compact = false,
 }: Props) {
-  const progress = useRef(new Animated.Value(0)).current;
-  const pulse = useRef(new Animated.Value(0)).current;
+  const progresses = useRef([
+    new Animated.Value(0),
+    new Animated.Value(0),
+    new Animated.Value(0),
+    new Animated.Value(0),
+  ]).current;
   const enters = useRef([
     new Animated.Value(0),
     new Animated.Value(0),
@@ -248,116 +263,117 @@ export function FaceAnalysisRing({
     new Animated.Value(0),
   ]).current;
   const [displayPcts, setDisplayPcts] = useState([0, 0, 0, 0]);
+  const [visibleCount, setVisibleCount] = useState(loading ? 0 : 4);
 
   const cards = useMemo(
-    () => (analyze && !loading ? cardsFromAnalyze(analyze) : PLACEHOLDER_CARDS),
+    () => (loading ? LOADING_CARDS : analyze ? cardsFromAnalyze(analyze) : LOADING_CARDS),
     [analyze, loading],
   );
 
   useEffect(() => {
-    enters.forEach((v) => v.setValue(0));
-    Animated.stagger(
-      90,
-      enters.map((v) =>
-        Animated.spring(v, {
-          toValue: 1,
-          friction: 8,
-          tension: 70,
-          useNativeDriver: true,
-        }),
-      ),
-    ).start();
-  }, [enters, loading, analyze?.face_shape, analyze?.hair_type]);
+    let cancelled = false;
+    const listeners: Array<{ remove: () => void }> = [];
 
-  useEffect(() => {
-    progress.stopAnimation();
-    pulse.stopAnimation();
-    progress.setValue(0);
-    pulse.setValue(0);
+    progresses.forEach((p) => {
+      p.stopAnimation();
+      p.setValue(0);
+    });
+    enters.forEach((e) => {
+      e.stopAnimation();
+      e.setValue(0);
+    });
+    setDisplayPcts([0, 0, 0, 0]);
 
     if (loading) {
-      const fillLoop = Animated.loop(
-        Animated.sequence([
-          Animated.timing(progress, {
-            toValue: 1,
-            duration: 1400,
-            easing: Easing.inOut(Easing.cubic),
-            useNativeDriver: false,
-          }),
-          Animated.timing(progress, {
-            toValue: 0.22,
-            duration: 900,
-            easing: Easing.inOut(Easing.quad),
-            useNativeDriver: false,
-          }),
-        ]),
-      );
-      const pulseLoop = Animated.loop(
-        Animated.sequence([
-          Animated.timing(pulse, {
-            toValue: 1,
-            duration: 700,
-            easing: Easing.inOut(Easing.quad),
-            useNativeDriver: false,
-          }),
-          Animated.timing(pulse, {
-            toValue: 0,
-            duration: 700,
-            easing: Easing.inOut(Easing.quad),
-            useNativeDriver: false,
-          }),
-        ]),
-      );
-      fillLoop.start();
-      pulseLoop.start();
+      setVisibleCount(0);
 
-      const id = pulse.addListener(({ value }) => {
-        setDisplayPcts(
-          cards.map((c, i) => {
-            const base = 18 + ((i * 11) % 20);
-            const swing = Math.round(value * (c.percent * 0.45));
-            return Math.min(99, base + swing);
-          }),
-        );
-      });
+      const run = async () => {
+        for (let i = 0; i < cards.length; i += 1) {
+          if (cancelled) return;
+          setVisibleCount(i + 1);
+          const progress = progresses[i];
+          const enter = enters[i];
+          const card = cards[i];
+
+          const listener = progress.addListener(({ value }) => {
+            setDisplayPcts((prev) => {
+              const next = [...prev];
+              next[i] = Math.round(value * card.percent);
+              return next;
+            });
+          });
+          listeners.push({ remove: () => progress.removeListener(listener) });
+
+          await Promise.all([springIn(enter), animateTo(progress, 1, 850)]);
+          if (cancelled) return;
+          await new Promise((r) => setTimeout(r, 180));
+        }
+      };
+      void run();
 
       return () => {
-        fillLoop.stop();
-        pulseLoop.stop();
-        pulse.removeListener(id);
+        cancelled = true;
+        listeners.forEach((l) => l.remove());
       };
     }
 
+    // Natija — 4 ta birdan, ringlar to‘ladi.
+    setVisibleCount(cards.length);
+    enters.forEach((e) => e.setValue(1));
     setDisplayPcts(cards.map((c) => c.percent));
-    Animated.timing(progress, {
-      toValue: 1,
-      duration: 1100,
-      easing: Easing.out(Easing.cubic),
-      useNativeDriver: false,
-    }).start();
 
-    const id = progress.addListener(({ value }) => {
-      setDisplayPcts(cards.map((c) => Math.round(value * c.percent)));
+    const shared = progresses[0];
+    shared.setValue(0);
+    progresses.forEach((p, i) => {
+      if (i > 0) p.setValue(0);
     });
-    return () => progress.removeListener(id);
+
+    // Har bir card o‘z progressiga bog‘langan — birga to‘ldiramiz.
+    const anims = progresses.slice(0, cards.length).map((p) =>
+      Animated.timing(p, {
+        toValue: 1,
+        duration: 1000,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: false,
+      }),
+    );
+    Animated.parallel(anims).start();
+
+    const ids = progresses.slice(0, cards.length).map((p, i) =>
+      p.addListener(({ value }) => {
+        setDisplayPcts((prev) => {
+          const next = [...prev];
+          next[i] = Math.round(value * cards[i].percent);
+          return next;
+        });
+      }),
+    );
+
+    return () => {
+      ids.forEach((id, i) => progresses[i].removeListener(id));
+    };
   }, [
     loading,
     cards,
-    progress,
-    pulse,
+    progresses,
+    enters,
     analyze?.face_confidence,
     analyze?.hair_type_confidence,
     analyze?.hair_color_confidence,
+    analyze?.face_shape,
+    analyze?.hair_type,
   ]);
+
+  const shown = cards.slice(0, visibleCount);
 
   return (
     <View style={styles.shell}>
-      <View style={styles.grid}>
-        {cards.map((card, index) => (
+      <View style={[styles.grid, loading && styles.gridLoading]}>
+        {shown.map((card, index) => (
           <MetricTile
             key={card.key}
             card={card}
-            progress={progress}
+            progress={progresses[index]}
             displayPercent={displayPcts[index] ?? 0}
             enter={enters[index]}
             loading={loading}
@@ -390,11 +406,15 @@ const styles = StyleSheet.create({
     shadowRadius: 22,
     shadowOffset: { width: 0, height: 10 },
     elevation: 6,
+    minHeight: 120,
   },
   grid: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 10,
+  },
+  gridLoading: {
+    // 3 ta: 2 yuqorida, 1 pastida markazda emas — oddiy wrap.
   },
   card: {
     flexBasis: "47%",
@@ -415,6 +435,10 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     elevation: 3,
   },
+  cardLoading: {
+    // Uchinchi card ham 50% eni — chapda qoladi.
+    maxWidth: "48.5%",
+  },
   cardCopy: {
     flex: 1,
     minWidth: 0,
@@ -431,9 +455,6 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     color: "#111111",
     letterSpacing: -0.4,
-  },
-  cardPctLoading: {
-    color: "#333333",
   },
   cardDetail: {
     fontSize: 11,
