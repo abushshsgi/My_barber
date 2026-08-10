@@ -183,6 +183,13 @@ export function FaceAnalysisSummary({
     setReady(false);
     sliderEnter.stopAnimation();
     sliderEnter.setValue(0);
+    // Generate darhol ko‘rinsin; ring animatsiyasi tugagach enable bo‘ladi.
+    Animated.spring(sliderEnter, {
+      toValue: 1,
+      friction: 8,
+      tension: 55,
+      useNativeDriver: true,
+    }).start();
   }, [
     sliderEnter,
     analyze.face_shape,
@@ -194,14 +201,17 @@ export function FaceAnalysisSummary({
   ]);
 
   useEffect(() => {
-    if (!ready) return;
-    Animated.spring(sliderEnter, {
-      toValue: 1,
-      friction: 8,
-      tension: 55,
-      useNativeDriver: true,
-    }).start();
-  }, [ready, sliderEnter]);
+    // Ring animatsiyasi osilib qolsa ham Generate yoqilsin.
+    const fallback = setTimeout(() => setReady(true), 4200);
+    return () => clearTimeout(fallback);
+  }, [
+    analyze.face_shape,
+    analyze.hair_type,
+    analyze.hair_color,
+    analyze.face_confidence,
+    analyze.hair_type_confidence,
+    analyze.hair_color_confidence,
+  ]);
 
   return (
     <View style={[styles.sheet, { paddingBottom: Math.max(bottomInset, 14) }]}>
@@ -212,36 +222,28 @@ export function FaceAnalysisSummary({
         tone="onLight"
         onRevealComplete={() => setReady(true)}
       />
-      {ready ? (
-        <Animated.View
-          style={[
-            styles.sliderWrap,
-            {
-              opacity: sliderEnter,
-              transform: [
-                {
-                  translateY: sliderEnter.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [18, 0],
-                  }),
-                },
-                {
-                  scale: sliderEnter.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [0.94, 1],
-                  }),
-                },
-              ],
-            },
-          ]}
-        >
-          <GenerateSlider
-            enabled
-            generating={generating}
-            onComplete={onStartGenerate}
-          />
-        </Animated.View>
-      ) : null}
+      <Animated.View
+        style={[
+          styles.sliderWrap,
+          {
+            opacity: sliderEnter,
+            transform: [
+              {
+                translateY: sliderEnter.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [12, 0],
+                }),
+              },
+            ],
+          },
+        ]}
+      >
+        <GenerateSlider
+          enabled={ready && !generating}
+          generating={generating}
+          onComplete={onStartGenerate}
+        />
+      </Animated.View>
     </View>
   );
 }
