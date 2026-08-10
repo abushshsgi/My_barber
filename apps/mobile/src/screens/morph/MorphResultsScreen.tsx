@@ -376,8 +376,11 @@ export function MorphResultsScreen({ navigation }: Props) {
               </Pressable>
             </View>
           ) : (
-            <View style={styles.analyzeCardPad}>
-              <FaceAnalysisRing loading />
+            <View style={[styles.scanBottom, { paddingBottom: 0 }]}>
+              <View style={styles.analyzeBtn}>
+                <ActivityIndicator color="#FFF" />
+                <Text style={styles.analyzeBtnText}>Tahlil qilinmoqda…</Text>
+              </View>
             </View>
           )}
         </View>

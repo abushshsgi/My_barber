@@ -149,23 +149,23 @@ function MetricTile({
       ]}
       accessibilityLabel={`${card.label}: ${card.detail}, ${displayPercent} foiz`}
     >
-      <View style={styles.cardCopy}>
-        <Text style={styles.cardLabel} numberOfLines={1}>
-          {card.label}
-        </Text>
-        <Text style={styles.cardPct}>{displayPercent}%</Text>
-        {card.detail ? (
-          <Text style={styles.cardDetail} numberOfLines={1}>
-            {card.detail}
-          </Text>
-        ) : null}
-      </View>
+      <Text style={styles.cardLabel} numberOfLines={1}>
+        {card.label}
+      </Text>
       <MiniProgressRing
         percent={card.percent}
         color={card.color}
         track={card.track}
         fill={fill}
+        size={40}
+        strokeWidth={3.2}
       />
+      <Text style={styles.cardPct}>{displayPercent}%</Text>
+      {card.detail ? (
+        <Text style={styles.cardDetail} numberOfLines={1}>
+          {card.detail}
+        </Text>
+      ) : null}
     </Animated.View>
   );
 }
@@ -330,36 +330,27 @@ export function FaceAnalysisRing({
   ]);
 
   if (loading) {
-    return (
-      <View style={styles.shell}>
-        <View style={styles.waitingBox}>
-          <View style={styles.waitingDotRow}>
-            <View style={[styles.waitingDot, { backgroundColor: "#FF4D8D" }]} />
-            <View style={[styles.waitingDot, { backgroundColor: "#6B8CFF" }]} />
-            <View style={[styles.waitingDot, { backgroundColor: "#FF7A59" }]} />
-          </View>
-          <Text style={styles.loadingHint}>Yuz topilmoqda, AI tahlil qilmoqda…</Text>
-        </View>
-      </View>
-    );
+    return null;
   }
 
   if (!analyze || cards.length === 0) return null;
 
-  const shown = cards.slice(0, visibleCount);
-
   return (
     <View style={styles.shell}>
-      <View style={styles.grid}>
-        {shown.map((card, index) => (
-          <MetricTile
-            key={card.key}
-            card={card}
-            fill={fills[index] ?? 0}
-            displayPercent={displayPcts[index] ?? 0}
-            enter={enters[index]}
-          />
-        ))}
+      <View style={styles.row}>
+        {cards.map((card, index) =>
+          index < visibleCount ? (
+            <MetricTile
+              key={card.key}
+              card={card}
+              fill={fills[index] ?? 0}
+              displayPercent={displayPcts[index] ?? 0}
+              enter={enters[index]}
+            />
+          ) : (
+            <View key={card.key} style={styles.cardSlot} />
+          ),
+        )}
       </View>
       {!compact && analyze.summary_uz && visibleCount >= cards.length ? (
         <Text style={styles.summary} numberOfLines={3}>
@@ -376,7 +367,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.65)",
     backgroundColor: "rgba(255,255,255,0.32)",
-    paddingHorizontal: 12,
+    paddingHorizontal: 10,
     paddingTop: 12,
     paddingBottom: 12,
     gap: 10,
@@ -385,75 +376,51 @@ const styles = StyleSheet.create({
     shadowRadius: 22,
     shadowOffset: { width: 0, height: 10 },
     elevation: 6,
-    minHeight: 112,
   },
-  waitingBox: {
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 28,
-    gap: 14,
-  },
-  waitingDotRow: {
+  /** 3 ta metrika — flex qator, grid emas. */
+  row: {
     flexDirection: "row",
-    gap: 8,
-  },
-  waitingDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    opacity: 0.85,
-  },
-  grid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 10,
-  },
-  card: {
-    flexBasis: "47%",
-    flexGrow: 1,
-    maxWidth: "48.5%",
-    minHeight: 88,
-    flexDirection: "row",
-    alignItems: "center",
+    alignItems: "stretch",
     justifyContent: "space-between",
     gap: 8,
+  },
+  card: {
+    flex: 1,
+    minWidth: 0,
+    alignItems: "center",
+    justifyContent: "flex-start",
+    gap: 6,
     backgroundColor: "#FFFFFF",
-    borderRadius: 20,
-    paddingVertical: 14,
-    paddingHorizontal: 14,
+    borderRadius: 18,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
     shadowColor: "#000000",
     shadowOpacity: 0.08,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 4 },
     elevation: 3,
   },
-  cardCopy: {
+  cardSlot: {
     flex: 1,
     minWidth: 0,
-    justifyContent: "center",
-    gap: 2,
   },
   cardLabel: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: "500",
     color: "#8A8A8A",
+    textAlign: "center",
   },
   cardPct: {
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: "800",
     color: "#111111",
     letterSpacing: -0.4,
+    textAlign: "center",
   },
   cardDetail: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: "600",
     color: "rgba(17,17,17,0.45)",
-    marginTop: 1,
-  },
-  loadingHint: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "rgba(20,20,20,0.7)",
     textAlign: "center",
   },
   summary: {
