@@ -816,6 +816,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
   },
+  topLinkText: { fontSize: 13, fontWeight: "700", color: "#0A0A0A" },
   errorInline: {
     backgroundColor: "rgba(239,68,68,0.1)",
     borderRadius: 12,
