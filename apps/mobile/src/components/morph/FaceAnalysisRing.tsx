@@ -36,10 +36,7 @@ function toPercent(value: number | undefined, fallback: number): number {
   return Math.max(8, Math.min(100, Math.round(pct)));
 }
 
-const METRIC_BLACK = "#0A0A0A";
-const METRIC_TRACK = "#E5E5E5";
-
-/** Faqat 3 ta: Yuz, Uzunlik, Rang — barcha metrikalar qora. */
+/** Faqat 3 ta: Yuz, Uzunlik, Rang — rangli metrikalar. */
 function cardsFromAnalyze(analyze: AiStyleAnalyzeResponse): MetricCard[] {
   const colorKey = analyze.hair_color || "other";
   return [
@@ -48,29 +45,29 @@ function cardsFromAnalyze(analyze: AiStyleAnalyzeResponse): MetricCard[] {
       label: "Yuz",
       detail: faceShapeLabel(analyze.face_shape),
       percent: toPercent(analyze.face_confidence, 0.86),
-      color: METRIC_BLACK,
-      track: METRIC_TRACK,
+      color: "#E11D74",
+      track: "#FCE7F0",
     },
     {
       key: "length",
       label: "Uzunlik",
       detail: hairTypeLabel(analyze.hair_type),
       percent: toPercent(analyze.hair_type_confidence, 0.78),
-      color: METRIC_BLACK,
-      track: METRIC_TRACK,
+      color: "#3B6EF5",
+      track: "#E8EEFF",
     },
     {
       key: "color",
       label: "Rang",
       detail: hairColorLabel(colorKey),
       percent: toPercent(analyze.hair_color_confidence, 0.74),
-      color: METRIC_BLACK,
-      track: METRIC_TRACK,
+      color: "#E85D04",
+      track: "#FFEADF",
     },
   ];
 }
 
-const RING_SIZE = 58;
+const RING_SIZE = 54;
 const RING_STROKE = 5;
 
 function MiniProgressRing({
@@ -146,6 +143,7 @@ function MetricTile({
       style={[
         styles.card,
         onDark ? styles.cardOnDark : styles.cardOnLight,
+        !onDark ? { backgroundColor: card.track } : null,
         {
           opacity: enter,
           transform: [
@@ -167,7 +165,11 @@ function MetricTile({
       accessibilityLabel={`${card.label}: ${card.detail}, ${displayPercent} foiz`}
     >
       <Text
-        style={[styles.cardLabel, onDark ? styles.cardLabelOnDark : styles.cardLabelOnLight]}
+        style={[
+          styles.cardLabel,
+          onDark ? styles.cardLabelOnDark : styles.cardLabelOnLight,
+          !onDark ? { color: card.color } : null,
+        ]}
         numberOfLines={1}
       >
         {card.label}
@@ -175,7 +177,7 @@ function MetricTile({
       <MiniProgressRing
         percent={card.percent}
         color={card.color}
-        track={onDark ? "rgba(0,0,0,0.14)" : card.track}
+        track={onDark ? "rgba(255,255,255,0.28)" : "#FFFFFF"}
         fill={fill}
         displayPercent={displayPercent}
       />
@@ -377,7 +379,7 @@ export function FaceAnalysisRing({
       </View>
       {!compact && analyze.summary_uz && visibleCount >= cards.length ? (
         <Text
-          style={[styles.summary, tone === "onLight" ? styles.summaryOnLight : null]}
+          style={[styles.summary, tone === "onLight" ? styles.summaryOnLight : styles.summaryOnDark]}
           numberOfLines={3}
         >
           {analyze.summary_uz}
@@ -389,19 +391,24 @@ export function FaceAnalysisRing({
 
 const styles = StyleSheet.create({
   shell: {
-    paddingHorizontal: 4,
-    paddingTop: 4,
-    paddingBottom: 4,
-    gap: 8,
+    gap: 12,
   },
-  shellOnDark: {},
-  shellOnLight: {},
+  shellOnDark: {
+    paddingHorizontal: 2,
+    paddingTop: 2,
+    paddingBottom: 2,
+  },
+  shellOnLight: {
+    paddingHorizontal: 0,
+    paddingTop: 0,
+    paddingBottom: 0,
+  },
   /** 3 ta metrika — flex qator, grid emas. */
   row: {
     flexDirection: "row",
     alignItems: "stretch",
     justifyContent: "space-between",
-    gap: 6,
+    gap: 8,
   },
   card: {
     flex: 1,
@@ -409,58 +416,69 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "flex-start",
     gap: 8,
-    paddingVertical: 10,
-    paddingHorizontal: 4,
+    borderRadius: 18,
+    paddingVertical: 14,
+    paddingHorizontal: 6,
   },
-  cardOnDark: {},
-  cardOnLight: {},
+  cardOnDark: {
+    backgroundColor: "rgba(255,255,255,0.2)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.35)",
+  },
+  cardOnLight: {
+    borderWidth: 0,
+  },
   cardSlot: {
     flex: 1,
     minWidth: 0,
   },
   cardLabel: {
-    fontSize: 12,
-    fontWeight: "700",
-    letterSpacing: 0.3,
+    fontSize: 11,
+    fontWeight: "800",
+    letterSpacing: 0.6,
     textAlign: "center",
     textTransform: "uppercase",
     includeFontPadding: false,
   },
   cardLabelOnDark: {
-    color: METRIC_BLACK,
+    color: "#FFFFFF",
   },
   cardLabelOnLight: {
-    color: METRIC_BLACK,
+    color: "#0A0A0A",
   },
   ringPct: {
-    fontSize: 14,
-    fontWeight: "700",
-    letterSpacing: -0.5,
+    fontSize: 13,
+    fontWeight: "800",
+    letterSpacing: -0.4,
     textAlign: "center",
     includeFontPadding: false,
   },
   cardDetail: {
     fontSize: 11,
-    fontWeight: "700",
+    fontWeight: "600",
     textAlign: "center",
     lineHeight: 14,
     paddingHorizontal: 2,
     includeFontPadding: false,
   },
   cardDetailOnDark: {
-    color: METRIC_BLACK,
+    color: "rgba(255,255,255,0.92)",
   },
   cardDetailOnLight: {
-    color: METRIC_BLACK,
+    color: "#404040",
   },
   summary: {
-    fontSize: 13,
-    lineHeight: 18,
-    fontWeight: "700",
-    color: "rgba(20,20,20,0.72)",
-    paddingHorizontal: 4,
+    fontSize: 12,
+    lineHeight: 17,
+    fontWeight: "500",
+    letterSpacing: 0.1,
+    paddingHorizontal: 2,
+    paddingTop: 2,
   },
   summaryOnLight: {
-    color: "#525252",
+    color: "#737373",
+  },
+  summaryOnDark: {
+    color: "rgba(255,255,255,0.78)",
   },
 });

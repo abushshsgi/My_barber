@@ -119,12 +119,8 @@ export function MorphResultsScreen({ navigation }: Props) {
           err instanceof Error ? err.message : "Try-on xatosi",
           "Try-on xatosi",
         );
-        // Katalog rasmi qoladi — banner sticky bo‘lmasin.
+        // Katalog rasmi qoladi — xato toast orqali, sticky banner yo‘q.
         toast.show(msg, { tone: "error", durationMs: 4200 });
-        setError(msg);
-        setTimeout(() => {
-          setError((cur) => (cur === msg ? null : cur));
-        }, 4500);
       } finally {
         setActiveStyleId(null);
       }
@@ -207,28 +203,21 @@ export function MorphResultsScreen({ navigation }: Props) {
       toast.show(error || NO_FACE_MESSAGE, { tone: "error", durationMs: 5200 });
       return;
     }
-    // Analyzing status ekranda pastda ko‘rsatiladi — toast dublikat emas.
+    // Analyzing status ekranda pastda — toast dublikat emas.
     if (phase === "analyzing") {
       toast.hide();
-      return;
     }
-    if (phase === "summary" || phase === "ready") {
-      toast.hide();
-      return;
-    }
-    toast.hide();
   }, [phase, error, session.analyze, toast]);
 
   const onStartGenerate = useCallback(() => {
     if (phase !== "summary") return;
     setError(null);
-    toast.hide();
     setPhase("ready");
     const first = pendingTryOnRef.current;
     if (first) {
       void runTryOn(first);
     }
-  }, [phase, runTryOn, toast]);
+  }, [phase, runTryOn]);
 
   useEffect(() => {
     return () => toast.hide();
@@ -317,6 +306,10 @@ export function MorphResultsScreen({ navigation }: Props) {
     }
     navigation.navigate("MorphStudio");
   }, [activePreview, activeSuggestion, navigation, session]);
+
+  const openAiChat = useCallback(() => {
+    navigation.getParent()?.navigate("MorphChat" as never);
+  }, [navigation]);
 
   /** Summary — yuzga hech narsa yo‘q; pastda metrikalar + Generate. */
   if (summaryBusy && session.analyze) {
@@ -421,21 +414,6 @@ export function MorphResultsScreen({ navigation }: Props) {
       ) : null}
       <View style={styles.bgDim} />
 
-      <View style={[styles.topBar, { paddingTop: Math.max(insets.top, 8) }]}>
-        <Pressable style={styles.topBtn} onPress={onBack} accessibilityLabel="Orqaga">
-          <Ionicons name="chevron-back" size={20} color="#0A0A0A" />
-        </Pressable>
-        <Text style={styles.topCounter}>
-          {suggestions.length > 0
-            ? `${spotlightIndex + 1} / ${suggestions.length}`
-            : "Natija"}
-        </Text>
-        <Pressable style={styles.topLink} onPress={onNewPhoto}>
-          <Ionicons name="camera-outline" size={15} color="#0A0A0A" />
-          <Text style={styles.topLinkText}>Yangi</Text>
-        </Pressable>
-      </View>
-
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={{
@@ -445,17 +423,8 @@ export function MorphResultsScreen({ navigation }: Props) {
         showsVerticalScrollIndicator={false}
         nestedScrollEnabled
       >
-        {error ? (
-          <View style={[styles.errorInline, { marginHorizontal: H_PAD, marginTop: 8 }]}>
-            <Text style={styles.errorInlineText}>{error}</Text>
-          </View>
-        ) : null}
-
         {suggestions.length > 0 ? (
           <View style={styles.recsBlock}>
-            <Text style={styles.recsTitle}>{suggestions.length} ta tavsiya</Text>
-            <Text style={styles.recsHint}>Chap yoki o‘ngga suring · tugmalar bilan ham</Text>
-
             <View style={styles.carouselWrap}>
               <FlatList
                 ref={carouselRef}
@@ -537,6 +506,24 @@ export function MorphResultsScreen({ navigation }: Props) {
                   );
                 }}
               />
+
+              <View
+                style={[styles.imageChrome, { paddingTop: Math.max(insets.top, 10) }]}
+                pointerEvents="box-none"
+              >
+                <Pressable
+                  style={styles.imageBackBtn}
+                  onPress={onBack}
+                  accessibilityLabel="Orqaga"
+                  hitSlop={8}
+                >
+                  <Ionicons name="chevron-back" size={18} color="#0A0A0A" />
+                </Pressable>
+                <View style={styles.recsCountPill}>
+                  <Text style={styles.recsCountText}>{suggestions.length} ta tavsiya</Text>
+                </View>
+                <View style={styles.imageBackBtnSpacer} />
+              </View>
 
               {suggestions.length > 1 ? (
                 <>
@@ -633,11 +620,27 @@ export function MorphResultsScreen({ navigation }: Props) {
               </View>
             ) : null}
           </View>
-        ) : null}
+        ) : (
+          <View style={[styles.fallbackTop, { paddingTop: Math.max(insets.top, 10) }]}>
+            <Pressable style={styles.imageBackBtn} onPress={onBack} accessibilityLabel="Orqaga">
+              <Ionicons name="chevron-back" size={18} color="#0A0A0A" />
+            </Pressable>
+          </View>
+        )}
 
         {session.analyze ? (
-          <View style={styles.sectionPad}>
+          <View style={styles.analyzePanel}>
+            <Text style={styles.analyzePanelTitle}>Yuz tahlili</Text>
             <FaceAnalysisRing analyze={session.analyze} tone="onLight" />
+            <Pressable
+              style={({ pressed }) => [styles.aiChatBtn, pressed && { opacity: 0.9 }]}
+              android_ripple={{ color: "rgba(0,0,0,0.06)" }}
+              onPress={openAiChat}
+            >
+              <Ionicons name="chatbubble-ellipses-outline" size={17} color="#0A0A0A" />
+              <Text style={styles.aiChatBtnText}>AI chat — maslahat olish</Text>
+              <Ionicons name="chevron-forward" size={16} color="#8E8E93" />
+            </Pressable>
           </View>
         ) : null}
 
@@ -762,10 +765,76 @@ const styles = StyleSheet.create({
   analyzeCardPad: {
     paddingHorizontal: 14,
   },
-  sectionPad: {
+  analyzePanel: {
+    width: "100%",
+    backgroundColor: "#FFF",
     paddingHorizontal: H_PAD,
-    paddingVertical: 12,
+    paddingTop: 18,
+    paddingBottom: 20,
+    gap: 14,
+  },
+  analyzePanelTitle: {
+    fontSize: 15,
+    fontWeight: "800",
+    color: "#0A0A0A",
+    letterSpacing: -0.2,
+  },
+  aiChatBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    minHeight: 48,
+    borderRadius: 14,
+    paddingHorizontal: 14,
     backgroundColor: "#F5F5F5",
+  },
+  aiChatBtnText: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#0A0A0A",
+    includeFontPadding: false,
+  },
+  fallbackTop: {
+    paddingHorizontal: H_PAD,
+    paddingBottom: 8,
+  },
+  imageChrome: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 4,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 12,
+    gap: 10,
+  },
+  imageBackBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255,255,255,0.94)",
+  },
+  imageBackBtnSpacer: {
+    width: 32,
+    height: 32,
+  },
+  recsCountPill: {
+    flexShrink: 1,
+    backgroundColor: "rgba(255,255,255,0.94)",
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+  },
+  recsCountText: {
+    fontSize: 12,
+    fontWeight: "800",
+    color: "#0A0A0A",
+    includeFontPadding: false,
   },
   scanHintAbove: {
     color: "rgba(255,255,255,0.9)",
@@ -816,66 +885,12 @@ const styles = StyleSheet.create({
     fontSize: 15,
     includeFontPadding: false,
   },
-  topBar: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: H_PAD,
-    paddingBottom: 8,
-    gap: 10,
-    backgroundColor: "#F5F5F5",
-    zIndex: 2,
-  },
-  topBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "#FFF",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  topCounter: {
-    flex: 1,
-    textAlign: "center",
-    fontSize: 15,
-    fontWeight: "800",
-    color: "#0A0A0A",
-    letterSpacing: -0.2,
-  },
-  topLink: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-    backgroundColor: "#FFF",
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  topLinkText: { fontSize: 13, fontWeight: "700", color: "#0A0A0A" },
-  errorInline: {
-    backgroundColor: "rgba(239,68,68,0.1)",
-    borderRadius: 12,
-    padding: 12,
-  },
-  errorInlineText: { color: "#B91C1C", fontSize: 13 },
   recsBlock: {
     width: "100%",
     backgroundColor: "#FFF",
-    paddingTop: 14,
+    paddingTop: 0,
     paddingBottom: 18,
     gap: 12,
-  },
-  recsTitle: {
-    fontSize: 17,
-    fontWeight: "800",
-    color: "#0A0A0A",
-    paddingHorizontal: H_PAD,
-  },
-  recsHint: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#8E8E93",
-    paddingHorizontal: H_PAD,
-    marginTop: -6,
   },
   carouselWrap: {
     position: "relative",
@@ -918,12 +933,13 @@ const styles = StyleSheet.create({
   spotlightBusyText: { color: "#FFF", fontWeight: "700", fontSize: 13 },
   previewBadge: {
     position: "absolute",
-    top: 12,
+    top: 56,
     left: 12,
     backgroundColor: "#FFF",
     borderRadius: 999,
     paddingHorizontal: 10,
     paddingVertical: 6,
+    zIndex: 2,
   },
   previewBadgeText: { fontSize: 11, fontWeight: "800", color: "#0A0A0A" },
   spotlightGrad: {
