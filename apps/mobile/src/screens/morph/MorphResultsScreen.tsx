@@ -208,8 +208,9 @@ export function MorphResultsScreen({ navigation }: Props) {
       toast.show(error || NO_FACE_MESSAGE, { tone: "error", durationMs: 5200 });
       return;
     }
+    // Analyzing status ekranda yuqorida ko‘rsatiladi — toast dublikat emas.
     if (phase === "analyzing") {
-      toast.show("Tahlil qilinmoqda…", { tone: "loading", durationMs: 0 });
+      toast.hide();
       return;
     }
     if (phase === "summary" || phase === "ready") {
@@ -313,11 +314,11 @@ export function MorphResultsScreen({ navigation }: Props) {
         {session.selfieDataUrl ? (
           <Image
             source={{ uri: session.selfieDataUrl }}
-            style={StyleSheet.absoluteFill}
+            style={styles.scanPhoto}
             resizeMode="cover"
           />
         ) : (
-          <View style={[StyleSheet.absoluteFill, { backgroundColor: "#111" }]} />
+          <View style={styles.scanPhotoFallback} />
         )}
         <View style={styles.summaryScrim} />
 
@@ -348,11 +349,11 @@ export function MorphResultsScreen({ navigation }: Props) {
         {session.selfieDataUrl ? (
           <Image
             source={{ uri: session.selfieDataUrl }}
-            style={StyleSheet.absoluteFill}
+            style={styles.scanPhoto}
             resizeMode="cover"
           />
         ) : (
-          <View style={[StyleSheet.absoluteFill, { backgroundColor: "#111" }]} />
+          <View style={styles.scanPhotoFallback} />
         )}
         <View style={styles.summaryScrim} />
 
@@ -374,28 +375,26 @@ export function MorphResultsScreen({ navigation }: Props) {
           <View style={styles.scanBackBtn} />
         </View>
 
-        <View style={[styles.summaryBottom, { paddingBottom: Math.max(insets.bottom, 12) }]}>
-          {phase === "error" ? (
-            <View style={styles.scanBottom}>
-              <Text style={styles.scanHintAbove}>Yuz aniq ko‘rinadigan selfie yuklang</Text>
-              <Pressable
-                style={({ pressed }) => [styles.analyzeBtn, pressed && { opacity: 0.88 }]}
-                android_ripple={{ color: "rgba(255,255,255,0.15)" }}
-                onPress={onNewPhoto}
-              >
-                <Ionicons name="camera-outline" size={18} color="#FFF" />
-                <Text style={styles.analyzeBtnText}>Yangi rasm yuklash</Text>
-              </Pressable>
+        {phase === "error" ? (
+          <View style={[styles.scanBottomDock, { paddingBottom: Math.max(insets.bottom, 16) }]}>
+            <Text style={styles.scanHintAbove}>Yuz aniq ko‘rinadigan selfie yuklang</Text>
+            <Pressable
+              style={({ pressed }) => [styles.analyzeBtn, pressed && { opacity: 0.88 }]}
+              android_ripple={{ color: "rgba(255,255,255,0.15)" }}
+              onPress={onNewPhoto}
+            >
+              <Ionicons name="camera-outline" size={18} color="#FFF" />
+              <Text style={styles.analyzeBtnText}>Yangi rasm yuklash</Text>
+            </Pressable>
+          </View>
+        ) : (
+          <View style={styles.scanStatusTop}>
+            <View style={styles.analyzeBtn}>
+              <ActivityIndicator color="#FFF" />
+              <Text style={styles.analyzeBtnText}>Tahlil qilinmoqda…</Text>
             </View>
-          ) : (
-            <View style={styles.scanBottom}>
-              <View style={styles.analyzeBtn}>
-                <ActivityIndicator color="#FFF" />
-                <Text style={styles.analyzeBtnText}>Tahlil qilinmoqda…</Text>
-              </View>
-            </View>
-          )}
-        </View>
+          </View>
+        )}
       </View>
     );
   }
@@ -756,6 +755,15 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFill,
     backgroundColor: "rgba(0,0,0,0.22)",
   },
+  scanPhoto: {
+    ...StyleSheet.absoluteFill,
+    width: "100%",
+    height: "100%",
+  },
+  scanPhotoFallback: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: "#111",
+  },
   summaryBottom: {
     position: "absolute",
     left: 0,
@@ -795,7 +803,19 @@ const styles = StyleSheet.create({
   scanBackBtnDisabled: {
     backgroundColor: "rgba(255,255,255,0.05)",
   },
-  scanBottom: {
+  /** Analyzing status — chrome ostida, yuqorida. */
+  scanStatusTop: {
+    zIndex: 3,
+    paddingHorizontal: 16,
+    paddingTop: 14,
+  },
+  /** Error CTA — pastga dock. */
+  scanBottomDock: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 3,
     paddingHorizontal: 16,
   },
   analyzeBtn: {
@@ -804,8 +824,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 10,
     minHeight: 54,
-    marginTop: 16,
-    marginBottom: 8,
     borderRadius: 18,
     backgroundColor: "rgba(30,30,30,0.92)",
     overflow: "hidden",
