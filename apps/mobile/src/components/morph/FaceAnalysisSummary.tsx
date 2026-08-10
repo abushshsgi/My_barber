@@ -204,7 +204,7 @@ export function FaceAnalysisSummary({
   }, [ready, sliderEnter]);
 
   return (
-    <View style={[styles.sheet, { paddingBottom: Math.max(bottomInset, 10) }]}>
+    <View style={[styles.sheet, { paddingBottom: Math.max(bottomInset, 14) }]}>
       <FaceAnalysisRing
         analyze={analyze}
         sequential
@@ -247,10 +247,15 @@ export function FaceAnalysisSummary({
 }
 
 const styles = StyleSheet.create({
+  /** YUZ…Generate oralig‘i — oq panel, rasm ichida width/height. */
   sheet: {
     width: "100%",
+    backgroundColor: "#FFFFFF",
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    paddingTop: 18,
     paddingHorizontal: 16,
-    gap: 14,
+    gap: 16,
   },
   sliderWrap: {
     borderRadius: 999,
@@ -263,9 +268,9 @@ const styles = StyleSheet.create({
   sliderTrack: {
     height: TRACK_H,
     borderRadius: 999,
-    backgroundColor: "rgba(255,255,255,0.92)",
+    backgroundColor: "#F3F3F3",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.95)",
+    borderColor: "rgba(0,0,0,0.06)",
     justifyContent: "center",
     overflow: "hidden",
   },
@@ -298,12 +303,14 @@ const styles = StyleSheet.create({
     height: THUMB,
     borderRadius: THUMB / 2,
     backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "rgba(0,0,0,0.06)",
     alignItems: "center",
     justifyContent: "center",
     shadowColor: "#000",
-    shadowOpacity: 0.14,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 3,
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
   },
 });
