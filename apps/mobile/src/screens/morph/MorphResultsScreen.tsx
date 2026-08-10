@@ -781,6 +781,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 10,
     minHeight: 54,
+    marginTop: 25,
+    marginBottom: 25,
     borderRadius: 18,
     backgroundColor: "rgba(30,30,30,0.92)",
   },
