@@ -21,7 +21,8 @@ type Props = {
 };
 
 const ACCENT = "#C026A0";
-const THUMB = 40;
+const THUMB = 46;
+const TRACK_H = 58;
 const SLIDE_THRESHOLD = 0.82;
 
 function GenerateSlider({
@@ -38,27 +39,23 @@ function GenerateSlider({
   const arrowPulse = useRef(new Animated.Value(0)).current;
   const doneRef = useRef(false);
   const maxTravel = Math.max(0, trackW - THUMB - 8);
+  /** Markazdan o‘ng chetigacha › › › › yurishi. */
+  const arrowTravel = Math.max(24, trackW * 0.42);
 
   useEffect(() => {
     if (!enabled || generating) {
       arrowPulse.stopAnimation();
+      arrowPulse.setValue(0);
       return;
     }
+    arrowPulse.setValue(0);
     const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(arrowPulse, {
-          toValue: 1,
-          duration: 900,
-          easing: Easing.inOut(Easing.quad),
-          useNativeDriver: true,
-        }),
-        Animated.timing(arrowPulse, {
-          toValue: 0,
-          duration: 900,
-          easing: Easing.inOut(Easing.quad),
-          useNativeDriver: true,
-        }),
-      ]),
+      Animated.timing(arrowPulse, {
+        toValue: 1,
+        duration: 1400,
+        easing: Easing.inOut(Easing.quad),
+        useNativeDriver: true,
+      }),
     );
     loop.start();
     return () => loop.stop();
@@ -115,7 +112,11 @@ function GenerateSlider({
 
   const arrowShift = arrowPulse.interpolate({
     inputRange: [0, 1],
-    outputRange: [0, 8],
+    outputRange: [0, arrowTravel],
+  });
+  const arrowOpacity = arrowPulse.interpolate({
+    inputRange: [0, 0.15, 0.75, 1],
+    outputRange: [0, 1, 1, 0],
   });
 
   return (
@@ -127,19 +128,28 @@ function GenerateSlider({
         {generating ? "Generate…" : enabled ? "Generate" : "…"}
       </Text>
 
-      <Animated.View
-        style={[styles.sliderArrows, { transform: [{ translateX: arrowShift }] }]}
-        pointerEvents="none"
-      >
-        {[0, 1, 2, 3].map((i) => (
-          <Text
-            key={i}
-            style={[styles.sliderChevron, { opacity: 0.35 + i * 0.15 }]}
-          >
-            ›
-          </Text>
-        ))}
-      </Animated.View>
+      {enabled && !generating && trackW > 0 ? (
+        <Animated.View
+          style={[
+            styles.sliderArrows,
+            {
+              left: trackW * 0.5 - 10,
+              opacity: arrowOpacity,
+              transform: [{ translateX: arrowShift }],
+            },
+          ]}
+          pointerEvents="none"
+        >
+          {[0, 1, 2, 3].map((i) => (
+            <Text
+              key={i}
+              style={[styles.sliderChevron, { opacity: 0.35 + i * 0.18 }]}
+            >
+              ›
+            </Text>
+          ))}
+        </Animated.View>
+      ) : null}
 
       <Animated.View
         style={[styles.sliderThumb, { transform: [{ translateX: dragX }] }]}
@@ -148,7 +158,7 @@ function GenerateSlider({
         {generating ? (
           <ActivityIndicator color="#111" size="small" />
         ) : (
-          <Ionicons name="sparkles" size={18} color="#111" />
+          <Ionicons name="sparkles" size={20} color="#111" />
         )}
       </Animated.View>
     </View>
@@ -200,17 +210,17 @@ const styles = StyleSheet.create({
   sheet: {
     width: "100%",
     paddingHorizontal: 14,
-    gap: 10,
+    gap: 12,
   },
   sliderWrap: {
     borderRadius: 999,
   },
   sliderTrack: {
-    height: 48,
+    height: TRACK_H,
     borderRadius: 999,
-    backgroundColor: "rgba(255,255,255,0.36)",
+    backgroundColor: "rgba(255,255,255,0.4)",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.65)",
+    borderColor: "rgba(255,255,255,0.7)",
     justifyContent: "center",
     overflow: "hidden",
     shadowColor: "#000",
@@ -227,26 +237,26 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     textAlign: "center",
-    fontSize: 14,
-    fontWeight: "700",
+    fontSize: 16,
+    fontWeight: "800",
     color: "#0A0A0A",
+    letterSpacing: 0.2,
   },
   sliderArrows: {
     position: "absolute",
-    right: 14,
     flexDirection: "row",
     alignItems: "center",
   },
   sliderChevron: {
-    fontSize: 22,
-    fontWeight: "700",
+    fontSize: 24,
+    fontWeight: "800",
     color: ACCENT,
-    marginLeft: -4,
-    lineHeight: 24,
+    marginLeft: -5,
+    lineHeight: 26,
   },
   sliderThumb: {
     position: "absolute",
-    left: 4,
+    left: 6,
     width: THUMB,
     height: THUMB,
     borderRadius: THUMB / 2,

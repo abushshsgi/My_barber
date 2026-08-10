@@ -65,19 +65,24 @@ function cardsFromAnalyze(analyze: AiStyleAnalyzeResponse): MetricCard[] {
   ];
 }
 
+const RING_SIZE = 58;
+const RING_STROKE = 5;
+
 function MiniProgressRing({
   percent,
   color,
   track,
   fill,
-  size = 46,
-  strokeWidth = 3.5,
+  displayPercent,
+  size = RING_SIZE,
+  strokeWidth = RING_STROKE,
 }: {
   percent: number;
   color: string;
   track: string;
   /** 0–1 */
   fill: number;
+  displayPercent: number;
   size?: number;
   strokeWidth?: number;
 }) {
@@ -88,29 +93,32 @@ function MiniProgressRing({
   const dashOffset = circumference * (1 - (fill * percent) / 100);
 
   return (
-    <Svg width={size} height={size}>
-      <G transform={`rotate(-90 ${cx} ${cy})`}>
-        <Circle
-          cx={cx}
-          cy={cy}
-          r={radius}
-          stroke={track}
-          strokeWidth={strokeWidth}
-          fill="none"
-        />
-        <Circle
-          cx={cx}
-          cy={cy}
-          r={radius}
-          stroke={color}
-          strokeWidth={strokeWidth}
-          fill="none"
-          strokeLinecap="round"
-          strokeDasharray={`${circumference} ${circumference}`}
-          strokeDashoffset={dashOffset}
-        />
-      </G>
-    </Svg>
+    <View style={{ width: size, height: size, alignItems: "center", justifyContent: "center" }}>
+      <Svg width={size} height={size} style={StyleSheet.absoluteFill}>
+        <G transform={`rotate(-90 ${cx} ${cy})`}>
+          <Circle
+            cx={cx}
+            cy={cy}
+            r={radius}
+            stroke={track}
+            strokeWidth={strokeWidth}
+            fill="none"
+          />
+          <Circle
+            cx={cx}
+            cy={cy}
+            r={radius}
+            stroke={color}
+            strokeWidth={strokeWidth}
+            fill="none"
+            strokeLinecap="round"
+            strokeDasharray={`${circumference} ${circumference}`}
+            strokeDashoffset={dashOffset}
+          />
+        </G>
+      </Svg>
+      <Text style={[styles.ringPct, { color }]}>{displayPercent}%</Text>
+    </View>
   );
 }
 
@@ -157,12 +165,10 @@ function MetricTile({
         color={card.color}
         track={card.track}
         fill={fill}
-        size={40}
-        strokeWidth={3.2}
+        displayPercent={displayPercent}
       />
-      <Text style={styles.cardPct}>{displayPercent}%</Text>
       {card.detail ? (
-        <Text style={styles.cardDetail} numberOfLines={1}>
+        <Text style={styles.cardDetail} numberOfLines={2}>
           {card.detail}
         </Text>
       ) : null}
@@ -363,41 +369,43 @@ export function FaceAnalysisRing({
 
 const styles = StyleSheet.create({
   shell: {
-    borderRadius: 28,
+    borderRadius: 24,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.65)",
-    backgroundColor: "rgba(255,255,255,0.32)",
-    paddingHorizontal: 10,
-    paddingTop: 12,
-    paddingBottom: 12,
-    gap: 10,
+    borderColor: "rgba(255,255,255,0.55)",
+    backgroundColor: "rgba(255,255,255,0.22)",
+    paddingHorizontal: 8,
+    paddingTop: 10,
+    paddingBottom: 10,
+    gap: 8,
     shadowColor: "#0A0A0A",
-    shadowOpacity: 0.14,
-    shadowRadius: 22,
-    shadowOffset: { width: 0, height: 10 },
-    elevation: 6,
+    shadowOpacity: 0.12,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 5,
   },
   /** 3 ta metrika — flex qator, grid emas. */
   row: {
     flexDirection: "row",
     alignItems: "stretch",
     justifyContent: "space-between",
-    gap: 8,
+    gap: 6,
   },
   card: {
     flex: 1,
     minWidth: 0,
     alignItems: "center",
     justifyContent: "flex-start",
-    gap: 6,
-    backgroundColor: "#FFFFFF",
-    borderRadius: 18,
-    paddingVertical: 12,
-    paddingHorizontal: 8,
+    gap: 8,
+    backgroundColor: "rgba(255,255,255,0.94)",
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.9)",
+    paddingVertical: 14,
+    paddingHorizontal: 6,
     shadowColor: "#000000",
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 5 },
     elevation: 3,
   },
   cardSlot: {
@@ -405,27 +413,31 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   cardLabel: {
-    fontSize: 12,
-    fontWeight: "500",
-    color: "#8A8A8A",
-    textAlign: "center",
-  },
-  cardPct: {
-    fontSize: 16,
+    fontSize: 13,
     fontWeight: "800",
     color: "#111111",
-    letterSpacing: -0.4,
+    letterSpacing: 0.2,
+    textAlign: "center",
+    textTransform: "uppercase",
+  },
+  ringPct: {
+    fontSize: 14,
+    fontWeight: "900",
+    letterSpacing: -0.5,
     textAlign: "center",
   },
   cardDetail: {
-    fontSize: 10,
-    fontWeight: "600",
-    color: "rgba(17,17,17,0.45)",
+    fontSize: 11,
+    fontWeight: "800",
+    color: "rgba(17,17,17,0.72)",
     textAlign: "center",
+    lineHeight: 14,
+    paddingHorizontal: 2,
   },
   summary: {
     fontSize: 13,
     lineHeight: 18,
+    fontWeight: "700",
     color: "rgba(20,20,20,0.72)",
     paddingHorizontal: 4,
   },
