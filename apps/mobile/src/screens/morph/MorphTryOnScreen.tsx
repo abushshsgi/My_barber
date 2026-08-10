@@ -458,8 +458,9 @@ export function MorphTryOnScreen({ navigation }: Props) {
         style={[
           styles.sheet,
           {
-            // Tugmalar tab bar ustiga yaqin tursin — ortiqcha oq bo‘shliq yo‘q
-            paddingBottom: Math.max(insets.bottom, 10) + 58,
+            // Tab ustida ozgina bo‘shliq; sheet biroz balandroq
+            paddingBottom: Math.max(insets.bottom, 10) + 78,
+            minHeight: 320,
           },
         ]}
       >
@@ -803,7 +804,7 @@ const styles = StyleSheet.create({
   actionGrid: {
     flexDirection: "row",
     gap: 10,
-    marginTop: 52,
+    marginTop: 44,
     marginBottom: 0,
     paddingHorizontal: 18,
     justifyContent: "center",
