@@ -325,7 +325,7 @@ export function MorphTryOnScreen({ navigation }: Props) {
       maxHeight: interpolate(
         lift.value,
         [0, historyH * 0.55],
-        [210, 0],
+        [250, 0],
         Extrapolation.CLAMP,
       ),
       marginBottom: interpolate(
@@ -458,7 +458,8 @@ export function MorphTryOnScreen({ navigation }: Props) {
         style={[
           styles.sheet,
           {
-            paddingBottom: dockPad + 14,
+            // Tugmalar tab bar ustiga yaqin tursin — ortiqcha oq bo‘shliq yo‘q
+            paddingBottom: Math.max(insets.bottom, 10) + 58,
           },
         ]}
       >
@@ -802,8 +803,8 @@ const styles = StyleSheet.create({
   actionGrid: {
     flexDirection: "row",
     gap: 10,
-    marginTop: 14,
-    marginBottom: 6,
+    marginTop: 52,
+    marginBottom: 0,
     paddingHorizontal: 18,
     justifyContent: "center",
   },
