@@ -198,9 +198,9 @@ export function MorphTryOnScreen({ navigation }: Props) {
   const gate = useMorphLimitGate();
 
   const dockPad = TAB_DOCK_CLEARANCE + Math.max(insets.bottom, 8);
-  const historyH = Math.min(Math.round(winH * 0.58), 480);
-  const gridGap = 10;
-  const gridPad = 16;
+  const historyH = Math.min(Math.round(winH * 0.68), 560);
+  const gridGap = 8;
+  const gridPad = 28;
   const cardW = (winW - gridPad * 2 - gridGap) / 2;
 
   const [ready, setReady] = useState(false);
@@ -349,6 +349,19 @@ export function MorphTryOnScreen({ navigation }: Props) {
       opacity: t,
       height: lift.value,
       overflow: "hidden" as const,
+    };
+  });
+
+  const fullHistoryCtaAnim = useAnimatedStyle(() => {
+    const t = interpolate(
+      lift.value,
+      [historyH * 0.72, historyH * 0.92],
+      [0, 1],
+      Extrapolation.CLAMP,
+    );
+    return {
+      opacity: t,
+      transform: [{ translateY: interpolate(t, [0, 1], [10, 0]) }],
     };
   });
 
@@ -599,7 +612,10 @@ export function MorphTryOnScreen({ navigation }: Props) {
           ) : (
             <ScrollView
               style={styles.historyScroll}
-              contentContainerStyle={[styles.historyGrid, { gap: gridGap }]}
+              contentContainerStyle={[
+                styles.historyGrid,
+                { gap: gridGap, paddingHorizontal: gridPad - 16 },
+              ]}
               showsVerticalScrollIndicator={false}
               nestedScrollEnabled
             >
@@ -624,13 +640,20 @@ export function MorphTryOnScreen({ navigation }: Props) {
             </ScrollView>
           )}
 
-          <Pressable
-            style={styles.fullHistoryCta}
-            onPress={() => navigation.navigate("MorphHistory")}
-          >
-            <Text style={styles.fullHistoryCtaText}>To‘liq tarixni ko‘rish</Text>
-            <Ionicons name="arrow-forward" size={16} color="#FFF" />
-          </Pressable>
+          {previewItems.length > 0 ? (
+            <Animated.View
+              style={fullHistoryCtaAnim}
+              pointerEvents={historyOpen ? "auto" : "none"}
+            >
+              <Pressable
+                style={styles.fullHistoryCta}
+                onPress={() => navigation.navigate("MorphHistory")}
+              >
+                <Text style={styles.fullHistoryCtaText}>To‘liq tarixni ko‘rish</Text>
+                <Ionicons name="arrow-forward" size={16} color="#FFF" />
+              </Pressable>
+            </Animated.View>
+          ) : null}
         </Animated.View>
       </Animated.View>
     </View>
@@ -779,7 +802,7 @@ const styles = StyleSheet.create({
   actionGrid: {
     flexDirection: "row",
     gap: 10,
-    marginTop: 18,
+    marginTop: 20,
     marginBottom: 2,
     paddingHorizontal: 18,
     justifyContent: "center",
@@ -876,15 +899,15 @@ const styles = StyleSheet.create({
   },
   historyImg: {
     width: "100%",
-    aspectRatio: 3 / 4,
+    aspectRatio: 1,
     backgroundColor: "#EFEFEF",
   },
   historyCardTitle: {
     color: "#0A0A0A",
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: "700",
-    paddingHorizontal: 8,
-    paddingVertical: 7,
+    paddingHorizontal: 6,
+    paddingVertical: 5,
   },
   historyEmpty: {
     flex: 1,

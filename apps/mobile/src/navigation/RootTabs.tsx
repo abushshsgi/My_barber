@@ -80,7 +80,7 @@ const MORPH_RIGHT: TabDef[] = [
   { name: "Profile", label: "Profil", icon: "person-outline", iconOn: "person" },
 ];
 
-const CENTER_SLOT = 64;
+const CENTER_SLOT = 54;
 const SWITCH_MIN_MS = 720;
 const mysaloonIcon = require("../../assets/icon.png");
 
@@ -310,7 +310,7 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
         <View style={styles.iconSlot}>
           <Ionicons
             name={focused ? tab.iconOn : tab.icon}
-            size={22}
+            size={18}
             color={focused ? colors.fg : colors.muted}
           />
           {focused ? <View style={styles.activeDot} /> : <View style={styles.activeDotSpacer} />}
@@ -475,14 +475,14 @@ const styles = StyleSheet.create({
     backgroundColor: "transparent",
   },
   dock: {
-    minHeight: 64,
-    borderRadius: 28,
+    minHeight: 56,
+    borderRadius: 26,
     backgroundColor: "#FFFFFF",
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: "rgba(0,0,0,0.06)",
     justifyContent: "flex-end",
-    paddingBottom: 8,
-    paddingTop: 10,
+    paddingBottom: 6,
+    paddingTop: 8,
     ...Platform.select({
       web: { boxShadow: "0 8px 24px rgba(0,0,0,0.12)" },
       default: {
@@ -512,30 +512,30 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "flex-end",
-    gap: 3,
+    gap: 2,
     minWidth: 0,
     paddingHorizontal: 2,
   },
   iconSlot: {
-    height: 26,
+    height: 22,
     alignItems: "center",
     justifyContent: "center",
   },
   activeDot: {
-    marginTop: 3,
-    width: 4,
-    height: 4,
-    borderRadius: 2,
+    marginTop: 2,
+    width: 3,
+    height: 3,
+    borderRadius: 1.5,
     backgroundColor: colors.fg,
   },
   activeDotSpacer: {
-    marginTop: 3,
-    width: 4,
-    height: 4,
+    marginTop: 2,
+    width: 3,
+    height: 3,
   },
   centerAnchor: {
     position: "absolute",
-    top: -18,
+    top: -14,
     left: 0,
     right: 0,
     alignItems: "center",
@@ -546,7 +546,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   centerBtnShadow: {
-    borderRadius: 26,
+    borderRadius: 22,
     ...Platform.select({
       web: { boxShadow: "0 6px 16px rgba(0,0,0,0.22)" },
       default: {
@@ -559,32 +559,32 @@ const styles = StyleSheet.create({
     }),
   },
   centerBtn: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
     backgroundColor: colors.fg,
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 3,
+    borderWidth: 2.5,
     borderColor: "#FFFFFF",
     overflow: "hidden",
   },
   centerLogo: {
-    width: 26,
-    height: 26,
+    width: 22,
+    height: 22,
   },
   centerAppIcon: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
   },
   label: {
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: "700",
     letterSpacing: -0.15,
   },
   centerLabel: {
-    marginTop: 4,
+    marginTop: 3,
     color: colors.muted,
   },
   labelOn: {
