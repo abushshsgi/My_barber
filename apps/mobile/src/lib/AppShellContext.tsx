@@ -19,8 +19,12 @@ import {
 type AppShellContextValue = {
   shell: AppShell;
   ready: boolean;
+  /** Switch overlay ko‘rinsin — target shell. */
+  switchingTo: AppShell | null;
   setShell: (shell: AppShell) => void;
   rememberTab: (shell: AppShell, tab: string) => void;
+  beginSwitch: (to: AppShell) => void;
+  endSwitch: () => void;
   switchToMorphTarget: () => Promise<string>;
   switchToMysaloonTarget: () => Promise<string>;
 };
@@ -30,6 +34,7 @@ const AppShellContext = createContext<AppShellContextValue | null>(null);
 export function AppShellProvider({ children }: { children: ReactNode }) {
   const [shell, setShellState] = useState<AppShell>("mysaloon");
   const [ready, setReady] = useState(false);
+  const [switchingTo, setSwitchingTo] = useState<AppShell | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -52,6 +57,14 @@ export function AppShellProvider({ children }: { children: ReactNode }) {
     void writeLastShellTab(target, tab);
   }, []);
 
+  const beginSwitch = useCallback((to: AppShell) => {
+    setSwitchingTo(to);
+  }, []);
+
+  const endSwitch = useCallback(() => {
+    setSwitchingTo(null);
+  }, []);
+
   const switchToMorphTarget = useCallback(async () => {
     setShellState("morph");
     void writeAppShell("morph");
@@ -68,12 +81,25 @@ export function AppShellProvider({ children }: { children: ReactNode }) {
     () => ({
       shell,
       ready,
+      switchingTo,
       setShell,
       rememberTab,
+      beginSwitch,
+      endSwitch,
       switchToMorphTarget,
       switchToMysaloonTarget,
     }),
-    [shell, ready, setShell, rememberTab, switchToMorphTarget, switchToMysaloonTarget],
+    [
+      shell,
+      ready,
+      switchingTo,
+      setShell,
+      rememberTab,
+      beginSwitch,
+      endSwitch,
+      switchToMorphTarget,
+      switchToMysaloonTarget,
+    ],
   );
 
   return <AppShellContext.Provider value={value}>{children}</AppShellContext.Provider>;

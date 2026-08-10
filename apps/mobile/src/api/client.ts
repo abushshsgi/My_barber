@@ -1,5 +1,6 @@
 ﻿import { API_BASE, API_ORIGIN } from "./config";
 import { getAccessToken, getRefreshToken, saveSession, clearSession } from "../auth/storage";
+import { friendlyNetworkError } from "../lib/network-error";
 
 export type Paginated<T> = {
   count?: number;
@@ -153,10 +154,7 @@ export async function apiJson<T>(path: string, init?: RequestInit): Promise<T> {
     if (err instanceof Error && err.name === "AbortError") {
       throw new Error("Backend javob bermadi (timeout). Internetni tekshiring.");
     }
-    if (err instanceof TypeError) {
-      throw new Error(`Failed to fetch (${API_BASE || API_ORIGIN})`);
-    }
-    throw err;
+    throw new Error(friendlyNetworkError(err, API_BASE || API_ORIGIN));
   } finally {
     clearTimeout(timer);
   }
@@ -227,10 +225,7 @@ export async function apiFetch(
     if (err instanceof Error && err.name === "AbortError") {
       throw new Error("Backend javob bermadi (timeout). Internetni tekshiring.");
     }
-    if (err instanceof TypeError) {
-      throw new Error(`Failed to fetch (${API_BASE || API_ORIGIN})`);
-    }
-    throw err;
+    throw new Error(friendlyNetworkError(err, API_BASE || API_ORIGIN));
   } finally {
     clearTimeout(timer);
   }

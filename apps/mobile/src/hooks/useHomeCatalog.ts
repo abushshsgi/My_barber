@@ -12,6 +12,7 @@ import type { ApiBarberPublic, ApiSalonList, HomeListing } from "../api/types";
 import { useAuth } from "../auth/AuthContext";
 import { getGuestLocation, type GuestLocation } from "../lib/guest";
 import { filterTopSalons, mapBarber, mapSalon } from "../lib/mappers";
+import { friendlyNetworkError } from "../lib/network-error";
 import { useHomeLayout } from "../theme/layout";
 
 type HomeCatalogState = {
@@ -132,8 +133,7 @@ export function useHomeCatalog(): HomeCatalogState {
         setRegions(regionList);
       } catch (err) {
         if (cancelled) return;
-        const msg = err instanceof Error ? err.message : "Yuklashda xato";
-        setError(`${msg} (${API_BASE})`);
+        setError(friendlyNetworkError(err, API_BASE));
         setRawSalons([]);
         setSalonDistances({});
         setRawBarbers([]);

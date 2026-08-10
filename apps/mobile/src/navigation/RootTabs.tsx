@@ -5,11 +5,21 @@ import {
 } from "@react-navigation/bottom-tabs";
 import { Image } from "expo-image";
 import { useEffect, useRef, useState } from "react";
-import { Animated, Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import {
+  Animated,
+  Easing,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { morfMarkWhite } from "../branding/morf-logo";
+import { ShellSwitchOverlay } from "../components/ShellSwitchOverlay";
 import { FLOATING_TAB_BAR_STYLE } from "../hooks/useHideTabBar";
 import { AppShellProvider, useAppShell } from "../lib/AppShellContext";
+import { readLastMorphContentTab } from "../lib/app-shell";
 import {
   TabBarVisibilityProvider,
   useTabBarHidden,
@@ -43,7 +53,7 @@ type TabDef = {
   iconOn: keyof typeof Ionicons.glyphMap;
 };
 
-/** Har doim 2 + markaz + 2 — katta ikonka o‘rtada qoladi. */
+/** MySaloon shell — Asosiy, Xarita | Explore, Profil + markaz Morf AI. */
 const MYSALOON_LEFT: TabDef[] = [
   { name: "Home", label: "Asosiy", icon: "home-outline", iconOn: "home" },
   { name: "Map", label: "Xarita", icon: "map-outline", iconOn: "map" },
@@ -54,9 +64,14 @@ const MYSALOON_RIGHT: TabDef[] = [
   { name: "Profile", label: "Profil", icon: "person-outline", iconOn: "person" },
 ];
 
-/** Tarkib — Morph home ichida; dockda emas (markaz siljimasin). */
+/** Morf AI shell — Chatbot, Parvarish | Try-on, Profil + markaz MySaloon. */
 const MORPH_LEFT: TabDef[] = [
-  { name: "MorphChat", label: "Chatbot", icon: "chatbubble-ellipses-outline", iconOn: "chatbubble-ellipses" },
+  {
+    name: "MorphChat",
+    label: "Chatbot",
+    icon: "chatbubble-ellipses-outline",
+    iconOn: "chatbubble-ellipses",
+  },
   { name: "MorphCare", label: "Parvarish", icon: "water-outline", iconOn: "water" },
 ];
 
@@ -66,47 +81,108 @@ const MORPH_RIGHT: TabDef[] = [
 ];
 
 const CENTER_SLOT = 64;
+const SWITCH_MIN_MS = 520;
 const mysaloonIcon = require("../../assets/icon.png");
+
+function isMorphTab(name: string | undefined): boolean {
+  return (
+    name === "MorphChat" ||
+    name === "MorphCare" ||
+    name === "MorphIngredient" ||
+    name === "MorphTryOn"
+  );
+}
+
+function isMysaloonExclusiveTab(name: string | undefined): boolean {
+  return name === "Home" || name === "Map" || name === "Explore";
+}
+
+function navigateToShellTab(
+  navigation: BottomTabBarProps["navigation"],
+  name: string,
+) {
+  const tab = (name === "MorphStudio" ? "MorphTryOn" : name) as keyof RootTabParamList;
+  if (tab === "MorphTryOn") {
+    navigation.navigate("MorphTryOn", { screen: "MorphCapture" } as never);
+    return;
+  }
+  navigation.navigate(tab);
+}
+
+function wait(ms: number) {
+  return new Promise<void>((resolve) => setTimeout(resolve, ms));
+}
 
 function CustomTabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
   const bottomPad = Math.max(insets.bottom, 8);
   const tabBarHidden = useTabBarHidden();
-  const { shell, rememberTab, setShell, switchToMorphTarget, switchToMysaloonTarget } =
-    useAppShell();
+  const {
+    shell,
+    ready,
+    rememberTab,
+    setShell,
+    beginSwitch,
+    endSwitch,
+    switchToMorphTarget,
+    switchToMysaloonTarget,
+  } = useAppShell();
   const activeName = state.routes[state.index]?.name as keyof RootTabParamList | undefined;
   const switchingRef = useRef(false);
+  const hydratedRef = useRef(false);
   const [displayShell, setDisplayShell] = useState(shell);
   const sidesY = useRef(new Animated.Value(0)).current;
   const sidesOpacity = useRef(new Animated.Value(1)).current;
+  const centerScale = useRef(new Animated.Value(1)).current;
 
+  // Saqlangan shell = morph bo‘lsa — Morph sahifaga o‘tkazish (Home + Morph nav bugini oldini olish).
   useEffect(() => {
-    setDisplayShell(shell);
-  }, [shell]);
+    if (!ready || hydratedRef.current) return;
+    hydratedRef.current = true;
 
-  useEffect(() => {
-    if (!activeName) return;
-    const isMorphTab =
-      activeName === "MorphChat" ||
-      activeName === "MorphCare" ||
-      activeName === "MorphIngredient" ||
-      activeName === "MorphTryOn";
-    if (isMorphTab && shell !== "morph") {
-      setShell("morph");
-      rememberTab("morph", activeName);
+    if (shell === "morph" && !isMorphTab(activeName) && activeName !== "Profile") {
+      switchingRef.current = true;
+      beginSwitch("morph");
+      setDisplayShell("morph");
+      void (async () => {
+        try {
+          const target = await readLastMorphContentTab();
+          navigateToShellTab(navigation, target);
+          await wait(SWITCH_MIN_MS);
+        } finally {
+          endSwitch();
+          switchingRef.current = false;
+        }
+      })();
       return;
     }
-    if (shell === "morph") {
-      rememberTab("morph", activeName);
-    } else if (
-      activeName === "Home" ||
-      activeName === "Map" ||
-      activeName === "Explore" ||
-      activeName === "Profile"
-    ) {
-      rememberTab("mysaloon", activeName);
+
+    setDisplayShell(shell);
+  }, [ready, shell, activeName, navigation, beginSwitch, endSwitch]);
+
+  // Faol tab ↔ shell sinxroni: MySaloon sahifada faqat MySaloon nav.
+  useEffect(() => {
+    if (!ready || switchingRef.current) return;
+
+    if (isMysaloonExclusiveTab(activeName)) {
+      if (shell !== "mysaloon") setShell("mysaloon");
+      setDisplayShell("mysaloon");
+      rememberTab("mysaloon", activeName!);
+      return;
     }
-  }, [activeName, rememberTab, setShell, shell]);
+
+    if (isMorphTab(activeName)) {
+      if (shell !== "morph") setShell("morph");
+      setDisplayShell("morph");
+      rememberTab("morph", activeName!);
+      return;
+    }
+
+    if (activeName === "Profile") {
+      setDisplayShell(shell);
+      rememberTab(shell, "Profile");
+    }
+  }, [activeName, ready, rememberTab, setShell, shell]);
 
   const pressTab = (name: keyof RootTabParamList) => {
     if (switchingRef.current) return;
@@ -129,64 +205,91 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
     }
   };
 
+  const animateSidesOut = () =>
+    new Promise<void>((resolve) => {
+      Animated.parallel([
+        Animated.timing(sidesY, {
+          toValue: 28,
+          duration: 220,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+        Animated.timing(sidesOpacity, {
+          toValue: 0,
+          duration: 180,
+          useNativeDriver: true,
+        }),
+        Animated.sequence([
+          Animated.timing(centerScale, {
+            toValue: 0.86,
+            duration: 160,
+            useNativeDriver: true,
+          }),
+          Animated.timing(centerScale, {
+            toValue: 1.06,
+            duration: 180,
+            useNativeDriver: true,
+          }),
+        ]),
+      ]).start(() => resolve());
+    });
+
+  const animateSidesIn = () =>
+    new Promise<void>((resolve) => {
+      sidesY.setValue(36);
+      sidesOpacity.setValue(0);
+      Animated.parallel([
+        Animated.timing(sidesY, {
+          toValue: 0,
+          duration: 420,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+        Animated.timing(sidesOpacity, {
+          toValue: 1,
+          duration: 380,
+          useNativeDriver: true,
+        }),
+        Animated.spring(centerScale, {
+          toValue: 1,
+          friction: 6,
+          tension: 120,
+          useNativeDriver: true,
+        }),
+      ]).start(() => resolve());
+    });
+
   const runShellSwitch = (toMorph: boolean) => {
     if (switchingRef.current) return;
     switchingRef.current = true;
+    const targetShell = toMorph ? "morph" : "mysaloon";
+    beginSwitch(targetShell);
 
-    Animated.parallel([
-      Animated.timing(sidesY, {
-        toValue: 28,
-        duration: 220,
-        useNativeDriver: true,
-      }),
-      Animated.timing(sidesOpacity, {
-        toValue: 0,
-        duration: 180,
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
-      void (async () => {
-        try {
-          if (toMorph) {
-            const target = await switchToMorphTarget();
-            setDisplayShell("morph");
-            const tab = (
-              target === "MorphStudio" ? "MorphTryOn" : target
-            ) as keyof RootTabParamList;
-            if (tab === "MorphTryOn") {
-              navigation.navigate("MorphTryOn", { screen: "MorphCapture" } as never);
-            } else {
-              navigation.navigate(tab);
-            }
-          } else {
-            const target = await switchToMysaloonTarget();
-            setDisplayShell("mysaloon");
-            navigation.navigate(target as keyof RootTabParamList);
-          }
-        } finally {
-          sidesY.setValue(36);
-          sidesOpacity.setValue(0);
-          Animated.parallel([
-            Animated.timing(sidesY, {
-              toValue: 0,
-              duration: 420,
-              useNativeDriver: true,
-            }),
-            Animated.timing(sidesOpacity, {
-              toValue: 1,
-              duration: 380,
-              useNativeDriver: true,
-            }),
-          ]).start(() => {
-            switchingRef.current = false;
-          });
+    void (async () => {
+      const started = Date.now();
+      try {
+        await animateSidesOut();
+        if (toMorph) {
+          const target = await switchToMorphTarget();
+          setDisplayShell("morph");
+          navigateToShellTab(navigation, target);
+        } else {
+          const target = await switchToMysaloonTarget();
+          setDisplayShell("mysaloon");
+          navigateToShellTab(navigation, target);
         }
-      })();
-    });
+        const elapsed = Date.now() - started;
+        if (elapsed < SWITCH_MIN_MS) await wait(SWITCH_MIN_MS - elapsed);
+      } finally {
+        await animateSidesIn();
+        endSwitch();
+        switchingRef.current = false;
+      }
+    })();
   };
 
   const onCenterPress = () => {
-    runShellSwitch(shell === "mysaloon");
+    runShellSwitch(displayShell === "mysaloon");
   };
 
   const visibleLeft = displayShell === "morph" ? MORPH_LEFT : MYSALOON_LEFT;
@@ -245,7 +348,6 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
           <View style={styles.sideGroup}>{visibleRight.map(renderSideTab)}</View>
         </Animated.View>
 
-        {/* Markaz — shell almashtirilganda joyidan siljimaydi */}
         <View style={styles.centerAnchor} pointerEvents="box-none">
           <Pressable
             onPress={onCenterPress}
@@ -254,15 +356,25 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
             accessibilityRole="button"
             accessibilityLabel={centerIsMorphEntry ? "Morf AI" : "MySaloon"}
           >
-            <View style={styles.centerBtnShadow}>
-              <View style={styles.centerBtn}>
-                {centerIsMorphEntry ? (
-                  <Image source={morfMarkWhite} style={styles.centerLogo} contentFit="contain" />
-                ) : (
-                  <Image source={mysaloonIcon} style={styles.centerAppIcon} contentFit="cover" />
-                )}
+            <Animated.View style={{ transform: [{ scale: centerScale }] }}>
+              <View style={styles.centerBtnShadow}>
+                <View style={styles.centerBtn}>
+                  {centerIsMorphEntry ? (
+                    <Image
+                      source={morfMarkWhite}
+                      style={styles.centerLogo}
+                      contentFit="contain"
+                    />
+                  ) : (
+                    <Image
+                      source={mysaloonIcon}
+                      style={styles.centerAppIcon}
+                      contentFit="cover"
+                    />
+                  )}
+                </View>
               </View>
-            </View>
+            </Animated.View>
             <Text style={[styles.label, styles.centerLabel]} numberOfLines={1}>
               {centerIsMorphEntry ? "Morf AI" : "MySaloon"}
             </Text>
@@ -274,64 +386,70 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
 }
 
 function RootTabsInner() {
-  return (
-    <TabBarVisibilityProvider>
-      <MorphSessionProvider>
-        <Tab.Navigator
-          tabBar={(props) => <CustomTabBar {...props} />}
-          screenOptions={{
-            headerShown: false,
-            lazy: true,
-            freezeOnBlur: true,
-            tabBarStyle: FLOATING_TAB_BAR_STYLE,
-            sceneStyle: { backgroundColor: "transparent" },
-          }}
-        >
-          <Tab.Screen name="Home">
-            {({ navigation }) => (
-              <HomeScreen
-                onOpenMap={() => navigation.navigate("Map")}
-                onOpenExplore={() => navigation.navigate("Explore")}
-              />
-            )}
-          </Tab.Screen>
-          <Tab.Screen name="Map" component={MapScreen} />
-          <Tab.Screen name="Explore">
-            {() => <PlaceholderScreen title="Explore" />}
-          </Tab.Screen>
-          <Tab.Screen name="Profile" component={ProfileStack} />
+  const { switchingTo } = useAppShell();
 
-          <Tab.Screen name="MorphChat">
-            {() => (
-              <MorphPlaceholderScreen
-                title="AI Chatbot"
-                subtitle="Tez orada — soch, parvarish va uslub bo‘yicha AI yordamchi."
-                icon="chatbubble-ellipses-outline"
-              />
-            )}
-          </Tab.Screen>
-          <Tab.Screen name="MorphCare">
-            {() => (
-              <MorphPlaceholderScreen
-                title="Parvarish"
-                subtitle="Shaxsiy soch parvarishi rejasi tez orada."
-                icon="water-outline"
-              />
-            )}
-          </Tab.Screen>
-          <Tab.Screen name="MorphIngredient">
-            {() => (
-              <MorphPlaceholderScreen
-                title="Tarkib"
-                subtitle="Kosmetika tarkibini AI bilan tekshirish tez orada."
-                icon="flask-outline"
-              />
-            )}
-          </Tab.Screen>
-          <Tab.Screen name="MorphTryOn" component={MorphStack} />
-        </Tab.Navigator>
-      </MorphSessionProvider>
-    </TabBarVisibilityProvider>
+  return (
+    <View style={styles.root}>
+      <TabBarVisibilityProvider>
+        <MorphSessionProvider>
+          <Tab.Navigator
+            tabBar={(props) => <CustomTabBar {...props} />}
+            screenOptions={{
+              headerShown: false,
+              lazy: true,
+              freezeOnBlur: true,
+              tabBarStyle: FLOATING_TAB_BAR_STYLE,
+              sceneStyle: { backgroundColor: "transparent" },
+              animation: "fade",
+            }}
+          >
+            <Tab.Screen name="Home">
+              {({ navigation }) => (
+                <HomeScreen
+                  onOpenMap={() => navigation.navigate("Map")}
+                  onOpenExplore={() => navigation.navigate("Explore")}
+                />
+              )}
+            </Tab.Screen>
+            <Tab.Screen name="Map" component={MapScreen} />
+            <Tab.Screen name="Explore">
+              {() => <PlaceholderScreen title="Explore" />}
+            </Tab.Screen>
+            <Tab.Screen name="Profile" component={ProfileStack} />
+
+            <Tab.Screen name="MorphChat">
+              {() => (
+                <MorphPlaceholderScreen
+                  title="AI Chatbot"
+                  subtitle="Tez orada — soch, parvarish va uslub bo‘yicha AI yordamchi."
+                  icon="chatbubble-ellipses-outline"
+                />
+              )}
+            </Tab.Screen>
+            <Tab.Screen name="MorphCare">
+              {() => (
+                <MorphPlaceholderScreen
+                  title="Parvarish"
+                  subtitle="Shaxsiy soch parvarishi rejasi tez orada."
+                  icon="water-outline"
+                />
+              )}
+            </Tab.Screen>
+            <Tab.Screen name="MorphIngredient">
+              {() => (
+                <MorphPlaceholderScreen
+                  title="Tarkib"
+                  subtitle="Kosmetika tarkibini AI bilan tekshirish tez orada."
+                  icon="flask-outline"
+                />
+              )}
+            </Tab.Screen>
+            <Tab.Screen name="MorphTryOn" component={MorphStack} />
+          </Tab.Navigator>
+          <ShellSwitchOverlay visible={switchingTo != null} target={switchingTo} />
+        </MorphSessionProvider>
+      </TabBarVisibilityProvider>
+    </View>
   );
 }
 
@@ -344,6 +462,9 @@ export function RootTabs() {
 }
 
 const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+  },
   dockOuter: {
     position: "absolute",
     left: 0,
