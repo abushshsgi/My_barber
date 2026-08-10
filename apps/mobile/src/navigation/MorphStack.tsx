@@ -66,7 +66,11 @@ export function MorphStack() {
         component={MorphPreviewScreen}
         options={{ animation: "slide_from_bottom", contentStyle: { backgroundColor: "#FFF" } }}
       />
-      <Stack.Screen name="MorphHistory" component={MorphHistoryScreen} />
+      <Stack.Screen
+        name="MorphHistory"
+        component={MorphHistoryScreen}
+        options={{ animation: "slide_from_bottom" }}
+      />
       <Stack.Screen name="MorphStudio" component={MorphStudioScreen} />
       <Stack.Screen name="MorphPaywall" component={MorphPaywallScreen} />
     </Stack.Navigator>

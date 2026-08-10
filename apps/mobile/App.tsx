@@ -25,6 +25,7 @@ import { ToastProvider } from "./src/components/ui/ToastProvider";
 import { colors } from "./src/theme/colors";
 import { NavigationContainer } from "@react-navigation/native";
 import { StatusBar } from "expo-status-bar";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import "react-native-gesture-handler";
 
@@ -135,18 +136,20 @@ function AppGate() {
 
 export default function App() {
   return (
-    <SafeAreaProvider>
-      <AuthProvider>
-        <GoogleAuthSessionProvider>
-          <ToastProvider>
-            <NavigationContainer>
-              <StatusBar style="dark" />
-              <AppGate />
-            </NavigationContainer>
-          </ToastProvider>
-        </GoogleAuthSessionProvider>
-      </AuthProvider>
-    </SafeAreaProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <AuthProvider>
+          <GoogleAuthSessionProvider>
+            <ToastProvider>
+              <NavigationContainer>
+                <StatusBar style="dark" />
+                <AppGate />
+              </NavigationContainer>
+            </ToastProvider>
+          </GoogleAuthSessionProvider>
+        </AuthProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }
 
