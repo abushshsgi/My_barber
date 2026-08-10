@@ -248,11 +248,9 @@ export function FaceAnalysisSummary({
 
 const styles = StyleSheet.create({
   sheet: {
-    flex: 1,
     width: "100%",
     paddingHorizontal: 16,
-    gap: 20,
-    justifyContent: "space-between",
+    gap: 14,
   },
   sliderWrap: {
     borderRadius: 999,
@@ -265,9 +263,9 @@ const styles = StyleSheet.create({
   sliderTrack: {
     height: TRACK_H,
     borderRadius: 999,
-    backgroundColor: "#F3F3F3",
+    backgroundColor: "rgba(255,255,255,0.92)",
     borderWidth: 1,
-    borderColor: "rgba(0,0,0,0.08)",
+    borderColor: "rgba(255,255,255,0.95)",
     justifyContent: "center",
     overflow: "hidden",
   },
@@ -300,14 +298,12 @@ const styles = StyleSheet.create({
     height: THUMB,
     borderRadius: THUMB / 2,
     backgroundColor: "#FFFFFF",
-    borderWidth: 1,
-    borderColor: "rgba(0,0,0,0.06)",
     alignItems: "center",
     justifyContent: "center",
     shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
+    shadowOpacity: 0.14,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
   },
 });

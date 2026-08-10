@@ -311,17 +311,28 @@ export function MorphResultsScreen({ navigation }: Props) {
     navigation.getParent()?.navigate("MorphChat" as never);
   }, [navigation]);
 
-  /** Summary — oq fon, to‘liq kenglik; metrikalar + Generate. */
+  /** Summary — selfie full-bleed; metrikalar + Generate rasm o‘lchamida. */
   if (summaryBusy && session.analyze) {
     return (
-      <View style={styles.summaryRoot}>
-        <View style={[styles.summaryChrome, { paddingTop: Math.max(insets.top, 10) }]}>
-          <Pressable style={styles.summaryBackBtn} onPress={onBack} accessibilityLabel="Orqaga">
+      <View style={styles.root}>
+        {session.selfieDataUrl ? (
+          <Image
+            source={{ uri: session.selfieDataUrl }}
+            style={styles.scanPhoto}
+            resizeMode="cover"
+          />
+        ) : (
+          <View style={styles.scanPhotoFallback} />
+        )}
+
+        <View style={[styles.scanChrome, { paddingTop: Math.max(insets.top, 10) }]}>
+          <Pressable style={styles.summaryBackOnPhoto} onPress={onBack} accessibilityLabel="Orqaga">
             <Ionicons name="chevron-back" size={18} color="#0A0A0A" />
           </Pressable>
+          <View style={{ flex: 1 }} />
         </View>
 
-        <View style={styles.summaryBody}>
+        <View style={styles.summaryBottom}>
           <FaceAnalysisSummary
             analyze={session.analyze}
             onStartGenerate={onStartGenerate}
@@ -742,39 +753,20 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFill,
     backgroundColor: "#111",
   },
-  summaryRoot: {
-    flex: 1,
-    width: "100%",
-    alignSelf: "stretch",
-    backgroundColor: "#FFFFFF",
-  },
-  summaryChrome: {
-    width: "100%",
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 14,
-    paddingBottom: 8,
-    zIndex: 2,
-  },
-  summaryBackBtn: {
+  summaryBackOnPhoto: {
     width: 32,
     height: 32,
     borderRadius: 16,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#F3F3F3",
-  },
-  summaryBody: {
-    flex: 1,
-    width: "100%",
-    justifyContent: "space-between",
-    paddingTop: 28,
+    backgroundColor: "rgba(255,255,255,0.94)",
   },
   summaryBottom: {
     position: "absolute",
     left: 0,
     right: 0,
     bottom: 0,
+    width: "100%",
     zIndex: 3,
   },
   analyzeCardPad: {
