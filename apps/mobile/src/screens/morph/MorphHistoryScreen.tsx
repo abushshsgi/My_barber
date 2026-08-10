@@ -149,41 +149,25 @@ export function MorphHistoryScreen({ navigation, route }: Props) {
   if (selected) {
     const canCompare = !!(selected.before_url && selected.after_url);
     const soloUri = selected.after_url || selected.before_url || undefined;
+    const lookTitle = selected.title || selected.style_id || "Look";
 
     return (
       <View style={[styles.detailRoot, { paddingTop: Math.max(insets.top, 10) }]}>
+        <LinearGradient
+          colors={["#1A1210", "#070708", "#050505"]}
+          locations={[0, 0.45, 1]}
+          style={StyleSheet.absoluteFill}
+        />
+
         <View style={styles.detailTop}>
           <Pressable style={styles.pillBtn} onPress={closeDetail}>
             <Ionicons name="chevron-back" size={18} color="#FFF" />
             <Text style={styles.pillBtnText}>Tarix</Text>
           </Pressable>
           <Text style={[styles.detailTitle, { fontSize: fs(16) }]} numberOfLines={1}>
-            {selected.title || selected.style_id}
+            {lookTitle}
           </Text>
-          <View style={styles.detailTopRight}>
-            <Pressable
-              style={styles.iconRound}
-              onPress={() => void onDownload()}
-              disabled={!!busyAction}
-            >
-              {busyAction === "download" ? (
-                <ActivityIndicator color="#FFF" size="small" />
-              ) : (
-                <Ionicons name="download-outline" size={18} color="#FFF" />
-              )}
-            </Pressable>
-            <Pressable
-              style={styles.iconRound}
-              onPress={() => void onShare()}
-              disabled={!!busyAction}
-            >
-              {busyAction === "share" ? (
-                <ActivityIndicator color="#FFF" size="small" />
-              ) : (
-                <Ionicons name="share-outline" size={18} color="#FFF" />
-              )}
-            </Pressable>
-          </View>
+          <View style={{ width: 40 }} />
         </View>
 
         <View style={styles.compareStage}>
@@ -193,14 +177,23 @@ export function MorphHistoryScreen({ navigation, route }: Props) {
               afterUri={selected.after_url!}
               width={compareW}
               height={compareH}
+              title={lookTitle}
             />
           ) : soloUri ? (
             <View style={[styles.soloWrap, { width: compareW, height: compareH }]}>
               <Image
                 source={{ uri: soloUri }}
                 style={styles.soloImg}
-                contentFit="contain"
+                contentFit="cover"
               />
+              <LinearGradient
+                colors={["transparent", "rgba(0,0,0,0.55)", "rgba(0,0,0,0.88)"]}
+                locations={[0.45, 0.75, 1]}
+                style={styles.soloGrad}
+              />
+              <Text style={styles.soloTitle} numberOfLines={1}>
+                {lookTitle}
+              </Text>
             </View>
           ) : null}
           {canCompare ? (
@@ -209,14 +202,34 @@ export function MorphHistoryScreen({ navigation, route }: Props) {
         </View>
 
         <View style={[styles.detailActions, { paddingBottom: Math.max(insets.bottom, 16) }]}>
-          <Pressable style={styles.primaryAction} onPress={() => void onDownload()}>
-            <Ionicons name="download-outline" size={18} color="#0A0A0A" />
-            <Text style={styles.primaryActionText}>Yuklab olish</Text>
+          <Pressable
+            style={styles.primaryAction}
+            onPress={() => void onDownload()}
+            disabled={!!busyAction}
+          >
+            {busyAction === "download" ? (
+              <ActivityIndicator color="#0A0A0A" />
+            ) : (
+              <>
+                <Ionicons name="download-outline" size={18} color="#0A0A0A" />
+                <Text style={styles.primaryActionText}>Yuklab olish</Text>
+              </>
+            )}
           </Pressable>
           <View style={styles.actionRow}>
-            <Pressable style={styles.secondaryAction} onPress={() => void onShare()}>
-              <Ionicons name="share-social-outline" size={16} color="#FFF" />
-              <Text style={styles.secondaryActionText}>Ulashish</Text>
+            <Pressable
+              style={styles.secondaryAction}
+              onPress={() => void onShare()}
+              disabled={!!busyAction}
+            >
+              {busyAction === "share" ? (
+                <ActivityIndicator color="#FFF" />
+              ) : (
+                <>
+                  <Ionicons name="share-social-outline" size={16} color="#FFF" />
+                  <Text style={styles.secondaryActionText}>Ulashish</Text>
+                </>
+              )}
             </Pressable>
             <Pressable style={styles.secondaryAction} onPress={openStudio}>
               <Ionicons name="color-palette-outline" size={16} color="#FFF" />
@@ -436,7 +449,6 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     letterSpacing: -0.2,
   },
-  detailTopRight: { flexDirection: "row", gap: 8 },
   compareStage: {
     flex: 1,
     alignItems: "center",
@@ -445,11 +457,25 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   soloWrap: {
-    borderRadius: 18,
+    borderRadius: 20,
     overflow: "hidden",
     backgroundColor: "#111",
+    position: "relative",
   },
   soloImg: { width: "100%", height: "100%" },
+  soloGrad: {
+    ...StyleSheet.absoluteFill,
+  },
+  soloTitle: {
+    position: "absolute",
+    left: 14,
+    right: 14,
+    bottom: 14,
+    color: "#FFF",
+    fontSize: 16,
+    fontWeight: "800",
+    letterSpacing: -0.2,
+  },
   sliderHint: {
     color: "rgba(255,255,255,0.4)",
     fontSize: 12,

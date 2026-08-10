@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
+import { LinearGradient } from "expo-linear-gradient";
 import { useEffect } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
@@ -13,16 +14,18 @@ type Props = {
   afterUri: string;
   width: number;
   height: number;
+  title?: string;
 };
 
 /**
- * Siljiydigan Oldin/Keyin taqqoslash — rasm to‘liq (contain) ko‘rinadi.
+ * Siljiydigan Oldin/Keyin — kartani to‘ldiradi (cover) + pastki gradient.
  */
 export function BeforeAfterSlider({
   beforeUri,
   afterUri,
   width,
   height,
+  title,
 }: Props) {
   const split = useSharedValue(width * 0.5);
   const startX = useSharedValue(width * 0.5);
@@ -55,7 +58,7 @@ export function BeforeAfterSlider({
         <Image
           source={{ uri: afterUri }}
           style={styles.img}
-          contentFit="contain"
+          contentFit="cover"
         />
         <View style={styles.tagRight}>
           <Text style={styles.tagText}>Keyin</Text>
@@ -67,13 +70,26 @@ export function BeforeAfterSlider({
           <Image
             source={{ uri: beforeUri }}
             style={styles.img}
-            contentFit="contain"
+            contentFit="cover"
           />
         </View>
         <View style={styles.tagLeft}>
           <Text style={styles.tagText}>Oldin</Text>
         </View>
       </Animated.View>
+
+      <LinearGradient
+        colors={["transparent", "rgba(0,0,0,0.55)", "rgba(0,0,0,0.88)"]}
+        locations={[0.45, 0.75, 1]}
+        style={styles.grad}
+        pointerEvents="none"
+      />
+
+      {title ? (
+        <Text style={styles.title} numberOfLines={1}>
+          {title}
+        </Text>
+      ) : null}
 
       <GestureDetector gesture={pan}>
         <Animated.View style={[styles.handleHit, handleStyle, { height }]}>
@@ -90,7 +106,7 @@ export function BeforeAfterSlider({
 const styles = StyleSheet.create({
   root: {
     overflow: "hidden",
-    borderRadius: 18,
+    borderRadius: 20,
     backgroundColor: "#111111",
   },
   layer: {
@@ -106,6 +122,24 @@ const styles = StyleSheet.create({
     width: "100%",
     height: "100%",
   },
+  grad: {
+    ...StyleSheet.absoluteFill,
+    zIndex: 2,
+  },
+  title: {
+    position: "absolute",
+    left: 14,
+    right: 14,
+    bottom: 14,
+    zIndex: 3,
+    color: "#FFF",
+    fontSize: 16,
+    fontWeight: "800",
+    letterSpacing: -0.2,
+    textShadowColor: "rgba(0,0,0,0.45)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 4,
+  },
   tagLeft: {
     position: "absolute",
     left: 10,
@@ -114,6 +148,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     paddingHorizontal: 9,
     paddingVertical: 4,
+    zIndex: 3,
   },
   tagRight: {
     position: "absolute",
@@ -123,6 +158,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     paddingHorizontal: 9,
     paddingVertical: 4,
+    zIndex: 3,
   },
   tagText: {
     color: "#FFF",
