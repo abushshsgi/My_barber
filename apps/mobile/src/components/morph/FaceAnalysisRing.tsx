@@ -36,7 +36,10 @@ function toPercent(value: number | undefined, fallback: number): number {
   return Math.max(8, Math.min(100, Math.round(pct)));
 }
 
-/** Faqat 3 ta: Yuz, Uzunlik, Rang. */
+const METRIC_BLACK = "#0A0A0A";
+const METRIC_TRACK = "#E5E5E5";
+
+/** Faqat 3 ta: Yuz, Uzunlik, Rang — barcha metrikalar qora. */
 function cardsFromAnalyze(analyze: AiStyleAnalyzeResponse): MetricCard[] {
   const colorKey = analyze.hair_color || "other";
   return [
@@ -45,24 +48,24 @@ function cardsFromAnalyze(analyze: AiStyleAnalyzeResponse): MetricCard[] {
       label: "Yuz",
       detail: faceShapeLabel(analyze.face_shape),
       percent: toPercent(analyze.face_confidence, 0.86),
-      color: "#FF4D8D",
-      track: "#F0E4EA",
+      color: METRIC_BLACK,
+      track: METRIC_TRACK,
     },
     {
       key: "length",
       label: "Uzunlik",
       detail: hairTypeLabel(analyze.hair_type),
       percent: toPercent(analyze.hair_type_confidence, 0.78),
-      color: "#6B8CFF",
-      track: "#E4E8F5",
+      color: METRIC_BLACK,
+      track: METRIC_TRACK,
     },
     {
       key: "color",
       label: "Rang",
       detail: hairColorLabel(colorKey),
       percent: toPercent(analyze.hair_color_confidence, 0.74),
-      color: "#FF7A59",
-      track: "#F5E6E2",
+      color: METRIC_BLACK,
+      track: METRIC_TRACK,
     },
   ];
 }
@@ -172,7 +175,7 @@ function MetricTile({
       <MiniProgressRing
         percent={card.percent}
         color={card.color}
-        track={onDark ? "rgba(255,255,255,0.28)" : card.track}
+        track={onDark ? "rgba(0,0,0,0.14)" : card.track}
         fill={fill}
         displayPercent={displayPercent}
       />
@@ -460,13 +463,10 @@ const styles = StyleSheet.create({
     includeFontPadding: false,
   },
   cardLabelOnDark: {
-    color: "#FFFFFF",
-    textShadowColor: "rgba(0,0,0,0.35)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
+    color: METRIC_BLACK,
   },
   cardLabelOnLight: {
-    color: "#525252",
+    color: METRIC_BLACK,
   },
   ringPct: {
     fontSize: 14,
@@ -484,13 +484,10 @@ const styles = StyleSheet.create({
     includeFontPadding: false,
   },
   cardDetailOnDark: {
-    color: "rgba(255,255,255,0.92)",
-    textShadowColor: "rgba(0,0,0,0.3)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
+    color: METRIC_BLACK,
   },
   cardDetailOnLight: {
-    color: "#0A0A0A",
+    color: METRIC_BLACK,
   },
   summary: {
     fontSize: 13,

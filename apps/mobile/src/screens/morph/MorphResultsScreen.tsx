@@ -208,7 +208,7 @@ export function MorphResultsScreen({ navigation }: Props) {
       toast.show(error || NO_FACE_MESSAGE, { tone: "error", durationMs: 5200 });
       return;
     }
-    // Analyzing status ekranda yuqorida ko‘rsatiladi — toast dublikat emas.
+    // Analyzing status ekranda pastda ko‘rsatiladi — toast dublikat emas.
     if (phase === "analyzing") {
       toast.hide();
       return;
@@ -388,7 +388,7 @@ export function MorphResultsScreen({ navigation }: Props) {
             </Pressable>
           </View>
         ) : (
-          <View style={styles.scanStatusTop}>
+          <View style={[styles.scanBottomDock, { paddingBottom: Math.max(insets.bottom, 16) }]}>
             <View style={styles.analyzeBtn}>
               <ActivityIndicator color="#FFF" />
               <Text style={styles.analyzeBtnText}>Tahlil qilinmoqda…</Text>
@@ -803,13 +803,7 @@ const styles = StyleSheet.create({
   scanBackBtnDisabled: {
     backgroundColor: "rgba(255,255,255,0.05)",
   },
-  /** Analyzing status — chrome ostida, yuqorida. */
-  scanStatusTop: {
-    zIndex: 3,
-    paddingHorizontal: 16,
-    paddingTop: 14,
-  },
-  /** Error CTA — pastga dock. */
+  /** Analyzing / error CTA — pastga dock. */
   scanBottomDock: {
     position: "absolute",
     left: 0,
