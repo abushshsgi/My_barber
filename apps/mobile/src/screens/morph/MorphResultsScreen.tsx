@@ -6,7 +6,6 @@ import {
   ActivityIndicator,
   FlatList,
   Image,
-  Linking,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -31,7 +30,7 @@ import { FaceAnalysisSummary } from "../../components/morph/FaceAnalysisSummary"
 import { useAppToast } from "../../components/ui/ToastProvider";
 import { useHideTabBar } from "../../hooks/useHideTabBar";
 import { useMorphLimitGate } from "../../hooks/useMorphLimitGate";
-import { WEB_ORIGIN } from "../../lib/morph-share";
+import { shareMorphLook } from "../../lib/morph-share";
 import { useMorphSession } from "../../lib/morph-session";
 import type { MorphStackParamList } from "../../navigation/MorphStack";
 
@@ -56,7 +55,7 @@ export function MorphResultsScreen({ navigation }: Props) {
   const [activeStyleId, setActiveStyleId] = useState<string | null>(null);
   const [spotlightIndex, setSpotlightIndex] = useState(0);
   const [moreStyles, setMoreStyles] = useState<ApiHairstyle[]>([]);
-  const [savedIds, setSavedIds] = useState<string[]>([]);
+  const [shareBusy, setShareBusy] = useState(false);
   const carouselRef = useRef<FlatList<AiStyleSuggestion>>(null);
   const pendingTryOnRef = useRef<AiStyleSuggestion | null>(null);
   const analyzingBusy = phase === "analyzing";
@@ -295,19 +294,31 @@ export function MorphResultsScreen({ navigation }: Props) {
     goCapture();
   }, [analyzingBusy, goCapture]);
 
-  const toggleSave = useCallback((id: string) => {
-    setSavedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
-  }, []);
-
-  const bookSalon = useCallback(async (salonId: number | null) => {
-    if (!salonId) {
-      await Linking.openURL(`${WEB_ORIGIN}/map`);
-      return;
+  const onShareLook = useCallback(async () => {
+    if (!activeSuggestion || !activePreview || shareBusy) return;
+    setShareBusy(true);
+    try {
+      await shareMorphLook({
+        styleId: activeSuggestion.id,
+        title: activeSuggestion.title,
+        previewImage: activePreview,
+      });
+    } catch {
+      toast.show("Ulashib bo‘lmadi", { tone: "error", durationMs: 3200 });
+    } finally {
+      setShareBusy(false);
     }
-    await Linking.openURL(`${WEB_ORIGIN}/booking/${salonId}`);
-  }, []);
+  }, [activeSuggestion, activePreview, shareBusy, toast]);
 
-  /** Summary — yuzga hech narsa yo‘q; pastda glass card + aylanalar. */
+  const openStudio = useCallback(() => {
+    if (!activePreview) return;
+    if (activeSuggestion) {
+      session.setTryOn(activePreview, activeSuggestion.id, activeSuggestion.title);
+    }
+    navigation.navigate("MorphStudio");
+  }, [activePreview, activeSuggestion, navigation, session]);
+
+  /** Summary — yuzga hech narsa yo‘q; pastda metrikalar + Generate. */
   if (summaryBusy && session.analyze) {
     return (
       <View style={styles.root}>
@@ -529,36 +540,30 @@ export function MorphResultsScreen({ navigation }: Props) {
 
               {suggestions.length > 1 ? (
                 <>
-                  <Pressable
-                    style={[
-                      styles.navArrowHit,
-                      styles.navArrowLeft,
-                      spotlightIndex === 0 && styles.navArrowDisabled,
-                    ]}
-                    disabled={spotlightIndex === 0}
-                    onPress={() => goToSuggestion(spotlightIndex - 1)}
-                    accessibilityLabel="Oldingi tavsiya"
-                    android_ripple={{ color: "rgba(0,0,0,0.08)", borderless: true, radius: 24 }}
-                  >
-                    <View style={styles.navArrowBtn}>
-                      <Ionicons name="chevron-back" size={22} color="#0A0A0A" />
-                    </View>
-                  </Pressable>
-                  <Pressable
-                    style={[
-                      styles.navArrowHit,
-                      styles.navArrowRight,
-                      spotlightIndex >= suggestions.length - 1 && styles.navArrowDisabled,
-                    ]}
-                    disabled={spotlightIndex >= suggestions.length - 1}
-                    onPress={() => goToSuggestion(spotlightIndex + 1)}
-                    accessibilityLabel="Keyingi tavsiya"
-                    android_ripple={{ color: "rgba(0,0,0,0.08)", borderless: true, radius: 24 }}
-                  >
-                    <View style={styles.navArrowBtn}>
-                      <Ionicons name="chevron-forward" size={22} color="#0A0A0A" />
-                    </View>
-                  </Pressable>
+                  {spotlightIndex > 0 ? (
+                    <Pressable
+                      style={[styles.navArrowHit, styles.navArrowLeft]}
+                      onPress={() => goToSuggestion(spotlightIndex - 1)}
+                      accessibilityLabel="Oldingi tavsiya"
+                      android_ripple={{ color: "rgba(0,0,0,0.08)", borderless: true, radius: 24 }}
+                    >
+                      <View style={styles.navArrowBtn}>
+                        <Ionicons name="chevron-back" size={22} color="#0A0A0A" />
+                      </View>
+                    </Pressable>
+                  ) : null}
+                  {spotlightIndex < suggestions.length - 1 ? (
+                    <Pressable
+                      style={[styles.navArrowHit, styles.navArrowRight]}
+                      onPress={() => goToSuggestion(spotlightIndex + 1)}
+                      accessibilityLabel="Keyingi tavsiya"
+                      android_ripple={{ color: "rgba(0,0,0,0.08)", borderless: true, radius: 24 }}
+                    >
+                      <View style={styles.navArrowBtn}>
+                        <Ionicons name="chevron-forward" size={22} color="#0A0A0A" />
+                      </View>
+                    </Pressable>
+                  ) : null}
                 </>
               ) : null}
             </View>
@@ -582,68 +587,51 @@ export function MorphResultsScreen({ navigation }: Props) {
               </Text>
             ) : null}
 
-            <Pressable
-              style={({ pressed }) => [styles.bookBtn, pressed && { opacity: 0.9 }]}
-              android_ripple={{ color: "rgba(255,255,255,0.12)" }}
-              onPress={() => void bookSalon(activeSuggestion?.salon_id ?? null)}
-            >
-              <Ionicons name="calendar-outline" size={18} color="#FFF" />
-              <Text style={styles.bookBtnText}>Bron qilish</Text>
-            </Pressable>
-
-            <View style={styles.iconActions}>
+            {activePreview ? (
+              <View style={styles.postGenActions}>
+                <Pressable
+                  style={({ pressed }) => [styles.shareBtn, pressed && { opacity: 0.9 }]}
+                  android_ripple={{ color: "rgba(255,255,255,0.12)" }}
+                  disabled={shareBusy}
+                  onPress={() => void onShareLook()}
+                >
+                  {shareBusy ? (
+                    <ActivityIndicator color="#FFF" />
+                  ) : (
+                    <>
+                      <Ionicons name="share-social-outline" size={18} color="#FFF" />
+                      <Text style={styles.shareBtnText}>Ulashish</Text>
+                    </>
+                  )}
+                </Pressable>
+                <Pressable
+                  style={({ pressed }) => [styles.studioBtn, pressed && { opacity: 0.9 }]}
+                  android_ripple={{ color: "rgba(0,0,0,0.08)" }}
+                  onPress={openStudio}
+                >
+                  <Ionicons name="color-palette-outline" size={18} color="#0A0A0A" />
+                  <Text style={styles.studioBtnText}>Studio</Text>
+                </Pressable>
+              </View>
+            ) : activeSuggestion && !activeStyleId ? (
               <Pressable
                 style={({ pressed }) => [
-                  styles.iconAction,
-                  activePreview ? styles.iconActionOn : null,
-                  pressed && { opacity: 0.85 },
+                  styles.shareBtn,
+                  styles.shareBtnSolo,
+                  pressed && { opacity: 0.9 },
                 ]}
-                android_ripple={{ color: "rgba(0,0,0,0.1)", borderless: true, radius: 23 }}
-                disabled={!!activeStyleId || !!activePreview}
-                onPress={() => {
-                  if (activeSuggestion) void runTryOn(activeSuggestion);
-                }}
+                android_ripple={{ color: "rgba(255,255,255,0.12)" }}
+                onPress={() => void runTryOn(activeSuggestion)}
               >
-                {activeStyleId === activeSuggestion?.id ? (
-                  <ActivityIndicator color={activePreview ? "#FFF" : "#0A0A0A"} />
-                ) : (
-                  <Ionicons
-                    name="sparkles"
-                    size={18}
-                    color={activePreview ? "#FFF" : "#0A0A0A"}
-                  />
-                )}
+                <Ionicons name="sparkles" size={18} color="#FFF" />
+                <Text style={styles.shareBtnText}>AI yaratish</Text>
               </Pressable>
-              <Pressable
-                style={[
-                  styles.iconAction,
-                  activeSuggestion && savedIds.includes(activeSuggestion.id)
-                    ? styles.iconActionOn
-                    : null,
-                ]}
-                onPress={() => activeSuggestion && toggleSave(activeSuggestion.id)}
-              >
-                <Ionicons
-                  name={
-                    activeSuggestion && savedIds.includes(activeSuggestion.id)
-                      ? "bookmark"
-                      : "bookmark-outline"
-                  }
-                  size={18}
-                  color={
-                    activeSuggestion && savedIds.includes(activeSuggestion.id)
-                      ? "#FFF"
-                      : "#0A0A0A"
-                  }
-                />
-              </Pressable>
-              <Pressable
-                style={styles.iconAction}
-                onPress={() => activeSuggestion && openPreview(activeSuggestion)}
-              >
-                <Ionicons name="share-outline" size={18} color="#0A0A0A" />
-              </Pressable>
-            </View>
+            ) : activeStyleId ? (
+              <View style={[styles.shareBtn, styles.shareBtnSolo]}>
+                <ActivityIndicator color="#FFF" />
+                <Text style={styles.shareBtnText}>AI yaratmoqda…</Text>
+              </View>
+            ) : null}
           </View>
         ) : null}
 
@@ -910,15 +898,9 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.95)",
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#000",
-    shadowOpacity: 0.14,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 6,
   },
   navArrowLeft: { left: 4 },
   navArrowRight: { right: 4 },
-  navArrowDisabled: { opacity: 0.35 },
   spotlight: {
     overflow: "hidden",
     backgroundColor: "#111",
@@ -973,8 +955,11 @@ const styles = StyleSheet.create({
     color: "#525252",
     paddingHorizontal: H_PAD,
   },
-  bookBtn: {
+  postGenActions: {
     marginHorizontal: H_PAD,
+    gap: 10,
+  },
+  shareBtn: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -984,23 +969,23 @@ const styles = StyleSheet.create({
     backgroundColor: "#0A0A0A",
     overflow: "hidden",
   },
-  bookBtnText: { color: "#FFF", fontWeight: "700", fontSize: 15, includeFontPadding: false },
-  iconActions: {
-    flexDirection: "row",
-    justifyContent: "center",
-    gap: 12,
-    paddingHorizontal: H_PAD,
+  shareBtnSolo: {
+    marginHorizontal: H_PAD,
   },
-  iconAction: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-    backgroundColor: "#F3F3F3",
+  shareBtnText: { color: "#FFF", fontWeight: "700", fontSize: 15, includeFontPadding: false },
+  studioBtn: {
+    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
+    gap: 8,
+    minHeight: 52,
+    borderRadius: 16,
+    backgroundColor: "#FFF",
+    borderWidth: 1,
+    borderColor: "rgba(0,0,0,0.08)",
     overflow: "hidden",
   },
-  iconActionOn: { backgroundColor: "#0A0A0A" },
+  studioBtnText: { color: "#0A0A0A", fontWeight: "700", fontSize: 15, includeFontPadding: false },
   dots: {
     flexDirection: "row",
     justifyContent: "center",
