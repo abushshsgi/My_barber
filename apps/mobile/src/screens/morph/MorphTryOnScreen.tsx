@@ -265,9 +265,9 @@ export function MorphTryOnScreen({ navigation }: Props) {
         style={[
           styles.historyPanel,
           {
-            height: historyH,
-            bottom: dockPad,
-            paddingBottom: 12,
+            height: historyH + dockPad,
+            bottom: 0,
+            paddingBottom: dockPad + 8,
           },
           historyAnim,
         ]}
@@ -335,13 +335,15 @@ export function MorphTryOnScreen({ navigation }: Props) {
         )}
       </Animated.View>
 
+      {/* Nav ostidagi oq fon — qora bo‘shliq bo‘lmasin, page + dock bir butun */}
+      <View style={[styles.dockBleed, { height: dockPad }]} pointerEvents="none" />
+
       <GestureDetector gesture={pan}>
         <Animated.View
           style={[
             styles.sheet,
             {
-              marginBottom: dockPad,
-              paddingBottom: 12,
+              paddingBottom: dockPad + 14,
             },
             sheetAnim,
           ]}
@@ -412,7 +414,7 @@ export function MorphTryOnScreen({ navigation }: Props) {
                 <ActivityIndicator color="#FFF" />
               ) : (
                 <>
-                  <Ionicons name="camera-outline" size={20} color="#FFF" />
+                  <Ionicons name="camera-outline" size={22} color="#FFF" />
                   <Text style={styles.gridTitleLight}>Kameradan olish</Text>
                 </>
               )}
@@ -427,7 +429,7 @@ export function MorphTryOnScreen({ navigation }: Props) {
                 <ActivityIndicator color="#0A0A0A" />
               ) : (
                 <>
-                  <Ionicons name="images-outline" size={20} color="#6B6B6B" />
+                  <Ionicons name="images-outline" size={22} color="#6B6B6B" />
                   <Text style={styles.gridTitleDark}>Galereyadan tanlash</Text>
                 </>
               )}
@@ -549,30 +551,38 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   historyRetryText: { color: "#0A0A0A", fontWeight: "800", fontSize: 12 },
+  dockBleed: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "#FFF",
+    zIndex: 1,
+  },
   sheet: {
     marginTop: "auto",
     backgroundColor: "#FFF",
-    borderTopLeftRadius: 22,
-    borderTopRightRadius: 22,
-    paddingHorizontal: 14,
-    paddingTop: 8,
-    gap: 10,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    gap: 12,
     zIndex: 2,
   },
   handleRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    minHeight: 28,
+    minHeight: 30,
   },
-  handleSpacer: { width: 32 },
+  handleSpacer: { width: 34 },
   handleCluster: {
     flex: 1,
     alignItems: "center",
     gap: 4,
   },
   handle: {
-    width: 36,
+    width: 40,
     height: 4,
     borderRadius: 2,
     backgroundColor: "#D4D4D4",
@@ -584,9 +594,9 @@ const styles = StyleSheet.create({
     includeFontPadding: false,
   },
   historyIconBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     backgroundColor: "#F2F2F2",
     alignItems: "center",
     justifyContent: "center",
@@ -598,41 +608,41 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-start",
     justifyContent: "space-between",
-    paddingHorizontal: 4,
+    paddingHorizontal: 6,
     position: "relative",
   },
   stepTrack: {
     position: "absolute",
-    left: 28,
-    right: 28,
-    top: 11,
+    left: 32,
+    right: 32,
+    top: 12,
     height: 1.5,
     backgroundColor: "#E8E8E8",
   },
   stepCol: {
     flex: 1,
     alignItems: "center",
-    gap: 4,
+    gap: 5,
     zIndex: 1,
   },
   stepDot: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     backgroundColor: "#F0F0F0",
     alignItems: "center",
     justifyContent: "center",
   },
   stepDotOn: { backgroundColor: "#0A0A0A" },
   stepNum: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: "700",
     color: "#9A9A9A",
     includeFontPadding: false,
   },
   stepNumOn: { color: "#FFF" },
   stepLabel: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: "600",
     color: "#A0A0A0",
     includeFontPadding: false,
@@ -658,43 +668,43 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
   },
   errorCtaText: { color: "#FFF", fontSize: 11, fontWeight: "700" },
-  actionGrid: { flexDirection: "row", gap: 8 },
+  actionGrid: { flexDirection: "row", gap: 10 },
   gridBtnDark: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    gap: 6,
+    gap: 8,
     backgroundColor: "#0A0A0A",
-    borderRadius: 14,
-    minHeight: 72,
-    paddingHorizontal: 8,
-    paddingVertical: 10,
+    borderRadius: 16,
+    minHeight: 88,
+    paddingHorizontal: 10,
+    paddingVertical: 14,
     overflow: "hidden",
   },
   gridBtnLight: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    gap: 6,
+    gap: 8,
     backgroundColor: "#FFF",
-    borderRadius: 14,
-    minHeight: 72,
-    paddingHorizontal: 8,
-    paddingVertical: 10,
+    borderRadius: 16,
+    minHeight: 88,
+    paddingHorizontal: 10,
+    paddingVertical: 14,
     borderWidth: 1.5,
     borderColor: "#D4D4D4",
   },
   gridTitleLight: {
     color: "#FFF",
     fontWeight: "700",
-    fontSize: 12,
+    fontSize: 13,
     textAlign: "center",
     includeFontPadding: false,
   },
   gridTitleDark: {
     color: "#0A0A0A",
     fontWeight: "700",
-    fontSize: 12,
+    fontSize: 13,
     textAlign: "center",
     includeFontPadding: false,
   },

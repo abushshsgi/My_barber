@@ -1,8 +1,16 @@
 import { Image } from "expo-image";
-import { ActivityIndicator, Modal, Platform, StyleSheet, Text, View } from "react-native";
+import { useEffect } from "react";
+import { ActivityIndicator, Modal, StyleSheet, Text } from "react-native";
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from "react-native-reanimated";
 import { morfMarkWhite } from "../branding/morf-logo";
 import type { AppShell } from "../lib/app-shell";
-import { colors } from "../theme/colors";
 
 const mysaloonIcon = require("../../assets/icon.png");
 
@@ -11,93 +19,99 @@ type Props = {
   target: AppShell | null;
 };
 
-/** MySaloon ↔ Morf AI shell almashtirish paytidagi loading. */
+/** MySaloon ↔ Morf AI — to‘liq ekran qora loading. */
 export function ShellSwitchOverlay({ visible, target }: Props) {
+  const pulse = useSharedValue(1);
+  const fade = useSharedValue(0);
+
+  useEffect(() => {
+    if (!visible) {
+      fade.value = 0;
+      return;
+    }
+    fade.value = withTiming(1, { duration: 220, easing: Easing.out(Easing.cubic) });
+    pulse.value = withRepeat(
+      withSequence(
+        withTiming(1.08, { duration: 700, easing: Easing.inOut(Easing.ease) }),
+        withTiming(1, { duration: 700, easing: Easing.inOut(Easing.ease) }),
+      ),
+      -1,
+      false,
+    );
+  }, [visible, fade, pulse]);
+
+  const rootAnim = useAnimatedStyle(() => ({
+    opacity: fade.value,
+  }));
+
+  const logoAnim = useAnimatedStyle(() => ({
+    transform: [{ scale: pulse.value }],
+  }));
+
   if (!visible || !target) return null;
 
   const toMorph = target === "morph";
 
   return (
-    <Modal visible transparent animationType="fade" statusBarTranslucent>
-      <View style={styles.backdrop}>
-        <View style={styles.card}>
-          <View style={styles.logoWrap}>
-            {toMorph ? (
-              <Image source={morfMarkWhite} style={styles.logo} contentFit="contain" />
-            ) : (
-              <Image source={mysaloonIcon} style={styles.appIcon} contentFit="cover" />
-            )}
-          </View>
-          <Text style={styles.title}>{toMorph ? "Morf AI" : "MySaloon"}</Text>
-          <Text style={styles.sub}>Yuklanmoqda…</Text>
-          <ActivityIndicator color="#FFF" style={styles.spinner} />
-        </View>
-      </View>
+    <Modal visible animationType="none" statusBarTranslucent>
+      <Animated.View style={[styles.root, rootAnim]}>
+        <Animated.View style={[styles.logoWrap, logoAnim]}>
+          {toMorph ? (
+            <Image source={morfMarkWhite} style={styles.logo} contentFit="contain" />
+          ) : (
+            <Image source={mysaloonIcon} style={styles.appIcon} contentFit="cover" />
+          )}
+        </Animated.View>
+        <Text style={styles.title}>{toMorph ? "Morf AI" : "MySaloon"}</Text>
+        <Text style={styles.sub}>Yuklanmoqda…</Text>
+        <ActivityIndicator color="#FFF" style={styles.spinner} size="large" />
+      </Animated.View>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  backdrop: {
+  root: {
     flex: 1,
-    backgroundColor: "rgba(10,10,10,0.55)",
+    backgroundColor: "#0A0A0A",
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 28,
-  },
-  card: {
-    width: "100%",
-    maxWidth: 280,
-    borderRadius: 24,
-    backgroundColor: colors.fg,
-    paddingVertical: 28,
-    paddingHorizontal: 24,
-    alignItems: "center",
-    gap: 8,
-    ...Platform.select({
-      web: { boxShadow: "0 16px 40px rgba(0,0,0,0.35)" },
-      default: {
-        shadowColor: "#000",
-        shadowOpacity: 0.35,
-        shadowRadius: 20,
-        shadowOffset: { width: 0, height: 10 },
-        elevation: 16,
-      },
-    }),
+    paddingHorizontal: 32,
   },
   logoWrap: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: "rgba(255,255,255,0.12)",
+    width: 88,
+    height: 88,
+    borderRadius: 44,
+    backgroundColor: "rgba(255,255,255,0.08)",
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 8,
+    marginBottom: 18,
     overflow: "hidden",
     borderWidth: 2,
-    borderColor: "rgba(255,255,255,0.2)",
+    borderColor: "rgba(255,255,255,0.14)",
   },
   logo: {
-    width: 32,
-    height: 32,
+    width: 44,
+    height: 44,
   },
   appIcon: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: 84,
+    height: 84,
+    borderRadius: 42,
   },
   title: {
     color: "#FFF",
-    fontSize: 20,
+    fontSize: 26,
     fontWeight: "800",
-    letterSpacing: -0.3,
+    letterSpacing: -0.4,
   },
   sub: {
-    color: "rgba(255,255,255,0.65)",
-    fontSize: 13,
+    marginTop: 8,
+    color: "rgba(255,255,255,0.55)",
+    fontSize: 15,
     fontWeight: "600",
   },
   spinner: {
-    marginTop: 12,
+    marginTop: 28,
   },
 });

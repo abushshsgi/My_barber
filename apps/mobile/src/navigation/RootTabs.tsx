@@ -81,7 +81,7 @@ const MORPH_RIGHT: TabDef[] = [
 ];
 
 const CENTER_SLOT = 64;
-const SWITCH_MIN_MS = 520;
+const SWITCH_MIN_MS = 720;
 const mysaloonIcon = require("../../assets/icon.png");
 
 function isMorphTab(name: string | undefined): boolean {
