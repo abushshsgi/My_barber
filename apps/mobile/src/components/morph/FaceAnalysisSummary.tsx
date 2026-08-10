@@ -156,7 +156,7 @@ function GenerateSlider({
 }
 
 /**
- * Natija oldidagi card — rasmdek 2×2 ring + Generate slider.
+ * AI tugagach: 3 ta card ketma-ket + Generate slider.
  */
 export function FaceAnalysisSummary({
   analyze,
@@ -168,8 +168,6 @@ export function FaceAnalysisSummary({
 
   useEffect(() => {
     setReady(false);
-    const t = setTimeout(() => setReady(true), 1200);
-    return () => clearTimeout(t);
   }, [
     analyze.face_shape,
     analyze.hair_type,
@@ -181,7 +179,12 @@ export function FaceAnalysisSummary({
 
   return (
     <View style={[styles.sheet, { paddingBottom: Math.max(bottomInset, 10) }]}>
-      <FaceAnalysisRing analyze={analyze} compact />
+      <FaceAnalysisRing
+        analyze={analyze}
+        sequential
+        compact
+        onRevealComplete={() => setReady(true)}
+      />
       <View style={styles.sliderWrap}>
         <GenerateSlider
           enabled={ready}

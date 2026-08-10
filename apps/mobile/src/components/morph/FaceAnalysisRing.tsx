@@ -1,22 +1,21 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Animated, Easing, StyleSheet, Text, View } from "react-native";
+import { Animated, StyleSheet, Text, View } from "react-native";
 import Svg, { Circle, G } from "react-native-svg";
 import type { AiStyleAnalyzeResponse } from "../../api/ai";
 import {
   faceShapeLabel,
   hairColorLabel,
-  hairTextureLabel,
   hairTypeLabel,
 } from "../../lib/morph-labels";
 
-const AnimatedCircle = Animated.createAnimatedComponent(Circle);
-
 type Props = {
-  /** Natija — haqiqiy foizlar. Loadingda ixtiyoriy. */
   analyze?: AiStyleAnalyzeResponse | null;
-  /** Tahlil jarayoni — 3 ta card ketma-ket chiqadi. */
+  /** AI hali ishlayapti — faqat kutish, card yo‘q. */
   loading?: boolean;
-  /** Summary matnini yashirish (pastdagi Generate uchun). */
+  /** AI tugagach: Yuz → Uzunlik → Rang ketma-ket. */
+  sequential?: boolean;
+  /** Ketma-ket animatsiya tugaganda. */
+  onRevealComplete?: () => void;
   compact?: boolean;
 };
 
@@ -29,51 +28,15 @@ type MetricCard = {
   track: string;
 };
 
-/** Analiz paytida faqat 3 ta. */
-const LOADING_CARDS: MetricCard[] = [
-  {
-    key: "face",
-    label: "Yuz",
-    detail: "…",
-    percent: 78,
-    color: "#FF4D8D",
-    track: "#F0E4EA",
-  },
-  {
-    key: "length",
-    label: "Uzunlik",
-    detail: "…",
-    percent: 72,
-    color: "#6B8CFF",
-    track: "#E4E8F5",
-  },
-  {
-    key: "color",
-    label: "Rang",
-    detail: "…",
-    percent: 68,
-    color: "#FF7A59",
-    track: "#F5E6E2",
-  },
-];
-
 function toPercent(value: number | undefined, fallback: number): number {
   const raw = typeof value === "number" && Number.isFinite(value) ? value : fallback;
   const pct = raw <= 1 ? raw * 100 : raw;
   return Math.max(8, Math.min(100, Math.round(pct)));
 }
 
+/** Faqat 3 ta: Yuz, Uzunlik, Rang. */
 function cardsFromAnalyze(analyze: AiStyleAnalyzeResponse): MetricCard[] {
   const colorKey = analyze.hair_color || "other";
-  const textureKey = analyze.hair_texture || "straight";
-  const texturePct = toPercent(
-    ((analyze.face_confidence ?? 0.86) +
-      (analyze.hair_type_confidence ?? 0.78) +
-      (analyze.hair_color_confidence ?? 0.74)) /
-      3,
-    0.7,
-  );
-
   return [
     {
       key: "face",
@@ -92,14 +55,6 @@ function cardsFromAnalyze(analyze: AiStyleAnalyzeResponse): MetricCard[] {
       track: "#E4E8F5",
     },
     {
-      key: "texture",
-      label: "Tekstura",
-      detail: hairTextureLabel(textureKey),
-      percent: texturePct,
-      color: "#3DCC7A",
-      track: "#E0F2E8",
-    },
-    {
       key: "color",
       label: "Rang",
       detail: hairColorLabel(colorKey),
@@ -114,14 +69,15 @@ function MiniProgressRing({
   percent,
   color,
   track,
-  progress,
+  fill,
   size = 46,
   strokeWidth = 3.5,
 }: {
   percent: number;
   color: string;
   track: string;
-  progress: Animated.Value;
+  /** 0–1 */
+  fill: number;
   size?: number;
   strokeWidth?: number;
 }) {
@@ -129,10 +85,7 @@ function MiniProgressRing({
   const cy = size / 2;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
-  const dashOffset = progress.interpolate({
-    inputRange: [0, 1],
-    outputRange: [circumference, circumference * (1 - percent / 100)],
-  });
+  const dashOffset = circumference * (1 - (fill * percent) / 100);
 
   return (
     <Svg width={size} height={size}>
@@ -145,7 +98,7 @@ function MiniProgressRing({
           strokeWidth={strokeWidth}
           fill="none"
         />
-        <AnimatedCircle
+        <Circle
           cx={cx}
           cy={cy}
           r={radius}
@@ -163,35 +116,32 @@ function MiniProgressRing({
 
 function MetricTile({
   card,
-  progress,
+  fill,
   displayPercent,
   enter,
-  loading,
 }: {
   card: MetricCard;
-  progress: Animated.Value;
+  fill: number;
   displayPercent: number;
   enter: Animated.Value;
-  loading: boolean;
 }) {
   return (
     <Animated.View
       style={[
         styles.card,
-        loading && styles.cardLoading,
         {
           opacity: enter,
           transform: [
             {
               translateY: enter.interpolate({
                 inputRange: [0, 1],
-                outputRange: [14, 0],
+                outputRange: [16, 0],
               }),
             },
             {
               scale: enter.interpolate({
                 inputRange: [0, 1],
-                outputRange: [0.92, 1],
+                outputRange: [0.9, 1],
               }),
             },
           ],
@@ -204,7 +154,7 @@ function MetricTile({
           {card.label}
         </Text>
         <Text style={styles.cardPct}>{displayPercent}%</Text>
-        {!loading && card.detail && card.detail !== "…" ? (
+        {card.detail ? (
           <Text style={styles.cardDetail} numberOfLines={1}>
             {card.detail}
           </Text>
@@ -214,21 +164,10 @@ function MetricTile({
         percent={card.percent}
         color={card.color}
         track={card.track}
-        progress={progress}
+        fill={fill}
       />
     </Animated.View>
   );
-}
-
-function animateTo(value: Animated.Value, toValue: number, duration: number) {
-  return new Promise<void>((resolve) => {
-    Animated.timing(value, {
-      toValue,
-      duration,
-      easing: Easing.out(Easing.cubic),
-      useNativeDriver: false,
-    }).start(() => resolve());
-  });
 }
 
 function springIn(value: Animated.Value) {
@@ -236,153 +175,193 @@ function springIn(value: Animated.Value) {
     Animated.spring(value, {
       toValue: 1,
       friction: 8,
-      tension: 64,
+      tension: 60,
       useNativeDriver: true,
     }).start(() => resolve());
   });
 }
 
+function tweenFill(
+  from: number,
+  to: number,
+  duration: number,
+  onFrame: (v: number) => void,
+): Promise<void> {
+  return new Promise((resolve) => {
+    const start = Date.now();
+    const tick = () => {
+      const t = Math.min(1, (Date.now() - start) / duration);
+      const eased = 1 - Math.pow(1 - t, 3);
+      onFrame(from + (to - from) * eased);
+      if (t < 1) {
+        requestAnimationFrame(tick);
+      } else {
+        resolve();
+      }
+    };
+    requestAnimationFrame(tick);
+  });
+}
+
 /**
- * Selfie tahlili — glass 2×2 (natija) / 3 ta ketma-ket (analiz).
+ * AI kutish yoki 3 ta metrika (Yuz → Uzunlik → Rang).
  */
 export function FaceAnalysisRing({
   analyze = null,
   loading = false,
+  sequential = false,
+  onRevealComplete,
   compact = false,
 }: Props) {
-  const progresses = useRef([
-    new Animated.Value(0),
-    new Animated.Value(0),
-    new Animated.Value(0),
-    new Animated.Value(0),
-  ]).current;
   const enters = useRef([
     new Animated.Value(0),
     new Animated.Value(0),
     new Animated.Value(0),
-    new Animated.Value(0),
   ]).current;
-  const [displayPcts, setDisplayPcts] = useState([0, 0, 0, 0]);
-  const [visibleCount, setVisibleCount] = useState(loading ? 0 : 4);
+  const [fills, setFills] = useState([0, 0, 0]);
+  const [displayPcts, setDisplayPcts] = useState([0, 0, 0]);
+  const [visibleCount, setVisibleCount] = useState(0);
+  const onDoneRef = useRef(onRevealComplete);
+  onDoneRef.current = onRevealComplete;
 
   const cards = useMemo(
-    () => (loading ? LOADING_CARDS : analyze ? cardsFromAnalyze(analyze) : LOADING_CARDS),
-    [analyze, loading],
+    () => (analyze ? cardsFromAnalyze(analyze) : []),
+    [analyze],
   );
 
   useEffect(() => {
-    let cancelled = false;
-    const listeners: Array<{ remove: () => void }> = [];
-
-    progresses.forEach((p) => {
-      p.stopAnimation();
-      p.setValue(0);
-    });
-    enters.forEach((e) => {
-      e.stopAnimation();
-      e.setValue(0);
-    });
-    setDisplayPcts([0, 0, 0, 0]);
-
-    if (loading) {
+    if (loading || !analyze || cards.length === 0) {
       setVisibleCount(0);
-
-      const run = async () => {
-        for (let i = 0; i < cards.length; i += 1) {
-          if (cancelled) return;
-          setVisibleCount(i + 1);
-          const progress = progresses[i];
-          const enter = enters[i];
-          const card = cards[i];
-
-          const listener = progress.addListener(({ value }) => {
-            setDisplayPcts((prev) => {
-              const next = [...prev];
-              next[i] = Math.round(value * card.percent);
-              return next;
-            });
-          });
-          listeners.push({ remove: () => progress.removeListener(listener) });
-
-          await Promise.all([springIn(enter), animateTo(progress, 1, 850)]);
-          if (cancelled) return;
-          await new Promise((r) => setTimeout(r, 180));
-        }
-      };
-      void run();
-
-      return () => {
-        cancelled = true;
-        listeners.forEach((l) => l.remove());
-      };
+      setFills([0, 0, 0]);
+      setDisplayPcts([0, 0, 0]);
+      enters.forEach((e) => {
+        e.stopAnimation();
+        e.setValue(0);
+      });
+      return;
     }
 
-    // Natija — 4 ta birdan, ringlar to‘ladi.
-    setVisibleCount(cards.length);
-    enters.forEach((e) => e.setValue(1));
-    setDisplayPcts(cards.map((c) => c.percent));
+    let cancelled = false;
 
-    const shared = progresses[0];
-    shared.setValue(0);
-    progresses.forEach((p, i) => {
-      if (i > 0) p.setValue(0);
-    });
+    const reset = () => {
+      enters.forEach((e) => {
+        e.stopAnimation();
+        e.setValue(0);
+      });
+      setFills([0, 0, 0]);
+      setDisplayPcts([0, 0, 0]);
+      setVisibleCount(0);
+    };
 
-    // Har bir card o‘z progressiga bog‘langan — birga to‘ldiramiz.
-    const anims = progresses.slice(0, cards.length).map((p) =>
-      Animated.timing(p, {
-        toValue: 1,
-        duration: 1000,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: false,
-      }),
-    );
-    Animated.parallel(anims).start();
+    reset();
 
-    const ids = progresses.slice(0, cards.length).map((p, i) =>
-      p.addListener(({ value }) => {
-        setDisplayPcts((prev) => {
-          const next = [...prev];
-          next[i] = Math.round(value * cards[i].percent);
-          return next;
+    const runSequential = async () => {
+      for (let i = 0; i < cards.length; i += 1) {
+        if (cancelled) return;
+        setVisibleCount(i + 1);
+        const card = cards[i];
+        await springIn(enters[i]);
+        if (cancelled) return;
+        await tweenFill(0, 1, 900, (v) => {
+          if (cancelled) return;
+          setFills((prev) => {
+            const next = [...prev];
+            next[i] = v;
+            return next;
+          });
+          setDisplayPcts((prev) => {
+            const next = [...prev];
+            next[i] = Math.round(v * card.percent);
+            return next;
+          });
         });
-      }),
-    );
+        if (cancelled) return;
+        await new Promise((r) => setTimeout(r, 220));
+      }
+      if (!cancelled) onDoneRef.current?.();
+    };
+
+    const runStatic = async () => {
+      setVisibleCount(cards.length);
+      enters.forEach((e) => e.setValue(1));
+      setFills(cards.map(() => 0));
+      setDisplayPcts(cards.map(() => 0));
+      await Promise.all(
+        cards.map((card, i) =>
+          tweenFill(0, 1, 900, (v) => {
+            if (cancelled) return;
+            setFills((prev) => {
+              const next = [...prev];
+              next[i] = v;
+              return next;
+            });
+            setDisplayPcts((prev) => {
+              const next = [...prev];
+              next[i] = Math.round(v * card.percent);
+              return next;
+            });
+          }),
+        ),
+      );
+      if (!cancelled) onDoneRef.current?.();
+    };
+
+    if (sequential) {
+      void runSequential();
+    } else {
+      void runStatic();
+    }
 
     return () => {
-      ids.forEach((id, i) => progresses[i].removeListener(id));
+      cancelled = true;
     };
   }, [
     loading,
+    sequential,
+    analyze,
     cards,
-    progresses,
     enters,
+    analyze?.face_shape,
+    analyze?.hair_type,
+    analyze?.hair_color,
     analyze?.face_confidence,
     analyze?.hair_type_confidence,
     analyze?.hair_color_confidence,
-    analyze?.face_shape,
-    analyze?.hair_type,
   ]);
+
+  if (loading) {
+    return (
+      <View style={styles.shell}>
+        <View style={styles.waitingBox}>
+          <View style={styles.waitingDotRow}>
+            <View style={[styles.waitingDot, { backgroundColor: "#FF4D8D" }]} />
+            <View style={[styles.waitingDot, { backgroundColor: "#6B8CFF" }]} />
+            <View style={[styles.waitingDot, { backgroundColor: "#FF7A59" }]} />
+          </View>
+          <Text style={styles.loadingHint}>Yuz topilmoqda, AI tahlil qilmoqda…</Text>
+        </View>
+      </View>
+    );
+  }
+
+  if (!analyze || cards.length === 0) return null;
 
   const shown = cards.slice(0, visibleCount);
 
   return (
     <View style={styles.shell}>
-      <View style={[styles.grid, loading && styles.gridLoading]}>
+      <View style={styles.grid}>
         {shown.map((card, index) => (
           <MetricTile
             key={card.key}
             card={card}
-            progress={progresses[index]}
+            fill={fills[index] ?? 0}
             displayPercent={displayPcts[index] ?? 0}
             enter={enters[index]}
-            loading={loading}
           />
         ))}
       </View>
-      {loading ? (
-        <Text style={styles.loadingHint}>Tahlil qilinmoqda…</Text>
-      ) : !compact && analyze?.summary_uz ? (
+      {!compact && analyze.summary_uz && visibleCount >= cards.length ? (
         <Text style={styles.summary} numberOfLines={3}>
           {analyze.summary_uz}
         </Text>
@@ -406,15 +385,28 @@ const styles = StyleSheet.create({
     shadowRadius: 22,
     shadowOffset: { width: 0, height: 10 },
     elevation: 6,
-    minHeight: 120,
+    minHeight: 112,
+  },
+  waitingBox: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 28,
+    gap: 14,
+  },
+  waitingDotRow: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  waitingDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    opacity: 0.85,
   },
   grid: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 10,
-  },
-  gridLoading: {
-    // 3 ta: 2 yuqorida, 1 pastida markazda emas — oddiy wrap.
   },
   card: {
     flexBasis: "47%",
@@ -435,10 +427,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     elevation: 3,
   },
-  cardLoading: {
-    // Uchinchi card ham 50% eni — chapda qoladi.
-    maxWidth: "48.5%",
-  },
   cardCopy: {
     flex: 1,
     minWidth: 0,
@@ -451,7 +439,7 @@ const styles = StyleSheet.create({
     color: "#8A8A8A",
   },
   cardPct: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: "800",
     color: "#111111",
     letterSpacing: -0.4,
@@ -465,9 +453,8 @@ const styles = StyleSheet.create({
   loadingHint: {
     fontSize: 13,
     fontWeight: "600",
-    color: "rgba(20,20,20,0.62)",
+    color: "rgba(20,20,20,0.7)",
     textAlign: "center",
-    paddingTop: 2,
   },
   summary: {
     fontSize: 13,
