@@ -325,7 +325,7 @@ export function MorphTryOnScreen({ navigation }: Props) {
       maxHeight: interpolate(
         lift.value,
         [0, historyH * 0.55],
-        [200, 0],
+        [230, 0],
         Extrapolation.CLAMP,
       ),
       marginBottom: interpolate(
@@ -802,8 +802,8 @@ const styles = StyleSheet.create({
   actionGrid: {
     flexDirection: "row",
     gap: 10,
-    marginTop: 20,
-    marginBottom: 2,
+    marginTop: 40,
+    marginBottom: 4,
     paddingHorizontal: 18,
     justifyContent: "center",
   },
