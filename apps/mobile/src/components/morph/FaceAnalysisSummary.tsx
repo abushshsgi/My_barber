@@ -209,7 +209,7 @@ export function FaceAnalysisSummary({
         analyze={analyze}
         sequential
         compact
-        tone="onDark"
+        tone="onLight"
         onRevealComplete={() => setReady(true)}
       />
       {ready ? (
@@ -248,27 +248,26 @@ export function FaceAnalysisSummary({
 
 const styles = StyleSheet.create({
   sheet: {
+    flex: 1,
     width: "100%",
-    paddingHorizontal: 14,
-    gap: 12,
+    paddingHorizontal: 16,
+    gap: 20,
+    justifyContent: "space-between",
   },
   sliderWrap: {
     borderRadius: 999,
+    width: "100%",
   },
   sliderOuter: {
     borderRadius: 999,
-    shadowColor: "#000",
-    shadowOpacity: 0.14,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 5,
+    width: "100%",
   },
   sliderTrack: {
     height: TRACK_H,
     borderRadius: 999,
-    backgroundColor: "rgba(255,255,255,0.42)",
+    backgroundColor: "#F3F3F3",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.72)",
+    borderColor: "rgba(0,0,0,0.08)",
     justifyContent: "center",
     overflow: "hidden",
   },
@@ -300,13 +299,15 @@ const styles = StyleSheet.create({
     width: THUMB,
     height: THUMB,
     borderRadius: THUMB / 2,
-    backgroundColor: "#FFF",
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "rgba(0,0,0,0.06)",
     alignItems: "center",
     justifyContent: "center",
     shadowColor: "#000",
-    shadowOpacity: 0.18,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 3,
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
   },
 });

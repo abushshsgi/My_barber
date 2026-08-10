@@ -311,35 +311,22 @@ export function MorphResultsScreen({ navigation }: Props) {
     navigation.getParent()?.navigate("MorphChat" as never);
   }, [navigation]);
 
-  /** Summary — yuzga hech narsa yo‘q; pastda metrikalar + Generate. */
+  /** Summary — oq fon, to‘liq kenglik; metrikalar + Generate. */
   if (summaryBusy && session.analyze) {
     return (
-      <View style={styles.root}>
-        {session.selfieDataUrl ? (
-          <Image
-            source={{ uri: session.selfieDataUrl }}
-            style={styles.scanPhoto}
-            resizeMode="cover"
-          />
-        ) : (
-          <View style={styles.scanPhotoFallback} />
-        )}
-        <View style={styles.summaryScrim} />
-
-        <View style={[styles.scanChrome, { paddingTop: Math.max(insets.top, 10) }]}>
-          <Pressable style={styles.scanBackBtn} onPress={onBack} accessibilityLabel="Orqaga">
-            <Ionicons name="chevron-back" size={22} color="#FFF" />
+      <View style={styles.summaryRoot}>
+        <View style={[styles.summaryChrome, { paddingTop: Math.max(insets.top, 10) }]}>
+          <Pressable style={styles.summaryBackBtn} onPress={onBack} accessibilityLabel="Orqaga">
+            <Ionicons name="chevron-back" size={18} color="#0A0A0A" />
           </Pressable>
-          <View style={{ flex: 1 }} />
-          <View style={styles.scanBackBtn} />
         </View>
 
-        <View style={styles.summaryBottom}>
+        <View style={styles.summaryBody}>
           <FaceAnalysisSummary
             analyze={session.analyze}
             onStartGenerate={onStartGenerate}
             generating={false}
-            bottomInset={Math.max(insets.bottom, 12)}
+            bottomInset={Math.max(insets.bottom, 16)}
           />
         </View>
       </View>
@@ -754,6 +741,34 @@ const styles = StyleSheet.create({
   scanPhotoFallback: {
     ...StyleSheet.absoluteFill,
     backgroundColor: "#111",
+  },
+  summaryRoot: {
+    flex: 1,
+    width: "100%",
+    alignSelf: "stretch",
+    backgroundColor: "#FFFFFF",
+  },
+  summaryChrome: {
+    width: "100%",
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 14,
+    paddingBottom: 8,
+    zIndex: 2,
+  },
+  summaryBackBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#F3F3F3",
+  },
+  summaryBody: {
+    flex: 1,
+    width: "100%",
+    justifyContent: "space-between",
+    paddingTop: 28,
   },
   summaryBottom: {
     position: "absolute",
