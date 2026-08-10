@@ -36,9 +36,10 @@ function toPercent(value: number | undefined, fallback: number): number {
   return Math.max(8, Math.min(100, Math.round(pct)));
 }
 
-/** Faqat 3 ta: Yuz, Uzunlik, Rang — rangli metrikalar. */
+/** Faqat 3 ta: Yuz, Uzunlik, Rang — rang faqat aylanada, matn qora. */
 function cardsFromAnalyze(analyze: AiStyleAnalyzeResponse): MetricCard[] {
   const colorKey = analyze.hair_color || "other";
+  const track = "#E8E8E8";
   return [
     {
       key: "face",
@@ -46,7 +47,7 @@ function cardsFromAnalyze(analyze: AiStyleAnalyzeResponse): MetricCard[] {
       detail: faceShapeLabel(analyze.face_shape),
       percent: toPercent(analyze.face_confidence, 0.86),
       color: "#E11D74",
-      track: "#FCE7F0",
+      track,
     },
     {
       key: "length",
@@ -54,7 +55,7 @@ function cardsFromAnalyze(analyze: AiStyleAnalyzeResponse): MetricCard[] {
       detail: hairTypeLabel(analyze.hair_type),
       percent: toPercent(analyze.hair_type_confidence, 0.78),
       color: "#3B6EF5",
-      track: "#E8EEFF",
+      track,
     },
     {
       key: "color",
@@ -62,7 +63,7 @@ function cardsFromAnalyze(analyze: AiStyleAnalyzeResponse): MetricCard[] {
       detail: hairColorLabel(colorKey),
       percent: toPercent(analyze.hair_color_confidence, 0.74),
       color: "#E85D04",
-      track: "#FFEADF",
+      track,
     },
   ];
 }
@@ -76,6 +77,7 @@ function MiniProgressRing({
   track,
   fill,
   displayPercent,
+  percentColor = "#0A0A0A",
   size = RING_SIZE,
   strokeWidth = RING_STROKE,
 }: {
@@ -85,6 +87,7 @@ function MiniProgressRing({
   /** 0–1 */
   fill: number;
   displayPercent: number;
+  percentColor?: string;
   size?: number;
   strokeWidth?: number;
 }) {
@@ -119,7 +122,7 @@ function MiniProgressRing({
           />
         </G>
       </Svg>
-      <Text style={[styles.ringPct, { color }]}>{displayPercent}%</Text>
+      <Text style={[styles.ringPct, { color: percentColor }]}>{displayPercent}%</Text>
     </View>
   );
 }
@@ -137,13 +140,10 @@ function MetricTile({
   enter: Animated.Value;
   tone: "onDark" | "onLight";
 }) {
-  const onDark = tone === "onDark";
   return (
     <Animated.View
       style={[
         styles.card,
-        onDark ? styles.cardOnDark : styles.cardOnLight,
-        !onDark ? { backgroundColor: card.track } : null,
         {
           opacity: enter,
           transform: [
@@ -164,28 +164,19 @@ function MetricTile({
       ]}
       accessibilityLabel={`${card.label}: ${card.detail}, ${displayPercent} foiz`}
     >
-      <Text
-        style={[
-          styles.cardLabel,
-          onDark ? styles.cardLabelOnDark : styles.cardLabelOnLight,
-          !onDark ? { color: card.color } : null,
-        ]}
-        numberOfLines={1}
-      >
+      <Text style={styles.cardLabel} numberOfLines={1}>
         {card.label}
       </Text>
       <MiniProgressRing
         percent={card.percent}
         color={card.color}
-        track={onDark ? "rgba(255,255,255,0.28)" : "#FFFFFF"}
+        track={tone === "onDark" ? "rgba(0,0,0,0.12)" : card.track}
         fill={fill}
         displayPercent={displayPercent}
+        percentColor="#0A0A0A"
       />
       {card.detail ? (
-        <Text
-          style={[styles.cardDetail, onDark ? styles.cardDetailOnDark : styles.cardDetailOnLight]}
-          numberOfLines={2}
-        >
+        <Text style={styles.cardDetail} numberOfLines={2}>
           {card.detail}
         </Text>
       ) : null}
@@ -416,17 +407,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "flex-start",
     gap: 8,
-    borderRadius: 18,
-    paddingVertical: 14,
-    paddingHorizontal: 6,
-  },
-  cardOnDark: {
-    backgroundColor: "rgba(255,255,255,0.2)",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.35)",
-  },
-  cardOnLight: {
-    borderWidth: 0,
+    paddingVertical: 8,
+    paddingHorizontal: 4,
   },
   cardSlot: {
     flex: 1,
@@ -438,13 +420,8 @@ const styles = StyleSheet.create({
     letterSpacing: 0.6,
     textAlign: "center",
     textTransform: "uppercase",
-    includeFontPadding: false,
-  },
-  cardLabelOnDark: {
-    color: "#FFFFFF",
-  },
-  cardLabelOnLight: {
     color: "#0A0A0A",
+    includeFontPadding: false,
   },
   ringPct: {
     fontSize: 13,
@@ -459,13 +436,8 @@ const styles = StyleSheet.create({
     textAlign: "center",
     lineHeight: 14,
     paddingHorizontal: 2,
+    color: "#0A0A0A",
     includeFontPadding: false,
-  },
-  cardDetailOnDark: {
-    color: "rgba(255,255,255,0.92)",
-  },
-  cardDetailOnLight: {
-    color: "#404040",
   },
   summary: {
     fontSize: 12,
@@ -476,9 +448,9 @@ const styles = StyleSheet.create({
     paddingTop: 2,
   },
   summaryOnLight: {
-    color: "#737373",
+    color: "#0A0A0A",
   },
   summaryOnDark: {
-    color: "rgba(255,255,255,0.78)",
+    color: "#0A0A0A",
   },
 });
