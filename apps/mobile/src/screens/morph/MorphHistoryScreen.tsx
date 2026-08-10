@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { Image } from "expo-image";
+import { LinearGradient } from "expo-linear-gradient";
 import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -285,7 +286,12 @@ export function MorphHistoryScreen({ navigation, route }: Props) {
                 <Image
                   source={{ uri: item.after_url || item.before_url || undefined }}
                   style={styles.cardImg}
-                  contentFit="contain"
+                  contentFit="cover"
+                />
+                <LinearGradient
+                  colors={["transparent", "rgba(0,0,0,0.82)"]}
+                  locations={[0.4, 1]}
+                  style={styles.cardGrad}
                 />
                 {item.before_url && item.after_url ? (
                   <View style={styles.cardChip}>
@@ -293,10 +299,13 @@ export function MorphHistoryScreen({ navigation, route }: Props) {
                     <Text style={styles.cardChipText}>Taqqos</Text>
                   </View>
                 ) : null}
+                <Text
+                  style={[styles.cardTitle, { fontSize: fs(12) }]}
+                  numberOfLines={1}
+                >
+                  {item.title || item.style_id}
+                </Text>
               </View>
-              <Text style={[styles.cardTitle, { fontSize: fs(12) }]} numberOfLines={1}>
-                {item.title || item.style_id}
-              </Text>
             </Pressable>
           )}
         />
@@ -333,34 +342,39 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     overflow: "hidden",
     backgroundColor: "#151517",
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(255,255,255,0.07)",
   },
   cardMedia: {
-    aspectRatio: 1,
+    aspectRatio: 3 / 4,
     backgroundColor: "#0F0F10",
-    alignItems: "center",
-    justifyContent: "center",
+    position: "relative",
   },
   cardImg: { width: "100%", height: "100%" },
+  cardGrad: {
+    ...StyleSheet.absoluteFill,
+  },
   cardChip: {
     position: "absolute",
     left: 8,
-    bottom: 8,
+    top: 8,
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    backgroundColor: "rgba(0,0,0,0.7)",
+    backgroundColor: "rgba(0,0,0,0.55)",
     borderRadius: 999,
     paddingHorizontal: 8,
     paddingVertical: 4,
   },
   cardChipText: { color: "#FFF", fontSize: 10, fontWeight: "700" },
   cardTitle: {
-    fontWeight: "700",
+    position: "absolute",
+    left: 10,
+    right: 10,
+    bottom: 10,
+    fontWeight: "800",
     color: "#FFF",
-    paddingHorizontal: 10,
-    paddingVertical: 10,
+    textShadowColor: "rgba(0,0,0,0.5)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
   },
   center: {
     flex: 1,

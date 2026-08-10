@@ -627,12 +627,17 @@ export function MorphTryOnScreen({ navigation }: Props) {
                         uri: item.after_url || item.before_url || undefined,
                       }}
                       style={styles.historyImg}
-                      contentFit="contain"
+                      contentFit="cover"
                     />
+                    <LinearGradient
+                      colors={["transparent", "rgba(0,0,0,0.75)"]}
+                      locations={[0.35, 1]}
+                      style={styles.historyGrad}
+                    />
+                    <Text style={styles.historyCardTitle} numberOfLines={1}>
+                      {item.title || item.style_id}
+                    </Text>
                   </View>
-                  <Text style={styles.historyCardTitle} numberOfLines={1}>
-                    {item.title || item.style_id}
-                  </Text>
                 </Pressable>
               ))}
             </ScrollView>
@@ -891,27 +896,33 @@ const styles = StyleSheet.create({
   historyCard: {
     borderRadius: 16,
     overflow: "hidden",
-    backgroundColor: "#F3F3F3",
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#E6E6E6",
+    backgroundColor: "#1A1A1A",
   },
   historyImgWrap: {
     width: "100%",
-    aspectRatio: 1,
-    backgroundColor: "#EBEBEB",
-    alignItems: "center",
-    justifyContent: "center",
+    aspectRatio: 3 / 4,
+    backgroundColor: "#1A1A1A",
+    position: "relative",
   },
   historyImg: {
     width: "100%",
     height: "100%",
   },
+  historyGrad: {
+    ...StyleSheet.absoluteFill,
+    justifyContent: "flex-end",
+  },
   historyCardTitle: {
-    color: "#0A0A0A",
-    fontSize: 10,
-    fontWeight: "700",
-    paddingHorizontal: 6,
-    paddingVertical: 5,
+    position: "absolute",
+    left: 8,
+    right: 8,
+    bottom: 8,
+    color: "#FFF",
+    fontSize: 11,
+    fontWeight: "800",
+    textShadowColor: "rgba(0,0,0,0.45)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
   },
   historyEmpty: {
     flex: 1,
