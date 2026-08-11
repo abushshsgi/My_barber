@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Clipboard from "expo-clipboard";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Linking,
@@ -8,8 +8,19 @@ import {
   Pressable,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from "react-native";
+import Animated, {
+  Easing,
+  interpolate,
+  runOnJS,
+  useAnimatedStyle,
+  useReducedMotion,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { createMorphAiLookShare } from "../../api/ai";
 import { composeInstagramStoryImage, downloadDataUrl } from "../../lib/compose-instagram-story";
 import { INSTAGRAM_CTA, pickInstagramHeadline } from "../../lib/morph-share-copy";
@@ -45,6 +56,20 @@ async function resolveShareUrl(styleId: string, title: string, previewImage: str
   return pageUrl;
 }
 
+async function openInstagramAppOrWeb() {
+  try {
+    const app = "instagram://app";
+    const can = await Linking.canOpenURL(app);
+    if (can) {
+      await Linking.openURL(app);
+      return;
+    }
+  } catch {
+    /* web / ruxsat yo‘q */
+  }
+  await Linking.openURL("https://www.instagram.com/");
+}
+
 export function ShareFriendsModal({
   visible,
   onClose,
@@ -55,9 +80,54 @@ export function ShareFriendsModal({
   userKey,
   onError,
 }: Props) {
+  const insets = useSafeAreaInsets();
+  const { height: winH } = useWindowDimensions();
+  const reduceMotion = useReducedMotion();
+  const sheetH = Math.round(winH * 0.43);
+  const progress = useSharedValue(0);
   const [busy, setBusy] = useState<Network | "copy" | null>(null);
   const [copied, setCopied] = useState(false);
   const [link, setLink] = useState("");
+
+  const enterMs = reduceMotion ? 1 : 320;
+  const exitMs = reduceMotion ? 1 : 240;
+
+  useEffect(() => {
+    if (!visible) return;
+    setCopied(false);
+    setBusy(null);
+    progress.value = 0;
+    progress.value = withTiming(1, {
+      duration: enterMs,
+      easing: Easing.out(Easing.cubic),
+    });
+  }, [enterMs, progress, visible]);
+
+  const finishClose = useCallback(() => {
+    onClose();
+  }, [onClose]);
+
+  const requestClose = useCallback(() => {
+    progress.value = withTiming(
+      0,
+      { duration: exitMs, easing: Easing.in(Easing.cubic) },
+      (finished) => {
+        if (finished) runOnJS(finishClose)();
+      },
+    );
+  }, [exitMs, finishClose, progress]);
+
+  const backdropStyle = useAnimatedStyle(() => ({
+    opacity: progress.value,
+  }));
+
+  const sheetStyle = useAnimatedStyle(() => ({
+    transform: [
+      {
+        translateY: interpolate(progress.value, [0, 1], [sheetH + 48, 0]),
+      },
+    ],
+  }));
 
   const ensureLink = useCallback(async () => {
     if (link) return link;
@@ -103,29 +173,31 @@ export function ShareFriendsModal({
           return;
         }
 
-        const headline = pickInstagramHeadline({ userKey, userName });
-        const story = await composeInstagramStoryImage({
-          resultImageUrl: previewImage,
-          styleTitle: title,
-          headline,
-          cta: INSTAGRAM_CTA,
-        });
         await Clipboard.setStringAsync(url);
-        await downloadDataUrl(story, "morf-ai-story.jpg");
-        if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
+        if (typeof document !== "undefined") {
           try {
-            const blob = await (await fetch(story)).blob();
-            const file = new File([blob], "morf-ai-story.jpg", { type: "image/jpeg" });
-            const can = navigator.canShare?.({ files: [file] }) ?? false;
-            if (can) {
-              await navigator.share({ files: [file] });
-              return;
+            const headline = pickInstagramHeadline({ userKey, userName });
+            const story = await composeInstagramStoryImage({
+              resultImageUrl: previewImage,
+              styleTitle: title,
+              headline,
+              cta: INSTAGRAM_CTA,
+            });
+            await downloadDataUrl(story, "morf-ai-story.jpg");
+            if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
+              const blob = await (await fetch(story)).blob();
+              const file = new File([blob], "morf-ai-story.jpg", { type: "image/jpeg" });
+              const can = navigator.canShare?.({ files: [file] }) ?? false;
+              if (can) {
+                await navigator.share({ files: [file] });
+                return;
+              }
             }
           } catch {
-            /* download + ochish */
+            /* havola + Instagram ochiladi */
           }
         }
-        await Linking.openURL("https://www.instagram.com/");
+        await openInstagramAppOrWeb();
       } catch (err) {
         onError(err instanceof Error ? err.message : "Ulashib bo‘lmadi");
       } finally {
@@ -135,13 +207,36 @@ export function ShareFriendsModal({
     [ensureLink, onError, previewImage, title, userKey, userName],
   );
 
+  if (!visible) return null;
+
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <Pressable style={styles.backdrop} onPress={onClose}>
-        <Pressable style={styles.card} onPress={(e) => e.stopPropagation()}>
+    <Modal
+      visible
+      transparent
+      animationType="none"
+      statusBarTranslucent
+      presentationStyle="overFullScreen"
+      onRequestClose={requestClose}
+    >
+      <View style={styles.root} pointerEvents="box-none">
+        <Animated.View style={[styles.backdrop, backdropStyle]}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={requestClose} />
+        </Animated.View>
+
+        <Animated.View
+          style={[
+            styles.sheet,
+            {
+              height: sheetH,
+              paddingBottom: Math.max(insets.bottom, 14) + 10,
+            },
+            sheetStyle,
+          ]}
+        >
+          <View style={styles.handle} />
           <View style={styles.head}>
             <Text style={styles.title}>Do‘stlarga ulashish</Text>
-            <Pressable style={styles.close} onPress={onClose} hitSlop={8}>
+            <Pressable style={styles.close} onPress={requestClose} hitSlop={8}>
               <Ionicons name="close" size={20} color="#0A0A0A" />
             </Pressable>
           </View>
@@ -194,8 +289,8 @@ export function ShareFriendsModal({
               />
             )}
           </Pressable>
-        </Pressable>
-      </Pressable>
+        </Animated.View>
+      </View>
     </Modal>
   );
 }
@@ -228,18 +323,28 @@ function NetBtn({
 }
 
 const styles = StyleSheet.create({
-  backdrop: {
+  root: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.45)",
-    justifyContent: "center",
-    paddingHorizontal: 20,
+    justifyContent: "flex-end",
   },
-  card: {
+  backdrop: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: "rgba(0,0,0,0.45)",
+  },
+  sheet: {
     backgroundColor: "#FFF",
-    borderRadius: 24,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
     paddingHorizontal: 20,
-    paddingTop: 18,
-    paddingBottom: 18,
+    paddingTop: 8,
+  },
+  handle: {
+    alignSelf: "center",
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "#D4D4D4",
+    marginBottom: 12,
   },
   head: {
     flexDirection: "row",
@@ -257,7 +362,7 @@ const styles = StyleSheet.create({
   },
   hint: { marginTop: 8, fontSize: 13, color: "#737373", fontWeight: "600" },
   row: {
-    marginTop: 18,
+    marginTop: 22,
     flexDirection: "row",
     justifyContent: "space-between",
   },
@@ -273,8 +378,8 @@ const styles = StyleSheet.create({
   divider: {
     height: 1,
     backgroundColor: "#EFEFEF",
-    marginTop: 18,
-    marginBottom: 14,
+    marginTop: 22,
+    marginBottom: 16,
   },
   copyLabel: { fontSize: 14, fontWeight: "800", color: "#0A0A0A", marginBottom: 8 },
   copyRow: {

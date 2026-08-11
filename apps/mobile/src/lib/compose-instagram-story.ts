@@ -1,12 +1,24 @@
-import { Image } from "react-native";
+import { Asset } from "expo-asset";
 import { morfMarkWhite, morfWordmarkWhite } from "../branding/morf-logo";
 
 const STORY_W = 1080;
 const STORY_H = 1920;
 
-function assetUri(mod: number): string {
-  const src = Image.resolveAssetSource(mod);
-  return src?.uri ?? "";
+/** RN Web da Image.resolveAssetSource yo‘q — expo-asset + require URL. */
+function assetUri(mod: unknown): string {
+  if (!mod) return "";
+  if (typeof mod === "string") return mod;
+  if (typeof mod === "object") {
+    const rec = mod as { uri?: string; default?: unknown };
+    if (typeof rec.uri === "string" && rec.uri) return rec.uri;
+    if (typeof rec.default === "string" && rec.default) return rec.default;
+  }
+  try {
+    const asset = Asset.fromModule(mod as number | string);
+    return asset.uri || asset.localUri || "";
+  } catch {
+    return "";
+  }
 }
 
 function mysaloonLogoUri(): string {
