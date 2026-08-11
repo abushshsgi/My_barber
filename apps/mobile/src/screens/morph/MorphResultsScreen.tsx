@@ -25,12 +25,13 @@ import {
 } from "../../api/ai";
 import { fetchHairstyles, type ApiHairstyle } from "../../api/hairstyles";
 import { resolveMediaUrl } from "../../api/media";
+import { useAuth } from "../../auth/AuthContext";
 import { FaceAnalysisRing } from "../../components/morph/FaceAnalysisRing";
 import { FaceAnalysisSummary } from "../../components/morph/FaceAnalysisSummary";
+import { ShareFriendsModal } from "../../components/morph/ShareFriendsModal";
 import { useAppToast } from "../../components/ui/ToastProvider";
 import { useHideTabBar } from "../../hooks/useHideTabBar";
 import { useMorphLimitGate } from "../../hooks/useMorphLimitGate";
-import { shareMorphLook } from "../../lib/morph-share";
 import { useMorphSession } from "../../lib/morph-session";
 import type { MorphStackParamList } from "../../navigation/MorphStack";
 
@@ -50,12 +51,13 @@ export function MorphResultsScreen({ navigation }: Props) {
   const session = useMorphSession();
   const gate = useMorphLimitGate();
   const toast = useAppToast();
+  const { user } = useAuth();
   const [phase, setPhase] = useState<Phase>("analyzing");
   const [error, setError] = useState<string | null>(null);
   const [activeStyleId, setActiveStyleId] = useState<string | null>(null);
   const [spotlightIndex, setSpotlightIndex] = useState(0);
   const [moreStyles, setMoreStyles] = useState<ApiHairstyle[]>([]);
-  const [shareBusy, setShareBusy] = useState(false);
+  const [shareTarget, setShareTarget] = useState<AiStyleSuggestion | null>(null);
   const carouselRef = useRef<FlatList<AiStyleSuggestion>>(null);
   const analyzingBusy = phase === "analyzing";
   const summaryBusy = phase === "summary";
@@ -265,29 +267,10 @@ export function MorphResultsScreen({ navigation }: Props) {
     goCapture();
   }, [analyzingBusy, goCapture]);
 
-  const onShareLook = useCallback(
-    async (style?: AiStyleSuggestion | null) => {
-      const target = style ?? activeSuggestion;
-      const preview = target
-        ? session.tryOnByStyle[target.id] ||
-          (session.tryOnStyleId === target.id ? session.tryOnPreview : null)
-        : activePreview;
-      if (!target || !preview || shareBusy) return;
-      setShareBusy(true);
-      try {
-        await shareMorphLook({
-          styleId: target.id,
-          title: target.title,
-          previewImage: preview,
-        });
-      } catch {
-        toast.show("Ulashib bo‘lmadi", { tone: "error", durationMs: 3200 });
-      } finally {
-        setShareBusy(false);
-      }
-    },
-    [activeSuggestion, activePreview, session.tryOnByStyle, session.tryOnPreview, session.tryOnStyleId, shareBusy, toast],
-  );
+  const sharePreview = shareTarget
+    ? session.tryOnByStyle[shareTarget.id] ||
+      (session.tryOnStyleId === shareTarget.id ? session.tryOnPreview : null)
+    : null;
 
   const openStudio = useCallback(() => {
     if (!activePreview) return;
@@ -443,14 +426,11 @@ export function MorphResultsScreen({ navigation }: Props) {
                   const loading = activeStyleId === item.id;
                   const isLast = index === suggestions.length - 1;
                   return (
-                    <Pressable
+                    <View
                       style={[
                         styles.spotlight,
                         { width: cardW, marginRight: isLast ? 0 : CARD_GAP },
                       ]}
-                      onPress={() => {
-                        if (preview) openPreview(item);
-                      }}
                     >
                       <Image
                         source={{
@@ -469,18 +449,17 @@ export function MorphResultsScreen({ navigation }: Props) {
                           <Text style={styles.spotlightBusyText}>AI yaratmoqda...</Text>
                         </View>
                       ) : null}
-                      {preview && !loading ? (
-                        <View style={styles.previewBadge}>
-                          <Text style={styles.previewBadgeText}>Sizning preview</Text>
-                        </View>
-                      ) : null}
                       <LinearGradient
                         colors={["transparent", "rgba(0,0,0,0.85)"]}
                         style={styles.spotlightGrad}
                       >
                         <View style={styles.spotlightMeta}>
                           <View style={{ flex: 1, minWidth: 0 }}>
-                            <Text style={styles.spotlightIndex}>#{index + 1}</Text>
+                            {preview && !loading ? (
+                              <Text style={styles.previewInline}>Sizning preview</Text>
+                            ) : (
+                              <Text style={styles.spotlightIndex}>#{index + 1}</Text>
+                            )}
                             <Text style={styles.spotlightTitle} numberOfLines={1}>
                               {item.title}
                             </Text>
@@ -497,16 +476,16 @@ export function MorphResultsScreen({ navigation }: Props) {
                             pressed && { opacity: 0.9 },
                           ]}
                           android_ripple={{ color: "rgba(0,0,0,0.08)" }}
-                          disabled={loading || (preview ? shareBusy : false)}
+                          disabled={loading}
                           onPress={() => {
                             if (preview) {
-                              void onShareLook(item);
+                              setShareTarget(item);
                               return;
                             }
                             void runTryOn(item);
                           }}
                         >
-                          {loading || (preview && shareBusy) ? (
+                          {loading ? (
                             <ActivityIndicator color="#0A0A0A" />
                           ) : (
                             <>
@@ -522,7 +501,7 @@ export function MorphResultsScreen({ navigation }: Props) {
                           )}
                         </Pressable>
                       </LinearGradient>
-                    </Pressable>
+                    </View>
                   );
                 }}
               />
@@ -709,6 +688,19 @@ export function MorphResultsScreen({ navigation }: Props) {
           </View>
         ) : null}
       </ScrollView>
+
+      {shareTarget && sharePreview ? (
+        <ShareFriendsModal
+          visible
+          onClose={() => setShareTarget(null)}
+          styleId={shareTarget.id}
+          title={shareTarget.title}
+          previewImage={sharePreview}
+          userName={user?.first_name || user?.full_name}
+          userKey={user?.id}
+          onError={(message) => toast.show(message, { tone: "error", durationMs: 3600 })}
+        />
+      ) : null}
     </View>
   );
 }
@@ -925,17 +917,13 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   spotlightBusyText: { color: "#FFF", fontWeight: "700", fontSize: 13 },
-  previewBadge: {
-    position: "absolute",
-    top: 56,
-    left: 12,
-    backgroundColor: "#FFF",
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    zIndex: 2,
+  previewInline: {
+    color: "rgba(255,255,255,0.78)",
+    fontSize: 11,
+    fontWeight: "800",
+    letterSpacing: 0.4,
+    textTransform: "uppercase",
   },
-  previewBadgeText: { fontSize: 11, fontWeight: "800", color: "#0A0A0A" },
   spotlightGrad: {
     position: "absolute",
     left: 0,
