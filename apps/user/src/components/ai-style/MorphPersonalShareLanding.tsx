@@ -2,12 +2,13 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { Loader2, Sparkles, Wand2 } from "lucide-react";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { fetchMorphAiLookShare, registerMorphAiLookShareView } from "@/lib/api";
 import { hasValidUserSession } from "@/lib/api/client";
 import { getAiStyleHeroUrl } from "@/lib/cover-images";
 import { trackMorphShare } from "@/lib/ga";
+import { resolveMediaUrl } from "@/lib/media-url";
 
 type Props = {
   shareId: string;
@@ -70,6 +71,13 @@ export function MorphPersonalShareLanding({ shareId }: Props) {
     personalSubtitleViral: "10 soniyada o‘z selfiengizda ko‘ring — Morf AI.",
   };
 
+  const imageSrc = resolveMediaUrl(data?.after_url) || data?.after_url || "";
+  const [staticPresent, setStaticPresent] = useState(false);
+
+  useEffect(() => {
+    setStaticPresent(Boolean(document.getElementById("morph-share-static")));
+  }, []);
+
   useEffect(() => {
     if (!shareId) return;
     trackMorphShare("landing_view", { surface: "landing", shareId });
@@ -77,6 +85,12 @@ export function MorphPersonalShareLanding({ shareId }: Props) {
       /* hisoblagich viral oqimni to‘xtatmasin */
     });
   }, [shareId]);
+
+  useEffect(() => {
+    if (!imageSrc) return;
+    document.getElementById("morph-share-static")?.remove();
+    setStaticPresent(false);
+  }, [imageSrc]);
 
   const onTry = () => {
     trackMorphShare("landing_try_click", {
@@ -98,6 +112,10 @@ export function MorphPersonalShareLanding({ shareId }: Props) {
       search: { redirect: tryPath },
     });
   };
+
+  if (staticPresent && !imageSrc) {
+    return null;
+  }
 
   return (
     <div className="min-h-[100dvh] bg-background text-foreground">
@@ -129,11 +147,11 @@ export function MorphPersonalShareLanding({ shareId }: Props) {
       </div>
 
       <div className="mx-auto max-w-lg space-y-3 px-5 pb-[max(1.75rem,env(safe-area-inset-bottom))] pt-3">
-        {isLoading ? (
+        {isLoading && !staticPresent ? (
           <div className="flex aspect-[3/4] w-full items-center justify-center rounded-2xl bg-surface">
             <Loader2 className="h-7 w-7 animate-spin text-muted-foreground" />
           </div>
-        ) : isError || !data?.after_url ? (
+        ) : isError && !imageSrc && !staticPresent ? (
           <div className="rounded-2xl border border-border bg-surface px-5 py-9 text-center">
             <p className="text-[15px] font-semibold">
               {t("aiStylePage.shareLook.notFound", {
@@ -150,8 +168,8 @@ export function MorphPersonalShareLanding({ shareId }: Props) {
         ) : (
           <div className="relative mx-auto aspect-[3/4] w-full overflow-hidden rounded-2xl border border-border bg-surface">
             <img
-              src={data.after_url || getAiStyleHeroUrl("hero-men")}
-              alt=""
+              src={imageSrc || getAiStyleHeroUrl("hero-men")}
+              alt={title}
               className="absolute inset-0 h-full w-full object-cover object-top"
             />
             <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 to-transparent px-3.5 pb-3.5 pt-10">
@@ -161,7 +179,7 @@ export function MorphPersonalShareLanding({ shareId }: Props) {
           </div>
         )}
 
-        {!isLoading && data?.after_url ? (
+        {!isLoading && imageSrc ? (
           <>
             <button
               type="button"

@@ -10,6 +10,7 @@ type MorphShareSeo = {
   url: string;
   styleTitle: string;
   sharerName: string;
+  styleId: string;
 };
 
 type MorphLookSeo = {
@@ -82,6 +83,7 @@ export async function fetchMorphShareSeo(shareId: string): Promise<MorphShareSeo
       after_url?: string | null;
       sharer_name?: string;
       share_page_url?: string;
+      style_id?: string;
     };
     const styleTitle = data.title?.trim() || "Morf AI";
     const sharerName = data.sharer_name?.trim() || "Do‘stingiz";
@@ -95,6 +97,7 @@ export async function fetchMorphShareSeo(shareId: string): Promise<MorphShareSeo
       url: data.share_page_url?.trim() || morphSharePublicUrl(shareId),
       styleTitle,
       sharerName,
+      styleId: data.style_id?.trim() || "",
     };
     shareCache.set(shareId, { at: Date.now(), data: seo });
     return seo;

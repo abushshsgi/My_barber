@@ -22,7 +22,11 @@ import Animated, {
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { createMorphAiLookShare } from "../../api/ai";
-import { composeInstagramStoryImage, downloadDataUrl } from "../../lib/compose-instagram-story";
+import {
+  composeInstagramStoryImage,
+  downloadDataUrl,
+  downloadLookImage,
+} from "../../lib/compose-instagram-story";
 import { INSTAGRAM_CTA, pickInstagramHeadline } from "../../lib/morph-share-copy";
 import { openTelegramShare, WEB_ORIGIN } from "../../lib/morph-share";
 
@@ -83,9 +87,9 @@ export function ShareFriendsModal({
   const insets = useSafeAreaInsets();
   const { height: winH } = useWindowDimensions();
   const reduceMotion = useReducedMotion();
-  const sheetH = Math.round(winH * 0.43);
+  const sheetH = Math.round(winH * 0.52);
   const progress = useSharedValue(0);
-  const [busy, setBusy] = useState<Network | "copy" | null>(null);
+  const [busy, setBusy] = useState<Network | "copy" | "download" | null>(null);
   const [copied, setCopied] = useState(false);
   const [link, setLink] = useState("");
 
@@ -135,6 +139,18 @@ export function ShareFriendsModal({
     setLink(next);
     return next;
   }, [link, previewImage, styleId, title]);
+
+  const onDownload = useCallback(async () => {
+    setBusy("download");
+    try {
+      const slug = title.replace(/[^a-z0-9]+/gi, "-").toLowerCase() || "look";
+      await downloadLookImage(previewImage, `morf-ai-${slug}.jpg`);
+    } catch {
+      onError("Rasmni yuklab bo‘lmadi");
+    } finally {
+      setBusy(null);
+    }
+  }, [onError, previewImage, title]);
 
   const onCopy = useCallback(async () => {
     setBusy("copy");
@@ -273,6 +289,20 @@ export function ShareFriendsModal({
             />
           </View>
 
+          <Pressable
+            style={styles.downloadBtn}
+            onPress={() => void onDownload()}
+            disabled={busy === "download"}
+            accessibilityLabel="Rasmni yuklab olish"
+          >
+            {busy === "download" ? (
+              <ActivityIndicator color="#0A0A0A" />
+            ) : (
+              <Ionicons name="download-outline" size={20} color="#0A0A0A" />
+            )}
+            <Text style={styles.downloadText}>Rasmni yuklab olish</Text>
+          </Pressable>
+
           <View style={styles.divider} />
           <Text style={styles.copyLabel}>Havolani nusxalash</Text>
           <Pressable style={styles.copyRow} onPress={() => void onCopy()}>
@@ -375,6 +405,17 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   netLabel: { fontSize: 11, fontWeight: "700", color: "#0A0A0A" },
+  downloadBtn: {
+    marginTop: 18,
+    minHeight: 46,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    borderRadius: 14,
+    backgroundColor: "#F3F3F3",
+  },
+  downloadText: { fontSize: 14, fontWeight: "800", color: "#0A0A0A" },
   divider: {
     height: 1,
     backgroundColor: "#EFEFEF",

@@ -6,9 +6,14 @@ import {
 } from "@/lib/morph-share-seo.server";
 
 export const Route = createFileRoute("/morf-ai/share/$shareId")({
+  ssr: false,
   loader: async ({ params }) => {
-    const seo = await fetchMorphShareSeo(params.shareId);
-    return { seo };
+    try {
+      const seo = await fetchMorphShareSeo(params.shareId);
+      return { seo };
+    } catch {
+      return { seo: null };
+    }
   },
   head: ({ loaderData, params }) =>
     buildMorphShareHeadMeta(params.shareId, loaderData?.seo ?? null),

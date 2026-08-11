@@ -213,3 +213,23 @@ export async function downloadDataUrl(dataUrl: string, filename: string): Promis
   a.click();
   a.remove();
 }
+
+/** Try-on rasmni qurilmaga saqlash — webda fayl, nativda Share. */
+export async function downloadLookImage(source: string, filename: string): Promise<void> {
+  if (typeof document !== "undefined") {
+    let href = source;
+    let revoke: string | null = null;
+    if (!source.startsWith("data:")) {
+      const res = await fetch(source);
+      if (!res.ok) throw new Error("Rasm yuklanmadi");
+      const blob = await res.blob();
+      href = URL.createObjectURL(blob);
+      revoke = href;
+    }
+    await downloadDataUrl(href, filename);
+    if (revoke) window.setTimeout(() => URL.revokeObjectURL(revoke), 1500);
+    return;
+  }
+  const { Share } = await import("react-native");
+  await Share.share({ url: source, message: filename });
+}
