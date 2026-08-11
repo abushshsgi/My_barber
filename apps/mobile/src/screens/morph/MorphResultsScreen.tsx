@@ -57,7 +57,6 @@ export function MorphResultsScreen({ navigation }: Props) {
   const [moreStyles, setMoreStyles] = useState<ApiHairstyle[]>([]);
   const [shareBusy, setShareBusy] = useState(false);
   const carouselRef = useRef<FlatList<AiStyleSuggestion>>(null);
-  const pendingTryOnRef = useRef<AiStyleSuggestion | null>(null);
   const analyzingBusy = phase === "analyzing";
   const summaryBusy = phase === "summary";
 
@@ -77,7 +76,7 @@ export function MorphResultsScreen({ navigation }: Props) {
     let cancelled = false;
     void fetchHairstyles("men")
       .then((rows) => {
-        if (!cancelled) setMoreStyles(rows.slice(0, 12));
+        if (!cancelled) setMoreStyles(rows);
       })
       .catch(() => undefined);
     return () => {
@@ -155,26 +154,6 @@ export function MorphResultsScreen({ navigation }: Props) {
           replace_latest: false,
         }).catch(() => undefined);
 
-        const preferredId = session.preferredStyleId;
-        const preferredFromList =
-          preferredId != null ? result.suggestions.find((s) => s.id === preferredId) : undefined;
-        const preferredFallback: AiStyleSuggestion | null =
-          preferredId && !preferredFromList
-            ? {
-                id: preferredId,
-                title: session.preferredStyleTitle || preferredId,
-                match: 100,
-                reason_uz: "",
-                category: "",
-                seed: preferredId,
-                image_url: "",
-                salon_id: null,
-                salon_name: null,
-                barber_name: null,
-              }
-            : null;
-        pendingTryOnRef.current =
-          preferredFromList || preferredFallback || result.suggestions[0] || null;
         setPhase("summary");
       } catch (err) {
         if (gate.handleError(err)) {
@@ -190,7 +169,7 @@ export function MorphResultsScreen({ navigation }: Props) {
         setPhase("error");
       }
     },
-    [session, gate, navigation, runTryOn],
+    [session, gate, navigation],
   );
 
   useEffect(() => {
@@ -213,17 +192,20 @@ export function MorphResultsScreen({ navigation }: Props) {
     if (phase !== "summary") return;
     setError(null);
     setPhase("ready");
-    const first = pendingTryOnRef.current;
-    if (first) {
-      void runTryOn(first);
-    }
-  }, [phase, runTryOn]);
+  }, [phase]);
 
   useEffect(() => {
     return () => toast.hide();
   }, [toast]);
 
-  const suggestions = session.analyze?.suggestions ?? [];
+  const suggestions = useMemo(() => {
+    const raw = session.analyze?.suggestions ?? [];
+    const preferredId = session.preferredStyleId;
+    if (!preferredId) return raw.slice(0, 3);
+    const preferred = raw.find((s) => s.id === preferredId);
+    const rest = raw.filter((s) => s.id !== preferredId);
+    return (preferred ? [preferred, ...rest] : raw).slice(0, 3);
+  }, [session.analyze?.suggestions, session.preferredStyleId]);
   const activeSuggestion = suggestions[spotlightIndex] ?? suggestions[0] ?? null;
   const activePreview = activeSuggestion
     ? session.tryOnByStyle[activeSuggestion.id] ||
@@ -283,21 +265,29 @@ export function MorphResultsScreen({ navigation }: Props) {
     goCapture();
   }, [analyzingBusy, goCapture]);
 
-  const onShareLook = useCallback(async () => {
-    if (!activeSuggestion || !activePreview || shareBusy) return;
-    setShareBusy(true);
-    try {
-      await shareMorphLook({
-        styleId: activeSuggestion.id,
-        title: activeSuggestion.title,
-        previewImage: activePreview,
-      });
-    } catch {
-      toast.show("Ulashib bo‘lmadi", { tone: "error", durationMs: 3200 });
-    } finally {
-      setShareBusy(false);
-    }
-  }, [activeSuggestion, activePreview, shareBusy, toast]);
+  const onShareLook = useCallback(
+    async (style?: AiStyleSuggestion | null) => {
+      const target = style ?? activeSuggestion;
+      const preview = target
+        ? session.tryOnByStyle[target.id] ||
+          (session.tryOnStyleId === target.id ? session.tryOnPreview : null)
+        : activePreview;
+      if (!target || !preview || shareBusy) return;
+      setShareBusy(true);
+      try {
+        await shareMorphLook({
+          styleId: target.id,
+          title: target.title,
+          previewImage: preview,
+        });
+      } catch {
+        toast.show("Ulashib bo‘lmadi", { tone: "error", durationMs: 3200 });
+      } finally {
+        setShareBusy(false);
+      }
+    },
+    [activeSuggestion, activePreview, session.tryOnByStyle, session.tryOnPreview, session.tryOnStyleId, shareBusy, toast],
+  );
 
   const openStudio = useCallback(() => {
     if (!activePreview) return;
@@ -458,7 +448,9 @@ export function MorphResultsScreen({ navigation }: Props) {
                         styles.spotlight,
                         { width: cardW, marginRight: isLast ? 0 : CARD_GAP },
                       ]}
-                      onPress={() => openPreview(item)}
+                      onPress={() => {
+                        if (preview) openPreview(item);
+                      }}
                     >
                       <Image
                         source={{
@@ -499,6 +491,36 @@ export function MorphResultsScreen({ navigation }: Props) {
                             </Text>
                           </View>
                         </View>
+                        <Pressable
+                          style={({ pressed }) => [
+                            styles.inImageCta,
+                            pressed && { opacity: 0.9 },
+                          ]}
+                          android_ripple={{ color: "rgba(0,0,0,0.08)" }}
+                          disabled={loading || (preview ? shareBusy : false)}
+                          onPress={() => {
+                            if (preview) {
+                              void onShareLook(item);
+                              return;
+                            }
+                            void runTryOn(item);
+                          }}
+                        >
+                          {loading || (preview && shareBusy) ? (
+                            <ActivityIndicator color="#0A0A0A" />
+                          ) : (
+                            <>
+                              <Ionicons
+                                name={preview ? "share-social-outline" : "sparkles"}
+                                size={18}
+                                color="#0A0A0A"
+                              />
+                              <Text style={styles.inImageCtaText}>
+                                {preview ? "Ulashish" : "Generatsiya qilish"}
+                              </Text>
+                            </>
+                          )}
+                        </Pressable>
                       </LinearGradient>
                     </Pressable>
                   );
@@ -573,49 +595,14 @@ export function MorphResultsScreen({ navigation }: Props) {
             ) : null}
 
             {activePreview ? (
-              <View style={styles.postGenActions}>
-                <Pressable
-                  style={({ pressed }) => [styles.shareBtn, pressed && { opacity: 0.9 }]}
-                  android_ripple={{ color: "rgba(255,255,255,0.12)" }}
-                  disabled={shareBusy}
-                  onPress={() => void onShareLook()}
-                >
-                  {shareBusy ? (
-                    <ActivityIndicator color="#FFF" />
-                  ) : (
-                    <>
-                      <Ionicons name="share-social-outline" size={18} color="#FFF" />
-                      <Text style={styles.shareBtnText}>Ulashish</Text>
-                    </>
-                  )}
-                </Pressable>
-                <Pressable
-                  style={({ pressed }) => [styles.studioBtn, pressed && { opacity: 0.9 }]}
-                  android_ripple={{ color: "rgba(0,0,0,0.08)" }}
-                  onPress={openStudio}
-                >
-                  <Ionicons name="color-palette-outline" size={18} color="#0A0A0A" />
-                  <Text style={styles.studioBtnText}>Studio</Text>
-                </Pressable>
-              </View>
-            ) : activeSuggestion && !activeStyleId ? (
               <Pressable
-                style={({ pressed }) => [
-                  styles.shareBtn,
-                  styles.shareBtnSolo,
-                  pressed && { opacity: 0.9 },
-                ]}
-                android_ripple={{ color: "rgba(255,255,255,0.12)" }}
-                onPress={() => void runTryOn(activeSuggestion)}
+                style={({ pressed }) => [styles.studioBtn, pressed && { opacity: 0.9 }]}
+                android_ripple={{ color: "rgba(0,0,0,0.08)" }}
+                onPress={openStudio}
               >
-                <Ionicons name="sparkles" size={18} color="#FFF" />
-                <Text style={styles.shareBtnText}>AI yaratish</Text>
+                <Ionicons name="color-palette-outline" size={18} color="#0A0A0A" />
+                <Text style={styles.studioBtnText}>Studio</Text>
               </Pressable>
-            ) : activeStyleId ? (
-              <View style={[styles.shareBtn, styles.shareBtnSolo]}>
-                <ActivityIndicator color="#FFF" />
-                <Text style={styles.shareBtnText}>AI yaratmoqda…</Text>
-              </View>
             ) : null}
           </View>
         ) : (
@@ -957,6 +944,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: H_PAD,
     paddingBottom: 16,
     paddingTop: 48,
+    gap: 12,
+  },
+  inImageCta: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    minHeight: 48,
+    borderRadius: 16,
+    backgroundColor: "#FFF",
+    overflow: "hidden",
+  },
+  inImageCtaText: {
+    color: "#0A0A0A",
+    fontWeight: "800",
+    fontSize: 15,
+    includeFontPadding: false,
   },
   spotlightMeta: {
     flexDirection: "row",
@@ -978,25 +982,8 @@ const styles = StyleSheet.create({
     color: "#525252",
     paddingHorizontal: H_PAD,
   },
-  postGenActions: {
-    marginHorizontal: H_PAD,
-    gap: 10,
-  },
-  shareBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    minHeight: 52,
-    borderRadius: 16,
-    backgroundColor: "#0A0A0A",
-    overflow: "hidden",
-  },
-  shareBtnSolo: {
-    marginHorizontal: H_PAD,
-  },
-  shareBtnText: { color: "#FFF", fontWeight: "700", fontSize: 15, includeFontPadding: false },
   studioBtn: {
+    marginHorizontal: H_PAD,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",

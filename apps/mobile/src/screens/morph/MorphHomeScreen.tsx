@@ -46,7 +46,7 @@ export function MorphHomeScreen({ navigation }: Props) {
     try {
       const rows = await fetchHairstyles("men");
       setSamples(
-        rows.slice(0, 12).map((entry) => ({
+        rows.map((entry) => ({
           id: entry.id,
           title: entry.title_uz || entry.title,
           image: entry.image_url,
