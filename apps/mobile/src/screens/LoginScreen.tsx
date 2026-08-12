@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -19,8 +20,10 @@ import {
 import { useAuth } from "../auth/AuthContext";
 import { useGoogleAuth } from "../auth/GoogleAuthSession";
 import { getLastPhone } from "../auth/storage";
+import { morfWordmarkWhite } from "../branding/morf-logo";
 import { BrandLogo } from "../components/BrandLogo";
 import { GoogleGlyph } from "../components/GoogleGlyph";
+import { useAppShell } from "../lib/AppShellContext";
 import { colors } from "../theme/colors";
 
 type Step = "choose" | "phone" | "password" | "code";
@@ -29,6 +32,8 @@ export function LoginScreen() {
   const insets = useSafeAreaInsets();
   const auth = useAuth();
   const google = useGoogleAuth();
+  const { shell } = useAppShell();
+  const morph = shell === "morph";
 
   const [step, setStep] = useState<Step>("choose");
   const [phone, setPhone] = useState("");
@@ -42,6 +47,8 @@ export function LoginScreen() {
   const showError = error || google.error;
   const showBusy = busy || google.busy;
   const googleWaiting = showBusy || !google.ready;
+  const titleStyle = [styles.title, morph && styles.titleMorph];
+  const subStyle = [styles.sub, morph && styles.subMorph];
 
   useEffect(() => {
     void getLastPhone().then((p) => {
@@ -132,25 +139,42 @@ export function LoginScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={[styles.root, { paddingTop: insets.top + 8 }]}
+      style={[
+        styles.root,
+        morph && styles.rootMorph,
+        { paddingTop: insets.top + 8 },
+      ]}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
       <View style={styles.body}>
         {/* Markaz — logo + sarlavha (Uzum Tezkor uslubi) */}
         <View style={styles.centerBlock}>
-          <BrandLogo size="xl" />
+          {morph ? (
+            <Image
+              source={morfWordmarkWhite}
+              style={styles.morphMark}
+              resizeMode="contain"
+              accessibilityLabel="Morf AI"
+            />
+          ) : (
+            <BrandLogo size="xl" />
+          )}
 
           {step === "choose" ? (
             <>
-              <Text style={styles.title}>Mysaloon ga kiring</Text>
-              <Text style={styles.sub}>Google yoki telefon orqali davom eting</Text>
+              <Text style={titleStyle}>
+                {morph ? "Morf AI ga kiring" : "Mysaloon ga kiring"}
+              </Text>
+              <Text style={subStyle}>
+                Bitta akkaunt — MySaloon va Morf AI uchun
+              </Text>
             </>
           ) : null}
 
           {step === "phone" ? (
             <>
-              <Text style={styles.title}>Raqam bilan davom eting</Text>
-              <Text style={styles.sub}>SMS kod yuboriladi</Text>
+              <Text style={titleStyle}>Raqam bilan davom eting</Text>
+              <Text style={subStyle}>SMS kod yuboriladi</Text>
               <View style={styles.phoneRow}>
                 <Text style={styles.prefix}>+998</Text>
                 <TextInput
@@ -169,8 +193,8 @@ export function LoginScreen() {
 
           {step === "password" ? (
             <>
-              <Text style={styles.title}>Parolingizni kiriting</Text>
-              <Text style={styles.sub}>+998 {formatUzPhoneDisplay(phone)}</Text>
+              <Text style={titleStyle}>Parolingizni kiriting</Text>
+              <Text style={subStyle}>+998 {formatUzPhoneDisplay(phone)}</Text>
               <TextInput
                 value={password}
                 onChangeText={setPassword}
@@ -188,8 +212,8 @@ export function LoginScreen() {
 
           {step === "code" ? (
             <>
-              <Text style={styles.title}>SMS kodni kiriting</Text>
-              <Text style={styles.sub}>+998 {formatUzPhoneDisplay(phone)}</Text>
+              <Text style={titleStyle}>SMS kodni kiriting</Text>
+              <Text style={subStyle}>+998 {formatUzPhoneDisplay(phone)}</Text>
               <TextInput
                 value={code}
                 onChangeText={setCode}
@@ -214,6 +238,7 @@ export function LoginScreen() {
               <Pressable
                 style={({ pressed }) => [
                   styles.outlineBtn,
+                  morph && styles.outlineBtnMorph,
                   googleWaiting && styles.btnDisabled,
                   pressed && !googleWaiting && styles.pressed,
                 ]}
@@ -223,17 +248,27 @@ export function LoginScreen() {
                 accessibilityLabel="Google bilan davom etish"
               >
                 <GoogleGlyph size={22} />
-                <Text style={styles.outlineBtnText}>Google bilan davom etish</Text>
-                {googleWaiting ? <ActivityIndicator color={colors.muted} /> : null}
+                <Text style={[styles.outlineBtnText, morph && styles.outlineBtnTextMorph]}>
+                  Google bilan davom etish
+                </Text>
+                {googleWaiting ? (
+                  <ActivityIndicator color={morph ? "#FFF" : colors.muted} />
+                ) : null}
               </Pressable>
 
               <Pressable
-                style={({ pressed }) => [styles.primaryBtn, pressed && styles.pressed]}
+                style={({ pressed }) => [
+                  styles.primaryBtn,
+                  morph && styles.primaryBtnMorph,
+                  pressed && styles.pressed,
+                ]}
                 onPress={() => setStep("phone")}
                 accessibilityRole="button"
               >
-                <Ionicons name="call-outline" size={18} color="#FFF" />
-                <Text style={styles.primaryBtnText}>Telefon bilan kirish</Text>
+                <Ionicons name="call-outline" size={18} color={morph ? "#0A0A0A" : "#FFF"} />
+                <Text style={[styles.primaryBtnText, morph && styles.primaryBtnTextMorph]}>
+                  Telefon bilan kirish
+                </Text>
               </Pressable>
             </View>
           ) : null}
@@ -310,11 +345,16 @@ export function LoginScreen() {
             </View>
           ) : null}
 
-          <Text style={styles.legal}>
+          <Text style={[styles.legal, morph && styles.subMorph]}>
             Davom etish orqali{" "}
-            <Text style={styles.legalLink}>foydalanish shartlari</Text> va{" "}
-            <Text style={styles.legalLink}>maxfiylik siyosati</Text>ga rozilik
-            bildirasiz.
+            <Text style={[styles.legalLink, morph && styles.titleMorph]}>
+              foydalanish shartlari
+            </Text>{" "}
+            va{" "}
+            <Text style={[styles.legalLink, morph && styles.titleMorph]}>
+              maxfiylik siyosati
+            </Text>
+            ga rozilik bildirasiz. Akkaunt MySaloon va Morf AI da ishlaydi.
           </Text>
         </View>
       </View>
@@ -326,6 +366,13 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: "#FFFFFF",
+  },
+  rootMorph: {
+    backgroundColor: "#070708",
+  },
+  morphMark: {
+    width: 180,
+    height: 44,
   },
   body: {
     flex: 1,
@@ -477,4 +524,13 @@ const styles = StyleSheet.create({
     color: colors.fg,
     fontWeight: "700",
   },
+  titleMorph: { color: "#FFFFFF" },
+  subMorph: { color: "rgba(255,255,255,0.55)" },
+  outlineBtnMorph: {
+    borderColor: "rgba(255,255,255,0.85)",
+    backgroundColor: "transparent",
+  },
+  outlineBtnTextMorph: { color: "#FFFFFF" },
+  primaryBtnMorph: { backgroundColor: "#FFFFFF" },
+  primaryBtnTextMorph: { color: "#0A0A0A" },
 });

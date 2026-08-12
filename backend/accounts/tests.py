@@ -287,3 +287,58 @@ class PhoneAuthTests(TestCase):
         )
         self.assertEqual(locked.status_code, 429)
         self.assertIn("retry_after", locked.json())
+
+
+class CustomerDashboardTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.user = User.objects.create_user(
+            username="901990011@phone.mysaloon.local",
+            email="901990011@phone.mysaloon.local",
+            phone="+998901990011",
+            password="unused",
+            full_name="Test Mijoz",
+        )
+
+    def _auth(self):
+        from rest_framework_simplejwt.tokens import RefreshToken
+
+        token = str(RefreshToken.for_user(self.user).access_token)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
+
+    def test_dashboard_requires_auth(self):
+        res = self.client.get("/api/v1/users/me/dashboard/")
+        self.assertIn(res.status_code, (401, 403))
+
+    def test_dashboard_returns_shared_account_payload(self):
+        self._auth()
+        res = self.client.get("/api/v1/users/me/dashboard/")
+        self.assertEqual(res.status_code, 200)
+        body = res.json()
+        self.assertTrue(body["verified"])
+        self.assertEqual(body["user"]["full_name"], "Test Mijoz")
+        self.assertIn("wallet_number", body["wallet"])
+        self.assertIn("balance", body["wallet"])
+        self.assertIn("has_active", body["subscription"])
+        self.assertIn("usage", body["subscription"])
+        self.assertEqual(body["morph"]["photo_count"], 0)
+        self.assertEqual(body["morph"]["photo_limit"], 60)
+        self.assertEqual(body["morph"]["history"], [])
+        self.assertEqual(body["mysaloon"]["upcoming_bookings"], 0)
+        self.assertEqual(body["mysaloon"]["favorites"], 0)
+
+    def test_barber_token_cannot_read_customer_dashboard(self):
+        from barbers.barber_auth import encode_barber_tokens
+        from barbers.models import Barber
+
+        barber = Barber.objects.create(
+            email="dash-barber@test.uz",
+            username="dash-barber@test.uz",
+            full_name="Barber Dash",
+            password="unused-hash",
+            is_active=True,
+        )
+        access, _refresh = encode_barber_tokens(barber.id)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {access}")
+        res = self.client.get("/api/v1/users/me/dashboard/")
+        self.assertEqual(res.status_code, 403)

@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { StatusBar } from "expo-status-bar";
 import {
   ActivityIndicator,
   Pressable,
@@ -12,11 +13,14 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { HeaderPill } from "../../components/ui/NativeHeader";
 import { SettingsGroup, SettingsRow } from "../../components/ui/SettingsKit";
-import { useProfileData } from "../../hooks/useProfileData";
+import { useProfileDashboard } from "../../hooks/useProfileDashboard";
 import { useAuth } from "../../auth/AuthContext";
+import { planLabel } from "../../api/dashboard";
 import { formatSom, initials } from "../../api/user";
+import { useAppShell } from "../../lib/AppShellContext";
 import type { ProfileStackParamList } from "../../navigation/ProfileStack";
 import { colors } from "../../theme/colors";
+import { MorphProfileScreen } from "./MorphProfileScreen";
 
 type Props = NativeStackScreenProps<ProfileStackParamList, "ProfileHome">;
 
@@ -27,23 +31,39 @@ const QUICK = [
   { key: "Settings", label: "Sozlamalar", icon: "settings-outline" as const },
 ] as const;
 
-export function ProfileHomeScreen({ navigation }: Props) {
+export function ProfileHomeScreen(props: Props) {
+  const { shell } = useAppShell();
+  if (shell === "morph") {
+    return <MorphProfileScreen {...props} />;
+  }
+  return <MysaloonProfileHome {...props} />;
+}
+
+function MysaloonProfileHome({ navigation }: Props) {
   const insets = useSafeAreaInsets();
-  const data = useProfileData();
+  const { dashboard, unreadCount, loading, refresh } = useProfileDashboard();
   const { signOut, user: authUser } = useAuth();
-  const display = authUser
-    ? authUser.full_name ||
-      [authUser.first_name, authUser.last_name].filter(Boolean).join(" ") ||
-      data.name
-    : data.name;
+  const user = dashboard?.user ?? authUser;
+  const display =
+    user?.full_name?.trim() ||
+    [user?.first_name, user?.last_name].filter(Boolean).join(" ").trim() ||
+    "Foydalanuvchi";
+  const verified = dashboard?.verified ?? Boolean(user?.phone || user?.email_verified);
+  const sub = dashboard?.subscription;
+  const wallet = dashboard?.wallet;
+  const upcoming = dashboard?.mysaloon.upcoming_bookings ?? 0;
+  const history = dashboard?.mysaloon.history_bookings ?? 0;
+  const favorites = dashboard?.mysaloon.favorites ?? 0;
+  const plan = planLabel(sub);
 
   return (
     <View style={[styles.root, { paddingTop: Math.max(insets.top, 10) }]}>
+      <StatusBar style="dark" />
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.content}
         refreshControl={
-          <RefreshControl refreshing={data.loading} onRefresh={data.refresh} />
+          <RefreshControl refreshing={loading && !!dashboard} onRefresh={refresh} />
         }
       >
         <View style={styles.topRow}>
@@ -52,7 +72,7 @@ export function ProfileHomeScreen({ navigation }: Props) {
             icon={<Ionicons name="star" size={13} color={colors.fg} />}
           />
           <HeaderPill
-            label="Obuna"
+            label={sub?.has_active ? plan : "Obuna"}
             dark
             icon={<Ionicons name="diamond" size={13} color="#FFF" />}
             onPress={() => navigation.navigate("Subscriptions")}
@@ -61,7 +81,7 @@ export function ProfileHomeScreen({ navigation }: Props) {
 
         <View style={styles.hero}>
           <View style={styles.avatar}>
-            {data.loading ? (
+            {loading && !dashboard ? (
               <ActivityIndicator color={colors.fg} />
             ) : (
               <Text style={styles.avatarText}>{initials(display)}</Text>
@@ -72,15 +92,18 @@ export function ProfileHomeScreen({ navigation }: Props) {
             onPress={() => navigation.navigate("PersonalInfo")}
           >
             <Text style={styles.name}>{display}</Text>
-            <Ionicons name="checkmark-circle" size={18} color="#007AFF" />
+            {verified ? (
+              <Ionicons name="checkmark-circle" size={18} color="#007AFF" />
+            ) : null}
             <Ionicons name="chevron-forward" size={16} color={colors.muted} />
           </Pressable>
           <View style={styles.audiencePill}>
-            <Text style={styles.audienceText}>Hammasi</Text>
+            <Text style={styles.audienceText}>
+              {sub?.has_active ? `${plan} · MySaloon` : "MySaloon"}
+            </Text>
           </View>
           <Text style={styles.stats}>
-            {data.upcomingCount + data.historyCount} bron · {data.favoritesCount} sevimli · 0
-            sharh
+            {upcoming + history} bron · {favorites} sevimli
           </Text>
         </View>
 
@@ -106,7 +129,7 @@ export function ProfileHomeScreen({ navigation }: Props) {
         <SettingsGroup dark>
           <SettingsRow
             title="Hamyon"
-            subtitle={formatSom(data.wallet?.balance ?? 0)}
+            subtitle={formatSom(wallet?.balance ?? 0)}
             icon="wallet-outline"
             iconDark
             darkText
@@ -157,7 +180,7 @@ export function ProfileHomeScreen({ navigation }: Props) {
           <SettingsRow
             title="Bildirishnomalar"
             icon="notifications-outline"
-            badge={data.unreadCount}
+            badge={unreadCount}
             onPress={() => navigation.navigate("Notifications")}
             last
           />
@@ -176,6 +199,10 @@ export function ProfileHomeScreen({ navigation }: Props) {
           <Ionicons name="log-out-outline" size={18} color={colors.fg} />
           <Text style={styles.logoutText}>Chiqish</Text>
         </Pressable>
+
+        <Text style={styles.guestHint}>
+          Shu akkaunt Morf AI try-on va MySaloon bronlari uchun bir xil
+        </Text>
       </ScrollView>
     </View>
   );

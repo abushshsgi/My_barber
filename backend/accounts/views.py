@@ -6,6 +6,9 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from accounts.customer_permissions import IsAuthenticatedCustomer
+from accounts.dashboard import build_customer_dashboard
+
 from barbers.barber_auth import encode_barber_tokens
 from barbers.barber_email import maybe_schedule_verification_email_once
 from barbers.models import Barber
@@ -28,6 +31,7 @@ __all__ = [
     "BarberRegisterJoinSalonView",
     "BarberRegisterView",
     "MeView",
+    "MeDashboardView",
     "SkinProfileMeView",
     "UserSearchView",
     "UzRegionsView",
@@ -112,16 +116,28 @@ class BarberRegisterJoinSalonView(APIView):
 
 
 class MeView(generics.RetrieveUpdateAPIView):
+    """Identity PATCH/GET — faqat mijoz User, barber JWT emas."""
+
     serializer_class = UserSerializer
+    permission_classes = [IsAuthenticatedCustomer]
 
     def get_object(self):
         return self.request.user
 
 
+class MeDashboardView(APIView):
+    """GET /users/me/dashboard/ — MySaloon va Morph AI uchun yagona profil payload."""
+
+    permission_classes = [IsAuthenticatedCustomer]
+
+    def get(self, request):
+        return Response(build_customer_dashboard(request.user, request))
+
+
 class SkinProfileMeView(APIView):
     """GET/PATCH users/me/skin-profile/ — Morph AI INCI skani uchun teri profili."""
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticatedCustomer]
 
     def get(self, request):
         profile, _ = SkinProfile.objects.get_or_create(user=request.user)

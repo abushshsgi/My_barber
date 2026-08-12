@@ -1,6 +1,8 @@
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { useAuth } from "../auth/AuthContext";
+import { useAppShell } from "../lib/AppShellContext";
 import { LoginScreen } from "../screens/LoginScreen";
+import { MorphPaywallScreen } from "../screens/morph/MorphPaywallScreen";
 import { NotificationPrefsScreen } from "../screens/profile/NotificationPrefsScreen";
 import { NotificationsScreen } from "../screens/profile/NotificationsScreen";
 import { OrdersScreen } from "../screens/profile/OrdersScreen";
@@ -26,6 +28,7 @@ export type ProfileStackParamList = {
   NotificationPrefs: undefined;
   Notifications: undefined;
   Subscriptions: undefined;
+  MorphPaywall: undefined;
   WalletGate: undefined;
   WalletHome: undefined;
   WalletTopUp: undefined;
@@ -40,6 +43,8 @@ const Stack = createNativeStackNavigator<ProfileStackParamList>();
 /** Profil oqimi — mehmon uchun login; autentifikatsiyadan keyin stack. */
 export function ProfileStack() {
   const { isAuthenticated } = useAuth();
+  const { shell } = useAppShell();
+  const morphHome = shell === "morph";
 
   if (!isAuthenticated) {
     return <LoginScreen />;
@@ -47,13 +52,16 @@ export function ProfileStack() {
 
   return (
     <Stack.Navigator
-      screenOptions={{
+      screenOptions={({ route }) => ({
         headerShown: false,
         animation: "slide_from_right",
         gestureEnabled: true,
         fullScreenGestureEnabled: true,
-        contentStyle: { backgroundColor: "#FFFFFF" },
-      }}
+        contentStyle: {
+          backgroundColor:
+            morphHome && route.name === "ProfileHome" ? "#070708" : "#FFFFFF",
+        },
+      })}
     >
       <Stack.Screen name="ProfileHome" component={ProfileHomeScreen} />
       <Stack.Screen name="Orders" component={OrdersScreen} />
@@ -63,6 +71,11 @@ export function ProfileStack() {
       <Stack.Screen name="NotificationPrefs" component={NotificationPrefsScreen} />
       <Stack.Screen name="Notifications" component={NotificationsScreen} />
       <Stack.Screen name="Subscriptions" component={SubscriptionsScreen} />
+      <Stack.Screen
+        name="MorphPaywall"
+        component={MorphPaywallScreen}
+        options={{ contentStyle: { backgroundColor: "#FFFFFF" } }}
+      />
       <Stack.Screen name="WalletGate" component={WalletGateScreen} />
       <Stack.Screen name="WalletHome" component={WalletHomeScreen} />
       <Stack.Screen name="WalletTopUp" component={WalletTopUpScreen} />

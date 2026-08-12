@@ -2,7 +2,9 @@ import os
 
 from django.conf import settings
 from rest_framework import status
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import AllowAny
+
+from accounts.customer_permissions import IsAuthenticatedCustomer
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -46,7 +48,7 @@ class SubscriptionPlansView(APIView):
 class SubscriptionPromoPreviewView(APIView):
     """Promokod + tarif → yakuniy narx (checkout oldidan)."""
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticatedCustomer]
     throttle_classes = [SubscriptionCheckoutThrottle, SubscriptionIPThrottle]
 
     def post(self, request):
@@ -69,14 +71,14 @@ class SubscriptionPromoPreviewView(APIView):
 
 
 class SubscriptionMeView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticatedCustomer]
 
     def get(self, request):
         return Response(build_me_payload(request.user))
 
 
 class SubscriptionCheckoutView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticatedCustomer]
     throttle_classes = [SubscriptionCheckoutThrottle, SubscriptionIPThrottle]
     throttle_detail = "Obuna so'rovlari limiti. Biroz kutib qayta urinib ko'ring."
 
@@ -144,7 +146,7 @@ class SubscriptionCheckoutView(APIView):
 
 
 class SubscriptionConfirmView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticatedCustomer]
     throttle_classes = [SubscriptionConfirmThrottle, SubscriptionIPThrottle]
     throttle_detail = "To'lov tasdiqlash limiti."
 
@@ -183,7 +185,7 @@ class SubscriptionConfirmView(APIView):
 class SubscriptionCareAccessView(APIView):
     """Morph AI Parvarish — faqat Pro (yoki care entitlements)."""
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticatedCustomer]
 
     def get(self, request):
         allowed = can_use_morph_care(request.user)

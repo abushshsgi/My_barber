@@ -5,9 +5,10 @@ from django.db.models import Q
 from rest_framework import status
 from rest_framework.generics import ListAPIView
 from rest_framework.pagination import PageNumberPagination
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+
+from accounts.customer_permissions import IsAuthenticatedCustomer
 
 from accounts.models import User
 from accounts.permissions import IsAdmin
@@ -42,7 +43,7 @@ def _idempotency_key(request, *, required: bool = False) -> str:
 
 
 class WalletMeView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticatedCustomer]
 
     def get(self, request):
         wallet = WalletService.ensure_wallet(request.user)
@@ -56,7 +57,7 @@ class WalletTxPagination(PageNumberPagination):
 
 
 class WalletTransactionsView(ListAPIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticatedCustomer]
     serializer_class = LedgerEntrySerializer
     pagination_class = WalletTxPagination
 
@@ -126,7 +127,7 @@ class WalletTransactionsView(ListAPIView):
 
 
 class WalletTopUpView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticatedCustomer]
     throttle_classes = [WalletTopUpThrottle, AuthIPThrottle]
 
     def post(self, request):
@@ -168,14 +169,14 @@ class WalletTopUpView(APIView):
 
 
 class WalletGiftDesignsView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticatedCustomer]
 
     def get(self, request):
         return Response([gift_design_to_dict(d) for d in list_gift_designs()])
 
 
 class WalletGiftSendView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticatedCustomer]
     throttle_classes = [WalletGiftThrottle, AuthIPThrottle]
 
     def post(self, request):
@@ -217,7 +218,7 @@ class WalletGiftSendView(APIView):
 class WalletGiftReceivedView(ListAPIView):
     """Qabul qilingan sovg'a kartalar — kimdan kelgani bilan."""
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticatedCustomer]
     serializer_class = GiftTransferSerializer
     pagination_class = WalletTxPagination
 
@@ -232,7 +233,7 @@ class WalletGiftReceivedView(ListAPIView):
 
 
 class WalletRecipientSearchView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticatedCustomer]
 
     def get(self, request):
         q = (request.query_params.get("q") or "").strip()
