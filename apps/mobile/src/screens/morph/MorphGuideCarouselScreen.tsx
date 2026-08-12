@@ -66,6 +66,7 @@ const SLIDES: Slide[] = [
 const H_PAD = 24;
 const LOOK_URI = pexelsPhotoUrl(3998445, 1400);
 const ANGLE_URI = pexelsPhotoUrl(3998429, 1200);
+const UPLOAD_URI = pexelsPhotoUrl(1570807, 1200);
 
 async function rememberMorphTryOnTab() {
   await writeAppShell("morph");
@@ -179,12 +180,7 @@ export function MorphGuideCarouselScreen({ navigation, route }: Props) {
       setIndex(prev);
       return;
     }
-    const parent = navigation.getParent();
-    if (parent?.canGoBack()) {
-      parent.goBack();
-      return;
-    }
-    parent?.navigate("Home" as never);
+    navigation.getParent()?.navigate("Home" as never);
   };
 
   const slide = SLIDES[index] ?? SLIDES[0];
@@ -193,14 +189,20 @@ export function MorphGuideCarouselScreen({ navigation, route }: Props) {
   const renderItem = ({ item }: { item: Slide }) => (
     <View style={[styles.page, { width: winW, paddingTop: pageTopPad }]}>
       <View style={[styles.visual, { height: galleryH, width: galleryW }]}>
-        {item.visual === "look" || item.visual === "angle" ? (
+        {item.visual === "look" || item.visual === "angle" || item.visual === "upload" ? (
           <Image
-            source={{ uri: item.visual === "look" ? LOOK_URI : ANGLE_URI }}
+            source={{
+              uri:
+                item.visual === "look"
+                  ? LOOK_URI
+                  : item.visual === "angle"
+                    ? ANGLE_URI
+                    : UPLOAD_URI,
+            }}
             style={styles.visualPhoto}
             contentFit="cover"
           />
         ) : null}
-        {item.visual === "upload" ? <UploadVisual /> : null}
       </View>
       <Text style={styles.title}>{item.title}</Text>
       <Text style={styles.subtitle}>{item.subtitle}</Text>
@@ -316,21 +318,6 @@ export function MorphGuideCarouselScreen({ navigation, route }: Props) {
             <Text style={styles.ctaText}>Davom etish</Text>
           </Pressable>
         )}
-      </View>
-    </View>
-  );
-}
-
-function UploadVisual() {
-  return (
-    <View style={styles.uploadVisual}>
-      <View style={styles.uploadTile}>
-        <Ionicons name="camera" size={28} color="#0A0A0A" />
-        <Text style={styles.uploadTileText}>Kamera</Text>
-      </View>
-      <View style={[styles.uploadTile, styles.uploadTileGhost]}>
-        <Ionicons name="images-outline" size={28} color="#FFF" />
-        <Text style={styles.uploadTileGhostText}>Galereya</Text>
       </View>
     </View>
   );
@@ -461,35 +448,5 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "600",
     lineHeight: 18,
-  },
-  uploadVisual: {
-    flexDirection: "row",
-    gap: 14,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  uploadTile: {
-    width: 118,
-    height: 132,
-    borderRadius: 22,
-    backgroundColor: "#FFFFFF",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 10,
-  },
-  uploadTileGhost: {
-    backgroundColor: "rgba(255,255,255,0.08)",
-    borderWidth: 1.5,
-    borderColor: "rgba(255,255,255,0.35)",
-  },
-  uploadTileText: {
-    fontSize: 13,
-    fontWeight: "800",
-    color: "#0A0A0A",
-  },
-  uploadTileGhostText: {
-    fontSize: 13,
-    fontWeight: "800",
-    color: "#FFFFFF",
   },
 });

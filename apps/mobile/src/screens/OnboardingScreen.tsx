@@ -1,9 +1,9 @@
-import { Ionicons } from "@expo/vector-icons";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -54,18 +54,18 @@ function splitPrefillName(user: {
 }
 
 /**
- * Login dan keyin — faqat ism va yosh.
+ * Login dan keyin — ism, familiya va yosh bitta sahifada.
  * Joylashuv mehmon picker orqali oldindan saqlangan.
  */
 export function OnboardingScreen() {
   const insets = useSafeAreaInsets();
   const { user, refreshMe } = useAuth();
 
-  const [step, setStep] = useState<1 | 2>(1);
   const [firstName, setFirstNameRaw] = useState("");
   const [lastName, setLastNameRaw] = useState("");
   const [age, setAge] = useState("");
   const [nameTouched, setNameTouched] = useState(false);
+  const [ageTouched, setAgeTouched] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [prefilled, setPrefilled] = useState(false);
@@ -101,19 +101,22 @@ export function OnboardingScreen() {
 
   const ageNum = parseInt(age, 10);
   const ageOk = Number.isFinite(ageNum) && ageNum >= 10 && ageNum <= 100;
+  const ageError =
+    ageTouched && !ageOk ? "Yosh 10–100 oralig'ida bo'lishi kerak" : null;
+
+  const canSubmit = nameValidation.ok && ageOk && !saving;
 
   const finish = useCallback(async () => {
     if (finishingRef.current) return;
     const checked = validateDisplayName(`${firstName} ${lastName}`);
     if (!checked.ok) {
       setNameTouched(true);
-      setStep(1);
       setError(NAME_ERRORS[checked.errorKey]);
       return;
     }
     const ageValue = parseInt(age, 10);
     if (!Number.isFinite(ageValue) || ageValue < 10 || ageValue > 100) {
-      setStep(2);
+      setAgeTouched(true);
       setError("Yosh 10–100 oralig'ida bo'lishi kerak");
       return;
     }
@@ -149,150 +152,147 @@ export function OnboardingScreen() {
     }
   }, [age, firstName, lastName, refreshMe]);
 
-  const goNextFromName = () => {
-    setError(null);
-    if (!nameValidation.ok) {
-      setNameTouched(true);
-      setError(NAME_ERRORS[nameValidation.errorKey]);
-      return;
-    }
-    setStep(2);
-  };
-
-  const goNextFromAge = () => {
-    setError(null);
-    if (!ageOk) {
-      setError("Yosh 10–100 oralig'ida bo'lishi kerak");
-      return;
-    }
-    void finish();
-  };
-
   if (saving) {
     return <AccountCreatingScreen />;
   }
 
   return (
     <KeyboardAvoidingView
-      style={[styles.root, { paddingTop: insets.top }]}
+      style={[styles.root, { paddingTop: insets.top + 8 }]}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-      <View style={[styles.page, { paddingBottom: insets.bottom + 24 }]}>
-        {step === 2 ? (
-          <Pressable onPress={() => setStep(1)} style={styles.backRow} disabled={saving}>
-            <Ionicons name="chevron-back" size={20} color={colors.muted} />
-            <Text style={styles.backText}>Orqaga</Text>
-          </Pressable>
-        ) : (
-          <View style={styles.backSpacer} />
-        )}
+      <ScrollView
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={[
+          styles.scroll,
+          { paddingBottom: Math.max(insets.bottom, 16) + 24 },
+        ]}
+      >
+        <View style={styles.hero}>
+          <Text style={styles.kicker}>Akkaunt</Text>
+          <Text style={styles.title}>O‘zingiz haqingizda</Text>
+          <Text style={styles.sub}>
+            Ism, familiya va yosh bir sahifada. Shu akkaunt MySaloon va Morf AI uchun.
+          </Text>
+        </View>
 
-        {step === 1 ? (
-          <View style={styles.pageBody}>
-            <Text style={styles.pageTitle}>Ism va familiya</Text>
-            <TextInput
-              value={firstName}
-              onChangeText={setFirstName}
-              placeholder="Ism"
-              placeholderTextColor={colors.muted}
-              autoComplete="given-name"
-              autoFocus
-              style={styles.inputBox}
-            />
-            <TextInput
-              value={lastName}
-              onChangeText={setLastName}
-              placeholder="Familiya"
-              placeholderTextColor={colors.muted}
-              autoComplete="family-name"
-              style={styles.inputBox}
-            />
-            {nameError ? <Text style={styles.fieldError}>{nameError}</Text> : null}
-            {error && !nameError ? <Text style={styles.fieldError}>{error}</Text> : null}
-          </View>
-        ) : (
-          <View style={styles.pageBody}>
-            <Text style={styles.pageTitle}>Yoshingiz</Text>
-            <TextInput
-              value={age}
-              onChangeText={(v) => setAge(v.replace(/\D/g, "").slice(0, 2))}
-              placeholder="25"
-              placeholderTextColor={colors.muted}
-              keyboardType="number-pad"
-              maxLength={2}
-              autoFocus
-              style={[styles.inputBox, styles.ageInput]}
-            />
-            {error ? <Text style={styles.fieldError}>{error}</Text> : null}
-          </View>
-        )}
+        <View style={styles.card}>
+          <Text style={styles.label}>Ism</Text>
+          <TextInput
+            value={firstName}
+            onChangeText={setFirstName}
+            placeholder="Ali"
+            placeholderTextColor={colors.muted}
+            autoComplete="given-name"
+            autoFocus
+            style={styles.input}
+          />
+
+          <Text style={styles.label}>Familiya</Text>
+          <TextInput
+            value={lastName}
+            onChangeText={setLastName}
+            placeholder="Karimov"
+            placeholderTextColor={colors.muted}
+            autoComplete="family-name"
+            style={styles.input}
+          />
+          {nameError ? <Text style={styles.fieldError}>{nameError}</Text> : null}
+
+          <Text style={styles.label}>Yosh</Text>
+          <TextInput
+            value={age}
+            onChangeText={(v) => {
+              setAgeTouched(true);
+              setAge(v.replace(/\D/g, "").slice(0, 2));
+            }}
+            placeholder="25"
+            placeholderTextColor={colors.muted}
+            keyboardType="number-pad"
+            maxLength={2}
+            style={styles.input}
+          />
+          {ageError ? <Text style={styles.fieldError}>{ageError}</Text> : null}
+          {error && !nameError && !ageError ? (
+            <Text style={styles.fieldError}>{error}</Text>
+          ) : null}
+        </View>
 
         <Pressable
-          style={[
-            styles.primary,
-            ((step === 1 && !nameValidation.ok) || (step === 2 && !ageOk) || saving) &&
-              styles.disabled,
-          ]}
-          onPress={step === 1 ? goNextFromName : goNextFromAge}
+          style={[styles.primary, !canSubmit && styles.disabled]}
+          onPress={() => void finish()}
           disabled={saving}
         >
-          <Text style={styles.primaryText}>{step === 1 ? "Keyingi" : "Tayyor"}</Text>
+          <Text style={styles.primaryText}>Davom etish</Text>
         </Pressable>
-      </View>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
-  page: {
-    flex: 1,
+  scroll: {
+    flexGrow: 1,
     paddingHorizontal: 24,
-    justifyContent: "space-between",
+    justifyContent: "flex-start",
   },
-  backSpacer: { height: 40, marginTop: 8 },
-  backRow: {
-    marginTop: 8,
-    height: 40,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 2,
-    alignSelf: "flex-start",
+  hero: {
+    marginTop: 28,
+    marginBottom: 22,
+    gap: 8,
   },
-  backText: { fontSize: 15, fontWeight: "600", color: colors.muted },
-  pageBody: { flex: 1, justifyContent: "center", gap: 14 },
-  pageTitle: {
+  kicker: {
+    fontSize: 12,
+    fontWeight: "800",
+    color: colors.muted,
+    letterSpacing: 1.2,
+    textTransform: "uppercase",
+  },
+  title: {
     fontSize: 28,
     fontWeight: "800",
     color: colors.fg,
-    letterSpacing: -0.5,
-    marginBottom: 8,
+    letterSpacing: -0.6,
   },
-  inputBox: {
+  sub: {
+    fontSize: 15,
+    lineHeight: 22,
+    fontWeight: "500",
+    color: colors.muted,
+    maxWidth: 340,
+  },
+  card: {
+    backgroundColor: colors.surface,
+    borderRadius: 20,
+    padding: 18,
+    gap: 8,
+  },
+  label: {
+    marginTop: 6,
+    fontSize: 13,
+    fontWeight: "700",
+    color: colors.fg,
+  },
+  input: {
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: 14,
-    backgroundColor: colors.surface,
-    minHeight: 56,
+    backgroundColor: "#FFFFFF",
+    minHeight: 52,
     paddingHorizontal: 16,
     fontSize: 17,
     color: colors.fg,
   },
-  ageInput: {
-    textAlign: "center",
-    fontSize: 36,
-    fontWeight: "700",
-    letterSpacing: 2,
-    minHeight: 72,
-  },
   fieldError: { fontSize: 13, lineHeight: 18, color: "#FF3B30", fontWeight: "600" },
   primary: {
-    minHeight: 54,
-    borderRadius: 14,
+    marginTop: 22,
+    minHeight: 56,
+    borderRadius: 28,
     backgroundColor: colors.fg,
     alignItems: "center",
     justifyContent: "center",
   },
   primaryText: { color: "#FFF", fontSize: 16, fontWeight: "800" },
-  disabled: { opacity: 0.5 },
+  disabled: { opacity: 0.45 },
 });

@@ -30,4 +30,4 @@ export function roundCoord(value: number): number {
   return Math.round(value * 1_000_000) / 1_000_000;
 }
 
-export const ONBOARDING_STEPS = ["Ism", "Yosh"] as const;
+export const ONBOARDING_STEPS = ["Profil"] as const;

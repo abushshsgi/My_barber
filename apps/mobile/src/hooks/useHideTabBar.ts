@@ -1,4 +1,5 @@
 import { useLayoutEffect } from "react";
+import { useIsFocused } from "@react-navigation/native";
 import { useTabBarHideControls } from "../lib/TabBarVisibility";
 
 /** Floating dock tab bar — Morph stack dan qaytganda tiklash uchun. */
@@ -19,8 +20,10 @@ export const TAB_DOCK_CLEARANCE = 84;
 /** Ichki Morph ekranlarida pastki tab bar ni yashirish. */
 export function useHideTabBar() {
   const { acquireHide, releaseHide } = useTabBarHideControls();
+  const focused = useIsFocused();
   useLayoutEffect(() => {
+    if (!focused) return;
     acquireHide();
     return () => releaseHide();
-  }, [acquireHide, releaseHide]);
+  }, [focused, acquireHide, releaseHide]);
 }

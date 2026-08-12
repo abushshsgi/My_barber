@@ -175,15 +175,15 @@ export function LoginScreen() {
             <>
               <Text style={titleStyle}>Raqam bilan davom eting</Text>
               <Text style={subStyle}>SMS kod yuboriladi</Text>
-              <View style={styles.phoneRow}>
-                <Text style={styles.prefix}>+998</Text>
+              <View style={[styles.phoneRow, morph && styles.phoneRowMorph]}>
+                <Text style={[styles.prefix, morph && styles.prefixMorph]}>+998</Text>
                 <TextInput
                   value={phone}
                   onChangeText={(t) => setPhone(formatUzPhoneDisplay(t))}
                   keyboardType="phone-pad"
                   placeholder="90 123 45 67"
-                  placeholderTextColor={colors.muted}
-                  style={styles.phoneInput}
+                  placeholderTextColor={morph ? "rgba(255,255,255,0.35)" : colors.muted}
+                  style={[styles.phoneInput, morph && styles.phoneInputMorph]}
                   maxLength={13}
                   autoFocus
                 />
@@ -200,12 +200,12 @@ export function LoginScreen() {
                 onChangeText={setPassword}
                 secureTextEntry
                 placeholder="Parol"
-                placeholderTextColor={colors.muted}
-                style={styles.field}
+                placeholderTextColor={morph ? "rgba(255,255,255,0.35)" : colors.muted}
+                style={[styles.field, morph && styles.fieldMorph]}
                 autoFocus
               />
               <Pressable onPress={onSendOtpInstead} disabled={busy} hitSlop={8}>
-                <Text style={styles.link}>SMS kod bilan kirish</Text>
+                <Text style={[styles.link, morph && styles.titleMorph]}>SMS kod bilan kirish</Text>
               </Pressable>
             </>
           ) : null}
@@ -219,12 +219,14 @@ export function LoginScreen() {
                 onChangeText={setCode}
                 keyboardType="number-pad"
                 placeholder="••••"
-                placeholderTextColor={colors.muted}
-                style={[styles.field, styles.codeField]}
+                placeholderTextColor={morph ? "rgba(255,255,255,0.35)" : colors.muted}
+                style={[styles.field, styles.codeField, morph && styles.fieldMorph]}
                 maxLength={6}
                 autoFocus
               />
-              {hint ? <Text style={styles.hint}>{hint}</Text> : null}
+              {hint ? (
+                <Text style={[styles.hint, morph && styles.subMorph]}>{hint}</Text>
+              ) : null}
             </>
           ) : null}
 
@@ -278,6 +280,7 @@ export function LoginScreen() {
               <Pressable
                 style={({ pressed }) => [
                   styles.primaryBtn,
+                  morph && styles.primaryBtnMorph,
                   busy && styles.btnDisabled,
                   pressed && !busy && styles.pressed,
                 ]}
@@ -285,13 +288,15 @@ export function LoginScreen() {
                 disabled={busy}
               >
                 {busy ? (
-                  <ActivityIndicator color="#FFF" />
+                  <ActivityIndicator color={morph ? "#0A0A0A" : "#FFF"} />
                 ) : (
-                  <Text style={styles.primaryBtnText}>Davom etish</Text>
+                  <Text style={[styles.primaryBtnText, morph && styles.primaryBtnTextMorph]}>
+                    Davom etish
+                  </Text>
                 )}
               </Pressable>
               <Pressable onPress={() => setStep("choose")} hitSlop={8}>
-                <Text style={styles.secondaryLink}>Orqaga</Text>
+                <Text style={[styles.secondaryLink, morph && styles.subMorph]}>Orqaga</Text>
               </Pressable>
             </View>
           ) : null}
@@ -301,6 +306,7 @@ export function LoginScreen() {
               <Pressable
                 style={({ pressed }) => [
                   styles.primaryBtn,
+                  morph && styles.primaryBtnMorph,
                   busy && styles.btnDisabled,
                   pressed && !busy && styles.pressed,
                 ]}
@@ -308,13 +314,15 @@ export function LoginScreen() {
                 disabled={busy}
               >
                 {busy ? (
-                  <ActivityIndicator color="#FFF" />
+                  <ActivityIndicator color={morph ? "#0A0A0A" : "#FFF"} />
                 ) : (
-                  <Text style={styles.primaryBtnText}>Kirish</Text>
+                  <Text style={[styles.primaryBtnText, morph && styles.primaryBtnTextMorph]}>
+                    Kirish
+                  </Text>
                 )}
               </Pressable>
               <Pressable onPress={() => setStep("phone")} hitSlop={8}>
-                <Text style={styles.secondaryLink}>Orqaga</Text>
+                <Text style={[styles.secondaryLink, morph && styles.subMorph]}>Orqaga</Text>
               </Pressable>
             </View>
           ) : null}
@@ -324,6 +332,7 @@ export function LoginScreen() {
               <Pressable
                 style={({ pressed }) => [
                   styles.primaryBtn,
+                  morph && styles.primaryBtnMorph,
                   busy && styles.btnDisabled,
                   pressed && !busy && styles.pressed,
                 ]}
@@ -331,16 +340,18 @@ export function LoginScreen() {
                 disabled={busy}
               >
                 {busy ? (
-                  <ActivityIndicator color="#FFF" />
+                  <ActivityIndicator color={morph ? "#0A0A0A" : "#FFF"} />
                 ) : (
-                  <Text style={styles.primaryBtnText}>Tasdiqlash</Text>
+                  <Text style={[styles.primaryBtnText, morph && styles.primaryBtnTextMorph]}>
+                    Tasdiqlash
+                  </Text>
                 )}
               </Pressable>
               <Pressable
                 onPress={() => setStep(hasPassword ? "password" : "phone")}
                 hitSlop={8}
               >
-                <Text style={styles.secondaryLink}>Orqaga</Text>
+                <Text style={[styles.secondaryLink, morph && styles.subMorph]}>Orqaga</Text>
               </Pressable>
             </View>
           ) : null}
@@ -407,24 +418,26 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     alignSelf: "stretch",
-    borderBottomWidth: 2,
-    borderBottomColor: colors.fg,
-    paddingBottom: 10,
-    paddingHorizontal: 4,
+    borderWidth: 1.5,
+    borderColor: colors.fg,
+    borderRadius: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    backgroundColor: "#FFFFFF",
   },
   prefix: {
-    fontSize: 28,
+    fontSize: 20,
     fontWeight: "800",
     color: colors.fg,
     marginRight: 10,
-    letterSpacing: -0.5,
+    letterSpacing: -0.3,
   },
   phoneInput: {
     flex: 1,
-    fontSize: 28,
+    fontSize: 20,
     fontWeight: "800",
     color: colors.fg,
-    letterSpacing: -0.5,
+    letterSpacing: -0.3,
     paddingVertical: 0,
   },
   field: {
@@ -533,4 +546,14 @@ const styles = StyleSheet.create({
   outlineBtnTextMorph: { color: "#FFFFFF" },
   primaryBtnMorph: { backgroundColor: "#FFFFFF" },
   primaryBtnTextMorph: { color: "#0A0A0A" },
+  phoneRowMorph: {
+    borderColor: "rgba(255,255,255,0.55)",
+    backgroundColor: "rgba(255,255,255,0.08)",
+  },
+  prefixMorph: { color: "#FFFFFF" },
+  phoneInputMorph: { color: "#FFFFFF" },
+  fieldMorph: {
+    backgroundColor: "rgba(255,255,255,0.08)",
+    color: "#FFFFFF",
+  },
 });
