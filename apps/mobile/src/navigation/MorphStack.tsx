@@ -13,7 +13,7 @@ export type MorphStackParamList = {
   /** Selfie capture (qayta kirish). Tab nomi MorphTryOn dan farq qiladi. */
   MorphCapture: undefined;
   MorphWelcome: undefined;
-  MorphGuide: undefined;
+  MorphGuide: { startIndex?: number } | undefined;
   /** Legacy hub — Try-on tab emas; Studio / namuna uchun. */
   MorphHome: undefined;
   MorphResults: undefined;
@@ -57,7 +57,7 @@ export function MorphStack() {
       <Stack.Screen
         name="MorphGuide"
         component={MorphGuideCarouselScreen}
-        options={{ animation: "slide_from_bottom", gestureEnabled: false }}
+        options={{ animation: "fade", gestureEnabled: false }}
       />
       <Stack.Screen name="MorphHome" component={MorphHomeScreen} />
       <Stack.Screen name="MorphResults" component={MorphResultsScreen} />

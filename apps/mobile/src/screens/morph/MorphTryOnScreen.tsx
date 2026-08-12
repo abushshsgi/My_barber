@@ -32,7 +32,8 @@ import { pexelsPhotoUrl } from "../../api/media";
 import { useAuth } from "../../auth/AuthContext";
 import { TAB_DOCK_CLEARANCE } from "../../hooks/useHideTabBar";
 import { useMorphLimitGate } from "../../hooks/useMorphLimitGate";
-import { hasCompletedMorphTryOnIntro } from "../../lib/morph-onboarding";
+import { writeAppShell, writeLastShellTab } from "../../lib/app-shell";
+import { hasCompletedMorphTryOnIntro, readMorphIntroStep } from "../../lib/morph-onboarding";
 import { useMorphSession } from "../../lib/morph-session";
 import { pickSelfieFromCamera, pickSelfieFromGallery } from "../../lib/selfie";
 import type { MorphStackParamList } from "../../navigation/MorphStack";
@@ -218,10 +219,12 @@ export function MorphTryOnScreen({ navigation }: Props) {
 
   useEffect(() => {
     let cancelled = false;
-    void hasCompletedMorphTryOnIntro().then((done) => {
+    void hasCompletedMorphTryOnIntro().then(async (done) => {
       if (cancelled) return;
       if (!done) {
-        navigation.replace("MorphWelcome");
+        const startIndex = await readMorphIntroStep();
+        if (cancelled) return;
+        navigation.replace("MorphGuide", { startIndex });
         return;
       }
       setReady(true);
@@ -372,6 +375,8 @@ export function MorphTryOnScreen({ navigation }: Props) {
   const startWith = useCallback(
     async (source: "camera" | "gallery") => {
       if (!isAuthenticated) {
+        void writeAppShell("morph");
+        void writeLastShellTab("morph", "MorphTryOn");
         navigation.getParent()?.navigate("Profile" as never);
         return;
       }
