@@ -642,6 +642,77 @@ class AiBarberCardView(UnthrottledAPIView):
             return Response({"detail": exc.message}, status=exc.status)
 
 
+class AiMorphChatView(UnthrottledAPIView):
+    """POST { message, history?, context? } — Morf AI chatbot javobi."""
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user = _require_customer_user(request)
+        if isinstance(user, Response):
+            return user
+
+        blocked = check_user_can_generate(user_id=user.pk, kind="chat")
+        if blocked:
+            return morph_generation_blocked_response(blocked)
+
+        message = request.data.get("message")
+        if not message or not str(message).strip():
+            return Response({"detail": "Xabar yuboring."}, status=400)
+
+        history = request.data.get("history")
+        context_raw = request.data.get("context")
+        context = context_raw if isinstance(context_raw, dict) else None
+
+        try:
+            from ai.chat_prompts import MORF_CHAT_DAILY_LIMIT
+            from ai.services.gemini_chat import (
+                count_user_chat_today,
+                generate_morf_chat_reply,
+            )
+
+            result = generate_morf_chat_reply(
+                user_message=str(message),
+                history=history if isinstance(history, list) else None,
+                context=context,
+            )
+            usage = result.pop("usage", None) or {}
+            limits = result.pop("limits", None) or {}
+            daily_used = count_user_chat_today(user.pk) + 1
+            limits["daily_used"] = daily_used
+            limits["daily_remaining"] = max(0, MORF_CHAT_DAILY_LIMIT - daily_used)
+
+            record_ai_generation(
+                user_id=user.pk,
+                kind="chat",
+                status="success",
+                prompt=str(usage.get("prompt") or message)[:500],
+                model=str(usage.get("model") or ""),
+                provider=str(usage.get("provider") or ""),
+                prompt_tokens=int(usage.get("prompt_tokens") or 0),
+                candidates_tokens=int(usage.get("candidates_tokens") or 0),
+                thoughts_tokens=int(usage.get("thoughts_tokens") or 0),
+                total_tokens=int(usage.get("total_tokens") or 0),
+                cost_usd=usage.get("cost_usd") or 0,
+                tokens_estimated=bool(usage.get("tokens_estimated")),
+                latency_ms=int(usage.get("latency_ms") or 0),
+            )
+            return Response(
+                {
+                    "reply": result["reply"],
+                    "limits": limits,
+                }
+            )
+        except AiStyleError as exc:
+            record_ai_generation(
+                user_id=user.pk,
+                kind="chat",
+                status="failed",
+                error_detail=exc.message,
+            )
+            return Response({"detail": exc.message}, status=exc.status)
+
+
 class AiStyleHistoryListCreateView(UnthrottledAPIView):
     """GET — oxirgi 6 ta selfie tarixi; POST — yangi yoki oxirgisini yangilash."""
 

@@ -596,10 +596,24 @@ def check_user_can_generate(*, user_id: int | None, kind: str) -> str | None:
     s = MorphAiSettings.load()
     if kind in ("tryon", "studio") and not s.tryon_enabled:
         return "Morph AI hozir ishlamayapti."
-    if kind in ("analyze", "face_check") and not s.analyze_enabled:
+    if kind in ("analyze", "face_check", "chat") and not s.analyze_enabled:
         return "Morph AI hozir ishlamayapti."
 
     if not user_id:
+        return None
+
+    if kind == "chat":
+        from ai.services.gemini_chat import check_chat_daily_limit
+
+        daily = check_chat_daily_limit(user_id)
+        if daily:
+            return daily
+        from accounts.models import User
+        from subscriptions.services import check_morph_entitlement
+
+        user = User.objects.filter(pk=user_id).first()
+        if user:
+            return check_morph_entitlement(user=user, kind="chat")
         return None
 
     # B2C obuna — Morph AI uchun majburiy + oylik tarif limiiti

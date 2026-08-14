@@ -461,3 +461,56 @@ export async function createMorphAiLookShare(payload: {
 export async function fetchCareAccess(): Promise<{ allowed: boolean; detail?: string }> {
   return apiJson("/api/v1/subscriptions/care-access/");
 }
+
+export type MorphChatMessage = {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+};
+
+export type MorphChatContext = {
+  face_shape?: string;
+  hair_type?: string;
+  hair_texture?: string;
+  hair_color?: string;
+  beard?: string;
+  detected_gender?: string;
+  summary_uz?: string;
+  preferred_style_title?: string;
+  preferred_style_id?: string;
+  suggestions?: Array<{ id?: string; title?: string }>;
+};
+
+export type MorphChatLimits = {
+  daily_limit: number;
+  daily_used: number | null;
+  daily_remaining: number | null;
+};
+
+export async function sendMorphChatMessage(payload: {
+  message: string;
+  history?: Array<{ role: "user" | "assistant"; content: string }>;
+  context?: MorphChatContext;
+}): Promise<{ reply: string; limits: MorphChatLimits }> {
+  const res = await apiFetch("/api/v1/ai/chat/", {
+    method: "POST",
+    body: JSON.stringify(payload),
+    timeoutMs: 60_000,
+  });
+  const body = (await res.json().catch(() => null)) as
+    | { reply?: string; limits?: MorphChatLimits; detail?: string; code?: string }
+    | null;
+  if (!res.ok) {
+    if (res.status === 403 && body?.code === "morph_plan_limit") {
+      throw new MorphPlanLimitError(body.detail ?? "Limit tugadi");
+    }
+    throwFromMorphApiError(res, body, "Chat javob bermadi");
+  }
+  if (!body?.reply) {
+    throw new Error("Chat javobi noto'g'ri");
+  }
+  return {
+    reply: body.reply,
+    limits: body.limits ?? { daily_limit: 40, daily_used: null, daily_remaining: null },
+  };
+}

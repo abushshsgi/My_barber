@@ -429,7 +429,7 @@ def check_morph_entitlement(*, user: User, kind: str) -> str | None:
     Oylik try-on kvotasi tugaganda analyze/face_check ham yopiladi.
     Yangi user — 0 kvota. Ochilishi: pullik obuna yoki 3 referal → 7 kun Starter trial.
     """
-    if kind not in ("tryon", "studio", "analyze", "face_check"):
+    if kind not in ("tryon", "studio", "analyze", "face_check", "chat"):
         return None
 
     from django.conf import settings
@@ -441,6 +441,10 @@ def check_morph_entitlement(*, user: User, kind: str) -> str | None:
     sub = get_active_subscription(user)
     if not sub:
         return _no_subscription_message()
+
+    # Chat — faqat obuna kerak; oylik try-on kvotasini yemaydi (kunlik limit alohida).
+    if kind == "chat":
+        return None
 
     usage = get_or_create_usage(user)
     ents = sub.entitlements or entitlement_snapshot(sub.plan_code)

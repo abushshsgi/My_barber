@@ -94,6 +94,7 @@ class AiGenerationUsage(models.Model):
         FACE_CHECK = "face_check", "Face check"
         STUDIO = "studio", "Studio edit"
         INGREDIENT = "ingredient", "Ingredient scan"
+        CHAT = "chat", "Morf AI chat"
 
     class Status(models.TextChoices):
         SUCCESS = "success", "Success"
