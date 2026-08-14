@@ -19,10 +19,20 @@ const WELCOME_KEY = "morph_chat_welcome_seen_v1";
 export const MORPH_QUICK_PROMPT_IDS = [
   "face_shape",
   "style_pick",
+  "beard_style",
   "care_routine",
   "product_tips",
   "barber_visit",
 ] as const;
+
+const QUICK_I18N: Record<(typeof MORPH_QUICK_PROMPT_IDS)[number], string> = {
+  face_shape: "faceShape",
+  style_pick: "stylePick",
+  beard_style: "beardStyle",
+  care_routine: "careRoutine",
+  product_tips: "productTips",
+  barber_visit: "barberVisit",
+};
 
 export type MorphChatThread = {
   id: string;
@@ -79,19 +89,7 @@ export function useMorphChat() {
     () =>
       MORPH_QUICK_PROMPT_IDS.map((id) => ({
         id,
-        label: t(
-          `chat.quick.${
-            id === "face_shape"
-              ? "faceShape"
-              : id === "style_pick"
-                ? "stylePick"
-                : id === "care_routine"
-                  ? "careRoutine"
-                  : id === "product_tips"
-                    ? "productTips"
-                    : "barberVisit"
-          }`,
-        ),
+        label: t(`chat.quick.${QUICK_I18N[id]}`),
       })),
     [t, i18n.language],
   );
@@ -256,19 +254,7 @@ export function useMorphChat() {
   }, [messages, hydrated]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const promptText = useCallback(
-    (id: (typeof MORPH_QUICK_PROMPT_IDS)[number]) => {
-      const key =
-        id === "face_shape"
-          ? "faceShape"
-          : id === "style_pick"
-            ? "stylePick"
-            : id === "care_routine"
-              ? "careRoutine"
-              : id === "product_tips"
-                ? "productTips"
-                : "barberVisit";
-      return t(`chat.prompts.${key}`);
-    },
+    (id: (typeof MORPH_QUICK_PROMPT_IDS)[number]) => t(`chat.prompts.${QUICK_I18N[id]}`),
     [t],
   );
 

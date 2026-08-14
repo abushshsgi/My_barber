@@ -15,6 +15,7 @@ type Props = {
 const CHIP_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
   face_shape: "happy-outline",
   style_pick: "sparkles-outline",
+  beard_style: "person-outline",
   care_routine: "water-outline",
   product_tips: "gift-outline",
   barber_visit: "cut-outline",
@@ -56,11 +57,11 @@ export function QuickPromptChips({ prompts, onSelect, disabled }: Props) {
 
 const styles = StyleSheet.create({
   row: {
-    paddingTop: 12,
+    paddingTop: 4,
     paddingBottom: 2,
     gap: 6,
     flexGrow: 1,
-    justifyContent: "center",
+    justifyContent: "flex-start",
   },
   chip: {
     flexDirection: "row",

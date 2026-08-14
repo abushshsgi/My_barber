@@ -4,6 +4,8 @@ import { StatusBar } from "expo-status-bar";
 import type { ReactNode } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Animated, { FadeInDown, ZoomIn } from "react-native-reanimated";
+import { morfMark } from "../../../branding/morf-logo";
 import { ChatAmbientBg } from "./ChatAmbientBg";
 
 type Props = {
@@ -11,26 +13,30 @@ type Props = {
   name: string;
   avatarUrl: string | null;
   initials: string;
-  headline: string;
-  subtitle: string;
+  brandLabel: string;
+  menuA11y: string;
+  onMenu: () => void;
   historyA11y: string;
   onHistory: () => void;
   bottomPad: number;
-  children: ReactNode;
+  composer: ReactNode;
+  chips: ReactNode;
 };
 
-/** Bo'sh chat — yengil AI landing. */
+/** Bo'sh chat — Gemini uslubidagi menyu tugmasi + composer. */
 export function MorphChatWelcome({
   greeting,
   name,
   avatarUrl,
   initials,
-  headline,
-  subtitle,
+  brandLabel,
+  menuA11y,
+  onMenu,
   historyA11y,
   onHistory,
   bottomPad,
-  children,
+  composer,
+  chips,
 }: Props) {
   const insets = useSafeAreaInsets();
 
@@ -67,9 +73,28 @@ export function MorphChatWelcome({
       </View>
 
       <View style={styles.hero}>
-        <Text style={styles.headline}>{headline}</Text>
-        <Text style={styles.subtitle}>{subtitle}</Text>
-        <View style={styles.composer}>{children}</View>
+        <Animated.View entering={ZoomIn.duration(420).delay(40)} style={styles.menuWrap}>
+          <Pressable
+            onPress={onMenu}
+            style={({ pressed }) => [styles.menuBtn, pressed && styles.menuPressed]}
+            accessibilityRole="button"
+            accessibilityLabel={menuA11y}
+          >
+            <Image source={morfMark} style={styles.mark} contentFit="contain" />
+            <Text style={styles.menuLabel}>{brandLabel}</Text>
+            <Ionicons name="chevron-down" size={14} color="#6B6685" />
+          </Pressable>
+        </Animated.View>
+
+        <Animated.View entering={FadeInDown.duration(360).delay(80)} style={styles.composer}>
+          {composer}
+        </Animated.View>
+
+        {chips ? (
+          <Animated.View entering={FadeInDown.duration(380).delay(140)} style={styles.chips}>
+            {chips}
+          </Animated.View>
+        ) : null}
       </View>
     </View>
   );
@@ -146,25 +171,47 @@ const styles = StyleSheet.create({
     zIndex: 1,
     justifyContent: "center",
     paddingHorizontal: 22,
-    marginTop: -28,
+    marginTop: -12,
   },
-  headline: {
-    fontSize: 34,
-    lineHeight: 40,
-    fontWeight: "800",
+  menuWrap: {
+    alignItems: "center",
+    marginBottom: 18,
+  },
+  menuBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: "#FFFFFF",
+    paddingLeft: 8,
+    paddingRight: 12,
+    paddingVertical: 7,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: "#EEEEF2",
+    shadowColor: "#1E1B4B",
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
+  },
+  menuPressed: {
+    opacity: 0.86,
+    transform: [{ scale: 0.98 }],
+  },
+  mark: {
+    width: 26,
+    height: 26,
+  },
+  menuLabel: {
+    fontSize: 16,
+    fontWeight: "700",
     color: "#1E1B4B",
-    textAlign: "center",
-    letterSpacing: -1.1,
-  },
-  subtitle: {
-    marginTop: 10,
-    fontSize: 14,
-    lineHeight: 21,
-    color: "#6B6685",
-    textAlign: "center",
-    paddingHorizontal: 10,
+    letterSpacing: -0.3,
   },
   composer: {
-    marginTop: 24,
+    marginTop: 2,
+  },
+  chips: {
+    marginTop: 28,
   },
 });

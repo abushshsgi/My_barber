@@ -1,6 +1,14 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, TextInput, View } from "react-native";
+import Animated, {
+  Easing,
+  FadeIn,
+  FadeOut,
+  LinearTransition,
+  ZoomIn,
+  ZoomOut,
+} from "react-native-reanimated";
 
 type Props = {
   value: string;
@@ -14,13 +22,13 @@ type Props = {
   cameraA11y?: string;
 };
 
-function WaveIcon({ color = "#FFFFFF" }: { color?: string }) {
+function WaveIcon() {
   return (
     <View style={styles.wave}>
-      <View style={[styles.bar, { height: 6, backgroundColor: color }]} />
-      <View style={[styles.bar, { height: 11, backgroundColor: color }]} />
-      <View style={[styles.bar, { height: 8, backgroundColor: color }]} />
-      <View style={[styles.bar, { height: 13, backgroundColor: color }]} />
+      <View style={[styles.bar, { height: 5 }]} />
+      <View style={[styles.bar, { height: 10 }]} />
+      <View style={[styles.bar, { height: 7 }]} />
+      <View style={[styles.bar, { height: 12 }]} />
     </View>
   );
 }
@@ -41,7 +49,10 @@ export function ChatInputBar({
   const canSend = !disabled && !sending && hasText;
 
   return (
-    <View style={[styles.wrap, focused && styles.wrapFocused]}>
+    <Animated.View
+      layout={LinearTransition.duration(180).easing(Easing.out(Easing.cubic))}
+      style={[styles.wrap, focused && styles.wrapFocused]}
+    >
       <Pressable
         onPress={onCamera}
         disabled={!onCamera || disabled}
@@ -49,7 +60,7 @@ export function ChatInputBar({
         accessibilityRole="button"
         accessibilityLabel={cameraA11y}
       >
-        <Ionicons name="camera-outline" size={20} color="#3F3A5A" />
+        <Ionicons name="camera-outline" size={18} color="#3F3A5A" />
       </Pressable>
       <TextInput
         style={styles.input}
@@ -70,90 +81,99 @@ export function ChatInputBar({
         accessibilityLabel={placeholder}
       />
       {hasText || sending ? (
-        <Pressable
-          onPress={onSend}
-          disabled={!canSend && !sending}
-          style={({ pressed }) => [
-            styles.sendBtn,
-            !canSend && !sending && styles.sendBtnIdle,
-            pressed && canSend && styles.pressed,
-          ]}
-          accessibilityRole="button"
-          accessibilityLabel={sendA11y}
+        <Animated.View
+          entering={ZoomIn.duration(160).easing(Easing.out(Easing.cubic))}
+          exiting={ZoomOut.duration(120)}
         >
-          {sending ? (
-            <ActivityIndicator size="small" color="#FFFFFF" />
-          ) : (
-            <Ionicons name="arrow-up" size={18} color="#FFFFFF" />
-          )}
-        </Pressable>
+          <Pressable
+            onPress={onSend}
+            disabled={!canSend && !sending}
+            style={({ pressed }) => [
+              styles.sendBtn,
+              !canSend && !sending && styles.sendBtnIdle,
+              pressed && canSend && styles.pressed,
+            ]}
+            accessibilityRole="button"
+            accessibilityLabel={sendA11y}
+          >
+            {sending ? (
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            ) : (
+              <Ionicons name="arrow-up" size={16} color="#FFFFFF" />
+            )}
+          </Pressable>
+        </Animated.View>
       ) : (
-        <View style={styles.voiceBtn} importantForAccessibility="no-hide-descendants">
+        <Animated.View
+          entering={FadeIn.duration(140)}
+          exiting={FadeOut.duration(100)}
+          style={styles.voiceBtn}
+          importantForAccessibility="no-hide-descendants"
+        >
           <WaveIcon />
-        </View>
+        </Animated.View>
       )}
-    </View>
+    </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
   wrap: {
     flexDirection: "row",
-    alignItems: "flex-end",
-    minHeight: 52,
-    paddingLeft: 8,
-    paddingRight: 6,
-    paddingVertical: 6,
-    borderRadius: 28,
+    alignItems: "center",
+    minHeight: 44,
+    paddingLeft: 6,
+    paddingRight: 5,
+    paddingVertical: 4,
+    borderRadius: 22,
     backgroundColor: "#FFFFFF",
     borderWidth: 1,
-    borderColor: "rgba(124, 58, 237, 0.08)",
-    shadowColor: "#5B21B6",
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 5,
+    borderColor: "#EEEEF2",
+    shadowColor: "#1E1B4B",
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
   },
   wrapFocused: {
-    borderColor: "rgba(124, 58, 237, 0.28)",
-    shadowOpacity: 0.12,
+    borderColor: "#DDD6FE",
+    shadowOpacity: 0.1,
   },
   sideBtn: {
-    width: 36,
-    height: 36,
+    width: 32,
+    height: 32,
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: 18,
+    borderRadius: 16,
   },
   pressed: {
     opacity: 0.78,
   },
   input: {
     flex: 1,
-    minHeight: 36,
-    maxHeight: 110,
-    paddingHorizontal: 6,
-    paddingVertical: 8,
-    fontSize: 16,
-    lineHeight: 22,
+    minHeight: 32,
+    maxHeight: 88,
+    paddingHorizontal: 4,
+    paddingVertical: 6,
+    fontSize: 15,
+    lineHeight: 20,
     color: "#1E1B4B",
   },
   sendBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "#1E1B4B",
-    marginBottom: 0,
   },
   sendBtnIdle: {
     backgroundColor: "#C4B5FD",
   },
   voiceBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "#7C3AED",
@@ -161,7 +181,7 @@ const styles = StyleSheet.create({
   wave: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 2,
+    gap: 1.5,
   },
   bar: {
     width: 2,

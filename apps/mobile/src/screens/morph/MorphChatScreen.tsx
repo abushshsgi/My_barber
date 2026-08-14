@@ -24,8 +24,8 @@ import { useAuth } from "../../auth/AuthContext";
 import { MorphPaywallView } from "../../components/morph/MorphPaywallView";
 import { ChatAmbientBg } from "../../components/morph/chat/ChatAmbientBg";
 import { ChatBubble } from "../../components/morph/chat/ChatBubble";
-import { ChatHistorySheet } from "../../components/morph/chat/ChatHistorySheet";
 import { ChatInputBar } from "../../components/morph/chat/ChatInputBar";
+import { ChatMenuDrawer } from "../../components/morph/chat/ChatMenuDrawer";
 import { MorphChatWelcome } from "../../components/morph/chat/MorphChatWelcome";
 import { QuickPromptChips } from "../../components/morph/chat/QuickPromptChips";
 import { TAB_DOCK_CLEARANCE, useHideTabBarWhen } from "../../hooks/useHideTabBar";
@@ -56,7 +56,7 @@ export function MorphChatScreen() {
   const listRef = useRef<FlatList<MorphChatMessage>>(null);
   const chat = useMorphChat();
   const pendingDraft = useRef<string | null>(null);
-  const [historyOpen, setHistoryOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
   const [paywall, setPaywall] = useState<PaywallReason | null>(null);
 
@@ -88,6 +88,10 @@ export function MorphChatScreen() {
           closePaywall();
           return true;
         }
+        if (menuOpen) {
+          setMenuOpen(false);
+          return true;
+        }
         if (chatOpen) {
           setChatOpen(false);
           return true;
@@ -95,7 +99,7 @@ export function MorphChatScreen() {
         return false;
       });
       return () => sub.remove();
-    }, [chatOpen, closePaywall, paywall]),
+    }, [chatOpen, closePaywall, menuOpen, paywall]),
   );
 
   useFocusEffect(
@@ -236,25 +240,73 @@ export function MorphChatScreen() {
     navigation.navigate("MorphTryOn", { screen: "MorphCapture" } as never);
   }, [navigation]);
 
-  const historySheet = (
-    <ChatHistorySheet
-      visible={historyOpen}
+  const openLooks = useCallback(() => {
+    setMenuOpen(false);
+    navigation.navigate("MorphTryOn", { screen: "MorphHistory" } as never);
+  }, [navigation]);
+
+  const openNewLook = useCallback(() => {
+    setMenuOpen(false);
+    navigation.navigate("MorphTryOn", { screen: "MorphCapture" } as never);
+  }, [navigation]);
+
+  const openLook = useCallback(
+    (id: number) => {
+      setMenuOpen(false);
+      navigation.navigate("MorphTryOn", {
+        screen: "MorphHistory",
+        params: { generationId: id },
+      } as never);
+    },
+    [navigation],
+  );
+
+  const openProfile = useCallback(() => {
+    setMenuOpen(false);
+    navigation.navigate("Profile");
+  }, [navigation]);
+
+  const openSettings = useCallback(() => {
+    setMenuOpen(false);
+    navigation.navigate("Profile", { screen: "Settings" } as never);
+  }, [navigation]);
+
+  const menuDrawer = (
+    <ChatMenuDrawer
+      visible={menuOpen}
+      brand={t("chat.menu.brand")}
+      newChatLabel={t("chat.menu.newChat")}
+      searchLabel={t("chat.menu.search")}
+      searchPlaceholder={t("chat.menu.searchPlaceholder")}
+      libraryLabel={t("chat.menu.library")}
+      looksLabel={t("chat.menu.looks")}
+      newLookLabel={t("chat.menu.newLook")}
+      allLooksLabel={t("chat.menu.allLooks")}
+      recentLabel={t("chat.menu.recent")}
+      emptyLabel={t("chat.history.empty")}
+      settingsA11y={t("chat.menu.settingsA11y")}
+      profileName={name}
+      avatarUrl={avatarUrl}
+      initials={initials(name)}
       threads={chat.threads}
       activeThreadId={chat.activeThreadId}
-      title={t("chat.history.title")}
-      emptyLabel={t("chat.history.empty")}
-      newChatLabel={t("chat.history.newChat")}
-      onClose={() => setHistoryOpen(false)}
+      onClose={() => setMenuOpen(false)}
       onNewChat={() => {
         chat.startNewChat();
-        setHistoryOpen(false);
+        setMenuOpen(false);
+        setChatOpen(false);
       }}
-      onSelect={(id) => {
+      onSelectThread={(id) => {
         chat.openThread(id);
-        setHistoryOpen(false);
+        setMenuOpen(false);
         setChatOpen(true);
       }}
-      onDelete={chat.deleteThread}
+      onLibrary={openLooks}
+      onNewLook={openNewLook}
+      onAllLooks={openLooks}
+      onLook={openLook}
+      onProfile={openProfile}
+      onSettings={openSettings}
     />
   );
 
@@ -290,22 +342,24 @@ export function MorphChatScreen() {
           name={name}
           avatarUrl={avatarUrl}
           initials={initials(name)}
-          headline={t("chat.home.headline")}
-          subtitle={t("chat.home.subtitle")}
+          brandLabel={t("chat.menu.brand")}
+          menuA11y={t("chat.menu.openA11y")}
+          onMenu={() => setMenuOpen(true)}
           historyA11y={t("chat.history.title")}
-          onHistory={() => setHistoryOpen(true)}
+          onHistory={() => setMenuOpen(true)}
           bottomPad={Math.max(insets.bottom, 8) + TAB_DOCK_CLEARANCE}
-        >
-          <ChatInputBar {...composer} onSend={() => void onSend()} onCamera={onCamera} />
-          {chat.input.trim().length === 0 ? (
-            <QuickPromptChips
-              prompts={chat.quickPrompts}
-              onSelect={(p) => void onQuickPrompt(p.id)}
-              disabled={chat.sending}
-            />
-          ) : null}
-        </MorphChatWelcome>
-        {historySheet}
+          composer={<ChatInputBar {...composer} onSend={() => void onSend()} onCamera={onCamera} />}
+          chips={
+            chat.input.trim().length === 0 ? (
+              <QuickPromptChips
+                prompts={chat.quickPrompts}
+                onSelect={(p) => void onQuickPrompt(p.id)}
+                disabled={chat.sending}
+              />
+            ) : null
+          }
+        />
+        {menuDrawer}
         {paywallModal}
       </KeyboardAvoidingView>
     );
@@ -331,7 +385,7 @@ export function MorphChatScreen() {
           </Text>
         </View>
         <Pressable
-          onPress={() => setHistoryOpen(true)}
+          onPress={() => setMenuOpen(true)}
           style={({ pressed }) => [styles.headerBtn, pressed && styles.pressed]}
           accessibilityRole="button"
           accessibilityLabel={t("chat.history.title")}
@@ -392,7 +446,7 @@ export function MorphChatScreen() {
         </View>
       </KeyboardAvoidingView>
 
-      {historySheet}
+      {menuDrawer}
       {paywallModal}
     </View>
   );

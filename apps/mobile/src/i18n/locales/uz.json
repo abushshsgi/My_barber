@@ -294,6 +294,19 @@
       "askAnything": "Istalgan narsani so'rang...",
       "cameraA11y": "Kamera"
     },
+    "menu": {
+      "brand": "Morf AI",
+      "openA11y": "Chat menyusi",
+      "newChat": "Yangi chat",
+      "search": "Chatlardan qidirish",
+      "searchPlaceholder": "Qidirish",
+      "library": "Kutubxona",
+      "looks": "Looklar",
+      "newLook": "Yangi look",
+      "allLooks": "Barcha looklar",
+      "recent": "Yaqinda",
+      "settingsA11y": "Sozlamalar"
+    },
     "welcome": "Salom! Men Morf AI — soch uslubi va parvarish bo'yicha yordamchingizman. Try-on natijangiz bo'lsa, shunga mos maslahat beraman. Savolingizni yozing yoki tez savollardan birini tanlang.",
     "error": "Chat javob bermadi. Qayta urinib ko'ring.",
     "marketing": {
@@ -309,6 +322,7 @@
     "quick": {
       "faceShape": "Yuz shakliga mos uslub",
       "stylePick": "Zamonaviy erkak soch uslubi",
+      "beardStyle": "Soqol shakli",
       "careRoutine": "Haftalik parvarish rejasi",
       "productTips": "Styling mahsulotlari",
       "barberVisit": "Barberga ko'rsatma"
@@ -316,6 +330,7 @@
     "prompts": {
       "faceShape": "Yuz shaklimga qaysi soch uslublari mos keladi?",
       "stylePick": "Menga zamonaviy va toza erkak soch uslubini tavsiya qil.",
+      "beardStyle": "Yuzimga mos soqol shaklini tavsiya qil.",
       "careRoutine": "Soch va bosh terisi uchun oddiy haftalik parvarish rejasi kerak.",
       "productTips": "Qaysi styling mahsulotlari (wax, clay, pomade) men uchun yaxshi?",
       "barberVisit": "Barberga borishda nima deyishim va qanday ko'rsatma berishim kerak?"
