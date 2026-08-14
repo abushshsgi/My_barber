@@ -18,6 +18,7 @@ import {
 } from "../../components/morph/MorphSampleMarquee";
 import { useAuth } from "../../auth/AuthContext";
 import { useMorphLimitGate } from "../../hooks/useMorphLimitGate";
+import { presentMorphPaywall } from "../../lib/morph-return";
 import { useMorphSession } from "../../lib/morph-session";
 import type { MorphStackParamList } from "../../navigation/MorphStack";
 
@@ -86,9 +87,13 @@ export function MorphHomeScreen({ navigation }: Props) {
       navigation.getParent()?.navigate("Profile" as never);
       return;
     }
-    const ok = await gate.ensureStudio();
-    if (!ok) {
-      navigation.navigate("MorphPaywall");
+    const result = await gate.ensureStudioDetailed();
+    if (!result.ok) {
+      presentMorphPaywall(
+        navigation,
+        result.reason === "limit" ? "limit" : "studio",
+        "MorphHome",
+      );
       return;
     }
     navigation.navigate("MorphStudio");
@@ -136,7 +141,7 @@ export function MorphHomeScreen({ navigation }: Props) {
                 gate.remaining <= Math.max(1, Math.floor(gate.limit * 0.2)) &&
                   styles.limitLow,
               ]}
-              onPress={() => navigation.navigate("MorphPaywall")}
+              onPress={() => presentMorphPaywall(navigation, "subscription", "MorphHome")}
             >
               <Text style={styles.limitText}>{showLimit}</Text>
             </Pressable>

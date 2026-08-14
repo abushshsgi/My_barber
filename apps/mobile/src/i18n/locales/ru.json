@@ -254,7 +254,26 @@
     "limitMonthly": "Месячный лимит Morph AI исчерпан ({{used}}/{{limit}}). Перейдите на Plus или Pro.",
     "subscriptionDefault": "Morph AI доступен только по подписке. Выберите тариф.",
     "studioPlusRequired": "Studio доступен в подписке Plus или Pro. Обновите тариф.",
-    "studioMonthlyLimit": "Месячный лимит Studio исчерпан ({{used}}/{{limit}})."
+    "studioMonthlyLimit": "Месячный лимит Studio исчерпан ({{used}}/{{limit}}).",
+    "paywall": {
+      "titleSubscribe": "Нужно больше Morph AI?",
+      "titleLimit": "Лимит кончился — возьмите больше сообщений",
+      "titleStudio": "Для Studio нужен более высокий тариф",
+      "subtitle": "Выберите план, который вам подходит",
+      "billedMonthly": "Ежемесячная оплата",
+      "monthShort": "мес",
+      "savePct": "−{{pct}}%",
+      "featuresTitle": "Всё из бесплатного, плюс",
+      "fallbackFeature": "Откроются Morph AI chat и try-on",
+      "cta": "Оформить {{plan}}",
+      "ctaLogin": "Войти и оформить подписку",
+      "currentPlan": "Текущий",
+      "taglineStarter": "Чтобы начать",
+      "taglinePlus": "Для ежедневных задач",
+      "taglinePro": "Больше возможностей и лимит",
+      "usage": "В этом месяце: {{used}}/{{limit}} Morph AI",
+      "maxPlanLimit": "Лимит на этот месяц исчерпан. Обновится в следующем периоде."
+    }
   },
   "chat": {
     "title": "Morf AI Chat",

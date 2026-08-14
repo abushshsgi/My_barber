@@ -18,11 +18,16 @@ import {
 } from "../../api/ai";
 import { useHideTabBar } from "../../hooks/useHideTabBar";
 import { useMorphLimitGate } from "../../hooks/useMorphLimitGate";
+import { presentMorphPaywall } from "../../lib/morph-return";
 import { pickSelfieFromCamera, pickSelfieFromGallery } from "../../lib/selfie";
 import { useMorphSession } from "../../lib/morph-session";
+import type { MorphStackParamList } from "../../navigation/MorphStack";
 
 type StudioNav = {
-  navigate: (name: "MorphPaywall", params?: undefined) => void;
+  navigate: (
+    name: "MorphPaywall",
+    params?: MorphStackParamList["MorphPaywall"],
+  ) => void;
   goBack: () => void;
 };
 
@@ -147,9 +152,13 @@ export function MorphStudioScreen({ navigation }: Props) {
 
   const applyPreset = useCallback(
     async (presetId: string) => {
-      const ok = await gate.ensureStudio();
-      if (!ok) {
-        navigation.navigate("MorphPaywall");
+      const result = await gate.ensureStudioDetailed();
+      if (!result.ok) {
+        presentMorphPaywall(
+          navigation,
+          result.reason === "limit" ? "limit" : "studio",
+          "MorphStudio",
+        );
         return;
       }
       const image = await ensureImage();
@@ -186,7 +195,7 @@ export function MorphStudioScreen({ navigation }: Props) {
         gate.refresh();
       } catch (err) {
         if (gate.handleError(err)) {
-          navigation.navigate("MorphPaywall");
+          presentMorphPaywall(navigation, "limit", "MorphStudio");
           return;
         }
         setError(err instanceof Error ? err.message : "Studio xatosi");

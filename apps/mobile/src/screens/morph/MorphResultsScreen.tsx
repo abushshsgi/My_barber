@@ -32,6 +32,7 @@ import { ShareFriendsModal } from "../../components/morph/ShareFriendsModal";
 import { useAppToast } from "../../components/ui/ToastProvider";
 import { useHideTabBar } from "../../hooks/useHideTabBar";
 import { useMorphLimitGate } from "../../hooks/useMorphLimitGate";
+import { presentMorphPaywall } from "../../lib/morph-return";
 import { useMorphSession } from "../../lib/morph-session";
 import type { MorphStackParamList } from "../../navigation/MorphStack";
 
@@ -94,9 +95,13 @@ export function MorphResultsScreen({ navigation }: Props) {
         session.setTryOn(session.tryOnByStyle[style.id], style.id, style.title);
         return;
       }
-      const ok = await gate.ensureTryOn();
-      if (!ok) {
-        navigation.navigate("MorphPaywall");
+      const result = await gate.ensureTryOnDetailed();
+      if (!result.ok) {
+        presentMorphPaywall(
+          navigation,
+          result.reason === "limit" ? "limit" : "subscription",
+          "MorphResults",
+        );
         return;
       }
       setActiveStyleId(style.id);
@@ -113,7 +118,7 @@ export function MorphResultsScreen({ navigation }: Props) {
         gate.refresh();
       } catch (err) {
         if (gate.handleError(err)) {
-          navigation.navigate("MorphPaywall");
+          presentMorphPaywall(navigation, "limit", "MorphResults");
           return;
         }
         const msg = formatMorphUserError(
@@ -159,7 +164,7 @@ export function MorphResultsScreen({ navigation }: Props) {
         setPhase("summary");
       } catch (err) {
         if (gate.handleError(err)) {
-          navigation.navigate("MorphPaywall");
+          presentMorphPaywall(navigation, "limit", "MorphResults");
           return;
         }
         setError(

@@ -8,6 +8,7 @@ import {
   BackHandler,
   FlatList,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   Pressable,
   StyleSheet,
@@ -20,6 +21,7 @@ import type { MorphChatMessage } from "../../api/ai";
 import { resolveMediaUrl } from "../../api/media";
 import { displayName, initials } from "../../api/user";
 import { useAuth } from "../../auth/AuthContext";
+import { MorphPaywallView } from "../../components/morph/MorphPaywallView";
 import { ChatBubble } from "../../components/morph/chat/ChatBubble";
 import { ChatHistorySheet } from "../../components/morph/chat/ChatHistorySheet";
 import { ChatInputBar } from "../../components/morph/chat/ChatInputBar";
@@ -28,6 +30,13 @@ import { QuickPromptChips } from "../../components/morph/chat/QuickPromptChips";
 import { TAB_DOCK_CLEARANCE, useHideTabBarWhen } from "../../hooks/useHideTabBar";
 import { MORPH_QUICK_PROMPT_IDS, useMorphChat } from "../../hooks/useMorphChat";
 import { useMorphLimitGate } from "../../hooks/useMorphLimitGate";
+import { writeAppShell, writeLastShellTab } from "../../lib/app-shell";
+import {
+  consumeMorphReturn,
+  peekMorphReturn,
+  rememberMorphReturn,
+  type PaywallReason,
+} from "../../lib/morph-return";
 import type { RootTabParamList } from "../../navigation/RootTabs";
 
 function greetingKey(hour: number): "greetingMorning" | "greetingAfternoon" | "greetingEvening" {
@@ -44,14 +53,39 @@ export function MorphChatScreen() {
   const gate = useMorphLimitGate();
   const listRef = useRef<FlatList<MorphChatMessage>>(null);
   const chat = useMorphChat();
+  const pendingDraft = useRef<string | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
+  const [paywall, setPaywall] = useState<PaywallReason | null>(null);
 
-  useHideTabBarWhen(chatOpen);
+  useHideTabBarWhen(chatOpen || paywall != null);
+
+  const showPaywall = useCallback(
+    (reason: PaywallReason, draft?: string) => {
+      if (draft) pendingDraft.current = draft;
+      rememberMorphReturn({
+        returnTo: "MorphChat",
+        reason,
+        draft: draft || pendingDraft.current || undefined,
+        chatOpen,
+      });
+      setPaywall(reason);
+    },
+    [chatOpen],
+  );
+
+  const closePaywall = useCallback(() => {
+    consumeMorphReturn();
+    setPaywall(null);
+  }, []);
 
   useFocusEffect(
     useCallback(() => {
       const sub = BackHandler.addEventListener("hardwareBackPress", () => {
+        if (paywall) {
+          closePaywall();
+          return true;
+        }
         if (chatOpen) {
           setChatOpen(false);
           return true;
@@ -59,7 +93,46 @@ export function MorphChatScreen() {
         return false;
       });
       return () => sub.remove();
-    }, [chatOpen]),
+    }, [chatOpen, closePaywall, paywall]),
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      const pending = peekMorphReturn();
+      if (pending?.returnTo !== "MorphChat") return undefined;
+
+      if (pending.draft) {
+        pendingDraft.current = pending.draft;
+        chat.setInput(pending.draft);
+      }
+
+      let cancelled = false;
+      void (async () => {
+        if (!isAuthenticated) {
+          setPaywall(pending.reason ?? "subscription");
+          return;
+        }
+        const result = await gate.ensureAccessDetailed();
+        if (cancelled) return;
+        if (result.ok) {
+          const draft = pending.draft;
+          consumeMorphReturn();
+          setPaywall(null);
+          if (pending.chatOpen || draft) setChatOpen(true);
+          if (draft) {
+            await chat.sendText(draft);
+          }
+        } else {
+          setPaywall(result.reason === "limit" ? "limit" : "subscription");
+        }
+      })();
+
+      return () => {
+        cancelled = true;
+      };
+      // Faqat auth o‘zgarganda / fokusda bir marta — chat obyekti deps emas.
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isAuthenticated]),
   );
 
   const name = displayName(user);
@@ -85,29 +158,69 @@ export function MorphChatScreen() {
     });
   }, []);
 
-  const openChat = useCallback(() => setChatOpen(true), []);
+  const requireAccess = useCallback(
+    async (draft?: string) => {
+      const result = await gate.ensureAccessDetailed();
+      if (result.ok) return true;
+      showPaywall(result.reason === "limit" ? "limit" : "subscription", draft);
+      return false;
+    },
+    [gate, showPaywall],
+  );
 
   const onSend = useCallback(async () => {
-    if (!chat.input.trim()) return;
-    openChat();
-    if (!isAuthenticated) return;
-    const ok = await gate.ensureAccess();
+    const draft = chat.input.trim();
+    if (!draft) return;
+    const ok = await requireAccess(draft);
     if (!ok) return;
-    await chat.sendText(chat.input);
+    setChatOpen(true);
+    const sent = await chat.sendText(draft);
+    if (sent === "limit") {
+      showPaywall("limit", draft);
+      return;
+    }
     scrollToEnd();
-  }, [chat, gate, isAuthenticated, openChat, scrollToEnd]);
+  }, [chat, requireAccess, scrollToEnd, showPaywall]);
 
   const onQuickPrompt = useCallback(
     async (id: string) => {
-      openChat();
-      if (!isAuthenticated) return;
-      const ok = await gate.ensureAccess();
+      const ok = await requireAccess(chat.input.trim() || undefined);
       if (!ok) return;
-      chat.sendQuickPrompt(id as (typeof MORPH_QUICK_PROMPT_IDS)[number]);
+      setChatOpen(true);
+      const sent = await chat.sendQuickPrompt(id as (typeof MORPH_QUICK_PROMPT_IDS)[number]);
+      if (sent === "limit") {
+        showPaywall("limit");
+        return;
+      }
       scrollToEnd();
     },
-    [chat, gate, isAuthenticated, openChat, scrollToEnd],
+    [chat, requireAccess, scrollToEnd, showPaywall],
   );
+
+  const onPaywallSuccess = useCallback(async () => {
+    consumeMorphReturn();
+    setPaywall(null);
+    gate.refresh();
+    const draft = pendingDraft.current || chat.input.trim();
+    pendingDraft.current = null;
+    setChatOpen(true);
+    if (draft) {
+      await chat.sendText(draft);
+      scrollToEnd();
+    }
+  }, [chat, gate, scrollToEnd]);
+
+  const onNeedLogin = useCallback(() => {
+    rememberMorphReturn({
+      returnTo: "MorphChat",
+      reason: paywall ?? "subscription",
+      draft: pendingDraft.current || chat.input.trim() || undefined,
+      chatOpen,
+    });
+    void writeAppShell("morph");
+    void writeLastShellTab("morph", "MorphChat");
+    navigation.navigate("Profile");
+  }, [chat.input, chatOpen, navigation, paywall]);
 
   const onCamera = useCallback(() => {
     navigation.navigate("MorphTryOn", { screen: "MorphCapture" } as never);
@@ -133,6 +246,17 @@ export function MorphChatScreen() {
       }}
       onDelete={chat.deleteThread}
     />
+  );
+
+  const paywallModal = (
+    <Modal visible={paywall != null} animationType="slide" onRequestClose={closePaywall}>
+      <MorphPaywallView
+        reason={paywall ?? "subscription"}
+        onClose={closePaywall}
+        onSuccess={() => void onPaywallSuccess()}
+        onNeedLogin={onNeedLogin}
+      />
+    </Modal>
   );
 
   if (!chat.hydrated) {
@@ -169,6 +293,7 @@ export function MorphChatScreen() {
           />
         </MorphChatWelcome>
         {historySheet}
+        {paywallModal}
       </KeyboardAvoidingView>
     );
   }
@@ -220,48 +345,41 @@ export function MorphChatScreen() {
         </View>
       ) : null}
 
-      {!isAuthenticated ? (
-        <View style={styles.guest}>
-          <Ionicons name="lock-closed-outline" size={28} color="#A1A1AA" />
-          <Text style={styles.guestTitle}>{t("common.loginRequired")}</Text>
-          <Text style={styles.guestSub}>{t("chat.loginRequired")}</Text>
-        </View>
-      ) : (
-        <KeyboardAvoidingView
-          style={styles.flex}
-          behavior={Platform.OS === "ios" ? "padding" : undefined}
-          keyboardVerticalOffset={Platform.OS === "ios" ? insets.top + 8 : 0}
-        >
-          <FlatList
-            ref={listRef}
-            data={chat.messages}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => (
-              <ChatBubble role={item.role} content={item.content} />
-            )}
-            contentContainerStyle={[styles.list, { paddingBottom: 12 }]}
-            onContentSizeChange={scrollToEnd}
-            keyboardShouldPersistTaps="handled"
-            ListFooterComponent={
-              chat.sending ? (
-                <ChatBubble role="assistant" content={t("chat.typing")} pending />
-              ) : null
-            }
-          />
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        keyboardVerticalOffset={Platform.OS === "ios" ? insets.top + 8 : 0}
+      >
+        <FlatList
+          ref={listRef}
+          data={chat.messages}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => (
+            <ChatBubble role={item.role} content={item.content} />
+          )}
+          contentContainerStyle={[styles.list, { paddingBottom: 12 }]}
+          onContentSizeChange={scrollToEnd}
+          keyboardShouldPersistTaps="handled"
+          ListFooterComponent={
+            chat.sending ? (
+              <ChatBubble role="assistant" content={t("chat.typing")} pending />
+            ) : null
+          }
+        />
 
-          {chat.error ? (
-            <View style={styles.errorBar}>
-              <Text style={styles.errorText}>{chat.error}</Text>
-            </View>
-          ) : null}
-
-          <View style={{ paddingHorizontal: 16, paddingBottom: Math.max(insets.bottom, 12) }}>
-            <ChatInputBar {...composer} onSend={() => void onSend()} onCamera={onCamera} />
+        {chat.error ? (
+          <View style={styles.errorBar}>
+            <Text style={styles.errorText}>{chat.error}</Text>
           </View>
-        </KeyboardAvoidingView>
-      )}
+        ) : null}
+
+        <View style={{ paddingHorizontal: 16, paddingBottom: Math.max(insets.bottom, 12) }}>
+          <ChatInputBar {...composer} onSend={() => void onSend()} onCamera={onCamera} />
+        </View>
+      </KeyboardAvoidingView>
 
       {historySheet}
+      {paywallModal}
     </View>
   );
 }

@@ -21,11 +21,13 @@ import { ShellSwitchOverlay } from "../components/ShellSwitchOverlay";
 import { FLOATING_TAB_BAR_STYLE } from "../hooks/useHideTabBar";
 import { AppShellProvider, useAppShell } from "../lib/AppShellContext";
 import { readLastMorphContentTab } from "../lib/app-shell";
+import { peekMorphReturn } from "../lib/morph-return";
 import {
   TabBarVisibilityProvider,
   useTabBarHidden,
 } from "../lib/TabBarVisibility";
 import { MorphSessionProvider } from "../lib/morph-session";
+import { useAuth } from "../auth/AuthContext";
 import { HomeScreen } from "../screens/HomeScreen";
 import { MapScreen } from "../screens/MapScreen";
 import { MorphChatScreen } from "../screens/morph/MorphChatScreen";
@@ -120,6 +122,8 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
   const bottomPad = Math.max(insets.bottom, 8);
   const tabBarHidden = useTabBarHidden();
+  const { isAuthenticated } = useAuth();
+  const prevAuth = useRef(isAuthenticated);
   const {
     shell,
     ready,
@@ -137,6 +141,26 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
   const sidesY = useRef(new Animated.Value(0)).current;
   const sidesOpacity = useRef(new Animated.Value(1)).current;
   const centerScale = useRef(new Animated.Value(1)).current;
+
+  // Login dan keyin — obuna/chat qayerda ochilgan bo‘lsa, shu yerga qaytarish.
+  useEffect(() => {
+    const justLoggedIn = isAuthenticated && !prevAuth.current;
+    prevAuth.current = isAuthenticated;
+    if (!justLoggedIn) return;
+    const pending = peekMorphReturn();
+    if (!pending) return;
+    if (pending.returnTo === "MorphChat") {
+      navigation.navigate("MorphChat");
+      return;
+    }
+    navigation.navigate("MorphTryOn", {
+      screen: "MorphPaywall",
+      params: {
+        reason: pending.reason ?? "subscription",
+        returnTo: pending.returnTo,
+      },
+    } as never);
+  }, [isAuthenticated, navigation]);
 
   // Saqlangan shell = morph bo‘lsa — Morph sahifaga o‘tkazish (Home + Morph nav bugini oldini olish).
   useEffect(() => {

@@ -20,6 +20,7 @@ import { useAuth } from "../../auth/AuthContext";
 import { useHideTabBar } from "../../hooks/useHideTabBar";
 import { useMorphLimitGate } from "../../hooks/useMorphLimitGate";
 import { writeAppShell, writeLastShellTab } from "../../lib/app-shell";
+import { presentMorphPaywall } from "../../lib/morph-return";
 import {
   markMorphTryOnIntroDone,
   writeMorphIntroStep,
@@ -151,13 +152,21 @@ export function MorphGuideCarouselScreen({ navigation, route }: Props) {
           return;
         }
         await markMorphTryOnIntroDone();
-        const ok = await gate.ensureAccess();
-        if (!ok) {
-          navigation.replace("MorphCapture");
-          return;
-        }
         session.clear();
         session.setSelfie(dataUrl);
+        const result = await gate.ensureAccessDetailed();
+        if (!result.ok) {
+          if (result.reason === "login") {
+            await goLogin();
+            return;
+          }
+          presentMorphPaywall(
+            navigation,
+            result.reason === "limit" ? "limit" : "subscription",
+            "MorphResults",
+          );
+          return;
+        }
         navigation.replace("MorphResults");
       } catch (err) {
         setError(err instanceof Error ? err.message : "Rasm yuklashda xato");

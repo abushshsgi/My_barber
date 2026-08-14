@@ -25,6 +25,7 @@ import {
 } from "../../lib/morph-share";
 import { useHideTabBar } from "../../hooks/useHideTabBar";
 import { useMorphLimitGate } from "../../hooks/useMorphLimitGate";
+import { presentMorphPaywall } from "../../lib/morph-return";
 import { useMorphSession } from "../../lib/morph-session";
 import type { MorphStackParamList } from "../../navigation/MorphStack";
 
@@ -62,9 +63,13 @@ export function MorphPreviewScreen({ navigation, route }: Props) {
       return;
     }
     if (preview) return;
-    const ok = await gate.ensureTryOn();
-    if (!ok) {
-      navigation.navigate("MorphPaywall");
+    const result = await gate.ensureTryOnDetailed();
+    if (!result.ok) {
+      presentMorphPaywall(
+        navigation,
+        result.reason === "limit" ? "limit" : "subscription",
+        "MorphPreview",
+      );
       return;
     }
     setBusy(true);
@@ -81,7 +86,7 @@ export function MorphPreviewScreen({ navigation, route }: Props) {
       gate.refresh();
     } catch (err) {
       if (gate.handleError(err)) {
-        navigation.navigate("MorphPaywall");
+        presentMorphPaywall(navigation, "limit", "MorphPreview");
         return;
       }
       Alert.alert("Xato", err instanceof Error ? err.message : "Try-on xatosi");

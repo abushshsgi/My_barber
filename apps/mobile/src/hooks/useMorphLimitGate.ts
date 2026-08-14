@@ -1,16 +1,12 @@
 import { useCallback } from "react";
-import { Alert, Platform } from "react-native";
 import { MorphPlanLimitError } from "../api/ai";
 import { useAuth } from "../auth/AuthContext";
 import { useSubscriptions } from "./useSubscriptions";
 
-type GateKind = "access" | "tryon" | "studio";
+export type MorphGateReason = "login" | "subscription" | "limit" | "studio";
+export type MorphGateResult = { ok: true } | { ok: false; reason: MorphGateReason };
 
-/**
- * TEMP test: obuna/limit majburiy emas.
- * Qayta yoqish: `false` qiling.
- */
-const TEMP_SKIP_MORPH_SUBSCRIPTION = true;
+type GateKind = "access" | "tryon" | "studio";
 
 /**
  * Morph AI limit gate — web `useMorphLimitGate` bilan mos.
@@ -20,23 +16,13 @@ export function useMorphLimitGate() {
   const { isAuthenticated } = useAuth();
   const { me, refresh, loading } = useSubscriptions();
 
-  const ensure = useCallback(
-    async (kind: GateKind): Promise<boolean> => {
+  const ensureDetailed = useCallback(
+    async (kind: GateKind): Promise<MorphGateResult> => {
       if (!isAuthenticated) {
-        if (Platform.OS === "web" && typeof window !== "undefined") {
-          window.alert("Kirish kerak\nMorph AI uchun avval akkauntga kiring.");
-        } else {
-          Alert.alert("Kirish kerak", "Morph AI uchun avval akkauntga kiring.");
-        }
-        return false;
-      }
-
-      if (TEMP_SKIP_MORPH_SUBSCRIPTION) {
-        return true;
+        return { ok: false, reason: "login" };
       }
 
       await refresh();
-      // refresh async state — me eski bo'lishi mumkin, shuning uchun API dan qayta olamiz
       const { fetchSubscriptionMe } = await import("../api/subscriptions");
       let latest = me;
       try {
@@ -45,60 +31,36 @@ export function useMorphLimitGate() {
         /* keep me */
       }
 
-      const show = (title: string, message: string) => {
-        if (Platform.OS === "web" && typeof window !== "undefined") {
-          window.alert(`${title}\n${message}`);
-        } else {
-          Alert.alert(title, message);
-        }
-      };
-
       if (!latest?.has_active || latest.access?.morph_ai_allowed === false) {
-        show(
-          "Obuna kerak",
-          latest?.access?.message ||
-            "Morph AI faqat obuna bilan ishlaydi. Tarif tanlang.",
-        );
-        return false;
+        return { ok: false, reason: "subscription" };
       }
 
       const usage = latest.usage;
       if (kind === "tryon" || kind === "access") {
         if ((usage?.morph_ai_remaining ?? 0) <= 0 && (usage?.morph_ai_limit ?? 0) > 0) {
-          show(
-            "Limit tugadi",
-            `Oylik Morph AI limiti tugagan (${usage.morph_ai_used}/${usage.morph_ai_limit}). Plus yoki Pro ga o'ting.`,
-          );
-          return false;
+          return { ok: false, reason: "limit" };
         }
       }
       if (kind === "studio") {
         if ((usage?.morph_studio_limit ?? 0) <= 0) {
-          show("Studio yo'q", "Studio Plus yoki Pro obunasida. Tarifni yangilang.");
-          return false;
+          return { ok: false, reason: "studio" };
         }
         if ((usage?.morph_studio_remaining ?? 0) <= 0) {
-          show(
-            "Studio limiti",
-            `Studio oylik limiti tugagan (${usage.morph_studio_used}/${usage.morph_studio_limit}).`,
-          );
-          return false;
+          return { ok: false, reason: "limit" };
         }
       }
-      return true;
+      return { ok: true };
     },
     [isAuthenticated, me, refresh],
   );
 
+  const ensure = useCallback(
+    async (kind: GateKind): Promise<boolean> => (await ensureDetailed(kind)).ok,
+    [ensureDetailed],
+  );
+
   const handleError = useCallback((err: unknown): boolean => {
-    if (TEMP_SKIP_MORPH_SUBSCRIPTION) {
-      return false;
-    }
-    if (err instanceof MorphPlanLimitError) {
-      Alert.alert("Limit", err.message);
-      return true;
-    }
-    return false;
+    return err instanceof MorphPlanLimitError;
   }, []);
 
   return {
@@ -106,15 +68,16 @@ export function useMorphLimitGate() {
     loading,
     refresh,
     ensureAccess: () => ensure("access"),
+    ensureAccessDetailed: () => ensureDetailed("access"),
     ensureTryOn: () => ensure("tryon"),
+    ensureTryOnDetailed: () => ensureDetailed("tryon"),
     ensureStudio: () => ensure("studio"),
+    ensureStudioDetailed: () => ensureDetailed("studio"),
     handleError,
     remaining: me?.usage?.morph_ai_remaining ?? 0,
     limit: me?.usage?.morph_ai_limit ?? 0,
     studioRemaining: me?.usage?.morph_studio_remaining ?? 0,
     studioLimit: me?.usage?.morph_studio_limit ?? 0,
-    allowed: TEMP_SKIP_MORPH_SUBSCRIPTION
-      ? isAuthenticated
-      : Boolean(me?.has_active && me?.access?.morph_ai_allowed !== false),
+    allowed: Boolean(me?.has_active && me?.access?.morph_ai_allowed !== false),
   };
 }

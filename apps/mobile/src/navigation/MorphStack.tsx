@@ -28,7 +28,7 @@ export type MorphStackParamList = {
   };
   MorphHistory: { generationId?: number } | undefined;
   MorphStudio: undefined;
-  MorphPaywall: undefined;
+  MorphPaywall: { reason?: import("../lib/morph-return").PaywallReason; returnTo?: import("../lib/morph-return").MorphReturnTo } | undefined;
 };
 
 const Stack = createNativeStackNavigator<MorphStackParamList>();

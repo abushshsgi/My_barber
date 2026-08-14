@@ -28,7 +28,7 @@ export type ProfileStackParamList = {
   NotificationPrefs: undefined;
   Notifications: undefined;
   Subscriptions: undefined;
-  MorphPaywall: undefined;
+  MorphPaywall: { reason?: import("../lib/morph-return").PaywallReason; returnTo?: import("../lib/morph-return").MorphReturnTo } | undefined;
   WalletGate: undefined;
   WalletHome: undefined;
   WalletTopUp: undefined;

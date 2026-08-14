@@ -308,25 +308,29 @@ export function useMorphChat() {
           },
         ]);
       } catch (err) {
+        if (err instanceof MorphPlanLimitError) {
+          setMessages((prev) => prev.filter((m) => m.id !== userMsg.id));
+          setInput(trimmed);
+          setError(null);
+          return "limit" as const;
+        }
         const msg =
-          err instanceof MorphPlanLimitError
-            ? err.message
-            : formatMorphUserError(
-                err instanceof Error ? err.message : "",
-                t("chat.error"),
-              );
+          formatMorphUserError(
+            err instanceof Error ? err.message : "",
+            t("chat.error"),
+          );
         setError(msg);
+        return "error" as const;
       } finally {
         setSending(false);
       }
+      return "ok" as const;
     },
     [context, messages, sending, t],
   );
 
   const sendQuickPrompt = useCallback(
-    (id: (typeof MORPH_QUICK_PROMPT_IDS)[number]) => {
-      void sendText(promptText(id));
-    },
+    (id: (typeof MORPH_QUICK_PROMPT_IDS)[number]) => sendText(promptText(id)),
     [promptText, sendText],
   );
 

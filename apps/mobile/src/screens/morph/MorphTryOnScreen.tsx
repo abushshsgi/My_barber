@@ -33,6 +33,7 @@ import { useAuth } from "../../auth/AuthContext";
 import { TAB_DOCK_CLEARANCE } from "../../hooks/useHideTabBar";
 import { useMorphLimitGate } from "../../hooks/useMorphLimitGate";
 import { writeAppShell, writeLastShellTab } from "../../lib/app-shell";
+import { presentMorphPaywall } from "../../lib/morph-return";
 import { hasCompletedMorphTryOnIntro, readMorphIntroStep } from "../../lib/morph-onboarding";
 import { useMorphSession } from "../../lib/morph-session";
 import { pickSelfieFromCamera, pickSelfieFromGallery } from "../../lib/selfie";
@@ -396,14 +397,25 @@ export function MorphTryOnScreen({ navigation }: Props) {
           return;
         }
 
-        const ok = await gate.ensureAccess();
-        if (!ok) {
-          setError("Morph AI uchun obuna kerak — tarifni tanlang.");
+        session.clear();
+        session.setSelfie(dataUrl);
+
+        const result = await gate.ensureAccessDetailed();
+        if (!result.ok) {
+          if (result.reason === "login") {
+            void writeAppShell("morph");
+            void writeLastShellTab("morph", "MorphTryOn");
+            navigation.getParent()?.navigate("Profile" as never);
+            return;
+          }
+          presentMorphPaywall(
+            navigation,
+            result.reason === "limit" ? "limit" : "subscription",
+            "MorphResults",
+          );
           return;
         }
 
-        session.clear();
-        session.setSelfie(dataUrl);
         navigation.replace("MorphResults");
       } catch (err) {
         setError(err instanceof Error ? err.message : "Rasm yuklashda xato");
@@ -522,7 +534,9 @@ export function MorphTryOnScreen({ navigation }: Props) {
                   {error.includes("obuna") ? (
                     <Pressable
                       style={styles.errorCta}
-                      onPress={() => navigation.navigate("MorphPaywall")}
+                      onPress={() =>
+                        presentMorphPaywall(navigation, "subscription", "MorphCapture")
+                      }
                     >
                       <Text style={styles.errorCtaText}>Tariflar</Text>
                     </Pressable>
