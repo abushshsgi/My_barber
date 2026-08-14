@@ -232,30 +232,33 @@ export function ChatMenuDrawer({
             )}
           </ScrollView>
 
-          <Pressable
-            onPress={onProfile}
-            style={({ pressed }) => [styles.footer, pressed && styles.pressed]}
-            accessibilityRole="button"
-          >
-            {avatarUrl ? (
-              <Image source={{ uri: avatarUrl }} style={styles.avatar} contentFit="cover" />
-            ) : (
-              <View style={[styles.avatar, styles.avatarFallback]}>
-                <Text style={styles.avatarText}>{initials}</Text>
-              </View>
-            )}
-            <Text style={styles.footerName} numberOfLines={1}>
-              {profileName}
-            </Text>
+          <View style={styles.footer}>
+            <Pressable
+              onPress={onProfile}
+              style={({ pressed }) => [styles.footerProfile, pressed && styles.pressed]}
+              accessibilityRole="button"
+            >
+              {avatarUrl ? (
+                <Image source={{ uri: avatarUrl }} style={styles.avatar} contentFit="cover" />
+              ) : (
+                <View style={[styles.avatar, styles.avatarFallback]}>
+                  <Text style={styles.avatarText}>{initials}</Text>
+                </View>
+              )}
+              <Text style={styles.footerName} numberOfLines={1}>
+                {profileName}
+              </Text>
+            </Pressable>
             <Pressable
               onPress={onSettings}
               hitSlop={10}
+              style={({ pressed }) => [styles.settingsBtn, pressed && styles.pressed]}
               accessibilityRole="button"
               accessibilityLabel={settingsA11y}
             >
               <Ionicons name="settings-outline" size={20} color="#FFFFFF" />
             </Pressable>
-          </Pressable>
+          </View>
         </View>
       </View>
     </Modal>
@@ -398,6 +401,19 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: "#27272A",
+  },
+  footerProfile: {
+    flex: 1,
+    minWidth: 0,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  settingsBtn: {
+    width: 36,
+    height: 36,
+    alignItems: "center",
+    justifyContent: "center",
   },
   avatar: {
     width: 36,

@@ -71,9 +71,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 999,
-    backgroundColor: "rgba(255,255,255,0.72)",
+    backgroundColor: "#F4F4F6",
     borderWidth: 1,
-    borderColor: "rgba(124, 58, 237, 0.1)",
+    borderColor: "#EEEEF2",
   },
   chipDisabled: {
     opacity: 0.45,

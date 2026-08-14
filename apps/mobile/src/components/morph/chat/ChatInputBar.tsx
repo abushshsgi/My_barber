@@ -63,7 +63,7 @@ export function ChatInputBar({
         <Ionicons name="camera-outline" size={18} color="#3F3A5A" />
       </Pressable>
       <TextInput
-        style={styles.input}
+        style={[styles.input, !hasText && styles.inputCentered]}
         value={value}
         onChangeText={onChange}
         placeholder={placeholder}
@@ -158,6 +158,10 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 20,
     color: "#1E1B4B",
+    textAlign: "left",
+  },
+  inputCentered: {
+    textAlign: "center",
   },
   sendBtn: {
     width: 32,

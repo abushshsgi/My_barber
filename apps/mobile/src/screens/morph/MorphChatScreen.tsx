@@ -41,12 +41,6 @@ import {
 } from "../../lib/morph-return";
 import type { RootTabParamList } from "../../navigation/RootTabs";
 
-function greetingKey(hour: number): "greetingMorning" | "greetingAfternoon" | "greetingEvening" {
-  if (hour < 12) return "greetingMorning";
-  if (hour < 18) return "greetingAfternoon";
-  return "greetingEvening";
-}
-
 export function MorphChatScreen() {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
@@ -145,7 +139,6 @@ export function MorphChatScreen() {
 
   const name = displayName(user);
   const avatarUrl = resolveMediaUrl(user?.avatar, { width: 120 });
-  const greeting = t(`chat.home.${greetingKey(new Date().getHours())}`);
 
   const composer = useMemo(
     () => ({
@@ -334,15 +327,12 @@ export function MorphChatScreen() {
   if (!chatOpen) {
     return (
       <KeyboardAvoidingView
-        style={styles.root}
+        style={[styles.root, styles.welcomeRoot]}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
         <MorphChatWelcome
-          greeting={greeting}
-          name={name}
-          avatarUrl={avatarUrl}
-          initials={initials(name)}
-          brandLabel={t("chat.menu.brand")}
+          headline={t("chat.home.headline")}
+          subtitle={t("chat.home.subtitle")}
           menuA11y={t("chat.menu.openA11y")}
           onMenu={() => setMenuOpen(true)}
           historyA11y={t("chat.history.title")}
@@ -456,6 +446,9 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: "#F7F3FF",
+  },
+  welcomeRoot: {
+    backgroundColor: "#FFFFFF",
   },
   boot: {
     alignItems: "center",
