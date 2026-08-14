@@ -22,7 +22,6 @@ import { resolveMediaUrl } from "../../api/media";
 import { displayName, initials } from "../../api/user";
 import { useAuth } from "../../auth/AuthContext";
 import { MorphPaywallView } from "../../components/morph/MorphPaywallView";
-import { ChatAmbientBg } from "../../components/morph/chat/ChatAmbientBg";
 import { ChatBubble } from "../../components/morph/chat/ChatBubble";
 import { ChatInputBar } from "../../components/morph/chat/ChatInputBar";
 import { ChatMenuDrawer } from "../../components/morph/chat/ChatMenuDrawer";
@@ -87,13 +86,14 @@ export function MorphChatScreen() {
           return true;
         }
         if (chatOpen) {
+          chat.startNewChat();
           setChatOpen(false);
           return true;
         }
         return false;
       });
       return () => sub.remove();
-    }, [chatOpen, closePaywall, menuOpen, paywall]),
+    }, [chat.startNewChat, chatOpen, closePaywall, menuOpen, paywall]),
   );
 
   useFocusEffect(
@@ -317,9 +317,8 @@ export function MorphChatScreen() {
   if (!chat.hydrated) {
     return (
       <View style={[styles.root, styles.boot]}>
-        <ChatAmbientBg />
         <StatusBar style="dark" />
-        <ActivityIndicator color="#7C3AED" />
+        <ActivityIndicator color="#111111" />
       </View>
     );
   }
@@ -327,7 +326,7 @@ export function MorphChatScreen() {
   if (!chatOpen) {
     return (
       <KeyboardAvoidingView
-        style={[styles.root, styles.welcomeRoot]}
+        style={styles.root}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
         <MorphChatWelcome
@@ -335,8 +334,6 @@ export function MorphChatScreen() {
           subtitle={t("chat.home.subtitle")}
           menuA11y={t("chat.menu.openA11y")}
           onMenu={() => setMenuOpen(true)}
-          historyA11y={t("chat.history.title")}
-          onHistory={() => setMenuOpen(true)}
           bottomPad={Math.max(insets.bottom, 8) + TAB_DOCK_CLEARANCE}
           composer={<ChatInputBar {...composer} onSend={() => void onSend()} onCamera={onCamera} />}
           chips={
@@ -355,53 +352,38 @@ export function MorphChatScreen() {
     );
   }
 
+  const threadTitle =
+    chat.threads.find((th) => th.id === chat.activeThreadId)?.title || t("chat.title");
+
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
-      <ChatAmbientBg />
       <StatusBar style="dark" />
       <View style={styles.header}>
-        <Pressable
-          onPress={() => setChatOpen(false)}
-          style={({ pressed }) => [styles.headerBtn, pressed && styles.pressed]}
-          accessibilityRole="button"
-          accessibilityLabel={t("common.back")}
-        >
-          <Ionicons name="chevron-back" size={22} color="#1E1B4B" />
-        </Pressable>
-        <View style={styles.headerText}>
-          <Text style={styles.title}>{t("chat.title")}</Text>
-          <Text style={styles.subtitle} numberOfLines={1}>
-            {chat.hasContext ? t("chat.contextLinked") : t("chat.subtitle")}
-          </Text>
-        </View>
         <Pressable
           onPress={() => setMenuOpen(true)}
           style={({ pressed }) => [styles.headerBtn, pressed && styles.pressed]}
           accessibilityRole="button"
-          accessibilityLabel={t("chat.history.title")}
+          accessibilityLabel={t("chat.menu.openA11y")}
         >
-          <Ionicons name="time-outline" size={18} color="#1E1B4B" />
+          <Ionicons name="menu" size={22} color="#111111" />
         </Pressable>
+        <View style={styles.headerText}>
+          <Text style={styles.title} numberOfLines={1}>
+            {threadTitle}
+          </Text>
+        </View>
         <Pressable
-          onPress={chat.startNewChat}
+          onPress={() => {
+            chat.startNewChat();
+            setChatOpen(false);
+          }}
           style={({ pressed }) => [styles.headerBtn, pressed && styles.pressed]}
           accessibilityRole="button"
           accessibilityLabel={t("chat.history.newChat")}
         >
-          <Ionicons name="create-outline" size={18} color="#1E1B4B" />
+          <Ionicons name="create-outline" size={18} color="#111111" />
         </Pressable>
       </View>
-
-      {chat.limits ? (
-        <View style={styles.limitBar}>
-          <Text style={styles.limitText}>
-            {t("chat.dailyLimit", {
-              used: chat.limits.daily_used ?? "—",
-              limit: chat.limits.daily_limit,
-            })}
-          </Text>
-        </View>
-      ) : null}
 
       <KeyboardAvoidingView
         style={styles.flex}
@@ -411,6 +393,7 @@ export function MorphChatScreen() {
         <FlatList
           ref={listRef}
           data={chat.messages}
+          extraData={chat.sending}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
             <ChatBubble role={item.role} content={item.content} />
@@ -419,9 +402,7 @@ export function MorphChatScreen() {
           onContentSizeChange={scrollToEnd}
           keyboardShouldPersistTaps="handled"
           ListFooterComponent={
-            chat.sending ? (
-              <ChatBubble role="assistant" content={t("chat.typing")} pending />
-            ) : null
+            chat.sending ? <ChatBubble role="assistant" content="" pending /> : null
           }
         />
 
@@ -431,7 +412,7 @@ export function MorphChatScreen() {
           </View>
         ) : null}
 
-        <View style={{ paddingHorizontal: 16, paddingBottom: Math.max(insets.bottom, 12) }}>
+        <View style={[styles.composerDock, { paddingBottom: Math.max(insets.bottom, 12) }]}>
           <ChatInputBar {...composer} onSend={() => void onSend()} onCamera={onCamera} />
         </View>
       </KeyboardAvoidingView>
@@ -445,9 +426,6 @@ export function MorphChatScreen() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: "#F7F3FF",
-  },
-  welcomeRoot: {
     backgroundColor: "#FFFFFF",
   },
   boot: {
@@ -456,25 +434,22 @@ const styles = StyleSheet.create({
   },
   flex: {
     flex: 1,
-    zIndex: 1,
   },
   header: {
-    zIndex: 1,
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    gap: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    gap: 4,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "#E4E4E7",
   },
   headerBtn: {
     width: 40,
     height: 40,
-    borderRadius: 14,
+    borderRadius: 20,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(255,255,255,0.82)",
-    borderWidth: 1,
-    borderColor: "rgba(124, 58, 237, 0.08)",
   },
   pressed: {
     opacity: 0.78,
@@ -484,27 +459,22 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   title: {
-    fontSize: 17,
-    fontWeight: "700",
-    color: "#1E1B4B",
-    letterSpacing: -0.3,
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#111111",
+    letterSpacing: -0.2,
   },
-  subtitle: {
-    marginTop: 2,
-    fontSize: 12,
-    color: "#6B6685",
-  },
-  limitBar: {
+  composerDock: {
     paddingHorizontal: 16,
-    paddingVertical: 6,
-  },
-  limitText: {
-    fontSize: 11,
-    color: "#6B6685",
+    paddingTop: 8,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: "#E4E4E7",
+    backgroundColor: "#FFFFFF",
   },
   list: {
-    paddingTop: 12,
+    paddingTop: 16,
     flexGrow: 1,
+    backgroundColor: "#FFFFFF",
   },
   errorBar: {
     marginHorizontal: 16,
@@ -518,23 +488,5 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: "#B91C1C",
     lineHeight: 18,
-  },
-  guest: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 32,
-    gap: 8,
-  },
-  guestTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#111111",
-  },
-  guestSub: {
-    fontSize: 14,
-    lineHeight: 20,
-    color: "#8A8A8E",
-    textAlign: "center",
   },
 });

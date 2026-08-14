@@ -63,7 +63,7 @@ def sanitize_chat_history(messages: list[Any] | None) -> list[ChatMessage]:
     if not messages:
         return []
     cleaned: list[ChatMessage] = []
-    for item in messages[-MORF_CHAT_MAX_HISTORY :]:
+    for item in messages[-MORF_CHAT_MAX_HISTORY:]:
         if not isinstance(item, dict):
             continue
         role = _normalize_role(str(item.get("role") or ""))
@@ -72,6 +72,27 @@ def sanitize_chat_history(messages: list[Any] | None) -> list[ChatMessage]:
             continue
         cleaned.append({"role": role, "content": content[:MORF_CHAT_MAX_MESSAGE_LEN]})
     return cleaned
+
+
+def build_chat_contents(user_message: str, history: list[ChatMessage]) -> list[dict[str, Any]]:
+    """Gemini contents: history dublikatisiz, navbatma-navbat rollar."""
+    prior = list(history)
+    if prior and prior[-1]["role"] == "user" and prior[-1]["content"] == user_message:
+        prior = prior[:-1]
+    while prior and prior[0]["role"] == "model":
+        prior = prior[1:]
+    merged: list[ChatMessage] = []
+    for msg in prior:
+        if merged and merged[-1]["role"] == msg["role"]:
+            merged[-1]["content"] = f"{merged[-1]['content']}\n{msg['content']}"
+        else:
+            merged.append({"role": msg["role"], "content": msg["content"]})
+    contents: list[dict[str, Any]] = [
+        {"role": item["role"], "parts": [{"text": item["content"]}]}
+        for item in merged
+    ]
+    contents.append({"role": "user", "parts": [{"text": user_message}]})
+    return contents
 
 
 def _post_gemini(model: str, api_key: str, body: dict[str, Any]) -> dict[str, Any]:
@@ -101,7 +122,7 @@ def _extract_reply_text(payload: dict[str, Any]) -> str:
     reply = "\n".join(text_parts).strip()
     if not reply:
         raise AiStyleError("AI javob bermadi.", 502)
-    return reply[:4000]
+    return reply[:8000]
 
 
 def generate_morf_chat_reply(
@@ -121,22 +142,13 @@ def generate_morf_chat_reply(
 
     prior = sanitize_chat_history(history)
     system_prompt = build_morf_chat_system_prompt(context)
-
-    contents: list[dict[str, Any]] = []
-    for msg in prior:
-        contents.append(
-            {
-                "role": msg["role"],
-                "parts": [{"text": msg["content"]}],
-            }
-        )
-    contents.append({"role": "user", "parts": [{"text": message}]})
+    contents = build_chat_contents(message, prior)
 
     body: dict[str, Any] = {
         "systemInstruction": {"parts": [{"text": system_prompt}]},
         "contents": contents,
         "generationConfig": {
-            "temperature": 0.65,
+            "temperature": 0.7,
             "maxOutputTokens": MORF_CHAT_MAX_OUTPUT_TOKENS,
         },
     }

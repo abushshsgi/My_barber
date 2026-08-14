@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
-import { ActivityIndicator, Pressable, StyleSheet, TextInput, View } from "react-native";
+import { ActivityIndicator, Platform, Pressable, StyleSheet, TextInput, View } from "react-native";
 import Animated, {
   Easing,
   FadeIn,
@@ -63,7 +63,7 @@ export function ChatInputBar({
         <Ionicons name="camera-outline" size={18} color="#3F3A5A" />
       </Pressable>
       <TextInput
-        style={[styles.input, !hasText && styles.inputCentered]}
+        style={styles.input}
         value={value}
         onChangeText={onChange}
         placeholder={placeholder}
@@ -79,6 +79,7 @@ export function ChatInputBar({
           if (canSend) onSend();
         }}
         accessibilityLabel={placeholder}
+        {...(Platform.OS === "web" ? { rows: 1 } : {})}
       />
       {hasText || sending ? (
         <Animated.View
@@ -121,66 +122,57 @@ const styles = StyleSheet.create({
   wrap: {
     flexDirection: "row",
     alignItems: "center",
-    minHeight: 44,
-    paddingLeft: 6,
-    paddingRight: 5,
-    paddingVertical: 4,
-    borderRadius: 22,
+    minHeight: 40,
+    paddingLeft: 4,
+    paddingRight: 4,
+    paddingVertical: 3,
+    borderRadius: 20,
     backgroundColor: "#FFFFFF",
     borderWidth: 1,
-    borderColor: "#EEEEF2",
-    shadowColor: "#1E1B4B",
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 3,
+    borderColor: "#E4E4E7",
   },
   wrapFocused: {
-    borderColor: "#DDD6FE",
-    shadowOpacity: 0.1,
+    borderColor: "#D4D4D8",
   },
   sideBtn: {
-    width: 32,
-    height: 32,
+    width: 30,
+    height: 30,
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: 16,
+    borderRadius: 15,
   },
   pressed: {
     opacity: 0.78,
   },
   input: {
     flex: 1,
-    minHeight: 32,
-    maxHeight: 88,
-    paddingHorizontal: 4,
-    paddingVertical: 6,
+    minHeight: 24,
+    maxHeight: 72,
+    paddingHorizontal: 6,
+    paddingVertical: 4,
     fontSize: 15,
     lineHeight: 20,
-    color: "#1E1B4B",
+    color: "#111111",
     textAlign: "left",
   },
-  inputCentered: {
-    textAlign: "center",
-  },
   sendBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#1E1B4B",
+    backgroundColor: "#111111",
   },
   sendBtnIdle: {
-    backgroundColor: "#C4B5FD",
+    backgroundColor: "#D4D4D8",
   },
   voiceBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#7C3AED",
+    backgroundColor: "#111111",
   },
   wave: {
     flexDirection: "row",

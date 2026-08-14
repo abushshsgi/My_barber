@@ -1,5 +1,16 @@
+import { useEffect } from "react";
 import { StyleSheet, Text, View } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import Animated, {
+  FadeIn,
+  FadeInDown,
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from "react-native-reanimated";
+import { ChatMarkdown } from "./ChatMarkdown";
 
 export type ChatRole = "user" | "assistant";
 
@@ -9,72 +20,95 @@ type Props = {
   pending?: boolean;
 };
 
-export function ChatBubble({ role, content, pending }: Props) {
-  const isUser = role === "user";
+function Dot({ delay }: { delay: number }) {
+  const opacity = useSharedValue(0.28);
 
+  useEffect(() => {
+    opacity.value = withDelay(
+      delay,
+      withRepeat(
+        withSequence(withTiming(1, { duration: 280 }), withTiming(0.28, { duration: 280 })),
+        -1,
+        false,
+      ),
+    );
+  }, [delay, opacity]);
+
+  const style = useAnimatedStyle(() => ({ opacity: opacity.value }));
+  return <Animated.View style={[styles.dot, style]} />;
+}
+
+function TypingDots() {
   return (
-    <View style={[styles.row, isUser ? styles.rowUser : styles.rowAssistant]}>
-      {!isUser ? (
-        <View style={styles.avatar}>
-          <Ionicons name="sparkles" size={13} color="#7C3AED" />
-        </View>
-      ) : null}
-      <View style={[styles.bubble, isUser ? styles.bubbleUser : styles.bubbleAssistant]}>
-        <Text style={[styles.text, isUser ? styles.textUser : styles.textAssistant]}>
-          {content}
-          {pending ? "…" : ""}
-        </Text>
-      </View>
+    <View style={styles.dots} accessibilityLabel="typing">
+      <Dot delay={0} />
+      <Dot delay={140} />
+      <Dot delay={280} />
     </View>
   );
 }
 
+export function ChatBubble({ role, content, pending }: Props) {
+  const isUser = role === "user";
+
+  if (pending && !isUser) {
+    return (
+      <Animated.View entering={FadeIn.duration(180)} style={styles.assistantRow}>
+        <TypingDots />
+      </Animated.View>
+    );
+  }
+
+  if (isUser) {
+    return (
+      <Animated.View entering={FadeInDown.duration(220)} style={styles.userRow}>
+        <View style={styles.userBubble}>
+          <Text style={styles.userText}>{content}</Text>
+        </View>
+      </Animated.View>
+    );
+  }
+
+  return (
+    <Animated.View entering={FadeIn.duration(280)} style={styles.assistantRow}>
+      <ChatMarkdown content={content} />
+    </Animated.View>
+  );
+}
+
 const styles = StyleSheet.create({
-  row: {
-    flexDirection: "row",
+  userRow: {
     alignItems: "flex-end",
-    marginBottom: 10,
-    paddingHorizontal: 16,
-    gap: 8,
+    paddingHorizontal: 18,
+    marginBottom: 18,
   },
-  rowUser: {
-    justifyContent: "flex-end",
-  },
-  rowAssistant: {
-    justifyContent: "flex-start",
-  },
-  avatar: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#EDE9FE",
-  },
-  bubble: {
-    maxWidth: "82%",
+  userBubble: {
+    maxWidth: "78%",
+    backgroundColor: "#F4F4F5",
     borderRadius: 18,
-    paddingHorizontal: 13,
+    borderBottomRightRadius: 6,
+    paddingHorizontal: 14,
     paddingVertical: 10,
   },
-  bubbleUser: {
-    backgroundColor: "#1E1B4B",
-    borderBottomRightRadius: 6,
+  userText: {
+    fontSize: 16,
+    lineHeight: 24,
+    color: "#111111",
   },
-  bubbleAssistant: {
-    backgroundColor: "rgba(255,255,255,0.92)",
-    borderBottomLeftRadius: 6,
-    borderWidth: 1,
-    borderColor: "rgba(124, 58, 237, 0.08)",
+  assistantRow: {
+    paddingHorizontal: 20,
+    marginBottom: 22,
   },
-  text: {
-    fontSize: 15,
-    lineHeight: 21,
+  dots: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    height: 24,
   },
-  textUser: {
-    color: "#FFFFFF",
-  },
-  textAssistant: {
-    color: "#1E1B4B",
+  dot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: "#A1A1AA",
   },
 });

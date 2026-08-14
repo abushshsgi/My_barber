@@ -1,5 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   formatMorphUserError,
@@ -12,8 +12,9 @@ import {
 import { useMorphSession } from "../lib/morph-session";
 
 const MESSAGES_KEY = "morph_chat_history_v1";
-const THREADS_KEY = "morph_chat_threads_v2";
-const ACTIVE_KEY = "morph_chat_active_v2";
+const THREADS_KEY = "morph_chat_threads_v3";
+const LEGACY_THREADS_KEY = "morph_chat_threads_v2";
+const ACTIVE_KEY = "morph_chat_active_v3";
 const WELCOME_KEY = "morph_chat_welcome_seen_v1";
 
 export const MORPH_QUICK_PROMPT_IDS = [
@@ -45,8 +46,12 @@ function newId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
+function realMessages(messages: MorphChatMessage[]): MorphChatMessage[] {
+  return messages.filter((m) => m.id !== "welcome" && m.content.trim().length > 0);
+}
+
 function titleFromMessages(messages: MorphChatMessage[], fallback: string): string {
-  const firstUser = messages.find((m) => m.role === "user" && m.id !== "welcome");
+  const firstUser = realMessages(messages).find((m) => m.role === "user");
   const raw = (firstUser?.content || "").trim().replace(/\s+/g, " ");
   if (!raw) return fallback;
   return raw.length > 42 ? `${raw.slice(0, 42)}…` : raw;
@@ -72,18 +77,15 @@ function buildContextFromSession(session: ReturnType<typeof useMorphSession>): M
   };
 }
 
+function sanitizeThread(thread: MorphChatThread): MorphChatThread | null {
+  const messages = realMessages(thread.messages ?? []);
+  if (!messages.length) return null;
+  return { ...thread, messages };
+}
+
 export function useMorphChat() {
   const { t, i18n } = useTranslation();
   const session = useMorphSession();
-
-  const welcome = useMemo(
-    (): MorphChatMessage => ({
-      id: "welcome",
-      role: "assistant",
-      content: t("chat.welcome"),
-    }),
-    [t, i18n.language],
-  );
 
   const quickPrompts = useMemo(
     () =>
@@ -97,66 +99,116 @@ export function useMorphChat() {
   const [welcomeSeen, setWelcomeSeen] = useState<boolean | null>(null);
   const [threads, setThreads] = useState<MorphChatThread[]>([]);
   const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
-  const [messages, setMessages] = useState<MorphChatMessage[]>([welcome]);
+  const [messages, setMessages] = useState<MorphChatMessage[]>([]);
   const [input, setInput] = useState("");
+  const sendingRef = useRef(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [limits, setLimits] = useState<MorphChatLimits | null>(null);
   const [hydrated, setHydrated] = useState(false);
 
+  const activeThreadIdRef = useRef<string | null>(null);
+  const messagesRef = useRef<MorphChatMessage[]>([]);
+  const threadsRef = useRef<MorphChatThread[]>([]);
+  const untitled = t("chat.history.untitled");
+
   const context = useMemo(() => buildContextFromSession(session), [session]);
 
-  useEffect(() => {
-    setMessages((prev) => {
-      const rest = prev.filter((m) => m.id !== "welcome");
-      return [welcome, ...rest];
-    });
-  }, [welcome]);
+  const persistThreads = useCallback(async (next: MorphChatThread[], activeId: string | null) => {
+    const cleaned = next
+      .map(sanitizeThread)
+      .filter((th): th is MorphChatThread => Boolean(th))
+      .slice(0, 40);
+    setThreads(cleaned);
+    threadsRef.current = cleaned;
+    setActiveThreadId(activeId);
+    activeThreadIdRef.current = activeId;
+    await AsyncStorage.setItem(THREADS_KEY, JSON.stringify(cleaned));
+    if (activeId) await AsyncStorage.setItem(ACTIVE_KEY, activeId);
+    else await AsyncStorage.removeItem(ACTIVE_KEY);
+  }, []);
+
+  const writeThreadMessages = useCallback(
+    (threadId: string, nextMessages: MorphChatMessage[]) => {
+      const cleaned = realMessages(nextMessages);
+      const now = new Date().toISOString();
+      const prev = threadsRef.current;
+      const exists = prev.some((th) => th.id === threadId);
+      let next: MorphChatThread[];
+      if (!cleaned.length) {
+        next = prev.filter((th) => th.id !== threadId);
+      } else if (!exists) {
+        next = [
+          {
+            id: threadId,
+            title: titleFromMessages(cleaned, untitled),
+            updatedAt: now,
+            messages: cleaned,
+          },
+          ...prev,
+        ];
+      } else {
+        next = prev.map((th) =>
+          th.id === threadId
+            ? {
+                ...th,
+                title: titleFromMessages(cleaned, th.title || untitled),
+                updatedAt: now,
+                messages: cleaned,
+              }
+            : th,
+        );
+      }
+      threadsRef.current = next;
+      setThreads(next);
+      void AsyncStorage.setItem(THREADS_KEY, JSON.stringify(next.slice(0, 40)));
+      void AsyncStorage.setItem(ACTIVE_KEY, threadId);
+    },
+    [untitled],
+  );
 
   useEffect(() => {
     let cancelled = false;
     void (async () => {
       try {
-        const [seenRaw, threadsRaw, activeRaw, legacyRaw] = await Promise.all([
+        const [seenRaw, threadsRaw, legacyRaw, oldSingle] = await Promise.all([
           AsyncStorage.getItem(WELCOME_KEY),
           AsyncStorage.getItem(THREADS_KEY),
-          AsyncStorage.getItem(ACTIVE_KEY),
+          AsyncStorage.getItem(LEGACY_THREADS_KEY),
           AsyncStorage.getItem(MESSAGES_KEY),
         ]);
 
         if (cancelled) return;
-
         setWelcomeSeen(seenRaw === "1");
 
         let parsedThreads: MorphChatThread[] = [];
-        if (threadsRaw) {
+        const raw = threadsRaw || legacyRaw;
+        if (raw) {
           try {
-            const rows = JSON.parse(threadsRaw) as MorphChatThread[];
-            if (Array.isArray(rows)) parsedThreads = rows;
+            const rows = JSON.parse(raw) as MorphChatThread[];
+            if (Array.isArray(rows)) {
+              parsedThreads = rows
+                .map(sanitizeThread)
+                .filter((th): th is MorphChatThread => Boolean(th));
+            }
           } catch {
             /* ignore */
           }
         }
 
-        // Legacy single-thread → migrate
-        if (!parsedThreads.length && legacyRaw) {
+        if (!parsedThreads.length && oldSingle) {
           try {
-            const legacy = JSON.parse(legacyRaw) as MorphChatMessage[];
-            if (Array.isArray(legacy) && legacy.length) {
-              const cleaned = legacy.filter((m) => m.id !== "welcome");
-              if (cleaned.length) {
-                const id = newId();
-                parsedThreads = [
-                  {
-                    id,
-                    title: titleFromMessages(cleaned, t("chat.history.untitled")),
-                    updatedAt: new Date().toISOString(),
-                    messages: cleaned,
-                  },
-                ];
-                await AsyncStorage.setItem(THREADS_KEY, JSON.stringify(parsedThreads));
-                await AsyncStorage.setItem(ACTIVE_KEY, id);
-              }
+            const legacy = JSON.parse(oldSingle) as MorphChatMessage[];
+            const cleaned = Array.isArray(legacy) ? realMessages(legacy) : [];
+            if (cleaned.length) {
+              parsedThreads = [
+                {
+                  id: newId(),
+                  title: titleFromMessages(cleaned, t("chat.history.untitled")),
+                  updatedAt: new Date().toISOString(),
+                  messages: cleaned,
+                },
+              ];
             }
           } catch {
             /* ignore */
@@ -164,17 +216,11 @@ export function useMorphChat() {
         }
 
         setThreads(parsedThreads);
-        const active =
-          (activeRaw && parsedThreads.some((th) => th.id === activeRaw) && activeRaw) ||
-          parsedThreads[0]?.id ||
-          null;
-        setActiveThreadId(active);
-        if (active) {
-          const found = parsedThreads.find((th) => th.id === active);
-          if (found?.messages?.length) {
-            setMessages([welcome, ...found.messages.filter((m) => m.id !== "welcome")]);
-          }
+        threadsRef.current = parsedThreads;
+        if (!threadsRaw && parsedThreads.length) {
+          await AsyncStorage.setItem(THREADS_KEY, JSON.stringify(parsedThreads.slice(0, 40)));
         }
+        await AsyncStorage.removeItem(ACTIVE_KEY);
       } finally {
         if (!cancelled) setHydrated(true);
       }
@@ -182,76 +228,7 @@ export function useMorphChat() {
     return () => {
       cancelled = true;
     };
-  }, [t, welcome]);
-
-  const persistThreads = useCallback(async (next: MorphChatThread[], activeId: string | null) => {
-    setThreads(next);
-    setActiveThreadId(activeId);
-    await AsyncStorage.setItem(THREADS_KEY, JSON.stringify(next.slice(0, 40)));
-    if (activeId) await AsyncStorage.setItem(ACTIVE_KEY, activeId);
-    else await AsyncStorage.removeItem(ACTIVE_KEY);
-  }, []);
-
-  const syncActiveThread = useCallback(
-    (nextMessages: MorphChatMessage[]) => {
-      const cleaned = nextMessages.filter((m) => m.id !== "welcome");
-      // Bo'sh suhbatni history ga yozmaymiz — faqat real xabar bo'lsa.
-      if (!cleaned.length && !activeThreadId) return;
-
-      const now = new Date().toISOString();
-      setThreads((prev) => {
-        let next: MorphChatThread[];
-        let activeId = activeThreadId;
-        if (!activeId) {
-          if (!cleaned.length) return prev;
-          activeId = newId();
-          next = [
-            {
-              id: activeId,
-              title: titleFromMessages(cleaned, t("chat.history.untitled")),
-              updatedAt: now,
-              messages: cleaned,
-            },
-            ...prev,
-          ];
-          setActiveThreadId(activeId);
-        } else {
-          const exists = prev.some((th) => th.id === activeId);
-          if (!exists) {
-            next = [
-              {
-                id: activeId,
-                title: titleFromMessages(cleaned, t("chat.history.untitled")),
-                updatedAt: now,
-                messages: cleaned,
-              },
-              ...prev,
-            ];
-          } else {
-            next = prev.map((th) =>
-              th.id === activeId
-                ? {
-                    ...th,
-                    title: titleFromMessages(cleaned, th.title || t("chat.history.untitled")),
-                    updatedAt: now,
-                    messages: cleaned,
-                  }
-                : th,
-            );
-          }
-        }
-        void AsyncStorage.setItem(THREADS_KEY, JSON.stringify(next.slice(0, 40)));
-        if (activeId) void AsyncStorage.setItem(ACTIVE_KEY, activeId);
-        return next;
-      });
-    },
-    [activeThreadId, t],
-  );
-
-  useEffect(() => {
-    if (!hydrated) return;
-    syncActiveThread(messages);
-  }, [messages, hydrated]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [t]);
 
   const promptText = useCallback(
     (id: (typeof MORPH_QUICK_PROMPT_IDS)[number]) => t(`chat.prompts.${QUICK_I18N[id]}`),
@@ -261,58 +238,79 @@ export function useMorphChat() {
   const sendText = useCallback(
     async (text: string) => {
       const trimmed = text.trim();
-      if (!trimmed || sending) return;
+      if (!trimmed || sendingRef.current) return;
+      sendingRef.current = true;
+
+      let threadId = activeThreadIdRef.current;
+      if (!threadId) {
+        threadId = newId();
+        activeThreadIdRef.current = threadId;
+        setActiveThreadId(threadId);
+      }
 
       const userMsg: MorphChatMessage = {
         id: newId(),
         role: "user",
         content: trimmed,
       };
-      setMessages((prev) => [...prev, userMsg]);
+      const history = realMessages(messagesRef.current).map((m) => ({
+        role: m.role,
+        content: m.content,
+      }));
+      const nextMessages = [...realMessages(messagesRef.current), userMsg];
+      messagesRef.current = nextMessages;
+      setMessages(nextMessages);
+      writeThreadMessages(threadId, nextMessages);
       setInput("");
       setSending(true);
       setError(null);
 
-      const history = [...messages, userMsg]
-        .filter((m) => m.id !== "welcome")
-        .slice(-10)
-        .map((m) => ({ role: m.role, content: m.content }));
-
       try {
         const res = await sendMorphChatMessage({
           message: trimmed,
-          history,
+          history: history.slice(-16),
           context,
         });
         setLimits(res.limits);
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: newId(),
-            role: "assistant",
-            content: res.reply,
-          },
-        ]);
+        const assistantMsg: MorphChatMessage = {
+          id: newId(),
+          role: "assistant",
+          content: res.reply,
+        };
+        if (activeThreadIdRef.current === threadId) {
+          const withReply = [...realMessages(messagesRef.current), assistantMsg];
+          messagesRef.current = withReply;
+          setMessages(withReply);
+          writeThreadMessages(threadId, withReply);
+        } else {
+          const stored = threadsRef.current.find((th) => th.id === threadId);
+          writeThreadMessages(threadId, [...(stored?.messages ?? nextMessages), assistantMsg]);
+        }
       } catch (err) {
         if (err instanceof MorphPlanLimitError) {
-          setMessages((prev) => prev.filter((m) => m.id !== userMsg.id));
+          if (activeThreadIdRef.current === threadId) {
+            const rolled = realMessages(messagesRef.current).filter((m) => m.id !== userMsg.id);
+            messagesRef.current = rolled;
+            setMessages(rolled);
+            writeThreadMessages(threadId, rolled);
+          }
           setInput(trimmed);
           setError(null);
           return "limit" as const;
         }
-        const msg =
-          formatMorphUserError(
-            err instanceof Error ? err.message : "",
-            t("chat.error"),
-          );
+        const msg = formatMorphUserError(
+          err instanceof Error ? err.message : "",
+          t("chat.error"),
+        );
         setError(msg);
         return "error" as const;
       } finally {
         setSending(false);
+        sendingRef.current = false;
       }
       return "ok" as const;
     },
-    [context, messages, sending, t],
+    [context, t, writeThreadMessages],
   );
 
   const sendQuickPrompt = useCallback(
@@ -326,68 +324,57 @@ export function useMorphChat() {
   }, []);
 
   const startNewChat = useCallback(() => {
-    const id = newId();
-    const thread: MorphChatThread = {
-      id,
-      title: t("chat.history.newChat"),
-      updatedAt: new Date().toISOString(),
-      messages: [],
-    };
-    const next = [thread, ...threads];
-    void persistThreads(next, id);
-    setMessages([welcome]);
+    activeThreadIdRef.current = null;
+    messagesRef.current = [];
+    setActiveThreadId(null);
+    setMessages([]);
     setError(null);
     setInput("");
-  }, [persistThreads, t, threads, welcome]);
+    void AsyncStorage.removeItem(ACTIVE_KEY);
+  }, []);
 
-  const openThread = useCallback(
-    (id: string) => {
-      const found = threads.find((th) => th.id === id);
-      if (!found) return;
-      setActiveThreadId(id);
-      void AsyncStorage.setItem(ACTIVE_KEY, id);
-      setMessages([welcome, ...found.messages.filter((m) => m.id !== "welcome")]);
-      setError(null);
-      setInput("");
-    },
-    [threads, welcome],
-  );
+  const openThread = useCallback((id: string) => {
+    const found = threadsRef.current.find((th) => th.id === id);
+    if (!found) return;
+    const cleaned = realMessages(found.messages);
+    activeThreadIdRef.current = id;
+    messagesRef.current = cleaned;
+    setActiveThreadId(id);
+    setMessages(cleaned);
+    setError(null);
+    setInput("");
+    void AsyncStorage.setItem(ACTIVE_KEY, id);
+  }, []);
 
   const deleteThread = useCallback(
     (id: string) => {
-      const next = threads.filter((th) => th.id !== id);
-      const nextActive =
-        activeThreadId === id ? next[0]?.id ?? null : activeThreadId;
-      void persistThreads(next, nextActive);
-      if (activeThreadId === id) {
-        const found = next.find((th) => th.id === nextActive);
-        setMessages([welcome, ...(found?.messages.filter((m) => m.id !== "welcome") ?? [])]);
+      const next = threadsRef.current.filter((th) => th.id !== id);
+      const switching = activeThreadIdRef.current === id;
+      void persistThreads(next, switching ? null : activeThreadIdRef.current);
+      if (switching) {
+        messagesRef.current = [];
+        setMessages([]);
+        setError(null);
+        setInput("");
       }
     },
-    [activeThreadId, persistThreads, threads, welcome],
+    [persistThreads],
   );
 
   const clearChat = useCallback(() => {
-    setMessages([welcome]);
-    setError(null);
-    if (activeThreadId) {
-      setThreads((prev) => {
-        const next = prev.map((th) =>
-          th.id === activeThreadId
-            ? { ...th, messages: [], updatedAt: new Date().toISOString(), title: t("chat.history.newChat") }
-            : th,
-        );
-        void AsyncStorage.setItem(THREADS_KEY, JSON.stringify(next));
-        return next;
-      });
-    }
-  }, [activeThreadId, t, welcome]);
+    startNewChat();
+  }, [startNewChat]);
+
+  const visibleThreads = useMemo(
+    () => threads.filter((th) => realMessages(th.messages).length > 0),
+    [threads],
+  );
 
   return {
     welcomeSeen,
     markWelcomeSeen,
     hydrated,
-    messages,
+    messages: realMessages(messages),
     input,
     setInput,
     sending,
@@ -395,7 +382,7 @@ export function useMorphChat() {
     limits,
     context,
     quickPrompts,
-    threads,
+    threads: visibleThreads,
     activeThreadId,
     sendText,
     sendQuickPrompt,

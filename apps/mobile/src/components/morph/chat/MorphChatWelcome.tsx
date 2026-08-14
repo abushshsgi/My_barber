@@ -10,8 +10,6 @@ type Props = {
   subtitle: string;
   menuA11y: string;
   onMenu: () => void;
-  historyA11y: string;
-  onHistory: () => void;
   bottomPad: number;
   composer: ReactNode;
   chips: ReactNode;
@@ -23,8 +21,6 @@ export function MorphChatWelcome({
   subtitle,
   menuA11y,
   onMenu,
-  historyA11y,
-  onHistory,
   bottomPad,
   composer,
   chips,
@@ -42,16 +38,7 @@ export function MorphChatWelcome({
           accessibilityRole="button"
           accessibilityLabel={menuA11y}
         >
-          <Ionicons name="menu" size={22} color="#1E1B4B" />
-        </Pressable>
-
-        <Pressable
-          onPress={onHistory}
-          style={({ pressed }) => [styles.headerBtn, pressed && styles.pressed]}
-          accessibilityRole="button"
-          accessibilityLabel={historyA11y}
-        >
-          <Ionicons name="time-outline" size={18} color="#1E1B4B" />
+          <Ionicons name="menu" size={22} color="#111111" />
         </Pressable>
       </View>
 
@@ -84,14 +71,12 @@ const styles = StyleSheet.create({
     zIndex: 1,
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
   },
   headerBtn: {
     width: 42,
     height: 42,
     borderRadius: 21,
-    backgroundColor: "#F4F4F6",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -114,7 +99,7 @@ const styles = StyleSheet.create({
     fontSize: 30,
     lineHeight: 36,
     fontWeight: "700",
-    color: "#1E1B4B",
+    color: "#111111",
     letterSpacing: -0.7,
     textAlign: "center",
   },
@@ -122,7 +107,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
     fontSize: 15,
     lineHeight: 22,
-    color: "#6B6685",
+    color: "#71717A",
     textAlign: "center",
     maxWidth: 340,
   },

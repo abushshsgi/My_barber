@@ -5,13 +5,14 @@ from __future__ import annotations
 from typing import Any
 
 MORF_CHAT_DAILY_LIMIT = 40
-MORF_CHAT_MAX_HISTORY = 10
+MORF_CHAT_MAX_HISTORY = 16
 MORF_CHAT_MAX_MESSAGE_LEN = 600
-MORF_CHAT_MAX_OUTPUT_TOKENS = 1024
+MORF_CHAT_MAX_OUTPUT_TOKENS = 2048
 
 QUICK_PROMPT_IDS = (
     "face_shape",
     "style_pick",
+    "beard_style",
     "care_routine",
     "product_tips",
     "barber_visit",
@@ -20,29 +21,87 @@ QUICK_PROMPT_IDS = (
 QUICK_PROMPTS_UZ: dict[str, str] = {
     "face_shape": "Yuz shaklimga qaysi soch uslublari mos keladi?",
     "style_pick": "Menga zamonaviy va toza erkak soch uslubini tavsiya qil.",
+    "beard_style": "Yuzimga mos soqol shaklini tavsiya qil.",
     "care_routine": "Soch va bosh terisi uchun oddiy haftalik parvarish rejasi kerak.",
     "product_tips": "Qaysi styling mahsulotlari (wax, clay, pomade) men uchun yaxshi?",
     "barber_visit": "Barberga borishda nima deyishim va qanday ko'rsatma berishim kerak?",
 }
 
+_FACE_SHAPE = {
+    "oval": "oval",
+    "round": "dumaloq",
+    "square": "kvadrat",
+    "heart": "yuraksimon",
+    "oblong": "uzunchoq",
+}
+_HAIR_TYPE = {
+    "short": "qisqa",
+    "medium": "o'rtacha",
+    "long": "uzun",
+}
+_HAIR_TEXTURE = {
+    "straight": "to'g'ri",
+    "wavy": "to'lqinsimon",
+    "curly": "jingalak",
+    "coily": "qattiq jingalak",
+}
+_HAIR_COLOR = {
+    "black": "qora",
+    "dark_brown": "to'q jigarrang",
+    "brown": "jigarrang",
+    "light_brown": "och jigarrang",
+    "blonde": "sariq",
+    "red": "qizg'ish",
+    "gray": "oq/kulrang",
+    "other": "boshqa",
+}
+_BEARD = {
+    "none": "soqolsiz",
+    "light": "yengil soqol",
+    "full": "to'liq soqol",
+}
+_GENDER = {
+    "male": "erkak",
+    "female": "ayol",
+    "unclear": "aniqlanmadi",
+}
+
+
+def _label(mapping: dict[str, str], value: Any) -> str:
+    raw = str(value or "").strip()
+    if not raw:
+        return ""
+    return mapping.get(raw.lower(), raw)
+
 
 def _format_context_block(context: dict[str, Any] | None) -> str:
     if not context:
-        return "Foydalanuvchi konteksti: hali try-on tahlili yo'q — umumiy maslahat bering."
+        return (
+            "Foydalanuvchi konteksti: hali try-on tahlili yo'q. "
+            "Umumiy, xavfsiz maslahat bering va try-on qilishni taklif qiling."
+        )
 
-    lines: list[str] = ["Foydalanuvchi konteksti (Morph AI try-on/tahlil):"]
+    lines: list[str] = [
+        "Foydalanuvchi konteksti (shu suhbat uchun — boshqa suhbatlar bilan aralashtirma):"
+    ]
     mapping = (
-        ("face_shape", "Yuz shakli"),
-        ("hair_type", "Soch uzunligi"),
-        ("hair_texture", "Soch teksturasi"),
-        ("hair_color", "Soch rangi"),
-        ("beard", "Soqol"),
-        ("detected_gender", "Jins"),
-        ("preferred_style_title", "Tanlangan uslub"),
+        ("face_shape", "Yuz shakli", _FACE_SHAPE),
+        ("hair_type", "Soch uzunligi", _HAIR_TYPE),
+        ("hair_texture", "Soch teksturasi", _HAIR_TEXTURE),
+        ("hair_color", "Soch rangi", _HAIR_COLOR),
+        ("beard", "Soqol", _BEARD),
+        ("detected_gender", "Jins", _GENDER),
+    )
+    for key, label, vocab in mapping:
+        pretty = _label(vocab, context.get(key))
+        if pretty:
+            lines.append(f"- {label}: {pretty}")
+
+    for key, label in (
+        ("preferred_style_title", "Tanlangan / try-on uslub"),
         ("preferred_style_id", "Uslub ID"),
         ("summary_uz", "AI tahlil xulosasi"),
-    )
-    for key, label in mapping:
+    ):
         val = context.get(key)
         if val is None or val == "":
             continue
@@ -59,6 +118,15 @@ def _format_context_block(context: dict[str, Any] | None) -> str:
         if titles:
             lines.append(f"- AI tavsiya etgan uslublar: {', '.join(titles)}")
 
+    if len(lines) == 1:
+        return (
+            "Foydalanuvchi konteksti: hali try-on tahlili yo'q. "
+            "Umumiy, xavfsiz maslahat bering va try-on qilishni taklif qiling."
+        )
+
+    lines.append(
+        "Agar kontekst bo'lsa, javobni SHU ma'lumotga bog'la — umumiy shablon bilan cheklanma."
+    )
     return "\n".join(lines)
 
 
@@ -66,37 +134,41 @@ def build_morf_chat_system_prompt(context: dict[str, Any] | None = None) -> str:
     """Morf AI chatbot uchun asosiy system prompt."""
     context_block = _format_context_block(context)
     return f"""Sen **Morf AI** — Mybarber ilovasidagi shaxsiy soch uslubi va parvarish maslahatchisisan.
+Ohang: ChatGPT / Claude kabi — sokin, aniq, foydali. Do'stona, lekin marketing sloganlarisiz.
 
 ## Roling
-- Professional barber va tricholog maslahatchisi kabi gapir, lekin do'stona va sodda tilda.
-- Foydalanuvchi try-on, yuz tahlili va uslub tanlash jarayonida yordam berasan.
-- Mybarber ekotizimini bilasan: try-on, Studio rang tahriri, barberga yozilish, Master Card.
+- Professional barber va tricholog maslahatchisi kabi gapir, sodda tilda.
+- Foydalanuvchi try-on, yuz tahlili va uslub tanlashida yordam berasan.
+- Mybarber: try-on, Studio rang tahriri, barberga yozilish, Master Card.
 
 ## Til
 - Asosiy til: **o'zbek (lotin)**.
-- Barber terminlari inglizcha bo'lishi mumkin (fade, undercut, taper, clipper guard #2 va h.k.) — qisqa izoh bilan.
-- Rus yoki ingliz tilida savol bersa — shu tilga mos javob ber.
+- Barber terminlari inglizcha bo'lishi mumkin (fade, undercut, taper, clipper guard #2) — qisqa izoh bilan.
+- Rus yoki ingliz tilida savol bersa — shu tilda javob ber.
 
 ## Nima qilasan
-1. Yuz shakliga mos soch uslublarini tavsiya qilish
+1. Yuz shakliga mos soch uslublari
 2. Soch parvarishi: yuvish, namlovchi, styling tartibi
 3. Mahsulot turlari (clay, pomade, sea salt spray) va qachon ishlatish
-4. Barberga borishda qanday ko'rsatma berish (guard raqamlari, fade balandligi)
-5. Try-on natijasini tushuntirish va keyingi qadamni taklif qilish
-6. Soch rangi / Studio tahriri haqida umumiy maslahat (kuchli kimyo tavsiyasi emas)
+4. Barberga ko'rsatma (guard raqamlari, fade balandligi)
+5. Try-on natijasini tushuntirish va keyingi qadam
+6. Soch rangi / Studio tahriri haqida umumiy maslahat (kuchli kimyo emas)
 
 ## Cheklovlar (qat'iy)
-- Tibbiy diagnoz, dori-darmon, allergiya davolash — **berma**. Shubhali holatda dermatologga murojaat qilishni ayt.
-- Siyosat, dini bahs, kripto, dasturlash va Mybarberdan tashqari mavzular — qisqa rad et va soch/parvarishga qaytar.
-- "Men AI man" deb takrorlama; tabiiy maslahatchi kabi gapir.
-- Uzun esse emas: **2–5 qisqa paragraf** yoki kerak bo'lsa 3–5 bullet.
-- Narxlarni uydan topib aytma — barber salon narxlari farq qiladi.
+- Tibbiy diagnoz, dori, allergiya davolash — **berma**. Dermatologga yo'naltir.
+- Siyosat, din, kripto, dasturlash va Mybarberdan tashqari mavzu — qisqa rad et va soch/parvarishga qaytar.
+- "Men AI man" deb takrorlama.
+- Narxlarni uydan aytma.
+- Faqat **shu suhbat** tarixiga tayangan holda javob ber. Boshqa suhbatlarni o'ylab qo'shma.
 
-## Javob formati
-- Birinchi jumla — to'g'ridan-to'g'ri javob yoki xulosa.
-- Ro'yxat kerak bo'lsa `-` bullet ishlat.
-- Oxirida ixtiyoriy **Keyingi qadam:** (1 ta aniq taklif: try-on, barber, parvarish).
+## Javob formati (Markdown)
+ChatGPT / Claude kabi o'qiladigan markdown yoz:
+- Birinchi jumla — to'g'ridan-to'g'ri javob.
+- Kerak bo'lsa `##` kichik sarlavha.
+- Ro'yxat: `-` yoki `1.`
+- Muhim so'zlarni **qalin** qil.
+- Kod bloki deyarli ishlatma.
+- 2–6 qisqa blok; uzun esse yo'q.
+- Oxirida ixtiyoriy **Keyingi qadam:** (1 ta aniq taklif).
 
-{context_block}
-
-Agar kontekst bo'lsa — undan foydalan; bo'lmasa umumiy, xavfsiz maslahat ber va try-on qilishni taklif qil."""
+{context_block}"""
