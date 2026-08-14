@@ -14,6 +14,7 @@ import {
   Text,
   View,
 } from "react-native";
+import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { morfMarkWhite } from "../branding/morf-logo";
 import { ShellSwitchOverlay } from "../components/ShellSwitchOverlay";
@@ -27,6 +28,7 @@ import {
 import { MorphSessionProvider } from "../lib/morph-session";
 import { HomeScreen } from "../screens/HomeScreen";
 import { MapScreen } from "../screens/MapScreen";
+import { MorphChatScreen } from "../screens/morph/MorphChatScreen";
 import { MorphPlaceholderScreen } from "../screens/morph/MorphPlaceholderScreen";
 import { PlaceholderScreen } from "../screens/PlaceholderScreen";
 import { colors } from "../theme/colors";
@@ -48,36 +50,36 @@ const Tab = createBottomTabNavigator<RootTabParamList>();
 
 type TabDef = {
   name: keyof RootTabParamList;
-  label: string;
+  labelKey: string;
   icon: keyof typeof Ionicons.glyphMap;
   iconOn: keyof typeof Ionicons.glyphMap;
 };
 
 /** MySaloon shell — Asosiy, Xarita | Explore, Profil + markaz Morf AI. */
 const MYSALOON_LEFT: TabDef[] = [
-  { name: "Home", label: "Asosiy", icon: "home-outline", iconOn: "home" },
-  { name: "Map", label: "Xarita", icon: "map-outline", iconOn: "map" },
+  { name: "Home", labelKey: "nav.home", icon: "home-outline", iconOn: "home" },
+  { name: "Map", labelKey: "nav.map", icon: "map-outline", iconOn: "map" },
 ];
 
 const MYSALOON_RIGHT: TabDef[] = [
-  { name: "Explore", label: "Explore", icon: "compass-outline", iconOn: "compass" },
-  { name: "Profile", label: "Profil", icon: "person-outline", iconOn: "person" },
+  { name: "Explore", labelKey: "nav.explore", icon: "compass-outline", iconOn: "compass" },
+  { name: "Profile", labelKey: "nav.profile", icon: "person-outline", iconOn: "person" },
 ];
 
 /** Morf AI shell — Chatbot, Parvarish | Try-on, Profil + markaz MySaloon. */
 const MORPH_LEFT: TabDef[] = [
   {
     name: "MorphChat",
-    label: "Chatbot",
+    labelKey: "nav.morphChat",
     icon: "chatbubble-ellipses-outline",
     iconOn: "chatbubble-ellipses",
   },
-  { name: "MorphCare", label: "Parvarish", icon: "water-outline", iconOn: "water" },
+  { name: "MorphCare", labelKey: "nav.morphCare", icon: "water-outline", iconOn: "water" },
 ];
 
 const MORPH_RIGHT: TabDef[] = [
-  { name: "MorphTryOn", label: "Try-on", icon: "sparkles-outline", iconOn: "sparkles" },
-  { name: "Profile", label: "Profil", icon: "person-outline", iconOn: "person" },
+  { name: "MorphTryOn", labelKey: "nav.morphTryOn", icon: "sparkles-outline", iconOn: "sparkles" },
+  { name: "Profile", labelKey: "nav.profile", icon: "person-outline", iconOn: "person" },
 ];
 
 const CENTER_SLOT = 54;
@@ -114,6 +116,7 @@ function wait(ms: number) {
 }
 
 function CustomTabBar({ state, navigation }: BottomTabBarProps) {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const bottomPad = Math.max(insets.bottom, 8);
   const tabBarHidden = useTabBarHidden();
@@ -297,6 +300,7 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
 
   const renderSideTab = (tab: TabDef) => {
     const focused = activeName === tab.name;
+    const label = t(tab.labelKey);
     return (
       <Pressable
         key={tab.name}
@@ -305,7 +309,7 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
         android_ripple={{ color: "rgba(0,0,0,0.08)", borderless: true, radius: 28 }}
         accessibilityRole="button"
         accessibilityState={{ selected: focused }}
-        accessibilityLabel={tab.label}
+        accessibilityLabel={label}
       >
         <View style={styles.iconSlot}>
           <Ionicons
@@ -319,7 +323,7 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
           style={[styles.label, focused ? styles.labelOn : styles.labelOff]}
           numberOfLines={1}
         >
-          {tab.label}
+          {label}
         </Text>
       </Pressable>
     );
@@ -354,7 +358,7 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
             style={styles.centerWrap}
             android_ripple={{ color: "rgba(255,255,255,0.2)", borderless: true, radius: 30 }}
             accessibilityRole="button"
-            accessibilityLabel={centerIsMorphEntry ? "Morf AI" : "MySaloon"}
+            accessibilityLabel={centerIsMorphEntry ? t("nav.morphAi") : t("nav.mysaloon")}
           >
             <Animated.View style={{ transform: [{ scale: centerScale }] }}>
               <View style={styles.centerBtnShadow}>
@@ -376,7 +380,7 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
               </View>
             </Animated.View>
             <Text style={[styles.label, styles.centerLabel]} numberOfLines={1}>
-              {centerIsMorphEntry ? "Morf AI" : "MySaloon"}
+              {centerIsMorphEntry ? t("nav.morphAi") : t("nav.mysaloon")}
             </Text>
           </Pressable>
         </View>
@@ -386,6 +390,7 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
 }
 
 function RootTabsInner() {
+  const { t } = useTranslation();
   const { switchingTo } = useAppShell();
 
   return (
@@ -413,24 +418,16 @@ function RootTabsInner() {
             </Tab.Screen>
             <Tab.Screen name="Map" component={MapScreen} />
             <Tab.Screen name="Explore">
-              {() => <PlaceholderScreen title="Explore" />}
+              {() => <PlaceholderScreen title={t("nav.explore")} />}
             </Tab.Screen>
             <Tab.Screen name="Profile" component={ProfileStack} />
 
-            <Tab.Screen name="MorphChat">
-              {() => (
-                <MorphPlaceholderScreen
-                  title="AI Chatbot"
-                  subtitle="Tez orada — soch, parvarish va uslub bo‘yicha AI yordamchi."
-                  icon="chatbubble-ellipses-outline"
-                />
-              )}
-            </Tab.Screen>
+            <Tab.Screen name="MorphChat" component={MorphChatScreen} />
             <Tab.Screen name="MorphCare">
               {() => (
                 <MorphPlaceholderScreen
-                  title="Parvarish"
-                  subtitle="Shaxsiy soch parvarishi rejasi tez orada."
+                  title={t("placeholder.morphCareTitle")}
+                  subtitle={t("placeholder.morphCareSub")}
                   icon="water-outline"
                 />
               )}
@@ -438,8 +435,8 @@ function RootTabsInner() {
             <Tab.Screen name="MorphIngredient">
               {() => (
                 <MorphPlaceholderScreen
-                  title="Tarkib"
-                  subtitle="Kosmetika tarkibini AI bilan tekshirish tez orada."
+                  title={t("placeholder.morphIngredientTitle")}
+                  subtitle={t("placeholder.morphIngredientSub")}
                   icon="flask-outline"
                 />
               )}

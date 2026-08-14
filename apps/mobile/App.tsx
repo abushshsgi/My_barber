@@ -1,10 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, Platform, StyleSheet, View } from "react-native";
+import { I18nextProvider } from "react-i18next";
 import { AuthProvider, useAuth } from "./src/auth/AuthContext";
 import {
   GoogleAuthSessionProvider,
   shouldSkipSplashForOAuth,
 } from "./src/auth/GoogleAuthSession";
+import { initI18n, setAppLanguage } from "./src/i18n/config";
+import i18n from "./src/i18n/config";
 import {
   getAppLang,
   getGuestLocation,
@@ -57,13 +60,17 @@ function AppGate() {
 
   const [splashDone, setSplashDone] = useState(skipIntro);
   const [bootReady, setBootReady] = useState(skipIntro);
-  const [lang, setLang] = useState<AppLang | null>(skipIntro ? "uz" : null);
+  const [lang, setLang] = useState<AppLang | null>(skipIntro ? "ru" : null);
   const [welcomeSeen, setWelcomeSeenState] = useState(skipIntro);
   const [locationMode, setLocationMode] = useState<LocationEntryMode>("map");
   const [guestLocation, setGuestLocationState] = useState<GuestLocation | null>(null);
 
   const onSplashFinish = useCallback(() => setSplashDone(true), []);
-  const onLanguagePick = useCallback((picked: AppLang) => setLang(picked), []);
+  const onLanguagePick = useCallback((picked: AppLang) => {
+    void setAppLanguage(picked);
+    setLang(picked);
+  }, []);
+
   const onWelcomeFinish = useCallback((mode: LocationEntryMode) => {
     setLocationMode(mode);
     setWelcomeSeenState(true);
@@ -74,17 +81,21 @@ function AppGate() {
 
   useEffect(() => {
     if (skipIntro) {
-      void getGuestLocation().then((loc) => {
-        setGuestLocationState(loc);
-        setBootReady(true);
+      void initI18n("ru").then(() => {
+        void getGuestLocation().then((loc) => {
+          setGuestLocationState(loc);
+          setBootReady(true);
+        });
       });
       return;
     }
     let alive = true;
     void Promise.all([getAppLang(), getWelcomeSeen(), getGuestLocation()]).then(
-      ([appLang, seen, loc]) => {
+      async ([appLang, seen, loc]) => {
         if (!alive) return;
-        setLang(appLang);
+        const resolved = appLang ?? "ru";
+        await initI18n(resolved);
+        setLang(resolved);
         setWelcomeSeenState(seen);
         setGuestLocationState(loc);
         setBootReady(true);
@@ -136,20 +147,22 @@ function AppGate() {
 
 export default function App() {
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaProvider>
-        <AuthProvider>
-          <GoogleAuthSessionProvider>
-            <ToastProvider>
-              <NavigationContainer>
-                <StatusBar style="dark" />
-                <AppGate />
-              </NavigationContainer>
-            </ToastProvider>
-          </GoogleAuthSessionProvider>
-        </AuthProvider>
-      </SafeAreaProvider>
-    </GestureHandlerRootView>
+    <I18nextProvider i18n={i18n}>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <SafeAreaProvider>
+          <AuthProvider>
+            <GoogleAuthSessionProvider>
+              <ToastProvider>
+                <NavigationContainer>
+                  <StatusBar style="dark" />
+                  <AppGate />
+                </NavigationContainer>
+              </ToastProvider>
+            </GoogleAuthSessionProvider>
+          </AuthProvider>
+        </SafeAreaProvider>
+      </GestureHandlerRootView>
+    </I18nextProvider>
   );
 }
 

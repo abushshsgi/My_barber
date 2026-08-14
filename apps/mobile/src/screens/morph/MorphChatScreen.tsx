@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useCallback, useRef } from "react";
+import { useCallback, useRef, useState } from "react";
 import {
+  ActivityIndicator,
   FlatList,
   KeyboardAvoidingView,
   Platform,
@@ -14,7 +15,9 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { MorphChatMessage } from "../../api/ai";
 import { useAuth } from "../../auth/AuthContext";
 import { ChatBubble } from "../../components/morph/chat/ChatBubble";
+import { ChatHistorySheet } from "../../components/morph/chat/ChatHistorySheet";
 import { ChatInputBar } from "../../components/morph/chat/ChatInputBar";
+import { MorphChatWelcome } from "../../components/morph/chat/MorphChatWelcome";
 import { QuickPromptChips } from "../../components/morph/chat/QuickPromptChips";
 import { MORPH_QUICK_PROMPT_IDS, useMorphChat } from "../../hooks/useMorphChat";
 import { useMorphLimitGate } from "../../hooks/useMorphLimitGate";
@@ -26,6 +29,7 @@ export function MorphChatScreen() {
   const gate = useMorphLimitGate();
   const listRef = useRef<FlatList<MorphChatMessage>>(null);
   const chat = useMorphChat();
+  const [historyOpen, setHistoryOpen] = useState(false);
 
   const scrollToEnd = useCallback(() => {
     requestAnimationFrame(() => {
@@ -54,6 +58,24 @@ export function MorphChatScreen() {
 
   const bottomPad = Math.max(insets.bottom, 8) + 72;
 
+  if (!chat.hydrated || chat.welcomeSeen === null) {
+    return (
+      <View style={[styles.root, styles.boot]}>
+        <ActivityIndicator color="rgba(255,255,255,0.5)" />
+      </View>
+    );
+  }
+
+  if (!chat.welcomeSeen) {
+    return (
+      <MorphChatWelcome
+        headline={t("chat.marketing.headline")}
+        ctaLabel={t("chat.marketing.cta")}
+        onStart={() => void chat.markWelcomeSeen()}
+      />
+    );
+  }
+
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
       <View style={styles.header}>
@@ -67,12 +89,20 @@ export function MorphChatScreen() {
           </Text>
         </View>
         <Pressable
-          onPress={chat.clearChat}
-          style={styles.clearBtn}
+          onPress={() => setHistoryOpen(true)}
+          style={styles.headerBtn}
           accessibilityRole="button"
-          accessibilityLabel={t("chat.clearA11y")}
+          accessibilityLabel={t("chat.history.title")}
         >
-          <Ionicons name="trash-outline" size={18} color="rgba(255,255,255,0.55)" />
+          <Ionicons name="time-outline" size={18} color="rgba(255,255,255,0.7)" />
+        </Pressable>
+        <Pressable
+          onPress={chat.startNewChat}
+          style={styles.headerBtn}
+          accessibilityRole="button"
+          accessibilityLabel={t("chat.history.newChat")}
+        >
+          <Ionicons name="create-outline" size={18} color="rgba(255,255,255,0.7)" />
         </Pressable>
       </View>
 
@@ -141,6 +171,25 @@ export function MorphChatScreen() {
           </View>
         </KeyboardAvoidingView>
       )}
+
+      <ChatHistorySheet
+        visible={historyOpen}
+        threads={chat.threads}
+        activeThreadId={chat.activeThreadId}
+        title={t("chat.history.title")}
+        emptyLabel={t("chat.history.empty")}
+        newChatLabel={t("chat.history.newChat")}
+        onClose={() => setHistoryOpen(false)}
+        onNewChat={() => {
+          chat.startNewChat();
+          setHistoryOpen(false);
+        }}
+        onSelect={(id) => {
+          chat.openThread(id);
+          setHistoryOpen(false);
+        }}
+        onDelete={chat.deleteThread}
+      />
     </View>
   );
 }
@@ -150,6 +199,10 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#050505",
   },
+  boot: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
   flex: {
     flex: 1,
   },
@@ -158,7 +211,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 12,
-    gap: 12,
+    gap: 8,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: "rgba(255,255,255,0.08)",
   },
@@ -187,7 +240,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "rgba(255,255,255,0.45)",
   },
-  clearBtn: {
+  headerBtn: {
     width: 36,
     height: 36,
     borderRadius: 12,

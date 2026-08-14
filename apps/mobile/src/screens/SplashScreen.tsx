@@ -10,6 +10,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BrandLogo } from "../components/BrandLogo";
 import { type AppLang, setAppLang } from "../lib/guest";
+import { setAppLanguage } from "../i18n/config";
 import { colors } from "../theme/colors";
 
 type Props = {
@@ -74,6 +75,7 @@ export function SplashScreen({
 
   const pick = async (lang: AppLang) => {
     await setAppLang(lang);
+    await setAppLanguage(lang);
     onLanguagePick?.(lang);
     onFinish();
   };

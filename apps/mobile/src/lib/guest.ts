@@ -19,6 +19,11 @@ export async function getAppLang(): Promise<AppLang | null> {
   return v === "uz" || v === "ru" ? v : null;
 }
 
+/** Birinchi ochilishda default til — rus. */
+export async function getAppLangOrDefault(): Promise<AppLang> {
+  return (await getAppLang()) ?? "ru";
+}
+
 export async function setAppLang(lang: AppLang): Promise<void> {
   await AsyncStorage.setItem(LANG_KEY, lang);
 }
