@@ -4,6 +4,7 @@ import { StatusBar } from "expo-status-bar";
 import type { ReactNode } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { ChatAmbientBg } from "./ChatAmbientBg";
 
 type Props = {
   greeting: string;
@@ -18,7 +19,7 @@ type Props = {
   children: ReactNode;
 };
 
-/** Bo'sh chat — rasm uslubidagi yengil landing. */
+/** Bo'sh chat — yengil AI landing. */
 export function MorphChatWelcome({
   greeting,
   name,
@@ -36,6 +37,7 @@ export function MorphChatWelcome({
   return (
     <View style={[styles.root, { paddingTop: insets.top + 8, paddingBottom: bottomPad }]}>
       <StatusBar style="dark" />
+      <ChatAmbientBg />
 
       <View style={styles.header}>
         <View style={styles.profile}>
@@ -60,7 +62,7 @@ export function MorphChatWelcome({
           accessibilityRole="button"
           accessibilityLabel={historyA11y}
         >
-          <Ionicons name="bag-handle-outline" size={20} color="#111111" />
+          <Ionicons name="time-outline" size={18} color="#1E1B4B" />
         </Pressable>
       </View>
 
@@ -76,9 +78,10 @@ export function MorphChatWelcome({
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: "#F5F4F2",
+    backgroundColor: "#F7F3FF",
   },
   header: {
+    zIndex: 1,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
@@ -93,19 +96,21 @@ const styles = StyleSheet.create({
     paddingRight: 12,
   },
   avatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: "#E8E7E4",
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: "#EDE9FE",
+    borderWidth: 1.5,
+    borderColor: "rgba(255,255,255,0.9)",
   },
   avatarFallback: {
     alignItems: "center",
     justifyContent: "center",
   },
   avatarText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "700",
-    color: "#111111",
+    color: "#1E1B4B",
   },
   profileText: {
     flex: 1,
@@ -113,55 +118,53 @@ const styles = StyleSheet.create({
   },
   greeting: {
     fontSize: 13,
-    color: "#8A8A8E",
+    color: "#6B6685",
     letterSpacing: -0.1,
   },
   name: {
     marginTop: 1,
     fontSize: 17,
     fontWeight: "700",
-    color: "#111111",
+    color: "#1E1B4B",
     letterSpacing: -0.4,
   },
   historyBtn: {
-    width: 44,
-    height: 44,
+    width: 40,
+    height: 40,
     borderRadius: 14,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "rgba(255,255,255,0.82)",
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#000",
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
+    borderWidth: 1,
+    borderColor: "rgba(124, 58, 237, 0.08)",
   },
   pressed: {
     opacity: 0.82,
   },
   hero: {
     flex: 1,
+    zIndex: 1,
     justifyContent: "center",
-    paddingHorizontal: 24,
-    marginTop: -36,
+    paddingHorizontal: 22,
+    marginTop: -28,
   },
   headline: {
     fontSize: 34,
     lineHeight: 40,
     fontWeight: "800",
-    color: "#111111",
+    color: "#1E1B4B",
     textAlign: "center",
-    letterSpacing: -1,
+    letterSpacing: -1.1,
   },
   subtitle: {
     marginTop: 10,
-    fontSize: 15,
-    lineHeight: 22,
-    color: "#8A8A8E",
+    fontSize: 14,
+    lineHeight: 21,
+    color: "#6B6685",
     textAlign: "center",
-    paddingHorizontal: 12,
+    paddingHorizontal: 10,
   },
   composer: {
-    marginTop: 28,
+    marginTop: 24,
   },
 });

@@ -22,6 +22,7 @@ import { resolveMediaUrl } from "../../api/media";
 import { displayName, initials } from "../../api/user";
 import { useAuth } from "../../auth/AuthContext";
 import { MorphPaywallView } from "../../components/morph/MorphPaywallView";
+import { ChatAmbientBg } from "../../components/morph/chat/ChatAmbientBg";
 import { ChatBubble } from "../../components/morph/chat/ChatBubble";
 import { ChatHistorySheet } from "../../components/morph/chat/ChatHistorySheet";
 import { ChatInputBar } from "../../components/morph/chat/ChatInputBar";
@@ -31,6 +32,7 @@ import { TAB_DOCK_CLEARANCE, useHideTabBarWhen } from "../../hooks/useHideTabBar
 import { MORPH_QUICK_PROMPT_IDS, useMorphChat } from "../../hooks/useMorphChat";
 import { useMorphLimitGate } from "../../hooks/useMorphLimitGate";
 import { writeAppShell, writeLastShellTab } from "../../lib/app-shell";
+import { MORPH_CHAT_DEBUG } from "../../lib/morph-debug";
 import {
   consumeMorphReturn,
   peekMorphReturn,
@@ -112,7 +114,9 @@ export function MorphChatScreen() {
           setPaywall(pending.reason ?? "subscription");
           return;
         }
-        const result = await gate.ensureAccessDetailed();
+        const result = MORPH_CHAT_DEBUG
+          ? ({ ok: true } as const)
+          : await gate.ensureAccessDetailed();
         if (cancelled) return;
         if (result.ok) {
           const draft = pending.draft;
@@ -160,12 +164,18 @@ export function MorphChatScreen() {
 
   const requireAccess = useCallback(
     async (draft?: string) => {
+      if (!isAuthenticated) {
+        showPaywall("subscription", draft);
+        return false;
+      }
+      // TEMP: Plus chatbot test — debug o‘chiq. Test tugagach MORPH_CHAT_DEBUG=false.
+      if (MORPH_CHAT_DEBUG) return true;
       const result = await gate.ensureAccessDetailed();
       if (result.ok) return true;
       showPaywall(result.reason === "limit" ? "limit" : "subscription", draft);
       return false;
     },
-    [gate, showPaywall],
+    [gate, isAuthenticated, showPaywall],
   );
 
   const onSend = useCallback(async () => {
@@ -262,8 +272,9 @@ export function MorphChatScreen() {
   if (!chat.hydrated) {
     return (
       <View style={[styles.root, styles.boot]}>
+        <ChatAmbientBg />
         <StatusBar style="dark" />
-        <ActivityIndicator color="#7B4DFF" />
+        <ActivityIndicator color="#7C3AED" />
       </View>
     );
   }
@@ -286,11 +297,13 @@ export function MorphChatScreen() {
           bottomPad={Math.max(insets.bottom, 8) + TAB_DOCK_CLEARANCE}
         >
           <ChatInputBar {...composer} onSend={() => void onSend()} onCamera={onCamera} />
-          <QuickPromptChips
-            prompts={chat.quickPrompts}
-            onSelect={(p) => void onQuickPrompt(p.id)}
-            disabled={chat.sending}
-          />
+          {chat.input.trim().length === 0 ? (
+            <QuickPromptChips
+              prompts={chat.quickPrompts}
+              onSelect={(p) => void onQuickPrompt(p.id)}
+              disabled={chat.sending}
+            />
+          ) : null}
         </MorphChatWelcome>
         {historySheet}
         {paywallModal}
@@ -300,6 +313,7 @@ export function MorphChatScreen() {
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
+      <ChatAmbientBg />
       <StatusBar style="dark" />
       <View style={styles.header}>
         <Pressable
@@ -308,7 +322,7 @@ export function MorphChatScreen() {
           accessibilityRole="button"
           accessibilityLabel={t("common.back")}
         >
-          <Ionicons name="chevron-back" size={22} color="#111111" />
+          <Ionicons name="chevron-back" size={22} color="#1E1B4B" />
         </Pressable>
         <View style={styles.headerText}>
           <Text style={styles.title}>{t("chat.title")}</Text>
@@ -322,7 +336,7 @@ export function MorphChatScreen() {
           accessibilityRole="button"
           accessibilityLabel={t("chat.history.title")}
         >
-          <Ionicons name="time-outline" size={18} color="#111111" />
+          <Ionicons name="time-outline" size={18} color="#1E1B4B" />
         </Pressable>
         <Pressable
           onPress={chat.startNewChat}
@@ -330,7 +344,7 @@ export function MorphChatScreen() {
           accessibilityRole="button"
           accessibilityLabel={t("chat.history.newChat")}
         >
-          <Ionicons name="create-outline" size={18} color="#111111" />
+          <Ionicons name="create-outline" size={18} color="#1E1B4B" />
         </Pressable>
       </View>
 
@@ -387,7 +401,7 @@ export function MorphChatScreen() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: "#F5F4F2",
+    backgroundColor: "#F7F3FF",
   },
   boot: {
     alignItems: "center",
@@ -395,8 +409,10 @@ const styles = StyleSheet.create({
   },
   flex: {
     flex: 1,
+    zIndex: 1,
   },
   header: {
+    zIndex: 1,
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 12,
@@ -409,7 +425,9 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "rgba(255,255,255,0.82)",
+    borderWidth: 1,
+    borderColor: "rgba(124, 58, 237, 0.08)",
   },
   pressed: {
     opacity: 0.78,
@@ -421,13 +439,13 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 17,
     fontWeight: "700",
-    color: "#111111",
+    color: "#1E1B4B",
     letterSpacing: -0.3,
   },
   subtitle: {
     marginTop: 2,
     fontSize: 12,
-    color: "#8A8A8E",
+    color: "#6B6685",
   },
   limitBar: {
     paddingHorizontal: 16,
@@ -435,7 +453,7 @@ const styles = StyleSheet.create({
   },
   limitText: {
     fontSize: 11,
-    color: "#8A8A8E",
+    color: "#6B6685",
   },
   list: {
     paddingTop: 12,

@@ -42,8 +42,8 @@ export function QuickPromptChips({ prompts, onSelect, disabled }: Props) {
         >
           <Ionicons
             name={CHIP_ICONS[item.id] ?? "ellipse-outline"}
-            size={14}
-            color="#3F3F46"
+            size={12}
+            color="#5B5678"
           />
           <Text style={styles.chipText} numberOfLines={1}>
             {item.label}
@@ -56,32 +56,35 @@ export function QuickPromptChips({ prompts, onSelect, disabled }: Props) {
 
 const styles = StyleSheet.create({
   row: {
-    paddingTop: 16,
-    paddingBottom: 4,
-    gap: 8,
+    paddingTop: 12,
+    paddingBottom: 2,
+    gap: 6,
     flexGrow: 1,
     justifyContent: "center",
   },
   chip: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    maxWidth: 220,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    gap: 5,
+    maxWidth: 200,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
     borderRadius: 999,
-    backgroundColor: "#EBEAE7",
+    backgroundColor: "rgba(255,255,255,0.72)",
+    borderWidth: 1,
+    borderColor: "rgba(124, 58, 237, 0.1)",
   },
   chipDisabled: {
     opacity: 0.45,
   },
   chipPressed: {
     opacity: 0.78,
+    backgroundColor: "rgba(237, 233, 254, 0.9)",
   },
   chipText: {
-    fontSize: 13,
-    lineHeight: 16,
+    fontSize: 12,
+    lineHeight: 15,
     fontWeight: "500",
-    color: "#3F3F46",
+    color: "#4C4768",
   },
 });
