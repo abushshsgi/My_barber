@@ -298,6 +298,8 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
   const visibleLeft = displayShell === "morph" ? MORPH_LEFT : MYSALOON_LEFT;
   const visibleRight = displayShell === "morph" ? MORPH_RIGHT : MYSALOON_RIGHT;
 
+  const morphDock = displayShell === "morph";
+
   const renderSideTab = (tab: TabDef) => {
     const focused = activeName === tab.name;
     const label = t(tab.labelKey);
@@ -306,25 +308,41 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
         key={tab.name}
         onPress={() => pressTab(tab.name)}
         style={styles.tab}
-        android_ripple={{ color: "rgba(0,0,0,0.08)", borderless: true, radius: 28 }}
+        android_ripple={{
+          color: morphDock ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.08)",
+          borderless: true,
+          radius: 28,
+        }}
         accessibilityRole="button"
         accessibilityState={{ selected: focused }}
         accessibilityLabel={label}
       >
-        <View style={styles.iconSlot}>
-          <Ionicons
-            name={focused ? tab.iconOn : tab.icon}
-            size={18}
-            color={focused ? colors.fg : colors.muted}
-          />
-          {focused ? <View style={styles.activeDot} /> : <View style={styles.activeDotSpacer} />}
-        </View>
-        <Text
-          style={[styles.label, focused ? styles.labelOn : styles.labelOff]}
-          numberOfLines={1}
-        >
-          {label}
-        </Text>
+        {morphDock ? (
+          <View style={[styles.morphIconSlot, focused && styles.morphIconSlotOn]}>
+            <Ionicons
+              name={focused ? tab.iconOn : tab.icon}
+              size={18}
+              color={focused ? "#111111" : "#FFFFFF"}
+            />
+          </View>
+        ) : (
+          <>
+            <View style={styles.iconSlot}>
+              <Ionicons
+                name={focused ? tab.iconOn : tab.icon}
+                size={18}
+                color={focused ? colors.fg : colors.muted}
+              />
+              {focused ? <View style={styles.activeDot} /> : <View style={styles.activeDotSpacer} />}
+            </View>
+            <Text
+              style={[styles.label, focused ? styles.labelOn : styles.labelOff]}
+              numberOfLines={1}
+            >
+              {label}
+            </Text>
+          </>
+        )}
       </Pressable>
     );
   };
@@ -336,11 +354,15 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
   const centerIsMorphEntry = displayShell === "mysaloon";
 
   return (
-    <View style={[styles.dockOuter, { paddingBottom: bottomPad }]} pointerEvents="box-none">
-      <View style={styles.dock}>
+    <View
+      style={[styles.dockOuter, morphDock && styles.dockOuterMorph, { paddingBottom: bottomPad }]}
+      pointerEvents="box-none"
+    >
+      <View style={[styles.dock, morphDock && styles.dockMorph]}>
         <Animated.View
           style={[
             styles.sidesRow,
+            morphDock && styles.sidesRowMorph,
             {
               opacity: sidesOpacity,
               transform: [{ translateY: sidesY }],
@@ -352,7 +374,7 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
           <View style={styles.sideGroup}>{visibleRight.map(renderSideTab)}</View>
         </Animated.View>
 
-        <View style={styles.centerAnchor} pointerEvents="box-none">
+        <View style={[styles.centerAnchor, morphDock && styles.centerAnchorMorph]} pointerEvents="box-none">
           <Pressable
             onPress={onCenterPress}
             style={styles.centerWrap}
@@ -379,9 +401,11 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
                 </View>
               </View>
             </Animated.View>
-            <Text style={[styles.label, styles.centerLabel]} numberOfLines={1}>
-              {centerIsMorphEntry ? t("nav.morphAi") : t("nav.mysaloon")}
-            </Text>
+            {morphDock ? null : (
+              <Text style={[styles.label, styles.centerLabel]} numberOfLines={1}>
+                {centerIsMorphEntry ? t("nav.morphAi") : t("nav.mysaloon")}
+              </Text>
+            )}
           </Pressable>
         </View>
       </View>
@@ -471,6 +495,10 @@ const styles = StyleSheet.create({
     paddingTop: 6,
     backgroundColor: "transparent",
   },
+  dockOuterMorph: {
+    paddingHorizontal: 28,
+    alignItems: "center",
+  },
   dock: {
     minHeight: 56,
     borderRadius: 26,
@@ -491,10 +519,34 @@ const styles = StyleSheet.create({
       },
     }),
   },
+  dockMorph: {
+    width: "100%",
+    minHeight: 64,
+    borderRadius: 36,
+    backgroundColor: "#171717",
+    borderWidth: 0,
+    justifyContent: "center",
+    paddingBottom: 8,
+    paddingTop: 8,
+    ...Platform.select({
+      web: { boxShadow: "0 10px 28px rgba(0,0,0,0.28)" },
+      default: {
+        shadowColor: "#000",
+        shadowOpacity: 0.28,
+        shadowRadius: 18,
+        shadowOffset: { width: 0, height: 8 },
+        elevation: 16,
+      },
+    }),
+  },
   sidesRow: {
     flexDirection: "row",
     alignItems: "flex-end",
     paddingHorizontal: 6,
+  },
+  sidesRowMorph: {
+    alignItems: "center",
+    paddingHorizontal: 10,
   },
   sideGroup: {
     flex: 1,
@@ -518,6 +570,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  morphIconSlot: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  morphIconSlotOn: {
+    backgroundColor: "#FFFFFF",
+  },
   activeDot: {
     marginTop: 2,
     width: 3,
@@ -537,6 +599,9 @@ const styles = StyleSheet.create({
     right: 0,
     alignItems: "center",
     zIndex: 2,
+  },
+  centerAnchorMorph: {
+    top: 4,
   },
   centerWrap: {
     width: CENTER_SLOT,

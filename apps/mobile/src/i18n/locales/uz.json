@@ -266,6 +266,15 @@
     "clearA11y": "Chatni tozalash",
     "inputPlaceholder": "Savolingizni yozing…",
     "sendA11y": "Yuborish",
+    "home": {
+      "greetingMorning": "Xayrli tong,",
+      "greetingAfternoon": "Xayrli kun,",
+      "greetingEvening": "Xayrli kech,",
+      "headline": "Nima kerak?",
+      "subtitle": "Aqlli AI yordamchimiz kerakli narsani tezroq va osonroq topishga yordam beradi.",
+      "askAnything": "Istalgan narsani so'rang...",
+      "cameraA11y": "Kamera"
+    },
     "welcome": "Salom! Men Morf AI — soch uslubi va parvarish bo'yicha yordamchingizman. Try-on natijangiz bo'lsa, shunga mos maslahat beraman. Savolingizni yozing yoki tez savollardan birini tanlang.",
     "error": "Chat javob bermadi. Qayta urinib ko'ring.",
     "marketing": {

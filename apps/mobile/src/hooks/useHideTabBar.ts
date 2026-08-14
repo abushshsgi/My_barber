@@ -19,11 +19,16 @@ export const TAB_DOCK_CLEARANCE = 84;
 
 /** Ichki Morph ekranlarida pastki tab bar ni yashirish. */
 export function useHideTabBar() {
+  useHideTabBarWhen(true);
+}
+
+/** Faqat shart bajarilganda tab bar ni yashirish (masalan, chat ochilganda). */
+export function useHideTabBarWhen(hidden: boolean) {
   const { acquireHide, releaseHide } = useTabBarHideControls();
   const focused = useIsFocused();
   useLayoutEffect(() => {
-    if (!focused) return;
+    if (!focused || !hidden) return;
     acquireHide();
     return () => releaseHide();
-  }, [focused, acquireHide, releaseHide]);
+  }, [focused, hidden, acquireHide, releaseHide]);
 }

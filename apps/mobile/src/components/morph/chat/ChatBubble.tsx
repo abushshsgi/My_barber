@@ -16,7 +16,7 @@ export function ChatBubble({ role, content, pending }: Props) {
     <View style={[styles.row, isUser ? styles.rowUser : styles.rowAssistant]}>
       {!isUser ? (
         <View style={styles.avatar}>
-          <Ionicons name="sparkles" size={14} color="rgba(255,255,255,0.85)" />
+          <Ionicons name="sparkles" size={14} color="#7B4DFF" />
         </View>
       ) : null}
       <View style={[styles.bubble, isUser ? styles.bubbleUser : styles.bubbleAssistant]}>
@@ -46,30 +46,24 @@ const styles = StyleSheet.create({
   avatar: {
     width: 28,
     height: 28,
-    borderRadius: 10,
+    borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(139, 92, 246, 0.2)",
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(139, 92, 246, 0.35)",
+    backgroundColor: "#EFE8FF",
   },
   bubble: {
     maxWidth: "82%",
-    borderRadius: 18,
+    borderRadius: 20,
     paddingHorizontal: 14,
-    paddingVertical: 10,
+    paddingVertical: 11,
   },
   bubbleUser: {
-    backgroundColor: "rgba(255,255,255,0.1)",
+    backgroundColor: "#111111",
     borderBottomRightRadius: 6,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(255,255,255,0.12)",
   },
   bubbleAssistant: {
-    backgroundColor: "rgba(139, 92, 246, 0.12)",
+    backgroundColor: "#FFFFFF",
     borderBottomLeftRadius: 6,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(139, 92, 246, 0.22)",
   },
   text: {
     fontSize: 15,
@@ -79,6 +73,6 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
   },
   textAssistant: {
-    color: "rgba(255,255,255,0.92)",
+    color: "#1F1F1F",
   },
 });

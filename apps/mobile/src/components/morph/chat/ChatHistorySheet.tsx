@@ -65,7 +65,7 @@ export function ChatHistorySheet({
           <View style={styles.header}>
             <Text style={styles.title}>{title}</Text>
             <Pressable onPress={onClose} hitSlop={10} accessibilityRole="button">
-              <Ionicons name="close" size={22} color="rgba(255,255,255,0.7)" />
+              <Ionicons name="close" size={22} color="#3F3F46" />
             </Pressable>
           </View>
 
@@ -107,7 +107,7 @@ export function ChatHistorySheet({
                     style={styles.deleteBtn}
                     accessibilityRole="button"
                   >
-                    <Ionicons name="trash-outline" size={16} color="rgba(255,255,255,0.4)" />
+                    <Ionicons name="trash-outline" size={16} color="#A1A1AA" />
                   </Pressable>
                 </Pressable>
               );
@@ -122,25 +122,23 @@ export function ChatHistorySheet({
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.55)",
+    backgroundColor: "rgba(0,0,0,0.35)",
     justifyContent: "flex-end",
   },
   sheet: {
     maxHeight: "78%",
-    backgroundColor: "#121212",
+    backgroundColor: "#F5F4F2",
     borderTopLeftRadius: 22,
     borderTopRightRadius: 22,
     paddingTop: 10,
     paddingHorizontal: 16,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(255,255,255,0.08)",
   },
   handle: {
     alignSelf: "center",
     width: 40,
     height: 4,
     borderRadius: 2,
-    backgroundColor: "rgba(255,255,255,0.2)",
+    backgroundColor: "#D4D4D8",
     marginBottom: 12,
   },
   header: {
@@ -152,14 +150,14 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 17,
     fontWeight: "700",
-    color: "#FFFFFF",
+    color: "#111111",
   },
   newBtn: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
     alignSelf: "flex-start",
-    backgroundColor: "#8B5CF6",
+    backgroundColor: "#7B4DFF",
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: 14,
@@ -176,7 +174,7 @@ const styles = StyleSheet.create({
   },
   empty: {
     textAlign: "center",
-    color: "rgba(255,255,255,0.4)",
+    color: "#8A8A8E",
     paddingVertical: 28,
     fontSize: 14,
   },
@@ -188,13 +186,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 14,
     marginBottom: 8,
-    backgroundColor: "rgba(255,255,255,0.04)",
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(255,255,255,0.06)",
+    backgroundColor: "#FFFFFF",
   },
   rowActive: {
-    borderColor: "rgba(139, 92, 246, 0.45)",
-    backgroundColor: "rgba(139, 92, 246, 0.12)",
+    backgroundColor: "#EFE8FF",
   },
   rowBody: {
     flex: 1,
@@ -203,17 +198,17 @@ const styles = StyleSheet.create({
   rowTitle: {
     fontSize: 14,
     fontWeight: "700",
-    color: "#FFFFFF",
+    color: "#111111",
   },
   rowPreview: {
     marginTop: 3,
     fontSize: 12,
-    color: "rgba(255,255,255,0.45)",
+    color: "#8A8A8E",
   },
   rowMeta: {
     marginTop: 4,
     fontSize: 11,
-    color: "rgba(255,255,255,0.3)",
+    color: "#A1A1AA",
   },
   deleteBtn: {
     width: 32,

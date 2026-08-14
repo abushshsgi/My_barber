@@ -1,3 +1,4 @@
+import { Ionicons } from "@expo/vector-icons";
 import { Pressable, ScrollView, StyleSheet, Text } from "react-native";
 
 export type QuickPrompt = {
@@ -9,6 +10,14 @@ type Props = {
   prompts: QuickPrompt[];
   onSelect: (prompt: QuickPrompt) => void;
   disabled?: boolean;
+};
+
+const CHIP_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
+  face_shape: "happy-outline",
+  style_pick: "sparkles-outline",
+  care_routine: "water-outline",
+  product_tips: "gift-outline",
+  barber_visit: "cut-outline",
 };
 
 export function QuickPromptChips({ prompts, onSelect, disabled }: Props) {
@@ -24,10 +33,19 @@ export function QuickPromptChips({ prompts, onSelect, disabled }: Props) {
           key={item.id}
           onPress={() => onSelect(item)}
           disabled={disabled}
-          style={[styles.chip, disabled && styles.chipDisabled]}
+          style={({ pressed }) => [
+            styles.chip,
+            disabled && styles.chipDisabled,
+            pressed && styles.chipPressed,
+          ]}
           accessibilityRole="button"
         >
-          <Text style={styles.chipText} numberOfLines={2}>
+          <Ionicons
+            name={CHIP_ICONS[item.id] ?? "ellipse-outline"}
+            size={14}
+            color="#3F3F46"
+          />
+          <Text style={styles.chipText} numberOfLines={1}>
             {item.label}
           </Text>
         </Pressable>
@@ -38,25 +56,32 @@ export function QuickPromptChips({ prompts, onSelect, disabled }: Props) {
 
 const styles = StyleSheet.create({
   row: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingTop: 16,
+    paddingBottom: 4,
     gap: 8,
+    flexGrow: 1,
+    justifyContent: "center",
   },
   chip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
     maxWidth: 220,
     paddingHorizontal: 14,
     paddingVertical: 10,
-    borderRadius: 16,
-    backgroundColor: "rgba(255,255,255,0.05)",
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(255,255,255,0.12)",
+    borderRadius: 999,
+    backgroundColor: "#EBEAE7",
   },
   chipDisabled: {
     opacity: 0.45,
   },
+  chipPressed: {
+    opacity: 0.78,
+  },
   chipText: {
     fontSize: 13,
-    lineHeight: 18,
-    color: "rgba(255,255,255,0.78)",
+    lineHeight: 16,
+    fontWeight: "500",
+    color: "#3F3F46",
   },
 });

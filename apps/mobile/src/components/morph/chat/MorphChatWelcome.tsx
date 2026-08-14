@@ -1,155 +1,73 @@
-import { LinearGradient } from "expo-linear-gradient";
-import { useEffect, useRef } from "react";
-import {
-  Animated,
-  Easing,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-  useWindowDimensions,
-} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { Image } from "expo-image";
+import { StatusBar } from "expo-status-bar";
+import type { ReactNode } from "react";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 type Props = {
+  greeting: string;
+  name: string;
+  avatarUrl: string | null;
+  initials: string;
   headline: string;
-  ctaLabel: string;
-  onStart: () => void;
+  subtitle: string;
+  historyA11y: string;
+  onHistory: () => void;
+  bottomPad: number;
+  children: ReactNode;
 };
 
-/** Birinchi kirish — soft lavender + bubble marketing. */
-export function MorphChatWelcome({ headline, ctaLabel, onStart }: Props) {
+/** Bo'sh chat — rasm uslubidagi yengil landing. */
+export function MorphChatWelcome({
+  greeting,
+  name,
+  avatarUrl,
+  initials,
+  headline,
+  subtitle,
+  historyA11y,
+  onHistory,
+  bottomPad,
+  children,
+}: Props) {
   const insets = useSafeAreaInsets();
-  const { width, height } = useWindowDimensions();
-  const fade = useRef(new Animated.Value(0)).current;
-  const rise = useRef(new Animated.Value(28)).current;
-  const ctaOp = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    Animated.sequence([
-      Animated.parallel([
-        Animated.timing(fade, {
-          toValue: 1,
-          duration: 700,
-          easing: Easing.out(Easing.cubic),
-          useNativeDriver: true,
-        }),
-        Animated.timing(rise, {
-          toValue: 0,
-          duration: 700,
-          easing: Easing.out(Easing.cubic),
-          useNativeDriver: true,
-        }),
-      ]),
-      Animated.timing(ctaOp, {
-        toValue: 1,
-        duration: 420,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, [ctaOp, fade, rise]);
 
   return (
-    <View style={styles.root}>
-      <LinearGradient
-        colors={["#EDE4FF", "#F3E8FF", "#FCE7F3", "#FDF2F8"]}
-        locations={[0, 0.35, 0.72, 1]}
-        start={{ x: 0.1, y: 0 }}
-        end={{ x: 0.9, y: 1 }}
-        style={StyleSheet.absoluteFill}
-      />
+    <View style={[styles.root, { paddingTop: insets.top + 8, paddingBottom: bottomPad }]}>
+      <StatusBar style="dark" />
 
-      {/* Soft bubbles — rasm uslubi */}
-      <View
-        pointerEvents="none"
-        style={[
-          styles.bubble,
-          {
-            width: width * 0.72,
-            height: width * 0.72,
-            borderRadius: width * 0.36,
-            top: height * 0.06,
-            left: -width * 0.18,
-            backgroundColor: "rgba(244, 163, 176, 0.42)",
-          },
-        ]}
-      />
-      <View
-        pointerEvents="none"
-        style={[
-          styles.bubble,
-          {
-            width: width * 0.58,
-            height: width * 0.58,
-            borderRadius: width * 0.29,
-            top: height * 0.18,
-            right: -width * 0.16,
-            backgroundColor: "rgba(233, 180, 220, 0.38)",
-          },
-        ]}
-      />
-      <View
-        pointerEvents="none"
-        style={[
-          styles.bubble,
-          {
-            width: width * 0.45,
-            height: width * 0.45,
-            borderRadius: width * 0.225,
-            top: height * 0.38,
-            left: width * 0.22,
-            backgroundColor: "rgba(196, 181, 253, 0.35)",
-          },
-        ]}
-      />
-      <View
-        pointerEvents="none"
-        style={[
-          styles.bubble,
-          {
-            width: width * 0.34,
-            height: width * 0.34,
-            borderRadius: width * 0.17,
-            bottom: height * 0.28,
-            right: width * 0.08,
-            backgroundColor: "rgba(251, 207, 232, 0.5)",
-          },
-        ]}
-      />
+      <View style={styles.header}>
+        <View style={styles.profile}>
+          {avatarUrl ? (
+            <Image source={{ uri: avatarUrl }} style={styles.avatar} contentFit="cover" />
+          ) : (
+            <View style={[styles.avatar, styles.avatarFallback]}>
+              <Text style={styles.avatarText}>{initials}</Text>
+            </View>
+          )}
+          <View style={styles.profileText}>
+            <Text style={styles.greeting}>{greeting}</Text>
+            <Text style={styles.name} numberOfLines={1}>
+              {name}
+            </Text>
+          </View>
+        </View>
 
-      <View
-        style={[
-          styles.content,
-          {
-            paddingTop: insets.top + 48,
-            paddingBottom: Math.max(insets.bottom, 16) + 88,
-          },
-        ]}
-      >
-        <Animated.View
-          style={{
-            opacity: fade,
-            transform: [{ translateY: rise }],
-            flex: 1,
-            justifyContent: "flex-end",
-            paddingBottom: 36,
-          }}
+        <Pressable
+          onPress={onHistory}
+          style={({ pressed }) => [styles.historyBtn, pressed && styles.pressed]}
+          accessibilityRole="button"
+          accessibilityLabel={historyA11y}
         >
-          <Text style={styles.brand}>MORF AI</Text>
-          <Text style={styles.headline}>{headline}</Text>
-        </Animated.View>
+          <Ionicons name="bag-handle-outline" size={20} color="#111111" />
+        </Pressable>
+      </View>
 
-        <Animated.View style={{ opacity: ctaOp }}>
-          <Pressable
-            onPress={onStart}
-            style={({ pressed }) => [styles.cta, pressed && styles.ctaPressed]}
-            accessibilityRole="button"
-            accessibilityLabel={ctaLabel}
-          >
-            <Text style={styles.ctaText}>{ctaLabel}</Text>
-          </Pressable>
-        </Animated.View>
+      <View style={styles.hero}>
+        <Text style={styles.headline}>{headline}</Text>
+        <Text style={styles.subtitle}>{subtitle}</Text>
+        <View style={styles.composer}>{children}</View>
       </View>
     </View>
   );
@@ -158,51 +76,92 @@ export function MorphChatWelcome({ headline, ctaLabel, onStart }: Props) {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: "#EDE4FF",
+    backgroundColor: "#F5F4F2",
   },
-  bubble: {
-    position: "absolute",
-  },
-  content: {
-    flex: 1,
-    paddingHorizontal: 28,
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
     justifyContent: "space-between",
+    paddingHorizontal: 20,
   },
-  brand: {
-    fontSize: 13,
+  profile: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    minWidth: 0,
+    paddingRight: 12,
+  },
+  avatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#E8E7E4",
+  },
+  avatarFallback: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  avatarText: {
+    fontSize: 14,
     fontWeight: "700",
-    letterSpacing: 2.4,
-    color: "rgba(45, 27, 78, 0.45)",
-    marginBottom: 14,
+    color: "#111111",
+  },
+  profileText: {
+    flex: 1,
+    minWidth: 0,
+  },
+  greeting: {
+    fontSize: 13,
+    color: "#8A8A8E",
+    letterSpacing: -0.1,
+  },
+  name: {
+    marginTop: 1,
+    fontSize: 17,
+    fontWeight: "700",
+    color: "#111111",
+    letterSpacing: -0.4,
+  },
+  historyBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    backgroundColor: "#FFFFFF",
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
+  pressed: {
+    opacity: 0.82,
+  },
+  hero: {
+    flex: 1,
+    justifyContent: "center",
+    paddingHorizontal: 24,
+    marginTop: -36,
   },
   headline: {
     fontSize: 34,
     lineHeight: 40,
     fontWeight: "800",
-    letterSpacing: -0.8,
-    color: "#1F1635",
-    textTransform: "uppercase",
+    color: "#111111",
+    textAlign: "center",
+    letterSpacing: -1,
   },
-  cta: {
-    minHeight: 56,
-    borderRadius: 999,
-    backgroundColor: "#FFFFFF",
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: "#6B21A8",
-    shadowOpacity: 0.12,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 4,
+  subtitle: {
+    marginTop: 10,
+    fontSize: 15,
+    lineHeight: 22,
+    color: "#8A8A8E",
+    textAlign: "center",
+    paddingHorizontal: 12,
   },
-  ctaPressed: {
-    opacity: 0.9,
-    transform: [{ scale: 0.985 }],
-  },
-  ctaText: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#1F1635",
-    letterSpacing: -0.2,
+  composer: {
+    marginTop: 28,
   },
 });
