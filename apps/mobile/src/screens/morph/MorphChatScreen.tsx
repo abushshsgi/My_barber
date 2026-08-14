@@ -393,17 +393,19 @@ export function MorphChatScreen() {
         <FlatList
           ref={listRef}
           data={chat.messages}
-          extraData={chat.sending}
+          extraData={`${chat.sending}-${chat.messages[chat.messages.length - 1]?.content ?? ""}`}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
-            <ChatBubble role={item.role} content={item.content} />
+            <ChatBubble
+              role={item.role}
+              content={item.content}
+              pending={Boolean(item.streaming) && !item.content}
+              streaming={Boolean(item.streaming) && Boolean(item.content)}
+            />
           )}
           contentContainerStyle={[styles.list, { paddingBottom: 12 }]}
           onContentSizeChange={scrollToEnd}
           keyboardShouldPersistTaps="handled"
-          ListFooterComponent={
-            chat.sending ? <ChatBubble role="assistant" content="" pending /> : null
-          }
         />
 
         {chat.error ? (

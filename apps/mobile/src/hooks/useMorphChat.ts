@@ -4,11 +4,12 @@ import { useTranslation } from "react-i18next";
 import {
   formatMorphUserError,
   MorphPlanLimitError,
-  sendMorphChatMessage,
+  streamMorphChatMessage,
   type MorphChatContext,
   type MorphChatLimits,
   type MorphChatMessage,
 } from "../api/ai";
+import { createPacedWriter } from "../lib/chat-pace";
 import { useMorphSession } from "../lib/morph-session";
 
 const MESSAGES_KEY = "morph_chat_history_v1";
@@ -47,7 +48,15 @@ function newId(): string {
 }
 
 function realMessages(messages: MorphChatMessage[]): MorphChatMessage[] {
-  return messages.filter((m) => m.id !== "welcome" && m.content.trim().length > 0);
+  return messages.filter(
+    (m) => m.id !== "welcome" && (m.streaming || m.content.trim().length > 0),
+  );
+}
+
+function persistable(messages: MorphChatMessage[]): MorphChatMessage[] {
+  return realMessages(messages)
+    .filter((m) => m.content.trim().length > 0)
+    .map(({ streaming: _ignored, ...rest }) => rest);
 }
 
 function titleFromMessages(messages: MorphChatMessage[], fallback: string): string {
@@ -130,7 +139,7 @@ export function useMorphChat() {
 
   const writeThreadMessages = useCallback(
     (threadId: string, nextMessages: MorphChatMessage[]) => {
-      const cleaned = realMessages(nextMessages);
+      const cleaned = persistable(nextMessages);
       const now = new Date().toISOString();
       const prev = threadsRef.current;
       const exists = prev.some((th) => th.id === threadId);
@@ -253,7 +262,7 @@ export function useMorphChat() {
         role: "user",
         content: trimmed,
       };
-      const history = realMessages(messagesRef.current).map((m) => ({
+      const history = persistable(messagesRef.current).map((m) => ({
         role: m.role,
         content: m.content,
       }));
@@ -265,31 +274,59 @@ export function useMorphChat() {
       setSending(true);
       setError(null);
 
+      const assistantMsg: MorphChatMessage = {
+        id: newId(),
+        role: "assistant",
+        content: "",
+        streaming: true,
+      };
+      const withAssistant = [...nextMessages, assistantMsg];
+      messagesRef.current = withAssistant;
+      setMessages(withAssistant);
+
+      const writer = createPacedWriter((text) => {
+        if (activeThreadIdRef.current !== threadId) return;
+        const updated = messagesRef.current.map((m) =>
+          m.id === assistantMsg.id ? { ...m, content: text, streaming: true } : m,
+        );
+        messagesRef.current = updated;
+        setMessages(updated);
+      });
+
       try {
-        const res = await sendMorphChatMessage({
-          message: trimmed,
-          history: history.slice(-16),
-          context,
-        });
+        const res = await streamMorphChatMessage(
+          {
+            message: trimmed,
+            history: history.slice(-16),
+            context,
+          },
+          (chunk) => writer.append(chunk),
+        );
+        const finalText = (await writer.finish()) || res.reply;
         setLimits(res.limits);
-        const assistantMsg: MorphChatMessage = {
-          id: newId(),
+        const doneMsg: MorphChatMessage = {
+          id: assistantMsg.id,
           role: "assistant",
-          content: res.reply,
+          content: finalText,
         };
         if (activeThreadIdRef.current === threadId) {
-          const withReply = [...realMessages(messagesRef.current), assistantMsg];
+          const withReply = persistable(
+            messagesRef.current.map((m) => (m.id === assistantMsg.id ? doneMsg : m)),
+          );
           messagesRef.current = withReply;
           setMessages(withReply);
           writeThreadMessages(threadId, withReply);
         } else {
           const stored = threadsRef.current.find((th) => th.id === threadId);
-          writeThreadMessages(threadId, [...(stored?.messages ?? nextMessages), assistantMsg]);
+          writeThreadMessages(threadId, [...(stored?.messages ?? nextMessages), doneMsg]);
         }
       } catch (err) {
+        writer.cancel();
         if (err instanceof MorphPlanLimitError) {
           if (activeThreadIdRef.current === threadId) {
-            const rolled = realMessages(messagesRef.current).filter((m) => m.id !== userMsg.id);
+            const rolled = persistable(messagesRef.current).filter(
+              (m) => m.id !== userMsg.id && m.id !== assistantMsg.id,
+            );
             messagesRef.current = rolled;
             setMessages(rolled);
             writeThreadMessages(threadId, rolled);
@@ -298,6 +335,11 @@ export function useMorphChat() {
           setError(null);
           return "limit" as const;
         }
+        if (activeThreadIdRef.current === threadId) {
+          const rolled = persistable(messagesRef.current).filter((m) => m.id !== assistantMsg.id);
+          messagesRef.current = rolled;
+          setMessages(rolled);
+        }
         const msg = formatMorphUserError(
           err instanceof Error ? err.message : "",
           t("chat.error"),
@@ -305,6 +347,7 @@ export function useMorphChat() {
         setError(msg);
         return "error" as const;
       } finally {
+        writer.cancel();
         setSending(false);
         sendingRef.current = false;
       }

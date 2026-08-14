@@ -2,8 +2,10 @@ from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from django.db.models import F
+from django.http import StreamingHttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
+import json
 import logging
 
 from accounts.models import SkinProfile, User
@@ -643,7 +645,7 @@ class AiBarberCardView(UnthrottledAPIView):
 
 
 class AiMorphChatView(UnthrottledAPIView):
-    """POST { message, history?, context? } — Morf AI chatbot javobi."""
+    """POST { message, history?, context?, stream? } — Morf AI chatbot javobi."""
 
     permission_classes = [IsAuthenticated]
 
@@ -663,6 +665,16 @@ class AiMorphChatView(UnthrottledAPIView):
         history = request.data.get("history")
         context_raw = request.data.get("context")
         context = context_raw if isinstance(context_raw, dict) else None
+        accept = (request.headers.get("Accept") or "").lower()
+        wants_stream = bool(request.data.get("stream")) or "text/event-stream" in accept
+
+        if wants_stream:
+            return self._stream_reply(
+                user=user,
+                message=str(message),
+                history=history if isinstance(history, list) else None,
+                context=context,
+            )
 
         try:
             from ai.chat_prompts import MORF_CHAT_DAILY_LIMIT
@@ -711,6 +723,73 @@ class AiMorphChatView(UnthrottledAPIView):
                 error_detail=exc.message,
             )
             return Response({"detail": exc.message}, status=exc.status)
+
+    def _stream_reply(self, *, user, message: str, history, context):
+        from ai.chat_prompts import MORF_CHAT_DAILY_LIMIT
+        from ai.services.gemini_chat import count_user_chat_today, stream_morf_chat_reply
+
+        def events():
+            try:
+                for event in stream_morf_chat_reply(
+                    user_message=message,
+                    history=history,
+                    context=context,
+                ):
+                    if event.get("delta"):
+                        yield f"data: {json.dumps({'delta': event['delta']}, ensure_ascii=False)}\n\n"
+                    if event.get("done"):
+                        usage = event.get("usage") or {}
+                        limits = event.get("limits") or {}
+                        daily_used = count_user_chat_today(user.pk) + 1
+                        limits["daily_used"] = daily_used
+                        limits["daily_remaining"] = max(0, MORF_CHAT_DAILY_LIMIT - daily_used)
+                        record_ai_generation(
+                            user_id=user.pk,
+                            kind="chat",
+                            status="success",
+                            prompt=str(usage.get("prompt") or message)[:500],
+                            model=str(usage.get("model") or ""),
+                            provider=str(usage.get("provider") or ""),
+                            prompt_tokens=int(usage.get("prompt_tokens") or 0),
+                            candidates_tokens=int(usage.get("candidates_tokens") or 0),
+                            thoughts_tokens=int(usage.get("thoughts_tokens") or 0),
+                            total_tokens=int(usage.get("total_tokens") or 0),
+                            cost_usd=usage.get("cost_usd") or 0,
+                            tokens_estimated=bool(usage.get("tokens_estimated")),
+                            latency_ms=int(usage.get("latency_ms") or 0),
+                        )
+                        yield (
+                            "data: "
+                            + json.dumps(
+                                {
+                                    "done": True,
+                                    "limits": limits,
+                                    "reply": event.get("reply") or "",
+                                },
+                                ensure_ascii=False,
+                            )
+                            + "\n\n"
+                        )
+            except AiStyleError as exc:
+                record_ai_generation(
+                    user_id=user.pk,
+                    kind="chat",
+                    status="failed",
+                    error_detail=exc.message,
+                )
+                yield (
+                    "data: "
+                    + json.dumps(
+                        {"error": exc.message, "status": exc.status},
+                        ensure_ascii=False,
+                    )
+                    + "\n\n"
+                )
+
+        response = StreamingHttpResponse(events(), content_type="text/event-stream")
+        response["Cache-Control"] = "no-cache"
+        response["X-Accel-Buffering"] = "no"
+        return response
 
 
 class AiStyleHistoryListCreateView(UnthrottledAPIView):

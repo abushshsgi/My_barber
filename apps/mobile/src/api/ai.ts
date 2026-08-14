@@ -466,6 +466,7 @@ export type MorphChatMessage = {
   id: string;
   role: "user" | "assistant";
   content: string;
+  streaming?: boolean;
 };
 
 export type MorphChatContext = {
@@ -513,4 +514,116 @@ export async function sendMorphChatMessage(payload: {
     reply: body.reply,
     limits: body.limits ?? { daily_limit: 40, daily_used: null, daily_remaining: null },
   };
+}
+
+type StreamEvent = {
+  delta?: string;
+  done?: boolean;
+  reply?: string;
+  limits?: MorphChatLimits;
+  error?: string;
+  status?: number;
+  detail?: string;
+  code?: string;
+};
+
+function parseSseBuffer(buffer: string): { events: StreamEvent[]; rest: string } {
+  const normalized = buffer.replace(/\r\n/g, "\n");
+  const parts = normalized.split("\n\n");
+  const rest = parts.pop() ?? "";
+  const events: StreamEvent[] = [];
+  for (const block of parts) {
+    const data = block
+      .split("\n")
+      .filter((line) => line.startsWith("data:"))
+      .map((line) => line.slice(5).trim())
+      .join("\n");
+    if (!data || data === "[DONE]") continue;
+    try {
+      const parsed = JSON.parse(data) as StreamEvent;
+      if (parsed && typeof parsed === "object") events.push(parsed);
+    } catch {
+      /* ignore partial json */
+    }
+  }
+  return { events, rest };
+}
+
+export async function streamMorphChatMessage(
+  payload: {
+    message: string;
+    history?: Array<{ role: "user" | "assistant"; content: string }>;
+    context?: MorphChatContext;
+  },
+  onDelta: (chunk: string) => void,
+): Promise<{ reply: string; limits: MorphChatLimits }> {
+  const res = await apiFetch("/api/v1/ai/chat/", {
+    method: "POST",
+    headers: { Accept: "text/event-stream" },
+    body: JSON.stringify({ ...payload, stream: true }),
+    timeoutMs: 90_000,
+  });
+
+  const ctype = (res.headers.get("content-type") || "").toLowerCase();
+  if (!res.ok) {
+    const body = (await res.json().catch(() => null)) as StreamEvent | null;
+    if (res.status === 403 && body?.code === "morph_plan_limit") {
+      throw new MorphPlanLimitError(body.detail ?? "Limit tugadi");
+    }
+    throwFromMorphApiError(res, body, "Chat javob bermadi");
+  }
+
+  if (!ctype.includes("text/event-stream") || !res.body) {
+    const body = (await res.json().catch(() => null)) as
+      | { reply?: string; limits?: MorphChatLimits }
+      | null;
+    if (!body?.reply) throw new Error("Chat javobi noto'g'ri");
+    onDelta(body.reply);
+    return {
+      reply: body.reply,
+      limits: body.limits ?? { daily_limit: 40, daily_used: null, daily_remaining: null },
+    };
+  }
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let reply = "";
+  let limits: MorphChatLimits = {
+    daily_limit: 40,
+    daily_used: null,
+    daily_remaining: null,
+  };
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const parsed = parseSseBuffer(buffer);
+    buffer = parsed.rest;
+    for (const event of parsed.events) {
+      if (event.error) {
+        if (event.status === 403) throw new MorphPlanLimitError(event.error);
+        throw new Error(formatMorphUserError(event.error, "Chat javob bermadi"));
+      }
+      if (event.delta) {
+        reply += event.delta;
+        onDelta(event.delta);
+      }
+      if (event.done) {
+        if (event.reply && !reply) {
+          reply = event.reply;
+          onDelta(event.reply);
+        } else if (event.reply) {
+          reply = event.reply;
+        }
+        if (event.limits) limits = event.limits;
+      }
+    }
+  }
+
+  if (!reply.trim()) {
+    throw new Error("Chat javobi noto'g'ri");
+  }
+  return { reply, limits };
 }

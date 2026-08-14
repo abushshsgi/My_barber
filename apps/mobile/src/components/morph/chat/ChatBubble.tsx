@@ -18,6 +18,7 @@ type Props = {
   role: ChatRole;
   content: string;
   pending?: boolean;
+  streaming?: boolean;
 };
 
 function Dot({ delay }: { delay: number }) {
@@ -48,10 +49,10 @@ function TypingDots() {
   );
 }
 
-export function ChatBubble({ role, content, pending }: Props) {
+export function ChatBubble({ role, content, pending, streaming }: Props) {
   const isUser = role === "user";
 
-  if (pending && !isUser) {
+  if (pending && !content && !isUser) {
     return (
       <Animated.View entering={FadeIn.duration(180)} style={styles.assistantRow}>
         <TypingDots />
@@ -70,8 +71,8 @@ export function ChatBubble({ role, content, pending }: Props) {
   }
 
   return (
-    <Animated.View entering={FadeIn.duration(280)} style={styles.assistantRow}>
-      <ChatMarkdown content={content} />
+    <Animated.View entering={FadeIn.duration(180)} style={styles.assistantRow}>
+      <ChatMarkdown content={streaming ? `${content}▍` : content} />
     </Animated.View>
   );
 }
@@ -85,19 +86,19 @@ const styles = StyleSheet.create({
   userBubble: {
     maxWidth: "78%",
     backgroundColor: "#F4F4F5",
-    borderRadius: 18,
+    borderRadius: 16,
     borderBottomRightRadius: 6,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
   },
   userText: {
-    fontSize: 16,
-    lineHeight: 24,
+    fontSize: 14,
+    lineHeight: 21,
     color: "#111111",
   },
   assistantRow: {
     paddingHorizontal: 20,
-    marginBottom: 22,
+    marginBottom: 18,
   },
   dots: {
     flexDirection: "row",

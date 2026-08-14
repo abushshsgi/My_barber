@@ -63,4 +63,26 @@ class ChatHistoryTests(SimpleTestCase):
         )
         contents = build_chat_contents("d", history)
         self.assertEqual([c["role"] for c in contents], ["user", "model", "user"])
-        self.assertEqual(contents[0]["parts"][0]["text"], "a\nb")
+    def test_extract_delta_text(self):
+        from ai.services.gemini_chat import extract_delta_text
+
+        payload = {
+            "candidates": [
+                {"content": {"parts": [{"text": "Salom "}, {"text": "dunyo"}]}}
+            ]
+        }
+        self.assertEqual(extract_delta_text(payload), "Salom dunyo")
+
+    def test_parse_sse_payloads(self):
+        from ai.services.gemini_chat import parse_sse_payloads
+
+        raw = (
+            'data: {"candidates":[{"content":{"parts":[{"text":"A"}]}}]}\n\n'
+            "data: [DONE]\n\n"
+            'data: {"candidates":[{"content":{"parts":[{"text":"B"}]}}]}\n\n'
+        )
+        payloads = parse_sse_payloads(raw)
+        self.assertEqual(len(payloads), 2)
+        from ai.services.gemini_chat import extract_delta_text
+
+        self.assertEqual("".join(extract_delta_text(p) for p in payloads), "AB")

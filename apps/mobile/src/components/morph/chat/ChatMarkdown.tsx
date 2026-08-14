@@ -206,28 +206,28 @@ export function ChatMarkdown({ content, color = "#111111" }: Props) {
 
 const styles = StyleSheet.create({
   wrap: {
-    gap: 10,
+    gap: 8,
   },
   p: {
-    fontSize: 16,
-    lineHeight: 26,
+    fontSize: 14,
+    lineHeight: 21,
   },
   h: {
     fontWeight: "700",
-    letterSpacing: -0.3,
-    marginTop: 4,
+    letterSpacing: -0.2,
+    marginTop: 2,
   },
   h1: {
-    fontSize: 22,
-    lineHeight: 28,
+    fontSize: 17,
+    lineHeight: 23,
   },
   h2: {
-    fontSize: 18,
-    lineHeight: 24,
+    fontSize: 15,
+    lineHeight: 21,
   },
   h3: {
-    fontSize: 16,
-    lineHeight: 22,
+    fontSize: 14,
+    lineHeight: 20,
   },
   bold: {
     fontWeight: "700",
@@ -237,12 +237,12 @@ const styles = StyleSheet.create({
   },
   code: {
     fontFamily: "monospace",
-    fontSize: 14,
+    fontSize: 13,
     backgroundColor: "#F4F4F5",
     color: "#18181B",
   },
   list: {
-    gap: 6,
+    gap: 5,
   },
   li: {
     flexDirection: "row",
@@ -250,9 +250,9 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   mark: {
-    width: 18,
-    fontSize: 16,
-    lineHeight: 26,
+    width: 16,
+    fontSize: 14,
+    lineHeight: 21,
   },
   liText: {
     flex: 1,
