@@ -1,4 +1,5 @@
 from rest_framework import status
+from rest_framework.renderers import JSONRenderer
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from django.db.models import F
@@ -53,7 +54,7 @@ from .services.gemini_style import (
     analyze_style_from_data_url,
     check_face_in_data_url,
 )
-from .unthrottled import UnthrottledAPIView
+from .unthrottled import EventStreamRenderer, UnthrottledAPIView
 from .usage_log import record_ai_generation
 from .morph_ops import check_user_can_generate, morph_generation_blocked_response
 
@@ -648,6 +649,12 @@ class AiMorphChatView(UnthrottledAPIView):
     """POST { message, history?, context?, stream? } — Morf AI chatbot javobi."""
 
     permission_classes = [IsAuthenticated]
+    renderer_classes = [JSONRenderer, EventStreamRenderer]
+
+    def finalize_response(self, request, response, *args, **kwargs):
+        if isinstance(response, StreamingHttpResponse):
+            return response
+        return super().finalize_response(request, response, *args, **kwargs)
 
     def post(self, request):
         user = _require_customer_user(request)

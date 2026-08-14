@@ -361,6 +361,19 @@ export function useMorphChat() {
     [promptText, sendText],
   );
 
+  const retryLast = useCallback(async () => {
+    if (sendingRef.current) return;
+    setError(null);
+    const lastUser = persistable(messagesRef.current).filter((m) => m.role === "user").slice(-1)[0];
+    if (!lastUser?.content) return;
+    const without = persistable(messagesRef.current).filter((m) => m.id !== lastUser.id);
+    messagesRef.current = without;
+    setMessages(without);
+    const threadId = activeThreadIdRef.current;
+    if (threadId) writeThreadMessages(threadId, without);
+    return sendText(lastUser.content);
+  }, [sendText, writeThreadMessages]);
+
   const markWelcomeSeen = useCallback(async () => {
     setWelcomeSeen(true);
     await AsyncStorage.setItem(WELCOME_KEY, "1");
@@ -408,6 +421,10 @@ export function useMorphChat() {
     startNewChat();
   }, [startNewChat]);
 
+  const clearError = useCallback(() => {
+    setError(null);
+  }, []);
+
   const visibleThreads = useMemo(
     () => threads.filter((th) => realMessages(th.messages).length > 0),
     [threads],
@@ -429,7 +446,9 @@ export function useMorphChat() {
     activeThreadId,
     sendText,
     sendQuickPrompt,
+    retryLast,
     clearChat,
+    clearError,
     startNewChat,
     openThread,
     deleteThread,

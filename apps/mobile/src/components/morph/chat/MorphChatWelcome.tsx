@@ -13,6 +13,7 @@ type Props = {
   bottomPad: number;
   composer: ReactNode;
   chips: ReactNode;
+  notice?: ReactNode;
 };
 
 /** Bo'sh chat — hamburger menyu, marketing matn va composer. */
@@ -24,6 +25,7 @@ export function MorphChatWelcome({
   bottomPad,
   composer,
   chips,
+  notice,
 }: Props) {
   const insets = useSafeAreaInsets();
 
@@ -47,6 +49,8 @@ export function MorphChatWelcome({
           <Text style={styles.headline}>{headline}</Text>
           <Text style={styles.lede}>{subtitle}</Text>
         </Animated.View>
+
+        {notice ? <View style={styles.notice}>{notice}</View> : null}
 
         <Animated.View entering={FadeInDown.duration(360).delay(80)} style={styles.composer}>
           {composer}
@@ -110,6 +114,10 @@ const styles = StyleSheet.create({
     color: "#71717A",
     textAlign: "center",
     maxWidth: 340,
+  },
+  notice: {
+    marginHorizontal: -6,
+    marginBottom: 12,
   },
   composer: {
     marginTop: 2,

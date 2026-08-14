@@ -15,6 +15,7 @@ import {
   type ViewToken,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { formatMorphUserError } from "../../api/ai";
 import { pexelsPhotoUrl } from "../../api/media";
 import { useAuth } from "../../auth/AuthContext";
 import { useHideTabBar } from "../../hooks/useHideTabBar";
@@ -169,7 +170,7 @@ export function MorphGuideCarouselScreen({ navigation, route }: Props) {
         }
         navigation.replace("MorphResults");
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Rasm yuklashda xato");
+        setError(formatMorphUserError(err instanceof Error ? err.message : "", "Rasm yuklashda xato"));
       } finally {
         setBusy(null);
       }

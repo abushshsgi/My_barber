@@ -9,6 +9,7 @@ import {
 import { StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AppToast, type AppToastTone } from "./AppToast";
+import { sanitizeDisplayError } from "../../lib/network-error";
 
 export type ShowToastOptions = {
   tone?: AppToastTone;
@@ -43,7 +44,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const show = useCallback((message: string, options?: ShowToastOptions) => {
     const next: ToastItem = {
       id: ++toastSeq,
-      message: message.trim() || "Xabar",
+      message: sanitizeDisplayError(message.trim() || "Xabar"),
       tone: options?.tone ?? "info",
       durationMs: options?.durationMs ?? 4200,
     };

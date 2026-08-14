@@ -25,6 +25,7 @@ import Animated, {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   fetchMorphAiGenerations,
+  formatMorphUserError,
   type MorphAiGeneration,
 } from "../../api/ai";
 import { fetchHairstyles } from "../../api/hairstyles";
@@ -418,7 +419,7 @@ export function MorphTryOnScreen({ navigation }: Props) {
 
         navigation.replace("MorphResults");
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Rasm yuklashda xato");
+        setError(formatMorphUserError(err instanceof Error ? err.message : "", "Rasm yuklashda xato"));
       } finally {
         setBusy(null);
       }

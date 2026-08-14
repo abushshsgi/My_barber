@@ -1,3 +1,4 @@
+import { sanitizeDisplayError } from "../lib/network-error";
 import { apiFetch, apiJson } from "./client";
 
 export class MorphPlanLimitError extends Error {
@@ -26,23 +27,16 @@ export function isNoFaceMessage(message: string): boolean {
   );
 }
 
-const AI_GATEWAY_RE =
-  /application failed to respond|bad gateway|proxy_failed|upstream_timeout|gateway timeout|service unavailable|resource exhausted|too many requests|429|502|503|504/i;
-
-export function isAiGatewayMessage(message: string): boolean {
-  return AI_GATEWAY_RE.test(message);
-}
-
 /** API status prefiksini olib, yuz xatosini bir xil matnga keltiradi. */
 export function formatMorphUserError(message: string, fallback: string): string {
   const cleaned = message.replace(/^API\s+\d+:\s*/i, "").trim();
   if (isNoFaceMessage(cleaned) || isNoFaceMessage(message)) {
     return NO_FACE_MESSAGE;
   }
-  if (isAiGatewayMessage(cleaned) || isAiGatewayMessage(message)) {
-    return "AI vaqtincha ishlamayapti. Bir ozdan keyin qayta urinib ko‘ring.";
+  if (/javobi noto.?g.?ri|chat javob bermadi/i.test(cleaned)) {
+    return fallback;
   }
-  return cleaned || fallback;
+  return sanitizeDisplayError(message) || fallback;
 }
 
 function morphErrorDetail(body: unknown, fallback: string): {
@@ -559,20 +553,24 @@ export async function streamMorphChatMessage(
 ): Promise<{ reply: string; limits: MorphChatLimits }> {
   const res = await apiFetch("/api/v1/ai/chat/", {
     method: "POST",
-    headers: { Accept: "text/event-stream" },
     body: JSON.stringify({ ...payload, stream: true }),
     timeoutMs: 90_000,
   });
 
-  const ctype = (res.headers.get("content-type") || "").toLowerCase();
   if (!res.ok) {
     const body = (await res.json().catch(() => null)) as StreamEvent | null;
     if (res.status === 403 && body?.code === "morph_plan_limit") {
       throw new MorphPlanLimitError(body.detail ?? "Limit tugadi");
     }
+    if (res.status === 406) {
+      const fallback = await sendMorphChatMessage(payload);
+      onDelta(fallback.reply);
+      return fallback;
+    }
     throwFromMorphApiError(res, body, "Chat javob bermadi");
   }
 
+  const ctype = (res.headers.get("content-type") || "").toLowerCase();
   if (!ctype.includes("text/event-stream") || !res.body) {
     const body = (await res.json().catch(() => null)) as
       | { reply?: string; limits?: MorphChatLimits }

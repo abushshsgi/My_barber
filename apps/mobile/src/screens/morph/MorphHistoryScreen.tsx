@@ -18,6 +18,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   fetchMorphAiGenerations,
+  formatMorphUserError,
   type MorphAiGeneration,
 } from "../../api/ai";
 import { BeforeAfterSlider } from "../../components/morph/BeforeAfterSlider";
@@ -84,7 +85,7 @@ export function MorphHistoryScreen({ navigation, route }: Props) {
         setSelected(hit);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Tarix yuklanmadi");
+      setError(formatMorphUserError(err instanceof Error ? err.message : "", "Tarix yuklanmadi"));
     } finally {
       setLoading(false);
     }

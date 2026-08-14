@@ -12,6 +12,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   fetchMorphStudioCatalog,
+  formatMorphUserError,
   generateMorphStudioEdit,
   saveMorphAiGeneration,
   type MorphStudioCategory,
@@ -198,7 +199,7 @@ export function MorphStudioScreen({ navigation }: Props) {
           presentMorphPaywall(navigation, "limit", "MorphStudio");
           return;
         }
-        setError(err instanceof Error ? err.message : "Studio xatosi");
+        setError(formatMorphUserError(err instanceof Error ? err.message : "", "Studio xatosi"));
       } finally {
         setBusyId(null);
       }

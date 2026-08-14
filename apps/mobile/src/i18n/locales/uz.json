@@ -308,7 +308,10 @@
       "settingsA11y": "Sozlamalar"
     },
     "welcome": "Salom! Men Morf AI — soch uslubi va parvarish bo'yicha yordamchingizman. Try-on natijangiz bo'lsa, shunga mos maslahat beraman. Savolingizni yozing yoki tez savollardan birini tanlang.",
-    "error": "Chat javob bermadi. Qayta urinib ko'ring.",
+    "error": "Javob yozilmadi. Qayta urinib ko'ring.",
+    "errorTitle": "Javob yozilmadi",
+    "errorRetry": "Qayta urinish",
+    "errorDismissA11y": "Yopish",
     "marketing": {
       "headline": "One assistant.\nMany ways\nto help.",
       "cta": "Boshlash"

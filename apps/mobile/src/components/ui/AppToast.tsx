@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useRef } from "react";
 import { Animated, StyleSheet, Text, type StyleProp, type ViewStyle } from "react-native";
 
-export type AppToastTone = "error" | "success" | "info" | "loading";
+export type AppToastTone = "error" | "success" | "info" | "loading" | "warning";
 
 type Props = {
   message: string;
@@ -26,6 +26,7 @@ export function AppToast({
   const translateY = useRef(new Animated.Value(-80)).current;
   const opacity = useRef(new Animated.Value(0)).current;
   const visualTone = tone === "loading" ? "info" : tone;
+  const isCard = visualTone === "error" || visualTone === "warning";
 
   useEffect(() => {
     translateY.setValue(-80);
@@ -71,19 +72,30 @@ export function AppToast({
       ? "checkmark-circle"
       : visualTone === "info"
         ? "information-circle"
-        : "alert-circle";
+        : visualTone === "warning"
+          ? "warning"
+          : "alert-circle";
   const palette =
     visualTone === "success"
       ? { bg: "#F4F4F4", fg: "#0A0A0A", icon: "#0A0A0A" }
       : visualTone === "info"
         ? { bg: "rgba(15,15,15,0.88)", fg: "#FFF", icon: "#FFF" }
-        : { bg: "#DC2626", fg: "#FFF", icon: "#FFF" };
+        : visualTone === "warning"
+          ? { bg: "#FFFBEB", fg: "#111111", icon: "#B45309", border: "#FDE68A" }
+          : { bg: "#FAFAFA", fg: "#111111", icon: "#B91C1C", border: "#E4E4E7" };
 
   return (
     <Animated.View
       style={[
         styles.wrap,
-        { backgroundColor: palette.bg, opacity, transform: [{ translateY }] },
+        isCard ? styles.card : styles.pill,
+        {
+          backgroundColor: palette.bg,
+          opacity,
+          transform: [{ translateY }],
+          borderColor: palette.border ?? "transparent",
+          borderWidth: isCard ? 1 : 0,
+        },
         style,
       ]}
       pointerEvents="none"
@@ -91,7 +103,10 @@ export function AppToast({
       accessibilityLiveRegion="polite"
     >
       <Ionicons name={icon} size={18} color={palette.icon} />
-      <Text style={[styles.text, { color: palette.fg }]} numberOfLines={3}>
+      <Text
+        style={[styles.text, isCard && styles.cardText, { color: palette.fg }]}
+        numberOfLines={isCard ? 4 : 3}
+      >
         {message}
       </Text>
     </Animated.View>
@@ -105,19 +120,32 @@ const styles = StyleSheet.create({
     gap: 8,
     alignSelf: "center",
     maxWidth: "94%",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 999,
     shadowColor: "#000",
-    shadowOpacity: 0.18,
+    shadowOpacity: 0.12,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 6 },
     elevation: 6,
+  },
+  pill: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 999,
+  },
+  card: {
+    alignItems: "flex-start",
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderRadius: 16,
+    width: "100%",
   },
   text: {
     flexShrink: 1,
     fontWeight: "700",
     fontSize: 13,
     letterSpacing: -0.1,
+  },
+  cardText: {
+    fontWeight: "600",
+    lineHeight: 18,
   },
 });

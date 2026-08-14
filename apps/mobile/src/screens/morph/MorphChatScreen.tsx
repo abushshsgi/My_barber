@@ -25,6 +25,7 @@ import { MorphPaywallView } from "../../components/morph/MorphPaywallView";
 import { ChatBubble } from "../../components/morph/chat/ChatBubble";
 import { ChatInputBar } from "../../components/morph/chat/ChatInputBar";
 import { ChatMenuDrawer } from "../../components/morph/chat/ChatMenuDrawer";
+import { ChatNotice } from "../../components/morph/chat/ChatNotice";
 import { MorphChatWelcome } from "../../components/morph/chat/MorphChatWelcome";
 import { QuickPromptChips } from "../../components/morph/chat/QuickPromptChips";
 import { TAB_DOCK_CLEARANCE, useHideTabBarWhen } from "../../hooks/useHideTabBar";
@@ -229,6 +230,10 @@ export function MorphChatScreen() {
     navigation.navigate("Profile");
   }, [chat.input, chatOpen, navigation, paywall]);
 
+  const retryLast = useCallback(() => {
+    void chat.retryLast();
+  }, [chat]);
+
   const onCamera = useCallback(() => {
     navigation.navigate("MorphTryOn", { screen: "MorphCapture" } as never);
   }, [navigation]);
@@ -263,6 +268,17 @@ export function MorphChatScreen() {
     setMenuOpen(false);
     navigation.navigate("Profile", { screen: "Settings" } as never);
   }, [navigation]);
+
+  const errorNotice = chat.error ? (
+    <ChatNotice
+      title={t("chat.errorTitle")}
+      message={chat.error}
+      retryLabel={t("chat.errorRetry")}
+      dismissA11y={t("chat.errorDismissA11y")}
+      onRetry={retryLast}
+      onDismiss={chat.clearError}
+    />
+  ) : null;
 
   const menuDrawer = (
     <ChatMenuDrawer
@@ -345,6 +361,19 @@ export function MorphChatScreen() {
               />
             ) : null
           }
+          notice={
+            chat.error ? (
+              <ChatNotice
+                title={t("chat.errorTitle")}
+                message={chat.error}
+                retryLabel={t("chat.errorRetry")}
+                dismissA11y={t("chat.errorDismissA11y")}
+                onRetry={retryLast}
+                onDismiss={chat.clearError}
+                style={{ marginHorizontal: 0, marginBottom: 0 }}
+              />
+            ) : null
+          }
         />
         {menuDrawer}
         {paywallModal}
@@ -408,11 +437,7 @@ export function MorphChatScreen() {
           keyboardShouldPersistTaps="handled"
         />
 
-        {chat.error ? (
-          <View style={styles.errorBar}>
-            <Text style={styles.errorText}>{chat.error}</Text>
-          </View>
-        ) : null}
+        {errorNotice}
 
         <View style={[styles.composerDock, { paddingBottom: Math.max(insets.bottom, 12) }]}>
           <ChatInputBar {...composer} onSend={() => void onSend()} onCamera={onCamera} />
@@ -477,18 +502,5 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     flexGrow: 1,
     backgroundColor: "#FFFFFF",
-  },
-  errorBar: {
-    marginHorizontal: 16,
-    marginBottom: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 12,
-    backgroundColor: "#FEE2E2",
-  },
-  errorText: {
-    fontSize: 13,
-    color: "#B91C1C",
-    lineHeight: 18,
   },
 });
