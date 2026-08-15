@@ -40,6 +40,7 @@ import {
   type PaywallReason,
 } from "../../lib/morph-return";
 import type { RootTabParamList } from "../../navigation/RootTabs";
+import { MorphChatSettingsScreen } from "./MorphChatSettingsScreen";
 
 export function MorphChatScreen() {
   const { t } = useTranslation();
@@ -52,9 +53,10 @@ export function MorphChatScreen() {
   const pendingDraft = useRef<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [paywall, setPaywall] = useState<PaywallReason | null>(null);
 
-  useHideTabBarWhen(chatOpen || paywall != null);
+  useHideTabBarWhen(chatOpen || paywall != null || settingsOpen);
 
   const showPaywall = useCallback(
     (reason: PaywallReason, draft?: string) => {
@@ -82,6 +84,10 @@ export function MorphChatScreen() {
           closePaywall();
           return true;
         }
+        if (settingsOpen) {
+          setSettingsOpen(false);
+          return true;
+        }
         if (menuOpen) {
           setMenuOpen(false);
           return true;
@@ -94,7 +100,7 @@ export function MorphChatScreen() {
         return false;
       });
       return () => sub.remove();
-    }, [chat.startNewChat, chatOpen, closePaywall, menuOpen, paywall]),
+    }, [chat.startNewChat, chatOpen, closePaywall, menuOpen, paywall, settingsOpen]),
   );
 
   useFocusEffect(
@@ -266,8 +272,24 @@ export function MorphChatScreen() {
 
   const openSettings = useCallback(() => {
     setMenuOpen(false);
-    navigation.navigate("Profile", { screen: "Settings" } as never);
-  }, [navigation]);
+    setSettingsOpen(true);
+  }, []);
+
+  const closeSettings = useCallback(() => {
+    void chat.reloadPrefs();
+    setSettingsOpen(false);
+  }, [chat]);
+
+  const clearAllFromSettings = useCallback(async () => {
+    await chat.clearAllChats();
+    setChatOpen(false);
+    setSettingsOpen(false);
+  }, [chat]);
+
+  const openSubscriptionFromSettings = useCallback(() => {
+    setSettingsOpen(false);
+    showPaywall("subscription");
+  }, [showPaywall]);
 
   const errorNotice = chat.error ? (
     <ChatNotice
@@ -291,7 +313,6 @@ export function MorphChatScreen() {
       looksLabel={t("chat.menu.looks")}
       newLookLabel={t("chat.menu.newLook")}
       allLooksLabel={t("chat.menu.allLooks")}
-      recentLabel={t("chat.menu.recent")}
       emptyLabel={t("chat.history.empty")}
       settingsA11y={t("chat.menu.settingsA11y")}
       profileName={name}
@@ -326,6 +347,19 @@ export function MorphChatScreen() {
         onClose={closePaywall}
         onSuccess={() => void onPaywallSuccess()}
         onNeedLogin={onNeedLogin}
+      />
+    </Modal>
+  );
+
+  const settingsModal = (
+    <Modal visible={settingsOpen} animationType="slide" onRequestClose={closeSettings}>
+      <MorphChatSettingsScreen
+        limits={chat.limits}
+        threadCount={chat.threads.length}
+        onClose={closeSettings}
+        onClearAllChats={() => void clearAllFromSettings()}
+        onOpenSubscription={openSubscriptionFromSettings}
+        onSaveHistoryOff={() => void chat.clearAllChats()}
       />
     </Modal>
   );
@@ -377,6 +411,7 @@ export function MorphChatScreen() {
         />
         {menuDrawer}
         {paywallModal}
+        {settingsModal}
       </KeyboardAvoidingView>
     );
   }
@@ -447,6 +482,7 @@ export function MorphChatScreen() {
 
       {menuDrawer}
       {paywallModal}
+      {settingsModal}
     </View>
   );
 }

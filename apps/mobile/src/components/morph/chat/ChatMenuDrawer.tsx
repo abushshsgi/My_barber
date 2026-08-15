@@ -25,7 +25,6 @@ type Props = {
   looksLabel: string;
   newLookLabel: string;
   allLooksLabel: string;
-  recentLabel: string;
   emptyLabel: string;
   settingsA11y: string;
   profileName: string;
@@ -59,7 +58,6 @@ export function ChatMenuDrawer({
   looksLabel,
   newLookLabel,
   allLooksLabel,
-  recentLabel,
   emptyLabel,
   settingsA11y,
   profileName,
@@ -209,7 +207,7 @@ export function ChatMenuDrawer({
               <Text style={styles.navMuted}>{allLooksLabel}</Text>
             </Pressable>
 
-            <Text style={[styles.section, styles.sectionGap]}>{recentLabel}</Text>
+            <View style={styles.historyGap} />
             {recent.length === 0 ? (
               <Text style={styles.empty}>{emptyLabel}</Text>
             ) : (
@@ -374,8 +372,8 @@ const styles = StyleSheet.create({
     color: "#A1A1AA",
     letterSpacing: 0.2,
   },
-  sectionGap: {
-    marginTop: 18,
+  historyGap: {
+    height: 14,
   },
   empty: {
     color: "#71717A",

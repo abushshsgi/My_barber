@@ -10,6 +10,10 @@ import {
   type MorphChatMessage,
 } from "../api/ai";
 import { createPacedWriter } from "../lib/chat-pace";
+import {
+  readMorphChatPrefs,
+  writeMorphChatLimitsSnapshot,
+} from "../lib/morph-chat-prefs";
 import { useMorphSession } from "../lib/morph-session";
 
 const MESSAGES_KEY = "morph_chat_history_v1";
@@ -119,9 +123,16 @@ export function useMorphChat() {
   const activeThreadIdRef = useRef<string | null>(null);
   const messagesRef = useRef<MorphChatMessage[]>([]);
   const threadsRef = useRef<MorphChatThread[]>([]);
+  const prefsRef = useRef({ useTryOnContext: true, saveHistory: true });
   const untitled = t("chat.history.untitled");
 
   const context = useMemo(() => buildContextFromSession(session), [session]);
+
+  useEffect(() => {
+    void readMorphChatPrefs().then((p) => {
+      prefsRef.current = p;
+    });
+  }, []);
 
   const persistThreads = useCallback(async (next: MorphChatThread[], activeId: string | null) => {
     const cleaned = next
@@ -132,9 +143,13 @@ export function useMorphChat() {
     threadsRef.current = cleaned;
     setActiveThreadId(activeId);
     activeThreadIdRef.current = activeId;
-    await AsyncStorage.setItem(THREADS_KEY, JSON.stringify(cleaned));
-    if (activeId) await AsyncStorage.setItem(ACTIVE_KEY, activeId);
-    else await AsyncStorage.removeItem(ACTIVE_KEY);
+    if (prefsRef.current.saveHistory) {
+      await AsyncStorage.setItem(THREADS_KEY, JSON.stringify(cleaned));
+      if (activeId) await AsyncStorage.setItem(ACTIVE_KEY, activeId);
+      else await AsyncStorage.removeItem(ACTIVE_KEY);
+    } else {
+      await AsyncStorage.multiRemove([THREADS_KEY, ACTIVE_KEY, LEGACY_THREADS_KEY, MESSAGES_KEY]);
+    }
   }, []);
 
   const writeThreadMessages = useCallback(
@@ -170,8 +185,10 @@ export function useMorphChat() {
       }
       threadsRef.current = next;
       setThreads(next);
-      void AsyncStorage.setItem(THREADS_KEY, JSON.stringify(next.slice(0, 40)));
-      void AsyncStorage.setItem(ACTIVE_KEY, threadId);
+      if (prefsRef.current.saveHistory) {
+        void AsyncStorage.setItem(THREADS_KEY, JSON.stringify(next.slice(0, 40)));
+        void AsyncStorage.setItem(ACTIVE_KEY, threadId);
+      }
     },
     [untitled],
   );
@@ -294,16 +311,19 @@ export function useMorphChat() {
       });
 
       try {
+        const prefs = await readMorphChatPrefs();
+        prefsRef.current = prefs;
         const res = await streamMorphChatMessage(
           {
             message: trimmed,
             history: history.slice(-16),
-            context,
+            context: prefs.useTryOnContext ? context : undefined,
           },
           (chunk) => writer.append(chunk),
         );
         const finalText = (await writer.finish()) || res.reply;
         setLimits(res.limits);
+        void writeMorphChatLimitsSnapshot(res.limits);
         const doneMsg: MorphChatMessage = {
           id: assistantMsg.id,
           role: "assistant",
@@ -425,6 +445,27 @@ export function useMorphChat() {
     setError(null);
   }, []);
 
+  const clearAllChats = useCallback(async () => {
+    activeThreadIdRef.current = null;
+    messagesRef.current = [];
+    threadsRef.current = [];
+    setActiveThreadId(null);
+    setMessages([]);
+    setThreads([]);
+    setError(null);
+    setInput("");
+    await AsyncStorage.multiRemove([
+      THREADS_KEY,
+      ACTIVE_KEY,
+      LEGACY_THREADS_KEY,
+      MESSAGES_KEY,
+    ]);
+  }, []);
+
+  const reloadPrefs = useCallback(async () => {
+    prefsRef.current = await readMorphChatPrefs();
+  }, []);
+
   const visibleThreads = useMemo(
     () => threads.filter((th) => realMessages(th.messages).length > 0),
     [threads],
@@ -449,6 +490,8 @@ export function useMorphChat() {
     retryLast,
     clearChat,
     clearError,
+    clearAllChats,
+    reloadPrefs,
     startNewChat,
     openThread,
     deleteThread,
