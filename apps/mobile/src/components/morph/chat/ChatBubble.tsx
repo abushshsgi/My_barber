@@ -49,7 +49,7 @@ function TypingDots() {
   );
 }
 
-export function ChatBubble({ role, content, pending, streaming }: Props) {
+export function ChatBubble({ role, content, pending }: Props) {
   const isUser = role === "user";
 
   if (pending && !content && !isUser) {
@@ -72,7 +72,7 @@ export function ChatBubble({ role, content, pending, streaming }: Props) {
 
   return (
     <Animated.View entering={FadeIn.duration(180)} style={styles.assistantRow}>
-      <ChatMarkdown content={streaming ? `${content}▍` : content} />
+      <ChatMarkdown content={content} />
     </Animated.View>
   );
 }
