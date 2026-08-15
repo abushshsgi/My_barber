@@ -60,6 +60,7 @@ class MorphAiSettingsAdmin(admin.ModelAdmin):
         "id",
         "tryon_enabled",
         "analyze_enabled",
+        "referral_generation_enabled",
         "daily_tryon_limit_per_user",
         "daily_budget_usd",
         "budget_enforce",

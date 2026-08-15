@@ -202,28 +202,3 @@ class SubscriptionEvent(models.Model):
     def __str__(self) -> str:
         return f"{self.action}:{self.user_id}"
 
-
-class ReferralTrialGrant(models.Model):
-    """3 ta referal → 7 kunlik Starter sinov — bir marta beriladi."""
-
-    user = models.OneToOneField(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        related_name="referral_trial_grant",
-    )
-    subscription = models.ForeignKey(
-        UserSubscription,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name="referral_grants",
-    )
-    referral_count_at_grant = models.PositiveIntegerField(default=0)
-    granted_at = models.DateTimeField(auto_now_add=True)
-    ends_at = models.DateTimeField()
-
-    class Meta:
-        ordering = ["-granted_at"]
-
-    def __str__(self) -> str:
-        return f"trial:{self.user_id}"

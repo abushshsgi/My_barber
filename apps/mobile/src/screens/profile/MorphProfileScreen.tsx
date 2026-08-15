@@ -177,8 +177,16 @@ export function MorphProfileScreen({ navigation }: Props) {
             <Text style={styles.cardTitle}>Do&apos;stlarni taklif</Text>
             <Text style={styles.cardLink}>Ochish</Text>
           </View>
-          <Text style={styles.cardLead}>1 referal = 1 generatsiya krediti</Text>
-          <Text style={styles.cardHint}>Yoki obuna bilan ishlang — ikkalasi ham ochadi</Text>
+          <Text style={styles.cardLead}>
+            {sub?.referral_generation_enabled === false
+              ? "Do'stlaringizni MySaloon ga taklif qiling"
+              : "1 referal = 1 generatsiya krediti"}
+          </Text>
+          <Text style={styles.cardHint}>
+            {sub?.referral_generation_enabled === false
+              ? "Kodingizni ulashing"
+              : "Yoki obuna bilan ishlang — ikkalasi ham ochadi"}
+          </Text>
         </Pressable>
 
         <Pressable

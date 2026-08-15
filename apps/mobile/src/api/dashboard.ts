@@ -18,10 +18,14 @@ export type ProfileSubscription = {
   days_remaining: number | null;
   morph_care: boolean;
   usage: SubscriptionUsage;
+  referral_credits?: number;
+  referral_generation_enabled?: boolean;
   access?: {
     morph_ai_allowed: boolean;
     reason: string | null;
     message: string | null;
+    referral_credits?: number;
+    referral_generation_enabled?: boolean;
   };
   upgrade?: { plan_code: string; label_uz: string } | null;
 };
@@ -79,6 +83,8 @@ export async function fetchProfileDashboardFallback(): Promise<ProfileDashboard>
       days_remaining: sub?.days_remaining ?? null,
       morph_care: Boolean(sub?.morph_care),
       usage: sub?.usage ?? EMPTY_USAGE,
+      referral_credits: sub?.referral_credits,
+      referral_generation_enabled: sub?.referral_generation_enabled,
       access: sub?.access,
       upgrade: sub?.upgrade ?? null,
     },

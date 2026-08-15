@@ -191,6 +191,10 @@ class MorphAiSettings(models.Model):
         default=False,
         help_text="Admin galleryda faqat opt-in tarix (hozir history yozuvlari).",
     )
+    referral_generation_enabled = models.BooleanField(
+        default=True,
+        help_text="True bo'lsa 1 referal = 1 Morph AI generatsiya krediti ishlaydi va UI da ko'rinadi.",
+    )
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:

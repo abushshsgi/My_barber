@@ -1,7 +1,6 @@
 from django.contrib import admin
 
 from subscriptions.models import (
-    ReferralTrialGrant,
     SubscriptionEvent,
     SubscriptionPayment,
     SubscriptionUsagePeriod,
@@ -36,7 +35,3 @@ class SubscriptionEventAdmin(admin.ModelAdmin):
     list_filter = ("action",)
     search_fields = ("user__phone", "actor")
 
-
-@admin.register(ReferralTrialGrant)
-class ReferralTrialGrantAdmin(admin.ModelAdmin):
-    list_display = ("user", "referral_count_at_grant", "granted_at", "ends_at")

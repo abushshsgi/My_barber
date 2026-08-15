@@ -301,10 +301,8 @@ export function SettingsSubscriptionsPanel() {
   const me = meQ.data;
   const activeCode = me?.subscription?.plan_code ?? null;
   const sub = me?.subscription;
-  const trial = me?.referral_trial;
-  const required = trial?.required_referrals ?? 3;
-  const progress = trial?.progress ?? trial?.invite_count ?? 0;
-  const remainingInvites = trial?.remaining_invites ?? Math.max(0, required - progress);
+  const refGenOn =
+    me?.referral_generation_enabled ?? me?.access?.referral_generation_enabled ?? true;
   const daysLeft = me?.days_remaining ?? sub?.days_remaining ?? null;
 
   const visiblePlans = useMemo(() => {
@@ -429,8 +427,9 @@ export function SettingsSubscriptionsPanel() {
     <div className="mt-4 space-y-6">
       <p className="text-sm text-muted-foreground">
         {t("subscriptions.subtitle", {
-          defaultValue:
-            "Morph AI yangi userlarga yopiq. 3 ta do'stni taklif qiling (7 kun Starter) yoki obuna sotib oling.",
+          defaultValue: refGenOn
+            ? "Morph AI yangi userlarga yopiq. 1 ta do'stni taklif qiling (1 generatsiya) yoki obuna sotib oling."
+            : "Morph AI yangi userlarga yopiq. Obuna sotib oling.",
         })}
       </p>
 
@@ -550,8 +549,9 @@ export function SettingsSubscriptionsPanel() {
                   Yo&apos;q — Morph AI yopiq
                 </p>
                 <p className="mt-2 max-w-md text-sm text-muted-foreground">
-                  Yangi hisobda Morph AI ishlamaydi. Obuna sotib oling yoki {required} ta do&apos;stni
-                  taklif qilib {trial?.trial_days ?? 7} kunlik Starter sinov oling.
+                  {refGenOn
+                    ? "Yangi hisobda Morph AI ishlamaydi. Obuna sotib oling yoki 1 ta do'stni taklif qilib 1 generatsiya oling."
+                    : "Yangi hisobda Morph AI ishlamaydi. Obuna sotib oling."}
                 </p>
               </div>
               <span className="rounded-full bg-muted px-3 py-1 text-xs font-bold text-muted-foreground">
@@ -559,38 +559,29 @@ export function SettingsSubscriptionsPanel() {
               </span>
             </div>
 
-            <div className="mt-4 rounded-xl bg-muted/40 p-3">
-              <div className="flex items-center justify-between gap-2 text-sm font-semibold">
-                <span className="inline-flex items-center gap-2">
-                  <UserPlus className="h-4 w-4" />
-                  Referal sinov
-                </span>
-                <span className="text-xs text-muted-foreground">
-                  {Math.min(progress, required)} / {required}
-                </span>
+            {refGenOn ? (
+              <div className="mt-4 rounded-xl bg-muted/40 p-3">
+                <div className="flex items-center justify-between gap-2 text-sm font-semibold">
+                  <span className="inline-flex items-center gap-2">
+                    <UserPlus className="h-4 w-4" />
+                    1 do&apos;st = 1 generatsiya
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    Kredit: {me?.referral_credits ?? me?.access?.referral_credits ?? 0}
+                  </span>
+                </div>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Do&apos;stingiz kodingiz bilan ro&apos;yxatdan o&apos;tsa, sizga 1 Morph AI
+                  generatsiya krediti beriladi.
+                </p>
+                <Link
+                  to="/referrals"
+                  className="mt-3 inline-flex h-10 items-center justify-center rounded-xl border border-border px-4 text-xs font-bold"
+                >
+                  Do&apos;stlarni taklif qilish
+                </Link>
               </div>
-              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-background">
-                <div
-                  className="h-full rounded-full bg-foreground transition-all"
-                  style={{
-                    width: `${Math.min(100, Math.round((Math.min(progress, required) / required) * 100))}%`,
-                  }}
-                />
-              </div>
-              <p className="mt-2 text-xs text-muted-foreground">
-                {remainingInvites > 0
-                  ? `Yana ${remainingInvites} ta do'st kerak — keyin ${trial?.trial_days ?? 7} kun Starter ochiladi.`
-                  : trial?.granted
-                    ? "Sinov allaqachon berilgan."
-                    : "Shart bajarildi — sinov tez orada faollashadi."}
-              </p>
-              <Link
-                to="/referrals"
-                className="mt-3 inline-flex h-10 items-center justify-center rounded-xl border border-border px-4 text-xs font-bold"
-              >
-                Do&apos;stlarni taklif qilish
-              </Link>
-            </div>
+            ) : null}
           </>
         )}
       </section>
@@ -637,7 +628,9 @@ export function SettingsSubscriptionsPanel() {
 
       <p className="text-[11px] leading-relaxed text-muted-foreground">
         Obuna faqat to&apos;lov tasdiqlangandan keyin yoqiladi. Limitlar serverda hisoblanadi.
-        3 ta do&apos;stni taklif qilsangiz — 7 kunlik Starter sinov (8-kuni avtomatik to&apos;xtaydi).
+        {refGenOn
+          ? " 1 ta do'stni taklif qilsangiz — 1 Morph AI generatsiya krediti beriladi."
+          : ""}
       </p>
     </div>
   );

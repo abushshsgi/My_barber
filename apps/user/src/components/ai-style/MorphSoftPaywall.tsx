@@ -15,6 +15,10 @@ export function MorphSoftPaywall({ className, previewUrl }: Props) {
   const { t } = useTranslation();
   const meQ = useSubscriptionMe();
   const offer = meQ.data?.welcome_offer;
+  const refGenOn =
+    meQ.data?.referral_generation_enabled ??
+    meQ.data?.access?.referral_generation_enabled ??
+    true;
   const discountHint =
     offer?.eligible === true
       ? `Yangi hisob: tariflarga −${offer.discount_pct}%.`
@@ -67,16 +71,17 @@ export function MorphSoftPaywall({ className, previewUrl }: Props) {
         </div>
       </div>
 
-      <Link
-        to="/referrals"
-        className="flex h-10 w-full items-center justify-center gap-1.5 rounded-2xl border border-border text-[12px] font-bold text-muted-foreground hover:bg-muted/40"
-      >
-        <Sparkles className="size-3.5" />
-        {t("homePage.subscriptionPromo.referralCta", {
-          days: 7,
-          defaultValue: "Yoki bepul 7 kun: 3 do‘st taklif qil",
-        })}
-      </Link>
+      {refGenOn ? (
+        <Link
+          to="/referrals"
+          className="flex h-10 w-full items-center justify-center gap-1.5 rounded-2xl border border-border text-[12px] font-bold text-muted-foreground hover:bg-muted/40"
+        >
+          <Sparkles className="size-3.5" />
+          {t("homePage.subscriptionPromo.referralCta", {
+            defaultValue: "Yoki 1 do‘st taklif qil — 1 generatsiya",
+          })}
+        </Link>
+      ) : null}
     </section>
   );
 }

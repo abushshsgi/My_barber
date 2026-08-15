@@ -1,4 +1,3 @@
-from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -57,27 +56,9 @@ def _invitee_payload(attr: ReferralAttribution, request) -> dict:
     }
 
 
-def _trial_payload(*, user, invite_count: int) -> dict:
-    from subscriptions.plans import (
-        REFERRAL_TRIAL_DAYS,
-        REFERRAL_TRIAL_PLAN,
-        REFERRAL_TRIAL_REQUIRED,
-    )
-    from subscriptions.models import ReferralTrialGrant
-
-    trial = ReferralTrialGrant.objects.filter(user=user).first()
-    return {
-        "required": REFERRAL_TRIAL_REQUIRED,
-        "days": REFERRAL_TRIAL_DAYS,
-        "plan": REFERRAL_TRIAL_PLAN,
-        "progress": min(invite_count, REFERRAL_TRIAL_REQUIRED),
-        "eligible": invite_count >= REFERRAL_TRIAL_REQUIRED,
-        "granted": bool(trial),
-        "ends_at": trial.ends_at.isoformat() if trial else None,
-    }
-
-
 def _referral_response(request) -> dict:
+    from subscriptions.services import referral_generation_enabled
+
     code = ensure_referral_code(request.user)
     attributions = (
         ReferralAttribution.objects.filter(referrer=request.user)
@@ -86,64 +67,26 @@ def _referral_response(request) -> dict:
     )
     invite_count = attributions.count()
     invites = [_invitee_payload(a, request) for a in attributions[:50]]
-    credits = int(getattr(request.user, "morph_referral_credits", 0) or 0)
+    ref_on = referral_generation_enabled()
+    credits = (
+        int(getattr(request.user, "morph_referral_credits", 0) or 0) if ref_on else 0
+    )
     return {
         "code": code,
         "invite_url": build_invite_url(code),
         "invite_count": invite_count,
         "invites": invites,
+        "referral_generation_enabled": ref_on,
         "referral_credits": credits,
-        "credit_per_invite": 1,
-        "trial": _trial_payload(user=request.user, invite_count=invite_count),
+        "credit_per_invite": 1 if ref_on else 0,
     }
 
 
 class MyReferralView(APIView):
-    """GET — referal kod, takliflar va sinov holati. POST — Starter sinovni olish."""
+    """GET — referal kod, takliflar va (admin yoqsa) generatsiya kreditlari."""
 
     permission_classes = [IsAuthenticated]
     throttle_classes = [ReferralThrottle]
 
     def get(self, request):
         return Response(_referral_response(request))
-
-    def post(self, request):
-        """Eligible bo'lsa Starter trialni beradi (bir marta)."""
-        from subscriptions.plans import REFERRAL_TRIAL_REQUIRED
-        from subscriptions.models import ReferralTrialGrant
-        from subscriptions.services import maybe_grant_referral_trial
-
-        invite_count = ReferralAttribution.objects.filter(referrer=request.user).count()
-        already = ReferralTrialGrant.objects.filter(user=request.user).first()
-        if already:
-            body = _referral_response(request)
-            body["claimed"] = False
-            body["already_granted"] = True
-            return Response(body)
-
-        if invite_count < REFERRAL_TRIAL_REQUIRED:
-            return Response(
-                {
-                    "detail": (
-                        f"Bonus olish uchun yana "
-                        f"{REFERRAL_TRIAL_REQUIRED - invite_count} ta do'st kerak."
-                    ),
-                    "invite_count": invite_count,
-                    "required": REFERRAL_TRIAL_REQUIRED,
-                },
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        maybe_grant_referral_trial(request.user)
-        body = _referral_response(request)
-        body["claimed"] = bool(body["trial"]["granted"])
-        body["already_granted"] = False
-        if not body["claimed"]:
-            return Response(
-                {
-                    "detail": "Sinovni berib bo'lmadi. Keyinroq qayta urinib ko'ring.",
-                    **body,
-                },
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        return Response(body)

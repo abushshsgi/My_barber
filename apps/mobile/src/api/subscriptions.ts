@@ -50,11 +50,13 @@ export type SubscriptionMe = {
   morph_care: boolean;
   days_remaining?: number | null;
   referral_credits?: number;
+  referral_generation_enabled?: boolean;
   access?: {
     morph_ai_allowed: boolean;
     reason: string | null;
     message: string | null;
     referral_credits?: number;
+    referral_generation_enabled?: boolean;
   };
   welcome_offer?: {
     eligible: boolean;

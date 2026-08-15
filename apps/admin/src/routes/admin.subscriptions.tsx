@@ -420,10 +420,6 @@ function AdminSubscriptionsPage() {
                   <span>Studio</span>
                   <span className="font-semibold">{stats.usage_totals.morph_studio}</span>
                 </li>
-                <li className="flex justify-between">
-                  <span>Referal sinov</span>
-                  <span className="font-semibold">{stats.referral_trials_granted}</span>
-                </li>
               </ul>
             </div>
           </div>

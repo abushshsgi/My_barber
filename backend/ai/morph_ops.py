@@ -39,6 +39,7 @@ def get_settings_payload() -> dict[str, Any]:
         "ab_traffic_percent_b": s.ab_traffic_percent_b,
         "preferred_model": s.preferred_model,
         "gallery_public": s.gallery_public,
+        "referral_generation_enabled": s.referral_generation_enabled,
         "runtime_model": getattr(settings, "GEMINI_MODEL", "") or "",
         "updated_at": s.updated_at.isoformat() if s.updated_at else None,
     }
@@ -58,6 +59,7 @@ def update_settings(data: dict[str, Any]) -> dict[str, Any]:
         "analyze_enabled",
         "ab_enabled",
         "gallery_public",
+        "referral_generation_enabled",
     )
     for key in int_fields:
         if key in data and data[key] is not None:

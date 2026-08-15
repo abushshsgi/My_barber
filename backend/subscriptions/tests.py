@@ -3,17 +3,15 @@
 from decimal import Decimal
 from datetime import timedelta
 
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.utils import timezone
 from rest_framework.test import APIClient
 
-from accounts.models import ReferralAttribution, User
-from subscriptions.models import ReferralTrialGrant, UserSubscription
-from subscriptions.plans import (
-    PLAN_PLUS,
-    PLAN_STARTER,
-    REFERRAL_TRIAL_REQUIRED,
-)
+from accounts.models import User
+from accounts.referral import apply_referral, ensure_referral_code
+from ai.models import MorphAiSettings
+from subscriptions.models import UserSubscription
+from subscriptions.plans import PLAN_PLUS, PLAN_STARTER
 from subscriptions.services import (
     activate_subscription,
     check_morph_entitlement,
@@ -38,15 +36,19 @@ def _user(email: str, phone: str, name: str = "Sub User") -> User:
     )
 
 
+@override_settings(MORPH_ENTITLEMENT_BYPASS=False)
 class SubscriptionServiceTests(TestCase):
     def setUp(self):
         self.user = _user("subuser@test.local", "+998901111111")
+        MorphAiSettings.load()
 
     def test_new_user_blocked_without_subscription(self):
-        for kind in ("tryon", "studio", "analyze", "face_check"):
-            msg = check_morph_entitlement(user=self.user, kind=kind) or ""
-            self.assertIn("obuna", msg.lower(), kind)
-            self.assertIn("taklif", msg.lower(), kind)
+        msg = check_morph_entitlement(user=self.user, kind="tryon") or ""
+        self.assertIn("obuna", msg.lower())
+        self.assertIsNone(check_morph_entitlement(user=self.user, kind="analyze"))
+        self.assertIsNone(check_morph_entitlement(user=self.user, kind="face_check"))
+        studio = check_morph_entitlement(user=self.user, kind="studio") or ""
+        self.assertIn("obuna", studio.lower())
 
     def test_activate_and_limits(self):
         sub = activate_subscription(
@@ -63,14 +65,12 @@ class SubscriptionServiceTests(TestCase):
         for _ in range(10):
             record_morph_usage(user=self.user, kind="tryon")
         self.assertIn("limiti", check_morph_entitlement(user=self.user, kind="tryon") or "")
-        # Limit tugaganda analyze ham yopiladi
-        self.assertIn("limiti", check_morph_entitlement(user=self.user, kind="analyze") or "")
 
     def test_expire_blocks_again(self):
         sub = activate_subscription(
             user=self.user,
             plan_code=PLAN_PLUS,
-            source=UserSubscription.Source.REFERRAL_TRIAL,
+            source=UserSubscription.Source.ADMIN,
             price_uzs=Decimal("0"),
             period_days=7,
         )
@@ -78,7 +78,6 @@ class SubscriptionServiceTests(TestCase):
         sub.save(update_fields=["ends_at"])
         expired = expire_if_needed(sub)
         self.assertEqual(expired.status, UserSubscription.Status.EXPIRED)
-        # Muddat tugagach Morph AI yana yopiladi.
         msg = check_morph_entitlement(user=self.user, kind="tryon") or ""
         self.assertIn("obuna", msg.lower())
 
@@ -94,36 +93,39 @@ class SubscriptionServiceTests(TestCase):
         self.assertIn("obuna", msg.lower())
         self.assertIn("obuna", (check_morph_entitlement(user=self.user, kind="studio") or "").lower())
 
-    def test_referral_trial_after_3(self):
-        from subscriptions.services import maybe_grant_referral_trial
-
-        for i in range(REFERRAL_TRIAL_REQUIRED):
-            referee = _user(f"ref{i}@test.local", f"+99890111211{i}", f"Ref {i}")
-            ReferralAttribution.objects.create(
-                referrer=self.user,
-                referee=referee,
-                code_used="ABCD1234",
-            )
-        # Claim-based: attribution o'zi berilmaydi — grant funksiyasi chaqiriladi.
-        self.assertFalse(ReferralTrialGrant.objects.filter(user=self.user).exists())
-        maybe_grant_referral_trial(self.user)
-        self.assertTrue(ReferralTrialGrant.objects.filter(user=self.user).exists())
-        active = UserSubscription.objects.filter(
-            user=self.user, status=UserSubscription.Status.ACTIVE
-        ).first()
-        self.assertIsNotNone(active)
-        self.assertEqual(active.source, UserSubscription.Source.REFERRAL_TRIAL)
-        self.assertEqual(active.plan_code, PLAN_STARTER)
+    def test_one_referral_gives_one_generation_credit(self):
+        code = ensure_referral_code(self.user)
+        referee = _user("ref0@test.local", "+998901112110", "Ref 0")
+        apply_referral(new_user=referee, code=code)
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.morph_referral_credits, 1)
         self.assertIsNone(check_morph_entitlement(user=self.user, kind="tryon"))
-        # Starter — Studio yo'q
-        self.assertIsNotNone(check_morph_entitlement(user=self.user, kind="studio"))
+        record_morph_usage(user=self.user, kind="tryon")
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.morph_referral_credits, 0)
+        self.assertIsNotNone(check_morph_entitlement(user=self.user, kind="tryon"))
+
+    def test_referral_credits_disabled_by_admin(self):
+        s = MorphAiSettings.load()
+        s.referral_generation_enabled = False
+        s.save(update_fields=["referral_generation_enabled"])
+        code = ensure_referral_code(self.user)
+        referee = _user("ref1@test.local", "+998901112111", "Ref 1")
+        apply_referral(new_user=referee, code=code)
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.morph_referral_credits, 0)
+        self.user.morph_referral_credits = 5
+        self.user.save(update_fields=["morph_referral_credits"])
+        self.assertIsNotNone(check_morph_entitlement(user=self.user, kind="tryon"))
 
 
+@override_settings(MORPH_ENTITLEMENT_BYPASS=False)
 class SubscriptionAPITests(TestCase):
     def setUp(self):
         self.user = _user("apiuser@test.local", "+998902222222", "API User")
         self.client = APIClient()
         self.client.force_authenticate(user=self.user)
+        MorphAiSettings.load()
         wallet = WalletService.ensure_wallet(self.user)
         WalletService.top_up(
             wallet=wallet,
@@ -161,5 +163,5 @@ class SubscriptionAPITests(TestCase):
         self.assertFalse(me.data["has_active"])
         self.assertFalse(me.data["access"]["morph_ai_allowed"])
         self.assertEqual(me.data["usage"]["morph_ai_limit"], 0)
-        self.assertEqual(me.data["referral_trial"]["required_referrals"], 3)
-        self.assertIn("invite_count", me.data["referral_trial"])
+        self.assertTrue(me.data["referral_generation_enabled"])
+        self.assertNotIn("referral_trial", me.data)

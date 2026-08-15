@@ -3787,6 +3787,7 @@ export type MorphAiSettings = {
   ab_traffic_percent_b: number;
   preferred_model: string;
   gallery_public: boolean;
+  referral_generation_enabled: boolean;
   runtime_model: string;
   updated_at: string | null;
 };
@@ -4294,6 +4295,7 @@ export async function patchMorphAiSettings(
     ab_traffic_percent_b: number;
     preferred_model: string;
     gallery_public: boolean;
+    referral_generation_enabled: boolean;
   }>,
 ): Promise<MorphAiSettings> {
   return apiJson("/api/v1/admin/morph-ai/settings/", {
@@ -4368,7 +4370,6 @@ export type AdminSubscriptionStats = {
   }>;
   recent_purchases: AdminSubscriptionPaymentRow[];
   recent_discounted: AdminSubscriptionPaymentRow[];
-  referral_trials_granted: number;
   usage_totals: { morph_ai: number; morph_studio: number };
   recent_events: Array<{
     id: string;
@@ -4518,11 +4519,6 @@ export async function fetchAdminSubscriptionDetail(id: string): Promise<{
   usage: AdminSubscriptionRow["usage"];
   events: AdminSubscriptionStats["recent_events"];
   payments: AdminSubscriptionPaymentRow[];
-  referral_trial: {
-    granted: boolean;
-    ends_at: string | null;
-    referral_count_at_grant: number | null;
-  };
 }> {
   return apiJson(`/api/v1/admin/subscriptions/${id}/`);
 }

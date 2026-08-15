@@ -10,7 +10,6 @@ from rest_framework.views import APIView
 from accounts.models import User
 from accounts.permissions import IsAdmin
 from subscriptions.models import (
-    ReferralTrialGrant,
     SubscriptionEvent,
     SubscriptionPayment,
     SubscriptionUsagePeriod,
@@ -173,7 +172,6 @@ class AdminSubscriptionDetailView(APIView):
         usage = usage_snapshot(sub.user, sub.entitlements or entitlement_snapshot(sub.plan_code))
         events = SubscriptionEvent.objects.filter(subscription=sub).order_by("-created_at")[:100]
         payments = SubscriptionPayment.objects.filter(user=sub.user).order_by("-created_at")[:50]
-        trial = ReferralTrialGrant.objects.filter(user=sub.user).first()
         return Response(
             {
                 "subscription": {
@@ -194,11 +192,6 @@ class AdminSubscriptionDetailView(APIView):
                 "me": build_me_payload(sub.user),
                 "events": [_serialize_event(e) for e in events],
                 "payments": [_serialize_payment(p) for p in payments],
-                "referral_trial": {
-                    "granted": bool(trial),
-                    "ends_at": trial.ends_at.isoformat() if trial else None,
-                    "referral_count_at_grant": trial.referral_count_at_grant if trial else None,
-                },
             }
         )
 

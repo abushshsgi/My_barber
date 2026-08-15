@@ -145,18 +145,6 @@ function AdminSubscriptionDetailPage() {
         ) : null}
       </div>
 
-      {d.referral_trial.granted ? (
-        <div className="rounded-2xl border border-border bg-card p-4 text-sm">
-          Referal sinov berilgan
-          {d.referral_trial.ends_at
-            ? ` · ${new Date(d.referral_trial.ends_at).toLocaleDateString("uz-UZ")}`
-            : ""}
-          {d.referral_trial.referral_count_at_grant != null
-            ? ` · ${d.referral_trial.referral_count_at_grant} ta referal`
-            : ""}
-        </div>
-      ) : null}
-
       <div className="rounded-2xl border border-border bg-card p-4">
         <h2 className="font-heading font-semibold">Audit log</h2>
         <ul className="mt-3 max-h-80 space-y-2 overflow-y-auto text-sm">

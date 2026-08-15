@@ -110,7 +110,7 @@ export function MorphLookShareLanding({ styleId }: Props) {
         <p className="text-center text-[11px] text-white/45">
           {t("aiStylePage.shareLook.authHint", {
             defaultValue:
-              "Davom etish uchun tezkor ro‘yxatdan o‘tasiz — keyin Morf AI try-on. 3 do‘st = 7 kun bepul.",
+              "Davom etish uchun tezkor ro‘yxatdan o‘tasiz — keyin Morf AI try-on. 1 do‘st = 1 generatsiya.",
           })}
         </p>
 

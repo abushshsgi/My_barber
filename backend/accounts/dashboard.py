@@ -73,6 +73,10 @@ def build_customer_dashboard(user: User, request: Request) -> dict[str, Any]:
             "days_remaining": sub_payload.get("days_remaining"),
             "morph_care": bool(sub_payload.get("morph_care")),
             "usage": sub_payload.get("usage") or {},
+            "referral_credits": sub_payload.get("referral_credits") or 0,
+            "referral_generation_enabled": bool(
+                sub_payload.get("referral_generation_enabled", True)
+            ),
             "access": sub_payload.get("access") or {},
             "upgrade": sub_payload.get("upgrade"),
         },

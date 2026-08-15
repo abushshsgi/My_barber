@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
-import { Check, Crown, Lock, Sparkles, UserPlus, Users } from "lucide-react";
+import { Crown, Gift, Lock, Sparkles, UserPlus } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import {
   Dialog,
@@ -32,61 +32,6 @@ type Props = {
   me: SubscriptionMe | null;
 };
 
-function trialPlanCode(code: string | undefined) {
-  const c = (code || "starter").toLowerCase();
-  if (c === "plus" || c === "pro" || c === "starter") return c;
-  return "starter";
-}
-
-function trialPlanLabel(code: string | undefined) {
-  const c = trialPlanCode(code);
-  if (c === "plus") return "Plus";
-  if (c === "pro") return "Pro";
-  return "Starter";
-}
-
-function FriendSteps({ progress, required }: { progress: number; required: number }) {
-  const safeRequired = Math.max(1, required);
-  const clamped = Math.min(progress, safeRequired);
-
-  return (
-    <div className="flex items-center justify-center">
-      {Array.from({ length: safeRequired }, (_, i) => {
-        const done = i < clamped;
-        return (
-          <div key={i} className="flex items-center">
-            <motion.span
-              initial={{ scale: 0.7, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ delay: 0.12 + i * 0.08, type: "spring", stiffness: 320, damping: 20 }}
-              className={cn(
-                "relative grid size-12 place-items-center rounded-full border-2 sm:size-14",
-                done
-                  ? "border-white bg-white shadow-[0_0_20px_-6px_rgba(255,255,255,0.45)]"
-                  : "border-white/20 bg-white/[0.04]",
-              )}
-            >
-              {done ? (
-                <Check className="size-5 text-[#0a0a0a] sm:size-6" strokeWidth={3} />
-              ) : (
-                <Users className="size-5 text-white/35 sm:size-6" strokeWidth={1.75} />
-              )}
-            </motion.span>
-            {i < safeRequired - 1 ? (
-              <span
-                className={cn(
-                  "mx-1.5 h-0.5 w-6 rounded-full sm:mx-2.5 sm:w-10",
-                  i < clamped ? "bg-white/70" : "bg-white/12",
-                )}
-              />
-            ) : null}
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
 function MorphLimitUpsellBody({
   kind,
   me,
@@ -100,14 +45,14 @@ function MorphLimitUpsellBody({
   const plansQ = useSubscriptionPlans();
   const usage = me?.usage;
   const planName = planLabelFromMe(me);
-  const locked = kind === "access" || !me?.has_active;
+  const credits =
+    me?.referral_credits ?? me?.access?.referral_credits ?? 0;
+  const refGenOn =
+    me?.referral_generation_enabled ??
+    me?.access?.referral_generation_enabled ??
+    true;
+  const locked = kind === "access" || (!me?.has_active && credits <= 0);
   const isTryOn = kind === "tryon";
-  const trial = me?.referral_trial;
-  const required = trial?.required_referrals ?? 3;
-  const progress = trial?.progress ?? trial?.invite_count ?? 0;
-  const remaining = trial?.remaining_invites ?? Math.max(0, required - progress);
-  const days = trial?.trial_days ?? 7;
-  const rewardPlan = trialPlanLabel(trial?.trial_plan);
   const plans = plansQ.data ?? [];
   const activeCode = me?.subscription?.plan_code ?? null;
   const next = nextUpgradePlan(activeCode);
@@ -165,45 +110,20 @@ function MorphLimitUpsellBody({
                 : t("aiStylePage.limitSheet.descFree")}
           </p>
 
-          {locked ? (
+          {locked && refGenOn ? (
             <motion.div
               initial={{ y: 8, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.15 }}
               className="mt-5 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/[0.06] px-4 py-1.5 text-sm font-bold text-white"
             >
-              <Crown className="size-3.5 text-white/80" strokeWidth={2.25} />
-              {days} kun {rewardPlan} · bepul
+              <Gift className="size-3.5 text-white/80" strokeWidth={2.25} />
+              1 do&apos;st = 1 generatsiya
             </motion.div>
           ) : null}
         </div>
 
-        {locked && trial ? (
-          <div className="relative mt-6 space-y-4">
-            <FriendSteps progress={progress} required={required} />
-            <div className="flex items-center justify-between gap-3 px-1">
-              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-white/40">
-                Referal · {days} kun {rewardPlan}
-              </p>
-              <p className="text-sm font-semibold tabular-nums text-white/85">
-                {Math.min(progress, required)}/{required}
-                {remaining > 0 ? (
-                  <span className="ml-2 font-medium text-white/55">· yana {remaining}</span>
-                ) : null}
-              </p>
-            </div>
-            <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
-              <motion.div
-                className="h-full rounded-full bg-white"
-                initial={{ width: 0 }}
-                animate={{
-                  width: `${Math.round((Math.min(progress, required) / Math.max(1, required)) * 100)}%`,
-                }}
-                transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-              />
-            </div>
-          </div>
-        ) : !locked && limit > 0 ? (
+        {!locked && limit > 0 ? (
           <div className="relative mt-7 space-y-3 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
             <div className="flex items-center justify-between gap-3">
               <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-white/45">
@@ -222,7 +142,14 @@ function MorphLimitUpsellBody({
 
       {locked ? (
         <p className="px-0.5 text-center text-[14px] leading-relaxed text-white/45">
-          {t("aiStylePage.limitSheet.descLocked", { required, days })}
+          {refGenOn
+            ? t("aiStylePage.limitSheet.descLocked", {
+                defaultValue:
+                  "Yangi hisobda Morph AI ishlamaydi. 1 ta do'stni taklif qilsangiz — 1 generatsiya, yoki obuna sotib oling.",
+              })
+            : t("aiStylePage.limitSheet.descLockedSubOnly", {
+                defaultValue: "Yangi hisobda Morph AI ishlamaydi. Obuna sotib oling.",
+              })}
         </p>
       ) : null}
 
@@ -272,19 +199,21 @@ function MorphLimitUpsellBody({
               ? `Obuna olish (−${offer.discount_pct}%)`
               : t("aiStylePage.limitSheet.buyPlan", { defaultValue: "Obuna olish" })}
           </Link>
-          <Link
-            to="/referrals"
-            onClick={onClose}
-            className={cn(
-              "flex h-12 items-center justify-center gap-2 rounded-[22px] border border-white/20 bg-transparent text-[14px] font-bold text-white",
-              "transition-[transform,background-color] duration-200 hover:bg-white/[0.06] active:scale-[0.985]",
-            )}
-          >
-            <UserPlus className="size-4.5" />
-            {remaining > 0
-              ? t("aiStylePage.limitSheet.inviteFriends", { count: remaining })
-              : t("aiStylePage.limitSheet.openReferrals")}
-          </Link>
+          {refGenOn ? (
+            <Link
+              to="/referrals"
+              onClick={onClose}
+              className={cn(
+                "flex h-12 items-center justify-center gap-2 rounded-[22px] border border-white/20 bg-transparent text-[14px] font-bold text-white",
+                "transition-[transform,background-color] duration-200 hover:bg-white/[0.06] active:scale-[0.985]",
+              )}
+            >
+              <UserPlus className="size-4.5" />
+              {t("aiStylePage.limitSheet.openReferrals", {
+                defaultValue: "Do'st taklif qilish",
+              })}
+            </Link>
+          ) : null}
         </>
       ) : next ? (
         <Link
@@ -311,7 +240,10 @@ const shellClass =
 export function MorphLimitUpsell({ open, onOpenChange, kind, me }: Props) {
   const { t } = useTranslation();
   const isMobile = useIsMobile();
-  const locked = kind === "access" || !me?.has_active;
+  const locked =
+    kind === "access" ||
+    (!me?.has_active &&
+      (me?.referral_credits ?? me?.access?.referral_credits ?? 0) <= 0);
   const title = locked
     ? t("aiStylePage.limitSheet.accessTitle")
     : t(

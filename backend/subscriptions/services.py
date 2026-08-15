@@ -13,7 +13,6 @@ from django.utils import timezone
 
 from accounts.models import User
 from subscriptions.models import (
-    ReferralTrialGrant,
     SubscriptionEvent,
     SubscriptionPayment,
     SubscriptionUsagePeriod,
@@ -22,12 +21,42 @@ from subscriptions.models import (
 from subscriptions.plans import (
     FREE_MORPH_AI_MONTHLY,
     FREE_MORPH_STUDIO_MONTHLY,
-    REFERRAL_TRIAL_DAYS,
-    REFERRAL_TRIAL_PLAN,
-    REFERRAL_TRIAL_REQUIRED,
     get_plan,
     serialize_plan,
 )
+
+
+def referral_generation_enabled() -> bool:
+    """Admin Morph AI sozlamasi: 1 referal = 1 generatsiya."""
+    try:
+        from ai.models import MorphAiSettings
+
+        return bool(MorphAiSettings.load().referral_generation_enabled)
+    except Exception:
+        return True
+
+
+def _no_subscription_message() -> str:
+    if referral_generation_enabled():
+        return (
+            "Generatsiya uchun obuna kerak yoki 1 ta do'stingizni taklif qiling "
+            "(1 referal = 1 generatsiya)."
+        )
+    return "Generatsiya uchun obuna kerak."
+
+
+def _raw_referral_credits(user: User) -> int:
+    try:
+        return max(0, int(getattr(user, "morph_referral_credits", 0) or 0))
+    except (TypeError, ValueError):
+        return 0
+
+
+def _referral_credits(user: User) -> int:
+    """Admin o'chirganida kreditlar ishlamaydi (0 deb hisoblanadi)."""
+    if not referral_generation_enabled():
+        return 0
+    return _raw_referral_credits(user)
 
 
 def _client_meta(request=None) -> dict[str, str]:
@@ -150,29 +179,17 @@ def usage_snapshot(user: User, entitlements: dict[str, Any] | None) -> dict[str,
     }
 
 
-def _no_subscription_message() -> str:
-    return (
-        "Generatsiya uchun obuna kerak yoki 1 ta do'stingizni taklif qiling "
-        "(1 referal = 1 generatsiya)."
-    )
-
-
-def _referral_credits(user: User) -> int:
-    try:
-        return max(0, int(getattr(user, "morph_referral_credits", 0) or 0))
-    except (TypeError, ValueError):
-        return 0
-
-
 def build_me_payload(user: User) -> dict[str, Any]:
     sub = get_active_subscription(user)
     entitlements = (sub.entitlements if sub else None) or (
         entitlement_snapshot(sub.plan_code) if sub else {}
     )
+    ref_on = referral_generation_enabled()
+    credits = _referral_credits(user)
     if sub:
         usage = {
             **usage_snapshot(user, entitlements),
-            "referral_credits": _referral_credits(user),
+            "referral_credits": credits,
         }
     else:
         period = usage_snapshot(
@@ -182,7 +199,6 @@ def build_me_payload(user: User) -> dict[str, Any]:
                 "morph_studio_monthly": FREE_MORPH_STUDIO_MONTHLY,
             },
         )
-        credits = _referral_credits(user)
         usage = {
             **period,
             "is_free_tier": True,
@@ -190,11 +206,8 @@ def build_me_payload(user: User) -> dict[str, Any]:
             "referral_credits": credits,
             "morph_ai_remaining": max(period["morph_ai_remaining"], credits),
         }
-    trial = ReferralTrialGrant.objects.filter(user=user).first()
-    from accounts.models import ReferralAttribution
     from subscriptions.promos import get_new_user_offer
 
-    invite_count = ReferralAttribution.objects.filter(referrer=user).count()
     now = timezone.now()
     days_remaining = None
     if sub and sub.ends_at:
@@ -208,6 +221,7 @@ def build_me_payload(user: User) -> dict[str, Any]:
     elif plan_code == "plus":
         next_upgrade = {"plan_code": "pro", "label_uz": "Pro ga upgrade"}
 
+    allowed = bool(sub) or credits > 0
     return {
         "has_active": bool(sub),
         "subscription": serialize_subscription(sub) if sub else None,
@@ -218,27 +232,14 @@ def build_me_payload(user: User) -> dict[str, Any]:
         "family_members_max": entitlements.get("family_members_max") if sub else 0,
         "family_unlimited": entitlements.get("family_members_max") is None if sub else False,
         "days_remaining": days_remaining,
-        "referral_credits": _referral_credits(user),
+        "referral_credits": credits,
+        "referral_generation_enabled": ref_on,
         "access": {
-            "morph_ai_allowed": bool(sub) or _referral_credits(user) > 0,
-            "reason": None
-            if (sub or _referral_credits(user) > 0)
-            else "subscription_required",
-            "message": None
-            if (sub or _referral_credits(user) > 0)
-            else _no_subscription_message(),
-            "referral_credits": _referral_credits(user),
-        },
-        "referral_trial": {
-            "granted": bool(trial),
-            "ends_at": trial.ends_at.isoformat() if trial else None,
-            "required_referrals": REFERRAL_TRIAL_REQUIRED,
-            "trial_days": REFERRAL_TRIAL_DAYS,
-            "trial_plan": REFERRAL_TRIAL_PLAN,
-            "invite_count": invite_count,
-            "progress": min(invite_count, REFERRAL_TRIAL_REQUIRED),
-            "eligible": invite_count >= REFERRAL_TRIAL_REQUIRED,
-            "remaining_invites": max(0, REFERRAL_TRIAL_REQUIRED - invite_count),
+            "morph_ai_allowed": allowed,
+            "reason": None if allowed else "subscription_required",
+            "message": None if allowed else _no_subscription_message(),
+            "referral_credits": credits,
+            "referral_generation_enabled": ref_on,
         },
         "welcome_offer": get_new_user_offer(user),
         "upgrade": next_upgrade,
@@ -500,7 +501,11 @@ def check_morph_entitlement(*, user: User, kind: str) -> str | None:
             )
             return (
                 f"Oylik Morph AI limiti tugadi ({limit}/{limit}). "
-                f"Tarifni yangilang yoki do'st taklif qilib kredit oling."
+                + (
+                    "Tarifni yangilang yoki do'st taklif qilib kredit oling."
+                    if referral_generation_enabled()
+                    else "Tarifni yangilang."
+                )
             )
         return None
 
@@ -526,13 +531,15 @@ def record_morph_usage(*, user: User, kind: str) -> None:
         if sub:
             usage.morph_ai_used = usage.morph_ai_used + 1
             usage.save(update_fields=["morph_ai_used", "updated_at"])
-        else:
+        elif referral_generation_enabled():
             updated = User.objects.filter(pk=user.pk, morph_referral_credits__gt=0).update(
                 morph_referral_credits=F("morph_referral_credits") - 1
             )
             if not updated:
                 return
             user.refresh_from_db(fields=["morph_referral_credits"])
+        else:
+            return
     else:
         usage.morph_studio_used = usage.morph_studio_used + 1
         usage.save(update_fields=["morph_studio_used", "updated_at"])
@@ -548,67 +555,6 @@ def record_morph_usage(*, user: User, kind: str) -> None:
             "referral_credits": _referral_credits(user),
         },
     )
-
-
-@transaction.atomic
-def maybe_grant_referral_trial(referrer: User) -> UserSubscription | None:
-    """3 ta muvaffaqiyatli referal → 7 kun Starter sinov (bir marta)."""
-    if ReferralTrialGrant.objects.filter(user=referrer).exists():
-        return None
-
-    from accounts.models import ReferralAttribution
-
-    count = ReferralAttribution.objects.filter(referrer=referrer).count()
-    if count < REFERRAL_TRIAL_REQUIRED:
-        return None
-
-    # Allaqachon pullik faol Pro/Plus bo'lsa ham trial berilmasin — faqat grant yo'qligini tekshiramiz.
-    # Agar faol pullik obuna bo'lsa, trialni skip qilamiz (yoki baribir grant yozamiz lekin aktivatsiya qilmaymiz).
-    active = get_active_subscription(referrer)
-    if active and active.source not in (
-        UserSubscription.Source.REFERRAL_TRIAL,
-    ):
-        # Pullik obuna bor — grantni yozib qo'yamiz (qayta urinmaslik), lekin yangi sub yaratmaymiz.
-        ends = timezone.now() + timedelta(days=REFERRAL_TRIAL_DAYS)
-        ReferralTrialGrant.objects.create(
-            user=referrer,
-            subscription=None,
-            referral_count_at_grant=count,
-            ends_at=ends,
-        )
-        log_event(
-            action=SubscriptionEvent.Action.REFERRAL_TRIAL,
-            user=referrer,
-            detail={"skipped": True, "reason": "already_paid", "count": count},
-        )
-        return None
-
-    plan = get_plan(REFERRAL_TRIAL_PLAN)
-    if not plan:
-        return None
-
-    sub = activate_subscription(
-        user=referrer,
-        plan_code=REFERRAL_TRIAL_PLAN,
-        source=UserSubscription.Source.REFERRAL_TRIAL,
-        price_uzs=Decimal("0"),
-        period_days=REFERRAL_TRIAL_DAYS,
-        actor="referral_system",
-        notes=f"Referral trial after {count} invites",
-    )
-    ReferralTrialGrant.objects.create(
-        user=referrer,
-        subscription=sub,
-        referral_count_at_grant=count,
-        ends_at=sub.ends_at,
-    )
-    log_event(
-        action=SubscriptionEvent.Action.REFERRAL_TRIAL,
-        user=referrer,
-        subscription=sub,
-        detail={"count": count, "days": REFERRAL_TRIAL_DAYS, "plan": REFERRAL_TRIAL_PLAN},
-    )
-    return sub
 
 
 def _payment_promo_fields(meta: dict | None) -> dict[str, Any]:
@@ -807,7 +753,6 @@ def admin_stats(*, start=None, end=None) -> dict[str, Any]:
     ]
 
     all_paid = SubscriptionPayment.objects.filter(status=SubscriptionPayment.Status.PAID)
-    trials = ReferralTrialGrant.objects.count()
     usage_agg = SubscriptionUsagePeriod.objects.aggregate(
         ai=Sum("morph_ai_used"),
         studio=Sum("morph_studio_used"),
@@ -869,7 +814,6 @@ def admin_stats(*, start=None, end=None) -> dict[str, Any]:
         "purchases_by_day": purchases_by_day,
         "recent_purchases": recent_purchases,
         "recent_discounted": recent_discounted,
-        "referral_trials_granted": trials,
         "usage_totals": {
             "morph_ai": usage_agg["ai"] or 0,
             "morph_studio": usage_agg["studio"] or 0,

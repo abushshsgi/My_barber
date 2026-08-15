@@ -114,6 +114,9 @@ export function MorphPaywallView({
   };
 
   const features = (selectedPlan?.features ?? []).filter((f) => f.included !== false);
+  const refGenOn =
+    me?.referral_generation_enabled ?? me?.access?.referral_generation_enabled ?? true;
+  const credits = me?.referral_credits ?? me?.access?.referral_credits ?? 0;
 
   return (
     <View style={styles.root}>
@@ -144,7 +147,7 @@ export function MorphPaywallView({
 
         <Text style={styles.title}>{t(titleKey)}</Text>
         <Text style={styles.lead}>{t("morph.paywall.subtitle")}</Text>
-        <Text style={styles.orHint}>{t("morph.paywall.orReferral")}</Text>
+        {refGenOn ? <Text style={styles.orHint}>{t("morph.paywall.orReferral")}</Text> : null}
 
         {me?.usage && (reason === "limit" || me.has_active) ? (
           <Text style={styles.usage}>
@@ -154,10 +157,10 @@ export function MorphPaywallView({
             })}
           </Text>
         ) : null}
-        {(me as { referral_credits?: number } | null)?.referral_credits ? (
+        {refGenOn && credits > 0 ? (
           <Text style={styles.usage}>
             {t("morph.paywall.credits", {
-              count: (me as { referral_credits?: number }).referral_credits ?? 0,
+              count: credits,
             })}
           </Text>
         ) : null}
@@ -273,7 +276,7 @@ export function MorphPaywallView({
             </LinearGradient>
           </Pressable>
 
-          {onOpenReferral ? (
+          {refGenOn && onOpenReferral ? (
             <Pressable
               onPress={onOpenReferral}
               style={({ pressed }) => [styles.referralBtn, pressed && styles.pressed]}

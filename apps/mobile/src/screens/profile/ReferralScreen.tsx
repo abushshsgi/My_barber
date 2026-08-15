@@ -13,11 +13,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import {
-  claimReferralTrial,
-  fetchMyReferral,
-  type ReferralInfo,
-} from "../../api/referrals";
+import { fetchMyReferral, type ReferralInfo } from "../../api/referrals";
 import { NativeHeader } from "../../components/ui/NativeHeader";
 import { useHideTabBar } from "../../hooks/useHideTabBar";
 import type { MorphStackParamList } from "../../navigation/MorphStack";
@@ -33,7 +29,6 @@ export function ReferralScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
   const [info, setInfo] = useState<ReferralInfo | null>(null);
   const [loading, setLoading] = useState(true);
-  const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -74,20 +69,7 @@ export function ReferralScreen({ navigation }: Props) {
     }
   };
 
-  const onClaim = async () => {
-    if (!info?.trial?.eligible || info.trial.granted) return;
-    setBusy(true);
-    try {
-      const next = await claimReferralTrial();
-      setInfo(next);
-      showToast(next.claimed ? "Sinov ochildi" : "Sinov olinmadi");
-    } catch (err) {
-      showToast(err instanceof Error ? err.message : "Xato");
-    } finally {
-      setBusy(false);
-    }
-  };
-
+  const refGenOn = info?.referral_generation_enabled !== false;
   const credits = info?.referral_credits ?? 0;
   const invites = info?.invites ?? [];
 
@@ -97,11 +79,14 @@ export function ReferralScreen({ navigation }: Props) {
       <NativeHeader title="Do'stlarni taklif" onBack={() => navigation.goBack()} />
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.hero}>
-          <Text style={styles.heroKicker}>1 referal = 1 generatsiya</Text>
-          <Text style={styles.heroTitle}>Do&apos;stingizni chaqiring — kredit oling</Text>
+          {refGenOn ? (
+            <Text style={styles.heroKicker}>1 referal = 1 generatsiya</Text>
+          ) : null}
+          <Text style={styles.heroTitle}>Do&apos;stingizni chaqiring</Text>
           <Text style={styles.heroSub}>
-            Yangi foydalanuvchi sizning kodingiz bilan kirsa, sizga 1 Morph AI generatsiya
-            krediti beriladi. Yoki obuna oling — cheklovsiz ishlang.
+            {refGenOn
+              ? "Yangi foydalanuvchi sizning kodingiz bilan kirsa, sizga 1 Morph AI generatsiya krediti beriladi. Yoki obuna oling."
+              : "Do'stlaringizni MySaloon ga taklif qiling. Kodingizni ulashing."}
           </Text>
         </View>
 
@@ -110,10 +95,12 @@ export function ReferralScreen({ navigation }: Props) {
         ) : info ? (
           <>
             <View style={styles.creditRow}>
-              <View style={styles.creditCard}>
-                <Text style={styles.creditLabel}>Kreditlar</Text>
-                <Text style={styles.creditValue}>{credits}</Text>
-              </View>
+              {refGenOn ? (
+                <View style={styles.creditCard}>
+                  <Text style={styles.creditLabel}>Kreditlar</Text>
+                  <Text style={styles.creditValue}>{credits}</Text>
+                </View>
+              ) : null}
               <View style={styles.creditCard}>
                 <Text style={styles.creditLabel}>Takliflar</Text>
                 <Text style={styles.creditValue}>{info.invite_count}</Text>
@@ -141,42 +128,6 @@ export function ReferralScreen({ navigation }: Props) {
               </View>
             </View>
 
-            {info.trial ? (
-              <View style={styles.trialCard}>
-                <Text style={styles.trialTitle}>Bonus: 3 do&apos;st → 7 kun Starter</Text>
-                <Text style={styles.trialSub}>
-                  Progress: {info.trial.progress}/{info.trial.required}
-                  {info.trial.granted ? " · Sinov ochilgan" : ""}
-                </Text>
-                <View style={styles.trialTrack}>
-                  <View
-                    style={[
-                      styles.trialFill,
-                      {
-                        width: `${Math.min(
-                          100,
-                          (info.trial.progress / Math.max(1, info.trial.required)) * 100,
-                        )}%`,
-                      },
-                    ]}
-                  />
-                </View>
-                {info.trial.eligible && !info.trial.granted ? (
-                  <Pressable
-                    onPress={() => void onClaim()}
-                    disabled={busy}
-                    style={({ pressed }) => [styles.claimBtn, pressed && styles.pressed]}
-                  >
-                    {busy ? (
-                      <ActivityIndicator color="#FFF" />
-                    ) : (
-                      <Text style={styles.claimText}>Sinovni olish</Text>
-                    )}
-                  </Pressable>
-                ) : null}
-              </View>
-            ) : null}
-
             <Text style={styles.listTitle}>Taklif qilinganlar</Text>
             {invites.length === 0 ? (
               <Text style={styles.empty}>Hali hech kim kodingiz bilan kirmagan.</Text>
@@ -195,7 +146,7 @@ export function ReferralScreen({ navigation }: Props) {
                       {row.badge ? ` · ${row.badge}` : ""}
                     </Text>
                   </View>
-                  <Text style={styles.inviteBonus}>+1</Text>
+                  {refGenOn ? <Text style={styles.inviteBonus}>+1</Text> : null}
                 </View>
               ))
             )}
@@ -275,24 +226,6 @@ const styles = StyleSheet.create({
     paddingVertical: 11,
   },
   primaryText: { fontSize: 14, fontWeight: "700", color: "#FFF" },
-  trialCard: {
-    backgroundColor: "#F4F4F5",
-    borderRadius: 16,
-    padding: 14,
-    gap: 8,
-  },
-  trialTitle: { fontSize: 14, fontWeight: "700", color: "#111" },
-  trialSub: { fontSize: 12, color: "#71717A" },
-  trialTrack: { height: 6, borderRadius: 999, backgroundColor: "#E4E4E7", overflow: "hidden" },
-  trialFill: { height: "100%", backgroundColor: "#111" },
-  claimBtn: {
-    marginTop: 4,
-    backgroundColor: "#111",
-    borderRadius: 12,
-    alignItems: "center",
-    paddingVertical: 12,
-  },
-  claimText: { color: "#FFF", fontWeight: "700", fontSize: 14 },
   listTitle: { marginTop: 8, fontSize: 13, fontWeight: "700", color: "#71717A" },
   empty: { fontSize: 13, color: "#A1A1AA" },
   inviteRow: {

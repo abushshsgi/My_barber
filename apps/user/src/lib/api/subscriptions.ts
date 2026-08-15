@@ -63,18 +63,11 @@ export type SubscriptionMe = {
     morph_ai_allowed: boolean;
     reason: string | null;
     message: string | null;
+    referral_credits?: number;
+    referral_generation_enabled?: boolean;
   };
-  referral_trial: {
-    granted: boolean;
-    ends_at: string | null;
-    required_referrals: number;
-    trial_days: number;
-    trial_plan: string;
-    invite_count?: number;
-    progress?: number;
-    eligible?: boolean;
-    remaining_invites?: number;
-  };
+  referral_credits?: number;
+  referral_generation_enabled?: boolean;
   welcome_offer?: {
     eligible: boolean;
     discount_pct: number;

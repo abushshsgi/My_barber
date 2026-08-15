@@ -33,6 +33,7 @@ function MorphLimitsPage() {
   const [analyzeLimit, setAnalyzeLimit] = useState("30");
   const [tryonOn, setTryonOn] = useState(true);
   const [analyzeOn, setAnalyzeOn] = useState(true);
+  const [refGenOn, setRefGenOn] = useState(true);
 
   useEffect(() => {
     if (!q.data) return;
@@ -40,6 +41,7 @@ function MorphLimitsPage() {
     setAnalyzeLimit(String(q.data.settings.daily_analyze_limit_per_user));
     setTryonOn(q.data.settings.tryon_enabled);
     setAnalyzeOn(q.data.settings.analyze_enabled);
+    setRefGenOn(q.data.settings.referral_generation_enabled !== false);
   }, [q.data]);
 
   const save = useMutation({
@@ -49,6 +51,7 @@ function MorphLimitsPage() {
         daily_analyze_limit_per_user: Number(analyzeLimit) || 0,
         tryon_enabled: tryonOn,
         analyze_enabled: analyzeOn,
+        referral_generation_enabled: refGenOn,
       }),
     onSuccess: () => {
       toast.success("Limitlar saqlandi");
@@ -93,6 +96,15 @@ function MorphLimitsPage() {
             <label className="flex items-center justify-between text-sm">
               Tahlil yoqilgan
               <Switch checked={analyzeOn} onCheckedChange={setAnalyzeOn} />
+            </label>
+            <label className="flex items-center justify-between gap-3 text-sm sm:col-span-2">
+              <span>
+                <span className="font-medium">1 referal = 1 generatsiya</span>
+                <span className="mt-0.5 block text-xs text-muted-foreground">
+                  O&apos;chirilsa kredit berilmaydi, ishlamaydi va user/mobile UI da ko&apos;rinmaydi.
+                </span>
+              </span>
+              <Switch checked={refGenOn} onCheckedChange={setRefGenOn} />
             </label>
             <div className="sm:col-span-2">
               <Button type="button" disabled={save.isPending} onClick={() => save.mutate()}>
