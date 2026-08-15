@@ -304,9 +304,8 @@ export function MorphChatScreen() {
   const openReferralFromSettings = useCallback(() => {
     setSettingsOpen(false);
     setPaywall(null);
-    navigation.getParent()?.navigate("Profile" as never, {
-      screen: "Referrals",
-    } as never);
+    // MorphChat — tab sibling; getParent() RootStack bo‘ladi (Profile yo‘q).
+    navigation.navigate("Profile" as never, { screen: "Referrals" } as never);
   }, [navigation]);
 
   const errorNotice = chat.error ? (
@@ -370,9 +369,7 @@ export function MorphChatScreen() {
         onNeedLogin={onNeedLogin}
         onOpenReferral={() => {
           closePaywall();
-          navigation.getParent()?.navigate("Profile" as never, {
-            screen: "Referrals",
-          } as never);
+          navigation.navigate("Profile" as never, { screen: "Referrals" } as never);
         }}
       />
     </Modal>

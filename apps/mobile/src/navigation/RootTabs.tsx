@@ -162,22 +162,19 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
     } as never);
   }, [isAuthenticated, navigation]);
 
-  // Saqlangan shell = morph bo‘lsa — Morph sahifaga o‘tkazish (Home + Morph nav bugini oldini olish).
+  // Saqlangan shell = morph bo‘lsa — jimda Morph tabga o‘tkazish (cold start’da overlay kerak emas).
   useEffect(() => {
     if (!ready || hydratedRef.current) return;
     hydratedRef.current = true;
 
     if (shell === "morph" && !isMorphTab(activeName) && activeName !== "Profile") {
       switchingRef.current = true;
-      beginSwitch("morph");
       setDisplayShell("morph");
       void (async () => {
         try {
           const target = await readLastMorphContentTab();
           navigateToShellTab(navigation, target);
-          await wait(SWITCH_MIN_MS);
         } finally {
-          endSwitch();
           switchingRef.current = false;
         }
       })();
@@ -185,7 +182,7 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
     }
 
     setDisplayShell(shell);
-  }, [ready, shell, activeName, navigation, beginSwitch, endSwitch]);
+  }, [ready, shell, activeName, navigation]);
 
   // Faol tab ↔ shell sinxroni: MySaloon sahifada faqat MySaloon nav.
   useEffect(() => {
