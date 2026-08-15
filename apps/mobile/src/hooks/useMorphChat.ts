@@ -4,11 +4,16 @@ import { useTranslation } from "react-i18next";
 import {
   formatMorphUserError,
   MorphPlanLimitError,
+  clearMorphChatThreads,
+  deleteMorphChatThread,
+  fetchMorphChatThreads,
   sendMorphChatMessage,
   streamMorphChatMessage,
+  syncMorphChatThread,
   type MorphChatContext,
   type MorphChatLimits,
   type MorphChatMessage,
+  type MorphChatThreadRemote,
 } from "../api/ai";
 import { createPacedWriter } from "../lib/chat-pace";
 import {
@@ -98,6 +103,56 @@ function sanitizeThread(thread: MorphChatThread): MorphChatThread | null {
   const messages = realMessages(thread.messages ?? []);
   if (!messages.length) return null;
   return { ...thread, messages };
+}
+
+function remoteToLocal(row: MorphChatThreadRemote): MorphChatThread | null {
+  const messages = (row.messages ?? [])
+    .filter((m) => m && (m.role === "user" || m.role === "assistant"))
+    .map((m) => ({
+      id: String(m.id || newId()),
+      role: m.role,
+      content: String(m.content || ""),
+    }));
+  if (!messages.length && !(row.preview || row.title)) return null;
+  return {
+    id: String(row.id),
+    title: (row.title || row.preview || "").trim() || "Suhbat",
+    updatedAt: row.updated_at || row.created_at || new Date().toISOString(),
+    messages: messages.length
+      ? messages
+      : row.preview
+        ? [{ id: newId(), role: "user", content: String(row.preview) }]
+        : [],
+  };
+}
+
+function mergeThreads(local: MorphChatThread[], remote: MorphChatThread[]): MorphChatThread[] {
+  const map = new Map<string, MorphChatThread>();
+  for (const th of local) {
+    const clean = sanitizeThread(th);
+    if (clean) map.set(clean.id, clean);
+  }
+  for (const th of remote) {
+    const clean = sanitizeThread(th);
+    if (!clean) continue;
+    const prev = map.get(clean.id);
+    if (!prev) {
+      map.set(clean.id, clean);
+      continue;
+    }
+    const prevTs = Date.parse(prev.updatedAt) || 0;
+    const nextTs = Date.parse(clean.updatedAt) || 0;
+    const preferRemote =
+      nextTs >= prevTs || clean.messages.length >= prev.messages.length;
+    map.set(clean.id, preferRemote ? clean : prev);
+  }
+  return [...map.values()]
+    .sort((a, b) => (Date.parse(b.updatedAt) || 0) - (Date.parse(a.updatedAt) || 0))
+    .slice(0, 40);
+}
+
+function shouldPersistToServer(prefs: MorphChatPrefs): boolean {
+  return Boolean(prefs.saveHistory) && !prefs.privacyLocalOnly;
 }
 
 export function useMorphChat() {
@@ -202,6 +257,9 @@ export function useMorphChat() {
     let cancelled = false;
     void (async () => {
       try {
+        const prefs = await readMorphChatPrefs();
+        if (!cancelled) prefsRef.current = prefs;
+
         const [seenRaw, threadsRaw, legacyRaw, oldSingle] = await Promise.all([
           AsyncStorage.getItem(WELCOME_KEY),
           AsyncStorage.getItem(THREADS_KEY),
@@ -246,9 +304,34 @@ export function useMorphChat() {
           }
         }
 
+        if (shouldPersistToServer(prefs)) {
+          try {
+            const remoteRows = await fetchMorphChatThreads({ messages: true });
+            const remoteLocal = remoteRows
+              .map(remoteToLocal)
+              .filter((th): th is MorphChatThread => Boolean(th));
+            parsedThreads = mergeThreads(parsedThreads, remoteLocal);
+
+            // Local-only threads (eski) — bir marta DB ga ko‘chirish
+            for (const th of parsedThreads) {
+              const onServer = remoteLocal.some((r) => r.id === th.id);
+              if (!onServer && th.messages.length) {
+                void syncMorphChatThread({
+                  id: th.id,
+                  title: th.title,
+                  messages: th.messages,
+                  updated_at: th.updatedAt,
+                }).catch(() => undefined);
+              }
+            }
+          } catch {
+            /* offline / auth — local qoladi */
+          }
+        }
+
         setThreads(parsedThreads);
         threadsRef.current = parsedThreads;
-        if (!threadsRaw && parsedThreads.length) {
+        if (prefs.saveHistory && parsedThreads.length) {
           await AsyncStorage.setItem(THREADS_KEY, JSON.stringify(parsedThreads.slice(0, 40)));
         }
         await AsyncStorage.removeItem(ACTIVE_KEY);
@@ -333,27 +416,24 @@ export function useMorphChat() {
             : {}),
         };
         const historyPayload = prefs.privacyLocalOnly ? [] : history.slice(-16);
+        const persist = shouldPersistToServer(prefs);
 
         let finalText = "";
         let resLimits: MorphChatLimits;
+        const sendPayload = {
+          message: trimmed,
+          history: historyPayload,
+          context: prefContext,
+          thread_id: threadId,
+          persist,
+        };
         if (prefs.streaming) {
-          const res = await streamMorphChatMessage(
-            {
-              message: trimmed,
-              history: historyPayload,
-              context: prefContext,
-            },
-            (chunk) => writer.append(chunk),
-          );
+          const res = await streamMorphChatMessage(sendPayload, (chunk) => writer.append(chunk));
           finalText = (await writer.finish()) || res.reply;
           resLimits = res.limits;
         } else {
           writer.cancel();
-          const res = await sendMorphChatMessage({
-            message: trimmed,
-            history: historyPayload,
-            context: prefContext,
-          });
+          const res = await sendMorphChatMessage(sendPayload);
           finalText = res.reply;
           resLimits = res.limits;
           if (activeThreadIdRef.current === threadId) {
@@ -491,6 +571,9 @@ export function useMorphChat() {
         setError(null);
         setInput("");
       }
+      if (shouldPersistToServer(prefsRef.current)) {
+        void deleteMorphChatThread(id).catch(() => undefined);
+      }
     },
     [persistThreads],
   );
@@ -518,6 +601,9 @@ export function useMorphChat() {
       LEGACY_THREADS_KEY,
       MESSAGES_KEY,
     ]);
+    if (shouldPersistToServer(prefsRef.current)) {
+      void clearMorphChatThreads().catch(() => undefined);
+    }
   }, []);
 
   const reloadPrefs = useCallback(async () => {

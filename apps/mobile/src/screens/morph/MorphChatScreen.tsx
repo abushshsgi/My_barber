@@ -271,22 +271,6 @@ export function MorphChatScreen() {
     navigation.navigate("MorphTryOn", { screen: "MorphHistory" } as never);
   }, [navigation]);
 
-  const openNewLook = useCallback(() => {
-    setMenuOpen(false);
-    navigation.navigate("MorphTryOn", { screen: "MorphCapture" } as never);
-  }, [navigation]);
-
-  const openLook = useCallback(
-    (id: number) => {
-      setMenuOpen(false);
-      navigation.navigate("MorphTryOn", {
-        screen: "MorphHistory",
-        params: { generationId: id },
-      } as never);
-    },
-    [navigation],
-  );
-
   const openProfile = useCallback(() => {
     setMenuOpen(false);
     navigation.navigate("Profile");
@@ -344,9 +328,7 @@ export function MorphChatScreen() {
       searchLabel={t("chat.menu.search")}
       searchPlaceholder={t("chat.menu.searchPlaceholder")}
       libraryLabel={t("chat.menu.library")}
-      looksLabel={t("chat.menu.looks")}
-      newLookLabel={t("chat.menu.newLook")}
-      allLooksLabel={t("chat.menu.allLooks")}
+      historyLabel={t("chat.menu.history")}
       emptyLabel={t("chat.history.empty")}
       settingsA11y={t("chat.menu.settingsA11y")}
       profileName={name}
@@ -366,9 +348,6 @@ export function MorphChatScreen() {
         setChatOpen(true);
       }}
       onLibrary={openLooks}
-      onNewLook={openNewLook}
-      onAllLooks={openLooks}
-      onLook={openLook}
       onProfile={openProfile}
       onSettings={openSettings}
     />

@@ -485,11 +485,31 @@ export type MorphChatLimits = {
   daily_remaining: number | null;
 };
 
-export async function sendMorphChatMessage(payload: {
+export type MorphChatThreadRemote = {
+  id: string;
+  db_id?: number;
+  title: string;
+  preview?: string;
+  context?: MorphChatContext | Record<string, unknown>;
+  message_count?: number;
+  total_tokens?: number;
+  total_cost_usd?: string;
+  created_at?: string | null;
+  updated_at?: string | null;
+  messages?: MorphChatMessage[];
+};
+
+export type MorphChatSendPayload = {
   message: string;
   history?: Array<{ role: "user" | "assistant"; content: string }>;
   context?: MorphChatContext;
-}): Promise<{ reply: string; limits: MorphChatLimits }> {
+  thread_id?: string;
+  persist?: boolean;
+};
+
+export async function sendMorphChatMessage(
+  payload: MorphChatSendPayload,
+): Promise<{ reply: string; limits: MorphChatLimits }> {
   const res = await apiFetch("/api/v1/ai/chat/", {
     method: "POST",
     body: JSON.stringify(payload),
@@ -547,11 +567,7 @@ function parseSseBuffer(buffer: string): { events: StreamEvent[]; rest: string }
 }
 
 export async function streamMorphChatMessage(
-  payload: {
-    message: string;
-    history?: Array<{ role: "user" | "assistant"; content: string }>;
-    context?: MorphChatContext;
-  },
+  payload: MorphChatSendPayload,
   onDelta: (chunk: string) => void,
 ): Promise<{ reply: string; limits: MorphChatLimits }> {
   const res = await apiFetch("/api/v1/ai/chat/", {
@@ -627,4 +643,38 @@ export async function streamMorphChatMessage(
     throw new Error("Chat javobi noto'g'ri");
   }
   return { reply, limits };
+}
+
+export async function fetchMorphChatThreads(options?: {
+  messages?: boolean;
+}): Promise<MorphChatThreadRemote[]> {
+  const q = options?.messages ? "?messages=1" : "";
+  return apiJson(`/api/v1/ai/chat/threads/${q}`);
+}
+
+export async function fetchMorphChatThread(clientId: string): Promise<MorphChatThreadRemote> {
+  return apiJson(`/api/v1/ai/chat/threads/${encodeURIComponent(clientId)}/`);
+}
+
+export async function syncMorphChatThread(payload: {
+  id: string;
+  title?: string;
+  messages?: MorphChatMessage[];
+  context?: MorphChatContext | Record<string, unknown>;
+  updated_at?: string;
+}): Promise<MorphChatThreadRemote> {
+  return apiJson("/api/v1/ai/chat/threads/", {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function deleteMorphChatThread(clientId: string): Promise<void> {
+  await apiFetch(`/api/v1/ai/chat/threads/${encodeURIComponent(clientId)}/`, {
+    method: "DELETE",
+  });
+}
+
+export async function clearMorphChatThreads(): Promise<void> {
+  await apiFetch("/api/v1/ai/chat/threads/", { method: "DELETE" });
 }
