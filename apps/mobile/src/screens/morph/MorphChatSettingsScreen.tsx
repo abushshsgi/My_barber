@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { StatusBar } from "expo-status-bar";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -14,7 +15,8 @@ import {
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { MorphChatLimits } from "../../api/ai";
-import { NativeHeader } from "../../components/ui/NativeHeader";
+import { displayName, initials } from "../../api/user";
+import { useAuth } from "../../auth/AuthContext";
 import type { MorphChatThread } from "../../hooks/useMorphChat";
 import {
   DEFAULT_MORPH_CHAT_PREFS,
@@ -27,7 +29,6 @@ import {
   type MorphChatReplyLang,
   type MorphChatReplyStyle,
 } from "../../lib/morph-chat-prefs";
-import { colors } from "../../theme/colors";
 
 type Props = {
   limits: MorphChatLimits | null;
@@ -43,6 +44,14 @@ type Props = {
 type Page = "hub" | "reply" | "chatbot" | "plan";
 
 type ChipOption<T extends string> = { value: T; label: string };
+
+const BG = "#000000";
+const CARD = "#1C1C1E";
+const LINE = "rgba(84, 84, 88, 0.65)";
+const MUTED = "#8E8E93";
+const ACCENT_BLUE = "#0A84FF";
+const AVATAR_TEAL = "#2A9B8F";
+const DESTRUCTIVE = "#FF453A";
 
 function ChipRow<T extends string>({
   options,
@@ -77,40 +86,74 @@ function ChipRow<T extends string>({
   );
 }
 
-function HubTile({
+function SettingsSection({
+  title,
+  children,
+}: {
+  title?: string;
+  children: ReactNode;
+}) {
+  return (
+    <View style={styles.section}>
+      {title ? <Text style={styles.sectionTitle}>{title}</Text> : null}
+      <View style={styles.card}>{children}</View>
+    </View>
+  );
+}
+
+function SettingsItem({
   icon,
   title,
   subtitle,
+  trailing,
+  value,
   onPress,
-  accent,
+  last,
+  titleColor,
+  iconColor,
+  showChevron = true,
 }: {
   icon: keyof typeof Ionicons.glyphMap;
   title: string;
-  subtitle: string;
-  onPress: () => void;
-  accent?: string;
+  subtitle?: string;
+  trailing?: ReactNode;
+  value?: string;
+  onPress?: () => void;
+  last?: boolean;
+  titleColor?: string;
+  iconColor?: string;
+  showChevron?: boolean;
 }) {
+  const body = (
+    <View style={styles.item}>
+      <Ionicons name={icon} size={22} color={iconColor ?? "#FFFFFF"} style={styles.itemIcon} />
+      <View style={[styles.itemMain, !last && styles.itemBorder]}>
+        <View style={styles.itemCopy}>
+          <Text style={[styles.itemTitle, titleColor ? { color: titleColor } : null]}>{title}</Text>
+          {subtitle ? <Text style={styles.itemSubtitle}>{subtitle}</Text> : null}
+        </View>
+        {value ? <Text style={styles.itemValue}>{value}</Text> : null}
+        {trailing}
+        {onPress && showChevron ? (
+          <Ionicons name="chevron-forward" size={18} color={MUTED} />
+        ) : null}
+      </View>
+    </View>
+  );
+
+  if (!onPress) return body;
   return (
     <Pressable
       onPress={onPress}
-      style={({ pressed }) => [styles.tile, pressed && styles.pressed]}
+      style={({ pressed }) => pressed && styles.pressed}
       accessibilityRole="button"
     >
-      <View style={[styles.tileIcon, accent ? { backgroundColor: accent } : null]}>
-        <Ionicons name={icon} size={20} color={accent ? "#111" : "#FFFFFF"} />
-      </View>
-      <View style={styles.tileCopy}>
-        <Text style={styles.tileTitle}>{title}</Text>
-        <Text style={styles.tileSub} numberOfLines={2}>
-          {subtitle}
-        </Text>
-      </View>
-      <Ionicons name="chevron-forward" size={18} color="#A1A1AA" />
+      {body}
     </Pressable>
   );
 }
 
-function ToggleRow({
+function PrefToggle({
   title,
   subtitle,
   value,
@@ -124,17 +167,20 @@ function ToggleRow({
   last?: boolean;
 }) {
   return (
-    <View style={[styles.toggleRow, !last && styles.toggleBorder]}>
-      <View style={styles.toggleCopy}>
-        <Text style={styles.toggleTitle}>{title}</Text>
-        <Text style={styles.toggleSub}>{subtitle}</Text>
+    <View style={styles.toggleRow}>
+      <View style={[styles.toggleMain, !last && styles.itemBorder]}>
+        <View style={styles.itemCopy}>
+          <Text style={styles.itemTitle}>{title}</Text>
+          <Text style={styles.itemSubtitle}>{subtitle}</Text>
+        </View>
+        <Switch
+          value={value}
+          onValueChange={onChange}
+          trackColor={{ false: "#3A3A3C", true: ACCENT_BLUE }}
+          thumbColor="#FFFFFF"
+          ios_backgroundColor="#3A3A3C"
+        />
       </View>
-      <Switch
-        value={value}
-        onValueChange={onChange}
-        trackColor={{ false: "#E4E4E7", true: "#111111" }}
-        thumbColor="#FFFFFF"
-      />
     </View>
   );
 }
@@ -143,21 +189,37 @@ function FieldBlock({
   title,
   subtitle,
   children,
+  last,
 }: {
   title: string;
   subtitle?: string;
   children: ReactNode;
+  last?: boolean;
 }) {
   return (
-    <View style={styles.fieldBlock}>
-      <Text style={styles.fieldTitle}>{title}</Text>
-      {subtitle ? <Text style={styles.fieldSub}>{subtitle}</Text> : null}
+    <View style={[styles.fieldBlock, !last && styles.fieldBorder]}>
+      <Text style={styles.itemTitle}>{title}</Text>
+      {subtitle ? <Text style={styles.itemSubtitle}>{subtitle}</Text> : null}
       {children}
     </View>
   );
 }
 
-/** Morf AI chatbot sozlamalari — hub + ichki sahifalar. */
+function CloseButton({ onPress, label }: { onPress: () => void; label: string }) {
+  return (
+    <Pressable
+      onPress={onPress}
+      hitSlop={10}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      style={({ pressed }) => [styles.closeBtn, pressed && styles.pressed]}
+    >
+      <Ionicons name="close" size={20} color="#FFFFFF" />
+    </Pressable>
+  );
+}
+
+/** Morf AI chatbot sozlamalari — ChatGPT uslubidagi dark hub + ichki sahifalar. */
 export function MorphChatSettingsScreen({
   limits,
   threadCount,
@@ -170,9 +232,14 @@ export function MorphChatSettingsScreen({
 }: Props) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
+  const { user } = useAuth();
   const [page, setPage] = useState<Page>("hub");
   const [prefs, setPrefs] = useState<MorphChatPrefs | null>(null);
   const [snap, setSnap] = useState<MorphChatLimits | null>(limits);
+
+  const name = useMemo(() => displayName(user), [user]);
+  const letters = useMemo(() => initials(name), [name]);
+  const email = user?.display_email || user?.email || "";
 
   useEffect(() => {
     let cancelled = false;
@@ -288,83 +355,179 @@ export function MorphChatSettingsScreen({
   };
 
   return (
-    <View style={[styles.root, { paddingBottom: Math.max(insets.bottom, 12) }]}>
-      <NativeHeader title={pageTitle} onBack={onBack} />
+    <View style={[styles.root, { paddingTop: Math.max(insets.top, 8) }]}>
+      <StatusBar style="light" />
+
+      {page === "hub" ? (
+        <View style={styles.hubTop}>
+          <View style={styles.hubTopSpacer} />
+          <CloseButton onPress={onClose} label={t("chat.errorDismissA11y")} />
+        </View>
+      ) : (
+        <View style={styles.subTop}>
+          <Pressable
+            onPress={onBack}
+            hitSlop={10}
+            accessibilityRole="button"
+            accessibilityLabel={t("common.back")}
+            style={({ pressed }) => [styles.backBtn, pressed && styles.pressed]}
+          >
+            <Ionicons name="chevron-back" size={22} color="#FFFFFF" />
+          </Pressable>
+          <Text style={styles.subTitle} numberOfLines={1}>
+            {pageTitle}
+          </Text>
+          <CloseButton onPress={onClose} label={t("chat.errorDismissA11y")} />
+        </View>
+      )}
+
       <ScrollView
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[
+          styles.content,
+          { paddingBottom: Math.max(insets.bottom, 28) },
+        ]}
         showsVerticalScrollIndicator={false}
       >
         {page === "hub" ? (
           <>
-            <View style={styles.usageHero}>
-              <View style={styles.usageRing}>
-                <Text style={styles.usagePct}>{usagePct}%</Text>
+            <View style={styles.profileBlock}>
+              <View style={styles.avatarWrap}>
+                <View style={styles.avatar}>
+                  <Text style={styles.avatarText}>{letters}</Text>
+                </View>
+                <View style={styles.editBadge} accessibilityElementsHidden>
+                  <Ionicons name="pencil" size={12} color="#FFFFFF" />
+                </View>
               </View>
-              <View style={styles.usageCopy}>
-                <Text style={styles.usageKicker}>{t("chat.settings.limitTitle")}</Text>
-                <Text style={styles.usageMain}>
-                  {t("chat.settings.limitValue", { used: usedLabel, limit })}
-                </Text>
-                <Text style={styles.usageHint}>
-                  {t("chat.settings.limitHint", { remaining: remainingLabel })}
-                </Text>
-              </View>
-            </View>
-            <View style={styles.usageBar}>
-              <View style={[styles.usageFill, { width: `${usagePct}%` }]} />
+              <Text style={styles.profileName}>{name}</Text>
             </View>
 
             {!prefs ? (
-              <ActivityIndicator color={colors.fg} style={{ marginTop: 28 }} />
+              <ActivityIndicator color="#FFFFFF" style={{ marginTop: 28 }} />
             ) : (
-              <View style={styles.tileGrid}>
-                <HubTile
-                  icon="chatbubbles-outline"
-                  title={t("chat.settings.replyGroup")}
-                  subtitle={t("chat.settings.replyLangHint")}
-                  onPress={() => setPage("reply")}
-                  accent="#E8F0FF"
-                />
-                <HubTile
-                  icon="sparkles-outline"
-                  title={t("chat.settings.aiGroup")}
-                  subtitle={t("chat.settings.streamingHint")}
-                  onPress={() => setPage("chatbot")}
-                  accent="#FFF1E8"
-                />
-                <HubTile
-                  icon="diamond-outline"
-                  title={t("chat.settings.planGroup")}
-                  subtitle={t("chat.settings.subscriptionHint")}
-                  onPress={() => setPage("plan")}
-                  accent="#F3E8FF"
-                />
-              </View>
-            )}
+              <>
+                <SettingsSection title={t("chat.settings.configureGroup")}>
+                  <SettingsItem
+                    icon="happy-outline"
+                    title={t("chat.settings.personalization")}
+                    onPress={() => setPage("reply")}
+                  />
+                  <SettingsItem
+                    icon="book-outline"
+                    title={t("chat.settings.memory")}
+                    onPress={() => setPage("chatbot")}
+                  />
+                  <SettingsItem
+                    icon="git-network-outline"
+                    title={t("chat.settings.plugins")}
+                    onPress={() => setPage("plan")}
+                    last
+                  />
+                </SettingsSection>
 
-            <View style={styles.footActions}>
-              <Pressable
-                onPress={() => void exportChats()}
-                style={({ pressed }) => [styles.ghostBtn, pressed && styles.pressed]}
-              >
-                <Ionicons name="share-outline" size={16} color="#52525B" />
-                <Text style={styles.ghostText}>
-                  {t("chat.settings.exportChats")}
-                  {threadCount > 0 ? ` · ${threadCount}` : ""}
-                </Text>
-              </Pressable>
-              <Pressable
-                onPress={confirmClear}
-                style={({ pressed }) => [styles.clearLink, pressed && styles.pressed]}
-              >
-                <Text style={styles.clearText}>{t("chat.settings.clearChats")}</Text>
-              </Pressable>
-            </View>
+                <SettingsSection title={t("chat.settings.accountGroup")}>
+                  <SettingsItem
+                    icon="mail-outline"
+                    title={t("chat.settings.email")}
+                    subtitle={email || t("chat.settings.emailEmpty")}
+                    onPress={() => setPage("plan")}
+                  />
+                  <SettingsItem
+                    icon="add-circle-outline"
+                    title={t("chat.settings.subscription")}
+                    value={t("chat.settings.planFree")}
+                    onPress={onOpenSubscription}
+                    showChevron={false}
+                  />
+                  <SettingsItem
+                    icon="speedometer-outline"
+                    title={t("chat.settings.limitTitle")}
+                    subtitle={t("chat.settings.limitValue", { used: usedLabel, limit })}
+                    value={`${usagePct}%`}
+                    onPress={() => setPage("plan")}
+                  />
+                  <SettingsItem
+                    icon="sparkles"
+                    title={t("chat.settings.upgradePlan")}
+                    onPress={onOpenSubscription}
+                    titleColor={ACCENT_BLUE}
+                    iconColor={ACCENT_BLUE}
+                    last={!onOpenReferral}
+                  />
+                  {onOpenReferral ? (
+                    <SettingsItem
+                      icon="people-outline"
+                      title={t("chat.settings.referral")}
+                      subtitle={t("chat.settings.referralHint")}
+                      onPress={onOpenReferral}
+                      last
+                    />
+                  ) : null}
+                </SettingsSection>
+
+                <SettingsSection title={t("chat.settings.appSettingsGroup")}>
+                  <SettingsItem
+                    icon="notifications-outline"
+                    title={t("chat.settings.limitNotify")}
+                    onPress={() => setPage("chatbot")}
+                  />
+                  <SettingsItem
+                    icon="pulse-outline"
+                    title={t("chat.settings.voiceInput")}
+                    onPress={() => setPage("chatbot")}
+                  />
+                  <SettingsItem
+                    icon="shield-outline"
+                    title={t("chat.settings.privacyLocal")}
+                    onPress={() => setPage("chatbot")}
+                  />
+                  <SettingsItem
+                    icon="folder-outline"
+                    title={t("chat.settings.dataGroup")}
+                    subtitle={t("chat.settings.limitHint", { remaining: remainingLabel })}
+                    onPress={() => void exportChats()}
+                    last
+                  />
+                </SettingsSection>
+
+                <SettingsSection title={t("chat.settings.helpGroup")}>
+                  <SettingsItem
+                    icon="flag-outline"
+                    title={t("chat.settings.reportProblem")}
+                    onPress={() =>
+                      Alert.alert(t("chat.settings.reportProblem"), t("chat.settings.helpSoon"))
+                    }
+                  />
+                  <SettingsItem
+                    icon="help-circle-outline"
+                    title={t("chat.settings.helpCenter")}
+                    onPress={() =>
+                      Alert.alert(t("chat.settings.helpCenter"), t("chat.settings.helpSoon"))
+                    }
+                    last
+                  />
+                </SettingsSection>
+
+                <View style={styles.card}>
+                  <Pressable
+                    onPress={confirmClear}
+                    style={({ pressed }) => [styles.destructiveRow, pressed && styles.pressed]}
+                    accessibilityRole="button"
+                  >
+                    <Ionicons name="trash-outline" size={22} color={DESTRUCTIVE} />
+                    <Text style={styles.destructiveText}>
+                      {t("chat.settings.clearChats")}
+                      {threadCount > 0 ? ` · ${threadCount}` : ""}
+                    </Text>
+                  </Pressable>
+                </View>
+              </>
+            )}
           </>
         ) : null}
 
         {page === "reply" && prefs ? (
-          <View style={styles.panel}>
+          <SettingsSection>
             <FieldBlock
               title={t("chat.settings.replyLang")}
               subtitle={t("chat.settings.replyLangHint")}
@@ -388,6 +551,7 @@ export function MorphChatSettingsScreen({
             <FieldBlock
               title={t("chat.settings.adviceGender")}
               subtitle={t("chat.settings.adviceGenderHint")}
+              last
             >
               <ChipRow
                 options={genderOptions}
@@ -395,82 +559,70 @@ export function MorphChatSettingsScreen({
                 onChange={(v) => void patchPrefs({ adviceGender: v })}
               />
             </FieldBlock>
-          </View>
+          </SettingsSection>
         ) : null}
 
         {page === "chatbot" && prefs ? (
-          <View style={styles.panel}>
-            <ToggleRow
+          <SettingsSection>
+            <PrefToggle
               title={t("chat.settings.streaming")}
               subtitle={t("chat.settings.streamingHint")}
               value={prefs.streaming}
               onChange={(v) => void patchPrefs({ streaming: v })}
             />
-            <ToggleRow
+            <PrefToggle
               title={t("chat.settings.voiceInput")}
               subtitle={t("chat.settings.voiceInputHint")}
               value={prefs.voiceInput}
               onChange={(v) => void patchPrefs({ voiceInput: v })}
             />
-            <ToggleRow
+            <PrefToggle
               title={t("chat.settings.limitNotify")}
               subtitle={t("chat.settings.limitNotifyHint")}
               value={prefs.limitNotify}
               onChange={(v) => void patchPrefs({ limitNotify: v })}
             />
-            <ToggleRow
+            <PrefToggle
               title={t("chat.settings.useContext")}
               subtitle={t("chat.settings.useContextHint")}
               value={prefs.useTryOnContext}
               onChange={(v) => void patchPrefs({ useTryOnContext: v })}
             />
-            <ToggleRow
+            <PrefToggle
               title={t("chat.settings.saveHistory")}
               subtitle={t("chat.settings.saveHistoryHint")}
               value={prefs.saveHistory}
               onChange={(v) => void patchPrefs({ saveHistory: v })}
             />
-            <ToggleRow
+            <PrefToggle
               title={t("chat.settings.privacyLocal")}
               subtitle={t("chat.settings.privacyLocalHint")}
               value={prefs.privacyLocalOnly}
               onChange={(v) => void patchPrefs({ privacyLocalOnly: v })}
               last
             />
-          </View>
+          </SettingsSection>
         ) : null}
 
         {page === "plan" ? (
-          <View style={styles.panel}>
-            <Pressable
+          <SettingsSection>
+            <SettingsItem
+              icon="diamond-outline"
+              title={t("chat.settings.subscription")}
+              subtitle={t("chat.settings.subscriptionHint")}
               onPress={onOpenSubscription}
-              style={({ pressed }) => [styles.planCard, pressed && styles.pressed]}
-            >
-              <View style={[styles.tileIcon, { backgroundColor: "#111111" }]}>
-                <Ionicons name="diamond-outline" size={20} color="#FFFFFF" />
-              </View>
-              <View style={styles.tileCopy}>
-                <Text style={styles.tileTitle}>{t("chat.settings.subscription")}</Text>
-                <Text style={styles.tileSub}>{t("chat.settings.subscriptionHint")}</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={18} color="#A1A1AA" />
-            </Pressable>
+              last={!onOpenReferral}
+            />
             {onOpenReferral ? (
-              <Pressable
+              <SettingsItem
+                icon="people-outline"
+                title={t("chat.settings.referral")}
+                subtitle={t("chat.settings.referralHint")}
                 onPress={onOpenReferral}
-                style={({ pressed }) => [styles.planCard, pressed && styles.pressed]}
-              >
-                <View style={[styles.tileIcon, { backgroundColor: "#FFF1E8" }]}>
-                  <Ionicons name="people-outline" size={20} color="#111111" />
-                </View>
-                <View style={styles.tileCopy}>
-                  <Text style={styles.tileTitle}>{t("chat.settings.referral")}</Text>
-                  <Text style={styles.tileSub}>{t("chat.settings.referralHint")}</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={18} color="#A1A1AA" />
-              </Pressable>
+                last
+              />
             ) : null}
-          </View>
+          </SettingsSection>
         ) : null}
       </ScrollView>
     </View>
@@ -478,102 +630,215 @@ export function MorphChatSettingsScreen({
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.bg },
-  content: { padding: 16, paddingBottom: 36, gap: 12 },
-  usageHero: { flexDirection: "row", alignItems: "center", gap: 14, marginBottom: 4 },
-  usageRing: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    borderWidth: 3,
-    borderColor: "#111111",
+  root: {
+    flex: 1,
+    backgroundColor: BG,
+  },
+  hubTop: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-end",
+    paddingHorizontal: 16,
+    paddingBottom: 4,
+    minHeight: 44,
+  },
+  hubTopSpacer: { flex: 1 },
+  subTop: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingBottom: 8,
+    minHeight: 44,
+  },
+  subTitle: {
+    flex: 1,
+    textAlign: "center",
+    fontSize: 17,
+    fontWeight: "600",
+    color: "#FFFFFF",
+  },
+  closeBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#2C2C2E",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#FAFAFA",
   },
-  usagePct: { fontSize: 16, fontWeight: "800", color: "#111111" },
-  usageCopy: { flex: 1, minWidth: 0, gap: 2 },
-  usageKicker: { fontSize: 12, fontWeight: "600", color: "#71717A" },
-  usageMain: { fontSize: 18, fontWeight: "700", color: "#111111", letterSpacing: -0.3 },
-  usageHint: { fontSize: 13, color: "#52525B" },
-  usageBar: {
-    height: 6,
-    borderRadius: 999,
-    backgroundColor: "#E4E4E7",
-    overflow: "hidden",
+  backBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  content: {
+    paddingHorizontal: 16,
+    paddingTop: 4,
+    gap: 0,
+  },
+  profileBlock: {
+    alignItems: "center",
+    paddingTop: 8,
+    paddingBottom: 28,
+  },
+  avatarWrap: {
+    width: 88,
+    height: 88,
+    marginBottom: 14,
+  },
+  avatar: {
+    width: 88,
+    height: 88,
+    borderRadius: 44,
+    backgroundColor: AVATAR_TEAL,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  avatarText: {
+    fontSize: 32,
+    fontWeight: "700",
+    color: "#FFFFFF",
+    letterSpacing: 0.5,
+  },
+  editBadge: {
+    position: "absolute",
+    right: 0,
+    bottom: 0,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: "#2C2C2E",
+    borderWidth: 2,
+    borderColor: BG,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  profileName: {
+    fontSize: 22,
+    fontWeight: "700",
+    color: "#FFFFFF",
+    letterSpacing: -0.3,
+    textAlign: "center",
+  },
+  section: {
+    marginBottom: 28,
+  },
+  sectionTitle: {
     marginBottom: 8,
+    marginLeft: 12,
+    fontSize: 13,
+    fontWeight: "400",
+    color: MUTED,
   },
-  usageFill: { height: "100%", backgroundColor: "#111111", borderRadius: 999 },
-  tileGrid: { gap: 10, marginTop: 8 },
-  tile: {
+  card: {
+    backgroundColor: CARD,
+    borderRadius: 16,
+    overflow: "hidden",
+  },
+  item: {
+    flexDirection: "row",
+    alignItems: "stretch",
+    paddingLeft: 14,
+    minHeight: 52,
+  },
+  itemMain: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 13,
+    paddingRight: 14,
+    gap: 6,
+  },
+  itemBorder: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: LINE,
+  },
+  itemIcon: {
+    width: 28,
+    marginTop: 15,
+    textAlign: "center",
+  },
+  itemCopy: {
+    flex: 1,
+    minWidth: 0,
+    paddingRight: 8,
+  },
+  itemTitle: {
+    fontSize: 17,
+    fontWeight: "400",
+    color: "#FFFFFF",
+    letterSpacing: -0.2,
+  },
+  itemSubtitle: {
+    marginTop: 2,
+    fontSize: 13,
+    color: MUTED,
+    lineHeight: 17,
+  },
+  itemValue: {
+    fontSize: 16,
+    color: MUTED,
+    marginRight: 2,
+  },
+  toggleRow: {
+    paddingLeft: 16,
+  },
+  toggleMain: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 12,
+    paddingRight: 14,
+    gap: 10,
+    minHeight: 64,
+  },
+  destructiveRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    padding: 14,
-    borderRadius: 18,
-    backgroundColor: "#F4F4F5",
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    minHeight: 52,
   },
-  tileIcon: {
-    width: 42,
-    height: 42,
-    borderRadius: 14,
-    backgroundColor: "#111111",
-    alignItems: "center",
-    justifyContent: "center",
+  destructiveText: {
+    fontSize: 17,
+    fontWeight: "400",
+    color: DESTRUCTIVE,
   },
-  tileCopy: { flex: 1, minWidth: 0, gap: 2 },
-  tileTitle: { fontSize: 16, fontWeight: "700", color: "#111111" },
-  tileSub: { fontSize: 12, lineHeight: 16, color: "#71717A" },
-  footActions: { marginTop: 18, alignItems: "center", gap: 12 },
-  ghostBtn: {
+  fieldBlock: {
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    gap: 10,
+  },
+  fieldBorder: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: LINE,
+  },
+  chipRow: {
     flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 999,
-    backgroundColor: "#F4F4F5",
+    flexWrap: "wrap",
+    gap: 8,
+    marginTop: 4,
   },
-  ghostText: { fontSize: 13, fontWeight: "600", color: "#52525B" },
-  clearLink: { paddingVertical: 4 },
-  clearText: { fontSize: 12, fontWeight: "600", color: "#A1A1AA", textDecorationLine: "underline" },
-  panel: {
-    borderRadius: 18,
-    backgroundColor: "#F4F4F5",
-    overflow: "hidden",
-    gap: 0,
-  },
-  fieldBlock: { padding: 14, gap: 10, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "#E4E4E7" },
-  fieldTitle: { fontSize: 15, fontWeight: "700", color: "#111111" },
-  fieldSub: { fontSize: 12, color: "#71717A", marginTop: -4 },
-  chipRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   chip: {
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 10,
+    backgroundColor: "#2C2C2E",
+  },
+  chipActive: {
     backgroundColor: "#FFFFFF",
   },
-  chipActive: { backgroundColor: "#111111" },
-  chipText: { fontSize: 13, fontWeight: "600", color: "#3F3F46" },
-  chipTextActive: { color: "#FFFFFF" },
-  toggleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 14,
+  chipText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#EBEBF5",
   },
-  toggleBorder: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "#E4E4E7" },
-  toggleCopy: { flex: 1, minWidth: 0, gap: 2 },
-  toggleTitle: { fontSize: 15, fontWeight: "600", color: "#111111" },
-  toggleSub: { fontSize: 12, lineHeight: 16, color: "#71717A" },
-  planCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    padding: 14,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#E4E4E7",
+  chipTextActive: {
+    color: "#000000",
   },
-  pressed: { opacity: 0.82 },
+  pressed: {
+    opacity: 0.72,
+  },
 });
