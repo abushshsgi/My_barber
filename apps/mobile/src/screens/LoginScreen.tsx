@@ -24,6 +24,7 @@ import { morfWordmarkWhite } from "../branding/morf-logo";
 import { BrandLogo } from "../components/BrandLogo";
 import { GoogleGlyph } from "../components/GoogleGlyph";
 import { useAppShell } from "../lib/AppShellContext";
+import { setPendingReferralCode } from "../lib/referral-storage";
 import { colors } from "../theme/colors";
 
 type Step = "choose" | "phone" | "password" | "code";
@@ -38,6 +39,7 @@ export function LoginScreen() {
   const [step, setStep] = useState<Step>("choose");
   const [phone, setPhone] = useState("");
   const [code, setCode] = useState("");
+  const [referralCode, setReferralCode] = useState("");
   const [password, setPassword] = useState("");
   const [hasPassword, setHasPassword] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -59,6 +61,7 @@ export function LoginScreen() {
   const onGoogle = async () => {
     setError(null);
     google.clearError();
+    await setPendingReferralCode(referralCode);
     await google.promptGoogle();
   };
 
@@ -97,7 +100,7 @@ export function LoginScreen() {
     setBusy(true);
     setError(null);
     try {
-      await auth.signInWithPhoneCode(nine, code.trim());
+      await auth.signInWithPhoneCode(nine, code.trim(), referralCode.trim() || undefined);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Kod noto'g'ri");
     } finally {
@@ -168,6 +171,17 @@ export function LoginScreen() {
               <Text style={subStyle}>
                 Bitta akkaunt — MySaloon va Morf AI uchun
               </Text>
+              <Text style={[styles.refLabel, morph && styles.subMorph]}>Taklif kodi (ixtiyoriy)</Text>
+              <TextInput
+                value={referralCode}
+                onChangeText={(v) => setReferralCode(v.toUpperCase())}
+                autoCapitalize="characters"
+                autoCorrect={false}
+                placeholder="ABCD1234"
+                placeholderTextColor={morph ? "rgba(255,255,255,0.35)" : colors.muted}
+                style={[styles.field, morph && styles.fieldMorph]}
+                maxLength={8}
+              />
             </>
           ) : null}
 
@@ -450,6 +464,14 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: "600",
     color: colors.fg,
+  },
+  refLabel: {
+    alignSelf: "stretch",
+    marginTop: 16,
+    marginBottom: -12,
+    fontSize: 12,
+    fontWeight: "600",
+    color: colors.muted,
   },
   codeField: {
     textAlign: "center",

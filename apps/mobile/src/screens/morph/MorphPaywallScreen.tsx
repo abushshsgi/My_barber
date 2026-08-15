@@ -64,6 +64,7 @@ export function MorphPaywallScreen({ navigation, route }: Props) {
       onClose={() => leaveTo(nav, returnTo)}
       onSuccess={() => leaveTo(nav, returnTo)}
       onNeedLogin={onNeedLogin}
+      onOpenReferral={() => nav.navigate("Referrals")}
     />
   );
 }

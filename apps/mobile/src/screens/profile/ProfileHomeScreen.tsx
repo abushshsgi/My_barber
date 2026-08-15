@@ -117,6 +117,7 @@ function MysaloonProfileHome({ navigation }: Props) {
                 if (item.key === "Orders") navigation.navigate("Orders");
                 else if (item.key === "Settings") navigation.navigate("Settings");
                 else if (item.key === "Addresses") navigation.navigate("Settings");
+                else if (item.key === "Referrals") navigation.navigate("Referrals");
               }}
             >
               <View style={styles.quickIcon}>

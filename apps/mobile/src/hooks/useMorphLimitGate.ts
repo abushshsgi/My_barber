@@ -9,8 +9,8 @@ export type MorphGateResult = { ok: true } | { ok: false; reason: MorphGateReaso
 type GateKind = "access" | "tryon" | "studio";
 
 /**
- * Morph AI limit gate — web `useMorphLimitGate` bilan mos.
- * analyze/face_check usage oshirmaydi; tryon/studio oshiradi (serverda).
+ * Morph AI limit gate.
+ * analyze — ochiq; tryon — obuna kvotasi yoki referal krediti.
  */
 export function useMorphLimitGate() {
   const { isAuthenticated } = useAuth();
@@ -31,25 +31,43 @@ export function useMorphLimitGate() {
         /* keep me */
       }
 
-      if (!latest?.has_active || latest.access?.morph_ai_allowed === false) {
-        return { ok: false, reason: "subscription" };
+      const credits =
+        latest?.referral_credits ??
+        latest?.access?.referral_credits ??
+        latest?.usage?.referral_credits ??
+        0;
+
+      if (kind === "access") {
+        // Selfie/tahlil — obunasiz ham ochiq
+        return { ok: true };
       }
 
-      const usage = latest.usage;
-      if (kind === "tryon" || kind === "access") {
-        if ((usage?.morph_ai_remaining ?? 0) <= 0 && (usage?.morph_ai_limit ?? 0) > 0) {
-          return { ok: false, reason: "limit" };
-        }
-      }
       if (kind === "studio") {
-        if ((usage?.morph_studio_limit ?? 0) <= 0) {
+        if (!latest?.has_active || latest.access?.morph_ai_allowed === false) {
+          return { ok: false, reason: "subscription" };
+        }
+        if ((latest.usage?.morph_studio_limit ?? 0) <= 0) {
           return { ok: false, reason: "studio" };
         }
-        if ((usage?.morph_studio_remaining ?? 0) <= 0) {
+        if ((latest.usage?.morph_studio_remaining ?? 0) <= 0) {
           return { ok: false, reason: "limit" };
         }
+        return { ok: true };
       }
-      return { ok: true };
+
+      // tryon
+      if (latest?.has_active) {
+        if ((latest.usage?.morph_ai_remaining ?? 0) <= 0 && (latest.usage?.morph_ai_limit ?? 0) > 0) {
+          if (credits > 0) return { ok: true };
+          return { ok: false, reason: "limit" };
+        }
+        return { ok: true };
+      }
+
+      if (credits > 0 || latest?.access?.morph_ai_allowed) {
+        return { ok: true };
+      }
+      return { ok: false, reason: "subscription" };
     },
     [isAuthenticated, me, refresh],
   );
@@ -63,6 +81,9 @@ export function useMorphLimitGate() {
     return err instanceof MorphPlanLimitError;
   }, []);
 
+  const credits =
+    me?.referral_credits ?? me?.access?.referral_credits ?? me?.usage?.referral_credits ?? 0;
+
   return {
     me,
     loading,
@@ -74,10 +95,11 @@ export function useMorphLimitGate() {
     ensureStudio: () => ensure("studio"),
     ensureStudioDetailed: () => ensureDetailed("studio"),
     handleError,
-    remaining: me?.usage?.morph_ai_remaining ?? 0,
+    remaining: (me?.usage?.morph_ai_remaining ?? 0) + (credits > 0 && !me?.has_active ? credits : 0),
     limit: me?.usage?.morph_ai_limit ?? 0,
+    referralCredits: credits,
     studioRemaining: me?.usage?.morph_studio_remaining ?? 0,
     studioLimit: me?.usage?.morph_studio_limit ?? 0,
-    allowed: Boolean(me?.has_active && me?.access?.morph_ai_allowed !== false),
+    allowed: Boolean(me?.has_active || credits > 0 || me?.access?.morph_ai_allowed),
   };
 }

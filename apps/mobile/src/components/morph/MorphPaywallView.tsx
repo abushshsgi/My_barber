@@ -26,6 +26,7 @@ type Props = {
   onClose: () => void;
   onSuccess: () => void;
   onNeedLogin: () => void;
+  onOpenReferral?: () => void;
 };
 
 function planIcon(code: string): keyof typeof Ionicons.glyphMap {
@@ -53,6 +54,7 @@ export function MorphPaywallView({
   onClose,
   onSuccess,
   onNeedLogin,
+  onOpenReferral,
 }: Props) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
@@ -142,12 +144,20 @@ export function MorphPaywallView({
 
         <Text style={styles.title}>{t(titleKey)}</Text>
         <Text style={styles.lead}>{t("morph.paywall.subtitle")}</Text>
+        <Text style={styles.orHint}>{t("morph.paywall.orReferral")}</Text>
 
         {me?.usage && (reason === "limit" || me.has_active) ? (
           <Text style={styles.usage}>
             {t("morph.paywall.usage", {
               used: me.usage.morph_ai_used,
               limit: me.usage.morph_ai_limit,
+            })}
+          </Text>
+        ) : null}
+        {(me as { referral_credits?: number } | null)?.referral_credits ? (
+          <Text style={styles.usage}>
+            {t("morph.paywall.credits", {
+              count: (me as { referral_credits?: number }).referral_credits ?? 0,
             })}
           </Text>
         ) : null}
@@ -239,7 +249,7 @@ export function MorphPaywallView({
           <Pressable
             onPress={() => void onBuy()}
             disabled={Boolean(busyCode) || (!canBuy && isAuthenticated)}
-            style={({ pressed }) => [pressed && styles.pressed, { marginTop: 18 }]}
+            style={({ pressed }) => [pressed && styles.pressed, { marginTop: 14 }]}
             accessibilityRole="button"
           >
             <LinearGradient
@@ -262,6 +272,17 @@ export function MorphPaywallView({
               )}
             </LinearGradient>
           </Pressable>
+
+          {onOpenReferral ? (
+            <Pressable
+              onPress={onOpenReferral}
+              style={({ pressed }) => [styles.referralBtn, pressed && styles.pressed]}
+              accessibilityRole="button"
+            >
+              <Ionicons name="people-outline" size={16} color="#111111" />
+              <Text style={styles.referralText}>{t("morph.paywall.referralCta")}</Text>
+            </Pressable>
+          ) : null}
         </View>
       </ScrollView>
     </View>
@@ -289,42 +310,49 @@ const styles = StyleSheet.create({
     opacity: 0.82,
   },
   title: {
-    fontSize: 28,
-    lineHeight: 34,
+    fontSize: 22,
+    lineHeight: 28,
     fontWeight: "800",
     color: "#111111",
-    letterSpacing: -0.8,
+    letterSpacing: -0.6,
     textAlign: "center",
   },
   lead: {
-    marginTop: 8,
-    fontSize: 15,
-    lineHeight: 21,
+    marginTop: 6,
+    fontSize: 13,
+    lineHeight: 18,
     color: "#8A8A8E",
     textAlign: "center",
   },
+  orHint: {
+    marginTop: 8,
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#52525B",
+    textAlign: "center",
+  },
   usage: {
-    marginTop: 10,
-    fontSize: 13,
+    marginTop: 8,
+    fontSize: 12,
     color: "#6B6B70",
     textAlign: "center",
     fontWeight: "600",
   },
   planCard: {
-    marginTop: 22,
+    marginTop: 16,
     backgroundColor: "#FFFFFF",
-    borderRadius: 24,
-    padding: 18,
+    borderRadius: 20,
+    padding: 14,
   },
   planName: {
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: "800",
     color: "#111111",
-    letterSpacing: -0.4,
+    letterSpacing: -0.3,
   },
   planTag: {
-    marginTop: 4,
-    fontSize: 14,
+    marginTop: 2,
+    fontSize: 12,
     color: "#8A8A8E",
   },
   billingRow: {
@@ -406,26 +434,26 @@ const styles = StyleSheet.create({
   featCard: {
     marginTop: 12,
     backgroundColor: "#FFFFFF",
-    borderRadius: 24,
-    padding: 18,
+    borderRadius: 20,
+    padding: 14,
   },
   featTitle: {
-    fontSize: 18,
+    fontSize: 15,
     fontWeight: "800",
     color: "#111111",
-    marginBottom: 12,
-    letterSpacing: -0.3,
+    marginBottom: 10,
+    letterSpacing: -0.2,
   },
   featRow: {
     flexDirection: "row",
     alignItems: "flex-start",
-    gap: 10,
-    marginBottom: 12,
+    gap: 8,
+    marginBottom: 8,
   },
   check: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
     backgroundColor: "#111111",
     alignItems: "center",
     justifyContent: "center",
@@ -433,25 +461,25 @@ const styles = StyleSheet.create({
   },
   featText: {
     flex: 1,
-    fontSize: 15,
-    lineHeight: 21,
+    fontSize: 13,
+    lineHeight: 18,
     color: "#1F1F1F",
   },
   error: {
     marginTop: 4,
     marginBottom: 4,
-    fontSize: 13,
-    lineHeight: 18,
+    fontSize: 12,
+    lineHeight: 16,
     color: "#B91C1C",
   },
   maxHint: {
     marginTop: 4,
-    fontSize: 13,
-    lineHeight: 18,
+    fontSize: 12,
+    lineHeight: 16,
     color: "#8A8A8E",
   },
   cta: {
-    minHeight: 54,
+    minHeight: 48,
     borderRadius: 999,
     alignItems: "center",
     justifyContent: "center",
@@ -462,8 +490,26 @@ const styles = StyleSheet.create({
   },
   ctaText: {
     color: "#FFFFFF",
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: "800",
     letterSpacing: -0.2,
+  },
+  referralBtn: {
+    marginTop: 10,
+    minHeight: 44,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: "#E4E4E7",
+    backgroundColor: "#FAFAFA",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingHorizontal: 14,
+  },
+  referralText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#111111",
   },
 });

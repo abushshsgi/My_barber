@@ -118,13 +118,18 @@ export function GoogleAuthSessionProvider({ children }: { children: ReactNode })
     setHandled(key);
     setBusy(true);
     setError(null);
-    void auth
-      .signInWithGoogle(idToken)
-      .catch((err) => {
+    void (async () => {
+      const { consumePendingReferralCode } = await import("../lib/referral-storage");
+      const referral = await consumePendingReferralCode();
+      try {
+        await auth.signInWithGoogle(idToken, referral);
+      } catch (err) {
         setHandled(null);
         setError(err instanceof Error ? err.message : "Google kirish xato");
-      })
-      .finally(() => setBusy(false));
+      } finally {
+        setBusy(false);
+      }
+    })();
   }, [response, auth, handled]);
 
   const promptGoogle = useCallback(async () => {

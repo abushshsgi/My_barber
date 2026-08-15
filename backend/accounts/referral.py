@@ -6,6 +6,7 @@ import os
 import secrets
 
 from django.db import IntegrityError, transaction
+from django.db.models import F
 
 from .models import ReferralAttribution, User
 
@@ -112,6 +113,10 @@ def apply_referral(*, new_user: User, code: object) -> ReferralAttribution | Non
             )
             User.objects.filter(pk=new_user.pk, referred_by__isnull=True).update(
                 referred_by=referrer
+            )
+            # 1 do'st = 1 Morph AI generatsiya krediti
+            User.objects.filter(pk=referrer.pk).update(
+                morph_referral_credits=F("morph_referral_credits") + 1
             )
             new_user.referred_by = referrer
             return attribution

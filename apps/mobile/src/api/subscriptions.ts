@@ -25,6 +25,7 @@ export type SubscriptionUsage = {
   morph_studio_used: number;
   morph_studio_limit: number;
   morph_studio_remaining: number;
+  referral_credits?: number;
 };
 
 export type UserSubscription = {
@@ -48,10 +49,12 @@ export type SubscriptionMe = {
   badge: string | null;
   morph_care: boolean;
   days_remaining?: number | null;
+  referral_credits?: number;
   access?: {
     morph_ai_allowed: boolean;
     reason: string | null;
     message: string | null;
+    referral_credits?: number;
   };
   welcome_offer?: {
     eligible: boolean;

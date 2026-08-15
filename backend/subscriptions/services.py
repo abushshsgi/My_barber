@@ -152,10 +152,16 @@ def usage_snapshot(user: User, entitlements: dict[str, Any] | None) -> dict[str,
 
 def _no_subscription_message() -> str:
     return (
-        f"Morph AI faqat obuna bilan ishlaydi. "
-        f"{REFERRAL_TRIAL_REQUIRED} ta do'stingizni taklif qiling — "
-        f"{REFERRAL_TRIAL_DAYS} kunlik Starter sinov, yoki obuna sotib oling."
+        "Generatsiya uchun obuna kerak yoki 1 ta do'stingizni taklif qiling "
+        "(1 referal = 1 generatsiya)."
     )
+
+
+def _referral_credits(user: User) -> int:
+    try:
+        return max(0, int(getattr(user, "morph_referral_credits", 0) or 0))
+    except (TypeError, ValueError):
+        return 0
 
 
 def build_me_payload(user: User) -> dict[str, Any]:
@@ -164,7 +170,10 @@ def build_me_payload(user: User) -> dict[str, Any]:
         entitlement_snapshot(sub.plan_code) if sub else {}
     )
     if sub:
-        usage = usage_snapshot(user, entitlements)
+        usage = {
+            **usage_snapshot(user, entitlements),
+            "referral_credits": _referral_credits(user),
+        }
     else:
         period = usage_snapshot(
             user,
@@ -173,10 +182,13 @@ def build_me_payload(user: User) -> dict[str, Any]:
                 "morph_studio_monthly": FREE_MORPH_STUDIO_MONTHLY,
             },
         )
+        credits = _referral_credits(user)
         usage = {
             **period,
             "is_free_tier": True,
-            "locked": True,
+            "locked": credits <= 0,
+            "referral_credits": credits,
+            "morph_ai_remaining": max(period["morph_ai_remaining"], credits),
         }
     trial = ReferralTrialGrant.objects.filter(user=user).first()
     from accounts.models import ReferralAttribution
@@ -206,10 +218,16 @@ def build_me_payload(user: User) -> dict[str, Any]:
         "family_members_max": entitlements.get("family_members_max") if sub else 0,
         "family_unlimited": entitlements.get("family_members_max") is None if sub else False,
         "days_remaining": days_remaining,
+        "referral_credits": _referral_credits(user),
         "access": {
-            "morph_ai_allowed": bool(sub),
-            "reason": None if sub else "subscription_required",
-            "message": None if sub else _no_subscription_message(),
+            "morph_ai_allowed": bool(sub) or _referral_credits(user) > 0,
+            "reason": None
+            if (sub or _referral_credits(user) > 0)
+            else "subscription_required",
+            "message": None
+            if (sub or _referral_credits(user) > 0)
+            else _no_subscription_message(),
+            "referral_credits": _referral_credits(user),
         },
         "referral_trial": {
             "granted": bool(trial),
@@ -425,31 +443,34 @@ def can_use_morph_care(user: User) -> bool:
 
 def check_morph_entitlement(*, user: User, kind: str) -> str | None:
     """
-    Morph AI (analyze / try-on / studio): faol obuna majburiy.
-    Oylik try-on kvotasi tugaganda analyze/face_check ham yopiladi.
-    Yangi user — 0 kvota. Ochilishi: pullik obuna yoki 3 referal → 7 kun Starter trial.
+    Morph AI:
+    - analyze / face_check — obunasiz ochiq (tahlil → keyin generatsiya paywall).
+    - tryon — faol obuna kvotasi YOKI referal krediti (1 do'st = 1 generatsiya).
+    - studio / chat — faol obuna majburiy.
     """
     if kind not in ("tryon", "studio", "analyze", "face_check", "chat"):
         return None
 
     from django.conf import settings
 
-    # TEMP test — MORPH_ENTITLEMENT_BYPASS=false qilib qayta yoqing.
     if getattr(settings, "MORPH_ENTITLEMENT_BYPASS", False):
         return None
 
-    sub = get_active_subscription(user)
-    if not sub:
-        return _no_subscription_message()
-
-    # Chat — faqat obuna kerak; oylik try-on kvotasini yemaydi (kunlik limit alohida).
-    if kind == "chat":
+    if kind in ("analyze", "face_check"):
         return None
 
-    usage = get_or_create_usage(user)
-    ents = sub.entitlements or entitlement_snapshot(sub.plan_code)
+    sub = get_active_subscription(user)
+
+    if kind == "chat":
+        if not sub:
+            return _no_subscription_message()
+        return None
 
     if kind == "studio":
+        if not sub:
+            return _no_subscription_message()
+        usage = get_or_create_usage(user)
+        ents = sub.entitlements or entitlement_snapshot(sub.plan_code)
         limit = int(ents.get("morph_studio_monthly") or 0)
         if limit <= 0:
             return "Morph AI Studio Plus yoki Pro obunasida mavjud."
@@ -463,47 +484,69 @@ def check_morph_entitlement(*, user: User, kind: str) -> str | None:
             return f"Oylik Morph AI Studio limiti tugadi ({limit}/{limit}). Tarifni yangilang."
         return None
 
-    # tryon + analyze + face_check — bir xil Morph AI oylik kvota
-    limit = int(ents.get("morph_ai_monthly") or 0)
-    if limit <= 0:
-        return "Bu reja Morph AI generatsiyasini qo'llab-quvvatlamaydi. Tarifni yangilang."
-    if usage.morph_ai_used >= limit:
-        log_event(
-            action=SubscriptionEvent.Action.LIMIT_HIT,
-            user=user,
-            subscription=sub,
-            detail={"kind": "morph_ai", "used": usage.morph_ai_used, "limit": limit},
-        )
-        return (
-            f"Oylik Morph AI limiti tugadi ({limit}/{limit}). "
-            f"Tarifni yangilang yoki Plus/Pro ga o'ting."
-        )
-    return None
+    # tryon
+    if sub:
+        usage = get_or_create_usage(user)
+        ents = sub.entitlements or entitlement_snapshot(sub.plan_code)
+        limit = int(ents.get("morph_ai_monthly") or 0)
+        if limit <= 0:
+            return "Bu reja Morph AI generatsiyasini qo'llab-quvvatlamaydi. Tarifni yangilang."
+        if usage.morph_ai_used >= limit:
+            log_event(
+                action=SubscriptionEvent.Action.LIMIT_HIT,
+                user=user,
+                subscription=sub,
+                detail={"kind": "morph_ai", "used": usage.morph_ai_used, "limit": limit},
+            )
+            return (
+                f"Oylik Morph AI limiti tugadi ({limit}/{limit}). "
+                f"Tarifni yangilang yoki do'st taklif qilib kredit oling."
+            )
+        return None
+
+    if _referral_credits(user) > 0:
+        return None
+    return _no_subscription_message()
 
 
 @transaction.atomic
 def record_morph_usage(*, user: User, kind: str) -> None:
     if kind not in ("tryon", "studio"):
         return
+    from django.db.models import F
+
     start, end = current_period_bounds()
     usage, _ = SubscriptionUsagePeriod.objects.select_for_update().get_or_create(
         user=user,
         period_start=start,
         defaults={"period_end": end},
     )
+    sub = get_active_subscription(user)
     if kind == "tryon":
-        usage.morph_ai_used = usage.morph_ai_used + 1
-        usage.save(update_fields=["morph_ai_used", "updated_at"])
+        if sub:
+            usage.morph_ai_used = usage.morph_ai_used + 1
+            usage.save(update_fields=["morph_ai_used", "updated_at"])
+        else:
+            updated = User.objects.filter(pk=user.pk, morph_referral_credits__gt=0).update(
+                morph_referral_credits=F("morph_referral_credits") - 1
+            )
+            if not updated:
+                return
+            user.refresh_from_db(fields=["morph_referral_credits"])
     else:
         usage.morph_studio_used = usage.morph_studio_used + 1
         usage.save(update_fields=["morph_studio_used", "updated_at"])
 
-    sub = get_active_subscription(user)
     log_event(
         action=SubscriptionEvent.Action.USAGE,
         user=user,
         subscription=sub,
-        detail={"kind": kind, "morph_ai_used": usage.morph_ai_used, "morph_studio_used": usage.morph_studio_used},
+        detail={
+            "kind": kind,
+            "morph_ai_used": usage.morph_ai_used,
+            "morph_studio_used": usage.morph_studio_used,
+            "referral_credits": _referral_credits(user),
+        },
     )
 
 

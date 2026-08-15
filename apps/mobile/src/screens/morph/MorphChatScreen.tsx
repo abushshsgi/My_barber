@@ -301,6 +301,14 @@ export function MorphChatScreen() {
     showPaywall("subscription");
   }, [showPaywall]);
 
+  const openReferralFromSettings = useCallback(() => {
+    setSettingsOpen(false);
+    setPaywall(null);
+    navigation.getParent()?.navigate("Profile" as never, {
+      screen: "Referrals",
+    } as never);
+  }, [navigation]);
+
   const errorNotice = chat.error ? (
     <ChatNotice
       title={t("chat.errorTitle")}
@@ -360,6 +368,12 @@ export function MorphChatScreen() {
         onClose={closePaywall}
         onSuccess={() => void onPaywallSuccess()}
         onNeedLogin={onNeedLogin}
+        onOpenReferral={() => {
+          closePaywall();
+          navigation.getParent()?.navigate("Profile" as never, {
+            screen: "Referrals",
+          } as never);
+        }}
       />
     </Modal>
   );
@@ -373,6 +387,7 @@ export function MorphChatScreen() {
         onClose={closeSettings}
         onClearAllChats={() => void clearAllFromSettings()}
         onOpenSubscription={openSubscriptionFromSettings}
+        onOpenReferral={openReferralFromSettings}
         onSaveHistoryOff={() => void chat.clearAllChats()}
       />
     </Modal>

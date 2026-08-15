@@ -15,7 +15,6 @@ import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { MorphChatLimits } from "../../api/ai";
 import { NativeHeader } from "../../components/ui/NativeHeader";
-import { SettingsGroup, SettingsRow } from "../../components/ui/SettingsKit";
 import type { MorphChatThread } from "../../hooks/useMorphChat";
 import {
   DEFAULT_MORPH_CHAT_PREFS,
@@ -37,8 +36,11 @@ type Props = {
   onClose: () => void;
   onClearAllChats: () => void;
   onOpenSubscription: () => void;
+  onOpenReferral?: () => void;
   onSaveHistoryOff?: () => void;
 };
+
+type Page = "hub" | "reply" | "chatbot" | "plan";
 
 type ChipOption<T extends string> = { value: T; label: string };
 
@@ -75,27 +77,87 @@ function ChipRow<T extends string>({
   );
 }
 
-function ChoiceBlock({
+function HubTile({
+  icon,
+  title,
+  subtitle,
+  onPress,
+  accent,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  title: string;
+  subtitle: string;
+  onPress: () => void;
+  accent?: string;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [styles.tile, pressed && styles.pressed]}
+      accessibilityRole="button"
+    >
+      <View style={[styles.tileIcon, accent ? { backgroundColor: accent } : null]}>
+        <Ionicons name={icon} size={20} color={accent ? "#111" : "#FFFFFF"} />
+      </View>
+      <View style={styles.tileCopy}>
+        <Text style={styles.tileTitle}>{title}</Text>
+        <Text style={styles.tileSub} numberOfLines={2}>
+          {subtitle}
+        </Text>
+      </View>
+      <Ionicons name="chevron-forward" size={18} color="#A1A1AA" />
+    </Pressable>
+  );
+}
+
+function ToggleRow({
+  title,
+  subtitle,
+  value,
+  onChange,
+  last,
+}: {
+  title: string;
+  subtitle: string;
+  value: boolean;
+  onChange: (v: boolean) => void;
+  last?: boolean;
+}) {
+  return (
+    <View style={[styles.toggleRow, !last && styles.toggleBorder]}>
+      <View style={styles.toggleCopy}>
+        <Text style={styles.toggleTitle}>{title}</Text>
+        <Text style={styles.toggleSub}>{subtitle}</Text>
+      </View>
+      <Switch
+        value={value}
+        onValueChange={onChange}
+        trackColor={{ false: "#E4E4E7", true: "#111111" }}
+        thumbColor="#FFFFFF"
+      />
+    </View>
+  );
+}
+
+function FieldBlock({
   title,
   subtitle,
   children,
-  last,
 }: {
   title: string;
   subtitle?: string;
   children: ReactNode;
-  last?: boolean;
 }) {
   return (
-    <View style={[styles.choiceBlock, !last && styles.choiceBorder]}>
-      <Text style={styles.choiceTitle}>{title}</Text>
-      {subtitle ? <Text style={styles.choiceSub}>{subtitle}</Text> : null}
+    <View style={styles.fieldBlock}>
+      <Text style={styles.fieldTitle}>{title}</Text>
+      {subtitle ? <Text style={styles.fieldSub}>{subtitle}</Text> : null}
       {children}
     </View>
   );
 }
 
-/** Morf AI chatbot sozlamalari — limit, uslub, maxfiylik. */
+/** Morf AI chatbot sozlamalari — hub + ichki sahifalar. */
 export function MorphChatSettingsScreen({
   limits,
   threadCount,
@@ -103,10 +165,12 @@ export function MorphChatSettingsScreen({
   onClose,
   onClearAllChats,
   onOpenSubscription,
+  onOpenReferral,
   onSaveHistoryOff,
 }: Props) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
+  const [page, setPage] = useState<Page>("hub");
   const [prefs, setPrefs] = useState<MorphChatPrefs | null>(null);
   const [snap, setSnap] = useState<MorphChatLimits | null>(limits);
 
@@ -209,341 +273,307 @@ export function MorphChatSettingsScreen({
     { value: "female", label: t("chat.settings.genderFemale") },
   ];
 
+  const pageTitle =
+    page === "reply"
+      ? t("chat.settings.replyGroup")
+      : page === "chatbot"
+        ? t("chat.settings.aiGroup")
+        : page === "plan"
+          ? t("chat.settings.planGroup")
+          : t("chat.settings.title");
+
+  const onBack = () => {
+    if (page === "hub") onClose();
+    else setPage("hub");
+  };
+
   return (
     <View style={[styles.root, { paddingBottom: Math.max(insets.bottom, 12) }]}>
-      <NativeHeader title={t("chat.settings.title")} onBack={onClose} />
+      <NativeHeader title={pageTitle} onBack={onBack} />
       <ScrollView
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.limitCard}>
-          <View style={styles.limitTop}>
-            <View style={styles.limitIcon}>
-              <Ionicons name="flash-outline" size={20} color="#111111" />
-            </View>
-            <View style={styles.limitCopy}>
-              <Text style={styles.limitTitle}>{t("chat.settings.limitTitle")}</Text>
-              <Text style={styles.limitValue}>
-                {t("chat.settings.limitUsage", { pct: usagePct })}
-              </Text>
-            </View>
-            <Text style={styles.limitPctBadge}>{usagePct}%</Text>
-          </View>
-          <View style={styles.track}>
-            <View style={[styles.trackFill, { width: `${usagePct}%` }]} />
-          </View>
-          <View style={styles.limitScale}>
-            <Text style={styles.limitScaleText}>0%</Text>
-            <Text style={styles.limitScaleMid}>
-              {t("chat.settings.limitValue", { used: usedLabel, limit })}
-            </Text>
-            <Text style={styles.limitScaleText}>100%</Text>
-          </View>
-          <Text style={styles.limitHint}>
-            {t("chat.settings.limitHint", { remaining: remainingLabel })}
-          </Text>
-        </View>
-
-        {!prefs ? (
-          <ActivityIndicator color={colors.fg} style={{ marginTop: 24 }} />
-        ) : (
+        {page === "hub" ? (
           <>
-            <SettingsGroup title={t("chat.settings.replyGroup")}>
-              <ChoiceBlock
-                title={t("chat.settings.replyLang")}
-                subtitle={t("chat.settings.replyLangHint")}
-              >
-                <ChipRow
-                  options={langOptions}
-                  value={prefs.replyLang}
-                  onChange={(v) => void patchPrefs({ replyLang: v })}
-                />
-              </ChoiceBlock>
-              <ChoiceBlock
-                title={t("chat.settings.replyStyle")}
-                subtitle={t("chat.settings.replyStyleHint")}
-              >
-                <ChipRow
-                  options={styleOptions}
-                  value={prefs.replyStyle}
-                  onChange={(v) => void patchPrefs({ replyStyle: v })}
-                />
-              </ChoiceBlock>
-              <ChoiceBlock
-                title={t("chat.settings.adviceGender")}
-                subtitle={t("chat.settings.adviceGenderHint")}
-                last
-              >
-                <ChipRow
-                  options={genderOptions}
-                  value={prefs.adviceGender}
-                  onChange={(v) => void patchPrefs({ adviceGender: v })}
-                />
-              </ChoiceBlock>
-            </SettingsGroup>
+            <View style={styles.usageHero}>
+              <View style={styles.usageRing}>
+                <Text style={styles.usagePct}>{usagePct}%</Text>
+              </View>
+              <View style={styles.usageCopy}>
+                <Text style={styles.usageKicker}>{t("chat.settings.limitTitle")}</Text>
+                <Text style={styles.usageMain}>
+                  {t("chat.settings.limitValue", { used: usedLabel, limit })}
+                </Text>
+                <Text style={styles.usageHint}>
+                  {t("chat.settings.limitHint", { remaining: remainingLabel })}
+                </Text>
+              </View>
+            </View>
+            <View style={styles.usageBar}>
+              <View style={[styles.usageFill, { width: `${usagePct}%` }]} />
+            </View>
 
-            <SettingsGroup title={t("chat.settings.aiGroup")}>
-              <SettingsRow
-                title={t("chat.settings.streaming")}
-                subtitle={t("chat.settings.streamingHint")}
-                icon="pulse-outline"
-                trailing={
-                  <Switch
-                    value={prefs.streaming}
-                    onValueChange={(v) => void patchPrefs({ streaming: v })}
-                    trackColor={{ false: "#E4E4E7", true: "#111111" }}
-                    thumbColor="#FFFFFF"
-                  />
-                }
-              />
-              <SettingsRow
-                title={t("chat.settings.voiceInput")}
-                subtitle={t("chat.settings.voiceInputHint")}
-                icon="mic-outline"
-                trailing={
-                  <Switch
-                    value={prefs.voiceInput}
-                    onValueChange={(v) => void patchPrefs({ voiceInput: v })}
-                    trackColor={{ false: "#E4E4E7", true: "#111111" }}
-                    thumbColor="#FFFFFF"
-                  />
-                }
-              />
-              <SettingsRow
-                title={t("chat.settings.limitNotify")}
-                subtitle={t("chat.settings.limitNotifyHint")}
-                icon="notifications-outline"
-                trailing={
-                  <Switch
-                    value={prefs.limitNotify}
-                    onValueChange={(v) => void patchPrefs({ limitNotify: v })}
-                    trackColor={{ false: "#E4E4E7", true: "#111111" }}
-                    thumbColor="#FFFFFF"
-                  />
-                }
-              />
-              <SettingsRow
-                title={t("chat.settings.useContext")}
-                subtitle={t("chat.settings.useContextHint")}
-                icon="scan-outline"
-                trailing={
-                  <Switch
-                    value={prefs.useTryOnContext}
-                    onValueChange={(v) => void patchPrefs({ useTryOnContext: v })}
-                    trackColor={{ false: "#E4E4E7", true: "#111111" }}
-                    thumbColor="#FFFFFF"
-                  />
-                }
-              />
-              <SettingsRow
-                title={t("chat.settings.saveHistory")}
-                subtitle={t("chat.settings.saveHistoryHint")}
-                icon="folder-outline"
-                trailing={
-                  <Switch
-                    value={prefs.saveHistory}
-                    onValueChange={(v) => void patchPrefs({ saveHistory: v })}
-                    trackColor={{ false: "#E4E4E7", true: "#111111" }}
-                    thumbColor="#FFFFFF"
-                  />
-                }
-              />
-              <SettingsRow
-                title={t("chat.settings.privacyLocal")}
-                subtitle={t("chat.settings.privacyLocalHint")}
-                icon="shield-checkmark-outline"
-                trailing={
-                  <Switch
-                    value={prefs.privacyLocalOnly}
-                    onValueChange={(v) => void patchPrefs({ privacyLocalOnly: v })}
-                    trackColor={{ false: "#E4E4E7", true: "#111111" }}
-                    thumbColor="#FFFFFF"
-                  />
-                }
-                last
-              />
-            </SettingsGroup>
+            {!prefs ? (
+              <ActivityIndicator color={colors.fg} style={{ marginTop: 28 }} />
+            ) : (
+              <View style={styles.tileGrid}>
+                <HubTile
+                  icon="chatbubbles-outline"
+                  title={t("chat.settings.replyGroup")}
+                  subtitle={t("chat.settings.replyLangHint")}
+                  onPress={() => setPage("reply")}
+                  accent="#E8F0FF"
+                />
+                <HubTile
+                  icon="sparkles-outline"
+                  title={t("chat.settings.aiGroup")}
+                  subtitle={t("chat.settings.streamingHint")}
+                  onPress={() => setPage("chatbot")}
+                  accent="#FFF1E8"
+                />
+                <HubTile
+                  icon="diamond-outline"
+                  title={t("chat.settings.planGroup")}
+                  subtitle={t("chat.settings.subscriptionHint")}
+                  onPress={() => setPage("plan")}
+                  accent="#F3E8FF"
+                />
+              </View>
+            )}
 
-            <SettingsGroup title={t("chat.settings.planGroup")}>
-              <SettingsRow
-                title={t("chat.settings.subscription")}
-                subtitle={t("chat.settings.subscriptionHint")}
-                icon="diamond-outline"
-                onPress={onOpenSubscription}
-                last
-              />
-            </SettingsGroup>
-
-            <SettingsGroup title={t("chat.settings.dataGroup")}>
-              <SettingsRow
-                title={t("chat.settings.exportChats")}
-                subtitle={t("chat.settings.exportChatsHint", { count: threadCount })}
-                icon="share-outline"
+            <View style={styles.footActions}>
+              <Pressable
                 onPress={() => void exportChats()}
-              />
-              <SettingsRow
-                title={t("chat.settings.clearChats")}
-                subtitle={t("chat.settings.clearChatsHint", { count: threadCount })}
-                icon="trash-outline"
-                destructive
+                style={({ pressed }) => [styles.ghostBtn, pressed && styles.pressed]}
+              >
+                <Ionicons name="share-outline" size={16} color="#52525B" />
+                <Text style={styles.ghostText}>
+                  {t("chat.settings.exportChats")}
+                  {threadCount > 0 ? ` · ${threadCount}` : ""}
+                </Text>
+              </Pressable>
+              <Pressable
                 onPress={confirmClear}
-                last
-              />
-            </SettingsGroup>
+                style={({ pressed }) => [styles.clearLink, pressed && styles.pressed]}
+              >
+                <Text style={styles.clearText}>{t("chat.settings.clearChats")}</Text>
+              </Pressable>
+            </View>
           </>
-        )}
+        ) : null}
 
-        <Pressable
-          onPress={onClose}
-          style={({ pressed }) => [styles.doneBtn, pressed && styles.pressed]}
-          accessibilityRole="button"
-        >
-          <Text style={styles.doneText}>{t("chat.settings.done")}</Text>
-        </Pressable>
+        {page === "reply" && prefs ? (
+          <View style={styles.panel}>
+            <FieldBlock
+              title={t("chat.settings.replyLang")}
+              subtitle={t("chat.settings.replyLangHint")}
+            >
+              <ChipRow
+                options={langOptions}
+                value={prefs.replyLang}
+                onChange={(v) => void patchPrefs({ replyLang: v })}
+              />
+            </FieldBlock>
+            <FieldBlock
+              title={t("chat.settings.replyStyle")}
+              subtitle={t("chat.settings.replyStyleHint")}
+            >
+              <ChipRow
+                options={styleOptions}
+                value={prefs.replyStyle}
+                onChange={(v) => void patchPrefs({ replyStyle: v })}
+              />
+            </FieldBlock>
+            <FieldBlock
+              title={t("chat.settings.adviceGender")}
+              subtitle={t("chat.settings.adviceGenderHint")}
+            >
+              <ChipRow
+                options={genderOptions}
+                value={prefs.adviceGender}
+                onChange={(v) => void patchPrefs({ adviceGender: v })}
+              />
+            </FieldBlock>
+          </View>
+        ) : null}
+
+        {page === "chatbot" && prefs ? (
+          <View style={styles.panel}>
+            <ToggleRow
+              title={t("chat.settings.streaming")}
+              subtitle={t("chat.settings.streamingHint")}
+              value={prefs.streaming}
+              onChange={(v) => void patchPrefs({ streaming: v })}
+            />
+            <ToggleRow
+              title={t("chat.settings.voiceInput")}
+              subtitle={t("chat.settings.voiceInputHint")}
+              value={prefs.voiceInput}
+              onChange={(v) => void patchPrefs({ voiceInput: v })}
+            />
+            <ToggleRow
+              title={t("chat.settings.limitNotify")}
+              subtitle={t("chat.settings.limitNotifyHint")}
+              value={prefs.limitNotify}
+              onChange={(v) => void patchPrefs({ limitNotify: v })}
+            />
+            <ToggleRow
+              title={t("chat.settings.useContext")}
+              subtitle={t("chat.settings.useContextHint")}
+              value={prefs.useTryOnContext}
+              onChange={(v) => void patchPrefs({ useTryOnContext: v })}
+            />
+            <ToggleRow
+              title={t("chat.settings.saveHistory")}
+              subtitle={t("chat.settings.saveHistoryHint")}
+              value={prefs.saveHistory}
+              onChange={(v) => void patchPrefs({ saveHistory: v })}
+            />
+            <ToggleRow
+              title={t("chat.settings.privacyLocal")}
+              subtitle={t("chat.settings.privacyLocalHint")}
+              value={prefs.privacyLocalOnly}
+              onChange={(v) => void patchPrefs({ privacyLocalOnly: v })}
+              last
+            />
+          </View>
+        ) : null}
+
+        {page === "plan" ? (
+          <View style={styles.panel}>
+            <Pressable
+              onPress={onOpenSubscription}
+              style={({ pressed }) => [styles.planCard, pressed && styles.pressed]}
+            >
+              <View style={[styles.tileIcon, { backgroundColor: "#111111" }]}>
+                <Ionicons name="diamond-outline" size={20} color="#FFFFFF" />
+              </View>
+              <View style={styles.tileCopy}>
+                <Text style={styles.tileTitle}>{t("chat.settings.subscription")}</Text>
+                <Text style={styles.tileSub}>{t("chat.settings.subscriptionHint")}</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color="#A1A1AA" />
+            </Pressable>
+            {onOpenReferral ? (
+              <Pressable
+                onPress={onOpenReferral}
+                style={({ pressed }) => [styles.planCard, pressed && styles.pressed]}
+              >
+                <View style={[styles.tileIcon, { backgroundColor: "#FFF1E8" }]}>
+                  <Ionicons name="people-outline" size={20} color="#111111" />
+                </View>
+                <View style={styles.tileCopy}>
+                  <Text style={styles.tileTitle}>{t("chat.settings.referral")}</Text>
+                  <Text style={styles.tileSub}>{t("chat.settings.referralHint")}</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color="#A1A1AA" />
+              </Pressable>
+            ) : null}
+          </View>
+        ) : null}
       </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: colors.bg,
-  },
-  content: {
-    padding: 16,
-    paddingBottom: 40,
-    gap: 4,
-  },
-  limitCard: {
-    padding: 14,
-    borderRadius: 16,
-    backgroundColor: "#F4F4F5",
-    marginBottom: 14,
-    gap: 10,
-  },
-  limitTop: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
-  limitIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: "#FFFFFF",
+  root: { flex: 1, backgroundColor: colors.bg },
+  content: { padding: 16, paddingBottom: 36, gap: 12 },
+  usageHero: { flexDirection: "row", alignItems: "center", gap: 14, marginBottom: 4 },
+  usageRing: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    borderWidth: 3,
+    borderColor: "#111111",
     alignItems: "center",
     justifyContent: "center",
+    backgroundColor: "#FAFAFA",
   },
-  limitCopy: {
-    flex: 1,
-    minWidth: 0,
-    gap: 2,
-  },
-  limitTitle: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#71717A",
-  },
-  limitValue: {
-    fontSize: 17,
-    fontWeight: "700",
-    color: "#111111",
-    letterSpacing: -0.3,
-  },
-  limitPctBadge: {
-    fontSize: 20,
-    fontWeight: "800",
-    color: "#111111",
-    letterSpacing: -0.4,
-  },
-  track: {
-    height: 8,
+  usagePct: { fontSize: 16, fontWeight: "800", color: "#111111" },
+  usageCopy: { flex: 1, minWidth: 0, gap: 2 },
+  usageKicker: { fontSize: 12, fontWeight: "600", color: "#71717A" },
+  usageMain: { fontSize: 18, fontWeight: "700", color: "#111111", letterSpacing: -0.3 },
+  usageHint: { fontSize: 13, color: "#52525B" },
+  usageBar: {
+    height: 6,
     borderRadius: 999,
     backgroundColor: "#E4E4E7",
     overflow: "hidden",
+    marginBottom: 8,
   },
-  trackFill: {
-    height: "100%",
-    borderRadius: 999,
-    backgroundColor: "#111111",
-  },
-  limitScale: {
+  usageFill: { height: "100%", backgroundColor: "#111111", borderRadius: 999 },
+  tileGrid: { gap: 10, marginTop: 8 },
+  tile: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
+    gap: 12,
+    padding: 14,
+    borderRadius: 18,
+    backgroundColor: "#F4F4F5",
   },
-  limitScaleText: {
-    fontSize: 11,
-    fontWeight: "600",
-    color: "#A1A1AA",
+  tileIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    backgroundColor: "#111111",
+    alignItems: "center",
+    justifyContent: "center",
   },
-  limitScaleMid: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#52525B",
-  },
-  limitHint: {
-    fontSize: 13,
-    lineHeight: 18,
-    color: "#52525B",
-  },
-  choiceBlock: {
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    gap: 8,
-  },
-  choiceBorder: {
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#E4E4E7",
-  },
-  choiceTitle: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: colors.fg,
-  },
-  choiceSub: {
-    fontSize: 12,
-    lineHeight: 16,
-    color: colors.muted,
-    marginTop: -4,
-  },
-  chipRow: {
+  tileCopy: { flex: 1, minWidth: 0, gap: 2 },
+  tileTitle: { fontSize: 16, fontWeight: "700", color: "#111111" },
+  tileSub: { fontSize: 12, lineHeight: 16, color: "#71717A" },
+  footActions: { marginTop: 18, alignItems: "center", gap: 12 },
+  ghostBtn: {
     flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+    backgroundColor: "#F4F4F5",
   },
+  ghostText: { fontSize: 13, fontWeight: "600", color: "#52525B" },
+  clearLink: { paddingVertical: 4 },
+  clearText: { fontSize: 12, fontWeight: "600", color: "#A1A1AA", textDecorationLine: "underline" },
+  panel: {
+    borderRadius: 18,
+    backgroundColor: "#F4F4F5",
+    overflow: "hidden",
+    gap: 0,
+  },
+  fieldBlock: { padding: 14, gap: 10, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "#E4E4E7" },
+  fieldTitle: { fontSize: 15, fontWeight: "700", color: "#111111" },
+  fieldSub: { fontSize: 12, color: "#71717A", marginTop: -4 },
+  chipRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   chip: {
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 10,
-    backgroundColor: "#F4F4F5",
+    backgroundColor: "#FFFFFF",
   },
-  chipActive: {
-    backgroundColor: "#111111",
-  },
-  chipText: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#3F3F46",
-  },
-  chipTextActive: {
-    color: "#FFFFFF",
-  },
-  doneBtn: {
-    marginTop: 18,
+  chipActive: { backgroundColor: "#111111" },
+  chipText: { fontSize: 13, fontWeight: "600", color: "#3F3F46" },
+  chipTextActive: { color: "#FFFFFF" },
+  toggleRow: {
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    minHeight: 48,
-    borderRadius: 14,
-    backgroundColor: "#111111",
+    gap: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
   },
-  doneText: {
-    color: "#FFFFFF",
-    fontSize: 15,
-    fontWeight: "700",
+  toggleBorder: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "#E4E4E7" },
+  toggleCopy: { flex: 1, minWidth: 0, gap: 2 },
+  toggleTitle: { fontSize: 15, fontWeight: "600", color: "#111111" },
+  toggleSub: { fontSize: 12, lineHeight: 16, color: "#71717A" },
+  planCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    padding: 14,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "#E4E4E7",
   },
-  pressed: {
-    opacity: 0.82,
-  },
+  pressed: { opacity: 0.82 },
 });

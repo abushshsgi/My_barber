@@ -402,22 +402,7 @@ export function MorphTryOnScreen({ navigation }: Props) {
         session.clear();
         session.setSelfie(dataUrl);
 
-        const result = await gate.ensureAccessDetailed();
-        if (!result.ok) {
-          if (result.reason === "login") {
-            void writeAppShell("morph");
-            void writeLastShellTab("morph", "MorphTryOn");
-            navigation.getParent()?.navigate("Profile" as never);
-            return;
-          }
-          presentMorphPaywall(
-            navigation,
-            result.reason === "limit" ? "limit" : "subscription",
-            "MorphResults",
-          );
-          return;
-        }
-
+        // Tahlil/generatsiya sahifasiga o'tamiz — obuna faqat Generate da so'raladi
         navigation.replace("MorphResults");
       } catch (err) {
         setError(formatMorphUserError(err instanceof Error ? err.message : "", "Rasm yuklashda xato"));
@@ -425,7 +410,7 @@ export function MorphTryOnScreen({ navigation }: Props) {
         setBusy(null);
       }
     },
-    [gate, isAuthenticated, navigation, session],
+    [isAuthenticated, navigation, session],
   );
 
   const openGeneration = useCallback(

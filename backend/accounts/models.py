@@ -44,6 +44,8 @@ class User(AbstractUser):
         blank=True,
         related_name="referred_users",
     )
+    # Do'st taklifi → 1 generatsiya krediti (obunasiz try-on uchun).
+    morph_referral_credits = models.PositiveIntegerField(default=0)
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = ["username"]

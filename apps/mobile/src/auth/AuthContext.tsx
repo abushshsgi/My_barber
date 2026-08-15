@@ -32,8 +32,8 @@ type AuthContextValue = {
   loading: boolean;
   isAuthenticated: boolean;
   needsOnboarding: boolean;
-  signInWithGoogle: (idToken: string) => Promise<void>;
-  signInWithPhoneCode: (phone: string, code: string) => Promise<void>;
+  signInWithGoogle: (idToken: string, referralCode?: string) => Promise<void>;
+  signInWithPhoneCode: (phone: string, code: string, referralCode?: string) => Promise<void>;
   signInWithPassword: (phone: string, password: string) => Promise<void>;
   requestPhoneCode: (phone: string) => Promise<{ debug_code?: string; detail: string }>;
   signOut: () => Promise<void>;
@@ -198,16 +198,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signInWithGoogle = useCallback(
-    async (idToken: string) => {
-      const data = await apiGoogle(idToken);
+    async (idToken: string, referralCode?: string) => {
+      const data = await apiGoogle(idToken, referralCode);
       await applyAuthSuccess(data);
     },
     [applyAuthSuccess],
   );
 
   const signInWithPhoneCode = useCallback(
-    async (phone: string, code: string) => {
-      const data = await verifyPhoneCode(phone, code, "login");
+    async (phone: string, code: string, referralCode?: string) => {
+      const data = await verifyPhoneCode(phone, code, "login", referralCode);
       await applyAuthSuccess(data);
     },
     [applyAuthSuccess],

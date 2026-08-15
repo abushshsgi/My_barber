@@ -86,11 +86,14 @@ def _referral_response(request) -> dict:
     )
     invite_count = attributions.count()
     invites = [_invitee_payload(a, request) for a in attributions[:50]]
+    credits = int(getattr(request.user, "morph_referral_credits", 0) or 0)
     return {
         "code": code,
         "invite_url": build_invite_url(code),
         "invite_count": invite_count,
         "invites": invites,
+        "referral_credits": credits,
+        "credit_per_invite": 1,
         "trial": _trial_payload(user=request.user, invite_count=invite_count),
     }
 

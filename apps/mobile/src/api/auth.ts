@@ -28,11 +28,15 @@ function clientMeta() {
   };
 }
 
-export async function loginWithGoogle(idToken: string): Promise<AuthSuccess> {
+export async function loginWithGoogle(
+  idToken: string,
+  referralCode?: string,
+): Promise<AuthSuccess> {
   return apiJson<AuthSuccess>("/api/v1/auth/google/", {
     method: "POST",
     body: JSON.stringify({
       id_token: idToken,
+      ...(referralCode?.trim() ? { referral_code: referralCode.trim().toUpperCase() } : {}),
       ...clientMeta(),
     }),
   });
@@ -67,6 +71,7 @@ export async function verifyPhoneCode(
   phone: string,
   code: string,
   intent: "login" | "register" = "login",
+  referralCode?: string,
 ): Promise<AuthSuccess> {
   return apiJson("/api/v1/auth/phone/verify/", {
     method: "POST",
@@ -74,6 +79,7 @@ export async function verifyPhoneCode(
       phone,
       code,
       intent,
+      ...(referralCode?.trim() ? { referral_code: referralCode.trim().toUpperCase() } : {}),
       ...clientMeta(),
     }),
   });

@@ -8,6 +8,7 @@ import { MorphResultsScreen } from "../screens/morph/MorphResultsScreen";
 import { MorphStudioScreen } from "../screens/morph/MorphStudioScreen";
 import { MorphTryOnScreen } from "../screens/morph/MorphTryOnScreen";
 import { MorphWelcomeScreen } from "../screens/morph/MorphWelcomeScreen";
+import { ReferralScreen } from "../screens/profile/ReferralScreen";
 
 export type MorphStackParamList = {
   /** Selfie capture (qayta kirish). Tab nomi MorphTryOn dan farq qiladi. */
@@ -29,6 +30,7 @@ export type MorphStackParamList = {
   MorphHistory: { generationId?: number } | undefined;
   MorphStudio: undefined;
   MorphPaywall: { reason?: import("../lib/morph-return").PaywallReason; returnTo?: import("../lib/morph-return").MorphReturnTo } | undefined;
+  Referrals: undefined;
 };
 
 const Stack = createNativeStackNavigator<MorphStackParamList>();
@@ -73,6 +75,11 @@ export function MorphStack() {
       />
       <Stack.Screen name="MorphStudio" component={MorphStudioScreen} />
       <Stack.Screen name="MorphPaywall" component={MorphPaywallScreen} />
+      <Stack.Screen
+        name="Referrals"
+        component={ReferralScreen}
+        options={{ contentStyle: { backgroundColor: "#FFFFFF" } }}
+      />
     </Stack.Navigator>
   );
 }
