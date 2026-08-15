@@ -322,6 +322,7 @@ export function MorphHistoryScreen({ navigation, route }: Props) {
               </View>
             </Pressable>
           )}
+          showsVerticalScrollIndicator={false}
         />
       )}
     </View>

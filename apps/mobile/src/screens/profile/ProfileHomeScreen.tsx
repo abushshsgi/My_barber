@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { HeaderPill } from "../../components/ui/NativeHeader";
 import { SettingsGroup, SettingsRow } from "../../components/ui/SettingsKit";
 import { useProfileDashboard } from "../../hooks/useProfileDashboard";
+import { TAB_DOCK_CLEARANCE } from "../../hooks/useHideTabBar";
 import { useAuth } from "../../auth/AuthContext";
 import { planLabel } from "../../api/dashboard";
 import { formatSom, initials } from "../../api/user";
@@ -210,7 +211,7 @@ function MysaloonProfileHome({ navigation }: Props) {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
-  content: { paddingHorizontal: 16, paddingBottom: 28, gap: 4 },
+  content: { paddingHorizontal: 16, paddingBottom: TAB_DOCK_CLEARANCE + 28, gap: 4 },
   topRow: {
     flexDirection: "row",
     justifyContent: "space-between",

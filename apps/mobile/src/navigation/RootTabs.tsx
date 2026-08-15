@@ -214,7 +214,12 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
   const pressTab = (name: keyof RootTabParamList) => {
     if (switchingRef.current) return;
     if (name === "MorphTryOn") {
-      navigation.navigate("MorphTryOn", { screen: "MorphCapture" } as never);
+      // Qayta bosilsa Capture ga qaytadi; boshqa tabdan esa stack holatini saqlaydi.
+      if (activeName === "MorphTryOn") {
+        navigation.navigate("MorphTryOn", { screen: "MorphCapture" } as never);
+      } else {
+        navigation.navigate("MorphTryOn");
+      }
       return;
     }
     const route = state.routes.find((r) => r.name === name);

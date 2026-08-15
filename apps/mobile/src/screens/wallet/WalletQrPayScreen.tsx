@@ -92,7 +92,7 @@ export function WalletQrPayScreen({ navigation }: Props) {
   return (
     <View style={styles.root}>
       <NativeHeader title="QR to'lov" onBack={() => navigation.goBack()} />
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
         <View style={styles.info}>
           <Ionicons name="shield-checkmark-outline" size={22} color={colors.fg} />
           <Text style={styles.infoText}>

@@ -6,13 +6,12 @@ import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   useWindowDimensions,
   View,
 } from "react-native";
-import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import { Gesture, GestureDetector, ScrollView } from "react-native-gesture-handler";
 import Animated, {
   Extrapolation,
   FadeIn,
@@ -299,9 +298,11 @@ export function MorphTryOnScreen({ navigation }: Props) {
     onHistoryClosed();
   }, [lift, onHistoryClosed]);
 
+  const scrollNative = Gesture.Native();
   const pan = Gesture.Pan()
-    .activeOffsetY([-8, 8])
-    .failOffsetX([-28, 28])
+    .activeOffsetY([-12, 12])
+    .failOffsetX([-40, 40])
+    .simultaneousWithExternalGesture(scrollNative)
     .onBegin(() => {
       dragStart.value = lift.value;
     })
@@ -470,49 +471,46 @@ export function MorphTryOnScreen({ navigation }: Props) {
         style={[
           styles.sheet,
           {
-            // Tab ustida ozgina bo‘shliq; sheet biroz balandroq
-            paddingBottom: Math.max(insets.bottom, 10) + 78,
+            paddingBottom: dockPad,
             minHeight: 320,
           },
         ]}
       >
         <GestureDetector gesture={pan}>
-          <View style={styles.handleRow}>
-            <View style={styles.handleSpacer} />
-            <Animated.View style={[styles.handleCluster, handleOpacity]}>
-              <View style={styles.handle} />
-              <Text style={styles.handleHint}>
-                {historyOpen ? "Yopish · pastga" : "Tarix · yuqoriga"}
-              </Text>
-            </Animated.View>
-            <Pressable
-              style={[
-                styles.historyIconBtn,
-                historyOpen && styles.historyIconBtnOn,
-              ]}
-              onPress={() => {
-                if (historyOpen) closeHistoryPanel();
-                else openHistoryPanel();
-              }}
-              accessibilityLabel="Tarix"
-              hitSlop={8}
-            >
-              <Ionicons
-                name="time-outline"
-                size={16}
-                color={historyOpen ? "#FFF" : "#0A0A0A"}
-              />
-            </Pressable>
-          </View>
-        </GestureDetector>
+          <View>
+            <View style={styles.handleRow}>
+              <View style={styles.handleSpacer} />
+              <Animated.View style={[styles.handleCluster, handleOpacity]}>
+                <View style={styles.handle} />
+                <Text style={styles.handleHint}>
+                  {historyOpen ? "Yopish · pastga" : "Tarix · yuqoriga"}
+                </Text>
+              </Animated.View>
+              <Pressable
+                style={[
+                  styles.historyIconBtn,
+                  historyOpen && styles.historyIconBtnOn,
+                ]}
+                onPress={() => {
+                  if (historyOpen) closeHistoryPanel();
+                  else openHistoryPanel();
+                }}
+                accessibilityLabel="Tarix"
+                hitSlop={8}
+              >
+                <Ionicons
+                  name="time-outline"
+                  size={16}
+                  color={historyOpen ? "#FFF" : "#0A0A0A"}
+                />
+              </Pressable>
+            </View>
 
-        {/* Capture — yopiq holat */}
-        <Animated.View
-          style={captureAnim}
-          pointerEvents={historyOpen ? "none" : "auto"}
-        >
-          <GestureDetector gesture={pan}>
-            <View>
+            {/* Capture — yopiq holat (pan faqat handle orqali; tugmalar bosiladi) */}
+            <Animated.View
+              style={captureAnim}
+              pointerEvents={historyOpen ? "none" : "auto"}
+            >
               <View style={styles.steps}>
                 <View style={styles.stepTrack} />
                 {(["Selfie", "Tahlil", "Natija"] as const).map((label, i) => (
@@ -576,108 +574,111 @@ export function MorphTryOnScreen({ navigation }: Props) {
                   )}
                 </Pressable>
               </View>
-            </View>
-          </GestureDetector>
-        </Animated.View>
+            </Animated.View>
 
-        {/* History — ochiq holat: ixcham kartalar, rasm to‘liq (contain) */}
-        <Animated.View
-          style={[styles.historyBody, historyAnim]}
-          pointerEvents={historyOpen ? "auto" : "none"}
-        >
-          <View style={styles.historyHeader}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.historyTitle}>So‘nggi looklar</Text>
-              <Text style={styles.historySub}>
-                {historyLoading
-                  ? "Yuklanmoqda…"
-                  : historyItems.length > 0
-                    ? `${Math.min(previewItems.length, PREVIEW_LIMIT)} / ${historyItems.length}`
-                    : "Try-on tarixi"}
-              </Text>
-            </View>
-            <Pressable
-              style={styles.seeAllBtn}
-              onPress={() => navigation.navigate("MorphHistory")}
-              accessibilityLabel="Barcha tarix"
-            >
-              <Text style={styles.seeAllText}>Barchasi</Text>
-              <Ionicons name="chevron-forward" size={14} color="#0A0A0A" />
-            </Pressable>
-          </View>
-
-          {historyLoading && !historyFetched ? (
-            <ActivityIndicator color="#0A0A0A" style={{ marginTop: 28 }} />
-          ) : historyError ? (
-            <View style={styles.historyEmpty}>
-              <Text style={styles.historyEmptyText}>{historyError}</Text>
-              <Pressable
-                style={styles.historyRetry}
-                onPress={() => void loadHistory()}
-              >
-                <Text style={styles.historyRetryText}>Qayta</Text>
-              </Pressable>
-            </View>
-          ) : previewItems.length === 0 ? (
-            <View style={styles.historyEmpty}>
-              <Text style={styles.historyEmptyTitle}>Hali try-on yo‘q</Text>
-              <Text style={styles.historyEmptyText}>
-                Yangi look yarating — bu yerda saqlanadi.
-              </Text>
-            </View>
-          ) : (
-            <ScrollView
-              style={styles.historyScroll}
-              contentContainerStyle={[
-                styles.historyGrid,
-                { gap: gridGap, paddingHorizontal: gridPad - 16 },
-              ]}
-              showsVerticalScrollIndicator={false}
-              nestedScrollEnabled
-            >
-              {previewItems.map((item) => (
-                <Pressable
-                  key={item.id}
-                  style={[styles.historyCard, { width: cardW }]}
-                  onPress={() => openGeneration(item)}
-                >
-                  <View style={styles.historyImgWrap}>
-                    <Image
-                      source={{
-                        uri: item.after_url || item.before_url || undefined,
-                      }}
-                      style={styles.historyImg}
-                      contentFit="cover"
-                    />
-                    <LinearGradient
-                      colors={["transparent", "rgba(0,0,0,0.75)"]}
-                      locations={[0.35, 1]}
-                      style={styles.historyGrad}
-                    />
-                    <Text style={styles.historyCardTitle} numberOfLines={1}>
-                      {item.title || item.style_id}
-                    </Text>
-                  </View>
-                </Pressable>
-              ))}
-            </ScrollView>
-          )}
-
-          {previewItems.length > 0 ? (
+            {/* History — ochiq holat */}
             <Animated.View
-              style={fullHistoryCtaAnim}
+              style={[styles.historyBody, historyAnim]}
               pointerEvents={historyOpen ? "auto" : "none"}
             >
-              <Pressable
-                style={styles.fullHistoryCta}
-                onPress={() => navigation.navigate("MorphHistory")}
-              >
-                <Text style={styles.fullHistoryCtaText}>To‘liq tarixni ko‘rish</Text>
-                <Ionicons name="arrow-forward" size={16} color="#FFF" />
-              </Pressable>
+              <View style={styles.historyHeader}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.historyTitle}>So‘nggi looklar</Text>
+                  <Text style={styles.historySub}>
+                    {historyLoading
+                      ? "Yuklanmoqda…"
+                      : historyItems.length > 0
+                        ? `${Math.min(previewItems.length, PREVIEW_LIMIT)} / ${historyItems.length}`
+                        : "Try-on tarixi"}
+                  </Text>
+                </View>
+                <Pressable
+                  style={styles.seeAllBtn}
+                  onPress={() => navigation.navigate("MorphHistory")}
+                  accessibilityLabel="Barcha tarix"
+                >
+                  <Text style={styles.seeAllText}>Barchasi</Text>
+                  <Ionicons name="chevron-forward" size={14} color="#0A0A0A" />
+                </Pressable>
+              </View>
+
+              {historyLoading && !historyFetched ? (
+                <ActivityIndicator color="#0A0A0A" style={{ marginTop: 28 }} />
+              ) : historyError ? (
+                <View style={styles.historyEmpty}>
+                  <Text style={styles.historyEmptyText}>{historyError}</Text>
+                  <Pressable
+                    style={styles.historyRetry}
+                    onPress={() => void loadHistory()}
+                  >
+                    <Text style={styles.historyRetryText}>Qayta</Text>
+                  </Pressable>
+                </View>
+              ) : previewItems.length === 0 ? (
+                <View style={styles.historyEmpty}>
+                  <Text style={styles.historyEmptyTitle}>Hali try-on yo‘q</Text>
+                  <Text style={styles.historyEmptyText}>
+                    Yangi look yarating — bu yerda saqlanadi.
+                  </Text>
+                </View>
+              ) : (
+                <GestureDetector gesture={scrollNative}>
+                  <ScrollView
+                    style={styles.historyScroll}
+                    contentContainerStyle={[
+                      styles.historyGrid,
+                      { gap: gridGap, paddingHorizontal: gridPad - 16 },
+                    ]}
+                    showsVerticalScrollIndicator={false}
+                    nestedScrollEnabled
+                    bounces
+                  >
+                    {previewItems.map((item) => (
+                      <Pressable
+                        key={item.id}
+                        style={[styles.historyCard, { width: cardW }]}
+                        onPress={() => openGeneration(item)}
+                      >
+                        <View style={styles.historyImgWrap}>
+                          <Image
+                            source={{
+                              uri: item.after_url || item.before_url || undefined,
+                            }}
+                            style={styles.historyImg}
+                            contentFit="cover"
+                          />
+                          <LinearGradient
+                            colors={["transparent", "rgba(0,0,0,0.75)"]}
+                            locations={[0.35, 1]}
+                            style={styles.historyGrad}
+                          />
+                          <Text style={styles.historyCardTitle} numberOfLines={1}>
+                            {item.title || item.style_id}
+                          </Text>
+                        </View>
+                      </Pressable>
+                    ))}
+                  </ScrollView>
+                </GestureDetector>
+              )}
+
+              {previewItems.length > 0 ? (
+                <Animated.View
+                  style={fullHistoryCtaAnim}
+                  pointerEvents={historyOpen ? "auto" : "none"}
+                >
+                  <Pressable
+                    style={styles.fullHistoryCta}
+                    onPress={() => navigation.navigate("MorphHistory")}
+                  >
+                    <Text style={styles.fullHistoryCtaText}>To‘liq tarixni ko‘rish</Text>
+                    <Ionicons name="arrow-forward" size={16} color="#FFF" />
+                  </Pressable>
+                </Animated.View>
+              ) : null}
             </Animated.View>
-          ) : null}
-        </Animated.View>
+          </View>
+        </GestureDetector>
       </Animated.View>
     </View>
   );
@@ -726,7 +727,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    minHeight: 30,
+    minHeight: 44,
+    paddingVertical: 6,
   },
   handleSpacer: { width: 34 },
   handleCluster: {

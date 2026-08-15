@@ -147,7 +147,7 @@ export function WalletTopUpScreen({ navigation }: Props) {
         onBack={() => navigation.goBack()}
         border
       />
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
         <Text style={styles.sub}>Hamyon balansini oshiring</Text>
 
         <View style={styles.balCard}>

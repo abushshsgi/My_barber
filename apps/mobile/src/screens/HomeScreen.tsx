@@ -9,9 +9,11 @@ import {
   Text,
   View,
 } from "react-native";
+import { useTranslation } from "react-i18next";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { TAB_DOCK_CLEARANCE } from "../hooks/useHideTabBar";
 import type { HomeCategoryKey, HomeListing } from "../api/types";
 import { HomeBanner } from "../components/home/HomeBanner";
 import { HomeCategories } from "../components/home/HomeCategories";
@@ -31,6 +33,7 @@ type Props = {
 const MemoCard = memo(ListingCard);
 
 export function HomeScreen({ onOpenMap, onOpenExplore }: Props) {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { cardW, cardImageW, fs } = useHomeLayout();
@@ -111,7 +114,7 @@ export function HomeScreen({ onOpenMap, onOpenExplore }: Props) {
           <View style={styles.errorBox}>
             <Text style={[styles.errorText, { fontSize: fs(12) }]}>{error}</Text>
             <Pressable onPress={refresh} style={styles.retry}>
-              <Text style={[styles.retryText, { fontSize: fs(12) }]}>Qayta urinish</Text>
+              <Text style={[styles.retryText, { fontSize: fs(12) }]}>{t("common.retry")}</Text>
             </Pressable>
           </View>
         ) : null}
@@ -124,7 +127,7 @@ export function HomeScreen({ onOpenMap, onOpenExplore }: Props) {
 
         {filteredSalons.length > 0 ? (
           <View style={styles.section}>
-            <SectionHeader title="Top salonlar" onPressLink={onOpenExplore} />
+            <SectionHeader title={t("home.topSalons")} onPressLink={onOpenExplore} />
             <FlatList
               data={filteredSalons}
               horizontal
@@ -150,7 +153,7 @@ export function HomeScreen({ onOpenMap, onOpenExplore }: Props) {
 
         {topBarbers.length > 0 ? (
           <View style={styles.section}>
-            <SectionHeader title="Top ustalar" onPressLink={onOpenMap} />
+            <SectionHeader title={t("home.topBarbers")} onPressLink={onOpenMap} />
             <FlatList
               data={topBarbers}
               horizontal
@@ -185,7 +188,7 @@ const styles = StyleSheet.create({
   },
   content: {
     gap: 16,
-    paddingBottom: 20,
+    paddingBottom: TAB_DOCK_CLEARANCE + 24,
   },
   section: {
     gap: 0,

@@ -112,6 +112,7 @@ export function ChatHistorySheet({
                 </Pressable>
               );
             }}
+            showsVerticalScrollIndicator={false}
           />
         </View>
       </View>

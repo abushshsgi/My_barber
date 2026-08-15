@@ -72,6 +72,7 @@ export function WalletTransactionsScreen({ navigation }: Props) {
               </Text>
             </View>
           )}
+          showsVerticalScrollIndicator={false}
         />
       )}
     </View>

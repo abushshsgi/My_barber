@@ -435,6 +435,7 @@ export function MorphChatScreen() {
           contentContainerStyle={[styles.list, { paddingBottom: 12 }]}
           onContentSizeChange={scrollToEnd}
           keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         />
 
         {errorNotice}

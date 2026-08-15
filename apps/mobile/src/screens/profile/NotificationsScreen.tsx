@@ -65,6 +65,7 @@ export function NotificationsScreen({ navigation }: Props) {
             </View>
           );
         }}
+        showsVerticalScrollIndicator={false}
       />
     </View>
   );

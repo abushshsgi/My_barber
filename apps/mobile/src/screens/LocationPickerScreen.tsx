@@ -341,6 +341,7 @@ export function LocationPickerScreen({
                 </View>
               </Pressable>
             )}
+            showsVerticalScrollIndicator={false}
           />
         )}
       </View>

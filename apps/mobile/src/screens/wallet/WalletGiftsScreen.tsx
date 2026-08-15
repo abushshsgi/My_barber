@@ -75,6 +75,7 @@ export function WalletGiftsScreen({ navigation }: Props) {
       <ScrollView
         contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        showsVerticalScrollIndicator={false}
       >
         <LinearGradient colors={["#1A1A1A", "#0A0A0A"]} style={styles.hero}>
           <View style={styles.heroTop}>

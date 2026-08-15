@@ -188,6 +188,7 @@ export function MapScreen() {
               </Text>
             ) : null
           }
+          showsVerticalScrollIndicator={false}
         />
       )}
     </View>

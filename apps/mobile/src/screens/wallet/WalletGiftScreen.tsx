@@ -94,7 +94,7 @@ export function WalletGiftScreen({ navigation }: Props) {
       <NativeHeader title="Hamyon" onBack={() => navigation.goBack()} />
       <Text style={styles.subHeader}>Sovg'a karta</Text>
 
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
         <LinearGradient colors={[palette.from, palette.to]} style={styles.preview}>
           <View style={styles.previewTop}>
             <Ionicons name="gift" size={18} color={palette.accent} />
