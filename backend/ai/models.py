@@ -6,6 +6,8 @@ from django.db import models
 
 HISTORY_MAX_PER_USER = 6
 GENERATION_HISTORY_MAX_PER_USER = 60
+CHAT_THREADS_MAX_PER_USER = 40
+CHAT_MESSAGES_MAX_PER_THREAD = 200
 
 
 class Hairstyle(models.Model):
@@ -264,3 +266,87 @@ class MorphAiGenerationEntry(models.Model):
 
     def __str__(self) -> str:
         return f"MorphAiGeneration({self.user_id}, {self.style_id}, {self.created_at})"
+
+
+class MorphAiChatThread(models.Model):
+    """Morf AI chatbot suhbat (client_id = mobil/local thread id)."""
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="morph_chat_threads",
+    )
+    client_id = models.CharField(max_length=64, db_index=True)
+    title = models.CharField(max_length=200, blank=True, default="")
+    preview = models.CharField(max_length=280, blank=True, default="")
+    context = models.JSONField(default=dict, blank=True)
+    message_count = models.PositiveIntegerField(default=0)
+    total_prompt_tokens = models.PositiveIntegerField(default=0)
+    total_candidates_tokens = models.PositiveIntegerField(default=0)
+    total_tokens = models.PositiveIntegerField(default=0)
+    total_cost_usd = models.DecimalField(max_digits=12, decimal_places=6, default=Decimal("0"))
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    updated_at = models.DateTimeField(auto_now=True, db_index=True)
+
+    class Meta:
+        ordering = ["-updated_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "client_id"],
+                name="uniq_morph_chat_thread_user_client",
+            ),
+        ]
+        indexes = [
+            models.Index(
+                fields=["user", "-updated_at"],
+                name="ai_morphchat_user_upd_idx",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"MorphAiChatThread({self.user_id}, {self.client_id})"
+
+
+class MorphAiChatMessage(models.Model):
+    """Morf AI chatbot xabari — to'liq transcript admin va sync uchun."""
+
+    class Role(models.TextChoices):
+        USER = "user", "User"
+        ASSISTANT = "assistant", "Assistant"
+
+    thread = models.ForeignKey(
+        MorphAiChatThread,
+        on_delete=models.CASCADE,
+        related_name="messages",
+    )
+    client_id = models.CharField(max_length=64, blank=True, default="", db_index=True)
+    role = models.CharField(max_length=16, choices=Role.choices, db_index=True)
+    content = models.TextField()
+    context = models.JSONField(default=dict, blank=True)
+    prompt_tokens = models.PositiveIntegerField(default=0)
+    candidates_tokens = models.PositiveIntegerField(default=0)
+    thoughts_tokens = models.PositiveIntegerField(default=0)
+    total_tokens = models.PositiveIntegerField(default=0)
+    cost_usd = models.DecimalField(max_digits=12, decimal_places=6, default=Decimal("0"))
+    model = models.CharField(max_length=80, blank=True, default="")
+    provider = models.CharField(max_length=32, blank=True, default="")
+    usage = models.ForeignKey(
+        AiGenerationUsage,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="chat_messages",
+    )
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ["created_at", "id"]
+        indexes = [
+            models.Index(
+                fields=["thread", "created_at"],
+                name="ai_morphchat_msg_thread_idx",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"MorphAiChatMessage({self.thread_id}, {self.role})"

@@ -24,6 +24,7 @@ from ai.morph_ops import (
     update_settings,
 )
 from ai.morph_studio import build_morph_studio_ops
+from ai.morph_chat_analytics import build_morph_chat_ops, build_morph_chat_thread_detail
 
 
 def _int_param(raw, default: int, *, lo: int = 1, hi: int = 200) -> int:
@@ -97,6 +98,31 @@ class AdminMorphAiStudioView(UnthrottledAPIView):
                 top_limit=_int_param(request.query_params.get("top"), 40, hi=100),
             )
         )
+
+
+class AdminMorphAiChatView(UnthrottledAPIView):
+    permission_classes = [IsAdmin]
+
+    def get(self, request):
+        return Response(
+            build_morph_chat_ops(
+                request.query_params.get("start"),
+                request.query_params.get("end"),
+                recent_limit=_int_param(request.query_params.get("limit"), 40),
+                top_limit=_int_param(request.query_params.get("top"), 40, hi=100),
+                thread_limit=_int_param(request.query_params.get("threads"), 30, hi=80),
+            )
+        )
+
+
+class AdminMorphAiChatThreadDetailView(UnthrottledAPIView):
+    permission_classes = [IsAdmin]
+
+    def get(self, request, thread_id: int):
+        detail = build_morph_chat_thread_detail(thread_id)
+        if detail is None:
+            return Response({"detail": "Thread topilmadi."}, status=status.HTTP_404_NOT_FOUND)
+        return Response(detail)
 
 
 class AdminMorphAiBudgetView(UnthrottledAPIView):

@@ -21,6 +21,7 @@ from .models import (
     HISTORY_MAX_PER_USER,
     AiStyleHistoryEntry,
     Hairstyle,
+    MorphAiChatThread,
     MorphAiGenerationEntry,
     MorphAiLookShare,
 )
@@ -57,6 +58,13 @@ from .services.gemini_style import (
 from .unthrottled import EventStreamRenderer, UnthrottledAPIView
 from .usage_log import record_ai_generation
 from .morph_ops import check_user_can_generate, morph_generation_blocked_response
+from .chat_persist import (
+    append_chat_turn,
+    clear_user_threads,
+    delete_user_thread,
+    serialize_thread,
+    upsert_thread_from_client,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -645,8 +653,19 @@ class AiBarberCardView(UnthrottledAPIView):
             return Response({"detail": exc.message}, status=exc.status)
 
 
+def _chat_should_persist(request) -> bool:
+    raw = request.data.get("persist")
+    if raw is False or raw == 0 or str(raw).strip().lower() in ("0", "false", "no"):
+        return False
+    return True
+
+
+def _chat_thread_id(request) -> str:
+    return str(request.data.get("thread_id") or request.data.get("threadId") or "").strip()[:64]
+
+
 class AiMorphChatView(UnthrottledAPIView):
-    """POST { message, history?, context?, stream? } — Morf AI chatbot javobi."""
+    """POST { message, history?, context?, stream?, thread_id?, persist? } — Morf AI chatbot."""
 
     permission_classes = [IsAuthenticated]
     renderer_classes = [JSONRenderer, EventStreamRenderer]
@@ -672,6 +691,8 @@ class AiMorphChatView(UnthrottledAPIView):
         history = request.data.get("history")
         context_raw = request.data.get("context")
         context = context_raw if isinstance(context_raw, dict) else None
+        thread_id = _chat_thread_id(request)
+        persist = _chat_should_persist(request) and bool(thread_id)
         accept = (request.headers.get("Accept") or "").lower()
         wants_stream = bool(request.data.get("stream")) or "text/event-stream" in accept
 
@@ -681,6 +702,8 @@ class AiMorphChatView(UnthrottledAPIView):
                 message=str(message),
                 history=history if isinstance(history, list) else None,
                 context=context,
+                thread_id=thread_id,
+                persist=persist,
             )
 
         try:
@@ -701,7 +724,7 @@ class AiMorphChatView(UnthrottledAPIView):
             limits["daily_used"] = daily_used
             limits["daily_remaining"] = max(0, MORF_CHAT_DAILY_LIMIT - daily_used)
 
-            record_ai_generation(
+            usage_row = record_ai_generation(
                 user_id=user.pk,
                 kind="chat",
                 status="success",
@@ -716,10 +739,22 @@ class AiMorphChatView(UnthrottledAPIView):
                 tokens_estimated=bool(usage.get("tokens_estimated")),
                 latency_ms=int(usage.get("latency_ms") or 0),
             )
+            reply = result.get("reply") or ""
+            if persist:
+                append_chat_turn(
+                    user_id=user.pk,
+                    thread_client_id=thread_id,
+                    user_message=str(message),
+                    assistant_message=str(reply),
+                    context=context,
+                    usage_row=usage_row,
+                    usage_meta=usage,
+                )
             return Response(
                 {
-                    "reply": result["reply"],
+                    "reply": reply,
                     "limits": limits,
+                    "thread_id": thread_id or None,
                 }
             )
         except AiStyleError as exc:
@@ -731,7 +766,7 @@ class AiMorphChatView(UnthrottledAPIView):
             )
             return Response({"detail": exc.message}, status=exc.status)
 
-    def _stream_reply(self, *, user, message: str, history, context):
+    def _stream_reply(self, *, user, message: str, history, context, thread_id: str, persist: bool):
         from ai.chat_prompts import MORF_CHAT_DAILY_LIMIT
         from ai.services.gemini_chat import count_user_chat_today, stream_morf_chat_reply
 
@@ -750,7 +785,7 @@ class AiMorphChatView(UnthrottledAPIView):
                         daily_used = count_user_chat_today(user.pk) + 1
                         limits["daily_used"] = daily_used
                         limits["daily_remaining"] = max(0, MORF_CHAT_DAILY_LIMIT - daily_used)
-                        record_ai_generation(
+                        usage_row = record_ai_generation(
                             user_id=user.pk,
                             kind="chat",
                             status="success",
@@ -765,13 +800,25 @@ class AiMorphChatView(UnthrottledAPIView):
                             tokens_estimated=bool(usage.get("tokens_estimated")),
                             latency_ms=int(usage.get("latency_ms") or 0),
                         )
+                        reply = event.get("reply") or ""
+                        if persist:
+                            append_chat_turn(
+                                user_id=user.pk,
+                                thread_client_id=thread_id,
+                                user_message=message,
+                                assistant_message=str(reply),
+                                context=context,
+                                usage_row=usage_row,
+                                usage_meta=usage,
+                            )
                         yield (
                             "data: "
                             + json.dumps(
                                 {
                                     "done": True,
                                     "limits": limits,
-                                    "reply": event.get("reply") or "",
+                                    "reply": reply,
+                                    "thread_id": thread_id or None,
                                 },
                                 ensure_ascii=False,
                             )
@@ -797,6 +844,86 @@ class AiMorphChatView(UnthrottledAPIView):
         response["Cache-Control"] = "no-cache"
         response["X-Accel-Buffering"] = "no"
         return response
+
+
+class MorphAiChatThreadListView(UnthrottledAPIView):
+    """GET — chat history; DELETE — barcha threadlarni o'chirish; PUT — sync upsert."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = _require_customer_user(request)
+        if isinstance(user, Response):
+            return user
+        include_messages = str(request.query_params.get("messages") or "").lower() in (
+            "1",
+            "true",
+            "yes",
+        )
+        threads = MorphAiChatThread.objects.filter(user=user).order_by("-updated_at")[:40]
+        if include_messages:
+            threads = threads.prefetch_related("messages")
+        return Response(
+            [serialize_thread(th, include_messages=include_messages) for th in threads]
+        )
+
+    def put(self, request):
+        """Bitta threadni to'liq sync qilish: { id, title?, messages?, context?, updated_at? }."""
+        user = _require_customer_user(request)
+        if isinstance(user, Response):
+            return user
+        client_id = str(request.data.get("id") or request.data.get("thread_id") or "").strip()
+        if not client_id:
+            return Response({"detail": "thread id kerak."}, status=400)
+        try:
+            thread = upsert_thread_from_client(
+                user_id=user.pk,
+                client_id=client_id,
+                title=str(request.data.get("title") or ""),
+                context=request.data.get("context")
+                if isinstance(request.data.get("context"), dict)
+                else None,
+                messages=request.data.get("messages")
+                if isinstance(request.data.get("messages"), list)
+                else None,
+                updated_at=str(request.data.get("updated_at") or "") or None,
+            )
+        except ValueError as exc:
+            return Response({"detail": str(exc)}, status=400)
+        return Response(serialize_thread(thread, include_messages=True))
+
+    def delete(self, request):
+        user = _require_customer_user(request)
+        if isinstance(user, Response):
+            return user
+        cleared = clear_user_threads(user_id=user.pk)
+        return Response({"ok": True, "deleted": cleared})
+
+
+class MorphAiChatThreadDetailView(UnthrottledAPIView):
+    """GET / DELETE — bitta chat thread (client_id bo'yicha)."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, client_id: str):
+        user = _require_customer_user(request)
+        if isinstance(user, Response):
+            return user
+        thread = get_object_or_404(
+            MorphAiChatThread.objects.prefetch_related("messages"),
+            user=user,
+            client_id=str(client_id).strip()[:64],
+        )
+        return Response(serialize_thread(thread, include_messages=True))
+
+    def delete(self, request, client_id: str):
+        user = _require_customer_user(request)
+        if isinstance(user, Response):
+            return user
+        ok = delete_user_thread(user_id=user.pk, client_id=str(client_id))
+        if not ok:
+            return Response({"detail": "Topilmadi."}, status=404)
+        return Response({"ok": True})
 
 
 class AiStyleHistoryListCreateView(UnthrottledAPIView):
