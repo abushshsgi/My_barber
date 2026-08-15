@@ -56,6 +56,7 @@ import { Route as AdminHisobRaqamIndexRouteImport } from './routes/admin.hisob-r
 import { Route as AdminMorphAiIndexRouteImport } from './routes/admin.morph-ai.index'
 import { Route as AdminMorphAiBudgetRouteImport } from './routes/admin.morph-ai.budget'
 import { Route as AdminMorphAiCatalogRouteImport } from './routes/admin.morph-ai.catalog'
+import { Route as AdminMorphAiChatRouteImport } from './routes/admin.morph-ai.chat'
 import { Route as AdminMorphAiConversionRouteImport } from './routes/admin.morph-ai.conversion'
 import { Route as AdminMorphAiErrorsRouteImport } from './routes/admin.morph-ai.errors'
 import { Route as AdminMorphAiGalleryRouteImport } from './routes/admin.morph-ai.gallery'
@@ -331,6 +332,11 @@ const AdminMorphAiCatalogRoute = AdminMorphAiCatalogRouteImport.update({
   path: '/catalog',
   getParentRoute: () => AdminMorphAiRoute,
 } as any)
+const AdminMorphAiChatRoute = AdminMorphAiChatRouteImport.update({
+  id: '/chat',
+  path: '/chat',
+  getParentRoute: () => AdminMorphAiRoute,
+} as any)
 const AdminMorphAiConversionRoute = AdminMorphAiConversionRouteImport.update({
   id: '/conversion',
   path: '/conversion',
@@ -575,6 +581,7 @@ export interface FileRoutesByFullPath {
   '/admin/finance/transactions': typeof AdminFinanceTransactionsRoute
   '/admin/morph-ai/budget': typeof AdminMorphAiBudgetRoute
   '/admin/morph-ai/catalog': typeof AdminMorphAiCatalogRoute
+  '/admin/morph-ai/chat': typeof AdminMorphAiChatRoute
   '/admin/morph-ai/conversion': typeof AdminMorphAiConversionRoute
   '/admin/morph-ai/errors': typeof AdminMorphAiErrorsRoute
   '/admin/morph-ai/gallery': typeof AdminMorphAiGalleryRoute
@@ -653,6 +660,7 @@ export interface FileRoutesByTo {
   '/admin/finance/transactions': typeof AdminFinanceTransactionsRoute
   '/admin/morph-ai/budget': typeof AdminMorphAiBudgetRoute
   '/admin/morph-ai/catalog': typeof AdminMorphAiCatalogRoute
+  '/admin/morph-ai/chat': typeof AdminMorphAiChatRoute
   '/admin/morph-ai/conversion': typeof AdminMorphAiConversionRoute
   '/admin/morph-ai/errors': typeof AdminMorphAiErrorsRoute
   '/admin/morph-ai/gallery': typeof AdminMorphAiGalleryRoute
@@ -738,6 +746,7 @@ export interface FileRoutesById {
   '/admin/finance/transactions': typeof AdminFinanceTransactionsRoute
   '/admin/morph-ai/budget': typeof AdminMorphAiBudgetRoute
   '/admin/morph-ai/catalog': typeof AdminMorphAiCatalogRoute
+  '/admin/morph-ai/chat': typeof AdminMorphAiChatRoute
   '/admin/morph-ai/conversion': typeof AdminMorphAiConversionRoute
   '/admin/morph-ai/errors': typeof AdminMorphAiErrorsRoute
   '/admin/morph-ai/gallery': typeof AdminMorphAiGalleryRoute
@@ -827,6 +836,7 @@ export interface FileRouteTypes {
     | '/admin/finance/transactions'
     | '/admin/morph-ai/budget'
     | '/admin/morph-ai/catalog'
+    | '/admin/morph-ai/chat'
     | '/admin/morph-ai/conversion'
     | '/admin/morph-ai/errors'
     | '/admin/morph-ai/gallery'
@@ -905,6 +915,7 @@ export interface FileRouteTypes {
     | '/admin/finance/transactions'
     | '/admin/morph-ai/budget'
     | '/admin/morph-ai/catalog'
+    | '/admin/morph-ai/chat'
     | '/admin/morph-ai/conversion'
     | '/admin/morph-ai/errors'
     | '/admin/morph-ai/gallery'
@@ -989,6 +1000,7 @@ export interface FileRouteTypes {
     | '/admin/finance/transactions'
     | '/admin/morph-ai/budget'
     | '/admin/morph-ai/catalog'
+    | '/admin/morph-ai/chat'
     | '/admin/morph-ai/conversion'
     | '/admin/morph-ai/errors'
     | '/admin/morph-ai/gallery'
@@ -1369,6 +1381,13 @@ declare module '@tanstack/react-router' {
       path: '/catalog'
       fullPath: '/admin/morph-ai/catalog'
       preLoaderRoute: typeof AdminMorphAiCatalogRouteImport
+      parentRoute: typeof AdminMorphAiRoute
+    }
+    '/admin/morph-ai/chat': {
+      id: '/admin/morph-ai/chat'
+      path: '/chat'
+      fullPath: '/admin/morph-ai/chat'
+      preLoaderRoute: typeof AdminMorphAiChatRouteImport
       parentRoute: typeof AdminMorphAiRoute
     }
     '/admin/morph-ai/conversion': {
@@ -1772,6 +1791,7 @@ const AdminHisobRaqamRouteWithChildren = AdminHisobRaqamRoute._addFileChildren(
 interface AdminMorphAiRouteChildren {
   AdminMorphAiBudgetRoute: typeof AdminMorphAiBudgetRoute
   AdminMorphAiCatalogRoute: typeof AdminMorphAiCatalogRoute
+  AdminMorphAiChatRoute: typeof AdminMorphAiChatRoute
   AdminMorphAiConversionRoute: typeof AdminMorphAiConversionRoute
   AdminMorphAiErrorsRoute: typeof AdminMorphAiErrorsRoute
   AdminMorphAiGalleryRoute: typeof AdminMorphAiGalleryRoute
@@ -1787,6 +1807,7 @@ interface AdminMorphAiRouteChildren {
 const AdminMorphAiRouteChildren: AdminMorphAiRouteChildren = {
   AdminMorphAiBudgetRoute: AdminMorphAiBudgetRoute,
   AdminMorphAiCatalogRoute: AdminMorphAiCatalogRoute,
+  AdminMorphAiChatRoute: AdminMorphAiChatRoute,
   AdminMorphAiConversionRoute: AdminMorphAiConversionRoute,
   AdminMorphAiErrorsRoute: AdminMorphAiErrorsRoute,
   AdminMorphAiGalleryRoute: AdminMorphAiGalleryRoute,

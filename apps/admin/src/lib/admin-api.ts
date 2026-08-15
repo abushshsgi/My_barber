@@ -4057,6 +4057,143 @@ export async function fetchMorphAiStudio(params?: {
   return apiJson<MorphAiStudioOps>(`/api/v1/admin/morph-ai/studio/${q ? `?${q}` : ""}`);
 }
 
+export type MorphAiChatOps = {
+  generated_at: string;
+  range: { start: string; end: string };
+  billing_period: { start: string; end: string };
+  live: { turns_15m: number; active_users_15m: number };
+  summary: {
+    turns: number;
+    success: number;
+    failed: number;
+    success_rate: number;
+    unique_users: number;
+    threads: number;
+    messages: number;
+    user_messages: number;
+    assistant_messages: number;
+    threads_with_context: number;
+    total_tokens: number;
+    prompt_tokens: number;
+    candidates_tokens: number;
+    total_cost_usd: string;
+    avg_cost_usd: string;
+    avg_latency_ms: number;
+    avg_tokens: number;
+    avg_prompt_tokens: number;
+  };
+  daily: Array<{
+    date: string;
+    turns: number;
+    success: number;
+    failed: number;
+    users: number;
+    tokens: number;
+    prompt_tokens: number;
+    cost_usd: string;
+  }>;
+  top_users: Array<{
+    user_id: number;
+    name: string;
+    phone: string;
+    email: string;
+    turns: number;
+    success: number;
+    failed: number;
+    tokens: number;
+    prompt_tokens: number;
+    cost_usd: string;
+    last_at: string | null;
+    threads: number;
+    plan_code: string;
+    subscription_status: string;
+    subscription_id: string | null;
+    ends_at: string | null;
+    morph_ai_used: number;
+    morph_ai_limit: number;
+  }>;
+  recent: Array<{
+    id: number;
+    user_id: number | null;
+    user_name: string;
+    status: string;
+    prompt: string;
+    model: string;
+    provider: string;
+    prompt_tokens: number;
+    candidates_tokens: number;
+    total_tokens: number;
+    cost_usd: string;
+    latency_ms: number;
+    error_detail: string;
+    created_at: string | null;
+    plan_code: string;
+    subscription_status: string;
+  }>;
+  recent_threads: Array<{
+    id: string;
+    db_id: number;
+    title: string;
+    preview: string;
+    message_count: number;
+    total_tokens: number;
+    total_cost_usd: string;
+    updated_at: string | null;
+    user_id: number;
+    user_name: string;
+    has_context: boolean;
+    context_keys: string[];
+  }>;
+};
+
+export type MorphAiChatThreadDetail = {
+  id: string;
+  db_id: number;
+  title: string;
+  preview: string;
+  message_count: number;
+  total_tokens: number;
+  total_cost_usd: string;
+  user_id: number;
+  user_name: string;
+  user_phone: string;
+  context: Record<string, unknown>;
+  messages: Array<{
+    id: string;
+    db_id: number;
+    role: "user" | "assistant" | string;
+    content: string;
+    context?: Record<string, unknown>;
+    prompt_tokens: number;
+    candidates_tokens: number;
+    total_tokens: number;
+    cost_usd: string;
+    model: string;
+    provider: string;
+    created_at: string | null;
+  }>;
+};
+
+export async function fetchMorphAiChat(params?: {
+  range?: StatDateRange;
+  limit?: number;
+  top?: number;
+  threads?: number;
+}): Promise<MorphAiChatOps> {
+  const sp = new URLSearchParams();
+  if (params?.range?.start) sp.set("start", params.range.start);
+  if (params?.range?.end) sp.set("end", params.range.end);
+  if (params?.limit) sp.set("limit", String(params.limit));
+  if (params?.top) sp.set("top", String(params.top));
+  if (params?.threads) sp.set("threads", String(params.threads));
+  const q = sp.toString();
+  return apiJson<MorphAiChatOps>(`/api/v1/admin/morph-ai/chat/${q ? `?${q}` : ""}`);
+}
+
+export async function fetchMorphAiChatThread(threadId: number): Promise<MorphAiChatThreadDetail> {
+  return apiJson(`/api/v1/admin/morph-ai/chat/threads/${threadId}/`);
+}
+
 export async function fetchMorphAiBudget(params?: { range?: StatDateRange }) {
   return apiJson<{
     settings: { daily_budget_usd: string; budget_enforce: boolean };

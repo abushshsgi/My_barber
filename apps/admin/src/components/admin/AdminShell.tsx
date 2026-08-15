@@ -35,6 +35,7 @@ import {
   Hash,
   UserPlus,
   ImagePlus,
+  MessageCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MysaloonLogo } from "@/components/brand/MysaloonLogo";
@@ -154,6 +155,7 @@ const SECTIONS: Section[] = [
     items: [
       { to: "/admin/morph-ai", label: "Analytics", icon: Sparkles },
       { to: "/admin/morph-ai/studio", label: "Studio", icon: ImagePlus },
+      { to: "/admin/morph-ai/chat", label: "Chat", icon: MessageCircle },
       { to: "/admin/morph-ai/catalog", label: "Katalog", icon: Tag },
       { to: "/admin/morph-ai/errors", label: "Xatolar", icon: ShieldCheck },
       { to: "/admin/morph-ai/limits", label: "Limitlar", icon: Users },

@@ -72,6 +72,7 @@ function kindLabel(kind: string): string {
   if (kind === "analyze") return "Tahlil";
   if (kind === "face_check") return "Yuz tekshiruv";
   if (kind === "studio") return "Studio";
+  if (kind === "chat") return "Chat";
   return kind;
 }
 
