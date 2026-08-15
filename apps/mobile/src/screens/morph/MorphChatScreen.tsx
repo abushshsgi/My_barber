@@ -108,14 +108,13 @@ export function MorphChatScreen() {
           return true;
         }
         if (chatOpen) {
-          chat.startNewChat();
           setChatOpen(false);
           return true;
         }
         return false;
       });
       return () => sub.remove();
-    }, [chat.startNewChat, chatOpen, closePaywall, menuOpen, paywall, settingsOpen]),
+    }, [chatOpen, closePaywall, menuOpen, paywall, settingsOpen]),
   );
 
   useFocusEffect(
@@ -304,8 +303,10 @@ export function MorphChatScreen() {
   const openReferralFromSettings = useCallback(() => {
     setSettingsOpen(false);
     setPaywall(null);
-    // MorphChat — tab sibling; getParent() RootStack bo‘ladi (Profile yo‘q).
-    navigation.navigate("Profile" as never, { screen: "Referrals" } as never);
+    navigation.navigate({
+      name: "Profile",
+      params: { screen: "Referrals" },
+    } as never);
   }, [navigation]);
 
   const errorNotice = chat.error ? (
@@ -369,7 +370,10 @@ export function MorphChatScreen() {
         onNeedLogin={onNeedLogin}
         onOpenReferral={() => {
           closePaywall();
-          navigation.navigate("Profile" as never, { screen: "Referrals" } as never);
+          navigation.navigate({
+            name: "Profile",
+            params: { screen: "Referrals" },
+          } as never);
         }}
       />
     </Modal>
@@ -472,15 +476,12 @@ export function MorphChatScreen() {
           </Text>
         </View>
         <Pressable
-          onPress={() => {
-            chat.startNewChat();
-            setChatOpen(false);
-          }}
+          onPress={() => setChatOpen(false)}
           style={({ pressed }) => [styles.headerBtn, pressed && styles.pressed]}
           accessibilityRole="button"
-          accessibilityLabel={t("chat.history.newChat")}
+          accessibilityLabel={t("chat.home.backA11y")}
         >
-          <Ionicons name="create-outline" size={18} color="#111111" />
+          <Ionicons name="home-outline" size={20} color="#111111" />
         </Pressable>
       </View>
 

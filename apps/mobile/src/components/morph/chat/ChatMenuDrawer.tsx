@@ -1,8 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { StatusBar } from "expo-status-bar";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
+  Dimensions,
   Modal,
   Pressable,
   ScrollView,
@@ -11,6 +12,13 @@ import {
   TextInput,
   View,
 } from "react-native";
+import Animated, {
+  Easing,
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { MorphChatThread } from "../../../hooks/useMorphChat";
 
@@ -36,6 +44,11 @@ type Props = {
   onProfile: () => void;
   onSettings: () => void;
 };
+
+const DRAWER_MS = 280;
+const EASE = Easing.out(Easing.cubic);
+const SCREEN_W = Dimensions.get("window").width;
+const DRAWER_W = Math.min(SCREEN_W * 0.86, 380);
 
 function previewOf(thread: MorphChatThread): string {
   const last = [...thread.messages].reverse().find((m) => m.id !== "welcome");
@@ -67,6 +80,21 @@ export function ChatMenuDrawer({
   const insets = useSafeAreaInsets();
   const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState("");
+  const [mounted, setMounted] = useState(visible);
+
+  const progress = useSharedValue(visible ? 1 : 0);
+
+  useEffect(() => {
+    if (visible) {
+      setMounted(true);
+      progress.value = withTiming(1, { duration: DRAWER_MS, easing: EASE });
+      return;
+    }
+    if (!mounted) return;
+    progress.value = withTiming(0, { duration: DRAWER_MS, easing: EASE }, (finished) => {
+      if (finished) runOnJS(setMounted)(false);
+    });
+  }, [visible, mounted, progress]);
 
   const recent = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -78,16 +106,39 @@ export function ChatMenuDrawer({
     });
   }, [query, threads]);
 
+  const scrimStyle = useAnimatedStyle(() => ({
+    opacity: progress.value,
+  }));
+
+  const drawerStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: (1 - progress.value) * -DRAWER_W }],
+  }));
+
+  const requestClose = () => {
+    if (!visible) return;
+    onClose();
+  };
+
+  if (!mounted) return null;
+
   return (
-    <Modal visible={visible} animationType="fade" transparent onRequestClose={onClose}>
-      <View style={styles.root}>
+    <Modal visible transparent animationType="none" onRequestClose={requestClose}>
+      <View style={styles.root} pointerEvents="box-none">
         <StatusBar style="light" />
-        <Pressable style={styles.scrim} onPress={onClose} accessibilityRole="button" />
-        <View style={[styles.drawer, { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 8 }]}>
+        <Animated.View style={[styles.scrimFill, scrimStyle]}>
+          <Pressable style={styles.scrim} onPress={requestClose} accessibilityRole="button" />
+        </Animated.View>
+        <Animated.View
+          style={[
+            styles.drawer,
+            drawerStyle,
+            { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 8, width: DRAWER_W },
+          ]}
+        >
           <View style={styles.header}>
             <Text style={styles.brand}>{brand}</Text>
             <Pressable
-              onPress={onClose}
+              onPress={requestClose}
               style={({ pressed }) => [styles.closeBtn, pressed && styles.pressed]}
               accessibilityRole="button"
               accessibilityLabel="Close"
@@ -116,7 +167,13 @@ export function ChatMenuDrawer({
                 style={styles.searchInput}
                 autoFocus
               />
-              <Pressable onPress={() => { setSearchOpen(false); setQuery(""); }} hitSlop={8}>
+              <Pressable
+                onPress={() => {
+                  setSearchOpen(false);
+                  setQuery("");
+                }}
+                hitSlop={8}
+              >
                 <Ionicons name="close" size={16} color="#A1A1AA" />
               </Pressable>
             </View>
@@ -200,7 +257,7 @@ export function ChatMenuDrawer({
               <Ionicons name="settings-outline" size={20} color="#FFFFFF" />
             </Pressable>
           </View>
-        </View>
+        </Animated.View>
       </View>
     </Modal>
   );
@@ -210,15 +267,18 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     flexDirection: "row",
+  },
+  scrimFill: {
+    ...StyleSheet.absoluteFill,
     backgroundColor: "rgba(0,0,0,0.45)",
   },
   scrim: {
-    ...StyleSheet.absoluteFill,
+    flex: 1,
   },
   drawer: {
     zIndex: 2,
-    width: "86%",
     maxWidth: 380,
+    height: "100%",
     backgroundColor: "#000000",
     paddingHorizontal: 18,
   },

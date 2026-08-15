@@ -295,7 +295,8 @@
       "headline": "Sizga mos uslub — bir savolda",
       "subtitle": "Yuz shakli, soch va soqol bo'yicha shaxsiy maslahat. Barberga tayyor ko'rsatma.",
       "askAnything": "Istalgan narsani so'rang...",
-      "cameraA11y": "Kamera"
+      "cameraA11y": "Kamera",
+      "backA11y": "Chat boshiga"
     },
     "menu": {
       "brand": "Morf AI",
