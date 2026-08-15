@@ -1,10 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import {
   ActivityIndicator,
   Alert,
   Pressable,
   ScrollView,
+  Share,
   StyleSheet,
   Switch,
   Text,
@@ -15,27 +16,90 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { MorphChatLimits } from "../../api/ai";
 import { NativeHeader } from "../../components/ui/NativeHeader";
 import { SettingsGroup, SettingsRow } from "../../components/ui/SettingsKit";
+import type { MorphChatThread } from "../../hooks/useMorphChat";
 import {
+  DEFAULT_MORPH_CHAT_PREFS,
+  morphChatUsagePercent,
   readMorphChatLimitsSnapshot,
   readMorphChatPrefs,
   writeMorphChatPrefs,
+  type MorphChatAdviceGender,
   type MorphChatPrefs,
+  type MorphChatReplyLang,
+  type MorphChatReplyStyle,
 } from "../../lib/morph-chat-prefs";
 import { colors } from "../../theme/colors";
 
 type Props = {
   limits: MorphChatLimits | null;
   threadCount: number;
+  threads: MorphChatThread[];
   onClose: () => void;
   onClearAllChats: () => void;
   onOpenSubscription: () => void;
   onSaveHistoryOff?: () => void;
 };
 
-/** Morf AI chatbot sozlamalari — limit, kontekst va tarix. */
+type ChipOption<T extends string> = { value: T; label: string };
+
+function ChipRow<T extends string>({
+  options,
+  value,
+  onChange,
+}: {
+  options: ChipOption<T>[];
+  value: T;
+  onChange: (v: T) => void;
+}) {
+  return (
+    <View style={styles.chipRow}>
+      {options.map((opt) => {
+        const active = opt.value === value;
+        return (
+          <Pressable
+            key={opt.value}
+            onPress={() => onChange(opt.value)}
+            style={({ pressed }) => [
+              styles.chip,
+              active && styles.chipActive,
+              pressed && styles.pressed,
+            ]}
+            accessibilityRole="button"
+            accessibilityState={{ selected: active }}
+          >
+            <Text style={[styles.chipText, active && styles.chipTextActive]}>{opt.label}</Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
+function ChoiceBlock({
+  title,
+  subtitle,
+  children,
+  last,
+}: {
+  title: string;
+  subtitle?: string;
+  children: ReactNode;
+  last?: boolean;
+}) {
+  return (
+    <View style={[styles.choiceBlock, !last && styles.choiceBorder]}>
+      <Text style={styles.choiceTitle}>{title}</Text>
+      {subtitle ? <Text style={styles.choiceSub}>{subtitle}</Text> : null}
+      {children}
+    </View>
+  );
+}
+
+/** Morf AI chatbot sozlamalari — limit, uslub, maxfiylik. */
 export function MorphChatSettingsScreen({
   limits,
   threadCount,
+  threads,
   onClose,
   onClearAllChats,
   onOpenSubscription,
@@ -76,7 +140,7 @@ export function MorphChatSettingsScreen({
   const patchPrefs = useCallback(
     async (patch: Partial<MorphChatPrefs>) => {
       setPrefs((prev) => {
-        const base = prev ?? { useTryOnContext: true, saveHistory: true };
+        const base = prev ?? { ...DEFAULT_MORPH_CHAT_PREFS };
         const next = { ...base, ...patch };
         void writeMorphChatPrefs(next);
         return next;
@@ -97,6 +161,26 @@ export function MorphChatSettingsScreen({
     ]);
   }, [onClearAllChats, t]);
 
+  const exportChats = useCallback(async () => {
+    if (!threads.length) {
+      Alert.alert(t("chat.settings.exportTitle"), t("chat.settings.exportEmpty"));
+      return;
+    }
+    const blocks = threads.map((th, i) => {
+      const lines = th.messages
+        .filter((m) => m.content.trim())
+        .map((m) => `${m.role === "user" ? "Siz" : "Morf"}: ${m.content.trim()}`);
+      return `${i + 1}. ${th.title}\n${lines.join("\n")}`;
+    });
+    const message = `Morf AI\n\n${blocks.join("\n\n---\n\n")}`;
+    try {
+      await Share.share({ message, title: t("chat.settings.exportTitle") });
+    } catch {
+      Alert.alert(t("chat.settings.exportTitle"), t("chat.settings.exportFail"));
+    }
+  }, [t, threads]);
+
+  const usagePct = morphChatUsagePercent(snap);
   const used = snap?.daily_used;
   const limit = snap?.daily_limit ?? 40;
   const remaining =
@@ -109,6 +193,22 @@ export function MorphChatSettingsScreen({
       ? String(remaining)
       : t("chat.settings.limitUnknown");
 
+  const langOptions: ChipOption<MorphChatReplyLang>[] = [
+    { value: "app", label: t("chat.settings.langApp") },
+    { value: "uz", label: t("chat.settings.langUz") },
+    { value: "ru", label: t("chat.settings.langRu") },
+  ];
+  const styleOptions: ChipOption<MorphChatReplyStyle>[] = [
+    { value: "short", label: t("chat.settings.styleShort") },
+    { value: "detailed", label: t("chat.settings.styleDetailed") },
+    { value: "barber", label: t("chat.settings.styleBarber") },
+  ];
+  const genderOptions: ChipOption<MorphChatAdviceGender>[] = [
+    { value: "auto", label: t("chat.settings.genderAuto") },
+    { value: "male", label: t("chat.settings.genderMale") },
+    { value: "female", label: t("chat.settings.genderFemale") },
+  ];
+
   return (
     <View style={[styles.root, { paddingBottom: Math.max(insets.bottom, 12) }]}>
       <NativeHeader title={t("chat.settings.title")} onBack={onClose} />
@@ -117,28 +217,111 @@ export function MorphChatSettingsScreen({
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.limitCard}>
-          <View style={styles.limitIcon}>
-            <Ionicons name="flash-outline" size={20} color="#111111" />
+          <View style={styles.limitTop}>
+            <View style={styles.limitIcon}>
+              <Ionicons name="flash-outline" size={20} color="#111111" />
+            </View>
+            <View style={styles.limitCopy}>
+              <Text style={styles.limitTitle}>{t("chat.settings.limitTitle")}</Text>
+              <Text style={styles.limitValue}>
+                {t("chat.settings.limitUsage", { pct: usagePct })}
+              </Text>
+            </View>
+            <Text style={styles.limitPctBadge}>{usagePct}%</Text>
           </View>
-          <View style={styles.limitCopy}>
-            <Text style={styles.limitTitle}>{t("chat.settings.limitTitle")}</Text>
-            <Text style={styles.limitValue}>
-              {t("chat.settings.limitValue", {
-                used: usedLabel,
-                limit,
-              })}
-            </Text>
-            <Text style={styles.limitHint}>
-              {t("chat.settings.limitHint", { remaining: remainingLabel })}
-            </Text>
+          <View style={styles.track}>
+            <View style={[styles.trackFill, { width: `${usagePct}%` }]} />
           </View>
+          <View style={styles.limitScale}>
+            <Text style={styles.limitScaleText}>0%</Text>
+            <Text style={styles.limitScaleMid}>
+              {t("chat.settings.limitValue", { used: usedLabel, limit })}
+            </Text>
+            <Text style={styles.limitScaleText}>100%</Text>
+          </View>
+          <Text style={styles.limitHint}>
+            {t("chat.settings.limitHint", { remaining: remainingLabel })}
+          </Text>
         </View>
 
         {!prefs ? (
           <ActivityIndicator color={colors.fg} style={{ marginTop: 24 }} />
         ) : (
           <>
+            <SettingsGroup title={t("chat.settings.replyGroup")}>
+              <ChoiceBlock
+                title={t("chat.settings.replyLang")}
+                subtitle={t("chat.settings.replyLangHint")}
+              >
+                <ChipRow
+                  options={langOptions}
+                  value={prefs.replyLang}
+                  onChange={(v) => void patchPrefs({ replyLang: v })}
+                />
+              </ChoiceBlock>
+              <ChoiceBlock
+                title={t("chat.settings.replyStyle")}
+                subtitle={t("chat.settings.replyStyleHint")}
+              >
+                <ChipRow
+                  options={styleOptions}
+                  value={prefs.replyStyle}
+                  onChange={(v) => void patchPrefs({ replyStyle: v })}
+                />
+              </ChoiceBlock>
+              <ChoiceBlock
+                title={t("chat.settings.adviceGender")}
+                subtitle={t("chat.settings.adviceGenderHint")}
+                last
+              >
+                <ChipRow
+                  options={genderOptions}
+                  value={prefs.adviceGender}
+                  onChange={(v) => void patchPrefs({ adviceGender: v })}
+                />
+              </ChoiceBlock>
+            </SettingsGroup>
+
             <SettingsGroup title={t("chat.settings.aiGroup")}>
+              <SettingsRow
+                title={t("chat.settings.streaming")}
+                subtitle={t("chat.settings.streamingHint")}
+                icon="pulse-outline"
+                trailing={
+                  <Switch
+                    value={prefs.streaming}
+                    onValueChange={(v) => void patchPrefs({ streaming: v })}
+                    trackColor={{ false: "#E4E4E7", true: "#111111" }}
+                    thumbColor="#FFFFFF"
+                  />
+                }
+              />
+              <SettingsRow
+                title={t("chat.settings.voiceInput")}
+                subtitle={t("chat.settings.voiceInputHint")}
+                icon="mic-outline"
+                trailing={
+                  <Switch
+                    value={prefs.voiceInput}
+                    onValueChange={(v) => void patchPrefs({ voiceInput: v })}
+                    trackColor={{ false: "#E4E4E7", true: "#111111" }}
+                    thumbColor="#FFFFFF"
+                  />
+                }
+              />
+              <SettingsRow
+                title={t("chat.settings.limitNotify")}
+                subtitle={t("chat.settings.limitNotifyHint")}
+                icon="notifications-outline"
+                trailing={
+                  <Switch
+                    value={prefs.limitNotify}
+                    onValueChange={(v) => void patchPrefs({ limitNotify: v })}
+                    trackColor={{ false: "#E4E4E7", true: "#111111" }}
+                    thumbColor="#FFFFFF"
+                  />
+                }
+              />
               <SettingsRow
                 title={t("chat.settings.useContext")}
                 subtitle={t("chat.settings.useContextHint")}
@@ -164,6 +347,19 @@ export function MorphChatSettingsScreen({
                     thumbColor="#FFFFFF"
                   />
                 }
+              />
+              <SettingsRow
+                title={t("chat.settings.privacyLocal")}
+                subtitle={t("chat.settings.privacyLocalHint")}
+                icon="shield-checkmark-outline"
+                trailing={
+                  <Switch
+                    value={prefs.privacyLocalOnly}
+                    onValueChange={(v) => void patchPrefs({ privacyLocalOnly: v })}
+                    trackColor={{ false: "#E4E4E7", true: "#111111" }}
+                    thumbColor="#FFFFFF"
+                  />
+                }
                 last
               />
             </SettingsGroup>
@@ -179,6 +375,12 @@ export function MorphChatSettingsScreen({
             </SettingsGroup>
 
             <SettingsGroup title={t("chat.settings.dataGroup")}>
+              <SettingsRow
+                title={t("chat.settings.exportChats")}
+                subtitle={t("chat.settings.exportChatsHint", { count: threadCount })}
+                icon="share-outline"
+                onPress={() => void exportChats()}
+              />
               <SettingsRow
                 title={t("chat.settings.clearChats")}
                 subtitle={t("chat.settings.clearChatsHint", { count: threadCount })}
@@ -214,12 +416,16 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   limitCard: {
-    flexDirection: "row",
-    gap: 12,
     padding: 14,
     borderRadius: 16,
     backgroundColor: "#F4F4F5",
     marginBottom: 14,
+    gap: 10,
+  },
+  limitTop: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
   },
   limitIcon: {
     width: 40,
@@ -240,16 +446,89 @@ const styles = StyleSheet.create({
     color: "#71717A",
   },
   limitValue: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: "700",
     color: "#111111",
     letterSpacing: -0.3,
   },
+  limitPctBadge: {
+    fontSize: 20,
+    fontWeight: "800",
+    color: "#111111",
+    letterSpacing: -0.4,
+  },
+  track: {
+    height: 8,
+    borderRadius: 999,
+    backgroundColor: "#E4E4E7",
+    overflow: "hidden",
+  },
+  trackFill: {
+    height: "100%",
+    borderRadius: 999,
+    backgroundColor: "#111111",
+  },
+  limitScale: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  limitScaleText: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: "#A1A1AA",
+  },
+  limitScaleMid: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#52525B",
+  },
   limitHint: {
-    marginTop: 2,
     fontSize: 13,
     lineHeight: 18,
     color: "#52525B",
+  },
+  choiceBlock: {
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    gap: 8,
+  },
+  choiceBorder: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "#E4E4E7",
+  },
+  choiceTitle: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: colors.fg,
+  },
+  choiceSub: {
+    fontSize: 12,
+    lineHeight: 16,
+    color: colors.muted,
+    marginTop: -4,
+  },
+  chipRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  chip: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+    backgroundColor: "#F4F4F5",
+  },
+  chipActive: {
+    backgroundColor: "#111111",
+  },
+  chipText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#3F3F46",
+  },
+  chipTextActive: {
+    color: "#FFFFFF",
   },
   doneBtn: {
     marginTop: 18,

@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import {
   formatMorphUserError,
   MorphPlanLimitError,
+  sendMorphChatMessage,
   streamMorphChatMessage,
   type MorphChatContext,
   type MorphChatLimits,
@@ -11,10 +12,13 @@ import {
 } from "../api/ai";
 import { createPacedWriter } from "../lib/chat-pace";
 import {
+  DEFAULT_MORPH_CHAT_PREFS,
   readMorphChatPrefs,
   writeMorphChatLimitsSnapshot,
+  type MorphChatPrefs,
 } from "../lib/morph-chat-prefs";
 import { useMorphSession } from "../lib/morph-session";
+import { currentLang } from "../i18n/config";
 
 const MESSAGES_KEY = "morph_chat_history_v1";
 const THREADS_KEY = "morph_chat_threads_v3";
@@ -123,8 +127,9 @@ export function useMorphChat() {
   const activeThreadIdRef = useRef<string | null>(null);
   const messagesRef = useRef<MorphChatMessage[]>([]);
   const threadsRef = useRef<MorphChatThread[]>([]);
-  const prefsRef = useRef({ useTryOnContext: true, saveHistory: true });
+  const prefsRef = useRef<MorphChatPrefs>({ ...DEFAULT_MORPH_CHAT_PREFS });
   const untitled = t("chat.history.untitled");
+  const [limitWarning, setLimitWarning] = useState<string | null>(null);
 
   const context = useMemo(() => buildContextFromSession(session), [session]);
 
@@ -313,17 +318,70 @@ export function useMorphChat() {
       try {
         const prefs = await readMorphChatPrefs();
         prefsRef.current = prefs;
-        const res = await streamMorphChatMessage(
-          {
+        const lang =
+          prefs.replyLang === "app"
+            ? currentLang() === "ru"
+              ? "ru"
+              : "uz"
+            : prefs.replyLang;
+        const prefContext: MorphChatContext = {
+          ...(prefs.useTryOnContext && context ? context : {}),
+          reply_lang: lang,
+          reply_style: prefs.replyStyle,
+          ...(prefs.adviceGender !== "auto"
+            ? { advice_gender: prefs.adviceGender }
+            : {}),
+        };
+        const historyPayload = prefs.privacyLocalOnly ? [] : history.slice(-16);
+
+        let finalText = "";
+        let resLimits: MorphChatLimits;
+        if (prefs.streaming) {
+          const res = await streamMorphChatMessage(
+            {
+              message: trimmed,
+              history: historyPayload,
+              context: prefContext,
+            },
+            (chunk) => writer.append(chunk),
+          );
+          finalText = (await writer.finish()) || res.reply;
+          resLimits = res.limits;
+        } else {
+          writer.cancel();
+          const res = await sendMorphChatMessage({
             message: trimmed,
-            history: history.slice(-16),
-            context: prefs.useTryOnContext ? context : undefined,
-          },
-          (chunk) => writer.append(chunk),
-        );
-        const finalText = (await writer.finish()) || res.reply;
-        setLimits(res.limits);
-        void writeMorphChatLimitsSnapshot(res.limits);
+            history: historyPayload,
+            context: prefContext,
+          });
+          finalText = res.reply;
+          resLimits = res.limits;
+          if (activeThreadIdRef.current === threadId) {
+            const instant = messagesRef.current.map((m) =>
+              m.id === assistantMsg.id
+                ? { ...m, content: finalText, streaming: true }
+                : m,
+            );
+            messagesRef.current = instant;
+            setMessages(instant);
+          }
+        }
+        setLimits(resLimits);
+        void writeMorphChatLimitsSnapshot(resLimits);
+        if (
+          prefs.limitNotify &&
+          typeof resLimits.daily_remaining === "number" &&
+          resLimits.daily_remaining <= 3
+        ) {
+          setLimitWarning(
+            t("chat.settings.limitWarn", {
+              remaining: resLimits.daily_remaining,
+              limit: resLimits.daily_limit,
+            }),
+          );
+        } else {
+          setLimitWarning(null);
+        }
         const doneMsg: MorphChatMessage = {
           id: assistantMsg.id,
           role: "assistant",
@@ -481,6 +539,8 @@ export function useMorphChat() {
     sending,
     error,
     limits,
+    limitWarning,
+    clearLimitWarning: () => setLimitWarning(null),
     context,
     quickPrompts,
     threads: visibleThreads,

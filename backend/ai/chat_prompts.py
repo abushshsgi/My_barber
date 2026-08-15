@@ -74,12 +74,45 @@ def _label(mapping: dict[str, str], value: Any) -> str:
     return mapping.get(raw.lower(), raw)
 
 
-def _format_context_block(context: dict[str, Any] | None) -> str:
+def _format_prefs_block(context: dict[str, Any] | None) -> str:
     if not context:
-        return (
+        return ""
+    lines: list[str] = ["Foydalanuvchi sozlamalari:"]
+    lang = str(context.get("reply_lang") or "").strip().lower()
+    if lang in ("uz", "ru"):
+        lines.append(
+            "- Javob tili: "
+            + ("o'zbek (lotin)" if lang == "uz" else "rus")
+            + " — savol tilidan qat'i nazar shu tilda yoz."
+        )
+    style = str(context.get("reply_style") or "").strip().lower()
+    if style == "short":
+        lines.append("- Javob uslubi: qisqa (3–6 jumla, faqat eng muhim).")
+    elif style == "barber":
+        lines.append(
+            "- Javob uslubi: barberga tayyor ko'rsatma "
+            "(guard #, fade balandligi, clipper yo'nalishi — ro'yxat)."
+        )
+    elif style == "detailed":
+        lines.append("- Javob uslubi: batafsil, lekin 2–6 blokdan oshmasin.")
+    gender = str(context.get("advice_gender") or "").strip().lower()
+    if gender in ("male", "female"):
+        lines.append(
+            "- Maslahat jinsi: "
+            + ("erkak" if gender == "male" else "ayol")
+            + " uslublari ustuvor."
+        )
+    return "\n".join(lines) if len(lines) > 1 else ""
+
+
+def _format_context_block(context: dict[str, Any] | None) -> str:
+    prefs = _format_prefs_block(context)
+    if not context:
+        base = (
             "Foydalanuvchi konteksti: hali try-on tahlili yo'q. "
             "Umumiy, xavfsiz maslahat bering va try-on qilishni taklif qiling."
         )
+        return f"{base}\n\n{prefs}".strip() if prefs else base
 
     lines: list[str] = [
         "Foydalanuvchi konteksti (shu suhbat uchun — boshqa suhbatlar bilan aralashtirma):"
@@ -119,15 +152,17 @@ def _format_context_block(context: dict[str, Any] | None) -> str:
             lines.append(f"- AI tavsiya etgan uslublar: {', '.join(titles)}")
 
     if len(lines) == 1:
-        return (
+        base = (
             "Foydalanuvchi konteksti: hali try-on tahlili yo'q. "
             "Umumiy, xavfsiz maslahat bering va try-on qilishni taklif qiling."
         )
+        return f"{base}\n\n{prefs}".strip() if prefs else base
 
     lines.append(
         "Agar kontekst bo'lsa, javobni SHU ma'lumotga bog'la — umumiy shablon bilan cheklanma."
     )
-    return "\n".join(lines)
+    block = "\n".join(lines)
+    return f"{block}\n\n{prefs}".strip() if prefs else block
 
 
 def build_morf_chat_system_prompt(context: dict[str, Any] | None = None) -> str:
@@ -142,9 +177,9 @@ Ohang: ChatGPT / Claude kabi — sokin, aniq, foydali. Do'stona, lekin marketing
 - Mybarber: try-on, Studio rang tahriri, barberga yozilish, Master Card.
 
 ## Til
-- Asosiy til: **o'zbek (lotin)**.
+- Asosiy til: **o'zbek (lotin)** (agar sozlamada boshqa til berilmasa).
 - Barber terminlari inglizcha bo'lishi mumkin (fade, undercut, taper, clipper guard #2) — qisqa izoh bilan.
-- Rus yoki ingliz tilida savol bersa — shu tilda javob ber.
+- Sozlamadagi javob tili ustuvor; aks holda savol tiliga moslash.
 
 ## Nima qilasan
 1. Yuz shakliga mos soch uslublari
@@ -168,7 +203,7 @@ ChatGPT / Claude kabi o'qiladigan markdown yoz:
 - Ro'yxat: `-` yoki `1.`
 - Muhim so'zlarni **qalin** qil.
 - Kod bloki deyarli ishlatma.
-- 2–6 qisqa blok; uzun esse yo'q.
+- Sozlamadagi uslubga rioya qil (qisqa / batafsil / barber ko'rsatma).
 - Oxirida ixtiyoriy **Keyingi qadam:** (1 ta aniq taklif).
 
 {context_block}"""

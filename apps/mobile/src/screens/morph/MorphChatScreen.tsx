@@ -5,6 +5,7 @@ import { StatusBar } from "expo-status-bar";
 import { useCallback, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   BackHandler,
   FlatList,
   KeyboardAvoidingView,
@@ -33,6 +34,7 @@ import { MORPH_QUICK_PROMPT_IDS, useMorphChat } from "../../hooks/useMorphChat";
 import { useMorphLimitGate } from "../../hooks/useMorphLimitGate";
 import { writeAppShell, writeLastShellTab } from "../../lib/app-shell";
 import { MORPH_CHAT_DEBUG } from "../../lib/morph-debug";
+import { readMorphChatPrefs } from "../../lib/morph-chat-prefs";
 import {
   consumeMorphReturn,
   peekMorphReturn,
@@ -54,9 +56,22 @@ export function MorphChatScreen() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [voiceEnabled, setVoiceEnabled] = useState(false);
   const [paywall, setPaywall] = useState<PaywallReason | null>(null);
 
   useHideTabBarWhen(chatOpen || paywall != null || settingsOpen);
+
+  useFocusEffect(
+    useCallback(() => {
+      let cancelled = false;
+      void readMorphChatPrefs().then((p) => {
+        if (!cancelled) setVoiceEnabled(p.voiceInput);
+      });
+      return () => {
+        cancelled = true;
+      };
+    }, []),
+  );
 
   const showPaywall = useCallback(
     (reason: PaywallReason, draft?: string) => {
@@ -147,6 +162,10 @@ export function MorphChatScreen() {
   const name = displayName(user);
   const avatarUrl = resolveMediaUrl(user?.avatar, { width: 120 });
 
+  const onVoice = useCallback(() => {
+    Alert.alert(t("chat.settings.voiceInput"), t("chat.settings.voiceSoon"));
+  }, [t]);
+
   const composer = useMemo(
     () => ({
       value: chat.input,
@@ -156,8 +175,11 @@ export function MorphChatScreen() {
       placeholder: t("chat.home.askAnything"),
       sendA11y: t("chat.sendA11y"),
       cameraA11y: t("chat.home.cameraA11y"),
+      voiceA11y: t("chat.settings.voiceInput"),
+      voiceEnabled,
+      onVoice,
     }),
-    [chat.input, chat.sending, chat.setInput, t],
+    [chat.input, chat.sending, chat.setInput, onVoice, t, voiceEnabled],
   );
 
   const scrollToEnd = useCallback(() => {
@@ -276,7 +298,11 @@ export function MorphChatScreen() {
   }, []);
 
   const closeSettings = useCallback(() => {
-    void chat.reloadPrefs();
+    void (async () => {
+      await chat.reloadPrefs();
+      const p = await readMorphChatPrefs();
+      setVoiceEnabled(p.voiceInput);
+    })();
     setSettingsOpen(false);
   }, [chat]);
 
@@ -299,6 +325,14 @@ export function MorphChatScreen() {
       dismissA11y={t("chat.errorDismissA11y")}
       onRetry={retryLast}
       onDismiss={chat.clearError}
+    />
+  ) : chat.limitWarning ? (
+    <ChatNotice
+      title={t("chat.settings.limitTitle")}
+      message={chat.limitWarning}
+      dismissA11y={t("chat.errorDismissA11y")}
+      tone="warning"
+      onDismiss={chat.clearLimitWarning}
     />
   ) : null;
 
@@ -356,6 +390,7 @@ export function MorphChatScreen() {
       <MorphChatSettingsScreen
         limits={chat.limits}
         threadCount={chat.threads.length}
+        threads={chat.threads}
         onClose={closeSettings}
         onClearAllChats={() => void clearAllFromSettings()}
         onOpenSubscription={openSubscriptionFromSettings}
@@ -404,6 +439,15 @@ export function MorphChatScreen() {
                 dismissA11y={t("chat.errorDismissA11y")}
                 onRetry={retryLast}
                 onDismiss={chat.clearError}
+                style={{ marginHorizontal: 0, marginBottom: 0 }}
+              />
+            ) : chat.limitWarning ? (
+              <ChatNotice
+                title={t("chat.settings.limitTitle")}
+                message={chat.limitWarning}
+                dismissA11y={t("chat.errorDismissA11y")}
+                tone="warning"
+                onDismiss={chat.clearLimitWarning}
                 style={{ marginHorizontal: 0, marginBottom: 0 }}
               />
             ) : null

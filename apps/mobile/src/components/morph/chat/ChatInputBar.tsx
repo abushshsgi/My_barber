@@ -15,11 +15,14 @@ type Props = {
   onChange: (text: string) => void;
   onSend: () => void;
   onCamera?: () => void;
+  onVoice?: () => void;
+  voiceEnabled?: boolean;
   disabled?: boolean;
   sending?: boolean;
   placeholder?: string;
   sendA11y?: string;
   cameraA11y?: string;
+  voiceA11y?: string;
 };
 
 function WaveIcon() {
@@ -38,11 +41,14 @@ export function ChatInputBar({
   onChange,
   onSend,
   onCamera,
+  onVoice,
+  voiceEnabled = false,
   disabled,
   sending,
   placeholder = "Savolingizni yozing…",
   sendA11y = "Yuborish",
   cameraA11y = "Kamera",
+  voiceA11y = "Mikrofon",
 }: Props) {
   const [focused, setFocused] = useState(false);
   const hasText = value.trim().length > 0;
@@ -102,6 +108,21 @@ export function ChatInputBar({
             ) : (
               <Ionicons name="arrow-up" size={16} color="#FFFFFF" />
             )}
+          </Pressable>
+        </Animated.View>
+      ) : voiceEnabled ? (
+        <Animated.View
+          entering={FadeIn.duration(140)}
+          exiting={FadeOut.duration(100)}
+        >
+          <Pressable
+            onPress={onVoice}
+            disabled={!onVoice || disabled}
+            style={({ pressed }) => [styles.voiceBtn, pressed && styles.pressed]}
+            accessibilityRole="button"
+            accessibilityLabel={voiceA11y}
+          >
+            <Ionicons name="mic" size={16} color="#FFFFFF" />
           </Pressable>
         </Animated.View>
       ) : (

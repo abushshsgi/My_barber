@@ -474,6 +474,9 @@ export type MorphChatContext = {
   preferred_style_title?: string;
   preferred_style_id?: string;
   suggestions?: Array<{ id?: string; title?: string }>;
+  reply_lang?: "uz" | "ru";
+  reply_style?: "short" | "detailed" | "barber";
+  advice_gender?: "male" | "female";
 };
 
 export type MorphChatLimits = {
