@@ -41,7 +41,7 @@ type Props = {
   onSaveHistoryOff?: () => void;
 };
 
-type Page = "hub" | "reply" | "chatbot" | "plan";
+type Page = "hub" | "reply" | "chatbot";
 
 type ChipOption<T extends string> = { value: T; label: string };
 
@@ -345,9 +345,7 @@ export function MorphChatSettingsScreen({
       ? t("chat.settings.replyGroup")
       : page === "chatbot"
         ? t("chat.settings.aiGroup")
-        : page === "plan"
-          ? t("chat.settings.planGroup")
-          : t("chat.settings.title");
+        : t("chat.settings.title");
 
   const onBack = () => {
     if (page === "hub") onClose();
@@ -411,16 +409,6 @@ export function MorphChatSettingsScreen({
                     icon="happy-outline"
                     title={t("chat.settings.personalization")}
                     onPress={() => setPage("reply")}
-                  />
-                  <SettingsItem
-                    icon="book-outline"
-                    title={t("chat.settings.memory")}
-                    onPress={() => setPage("chatbot")}
-                  />
-                  <SettingsItem
-                    icon="git-network-outline"
-                    title={t("chat.settings.plugins")}
-                    onPress={() => setPage("plan")}
                     last
                   />
                 </SettingsSection>
@@ -430,13 +418,6 @@ export function MorphChatSettingsScreen({
                     icon="mail-outline"
                     title={t("chat.settings.email")}
                     subtitle={email || t("chat.settings.emailEmpty")}
-                    onPress={() => setPage("plan")}
-                  />
-                  <SettingsItem
-                    icon="add-circle-outline"
-                    title={t("chat.settings.subscription")}
-                    value={t("chat.settings.planFree")}
-                    onPress={onOpenSubscription}
                     showChevron={false}
                   />
                   <SettingsItem
@@ -444,7 +425,7 @@ export function MorphChatSettingsScreen({
                     title={t("chat.settings.limitTitle")}
                     subtitle={t("chat.settings.limitValue", { used: usedLabel, limit })}
                     value={`${usagePct}%`}
-                    onPress={() => setPage("plan")}
+                    showChevron={false}
                   />
                   <SettingsItem
                     icon="sparkles"
@@ -604,26 +585,6 @@ export function MorphChatSettingsScreen({
           </SettingsSection>
         ) : null}
 
-        {page === "plan" ? (
-          <SettingsSection>
-            <SettingsItem
-              icon="diamond-outline"
-              title={t("chat.settings.subscription")}
-              subtitle={t("chat.settings.subscriptionHint")}
-              onPress={onOpenSubscription}
-              last={!onOpenReferral}
-            />
-            {onOpenReferral ? (
-              <SettingsItem
-                icon="people-outline"
-                title={t("chat.settings.referral")}
-                subtitle={t("chat.settings.referralHint")}
-                onPress={onOpenReferral}
-                last
-              />
-            ) : null}
-          </SettingsSection>
-        ) : null}
       </ScrollView>
     </View>
   );
