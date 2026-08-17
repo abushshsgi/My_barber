@@ -73,11 +73,11 @@ export function shouldAutoStopListening(opts: {
   silentMs: number;
 }): { heardSpeech: boolean; silentMs: number; stop: boolean } {
   const level = typeof opts.metering === "number" ? opts.metering : -160;
-  const speaking = level > -32;
-  const heardSpeech = opts.heardSpeech || (speaking && opts.elapsedMs > 280);
+  const speaking = level > -34;
+  const heardSpeech = opts.heardSpeech || (speaking && opts.elapsedMs > 480);
   const silentMs = speaking ? 0 : heardSpeech ? opts.silentMs + 120 : opts.silentMs;
   const stop =
-    heardSpeech && silentMs >= 1100 && opts.elapsedMs >= 900 && opts.elapsedMs < 45_000;
+    heardSpeech && silentMs >= 1400 && opts.elapsedMs >= 1100 && opts.elapsedMs < 45_000;
   return { heardSpeech, silentMs, stop };
 }
 

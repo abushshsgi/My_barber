@@ -63,7 +63,7 @@ export const DEFAULT_MORPH_CHAT_PREFS: MorphChatPrefs = {
   streaming: true,
   voiceInput: true,
   autoSpeak: true,
-  conversationMode: false,
+      conversationMode: true,
   voiceGender: "male",
   voiceId: DEFAULT_MALE_VOICE,
   voiceLang: "auto",

@@ -5,6 +5,7 @@ import Animated, {
   Easing,
   interpolate,
   useAnimatedStyle,
+  useReducedMotion,
   useSharedValue,
   withRepeat,
   withTiming,
@@ -17,30 +18,84 @@ type Props = {
   phase: MorphVoicePhase;
   metering: number;
   transcript?: string;
+  reply?: string;
   error?: string | null;
   title: string;
   listeningLabel: string;
+  listeningHint: string;
   transcribingLabel: string;
   thinkingLabel: string;
   speakingLabel: string;
+  yourTurnLabel: string;
   tapToStop: string;
+  tapToSend: string;
+  interruptLabel: string;
   closeA11y: string;
   onClose: () => void;
   onPrimary: () => void;
 };
 
+const BAR_COUNT = 9;
+
 function phaseCopy(
   phase: MorphVoicePhase,
   labels: Pick<
     Props,
-    "listeningLabel" | "transcribingLabel" | "thinkingLabel" | "speakingLabel"
+    | "listeningLabel"
+    | "transcribingLabel"
+    | "thinkingLabel"
+    | "speakingLabel"
+    | "yourTurnLabel"
   >,
 ): string {
   if (phase === "recording") return labels.listeningLabel;
   if (phase === "transcribing") return labels.transcribingLabel;
   if (phase === "thinking") return labels.thinkingLabel;
   if (phase === "speaking") return labels.speakingLabel;
+  if (phase === "waiting") return labels.yourTurnLabel;
   return labels.listeningLabel;
+}
+
+function WaveBar({
+  index,
+  level,
+  live,
+  reduced,
+}: {
+  index: number;
+  level: number;
+  live: boolean;
+  reduced: boolean;
+}) {
+  const wave = useSharedValue(0);
+
+  useEffect(() => {
+    if (reduced) {
+      wave.value = 0.35;
+      return;
+    }
+    wave.value = withRepeat(
+      withTiming(1, {
+        duration: 420 + index * 70,
+        easing: Easing.inOut(Easing.quad),
+      }),
+      -1,
+      true,
+    );
+  }, [index, reduced, wave]);
+
+  const style = useAnimatedStyle(() => {
+    const base = interpolate(wave.value, [0, 1], [0.22, 0.7]);
+    const amp = live ? Math.max(base, 0.28 + level * 0.72) : base * 0.55;
+    const mid = Math.abs(index - (BAR_COUNT - 1) / 2);
+    const falloff = 1 - mid * 0.08;
+    return {
+      height: 10 + amp * 42 * falloff,
+      opacity: live ? 0.95 : 0.55,
+    };
+  }, [level, live]);
+
+  return <Animated.View style={[styles.bar, style]} />;
 }
 
 export function VoiceSessionOverlay({
@@ -48,36 +103,62 @@ export function VoiceSessionOverlay({
   phase,
   metering,
   transcript,
+  reply,
   error,
   title,
   listeningLabel,
+  listeningHint,
   transcribingLabel,
   thinkingLabel,
   speakingLabel,
+  yourTurnLabel,
   tapToStop,
+  tapToSend,
+  interruptLabel,
   closeA11y,
   onClose,
   onPrimary,
 }: Props) {
   const insets = useSafeAreaInsets();
+  const reduced = useReducedMotion();
   const pulse = useSharedValue(0);
+  const listening = phase === "recording";
+  const speaking = phase === "speaking";
+  const busy = phase === "transcribing" || phase === "thinking";
+  const level = Math.max(0, Math.min(1, (metering + 55) / 42));
 
   useEffect(() => {
+    if (reduced) {
+      pulse.value = 0.4;
+      return;
+    }
     pulse.value = withRepeat(
-      withTiming(1, { duration: 1100, easing: Easing.inOut(Easing.quad) }),
+      withTiming(1, { duration: listening ? 900 : 1400, easing: Easing.inOut(Easing.quad) }),
       -1,
       true,
     );
-  }, [pulse]);
+  }, [listening, pulse, reduced]);
 
-  const level = Math.max(0, Math.min(1, (metering + 50) / 40));
-  const orbStyle = useAnimatedStyle(() => {
-    const extra = phase === "recording" ? level * 18 : interpolate(pulse.value, [0, 1], [0, 10]);
+  const ringA = useAnimatedStyle(() => {
+    const extra = listening ? level * 0.18 : 0;
     return {
-      transform: [{ scale: 1 + extra / 90 }],
-      opacity: phase === "idle" ? 0.7 : 1,
+      transform: [{ scale: interpolate(pulse.value, [0, 1], [1, 1.22]) + extra }],
+      opacity: interpolate(pulse.value, [0, 1], [0.28, 0.08]),
     };
-  }, [level, phase]);
+  }, [level, listening]);
+
+  const ringB = useAnimatedStyle(() => {
+    const extra = listening ? level * 0.12 : 0;
+    return {
+      transform: [{ scale: interpolate(pulse.value, [0, 1], [1, 1.38]) + extra }],
+      opacity: interpolate(pulse.value, [0, 1], [0.18, 0.04]),
+    };
+  }, [level, listening]);
+
+  const orbStyle = useAnimatedStyle(() => {
+    const extra = listening ? level * 0.08 : interpolate(pulse.value, [0, 1], [0, 0.04]);
+    return { transform: [{ scale: 1 + extra }] };
+  }, [level, listening]);
 
   if (!visible) return null;
 
@@ -86,12 +167,18 @@ export function VoiceSessionOverlay({
     transcribingLabel,
     thinkingLabel,
     speakingLabel,
+    yourTurnLabel,
   });
+  const hint = listening ? listeningHint : speaking ? interruptLabel : tapToStop;
+  const caption = listening ? null : speaking || busy ? reply || transcript : transcript;
 
   return (
-    <View style={[styles.root, { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 24 }]}>
+    <View style={[styles.root, { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 28 }]}>
       <View style={styles.top}>
-        <Text style={styles.brand}>{title}</Text>
+        <View style={styles.livePill}>
+          <View style={[styles.liveDot, listening && styles.liveDotOn]} />
+          <Text style={styles.brand}>{title}</Text>
+        </View>
         <Pressable
           onPress={onClose}
           hitSlop={10}
@@ -103,23 +190,45 @@ export function VoiceSessionOverlay({
         </Pressable>
       </View>
 
-      <Pressable style={styles.stage} onPress={onPrimary} accessibilityRole="button">
-        <Animated.View style={[styles.glow, orbStyle]} />
-        <View style={[styles.orb, phase === "recording" && styles.orbLive]}>
-          <Ionicons
-            name={phase === "speaking" ? "volume-high" : phase === "thinking" ? "sparkles" : "mic"}
-            size={36}
-            color="#FFFFFF"
-          />
-        </View>
+      <Pressable
+        style={styles.stage}
+        onPress={onPrimary}
+        accessibilityRole="button"
+        accessibilityLabel={listening ? tapToSend : hint}
+      >
+        <Animated.View style={[styles.ring, styles.ringOuter, ringB]} />
+        <Animated.View style={[styles.ring, ringA]} />
+        <Animated.View
+          style={[
+            styles.orb,
+            listening && styles.orbLive,
+            speaking && styles.orbSpeak,
+            orbStyle,
+          ]}
+        >
+          <View style={styles.waveRow}>
+            {Array.from({ length: BAR_COUNT }, (_, i) => (
+              <WaveBar
+                key={i}
+                index={i}
+                level={listening ? level : speaking ? 0.55 : 0.2}
+                live={listening || speaking}
+                reduced={Boolean(reduced)}
+              />
+            ))}
+          </View>
+        </Animated.View>
+
         <Text style={styles.status}>{status}</Text>
-        {transcript && phase !== "recording" ? (
-          <Text style={styles.transcript} numberOfLines={3}>
-            {transcript}
+        {listening ? (
+          <Text style={styles.hintStrong}>{listeningHint}</Text>
+        ) : caption ? (
+          <Text style={styles.transcript} numberOfLines={4}>
+            {caption}
           </Text>
         ) : null}
         {error ? <Text style={styles.error}>{error}</Text> : null}
-        <Text style={styles.hint}>{tapToStop}</Text>
+        <Text style={styles.hint}>{listening ? tapToSend : hint}</Text>
       </Pressable>
     </View>
   );
@@ -127,13 +236,8 @@ export function VoiceSessionOverlay({
 
 const styles = StyleSheet.create({
   root: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "#000000",
-    zIndex: 40,
+    ...StyleSheet.absoluteFill,
+    backgroundColor: "#0B0B0D",
   },
   top: {
     flexDirection: "row",
@@ -142,16 +246,35 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     minHeight: 44,
   },
+  livePill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: "rgba(255,255,255,0.08)",
+  },
+  liveDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "rgba(255,255,255,0.35)",
+  },
+  liveDotOn: {
+    backgroundColor: "#34C759",
+  },
   brand: {
-    fontSize: 17,
+    fontSize: 15,
     fontWeight: "600",
     color: "#FFFFFF",
+    letterSpacing: -0.2,
   },
   close: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: "#2C2C2E",
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "rgba(255,255,255,0.1)",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -161,40 +284,72 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: 28,
   },
-  glow: {
+  ring: {
     position: "absolute",
-    width: 220,
-    height: 220,
-    borderRadius: 110,
-    backgroundColor: "rgba(10, 132, 255, 0.18)",
+    width: 196,
+    height: 196,
+    borderRadius: 98,
+    borderWidth: 1.5,
+    borderColor: "rgba(52, 199, 89, 0.35)",
+  },
+  ringOuter: {
+    width: 236,
+    height: 236,
+    borderRadius: 118,
+    borderColor: "rgba(52, 199, 89, 0.18)",
   },
   orb: {
-    width: 108,
-    height: 108,
-    borderRadius: 54,
+    width: 148,
+    height: 148,
+    borderRadius: 74,
     backgroundColor: "#1C1C1E",
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 2,
-    borderColor: "#3A3A3C",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.12)",
   },
   orbLive: {
-    backgroundColor: "#0A84FF",
-    borderColor: "#0A84FF",
+    backgroundColor: "#14532D",
+    borderColor: "#34C759",
+  },
+  orbSpeak: {
+    backgroundColor: "#1C1C1E",
+    borderColor: "rgba(255,255,255,0.28)",
+  },
+  waveRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    height: 56,
+    gap: 4,
+  },
+  bar: {
+    width: 5,
+    borderRadius: 3,
+    backgroundColor: "#FFFFFF",
   },
   status: {
-    marginTop: 28,
-    fontSize: 20,
-    fontWeight: "600",
+    marginTop: 36,
+    fontSize: 22,
+    fontWeight: "700",
     color: "#FFFFFF",
     textAlign: "center",
+    letterSpacing: -0.4,
   },
-  transcript: {
-    marginTop: 12,
+  hintStrong: {
+    marginTop: 10,
     fontSize: 15,
     lineHeight: 22,
-    color: "#8E8E93",
+    color: "rgba(255,255,255,0.62)",
     textAlign: "center",
+    maxWidth: 300,
+  },
+  transcript: {
+    marginTop: 14,
+    fontSize: 15,
+    lineHeight: 22,
+    color: "rgba(255,255,255,0.55)",
+    textAlign: "center",
+    maxWidth: 340,
   },
   error: {
     marginTop: 12,
@@ -205,7 +360,7 @@ const styles = StyleSheet.create({
   hint: {
     marginTop: 28,
     fontSize: 13,
-    color: "#636366",
+    color: "rgba(255,255,255,0.38)",
   },
   pressed: {
     opacity: 0.72,

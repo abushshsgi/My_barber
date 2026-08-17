@@ -19,13 +19,15 @@ import {
   shouldAutoStopListening,
   speechLangTag,
 } from "../lib/morph-voice";
+import { createWebRecorder, playHtmlAudio } from "../lib/morph-voice-web";
 
 export type MorphVoicePhase =
   | "idle"
   | "recording"
   | "transcribing"
   | "thinking"
-  | "speaking";
+  | "speaking"
+  | "waiting";
 
 type SendResult = "ok" | "limit" | "error" | undefined;
 
@@ -42,6 +44,9 @@ const RECORD_OPTS = {
   isMeteringEnabled: true,
 };
 
+const MIN_RECORD_MS = 700;
+const NEXT_TURN_MS = 560;
+
 export function useMorphVoice({
   sendText,
   lastReply,
@@ -52,16 +57,26 @@ export function useMorphVoice({
   const [phase, setPhase] = useState<MorphVoicePhase>("idle");
   const [live, setLive] = useState(false);
   const [metering, setMetering] = useState(-160);
+  const meteringRef = useRef(-160);
   const [transcript, setTranscript] = useState("");
+  const [reply, setReply] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [previewing, setPreviewing] = useState(false);
 
+  const pushMeter = useCallback((db: number) => {
+    meteringRef.current = db;
+    setMetering(db);
+  }, []);
+
   const recordingRef = useRef<Audio.Recording | null>(null);
   const soundRef = useRef<Audio.Sound | null>(null);
+  const htmlAudioRef = useRef<HTMLAudioElement | null>(null);
+  const webRecRef = useRef<ReturnType<typeof createWebRecorder> | null>(null);
   const liveRef = useRef(false);
   const phaseRef = useRef<MorphVoicePhase>("idle");
   const cancelledRef = useRef(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const nextTurnRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const heardRef = useRef(false);
   const silentRef = useRef(0);
   const startedAtRef = useRef(0);
@@ -78,21 +93,36 @@ export function useMorphVoice({
       clearInterval(pollRef.current);
       pollRef.current = null;
     }
+    if (nextTurnRef.current) {
+      clearTimeout(nextTurnRef.current);
+      nextTurnRef.current = null;
+    }
   }, []);
 
   const unloadSound = useCallback(async () => {
+    const html = htmlAudioRef.current;
+    htmlAudioRef.current = null;
+    if (html) {
+      try {
+        html.pause();
+        html.src = "";
+      } catch {
+        /* ignore */
+      }
+    }
     const sound = soundRef.current;
     soundRef.current = null;
-    if (!sound) return;
-    try {
-      await sound.stopAsync();
-    } catch {
-      /* ignore */
-    }
-    try {
-      await sound.unloadAsync();
-    } catch {
-      /* ignore */
+    if (sound) {
+      try {
+        await sound.stopAsync();
+      } catch {
+        /* ignore */
+      }
+      try {
+        await sound.unloadAsync();
+      } catch {
+        /* ignore */
+      }
     }
     try {
       Speech.stop();
@@ -101,11 +131,23 @@ export function useMorphVoice({
     }
   }, []);
 
-  const stopRecordingInternal = useCallback(async (): Promise<string | null> => {
+  const stopRecordingInternal = useCallback(async (): Promise<{
+    uri: string | null;
+    blob?: Blob;
+    mime?: string;
+  }> => {
     stopPoll();
+    if (Platform.OS === "web" && webRecRef.current) {
+      const rec = webRecRef.current;
+      webRecRef.current = null;
+      const result = await rec.stop();
+      setMetering(-160);
+      if (!result) return { uri: null };
+      return { uri: result.uri, blob: result.blob, mime: result.mime };
+    }
     const rec = recordingRef.current;
     recordingRef.current = null;
-    if (!rec) return null;
+    if (!rec) return { uri: null };
     try {
       await rec.stopAndUnloadAsync();
     } catch {
@@ -116,7 +158,8 @@ export function useMorphVoice({
     } catch {
       /* ignore */
     }
-    return rec.getURI();
+    setMetering(-160);
+    return { uri: rec.getURI() };
   }, [stopPoll]);
 
   const cancelSession = useCallback(async () => {
@@ -124,6 +167,8 @@ export function useMorphVoice({
     liveRef.current = false;
     setLive(false);
     setError(null);
+    webRecRef.current?.cancel();
+    webRecRef.current = null;
     await stopRecordingInternal();
     await unloadSound();
     setPhaseSafe("idle");
@@ -134,6 +179,7 @@ export function useMorphVoice({
     return () => {
       cancelledRef.current = true;
       stopPoll();
+      webRecRef.current?.cancel();
       void stopRecordingInternal();
       void unloadSound();
     };
@@ -148,6 +194,18 @@ export function useMorphVoice({
   const speakWithDevice = useCallback(async (text: string, lang: string) => {
     const spoken = sanitizeSpeechText(text);
     if (!spoken) return;
+    if (Platform.OS === "web" && typeof window !== "undefined" && window.speechSynthesis) {
+      await new Promise<void>((resolve) => {
+        const utter = new SpeechSynthesisUtterance(spoken);
+        utter.lang = speechLangTag(lang);
+        utter.rate = 0.96;
+        utter.onend = () => resolve();
+        utter.onerror = () => resolve();
+        window.speechSynthesis.cancel();
+        window.speechSynthesis.speak(utter);
+      });
+      return;
+    }
     await new Promise<void>((resolve) => {
       Speech.speak(spoken, {
         language: speechLangTag(lang),
@@ -160,38 +218,50 @@ export function useMorphVoice({
     });
   }, []);
 
-  const playServerAudio = useCallback(async (base64: string, mime: string) => {
-    const ext = mime.includes("mpeg") || mime.includes("mp3") ? "mp3" : "wav";
-    const dir = FileSystem.cacheDirectory || FileSystem.documentDirectory || "";
-    const path = `${dir}morph-tts-${Date.now()}.${ext}`;
-    await FileSystem.writeAsStringAsync(path, base64, {
-      encoding: FileSystem.EncodingType.Base64,
-    });
-    await Audio.setAudioModeAsync({
-      allowsRecordingIOS: false,
-      playsInSilentModeIOS: true,
-      staysActiveInBackground: false,
-    });
-    const { sound } = await Audio.Sound.createAsync(
-      { uri: path },
-      { shouldPlay: true, volume: 1 },
-    );
-    soundRef.current = sound;
-    await new Promise<void>((resolve) => {
-      sound.setOnPlaybackStatusUpdate((status) => {
-        if (!status.isLoaded) return;
-        if (status.didJustFinish) resolve();
+  const playServerAudio = useCallback(
+    async (base64: string, mime: string) => {
+      if (Platform.OS === "web") {
+        const { audio, done } = playHtmlAudio(base64, mime);
+        htmlAudioRef.current = audio;
+        await audio.play();
+        await done;
+        htmlAudioRef.current = null;
+        return;
+      }
+      const ext = mime.includes("mpeg") || mime.includes("mp3") ? "mp3" : "wav";
+      const dir = FileSystem.cacheDirectory || FileSystem.documentDirectory || "";
+      const path = `${dir}morph-tts-${Date.now()}.${ext}`;
+      await FileSystem.writeAsStringAsync(path, base64, {
+        encoding: FileSystem.EncodingType.Base64,
       });
-    });
-    await unloadSound();
-    FileSystem.deleteAsync(path, { idempotent: true }).catch(() => undefined);
-  }, [unloadSound]);
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: false,
+        playsInSilentModeIOS: true,
+        staysActiveInBackground: false,
+      });
+      const { sound } = await Audio.Sound.createAsync(
+        { uri: path },
+        { shouldPlay: true, volume: 1 },
+      );
+      soundRef.current = sound;
+      await new Promise<void>((resolve) => {
+        sound.setOnPlaybackStatusUpdate((status) => {
+          if (!status.isLoaded) return;
+          if (status.didJustFinish) resolve();
+        });
+      });
+      await unloadSound();
+      FileSystem.deleteAsync(path, { idempotent: true }).catch(() => undefined);
+    },
+    [unloadSound],
+  );
 
   const speakText = useCallback(
     async (text: string) => {
       const spoken = sanitizeSpeechText(text);
       if (!spoken || cancelledRef.current) return;
       const prefs = prefsRef.current ?? (await loadPrefs());
+      setReply(spoken);
       setPhaseSafe("speaking");
       await unloadSound();
       try {
@@ -214,7 +284,7 @@ export function useMorphVoice({
         await speakWithDevice(spoken, lang);
       } finally {
         if (!cancelledRef.current && phaseRef.current === "speaking") {
-          setPhaseSafe("idle");
+          setPhaseSafe(liveRef.current ? "waiting" : "idle");
         }
       }
     },
@@ -239,35 +309,74 @@ export function useMorphVoice({
     [loadPrefs, speakText],
   );
 
+  const scheduleNextListen = useCallback(() => {
+    if (!liveRef.current || cancelledRef.current) {
+      if (!cancelledRef.current) setPhaseSafe("idle");
+      return;
+    }
+    setPhaseSafe("waiting");
+    nextTurnRef.current = setTimeout(() => {
+      nextTurnRef.current = null;
+      if (liveRef.current && !cancelledRef.current) {
+        void startListeningRef.current();
+      }
+    }, NEXT_TURN_MS);
+  }, [setPhaseSafe]);
+
   const finishTurn = useCallback(
-    async (uri: string | null) => {
-      if (!uri || cancelledRef.current) {
-        setPhaseSafe("idle");
+    async (captured: { uri: string | null; blob?: Blob; mime?: string }) => {
+      if (!captured.uri || cancelledRef.current) {
+        if (liveRef.current && !cancelledRef.current) {
+          scheduleNextListen();
+        } else {
+          setPhaseSafe("idle");
+        }
+        return;
+      }
+      const elapsed = Date.now() - startedAtRef.current;
+      if (elapsed < MIN_RECORD_MS) {
+        setError("Yana bir oz gapiring.");
+        if (liveRef.current) {
+          scheduleNextListen();
+        } else {
+          setPhaseSafe("idle");
+        }
         return;
       }
       const prefs = prefsRef.current ?? (await loadPrefs());
       setPhaseSafe("transcribing");
       try {
-        const uriLower = uri.toLowerCase();
-        const guessed = uriLower.endsWith(".webm")
-          ? { extension: "webm", mime: "audio/webm" }
-          : uriLower.endsWith(".3gp")
-            ? { extension: "3gp", mime: "audio/3gpp" }
-            : recordingMime();
+        const uriLower = captured.uri.toLowerCase();
+        const guessed = captured.mime
+          ? {
+              mime: captured.mime,
+              extension: captured.mime.includes("webm") ? "webm" : "m4a",
+            }
+          : uriLower.endsWith(".webm")
+            ? { extension: "webm", mime: "audio/webm" }
+            : uriLower.endsWith(".3gp")
+              ? { extension: "3gp", mime: "audio/3gpp" }
+              : recordingMime();
         const result = await transcribeMorphVoice({
-          uri,
+          uri: captured.uri,
+          blob: captured.blob,
           name: `speech.${guessed.extension}`,
           mime: guessed.mime,
           lang: prefs.voiceLang,
         });
+        if (captured.uri.startsWith("blob:")) {
+          URL.revokeObjectURL(captured.uri);
+        }
         if (cancelledRef.current) return;
         const text = result.text.trim();
         if (!text) {
           setError("Ovoz aniqlanmadi. Qayta gapiring.");
-          setPhaseSafe("idle");
+          if (liveRef.current) scheduleNextListen();
+          else setPhaseSafe("idle");
           return;
         }
         setTranscript(text);
+        setError(null);
         onOpenChat?.();
         setPhaseSafe("thinking");
         const sent = await sendText(text, { voice: true });
@@ -280,31 +389,36 @@ export function useMorphVoice({
           return;
         }
         if (sent !== "ok") {
-          setPhaseSafe("idle");
+          if (liveRef.current) scheduleNextListen();
+          else setPhaseSafe("idle");
           return;
         }
-        if (prefs.autoSpeak) {
-          await speakText(lastReply());
+        const answer = lastReply();
+        setReply(answer);
+        if (liveRef.current || prefs.autoSpeak) {
+          await speakText(answer);
         } else {
           setPhaseSafe("idle");
         }
-        if (liveRef.current && !cancelledRef.current && prefs.conversationMode) {
-          setTimeout(() => {
-            if (liveRef.current && !cancelledRef.current) {
-              void startListeningRef.current();
-            }
-          }, 380);
+        if (liveRef.current && !cancelledRef.current) {
+          scheduleNextListen();
         }
       } catch (err) {
         if (err instanceof MorphPlanLimitError) {
           onLimit();
+          liveRef.current = false;
+          setLive(false);
         } else {
           setError(err instanceof Error ? err.message : "Ovoz ishlamadi");
         }
-        setPhaseSafe("idle");
+        if (liveRef.current && !(err instanceof MorphPlanLimitError)) {
+          scheduleNextListen();
+        } else {
+          setPhaseSafe("idle");
+        }
       }
     },
-    [lastReply, loadPrefs, onLimit, onOpenChat, sendText, setPhaseSafe, speakText],
+    [lastReply, loadPrefs, onLimit, onOpenChat, scheduleNextListen, sendText, setPhaseSafe, speakText],
   );
 
   const startListening = useCallback(async () => {
@@ -321,6 +435,51 @@ export function useMorphVoice({
     } catch {
       /* ignore */
     }
+    if (Platform.OS === "web" && typeof window !== "undefined") {
+      try {
+        window.speechSynthesis?.cancel();
+      } catch {
+        /* ignore */
+      }
+    }
+    heardRef.current = false;
+    silentRef.current = 0;
+    startedAtRef.current = Date.now();
+    meteringRef.current = -160;
+    setMetering(-160);
+
+    if (Platform.OS === "web") {
+      const webRec = createWebRecorder(pushMeter);
+      webRecRef.current = webRec;
+      try {
+        await webRec.start();
+      } catch {
+        setError("Mikrofon ruxsati berilmagan.");
+        webRecRef.current = null;
+        return;
+      }
+      setPhaseSafe("recording");
+      stopPoll();
+      pollRef.current = setInterval(() => {
+        void (async () => {
+          const elapsed = Date.now() - startedAtRef.current;
+          const next = shouldAutoStopListening({
+            metering: meteringRef.current,
+            elapsedMs: elapsed,
+            heardSpeech: heardRef.current,
+            silentMs: silentRef.current,
+          });
+          heardRef.current = next.heardSpeech;
+          silentRef.current = next.silentMs;
+          if (elapsed >= 45_000 || next.stop) {
+            const captured = await stopRecordingInternal();
+            await finishTurn(captured);
+          }
+        })();
+      }, 120);
+      return;
+    }
+
     const perm = await Audio.requestPermissionsAsync();
     if (!perm.granted) {
       setError("Mikrofon ruxsati berilmagan.");
@@ -334,9 +493,6 @@ export function useMorphVoice({
     const rec = new Audio.Recording();
     await rec.prepareToRecordAsync(RECORD_OPTS);
     recordingRef.current = rec;
-    heardRef.current = false;
-    silentRef.current = 0;
-    startedAtRef.current = Date.now();
     await rec.startAsync();
     setPhaseSafe("recording");
     stopPoll();
@@ -356,10 +512,10 @@ export function useMorphVoice({
           });
           heardRef.current = next.heardSpeech;
           silentRef.current = next.silentMs;
-          if (typeof status.metering === "number") setMetering(status.metering);
+          if (typeof status.metering === "number") pushMeter(status.metering);
           if (elapsed >= 45_000 || next.stop) {
-            const uri = await stopRecordingInternal();
-            await finishTurn(uri);
+            const captured = await stopRecordingInternal();
+            await finishTurn(captured);
           }
         } catch {
           /* ignore poll errors */
@@ -369,6 +525,7 @@ export function useMorphVoice({
   }, [
     finishTurn,
     loadPrefs,
+    pushMeter,
     requireAccess,
     setPhaseSafe,
     stopPoll,
@@ -379,8 +536,8 @@ export function useMorphVoice({
 
   const stopListening = useCallback(async () => {
     if (phaseRef.current !== "recording") return;
-    const uri = await stopRecordingInternal();
-    await finishTurn(uri);
+    const captured = await stopRecordingInternal();
+    await finishTurn(captured);
   }, [finishTurn, stopRecordingInternal]);
 
   const toggleMic = useCallback(async () => {
@@ -388,23 +545,24 @@ export function useMorphVoice({
       await stopListening();
       return;
     }
-    if (phaseRef.current !== "idle") {
+    if (phaseRef.current !== "idle" && phaseRef.current !== "waiting") {
       await cancelSession();
       return;
     }
-    const prefs = await loadPrefs();
-    if (prefs.conversationMode) {
-      cancelledRef.current = false;
-      liveRef.current = true;
-      setLive(true);
-    }
+    cancelledRef.current = false;
+    liveRef.current = true;
+    setLive(true);
+    setTranscript("");
+    setReply("");
     await startListening();
-  }, [cancelSession, loadPrefs, startListening, stopListening]);
+  }, [cancelSession, startListening, stopListening]);
 
   const startLive = useCallback(async () => {
     cancelledRef.current = false;
     liveRef.current = true;
     setLive(true);
+    setTranscript("");
+    setReply("");
     await startListening();
   }, [startListening]);
 
@@ -422,6 +580,7 @@ export function useMorphVoice({
     live,
     metering,
     transcript,
+    reply,
     error,
     previewing,
     busy: phase !== "idle",

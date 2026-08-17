@@ -167,6 +167,69 @@
     background: color-mix(in oklab, var(--foreground) 30%, transparent);
   }
 
+  @keyframes morph-voice-bar {
+    0%, 100% { transform: scaleY(0.45); }
+    50% { transform: scaleY(1); }
+  }
+
+  @keyframes morph-voice-ring {
+    0% { transform: scale(0.92); opacity: 0.28; }
+    100% { transform: scale(1.18); opacity: 0.04; }
+  }
+
+  @keyframes morph-voice-dot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.35; }
+  }
+
+  @keyframes morph-voice-mic-ring {
+    0% { transform: scale(1); opacity: 0.35; }
+    100% { transform: scale(1.18); opacity: 0; }
+  }
+
+  .morph-voice-wave {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    height: 56px;
+  }
+
+  .morph-voice-wave i {
+    display: block;
+    width: 5px;
+    border-radius: 3px;
+    background: #fff;
+    transform-origin: center;
+    animation: morph-voice-bar 0.9s ease-in-out infinite;
+  }
+
+  .morph-voice-wave[data-live="0"] i {
+    animation-duration: 1.6s;
+    opacity: 0.55;
+  }
+
+  .morph-voice-ring,
+  .morph-voice-ring-slow {
+    border: 1.5px solid rgba(52, 199, 89, 0.28);
+  }
+
+  .morph-voice-ring.is-live {
+    animation: morph-voice-ring 1.1s ease-out infinite;
+  }
+
+  .morph-voice-ring-slow.is-live {
+    animation: morph-voice-ring 1.6s ease-out infinite;
+  }
+
+  .morph-voice-dot {
+    animation: morph-voice-dot 1.1s ease-in-out infinite;
+  }
+
+  .morph-voice-mic-ring {
+    border: 1.5px solid currentColor;
+    animation: morph-voice-mic-ring 1.6s ease-out infinite;
+  }
+
   @keyframes map-shimmer-slide {
     0% { transform: translateX(-120%); }
     100% { transform: translateX(120%); }
@@ -264,6 +327,14 @@
 
   @media (prefers-reduced-motion: reduce) {
     .page-stagger > * {
+      animation: none;
+    }
+
+    .morph-voice-wave i,
+    .morph-voice-ring,
+    .morph-voice-ring-slow,
+    .morph-voice-dot,
+    .morph-voice-mic-ring {
       animation: none;
     }
   }
@@ -427,53 +498,4 @@
     }
   }
 
-}
-
-/* Sonner — yuqoridan tushish / yuqoriga yo‘qolish */
-@keyframes app-toast-in {
-  from {
-    opacity: 0;
-    transform: translateY(-120%) scale(0.96);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-@keyframes app-toast-out {
-  from {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-  to {
-    opacity: 0;
-    transform: translateY(-110%) scale(0.96);
-  }
-}
-
-[data-sonner-toaster][data-y-position="top"] {
-  --offset-top: max(1rem, env(safe-area-inset-top, 0px));
-}
-
-[data-sonner-toaster][data-y-position="top"] [data-sonner-toast] {
-  animation: app-toast-in 0.38s cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
-[data-sonner-toaster][data-y-position="top"] [data-sonner-toast][data-removed="true"] {
-  animation: app-toast-out 0.28s cubic-bezier(0.4, 0, 1, 1) both;
-}
-
-[data-sonner-toaster] [data-sonner-toast].app-toast {
-  border-radius: 999px;
-  padding: 0.7rem 1.1rem;
-  font-weight: 500;
-  letter-spacing: -0.01em;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  [data-sonner-toaster][data-y-position="top"] [data-sonner-toast],
-  [data-sonner-toaster][data-y-position="top"] [data-sonner-toast][data-removed="true"] {
-    animation: none;
-  }
 }

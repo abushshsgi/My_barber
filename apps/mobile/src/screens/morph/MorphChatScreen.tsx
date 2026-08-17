@@ -424,18 +424,24 @@ export function MorphChatScreen() {
         phase={voice.phase}
         metering={voice.metering}
         transcript={voice.transcript}
+        reply={voice.reply}
         error={voice.error}
         title={t("chat.settings.voiceLiveTitle")}
         listeningLabel={t("chat.settings.voiceListening")}
+        listeningHint={t("chat.settings.voiceListeningHint")}
         transcribingLabel={t("chat.settings.voiceTranscribing")}
         thinkingLabel={t("chat.typing")}
         speakingLabel={t("chat.settings.voiceSpeaking")}
+        yourTurnLabel={t("chat.settings.voiceYourTurn")}
         tapToStop={t("chat.settings.voiceTapHint")}
+        tapToSend={t("chat.settings.voiceTapSend")}
+        interruptLabel={t("chat.settings.voiceInterrupt")}
         closeA11y={t("chat.errorDismissA11y")}
         onClose={() => void voice.cancelSession()}
         onPrimary={() => {
           if (voice.phase === "recording") void voice.stopListening();
           else if (voice.phase === "speaking") void voice.interruptSpeech();
+          else if (voice.phase === "waiting") void voice.startListening();
           else void voice.cancelSession();
         }}
       />

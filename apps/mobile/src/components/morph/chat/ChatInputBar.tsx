@@ -1,11 +1,16 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { ActivityIndicator, Platform, Pressable, StyleSheet, TextInput, View } from "react-native";
 import Animated, {
   Easing,
   FadeIn,
   FadeOut,
   LinearTransition,
+  useAnimatedStyle,
+  useReducedMotion,
+  useSharedValue,
+  withRepeat,
+  withTiming,
   ZoomIn,
   ZoomOut,
 } from "react-native-reanimated";
@@ -33,6 +38,35 @@ function WaveIcon() {
       <View style={[styles.bar, { height: 10 }]} />
       <View style={[styles.bar, { height: 7 }]} />
       <View style={[styles.bar, { height: 12 }]} />
+    </View>
+  );
+}
+
+function MicPulse({ children }: { children: ReactNode }) {
+  const reduced = useReducedMotion();
+  const pulse = useSharedValue(0);
+
+  useEffect(() => {
+    if (reduced) {
+      pulse.value = 0;
+      return;
+    }
+    pulse.value = withRepeat(
+      withTiming(1, { duration: 1400, easing: Easing.inOut(Easing.quad) }),
+      -1,
+      true,
+    );
+  }, [pulse, reduced]);
+
+  const ring = useAnimatedStyle(() => ({
+    opacity: 0.35 - pulse.value * 0.28,
+    transform: [{ scale: 1 + pulse.value * 0.38 }],
+  }));
+
+  return (
+    <View>
+      <Animated.View pointerEvents="none" style={[styles.micRing, ring]} />
+      {children}
     </View>
   );
 }
@@ -119,24 +153,26 @@ export function ChatInputBar({
           entering={FadeIn.duration(140)}
           exiting={FadeOut.duration(100)}
         >
-          <Pressable
-            onPress={onVoice}
-            disabled={!onVoice || disabled || voiceBusy}
-            style={({ pressed }) => [
-              styles.voiceBtn,
-              voiceRecording && styles.voiceBtnLive,
-              pressed && styles.pressed,
-            ]}
-            accessibilityRole="button"
-            accessibilityLabel={voiceA11y}
-            accessibilityState={{ busy: voiceBusy, selected: voiceRecording }}
-          >
-            {voiceBusy ? (
-              <ActivityIndicator size="small" color="#FFFFFF" />
-            ) : (
-              <Ionicons name={voiceRecording ? "stop" : "mic"} size={16} color="#FFFFFF" />
-            )}
-          </Pressable>
+          <MicPulse>
+            <Pressable
+              onPress={onVoice}
+              disabled={!onVoice || disabled || voiceBusy}
+              style={({ pressed }) => [
+                styles.voiceBtn,
+                voiceRecording && styles.voiceBtnLive,
+                pressed && styles.pressed,
+              ]}
+              accessibilityRole="button"
+              accessibilityLabel={voiceA11y}
+              accessibilityState={{ busy: voiceBusy, selected: voiceRecording }}
+            >
+              {voiceBusy ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <Ionicons name={voiceRecording ? "stop" : "mic"} size={16} color="#FFFFFF" />
+              )}
+            </Pressable>
+          </MicPulse>
         </Animated.View>
       ) : (
         <Animated.View
@@ -210,6 +246,16 @@ const styles = StyleSheet.create({
   },
   voiceBtnLive: {
     backgroundColor: "#FF3B30",
+  },
+  micRing: {
+    position: "absolute",
+    top: -4,
+    left: -4,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    borderWidth: 1.5,
+    borderColor: "#111111",
   },
   wave: {
     flexDirection: "row",

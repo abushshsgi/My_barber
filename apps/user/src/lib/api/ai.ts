@@ -9,6 +9,7 @@ import {
 import type { ExplorePersonaId } from "@/lib/explore-personas";
 import { toShareImageSource } from "@/lib/media-url";
 import { throwFromMorphApiError } from "@/lib/morph-plan-limit";
+import { shouldPersistLooksToServer } from "@/lib/morph-ai-prefs";
 import { prepareStudioImagePayload } from "@/lib/selfie-image";
 import { apiFetch, apiJson } from "./client";
 
@@ -38,15 +39,6 @@ export type AiFaceCheckResponse = {
   detail?: string;
 };
 
-/** Server va client uchun yagona "yuz yo'q" xabari. */
-export const NO_FACE_MESSAGE = "Iltimos yuz shaklini yuboring!";
-
-export function isNoFaceMessage(message: string): boolean {
-  return /yuz shaklini yuboring|yuz shakli rasmini yuklang|yuz topilmadi|no face|upload.*face|лицо/i.test(
-    message,
-  );
-}
-
 export async function checkAiStyleFace(image: string): Promise<AiFaceCheckResponse> {
   const res = await apiFetch("/api/v1/ai/face-check/", {
     method: "POST",
@@ -60,20 +52,10 @@ export async function checkAiStyleFace(image: string): Promise<AiFaceCheckRespon
     const detail =
       body && typeof body === "object" && typeof body.detail === "string"
         ? body.detail
-        : NO_FACE_MESSAGE;
-    throw new Error(isNoFaceMessage(detail) ? NO_FACE_MESSAGE : detail);
+        : "Iltimos, yuz shakli rasmini yuklang.";
+    throw new Error(detail);
   }
-  const parsed = (body ?? { has_face: false }) as AiFaceCheckResponse;
-  if (!parsed.has_face) {
-    throw new Error(
-      typeof parsed.detail === "string" && parsed.detail.trim()
-        ? isNoFaceMessage(parsed.detail)
-          ? NO_FACE_MESSAGE
-          : parsed.detail
-        : NO_FACE_MESSAGE,
-    );
-  }
-  return parsed;
+  return (body ?? { has_face: false }) as AiFaceCheckResponse;
 }
 
 export type AiFaceHint = {
@@ -231,10 +213,7 @@ export async function generateAiStyleTryOnViews(payload: {
   ) {
     const views = body.views as Partial<Record<TryOnViewId, string>>;
     return {
-      preview_image:
-        (body as AiStyleTryOnResponse).preview_image ||
-        views.front ||
-        payload.image,
+      preview_image: (body as AiStyleTryOnResponse).preview_image || views.front || payload.image,
       style_id: (body as AiStyleTryOnResponse).style_id || payload.style_id,
       style_title: (body as AiStyleTryOnResponse).style_title || "",
       views,
@@ -299,9 +278,7 @@ export async function generateMorphStudioEdit(
     | null;
   if (!res.ok) {
     if (res.status === 413) {
-      throw new Error(
-        "Rasm juda katta. Undo qilib qayta urinib ko‘ring yoki asl rasmni tanlang.",
-      );
+      throw new Error("Rasm juda katta. Undo qilib qayta urinib ko‘ring yoki asl rasmni tanlang.");
     }
     throwFromMorphApiError(res, body, "Studio tahririda xatolik");
   }
@@ -446,8 +423,10 @@ export async function refreshAiStyleHistoryCache(): Promise<FaceProfileHistoryEn
 export async function persistAiStyleHistory(payload: SaveAiStyleHistoryPayload): Promise<void> {
   const userId = getActiveUserId();
   if (!userId) return;
+  if (!shouldPersistLooksToServer()) return;
   try {
     const saved = await saveAiStyleHistory(payload);
+    if (!saved || !("id" in saved)) return;
     upsertFaceProfileHistoryEntry(mapApiHistoryEntry(saved), userId);
   } catch {
     /* local cache already updated */
@@ -558,4 +537,235 @@ export async function scanIngredient(image: string): Promise<IngredientScanRespo
     throw new Error("Tarkib tahlili javobi noto'g'ri.");
   }
   return body as IngredientScanResponse;
+}
+
+export type MorphChatLimits = {
+  daily_limit: number;
+  daily_used: number | null;
+  daily_remaining: number | null;
+  warn_at?: number;
+  should_warn?: boolean;
+};
+
+export type MorphAiPrivacyPrefs = {
+  privacy_local_only: boolean;
+  save_chat_history: boolean;
+  persist_looks: boolean;
+  limit_notify: boolean;
+  use_tryon_context: boolean;
+};
+
+export type MorphAiPrivacyDataCounts = {
+  chat_threads: number;
+  chat_messages: number;
+  looks: number;
+  selfies: number;
+  shares: number;
+};
+
+export type MorphAiPrivacyPayload = {
+  prefs: MorphAiPrivacyPrefs;
+  limits: MorphChatLimits;
+  data: MorphAiPrivacyDataCounts;
+  updated_at?: string | null;
+};
+
+export async function fetchMorphAiPrivacy(): Promise<MorphAiPrivacyPayload> {
+  return apiJson<MorphAiPrivacyPayload>("/api/v1/ai/privacy/");
+}
+
+export async function patchMorphAiPrivacy(
+  patch: Partial<MorphAiPrivacyPrefs>,
+): Promise<MorphAiPrivacyPayload> {
+  return apiJson<MorphAiPrivacyPayload>("/api/v1/ai/privacy/", {
+    method: "PATCH",
+    body: JSON.stringify(patch),
+  });
+}
+
+export async function deleteMorphAiPrivacyData(
+  kind: "chats" | "looks" | "selfies" | "shares" | "all",
+): Promise<MorphAiPrivacyPayload & { ok: boolean; deleted: Record<string, number> }> {
+  return apiJson("/api/v1/ai/privacy/data/", {
+    method: "DELETE",
+    body: JSON.stringify({ kind }),
+  });
+}
+
+export async function fetchMorphChatLimits(): Promise<MorphChatLimits> {
+  return apiJson<MorphChatLimits>("/api/v1/ai/chat/limits/");
+}
+
+export type MorphChatMessageApi = {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+};
+
+export type MorphChatSendPayload = {
+  message: string;
+  history?: Array<{ role: "user" | "assistant"; content: string }>;
+  context?: Record<string, unknown>;
+  thread_id?: string;
+  persist?: boolean;
+};
+
+export async function sendMorphChatMessage(
+  payload: MorphChatSendPayload,
+): Promise<{ reply: string; limits: MorphChatLimits }> {
+  const res = await apiFetch("/api/v1/ai/chat/", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+  const body = (await res.json().catch(() => null)) as {
+    reply?: string;
+    limits?: MorphChatLimits;
+    detail?: string;
+    code?: string;
+  } | null;
+  if (!res.ok) {
+    throwFromMorphApiError(res, body, "Chat javob bermadi");
+  }
+  if (!body?.reply) throw new Error("Chat javobi noto'g'ri");
+  return {
+    reply: body.reply,
+    limits: body.limits ?? { daily_limit: 40, daily_used: null, daily_remaining: null },
+  };
+}
+
+type StreamEvent = {
+  delta?: string;
+  done?: boolean;
+  reply?: string;
+  limits?: MorphChatLimits;
+  error?: string;
+  status?: number;
+};
+
+function parseSseBuffer(buffer: string): { events: StreamEvent[]; rest: string } {
+  const normalized = buffer.replace(/\r\n/g, "\n");
+  const parts = normalized.split("\n\n");
+  const rest = parts.pop() ?? "";
+  const events: StreamEvent[] = [];
+  for (const part of parts) {
+    const line = part
+      .split("\n")
+      .filter((row) => row.startsWith("data:"))
+      .map((row) => row.slice(5).trim())
+      .join("");
+    if (!line) continue;
+    try {
+      events.push(JSON.parse(line) as StreamEvent);
+    } catch {
+      /* ignore */
+    }
+  }
+  return { events, rest };
+}
+
+export async function streamMorphChatMessage(
+  payload: MorphChatSendPayload,
+  onDelta: (chunk: string) => void,
+): Promise<{ reply: string; limits: MorphChatLimits }> {
+  const res = await apiFetch("/api/v1/ai/chat/", {
+    method: "POST",
+    headers: { Accept: "text/event-stream" },
+    body: JSON.stringify({ ...payload, stream: true }),
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => null);
+    throwFromMorphApiError(res, body, "Chat javob bermadi");
+  }
+  if (!res.body) {
+    throw new Error("Chat javobi noto'g'ri");
+  }
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let reply = "";
+  let limits: MorphChatLimits = {
+    daily_limit: 40,
+    daily_used: null,
+    daily_remaining: null,
+  };
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const parsed = parseSseBuffer(buffer);
+    buffer = parsed.rest;
+    for (const event of parsed.events) {
+      if (event.error) {
+        throwFromMorphApiError(
+          new Response(null, { status: event.status || 500 }),
+          { detail: event.error },
+          event.error,
+        );
+      }
+      if (event.delta) {
+        reply += event.delta;
+        onDelta(event.delta);
+      }
+      if (event.done) {
+        if (event.reply) reply = event.reply;
+        if (event.limits) limits = event.limits;
+      }
+    }
+  }
+  if (!reply.trim()) throw new Error("Chat javobi noto'g'ri");
+  return { reply, limits };
+}
+
+export type MorphVoiceGender = "male" | "female";
+
+export async function transcribeMorphVoice(payload: {
+  blob: Blob;
+  lang?: "auto" | "uz" | "ru";
+}): Promise<{ text: string; lang: string }> {
+  const mime = payload.blob.type || "audio/webm";
+  const name = mime.includes("webm") ? "speech.webm" : "speech.m4a";
+  const fd = new FormData();
+  fd.append("audio", payload.blob, name);
+  fd.append("lang", payload.lang || "auto");
+  fd.append("mime", mime);
+  const res = await apiFetch("/api/v1/ai/chat/voice/transcribe/", {
+    method: "POST",
+    body: fd,
+  });
+  const body = (await res.json().catch(() => null)) as {
+    text?: string;
+    lang?: string;
+    detail?: string;
+    code?: string;
+  } | null;
+  if (!res.ok) {
+    throwFromMorphApiError(res, body, "Ovoz aniqlanmadi");
+  }
+  const text = (body?.text || "").trim();
+  if (!text) throw new Error("Ovoz aniqlanmadi");
+  return { text, lang: body?.lang || "uz" };
+}
+
+export async function speakMorphVoice(payload: {
+  text: string;
+  lang?: "uz" | "ru" | "auto";
+}): Promise<{ audioBase64: string; mime: string }> {
+  const res = await apiFetch("/api/v1/ai/chat/voice/speak/", {
+    method: "POST",
+    body: JSON.stringify({
+      text: payload.text,
+      lang: payload.lang && payload.lang !== "auto" ? payload.lang : undefined,
+    }),
+  });
+  const body = (await res.json().catch(() => null)) as {
+    audio_base64?: string;
+    mime?: string;
+    detail?: string;
+    code?: string;
+  } | null;
+  if (!res.ok) {
+    throwFromMorphApiError(res, body, "Ovoz yaratilmadi");
+  }
+  if (!body?.audio_base64) throw new Error("Ovoz yaratilmadi");
+  return { audioBase64: body.audio_base64, mime: body.mime || "audio/wav" };
 }

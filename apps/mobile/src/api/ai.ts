@@ -762,18 +762,28 @@ export async function fetchMorphVoiceCatalog(): Promise<MorphVoiceCatalog> {
 
 export async function transcribeMorphVoice(payload: {
   uri: string;
+  blob?: Blob;
   name?: string;
   mime?: string;
   lang?: "auto" | "uz" | "ru";
 }): Promise<{ text: string; lang: string }> {
-  const mime = payload.mime || "audio/mp4";
+  const mime = payload.mime || payload.blob?.type || "audio/mp4";
   const fd = new FormData();
-  fd.append("audio", {
-    uri: payload.uri,
-    name: payload.name || "speech.m4a",
-    type: mime,
-  } as unknown as Blob);
+  const name = payload.name || (mime.includes("webm") ? "speech.webm" : "speech.m4a");
+  if (payload.blob) {
+    fd.append("audio", payload.blob, name);
+  } else if (typeof window !== "undefined" && payload.uri.startsWith("blob:")) {
+    const blob = await fetch(payload.uri).then((r) => r.blob());
+    fd.append("audio", blob, name);
+  } else {
+    fd.append("audio", {
+      uri: payload.uri,
+      name,
+      type: mime,
+    } as unknown as Blob);
+  }
   fd.append("lang", payload.lang || "auto");
+  fd.append("mime", mime);
   const res = await apiFetch("/api/v1/ai/chat/voice/transcribe/", {
     method: "POST",
     body: fd,
