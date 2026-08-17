@@ -35,18 +35,13 @@ import { cn } from "@/lib/utils";
 import { sanitizeDisplayNameInput, validateDisplayName } from "@/lib/validate-display-name";
 import { useCurrency } from "@/hooks/use-currency";
 import { useWalletMe } from "@/hooks/use-wallet";
+import { useSubscriptionMe } from "@/hooks/use-subscription";
 import { fetchCurrencyRates } from "@/lib/api/currency";
 import { CURRENCY_VISUAL, LANG_FLAGS } from "@/lib/locale-display";
 import { SUPPORTED_CURRENCY_CODES, type CurrencyCode } from "@mybarber/shared/currency";
 import type { AppLang } from "@/i18n/config";
 
-function Toggle({
-  value,
-  onChange,
-}: {
-  value: boolean;
-  onChange: (v: boolean) => void;
-}) {
+function Toggle({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) {
   return (
     <button
       type="button"
@@ -54,8 +49,8 @@ function Toggle({
       aria-checked={value}
       onClick={() => onChange(!value)}
       className={cn(
-        "relative h-7 w-12 shrink-0 rounded-full transition-colors",
-        value ? "bg-foreground" : "bg-surface-2",
+        "relative h-7 w-12 shrink-0 cursor-pointer rounded-full transition-colors duration-200",
+        value ? "bg-foreground" : "bg-muted",
       )}
     >
       <span
@@ -100,8 +95,8 @@ function SettingsPickerOption({
       type="button"
       onClick={onClick}
       className={cn(
-        "flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-medium transition-colors hover:bg-surface/60",
-        selected && "bg-surface font-semibold",
+        "flex w-full cursor-pointer items-center gap-3 px-4 py-3 text-left text-sm font-medium transition-colors duration-200 hover:bg-muted/60",
+        selected && "bg-muted font-semibold",
       )}
     >
       {leading}
@@ -163,6 +158,7 @@ export function SettingsPanelContent({
 
   const { currency, setCurrency } = useCurrency();
   const { data: walletMe } = useWalletMe();
+  const { data: subMe } = useSubscriptionMe();
   const { data: currencyRates } = useQuery({
     queryKey: ["currencies", "rates"],
     queryFn: fetchCurrencyRates,
@@ -173,6 +169,27 @@ export function SettingsPanelContent({
     t(`currency.codes.${currency}`, {
       defaultValue: currencyRates?.currencies.find((c) => c.code === currency)?.label ?? currency,
     }) ?? currency;
+
+  const plan = subMe?.subscription?.plan;
+  const planName =
+    plan == null
+      ? null
+      : activeLang === "ru"
+        ? plan.name_ru
+        : activeLang === "en"
+          ? plan.name_en
+          : plan.name_uz;
+  const subscriptionMeta =
+    subMe == null
+      ? t("common.loading", { defaultValue: "Yuklanmoqda…" })
+      : subMe.has_active && planName
+        ? t("settings.hubs.subscriptions.metaActive", {
+            plan: planName,
+            defaultValue: "{{plan}}",
+          })
+        : t("settings.hubs.subscriptions.metaEmpty", {
+            defaultValue: "Obuna yo'q",
+          });
 
   const queryClient = useQueryClient();
   const [editEmail, setEditEmail] = useState(initialEdit === "email");
@@ -296,7 +313,7 @@ export function SettingsPanelContent({
     <Link
       to="/settings"
       search={{ section }}
-      className="mb-5 inline-flex items-center gap-1.5 text-sm font-semibold text-foreground transition-opacity hover:opacity-80"
+      className="mb-5 inline-flex cursor-pointer items-center gap-1.5 text-sm font-semibold text-foreground transition-opacity duration-200 hover:opacity-80"
     >
       <ChevronLeft className="h-4 w-4" strokeWidth={2.2} />
       {t("common.back", { defaultValue: "Orqaga" })}
@@ -373,15 +390,15 @@ export function SettingsPanelContent({
             <SettingsFieldRow
               label={t("settings.fields.email", { defaultValue: "Email" })}
               value={
-                displayEmail
-                  ? `${displayEmail}${emailMeta ? ` · ${emailMeta}` : ""}`
-                  : undefined
+                displayEmail ? `${displayEmail}${emailMeta ? ` · ${emailMeta}` : ""}` : undefined
               }
               emptyLabel={t("settings.fields.emailNotSet", { defaultValue: "Qo'shilmagan" })}
               hint={
                 displayEmail
                   ? emailVerified
-                    ? t("settings.fields.emailVerifiedHint", { defaultValue: "Email tasdiqlangan." })
+                    ? t("settings.fields.emailVerifiedHint", {
+                        defaultValue: "Email tasdiqlangan.",
+                      })
                     : t("settings.fields.emailUnverifiedHint", {
                         defaultValue: "Email tasdiqlanmagan — kod yoki havola orqali tasdiqlang.",
                       })
@@ -452,7 +469,9 @@ export function SettingsPanelContent({
                   />
                   <SettingsEditActions
                     saveLabel={t("emailVerify.confirm", { defaultValue: "Tasdiqlash" })}
-                    cancelLabel={t("emailVerify.changeEmail", { defaultValue: "Emailni o'zgartirish" })}
+                    cancelLabel={t("emailVerify.changeEmail", {
+                      defaultValue: "Emailni o'zgartirish",
+                    })}
                     saving={verifyEmail.isPending}
                     saveDisabled={emailCode.length !== 6}
                     onSave={() => verifyEmail.mutate()}
@@ -527,7 +546,9 @@ export function SettingsPanelContent({
                   className="w-full rounded-lg border border-border px-3 py-2.5 text-sm outline-none focus:border-foreground"
                 />
                 <SettingsEditActions
-                  saveLabel={me.has_password ? t("settings.changePassword") : t("settings.setPassword")}
+                  saveLabel={
+                    me.has_password ? t("settings.changePassword") : t("settings.setPassword")
+                  }
                   cancelLabel={cancelLabel}
                   saving={me.has_password ? changePw.isPending : setPw.isPending}
                   saveDisabled={
@@ -601,22 +622,24 @@ export function SettingsPanelContent({
         ) : null}
 
         {section === "notifications" &&
-          notificationItems.map((item) => (
-            <SettingsFieldRow
-              key={item.key}
-              label={item.label}
-              value={onOff(prefs[item.key])}
-              trailing={
-                <Toggle
-                  value={prefs[item.key]}
-                  onChange={(v) => {
-                    updatePref(item.key, v);
-                    toast.success(t("settings.saved", { defaultValue: "Saqlandi" }));
-                  }}
-                />
-              }
-            />
-          ))}
+          notificationItems
+            .filter((item) => item.key !== "reduceMotion")
+            .map((item) => (
+              <SettingsFieldRow
+                key={item.key}
+                label={item.label}
+                value={onOff(prefs[item.key])}
+                trailing={
+                  <Toggle
+                    value={prefs[item.key]}
+                    onChange={(v) => {
+                      updatePref(item.key, v);
+                      toast.success(t("settings.saved", { defaultValue: "Saqlandi" }));
+                    }}
+                  />
+                }
+              />
+            ))}
 
         {section === "preferences" && (
           <>
@@ -681,7 +704,7 @@ export function SettingsPanelContent({
                       title={
                         <span className="flex items-center gap-2">
                           <span>{label}</span>
-                          <span className="rounded-md bg-surface px-1.5 py-0.5 text-[11px] font-bold text-muted-foreground">
+                          <span className="rounded-md bg-muted px-1.5 py-0.5 text-[11px] font-semibold text-muted-foreground">
                             {visual.symbol}
                           </span>
                         </span>
@@ -699,7 +722,9 @@ export function SettingsPanelContent({
             </SettingsFieldRow>
             <SettingsFieldRow
               label={t("settings.preferredAudience")}
-              value={t(`audience.${prefs.preferredAudience}`, { defaultValue: prefs.preferredAudience })}
+              value={t(`audience.${prefs.preferredAudience}`, {
+                defaultValue: prefs.preferredAudience,
+              })}
               actionLabel={t("settings.actions.edit", { defaultValue: "Tahrirlash" })}
               cancelLabel={cancelLabel}
               expanded={editAudience}
@@ -751,7 +776,7 @@ export function SettingsPanelContent({
         {section === "subscriptions" && !showManageDetail ? (
           <SettingsFieldRow
             label={t("settings.hubs.subscriptions.title", { defaultValue: "Obunalar" })}
-            value={t("settings.hubs.subscriptions.meta", { defaultValue: "Obuna rejalar tez orada" })}
+            value={subscriptionMeta}
             hint={t("settings.hubs.subscriptions.desc")}
             actionLabel={t("settings.actions.view", { defaultValue: "Ko'rish" })}
             actionTo="/settings"
@@ -863,16 +888,18 @@ export function SettingsPanelContent({
             onClick={() => {
               resetPrefs();
               setCurrency("UZS");
-              toast.success(t("settings.resetDone", { defaultValue: "Standart sozlamalar tiklandi" }));
+              toast.success(
+                t("settings.resetDone", { defaultValue: "Standart sozlamalar tiklandi" }),
+              );
             }}
-            className="text-sm font-semibold text-muted-foreground underline underline-offset-2 hover:text-foreground"
+            className="cursor-pointer text-sm font-semibold text-muted-foreground underline underline-offset-2 transition-colors duration-200 hover:text-foreground"
           >
             {t("settings.reset")}
           </button>
           <button
             type="button"
             onClick={handleLogout}
-            className="inline-flex items-center gap-2 text-sm font-semibold text-muted-foreground underline underline-offset-2 hover:text-foreground"
+            className="inline-flex cursor-pointer items-center gap-2 text-sm font-semibold text-muted-foreground underline underline-offset-2 transition-colors duration-200 hover:text-foreground"
           >
             <LogOut className="h-4 w-4" />
             {t("common.logout")}
@@ -881,9 +908,9 @@ export function SettingsPanelContent({
       ) : null}
 
       {section === "personal" ? (
-        <div className="mt-10 rounded-xl border border-border bg-surface/40 p-5">
+        <div className="mt-10 border-t border-border pt-6">
           <p className="text-sm font-semibold">{t("settings.privacyNote.title")}</p>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
             {t("settings.privacyNote.body")}{" "}
             <Link
               to="/settings"
@@ -902,13 +929,11 @@ export function SettingsPanelContent({
             <DialogTitle>{t("settings.fields.phone", { defaultValue: "Telefon" })}</DialogTitle>
             <DialogDescription>{t("settings.fields.phoneHint")}</DialogDescription>
           </DialogHeader>
-          {user.phone ? (
-            <p className="text-sm font-medium text-foreground">{user.phone}</p>
-          ) : null}
+          {user.phone ? <p className="text-sm font-medium text-foreground">{user.phone}</p> : null}
           <Link
             to="/settings"
             search={{ section: "help", manage: true }}
-            className="inline-flex w-fit rounded-lg bg-foreground px-4 py-2.5 text-sm font-semibold text-background"
+            className="inline-flex w-fit cursor-pointer rounded-lg bg-foreground px-4 py-2.5 text-sm font-semibold text-background"
             onClick={() => setPhoneDialogOpen(false)}
           >
             {t("settings.actions.contactSupport", { defaultValue: "Yordam markaziga yozish" })}

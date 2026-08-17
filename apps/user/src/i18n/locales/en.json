@@ -768,8 +768,8 @@
     }
   },
   "referral": {
-    "title": "Referrals",
-    "subtitle": "Invite your friends and family to MySaloon.",
+    "title": "Invite friends",
+    "subtitle": "Invite a friend to MySaloon — 1 friend = 1 Morf AI generation.",
     "intro": "Share your 8-character code or invite link. Friends enter the code at signup (or the link applies it automatically).",
     "yourCode": "Your code",
     "yourLink": "Invite link",
@@ -828,7 +828,7 @@
   "settings": {
     "title": "Settings",
     "pageTitle": "Account settings",
-    "pageLead": "Personal info, security, addresses, and app preferences.",
+    "pageLead": "Profile, security, language, and billing — all in one place.",
     "manageDetails": "Manage details",
     "done": "Done",
     "saved": "Saved",
@@ -897,8 +897,8 @@
       "off": "Off"
     },
     "privacyNote": {
-      "title": "Why isn't my info shown here?",
-      "body": "Some details only appear in their related section. For full control, go to the privacy page."
+      "title": "Privacy",
+      "body": "Control how your data is stored and used in the privacy section."
     },
     "morphPrivacy": {
       "policyTitle": "Your data",
@@ -956,8 +956,8 @@
         "metaCount": "{{count}} members"
       },
       "notifications": {
-        "title": "Notification preferences",
-        "desc": "Reminders and chat alerts.",
+        "title": "Notifications",
+        "desc": "Booking reminders and chat alerts.",
         "metaOn": "Reminders on",
         "metaOff": "Reminders off"
       },
@@ -973,8 +973,10 @@
       },
       "subscriptions": {
         "title": "Subscriptions",
-        "desc": "Plans and recurring payments.",
-        "meta": "Subscription plans coming soon"
+        "desc": "Plans, limits, and billing.",
+        "meta": "{{plan}}",
+        "metaActive": "{{plan}}",
+        "metaEmpty": "No subscription"
       },
       "privacy": {
         "title": "Privacy",
@@ -993,6 +995,12 @@
       "payments": "Payments & rewards",
       "household": "Family & address",
       "chat": "Messages"
+    },
+    "groups": {
+      "account": "Account",
+      "prefs": "Preferences",
+      "billing": "Billing",
+      "more": "More"
     }
   },
   "favorites": {

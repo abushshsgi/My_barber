@@ -97,8 +97,7 @@ export function ProfileSubpageCard({
     <div
       id={id}
       className={cn(
-        "rounded-2xl border border-border bg-surface p-4 shadow-soft",
-        "lg:border-border/45 lg:bg-background/55 lg:shadow-none lg:backdrop-blur-md",
+        "rounded-2xl border border-border bg-card p-4 shadow-[0_1px_2px_rgba(15,15,15,0.05)]",
         className,
       )}
     >

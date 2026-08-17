@@ -27,7 +27,7 @@ type Props = NativeStackScreenProps<ProfileStackParamList, "ProfileHome">;
 
 const QUICK = [
   { key: "Orders", label: "Buyurtmalar", icon: "calendar-outline" as const },
-  { key: "Referrals", label: "Referrals", icon: "person-add-outline" as const },
+  { key: "Notifications", label: "Bildirishnomalar", icon: "notifications-outline" as const },
   { key: "Addresses", label: "Manzillar", icon: "location-outline" as const },
   { key: "Settings", label: "Sozlamalar", icon: "settings-outline" as const },
 ] as const;
@@ -117,7 +117,7 @@ function MysaloonProfileHome({ navigation }: Props) {
                 if (item.key === "Orders") navigation.navigate("Orders");
                 else if (item.key === "Settings") navigation.navigate("Settings");
                 else if (item.key === "Addresses") navigation.navigate("Settings");
-                else if (item.key === "Referrals") navigation.navigate("Referrals");
+                else if (item.key === "Notifications") navigation.navigate("Notifications");
               }}
             >
               <View style={styles.quickIcon}>

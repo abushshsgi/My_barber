@@ -317,15 +317,6 @@ export function MorphChatScreen() {
     showPaywall("subscription");
   }, [showPaywall]);
 
-  const openReferralFromSettings = useCallback(() => {
-    setSettingsOpen(false);
-    setPaywall(null);
-    navigation.navigate({
-      name: "Profile",
-      params: { screen: "Referrals" },
-    } as never);
-  }, [navigation]);
-
   const errorNotice = chat.error ? (
     <ChatNotice
       title={t("chat.errorTitle")}
@@ -405,7 +396,6 @@ export function MorphChatScreen() {
         onClose={closeSettings}
         onClearAllChats={() => void clearAllFromSettings()}
         onOpenSubscription={openSubscriptionFromSettings}
-        onOpenReferral={openReferralFromSettings}
         onSaveHistoryOff={() => void chat.clearAllChats()}
         onPreviewVoice={(id) => void voice.previewVoice(id, t("chat.settings.voiceSample"))}
         voicePreviewing={voice.previewing}

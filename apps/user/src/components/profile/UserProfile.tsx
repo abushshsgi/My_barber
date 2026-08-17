@@ -11,7 +11,7 @@ import {
   Shield,
   Sparkles,
   Tag,
-  UserPlus,
+  Users,
 } from "lucide-react";
 import {
   ProfileGoMenuGroup,
@@ -44,12 +44,8 @@ export function UserProfile() {
 
   const quickItems = [
     { icon: CalendarCheck, label: t("profile.bookings"), to: "/bookings" },
-    {
-      icon: UserPlus,
-      label: t("referral.title", { defaultValue: "Referrals" }),
-      to: "/referrals",
-    },
     { icon: MapPin, label: t("profile.addresses"), to: "/addresses" },
+    { icon: Users, label: t("family.title", { defaultValue: "Oilaviy profil" }), to: "/family" },
     { icon: Settings, label: t("profile.settings"), to: "/settings" },
   ];
 
@@ -73,7 +69,11 @@ export function UserProfile() {
             nameTo="/settings"
             nameClassName="truncate text-[22px] font-bold tracking-tight"
           />
-          <Link to="/settings" className="shrink-0 text-muted-foreground" aria-label={t("profile.settings")}>
+          <Link
+            to="/settings"
+            className="shrink-0 text-muted-foreground"
+            aria-label={t("profile.settings")}
+          >
             <ChevronRight className="h-5 w-5" />
           </Link>
         </div>

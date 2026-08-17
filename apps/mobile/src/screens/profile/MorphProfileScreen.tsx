@@ -57,7 +57,6 @@ export function MorphProfileScreen({ navigation }: Props) {
   const progress = aiLimit > 0 ? Math.min(1, aiUsed / aiLimit) : 0;
   const badge = (sub?.badge || "").toLowerCase();
   const checkColor = badge === "pro" ? GOLD : "#5AC8FA";
-  const referralOff = sub?.referral_generation_enabled === false;
 
   return (
     <View style={[styles.root, { paddingTop: Math.max(insets.top, 10) }]}>
@@ -213,10 +212,10 @@ export function MorphProfileScreen({ navigation }: Props) {
           </View>
           <View style={styles.gridRow}>
             <QuickTile
-              icon="gift-outline"
-              label="Taklif"
-              value={referralOff ? "Ulash" : "1 = 1"}
-              onPress={() => navigation.navigate("Referrals")}
+              icon="settings-outline"
+              label="Sozlamalar"
+              value="Hisob"
+              onPress={() => navigation.navigate("Settings")}
             />
             <QuickTile
               icon="sparkles-outline"

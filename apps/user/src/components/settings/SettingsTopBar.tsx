@@ -25,7 +25,7 @@ export function SettingsTopBar({ backTo = "/profile", backLabel, doneLabel, clas
         <button
           type="button"
           onClick={() => void router.navigate({ to: "/profile" })}
-          className="text-sm font-semibold text-foreground underline underline-offset-2 hover:opacity-80"
+          className="cursor-pointer text-sm font-semibold text-foreground underline underline-offset-2 hover:opacity-80"
         >
           {doneLabel}
         </button>

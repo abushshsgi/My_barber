@@ -28,9 +28,7 @@ function initials(name: string): string {
 }
 
 function InviteeRow({ invitee }: { invitee: ReferralInvitee }) {
-  const joined = invitee.joined_at
-    ? new Date(invitee.joined_at).toLocaleDateString("uz-UZ")
-    : null;
+  const joined = invitee.joined_at ? new Date(invitee.joined_at).toLocaleDateString("uz-UZ") : null;
   return (
     <li className="flex items-center gap-3 py-2.5">
       {invitee.avatar_url ? (
@@ -137,14 +135,14 @@ export function SettingsReferralPanel() {
             {t("referral.yourCode", { defaultValue: "Sizning kodingiz" })}
           </p>
           <div className="mt-2 flex items-center gap-2">
-            <span className="flex-1 rounded-xl border border-border bg-surface px-3 py-3 text-center font-mono text-2xl font-bold tracking-[0.22em]">
+            <span className="flex-1 rounded-xl border border-border bg-background px-3 py-3 text-center font-mono text-2xl font-bold tracking-[0.22em]">
               {data.code}
             </span>
             <button
               type="button"
               onClick={() => handleCopy(data.code, "code")}
               aria-label={t("referral.copyCode", { defaultValue: "Kodni nusxalash" })}
-              className="grid h-12 w-12 shrink-0 place-items-center rounded-xl border border-border transition-colors hover:bg-muted/40"
+              className="grid h-12 w-12 shrink-0 cursor-pointer place-items-center rounded-xl border border-border transition-colors duration-200 hover:bg-muted/50"
             >
               {copied === "code" ? (
                 <Check className="h-5 w-5 text-emerald-600" />
@@ -159,7 +157,7 @@ export function SettingsReferralPanel() {
           <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
             {t("referral.yourLink", { defaultValue: "Taklif havolasi" })}
           </p>
-          <p className="mt-2 break-all rounded-xl border border-border bg-surface px-3 py-3 text-xs text-muted-foreground">
+          <p className="mt-2 break-all rounded-xl border border-border bg-background px-3 py-3 text-xs text-muted-foreground">
             {inviteUrl}
           </p>
         </div>
@@ -168,7 +166,7 @@ export function SettingsReferralPanel() {
           <button
             type="button"
             onClick={handleShare}
-            className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-foreground py-3 text-sm font-bold text-background"
+            className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl bg-foreground py-3 text-sm font-bold text-background"
           >
             <Share2 className="h-4 w-4" />
             {t("referral.share", { defaultValue: "Havolani ulashish" })}
@@ -176,9 +174,13 @@ export function SettingsReferralPanel() {
           <button
             type="button"
             onClick={() => handleCopy(inviteUrl, "link")}
-            className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-border py-3 text-sm font-bold"
+            className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl border border-border py-3 text-sm font-bold transition-colors duration-200 hover:bg-muted/50"
           >
-            {copied === "link" ? <Check className="h-4 w-4 text-emerald-600" /> : <Copy className="h-4 w-4" />}
+            {copied === "link" ? (
+              <Check className="h-4 w-4 text-emerald-600" />
+            ) : (
+              <Copy className="h-4 w-4" />
+            )}
             {t("referral.copyLink", { defaultValue: "Havoladan nusxa" })}
           </button>
         </div>
@@ -186,7 +188,7 @@ export function SettingsReferralPanel() {
 
       <ProfileSubpageCard>
         <div className="flex items-center gap-3">
-          <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-surface">
+          <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-muted">
             <Users className="h-4 w-4" />
           </div>
           <div className="min-w-0 flex-1">
@@ -206,7 +208,7 @@ export function SettingsReferralPanel() {
       {refGenOn ? (
         <ProfileSubpageCard className="space-y-1">
           <div className="flex items-center gap-3">
-            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-surface">
+            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-muted">
               <Gift className="h-4 w-4" />
             </div>
             <div className="min-w-0 flex-1">

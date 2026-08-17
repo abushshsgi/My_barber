@@ -1,10 +1,8 @@
-import { DESKTOP_ACCOUNT_BG } from "@/components/desktop/ui/desktop-glass";
 import { SettingsAirbnbSidebar } from "@/components/settings/SettingsAirbnbSidebar";
 import { SettingsPanelContent } from "@/components/settings/SettingsPanelContent";
 import { SettingsTopBar } from "@/components/settings/SettingsTopBar";
 import type { SettingsPageState } from "@/components/settings/useSettingsPage";
 import type { SettingsEditField, SettingsSection } from "@/lib/settings-nav";
-import { cn } from "@/lib/utils";
 
 type Props = {
   state: SettingsPageState;
@@ -28,10 +26,10 @@ export function SettingsDesktopPage({
   const { t } = state;
 
   return (
-    <div className={cn("w-full", DESKTOP_ACCOUNT_BG)}>
+    <div className="w-full bg-background">
       <div className="lg:pl-8 xl:pl-14">
         <SettingsTopBar
-          className="mb-6 border-b border-border/70 pb-4"
+          className="mb-6 border-b border-border pb-4"
           backLabel={t("common.back", { defaultValue: "Orqaga" })}
           doneLabel={t("settings.done", { defaultValue: "Tayyor" })}
         />
@@ -41,6 +39,9 @@ export function SettingsDesktopPage({
             <h1 className="text-[32px] font-semibold tracking-tight text-foreground xl:text-[36px]">
               {t("settings.pageTitle", { defaultValue: "Hisob sozlamalari" })}
             </h1>
+            <p className="mt-2 max-w-sm text-sm leading-relaxed text-muted-foreground">
+              {t("settings.pageLead")}
+            </p>
             <div className="mt-7">
               <SettingsAirbnbSidebar active={section} t={t} large />
             </div>

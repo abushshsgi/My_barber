@@ -19,7 +19,11 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { FeatureIcon } from "@/components/subscriptions/SubscriptionPlanAds";
 import { MorphPromoUrgencyBanner } from "@/components/subscriptions/MorphPromoUrgencyBanner";
-import { useSubscriptionCheckout, useSubscriptionMe, useSubscriptionPlans } from "@/hooks/use-subscription";
+import {
+  useSubscriptionCheckout,
+  useSubscriptionMe,
+  useSubscriptionPlans,
+} from "@/hooks/use-subscription";
 import { useWalletMe } from "@/hooks/use-wallet";
 import { parseWalletBalance } from "@/lib/api/wallet";
 import { getPublicSiteOrigin } from "@/lib/public-origin";
@@ -28,7 +32,11 @@ import {
   previewSubscriptionPromo,
   type SubscriptionPlan,
 } from "@/lib/api/subscriptions";
-import { filterPlansForSubscriber, isPlanUpgrade, upgradeCtaLabel } from "@/lib/subscription-upgrade";
+import {
+  filterPlansForSubscriber,
+  isPlanUpgrade,
+  upgradeCtaLabel,
+} from "@/lib/subscription-upgrade";
 import { cn } from "@/lib/utils";
 
 function readSubscriptionDeepLink(searchStr: string) {
@@ -37,7 +45,9 @@ function readSubscriptionDeepLink(searchStr: string) {
   const plan = planRaw === "starter" || planRaw === "plus" || planRaw === "pro" ? planRaw : null;
   const returnToRaw = sp.get("returnTo");
   const returnTo =
-    returnToRaw && returnToRaw.startsWith("/") && !returnToRaw.startsWith("//") ? returnToRaw : null;
+    returnToRaw && returnToRaw.startsWith("/") && !returnToRaw.startsWith("//")
+      ? returnToRaw
+      : null;
   return { plan, returnTo };
 }
 
@@ -88,7 +98,9 @@ function FeatureRow({
         ) : null}
         <span
           className={cn(
-            included ? "text-foreground" : "text-muted-foreground line-through decoration-muted-foreground/40",
+            included
+              ? "text-foreground"
+              : "text-muted-foreground line-through decoration-muted-foreground/40",
           )}
         >
           {label}
@@ -117,30 +129,25 @@ function PlanCard({
 }) {
   const isActive = activeCode === plan.code;
   const canUpgrade = isPlanUpgrade(plan.code, activeCode);
-  const PlanGlyph =
-    plan.code === "pro" ? Crown : plan.code === "plus" ? Sparkles : Zap;
+  const PlanGlyph = plan.code === "pro" ? Crown : plan.code === "plus" ? Sparkles : Zap;
   const cardRef = useRef<HTMLElement | null>(null);
-  const showDiscount =
-    discountedPrice != null && discountedPrice < plan.price_uzs && !activeCode;
+  const showDiscount = discountedPrice != null && discountedPrice < plan.price_uzs && !activeCode;
 
   useEffect(() => {
     if (!focused || !cardRef.current) return;
     cardRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
   }, [focused]);
 
-  const payLabel = activeCode && canUpgrade
-    ? upgradeCtaLabel(activeCode, true)
-    : "Hamyondan to'lash";
+  const payLabel =
+    activeCode && canUpgrade ? upgradeCtaLabel(activeCode, true) : "Hamyondan to'lash";
 
   return (
     <article
       ref={cardRef}
       id={`sub-plan-${plan.code}`}
       className={cn(
-        "relative overflow-hidden rounded-2xl border p-5 transition-shadow",
-        plan.highlight
-          ? "border-foreground/20 bg-gradient-to-b from-foreground/[0.06] to-background shadow-md"
-          : "border-border bg-card",
+        "relative overflow-hidden rounded-2xl border bg-card p-5 transition-shadow duration-200",
+        plan.highlight ? "border-border shadow-[0_1px_2px_rgba(15,15,15,0.05)]" : "border-border",
         isActive && "ring-2 ring-foreground/80",
         focused && !isActive && "ring-2 ring-foreground/40",
       )}
@@ -194,9 +201,7 @@ function PlanCard({
         <span className="ml-1 text-sm text-muted-foreground">/ oy</span>
       </p>
       {showDiscount && discountPct ? (
-        <p className="mt-1 text-[11px] font-bold text-foreground">
-          Yangi hisob −{discountPct}%
-        </p>
+        <p className="mt-1 text-[11px] font-bold text-foreground">Yangi hisob −{discountPct}%</p>
       ) : null}
 
       <ul className="mt-4 space-y-2.5">
@@ -435,12 +440,13 @@ export function SettingsSubscriptionsPanel() {
 
       {wallet ? (
         <p className="text-xs text-muted-foreground">
-          Hamyon balansi: <span className="font-semibold text-foreground">{formatUzs(balance)}</span>
+          Hamyon balansi:{" "}
+          <span className="font-semibold text-foreground">{formatUzs(balance)}</span>
         </p>
       ) : null}
 
       {/* Joriy holat — faol yoki yopiq */}
-      <section className="rounded-2xl border border-border bg-card p-4">
+      <section className="rounded-2xl border border-border bg-card p-4 shadow-[0_1px_2px_rgba(15,15,15,0.05)]">
         {me?.has_active && sub ? (
           <>
             <div className="flex flex-wrap items-start justify-between gap-3">
@@ -496,7 +502,10 @@ export function SettingsSubscriptionsPanel() {
                   row.limit > 0 ? Math.min(100, Math.round((row.used / row.limit) * 100)) : 0;
                 const Icon = row.icon;
                 return (
-                  <div key={row.label} className="rounded-xl bg-muted/40 p-3">
+                  <div
+                    key={row.label}
+                    className="rounded-xl border border-border bg-background p-3"
+                  >
                     <div className="flex items-center gap-2 text-sm font-semibold">
                       <Icon className="h-4 w-4" />
                       {row.label}
@@ -522,9 +531,7 @@ export function SettingsSubscriptionsPanel() {
             <div className="mt-3 flex flex-wrap gap-2 text-xs">
               <span className="inline-flex items-center gap-1 rounded-full border border-border px-2.5 py-1">
                 <Users className="h-3.5 w-3.5" />
-                {me.family_unlimited
-                  ? "Oila: cheksiz"
-                  : `Oila: ${me.family_members_max ?? 0}`}
+                {me.family_unlimited ? "Oila: cheksiz" : `Oila: ${me.family_members_max ?? 0}`}
               </span>
               {me.morph_care ? (
                 <Link
@@ -560,11 +567,10 @@ export function SettingsSubscriptionsPanel() {
             </div>
 
             {refGenOn ? (
-              <div className="mt-4 rounded-xl bg-muted/40 p-3">
+              <div className="mt-4 rounded-xl border border-border bg-background p-3">
                 <div className="flex items-center justify-between gap-2 text-sm font-semibold">
                   <span className="inline-flex items-center gap-2">
-                    <UserPlus className="h-4 w-4" />
-                    1 do&apos;st = 1 generatsiya
+                    <UserPlus className="h-4 w-4" />1 do&apos;st = 1 generatsiya
                   </span>
                   <span className="text-xs text-muted-foreground">
                     Kredit: {me?.referral_credits ?? me?.access?.referral_credits ?? 0}
@@ -576,7 +582,7 @@ export function SettingsSubscriptionsPanel() {
                 </p>
                 <Link
                   to="/referrals"
-                  className="mt-3 inline-flex h-10 items-center justify-center rounded-xl border border-border px-4 text-xs font-bold"
+                  className="mt-3 inline-flex h-10 cursor-pointer items-center justify-center rounded-xl border border-border bg-card px-4 text-xs font-bold transition-colors duration-200 hover:bg-muted/50"
                 >
                   Do&apos;stlarni taklif qilish
                 </Link>
@@ -595,7 +601,7 @@ export function SettingsSubscriptionsPanel() {
           <MorphPromoUrgencyBanner variant="card" className="mb-1" />
 
           {welcomeEligible && !me?.has_active ? (
-            <section className="rounded-[22px] border border-border bg-card p-4">
+            <section className="rounded-2xl border border-border bg-card p-4 shadow-[0_1px_2px_rgba(15,15,15,0.05)]">
               <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
                 Yangi hisob
               </p>
@@ -603,8 +609,7 @@ export function SettingsSubscriptionsPanel() {
                 {welcomeOffer?.label_uz ?? "Birinchi 24 soat — chegirma"}
               </p>
               <p className="mt-1 text-sm text-muted-foreground">
-                {welcomeOffer?.hint_uz ??
-                  "Promokod kerak emas — to‘lovda avtomatik qo‘llanadi."}
+                {welcomeOffer?.hint_uz ?? "Promokod kerak emas — to‘lovda avtomatik qo‘llanadi."}
               </p>
             </section>
           ) : null}

@@ -768,8 +768,8 @@
     }
   },
   "referral": {
-    "title": "Referrals",
-    "subtitle": "Do'st va oilangizni MySaloon'ga taklif qiling.",
+    "title": "Do'stlarni taklif",
+    "subtitle": "Do'stingizni MySaloon'ga taklif qiling — 1 do'st = 1 Morf AI generatsiya.",
     "intro": "8 belgilik kodingizni yoki havolani ulashing. Do'stingiz ro'yxatdan o'tishda shu kodni kiritadi (yoki havola avtomatik qo'llaydi).",
     "yourCode": "Sizning kodingiz",
     "yourLink": "Taklif havolasi",
@@ -828,7 +828,7 @@
   "settings": {
     "title": "Sozlamalar",
     "pageTitle": "Hisob sozlamalari",
-    "pageLead": "Shaxsiy ma'lumotlar, xavfsizlik, manzillar va ilova afzalliklari.",
+    "pageLead": "Profil, xavfsizlik, til va to'lov — barchasi bir joyda.",
     "manageDetails": "Batafsil sozlamalar",
     "done": "Tayyor",
     "saved": "Saqlandi",
@@ -897,17 +897,17 @@
       "off": "O'chirilgan"
     },
     "privacyNote": {
-      "title": "Nima uchun ba'zi ma'lumotlar ko'rinmaydi?",
-      "body": "Ba'zi ma'lumotlar faqat tegishli bo'limda ko'rsatiladi. To'liq boshqarish uchun maxfiylik sahifasiga o'ting."
+      "title": "Maxfiylik",
+      "body": "Ma'lumotlaringiz qanday saqlanishi va ishlatilishini maxfiylik bo'limida boshqarasiz."
     },
     "morphPrivacy": {
       "policyTitle": "Ma'lumotlaringiz",
-      "policyBody": "mysaloon.uz shaxsiy ma'lumotlarni xizmat ko'rsatish uchun ishlatadi. Uchinchi shaxslarga sotilmaydi. Morph AI suhbat va looklarini sozlamalardan boshqarasiz.",
+      "policyBody": "mysaloon.uz shaxsiy ma'lumotlarni faqat xizmat ko'rsatish uchun ishlatadi va uchinchi shaxslarga sotilmaydi. Morf AI suhbat va looklarini shu yerdan boshqarasiz.",
       "locationTitle": "Lokatsiya",
-      "locationBody": "Lokatsiya yaqin salonlarni ko'rsatish uchun so'raladi va ixtiyoriy.",
-      "loginHint": "Morph AI ma'lumotlari va maxfiylik sozlamalarini boshqarish uchun kiring.",
+      "locationBody": "Joylashuv ixtiyoriy — yaqin salonlarni ko'rsatish uchun so'raladi.",
+      "loginHint": "Morf AI ma'lumotlari va maxfiylik sozlamalarini boshqarish uchun kiring.",
       "morphTitle": "Morf AI maxfiyligi",
-      "morphLead": "Chat tarixi, looklar va kunlik limit — real server ma'lumotlari.",
+      "morphLead": "Chat tarixi, looklar va kunlik limit shu hisobda saqlanadi.",
       "limitValue": "Bugun {{used}} / {{limit}} chat · qolgan {{remaining}}",
       "limitWarn": "Limitga yaqin: {{remaining}} / {{limit}} qoldi",
       "privacyLocal": "Tarixni serverga yubormaslik",
@@ -929,7 +929,7 @@
       "deleteAll": "Hammasini o'chirish",
       "deleteChatsBody": "Serverdagi barcha Morf AI suhbatlari o'chiriladi.",
       "deleteLooksBody": "Serverdagi try-on rasmlari o'chiriladi.",
-      "deleteAllBody": "Barcha Morph AI ma'lumotlari (chat, look, selfie, ulashish) o'chiriladi. Qaytarib bo'lmaydi.",
+      "deleteAllBody": "Barcha Morf AI ma'lumotlari (chat, look, selfie, ulashish) o'chiriladi. Qaytarib bo'lmaydi.",
       "deleted": "O'chirildi"
     },
     "hubs": {
@@ -956,8 +956,8 @@
         "metaCount": "{{count}} ta a'zo"
       },
       "notifications": {
-        "title": "Bildirishnoma afzalliklari",
-        "desc": "Eslatmalar va chat xabarlari.",
+        "title": "Bildirishnomalar",
+        "desc": "Buyurtma eslatmalari va chat xabarlari.",
         "metaOn": "Eslatmalar yoqilgan",
         "metaOff": "Eslatmalar o'chirilgan"
       },
@@ -973,8 +973,10 @@
       },
       "subscriptions": {
         "title": "Obunalar",
-        "desc": "Obuna rejalar va avtomatik to'lovlar.",
-        "meta": "Obuna rejalar tez orada"
+        "desc": "Tariflar, limitlar va to'lov.",
+        "meta": "{{plan}}",
+        "metaActive": "{{plan}}",
+        "metaEmpty": "Obuna yo'q"
       },
       "privacy": {
         "title": "Maxfiylik",
@@ -993,6 +995,12 @@
       "payments": "To'lov va bonus",
       "household": "Oila va manzil",
       "chat": "Xabarlar"
+    },
+    "groups": {
+      "account": "Hisob",
+      "prefs": "Afzalliklar",
+      "billing": "To'lov va obuna",
+      "more": "Boshqa"
     }
   },
   "favorites": {

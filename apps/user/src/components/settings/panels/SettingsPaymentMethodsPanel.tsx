@@ -20,12 +20,17 @@ export function SettingsPaymentMethodsPanel() {
   const onProviderClick = async (provider: "click" | "payme", configured: boolean) => {
     if (!configured) {
       toast.message("To'lov provayderi hali sozlanmagan", {
-        description: "Production'da Click/Payme kalitlari kerak. Hozir hamyon balansidan foydalaning.",
+        description:
+          "Production'da Click/Payme kalitlari kerak. Hozir hamyon balansidan foydalaning.",
       });
       return;
     }
     try {
-      const res = await startPaymentCheckout({ provider, amount: 1000, order_id: `wallet-topup-${Date.now()}` });
+      const res = await startPaymentCheckout({
+        provider,
+        amount: 1000,
+        order_id: `wallet-topup-${Date.now()}`,
+      });
       if (res.checkout_url) {
         window.location.assign(res.checkout_url);
       } else {
@@ -41,9 +46,9 @@ export function SettingsPaymentMethodsPanel() {
       <p className="text-sm text-muted-foreground">{t("paymentMethods.mockNote")}</p>
 
       {wallet ? (
-        <ProfileSubpageCard className="border-foreground bg-surface/40">
+        <ProfileSubpageCard>
           <div className="flex items-center gap-3">
-            <div className="grid h-10 w-10 place-items-center rounded-lg bg-background">
+            <div className="grid h-10 w-10 place-items-center rounded-xl bg-muted">
               <WalletIcon className="h-4 w-4" />
             </div>
             <div>
@@ -66,7 +71,7 @@ export function SettingsPaymentMethodsPanel() {
                 onClick={() => void onProviderClick(pm.id as "click" | "payme", pm.configured)}
                 className="flex w-full items-center gap-3 text-left"
               >
-                <div className="grid h-10 w-10 place-items-center rounded-lg bg-surface">
+                <div className="grid h-10 w-10 place-items-center rounded-xl bg-muted">
                   <Icon className="h-4 w-4" />
                 </div>
                 <div className="min-w-0 flex-1">

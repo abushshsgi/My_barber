@@ -101,7 +101,7 @@ export function SettingsSessionsPanel({ embedded = false }: { embedded?: boolean
                 className={cn(session.is_current && "ring-2 ring-foreground/15")}
               >
                 <div className="flex items-start gap-3">
-                  <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-surface">
+                  <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-muted">
                     <Icon className="h-4 w-4" />
                   </div>
                   <div className="min-w-0 flex-1">

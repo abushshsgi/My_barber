@@ -1,7 +1,10 @@
 import { Link } from "@tanstack/react-router";
-import { Bell, CalendarCheck, Heart, MessageSquare, Settings, UserPlus, Wallet } from "lucide-react";
+import { Bell, CalendarCheck, Heart, MessageSquare, Settings, Wallet } from "lucide-react";
 import { AccountDesktopShell } from "@/components/desktop/pages/AccountDesktopShell";
-import { ProfileAccountHubGrid, type AccountHubTile } from "@/components/desktop/profile/ProfileAccountHubGrid";
+import {
+  ProfileAccountHubGrid,
+  type AccountHubTile,
+} from "@/components/desktop/profile/ProfileAccountHubGrid";
 import { ProfileUpgradeButton } from "@/components/profile/ProfileUpgradeButton";
 import { MyNameWithBadge } from "@/components/subscriptions/SubscriptionVerifiedBadge";
 import { useProfileScreen } from "@/components/profile/useProfileScreen";
@@ -103,15 +106,6 @@ export function ProfileDesktopPage() {
       badge: unreadCount > 0 ? (unreadCount > 9 ? "9+" : String(unreadCount)) : undefined,
     },
     {
-      icon: UserPlus,
-      title: t("referral.title", { defaultValue: "Referrals" }),
-      description: t("referral.subtitle", {
-        defaultValue: "Do'st va oilangizni MySaloon'ga taklif qiling.",
-      }),
-      to: "/referrals",
-      meta: t("referral.share", { defaultValue: "Havolani ulashish" }),
-    },
-    {
       icon: Settings,
       title: t("profile.desktop.hubs.settings.title", { defaultValue: "Hisob sozlamalari" }),
       description: t("profile.desktop.hubs.settings.desc", {
@@ -147,7 +141,9 @@ export function ProfileDesktopPage() {
               size="md"
               nameClassName="truncate text-lg font-semibold text-foreground"
             />
-            {user.phone ? <p className="truncate text-sm text-muted-foreground">{user.phone}</p> : null}
+            {user.phone ? (
+              <p className="truncate text-sm text-muted-foreground">{user.phone}</p>
+            ) : null}
             <div className="mt-3">
               <ProfileUpgradeButton />
             </div>

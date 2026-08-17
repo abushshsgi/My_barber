@@ -12,7 +12,6 @@ import {
   Sparkles,
   Star,
   Tag,
-  UserPlus,
   Users,
   Wallet,
 } from "lucide-react";
@@ -53,10 +52,9 @@ export const PROFILE_MENU_SECTIONS: {
   },
   {
     titleKey: "settings.sections.household",
-    labelKeys: ["family.title", "referral.title", "addresses.title"],
+    labelKeys: ["family.title", "addresses.title"],
     items: [
       { icon: Users, to: "/family" },
-      { icon: UserPlus, to: "/referrals" },
       { icon: MapPin, to: "/addresses" },
     ],
   },

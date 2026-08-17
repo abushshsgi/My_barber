@@ -133,7 +133,7 @@ function TicketThread({ ticketId, onBack }: { ticketId: number; onBack: () => vo
           ) : null}
         </div>
         {ticket?.related_type === "gift_transfer" && ticket.related_id ? (
-          <p className="rounded-xl bg-surface/60 px-3 py-2 text-xs text-muted-foreground">
+          <p className="rounded-xl bg-muted px-3 py-2 text-xs text-muted-foreground">
             Sovg&apos;a TX: <span className="font-mono text-foreground">{ticket.related_id}</span>
           </p>
         ) : null}
@@ -238,17 +238,17 @@ function NewComplaintForm({ onCreated }: { onCreated: (ticket: ApiSupportTicket)
 
   return (
     <ProfileSubpageCard className="space-y-4 overflow-hidden p-0">
-      <div className="bg-gradient-to-br from-foreground via-foreground to-foreground/85 px-4 py-5 text-background">
+      <div className="border-b border-border bg-card px-4 py-5">
         <div className="flex items-center gap-2">
           <LifeBuoy className="h-5 w-5 opacity-80" />
-          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-background/70">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
             Shikoyat / murojaat
           </p>
         </div>
-        <h2 className="mt-2 font-heading text-xl font-semibold tracking-tight">
+        <h2 className="mt-2 text-lg font-semibold tracking-tight text-foreground">
           Muammoni yozing — biz javob beramiz
         </h2>
-        <p className="mt-1 text-sm text-background/75">
+        <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
           To&apos;lov, sovg&apos;a, bron yoki boshqa masala. Dialog ochiladi.
         </p>
       </div>
@@ -268,7 +268,8 @@ function NewComplaintForm({ onCreated }: { onCreated: (ticket: ApiSupportTicket)
                   if (t.subject) setSubject(t.subject);
                 }}
                 className={cn(
-                  "rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors",
+                  (className =
+                    "rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors duration-200 cursor-pointer"),
                   topic === t.id
                     ? "border-foreground bg-foreground text-background"
                     : "border-border bg-card text-muted-foreground hover:text-foreground",
@@ -332,7 +333,7 @@ export function SettingsSupportPanel({ embedded = false }: { embedded?: boolean 
       }
     >
       <div className="space-y-3">
-        <ProfileSubpageCard className="flex items-start gap-3 border-border/80 bg-gradient-to-br from-card to-surface/40">
+        <ProfileSubpageCard className="flex items-start gap-3">
           <div className="rounded-2xl bg-foreground/5 p-2.5">
             <Headphones className="h-5 w-5" />
           </div>
@@ -347,7 +348,7 @@ export function SettingsSupportPanel({ embedded = false }: { embedded?: boolean 
 
         <Link
           to="/ai-style/help"
-          className="flex items-start gap-3 rounded-2xl border border-border bg-card px-4 py-3.5 transition-colors hover:border-foreground/25"
+          className="flex cursor-pointer items-start gap-3 rounded-2xl border border-border bg-card px-4 py-3.5 shadow-[0_1px_2px_rgba(15,15,15,0.05)] transition-colors duration-200 hover:bg-muted/40"
         >
           <LifeBuoy className="mt-0.5 h-5 w-5 shrink-0" />
           <div>
@@ -365,7 +366,7 @@ export function SettingsSupportPanel({ embedded = false }: { embedded?: boolean 
               <button
                 type="button"
                 onClick={() => setOpenFaq(isOpen ? null : i)}
-                className="flex w-full items-center justify-between gap-3 px-4 py-4 text-left"
+                className="flex w-full cursor-pointer items-center justify-between gap-3 px-4 py-4 text-left"
               >
                 <span className="text-sm font-bold">{item.q}</span>
                 <ChevronDown
@@ -373,7 +374,7 @@ export function SettingsSupportPanel({ embedded = false }: { embedded?: boolean 
                 />
               </button>
               {isOpen ? (
-                <p className="border-t border-border bg-surface/40 px-4 py-4 text-sm text-muted-foreground">
+                <p className="border-t border-border bg-background px-4 py-4 text-sm text-muted-foreground">
                   {item.a}
                 </p>
               ) : null}
@@ -381,12 +382,12 @@ export function SettingsSupportPanel({ embedded = false }: { embedded?: boolean 
           );
         })}
 
-        <ProfileSubpageCard className="border-foreground bg-foreground text-background">
-          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-background/70">
+        <ProfileSubpageCard>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
             Bog&apos;lanish
           </p>
-          <p className="mt-2 text-base font-bold">support@mysaloon.uz</p>
-          <p className="mt-1 text-sm text-background/80">+998 71 123 45 67</p>
+          <p className="mt-2 text-base font-semibold">support@mysaloon.uz</p>
+          <p className="mt-1 text-sm text-muted-foreground">+998 71 123 45 67</p>
         </ProfileSubpageCard>
       </div>
 

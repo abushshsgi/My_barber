@@ -53,7 +53,6 @@ type Props = {
   onClose: () => void;
   onClearAllChats: () => void;
   onOpenSubscription: () => void;
-  onOpenReferral?: () => void;
   onSaveHistoryOff?: () => void;
   onPreviewVoice?: (voiceId: MorphVoiceId) => void;
   voicePreviewing?: boolean;
@@ -253,7 +252,6 @@ export function MorphChatSettingsScreen({
   onClose,
   onClearAllChats,
   onOpenSubscription,
-  onOpenReferral,
   onSaveHistoryOff,
   onPreviewVoice,
   voicePreviewing,
@@ -578,17 +576,8 @@ export function MorphChatSettingsScreen({
                     onPress={onOpenSubscription}
                     titleColor={ACCENT_BLUE}
                     iconColor={ACCENT_BLUE}
-                    last={!onOpenReferral}
+                    last
                   />
-                  {onOpenReferral ? (
-                    <SettingsItem
-                      icon="people-outline"
-                      title={t("chat.settings.referral")}
-                      subtitle={t("chat.settings.referralHint")}
-                      onPress={onOpenReferral}
-                      last
-                    />
-                  ) : null}
                 </SettingsSection>
 
                 <SettingsSection title={t("chat.settings.appSettingsGroup")}>
