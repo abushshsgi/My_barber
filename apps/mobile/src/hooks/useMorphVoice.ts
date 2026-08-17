@@ -44,8 +44,8 @@ const RECORD_OPTS = {
   isMeteringEnabled: true,
 };
 
-const MIN_RECORD_MS = 700;
-const NEXT_TURN_MS = 560;
+const MIN_RECORD_MS = 520;
+const NEXT_TURN_MS = 420;
 
 export function useMorphVoice({
   sendText,
@@ -265,12 +265,22 @@ export function useMorphVoice({
       setPhaseSafe("speaking");
       await unloadSound();
       try {
-        const res = await speakMorphVoice({
-          text: spoken,
-          voiceId: prefs.voiceId,
-          gender: prefs.voiceGender,
-          lang: prefs.voiceLang,
-        });
+        let res;
+        try {
+          res = await speakMorphVoice({
+            text: spoken,
+            voiceId: prefs.voiceId,
+            gender: prefs.voiceGender,
+            lang: prefs.voiceLang,
+          });
+        } catch {
+          res = await speakMorphVoice({
+            text: spoken,
+            voiceId: prefs.voiceId,
+            gender: prefs.voiceGender,
+            lang: prefs.voiceLang,
+          });
+        }
         if (cancelledRef.current) return;
         await playServerAudio(res.audioBase64, res.mime);
       } catch {

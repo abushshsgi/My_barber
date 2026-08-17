@@ -139,7 +139,7 @@ export function MorphAiChatPage() {
         };
         let reply = "";
         let limits: MorphChatLimits;
-        if (prefs.streaming) {
+        if (prefs.streaming && !raw) {
           const res = await streamMorphChatMessage(payload, (chunk) => {
             reply += chunk;
             setMessages((prev) =>

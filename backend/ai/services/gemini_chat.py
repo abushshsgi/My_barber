@@ -17,7 +17,9 @@ from ai.chat_prompts import (
     MORF_CHAT_MAX_HISTORY,
     MORF_CHAT_MAX_MESSAGE_LEN,
     MORF_CHAT_MAX_OUTPUT_TOKENS,
+    MORF_CHAT_VOICE_MAX_OUTPUT_TOKENS,
     build_morf_chat_system_prompt,
+    is_voice_mode,
 )
 from ai.services.errors import AiStyleError, map_gemini_http_error, read_http_error_body
 from ai.services.gemini_style import _vision_model
@@ -186,6 +188,18 @@ def _iter_sse_payloads(res: Any) -> Any:
             yield from parse_sse_payloads(event + "\n\n")
 
 
+def _chat_generation_config(context: dict[str, Any] | None) -> dict[str, Any]:
+    if is_voice_mode(context):
+        return {
+            "temperature": 0.5,
+            "maxOutputTokens": MORF_CHAT_VOICE_MAX_OUTPUT_TOKENS,
+        }
+    return {
+        "temperature": 0.7,
+        "maxOutputTokens": MORF_CHAT_MAX_OUTPUT_TOKENS,
+    }
+
+
 def generate_morf_chat_reply(
     *,
     user_message: str,
@@ -208,10 +222,7 @@ def generate_morf_chat_reply(
     body: dict[str, Any] = {
         "systemInstruction": {"parts": [{"text": system_prompt}]},
         "contents": contents,
-        "generationConfig": {
-            "temperature": 0.7,
-            "maxOutputTokens": MORF_CHAT_MAX_OUTPUT_TOKENS,
-        },
+        "generationConfig": _chat_generation_config(context),
     }
 
     model = _vision_model()
@@ -311,10 +322,7 @@ def stream_morf_chat_reply(
     body: dict[str, Any] = {
         "systemInstruction": {"parts": [{"text": system_prompt}]},
         "contents": contents,
-        "generationConfig": {
-            "temperature": 0.7,
-            "maxOutputTokens": MORF_CHAT_MAX_OUTPUT_TOKENS,
-        },
+        "generationConfig": _chat_generation_config(context),
     }
 
     model = _vision_model()

@@ -14,8 +14,8 @@ type Args = {
   lang?: "auto" | "uz" | "ru";
 };
 
-const MIN_RECORD_MS = 700;
-const NEXT_TURN_MS = 560;
+const MIN_RECORD_MS = 520;
+const NEXT_TURN_MS = 420;
 
 export function useMorphVoiceChat({ onTurn, lang = "auto" }: Args) {
   const [phase, setPhase] = useState<MorphVoicePhase>("idle");
@@ -124,7 +124,12 @@ export function useMorphVoiceChat({ onTurn, lang = "auto" }: Args) {
       setPhaseSafe("speaking");
       stopAudio();
       try {
-        const res = await speakMorphVoice({ text: spoken, lang });
+        let res;
+        try {
+          res = await speakMorphVoice({ text: spoken, lang });
+        } catch {
+          res = await speakMorphVoice({ text: spoken, lang });
+        }
         if (cancelledRef.current) return;
         const { audio, done } = playBase64Audio(res.audioBase64, res.mime);
         audioRef.current = audio;

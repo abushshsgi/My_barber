@@ -453,19 +453,6 @@ export function useMorphChat() {
           const res = await streamMorphChatMessage(sendPayload, (chunk) => writer.append(chunk));
           finalText = (await writer.finish()) || res.reply;
           resLimits = res.limits;
-        } else if (prefs.streaming && options?.voice) {
-          writer.cancel();
-          const res = await streamMorphChatMessage(sendPayload, (chunk) => {
-            finalText += chunk;
-            if (activeThreadIdRef.current !== threadId) return;
-            const updated = messagesRef.current.map((m) =>
-              m.id === assistantMsg.id ? { ...m, content: finalText, streaming: true } : m,
-            );
-            messagesRef.current = updated;
-            setMessages(updated);
-          });
-          finalText = res.reply || finalText;
-          resLimits = res.limits;
         } else {
           writer.cancel();
           const res = await sendMorphChatMessage(sendPayload);

@@ -17,10 +17,10 @@ export function shouldAutoStopListening(opts: {
   heardSpeech: boolean;
   silentMs: number;
 }): { heardSpeech: boolean; silentMs: number; stop: boolean } {
-  const speaking = opts.metering > -34;
-  const heardSpeech = opts.heardSpeech || (speaking && opts.elapsedMs > 480);
+  const speaking = opts.metering > -36;
+  const heardSpeech = opts.heardSpeech || (speaking && opts.elapsedMs > 320);
   const silentMs = speaking ? 0 : heardSpeech ? opts.silentMs + 120 : opts.silentMs;
-  const stop = heardSpeech && silentMs >= 1400 && opts.elapsedMs >= 1100 && opts.elapsedMs < 45_000;
+  const stop = heardSpeech && silentMs >= 1000 && opts.elapsedMs >= 750 && opts.elapsedMs < 45_000;
   return { heardSpeech, silentMs, stop };
 }
 
@@ -78,9 +78,15 @@ export function createWebRecorder(onMeter: (db: number) => void): {
       const candidates = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4"];
       mime = candidates.find((row) => MediaRecorder.isTypeSupported(row)) ?? "audio/webm";
       stream = await navigator.mediaDevices.getUserMedia({
-        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+          channelCount: 1,
+          sampleRate: 48000,
+        },
       });
-      recorder = new MediaRecorder(stream, { mimeType: mime });
+      recorder = new MediaRecorder(stream, { mimeType: mime, audioBitsPerSecond: 128000 });
       recorder.ondataavailable = (event) => {
         if (event.data?.size) chunks.push(event.data);
       };

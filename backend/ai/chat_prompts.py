@@ -8,6 +8,7 @@ MORF_CHAT_DAILY_LIMIT = 40
 MORF_CHAT_MAX_HISTORY = 16
 MORF_CHAT_MAX_MESSAGE_LEN = 600
 MORF_CHAT_MAX_OUTPUT_TOKENS = 2048
+MORF_CHAT_VOICE_MAX_OUTPUT_TOKENS = 384
 
 QUICK_PROMPT_IDS = (
     "face_shape",
@@ -102,15 +103,22 @@ def _format_prefs_block(context: dict[str, Any] | None) -> str:
             + ("erkak" if gender == "male" else "ayol")
             + " uslublari ustuvor."
         )
-    voice_raw = context.get("voice_mode")
-    voice_on = voice_raw is True or str(voice_raw).strip().lower() in ("1", "true", "yes")
-    if voice_on:
+    if is_voice_mode(context):
         lines.append(
-            "- Ovozli suhbat: javobni og'zaki aytiladigan qilib yoz "
-            "(qisqa gaplar, markdown yo'q, ro'yxat o'rniga 1–2 jumla). "
-            "8 jumladan oshirma. Tabiiy suhbat ohangi."
+            "- Ovozli suhbat: faqat og'zaki aytiladigan matn. "
+            "2–4 qisqa jumla, jami 40 so‘zdan oshirma. "
+            "Markdown, ro'yxat, sarlavha va **qalin** yo'q. "
+            "Adabiy o'zbek (Toshkent talaffuzi), turkcha yoki aralash sheva yo'q. "
+            "Tabiiy suhbatdosh kabi, birinchi jumlada javob."
         )
     return "\n".join(lines) if len(lines) > 1 else ""
+
+
+def is_voice_mode(context: dict[str, Any] | None) -> bool:
+    if not context:
+        return False
+    raw = context.get("voice_mode")
+    return raw is True or str(raw).strip().lower() in ("1", "true", "yes")
 
 
 def _format_context_block(context: dict[str, Any] | None) -> str:
@@ -204,8 +212,9 @@ Ohang: ChatGPT / Claude kabi — sokin, aniq, foydali. Do'stona, lekin marketing
 - Narxlarni uydan aytma.
 - Faqat **shu suhbat** tarixiga tayangan holda javob ber. Boshqa suhbatlarni o'ylab qo'shma.
 
-## Javob formati (Markdown)
-ChatGPT / Claude kabi o'qiladigan markdown yoz:
+## Javob formati
+Agar ovozli suhbat yoqilgan bo'lsa — markdown yo'q, faqat qisqa og'zaki gaplar.
+Aks holda ChatGPT / Claude kabi o'qiladigan markdown yoz:
 - Birinchi jumla — to'g'ridan-to'g'ri javob.
 - Kerak bo'lsa `##` kichik sarlavha.
 - Ro'yxat: `-` yoki `1.`

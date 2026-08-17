@@ -9,11 +9,11 @@ export type MorphChatAdviceGender = "auto" | "male" | "female";
 export type MorphVoiceGenderPref = "male" | "female";
 export type MorphVoiceLangPref = "auto" | "uz" | "ru";
 
-export const MORPH_VOICE_IDS = ["charon", "orus", "kore", "aoede"] as const;
+export const MORPH_VOICE_IDS = ["puck", "orus", "kore", "aoede"] as const;
 export type MorphVoiceId = (typeof MORPH_VOICE_IDS)[number];
 
-export const DEFAULT_MALE_VOICE: MorphVoiceId = "charon";
-export const DEFAULT_FEMALE_VOICE: MorphVoiceId = "kore";
+export const DEFAULT_MALE_VOICE: MorphVoiceId = "puck";
+export const DEFAULT_FEMALE_VOICE: MorphVoiceId = "aoede";
 
 export type MorphChatPrefs = {
   /** Try-on / yuz tahlili kontekstini chatga ulash. */
@@ -63,7 +63,7 @@ export const DEFAULT_MORPH_CHAT_PREFS: MorphChatPrefs = {
   streaming: true,
   voiceInput: true,
   autoSpeak: true,
-      conversationMode: true,
+  conversationMode: true,
   voiceGender: "male",
   voiceId: DEFAULT_MALE_VOICE,
   voiceLang: "auto",
@@ -98,7 +98,8 @@ function asVoiceLang(v: unknown): MorphVoiceLangPref {
 }
 
 function asVoiceId(v: unknown, gender: MorphVoiceGenderPref): MorphVoiceId {
-  if (v === "charon" || v === "orus" || v === "kore" || v === "aoede") return v;
+  if (v === "charon") return "puck";
+  if (v === "puck" || v === "orus" || v === "kore" || v === "aoede") return v;
   return gender === "female" ? DEFAULT_FEMALE_VOICE : DEFAULT_MALE_VOICE;
 }
 

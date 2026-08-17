@@ -6,10 +6,12 @@ from ai.services.gemini_voice import (
     detect_transcript_lang,
     extract_inline_audio,
     extract_reply_text,
+    latin_uz_to_cyrillic,
     list_morph_voices,
     normalize_audio_mime,
     parse_pcm_rate,
     pcm_to_wav,
+    prepare_tts_utterance,
     resolve_voice,
     sanitize_for_speech,
 )
@@ -33,11 +35,19 @@ class VoiceAlgorithmTests(SimpleTestCase):
     def test_resolve_voice_defaults(self):
         male = resolve_voice(gender="male")
         female = resolve_voice(gender="female")
-        self.assertEqual(male["id"], "charon")
+        self.assertEqual(male["id"], "puck")
         self.assertEqual(male["gender"], "male")
-        self.assertEqual(female["id"], "kore")
+        self.assertEqual(female["id"], "aoede")
         self.assertEqual(female["gender"], "female")
         self.assertEqual(resolve_voice(voice_id="aoede")["id"], "aoede")
+        self.assertEqual(resolve_voice(voice_id="charon")["id"], "puck")
+
+    def test_latin_uz_to_cyrillic(self):
+        self.assertEqual(latin_uz_to_cyrillic("Salom"), "салом")
+        self.assertEqual(latin_uz_to_cyrillic("o'zbek"), "ўзбек")
+        self.assertEqual(latin_uz_to_cyrillic("soch"), "соч")
+        self.assertEqual(latin_uz_to_cyrillic("qanday"), "қандай")
+        self.assertIn("ў", prepare_tts_utterance("O'zbekcha gapiring", "uz"))
 
     def test_detect_lang(self):
         self.assertEqual(detect_transcript_lang("Мне нужен фейд"), "ru")
@@ -62,8 +72,8 @@ class VoiceAlgorithmTests(SimpleTestCase):
         catalog = list_morph_voices()
         genders = {v["gender"] for v in catalog["voices"]}
         self.assertEqual(genders, {"male", "female"})
-        self.assertEqual(catalog["defaults"]["male"], "charon")
-        self.assertEqual(catalog["defaults"]["female"], "kore")
+        self.assertEqual(catalog["defaults"]["male"], "puck")
+        self.assertEqual(catalog["defaults"]["female"], "aoede")
 
     def test_extract_audio_and_text(self):
         import base64
@@ -97,3 +107,4 @@ class VoiceAlgorithmTests(SimpleTestCase):
         block = _format_prefs_block({"voice_mode": True, "reply_lang": "uz"})
         self.assertIn("Ovozli suhbat", block)
         self.assertIn("o'zbek", block)
+        self.assertIn("Adabiy", block)

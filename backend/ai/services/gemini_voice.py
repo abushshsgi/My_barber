@@ -43,19 +43,19 @@ ALLOWED_AUDIO_MIME = frozenset(
     }
 )
 MAX_AUDIO_BYTES = 8 * 1024 * 1024
-TTS_MAX_CHARS = 2500
+TTS_MAX_CHARS = 520
 
-DEFAULT_MALE_VOICE = "charon"
-DEFAULT_FEMALE_VOICE = "kore"
+DEFAULT_MALE_VOICE = "puck"
+DEFAULT_FEMALE_VOICE = "aoede"
 
-# Gemini 2.5 TTS prebuilt voices — assistant uchun eng tabiiy juftlik.
+# Gemini 2.5 TTS — iliq, tabiiy ovozlar (Charon "informative" robotroq).
 MORPH_VOICES: tuple[dict[str, str], ...] = (
     {
-        "id": "charon",
-        "name": "Charon",
+        "id": "puck",
+        "name": "Puck",
         "gender": "male",
-        "style": "informative",
-        "gemini_name": "Charon",
+        "style": "upbeat",
+        "gemini_name": "Puck",
     },
     {
         "id": "orus",
@@ -108,12 +108,97 @@ def list_morph_voices() -> dict[str, Any]:
 
 def resolve_voice(*, voice_id: str | None = None, gender: str | None = None) -> dict[str, str]:
     raw_id = (voice_id or "").strip().lower()
+    if raw_id == "charon":
+        raw_id = DEFAULT_MALE_VOICE
     if raw_id in _VOICE_BY_ID:
         return dict(_VOICE_BY_ID[raw_id])
     g = (gender or "").strip().lower()
     if g == "female":
         return dict(_VOICE_BY_ID[DEFAULT_FEMALE_VOICE])
     return dict(_VOICE_BY_ID[DEFAULT_MALE_VOICE])
+
+
+_UZ_DIGRAPHS: tuple[tuple[str, str], ...] = (
+    ("yo", "ё"),
+    ("yu", "ю"),
+    ("ya", "я"),
+    ("ye", "е"),
+    ("sh", "ш"),
+    ("ch", "ч"),
+    ("ng", "нг"),
+    ("ts", "ц"),
+    ("o'", "ў"),
+    ("o‘", "ў"),
+    ("o’", "ў"),
+    ("oʻ", "ў"),
+    ("o`", "ў"),
+    ("g'", "ғ"),
+    ("g‘", "ғ"),
+    ("g’", "ғ"),
+    ("gʻ", "ғ"),
+    ("g`", "ғ"),
+)
+_UZ_SINGLE = {
+    "a": "а",
+    "b": "б",
+    "d": "д",
+    "e": "е",
+    "f": "ф",
+    "g": "г",
+    "h": "ҳ",
+    "i": "и",
+    "j": "ж",
+    "k": "к",
+    "l": "л",
+    "m": "м",
+    "n": "н",
+    "o": "о",
+    "p": "п",
+    "q": "қ",
+    "r": "р",
+    "s": "с",
+    "t": "т",
+    "u": "у",
+    "v": "в",
+    "x": "х",
+    "y": "й",
+    "z": "з",
+}
+
+
+def latin_uz_to_cyrillic(text: str) -> str:
+    """Lotin o'zbekni kirillga — Gemini TTS lotin o'zbekni inglizcha o'qiydi."""
+    raw = text or ""
+    if not raw:
+        return ""
+    out: list[str] = []
+    i = 0
+    lower = raw.lower()
+    while i < len(lower):
+        matched = False
+        for src, dst in _UZ_DIGRAPHS:
+            if lower.startswith(src, i):
+                out.append(dst)
+                i += len(src)
+                matched = True
+                break
+        if matched:
+            continue
+        ch = lower[i]
+        out.append(_UZ_SINGLE.get(ch, raw[i]))
+        i += 1
+    return "".join(out)
+
+
+def prepare_tts_utterance(text: str, lang: str | None) -> str:
+    """TTS ga yuboriladigan matn — ko'rsatiladigan lotin matndan alohida."""
+    spoken = sanitize_for_speech(text)
+    if not spoken:
+        return ""
+    hint = (lang or "").strip().lower()
+    if hint == "ru" or (_CYRILLIC.search(spoken) and not _UZ_MARK.search(spoken)):
+        return spoken
+    return latin_uz_to_cyrillic(spoken)
 
 
 def sanitize_for_speech(text: str, *, max_chars: int = TTS_MAX_CHARS) -> str:
@@ -330,13 +415,22 @@ def transcribe_audio(
     mime = normalize_audio_mime(mime_type)
     hint = (lang or "auto").strip().lower()
     if hint == "ru":
-        lang_line = "The speech is Russian. Transcribe in Russian."
+        lang_line = (
+            "The speaker is talking in Russian. Transcribe in Russian Cyrillic. "
+            "Keep barber terms (fade, undercut, taper, guard) in Latin if spoken that way."
+        )
     elif hint == "uz":
-        lang_line = "The speech is Uzbek (Latin script). Transcribe in Uzbek Latin."
+        lang_line = (
+            "The speaker is talking in Uzbek. Transcribe in Uzbek Latin script "
+            "(o', g', sh, ch, q, x). Any regional accent is still Uzbek — do not translate. "
+            "Keep barber terms (fade, undercut, taper, clipper, guard) as spoken."
+        )
     else:
         lang_line = (
-            "The speech may be Uzbek (Latin), Russian, or English. "
-            "Transcribe in the spoken language. Uzbek must stay Latin script."
+            "Speech may be Uzbek (any region), Russian, or a mix. "
+            "Transcribe in the spoken language. Uzbek must stay Latin script "
+            "(o', g', sh, ch). Do not translate into English. "
+            "Keep barber/haircut terms as spoken."
         )
 
     body: dict[str, Any] = {
@@ -352,24 +446,25 @@ def transcribe_audio(
                     },
                     {
                         "text": (
-                            "Transcribe the spoken words exactly.\n"
+                            "Transcribe this short voice message for a barbershop assistant.\n"
                             f"{lang_line}\n"
-                            "Return only the transcript. No quotes, labels, or commentary.\n"
-                            "If the audio is silent or unintelligible, return EMPTY."
+                            "Ignore keyboard clicks, music, and the assistant's own previous voice if heard.\n"
+                            "Fix only obvious cut-off words. Return the transcript only.\n"
+                            "If silent or unintelligible, return EMPTY."
                         )
                     },
                 ],
             }
         ],
         "generationConfig": {
-            "temperature": 0.1,
-            "maxOutputTokens": 1024,
+            "temperature": 0,
+            "maxOutputTokens": 320,
         },
     }
 
     model = _vision_model()
     started = time.perf_counter()
-    payload, provider, used_model = _generate(model, body, timeout=60)
+    payload, provider, used_model = _generate(model, body, timeout=25)
     text = extract_reply_text(payload).strip().strip('"').strip("'")
     if not text or text.upper() == "EMPTY" or text.lower() in {"(empty)", "[empty]"}:
         raise AiStyleError("Ovoz aniqlanmadi. Qayta gapiring.", 400)
@@ -406,15 +501,25 @@ def synthesize_speech(
     if not spoken:
         raise AiStyleError("O'qiladigan matn yo'q.", 400)
     voice = resolve_voice(voice_id=voice_id, gender=gender)
-    lang_hint = (lang or "").strip().lower()
-    prefix = ""
-    if lang_hint == "ru":
-        prefix = "Speak in natural Russian: "
-    elif lang_hint == "uz":
-        prefix = "Speak in natural Uzbek (Latin pronunciation): "
+    utterance = prepare_tts_utterance(spoken, lang)
+    if not utterance:
+        raise AiStyleError("O'qiladigan matn yo'q.", 400)
 
+    # Matnni contents ichiga inglizcha prefix qo'ymang — model uni ham o'qiydi.
     body: dict[str, Any] = {
-        "contents": [{"role": "user", "parts": [{"text": f"{prefix}{spoken}"}]}],
+        "systemInstruction": {
+            "parts": [
+                {
+                    "text": (
+                        "You are a TTS engine. Speak only the user text. "
+                        "Native Tashkent Uzbek, literary pronunciation, warm and clear. "
+                        "Not Turkish, Kazakh, or English. Conversational pace. "
+                        "If the text is Cyrillic Uzbek, read it as Uzbek, not Russian."
+                    )
+                }
+            ]
+        },
+        "contents": [{"role": "user", "parts": [{"text": utterance}]}],
         "generationConfig": {
             "responseModalities": ["AUDIO"],
             "speechConfig": {
@@ -428,18 +533,21 @@ def synthesize_speech(
     model = _tts_model()
     started = time.perf_counter()
     try:
-        payload, provider, used_model = _generate(model, body, timeout=60)
-    except AiStyleError:
-        # Vertex ba'zan preview TTS modelini topmaydi — Studio kalit bilan qayta.
-        if vertex_configured() and _studio_api_key():
-            try:
-                payload = _post_gemini(model, _studio_api_key(), body, timeout=60)
-                provider, used_model = "studio", model
-            except Exception as exc:
-                logger.warning("Studio TTS fallback failed: %s", exc)
+        payload, provider, used_model = _generate(model, body, timeout=28)
+    except AiStyleError as first_err:
+        body.pop("systemInstruction", None)
+        try:
+            payload, provider, used_model = _generate(model, body, timeout=28)
+        except AiStyleError:
+            if vertex_configured() and _studio_api_key():
+                try:
+                    payload = _post_gemini(model, _studio_api_key(), body, timeout=28)
+                    provider, used_model = "studio", model
+                except Exception as exc:
+                    logger.warning("Studio TTS fallback failed: %s", exc)
+                    raise first_err from exc
+            else:
                 raise
-        else:
-            raise
 
     audio, mime = extract_inline_audio(payload)
     audio_b64, out_mime = audio_to_wav_base64(audio, mime)
