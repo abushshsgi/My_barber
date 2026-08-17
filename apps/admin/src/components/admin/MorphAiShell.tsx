@@ -5,6 +5,7 @@ const TABS = [
   { to: "/admin/morph-ai" as const, label: "Analytics", exact: true },
   { to: "/admin/morph-ai/studio" as const, label: "Studio" },
   { to: "/admin/morph-ai/chat" as const, label: "Chat" },
+  { to: "/admin/morph-ai/support" as const, label: "Yordam" },
   {
     to: "/admin/morph-ai/list/$kind" as const,
     params: { kind: "generations" as const },
@@ -36,9 +37,7 @@ export function MorphAiSubNav() {
         <h2 className="font-heading text-sm font-semibold tracking-tight text-foreground">
           Morph AI bo&apos;limlari
         </h2>
-        <p className="hidden text-xs text-muted-foreground sm:block">
-          Chap menyu yoki shu tablar
-        </p>
+        <p className="hidden text-xs text-muted-foreground sm:block">Chap menyu yoki shu tablar</p>
       </div>
       <div className="flex gap-1 overflow-x-auto rounded-xl border border-border bg-muted/80 p-1.5 shadow-card">
         {TABS.map((tab) => {

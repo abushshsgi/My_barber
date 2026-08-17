@@ -2988,9 +2988,13 @@ export type AdminTicket = {
   updated_at: string;
 };
 
-export async function fetchTickets(params?: { status?: string }): Promise<AdminTicket[]> {
+export async function fetchTickets(params?: {
+  status?: string;
+  kind?: "morph" | "morph_help" | "morph_problem";
+}): Promise<AdminTicket[]> {
   const sp = new URLSearchParams();
   if (params?.status && params.status !== "all") sp.set("status", params.status);
+  if (params?.kind) sp.set("kind", params.kind);
   const res = await apiFetch(`/api/v1/admin/support/tickets/?${sp.toString()}`);
   const j = (await res.json().catch(() => ({}))) as any;
   if (!res.ok) throw new Error(j.detail || "Xato");

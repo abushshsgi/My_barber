@@ -87,6 +87,13 @@ function SupportPage() {
                   <div className="text-xs text-muted-foreground mt-0.5 truncate">
                     {t.user_name} · {t.assignee ?? "Biriktirilmagan"}
                     {t.related_type === "gift_transfer" ? " · Sovg'a dispute" : ""}
+                    {t.category === "morph_ai:help"
+                      ? " · Morf AI yordam"
+                      : t.category === "morph_ai:problem"
+                        ? " · Morf AI muammo"
+                        : t.category?.startsWith("morph_ai")
+                          ? " · Morf AI"
+                          : ""}
                   </div>
                 </div>
                 <span

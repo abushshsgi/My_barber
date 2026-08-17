@@ -156,6 +156,7 @@ const SECTIONS: Section[] = [
       { to: "/admin/morph-ai", label: "Analytics", icon: Sparkles },
       { to: "/admin/morph-ai/studio", label: "Studio", icon: ImagePlus },
       { to: "/admin/morph-ai/chat", label: "Chat", icon: MessageCircle },
+      { to: "/admin/morph-ai/support", label: "Yordam", icon: LifeBuoy },
       { to: "/admin/morph-ai/catalog", label: "Katalog", icon: Tag },
       { to: "/admin/morph-ai/errors", label: "Xatolar", icon: ShieldCheck },
       { to: "/admin/morph-ai/limits", label: "Limitlar", icon: Users },
@@ -280,12 +281,7 @@ function IconRail({
 }) {
   return (
     <aside className="hidden lg:flex w-14 shrink-0 flex-col items-center bg-sidebar border-r border-sidebar-border py-3 gap-1">
-      <Link
-        to="/admin"
-        className="mb-2"
-        title="Mysaloon"
-        aria-label="Mysaloon Admin"
-      >
+      <Link to="/admin" className="mb-2" title="Mysaloon" aria-label="Mysaloon Admin">
         <MysaloonLogo compact />
       </Link>
       {SECTIONS.map((sec) => {

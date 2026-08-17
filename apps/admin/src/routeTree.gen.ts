@@ -65,6 +65,7 @@ import { Route as AdminMorphAiPopularityRouteImport } from './routes/admin.morph
 import { Route as AdminMorphAiQueueRouteImport } from './routes/admin.morph-ai.queue'
 import { Route as AdminMorphAiSettingsRouteImport } from './routes/admin.morph-ai.settings'
 import { Route as AdminMorphAiStudioRouteImport } from './routes/admin.morph-ai.studio'
+import { Route as AdminMorphAiSupportRouteImport } from './routes/admin.morph-ai.support'
 import { Route as AdminPayoutsIndexRouteImport } from './routes/admin.payouts.index'
 import { Route as AdminSalonsSalonIdRouteImport } from './routes/admin.salons.$salonId'
 import { Route as AdminServicesAnalyticsRouteImport } from './routes/admin.services.analytics'
@@ -88,6 +89,7 @@ import { Route as AdminBarbersBarberIdBookingsRouteImport } from './routes/admin
 import { Route as AdminBarbersBarberIdReviewsRouteImport } from './routes/admin.barbers.$barberId.reviews'
 import { Route as AdminBarbersBarberIdStatsRouteImport } from './routes/admin.barbers.$barberId.stats'
 import { Route as AdminMorphAiListKindRouteImport } from './routes/admin.morph-ai.list.$kind'
+import { Route as AdminMorphAiSupportTicketIdRouteImport } from './routes/admin.morph-ai.support_.$ticketId'
 import { Route as AdminSalonsSalonIdIndexRouteImport } from './routes/admin.salons.$salonId.index'
 import { Route as AdminSalonsSalonIdStatsRouteImport } from './routes/admin.salons.$salonId.stats'
 import { Route as AdminSalonsSalonIdTeamRouteImport } from './routes/admin.salons.$salonId.team'
@@ -377,6 +379,11 @@ const AdminMorphAiStudioRoute = AdminMorphAiStudioRouteImport.update({
   path: '/studio',
   getParentRoute: () => AdminMorphAiRoute,
 } as any)
+const AdminMorphAiSupportRoute = AdminMorphAiSupportRouteImport.update({
+  id: '/support',
+  path: '/support',
+  getParentRoute: () => AdminMorphAiRoute,
+} as any)
 const AdminPayoutsIndexRoute = AdminPayoutsIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -498,6 +505,12 @@ const AdminMorphAiListKindRoute = AdminMorphAiListKindRouteImport.update({
   path: '/list/$kind',
   getParentRoute: () => AdminMorphAiRoute,
 } as any)
+const AdminMorphAiSupportTicketIdRoute =
+  AdminMorphAiSupportTicketIdRouteImport.update({
+    id: '/support_/$ticketId',
+    path: '/support/$ticketId',
+    getParentRoute: () => AdminMorphAiRoute,
+  } as any)
 const AdminSalonsSalonIdIndexRoute = AdminSalonsSalonIdIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -590,6 +603,7 @@ export interface FileRoutesByFullPath {
   '/admin/morph-ai/queue': typeof AdminMorphAiQueueRoute
   '/admin/morph-ai/settings': typeof AdminMorphAiSettingsRoute
   '/admin/morph-ai/studio': typeof AdminMorphAiStudioRoute
+  '/admin/morph-ai/support': typeof AdminMorphAiSupportRoute
   '/admin/salons/$salonId': typeof AdminSalonsSalonIdRouteWithChildren
   '/admin/services/analytics': typeof AdminServicesAnalyticsRoute
   '/admin/statistics/agents': typeof AdminStatisticsAgentsRoute
@@ -617,6 +631,7 @@ export interface FileRoutesByFullPath {
   '/admin/barbers/$barberId/reviews': typeof AdminBarbersBarberIdReviewsRoute
   '/admin/barbers/$barberId/stats': typeof AdminBarbersBarberIdStatsRouteWithChildren
   '/admin/morph-ai/list/$kind': typeof AdminMorphAiListKindRoute
+  '/admin/morph-ai/support/$ticketId': typeof AdminMorphAiSupportTicketIdRoute
   '/admin/salons/$salonId/stats': typeof AdminSalonsSalonIdStatsRouteWithChildren
   '/admin/salons/$salonId/team': typeof AdminSalonsSalonIdTeamRoute
   '/admin/barbers/$barberId/': typeof AdminBarbersBarberIdIndexRoute
@@ -669,6 +684,7 @@ export interface FileRoutesByTo {
   '/admin/morph-ai/queue': typeof AdminMorphAiQueueRoute
   '/admin/morph-ai/settings': typeof AdminMorphAiSettingsRoute
   '/admin/morph-ai/studio': typeof AdminMorphAiStudioRoute
+  '/admin/morph-ai/support': typeof AdminMorphAiSupportRoute
   '/admin/services/analytics': typeof AdminServicesAnalyticsRoute
   '/admin/statistics/agents': typeof AdminStatisticsAgentsRoute
   '/admin/statistics/barbers': typeof AdminStatisticsBarbersRoute
@@ -694,6 +710,7 @@ export interface FileRoutesByTo {
   '/admin/barbers/$barberId/bookings': typeof AdminBarbersBarberIdBookingsRoute
   '/admin/barbers/$barberId/reviews': typeof AdminBarbersBarberIdReviewsRoute
   '/admin/morph-ai/list/$kind': typeof AdminMorphAiListKindRoute
+  '/admin/morph-ai/support/$ticketId': typeof AdminMorphAiSupportTicketIdRoute
   '/admin/salons/$salonId/team': typeof AdminSalonsSalonIdTeamRoute
   '/admin/barbers/$barberId': typeof AdminBarbersBarberIdIndexRoute
   '/admin/salons/$salonId': typeof AdminSalonsSalonIdIndexRoute
@@ -755,6 +772,7 @@ export interface FileRoutesById {
   '/admin/morph-ai/queue': typeof AdminMorphAiQueueRoute
   '/admin/morph-ai/settings': typeof AdminMorphAiSettingsRoute
   '/admin/morph-ai/studio': typeof AdminMorphAiStudioRoute
+  '/admin/morph-ai/support': typeof AdminMorphAiSupportRoute
   '/admin/salons/$salonId': typeof AdminSalonsSalonIdRouteWithChildren
   '/admin/services/analytics': typeof AdminServicesAnalyticsRoute
   '/admin/statistics/agents': typeof AdminStatisticsAgentsRoute
@@ -782,6 +800,7 @@ export interface FileRoutesById {
   '/admin/barbers/$barberId/reviews': typeof AdminBarbersBarberIdReviewsRoute
   '/admin/barbers/$barberId/stats': typeof AdminBarbersBarberIdStatsRouteWithChildren
   '/admin/morph-ai/list/$kind': typeof AdminMorphAiListKindRoute
+  '/admin/morph-ai/support_/$ticketId': typeof AdminMorphAiSupportTicketIdRoute
   '/admin/salons/$salonId/stats': typeof AdminSalonsSalonIdStatsRouteWithChildren
   '/admin/salons/$salonId/team': typeof AdminSalonsSalonIdTeamRoute
   '/admin/barbers/$barberId/': typeof AdminBarbersBarberIdIndexRoute
@@ -845,6 +864,7 @@ export interface FileRouteTypes {
     | '/admin/morph-ai/queue'
     | '/admin/morph-ai/settings'
     | '/admin/morph-ai/studio'
+    | '/admin/morph-ai/support'
     | '/admin/salons/$salonId'
     | '/admin/services/analytics'
     | '/admin/statistics/agents'
@@ -872,6 +892,7 @@ export interface FileRouteTypes {
     | '/admin/barbers/$barberId/reviews'
     | '/admin/barbers/$barberId/stats'
     | '/admin/morph-ai/list/$kind'
+    | '/admin/morph-ai/support/$ticketId'
     | '/admin/salons/$salonId/stats'
     | '/admin/salons/$salonId/team'
     | '/admin/barbers/$barberId/'
@@ -924,6 +945,7 @@ export interface FileRouteTypes {
     | '/admin/morph-ai/queue'
     | '/admin/morph-ai/settings'
     | '/admin/morph-ai/studio'
+    | '/admin/morph-ai/support'
     | '/admin/services/analytics'
     | '/admin/statistics/agents'
     | '/admin/statistics/barbers'
@@ -949,6 +971,7 @@ export interface FileRouteTypes {
     | '/admin/barbers/$barberId/bookings'
     | '/admin/barbers/$barberId/reviews'
     | '/admin/morph-ai/list/$kind'
+    | '/admin/morph-ai/support/$ticketId'
     | '/admin/salons/$salonId/team'
     | '/admin/barbers/$barberId'
     | '/admin/salons/$salonId'
@@ -1009,6 +1032,7 @@ export interface FileRouteTypes {
     | '/admin/morph-ai/queue'
     | '/admin/morph-ai/settings'
     | '/admin/morph-ai/studio'
+    | '/admin/morph-ai/support'
     | '/admin/salons/$salonId'
     | '/admin/services/analytics'
     | '/admin/statistics/agents'
@@ -1036,6 +1060,7 @@ export interface FileRouteTypes {
     | '/admin/barbers/$barberId/reviews'
     | '/admin/barbers/$barberId/stats'
     | '/admin/morph-ai/list/$kind'
+    | '/admin/morph-ai/support_/$ticketId'
     | '/admin/salons/$salonId/stats'
     | '/admin/salons/$salonId/team'
     | '/admin/barbers/$barberId/'
@@ -1446,6 +1471,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminMorphAiStudioRouteImport
       parentRoute: typeof AdminMorphAiRoute
     }
+    '/admin/morph-ai/support': {
+      id: '/admin/morph-ai/support'
+      path: '/support'
+      fullPath: '/admin/morph-ai/support'
+      preLoaderRoute: typeof AdminMorphAiSupportRouteImport
+      parentRoute: typeof AdminMorphAiRoute
+    }
     '/admin/payouts/': {
       id: '/admin/payouts/'
       path: '/'
@@ -1605,6 +1637,13 @@ declare module '@tanstack/react-router' {
       path: '/list/$kind'
       fullPath: '/admin/morph-ai/list/$kind'
       preLoaderRoute: typeof AdminMorphAiListKindRouteImport
+      parentRoute: typeof AdminMorphAiRoute
+    }
+    '/admin/morph-ai/support_/$ticketId': {
+      id: '/admin/morph-ai/support_/$ticketId'
+      path: '/support/$ticketId'
+      fullPath: '/admin/morph-ai/support/$ticketId'
+      preLoaderRoute: typeof AdminMorphAiSupportTicketIdRouteImport
       parentRoute: typeof AdminMorphAiRoute
     }
     '/admin/salons/$salonId/': {
@@ -1800,8 +1839,10 @@ interface AdminMorphAiRouteChildren {
   AdminMorphAiQueueRoute: typeof AdminMorphAiQueueRoute
   AdminMorphAiSettingsRoute: typeof AdminMorphAiSettingsRoute
   AdminMorphAiStudioRoute: typeof AdminMorphAiStudioRoute
+  AdminMorphAiSupportRoute: typeof AdminMorphAiSupportRoute
   AdminMorphAiIndexRoute: typeof AdminMorphAiIndexRoute
   AdminMorphAiListKindRoute: typeof AdminMorphAiListKindRoute
+  AdminMorphAiSupportTicketIdRoute: typeof AdminMorphAiSupportTicketIdRoute
 }
 
 const AdminMorphAiRouteChildren: AdminMorphAiRouteChildren = {
@@ -1816,8 +1857,10 @@ const AdminMorphAiRouteChildren: AdminMorphAiRouteChildren = {
   AdminMorphAiQueueRoute: AdminMorphAiQueueRoute,
   AdminMorphAiSettingsRoute: AdminMorphAiSettingsRoute,
   AdminMorphAiStudioRoute: AdminMorphAiStudioRoute,
+  AdminMorphAiSupportRoute: AdminMorphAiSupportRoute,
   AdminMorphAiIndexRoute: AdminMorphAiIndexRoute,
   AdminMorphAiListKindRoute: AdminMorphAiListKindRoute,
+  AdminMorphAiSupportTicketIdRoute: AdminMorphAiSupportTicketIdRoute,
 }
 
 const AdminMorphAiRouteWithChildren = AdminMorphAiRoute._addFileChildren(
