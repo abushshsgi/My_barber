@@ -682,6 +682,21 @@ def _user_ticket_qs(user):
     return SupportTicket.objects.filter(created_by_user=user).prefetch_related("replies")
 
 
+def _apply_ticket_scope(qs, params):
+    """kind=morph|morph_help|morph_problem yoki category=... bo'yicha filter."""
+    kind = str(params.get("kind") or "").strip()
+    category = str(params.get("category") or "").strip()
+    if kind == "morph":
+        qs = qs.filter(Q(category__startswith="morph_ai") | Q(related_type="morph_ai"))
+    elif kind == "morph_help":
+        qs = qs.filter(category="morph_ai:help")
+    elif kind == "morph_problem":
+        qs = qs.filter(category="morph_ai:problem")
+    if category:
+        qs = qs.filter(category=category)
+    return qs
+
+
 def _serialize_user_reply(r: SupportReply) -> dict:
     return {
         "id": r.id,
@@ -736,8 +751,9 @@ class UserSupportTicketListCreateView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        qs = _user_ticket_qs(request.user).order_by("-updated_at")[:50]
-        return Response([_serialize_user_ticket(t) for t in qs])
+        qs = _user_ticket_qs(request.user).order_by("-updated_at")
+        qs = _apply_ticket_scope(qs, request.query_params)
+        return Response([_serialize_user_ticket(t) for t in qs[:50]])
 
     def post(self, request):
         subject = str(request.data.get("subject", "")).strip()
@@ -745,6 +761,8 @@ class UserSupportTicketListCreateView(APIView):
         category = str(request.data.get("category", "user_support") or "user_support").strip()[:64]
         related_type = str(request.data.get("related_type", "") or "").strip()[:64]
         related_id = str(request.data.get("related_id", "") or "").strip()[:64]
+        if category.startswith("morph_ai") and not related_type:
+            related_type = "morph_ai"
         if not subject:
             return Response({"detail": "Mavzu kerak."}, status=http_status.HTTP_400_BAD_REQUEST)
         if len(body) < 5:
@@ -1542,7 +1560,7 @@ class AdminSupportTicketListView(generics.ListAPIView):
         st = self.request.query_params.get("status")
         if st and st != "all":
             qs = qs.filter(status=st)
-        return qs
+        return _apply_ticket_scope(qs, self.request.query_params)
 
 
 class AdminSupportTicketDetailView(generics.RetrieveUpdateAPIView):
@@ -1611,12 +1629,13 @@ class AdminSupportTicketRepliesView(APIView):
             try:
                 from notifications.utils import notify_user
 
+                morph = (t.category or "").startswith("morph_ai") or t.related_type == "morph_ai"
                 notify_user(
                     t.created_by_user,
                     "support_reply",
-                    "Support javob berdi",
+                    "Morf AI support javob berdi" if morph else "Support javob berdi",
                     body[:180],
-                    payload={"ticket_id": t.id, "subject": t.subject},
+                    payload={"ticket_id": t.id, "subject": t.subject, "morph": morph},
                 )
             except Exception:
                 pass
