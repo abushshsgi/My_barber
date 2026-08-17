@@ -1,6 +1,13 @@
 from django.contrib import admin
 
-from .models import AiGenerationUsage, AiStyleHistoryEntry, Hairstyle, MorphAiLookShare, MorphAiSettings
+from .models import (
+    AiGenerationUsage,
+    AiStyleHistoryEntry,
+    Hairstyle,
+    MorphAiLookShare,
+    MorphAiSettings,
+    MorphAiUserPrefs,
+)
 
 
 @admin.register(Hairstyle)
@@ -67,3 +74,20 @@ class MorphAiSettingsAdmin(admin.ModelAdmin):
         "ab_enabled",
         "updated_at",
     )
+
+
+@admin.register(MorphAiUserPrefs)
+class MorphAiUserPrefsAdmin(admin.ModelAdmin):
+    list_display = (
+        "id",
+        "user",
+        "privacy_local_only",
+        "save_chat_history",
+        "persist_looks",
+        "limit_notify",
+        "updated_at",
+    )
+    list_filter = ("privacy_local_only", "save_chat_history", "persist_looks", "limit_notify")
+    search_fields = ("user__phone", "user__email")
+    raw_id_fields = ("user",)
+    readonly_fields = ("updated_at",)

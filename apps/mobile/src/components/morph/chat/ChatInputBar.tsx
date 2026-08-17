@@ -17,6 +17,7 @@ type Props = {
   onCamera?: () => void;
   onVoice?: () => void;
   voiceEnabled?: boolean;
+  voiceState?: "idle" | "recording" | "busy";
   disabled?: boolean;
   sending?: boolean;
   placeholder?: string;
@@ -43,6 +44,7 @@ export function ChatInputBar({
   onCamera,
   onVoice,
   voiceEnabled = false,
+  voiceState = "idle",
   disabled,
   sending,
   placeholder = "Savolingizni yozing…",
@@ -53,6 +55,8 @@ export function ChatInputBar({
   const [focused, setFocused] = useState(false);
   const hasText = value.trim().length > 0;
   const canSend = !disabled && !sending && hasText;
+  const voiceBusy = voiceState === "busy";
+  const voiceRecording = voiceState === "recording";
 
   return (
     <Animated.View
@@ -117,12 +121,21 @@ export function ChatInputBar({
         >
           <Pressable
             onPress={onVoice}
-            disabled={!onVoice || disabled}
-            style={({ pressed }) => [styles.voiceBtn, pressed && styles.pressed]}
+            disabled={!onVoice || disabled || voiceBusy}
+            style={({ pressed }) => [
+              styles.voiceBtn,
+              voiceRecording && styles.voiceBtnLive,
+              pressed && styles.pressed,
+            ]}
             accessibilityRole="button"
             accessibilityLabel={voiceA11y}
+            accessibilityState={{ busy: voiceBusy, selected: voiceRecording }}
           >
-            <Ionicons name="mic" size={16} color="#FFFFFF" />
+            {voiceBusy ? (
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            ) : (
+              <Ionicons name={voiceRecording ? "stop" : "mic"} size={16} color="#FFFFFF" />
+            )}
           </Pressable>
         </Animated.View>
       ) : (
@@ -194,6 +207,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "#111111",
+  },
+  voiceBtnLive: {
+    backgroundColor: "#FF3B30",
   },
   wave: {
     flexDirection: "row",

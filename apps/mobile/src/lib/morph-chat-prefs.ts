@@ -6,6 +6,14 @@ const LIMITS_KEY = "morph_chat_limits_v1";
 export type MorphChatReplyLang = "app" | "uz" | "ru";
 export type MorphChatReplyStyle = "short" | "detailed" | "barber";
 export type MorphChatAdviceGender = "auto" | "male" | "female";
+export type MorphVoiceGenderPref = "male" | "female";
+export type MorphVoiceLangPref = "auto" | "uz" | "ru";
+
+export const MORPH_VOICE_IDS = ["charon", "orus", "kore", "aoede"] as const;
+export type MorphVoiceId = (typeof MORPH_VOICE_IDS)[number];
+
+export const DEFAULT_MALE_VOICE: MorphVoiceId = "charon";
+export const DEFAULT_FEMALE_VOICE: MorphVoiceId = "kore";
 
 export type MorphChatPrefs = {
   /** Try-on / yuz tahlili kontekstini chatga ulash. */
@@ -18,14 +26,26 @@ export type MorphChatPrefs = {
   replyStyle: MorphChatReplyStyle;
   /** Token-by-token yozish. */
   streaming: boolean;
-  /** Mikrofon tugmasi. */
+  /** Mikrofon tugmasi va ovozli suhbat. */
   voiceInput: boolean;
+  /** AI javobini ovozda o'qish. */
+  autoSpeak: boolean;
+  /** Gemini Live uslubidagi ketma-ket suhbat. */
+  conversationMode: boolean;
+  /** TTS ovoz jinsi. */
+  voiceGender: MorphVoiceGenderPref;
+  /** Tanlangan Gemini TTS ovozi. */
+  voiceId: MorphVoiceId;
+  /** STT tili. */
+  voiceLang: MorphVoiceLangPref;
   /** Limit tugaganda/ogohlantirish. */
   limitNotify: boolean;
   /** Maslahat uchun jins preferensiyasi. */
   adviceGender: MorphChatAdviceGender;
   /** Tarixni serverga yubormaslik (faqat joriy xabar). */
   privacyLocalOnly: boolean;
+  /** Try-on / studio / selfie tarixini serverga yozish. */
+  persistLooks: boolean;
 };
 
 export type MorphChatLimitsSnapshot = {
@@ -41,10 +61,16 @@ export const DEFAULT_MORPH_CHAT_PREFS: MorphChatPrefs = {
   replyLang: "app",
   replyStyle: "detailed",
   streaming: true,
-  voiceInput: false,
+  voiceInput: true,
+  autoSpeak: true,
+  conversationMode: false,
+  voiceGender: "male",
+  voiceId: DEFAULT_MALE_VOICE,
+  voiceLang: "auto",
   limitNotify: true,
   adviceGender: "auto",
   privacyLocalOnly: false,
+  persistLooks: true,
 };
 
 function asBool(v: unknown, fallback: boolean): boolean {
@@ -63,6 +89,23 @@ function asAdviceGender(v: unknown): MorphChatAdviceGender {
   return v === "male" || v === "female" || v === "auto" ? v : "auto";
 }
 
+function asVoiceGender(v: unknown): MorphVoiceGenderPref {
+  return v === "female" ? "female" : "male";
+}
+
+function asVoiceLang(v: unknown): MorphVoiceLangPref {
+  return v === "uz" || v === "ru" || v === "auto" ? v : "auto";
+}
+
+function asVoiceId(v: unknown, gender: MorphVoiceGenderPref): MorphVoiceId {
+  if (v === "charon" || v === "orus" || v === "kore" || v === "aoede") return v;
+  return gender === "female" ? DEFAULT_FEMALE_VOICE : DEFAULT_MALE_VOICE;
+}
+
+export function defaultVoiceForGender(gender: MorphVoiceGenderPref): MorphVoiceId {
+  return gender === "female" ? DEFAULT_FEMALE_VOICE : DEFAULT_MALE_VOICE;
+}
+
 export async function readMorphChatPrefs(): Promise<MorphChatPrefs> {
   try {
     const raw = await AsyncStorage.getItem(PREFS_KEY);
@@ -71,6 +114,7 @@ export async function readMorphChatPrefs(): Promise<MorphChatPrefs> {
     const source = raw || legacy;
     if (!source) return { ...DEFAULT_MORPH_CHAT_PREFS };
     const parsed = JSON.parse(source) as Partial<MorphChatPrefs>;
+    const voiceGender = asVoiceGender(parsed.voiceGender);
     return {
       useTryOnContext: asBool(parsed.useTryOnContext, DEFAULT_MORPH_CHAT_PREFS.useTryOnContext),
       saveHistory: asBool(parsed.saveHistory, DEFAULT_MORPH_CHAT_PREFS.saveHistory),
@@ -78,12 +122,21 @@ export async function readMorphChatPrefs(): Promise<MorphChatPrefs> {
       replyStyle: asReplyStyle(parsed.replyStyle),
       streaming: asBool(parsed.streaming, DEFAULT_MORPH_CHAT_PREFS.streaming),
       voiceInput: asBool(parsed.voiceInput, DEFAULT_MORPH_CHAT_PREFS.voiceInput),
+      autoSpeak: asBool(parsed.autoSpeak, DEFAULT_MORPH_CHAT_PREFS.autoSpeak),
+      conversationMode: asBool(
+        parsed.conversationMode,
+        DEFAULT_MORPH_CHAT_PREFS.conversationMode,
+      ),
+      voiceGender,
+      voiceId: asVoiceId(parsed.voiceId, voiceGender),
+      voiceLang: asVoiceLang(parsed.voiceLang),
       limitNotify: asBool(parsed.limitNotify, DEFAULT_MORPH_CHAT_PREFS.limitNotify),
       adviceGender: asAdviceGender(parsed.adviceGender),
       privacyLocalOnly: asBool(
         parsed.privacyLocalOnly,
         DEFAULT_MORPH_CHAT_PREFS.privacyLocalOnly,
       ),
+      persistLooks: asBool(parsed.persistLooks, DEFAULT_MORPH_CHAT_PREFS.persistLooks),
     };
   } catch {
     return { ...DEFAULT_MORPH_CHAT_PREFS };
@@ -122,4 +175,13 @@ export function morphChatUsagePercent(limits: {
   if (!limits || !limits.daily_limit || limits.daily_used == null) return 0;
   const pct = Math.round((limits.daily_used / limits.daily_limit) * 100);
   return Math.max(0, Math.min(100, pct));
+}
+
+export function shouldPersistChatToServer(prefs: MorphChatPrefs): boolean {
+  return Boolean(prefs.saveHistory) && !prefs.privacyLocalOnly;
+}
+
+export async function shouldPersistLooksToServer(): Promise<boolean> {
+  const prefs = await readMorphChatPrefs();
+  return Boolean(prefs.persistLooks);
 }

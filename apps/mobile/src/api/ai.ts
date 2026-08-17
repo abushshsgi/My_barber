@@ -413,7 +413,9 @@ export async function saveMorphAiGeneration(payload: {
   persona_id?: string;
   before_image?: string;
   after_image: string;
-}): Promise<MorphAiGeneration> {
+}): Promise<MorphAiGeneration | null> {
+  const { shouldPersistLooksToServer } = await import("../lib/morph-chat-prefs");
+  if (!(await shouldPersistLooksToServer())) return null;
   return apiJson("/api/v1/ai/generations/", {
     method: "POST",
     body: JSON.stringify(payload),
@@ -433,7 +435,9 @@ export async function saveAiStyleHistory(payload: {
   beard_key?: string;
   source: "camera_scan" | "gallery" | "ai_analysis";
   replace_latest?: boolean;
-}): Promise<AiStyleHistoryEntry> {
+}): Promise<AiStyleHistoryEntry | null> {
+  const { shouldPersistLooksToServer } = await import("../lib/morph-chat-prefs");
+  if (!(await shouldPersistLooksToServer())) return null;
   return apiJson("/api/v1/ai/style-history/", {
     method: "POST",
     body: JSON.stringify(payload),
@@ -477,6 +481,7 @@ export type MorphChatContext = {
   reply_lang?: "uz" | "ru";
   reply_style?: "short" | "detailed" | "barber";
   advice_gender?: "male" | "female";
+  voice_mode?: boolean;
 };
 
 export type MorphChatLimits = {
@@ -677,4 +682,164 @@ export async function deleteMorphChatThread(clientId: string): Promise<void> {
 
 export async function clearMorphChatThreads(): Promise<void> {
   await apiFetch("/api/v1/ai/chat/threads/", { method: "DELETE" });
+}
+
+export type MorphAiPrivacyPrefs = {
+  privacy_local_only: boolean;
+  save_chat_history: boolean;
+  persist_looks: boolean;
+  limit_notify: boolean;
+  use_tryon_context: boolean;
+};
+
+export type MorphAiPrivacyDataCounts = {
+  chat_threads: number;
+  chat_messages: number;
+  looks: number;
+  selfies: number;
+  shares: number;
+};
+
+export type MorphAiPrivacyPayload = {
+  prefs: MorphAiPrivacyPrefs;
+  limits: MorphChatLimits & { warn_at?: number; should_warn?: boolean };
+  data: MorphAiPrivacyDataCounts;
+  updated_at?: string | null;
+};
+
+export async function fetchMorphAiPrivacy(): Promise<MorphAiPrivacyPayload> {
+  return apiJson("/api/v1/ai/privacy/");
+}
+
+export async function patchMorphAiPrivacy(
+  patch: Partial<MorphAiPrivacyPrefs>,
+): Promise<MorphAiPrivacyPayload> {
+  return apiJson("/api/v1/ai/privacy/", {
+    method: "PATCH",
+    body: JSON.stringify(patch),
+  });
+}
+
+export async function deleteMorphAiPrivacyData(
+  kind: "chats" | "looks" | "selfies" | "shares" | "all",
+): Promise<MorphAiPrivacyPayload & { ok: boolean; deleted: Record<string, number> }> {
+  return apiJson("/api/v1/ai/privacy/data/", {
+    method: "DELETE",
+    body: JSON.stringify({ kind }),
+  });
+}
+
+export async function fetchMorphChatLimits(): Promise<MorphChatLimits> {
+  return apiJson("/api/v1/ai/chat/limits/");
+}
+
+export async function clearMorphAiGenerations(): Promise<void> {
+  await apiFetch("/api/v1/ai/generations/", { method: "DELETE" });
+}
+
+export async function clearAiStyleHistory(): Promise<void> {
+  await apiFetch("/api/v1/ai/style-history/", { method: "DELETE" });
+}
+
+export type MorphVoiceGender = "male" | "female";
+
+export type MorphVoiceInfo = {
+  id: string;
+  name: string;
+  gender: MorphVoiceGender;
+  style: string;
+  gemini_name?: string;
+};
+
+export type MorphVoiceCatalog = {
+  voices: MorphVoiceInfo[];
+  defaults: { male: string; female: string };
+};
+
+export async function fetchMorphVoiceCatalog(): Promise<MorphVoiceCatalog> {
+  return apiJson<MorphVoiceCatalog>("/api/v1/ai/chat/voice/voices/");
+}
+
+export async function transcribeMorphVoice(payload: {
+  uri: string;
+  name?: string;
+  mime?: string;
+  lang?: "auto" | "uz" | "ru";
+}): Promise<{ text: string; lang: string }> {
+  const mime = payload.mime || "audio/mp4";
+  const fd = new FormData();
+  fd.append("audio", {
+    uri: payload.uri,
+    name: payload.name || "speech.m4a",
+    type: mime,
+  } as unknown as Blob);
+  fd.append("lang", payload.lang || "auto");
+  const res = await apiFetch("/api/v1/ai/chat/voice/transcribe/", {
+    method: "POST",
+    body: fd,
+    timeoutMs: 60_000,
+  });
+  const body = (await res.json().catch(() => null)) as
+    | { text?: string; lang?: string; detail?: string; code?: string }
+    | null;
+  if (!res.ok) {
+    if (res.status === 403 && body?.code === "morph_plan_limit") {
+      throw new MorphPlanLimitError(body.detail ?? "Limit tugadi");
+    }
+    throwFromMorphApiError(res, body, "Ovoz aniqlanmadi");
+  }
+  const text = (body?.text || "").trim();
+  if (!text) throw new Error("Ovoz aniqlanmadi");
+  return { text, lang: body?.lang || "uz" };
+}
+
+export async function speakMorphVoice(payload: {
+  text: string;
+  voiceId?: string;
+  gender?: MorphVoiceGender;
+  lang?: "uz" | "ru" | "auto";
+}): Promise<{
+  audioBase64: string;
+  mime: string;
+  voiceId: string;
+  voiceName: string;
+  spokenText: string;
+}> {
+  const res = await apiFetch("/api/v1/ai/chat/voice/speak/", {
+    method: "POST",
+    body: JSON.stringify({
+      text: payload.text,
+      voice_id: payload.voiceId,
+      gender: payload.gender,
+      lang: payload.lang && payload.lang !== "auto" ? payload.lang : undefined,
+    }),
+    timeoutMs: 60_000,
+  });
+  const body = (await res.json().catch(() => null)) as
+    | {
+        audio_base64?: string;
+        mime?: string;
+        voice_id?: string;
+        voice_name?: string;
+        text?: string;
+        detail?: string;
+        code?: string;
+      }
+    | null;
+  if (!res.ok) {
+    if (res.status === 403 && body?.code === "morph_plan_limit") {
+      throw new MorphPlanLimitError(body.detail ?? "Limit tugadi");
+    }
+    throwFromMorphApiError(res, body, "Ovoz yaratilmadi");
+  }
+  if (!body?.audio_base64) {
+    throw new Error("Ovoz yaratilmadi");
+  }
+  return {
+    audioBase64: body.audio_base64,
+    mime: body.mime || "audio/wav",
+    voiceId: body.voice_id || payload.voiceId || "",
+    voiceName: body.voice_name || "",
+    spokenText: body.text || payload.text,
+  };
 }

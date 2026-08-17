@@ -378,6 +378,50 @@ export function MorphChatSettingsScreen({
     }
   }, [t, threads]);
 
+  const wipeServerKind = useCallback(
+    (kind: "chats" | "looks" | "selfies" | "shares" | "all", title: string, body: string) => {
+      Alert.alert(title, body, [
+        { text: t("common.cancel"), style: "cancel" },
+        {
+          text: t("chat.settings.clearConfirm"),
+          style: "destructive",
+          onPress: () => {
+            void (async () => {
+              setDataBusy(true);
+              try {
+                const remote = await deleteMorphAiPrivacyData(kind);
+                setCounts(remote.data);
+                if (kind === "chats" || kind === "all") onClearAllChats();
+              } catch {
+                Alert.alert(title, t("chat.settings.dataFail"));
+              } finally {
+                setDataBusy(false);
+              }
+            })();
+          },
+        },
+      ]);
+    },
+    [onClearAllChats, t],
+  );
+
+  const togglePrivacyLocal = useCallback(
+    (value: boolean) => {
+      if (value) {
+        Alert.alert(t("chat.settings.privacyOnTitle"), t("chat.settings.privacyOnBody"), [
+          { text: t("common.cancel"), style: "cancel" },
+          {
+            text: t("chat.settings.privacyOnConfirm"),
+            onPress: () => void patchPrefs({ privacyLocalOnly: true }),
+          },
+        ]);
+        return;
+      }
+      void patchPrefs({ privacyLocalOnly: false });
+    },
+    [patchPrefs, t],
+  );
+
   const usagePct = morphChatUsagePercent(snap);
   const used = snap?.daily_used;
   const limit = snap?.daily_limit ?? 40;
@@ -423,6 +467,10 @@ export function MorphChatSettingsScreen({
         ? t("chat.settings.aiGroup")
         : page === "voice"
           ? t("chat.settings.voiceInput")
+          : page === "limits"
+            ? t("chat.settings.limitTitle")
+            : page === "data"
+              ? t("chat.settings.dataGroup")
           : page === "help"
           ? t("chat.settings.helpCenter")
           : page === "report"
@@ -522,7 +570,7 @@ export function MorphChatSettingsScreen({
                     title={t("chat.settings.limitTitle")}
                     subtitle={t("chat.settings.limitValue", { used: usedLabel, limit })}
                     value={`${usagePct}%`}
-                    showChevron={false}
+                    onPress={() => setPage("limits")}
                   />
                   <SettingsItem
                     icon="sparkles"
@@ -547,7 +595,12 @@ export function MorphChatSettingsScreen({
                   <SettingsItem
                     icon="notifications-outline"
                     title={t("chat.settings.limitNotify")}
-                    onPress={() => setPage("chatbot")}
+                    subtitle={
+                      prefs.limitNotify
+                        ? t("chat.settings.limitNotifyOn")
+                        : t("chat.settings.limitNotifyOff")
+                    }
+                    onPress={() => setPage("limits")}
                   />
                   <SettingsItem
                     icon="mic-outline"
@@ -562,13 +615,21 @@ export function MorphChatSettingsScreen({
                   <SettingsItem
                     icon="shield-outline"
                     title={t("chat.settings.privacyLocal")}
-                    onPress={() => setPage("chatbot")}
+                    subtitle={
+                      prefs.privacyLocalOnly
+                        ? t("chat.settings.privacyOn")
+                        : t("chat.settings.privacyOff")
+                    }
+                    onPress={() => setPage("data")}
                   />
                   <SettingsItem
                     icon="folder-outline"
                     title={t("chat.settings.dataGroup")}
-                    subtitle={t("chat.settings.limitHint", { remaining: remainingLabel })}
-                    onPress={() => void exportChats()}
+                    subtitle={t("chat.settings.dataHubHint", {
+                      chats: counts.chat_threads,
+                      looks: counts.looks,
+                    })}
+                    onPress={() => setPage("data")}
                     last
                   />
                 </SettingsSection>
@@ -746,6 +807,181 @@ export function MorphChatSettingsScreen({
           <MorphReportProblemView onOpenTicket={(id) => openTicket(id, "report")} />
         ) : null}
 
+        {page === "limits" && prefs ? (
+          <>
+            {typeof remaining === "number" && remaining <= 3 ? (
+              <View style={styles.warnBanner}>
+                <Ionicons name="warning-outline" size={18} color={WARN} />
+                <Text style={styles.warnText}>
+                  {t("chat.settings.limitWarn", { remaining, limit })}
+                </Text>
+              </View>
+            ) : (
+              <View style={styles.okBanner}>
+                <Ionicons name="checkmark-circle-outline" size={18} color="#30D158" />
+                <Text style={styles.okText}>
+                  {t("chat.settings.limitOk", { remaining: remainingLabel, limit })}
+                </Text>
+              </View>
+            )}
+            <SettingsSection title={t("chat.settings.limitTitle")}>
+              <View style={styles.meterBlock}>
+                <Text style={styles.itemTitle}>
+                  {t("chat.settings.limitValue", { used: usedLabel, limit })}
+                </Text>
+                <Text style={styles.itemSubtitle}>
+                  {t("chat.settings.limitHint", { remaining: remainingLabel })}
+                </Text>
+                <View style={styles.meterTrack}>
+                  <View
+                    style={[
+                      styles.meterFill,
+                      {
+                        width: `${usagePct}%`,
+                        backgroundColor: usagePct >= 90 ? DESTRUCTIVE : usagePct >= 70 ? WARN : ACCENT_BLUE,
+                      },
+                    ]}
+                  />
+                </View>
+                <Text style={styles.meterPct}>{usagePct}%</Text>
+              </View>
+            </SettingsSection>
+            <SettingsSection>
+              <PrefToggle
+                title={t("chat.settings.limitNotify")}
+                subtitle={t("chat.settings.limitNotifyHint")}
+                value={prefs.limitNotify}
+                onChange={(v) => void patchPrefs({ limitNotify: v })}
+                last
+              />
+            </SettingsSection>
+            <SettingsSection>
+              <SettingsItem
+                icon="sparkles"
+                title={t("chat.settings.upgradePlan")}
+                subtitle={t("chat.settings.subscriptionHint")}
+                onPress={onOpenSubscription}
+                titleColor={ACCENT_BLUE}
+                iconColor={ACCENT_BLUE}
+                last
+              />
+            </SettingsSection>
+          </>
+        ) : null}
+
+        {page === "data" && prefs ? (
+          <>
+            <Text style={styles.pageLead}>{t("chat.settings.dataLead")}</Text>
+            <SettingsSection title={t("chat.settings.dataServer")}>
+              <SettingsItem
+                icon="chatbubbles-outline"
+                title={t("chat.settings.dataChats")}
+                value={String(counts.chat_threads)}
+                showChevron={false}
+              />
+              <SettingsItem
+                icon="images-outline"
+                title={t("chat.settings.dataLooks")}
+                value={String(counts.looks)}
+                showChevron={false}
+              />
+              <SettingsItem
+                icon="camera-outline"
+                title={t("chat.settings.dataSelfies")}
+                value={String(counts.selfies)}
+                showChevron={false}
+              />
+              <SettingsItem
+                icon="share-outline"
+                title={t("chat.settings.dataShares")}
+                value={String(counts.shares)}
+                showChevron={false}
+                last
+              />
+            </SettingsSection>
+            {!privacySynced ? (
+              <Text style={styles.syncHint}>{t("chat.settings.dataOffline")}</Text>
+            ) : null}
+            <SettingsSection title={t("chat.settings.privacyGroup")}>
+              <PrefToggle
+                title={t("chat.settings.privacyLocal")}
+                subtitle={t("chat.settings.privacyLocalHint")}
+                value={prefs.privacyLocalOnly}
+                onChange={togglePrivacyLocal}
+              />
+              <PrefToggle
+                title={t("chat.settings.saveHistory")}
+                subtitle={t("chat.settings.saveHistoryHint")}
+                value={prefs.saveHistory}
+                onChange={(v) => void patchPrefs({ saveHistory: v })}
+              />
+              <PrefToggle
+                title={t("chat.settings.persistLooks")}
+                subtitle={t("chat.settings.persistLooksHint")}
+                value={prefs.persistLooks}
+                onChange={(v) => void patchPrefs({ persistLooks: v })}
+                last
+              />
+            </SettingsSection>
+            <SettingsSection title={t("chat.settings.dataActions")}>
+              <SettingsItem
+                icon="download-outline"
+                title={t("chat.settings.exportChats")}
+                subtitle={t("chat.settings.exportChatsHint", { count: threadCount })}
+                onPress={() => void exportChats()}
+              />
+              <SettingsItem
+                icon="trash-outline"
+                title={t("chat.settings.deleteServerChats")}
+                subtitle={t("chat.settings.deleteServerChatsHint", {
+                  count: counts.chat_threads,
+                })}
+                titleColor={DESTRUCTIVE}
+                iconColor={DESTRUCTIVE}
+                onPress={() =>
+                  wipeServerKind(
+                    "chats",
+                    t("chat.settings.deleteServerChats"),
+                    t("chat.settings.deleteServerChatsBody"),
+                  )
+                }
+              />
+              <SettingsItem
+                icon="trash-outline"
+                title={t("chat.settings.deleteLooks")}
+                subtitle={t("chat.settings.deleteLooksHint", { count: counts.looks })}
+                titleColor={DESTRUCTIVE}
+                iconColor={DESTRUCTIVE}
+                onPress={() =>
+                  wipeServerKind(
+                    "looks",
+                    t("chat.settings.deleteLooks"),
+                    t("chat.settings.deleteLooksBody"),
+                  )
+                }
+              />
+              <SettingsItem
+                icon="trash-outline"
+                title={t("chat.settings.deleteSelfies")}
+                subtitle={t("chat.settings.deleteSelfiesHint", { count: counts.selfies })}
+                titleColor={DESTRUCTIVE}
+                iconColor={DESTRUCTIVE}
+                onPress={() =>
+                  wipeServerKind(
+                    "selfies",
+                    t("chat.settings.deleteSelfies"),
+                    t("chat.settings.deleteSelfiesBody"),
+                  )
+                }
+                last
+              />
+            </SettingsSection>
+            {dataBusy ? (
+              <ActivityIndicator color="#FFFFFF" style={{ marginTop: 12 }} />
+            ) : null}
+          </>
+        ) : null}
+
         {page === "chatbot" && prefs ? (
           <SettingsSection>
             <PrefToggle
@@ -755,28 +991,10 @@ export function MorphChatSettingsScreen({
               onChange={(v) => void patchPrefs({ streaming: v })}
             />
             <PrefToggle
-              title={t("chat.settings.limitNotify")}
-              subtitle={t("chat.settings.limitNotifyHint")}
-              value={prefs.limitNotify}
-              onChange={(v) => void patchPrefs({ limitNotify: v })}
-            />
-            <PrefToggle
               title={t("chat.settings.useContext")}
               subtitle={t("chat.settings.useContextHint")}
               value={prefs.useTryOnContext}
               onChange={(v) => void patchPrefs({ useTryOnContext: v })}
-            />
-            <PrefToggle
-              title={t("chat.settings.saveHistory")}
-              subtitle={t("chat.settings.saveHistoryHint")}
-              value={prefs.saveHistory}
-              onChange={(v) => void patchPrefs({ saveHistory: v })}
-            />
-            <PrefToggle
-              title={t("chat.settings.privacyLocal")}
-              subtitle={t("chat.settings.privacyLocalHint")}
-              value={prefs.privacyLocalOnly}
-              onChange={(v) => void patchPrefs({ privacyLocalOnly: v })}
               last
             />
           </SettingsSection>
@@ -1026,6 +1244,75 @@ const styles = StyleSheet.create({
     backgroundColor: "#2C2C2E",
     alignItems: "center",
     justifyContent: "center",
+  },
+  warnBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginBottom: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderRadius: 14,
+    backgroundColor: "rgba(255, 159, 10, 0.16)",
+  },
+  warnText: {
+    flex: 1,
+    fontSize: 14,
+    lineHeight: 19,
+    color: WARN,
+    fontWeight: "600",
+  },
+  okBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginBottom: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderRadius: 14,
+    backgroundColor: "rgba(48, 209, 88, 0.12)",
+  },
+  okText: {
+    flex: 1,
+    fontSize: 14,
+    lineHeight: 19,
+    color: "#30D158",
+    fontWeight: "500",
+  },
+  meterBlock: {
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    gap: 8,
+  },
+  meterTrack: {
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#2C2C2E",
+    overflow: "hidden",
+    marginTop: 6,
+  },
+  meterFill: {
+    height: 8,
+    borderRadius: 4,
+  },
+  meterPct: {
+    fontSize: 13,
+    color: MUTED,
+    marginTop: 2,
+  },
+  pageLead: {
+    marginBottom: 16,
+    marginHorizontal: 4,
+    fontSize: 14,
+    lineHeight: 20,
+    color: MUTED,
+  },
+  syncHint: {
+    marginTop: -12,
+    marginBottom: 16,
+    marginHorizontal: 12,
+    fontSize: 12,
+    color: MUTED,
   },
   pressed: {
     opacity: 0.72,

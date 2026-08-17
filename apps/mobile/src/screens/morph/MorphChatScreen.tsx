@@ -5,7 +5,6 @@ import { StatusBar } from "expo-status-bar";
 import { useCallback, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   BackHandler,
   FlatList,
   KeyboardAvoidingView,
@@ -29,8 +28,10 @@ import { ChatMenuDrawer } from "../../components/morph/chat/ChatMenuDrawer";
 import { ChatNotice } from "../../components/morph/chat/ChatNotice";
 import { MorphChatWelcome } from "../../components/morph/chat/MorphChatWelcome";
 import { QuickPromptChips } from "../../components/morph/chat/QuickPromptChips";
+import { VoiceSessionOverlay } from "../../components/morph/chat/VoiceSessionOverlay";
 import { TAB_DOCK_CLEARANCE, useHideTabBarWhen } from "../../hooks/useHideTabBar";
 import { MORPH_QUICK_PROMPT_IDS, useMorphChat } from "../../hooks/useMorphChat";
+import { useMorphVoice } from "../../hooks/useMorphVoice";
 import { useMorphLimitGate } from "../../hooks/useMorphLimitGate";
 import { writeAppShell, writeLastShellTab } from "../../lib/app-shell";
 import { MORPH_CHAT_DEBUG } from "../../lib/morph-debug";
@@ -56,10 +57,8 @@ export function MorphChatScreen() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [voiceEnabled, setVoiceEnabled] = useState(false);
+  const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [paywall, setPaywall] = useState<PaywallReason | null>(null);
-
-  useHideTabBarWhen(chatOpen || paywall != null || settingsOpen);
 
   useFocusEffect(
     useCallback(() => {
@@ -91,31 +90,6 @@ export function MorphChatScreen() {
     consumeMorphReturn();
     setPaywall(null);
   }, []);
-
-  useFocusEffect(
-    useCallback(() => {
-      const sub = BackHandler.addEventListener("hardwareBackPress", () => {
-        if (paywall) {
-          closePaywall();
-          return true;
-        }
-        if (settingsOpen) {
-          setSettingsOpen(false);
-          return true;
-        }
-        if (menuOpen) {
-          setMenuOpen(false);
-          return true;
-        }
-        if (chatOpen) {
-          setChatOpen(false);
-          return true;
-        }
-        return false;
-      });
-      return () => sub.remove();
-    }, [chatOpen, closePaywall, menuOpen, paywall, settingsOpen]),
-  );
 
   useFocusEffect(
     useCallback(() => {
@@ -161,26 +135,6 @@ export function MorphChatScreen() {
   const name = displayName(user);
   const avatarUrl = resolveMediaUrl(user?.avatar, { width: 120 });
 
-  const onVoice = useCallback(() => {
-    Alert.alert(t("chat.settings.voiceInput"), t("chat.settings.voiceSoon"));
-  }, [t]);
-
-  const composer = useMemo(
-    () => ({
-      value: chat.input,
-      onChange: chat.setInput,
-      disabled: chat.sending,
-      sending: chat.sending,
-      placeholder: t("chat.home.askAnything"),
-      sendA11y: t("chat.sendA11y"),
-      cameraA11y: t("chat.home.cameraA11y"),
-      voiceA11y: t("chat.settings.voiceInput"),
-      voiceEnabled,
-      onVoice,
-    }),
-    [chat.input, chat.sending, chat.setInput, onVoice, t, voiceEnabled],
-  );
-
   const scrollToEnd = useCallback(() => {
     requestAnimationFrame(() => {
       listRef.current?.scrollToEnd({ animated: true });
@@ -201,6 +155,69 @@ export function MorphChatScreen() {
       return false;
     },
     [gate, isAuthenticated, showPaywall],
+  );
+
+  const voice = useMorphVoice({
+    sendText: chat.sendText,
+    lastReply: chat.lastReply,
+    requireAccess,
+    onLimit: (draft) => showPaywall("limit", draft),
+    onOpenChat: () => {
+      setChatOpen(true);
+      scrollToEnd();
+    },
+  });
+
+  const voiceOverlayOpen = voice.live || voice.phase !== "idle" || Boolean(voice.error);
+  useHideTabBarWhen(chatOpen || paywall != null || settingsOpen || voiceOverlayOpen);
+
+  useFocusEffect(
+    useCallback(() => {
+      const sub = BackHandler.addEventListener("hardwareBackPress", () => {
+        if (paywall) {
+          closePaywall();
+          return true;
+        }
+        if (voice.phase !== "idle" || voice.live) {
+          void voice.cancelSession();
+          return true;
+        }
+        if (settingsOpen) {
+          setSettingsOpen(false);
+          return true;
+        }
+        if (menuOpen) {
+          setMenuOpen(false);
+          return true;
+        }
+        if (chatOpen) {
+          setChatOpen(false);
+          return true;
+        }
+        return false;
+      });
+      return () => sub.remove();
+    }, [chatOpen, closePaywall, menuOpen, paywall, settingsOpen, voice.cancelSession, voice.live, voice.phase]),
+  );
+
+  const composer = useMemo(
+    () => ({
+      value: chat.input,
+      onChange: chat.setInput,
+      disabled: chat.sending || voice.busy,
+      sending: chat.sending,
+      placeholder: t("chat.home.askAnything"),
+      sendA11y: t("chat.sendA11y"),
+      cameraA11y: t("chat.home.cameraA11y"),
+      voiceA11y: t("chat.settings.voiceInput"),
+      voiceEnabled,
+      voiceState: (voice.recording ? "recording" : voice.busy ? "busy" : "idle") as
+        | "idle"
+        | "recording"
+        | "busy",
+      onVoice: () => void voice.toggleMic(),
+    }),
+    [chat.input, chat.sending, chat.setInput, t, voice, voiceEnabled],
   );
 
   const onSend = useCallback(async () => {
@@ -390,6 +407,37 @@ export function MorphChatScreen() {
         onOpenSubscription={openSubscriptionFromSettings}
         onOpenReferral={openReferralFromSettings}
         onSaveHistoryOff={() => void chat.clearAllChats()}
+        onPreviewVoice={(id) => void voice.previewVoice(id, t("chat.settings.voiceSample"))}
+        voicePreviewing={voice.previewing}
+      />
+    </Modal>
+  );
+
+  const voiceOverlay = (
+    <Modal
+      visible={voiceOverlayOpen}
+      animationType="fade"
+      onRequestClose={() => void voice.cancelSession()}
+    >
+      <VoiceSessionOverlay
+        visible
+        phase={voice.phase}
+        metering={voice.metering}
+        transcript={voice.transcript}
+        error={voice.error}
+        title={t("chat.settings.voiceLiveTitle")}
+        listeningLabel={t("chat.settings.voiceListening")}
+        transcribingLabel={t("chat.settings.voiceTranscribing")}
+        thinkingLabel={t("chat.typing")}
+        speakingLabel={t("chat.settings.voiceSpeaking")}
+        tapToStop={t("chat.settings.voiceTapHint")}
+        closeA11y={t("chat.errorDismissA11y")}
+        onClose={() => void voice.cancelSession()}
+        onPrimary={() => {
+          if (voice.phase === "recording") void voice.stopListening();
+          else if (voice.phase === "speaking") void voice.interruptSpeech();
+          else void voice.cancelSession();
+        }}
       />
     </Modal>
   );
@@ -451,6 +499,7 @@ export function MorphChatScreen() {
         {menuDrawer}
         {paywallModal}
         {settingsModal}
+        {voiceOverlay}
       </KeyboardAvoidingView>
     );
   }
@@ -519,6 +568,7 @@ export function MorphChatScreen() {
       {menuDrawer}
       {paywallModal}
       {settingsModal}
+      {voiceOverlay}
     </View>
   );
 }

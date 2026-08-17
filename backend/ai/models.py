@@ -97,6 +97,8 @@ class AiGenerationUsage(models.Model):
         STUDIO = "studio", "Studio edit"
         INGREDIENT = "ingredient", "Ingredient scan"
         CHAT = "chat", "Morf AI chat"
+        VOICE_STT = "voice_stt", "Morf AI voice STT"
+        VOICE_TTS = "voice_tts", "Morf AI voice TTS"
 
     class Status(models.TextChoices):
         SUCCESS = "success", "Success"
@@ -354,3 +356,32 @@ class MorphAiChatMessage(models.Model):
 
     def __str__(self) -> str:
         return f"MorphAiChatMessage({self.thread_id}, {self.role})"
+
+
+class MorphAiUserPrefs(models.Model):
+    """Foydalanuvchi Morph AI maxfiylik va limit sozlamalari."""
+
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="morph_ai_prefs",
+    )
+    privacy_local_only = models.BooleanField(
+        default=False,
+        help_text="True bo'lsa chat tarixi serverga yozilmaydi va Gemini ga yuborilmaydi.",
+    )
+    save_chat_history = models.BooleanField(default=True)
+    persist_looks = models.BooleanField(
+        default=True,
+        help_text="False bo'lsa try-on/studio/selfie tarixi serverga yozilmaydi.",
+    )
+    limit_notify = models.BooleanField(default=True)
+    use_tryon_context = models.BooleanField(default=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Morph AI user prefs"
+        verbose_name_plural = "Morph AI user prefs"
+
+    def __str__(self) -> str:
+        return f"MorphAiUserPrefs({self.user_id})"

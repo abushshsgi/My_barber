@@ -6,6 +6,7 @@ import {
   MorphPlanLimitError,
   clearMorphChatThreads,
   deleteMorphChatThread,
+  fetchMorphChatLimits,
   fetchMorphChatThreads,
   sendMorphChatMessage,
   streamMorphChatMessage,
@@ -19,6 +20,7 @@ import { createPacedWriter } from "../lib/chat-pace";
 import {
   DEFAULT_MORPH_CHAT_PREFS,
   readMorphChatPrefs,
+  shouldPersistChatToServer,
   writeMorphChatLimitsSnapshot,
   type MorphChatPrefs,
 } from "../lib/morph-chat-prefs";
@@ -151,10 +153,6 @@ function mergeThreads(local: MorphChatThread[], remote: MorphChatThread[]): Morp
     .slice(0, 40);
 }
 
-function shouldPersistToServer(prefs: MorphChatPrefs): boolean {
-  return Boolean(prefs.saveHistory) && !prefs.privacyLocalOnly;
-}
-
 export function useMorphChat() {
   const { t, i18n } = useTranslation();
   const session = useMorphSession();
@@ -184,6 +182,7 @@ export function useMorphChat() {
   const threadsRef = useRef<MorphChatThread[]>([]);
   const prefsRef = useRef<MorphChatPrefs>({ ...DEFAULT_MORPH_CHAT_PREFS });
   const untitled = t("chat.history.untitled");
+  const lastReplyRef = useRef("");
   const [limitWarning, setLimitWarning] = useState<string | null>(null);
 
   const context = useMemo(() => buildContextFromSession(session), [session]);
@@ -304,7 +303,7 @@ export function useMorphChat() {
           }
         }
 
-        if (shouldPersistToServer(prefs)) {
+        if (shouldPersistChatToServer(prefs)) {
           try {
             const remoteRows = await fetchMorphChatThreads({ messages: true });
             const remoteLocal = remoteRows
@@ -329,6 +328,28 @@ export function useMorphChat() {
           }
         }
 
+        try {
+          const remoteLimits = await fetchMorphChatLimits();
+          if (!cancelled) {
+            setLimits(remoteLimits);
+            void writeMorphChatLimitsSnapshot(remoteLimits);
+            if (
+              prefs.limitNotify &&
+              typeof remoteLimits.daily_remaining === "number" &&
+              remoteLimits.daily_remaining <= 3
+            ) {
+              setLimitWarning(
+                t("chat.settings.limitWarn", {
+                  remaining: remoteLimits.daily_remaining,
+                  limit: remoteLimits.daily_limit,
+                }),
+              );
+            }
+          }
+        } catch {
+          /* offline */
+        }
+
         setThreads(parsedThreads);
         threadsRef.current = parsedThreads;
         if (prefs.saveHistory && parsedThreads.length) {
@@ -350,7 +371,7 @@ export function useMorphChat() {
   );
 
   const sendText = useCallback(
-    async (text: string) => {
+    async (text: string, options?: { voice?: boolean }) => {
       const trimmed = text.trim();
       if (!trimmed || sendingRef.current) return;
       sendingRef.current = true;
@@ -414,9 +435,10 @@ export function useMorphChat() {
           ...(prefs.adviceGender !== "auto"
             ? { advice_gender: prefs.adviceGender }
             : {}),
+          ...(options?.voice ? { voice_mode: true } : {}),
         };
         const historyPayload = prefs.privacyLocalOnly ? [] : history.slice(-16);
-        const persist = shouldPersistToServer(prefs);
+        const persist = shouldPersistChatToServer(prefs);
 
         let finalText = "";
         let resLimits: MorphChatLimits;
@@ -467,6 +489,7 @@ export function useMorphChat() {
           role: "assistant",
           content: finalText,
         };
+        lastReplyRef.current = finalText;
         if (activeThreadIdRef.current === threadId) {
           const withReply = persistable(
             messagesRef.current.map((m) => (m.id === assistantMsg.id ? doneMsg : m)),
@@ -571,9 +594,7 @@ export function useMorphChat() {
         setError(null);
         setInput("");
       }
-      if (shouldPersistToServer(prefsRef.current)) {
-        void deleteMorphChatThread(id).catch(() => undefined);
-      }
+      void deleteMorphChatThread(id).catch(() => undefined);
     },
     [persistThreads],
   );
@@ -601,9 +622,7 @@ export function useMorphChat() {
       LEGACY_THREADS_KEY,
       MESSAGES_KEY,
     ]);
-    if (shouldPersistToServer(prefsRef.current)) {
-      void clearMorphChatThreads().catch(() => undefined);
-    }
+    void clearMorphChatThreads().catch(() => undefined);
   }, []);
 
   const reloadPrefs = useCallback(async () => {
@@ -632,6 +651,7 @@ export function useMorphChat() {
     threads: visibleThreads,
     activeThreadId,
     sendText,
+    lastReply: () => lastReplyRef.current,
     sendQuickPrompt,
     retryLast,
     clearChat,

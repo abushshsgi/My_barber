@@ -6,6 +6,8 @@ from django.db.models import F
 from django.http import StreamingHttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
+from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
+import base64
 import json
 import logging
 
@@ -64,6 +66,15 @@ from .chat_persist import (
     delete_user_thread,
     serialize_thread,
     upsert_thread_from_client,
+)
+from .privacy_prefs import (
+    apply_prefs_patch,
+    chat_limits_payload,
+    get_or_create_prefs,
+    serialize_privacy,
+    user_allows_chat_persist,
+    user_allows_look_persist,
+    wipe_user_morph_data,
 )
 
 logger = logging.getLogger(__name__)
@@ -664,6 +675,45 @@ def _chat_thread_id(request) -> str:
     return str(request.data.get("thread_id") or request.data.get("threadId") or "").strip()[:64]
 
 
+def _voice_feature_blocked(user) -> Response | None:
+    """Ovoz STT/TTS — obuna kerak, kunlik chat limitini yemaydi."""
+    from ai.models import MorphAiSettings
+    from subscriptions.services import check_morph_entitlement
+
+    s = MorphAiSettings.load()
+    if not s.analyze_enabled:
+        return morph_generation_blocked_response("Morph AI hozir ishlamayapti.")
+    blocked = check_morph_entitlement(user=user, kind="chat")
+    if blocked:
+        return morph_generation_blocked_response(blocked)
+    return None
+
+
+def _read_request_audio(request) -> tuple[bytes, str]:
+    uploaded = request.FILES.get("audio") or request.FILES.get("file")
+    if uploaded is not None:
+        data = uploaded.read()
+        mime = (
+            getattr(uploaded, "content_type", None)
+            or request.data.get("mime")
+            or request.data.get("mime_type")
+            or "audio/mp4"
+        )
+        return data, str(mime)
+    raw_b64 = request.data.get("audio_base64") or request.data.get("audio")
+    if isinstance(raw_b64, str) and raw_b64.strip():
+        payload = raw_b64.strip()
+        if "base64," in payload:
+            payload = payload.split("base64,", 1)[1]
+        try:
+            data = base64.b64decode(payload, validate=False)
+        except Exception as exc:
+            raise AiStyleError("Ovoz fayli o'qilmadi.", 400) from exc
+        mime = request.data.get("mime") or request.data.get("mime_type") or "audio/mp4"
+        return data, str(mime)
+    raise AiStyleError("Ovoz faylini yuboring.", 400)
+
+
 class AiMorphChatView(UnthrottledAPIView):
     """POST { message, history?, context?, stream?, thread_id?, persist? } — Morf AI chatbot."""
 
@@ -692,7 +742,13 @@ class AiMorphChatView(UnthrottledAPIView):
         context_raw = request.data.get("context")
         context = context_raw if isinstance(context_raw, dict) else None
         thread_id = _chat_thread_id(request)
-        persist = _chat_should_persist(request) and bool(thread_id)
+        persist = (
+            _chat_should_persist(request)
+            and bool(thread_id)
+            and user_allows_chat_persist(user)
+        )
+        if not user_allows_chat_persist(user):
+            history = None
         accept = (request.headers.get("Accept") or "").lower()
         wants_stream = bool(request.data.get("stream")) or "text/event-stream" in accept
 
@@ -728,7 +784,7 @@ class AiMorphChatView(UnthrottledAPIView):
                 user_id=user.pk,
                 kind="chat",
                 status="success",
-                prompt=str(usage.get("prompt") or message)[:500],
+                prompt="" if not persist else str(usage.get("prompt") or message)[:500],
                 model=str(usage.get("model") or ""),
                 provider=str(usage.get("provider") or ""),
                 prompt_tokens=int(usage.get("prompt_tokens") or 0),
@@ -789,7 +845,7 @@ class AiMorphChatView(UnthrottledAPIView):
                             user_id=user.pk,
                             kind="chat",
                             status="success",
-                            prompt=str(usage.get("prompt") or message)[:500],
+                            prompt="" if not persist else str(usage.get("prompt") or message)[:500],
                             model=str(usage.get("model") or ""),
                             provider=str(usage.get("provider") or ""),
                             prompt_tokens=int(usage.get("prompt_tokens") or 0),
@@ -846,6 +902,119 @@ class AiMorphChatView(UnthrottledAPIView):
         return response
 
 
+class AiMorphChatVoiceVoicesView(UnthrottledAPIView):
+    """GET — erkak/ayol Gemini TTS ovozlari."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = _require_customer_user(request)
+        if isinstance(user, Response):
+            return user
+        from ai.services.gemini_voice import list_morph_voices
+
+        return Response(list_morph_voices())
+
+
+class AiMorphChatVoiceTranscribeView(UnthrottledAPIView):
+    """POST multipart/json — nutqni matnga (Gemini STT)."""
+
+    permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
+
+    def post(self, request):
+        user = _require_customer_user(request)
+        if isinstance(user, Response):
+            return user
+        blocked = _voice_feature_blocked(user)
+        if blocked:
+            return blocked
+        lang = str(request.data.get("lang") or request.data.get("language") or "auto").strip()
+        try:
+            from ai.services.gemini_voice import transcribe_audio
+
+            audio_bytes, mime = _read_request_audio(request)
+            result = transcribe_audio(audio_bytes=audio_bytes, mime_type=mime, lang=lang)
+        except AiStyleError as exc:
+            record_ai_generation(
+                user_id=user.pk,
+                kind="voice_stt",
+                status="failed",
+                error_detail=exc.message,
+            )
+            return Response({"detail": exc.message}, status=exc.status)
+
+        usage = result.pop("usage", None) or {}
+        record_ai_generation(
+            user_id=user.pk,
+            kind="voice_stt",
+            status="success",
+            prompt=str(usage.get("prompt") or result.get("text") or "")[:500],
+            model=str(usage.get("model") or ""),
+            provider=str(usage.get("provider") or ""),
+            prompt_tokens=int(usage.get("prompt_tokens") or 0),
+            candidates_tokens=int(usage.get("candidates_tokens") or 0),
+            thoughts_tokens=int(usage.get("thoughts_tokens") or 0),
+            total_tokens=int(usage.get("total_tokens") or 0),
+            cost_usd=usage.get("cost_usd") or 0,
+            tokens_estimated=bool(usage.get("tokens_estimated")),
+            latency_ms=int(usage.get("latency_ms") or 0),
+        )
+        return Response(result)
+
+
+class AiMorphChatVoiceSpeakView(UnthrottledAPIView):
+    """POST { text, voice_id?, gender?, lang? } — matnni ovozga (Gemini TTS)."""
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user = _require_customer_user(request)
+        if isinstance(user, Response):
+            return user
+        blocked = _voice_feature_blocked(user)
+        if blocked:
+            return blocked
+        text = str(request.data.get("text") or "").strip()
+        if not text:
+            return Response({"detail": "Matn yuboring."}, status=400)
+        try:
+            from ai.services.gemini_voice import synthesize_speech
+
+            result = synthesize_speech(
+                text=text,
+                voice_id=str(request.data.get("voice_id") or request.data.get("voice") or ""),
+                gender=str(request.data.get("gender") or ""),
+                lang=str(request.data.get("lang") or request.data.get("language") or ""),
+            )
+        except AiStyleError as exc:
+            record_ai_generation(
+                user_id=user.pk,
+                kind="voice_tts",
+                status="failed",
+                error_detail=exc.message,
+            )
+            return Response({"detail": exc.message}, status=exc.status)
+
+        usage = result.pop("usage", None) or {}
+        record_ai_generation(
+            user_id=user.pk,
+            kind="voice_tts",
+            status="success",
+            prompt=str(usage.get("prompt") or "")[:500],
+            model=str(usage.get("model") or ""),
+            provider=str(usage.get("provider") or ""),
+            prompt_tokens=int(usage.get("prompt_tokens") or 0),
+            candidates_tokens=int(usage.get("candidates_tokens") or 0),
+            thoughts_tokens=int(usage.get("thoughts_tokens") or 0),
+            total_tokens=int(usage.get("total_tokens") or 0),
+            cost_usd=usage.get("cost_usd") or 0,
+            tokens_estimated=bool(usage.get("tokens_estimated")),
+            latency_ms=int(usage.get("latency_ms") or 0),
+        )
+        return Response(result)
+
+
 class MorphAiChatThreadListView(UnthrottledAPIView):
     """GET — chat history; DELETE — barcha threadlarni o'chirish; PUT — sync upsert."""
 
@@ -872,6 +1041,14 @@ class MorphAiChatThreadListView(UnthrottledAPIView):
         user = _require_customer_user(request)
         if isinstance(user, Response):
             return user
+        if not user_allows_chat_persist(user):
+            return Response(
+                {
+                    "detail": "Tarixni serverga yubormaslik yoqilgan.",
+                    "code": "privacy_local_only",
+                },
+                status=403,
+            )
         client_id = str(request.data.get("id") or request.data.get("thread_id") or "").strip()
         if not client_id:
             return Response({"detail": "thread id kerak."}, status=400)
@@ -951,6 +1128,9 @@ class AiStyleHistoryListCreateView(UnthrottledAPIView):
         if isinstance(user, Response):
             return user
 
+        if not user_allows_look_persist(user):
+            return Response({"ok": True, "stored": False, "code": "privacy_local_only"})
+
         serializer = AiStyleHistoryCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
@@ -997,6 +1177,13 @@ class AiStyleHistoryListCreateView(UnthrottledAPIView):
         trim_user_history(user)
         out = AiStyleHistoryEntrySerializer(entry, context={"request": request})
         return Response(out.data, status=status.HTTP_201_CREATED)
+
+    def delete(self, request):
+        user = _require_customer_user(request)
+        if isinstance(user, Response):
+            return user
+        deleted = wipe_user_morph_data(user_id=user.pk, kind="selfies")
+        return Response({"ok": True, "deleted": deleted["selfies"]})
 
 
 class MorphAiLookShareCreateView(UnthrottledAPIView):
@@ -1104,6 +1291,9 @@ class MorphAiGenerationListCreateView(UnthrottledAPIView):
         if not after_raw:
             return Response({"detail": "After rasm kerak."}, status=400)
 
+        if not user_allows_look_persist(user):
+            return Response({"ok": True, "stored": False, "code": "privacy_local_only"})
+
         from ai.tryon_persist import persist_tryon_generation
 
         # Try-on allaqachon serverda saqlangan bo‘lishi mumkin — dedupe bilan yozamiz.
@@ -1120,6 +1310,74 @@ class MorphAiGenerationListCreateView(UnthrottledAPIView):
 
         out = MorphAiGenerationSerializer(entry, context={"request": request})
         return Response(out.data, status=status.HTTP_201_CREATED)
+
+    def delete(self, request):
+        user = _require_customer_user(request)
+        if isinstance(user, Response):
+            return user
+        deleted = wipe_user_morph_data(user_id=user.pk, kind="looks")
+        return Response({"ok": True, "deleted": deleted["looks"]})
+
+
+class MorphAiPrivacyView(UnthrottledAPIView):
+    """GET/PATCH — Morph AI maxfiylik, limit va ma'lumotlar hisobi."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = _require_customer_user(request)
+        if isinstance(user, Response):
+            return user
+        return Response(serialize_privacy(user))
+
+    def patch(self, request):
+        user = _require_customer_user(request)
+        if isinstance(user, Response):
+            return user
+        prefs = get_or_create_prefs(user)
+        allowed_before = user_allows_chat_persist(user)
+        payload = dict(request.data or {})
+        nested = payload.get("prefs")
+        if isinstance(nested, dict):
+            payload = {**payload, **nested}
+        prefs = apply_prefs_patch(prefs, payload)
+        allowed_after = bool(prefs.save_chat_history) and not bool(prefs.privacy_local_only)
+        if allowed_before and not allowed_after:
+            wipe_user_morph_data(user_id=user.pk, kind="chats")
+        return Response(serialize_privacy(user))
+
+
+class MorphAiPrivacyDataView(UnthrottledAPIView):
+    """DELETE — serverdagi Morph ma'lumotlarini o'chirish. { kind: chats|looks|selfies|shares|all }"""
+
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request):
+        user = _require_customer_user(request)
+        if isinstance(user, Response):
+            return user
+        kind = str(
+            request.data.get("kind")
+            or request.query_params.get("kind")
+            or "all"
+        ).strip()
+        try:
+            deleted = wipe_user_morph_data(user_id=user.pk, kind=kind)
+        except ValueError as exc:
+            return Response({"detail": str(exc)}, status=400)
+        return Response({"ok": True, "deleted": deleted, **serialize_privacy(user)})
+
+
+class MorphAiChatLimitsView(UnthrottledAPIView):
+    """GET — kunlik chat limiti (xabar yubormasdan)."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = _require_customer_user(request)
+        if isinstance(user, Response):
+            return user
+        return Response(chat_limits_payload(user.pk))
 
 
 class AiStyleStudioCatalogView(UnthrottledAPIView):

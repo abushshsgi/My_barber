@@ -102,6 +102,14 @@ def _format_prefs_block(context: dict[str, Any] | None) -> str:
             + ("erkak" if gender == "male" else "ayol")
             + " uslublari ustuvor."
         )
+    voice_raw = context.get("voice_mode")
+    voice_on = voice_raw is True or str(voice_raw).strip().lower() in ("1", "true", "yes")
+    if voice_on:
+        lines.append(
+            "- Ovozli suhbat: javobni og'zaki aytiladigan qilib yoz "
+            "(qisqa gaplar, markdown yo'q, ro'yxat o'rniga 1–2 jumla). "
+            "8 jumladan oshirma. Tabiiy suhbat ohangi."
+        )
     return "\n".join(lines) if len(lines) > 1 else ""
 
 

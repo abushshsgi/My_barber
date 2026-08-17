@@ -27,6 +27,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       infoPlist: {
         NSLocationWhenInUseUsageDescription:
           "Yaqin salonlarni ko'rsatish uchun joylashuvingiz kerak.",
+        NSMicrophoneUsageDescription:
+          "Morf AI bilan ovozli suhbat uchun mikrofon kerak.",
         ITSAppUsesNonExemptEncryption: false,
       },
       config: googleMapsApiKey
@@ -35,7 +37,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     },
     android: {
       package: "uz.mysaloon.app",
-      permissions: ["ACCESS_COARSE_LOCATION", "ACCESS_FINE_LOCATION"],
+      permissions: ["ACCESS_COARSE_LOCATION", "ACCESS_FINE_LOCATION", "RECORD_AUDIO"],
       adaptiveIcon: {
         backgroundColor: "#FFFFFF",
         foregroundImage: "./assets/android-icon-foreground.png",
@@ -51,6 +53,13 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       favicon: "./assets/favicon.png",
     },
     plugins: [
+      [
+        "expo-av",
+        {
+          microphonePermission:
+            "Morf AI bilan ovozli suhbat uchun mikrofon kerak.",
+        },
+      ],
       "expo-image",
       "expo-asset",
       "expo-font",

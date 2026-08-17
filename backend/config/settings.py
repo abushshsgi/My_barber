@@ -138,6 +138,10 @@ DGIS_MAPGL_KEY = (
 )
 # Scan + tahlil: faqat gemini-2.5-flash (AI Studio kalit)
 GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash").strip() or "gemini-2.5-flash"
+GEMINI_TTS_MODEL = (
+    os.environ.get("GEMINI_TTS_MODEL", "gemini-2.5-flash-preview-tts").strip()
+    or "gemini-2.5-flash-preview-tts"
+)
 
 # Try-on rasm: faqat Vertex AI + gemini-3.1-flash-lite-image
 VERTEX_PROJECT_ID = os.environ.get("VERTEX_PROJECT_ID", "").strip()

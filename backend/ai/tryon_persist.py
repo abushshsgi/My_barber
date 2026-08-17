@@ -35,6 +35,11 @@ def persist_tryon_generation(
     if not after_raw or not user or not getattr(user, "pk", None):
         return None
 
+    from ai.privacy_prefs import user_allows_look_persist
+
+    if not user_allows_look_persist(user):
+        return None
+
     style_id = (style_id or "").strip()[:64]
     title = (title or "").strip()[:160]
     persona_id = (persona_id or "").strip()[:64]
