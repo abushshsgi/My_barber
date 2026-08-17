@@ -9,6 +9,7 @@ import { OrdersScreen } from "../screens/profile/OrdersScreen";
 import { PersonalInfoScreen } from "../screens/profile/PersonalInfoScreen";
 import { ProfileHomeScreen } from "../screens/profile/ProfileHomeScreen";
 import { SecurityScreen } from "../screens/profile/SecurityScreen";
+import { HelpCenterScreen } from "../screens/profile/HelpCenterScreen";
 import { SettingsScreen } from "../screens/profile/SettingsScreen";
 import { SubscriptionsScreen } from "../screens/profile/SubscriptionsScreen";
 import { ReferralScreen } from "../screens/profile/ReferralScreen";
@@ -28,6 +29,7 @@ export type ProfileStackParamList = {
   Security: undefined;
   NotificationPrefs: undefined;
   Notifications: undefined;
+  HelpCenter: undefined;
   Subscriptions: undefined;
   MorphPaywall: { reason?: import("../lib/morph-return").PaywallReason; returnTo?: import("../lib/morph-return").MorphReturnTo } | undefined;
   Referrals: undefined;
@@ -71,6 +73,7 @@ export function ProfileStack() {
       <Stack.Screen name="PersonalInfo" component={PersonalInfoScreen} />
       <Stack.Screen name="Security" component={SecurityScreen} />
       <Stack.Screen name="NotificationPrefs" component={NotificationPrefsScreen} />
+      <Stack.Screen name="HelpCenter" component={HelpCenterScreen} />
       <Stack.Screen name="Notifications" component={NotificationsScreen} />
       <Stack.Screen name="Subscriptions" component={SubscriptionsScreen} />
       <Stack.Screen name="Referrals" component={ReferralScreen} />

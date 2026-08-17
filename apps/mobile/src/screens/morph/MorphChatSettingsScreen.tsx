@@ -14,12 +14,19 @@ import {
 } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import type { MorphChatLimits } from "../../api/ai";
+import type { MorphAiPrivacyDataCounts, MorphChatLimits } from "../../api/ai";
+import {
+  deleteMorphAiPrivacyData,
+  fetchMorphAiPrivacy,
+  fetchMorphChatLimits,
+  patchMorphAiPrivacy,
+} from "../../api/ai";
 import { displayName, initials } from "../../api/user";
 import { useAuth } from "../../auth/AuthContext";
 import type { MorphChatThread } from "../../hooks/useMorphChat";
 import {
   DEFAULT_MORPH_CHAT_PREFS,
+  defaultVoiceForGender,
   morphChatUsagePercent,
   readMorphChatLimitsSnapshot,
   readMorphChatPrefs,
@@ -28,7 +35,16 @@ import {
   type MorphChatPrefs,
   type MorphChatReplyLang,
   type MorphChatReplyStyle,
+  type MorphVoiceGenderPref,
+  type MorphVoiceId,
+  type MorphVoiceLangPref,
 } from "../../lib/morph-chat-prefs";
+import { MORPH_VOICE_CATALOG } from "../../lib/morph-voice";
+import {
+  MorphHelpCenterView,
+  MorphReportProblemView,
+  MorphTicketThreadView,
+} from "./MorphChatSupport";
 
 type Props = {
   limits: MorphChatLimits | null;
@@ -39,9 +55,11 @@ type Props = {
   onOpenSubscription: () => void;
   onOpenReferral?: () => void;
   onSaveHistoryOff?: () => void;
+  onPreviewVoice?: (voiceId: MorphVoiceId) => void;
+  voicePreviewing?: boolean;
 };
 
-type Page = "hub" | "reply" | "chatbot";
+type Page = "hub" | "reply" | "chatbot" | "voice" | "limits" | "data" | "help" | "report" | "ticket";
 
 type ChipOption<T extends string> = { value: T; label: string };
 
@@ -52,6 +70,14 @@ const MUTED = "#8E8E93";
 const ACCENT_BLUE = "#0A84FF";
 const AVATAR_TEAL = "#2A9B8F";
 const DESTRUCTIVE = "#FF453A";
+const WARN = "#FF9F0A";
+const EMPTY_COUNTS: MorphAiPrivacyDataCounts = {
+  chat_threads: 0,
+  chat_messages: 0,
+  looks: 0,
+  selfies: 0,
+  shares: 0,
+};
 
 function ChipRow<T extends string>({
   options,
@@ -229,13 +255,20 @@ export function MorphChatSettingsScreen({
   onOpenSubscription,
   onOpenReferral,
   onSaveHistoryOff,
+  onPreviewVoice,
+  voicePreviewing,
 }: Props) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const [page, setPage] = useState<Page>("hub");
+  const [ticketId, setTicketId] = useState<number | null>(null);
+  const [ticketFrom, setTicketFrom] = useState<"help" | "report">("help");
   const [prefs, setPrefs] = useState<MorphChatPrefs | null>(null);
   const [snap, setSnap] = useState<MorphChatLimits | null>(limits);
+  const [counts, setCounts] = useState<MorphAiPrivacyDataCounts>(EMPTY_COUNTS);
+  const [dataBusy, setDataBusy] = useState(false);
+  const [privacySynced, setPrivacySynced] = useState(false);
 
   const name = useMemo(() => displayName(user), [user]);
   const letters = useMemo(() => initials(name), [name]);
@@ -258,6 +291,20 @@ export function MorphChatSettingsScreen({
           daily_remaining: stored.daily_remaining,
         });
       }
+      try {
+        const remote = await fetchMorphAiPrivacy();
+        if (cancelled) return;
+        setCounts(remote.data);
+        setSnap(remote.limits);
+        setPrivacySynced(true);
+      } catch {
+        try {
+          const remoteLimits = await fetchMorphChatLimits();
+          if (!cancelled) setSnap(remoteLimits);
+        } catch {
+          /* offline */
+        }
+      }
     })();
     return () => {
       cancelled = true;
@@ -277,6 +324,26 @@ export function MorphChatSettingsScreen({
         return next;
       });
       if (patch.saveHistory === false) onSaveHistoryOff?.();
+      const serverPatch: Parameters<typeof patchMorphAiPrivacy>[0] = {};
+      if (patch.privacyLocalOnly !== undefined) {
+        serverPatch.privacy_local_only = patch.privacyLocalOnly;
+      }
+      if (patch.saveHistory !== undefined) serverPatch.save_chat_history = patch.saveHistory;
+      if (patch.persistLooks !== undefined) serverPatch.persist_looks = patch.persistLooks;
+      if (patch.limitNotify !== undefined) serverPatch.limit_notify = patch.limitNotify;
+      if (patch.useTryOnContext !== undefined) {
+        serverPatch.use_tryon_context = patch.useTryOnContext;
+      }
+      if (Object.keys(serverPatch).length) {
+        try {
+          const remote = await patchMorphAiPrivacy(serverPatch);
+          setCounts(remote.data);
+          setSnap(remote.limits);
+          setPrivacySynced(true);
+        } catch {
+          /* offline — local qoladi */
+        }
+      }
     },
     [onSaveHistoryOff],
   );
@@ -339,17 +406,41 @@ export function MorphChatSettingsScreen({
     { value: "male", label: t("chat.settings.genderMale") },
     { value: "female", label: t("chat.settings.genderFemale") },
   ];
+  const voiceGenderOptions: ChipOption<MorphVoiceGenderPref>[] = [
+    { value: "male", label: t("chat.settings.voiceMale") },
+    { value: "female", label: t("chat.settings.voiceFemale") },
+  ];
+  const voiceLangOptions: ChipOption<MorphVoiceLangPref>[] = [
+    { value: "auto", label: t("chat.settings.voiceLangAuto") },
+    { value: "uz", label: t("chat.settings.langUz") },
+    { value: "ru", label: t("chat.settings.langRu") },
+  ];
 
   const pageTitle =
     page === "reply"
       ? t("chat.settings.replyGroup")
       : page === "chatbot"
         ? t("chat.settings.aiGroup")
-        : t("chat.settings.title");
+        : page === "voice"
+          ? t("chat.settings.voiceInput")
+          : page === "help"
+          ? t("chat.settings.helpCenter")
+          : page === "report"
+            ? t("chat.settings.reportProblem")
+            : page === "ticket"
+              ? t("chat.support.ticketTitle")
+              : t("chat.settings.title");
 
   const onBack = () => {
     if (page === "hub") onClose();
+    else if (page === "ticket") setPage(ticketFrom);
     else setPage("hub");
+  };
+
+  const openTicket = (id: number, from: "help" | "report") => {
+    setTicketFrom(from);
+    setTicketId(id);
+    setPage("ticket");
   };
 
   return (
@@ -379,11 +470,17 @@ export function MorphChatSettingsScreen({
         </View>
       )}
 
+      {page === "ticket" && ticketId ? (
+        <View style={[styles.content, { flex: 1, paddingBottom: Math.max(insets.bottom, 12) }]}>
+          <MorphTicketThreadView ticketId={ticketId} />
+        </View>
+      ) : (
       <ScrollView
         contentContainerStyle={[
           styles.content,
           { paddingBottom: Math.max(insets.bottom, 28) },
         ]}
+        keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
         {page === "hub" ? (
@@ -453,9 +550,14 @@ export function MorphChatSettingsScreen({
                     onPress={() => setPage("chatbot")}
                   />
                   <SettingsItem
-                    icon="pulse-outline"
+                    icon="mic-outline"
                     title={t("chat.settings.voiceInput")}
-                    onPress={() => setPage("chatbot")}
+                    subtitle={
+                      prefs.voiceInput
+                        ? t("chat.settings.voiceOn")
+                        : t("chat.settings.voiceOff")
+                    }
+                    onPress={() => setPage("voice")}
                   />
                   <SettingsItem
                     icon="shield-outline"
@@ -475,16 +577,12 @@ export function MorphChatSettingsScreen({
                   <SettingsItem
                     icon="flag-outline"
                     title={t("chat.settings.reportProblem")}
-                    onPress={() =>
-                      Alert.alert(t("chat.settings.reportProblem"), t("chat.settings.helpSoon"))
-                    }
+                    onPress={() => setPage("report")}
                   />
                   <SettingsItem
                     icon="help-circle-outline"
                     title={t("chat.settings.helpCenter")}
-                    onPress={() =>
-                      Alert.alert(t("chat.settings.helpCenter"), t("chat.settings.helpSoon"))
-                    }
+                    onPress={() => setPage("help")}
                     last
                   />
                 </SettingsSection>
@@ -543,6 +641,111 @@ export function MorphChatSettingsScreen({
           </SettingsSection>
         ) : null}
 
+        {page === "voice" && prefs ? (
+          <>
+            <SettingsSection>
+              <PrefToggle
+                title={t("chat.settings.voiceInput")}
+                subtitle={t("chat.settings.voiceInputHint")}
+                value={prefs.voiceInput}
+                onChange={(v) => void patchPrefs({ voiceInput: v })}
+              />
+              <PrefToggle
+                title={t("chat.settings.autoSpeak")}
+                subtitle={t("chat.settings.autoSpeakHint")}
+                value={prefs.autoSpeak}
+                onChange={(v) => void patchPrefs({ autoSpeak: v })}
+              />
+              <PrefToggle
+                title={t("chat.settings.conversationMode")}
+                subtitle={t("chat.settings.conversationModeHint")}
+                value={prefs.conversationMode}
+                onChange={(v) => void patchPrefs({ conversationMode: v })}
+                last
+              />
+            </SettingsSection>
+            <SettingsSection title={t("chat.settings.voiceModel")}>
+              <FieldBlock
+                title={t("chat.settings.voiceGender")}
+                subtitle={t("chat.settings.voiceGenderHint")}
+              >
+                <ChipRow
+                  options={voiceGenderOptions}
+                  value={prefs.voiceGender}
+                  onChange={(v) =>
+                    void patchPrefs({
+                      voiceGender: v,
+                      voiceId: defaultVoiceForGender(v),
+                    })
+                  }
+                />
+              </FieldBlock>
+              <FieldBlock
+                title={t("chat.settings.voiceLang")}
+                subtitle={t("chat.settings.voiceLangHint")}
+                last
+              >
+                <ChipRow
+                  options={voiceLangOptions}
+                  value={prefs.voiceLang}
+                  onChange={(v) => void patchPrefs({ voiceLang: v })}
+                />
+              </FieldBlock>
+            </SettingsSection>
+            <SettingsSection title={t("chat.settings.voicePick")}>
+              {MORPH_VOICE_CATALOG.filter((row) => row.gender === prefs.voiceGender).map(
+                (row, index, arr) => {
+                  const active = prefs.voiceId === row.id;
+                  const last = index === arr.length - 1;
+                  return (
+                    <View key={row.id} style={[styles.voiceRow, !last && styles.itemBorder]}>
+                      <Pressable
+                        onPress={() => void patchPrefs({ voiceId: row.id })}
+                        style={({ pressed }) => [styles.voiceMain, pressed && styles.pressed]}
+                        accessibilityRole="button"
+                        accessibilityState={{ selected: active }}
+                      >
+                        <View style={styles.itemCopy}>
+                          <Text style={styles.itemTitle}>{t(row.nameKey)}</Text>
+                          <Text style={styles.itemSubtitle}>{t(row.hintKey)}</Text>
+                        </View>
+                        {active ? (
+                          <Ionicons name="checkmark-circle" size={22} color={ACCENT_BLUE} />
+                        ) : (
+                          <View style={styles.voiceDot} />
+                        )}
+                      </Pressable>
+                      {onPreviewVoice ? (
+                        <Pressable
+                          onPress={() => onPreviewVoice(row.id)}
+                          disabled={voicePreviewing}
+                          style={({ pressed }) => [styles.previewBtn, pressed && styles.pressed]}
+                          accessibilityRole="button"
+                          accessibilityLabel={t("chat.settings.voicePreview")}
+                        >
+                          <Ionicons
+                            name={voicePreviewing && active ? "hourglass-outline" : "play"}
+                            size={16}
+                            color="#FFFFFF"
+                          />
+                        </Pressable>
+                      ) : null}
+                    </View>
+                  );
+                },
+              )}
+            </SettingsSection>
+          </>
+        ) : null}
+
+        {page === "help" ? (
+          <MorphHelpCenterView onOpenTicket={(id) => openTicket(id, "help")} />
+        ) : null}
+
+        {page === "report" ? (
+          <MorphReportProblemView onOpenTicket={(id) => openTicket(id, "report")} />
+        ) : null}
+
         {page === "chatbot" && prefs ? (
           <SettingsSection>
             <PrefToggle
@@ -550,12 +753,6 @@ export function MorphChatSettingsScreen({
               subtitle={t("chat.settings.streamingHint")}
               value={prefs.streaming}
               onChange={(v) => void patchPrefs({ streaming: v })}
-            />
-            <PrefToggle
-              title={t("chat.settings.voiceInput")}
-              subtitle={t("chat.settings.voiceInputHint")}
-              value={prefs.voiceInput}
-              onChange={(v) => void patchPrefs({ voiceInput: v })}
             />
             <PrefToggle
               title={t("chat.settings.limitNotify")}
@@ -586,6 +783,7 @@ export function MorphChatSettingsScreen({
         ) : null}
 
       </ScrollView>
+      )}
     </View>
   );
 }
@@ -798,6 +996,36 @@ const styles = StyleSheet.create({
   },
   chipTextActive: {
     color: "#000000",
+  },
+  voiceRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingLeft: 16,
+    paddingRight: 10,
+    minHeight: 64,
+    gap: 8,
+  },
+  voiceMain: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 12,
+    gap: 8,
+  },
+  voiceDot: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 1.5,
+    borderColor: "#3A3A3C",
+  },
+  previewBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#2C2C2E",
+    alignItems: "center",
+    justifyContent: "center",
   },
   pressed: {
     opacity: 0.72,

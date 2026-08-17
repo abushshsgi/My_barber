@@ -1,22 +1,42 @@
 import { Ionicons } from "@expo/vector-icons";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { ScrollView, StyleSheet, View } from "react-native";
+import { Alert, ScrollView, StyleSheet, View } from "react-native";
+import { useTranslation } from "react-i18next";
 import { HeaderPill, NativeHeader } from "../../components/ui/NativeHeader";
 import { SettingsGroup, SettingsRow } from "../../components/ui/SettingsKit";
+import { currentLang, setAppLanguage } from "../../i18n/config";
+import type { AppLang } from "../../lib/guest";
 import type { ProfileStackParamList } from "../../navigation/ProfileStack";
 import { colors } from "../../theme/colors";
 
 type Props = NativeStackScreenProps<ProfileStackParamList, "Settings">;
 
 export function SettingsScreen({ navigation }: Props) {
+  const { t } = useTranslation();
+  const lang = currentLang();
+
+  const pickLanguage = () => {
+    Alert.alert(t("profile.language"), undefined, [
+      {
+        text: t("profile.languageRu"),
+        onPress: () => void setAppLanguage("ru"),
+      },
+      {
+        text: t("profile.languageUz"),
+        onPress: () => void setAppLanguage("uz"),
+      },
+      { text: t("common.cancel"), style: "cancel" },
+    ]);
+  };
+
   return (
     <View style={styles.root}>
       <NativeHeader
-        title="Hisob sozlamalari"
+        title={t("profile.settingsTitle")}
         onBack={() => navigation.goBack()}
         right={
           <HeaderPill
-            label="Obuna"
+            label={t("profile.subscription")}
             dark
             icon={<Ionicons name="sparkles" size={12} color="#FFF" />}
             onPress={() => navigation.navigate("Subscriptions")}
@@ -27,56 +47,57 @@ export function SettingsScreen({ navigation }: Props) {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        <SettingsGroup title="Hisob">
+        <SettingsGroup title={t("profile.accountGroup")}>
           <SettingsRow
-            title="Shaxsiy ma'lumotlar"
+            title={t("profile.personalInfo")}
             icon="person-outline"
             onPress={() => navigation.navigate("PersonalInfo")}
           />
           <SettingsRow
-            title="Kirish va xavfsizlik"
+            title={t("profile.security")}
             icon="lock-closed-outline"
             onPress={() => navigation.navigate("Security")}
           />
           <SettingsRow
-            title="Maxfiylik"
+            title={t("profile.privacyRow")}
             icon="shield-checkmark-outline"
             onPress={() => undefined}
             last
           />
         </SettingsGroup>
 
-        <SettingsGroup title="Afzalliklar">
+        <SettingsGroup title={t("profile.prefsGroup")}>
           <SettingsRow
-            title="Bildirishnoma afzalliklari"
+            title={t("profile.notificationPrefs")}
             icon="notifications-outline"
             onPress={() => navigation.navigate("NotificationPrefs")}
           />
           <SettingsRow
-            title="Til va afzalliklar"
+            title={t("profile.languagePrefs")}
+            subtitle={lang === "ru" ? t("profile.languageRu") : t("profile.languageUz")}
             icon="globe-outline"
-            onPress={() => undefined}
+            onPress={pickLanguage}
             last
           />
         </SettingsGroup>
 
-        <SettingsGroup title="To'lov va obuna">
-          <SettingsRow title="To'lov usullari" icon="card-outline" onPress={() => undefined} />
+        <SettingsGroup title={t("profile.paymentGroup")}>
+          <SettingsRow title={t("profile.paymentMethods")} icon="card-outline" onPress={() => undefined} />
           <SettingsRow
-            title="Obunalar"
+            title={t("profile.subscriptions")}
             icon="sync-outline"
             onPress={() => navigation.navigate("Subscriptions")}
             last
           />
         </SettingsGroup>
 
-        <SettingsGroup title="Boshqa">
-          <SettingsRow title="Manzillar" icon="location-outline" onPress={() => undefined} />
-          <SettingsRow title="Oilaviy profil" icon="people-outline" onPress={() => undefined} />
+        <SettingsGroup title={t("profile.otherGroup")}>
+          <SettingsRow title={t("profile.addresses")} icon="location-outline" onPress={() => undefined} />
+          <SettingsRow title={t("profile.familyProfile")} icon="people-outline" onPress={() => undefined} />
           <SettingsRow
-            title="Yordam markazi"
+            title={t("profile.helpCenter")}
             icon="help-circle-outline"
-            onPress={() => undefined}
+            onPress={() => navigation.navigate("HelpCenter")}
             last
           />
         </SettingsGroup>
