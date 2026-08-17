@@ -50,7 +50,9 @@ import { Route as AccountPreferencesRouteImport } from './routes/account.prefere
 import { Route as AiStyleCareRouteImport } from './routes/ai-style_.care'
 import { Route as AiStyleChatRouteImport } from './routes/ai-style_.chat'
 import { Route as AiStyleConsultRouteImport } from './routes/ai-style_.consult'
+import { Route as AiStyleHelpRouteImport } from './routes/ai-style_.help'
 import { Route as AiStyleHistoryRouteImport } from './routes/ai-style_.history'
+import { Route as AiStyleReportRouteImport } from './routes/ai-style_.report'
 import { Route as AiStyleStudioRouteImport } from './routes/ai-style_.studio'
 import { Route as BarberBarberIdRouteImport } from './routes/barber.$barberId'
 import { Route as BookingSalonIdRouteImport } from './routes/booking.$salonId'
@@ -279,9 +281,19 @@ const AiStyleConsultRoute = AiStyleConsultRouteImport.update({
   path: '/ai-style/consult',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AiStyleHelpRoute = AiStyleHelpRouteImport.update({
+  id: '/ai-style_/help',
+  path: '/ai-style/help',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AiStyleHistoryRoute = AiStyleHistoryRouteImport.update({
   id: '/ai-style_/history',
   path: '/ai-style/history',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AiStyleReportRoute = AiStyleReportRouteImport.update({
+  id: '/ai-style_/report',
+  path: '/ai-style/report',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AiStyleStudioRoute = AiStyleStudioRouteImport.update({
@@ -437,7 +449,9 @@ export interface FileRoutesByFullPath {
   '/ai-style/care': typeof AiStyleCareRoute
   '/ai-style/chat': typeof AiStyleChatRoute
   '/ai-style/consult': typeof AiStyleConsultRoute
+  '/ai-style/help': typeof AiStyleHelpRoute
   '/ai-style/history': typeof AiStyleHistoryRoute
+  '/ai-style/report': typeof AiStyleReportRoute
   '/ai-style/studio': typeof AiStyleStudioRoute
   '/barber/$barberId': typeof BarberBarberIdRoute
   '/booking/$salonId': typeof BookingSalonIdRoute
@@ -503,7 +517,9 @@ export interface FileRoutesByTo {
   '/ai-style/care': typeof AiStyleCareRoute
   '/ai-style/chat': typeof AiStyleChatRoute
   '/ai-style/consult': typeof AiStyleConsultRoute
+  '/ai-style/help': typeof AiStyleHelpRoute
   '/ai-style/history': typeof AiStyleHistoryRoute
+  '/ai-style/report': typeof AiStyleReportRoute
   '/ai-style/studio': typeof AiStyleStudioRoute
   '/barber/$barberId': typeof BarberBarberIdRoute
   '/booking/$salonId': typeof BookingSalonIdRoute
@@ -569,7 +585,9 @@ export interface FileRoutesById {
   '/ai-style_/care': typeof AiStyleCareRoute
   '/ai-style_/chat': typeof AiStyleChatRoute
   '/ai-style_/consult': typeof AiStyleConsultRoute
+  '/ai-style_/help': typeof AiStyleHelpRoute
   '/ai-style_/history': typeof AiStyleHistoryRoute
+  '/ai-style_/report': typeof AiStyleReportRoute
   '/ai-style_/studio': typeof AiStyleStudioRoute
   '/barber/$barberId': typeof BarberBarberIdRoute
   '/booking/$salonId': typeof BookingSalonIdRoute
@@ -637,7 +655,9 @@ export interface FileRouteTypes {
     | '/ai-style/care'
     | '/ai-style/chat'
     | '/ai-style/consult'
+    | '/ai-style/help'
     | '/ai-style/history'
+    | '/ai-style/report'
     | '/ai-style/studio'
     | '/barber/$barberId'
     | '/booking/$salonId'
@@ -703,7 +723,9 @@ export interface FileRouteTypes {
     | '/ai-style/care'
     | '/ai-style/chat'
     | '/ai-style/consult'
+    | '/ai-style/help'
     | '/ai-style/history'
+    | '/ai-style/report'
     | '/ai-style/studio'
     | '/barber/$barberId'
     | '/booking/$salonId'
@@ -768,7 +790,9 @@ export interface FileRouteTypes {
     | '/ai-style_/care'
     | '/ai-style_/chat'
     | '/ai-style_/consult'
+    | '/ai-style_/help'
     | '/ai-style_/history'
+    | '/ai-style_/report'
     | '/ai-style_/studio'
     | '/barber/$barberId'
     | '/booking/$salonId'
@@ -835,7 +859,9 @@ export interface RootRouteChildren {
   AiStyleCareRoute: typeof AiStyleCareRoute
   AiStyleChatRoute: typeof AiStyleChatRoute
   AiStyleConsultRoute: typeof AiStyleConsultRoute
+  AiStyleHelpRoute: typeof AiStyleHelpRoute
   AiStyleHistoryRoute: typeof AiStyleHistoryRoute
+  AiStyleReportRoute: typeof AiStyleReportRoute
   AiStyleStudioRoute: typeof AiStyleStudioRoute
   BarberBarberIdRoute: typeof BarberBarberIdRoute
   BookingSalonIdRoute: typeof BookingSalonIdRoute
@@ -1143,11 +1169,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AiStyleConsultRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/ai-style_/help': {
+      id: '/ai-style_/help'
+      path: '/ai-style/help'
+      fullPath: '/ai-style/help'
+      preLoaderRoute: typeof AiStyleHelpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/ai-style_/history': {
       id: '/ai-style_/history'
       path: '/ai-style/history'
       fullPath: '/ai-style/history'
       preLoaderRoute: typeof AiStyleHistoryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ai-style_/report': {
+      id: '/ai-style_/report'
+      path: '/ai-style/report'
+      fullPath: '/ai-style/report'
+      preLoaderRoute: typeof AiStyleReportRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/ai-style_/studio': {
@@ -1407,7 +1447,9 @@ const rootRouteChildren: RootRouteChildren = {
   AiStyleCareRoute: AiStyleCareRoute,
   AiStyleChatRoute: AiStyleChatRoute,
   AiStyleConsultRoute: AiStyleConsultRoute,
+  AiStyleHelpRoute: AiStyleHelpRoute,
   AiStyleHistoryRoute: AiStyleHistoryRoute,
+  AiStyleReportRoute: AiStyleReportRoute,
   AiStyleStudioRoute: AiStyleStudioRoute,
   BarberBarberIdRoute: BarberBarberIdRoute,
   BookingSalonIdRoute: BookingSalonIdRoute,

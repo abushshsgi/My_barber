@@ -3,8 +3,10 @@ import { motion, useReducedMotion } from "framer-motion";
 import {
   ArrowUpRight,
   Camera,
+  HelpCircle,
   Clock3,
   Droplets,
+  Flag,
   FlaskConical,
   Images,
   Sparkles,
@@ -500,6 +502,24 @@ export function MorphAiHome({
             </div>
           )}
         </motion.section>
+
+        <div className="mt-10 flex items-center justify-center gap-4 text-[12px] font-medium">
+          <Link
+            to="/ai-style/help"
+            className="inline-flex cursor-pointer items-center gap-1.5 text-white/40 transition-colors duration-200 hover:text-white/75"
+          >
+            <HelpCircle className="size-3.5" />
+            {t("aiStylePage.support.homeHelp")}
+          </Link>
+          <span className="text-white/15">·</span>
+          <Link
+            to="/ai-style/report"
+            className="inline-flex cursor-pointer items-center gap-1.5 text-white/40 transition-colors duration-200 hover:text-white/75"
+          >
+            <Flag className="size-3.5" />
+            {t("aiStylePage.support.homeReport")}
+          </Link>
+        </div>
       </div>
     </div>
   );

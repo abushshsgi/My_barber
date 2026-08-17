@@ -1,13 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  ArrowLeft,
-  ChevronDown,
-  Headphones,
-  LifeBuoy,
-  MessageCircle,
-  Send,
-} from "lucide-react";
+import { ArrowLeft, ChevronDown, Headphones, LifeBuoy, MessageCircle, Send } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { ProfileSubpageCard } from "@/components/profile/ProfileSubpageLayout";
@@ -43,6 +36,7 @@ const FAQ = [
 
 const TOPICS = [
   { id: "general", label: "Umumiy savol", subject: "Umumiy savol" },
+  { id: "morph", label: "Morf AI", subject: "Morf AI yordam" },
   { id: "payment", label: "To'lov / hamyon", subject: "To'lov yoki hamyon muammosi" },
   { id: "gift", label: "Sovg'a kartasi", subject: "Sovg'a kartasi shikoyati" },
   { id: "booking", label: "Bron / bekor", subject: "Bron yoki bekor qilish" },
@@ -79,13 +73,7 @@ function formatWhen(iso: string) {
   }
 }
 
-function TicketThread({
-  ticketId,
-  onBack,
-}: {
-  ticketId: number;
-  onBack: () => void;
-}) {
+function TicketThread({ ticketId, onBack }: { ticketId: number; onBack: () => void }) {
   const qc = useQueryClient();
   const [text, setText] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -152,35 +140,38 @@ function TicketThread({
       </ProfileSubpageCard>
 
       <div className="flex-1 space-y-3 overflow-y-auto pb-4">
-        {detailQ.isLoading ? (
-          Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="h-16 animate-pulse rounded-2xl bg-muted/40" />
-          ))
-        ) : (
-          replies.map((r) => {
-            const mine = r.author_role === "user";
-            return (
-              <div
-                key={`${r.id}-${r.created_at}`}
-                className={cn("flex", mine ? "justify-end" : "justify-start")}
-              >
+        {detailQ.isLoading
+          ? Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="h-16 animate-pulse rounded-2xl bg-muted/40" />
+            ))
+          : replies.map((r) => {
+              const mine = r.author_role === "user";
+              return (
                 <div
-                  className={cn(
-                    "max-w-[85%] rounded-2xl px-3.5 py-2.5 text-sm shadow-sm",
-                    mine
-                      ? "rounded-br-md bg-foreground text-background"
-                      : "rounded-bl-md border border-border bg-card",
-                  )}
+                  key={`${r.id}-${r.created_at}`}
+                  className={cn("flex", mine ? "justify-end" : "justify-start")}
                 >
-                  <p className={cn("mb-1 text-[10px] font-bold uppercase tracking-wide", mine ? "opacity-70" : "text-muted-foreground")}>
-                    {mine ? "Siz" : r.author_name || "Support"} · {formatWhen(r.created_at)}
-                  </p>
-                  <p className="whitespace-pre-wrap leading-relaxed">{r.body}</p>
+                  <div
+                    className={cn(
+                      "max-w-[85%] rounded-2xl px-3.5 py-2.5 text-sm shadow-sm",
+                      mine
+                        ? "rounded-br-md bg-foreground text-background"
+                        : "rounded-bl-md border border-border bg-card",
+                    )}
+                  >
+                    <p
+                      className={cn(
+                        "mb-1 text-[10px] font-bold uppercase tracking-wide",
+                        mine ? "opacity-70" : "text-muted-foreground",
+                      )}
+                    >
+                      {mine ? "Siz" : r.author_name || "Support"} · {formatWhen(r.created_at)}
+                    </p>
+                    <p className="whitespace-pre-wrap leading-relaxed">{r.body}</p>
+                  </div>
                 </div>
-              </div>
-            );
-          })
-        )}
+              );
+            })}
         <div ref={bottomRef} />
       </div>
 
@@ -214,11 +205,7 @@ function TicketThread({
   );
 }
 
-function NewComplaintForm({
-  onCreated,
-}: {
-  onCreated: (ticket: ApiSupportTicket) => void;
-}) {
+function NewComplaintForm({ onCreated }: { onCreated: (ticket: ApiSupportTicket) => void }) {
   const [topic, setTopic] = useState<(typeof TOPICS)[number]["id"]>("general");
   const [subject, setSubject] = useState(TOPICS[0].subject);
   const [body, setBody] = useState("");
@@ -227,9 +214,18 @@ function NewComplaintForm({
   const createTicket = useMutation({
     mutationFn: () =>
       createSupportTicket({
-        subject: (subject.trim() || TOPICS.find((t) => t.id === topic)?.label || "Murojaat").slice(0, 255),
+        subject: (subject.trim() || TOPICS.find((t) => t.id === topic)?.label || "Murojaat").slice(
+          0,
+          255,
+        ),
         body: body.trim(),
-        category: topic === "gift" ? "gift_complaint" : `user_support:${topic}`,
+        category:
+          topic === "gift"
+            ? "gift_complaint"
+            : topic === "morph"
+              ? "morph_ai:help"
+              : `user_support:${topic}`,
+        related_type: topic === "morph" ? "morph_ai" : undefined,
       }),
     onSuccess: (ticket) => {
       toast.success("Shikoyat yuborildi — support javob beradi");
@@ -324,9 +320,7 @@ export function SettingsSupportPanel({ embedded = false }: { embedded?: boolean 
   });
 
   if (activeTicketId) {
-    return (
-      <TicketThread ticketId={activeTicketId} onBack={() => setActiveTicketId(null)} />
-    );
+    return <TicketThread ticketId={activeTicketId} onBack={() => setActiveTicketId(null)} />;
   }
 
   return (
@@ -345,10 +339,24 @@ export function SettingsSupportPanel({ embedded = false }: { embedded?: boolean 
           <div>
             <p className="text-sm font-bold">Yordam markazi</p>
             <p className="mt-1 text-sm text-muted-foreground">
-              Avval FAQ ni ko&apos;ring. Bo&apos;lmasa — shikoyat yozing, support bilan chat ochiladi.
+              Avval FAQ ni ko&apos;ring. Bo&apos;lmasa — shikoyat yozing, support bilan chat
+              ochiladi.
             </p>
           </div>
         </ProfileSubpageCard>
+
+        <Link
+          to="/ai-style/help"
+          className="flex items-start gap-3 rounded-2xl border border-border bg-card px-4 py-3.5 transition-colors hover:border-foreground/25"
+        >
+          <LifeBuoy className="mt-0.5 h-5 w-5 shrink-0" />
+          <div>
+            <p className="text-sm font-bold">Morf AI yordam</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Try-on, chat va limit savollari Morph AI supportga tushadi.
+            </p>
+          </div>
+        </Link>
 
         {FAQ.map((item, i) => {
           const isOpen = openFaq === i;

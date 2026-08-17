@@ -18,7 +18,7 @@ export function shouldShowMobileDock(pathname: string): boolean {
 export type DesktopContentProfile = "discovery" | "standard" | "compact";
 
 const FOOTER_HIDDEN_EXACT = new Set(["/auth", "/onboarding", "/map", "/ai-style"]);
-const FOOTER_HIDDEN_PREFIX = ["/stories/", "/booking/"];
+const FOOTER_HIDDEN_PREFIX = ["/stories/", "/booking/", "/ai-style"];
 
 const DISCOVERY_EXACT = new Set(["/", "/explore", "/offers", "/map", "/today", "/compare", "/top"]);
 
@@ -111,6 +111,8 @@ export function getPageTitleKey(pathname: string): string | null {
   if (pathname === "/top") return "topSalonsPage.title";
   if (pathname.startsWith("/category/")) return "home.sections.browseCategories";
   if (pathname === "/wallet" || pathname.startsWith("/wallet/")) return "nav.wallet";
+  if (pathname === "/ai-style/help") return "aiStylePage.support.helpTitle";
+  if (pathname === "/ai-style/report") return "aiStylePage.support.reportTitle";
   if (pathname === "/ai-style/chat") return "nav.morphChat";
   if (pathname === "/ai-style" || pathname.startsWith("/ai-style/")) return "home.quick.aiStyle";
   if (pathname === "/notifications") return "nav.notifications";
