@@ -156,10 +156,23 @@ export function MorphChatScreen() {
     [gate, isAuthenticated, showPaywall],
   );
 
+  const requireVoice = useCallback(async () => {
+    if (!isAuthenticated) {
+      showPaywall("subscription");
+      return false;
+    }
+    if (MORPH_CHAT_DEBUG) return true;
+    const result = await gate.ensureVoiceDetailed();
+    if (result.ok) return true;
+    showPaywall(result.reason === "limit" ? "limit" : "subscription");
+    return false;
+  }, [gate, isAuthenticated, showPaywall]);
+
   const voice = useMorphVoice({
     sendText: chat.sendText,
     lastReply: chat.lastReply,
     requireAccess,
+    requireVoice,
     onLimit: (draft) => showPaywall("limit", draft),
     onOpenChat: () => {
       setChatOpen(true);
@@ -396,7 +409,11 @@ export function MorphChatScreen() {
         onClearAllChats={() => void clearAllFromSettings()}
         onOpenSubscription={openSubscriptionFromSettings}
         onSaveHistoryOff={() => void chat.clearAllChats()}
-        onPreviewVoice={(id) => void voice.previewVoice(id, t("chat.settings.voiceSample"))}
+        onPreviewVoice={async (id) => {
+          const ok = await requireVoice();
+          if (!ok) return;
+          void voice.previewVoice(id, t("chat.settings.voiceSample"));
+        }}
         voicePreviewing={voice.previewing}
       />
     </Modal>

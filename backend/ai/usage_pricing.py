@@ -135,6 +135,46 @@ def estimate_chat_tokens() -> dict[str, int]:
     }
 
 
+def _chars_to_tokens(n: int) -> int:
+    """Lotin matn: ~4 belgi = 1 token. Haqiqiy usageMetadata yo'q bo'lganda."""
+    return max(1, (max(0, int(n or 0)) + 3) // 4)
+
+
+def estimate_chat_tokens_from_text(*, prompt_chars: int, reply_chars: int) -> dict[str, int]:
+    """Haqiqiy matn uzunligidan taxmin — qat'iy 1200 token o'rniga."""
+    prompt = _chars_to_tokens(prompt_chars)
+    candidates = _chars_to_tokens(reply_chars)
+    return {
+        "prompt_tokens": prompt,
+        "candidates_tokens": candidates,
+        "thoughts_tokens": 0,
+        "total_tokens": prompt + candidates,
+        "estimated": True,
+    }
+
+
+def merge_usage_tokens(*payloads: dict[str, Any] | None) -> dict[str, int]:
+    """SSE chunk'lardagi usageMetadata — har maydon uchun eng katta qiymat."""
+    merged = {
+        "prompt_tokens": 0,
+        "candidates_tokens": 0,
+        "thoughts_tokens": 0,
+        "total_tokens": 0,
+    }
+    for payload in payloads:
+        if not payload:
+            continue
+        row = extract_usage_tokens(payload)
+        for key in merged:
+            if row[key] > merged[key]:
+                merged[key] = row[key]
+    if merged["total_tokens"] <= 0:
+        merged["total_tokens"] = (
+            merged["prompt_tokens"] + merged["candidates_tokens"] + merged["thoughts_tokens"]
+        )
+    return merged
+
+
 def cost_usd_for_image(
     *,
     prompt_tokens: int,
@@ -180,15 +220,27 @@ def finalize_usage(
     *,
     kind: str,
     input_images: int = 1,
+    extra_payloads: list[dict[str, Any]] | None = None,
+    prompt_chars: int = 0,
+    reply_chars: int = 0,
 ) -> dict[str, Any]:
-    """Token + cost dict — API payload yoki fallback taxmin."""
-    tokens = extract_usage_tokens(payload)
+    """Token + cost dict — API payload yoki matnga asoslangan taxmin."""
+    if extra_payloads:
+        tokens = merge_usage_tokens(payload, *extra_payloads)
+    else:
+        tokens = extract_usage_tokens(payload)
     estimated = False
     if tokens["total_tokens"] <= 0:
         if kind in ("tryon", "studio"):
             tokens = estimate_image_tokens(input_images=input_images)
         elif kind == "chat":
-            tokens = estimate_chat_tokens()
+            if prompt_chars or reply_chars:
+                tokens = estimate_chat_tokens_from_text(
+                    prompt_chars=prompt_chars,
+                    reply_chars=reply_chars,
+                )
+            else:
+                tokens = estimate_chat_tokens()
         else:
             tokens = estimate_vision_tokens()
         estimated = bool(tokens.pop("estimated", True))

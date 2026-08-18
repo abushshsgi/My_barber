@@ -11,13 +11,14 @@ import {
 
 type Args = {
   onTurn: (text: string) => Promise<string | null>;
+  onLimit?: () => void;
   lang?: "auto" | "uz" | "ru";
 };
 
 const MIN_RECORD_MS = 520;
 const NEXT_TURN_MS = 420;
 
-export function useMorphVoiceChat({ onTurn, lang = "auto" }: Args) {
+export function useMorphVoiceChat({ onTurn, onLimit, lang = "auto" }: Args) {
   const [phase, setPhase] = useState<MorphVoicePhase>("idle");
   const [live, setLive] = useState(false);
   const [metering, setMetering] = useState(-160);
@@ -39,6 +40,8 @@ export function useMorphVoiceChat({ onTurn, lang = "auto" }: Args) {
   const startRef = useRef<() => Promise<void>>(async () => undefined);
   const onTurnRef = useRef(onTurn);
   onTurnRef.current = onTurn;
+  const onLimitRef = useRef(onLimit);
+  onLimitRef.current = onLimit;
 
   const setPhaseSafe = useCallback((next: MorphVoicePhase) => {
     phaseRef.current = next;
@@ -127,7 +130,8 @@ export function useMorphVoiceChat({ onTurn, lang = "auto" }: Args) {
         let res;
         try {
           res = await speakMorphVoice({ text: spoken, lang });
-        } catch {
+        } catch (err) {
+          if (isMorphPlanLimitError(err)) throw err;
           res = await speakMorphVoice({ text: spoken, lang });
         }
         if (cancelledRef.current) return;
@@ -135,7 +139,14 @@ export function useMorphVoiceChat({ onTurn, lang = "auto" }: Args) {
         audioRef.current = audio;
         await audio.play();
         await done;
-      } catch {
+      } catch (err) {
+        if (isMorphPlanLimitError(err)) {
+          onLimitRef.current?.();
+          liveRef.current = false;
+          setLive(false);
+          setPhaseSafe("idle");
+          return;
+        }
         if (cancelledRef.current) return;
         await speakDevice(spoken);
       } finally {
@@ -200,8 +211,8 @@ export function useMorphVoiceChat({ onTurn, lang = "auto" }: Args) {
         if (isMorphPlanLimitError(err)) {
           liveRef.current = false;
           setLive(false);
-          setError(err.message);
           setPhaseSafe("idle");
+          onLimitRef.current?.();
           return;
         }
         setError(err instanceof Error ? err.message : "Ovoz ishlamadi");

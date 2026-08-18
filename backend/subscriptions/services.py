@@ -106,6 +106,7 @@ def entitlement_snapshot(plan_code: str) -> dict[str, Any]:
         "morph_ai_monthly": plan["morph_ai_monthly"],
         "morph_studio_monthly": plan["morph_studio_monthly"],
         "morph_chat_tokens_monthly": int(plan.get("morph_chat_tokens_monthly") or 0),
+        "morph_voice": True,
         "family_members_max": plan["family_members_max"],
         "morph_care": plan["morph_care"],
         "badge": plan["badge"],
@@ -303,6 +304,7 @@ def build_me_payload(user: User) -> dict[str, Any]:
         "access": {
             "morph_ai_allowed": allowed,
             "morph_chat_allowed": chat_remaining >= CHAT_TOKEN_MIN_TURN,
+            "morph_voice_allowed": bool(sub),
             "reason": None if allowed else "subscription_required",
             "message": None if allowed else _no_subscription_message(),
             "referral_credits": credits,
@@ -509,15 +511,21 @@ def can_use_morph_care(user: User) -> bool:
     return bool(ents.get("morph_care"))
 
 
+def can_use_morph_voice(user: User) -> bool:
+    """Jonli ovoz — faqat faol pullik obuna (bepul 10k chat tokeniga kirmaydi)."""
+    return get_active_subscription(user) is not None
+
+
 def check_morph_entitlement(*, user: User, kind: str) -> str | None:
     """
     Morph AI:
     - analyze / face_check — obunasiz ochiq (tahlil → keyin generatsiya paywall).
     - chat — obunasiz, oylik token kvota (yangi user 10k).
+    - voice — faqat faol pullik obuna.
     - tryon — faol obuna kvotasi YOKI referal krediti (1 do'st = 1 generatsiya).
     - studio — faol obuna majburiy.
     """
-    if kind not in ("tryon", "studio", "analyze", "face_check", "chat"):
+    if kind not in ("tryon", "studio", "analyze", "face_check", "chat", "voice"):
         return None
 
     from django.conf import settings
@@ -529,6 +537,11 @@ def check_morph_entitlement(*, user: User, kind: str) -> str | None:
         return None
 
     sub = get_active_subscription(user)
+
+    if kind == "voice":
+        if not can_use_morph_voice(user):
+            return "Ovozli suhbat Starter, Plus yoki Pro obunasida mavjud."
+        return check_morph_entitlement(user=user, kind="chat")
 
     if kind == "chat":
         snap = chat_token_snapshot(user)

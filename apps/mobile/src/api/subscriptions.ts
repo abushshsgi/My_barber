@@ -64,6 +64,7 @@ export type SubscriptionMe = {
   access?: {
     morph_ai_allowed: boolean;
     morph_chat_allowed?: boolean;
+    morph_voice_allowed?: boolean;
     reason: string | null;
     message: string | null;
     referral_credits?: number;

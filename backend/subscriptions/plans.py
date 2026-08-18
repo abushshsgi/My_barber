@@ -47,6 +47,7 @@ _PLANS: dict[str, dict[str, Any]] = {
         "features": [
             _feat("morph_ai", "Morph AI try-on — oyiga 5 marta", "Morph AI try-on — 5 раз в месяц", "Morph AI try-on — 5 times / month"),
             _feat("chat", "Morf AI chat — 50 000 token / oy", "Morf AI чат — 50 000 токенов / мес", "Morf AI chat — 50,000 tokens / month"),
+            _feat("voice", "Jonli ovozli suhbat", "Живой голосовой чат", "Live voice chat"),
             _feat("badge", "Oddiy tasdiqlangan belgi", "Обычный значок подтверждения", "Standard verified badge"),
             _feat("studio", "Morph AI Studio — yo'q", "Morph AI Studio — нет", "Morph AI Studio — not included", included=False),
             _feat("family", "Oila a'zolari — yo'q", "Члены семьи — нет", "Family members — not included", included=False),
@@ -71,6 +72,7 @@ _PLANS: dict[str, dict[str, Any]] = {
         "features": [
             _feat("morph_ai", "Morph AI try-on — oyiga 20 marta", "Morph AI try-on — 20 раз в месяц", "Morph AI try-on — 20 times / month"),
             _feat("chat", "Morf AI chat — 150 000 token / oy", "Morf AI чат — 150 000 токенов / мес", "Morf AI chat — 150,000 tokens / month"),
+            _feat("voice", "Jonli ovozli suhbat", "Живой голосовой чат", "Live voice chat"),
             _feat("studio", "Morph AI Studio — 30 marta", "Morph AI Studio — 30 раз", "Morph AI Studio — 30 times"),
             _feat("family", "Oila a'zolari — 2 kishi (qo'shish va bron)", "Семья — 2 человека (добавить и записаться)", "Family members — 2 people (add and book)"),
             _feat("badge", "Premium tasdiqlangan belgi", "Премиум значок подтверждения", "Premium verified badge"),
@@ -95,6 +97,7 @@ _PLANS: dict[str, dict[str, Any]] = {
         "features": [
             _feat("morph_ai", "Morph AI try-on — oyiga 100 marta", "Morph AI try-on — 100 раз в месяц", "Morph AI try-on — 100 times / month"),
             _feat("chat", "Morf AI chat — 500 000 token / oy", "Morf AI чат — 500 000 токенов / мес", "Morf AI chat — 500,000 tokens / month"),
+            _feat("voice", "Jonli ovozli suhbat", "Живой голосовой чат", "Live voice chat"),
             _feat("studio", "Morph AI Studio — 150 marta", "Morph AI Studio — 150 раз", "Morph AI Studio — 150 times"),
             _feat("family", "Oila a'zolari — cheksiz qo'shish va bron", "Семья — безлимитное добавление и запись", "Family members — unlimited add and book"),
             _feat("care", "Morph AI Parvarish", "Morph AI Уход", "Morph AI Care"),

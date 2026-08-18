@@ -47,3 +47,32 @@ class UsagePricingTests(SimpleTestCase):
         self.assertGreater(usage["total_tokens"], 0)
         self.assertLess(usage["cost_usd"], Decimal("0.01"))
         self.assertGreater(usd_to_uzs(cost), 0)
+
+    def test_chat_fallback_uses_actual_text_length(self):
+        from ai.usage_pricing import estimate_chat_tokens_from_text, merge_usage_tokens
+
+        short = estimate_chat_tokens_from_text(prompt_chars=40, reply_chars=80)
+        long = estimate_chat_tokens_from_text(prompt_chars=4000, reply_chars=2000)
+        self.assertLess(short["total_tokens"], 80)
+        self.assertGreater(long["total_tokens"], short["total_tokens"])
+        usage = finalize_usage(
+            {},
+            kind="chat",
+            prompt_chars=120,
+            reply_chars=40,
+        )
+        self.assertTrue(usage["tokens_estimated"])
+        self.assertLess(usage["total_tokens"], 200)
+
+        merged = merge_usage_tokens(
+            {"candidates": [{"content": {"parts": [{"text": "A"}]}}]},
+            {
+                "usageMetadata": {
+                    "promptTokenCount": 210,
+                    "candidatesTokenCount": 40,
+                    "totalTokenCount": 250,
+                }
+            },
+        )
+        self.assertEqual(merged["prompt_tokens"], 210)
+        self.assertEqual(merged["total_tokens"], 250)

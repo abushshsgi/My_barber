@@ -35,6 +35,7 @@ type Args = {
   sendText: (text: string, options?: { voice?: boolean }) => Promise<SendResult>;
   lastReply: () => string;
   requireAccess: (draft?: string) => Promise<boolean>;
+  requireVoice?: () => Promise<boolean>;
   onLimit: (draft?: string) => void;
   onOpenChat?: () => void;
 };
@@ -51,6 +52,7 @@ export function useMorphVoice({
   sendText,
   lastReply,
   requireAccess,
+  requireVoice,
   onLimit,
   onOpenChat,
 }: Args) {
@@ -273,7 +275,8 @@ export function useMorphVoice({
             gender: prefs.voiceGender,
             lang: prefs.voiceLang,
           });
-        } catch {
+        } catch (err) {
+          if (err instanceof MorphPlanLimitError) throw err;
           res = await speakMorphVoice({
             text: spoken,
             voiceId: prefs.voiceId,
@@ -283,7 +286,14 @@ export function useMorphVoice({
         }
         if (cancelledRef.current) return;
         await playServerAudio(res.audioBase64, res.mime);
-      } catch {
+      } catch (err) {
+        if (err instanceof MorphPlanLimitError) {
+          onLimit();
+          liveRef.current = false;
+          setLive(false);
+          setPhaseSafe("idle");
+          return;
+        }
         if (cancelledRef.current) return;
         const lang =
           prefs.voiceLang === "auto"
@@ -298,7 +308,7 @@ export function useMorphVoice({
         }
       }
     },
-    [loadPrefs, playServerAudio, setPhaseSafe, speakWithDevice, unloadSound],
+    [loadPrefs, onLimit, playServerAudio, setPhaseSafe, speakWithDevice, unloadSound],
   );
 
   const previewVoice = useCallback(
@@ -437,8 +447,10 @@ export function useMorphVoice({
     setError(null);
     const prefs = await loadPrefs();
     if (!prefs.voiceInput) return;
-    const ok = await requireAccess();
-    if (!ok) return;
+    if (!liveRef.current) {
+      const allowed = await (requireVoice ?? requireAccess)();
+      if (!allowed) return;
+    }
     await unloadSound();
     try {
       Speech.stop();
@@ -537,6 +549,7 @@ export function useMorphVoice({
     loadPrefs,
     pushMeter,
     requireAccess,
+    requireVoice,
     setPhaseSafe,
     stopPoll,
     stopRecordingInternal,
@@ -559,22 +572,26 @@ export function useMorphVoice({
       await cancelSession();
       return;
     }
+    const allowed = await (requireVoice ?? requireAccess)();
+    if (!allowed) return;
     cancelledRef.current = false;
     liveRef.current = true;
     setLive(true);
     setTranscript("");
     setReply("");
     await startListening();
-  }, [cancelSession, startListening, stopListening]);
+  }, [cancelSession, requireAccess, requireVoice, startListening, stopListening]);
 
   const startLive = useCallback(async () => {
+    const allowed = await (requireVoice ?? requireAccess)();
+    if (!allowed) return;
     cancelledRef.current = false;
     liveRef.current = true;
     setLive(true);
     setTranscript("");
     setReply("");
     await startListening();
-  }, [startListening]);
+  }, [requireAccess, requireVoice, startListening]);
 
   const interruptSpeech = useCallback(async () => {
     await unloadSound();

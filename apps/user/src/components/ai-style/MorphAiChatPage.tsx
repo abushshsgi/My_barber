@@ -130,7 +130,7 @@ export function MorphAiChatPage() {
       const userMsg: ChatMsg = { id: newId(), role: "user", content: trimmed };
       const history = prefs.privacyLocalOnly
         ? []
-        : messages.slice(-16).map((m) => ({ role: m.role, content: m.content }));
+        : messages.slice(-24).map((m) => ({ role: m.role, content: m.content }));
       const persist = shouldPersistChatToServer(prefs);
       if (!raw) setInput("");
       setSending(true);
@@ -171,7 +171,7 @@ export function MorphAiChatPage() {
         setMessages((prev) => prev.filter((m) => m.id !== "pending" && m.id !== userMsg.id));
         if (!raw) setInput(trimmed);
         if (isMorphPlanLimitError(err)) {
-          await gate.openFromApiLimit("chat");
+          await gate.openFromApiLimit(raw ? "voice" : "chat");
           return null;
         }
         toast.error(err instanceof Error ? err.message : t("aiStylePage.chat.error"));
@@ -185,7 +185,18 @@ export function MorphAiChatPage() {
 
   const voice = useMorphVoiceChat({
     onTurn: async (text) => send(text),
+    onLimit: () => void gate.openFromApiLimit("voice"),
   });
+
+  const startVoice = useCallback(async () => {
+    if (!loggedIn) {
+      void navigate({ to: "/auth" });
+      return;
+    }
+    const allowed = await gate.ensureVoice();
+    if (!allowed) return;
+    void voice.toggleLive();
+  }, [gate, loggedIn, navigate, voice]);
 
   const limits = privacy.query.data?.limits;
   const remaining = limits?.token_remaining ?? limits?.daily_remaining;
@@ -250,7 +261,7 @@ export function MorphAiChatPage() {
             </p>
             <button
               type="button"
-              onClick={() => void voice.toggleLive()}
+              onClick={() => void startVoice()}
               className="mt-6 inline-flex cursor-pointer items-center gap-2 rounded-full bg-white px-4 py-2.5 text-sm font-semibold text-black"
             >
               <Mic className="size-4" strokeWidth={2.25} />
@@ -312,7 +323,7 @@ export function MorphAiChatPage() {
         ) : (
           <button
             type="button"
-            onClick={() => void voice.toggleLive()}
+            onClick={() => void startVoice()}
             disabled={sending}
             className="relative grid size-12 shrink-0 cursor-pointer place-items-center rounded-2xl bg-white text-black disabled:opacity-40"
             aria-label={t("aiStylePage.chat.voiceStart")}

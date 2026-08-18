@@ -15,7 +15,7 @@ from accounts.models import SkinProfile, User
 
 from ai.age_groups import birth_year_to_group, normalize_age_group, resolve_hairstyle_image_path
 from ai.explore_personas import has_persona_style_asset, list_explore_personas, normalize_persona_id
-from subscriptions.services import can_use_morph_care, get_active_subscription
+from subscriptions.services import can_use_morph_care, can_use_morph_voice, get_active_subscription
 
 from .history_storage import image_file_from_source, save_history_photo, trim_user_history
 from .models import (
@@ -683,16 +683,14 @@ def _chat_thread_id(request) -> str:
 
 
 def _voice_feature_blocked(user) -> Response | None:
-    """Ovoz STT/TTS — obuna kerak (arzon chat tokeniga kirmaydi)."""
+    """Ovoz STT/TTS — faqat pullik obuna."""
     from ai.models import MorphAiSettings
     from subscriptions.services import check_morph_entitlement
 
     s = MorphAiSettings.load()
     if not s.analyze_enabled:
         return morph_generation_blocked_response("Morph AI hozir ishlamayapti.")
-    if not get_active_subscription(user):
-        return morph_generation_blocked_response("Ovozli suhbat uchun obuna kerak.")
-    blocked = check_morph_entitlement(user=user, kind="chat")
+    blocked = check_morph_entitlement(user=user, kind="voice")
     if blocked:
         return morph_generation_blocked_response(blocked)
     return None
@@ -750,6 +748,12 @@ class AiMorphChatView(UnthrottledAPIView):
         history = request.data.get("history")
         context_raw = request.data.get("context")
         context = context_raw if isinstance(context_raw, dict) else None
+        from ai.chat_prompts import is_voice_mode
+
+        if is_voice_mode(context) and not can_use_morph_voice(user):
+            return morph_generation_blocked_response(
+                "Ovozli suhbat Starter, Plus yoki Pro obunasida mavjud."
+            )
         thread_id = _chat_thread_id(request)
         persist = (
             _chat_should_persist(request)
@@ -1028,7 +1032,11 @@ class MorphAiChatThreadListView(UnthrottledAPIView):
             "true",
             "yes",
         )
-        threads = MorphAiChatThread.objects.filter(user=user).order_by("-updated_at")[:40]
+        from ai.chat_prompts import MORF_CHAT_MAX_THREADS
+
+        threads = MorphAiChatThread.objects.filter(user=user).order_by("-updated_at")[
+            :MORF_CHAT_MAX_THREADS
+        ]
         if include_messages:
             threads = threads.prefetch_related("messages")
         return Response(

@@ -99,12 +99,38 @@ export function useMorphLimitGate() {
     [refreshMe, showLimit],
   );
 
+  const ensureVoice = useCallback(
+    async (opts?: EnsureOpts): Promise<boolean> => {
+      try {
+        const data = await refreshMe();
+        const voiceAllowed =
+          data.access?.morph_voice_allowed === true || data.has_active === true;
+        if (!voiceAllowed) {
+          if (!opts?.silent) showLimit("voice", data);
+          return false;
+        }
+        if (morphChatTokensBlocked(data.usage)) {
+          if (!opts?.silent) showLimit("chat", data);
+          return false;
+        }
+        return true;
+      } catch {
+        return true;
+      }
+    },
+    [refreshMe, showLimit],
+  );
+
   const openFromApiLimit = useCallback(
     async (limitKind: MorphLimitKind) => {
       try {
         const data = await refreshMe();
         const kindToShow =
-          morphAccessBlocked(data) && limitKind !== "access" ? "access" : limitKind;
+          limitKind === "voice" || limitKind === "chat" || limitKind === "access"
+            ? limitKind
+            : morphAccessBlocked(data)
+              ? "access"
+              : limitKind;
         showLimit(kindToShow, data);
       } catch {
         setKind(limitKind);
@@ -124,6 +150,7 @@ export function useMorphLimitGate() {
     ensureTryOn,
     ensureStudio,
     ensureChat,
+    ensureVoice,
     openFromApiLimit,
     invalidateUsage: () => void qc.invalidateQueries({ queryKey: ["subscriptions", "me"] }),
   };

@@ -99,7 +99,7 @@ export function ChatMenuDrawer({
   const recent = useMemo(() => {
     const q = query.trim().toLowerCase();
     const rows = threads.filter((th) => previewOf(th).length > 0);
-    if (!q) return rows.slice(0, 40);
+    if (!q) return rows.slice(0, 200);
     return rows.filter((th) => {
       const hay = `${th.title} ${previewOf(th)}`.toLowerCase();
       return hay.includes(q);

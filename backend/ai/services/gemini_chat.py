@@ -121,6 +121,15 @@ def build_chat_contents(user_message: str, history: list[ChatMessage]) -> list[d
     return contents
 
 
+def _prompt_char_count(system_prompt: str, contents: list[dict[str, Any]]) -> int:
+    total = len(system_prompt or "")
+    for item in contents:
+        for part in item.get("parts") or []:
+            if isinstance(part, dict) and part.get("text"):
+                total += len(str(part["text"]))
+    return total
+
+
 def _post_gemini(model: str, api_key: str, body: dict[str, Any]) -> dict[str, Any]:
     url = (
         "https://generativelanguage.googleapis.com/v1beta/models/"
@@ -284,7 +293,12 @@ def generate_morf_chat_reply(
 
     latency_ms = int((time.perf_counter() - started) * 1000)
     reply = _extract_reply_text(payload)
-    usage_nums = finalize_usage(payload, kind="chat")
+    usage_nums = finalize_usage(
+        payload,
+        kind="chat",
+        prompt_chars=_prompt_char_count(system_prompt, contents),
+        reply_chars=len(reply),
+    )
 
     return {
         "reply": reply,
@@ -362,12 +376,15 @@ def stream_morf_chat_reply(
 
     started = time.perf_counter()
     last_payload: dict[str, Any] = {}
+    usage_payloads: list[dict[str, Any]] = []
     reply_parts: list[str] = []
 
     try:
         with _open_chat_stream(model, body, vertex=vertex, api_key=api_key) as res:
             for payload in _iter_sse_payloads(res):
                 last_payload = payload
+                if payload.get("usageMetadata") or payload.get("usage_metadata"):
+                    usage_payloads.append(payload)
                 delta = extract_delta_text(payload)
                 if not delta:
                     continue
@@ -397,7 +414,13 @@ def stream_morf_chat_reply(
         raise AiStyleError("AI javob bermadi.", 502)
 
     latency_ms = int((time.perf_counter() - started) * 1000)
-    usage_nums = finalize_usage(last_payload or {}, kind="chat")
+    usage_nums = finalize_usage(
+        last_payload or {},
+        kind="chat",
+        extra_payloads=usage_payloads,
+        prompt_chars=_prompt_char_count(system_prompt, contents),
+        reply_chars=len(reply),
+    )
     yield {
         "done": True,
         "reply": reply,

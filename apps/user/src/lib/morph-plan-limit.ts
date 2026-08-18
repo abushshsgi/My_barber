@@ -9,7 +9,7 @@ export class MorphPlanLimitError extends Error {
   }
 }
 
-export type MorphLimitKind = "tryon" | "studio" | "access" | "chat";
+export type MorphLimitKind = "tryon" | "studio" | "access" | "chat" | "voice";
 
 export function isMorphPlanLimitError(error: unknown): error is MorphPlanLimitError {
   return error instanceof MorphPlanLimitError;

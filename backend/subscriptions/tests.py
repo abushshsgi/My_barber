@@ -49,6 +49,8 @@ class SubscriptionServiceTests(TestCase):
         self.assertIsNone(check_morph_entitlement(user=self.user, kind="analyze"))
         self.assertIsNone(check_morph_entitlement(user=self.user, kind="face_check"))
         self.assertIsNone(check_morph_entitlement(user=self.user, kind="chat"))
+        voice = check_morph_entitlement(user=self.user, kind="voice") or ""
+        self.assertIn("ovoz", voice.lower())
         studio = check_morph_entitlement(user=self.user, kind="studio") or ""
         self.assertIn("obuna", studio.lower())
 
@@ -62,6 +64,7 @@ class SubscriptionServiceTests(TestCase):
         self.assertEqual(sub.status, UserSubscription.Status.ACTIVE)
         self.assertIsNone(check_morph_entitlement(user=self.user, kind="tryon"))
         self.assertIsNone(check_morph_entitlement(user=self.user, kind="analyze"))
+        self.assertIsNone(check_morph_entitlement(user=self.user, kind="voice"))
         self.assertIn("Studio", check_morph_entitlement(user=self.user, kind="studio") or "")
 
         for _ in range(5):
@@ -155,6 +158,8 @@ class SubscriptionAPITests(TestCase):
         self.assertEqual(starter["morph_chat_tokens_monthly"], 50000)
         chat_feat = next(f for f in starter["features"] if f["key"] == "chat")
         self.assertIn("токенов", chat_feat["label_ru"])
+        voice_feat = next(f for f in starter["features"] if f["key"] == "voice")
+        self.assertTrue(voice_feat.get("included", True))
         r = self.client.get("/api/v1/subscriptions/plans/")
         self.assertEqual(r.status_code, 200)
         self.assertEqual(len(r.data["plans"]), 3)
@@ -172,6 +177,7 @@ class SubscriptionAPITests(TestCase):
         self.assertTrue(me.data["has_active"])
         self.assertEqual(me.data["subscription"]["plan_code"], "starter")
         self.assertTrue(me.data["access"]["morph_ai_allowed"])
+        self.assertTrue(me.data["access"]["morph_voice_allowed"])
 
     def test_checkout_rejects_downgrade_and_ignores_client_price(self):
         first = self.client.post(
@@ -214,6 +220,7 @@ class SubscriptionAPITests(TestCase):
         self.assertFalse(me.data["has_active"])
         self.assertFalse(me.data["access"]["morph_ai_allowed"])
         self.assertTrue(me.data["access"]["morph_chat_allowed"])
+        self.assertFalse(me.data["access"]["morph_voice_allowed"])
         self.assertEqual(me.data["usage"]["morph_ai_limit"], 0)
         self.assertEqual(me.data["usage"]["morph_chat_tokens_limit"], 10000)
         self.assertEqual(me.data["usage"]["morph_chat_tokens_remaining"], 10000)

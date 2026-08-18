@@ -32,6 +32,8 @@ const THREADS_KEY = "morph_chat_threads_v3";
 const LEGACY_THREADS_KEY = "morph_chat_threads_v2";
 const ACTIVE_KEY = "morph_chat_active_v3";
 const WELCOME_KEY = "morph_chat_welcome_seen_v1";
+const MAX_CHAT_THREADS = 200;
+const CHAT_HISTORY_TURNS = 24;
 
 export const MORPH_QUICK_PROMPT_IDS = [
   "face_shape",
@@ -150,7 +152,7 @@ function mergeThreads(local: MorphChatThread[], remote: MorphChatThread[]): Morp
   }
   return [...map.values()]
     .sort((a, b) => (Date.parse(b.updatedAt) || 0) - (Date.parse(a.updatedAt) || 0))
-    .slice(0, 40);
+    .slice(0, MAX_CHAT_THREADS);
 }
 
 export function useMorphChat() {
@@ -197,7 +199,7 @@ export function useMorphChat() {
     const cleaned = next
       .map(sanitizeThread)
       .filter((th): th is MorphChatThread => Boolean(th))
-      .slice(0, 40);
+      .slice(0, MAX_CHAT_THREADS);
     setThreads(cleaned);
     threadsRef.current = cleaned;
     setActiveThreadId(activeId);
@@ -245,7 +247,7 @@ export function useMorphChat() {
       threadsRef.current = next;
       setThreads(next);
       if (prefsRef.current.saveHistory) {
-        void AsyncStorage.setItem(THREADS_KEY, JSON.stringify(next.slice(0, 40)));
+        void AsyncStorage.setItem(THREADS_KEY, JSON.stringify(next.slice(0, MAX_CHAT_THREADS)));
         void AsyncStorage.setItem(ACTIVE_KEY, threadId);
       }
     },
@@ -356,7 +358,7 @@ export function useMorphChat() {
         setThreads(parsedThreads);
         threadsRef.current = parsedThreads;
         if (prefs.saveHistory && parsedThreads.length) {
-          await AsyncStorage.setItem(THREADS_KEY, JSON.stringify(parsedThreads.slice(0, 40)));
+          await AsyncStorage.setItem(THREADS_KEY, JSON.stringify(parsedThreads.slice(0, MAX_CHAT_THREADS)));
         }
         await AsyncStorage.removeItem(ACTIVE_KEY);
       } finally {
@@ -440,7 +442,7 @@ export function useMorphChat() {
             : {}),
           ...(options?.voice ? { voice_mode: true } : {}),
         };
-        const historyPayload = prefs.privacyLocalOnly ? [] : history.slice(-16);
+        const historyPayload = prefs.privacyLocalOnly ? [] : history.slice(-CHAT_HISTORY_TURNS);
         const persist = shouldPersistChatToServer(prefs);
 
         let finalText = "";

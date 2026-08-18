@@ -27,16 +27,15 @@ class ChatPromptTests(SimpleTestCase):
 
     def test_system_prompt_asks_for_markdown(self):
         prompt = build_morf_chat_system_prompt({"face_shape": "round"})
-        self.assertIn("Markdown", prompt)
+        self.assertIn("markdown", prompt.lower())
         self.assertIn("dumaloq", prompt)
+        self.assertIn("teroq", prompt.lower())
 
-
-class ChatHistoryTests(SimpleTestCase):
     def test_sanitize_keeps_last_turns(self):
-        rows = [{"role": "user", "content": f"m{i}"} for i in range(20)]
+        rows = [{"role": "user", "content": f"m{i}"} for i in range(30)]
         cleaned = sanitize_chat_history(rows)
-        self.assertEqual(len(cleaned), 16)
-        self.assertEqual(cleaned[0]["content"], "m4")
+        self.assertEqual(len(cleaned), 24)
+        self.assertEqual(cleaned[0]["content"], "m6")
 
     def test_build_contents_drops_duplicate_user_message(self):
         history = sanitize_chat_history(

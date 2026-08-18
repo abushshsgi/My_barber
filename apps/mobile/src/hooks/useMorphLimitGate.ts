@@ -6,7 +6,7 @@ import { useSubscriptions } from "./useSubscriptions";
 export type MorphGateReason = "login" | "subscription" | "limit" | "studio";
 export type MorphGateResult = { ok: true } | { ok: false; reason: MorphGateReason };
 
-type GateKind = "access" | "tryon" | "studio" | "chat";
+type GateKind = "access" | "tryon" | "studio" | "chat" | "voice";
 
 /**
  * Morph AI limit gate.
@@ -49,6 +49,18 @@ export function useMorphLimitGate() {
           return { ok: false, reason: "limit" };
         }
         if (latest?.access?.morph_chat_allowed === false) {
+          return { ok: false, reason: "limit" };
+        }
+        return { ok: true };
+      }
+
+      if (kind === "voice") {
+        if (latest?.access?.morph_voice_allowed === false || !latest?.has_active) {
+          return { ok: false, reason: "subscription" };
+        }
+        const remaining = latest?.usage?.morph_chat_tokens_remaining;
+        const limit = latest?.usage?.morph_chat_tokens_limit;
+        if (typeof remaining === "number" && remaining <= 0 && (limit ?? 0) > 0) {
           return { ok: false, reason: "limit" };
         }
         return { ok: true };
@@ -104,6 +116,8 @@ export function useMorphLimitGate() {
     ensureAccessDetailed: () => ensureDetailed("access"),
     ensureChat: () => ensure("chat"),
     ensureChatDetailed: () => ensureDetailed("chat"),
+    ensureVoice: () => ensure("voice"),
+    ensureVoiceDetailed: () => ensureDetailed("voice"),
     ensureTryOn: () => ensure("tryon"),
     ensureTryOnDetailed: () => ensureDetailed("tryon"),
     ensureStudio: () => ensure("studio"),

@@ -53,9 +53,11 @@ function MorphLimitUpsellBody({
     true;
   const locked =
     kind === "access" ||
+    kind === "voice" ||
     (kind !== "chat" && !me?.has_active && credits <= 0);
   const isTryOn = kind === "tryon";
   const isChat = kind === "chat";
+  const isVoice = kind === "voice";
   const plans = plansQ.data ?? [];
   const activeCode = me?.subscription?.plan_code ?? null;
   const next = nextUpgradePlan(activeCode);
@@ -105,10 +107,12 @@ function MorphLimitUpsellBody({
             Morf AI
           </p>
           <h3 className="mt-2 max-w-[20rem] text-[1.65rem] font-bold leading-[1.15] tracking-tight sm:text-[1.85rem]">
-            {locked && kind !== "chat"
+            {locked && kind !== "chat" && kind !== "voice"
               ? t("aiStylePage.limitSheet.accessTitle")
               : t(
-                  isChat
+                  isVoice
+                    ? "aiStylePage.limitSheet.voiceTitle"
+                    : isChat
                     ? "aiStylePage.limitSheet.chatTitle"
                     : isTryOn
                       ? "aiStylePage.limitSheet.tryonTitle"
@@ -117,13 +121,15 @@ function MorphLimitUpsellBody({
           </h3>
           <p className="mt-2 max-w-[22rem] text-sm leading-relaxed text-white/50">
             {locked
-              ? t("aiStylePage.limitSheet.accessSubtitle")
+              ? isVoice
+                ? t("aiStylePage.limitSheet.voiceSubtitle")
+                : t("aiStylePage.limitSheet.accessSubtitle")
               : planName
                 ? t("aiStylePage.limitSheet.descWithPlan", { plan: planName })
                 : t("aiStylePage.limitSheet.descFree")}
           </p>
 
-          {locked && refGenOn ? (
+          {locked && refGenOn && !isVoice ? (
             <motion.div
               initial={{ y: 8, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
@@ -158,7 +164,9 @@ function MorphLimitUpsellBody({
 
       {locked ? (
         <p className="px-0.5 text-center text-[14px] leading-relaxed text-white/45">
-          {refGenOn
+          {isVoice
+            ? t("aiStylePage.limitSheet.descVoice")
+            : refGenOn
             ? t("aiStylePage.limitSheet.descLocked", {
                 defaultValue:
                   "Yangi hisobda Morph AI ishlamaydi. 1 ta do'stni taklif qilsangiz — 1 generatsiya, yoki obuna sotib oling.",
@@ -262,11 +270,14 @@ export function MorphLimitUpsell({ open, onOpenChange, kind, me }: Props) {
   const isMobile = useIsMobile();
   const locked =
     kind === "access" ||
+    kind === "voice" ||
     (kind !== "chat" &&
       !me?.has_active &&
       (me?.referral_credits ?? me?.access?.referral_credits ?? 0) <= 0);
   const title = locked
-    ? t("aiStylePage.limitSheet.accessTitle")
+    ? kind === "voice"
+      ? t("aiStylePage.limitSheet.voiceTitle")
+      : t("aiStylePage.limitSheet.accessTitle")
     : t(
         kind === "chat"
           ? "aiStylePage.limitSheet.chatTitle"
@@ -275,7 +286,9 @@ export function MorphLimitUpsell({ open, onOpenChange, kind, me }: Props) {
             : "aiStylePage.limitSheet.studioTitle",
       );
   const subtitle = locked
-    ? t("aiStylePage.limitSheet.accessSubtitle")
+    ? kind === "voice"
+      ? t("aiStylePage.limitSheet.voiceSubtitle")
+      : t("aiStylePage.limitSheet.accessSubtitle")
     : t("aiStylePage.limitSheet.subtitle");
 
   if (isMobile) {

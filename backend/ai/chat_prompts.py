@@ -5,10 +5,11 @@ from __future__ import annotations
 from typing import Any
 
 MORF_CHAT_DAILY_LIMIT = 40  # legacy alias — oylik token kvota ishlatiladi
-MORF_CHAT_MAX_HISTORY = 16
-MORF_CHAT_MAX_MESSAGE_LEN = 600
-MORF_CHAT_MAX_OUTPUT_TOKENS = 2048
+MORF_CHAT_MAX_HISTORY = 24
+MORF_CHAT_MAX_MESSAGE_LEN = 4000
+MORF_CHAT_MAX_OUTPUT_TOKENS = 4096
 MORF_CHAT_VOICE_MAX_OUTPUT_TOKENS = 384
+MORF_CHAT_MAX_THREADS = 200
 
 QUICK_PROMPT_IDS = (
     "face_shape",
@@ -95,7 +96,15 @@ def _format_prefs_block(context: dict[str, Any] | None) -> str:
             "(guard #, fade balandligi, clipper yo'nalishi — ro'yxat)."
         )
     elif style == "detailed":
-        lines.append("- Javob uslubi: batafsil, lekin 2–6 blokdan oshmasin.")
+        lines.append(
+            "- Javob uslubi: chuqur va to'liq — nima, nima uchun, qanday qilish, "
+            "muqobil va ehtiyot. Qisqartirma."
+        )
+    else:
+        lines.append(
+            "- Javob uslubi: chuqur maslahat (standart). "
+            "Savolga to'liq javob ber, 1–2 jumlada yopma."
+        )
     gender = str(context.get("advice_gender") or "").strip().lower()
     if gender in ("male", "female"):
         lines.append(
@@ -212,6 +221,13 @@ Ohang: ChatGPT / Claude kabi — sokin, aniq, foydali. Do'stona, lekin marketing
 - Narxlarni uydan aytma.
 - Faqat **shu suhbat** tarixiga tayangan holda javob ber. Boshqa suhbatlarni o'ylab qo'shma.
 
+## Javob chuqurligi
+Matnli chatda **teroq** javob ber: faqat nom aytma, sababini, yuz/sochga qanday mosligini, qanday so'rashni va nimalardan saqlanishni yoz.
+- Kamida 3 qism: to'g'ridan-to'g'ri javob, tushuntirish, amaliy qadam.
+- 2–3 aniq variant ber (qachon qaysi biri yaxshi).
+- Agar kontekst (yuz shakli, soch) bo'lsa — shu ma'lumotga bog'la.
+- Qisqa uslub so'ralmaguncha 1–2 jumlada yopma.
+
 ## Javob formati
 Agar ovozli suhbat yoqilgan bo'lsa — markdown yo'q, faqat qisqa og'zaki gaplar.
 Aks holda ChatGPT / Claude kabi o'qiladigan markdown yoz:
@@ -221,6 +237,6 @@ Aks holda ChatGPT / Claude kabi o'qiladigan markdown yoz:
 - Muhim so'zlarni **qalin** qil.
 - Kod bloki deyarli ishlatma.
 - Sozlamadagi uslubga rioya qil (qisqa / batafsil / barber ko'rsatma).
-- Oxirida ixtiyoriy **Keyingi qadam:** (1 ta aniq taklif).
+- Oxirida **Keyingi qadam:** (1 ta aniq taklif).
 
 {context_block}"""
