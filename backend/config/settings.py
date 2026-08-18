@@ -138,6 +138,12 @@ DGIS_MAPGL_KEY = (
 )
 # Scan + tahlil: faqat gemini-2.5-flash (AI Studio kalit)
 GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash").strip() or "gemini-2.5-flash"
+# Morf AI chat — arzon Flash-Lite
+GEMINI_CHAT_MODEL = (
+    os.environ.get("GEMINI_CHAT_MODEL", "gemini-2.5-flash-lite").strip()
+    or "gemini-2.5-flash-lite"
+)
+AI_USD_TO_UZS = os.environ.get("AI_USD_TO_UZS", "11857").strip() or "11857"
 GEMINI_TTS_MODEL = (
     os.environ.get("GEMINI_TTS_MODEL", "gemini-2.5-flash-preview-tts").strip()
     or "gemini-2.5-flash-preview-tts"

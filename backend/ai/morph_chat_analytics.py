@@ -12,8 +12,10 @@ from django.utils import timezone
 from ai.chat_persist import serialize_message, serialize_thread
 from ai.models import AiGenerationUsage, MorphAiChatMessage, MorphAiChatThread
 from ai.morph_analytics import _money, _safe_limit, _user_label
+from ai.usage_pricing import usd_to_uzs
 from control_panel.platform_analytics import resolve_range
 from subscriptions.models import SubscriptionUsagePeriod, UserSubscription
+from subscriptions.plans import FREE_MORPH_CHAT_TOKENS, get_plan
 from subscriptions.services import current_period_bounds
 
 ACTIVE_WINDOW = timedelta(minutes=15)
@@ -54,6 +56,22 @@ def _sub_limit(entitlements: dict[str, Any] | None, key: str) -> int:
         return int((entitlements or {}).get(key) or 0)
     except (TypeError, ValueError):
         return 0
+
+
+def _chat_limit_for_ents(ents: dict[str, Any] | None, plan_code: str = "") -> int:
+    raw = (ents or {}).get("morph_chat_tokens_monthly")
+    if raw is not None:
+        try:
+            return max(0, int(raw))
+        except (TypeError, ValueError):
+            pass
+    plan = get_plan(plan_code) if plan_code else None
+    if plan:
+        try:
+            return max(0, int(plan.get("morph_chat_tokens_monthly") or FREE_MORPH_CHAT_TOKENS))
+        except (TypeError, ValueError):
+            return FREE_MORPH_CHAT_TOKENS
+    return FREE_MORPH_CHAT_TOKENS
 
 
 def build_morph_chat_ops(
@@ -173,6 +191,8 @@ def build_morph_chat_ops(
         sub = subs.get(uid)
         usage = usage_map.get(uid)
         ents = (sub.entitlements if sub else None) or {}
+        chat_limit = _chat_limit_for_ents(ents, sub.plan_code if sub else "")
+        chat_used = int(usage.morph_chat_tokens_used) if usage else 0
         top_users.append(
             {
                 "user_id": uid,
@@ -185,6 +205,7 @@ def build_morph_chat_ops(
                 "tokens": int(row["tokens"] or 0),
                 "prompt_tokens": int(row["prompt_tokens"] or 0),
                 "cost_usd": _money(row["cost_usd"]),
+                "cost_uzs": usd_to_uzs(row["cost_usd"]),
                 "last_at": row["last_at"].isoformat() if row.get("last_at") else None,
                 "threads": int(thread_counts.get(uid) or 0),
                 "plan_code": (sub.plan_code if sub else "") or "",
@@ -193,6 +214,9 @@ def build_morph_chat_ops(
                 "ends_at": sub.ends_at.isoformat() if sub and sub.ends_at else None,
                 "morph_ai_used": int(usage.morph_ai_used) if usage else 0,
                 "morph_ai_limit": _sub_limit(ents, "morph_ai_monthly"),
+                "token_used_month": chat_used,
+                "token_limit": chat_limit,
+                "token_remaining": max(0, chat_limit - chat_used),
             }
         )
 
@@ -230,6 +254,7 @@ def build_morph_chat_ops(
                 "candidates_tokens": row.candidates_tokens,
                 "total_tokens": row.total_tokens,
                 "cost_usd": _money(row.cost_usd),
+                "cost_uzs": usd_to_uzs(row.cost_usd),
                 "latency_ms": row.latency_ms,
                 "error_detail": row.error_detail,
                 "created_at": row.created_at.isoformat() if row.created_at else None,
@@ -293,6 +318,8 @@ def build_morph_chat_ops(
             "prompt_tokens": int(totals["sum_prompt_tokens"] or 0),
             "candidates_tokens": int(totals["sum_candidates_tokens"] or 0),
             "total_cost_usd": _money(totals["total_cost"]),
+            "total_cost_uzs": usd_to_uzs(totals["total_cost"]),
+            "usd_to_uzs_rate": usd_to_uzs(1),
             "avg_cost_usd": _money(totals["avg_cost"]),
             "avg_latency_ms": int(totals["avg_latency"] or 0),
             "avg_tokens": int(totals["avg_tokens"] or 0),
@@ -308,6 +335,7 @@ def build_morph_chat_ops(
                 "tokens": int(row["tokens"] or 0),
                 "prompt_tokens": int(row["prompt_tokens"] or 0),
                 "cost_usd": _money(row["cost_usd"]),
+                "cost_uzs": usd_to_uzs(row["cost_usd"]),
             }
             for row in daily
         ],

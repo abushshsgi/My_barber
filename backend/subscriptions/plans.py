@@ -21,17 +21,19 @@ _PLANS: dict[str, dict[str, Any]] = {
         "name_uz": "Starter",
         "name_ru": "Starter",
         "name_en": "Starter",
-        "price_uzs": Decimal("19990"),
+        "price_uzs": Decimal("9990"),
         "period_days": 30,
-        "morph_ai_monthly": 10,
+        "morph_ai_monthly": 5,
         "morph_studio_monthly": 0,
+        "morph_chat_tokens_monthly": 50_000,
         "family_members_max": 0,
         "morph_care": False,
         "badge": "basic",
         "sort_order": 1,
         "highlight": False,
         "features": [
-            {"key": "morph_ai", "label_uz": "Morph AI — oyiga 10 marta"},
+            {"key": "morph_ai", "label_uz": "Morph AI try-on — oyiga 5 marta"},
+            {"key": "chat", "label_uz": "Morf AI chat — 50 000 token / oy"},
             {"key": "badge", "label_uz": "Oddiy tasdiqlangan belgi"},
             {"key": "studio", "label_uz": "Morph AI Studio — yo'q", "included": False},
             {"key": "family", "label_uz": "Oila a'zolari — yo'q", "included": False},
@@ -47,13 +49,15 @@ _PLANS: dict[str, dict[str, Any]] = {
         "period_days": 30,
         "morph_ai_monthly": 20,
         "morph_studio_monthly": 30,
+        "morph_chat_tokens_monthly": 150_000,
         "family_members_max": 2,
         "morph_care": False,
         "badge": "plus",
         "sort_order": 2,
         "highlight": True,
         "features": [
-            {"key": "morph_ai", "label_uz": "Morph AI — oyiga 20 marta"},
+            {"key": "morph_ai", "label_uz": "Morph AI try-on — oyiga 20 marta"},
+            {"key": "chat", "label_uz": "Morf AI chat — 150 000 token / oy"},
             {"key": "studio", "label_uz": "Morph AI Studio — 30 marta"},
             {"key": "family", "label_uz": "Oila a'zolari — 2 kishi (qo'shish va bron)"},
             {"key": "badge", "label_uz": "Premium tasdiqlangan belgi"},
@@ -69,13 +73,15 @@ _PLANS: dict[str, dict[str, Any]] = {
         "period_days": 30,
         "morph_ai_monthly": 100,
         "morph_studio_monthly": 150,
+        "morph_chat_tokens_monthly": 500_000,
         "family_members_max": FAMILY_UNLIMITED,
         "morph_care": True,
         "badge": "pro",
         "sort_order": 3,
         "highlight": False,
         "features": [
-            {"key": "morph_ai", "label_uz": "Morph AI — oyiga 100 marta"},
+            {"key": "morph_ai", "label_uz": "Morph AI try-on — oyiga 100 marta"},
+            {"key": "chat", "label_uz": "Morf AI chat — 500 000 token / oy"},
             {"key": "studio", "label_uz": "Morph AI Studio — 150 marta"},
             {"key": "family", "label_uz": "Oila a'zolari — cheksiz qo'shish va bron"},
             {"key": "care", "label_uz": "Morph AI Parvarish"},
@@ -85,9 +91,12 @@ _PLANS: dict[str, dict[str, Any]] = {
     },
 }
 
-# Yangi user — Morph AI umuman yo'q. Faqat pullik obuna yoki (admin yoqsa) 1 referal = 1 generatsiya.
+# Yangi user — try-on yo'q, chat uchun 10k token.
 FREE_MORPH_AI_MONTHLY = 0
 FREE_MORPH_STUDIO_MONTHLY = 0
+FREE_MORPH_CHAT_TOKENS = 10_000
+# Bitta chat javobi uchun minimal qoldiq (system prompt + javob).
+CHAT_TOKEN_MIN_TURN = 200
 
 
 def get_plan(code: str) -> dict[str, Any] | None:

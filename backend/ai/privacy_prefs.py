@@ -7,7 +7,6 @@ from typing import Any
 
 from django.db.models.fields.files import FieldFile
 
-from ai.chat_prompts import MORF_CHAT_DAILY_LIMIT
 from ai.models import (
     AiStyleHistoryEntry,
     MorphAiChatMessage,
@@ -19,7 +18,7 @@ from ai.models import (
 
 logger = logging.getLogger(__name__)
 
-CHAT_LIMIT_WARN_AT = 3
+CHAT_LIMIT_WARN_AT = 1000
 
 PREF_BOOL_FIELDS = (
     "privacy_local_only",
@@ -44,18 +43,10 @@ def user_allows_look_persist(user) -> bool:
     return bool(get_or_create_prefs(user).persist_looks)
 
 
-def chat_limits_payload(user_id: int) -> dict[str, Any]:
-    from ai.services.gemini_chat import count_user_chat_today
+def chat_limits_payload(user) -> dict[str, Any]:
+    from ai.services.gemini_chat import chat_limits_from_user
 
-    used = count_user_chat_today(user_id)
-    remaining = max(0, MORF_CHAT_DAILY_LIMIT - used)
-    return {
-        "daily_limit": MORF_CHAT_DAILY_LIMIT,
-        "daily_used": used,
-        "daily_remaining": remaining,
-        "warn_at": CHAT_LIMIT_WARN_AT,
-        "should_warn": remaining <= CHAT_LIMIT_WARN_AT,
-    }
+    return chat_limits_from_user(user)
 
 
 def serialize_prefs(prefs: MorphAiUserPrefs) -> dict[str, bool]:
@@ -152,7 +143,7 @@ def serialize_privacy(user) -> dict[str, Any]:
     prefs = get_or_create_prefs(user)
     return {
         "prefs": serialize_prefs(prefs),
-        "limits": chat_limits_payload(user.pk),
+        "limits": chat_limits_payload(user),
         "data": data_counts(user_id=user.pk),
         "updated_at": prefs.updated_at.isoformat() if prefs.updated_at else None,
     }

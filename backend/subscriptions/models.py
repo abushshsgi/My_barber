@@ -135,6 +135,7 @@ class SubscriptionUsagePeriod(models.Model):
     period_end = models.DateField()
     morph_ai_used = models.PositiveIntegerField(default=0)
     morph_studio_used = models.PositiveIntegerField(default=0)
+    morph_chat_tokens_used = models.PositiveIntegerField(default=0)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:

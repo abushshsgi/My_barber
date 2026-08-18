@@ -15,7 +15,7 @@ from accounts.models import SkinProfile, User
 
 from ai.age_groups import birth_year_to_group, normalize_age_group, resolve_hairstyle_image_path
 from ai.explore_personas import has_persona_style_asset, list_explore_personas, normalize_persona_id
-from subscriptions.services import can_use_morph_care
+from subscriptions.services import can_use_morph_care, get_active_subscription
 
 from .history_storage import image_file_from_source, save_history_photo, trim_user_history
 from .models import (
@@ -671,18 +671,27 @@ def _chat_should_persist(request) -> bool:
     return True
 
 
+def _apply_chat_token_usage(user, usage: dict) -> dict:
+    from subscriptions.services import record_morph_chat_tokens
+
+    record_morph_chat_tokens(user=user, tokens=int(usage.get("total_tokens") or 0))
+    return chat_limits_payload(user)
+
+
 def _chat_thread_id(request) -> str:
     return str(request.data.get("thread_id") or request.data.get("threadId") or "").strip()[:64]
 
 
 def _voice_feature_blocked(user) -> Response | None:
-    """Ovoz STT/TTS — obuna kerak, kunlik chat limitini yemaydi."""
+    """Ovoz STT/TTS — obuna kerak (arzon chat tokeniga kirmaydi)."""
     from ai.models import MorphAiSettings
     from subscriptions.services import check_morph_entitlement
 
     s = MorphAiSettings.load()
     if not s.analyze_enabled:
         return morph_generation_blocked_response("Morph AI hozir ishlamayapti.")
+    if not get_active_subscription(user):
+        return morph_generation_blocked_response("Ovozli suhbat uchun obuna kerak.")
     blocked = check_morph_entitlement(user=user, kind="chat")
     if blocked:
         return morph_generation_blocked_response(blocked)
@@ -763,11 +772,7 @@ class AiMorphChatView(UnthrottledAPIView):
             )
 
         try:
-            from ai.chat_prompts import MORF_CHAT_DAILY_LIMIT
-            from ai.services.gemini_chat import (
-                count_user_chat_today,
-                generate_morf_chat_reply,
-            )
+            from ai.services.gemini_chat import generate_morf_chat_reply
 
             result = generate_morf_chat_reply(
                 user_message=str(message),
@@ -775,10 +780,7 @@ class AiMorphChatView(UnthrottledAPIView):
                 context=context,
             )
             usage = result.pop("usage", None) or {}
-            limits = result.pop("limits", None) or {}
-            daily_used = count_user_chat_today(user.pk) + 1
-            limits["daily_used"] = daily_used
-            limits["daily_remaining"] = max(0, MORF_CHAT_DAILY_LIMIT - daily_used)
+            result.pop("limits", None)
 
             usage_row = record_ai_generation(
                 user_id=user.pk,
@@ -795,6 +797,7 @@ class AiMorphChatView(UnthrottledAPIView):
                 tokens_estimated=bool(usage.get("tokens_estimated")),
                 latency_ms=int(usage.get("latency_ms") or 0),
             )
+            limits = _apply_chat_token_usage(user, usage)
             reply = result.get("reply") or ""
             if persist:
                 append_chat_turn(
@@ -823,8 +826,7 @@ class AiMorphChatView(UnthrottledAPIView):
             return Response({"detail": exc.message}, status=exc.status)
 
     def _stream_reply(self, *, user, message: str, history, context, thread_id: str, persist: bool):
-        from ai.chat_prompts import MORF_CHAT_DAILY_LIMIT
-        from ai.services.gemini_chat import count_user_chat_today, stream_morf_chat_reply
+        from ai.services.gemini_chat import stream_morf_chat_reply
 
         def events():
             try:
@@ -837,10 +839,6 @@ class AiMorphChatView(UnthrottledAPIView):
                         yield f"data: {json.dumps({'delta': event['delta']}, ensure_ascii=False)}\n\n"
                     if event.get("done"):
                         usage = event.get("usage") or {}
-                        limits = event.get("limits") or {}
-                        daily_used = count_user_chat_today(user.pk) + 1
-                        limits["daily_used"] = daily_used
-                        limits["daily_remaining"] = max(0, MORF_CHAT_DAILY_LIMIT - daily_used)
                         usage_row = record_ai_generation(
                             user_id=user.pk,
                             kind="chat",
@@ -856,6 +854,7 @@ class AiMorphChatView(UnthrottledAPIView):
                             tokens_estimated=bool(usage.get("tokens_estimated")),
                             latency_ms=int(usage.get("latency_ms") or 0),
                         )
+                        limits = _apply_chat_token_usage(user, usage)
                         reply = event.get("reply") or ""
                         if persist:
                             append_chat_turn(
@@ -1369,7 +1368,7 @@ class MorphAiPrivacyDataView(UnthrottledAPIView):
 
 
 class MorphAiChatLimitsView(UnthrottledAPIView):
-    """GET — kunlik chat limiti (xabar yubormasdan)."""
+    """GET — oylik chat token limiti (xabar yubormasdan)."""
 
     permission_classes = [IsAuthenticated]
 
@@ -1377,7 +1376,7 @@ class MorphAiChatLimitsView(UnthrottledAPIView):
         user = _require_customer_user(request)
         if isinstance(user, Response):
             return user
-        return Response(chat_limits_payload(user.pk))
+        return Response(chat_limits_payload(user))
 
 
 class AiStyleStudioCatalogView(UnthrottledAPIView):

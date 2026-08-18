@@ -13,7 +13,6 @@ from django.conf import settings
 from django.utils import timezone
 
 from ai.chat_prompts import (
-    MORF_CHAT_DAILY_LIMIT,
     MORF_CHAT_MAX_HISTORY,
     MORF_CHAT_MAX_MESSAGE_LEN,
     MORF_CHAT_MAX_OUTPUT_TOKENS,
@@ -22,7 +21,6 @@ from ai.chat_prompts import (
     is_voice_mode,
 )
 from ai.services.errors import AiStyleError, map_gemini_http_error, read_http_error_body
-from ai.services.gemini_style import _vision_model
 from ai.usage_pricing import finalize_usage
 from ai.services.vertex_auth import get_vertex_access_token, vertex_configured
 from ai.services.vertex_client import build_vertex_generate_url, generate_content
@@ -30,6 +28,32 @@ from ai.services.vertex_client import build_vertex_generate_url, generate_conten
 logger = logging.getLogger(__name__)
 
 ChatMessage = dict[str, str]
+
+
+def _chat_model() -> str:
+    configured = (getattr(settings, "GEMINI_CHAT_MODEL", None) or "").strip()
+    return configured or "gemini-2.5-flash-lite"
+
+
+def chat_limits_from_user(user) -> dict[str, Any]:
+    from subscriptions.services import chat_token_snapshot
+
+    snap = chat_token_snapshot(user)
+    limit = snap["morph_chat_tokens_limit"]
+    used = snap["morph_chat_tokens_used"]
+    remaining = snap["morph_chat_tokens_remaining"]
+    warn_at = max(500, int(limit * 0.1)) if limit else 500
+    return {
+        "period": "month",
+        "token_limit": limit,
+        "token_used": used,
+        "token_remaining": remaining,
+        "warn_at": warn_at,
+        "should_warn": remaining <= warn_at,
+        "daily_limit": limit,
+        "daily_used": used,
+        "daily_remaining": remaining,
+    }
 
 
 def count_user_chat_today(user_id: int) -> int:
@@ -45,13 +69,13 @@ def count_user_chat_today(user_id: int) -> int:
 
 
 def check_chat_daily_limit(user_id: int) -> str | None:
-    used = count_user_chat_today(user_id)
-    if used >= MORF_CHAT_DAILY_LIMIT:
-        return (
-            f"Kunlik Morf AI chat limiti tugadi ({MORF_CHAT_DAILY_LIMIT} ta xabar). "
-            "Ertaga qayting yoki try-on funksiyasidan foydalaning."
-        )
-    return None
+    from accounts.models import User
+    from subscriptions.services import check_morph_entitlement
+
+    user = User.objects.filter(pk=user_id).first()
+    if not user:
+        return None
+    return check_morph_entitlement(user=user, kind="chat")
 
 
 def _normalize_role(role: str) -> str:
@@ -225,7 +249,7 @@ def generate_morf_chat_reply(
         "generationConfig": _chat_generation_config(context),
     }
 
-    model = _vision_model()
+    model = _chat_model()
     provider = "vertex" if vertex_configured() else "studio"
     started = time.perf_counter()
 
@@ -260,7 +284,7 @@ def generate_morf_chat_reply(
 
     latency_ms = int((time.perf_counter() - started) * 1000)
     reply = _extract_reply_text(payload)
-    usage_nums = finalize_usage(payload, kind="analyze")
+    usage_nums = finalize_usage(payload, kind="chat")
 
     return {
         "reply": reply,
@@ -277,7 +301,7 @@ def generate_morf_chat_reply(
             "tokens_estimated": usage_nums["tokens_estimated"],
         },
         "limits": {
-            "daily_limit": MORF_CHAT_DAILY_LIMIT,
+            "daily_limit": None,
             "daily_used": None,
             "daily_remaining": None,
         },
@@ -325,7 +349,7 @@ def stream_morf_chat_reply(
         "generationConfig": _chat_generation_config(context),
     }
 
-    model = _vision_model()
+    model = _chat_model()
     vertex = vertex_configured()
     provider = "vertex" if vertex else "studio"
     api_key = (getattr(settings, "GEMINI_API_KEY", None) or "").strip()
@@ -373,7 +397,7 @@ def stream_morf_chat_reply(
         raise AiStyleError("AI javob bermadi.", 502)
 
     latency_ms = int((time.perf_counter() - started) * 1000)
-    usage_nums = finalize_usage(last_payload or {}, kind="analyze")
+    usage_nums = finalize_usage(last_payload or {}, kind="chat")
     yield {
         "done": True,
         "reply": reply,
@@ -390,7 +414,7 @@ def stream_morf_chat_reply(
             "tokens_estimated": usage_nums["tokens_estimated"],
         },
         "limits": {
-            "daily_limit": MORF_CHAT_DAILY_LIMIT,
+            "daily_limit": None,
             "daily_used": None,
             "daily_remaining": None,
         },

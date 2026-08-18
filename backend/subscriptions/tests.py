@@ -17,6 +17,7 @@ from subscriptions.services import (
     check_morph_entitlement,
     deactivate_subscription,
     expire_if_needed,
+    record_morph_chat_tokens,
     record_morph_usage,
 )
 from wallet.services.wallet_service import WalletService
@@ -47,6 +48,7 @@ class SubscriptionServiceTests(TestCase):
         self.assertIn("obuna", msg.lower())
         self.assertIsNone(check_morph_entitlement(user=self.user, kind="analyze"))
         self.assertIsNone(check_morph_entitlement(user=self.user, kind="face_check"))
+        self.assertIsNone(check_morph_entitlement(user=self.user, kind="chat"))
         studio = check_morph_entitlement(user=self.user, kind="studio") or ""
         self.assertIn("obuna", studio.lower())
 
@@ -62,9 +64,17 @@ class SubscriptionServiceTests(TestCase):
         self.assertIsNone(check_morph_entitlement(user=self.user, kind="analyze"))
         self.assertIn("Studio", check_morph_entitlement(user=self.user, kind="studio") or "")
 
-        for _ in range(10):
+        for _ in range(5):
             record_morph_usage(user=self.user, kind="tryon")
         self.assertIn("limiti", check_morph_entitlement(user=self.user, kind="tryon") or "")
+
+    def test_new_user_chat_token_quota(self):
+        self.assertIsNone(check_morph_entitlement(user=self.user, kind="chat"))
+        record_morph_chat_tokens(user=self.user, tokens=9800)
+        self.assertIsNone(check_morph_entitlement(user=self.user, kind="chat"))
+        record_morph_chat_tokens(user=self.user, tokens=200)
+        msg = check_morph_entitlement(user=self.user, kind="chat") or ""
+        self.assertIn("token", msg.lower())
 
     def test_expire_blocks_again(self):
         sub = activate_subscription(
@@ -139,6 +149,10 @@ class SubscriptionAPITests(TestCase):
         r = anon.get("/api/v1/subscriptions/plans/")
         self.assertEqual(r.status_code, 200)
         self.assertEqual(len(r.data["plans"]), 3)
+        starter = next(p for p in r.data["plans"] if p["code"] == "starter")
+        self.assertEqual(starter["price_uzs"], 9990)
+        self.assertEqual(starter["morph_ai_monthly"], 5)
+        self.assertEqual(starter["morph_chat_tokens_monthly"], 50000)
         r = self.client.get("/api/v1/subscriptions/plans/")
         self.assertEqual(r.status_code, 200)
         self.assertEqual(len(r.data["plans"]), 3)
@@ -162,6 +176,9 @@ class SubscriptionAPITests(TestCase):
         self.assertEqual(me.status_code, 200)
         self.assertFalse(me.data["has_active"])
         self.assertFalse(me.data["access"]["morph_ai_allowed"])
+        self.assertTrue(me.data["access"]["morph_chat_allowed"])
         self.assertEqual(me.data["usage"]["morph_ai_limit"], 0)
+        self.assertEqual(me.data["usage"]["morph_chat_tokens_limit"], 10000)
+        self.assertEqual(me.data["usage"]["morph_chat_tokens_remaining"], 10000)
         self.assertTrue(me.data["referral_generation_enabled"])
         self.assertNotIn("referral_trial", me.data)

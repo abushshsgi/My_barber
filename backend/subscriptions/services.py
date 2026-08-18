@@ -19,7 +19,9 @@ from subscriptions.models import (
     UserSubscription,
 )
 from subscriptions.plans import (
+    CHAT_TOKEN_MIN_TURN,
     FREE_MORPH_AI_MONTHLY,
+    FREE_MORPH_CHAT_TOKENS,
     FREE_MORPH_STUDIO_MONTHLY,
     get_plan,
     serialize_plan,
@@ -101,6 +103,7 @@ def entitlement_snapshot(plan_code: str) -> dict[str, Any]:
         "plan_code": plan["code"],
         "morph_ai_monthly": plan["morph_ai_monthly"],
         "morph_studio_monthly": plan["morph_studio_monthly"],
+        "morph_chat_tokens_monthly": int(plan.get("morph_chat_tokens_monthly") or 0),
         "family_members_max": plan["family_members_max"],
         "morph_care": plan["morph_care"],
         "badge": plan["badge"],
@@ -161,10 +164,44 @@ def get_or_create_usage(user: User) -> SubscriptionUsagePeriod:
     return usage
 
 
+def chat_token_limit_for_user(user: User) -> int:
+    """Obuna snapshot, keyin joriy tarif, aks holda bepul 10k."""
+    sub = get_active_subscription(user)
+    if not sub:
+        return FREE_MORPH_CHAT_TOKENS
+    ents = sub.entitlements or {}
+    raw = ents.get("morph_chat_tokens_monthly")
+    if raw is not None:
+        try:
+            return max(0, int(raw))
+        except (TypeError, ValueError):
+            pass
+    plan = get_plan(sub.plan_code)
+    if plan:
+        try:
+            return max(0, int(plan.get("morph_chat_tokens_monthly") or FREE_MORPH_CHAT_TOKENS))
+        except (TypeError, ValueError):
+            return FREE_MORPH_CHAT_TOKENS
+    return FREE_MORPH_CHAT_TOKENS
+
+
+def chat_token_snapshot(user: User) -> dict[str, int]:
+    usage = get_or_create_usage(user)
+    limit = chat_token_limit_for_user(user)
+    used = int(usage.morph_chat_tokens_used or 0)
+    remaining = max(0, limit - used)
+    return {
+        "morph_chat_tokens_used": used,
+        "morph_chat_tokens_limit": limit,
+        "morph_chat_tokens_remaining": remaining,
+    }
+
+
 def usage_snapshot(user: User, entitlements: dict[str, Any] | None) -> dict[str, Any]:
     usage = get_or_create_usage(user)
     ai_limit = int((entitlements or {}).get("morph_ai_monthly") or 0)
     studio_limit = int((entitlements or {}).get("morph_studio_monthly") or 0)
+    chat = chat_token_snapshot(user)
     return {
         "period_start": usage.period_start.isoformat(),
         "period_end": usage.period_end.isoformat(),
@@ -176,6 +213,7 @@ def usage_snapshot(user: User, entitlements: dict[str, Any] | None) -> dict[str,
         "morph_studio_remaining": max(0, studio_limit - usage.morph_studio_used)
         if studio_limit
         else 0,
+        **chat,
     }
 
 
@@ -222,6 +260,8 @@ def build_me_payload(user: User) -> dict[str, Any]:
         next_upgrade = {"plan_code": "pro", "label_uz": "Pro ga upgrade"}
 
     allowed = bool(sub) or credits > 0
+    chat = usage
+    chat_remaining = int(chat.get("morph_chat_tokens_remaining") or 0)
     return {
         "has_active": bool(sub),
         "subscription": serialize_subscription(sub) if sub else None,
@@ -236,6 +276,7 @@ def build_me_payload(user: User) -> dict[str, Any]:
         "referral_generation_enabled": ref_on,
         "access": {
             "morph_ai_allowed": allowed,
+            "morph_chat_allowed": chat_remaining >= CHAT_TOKEN_MIN_TURN,
             "reason": None if allowed else "subscription_required",
             "message": None if allowed else _no_subscription_message(),
             "referral_credits": credits,
@@ -446,8 +487,9 @@ def check_morph_entitlement(*, user: User, kind: str) -> str | None:
     """
     Morph AI:
     - analyze / face_check — obunasiz ochiq (tahlil → keyin generatsiya paywall).
+    - chat — obunasiz, oylik token kvota (yangi user 10k).
     - tryon — faol obuna kvotasi YOKI referal krediti (1 do'st = 1 generatsiya).
-    - studio / chat — faol obuna majburiy.
+    - studio — faol obuna majburiy.
     """
     if kind not in ("tryon", "studio", "analyze", "face_check", "chat"):
         return None
@@ -463,8 +505,21 @@ def check_morph_entitlement(*, user: User, kind: str) -> str | None:
     sub = get_active_subscription(user)
 
     if kind == "chat":
-        if not sub:
-            return _no_subscription_message()
+        snap = chat_token_snapshot(user)
+        used = snap["morph_chat_tokens_used"]
+        limit = snap["morph_chat_tokens_limit"]
+        remaining = snap["morph_chat_tokens_remaining"]
+        if remaining < CHAT_TOKEN_MIN_TURN:
+            log_event(
+                action=SubscriptionEvent.Action.LIMIT_HIT,
+                user=user,
+                subscription=sub,
+                detail={"kind": "morph_chat_tokens", "used": used, "limit": limit},
+            )
+            return (
+                f"Oylik Morf AI chat token limiti tugadi ({used}/{limit}). "
+                "Tarifni yangilang — ko'proq token olasiz."
+            )
         return None
 
     if kind == "studio":
@@ -552,9 +607,36 @@ def record_morph_usage(*, user: User, kind: str) -> None:
             "kind": kind,
             "morph_ai_used": usage.morph_ai_used,
             "morph_studio_used": usage.morph_studio_used,
+            "morph_chat_tokens_used": usage.morph_chat_tokens_used,
             "referral_credits": _referral_credits(user),
         },
     )
+
+
+@transaction.atomic
+def record_morph_chat_tokens(*, user: User, tokens: int) -> dict[str, int]:
+    """Chat javobidan keyin oylik token hisoblagichini oshirish."""
+    added = max(0, int(tokens or 0))
+    start, end = current_period_bounds()
+    usage, _ = SubscriptionUsagePeriod.objects.select_for_update().get_or_create(
+        user=user,
+        period_start=start,
+        defaults={"period_end": end},
+    )
+    if added:
+        usage.morph_chat_tokens_used = int(usage.morph_chat_tokens_used or 0) + added
+        usage.save(update_fields=["morph_chat_tokens_used", "updated_at"])
+        log_event(
+            action=SubscriptionEvent.Action.USAGE,
+            user=user,
+            subscription=get_active_subscription(user),
+            detail={
+                "kind": "morph_chat_tokens",
+                "added": added,
+                "used": usage.morph_chat_tokens_used,
+            },
+        )
+    return chat_token_snapshot(user)
 
 
 def _payment_promo_fields(meta: dict | None) -> dict[str, Any]:

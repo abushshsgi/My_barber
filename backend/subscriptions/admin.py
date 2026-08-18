@@ -25,7 +25,13 @@ class SubscriptionPaymentAdmin(admin.ModelAdmin):
 
 @admin.register(SubscriptionUsagePeriod)
 class SubscriptionUsagePeriodAdmin(admin.ModelAdmin):
-    list_display = ("user", "period_start", "morph_ai_used", "morph_studio_used")
+    list_display = (
+        "user",
+        "period_start",
+        "morph_ai_used",
+        "morph_studio_used",
+        "morph_chat_tokens_used",
+    )
     search_fields = ("user__phone", "user__email")
 
 

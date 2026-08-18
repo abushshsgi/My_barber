@@ -40,7 +40,8 @@ class MorphAiPrivacyApiTests(TestCase):
         self.assertFalse(body["prefs"]["privacy_local_only"])
         self.assertTrue(body["prefs"]["persist_looks"])
         self.assertEqual(body["data"]["chat_threads"], 0)
-        self.assertEqual(body["limits"]["daily_limit"], 40)
+        self.assertEqual(body["limits"]["token_limit"], 10000)
+        self.assertEqual(body["limits"]["daily_limit"], 10000)
         self.assertTrue(MorphAiUserPrefs.objects.filter(user=self.user).exists())
 
     def test_privacy_patch_local_only_wipes_chat_threads(self):
@@ -88,4 +89,5 @@ class MorphAiPrivacyApiTests(TestCase):
         self.assertEqual(res.status_code, 200)
         body = res.json()
         self.assertEqual(body["daily_used"], 0)
-        self.assertEqual(body["daily_remaining"], 40)
+        self.assertEqual(body["token_limit"], 10000)
+        self.assertEqual(body["daily_remaining"], 10000)

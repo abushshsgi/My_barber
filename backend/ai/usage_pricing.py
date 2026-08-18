@@ -17,11 +17,18 @@ DEFAULT_IMAGE_OUT_PER_1M = Decimal("30.00")
 DEFAULT_VISION_INPUT_PER_1M = Decimal("0.30")
 DEFAULT_VISION_OUTPUT_PER_1M = Decimal("2.50")
 
+# Gemini 2.5 Flash-Lite — Morf AI chat (arzon)
+DEFAULT_CHAT_INPUT_PER_1M = Decimal("0.10")
+DEFAULT_CHAT_OUTPUT_PER_1M = Decimal("0.40")
+DEFAULT_USD_TO_UZS = Decimal("11857")
+
 # usageMetadata yo'q bo'lsa — taxminiy tokenlar (1K image ≈ 1120 token)
 FALLBACK_IMAGE_INPUT_TOKENS = 1120
 FALLBACK_IMAGE_OUTPUT_TOKENS = 1120
 FALLBACK_VISION_PROMPT_TOKENS = 800
 FALLBACK_VISION_OUTPUT_TOKENS = 200
+FALLBACK_CHAT_PROMPT_TOKENS = 800
+FALLBACK_CHAT_OUTPUT_TOKENS = 400
 
 USD_QUANT = Decimal("0.000001")
 
@@ -46,6 +53,19 @@ def vision_rates() -> tuple[Decimal, Decimal]:
         _dec(getattr(settings, "AI_VISION_INPUT_USD_PER_1M", None), str(DEFAULT_VISION_INPUT_PER_1M)),
         _dec(getattr(settings, "AI_VISION_OUTPUT_USD_PER_1M", None), str(DEFAULT_VISION_OUTPUT_PER_1M)),
     )
+
+
+def chat_rates() -> tuple[Decimal, Decimal]:
+    return (
+        _dec(getattr(settings, "AI_CHAT_INPUT_USD_PER_1M", None), str(DEFAULT_CHAT_INPUT_PER_1M)),
+        _dec(getattr(settings, "AI_CHAT_OUTPUT_USD_PER_1M", None), str(DEFAULT_CHAT_OUTPUT_PER_1M)),
+    )
+
+
+def usd_to_uzs(cost_usd: Decimal | float | str | None) -> int:
+    rate = _dec(getattr(settings, "AI_USD_TO_UZS", None), str(DEFAULT_USD_TO_UZS))
+    raw = cost_usd if isinstance(cost_usd, Decimal) else _dec(cost_usd, "0")
+    return int((raw * rate).quantize(Decimal("1"), rounding=ROUND_HALF_UP))
 
 
 def extract_usage_tokens(payload: dict[str, Any] | None) -> dict[str, int]:
@@ -103,6 +123,18 @@ def estimate_vision_tokens() -> dict[str, int]:
     }
 
 
+def estimate_chat_tokens() -> dict[str, int]:
+    prompt = FALLBACK_CHAT_PROMPT_TOKENS
+    candidates = FALLBACK_CHAT_OUTPUT_TOKENS
+    return {
+        "prompt_tokens": prompt,
+        "candidates_tokens": candidates,
+        "thoughts_tokens": 0,
+        "total_tokens": prompt + candidates,
+        "estimated": True,
+    }
+
+
 def cost_usd_for_image(
     *,
     prompt_tokens: int,
@@ -131,6 +163,18 @@ def cost_usd_for_vision(
     return (input_cost + output_cost).quantize(USD_QUANT, rounding=ROUND_HALF_UP)
 
 
+def cost_usd_for_chat(
+    *,
+    prompt_tokens: int,
+    candidates_tokens: int,
+    thoughts_tokens: int = 0,
+) -> Decimal:
+    inp, out = chat_rates()
+    input_cost = (Decimal(prompt_tokens) / Decimal(1_000_000)) * inp
+    output_cost = (Decimal(candidates_tokens + thoughts_tokens) / Decimal(1_000_000)) * out
+    return (input_cost + output_cost).quantize(USD_QUANT, rounding=ROUND_HALF_UP)
+
+
 def finalize_usage(
     payload: dict[str, Any] | None,
     *,
@@ -143,12 +187,20 @@ def finalize_usage(
     if tokens["total_tokens"] <= 0:
         if kind in ("tryon", "studio"):
             tokens = estimate_image_tokens(input_images=input_images)
+        elif kind == "chat":
+            tokens = estimate_chat_tokens()
         else:
             tokens = estimate_vision_tokens()
         estimated = bool(tokens.pop("estimated", True))
 
     if kind in ("tryon", "studio"):
         cost = cost_usd_for_image(
+            prompt_tokens=tokens["prompt_tokens"],
+            candidates_tokens=tokens["candidates_tokens"],
+            thoughts_tokens=tokens["thoughts_tokens"],
+        )
+    elif kind == "chat":
+        cost = cost_usd_for_chat(
             prompt_tokens=tokens["prompt_tokens"],
             candidates_tokens=tokens["candidates_tokens"],
             thoughts_tokens=tokens["thoughts_tokens"],

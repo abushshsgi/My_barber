@@ -605,11 +605,6 @@ def check_user_can_generate(*, user_id: int | None, kind: str) -> str | None:
         return None
 
     if kind == "chat":
-        from ai.services.gemini_chat import check_chat_daily_limit
-
-        daily = check_chat_daily_limit(user_id)
-        if daily:
-            return daily
         from accounts.models import User
         from subscriptions.services import check_morph_entitlement
 
@@ -642,7 +637,7 @@ def is_morph_plan_limit_message(message: str) -> bool:
         "Bu reja Morph",
         "do'stingizni taklif",
         "Tarifni yangilang",
-        "Plus/Pro",
+        "Oylik Morf",
     )
     return any(m in msg for m in markers)
 

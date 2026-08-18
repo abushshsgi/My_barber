@@ -3,9 +3,11 @@ from decimal import Decimal
 from django.test import SimpleTestCase
 
 from ai.usage_pricing import (
+    cost_usd_for_chat,
     cost_usd_for_image,
     extract_usage_tokens,
     finalize_usage,
+    usd_to_uzs,
 )
 
 
@@ -35,3 +37,13 @@ class UsagePricingTests(SimpleTestCase):
         self.assertTrue(usage["tokens_estimated"])
         self.assertGreater(usage["total_tokens"], 0)
         self.assertGreater(usage["cost_usd"], Decimal("0"))
+
+    def test_chat_flash_lite_is_cheap(self):
+        # 10k tokens: ~8000 in / 2000 out @ $0.10 / $0.40 → $0.0016
+        cost = cost_usd_for_chat(prompt_tokens=8000, candidates_tokens=2000)
+        self.assertGreater(cost, Decimal("0.001"))
+        self.assertLess(cost, Decimal("0.002"))
+        usage = finalize_usage({}, kind="chat")
+        self.assertGreater(usage["total_tokens"], 0)
+        self.assertLess(usage["cost_usd"], Decimal("0.01"))
+        self.assertGreater(usd_to_uzs(cost), 0)

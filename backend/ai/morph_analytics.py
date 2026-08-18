@@ -10,7 +10,7 @@ from django.db.models import Avg, Count, Max, Min, Q, Sum
 from django.db.models.functions import TruncDate
 from django.utils import timezone
 
-from ai.models import AiGenerationUsage
+from ai.usage_pricing import usd_to_uzs
 from control_panel.platform_analytics import resolve_range
 
 
@@ -203,6 +203,8 @@ def build_morph_ai_analytics(
             "prompt_tokens": int(totals["sum_prompt_tokens"] or 0),
             "candidates_tokens": int(totals["sum_candidates_tokens"] or 0),
             "total_cost_usd": _money(totals["total_cost"]),
+            "total_cost_uzs": usd_to_uzs(totals["total_cost"]),
+            "usd_to_uzs_rate": usd_to_uzs(1),
             "avg_cost_usd": _money(avg_cost),
             "avg_tokens": int(round(float(totals["avg_tokens"] or 0))),
             "avg_latency_ms": int(round(float(totals["avg_latency"] or 0))),
@@ -222,6 +224,7 @@ def build_morph_ai_analytics(
                 "chat": int(row["chat"] or 0),
                 "tokens": int(row["tokens"] or 0),
                 "cost_usd": _money(row["cost_usd"]),
+                "cost_uzs": usd_to_uzs(row["cost_usd"]),
                 "users": int(row["users"] or 0),
             }
             for row in daily
@@ -241,6 +244,7 @@ def build_morph_ai_analytics(
                 "prompt_tokens": int(row["prompt_tokens"] or 0),
                 "candidates_tokens": int(row["candidates_tokens"] or 0),
                 "cost_usd": _money(row["cost_usd"]),
+                "cost_uzs": usd_to_uzs(row["cost_usd"]),
                 "last_at": row["last_at"].isoformat() if row.get("last_at") else None,
             }
             for row in top_users
@@ -267,6 +271,7 @@ def build_morph_ai_analytics(
                 "candidates_tokens": item.candidates_tokens,
                 "total_tokens": item.total_tokens,
                 "cost_usd": _money(item.cost_usd),
+                "cost_uzs": usd_to_uzs(item.cost_usd),
                 "tokens_estimated": item.tokens_estimated,
                 "latency_ms": item.latency_ms,
                 "error_detail": item.error_detail,

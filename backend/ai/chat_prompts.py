@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-MORF_CHAT_DAILY_LIMIT = 40
+MORF_CHAT_DAILY_LIMIT = 40  # legacy alias — oylik token kvota ishlatiladi
 MORF_CHAT_MAX_HISTORY = 16
 MORF_CHAT_MAX_MESSAGE_LEN = 600
 MORF_CHAT_MAX_OUTPUT_TOKENS = 2048
