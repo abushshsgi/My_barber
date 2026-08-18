@@ -486,8 +486,6 @@ export function useMorphChat() {
               limit: resLimits.daily_limit.toLocaleString("uz-UZ"),
             }),
           );
-            }),
-          );
         } else {
           setLimitWarning(null);
         }
