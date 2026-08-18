@@ -1080,8 +1080,18 @@ class MorphAiChatThreadListView(UnthrottledAPIView):
         user = _require_customer_user(request)
         if isinstance(user, Response):
             return user
-        cleared = clear_user_threads(user_id=user.pk)
-        return Response({"ok": True, "deleted": cleared})
+        try:
+            cleared = clear_user_threads(user_id=user.pk)
+        except Exception:
+            logger.exception("Morph chat threads o'chirilmadi user=%s", user.pk)
+            return Response(
+                {
+                    "ok": False,
+                    "detail": "Chatlarni o'chirish amalga oshmadi. Qayta urinib ko'ring.",
+                },
+                status=500,
+            )
+        return Response({"ok": True, "deleted": cleared, "remaining": 0})
 
 
 class MorphAiChatThreadDetailView(UnthrottledAPIView):
@@ -1371,7 +1381,16 @@ class MorphAiPrivacyDataView(UnthrottledAPIView):
         try:
             deleted = wipe_user_morph_data(user_id=user.pk, kind=kind)
         except ValueError as exc:
-            return Response({"detail": str(exc)}, status=400)
+            return Response({"ok": False, "detail": str(exc)}, status=400)
+        except Exception:
+            logger.exception("Morph privacy data o'chirilmadi user=%s kind=%s", user.pk, kind)
+            return Response(
+                {
+                    "ok": False,
+                    "detail": "Ma'lumotlarni o'chirish amalga oshmadi. Qayta urinib ko'ring.",
+                },
+                status=500,
+            )
         return Response({"ok": True, "deleted": deleted, **serialize_privacy(user)})
 
 

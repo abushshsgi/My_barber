@@ -259,8 +259,11 @@ def delete_user_thread(*, user_id: int, client_id: str) -> bool:
 
 
 def clear_user_threads(*, user_id: int) -> int:
-    deleted, _ = MorphAiChatThread.objects.filter(user_id=user_id).delete()
-    return int(deleted or 0)
+    qs = MorphAiChatThread.objects.filter(user_id=user_id)
+    n = qs.count()
+    if n:
+        qs.delete()
+    return int(n)
 
 
 def serialize_message(msg: MorphAiChatMessage) -> dict[str, Any]:

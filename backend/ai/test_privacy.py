@@ -84,6 +84,23 @@ class MorphAiPrivacyApiTests(TestCase):
         self.assertEqual(res.status_code, 200)
         self.assertEqual(res.json()["deleted"]["chats"], 1)
 
+    def test_chat_threads_delete_all_returns_count(self):
+        MorphAiChatThread.objects.create(user=self.user, client_id="t3", title="One")
+        MorphAiChatThread.objects.create(user=self.user, client_id="t4", title="Two")
+        res = self.client.delete("/api/v1/ai/chat/threads/")
+        self.assertEqual(res.status_code, 200)
+        body = res.json()
+        self.assertTrue(body["ok"])
+        self.assertEqual(body["deleted"], 2)
+        self.assertEqual(body["remaining"], 0)
+        self.assertEqual(MorphAiChatThread.objects.filter(user=self.user).count(), 0)
+
+    def test_privacy_data_delete_bad_kind_returns_detail(self):
+        res = self.client.delete("/api/v1/ai/privacy/data/", {"kind": "nope"}, format="json")
+        self.assertEqual(res.status_code, 400)
+        self.assertIn("detail", res.json())
+        self.assertFalse(res.json().get("ok", True))
+
     def test_chat_limits_endpoint(self):
         res = self.client.get("/api/v1/ai/chat/limits/")
         self.assertEqual(res.status_code, 200)

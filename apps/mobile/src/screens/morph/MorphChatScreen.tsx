@@ -406,7 +406,7 @@ export function MorphChatScreen() {
         threadCount={chat.threads.length}
         threads={chat.threads}
         onClose={closeSettings}
-        onClearAllChats={() => void clearAllFromSettings()}
+        onClearAllChats={clearAllFromSettings}
         onOpenSubscription={openSubscriptionFromSettings}
         onSaveHistoryOff={() => void chat.clearAllChats()}
         onPreviewVoice={async (id) => {

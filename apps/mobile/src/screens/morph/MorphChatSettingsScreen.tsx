@@ -11,6 +11,7 @@ import {
   Text,
   View,
 } from "react-native";
+import Svg, { Circle, G } from "react-native-svg";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { MorphAiPrivacyDataCounts, MorphChatLimits } from "../../api/ai";
@@ -52,7 +53,7 @@ type Props = {
   threadCount: number;
   threads: MorphChatThread[];
   onClose: () => void;
-  onClearAllChats: () => void;
+  onClearAllChats: () => void | Promise<void>;
   onOpenSubscription: () => void;
   onSaveHistoryOff?: () => void;
   onPreviewVoice?: (voiceId: MorphVoiceId) => void;
@@ -62,6 +63,20 @@ type Props = {
 type Page = "hub" | "reply" | "chatbot" | "voice" | "limits" | "data" | "help" | "report" | "ticket";
 
 type ChipOption<T extends string> = { value: T; label: string };
+
+type ConfirmSpec = {
+  title: string;
+  body: string;
+  confirmLabel: string;
+  cancelLabel: string;
+  onConfirm: () => void | Promise<void>;
+};
+
+function formatCount(n: number): string {
+  return Math.max(0, Math.round(n))
+    .toString()
+    .replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+}
 
 const BG = "#000000";
 const CARD = "#1C1C1E";
@@ -152,7 +167,9 @@ function SettingsItem({
 }) {
   const body = (
     <View style={styles.item}>
-      <Ionicons name={icon} size={22} color={iconColor ?? "#FFFFFF"} style={styles.itemIcon} />
+      <View style={styles.iconTile}>
+        <Ionicons name={icon} size={18} color={iconColor ?? "#F2F2F7"} />
+      </View>
       <View style={[styles.itemMain, !last && styles.itemBorder]}>
         <View style={styles.itemCopy}>
           <Text style={[styles.itemTitle, titleColor ? { color: titleColor } : null]}>{title}</Text>
@@ -161,7 +178,7 @@ function SettingsItem({
         {value ? <Text style={styles.itemValue}>{value}</Text> : null}
         {trailing}
         {onPress && showChevron ? (
-          <Ionicons name="chevron-forward" size={18} color={MUTED} />
+          <Ionicons name="chevron-forward" size={16} color={MUTED} />
         ) : null}
       </View>
     </View>
@@ -234,8 +251,129 @@ function CloseButton({ onPress, label }: { onPress: () => void; label: string })
       accessibilityLabel={label}
       style={({ pressed }) => [styles.closeBtn, pressed && styles.pressed]}
     >
-      <Ionicons name="close" size={20} color="#FFFFFF" />
+      <Ionicons name="close" size={18} color="#FFFFFF" />
     </Pressable>
+  );
+}
+
+function UsageMeter({
+  pct,
+  used,
+  remaining,
+  limit,
+  usedLabel,
+  leftLabel,
+  color,
+}: {
+  pct: number;
+  used: number;
+  remaining: number;
+  limit: number;
+  usedLabel: string;
+  leftLabel: string;
+  color: string;
+}) {
+  const size = 156;
+  const stroke = 11;
+  const cx = size / 2;
+  const cy = size / 2;
+  const radius = (size - stroke) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const dashOffset = circumference * (1 - pct / 100);
+  return (
+    <View style={styles.meterBlock}>
+      <View style={styles.meterRingWrap}>
+        <Svg width={size} height={size}>
+          <G transform={`rotate(-90 ${cx} ${cy})`}>
+            <Circle
+              cx={cx}
+              cy={cy}
+              r={radius}
+              stroke="#2C2C2E"
+              strokeWidth={stroke}
+              fill="none"
+            />
+            <Circle
+              cx={cx}
+              cy={cy}
+              r={radius}
+              stroke={color}
+              strokeWidth={stroke}
+              fill="none"
+              strokeLinecap="round"
+              strokeDasharray={`${circumference} ${circumference}`}
+              strokeDashoffset={dashOffset}
+            />
+          </G>
+        </Svg>
+        <View style={styles.meterCenter} pointerEvents="none">
+          <Text style={styles.meterPctBig}>{pct}%</Text>
+        </View>
+      </View>
+      <View style={styles.meterStats}>
+        <View style={styles.meterStat}>
+          <View style={[styles.meterDot, { backgroundColor: color }]} />
+          <View style={styles.itemCopy}>
+            <Text style={styles.meterStatLabel}>{usedLabel}</Text>
+            <Text style={styles.meterStatValue}>{formatCount(used)}</Text>
+          </View>
+        </View>
+        <View style={styles.meterStat}>
+          <View style={[styles.meterDot, { backgroundColor: "#3A3A3C" }]} />
+          <View style={styles.itemCopy}>
+            <Text style={styles.meterStatLabel}>{leftLabel}</Text>
+            <Text style={styles.meterStatValue}>{formatCount(remaining)}</Text>
+          </View>
+        </View>
+      </View>
+      {limit > 0 ? (
+        <Text style={styles.meterCap}>{`${formatCount(used)} / ${formatCount(limit)}`}</Text>
+      ) : null}
+    </View>
+  );
+}
+
+function ConfirmSheet({
+  spec,
+  busy,
+  onCancel,
+  onConfirm,
+}: {
+  spec: ConfirmSpec;
+  busy: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <View style={styles.confirmRoot} accessibilityViewIsModal>
+      <Pressable style={styles.confirmScrim} onPress={busy ? undefined : onCancel} />
+      <View style={styles.confirmCard}>
+        <Text style={styles.confirmTitle}>{spec.title}</Text>
+        <Text style={styles.confirmBody}>{spec.body}</Text>
+        <View style={styles.confirmRow}>
+          <Pressable
+            onPress={onCancel}
+            disabled={busy}
+            style={({ pressed }) => [styles.confirmNo, pressed && styles.pressed]}
+            accessibilityRole="button"
+          >
+            <Text style={styles.confirmNoText}>{spec.cancelLabel}</Text>
+          </Pressable>
+          <Pressable
+            onPress={onConfirm}
+            disabled={busy}
+            style={({ pressed }) => [styles.confirmYes, pressed && styles.pressed]}
+            accessibilityRole="button"
+          >
+            {busy ? (
+              <ActivityIndicator color="#FFFFFF" />
+            ) : (
+              <Text style={styles.confirmYesText}>{spec.confirmLabel}</Text>
+            )}
+          </Pressable>
+        </View>
+      </View>
+    </View>
   );
 }
 
@@ -262,6 +400,9 @@ export function MorphChatSettingsScreen({
   const [counts, setCounts] = useState<MorphAiPrivacyDataCounts>(EMPTY_COUNTS);
   const [dataBusy, setDataBusy] = useState(false);
   const [privacySynced, setPrivacySynced] = useState(false);
+  const [confirm, setConfirm] = useState<ConfirmSpec | null>(null);
+  const [confirmBusy, setConfirmBusy] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const name = useMemo(() => displayName(user), [user]);
   const letters = useMemo(() => initials(name), [name]);
@@ -333,23 +474,39 @@ export function MorphChatSettingsScreen({
           setCounts(remote.data);
           setSnap(remote.limits);
           setPrivacySynced(true);
-        } catch {
-          /* offline — local qoladi */
+          setActionError(null);
+        } catch (err) {
+          setActionError(
+            err instanceof Error && err.message.trim()
+              ? err.message
+              : t("chat.settings.dataFail"),
+          );
         }
       }
     },
-    [onSaveHistoryOff],
+    [onSaveHistoryOff, t],
   );
 
   const confirmClear = useCallback(() => {
-    Alert.alert(t("chat.settings.clearTitle"), t("chat.settings.clearBody"), [
-      { text: t("common.cancel"), style: "cancel" },
-      {
-        text: t("chat.settings.clearConfirm"),
-        style: "destructive",
-        onPress: onClearAllChats,
+    setActionError(null);
+    setConfirm({
+      title: t("chat.settings.clearTitle"),
+      body: t("chat.settings.clearBody"),
+      confirmLabel: t("chat.settings.clearConfirm"),
+      cancelLabel: t("chat.settings.clearCancel"),
+      onConfirm: async () => {
+        try {
+          await onClearAllChats();
+        } catch (err) {
+          setActionError(
+            err instanceof Error && err.message.trim()
+              ? err.message
+              : t("chat.settings.clearFail"),
+          );
+          throw err;
+        }
       },
-    ]);
+    });
   }, [onClearAllChats, t]);
 
   const exportChats = useCallback(async () => {
@@ -373,27 +530,30 @@ export function MorphChatSettingsScreen({
 
   const wipeServerKind = useCallback(
     (kind: "chats" | "looks" | "selfies" | "shares" | "all", title: string, body: string) => {
-      Alert.alert(title, body, [
-        { text: t("common.cancel"), style: "cancel" },
-        {
-          text: t("chat.settings.clearConfirm"),
-          style: "destructive",
-          onPress: () => {
-            void (async () => {
-              setDataBusy(true);
-              try {
-                const remote = await deleteMorphAiPrivacyData(kind);
-                setCounts(remote.data);
-                if (kind === "chats" || kind === "all") onClearAllChats();
-              } catch {
-                Alert.alert(title, t("chat.settings.dataFail"));
-              } finally {
-                setDataBusy(false);
-              }
-            })();
-          },
+      setActionError(null);
+      setConfirm({
+        title,
+        body,
+        confirmLabel: t("common.yes"),
+        cancelLabel: t("common.no"),
+        onConfirm: async () => {
+          setDataBusy(true);
+          try {
+            const remote = await deleteMorphAiPrivacyData(kind);
+            setCounts(remote.data);
+            if (kind === "chats" || kind === "all") await onClearAllChats();
+          } catch (err) {
+            setActionError(
+              err instanceof Error && err.message.trim()
+                ? err.message
+                : t("chat.settings.dataFail"),
+            );
+            throw err;
+          } finally {
+            setDataBusy(false);
+          }
         },
-      ]);
+      });
     },
     [onClearAllChats, t],
   );
@@ -401,13 +561,14 @@ export function MorphChatSettingsScreen({
   const togglePrivacyLocal = useCallback(
     (value: boolean) => {
       if (value) {
-        Alert.alert(t("chat.settings.privacyOnTitle"), t("chat.settings.privacyOnBody"), [
-          { text: t("common.cancel"), style: "cancel" },
-          {
-            text: t("chat.settings.privacyOnConfirm"),
-            onPress: () => void patchPrefs({ privacyLocalOnly: true }),
-          },
-        ]);
+        setActionError(null);
+        setConfirm({
+          title: t("chat.settings.privacyOnTitle"),
+          body: t("chat.settings.privacyOnBody"),
+          confirmLabel: t("common.yes"),
+          cancelLabel: t("common.no"),
+          onConfirm: () => patchPrefs({ privacyLocalOnly: true }),
+        });
         return;
       }
       void patchPrefs({ privacyLocalOnly: false });
@@ -417,6 +578,27 @@ export function MorphChatSettingsScreen({
 
   const usagePct = morphChatUsagePercent(snap);
   const nearlyEmpty = usagePct >= 90;
+  const tokenLimit = Number(snap?.token_limit ?? snap?.daily_limit ?? 0) || 0;
+  const tokenUsed = Number(snap?.token_used ?? snap?.daily_used ?? 0) || 0;
+  const tokenLeft =
+    Number(snap?.token_remaining ?? snap?.daily_remaining ?? Math.max(0, tokenLimit - tokenUsed)) ||
+    0;
+  const meterColor = usagePct >= 90 ? DESTRUCTIVE : usagePct >= 70 ? WARN : ACCENT_BLUE;
+
+  const runConfirm = useCallback(() => {
+    if (!confirm || confirmBusy) return;
+    void (async () => {
+      setConfirmBusy(true);
+      try {
+        await confirm.onConfirm();
+        setConfirm(null);
+      } catch {
+        setConfirm(null);
+      } finally {
+        setConfirmBusy(false);
+      }
+    })();
+  }, [confirm, confirmBusy]);
 
   const langOptions: ChipOption<MorphChatReplyLang>[] = [
     { value: "app", label: t("chat.settings.langApp") },
@@ -492,7 +674,7 @@ export function MorphChatSettingsScreen({
             accessibilityLabel={t("common.back")}
             style={({ pressed }) => [styles.backBtn, pressed && styles.pressed]}
           >
-            <Ionicons name="chevron-back" size={22} color="#FFFFFF" />
+            <Ionicons name="chevron-back" size={20} color="#FFFFFF" />
           </Pressable>
           <Text style={styles.subTitle} numberOfLines={1}>
             {pageTitle}
@@ -514,6 +696,12 @@ export function MorphChatSettingsScreen({
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
+        {actionError ? (
+          <View style={styles.errorBanner}>
+            <Ionicons name="alert-circle-outline" size={18} color={DESTRUCTIVE} />
+            <Text style={styles.errorText}>{actionError}</Text>
+          </View>
+        ) : null}
         {page === "hub" ? (
           <>
             <View style={styles.profileBlock}>
@@ -522,7 +710,7 @@ export function MorphChatSettingsScreen({
                   <Text style={styles.avatarText}>{letters}</Text>
                 </View>
                 <View style={styles.editBadge} accessibilityElementsHidden>
-                  <Ionicons name="pencil" size={12} color="#FFFFFF" />
+                  <Ionicons name="create-outline" size={12} color="#FFFFFF" />
                 </View>
               </View>
               <Text style={styles.profileName}>{name}</Text>
@@ -534,7 +722,7 @@ export function MorphChatSettingsScreen({
               <>
                 <SettingsSection title={t("chat.settings.configureGroup")}>
                   <SettingsItem
-                    icon="happy-outline"
+                    icon="color-palette-outline"
                     title={t("chat.settings.personalization")}
                     onPress={() => setPage("reply")}
                     last
@@ -551,12 +739,16 @@ export function MorphChatSettingsScreen({
                   <SettingsItem
                     icon="speedometer-outline"
                     title={t("chat.settings.limitTitle")}
-                    subtitle={t("chat.settings.limitUsage", { pct: usagePct })}
+                    subtitle={
+                      tokenLimit > 0
+                        ? `${formatCount(tokenUsed)} / ${formatCount(tokenLimit)}`
+                        : undefined
+                    }
                     value={`${usagePct}%`}
                     onPress={() => setPage("limits")}
                   />
                   <SettingsItem
-                    icon="sparkles"
+                    icon="diamond-outline"
                     title={t("chat.settings.upgradePlan")}
                     onPress={onOpenSubscription}
                     titleColor={ACCENT_BLUE}
@@ -587,7 +779,7 @@ export function MorphChatSettingsScreen({
                     onPress={() => setPage("voice")}
                   />
                   <SettingsItem
-                    icon="shield-outline"
+                    icon="lock-closed-outline"
                     title={t("chat.settings.privacyLocal")}
                     subtitle={
                       prefs.privacyLocalOnly
@@ -597,7 +789,7 @@ export function MorphChatSettingsScreen({
                     onPress={() => setPage("data")}
                   />
                   <SettingsItem
-                    icon="folder-outline"
+                    icon="folder-open-outline"
                     title={t("chat.settings.dataGroup")}
                     subtitle={t("chat.settings.dataHubHint", {
                       chats: counts.chat_threads,
@@ -628,7 +820,9 @@ export function MorphChatSettingsScreen({
                     style={({ pressed }) => [styles.destructiveRow, pressed && styles.pressed]}
                     accessibilityRole="button"
                   >
-                    <Ionicons name="trash-outline" size={22} color={DESTRUCTIVE} />
+                    <View style={styles.iconTile}>
+                      <Ionicons name="trash-outline" size={18} color={DESTRUCTIVE} />
+                    </View>
                     <Text style={styles.destructiveText}>
                       {t("chat.settings.clearChats")}
                       {threadCount > 0 ? ` · ${threadCount}` : ""}
@@ -790,35 +984,17 @@ export function MorphChatSettingsScreen({
                   {t("chat.settings.limitWarn", { pct: usagePct })}
                 </Text>
               </View>
-            ) : (
-              <View style={styles.okBanner}>
-                <Ionicons name="checkmark-circle-outline" size={18} color="#30D158" />
-                <Text style={styles.okText}>
-                  {t("chat.settings.limitOk", { pct: usagePct })}
-                </Text>
-              </View>
-            )}
-            <SettingsSection title={t("chat.settings.limitTitle")}>
-              <View style={styles.meterBlock}>
-                <Text style={styles.itemTitle}>
-                  {t("chat.settings.limitValue", { pct: usagePct })}
-                </Text>
-                <Text style={styles.itemSubtitle}>
-                  {t("chat.settings.limitHint", { pct: usagePct })}
-                </Text>
-                <View style={styles.meterTrack}>
-                  <View
-                    style={[
-                      styles.meterFill,
-                      {
-                        width: `${usagePct}%`,
-                        backgroundColor: usagePct >= 90 ? DESTRUCTIVE : usagePct >= 70 ? WARN : ACCENT_BLUE,
-                      },
-                    ]}
-                  />
-                </View>
-                <Text style={styles.meterPct}>{usagePct}%</Text>
-              </View>
+            ) : null}
+            <SettingsSection>
+              <UsageMeter
+                pct={usagePct}
+                used={tokenUsed}
+                remaining={tokenLeft}
+                limit={tokenLimit}
+                usedLabel={t("chat.settings.limitUsed")}
+                leftLabel={t("chat.settings.limitLeft")}
+                color={meterColor}
+              />
             </SettingsSection>
             <SettingsSection>
               <PrefToggle
@@ -831,7 +1007,7 @@ export function MorphChatSettingsScreen({
             </SettingsSection>
             <SettingsSection>
               <SettingsItem
-                icon="sparkles"
+                icon="diamond-outline"
                 title={t("chat.settings.upgradePlan")}
                 subtitle={t("chat.settings.subscriptionHint")}
                 onPress={onOpenSubscription}
@@ -848,7 +1024,7 @@ export function MorphChatSettingsScreen({
             <Text style={styles.pageLead}>{t("chat.settings.dataLead")}</Text>
             <SettingsSection title={t("chat.settings.dataServer")}>
               <SettingsItem
-                icon="chatbubbles-outline"
+                    icon="chatbubble-ellipses-outline"
                 title={t("chat.settings.dataChats")}
                 value={String(counts.chat_threads)}
                 showChevron={false}
@@ -866,7 +1042,7 @@ export function MorphChatSettingsScreen({
                 showChevron={false}
               />
               <SettingsItem
-                icon="share-outline"
+                    icon="share-social-outline"
                 title={t("chat.settings.dataShares")}
                 value={String(counts.shares)}
                 showChevron={false}
@@ -976,6 +1152,16 @@ export function MorphChatSettingsScreen({
 
       </ScrollView>
       )}
+      {confirm ? (
+        <ConfirmSheet
+          spec={confirm}
+          busy={confirmBusy}
+          onCancel={() => {
+            if (!confirmBusy) setConfirm(null);
+          }}
+          onConfirm={runConfirm}
+        />
+      ) : null}
     </View>
   );
 }
@@ -984,6 +1170,7 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: BG,
+    position: "relative",
   },
   hubTop: {
     flexDirection: "row",
@@ -1095,8 +1282,18 @@ const styles = StyleSheet.create({
   item: {
     flexDirection: "row",
     alignItems: "stretch",
-    paddingLeft: 14,
+    paddingLeft: 12,
     minHeight: 52,
+  },
+  iconTile: {
+    width: 30,
+    height: 30,
+    borderRadius: 8,
+    backgroundColor: "#2C2C2E",
+    alignItems: "center",
+    justifyContent: "center",
+    alignSelf: "center",
+    marginRight: 4,
   },
   itemMain: {
     flex: 1,
@@ -1109,11 +1306,6 @@ const styles = StyleSheet.create({
   itemBorder: {
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: LINE,
-  },
-  itemIcon: {
-    width: 28,
-    marginTop: 15,
-    textAlign: "center",
   },
   itemCopy: {
     flex: 1,
@@ -1154,9 +1346,10 @@ const styles = StyleSheet.create({
   destructiveRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    gap: 10,
+    paddingLeft: 12,
+    paddingRight: 16,
+    paddingVertical: 12,
     minHeight: 52,
   },
   destructiveText: {
@@ -1246,7 +1439,7 @@ const styles = StyleSheet.create({
     color: WARN,
     fontWeight: "600",
   },
-  okBanner: {
+  errorBanner: {
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
@@ -1254,37 +1447,142 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 12,
     borderRadius: 14,
-    backgroundColor: "rgba(48, 209, 88, 0.12)",
+    backgroundColor: "rgba(255, 69, 58, 0.14)",
   },
-  okText: {
+  errorText: {
     flex: 1,
     ...morphFont,
     fontSize: 13,
     lineHeight: 18,
-    color: "#30D158",
-    fontWeight: "500",
+    color: DESTRUCTIVE,
   },
   meterBlock: {
     paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingTop: 20,
+    paddingBottom: 18,
+    alignItems: "center",
+    gap: 16,
+  },
+  meterRingWrap: {
+    width: 156,
+    height: 156,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  meterCenter: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  meterPctBig: {
+    ...morphFont,
+    fontSize: 36,
+    fontWeight: "600",
+    color: "#FFFFFF",
+    letterSpacing: -1,
+  },
+  meterStats: {
+    width: "100%",
+    flexDirection: "row",
+    gap: 10,
+  },
+  meterStat: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
-  },
-  meterTrack: {
-    height: 8,
-    borderRadius: 4,
     backgroundColor: "#2C2C2E",
-    overflow: "hidden",
-    marginTop: 6,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
   },
-  meterFill: {
+  meterDot: {
+    width: 8,
     height: 8,
     borderRadius: 4,
   },
-  meterPct: {
+  meterStatLabel: {
+    ...morphFont,
+    fontSize: 11,
+    color: MUTED,
+  },
+  meterStatValue: {
+    ...morphFont,
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#FFFFFF",
+    letterSpacing: -0.3,
+  },
+  meterCap: {
     ...morphFont,
     fontSize: 12,
     color: MUTED,
-    marginTop: 2,
+  },
+  confirmRoot: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 40,
+    justifyContent: "center",
+    paddingHorizontal: 28,
+  },
+  confirmScrim: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0, 0, 0, 0.62)",
+  },
+  confirmCard: {
+    backgroundColor: CARD,
+    borderRadius: 18,
+    paddingHorizontal: 20,
+    paddingTop: 22,
+    paddingBottom: 16,
+    gap: 10,
+  },
+  confirmTitle: {
+    ...morphFont,
+    fontSize: 17,
+    fontWeight: "600",
+    color: "#FFFFFF",
+    letterSpacing: -0.3,
+    textAlign: "center",
+  },
+  confirmBody: {
+    ...morphFont,
+    fontSize: 14,
+    lineHeight: 20,
+    color: MUTED,
+    textAlign: "center",
+    marginBottom: 6,
+  },
+  confirmRow: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  confirmNo: {
+    flex: 1,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: "#2C2C2E",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  confirmNoText: {
+    ...morphFont,
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#FFFFFF",
+  },
+  confirmYes: {
+    flex: 1,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: DESTRUCTIVE,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  confirmYesText: {
+    ...morphFont,
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#FFFFFF",
   },
   pageLead: {
     marginBottom: 16,

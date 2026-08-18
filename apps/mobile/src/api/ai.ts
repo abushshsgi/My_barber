@@ -686,8 +686,23 @@ export async function deleteMorphChatThread(clientId: string): Promise<void> {
   });
 }
 
-export async function clearMorphChatThreads(): Promise<void> {
-  await apiFetch("/api/v1/ai/chat/threads/", { method: "DELETE" });
+export async function clearMorphChatThreads(): Promise<{
+  ok: boolean;
+  deleted: number;
+  remaining?: number;
+}> {
+  const body = await apiJson<{ ok?: boolean; deleted?: number; remaining?: number; detail?: string }>(
+    "/api/v1/ai/chat/threads/",
+    { method: "DELETE" },
+  );
+  if (body?.ok === false) {
+    throw new Error(body.detail || "Chatlarni o'chirish amalga oshmadi.");
+  }
+  return {
+    ok: true,
+    deleted: Number(body?.deleted ?? 0),
+    remaining: Number(body?.remaining ?? 0),
+  };
 }
 
 export type MorphAiPrivacyPrefs = {

@@ -626,13 +626,22 @@ export function useMorphChat() {
   }, []);
 
   const clearAllChats = useCallback(async () => {
+    let remoteError: string | null = null;
+    try {
+      await clearMorphChatThreads();
+    } catch (err) {
+      remoteError =
+        err instanceof Error && err.message.trim()
+          ? err.message
+          : "Chatlarni o'chirish amalga oshmadi.";
+    }
     activeThreadIdRef.current = null;
     messagesRef.current = [];
     threadsRef.current = [];
     setActiveThreadId(null);
     setMessages([]);
     setThreads([]);
-    setError(null);
+    setError(remoteError);
     setInput("");
     await AsyncStorage.multiRemove([
       THREADS_KEY,
@@ -640,7 +649,7 @@ export function useMorphChat() {
       LEGACY_THREADS_KEY,
       MESSAGES_KEY,
     ]);
-    void clearMorphChatThreads().catch(() => undefined);
+    if (remoteError) throw new Error(remoteError);
   }, []);
 
   const reloadPrefs = useCallback(async () => {
