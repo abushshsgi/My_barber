@@ -267,6 +267,9 @@
       "monthShort": "oy",
       "savePct": "−{{pct}}%",
       "currencyShort": "so'm",
+      "quotaTryOn": "Morph AI {{count}}",
+      "quotaChat": "Chat {{tokens}}",
+      "quotaStudio": "Studio {{count}}",
       "featuresTitle": "Bepuldan tashqari",
       "fallbackFeature": "Morph AI chat va try-on ochiladi",
       "cta": "{{plan}} tarifni olish",
@@ -276,7 +279,13 @@
       "taglinePlus": "Har kungi ishlar uchun",
       "taglinePro": "Ko'proq imkoniyat va limit",
       "usage": "Bu oy: {{used}}/{{limit}} Morph AI",
-      "maxPlanLimit": "Bu oy limiti tugadi. Keyingi davrda tiklanadi."
+      "maxPlanLimit": "Bu oy limiti tugadi. Keyingi davrda tiklanadi.",
+      "popular": "Mashhur",
+      "periodDays": "{{count}} kunlik davr",
+      "ctaWallet": "Hamyondan to'lash",
+      "ctaLower": "Pastroq tarif",
+      "ctaCurrent": "Joriy obuna",
+      "plansUpgrade": "Upgrade"
     }
   },
   "chat": {

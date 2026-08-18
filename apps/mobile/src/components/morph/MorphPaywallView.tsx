@@ -18,6 +18,7 @@ import {
 } from "../../api/subscriptions";
 import { useAuth } from "../../auth/AuthContext";
 import { useSubscriptions } from "../../hooks/useSubscriptions";
+import { pickFeatureLabel, pickPlanName } from "../../lib/plan-labels";
 import type { PaywallReason } from "../../lib/morph-return";
 
 type Props = {
@@ -44,11 +45,18 @@ function formatTokenShort(n: number): string {
   return String(n);
 }
 
-function planQuota(plan: SubscriptionPlan): string {
-  const parts = [`Morph AI ${plan.morph_ai_monthly}`];
+function planQuota(
+  plan: SubscriptionPlan,
+  t: (key: string, opts?: Record<string, string | number>) => string,
+): string {
+  const parts = [t("morph.paywall.quotaTryOn", { count: plan.morph_ai_monthly })];
   const tokens = plan.morph_chat_tokens_monthly ?? 0;
-  if (tokens > 0) parts.push(`Chat ${formatTokenShort(tokens)}`);
-  if (plan.morph_studio_monthly > 0) parts.push(`Studio ${plan.morph_studio_monthly}`);
+  if (tokens > 0) {
+    parts.push(t("morph.paywall.quotaChat", { tokens: formatTokenShort(tokens) }));
+  }
+  if (plan.morph_studio_monthly > 0) {
+    parts.push(t("morph.paywall.quotaStudio", { count: plan.morph_studio_monthly }));
+  }
   return parts.join(" · ");
 }
 
@@ -59,7 +67,9 @@ export function MorphPaywallView({
   onNeedLogin,
   onOpenReferral,
 }: Props) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const lang = i18n.language;
+  const numberLocale = lang.startsWith("ru") ? "ru-RU" : "uz-UZ";
   const insets = useSafeAreaInsets();
   const { isAuthenticated } = useAuth();
   const { plans, me, loading, busyCode, subscribeWallet, activeCode } = useSubscriptions();
@@ -169,7 +179,9 @@ export function MorphPaywallView({
         ) : null}
 
         <View style={styles.planCard}>
-          <Text style={styles.planName}>{selectedPlan?.name_uz ?? "Plus"}</Text>
+          <Text style={styles.planName}>
+            {selectedPlan ? pickPlanName(selectedPlan, lang) : "Plus"}
+          </Text>
           <Text style={styles.planTag}>{t(taglineKey)}</Text>
 
           {loading && cards.length === 0 ? (
@@ -198,15 +210,15 @@ export function MorphPaywallView({
                         </View>
                       ) : null}
                     </View>
-                    <Text style={styles.cardName}>{plan.name_uz}</Text>
+                    <Text style={styles.cardName}>{pickPlanName(plan, lang)}</Text>
                     <Text style={styles.price}>
-                      {plan.price_uzs.toLocaleString("uz-UZ")}
+                      {plan.price_uzs.toLocaleString(numberLocale)}
                     </Text>
                     <Text style={styles.priceUnit}>
                       {t("morph.paywall.currencyShort")}/{t("morph.paywall.monthShort")}
                     </Text>
                     <Text style={styles.billed}>{t("morph.paywall.billedMonthly")}</Text>
-                    <Text style={styles.quota}>{planQuota(plan)}</Text>
+                    <Text style={styles.quota}>{planQuota(plan, t)}</Text>
                   </Pressable>
                 );
 
@@ -235,16 +247,17 @@ export function MorphPaywallView({
 
         <View style={styles.featCard}>
           <Text style={styles.featTitle}>{t("morph.paywall.featuresTitle")}</Text>
-          {(features.length ? features : [{ key: "ai", label_uz: t("morph.paywall.fallbackFeature") }]).map(
-            (item) => (
+          {(features.length
+            ? features
+            : [{ key: "ai", label_uz: t("morph.paywall.fallbackFeature") }]
+          ).map((item) => (
               <View key={item.key} style={styles.featRow}>
                 <View style={styles.check}>
                   <Ionicons name="checkmark" size={12} color="#FFFFFF" />
                 </View>
-                <Text style={styles.featText}>{item.label_uz}</Text>
+                <Text style={styles.featText}>{pickFeatureLabel(item, lang)}</Text>
               </View>
-            ),
-          )}
+            ))}
 
           {error ? <Text style={styles.error}>{error}</Text> : null}
 
@@ -272,7 +285,9 @@ export function MorphPaywallView({
               ) : (
                 <Text style={styles.ctaText}>
                   {isAuthenticated
-                    ? t("morph.paywall.cta", { plan: selectedPlan?.name_uz ?? "Plus" })
+                    ? t("morph.paywall.cta", {
+                        plan: selectedPlan ? pickPlanName(selectedPlan, lang) : "Plus",
+                      })
                     : t("morph.paywall.ctaLogin")}
                 </Text>
               )}

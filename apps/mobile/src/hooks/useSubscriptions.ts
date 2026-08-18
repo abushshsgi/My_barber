@@ -26,9 +26,22 @@ const FALLBACK_PLANS: SubscriptionPlan[] = [
     sort_order: 1,
     highlight: false,
     features: [
-      { key: "morph_ai", label_uz: "Morph AI try-on — oyiga 5 marta" },
-      { key: "chat", label_uz: "Morf AI chat — 50 000 token / oy" },
-      { key: "studio", label_uz: "Morph AI Studio — yo'q", included: false },
+      {
+        key: "morph_ai",
+        label_uz: "Morph AI try-on — oyiga 5 marta",
+        label_ru: "Morph AI try-on — 5 раз в месяц",
+      },
+      {
+        key: "chat",
+        label_uz: "Morf AI chat — 50 000 token / oy",
+        label_ru: "Morf AI чат — 50 000 токенов / мес",
+      },
+      {
+        key: "studio",
+        label_uz: "Morph AI Studio — yo'q",
+        label_ru: "Morph AI Studio — нет",
+        included: false,
+      },
     ],
   },
   {
@@ -48,9 +61,21 @@ const FALLBACK_PLANS: SubscriptionPlan[] = [
     sort_order: 2,
     highlight: true,
     features: [
-      { key: "morph_ai", label_uz: "Morph AI try-on — oyiga 20 marta" },
-      { key: "chat", label_uz: "Morf AI chat — 150 000 token / oy" },
-      { key: "studio", label_uz: "Morph AI Studio — 30 marta" },
+      {
+        key: "morph_ai",
+        label_uz: "Morph AI try-on — oyiga 20 marta",
+        label_ru: "Morph AI try-on — 20 раз в месяц",
+      },
+      {
+        key: "chat",
+        label_uz: "Morf AI chat — 150 000 token / oy",
+        label_ru: "Morf AI чат — 150 000 токенов / мес",
+      },
+      {
+        key: "studio",
+        label_uz: "Morph AI Studio — 30 marta",
+        label_ru: "Morph AI Studio — 30 раз",
+      },
     ],
   },
   {
@@ -70,10 +95,22 @@ const FALLBACK_PLANS: SubscriptionPlan[] = [
     sort_order: 3,
     highlight: false,
     features: [
-      { key: "morph_ai", label_uz: "Morph AI try-on — oyiga 100 marta" },
-      { key: "chat", label_uz: "Morf AI chat — 500 000 token / oy" },
-      { key: "studio", label_uz: "Morph AI Studio — 150 marta" },
-      { key: "care", label_uz: "Morph AI Parvarish" },
+      {
+        key: "morph_ai",
+        label_uz: "Morph AI try-on — oyiga 100 marta",
+        label_ru: "Morph AI try-on — 100 раз в месяц",
+      },
+      {
+        key: "chat",
+        label_uz: "Morf AI chat — 500 000 token / oy",
+        label_ru: "Morf AI чат — 500 000 токенов / мес",
+      },
+      {
+        key: "studio",
+        label_uz: "Morph AI Studio — 150 marta",
+        label_ru: "Morph AI Studio — 150 раз",
+      },
+      { key: "care", label_uz: "Morph AI Parvarish", label_ru: "Morph AI Уход" },
     ],
   },
 ];

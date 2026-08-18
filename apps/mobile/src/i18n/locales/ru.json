@@ -267,6 +267,9 @@
       "monthShort": "мес",
       "savePct": "−{{pct}}%",
       "currencyShort": "сум",
+      "quotaTryOn": "Morph AI {{count}}",
+      "quotaChat": "Чат {{tokens}}",
+      "quotaStudio": "Studio {{count}}",
       "featuresTitle": "Всё из бесплатного, плюс",
       "fallbackFeature": "Откроются Morph AI chat и try-on",
       "cta": "Оформить {{plan}}",
@@ -276,7 +279,13 @@
       "taglinePlus": "Для ежедневных задач",
       "taglinePro": "Больше возможностей и лимит",
       "usage": "В этом месяце: {{used}}/{{limit}} Morph AI",
-      "maxPlanLimit": "Лимит на этот месяц исчерпан. Обновится в следующем периоде."
+      "maxPlanLimit": "Лимит на этот месяц исчерпан. Обновится в следующем периоде.",
+      "popular": "Хит",
+      "periodDays": "{{count}} дней",
+      "ctaWallet": "Оплатить с кошелька",
+      "ctaLower": "Более низкий тариф",
+      "ctaCurrent": "Текущая подписка",
+      "plansUpgrade": "Upgrade"
     }
   },
   "chat": {

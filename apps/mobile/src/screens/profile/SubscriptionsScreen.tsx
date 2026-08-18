@@ -11,15 +11,16 @@ import {
   Text,
   View,
 } from "react-native";
+import { useTranslation } from "react-i18next";
 import {
   formatSubDate,
   formatUzs,
   isPlanUpgrade,
-  upgradeCtaLabel,
   type SubscriptionPlan,
 } from "../../api/subscriptions";
 import { NativeHeader } from "../../components/ui/NativeHeader";
 import { useSubscriptions } from "../../hooks/useSubscriptions";
+import { pickFeatureLabel, pickLocalizedLabel, pickPlanName } from "../../lib/plan-labels";
 import type { ProfileStackParamList } from "../../navigation/ProfileStack";
 import { colors } from "../../theme/colors";
 
@@ -46,22 +47,24 @@ function PlanCard({
   busy: boolean;
   onSubscribe: (code: string) => void;
 }) {
+  const { t, i18n } = useTranslation();
+  const lang = i18n.language;
   const isActive = activeCode === plan.code;
   const canUpgrade = isPlanUpgrade(plan.code, activeCode);
   const blocked = Boolean(activeCode) && !canUpgrade && !isActive;
 
   let badge: string | null = null;
-  if (isActive) badge = "Joriy";
-  else if (canUpgrade && activeCode) badge = "Upgrade";
-  else if (plan.highlight) badge = "Mashhur";
+  if (isActive) badge = t("morph.paywall.currentPlan");
+  else if (canUpgrade && activeCode) badge = t("morph.paywall.plansUpgrade", { defaultValue: "Upgrade" });
+  else if (plan.highlight) badge = t("morph.paywall.popular");
 
   const cta = isActive
-    ? "Joriy obuna"
+    ? t("morph.paywall.ctaCurrent")
     : blocked
-      ? "Pastroq tarif"
+      ? t("morph.paywall.ctaLower")
       : activeCode && canUpgrade
-        ? upgradeCtaLabel(activeCode, true)
-        : "Hamyondan to'lash";
+        ? t("morph.paywall.cta", { plan: pickPlanName(plan, lang) })
+        : t("morph.paywall.ctaWallet");
 
   return (
     <View style={[styles.card, plan.highlight && styles.cardHighlight, isActive && styles.cardActive]}>
@@ -74,14 +77,16 @@ function PlanCard({
       <View style={styles.cardHead}>
         <PlanGlyph code={plan.code} />
         <View style={styles.cardHeadText}>
-          <Text style={styles.planName}>{plan.name_uz}</Text>
-          <Text style={styles.planPeriod}>{plan.period_days} kunlik davr</Text>
+          <Text style={styles.planName}>{pickPlanName(plan, lang)}</Text>
+          <Text style={styles.planPeriod}>
+            {t("morph.paywall.periodDays", { count: plan.period_days })}
+          </Text>
         </View>
       </View>
 
       <Text style={styles.price}>
         {formatUzs(plan.price_uzs)}
-        <Text style={styles.priceSuffix}> / oy</Text>
+        <Text style={styles.priceSuffix}> / {t("morph.paywall.monthShort")}</Text>
       </Text>
 
       <View style={styles.features}>
@@ -97,7 +102,7 @@ function PlanCard({
                 />
               </View>
               <Text style={[styles.featureText, !included && styles.featureOff]}>
-                {f.label_uz}
+                {pickFeatureLabel(f, lang)}
               </Text>
             </View>
           );
@@ -126,6 +131,8 @@ function PlanCard({
 }
 
 export function SubscriptionsScreen({ navigation }: Props) {
+  const { t, i18n } = useTranslation();
+  const lang = i18n.language;
   const { plans, me, loading, error, busyCode, refresh, subscribeWallet, activeCode } =
     useSubscriptions();
   const [toast, setToast] = useState<string | null>(null);
@@ -145,7 +152,7 @@ export function SubscriptionsScreen({ navigation }: Props) {
 
   return (
     <View style={styles.root}>
-      <NativeHeader title="Obunalar" onBack={() => navigation.goBack()} />
+      <NativeHeader title={t("profile.subscriptions")} onBack={() => navigation.goBack()} />
 
       <ScrollView
         contentContainerStyle={styles.content}
@@ -181,7 +188,7 @@ export function SubscriptionsScreen({ navigation }: Props) {
           {me?.has_active && sub ? (
             <>
               <Text style={styles.currentPlan}>
-                {sub.plan?.name_uz || sub.plan_code.toUpperCase()}
+                {sub.plan ? pickPlanName(sub.plan, lang) : sub.plan_code.toUpperCase()}
               </Text>
               <Text style={styles.currentMeta}>
                 {formatUzs(sub.price_uzs)} · {sub.days_remaining ?? me.days_remaining ?? "—"} kun
@@ -212,7 +219,11 @@ export function SubscriptionsScreen({ navigation }: Props) {
           <View style={styles.offer}>
             <Ionicons name="gift-outline" size={18} color={colors.fg} />
             <Text style={styles.offerText}>
-              {me.welcome_offer.label_uz || `Yangi hisob −${me.welcome_offer.discount_pct}%`}
+              {pickLocalizedLabel(
+                me.welcome_offer,
+                lang,
+                `−${me.welcome_offer.discount_pct}%`,
+              )}
             </Text>
           </View>
         ) : null}
