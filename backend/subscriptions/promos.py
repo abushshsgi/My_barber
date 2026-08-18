@@ -61,7 +61,11 @@ def get_new_user_offer(user: User | None, *, now=None) -> dict[str, Any] | None:
         "ends_at": ends_at.isoformat(),
         "seconds_left": seconds_left,
         "label_uz": f"Yangi hisob — −{int(NEW_USER_DISCOUNT_PCT)}%",
+        "label_ru": f"Новый аккаунт — −{int(NEW_USER_DISCOUNT_PCT)}%",
+        "label_en": f"New account — −{int(NEW_USER_DISCOUNT_PCT)}%",
         "hint_uz": "Birinchi 24 soat ichida tanlangan tariflarga chegirma.",
+        "hint_ru": "Скидка на выбранные тарифы в первые 24 часа.",
+        "hint_en": "Discount on selected plans during the first 24 hours.",
     }
 
 

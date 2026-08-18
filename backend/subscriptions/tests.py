@@ -153,6 +153,8 @@ class SubscriptionAPITests(TestCase):
         self.assertEqual(starter["price_uzs"], 9990)
         self.assertEqual(starter["morph_ai_monthly"], 5)
         self.assertEqual(starter["morph_chat_tokens_monthly"], 50000)
+        chat_feat = next(f for f in starter["features"] if f["key"] == "chat")
+        self.assertIn("токенов", chat_feat["label_ru"])
         r = self.client.get("/api/v1/subscriptions/plans/")
         self.assertEqual(r.status_code, 200)
         self.assertEqual(len(r.data["plans"]), 3)

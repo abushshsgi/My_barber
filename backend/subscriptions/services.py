@@ -271,9 +271,19 @@ def build_me_payload(user: User) -> dict[str, Any]:
     plan_code = sub.plan_code if sub else None
     next_upgrade = None
     if plan_code == "starter":
-        next_upgrade = {"plan_code": "plus", "label_uz": "Plus ga upgrade"}
+        next_upgrade = {
+            "plan_code": "plus",
+            "label_uz": "Plus ga upgrade",
+            "label_ru": "Перейти на Plus",
+            "label_en": "Upgrade to Plus",
+        }
     elif plan_code == "plus":
-        next_upgrade = {"plan_code": "pro", "label_uz": "Pro ga upgrade"}
+        next_upgrade = {
+            "plan_code": "pro",
+            "label_uz": "Pro ga upgrade",
+            "label_ru": "Перейти на Pro",
+            "label_en": "Upgrade to Pro",
+        }
 
     allowed = bool(sub) or credits > 0
     chat = usage
