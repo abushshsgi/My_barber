@@ -44,7 +44,9 @@
     "loading": "Loading...",
     "loadError": "Could not load data. Please try again.",
     "retry": "Try again",
-    "empty": "Nothing here yet"
+    "empty": "Nothing here yet",
+    "currencySom": "UZS",
+    "perMonth": "mo"
   },
   "scrollToTop": {
     "label": "Back to top"
@@ -177,6 +179,7 @@
       "referralProgressLabel": "Referral trial",
       "planOpen": "Open with this plan",
       "planActive": "Current",
+      "popular": "Popular",
       "plans": {
         "starter": "Starter",
         "plus": "Plus",
@@ -1199,7 +1202,12 @@
       "buyPlan": "Unlock Morph AI — Starter",
       "switchPlan": "Upgrade to Plus — more generations",
       "inviteFriends": "Invite {{count}} more friends",
-      "openReferrals": "Open referrals"
+      "openReferrals": "Open referrals",
+      "plansTitle": "Subscription plans",
+      "plansUpgrade": "Upgrade",
+      "seeAll": "See all",
+      "friendGift": "1 friend = 1 generation",
+      "upgradeTo": "Upgrade to {{plan}}"
     },
     "uploadTitle": "Upload a selfie",
     "uploadHint": "Face clearly visible · good lighting",

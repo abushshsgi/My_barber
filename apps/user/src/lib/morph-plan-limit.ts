@@ -84,9 +84,12 @@ export function throwFromMorphApiError(res: Response, body: unknown, fallback: s
   throw new Error(detail);
 }
 
-export function planLabelFromMe(me: SubscriptionMe | null): string | null {
+export function planLabelFromMe(me: SubscriptionMe | null, lang?: string): string | null {
   if (!me?.has_active) return null;
   const plan = me.subscription?.plan;
   if (!plan) return me.subscription?.plan_code ?? null;
+  const l = (lang || "uz").slice(0, 2).toLowerCase();
+  if (l === "ru") return plan.name_ru || plan.name_uz || plan.code;
+  if (l === "en") return plan.name_en || plan.name_uz || plan.code;
   return plan.name_uz || plan.code;
 }

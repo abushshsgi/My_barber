@@ -32,6 +32,7 @@ import {
   previewSubscriptionPromo,
   type SubscriptionPlan,
 } from "@/lib/api/subscriptions";
+import { pickFeatureLabel, pickPlanName } from "@/lib/plan-labels";
 import {
   filterPlansForSubscriber,
   isPlanUpgrade,
@@ -127,6 +128,8 @@ function PlanCard({
   discountPct?: number | null;
   onSubscribe: (code: string, method: "wallet" | "click" | "payme") => void;
 }) {
+  const { t, i18n } = useTranslation();
+  const lang = i18n.language;
   const isActive = activeCode === plan.code;
   const canUpgrade = isPlanUpgrade(plan.code, activeCode);
   const PlanGlyph = plan.code === "pro" ? Crown : plan.code === "plus" ? Sparkles : Zap;
@@ -154,15 +157,15 @@ function PlanCard({
     >
       {isActive ? (
         <span className="absolute right-3 top-3 rounded-full bg-foreground/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-foreground">
-          Joriy
+          {t("home.subscriptionPromo.planActive")}
         </span>
       ) : canUpgrade && activeCode ? (
         <span className="absolute right-3 top-3 rounded-full bg-foreground px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-background">
-          Upgrade
+          {t("aiStylePage.limitSheet.plansUpgrade")}
         </span>
       ) : plan.highlight ? (
         <span className="absolute right-3 top-3 rounded-full bg-foreground px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-background">
-          Mashhur
+          {t("home.subscriptionPromo.popular")}
         </span>
       ) : null}
 
@@ -172,7 +175,7 @@ function PlanCard({
         </span>
         <div className="min-w-0">
           <div className="flex items-center gap-1.5">
-            <h3 className="text-lg font-bold tracking-tight">{plan.name_uz}</h3>
+            <h3 className="text-lg font-bold tracking-tight">{pickPlanName(plan, lang)}</h3>
             <BadgeCheck
               className={cn(
                 "h-4 w-4",
@@ -198,7 +201,7 @@ function PlanCard({
         ) : (
           <span className="text-2xl font-bold tracking-tight">{formatUzs(plan.price_uzs)}</span>
         )}
-        <span className="ml-1 text-sm text-muted-foreground">/ oy</span>
+        <span className="ml-1 text-sm text-muted-foreground">/ {t("common.perMonth")}</span>
       </p>
       {showDiscount && discountPct ? (
         <p className="mt-1 text-[11px] font-bold text-foreground">Yangi hisob −{discountPct}%</p>
@@ -210,7 +213,7 @@ function PlanCard({
             key={f.key}
             featureKey={f.key}
             included={f.included !== false}
-            label={f.label_uz}
+            label={pickFeatureLabel(f, lang)}
           />
         ))}
       </ul>

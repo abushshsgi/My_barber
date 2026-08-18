@@ -16,7 +16,13 @@ export type SubscriptionPlan = {
   badge: "basic" | "plus" | "pro";
   sort_order: number;
   highlight: boolean;
-  features: Array<{ key: string; label_uz: string; included?: boolean }>;
+  features: Array<{
+    key: string;
+    label_uz: string;
+    label_ru?: string;
+    label_en?: string;
+    included?: boolean;
+  }>;
 };
 
 export type SubscriptionUsage = {
@@ -80,11 +86,17 @@ export type SubscriptionMe = {
     ends_at: string;
     seconds_left: number;
     label_uz: string;
+    label_ru?: string;
+    label_en?: string;
     hint_uz: string;
+    hint_ru?: string;
+    hint_en?: string;
   } | null;
   upgrade?: {
     plan_code: "plus" | "pro";
     label_uz: string;
+    label_ru?: string;
+    label_en?: string;
   } | null;
 };
 

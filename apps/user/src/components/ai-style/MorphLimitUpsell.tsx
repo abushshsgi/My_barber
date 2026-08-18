@@ -22,7 +22,7 @@ import { useSubscriptionPlans } from "@/hooks/use-subscription";
 import type { MorphLimitKind } from "@/lib/morph-plan-limit";
 import { planLabelFromMe } from "@/lib/morph-plan-limit";
 import type { SubscriptionMe } from "@/lib/api/subscriptions";
-import { nextUpgradePlan, upgradeCtaLabel } from "@/lib/subscription-upgrade";
+import { nextUpgradePlan } from "@/lib/subscription-upgrade";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -41,10 +41,10 @@ function MorphLimitUpsellBody({
   me: SubscriptionMe | null;
   onClose: () => void;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const plansQ = useSubscriptionPlans();
   const usage = me?.usage;
-  const planName = planLabelFromMe(me);
+  const planName = planLabelFromMe(me, i18n.language);
   const credits =
     me?.referral_credits ?? me?.access?.referral_credits ?? 0;
   const refGenOn =
@@ -131,7 +131,7 @@ function MorphLimitUpsellBody({
               className="mt-5 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/[0.06] px-4 py-1.5 text-sm font-bold text-white"
             >
               <Gift className="size-3.5 text-white/80" strokeWidth={2.25} />
-              1 do&apos;st = 1 generatsiya
+              {t("aiStylePage.limitSheet.friendGift")}
             </motion.div>
           ) : null}
         </div>
@@ -173,7 +173,9 @@ function MorphLimitUpsellBody({
         <div className="space-y-3">
           <div className="flex items-center justify-between gap-2 px-0.5">
             <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-white/40">
-              {me?.has_active ? "Upgrade" : "Obuna tariflari"}
+              {me?.has_active
+                ? t("aiStylePage.limitSheet.plansUpgrade")
+                : t("aiStylePage.limitSheet.plansTitle")}
             </p>
             <Link
               to="/wallet"
@@ -185,7 +187,7 @@ function MorphLimitUpsellBody({
               onClick={onClose}
               className="inline-flex items-center gap-1 text-[12px] font-bold text-white/70 hover:text-white"
             >
-              Barchasi
+              {t("aiStylePage.limitSheet.seeAll")}
               <Crown className="size-3" strokeWidth={2.5} />
             </Link>
           </div>
@@ -241,7 +243,9 @@ function MorphLimitUpsellBody({
             "transition-[transform,background-color] duration-200 hover:bg-white/95 active:scale-[0.985]",
           )}
         >
-          {upgradeCtaLabel(activeCode, true)}
+          {t("aiStylePage.limitSheet.upgradeTo", {
+            plan: next === "plus" ? "Plus" : "Pro",
+          })}
         </Link>
       ) : null}
     </div>

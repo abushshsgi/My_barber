@@ -44,7 +44,9 @@
     "loading": "Загрузка...",
     "loadError": "Не удалось загрузить данные. Попробуйте снова.",
     "retry": "Повторить",
-    "empty": "Пока пусто"
+    "empty": "Пока пусто",
+    "currencySom": "сум",
+    "perMonth": "мес"
   },
   "scrollToTop": {
     "label": "Наверх"
@@ -163,7 +165,7 @@
       "eyebrow": "Morph AI",
       "title": "Селфи → новый образ. Без подписки закрыто.",
       "titleUpgrade": "Откройте больше генераций",
-      "hint": "Подходящий стиль за секунды. Откройте Starter или пригласите 3 друзей — {{days}} дней бесплатно.",
+      "hint": "Подходящий стиль за секунды. Откройте подпиской или пригласите 1 друга — 1 генерация.",
       "hintUpgrade": "Studio, семья и большие лимиты — перейдите на Plus или Pro.",
       "hintUpgradeUsage": "Осталось {{remaining}}/{{limit}} try-on — увеличьте лимит с Plus или Pro.",
       "bannerTitle": "Откройте Morph AI — попробуйте первый образ",
@@ -177,6 +179,7 @@
       "referralProgressLabel": "Реферальный пробный",
       "planOpen": "Открыть этим тарифом",
       "planActive": "Текущий",
+      "popular": "Хит",
       "plans": {
         "starter": "Starter",
         "plus": "Plus",
@@ -1202,7 +1205,12 @@
       "buyPlan": "Открыть Morph AI — Starter",
       "switchPlan": "Перейти на Plus — больше генераций",
       "inviteFriends": "Пригласить ещё {{count}} друзей",
-      "openReferrals": "Рефералы"
+      "openReferrals": "Рефералы",
+      "plansTitle": "Тарифы подписки",
+      "plansUpgrade": "Upgrade",
+      "seeAll": "Все",
+      "friendGift": "1 друг = 1 генерация",
+      "upgradeTo": "Перейти на {{plan}}"
     },
     "uploadTitle": "Загрузите селфи",
     "uploadHint": "Лицо чётко видно · хорошее освещение",

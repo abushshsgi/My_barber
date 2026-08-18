@@ -10,8 +10,10 @@ import {
   Zap,
 } from "lucide-react";
 import type { ComponentType } from "react";
+import { useTranslation } from "react-i18next";
 import type { SubscriptionPlan } from "@/lib/api/subscriptions";
 import { MorphPromoUrgencyBanner } from "@/components/subscriptions/MorphPromoUrgencyBanner";
+import { pickFeatureLabel, pickPlanName } from "@/lib/plan-labels";
 import { filterPlansForSubscriber } from "@/lib/subscription-upgrade";
 import { cn } from "@/lib/utils";
 
@@ -33,8 +35,8 @@ const FEATURE_ICONS: Record<string, IconType> = {
   priority: Crown,
 };
 
-function formatUzs(n: number) {
-  return `${n.toLocaleString("uz-UZ")} so'm`;
+function formatUzs(n: number, locale: string, currency: string) {
+  return `${n.toLocaleString(locale)} ${currency}`;
 }
 
 function PlanIcon({ code, className }: { code: string; className?: string }) {
@@ -77,6 +79,10 @@ export function SubscriptionPlanAds({
   className,
   upgradeOnly = Boolean(activeCode),
 }: AdsProps) {
+  const { t, i18n } = useTranslation();
+  const lang = i18n.language;
+  const locale = lang.startsWith("ru") ? "ru-RU" : lang.startsWith("en") ? "en-US" : "uz-UZ";
+  const currency = t("common.currencySom");
   const base = upgradeOnly && activeCode ? filterPlansForSubscriber(plans, activeCode) : plans;
   const sorted = [...base].sort((a, b) => a.sort_order - b.sort_order);
 
@@ -87,7 +93,9 @@ export function SubscriptionPlanAds({
       <div className={cn("no-scrollbar -mx-1 flex gap-2.5 overflow-x-auto px-1 pb-1", className)}>
         {sorted.map((plan) => {
           const isActive = activeCode === plan.code;
-          const cta = activeCode ? `${plan.name_uz} ga upgrade` : "Shu tarif bilan ochish";
+          const cta = activeCode
+            ? t("aiStylePage.limitSheet.upgradeTo", { plan: pickPlanName(plan, lang) })
+            : t("home.subscriptionPromo.planOpen");
           return (
             <Link
               key={plan.code}
@@ -112,17 +120,19 @@ export function SubscriptionPlanAds({
                   <PlanIcon code={plan.code} className="size-4" />
                 </span>
                 <span className="min-w-0">
-                  <span className="block text-[13px] font-bold leading-tight">{plan.name_uz}</span>
+                  <span className="block text-[13px] font-bold leading-tight">
+                    {pickPlanName(plan, lang)}
+                  </span>
                   {plan.highlight ? (
                     <span className="text-[10px] font-bold uppercase tracking-wide opacity-60">
-                      Mashhur
+                      {t("home.subscriptionPromo.popular")}
                     </span>
                   ) : null}
                 </span>
               </span>
               <span className="text-[12px] font-semibold tabular-nums opacity-80">
-                {formatUzs(plan.price_uzs)}
-                <span className="font-medium opacity-60"> / oy</span>
+                {formatUzs(plan.price_uzs, locale, currency)}
+                <span className="font-medium opacity-60"> / {t("common.perMonth")}</span>
               </span>
               <span
                 className={cn(
@@ -145,7 +155,7 @@ export function SubscriptionPlanAds({
       {sorted.map((plan) => {
         const isActive = activeCode === plan.code;
         const highlights = plan.features.filter((f) => f.included !== false).slice(0, 3);
-        const ctaHint = activeCode ? "Upgrade" : null;
+        const ctaHint = activeCode ? t("aiStylePage.limitSheet.plansUpgrade") : null;
         return (
           <Link
             key={plan.code}
@@ -171,7 +181,7 @@ export function SubscriptionPlanAds({
 
             <span className="min-w-0 flex-1">
               <span className="flex flex-wrap items-center gap-2">
-                <span className="text-[15px] font-bold tracking-tight">{plan.name_uz}</span>
+                <span className="text-[15px] font-bold tracking-tight">{pickPlanName(plan, lang)}</span>
                 {ctaHint ? (
                   <span
                     className={cn(
@@ -183,7 +193,7 @@ export function SubscriptionPlanAds({
                   </span>
                 ) : plan.highlight ? (
                   <span className="rounded-full bg-black px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white">
-                    Mashhur
+                    {t("home.subscriptionPromo.popular")}
                   </span>
                 ) : null}
               </span>
@@ -193,8 +203,8 @@ export function SubscriptionPlanAds({
                   plan.highlight ? "text-black/70" : "text-white/70",
                 )}
               >
-                {formatUzs(plan.price_uzs)}
-                <span className="font-medium opacity-60"> / oy</span>
+                {formatUzs(plan.price_uzs, locale, currency)}
+                <span className="font-medium opacity-60"> / {t("common.perMonth")}</span>
               </span>
               <span className="mt-2 flex flex-wrap gap-1.5">
                 {highlights.map((f) => (
@@ -206,7 +216,7 @@ export function SubscriptionPlanAds({
                     )}
                   >
                     <FeatureIcon featureKey={f.key} className="size-3 shrink-0" />
-                    <span className="max-w-[9.5rem] truncate">{f.label_uz}</span>
+                    <span className="max-w-[9.5rem] truncate">{pickFeatureLabel(f, lang)}</span>
                   </span>
                 ))}
               </span>

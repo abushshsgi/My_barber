@@ -1,7 +1,9 @@
 import { Link } from "@tanstack/react-router";
 import { ArrowUpRight } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useSubscriptionMe } from "@/hooks/use-subscription";
-import { nextUpgradePlan, upgradeCtaLabel } from "@/lib/subscription-upgrade";
+import { pickLocalizedLabel } from "@/lib/plan-labels";
+import { nextUpgradePlan } from "@/lib/subscription-upgrade";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -15,6 +17,7 @@ type Props = {
  * Faol obunachi — faqat Plus/Pro upgrade (obuna ol reklamalari yo'q).
  */
 export function MorphPromoUrgencyBanner({ onNavigate, className, variant = "glass" }: Props) {
+  const { t, i18n } = useTranslation();
   const meQ = useSubscriptionMe();
   const me = meQ.data;
   if (!me) return null;
@@ -46,10 +49,10 @@ export function MorphPromoUrgencyBanner({ onNavigate, className, variant = "glas
       >
         <div className="min-w-0">
           <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-            Upgrade
+            {t("aiStylePage.limitSheet.plansUpgrade")}
           </p>
           <p className="mt-1 text-[14px] font-semibold leading-snug tracking-tight">
-            {upgradeCtaLabel(code, true)}
+            {t("aiStylePage.limitSheet.upgradeTo", { plan: next === "plus" ? "Plus" : "Pro" })}
           </p>
           <p className="mt-0.5 text-[12px] text-muted-foreground">
             Ko‘proq Morph AI limit va imkoniyatlar.
@@ -85,17 +88,21 @@ export function MorphPromoUrgencyBanner({ onNavigate, className, variant = "glas
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-              Yangi hisob
+              {t("aiStylePage.limitSheet.plansTitle")}
             </p>
             <span className="rounded-md border border-black/[0.08] bg-black/[0.03] px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-foreground/80">
               −{offer.discount_pct}%
             </span>
           </div>
           <p className="mt-1.5 text-[14px] font-semibold leading-snug tracking-tight text-foreground">
-            {offer.label_uz}
+            {pickLocalizedLabel(offer, i18n.language, offer.label_uz)}
           </p>
           <p className="mt-1 text-[12px] font-medium text-muted-foreground">
-            {offer.hint_uz}
+            {pickLocalizedLabel(
+              { label_uz: offer.hint_uz, label_ru: offer.hint_ru, label_en: offer.hint_en },
+              i18n.language,
+              offer.hint_uz,
+            )}
           </p>
         </div>
         <span className="mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-full border border-black/[0.08] bg-white/50 text-foreground/70 transition-colors group-hover:border-black/15 group-hover:text-foreground">
@@ -104,7 +111,7 @@ export function MorphPromoUrgencyBanner({ onNavigate, className, variant = "glas
       </div>
       <div className="flex items-center justify-end border-t border-black/[0.06] pt-2.5">
         <span className="text-[12px] font-semibold tracking-tight text-foreground/80">
-          Tariflarni ko‘rish
+          {t("aiStylePage.limitSheet.seeAll")}
         </span>
       </div>
     </Link>

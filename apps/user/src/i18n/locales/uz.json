@@ -44,7 +44,9 @@
     "loading": "Yuklanmoqda...",
     "loadError": "Ma'lumot yuklanmadi. Qayta urinib ko'ring.",
     "retry": "Qayta urinish",
-    "empty": "Hozircha bo'sh"
+    "empty": "Hozircha bo'sh",
+    "currencySom": "so'm",
+    "perMonth": "oy"
   },
   "scrollToTop": {
     "label": "Yuqoriga"
@@ -177,6 +179,7 @@
       "referralProgressLabel": "Referal sinov",
       "planOpen": "Shu tarif bilan ochish",
       "planActive": "Joriy",
+      "popular": "Mashhur",
       "plans": {
         "starter": "Starter",
         "plus": "Plus",
@@ -1199,7 +1202,12 @@
       "buyPlan": "Morph AI ni ochish — Starter",
       "switchPlan": "Plus ga o'tish — ko'proq generatsiya",
       "inviteFriends": "Yana {{count}} ta do'st taklif qilish",
-      "openReferrals": "Referallar sahifasi"
+      "openReferrals": "Referallar sahifasi",
+      "plansTitle": "Obuna tariflari",
+      "plansUpgrade": "Upgrade",
+      "seeAll": "Barchasi",
+      "friendGift": "1 do'st = 1 generatsiya",
+      "upgradeTo": "{{plan}} ga o'tish"
     },
     "uploadTitle": "Selfie yuklang",
     "uploadHint": "Yuz aniq ko'rinsin · yaxshi yorug'lik",
