@@ -61,6 +61,16 @@ function formatUsd(raw: string | number | undefined): string {
   return `$${n.toFixed(4)}`;
 }
 
+function formatUzs(n: number | undefined): string {
+  if (typeof n !== "number" || !Number.isFinite(n)) return "0 so'm";
+  return `${Math.round(n).toLocaleString("uz-UZ")} so'm`;
+}
+
+function formatCost(usd: string | number | undefined, uzs?: number): string {
+  if (typeof uzs === "number") return `${formatUsd(usd)} · ${formatUzs(uzs)}`;
+  return formatUsd(usd);
+}
+
 function formatTokens(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(2)}M`;
   if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
@@ -130,7 +140,7 @@ function MorphAiPage() {
     <div className="space-y-6">
       <StatsPageHeader
         title="Morph AI"
-        description="AI Style / try-on foydalanish — kim ishlatyapti, qancha token va xarajat ketayotgani."
+        description="Try-on, studio va chat — kim qancha token sarflayapti, USD va so'm xarajat."
         rangeKey={rangeKey}
         onRangeChange={setRangeKey}
         onExport={async () => {
@@ -202,7 +212,7 @@ function MorphAiPage() {
             label="Jami xarajat"
             value={formatUsd(d.summary.total_cost_usd)}
             icon={Coins}
-            hint={`O'rtacha ${formatUsd(d.summary.avg_cost_usd)}`}
+            hint={`${formatUzs(d.summary.total_cost_uzs)} · o'rtacha ${formatUsd(d.summary.avg_cost_usd)}`}
           />
           <KPICard
             label="Studio + Try-on"
@@ -355,7 +365,7 @@ function MorphAiPage() {
                       {formatTokens(u.prompt_tokens ?? 0)} / {formatTokens(u.candidates_tokens ?? 0)}
                     </TableCell>
                     <TableCell className="text-right font-medium tabular-nums">
-                      {formatUsd(u.cost_usd)}
+                      {formatCost(u.cost_usd, u.cost_uzs)}
                     </TableCell>
                     <TableCell className="text-right text-xs text-muted-foreground">
                       {u.last_at

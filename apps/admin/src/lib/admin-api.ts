@@ -3687,6 +3687,8 @@ export type MorphAiAnalytics = {
     prompt_tokens: number;
     candidates_tokens: number;
     total_cost_usd: string;
+    total_cost_uzs?: number;
+    usd_to_uzs_rate?: number;
     avg_cost_usd: string;
     avg_tokens: number;
     avg_latency_ms: number;
@@ -3704,6 +3706,7 @@ export type MorphAiAnalytics = {
     studio?: number;
     tokens: number;
     cost_usd: string;
+    cost_uzs?: number;
     users: number;
   }>;
   top_users: Array<{
@@ -3719,6 +3722,7 @@ export type MorphAiAnalytics = {
     prompt_tokens: number;
     candidates_tokens: number;
     cost_usd: string;
+    cost_uzs?: number;
     last_at: string | null;
   }>;
   recent: Array<{
@@ -4082,6 +4086,8 @@ export type MorphAiChatOps = {
     prompt_tokens: number;
     candidates_tokens: number;
     total_cost_usd: string;
+    total_cost_uzs?: number;
+    usd_to_uzs_rate?: number;
     avg_cost_usd: string;
     avg_latency_ms: number;
     avg_tokens: number;
@@ -4096,6 +4102,7 @@ export type MorphAiChatOps = {
     tokens: number;
     prompt_tokens: number;
     cost_usd: string;
+    cost_uzs?: number;
   }>;
   top_users: Array<{
     user_id: number;
@@ -4108,6 +4115,7 @@ export type MorphAiChatOps = {
     tokens: number;
     prompt_tokens: number;
     cost_usd: string;
+    cost_uzs?: number;
     last_at: string | null;
     threads: number;
     plan_code: string;
@@ -4116,6 +4124,9 @@ export type MorphAiChatOps = {
     ends_at: string | null;
     morph_ai_used: number;
     morph_ai_limit: number;
+    token_used_month?: number;
+    token_limit?: number;
+    token_remaining?: number;
   }>;
   recent: Array<{
     id: number;

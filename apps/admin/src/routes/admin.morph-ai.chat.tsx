@@ -61,6 +61,16 @@ function formatUsd(raw: string | number | undefined): string {
   return `$${n.toFixed(4)}`;
 }
 
+function formatUzs(n: number | undefined): string {
+  if (typeof n !== "number" || !Number.isFinite(n)) return "0 so'm";
+  return `${Math.round(n).toLocaleString("uz-UZ")} so'm`;
+}
+
+function formatCost(usd: string | number | undefined, uzs?: number): string {
+  if (typeof uzs === "number") return `${formatUsd(usd)} · ${formatUzs(uzs)}`;
+  return formatUsd(usd);
+}
+
 function formatTokens(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(2)}M`;
   if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
@@ -173,7 +183,7 @@ function MorphChatOpsPage() {
             label="Xarajat"
             value={formatUsd(d.summary.total_cost_usd)}
             icon={Coins}
-            hint={`O'rtacha ${formatUsd(d.summary.avg_cost_usd)}`}
+            hint={`${formatUzs(d.summary.total_cost_uzs)} · o'rtacha ${formatUsd(d.summary.avg_cost_usd)}`}
           />
           <KPICard
             label="Token / kontekst"
@@ -187,7 +197,7 @@ function MorphChatOpsPage() {
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
         <div className="rounded-2xl border border-border bg-card p-5 shadow-card sm:p-6">
           <h2 className="font-heading text-lg font-semibold">Kunlik chat xarajati</h2>
-          <p className="mt-1 text-sm text-muted-foreground">USD — faqat Morf AI chat</p>
+          <p className="mt-1 text-sm text-muted-foreground">USD va so&apos;m — faqat Morf AI chat</p>
           {q.isLoading || !d ? (
             <CardSkeleton className="mt-4 h-[260px]" />
           ) : dailyChart.length === 0 ? (
@@ -264,8 +274,8 @@ function MorphChatOpsPage() {
                   <TableHead>Obuna</TableHead>
                   <TableHead className="text-right">Suhbat</TableHead>
                   <TableHead className="text-right">Xabar</TableHead>
-                  <TableHead className="text-right">Token</TableHead>
-                  <TableHead className="text-right">Kontekst</TableHead>
+                  <TableHead className="text-right">Oylik token</TableHead>
+                  <TableHead className="text-right">Davr token</TableHead>
                   <TableHead className="text-right">Xarajat</TableHead>
                   <TableHead className="text-right">Oxirgi</TableHead>
                 </TableRow>
@@ -296,13 +306,16 @@ function MorphChatOpsPage() {
                       </span>
                     </TableCell>
                     <TableCell className="text-right tabular-nums">
-                      {formatTokens(u.tokens)}
+                      {formatTokens(u.token_used_month ?? 0)}
+                      <span className="ml-1 text-xs text-muted-foreground">
+                        / {formatTokens(u.token_limit ?? 0)}
+                      </span>
                     </TableCell>
                     <TableCell className="text-right tabular-nums">
-                      {formatTokens(u.prompt_tokens)}
+                      {formatTokens(u.tokens)}
                     </TableCell>
                     <TableCell className="text-right tabular-nums font-medium">
-                      {formatUsd(u.cost_usd)}
+                      {formatCost(u.cost_usd, u.cost_uzs)}
                     </TableCell>
                     <TableCell className="text-right text-xs text-muted-foreground">
                       {u.last_at
