@@ -7,6 +7,8 @@ export function useLayoutRouteFlags(pathname: string) {
   const isAiStyle = pathname === "/ai-style";
   const isAiStyleSection = isAiStyle || pathname.startsWith("/ai-style/");
   const isMorfShare = pathname === "/morf-ai" || pathname.startsWith("/morf-ai/");
+  const isExploreTry = /\/explore\/[^/]+\/try\/?$/.test(pathname);
+  const isMorphType = isAiStyleSection || isMorfShare || isExploreTry;
   const isMap = pathname === "/map";
   const isFullBleed =
     isAiStyleSection ||
@@ -23,6 +25,7 @@ export function useLayoutRouteFlags(pathname: string) {
   return {
     isAiStyle,
     isAiStyleSection,
+    isMorphType,
     isMap,
     isFullBleed,
     isViewportLocked,

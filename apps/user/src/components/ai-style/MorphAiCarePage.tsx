@@ -60,7 +60,7 @@ export function MorphAiCarePage() {
         <BackLink label={t("common.back")} />
         <div className="mx-auto mt-24 max-w-xs text-center">
           <Lock className="mx-auto size-6 text-white/50" />
-          <h1 className="mt-4 text-xl font-semibold tracking-tight">
+          <h1 className="mt-4 text-lg font-semibold tracking-tight">
             {t("aiStylePage.care.badge", { defaultValue: "Parvarish" })}
           </h1>
           <p className="mt-2 text-sm text-white/50">

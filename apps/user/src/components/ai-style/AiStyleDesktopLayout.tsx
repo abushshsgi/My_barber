@@ -311,7 +311,7 @@ export function AiStyleDesktopLayout(props: AiStyleSplitLayoutProps) {
                 <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
                   {t("aiStylePage.title")}
                 </p>
-                <h1 className="mt-1.5 text-2xl font-extrabold tracking-tight text-foreground xl:text-[1.85rem]">
+                <h1 className="mt-1.5 text-xl font-semibold tracking-tight text-foreground xl:text-[1.65rem]">
                   {showResults
                     ? t("aiStylePage.resultsTitle")
                     : isPhotoPreview

@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, { FadeInDown } from "react-native-reanimated";
+import { morphFont } from "../../../theme/morph-font";
 
 type Props = {
   headline: string;
@@ -100,17 +101,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
   },
   headline: {
-    fontSize: 30,
-    lineHeight: 36,
-    fontWeight: "700",
+    ...morphFont,
+    fontSize: 26,
+    lineHeight: 32,
+    fontWeight: "600",
     color: "#111111",
-    letterSpacing: -0.7,
+    letterSpacing: -0.6,
     textAlign: "center",
   },
   lede: {
-    marginTop: 10,
-    fontSize: 15,
-    lineHeight: 22,
+    marginTop: 8,
+    ...morphFont,
+    fontSize: 13,
+    lineHeight: 19,
     color: "#71717A",
     textAlign: "center",
     maxWidth: 340,

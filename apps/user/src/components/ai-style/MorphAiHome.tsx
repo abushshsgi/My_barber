@@ -357,7 +357,7 @@ export function MorphAiHome({
             ) : null}
           </motion.div>
 
-          <p className="max-w-[18rem] text-[15px] leading-snug text-white/55 md:text-[16px]">
+          <p className="max-w-[18rem] text-[13px] leading-snug text-white/55 md:text-[14px]">
             {t("aiStylePage.home.subtitle")}
           </p>
 
@@ -366,7 +366,7 @@ export function MorphAiHome({
             onClick={onStartNew}
             className="relative mt-6 flex h-12 w-full max-w-sm cursor-pointer items-center gap-3 rounded-full bg-white px-2 pl-5 text-left text-[#050505] transition-opacity duration-200 active:opacity-90 md:h-14"
           >
-            <span className="min-w-0 flex-1 truncate text-[14px] font-semibold">
+            <span className="min-w-0 flex-1 truncate text-[13px] font-semibold">
               {t("aiStylePage.home.newLook")}
             </span>
             <span className="grid size-9 shrink-0 place-items-center rounded-full bg-[#050505] text-white">
@@ -423,7 +423,7 @@ export function MorphAiHome({
             className="mt-8"
           >
             <div className="mb-3 flex items-center justify-between">
-              <p className="text-[13px] font-semibold text-white/80">
+              <p className="text-[12px] font-semibold text-white/80">
                 {t("aiStylePage.home.myLooksTitle")}
               </p>
               <button
@@ -460,7 +460,7 @@ export function MorphAiHome({
           className="mt-9"
         >
           <div className="mb-3 flex items-center justify-between px-0.5">
-            <p className="text-[13px] font-semibold text-white/80">
+            <p className="text-[12px] font-semibold text-white/80">
               {t("aiStylePage.home.samplesTitle")}
             </p>
             <Link

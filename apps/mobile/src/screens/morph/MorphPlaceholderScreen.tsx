@@ -1,6 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import { StyleSheet, Text, View } from "react-native";
+import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { morphFont } from "../../theme/morph-font";
 
 type Props = {
   title: string;
@@ -11,17 +13,19 @@ type Props = {
 /** Morph AI tab placeholder — qorong‘u uslub. */
 export function MorphPlaceholderScreen({
   title,
-  subtitle = "Tez orada — Morph AI ichida ochiladi.",
+  subtitle,
   icon = "sparkles-outline",
 }: Props) {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
+  const sub = subtitle ?? t("placeholder.comingSoon");
   return (
     <View style={[styles.root, { paddingTop: insets.top + 48 }]}>
       <View style={styles.iconWrap}>
         <Ionicons name={icon} size={28} color="rgba(255,255,255,0.85)" />
       </View>
       <Text style={styles.title}>{title}</Text>
-      <Text style={styles.subtitle}>{subtitle}</Text>
+      <Text style={styles.subtitle}>{sub}</Text>
     </View>
   );
 }
@@ -45,8 +49,9 @@ const styles = StyleSheet.create({
   },
   title: {
     marginTop: 18,
-    fontSize: 22,
-    fontWeight: "700",
+    ...morphFont,
+    fontSize: 18,
+    fontWeight: "600",
     color: "#FFFFFF",
     letterSpacing: -0.4,
     textAlign: "center",
@@ -54,8 +59,9 @@ const styles = StyleSheet.create({
   subtitle: {
     marginTop: 8,
     maxWidth: 280,
-    fontSize: 14,
-    lineHeight: 20,
+    ...morphFont,
+    fontSize: 13,
+    lineHeight: 18,
     color: "rgba(255,255,255,0.5)",
     textAlign: "center",
   },

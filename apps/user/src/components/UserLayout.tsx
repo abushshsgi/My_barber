@@ -90,7 +90,12 @@ export function UserLayout({ children }: { children: React.ReactNode }) {
     : undefined;
 
   return (
-    <div className="min-h-screen min-w-0 overflow-x-clip bg-background text-foreground">
+    <div
+      className={cn(
+        "min-h-screen min-w-0 overflow-x-clip bg-background text-foreground",
+        flags.isMorphType && "morph-ai-type",
+      )}
+    >
       <ClientOnly>
         <DemoEnvironmentBanner />
       </ClientOnly>

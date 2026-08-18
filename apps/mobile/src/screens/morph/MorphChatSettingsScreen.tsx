@@ -8,7 +8,6 @@ import {
   ScrollView,
   Share,
   StyleSheet,
-  Switch,
   Text,
   View,
 } from "react-native";
@@ -40,6 +39,8 @@ import {
   type MorphVoiceLangPref,
 } from "../../lib/morph-chat-prefs";
 import { MORPH_VOICE_CATALOG } from "../../lib/morph-voice";
+import { MorphToggle } from "../../components/morph/MorphToggle";
+import { morphFont } from "../../theme/morph-font";
 import {
   MorphHelpCenterView,
   MorphReportProblemView,
@@ -198,13 +199,7 @@ function PrefToggle({
           <Text style={styles.itemTitle}>{title}</Text>
           <Text style={styles.itemSubtitle}>{subtitle}</Text>
         </View>
-        <Switch
-          value={value}
-          onValueChange={onChange}
-          trackColor={{ false: "#3A3A3C", true: ACCENT_BLUE }}
-          thumbColor="#FFFFFF"
-          ios_backgroundColor="#3A3A3C"
-        />
+        <MorphToggle value={value} onChange={onChange} />
       </View>
     </View>
   );
@@ -1010,7 +1005,8 @@ const styles = StyleSheet.create({
   subTitle: {
     flex: 1,
     textAlign: "center",
-    fontSize: 17,
+    ...morphFont,
+    fontSize: 15,
     fontWeight: "600",
     color: "#FFFFFF",
   },
@@ -1053,10 +1049,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   avatarText: {
-    fontSize: 32,
-    fontWeight: "700",
+    ...morphFont,
+    fontSize: 26,
+    fontWeight: "600",
     color: "#FFFFFF",
-    letterSpacing: 0.5,
+    letterSpacing: 0.4,
   },
   editBadge: {
     position: "absolute",
@@ -1072,8 +1069,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   profileName: {
-    fontSize: 22,
-    fontWeight: "700",
+    ...morphFont,
+    fontSize: 18,
+    fontWeight: "600",
     color: "#FFFFFF",
     letterSpacing: -0.3,
     textAlign: "center",
@@ -1084,7 +1082,8 @@ const styles = StyleSheet.create({
   sectionTitle: {
     marginBottom: 8,
     marginLeft: 12,
-    fontSize: 13,
+    ...morphFont,
+    fontSize: 12,
     fontWeight: "400",
     color: MUTED,
   },
@@ -1122,19 +1121,22 @@ const styles = StyleSheet.create({
     paddingRight: 8,
   },
   itemTitle: {
-    fontSize: 17,
+    ...morphFont,
+    fontSize: 15,
     fontWeight: "400",
     color: "#FFFFFF",
     letterSpacing: -0.2,
   },
   itemSubtitle: {
     marginTop: 2,
-    fontSize: 13,
+    ...morphFont,
+    fontSize: 12,
     color: MUTED,
-    lineHeight: 17,
+    lineHeight: 16,
   },
   itemValue: {
-    fontSize: 16,
+    ...morphFont,
+    fontSize: 14,
     color: MUTED,
     marginRight: 2,
   },
@@ -1158,7 +1160,8 @@ const styles = StyleSheet.create({
     minHeight: 52,
   },
   destructiveText: {
-    fontSize: 17,
+    ...morphFont,
+    fontSize: 15,
     fontWeight: "400",
     color: DESTRUCTIVE,
   },
@@ -1187,7 +1190,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
   },
   chipText: {
-    fontSize: 13,
+    ...morphFont,
+    fontSize: 12,
     fontWeight: "600",
     color: "#EBEBF5",
   },
@@ -1236,8 +1240,9 @@ const styles = StyleSheet.create({
   },
   warnText: {
     flex: 1,
-    fontSize: 14,
-    lineHeight: 19,
+    ...morphFont,
+    fontSize: 13,
+    lineHeight: 18,
     color: WARN,
     fontWeight: "600",
   },
@@ -1253,8 +1258,9 @@ const styles = StyleSheet.create({
   },
   okText: {
     flex: 1,
-    fontSize: 14,
-    lineHeight: 19,
+    ...morphFont,
+    fontSize: 13,
+    lineHeight: 18,
     color: "#30D158",
     fontWeight: "500",
   },
@@ -1275,22 +1281,25 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   meterPct: {
-    fontSize: 13,
+    ...morphFont,
+    fontSize: 12,
     color: MUTED,
     marginTop: 2,
   },
   pageLead: {
     marginBottom: 16,
     marginHorizontal: 4,
-    fontSize: 14,
-    lineHeight: 20,
+    ...morphFont,
+    fontSize: 13,
+    lineHeight: 19,
     color: MUTED,
   },
   syncHint: {
     marginTop: -12,
     marginBottom: 16,
     marginHorizontal: 12,
-    fontSize: 12,
+    ...morphFont,
+    fontSize: 11,
     color: MUTED,
   },
   pressed: {

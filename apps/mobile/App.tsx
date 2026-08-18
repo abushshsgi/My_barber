@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, Platform, StyleSheet, View } from "react-native";
+import { useFonts } from "expo-font";
 import { I18nextProvider } from "react-i18next";
 import { AuthProvider, useAuth } from "./src/auth/AuthContext";
 import {
@@ -146,6 +147,18 @@ function AppGate() {
 }
 
 export default function App() {
+  const [fontsLoaded] = useFonts({
+    Jost: require("./assets/fonts/Jost.ttf"),
+  });
+
+  if (!fontsLoaded) {
+    return (
+      <View style={styles.boot}>
+        <ActivityIndicator color={colors.fg} size="large" />
+      </View>
+    );
+  }
+
   return (
     <I18nextProvider i18n={i18n}>
       <GestureHandlerRootView style={{ flex: 1 }}>

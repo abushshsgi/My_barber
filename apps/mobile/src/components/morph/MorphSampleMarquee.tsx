@@ -10,6 +10,7 @@ import Animated, {
   withRepeat,
   withTiming,
 } from "react-native-reanimated";
+import { morphFont } from "../../theme/morph-font";
 
 export type MorphSampleCard = {
   id: string;
@@ -154,13 +155,14 @@ const styles = StyleSheet.create({
     height: 48,
   },
   title: {
+    ...morphFont,
     position: "absolute",
     left: 8,
     right: 8,
     bottom: 8,
     color: "rgba(255,255,255,0.92)",
     fontSize: 10,
-    fontWeight: "700",
+    fontWeight: "600",
   },
   skeletonWrap: { gap: 10 },
   skeletonRow: { flexDirection: "row", gap: GAP },

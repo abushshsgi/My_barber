@@ -15,6 +15,8 @@ import Animated, {
   ZoomOut,
 } from "react-native-reanimated";
 
+import { morphFont } from "../../../theme/morph-font";
+
 type Props = {
   value: string;
   onChange: (text: string) => void;
@@ -220,8 +222,9 @@ const styles = StyleSheet.create({
     maxHeight: 72,
     paddingHorizontal: 6,
     paddingVertical: 4,
-    fontSize: 15,
-    lineHeight: 20,
+    ...morphFont,
+    fontSize: 14,
+    lineHeight: 19,
     color: "#111111",
     textAlign: "left",
   },

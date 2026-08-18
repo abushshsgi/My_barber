@@ -4,9 +4,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { MorphLimitUpsell } from "@/components/ai-style/MorphLimitUpsell";
+import { MorphToggle } from "@/components/ai-style/MorphToggle";
 import { MorphVoiceLiveOverlay } from "@/components/ai-style/MorphVoiceLiveOverlay";
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
 import { useMorphAiPrivacy } from "@/hooks/use-morph-ai-privacy";
 import { useMorphLimitGate } from "@/hooks/use-morph-limit-gate";
 import { useMorphVoiceChat } from "@/hooks/use-morph-voice";
@@ -50,12 +50,17 @@ function saveLocalMessages(messages: ChatMsg[]) {
   localStorage.setItem(THREADS_KEY, JSON.stringify(messages.slice(-80)));
 }
 
-function chatUsagePct(limits: {
-  token_used?: number | null;
-  daily_used?: number | null;
-  token_limit?: number | null;
-  daily_limit?: number | null;
-} | null | undefined) {
+function chatUsagePct(
+  limits:
+    | {
+        token_used?: number | null;
+        daily_used?: number | null;
+        token_limit?: number | null;
+        daily_limit?: number | null;
+      }
+    | null
+    | undefined,
+) {
   const used = limits?.token_used ?? limits?.daily_used;
   const limit = limits?.token_limit ?? limits?.daily_limit;
   if (typeof used !== "number" || typeof limit !== "number" || !limit) return 0;
@@ -219,7 +224,7 @@ export function MorphAiChatPage() {
           <ChevronLeft className="size-5" strokeWidth={2.25} />
         </button>
         <div className="min-w-0 flex-1 text-center">
-          <p className="truncate text-[13px] font-extrabold tracking-[0.18em]">
+          <p className="truncate text-[11px] font-semibold tracking-[0.2em]">
             {t("aiStylePage.chat.title")}
           </p>
         </div>
@@ -253,16 +258,16 @@ export function MorphAiChatPage() {
             <span className="grid size-14 place-items-center rounded-2xl bg-white/[0.06] ring-1 ring-white/10">
               <Sparkles className="size-6 text-white/80" strokeWidth={1.75} />
             </span>
-            <h1 className="mt-5 text-xl font-semibold tracking-tight">
+            <h1 className="mt-5 text-[1.15rem] font-semibold tracking-tight">
               {t("aiStylePage.chat.welcomeTitle")}
             </h1>
-            <p className="mt-2 max-w-xs text-sm leading-relaxed text-white/50">
+            <p className="mt-2 max-w-xs text-[13px] leading-relaxed text-white/50">
               {t("aiStylePage.chat.welcomeBody")}
             </p>
             <button
               type="button"
               onClick={() => void startVoice()}
-              className="mt-6 inline-flex cursor-pointer items-center gap-2 rounded-full bg-white px-4 py-2.5 text-sm font-semibold text-black"
+              className="mt-6 inline-flex cursor-pointer items-center gap-2 rounded-full bg-white px-4 py-2.5 text-[13px] font-semibold text-black"
             >
               <Mic className="size-4" strokeWidth={2.25} />
               {t("aiStylePage.chat.voiceStart")}
@@ -274,7 +279,7 @@ export function MorphAiChatPage() {
               <div
                 key={msg.id}
                 className={cn(
-                  "max-w-[85%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed",
+                  "max-w-[85%] rounded-2xl px-3.5 py-2.5 text-[13px] leading-relaxed",
                   msg.role === "user"
                     ? "ml-auto bg-white text-black"
                     : "mr-auto bg-white/[0.08] text-white",
@@ -305,7 +310,7 @@ export function MorphAiChatPage() {
           }}
           rows={1}
           placeholder={t("aiStylePage.chat.placeholder")}
-          className="min-h-12 max-h-32 flex-1 resize-none rounded-2xl bg-white/[0.08] px-4 py-3 text-sm text-white outline-none ring-1 ring-white/10 placeholder:text-white/35"
+          className="min-h-12 max-h-32 flex-1 resize-none rounded-2xl bg-white/[0.08] px-4 py-3 text-[13px] text-white outline-none ring-1 ring-white/10 placeholder:text-white/35"
         />
         {input.trim() ? (
           <button
@@ -336,12 +341,14 @@ export function MorphAiChatPage() {
 
       {settingsOpen ? (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-3 sm:items-center">
-          <div className="max-h-[86dvh] w-full max-w-md overflow-y-auto rounded-3xl bg-[#1C1C1E] p-5 text-white shadow-2xl">
+          <div className="max-h-[86dvh] w-full max-w-md overflow-y-auto rounded-[28px] bg-[#1C1C1E] p-5 text-white shadow-2xl">
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-semibold">{t("aiStylePage.chat.settings")}</h2>
+              <h2 className="text-[17px] font-semibold tracking-tight">
+                {t("aiStylePage.chat.settings")}
+              </h2>
               <button
                 type="button"
-                className="cursor-pointer text-sm text-white/60"
+                className="cursor-pointer text-[13px] text-white/55 transition-colors duration-200 hover:text-white"
                 onClick={() => setSettingsOpen(false)}
               >
                 {t("common.close")}
@@ -349,52 +356,62 @@ export function MorphAiChatPage() {
             </div>
             {limits ? (
               <div className="mb-4 rounded-2xl bg-white/[0.06] p-4">
-                <p className="text-sm font-medium">
+                <p className="text-[13px] font-medium">
                   {t("aiStylePage.chat.limitValue", { pct: usedPct })}
                 </p>
-                <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/10">
+                <div className="mt-2.5 h-1.5 overflow-hidden rounded-full bg-white/10">
                   <div
                     className={cn(
-                      "h-2 rounded-full",
-                      usedPct >= 90 ? "bg-red-500" : usedPct >= 70 ? "bg-amber-400" : "bg-sky-500",
+                      "h-1.5 rounded-full transition-[width] duration-300",
+                      usedPct >= 90
+                        ? "bg-red-500"
+                        : usedPct >= 70
+                          ? "bg-amber-400"
+                          : "bg-[#34C759]",
                     )}
                     style={{ width: `${usedPct}%` }}
                   />
                 </div>
-                <p className="mt-2 text-xs text-white/50">
+                <p className="mt-2 text-[11px] leading-relaxed text-white/45">
                   {t("aiStylePage.chat.limitHint", { pct: usedPct })}
                 </p>
               </div>
             ) : null}
-            <div className="space-y-4">
-              <ChatPref
-                title={t("aiStylePage.chat.limitNotify")}
-                hint={t("aiStylePage.chat.limitNotifyHint")}
-                value={prefs.limitNotify}
-                onChange={(v) => {
-                  setPrefs(patchMorphAiPrefs({ limitNotify: v }));
-                  if (loggedIn) privacy.patch.mutate({ limit_notify: v });
-                }}
-              />
-              <ChatPref
-                title={t("aiStylePage.chat.privacyLocal")}
-                hint={t("aiStylePage.chat.privacyLocalHint")}
-                value={prefs.privacyLocalOnly}
-                onChange={(v) => {
-                  if (v && !window.confirm(t("aiStylePage.chat.privacyOnBody"))) return;
-                  setPrefs(patchMorphAiPrefs({ privacyLocalOnly: v }));
-                  if (loggedIn) privacy.patch.mutate({ privacy_local_only: v });
-                }}
-              />
-              <ChatPref
-                title={t("aiStylePage.chat.persistLooks")}
-                hint={t("aiStylePage.chat.persistLooksHint")}
-                value={prefs.persistLooks}
-                onChange={(v) => {
-                  setPrefs(patchMorphAiPrefs({ persistLooks: v }));
-                  if (loggedIn) privacy.patch.mutate({ persist_looks: v });
-                }}
-              />
+            <div className="divide-y divide-white/[0.08] overflow-hidden rounded-2xl bg-white/[0.06]">
+              <div className="px-4 py-3.5">
+                <ChatPref
+                  title={t("aiStylePage.chat.limitNotify")}
+                  hint={t("aiStylePage.chat.limitNotifyHint")}
+                  value={prefs.limitNotify}
+                  onChange={(v) => {
+                    setPrefs(patchMorphAiPrefs({ limitNotify: v }));
+                    if (loggedIn) privacy.patch.mutate({ limit_notify: v });
+                  }}
+                />
+              </div>
+              <div className="px-4 py-3.5">
+                <ChatPref
+                  title={t("aiStylePage.chat.privacyLocal")}
+                  hint={t("aiStylePage.chat.privacyLocalHint")}
+                  value={prefs.privacyLocalOnly}
+                  onChange={(v) => {
+                    if (v && !window.confirm(t("aiStylePage.chat.privacyOnBody"))) return;
+                    setPrefs(patchMorphAiPrefs({ privacyLocalOnly: v }));
+                    if (loggedIn) privacy.patch.mutate({ privacy_local_only: v });
+                  }}
+                />
+              </div>
+              <div className="px-4 py-3.5">
+                <ChatPref
+                  title={t("aiStylePage.chat.persistLooks")}
+                  hint={t("aiStylePage.chat.persistLooksHint")}
+                  value={prefs.persistLooks}
+                  onChange={(v) => {
+                    setPrefs(patchMorphAiPrefs({ persistLooks: v }));
+                    if (loggedIn) privacy.patch.mutate({ persist_looks: v });
+                  }}
+                />
+              </div>
             </div>
             <div className="mt-5 flex flex-wrap gap-2">
               <Button
@@ -475,12 +492,12 @@ function ChatPref({
   onChange: (v: boolean) => void;
 }) {
   return (
-    <label className="flex cursor-pointer items-start justify-between gap-4">
+    <label className="flex cursor-pointer items-center justify-between gap-4">
       <span className="min-w-0">
-        <span className="block text-sm font-medium">{title}</span>
-        <span className="mt-0.5 block text-xs leading-relaxed text-white/50">{hint}</span>
+        <span className="block text-[13px] font-medium leading-snug">{title}</span>
+        <span className="mt-0.5 block text-[11px] leading-relaxed text-white/45">{hint}</span>
       </span>
-      <Switch checked={value} onCheckedChange={onChange} />
+      <MorphToggle checked={value} onCheckedChange={onChange} />
     </label>
   );
 }

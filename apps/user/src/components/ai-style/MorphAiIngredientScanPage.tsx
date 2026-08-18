@@ -78,7 +78,7 @@ export function MorphAiIngredientScanPage() {
         <BackLink label={t("common.back")} />
         <div className="mx-auto mt-24 max-w-xs text-center">
           <Lock className="mx-auto size-6 text-white/50" />
-          <h1 className="mt-4 text-xl font-semibold tracking-tight">
+          <h1 className="mt-4 text-lg font-semibold tracking-tight">
             {t("aiStylePage.care.ingredientScan.title", { defaultValue: "Tarkib skani" })}
           </h1>
           <p className="mt-2 text-sm text-white/50">
@@ -210,7 +210,7 @@ export function MorphAiIngredientScanPage() {
           <p className="mt-6 text-[12px] font-medium tracking-wide text-white/35">
             {t("aiStylePage.care.ingredientScan.badge", { defaultValue: "Teri profili" })}
           </p>
-          <h1 className="mt-2 max-w-[18rem] text-[1.75rem] font-semibold leading-[1.12] tracking-tight">
+          <h1 className="mt-2 max-w-[18rem] text-[1.45rem] font-semibold leading-[1.12] tracking-tight">
             {current.title}
           </h1>
           <div className="mt-4 h-1 overflow-hidden rounded-full bg-white/10">
@@ -444,7 +444,7 @@ export function MorphAiIngredientScanPage() {
           <p className="text-[12px] font-medium tracking-wide text-white/35">
             {t("aiStylePage.care.ingredientScan.badge", { defaultValue: "Tarkib skani" })}
           </p>
-          <h1 className="mt-2 max-w-[18rem] text-[1.75rem] font-semibold leading-[1.12] tracking-tight">
+          <h1 className="mt-2 max-w-[18rem] text-[1.45rem] font-semibold leading-[1.12] tracking-tight">
             {t("aiStylePage.care.ingredientScan.title", {
               defaultValue: "Mahsulot tarkibini tekshiring",
             })}

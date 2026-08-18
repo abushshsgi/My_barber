@@ -22,6 +22,8 @@ import Animated, {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { MorphChatThread } from "../../../hooks/useMorphChat";
 
+import { morphFont } from "../../../theme/morph-font";
+
 type Props = {
   visible: boolean;
   brand: string;
@@ -289,8 +291,9 @@ const styles = StyleSheet.create({
     marginBottom: 18,
   },
   brand: {
-    fontSize: 22,
-    fontWeight: "700",
+    ...morphFont,
+    fontSize: 18,
+    fontWeight: "600",
     color: "#FFFFFF",
     letterSpacing: -0.4,
   },
@@ -317,8 +320,9 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   newChatText: {
+    ...morphFont,
     color: "#FFFFFF",
-    fontSize: 15,
+    fontSize: 13,
     fontWeight: "600",
   },
   navRow: {
@@ -328,9 +332,10 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   navText: {
+    ...morphFont,
     flex: 1,
     color: "#FFFFFF",
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: "500",
   },
   searchBox: {
@@ -344,9 +349,10 @@ const styles = StyleSheet.create({
     marginVertical: 6,
   },
   searchInput: {
+    ...morphFont,
     flex: 1,
     color: "#FFFFFF",
-    fontSize: 15,
+    fontSize: 13,
     paddingVertical: 0,
   },
   scroll: {
@@ -359,14 +365,16 @@ const styles = StyleSheet.create({
   section: {
     marginTop: 10,
     marginBottom: 4,
-    fontSize: 12,
+    ...morphFont,
+    fontSize: 11,
     fontWeight: "600",
     color: "#A1A1AA",
     letterSpacing: 0.2,
   },
   empty: {
+    ...morphFont,
     color: "#71717A",
-    fontSize: 14,
+    fontSize: 13,
     paddingVertical: 8,
   },
   recentRow: {
@@ -381,9 +389,10 @@ const styles = StyleSheet.create({
     backgroundColor: "#1A1A1A",
   },
   recentText: {
+    ...morphFont,
     flex: 1,
     color: "#FFFFFF",
-    fontSize: 15,
+    fontSize: 13,
   },
   footer: {
     flexDirection: "row",
@@ -417,14 +426,16 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   avatarText: {
+    ...morphFont,
     color: "#FFFFFF",
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "700",
   },
   footerName: {
+    ...morphFont,
     flex: 1,
     color: "#FFFFFF",
-    fontSize: 15,
+    fontSize: 13,
     fontWeight: "600",
   },
 });

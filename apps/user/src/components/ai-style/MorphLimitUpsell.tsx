@@ -258,7 +258,7 @@ function MorphLimitUpsellBody({
 }
 
 const shellClass =
-  "border-white/10 bg-[#0a0a0a] text-white shadow-[0_40px_100px_-40px_rgba(0,0,0,0.9)] " +
+  "morph-ai-type border-white/10 bg-[#0a0a0a] text-white shadow-[0_40px_100px_-40px_rgba(0,0,0,0.9)] " +
   "[&>button]:text-white/70 [&>button]:hover:text-white [&>button]:hover:bg-white/10 " +
   "[&>button]:ring-offset-[#0a0a0a]";
 
@@ -293,7 +293,7 @@ export function MorphLimitUpsell({ open, onOpenChange, kind, me }: Props) {
       <Drawer open={open} onOpenChange={onOpenChange}>
         <DrawerContent
           className={cn(
-            "rounded-t-[32px] border-white/10 bg-[#0a0a0a] px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-2 text-white",
+            "morph-ai-type rounded-t-[32px] border-white/10 bg-[#0a0a0a] px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-2 text-white",
             "[&_[data-vaul-handle]]:bg-white/25",
           )}
         >

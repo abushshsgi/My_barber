@@ -289,7 +289,7 @@ export function AiStylePreviewSheet({
               <p className="text-[10px] font-bold uppercase tracking-wider text-white/60">
                 {previewImage ? t("aiStylePage.tryOnBadge") : t("aiStylePage.viewStyle")}
               </p>
-              <h2 className="mt-1 text-2xl font-bold text-white">{suggestion.title}</h2>
+              <h2 className="mt-1 text-xl font-semibold text-white">{suggestion.title}</h2>
               <p className="mt-1 text-sm text-white/80">
                 {t("aiStylePage.matchPct", { value: suggestion.match })}
               </p>

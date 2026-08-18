@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import "@fontsource-variable/space-grotesk";
 import "@fontsource-variable/inter";
+import "@fontsource-variable/jost";
 import "../i18n/config";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -18,7 +19,7 @@ import { UserLayout } from "../components/UserLayout";
 import { DeployRecovery } from "../components/DeployRecovery";
 import { ClientOnly } from "../components/ClientOnly";
 import { CLIENT_BOOT_SCRIPT } from "../lib/client-boot-script";
-import { Toaster } from "@/components/ui/sonner";
+import { Toaster } from "sonner";
 import { APP_BUILD_ID } from "../lib/app-build-id";
 import { isChunkLoadError, reloadForChunkError } from "../lib/chunk-reload";
 import { requireAuth } from "../lib/require-auth";
@@ -215,7 +216,7 @@ function AppShell() {
           <ClientOnly>
             <GoogleAnalytics />
             <DeployRecovery />
-            <Toaster />
+            <Toaster position="top-center" />
           </ClientOnly>
         </CurrencyProvider>
       </AudienceProvider>

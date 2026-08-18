@@ -11,6 +11,7 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import { ChatMarkdown } from "./ChatMarkdown";
+import { morphFont } from "../../../theme/morph-font";
 
 export type ChatRole = "user" | "assistant";
 
@@ -92,8 +93,9 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   userText: {
-    fontSize: 14,
-    lineHeight: 21,
+    ...morphFont,
+    fontSize: 13,
+    lineHeight: 19,
     color: "#111111",
   },
   assistantRow: {

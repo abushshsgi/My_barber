@@ -1,5 +1,6 @@
 import { Fragment, type ReactNode } from "react";
 import { StyleSheet, Text, View } from "react-native";
+import { morphFont } from "../../../theme/morph-font";
 
 type Props = {
   content: string;
@@ -209,25 +210,27 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   p: {
-    fontSize: 14,
-    lineHeight: 21,
+    ...morphFont,
+    fontSize: 13,
+    lineHeight: 19,
   },
   h: {
-    fontWeight: "700",
+    ...morphFont,
+    fontWeight: "600",
     letterSpacing: -0.2,
     marginTop: 2,
   },
   h1: {
-    fontSize: 17,
-    lineHeight: 23,
+    fontSize: 16,
+    lineHeight: 22,
   },
   h2: {
-    fontSize: 15,
-    lineHeight: 21,
-  },
-  h3: {
     fontSize: 14,
     lineHeight: 20,
+  },
+  h3: {
+    fontSize: 13,
+    lineHeight: 18,
   },
   bold: {
     fontWeight: "700",

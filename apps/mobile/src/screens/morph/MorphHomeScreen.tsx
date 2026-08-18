@@ -18,6 +18,7 @@ import {
 } from "../../components/morph/MorphSampleMarquee";
 import { useAuth } from "../../auth/AuthContext";
 import { useMorphLimitGate } from "../../hooks/useMorphLimitGate";
+import { morphFont } from "../../theme/morph-font";
 import { presentMorphPaywall } from "../../lib/morph-return";
 import { useMorphSession } from "../../lib/morph-session";
 import type { MorphStackParamList } from "../../navigation/MorphStack";
@@ -296,7 +297,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   limitLow: { backgroundColor: "#CA8A04" },
-  limitText: { fontSize: 10, fontWeight: "800", color: "#050505" },
+  limitText: { ...morphFont, fontSize: 10, fontWeight: "700", color: "#050505" },
   body: { paddingHorizontal: 20, gap: 8 },
   hero: {
     alignItems: "center",
@@ -317,9 +318,10 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   ctaText: {
+    ...morphFont,
     flex: 1,
-    fontSize: 14,
-    fontWeight: "700",
+    fontSize: 13,
+    fontWeight: "600",
     color: "#050505",
   },
   ctaArrow: {
@@ -355,11 +357,12 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   toolLabel: {
+    ...morphFont,
     textAlign: "center",
-    fontSize: 11,
-    fontWeight: "600",
+    fontSize: 10,
+    fontWeight: "500",
     color: "rgba(255,255,255,0.5)",
-    lineHeight: 14,
+    lineHeight: 13,
   },
   section: { marginTop: 28 },
   sectionHead: {
@@ -369,13 +372,15 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   sectionTitle: {
-    fontSize: 13,
-    fontWeight: "700",
+    ...morphFont,
+    fontSize: 12,
+    fontWeight: "600",
     color: "rgba(255,255,255,0.8)",
   },
   sectionLink: {
-    fontSize: 12,
-    fontWeight: "600",
+    ...morphFont,
+    fontSize: 11,
+    fontWeight: "500",
     color: "rgba(255,255,255,0.4)",
   },
   exploreLink: { flexDirection: "row", alignItems: "center", gap: 2 },
@@ -406,11 +411,13 @@ const styles = StyleSheet.create({
   },
   careCopy: { flex: 1, gap: 2 },
   careTitle: {
+    ...morphFont,
     color: "#FFF",
-    fontWeight: "700",
-    fontSize: 13,
+    fontWeight: "600",
+    fontSize: 12,
   },
   careSub: {
+    ...morphFont,
     color: "rgba(255,255,255,0.4)",
     fontSize: 10,
     lineHeight: 13,

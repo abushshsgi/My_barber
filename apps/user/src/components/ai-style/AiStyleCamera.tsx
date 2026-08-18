@@ -266,7 +266,7 @@ export function AiStyleCamera({ open, onClose, onCapture }: Props) {
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[300] bg-black text-white"
+      className="morph-ai-type fixed inset-0 z-[300] bg-black text-white"
       role="dialog"
       aria-modal="true"
       onClick={(event) => event.stopPropagation()}

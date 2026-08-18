@@ -102,7 +102,7 @@ export function MorphAiIntroOverlay({ open, onComplete }: Props) {
       {visible ? (
         <motion.div
           key="morph-ai-intro"
-          className="fixed inset-0 z-[280] flex items-center justify-center bg-black text-white"
+          className="morph-ai-type fixed inset-0 z-[280] flex items-center justify-center bg-black text-white"
           role="dialog"
           aria-modal="true"
           aria-label={t("aiStylePage.introVideo.title")}
@@ -137,7 +137,7 @@ export function MorphAiIntroOverlay({ open, onComplete }: Props) {
               <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-white/55">
                 {t("aiStylePage.introVideo.badge")}
               </p>
-              <h2 className="mt-2 max-w-[18rem] font-display text-[1.45rem] font-extrabold leading-tight tracking-[-0.03em]">
+              <h2 className="mt-2 max-w-[18rem] font-morph text-[1.25rem] font-semibold leading-tight tracking-[-0.03em]">
                 {t("aiStylePage.introVideo.title")}
               </h2>
               <p className="mt-1.5 max-w-[20rem] text-[13px] leading-relaxed text-white/65">

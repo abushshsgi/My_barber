@@ -47,7 +47,7 @@ export function AiStyleChrome({ tone = "light", className, title, onBack }: Prop
       <div className="min-w-0 flex-1 px-1 text-center">
         <p
           className={cn(
-            "truncate text-[13px] font-extrabold tracking-[0.22em]",
+            "truncate text-[11px] font-semibold tracking-[0.2em]",
             isDark ? "text-white" : "text-foreground",
           )}
         >

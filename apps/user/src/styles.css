@@ -40,6 +40,7 @@
 
   --font-sans: "Space Grotesk Variable", "Inter Variable", system-ui, sans-serif;
   --font-display: "Space Grotesk Variable", system-ui, sans-serif;
+  --font-morph: "Jost Variable", "Jost", system-ui, sans-serif;
 }
 
 /*
@@ -139,6 +140,31 @@
     font-family: var(--font-display);
     font-weight: 700;
     letter-spacing: -0.02em;
+  }
+
+  /* Morph AI — geometric sans (Neiko uslubi), biroz maydaroq type. */
+  .morph-ai-type,
+  .morph-ai-type button,
+  .morph-ai-type input,
+  .morph-ai-type textarea,
+  .morph-ai-type select {
+    font-family: var(--font-morph);
+    letter-spacing: -0.018em;
+  }
+
+  .morph-ai-type {
+    font-size: 15px;
+  }
+
+  .morph-ai-type h1,
+  .morph-ai-type h2,
+  .morph-ai-type h3,
+  .morph-ai-type h4,
+  .morph-ai-type h5,
+  .morph-ai-type h6 {
+    font-family: var(--font-morph);
+    font-weight: 600;
+    letter-spacing: -0.03em;
   }
 
   .no-scrollbar::-webkit-scrollbar { display: none; }
