@@ -44,6 +44,7 @@ import {
 } from "../../lib/morph-return";
 import type { RootTabParamList } from "../../navigation/RootTabs";
 import { MorphChatSettingsScreen } from "./MorphChatSettingsScreen";
+import { useMorphAppearance } from "../../lib/MorphAppearanceContext";
 
 export function MorphChatScreen() {
   const { t } = useTranslation();
@@ -53,6 +54,7 @@ export function MorphChatScreen() {
   const gate = useMorphLimitGate();
   const listRef = useRef<FlatList<MorphChatMessage>>(null);
   const chat = useMorphChat();
+  const { colors: pal } = useMorphAppearance();
   const pendingDraft = useRef<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
@@ -415,6 +417,10 @@ export function MorphChatScreen() {
           void voice.previewVoice(id, t("chat.settings.voiceSample"));
         }}
         voicePreviewing={voice.previewing}
+        onOpenAccount={() => {
+          setSettingsOpen(false);
+          navigation.navigate("Profile", { screen: "PersonalInfo" } as never);
+        }}
       />
     </Modal>
   );
@@ -456,9 +462,9 @@ export function MorphChatScreen() {
 
   if (!chat.hydrated) {
     return (
-      <View style={[styles.root, styles.boot]}>
-        <StatusBar style="dark" />
-        <ActivityIndicator color="#111111" />
+      <View style={[styles.root, styles.boot, { backgroundColor: pal.bg }]}>
+        <StatusBar style={pal.status} />
+        <ActivityIndicator color={pal.fg} />
       </View>
     );
   }
@@ -466,7 +472,7 @@ export function MorphChatScreen() {
   if (!chatOpen) {
     return (
       <KeyboardAvoidingView
-        style={styles.root}
+        style={[styles.root, { backgroundColor: pal.bg }]}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
         <MorphChatWelcome
@@ -520,19 +526,19 @@ export function MorphChatScreen() {
     chat.threads.find((th) => th.id === chat.activeThreadId)?.title || t("chat.title");
 
   return (
-    <View style={[styles.root, { paddingTop: insets.top }]}>
-      <StatusBar style="dark" />
-      <View style={styles.header}>
+    <View style={[styles.root, { paddingTop: insets.top, backgroundColor: pal.bg }]}>
+      <StatusBar style={pal.status} />
+      <View style={[styles.header, { borderBottomColor: pal.line }]}>
         <Pressable
           onPress={() => setMenuOpen(true)}
           style={({ pressed }) => [styles.headerBtn, pressed && styles.pressed]}
           accessibilityRole="button"
           accessibilityLabel={t("chat.menu.openA11y")}
         >
-          <Ionicons name="menu" size={22} color="#111111" />
+          <Ionicons name="menu" size={22} color={pal.fg} />
         </Pressable>
         <View style={styles.headerText}>
-          <Text style={styles.title} numberOfLines={1}>
+          <Text style={[styles.title, { color: pal.fg }]} numberOfLines={1}>
             {threadTitle}
           </Text>
         </View>
@@ -542,7 +548,7 @@ export function MorphChatScreen() {
           accessibilityRole="button"
           accessibilityLabel={t("chat.home.backA11y")}
         >
-          <Ionicons name="home-outline" size={20} color="#111111" />
+          <Ionicons name="home-outline" size={20} color={pal.fg} />
         </Pressable>
       </View>
 
@@ -564,7 +570,7 @@ export function MorphChatScreen() {
               streaming={Boolean(item.streaming) && Boolean(item.content)}
             />
           )}
-          contentContainerStyle={[styles.list, { paddingBottom: 12 }]}
+          contentContainerStyle={[styles.list, { paddingBottom: 12, backgroundColor: pal.bg }]}
           onContentSizeChange={scrollToEnd}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
@@ -572,7 +578,16 @@ export function MorphChatScreen() {
 
         {errorNotice}
 
-        <View style={[styles.composerDock, { paddingBottom: Math.max(insets.bottom, 12) }]}>
+        <View
+          style={[
+            styles.composerDock,
+            {
+              paddingBottom: Math.max(insets.bottom, 12),
+              backgroundColor: pal.bg,
+              borderTopColor: pal.line,
+            },
+          ]}
+        >
           <ChatInputBar {...composer} onSend={() => void onSend()} onCamera={onCamera} />
         </View>
       </KeyboardAvoidingView>

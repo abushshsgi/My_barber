@@ -1,6 +1,7 @@
 import { ReactNode } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useShellTheme } from "../../lib/useShellTheme";
 import { colors } from "../../theme/colors";
 import { NativeBackButton } from "./NativeBackButton";
 
@@ -21,15 +22,18 @@ export function NativeHeader({
   largeTitle = false,
 }: Props) {
   const insets = useSafeAreaInsets();
+  const pal = useShellTheme();
 
   if (largeTitle) {
     return (
-      <View style={[styles.largeWrap, { paddingTop: Math.max(insets.top, 12) }]}>
+      <View style={[styles.largeWrap, { paddingTop: Math.max(insets.top, 12), backgroundColor: pal.bg }]}>
         <View style={styles.largeTop}>
           {onBack ? <NativeBackButton onPress={onBack} /> : <View style={styles.spacer} />}
           {right ?? <View style={styles.spacer} />}
         </View>
-        <Text style={styles.largeTitle}>{title}</Text>
+        <Text style={[styles.largeTitle, { color: pal.fg, fontFamily: pal.font.fontFamily }]}>
+          {title}
+        </Text>
       </View>
     );
   }
@@ -38,13 +42,16 @@ export function NativeHeader({
     <View
       style={[
         styles.wrap,
-        { paddingTop: Math.max(insets.top, 8) },
-        border && styles.border,
+        { paddingTop: Math.max(insets.top, 8), backgroundColor: pal.bg },
+        border && [styles.border, { borderBottomColor: pal.border }],
       ]}
     >
       <View style={styles.row}>
         {onBack ? <NativeBackButton onPress={onBack} /> : <View style={styles.spacer} />}
-        <Text style={styles.title} numberOfLines={1}>
+        <Text
+          style={[styles.title, { color: pal.fg, fontFamily: pal.font.fontFamily }]}
+          numberOfLines={1}
+        >
           {title}
         </Text>
         <View style={styles.right}>{right ?? <View style={styles.spacer} />}</View>

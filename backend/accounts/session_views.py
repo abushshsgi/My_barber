@@ -34,7 +34,9 @@ class UserSessionListView(APIView, UserSessionSerializerMixin):
 
     def get(self, request):
         current_jti = current_session_jti_from_request(request)
-        qs = UserSession.objects.filter(user=request.user, revoked_at__isnull=True)
+        qs = UserSession.objects.filter(user=request.user, revoked_at__isnull=True).order_by(
+            "-last_seen_at"
+        )
         data = [self._serialize(s, current_jti) for s in qs]
         return Response(data)
 

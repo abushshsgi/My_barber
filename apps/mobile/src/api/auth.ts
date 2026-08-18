@@ -95,6 +95,23 @@ export async function loginWithPassword(
   });
 }
 
+export async function setPassword(password: string): Promise<{ detail: string; user: ApiUser }> {
+  return apiJson("/api/v1/auth/phone/set-password/", {
+    method: "POST",
+    body: JSON.stringify({ password }),
+  });
+}
+
+export async function changePassword(
+  oldPassword: string,
+  newPassword: string,
+): Promise<{ detail: string; user: ApiUser }> {
+  return apiJson("/api/v1/auth/phone/change-password/", {
+    method: "POST",
+    body: JSON.stringify({ old_password: oldPassword, new_password: newPassword }),
+  });
+}
+
 /** Refresh — circular importdan qochish uchun raw fetch. */
 export async function refreshAccessToken(refresh: string): Promise<{
   access: string;

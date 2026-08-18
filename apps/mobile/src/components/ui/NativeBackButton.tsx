@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
-import { Pressable, StyleSheet, View } from "react-native";
-import { colors } from "../../theme/colors";
+import { Pressable, StyleSheet } from "react-native";
+import { useShellTheme } from "../../lib/useShellTheme";
 
 type Props = {
   onPress: () => void;
@@ -12,6 +12,7 @@ export function NativeBackButton({
   onPress,
   accessibilityLabel = "Orqaga",
 }: Props) {
+  const pal = useShellTheme();
   return (
     <Pressable
       onPress={onPress}
@@ -19,9 +20,13 @@ export function NativeBackButton({
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
       android_ripple={{ color: "rgba(0,0,0,0.1)", borderless: true, radius: 22 }}
-      style={({ pressed }) => [styles.btn, pressed && styles.pressed]}
+      style={({ pressed }) => [
+        styles.btn,
+        { backgroundColor: pal.iconTile },
+        pressed && styles.pressed,
+      ]}
     >
-      <Ionicons name="chevron-back" size={22} color={colors.fg} />
+      <Ionicons name="chevron-back" size={22} color={pal.fg} />
     </Pressable>
   );
 }
@@ -31,7 +36,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: colors.surface,
+    backgroundColor: "transparent",
     alignItems: "center",
     justifyContent: "center",
   },

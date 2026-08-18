@@ -11,10 +11,10 @@ import {
   Text,
   View,
 } from "react-native";
-import Svg, { Circle, G } from "react-native-svg";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { MorphAiPrivacyDataCounts, MorphChatLimits } from "../../api/ai";
+import { UsageMeter, UsageRing } from "../../components/morph/UsageMeter";
 import {
   deleteMorphAiPrivacyData,
   fetchMorphAiPrivacy,
@@ -60,6 +60,7 @@ type Props = {
   onSaveHistoryOff?: () => void;
   onPreviewVoice?: (voiceId: MorphVoiceId) => void;
   voicePreviewing?: boolean;
+  onOpenAccount?: () => void;
 };
 
 type Page =
@@ -162,7 +163,19 @@ function SettingsSection({
       {title ? (
         <Text style={[styles.sectionTitle, { color: pal.muted, fontSize: fs(12) }]}>{title}</Text>
       ) : null}
-      <View style={[styles.card, { backgroundColor: pal.card }]}>{children}</View>
+      <View
+        style={[
+          styles.card,
+          {
+            backgroundColor: pal.card,
+            borderColor: pal.line,
+            shadowOpacity: 0,
+            elevation: 0,
+          },
+        ]}
+      >
+        {children}
+      </View>
     </View>
   );
 }
@@ -194,7 +207,7 @@ function SettingsItem({
   const body = (
     <View style={styles.item}>
       <View style={[styles.iconTile, { backgroundColor: pal.iconTile }]}>
-        <Ionicons name={icon} size={18} color={iconColor ?? pal.fg} />
+        <Ionicons name={icon} size={20} color={iconColor ?? pal.fg} />
       </View>
       <View style={[styles.itemMain, !last && styles.itemBorder, !last && { borderBottomColor: pal.line }]}>
         <View style={styles.itemCopy}>
@@ -304,94 +317,6 @@ function CloseButton({ onPress, label }: { onPress: () => void; label: string })
   );
 }
 
-function UsageMeter({
-  pct,
-  used,
-  remaining,
-  limit,
-  usedLabel,
-  leftLabel,
-  color,
-}: {
-  pct: number;
-  used: number;
-  remaining: number;
-  limit: number;
-  usedLabel: string;
-  leftLabel: string;
-  color: string;
-}) {
-  const { colors: pal, fs } = useMorphAppearance();
-  const size = 156;
-  const stroke = 11;
-  const cx = size / 2;
-  const cy = size / 2;
-  const radius = (size - stroke) / 2;
-  const circumference = 2 * Math.PI * radius;
-  const dashOffset = circumference * (1 - pct / 100);
-  return (
-    <View style={styles.meterBlock}>
-      <View style={styles.meterRingWrap}>
-        <Svg width={size} height={size}>
-          <G transform={`rotate(-90 ${cx} ${cy})`}>
-            <Circle
-              cx={cx}
-              cy={cy}
-              r={radius}
-              stroke="#2C2C2E"
-              strokeWidth={stroke}
-              fill="none"
-            />
-            <Circle
-              cx={cx}
-              cy={cy}
-              r={radius}
-              stroke={color}
-              strokeWidth={stroke}
-              fill="none"
-              strokeLinecap="round"
-              strokeDasharray={`${circumference} ${circumference}`}
-              strokeDashoffset={dashOffset}
-            />
-          </G>
-        </Svg>
-        <View style={styles.meterCenter} pointerEvents="none">
-          <Text style={[styles.meterPctBig, { color: pal.fg, fontSize: fs(36) }]}>{pct}%</Text>
-        </View>
-      </View>
-      <View style={styles.meterStats}>
-        <View style={[styles.meterStat, { backgroundColor: pal.iconTile }]}>
-          <View style={[styles.meterDot, { backgroundColor: color }]} />
-          <View style={styles.itemCopy}>
-            <Text style={[styles.meterStatLabel, { color: pal.muted, fontSize: fs(11) }]}>
-              {usedLabel}
-            </Text>
-            <Text style={[styles.meterStatValue, { color: pal.fg, fontSize: fs(15) }]}>
-              {formatCount(used)}
-            </Text>
-          </View>
-        </View>
-        <View style={[styles.meterStat, { backgroundColor: pal.iconTile }]}>
-          <View style={[styles.meterDot, { backgroundColor: pal.track }]} />
-          <View style={styles.itemCopy}>
-            <Text style={[styles.meterStatLabel, { color: pal.muted, fontSize: fs(11) }]}>
-              {leftLabel}
-            </Text>
-            <Text style={[styles.meterStatValue, { color: pal.fg, fontSize: fs(15) }]}>
-              {formatCount(remaining)}
-            </Text>
-          </View>
-        </View>
-      </View>
-      {limit > 0 ? (
-        <Text style={[styles.meterCap, { color: pal.muted, fontSize: fs(12) }]}>
-          {`${formatCount(used)} / ${formatCount(limit)}`}
-        </Text>
-      ) : null}
-    </View>
-  );
-}
-
 function ConfirmSheet({
   spec,
   busy,
@@ -448,6 +373,7 @@ export function MorphChatSettingsScreen({
   onSaveHistoryOff,
   onPreviewVoice,
   voicePreviewing,
+  onOpenAccount,
 }: Props) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
@@ -457,8 +383,11 @@ export function MorphChatSettingsScreen({
     fs,
     theme,
     fontSize,
+    chatFontSize,
+    chatFs,
     setTheme,
     setFontSize,
+    setChatFontSize,
   } = useMorphAppearance();
   const [page, setPage] = useState<Page>("hub");
   const [ticketId, setTicketId] = useState<number | null>(null);
@@ -775,15 +704,21 @@ export function MorphChatSettingsScreen({
         {page === "hub" ? (
           <>
             <View style={styles.profileBlock}>
-              <View style={styles.avatarWrap}>
-                <View style={styles.avatar}>
-                  <Text style={styles.avatarText}>{letters}</Text>
+              <Pressable
+                onPress={onOpenAccount}
+                disabled={!onOpenAccount}
+                accessibilityRole={onOpenAccount ? "button" : undefined}
+              >
+                <View style={styles.avatarWrap}>
+                  <View style={styles.avatar}>
+                    <Text style={styles.avatarText}>{letters}</Text>
+                  </View>
+                  <View style={[styles.editBadge, { borderColor: pal.bg, backgroundColor: pal.cardStrong }]} accessibilityElementsHidden>
+                    <Ionicons name="pencil" size={12} color={pal.fg} />
+                  </View>
                 </View>
-                <View style={styles.editBadge} accessibilityElementsHidden>
-                  <Ionicons name="create-outline" size={12} color="#FFFFFF" />
-                </View>
-              </View>
-              <Text style={[styles.profileName, { color: pal.fg, fontSize: fs(18) }]}>{name}</Text>
+              </Pressable>
+              <Text style={[styles.profileName, { color: pal.fg, fontSize: fs(20) }]}>{name}</Text>
             </View>
 
             {!prefs ? (
@@ -792,7 +727,7 @@ export function MorphChatSettingsScreen({
               <>
                 <SettingsSection title={t("chat.settings.configureGroup")}>
                   <SettingsItem
-                    icon="color-palette-outline"
+                    icon="options"
                     title={t("chat.settings.personalization")}
                     onPress={() => setPage("reply")}
                     last
@@ -801,24 +736,45 @@ export function MorphChatSettingsScreen({
 
                 <SettingsSection title={t("chat.settings.accountGroup")}>
                   <SettingsItem
-                    icon="mail-outline"
+                    icon="mail"
                     title={t("chat.settings.email")}
                     subtitle={email || t("chat.settings.emailEmpty")}
                     showChevron={false}
                   />
-                  <SettingsItem
-                    icon="speedometer-outline"
-                    title={t("chat.settings.limitTitle")}
-                    subtitle={
-                      tokenLimit > 0
-                        ? `${formatCount(tokenUsed)} / ${formatCount(tokenLimit)}`
-                        : undefined
-                    }
-                    value={`${usagePct}%`}
+                  <Pressable
                     onPress={() => setPage("limits")}
-                  />
+                    style={({ pressed }) => pressed && styles.pressed}
+                    accessibilityRole="button"
+                  >
+                    <View style={styles.item}>
+                      <UsageRing pct={usagePct} color={meterColor} size={36} stroke={4}>
+                        <Text style={[styles.miniPct, { color: pal.fg, fontSize: fs(9) }]}>
+                          {usagePct}
+                        </Text>
+                      </UsageRing>
+                      <View
+                        style={[
+                          styles.itemMain,
+                          styles.itemBorder,
+                          { borderBottomColor: pal.line, marginLeft: 12 },
+                        ]}
+                      >
+                        <View style={styles.itemCopy}>
+                          <Text style={[styles.itemTitle, { color: pal.fg, fontSize: fs(15) }]}>
+                            {t("chat.settings.limitTitle")}
+                          </Text>
+                          <Text style={[styles.itemSubtitle, { color: pal.muted, fontSize: fs(12) }]}>
+                            {tokenLimit > 0
+                              ? `${formatCount(tokenUsed)} / ${formatCount(tokenLimit)}`
+                              : t("chat.settings.planFree")}
+                          </Text>
+                        </View>
+                        <Ionicons name="chevron-forward" size={16} color={pal.muted} />
+                      </View>
+                    </View>
+                  </Pressable>
                   <SettingsItem
-                    icon="diamond-outline"
+                    icon="diamond"
                     title={t("chat.settings.upgradePlan")}
                     onPress={onOpenSubscription}
                     titleColor={ACCENT_BLUE}
@@ -829,7 +785,7 @@ export function MorphChatSettingsScreen({
 
                 <SettingsSection title={t("chat.settings.appSettingsGroup")}>
                   <SettingsItem
-                    icon="contrast-outline"
+                    icon="contrast"
                     title={t("chat.settings.appearance")}
                     subtitle={
                       theme === "dark"
@@ -839,7 +795,7 @@ export function MorphChatSettingsScreen({
                     onPress={() => setPage("appearance")}
                   />
                   <SettingsItem
-                    icon="notifications-outline"
+                    icon="notifications"
                     title={t("chat.settings.limitNotify")}
                     subtitle={
                       prefs.limitNotify
@@ -849,7 +805,7 @@ export function MorphChatSettingsScreen({
                     onPress={() => setPage("limits")}
                   />
                   <SettingsItem
-                    icon="mic-outline"
+                    icon="mic"
                     title={t("chat.settings.voiceInput")}
                     subtitle={
                       prefs.voiceInput
@@ -859,7 +815,7 @@ export function MorphChatSettingsScreen({
                     onPress={() => setPage("voice")}
                   />
                   <SettingsItem
-                    icon="lock-closed-outline"
+                    icon="lock-closed"
                     title={t("chat.settings.privacyLocal")}
                     subtitle={
                       prefs.privacyLocalOnly
@@ -869,7 +825,7 @@ export function MorphChatSettingsScreen({
                     onPress={() => setPage("data")}
                   />
                   <SettingsItem
-                    icon="folder-open-outline"
+                    icon="folder"
                     title={t("chat.settings.dataGroup")}
                     subtitle={t("chat.settings.dataHubHint", {
                       chats: counts.chat_threads,
@@ -882,12 +838,12 @@ export function MorphChatSettingsScreen({
 
                 <SettingsSection title={t("chat.settings.helpGroup")}>
                   <SettingsItem
-                    icon="flag-outline"
+                    icon="flag"
                     title={t("chat.settings.reportProblem")}
                     onPress={() => setPage("report")}
                   />
                   <SettingsItem
-                    icon="help-circle-outline"
+                    icon="help-circle"
                     title={t("chat.settings.helpCenter")}
                     onPress={() => setPage("help")}
                     last
@@ -900,8 +856,8 @@ export function MorphChatSettingsScreen({
                     style={({ pressed }) => [styles.destructiveRow, pressed && styles.pressed]}
                     accessibilityRole="button"
                   >
-                    <View style={styles.iconTile}>
-                      <Ionicons name="trash-outline" size={18} color={DESTRUCTIVE} />
+                    <View style={[styles.iconTile, { backgroundColor: pal.iconTile }]}>
+                      <Ionicons name="trash" size={18} color={DESTRUCTIVE} />
                     </View>
                     <Text style={styles.destructiveText}>
                       {t("chat.settings.clearChats")}
@@ -1073,10 +1029,10 @@ export function MorphChatSettingsScreen({
                 />
               </FieldBlock>
             </SettingsSection>
-            <SettingsSection title={t("chat.settings.fontGroup")}>
+            <SettingsSection title={t("chat.settings.uiFontGroup")}>
               <FieldBlock
-                title={t("chat.settings.fontSize")}
-                subtitle={t("chat.settings.fontHint")}
+                title={t("chat.settings.uiFontSize")}
+                subtitle={t("chat.settings.uiFontHint")}
                 last
               >
                 <ChipRow
@@ -1088,14 +1044,69 @@ export function MorphChatSettingsScreen({
                   value={fontSize}
                   onChange={(v) => setFontSize(v)}
                 />
-                <Text
-                  style={[
-                    styles.itemSubtitle,
-                    { color: pal.muted, fontSize: fs(15), marginTop: 8, lineHeight: fs(22) },
+                <View style={[styles.previewCard, { backgroundColor: pal.iconTile }]}>
+                  <Text style={[styles.previewKicker, { color: pal.muted, fontSize: fs(11) }]}>
+                    {t("chat.settings.uiFontPreviewLabel")}
+                  </Text>
+                  <Text style={[styles.previewTitle, { color: pal.fg, fontSize: fs(17) }]}>
+                    {t("chat.settings.appearance")}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.previewBody,
+                      { color: pal.muted, fontSize: fs(13), lineHeight: fs(18) },
+                    ]}
+                  >
+                    {t("chat.settings.fontPreview")}
+                  </Text>
+                </View>
+              </FieldBlock>
+            </SettingsSection>
+            <SettingsSection title={t("chat.settings.chatFontGroup")}>
+              <FieldBlock
+                title={t("chat.settings.chatFontSize")}
+                subtitle={t("chat.settings.chatFontHint")}
+                last
+              >
+                <ChipRow
+                  options={[
+                    { value: "s" as MorphFontSize, label: t("chat.settings.fontSmall") },
+                    { value: "m" as MorphFontSize, label: t("chat.settings.fontMedium") },
+                    { value: "l" as MorphFontSize, label: t("chat.settings.fontLarge") },
                   ]}
-                >
-                  {t("chat.settings.fontPreview")}
-                </Text>
+                  value={chatFontSize}
+                  onChange={(v) => setChatFontSize(v)}
+                />
+                <View style={styles.chatPreview}>
+                  <View
+                    style={[
+                      styles.chatPreviewUser,
+                      { backgroundColor: pal.theme === "dark" ? "#2C2C2E" : "#E8E8ED" },
+                    ]}
+                  >
+                    <Text
+                      style={{
+                        ...morphFont,
+                        color: pal.fg,
+                        fontSize: chatFs(13),
+                        lineHeight: chatFs(19),
+                      }}
+                    >
+                      {t("chat.settings.chatFontPreviewUser")}
+                    </Text>
+                  </View>
+                  <Text
+                    style={{
+                      ...morphFont,
+                      color: pal.fg,
+                      fontSize: chatFs(13),
+                      lineHeight: chatFs(19),
+                      marginTop: 10,
+                    }}
+                  >
+                    {t("chat.settings.chatFontPreviewAi")}
+                  </Text>
+                </View>
               </FieldBlock>
             </SettingsSection>
           </>
@@ -1133,7 +1144,7 @@ export function MorphChatSettingsScreen({
             </SettingsSection>
             <SettingsSection>
               <SettingsItem
-                icon="diamond-outline"
+                    icon="diamond"
                 title={t("chat.settings.upgradePlan")}
                 subtitle={t("chat.settings.subscriptionHint")}
                 onPress={onOpenSubscription}
@@ -1150,25 +1161,25 @@ export function MorphChatSettingsScreen({
             <Text style={styles.pageLead}>{t("chat.settings.dataLead")}</Text>
             <SettingsSection title={t("chat.settings.dataServer")}>
               <SettingsItem
-                    icon="chatbubble-ellipses-outline"
+                    icon="chatbubbles"
                 title={t("chat.settings.dataChats")}
                 value={String(counts.chat_threads)}
                 showChevron={false}
               />
               <SettingsItem
-                icon="images-outline"
+                icon="images"
                 title={t("chat.settings.dataLooks")}
                 value={String(counts.looks)}
                 showChevron={false}
               />
               <SettingsItem
-                icon="camera-outline"
+                icon="camera"
                 title={t("chat.settings.dataSelfies")}
                 value={String(counts.selfies)}
                 showChevron={false}
               />
               <SettingsItem
-                    icon="share-social-outline"
+                    icon="share-social"
                 title={t("chat.settings.dataShares")}
                 value={String(counts.shares)}
                 showChevron={false}
@@ -1201,13 +1212,13 @@ export function MorphChatSettingsScreen({
             </SettingsSection>
             <SettingsSection title={t("chat.settings.dataActions")}>
               <SettingsItem
-                icon="download-outline"
+                icon="download"
                 title={t("chat.settings.exportChats")}
                 subtitle={t("chat.settings.exportChatsHint", { count: threadCount })}
                 onPress={() => void exportChats()}
               />
               <SettingsItem
-                icon="trash-outline"
+                icon="trash"
                 title={t("chat.settings.deleteServerChats")}
                 subtitle={t("chat.settings.deleteServerChatsHint", {
                   count: counts.chat_threads,
@@ -1223,7 +1234,7 @@ export function MorphChatSettingsScreen({
                 }
               />
               <SettingsItem
-                icon="trash-outline"
+                icon="trash"
                 title={t("chat.settings.deleteLooks")}
                 subtitle={t("chat.settings.deleteLooksHint", { count: counts.looks })}
                 titleColor={DESTRUCTIVE}
@@ -1237,7 +1248,7 @@ export function MorphChatSettingsScreen({
                 }
               />
               <SettingsItem
-                icon="trash-outline"
+                icon="trash"
                 title={t("chat.settings.deleteSelfies")}
                 subtitle={t("chat.settings.deleteSelfiesHint", { count: counts.selfies })}
                 titleColor={DESTRUCTIVE}
@@ -1402,32 +1413,75 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: CARD,
-    borderRadius: 16,
+    borderRadius: 18,
     overflow: "hidden",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: LINE,
+    shadowColor: "transparent",
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 0,
   },
   item: {
     flexDirection: "row",
     alignItems: "stretch",
-    paddingLeft: 12,
-    minHeight: 52,
+    paddingLeft: 14,
+    minHeight: 58,
   },
   iconTile: {
-    width: 30,
-    height: 30,
-    borderRadius: 8,
+    width: 34,
+    height: 34,
+    borderRadius: 10,
     backgroundColor: "#2C2C2E",
     alignItems: "center",
     justifyContent: "center",
     alignSelf: "center",
-    marginRight: 4,
+    marginRight: 14,
   },
   itemMain: {
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 13,
+    paddingVertical: 14,
     paddingRight: 14,
-    gap: 6,
+    gap: 10,
+  },
+  miniPct: {
+    ...morphFont,
+    fontWeight: "700",
+  },
+  previewCard: {
+    marginTop: 8,
+    borderRadius: 14,
+    padding: 14,
+    gap: 4,
+  },
+  previewKicker: {
+    ...morphFont,
+    fontWeight: "600",
+    letterSpacing: 0.4,
+    textTransform: "uppercase",
+  },
+  previewTitle: {
+    ...morphFont,
+    fontWeight: "600",
+    letterSpacing: -0.3,
+  },
+  previewBody: {
+    ...morphFont,
+  },
+  chatPreview: {
+    marginTop: 8,
+    paddingTop: 4,
+  },
+  chatPreviewUser: {
+    alignSelf: "flex-end",
+    maxWidth: "82%",
+    borderRadius: 16,
+    borderBottomRightRadius: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
   },
   itemBorder: {
     borderBottomWidth: StyleSheet.hairlineWidth,
@@ -1441,7 +1495,7 @@ const styles = StyleSheet.create({
   itemTitle: {
     ...morphFont,
     fontSize: 15,
-    fontWeight: "400",
+    fontWeight: "600",
     color: "#FFFFFF",
     letterSpacing: -0.2,
   },
@@ -1596,7 +1650,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   meterCenter: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -1645,13 +1699,13 @@ const styles = StyleSheet.create({
     color: MUTED,
   },
   confirmRoot: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     zIndex: 40,
     justifyContent: "center",
     paddingHorizontal: 28,
   },
   confirmScrim: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: "rgba(0, 0, 0, 0.62)",
   },
   confirmCard: {

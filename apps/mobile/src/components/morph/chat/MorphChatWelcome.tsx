@@ -5,6 +5,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { morphFont } from "../../../theme/morph-font";
+import { useMorphAppearance } from "../../../lib/MorphAppearanceContext";
 
 type Props = {
   headline: string;
@@ -29,10 +30,11 @@ export function MorphChatWelcome({
   notice,
 }: Props) {
   const insets = useSafeAreaInsets();
+  const { colors: pal, fs } = useMorphAppearance();
 
   return (
-    <View style={[styles.root, { paddingTop: insets.top + 8, paddingBottom: bottomPad }]}>
-      <StatusBar style="dark" />
+    <View style={[styles.root, { paddingTop: insets.top + 8, paddingBottom: bottomPad, backgroundColor: pal.bg }]}>
+      <StatusBar style={pal.status} />
 
       <View style={styles.header}>
         <Pressable
@@ -41,14 +43,18 @@ export function MorphChatWelcome({
           accessibilityRole="button"
           accessibilityLabel={menuA11y}
         >
-          <Ionicons name="menu" size={22} color="#111111" />
+          <Ionicons name="menu" size={22} color={pal.fg} />
         </Pressable>
       </View>
 
-      <View style={styles.hero}>
+      <View style={[styles.hero, { backgroundColor: pal.bg }]}>
         <Animated.View entering={FadeInDown.duration(360)} style={styles.copy}>
-          <Text style={styles.headline}>{headline}</Text>
-          <Text style={styles.lede}>{subtitle}</Text>
+          <Text style={[styles.headline, { color: pal.fg, fontSize: fs(26), lineHeight: fs(32) }]}>
+            {headline}
+          </Text>
+          <Text style={[styles.lede, { color: pal.muted, fontSize: fs(13), lineHeight: fs(19) }]}>
+            {subtitle}
+          </Text>
         </Animated.View>
 
         {notice ? <View style={styles.notice}>{notice}</View> : null}

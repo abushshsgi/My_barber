@@ -237,28 +237,29 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
 
   const animateSidesOut = () =>
     new Promise<void>((resolve) => {
+      const native = Platform.OS !== "web";
       Animated.parallel([
         Animated.timing(sidesY, {
           toValue: 28,
           duration: 220,
           easing: Easing.out(Easing.cubic),
-          useNativeDriver: true,
+          useNativeDriver: native,
         }),
         Animated.timing(sidesOpacity, {
           toValue: 0,
           duration: 180,
-          useNativeDriver: true,
+          useNativeDriver: native,
         }),
         Animated.sequence([
           Animated.timing(centerScale, {
             toValue: 0.86,
             duration: 160,
-            useNativeDriver: true,
+            useNativeDriver: native,
           }),
           Animated.timing(centerScale, {
             toValue: 1.06,
             duration: 180,
-            useNativeDriver: true,
+            useNativeDriver: native,
           }),
         ]),
       ]).start(() => resolve());
@@ -273,18 +274,18 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
           toValue: 0,
           duration: 420,
           easing: Easing.out(Easing.cubic),
-          useNativeDriver: true,
+          useNativeDriver: Platform.OS !== "web",
         }),
         Animated.timing(sidesOpacity, {
           toValue: 1,
           duration: 380,
-          useNativeDriver: true,
+          useNativeDriver: Platform.OS !== "web",
         }),
         Animated.spring(centerScale, {
           toValue: 1,
           friction: 6,
           tension: 120,
-          useNativeDriver: true,
+          useNativeDriver: Platform.OS !== "web",
         }),
       ]).start(() => resolve());
     });

@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { fetchHairstyles } from "../../api/hairstyles";
-import { morfWordmarkWhite } from "../../branding/morf-logo";
+import { morfWordmark, morfWordmarkWhite } from "../../branding/morf-logo";
 import {
   MorphSampleMarquee,
   type MorphSampleCard,
@@ -21,6 +21,7 @@ import { useMorphLimitGate } from "../../hooks/useMorphLimitGate";
 import { morphFont } from "../../theme/morph-font";
 import { presentMorphPaywall } from "../../lib/morph-return";
 import { useMorphSession } from "../../lib/morph-session";
+import { useMorphAppearance } from "../../lib/MorphAppearanceContext";
 import type { MorphStackParamList } from "../../navigation/MorphStack";
 
 type Props = NativeStackScreenProps<MorphStackParamList, "MorphHome">;
@@ -40,6 +41,7 @@ export function MorphHomeScreen({ navigation }: Props) {
   const { isAuthenticated } = useAuth();
   const session = useMorphSession();
   const gate = useMorphLimitGate();
+  const { colors: pal, theme } = useMorphAppearance();
   const [samplesLoading, setSamplesLoading] = useState(true);
   const [samples, setSamples] = useState<MorphSampleCard[]>([]);
 
@@ -125,13 +127,13 @@ export function MorphHomeScreen({ navigation }: Props) {
     gate.allowed && gate.limit > 0 ? gate.remaining : null;
 
   return (
-    <View style={[styles.root, { paddingTop: Math.max(insets.top, 8) }]}>
+    <View style={[styles.root, { paddingTop: Math.max(insets.top, 8), backgroundColor: pal.bg }]}>
       <View pointerEvents="none" style={styles.glow} />
 
       <View style={styles.header}>
         <View style={styles.headerBrand}>
           <Image
-            source={morfWordmarkWhite}
+            source={theme === "dark" ? morfWordmarkWhite : morfWordmark}
             style={styles.wordmarkLogo}
             resizeMode="contain"
           />
@@ -158,13 +160,16 @@ export function MorphHomeScreen({ navigation }: Props) {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.hero}>
-          <Pressable style={styles.cta} onPress={onNewTryOn}>
-            <Text style={styles.ctaText}>Yangi try-on</Text>
-            <View style={styles.ctaArrow}>
+          <Pressable
+            style={[styles.cta, { backgroundColor: pal.fg }]}
+            onPress={onNewTryOn}
+          >
+            <Text style={[styles.ctaText, { color: pal.bg }]}>Yangi try-on</Text>
+            <View style={[styles.ctaArrow, { backgroundColor: pal.bg }]}>
               <Ionicons
                 name="arrow-up"
                 size={16}
-                color="#FFF"
+                color={pal.fg}
                 style={styles.arrowRot}
               />
             </View>
@@ -178,10 +183,10 @@ export function MorphHomeScreen({ navigation }: Props) {
               style={styles.tool}
               onPress={() => void onTool()}
             >
-              <View style={styles.toolIcon}>
-                <Ionicons name={tool.icon} size={20} color="#FFF" />
+              <View style={[styles.toolIcon, { backgroundColor: pal.iconTile, borderColor: pal.line }]}>
+                <Ionicons name={tool.icon} size={20} color={pal.fg} />
               </View>
-              <Text style={styles.toolLabel} numberOfLines={2}>
+              <Text style={[styles.toolLabel, { color: pal.muted }]} numberOfLines={2}>
                 {tool.label}
               </Text>
             </Pressable>
@@ -190,15 +195,15 @@ export function MorphHomeScreen({ navigation }: Props) {
 
         <View style={styles.careRow}>
           <Pressable
-            style={styles.careCard}
+            style={[styles.careCard, { backgroundColor: pal.card, borderColor: pal.line }]}
             onPress={() => openCareOrIngredient("care")}
           >
-            <View style={styles.careIcon}>
-              <Ionicons name="water-outline" size={18} color="#FFF" />
+            <View style={[styles.careIcon, { backgroundColor: pal.iconTile }]}>
+              <Ionicons name="water-outline" size={18} color={pal.fg} />
             </View>
             <View style={styles.careCopy}>
-              <Text style={styles.careTitle}>Parvarish</Text>
-              <Text style={styles.careSub} numberOfLines={2}>
+              <Text style={[styles.careTitle, { color: pal.fg }]}>Parvarish</Text>
+              <Text style={[styles.careSub, { color: pal.muted }]} numberOfLines={2}>
                 Sochingiz uchun shaxsiy tavsiyalar
               </Text>
             </View>
@@ -211,15 +216,15 @@ export function MorphHomeScreen({ navigation }: Props) {
           </Pressable>
 
           <Pressable
-            style={styles.careCard}
+            style={[styles.careCard, { backgroundColor: pal.card, borderColor: pal.line }]}
             onPress={() => openCareOrIngredient("ingredient")}
           >
-            <View style={styles.careIcon}>
-              <Ionicons name="flask-outline" size={18} color="#FFF" />
+            <View style={[styles.careIcon, { backgroundColor: pal.iconTile }]}>
+              <Ionicons name="flask-outline" size={18} color={pal.fg} />
             </View>
             <View style={styles.careCopy}>
-              <Text style={styles.careTitle}>Tarkib</Text>
-              <Text style={styles.careSub} numberOfLines={2}>
+              <Text style={[styles.careTitle, { color: pal.fg }]}>Tarkib</Text>
+              <Text style={[styles.careSub, { color: pal.muted }]} numberOfLines={2}>
                 Mahsulot tarkibini skan qiling
               </Text>
             </View>

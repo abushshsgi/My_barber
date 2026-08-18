@@ -20,6 +20,7 @@ import { useAuth } from "../../auth/AuthContext";
 import { morfWordmark, morfWordmarkWhite } from "../../branding/morf-logo";
 import { useProfileDashboard } from "../../hooks/useProfileDashboard";
 import { TAB_DOCK_CLEARANCE } from "../../hooks/useHideTabBar";
+import { UsageRing } from "../../components/morph/UsageMeter";
 import { useMorphAppearance } from "../../lib/MorphAppearanceContext";
 import { openMorphStack } from "../../lib/profile-nav";
 import type { ProfileStackParamList } from "../../navigation/ProfileStack";
@@ -171,22 +172,19 @@ export function MorphProfileScreen({ navigation }: Props) {
                     : plan
                   : "Tarifni oching"}
               </Text>
+              <Text style={styles.usageHint}>
+                {aiLimit > 0
+                  ? `${aiUsed} / ${aiLimit} AI · Studio ${usage?.morph_studio_used ?? 0}/${usage?.morph_studio_limit ?? 0}`
+                  : "Try-on va Studio limitlari obuna bilan ochiladi"}
+              </Text>
             </View>
-            <View style={styles.usagePctWrap}>
-              <Text style={[styles.usagePct, { color: meterColor }]}>{usagePct}%</Text>
-            </View>
-          </View>
-          <View style={styles.track}>
-            <View
-              style={[styles.trackFill, { width: `${usagePct}%`, backgroundColor: meterColor }]}
-            />
+            <UsageRing pct={usagePct} color={meterColor} size={72} stroke={7}>
+              <Text style={[styles.usagePct, { color: meterColor, fontSize: fs(13) }]}>
+                {usagePct}%
+              </Text>
+            </UsageRing>
           </View>
           <View style={styles.usageBottom}>
-            <Text style={styles.usageHint}>
-              {aiLimit > 0
-                ? `${aiUsed} / ${aiLimit} AI · Studio ${usage?.morph_studio_used ?? 0}/${usage?.morph_studio_limit ?? 0}`
-                : "Try-on va Studio limitlari obuna bilan ochiladi"}
-            </Text>
             <Text style={styles.usageCta}>{sub?.has_active ? "Boshqarish" : "Sotib olish"}</Text>
           </View>
         </Pressable>
@@ -195,7 +193,7 @@ export function MorphProfileScreen({ navigation }: Props) {
           <MenuRow
             pal={pal}
             styles={styles}
-            icon="settings-outline"
+            icon="settings"
             title="Sozlamalar"
             subtitle="Ko'rinish, limit, maxfiylik"
             onPress={openSettings}
@@ -203,7 +201,7 @@ export function MorphProfileScreen({ navigation }: Props) {
           <MenuRow
             pal={pal}
             styles={styles}
-            icon="images-outline"
+            icon="images"
             title="Looks"
             value={String(photoCount)}
             onPress={() => openMorphStack(navigation, "MorphHistory")}
@@ -211,14 +209,14 @@ export function MorphProfileScreen({ navigation }: Props) {
           <MenuRow
             pal={pal}
             styles={styles}
-            icon="color-wand-outline"
+            icon="color-wand"
             title="Studio"
             onPress={() => openMorphStack(navigation, "MorphStudio")}
           />
           <MenuRow
             pal={pal}
             styles={styles}
-            icon="wallet-outline"
+            icon="wallet"
             title="Hamyon"
             value={formatSom(wallet?.balance ?? 0).replace(" so'm", "")}
             onPress={() => navigation.navigate("WalletGate")}
@@ -287,7 +285,7 @@ export function MorphProfileScreen({ navigation }: Props) {
           <MenuRow
             pal={pal}
             styles={styles}
-            icon="notifications-outline"
+            icon="notifications"
             title="Bildirishnomalar"
             badge={unreadCount}
             onPress={() => navigation.navigate("Notifications")}
@@ -295,7 +293,7 @@ export function MorphProfileScreen({ navigation }: Props) {
           <MenuRow
             pal={pal}
             styles={styles}
-            icon="lock-closed-outline"
+            icon="lock-closed"
             title="Xavfsizlik"
             onPress={() => navigation.navigate("Security")}
             last
@@ -454,9 +452,13 @@ function makeStyles(pal: MorphPalette, fs: (n: number) => number) {
     metaPlan: { marginTop: 3, ...morphFont, fontSize: fs(13), color: pal.muted },
     usageCard: {
       backgroundColor: pal.card,
-      borderRadius: 16,
+      borderRadius: 18,
       padding: 16,
       marginBottom: 16,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: pal.line,
+      shadowOpacity: 0,
+      elevation: 0,
     },
     usageTop: {
       flexDirection: "row",
@@ -547,23 +549,27 @@ function makeStyles(pal: MorphPalette, fs: (n: number) => number) {
     },
     menu: {
       backgroundColor: pal.card,
-      borderRadius: 16,
+      borderRadius: 18,
       overflow: "hidden",
       marginBottom: 16,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: pal.line,
+      shadowOpacity: 0,
+      elevation: 0,
     },
     menuRow: {
       flexDirection: "row",
       alignItems: "center",
-      gap: 12,
-      paddingHorizontal: 12,
-      paddingVertical: 12,
-      minHeight: 52,
+      gap: 14,
+      paddingHorizontal: 14,
+      paddingVertical: 14,
+      minHeight: 56,
     },
     menuBorder: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: pal.line },
     menuIcon: {
-      width: 30,
-      height: 30,
-      borderRadius: 8,
+      width: 34,
+      height: 34,
+      borderRadius: 10,
       backgroundColor: pal.iconTile,
       alignItems: "center",
       justifyContent: "center",

@@ -15,6 +15,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { NativeHeader } from "../../components/ui/NativeHeader";
 import type { ProfileStackParamList } from "../../navigation/ProfileStack";
+import { useShellTheme } from "../../lib/useShellTheme";
 import { colors } from "../../theme/colors";
 import {
   submitSupportReply,
@@ -58,6 +59,7 @@ function statusLabel(status: string, t: (k: string) => string) {
 
 export function HelpCenterScreen({ navigation }: Props) {
   const { t } = useTranslation();
+  const pal = useShellTheme();
   const { tickets, loading, refresh } = useSupportTickets();
   const [view, setView] = useState<ViewState>("hub");
   const [ticketId, setTicketId] = useState<number | null>(null);
@@ -114,7 +116,7 @@ export function HelpCenterScreen({ navigation }: Props) {
   }
 
   return (
-    <View style={styles.root}>
+    <View style={[styles.root, { backgroundColor: pal.bg }]}>
       <NativeHeader title={t("profile.helpCenter")} onBack={() => navigation.goBack()} />
       <KeyboardAvoidingView
         style={{ flex: 1 }}
@@ -271,8 +273,9 @@ function TicketThread({ ticketId, onBack }: { ticketId: number; onBack: () => vo
 
   const canReply = ticket?.can_reply !== false && ticket?.status !== "closed";
 
+  const pal = useShellTheme();
   return (
-    <View style={styles.root}>
+    <View style={[styles.root, { backgroundColor: pal.bg }]}>
       <NativeHeader title={ticket?.subject || t("help.ticketTitle")} onBack={onBack} />
       <KeyboardAvoidingView
         style={{ flex: 1 }}

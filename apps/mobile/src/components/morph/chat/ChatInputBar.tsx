@@ -16,6 +16,7 @@ import Animated, {
 } from "react-native-reanimated";
 
 import { morphFont } from "../../../theme/morph-font";
+import { useMorphAppearance } from "../../../lib/MorphAppearanceContext";
 
 type Props = {
   value: string;
@@ -88,6 +89,7 @@ export function ChatInputBar({
   cameraA11y = "Kamera",
   voiceA11y = "Mikrofon",
 }: Props) {
+  const { colors: pal, chatFs } = useMorphAppearance();
   const [focused, setFocused] = useState(false);
   const hasText = value.trim().length > 0;
   const canSend = !disabled && !sending && hasText;
@@ -97,7 +99,13 @@ export function ChatInputBar({
   return (
     <Animated.View
       layout={LinearTransition.duration(180).easing(Easing.out(Easing.cubic))}
-      style={[styles.wrap, focused && styles.wrapFocused]}
+      style={[
+        styles.wrap,
+        {
+          backgroundColor: pal.card,
+          borderColor: focused ? pal.muted : pal.line,
+        },
+      ]}
     >
       <Pressable
         onPress={onCamera}
@@ -106,14 +114,14 @@ export function ChatInputBar({
         accessibilityRole="button"
         accessibilityLabel={cameraA11y}
       >
-        <Ionicons name="camera-outline" size={18} color="#3F3A5A" />
+        <Ionicons name="camera-outline" size={18} color={pal.muted} />
       </Pressable>
       <TextInput
-        style={styles.input}
+        style={[styles.input, { color: pal.fg, fontSize: chatFs(14), lineHeight: chatFs(19) }]}
         value={value}
         onChangeText={onChange}
         placeholder={placeholder}
-        placeholderTextColor="#9B96B0"
+        placeholderTextColor={pal.muted}
         multiline
         maxLength={600}
         editable={!disabled && !sending}
@@ -137,16 +145,17 @@ export function ChatInputBar({
             disabled={!canSend && !sending}
             style={({ pressed }) => [
               styles.sendBtn,
-              !canSend && !sending && styles.sendBtnIdle,
+              { backgroundColor: pal.fg },
+              !canSend && !sending && { backgroundColor: pal.track },
               pressed && canSend && styles.pressed,
             ]}
             accessibilityRole="button"
             accessibilityLabel={sendA11y}
           >
             {sending ? (
-              <ActivityIndicator size="small" color="#FFFFFF" />
+              <ActivityIndicator size="small" color={pal.bg} />
             ) : (
-              <Ionicons name="arrow-up" size={16} color="#FFFFFF" />
+              <Ionicons name="arrow-up" size={16} color={pal.bg} />
             )}
           </Pressable>
         </Animated.View>

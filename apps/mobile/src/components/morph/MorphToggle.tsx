@@ -6,6 +6,7 @@ import Animated, {
   useSharedValue,
   withSpring,
 } from "react-native-reanimated";
+import { useMorphAppearance } from "../../lib/MorphAppearanceContext";
 
 type Props = {
   value: boolean;
@@ -21,7 +22,9 @@ const TRAVEL = TRACK_W - THUMB - PAD * 2;
 
 /** iOS 18 uslubidagi pill toggle — Morph AI sozlamalari uchun. */
 export function MorphToggle({ value, onChange, disabled }: Props) {
+  const { colors: pal } = useMorphAppearance();
   const progress = useSharedValue(value ? 1 : 0);
+  const offColor = pal.track;
 
   useEffect(() => {
     progress.value = withSpring(value ? 1 : 0, {
@@ -32,7 +35,7 @@ export function MorphToggle({ value, onChange, disabled }: Props) {
   }, [progress, value]);
 
   const trackStyle = useAnimatedStyle(() => ({
-    backgroundColor: interpolateColor(progress.value, [0, 1], ["#3A3A3C", "#34C759"]),
+    backgroundColor: interpolateColor(progress.value, [0, 1], [offColor, "#34C759"]),
   }));
 
   const thumbStyle = useAnimatedStyle(() => ({
@@ -75,11 +78,8 @@ const styles = StyleSheet.create({
     height: THUMB,
     borderRadius: THUMB / 2,
     backgroundColor: "#FFFFFF",
-    shadowColor: "#000",
-    shadowOpacity: 0.28,
-    shadowRadius: 3,
-    shadowOffset: { width: 0, height: 1 },
-    elevation: 3,
+    shadowOpacity: 0,
+    elevation: 0,
   },
   disabled: {
     opacity: 0.4,

@@ -29,7 +29,7 @@ type AppShellContextValue = {
   switchToMysaloonTarget: () => Promise<string>;
 };
 
-const AppShellContext = createContext<AppShellContextValue | null>(null);
+export const AppShellContext = createContext<AppShellContextValue | null>(null);
 
 export function AppShellProvider({ children }: { children: ReactNode }) {
   const [shell, setShellState] = useState<AppShell>("mysaloon");

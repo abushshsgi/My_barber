@@ -89,6 +89,24 @@ export async function fetchFavoriteSalonIds(): Promise<unknown[]> {
   return apiList(`/api/v1/favorites/salons/${qs({ page_size: 100 })}`);
 }
 
+export async function sendEmailVerificationCode(email: string): Promise<{
+  detail: string;
+  email: string;
+  debug_code?: string;
+}> {
+  return apiJson("/api/v1/users/me/email/send-code/", {
+    method: "POST",
+    body: JSON.stringify({ email }),
+  });
+}
+
+export async function verifyEmailCode(code: string): Promise<{ detail: string; user: ApiUser }> {
+  return apiJson("/api/v1/users/me/email/verify/", {
+    method: "POST",
+    body: JSON.stringify({ code }),
+  });
+}
+
 export function displayName(user: ApiUser | null): string {
   if (!user) return "Mehmon";
   const full = user.full_name?.trim();

@@ -68,6 +68,10 @@ export async function getRefreshToken() {
   return getItem(REFRESH_KEY);
 }
 
+export async function getSessionId(): Promise<string | null> {
+  return getItem(SESSION_KEY);
+}
+
 export async function getStoredUser(): Promise<StoredUser | null> {
   const raw = await AsyncStorage.getItem(USER_KEY);
   if (!raw) return null;

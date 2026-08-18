@@ -1,5 +1,5 @@
 ﻿import { API_BASE, API_ORIGIN } from "./config";
-import { getAccessToken, getRefreshToken, saveSession, clearSession } from "../auth/storage";
+import { getAccessToken, getRefreshToken, getSessionId, saveSession, clearSession } from "../auth/storage";
 import { friendlyNetworkError } from "../lib/network-error";
 
 export type Paginated<T> = {
@@ -103,6 +103,8 @@ export async function apiJson<T>(path: string, init?: RequestInit): Promise<T> {
   if (!isAuthPath(path) && !headers.Authorization) {
     const token = await getAccessToken();
     if (token) headers.Authorization = `Bearer ${token}`;
+    const sessionId = await getSessionId();
+    if (sessionId) headers["X-Session-Id"] = sessionId;
   }
 
   try {
@@ -198,6 +200,8 @@ export async function apiFetch(
   if (!isAuthPath(path) && !headers.Authorization) {
     const token = await getAccessToken();
     if (token) headers.Authorization = `Bearer ${token}`;
+    const sessionId = await getSessionId();
+    if (sessionId) headers["X-Session-Id"] = sessionId;
   }
 
   try {

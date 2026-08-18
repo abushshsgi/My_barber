@@ -13,6 +13,8 @@ import { SecurityScreen } from "../screens/profile/SecurityScreen";
 import { HelpCenterScreen } from "../screens/profile/HelpCenterScreen";
 import { SettingsScreen } from "../screens/profile/SettingsScreen";
 import { MorphAiSettingsScreen } from "../screens/morph/MorphAiSettingsScreen";
+import { SecurityPasswordScreen } from "../screens/profile/SecurityPasswordScreen";
+import { SecuritySessionsScreen } from "../screens/profile/SecuritySessionsScreen";
 import { SubscriptionsScreen } from "../screens/profile/SubscriptionsScreen";
 import { ReferralScreen } from "../screens/profile/ReferralScreen";
 import { WalletGiftScreen } from "../screens/wallet/WalletGiftScreen";
@@ -30,6 +32,8 @@ export type ProfileStackParamList = {
   MorphAiSettings: undefined;
   PersonalInfo: undefined;
   Security: undefined;
+  SecurityPassword: undefined;
+  SecuritySessions: undefined;
   NotificationPrefs: undefined;
   Notifications: undefined;
   HelpCenter: undefined;
@@ -60,18 +64,15 @@ export function ProfileStack() {
 
   return (
     <Stack.Navigator
-      screenOptions={({ route }) => ({
+      screenOptions={{
         headerShown: false,
         animation: "slide_from_right",
         gestureEnabled: true,
         fullScreenGestureEnabled: true,
         contentStyle: {
-          backgroundColor:
-            morphHome && (route.name === "ProfileHome" || route.name === "MorphAiSettings")
-              ? colors.bg
-              : "#FFFFFF",
+          backgroundColor: morphHome ? colors.bg : "#FFFFFF",
         },
-      })}
+      }}
     >
       <Stack.Screen name="ProfileHome" component={ProfileHomeScreen} />
       <Stack.Screen name="Orders" component={OrdersScreen} />
@@ -79,6 +80,8 @@ export function ProfileStack() {
       <Stack.Screen name="MorphAiSettings" component={MorphAiSettingsScreen} />
       <Stack.Screen name="PersonalInfo" component={PersonalInfoScreen} />
       <Stack.Screen name="Security" component={SecurityScreen} />
+      <Stack.Screen name="SecurityPassword" component={SecurityPasswordScreen} />
+      <Stack.Screen name="SecuritySessions" component={SecuritySessionsScreen} />
       <Stack.Screen name="NotificationPrefs" component={NotificationPrefsScreen} />
       <Stack.Screen name="HelpCenter" component={HelpCenterScreen} />
       <Stack.Screen name="Notifications" component={NotificationsScreen} />

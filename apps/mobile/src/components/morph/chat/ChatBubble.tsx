@@ -11,6 +11,7 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import { ChatMarkdown } from "./ChatMarkdown";
+import { useMorphAppearance } from "../../../lib/MorphAppearanceContext";
 import { morphFont } from "../../../theme/morph-font";
 
 export type ChatRole = "user" | "assistant";
@@ -52,6 +53,9 @@ function TypingDots() {
 
 export function ChatBubble({ role, content, pending }: Props) {
   const isUser = role === "user";
+  const { colors: pal, chatFs } = useMorphAppearance();
+  const textSize = chatFs(13);
+  const line = chatFs(19);
 
   if (pending && !content && !isUser) {
     return (
@@ -64,8 +68,15 @@ export function ChatBubble({ role, content, pending }: Props) {
   if (isUser) {
     return (
       <Animated.View entering={FadeInDown.duration(220)} style={styles.userRow}>
-        <View style={styles.userBubble}>
-          <Text style={styles.userText}>{content}</Text>
+        <View
+          style={[
+            styles.userBubble,
+            { backgroundColor: pal.theme === "dark" ? pal.cardStrong : "#F4F4F5" },
+          ]}
+        >
+          <Text style={[styles.userText, { color: pal.fg, fontSize: textSize, lineHeight: line }]}>
+            {content}
+          </Text>
         </View>
       </Animated.View>
     );
@@ -73,7 +84,7 @@ export function ChatBubble({ role, content, pending }: Props) {
 
   return (
     <Animated.View entering={FadeIn.duration(180)} style={styles.assistantRow}>
-      <ChatMarkdown content={content} />
+      <ChatMarkdown content={content} color={pal.fg} scale={textSize / 13} />
     </Animated.View>
   );
 }

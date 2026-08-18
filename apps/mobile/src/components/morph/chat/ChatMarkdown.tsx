@@ -5,6 +5,7 @@ import { morphFont } from "../../../theme/morph-font";
 type Props = {
   content: string;
   color?: string;
+  scale?: number;
 };
 
 type Block =
@@ -140,12 +141,13 @@ function renderInline(text: string, color: string, keyPrefix: string): ReactNode
   });
 }
 
-export function ChatMarkdown({ content, color = "#111111" }: Props) {
+export function ChatMarkdown({ content, color = "#111111", scale = 1 }: Props) {
   const blocks = parseBlocks(content.trim() || content);
+  const fs = (n: number) => Math.round(n * scale);
 
   if (!blocks.length) {
     return (
-      <Text style={[styles.p, { color }]}>{content}</Text>
+      <Text style={[styles.p, { color, fontSize: fs(13), lineHeight: fs(19) }]}>{content}</Text>
     );
   }
 
@@ -153,15 +155,13 @@ export function ChatMarkdown({ content, color = "#111111" }: Props) {
     <View style={styles.wrap}>
       {blocks.map((block, idx) => {
         if (block.type === "h") {
+          const size = block.level === 1 ? 16 : block.level === 2 ? 14 : 13;
           return (
             <Text
               key={`h-${idx}`}
               style={[
                 styles.h,
-                block.level === 1 && styles.h1,
-                block.level === 2 && styles.h2,
-                block.level === 3 && styles.h3,
-                { color },
+                { color, fontSize: fs(size), lineHeight: fs(size + 6) },
               ]}
             >
               {renderInline(block.text, color, `h-${idx}`)}
@@ -185,7 +185,7 @@ export function ChatMarkdown({ content, color = "#111111" }: Props) {
                   <Text style={[styles.mark, { color }]}>
                     {block.type === "ol" ? `${itemIdx + 1}.` : "•"}
                   </Text>
-                  <Text style={[styles.p, styles.liText, { color }]}>
+                  <Text style={[styles.p, styles.liText, { color, fontSize: fs(13), lineHeight: fs(19) }]}>
                     {renderInline(item, color, `l-${idx}-${itemIdx}`)}
                   </Text>
                 </View>
@@ -194,7 +194,7 @@ export function ChatMarkdown({ content, color = "#111111" }: Props) {
           );
         }
         return (
-          <Text key={`p-${idx}`} style={[styles.p, { color }]}>
+          <Text key={`p-${idx}`} style={[styles.p, { color, fontSize: fs(13), lineHeight: fs(19) }]}>
             {renderInline(block.text, color, `p-${idx}`).map((node, nIdx) => (
               <Fragment key={`p-${idx}-n-${nIdx}`}>{node}</Fragment>
             ))}
