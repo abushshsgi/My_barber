@@ -266,6 +266,7 @@
       "billedMonthly": "Ежемесячная оплата",
       "monthShort": "мес",
       "savePct": "−{{pct}}%",
+      "currencyShort": "сум",
       "featuresTitle": "Всё из бесплатного, плюс",
       "fallbackFeature": "Откроются Morph AI chat и try-on",
       "cta": "Оформить {{plan}}",

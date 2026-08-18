@@ -13,7 +13,6 @@ import {
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
-  formatUzs,
   isPlanUpgrade,
   type SubscriptionPlan,
 } from "../../api/subscriptions";
@@ -32,21 +31,25 @@ type Props = {
 function planIcon(code: string): keyof typeof Ionicons.glyphMap {
   if (code === "pro") return "diamond-outline";
   if (code === "plus") return "flash-outline";
-  return "albums-outline";
+  return "sparkles-outline";
 }
 
-function pickCards(plans: SubscriptionPlan[], activeCode: string | null): SubscriptionPlan[] {
-  const ranked = [...plans].sort((a, b) => a.sort_order - b.sort_order);
-  if (!activeCode) {
-    const plusPro = ranked.filter((p) => p.code === "plus" || p.code === "pro");
-    if (plusPro.length >= 2) return plusPro.slice(0, 2);
-    return ranked.slice(0, 2);
-  }
-  const upgrades = ranked.filter((p) => isPlanUpgrade(p.code, activeCode));
-  const current = ranked.find((p) => p.code === activeCode);
-  if (upgrades.length === 0) return current ? [current] : ranked.slice(0, 2);
-  if (upgrades.length === 1 && current) return [current, upgrades[0]!];
-  return upgrades.slice(0, 2);
+function pickCards(plans: SubscriptionPlan[]): SubscriptionPlan[] {
+  return [...plans].sort((a, b) => a.sort_order - b.sort_order);
+}
+
+function formatTokenShort(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(n % 1_000_000 === 0 ? 0 : 1)}M`;
+  if (n >= 1000) return `${Math.round(n / 1000)}K`;
+  return String(n);
+}
+
+function planQuota(plan: SubscriptionPlan): string {
+  const parts = [`Morph AI ${plan.morph_ai_monthly}`];
+  const tokens = plan.morph_chat_tokens_monthly ?? 0;
+  if (tokens > 0) parts.push(`Chat ${formatTokenShort(tokens)}`);
+  if (plan.morph_studio_monthly > 0) parts.push(`Studio ${plan.morph_studio_monthly}`);
+  return parts.join(" · ");
 }
 
 export function MorphPaywallView({
@@ -62,7 +65,7 @@ export function MorphPaywallView({
   const { plans, me, loading, busyCode, subscribeWallet, activeCode } = useSubscriptions();
   const [error, setError] = useState<string | null>(null);
 
-  const cards = useMemo(() => pickCards(plans, activeCode), [plans, activeCode]);
+  const cards = useMemo(() => pickCards(plans), [plans]);
   const [selected, setSelected] = useState<string | null>(null);
 
   useEffect(() => {
@@ -182,7 +185,7 @@ export function MorphPaywallView({
                     style={[styles.billingInner, !on && styles.billingInnerOff]}
                   >
                     <View style={styles.billingTop}>
-                      <Ionicons name={planIcon(plan.code)} size={18} color="#111111" />
+                      <Ionicons name={planIcon(plan.code)} size={16} color="#111111" />
                       {saveOn(plan.code) ? (
                         <View style={styles.saveBadge}>
                           <Text style={styles.saveText}>
@@ -195,15 +198,15 @@ export function MorphPaywallView({
                         </View>
                       ) : null}
                     </View>
+                    <Text style={styles.cardName}>{plan.name_uz}</Text>
                     <Text style={styles.price}>
-                      {formatUzs(plan.price_uzs)}
-                      <Text style={styles.priceUnit}> /{t("morph.paywall.monthShort")}</Text>
+                      {plan.price_uzs.toLocaleString("uz-UZ")}
+                    </Text>
+                    <Text style={styles.priceUnit}>
+                      {t("morph.paywall.currencyShort")}/{t("morph.paywall.monthShort")}
                     </Text>
                     <Text style={styles.billed}>{t("morph.paywall.billedMonthly")}</Text>
-                    <Text style={styles.quota}>
-                      Morph AI {plan.morph_ai_monthly}
-                      {plan.morph_studio_monthly > 0 ? ` · Studio ${plan.morph_studio_monthly}` : ""}
-                    </Text>
+                    <Text style={styles.quota}>{planQuota(plan)}</Text>
                   </Pressable>
                 );
 
@@ -360,25 +363,28 @@ const styles = StyleSheet.create({
   },
   billingRow: {
     flexDirection: "row",
-    gap: 10,
+    gap: 8,
     marginTop: 16,
   },
   billingWrapOn: {
     flex: 1,
-    borderRadius: 18,
+    minWidth: 0,
+    borderRadius: 16,
     padding: 2,
   },
   billingWrapOff: {
     flex: 1,
-    borderRadius: 18,
+    minWidth: 0,
+    borderRadius: 16,
     backgroundColor: "#F2F2F4",
     padding: 2,
   },
   billingInner: {
-    borderRadius: 16,
+    borderRadius: 14,
     backgroundColor: "#FFFFFF",
-    padding: 12,
-    minHeight: 148,
+    paddingHorizontal: 8,
+    paddingVertical: 10,
+    minHeight: 168,
   },
   billingInnerOff: {
     backgroundColor: "transparent",
@@ -411,26 +417,34 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#3F3F46",
   },
+  cardName: {
+    marginTop: 8,
+    fontSize: 12,
+    fontWeight: "800",
+    color: "#111111",
+  },
   price: {
-    marginTop: 14,
-    fontSize: 18,
+    marginTop: 8,
+    fontSize: 15,
     fontWeight: "800",
     color: "#111111",
     letterSpacing: -0.4,
   },
   priceUnit: {
-    fontSize: 13,
+    marginTop: 2,
+    fontSize: 11,
     fontWeight: "600",
     color: "#8A8A8E",
   },
   billed: {
     marginTop: 4,
-    fontSize: 12,
+    fontSize: 11,
     color: "#8A8A8E",
   },
   quota: {
     marginTop: 8,
-    fontSize: 11,
+    fontSize: 10,
+    lineHeight: 13,
     fontWeight: "600",
     color: "#52525B",
   },

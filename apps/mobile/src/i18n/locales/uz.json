@@ -266,6 +266,7 @@
       "billedMonthly": "Oylik to'lov",
       "monthShort": "oy",
       "savePct": "−{{pct}}%",
+      "currencyShort": "so'm",
       "featuresTitle": "Bepuldan tashqari",
       "fallbackFeature": "Morph AI chat va try-on ochiladi",
       "cta": "{{plan}} tarifni olish",

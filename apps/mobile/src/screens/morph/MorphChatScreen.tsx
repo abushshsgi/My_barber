@@ -147,7 +147,6 @@ export function MorphChatScreen() {
         showPaywall("subscription", draft);
         return false;
       }
-      // TEMP: Plus chatbot test — debug o‘chiq. Test tugagach MORPH_CHAT_DEBUG=false.
       if (MORPH_CHAT_DEBUG) return true;
       const result = await gate.ensureChatDetailed();
       if (result.ok) return true;
