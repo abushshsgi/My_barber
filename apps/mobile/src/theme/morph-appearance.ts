@@ -4,12 +4,15 @@ const KEY = "morph_appearance_v1";
 
 export type MorphThemeName = "dark" | "light";
 export type MorphFontSize = "s" | "m" | "l";
+export type MorphChatFontSize = "xs" | "s" | "m" | "l" | "xl";
 
 export const MORPH_FONT_SCALE: Record<MorphFontSize, number> = {
   s: 0.9,
   m: 1,
   l: 1.16,
 };
+
+export const MORPH_CHAT_FONT_STEPS: MorphChatFontSize[] = ["xs", "s", "m", "l", "xl"];
 
 export type MorphPalette = {
   theme: MorphThemeName;
@@ -27,16 +30,18 @@ export type MorphPalette = {
   status: "light" | "dark";
 };
 
-export const MORPH_CHAT_FONT_SCALE: Record<MorphFontSize, number> = {
-  s: 0.86,
+export const MORPH_CHAT_FONT_SCALE: Record<MorphChatFontSize, number> = {
+  xs: 0.82,
+  s: 0.92,
   m: 1,
-  l: 1.28,
+  l: 1.18,
+  xl: 1.38,
 };
 
 export type MorphAppearance = {
   theme: MorphThemeName;
   fontSize: MorphFontSize;
-  chatFontSize: MorphFontSize;
+  chatFontSize: MorphChatFontSize;
 };
 
 export const DEFAULT_MORPH_APPEARANCE: MorphAppearance = {
@@ -90,8 +95,9 @@ export async function readMorphAppearance(): Promise<MorphAppearance> {
     return {
       theme: parsed.theme === "light" ? "light" : "dark",
       fontSize: parsed.fontSize === "s" || parsed.fontSize === "l" ? parsed.fontSize : "m",
-      chatFontSize:
-        parsed.chatFontSize === "s" || parsed.chatFontSize === "l" ? parsed.chatFontSize : "m",
+      chatFontSize: MORPH_CHAT_FONT_STEPS.includes(parsed.chatFontSize as MorphChatFontSize)
+        ? (parsed.chatFontSize as MorphChatFontSize)
+        : "m",
     };
   } catch {
     return { ...DEFAULT_MORPH_APPEARANCE };

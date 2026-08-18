@@ -15,6 +15,7 @@ import {
   readMorphAppearance,
   writeMorphAppearance,
   type MorphAppearance,
+  type MorphChatFontSize,
   type MorphFontSize,
   type MorphPalette,
   type MorphThemeName,
@@ -24,7 +25,7 @@ type MorphAppearanceContextValue = {
   ready: boolean;
   theme: MorphThemeName;
   fontSize: MorphFontSize;
-  chatFontSize: MorphFontSize;
+  chatFontSize: MorphChatFontSize;
   fontScale: number;
   chatFontScale: number;
   colors: MorphPalette;
@@ -32,7 +33,7 @@ type MorphAppearanceContextValue = {
   chatFs: (size: number) => number;
   setTheme: (theme: MorphThemeName) => void;
   setFontSize: (size: MorphFontSize) => void;
-  setChatFontSize: (size: MorphFontSize) => void;
+  setChatFontSize: (size: MorphChatFontSize) => void;
 };
 
 const MorphAppearanceContext = createContext<MorphAppearanceContextValue | null>(null);
@@ -69,7 +70,7 @@ export function MorphAppearanceProvider({ children }: { children: ReactNode }) {
   );
 
   const setChatFontSize = useCallback(
-    (chatFontSize: MorphFontSize) => persist({ ...appearance, chatFontSize }),
+    (chatFontSize: MorphChatFontSize) => persist({ ...appearance, chatFontSize }),
     [appearance, persist],
   );
 

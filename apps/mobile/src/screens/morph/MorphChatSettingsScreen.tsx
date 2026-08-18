@@ -14,7 +14,8 @@ import {
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { MorphAiPrivacyDataCounts, MorphChatLimits } from "../../api/ai";
-import { UsageMeter, UsageRing } from "../../components/morph/UsageMeter";
+import { UsageBar, UsageMeter } from "../../components/morph/UsageMeter";
+import { TelegramAppearancePanel } from "../../components/morph/TelegramAppearancePanel";
 import {
   deleteMorphAiPrivacyData,
   fetchMorphAiPrivacy,
@@ -43,7 +44,6 @@ import { MORPH_VOICE_CATALOG } from "../../lib/morph-voice";
 import { MorphToggle } from "../../components/morph/MorphToggle";
 import { useMorphAppearance } from "../../lib/MorphAppearanceContext";
 import { morphFont } from "../../theme/morph-font";
-import type { MorphFontSize, MorphThemeName } from "../../theme/morph-appearance";
 import {
   MorphHelpCenterView,
   MorphReportProblemView,
@@ -84,12 +84,6 @@ type ConfirmSpec = {
   cancelLabel: string;
   onConfirm: () => void | Promise<void>;
 };
-
-function formatCount(n: number): string {
-  return Math.max(0, Math.round(n))
-    .toString()
-    .replace(/\B(?=(\d{3})+(?!\d))/g, " ");
-}
 
 const BG = "#000000";
 const CARD = "#1C1C1E";
@@ -378,17 +372,7 @@ export function MorphChatSettingsScreen({
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
-  const {
-    colors: pal,
-    fs,
-    theme,
-    fontSize,
-    chatFontSize,
-    chatFs,
-    setTheme,
-    setFontSize,
-    setChatFontSize,
-  } = useMorphAppearance();
+  const { colors: pal, fs } = useMorphAppearance();
   const [page, setPage] = useState<Page>("hub");
   const [ticketId, setTicketId] = useState<number | null>(null);
   const [ticketFrom, setTicketFrom] = useState<"help" | "report">("help");
@@ -575,11 +559,6 @@ export function MorphChatSettingsScreen({
 
   const usagePct = morphChatUsagePercent(snap);
   const nearlyEmpty = usagePct >= 90;
-  const tokenLimit = Number(snap?.token_limit ?? snap?.daily_limit ?? 0) || 0;
-  const tokenUsed = Number(snap?.token_used ?? snap?.daily_used ?? 0) || 0;
-  const tokenLeft =
-    Number(snap?.token_remaining ?? snap?.daily_remaining ?? Math.max(0, tokenLimit - tokenUsed)) ||
-    0;
   const meterColor = usagePct >= 90 ? DESTRUCTIVE : usagePct >= 70 ? WARN : ACCENT_BLUE;
 
   const runConfirm = useCallback(() => {
@@ -686,6 +665,8 @@ export function MorphChatSettingsScreen({
         <View style={[styles.content, { flex: 1, paddingBottom: Math.max(insets.bottom, 12) }]}>
           <MorphTicketThreadView ticketId={ticketId} />
         </View>
+      ) : page === "appearance" ? (
+        <TelegramAppearancePanel bottomInset={Math.max(insets.bottom, 16)} />
       ) : (
       <ScrollView
         contentContainerStyle={[
@@ -747,11 +728,12 @@ export function MorphChatSettingsScreen({
                     accessibilityRole="button"
                   >
                     <View style={styles.item}>
-                      <UsageRing pct={usagePct} color={meterColor} size={36} stroke={4}>
-                        <Text style={[styles.miniPct, { color: pal.fg, fontSize: fs(9) }]}>
-                          {usagePct}
+                      <View style={styles.hubMeter}>
+                        <UsageBar pct={usagePct} color={meterColor} height={6} />
+                        <Text style={[styles.miniPct, { color: pal.fg, fontSize: fs(11) }]}>
+                          {usagePct}%
                         </Text>
-                      </UsageRing>
+                      </View>
                       <View
                         style={[
                           styles.itemMain,
@@ -764,9 +746,7 @@ export function MorphChatSettingsScreen({
                             {t("chat.settings.limitTitle")}
                           </Text>
                           <Text style={[styles.itemSubtitle, { color: pal.muted, fontSize: fs(12) }]}>
-                            {tokenLimit > 0
-                              ? `${formatCount(tokenUsed)} / ${formatCount(tokenLimit)}`
-                              : t("chat.settings.planFree")}
+                            {t("chat.settings.limitUsedPct", { pct: usagePct })}
                           </Text>
                         </View>
                         <Ionicons name="chevron-forward" size={16} color={pal.muted} />
@@ -788,7 +768,7 @@ export function MorphChatSettingsScreen({
                     icon="contrast"
                     title={t("chat.settings.appearance")}
                     subtitle={
-                      theme === "dark"
+                      pal.theme === "dark"
                         ? t("chat.settings.themeDark")
                         : t("chat.settings.themeLight")
                     }
@@ -1011,107 +991,6 @@ export function MorphChatSettingsScreen({
           <MorphReportProblemView onOpenTicket={(id) => openTicket(id, "report")} />
         ) : null}
 
-        {page === "appearance" ? (
-          <>
-            <SettingsSection title={t("chat.settings.themeGroup")}>
-              <FieldBlock
-                title={t("chat.settings.theme")}
-                subtitle={t("chat.settings.themeHint")}
-                last
-              >
-                <ChipRow
-                  options={[
-                    { value: "dark" as MorphThemeName, label: t("chat.settings.themeDark") },
-                    { value: "light" as MorphThemeName, label: t("chat.settings.themeLight") },
-                  ]}
-                  value={theme}
-                  onChange={(v) => setTheme(v)}
-                />
-              </FieldBlock>
-            </SettingsSection>
-            <SettingsSection title={t("chat.settings.uiFontGroup")}>
-              <FieldBlock
-                title={t("chat.settings.uiFontSize")}
-                subtitle={t("chat.settings.uiFontHint")}
-                last
-              >
-                <ChipRow
-                  options={[
-                    { value: "s" as MorphFontSize, label: t("chat.settings.fontSmall") },
-                    { value: "m" as MorphFontSize, label: t("chat.settings.fontMedium") },
-                    { value: "l" as MorphFontSize, label: t("chat.settings.fontLarge") },
-                  ]}
-                  value={fontSize}
-                  onChange={(v) => setFontSize(v)}
-                />
-                <View style={[styles.previewCard, { backgroundColor: pal.iconTile }]}>
-                  <Text style={[styles.previewKicker, { color: pal.muted, fontSize: fs(11) }]}>
-                    {t("chat.settings.uiFontPreviewLabel")}
-                  </Text>
-                  <Text style={[styles.previewTitle, { color: pal.fg, fontSize: fs(17) }]}>
-                    {t("chat.settings.appearance")}
-                  </Text>
-                  <Text
-                    style={[
-                      styles.previewBody,
-                      { color: pal.muted, fontSize: fs(13), lineHeight: fs(18) },
-                    ]}
-                  >
-                    {t("chat.settings.fontPreview")}
-                  </Text>
-                </View>
-              </FieldBlock>
-            </SettingsSection>
-            <SettingsSection title={t("chat.settings.chatFontGroup")}>
-              <FieldBlock
-                title={t("chat.settings.chatFontSize")}
-                subtitle={t("chat.settings.chatFontHint")}
-                last
-              >
-                <ChipRow
-                  options={[
-                    { value: "s" as MorphFontSize, label: t("chat.settings.fontSmall") },
-                    { value: "m" as MorphFontSize, label: t("chat.settings.fontMedium") },
-                    { value: "l" as MorphFontSize, label: t("chat.settings.fontLarge") },
-                  ]}
-                  value={chatFontSize}
-                  onChange={(v) => setChatFontSize(v)}
-                />
-                <View style={styles.chatPreview}>
-                  <View
-                    style={[
-                      styles.chatPreviewUser,
-                      { backgroundColor: pal.theme === "dark" ? "#2C2C2E" : "#E8E8ED" },
-                    ]}
-                  >
-                    <Text
-                      style={{
-                        ...morphFont,
-                        color: pal.fg,
-                        fontSize: chatFs(13),
-                        lineHeight: chatFs(19),
-                      }}
-                    >
-                      {t("chat.settings.chatFontPreviewUser")}
-                    </Text>
-                  </View>
-                  <Text
-                    style={{
-                      ...morphFont,
-                      color: pal.fg,
-                      fontSize: chatFs(13),
-                      lineHeight: chatFs(19),
-                      marginTop: 10,
-                    }}
-                  >
-                    {t("chat.settings.chatFontPreviewAi")}
-                  </Text>
-                </View>
-              </FieldBlock>
-            </SettingsSection>
-          </>
-        ) : null}
-
         {page === "limits" && prefs ? (
           <>
             {nearlyEmpty ? (
@@ -1122,17 +1001,14 @@ export function MorphChatSettingsScreen({
                 </Text>
               </View>
             ) : null}
-            <SettingsSection>
-              <UsageMeter
-                pct={usagePct}
-                used={tokenUsed}
-                remaining={tokenLeft}
-                limit={tokenLimit}
-                usedLabel={t("chat.settings.limitUsed")}
-                leftLabel={t("chat.settings.limitLeft")}
-                color={meterColor}
-              />
-            </SettingsSection>
+            <UsageMeter
+              pct={usagePct}
+              color={meterColor}
+              caption={t("chat.settings.limitMeterCaption")}
+              usedLabel={t("chat.settings.limitUsedPct", { pct: usagePct })}
+              leftLabel={t("chat.settings.limitLeftPct", { pct: Math.max(0, 100 - usagePct) })}
+            />
+            <View style={{ height: 16 }} />
             <SettingsSection>
               <PrefToggle
                 title={t("chat.settings.limitNotify")}
@@ -1450,38 +1326,13 @@ const styles = StyleSheet.create({
   miniPct: {
     ...morphFont,
     fontWeight: "700",
+    textAlign: "right",
   },
-  previewCard: {
-    marginTop: 8,
-    borderRadius: 14,
-    padding: 14,
+  hubMeter: {
+    width: 52,
     gap: 4,
-  },
-  previewKicker: {
-    ...morphFont,
-    fontWeight: "600",
-    letterSpacing: 0.4,
-    textTransform: "uppercase",
-  },
-  previewTitle: {
-    ...morphFont,
-    fontWeight: "600",
-    letterSpacing: -0.3,
-  },
-  previewBody: {
-    ...morphFont,
-  },
-  chatPreview: {
-    marginTop: 8,
-    paddingTop: 4,
-  },
-  chatPreviewUser: {
-    alignSelf: "flex-end",
-    maxWidth: "82%",
-    borderRadius: 16,
-    borderBottomRightRadius: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    alignSelf: "center",
+    justifyContent: "center",
   },
   itemBorder: {
     borderBottomWidth: StyleSheet.hairlineWidth,
