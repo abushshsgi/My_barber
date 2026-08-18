@@ -90,7 +90,11 @@ export function ProfileStack() {
         options={{ contentStyle: { backgroundColor: "#FFFFFF" } }}
       />
       <Stack.Screen name="WalletGate" component={WalletGateScreen} />
-      <Stack.Screen name="WalletHome" component={WalletHomeScreen} />
+      <Stack.Screen
+        name="WalletHome"
+        component={WalletHomeScreen}
+        options={{ contentStyle: { backgroundColor: "#5B4ED6" } }}
+      />
       <Stack.Screen name="WalletTopUp" component={WalletTopUpScreen} />
       <Stack.Screen name="WalletGift" component={WalletGiftScreen} />
       <Stack.Screen name="WalletGifts" component={WalletGiftsScreen} />

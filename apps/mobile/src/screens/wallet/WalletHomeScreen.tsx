@@ -1,373 +1,520 @@
 import { Ionicons } from "@expo/vector-icons";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { LinearGradient } from "expo-linear-gradient";
+import { StatusBar } from "expo-status-bar";
 import { useCallback, useMemo, useState } from "react";
 import {
   ActivityIndicator,
+  Dimensions,
+  Platform,
   Pressable,
   RefreshControl,
   ScrollView,
+  Share,
   StyleSheet,
   Text,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { NativeBackButton } from "../../components/ui/NativeBackButton";
 import { useHideTabBar } from "../../hooks/useHideTabBar";
-import { useReceivedGifts, useWalletMe, useWalletTransactions } from "../../hooks/useWallet";
-import { formatSomAmount, formatSomLabel } from "../../lib/wallet-format";
+import { useWalletMe, useWalletTransactions } from "../../hooks/useWallet";
+import type { WalletTx } from "../../lib/wallet-format";
 import type { WalletStackParamList } from "../../navigation/WalletStack";
-import { colors } from "../../theme/colors";
 
 type Props = NativeStackScreenProps<WalletStackParamList, "WalletHome">;
 
-const PINK = "#FF6B9D";
+const PURPLE = ["#5B4ED6", "#6E5EF0", "#8574FF"] as const;
+const FAB_BLUE = "#4C63F2";
+const PROMO_NAVY = "#241E6B";
+const MUTED = "#9CA3AF";
+const INK = "#111827";
+const AVATAR_TONES = ["#C4B5FD", "#FDBA74", "#6EE7B7", "#F9A8D4", "#93C5FD"];
+
+const QUICK: {
+  key: "WalletGift" | "WalletTopUp" | "WalletQrPay";
+  label: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  colors: [string, string];
+}[] = [
+  { key: "WalletGift", label: "O'tkazma", icon: "swap-horizontal", colors: ["#EDE9FE", "#DDD6FE"] },
+  { key: "WalletTopUp", label: "To'ldirish", icon: "card-outline", colors: ["#FFEDD5", "#FED7AA"] },
+  { key: "WalletQrPay", label: "To'lov", icon: "arrow-up", colors: ["#D1FAE5", "#A7F3D0"] },
+];
+
+function formatMoney(n: number): string {
+  if (!Number.isFinite(n)) return "0";
+  return Math.round(n).toLocaleString("en-US");
+}
+
+function formatTxDay(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+}
+
+function txKindLabel(entryType: string): string {
+  if (entryType === "topup") return "To'ldirish";
+  if (entryType.startsWith("gift")) return "O'tkazma";
+  return "To'lov";
+}
+
+function initials(title: string): string {
+  const clean = title.replace(/^Sovg'a · /, "").trim();
+  const parts = clean.split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) {
+    return `${parts[0]!.charAt(0)}${parts[1]!.charAt(0)}`.toUpperCase();
+  }
+  return (clean.charAt(0) || "?").toUpperCase();
+}
+
+function avatarColor(id: string): string {
+  let h = 0;
+  for (let i = 0; i < id.length; i += 1) h = (h + id.charCodeAt(i) * (i + 1)) % AVATAR_TONES.length;
+  return AVATAR_TONES[h]!;
+}
 
 export function WalletHomeScreen({ navigation }: Props) {
   useHideTabBar();
   const insets = useSafeAreaInsets();
   const me = useWalletMe();
   const tx = useWalletTransactions("all");
-  const gifts = useReceivedGifts();
   const [refreshing, setRefreshing] = useState(false);
+  const [hidden, setHidden] = useState(false);
 
-  const inSum = useMemo(
-    () => tx.items.filter((t) => t.kind === "in").reduce((s, t) => s + Math.abs(t.amount), 0),
-    [tx.items],
-  );
-  const outSum = useMemo(
-    () => tx.items.filter((t) => t.kind === "out").reduce((s, t) => s + Math.abs(t.amount), 0),
-    [tx.items],
-  );
-  const giftSum = useMemo(
-    () =>
-      gifts.gifts.reduce((s, g) => {
-        const n =
-          typeof g.gift_amount === "number"
-            ? g.gift_amount
-            : parseFloat(String(g.gift_amount ?? g.amount)) || 0;
-        return s + n;
-      }, 0),
-    [gifts.gifts],
-  );
+  const recent = tx.items.slice(0, 8);
+  const tabH = 64 + Math.max(insets.bottom, 10);
+  const sheetMin = Math.max(420, Dimensions.get("window").height * 0.52);
+
+  const balanceText = useMemo(() => (hidden ? "••••••" : formatMoney(me.balance)), [hidden, me.balance]);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     me.refresh();
     tx.refresh();
-    gifts.refresh();
     setTimeout(() => setRefreshing(false), 700);
-  }, [me, tx, gifts]);
+  }, [me, tx]);
 
-  const recent = tx.items.slice(0, 6);
+  const onRequest = useCallback(async () => {
+    const number = me.walletNumber.replace(/(.{4})/g, "$1 ").trim();
+    if (!number) return;
+    try {
+      await Share.share({
+        message: `Mening Mysaloon hamyon raqamim: ${number}`,
+        title: "Hamyon raqami",
+      });
+    } catch {
+      /* ignore */
+    }
+  }, [me.walletNumber]);
+
+  const goHomeTab = () => {
+    navigation.getParent()?.navigate("Home" as never);
+  };
 
   return (
-    <View style={[styles.root, { paddingTop: Math.max(insets.top, 10) }]}>
-      <View style={styles.topBar}>
-        <NativeBackButton onPress={() => navigation.goBack()} />
-        <Text style={styles.logo}>
-          Mysaloon<Text style={styles.logoDot}>.</Text>
-        </Text>
-        <Pressable
-          style={styles.menuPill}
-          onPress={() => navigation.navigate("WalletTransactions")}
-          hitSlop={8}
-        >
-          <Ionicons name="search-outline" size={18} color={colors.fg} />
-          <Ionicons name="ellipsis-horizontal" size={18} color={colors.fg} />
-        </Pressable>
-      </View>
+    <View style={styles.root}>
+      <StatusBar style="light" />
+      <LinearGradient colors={[...PURPLE]} start={{ x: 0.5, y: 0 }} end={{ x: 0.5, y: 1 }} style={styles.root}>
+        <View style={[styles.orb, styles.orbA]} />
+        <View style={[styles.orb, styles.orbB]} />
 
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={[styles.content, { paddingBottom: Math.max(insets.bottom, 28) }]}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-      >
-        <Text style={styles.balanceLabel}>Sizning balansingiz</Text>
-        <View style={styles.currencyRow}>
-          <View style={styles.currencyBadge}>
-            <Ionicons name="wallet" size={14} color="#FFF" />
-          </View>
-          <Text style={styles.currencyText}>so'm</Text>
-        </View>
-
-        {me.loading && !me.wallet ? (
-          <ActivityIndicator style={{ marginVertical: 28 }} color={colors.fg} />
-        ) : (
-          <Text style={styles.balance}>{formatSomAmount(me.balance)}</Text>
-        )}
-
-        {me.walletNumber ? (
-          <Text style={styles.walletNo}>{me.walletNumber.replace(/(.{4})/g, "$1 ").trim()}</Text>
-        ) : null}
-
-        <View style={styles.circles}>
-          <Pressable style={styles.circleItem} onPress={() => navigation.navigate("WalletGift")}>
-            <View style={[styles.circle, styles.circlePink]}>
-              <Ionicons name="heart" size={26} color={colors.fg} />
-            </View>
-            <Text style={styles.circleLabel}>Bonus</Text>
-            <Text style={styles.circleValue}>{formatSomAmount(inSum)}</Text>
-          </Pressable>
-          <Pressable style={styles.circleItem} onPress={() => navigation.navigate("WalletGifts")}>
-            <View style={[styles.circle, styles.circleDark]}>
-              <Ionicons name="bar-chart" size={24} color="#FFF" />
-            </View>
-            <Text style={styles.circleLabel}>Sovg'alar</Text>
-            <Text style={styles.circleValue}>{formatSomAmount(giftSum || gifts.gifts.length)}</Text>
-          </Pressable>
-          <Pressable style={styles.circleItem} onPress={() => navigation.navigate("WalletTopUp")}>
-            <View style={[styles.circle, styles.circleDark]}>
-              <Ionicons name="cash-outline" size={26} color="#FFF" />
-            </View>
-            <Text style={styles.circleLabel}>Naqd</Text>
-            <Text style={styles.circleValue}>{formatSomAmount(me.balance)}</Text>
-          </Pressable>
-        </View>
-
-        <Text style={styles.section}>Tezkor amallar</Text>
         <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.orderRow}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#FFF" colors={["#FFF"]} />
+          }
         >
-          <Pressable style={styles.orderCard} onPress={() => navigation.navigate("WalletTopUp")}>
-            <View style={styles.orderTop}>
-              <View style={styles.orderIcon}>
-                <Ionicons name="add" size={16} color="#FFF" />
+          <View style={[styles.hero, { paddingTop: Math.max(insets.top, 12) }]}>
+            <View style={styles.header}>
+              <Pressable
+                onPress={() => navigation.goBack()}
+                hitSlop={10}
+                style={styles.backBtn}
+                accessibilityRole="button"
+                accessibilityLabel="Orqaga"
+              >
+                <Ionicons name="chevron-back" size={22} color="#FFF" />
+              </Pressable>
+              <View style={styles.brand}>
+                <View style={styles.brandMark}>
+                  <Text style={styles.brandDollar}>$</Text>
+                </View>
+                <Text style={styles.brandName}>Mysaloon</Text>
               </View>
-              <Text style={styles.orderTitle}>To'ldirish</Text>
+              <View style={styles.backBtn} />
             </View>
-            <Text style={styles.orderBody}>Balansni oshirish</Text>
-            <Text style={styles.orderMeta}>min 10 000 so'm</Text>
-          </Pressable>
-          <Pressable style={styles.orderCard} onPress={() => navigation.navigate("WalletGift")}>
-            <View style={styles.orderTop}>
-              <View style={[styles.orderIcon, styles.orderIconPink]}>
-                <Ionicons name="gift" size={14} color={colors.fg} />
+
+            <Text style={styles.balanceLabel}>Hamyon balansi</Text>
+            <View style={styles.balanceRow}>
+              {me.loading && !me.wallet ? (
+                <ActivityIndicator color="#FFF" />
+              ) : (
+                <Text style={styles.balance}>{balanceText}</Text>
+              )}
+              <Pressable onPress={() => setHidden((v) => !v)} hitSlop={8} style={styles.eyeBtn}>
+                <Ionicons name={hidden ? "eye-off-outline" : "eye-outline"} size={18} color="rgba(255,255,255,0.85)" />
+              </Pressable>
+            </View>
+
+            <View style={styles.ctaRow}>
+              <Pressable style={styles.cta} onPress={() => navigation.navigate("WalletGift")}>
+                <Text style={styles.ctaText}>Yuborish</Text>
+              </Pressable>
+              <Pressable style={styles.cta} onPress={onRequest}>
+                <Text style={styles.ctaText}>So'rash</Text>
+              </Pressable>
+            </View>
+
+            <View style={styles.promo}>
+              <View style={styles.promoLeft}>
+                <View style={styles.promoIcon}>
+                  <Ionicons name="sparkles" size={14} color="#FFF" />
+                </View>
+                <Text style={styles.promoText}>Yangi aksiya!</Text>
               </View>
-              <Text style={styles.orderTitle}>Sovg'a</Text>
+              <Pressable style={styles.promoBtn} onPress={() => navigation.navigate("WalletGifts")}>
+                <Text style={styles.promoBtnText}>Olish</Text>
+              </Pressable>
             </View>
-            <Text style={styles.orderBody}>Do'stga yuborish</Text>
-            <Text style={styles.orderMeta}>5k — 1M so'm</Text>
-          </Pressable>
-          <Pressable style={styles.orderCard} onPress={() => navigation.navigate("WalletQrPay")}>
-            <View style={styles.orderTop}>
-              <View style={styles.orderIcon}>
-                <Ionicons name="qr-code" size={14} color="#FFF" />
+          </View>
+
+          <View style={[styles.sheet, { minHeight: sheetMin, paddingBottom: tabH + 16 }]}>
+            <View style={styles.sectionHead}>
+              <Text style={styles.sectionTitle}>Tezkor amallar</Text>
+              <Pressable onPress={() => navigation.navigate("WalletGift")}>
+                <Text style={styles.seeMore}>Barchasi</Text>
+              </Pressable>
+            </View>
+
+            <View style={styles.quickRow}>
+              {QUICK.map((item) => (
+                <Pressable
+                  key={item.key}
+                  style={styles.quickItem}
+                  onPress={() => navigation.navigate(item.key)}
+                >
+                  <LinearGradient colors={item.colors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.quickCard}>
+                    <View style={styles.quickIcon}>
+                      <Ionicons name={item.icon} size={20} color={INK} />
+                    </View>
+                  </LinearGradient>
+                  <Text style={styles.quickLabel}>{item.label}</Text>
+                </Pressable>
+              ))}
+            </View>
+
+            <View style={[styles.sectionHead, { marginTop: 22 }]}>
+              <Text style={styles.sectionTitle}>Tranzaksiyalar</Text>
+              <Pressable onPress={() => navigation.navigate("WalletTransactions")}>
+                <Text style={styles.seeMore}>Barchasi</Text>
+              </Pressable>
+            </View>
+
+            {tx.loading ? (
+              <ActivityIndicator style={{ marginTop: 28 }} color={FAB_BLUE} />
+            ) : recent.length === 0 ? (
+              <View style={styles.emptyBox}>
+                <Text style={styles.empty}>Hali tranzaksiya yo'q</Text>
+                <Pressable style={styles.emptyCta} onPress={() => navigation.navigate("WalletTopUp")}>
+                  <Text style={styles.emptyCtaText}>To'ldirish</Text>
+                </Pressable>
               </View>
-              <Text style={styles.orderTitle}>QR to'lov</Text>
-            </View>
-            <Text style={styles.orderBody}>Sartaroshga to'lang</Text>
-            <Text style={styles.orderMeta}>imzolangan QR</Text>
-          </Pressable>
+            ) : (
+              recent.map((item) => <TxRow key={item.id} item={item} />)
+            )}
+
+            {me.error ? <Text style={styles.err}>{me.error}</Text> : null}
+          </View>
         </ScrollView>
 
-        <View style={styles.txHead}>
-          <Text style={styles.section}>Oxirgi harakatlar</Text>
-          <Pressable onPress={() => navigation.navigate("WalletTransactions")}>
-            <Text style={styles.link}>Hammasi</Text>
-          </Pressable>
-        </View>
-
-        {tx.loading ? (
-          <ActivityIndicator style={{ marginTop: 20 }} color={colors.fg} />
-        ) : recent.length === 0 ? (
-          <View style={styles.emptyBox}>
-            <Text style={styles.empty}>Hali harakatlar yo'q</Text>
-            <Pressable style={styles.emptyCta} onPress={() => navigation.navigate("WalletTopUp")}>
-              <Text style={styles.emptyCtaText}>Birinchi to'ldirish</Text>
+        <View style={[styles.tabBar, { paddingBottom: Math.max(insets.bottom, 10) }]}>
+          <TabItem icon="home" label="Asosiy" active={false} onPress={goHomeTab} />
+          <TabItem icon="wallet" label="Hamyon" active onPress={() => {}} />
+          <View style={styles.fabSlot}>
+            <Pressable
+              style={styles.fab}
+              onPress={() => navigation.navigate("WalletQrPay")}
+              accessibilityRole="button"
+              accessibilityLabel="QR to'lov"
+            >
+              <Ionicons name="scan" size={26} color="#FFF" />
             </Pressable>
+            <Text style={styles.fabLabel}>To'lov</Text>
           </View>
-        ) : (
-          recent.map((item) => (
-            <View key={item.id} style={styles.txRow}>
-              <View style={[styles.txIcon, item.kind === "in" && styles.txIconIn]}>
-                <Ionicons
-                  name={item.kind === "in" ? "arrow-down" : "arrow-up"}
-                  size={16}
-                  color={item.kind === "in" ? "#FFF" : colors.fg}
-                />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.txTitle} numberOfLines={1}>
-                  {item.title}
-                </Text>
-                <Text style={styles.txDate}>{item.date}</Text>
-              </View>
-              <Text style={[styles.txAmt, item.kind === "in" && styles.txAmtIn]}>
-                {item.kind === "in" ? "+" : "−"}
-                {formatSomLabel(Math.abs(item.amount))}
-              </Text>
-            </View>
-          ))
-        )}
+          <TabItem
+            icon="stats-chart-outline"
+            label="Statistika"
+            active={false}
+            onPress={() => navigation.navigate("WalletTransactions")}
+          />
+          <TabItem
+            icon="person-outline"
+            label="Profil"
+            active={false}
+            onPress={() => navigation.navigate("ProfileHome" as never)}
+          />
+        </View>
+      </LinearGradient>
+    </View>
+  );
+}
 
-        {me.error ? <Text style={styles.err}>{me.error}</Text> : null}
-      </ScrollView>
+function TabItem({
+  icon,
+  label,
+  active,
+  onPress,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  active: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable style={styles.tabItem} onPress={onPress} accessibilityRole="button" accessibilityLabel={label}>
+      <Ionicons name={icon} size={22} color={active ? INK : MUTED} />
+      <Text style={[styles.tabLabel, active && styles.tabLabelOn]}>{label}</Text>
+    </Pressable>
+  );
+}
+
+function TxRow({ item }: { item: WalletTx }) {
+  return (
+    <View style={styles.txRow}>
+      <View style={[styles.avatar, { backgroundColor: avatarColor(item.id) }]}>
+        <Text style={styles.avatarText}>{initials(item.title)}</Text>
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text style={styles.txTitle} numberOfLines={1}>
+          {item.title}
+        </Text>
+        <Text style={styles.txDate}>{formatTxDay(item.createdAt)}</Text>
+      </View>
+      <View style={styles.txRight}>
+        <Text style={styles.txAmt}>
+          {item.kind === "in" ? "+" : "−"}
+          {formatMoney(Math.abs(item.amount))}
+        </Text>
+        <Text style={styles.txKind}>{txKindLabel(item.entryType)}</Text>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: "#FFFFFF" },
-  topBar: {
+  root: { flex: 1, backgroundColor: "#5B4ED6" },
+  orb: {
+    position: "absolute",
+    width: 220,
+    height: 220,
+    borderRadius: 110,
+    backgroundColor: "rgba(255,255,255,0.12)",
+  },
+  orbA: { top: -70, right: -80 },
+  orbB: { top: 160, left: -110, width: 260, height: 260, borderRadius: 130 },
+  scrollContent: { flexGrow: 1 },
+  hero: { paddingHorizontal: 20, paddingBottom: 8 },
+  header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingBottom: 4,
+    marginBottom: 22,
   },
-  logo: {
-    fontSize: 18,
-    fontWeight: "800",
-    color: colors.fg,
-    letterSpacing: -0.4,
-  },
-  logoDot: { color: colors.brandDot },
-  menuPill: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    backgroundColor: colors.surface,
-    borderRadius: 14,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  content: { paddingHorizontal: 20, paddingTop: 18 },
-  balanceLabel: {
-    textAlign: "center",
-    fontSize: 15,
-    color: colors.muted,
-    fontWeight: "500",
-  },
-  currencyRow: {
-    marginTop: 10,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-  },
-  currencyBadge: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: colors.fg,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  currencyText: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: colors.fg,
-  },
-  balance: {
-    marginTop: 8,
-    textAlign: "center",
-    fontSize: 36,
-    fontWeight: "800",
-    color: colors.fg,
-    letterSpacing: -1.2,
-  },
-  walletNo: {
-    marginTop: 4,
-    textAlign: "center",
-    fontSize: 11,
-    color: colors.muted,
-    letterSpacing: 1,
-    fontVariant: ["tabular-nums"],
-  },
-  circles: {
-    marginTop: 24,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingHorizontal: 4,
-  },
-  circleItem: { alignItems: "center", flex: 1 },
-  circle: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  circlePink: { backgroundColor: PINK },
-  circleDark: { backgroundColor: colors.fg },
-  circleLabel: {
-    marginTop: 8,
-    fontSize: 12,
-    fontWeight: "700",
-    color: colors.fg,
-  },
-  circleValue: {
-    marginTop: 2,
-    fontSize: 11,
-    fontWeight: "600",
-    color: colors.muted,
-  },
-  section: {
-    marginTop: 24,
-    fontSize: 16,
-    fontWeight: "800",
-    color: colors.fg,
-    letterSpacing: -0.3,
-  },
-  orderRow: { gap: 12, paddingTop: 14, paddingRight: 8 },
-  orderCard: {
-    width: 168,
-    backgroundColor: colors.surface,
-    borderRadius: 22,
-    padding: 16,
-    gap: 8,
-  },
-  orderTop: { flexDirection: "row", alignItems: "center", gap: 8 },
-  orderIcon: {
+  backBtn: { width: 40, height: 40, alignItems: "center", justifyContent: "center" },
+  brand: { flexDirection: "row", alignItems: "center", gap: 8 },
+  brandMark: {
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: colors.fg,
+    backgroundColor: "#FFF",
     alignItems: "center",
     justifyContent: "center",
   },
-  orderIconPink: { backgroundColor: PINK },
-  orderTitle: { fontSize: 15, fontWeight: "800", color: colors.fg },
-  orderBody: { fontSize: 13, color: colors.fg, fontWeight: "500" },
-  orderMeta: { fontSize: 12, color: colors.muted, marginTop: 4 },
-  txHead: {
+  brandDollar: { fontSize: 15, fontWeight: "800", color: "#5B4ED6" },
+  brandName: { fontSize: 18, fontWeight: "700", color: "#FFF", letterSpacing: -0.3 },
+  balanceLabel: {
+    textAlign: "center",
+    fontSize: 13,
+    color: "rgba(255,255,255,0.78)",
+    fontWeight: "500",
+  },
+  balanceRow: {
+    marginTop: 6,
     flexDirection: "row",
-    alignItems: "flex-end",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  balance: {
+    fontSize: 36,
+    fontWeight: "800",
+    color: "#FFF",
+    letterSpacing: -1.2,
+    fontVariant: ["tabular-nums"],
+  },
+  eyeBtn: { paddingTop: 4 },
+  ctaRow: { marginTop: 22, flexDirection: "row", gap: 12 },
+  cta: {
+    flex: 1,
+    backgroundColor: "#FFF",
+    borderRadius: 28,
+    paddingVertical: 14,
+    alignItems: "center",
+    ...Platform.select({
+      ios: {
+        shadowColor: "#1A1040",
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.16,
+        shadowRadius: 10,
+      },
+      android: { elevation: 4 },
+    }),
+  },
+  ctaText: { fontSize: 15, fontWeight: "700", color: INK },
+  promo: {
+    marginTop: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "rgba(255,255,255,0.22)",
+    borderRadius: 18,
+    paddingVertical: 10,
+    paddingLeft: 12,
+    paddingRight: 8,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.28)",
+  },
+  promoLeft: { flexDirection: "row", alignItems: "center", gap: 10 },
+  promoIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: "rgba(255,255,255,0.22)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  promoText: { fontSize: 14, fontWeight: "700", color: "#FFF" },
+  promoBtn: {
+    backgroundColor: PROMO_NAVY,
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
+  promoBtnText: { color: "#FFF", fontSize: 12, fontWeight: "700" },
+  sheet: {
+    marginTop: 18,
+    backgroundColor: "#FFF",
+    borderTopLeftRadius: 36,
+    borderTopRightRadius: 36,
+    paddingHorizontal: 20,
+    paddingTop: 22,
+    flexGrow: 1,
+  },
+  sectionHead: {
+    flexDirection: "row",
+    alignItems: "center",
     justifyContent: "space-between",
   },
-  link: { fontSize: 13, fontWeight: "700", color: colors.muted, marginBottom: 2 },
+  sectionTitle: { fontSize: 17, fontWeight: "800", color: INK, letterSpacing: -0.3 },
+  seeMore: { fontSize: 13, fontWeight: "600", color: MUTED },
+  quickRow: { marginTop: 14, flexDirection: "row", gap: 12 },
+  quickItem: { flex: 1, alignItems: "center" },
+  quickCard: {
+    width: "100%",
+    aspectRatio: 1,
+    borderRadius: 22,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  quickIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#FFF",
+    alignItems: "center",
+    justifyContent: "center",
+    ...Platform.select({
+      ios: {
+        shadowColor: "#1A1040",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.08,
+        shadowRadius: 6,
+      },
+      android: { elevation: 2 },
+    }),
+  },
+  quickLabel: { marginTop: 8, fontSize: 13, fontWeight: "700", color: INK },
   emptyBox: { alignItems: "center", marginTop: 28, gap: 14 },
-  empty: { color: colors.muted, fontSize: 14 },
+  empty: { color: MUTED, fontSize: 14 },
   emptyCta: {
-    backgroundColor: colors.fg,
+    backgroundColor: FAB_BLUE,
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 14,
   },
   emptyCtaText: { color: "#FFF", fontWeight: "700", fontSize: 14 },
   txRow: {
-    marginTop: 12,
+    marginTop: 16,
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    backgroundColor: colors.surface,
-    borderRadius: 18,
-    padding: 14,
   },
-  txIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "#FFF",
+  avatar: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
     alignItems: "center",
     justifyContent: "center",
   },
-  txIconIn: { backgroundColor: colors.fg },
-  txTitle: { fontSize: 14, fontWeight: "700", color: colors.fg },
-  txDate: { fontSize: 11, color: colors.muted, marginTop: 2 },
-  txAmt: { fontSize: 13, fontWeight: "700", color: colors.fg },
-  txAmtIn: { fontWeight: "800" },
+  avatarText: { fontSize: 13, fontWeight: "800", color: INK },
+  txTitle: { fontSize: 14, fontWeight: "700", color: INK },
+  txDate: { fontSize: 12, color: MUTED, marginTop: 2 },
+  txRight: { alignItems: "flex-end" },
+  txAmt: { fontSize: 14, fontWeight: "800", color: INK, fontVariant: ["tabular-nums"] },
+  txKind: { fontSize: 12, color: MUTED, marginTop: 2 },
   err: { marginTop: 16, color: "#EF4444", fontSize: 12, textAlign: "center" },
+  tabBar: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "#FFF",
+    flexDirection: "row",
+    alignItems: "flex-end",
+    justifyContent: "space-between",
+    paddingHorizontal: 8,
+    paddingTop: 8,
+    ...Platform.select({
+      ios: {
+        shadowColor: "#1A1040",
+        shadowOffset: { width: 0, height: -4 },
+        shadowOpacity: 0.06,
+        shadowRadius: 10,
+      },
+      android: { elevation: 12 },
+    }),
+  },
+  tabItem: { flex: 1, alignItems: "center", gap: 2, paddingBottom: 2 },
+  tabLabel: { fontSize: 10, fontWeight: "600", color: MUTED },
+  tabLabelOn: { color: INK },
+  fabSlot: { width: 76, alignItems: "center", marginTop: -28 },
+  fab: {
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+    backgroundColor: FAB_BLUE,
+    alignItems: "center",
+    justifyContent: "center",
+    ...Platform.select({
+      ios: {
+        shadowColor: "#4C63F2",
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.35,
+        shadowRadius: 12,
+      },
+      android: { elevation: 8 },
+    }),
+  },
+  fabLabel: { marginTop: 4, fontSize: 10, fontWeight: "600", color: MUTED },
 });
