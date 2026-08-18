@@ -9,6 +9,7 @@ export type SubscriptionPlan = {
   period_days: number;
   morph_ai_monthly: number;
   morph_studio_monthly: number;
+  morph_chat_tokens_monthly?: number;
   family_members_max: number | null;
   family_unlimited: boolean;
   morph_care: boolean;
@@ -26,6 +27,9 @@ export type SubscriptionUsage = {
   morph_studio_limit: number;
   morph_studio_remaining: number;
   referral_credits?: number;
+  morph_chat_tokens_used?: number;
+  morph_chat_tokens_limit?: number;
+  morph_chat_tokens_remaining?: number;
 };
 
 export type UserSubscription = {
@@ -53,6 +57,7 @@ export type SubscriptionMe = {
   referral_generation_enabled?: boolean;
   access?: {
     morph_ai_allowed: boolean;
+    morph_chat_allowed?: boolean;
     reason: string | null;
     message: string | null;
     referral_credits?: number;

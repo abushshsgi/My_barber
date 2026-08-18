@@ -52,6 +52,9 @@ export type MorphChatLimitsSnapshot = {
   daily_limit: number;
   daily_used: number | null;
   daily_remaining: number | null;
+  token_limit?: number;
+  token_used?: number | null;
+  token_remaining?: number | null;
   updatedAt: string;
 };
 

@@ -109,7 +109,7 @@ export function MorphChatScreen() {
         }
         const result = MORPH_CHAT_DEBUG
           ? ({ ok: true } as const)
-          : await gate.ensureAccessDetailed();
+          : await gate.ensureChatDetailed();
         if (cancelled) return;
         if (result.ok) {
           const draft = pending.draft;
@@ -149,7 +149,7 @@ export function MorphChatScreen() {
       }
       // TEMP: Plus chatbot test — debug o‘chiq. Test tugagach MORPH_CHAT_DEBUG=false.
       if (MORPH_CHAT_DEBUG) return true;
-      const result = await gate.ensureAccessDetailed();
+      const result = await gate.ensureChatDetailed();
       if (result.ok) return true;
       showPaywall(result.reason === "limit" ? "limit" : "subscription", draft);
       return false;

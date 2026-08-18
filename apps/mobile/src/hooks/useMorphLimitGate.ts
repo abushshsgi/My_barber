@@ -6,7 +6,7 @@ import { useSubscriptions } from "./useSubscriptions";
 export type MorphGateReason = "login" | "subscription" | "limit" | "studio";
 export type MorphGateResult = { ok: true } | { ok: false; reason: MorphGateReason };
 
-type GateKind = "access" | "tryon" | "studio";
+type GateKind = "access" | "tryon" | "studio" | "chat";
 
 /**
  * Morph AI limit gate.
@@ -39,6 +39,18 @@ export function useMorphLimitGate() {
 
       if (kind === "access") {
         // Selfie/tahlil — obunasiz ham ochiq
+        return { ok: true };
+      }
+
+      if (kind === "chat") {
+        const remaining = latest?.usage?.morph_chat_tokens_remaining;
+        const limit = latest?.usage?.morph_chat_tokens_limit;
+        if (typeof remaining === "number" && remaining <= 0 && (limit ?? 0) > 0) {
+          return { ok: false, reason: "limit" };
+        }
+        if (latest?.access?.morph_chat_allowed === false) {
+          return { ok: false, reason: "limit" };
+        }
         return { ok: true };
       }
 
@@ -90,6 +102,8 @@ export function useMorphLimitGate() {
     refresh,
     ensureAccess: () => ensure("access"),
     ensureAccessDetailed: () => ensureDetailed("access"),
+    ensureChat: () => ensure("chat"),
+    ensureChatDetailed: () => ensureDetailed("chat"),
     ensureTryOn: () => ensure("tryon"),
     ensureTryOnDetailed: () => ensureDetailed("tryon"),
     ensureStudio: () => ensure("studio"),

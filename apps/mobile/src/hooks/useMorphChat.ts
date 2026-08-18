@@ -336,7 +336,10 @@ export function useMorphChat() {
             if (
               prefs.limitNotify &&
               typeof remoteLimits.daily_remaining === "number" &&
-              remoteLimits.daily_remaining <= 3
+              remoteLimits.daily_limit > 0 &&
+              (remoteLimits.should_warn ||
+                remoteLimits.daily_remaining <=
+                  Math.max(500, Math.floor(remoteLimits.daily_limit * 0.1)))
             ) {
               setLimitWarning(
                 t("chat.settings.limitWarn", {
@@ -473,12 +476,16 @@ export function useMorphChat() {
         if (
           prefs.limitNotify &&
           typeof resLimits.daily_remaining === "number" &&
-          resLimits.daily_remaining <= 3
+          resLimits.daily_limit > 0 &&
+          (resLimits.should_warn ||
+            resLimits.daily_remaining <= Math.max(500, Math.floor(resLimits.daily_limit * 0.1)))
         ) {
           setLimitWarning(
             t("chat.settings.limitWarn", {
-              remaining: resLimits.daily_remaining,
-              limit: resLimits.daily_limit,
+              remaining: resLimits.daily_remaining.toLocaleString("uz-UZ"),
+              limit: resLimits.daily_limit.toLocaleString("uz-UZ"),
+            }),
+          );
             }),
           );
         } else {
