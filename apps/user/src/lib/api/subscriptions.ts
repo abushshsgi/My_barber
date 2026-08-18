@@ -37,6 +37,7 @@ export type SubscriptionUsage = {
   morph_chat_tokens_used?: number;
   morph_chat_tokens_limit?: number;
   morph_chat_tokens_remaining?: number;
+  morph_chat_tokens_period?: "lifetime" | "month";
   is_free_tier?: boolean;
   locked?: boolean;
 };

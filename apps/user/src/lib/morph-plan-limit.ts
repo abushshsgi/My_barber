@@ -17,7 +17,7 @@ export function isMorphPlanLimitError(error: unknown): error is MorphPlanLimitEr
 
 /** Server detail — obuna/oylik kvota (DRF throttle emas). */
 export function isMorphPlanLimitMessage(message: string): boolean {
-  return /Oylik Morph|Oylik Morf|Bepul Morph|Morph AI faqat obuna|obuna|Studio Plus|Bu reja Morph|do'stingizni taklif|Tarifni yangilang|Plus\/Pro|chat token/i.test(
+  return /Oylik Morph|Oylik Morf|Bepul Morph|Bepul Morf|Morph AI faqat obuna|obuna|Studio Plus|Bu reja Morph|do'stingizni taklif|Tarifni yangilang|Plus\/Pro|chat token/i.test(
     message,
   );
 }
@@ -48,7 +48,7 @@ export function morphChatTokensBlocked(usage: SubscriptionUsage): boolean {
   const limit = usage.morph_chat_tokens_limit;
   if (limit == null) return false;
   if (limit <= 0) return true;
-  return (usage.morph_chat_tokens_remaining ?? 0) <= 0;
+  return (usage.morph_chat_tokens_remaining ?? 0) < 200;
 }
 
 /** Yangi user — faol obuna (yoki trial) bo'lmasa Morph AI yopiq. */

@@ -107,7 +107,7 @@ _PLANS: dict[str, dict[str, Any]] = {
     },
 }
 
-# Yangi user — try-on yo'q, chat uchun 10k token.
+# Yangi user — try-on yo'q, chat uchun bir martalik 10k token (oylik emas).
 FREE_MORPH_AI_MONTHLY = 0
 FREE_MORPH_STUDIO_MONTHLY = 0
 FREE_MORPH_CHAT_TOKENS = 10_000

@@ -214,24 +214,45 @@ export function MorphChatScreen() {
     }, [chatOpen, closePaywall, menuOpen, paywall, settingsOpen, voice.cancelSession, voice.live, voice.phase]),
   );
 
+  const tokenRemaining = Number(
+    chat.limits?.token_remaining ?? chat.limits?.daily_remaining ?? NaN,
+  );
+  const chatLocked =
+    !MORPH_CHAT_DEBUG && Number.isFinite(tokenRemaining) && tokenRemaining < 200;
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!isAuthenticated || MORPH_CHAT_DEBUG) return;
+      let cancelled = false;
+      void (async () => {
+        const result = await gate.ensureChatDetailed();
+        if (cancelled || result.ok) return;
+        setPaywall(result.reason === "limit" ? "limit" : "subscription");
+      })();
+      return () => {
+        cancelled = true;
+      };
+    }, [gate, isAuthenticated]),
+  );
+
   const composer = useMemo(
     () => ({
       value: chat.input,
       onChange: chat.setInput,
-      disabled: chat.sending || voice.busy,
+      disabled: chat.sending || voice.busy || chatLocked,
       sending: chat.sending,
-      placeholder: t("chat.home.askAnything"),
+      placeholder: chatLocked ? t("chat.tokenEmptyShort") : t("chat.home.askAnything"),
       sendA11y: t("chat.sendA11y"),
       cameraA11y: t("chat.home.cameraA11y"),
       voiceA11y: t("chat.settings.voiceInput"),
-      voiceEnabled,
+      voiceEnabled: voiceEnabled && !chatLocked,
       voiceState: (voice.recording ? "recording" : voice.busy ? "busy" : "idle") as
         | "idle"
         | "recording"
         | "busy",
       onVoice: () => void voice.toggleMic(),
     }),
-    [chat.input, chat.sending, chat.setInput, t, voice, voiceEnabled],
+    [chat.input, chat.sending, chat.setInput, chatLocked, t, voice, voiceEnabled],
   );
 
   const onSend = useCallback(async () => {
@@ -340,9 +361,22 @@ export function MorphChatScreen() {
       onRetry={retryLast}
       onDismiss={chat.clearError}
     />
+  ) : chatLocked ? (
+    <ChatNotice
+      title={t("chat.settings.limitTitleOnce")}
+      message={t("chat.tokenEmpty")}
+      retryLabel={t("chat.tokenEmptyCta")}
+      dismissA11y={t("chat.errorDismissA11y")}
+      onRetry={() => showPaywall("limit")}
+      onDismiss={() => showPaywall("limit")}
+    />
   ) : chat.limitWarning ? (
     <ChatNotice
-      title={t("chat.settings.limitTitle")}
+      title={
+        chat.limits?.period === "lifetime"
+          ? t("chat.settings.limitTitleOnce")
+          : t("chat.settings.limitTitle")
+      }
       message={chat.limitWarning}
       dismissA11y={t("chat.errorDismissA11y")}
       tone="warning"
@@ -481,13 +515,25 @@ export function MorphChatScreen() {
           menuA11y={t("chat.menu.openA11y")}
           onMenu={() => setMenuOpen(true)}
           bottomPad={Math.max(insets.bottom, 8) + TAB_DOCK_CLEARANCE}
-          composer={<ChatInputBar {...composer} onSend={() => void onSend()} onCamera={onCamera} />}
+          composer={
+            <View>
+              <ChatInputBar {...composer} onSend={() => void onSend()} onCamera={onCamera} />
+              {chatLocked ? (
+                <Pressable
+                  style={StyleSheet.absoluteFill}
+                  onPress={() => showPaywall("limit")}
+                  accessibilityRole="button"
+                  accessibilityLabel={t("chat.tokenEmptyCta")}
+                />
+              ) : null}
+            </View>
+          }
           chips={
             chat.input.trim().length === 0 ? (
               <QuickPromptChips
                 prompts={chat.quickPrompts}
                 onSelect={(p) => void onQuickPrompt(p.id)}
-                disabled={chat.sending}
+                disabled={chat.sending || chatLocked}
               />
             ) : null
           }
@@ -500,6 +546,16 @@ export function MorphChatScreen() {
                 dismissA11y={t("chat.errorDismissA11y")}
                 onRetry={retryLast}
                 onDismiss={chat.clearError}
+                style={{ marginHorizontal: 0, marginBottom: 0 }}
+              />
+            ) : chatLocked ? (
+              <ChatNotice
+                title={t("chat.settings.limitTitleOnce")}
+                message={t("chat.tokenEmpty")}
+                retryLabel={t("chat.tokenEmptyCta")}
+                dismissA11y={t("chat.errorDismissA11y")}
+                onRetry={() => showPaywall("limit")}
+                onDismiss={() => showPaywall("limit")}
                 style={{ marginHorizontal: 0, marginBottom: 0 }}
               />
             ) : chat.limitWarning ? (
@@ -588,7 +644,17 @@ export function MorphChatScreen() {
             },
           ]}
         >
-          <ChatInputBar {...composer} onSend={() => void onSend()} onCamera={onCamera} />
+          <View>
+            <ChatInputBar {...composer} onSend={() => void onSend()} onCamera={onCamera} />
+            {chatLocked ? (
+              <Pressable
+                style={StyleSheet.absoluteFill}
+                onPress={() => showPaywall("limit")}
+                accessibilityRole="button"
+                accessibilityLabel={t("chat.tokenEmptyCta")}
+              />
+            ) : null}
+          </View>
         </View>
       </KeyboardAvoidingView>
 

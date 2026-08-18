@@ -42,9 +42,10 @@ def chat_limits_from_user(user) -> dict[str, Any]:
     limit = snap["morph_chat_tokens_limit"]
     used = snap["morph_chat_tokens_used"]
     remaining = snap["morph_chat_tokens_remaining"]
+    period = snap.get("morph_chat_tokens_period") or "month"
     warn_at = max(500, int(limit * 0.1)) if limit else 500
     return {
-        "period": "month",
+        "period": period,
         "token_limit": limit,
         "token_used": used,
         "token_remaining": remaining,

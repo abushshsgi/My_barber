@@ -51,13 +51,15 @@ function MorphLimitUpsellBody({
     me?.referral_generation_enabled ??
     me?.access?.referral_generation_enabled ??
     true;
-  const locked =
-    kind === "access" ||
-    kind === "voice" ||
-    (kind !== "chat" && !me?.has_active && credits <= 0);
   const isTryOn = kind === "tryon";
   const isChat = kind === "chat";
   const isVoice = kind === "voice";
+  const chatMustSubscribe = isChat && !me?.has_active;
+  const locked =
+    kind === "access" ||
+    kind === "voice" ||
+    chatMustSubscribe ||
+    (kind !== "chat" && !me?.has_active && credits <= 0);
   const plans = plansQ.data ?? [];
   const activeCode = me?.subscription?.plan_code ?? null;
   const next = nextUpgradePlan(activeCode);
@@ -123,13 +125,15 @@ function MorphLimitUpsellBody({
             {locked
               ? isVoice
                 ? t("aiStylePage.limitSheet.voiceSubtitle")
-                : t("aiStylePage.limitSheet.accessSubtitle")
+                : isChat
+                  ? t("aiStylePage.limitSheet.chatSubtitle")
+                  : t("aiStylePage.limitSheet.accessSubtitle")
               : planName
                 ? t("aiStylePage.limitSheet.descWithPlan", { plan: planName })
                 : t("aiStylePage.limitSheet.descFree")}
           </p>
 
-          {locked && refGenOn && !isVoice ? (
+          {locked && refGenOn && !isVoice && !isChat ? (
             <motion.div
               initial={{ y: 8, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
@@ -142,7 +146,7 @@ function MorphLimitUpsellBody({
           ) : null}
         </div>
 
-        {!locked && limit > 0 ? (
+        {limit > 0 && (isChat || !locked) ? (
           <div className="relative mt-7 space-y-3 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
             <div className="flex items-center justify-between gap-3">
               <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-white/45">
@@ -159,7 +163,7 @@ function MorphLimitUpsellBody({
         ) : null}
       </div>
 
-      {locked ? (
+      {locked && !isChat ? (
         <p className="px-0.5 text-center text-[14px] leading-relaxed text-white/45">
           {isVoice
             ? t("aiStylePage.limitSheet.descVoice")
@@ -222,7 +226,7 @@ function MorphLimitUpsellBody({
               ? `Obuna olish (−${offer.discount_pct}%)`
               : t("aiStylePage.limitSheet.buyPlan", { defaultValue: "Obuna olish" })}
           </Link>
-          {refGenOn ? (
+          {refGenOn && !isChat ? (
             <Link
               to="/referrals"
               onClick={onClose}
@@ -268,13 +272,16 @@ export function MorphLimitUpsell({ open, onOpenChange, kind, me }: Props) {
   const locked =
     kind === "access" ||
     kind === "voice" ||
+    (kind === "chat" && !me?.has_active) ||
     (kind !== "chat" &&
       !me?.has_active &&
       (me?.referral_credits ?? me?.access?.referral_credits ?? 0) <= 0);
   const title = locked
     ? kind === "voice"
       ? t("aiStylePage.limitSheet.voiceTitle")
-      : t("aiStylePage.limitSheet.accessTitle")
+      : kind === "chat"
+        ? t("aiStylePage.limitSheet.chatTitle")
+        : t("aiStylePage.limitSheet.accessTitle")
     : t(
         kind === "chat"
           ? "aiStylePage.limitSheet.chatTitle"
@@ -285,7 +292,9 @@ export function MorphLimitUpsell({ open, onOpenChange, kind, me }: Props) {
   const subtitle = locked
     ? kind === "voice"
       ? t("aiStylePage.limitSheet.voiceSubtitle")
-      : t("aiStylePage.limitSheet.accessSubtitle")
+      : kind === "chat"
+        ? t("aiStylePage.limitSheet.chatSubtitle")
+        : t("aiStylePage.limitSheet.accessSubtitle")
     : t("aiStylePage.limitSheet.subtitle");
 
   if (isMobile) {

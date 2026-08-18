@@ -44,8 +44,7 @@ export function useMorphLimitGate() {
 
       if (kind === "chat") {
         const remaining = latest?.usage?.morph_chat_tokens_remaining;
-        const limit = latest?.usage?.morph_chat_tokens_limit;
-        if (typeof remaining === "number" && remaining <= 0 && (limit ?? 0) > 0) {
+        if (typeof remaining === "number" && remaining < 200) {
           return { ok: false, reason: "limit" };
         }
         if (latest?.access?.morph_chat_allowed === false) {
@@ -59,8 +58,7 @@ export function useMorphLimitGate() {
           return { ok: false, reason: "subscription" };
         }
         const remaining = latest?.usage?.morph_chat_tokens_remaining;
-        const limit = latest?.usage?.morph_chat_tokens_limit;
-        if (typeof remaining === "number" && remaining <= 0 && (limit ?? 0) > 0) {
+        if (typeof remaining === "number" && remaining < 200) {
           return { ok: false, reason: "limit" };
         }
         return { ok: true };

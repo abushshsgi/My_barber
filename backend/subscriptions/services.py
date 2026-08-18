@@ -182,7 +182,7 @@ def get_or_create_usage(user: User) -> SubscriptionUsagePeriod:
 
 
 def chat_token_limit_for_user(user: User) -> int:
-    """Obuna snapshot, keyin joriy tarif, aks holda bepul 10k."""
+    """Obuna: oylik tarif. Obunasiz: bir martalik 10k."""
     sub = get_active_subscription(user)
     if not sub:
         return FREE_MORPH_CHAT_TOKENS
@@ -202,15 +202,38 @@ def chat_token_limit_for_user(user: User) -> int:
     return FREE_MORPH_CHAT_TOKENS
 
 
-def chat_token_snapshot(user: User) -> dict[str, int]:
-    usage = get_or_create_usage(user)
-    limit = chat_token_limit_for_user(user)
-    used = int(usage.morph_chat_tokens_used or 0)
+def _free_chat_tokens_used(user: User) -> int:
+    raw = getattr(user, "morph_chat_free_tokens_used", None)
+    if raw is not None:
+        try:
+            return max(0, int(raw or 0))
+        except (TypeError, ValueError):
+            pass
+    stored = (
+        User.objects.filter(pk=user.pk)
+        .values_list("morph_chat_free_tokens_used", flat=True)
+        .first()
+    )
+    return max(0, int(stored or 0))
+
+
+def chat_token_snapshot(user: User) -> dict[str, Any]:
+    sub = get_active_subscription(user)
+    if sub:
+        usage = get_or_create_usage(user)
+        limit = chat_token_limit_for_user(user)
+        used = int(usage.morph_chat_tokens_used or 0)
+        period = "month"
+    else:
+        limit = FREE_MORPH_CHAT_TOKENS
+        used = _free_chat_tokens_used(user)
+        period = "lifetime"
     remaining = max(0, limit - used)
     return {
         "morph_chat_tokens_used": used,
         "morph_chat_tokens_limit": limit,
         "morph_chat_tokens_remaining": remaining,
+        "morph_chat_tokens_period": period,
     }
 
 
@@ -520,7 +543,7 @@ def check_morph_entitlement(*, user: User, kind: str) -> str | None:
     """
     Morph AI:
     - analyze / face_check — obunasiz ochiq (tahlil → keyin generatsiya paywall).
-    - chat — obunasiz, oylik token kvota (yangi user 10k).
+    - chat — obunasiz bir martalik 10k token; tugagach obuna majburiy.
     - voice — faqat faol pullik obuna.
     - tryon — faol obuna kvotasi YOKI referal krediti (1 do'st = 1 generatsiya).
     - studio — faol obuna majburiy.
@@ -555,6 +578,11 @@ def check_morph_entitlement(*, user: User, kind: str) -> str | None:
                 subscription=sub,
                 detail={"kind": "morph_chat_tokens", "used": used, "limit": limit},
             )
+            if not sub:
+                return (
+                    f"Bepul Morf AI chat tokenlari tugadi ({used}/{limit}). "
+                    "Chatbotdan foydalanish uchun obuna sotib oling."
+                )
             return (
                 f"Oylik Morf AI chat token limiti tugadi ({used}/{limit}). "
                 "Tarifni yangilang — ko'proq token olasiz."
@@ -653,26 +681,47 @@ def record_morph_usage(*, user: User, kind: str) -> None:
 
 
 @transaction.atomic
-def record_morph_chat_tokens(*, user: User, tokens: int) -> dict[str, int]:
-    """Chat javobidan keyin oylik token hisoblagichini oshirish."""
+def record_morph_chat_tokens(*, user: User, tokens: int) -> dict[str, Any]:
+    """Chat javobidan keyin token hisoblagichini oshirish (obuna: oy, bepul: umrbod)."""
     added = max(0, int(tokens or 0))
-    start, end = current_period_bounds()
-    usage, _ = SubscriptionUsagePeriod.objects.select_for_update().get_or_create(
-        user=user,
-        period_start=start,
-        defaults={"period_end": end},
-    )
+    sub = get_active_subscription(user)
+    if sub:
+        start, end = current_period_bounds()
+        usage, _ = SubscriptionUsagePeriod.objects.select_for_update().get_or_create(
+            user=user,
+            period_start=start,
+            defaults={"period_end": end},
+        )
+        if added:
+            usage.morph_chat_tokens_used = int(usage.morph_chat_tokens_used or 0) + added
+            usage.save(update_fields=["morph_chat_tokens_used", "updated_at"])
+            log_event(
+                action=SubscriptionEvent.Action.USAGE,
+                user=user,
+                subscription=sub,
+                detail={
+                    "kind": "morph_chat_tokens",
+                    "added": added,
+                    "used": usage.morph_chat_tokens_used,
+                    "period": "month",
+                },
+            )
+        return chat_token_snapshot(user)
+
+    locked = User.objects.select_for_update().get(pk=user.pk)
     if added:
-        usage.morph_chat_tokens_used = int(usage.morph_chat_tokens_used or 0) + added
-        usage.save(update_fields=["morph_chat_tokens_used", "updated_at"])
+        locked.morph_chat_free_tokens_used = int(locked.morph_chat_free_tokens_used or 0) + added
+        locked.save(update_fields=["morph_chat_free_tokens_used"])
+        user.morph_chat_free_tokens_used = locked.morph_chat_free_tokens_used
         log_event(
             action=SubscriptionEvent.Action.USAGE,
             user=user,
-            subscription=get_active_subscription(user),
+            subscription=None,
             detail={
                 "kind": "morph_chat_tokens",
                 "added": added,
-                "used": usage.morph_chat_tokens_used,
+                "used": locked.morph_chat_free_tokens_used,
+                "period": "lifetime",
             },
         )
     return chat_token_snapshot(user)

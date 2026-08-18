@@ -14,6 +14,7 @@ from subscriptions.models import UserSubscription
 from subscriptions.plans import PLAN_PLUS, PLAN_STARTER
 from subscriptions.services import (
     activate_subscription,
+    chat_token_snapshot,
     check_morph_entitlement,
     deactivate_subscription,
     expire_if_needed,
@@ -73,11 +74,40 @@ class SubscriptionServiceTests(TestCase):
 
     def test_new_user_chat_token_quota(self):
         self.assertIsNone(check_morph_entitlement(user=self.user, kind="chat"))
+        snap = chat_token_snapshot(self.user)
+        self.assertEqual(snap["morph_chat_tokens_period"], "lifetime")
+        self.assertEqual(snap["morph_chat_tokens_limit"], 10000)
         record_morph_chat_tokens(user=self.user, tokens=9800)
         self.assertIsNone(check_morph_entitlement(user=self.user, kind="chat"))
         record_morph_chat_tokens(user=self.user, tokens=200)
         msg = check_morph_entitlement(user=self.user, kind="chat") or ""
         self.assertIn("token", msg.lower())
+        self.assertIn("obuna", msg.lower())
+
+    def test_free_chat_tokens_do_not_reset_next_month(self):
+        record_morph_chat_tokens(user=self.user, tokens=10_000)
+        self.assertIsNotNone(check_morph_entitlement(user=self.user, kind="chat"))
+        from subscriptions.models import SubscriptionUsagePeriod
+
+        SubscriptionUsagePeriod.objects.filter(user=self.user).delete()
+        self.user.refresh_from_db()
+        self.assertGreaterEqual(self.user.morph_chat_free_tokens_used, 10_000)
+        msg = check_morph_entitlement(user=self.user, kind="chat") or ""
+        self.assertIn("obuna", msg.lower())
+
+    def test_subscription_unlocks_chat_after_free_grant(self):
+        record_morph_chat_tokens(user=self.user, tokens=10_000)
+        self.assertIsNotNone(check_morph_entitlement(user=self.user, kind="chat"))
+        activate_subscription(
+            user=self.user,
+            plan_code=PLAN_STARTER,
+            source=UserSubscription.Source.ADMIN,
+            price_uzs=Decimal("0"),
+        )
+        self.assertIsNone(check_morph_entitlement(user=self.user, kind="chat"))
+        snap = chat_token_snapshot(self.user)
+        self.assertEqual(snap["morph_chat_tokens_period"], "month")
+        self.assertEqual(snap["morph_chat_tokens_used"], 0)
 
     def test_expire_blocks_again(self):
         sub = activate_subscription(
@@ -226,3 +256,11 @@ class SubscriptionAPITests(TestCase):
         self.assertEqual(me.data["usage"]["morph_chat_tokens_remaining"], 10000)
         self.assertTrue(me.data["referral_generation_enabled"])
         self.assertNotIn("referral_trial", me.data)
+
+    def test_me_chat_blocked_after_free_tokens(self):
+        record_morph_chat_tokens(user=self.user, tokens=10_000)
+        me = self.client.get("/api/v1/subscriptions/me/")
+        self.assertEqual(me.status_code, 200)
+        self.assertFalse(me.data["access"]["morph_chat_allowed"])
+        self.assertEqual(me.data["usage"]["morph_chat_tokens_remaining"], 0)
+        self.assertEqual(me.data["usage"]["morph_chat_tokens_period"], "lifetime")

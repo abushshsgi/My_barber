@@ -1395,7 +1395,7 @@ class MorphAiPrivacyDataView(UnthrottledAPIView):
 
 
 class MorphAiChatLimitsView(UnthrottledAPIView):
-    """GET — oylik chat token limiti (xabar yubormasdan)."""
+    """GET — chat token limiti (xabar yubormasdan)."""
 
     permission_classes = [IsAuthenticated]
 

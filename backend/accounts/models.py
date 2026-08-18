@@ -46,6 +46,8 @@ class User(AbstractUser):
     )
     # Do'st taklifi → 1 generatsiya krediti (obunasiz try-on uchun).
     morph_referral_credits = models.PositiveIntegerField(default=0)
+    # Morf AI chat — obunasiz bir martalik 10k token (oylik/kunlik emas).
+    morph_chat_free_tokens_used = models.PositiveIntegerField(default=0)
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = ["username"]

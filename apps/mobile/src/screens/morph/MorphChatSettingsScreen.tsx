@@ -611,7 +611,11 @@ export function MorphChatSettingsScreen({
           : page === "appearance"
             ? t("chat.settings.appearance")
           : page === "limits"
-            ? t("chat.settings.limitTitle")
+            ? t(
+                snap?.period === "lifetime"
+                  ? "chat.settings.limitTitleOnce"
+                  : "chat.settings.limitTitle",
+              )
             : page === "data"
               ? t("chat.settings.dataGroup")
           : page === "help"
@@ -743,7 +747,11 @@ export function MorphChatSettingsScreen({
                       >
                         <View style={styles.itemCopy}>
                           <Text style={[styles.itemTitle, { color: pal.fg, fontSize: fs(15) }]}>
-                            {t("chat.settings.limitTitle")}
+                            {t(
+                              snap?.period === "lifetime"
+                                ? "chat.settings.limitTitleOnce"
+                                : "chat.settings.limitTitle",
+                            )}
                           </Text>
                           <Text style={[styles.itemSubtitle, { color: pal.muted, fontSize: fs(12) }]}>
                             {t("chat.settings.limitUsedPct", { pct: usagePct })}

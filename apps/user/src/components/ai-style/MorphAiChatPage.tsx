@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { ChevronLeft, Loader2, Mic, Send, Settings2, Sparkles, TriangleAlert } from "lucide-react";
+import { ChevronLeft, Loader2, Lock, Mic, Send, Settings2, Sparkles, TriangleAlert } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -78,6 +78,7 @@ export function MorphAiChatPage() {
   const [sending, setSending] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [limitWarning, setLimitWarning] = useState<string | null>(null);
+  const [liveLimits, setLiveLimits] = useState<MorphChatLimits | null>(null);
   const [hydrated, setHydrated] = useState(false);
   const [prefs, setPrefs] = useState(readMorphAiPrefs);
   const listRef = useRef<HTMLDivElement>(null);
@@ -106,6 +107,7 @@ export function MorphAiChatPage() {
 
   const applyLimits = useCallback(
     (limits: MorphChatLimits) => {
+      setLiveLimits(limits);
       const prefs = readMorphAiPrefs();
       if (
         prefs.limitNotify &&
@@ -209,8 +211,17 @@ export function MorphAiChatPage() {
     void voice.toggleLive();
   }, [gate, loggedIn, navigate, voice]);
 
-  const limits = privacy.query.data?.limits;
+  const limits = liveLimits ?? privacy.query.data?.limits;
   const usedPct = chatUsagePct(limits);
+  const remaining = limits?.token_remaining ?? limits?.daily_remaining;
+  const chatLocked =
+    (typeof remaining === "number" && remaining < 200) ||
+    gate.me?.access?.morph_chat_allowed === false;
+
+  useEffect(() => {
+    if (!loggedIn) return;
+    void gate.ensureChat();
+  }, [gate.ensureChat, loggedIn]);
 
   return (
     <div className="flex min-h-[100dvh] flex-col bg-[#050505] text-white lg:min-h-0">
@@ -266,8 +277,15 @@ export function MorphAiChatPage() {
             </p>
             <button
               type="button"
-              onClick={() => void startVoice()}
-              className="mt-6 inline-flex cursor-pointer items-center gap-2 rounded-full bg-white px-4 py-2.5 text-[13px] font-semibold text-black"
+              onClick={() => {
+                if (chatLocked) {
+                  void gate.openFromApiLimit("chat");
+                  return;
+                }
+                void startVoice();
+              }}
+              disabled={sending || chatLocked}
+              className="mt-6 inline-flex cursor-pointer items-center gap-2 rounded-full bg-white px-4 py-2.5 text-[13px] font-semibold text-black disabled:opacity-40"
             >
               <Mic className="size-4" strokeWidth={2.25} />
               {t("aiStylePage.chat.voiceStart")}
@@ -292,10 +310,28 @@ export function MorphAiChatPage() {
         )}
       </div>
 
+      {chatLocked ? (
+        <button
+          type="button"
+          onClick={() => void gate.openFromApiLimit("chat")}
+          className="mx-4 mb-2 flex items-start gap-2 rounded-2xl bg-white/[0.08] px-3 py-2.5 text-left text-sm text-white/80 ring-1 ring-white/10"
+        >
+          <Lock className="mt-0.5 size-4 shrink-0" strokeWidth={2} />
+          <span className="min-w-0 flex-1 leading-relaxed">{t("aiStylePage.chat.tokenEmpty")}</span>
+          <span className="shrink-0 text-xs font-semibold text-white">
+            {t("aiStylePage.chat.tokenEmptyCta")}
+          </span>
+        </button>
+      ) : null}
+
       <form
         className="mx-auto flex w-full max-w-2xl items-end gap-2 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-2"
         onSubmit={(e) => {
           e.preventDefault();
+          if (chatLocked) {
+            void gate.openFromApiLimit("chat");
+            return;
+          }
           void send();
         }}
       >
@@ -305,17 +341,24 @@ export function MorphAiChatPage() {
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey) {
               e.preventDefault();
+              if (chatLocked) {
+                void gate.openFromApiLimit("chat");
+                return;
+              }
               void send();
             }
           }}
           rows={1}
-          placeholder={t("aiStylePage.chat.placeholder")}
-          className="min-h-12 max-h-32 flex-1 resize-none rounded-2xl bg-white/[0.08] px-4 py-3 text-[13px] text-white outline-none ring-1 ring-white/10 placeholder:text-white/35"
+          disabled={sending || chatLocked}
+          placeholder={
+            chatLocked ? t("aiStylePage.chat.tokenEmptyShort") : t("aiStylePage.chat.placeholder")
+          }
+          className="min-h-12 max-h-32 flex-1 resize-none rounded-2xl bg-white/[0.08] px-4 py-3 text-[13px] text-white outline-none ring-1 ring-white/10 placeholder:text-white/35 disabled:opacity-50"
         />
         {input.trim() ? (
           <button
             type="submit"
-            disabled={sending || !input.trim()}
+            disabled={sending || !input.trim() || chatLocked}
             className="grid size-12 shrink-0 cursor-pointer place-items-center rounded-2xl bg-white text-black disabled:opacity-40"
             aria-label={t("aiStylePage.chat.send")}
           >
@@ -328,8 +371,14 @@ export function MorphAiChatPage() {
         ) : (
           <button
             type="button"
-            onClick={() => void startVoice()}
-            disabled={sending}
+            onClick={() => {
+              if (chatLocked) {
+                void gate.openFromApiLimit("chat");
+                return;
+              }
+              void startVoice();
+            }}
+            disabled={sending || chatLocked}
             className="relative grid size-12 shrink-0 cursor-pointer place-items-center rounded-2xl bg-white text-black disabled:opacity-40"
             aria-label={t("aiStylePage.chat.voiceStart")}
           >

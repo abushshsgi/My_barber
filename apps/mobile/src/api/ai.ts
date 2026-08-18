@@ -485,7 +485,7 @@ export type MorphChatContext = {
 };
 
 export type MorphChatLimits = {
-  period?: "month" | "day";
+  period?: "month" | "day" | "lifetime";
   token_limit?: number;
   token_used?: number | null;
   token_remaining?: number | null;

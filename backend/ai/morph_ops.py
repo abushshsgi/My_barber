@@ -631,6 +631,7 @@ def is_morph_plan_limit_message(message: str) -> bool:
     markers = (
         "Oylik Morph",
         "Bepul Morph",
+        "Bepul Morf",
         "Morph AI faqat obuna",
         "obuna",
         "Studio Plus",

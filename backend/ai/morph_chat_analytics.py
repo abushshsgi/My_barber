@@ -177,6 +177,14 @@ def build_morph_chat_ops(
     user_ids = [int(row["user_id"]) for row in top_users_raw if row.get("user_id")]
     subs = _active_subs_by_user(user_ids)
     usage_map = _usage_by_user(user_ids)
+    from accounts.models import User
+
+    free_used = {
+        int(row["id"]): int(row["morph_chat_free_tokens_used"] or 0)
+        for row in User.objects.filter(pk__in=user_ids).values(
+            "id", "morph_chat_free_tokens_used"
+        )
+    }
 
     thread_counts = {
         row["user_id"]: row["c"]
@@ -191,8 +199,12 @@ def build_morph_chat_ops(
         sub = subs.get(uid)
         usage = usage_map.get(uid)
         ents = (sub.entitlements if sub else None) or {}
-        chat_limit = _chat_limit_for_ents(ents, sub.plan_code if sub else "")
-        chat_used = int(usage.morph_chat_tokens_used) if usage else 0
+        if sub:
+            chat_limit = _chat_limit_for_ents(ents, sub.plan_code)
+            chat_used = int(usage.morph_chat_tokens_used) if usage else 0
+        else:
+            chat_limit = FREE_MORPH_CHAT_TOKENS
+            chat_used = free_used.get(uid, 0)
         top_users.append(
             {
                 "user_id": uid,

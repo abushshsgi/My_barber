@@ -89,12 +89,23 @@ export function MorphPaywallView({
   const saveOn = (code: string) =>
     savePct > 0 && (me?.welcome_offer?.plans?.includes(code) ?? true);
 
+  const features = (selectedPlan?.features ?? []).filter((f) => f.included !== false);
+  const chatBlocked =
+    typeof me?.usage?.morph_chat_tokens_remaining === "number" &&
+    me.usage.morph_chat_tokens_remaining < 200;
+  const refGenOn =
+    !chatBlocked &&
+    (me?.referral_generation_enabled ?? me?.access?.referral_generation_enabled ?? true);
+  const credits = me?.referral_credits ?? me?.access?.referral_credits ?? 0;
+
   const titleKey =
-    reason === "limit"
-      ? "morph.paywall.titleLimit"
-      : reason === "studio"
-        ? "morph.paywall.titleStudio"
-        : "morph.paywall.titleSubscribe";
+    chatBlocked
+      ? "morph.paywall.titleChat"
+      : reason === "limit"
+        ? "morph.paywall.titleLimit"
+        : reason === "studio"
+          ? "morph.paywall.titleStudio"
+          : "morph.paywall.titleSubscribe";
 
   const taglineKey =
     selectedPlan?.code === "pro"
@@ -118,11 +129,6 @@ export function MorphPaywallView({
     }
     setError(res.message);
   };
-
-  const features = (selectedPlan?.features ?? []).filter((f) => f.included !== false);
-  const refGenOn =
-    me?.referral_generation_enabled ?? me?.access?.referral_generation_enabled ?? true;
-  const credits = me?.referral_credits ?? me?.access?.referral_credits ?? 0;
 
   return (
     <View style={styles.root}>
@@ -157,10 +163,15 @@ export function MorphPaywallView({
 
         {me?.usage && (reason === "limit" || me.has_active) ? (
           <Text style={styles.usage}>
-            {t("morph.paywall.usage", {
-              used: me.usage.morph_ai_used,
-              limit: me.usage.morph_ai_limit,
-            })}
+            {chatBlocked
+              ? t("morph.paywall.usageChat", {
+                  used: me.usage.morph_chat_tokens_used ?? 0,
+                  limit: me.usage.morph_chat_tokens_limit ?? 0,
+                })
+              : t("morph.paywall.usage", {
+                  used: me.usage.morph_ai_used,
+                  limit: me.usage.morph_ai_limit,
+                })}
           </Text>
         ) : null}
         {refGenOn && credits > 0 ? (
