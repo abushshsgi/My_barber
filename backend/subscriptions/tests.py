@@ -139,7 +139,7 @@ class SubscriptionAPITests(TestCase):
         wallet = WalletService.ensure_wallet(self.user)
         WalletService.top_up(
             wallet=wallet,
-            amount=Decimal("100000"),
+            amount=Decimal("200000"),
             idempotency_key="test-topup-sub-1",
             metadata={"source": "test"},
         )
@@ -170,6 +170,41 @@ class SubscriptionAPITests(TestCase):
         self.assertTrue(me.data["has_active"])
         self.assertEqual(me.data["subscription"]["plan_code"], "starter")
         self.assertTrue(me.data["access"]["morph_ai_allowed"])
+
+    def test_checkout_rejects_downgrade_and_ignores_client_price(self):
+        first = self.client.post(
+            "/api/v1/subscriptions/checkout/",
+            {"plan_code": "plus", "method": "wallet", "amount_uzs": 1},
+            format="json",
+        )
+        self.assertEqual(first.status_code, 201, first.data)
+        self.assertEqual(first.data["subscription"]["plan_code"], "plus")
+        # Klient 1 so'm yuborgan — server katalog/promo narxini oladi.
+        self.assertNotEqual(first.data["subscription"]["price_uzs"], 1)
+        self.assertGreaterEqual(first.data["subscription"]["price_uzs"], 20000)
+
+        down = self.client.post(
+            "/api/v1/subscriptions/checkout/",
+            {"plan_code": "starter", "method": "wallet"},
+            format="json",
+        )
+        self.assertEqual(down.status_code, 400, down.data)
+        self.assertIn("past", str(down.data.get("detail", "")).lower())
+
+        same = self.client.post(
+            "/api/v1/subscriptions/checkout/",
+            {"plan_code": "plus", "method": "wallet"},
+            format="json",
+        )
+        self.assertEqual(same.status_code, 400, same.data)
+
+        up = self.client.post(
+            "/api/v1/subscriptions/checkout/",
+            {"plan_code": "pro", "method": "wallet"},
+            format="json",
+        )
+        self.assertEqual(up.status_code, 201, up.data)
+        self.assertEqual(up.data["subscription"]["plan_code"], "pro")
 
     def test_me_locked_for_new_user(self):
         me = self.client.get("/api/v1/subscriptions/me/")

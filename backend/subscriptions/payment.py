@@ -50,6 +50,12 @@ def pay_with_wallet(*, user: User, plan_code: str, request=None, promo_code: str
     if not plan:
         raise WalletServiceError("Noto'g'ri obuna rejasi.")
 
+    from subscriptions.services import checkout_plan_error
+
+    blocked = checkout_plan_error(user=user, plan_code=plan_code)
+    if blocked:
+        raise WalletServiceError(blocked)
+
     try:
         priced = resolve_checkout_price(plan_code=plan_code, promo_code=promo_code, user=user)
     except ValueError as exc:
@@ -149,6 +155,12 @@ def start_provider_checkout(
         raise ValueError("Noto'g'ri obuna rejasi.")
     if provider not in ("click", "payme"):
         raise ValueError("provider must be click or payme.")
+
+    from subscriptions.services import checkout_plan_error
+
+    blocked = checkout_plan_error(user=user, plan_code=plan_code)
+    if blocked:
+        raise ValueError(blocked)
 
     priced = resolve_checkout_price(plan_code=plan_code, promo_code=promo_code, user=user)
     price = Decimal(priced["amount_uzs"])

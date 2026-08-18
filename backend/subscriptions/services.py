@@ -23,7 +23,9 @@ from subscriptions.plans import (
     FREE_MORPH_AI_MONTHLY,
     FREE_MORPH_CHAT_TOKENS,
     FREE_MORPH_STUDIO_MONTHLY,
+    PLAN_CODES,
     get_plan,
+    is_plan_upgrade,
     serialize_plan,
 )
 
@@ -151,6 +153,20 @@ def get_active_subscription(user: User) -> UserSubscription | None:
         sub = expire_if_needed(sub)
         if sub.is_currently_active:
             return sub
+    return None
+
+
+def checkout_plan_error(*, user: User, plan_code: str) -> str | None:
+    """Klient tarif kodini yuboradi — narx va daraja faqat serverda."""
+    code = (plan_code or "").strip().lower()
+    if code not in PLAN_CODES:
+        return "plan_code starter, plus yoki pro bo'lishi kerak."
+    sub = get_active_subscription(user)
+    if sub and not is_plan_upgrade(code, sub.plan_code):
+        return (
+            "Joriy tarifdan past yoki teng tarifga o'tib bo'lmaydi. "
+            "Yuqori tarifni tanlang."
+        )
     return None
 
 

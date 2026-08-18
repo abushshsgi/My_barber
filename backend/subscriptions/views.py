@@ -15,7 +15,12 @@ from subscriptions.payment import (
 )
 from subscriptions.plans import PLAN_CODES, list_plans, serialize_plan
 from subscriptions.promos import list_public_promos, resolve_checkout_price
-from subscriptions.services import build_me_payload, can_use_morph_care, serialize_subscription
+from subscriptions.services import (
+    build_me_payload,
+    can_use_morph_care,
+    checkout_plan_error,
+    serialize_subscription,
+)
 from subscriptions.throttles import (
     SubscriptionCheckoutThrottle,
     SubscriptionConfirmThrottle,
@@ -84,11 +89,9 @@ class SubscriptionCheckoutView(APIView):
 
     def post(self, request):
         plan_code = str(request.data.get("plan_code") or "").strip().lower()
-        if plan_code not in PLAN_CODES:
-            return Response(
-                {"detail": "plan_code starter, plus yoki pro bo'lishi kerak."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        blocked = checkout_plan_error(user=request.user, plan_code=plan_code)
+        if blocked:
+            return Response({"detail": blocked}, status=status.HTTP_400_BAD_REQUEST)
 
         method = str(request.data.get("method") or request.data.get("provider") or "wallet").strip().lower()
         promo_code = str(request.data.get("promo_code") or "").strip() or None

@@ -11,6 +11,11 @@ PLAN_PLUS = "plus"
 PLAN_PRO = "pro"
 
 PLAN_CODES = (PLAN_STARTER, PLAN_PLUS, PLAN_PRO)
+PLAN_RANK = {
+    PLAN_STARTER: 1,
+    PLAN_PLUS: 2,
+    PLAN_PRO: 3,
+}
 
 # Unlimited oila a'zolari uchun sentinel (DB/JSON da None saqlanadi).
 FAMILY_UNLIMITED = None
@@ -97,6 +102,16 @@ FREE_MORPH_STUDIO_MONTHLY = 0
 FREE_MORPH_CHAT_TOKENS = 10_000
 # Bitta chat javobi uchun minimal qoldiq (system prompt + javob).
 CHAT_TOKEN_MIN_TURN = 200
+
+
+def plan_rank(code: str) -> int:
+    return PLAN_RANK.get((code or "").strip().lower(), 0)
+
+
+def is_plan_upgrade(plan_code: str, active_code: str | None) -> bool:
+    if not active_code:
+        return True
+    return plan_rank(plan_code) > plan_rank(active_code)
 
 
 def get_plan(code: str) -> dict[str, Any] | None:

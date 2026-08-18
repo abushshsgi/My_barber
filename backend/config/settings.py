@@ -181,8 +181,8 @@ TRYON_QUEUE_ENABLED = os.environ.get("TRYON_QUEUE_ENABLED", "true").lower() in (
 TRYON_QUEUE_MAX_DEPTH = int(os.environ.get("TRYON_QUEUE_MAX_DEPTH", "200"))
 TRYON_JOB_TTL_SECONDS = int(os.environ.get("TRYON_JOB_TTL_SECONDS", "3600"))
 
-# TEMP test: Morph AI obuna/limit gate o‘chiq. Prod oldidan "false" qiling.
-MORPH_ENTITLEMENT_BYPASS = os.environ.get("MORPH_ENTITLEMENT_BYPASS", "true").lower() in (
+# Morph AI kvota. Default o‘chiq — faqat lokal test uchun "true" qiling.
+MORPH_ENTITLEMENT_BYPASS = os.environ.get("MORPH_ENTITLEMENT_BYPASS", "false").lower() in (
     "1",
     "true",
     "yes",
