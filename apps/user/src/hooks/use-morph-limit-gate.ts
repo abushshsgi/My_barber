@@ -3,6 +3,7 @@ import { useCallback, useState } from "react";
 import { fetchSubscriptionMe, type SubscriptionMe } from "@/lib/api/subscriptions";
 import {
   morphAccessBlocked,
+  morphChatTokensBlocked,
   morphStudioUsageBlocked,
   morphTryOnUsageBlocked,
   type MorphLimitKind,
@@ -84,6 +85,20 @@ export function useMorphLimitGate() {
     [refreshMe, showLimit],
   );
 
+  const ensureChat = useCallback(
+    async (opts?: EnsureOpts): Promise<boolean> => {
+      try {
+        const data = await refreshMe();
+        if (!morphChatTokensBlocked(data.usage)) return true;
+        if (!opts?.silent) showLimit("chat", data);
+        return false;
+      } catch {
+        return true;
+      }
+    },
+    [refreshMe, showLimit],
+  );
+
   const openFromApiLimit = useCallback(
     async (limitKind: MorphLimitKind) => {
       try {
@@ -108,6 +123,7 @@ export function useMorphLimitGate() {
     ensureAccess,
     ensureTryOn,
     ensureStudio,
+    ensureChat,
     openFromApiLimit,
     invalidateUsage: () => void qc.invalidateQueries({ queryKey: ["subscriptions", "me"] }),
   };

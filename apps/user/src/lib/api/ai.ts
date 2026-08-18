@@ -540,6 +540,10 @@ export async function scanIngredient(image: string): Promise<IngredientScanRespo
 }
 
 export type MorphChatLimits = {
+  period?: "month" | "day";
+  token_limit?: number;
+  token_used?: number | null;
+  token_remaining?: number | null;
   daily_limit: number;
   daily_used: number | null;
   daily_remaining: number | null;
@@ -629,7 +633,7 @@ export async function sendMorphChatMessage(
   if (!body?.reply) throw new Error("Chat javobi noto'g'ri");
   return {
     reply: body.reply,
-    limits: body.limits ?? { daily_limit: 40, daily_used: null, daily_remaining: null },
+    limits: body.limits ?? { daily_limit: 10000, daily_used: null, daily_remaining: null },
   };
 }
 
@@ -684,7 +688,7 @@ export async function streamMorphChatMessage(
   let buffer = "";
   let reply = "";
   let limits: MorphChatLimits = {
-    daily_limit: 40,
+    daily_limit: 10000,
     daily_used: null,
     daily_remaining: null,
   };

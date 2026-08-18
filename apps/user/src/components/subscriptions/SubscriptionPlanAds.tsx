@@ -25,6 +25,7 @@ const PLAN_ICONS: Record<string, IconType> = {
 
 const FEATURE_ICONS: Record<string, IconType> = {
   morph_ai: Sparkles,
+  chat: Sparkles,
   studio: Wand2,
   family: Users,
   care: Droplets,

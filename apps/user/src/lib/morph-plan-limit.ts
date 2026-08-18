@@ -9,7 +9,7 @@ export class MorphPlanLimitError extends Error {
   }
 }
 
-export type MorphLimitKind = "tryon" | "studio" | "access";
+export type MorphLimitKind = "tryon" | "studio" | "access" | "chat";
 
 export function isMorphPlanLimitError(error: unknown): error is MorphPlanLimitError {
   return error instanceof MorphPlanLimitError;
@@ -17,7 +17,7 @@ export function isMorphPlanLimitError(error: unknown): error is MorphPlanLimitEr
 
 /** Server detail — obuna/oylik kvota (DRF throttle emas). */
 export function isMorphPlanLimitMessage(message: string): boolean {
-  return /Oylik Morph|Bepul Morph|Morph AI faqat obuna|obuna|Studio Plus|Bu reja Morph|do'stingizni taklif|Tarifni yangilang|Plus\/Pro/i.test(
+  return /Oylik Morph|Oylik Morf|Bepul Morph|Morph AI faqat obuna|obuna|Studio Plus|Bu reja Morph|do'stingizni taklif|Tarifni yangilang|Plus\/Pro|chat token/i.test(
     message,
   );
 }
@@ -42,6 +42,13 @@ export function morphStudioUsageBlocked(usage: SubscriptionUsage): boolean {
   const limit = usage.morph_studio_limit ?? 0;
   if (limit <= 0) return true;
   return usage.morph_studio_remaining <= 0 || usage.morph_studio_used >= limit;
+}
+
+export function morphChatTokensBlocked(usage: SubscriptionUsage): boolean {
+  const limit = usage.morph_chat_tokens_limit;
+  if (limit == null) return false;
+  if (limit <= 0) return true;
+  return (usage.morph_chat_tokens_remaining ?? 0) <= 0;
 }
 
 /** Yangi user — faol obuna (yoki trial) bo'lmasa Morph AI yopiq. */

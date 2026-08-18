@@ -50,6 +50,11 @@ function saveLocalMessages(messages: ChatMsg[]) {
   localStorage.setItem(THREADS_KEY, JSON.stringify(messages.slice(-80)));
 }
 
+function fmtTokens(n: number | null | undefined) {
+  if (typeof n !== "number" || !Number.isFinite(n)) return "—";
+  return n.toLocaleString("uz-UZ");
+}
+
 export function MorphAiChatPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -92,13 +97,15 @@ export function MorphAiChatPage() {
       const prefs = readMorphAiPrefs();
       if (
         prefs.limitNotify &&
-        typeof limits.daily_remaining === "number" &&
-        limits.daily_remaining <= 3
+        (limits.should_warn ||
+          (typeof limits.daily_remaining === "number" &&
+            typeof limits.daily_limit === "number" &&
+            limits.daily_remaining <= Math.max(500, Math.floor(limits.daily_limit * 0.1))))
       ) {
         setLimitWarning(
           t("aiStylePage.chat.limitWarn", {
-            remaining: limits.daily_remaining,
-            limit: limits.daily_limit,
+            remaining: (limits.token_remaining ?? limits.daily_remaining ?? 0).toLocaleString("uz-UZ"),
+            limit: (limits.token_limit ?? limits.daily_limit).toLocaleString("uz-UZ"),
           }),
         );
       } else {
@@ -116,7 +123,7 @@ export function MorphAiChatPage() {
         void navigate({ to: "/auth" });
         return null;
       }
-      const allowed = await gate.ensureAccess();
+      const allowed = await gate.ensureChat();
       if (!allowed) return null;
 
       const prefs = readMorphAiPrefs();
@@ -164,7 +171,7 @@ export function MorphAiChatPage() {
         setMessages((prev) => prev.filter((m) => m.id !== "pending" && m.id !== userMsg.id));
         if (!raw) setInput(trimmed);
         if (isMorphPlanLimitError(err)) {
-          await gate.openFromApiLimit("access");
+          await gate.openFromApiLimit("chat");
           return null;
         }
         toast.error(err instanceof Error ? err.message : t("aiStylePage.chat.error"));
@@ -181,10 +188,12 @@ export function MorphAiChatPage() {
   });
 
   const limits = privacy.query.data?.limits;
-  const remaining = limits?.daily_remaining;
+  const remaining = limits?.token_remaining ?? limits?.daily_remaining;
+  const usedVal = limits?.token_used ?? limits?.daily_used;
+  const limitVal = limits?.token_limit ?? limits?.daily_limit;
   const usedPct =
-    limits && limits.daily_limit && limits.daily_used != null
-      ? Math.min(100, Math.round((limits.daily_used / limits.daily_limit) * 100))
+    limits && limitVal && usedVal != null
+      ? Math.min(100, Math.round((usedVal / limitVal) * 100))
       : 0;
 
   return (
@@ -331,8 +340,8 @@ export function MorphAiChatPage() {
               <div className="mb-4 rounded-2xl bg-white/[0.06] p-4">
                 <p className="text-sm font-medium">
                   {t("aiStylePage.chat.limitValue", {
-                    used: limits.daily_used ?? "—",
-                    limit: limits.daily_limit,
+                    used: fmtTokens(usedVal),
+                    limit: fmtTokens(limitVal),
                   })}
                 </p>
                 <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/10">
@@ -345,7 +354,7 @@ export function MorphAiChatPage() {
                   />
                 </div>
                 <p className="mt-2 text-xs text-white/50">
-                  {t("aiStylePage.chat.limitHint", { remaining: remaining ?? "—" })}
+                  {t("aiStylePage.chat.limitHint", { remaining: fmtTokens(remaining) })}
                 </p>
               </div>
             ) : null}

@@ -51,15 +51,27 @@ function MorphLimitUpsellBody({
     me?.referral_generation_enabled ??
     me?.access?.referral_generation_enabled ??
     true;
-  const locked = kind === "access" || (!me?.has_active && credits <= 0);
+  const locked =
+    kind === "access" ||
+    (kind === "chat" && !me?.has_active) ||
+    (kind !== "chat" && !me?.has_active && credits <= 0);
   const isTryOn = kind === "tryon";
+  const isChat = kind === "chat";
   const plans = plansQ.data ?? [];
   const activeCode = me?.subscription?.plan_code ?? null;
   const next = nextUpgradePlan(activeCode);
   const offer = me?.welcome_offer;
 
-  const used = isTryOn ? usage?.morph_ai_used ?? 0 : usage?.morph_studio_used ?? 0;
-  const limit = isTryOn ? usage?.morph_ai_limit ?? 0 : usage?.morph_studio_limit ?? 0;
+  const used = isChat
+    ? usage?.morph_chat_tokens_used ?? 0
+    : isTryOn
+      ? usage?.morph_ai_used ?? 0
+      : usage?.morph_studio_used ?? 0;
+  const limit = isChat
+    ? usage?.morph_chat_tokens_limit ?? 0
+    : isTryOn
+      ? usage?.morph_ai_limit ?? 0
+      : usage?.morph_studio_limit ?? 0;
   const usagePct = limit > 0 ? Math.min(100, Math.round((used / limit) * 100)) : 100;
 
   return (
@@ -94,12 +106,14 @@ function MorphLimitUpsellBody({
             Morf AI
           </p>
           <h3 className="mt-2 max-w-[20rem] text-[1.65rem] font-bold leading-[1.15] tracking-tight sm:text-[1.85rem]">
-            {locked
+            {locked && kind !== "chat"
               ? t("aiStylePage.limitSheet.accessTitle")
               : t(
-                  isTryOn
-                    ? "aiStylePage.limitSheet.tryonTitle"
-                    : "aiStylePage.limitSheet.studioTitle",
+                  isChat
+                    ? "aiStylePage.limitSheet.chatTitle"
+                    : isTryOn
+                      ? "aiStylePage.limitSheet.tryonTitle"
+                      : "aiStylePage.limitSheet.studioTitle",
                 )}
           </h3>
           <p className="mt-2 max-w-[22rem] text-sm leading-relaxed text-white/50">
@@ -130,7 +144,10 @@ function MorphLimitUpsellBody({
                 {planName || "Plan"}
               </p>
               <p className="text-sm font-semibold tabular-nums text-white/90">
-                {t("aiStylePage.limitSheet.usage", { used, limit })}
+                {t("aiStylePage.limitSheet.usage", {
+                  used: used.toLocaleString("uz-UZ"),
+                  limit: limit.toLocaleString("uz-UZ"),
+                })}
               </p>
             </div>
             <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
