@@ -345,8 +345,14 @@ export function useMorphChat() {
             ) {
               setLimitWarning(
                 t("chat.settings.limitWarn", {
-                  remaining: remoteLimits.daily_remaining,
-                  limit: remoteLimits.daily_limit,
+                  pct: Math.min(
+                    100,
+                    Math.round(
+                      ((remoteLimits.daily_limit - remoteLimits.daily_remaining) /
+                        remoteLimits.daily_limit) *
+                        100,
+                    ),
+                  ),
                 }),
               );
             }
@@ -484,8 +490,13 @@ export function useMorphChat() {
         ) {
           setLimitWarning(
             t("chat.settings.limitWarn", {
-              remaining: resLimits.daily_remaining.toLocaleString("uz-UZ"),
-              limit: resLimits.daily_limit.toLocaleString("uz-UZ"),
+              pct: Math.min(
+                100,
+                Math.round(
+                  ((resLimits.daily_limit - resLimits.daily_remaining) / resLimits.daily_limit) *
+                    100,
+                ),
+              ),
             }),
           );
         } else {

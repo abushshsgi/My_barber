@@ -8,9 +8,16 @@ import { Button } from "@/components/ui/button";
 import { useMorphAiPrivacy } from "@/hooks/use-morph-ai-privacy";
 import { cn } from "@/lib/utils";
 
-function fmtTokens(n: number | null | undefined) {
-  if (typeof n !== "number" || !Number.isFinite(n)) return "—";
-  return n.toLocaleString("uz-UZ");
+function chatUsagePct(limits: {
+  token_used?: number | null;
+  daily_used?: number | null;
+  token_limit?: number | null;
+  daily_limit?: number | null;
+} | null | undefined) {
+  const used = limits?.token_used ?? limits?.daily_used;
+  const limit = limits?.token_limit ?? limits?.daily_limit;
+  if (typeof used !== "number" || typeof limit !== "number" || !limit) return 0;
+  return Math.max(0, Math.min(100, Math.round((used / limit) * 100)));
 }
 
 export function SettingsPrivacyPanel({ embedded = false }: { embedded?: boolean }) {
@@ -99,17 +106,14 @@ export function SettingsPrivacyPanel({ embedded = false }: { embedded?: boolean 
                 {limits ? (
                   <p className="mt-3 text-sm font-medium">
                     {t("settings.morphPrivacy.limitValue", {
-                      used: fmtTokens(limits.token_used ?? limits.daily_used),
-                      limit: fmtTokens(limits.token_limit ?? limits.daily_limit),
-                      remaining: fmtTokens(limits.token_remaining ?? limits.daily_remaining),
+                      pct: chatUsagePct(limits),
                     })}
                   </p>
                 ) : null}
                 {limits?.should_warn ? (
                   <p className="mt-2 rounded-xl bg-amber-500/15 px-3 py-2 text-sm font-medium text-amber-700 dark:text-amber-400">
                     {t("settings.morphPrivacy.limitWarn", {
-                      remaining: fmtTokens(limits.token_remaining ?? limits.daily_remaining),
-                      limit: fmtTokens(limits.token_limit ?? limits.daily_limit),
+                      pct: chatUsagePct(limits),
                     })}
                   </p>
                 ) : null}

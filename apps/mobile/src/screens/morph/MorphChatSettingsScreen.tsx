@@ -421,19 +421,7 @@ export function MorphChatSettingsScreen({
   );
 
   const usagePct = morphChatUsagePercent(snap);
-  const used = snap?.token_used ?? snap?.daily_used;
-  const limit = snap?.token_limit ?? snap?.daily_limit ?? 10000;
-  const remaining =
-    snap?.token_remaining ??
-    snap?.daily_remaining ??
-    (typeof used === "number" ? Math.max(0, limit - used) : null);
-  const usedLabel =
-    typeof used === "number" ? used.toLocaleString("uz-UZ") : t("chat.settings.limitUnknown");
-  const remainingLabel =
-    typeof remaining === "number"
-      ? remaining.toLocaleString("uz-UZ")
-      : t("chat.settings.limitUnknown");
-  const limitLabel = limit.toLocaleString("uz-UZ");
+  const nearlyEmpty = usagePct >= 90;
 
   const langOptions: ChipOption<MorphChatReplyLang>[] = [
     { value: "app", label: t("chat.settings.langApp") },
@@ -568,7 +556,7 @@ export function MorphChatSettingsScreen({
                   <SettingsItem
                     icon="speedometer-outline"
                     title={t("chat.settings.limitTitle")}
-                    subtitle={t("chat.settings.limitValue", { used: usedLabel, limit: limitLabel })}
+                    subtitle={t("chat.settings.limitUsage", { pct: usagePct })}
                     value={`${usagePct}%`}
                     onPress={() => setPage("limits")}
                   />
@@ -800,28 +788,28 @@ export function MorphChatSettingsScreen({
 
         {page === "limits" && prefs ? (
           <>
-            {typeof remaining === "number" && remaining <= 3 ? (
+            {nearlyEmpty ? (
               <View style={styles.warnBanner}>
                 <Ionicons name="warning-outline" size={18} color={WARN} />
                 <Text style={styles.warnText}>
-                  {t("chat.settings.limitWarn", { remaining: remainingLabel, limit: limitLabel })}
+                  {t("chat.settings.limitWarn", { pct: usagePct })}
                 </Text>
               </View>
             ) : (
               <View style={styles.okBanner}>
                 <Ionicons name="checkmark-circle-outline" size={18} color="#30D158" />
                 <Text style={styles.okText}>
-                  {t("chat.settings.limitOk", { remaining: remainingLabel, limit: limitLabel })}
+                  {t("chat.settings.limitOk", { pct: usagePct })}
                 </Text>
               </View>
             )}
             <SettingsSection title={t("chat.settings.limitTitle")}>
               <View style={styles.meterBlock}>
                 <Text style={styles.itemTitle}>
-                  {t("chat.settings.limitValue", { used: usedLabel, limit: limitLabel })}
+                  {t("chat.settings.limitValue", { pct: usagePct })}
                 </Text>
                 <Text style={styles.itemSubtitle}>
-                  {t("chat.settings.limitHint", { remaining: remainingLabel })}
+                  {t("chat.settings.limitHint", { pct: usagePct })}
                 </Text>
                 <View style={styles.meterTrack}>
                   <View

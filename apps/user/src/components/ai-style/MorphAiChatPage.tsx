@@ -50,9 +50,16 @@ function saveLocalMessages(messages: ChatMsg[]) {
   localStorage.setItem(THREADS_KEY, JSON.stringify(messages.slice(-80)));
 }
 
-function fmtTokens(n: number | null | undefined) {
-  if (typeof n !== "number" || !Number.isFinite(n)) return "—";
-  return n.toLocaleString("uz-UZ");
+function chatUsagePct(limits: {
+  token_used?: number | null;
+  daily_used?: number | null;
+  token_limit?: number | null;
+  daily_limit?: number | null;
+} | null | undefined) {
+  const used = limits?.token_used ?? limits?.daily_used;
+  const limit = limits?.token_limit ?? limits?.daily_limit;
+  if (typeof used !== "number" || typeof limit !== "number" || !limit) return 0;
+  return Math.max(0, Math.min(100, Math.round((used / limit) * 100)));
 }
 
 export function MorphAiChatPage() {
@@ -104,8 +111,7 @@ export function MorphAiChatPage() {
       ) {
         setLimitWarning(
           t("aiStylePage.chat.limitWarn", {
-            remaining: (limits.token_remaining ?? limits.daily_remaining ?? 0).toLocaleString("uz-UZ"),
-            limit: (limits.token_limit ?? limits.daily_limit).toLocaleString("uz-UZ"),
+            pct: chatUsagePct(limits),
           }),
         );
       } else {
@@ -199,13 +205,7 @@ export function MorphAiChatPage() {
   }, [gate, loggedIn, navigate, voice]);
 
   const limits = privacy.query.data?.limits;
-  const remaining = limits?.token_remaining ?? limits?.daily_remaining;
-  const usedVal = limits?.token_used ?? limits?.daily_used;
-  const limitVal = limits?.token_limit ?? limits?.daily_limit;
-  const usedPct =
-    limits && limitVal && usedVal != null
-      ? Math.min(100, Math.round((usedVal / limitVal) * 100))
-      : 0;
+  const usedPct = chatUsagePct(limits);
 
   return (
     <div className="flex min-h-[100dvh] flex-col bg-[#050505] text-white lg:min-h-0">
@@ -350,10 +350,7 @@ export function MorphAiChatPage() {
             {limits ? (
               <div className="mb-4 rounded-2xl bg-white/[0.06] p-4">
                 <p className="text-sm font-medium">
-                  {t("aiStylePage.chat.limitValue", {
-                    used: fmtTokens(usedVal),
-                    limit: fmtTokens(limitVal),
-                  })}
+                  {t("aiStylePage.chat.limitValue", { pct: usedPct })}
                 </p>
                 <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/10">
                   <div
@@ -365,7 +362,7 @@ export function MorphAiChatPage() {
                   />
                 </div>
                 <p className="mt-2 text-xs text-white/50">
-                  {t("aiStylePage.chat.limitHint", { remaining: fmtTokens(remaining) })}
+                  {t("aiStylePage.chat.limitHint", { pct: usedPct })}
                 </p>
               </div>
             ) : null}

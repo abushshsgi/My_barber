@@ -149,10 +149,7 @@ function MorphLimitUpsellBody({
                 {planName || "Plan"}
               </p>
               <p className="text-sm font-semibold tabular-nums text-white/90">
-                {t("aiStylePage.limitSheet.usage", {
-                  used: used.toLocaleString("uz-UZ"),
-                  limit: limit.toLocaleString("uz-UZ"),
-                })}
+                {t("aiStylePage.limitSheet.usage", { pct: usagePct })}
               </p>
             </div>
             <div className="h-1.5 overflow-hidden rounded-full bg-white/10">

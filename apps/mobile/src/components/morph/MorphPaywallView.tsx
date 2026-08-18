@@ -39,20 +39,13 @@ function pickCards(plans: SubscriptionPlan[]): SubscriptionPlan[] {
   return [...plans].sort((a, b) => a.sort_order - b.sort_order);
 }
 
-function formatTokenShort(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(n % 1_000_000 === 0 ? 0 : 1)}M`;
-  if (n >= 1000) return `${Math.round(n / 1000)}K`;
-  return String(n);
-}
-
 function planQuota(
   plan: SubscriptionPlan,
   t: (key: string, opts?: Record<string, string | number>) => string,
 ): string {
   const parts = [t("morph.paywall.quotaTryOn", { count: plan.morph_ai_monthly })];
-  const tokens = plan.morph_chat_tokens_monthly ?? 0;
-  if (tokens > 0) {
-    parts.push(t("morph.paywall.quotaChat", { tokens: formatTokenShort(tokens) }));
+  if ((plan.morph_chat_tokens_monthly ?? 0) > 0) {
+    parts.push(t("morph.paywall.quotaChat"));
   }
   if (plan.morph_studio_monthly > 0) {
     parts.push(t("morph.paywall.quotaStudio", { count: plan.morph_studio_monthly }));
