@@ -53,7 +53,6 @@ function MorphLimitUpsellBody({
     true;
   const locked =
     kind === "access" ||
-    (kind === "chat" && !me?.has_active) ||
     (kind !== "chat" && !me?.has_active && credits <= 0);
   const isTryOn = kind === "tryon";
   const isChat = kind === "chat";
@@ -170,17 +169,17 @@ function MorphLimitUpsellBody({
         </p>
       ) : null}
 
-      {plans.length > 0 && (locked || next) ? (
+      {plans.length > 0 && (locked || next || !me?.has_active) ? (
         <div className="space-y-3">
           <div className="flex items-center justify-between gap-2 px-0.5">
             <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-white/40">
-              {locked ? "Obuna tariflari" : "Upgrade"}
+              {me?.has_active ? "Upgrade" : "Obuna tariflari"}
             </p>
             <Link
               to="/wallet"
               search={{
                 section: "subscriptions",
-                plan: next || "plus",
+                plan: next || "starter",
                 returnTo: "/ai-style",
               }}
               onClick={onClose}
@@ -192,19 +191,19 @@ function MorphLimitUpsellBody({
           </div>
           <SubscriptionPlanAds
             plans={plans}
-            activeCode={locked ? null : activeCode}
-            upgradeOnly={!locked}
+            activeCode={me?.has_active ? activeCode : null}
+            upgradeOnly={Boolean(me?.has_active)}
             onNavigate={onClose}
             variant="cards"
           />
         </div>
       ) : null}
 
-      {locked ? (
+      {!me?.has_active ? (
         <>
           <Link
             to="/wallet"
-            search={{ section: "subscriptions", plan: "plus", returnTo: "/ai-style" }}
+            search={{ section: "subscriptions", plan: "starter", returnTo: "/ai-style" }}
             onClick={onClose}
             className={cn(
               "flex h-14 items-center justify-center gap-2 rounded-[22px] bg-white text-[15px] font-bold text-[#0a0a0a]",
@@ -259,12 +258,17 @@ export function MorphLimitUpsell({ open, onOpenChange, kind, me }: Props) {
   const isMobile = useIsMobile();
   const locked =
     kind === "access" ||
-    (!me?.has_active &&
+    (kind !== "chat" &&
+      !me?.has_active &&
       (me?.referral_credits ?? me?.access?.referral_credits ?? 0) <= 0);
   const title = locked
     ? t("aiStylePage.limitSheet.accessTitle")
     : t(
-        kind === "tryon" ? "aiStylePage.limitSheet.tryonTitle" : "aiStylePage.limitSheet.studioTitle",
+        kind === "chat"
+          ? "aiStylePage.limitSheet.chatTitle"
+          : kind === "tryon"
+            ? "aiStylePage.limitSheet.tryonTitle"
+            : "aiStylePage.limitSheet.studioTitle",
       );
   const subtitle = locked
     ? t("aiStylePage.limitSheet.accessSubtitle")
