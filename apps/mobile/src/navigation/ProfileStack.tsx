@@ -1,6 +1,7 @@
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { useAuth } from "../auth/AuthContext";
 import { useAppShell } from "../lib/AppShellContext";
+import { useMorphAppearance } from "../lib/MorphAppearanceContext";
 import { LoginScreen } from "../screens/LoginScreen";
 import { MorphPaywallScreen } from "../screens/morph/MorphPaywallScreen";
 import { NotificationPrefsScreen } from "../screens/profile/NotificationPrefsScreen";
@@ -11,6 +12,7 @@ import { ProfileHomeScreen } from "../screens/profile/ProfileHomeScreen";
 import { SecurityScreen } from "../screens/profile/SecurityScreen";
 import { HelpCenterScreen } from "../screens/profile/HelpCenterScreen";
 import { SettingsScreen } from "../screens/profile/SettingsScreen";
+import { MorphAiSettingsScreen } from "../screens/morph/MorphAiSettingsScreen";
 import { SubscriptionsScreen } from "../screens/profile/SubscriptionsScreen";
 import { ReferralScreen } from "../screens/profile/ReferralScreen";
 import { WalletGiftScreen } from "../screens/wallet/WalletGiftScreen";
@@ -25,6 +27,7 @@ export type ProfileStackParamList = {
   ProfileHome: undefined;
   Orders: undefined;
   Settings: undefined;
+  MorphAiSettings: undefined;
   PersonalInfo: undefined;
   Security: undefined;
   NotificationPrefs: undefined;
@@ -48,6 +51,7 @@ const Stack = createNativeStackNavigator<ProfileStackParamList>();
 export function ProfileStack() {
   const { isAuthenticated } = useAuth();
   const { shell } = useAppShell();
+  const { colors } = useMorphAppearance();
   const morphHome = shell === "morph";
 
   if (!isAuthenticated) {
@@ -63,13 +67,16 @@ export function ProfileStack() {
         fullScreenGestureEnabled: true,
         contentStyle: {
           backgroundColor:
-            morphHome && route.name === "ProfileHome" ? "#070708" : "#FFFFFF",
+            morphHome && (route.name === "ProfileHome" || route.name === "MorphAiSettings")
+              ? colors.bg
+              : "#FFFFFF",
         },
       })}
     >
       <Stack.Screen name="ProfileHome" component={ProfileHomeScreen} />
       <Stack.Screen name="Orders" component={OrdersScreen} />
       <Stack.Screen name="Settings" component={SettingsScreen} />
+      <Stack.Screen name="MorphAiSettings" component={MorphAiSettingsScreen} />
       <Stack.Screen name="PersonalInfo" component={PersonalInfoScreen} />
       <Stack.Screen name="Security" component={SecurityScreen} />
       <Stack.Screen name="NotificationPrefs" component={NotificationPrefsScreen} />

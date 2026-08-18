@@ -41,7 +41,9 @@ import {
 } from "../../lib/morph-chat-prefs";
 import { MORPH_VOICE_CATALOG } from "../../lib/morph-voice";
 import { MorphToggle } from "../../components/morph/MorphToggle";
+import { useMorphAppearance } from "../../lib/MorphAppearanceContext";
 import { morphFont } from "../../theme/morph-font";
+import type { MorphFontSize, MorphThemeName } from "../../theme/morph-appearance";
 import {
   MorphHelpCenterView,
   MorphReportProblemView,
@@ -60,7 +62,17 @@ type Props = {
   voicePreviewing?: boolean;
 };
 
-type Page = "hub" | "reply" | "chatbot" | "voice" | "limits" | "data" | "help" | "report" | "ticket";
+type Page =
+  | "hub"
+  | "reply"
+  | "chatbot"
+  | "voice"
+  | "limits"
+  | "data"
+  | "help"
+  | "report"
+  | "ticket"
+  | "appearance";
 
 type ChipOption<T extends string> = { value: T; label: string };
 
@@ -103,6 +115,7 @@ function ChipRow<T extends string>({
   value: T;
   onChange: (v: T) => void;
 }) {
+  const { colors: pal } = useMorphAppearance();
   return (
     <View style={styles.chipRow}>
       {options.map((opt) => {
@@ -113,13 +126,22 @@ function ChipRow<T extends string>({
             onPress={() => onChange(opt.value)}
             style={({ pressed }) => [
               styles.chip,
-              active && styles.chipActive,
+              { backgroundColor: pal.iconTile },
+              active && { backgroundColor: pal.theme === "dark" ? "#FFFFFF" : pal.fg },
               pressed && styles.pressed,
             ]}
             accessibilityRole="button"
             accessibilityState={{ selected: active }}
           >
-            <Text style={[styles.chipText, active && styles.chipTextActive]}>{opt.label}</Text>
+            <Text
+              style={[
+                styles.chipText,
+                { color: pal.fg },
+                active && { color: pal.theme === "dark" ? "#000000" : pal.bg },
+              ]}
+            >
+              {opt.label}
+            </Text>
           </Pressable>
         );
       })}
@@ -134,10 +156,13 @@ function SettingsSection({
   title?: string;
   children: ReactNode;
 }) {
+  const { colors: pal, fs } = useMorphAppearance();
   return (
     <View style={styles.section}>
-      {title ? <Text style={styles.sectionTitle}>{title}</Text> : null}
-      <View style={styles.card}>{children}</View>
+      {title ? (
+        <Text style={[styles.sectionTitle, { color: pal.muted, fontSize: fs(12) }]}>{title}</Text>
+      ) : null}
+      <View style={[styles.card, { backgroundColor: pal.card }]}>{children}</View>
     </View>
   );
 }
@@ -165,20 +190,34 @@ function SettingsItem({
   iconColor?: string;
   showChevron?: boolean;
 }) {
+  const { colors: pal, fs } = useMorphAppearance();
   const body = (
     <View style={styles.item}>
-      <View style={styles.iconTile}>
-        <Ionicons name={icon} size={18} color={iconColor ?? "#F2F2F7"} />
+      <View style={[styles.iconTile, { backgroundColor: pal.iconTile }]}>
+        <Ionicons name={icon} size={18} color={iconColor ?? pal.fg} />
       </View>
-      <View style={[styles.itemMain, !last && styles.itemBorder]}>
+      <View style={[styles.itemMain, !last && styles.itemBorder, !last && { borderBottomColor: pal.line }]}>
         <View style={styles.itemCopy}>
-          <Text style={[styles.itemTitle, titleColor ? { color: titleColor } : null]}>{title}</Text>
-          {subtitle ? <Text style={styles.itemSubtitle}>{subtitle}</Text> : null}
+          <Text
+            style={[
+              styles.itemTitle,
+              { color: titleColor ?? pal.fg, fontSize: fs(15) },
+            ]}
+          >
+            {title}
+          </Text>
+          {subtitle ? (
+            <Text style={[styles.itemSubtitle, { color: pal.muted, fontSize: fs(12) }]}>
+              {subtitle}
+            </Text>
+          ) : null}
         </View>
-        {value ? <Text style={styles.itemValue}>{value}</Text> : null}
+        {value ? (
+          <Text style={[styles.itemValue, { color: pal.muted, fontSize: fs(14) }]}>{value}</Text>
+        ) : null}
         {trailing}
         {onPress && showChevron ? (
-          <Ionicons name="chevron-forward" size={16} color={MUTED} />
+          <Ionicons name="chevron-forward" size={16} color={pal.muted} />
         ) : null}
       </View>
     </View>
@@ -209,12 +248,13 @@ function PrefToggle({
   onChange: (v: boolean) => void;
   last?: boolean;
 }) {
+  const { colors: pal, fs } = useMorphAppearance();
   return (
     <View style={styles.toggleRow}>
-      <View style={[styles.toggleMain, !last && styles.itemBorder]}>
+      <View style={[styles.toggleMain, !last && styles.itemBorder, !last && { borderBottomColor: pal.line }]}>
         <View style={styles.itemCopy}>
-          <Text style={styles.itemTitle}>{title}</Text>
-          <Text style={styles.itemSubtitle}>{subtitle}</Text>
+          <Text style={[styles.itemTitle, { color: pal.fg, fontSize: fs(15) }]}>{title}</Text>
+          <Text style={[styles.itemSubtitle, { color: pal.muted, fontSize: fs(12) }]}>{subtitle}</Text>
         </View>
         <MorphToggle value={value} onChange={onChange} />
       </View>
@@ -233,25 +273,33 @@ function FieldBlock({
   children: ReactNode;
   last?: boolean;
 }) {
+  const { colors: pal, fs } = useMorphAppearance();
   return (
-    <View style={[styles.fieldBlock, !last && styles.fieldBorder]}>
-      <Text style={styles.itemTitle}>{title}</Text>
-      {subtitle ? <Text style={styles.itemSubtitle}>{subtitle}</Text> : null}
+    <View style={[styles.fieldBlock, !last && styles.fieldBorder, !last && { borderBottomColor: pal.line }]}>
+      <Text style={[styles.itemTitle, { color: pal.fg, fontSize: fs(15) }]}>{title}</Text>
+      {subtitle ? (
+        <Text style={[styles.itemSubtitle, { color: pal.muted, fontSize: fs(12) }]}>{subtitle}</Text>
+      ) : null}
       {children}
     </View>
   );
 }
 
 function CloseButton({ onPress, label }: { onPress: () => void; label: string }) {
+  const { colors: pal } = useMorphAppearance();
   return (
     <Pressable
       onPress={onPress}
       hitSlop={10}
       accessibilityRole="button"
       accessibilityLabel={label}
-      style={({ pressed }) => [styles.closeBtn, pressed && styles.pressed]}
+      style={({ pressed }) => [
+        styles.closeBtn,
+        { backgroundColor: pal.iconTile },
+        pressed && styles.pressed,
+      ]}
     >
-      <Ionicons name="close" size={18} color="#FFFFFF" />
+      <Ionicons name="close" size={18} color={pal.fg} />
     </Pressable>
   );
 }
@@ -273,6 +321,7 @@ function UsageMeter({
   leftLabel: string;
   color: string;
 }) {
+  const { colors: pal, fs } = useMorphAppearance();
   const size = 156;
   const stroke = 11;
   const cx = size / 2;
@@ -307,27 +356,37 @@ function UsageMeter({
           </G>
         </Svg>
         <View style={styles.meterCenter} pointerEvents="none">
-          <Text style={styles.meterPctBig}>{pct}%</Text>
+          <Text style={[styles.meterPctBig, { color: pal.fg, fontSize: fs(36) }]}>{pct}%</Text>
         </View>
       </View>
       <View style={styles.meterStats}>
-        <View style={styles.meterStat}>
+        <View style={[styles.meterStat, { backgroundColor: pal.iconTile }]}>
           <View style={[styles.meterDot, { backgroundColor: color }]} />
           <View style={styles.itemCopy}>
-            <Text style={styles.meterStatLabel}>{usedLabel}</Text>
-            <Text style={styles.meterStatValue}>{formatCount(used)}</Text>
+            <Text style={[styles.meterStatLabel, { color: pal.muted, fontSize: fs(11) }]}>
+              {usedLabel}
+            </Text>
+            <Text style={[styles.meterStatValue, { color: pal.fg, fontSize: fs(15) }]}>
+              {formatCount(used)}
+            </Text>
           </View>
         </View>
-        <View style={styles.meterStat}>
-          <View style={[styles.meterDot, { backgroundColor: "#3A3A3C" }]} />
+        <View style={[styles.meterStat, { backgroundColor: pal.iconTile }]}>
+          <View style={[styles.meterDot, { backgroundColor: pal.track }]} />
           <View style={styles.itemCopy}>
-            <Text style={styles.meterStatLabel}>{leftLabel}</Text>
-            <Text style={styles.meterStatValue}>{formatCount(remaining)}</Text>
+            <Text style={[styles.meterStatLabel, { color: pal.muted, fontSize: fs(11) }]}>
+              {leftLabel}
+            </Text>
+            <Text style={[styles.meterStatValue, { color: pal.fg, fontSize: fs(15) }]}>
+              {formatCount(remaining)}
+            </Text>
           </View>
         </View>
       </View>
       {limit > 0 ? (
-        <Text style={styles.meterCap}>{`${formatCount(used)} / ${formatCount(limit)}`}</Text>
+        <Text style={[styles.meterCap, { color: pal.muted, fontSize: fs(12) }]}>
+          {`${formatCount(used)} / ${formatCount(limit)}`}
+        </Text>
       ) : null}
     </View>
   );
@@ -344,12 +403,13 @@ function ConfirmSheet({
   onCancel: () => void;
   onConfirm: () => void;
 }) {
+  const { colors: pal, fs } = useMorphAppearance();
   return (
     <View style={styles.confirmRoot} accessibilityViewIsModal>
       <Pressable style={styles.confirmScrim} onPress={busy ? undefined : onCancel} />
-      <View style={styles.confirmCard}>
-        <Text style={styles.confirmTitle}>{spec.title}</Text>
-        <Text style={styles.confirmBody}>{spec.body}</Text>
+      <View style={[styles.confirmCard, { backgroundColor: pal.card }]}>
+        <Text style={[styles.confirmTitle, { color: pal.fg, fontSize: fs(17) }]}>{spec.title}</Text>
+        <Text style={[styles.confirmBody, { color: pal.muted, fontSize: fs(14) }]}>{spec.body}</Text>
         <View style={styles.confirmRow}>
           <Pressable
             onPress={onCancel}
@@ -377,7 +437,7 @@ function ConfirmSheet({
   );
 }
 
-/** Morf AI chatbot sozlamalari — ChatGPT uslubidagi dark hub + ichki sahifalar. */
+/** Morf AI sozlamalari — ko'rinish, limit, maxfiylik, ovoz. Chat va butun Morph AI uchun. */
 export function MorphChatSettingsScreen({
   limits,
   threadCount,
@@ -392,6 +452,14 @@ export function MorphChatSettingsScreen({
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
+  const {
+    colors: pal,
+    fs,
+    theme,
+    fontSize,
+    setTheme,
+    setFontSize,
+  } = useMorphAppearance();
   const [page, setPage] = useState<Page>("hub");
   const [ticketId, setTicketId] = useState<number | null>(null);
   const [ticketFrom, setTicketFrom] = useState<"help" | "report">("help");
@@ -632,6 +700,8 @@ export function MorphChatSettingsScreen({
         ? t("chat.settings.aiGroup")
         : page === "voice"
           ? t("chat.settings.voiceInput")
+          : page === "appearance"
+            ? t("chat.settings.appearance")
           : page === "limits"
             ? t("chat.settings.limitTitle")
             : page === "data"
@@ -657,8 +727,8 @@ export function MorphChatSettingsScreen({
   };
 
   return (
-    <View style={[styles.root, { paddingTop: Math.max(insets.top, 8) }]}>
-      <StatusBar style="light" />
+    <View style={[styles.root, { paddingTop: Math.max(insets.top, 8), backgroundColor: pal.bg }]}>
+      <StatusBar style={pal.status} />
 
       {page === "hub" ? (
         <View style={styles.hubTop}>
@@ -674,9 +744,9 @@ export function MorphChatSettingsScreen({
             accessibilityLabel={t("common.back")}
             style={({ pressed }) => [styles.backBtn, pressed && styles.pressed]}
           >
-            <Ionicons name="chevron-back" size={20} color="#FFFFFF" />
+            <Ionicons name="chevron-back" size={20} color={pal.fg} />
           </Pressable>
-          <Text style={styles.subTitle} numberOfLines={1}>
+          <Text style={[styles.subTitle, { color: pal.fg, fontSize: fs(15) }]} numberOfLines={1}>
             {pageTitle}
           </Text>
           <CloseButton onPress={onClose} label={t("chat.errorDismissA11y")} />
@@ -713,11 +783,11 @@ export function MorphChatSettingsScreen({
                   <Ionicons name="create-outline" size={12} color="#FFFFFF" />
                 </View>
               </View>
-              <Text style={styles.profileName}>{name}</Text>
+              <Text style={[styles.profileName, { color: pal.fg, fontSize: fs(18) }]}>{name}</Text>
             </View>
 
             {!prefs ? (
-              <ActivityIndicator color="#FFFFFF" style={{ marginTop: 28 }} />
+              <ActivityIndicator color={pal.fg} style={{ marginTop: 28 }} />
             ) : (
               <>
                 <SettingsSection title={t("chat.settings.configureGroup")}>
@@ -758,6 +828,16 @@ export function MorphChatSettingsScreen({
                 </SettingsSection>
 
                 <SettingsSection title={t("chat.settings.appSettingsGroup")}>
+                  <SettingsItem
+                    icon="contrast-outline"
+                    title={t("chat.settings.appearance")}
+                    subtitle={
+                      theme === "dark"
+                        ? t("chat.settings.themeDark")
+                        : t("chat.settings.themeLight")
+                    }
+                    onPress={() => setPage("appearance")}
+                  />
                   <SettingsItem
                     icon="notifications-outline"
                     title={t("chat.settings.limitNotify")}
@@ -814,7 +894,7 @@ export function MorphChatSettingsScreen({
                   />
                 </SettingsSection>
 
-                <View style={styles.card}>
+                <View style={[styles.card, { backgroundColor: pal.card }]}>
                   <Pressable
                     onPress={confirmClear}
                     style={({ pressed }) => [styles.destructiveRow, pressed && styles.pressed]}
@@ -973,6 +1053,52 @@ export function MorphChatSettingsScreen({
 
         {page === "report" ? (
           <MorphReportProblemView onOpenTicket={(id) => openTicket(id, "report")} />
+        ) : null}
+
+        {page === "appearance" ? (
+          <>
+            <SettingsSection title={t("chat.settings.themeGroup")}>
+              <FieldBlock
+                title={t("chat.settings.theme")}
+                subtitle={t("chat.settings.themeHint")}
+                last
+              >
+                <ChipRow
+                  options={[
+                    { value: "dark" as MorphThemeName, label: t("chat.settings.themeDark") },
+                    { value: "light" as MorphThemeName, label: t("chat.settings.themeLight") },
+                  ]}
+                  value={theme}
+                  onChange={(v) => setTheme(v)}
+                />
+              </FieldBlock>
+            </SettingsSection>
+            <SettingsSection title={t("chat.settings.fontGroup")}>
+              <FieldBlock
+                title={t("chat.settings.fontSize")}
+                subtitle={t("chat.settings.fontHint")}
+                last
+              >
+                <ChipRow
+                  options={[
+                    { value: "s" as MorphFontSize, label: t("chat.settings.fontSmall") },
+                    { value: "m" as MorphFontSize, label: t("chat.settings.fontMedium") },
+                    { value: "l" as MorphFontSize, label: t("chat.settings.fontLarge") },
+                  ]}
+                  value={fontSize}
+                  onChange={(v) => setFontSize(v)}
+                />
+                <Text
+                  style={[
+                    styles.itemSubtitle,
+                    { color: pal.muted, fontSize: fs(15), marginTop: 8, lineHeight: fs(22) },
+                  ]}
+                >
+                  {t("chat.settings.fontPreview")}
+                </Text>
+              </FieldBlock>
+            </SettingsSection>
+          </>
         ) : null}
 
         {page === "limits" && prefs ? (

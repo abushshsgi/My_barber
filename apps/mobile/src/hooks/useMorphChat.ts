@@ -32,6 +32,33 @@ const THREADS_KEY = "morph_chat_threads_v3";
 const LEGACY_THREADS_KEY = "morph_chat_threads_v2";
 const ACTIVE_KEY = "morph_chat_active_v3";
 const WELCOME_KEY = "morph_chat_welcome_seen_v1";
+
+type MorphChatWipeListener = () => void;
+const morphChatWipeListeners = new Set<MorphChatWipeListener>();
+
+export function subscribeMorphChatWipe(listener: MorphChatWipeListener): () => void {
+  morphChatWipeListeners.add(listener);
+  return () => morphChatWipeListeners.delete(listener);
+}
+
+export async function wipeLocalMorphChatStorage(): Promise<void> {
+  await AsyncStorage.multiRemove([THREADS_KEY, ACTIVE_KEY, LEGACY_THREADS_KEY, MESSAGES_KEY]);
+}
+
+export async function wipeMorphChatsEverywhere(): Promise<void> {
+  let remoteError: string | null = null;
+  try {
+    await clearMorphChatThreads();
+  } catch (err) {
+    remoteError =
+      err instanceof Error && err.message.trim()
+        ? err.message
+        : "Chatlarni o'chirish amalga oshmadi.";
+  }
+  await wipeLocalMorphChatStorage();
+  morphChatWipeListeners.forEach((fn) => fn());
+  if (remoteError) throw new Error(remoteError);
+}
 const MAX_CHAT_THREADS = 200;
 const CHAT_HISTORY_TURNS = 24;
 
@@ -192,6 +219,18 @@ export function useMorphChat() {
   useEffect(() => {
     void readMorphChatPrefs().then((p) => {
       prefsRef.current = p;
+    });
+  }, []);
+
+  useEffect(() => {
+    return subscribeMorphChatWipe(() => {
+      activeThreadIdRef.current = null;
+      messagesRef.current = [];
+      threadsRef.current = [];
+      setActiveThreadId(null);
+      setMessages([]);
+      setThreads([]);
+      setInput("");
     });
   }, []);
 
@@ -626,30 +665,7 @@ export function useMorphChat() {
   }, []);
 
   const clearAllChats = useCallback(async () => {
-    let remoteError: string | null = null;
-    try {
-      await clearMorphChatThreads();
-    } catch (err) {
-      remoteError =
-        err instanceof Error && err.message.trim()
-          ? err.message
-          : "Chatlarni o'chirish amalga oshmadi.";
-    }
-    activeThreadIdRef.current = null;
-    messagesRef.current = [];
-    threadsRef.current = [];
-    setActiveThreadId(null);
-    setMessages([]);
-    setThreads([]);
-    setError(remoteError);
-    setInput("");
-    await AsyncStorage.multiRemove([
-      THREADS_KEY,
-      ACTIVE_KEY,
-      LEGACY_THREADS_KEY,
-      MESSAGES_KEY,
-    ]);
-    if (remoteError) throw new Error(remoteError);
+    await wipeMorphChatsEverywhere();
   }, []);
 
   const reloadPrefs = useCallback(async () => {

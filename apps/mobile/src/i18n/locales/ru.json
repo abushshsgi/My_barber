@@ -324,7 +324,7 @@
       "settingsA11y": "Настройки AI"
     },
     "settings": {
-      "title": "Настройки AI",
+      "title": "Настройки Morf AI",
       "done": "Готово",
       "limitTitle": "Месячный лимит AI",
       "limitUsage": "{{pct}}%",
@@ -456,6 +456,19 @@
       "planFree": "Free",
       "upgradePlan": "Обновить план",
       "appSettingsGroup": "Настройки приложения",
+      "appearance": "Оформление",
+      "themeGroup": "Тема",
+      "theme": "Режим",
+      "themeHint": "Применяется ко всему Morf AI",
+      "themeDark": "Dark mode",
+      "themeLight": "Light mode",
+      "fontGroup": "Текст",
+      "fontSize": "Размер шрифта",
+      "fontHint": "Мелкий, средний или крупный",
+      "fontSmall": "Мелкий",
+      "fontMedium": "Средний",
+      "fontLarge": "Крупный",
+      "fontPreview": "Текст Morf AI будет такого размера.",
       "helpGroup": "Помощь",
       "reportProblem": "Сообщить о проблеме в приложении",
       "helpCenter": "Справочный центр"

@@ -324,7 +324,7 @@
       "settingsA11y": "AI sozlamalari"
     },
     "settings": {
-      "title": "AI sozlamalari",
+      "title": "Morf AI sozlamalari",
       "done": "Tayyor",
       "limitTitle": "Oylik AI limiti",
       "limitUsage": "{{pct}}%",
@@ -456,6 +456,19 @@
       "planFree": "Free",
       "upgradePlan": "Tarifni yangilash",
       "appSettingsGroup": "Ilova sozlamalari",
+      "appearance": "Ko'rinish",
+      "themeGroup": "Mavzu",
+      "theme": "Rejim",
+      "themeHint": "Morf AI butun ilovasiga tatbiq etiladi",
+      "themeDark": "Dark mode",
+      "themeLight": "Light mode",
+      "fontGroup": "Matn",
+      "fontSize": "Shrift o'lchami",
+      "fontHint": "Kichik, o'rtacha yoki katta",
+      "fontSmall": "Kichik",
+      "fontMedium": "O'rtacha",
+      "fontLarge": "Katta",
+      "fontPreview": "Morf AI matni shu o'lchamda ko'rinadi.",
       "helpGroup": "Yordam",
       "reportProblem": "Muammo haqida xabar berish",
       "helpCenter": "Yordam markazi"

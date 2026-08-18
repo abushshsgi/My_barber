@@ -17,25 +17,22 @@ import { planLabel } from "../../api/dashboard";
 import { resolveMediaUrl } from "../../api/media";
 import { formatSom, initials } from "../../api/user";
 import { useAuth } from "../../auth/AuthContext";
-import { morfWordmarkWhite } from "../../branding/morf-logo";
+import { morfWordmark, morfWordmarkWhite } from "../../branding/morf-logo";
 import { useProfileDashboard } from "../../hooks/useProfileDashboard";
 import { TAB_DOCK_CLEARANCE } from "../../hooks/useHideTabBar";
+import { useMorphAppearance } from "../../lib/MorphAppearanceContext";
 import { openMorphStack } from "../../lib/profile-nav";
 import type { ProfileStackParamList } from "../../navigation/ProfileStack";
+import { morphFont } from "../../theme/morph-font";
+import type { MorphPalette } from "../../theme/morph-appearance";
 
 type Props = NativeStackScreenProps<ProfileStackParamList, "ProfileHome">;
-
-const BG = "#070708";
-const SURFACE = "rgba(255,255,255,0.055)";
-const SURFACE_STRONG = "rgba(255,255,255,0.09)";
-const LINE = "rgba(255,255,255,0.1)";
-const MUTED = "rgba(255,255,255,0.52)";
-const GOLD = "#D4AF37";
 
 export function MorphProfileScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
   const { signOut, user: authUser } = useAuth();
   const { dashboard, unreadCount, loading, error, refresh } = useProfileDashboard();
+  const { colors: pal, fs, theme } = useMorphAppearance();
 
   const user = dashboard?.user ?? authUser;
   const display =
@@ -55,12 +52,16 @@ export function MorphProfileScreen({ navigation }: Props) {
   const aiLimit = usage?.morph_ai_limit ?? 0;
   const aiRemain = usage?.morph_ai_remaining ?? 0;
   const progress = aiLimit > 0 ? Math.min(1, aiUsed / aiLimit) : 0;
-  const badge = (sub?.badge || "").toLowerCase();
-  const checkColor = badge === "pro" ? GOLD : "#5AC8FA";
+  const usagePct = Math.round(progress * 100);
+  const meterColor =
+    usagePct >= 90 ? pal.destructive : usagePct >= 70 ? pal.warn : pal.accent;
+  const styles = makeStyles(pal, fs);
+
+  const openSettings = () => navigation.navigate("MorphAiSettings");
 
   return (
     <View style={[styles.root, { paddingTop: Math.max(insets.top, 10) }]}>
-      <StatusBar style="light" />
+      <StatusBar style={pal.status} />
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[
@@ -71,35 +72,39 @@ export function MorphProfileScreen({ navigation }: Props) {
           <RefreshControl
             refreshing={loading && !!dashboard}
             onRefresh={refresh}
-            tintColor="#FFF"
+            tintColor={pal.fg}
           />
         }
       >
         <View style={styles.topRow}>
-          <Image source={morfWordmarkWhite} style={styles.wordmark} contentFit="contain" />
+          <Image
+            source={theme === "dark" ? morfWordmarkWhite : morfWordmark}
+            style={styles.wordmark}
+            contentFit="contain"
+          />
           <View style={styles.topActions}>
-            {unreadCount > 0 ? (
-              <Pressable
-                onPress={() => navigation.navigate("Notifications")}
-                hitSlop={8}
-                accessibilityRole="button"
-                accessibilityLabel="Bildirishnomalar"
-                style={({ pressed }) => [styles.iconBtn, pressed && styles.pressed]}
-              >
-                <Ionicons name="notifications-outline" size={18} color="#FFF" />
+            <Pressable
+              onPress={() => navigation.navigate("Notifications")}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel="Bildirishnomalar"
+              style={({ pressed }) => [styles.iconBtn, pressed && styles.pressed]}
+            >
+              <Ionicons name="notifications-outline" size={18} color={pal.fg} />
+              {unreadCount > 0 ? (
                 <View style={styles.badgeDot}>
                   <Text style={styles.badgeText}>{unreadCount > 9 ? "9+" : unreadCount}</Text>
                 </View>
-              </Pressable>
-            ) : null}
+              ) : null}
+            </Pressable>
             <Pressable
-              onPress={() => navigation.navigate("Settings")}
+              onPress={openSettings}
               hitSlop={8}
               accessibilityRole="button"
-              accessibilityLabel="Sozlamalar"
+              accessibilityLabel="Morf AI sozlamalari"
               style={({ pressed }) => [styles.iconBtn, pressed && styles.pressed]}
             >
-              <Ionicons name="settings-outline" size={18} color="#FFF" />
+              <Ionicons name="settings-outline" size={18} color={pal.fg} />
             </Pressable>
           </View>
         </View>
@@ -110,7 +115,7 @@ export function MorphProfileScreen({ navigation }: Props) {
             style={({ pressed }) => [styles.errorBanner, pressed && styles.pressed]}
             accessibilityRole="button"
           >
-            <Ionicons name="warning-outline" size={16} color="#FFB4A8" />
+            <Ionicons name="alert-circle-outline" size={16} color={pal.destructive} />
             <Text style={styles.errorText}>{error}</Text>
             <Text style={styles.errorRetry}>Qayta</Text>
           </Pressable>
@@ -126,7 +131,7 @@ export function MorphProfileScreen({ navigation }: Props) {
             {avatarUrl ? (
               <Image source={{ uri: avatarUrl }} style={styles.avatarImg} contentFit="cover" />
             ) : (
-              <LinearGradient colors={["#2C2C30", "#121214"]} style={styles.avatar}>
+              <LinearGradient colors={["#2A9B8F", "#1D6F68"]} style={styles.avatar}>
                 {loading && !dashboard ? (
                   <ActivityIndicator color="#FFF" />
                 ) : (
@@ -135,26 +140,20 @@ export function MorphProfileScreen({ navigation }: Props) {
               </LinearGradient>
             )}
             {verified ? (
-              <View style={[styles.checkBadge, { backgroundColor: checkColor }]}>
-                <Ionicons name="checkmark" size={11} color="#0A0A0A" />
+              <View style={styles.checkBadge}>
+                <Ionicons name="checkmark" size={11} color="#FFFFFF" />
               </View>
             ) : null}
           </View>
-
           <View style={styles.identityBody}>
             <Text style={styles.name} numberOfLines={1}>
               {display}
             </Text>
-            <View style={styles.metaRow}>
-              <Text style={[styles.metaPlan, sub?.has_active && styles.metaPlanOn]} numberOfLines={1}>
-                {plan}
-              </Text>
-              {sub?.has_active && days != null ? (
-                <Text style={styles.metaDays}>{days} kun</Text>
-              ) : null}
-            </View>
+            <Text style={styles.metaPlan} numberOfLines={1}>
+              {sub?.has_active && days != null ? `${plan} · ${days} kun` : plan}
+            </Text>
           </View>
-          <Ionicons name="chevron-forward" size={16} color={MUTED} />
+          <Ionicons name="chevron-forward" size={16} color={pal.muted} />
         </Pressable>
 
         <Pressable
@@ -162,68 +161,69 @@ export function MorphProfileScreen({ navigation }: Props) {
           style={({ pressed }) => [styles.usageCard, pressed && styles.pressed]}
           accessibilityRole="button"
         >
-          <LinearGradient
-            colors={["rgba(212,175,55,0.16)", "rgba(255,255,255,0.04)"]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.usageInner}
-          >
-            <View style={styles.usageTop}>
-              <View>
-                <Text style={styles.usageEyebrow}>Morph AI</Text>
-                <Text style={styles.usageTitle}>
-                  {sub?.has_active
-                    ? aiLimit > 0
-                      ? `${aiRemain} generatsiya qoldi`
-                      : plan
-                    : "Tarifni oching"}
-                </Text>
-              </View>
-              <Text style={styles.usageCta}>{sub?.has_active ? "Boshqarish" : "Sotib olish"}</Text>
+          <View style={styles.usageTop}>
+            <View style={styles.usageCopy}>
+              <Text style={styles.usageEyebrow}>Morph AI</Text>
+              <Text style={styles.usageTitle}>
+                {sub?.has_active
+                  ? aiLimit > 0
+                    ? `${aiRemain} generatsiya qoldi`
+                    : plan
+                  : "Tarifni oching"}
+              </Text>
             </View>
-
-            <View style={styles.track}>
-              <View style={[styles.trackFill, { width: `${Math.round(progress * 100)}%` }]} />
+            <View style={styles.usagePctWrap}>
+              <Text style={[styles.usagePct, { color: meterColor }]}>{usagePct}%</Text>
             </View>
-
+          </View>
+          <View style={styles.track}>
+            <View
+              style={[styles.trackFill, { width: `${usagePct}%`, backgroundColor: meterColor }]}
+            />
+          </View>
+          <View style={styles.usageBottom}>
             <Text style={styles.usageHint}>
               {aiLimit > 0
                 ? `${aiUsed} / ${aiLimit} AI · Studio ${usage?.morph_studio_used ?? 0}/${usage?.morph_studio_limit ?? 0}`
                 : "Try-on va Studio limitlari obuna bilan ochiladi"}
-              {sub?.morph_care ? " · Parvarish yoqilgan" : ""}
             </Text>
-          </LinearGradient>
+            <Text style={styles.usageCta}>{sub?.has_active ? "Boshqarish" : "Sotib olish"}</Text>
+          </View>
         </Pressable>
 
-        <View style={styles.grid}>
-          <View style={styles.gridRow}>
-            <QuickTile
-              icon="images-outline"
-              label="Looks"
-              value={String(photoCount)}
-              onPress={() => openMorphStack(navigation, "MorphHistory")}
-            />
-            <QuickTile
-              icon="wallet-outline"
-              label="Hamyon"
-              value={formatSom(wallet?.balance ?? 0).replace(" so'm", "")}
-              onPress={() => navigation.navigate("WalletGate")}
-            />
-          </View>
-          <View style={styles.gridRow}>
-            <QuickTile
-              icon="settings-outline"
-              label="Sozlamalar"
-              value="Hisob"
-              onPress={() => navigation.navigate("Settings")}
-            />
-            <QuickTile
-              icon="sparkles-outline"
-              label="Studio"
-              value="AI"
-              onPress={() => openMorphStack(navigation, "MorphStudio")}
-            />
-          </View>
+        <View style={styles.menu}>
+          <MenuRow
+            pal={pal}
+            styles={styles}
+            icon="settings-outline"
+            title="Sozlamalar"
+            subtitle="Ko'rinish, limit, maxfiylik"
+            onPress={openSettings}
+          />
+          <MenuRow
+            pal={pal}
+            styles={styles}
+            icon="images-outline"
+            title="Looks"
+            value={String(photoCount)}
+            onPress={() => openMorphStack(navigation, "MorphHistory")}
+          />
+          <MenuRow
+            pal={pal}
+            styles={styles}
+            icon="color-wand-outline"
+            title="Studio"
+            onPress={() => openMorphStack(navigation, "MorphStudio")}
+          />
+          <MenuRow
+            pal={pal}
+            styles={styles}
+            icon="wallet-outline"
+            title="Hamyon"
+            value={formatSom(wallet?.balance ?? 0).replace(" so'm", "")}
+            onPress={() => navigation.navigate("WalletGate")}
+            last
+          />
         </View>
 
         <View style={styles.sectionHead}>
@@ -240,13 +240,13 @@ export function MorphProfileScreen({ navigation }: Props) {
             accessibilityRole="button"
           >
             <View style={styles.emptyIcon}>
-              <Ionicons name="camera-outline" size={22} color="#FFF" />
+              <Ionicons name="camera-outline" size={20} color={pal.fg} />
             </View>
             <View style={styles.emptyCopy}>
               <Text style={styles.emptyTitle}>Birinchi try-on</Text>
               <Text style={styles.emptySub}>Natijalar shu yerda saqlanadi</Text>
             </View>
-            <Ionicons name="chevron-forward" size={16} color={MUTED} />
+            <Ionicons name="chevron-forward" size={16} color={pal.muted} />
           </Pressable>
         ) : (
           <ScrollView
@@ -271,7 +271,7 @@ export function MorphProfileScreen({ navigation }: Props) {
                     <View style={[styles.thumbImg, styles.thumbFallback]} />
                   )}
                   <LinearGradient
-                    colors={["transparent", "rgba(0,0,0,0.75)"]}
+                    colors={["transparent", "rgba(0,0,0,0.72)"]}
                     style={styles.thumbScrim}
                   />
                   <Text style={styles.thumbTitle} numberOfLines={1}>
@@ -283,15 +283,19 @@ export function MorphProfileScreen({ navigation }: Props) {
           </ScrollView>
         )}
 
-        <View style={styles.menu}>
+        <View style={[styles.menu, { marginTop: 4 }]}>
           <MenuRow
+            pal={pal}
+            styles={styles}
             icon="notifications-outline"
             title="Bildirishnomalar"
             badge={unreadCount}
             onPress={() => navigation.navigate("Notifications")}
           />
           <MenuRow
-            icon="shield-checkmark-outline"
+            pal={pal}
+            styles={styles}
+            icon="lock-closed-outline"
             title="Xavfsizlik"
             onPress={() => navigation.navigate("Security")}
             last
@@ -303,7 +307,7 @@ export function MorphProfileScreen({ navigation }: Props) {
           onPress={() => void signOut()}
           accessibilityRole="button"
         >
-          <Ionicons name="log-out-outline" size={18} color="#FFF" />
+          <Ionicons name="log-out-outline" size={18} color={pal.destructive} />
           <Text style={styles.logoutText}>Chiqish</Text>
         </Pressable>
       </ScrollView>
@@ -311,44 +315,23 @@ export function MorphProfileScreen({ navigation }: Props) {
   );
 }
 
-function QuickTile({
-  icon,
-  label,
-  value,
-  onPress,
-}: {
-  icon: keyof typeof Ionicons.glyphMap;
-  label: string;
-  value: string;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => [styles.tile, pressed && styles.pressed]}
-      accessibilityRole="button"
-      accessibilityLabel={label}
-    >
-      <View style={styles.tileIcon}>
-        <Ionicons name={icon} size={16} color="#FFF" />
-      </View>
-      <Text style={styles.tileValue} numberOfLines={1}>
-        {value}
-      </Text>
-      <Text style={styles.tileLabel}>{label}</Text>
-    </Pressable>
-  );
-}
-
 function MenuRow({
+  pal,
+  styles,
   icon,
   title,
+  subtitle,
+  value,
   badge,
   onPress,
   last,
 }: {
+  pal: MorphPalette;
+  styles: ReturnType<typeof makeStyles>;
   icon: keyof typeof Ionicons.glyphMap;
   title: string;
+  subtitle?: string;
+  value?: string;
   badge?: number;
   onPress: () => void;
   last?: boolean;
@@ -360,248 +343,256 @@ function MenuRow({
       accessibilityRole="button"
     >
       <View style={styles.menuIcon}>
-        <Ionicons name={icon} size={17} color="#FFF" />
+        <Ionicons name={icon} size={18} color={pal.fg} />
       </View>
-      <Text style={styles.menuTitle}>{title}</Text>
+      <View style={styles.menuCopy}>
+        <Text style={styles.menuTitle}>{title}</Text>
+        {subtitle ? <Text style={styles.menuSub}>{subtitle}</Text> : null}
+      </View>
+      {value ? <Text style={styles.menuValue}>{value}</Text> : null}
       {badge && badge > 0 ? (
         <View style={styles.menuBadge}>
           <Text style={styles.menuBadgeText}>{badge > 99 ? "99+" : badge}</Text>
         </View>
       ) : null}
-      <Ionicons name="chevron-forward" size={16} color={MUTED} />
+      <Ionicons name="chevron-forward" size={16} color={pal.muted} />
     </Pressable>
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: BG },
-  content: { paddingHorizontal: 16 },
-  topRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 16,
-  },
-  wordmark: { width: 112, height: 26 },
-  topActions: { flexDirection: "row", alignItems: "center", gap: 8 },
-  iconBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
-    backgroundColor: SURFACE,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: LINE,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  badgeDot: {
-    position: "absolute",
-    top: -3,
-    right: -3,
-    minWidth: 16,
-    height: 16,
-    borderRadius: 8,
-    paddingHorizontal: 3,
-    backgroundColor: GOLD,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  badgeText: { fontSize: 9, fontWeight: "800", color: "#111" },
-  errorBanner: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    backgroundColor: "rgba(255,100,80,0.14)",
-    borderRadius: 14,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    marginBottom: 12,
-  },
-  errorText: { flex: 1, fontSize: 13, color: "#FFD0C8", fontWeight: "600" },
-  errorRetry: { fontSize: 13, fontWeight: "800", color: "#FFF" },
-  identity: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    backgroundColor: SURFACE,
-    borderRadius: 18,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: LINE,
-    padding: 12,
-    marginBottom: 12,
-  },
-  avatarWrap: { position: "relative" },
-  avatar: {
-    width: 64,
-    height: 64,
-    borderRadius: 20,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  avatarImg: { width: 64, height: 64, borderRadius: 20 },
-  avatarText: { fontSize: 20, fontWeight: "800", color: "#FFF" },
-  checkBadge: {
-    position: "absolute",
-    right: -2,
-    bottom: -2,
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 2,
-    borderColor: BG,
-  },
-  identityBody: { flex: 1, minWidth: 0 },
-  name: { fontSize: 18, fontWeight: "800", color: "#FFF", letterSpacing: -0.3 },
-  metaRow: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 4 },
-  metaPlan: { fontSize: 12, fontWeight: "700", color: MUTED },
-  metaPlanOn: { color: GOLD },
-  metaDays: { fontSize: 12, fontWeight: "600", color: MUTED },
-  usageCard: { marginBottom: 12, borderRadius: 18, overflow: "hidden" },
-  usageInner: {
-    borderRadius: 18,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(212,175,55,0.28)",
-    padding: 16,
-  },
-  usageTop: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    justifyContent: "space-between",
-    gap: 12,
-    marginBottom: 14,
-  },
-  usageEyebrow: {
-    fontSize: 11,
-    fontWeight: "700",
-    color: GOLD,
-    letterSpacing: 0.4,
-    textTransform: "uppercase",
-    marginBottom: 4,
-  },
-  usageTitle: { fontSize: 17, fontWeight: "800", color: "#FFF", letterSpacing: -0.3 },
-  usageCta: { fontSize: 13, fontWeight: "700", color: GOLD, marginTop: 2 },
-  track: {
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: "rgba(255,255,255,0.1)",
-    overflow: "hidden",
-  },
-  trackFill: { height: "100%", backgroundColor: GOLD, borderRadius: 3 },
-  usageHint: { marginTop: 10, fontSize: 12, lineHeight: 17, color: MUTED },
-  grid: { gap: 10, marginBottom: 18 },
-  gridRow: { flexDirection: "row", gap: 10 },
-  tile: {
-    flex: 1,
-    backgroundColor: SURFACE,
-    borderRadius: 16,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: LINE,
-    paddingHorizontal: 12,
-    paddingVertical: 14,
-    gap: 6,
-  },
-  tileIcon: {
-    width: 30,
-    height: 30,
-    borderRadius: 10,
-    backgroundColor: SURFACE_STRONG,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 2,
-  },
-  tileValue: { fontSize: 16, fontWeight: "800", color: "#FFF" },
-  tileLabel: { fontSize: 12, fontWeight: "600", color: MUTED },
-  sectionHead: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 10,
-  },
-  sectionTitle: { fontSize: 16, fontWeight: "800", color: "#FFF" },
-  link: { fontSize: 13, fontWeight: "700", color: GOLD },
-  emptyHistory: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    backgroundColor: SURFACE,
-    borderRadius: 16,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: LINE,
-    padding: 14,
-    marginBottom: 14,
-  },
-  emptyIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    backgroundColor: SURFACE_STRONG,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  emptyCopy: { flex: 1 },
-  emptyTitle: { fontSize: 15, fontWeight: "700", color: "#FFF" },
-  emptySub: { marginTop: 2, fontSize: 12, color: MUTED },
-  historyRow: { gap: 10, paddingBottom: 14 },
-  thumb: { width: 112, height: 140, borderRadius: 16, overflow: "hidden" },
-  thumbImg: { position: "absolute", top: 0, right: 0, bottom: 0, left: 0 },
-  thumbFallback: { backgroundColor: "#1A1A1C" },
-  thumbScrim: { position: "absolute", left: 0, right: 0, bottom: 0, height: 52 },
-  thumbTitle: {
-    position: "absolute",
-    left: 8,
-    right: 8,
-    bottom: 8,
-    fontSize: 11,
-    fontWeight: "700",
-    color: "#FFF",
-  },
-  menu: {
-    backgroundColor: SURFACE,
-    borderRadius: 16,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: LINE,
-    overflow: "hidden",
-  },
-  menuRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 13,
-  },
-  menuBorder: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: LINE },
-  menuIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 10,
-    backgroundColor: SURFACE_STRONG,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  menuTitle: { flex: 1, fontSize: 15, fontWeight: "700", color: "#FFF" },
-  menuBadge: {
-    minWidth: 22,
-    height: 20,
-    borderRadius: 10,
-    paddingHorizontal: 6,
-    backgroundColor: GOLD,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  menuBadgeText: { fontSize: 11, fontWeight: "800", color: "#111" },
-  logout: {
-    marginTop: 14,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: LINE,
-    borderRadius: 14,
-    minHeight: 50,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-  },
-  logoutText: { fontSize: 15, fontWeight: "700", color: "#FFF" },
-  pressed: { opacity: 0.82 },
-});
+function makeStyles(pal: MorphPalette, fs: (n: number) => number) {
+  return StyleSheet.create({
+    root: { flex: 1, backgroundColor: pal.bg },
+    content: { paddingHorizontal: 16 },
+    topRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      marginBottom: 18,
+    },
+    wordmark: { width: 112, height: 26 },
+    topActions: { flexDirection: "row", alignItems: "center", gap: 8 },
+    iconBtn: {
+      width: 38,
+      height: 38,
+      borderRadius: 12,
+      backgroundColor: pal.card,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    badgeDot: {
+      position: "absolute",
+      top: -3,
+      right: -3,
+      minWidth: 16,
+      height: 16,
+      borderRadius: 8,
+      paddingHorizontal: 3,
+      backgroundColor: pal.accent,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    badgeText: { ...morphFont, fontSize: 9, fontWeight: "700", color: "#FFFFFF" },
+    errorBanner: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+      backgroundColor: "rgba(255, 69, 58, 0.14)",
+      borderRadius: 14,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+      marginBottom: 12,
+    },
+    errorText: {
+      flex: 1,
+      ...morphFont,
+      fontSize: fs(13),
+      color: pal.destructive,
+      fontWeight: "600",
+    },
+    errorRetry: { ...morphFont, fontSize: fs(13), fontWeight: "700", color: pal.accent },
+    identity: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 12,
+      backgroundColor: pal.card,
+      borderRadius: 16,
+      padding: 12,
+      marginBottom: 12,
+    },
+    avatarWrap: { position: "relative" },
+    avatar: {
+      width: 58,
+      height: 58,
+      borderRadius: 29,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    avatarImg: { width: 58, height: 58, borderRadius: 29 },
+    avatarText: { ...morphFont, fontSize: fs(18), fontWeight: "600", color: "#FFFFFF" },
+    checkBadge: {
+      position: "absolute",
+      right: -1,
+      bottom: -1,
+      width: 18,
+      height: 18,
+      borderRadius: 9,
+      backgroundColor: pal.accent,
+      alignItems: "center",
+      justifyContent: "center",
+      borderWidth: 2,
+      borderColor: pal.card,
+    },
+    identityBody: { flex: 1, minWidth: 0 },
+    name: {
+      ...morphFont,
+      fontSize: fs(17),
+      fontWeight: "600",
+      color: pal.fg,
+      letterSpacing: -0.3,
+    },
+    metaPlan: { marginTop: 3, ...morphFont, fontSize: fs(13), color: pal.muted },
+    usageCard: {
+      backgroundColor: pal.card,
+      borderRadius: 16,
+      padding: 16,
+      marginBottom: 16,
+    },
+    usageTop: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      justifyContent: "space-between",
+      gap: 12,
+      marginBottom: 12,
+    },
+    usageCopy: { flex: 1, minWidth: 0 },
+    usageEyebrow: {
+      ...morphFont,
+      fontSize: fs(11),
+      fontWeight: "600",
+      color: pal.accent,
+      letterSpacing: 0.6,
+      textTransform: "uppercase",
+      marginBottom: 4,
+    },
+    usageTitle: {
+      ...morphFont,
+      fontSize: fs(17),
+      fontWeight: "600",
+      color: pal.fg,
+      letterSpacing: -0.3,
+    },
+    usagePctWrap: { alignItems: "flex-end" },
+    usagePct: { ...morphFont, fontSize: fs(22), fontWeight: "600", letterSpacing: -0.6 },
+    track: {
+      height: 8,
+      borderRadius: 4,
+      backgroundColor: pal.track,
+      overflow: "hidden",
+    },
+    trackFill: { height: "100%", borderRadius: 4 },
+    usageBottom: {
+      marginTop: 10,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: 10,
+    },
+    usageHint: { flex: 1, ...morphFont, fontSize: fs(12), lineHeight: fs(16), color: pal.muted },
+    usageCta: { ...morphFont, fontSize: fs(13), fontWeight: "600", color: pal.accent },
+    sectionHead: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      marginBottom: 8,
+      marginTop: 8,
+      paddingHorizontal: 4,
+    },
+    sectionTitle: { ...morphFont, fontSize: fs(13), fontWeight: "500", color: pal.muted },
+    link: { ...morphFont, fontSize: fs(13), fontWeight: "600", color: pal.accent },
+    emptyHistory: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 12,
+      backgroundColor: pal.card,
+      borderRadius: 16,
+      padding: 14,
+      marginBottom: 16,
+    },
+    emptyIcon: {
+      width: 40,
+      height: 40,
+      borderRadius: 12,
+      backgroundColor: pal.iconTile,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    emptyCopy: { flex: 1 },
+    emptyTitle: { ...morphFont, fontSize: fs(15), fontWeight: "600", color: pal.fg },
+    emptySub: { marginTop: 2, ...morphFont, fontSize: fs(12), color: pal.muted },
+    historyRow: { gap: 10, paddingBottom: 16 },
+    thumb: { width: 108, height: 136, borderRadius: 16, overflow: "hidden" },
+    thumbImg: { position: "absolute", top: 0, right: 0, bottom: 0, left: 0 },
+    thumbFallback: { backgroundColor: pal.iconTile },
+    thumbScrim: { position: "absolute", left: 0, right: 0, bottom: 0, height: 52 },
+    thumbTitle: {
+      position: "absolute",
+      left: 8,
+      right: 8,
+      bottom: 8,
+      ...morphFont,
+      fontSize: fs(11),
+      fontWeight: "600",
+      color: "#FFFFFF",
+    },
+    menu: {
+      backgroundColor: pal.card,
+      borderRadius: 16,
+      overflow: "hidden",
+      marginBottom: 16,
+    },
+    menuRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 12,
+      paddingHorizontal: 12,
+      paddingVertical: 12,
+      minHeight: 52,
+    },
+    menuBorder: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: pal.line },
+    menuIcon: {
+      width: 30,
+      height: 30,
+      borderRadius: 8,
+      backgroundColor: pal.iconTile,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    menuCopy: { flex: 1, minWidth: 0 },
+    menuTitle: { ...morphFont, fontSize: fs(15), fontWeight: "400", color: pal.fg },
+    menuSub: { marginTop: 1, ...morphFont, fontSize: fs(12), color: pal.muted },
+    menuValue: { ...morphFont, fontSize: fs(14), color: pal.muted, marginRight: 2 },
+    menuBadge: {
+      minWidth: 22,
+      height: 20,
+      borderRadius: 10,
+      paddingHorizontal: 6,
+      backgroundColor: pal.accent,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    menuBadgeText: { ...morphFont, fontSize: 11, fontWeight: "700", color: "#FFFFFF" },
+    logout: {
+      marginTop: 2,
+      minHeight: 50,
+      borderRadius: 14,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 8,
+      backgroundColor: pal.card,
+    },
+    logoutText: { ...morphFont, fontSize: fs(15), fontWeight: "500", color: pal.destructive },
+    pressed: { opacity: 0.72 },
+  });
+}

@@ -20,6 +20,7 @@ import { morfMarkWhite } from "../branding/morf-logo";
 import { ShellSwitchOverlay } from "../components/ShellSwitchOverlay";
 import { FLOATING_TAB_BAR_STYLE } from "../hooks/useHideTabBar";
 import { AppShellProvider, useAppShell } from "../lib/AppShellContext";
+import { MorphAppearanceProvider } from "../lib/MorphAppearanceContext";
 import { readLastMorphContentTab } from "../lib/app-shell";
 import { peekMorphReturn } from "../lib/morph-return";
 import {
@@ -503,7 +504,9 @@ function RootTabsInner() {
 export function RootTabs() {
   return (
     <AppShellProvider>
-      <RootTabsInner />
+      <MorphAppearanceProvider>
+        <RootTabsInner />
+      </MorphAppearanceProvider>
     </AppShellProvider>
   );
 }
