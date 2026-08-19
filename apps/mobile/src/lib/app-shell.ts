@@ -62,6 +62,8 @@ export async function writeLastShellTab(shell: AppShell, tab: string): Promise<v
 /** Morph shellga o‘tganda Profile emas, oxirgi AI tab. */
 export async function readLastMorphContentTab(): Promise<string> {
   const last = await readLastShellTab("morph");
-  if (last === "Profile" || last === "MorphStudio") return APP_SHELL_DEFAULT_MORPH;
+  if (last === "Profile" || last === "MorphStudio" || last === "MorphChat") {
+    return APP_SHELL_DEFAULT_MORPH;
+  }
   return last;
 }

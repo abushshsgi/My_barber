@@ -199,7 +199,7 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
     if (isMorphTab(activeName)) {
       if (shell !== "morph") setShell("morph");
       setDisplayShell("morph");
-      rememberTab("morph", activeName!);
+      if (activeName !== "MorphChat") rememberTab("morph", activeName!);
       return;
     }
 

@@ -13,6 +13,8 @@ type Props = {
   subtitle: string;
   menuA11y: string;
   onMenu: () => void;
+  onExit: () => void;
+  exitA11y: string;
   bottomPad: number;
   composer: ReactNode;
   chips: ReactNode;
@@ -25,6 +27,8 @@ export function MorphChatWelcome({
   subtitle,
   menuA11y,
   onMenu,
+  onExit,
+  exitA11y,
   bottomPad,
   composer,
   chips,
@@ -54,6 +58,15 @@ export function MorphChatWelcome({
           accessibilityLabel={menuA11y}
         >
           <Ionicons name="menu" size={22} color="#8E8E93" />
+        </Pressable>
+        <View style={styles.headerSpacer} />
+        <Pressable
+          onPress={onExit}
+          style={({ pressed }) => [styles.headerBtn, pressed && styles.pressed]}
+          accessibilityRole="button"
+          accessibilityLabel={exitA11y}
+        >
+          <Ionicons name="chevron-forward" size={24} color="#F5F5F7" />
         </Pressable>
       </View>
 
@@ -99,6 +112,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 16,
   },
+  headerSpacer: { flex: 1 },
   headerBtn: {
     width: 42,
     height: 42,
