@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   checkoutSubscription,
   fetchSubscriptionMe,
@@ -115,33 +115,86 @@ const FALLBACK_PLANS: SubscriptionPlan[] = [
   },
 ];
 
+type SubSnapshot = { plans: SubscriptionPlan[]; me: SubscriptionMe | null };
+
+let shared: SubSnapshot | null = null;
+let sharedAt = 0;
+let inflight: Promise<SubSnapshot> | null = null;
+const CACHE_MS = 12_000;
+
+function fingerprintMe(me: SubscriptionMe | null): string {
+  if (!me) return "";
+  return JSON.stringify({
+    has_active: me.has_active,
+    plan: me.subscription?.plan_code,
+    usage: me.usage,
+    credits: me.referral_credits,
+    access: me.access,
+    welcome: me.welcome_offer,
+  });
+}
+
+function fingerprintPlans(plans: SubscriptionPlan[]): string {
+  return plans.map((p) => `${p.code}:${p.price_uzs}:${p.sort_order}`).join("|");
+}
+
+async function loadSnapshot(force: boolean): Promise<SubSnapshot> {
+  if (!force && shared && Date.now() - sharedAt < CACHE_MS) {
+    return shared;
+  }
+  if (inflight) return inflight;
+  inflight = (async () => {
+    try {
+      const catalog = await fetchSubscriptionPlans();
+      const list = [...(catalog.plans ?? [])].sort((a, b) => a.sort_order - b.sort_order);
+      const plans = list.length > 0 ? list : FALLBACK_PLANS;
+      let me: SubscriptionMe | null = null;
+      try {
+        me = await fetchSubscriptionMe();
+      } catch {
+        me = null;
+      }
+      shared = { plans, me };
+      sharedAt = Date.now();
+      return shared;
+    } finally {
+      inflight = null;
+    }
+  })();
+  return inflight;
+}
+
 export function useSubscriptions() {
-  const [plans, setPlans] = useState<SubscriptionPlan[]>(FALLBACK_PLANS);
-  const [me, setMe] = useState<SubscriptionMe | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [plans, setPlans] = useState<SubscriptionPlan[]>(shared?.plans ?? FALLBACK_PLANS);
+  const [me, setMe] = useState<SubscriptionMe | null>(shared?.me ?? null);
+  const [loading, setLoading] = useState(!shared);
   const [error, setError] = useState<string | null>(null);
   const [busyCode, setBusyCode] = useState<string | null>(null);
   const [tick, setTick] = useState(0);
+  const plansFp = useRef(fingerprintPlans(shared?.plans ?? FALLBACK_PLANS));
+  const meFp = useRef(fingerprintMe(shared?.me ?? null));
 
   const refresh = useCallback(() => setTick((n) => n + 1), []);
 
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
-    setError(null);
+    const force = tick > 0;
 
     (async () => {
+      if (!shared || force) setLoading(true);
+      setError(null);
       try {
-        const catalog = await fetchSubscriptionPlans();
+        const snap = await loadSnapshot(force);
         if (cancelled) return;
-        const list = [...(catalog.plans ?? [])].sort((a, b) => a.sort_order - b.sort_order);
-        setPlans(list.length > 0 ? list : FALLBACK_PLANS);
-
-        try {
-          const subMe = await fetchSubscriptionMe();
-          if (!cancelled) setMe(subMe);
-        } catch {
-          if (!cancelled) setMe(null);
+        const nextPlansFp = fingerprintPlans(snap.plans);
+        if (nextPlansFp !== plansFp.current) {
+          plansFp.current = nextPlansFp;
+          setPlans(snap.plans);
+        }
+        const nextMeFp = fingerprintMe(snap.me);
+        if (nextMeFp !== meFp.current) {
+          meFp.current = nextMeFp;
+          setMe(snap.me);
         }
       } catch (err) {
         if (!cancelled) {
@@ -166,8 +219,12 @@ export function useSubscriptions() {
           plan_code: planCode,
           method: "wallet",
         });
-        if (res.me) setMe(res.me);
-        else await refresh();
+        if (res.me) {
+          shared = { plans: shared?.plans ?? FALLBACK_PLANS, me: res.me };
+          sharedAt = Date.now();
+          meFp.current = fingerprintMe(res.me);
+          setMe(res.me);
+        } else await refresh();
         return { ok: true as const, message: res.message || "Obuna faollashtirildi!" };
       } catch (err) {
         const raw = err instanceof Error ? err.message : "To'lov amalga oshmadi";

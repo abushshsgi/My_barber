@@ -1,5 +1,6 @@
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import { MorphPlanLimitError } from "../api/ai";
+import { fetchSubscriptionMe } from "../api/subscriptions";
 import { useAuth } from "../auth/AuthContext";
 import { useSubscriptions } from "./useSubscriptions";
 
@@ -22,8 +23,6 @@ export function useMorphLimitGate() {
         return { ok: false, reason: "login" };
       }
 
-      await refresh();
-      const { fetchSubscriptionMe } = await import("../api/subscriptions");
       let latest = me;
       try {
         latest = await fetchSubscriptionMe();
@@ -91,7 +90,7 @@ export function useMorphLimitGate() {
       }
       return { ok: false, reason: "subscription" };
     },
-    [isAuthenticated, me, refresh],
+    [isAuthenticated, me],
   );
 
   const ensure = useCallback(
@@ -106,26 +105,56 @@ export function useMorphLimitGate() {
   const credits =
     me?.referral_credits ?? me?.access?.referral_credits ?? me?.usage?.referral_credits ?? 0;
 
-  return {
-    me,
-    loading,
-    refresh,
-    ensureAccess: () => ensure("access"),
-    ensureAccessDetailed: () => ensureDetailed("access"),
-    ensureChat: () => ensure("chat"),
-    ensureChatDetailed: () => ensureDetailed("chat"),
-    ensureVoice: () => ensure("voice"),
-    ensureVoiceDetailed: () => ensureDetailed("voice"),
-    ensureTryOn: () => ensure("tryon"),
-    ensureTryOnDetailed: () => ensureDetailed("tryon"),
-    ensureStudio: () => ensure("studio"),
-    ensureStudioDetailed: () => ensureDetailed("studio"),
-    handleError,
-    remaining: (me?.usage?.morph_ai_remaining ?? 0) + (credits > 0 && !me?.has_active ? credits : 0),
-    limit: me?.usage?.morph_ai_limit ?? 0,
-    referralCredits: credits,
-    studioRemaining: me?.usage?.morph_studio_remaining ?? 0,
-    studioLimit: me?.usage?.morph_studio_limit ?? 0,
-    allowed: Boolean(me?.has_active || credits > 0 || me?.access?.morph_ai_allowed),
-  };
+  const ensureAccess = useCallback(() => ensure("access"), [ensure]);
+  const ensureAccessDetailed = useCallback(() => ensureDetailed("access"), [ensureDetailed]);
+  const ensureChat = useCallback(() => ensure("chat"), [ensure]);
+  const ensureChatDetailed = useCallback(() => ensureDetailed("chat"), [ensureDetailed]);
+  const ensureVoice = useCallback(() => ensure("voice"), [ensure]);
+  const ensureVoiceDetailed = useCallback(() => ensureDetailed("voice"), [ensureDetailed]);
+  const ensureTryOn = useCallback(() => ensure("tryon"), [ensure]);
+  const ensureTryOnDetailed = useCallback(() => ensureDetailed("tryon"), [ensureDetailed]);
+  const ensureStudio = useCallback(() => ensure("studio"), [ensure]);
+  const ensureStudioDetailed = useCallback(() => ensureDetailed("studio"), [ensureDetailed]);
+
+  return useMemo(
+    () => ({
+      me,
+      loading,
+      refresh,
+      ensureAccess,
+      ensureAccessDetailed,
+      ensureChat,
+      ensureChatDetailed,
+      ensureVoice,
+      ensureVoiceDetailed,
+      ensureTryOn,
+      ensureTryOnDetailed,
+      ensureStudio,
+      ensureStudioDetailed,
+      handleError,
+      remaining: (me?.usage?.morph_ai_remaining ?? 0) + (credits > 0 && !me?.has_active ? credits : 0),
+      limit: me?.usage?.morph_ai_limit ?? 0,
+      referralCredits: credits,
+      studioRemaining: me?.usage?.morph_studio_remaining ?? 0,
+      studioLimit: me?.usage?.morph_studio_limit ?? 0,
+      allowed: Boolean(me?.has_active || credits > 0 || me?.access?.morph_ai_allowed),
+    }),
+    [
+      credits,
+      ensureAccess,
+      ensureAccessDetailed,
+      ensureChat,
+      ensureChatDetailed,
+      ensureStudio,
+      ensureStudioDetailed,
+      ensureTryOn,
+      ensureTryOnDetailed,
+      ensureVoice,
+      ensureVoiceDetailed,
+      handleError,
+      loading,
+      me,
+      refresh,
+    ],
+  );
 }

@@ -441,8 +441,34 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
   );
 }
 
-function RootTabsInner() {
+function ExploreTab() {
   const { t } = useTranslation();
+  return <PlaceholderScreen title={t("nav.explore")} />;
+}
+
+function MorphCareTab() {
+  const { t } = useTranslation();
+  return (
+    <MorphPlaceholderScreen
+      title={t("placeholder.morphCareTitle")}
+      subtitle={t("placeholder.morphCareSub")}
+      icon="water-outline"
+    />
+  );
+}
+
+function MorphIngredientTab() {
+  const { t } = useTranslation();
+  return (
+    <MorphPlaceholderScreen
+      title={t("placeholder.morphIngredientTitle")}
+      subtitle={t("placeholder.morphIngredientSub")}
+      icon="flask-outline"
+    />
+  );
+}
+
+function RootTabsInner() {
   const { switchingTo } = useAppShell();
 
   return (
@@ -460,39 +486,14 @@ function RootTabsInner() {
               animation: "fade",
             }}
           >
-            <Tab.Screen name="Home">
-              {({ navigation }) => (
-                <HomeScreen
-                  onOpenMap={() => navigation.navigate("Map")}
-                  onOpenExplore={() => navigation.navigate("Explore")}
-                />
-              )}
-            </Tab.Screen>
+            <Tab.Screen name="Home" component={HomeScreen} />
             <Tab.Screen name="Map" component={MapScreen} />
-            <Tab.Screen name="Explore">
-              {() => <PlaceholderScreen title={t("nav.explore")} />}
-            </Tab.Screen>
+            <Tab.Screen name="Explore" component={ExploreTab} />
             <Tab.Screen name="Profile" component={ProfileStack} />
 
             <Tab.Screen name="MorphChat" component={MorphChatScreen} />
-            <Tab.Screen name="MorphCare">
-              {() => (
-                <MorphPlaceholderScreen
-                  title={t("placeholder.morphCareTitle")}
-                  subtitle={t("placeholder.morphCareSub")}
-                  icon="water-outline"
-                />
-              )}
-            </Tab.Screen>
-            <Tab.Screen name="MorphIngredient">
-              {() => (
-                <MorphPlaceholderScreen
-                  title={t("placeholder.morphIngredientTitle")}
-                  subtitle={t("placeholder.morphIngredientSub")}
-                  icon="flask-outline"
-                />
-              )}
-            </Tab.Screen>
+            <Tab.Screen name="MorphCare" component={MorphCareTab} />
+            <Tab.Screen name="MorphIngredient" component={MorphIngredientTab} />
             <Tab.Screen name="MorphTryOn" component={MorphStack} />
           </Tab.Navigator>
           <ShellSwitchOverlay visible={switchingTo != null} target={switchingTo} />

@@ -78,7 +78,7 @@ export function MorphPaywallView({
       cards.find((p) => isPlanUpgrade(p.code, activeCode))?.code ||
       cards[0]?.code ||
       null;
-    setSelected(next);
+    if (next !== selected) setSelected(next);
   }, [activeCode, cards, selected]);
 
   const selectedPlan = cards.find((p) => p.code === selected) ?? cards[0] ?? null;

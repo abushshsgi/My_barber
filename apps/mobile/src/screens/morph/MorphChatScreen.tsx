@@ -155,7 +155,7 @@ export function MorphChatScreen() {
       showPaywall(result.reason === "limit" ? "limit" : "subscription", draft);
       return false;
     },
-    [gate, isAuthenticated, showPaywall],
+    [gate.ensureChatDetailed, isAuthenticated, showPaywall],
   );
 
   const requireVoice = useCallback(async () => {
@@ -168,7 +168,7 @@ export function MorphChatScreen() {
     if (result.ok) return true;
     showPaywall(result.reason === "limit" ? "limit" : "subscription");
     return false;
-  }, [gate, isAuthenticated, showPaywall]);
+  }, [gate.ensureVoiceDetailed, isAuthenticated, showPaywall]);
 
   const voice = useMorphVoice({
     sendText: chat.sendText,
@@ -232,7 +232,9 @@ export function MorphChatScreen() {
       return () => {
         cancelled = true;
       };
-    }, [gate, isAuthenticated]),
+      // gate obyekti har renderda yangilanmasin — aks holda API sikli.
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isAuthenticated]),
   );
 
   const composer = useMemo(
@@ -295,7 +297,7 @@ export function MorphChatScreen() {
       await chat.sendText(draft);
       scrollToEnd();
     }
-  }, [chat, gate, scrollToEnd]);
+  }, [chat, gate.refresh, scrollToEnd]);
 
   const onNeedLogin = useCallback(() => {
     rememberMorphReturn({

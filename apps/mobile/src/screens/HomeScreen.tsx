@@ -40,6 +40,8 @@ export function HomeScreen({ onOpenMap, onOpenExplore }: Props) {
   const { topSalons, topBarbers, locationLabel, loading, error, refresh } = useHomeCatalog();
   const [category, setCategory] = useState<HomeCategoryKey>("all");
   const [favorites, setFavorites] = useState<Record<string, boolean>>({});
+  const openMap = onOpenMap ?? (() => navigation.navigate("Map" as never));
+  const openExplore = onOpenExplore ?? (() => navigation.navigate("Explore" as never));
 
   const openListing = useCallback(
     (item: HomeListing) => {
@@ -104,7 +106,10 @@ export function HomeScreen({ onOpenMap, onOpenExplore }: Props) {
         }
         removeClippedSubviews
       >
-        <HomeHeader locationLabel={locationLabel} onPressMap={onOpenMap} />
+        <HomeHeader
+          locationLabel={locationLabel}
+          onPressMap={openMap}
+        />
 
         <HomeBanner />
 
@@ -127,7 +132,10 @@ export function HomeScreen({ onOpenMap, onOpenExplore }: Props) {
 
         {filteredSalons.length > 0 ? (
           <View style={styles.section}>
-            <SectionHeader title={t("home.topSalons")} onPressLink={onOpenExplore} />
+            <SectionHeader
+              title={t("home.topSalons")}
+              onPressLink={openExplore}
+            />
             <FlatList
               data={filteredSalons}
               horizontal
@@ -153,7 +161,7 @@ export function HomeScreen({ onOpenMap, onOpenExplore }: Props) {
 
         {topBarbers.length > 0 ? (
           <View style={styles.section}>
-            <SectionHeader title={t("home.topBarbers")} onPressLink={onOpenMap} />
+            <SectionHeader title={t("home.topBarbers")} onPressLink={openMap} />
             <FlatList
               data={topBarbers}
               horizontal
