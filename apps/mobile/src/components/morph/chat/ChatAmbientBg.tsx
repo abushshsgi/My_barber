@@ -4,14 +4,29 @@ import { Platform, StyleSheet, useWindowDimensions, View } from "react-native";
 import Animated, {
   Easing,
   interpolate,
+  type SharedValue,
   useAnimatedStyle,
   useSharedValue,
+  withDelay,
   withRepeat,
   withTiming,
 } from "react-native-reanimated";
-import { useMorphAppearance } from "../../../lib/MorphAppearanceContext";
 
 const AURORA_STYLE_ID = "morph-chat-aurora-mono";
+
+const DARK_MESH = [
+  "radial-gradient(ellipse 90% 70% at 15% 10%, rgba(255,255,255,0.28) 0%, transparent 58%)",
+  "radial-gradient(ellipse 80% 80% at 90% 5%, rgba(160,160,160,0.35) 0%, transparent 55%)",
+  "radial-gradient(ellipse 95% 75% at 8% 92%, rgba(80,80,80,0.7) 0%, transparent 58%)",
+  "radial-gradient(ellipse 85% 70% at 95% 85%, rgba(0,0,0,0.85) 0%, transparent 55%)",
+].join(",");
+
+const LIGHT_MESH = [
+  "radial-gradient(ellipse 90% 70% at 12% 8%, #ffffff 0%, transparent 56%)",
+  "radial-gradient(ellipse 80% 80% at 88% 12%, rgba(255,255,255,1) 0%, transparent 50%)",
+  "radial-gradient(ellipse 95% 75% at 10% 88%, rgba(245,245,245,0.95) 0%, transparent 58%)",
+  "radial-gradient(ellipse 70% 60% at 92% 82%, rgba(228,228,228,0.7) 0%, transparent 52%)",
+].join(",");
 
 function ensureWebKeyframes() {
   if (typeof document === "undefined") return;
@@ -29,24 +44,10 @@ function ensureWebKeyframes() {
   document.head.appendChild(tag);
 }
 
-function WebAurora({ dark }: { dark: boolean }) {
+function WebMesh({ light }: { light: boolean }) {
   useEffect(() => {
     ensureWebKeyframes();
   }, []);
-
-      const image = dark
-    ? [
-        "radial-gradient(ellipse 90% 70% at 15% 10%, rgba(255,255,255,0.28) 0%, transparent 58%)",
-        "radial-gradient(ellipse 80% 80% at 90% 5%, rgba(160,160,160,0.35) 0%, transparent 55%)",
-        "radial-gradient(ellipse 95% 75% at 8% 92%, rgba(80,80,80,0.7) 0%, transparent 58%)",
-        "radial-gradient(ellipse 85% 70% at 95% 85%, rgba(0,0,0,0.85) 0%, transparent 55%)",
-      ].join(",")
-    : [
-        "radial-gradient(ellipse 90% 70% at 12% 8%, #ffffff 0%, transparent 56%)",
-        "radial-gradient(ellipse 80% 80% at 88% 12%, rgba(255,255,255,0.95) 0%, transparent 52%)",
-        "radial-gradient(ellipse 95% 75% at 10% 88%, rgba(232,232,232,0.9) 0%, transparent 58%)",
-        "radial-gradient(ellipse 70% 60% at 92% 82%, rgba(210,210,210,0.55) 0%, transparent 52%)",
-      ].join(",");
 
   return createElement("div", {
     "aria-hidden": true,
@@ -55,8 +56,8 @@ function WebAurora({ dark }: { dark: boolean }) {
       inset: 0,
       pointerEvents: "none",
       overflow: "hidden",
-      backgroundColor: dark ? "#0a0a0a" : "#ffffff",
-      backgroundImage: image,
+      backgroundColor: light ? "#ffffff" : "#0a0a0a",
+      backgroundImage: light ? LIGHT_MESH : DARK_MESH,
       backgroundRepeat: "no-repeat",
       backgroundSize: "220% 220%",
       animation: "morphChatAurora 16s ease-in-out infinite",
@@ -130,30 +131,23 @@ function FlowSheet({
   );
 }
 
-/** Chat foni — oq/qora/kulrang oqib turadigan gradient. */
-export function ChatAmbientBg() {
-  const { theme } = useMorphAppearance();
+function NativeMesh({ light }: { light: boolean }) {
   const { width, height } = useWindowDimensions();
-  const dark = theme === "dark";
   const dim = Math.max(width, height) * 1.85;
-
-  if (Platform.OS === "web") {
-    return <WebAurora dark={dark} />;
-  }
 
   return (
     <View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.clip]}>
       <LinearGradient
-        colors={dark ? ["#0a0a0a", "#1a1a1a", "#0a0a0a"] : ["#ffffff", "#f3f3f3", "#ffffff"]}
+        colors={light ? ["#ffffff", "#f6f6f6", "#ffffff"] : ["#0a0a0a", "#1a1a1a", "#0a0a0a"]}
         start={{ x: 0.1, y: 0 }}
         end={{ x: 0.9, y: 1 }}
         style={StyleSheet.absoluteFill}
       />
       <FlowSheet
         colors={
-          dark
-            ? ["#111111", "#6e6e6e", "#f5f5f5", "#111111"]
-            : ["#ffffff", "#ececec", "#d8d8d8", "#ffffff"]
+          light
+            ? ["#ffffff", "#ececec", "#dcdcdc", "#ffffff"]
+            : ["#111111", "#6e6e6e", "#f5f5f5", "#111111"]
         }
         duration={18000}
         dim={dim}
@@ -167,9 +161,9 @@ export function ChatAmbientBg() {
       />
       <FlowSheet
         colors={
-          dark
-            ? ["#000000", "#9a9a9a", "#ffffff", "#000000"]
-            : ["#ffffff", "#e6e6e6", "#cfcfcf", "#ffffff"]
+          light
+            ? ["#ffffff", "#e8e8e8", "#d0d0d0", "#ffffff"]
+            : ["#000000", "#9a9a9a", "#ffffff", "#000000"]
         }
         duration={24000}
         dim={dim}
@@ -181,22 +175,52 @@ export function ChatAmbientBg() {
         yTo={-height * 0.1}
         opacity={0.55}
       />
-      <FlowSheet
-        colors={
-          dark
-            ? ["#2c2c2c", "#d4d4d4", "#000000", "#2c2c2c"]
-            : ["#ffffff", "#f7f7f7", "#dadada", "#ffffff"]
-        }
-        duration={30000}
-        dim={dim}
-        rotateFrom={8}
-        rotateTo={28}
-        xFrom={-width * 0.06}
-        xTo={width * 0.08}
-        yFrom={height * 0.08}
-        yTo={-height * 0.06}
-        opacity={0.42}
-      />
+    </View>
+  );
+}
+
+function Mesh({ light }: { light: boolean }) {
+  return Platform.OS === "web" ? <WebMesh light={light} /> : <NativeMesh light={light} />;
+}
+
+/** 0 = qora fon + oq matn, 1 = oq fon + qora matn. */
+export function useWelcomeBgCycle(): SharedValue<number> {
+  const cycle = useSharedValue(0);
+  useEffect(() => {
+    cycle.value = withDelay(
+      500,
+      withRepeat(
+        withTiming(1, { duration: 5600, easing: Easing.inOut(Easing.sin) }),
+        -1,
+        true,
+      ),
+    );
+  }, [cycle]);
+  return cycle;
+}
+
+type Props = {
+  /** 0 dark, 1 light. Berilmasa — faqat qora palitra. */
+  cycle?: SharedValue<number>;
+};
+
+/** Chat foni — oq/qora gradient; welcome da qora↔oq o‘tadi. */
+export function ChatAmbientBg({ cycle }: Props = {}) {
+  const darkStyle = useAnimatedStyle(() => ({
+    opacity: cycle ? interpolate(cycle.value, [0, 1], [1, 0]) : 1,
+  }));
+  const lightStyle = useAnimatedStyle(() => ({
+    opacity: cycle ? interpolate(cycle.value, [0, 1], [0, 1]) : 0,
+  }));
+
+  return (
+    <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+      <Animated.View style={[StyleSheet.absoluteFill, darkStyle]}>
+        <Mesh light={false} />
+      </Animated.View>
+      <Animated.View style={[StyleSheet.absoluteFill, lightStyle]}>
+        <Mesh light />
+      </Animated.View>
     </View>
   );
 }

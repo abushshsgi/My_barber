@@ -1,20 +1,12 @@
 import { Ionicons } from "@expo/vector-icons";
 import { StatusBar } from "expo-status-bar";
-import { useEffect, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import Animated, {
-  Easing,
-  FadeInDown,
-  interpolateColor,
-  useAnimatedStyle,
-  useSharedValue,
-  withDelay,
-  withTiming,
-} from "react-native-reanimated";
+import Animated, { FadeInDown, interpolateColor, useAnimatedStyle } from "react-native-reanimated";
 import { morphFont } from "../../../theme/morph-font";
 import { useMorphAppearance } from "../../../lib/MorphAppearanceContext";
-import { ChatAmbientBg } from "./ChatAmbientBg";
+import { ChatAmbientBg, useWelcomeBgCycle } from "./ChatAmbientBg";
 
 type Props = {
   headline: string;
@@ -39,28 +31,20 @@ export function MorphChatWelcome({
   notice,
 }: Props) {
   const insets = useSafeAreaInsets();
-  const { colors: pal, fs, theme } = useMorphAppearance();
-  const ink = useSharedValue(0);
-
-  useEffect(() => {
-    ink.value = 0;
-    ink.value = withDelay(
-      220,
-      withTiming(1, { duration: 1100, easing: Easing.out(Easing.cubic) }),
-    );
-  }, [headline, ink, subtitle]);
+  const { fs } = useMorphAppearance();
+  const cycle = useWelcomeBgCycle();
 
   const headlineStyle = useAnimatedStyle(() => ({
-    color: interpolateColor(ink.value, [0, 1], ["#FFFFFF", theme === "light" ? "#111111" : "#F5F5F7"]),
+    color: interpolateColor(cycle.value, [0, 1], ["#FFFFFF", "#111111"]),
   }));
   const ledeStyle = useAnimatedStyle(() => ({
-    color: interpolateColor(ink.value, [0, 1], ["#FFFFFF", theme === "light" ? "#3A3A3A" : "#A1A1A6"]),
+    color: interpolateColor(cycle.value, [0, 1], ["#F5F5F5", "#3A3A3A"]),
   }));
 
   return (
     <View style={[styles.root, { paddingTop: insets.top + 8, paddingBottom: bottomPad }]}>
-      <ChatAmbientBg />
-      <StatusBar style={pal.status} />
+      <ChatAmbientBg cycle={cycle} />
+      <StatusBar style="light" />
 
       <View style={styles.header}>
         <Pressable
@@ -69,7 +53,7 @@ export function MorphChatWelcome({
           accessibilityRole="button"
           accessibilityLabel={menuA11y}
         >
-          <Ionicons name="menu" size={22} color={pal.fg} />
+          <Ionicons name="menu" size={22} color="#8E8E93" />
         </Pressable>
       </View>
 
