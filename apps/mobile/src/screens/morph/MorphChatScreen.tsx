@@ -45,6 +45,7 @@ import {
 import type { RootTabParamList } from "../../navigation/RootTabs";
 import { MorphChatSettingsScreen } from "./MorphChatSettingsScreen";
 import { useMorphAppearance } from "../../lib/MorphAppearanceContext";
+import { ChatAmbientBg } from "../../components/morph/chat/ChatAmbientBg";
 
 export function MorphChatScreen() {
   const { t } = useTranslation();
@@ -504,7 +505,7 @@ export function MorphChatScreen() {
   if (!chatOpen) {
     return (
       <KeyboardAvoidingView
-        style={[styles.root, { backgroundColor: pal.bg }]}
+        style={styles.root}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
         <MorphChatWelcome
@@ -580,7 +581,8 @@ export function MorphChatScreen() {
     chat.threads.find((th) => th.id === chat.activeThreadId)?.title || t("chat.title");
 
   return (
-    <View style={[styles.root, { paddingTop: insets.top, backgroundColor: pal.bg }]}>
+    <View style={[styles.root, { paddingTop: insets.top }]}>
+      <ChatAmbientBg />
       <StatusBar style={pal.status} />
       <View style={[styles.header, { borderBottomColor: pal.line }]}>
         <Pressable
@@ -624,7 +626,7 @@ export function MorphChatScreen() {
               streaming={Boolean(item.streaming) && Boolean(item.content)}
             />
           )}
-          contentContainerStyle={[styles.list, { paddingBottom: 12, backgroundColor: pal.bg }]}
+          contentContainerStyle={[styles.list, { paddingBottom: 12 }]}
           onContentSizeChange={scrollToEnd}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
@@ -637,7 +639,7 @@ export function MorphChatScreen() {
             styles.composerDock,
             {
               paddingBottom: Math.max(insets.bottom, 12),
-              backgroundColor: pal.bg,
+              backgroundColor: pal.theme === "dark" ? "rgba(12,12,14,0.42)" : "rgba(238,239,243,0.5)",
               borderTopColor: pal.line,
             },
           ]}
@@ -667,7 +669,7 @@ export function MorphChatScreen() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "transparent",
   },
   boot: {
     alignItems: "center",
@@ -710,11 +712,11 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: "#E4E4E7",
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "transparent",
   },
   list: {
     paddingTop: 16,
     flexGrow: 1,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "transparent",
   },
 });

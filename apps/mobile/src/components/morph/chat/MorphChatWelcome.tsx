@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { morphFont } from "../../../theme/morph-font";
 import { useMorphAppearance } from "../../../lib/MorphAppearanceContext";
+import { ChatAmbientBg } from "./ChatAmbientBg";
 
 type Props = {
   headline: string;
@@ -33,7 +34,8 @@ export function MorphChatWelcome({
   const { colors: pal, fs } = useMorphAppearance();
 
   return (
-    <View style={[styles.root, { paddingTop: insets.top + 8, paddingBottom: bottomPad, backgroundColor: pal.bg }]}>
+    <View style={[styles.root, { paddingTop: insets.top + 8, paddingBottom: bottomPad }]}>
+      <ChatAmbientBg />
       <StatusBar style={pal.status} />
 
       <View style={styles.header}>
@@ -47,7 +49,7 @@ export function MorphChatWelcome({
         </Pressable>
       </View>
 
-      <View style={[styles.hero, { backgroundColor: pal.bg }]}>
+      <View style={styles.hero}>
         <Animated.View entering={FadeInDown.duration(360)} style={styles.copy}>
           <Text style={[styles.headline, { color: pal.fg, fontSize: fs(26), lineHeight: fs(32) }]}>
             {headline}
@@ -76,7 +78,7 @@ export function MorphChatWelcome({
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "transparent",
   },
   header: {
     zIndex: 1,
@@ -99,7 +101,7 @@ const styles = StyleSheet.create({
     zIndex: 1,
     justifyContent: "center",
     paddingHorizontal: 22,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "transparent",
   },
   copy: {
     alignItems: "center",
