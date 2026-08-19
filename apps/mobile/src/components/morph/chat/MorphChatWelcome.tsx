@@ -33,7 +33,6 @@ export function MorphChatWelcome({
   const insets = useSafeAreaInsets();
   const { fs } = useMorphAppearance();
   const cycle = useWelcomeBgCycle();
-  const bottomSafe = Math.max(insets.bottom, 10);
 
   const headlineStyle = useAnimatedStyle(() => ({
     color: interpolateColor(cycle.value, [0, 1], ["#FFFFFF", "#C8C8C8"]),
