@@ -42,6 +42,7 @@ import {
 } from "../../lib/morph-chat-prefs";
 import { MORPH_VOICE_CATALOG } from "../../lib/morph-voice";
 import { MorphToggle } from "../../components/morph/MorphToggle";
+import { PersonalInfoPanel } from "../profile/PersonalInfoPanel";
 import { useMorphAppearance } from "../../lib/MorphAppearanceContext";
 import { morphFont } from "../../theme/morph-font";
 import {
@@ -60,11 +61,11 @@ type Props = {
   onSaveHistoryOff?: () => void;
   onPreviewVoice?: (voiceId: MorphVoiceId) => void;
   voicePreviewing?: boolean;
-  onOpenAccount?: () => void;
 };
 
 type Page =
   | "hub"
+  | "account"
   | "reply"
   | "chatbot"
   | "voice"
@@ -367,7 +368,6 @@ export function MorphChatSettingsScreen({
   onSaveHistoryOff,
   onPreviewVoice,
   voicePreviewing,
-  onOpenAccount,
 }: Props) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
@@ -602,7 +602,9 @@ export function MorphChatSettingsScreen({
   ];
 
   const pageTitle =
-    page === "reply"
+    page === "account"
+      ? t("profile.personalInfo")
+      : page === "reply"
       ? t("chat.settings.replyGroup")
       : page === "chatbot"
         ? t("chat.settings.aiGroup")
@@ -690,9 +692,9 @@ export function MorphChatSettingsScreen({
           <>
             <View style={styles.profileBlock}>
               <Pressable
-                onPress={onOpenAccount}
-                disabled={!onOpenAccount}
-                accessibilityRole={onOpenAccount ? "button" : undefined}
+                onPress={() => setPage("account")}
+                accessibilityRole="button"
+                accessibilityLabel={t("profile.personalInfo")}
               >
                 <View style={styles.avatarWrap}>
                   <View style={styles.avatar}>
@@ -857,6 +859,8 @@ export function MorphChatSettingsScreen({
             )}
           </>
         ) : null}
+
+        {page === "account" ? <PersonalInfoPanel /> : null}
 
         {page === "reply" && prefs ? (
           <SettingsSection>

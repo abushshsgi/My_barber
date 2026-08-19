@@ -4,6 +4,7 @@ import { Alert, ScrollView, StyleSheet, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { HeaderPill, NativeHeader } from "../../components/ui/NativeHeader";
 import { SettingsGroup, SettingsRow } from "../../components/ui/SettingsKit";
+import { PersonalInfoPanel } from "./PersonalInfoPanel";
 import { currentLang, setAppLanguage } from "../../i18n/config";
 import type { AppLang } from "../../lib/guest";
 import type { ProfileStackParamList } from "../../navigation/ProfileStack";
@@ -47,12 +48,13 @@ export function SettingsScreen({ navigation }: Props) {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
+        <SettingsGroup title={t("profile.personalInfo")}>
+          <View style={styles.infoPad}>
+            <PersonalInfoPanel />
+          </View>
+        </SettingsGroup>
+
         <SettingsGroup title={t("profile.accountGroup")}>
-          <SettingsRow
-            title={t("profile.personalInfo")}
-            icon="person-outline"
-            onPress={() => navigation.navigate("PersonalInfo")}
-          />
           <SettingsRow
             title={t("profile.security")}
             icon="lock-closed-outline"
@@ -109,4 +111,5 @@ export function SettingsScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
   content: { padding: 16, paddingBottom: 32 },
+  infoPad: { paddingHorizontal: 14, paddingBottom: 10 },
 });

@@ -453,10 +453,6 @@ export function MorphChatScreen() {
           void voice.previewVoice(id, t("chat.settings.voiceSample"));
         }}
         voicePreviewing={voice.previewing}
-        onOpenAccount={() => {
-          setSettingsOpen(false);
-          navigation.navigate("Profile", { screen: "PersonalInfo" } as never);
-        }}
       />
     </Modal>
   );

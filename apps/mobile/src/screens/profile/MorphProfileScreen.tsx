@@ -83,31 +83,6 @@ export function MorphProfileScreen({ navigation }: Props) {
             style={styles.wordmark}
             contentFit="contain"
           />
-          <View style={styles.topActions}>
-            <Pressable
-              onPress={() => navigation.navigate("Notifications")}
-              hitSlop={8}
-              accessibilityRole="button"
-              accessibilityLabel="Bildirishnomalar"
-              style={({ pressed }) => [styles.iconBtn, pressed && styles.pressed]}
-            >
-              <Ionicons name="notifications-outline" size={18} color={pal.fg} />
-              {unreadCount > 0 ? (
-                <View style={styles.badgeDot}>
-                  <Text style={styles.badgeText}>{unreadCount > 9 ? "9+" : unreadCount}</Text>
-                </View>
-              ) : null}
-            </Pressable>
-            <Pressable
-              onPress={openSettings}
-              hitSlop={8}
-              accessibilityRole="button"
-              accessibilityLabel="Morf AI sozlamalari"
-              style={({ pressed }) => [styles.iconBtn, pressed && styles.pressed]}
-            >
-              <Ionicons name="settings-outline" size={18} color={pal.fg} />
-            </Pressable>
-          </View>
         </View>
 
         {error ? (
@@ -123,10 +98,10 @@ export function MorphProfileScreen({ navigation }: Props) {
         ) : null}
 
         <Pressable
-          onPress={() => navigation.navigate("PersonalInfo")}
+          onPress={openSettings}
           style={({ pressed }) => [styles.identity, pressed && styles.pressed]}
           accessibilityRole="button"
-          accessibilityLabel="Shaxsiy ma'lumot"
+          accessibilityLabel="Sozlamalar"
         >
           <View style={styles.avatarWrap}>
             {avatarUrl ? (
@@ -365,32 +340,9 @@ function makeStyles(pal: MorphPalette, fs: (n: number) => number) {
     topRow: {
       flexDirection: "row",
       alignItems: "center",
-      justifyContent: "space-between",
       marginBottom: 18,
     },
     wordmark: { width: 112, height: 26 },
-    topActions: { flexDirection: "row", alignItems: "center", gap: 8 },
-    iconBtn: {
-      width: 38,
-      height: 38,
-      borderRadius: 12,
-      backgroundColor: pal.card,
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    badgeDot: {
-      position: "absolute",
-      top: -3,
-      right: -3,
-      minWidth: 16,
-      height: 16,
-      borderRadius: 8,
-      paddingHorizontal: 3,
-      backgroundColor: pal.accent,
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    badgeText: { ...morphFont, fontSize: 9, fontWeight: "700", color: "#FFFFFF" },
     errorBanner: {
       flexDirection: "row",
       alignItems: "center",

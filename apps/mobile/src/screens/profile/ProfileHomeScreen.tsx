@@ -90,7 +90,7 @@ function MysaloonProfileHome({ navigation }: Props) {
           </View>
           <Pressable
             style={styles.nameRow}
-            onPress={() => navigation.navigate("PersonalInfo")}
+            onPress={() => navigation.navigate("Settings")}
           >
             <Text style={styles.name}>{display}</Text>
             {verified ? (
