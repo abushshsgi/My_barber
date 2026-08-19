@@ -29,11 +29,12 @@ import { ChatNotice } from "../../components/morph/chat/ChatNotice";
 import { MorphChatWelcome } from "../../components/morph/chat/MorphChatWelcome";
 import { QuickPromptChips } from "../../components/morph/chat/QuickPromptChips";
 import { VoiceSessionOverlay } from "../../components/morph/chat/VoiceSessionOverlay";
-import { TAB_DOCK_CLEARANCE, useHideTabBarWhen } from "../../hooks/useHideTabBar";
+import { useHideTabBarWhen } from "../../hooks/useHideTabBar";
 import { MORPH_QUICK_PROMPT_IDS, useMorphChat } from "../../hooks/useMorphChat";
 import { useMorphVoice } from "../../hooks/useMorphVoice";
 import { useMorphLimitGate } from "../../hooks/useMorphLimitGate";
 import { writeAppShell, writeLastShellTab } from "../../lib/app-shell";
+import { useAppShell } from "../../lib/AppShellContext";
 import { MORPH_CHAT_DEBUG } from "../../lib/morph-debug";
 import { readMorphChatPrefs } from "../../lib/morph-chat-prefs";
 import {
@@ -56,6 +57,7 @@ export function MorphChatScreen() {
   const listRef = useRef<FlatList<MorphChatMessage>>(null);
   const chat = useMorphChat();
   const { colors: pal } = useMorphAppearance();
+  const { switchToMysaloonTarget, beginSwitch, endSwitch } = useAppShell();
   const pendingDraft = useRef<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
@@ -184,7 +186,7 @@ export function MorphChatScreen() {
   });
 
   const voiceOverlayOpen = voice.live || voice.phase !== "idle" || Boolean(voice.error);
-  useHideTabBarWhen(chatOpen || paywall != null || settingsOpen || voiceOverlayOpen);
+  useHideTabBarWhen(true);
 
   useFocusEffect(
     useCallback(() => {
@@ -330,6 +332,29 @@ export function MorphChatScreen() {
     navigation.navigate("Profile");
   }, [navigation]);
 
+  const openTryOn = useCallback(() => {
+    setMenuOpen(false);
+    navigation.navigate("MorphTryOn");
+  }, [navigation]);
+
+  const openCare = useCallback(() => {
+    setMenuOpen(false);
+    navigation.navigate("MorphCare");
+  }, [navigation]);
+
+  const openMysaloon = useCallback(() => {
+    setMenuOpen(false);
+    beginSwitch("mysaloon");
+    void (async () => {
+      try {
+        const target = await switchToMysaloonTarget();
+        navigation.navigate(target as keyof RootTabParamList);
+      } finally {
+        endSwitch();
+      }
+    })();
+  }, [beginSwitch, endSwitch, navigation, switchToMysaloonTarget]);
+
   const openSettings = useCallback(() => {
     setMenuOpen(false);
     setSettingsOpen(true);
@@ -415,6 +440,12 @@ export function MorphChatScreen() {
         setChatOpen(true);
       }}
       onLibrary={openLooks}
+      tryOnLabel={t("nav.morphTryOn")}
+      careLabel={t("nav.morphCare")}
+      mysaloonLabel={t("nav.mysaloon")}
+      onTryOn={openTryOn}
+      onCare={openCare}
+      onMysaloon={openMysaloon}
       onProfile={openProfile}
       onSettings={openSettings}
     />
@@ -513,7 +544,7 @@ export function MorphChatScreen() {
           subtitle={t("chat.home.subtitle")}
           menuA11y={t("chat.menu.openA11y")}
           onMenu={() => setMenuOpen(true)}
-          bottomPad={Math.max(insets.bottom, 8) + TAB_DOCK_CLEARANCE}
+          bottomPad={Math.max(insets.bottom, 10)}
           composer={
             <View>
               <ChatInputBar {...composer} onSend={() => void onSend()} onCamera={onCamera} />

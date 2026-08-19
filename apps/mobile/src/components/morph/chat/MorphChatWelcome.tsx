@@ -33,6 +33,7 @@ export function MorphChatWelcome({
   const insets = useSafeAreaInsets();
   const { fs } = useMorphAppearance();
   const cycle = useWelcomeBgCycle();
+  const bottomSafe = Math.max(insets.bottom, 10);
 
   const headlineStyle = useAnimatedStyle(() => ({
     color: interpolateColor(cycle.value, [0, 1], ["#FFFFFF", "#C8C8C8"]),
@@ -42,11 +43,11 @@ export function MorphChatWelcome({
   }));
 
   return (
-    <View style={[styles.root, { paddingTop: insets.top + 8, paddingBottom: bottomPad }]}>
+    <View style={styles.root}>
       <ChatAmbientBg cycle={cycle} />
       <StatusBar style="light" />
 
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
         <Pressable
           onPress={onMenu}
           style={({ pressed }) => [styles.headerBtn, pressed && styles.pressed]}
@@ -72,16 +73,17 @@ export function MorphChatWelcome({
         </Animated.View>
 
         {notice ? <View style={styles.notice}>{notice}</View> : null}
+      </View>
 
-        <Animated.View entering={FadeInDown.duration(360).delay(80)} style={styles.composer}>
-          {composer}
-        </Animated.View>
-
+      <View style={[styles.dock, { paddingBottom: bottomPad }]}>
         {chips ? (
-          <Animated.View entering={FadeInDown.duration(380).delay(140)} style={styles.chips}>
+          <Animated.View entering={FadeInDown.duration(380).delay(80)} style={styles.chips}>
             {chips}
           </Animated.View>
         ) : null}
+        <Animated.View entering={FadeInDown.duration(360).delay(40)} style={styles.composer}>
+          {composer}
+        </Animated.View>
       </View>
     </View>
   );
@@ -117,7 +119,6 @@ const styles = StyleSheet.create({
   },
   copy: {
     alignItems: "center",
-    marginBottom: 28,
     paddingHorizontal: 8,
   },
   headline: {
@@ -146,6 +147,11 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   chips: {
-    marginTop: 28,
+    marginBottom: 12,
+  },
+  dock: {
+    zIndex: 1,
+    paddingHorizontal: 16,
+    paddingTop: 8,
   },
 });

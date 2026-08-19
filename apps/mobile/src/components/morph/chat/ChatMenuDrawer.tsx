@@ -43,6 +43,12 @@ type Props = {
   onNewChat: () => void;
   onSelectThread: (id: string) => void;
   onLibrary: () => void;
+  tryOnLabel?: string;
+  careLabel?: string;
+  mysaloonLabel?: string;
+  onTryOn?: () => void;
+  onCare?: () => void;
+  onMysaloon?: () => void;
   onProfile: () => void;
   onSettings: () => void;
 };
@@ -76,6 +82,12 @@ export function ChatMenuDrawer({
   onNewChat,
   onSelectThread,
   onLibrary,
+  tryOnLabel,
+  careLabel,
+  mysaloonLabel,
+  onTryOn,
+  onCare,
+  onMysaloon,
   onProfile,
   onSettings,
 }: Props) {
@@ -198,6 +210,39 @@ export function ChatMenuDrawer({
             <Ionicons name="grid-outline" size={20} color="#FFFFFF" />
             <Text style={styles.navText}>{libraryLabel}</Text>
           </Pressable>
+
+          {onTryOn && tryOnLabel ? (
+            <Pressable
+              onPress={onTryOn}
+              style={({ pressed }) => [styles.navRow, pressed && styles.pressed]}
+              accessibilityRole="button"
+            >
+              <Ionicons name="sparkles-outline" size={20} color="#FFFFFF" />
+              <Text style={styles.navText}>{tryOnLabel}</Text>
+            </Pressable>
+          ) : null}
+
+          {onCare && careLabel ? (
+            <Pressable
+              onPress={onCare}
+              style={({ pressed }) => [styles.navRow, pressed && styles.pressed]}
+              accessibilityRole="button"
+            >
+              <Ionicons name="water-outline" size={20} color="#FFFFFF" />
+              <Text style={styles.navText}>{careLabel}</Text>
+            </Pressable>
+          ) : null}
+
+          {onMysaloon && mysaloonLabel ? (
+            <Pressable
+              onPress={onMysaloon}
+              style={({ pressed }) => [styles.navRow, pressed && styles.pressed]}
+              accessibilityRole="button"
+            >
+              <Ionicons name="storefront-outline" size={20} color="#FFFFFF" />
+              <Text style={styles.navText}>{mysaloonLabel}</Text>
+            </Pressable>
+          ) : null}
 
           <ScrollView
             style={styles.scroll}
