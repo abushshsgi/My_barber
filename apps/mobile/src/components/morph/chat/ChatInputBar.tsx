@@ -102,8 +102,14 @@ export function ChatInputBar({
       style={[
         styles.wrap,
         {
-          backgroundColor: pal.card,
-          borderColor: focused ? pal.muted : pal.line,
+          backgroundColor: pal.theme === "dark" ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.92)",
+          borderColor: focused
+            ? pal.theme === "dark"
+              ? "rgba(255,255,255,0.28)"
+              : "rgba(0,0,0,0.14)"
+            : pal.theme === "dark"
+              ? "rgba(255,255,255,0.12)"
+              : "rgba(0,0,0,0.08)",
         },
       ]}
     >
@@ -114,10 +120,10 @@ export function ChatInputBar({
         accessibilityRole="button"
         accessibilityLabel={cameraA11y}
       >
-        <Ionicons name="camera-outline" size={18} color={pal.muted} />
+        <Ionicons name="add" size={22} color={pal.fg} />
       </Pressable>
       <TextInput
-        style={[styles.input, { color: pal.fg, fontSize: chatFs(14), lineHeight: chatFs(19) }]}
+        style={[styles.input, { color: pal.fg, fontSize: chatFs(16), lineHeight: chatFs(22) }]}
         value={value}
         onChangeText={onChange}
         placeholder={placeholder}
@@ -155,7 +161,7 @@ export function ChatInputBar({
             {sending ? (
               <ActivityIndicator size="small" color={pal.bg} />
             ) : (
-              <Ionicons name="arrow-up" size={16} color={pal.bg} />
+              <Ionicons name="arrow-up" size={18} color={pal.bg} />
             )}
           </Pressable>
         </Animated.View>
@@ -180,7 +186,7 @@ export function ChatInputBar({
               {voiceBusy ? (
                 <ActivityIndicator size="small" color="#FFFFFF" />
               ) : (
-                <Ionicons name={voiceRecording ? "stop" : "mic"} size={16} color="#FFFFFF" />
+                <Ionicons name={voiceRecording ? "stop" : "mic"} size={18} color="#FFFFFF" />
               )}
             </Pressable>
           </MicPulse>
@@ -203,44 +209,44 @@ const styles = StyleSheet.create({
   wrap: {
     flexDirection: "row",
     alignItems: "center",
-    minHeight: 40,
-    paddingLeft: 4,
-    paddingRight: 4,
-    paddingVertical: 3,
-    borderRadius: 20,
-    backgroundColor: "#FFFFFF",
-    borderWidth: 1,
-    borderColor: "#E4E4E7",
+    minHeight: 52,
+    paddingLeft: 6,
+    paddingRight: 6,
+    paddingVertical: 6,
+    borderRadius: 26,
+    backgroundColor: "rgba(255,255,255,0.08)",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(255,255,255,0.14)",
   },
   wrapFocused: {
-    borderColor: "#D4D4D8",
+    borderColor: "rgba(255,255,255,0.28)",
   },
   sideBtn: {
-    width: 30,
-    height: 30,
+    width: 38,
+    height: 38,
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: 15,
+    borderRadius: 19,
   },
   pressed: {
     opacity: 0.78,
   },
   input: {
     flex: 1,
-    minHeight: 24,
-    maxHeight: 72,
-    paddingHorizontal: 6,
-    paddingVertical: 4,
+    minHeight: 28,
+    maxHeight: 96,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
     ...morphFont,
-    fontSize: 14,
-    lineHeight: 19,
+    fontSize: 16,
+    lineHeight: 22,
     color: "#111111",
     textAlign: "left",
   },
   sendBtn: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "#111111",
@@ -249,9 +255,9 @@ const styles = StyleSheet.create({
     backgroundColor: "#D4D4D8",
   },
   voiceBtn: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "#111111",
@@ -261,11 +267,11 @@ const styles = StyleSheet.create({
   },
   micRing: {
     position: "absolute",
-    top: -4,
-    left: -4,
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    top: -5,
+    left: -5,
+    width: 46,
+    height: 46,
+    borderRadius: 23,
     borderWidth: 1.5,
     borderColor: "#111111",
   },

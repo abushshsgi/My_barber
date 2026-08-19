@@ -27,10 +27,9 @@ import { ChatInputBar } from "../../components/morph/chat/ChatInputBar";
 import { ChatMenuDrawer } from "../../components/morph/chat/ChatMenuDrawer";
 import { ChatNotice } from "../../components/morph/chat/ChatNotice";
 import { MorphChatWelcome } from "../../components/morph/chat/MorphChatWelcome";
-import { QuickPromptChips } from "../../components/morph/chat/QuickPromptChips";
 import { VoiceSessionOverlay } from "../../components/morph/chat/VoiceSessionOverlay";
 import { useHideTabBarWhen } from "../../hooks/useHideTabBar";
-import { MORPH_QUICK_PROMPT_IDS, useMorphChat } from "../../hooks/useMorphChat";
+import { useMorphChat } from "../../hooks/useMorphChat";
 import { useMorphVoice } from "../../hooks/useMorphVoice";
 import { useMorphLimitGate } from "../../hooks/useMorphLimitGate";
 import { readLastMorphContentTab, writeAppShell, writeLastShellTab } from "../../lib/app-shell";
@@ -271,21 +270,6 @@ export function MorphChatScreen() {
     }
     scrollToEnd();
   }, [chat, requireAccess, scrollToEnd, showPaywall]);
-
-  const onQuickPrompt = useCallback(
-    async (id: string) => {
-      const ok = await requireAccess(chat.input.trim() || undefined);
-      if (!ok) return;
-      setChatOpen(true);
-      const sent = await chat.sendQuickPrompt(id as (typeof MORPH_QUICK_PROMPT_IDS)[number]);
-      if (sent === "limit") {
-        showPaywall("limit");
-        return;
-      }
-      scrollToEnd();
-    },
-    [chat, requireAccess, scrollToEnd, showPaywall],
-  );
 
   const onPaywallSuccess = useCallback(async () => {
     consumeMorphReturn();
@@ -536,15 +520,7 @@ export function MorphChatScreen() {
               ) : null}
             </View>
           }
-          chips={
-            chat.input.trim().length === 0 ? (
-              <QuickPromptChips
-                prompts={chat.quickPrompts}
-                onSelect={(p) => void onQuickPrompt(p.id)}
-                disabled={chat.sending || chatLocked}
-              />
-            ) : null
-          }
+          chips={null}
           notice={
             chat.error ? (
               <ChatNotice
@@ -648,8 +624,6 @@ export function MorphChatScreen() {
             styles.composerDock,
             {
               paddingBottom: Math.max(insets.bottom, 12),
-              backgroundColor: pal.theme === "dark" ? "rgba(12,12,14,0.42)" : "rgba(238,239,243,0.5)",
-              borderTopColor: pal.line,
             },
           ]}
         >
@@ -719,8 +693,6 @@ const styles = StyleSheet.create({
   composerDock: {
     paddingHorizontal: 16,
     paddingTop: 8,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: "#E4E4E7",
     backgroundColor: "transparent",
   },
   list: {
