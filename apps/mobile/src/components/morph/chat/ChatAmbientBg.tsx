@@ -34,7 +34,7 @@ function WebAurora({ dark }: { dark: boolean }) {
     ensureWebKeyframes();
   }, []);
 
-  const image = dark
+      const image = dark
     ? [
         "radial-gradient(ellipse 90% 70% at 15% 10%, rgba(255,255,255,0.28) 0%, transparent 58%)",
         "radial-gradient(ellipse 80% 80% at 90% 5%, rgba(160,160,160,0.35) 0%, transparent 55%)",
@@ -42,10 +42,10 @@ function WebAurora({ dark }: { dark: boolean }) {
         "radial-gradient(ellipse 85% 70% at 95% 85%, rgba(0,0,0,0.85) 0%, transparent 55%)",
       ].join(",")
     : [
-        "radial-gradient(ellipse 90% 70% at 15% 10%, rgba(255,255,255,0.95) 0%, transparent 58%)",
-        "radial-gradient(ellipse 80% 80% at 90% 5%, rgba(210,210,210,0.9) 0%, transparent 55%)",
-        "radial-gradient(ellipse 95% 75% at 8% 92%, rgba(140,140,140,0.45) 0%, transparent 58%)",
-        "radial-gradient(ellipse 85% 70% at 95% 85%, rgba(40,40,40,0.18) 0%, transparent 55%)",
+        "radial-gradient(ellipse 90% 70% at 12% 8%, #ffffff 0%, transparent 56%)",
+        "radial-gradient(ellipse 80% 80% at 88% 12%, rgba(255,255,255,0.95) 0%, transparent 52%)",
+        "radial-gradient(ellipse 95% 75% at 10% 88%, rgba(232,232,232,0.9) 0%, transparent 58%)",
+        "radial-gradient(ellipse 70% 60% at 92% 82%, rgba(210,210,210,0.55) 0%, transparent 52%)",
       ].join(",");
 
   return createElement("div", {
@@ -55,7 +55,7 @@ function WebAurora({ dark }: { dark: boolean }) {
       inset: 0,
       pointerEvents: "none",
       overflow: "hidden",
-      backgroundColor: dark ? "#0a0a0a" : "#f2f2f2",
+      backgroundColor: dark ? "#0a0a0a" : "#ffffff",
       backgroundImage: image,
       backgroundRepeat: "no-repeat",
       backgroundSize: "220% 220%",
@@ -144,7 +144,7 @@ export function ChatAmbientBg() {
   return (
     <View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.clip]}>
       <LinearGradient
-        colors={dark ? ["#0a0a0a", "#1a1a1a", "#0a0a0a"] : ["#f4f4f4", "#e8e8e8", "#f4f4f4"]}
+        colors={dark ? ["#0a0a0a", "#1a1a1a", "#0a0a0a"] : ["#ffffff", "#f3f3f3", "#ffffff"]}
         start={{ x: 0.1, y: 0 }}
         end={{ x: 0.9, y: 1 }}
         style={StyleSheet.absoluteFill}
@@ -153,7 +153,7 @@ export function ChatAmbientBg() {
         colors={
           dark
             ? ["#111111", "#6e6e6e", "#f5f5f5", "#111111"]
-            : ["#ffffff", "#c8c8c8", "#2a2a2a", "#ffffff"]
+            : ["#ffffff", "#ececec", "#d8d8d8", "#ffffff"]
         }
         duration={18000}
         dim={dim}
@@ -169,7 +169,7 @@ export function ChatAmbientBg() {
         colors={
           dark
             ? ["#000000", "#9a9a9a", "#ffffff", "#000000"]
-            : ["#fafafa", "#b0b0b0", "#1c1c1c", "#fafafa"]
+            : ["#ffffff", "#e6e6e6", "#cfcfcf", "#ffffff"]
         }
         duration={24000}
         dim={dim}
@@ -185,7 +185,7 @@ export function ChatAmbientBg() {
         colors={
           dark
             ? ["#2c2c2c", "#d4d4d4", "#000000", "#2c2c2c"]
-            : ["#ffffff", "#8d8d8d", "#3a3a3a", "#ffffff"]
+            : ["#ffffff", "#f7f7f7", "#dadada", "#ffffff"]
         }
         duration={30000}
         dim={dim}

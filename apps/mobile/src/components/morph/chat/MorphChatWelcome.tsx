@@ -1,9 +1,17 @@
 import { Ionicons } from "@expo/vector-icons";
 import { StatusBar } from "expo-status-bar";
-import type { ReactNode } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { useEffect, type ReactNode } from "react";
+import { Pressable, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import Animated, { FadeInDown } from "react-native-reanimated";
+import Animated, {
+  Easing,
+  FadeInDown,
+  interpolateColor,
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withTiming,
+} from "react-native-reanimated";
 import { morphFont } from "../../../theme/morph-font";
 import { useMorphAppearance } from "../../../lib/MorphAppearanceContext";
 import { ChatAmbientBg } from "./ChatAmbientBg";
@@ -31,7 +39,23 @@ export function MorphChatWelcome({
   notice,
 }: Props) {
   const insets = useSafeAreaInsets();
-  const { colors: pal, fs } = useMorphAppearance();
+  const { colors: pal, fs, theme } = useMorphAppearance();
+  const ink = useSharedValue(0);
+
+  useEffect(() => {
+    ink.value = 0;
+    ink.value = withDelay(
+      220,
+      withTiming(1, { duration: 1100, easing: Easing.out(Easing.cubic) }),
+    );
+  }, [headline, ink, subtitle]);
+
+  const headlineStyle = useAnimatedStyle(() => ({
+    color: interpolateColor(ink.value, [0, 1], ["#FFFFFF", theme === "light" ? "#111111" : "#F5F5F7"]),
+  }));
+  const ledeStyle = useAnimatedStyle(() => ({
+    color: interpolateColor(ink.value, [0, 1], ["#FFFFFF", theme === "light" ? "#3A3A3A" : "#A1A1A6"]),
+  }));
 
   return (
     <View style={[styles.root, { paddingTop: insets.top + 8, paddingBottom: bottomPad }]}>
@@ -51,12 +75,16 @@ export function MorphChatWelcome({
 
       <View style={styles.hero}>
         <Animated.View entering={FadeInDown.duration(360)} style={styles.copy}>
-          <Text style={[styles.headline, { color: pal.fg, fontSize: fs(26), lineHeight: fs(32) }]}>
+          <Animated.Text
+            style={[styles.headline, { fontSize: fs(26), lineHeight: fs(32) }, headlineStyle]}
+          >
             {headline}
-          </Text>
-          <Text style={[styles.lede, { color: pal.muted, fontSize: fs(13), lineHeight: fs(19) }]}>
+          </Animated.Text>
+          <Animated.Text
+            style={[styles.lede, { fontSize: fs(13), lineHeight: fs(19) }, ledeStyle]}
+          >
             {subtitle}
-          </Text>
+          </Animated.Text>
         </Animated.View>
 
         {notice ? <View style={styles.notice}>{notice}</View> : null}
