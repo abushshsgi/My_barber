@@ -35,10 +35,10 @@ export function MorphChatWelcome({
   const cycle = useWelcomeBgCycle();
 
   const headlineStyle = useAnimatedStyle(() => ({
-    color: interpolateColor(cycle.value, [0, 1], ["#FFFFFF", "#111111"]),
+    color: interpolateColor(cycle.value, [0, 1], ["#FFFFFF", "#C8C8C8"]),
   }));
   const ledeStyle = useAnimatedStyle(() => ({
-    color: interpolateColor(cycle.value, [0, 1], ["#F5F5F5", "#3A3A3A"]),
+    color: interpolateColor(cycle.value, [0, 1], ["#F5F5F5", "#A3A3A3"]),
   }));
 
   return (

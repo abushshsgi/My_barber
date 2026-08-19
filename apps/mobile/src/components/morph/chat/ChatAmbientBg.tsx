@@ -15,10 +15,10 @@ import Animated, {
 const AURORA_STYLE_ID = "morph-chat-aurora-mono";
 
 const DARK_MESH = [
-  "radial-gradient(ellipse 90% 70% at 15% 10%, rgba(255,255,255,0.28) 0%, transparent 58%)",
-  "radial-gradient(ellipse 80% 80% at 90% 5%, rgba(160,160,160,0.35) 0%, transparent 55%)",
-  "radial-gradient(ellipse 95% 75% at 8% 92%, rgba(80,80,80,0.7) 0%, transparent 58%)",
-  "radial-gradient(ellipse 85% 70% at 95% 85%, rgba(0,0,0,0.85) 0%, transparent 55%)",
+  "radial-gradient(ellipse 90% 70% at 15% 10%, rgba(255,255,255,0.1) 0%, transparent 58%)",
+  "radial-gradient(ellipse 80% 80% at 90% 5%, rgba(140,140,140,0.18) 0%, transparent 55%)",
+  "radial-gradient(ellipse 95% 75% at 8% 92%, rgba(70,70,70,0.65) 0%, transparent 58%)",
+  "radial-gradient(ellipse 85% 70% at 95% 85%, rgba(0,0,0,0.9) 0%, transparent 55%)",
 ].join(",");
 
 const LIGHT_MESH = [
@@ -147,7 +147,7 @@ function NativeMesh({ light }: { light: boolean }) {
         colors={
           light
             ? ["#ffffff", "#ececec", "#dcdcdc", "#ffffff"]
-            : ["#111111", "#6e6e6e", "#f5f5f5", "#111111"]
+            : ["#111111", "#4a4a4a", "#8a8a8a", "#111111"]
         }
         duration={18000}
         dim={dim}
@@ -163,7 +163,7 @@ function NativeMesh({ light }: { light: boolean }) {
         colors={
           light
             ? ["#ffffff", "#e8e8e8", "#d0d0d0", "#ffffff"]
-            : ["#000000", "#9a9a9a", "#ffffff", "#000000"]
+            : ["#000000", "#5c5c5c", "#8d8d8d", "#000000"]
         }
         duration={24000}
         dim={dim}
@@ -207,10 +207,10 @@ type Props = {
 /** Chat foni — oq/qora gradient; welcome da qora↔oq o‘tadi. */
 export function ChatAmbientBg({ cycle }: Props = {}) {
   const darkStyle = useAnimatedStyle(() => ({
-    opacity: cycle ? interpolate(cycle.value, [0, 1], [1, 0]) : 1,
+    opacity: cycle ? interpolate(cycle.value, [0, 1], [1, 0.88]) : 1,
   }));
   const lightStyle = useAnimatedStyle(() => ({
-    opacity: cycle ? interpolate(cycle.value, [0, 1], [0, 1]) : 0,
+    opacity: cycle ? interpolate(cycle.value, [0, 1], [0, 0.16]) : 0,
   }));
 
   return (
