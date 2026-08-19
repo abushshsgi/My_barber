@@ -1,4 +1,5 @@
-import { useEffect } from "react";
+import { LinearGradient } from "expo-linear-gradient";
+import { createElement, useEffect } from "react";
 import { Platform, StyleSheet, useWindowDimensions, View } from "react-native";
 import Animated, {
   Easing,
@@ -10,33 +11,93 @@ import Animated, {
 } from "react-native-reanimated";
 import { useMorphAppearance } from "../../../lib/MorphAppearanceContext";
 
-type BlobSpec = {
-  color: string;
-  size: number;
-  left: number;
-  top: number;
-  dx: number;
-  dy: number;
-  duration: number;
-};
+const AURORA_STYLE_ID = "morph-chat-aurora-kf";
 
-function DriftBlob({
-  color,
-  size,
-  left,
-  top,
-  dx,
-  dy,
+function ensureWebKeyframes() {
+  if (typeof document === "undefined") return;
+  if (document.getElementById(AURORA_STYLE_ID)) return;
+  const tag = document.createElement("style");
+  tag.id = AURORA_STYLE_ID;
+  tag.textContent = `
+    @keyframes morphChatAurora {
+      0% { background-position: 0% 20%, 100% 0%, 0% 100%, 100% 80%; }
+      40% { background-position: 80% 0%, 20% 80%, 70% 30%, 10% 100%; }
+      70% { background-position: 40% 100%, 0% 40%, 100% 10%, 60% 20%; }
+      100% { background-position: 0% 20%, 100% 0%, 0% 100%, 100% 80%; }
+    }
+    @keyframes morphChatHue {
+      0% { filter: hue-rotate(0deg) saturate(1.2); }
+      50% { filter: hue-rotate(32deg) saturate(1.35); }
+      100% { filter: hue-rotate(0deg) saturate(1.2); }
+    }
+  `;
+  document.head.appendChild(tag);
+}
+
+function WebAurora({ dark }: { dark: boolean }) {
+  useEffect(() => {
+    ensureWebKeyframes();
+  }, []);
+
+  const image = dark
+    ? [
+        "radial-gradient(ellipse 90% 70% at 15% 10%, rgba(59,130,246,0.95) 0%, transparent 58%)",
+        "radial-gradient(ellipse 80% 80% at 90% 5%, rgba(139,92,246,0.88) 0%, transparent 55%)",
+        "radial-gradient(ellipse 95% 75% at 8% 92%, rgba(45,212,191,0.82) 0%, transparent 58%)",
+        "radial-gradient(ellipse 85% 70% at 95% 85%, rgba(244,114,182,0.7) 0%, transparent 55%)",
+      ].join(",")
+    : [
+        "radial-gradient(ellipse 90% 70% at 15% 10%, rgba(96,165,250,0.85) 0%, transparent 58%)",
+        "radial-gradient(ellipse 80% 80% at 90% 5%, rgba(196,181,253,0.8) 0%, transparent 55%)",
+        "radial-gradient(ellipse 95% 75% at 8% 92%, rgba(94,234,212,0.72) 0%, transparent 58%)",
+        "radial-gradient(ellipse 85% 70% at 95% 85%, rgba(249,168,212,0.65) 0%, transparent 55%)",
+      ].join(",");
+
+  return createElement("div", {
+    "aria-hidden": true,
+    style: {
+      position: "absolute",
+      inset: 0,
+      pointerEvents: "none",
+      overflow: "hidden",
+      backgroundColor: dark ? "#0b1020" : "#e8eefc",
+      backgroundImage: image,
+      backgroundRepeat: "no-repeat",
+      backgroundSize: "220% 220%",
+      animation:
+        "morphChatAurora 16s ease-in-out infinite, morphChatHue 22s ease-in-out infinite",
+    },
+  });
+}
+
+function FlowSheet({
+  colors,
   duration,
-}: BlobSpec) {
+  dim,
+  rotateFrom,
+  rotateTo,
+  xFrom,
+  xTo,
+  yFrom,
+  yTo,
+  opacity,
+}: {
+  colors: [string, string, ...string[]];
+  duration: number;
+  dim: number;
+  rotateFrom: number;
+  rotateTo: number;
+  xFrom: number;
+  xTo: number;
+  yFrom: number;
+  yTo: number;
+  opacity: number;
+}) {
   const p = useSharedValue(0);
 
   useEffect(() => {
     p.value = withRepeat(
-      withTiming(1, {
-        duration,
-        easing: Easing.inOut(Easing.sin),
-      }),
+      withTiming(1, { duration, easing: Easing.inOut(Easing.sin) }),
       -1,
       true,
     );
@@ -44,98 +105,109 @@ function DriftBlob({
 
   const style = useAnimatedStyle(() => ({
     transform: [
-      { translateX: interpolate(p.value, [0, 1], [0, dx]) },
-      { translateY: interpolate(p.value, [0, 1], [0, dy]) },
-      { scale: interpolate(p.value, [0, 1], [1, 1.22]) },
+      { translateX: interpolate(p.value, [0, 1], [xFrom, xTo]) },
+      { translateY: interpolate(p.value, [0, 1], [yFrom, yTo]) },
+      {
+        rotate: `${interpolate(p.value, [0, 1], [rotateFrom, rotateTo])}deg`,
+      },
+      { scale: interpolate(p.value, [0, 1], [1.05, 1.18]) },
     ],
-    opacity: interpolate(p.value, [0, 0.5, 1], [0.55, 0.95, 0.62]),
   }));
 
   return (
     <Animated.View
       pointerEvents="none"
       style={[
-        styles.blob,
         {
-          width: size,
-          height: size,
-          borderRadius: size / 2,
-          left,
-          top,
-          backgroundColor: color,
-          ...Platform.select({
-            web: { boxShadow: `0 0 ${Math.round(size * 0.42)}px ${Math.round(size * 0.22)}px ${color}` },
-            default: {},
-          }),
+          position: "absolute",
+          width: dim,
+          height: dim,
+          left: "50%",
+          top: "50%",
+          marginLeft: -dim / 2,
+          marginTop: -dim / 2,
+          opacity,
         },
         style,
       ]}
-    />
+    >
+      <LinearGradient colors={colors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.fill} />
+    </Animated.View>
   );
 }
 
-/** Gemini uslubidagi sekin oqadigan rangli gradient fon. */
+/** Chat foni — oqib turadigan rangli gradient (Gemini uslubi). */
 export function ChatAmbientBg() {
-  const { colors: pal, theme } = useMorphAppearance();
+  const { theme } = useMorphAppearance();
   const { width, height } = useWindowDimensions();
   const dark = theme === "dark";
+  const dim = Math.max(width, height) * 1.85;
 
-  const blobs: BlobSpec[] = [
-    {
-      color: dark ? "rgba(66,133,244,0.42)" : "rgba(66,133,244,0.28)",
-      size: Math.max(280, width * 0.78),
-      left: -width * 0.22,
-      top: -height * 0.08,
-      dx: width * 0.18,
-      dy: height * 0.1,
-      duration: 16000,
-    },
-    {
-      color: dark ? "rgba(168,85,247,0.38)" : "rgba(192,132,252,0.26)",
-      size: Math.max(240, width * 0.7),
-      left: width * 0.28,
-      top: height * 0.08,
-      dx: -width * 0.16,
-      dy: height * 0.12,
-      duration: 19000,
-    },
-    {
-      color: dark ? "rgba(20,184,166,0.32)" : "rgba(45,212,191,0.22)",
-      size: Math.max(220, width * 0.62),
-      left: width * 0.08,
-      top: height * 0.42,
-      dx: width * 0.14,
-      dy: -height * 0.1,
-      duration: 21000,
-    },
-    {
-      color: dark ? "rgba(236,72,153,0.22)" : "rgba(244,114,182,0.18)",
-      size: Math.max(200, width * 0.55),
-      left: width * 0.42,
-      top: height * 0.58,
-      dx: -width * 0.12,
-      dy: -height * 0.08,
-      duration: 24000,
-    },
-  ];
+  if (Platform.OS === "web") {
+    return <WebAurora dark={dark} />;
+  }
 
   return (
-    <View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: pal.bg }]}>
-      {blobs.map((blob, i) => (
-        <DriftBlob key={i} {...blob} />
-      ))}
-      <View
-        style={[
-          StyleSheet.absoluteFill,
-          { backgroundColor: dark ? "rgba(12,12,14,0.42)" : "rgba(238,239,243,0.38)" },
-        ]}
+    <View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.clip]}>
+      <LinearGradient
+        colors={dark ? ["#0b1020", "#14122a", "#0b1020"] : ["#e8eefc", "#f3e8ff", "#e8fbf7"]}
+        start={{ x: 0.1, y: 0 }}
+        end={{ x: 0.9, y: 1 }}
+        style={StyleSheet.absoluteFill}
+      />
+      <FlowSheet
+        colors={
+          dark
+            ? ["#2563eb", "#7c3aed", "#06b6d4", "#2563eb"]
+            : ["#60a5fa", "#c4b5fd", "#5eead4", "#60a5fa"]
+        }
+        duration={18000}
+        dim={dim}
+        rotateFrom={-18}
+        rotateTo={16}
+        xFrom={-width * 0.12}
+        xTo={width * 0.1}
+        yFrom={-height * 0.08}
+        yTo={height * 0.1}
+        opacity={0.72}
+      />
+      <FlowSheet
+        colors={
+          dark
+            ? ["#14b8a6", "#3b82f6", "#ec4899", "#14b8a6"]
+            : ["#2dd4bf", "#93c5fd", "#f9a8d4", "#2dd4bf"]
+        }
+        duration={24000}
+        dim={dim}
+        rotateFrom={12}
+        rotateTo={-20}
+        xFrom={width * 0.08}
+        xTo={-width * 0.1}
+        yFrom={height * 0.06}
+        yTo={-height * 0.1}
+        opacity={0.55}
+      />
+      <FlowSheet
+        colors={
+          dark
+            ? ["#8b5cf6", "#0ea5e9", "#22d3ee", "#8b5cf6"]
+            : ["#a78bfa", "#38bdf8", "#67e8f9", "#a78bfa"]
+        }
+        duration={30000}
+        dim={dim}
+        rotateFrom={8}
+        rotateTo={28}
+        xFrom={-width * 0.06}
+        xTo={width * 0.08}
+        yFrom={height * 0.08}
+        yTo={-height * 0.06}
+        opacity={0.42}
       />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  blob: {
-    position: "absolute",
-  },
+  clip: { overflow: "hidden" },
+  fill: { flex: 1 },
 });
