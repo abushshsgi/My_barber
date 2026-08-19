@@ -3,10 +3,10 @@ import { StatusBar } from "expo-status-bar";
 import type { ReactNode } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import Animated, { FadeInDown, interpolateColor, useAnimatedStyle } from "react-native-reanimated";
+import Animated, { FadeInDown } from "react-native-reanimated";
 import { morphFont } from "../../../theme/morph-font";
 import { useMorphAppearance } from "../../../lib/MorphAppearanceContext";
-import { ChatAmbientBg, useWelcomeBgCycle } from "./ChatAmbientBg";
+import { ChatAmbientBg } from "./ChatAmbientBg";
 
 type Props = {
   headline: string;
@@ -36,18 +36,10 @@ export function MorphChatWelcome({
 }: Props) {
   const insets = useSafeAreaInsets();
   const { fs } = useMorphAppearance();
-  const cycle = useWelcomeBgCycle();
-
-  const headlineStyle = useAnimatedStyle(() => ({
-    color: interpolateColor(cycle.value, [0, 1], ["#FFFFFF", "#C8C8C8"]),
-  }));
-  const ledeStyle = useAnimatedStyle(() => ({
-    color: interpolateColor(cycle.value, [0, 1], ["#F5F5F5", "#A3A3A3"]),
-  }));
 
   return (
     <View style={styles.root}>
-      <ChatAmbientBg cycle={cycle} />
+      <ChatAmbientBg />
       <StatusBar style="light" />
 
       <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
@@ -73,12 +65,12 @@ export function MorphChatWelcome({
       <View style={styles.hero}>
         <Animated.View entering={FadeInDown.duration(360)} style={styles.copy}>
           <Animated.Text
-            style={[styles.headline, { fontSize: fs(26), lineHeight: fs(32) }, headlineStyle]}
+            style={[styles.headline, { fontSize: fs(26), lineHeight: fs(32) }]}
           >
             {headline}
           </Animated.Text>
           <Animated.Text
-            style={[styles.lede, { fontSize: fs(13), lineHeight: fs(19) }, ledeStyle]}
+            style={[styles.lede, { fontSize: fs(13), lineHeight: fs(19) }]}
           >
             {subtitle}
           </Animated.Text>
@@ -139,7 +131,7 @@ const styles = StyleSheet.create({
     fontSize: 26,
     lineHeight: 32,
     fontWeight: "600",
-    color: "#111111",
+    color: "#FFFFFF",
     letterSpacing: -0.6,
     textAlign: "center",
   },
@@ -148,7 +140,7 @@ const styles = StyleSheet.create({
     ...morphFont,
     fontSize: 13,
     lineHeight: 19,
-    color: "#71717A",
+    color: "#A1A1AA",
     textAlign: "center",
     maxWidth: 340,
   },
