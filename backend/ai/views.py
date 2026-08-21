@@ -23,6 +23,7 @@ from .models import (
     GENERATION_HISTORY_MAX_PER_USER,
     HISTORY_MAX_PER_USER,
     AiStyleHistoryEntry,
+    CareProduct,
     HairCareProfile,
     Hairstyle,
     IngredientScanEntry,
@@ -53,8 +54,9 @@ from .services.tryon_queue import (
     is_queue_enabled,
 )
 from .services.gemini_barber_card import generate_barber_master_card
-from .services.gemini_ingredient import analyze_ingredient_from_data_url
+from .services.care_catalog_context import build_care_catalog_context
 from .services.care_match import match_care_product, score_against_hair
+from .services.gemini_ingredient import analyze_ingredient_from_data_url
 from .services.gemini_style import (
     NO_FACE_MESSAGE,
     AiStyleError,
@@ -581,15 +583,33 @@ class AiIngredientScanView(UnthrottledAPIView):
             )
 
         try:
-            result = analyze_ingredient_from_data_url(str(image), profile)
+            catalog_block = build_care_catalog_context()
+            result = analyze_ingredient_from_data_url(
+                str(image), profile, catalog_block=catalog_block
+            )
             usage = result.pop("_usage", None) or {}
             analysis = result.get("product_analysis") if isinstance(result.get("product_analysis"), dict) else {}
             ingredients = result.get("ingredients") if isinstance(result.get("ingredients"), list) else []
-            product, match_score = match_care_product(
-                product_name=str(analysis.get("product_name") or ""),
-                brand=str(analysis.get("brand") or ""),
-                ingredients=ingredients,
-            )
+            fit_uz = str(result.get("fit_uz") or "").strip()
+            catalog_notes_uz = str(result.get("catalog_notes_uz") or "").strip()
+
+            product = None
+            match_score = 0.0
+            gemini_id = result.get("matched_product_id")
+            if isinstance(gemini_id, int) and gemini_id > 0:
+                product = CareProduct.objects.filter(
+                    pk=gemini_id, is_published=True
+                ).first()
+                if product is not None:
+                    match_score = 1.0
+
+            if product is None:
+                product, match_score = match_care_product(
+                    product_name=str(analysis.get("product_name") or ""),
+                    brand=str(analysis.get("brand") or ""),
+                    ingredients=ingredients,
+                )
+
             scored = score_against_hair(
                 product,
                 ingredients,
@@ -597,6 +617,8 @@ class AiIngredientScanView(UnthrottledAPIView):
                 str(result.get("verdict_key") or ""),
             )
             analysis["safety_score"] = scored["safety_score"]
+            if fit_uz:
+                analysis["verdict"] = fit_uz[:280]
             result["product_analysis"] = analysis
             result["verdict"] = scored["verdict"]
             result["verdict_key"] = scored["verdict"]
@@ -605,6 +627,9 @@ class AiIngredientScanView(UnthrottledAPIView):
             result["good_flags"] = scored["good_flags"]
             result["bad_flags"] = scored["bad_flags"]
             result["dangerous_flags"] = scored["dangerous_flags"]
+            result["fit_uz"] = fit_uz
+            result["catalog_notes_uz"] = catalog_notes_uz
+            result["matched_product_id"] = product.pk if product is not None else None
             result["matched_product"] = (
                 CareProductSerializer(product, context={"request": request}).data
                 if product is not None

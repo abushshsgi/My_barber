@@ -16,20 +16,32 @@ import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useIngredientScan } from "@/hooks/use-ingredient-scan";
-import { useSkinProfile, useUpdateSkinProfile } from "@/hooks/use-skin-profile";
+import { useHairCareProfile, useUpdateHairCareProfile } from "@/hooks/use-hair-care-profile";
 import { fetchCareAccess } from "@/lib/api/subscriptions";
 import type { IngredientScanResponse } from "@/lib/api/ai";
-import type { SkinSensitivity, SkinType } from "@/lib/api/skin-profile";
+import type {
+  HairColorStatus,
+  HairCondition,
+  HairTexture,
+} from "@/lib/api/hair-care-profile";
 import { prepareSelfieFromFile } from "@/lib/selfie-image";
 import { cn } from "@/lib/utils";
 
-const SKIN_TYPES: SkinType[] = ["dry", "oily", "combination", "normal"];
-const SENSITIVITY: SkinSensitivity[] = ["low", "medium", "high"];
+const CONDITION_OPTS: HairCondition[] = ["oily", "dry", "normal", "damaged"];
+const TEXTURE_OPTS: HairTexture[] = ["straight", "wavy", "curly"];
+const COLOR_OPTS: HairColorStatus[] = ["natural", "colored", "bleached"];
 
 type QuizStep = 0 | 1 | 2;
 type Screen = "quiz" | "capture" | "result";
 
 const ease = [0.22, 1, 0.36, 1] as const;
+
+const VERDICT_TONE: Record<string, string> = {
+  good: "text-emerald-300",
+  caution: "text-amber-300",
+  bad: "text-orange-300",
+  dangerous: "text-rose-300",
+};
 
 export function MorphAiIngredientScanPage() {
   const { t } = useTranslation();
@@ -39,13 +51,13 @@ export function MorphAiIngredientScanPage() {
     queryFn: fetchCareAccess,
     staleTime: 30_000,
   });
-  const skinQ = useSkinProfile();
-  const updateSkin = useUpdateSkinProfile();
+  const hairQ = useHairCareProfile();
+  const updateHair = useUpdateHairCareProfile();
   const scan = useIngredientScan();
 
-  const [skinType, setSkinType] = useState<SkinType | null>(null);
-  const [acneProne, setAcneProne] = useState<boolean | null>(null);
-  const [sensitivity, setSensitivity] = useState<SkinSensitivity | null>(null);
+  const [condition, setCondition] = useState<HairCondition | null>(null);
+  const [texture, setTexture] = useState<HairTexture | null>(null);
+  const [colorStatus, setColorStatus] = useState<HairColorStatus | null>(null);
   const [quizStep, setQuizStep] = useState<QuizStep>(0);
   const [forceQuiz, setForceQuiz] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -54,14 +66,14 @@ export function MorphAiIngredientScanPage() {
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
 
-  const profileComplete = Boolean(skinQ.data?.complete);
+  const profileComplete = Boolean(hairQ.data?.complete);
   const screen: Screen = result
     ? "result"
-    : forceQuiz || (!profileComplete && !skinQ.isLoading)
+    : forceQuiz || (!profileComplete && !hairQ.isLoading)
       ? "quiz"
       : "capture";
 
-  if (accessQ.isLoading || skinQ.isLoading) {
+  if (accessQ.isLoading || hairQ.isLoading) {
     return (
       <div className="grid min-h-[100dvh] place-items-center bg-[#050505] text-white">
         <Loader2 className="size-6 animate-spin text-white/40" />
@@ -98,17 +110,17 @@ export function MorphAiIngredientScanPage() {
   }
 
   const finishQuiz = async () => {
-    if (!skinType || acneProne === null || !sensitivity) return;
+    if (!condition || !texture || !colorStatus) return;
     try {
-      await updateSkin.mutateAsync({
-        skin_type: skinType,
-        acne_prone: acneProne,
-        sensitivity,
+      await updateHair.mutateAsync({
+        condition,
+        texture,
+        color_status: colorStatus,
       });
       setForceQuiz(false);
       toast.success(
         t("aiStylePage.care.ingredientScan.profileSaved", {
-          defaultValue: "Teri profilingiz saqlandi",
+          defaultValue: "Soch profilingiz saqlandi",
         }),
       );
     } catch (e) {
@@ -143,60 +155,36 @@ export function MorphAiIngredientScanPage() {
   if (screen === "quiz") {
     const questions = [
       {
-        title: t("aiStylePage.care.ingredientScan.quiz.skinTypeQ", {
-          defaultValue: "Teri turi?",
-        }),
-        options: SKIN_TYPES.map((value) => ({
+        title: t("aiStylePage.care.quiz.conditionQ", { defaultValue: "Soch holati?" }),
+        options: CONDITION_OPTS.map((value) => ({
           value,
-          label: t(`aiStylePage.care.ingredientScan.skinTypes.${value}`, {
-            defaultValue: value,
-          }),
+          label: t(`aiStylePage.care.conditions.${value}`, { defaultValue: value }),
         })),
-        selected: skinType,
-        onPick: (v: string) => setSkinType(v as SkinType),
+        selected: condition,
+        onPick: (v: string) => setCondition(v as HairCondition),
       },
       {
-        title: t("aiStylePage.care.ingredientScan.quiz.acneQ", {
-          defaultValue: "Akne chiqadimi?",
-        }),
-        options: [
-          {
-            value: "yes",
-            label: t("aiStylePage.care.ingredientScan.quiz.acneYes", {
-              defaultValue: "Ha, akne chiqadi",
-            }),
-          },
-          {
-            value: "no",
-            label: t("aiStylePage.care.ingredientScan.quiz.acneNo", {
-              defaultValue: "Yo‘q",
-            }),
-          },
-        ],
-        selected: acneProne === null ? null : acneProne ? "yes" : "no",
-        onPick: (v: string) => setAcneProne(v === "yes"),
+        title: t("aiStylePage.care.quiz.textureQ", { defaultValue: "Tekstura?" }),
+        options: TEXTURE_OPTS.map((value) => ({
+          value,
+          label: t(`aiStylePage.care.textures.${value}`, { defaultValue: value }),
+        })),
+        selected: texture,
+        onPick: (v: string) => setTexture(v as HairTexture),
       },
       {
-        title: t("aiStylePage.care.ingredientScan.quiz.sensitivityQ", {
-          defaultValue: "Sezgirlik?",
-        }),
-        options: SENSITIVITY.map((value) => ({
+        title: t("aiStylePage.care.quiz.colorQ", { defaultValue: "Rang?" }),
+        options: COLOR_OPTS.map((value) => ({
           value,
-          label: t(`aiStylePage.care.ingredientScan.sensitivity.${value}`, {
-            defaultValue: value,
-          }),
+          label: t(`aiStylePage.care.colors.${value}`, { defaultValue: value }),
         })),
-        selected: sensitivity,
-        onPick: (v: string) => setSensitivity(v as SkinSensitivity),
+        selected: colorStatus,
+        onPick: (v: string) => setColorStatus(v as HairColorStatus),
       },
     ] as const;
     const current = questions[quizStep];
     const canNext =
-      quizStep === 0
-        ? Boolean(skinType)
-        : quizStep === 1
-          ? acneProne !== null
-          : Boolean(sensitivity);
+      quizStep === 0 ? Boolean(condition) : quizStep === 1 ? Boolean(texture) : Boolean(colorStatus);
     const progress = ((quizStep + 1) / questions.length) * 100;
 
     return (
@@ -208,7 +196,7 @@ export function MorphAiIngredientScanPage() {
         >
           <BackLink label={t("common.back")} />
           <p className="mt-6 text-[12px] font-medium tracking-wide text-white/35">
-            {t("aiStylePage.care.ingredientScan.badge", { defaultValue: "Teri profili" })}
+            {t("aiStylePage.care.ingredientScan.hairProfile", { defaultValue: "Soch profili" })}
           </p>
           <h1 className="mt-2 max-w-[18rem] text-[1.45rem] font-semibold leading-[1.12] tracking-tight">
             {current.title}
@@ -259,14 +247,14 @@ export function MorphAiIngredientScanPage() {
             ) : null}
             <button
               type="button"
-              disabled={!canNext || updateSkin.isPending}
+              disabled={!canNext || updateHair.isPending}
               onClick={() => {
                 if (quizStep === 2) void finishQuiz();
                 else setQuizStep((s) => (s + 1) as QuizStep);
               }}
               className="h-12 flex-[1.6] rounded-full bg-white text-sm font-semibold text-black disabled:opacity-40"
             >
-              {updateSkin.isPending ? (
+              {updateHair.isPending ? (
                 <Loader2 className="mx-auto size-5 animate-spin" />
               ) : quizStep === 2 ? (
                 t("aiStylePage.care.ingredientScan.quiz.save", { defaultValue: "Saqlash" })
@@ -282,12 +270,13 @@ export function MorphAiIngredientScanPage() {
 
   if (screen === "result" && result) {
     const score = result.product_analysis.safety_score;
-    const scoreColor =
-      score >= 75 ? "text-emerald-400" : score >= 50 ? "text-amber-300" : "text-rose-400";
+    const verdict = result.verdict || result.verdict_key || "";
+    const scoreColor = VERDICT_TONE[verdict] || (score >= 70 ? "text-emerald-300" : score >= 45 ? "text-amber-300" : "text-rose-300");
+    const matched = result.matched_product;
 
     return (
       <div className="relative min-h-[100dvh] overflow-hidden bg-[#050505] text-white">
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-64 bg-[radial-gradient(ellipse_at_50%_0%,rgba(255,255,255,0.08),transparent_60%)]" />
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-56 bg-[radial-gradient(ellipse_at_50%_0%,rgba(255,255,255,0.07),transparent_65%)]" />
         <div
           className="relative z-[1] px-5 pb-[max(2rem,env(safe-area-inset-bottom))]"
           style={{ paddingTop: "max(1rem, env(safe-area-inset-top))" }}
@@ -306,9 +295,28 @@ export function MorphAiIngredientScanPage() {
               <p className={cn("text-5xl font-semibold tracking-tight", scoreColor)}>{score}</p>
               <p className="mb-1.5 text-sm text-white/45">/ 100</p>
             </div>
+            {verdict ? (
+              <p className={cn("mt-2 text-[13px] font-semibold uppercase tracking-wide", scoreColor)}>
+                {t(`aiStylePage.care.verdicts.${verdict}`, {
+                  defaultValue:
+                    verdict === "good"
+                      ? "Yaxshi"
+                      : verdict === "caution"
+                        ? "Ehtiyot"
+                        : verdict === "bad"
+                          ? "Yomon"
+                          : "Xavfli",
+                })}
+              </p>
+            ) : null}
             <p className="mt-2 max-w-[22rem] text-[15px] leading-relaxed text-white/75">
-              {result.product_analysis.verdict}
+              {result.fit_uz || result.product_analysis.verdict}
             </p>
+            {result.catalog_notes_uz ? (
+              <p className="mt-2 max-w-[22rem] text-[12px] leading-relaxed text-white/40">
+                {result.catalog_notes_uz}
+              </p>
+            ) : null}
             <p className="mt-2 text-[12px] text-white/35">
               {t("aiStylePage.care.ingredientScan.ingredientsCount", {
                 defaultValue: "{{count}} ta modda",
@@ -316,6 +324,28 @@ export function MorphAiIngredientScanPage() {
               })}
             </p>
           </motion.div>
+
+          {matched ? (
+            <Link
+              to="/ai-style/care/products/$productId"
+              params={{ productId: String(matched.id) }}
+              className="mt-8 block rounded-2xl bg-white/[0.06] px-3.5 py-3.5 ring-1 ring-white/10"
+            >
+              <p className="text-[11px] text-white/35">
+                {t("aiStylePage.care.catalog.match", { defaultValue: "Katalogdagi mahsulot" })}
+              </p>
+              <p className="mt-1 text-[15px] font-semibold">{matched.name}</p>
+              {matched.brand ? <p className="text-[12px] text-white/45">{matched.brand}</p> : null}
+              {matched.purpose_uz ? (
+                <p className="mt-2 text-[13px] text-white/55">{matched.purpose_uz}</p>
+              ) : null}
+              {matched.warnings_uz ? (
+                <p className="mt-2 text-[12px] leading-snug text-amber-200/70">
+                  {matched.warnings_uz}
+                </p>
+              ) : null}
+            </Link>
+          ) : null}
 
           {result.critical_alerts.length > 0 ? (
             <section className="mt-9">
@@ -410,15 +440,15 @@ export function MorphAiIngredientScanPage() {
           <button
             type="button"
             onClick={() => {
-              setSkinType(
-                skinQ.data?.skin_type && skinQ.data.skin_type !== "" ? skinQ.data.skin_type : null,
+              setCondition(
+                hairQ.data?.condition && hairQ.data.condition !== "" ? hairQ.data.condition : null,
               );
-              setAcneProne(
-                typeof skinQ.data?.acne_prone === "boolean" ? skinQ.data.acne_prone : null,
+              setTexture(
+                hairQ.data?.texture && hairQ.data.texture !== "" ? hairQ.data.texture : null,
               );
-              setSensitivity(
-                skinQ.data?.sensitivity && skinQ.data.sensitivity !== ""
-                  ? skinQ.data.sensitivity
+              setColorStatus(
+                hairQ.data?.color_status && hairQ.data.color_status !== ""
+                  ? hairQ.data.color_status
                   : null,
               );
               setQuizStep(0);
@@ -452,7 +482,7 @@ export function MorphAiIngredientScanPage() {
           <p className="mt-3 max-w-[22rem] text-[15px] leading-relaxed text-white/55">
             {t("aiStylePage.care.ingredientScan.subtitle", {
               defaultValue:
-                "Krem, loson yoki shampun orqasidagi Ingredients yozuvini suratga oling — AI foydali va zararli moddalarni aytadi.",
+                "Shampun, balzam yoki boshqa soch vositasi orqasidagi Ingredients yozuvini suratga oling — AI sochingizga qarab yaxshi, yomon va xavfli moddalarni aytadi.",
             })}
           </p>
         </motion.div>
@@ -553,7 +583,7 @@ export function MorphAiIngredientScanPage() {
 function BackLink({ label }: { label: string }) {
   return (
     <Link
-      to="/ai-style"
+      to="/ai-style/care"
       className="inline-flex size-11 items-center justify-center rounded-full bg-white/10 touch-manipulation"
       aria-label={label}
     >
