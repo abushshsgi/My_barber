@@ -34,6 +34,9 @@ import { morphFont } from "../../theme/morph-font";
 type Props = NativeStackScreenProps<MorphCareStackParamList, "CareHome">;
 type QuizStep = 0 | 1 | 2;
 
+/** Vaqtinchalik: Pro obunasiz Care ochiq. Production oldidan false qiling. */
+const CARE_ACCESS_DEBUG = true;
+
 const CONDITION_OPTS: HairCondition[] = ["oily", "dry", "normal", "damaged"];
 const TEXTURE_OPTS: HairTexture[] = ["straight", "wavy", "curly"];
 const COLOR_OPTS: HairColorStatus[] = ["natural", "colored", "bleached"];
@@ -53,10 +56,12 @@ export function MorphCareScreen({ navigation }: Props) {
   const bootstrap = useCallback(async () => {
     setLoading(true);
     try {
-      const accessRes = await fetchCareAccess().catch(() => ({
-        allowed: false,
-        detail: undefined,
-      }));
+      const accessRes = CARE_ACCESS_DEBUG
+        ? { allowed: true as const, detail: undefined }
+        : await fetchCareAccess().catch(() => ({
+            allowed: false,
+            detail: undefined,
+          }));
       setAccess(accessRes);
       if (!accessRes.allowed) return;
 

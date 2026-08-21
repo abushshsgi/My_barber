@@ -1,20 +1,13 @@
 import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Pencil, Plus, Search, Trash2 } from "lucide-react";
+import { ImagePlus, Pencil, Plus, Search, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { EmptyState } from "@/components/admin/EmptyState";
 import { CardSkeleton } from "@/components/admin/Skeletons";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -27,14 +20,6 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
   createAdminCareProduct,
   deleteAdminCareProduct,
   fetchAdminCareProducts,
@@ -42,6 +27,7 @@ import {
   type AdminCareProduct,
   type CareProductCategory,
 } from "@/lib/admin-api";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/admin/parvarish/tarkib")({
   component: ParvarishTarkibPage,
@@ -111,9 +97,10 @@ function ParvarishTarkibPage() {
   const qc = useQueryClient();
   const [q, setQ] = useState("");
   const [category, setCategory] = useState<string>("all");
-  const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<AdminCareProduct | null>(null);
+  const [creating, setCreating] = useState(false);
   const [form, setForm] = useState<FormState>(emptyForm);
+  const editorOpen = creating || editing != null;
 
   const list = useQuery({
     queryKey: ["admin", "parvarish", "products", category, q],
@@ -148,9 +135,7 @@ function ParvarishTarkibPage() {
     },
     onSuccess: () => {
       toast.success(editing ? "Saqlandi" : "Qo'shildi");
-      setOpen(false);
-      setEditing(null);
-      setForm(emptyForm());
+      closeEditor();
       void qc.invalidateQueries({ queryKey: ["admin", "parvarish"] });
     },
     onError: (e: Error) => toast.error(e.message || "Xato"),
@@ -160,6 +145,7 @@ function ParvarishTarkibPage() {
     mutationFn: (id: number) => deleteAdminCareProduct(id),
     onSuccess: () => {
       toast.success("O'chirildi");
+      closeEditor();
       void qc.invalidateQueries({ queryKey: ["admin", "parvarish"] });
     },
     onError: (e: Error) => toast.error(e.message || "O'chirilmadi"),
@@ -167,12 +153,20 @@ function ParvarishTarkibPage() {
 
   const rows = useMemo(() => list.data || [], [list.data]);
 
-  const openCreate = () => {
+  const closeEditor = () => {
+    setCreating(false);
     setEditing(null);
     setForm(emptyForm());
-    setOpen(true);
   };
+
+  const openCreate = () => {
+    setEditing(null);
+    setCreating(true);
+    setForm(emptyForm());
+  };
+
   const openEdit = (row: AdminCareProduct) => {
+    setCreating(false);
     setEditing(row);
     setForm({
       name: row.name,
@@ -190,271 +184,372 @@ function ParvarishTarkibPage() {
       sort_order: String(row.sort_order ?? 0),
       image: null,
     });
-    setOpen(true);
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-end justify-between gap-3">
+    <div className="space-y-5">
+      <div className="flex flex-wrap items-end justify-between gap-3 border-b border-border pb-4">
         <div>
-          <h1 className="font-heading text-2xl font-semibold">Tarkib katalogi</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Shampun, balzam va boshqa soch vositalari — userlarga ko'rinadi
+          <p className="text-[11px] font-medium tracking-[0.14em] text-muted-foreground uppercase">
+            Parvarish / Tarkib
+          </p>
+          <h1 className="mt-1 font-heading text-2xl font-semibold tracking-tight">
+            Mahsulotlar
+          </h1>
+          <p className="mt-1 max-w-md text-sm text-muted-foreground">
+            Katalog kartochkalari — tahrirlash o‘ng paneldan.
           </p>
         </div>
-        <Button type="button" onClick={openCreate}>
+        <Button type="button" onClick={openCreate} className="rounded-full px-4">
           <Plus className="size-4" />
-          Yangi mahsulot
+          Yangi
         </Button>
       </div>
 
       <div className="flex flex-wrap gap-2">
-        <div className="relative min-w-[220px] flex-1">
+        <div className="relative min-w-[200px] flex-1">
           <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            className="pl-9"
+            className="rounded-full pl-9"
             placeholder="Qidiruv..."
             value={q}
             onChange={(e) => setQ(e.target.value)}
           />
         </div>
-        <Select value={category} onValueChange={setCategory}>
-          <SelectTrigger className="w-[160px]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Hammasi</SelectItem>
-            {CATEGORIES.map((c) => (
-              <SelectItem key={c.value} value={c.value}>
-                {c.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="flex flex-wrap gap-1.5">
+          <FilterPill active={category === "all"} onClick={() => setCategory("all")} label="Hammasi" />
+          {CATEGORIES.map((c) => (
+            <FilterPill
+              key={c.value}
+              active={category === c.value}
+              onClick={() => setCategory(c.value)}
+              label={c.label}
+            />
+          ))}
+        </div>
       </div>
 
-      {list.isLoading ? (
-        <CardSkeleton className="h-64" />
-      ) : rows.length === 0 ? (
-        <EmptyState title="Katalog bo'sh" description="Mahsulot qo'shing yoki filtrni o'zgartiring." />
-      ) : (
-        <div className="overflow-x-auto rounded-2xl border border-border bg-card">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Mahsulot</TableHead>
-                <TableHead>Tur</TableHead>
-                <TableHead>Kimlarga</TableHead>
-                <TableHead>Holat</TableHead>
-                <TableHead />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.map((row) => (
-                <TableRow key={row.id}>
-                  <TableCell>
-                    <div className="flex items-center gap-3">
+      <div
+        className={cn(
+          "grid gap-5",
+          editorOpen ? "lg:grid-cols-[minmax(0,1fr)_minmax(320px,420px)]" : "grid-cols-1",
+        )}
+      >
+        <div>
+          {list.isLoading ? (
+            <CardSkeleton className="h-64" />
+          ) : rows.length === 0 ? (
+            <EmptyState
+              title="Katalog bo'sh"
+              description="Yangi mahsulot qo'shing yoki filtrni o'zgartiring."
+            />
+          ) : (
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+              {rows.map((row) => {
+                const active = editing?.id === row.id;
+                return (
+                  <button
+                    key={row.id}
+                    type="button"
+                    onClick={() => openEdit(row)}
+                    className={cn(
+                      "group overflow-hidden rounded-2xl border text-left transition-colors",
+                      active
+                        ? "border-foreground bg-card shadow-sm"
+                        : "border-border bg-card/60 hover:border-foreground/30",
+                    )}
+                  >
+                    <div className="relative aspect-[5/3] bg-muted">
                       {row.image_url ? (
-                        <img src={row.image_url} alt="" className="size-10 rounded-lg object-cover" />
-                      ) : null}
-                      <div>
-                        <div className="font-medium">{row.name}</div>
-                        <div className="text-xs text-muted-foreground">{row.brand || row.slug}</div>
+                        <img
+                          src={row.image_url}
+                          alt=""
+                          className="size-full object-cover"
+                        />
+                      ) : (
+                        <div className="grid size-full place-items-center text-muted-foreground">
+                          <ImagePlus className="size-6 opacity-40" />
+                        </div>
+                      )}
+                      <div className="absolute top-2 left-2 flex gap-1">
+                        <Badge variant="secondary" className="bg-background/90 backdrop-blur">
+                          {CATEGORIES.find((c) => c.value === row.category)?.label || row.category}
+                        </Badge>
+                      </div>
+                      <div className="absolute top-2 right-2">
+                        <Badge variant={row.is_published ? "default" : "outline"}>
+                          {row.is_published ? "Nashr" : "Qoralama"}
+                        </Badge>
                       </div>
                     </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="secondary">
-                      {CATEGORIES.find((c) => c.value === row.category)?.label || row.category}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="max-w-[180px] truncate text-xs text-muted-foreground">
-                    {(row.suitable_for || []).join(", ") || "—"}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={row.is_published ? "default" : "outline"}>
-                      {row.is_published ? "Nashr" : "Qoralama"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Button type="button" variant="ghost" size="sm" onClick={() => openEdit(row)}>
-                      <Pencil className="size-4" />
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        if (window.confirm("O'chirilsinmi?")) remove.mutate(row.id);
-                      }}
-                    >
-                      <Trash2 className="size-4" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+                    <div className="space-y-1 p-3.5">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="truncate font-medium">{row.name}</p>
+                          <p className="truncate text-xs text-muted-foreground">
+                            {row.brand || "Brend yo‘q"}
+                          </p>
+                        </div>
+                        <Pencil className="mt-0.5 size-3.5 shrink-0 text-muted-foreground opacity-0 transition group-hover:opacity-100" />
+                      </div>
+                      <p className="line-clamp-2 text-xs text-muted-foreground">
+                        {row.purpose_uz || row.usage_uz || "Tavsif yo‘q"}
+                      </p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
-      )}
 
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="font-heading">
-              {editing ? "Mahsulotni tahrirlash" : "Yangi mahsulot"}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-3">
-            <div className="grid gap-1.5">
-              <Label>Nomi</Label>
-              <Input
-                value={form.name}
-                onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
+        {editorOpen ? (
+          <aside className="sticky top-20 h-fit rounded-2xl border border-border bg-card p-4 shadow-sm lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto">
+            <div className="mb-4 flex items-start justify-between gap-3">
+              <div>
+                <p className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
+                  {editing ? "Tahrirlash" : "Yangi yozuv"}
+                </p>
+                <h2 className="font-heading text-lg font-semibold">
+                  {editing ? editing.name : "Mahsulot"}
+                </h2>
+              </div>
+              <Button type="button" variant="ghost" size="icon" onClick={closeEditor}>
+                <X className="size-4" />
+              </Button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Field label="Nomi">
+                  <Input
+                    value={form.name}
+                    onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
+                  />
+                </Field>
+                <Field label="Brend">
+                  <Input
+                    value={form.brand}
+                    onChange={(e) => setForm((p) => ({ ...p, brand: e.target.value }))}
+                  />
+                </Field>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Field label="Kategoriya">
+                  <Select
+                    value={form.category}
+                    onValueChange={(v) =>
+                      setForm((p) => ({ ...p, category: v as CareProductCategory }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CATEGORIES.map((c) => (
+                        <SelectItem key={c.value} value={c.value}>
+                          {c.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </Field>
+                <Field label="Rasm">
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) =>
+                      setForm((p) => ({ ...p, image: e.target.files?.[0] || null }))
+                    }
+                  />
+                </Field>
+              </div>
+
+              <Field label="Tarkib (INCI)">
+                <Textarea
+                  rows={3}
+                  value={form.ingredients_text}
+                  onChange={(e) => setForm((p) => ({ ...p, ingredients_text: e.target.value }))}
+                  placeholder="Aqua, Glycerin, ..."
+                />
+              </Field>
+
+              <div className="grid gap-3">
+                <Field label="Qo'llanish">
+                  <Textarea
+                    rows={2}
+                    value={form.usage_uz}
+                    onChange={(e) => setForm((p) => ({ ...p, usage_uz: e.target.value }))}
+                  />
+                </Field>
+                <Field label="Nima uchun">
+                  <Textarea
+                    rows={2}
+                    value={form.purpose_uz}
+                    onChange={(e) => setForm((p) => ({ ...p, purpose_uz: e.target.value }))}
+                  />
+                </Field>
+              </div>
+
+              <TagGroup
+                label="Kimlarga mos"
+                selected={form.suitable_for}
+                onToggle={(tag) =>
+                  setForm((p) => ({ ...p, suitable_for: toggleTag(p.suitable_for, tag) }))
+                }
               />
-            </div>
-            <div className="grid gap-1.5">
-              <Label>Brend</Label>
-              <Input
-                value={form.brand}
-                onChange={(e) => setForm((p) => ({ ...p, brand: e.target.value }))}
+              <TagGroup
+                label="Kimlarga mos emas"
+                selected={form.not_suitable_for}
+                onToggle={(tag) =>
+                  setForm((p) => ({
+                    ...p,
+                    not_suitable_for: toggleTag(p.not_suitable_for, tag),
+                  }))
+                }
               />
-            </div>
-            <div className="grid gap-1.5">
-              <Label>Kategoriya</Label>
-              <Select
-                value={form.category}
-                onValueChange={(v) => setForm((p) => ({ ...p, category: v as CareProductCategory }))}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {CATEGORIES.map((c) => (
-                    <SelectItem key={c.value} value={c.value}>
-                      {c.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid gap-1.5">
-              <Label>Rasm</Label>
-              <Input
-                type="file"
-                accept="image/*"
-                onChange={(e) => setForm((p) => ({ ...p, image: e.target.files?.[0] || null }))}
-              />
-            </div>
-            <div className="grid gap-1.5">
-              <Label>Tarkib (INCI)</Label>
-              <Textarea
-                rows={3}
-                value={form.ingredients_text}
-                onChange={(e) => setForm((p) => ({ ...p, ingredients_text: e.target.value }))}
-                placeholder="Aqua, Glycerin, ..."
-              />
-            </div>
-            <div className="grid gap-1.5">
-              <Label>Qo'llanish</Label>
-              <Textarea
-                rows={2}
-                value={form.usage_uz}
-                onChange={(e) => setForm((p) => ({ ...p, usage_uz: e.target.value }))}
-              />
-            </div>
-            <div className="grid gap-1.5">
-              <Label>Nima uchun</Label>
-              <Textarea
-                rows={2}
-                value={form.purpose_uz}
-                onChange={(e) => setForm((p) => ({ ...p, purpose_uz: e.target.value }))}
-              />
-            </div>
-            <div className="grid gap-1.5">
-              <Label>Kimlarga mos</Label>
-              <div className="flex flex-wrap gap-2">
-                {HAIR_TAGS.map((tag) => (
-                  <label key={tag.value} className="flex items-center gap-1.5 text-xs">
-                    <Checkbox
-                      checked={form.suitable_for.includes(tag.value)}
-                      onCheckedChange={() =>
-                        setForm((p) => ({ ...p, suitable_for: toggleTag(p.suitable_for, tag.value) }))
-                      }
-                    />
-                    {tag.label}
-                  </label>
-                ))}
+
+              <div className="grid gap-3">
+                <Field label="Yaxshi tomonlari">
+                  <Textarea
+                    rows={2}
+                    value={form.pros_uz}
+                    onChange={(e) => setForm((p) => ({ ...p, pros_uz: e.target.value }))}
+                  />
+                </Field>
+                <Field label="Yomon tomonlari">
+                  <Textarea
+                    rows={2}
+                    value={form.cons_uz}
+                    onChange={(e) => setForm((p) => ({ ...p, cons_uz: e.target.value }))}
+                  />
+                </Field>
+                <Field label="Ogohlantirish">
+                  <Textarea
+                    rows={2}
+                    value={form.warnings_uz}
+                    onChange={(e) => setForm((p) => ({ ...p, warnings_uz: e.target.value }))}
+                  />
+                </Field>
+              </div>
+
+              <div className="flex items-center justify-between rounded-xl border border-border px-3 py-2.5">
+                <Label>Nashr qilish</Label>
+                <Switch
+                  checked={form.is_published}
+                  onCheckedChange={(v) => setForm((p) => ({ ...p, is_published: v }))}
+                />
+              </div>
+
+              <Field label="Tartib">
+                <Input
+                  value={form.sort_order}
+                  onChange={(e) => setForm((p) => ({ ...p, sort_order: e.target.value }))}
+                />
+              </Field>
+
+              <div className="flex flex-wrap gap-2 border-t border-border pt-4">
+                <Button
+                  type="button"
+                  className="flex-1 rounded-full"
+                  onClick={() => save.mutate()}
+                  disabled={save.isPending}
+                >
+                  Saqlash
+                </Button>
+                <Button type="button" variant="outline" className="rounded-full" onClick={closeEditor}>
+                  Bekor
+                </Button>
+                {editing ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="rounded-full text-destructive"
+                    disabled={remove.isPending}
+                    onClick={() => {
+                      if (window.confirm("O'chirilsinmi?")) remove.mutate(editing.id);
+                    }}
+                  >
+                    <Trash2 className="size-4" />
+                  </Button>
+                ) : null}
               </div>
             </div>
-            <div className="grid gap-1.5">
-              <Label>Kimlarga mos emas</Label>
-              <div className="flex flex-wrap gap-2">
-                {HAIR_TAGS.map((tag) => (
-                  <label key={`n-${tag.value}`} className="flex items-center gap-1.5 text-xs">
-                    <Checkbox
-                      checked={form.not_suitable_for.includes(tag.value)}
-                      onCheckedChange={() =>
-                        setForm((p) => ({
-                          ...p,
-                          not_suitable_for: toggleTag(p.not_suitable_for, tag.value),
-                        }))
-                      }
-                    />
-                    {tag.label}
-                  </label>
-                ))}
-              </div>
-            </div>
-            <div className="grid gap-1.5">
-              <Label>Yaxshi tomonlari</Label>
-              <Textarea
-                rows={2}
-                value={form.pros_uz}
-                onChange={(e) => setForm((p) => ({ ...p, pros_uz: e.target.value }))}
+          </aside>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="grid gap-1.5">
+      <Label className="text-xs text-muted-foreground">{label}</Label>
+      {children}
+    </div>
+  );
+}
+
+function FilterPill({
+  active,
+  label,
+  onClick,
+}: {
+  active: boolean;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "h-9 rounded-full px-3.5 text-sm font-medium transition-colors",
+        active
+          ? "bg-foreground text-background"
+          : "bg-muted text-muted-foreground hover:text-foreground",
+      )}
+    >
+      {label}
+    </button>
+  );
+}
+
+function TagGroup({
+  label,
+  selected,
+  onToggle,
+}: {
+  label: string;
+  selected: string[];
+  onToggle: (tag: string) => void;
+}) {
+  return (
+    <div className="grid gap-2">
+      <Label className="text-xs text-muted-foreground">{label}</Label>
+      <div className="flex flex-wrap gap-1.5">
+        {HAIR_TAGS.map((tag) => {
+          const on = selected.includes(tag.value);
+          return (
+            <label
+              key={`${label}-${tag.value}`}
+              className={cn(
+                "inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs",
+                on ? "border-foreground bg-foreground/5" : "border-border text-muted-foreground",
+              )}
+            >
+              <Checkbox
+                checked={on}
+                onCheckedChange={() => onToggle(tag.value)}
+                className="size-3.5"
               />
-            </div>
-            <div className="grid gap-1.5">
-              <Label>Yomon tomonlari</Label>
-              <Textarea
-                rows={2}
-                value={form.cons_uz}
-                onChange={(e) => setForm((p) => ({ ...p, cons_uz: e.target.value }))}
-              />
-            </div>
-            <div className="grid gap-1.5">
-              <Label>Ogohlantirish</Label>
-              <Textarea
-                rows={2}
-                value={form.warnings_uz}
-                onChange={(e) => setForm((p) => ({ ...p, warnings_uz: e.target.value }))}
-              />
-            </div>
-            <div className="flex items-center justify-between gap-3">
-              <Label>Nashr qilish</Label>
-              <Switch
-                checked={form.is_published}
-                onCheckedChange={(v) => setForm((p) => ({ ...p, is_published: v }))}
-              />
-            </div>
-            <div className="grid gap-1.5">
-              <Label>Tartib</Label>
-              <Input
-                value={form.sort_order}
-                onChange={(e) => setForm((p) => ({ ...p, sort_order: e.target.value }))}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
-              Bekor
-            </Button>
-            <Button type="button" onClick={() => save.mutate()} disabled={save.isPending}>
-              Saqlash
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+              {tag.label}
+            </label>
+          );
+        })}
+      </div>
     </div>
   );
 }

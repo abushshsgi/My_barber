@@ -83,10 +83,8 @@ class AdminParvarishProductListCreateView(UnthrottledAPIView):
         brand = str(ser.validated_data.get("brand") or "").strip()
         if not name:
             return Response({"detail": "Mahsulot nomi kerak."}, status=400)
-        obj = ser.save(
-            slug=_unique_slug(name, brand),
-            created_by=request.user if request.user.is_authenticated else None,
-        )
+        # Admin JWT → AdminPrincipal (User emas); created_by faqat User FK.
+        obj = ser.save(slug=_unique_slug(name, brand), created_by=None)
         image = request.FILES.get("image")
         if image:
             obj.image = image
