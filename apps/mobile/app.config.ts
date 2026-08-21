@@ -97,6 +97,12 @@ export default ({ config }: ConfigContext): ExpoConfig => {
             enableMinifyInReleaseBuilds: true,
             enableShrinkResourcesInReleaseBuilds: true,
             useLegacyPackaging: true,
+            // R8: expo-av references optional expo-modules types not always on classpath
+            extraProguardRules: [
+              "-dontwarn expo.modules.core.interfaces.services.KeepAwakeManager",
+              "-dontwarn expo.modules.kotlin.types.AnyTypeProvider",
+              "-dontwarn expo.modules.kotlin.types.LazyKType",
+            ].join("\n"),
           },
         },
       ],
