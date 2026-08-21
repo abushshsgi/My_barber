@@ -261,6 +261,16 @@ from ai.admin_views import (
     AdminMorphAiSettingsView,
     AdminMorphAiStudioView,
 )
+from ai.admin_parvarish_views import (
+    AdminParvarishProductDetailView,
+    AdminParvarishProductListCreateView,
+    AdminParvarishStatsView,
+)
+from ai.care_views import (
+    CareProductDetailView,
+    CareProductListView,
+    HairCareProfileMeView,
+)
 from ai.views import (
     AiBarberCardView,
     AiFaceCheckView,
@@ -403,6 +413,9 @@ api_routes = [
     path("admin/morph-ai/list/<str:kind>/", AdminMorphAiListView.as_view()),
     path("admin/morph-ai/catalog/", AdminMorphAiCatalogListCreateView.as_view()),
     path("admin/morph-ai/catalog/<str:style_id>/", AdminMorphAiCatalogDetailView.as_view()),
+    path("admin/parvarish/stats/", AdminParvarishStatsView.as_view()),
+    path("admin/parvarish/products/", AdminParvarishProductListCreateView.as_view()),
+    path("admin/parvarish/products/<int:product_id>/", AdminParvarishProductDetailView.as_view()),
     path("admin/subscriptions/stats/", AdminSubscriptionStatsView.as_view()),
     path("admin/subscriptions/analytics/", AdminSubscriptionAnalyticsView.as_view()),
     path("admin/subscriptions/", AdminSubscriptionListView.as_view()),
@@ -516,6 +529,8 @@ api_routes = [
     path("ai/style-studio/catalog/", AiStyleStudioCatalogView.as_view()),
     path("ai/face-check/", AiFaceCheckView.as_view()),
     path("ai/ingredient-scan/", AiIngredientScanView.as_view()),
+    path("ai/care/products/", CareProductListView.as_view()),
+    path("ai/care/products/<int:product_id>/", CareProductDetailView.as_view()),
     path("ai/barber-card/", AiBarberCardView.as_view()),
     path("ai/chat/", AiMorphChatView.as_view()),
     path("ai/chat/voice/voices/", AiMorphChatVoiceVoicesView.as_view()),
@@ -569,6 +584,7 @@ api_routes = [
     path("users/me/", MeView.as_view()),
     path("users/me/dashboard/", MeDashboardView.as_view()),
     path("users/me/skin-profile/", SkinProfileMeView.as_view()),
+    path("users/me/hair-care-profile/", HairCareProfileMeView.as_view()),
     path("users/addresses/", UserAddressListCreateView.as_view()),
     path("users/addresses/<int:pk>/", UserAddressDetailView.as_view()),
     path("users/addresses/<int:pk>/set-default/", UserAddressSetDefaultView.as_view()),

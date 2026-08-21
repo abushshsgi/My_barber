@@ -1272,7 +1272,7 @@
         "care": "Parvarish",
         "careDesc": "Yuvish, mahsulot turi va styling yo'riqnomasi",
         "ingredient": "Tarkib",
-        "ingredientDesc": "Kosmetika INCI tarkibini AI bilan tekshirish",
+        "ingredientDesc": "Soch vositasi tarkibini AI bilan tekshirish",
         "gallery": "Galereya",
         "galleryDesc": "Selfie yuklab yangi try-on boshlang"
       }
@@ -1488,7 +1488,7 @@
       "ingredientScan": {
         "badge": "Tarkib skani",
         "title": "Mahsulot tarkibini tekshiring",
-        "subtitle": "Krem, loson yoki shampun orqasidagi Ingredients yozuvini suratga oling — AI foydali va zararli moddalarni aytadi.",
+        "subtitle": "Shampun, balzam yoki boshqa soch vositasi orqasidagi Ingredients yozuvini suratga oling — AI sochingizga qarab yaxshi, yomon va xavfli moddalarni aytadi.",
         "cta": "Tarkib skani",
         "placeholder": "Ingredients yozuvi aniq ko‘rinsin",
         "analyzing": "Tarkib tahlil qilinmoqda…",
@@ -1496,8 +1496,9 @@
         "alertsTitle": "Ogohlantirishlar",
         "beneficialTitle": "Foydali moddalar",
         "ingredientsCount": "{{count}} ta modda",
-        "profileSaved": "Teri profilingiz saqlandi",
+        "profileSaved": "Soch profilingiz saqlandi",
         "editProfile": "Profil",
+        "hairProfile": "Soch profili",
         "quiz": {
           "skinTypeQ": "Teri turi?",
           "acneQ": "Akne chiqadimi?",
@@ -1516,6 +1517,51 @@
           "low": "Past",
           "medium": "O‘rtacha",
           "high": "Yuqori"
+        }
+      },
+      "verdicts": {
+        "good": "Yaxshi",
+        "caution": "Ehtiyot",
+        "bad": "Yomon",
+        "dangerous": "Xavfli"
+      },
+      "catalog": {
+        "badge": "Tarkib",
+        "title": "Soch vositalari",
+        "subtitle": "Tarkib, qo‘llanish, kimlarga mos va yaxshi/yomon tomonlari.",
+        "search": "Qidiruv",
+        "all": "Hammasi",
+        "empty": "Hozircha mahsulot yo‘q.",
+        "notFound": "Mahsulot topilmadi.",
+        "cta": "Barcha vositalar",
+        "match": "Katalogdagi mahsulot",
+        "purpose": "Nima uchun",
+        "usage": "Qo‘llanish",
+        "who": "Kimlarga",
+        "whoNot": "Mos emas",
+        "pros": "Yaxshi tomonlari",
+        "cons": "Yomon tomonlari",
+        "warnings": "Ogohlantirish",
+        "ingredients": "Tarkib",
+        "categories": {
+          "shampoo": "Shampun",
+          "balsam": "Balzam",
+          "mask": "Maska",
+          "oil": "Yog‘",
+          "spray": "Sprey",
+          "other": "Boshqa"
+        },
+        "tags": {
+          "oily": "Yog‘li",
+          "dry": "Quruq",
+          "normal": "Normal",
+          "damaged": "Shikastlangan",
+          "straight": "To‘g‘ri",
+          "wavy": "To‘lqinsimon",
+          "curly": "Jingalak",
+          "natural": "Tabiiy",
+          "colored": "Bo‘yalgan",
+          "bleached": "Ochilgan"
         }
       }
     },

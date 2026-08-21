@@ -1271,7 +1271,7 @@
         "care": "Care",
         "careDesc": "Wash routine, product types, and styling tips",
         "ingredient": "Ingredients",
-        "ingredientDesc": "Scan cosmetic INCI with AI",
+        "ingredientDesc": "Scan hair product INCI with AI",
         "gallery": "Gallery",
         "galleryDesc": "Upload a selfie to start a try-on"
       }
@@ -1487,7 +1487,7 @@
       "ingredientScan": {
         "badge": "Ingredient scan",
         "title": "Check product ingredients",
-        "subtitle": "Photograph the Ingredients (INCI) list on a cream, lotion, or shampoo — AI flags helpful and risky compounds for your skin.",
+        "subtitle": "Photograph the Ingredients (INCI) list on a shampoo, balsam, or other hair product — AI flags what is good, bad, or risky for your hair.",
         "cta": "Ingredient scan",
         "placeholder": "Make the Ingredients text clear",
         "analyzing": "Analyzing ingredients…",
@@ -1495,8 +1495,9 @@
         "alertsTitle": "Warnings",
         "beneficialTitle": "Beneficial ingredients",
         "ingredientsCount": "{{count}} ingredients",
-        "profileSaved": "Skin profile saved",
+        "profileSaved": "Hair profile saved",
         "editProfile": "Profile",
+        "hairProfile": "Hair profile",
         "quiz": {
           "skinTypeQ": "Skin type?",
           "acneQ": "Acne-prone?",
@@ -1515,6 +1516,51 @@
           "low": "Low",
           "medium": "Medium",
           "high": "High"
+        }
+      },
+      "verdicts": {
+        "good": "Good",
+        "caution": "Caution",
+        "bad": "Poor match",
+        "dangerous": "Risky"
+      },
+      "catalog": {
+        "badge": "Ingredients",
+        "title": "Hair products",
+        "subtitle": "Composition, how to use, who it is for, and pros and cons.",
+        "search": "Search",
+        "all": "All",
+        "empty": "No products yet.",
+        "notFound": "Product not found.",
+        "cta": "All products",
+        "match": "Catalog match",
+        "purpose": "Why it is used",
+        "usage": "How to use",
+        "who": "Who it is for",
+        "whoNot": "Not for",
+        "pros": "Pros",
+        "cons": "Cons",
+        "warnings": "Warnings",
+        "ingredients": "Ingredients",
+        "categories": {
+          "shampoo": "Shampoo",
+          "balsam": "Balsam",
+          "mask": "Mask",
+          "oil": "Oil",
+          "spray": "Spray",
+          "other": "Other"
+        },
+        "tags": {
+          "oily": "Oily",
+          "dry": "Dry",
+          "normal": "Normal",
+          "damaged": "Damaged",
+          "straight": "Straight",
+          "wavy": "Wavy",
+          "curly": "Curly",
+          "natural": "Natural",
+          "colored": "Colored",
+          "bleached": "Bleached"
         }
       }
     },

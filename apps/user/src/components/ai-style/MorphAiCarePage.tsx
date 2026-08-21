@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ChevronLeft, Loader2, Lock } from "lucide-react";
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -18,6 +18,8 @@ import {
 import { loadFaceProfile } from "@/lib/face-profile";
 import { fetchCareAccess } from "@/lib/api/subscriptions";
 import { cn } from "@/lib/utils";
+import { useHairCareProfile, useUpdateHairCareProfile } from "@/hooks/use-hair-care-profile";
+import { useCareProducts } from "@/hooks/use-care-products";
 
 const CONDITION_OPTS: HairCondition[] = ["oily", "dry", "normal", "damaged"];
 const TEXTURE_OPTS: HairTexture[] = ["straight", "wavy", "curly"];
@@ -35,6 +37,9 @@ export function MorphAiCarePage() {
     queryFn: fetchCareAccess,
     staleTime: 30_000,
   });
+  const hairQ = useHairCareProfile();
+  const updateHair = useUpdateHairCareProfile();
+  const catalogQ = useCareProducts({ recommended: true });
   const profile = useMemo(() => loadFaceProfile(), []);
   const savedQuiz = useMemo(() => loadCareQuiz(), []);
   const [quiz, setQuiz] = useState<CareQuizAnswers>(
@@ -42,8 +47,23 @@ export function MorphAiCarePage() {
   );
   const [step, setStep] = useState<QuizStep | "plan">(savedQuiz ? "plan" : 0);
   const plan = useMemo(() => buildCarePlan(profile, quiz), [profile, quiz]);
+  const catalogProducts = catalogQ.data || [];
+  const hydratedHair = useRef(false);
 
-  if (accessQ.isLoading) {
+  useEffect(() => {
+    if (hydratedHair.current || !hairQ.data?.complete) return;
+    hydratedHair.current = true;
+    const next: CareQuizAnswers = {
+      condition: hairQ.data.condition as HairCondition,
+      texture: hairQ.data.texture as HairTexture,
+      colorStatus: hairQ.data.color_status as ColorStatus,
+    };
+    setQuiz(next);
+    saveCareQuiz(next);
+    setStep("plan");
+  }, [hairQ.data]);
+
+  if (accessQ.isLoading || hairQ.isLoading) {
     return (
       <div className="grid min-h-[100dvh] place-items-center bg-[#050505] text-white">
         <Loader2 className="size-6 animate-spin text-white/40" />
@@ -81,6 +101,11 @@ export function MorphAiCarePage() {
 
   const finishQuiz = () => {
     saveCareQuiz(quiz);
+    void updateHair.mutateAsync({
+      condition: quiz.condition,
+      texture: quiz.texture,
+      color_status: quiz.colorStatus,
+    }).catch(() => undefined);
     setStep("plan");
   };
 
@@ -309,21 +334,53 @@ export function MorphAiCarePage() {
 
         <Section title={t("aiStylePage.care.productsTitle", { defaultValue: "Mahsulotlar" })} delay={0.2}>
           <div className="space-y-1.5">
-            {plan.products.map((p, i) => (
-              <motion.div
-                key={p.name}
-                initial={reduce ? false : { opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.22 + i * 0.04, duration: 0.3, ease }}
-                className="rounded-2xl bg-white/[0.04] px-3.5 py-3.5"
-              >
-                <div className="flex items-baseline justify-between gap-3">
-                  <p className="text-[14px] font-semibold">{p.name}</p>
-                  <p className="shrink-0 text-[11px] text-white/35">{p.role}</p>
-                </div>
-                <p className="mt-1 text-[13px] text-white/50">{p.tip}</p>
-              </motion.div>
-            ))}
+            {(catalogProducts.length > 0
+              ? catalogProducts.slice(0, 4).map((p) => ({
+                  id: p.id,
+                  href: true as const,
+                  name: p.name,
+                  role: p.brand || p.category,
+                  tip: p.purpose_uz || p.usage_uz,
+                }))
+              : plan.products.map((p) => ({
+                  id: p.name,
+                  href: false as const,
+                  name: p.name,
+                  role: p.role,
+                  tip: p.tip,
+                }))
+            ).map((p, i) => {
+              const inner = (
+                <>
+                  <div className="flex items-baseline justify-between gap-3">
+                    <p className="text-[14px] font-semibold">{p.name}</p>
+                    <p className="shrink-0 text-[11px] text-white/35">{p.role}</p>
+                  </div>
+                  {p.tip ? <p className="mt-1 text-[13px] text-white/50">{p.tip}</p> : null}
+                </>
+              );
+              const cls = "rounded-2xl bg-white/[0.04] px-3.5 py-3.5";
+              return (
+                <motion.div
+                  key={p.id}
+                  initial={reduce ? false : { opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.22 + i * 0.04, duration: 0.3, ease }}
+                >
+                  {p.href ? (
+                    <Link
+                      to="/ai-style/care/products/$productId"
+                      params={{ productId: String(p.id) }}
+                      className={cn(cls, "block")}
+                    >
+                      {inner}
+                    </Link>
+                  ) : (
+                    <div className={cls}>{inner}</div>
+                  )}
+                </motion.div>
+              );
+            })}
           </div>
         </Section>
 
@@ -379,6 +436,12 @@ export function MorphAiCarePage() {
             {t("aiStylePage.care.ingredientScan.cta", {
               defaultValue: "Tarkib skani",
             })}
+          </Link>
+          <Link
+            to="/ai-style/care/products"
+            className="mt-3 flex h-12 w-full items-center justify-center rounded-full bg-white/[0.08] text-sm font-semibold text-white ring-1 ring-white/15 active:scale-[0.98]"
+          >
+            {t("aiStylePage.care.catalog.cta", { defaultValue: "Barcha vositalar" })}
           </Link>
           <Link
             to="/explore"

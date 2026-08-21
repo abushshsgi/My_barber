@@ -385,3 +385,160 @@ class MorphAiUserPrefs(models.Model):
 
     def __str__(self) -> str:
         return f"MorphAiUserPrefs({self.user_id})"
+
+
+class CareProduct(models.Model):
+    """Admin kiritadigan soch parvarishi mahsuloti — user katalogida ko'rinadi."""
+
+    class Category(models.TextChoices):
+        SHAMPOO = "shampoo", "Shampun"
+        BALSAM = "balsam", "Balzam"
+        MASK = "mask", "Maska"
+        OIL = "oil", "Yog'"
+        SPRAY = "spray", "Sprey"
+        OTHER = "other", "Boshqa"
+
+    name = models.CharField(max_length=160)
+    brand = models.CharField(max_length=120, blank=True, default="")
+    slug = models.SlugField(max_length=180, unique=True, db_index=True)
+    category = models.CharField(
+        max_length=16,
+        choices=Category.choices,
+        default=Category.SHAMPOO,
+        db_index=True,
+    )
+    image = models.ImageField(upload_to="care/products/%Y/%m/", blank=True, null=True)
+    ingredients_text = models.TextField(blank=True, default="")
+    ingredients = models.JSONField(default=list, blank=True)
+    usage_uz = models.TextField(blank=True, default="")
+    purpose_uz = models.TextField(blank=True, default="")
+    suitable_for = models.JSONField(default=list, blank=True)
+    not_suitable_for = models.JSONField(default=list, blank=True)
+    pros_uz = models.TextField(blank=True, default="")
+    cons_uz = models.TextField(blank=True, default="")
+    warnings_uz = models.TextField(blank=True, default="")
+    is_published = models.BooleanField(default=True, db_index=True)
+    sort_order = models.PositiveSmallIntegerField(default=0)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="care_products_created",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["sort_order", "name"]
+        indexes = [
+            models.Index(fields=["is_published", "category", "sort_order"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.brand} {self.name}".strip() or self.slug
+
+
+class HairCareProfile(models.Model):
+    """Mijoz soch profili — parvarish reja va INCI skani uchun."""
+
+    class Condition(models.TextChoices):
+        OILY = "oily", "Oily"
+        DRY = "dry", "Dry"
+        NORMAL = "normal", "Normal"
+        DAMAGED = "damaged", "Damaged"
+
+    class Texture(models.TextChoices):
+        STRAIGHT = "straight", "Straight"
+        WAVY = "wavy", "Wavy"
+        CURLY = "curly", "Curly"
+
+    class ColorStatus(models.TextChoices):
+        NATURAL = "natural", "Natural"
+        COLORED = "colored", "Colored"
+        BLEACHED = "bleached", "Bleached"
+
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="hair_care_profile",
+    )
+    condition = models.CharField(
+        max_length=16, choices=Condition.choices, blank=True, default=""
+    )
+    texture = models.CharField(
+        max_length=16, choices=Texture.choices, blank=True, default=""
+    )
+    color_status = models.CharField(
+        max_length=16, choices=ColorStatus.choices, blank=True, default=""
+    )
+    completed_at = models.DateTimeField(null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-updated_at"]
+
+    def __str__(self) -> str:
+        return f"HairCareProfile(user={self.user_id}, {self.condition})"
+
+    @property
+    def is_complete(self) -> bool:
+        return bool(self.condition and self.texture and self.color_status and self.completed_at)
+
+    def profile_label(self) -> str:
+        cond = self.get_condition_display() if self.condition else "Unknown"
+        tex = self.get_texture_display() if self.texture else "Unknown"
+        color = self.get_color_status_display() if self.color_status else "Unknown"
+        return (
+            f"Hair condition: {cond}\n"
+            f"Hair texture: {tex}\n"
+            f"Color status: {color}"
+        )
+
+    def tag_set(self) -> set[str]:
+        tags = {self.condition, self.texture, self.color_status}
+        return {t for t in tags if t}
+
+
+class IngredientScanEntry(models.Model):
+    """User mahsulot tarkibi skani — audit va moslash tarixi."""
+
+    class Verdict(models.TextChoices):
+        GOOD = "good", "Good"
+        CAUTION = "caution", "Caution"
+        BAD = "bad", "Bad"
+        DANGEROUS = "dangerous", "Dangerous"
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="ingredient_scans",
+    )
+    photo = models.ImageField(
+        upload_to="care/scans/%Y/%m/", blank=True, null=True
+    )
+    extracted_name = models.CharField(max_length=160, blank=True, default="")
+    ingredients = models.JSONField(default=list, blank=True)
+    matched_product = models.ForeignKey(
+        CareProduct,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="scans",
+    )
+    verdict = models.CharField(
+        max_length=16, choices=Verdict.choices, default=Verdict.CAUTION, db_index=True
+    )
+    safety_score = models.PositiveSmallIntegerField(default=0)
+    result = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["user", "-created_at"]),
+            models.Index(fields=["verdict", "-created_at"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"IngredientScan({self.user_id}, {self.verdict})"

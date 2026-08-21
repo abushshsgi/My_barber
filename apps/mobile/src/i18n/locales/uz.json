@@ -41,6 +41,79 @@
     "morphIngredientTitle": "Tarkib",
     "morphIngredientSub": "Kosmetika tarkibini AI bilan tekshirish tez orada."
   },
+  "care": {
+    "badge": "Parvarish",
+    "title": "Sizning rejangiz",
+    "proOnly": "Pro obunasida ochiladi.",
+    "seePlans": "Obunalar",
+    "condition": "Holat",
+    "texture": "Tekstura",
+    "colorStatus": "Rang",
+    "weeklyTitle": "Hafta",
+    "productsTitle": "Mahsulotlar",
+    "tipsTitle": "Maslahatlar",
+    "avoidTitle": "Saqlaning",
+    "conditions": {
+      "oily": "Yog‘li",
+      "dry": "Quruq",
+      "normal": "Normal",
+      "damaged": "Shikastlangan"
+    },
+    "textures": {
+      "straight": "To‘g‘ri",
+      "wavy": "To‘lqinsimon",
+      "curly": "Jingalak"
+    },
+    "colors": {
+      "natural": "Tabiiy",
+      "colored": "Bo‘yalgan",
+      "bleached": "Ochilgan"
+    },
+    "quiz": {
+      "conditionQ": "Soch holati?",
+      "textureQ": "Tekstura?",
+      "colorQ": "Rang?",
+      "seePlan": "Davom etish",
+      "retake": "Qayta"
+    },
+    "catalog": {
+      "badge": "Tarkib",
+      "title": "Soch vositalari",
+      "subtitle": "Tarkib, qo‘llanish, kimlarga mos va yaxshi/yomon tomonlari.",
+      "search": "Qidiruv",
+      "all": "Hammasi",
+      "empty": "Hozircha mahsulot yo‘q.",
+      "notFound": "Mahsulot topilmadi.",
+      "purpose": "Nima uchun",
+      "usage": "Qo‘llanish",
+      "who": "Kimlarga",
+      "whoNot": "Mos emas",
+      "pros": "Yaxshi tomonlari",
+      "cons": "Yomon tomonlari",
+      "warnings": "Ogohlantirish",
+      "ingredients": "Tarkib",
+      "categories": {
+        "shampoo": "Shampun",
+        "balsam": "Balzam",
+        "mask": "Maska",
+        "oil": "Yog‘",
+        "spray": "Sprey",
+        "other": "Boshqa"
+      },
+      "tags": {
+        "oily": "Yog‘li",
+        "dry": "Quruq",
+        "normal": "Normal",
+        "damaged": "Shikastlangan",
+        "straight": "To‘g‘ri",
+        "wavy": "To‘lqinsimon",
+        "curly": "Jingalak",
+        "natural": "Tabiiy",
+        "colored": "Bo‘yalgan",
+        "bleached": "Ochilgan"
+      }
+    }
+  },
   "onboarding": {
     "slide1Title": "Sartaroshxonani\noson bron qiling",
     "slide1Sub": "Yaqin salonlar, usta va vaqt — bir necha bosishda.",

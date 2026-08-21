@@ -8,7 +8,7 @@ export const Route = createFileRoute("/ai-style_/care_/ingredient")({
       {
         name: "description",
         content:
-          "Kosmetika tarkibini (INCI) AI bilan tahlil qiling — komedogen moddalar va teri mosligi.",
+          "Soch mahsuloti tarkibini AI bilan tahlil qiling — sochingizga mosligi, xavfli va foydali moddalar.",
       },
     ],
   }),

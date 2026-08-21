@@ -13,6 +13,7 @@ const MORPH_LAST_EXACT = new Set([
   "/ai-style/chat",
   "/ai-style/care",
   "/ai-style/care/ingredient",
+  "/ai-style/care/products",
   "/ai-style/studio",
   "/profile",
 ]);

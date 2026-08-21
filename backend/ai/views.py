@@ -11,18 +11,21 @@ import base64
 import json
 import logging
 
-from accounts.models import SkinProfile, User
+from accounts.models import User
 
 from ai.age_groups import birth_year_to_group, normalize_age_group, resolve_hairstyle_image_path
 from ai.explore_personas import has_persona_style_asset, list_explore_personas, normalize_persona_id
 from subscriptions.services import can_use_morph_care, can_use_morph_voice, get_active_subscription
 
-from .history_storage import image_file_from_source, save_history_photo, trim_user_history
+from .history_storage import image_file_from_data_url, image_file_from_source, save_history_photo, trim_user_history
+from .care_serializers import CareProductSerializer
 from .models import (
     GENERATION_HISTORY_MAX_PER_USER,
     HISTORY_MAX_PER_USER,
     AiStyleHistoryEntry,
+    HairCareProfile,
     Hairstyle,
+    IngredientScanEntry,
     MorphAiChatThread,
     MorphAiGenerationEntry,
     MorphAiLookShare,
@@ -51,6 +54,7 @@ from .services.tryon_queue import (
 )
 from .services.gemini_barber_card import generate_barber_master_card
 from .services.gemini_ingredient import analyze_ingredient_from_data_url
+from .services.care_match import match_care_product, score_against_hair
 from .services.gemini_style import (
     NO_FACE_MESSAGE,
     AiStyleError,
@@ -543,7 +547,7 @@ class AiFaceCheckView(UnthrottledAPIView):
 
 
 class AiIngredientScanView(UnthrottledAPIView):
-    """POST { image } — kosmetika INCI skani (Pro / morph_care)."""
+    """POST { image } — soch mahsuloti INCI skani (Pro / morph_care)."""
 
     permission_classes = [IsAuthenticated]
 
@@ -558,7 +562,6 @@ class AiIngredientScanView(UnthrottledAPIView):
                 status=status.HTTP_403_FORBIDDEN,
             )
 
-        # Kvotada analyze bilan bir xil Morph AI oylik limit
         blocked = check_user_can_generate(user_id=user.pk, kind="analyze")
         if blocked:
             return morph_generation_blocked_response(blocked)
@@ -570,16 +573,58 @@ class AiIngredientScanView(UnthrottledAPIView):
                 status=400,
             )
 
-        profile = SkinProfile.objects.filter(user=user).first()
+        profile = HairCareProfile.objects.filter(user=user).first()
         if profile is None or not profile.is_complete:
             return Response(
-                {"detail": "Avval teri profilingizni to'ldiring."},
+                {"detail": "Avval soch profilingizni to'ldiring."},
                 status=400,
             )
 
         try:
             result = analyze_ingredient_from_data_url(str(image), profile)
             usage = result.pop("_usage", None) or {}
+            analysis = result.get("product_analysis") if isinstance(result.get("product_analysis"), dict) else {}
+            ingredients = result.get("ingredients") if isinstance(result.get("ingredients"), list) else []
+            product, match_score = match_care_product(
+                product_name=str(analysis.get("product_name") or ""),
+                brand=str(analysis.get("brand") or ""),
+                ingredients=ingredients,
+            )
+            scored = score_against_hair(
+                product,
+                ingredients,
+                profile,
+                str(result.get("verdict_key") or ""),
+            )
+            analysis["safety_score"] = scored["safety_score"]
+            result["product_analysis"] = analysis
+            result["verdict"] = scored["verdict"]
+            result["verdict_key"] = scored["verdict"]
+            result["match_score"] = round(float(match_score), 3)
+            result["flags"] = scored["flags"]
+            result["good_flags"] = scored["good_flags"]
+            result["bad_flags"] = scored["bad_flags"]
+            result["dangerous_flags"] = scored["dangerous_flags"]
+            result["matched_product"] = (
+                CareProductSerializer(product, context={"request": request}).data
+                if product is not None
+                else None
+            )
+            photo = None
+            try:
+                photo = image_file_from_data_url(str(image), f"scan-{user.pk}")
+            except Exception:
+                logger.exception("Ingredient scan photo saqlanmadi")
+            IngredientScanEntry.objects.create(
+                user=user,
+                photo=photo,
+                extracted_name=str(analysis.get("product_name") or "")[:160],
+                ingredients=ingredients,
+                matched_product=product,
+                verdict=scored["verdict"],
+                safety_score=scored["safety_score"],
+                result={k: v for k, v in result.items() if k != "matched_product"},
+            )
             record_ai_generation(
                 user_id=user.pk,
                 kind="ingredient",

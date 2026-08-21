@@ -4883,3 +4883,121 @@ export async function fetchAdminBarberCustomerInvites(
 ): Promise<AdminBarberCustomerInvitesDetail> {
   return apiJson(`/api/v1/admin/barbers/${barberId}/customer-invites/`);
 }
+
+export type CareProductCategory = "shampoo" | "balsam" | "mask" | "oil" | "spray" | "other";
+
+export type AdminCareProduct = {
+  id: number;
+  name: string;
+  brand: string;
+  slug: string;
+  category: CareProductCategory | string;
+  image_url: string | null;
+  ingredients_text: string;
+  ingredients: string[];
+  usage_uz: string;
+  purpose_uz: string;
+  suitable_for: string[];
+  not_suitable_for: string[];
+  pros_uz: string;
+  cons_uz: string;
+  warnings_uz: string;
+  is_published: boolean;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type AdminParvarishStats = {
+  products_total: number;
+  products_published: number;
+  scans_total: number;
+  scans_today: number;
+  recent_scans: Array<{
+    id: number;
+    user_id: number;
+    verdict: string;
+    safety_score: number;
+    extracted_name: string;
+    product_name: string;
+    created_at: string;
+  }>;
+};
+
+export async function fetchAdminParvarishStats(): Promise<AdminParvarishStats> {
+  return apiJson("/api/v1/admin/parvarish/stats/");
+}
+
+export async function fetchAdminCareProducts(params?: {
+  q?: string;
+  category?: string;
+  published?: string;
+}): Promise<AdminCareProduct[]> {
+  const sp = new URLSearchParams();
+  if (params?.q) sp.set("q", params.q);
+  if (params?.category) sp.set("category", params.category);
+  if (params?.published) sp.set("published", params.published);
+  const q = sp.toString();
+  return apiJson(`/api/v1/admin/parvarish/products/${q ? `?${q}` : ""}`);
+}
+
+export type AdminCareProductPayload = {
+  name: string;
+  brand?: string;
+  category?: string;
+  ingredients_text?: string;
+  usage_uz?: string;
+  purpose_uz?: string;
+  suitable_for?: string[];
+  not_suitable_for?: string[];
+  pros_uz?: string;
+  cons_uz?: string;
+  warnings_uz?: string;
+  is_published?: boolean;
+  sort_order?: number;
+  image?: File | null;
+};
+
+function careProductFormData(body: AdminCareProductPayload): FormData {
+  const fd = new FormData();
+  fd.set("name", body.name);
+  fd.set("brand", body.brand || "");
+  fd.set("category", body.category || "shampoo");
+  fd.set("ingredients_text", body.ingredients_text || "");
+  fd.set("usage_uz", body.usage_uz || "");
+  fd.set("purpose_uz", body.purpose_uz || "");
+  fd.set("suitable_for", JSON.stringify(body.suitable_for || []));
+  fd.set("not_suitable_for", JSON.stringify(body.not_suitable_for || []));
+  fd.set("pros_uz", body.pros_uz || "");
+  fd.set("cons_uz", body.cons_uz || "");
+  fd.set("warnings_uz", body.warnings_uz || "");
+  fd.set("is_published", body.is_published === false ? "0" : "1");
+  fd.set("sort_order", String(body.sort_order ?? 0));
+  if (body.image) fd.set("image", body.image);
+  return fd;
+}
+
+export async function createAdminCareProduct(body: AdminCareProductPayload): Promise<AdminCareProduct> {
+  return apiJson("/api/v1/admin/parvarish/products/", {
+    method: "POST",
+    body: careProductFormData(body),
+  });
+}
+
+export async function patchAdminCareProduct(
+  id: number,
+  body: AdminCareProductPayload,
+): Promise<AdminCareProduct> {
+  return apiJson(`/api/v1/admin/parvarish/products/${id}/`, {
+    method: "PATCH",
+    body: careProductFormData(body),
+  });
+}
+
+export async function deleteAdminCareProduct(id: number): Promise<void> {
+  const res = await apiFetch(`/api/v1/admin/parvarish/products/${id}/`, { method: "DELETE" });
+  if (!res.ok && res.status !== 204) {
+    const body = await res.json().catch(() => null);
+    throw new Error((body as { detail?: string } | null)?.detail || "O'chirilmadi");
+  }
+}

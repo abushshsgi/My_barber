@@ -41,6 +41,79 @@
     "morphIngredientTitle": "Состав",
     "morphIngredientSub": "AI-проверка состава косметики — скоро."
   },
+  "care": {
+    "badge": "Уход",
+    "title": "Ваш план",
+    "proOnly": "Доступно с Pro-подпиской.",
+    "seePlans": "Подписки",
+    "condition": "Состояние",
+    "texture": "Текстура",
+    "colorStatus": "Цвет",
+    "weeklyTitle": "Неделя",
+    "productsTitle": "Средства",
+    "tipsTitle": "Советы",
+    "avoidTitle": "Избегайте",
+    "conditions": {
+      "oily": "Жирные",
+      "dry": "Сухие",
+      "normal": "Нормальные",
+      "damaged": "Повреждённые"
+    },
+    "textures": {
+      "straight": "Прямые",
+      "wavy": "Волнистые",
+      "curly": "Кудрявые"
+    },
+    "colors": {
+      "natural": "Натуральный",
+      "colored": "Окрашенные",
+      "bleached": "Осветлённые"
+    },
+    "quiz": {
+      "conditionQ": "Состояние волос?",
+      "textureQ": "Текстура?",
+      "colorQ": "Цвет?",
+      "seePlan": "Продолжить",
+      "retake": "Заново"
+    },
+    "catalog": {
+      "badge": "Состав",
+      "title": "Средства для волос",
+      "subtitle": "Состав, применение, кому подходит и плюсы/минусы.",
+      "search": "Поиск",
+      "all": "Все",
+      "empty": "Пока нет продуктов.",
+      "notFound": "Продукт не найден.",
+      "purpose": "Для чего",
+      "usage": "Применение",
+      "who": "Кому подходит",
+      "whoNot": "Не подходит",
+      "pros": "Плюсы",
+      "cons": "Минусы",
+      "warnings": "Предупреждение",
+      "ingredients": "Состав",
+      "categories": {
+        "shampoo": "Шампунь",
+        "balsam": "Бальзам",
+        "mask": "Маска",
+        "oil": "Масло",
+        "spray": "Спрей",
+        "other": "Другое"
+      },
+      "tags": {
+        "oily": "Жирные",
+        "dry": "Сухие",
+        "normal": "Нормальные",
+        "damaged": "Повреждённые",
+        "straight": "Прямые",
+        "wavy": "Волнистые",
+        "curly": "Кудрявые",
+        "natural": "Натуральный",
+        "colored": "Окрашенные",
+        "bleached": "Осветлённые"
+      }
+    }
+  },
   "onboarding": {
     "slide1Title": "Легко бронируйте\nбарбершоп",
     "slide1Sub": "Ближайшие салоны, мастера и время — в несколько нажатий.",

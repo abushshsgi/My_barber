@@ -3,7 +3,10 @@ from django.contrib import admin
 from .models import (
     AiGenerationUsage,
     AiStyleHistoryEntry,
+    CareProduct,
+    HairCareProfile,
     Hairstyle,
+    IngredientScanEntry,
     MorphAiLookShare,
     MorphAiSettings,
     MorphAiUserPrefs,
@@ -91,3 +94,29 @@ class MorphAiUserPrefsAdmin(admin.ModelAdmin):
     search_fields = ("user__phone", "user__email")
     raw_id_fields = ("user",)
     readonly_fields = ("updated_at",)
+
+
+@admin.register(CareProduct)
+class CareProductAdmin(admin.ModelAdmin):
+    list_display = ("id", "name", "brand", "category", "is_published", "sort_order", "updated_at")
+    list_filter = ("category", "is_published")
+    search_fields = ("name", "brand", "slug", "ingredients_text")
+    prepopulated_fields = {"slug": ("brand", "name")}
+    raw_id_fields = ("created_by",)
+
+
+@admin.register(HairCareProfile)
+class HairCareProfileAdmin(admin.ModelAdmin):
+    list_display = ("id", "user", "condition", "texture", "color_status", "completed_at")
+    list_filter = ("condition", "texture", "color_status")
+    search_fields = ("user__phone", "user__email")
+    raw_id_fields = ("user",)
+
+
+@admin.register(IngredientScanEntry)
+class IngredientScanEntryAdmin(admin.ModelAdmin):
+    list_display = ("id", "user", "verdict", "safety_score", "extracted_name", "created_at")
+    list_filter = ("verdict",)
+    search_fields = ("user__phone", "user__email", "extracted_name")
+    raw_id_fields = ("user", "matched_product")
+    readonly_fields = ("created_at",)

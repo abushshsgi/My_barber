@@ -26,6 +26,7 @@ import { Route as AdminHisobRaqamRouteImport } from './routes/admin.hisob-raqam'
 import { Route as AdminLedgerRouteImport } from './routes/admin.ledger'
 import { Route as AdminMapRouteImport } from './routes/admin.map'
 import { Route as AdminMorphAiRouteImport } from './routes/admin.morph-ai'
+import { Route as AdminParvarishRouteImport } from './routes/admin.parvarish'
 import { Route as AdminPayoutsRouteImport } from './routes/admin.payouts'
 import { Route as AdminProfileRouteImport } from './routes/admin.profile'
 import { Route as AdminReviewsRouteImport } from './routes/admin.reviews'
@@ -66,6 +67,8 @@ import { Route as AdminMorphAiQueueRouteImport } from './routes/admin.morph-ai.q
 import { Route as AdminMorphAiSettingsRouteImport } from './routes/admin.morph-ai.settings'
 import { Route as AdminMorphAiStudioRouteImport } from './routes/admin.morph-ai.studio'
 import { Route as AdminMorphAiSupportRouteImport } from './routes/admin.morph-ai.support'
+import { Route as AdminParvarishIndexRouteImport } from './routes/admin.parvarish.index'
+import { Route as AdminParvarishTarkibRouteImport } from './routes/admin.parvarish.tarkib'
 import { Route as AdminPayoutsIndexRouteImport } from './routes/admin.payouts.index'
 import { Route as AdminSalonsSalonIdRouteImport } from './routes/admin.salons.$salonId'
 import { Route as AdminServicesAnalyticsRouteImport } from './routes/admin.services.analytics'
@@ -181,6 +184,11 @@ const AdminMapRoute = AdminMapRouteImport.update({
 const AdminMorphAiRoute = AdminMorphAiRouteImport.update({
   id: '/morph-ai',
   path: '/morph-ai',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminParvarishRoute = AdminParvarishRouteImport.update({
+  id: '/parvarish',
+  path: '/parvarish',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminPayoutsRoute = AdminPayoutsRouteImport.update({
@@ -384,6 +392,16 @@ const AdminMorphAiSupportRoute = AdminMorphAiSupportRouteImport.update({
   path: '/support',
   getParentRoute: () => AdminMorphAiRoute,
 } as any)
+const AdminParvarishIndexRoute = AdminParvarishIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminParvarishRoute,
+} as any)
+const AdminParvarishTarkibRoute = AdminParvarishTarkibRouteImport.update({
+  id: '/tarkib',
+  path: '/tarkib',
+  getParentRoute: () => AdminParvarishRoute,
+} as any)
 const AdminPayoutsIndexRoute = AdminPayoutsIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -568,6 +586,7 @@ export interface FileRoutesByFullPath {
   '/admin/ledger': typeof AdminLedgerRoute
   '/admin/map': typeof AdminMapRoute
   '/admin/morph-ai': typeof AdminMorphAiRouteWithChildren
+  '/admin/parvarish': typeof AdminParvarishRouteWithChildren
   '/admin/payouts': typeof AdminPayoutsRouteWithChildren
   '/admin/profile': typeof AdminProfileRoute
   '/admin/reviews': typeof AdminReviewsRoute
@@ -604,6 +623,7 @@ export interface FileRoutesByFullPath {
   '/admin/morph-ai/settings': typeof AdminMorphAiSettingsRoute
   '/admin/morph-ai/studio': typeof AdminMorphAiStudioRoute
   '/admin/morph-ai/support': typeof AdminMorphAiSupportRoute
+  '/admin/parvarish/tarkib': typeof AdminParvarishTarkibRoute
   '/admin/salons/$salonId': typeof AdminSalonsSalonIdRouteWithChildren
   '/admin/services/analytics': typeof AdminServicesAnalyticsRoute
   '/admin/statistics/agents': typeof AdminStatisticsAgentsRoute
@@ -625,6 +645,7 @@ export interface FileRoutesByFullPath {
   '/admin/finance/': typeof AdminFinanceIndexRoute
   '/admin/hisob-raqam/': typeof AdminHisobRaqamIndexRoute
   '/admin/morph-ai/': typeof AdminMorphAiIndexRoute
+  '/admin/parvarish/': typeof AdminParvarishIndexRoute
   '/admin/payouts/': typeof AdminPayoutsIndexRoute
   '/admin/statistics/': typeof AdminStatisticsIndexRoute
   '/admin/barbers/$barberId/bookings': typeof AdminBarbersBarberIdBookingsRoute
@@ -685,6 +706,7 @@ export interface FileRoutesByTo {
   '/admin/morph-ai/settings': typeof AdminMorphAiSettingsRoute
   '/admin/morph-ai/studio': typeof AdminMorphAiStudioRoute
   '/admin/morph-ai/support': typeof AdminMorphAiSupportRoute
+  '/admin/parvarish/tarkib': typeof AdminParvarishTarkibRoute
   '/admin/services/analytics': typeof AdminServicesAnalyticsRoute
   '/admin/statistics/agents': typeof AdminStatisticsAgentsRoute
   '/admin/statistics/barbers': typeof AdminStatisticsBarbersRoute
@@ -705,6 +727,7 @@ export interface FileRoutesByTo {
   '/admin/finance': typeof AdminFinanceIndexRoute
   '/admin/hisob-raqam': typeof AdminHisobRaqamIndexRoute
   '/admin/morph-ai': typeof AdminMorphAiIndexRoute
+  '/admin/parvarish': typeof AdminParvarishIndexRoute
   '/admin/payouts': typeof AdminPayoutsIndexRoute
   '/admin/statistics': typeof AdminStatisticsIndexRoute
   '/admin/barbers/$barberId/bookings': typeof AdminBarbersBarberIdBookingsRoute
@@ -737,6 +760,7 @@ export interface FileRoutesById {
   '/admin/ledger': typeof AdminLedgerRoute
   '/admin/map': typeof AdminMapRoute
   '/admin/morph-ai': typeof AdminMorphAiRouteWithChildren
+  '/admin/parvarish': typeof AdminParvarishRouteWithChildren
   '/admin/payouts': typeof AdminPayoutsRouteWithChildren
   '/admin/profile': typeof AdminProfileRoute
   '/admin/reviews': typeof AdminReviewsRoute
@@ -773,6 +797,7 @@ export interface FileRoutesById {
   '/admin/morph-ai/settings': typeof AdminMorphAiSettingsRoute
   '/admin/morph-ai/studio': typeof AdminMorphAiStudioRoute
   '/admin/morph-ai/support': typeof AdminMorphAiSupportRoute
+  '/admin/parvarish/tarkib': typeof AdminParvarishTarkibRoute
   '/admin/salons/$salonId': typeof AdminSalonsSalonIdRouteWithChildren
   '/admin/services/analytics': typeof AdminServicesAnalyticsRoute
   '/admin/statistics/agents': typeof AdminStatisticsAgentsRoute
@@ -794,6 +819,7 @@ export interface FileRoutesById {
   '/admin/finance/': typeof AdminFinanceIndexRoute
   '/admin/hisob-raqam/': typeof AdminHisobRaqamIndexRoute
   '/admin/morph-ai/': typeof AdminMorphAiIndexRoute
+  '/admin/parvarish/': typeof AdminParvarishIndexRoute
   '/admin/payouts/': typeof AdminPayoutsIndexRoute
   '/admin/statistics/': typeof AdminStatisticsIndexRoute
   '/admin/barbers/$barberId/bookings': typeof AdminBarbersBarberIdBookingsRoute
@@ -829,6 +855,7 @@ export interface FileRouteTypes {
     | '/admin/ledger'
     | '/admin/map'
     | '/admin/morph-ai'
+    | '/admin/parvarish'
     | '/admin/payouts'
     | '/admin/profile'
     | '/admin/reviews'
@@ -865,6 +892,7 @@ export interface FileRouteTypes {
     | '/admin/morph-ai/settings'
     | '/admin/morph-ai/studio'
     | '/admin/morph-ai/support'
+    | '/admin/parvarish/tarkib'
     | '/admin/salons/$salonId'
     | '/admin/services/analytics'
     | '/admin/statistics/agents'
@@ -886,6 +914,7 @@ export interface FileRouteTypes {
     | '/admin/finance/'
     | '/admin/hisob-raqam/'
     | '/admin/morph-ai/'
+    | '/admin/parvarish/'
     | '/admin/payouts/'
     | '/admin/statistics/'
     | '/admin/barbers/$barberId/bookings'
@@ -946,6 +975,7 @@ export interface FileRouteTypes {
     | '/admin/morph-ai/settings'
     | '/admin/morph-ai/studio'
     | '/admin/morph-ai/support'
+    | '/admin/parvarish/tarkib'
     | '/admin/services/analytics'
     | '/admin/statistics/agents'
     | '/admin/statistics/barbers'
@@ -966,6 +996,7 @@ export interface FileRouteTypes {
     | '/admin/finance'
     | '/admin/hisob-raqam'
     | '/admin/morph-ai'
+    | '/admin/parvarish'
     | '/admin/payouts'
     | '/admin/statistics'
     | '/admin/barbers/$barberId/bookings'
@@ -997,6 +1028,7 @@ export interface FileRouteTypes {
     | '/admin/ledger'
     | '/admin/map'
     | '/admin/morph-ai'
+    | '/admin/parvarish'
     | '/admin/payouts'
     | '/admin/profile'
     | '/admin/reviews'
@@ -1033,6 +1065,7 @@ export interface FileRouteTypes {
     | '/admin/morph-ai/settings'
     | '/admin/morph-ai/studio'
     | '/admin/morph-ai/support'
+    | '/admin/parvarish/tarkib'
     | '/admin/salons/$salonId'
     | '/admin/services/analytics'
     | '/admin/statistics/agents'
@@ -1054,6 +1087,7 @@ export interface FileRouteTypes {
     | '/admin/finance/'
     | '/admin/hisob-raqam/'
     | '/admin/morph-ai/'
+    | '/admin/parvarish/'
     | '/admin/payouts/'
     | '/admin/statistics/'
     | '/admin/barbers/$barberId/bookings'
@@ -1196,6 +1230,13 @@ declare module '@tanstack/react-router' {
       path: '/morph-ai'
       fullPath: '/admin/morph-ai'
       preLoaderRoute: typeof AdminMorphAiRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/parvarish': {
+      id: '/admin/parvarish'
+      path: '/parvarish'
+      fullPath: '/admin/parvarish'
+      preLoaderRoute: typeof AdminParvarishRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/payouts': {
@@ -1477,6 +1518,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/morph-ai/support'
       preLoaderRoute: typeof AdminMorphAiSupportRouteImport
       parentRoute: typeof AdminMorphAiRoute
+    }
+    '/admin/parvarish/': {
+      id: '/admin/parvarish/'
+      path: '/'
+      fullPath: '/admin/parvarish/'
+      preLoaderRoute: typeof AdminParvarishIndexRouteImport
+      parentRoute: typeof AdminParvarishRoute
+    }
+    '/admin/parvarish/tarkib': {
+      id: '/admin/parvarish/tarkib'
+      path: '/tarkib'
+      fullPath: '/admin/parvarish/tarkib'
+      preLoaderRoute: typeof AdminParvarishTarkibRouteImport
+      parentRoute: typeof AdminParvarishRoute
     }
     '/admin/payouts/': {
       id: '/admin/payouts/'
@@ -1867,6 +1922,20 @@ const AdminMorphAiRouteWithChildren = AdminMorphAiRoute._addFileChildren(
   AdminMorphAiRouteChildren,
 )
 
+interface AdminParvarishRouteChildren {
+  AdminParvarishTarkibRoute: typeof AdminParvarishTarkibRoute
+  AdminParvarishIndexRoute: typeof AdminParvarishIndexRoute
+}
+
+const AdminParvarishRouteChildren: AdminParvarishRouteChildren = {
+  AdminParvarishTarkibRoute: AdminParvarishTarkibRoute,
+  AdminParvarishIndexRoute: AdminParvarishIndexRoute,
+}
+
+const AdminParvarishRouteWithChildren = AdminParvarishRoute._addFileChildren(
+  AdminParvarishRouteChildren,
+)
+
 interface AdminPayoutsRouteChildren {
   AdminPayoutsIndexRoute: typeof AdminPayoutsIndexRoute
 }
@@ -2017,6 +2086,7 @@ interface AdminRouteChildren {
   AdminLedgerRoute: typeof AdminLedgerRoute
   AdminMapRoute: typeof AdminMapRoute
   AdminMorphAiRoute: typeof AdminMorphAiRouteWithChildren
+  AdminParvarishRoute: typeof AdminParvarishRouteWithChildren
   AdminPayoutsRoute: typeof AdminPayoutsRouteWithChildren
   AdminProfileRoute: typeof AdminProfileRoute
   AdminReviewsRoute: typeof AdminReviewsRoute
@@ -2043,6 +2113,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminLedgerRoute: AdminLedgerRoute,
   AdminMapRoute: AdminMapRoute,
   AdminMorphAiRoute: AdminMorphAiRouteWithChildren,
+  AdminParvarishRoute: AdminParvarishRouteWithChildren,
   AdminPayoutsRoute: AdminPayoutsRouteWithChildren,
   AdminProfileRoute: AdminProfileRoute,
   AdminReviewsRoute: AdminReviewsRoute,

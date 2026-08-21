@@ -1,0 +1,40 @@
+import { apiJson } from "./client";
+
+export type CareProductCategory = "shampoo" | "balsam" | "mask" | "oil" | "spray" | "other";
+
+export type CareProduct = {
+  id: number;
+  name: string;
+  brand: string;
+  slug: string;
+  category: CareProductCategory | string;
+  image_url: string | null;
+  ingredients_text: string;
+  ingredients: string[];
+  usage_uz: string;
+  purpose_uz: string;
+  suitable_for: string[];
+  not_suitable_for: string[];
+  pros_uz: string;
+  cons_uz: string;
+  warnings_uz: string;
+  is_published: boolean;
+  sort_order: number;
+};
+
+export async function fetchCareProducts(params?: {
+  q?: string;
+  category?: string;
+  recommended?: boolean;
+}): Promise<CareProduct[]> {
+  const sp = new URLSearchParams();
+  if (params?.q) sp.set("q", params.q);
+  if (params?.category) sp.set("category", params.category);
+  if (params?.recommended) sp.set("recommended", "1");
+  const q = sp.toString();
+  return apiJson(`/api/v1/ai/care/products/${q ? `?${q}` : ""}`);
+}
+
+export async function fetchCareProduct(id: number): Promise<CareProduct> {
+  return apiJson(`/api/v1/ai/care/products/${id}/`);
+}

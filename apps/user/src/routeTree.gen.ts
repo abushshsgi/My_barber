@@ -68,6 +68,7 @@ import { Route as WalletHistoryRouteImport } from './routes/wallet_.history'
 import { Route as WalletQrPayRouteImport } from './routes/wallet_.qr-pay'
 import { Route as WalletTopUpRouteImport } from './routes/wallet_.top-up'
 import { Route as AiStyleCareIngredientRouteImport } from './routes/ai-style_.care_.ingredient'
+import { Route as AiStyleCareProductsRouteImport } from './routes/ai-style_.care_.products'
 import { Route as BookingBarberBarberIdRouteImport } from './routes/booking.barber.$barberId'
 import { Route as DevExploreGenIndexRouteImport } from './routes/dev.explore-gen.index'
 import { Route as DevExploreGenAssetsRouteImport } from './routes/dev.explore-gen.assets'
@@ -75,6 +76,7 @@ import { Route as ExploreStyleIdTryRouteImport } from './routes/explore_.$styleI
 import { Route as MorfAiLookStyleIdRouteImport } from './routes/morf-ai.look.$styleId'
 import { Route as MorfAiShareShareIdRouteImport } from './routes/morf-ai.share.$shareId'
 import { Route as SalonIdLocationRouteImport } from './routes/salon.$id.location'
+import { Route as AiStyleCareProductsProductIdRouteImport } from './routes/ai-style_.care_.products_.$productId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -371,6 +373,11 @@ const AiStyleCareIngredientRoute = AiStyleCareIngredientRouteImport.update({
   path: '/ai-style/care/ingredient',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AiStyleCareProductsRoute = AiStyleCareProductsRouteImport.update({
+  id: '/ai-style_/care_/products',
+  path: '/ai-style/care/products',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const BookingBarberBarberIdRoute = BookingBarberBarberIdRouteImport.update({
   id: '/booking/barber/$barberId',
   path: '/booking/barber/$barberId',
@@ -406,6 +413,12 @@ const SalonIdLocationRoute = SalonIdLocationRouteImport.update({
   path: '/location',
   getParentRoute: () => SalonIdRoute,
 } as any)
+const AiStyleCareProductsProductIdRoute =
+  AiStyleCareProductsProductIdRouteImport.update({
+    id: '/ai-style_/care_/products_/$productId',
+    path: '/ai-style/care/products/$productId',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -467,6 +480,7 @@ export interface FileRoutesByFullPath {
   '/wallet/qr-pay': typeof WalletQrPayRoute
   '/wallet/top-up': typeof WalletTopUpRoute
   '/ai-style/care/ingredient': typeof AiStyleCareIngredientRoute
+  '/ai-style/care/products': typeof AiStyleCareProductsRoute
   '/booking/barber/$barberId': typeof BookingBarberBarberIdRoute
   '/dev/explore-gen/assets': typeof DevExploreGenAssetsRoute
   '/explore/$styleId/try': typeof ExploreStyleIdTryRoute
@@ -474,6 +488,7 @@ export interface FileRoutesByFullPath {
   '/morf-ai/share/$shareId': typeof MorfAiShareShareIdRoute
   '/salon/$id/location': typeof SalonIdLocationRoute
   '/dev/explore-gen/': typeof DevExploreGenIndexRoute
+  '/ai-style/care/products/$productId': typeof AiStyleCareProductsProductIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -534,6 +549,7 @@ export interface FileRoutesByTo {
   '/wallet/qr-pay': typeof WalletQrPayRoute
   '/wallet/top-up': typeof WalletTopUpRoute
   '/ai-style/care/ingredient': typeof AiStyleCareIngredientRoute
+  '/ai-style/care/products': typeof AiStyleCareProductsRoute
   '/booking/barber/$barberId': typeof BookingBarberBarberIdRoute
   '/dev/explore-gen/assets': typeof DevExploreGenAssetsRoute
   '/explore/$styleId/try': typeof ExploreStyleIdTryRoute
@@ -541,6 +557,7 @@ export interface FileRoutesByTo {
   '/morf-ai/share/$shareId': typeof MorfAiShareShareIdRoute
   '/salon/$id/location': typeof SalonIdLocationRoute
   '/dev/explore-gen': typeof DevExploreGenIndexRoute
+  '/ai-style/care/products/$productId': typeof AiStyleCareProductsProductIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -603,6 +620,7 @@ export interface FileRoutesById {
   '/wallet_/qr-pay': typeof WalletQrPayRoute
   '/wallet_/top-up': typeof WalletTopUpRoute
   '/ai-style_/care_/ingredient': typeof AiStyleCareIngredientRoute
+  '/ai-style_/care_/products': typeof AiStyleCareProductsRoute
   '/booking/barber/$barberId': typeof BookingBarberBarberIdRoute
   '/dev/explore-gen/assets': typeof DevExploreGenAssetsRoute
   '/explore_/$styleId_/try': typeof ExploreStyleIdTryRoute
@@ -610,6 +628,7 @@ export interface FileRoutesById {
   '/morf-ai/share/$shareId': typeof MorfAiShareShareIdRoute
   '/salon/$id/location': typeof SalonIdLocationRoute
   '/dev/explore-gen/': typeof DevExploreGenIndexRoute
+  '/ai-style_/care_/products_/$productId': typeof AiStyleCareProductsProductIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -673,6 +692,7 @@ export interface FileRouteTypes {
     | '/wallet/qr-pay'
     | '/wallet/top-up'
     | '/ai-style/care/ingredient'
+    | '/ai-style/care/products'
     | '/booking/barber/$barberId'
     | '/dev/explore-gen/assets'
     | '/explore/$styleId/try'
@@ -680,6 +700,7 @@ export interface FileRouteTypes {
     | '/morf-ai/share/$shareId'
     | '/salon/$id/location'
     | '/dev/explore-gen/'
+    | '/ai-style/care/products/$productId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -740,6 +761,7 @@ export interface FileRouteTypes {
     | '/wallet/qr-pay'
     | '/wallet/top-up'
     | '/ai-style/care/ingredient'
+    | '/ai-style/care/products'
     | '/booking/barber/$barberId'
     | '/dev/explore-gen/assets'
     | '/explore/$styleId/try'
@@ -747,6 +769,7 @@ export interface FileRouteTypes {
     | '/morf-ai/share/$shareId'
     | '/salon/$id/location'
     | '/dev/explore-gen'
+    | '/ai-style/care/products/$productId'
   id:
     | '__root__'
     | '/'
@@ -808,6 +831,7 @@ export interface FileRouteTypes {
     | '/wallet_/qr-pay'
     | '/wallet_/top-up'
     | '/ai-style_/care_/ingredient'
+    | '/ai-style_/care_/products'
     | '/booking/barber/$barberId'
     | '/dev/explore-gen/assets'
     | '/explore_/$styleId_/try'
@@ -815,6 +839,7 @@ export interface FileRouteTypes {
     | '/morf-ai/share/$shareId'
     | '/salon/$id/location'
     | '/dev/explore-gen/'
+    | '/ai-style_/care_/products_/$productId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -874,10 +899,12 @@ export interface RootRouteChildren {
   WalletQrPayRoute: typeof WalletQrPayRoute
   WalletTopUpRoute: typeof WalletTopUpRoute
   AiStyleCareIngredientRoute: typeof AiStyleCareIngredientRoute
+  AiStyleCareProductsRoute: typeof AiStyleCareProductsRoute
   BookingBarberBarberIdRoute: typeof BookingBarberBarberIdRoute
   ExploreStyleIdTryRoute: typeof ExploreStyleIdTryRoute
   MorfAiLookStyleIdRoute: typeof MorfAiLookStyleIdRoute
   MorfAiShareShareIdRoute: typeof MorfAiShareShareIdRoute
+  AiStyleCareProductsProductIdRoute: typeof AiStyleCareProductsProductIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -1295,6 +1322,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AiStyleCareIngredientRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/ai-style_/care_/products': {
+      id: '/ai-style_/care_/products'
+      path: '/ai-style/care/products'
+      fullPath: '/ai-style/care/products'
+      preLoaderRoute: typeof AiStyleCareProductsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/booking/barber/$barberId': {
       id: '/booking/barber/$barberId'
       path: '/booking/barber/$barberId'
@@ -1343,6 +1377,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/salon/$id/location'
       preLoaderRoute: typeof SalonIdLocationRouteImport
       parentRoute: typeof SalonIdRoute
+    }
+    '/ai-style_/care_/products_/$productId': {
+      id: '/ai-style_/care_/products_/$productId'
+      path: '/ai-style/care/products/$productId'
+      fullPath: '/ai-style/care/products/$productId'
+      preLoaderRoute: typeof AiStyleCareProductsProductIdRouteImport
+      parentRoute: typeof rootRouteImport
     }
   }
 }
@@ -1462,11 +1503,23 @@ const rootRouteChildren: RootRouteChildren = {
   WalletQrPayRoute: WalletQrPayRoute,
   WalletTopUpRoute: WalletTopUpRoute,
   AiStyleCareIngredientRoute: AiStyleCareIngredientRoute,
+  AiStyleCareProductsRoute: AiStyleCareProductsRoute,
   BookingBarberBarberIdRoute: BookingBarberBarberIdRoute,
   ExploreStyleIdTryRoute: ExploreStyleIdTryRoute,
   MorfAiLookStyleIdRoute: MorfAiLookStyleIdRoute,
   MorfAiShareShareIdRoute: MorfAiShareShareIdRoute,
+  AiStyleCareProductsProductIdRoute: AiStyleCareProductsProductIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

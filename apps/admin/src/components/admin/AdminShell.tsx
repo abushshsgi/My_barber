@@ -36,6 +36,8 @@ import {
   UserPlus,
   ImagePlus,
   MessageCircle,
+  FlaskConical,
+  Droplets,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MysaloonLogo } from "@/components/brand/MysaloonLogo";
@@ -166,6 +168,16 @@ const SECTIONS: Section[] = [
       { to: "/admin/morph-ai/conversion", label: "Konversiya", icon: TrendingUp },
       { to: "/admin/morph-ai/gallery", label: "Gallery", icon: Search },
       { to: "/admin/morph-ai/settings", label: "Sozlamalar", icon: UserCog },
+    ],
+  },
+  {
+    key: "parvarish",
+    label: "Parvarish",
+    icon: Droplets,
+    matchPrefixes: ["/admin/parvarish"],
+    items: [
+      { to: "/admin/parvarish", label: "Umumiy", icon: LayoutDashboard },
+      { to: "/admin/parvarish/tarkib", label: "Tarkib", icon: FlaskConical },
     ],
   },
   {
