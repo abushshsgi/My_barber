@@ -39,7 +39,7 @@
     "morphCareTitle": "Parvarish",
     "morphCareSub": "Shaxsiy soch parvarishi rejasi tez orada.",
     "morphIngredientTitle": "Tarkib",
-    "morphIngredientSub": "Kosmetika tarkibini AI bilan tekshirish tez orada."
+    "morphIngredientSub": "Mahsulot tarkibini AI bilan tekshiring."
   },
   "care": {
     "badge": "Parvarish",
@@ -727,5 +727,32 @@
     "noFace": "Yuzdan boshqa narsa yuklandi. Iltimos, yuz shaklingizni yuboring!",
     "imageRead": "Rasmni o'qib bo'lmadi. Boshqa rasm tanlang.",
     "cameraDenied": "Kamera ruxsati kerak."
+  },
+  "ingredient": {
+    "badge": "Tarkib",
+    "title": "Mahsulot tarkibini skan qiling",
+    "subtitle": "INCI yorlig‘ini suratga oling — AI sochingiz holatiga mos tahlil beradi.",
+    "quizHint": "Avval soch profilingizni belgilang — tahlil shunga moslanadi.",
+    "frameHint": "Tarkib (Ingredients) yozuvini ramka ichiga joylashtiring",
+    "camera": "Kamera",
+    "gallery": "Galereya",
+    "editProfile": "Soch profilini o‘zgartirish",
+    "openCatalog": "Mahsulotlar",
+    "analyzing": "Tarkib tahlil qilinmoqda…",
+    "analyzingSub": "LLM katalog va profilingiz bilan solishtirmoqda",
+    "scanFailed": "Tarkib tahlili muvaffaqiyatsiz.",
+    "unknownProduct": "Noma’lum mahsulot",
+    "catalogMatch": "Katalogdagi mahsulot",
+    "alertsTitle": "Ogohlantirishlar",
+    "beneficialTitle": "Foydali moddalar",
+    "listTitle": "Topilgan tarkib",
+    "ingredientsCount": "{{count}} ta modda",
+    "scanAgain": "Yana skan qilish",
+    "verdicts": {
+      "good": "Yaxshi",
+      "caution": "Ehtiyot",
+      "bad": "Yomon",
+      "dangerous": "Xavfli"
+    }
   }
 }

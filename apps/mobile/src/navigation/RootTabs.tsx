@@ -36,6 +36,7 @@ import { MorphPlaceholderScreen } from "../screens/morph/MorphPlaceholderScreen"
 import { PlaceholderScreen } from "../screens/PlaceholderScreen";
 import { colors } from "../theme/colors";
 import { MorphCareStack } from "./MorphCareStack";
+import { MorphIngredientStack } from "./MorphIngredientStack";
 import { MorphStack } from "./MorphStack";
 import { ProfileStack } from "./ProfileStack";
 
@@ -447,16 +448,6 @@ function ExploreTab() {
   return <PlaceholderScreen title={t("nav.explore")} />;
 }
 
-function MorphIngredientTab() {
-  const { t } = useTranslation();
-  return (
-    <MorphPlaceholderScreen
-      title={t("placeholder.morphIngredientTitle")}
-      subtitle={t("placeholder.morphIngredientSub")}
-      icon="flask-outline"
-    />
-  );
-}
 
 function RootTabsInner() {
   const { switchingTo } = useAppShell();
@@ -483,7 +474,7 @@ function RootTabsInner() {
 
             <Tab.Screen name="MorphChat" component={MorphChatScreen} />
             <Tab.Screen name="MorphCare" component={MorphCareStack} />
-            <Tab.Screen name="MorphIngredient" component={MorphIngredientTab} />
+            <Tab.Screen name="MorphIngredient" component={MorphIngredientStack} />
             <Tab.Screen name="MorphTryOn" component={MorphStack} />
           </Tab.Navigator>
           <ShellSwitchOverlay visible={switchingTo != null} target={switchingTo} />

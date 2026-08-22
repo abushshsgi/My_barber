@@ -34,6 +34,21 @@ INGREDIENT_ALIASES: dict[str, str] = {
     "sd alcohol": "drying_alcohol",
     "mineral oil": "heavy_oil",
     "petrolatum": "heavy_oil",
+
+    "tea tree oil": "melaleuca",
+    "melaleuca alternifolia": "melaleuca",
+    "cocamidopropyl betaine": "capb",
+    "sodium cocoyl isethionate": "sci",
+    "behentrimonium chloride": "btac",
+    "cetyl alcohol": "fatty_alcohol",
+    "cetearyl alcohol": "fatty_alcohol",
+    "stearyl alcohol": "fatty_alcohol",
+    "glycerin": "glycerin",
+    "glycerine": "glycerin",
+    "panthenol": "panthenol",
+    "niacinamide": "niacinamide",
+    "salicylic acid": "bha",
+    "benzyl alcohol": "preservative_alcohol",
 }
 
 DANGEROUS_CANON = frozenset({"formaldehyde"})
@@ -80,10 +95,15 @@ def normalize_set(names: Iterable[str]) -> set[str]:
 
 
 def overlap_ratio(a: set[str], b: set[str]) -> float:
+    """Dice + Jaccard aralashmasi — qisqa INCI ro'yxatlarida barqarorroq."""
     if not a or not b:
         return 0.0
     inter = len(a & b)
-    return inter / max(1, min(len(a), len(b)))
+    if inter == 0:
+        return 0.0
+    dice = (2.0 * inter) / (len(a) + len(b))
+    jaccard = inter / len(a | b)
+    return max(dice, jaccard)
 
 
 def _as_tag_list(raw: Any) -> list[str]:
@@ -133,6 +153,13 @@ def match_care_product(
             score += 0.4
         if brand_q and brand_q.lower() in prod_brand:
             score += 0.25
+        # Nom tokenlari bo‘yicha qo‘shimcha ball
+        if name_q:
+            name_tokens = {t for t in name_q.lower().split() if len(t) > 2}
+            prod_tokens = {t for t in prod_name.split() if len(t) > 2}
+            shared = name_tokens & prod_tokens
+            if shared:
+                score += min(0.35, 0.12 * len(shared))
         catalog_ings = normalize_set(
             product.ingredients if isinstance(product.ingredients, list) else []
         )
@@ -145,7 +172,7 @@ def match_care_product(
             best_score = score
             best = product
 
-    if best is None or best_score < 0.45:
+    if best is None or best_score < 0.38:
         return None, best_score
     return best, best_score
 
