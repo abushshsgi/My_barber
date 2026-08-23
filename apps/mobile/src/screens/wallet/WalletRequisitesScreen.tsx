@@ -37,7 +37,9 @@ export function WalletRequisitesScreen({ navigation }: Props) {
   }, [user]);
 
   const cardholder = me.card?.cardholder_name?.trim() || fullName;
-  const walletNumber = me.walletNumber ? formatWalletNumber(me.walletNumber) : "—";
+  const cardNumber = me.card?.card_display?.trim()
+    || (me.walletNumber ? formatWalletNumber(me.walletNumber) : "—");
+  const cardNumberRaw = me.card?.card_display?.trim() || me.walletNumber;
 
   const copy = useCallback(async (value: string, key: string) => {
     if (!value || value === "—") return;
@@ -57,26 +59,17 @@ export function WalletRequisitesScreen({ navigation }: Props) {
         contentContainerStyle={styles.body}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.lead}>
-          Hamyon raqami, shaxsiy ism-familya va karta egasi maʼlumotlari.
-        </Text>
+        <Text style={styles.lead}>Karta raqami va karta egasi.</Text>
 
         {me.loading && !me.wallet ? (
           <ActivityIndicator style={{ marginTop: 40 }} color="#5B4ED6" />
         ) : (
           <View style={styles.card}>
             <Row
-              label="Hamyon raqami"
-              value={walletNumber}
-              onCopy={() => void copy(me.walletNumber, "number")}
+              label="Karta raqami"
+              value={cardNumber}
+              onCopy={() => void copy(cardNumberRaw, "number")}
               copied={copied === "number"}
-            />
-            <View style={styles.divider} />
-            <Row
-              label="Ism familiya"
-              value={fullName}
-              onCopy={() => void copy(fullName, "name")}
-              copied={copied === "name"}
             />
             <View style={styles.divider} />
             <Row

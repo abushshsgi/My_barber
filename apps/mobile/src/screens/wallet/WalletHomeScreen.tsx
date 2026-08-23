@@ -28,6 +28,8 @@ import type { WalletTx } from "../../lib/wallet-format";
 import type { WalletStackParamList } from "../../navigation/WalletStack";
 import { useAuth } from "../../auth/AuthContext";
 
+const mysaloonIcon = require("../../../assets/icon.png");
+
 type Props = NativeStackScreenProps<WalletStackParamList, "WalletHome">;
 
 const PURPLE = ["#5B4ED6", "#6E5EF0", "#8574FF"] as const;
@@ -378,75 +380,57 @@ export function WalletHomeScreen({ navigation }: Props) {
               <View style={styles.fabSlot}>
                 <Pressable
                   style={styles.fab}
-                  onPress={() => goMorphTab("MorphTryOn")}
+                  onPress={switchToMysaloon}
                   accessibilityRole="button"
-                  accessibilityLabel="Morf AI Try-on"
+                  accessibilityLabel="MySaloon"
                 >
-                  <Image source={morfMarkWhite} style={styles.fabLogo} contentFit="contain" />
+                  <Image source={mysaloonIcon} style={styles.fabAppIcon} contentFit="cover" />
                 </Pressable>
-                <Text style={styles.fabLabel}>Try-on</Text>
+                <Text style={styles.fabLabel}>MySaloon</Text>
               </View>
               <TabItem
-                icon="flask-outline"
-                label="Tarkib"
+                icon="sparkles-outline"
+                label="Try-on"
                 active={false}
-                onPress={() => goMorphTab("MorphIngredient")}
+                onPress={() => goMorphTab("MorphTryOn")}
               />
-              <TabItem
-                icon="person"
-                label="Profil"
-                active
-                onPress={goBackSafe}
-              />
+              <TabItem icon="person" label="Profil" active onPress={goBackSafe} />
             </>
           ) : (
             <>
-              <TabItem icon="home" label="Asosiy" active={false} onPress={() => goMysaloonTab("Home")} />
-              <TabItem icon="wallet" label="Hamyon" active onPress={() => {}} />
+              <TabItem
+                icon="home-outline"
+                label="Asosiy"
+                active={false}
+                onPress={() => goMysaloonTab("Home")}
+              />
+              <TabItem
+                icon="map-outline"
+                label="Xarita"
+                active={false}
+                onPress={() => goMysaloonTab("Map")}
+              />
               <View style={styles.fabSlot}>
                 <Pressable
-                  style={[styles.fab, styles.fabMysaloon]}
-                  onPress={() => {
-                    if (!requireAuth()) return;
-                    navigation.navigate("WalletQrPay");
-                  }}
+                  style={styles.fab}
+                  onPress={switchToMorph}
                   accessibilityRole="button"
-                  accessibilityLabel="QR to'lov"
+                  accessibilityLabel="Morf AI"
                 >
-                  <Ionicons name="scan" size={24} color="#FFF" />
+                  <Image source={morfMarkWhite} style={styles.fabLogo} contentFit="contain" />
                 </Pressable>
-                <Text style={styles.fabLabel}>To'lov</Text>
+                <Text style={styles.fabLabel}>Morf AI</Text>
               </View>
               <TabItem
-                icon="document-text-outline"
-                label="Rekvizit"
+                icon="compass-outline"
+                label="Explore"
                 active={false}
-                onPress={() => {
-                  if (!requireAuth()) return;
-                  navigation.navigate("WalletRequisites");
-                }}
+                onPress={() => goMysaloonTab("Explore")}
               />
-              <TabItem
-                icon="person-outline"
-                label="Profil"
-                active={false}
-                onPress={goBackSafe}
-              />
+              <TabItem icon="person-outline" label="Profil" active onPress={goBackSafe} />
             </>
           )}
         </View>
-
-        {!isMorph ? (
-          <Pressable style={styles.morphSwitchHint} onPress={switchToMorph}>
-            <Ionicons name="sparkles" size={14} color="#FFF" />
-            <Text style={styles.morphSwitchText}>Morf AI ga o‘tish</Text>
-          </Pressable>
-        ) : (
-          <Pressable style={styles.morphSwitchHint} onPress={switchToMysaloon}>
-            <Ionicons name="storefront-outline" size={14} color="#FFF" />
-            <Text style={styles.morphSwitchText}>MySaloon ga o‘tish</Text>
-          </Pressable>
-        )}
       </LinearGradient>
     </View>
   );
@@ -703,19 +687,6 @@ const styles = StyleSheet.create({
     borderColor: "#FFF",
   },
   fabLogo: { width: 28, height: 28 },
+  fabAppIcon: { width: 28, height: 28, borderRadius: 8 },
   fabLabel: { marginTop: 4, fontSize: 10, fontWeight: "600", color: INK },
-  fabMysaloon: { backgroundColor: FAB_BLUE },
-  morphSwitchHint: {
-    position: "absolute",
-    right: 16,
-    bottom: 88,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 999,
-    backgroundColor: "rgba(10,10,10,0.72)",
-  },
-  morphSwitchText: { color: "#FFF", fontSize: 11, fontWeight: "600" },
 });

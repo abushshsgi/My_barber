@@ -1,5 +1,5 @@
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { openWallet } from "../../api/wallet";
 import { useAuth } from "../../auth/AuthContext";
@@ -11,18 +11,26 @@ import { WalletCreatingScreen } from "./WalletCreatingScreen";
 
 type Props = NativeStackScreenProps<WalletStackParamList, "WalletGate">;
 
-const MIN_CREATE_MS = 1600;
+const MIN_CREATE_MS = 1400;
 
 /**
- * Yangi kirish: carousel yo‘q — «Hamyoningiz yaratilmoqda» + ensure_wallet.
+ * Birinchi kirish: Get Started UI → ensure_wallet.
  * Allaqachon ochilgan bo‘lsa — to‘g‘ridan WalletHome.
  */
 export function WalletGateScreen({ navigation }: Props) {
   useHideTabBar();
   const { user } = useAuth();
-  const [phase, setPhase] = useState<"boot" | "creating" | "ready" | "error">("boot");
+  const [phase, setPhase] = useState<"boot" | "welcome" | "creating" | "ready" | "error">(
+    "boot",
+  );
   const [error, setError] = useState<string | null>(null);
   const ran = useRef(false);
+  const creating = useRef(false);
+
+  const cardholderName = useMemo(() => {
+    const fromParts = [user?.first_name, user?.last_name].filter(Boolean).join(" ").trim();
+    return fromParts || user?.full_name?.trim() || "";
+  }, [user]);
 
   useEffect(() => {
     if (ran.current) return;
@@ -43,30 +51,10 @@ export function WalletGateScreen({ navigation }: Props) {
           return;
         }
       } catch {
-        /* creatingga o‘tamiz */
+        /* welcome ga o‘tamiz */
       }
 
-      if (cancelled) return;
-      setPhase("creating");
-      const started = Date.now();
-
-      try {
-        await openWallet();
-        await markWalletOpened(user.id);
-        const wait = Math.max(0, MIN_CREATE_MS - (Date.now() - started));
-        if (wait > 0) await new Promise((r) => setTimeout(r, wait));
-        if (cancelled) return;
-        setPhase("ready");
-        await new Promise((r) => setTimeout(r, 520));
-        if (!cancelled) navigation.replace("WalletHome");
-      } catch (e) {
-        if (cancelled) return;
-        setError(e instanceof Error ? e.message : "Hamyon ochilmadi.");
-        setPhase("error");
-        // Xato bo‘lsa ham home — keyinroq /me qayta urinadi
-        await new Promise((r) => setTimeout(r, 900));
-        if (!cancelled) navigation.replace("WalletHome");
-      }
+      if (!cancelled) setPhase("welcome");
     })();
 
     return () => {
@@ -74,14 +62,39 @@ export function WalletGateScreen({ navigation }: Props) {
     };
   }, [user?.id, navigation]);
 
+  const onGetStarted = useCallback(async () => {
+    if (!user?.id || creating.current) return;
+    if (phase !== "welcome" && phase !== "error") return;
+    creating.current = true;
+    setError(null);
+    setPhase("creating");
+    const started = Date.now();
+
+    try {
+      await openWallet();
+      await markWalletOpened(user.id);
+      const wait = Math.max(0, MIN_CREATE_MS - (Date.now() - started));
+      if (wait > 0) await new Promise((r) => setTimeout(r, wait));
+      setPhase("ready");
+      await new Promise((r) => setTimeout(r, 480));
+      navigation.replace("WalletHome");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Hamyon ochilmadi.");
+      setPhase("error");
+      creating.current = false;
+    }
+  }, [user?.id, phase, navigation]);
+
   if (phase === "boot") {
     return <View style={styles.boot} />;
   }
 
   return (
     <WalletCreatingScreen
-      creating={phase === "creating"}
+      phase={phase}
       error={phase === "error" ? error : null}
+      cardholderName={cardholderName}
+      onGetStarted={() => void onGetStarted()}
     />
   );
 }
