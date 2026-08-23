@@ -249,9 +249,11 @@ class WalletRecipientSearchView(APIView):
         phone = normalize_uz_phone(q)
 
         # wallet_number DB da "7700 1234 …" bo'shliqli; raqam bilan qidirish uchun spacesiz annotate.
+        # Muzlatilgan hamyonlar hech qachon chiqmaydi (xavfsizlik).
         wallet_qs = (
             Wallet.objects.select_related("user")
             .exclude(user=request.user)
+            .exclude(is_frozen=True)
             .annotate(
                 wallet_digits=Replace(
                     "wallet_number",

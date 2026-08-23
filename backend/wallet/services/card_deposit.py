@@ -289,6 +289,7 @@ class CardDepositService:
 
         cfg = receiving_card_config()
         wallet = WalletService.ensure_wallet(user)
+        WalletService.assert_not_frozen(wallet, action="to'ldirish")
         now = timezone.now()
         deposit = ManualCardDeposit.objects.create(
             user=user,

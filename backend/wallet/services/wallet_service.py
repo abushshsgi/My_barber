@@ -233,9 +233,11 @@ class WalletService:
             return existing
 
         wallet = Wallet.objects.select_for_update().get(pk=wallet.pk)
-        # Debit (chiqim) muzlatilgan hamyonda taqiqlanadi; kirim (topup/gift_in) ochiq.
-        if amount < 0:
-            cls.assert_not_frozen(wallet, action="chiqim")
+        # Muzlatilgan hamyon: chiqim va kirim (gift/topup) ham taqiqlanadi.
+        cls.assert_not_frozen(
+            wallet,
+            action="kirim" if amount >= 0 else "chiqim",
+        )
         new_balance = wallet.balance + amount
         if new_balance < 0:
             raise InsufficientBalanceError(
@@ -306,7 +308,7 @@ class WalletService:
 
         if recipient_user_id:
             wallet = qs.filter(user_id=recipient_user_id).first()
-            if wallet:
+            if wallet and not wallet.is_frozen:
                 return wallet
             raise WalletServiceError("Qabul qiluvchi topilmadi.")
 
@@ -314,7 +316,7 @@ class WalletService:
             normalized = normalize_wallet_number(recipient_wallet_number)
             formatted = format_wallet_number(normalized)
             wallet = qs.filter(wallet_number=formatted).first()
-            if wallet:
+            if wallet and not wallet.is_frozen:
                 return wallet
             raise WalletServiceError("Hamyon raqami topilmadi.")
 
@@ -323,7 +325,7 @@ class WalletService:
             if not phone:
                 raise WalletServiceError("Telefon raqami noto'g'ri.")
             wallet = qs.filter(user__phone=phone).first()
-            if wallet:
+            if wallet and not wallet.is_frozen:
                 return wallet
             raise WalletServiceError("Telefon bo'yicha foydalanuvchi topilmadi.")
 

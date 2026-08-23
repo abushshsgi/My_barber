@@ -1,4 +1,9 @@
-import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { Easing, Platform } from "react-native";
+import {
+  CardStyleInterpolators,
+  createStackNavigator,
+  type StackNavigationOptions,
+} from "@react-navigation/stack";
 import { useAuth } from "../auth/AuthContext";
 import { useAppShell } from "../lib/AppShellContext";
 import { useMorphAppearance } from "../lib/MorphAppearanceContext";
@@ -64,9 +69,48 @@ export type ProfileStackParamList = {
   WalletFaq: undefined;
 };
 
-const Stack = createNativeStackNavigator<ProfileStackParamList>();
+const Stack = createStackNavigator<ProfileStackParamList>();
 
-/** Profil oqimi — mehmon uchun login; autentifikatsiyadan keyin stack. */
+const openRight = {
+  animation: "timing" as const,
+  config: { duration: 320, easing: Easing.out(Easing.cubic) },
+};
+const closeRight = {
+  animation: "timing" as const,
+  config: { duration: 280, easing: Easing.in(Easing.cubic) },
+};
+const openBottom = {
+  animation: "timing" as const,
+  config: { duration: 480, easing: Easing.out(Easing.cubic) },
+};
+const closeBottom = {
+  animation: "timing" as const,
+  config: { duration: 360, easing: Easing.in(Easing.cubic) },
+};
+
+const fromRight: StackNavigationOptions = {
+  gestureEnabled: true,
+  fullScreenGestureEnabled: Platform.OS !== "web",
+  cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
+  transitionSpec: { open: openRight, close: closeRight },
+};
+
+const fromBottom: StackNavigationOptions = {
+  gestureEnabled: true,
+  fullScreenGestureEnabled: Platform.OS !== "web",
+  cardStyleInterpolator: CardStyleInterpolators.forModalPresentationIOS,
+  transitionSpec: { open: openBottom, close: closeBottom },
+};
+
+const freezeSheet: StackNavigationOptions = {
+  presentation: "transparentModal",
+  cardStyle: { backgroundColor: "transparent" },
+  cardOverlayEnabled: false,
+  animationEnabled: false,
+  gestureEnabled: false,
+};
+
+/** Profil oqimi — mehmon uchun login; autentifikatsiyadan keyin stack (web animatsiya ishlaydi). */
 export function ProfileStack() {
   const { isAuthenticated } = useAuth();
   const { shell } = useAppShell();
@@ -81,12 +125,8 @@ export function ProfileStack() {
     <Stack.Navigator
       screenOptions={{
         headerShown: false,
-        animation: "slide_from_right",
-        gestureEnabled: true,
-        fullScreenGestureEnabled: true,
-        contentStyle: {
-          backgroundColor: morphHome ? colors.bg : "#FFFFFF",
-        },
+        cardStyle: { backgroundColor: morphHome ? colors.bg : "#FFFFFF" },
+        ...fromRight,
       }}
     >
       <Stack.Screen name="ProfileHome" component={ProfileHomeScreen} />
@@ -105,70 +145,24 @@ export function ProfileStack() {
       <Stack.Screen
         name="MorphPaywall"
         component={MorphPaywallScreen}
-        options={{ contentStyle: { backgroundColor: "#FFFFFF" } }}
+        options={{ cardStyle: { backgroundColor: "#FFFFFF" } }}
       />
       <Stack.Screen name="WalletGate" component={WalletGateScreen} />
       <Stack.Screen
         name="WalletHome"
         component={WalletHomeScreen}
-        options={{ contentStyle: { backgroundColor: "#F7F5F2" } }}
+        options={{ cardStyle: { backgroundColor: "#F7F5F2" } }}
       />
-      <Stack.Screen
-        name="WalletTopUp"
-        component={WalletTopUpScreen}
-        options={{ animation: "slide_from_right", gestureEnabled: true, fullScreenGestureEnabled: true }}
-      />
-      <Stack.Screen
-        name="WalletGift"
-        component={WalletGiftScreen}
-        options={{ animation: "slide_from_right", gestureEnabled: true, fullScreenGestureEnabled: true }}
-      />
-      <Stack.Screen
-        name="WalletGiftAmount"
-        component={WalletGiftAmountScreen}
-        options={{ animation: "slide_from_right", gestureEnabled: true, fullScreenGestureEnabled: true }}
-      />
-      <Stack.Screen
-        name="WalletGifts"
-        component={WalletGiftsScreen}
-        options={{ animation: "slide_from_right", gestureEnabled: true, fullScreenGestureEnabled: true }}
-      />
-      <Stack.Screen
-        name="WalletMore"
-        component={WalletMoreScreen}
-        options={{ animation: "slide_from_right", gestureEnabled: true, fullScreenGestureEnabled: true }}
-      />
-      <Stack.Screen
-        name="WalletQrPay"
-        component={WalletQrPayScreen}
-        options={{ animation: "slide_from_bottom", gestureEnabled: true, fullScreenGestureEnabled: true }}
-      />
-      <Stack.Screen
-        name="WalletTransactions"
-        component={WalletTransactionsScreen}
-        options={{ animation: "slide_from_right", gestureEnabled: true, fullScreenGestureEnabled: true }}
-      />
-      <Stack.Screen
-        name="WalletRequisites"
-        component={WalletRequisitesScreen}
-        options={{ animation: "slide_from_right", gestureEnabled: true, fullScreenGestureEnabled: true }}
-      />
-      <Stack.Screen
-        name="WalletFreeze"
-        component={WalletFreezeScreen}
-        options={{
-          presentation: "transparentModal",
-          animation: "slide_from_bottom",
-          contentStyle: { backgroundColor: "transparent" },
-          gestureEnabled: true,
-          gestureDirection: "vertical",
-        }}
-      />
-      <Stack.Screen
-        name="WalletFaq"
-        component={WalletFaqScreen}
-        options={{ animation: "slide_from_right", gestureEnabled: true, fullScreenGestureEnabled: true }}
-      />
+      <Stack.Screen name="WalletTopUp" component={WalletTopUpScreen} options={fromRight} />
+      <Stack.Screen name="WalletGift" component={WalletGiftScreen} options={fromRight} />
+      <Stack.Screen name="WalletGiftAmount" component={WalletGiftAmountScreen} options={fromRight} />
+      <Stack.Screen name="WalletGifts" component={WalletGiftsScreen} options={fromRight} />
+      <Stack.Screen name="WalletMore" component={WalletMoreScreen} options={fromRight} />
+      <Stack.Screen name="WalletQrPay" component={WalletQrPayScreen} options={fromBottom} />
+      <Stack.Screen name="WalletTransactions" component={WalletTransactionsScreen} options={fromRight} />
+      <Stack.Screen name="WalletRequisites" component={WalletRequisitesScreen} options={fromRight} />
+      <Stack.Screen name="WalletFreeze" component={WalletFreezeScreen} options={freezeSheet} />
+      <Stack.Screen name="WalletFaq" component={WalletFaqScreen} options={fromRight} />
     </Stack.Navigator>
   );
 }
