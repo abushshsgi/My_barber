@@ -7,6 +7,7 @@ import { WalletHomeScreen } from "../screens/wallet/WalletHomeScreen";
 import { WalletMoreScreen } from "../screens/wallet/WalletMoreScreen";
 import { WalletQrPayScreen } from "../screens/wallet/WalletQrPayScreen";
 import { WalletRequisitesScreen } from "../screens/wallet/WalletRequisitesScreen";
+import { WalletSoonScreen } from "../screens/wallet/WalletSoonScreen";
 import { WalletTopUpScreen } from "../screens/wallet/WalletTopUpScreen";
 import { WalletTransactionsScreen } from "../screens/wallet/WalletTransactionsScreen";
 
@@ -27,6 +28,8 @@ export type WalletStackParamList = {
   WalletQrPay: undefined;
   WalletTransactions: undefined;
   WalletRequisites: undefined;
+  WalletLimits: undefined;
+  WalletAlerts: undefined;
 };
 
 export type WalletScreenName = keyof WalletStackParamList;
@@ -59,6 +62,8 @@ export function WalletStack() {
       <Stack.Screen name="WalletQrPay" component={WalletQrPayScreen} />
       <Stack.Screen name="WalletTransactions" component={WalletTransactionsScreen} />
       <Stack.Screen name="WalletRequisites" component={WalletRequisitesScreen} />
+      <Stack.Screen name="WalletLimits" component={WalletSoonScreen} />
+      <Stack.Screen name="WalletAlerts" component={WalletSoonScreen} />
     </Stack.Navigator>
   );
 }

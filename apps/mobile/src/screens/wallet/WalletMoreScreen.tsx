@@ -1,149 +1,192 @@
 import { Ionicons } from "@expo/vector-icons";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { LinearGradient } from "expo-linear-gradient";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useMemo, useState } from "react";
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useAuth } from "../../auth/AuthContext";
-import { WalletPlasticCard } from "../../components/wallet/WalletPlasticCard";
 import { useHideTabBar } from "../../hooks/useHideTabBar";
 import { useWalletMe } from "../../hooks/useWallet";
-import { formatSomLabel } from "../../lib/wallet-format";
 import type { WalletStackParamList } from "../../navigation/WalletStack";
 
 type Props = NativeStackScreenProps<WalletStackParamList, "WalletMore">;
 
-type Link = {
+const INK = "#1A1A1A";
+const MUTED = "#9CA3AF";
+const SOFT_BG = "#F7F5F2";
+const CARD_SHADOW = {
+  shadowColor: "#B8A99A",
+  shadowOffset: { width: 0, height: 8 },
+  shadowOpacity: 0.12,
+  shadowRadius: 20,
+  elevation: 4,
+};
+
+type GridItem = {
   key: keyof WalletStackParamList;
   title: string;
   subtitle: string;
   icon: keyof typeof Ionicons.glyphMap;
+  tone: string;
 };
 
-const PRIMARY: Link[] = [
-  {
-    key: "WalletGifts",
-    title: "Olingan sovg'alar",
-    subtitle: "Sizga kelgan sovg'alar",
-    icon: "gift-outline",
-  },
-  {
-    key: "WalletRequisites",
-    title: "Mening kartam",
-    subtitle: "Rekvizit va nusxa olish",
-    icon: "card-outline",
-  },
-  {
-    key: "WalletTransactions",
-    title: "Tarix",
-    subtitle: "Kirim va chiqimlar",
-    icon: "receipt-outline",
-  },
-];
-
-const SECONDARY: Link[] = [
+const GRID: GridItem[] = [
   {
     key: "WalletTopUp",
     title: "To'ldirish",
     subtitle: "Balansni oshirish",
     icon: "add-circle-outline",
+    tone: "#FDE68A",
   },
   {
     key: "WalletGift",
     title: "O'tkazma",
     subtitle: "Do'stga yuborish",
     icon: "paper-plane-outline",
+    tone: "#C7D2FE",
+  },
+  {
+    key: "WalletGifts",
+    title: "Olingan sovg'alar",
+    subtitle: "Kelgan sovg'alar",
+    icon: "gift-outline",
+    tone: "#FBCFE8",
+  },
+  {
+    key: "WalletTransactions",
+    title: "Tarix",
+    subtitle: "Kirim va chiqim",
+    icon: "receipt-outline",
+    tone: "#BBF7D0",
+  },
+  {
+    key: "WalletRequisites",
+    title: "Mening kartam",
+    subtitle: "Rekvizitlar",
+    icon: "card-outline",
+    tone: "#A5F3FC",
   },
   {
     key: "WalletQrPay",
     title: "QR to'lov",
-    subtitle: "Skaner orqali to'lash",
+    subtitle: "Skaner orqali",
     icon: "qr-code-outline",
+    tone: "#F5D0C5",
+  },
+  {
+    key: "WalletLimits",
+    title: "Limitlar",
+    subtitle: "Kunlik cheklov",
+    icon: "speedometer-outline",
+    tone: "#E9D5FF",
+  },
+  {
+    key: "WalletAlerts",
+    title: "Bildirishnomalar",
+    subtitle: "Hamyon signalari",
+    icon: "notifications-outline",
+    tone: "#FED7AA",
   },
 ];
 
-/** Ko'proq — vertikal hub (karta + bo'limlar). */
+function formatMoney(n: number): string {
+  if (!Number.isFinite(n)) return "0.00";
+  return Math.round(n).toLocaleString("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
+
+function maskWallet(raw?: string): string {
+  const digits = (raw || "").replace(/\D/g, "");
+  if (digits.length < 4) return "••••";
+  return `•••• ${digits.slice(-4)}`;
+}
+
+/** Ko'proq — balans + 2 ustunli grid (wallet home palitrasi). */
 export function WalletMoreScreen({ navigation }: Props) {
   useHideTabBar();
   const insets = useSafeAreaInsets();
-  const { user } = useAuth();
   const me = useWalletMe();
-  const holder =
-    me.card?.cardholder_name ||
-    user?.full_name ||
-    [user?.first_name, user?.last_name].filter(Boolean).join(" ") ||
-    "Foydalanuvchi";
+  const [hidden, setHidden] = useState(false);
+
+  const balanceText = useMemo(
+    () => (hidden ? "••••••" : formatMoney(me.balance)),
+    [hidden, me.balance],
+  );
 
   return (
     <View style={[styles.root, { paddingBottom: Math.max(insets.bottom, 12) }]}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
         <LinearGradient
-          colors={["#0F172A", "#1E293B"]}
-          style={[styles.hero, { paddingTop: insets.top + 6 }]}
+          colors={["#F8E8DC", "#F3E4F0", "#E8EEF8", "#F7F5F2"]}
+          locations={[0, 0.35, 0.7, 1]}
+          start={{ x: 0.1, y: 0 }}
+          end={{ x: 0.9, y: 1 }}
+          style={[styles.hero, { paddingTop: insets.top + 8 }, CARD_SHADOW]}
         >
           <View style={styles.header}>
-            <Pressable style={styles.backBtn} onPress={() => navigation.goBack()} hitSlop={8}>
-              <Ionicons name="chevron-back" size={22} color="#FFF" />
+            <Pressable style={styles.iconBtn} onPress={() => navigation.goBack()} hitSlop={8}>
+              <Ionicons name="chevron-back" size={22} color={INK} />
             </Pressable>
-            <Text style={styles.headerTitle}>Hamyon</Text>
-            <View style={styles.backBtn} />
+            <Text style={styles.headerTitle}>Ko'proq</Text>
+            <Pressable
+              style={styles.iconBtn}
+              onPress={() => navigation.navigate("WalletRequisites")}
+              hitSlop={8}
+            >
+              <Ionicons name="card-outline" size={20} color={INK} />
+            </Pressable>
           </View>
 
-          <Text style={styles.balHint}>Joriy balans</Text>
-          <Text style={styles.bal}>{formatSomLabel(me.balance)}</Text>
-
-          <View style={styles.cardWrap}>
-            <WalletPlasticCard
-              balance={me.balance}
-              cardholderName={holder}
-              walletNumber={me.walletNumber}
-            />
+          <View style={styles.balanceBlock}>
+            {me.loading && !me.wallet ? (
+              <ActivityIndicator color={INK} />
+            ) : (
+              <Pressable onPress={() => setHidden((v) => !v)} style={styles.balancePress}>
+                <Text style={styles.balance}>{balanceText}</Text>
+                <Ionicons
+                  name={hidden ? "eye-off-outline" : "eye-outline"}
+                  size={16}
+                  color={MUTED}
+                  style={{ marginLeft: 8, marginBottom: 4 }}
+                />
+              </Pressable>
+            )}
+            <Text style={styles.balanceLabel}>Hamyon balansi</Text>
+            <Pressable onPress={() => navigation.navigate("WalletRequisites")}>
+              <Text style={styles.walletHint}>{maskWallet(me.walletNumber)}</Text>
+            </Pressable>
           </View>
         </LinearGradient>
 
         <View style={styles.content}>
-          <Text style={styles.section}>Asosiy</Text>
-          <View style={styles.list}>
-            {PRIMARY.map((item, i) => (
+          <Text style={styles.section}>Amallar</Text>
+          <View style={styles.grid}>
+            {GRID.map((item) => (
               <Pressable
                 key={item.key}
-                style={[styles.row, i < PRIMARY.length - 1 && styles.rowBorder]}
+                style={[styles.tile, CARD_SHADOW]}
                 onPress={() => navigation.navigate(item.key as never)}
               >
-                <View style={styles.iconBox}>
-                  <Ionicons name={item.icon} size={20} color="#111" />
+                <View style={[styles.tileIcon, { backgroundColor: item.tone }]}>
+                  <Ionicons name={item.icon} size={22} color={INK} />
                 </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.rowTitle}>{item.title}</Text>
-                  <Text style={styles.rowSub}>{item.subtitle}</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={18} color="#D1D5DB" />
+                <Text style={styles.tileTitle} numberOfLines={2}>
+                  {item.title}
+                </Text>
+                <Text style={styles.tileSub} numberOfLines={1}>
+                  {item.subtitle}
+                </Text>
               </Pressable>
             ))}
           </View>
-
-          <Text style={[styles.section, { marginTop: 20 }]}>Amallar</Text>
-          <View style={styles.list}>
-            {SECONDARY.map((item, i) => (
-              <Pressable
-                key={item.key}
-                style={[styles.row, i < SECONDARY.length - 1 && styles.rowBorder]}
-                onPress={() => navigation.navigate(item.key as never)}
-              >
-                <View style={styles.iconBox}>
-                  <Ionicons name={item.icon} size={20} color="#111" />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.rowTitle}>{item.title}</Text>
-                  <Text style={styles.rowSub}>{item.subtitle}</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={18} color="#D1D5DB" />
-              </Pressable>
-            ))}
-          </View>
-
-          <Text style={styles.tip}>
-            Keyinroq qo‘shish mumkin: limmitlar, bildirishnomalar, oilaviy hamyon, cheklar PDF.
-          </Text>
         </View>
       </ScrollView>
     </View>
@@ -151,80 +194,97 @@ export function WalletMoreScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: "#F3F4F6" },
+  root: { flex: 1, backgroundColor: SOFT_BG },
   scroll: { paddingBottom: 28 },
   hero: {
+    marginHorizontal: 16,
+    marginTop: 4,
+    borderRadius: 28,
     paddingHorizontal: 16,
-    paddingBottom: 28,
-    borderBottomLeftRadius: 28,
-    borderBottomRightRadius: 28,
+    paddingBottom: 22,
   },
-  header: { flexDirection: "row", alignItems: "center", marginBottom: 18 },
-  backBtn: { width: 40, height: 40, alignItems: "center", justifyContent: "center" },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 18,
+  },
+  iconBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(255,255,255,0.55)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
   headerTitle: {
     flex: 1,
     textAlign: "center",
     fontSize: 17,
     fontWeight: "800",
-    color: "#FFF",
+    color: INK,
   },
-  balHint: { color: "rgba(255,255,255,0.55)", fontSize: 12, fontWeight: "600" },
-  bal: {
-    marginTop: 4,
-    marginBottom: 18,
-    color: "#FFF",
-    fontSize: 32,
+  balanceBlock: { alignItems: "center", paddingBottom: 4 },
+  balancePress: { flexDirection: "row", alignItems: "flex-end" },
+  balance: {
+    fontSize: 36,
     fontWeight: "800",
-    letterSpacing: -0.8,
+    color: INK,
+    letterSpacing: -1,
   },
-  cardWrap: {
-    shadowColor: "#000",
-    shadowOpacity: 0.35,
-    shadowRadius: 20,
-    shadowOffset: { width: 0, height: 12 },
-    elevation: 10,
+  balanceLabel: {
+    marginTop: 4,
+    fontSize: 13,
+    fontWeight: "600",
+    color: MUTED,
   },
-  content: { paddingHorizontal: 16, marginTop: -8, paddingTop: 20 },
+  walletHint: {
+    marginTop: 10,
+    fontSize: 13,
+    fontWeight: "700",
+    color: INK,
+    letterSpacing: 1.2,
+    opacity: 0.55,
+  },
+  content: { paddingHorizontal: 16, marginTop: 22 },
   section: {
-    marginBottom: 10,
+    marginBottom: 12,
     fontSize: 12,
     fontWeight: "700",
-    color: "#9CA3AF",
+    color: MUTED,
     letterSpacing: 0.4,
     textTransform: "uppercase",
   },
-  list: {
+  grid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 12,
+  },
+  tile: {
+    width: "47.5%",
+    flexGrow: 1,
+    minWidth: "45%",
     backgroundColor: "#FFF",
     borderRadius: 20,
-    overflow: "hidden",
+    padding: 14,
+    gap: 6,
   },
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 14,
-  },
-  rowBorder: {
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "rgba(0,0,0,0.06)",
-  },
-  iconBox: {
-    width: 42,
-    height: 42,
+  tileIcon: {
+    width: 44,
+    height: 44,
     borderRadius: 14,
-    backgroundColor: "#F3F4F6",
     alignItems: "center",
     justifyContent: "center",
+    marginBottom: 4,
   },
-  rowTitle: { fontSize: 15, fontWeight: "700", color: "#111" },
-  rowSub: { marginTop: 2, fontSize: 12, color: "#9CA3AF" },
-  tip: {
-    marginTop: 18,
-    fontSize: 12,
-    lineHeight: 18,
-    color: "#9CA3AF",
-    textAlign: "center",
-    paddingHorizontal: 12,
+  tileTitle: {
+    fontSize: 14,
+    fontWeight: "800",
+    color: INK,
+    letterSpacing: -0.2,
+  },
+  tileSub: {
+    fontSize: 11,
+    color: MUTED,
+    fontWeight: "500",
   },
 });
