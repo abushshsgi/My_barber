@@ -20,8 +20,13 @@ import { morfMarkWhite } from "../../branding/morf-logo";
 import { useHideTabBar } from "../../hooks/useHideTabBar";
 import { useWalletMe, useWalletTransactions } from "../../hooks/useWallet";
 import { useAppShell } from "../../lib/AppShellContext";
+import {
+  navigateRootTab,
+  useShellNavigation,
+} from "../../lib/shell-nav";
 import type { WalletTx } from "../../lib/wallet-format";
 import type { WalletStackParamList } from "../../navigation/WalletStack";
+import { useAuth } from "../../auth/AuthContext";
 
 type Props = NativeStackScreenProps<WalletStackParamList, "WalletHome">;
 
@@ -84,9 +89,13 @@ function avatarColor(id: string): string {
 export function WalletHomeScreen({ navigation }: Props) {
   useHideTabBar();
   const insets = useSafeAreaInsets();
+  const { isAuthenticated } = useAuth();
   const me = useWalletMe();
   const tx = useWalletTransactions("all");
-  const { beginSwitch, endSwitch, switchToMorphTarget } = useAppShell();
+  const { shell, beginSwitch, endSwitch, switchToMorphTarget, switchToMysaloonTarget, rememberTab } =
+    useAppShell();
+  const { goMorph, goMysaloon } = useShellNavigation();
+  const isMorph = shell === "morph";
   const [refreshing, setRefreshing] = useState(false);
   const [hidden, setHidden] = useState(false);
   const switching = useRef(false);
@@ -117,23 +126,39 @@ export function WalletHomeScreen({ navigation }: Props) {
     }
   }, [me.walletNumber]);
 
-  const goHomeTab = () => {
-    navigation.getParent()?.navigate("Home" as never);
-  };
+  const requireAuth = useCallback(() => {
+    if (isAuthenticated) return true;
+    navigateRootTab(navigation, "Profile");
+    return false;
+  }, [isAuthenticated, navigation]);
 
-  const goMorphAi = useCallback(() => {
+  const goMysaloonTab = useCallback(
+    (tab: string) => {
+      if (!requireAuth() && tab !== "Profile") return;
+      goMysaloon(navigation, tab);
+    },
+    [navigation, requireAuth, goMysaloon],
+  );
+
+  const goMorphTab = useCallback(
+    (tab: string) => {
+      if (!requireAuth() && tab !== "Profile") return;
+      goMorph(navigation, tab);
+    },
+    [navigation, requireAuth, goMorph],
+  );
+
+  /** MySaloon → Morf: faqat ongli switch (xavfsiz). */
+  const switchToMorph = useCallback(() => {
     if (switching.current) return;
+    if (!requireAuth()) return;
     switching.current = true;
     beginSwitch("morph");
     void (async () => {
       try {
         const target = await switchToMorphTarget();
-        const tab = navigation.getParent();
-        if (target === "MorphTryOn") {
-          tab?.navigate("MorphTryOn" as never, { screen: "MorphCapture" } as never);
-        } else {
-          tab?.navigate(target as never);
-        }
+        navigateRootTab(navigation, target);
+        rememberTab("morph", target);
       } finally {
         setTimeout(() => {
           endSwitch();
@@ -141,7 +166,49 @@ export function WalletHomeScreen({ navigation }: Props) {
         }, 700);
       }
     })();
-  }, [beginSwitch, endSwitch, switchToMorphTarget, navigation]);
+  }, [
+    beginSwitch,
+    endSwitch,
+    switchToMorphTarget,
+    navigation,
+    rememberTab,
+    requireAuth,
+  ]);
+
+  /** Morf → MySaloon: faqat ongli switch. */
+  const switchToMysaloon = useCallback(() => {
+    if (switching.current) return;
+    switching.current = true;
+    beginSwitch("mysaloon");
+    void (async () => {
+      try {
+        const target = await switchToMysaloonTarget();
+        navigateRootTab(navigation, target);
+        rememberTab("mysaloon", target);
+      } finally {
+        setTimeout(() => {
+          endSwitch();
+          switching.current = false;
+        }, 700);
+      }
+    })();
+  }, [beginSwitch, endSwitch, switchToMysaloonTarget, navigation, rememberTab]);
+
+  const goBackSafe = useCallback(() => {
+    if (navigation.canGoBack()) {
+      navigation.goBack();
+      return;
+    }
+    if (isMorph) goMorph(navigation, "Profile");
+    else goMysaloon(navigation, "Profile");
+  }, [navigation, isMorph, goMorph, goMysaloon]);
+
+  const quickItems = useMemo(() => {
+    if (isMorph) {
+      return QUICK.filter((q) => q.key !== "WalletQrPay");
+    }
+    return QUICK;
+  }, [isMorph]);
 
   return (
     <View style={styles.root}>
@@ -160,7 +227,7 @@ export function WalletHomeScreen({ navigation }: Props) {
           <View style={[styles.hero, { paddingTop: Math.max(insets.top, 12) }]}>
             <View style={styles.header}>
               <Pressable
-                onPress={() => navigation.goBack()}
+                onPress={goBackSafe}
                 hitSlop={10}
                 style={styles.backBtn}
                 accessibilityRole="button"
@@ -170,9 +237,9 @@ export function WalletHomeScreen({ navigation }: Props) {
               </Pressable>
               <View style={styles.brand}>
                 <View style={styles.brandMark}>
-                  <Text style={styles.brandDollar}>$</Text>
+                  <Text style={styles.brandDollar}>{isMorph ? "M" : "$"}</Text>
                 </View>
-                <Text style={styles.brandName}>Mysaloon</Text>
+                <Text style={styles.brandName}>{isMorph ? "Morf AI" : "Mysaloon"}</Text>
               </View>
               <Pressable
                 onPress={() => navigation.navigate("WalletRequisites")}
@@ -214,17 +281,31 @@ export function WalletHomeScreen({ navigation }: Props) {
               </Pressable>
             </View>
 
-            <View style={styles.promo}>
-              <View style={styles.promoLeft}>
-                <View style={styles.promoIcon}>
-                  <Ionicons name="sparkles" size={14} color="#FFF" />
+            {isMorph ? (
+              <View style={styles.promo}>
+                <View style={styles.promoLeft}>
+                  <View style={styles.promoIcon}>
+                    <Ionicons name="sparkles" size={14} color="#FFF" />
+                  </View>
+                  <Text style={styles.promoText}>Morph AI aksiya</Text>
                 </View>
-                <Text style={styles.promoText}>Yangi aksiya!</Text>
+                <Pressable style={styles.promoBtn} onPress={() => navigation.navigate("WalletGifts")}>
+                  <Text style={styles.promoBtnText}>Olish</Text>
+                </Pressable>
               </View>
-              <Pressable style={styles.promoBtn} onPress={() => navigation.navigate("WalletGifts")}>
-                <Text style={styles.promoBtnText}>Olish</Text>
-              </Pressable>
-            </View>
+            ) : (
+              <View style={styles.promo}>
+                <View style={styles.promoLeft}>
+                  <View style={styles.promoIcon}>
+                    <Ionicons name="shield-checkmark" size={14} color="#FFF" />
+                  </View>
+                  <Text style={styles.promoText}>Hamyon himoyalangan</Text>
+                </View>
+                <Pressable style={styles.promoBtn} onPress={() => navigation.navigate("WalletRequisites")}>
+                  <Text style={styles.promoBtnText}>Rekvizit</Text>
+                </Pressable>
+              </View>
+            )}
           </View>
 
           <View style={[styles.sheet, { minHeight: sheetMin, paddingBottom: tabH + 16 }]}>
@@ -236,11 +317,14 @@ export function WalletHomeScreen({ navigation }: Props) {
             </View>
 
             <View style={styles.quickRow}>
-              {QUICK.map((item) => (
+              {quickItems.map((item) => (
                 <Pressable
                   key={item.key}
                   style={styles.quickItem}
-                  onPress={() => navigation.navigate(item.key)}
+                  onPress={() => {
+                    if (!requireAuth()) return;
+                    navigation.navigate(item.key);
+                  }}
                 >
                   <LinearGradient colors={item.colors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.quickCard}>
                     <View style={styles.quickIcon}>
@@ -277,32 +361,92 @@ export function WalletHomeScreen({ navigation }: Props) {
         </ScrollView>
 
         <View style={[styles.tabBar, { paddingBottom: Math.max(insets.bottom, 10) }]}>
-          <TabItem icon="home" label="Asosiy" active={false} onPress={goHomeTab} />
-          <TabItem icon="wallet" label="Hamyon" active onPress={() => {}} />
-          <View style={styles.fabSlot}>
-            <Pressable
-              style={styles.fab}
-              onPress={goMorphAi}
-              accessibilityRole="button"
-              accessibilityLabel="Morf AI"
-            >
-              <Image source={morfMarkWhite} style={styles.fabLogo} contentFit="contain" />
-            </Pressable>
-            <Text style={styles.fabLabel}>Morf AI</Text>
-          </View>
-          <TabItem
-            icon="document-text-outline"
-            label="Rekvizit"
-            active={false}
-            onPress={() => navigation.navigate("WalletRequisites")}
-          />
-          <TabItem
-            icon="person-outline"
-            label="Profil"
-            active={false}
-            onPress={() => navigation.navigate("ProfileHome" as never)}
-          />
+          {isMorph ? (
+            <>
+              <TabItem
+                icon="chatbubble-ellipses-outline"
+                label="Chat"
+                active={false}
+                onPress={() => goMorphTab("MorphChat")}
+              />
+              <TabItem
+                icon="water-outline"
+                label="Parvarish"
+                active={false}
+                onPress={() => goMorphTab("MorphCare")}
+              />
+              <View style={styles.fabSlot}>
+                <Pressable
+                  style={styles.fab}
+                  onPress={() => goMorphTab("MorphTryOn")}
+                  accessibilityRole="button"
+                  accessibilityLabel="Morf AI Try-on"
+                >
+                  <Image source={morfMarkWhite} style={styles.fabLogo} contentFit="contain" />
+                </Pressable>
+                <Text style={styles.fabLabel}>Try-on</Text>
+              </View>
+              <TabItem
+                icon="flask-outline"
+                label="Tarkib"
+                active={false}
+                onPress={() => goMorphTab("MorphIngredient")}
+              />
+              <TabItem
+                icon="person"
+                label="Profil"
+                active
+                onPress={goBackSafe}
+              />
+            </>
+          ) : (
+            <>
+              <TabItem icon="home" label="Asosiy" active={false} onPress={() => goMysaloonTab("Home")} />
+              <TabItem icon="wallet" label="Hamyon" active onPress={() => {}} />
+              <View style={styles.fabSlot}>
+                <Pressable
+                  style={[styles.fab, styles.fabMysaloon]}
+                  onPress={() => {
+                    if (!requireAuth()) return;
+                    navigation.navigate("WalletQrPay");
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel="QR to'lov"
+                >
+                  <Ionicons name="scan" size={24} color="#FFF" />
+                </Pressable>
+                <Text style={styles.fabLabel}>To'lov</Text>
+              </View>
+              <TabItem
+                icon="document-text-outline"
+                label="Rekvizit"
+                active={false}
+                onPress={() => {
+                  if (!requireAuth()) return;
+                  navigation.navigate("WalletRequisites");
+                }}
+              />
+              <TabItem
+                icon="person-outline"
+                label="Profil"
+                active={false}
+                onPress={goBackSafe}
+              />
+            </>
+          )}
         </View>
+
+        {!isMorph ? (
+          <Pressable style={styles.morphSwitchHint} onPress={switchToMorph}>
+            <Ionicons name="sparkles" size={14} color="#FFF" />
+            <Text style={styles.morphSwitchText}>Morf AI ga o‘tish</Text>
+          </Pressable>
+        ) : (
+          <Pressable style={styles.morphSwitchHint} onPress={switchToMysaloon}>
+            <Ionicons name="storefront-outline" size={14} color="#FFF" />
+            <Text style={styles.morphSwitchText}>MySaloon ga o‘tish</Text>
+          </Pressable>
+        )}
       </LinearGradient>
     </View>
   );
@@ -560,4 +704,18 @@ const styles = StyleSheet.create({
   },
   fabLogo: { width: 28, height: 28 },
   fabLabel: { marginTop: 4, fontSize: 10, fontWeight: "600", color: INK },
+  fabMysaloon: { backgroundColor: FAB_BLUE },
+  morphSwitchHint: {
+    position: "absolute",
+    right: 16,
+    bottom: 88,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+    backgroundColor: "rgba(10,10,10,0.72)",
+  },
+  morphSwitchText: { color: "#FFF", fontSize: 11, fontWeight: "600" },
 });

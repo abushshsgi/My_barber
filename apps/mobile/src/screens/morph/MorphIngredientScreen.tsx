@@ -35,6 +35,8 @@ import {
   pickProductLabelFromCamera,
   pickProductLabelFromGallery,
 } from "../../lib/product-label";
+import { writeAppShell, writeLastShellTab } from "../../lib/app-shell";
+import { useShellNavigation } from "../../lib/shell-nav";
 import type { MorphIngredientStackParamList } from "../../navigation/MorphIngredientStack";
 import { morphFont } from "../../theme/morph-font";
 
@@ -67,6 +69,7 @@ export function MorphIngredientScreen({ navigation }: Props) {
   useHideTabBar();
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
+  const { goMorph } = useShellNavigation();
 
   const [booting, setBooting] = useState(true);
   const [access, setAccess] = useState<{ allowed: boolean; detail?: string } | null>(null);
@@ -86,6 +89,12 @@ export function MorphIngredientScreen({ navigation }: Props) {
     if (forceQuiz || (!profileOk && !booting)) return "quiz";
     return "capture";
   }, [result, busy, forceQuiz, profileOk, booting]);
+
+  useEffect(() => {
+    // Tarkib faqat Morph shellda — MySaloon dock aralashib ketmasin.
+    void writeAppShell("morph");
+    void writeLastShellTab("morph", "MorphCare");
+  }, []);
 
   const bootstrap = useCallback(async () => {
     setBooting(true);
@@ -165,19 +174,14 @@ export function MorphIngredientScreen({ navigation }: Props) {
     setError(null);
   };
 
-  /** Tab ildizi — goBack ishlamaydi; Parvarish hubiga qaytamiz. */
+  /** Tab ildizi — MySaloon’ga otib ketmasin; Parvarish (Morph) hubiga qaytamiz. */
   const leaveIngredient = useCallback(() => {
     if (forceQuiz) {
       setForceQuiz(false);
       return;
     }
-    const parent = navigation.getParent();
-    if (parent?.canGoBack()) {
-      parent.goBack();
-      return;
-    }
-    parent?.navigate("MorphCare" as never);
-  }, [forceQuiz, navigation]);
+    goMorph(navigation, "MorphCare");
+  }, [forceQuiz, navigation, goMorph]);
 
   if (booting) {
     return (

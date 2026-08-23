@@ -44,6 +44,7 @@ function MysaloonProfileHome({ navigation }: Props) {
   const insets = useSafeAreaInsets();
   const { dashboard, unreadCount, loading, refresh } = useProfileDashboard();
   const { signOut, user: authUser } = useAuth();
+  const { setShell, rememberTab } = useAppShell();
   const user = dashboard?.user ?? authUser;
   const display =
     user?.full_name?.trim() ||
@@ -136,6 +137,8 @@ function MysaloonProfileHome({ navigation }: Props) {
             iconDark
             darkText
             onPress={() => {
+              setShell("mysaloon");
+              rememberTab("mysaloon", "Profile");
               try {
                 navigation.navigate("WalletGate");
               } catch {

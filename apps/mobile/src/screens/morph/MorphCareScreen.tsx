@@ -31,6 +31,7 @@ import {
 } from "../../lib/morph-ai-care";
 import type { MorphCareStackParamList } from "../../navigation/MorphCareStack";
 import { morphFont } from "../../theme/morph-font";
+import { useShellNavigation } from "../../lib/shell-nav";
 
 type Props = NativeStackScreenProps<MorphCareStackParamList, "CareHome">;
 type QuizStep = 0 | 1 | 2;
@@ -46,6 +47,7 @@ const COLOR_OPTS: HairColorStatus[] = ["natural", "colored", "bleached"];
 export function MorphCareScreen({ navigation }: Props) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
+  const { goMorph } = useShellNavigation();
   const [loading, setLoading] = useState(true);
   const [access, setAccess] = useState<{ allowed: boolean; detail?: string } | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>("hub");
@@ -66,8 +68,12 @@ export function MorphCareScreen({ navigation }: Props) {
   );
 
   const openTarkib = useCallback(() => {
-    navigation.getParent()?.navigate("MorphIngredient" as never);
-  }, [navigation]);
+    goMorph(navigation, "MorphIngredient");
+  }, [navigation, goMorph]);
+
+  const openSubscriptions = useCallback(() => {
+    goMorph(navigation, "Profile", { screen: "Subscriptions" });
+  }, [navigation, goMorph]);
 
   const bootstrap = useCallback(async () => {
     setLoading(true);
@@ -148,7 +154,7 @@ export function MorphCareScreen({ navigation }: Props) {
           <Text style={styles.lockSub}>{access.detail || t("care.proOnly")}</Text>
           <Pressable
             style={[styles.primaryBtn, { marginTop: 24 }]}
-            onPress={() => navigation.getParent()?.navigate("Wallet" as never)}
+            onPress={openSubscriptions}
           >
             <Text style={styles.primaryBtnText}>{t("care.seePlans")}</Text>
           </Pressable>
@@ -276,10 +282,12 @@ export function MorphCareScreen({ navigation }: Props) {
           </View>
         </View>
         <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
-          {step > 0 ? (
+          {typeof step === "number" && step > 0 ? (
             <Pressable
               style={styles.ghostBtn}
-              onPress={() => setStep((s) => (s === 0 ? 0 : ((s - 1) as QuizStep)))}
+              onPress={() =>
+                setStep((s) => (typeof s === "number" && s > 0 ? ((s - 1) as QuizStep) : 0))
+              }
             >
               <Text style={styles.ghostBtnText}>{t("common.back")}</Text>
             </Pressable>
@@ -289,7 +297,7 @@ export function MorphCareScreen({ navigation }: Props) {
             disabled={saving}
             onPress={() => {
               if (step === 2) void finishQuiz();
-              else setStep((s) => (s + 1) as QuizStep);
+              else if (typeof step === "number") setStep((step + 1) as QuizStep);
             }}
           >
             <Text style={styles.primaryBtnText}>

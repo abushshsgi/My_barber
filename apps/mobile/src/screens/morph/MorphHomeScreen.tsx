@@ -22,6 +22,7 @@ import { morphFont } from "../../theme/morph-font";
 import { presentMorphPaywall } from "../../lib/morph-return";
 import { useMorphSession } from "../../lib/morph-session";
 import { useMorphAppearance } from "../../lib/MorphAppearanceContext";
+import { useShellNavigation } from "../../lib/shell-nav";
 import type { MorphStackParamList } from "../../navigation/MorphStack";
 
 type Props = NativeStackScreenProps<MorphStackParamList, "MorphHome">;
@@ -102,20 +103,18 @@ export function MorphHomeScreen({ navigation }: Props) {
     navigation.navigate("MorphStudio");
   }, [gate, isAuthenticated, navigation]);
 
+  const { goMorph } = useShellNavigation();
+
   const openCareOrIngredient = useCallback(
     (kind: "care" | "ingredient") => {
-      navigation.getParent()?.navigate(
-        (kind === "care" ? "MorphCare" : "MorphIngredient") as never,
-      );
+      goMorph(navigation, kind === "care" ? "MorphCare" : "MorphIngredient");
     },
-    [navigation],
+    [navigation, goMorph],
   );
 
   const openCareCatalog = useCallback(() => {
-    navigation.getParent()?.navigate("MorphCare" as never, {
-      screen: "CareProducts",
-    } as never);
-  }, [navigation]);
+    goMorph(navigation, "MorphCare", { screen: "CareProducts" });
+  }, [navigation, goMorph]);
 
   const onSamplePress = useCallback(
     (item: MorphSampleCard) => {

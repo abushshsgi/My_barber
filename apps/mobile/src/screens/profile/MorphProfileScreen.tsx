@@ -22,6 +22,7 @@ import { useProfileDashboard } from "../../hooks/useProfileDashboard";
 import { TAB_DOCK_CLEARANCE } from "../../hooks/useHideTabBar";
 import { UsageRing } from "../../components/morph/UsageMeter";
 import { useMorphAppearance } from "../../lib/MorphAppearanceContext";
+import { useAppShell } from "../../lib/AppShellContext";
 import { openMorphStack } from "../../lib/profile-nav";
 import type { ProfileStackParamList } from "../../navigation/ProfileStack";
 import { morphFont } from "../../theme/morph-font";
@@ -34,6 +35,7 @@ export function MorphProfileScreen({ navigation }: Props) {
   const { signOut, user: authUser } = useAuth();
   const { dashboard, unreadCount, loading, error, refresh } = useProfileDashboard();
   const { colors: pal, fs, theme } = useMorphAppearance();
+  const { setShell, rememberTab } = useAppShell();
 
   const user = dashboard?.user ?? authUser;
   const display =
@@ -194,7 +196,11 @@ export function MorphProfileScreen({ navigation }: Props) {
             icon="wallet"
             title="Hamyon"
             value={formatSom(wallet?.balance ?? 0).replace(" so'm", "")}
-            onPress={() => navigation.navigate("WalletGate")}
+            onPress={() => {
+              setShell("morph");
+              rememberTab("morph", "Profile");
+              navigation.navigate("WalletGate");
+            }}
             last
           />
         </View>
