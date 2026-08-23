@@ -5,6 +5,7 @@ import {
   Alert,
   Animated,
   Easing,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -21,18 +22,23 @@ type Props = NativeStackScreenProps<WalletStackParamList, "WalletFreeze">;
 const INK = "#1A1A1A";
 const MUTED = "#8A8A8E";
 const OPEN_MS = 480;
-const CLOSE_MS = 360;
+const CLOSE_MS = 280;
+const USE_NATIVE = Platform.OS !== "web";
 
-/** Pastdan sekin chiqadigan muzlatish / ochish (razblokirovka) sheet. */
+/** Pastdan 480ms sheet — 1 click muzlatish / ochish. */
 export function WalletFreezeScreen({ navigation }: Props) {
   useHideTabBar();
   const insets = useSafeAreaInsets();
   const me = useWalletMe();
   const [busy, setBusy] = useState(false);
-  const frozen = me.isFrozen;
+  const [statusLabel, setStatusLabel] = useState<"idle" | "freeze" | "unfreeze">("idle");
+  const frozen = Boolean(me.isFrozen);
+  const frozenRef = useRef(frozen);
+  frozenRef.current = frozen;
+  const busyRef = useRef(false);
+  const closingRef = useRef(false);
   const backdrop = useRef(new Animated.Value(0)).current;
-  const sheetY = useRef(new Animated.Value(420)).current;
-  const closing = useRef(false);
+  const sheetY = useRef(new Animated.Value(520)).current;
 
   useEffect(() => {
     Animated.parallel([
@@ -40,50 +46,49 @@ export function WalletFreezeScreen({ navigation }: Props) {
         toValue: 1,
         duration: OPEN_MS,
         easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
+        useNativeDriver: USE_NATIVE,
       }),
       Animated.timing(sheetY, {
         toValue: 0,
         duration: OPEN_MS,
         easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
+        useNativeDriver: USE_NATIVE,
       }),
     ]).start();
   }, [backdrop, sheetY]);
 
-  const animateClose = (after?: () => void) => {
-    if (closing.current) return;
-    closing.current = true;
+  const animateClose = () => {
+    if (closingRef.current) return;
+    closingRef.current = true;
     Animated.parallel([
       Animated.timing(backdrop, {
         toValue: 0,
         duration: CLOSE_MS,
         easing: Easing.in(Easing.cubic),
-        useNativeDriver: true,
+        useNativeDriver: USE_NATIVE,
       }),
       Animated.timing(sheetY, {
-        toValue: 420,
+        toValue: 520,
         duration: CLOSE_MS,
         easing: Easing.in(Easing.cubic),
-        useNativeDriver: true,
+        useNativeDriver: USE_NATIVE,
       }),
-    ]).start(({ finished }) => {
-      if (finished) {
-        after?.();
-        navigation.goBack();
-      } else {
-        closing.current = false;
-      }
+    ]).start(() => {
+      if (navigation.canGoBack()) navigation.goBack();
     });
   };
 
   const close = () => {
-    if (!busy) animateClose();
+    if (busyRef.current) return;
+    animateClose();
   };
 
-  const run = async (action: "freeze" | "unfreeze") => {
-    if (busy) return;
+  const run = async () => {
+    if (busyRef.current || closingRef.current) return;
+    const action = frozenRef.current ? "unfreeze" : "freeze";
+    busyRef.current = true;
     setBusy(true);
+    setStatusLabel(action);
     try {
       await setWalletFreeze(
         action,
@@ -92,15 +97,21 @@ export function WalletFreezeScreen({ navigation }: Props) {
       me.refresh();
       animateClose();
     } catch (e) {
+      busyRef.current = false;
+      closingRef.current = false;
       setBusy(false);
-      closing.current = false;
+      setStatusLabel("idle");
       Alert.alert("Xato", e instanceof Error ? e.message : "Amal bajarilmadi");
     }
   };
 
+  const primaryTitle = frozen ? "Ochish" : "Muzlatish";
+  const loadingTitle = statusLabel === "unfreeze" ? "Ochilmoqda…" : "Muzlatilmoqda…";
+
   return (
-    <View style={styles.root} pointerEvents="box-none">
+    <View style={styles.root}>
       <Animated.View
+        pointerEvents="none"
         style={[
           styles.backdrop,
           {
@@ -110,9 +121,10 @@ export function WalletFreezeScreen({ navigation }: Props) {
             }),
           },
         ]}
-      >
-        <Pressable style={StyleSheet.absoluteFill} onPress={close} accessibilityLabel="Yopish" />
-      </Animated.View>
+      />
+
+      {/* Faqat sheet ustidagi bo'sh joy — tugmalarni yopmaydi */}
+      <Pressable style={styles.dismissZone} onPress={close} accessibilityLabel="Yopish" />
 
       <Animated.View
         style={[
@@ -127,23 +139,32 @@ export function WalletFreezeScreen({ navigation }: Props) {
         <Text style={styles.title}>{frozen ? "Kartani ochish?" : "Kartani muzlatish?"}</Text>
         <Text style={styles.desc}>
           {frozen
-            ? "Ochilgach o'tkazma, sovg'a va QR to'lov yana ishlaydi. Bir necha soniyada ochasiz."
-            : "To'lov, o'tkazma va boshqalar bu hamyonga pul yubora olmaydi. Istalgan paytda ochishingiz mumkin."}
+            ? "Ochilgach o'tkazma, sovg'a va QR to'lov yana ishlaydi."
+            : "To'lov va o'tkazmalar to'xtaydi. Istalgan paytda ochishingiz mumkin."}
         </Text>
 
         <Pressable
           style={[styles.primary, busy && styles.disabled]}
-          disabled={busy || me.loading}
-          onPress={() => void run(frozen ? "unfreeze" : "freeze")}
+          disabled={busy}
+          onPress={() => void run()}
+          accessibilityRole="button"
         >
           {busy ? (
-            <ActivityIndicator color="#FFF" />
+            <View style={styles.loadingRow}>
+              <ActivityIndicator color="#FFF" size="small" />
+              <Text style={styles.primaryText}>{loadingTitle}</Text>
+            </View>
           ) : (
-            <Text style={styles.primaryText}>{frozen ? "Ochish" : "Muzlatish"}</Text>
+            <Text style={styles.primaryText}>{primaryTitle}</Text>
           )}
         </Pressable>
 
-        <Pressable style={[styles.secondary, busy && styles.disabled]} disabled={busy} onPress={close}>
+        <Pressable
+          style={[styles.secondary, busy && styles.disabled]}
+          disabled={busy}
+          onPress={close}
+          accessibilityRole="button"
+        >
           <Text style={styles.secondaryText}>Bekor qilish</Text>
         </Pressable>
       </Animated.View>
@@ -157,13 +178,17 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     backgroundColor: "#000",
   },
+  dismissZone: {
+    ...StyleSheet.absoluteFillObject,
+    bottom: 280,
+  },
   sheet: {
     backgroundColor: "#FFF",
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     paddingHorizontal: 20,
     paddingTop: 10,
-    zIndex: 2,
+    zIndex: 20,
   },
   handle: {
     alignSelf: "center",
@@ -192,14 +217,19 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     alignItems: "center",
     marginBottom: 10,
+    minHeight: 54,
+    justifyContent: "center",
   },
+  loadingRow: { flexDirection: "row", alignItems: "center", gap: 10 },
   primaryText: { color: "#FFF", fontSize: 16, fontWeight: "800" },
   secondary: {
     backgroundColor: "#F0EEEA",
     borderRadius: 16,
     paddingVertical: 16,
     alignItems: "center",
+    minHeight: 54,
+    justifyContent: "center",
   },
   secondaryText: { color: INK, fontSize: 16, fontWeight: "700" },
-  disabled: { opacity: 0.6 },
+  disabled: { opacity: 0.7 },
 });
