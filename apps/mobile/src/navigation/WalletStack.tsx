@@ -16,7 +16,12 @@ export type WalletStackParamList = {
   WalletHome: undefined;
   WalletTopUp: undefined;
   WalletGift: undefined;
-  WalletGiftAmount: { designId: string };
+  WalletGiftAmount: {
+    recipientUserId: number;
+    recipientName: string;
+    recipientPhone?: string | null;
+    recipientWallet?: string;
+  };
   WalletGiftSend: { designId: string; amount: number };
   WalletGifts: undefined;
   WalletQrPay: undefined;
