@@ -1,7 +1,8 @@
 from decimal import Decimal
 
 from django.conf import settings
-from django.db.models import Q
+from django.db.models import CharField, Q, Value
+from django.db.models.functions import Replace
 from rest_framework import status
 from rest_framework.generics import ListAPIView
 from rest_framework.pagination import PageNumberPagination
@@ -23,7 +24,7 @@ from wallet.serializers import (
     WalletMeSerializer,
     WalletTopUpSerializer,
 )
-from wallet.services.wallet_number import normalize_wallet_number
+from wallet.services.wallet_number import format_wallet_number, normalize_wallet_number
 from wallet.services.wallet_service import (
     InsufficientBalanceError,
     WalletService,
@@ -240,21 +241,37 @@ class WalletRecipientSearchView(APIView):
         if len(q) < 2:
             return Response([])
 
-        wallet_qs = Wallet.objects.select_related("user").exclude(user=request.user)
         digits = normalize_wallet_number(q)
         phone = normalize_uz_phone(q)
 
+        # wallet_number DB da "7700 1234 …" bo'shliqli; raqam bilan qidirish uchun spacesiz annotate.
+        wallet_qs = (
+            Wallet.objects.select_related("user")
+            .exclude(user=request.user)
+            .annotate(
+                wallet_digits=Replace(
+                    "wallet_number",
+                    Value(" "),
+                    Value(""),
+                    output_field=CharField(),
+                )
+            )
+        )
+
         filters = Q(user__full_name__icontains=q)
+
         if phone:
             filters |= Q(user__phone=phone)
-        if len(digits) >= 4:
-            from wallet.services.wallet_number import format_wallet_number
 
-            filters |= Q(wallet_number__icontains=digits)
+        # Telefon / hamyon: qisman raqam ham ishlasin (+998, bo'shliq, tire).
+        if len(digits) >= 4:
+            filters |= Q(user__phone__icontains=digits)
+            if len(digits) >= 9:
+                filters |= Q(user__phone__icontains=digits[-9:])
+            filters |= Q(wallet_digits__icontains=digits)
             if len(digits) == 16:
                 try:
-                    formatted = format_wallet_number(digits)
-                    filters |= Q(wallet_number=formatted)
+                    filters |= Q(wallet_number=format_wallet_number(digits))
                 except ValueError:
                     pass
 
