@@ -195,8 +195,8 @@ export function WalletHomeScreen({ navigation }: Props) {
             </Pressable>
             <Pressable
               style={styles.bellBtn}
-              onPress={() => navigation.navigate("WalletRequisites")}
-              accessibilityLabel="Rekvizitlar"
+              onPress={() => navigation.navigate("WalletMore")}
+              accessibilityLabel="Ko'proq"
             >
               <Ionicons name="notifications-outline" size={20} color={INK} />
             </Pressable>

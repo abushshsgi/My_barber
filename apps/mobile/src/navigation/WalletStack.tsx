@@ -2,7 +2,6 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { WalletGateScreen } from "../screens/wallet/WalletGateScreen";
 import { WalletGiftAmountScreen } from "../screens/wallet/WalletGiftAmountScreen";
 import { WalletGiftScreen } from "../screens/wallet/WalletGiftScreen";
-import { WalletGiftSendScreen } from "../screens/wallet/WalletGiftSendScreen";
 import { WalletGiftsScreen } from "../screens/wallet/WalletGiftsScreen";
 import { WalletHomeScreen } from "../screens/wallet/WalletHomeScreen";
 import { WalletMoreScreen } from "../screens/wallet/WalletMoreScreen";
@@ -23,7 +22,6 @@ export type WalletStackParamList = {
     recipientPhone?: string | null;
     recipientWallet?: string;
   };
-  WalletGiftSend: { designId: string; amount: number };
   WalletGifts: undefined;
   WalletMore: undefined;
   WalletQrPay: undefined;
@@ -56,7 +54,6 @@ export function WalletStack() {
       <Stack.Screen name="WalletTopUp" component={WalletTopUpScreen} />
       <Stack.Screen name="WalletGift" component={WalletGiftScreen} />
       <Stack.Screen name="WalletGiftAmount" component={WalletGiftAmountScreen} />
-      <Stack.Screen name="WalletGiftSend" component={WalletGiftSendScreen} />
       <Stack.Screen name="WalletGifts" component={WalletGiftsScreen} />
       <Stack.Screen name="WalletMore" component={WalletMoreScreen} />
       <Stack.Screen name="WalletQrPay" component={WalletQrPayScreen} />

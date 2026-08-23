@@ -7,67 +7,61 @@ import { useAuth } from "../../auth/AuthContext";
 import { WalletPlasticCard } from "../../components/wallet/WalletPlasticCard";
 import { useHideTabBar } from "../../hooks/useHideTabBar";
 import { useWalletMe } from "../../hooks/useWallet";
+import { formatSomLabel } from "../../lib/wallet-format";
 import type { WalletStackParamList } from "../../navigation/WalletStack";
 
 type Props = NativeStackScreenProps<WalletStackParamList, "WalletMore">;
 
-const INK = "#1A1A1A";
-const MUTED = "#6B7280";
-
-type MenuItem = {
+type Link = {
   key: keyof WalletStackParamList;
   title: string;
   subtitle: string;
   icon: keyof typeof Ionicons.glyphMap;
-  colors: [string, string];
 };
 
-const MENU: MenuItem[] = [
+const PRIMARY: Link[] = [
   {
     key: "WalletGifts",
     title: "Olingan sovg'alar",
-    subtitle: "Sizga yuborilgan sovg'alar",
+    subtitle: "Sizga kelgan sovg'alar",
     icon: "gift-outline",
-    colors: ["#FCE7F3", "#FBCFE8"],
   },
   {
     key: "WalletRequisites",
-    title: "Rekvizitlar",
-    subtitle: "Hamyon va karta ma'lumotlari",
+    title: "Mening kartam",
+    subtitle: "Rekvizit va nusxa olish",
     icon: "card-outline",
-    colors: ["#FFEDD5", "#FED7AA"],
   },
   {
     key: "WalletTransactions",
-    title: "Tranzaksiyalar",
-    subtitle: "To'liq tarix",
-    icon: "time-outline",
-    colors: ["#E0E7FF", "#C7D2FE"],
+    title: "Tarix",
+    subtitle: "Kirim va chiqimlar",
+    icon: "receipt-outline",
   },
+];
+
+const SECONDARY: Link[] = [
   {
     key: "WalletTopUp",
     title: "To'ldirish",
-    subtitle: "Hamyonni to'ldirish",
+    subtitle: "Balansni oshirish",
     icon: "add-circle-outline",
-    colors: ["#D1FAE5", "#A7F3D0"],
   },
   {
     key: "WalletGift",
     title: "O'tkazma",
-    subtitle: "Do'stga pul yuborish",
+    subtitle: "Do'stga yuborish",
     icon: "paper-plane-outline",
-    colors: ["#EDE9FE", "#DDD6FE"],
   },
   {
     key: "WalletQrPay",
     title: "QR to'lov",
-    subtitle: "Sartaroshga QR orqali",
+    subtitle: "Skaner orqali to'lash",
     icon: "qr-code-outline",
-    colors: ["#CFFAFE", "#A5F3FC"],
   },
 ];
 
-/** Ko'proq — karta + wallet menyu. */
+/** Ko'proq — vertikal hub (karta + bo'limlar). */
 export function WalletMoreScreen({ navigation }: Props) {
   useHideTabBar();
   const insets = useSafeAreaInsets();
@@ -81,152 +75,156 @@ export function WalletMoreScreen({ navigation }: Props) {
 
   return (
     <View style={[styles.root, { paddingBottom: Math.max(insets.bottom, 12) }]}>
-      <LinearGradient
-        colors={["#EDE7FF", "#F7F5F2", "#F7F5F2"]}
-        locations={[0, 0.28, 1]}
-        style={StyleSheet.absoluteFill}
-      />
-
-      <View style={[styles.header, { paddingTop: insets.top + 6 }]}>
-        <Pressable style={styles.backBtn} onPress={() => navigation.goBack()} hitSlop={8}>
-          <Ionicons name="chevron-back" size={22} color={INK} />
-        </Pressable>
-        <Text style={styles.headerTitle}>Ko'proq</Text>
-        <View style={styles.backBtn} />
-      </View>
-
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scroll}
-      >
-        <View style={styles.cardWrap}>
-          <WalletPlasticCard
-            balance={me.balance}
-            cardholderName={holder}
-            walletNumber={me.walletNumber}
-          />
-        </View>
-
-        <Text style={styles.section}>Hamyon bo‘limlari</Text>
-
-        <View style={styles.grid}>
-          {MENU.map((item) => (
-            <Pressable
-              key={item.key}
-              style={styles.menuCard}
-              onPress={() => navigation.navigate(item.key as never)}
-            >
-              <LinearGradient
-                colors={item.colors}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.menuIcon}
-              >
-                <Ionicons name={item.icon} size={22} color={INK} />
-              </LinearGradient>
-              <Text style={styles.menuTitle}>{item.title}</Text>
-              <Text style={styles.menuSub} numberOfLines={2}>
-                {item.subtitle}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
-
-        <Pressable
-          style={styles.listRow}
-          onPress={() => navigation.navigate("WalletRequisites")}
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
+        <LinearGradient
+          colors={["#0F172A", "#1E293B"]}
+          style={[styles.hero, { paddingTop: insets.top + 6 }]}
         >
-          <View style={styles.listIcon}>
-            <Ionicons name="shield-checkmark-outline" size={20} color={INK} />
+          <View style={styles.header}>
+            <Pressable style={styles.backBtn} onPress={() => navigation.goBack()} hitSlop={8}>
+              <Ionicons name="chevron-back" size={22} color="#FFF" />
+            </Pressable>
+            <Text style={styles.headerTitle}>Hamyon</Text>
+            <View style={styles.backBtn} />
           </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.listTitle}>Xavfsizlik</Text>
-            <Text style={styles.listSub}>Hamyon himoyalangan · Luhn raqam</Text>
+
+          <Text style={styles.balHint}>Joriy balans</Text>
+          <Text style={styles.bal}>{formatSomLabel(me.balance)}</Text>
+
+          <View style={styles.cardWrap}>
+            <WalletPlasticCard
+              balance={me.balance}
+              cardholderName={holder}
+              walletNumber={me.walletNumber}
+            />
           </View>
-          <Ionicons name="chevron-forward" size={18} color="#D1D5DB" />
-        </Pressable>
+        </LinearGradient>
+
+        <View style={styles.content}>
+          <Text style={styles.section}>Asosiy</Text>
+          <View style={styles.list}>
+            {PRIMARY.map((item, i) => (
+              <Pressable
+                key={item.key}
+                style={[styles.row, i < PRIMARY.length - 1 && styles.rowBorder]}
+                onPress={() => navigation.navigate(item.key as never)}
+              >
+                <View style={styles.iconBox}>
+                  <Ionicons name={item.icon} size={20} color="#111" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.rowTitle}>{item.title}</Text>
+                  <Text style={styles.rowSub}>{item.subtitle}</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color="#D1D5DB" />
+              </Pressable>
+            ))}
+          </View>
+
+          <Text style={[styles.section, { marginTop: 20 }]}>Amallar</Text>
+          <View style={styles.list}>
+            {SECONDARY.map((item, i) => (
+              <Pressable
+                key={item.key}
+                style={[styles.row, i < SECONDARY.length - 1 && styles.rowBorder]}
+                onPress={() => navigation.navigate(item.key as never)}
+              >
+                <View style={styles.iconBox}>
+                  <Ionicons name={item.icon} size={20} color="#111" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.rowTitle}>{item.title}</Text>
+                  <Text style={styles.rowSub}>{item.subtitle}</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color="#D1D5DB" />
+              </Pressable>
+            ))}
+          </View>
+
+          <Text style={styles.tip}>
+            Keyinroq qo‘shish mumkin: limmitlar, bildirishnomalar, oilaviy hamyon, cheklar PDF.
+          </Text>
+        </View>
       </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: "#F7F5F2" },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 12,
-    marginBottom: 8,
+  root: { flex: 1, backgroundColor: "#F3F4F6" },
+  scroll: { paddingBottom: 28 },
+  hero: {
+    paddingHorizontal: 16,
+    paddingBottom: 28,
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
   },
-  backBtn: {
-    width: 40,
-    height: 40,
-    alignItems: "center",
-    justifyContent: "center",
-  },
+  header: { flexDirection: "row", alignItems: "center", marginBottom: 18 },
+  backBtn: { width: 40, height: 40, alignItems: "center", justifyContent: "center" },
   headerTitle: {
     flex: 1,
     textAlign: "center",
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: "800",
-    color: INK,
+    color: "#FFF",
   },
-  scroll: { paddingHorizontal: 16, paddingBottom: 28 },
+  balHint: { color: "rgba(255,255,255,0.55)", fontSize: 12, fontWeight: "600" },
+  bal: {
+    marginTop: 4,
+    marginBottom: 18,
+    color: "#FFF",
+    fontSize: 32,
+    fontWeight: "800",
+    letterSpacing: -0.8,
+  },
   cardWrap: {
-    marginBottom: 22,
     shadowColor: "#000",
-    shadowOpacity: 0.18,
+    shadowOpacity: 0.35,
     shadowRadius: 20,
-    shadowOffset: { width: 0, height: 10 },
-    elevation: 8,
+    shadowOffset: { width: 0, height: 12 },
+    elevation: 10,
   },
+  content: { paddingHorizontal: 16, marginTop: -8, paddingTop: 20 },
   section: {
-    marginBottom: 12,
-    fontSize: 13,
+    marginBottom: 10,
+    fontSize: 12,
     fontWeight: "700",
-    color: MUTED,
-    letterSpacing: 0.3,
+    color: "#9CA3AF",
+    letterSpacing: 0.4,
+    textTransform: "uppercase",
   },
-  grid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 12,
-    marginBottom: 16,
-  },
-  menuCard: {
-    width: "47.5%",
+  list: {
     backgroundColor: "#FFF",
     borderRadius: 20,
-    padding: 14,
-    minHeight: 120,
+    overflow: "hidden",
   },
-  menuIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 12,
-  },
-  menuTitle: { fontSize: 14, fontWeight: "800", color: INK, marginBottom: 4 },
-  menuSub: { fontSize: 11, lineHeight: 15, color: MUTED },
-  listRow: {
+  row: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    backgroundColor: "#FFF",
-    borderRadius: 18,
     paddingHorizontal: 14,
     paddingVertical: 14,
   },
-  listIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
+  rowBorder: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "rgba(0,0,0,0.06)",
+  },
+  iconBox: {
+    width: 42,
+    height: 42,
+    borderRadius: 14,
     backgroundColor: "#F3F4F6",
     alignItems: "center",
     justifyContent: "center",
   },
-  listTitle: { fontSize: 14, fontWeight: "700", color: INK },
-  listSub: { marginTop: 2, fontSize: 12, color: MUTED },
+  rowTitle: { fontSize: 15, fontWeight: "700", color: "#111" },
+  rowSub: { marginTop: 2, fontSize: 12, color: "#9CA3AF" },
+  tip: {
+    marginTop: 18,
+    fontSize: 12,
+    lineHeight: 18,
+    color: "#9CA3AF",
+    textAlign: "center",
+    paddingHorizontal: 12,
+  },
 });
