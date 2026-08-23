@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { LinearGradient } from "expo-linear-gradient";
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -11,10 +11,18 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { useFocusEffect } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useAuth } from "../../auth/AuthContext";
 import type { ApiWalletRecipient } from "../../api/wallet";
 import { useHideTabBar } from "../../hooks/useHideTabBar";
-import { useRecipientSearch, useWalletTransactions } from "../../hooks/useWallet";
+import { useRecipientSearch } from "../../hooks/useWallet";
+import {
+  loadRecipientHistory,
+  maskWalletDisplay,
+  rememberRecipientSearch,
+  type RecipientHistoryItem,
+} from "../../lib/recipient-history";
 import type { WalletStackParamList } from "../../navigation/WalletStack";
 
 type Props = NativeStackScreenProps<WalletStackParamList, "WalletGift">;
@@ -23,9 +31,9 @@ const PURPLE = "#7C5CFF";
 const AVATAR = ["#F5C542", "#A78BFA", "#34D399", "#FB923C", "#60A5FA", "#F472B6"];
 
 const HINTS = [
-  { icon: "person-outline" as const, label: "Ism" },
-  { icon: "call-outline" as const, label: "Telefon" },
-  { icon: "wallet-outline" as const, label: "Hamyon" },
+  { icon: "person-outline" as const, label: "Ism", hint: "" },
+  { icon: "call-outline" as const, label: "Telefon", hint: "+998" },
+  { icon: "wallet-outline" as const, label: "Hamyon", hint: "7700" },
 ];
 
 function initials(name: string): string {
@@ -41,52 +49,69 @@ function avatarTone(id: number | string): string {
   return AVATAR[Math.abs(n) % AVATAR.length]!;
 }
 
-type Recent = { key: string; name: string; subtitle?: string };
-
-/** 1-qadam: kimga yuborish. */
+/** 1-qadam: kimga yuborish — tarix + maxfiy mask. */
 export function WalletGiftScreen({ navigation }: Props) {
   useHideTabBar();
   const insets = useSafeAreaInsets();
+  const { user } = useAuth();
   const [query, setQuery] = useState("");
+  const [history, setHistory] = useState<RecipientHistoryItem[]>([]);
   const { results, loading } = useRecipientSearch(query);
-  const tx = useWalletTransactions("out");
 
-  const recent = useMemo(() => {
-    const seen = new Set<string>();
-    const list: Recent[] = [];
-    for (const item of tx.items) {
-      if (!item.entryType.startsWith("gift")) continue;
-      const name = (item.recipientName || item.title.replace(/^Sovg'a · /, "")).trim();
-      if (!name || name.length < 2) continue;
-      const key = name.toLowerCase();
-      if (seen.has(key)) continue;
-      seen.add(key);
-      list.push({
-        key: item.id,
-        name,
-        subtitle: item.recipientWalletMasked || item.subtitle,
-      });
-      if (list.length >= 6) break;
+  const reloadHistory = useCallback(() => {
+    if (!user?.id) {
+      setHistory([]);
+      return;
     }
-    return list;
-  }, [tx.items]);
+    void loadRecipientHistory(user.id).then(setHistory);
+  }, [user?.id]);
 
-  const pick = (r: ApiWalletRecipient) => {
+  useFocusEffect(
+    useCallback(() => {
+      reloadHistory();
+    }, [reloadHistory]),
+  );
+
+  useEffect(() => {
+    reloadHistory();
+  }, [reloadHistory]);
+
+  const goAmount = async (r: {
+    userId: number;
+    fullName: string;
+    walletMasked?: string | null;
+  }) => {
+    if (user?.id) {
+      const next = await rememberRecipientSearch(user.id, r);
+      setHistory(next);
+    }
     navigation.navigate("WalletGiftAmount", {
-      recipientUserId: r.user_id,
-      recipientName: r.full_name,
-      recipientPhone: r.phone,
-      recipientWallet: r.wallet_number,
+      recipientUserId: r.userId,
+      recipientName: r.fullName,
+      recipientPhone: null,
+      recipientWallet: maskWalletDisplay(r.walletMasked),
     });
   };
 
-  const fillHint = (label: string) => {
-    if (label === "Telefon") setQuery("+998");
-    else if (label === "Hamyon") setQuery("7700");
-    else setQuery("");
+  const pickApi = (r: ApiWalletRecipient) => {
+    void goAmount({
+      userId: r.user_id,
+      fullName: r.full_name || "Foydalanuvchi",
+      walletMasked: r.wallet_number,
+    });
+  };
+
+  const pickHistory = (h: RecipientHistoryItem) => {
+    void goAmount({
+      userId: h.userId,
+      fullName: h.fullName,
+      walletMasked: h.walletMasked,
+    });
   };
 
   const searching = query.trim().length >= 2;
+  const sentFirst = history.filter((h) => (h.lastSentAt ?? 0) > 0);
+  const searchedOnly = history.filter((h) => !(h.lastSentAt ?? 0));
 
   return (
     <View style={[styles.root, { paddingBottom: insets.bottom + 12 }]}>
@@ -104,12 +129,13 @@ export function WalletGiftScreen({ navigation }: Props) {
 
         <View style={styles.heroCard}>
           <View style={styles.heroIcon}>
-            <Ionicons name="paper-plane" size={22} color={PURPLE} />
+            <Ionicons name="shield-checkmark" size={22} color={PURPLE} />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={styles.heroTitle}>Qabul qiluvchini toping</Text>
+            <Text style={styles.heroTitle}>Maxfiy qidiruv</Text>
             <Text style={styles.heroSub}>
-              Ism, telefon (+998…) yoki 16 xonali hamyon raqami bilan qidiring
+              Telefon ko‘rinmaydi. Hamyon faqat oxirgi 4 raqam. To‘liq 16 xona kiritsangiz — egasi
+              chiqadi.
             </Text>
           </View>
         </View>
@@ -118,13 +144,12 @@ export function WalletGiftScreen({ navigation }: Props) {
           <Ionicons name="search" size={18} color={PURPLE} />
           <TextInput
             style={styles.searchInput}
-            placeholder="Masalan: +99890… yoki 7700 …"
+            placeholder="Ism, telefon yoki to‘liq hamyon"
             placeholderTextColor="#9CA3AF"
             value={query}
             onChangeText={setQuery}
             autoCorrect={false}
             autoCapitalize="none"
-            keyboardType="default"
             autoFocus
           />
           {query ? (
@@ -136,7 +161,11 @@ export function WalletGiftScreen({ navigation }: Props) {
 
         <View style={styles.hints}>
           {HINTS.map((h) => (
-            <Pressable key={h.label} style={styles.hintChip} onPress={() => fillHint(h.label)}>
+            <Pressable
+              key={h.label}
+              style={styles.hintChip}
+              onPress={() => setQuery(h.hint)}
+            >
               <Ionicons name={h.icon} size={14} color={PURPLE} />
               <Text style={styles.hintText}>{h.label}</Text>
             </Pressable>
@@ -149,29 +178,32 @@ export function WalletGiftScreen({ navigation }: Props) {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.list}
       >
-        {!searching && recent.length > 0 ? (
+        {!searching && sentFirst.length > 0 ? (
           <>
-            <Text style={styles.section}>So‘nggi oluvchilar</Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.recentRow}
-            >
-              {recent.map((r) => (
-                <Pressable
-                  key={r.key}
-                  style={styles.recentItem}
-                  onPress={() => setQuery(r.name)}
-                >
-                  <View style={[styles.recentAvatar, { backgroundColor: avatarTone(r.key) }]}>
-                    <Text style={styles.avatarText}>{initials(r.name)}</Text>
-                  </View>
-                  <Text style={styles.recentName} numberOfLines={1}>
-                    {r.name.split(/\s+/)[0]}
-                  </Text>
-                </Pressable>
-              ))}
-            </ScrollView>
+            <Text style={styles.section}>Oxirgi yuborilganlar</Text>
+            {sentFirst.map((h) => (
+              <HistoryRow
+                key={`sent-${h.userId}`}
+                item={h}
+                badge="Yuborilgan"
+                onPress={() => pickHistory(h)}
+              />
+            ))}
+          </>
+        ) : null}
+
+        {!searching && searchedOnly.length > 0 ? (
+          <>
+            <Text style={[styles.section, sentFirst.length ? { marginTop: 16 } : null]}>
+              So‘nggi qidiruvlar
+            </Text>
+            {searchedOnly.map((h) => (
+              <HistoryRow
+                key={`search-${h.userId}`}
+                item={h}
+                onPress={() => pickHistory(h)}
+              />
+            ))}
           </>
         ) : null}
 
@@ -186,13 +218,12 @@ export function WalletGiftScreen({ navigation }: Props) {
             </View>
             <Text style={styles.emptyTitle}>Topilmadi</Text>
             <Text style={styles.empty}>
-              To‘liq telefon (+998901234567) yoki hamyon raqamini (bo‘shliqlar bilan yoki
-              bo‘shliqsiz) qayta kiriting
+              Ismning bir qismini yozing yoki to‘liq 16 xonali hamyon / telefon kiriting
             </Text>
           </View>
         ) : searching ? (
           results.map((r) => (
-            <Pressable key={r.user_id} style={styles.row} onPress={() => pick(r)}>
+            <Pressable key={r.user_id} style={styles.row} onPress={() => pickApi(r)}>
               <View style={[styles.avatar, { backgroundColor: avatarTone(r.user_id) }]}>
                 <Text style={styles.avatarText}>{initials(r.full_name || "?")}</Text>
               </View>
@@ -200,28 +231,58 @@ export function WalletGiftScreen({ navigation }: Props) {
                 <Text style={styles.name} numberOfLines={1}>
                   {r.full_name || "Foydalanuvchi"}
                 </Text>
-                <Text style={styles.meta} numberOfLines={1}>
-                  {[r.phone, r.wallet_number].filter(Boolean).join(" · ")}
-                </Text>
+                <Text style={styles.meta}>{maskWalletDisplay(r.wallet_number)}</Text>
               </View>
               <View style={styles.sendPill}>
                 <Ionicons name="arrow-forward" size={16} color="#FFF" />
               </View>
             </Pressable>
           ))
-        ) : recent.length === 0 ? (
+        ) : history.length === 0 ? (
           <View style={styles.emptyBox}>
             <View style={styles.emptyIcon}>
               <Ionicons name="people-outline" size={28} color="#C4B5FD" />
             </View>
             <Text style={styles.emptyTitle}>Qidiruvni boshlang</Text>
             <Text style={styles.empty}>
-              Do‘stingiz ismi, telefoni yoki Mysaloon hamyon raqamini yozing
+              Topilgan odamlar shu yerda saqlanadi. Pul yuborganlaringiz eng yuqorida turadi.
             </Text>
           </View>
         ) : null}
       </ScrollView>
     </View>
+  );
+}
+
+function HistoryRow({
+  item,
+  badge,
+  onPress,
+}: {
+  item: RecipientHistoryItem;
+  badge?: string;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable style={styles.row} onPress={onPress}>
+      <View style={[styles.avatar, { backgroundColor: avatarTone(item.userId) }]}>
+        <Text style={styles.avatarText}>{initials(item.fullName)}</Text>
+      </View>
+      <View style={{ flex: 1 }}>
+        <View style={styles.nameRow}>
+          <Text style={styles.name} numberOfLines={1}>
+            {item.fullName}
+          </Text>
+          {badge ? (
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>{badge}</Text>
+            </View>
+          ) : null}
+        </View>
+        <Text style={styles.meta}>{maskWalletDisplay(item.walletMasked)}</Text>
+      </View>
+      <Ionicons name="chevron-forward" size={18} color="#D1D5DB" />
+    </Pressable>
   );
 }
 
@@ -307,16 +368,6 @@ const styles = StyleSheet.create({
     color: "#6B7280",
     letterSpacing: 0.2,
   },
-  recentRow: { gap: 14, paddingBottom: 8, marginBottom: 8 },
-  recentItem: { alignItems: "center", width: 64, gap: 6 },
-  recentAvatar: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  recentName: { fontSize: 11, fontWeight: "600", color: "#4B5563", textAlign: "center" },
   emptyBox: { alignItems: "center", paddingVertical: 36, paddingHorizontal: 24 },
   emptyIcon: {
     width: 64,
@@ -357,8 +408,16 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   avatarText: { fontSize: 14, fontWeight: "800", color: "#FFF" },
-  name: { fontSize: 15, fontWeight: "700", color: "#0A0A0A" },
-  meta: { marginTop: 2, fontSize: 12, color: "#9CA3AF" },
+  nameRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  name: { flexShrink: 1, fontSize: 15, fontWeight: "700", color: "#0A0A0A" },
+  badge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 999,
+    backgroundColor: "#EDE9FE",
+  },
+  badgeText: { fontSize: 10, fontWeight: "700", color: PURPLE },
+  meta: { marginTop: 2, fontSize: 12, color: "#9CA3AF", letterSpacing: 0.6 },
   sendPill: {
     width: 32,
     height: 32,

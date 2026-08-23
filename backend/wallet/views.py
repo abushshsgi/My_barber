@@ -24,7 +24,11 @@ from wallet.serializers import (
     WalletMeSerializer,
     WalletTopUpSerializer,
 )
-from wallet.services.wallet_number import format_wallet_number, normalize_wallet_number
+from wallet.services.wallet_number import (
+    format_wallet_number,
+    mask_wallet_number,
+    normalize_wallet_number,
+)
 from wallet.services.wallet_service import (
     InsufficientBalanceError,
     WalletService,
@@ -258,30 +262,37 @@ class WalletRecipientSearchView(APIView):
             )
         )
 
-        filters = Q(user__full_name__icontains=q)
+        filters = Q()
+        # Ism (qisman): "Ali" → Ali* ismlar
+        if any(ch.isalpha() for ch in q) or not digits:
+            filters |= Q(user__full_name__icontains=q)
 
+        # Telefon: faqat to'liq/normalizatsiya yoki 9+ raqam — javobda telefon qaytmaydi
         if phone:
             filters |= Q(user__phone=phone)
+        elif len(digits) >= 9:
+            filters |= Q(user__phone__icontains=digits[-9:])
 
-        # Telefon / hamyon: qisman raqam ham ishlasin (+998, bo'shliq, tire).
-        if len(digits) >= 4:
-            filters |= Q(user__phone__icontains=digits)
-            if len(digits) >= 9:
-                filters |= Q(user__phone__icontains=digits[-9:])
-            filters |= Q(wallet_digits__icontains=digits)
-            if len(digits) == 16:
-                try:
-                    filters |= Q(wallet_number=format_wallet_number(digits))
-                except ValueError:
-                    pass
+        # Hamyon: faqat to'liq 16 xona — egasi chiqadi; raqam javobda maskalanadi
+        if len(digits) == 16:
+            try:
+                filters |= Q(wallet_number=format_wallet_number(digits)) | Q(
+                    wallet_digits=digits
+                )
+            except ValueError:
+                filters |= Q(wallet_digits=digits)
+
+        if not filters:
+            return Response([])
 
         results = wallet_qs.filter(filters).order_by("user__full_name")[:20]
         payload = [
             {
                 "user_id": w.user_id,
                 "full_name": w.user.full_name or "",
-                "phone": w.user.phone,
-                "wallet_number": w.wallet_number,
+                # Maxfiylik: telefon va to'liq hamyon hech qachon qaytmaydi
+                "phone": None,
+                "wallet_number": mask_wallet_number(w.wallet_number),
             }
             for w in results
         ]

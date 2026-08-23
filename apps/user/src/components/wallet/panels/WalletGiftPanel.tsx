@@ -340,8 +340,8 @@ export function WalletGiftPanel() {
 
   const pickRecipient = (r: (typeof recipients)[0]) => {
     setRecipientUserId(r.user_id);
-    setRecipientLabel(r.full_name || r.phone || r.wallet_number);
-    setQuery(r.full_name || r.phone || r.wallet_number);
+    setRecipientLabel(r.full_name || "Foydalanuvchi");
+    setQuery(r.full_name || "");
   };
 
   const clearRecipient = () => {
@@ -612,8 +612,7 @@ export function WalletGiftPanel() {
                               {r.full_name || "Foydalanuvchi"}
                             </span>
                             <span className="block text-[11px] text-muted-foreground">
-                              {r.phone ? `${r.phone} · ` : ""}
-                              {r.wallet_number}
+                              {(r.wallet_number || "****").replace(/\*/g, "•")}
                             </span>
                           </span>
                         </button>

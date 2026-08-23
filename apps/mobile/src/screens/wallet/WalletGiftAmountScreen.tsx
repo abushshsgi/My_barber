@@ -17,8 +17,10 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MAX_GIFT_AMOUNT, MIN_GIFT_AMOUNT, parseWalletBalance, sendGift } from "../../api/wallet";
+import { useAuth } from "../../auth/AuthContext";
 import { useHideTabBar } from "../../hooks/useHideTabBar";
 import { useGiftDesigns, useWalletMe } from "../../hooks/useWallet";
+import { maskWalletDisplay, rememberRecipientSent } from "../../lib/recipient-history";
 import { designColorsById, formatSomAmount, formatSomLabel } from "../../lib/wallet-format";
 import type { WalletStackParamList } from "../../navigation/WalletStack";
 
@@ -47,9 +49,11 @@ function avatarTone(id: number): string {
 export function WalletGiftAmountScreen({ navigation, route }: Props) {
   useHideTabBar();
   const insets = useSafeAreaInsets();
-  const { recipientUserId, recipientName, recipientPhone, recipientWallet } = route.params;
+  const { recipientUserId, recipientName, recipientWallet } = route.params;
+  const { user } = useAuth();
   const me = useWalletMe();
   const { designs, loading: designsLoading } = useGiftDesigns();
+  const walletMasked = maskWalletDisplay(recipientWallet);
 
   const [digits, setDigits] = useState("100000");
   const [designId, setDesignId] = useState<string | null>(null);
@@ -123,6 +127,13 @@ export function WalletGiftAmountScreen({ navigation, route }: Props) {
         message: "",
         recipient_user_id: recipientUserId,
       });
+      if (user?.id) {
+        await rememberRecipientSent(user.id, {
+          userId: recipientUserId,
+          fullName: recipientName,
+          walletMasked,
+        });
+      }
       me.refresh();
       Alert.alert("Yuborildi", `${formatSomLabel(amount)} sovg'a yuborildi.`, [
         { text: "OK", onPress: () => navigation.navigate("WalletHome") },
@@ -164,7 +175,7 @@ export function WalletGiftAmountScreen({ navigation, route }: Props) {
                 {recipientName}
               </Text>
               <Text style={styles.toMeta} numberOfLines={1}>
-                {recipientPhone || recipientWallet || ""}
+                {walletMasked}
               </Text>
             </View>
           </View>
