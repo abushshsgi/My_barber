@@ -7,6 +7,13 @@ const projectRoot = __dirname;
 const config = getDefaultConfig(projectRoot);
 
 /** Web: react-native-maps native codegen — stub (MapScreen.web / OnboardingMap.web ishlatiladi). */
+try {
+  // Expo CLI odatda .env ni yuklaydi; Metro alohida ishga tushganda ham UPSTREAM to‘g‘ri bo‘lsin.
+  require("dotenv").config({ path: path.join(projectRoot, ".env") });
+} catch {
+  /* dotenv ixtiyoriy */
+}
+
 const upstreamResolveRequest = config.resolver.resolveRequest;
 config.resolver.resolveRequest = (context, moduleName, platform) => {
   if (platform === "web" && moduleName === "react-native-maps") {

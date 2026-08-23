@@ -527,6 +527,13 @@ def family_member_limit_for(user: User) -> int | None:
 
 
 def can_use_morph_care(user: User) -> bool:
+    from django.conf import settings
+
+    if getattr(settings, "MORPH_ENTITLEMENT_BYPASS", False):
+        return True
+    if getattr(settings, "MORPH_CARE_ACCESS_DEBUG", False):
+        return True
+
     sub = get_active_subscription(user)
     if not sub:
         return False

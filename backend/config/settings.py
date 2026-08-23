@@ -187,6 +187,12 @@ MORPH_ENTITLEMENT_BYPASS = os.environ.get("MORPH_ENTITLEMENT_BYPASS", "false").l
     "true",
     "yes",
 )
+# Parvarish / Tarkib (ingredient-scan). Mobil CARE_ACCESS_DEBUG bilan mos — production oldidan false.
+MORPH_CARE_ACCESS_DEBUG = os.environ.get("MORPH_CARE_ACCESS_DEBUG", "true").lower() in (
+    "1",
+    "true",
+    "yes",
+)
 
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
