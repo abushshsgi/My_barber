@@ -25,16 +25,15 @@ const OPEN_MS = 480;
 const CLOSE_MS = 280;
 const USE_NATIVE = Platform.OS !== "web";
 
-/** Pastdan 480ms sheet — 1 click muzlatish / ochish. */
-export function WalletFreezeScreen({ navigation }: Props) {
+/** Pastdan 480ms sheet — 1 click muzlatish / ochish. Intent route paramda qotadi (miltiltmasin). */
+export function WalletFreezeScreen({ navigation, route }: Props) {
   useHideTabBar();
   const insets = useSafeAreaInsets();
   const me = useWalletMe();
+  /** Bosish paytidagi holat — fetch kelib UI ni almashtirmasin. */
+  const [frozen] = useState(() => Boolean(route.params?.isFrozen));
   const [busy, setBusy] = useState(false);
   const [statusLabel, setStatusLabel] = useState<"idle" | "freeze" | "unfreeze">("idle");
-  const frozen = Boolean(me.isFrozen);
-  const frozenRef = useRef(frozen);
-  frozenRef.current = frozen;
   const busyRef = useRef(false);
   const closingRef = useRef(false);
   const backdrop = useRef(new Animated.Value(0)).current;
@@ -85,7 +84,7 @@ export function WalletFreezeScreen({ navigation }: Props) {
 
   const run = async () => {
     if (busyRef.current || closingRef.current) return;
-    const action = frozenRef.current ? "unfreeze" : "freeze";
+    const action = frozen ? "unfreeze" : "freeze";
     busyRef.current = true;
     setBusy(true);
     setStatusLabel(action);

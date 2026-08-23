@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import * as Clipboard from "expo-clipboard";
+import { useFocusEffect } from "@react-navigation/native";
 import { useCallback, useMemo, useState, type ReactNode } from "react";
 import {
   ActivityIndicator,
@@ -39,6 +40,14 @@ export function WalletRequisitesScreen({ navigation }: Props) {
   const me = useWalletMe();
   const [copied, setCopied] = useState<string | null>(null);
   const [revealed, setRevealed] = useState(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      me.refresh();
+      // refresh stable via useCallback in hook
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [me.refresh]),
+  );
 
   const fullName = useMemo(() => {
     const fromParts = [user?.first_name, user?.last_name].filter(Boolean).join(" ").trim();
@@ -159,7 +168,7 @@ export function WalletRequisitesScreen({ navigation }: Props) {
             icon="snow-outline"
             title={me.isFrozen ? "Kartani ochish" : "Kartani muzlatish"}
             subtitle={me.isFrozen ? "Hamyonni yana faollashtirish" : "Har doim ochishingiz mumkin"}
-            onPress={() => navigation.navigate("WalletFreeze")}
+            onPress={() => navigation.navigate("WalletFreeze", { isFrozen: me.isFrozen })}
             chevron
           />
           <Divider />

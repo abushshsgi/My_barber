@@ -35,7 +35,7 @@ export type WalletStackParamList = {
   WalletQrPay: undefined;
   WalletTransactions: undefined;
   WalletRequisites: undefined;
-  WalletFreeze: undefined;
+  WalletFreeze: { isFrozen: boolean };
   WalletFaq: undefined;
 };
 
