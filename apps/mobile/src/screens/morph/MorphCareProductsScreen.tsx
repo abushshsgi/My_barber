@@ -33,11 +33,11 @@ const CATEGORIES: CareProductCategory[] = [
   "other",
 ];
 
-export function MorphCareProductsScreen({ navigation }: Props) {
+export function MorphCareProductsScreen({ navigation, route }: Props) {
   useHideTabBar();
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
-  const [q, setQ] = useState("");
+  const [q, setQ] = useState(route.params?.q ?? "");
   const [category, setCategory] = useState<string>("all");
   const [rows, setRows] = useState<CareProduct[]>([]);
   const [loading, setLoading] = useState(true);

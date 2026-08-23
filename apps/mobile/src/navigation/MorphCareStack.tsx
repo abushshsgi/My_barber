@@ -5,7 +5,7 @@ import { MorphCareScreen } from "../screens/morph/MorphCareScreen";
 
 export type MorphCareStackParamList = {
   CareHome: undefined;
-  CareProducts: undefined;
+  CareProducts: { q?: string } | undefined;
   CareProductDetail: { productId: number };
 };
 

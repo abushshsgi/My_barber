@@ -5,7 +5,7 @@ import { MorphIngredientScreen } from "../screens/morph/MorphIngredientScreen";
 
 export type MorphIngredientStackParamList = {
   IngredientScan: undefined;
-  CareProducts: undefined;
+  CareProducts: { q?: string } | undefined;
   CareProductDetail: { productId: number };
 };
 

@@ -7,6 +7,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from "react-native";
 import { useTranslation } from "react-i18next";
@@ -33,6 +34,7 @@ import { morphFont } from "../../theme/morph-font";
 
 type Props = NativeStackScreenProps<MorphCareStackParamList, "CareHome">;
 type QuizStep = 0 | 1 | 2;
+type ViewMode = "hub" | "flow";
 
 /** Vaqtinchalik: Pro obunasiz Care ochiq. Production oldidan false qiling. */
 const CARE_ACCESS_DEBUG = true;
@@ -46,12 +48,26 @@ export function MorphCareScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
   const [loading, setLoading] = useState(true);
   const [access, setAccess] = useState<{ allowed: boolean; detail?: string } | null>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>("hub");
+  const [hubQuery, setHubQuery] = useState("");
   const [quiz, setQuiz] = useState<CareQuizAnswers>(defaultQuiz);
   const [step, setStep] = useState<QuizStep | "plan">(0);
   const [catalog, setCatalog] = useState<CareProduct[]>([]);
   const [saving, setSaving] = useState(false);
 
   const plan = useMemo(() => buildCarePlan(quiz), [quiz]);
+
+  const openCatalog = useCallback(
+    (q?: string) => {
+      const trimmed = (q ?? hubQuery).trim();
+      navigation.navigate("CareProducts", trimmed ? { q: trimmed } : undefined);
+    },
+    [hubQuery, navigation],
+  );
+
+  const openTarkib = useCallback(() => {
+    navigation.getParent()?.navigate("MorphIngredient" as never);
+  }, [navigation]);
 
   const bootstrap = useCallback(async () => {
     setLoading(true);
@@ -124,19 +140,15 @@ export function MorphCareScreen({ navigation }: Props) {
 
   if (access && !access.allowed) {
     return (
-      <View style={[styles.root, { paddingTop: insets.top + 24, paddingHorizontal: 20 }]}>
+      <View style={[styles.root, styles.pad, { paddingTop: insets.top + 12 }]}>
+        <Text style={styles.muted}>{t("care.badge")}</Text>
         <View style={styles.lockWrap}>
-          <Ionicons name="lock-closed-outline" size={24} color="rgba(255,255,255,0.5)" />
+          <Ionicons name="lock-closed" size={28} color="rgba(255,255,255,0.5)" />
           <Text style={styles.lockTitle}>{t("care.badge")}</Text>
           <Text style={styles.lockSub}>{access.detail || t("care.proOnly")}</Text>
           <Pressable
-            style={styles.primaryBtn}
-            onPress={() =>
-              navigation.getParent()?.navigate("MorphTryOn", {
-                screen: "MorphPaywall",
-                params: { reason: "subscription", returnTo: "MorphCapture" },
-              } as never)
-            }
+            style={[styles.primaryBtn, { marginTop: 24 }]}
+            onPress={() => navigation.getParent()?.navigate("Wallet" as never)}
           >
             <Text style={styles.primaryBtnText}>{t("care.seePlans")}</Text>
           </Pressable>
@@ -145,56 +157,119 @@ export function MorphCareScreen({ navigation }: Props) {
     );
   }
 
+  if (viewMode === "hub") {
+    return (
+      <View style={[styles.root, { paddingTop: insets.top }]}>
+        <View style={styles.hubSpacer} />
+        <View
+          style={[
+            styles.hubSheet,
+            { paddingBottom: Math.max(insets.bottom, 16) + 72 },
+          ]}
+        >
+          <View style={styles.hubCards}>
+            <Pressable
+              style={[styles.hubCard, styles.hubCardActive]}
+              onPress={() => setViewMode("flow")}
+            >
+              <View style={styles.hubCardIcon}>
+                <Ionicons name="water-outline" size={22} color="#fff" />
+              </View>
+              <Text style={styles.hubCardTitle}>{t("care.hubParvarish")}</Text>
+              <Text style={styles.hubCardSub} numberOfLines={2}>
+                {t("care.hubParvarishSub")}
+              </Text>
+            </Pressable>
+
+            <Pressable style={styles.hubCard} onPress={openTarkib}>
+              <View style={styles.hubCardIcon}>
+                <Ionicons name="flask-outline" size={22} color="#fff" />
+              </View>
+              <Text style={styles.hubCardTitle}>{t("care.hubTarkib")}</Text>
+              <Text style={styles.hubCardSub} numberOfLines={2}>
+                {t("care.hubTarkibSub")}
+              </Text>
+            </Pressable>
+          </View>
+
+          <View style={styles.hubSearchRow}>
+            <View style={styles.hubSearchField}>
+              <Ionicons name="search" size={16} color="rgba(255,255,255,0.35)" />
+              <TextInput
+                value={hubQuery}
+                onChangeText={setHubQuery}
+                placeholder={t("care.hubSearchPlaceholder")}
+                placeholderTextColor="rgba(255,255,255,0.3)"
+                style={styles.hubSearchInput}
+                returnKeyType="search"
+                onSubmitEditing={() => openCatalog()}
+              />
+            </View>
+            <Pressable
+              style={styles.hubSearchBtn}
+              onPress={() => openCatalog()}
+              accessibilityLabel={t("care.catalog.search")}
+            >
+              <Ionicons name="search" size={20} color="#050505" />
+            </Pressable>
+          </View>
+        </View>
+      </View>
+    );
+  }
+
   if (step !== "plan") {
-    const questions = [
-      {
-        title: t("care.quiz.conditionQ"),
-        options: CONDITION_OPTS,
-        value: quiz.condition,
-        onPick: (v: string) => setQuiz((q) => ({ ...q, condition: v as HairCondition })),
-        labelKey: "care.conditions",
-      },
-      {
-        title: t("care.quiz.textureQ"),
-        options: TEXTURE_OPTS,
-        value: quiz.texture,
-        onPick: (v: string) => setQuiz((q) => ({ ...q, texture: v as HairTexture })),
-        labelKey: "care.textures",
-      },
-      {
-        title: t("care.quiz.colorQ"),
-        options: COLOR_OPTS,
-        value: quiz.colorStatus,
-        onPick: (v: string) => setQuiz((q) => ({ ...q, colorStatus: v as HairColorStatus })),
-        labelKey: "care.colors",
-      },
-    ] as const;
-    const current = questions[step];
-    const progress = ((step + 1) / questions.length) * 100;
+    const quizMeta =
+      step === 0
+        ? {
+            title: t("care.quiz.conditionQ"),
+            opts: CONDITION_OPTS,
+            value: quiz.condition,
+            labelKey: "care.conditions",
+            set: (v: HairCondition) => setQuiz((q) => ({ ...q, condition: v })),
+          }
+        : step === 1
+          ? {
+              title: t("care.quiz.textureQ"),
+              opts: TEXTURE_OPTS,
+              value: quiz.texture,
+              labelKey: "care.textures",
+              set: (v: HairTexture) => setQuiz((q) => ({ ...q, texture: v })),
+            }
+          : {
+              title: t("care.quiz.colorQ"),
+              opts: COLOR_OPTS,
+              value: quiz.colorStatus,
+              labelKey: "care.colors",
+              set: (v: HairColorStatus) => setQuiz((q) => ({ ...q, colorStatus: v })),
+            };
 
     return (
       <View style={[styles.root, { paddingTop: insets.top + 12 }]}>
         <View style={styles.pad}>
           <View style={styles.rowBetween}>
+            <Pressable onPress={() => setViewMode("hub")} hitSlop={12}>
+              <Ionicons name="chevron-back" size={22} color="#fff" />
+            </Pressable>
             <Text style={styles.muted}>{t("care.badge")}</Text>
-            <Text style={styles.muted}>
-              {step + 1}/3
-            </Text>
+            <View style={{ width: 22 }} />
           </View>
+          <Text style={styles.h1}>{quizMeta.title}</Text>
           <View style={styles.progressTrack}>
-            <View style={[styles.progressFill, { width: `${progress}%` }]} />
+            <View style={[styles.progressFill, { width: `${((step + 1) / 3) * 100}%` }]} />
           </View>
-          <Text style={styles.h1}>{current.title}</Text>
           <View style={styles.optGrid}>
-            {current.options.map((opt) => {
-              const selected = current.value === opt;
+            {quizMeta.opts.map((opt) => {
+              const on = quizMeta.value === opt;
               return (
                 <Pressable
                   key={opt}
-                  onPress={() => current.onPick(opt)}
-                  style={[styles.optCard, selected && styles.optCardOn]}
+                  style={[styles.optCard, on && styles.optCardOn]}
+                  onPress={() => quizMeta.set(opt as never)}
                 >
-                  <Text style={styles.optText}>{t(`${current.labelKey}.${opt}`)}</Text>
+                  <Text style={styles.optText}>
+                    {t(`${quizMeta.labelKey}.${opt}`)}
+                  </Text>
                 </Pressable>
               );
             })}
@@ -204,7 +279,7 @@ export function MorphCareScreen({ navigation }: Props) {
           {step > 0 ? (
             <Pressable
               style={styles.ghostBtn}
-              onPress={() => setStep((step - 1) as QuizStep)}
+              onPress={() => setStep((s) => (s === 0 ? 0 : ((s - 1) as QuizStep)))}
             >
               <Text style={styles.ghostBtnText}>{t("common.back")}</Text>
             </Pressable>
@@ -214,7 +289,7 @@ export function MorphCareScreen({ navigation }: Props) {
             disabled={saving}
             onPress={() => {
               if (step === 2) void finishQuiz();
-              else setStep((step + 1) as QuizStep);
+              else setStep((s) => (s + 1) as QuizStep);
             }}
           >
             <Text style={styles.primaryBtnText}>
@@ -253,6 +328,9 @@ export function MorphCareScreen({ navigation }: Props) {
       }}
     >
       <View style={styles.rowBetween}>
+        <Pressable onPress={() => setViewMode("hub")} hitSlop={12}>
+          <Ionicons name="chevron-back" size={22} color="#fff" />
+        </Pressable>
         <Text style={styles.muted}>{t("care.badge")}</Text>
         <Pressable onPress={() => setStep(0)}>
           <Text style={styles.link}>{t("care.quiz.retake")}</Text>
@@ -286,7 +364,7 @@ export function MorphCareScreen({ navigation }: Props) {
 
       <View style={[styles.rowBetween, { marginTop: 28 }]}>
         <Text style={styles.sectionTight}>{t("care.productsTitle")}</Text>
-        <Pressable onPress={() => navigation.navigate("CareProducts")}>
+        <Pressable onPress={() => openCatalog()}>
           <Text style={styles.link}>{t("common.viewAll")}</Text>
         </Pressable>
       </View>
@@ -327,6 +405,87 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: "#050505" },
   center: { alignItems: "center", justifyContent: "center" },
   pad: { flex: 1, paddingHorizontal: 20 },
+  hubSpacer: { flex: 1 },
+  hubSheet: {
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    backgroundColor: "#141414",
+    paddingHorizontal: 18,
+    paddingTop: 22,
+    gap: 14,
+  },
+  hubCards: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  hubCard: {
+    flex: 1,
+    minHeight: 132,
+    borderRadius: 20,
+    backgroundColor: "rgba(255,255,255,0.06)",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(255,255,255,0.08)",
+    padding: 16,
+    justifyContent: "flex-end",
+    gap: 4,
+  },
+  hubCardActive: {
+    borderWidth: 1.5,
+    borderColor: "#fff",
+  },
+  hubCardIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 14,
+    backgroundColor: "rgba(255,255,255,0.08)",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 10,
+  },
+  hubCardTitle: {
+    ...morphFont,
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#fff",
+  },
+  hubCardSub: {
+    ...morphFont,
+    fontSize: 11,
+    lineHeight: 14,
+    color: "rgba(255,255,255,0.45)",
+  },
+  hubSearchRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  hubSearchField: {
+    flex: 1,
+    height: 48,
+    borderRadius: 16,
+    backgroundColor: "rgba(255,255,255,0.06)",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(255,255,255,0.1)",
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 14,
+    gap: 8,
+  },
+  hubSearchInput: {
+    ...morphFont,
+    flex: 1,
+    fontSize: 14,
+    color: "#fff",
+    paddingVertical: 0,
+  },
+  hubSearchBtn: {
+    width: 48,
+    height: 48,
+    borderRadius: 16,
+    backgroundColor: "#fff",
+    alignItems: "center",
+    justifyContent: "center",
+  },
   rowBetween: {
     flexDirection: "row",
     alignItems: "center",

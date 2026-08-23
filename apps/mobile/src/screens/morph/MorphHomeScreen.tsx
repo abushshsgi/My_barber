@@ -111,6 +111,12 @@ export function MorphHomeScreen({ navigation }: Props) {
     [navigation],
   );
 
+  const openCareCatalog = useCallback(() => {
+    navigation.getParent()?.navigate("MorphCare" as never, {
+      screen: "CareProducts",
+    } as never);
+  }, [navigation]);
+
   const onSamplePress = useCallback(
     (item: MorphSampleCard) => {
       if (!isAuthenticated) {
@@ -193,48 +199,57 @@ export function MorphHomeScreen({ navigation }: Props) {
           ))}
         </View>
 
-        <View style={styles.careRow}>
-          <Pressable
-            style={[styles.careCard, { backgroundColor: pal.card, borderColor: pal.line }]}
-            onPress={() => openCareOrIngredient("care")}
-          >
-            <View style={[styles.careIcon, { backgroundColor: pal.iconTile }]}>
-              <Ionicons name="water-outline" size={18} color={pal.fg} />
-            </View>
-            <View style={styles.careCopy}>
+        <View style={[styles.careSheet, { backgroundColor: pal.card, borderColor: pal.line }]}>
+          <View style={styles.careRow}>
+            <Pressable
+              style={[
+                styles.careCard,
+                { backgroundColor: pal.iconTile, borderColor: pal.fg },
+                styles.careCardActive,
+              ]}
+              onPress={() => openCareOrIngredient("care")}
+            >
+              <View style={[styles.careIcon, { backgroundColor: pal.card }]}>
+                <Ionicons name="water-outline" size={20} color={pal.fg} />
+              </View>
               <Text style={[styles.careTitle, { color: pal.fg }]}>Parvarish</Text>
               <Text style={[styles.careSub, { color: pal.muted }]} numberOfLines={2}>
                 Sochingiz uchun shaxsiy tavsiyalar
               </Text>
-            </View>
-            <Ionicons
-              name="arrow-up"
-              size={14}
-              color="rgba(255,255,255,0.35)"
-              style={styles.arrowRot}
-            />
-          </Pressable>
+            </Pressable>
 
-          <Pressable
-            style={[styles.careCard, { backgroundColor: pal.card, borderColor: pal.line }]}
-            onPress={() => openCareOrIngredient("ingredient")}
-          >
-            <View style={[styles.careIcon, { backgroundColor: pal.iconTile }]}>
-              <Ionicons name="flask-outline" size={18} color={pal.fg} />
-            </View>
-            <View style={styles.careCopy}>
+            <Pressable
+              style={[styles.careCard, { backgroundColor: pal.iconTile, borderColor: pal.line }]}
+              onPress={() => openCareOrIngredient("ingredient")}
+            >
+              <View style={[styles.careIcon, { backgroundColor: pal.card }]}>
+                <Ionicons name="flask-outline" size={20} color={pal.fg} />
+              </View>
               <Text style={[styles.careTitle, { color: pal.fg }]}>Tarkib</Text>
               <Text style={[styles.careSub, { color: pal.muted }]} numberOfLines={2}>
                 Mahsulot tarkibini skan qiling
               </Text>
-            </View>
-            <Ionicons
-              name="arrow-up"
-              size={14}
-              color="rgba(255,255,255,0.35)"
-              style={styles.arrowRot}
-            />
-          </Pressable>
+            </Pressable>
+          </View>
+
+          <View style={styles.careSearchRow}>
+            <Pressable
+              style={[styles.careSearchField, { backgroundColor: pal.iconTile, borderColor: pal.line }]}
+              onPress={openCareCatalog}
+            >
+              <Ionicons name="search" size={16} color={pal.muted} />
+              <Text style={[styles.careSearchPlaceholder, { color: pal.muted }]} numberOfLines={1}>
+                Shampun, balsam, gigiyena…
+              </Text>
+            </Pressable>
+            <Pressable
+              style={[styles.careSearchBtn, { backgroundColor: pal.fg }]}
+              onPress={openCareCatalog}
+              accessibilityLabel="Qidiruv"
+            >
+              <Ionicons name="search" size={18} color={pal.bg} />
+            </Pressable>
+          </View>
         </View>
 
         <View style={styles.section}>
@@ -389,42 +404,72 @@ const styles = StyleSheet.create({
     color: "rgba(255,255,255,0.4)",
   },
   exploreLink: { flexDirection: "row", alignItems: "center", gap: 2 },
-  careRow: {
+  careSheet: {
     marginTop: 20,
+    borderRadius: 24,
+    borderWidth: StyleSheet.hairlineWidth,
+    padding: 14,
+    gap: 12,
+  },
+  careRow: {
     flexDirection: "row",
     gap: 10,
   },
   careCard: {
     flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    paddingVertical: 14,
-    paddingHorizontal: 12,
+    minHeight: 120,
     borderRadius: 18,
-    backgroundColor: "rgba(255,255,255,0.05)",
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(255,255,255,0.1)",
+    padding: 14,
+    justifyContent: "flex-end",
+    gap: 4,
+  },
+  careCardActive: {
+    borderWidth: 1.5,
   },
   careIcon: {
     width: 36,
     height: 36,
     borderRadius: 12,
-    backgroundColor: "rgba(255,255,255,0.08)",
     alignItems: "center",
     justifyContent: "center",
+    marginBottom: 8,
   },
-  careCopy: { flex: 1, gap: 2 },
   careTitle: {
     ...morphFont,
-    color: "#FFF",
-    fontWeight: "600",
-    fontSize: 12,
+    fontWeight: "700",
+    fontSize: 13,
   },
   careSub: {
     ...morphFont,
-    color: "rgba(255,255,255,0.4)",
     fontSize: 10,
     lineHeight: 13,
+  },
+  careSearchRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  careSearchField: {
+    flex: 1,
+    height: 44,
+    borderRadius: 14,
+    borderWidth: StyleSheet.hairlineWidth,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    gap: 8,
+  },
+  careSearchPlaceholder: {
+    ...morphFont,
+    flex: 1,
+    fontSize: 12,
+  },
+  careSearchBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
   },
 });
