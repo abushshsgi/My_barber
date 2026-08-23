@@ -165,6 +165,20 @@ export function MorphIngredientScreen({ navigation }: Props) {
     setError(null);
   };
 
+  /** Tab ildizi — goBack ishlamaydi; Parvarish hubiga qaytamiz. */
+  const leaveIngredient = useCallback(() => {
+    if (forceQuiz) {
+      setForceQuiz(false);
+      return;
+    }
+    const parent = navigation.getParent();
+    if (parent?.canGoBack()) {
+      parent.goBack();
+      return;
+    }
+    parent?.navigate("MorphCare" as never);
+  }, [forceQuiz, navigation]);
+
   if (booting) {
     return (
       <View style={[styles.root, styles.center, { paddingTop: insets.top }]}>
@@ -175,7 +189,14 @@ export function MorphIngredientScreen({ navigation }: Props) {
 
   if (access && !access.allowed) {
     return (
-      <View style={[styles.root, { paddingTop: insets.top + 24, paddingHorizontal: 20 }]}>
+      <View style={[styles.root, { paddingTop: insets.top + 12, paddingHorizontal: 20 }]}>
+        <Pressable
+          style={styles.iconBtn}
+          onPress={leaveIngredient}
+          accessibilityLabel={t("common.back")}
+        >
+          <Ionicons name="chevron-back" size={22} color="#fff" />
+        </Pressable>
         <View style={styles.lockWrap}>
           <Ionicons name="lock-closed-outline" size={24} color="rgba(255,255,255,0.5)" />
           <Text style={styles.lockTitle}>{t("ingredient.badge")}</Text>
@@ -235,7 +256,17 @@ export function MorphIngredientScreen({ navigation }: Props) {
           },
         ]}
       >
-        <Text style={styles.badge}>{t("ingredient.badge")}</Text>
+        <View style={styles.rowBetween}>
+          <Pressable
+            style={styles.iconBtn}
+            onPress={leaveIngredient}
+            accessibilityLabel={t("common.back")}
+          >
+            <Ionicons name="chevron-back" size={22} color="#fff" />
+          </Pressable>
+          <Text style={styles.badge}>{t("ingredient.badge")}</Text>
+          <View style={{ width: 40 }} />
+        </View>
         <Text style={styles.quizHint}>{t("ingredient.quizHint")}</Text>
         <Text style={styles.h1}>{current.title}</Text>
         <View style={styles.progressTrack}>
@@ -469,6 +500,13 @@ export function MorphIngredientScreen({ navigation }: Props) {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.rowBetween}>
+          <Pressable
+            style={styles.iconBtn}
+            onPress={leaveIngredient}
+            accessibilityLabel={t("common.back")}
+          >
+            <Ionicons name="chevron-back" size={22} color="#fff" />
+          </Pressable>
           <Text style={styles.badge}>{t("ingredient.badge")}</Text>
           <Pressable onPress={() => navigation.navigate("CareProducts")}>
             <Text style={styles.link}>{t("ingredient.openCatalog")}</Text>
