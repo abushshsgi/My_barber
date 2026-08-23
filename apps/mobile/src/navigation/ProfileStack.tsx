@@ -17,7 +17,9 @@ import { SecurityPasswordScreen } from "../screens/profile/SecurityPasswordScree
 import { SecuritySessionsScreen } from "../screens/profile/SecuritySessionsScreen";
 import { SubscriptionsScreen } from "../screens/profile/SubscriptionsScreen";
 import { ReferralScreen } from "../screens/profile/ReferralScreen";
+import { WalletGiftAmountScreen } from "../screens/wallet/WalletGiftAmountScreen";
 import { WalletGiftScreen } from "../screens/wallet/WalletGiftScreen";
+import { WalletGiftSendScreen } from "../screens/wallet/WalletGiftSendScreen";
 import { WalletGiftsScreen } from "../screens/wallet/WalletGiftsScreen";
 import { WalletGateScreen } from "../screens/wallet/WalletGateScreen";
 import { WalletHomeScreen } from "../screens/wallet/WalletHomeScreen";
@@ -45,6 +47,8 @@ export type ProfileStackParamList = {
   WalletHome: undefined;
   WalletTopUp: undefined;
   WalletGift: undefined;
+  WalletGiftAmount: { designId: string };
+  WalletGiftSend: { designId: string; amount: number };
   WalletGifts: undefined;
   WalletQrPay: undefined;
   WalletTransactions: undefined;
@@ -102,6 +106,8 @@ export function ProfileStack() {
       />
       <Stack.Screen name="WalletTopUp" component={WalletTopUpScreen} />
       <Stack.Screen name="WalletGift" component={WalletGiftScreen} />
+      <Stack.Screen name="WalletGiftAmount" component={WalletGiftAmountScreen} />
+      <Stack.Screen name="WalletGiftSend" component={WalletGiftSendScreen} />
       <Stack.Screen name="WalletGifts" component={WalletGiftsScreen} />
       <Stack.Screen name="WalletQrPay" component={WalletQrPayScreen} />
       <Stack.Screen name="WalletTransactions" component={WalletTransactionsScreen} />

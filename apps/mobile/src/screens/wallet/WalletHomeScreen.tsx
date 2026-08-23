@@ -15,6 +15,7 @@ import {
   Text,
   View,
 } from "react-native";
+import { useFocusEffect } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { morfMarkWhite } from "../../branding/morf-logo";
 import { useHideTabBar } from "../../hooks/useHideTabBar";
@@ -27,6 +28,7 @@ import {
 import type { WalletTx } from "../../lib/wallet-format";
 import type { WalletStackParamList } from "../../navigation/WalletStack";
 import { useAuth } from "../../auth/AuthContext";
+import { WalletTransactionReceiptSheet } from "../../components/wallet/WalletTransactionReceiptSheet";
 
 const mysaloonIcon = require("../../../assets/icon.png");
 
@@ -100,6 +102,7 @@ export function WalletHomeScreen({ navigation }: Props) {
   const isMorph = shell === "morph";
   const [refreshing, setRefreshing] = useState(false);
   const [hidden, setHidden] = useState(false);
+  const [selectedTx, setSelectedTx] = useState<WalletTx | null>(null);
   const switching = useRef(false);
 
   const recent = tx.items.slice(0, 8);
@@ -114,6 +117,13 @@ export function WalletHomeScreen({ navigation }: Props) {
     tx.refresh();
     setTimeout(() => setRefreshing(false), 700);
   }, [me, tx]);
+
+  useFocusEffect(
+    useCallback(() => {
+      me.refresh();
+      tx.refresh();
+    }, [me.refresh, tx.refresh]),
+  );
 
   const onRequest = useCallback(async () => {
     const number = me.walletNumber.replace(/(.{4})/g, "$1 ").trim();
@@ -339,9 +349,9 @@ export function WalletHomeScreen({ navigation }: Props) {
             </View>
 
             <View style={[styles.sectionHead, { marginTop: 22 }]}>
-              <Text style={styles.sectionTitle}>Tranzaksiyalar</Text>
+              <Text style={styles.sectionTitle}>Oxirgi harakatlar</Text>
               <Pressable onPress={() => navigation.navigate("WalletTransactions")}>
-                <Text style={styles.seeMore}>Barchasi</Text>
+                <Text style={styles.seeMore}>To'liq tarix</Text>
               </Pressable>
             </View>
 
@@ -355,7 +365,9 @@ export function WalletHomeScreen({ navigation }: Props) {
                 </Pressable>
               </View>
             ) : (
-              recent.map((item) => <TxRow key={item.id} item={item} />)
+              recent.map((item) => (
+                <TxRow key={item.id} item={item} onPress={() => setSelectedTx(item)} />
+              ))
             )}
 
             {me.error ? <Text style={styles.err}>{me.error}</Text> : null}
@@ -432,6 +444,12 @@ export function WalletHomeScreen({ navigation }: Props) {
           )}
         </View>
       </LinearGradient>
+
+      <WalletTransactionReceiptSheet
+        tx={selectedTx}
+        visible={!!selectedTx}
+        onClose={() => setSelectedTx(null)}
+      />
     </View>
   );
 }
@@ -455,9 +473,9 @@ function TabItem({
   );
 }
 
-function TxRow({ item }: { item: WalletTx }) {
+function TxRow({ item, onPress }: { item: WalletTx; onPress: () => void }) {
   return (
-    <View style={styles.txRow}>
+    <Pressable style={styles.txRow} onPress={onPress}>
       <View style={[styles.avatar, { backgroundColor: avatarColor(item.id) }]}>
         <Text style={styles.avatarText}>{initials(item.title)}</Text>
       </View>
@@ -465,7 +483,9 @@ function TxRow({ item }: { item: WalletTx }) {
         <Text style={styles.txTitle} numberOfLines={1}>
           {item.title}
         </Text>
-        <Text style={styles.txDate}>{formatTxDay(item.createdAt)}</Text>
+        <Text style={styles.txDate} numberOfLines={1}>
+          {item.subtitle || formatTxDay(item.createdAt)}
+        </Text>
       </View>
       <View style={styles.txRight}>
         <Text style={styles.txAmt}>
@@ -474,7 +494,7 @@ function TxRow({ item }: { item: WalletTx }) {
         </Text>
         <Text style={styles.txKind}>{txKindLabel(item.entryType)}</Text>
       </View>
-    </View>
+    </Pressable>
   );
 }
 

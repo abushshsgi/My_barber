@@ -10,6 +10,11 @@ export type WalletTx = {
   amount: number;
   entryType: string;
   createdAt: string;
+  senderName?: string;
+  recipientName?: string;
+  senderWalletMasked?: string;
+  recipientWalletMasked?: string;
+  message?: string;
 };
 
 const ENTRY_TITLES: Record<string, string> = {
@@ -51,6 +56,11 @@ export function formatTxDate(iso: string): string {
   });
 }
 
+function metaStr(meta: Record<string, unknown>, key: string): string | undefined {
+  const v = meta[key];
+  return typeof v === "string" && v.trim() ? v.trim() : undefined;
+}
+
 export function mapLedgerEntry(entry: ApiLedgerEntry): WalletTx {
   const amount = parseWalletBalance(entry.amount);
   const meta = entry.metadata || {};
@@ -58,20 +68,29 @@ export function mapLedgerEntry(entry: ApiLedgerEntry): WalletTx {
   let subtitle: string | undefined;
 
   if (entry.entry_type === "gift_out") {
-    const toName = typeof meta.recipient_name === "string" ? meta.recipient_name.trim() : "";
+    const toName = metaStr(meta, "recipient_name");
     title = toName ? `Sovg'a · ${toName}` : "Sovg'a yuborildi";
-    if (typeof meta.message === "string" && meta.message) subtitle = meta.message.slice(0, 60);
+    const msg = metaStr(meta, "message");
+    if (msg) subtitle = msg.slice(0, 60);
   } else if (entry.entry_type === "gift_in") {
-    const fromName = typeof meta.sender_name === "string" ? meta.sender_name.trim() : "";
+    const fromName = metaStr(meta, "sender_name");
     title = fromName ? `Sovg'a · ${fromName}` : "Sovg'a qabul qilindi";
-    if (typeof meta.message === "string" && meta.message) subtitle = meta.message.slice(0, 60);
+    const msg = metaStr(meta, "message");
+    if (msg) subtitle = msg.slice(0, 60);
+  } else if (entry.entry_type === "gift_design_fee" && entry.kind === "out") {
+    const designId = metaStr(meta, "design_id");
+    title = designId ? `Dizayn · ${designId}` : "Sovg'a karta dizayni";
   } else if (entry.entry_type === "qr_pay") {
-    const barberName = typeof meta.barber_name === "string" ? meta.barber_name.trim() : "";
+    const barberName = metaStr(meta, "barber_name");
     title = barberName ? `QR to'lov · ${barberName}` : "QR to'lov";
   } else if (entry.entry_type === "topup") {
-    const source = typeof meta.source === "string" ? meta.source : "";
+    const source = metaStr(meta, "source") || "";
     if (source === "card_manual") title = "Karta to'ldirish";
+  } else if (entry.entry_type === "subscription") {
+    title = "Obuna";
   }
+
+  const message = metaStr(meta, "message")?.slice(0, 120);
 
   return {
     id: entry.id,
@@ -82,6 +101,11 @@ export function mapLedgerEntry(entry: ApiLedgerEntry): WalletTx {
     amount,
     entryType: entry.entry_type,
     createdAt: entry.created_at,
+    senderName: metaStr(meta, "sender_name"),
+    recipientName: metaStr(meta, "recipient_name"),
+    senderWalletMasked: metaStr(meta, "sender_wallet_masked"),
+    recipientWalletMasked: metaStr(meta, "recipient_wallet_masked"),
+    message,
   };
 }
 
@@ -91,18 +115,7 @@ export function designPreviewColors(preview?: {
   to?: string;
   accent?: string;
 } | null): { from: string; to: string; accent: string } {
-  const map: Record<string, string> = {
-    classic: "#1A1A1A",
-    soft: "#E8D9C0",
-    midnight: "#1E2A4A",
-    bloom: "#8B3A4A",
-    forest: "#2D4A35",
-    prestige: "#3A3428",
-    royal: "#4A2A5A",
-    legend: "#141414",
-  };
   const from = preview?.from ?? "";
-  // Server oklch yuboradi — dizayn id bo'yicha fallback ishlatiladi chaqiruvchi tomonda.
   if (from.startsWith("#")) {
     return {
       from,
@@ -111,7 +124,7 @@ export function designPreviewColors(preview?: {
     };
   }
   return {
-    from: map.classic!,
+    from: "#1A1A1A",
     to: "#2A2A2A",
     accent: "#F5F5F0",
   };

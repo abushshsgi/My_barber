@@ -1,6 +1,8 @@
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { WalletGateScreen } from "../screens/wallet/WalletGateScreen";
+import { WalletGiftAmountScreen } from "../screens/wallet/WalletGiftAmountScreen";
 import { WalletGiftScreen } from "../screens/wallet/WalletGiftScreen";
+import { WalletGiftSendScreen } from "../screens/wallet/WalletGiftSendScreen";
 import { WalletGiftsScreen } from "../screens/wallet/WalletGiftsScreen";
 import { WalletHomeScreen } from "../screens/wallet/WalletHomeScreen";
 import { WalletQrPayScreen } from "../screens/wallet/WalletQrPayScreen";
@@ -14,6 +16,8 @@ export type WalletStackParamList = {
   WalletHome: undefined;
   WalletTopUp: undefined;
   WalletGift: undefined;
+  WalletGiftAmount: { designId: string };
+  WalletGiftSend: { designId: string; amount: number };
   WalletGifts: undefined;
   WalletQrPay: undefined;
   WalletTransactions: undefined;
@@ -44,6 +48,8 @@ export function WalletStack() {
       />
       <Stack.Screen name="WalletTopUp" component={WalletTopUpScreen} />
       <Stack.Screen name="WalletGift" component={WalletGiftScreen} />
+      <Stack.Screen name="WalletGiftAmount" component={WalletGiftAmountScreen} />
+      <Stack.Screen name="WalletGiftSend" component={WalletGiftSendScreen} />
       <Stack.Screen name="WalletGifts" component={WalletGiftsScreen} />
       <Stack.Screen name="WalletQrPay" component={WalletQrPayScreen} />
       <Stack.Screen name="WalletTransactions" component={WalletTransactionsScreen} />
