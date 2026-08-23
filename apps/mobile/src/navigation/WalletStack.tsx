@@ -37,6 +37,26 @@ export type WalletScreenName = keyof WalletStackParamList;
 
 const Stack = createNativeStackNavigator<WalletStackParamList>();
 
+const bottomSheetOpts = {
+  presentation: "transparentModal" as const,
+  animation: "slide_from_bottom" as const,
+  contentStyle: { backgroundColor: "transparent" },
+  gestureEnabled: true,
+  gestureDirection: "vertical" as const,
+};
+
+const fromBottomOpts = {
+  animation: "slide_from_bottom" as const,
+  gestureEnabled: true,
+  fullScreenGestureEnabled: true,
+};
+
+const fromRightOpts = {
+  animation: "slide_from_right" as const,
+  gestureEnabled: true,
+  fullScreenGestureEnabled: true,
+};
+
 export function WalletStack() {
   return (
     <Stack.Navigator
@@ -55,16 +75,20 @@ export function WalletStack() {
         component={WalletHomeScreen}
         options={{ contentStyle: { backgroundColor: "#F7F5F2" } }}
       />
-      <Stack.Screen name="WalletTopUp" component={WalletTopUpScreen} />
-      <Stack.Screen name="WalletGift" component={WalletGiftScreen} />
-      <Stack.Screen name="WalletGiftAmount" component={WalletGiftAmountScreen} />
-      <Stack.Screen name="WalletGifts" component={WalletGiftsScreen} />
-      <Stack.Screen name="WalletMore" component={WalletMoreScreen} />
-      <Stack.Screen name="WalletQrPay" component={WalletQrPayScreen} />
-      <Stack.Screen name="WalletTransactions" component={WalletTransactionsScreen} />
-      <Stack.Screen name="WalletRequisites" component={WalletRequisitesScreen} />
-      <Stack.Screen name="WalletFreeze" component={WalletFreezeScreen} />
-      <Stack.Screen name="WalletFaq" component={WalletFaqScreen} />
+      <Stack.Screen name="WalletTopUp" component={WalletTopUpScreen} options={fromRightOpts} />
+      <Stack.Screen name="WalletGift" component={WalletGiftScreen} options={fromRightOpts} />
+      <Stack.Screen name="WalletGiftAmount" component={WalletGiftAmountScreen} options={fromRightOpts} />
+      <Stack.Screen name="WalletGifts" component={WalletGiftsScreen} options={fromRightOpts} />
+      <Stack.Screen name="WalletMore" component={WalletMoreScreen} options={fromRightOpts} />
+      <Stack.Screen name="WalletQrPay" component={WalletQrPayScreen} options={fromBottomOpts} />
+      <Stack.Screen
+        name="WalletTransactions"
+        component={WalletTransactionsScreen}
+        options={fromRightOpts}
+      />
+      <Stack.Screen name="WalletRequisites" component={WalletRequisitesScreen} options={fromRightOpts} />
+      <Stack.Screen name="WalletFreeze" component={WalletFreezeScreen} options={bottomSheetOpts} />
+      <Stack.Screen name="WalletFaq" component={WalletFaqScreen} options={fromRightOpts} />
     </Stack.Navigator>
   );
 }

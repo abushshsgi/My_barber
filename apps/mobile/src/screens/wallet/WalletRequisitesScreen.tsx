@@ -1,8 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import * as Clipboard from "expo-clipboard";
-import { LinearGradient } from "expo-linear-gradient";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState, type ReactNode } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -14,7 +13,6 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "../../auth/AuthContext";
-import { WalletPlasticCard } from "../../components/wallet/WalletPlasticCard";
 import { useHideTabBar } from "../../hooks/useHideTabBar";
 import { useWalletMe } from "../../hooks/useWallet";
 import { formatSomLabel } from "../../lib/wallet-format";
@@ -22,13 +20,25 @@ import type { WalletStackParamList } from "../../navigation/WalletStack";
 
 type Props = NativeStackScreenProps<WalletStackParamList, "WalletRequisites">;
 
-/** Rekvizitlar — karta + nusxa / ulashish. */
+const INK = "#1A1A1A";
+const MUTED = "#8A8A8E";
+const SOFT_BG = "#F7F5F2";
+const ICON_BG = "#F0EEEA";
+
+function groupNumber(raw: string): string {
+  const d = raw.replace(/\D/g, "");
+  if (!d) return "—";
+  return d.replace(/(\d{4})(?=\d)/g, "$1 ").trim();
+}
+
+/** Mening kartam — soft list layout (plastic cardsiz). */
 export function WalletRequisitesScreen({ navigation }: Props) {
   useHideTabBar();
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const me = useWalletMe();
   const [copied, setCopied] = useState<string | null>(null);
+  const [revealed, setRevealed] = useState(false);
 
   const fullName = useMemo(() => {
     const fromParts = [user?.first_name, user?.last_name].filter(Boolean).join(" ").trim();
@@ -37,6 +47,10 @@ export function WalletRequisitesScreen({ navigation }: Props) {
 
   const cardholder = me.card?.cardholder_name?.trim() || fullName;
   const walletRaw = me.walletNumber || "";
+  const masked = walletRaw
+    ? `•••• •••• •••• ${walletRaw.replace(/\D/g, "").slice(-4) || "----"}`
+    : "—";
+  const displayNumber = revealed ? groupNumber(walletRaw) : masked;
 
   const copy = useCallback(async (value: string, key: string) => {
     if (!value || value === "—") return;
@@ -62,70 +76,100 @@ export function WalletRequisitesScreen({ navigation }: Props) {
   }, [walletRaw]);
 
   return (
-    <View style={[styles.root, { paddingBottom: insets.bottom + 12 }]}>
-      <LinearGradient colors={["#111827", "#1F2937", "#F7F5F2"]} locations={[0, 0.35, 0.55]} style={styles.topBg}>
-        <View style={[styles.header, { paddingTop: insets.top + 6 }]}>
-          <Pressable style={styles.backBtn} onPress={() => navigation.goBack()} hitSlop={8}>
-            <Ionicons name="chevron-back" size={22} color="#FFF" />
-          </Pressable>
-          <Text style={styles.headerTitle}>Mening kartam</Text>
-          <Pressable style={styles.backBtn} onPress={() => void onShare()} hitSlop={8}>
-            <Ionicons name="share-outline" size={20} color="#FFF" />
-          </Pressable>
-        </View>
+    <View style={[styles.root, { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 12 }]}>
+      <View style={styles.header}>
+        <Pressable style={styles.iconBtn} onPress={() => navigation.goBack()} hitSlop={8}>
+          <Ionicons name="chevron-back" size={22} color={INK} />
+        </Pressable>
+        <Text style={styles.headerTitle}>Mening kartam</Text>
+        <Pressable style={styles.iconBtn} onPress={() => void onShare()} hitSlop={8}>
+          <Ionicons name="share-outline" size={18} color={INK} />
+        </Pressable>
+      </View>
 
-        <View style={styles.cardPad}>
-          {me.loading && !me.wallet ? (
-            <ActivityIndicator color="#FFF" style={{ marginVertical: 48 }} />
-          ) : (
-            <WalletPlasticCard
-              balance={me.balance}
-              cardholderName={cardholder}
-              walletNumber={walletRaw}
-            />
-          )}
-        </View>
-      </LinearGradient>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
+        {me.loading && !me.wallet ? (
+          <ActivityIndicator color={INK} style={{ marginVertical: 40 }} />
+        ) : (
+          <View style={styles.hero}>
+            <Text style={styles.heroLabel}>Hamyon raqami</Text>
+            <Text style={styles.heroNumber}>{displayNumber}</Text>
+            <Text style={styles.heroBal}>{formatSomLabel(me.balance)}</Text>
+            {me.isFrozen ? (
+              <View style={styles.frozenChip}>
+                <Ionicons name="snow-outline" size={14} color={INK} />
+                <Text style={styles.frozenText}>Muzlatilgan</Text>
+              </View>
+            ) : null}
+          </View>
+        )}
 
-      <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
-        <Text style={styles.section}>Rekvizitlar</Text>
-
-        <View style={styles.panel}>
-          <InfoRow
-            icon="person-outline"
-            label="Karta egasi"
-            value={cardholder}
-            onCopy={() => void copy(cardholder, "holder")}
-            copied={copied === "holder"}
-          />
-          <View style={styles.divider} />
-          <InfoRow
+        <View style={styles.list}>
+          <Row
             icon="card-outline"
-            label="Hamyon raqami"
-            value={walletRaw || "—"}
-            onCopy={() => void copy(walletRaw, "number")}
-            copied={copied === "number"}
-            mono
+            title="Karta ma'lumotlari"
+            subtitle="Raqam, egasi va balans"
+            trailing={
+              <Pressable onPress={() => setRevealed((v) => !v)} hitSlop={8} style={styles.eyeBtn}>
+                <Ionicons name={revealed ? "eye-off-outline" : "eye-outline"} size={18} color={MUTED} />
+              </Pressable>
+            }
+            onPress={() => setRevealed((v) => !v)}
           />
-          <View style={styles.divider} />
-          <InfoRow
-            icon="wallet-outline"
-            label="Balans"
-            value={formatSomLabel(me.balance)}
+          <Divider />
+          <Row
+            icon="person-outline"
+            title="Karta egasi"
+            subtitle={cardholder}
+            onPress={() => void copy(cardholder, "holder")}
+            trailing={
+              <Ionicons
+                name={copied === "holder" ? "checkmark" : "copy-outline"}
+                size={16}
+                color={copied === "holder" ? "#16A34A" : MUTED}
+              />
+            }
+          />
+          <Divider />
+          <Row
+            icon="keypad-outline"
+            title="Hamyon raqami"
+            subtitle={revealed ? groupNumber(walletRaw) : masked}
+            onPress={() => void copy(walletRaw, "number")}
+            trailing={
+              <Ionicons
+                name={copied === "number" ? "checkmark" : "copy-outline"}
+                size={16}
+                color={copied === "number" ? "#16A34A" : MUTED}
+              />
+            }
           />
         </View>
 
-        <View style={styles.actions}>
-          <Pressable style={styles.actionBtn} onPress={() => void copy(walletRaw, "number")}>
-            <Ionicons name="copy-outline" size={18} color="#111" />
-            <Text style={styles.actionText}>
-              {copied === "number" ? "Nusxa olindi" : "Nusxa olish"}
-            </Text>
-          </Pressable>
-          <Pressable style={[styles.actionBtn, styles.actionDark]} onPress={() => void onShare()}>
-            <Ionicons name="share-social-outline" size={18} color="#FFF" />
-            <Text style={[styles.actionText, { color: "#FFF" }]}>Ulashish</Text>
-          </Pressable>
+        <View style={[styles.list, { marginTop: 12 }]}>
+          <Row
+            icon="share-social-outline"
+            title="Ulashish"
+            subtitle="Raqamni do'stga yuborish"
+            onPress={() => void onShare()}
+            chevron
+          />
+          <Divider />
+          <Row
+            icon="snow-outline"
+            title={me.isFrozen ? "Kartani ochish" : "Kartani muzlatish"}
+            subtitle={me.isFrozen ? "Hamyonni yana faollashtirish" : "Har doim ochishingiz mumkin"}
+            onPress={() => navigation.navigate("WalletFreeze")}
+            chevron
+          />
+          <Divider />
+          <Row
+            icon="time-outline"
+            title="Tarix"
+            subtitle="Kirim va chiqimlar"
+            onPress={() => navigation.navigate("WalletTransactions")}
+            chevron
+          />
         </View>
 
         {me.error ? <Text style={styles.err}>{me.error}</Text> : null}
@@ -134,57 +178,50 @@ export function WalletRequisitesScreen({ navigation }: Props) {
   );
 }
 
-function InfoRow({
+function Divider() {
+  return <View style={styles.divider} />;
+}
+
+function Row({
   icon,
-  label,
-  value,
-  onCopy,
-  copied,
-  mono,
+  title,
+  subtitle,
+  onPress,
+  trailing,
+  chevron,
 }: {
   icon: keyof typeof Ionicons.glyphMap;
-  label: string;
-  value: string;
-  onCopy?: () => void;
-  copied?: boolean;
-  mono?: boolean;
+  title: string;
+  subtitle: string;
+  onPress?: () => void;
+  trailing?: ReactNode;
+  chevron?: boolean;
 }) {
   return (
-    <View style={styles.infoRow}>
-      <View style={styles.infoIcon}>
-        <Ionicons name={icon} size={18} color="#111" />
+    <Pressable style={styles.row} onPress={onPress} disabled={!onPress}>
+      <View style={styles.rowIcon}>
+        <Ionicons name={icon} size={20} color={INK} />
       </View>
       <View style={{ flex: 1 }}>
-        <Text style={styles.infoLabel}>{label}</Text>
-        <Text style={[styles.infoValue, mono && styles.mono]} numberOfLines={2}>
-          {value}
+        <Text style={styles.rowTitle}>{title}</Text>
+        <Text style={styles.rowSub} numberOfLines={1}>
+          {subtitle}
         </Text>
       </View>
-      {onCopy ? (
-        <Pressable onPress={onCopy} hitSlop={8} style={styles.copyMini}>
-          <Ionicons
-            name={copied ? "checkmark" : "copy-outline"}
-            size={16}
-            color={copied ? "#16A34A" : "#6B7280"}
-          />
-        </Pressable>
-      ) : null}
-    </View>
+      {trailing}
+      {chevron ? <Ionicons name="chevron-forward" size={18} color="#D1D5DB" /> : null}
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: "#F7F5F2" },
-  topBg: { paddingBottom: 8 },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 12,
-    marginBottom: 12,
-  },
-  backBtn: {
+  root: { flex: 1, backgroundColor: SOFT_BG, paddingHorizontal: 16 },
+  header: { flexDirection: "row", alignItems: "center", marginBottom: 12 },
+  iconBtn: {
     width: 40,
     height: 40,
+    borderRadius: 20,
+    backgroundColor: "#FFF",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -193,65 +230,69 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontSize: 17,
     fontWeight: "800",
-    color: "#FFF",
+    color: INK,
   },
-  cardPad: { paddingHorizontal: 16, marginBottom: 8 },
-  body: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 28 },
-  section: {
-    marginBottom: 10,
-    fontSize: 13,
-    fontWeight: "700",
-    color: "#6B7280",
-  },
-  panel: {
+  scroll: { paddingBottom: 28 },
+  hero: {
     backgroundColor: "#FFF",
-    borderRadius: 22,
-    paddingVertical: 4,
+    borderRadius: 24,
+    paddingVertical: 28,
+    paddingHorizontal: 20,
+    alignItems: "center",
     marginBottom: 16,
   },
-  infoRow: {
+  heroLabel: { fontSize: 12, fontWeight: "600", color: MUTED, marginBottom: 8 },
+  heroNumber: {
+    fontSize: 22,
+    fontWeight: "800",
+    color: INK,
+    letterSpacing: 1.4,
+    textAlign: "center",
+  },
+  heroBal: { marginTop: 10, fontSize: 15, fontWeight: "700", color: MUTED },
+  frozenChip: {
+    marginTop: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: ICON_BG,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+  },
+  frozenText: { fontSize: 12, fontWeight: "700", color: INK },
+  list: {
+    backgroundColor: "#FFF",
+    borderRadius: 22,
+    overflow: "hidden",
+  },
+  row: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
     paddingHorizontal: 14,
     paddingVertical: 14,
   },
-  infoIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: "#F3F4F6",
+  rowIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 13,
+    backgroundColor: ICON_BG,
     alignItems: "center",
     justifyContent: "center",
   },
-  infoLabel: { fontSize: 11, fontWeight: "600", color: "#9CA3AF" },
-  infoValue: { marginTop: 2, fontSize: 15, fontWeight: "700", color: "#111" },
-  mono: { letterSpacing: 0.6, fontSize: 13 },
-  copyMini: {
+  rowTitle: { fontSize: 15, fontWeight: "700", color: INK },
+  rowSub: { marginTop: 2, fontSize: 12, color: MUTED },
+  eyeBtn: {
     width: 36,
     height: 36,
-    borderRadius: 12,
-    backgroundColor: "#F9FAFB",
     alignItems: "center",
     justifyContent: "center",
   },
   divider: {
     height: StyleSheet.hairlineWidth,
     backgroundColor: "rgba(0,0,0,0.06)",
-    marginLeft: 66,
+    marginLeft: 68,
   },
-  actions: { flexDirection: "row", gap: 10 },
-  actionBtn: {
-    flex: 1,
-    height: 48,
-    borderRadius: 16,
-    backgroundColor: "#FFF",
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-  },
-  actionDark: { backgroundColor: "#111" },
-  actionText: { fontSize: 14, fontWeight: "700", color: "#111" },
-  err: { marginTop: 12, color: "#DC2626", textAlign: "center" },
+  err: { marginTop: 14, color: "#B91C1C", fontSize: 13, textAlign: "center" },
 });

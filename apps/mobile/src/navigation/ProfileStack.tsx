@@ -113,16 +113,62 @@ export function ProfileStack() {
         component={WalletHomeScreen}
         options={{ contentStyle: { backgroundColor: "#F7F5F2" } }}
       />
-      <Stack.Screen name="WalletTopUp" component={WalletTopUpScreen} />
-      <Stack.Screen name="WalletGift" component={WalletGiftScreen} />
-      <Stack.Screen name="WalletGiftAmount" component={WalletGiftAmountScreen} />
-      <Stack.Screen name="WalletGifts" component={WalletGiftsScreen} />
-      <Stack.Screen name="WalletMore" component={WalletMoreScreen} />
-      <Stack.Screen name="WalletQrPay" component={WalletQrPayScreen} />
-      <Stack.Screen name="WalletTransactions" component={WalletTransactionsScreen} />
-      <Stack.Screen name="WalletRequisites" component={WalletRequisitesScreen} />
-      <Stack.Screen name="WalletFreeze" component={WalletFreezeScreen} />
-      <Stack.Screen name="WalletFaq" component={WalletFaqScreen} />
+      <Stack.Screen
+        name="WalletTopUp"
+        component={WalletTopUpScreen}
+        options={{ animation: "slide_from_right", gestureEnabled: true, fullScreenGestureEnabled: true }}
+      />
+      <Stack.Screen
+        name="WalletGift"
+        component={WalletGiftScreen}
+        options={{ animation: "slide_from_right", gestureEnabled: true, fullScreenGestureEnabled: true }}
+      />
+      <Stack.Screen
+        name="WalletGiftAmount"
+        component={WalletGiftAmountScreen}
+        options={{ animation: "slide_from_right", gestureEnabled: true, fullScreenGestureEnabled: true }}
+      />
+      <Stack.Screen
+        name="WalletGifts"
+        component={WalletGiftsScreen}
+        options={{ animation: "slide_from_right", gestureEnabled: true, fullScreenGestureEnabled: true }}
+      />
+      <Stack.Screen
+        name="WalletMore"
+        component={WalletMoreScreen}
+        options={{ animation: "slide_from_right", gestureEnabled: true, fullScreenGestureEnabled: true }}
+      />
+      <Stack.Screen
+        name="WalletQrPay"
+        component={WalletQrPayScreen}
+        options={{ animation: "slide_from_bottom", gestureEnabled: true, fullScreenGestureEnabled: true }}
+      />
+      <Stack.Screen
+        name="WalletTransactions"
+        component={WalletTransactionsScreen}
+        options={{ animation: "slide_from_right", gestureEnabled: true, fullScreenGestureEnabled: true }}
+      />
+      <Stack.Screen
+        name="WalletRequisites"
+        component={WalletRequisitesScreen}
+        options={{ animation: "slide_from_right", gestureEnabled: true, fullScreenGestureEnabled: true }}
+      />
+      <Stack.Screen
+        name="WalletFreeze"
+        component={WalletFreezeScreen}
+        options={{
+          presentation: "transparentModal",
+          animation: "slide_from_bottom",
+          contentStyle: { backgroundColor: "transparent" },
+          gestureEnabled: true,
+          gestureDirection: "vertical",
+        }}
+      />
+      <Stack.Screen
+        name="WalletFaq"
+        component={WalletFaqScreen}
+        options={{ animation: "slide_from_right", gestureEnabled: true, fullScreenGestureEnabled: true }}
+      />
     </Stack.Navigator>
   );
 }

@@ -19,15 +19,18 @@ type Props = NativeStackScreenProps<WalletStackParamList, "WalletFreeze">;
 
 const INK = "#1A1A1A";
 const MUTED = "#8A8A8E";
-const SOFT_BG = "#F7F5F2";
 
-/** Kartani muzlatish / ochish — backend `/wallet/freeze/`. */
+/** Pastdan chiqadigan muzlatish / ochish sheet (Uzum uslubi). */
 export function WalletFreezeScreen({ navigation }: Props) {
   useHideTabBar();
   const insets = useSafeAreaInsets();
   const me = useWalletMe();
   const [busy, setBusy] = useState(false);
   const frozen = me.isFrozen;
+
+  const close = () => {
+    if (!busy) navigation.goBack();
+  };
 
   const run = async (action: "freeze" | "unfreeze") => {
     if (busy) return;
@@ -38,62 +41,39 @@ export function WalletFreezeScreen({ navigation }: Props) {
         action === "freeze" ? "Mobil ilovadan muzlatildi" : "Mobil ilovadan ochildi",
       );
       me.refresh();
-      Alert.alert(
-        action === "freeze" ? "Muzlatildi" : "Ochildi",
-        action === "freeze"
-          ? "O'tkazma va QR to'lov vaqtincha to'xtatildi."
-          : "Hamyon yana ishlaydi.",
-      );
+      navigation.goBack();
     } catch (e) {
-      Alert.alert("Xato", e instanceof Error ? e.message : "Amal bajarilmadi");
-    } finally {
       setBusy(false);
+      Alert.alert("Xato", e instanceof Error ? e.message : "Amal bajarilmadi");
     }
   };
 
-  const confirmFreeze = () => {
-    Alert.alert(
-      "Kartani muzlatish?",
-      "O'tkazma, sovg'a va QR to'lov to'xtatiladi. Istalgan paytda ochishingiz mumkin.",
-      [
-        { text: "Bekor", style: "cancel" },
-        { text: "Muzlatish", style: "destructive", onPress: () => void run("freeze") },
-      ],
-    );
-  };
-
   return (
-    <View style={[styles.root, { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 16 }]}>
-      <View style={styles.header}>
-        <Pressable style={styles.back} onPress={() => navigation.goBack()} hitSlop={8}>
-          <Ionicons name="chevron-back" size={22} color={INK} />
-        </Pressable>
-        <Text style={styles.headerTitle}>Kartani muzlatish</Text>
-        <View style={styles.back} />
-      </View>
-
-      <View style={styles.card}>
-        <View style={styles.iconWrap}>
-          <Ionicons name={frozen ? "snow" : "shield-checkmark-outline"} size={28} color={INK} />
-        </View>
-        <Text style={styles.status}>{frozen ? "Muzlatilgan" : "Faol"}</Text>
-        <Text style={styles.body}>
+    <View style={styles.root}>
+      <Pressable style={styles.backdrop} onPress={close} accessibilityLabel="Yopish" />
+      <View style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, 16) + 8 }]}>
+        <View style={styles.handle} />
+        <Text style={styles.title}>{frozen ? "Kartani ochish?" : "Kartani muzlatish?"}</Text>
+        <Text style={styles.desc}>
           {frozen
-            ? "Hamyondan chiqimlar bloklangan. Admin panelda ham ko'rinadi."
-            : "Yo'qotilgan telefon yoki shubhali harakatda kartani darhol muzlating."}
+            ? "Ochilgach o'tkazma, sovg'a va QR to'lov yana ishlaydi. Bir necha soniyada ochasiz."
+            : "To'lov, o'tkazma va QR amallarini qila olmaysiz. Istalgan paytda bir necha soniyada ochishingiz mumkin."}
         </Text>
-        {me.freezeReason ? <Text style={styles.reason}>{me.freezeReason}</Text> : null}
 
         <Pressable
-          style={[styles.cta, busy && { opacity: 0.6 }]}
+          style={[styles.primary, busy && styles.disabled]}
           disabled={busy || me.loading}
-          onPress={() => (frozen ? void run("unfreeze") : confirmFreeze())}
+          onPress={() => void run(frozen ? "unfreeze" : "freeze")}
         >
           {busy ? (
             <ActivityIndicator color="#FFF" />
           ) : (
-            <Text style={styles.ctaText}>{frozen ? "Kartani ochish" : "Kartani muzlatish"}</Text>
+            <Text style={styles.primaryText}>{frozen ? "Ochish" : "Muzlatish"}</Text>
           )}
+        </Pressable>
+
+        <Pressable style={[styles.secondary, busy && styles.disabled]} disabled={busy} onPress={close}>
+          <Text style={styles.secondaryText}>Bekor qilish</Text>
         </Pressable>
       </View>
     </View>
@@ -101,59 +81,54 @@ export function WalletFreezeScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: SOFT_BG, paddingHorizontal: 16 },
-  header: { flexDirection: "row", alignItems: "center", marginBottom: 20 },
-  back: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "#FFF",
-    alignItems: "center",
-    justifyContent: "center",
+  root: { flex: 1, justifyContent: "flex-end" },
+  backdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.45)",
   },
-  headerTitle: {
-    flex: 1,
-    textAlign: "center",
-    fontSize: 17,
+  sheet: {
+    backgroundColor: "#FFF",
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    zIndex: 2,
+  },
+  handle: {
+    alignSelf: "center",
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "#D1D5DB",
+    marginBottom: 18,
+  },
+  title: {
+    fontSize: 22,
     fontWeight: "800",
     color: INK,
+    letterSpacing: -0.4,
+    marginBottom: 10,
   },
-  card: {
-    backgroundColor: "#FFF",
-    borderRadius: 24,
-    padding: 24,
-    alignItems: "center",
-    gap: 10,
-  },
-  iconWrap: {
-    width: 64,
-    height: 64,
-    borderRadius: 20,
-    backgroundColor: "#F0EEEA",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 4,
-  },
-  status: { fontSize: 22, fontWeight: "800", color: INK },
-  body: {
+  desc: {
     fontSize: 14,
     lineHeight: 21,
     color: MUTED,
-    textAlign: "center",
+    marginBottom: 22,
   },
-  reason: {
-    marginTop: 4,
-    fontSize: 12,
-    color: MUTED,
-    fontStyle: "italic",
-  },
-  cta: {
-    marginTop: 14,
-    alignSelf: "stretch",
+  primary: {
     backgroundColor: INK,
     borderRadius: 16,
-    paddingVertical: 14,
+    paddingVertical: 16,
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  primaryText: { color: "#FFF", fontSize: 16, fontWeight: "800" },
+  secondary: {
+    backgroundColor: "#F0EEEA",
+    borderRadius: 16,
+    paddingVertical: 16,
     alignItems: "center",
   },
-  ctaText: { color: "#FFF", fontSize: 15, fontWeight: "800" },
+  secondaryText: { color: INK, fontSize: 16, fontWeight: "700" },
+  disabled: { opacity: 0.6 },
 });
