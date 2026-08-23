@@ -5,6 +5,7 @@ import { WalletGiftScreen } from "../screens/wallet/WalletGiftScreen";
 import { WalletGiftSendScreen } from "../screens/wallet/WalletGiftSendScreen";
 import { WalletGiftsScreen } from "../screens/wallet/WalletGiftsScreen";
 import { WalletHomeScreen } from "../screens/wallet/WalletHomeScreen";
+import { WalletMoreScreen } from "../screens/wallet/WalletMoreScreen";
 import { WalletQrPayScreen } from "../screens/wallet/WalletQrPayScreen";
 import { WalletRequisitesScreen } from "../screens/wallet/WalletRequisitesScreen";
 import { WalletTopUpScreen } from "../screens/wallet/WalletTopUpScreen";
@@ -24,6 +25,7 @@ export type WalletStackParamList = {
   };
   WalletGiftSend: { designId: string; amount: number };
   WalletGifts: undefined;
+  WalletMore: undefined;
   WalletQrPay: undefined;
   WalletTransactions: undefined;
   WalletRequisites: undefined;
@@ -56,6 +58,7 @@ export function WalletStack() {
       <Stack.Screen name="WalletGiftAmount" component={WalletGiftAmountScreen} />
       <Stack.Screen name="WalletGiftSend" component={WalletGiftSendScreen} />
       <Stack.Screen name="WalletGifts" component={WalletGiftsScreen} />
+      <Stack.Screen name="WalletMore" component={WalletMoreScreen} />
       <Stack.Screen name="WalletQrPay" component={WalletQrPayScreen} />
       <Stack.Screen name="WalletTransactions" component={WalletTransactionsScreen} />
       <Stack.Screen name="WalletRequisites" component={WalletRequisitesScreen} />

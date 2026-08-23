@@ -19,6 +19,10 @@ import { useAuth } from "../../auth/AuthContext";
 import { WalletTransactionReceiptSheet } from "../../components/wallet/WalletTransactionReceiptSheet";
 import { TAB_DOCK_CLEARANCE } from "../../hooks/useHideTabBar";
 import { useWalletMe, useWalletTransactions } from "../../hooks/useWallet";
+import {
+  loadRecipientHistory,
+  type RecipientHistoryItem,
+} from "../../lib/recipient-history";
 import type { WalletTx } from "../../lib/wallet-format";
 import type { WalletStackParamList } from "../../navigation/WalletStack";
 
@@ -37,17 +41,15 @@ const CARD_SHADOW = {
 const AVATAR_TONES = ["#F5D0C5", "#C7D2FE", "#BBF7D0", "#FBCFE8", "#FDE68A", "#A5F3FC"];
 
 const QUICK: {
-  key: "WalletGift" | "WalletTopUp" | "WalletQrPay" | "WalletRequisites";
+  key: "WalletGift" | "WalletTopUp" | "WalletQrPay" | "WalletMore";
   label: string;
   icon: keyof typeof Ionicons.glyphMap;
 }[] = [
   { key: "WalletGift", label: "O'tkazma", icon: "arrow-up-outline" },
   { key: "WalletQrPay", label: "To'lov", icon: "arrow-down-outline" },
   { key: "WalletTopUp", label: "To'ldirish", icon: "add" },
-  { key: "WalletRequisites", label: "Ko'proq", icon: "grid-outline" },
+  { key: "WalletMore", label: "Ko'proq", icon: "grid-outline" },
 ];
-
-type QuickContact = { id: string; name: string; short: string };
 
 function formatMoney(n: number): string {
   if (!Number.isFinite(n)) return "0.00";
@@ -85,23 +87,11 @@ function initials(title: string): string {
   return (clean.charAt(0) || "?").toUpperCase();
 }
 
-function avatarColor(id: string): string {
+function avatarColor(id: string | number): string {
+  const s = String(id);
   let h = 0;
-  for (let i = 0; i < id.length; i += 1) h = (h + id.charCodeAt(i) * (i + 1)) % AVATAR_TONES.length;
+  for (let i = 0; i < s.length; i += 1) h = (h + s.charCodeAt(i) * (i + 1)) % AVATAR_TONES.length;
   return AVATAR_TONES[h]!;
-}
-
-function contactFromTx(item: WalletTx): QuickContact | null {
-  const raw =
-    item.kind === "out"
-      ? item.recipientName || item.title.replace(/^Sovg'a · /, "")
-      : item.senderName || item.title.replace(/^Sovg'a · /, "");
-  const name = raw.trim();
-  if (!name || name.startsWith("Hamyon") || name.startsWith("QR") || name.startsWith("Obuna")) {
-    return null;
-  }
-  const short = name.split(/\s+/)[0]!;
-  return { id: item.id, name, short };
 }
 
 export function WalletHomeScreen({ navigation }: Props) {
@@ -112,6 +102,7 @@ export function WalletHomeScreen({ navigation }: Props) {
   const [refreshing, setRefreshing] = useState(false);
   const [hidden, setHidden] = useState(false);
   const [selectedTx, setSelectedTx] = useState<WalletTx | null>(null);
+  const [history, setHistory] = useState<RecipientHistoryItem[]>([]);
 
   const recent = tx.items.slice(0, 8);
   const greetName = firstName(user?.first_name || user?.full_name);
@@ -120,34 +111,30 @@ export function WalletHomeScreen({ navigation }: Props) {
     [hidden, me.balance],
   );
 
-  const quickContacts = useMemo(() => {
-    const seen = new Set<string>();
-    const list: QuickContact[] = [];
-    for (const item of tx.items) {
-      if (!item.entryType.startsWith("gift")) continue;
-      const c = contactFromTx(item);
-      if (!c) continue;
-      const key = c.name.toLowerCase();
-      if (seen.has(key)) continue;
-      seen.add(key);
-      list.push(c);
-      if (list.length >= 5) break;
+  const quickContacts = useMemo(() => history.slice(0, 8), [history]);
+
+  const reloadHistory = useCallback(() => {
+    if (!user?.id) {
+      setHistory([]);
+      return;
     }
-    return list;
-  }, [tx.items]);
+    void loadRecipientHistory(user.id).then(setHistory);
+  }, [user?.id]);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     me.refresh();
     tx.refresh();
+    reloadHistory();
     setTimeout(() => setRefreshing(false), 700);
-  }, [me, tx]);
+  }, [me, tx, reloadHistory]);
 
   useFocusEffect(
     useCallback(() => {
       me.refresh();
       tx.refresh();
-    }, [me.refresh, tx.refresh]),
+      reloadHistory();
+    }, [me.refresh, tx.refresh, reloadHistory]),
   );
 
   const requireAuth = useCallback(() => {
@@ -159,6 +146,19 @@ export function WalletHomeScreen({ navigation }: Props) {
   const goBackSafe = useCallback(() => {
     if (navigation.canGoBack()) navigation.goBack();
   }, [navigation]);
+
+  const openRecipient = useCallback(
+    (h: RecipientHistoryItem) => {
+      if (!requireAuth()) return;
+      navigation.navigate("WalletGiftAmount", {
+        recipientUserId: h.userId,
+        recipientName: h.fullName,
+        recipientPhone: null,
+        recipientWallet: h.walletMasked,
+      });
+    },
+    [navigation, requireAuth],
+  );
 
   return (
     <View style={styles.root}>
@@ -250,20 +250,22 @@ export function WalletHomeScreen({ navigation }: Props) {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.contactsRow}
           >
-            {quickContacts.map((c) => (
+            {quickContacts.map((h) => (
               <Pressable
-                key={c.id}
+                key={h.userId}
                 style={styles.contactItem}
-                onPress={() => {
-                  if (!requireAuth()) return;
-                  navigation.navigate("WalletGift");
-                }}
+                onPress={() => openRecipient(h)}
               >
-                <View style={[styles.contactAvatar, { backgroundColor: avatarColor(c.id) }]}>
-                  <Text style={styles.contactInitials}>{initials(c.name)}</Text>
+                <View style={[styles.contactAvatar, { backgroundColor: avatarColor(h.userId) }]}>
+                  <Text style={styles.contactInitials}>{initials(h.fullName)}</Text>
+                  {h.lastSentAt ? (
+                    <View style={styles.sentDot}>
+                      <Ionicons name="checkmark" size={8} color="#FFF" />
+                    </View>
+                  ) : null}
                 </View>
                 <Text style={styles.contactName} numberOfLines={1}>
-                  {c.short}
+                  {h.fullName.split(/\s+/)[0]}
                 </Text>
               </Pressable>
             ))}
@@ -474,6 +476,19 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     alignItems: "center",
     justifyContent: "center",
+  },
+  sentDot: {
+    position: "absolute",
+    right: 0,
+    bottom: 0,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: "#16A34A",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 2,
+    borderColor: "#F7F5F2",
   },
   contactInitials: { fontSize: 15, fontWeight: "700", color: INK },
   contactName: { fontSize: 12, fontWeight: "500", color: "#4B5563", textAlign: "center" },
