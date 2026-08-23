@@ -328,7 +328,10 @@ from wallet.admin_accounts_views import (
 from wallet.payment_confirm import PaymentConfirmView
 from wallet.payment_views import PaymentCheckoutView, PaymentProvidersView
 from wallet.views import (
+    AdminWalletFreezeView,
+    AdminWalletFrozenListView,
     AdminWalletTopUpView,
+    WalletFreezeView,
     WalletGiftDesignsView,
     WalletGiftReceivedView,
     WalletGiftSendView,
@@ -655,6 +658,7 @@ api_routes = [
     path("support/tickets/<int:pk>/", UserSupportTicketDetailView.as_view()),
     path("support/tickets/<int:pk>/replies/", UserSupportTicketReplyView.as_view()),
     path("wallet/me/", WalletMeView.as_view()),
+    path("wallet/freeze/", WalletFreezeView.as_view()),
     path("wallet/transactions/", WalletTransactionsView.as_view()),
     path("wallet/top-up/", WalletTopUpView.as_view()),
     path("wallet/top-up/receiving-card/", WalletReceivingCardView.as_view()),
@@ -671,6 +675,8 @@ api_routes = [
     path("payments/checkout/", PaymentCheckoutView.as_view()),
     path("payments/confirm/", PaymentConfirmView.as_view()),
     path("admin/wallet/top-up/", AdminWalletTopUpView.as_view()),
+    path("admin/wallet/frozen/", AdminWalletFrozenListView.as_view()),
+    path("admin/wallet/<int:wallet_id>/freeze/", AdminWalletFreezeView.as_view()),
     path("admin/wallet/deposits/", AdminWalletDepositsView.as_view()),
     path("admin/wallet/deposits/<uuid:deposit_id>/approve/", AdminWalletDepositApproveView.as_view()),
     path("admin/wallet/deposits/<uuid:deposit_id>/reject/", AdminWalletDepositRejectView.as_view()),

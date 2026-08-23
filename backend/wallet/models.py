@@ -5,6 +5,10 @@ from django.db import models
 
 
 class Wallet(models.Model):
+    class FreezeBy(models.TextChoices):
+        USER = "user", "Foydalanuvchi"
+        ADMIN = "admin", "Admin"
+
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -12,6 +16,19 @@ class Wallet(models.Model):
     )
     wallet_number = models.CharField(max_length=19, unique=True, db_index=True)
     balance = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    is_frozen = models.BooleanField(default=False, db_index=True)
+    frozen_at = models.DateTimeField(null=True, blank=True)
+    frozen_by = models.CharField(
+        max_length=16,
+        choices=FreezeBy.choices,
+        blank=True,
+        default="",
+    )
+    frozen_by_user_id = models.PositiveIntegerField(null=True, blank=True)
+    frozen_by_admin_id = models.PositiveIntegerField(null=True, blank=True)
+    frozen_by_label = models.CharField(max_length=255, blank=True, default="")
+    freeze_reason = models.CharField(max_length=500, blank=True, default="")
+    freeze_log = models.JSONField(default=list, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

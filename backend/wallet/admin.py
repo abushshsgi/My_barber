@@ -10,9 +10,37 @@ class WalletCardInline(admin.StackedInline):
 
 @admin.register(Wallet)
 class WalletAdmin(admin.ModelAdmin):
-    list_display = ("wallet_number", "user", "balance", "created_at")
-    search_fields = ("wallet_number", "user__phone", "user__full_name", "user__email")
-    readonly_fields = ("wallet_number", "balance", "created_at", "updated_at")
+    list_display = (
+        "wallet_number",
+        "user",
+        "balance",
+        "is_frozen",
+        "frozen_by",
+        "frozen_at",
+        "created_at",
+    )
+    list_filter = ("is_frozen", "frozen_by")
+    search_fields = (
+        "wallet_number",
+        "user__phone",
+        "user__full_name",
+        "user__email",
+        "frozen_by_label",
+    )
+    readonly_fields = (
+        "wallet_number",
+        "balance",
+        "is_frozen",
+        "frozen_at",
+        "frozen_by",
+        "frozen_by_user_id",
+        "frozen_by_admin_id",
+        "frozen_by_label",
+        "freeze_reason",
+        "freeze_log",
+        "created_at",
+        "updated_at",
+    )
     inlines = [WalletCardInline]
 
 

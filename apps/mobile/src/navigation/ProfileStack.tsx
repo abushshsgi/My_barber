@@ -17,6 +17,8 @@ import { SecurityPasswordScreen } from "../screens/profile/SecurityPasswordScree
 import { SecuritySessionsScreen } from "../screens/profile/SecuritySessionsScreen";
 import { SubscriptionsScreen } from "../screens/profile/SubscriptionsScreen";
 import { ReferralScreen } from "../screens/profile/ReferralScreen";
+import { WalletFaqScreen } from "../screens/wallet/WalletFaqScreen";
+import { WalletFreezeScreen } from "../screens/wallet/WalletFreezeScreen";
 import { WalletGiftAmountScreen } from "../screens/wallet/WalletGiftAmountScreen";
 import { WalletGiftScreen } from "../screens/wallet/WalletGiftScreen";
 import { WalletGiftsScreen } from "../screens/wallet/WalletGiftsScreen";
@@ -25,7 +27,6 @@ import { WalletHomeScreen } from "../screens/wallet/WalletHomeScreen";
 import { WalletMoreScreen } from "../screens/wallet/WalletMoreScreen";
 import { WalletQrPayScreen } from "../screens/wallet/WalletQrPayScreen";
 import { WalletRequisitesScreen } from "../screens/wallet/WalletRequisitesScreen";
-import { WalletSoonScreen } from "../screens/wallet/WalletSoonScreen";
 import { WalletTopUpScreen } from "../screens/wallet/WalletTopUpScreen";
 import { WalletTransactionsScreen } from "../screens/wallet/WalletTransactionsScreen";
 
@@ -59,8 +60,8 @@ export type ProfileStackParamList = {
   WalletQrPay: undefined;
   WalletTransactions: undefined;
   WalletRequisites: undefined;
-  WalletLimits: undefined;
-  WalletAlerts: undefined;
+  WalletFreeze: undefined;
+  WalletFaq: undefined;
 };
 
 const Stack = createNativeStackNavigator<ProfileStackParamList>();
@@ -120,8 +121,8 @@ export function ProfileStack() {
       <Stack.Screen name="WalletQrPay" component={WalletQrPayScreen} />
       <Stack.Screen name="WalletTransactions" component={WalletTransactionsScreen} />
       <Stack.Screen name="WalletRequisites" component={WalletRequisitesScreen} />
-      <Stack.Screen name="WalletLimits" component={WalletSoonScreen} />
-      <Stack.Screen name="WalletAlerts" component={WalletSoonScreen} />
+      <Stack.Screen name="WalletFreeze" component={WalletFreezeScreen} />
+      <Stack.Screen name="WalletFaq" component={WalletFaqScreen} />
     </Stack.Navigator>
   );
 }

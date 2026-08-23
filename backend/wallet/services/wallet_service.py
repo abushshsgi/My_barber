@@ -34,7 +34,123 @@ class InsufficientBalanceError(WalletServiceError):
     pass
 
 
+class WalletFrozenError(WalletServiceError):
+    pass
+
+
 class WalletService:
+    @staticmethod
+    def assert_not_frozen(wallet: Wallet, *, action: str = "amal") -> None:
+        if wallet.is_frozen:
+            raise WalletFrozenError(
+                f"Hamyon muzlatilgan — {action} qilib bo'lmaydi. Avval kartani oching."
+            )
+
+    @classmethod
+    @transaction.atomic
+    def freeze_wallet(
+        cls,
+        *,
+        wallet: Wallet,
+        actor_type: str,
+        reason: str = "",
+        actor_user_id: int | None = None,
+        actor_admin_id: int | None = None,
+        actor_label: str = "",
+    ) -> Wallet:
+        wallet = Wallet.objects.select_for_update().get(pk=wallet.pk)
+        if wallet.is_frozen:
+            return wallet
+        now = timezone.now()
+        reason = (reason or "").strip()[:500]
+        label = (actor_label or "").strip()[:255]
+        log = list(wallet.freeze_log or [])
+        log.append(
+            {
+                "action": "freeze",
+                "at": now.isoformat(),
+                "actor_type": actor_type,
+                "actor_user_id": actor_user_id,
+                "actor_admin_id": actor_admin_id,
+                "actor_label": label,
+                "reason": reason,
+            }
+        )
+        wallet.is_frozen = True
+        wallet.frozen_at = now
+        wallet.frozen_by = actor_type
+        wallet.frozen_by_user_id = actor_user_id
+        wallet.frozen_by_admin_id = actor_admin_id
+        wallet.frozen_by_label = label
+        wallet.freeze_reason = reason
+        wallet.freeze_log = log[-50:]
+        wallet.save(
+            update_fields=[
+                "is_frozen",
+                "frozen_at",
+                "frozen_by",
+                "frozen_by_user_id",
+                "frozen_by_admin_id",
+                "frozen_by_label",
+                "freeze_reason",
+                "freeze_log",
+                "updated_at",
+            ]
+        )
+        return wallet
+
+    @classmethod
+    @transaction.atomic
+    def unfreeze_wallet(
+        cls,
+        *,
+        wallet: Wallet,
+        actor_type: str,
+        reason: str = "",
+        actor_user_id: int | None = None,
+        actor_admin_id: int | None = None,
+        actor_label: str = "",
+    ) -> Wallet:
+        wallet = Wallet.objects.select_for_update().get(pk=wallet.pk)
+        if not wallet.is_frozen:
+            return wallet
+        now = timezone.now()
+        reason = (reason or "").strip()[:500]
+        label = (actor_label or "").strip()[:255]
+        log = list(wallet.freeze_log or [])
+        log.append(
+            {
+                "action": "unfreeze",
+                "at": now.isoformat(),
+                "actor_type": actor_type,
+                "actor_user_id": actor_user_id,
+                "actor_admin_id": actor_admin_id,
+                "actor_label": label,
+                "reason": reason,
+            }
+        )
+        wallet.is_frozen = False
+        wallet.frozen_at = None
+        wallet.frozen_by = ""
+        wallet.frozen_by_user_id = None
+        wallet.frozen_by_admin_id = None
+        wallet.frozen_by_label = ""
+        wallet.freeze_reason = ""
+        wallet.freeze_log = log[-50:]
+        wallet.save(
+            update_fields=[
+                "is_frozen",
+                "frozen_at",
+                "frozen_by",
+                "frozen_by_user_id",
+                "frozen_by_admin_id",
+                "frozen_by_label",
+                "freeze_reason",
+                "freeze_log",
+                "updated_at",
+            ]
+        )
+        return wallet
     @staticmethod
     def cardholder_name(user: User) -> str:
         name = (user.full_name or "").strip()
@@ -117,6 +233,9 @@ class WalletService:
             return existing
 
         wallet = Wallet.objects.select_for_update().get(pk=wallet.pk)
+        # Debit (chiqim) muzlatilgan hamyonda taqiqlanadi; kirim (topup/gift_in) ochiq.
+        if amount < 0:
+            cls.assert_not_frozen(wallet, action="chiqim")
         new_balance = wallet.balance + amount
         if new_balance < 0:
             raise InsufficientBalanceError(
@@ -251,6 +370,8 @@ class WalletService:
             recipient_wallet_number=recipient_wallet_number,
         )
         platform_wallet = cls.ensure_platform_wallet()
+        cls.assert_not_frozen(sender_wallet, action="o'tkazma")
+        cls.assert_not_frozen(recipient_wallet, action="qabul")
 
         if sender_wallet.pk == recipient_wallet.pk:
             raise WalletServiceError("O'zingizga sovg'a yuborib bo'lmaydi.")

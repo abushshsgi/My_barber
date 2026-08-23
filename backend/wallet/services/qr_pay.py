@@ -259,6 +259,7 @@ class QrPayService:
         if not clean_note and resolved.get("request"):
             clean_note = (resolved["request"].get("note") or "")[:200]
         wallet = WalletService.ensure_wallet(payer)
+        WalletService.assert_not_frozen(wallet, action="QR to'lov")
         barber_wallet = BarberWalletService.ensure_wallet(barber)
 
         with transaction.atomic():

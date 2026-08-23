@@ -339,3 +339,147 @@ class AdminWalletTopUpView(APIView):
                 "entry": LedgerEntrySerializer(entry).data,
             }
         )
+
+
+def _actor_label(user) -> str:
+    return (
+        (getattr(user, "full_name", None) or "").strip()
+        or (getattr(user, "email", None) or "").strip()
+        or (getattr(user, "phone", None) or "").strip()
+        or f"id:{getattr(user, 'pk', '')}"
+    )
+
+
+class WalletFreezeView(APIView):
+    """Foydalanuvchi o'z kartasini muzlatadi / ochadi."""
+
+    permission_classes = [IsAuthenticatedCustomer]
+
+    def post(self, request):
+        action = (request.data.get("action") or "freeze").strip().lower()
+        reason = (request.data.get("reason") or "").strip()
+        wallet = WalletService.ensure_wallet(request.user)
+        label = _actor_label(request.user)
+        try:
+            if action == "unfreeze":
+                wallet = WalletService.unfreeze_wallet(
+                    wallet=wallet,
+                    actor_type=Wallet.FreezeBy.USER,
+                    reason=reason or "Foydalanuvchi ochdi",
+                    actor_user_id=request.user.pk,
+                    actor_label=label,
+                )
+            else:
+                wallet = WalletService.freeze_wallet(
+                    wallet=wallet,
+                    actor_type=Wallet.FreezeBy.USER,
+                    reason=reason or "Foydalanuvchi muzlatdi",
+                    actor_user_id=request.user.pk,
+                    actor_label=label,
+                )
+        except WalletServiceError as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(WalletMeSerializer(wallet).data)
+
+
+class AdminWalletFrozenListView(APIView):
+    """Muzlatilgan hamyonlar — admin paneli."""
+
+    permission_classes = [IsAdmin]
+
+    def get(self, request):
+        q = (request.query_params.get("q") or "").strip()
+        qs = (
+            Wallet.objects.filter(is_frozen=True)
+            .select_related("user", "card")
+            .order_by("-frozen_at", "-updated_at")
+        )
+        if q:
+            qs = qs.filter(
+                Q(wallet_number__icontains=q)
+                | Q(user__full_name__icontains=q)
+                | Q(user__phone__icontains=q)
+                | Q(user__email__icontains=q)
+                | Q(frozen_by_label__icontains=q)
+            )
+        results = []
+        for w in qs[:200]:
+            u = w.user
+            results.append(
+                {
+                    "id": w.pk,
+                    "wallet_number": w.wallet_number,
+                    "balance": w.balance,
+                    "is_frozen": w.is_frozen,
+                    "frozen_at": w.frozen_at,
+                    "frozen_by": w.frozen_by,
+                    "frozen_by_label": w.frozen_by_label,
+                    "frozen_by_user_id": w.frozen_by_user_id,
+                    "frozen_by_admin_id": w.frozen_by_admin_id,
+                    "freeze_reason": w.freeze_reason,
+                    "freeze_log": w.freeze_log or [],
+                    "user": {
+                        "id": u.pk,
+                        "full_name": u.full_name or "",
+                        "phone": u.phone or "",
+                        "email": u.email or "",
+                    },
+                    "cardholder_name": getattr(getattr(w, "card", None), "cardholder_name", "")
+                    or "",
+                }
+            )
+        return Response({"count": len(results), "results": results})
+
+
+class AdminWalletFreezeView(APIView):
+    """Admin: foydalanuvchi hamyonini muzlatish / ochish."""
+
+    permission_classes = [IsAdmin]
+
+    def post(self, request, wallet_id: int):
+        action = (request.data.get("action") or "freeze").strip().lower()
+        reason = (request.data.get("reason") or "").strip()
+        wallet = (
+            Wallet.objects.select_related("user", "card").filter(pk=wallet_id).first()
+        )
+        if not wallet:
+            return Response({"detail": "Hamyon topilmadi."}, status=status.HTTP_404_NOT_FOUND)
+        label = _actor_label(request.user)
+        try:
+            if action == "unfreeze":
+                wallet = WalletService.unfreeze_wallet(
+                    wallet=wallet,
+                    actor_type=Wallet.FreezeBy.ADMIN,
+                    reason=reason or "Admin ochdi",
+                    actor_admin_id=request.user.pk,
+                    actor_label=label,
+                )
+            else:
+                wallet = WalletService.freeze_wallet(
+                    wallet=wallet,
+                    actor_type=Wallet.FreezeBy.ADMIN,
+                    reason=reason or "Admin muzlatdi",
+                    actor_admin_id=request.user.pk,
+                    actor_label=label,
+                )
+        except WalletServiceError as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        u = wallet.user
+        return Response(
+            {
+                "id": wallet.pk,
+                "wallet_number": wallet.wallet_number,
+                "is_frozen": wallet.is_frozen,
+                "frozen_at": wallet.frozen_at,
+                "frozen_by": wallet.frozen_by,
+                "frozen_by_label": wallet.frozen_by_label,
+                "freeze_reason": wallet.freeze_reason,
+                "freeze_log": wallet.freeze_log or [],
+                "user": {
+                    "id": u.pk,
+                    "full_name": u.full_name or "",
+                    "phone": u.phone or "",
+                    "email": u.email or "",
+                },
+            }
+        )

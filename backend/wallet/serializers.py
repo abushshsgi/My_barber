@@ -16,7 +16,16 @@ class WalletMeSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Wallet
-        fields = ("wallet_number", "balance", "card", "created_at")
+        fields = (
+            "wallet_number",
+            "balance",
+            "card",
+            "created_at",
+            "is_frozen",
+            "frozen_at",
+            "frozen_by",
+            "freeze_reason",
+        )
 
 
 class LedgerEntrySerializer(serializers.ModelSerializer):

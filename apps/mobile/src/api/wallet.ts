@@ -12,6 +12,10 @@ export type ApiWalletMe = {
   balance: string | number;
   card: ApiWalletCard;
   created_at: string;
+  is_frozen?: boolean;
+  frozen_at?: string | null;
+  frozen_by?: string;
+  freeze_reason?: string;
 };
 
 export type ApiLedgerEntry = {
@@ -177,6 +181,13 @@ export async function fetchWalletMe(): Promise<ApiWalletMe> {
 /** Hamyon ochish / ensure — backend `WalletService.ensure_wallet`. */
 export async function openWallet(): Promise<ApiWalletMe> {
   return fetchWalletMe();
+}
+
+export async function setWalletFreeze(action: "freeze" | "unfreeze", reason?: string): Promise<ApiWalletMe> {
+  return apiJson<ApiWalletMe>("/api/v1/wallet/freeze/", {
+    method: "POST",
+    body: JSON.stringify({ action, reason: reason || "" }),
+  });
 }
 
 export async function fetchWalletTransactions(params?: {

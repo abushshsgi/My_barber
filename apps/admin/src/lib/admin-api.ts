@@ -4678,6 +4678,42 @@ export async function rejectAdminCardDeposit(id: string, note?: string): Promise
   });
 }
 
+export type AdminFrozenWallet = {
+  id: number;
+  wallet_number: string;
+  balance: string | number;
+  is_frozen: boolean;
+  frozen_at: string | null;
+  frozen_by: string;
+  frozen_by_label: string;
+  frozen_by_user_id: number | null;
+  frozen_by_admin_id: number | null;
+  freeze_reason: string;
+  freeze_log: Array<Record<string, unknown>>;
+  user: { id: number; full_name: string; phone: string; email: string };
+  cardholder_name: string;
+};
+
+export async function fetchAdminFrozenWallets(params?: {
+  q?: string;
+}): Promise<{ count: number; results: AdminFrozenWallet[] }> {
+  const sp = new URLSearchParams();
+  if (params?.q) sp.set("q", params.q);
+  const qs = sp.toString();
+  return apiJson(`/api/v1/admin/wallet/frozen/${qs ? `?${qs}` : ""}`);
+}
+
+export async function setAdminWalletFreeze(
+  walletId: number,
+  action: "freeze" | "unfreeze",
+  reason?: string,
+): Promise<AdminFrozenWallet> {
+  return apiJson(`/api/v1/admin/wallet/${walletId}/freeze/`, {
+    method: "POST",
+    body: JSON.stringify({ action, reason: reason || "" }),
+  });
+}
+
 export type LedgerLookupSuggestion = {
   kind: string;
   kind_label: string;
