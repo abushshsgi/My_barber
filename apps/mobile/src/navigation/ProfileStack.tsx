@@ -22,6 +22,7 @@ import { WalletGiftsScreen } from "../screens/wallet/WalletGiftsScreen";
 import { WalletGateScreen } from "../screens/wallet/WalletGateScreen";
 import { WalletHomeScreen } from "../screens/wallet/WalletHomeScreen";
 import { WalletQrPayScreen } from "../screens/wallet/WalletQrPayScreen";
+import { WalletRequisitesScreen } from "../screens/wallet/WalletRequisitesScreen";
 import { WalletTopUpScreen } from "../screens/wallet/WalletTopUpScreen";
 import { WalletTransactionsScreen } from "../screens/wallet/WalletTransactionsScreen";
 
@@ -47,6 +48,7 @@ export type ProfileStackParamList = {
   WalletGifts: undefined;
   WalletQrPay: undefined;
   WalletTransactions: undefined;
+  WalletRequisites: undefined;
 };
 
 const Stack = createNativeStackNavigator<ProfileStackParamList>();
@@ -103,6 +105,7 @@ export function ProfileStack() {
       <Stack.Screen name="WalletGifts" component={WalletGiftsScreen} />
       <Stack.Screen name="WalletQrPay" component={WalletQrPayScreen} />
       <Stack.Screen name="WalletTransactions" component={WalletTransactionsScreen} />
+      <Stack.Screen name="WalletRequisites" component={WalletRequisitesScreen} />
     </Stack.Navigator>
   );
 }

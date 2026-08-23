@@ -1,12 +1,12 @@
 import { Ionicons } from "@expo/vector-icons";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { StatusBar } from "expo-status-bar";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Dimensions,
-  Platform,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -16,8 +16,10 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { morfMarkWhite } from "../../branding/morf-logo";
 import { useHideTabBar } from "../../hooks/useHideTabBar";
 import { useWalletMe, useWalletTransactions } from "../../hooks/useWallet";
+import { useAppShell } from "../../lib/AppShellContext";
 import type { WalletTx } from "../../lib/wallet-format";
 import type { WalletStackParamList } from "../../navigation/WalletStack";
 
@@ -31,7 +33,7 @@ const INK = "#111827";
 const AVATAR_TONES = ["#C4B5FD", "#FDBA74", "#6EE7B7", "#F9A8D4", "#93C5FD"];
 
 const QUICK: {
-  key: "WalletGift" | "WalletTopUp" | "WalletQrPay";
+  key: "WalletGift" | "WalletTopUp" | "WalletQrPay" | "WalletRequisites";
   label: string;
   icon: keyof typeof Ionicons.glyphMap;
   colors: [string, string];
@@ -39,6 +41,12 @@ const QUICK: {
   { key: "WalletGift", label: "O'tkazma", icon: "swap-horizontal", colors: ["#EDE9FE", "#DDD6FE"] },
   { key: "WalletTopUp", label: "To'ldirish", icon: "card-outline", colors: ["#FFEDD5", "#FED7AA"] },
   { key: "WalletQrPay", label: "To'lov", icon: "arrow-up", colors: ["#D1FAE5", "#A7F3D0"] },
+  {
+    key: "WalletRequisites",
+    label: "Rekvizit",
+    icon: "document-text-outline",
+    colors: ["#DBEAFE", "#BFDBFE"],
+  },
 ];
 
 function formatMoney(n: number): string {
@@ -78,8 +86,10 @@ export function WalletHomeScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
   const me = useWalletMe();
   const tx = useWalletTransactions("all");
+  const { beginSwitch, endSwitch, switchToMorphTarget } = useAppShell();
   const [refreshing, setRefreshing] = useState(false);
   const [hidden, setHidden] = useState(false);
+  const switching = useRef(false);
 
   const recent = tx.items.slice(0, 8);
   const tabH = 64 + Math.max(insets.bottom, 10);
@@ -110,6 +120,28 @@ export function WalletHomeScreen({ navigation }: Props) {
   const goHomeTab = () => {
     navigation.getParent()?.navigate("Home" as never);
   };
+
+  const goMorphAi = useCallback(() => {
+    if (switching.current) return;
+    switching.current = true;
+    beginSwitch("morph");
+    void (async () => {
+      try {
+        const target = await switchToMorphTarget();
+        const tab = navigation.getParent();
+        if (target === "MorphTryOn") {
+          tab?.navigate("MorphTryOn" as never, { screen: "MorphCapture" } as never);
+        } else {
+          tab?.navigate(target as never);
+        }
+      } finally {
+        setTimeout(() => {
+          endSwitch();
+          switching.current = false;
+        }, 700);
+      }
+    })();
+  }, [beginSwitch, endSwitch, switchToMorphTarget, navigation]);
 
   return (
     <View style={styles.root}>
@@ -142,7 +174,14 @@ export function WalletHomeScreen({ navigation }: Props) {
                 </View>
                 <Text style={styles.brandName}>Mysaloon</Text>
               </View>
-              <View style={styles.backBtn} />
+              <Pressable
+                onPress={() => navigation.navigate("WalletRequisites")}
+                hitSlop={10}
+                style={styles.backBtn}
+                accessibilityLabel="Rekvizitlar"
+              >
+                <Ionicons name="card-outline" size={20} color="#FFF" />
+              </Pressable>
             </View>
 
             <Text style={styles.balanceLabel}>Hamyon balansi</Text>
@@ -156,6 +195,15 @@ export function WalletHomeScreen({ navigation }: Props) {
                 <Ionicons name={hidden ? "eye-off-outline" : "eye-outline"} size={18} color="rgba(255,255,255,0.85)" />
               </Pressable>
             </View>
+
+            {me.walletNumber ? (
+              <Pressable style={styles.walletChip} onPress={() => navigation.navigate("WalletRequisites")}>
+                <Text style={styles.walletChipText}>
+                  {me.walletNumber.replace(/(.{4})/g, "$1 ").trim()}
+                </Text>
+                <Ionicons name="chevron-forward" size={14} color="rgba(255,255,255,0.75)" />
+              </Pressable>
+            ) : null}
 
             <View style={styles.ctaRow}>
               <Pressable style={styles.cta} onPress={() => navigation.navigate("WalletGift")}>
@@ -182,8 +230,8 @@ export function WalletHomeScreen({ navigation }: Props) {
           <View style={[styles.sheet, { minHeight: sheetMin, paddingBottom: tabH + 16 }]}>
             <View style={styles.sectionHead}>
               <Text style={styles.sectionTitle}>Tezkor amallar</Text>
-              <Pressable onPress={() => navigation.navigate("WalletGift")}>
-                <Text style={styles.seeMore}>Barchasi</Text>
+              <Pressable onPress={() => navigation.navigate("WalletRequisites")}>
+                <Text style={styles.seeMore}>Rekvizitlar</Text>
               </Pressable>
             </View>
 
@@ -234,19 +282,19 @@ export function WalletHomeScreen({ navigation }: Props) {
           <View style={styles.fabSlot}>
             <Pressable
               style={styles.fab}
-              onPress={() => navigation.navigate("WalletQrPay")}
+              onPress={goMorphAi}
               accessibilityRole="button"
-              accessibilityLabel="QR to'lov"
+              accessibilityLabel="Morf AI"
             >
-              <Ionicons name="scan" size={26} color="#FFF" />
+              <Image source={morfMarkWhite} style={styles.fabLogo} contentFit="contain" />
             </Pressable>
-            <Text style={styles.fabLabel}>To'lov</Text>
+            <Text style={styles.fabLabel}>Morf AI</Text>
           </View>
           <TabItem
-            icon="stats-chart-outline"
-            label="Statistika"
+            icon="document-text-outline"
+            label="Rekvizit"
             active={false}
-            onPress={() => navigation.navigate("WalletTransactions")}
+            onPress={() => navigation.navigate("WalletRequisites")}
           />
           <TabItem
             icon="person-outline"
@@ -319,202 +367,197 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 22,
+    marginBottom: 18,
   },
-  backBtn: { width: 40, height: 40, alignItems: "center", justifyContent: "center" },
+  backBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255,255,255,0.14)",
+  },
   brand: { flexDirection: "row", alignItems: "center", gap: 8 },
   brandMark: {
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: "#FFF",
+    backgroundColor: "rgba(255,255,255,0.2)",
     alignItems: "center",
     justifyContent: "center",
   },
-  brandDollar: { fontSize: 15, fontWeight: "800", color: "#5B4ED6" },
-  brandName: { fontSize: 18, fontWeight: "700", color: "#FFF", letterSpacing: -0.3 },
+  brandDollar: { color: "#FFF", fontWeight: "800", fontSize: 14 },
+  brandName: { color: "#FFF", fontWeight: "700", fontSize: 17, letterSpacing: -0.2 },
   balanceLabel: {
-    textAlign: "center",
+    color: "rgba(255,255,255,0.72)",
     fontSize: 13,
-    color: "rgba(255,255,255,0.78)",
     fontWeight: "500",
+    marginBottom: 6,
   },
-  balanceRow: {
-    marginTop: 6,
+  balanceRow: { flexDirection: "row", alignItems: "center", gap: 10 },
+  balance: {
+    color: "#FFF",
+    fontSize: 42,
+    fontWeight: "700",
+    letterSpacing: -1.2,
+  },
+  eyeBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255,255,255,0.12)",
+  },
+  walletChip: {
+    marginTop: 10,
+    alignSelf: "flex-start",
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 999,
+    backgroundColor: "rgba(255,255,255,0.14)",
   },
-  balance: {
-    fontSize: 36,
-    fontWeight: "800",
-    color: "#FFF",
-    letterSpacing: -1.2,
-    fontVariant: ["tabular-nums"],
+  walletChipText: {
+    color: "rgba(255,255,255,0.92)",
+    fontSize: 12,
+    fontWeight: "600",
+    letterSpacing: 0.6,
   },
-  eyeBtn: { paddingTop: 4 },
-  ctaRow: { marginTop: 22, flexDirection: "row", gap: 12 },
+  ctaRow: { flexDirection: "row", gap: 10, marginTop: 18 },
   cta: {
     flex: 1,
+    height: 46,
+    borderRadius: 999,
     backgroundColor: "#FFF",
-    borderRadius: 28,
-    paddingVertical: 14,
     alignItems: "center",
-    ...Platform.select({
-      ios: {
-        shadowColor: "#1A1040",
-        shadowOffset: { width: 0, height: 6 },
-        shadowOpacity: 0.16,
-        shadowRadius: 10,
-      },
-      android: { elevation: 4 },
-    }),
+    justifyContent: "center",
   },
-  ctaText: { fontSize: 15, fontWeight: "700", color: INK },
+  ctaText: { color: INK, fontWeight: "700", fontSize: 14 },
   promo: {
-    marginTop: 16,
+    marginTop: 14,
+    marginBottom: 6,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: "rgba(255,255,255,0.22)",
-    borderRadius: 18,
+    backgroundColor: PROMO_NAVY,
+    borderRadius: 16,
+    paddingHorizontal: 12,
     paddingVertical: 10,
-    paddingLeft: 12,
-    paddingRight: 8,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.28)",
   },
-  promoLeft: { flexDirection: "row", alignItems: "center", gap: 10 },
+  promoLeft: { flexDirection: "row", alignItems: "center", gap: 8 },
   promoIcon: {
-    width: 32,
-    height: 32,
+    width: 28,
+    height: 28,
     borderRadius: 10,
-    backgroundColor: "rgba(255,255,255,0.22)",
+    backgroundColor: "rgba(255,255,255,0.12)",
     alignItems: "center",
     justifyContent: "center",
   },
-  promoText: { fontSize: 14, fontWeight: "700", color: "#FFF" },
+  promoText: { color: "#FFF", fontWeight: "600", fontSize: 13 },
   promoBtn: {
-    backgroundColor: PROMO_NAVY,
-    borderRadius: 16,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-  },
-  promoBtnText: { color: "#FFF", fontSize: 12, fontWeight: "700" },
-  sheet: {
-    marginTop: 18,
     backgroundColor: "#FFF",
-    borderTopLeftRadius: 36,
-    borderTopRightRadius: 36,
+    borderRadius: 999,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+  },
+  promoBtnText: { color: PROMO_NAVY, fontWeight: "700", fontSize: 12 },
+  sheet: {
+    marginTop: 10,
+    backgroundColor: "#FFF",
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
     paddingHorizontal: 20,
     paddingTop: 22,
-    flexGrow: 1,
   },
   sectionHead: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    marginBottom: 12,
   },
-  sectionTitle: { fontSize: 17, fontWeight: "800", color: INK, letterSpacing: -0.3 },
-  seeMore: { fontSize: 13, fontWeight: "600", color: MUTED },
-  quickRow: { marginTop: 14, flexDirection: "row", gap: 12 },
-  quickItem: { flex: 1, alignItems: "center" },
+  sectionTitle: { fontSize: 16, fontWeight: "700", color: INK },
+  seeMore: { fontSize: 13, fontWeight: "600", color: FAB_BLUE },
+  quickRow: { flexDirection: "row", gap: 10 },
+  quickItem: { flex: 1, alignItems: "center", gap: 8 },
   quickCard: {
     width: "100%",
     aspectRatio: 1,
-    borderRadius: 22,
+    maxHeight: 72,
+    borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
   },
   quickIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: "#FFF",
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    backgroundColor: "rgba(255,255,255,0.65)",
     alignItems: "center",
     justifyContent: "center",
-    ...Platform.select({
-      ios: {
-        shadowColor: "#1A1040",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.08,
-        shadowRadius: 6,
-      },
-      android: { elevation: 2 },
-    }),
   },
-  quickLabel: { marginTop: 8, fontSize: 13, fontWeight: "700", color: INK },
-  emptyBox: { alignItems: "center", marginTop: 28, gap: 14 },
+  quickLabel: { fontSize: 11, fontWeight: "600", color: "#4B5563", textAlign: "center" },
+  emptyBox: { alignItems: "center", paddingVertical: 28, gap: 12 },
   empty: { color: MUTED, fontSize: 14 },
   emptyCta: {
     backgroundColor: FAB_BLUE,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 14,
+    borderRadius: 999,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
   },
-  emptyCtaText: { color: "#FFF", fontWeight: "700", fontSize: 14 },
+  emptyCtaText: { color: "#FFF", fontWeight: "700", fontSize: 13 },
+  err: { marginTop: 12, color: "#DC2626", fontSize: 13, textAlign: "center" },
   txRow: {
-    marginTop: 16,
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
+    paddingVertical: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "rgba(15,23,42,0.06)",
   },
   avatar: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: "center",
     justifyContent: "center",
   },
-  avatarText: { fontSize: 13, fontWeight: "800", color: INK },
-  txTitle: { fontSize: 14, fontWeight: "700", color: INK },
-  txDate: { fontSize: 12, color: MUTED, marginTop: 2 },
+  avatarText: { fontWeight: "700", fontSize: 13, color: INK },
+  txTitle: { fontSize: 14, fontWeight: "600", color: INK },
+  txDate: { marginTop: 2, fontSize: 11, color: MUTED },
   txRight: { alignItems: "flex-end" },
-  txAmt: { fontSize: 14, fontWeight: "800", color: INK, fontVariant: ["tabular-nums"] },
-  txKind: { fontSize: 12, color: MUTED, marginTop: 2 },
-  err: { marginTop: 16, color: "#EF4444", fontSize: 12, textAlign: "center" },
+  txAmt: { fontSize: 14, fontWeight: "700", color: INK },
+  txKind: { marginTop: 2, fontSize: 11, color: MUTED },
   tabBar: {
     position: "absolute",
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: "#FFF",
     flexDirection: "row",
     alignItems: "flex-end",
     justifyContent: "space-between",
-    paddingHorizontal: 8,
+    backgroundColor: "#FFF",
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: "rgba(15,23,42,0.08)",
     paddingTop: 8,
-    ...Platform.select({
-      ios: {
-        shadowColor: "#1A1040",
-        shadowOffset: { width: 0, height: -4 },
-        shadowOpacity: 0.06,
-        shadowRadius: 10,
-      },
-      android: { elevation: 12 },
-    }),
+    paddingHorizontal: 8,
   },
   tabItem: { flex: 1, alignItems: "center", gap: 2, paddingBottom: 2 },
-  tabLabel: { fontSize: 10, fontWeight: "600", color: MUTED },
-  tabLabelOn: { color: INK },
-  fabSlot: { width: 76, alignItems: "center", marginTop: -28 },
+  tabLabel: { fontSize: 10, fontWeight: "500", color: MUTED },
+  tabLabelOn: { color: INK, fontWeight: "700" },
+  fabSlot: { width: 72, alignItems: "center", marginTop: -22 },
   fab: {
-    width: 58,
-    height: 58,
-    borderRadius: 29,
-    backgroundColor: FAB_BLUE,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: "#0A0A0A",
     alignItems: "center",
     justifyContent: "center",
-    ...Platform.select({
-      ios: {
-        shadowColor: "#4C63F2",
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.35,
-        shadowRadius: 12,
-      },
-      android: { elevation: 8 },
-    }),
+    borderWidth: 3,
+    borderColor: "#FFF",
   },
-  fabLabel: { marginTop: 4, fontSize: 10, fontWeight: "600", color: MUTED },
+  fabLogo: { width: 28, height: 28 },
+  fabLabel: { marginTop: 4, fontSize: 10, fontWeight: "600", color: INK },
 });

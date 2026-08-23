@@ -4,6 +4,7 @@ import { WalletGiftScreen } from "../screens/wallet/WalletGiftScreen";
 import { WalletGiftsScreen } from "../screens/wallet/WalletGiftsScreen";
 import { WalletHomeScreen } from "../screens/wallet/WalletHomeScreen";
 import { WalletQrPayScreen } from "../screens/wallet/WalletQrPayScreen";
+import { WalletRequisitesScreen } from "../screens/wallet/WalletRequisitesScreen";
 import { WalletTopUpScreen } from "../screens/wallet/WalletTopUpScreen";
 import { WalletTransactionsScreen } from "../screens/wallet/WalletTransactionsScreen";
 
@@ -16,6 +17,7 @@ export type WalletStackParamList = {
   WalletGifts: undefined;
   WalletQrPay: undefined;
   WalletTransactions: undefined;
+  WalletRequisites: undefined;
 };
 
 export type WalletScreenName = keyof WalletStackParamList;
@@ -45,6 +47,7 @@ export function WalletStack() {
       <Stack.Screen name="WalletGifts" component={WalletGiftsScreen} />
       <Stack.Screen name="WalletQrPay" component={WalletQrPayScreen} />
       <Stack.Screen name="WalletTransactions" component={WalletTransactionsScreen} />
+      <Stack.Screen name="WalletRequisites" component={WalletRequisitesScreen} />
     </Stack.Navigator>
   );
 }
