@@ -219,7 +219,7 @@ const styles = StyleSheet.create({
   },
   soonText: { fontSize: 11, fontWeight: "700", color: MUTED },
   bonusBlur: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: "rgba(247,245,242,0.45)",
   },
   frozenBanner: {

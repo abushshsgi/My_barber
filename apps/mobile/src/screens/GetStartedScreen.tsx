@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import {
   FlatList,
   type NativeScrollEvent,
@@ -10,6 +10,7 @@ import {
   View,
   type ViewToken,
 } from "react-native";
+import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AnimatedImageColumns } from "../components/welcome/AnimatedImageColumns";
 import {
@@ -32,33 +33,34 @@ type Slide = {
   isLocation?: boolean;
 };
 
-const SLIDES: Slide[] = [
-  {
-    key: "gallery",
-    title: "Sartaroshxonani\noson bron qiling",
-    subtitle: "Yaqin salonlar, usta va vaqt — bir necha bosishda.",
-  },
-  {
-    key: "morph",
-    title: "Morf AI bilan\nuslubni sinab ko'ring",
-    subtitle:
-      "O'z selfiingizda yangi soch turmaklarini ko'ring — saloniga borishdan oldin.",
-  },
-  {
-    key: "location",
-    title: "Qayerdasiz?",
-    subtitle:
-      "Yaqin atrofdagi eng yaxshi sartaroshxonalarni ko'rsatishimiz uchun joylashuvingizdan foydalanamiz.",
-    isLocation: true,
-  },
-];
-
 const H_PAD = 24;
 
 /**
  * Til → 3 ta karusel → LocationPicker (map yoki qo'lda qidiruv).
  */
 export function GetStartedScreen({ onFinish }: Props) {
+  const { t } = useTranslation();
+  const SLIDES: Slide[] = useMemo(
+    () => [
+      {
+        key: "gallery",
+        title: t("onboarding.slide1Title"),
+        subtitle: t("onboarding.slide1Sub"),
+      },
+      {
+        key: "morph",
+        title: t("onboarding.slide2Title"),
+        subtitle: t("onboarding.slide2Sub"),
+      },
+      {
+        key: "location",
+        title: t("onboarding.slide3Title"),
+        subtitle: t("onboarding.slide3Sub"),
+        isLocation: true,
+      },
+    ],
+    [t],
+  );
   const insets = useSafeAreaInsets();
   const { height: winH, width: winW } = useWindowDimensions();
   const listRef = useRef<FlatList<Slide>>(null);
@@ -161,16 +163,16 @@ export function GetStartedScreen({ onFinish }: Props) {
           style={({ pressed }) => [styles.cta, pressed && styles.ctaPressed]}
           onPress={() => void goNext()}
           accessibilityRole="button"
-          accessibilityLabel={isLast ? "Joylashuvni aniqlash" : "Davom etish"}
+          accessibilityLabel={isLast ? t("onboarding.detectLocation") : t("onboarding.continue")}
         >
           <Text style={styles.ctaText}>
-            {isLast ? "Joylashuvni aniqlash" : "Davom etish"}
+            {isLast ? t("onboarding.detectLocation") : t("onboarding.continue")}
           </Text>
         </Pressable>
 
         {isLast ? (
           <Pressable onPress={() => void finish("search")} hitSlop={8}>
-            <Text style={styles.secondary}>Manzilni qo'lda ko'rsatish</Text>
+            <Text style={styles.secondary}>{t("onboarding.manualAddress")}</Text>
           </Pressable>
         ) : (
           <View style={styles.secondarySpacer} />

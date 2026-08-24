@@ -1,84 +1,25 @@
-/** Web `aiStylePage.faceShapes` / `hairTypes` bilan bir xil o‘zbekcha yorliqlar. */
+/** Web `aiStylePage.faceShapes` / `hairTypes` bilan bir xil — i18n orqali. */
+
+import i18n from "../i18n/config";
 
 export function faceShapeLabel(key: string): string {
-  switch (key) {
-    case "oval":
-      return "Oval yuz";
-    case "round":
-      return "Dumaloq yuz";
-    case "square":
-      return "Kvadrat yuz";
-    case "heart":
-      return "Yurak yuz";
-    case "oblong":
-      return "Uzunchoq yuz";
-    default:
-      return key;
-  }
+  return i18n.t(`morphLabels.faceShape.${key}`, { defaultValue: key });
 }
 
 export function hairTypeLabel(key: string): string {
-  switch (key) {
-    case "short":
-      return "Qisqa soch";
-    case "medium":
-      return "O‘rtacha soch";
-    case "long":
-      return "Uzun soch";
-    default:
-      return key;
-  }
+  return i18n.t(`morphLabels.hairType.${key}`, { defaultValue: key });
 }
 
 export function hairColorLabel(key: string): string {
-  switch (key) {
-    case "black":
-      return "Qora";
-    case "dark_brown":
-      return "To‘q jigarrang";
-    case "brown":
-      return "Jigarrang";
-    case "light_brown":
-      return "Och jigarrang";
-    case "blonde":
-      return "Sariq";
-    case "red":
-      return "Qizg‘ish";
-    case "gray":
-      return "Oq/kulrang";
-    case "other":
-      return "Boshqa";
-    default:
-      return key;
-  }
+  return i18n.t(`morphLabels.hairColor.${key}`, { defaultValue: key });
 }
 
 export function hairTextureLabel(key: string): string {
-  switch (key) {
-    case "straight":
-      return "To‘g‘ri";
-    case "wavy":
-      return "To‘lqinsimon";
-    case "curly":
-      return "Jingalak";
-    case "coily":
-      return "Qattiq jingalak";
-    default:
-      return key;
-  }
+  return i18n.t(`morphLabels.hairTexture.${key}`, { defaultValue: key });
 }
 
 export function beardLabel(key: string): string {
-  switch (key) {
-    case "none":
-      return "Soqolsiz";
-    case "light":
-      return "Yengil soqol";
-    case "full":
-      return "To‘liq soqol";
-    default:
-      return key;
-  }
+  return i18n.t(`morphLabels.beard.${key}`, { defaultValue: key });
 }
 
 export const HAIR_COLOR_HEX: Record<string, string> = {

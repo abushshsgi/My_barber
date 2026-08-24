@@ -6,16 +6,38 @@ import type {
   HomeListing,
 } from "../api/types";
 
+import i18n from "../i18n/config";
+
+export function categoryLabel(key: keyof typeof CATEGORY_KEYS): string {
+  return i18n.t(`home.categories.${CATEGORY_KEYS[key]}`);
+}
+
+const CATEGORY_KEYS = {
+  all: "all",
+  barber: "barber",
+  beauty: "beauty",
+  nails: "nails",
+} as const;
+
+/** @deprecated use categoryLabel */
 export const CATEGORY_LABELS = {
-  all: "Barchasi",
-  barber: "Barber",
-  beauty: "Go'zallik",
-  nails: "Manikyur",
+  get all() {
+    return categoryLabel("all");
+  },
+  get barber() {
+    return categoryLabel("barber");
+  },
+  get beauty() {
+    return categoryLabel("beauty");
+  },
+  get nails() {
+    return categoryLabel("nails");
+  },
 } as const;
 
 function businessKindLabel(kind?: string): string {
-  if (kind === "beauty_salon") return CATEGORY_LABELS.beauty;
-  return CATEGORY_LABELS.barber;
+  if (kind === "beauty_salon") return categoryLabel("beauty");
+  return categoryLabel("barber");
 }
 
 export function mapSalon(

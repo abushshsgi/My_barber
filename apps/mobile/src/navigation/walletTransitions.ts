@@ -60,16 +60,13 @@ function forSlideFromBottom({ current, layouts }: StackCardInterpolationProps) {
 
 export const walletFromRight: StackNavigationOptions = {
   gestureEnabled: true,
-  fullScreenGestureEnabled: Platform.OS !== "web",
-  animationEnabled: true,
+  gestureResponseDistance: Platform.OS === "ios" ? 50 : undefined,
   cardStyleInterpolator: forSlideFromRight,
   transitionSpec: { open: openRight, close: closeRight },
 };
 
 export const walletFromBottom: StackNavigationOptions = {
   gestureEnabled: true,
-  fullScreenGestureEnabled: Platform.OS !== "web",
-  animationEnabled: true,
   gestureDirection: "vertical",
   cardStyleInterpolator: forSlideFromBottom,
   transitionSpec: { open: openBottom, close: closeBottom },
@@ -81,6 +78,9 @@ export const walletFreezeSheet: StackNavigationOptions = {
   presentation: "transparentModal",
   cardStyle: { backgroundColor: "transparent" },
   cardOverlayEnabled: false,
-  animationEnabled: false,
   gestureEnabled: false,
+  transitionSpec: {
+    open: { animation: "timing", config: { duration: 0 } },
+    close: { animation: "timing", config: { duration: 0 } },
+  },
 };

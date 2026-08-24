@@ -1,16 +1,23 @@
+import i18n, { currentLang } from "../i18n/config";
+
+function dateLocale(): string {
+  return currentLang() === "ru" ? "ru-RU" : "uz-UZ";
+}
+
 /** Keyingi N kun — bron kalendari. */
 export function buildDayList(count = 14): { key: string; label: string; full: Date }[] {
   const out: { key: string; label: string; full: Date }[] = [];
   const now = new Date();
+  const locale = dateLocale();
   for (let i = 0; i < count; i++) {
     const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() + i);
     const key = d.toISOString().slice(0, 10);
     const label =
       i === 0
-        ? "Bugun"
+        ? i18n.t("booking.today")
         : i === 1
-          ? "Ertaga"
-          : d.toLocaleDateString("uz-UZ", { weekday: "short", day: "numeric", month: "short" });
+          ? i18n.t("booking.tomorrow")
+          : d.toLocaleDateString(locale, { weekday: "short", day: "numeric", month: "short" });
     out.push({ key, label, full: d });
   }
   return out;
@@ -18,7 +25,7 @@ export function buildDayList(count = 14): { key: string; label: string; full: Da
 
 export function slotLabel(slot: { start: string } | string): string {
   if (typeof slot === "string") return slot;
-  return new Date(slot.start).toLocaleTimeString("uz-UZ", {
+  return new Date(slot.start).toLocaleTimeString(dateLocale(), {
     hour: "2-digit",
     minute: "2-digit",
   });

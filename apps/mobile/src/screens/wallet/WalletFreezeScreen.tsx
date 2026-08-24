@@ -31,7 +31,7 @@ export function WalletFreezeScreen({ navigation, route }: Props) {
   const insets = useSafeAreaInsets();
   const me = useWalletMe();
   /** Bosish paytidagi holat — fetch kelib UI ni almashtirmasin. */
-  const [frozen] = useState(() => Boolean(route.params?.isFrozen));
+  const [frozen] = useState(() => Boolean(route.params?.isFrozen ?? false));
   const [busy, setBusy] = useState(false);
   const [statusLabel, setStatusLabel] = useState<"idle" | "freeze" | "unfreeze">("idle");
   const busyRef = useRef(false);
@@ -174,11 +174,11 @@ export function WalletFreezeScreen({ navigation, route }: Props) {
 const styles = StyleSheet.create({
   root: { flex: 1, justifyContent: "flex-end" },
   backdrop: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: "#000",
   },
   dismissZone: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     bottom: 280,
   },
   sheet: {
