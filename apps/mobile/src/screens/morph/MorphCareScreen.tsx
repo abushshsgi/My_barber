@@ -424,10 +424,10 @@ export function MorphCareScreen({ navigation }: Props) {
             </View>
           </View>
           <View style={styles.onboardFooter}>
-            {step > 0 ? (
+            {typeof step === "number" && step > 0 ? (
               <Pressable
                 style={styles.ghostBtnLight}
-                onPress={() => setStep((s) => (s > 0 ? ((s - 1) as QuizStep) : 0))}
+                onPress={() => setStep((s) => (typeof s === "number" && s > 0 ? ((s - 1) as QuizStep) : 0))}
               >
                 <Text style={styles.ghostBtnLightText}>{t("common.back")}</Text>
               </Pressable>
