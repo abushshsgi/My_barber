@@ -13,6 +13,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { fetchCareAccess } from "../../api/ai";
+import { weatherIconName } from "../../api/weather";
 import {
   fetchCareProducts,
   fetchHairCareProfile,
@@ -29,6 +30,7 @@ import {
   saveCareQuiz,
   type CareQuizAnswers,
 } from "../../lib/morph-ai-care";
+import { useCareWeather } from "../../hooks/useCareWeather";
 import type { MorphCareStackParamList } from "../../navigation/MorphCareStack";
 import { morphFont } from "../../theme/morph-font";
 import { useShellNavigation } from "../../lib/shell-nav";
@@ -44,6 +46,29 @@ const CONDITION_OPTS: HairCondition[] = ["oily", "dry", "normal", "damaged"];
 const TEXTURE_OPTS: HairTexture[] = ["straight", "wavy", "curly"];
 const COLOR_OPTS: HairColorStatus[] = ["natural", "colored", "bleached"];
 
+const WEEKDAY_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as const;
+
+function formatDayNumber(iso: string): string {
+  const day = Number(iso.slice(8, 10));
+  return Number.isFinite(day) ? String(day) : "—";
+}
+
+function buildFallbackDays(): { date: string; weekday_key: string; is_today: boolean }[] {
+  const rows: { date: string; weekday_key: string; is_today: boolean }[] = [];
+  const today = new Date();
+  for (let i = 0; i < 7; i += 1) {
+    const d = new Date(today);
+    d.setDate(today.getDate() + i);
+    const iso = d.toISOString().slice(0, 10);
+    rows.push({
+      date: iso,
+      weekday_key: WEEKDAY_KEYS[d.getDay()],
+      is_today: i === 0,
+    });
+  }
+  return rows;
+}
+
 export function MorphCareScreen({ navigation }: Props) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
@@ -56,6 +81,8 @@ export function MorphCareScreen({ navigation }: Props) {
   const [step, setStep] = useState<QuizStep | "plan">(0);
   const [catalog, setCatalog] = useState<CareProduct[]>([]);
   const [saving, setSaving] = useState(false);
+  const [selectedDayIdx, setSelectedDayIdx] = useState(0);
+  const { data: weather, loading: weatherLoading } = useCareWeather();
 
   const plan = useMemo(() => buildCarePlan(quiz), [quiz]);
 
@@ -74,6 +101,10 @@ export function MorphCareScreen({ navigation }: Props) {
   const openSubscriptions = useCallback(() => {
     goMorph(navigation, "Profile", { screen: "Subscriptions" });
   }, [navigation, goMorph]);
+
+  const openWeather = useCallback(() => {
+    navigation.navigate("CareWeather");
+  }, [navigation]);
 
   const bootstrap = useCallback(async () => {
     setLoading(true);
@@ -164,13 +195,92 @@ export function MorphCareScreen({ navigation }: Props) {
   }
 
   if (viewMode === "hub") {
+    const dayRows = weather?.days?.length
+      ? weather.days.slice(0, 7)
+      : buildFallbackDays();
+    const activeDay = dayRows[selectedDayIdx] ?? dayRows[0];
+    const activeTip =
+      weather?.recommendations[selectedDayIdx] ??
+      weather?.recommendations[0] ??
+      t("care.weather.defaultTip");
+
     return (
-      <View style={[styles.root, { paddingTop: insets.top }]}>
-        <View style={styles.hubSpacer} />
+      <View style={[styles.hubRoot, { paddingTop: insets.top }]}>
+        <View style={styles.hubTop}>
+          <Pressable style={styles.weatherChip} onPress={openWeather}>
+            {weatherLoading ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <>
+                <Ionicons
+                  name={weatherIconName(weather?.current.condition_key ?? "unknown")}
+                  size={18}
+                  color="#fff"
+                />
+                <Text style={styles.weatherTemp}>
+                  {weather?.current.temperature_c != null
+                    ? `${Math.round(weather.current.temperature_c)}°`
+                    : "—"}
+                </Text>
+              </>
+            )}
+          </Pressable>
+
+          <View style={styles.dayRow}>
+            {dayRows.map((day, idx) => {
+              const on = idx === selectedDayIdx;
+              return (
+                <Pressable
+                  key={day.date}
+                  style={[styles.dayPill, on && styles.dayPillOn]}
+                  onPress={() => setSelectedDayIdx(idx)}
+                >
+                  <Text style={[styles.dayPillDate, on && styles.dayPillTextOn]}>
+                    {formatDayNumber(day.date)}
+                  </Text>
+                  <Text style={[styles.dayPillWeek, on && styles.dayPillTextOn]} numberOfLines={1}>
+                    {t(`care.weather.weekdaysShort.${day.weekday_key}`)}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+
+          <View style={styles.featureWrap}>
+            <Pressable style={styles.featureBlock} onPress={openWeather}>
+              <View style={styles.featureTop}>
+                <Ionicons
+                  name={weatherIconName(activeDay?.condition_key ?? weather?.current.condition_key ?? "unknown")}
+                  size={22}
+                  color="#fff"
+                />
+                <Text style={styles.featureTitle}>
+                  {activeDay?.is_today
+                    ? t("care.weather.today")
+                    : t(`care.weather.weekdays.${activeDay?.weekday_key ?? "mon"}`)}
+                </Text>
+              </View>
+              <Text style={styles.featureMeta}>
+                {activeDay?.temperature_max_c != null && activeDay?.temperature_min_c != null
+                  ? `${Math.round(activeDay.temperature_max_c)}° / ${Math.round(activeDay.temperature_min_c)}°`
+                  : weather?.current.temperature_c != null
+                    ? `${Math.round(weather.current.temperature_c)}°`
+                    : "—"}
+                {weather?.current.humidity_pct != null
+                  ? ` · ${Math.round(weather.current.humidity_pct)}% ${t("care.weather.humidityShort")}`
+                  : ""}
+              </Text>
+              <Text style={styles.featureBody} numberOfLines={2}>
+                {activeTip}
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+
         <View
           style={[
             styles.hubSheet,
-            { paddingBottom: Math.max(insets.bottom, 16) + 72 },
+            { paddingBottom: Math.max(insets.bottom, 12) + 72 },
           ]}
         >
           <View style={styles.hubCards}>
@@ -179,7 +289,7 @@ export function MorphCareScreen({ navigation }: Props) {
               onPress={() => setViewMode("flow")}
             >
               <View style={styles.hubCardIcon}>
-                <Ionicons name="water-outline" size={22} color="#fff" />
+                <Ionicons name="water-outline" size={22} color="#564746" />
               </View>
               <Text style={styles.hubCardTitle}>{t("care.hubParvarish")}</Text>
               <Text style={styles.hubCardSub} numberOfLines={2}>
@@ -189,7 +299,7 @@ export function MorphCareScreen({ navigation }: Props) {
 
             <Pressable style={styles.hubCard} onPress={openTarkib}>
               <View style={styles.hubCardIcon}>
-                <Ionicons name="flask-outline" size={22} color="#fff" />
+                <Ionicons name="flask-outline" size={22} color="#564746" />
               </View>
               <Text style={styles.hubCardTitle}>{t("care.hubTarkib")}</Text>
               <Text style={styles.hubCardSub} numberOfLines={2}>
@@ -200,12 +310,12 @@ export function MorphCareScreen({ navigation }: Props) {
 
           <View style={styles.hubSearchRow}>
             <View style={styles.hubSearchField}>
-              <Ionicons name="search" size={16} color="rgba(255,255,255,0.35)" />
+              <Ionicons name="search" size={16} color="rgba(42,42,42,0.35)" />
               <TextInput
                 value={hubQuery}
                 onChangeText={setHubQuery}
                 placeholder={t("care.hubSearchPlaceholder")}
-                placeholderTextColor="rgba(255,255,255,0.3)"
+                placeholderTextColor="rgba(42,42,42,0.35)"
                 style={styles.hubSearchInput}
                 returnKeyType="search"
                 onSubmitEditing={() => openCatalog()}
@@ -216,7 +326,7 @@ export function MorphCareScreen({ navigation }: Props) {
               onPress={() => openCatalog()}
               accessibilityLabel={t("care.catalog.search")}
             >
-              <Ionicons name="search" size={45} color="#050505" />
+              <Ionicons name="search" size={22} color="#f2eeed" />
             </Pressable>
           </View>
         </View>
@@ -411,56 +521,134 @@ export function MorphCareScreen({ navigation }: Props) {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: "#050505" },
+  hubRoot: {
+    flex: 1,
+    backgroundColor: "#d9d9d9",
+  },
+  hubTop: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 10,
+    gap: 12,
+  },
+  weatherChip: {
+    alignSelf: "flex-start",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    minWidth: 88,
+    minHeight: 40,
+    paddingHorizontal: 14,
+    borderRadius: 999,
+    backgroundColor: "#96605e",
+  },
+  weatherTemp: { ...morphFont, fontSize: 16, fontWeight: "700", color: "#fff" },
+  dayRow: {
+    flexDirection: "row",
+    gap: 6,
+  },
+  dayPill: {
+    flex: 1,
+    minHeight: 74,
+    borderRadius: 16,
+    backgroundColor: "#e6bdb8",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 8,
+    paddingHorizontal: 2,
+    gap: 2,
+  },
+  dayPillOn: {
+    backgroundColor: "#96605e",
+  },
+  dayPillDate: {
+    ...morphFont,
+    fontSize: 17,
+    fontWeight: "700",
+    color: "rgba(42,42,42,0.75)",
+  },
+  dayPillWeek: {
+    ...morphFont,
+    fontSize: 10,
+    fontWeight: "600",
+    color: "rgba(42,42,42,0.55)",
+  },
+  dayPillTextOn: { color: "#fff" },
+  featureWrap: {
+    flex: 1,
+    justifyContent: "center",
+  },
+  featureBlock: {
+    height: 100,
+    borderRadius: 24,
+    backgroundColor: "#564746",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    justifyContent: "center",
+    gap: 4,
+  },
+  featureTop: { flexDirection: "row", alignItems: "center", gap: 8 },
+  featureTitle: { ...morphFont, fontSize: 16, fontWeight: "700", color: "#fff" },
+  featureMeta: { ...morphFont, fontSize: 13, color: "rgba(255,255,255,0.72)" },
+  featureBody: {
+    ...morphFont,
+    fontSize: 13,
+    lineHeight: 18,
+    color: "rgba(255,255,255,0.88)",
+  },
   center: { alignItems: "center", justifyContent: "center" },
   pad: { flex: 1, paddingHorizontal: 20 },
   hubSpacer: { flex: 1 },
   hubSheet: {
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
-    backgroundColor: "#141414",
+    backgroundColor: "#f2eeed",
     paddingHorizontal: 18,
-    paddingTop: 22,
-    gap: 25,
+    paddingTop: 16,
+    gap: 14,
   },
   hubCards: {
     flexDirection: "row",
     gap: 12,
+    height: 100,
   },
   hubCard: {
     flex: 1,
-    minHeight: 132,
+    height: 100,
     borderRadius: 20,
-    backgroundColor: "rgba(255,255,255,0.06)",
+    backgroundColor: "rgba(42,42,42,0.08)",
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(255,255,255,0.08)",
-    padding: 16,
-    justifyContent: "flex-end",
-    gap: 4,
+    borderColor: "rgba(42,42,42,0.08)",
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    justifyContent: "center",
+    gap: 2,
   },
   hubCardActive: {
     borderWidth: 1.5,
-    borderColor: "#fff",
+    borderColor: "#2a2a2a",
   },
   hubCardIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 14,
-    backgroundColor: "rgba(255,255,255,0.08)",
+    width: 32,
+    height: 32,
+    borderRadius: 12,
+    backgroundColor: "rgba(42,42,42,0.08)",
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 10,
+    marginBottom: 4,
   },
   hubCardTitle: {
     ...morphFont,
     fontSize: 15,
     fontWeight: "700",
-    color: "#fff",
+    color: "#2a2a2a",
   },
   hubCardSub: {
     ...morphFont,
     fontSize: 11,
     lineHeight: 14,
-    color: "rgba(255,255,255,0.45)",
+    color: "rgba(42,42,42,0.55)",
   },
   hubSearchRow: {
     flexDirection: "row",
@@ -469,28 +657,28 @@ const styles = StyleSheet.create({
   },
   hubSearchField: {
     flex: 1,
-    height: 48,
+    height: 70,
     borderRadius: 16,
-    backgroundColor: "rgba(255,255,255,0.06)",
+    backgroundColor: "rgba(42,42,42,0.08)",
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(255,255,255,0.1)",
+    borderColor: "rgba(42,42,42,0.08)",
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 14,
-    gap: 25,
+    gap: 10,
   },
   hubSearchInput: {
     ...morphFont,
     flex: 1,
     fontSize: 14,
-    color: "#fff",
+    color: "#2a2a2a",
     paddingVertical: 0,
   },
   hubSearchBtn: {
-    width: 48,
+    width: 70,
     height: 48,
     borderRadius: 16,
-    backgroundColor: "#fff",
+    backgroundColor: "#564746",
     alignItems: "center",
     justifyContent: "center",
   },
