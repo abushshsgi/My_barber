@@ -198,11 +198,6 @@ export function MorphCareScreen({ navigation }: Props) {
     const dayRows = weather?.days?.length
       ? weather.days.slice(0, 7)
       : buildFallbackDays();
-    const activeDay = dayRows[selectedDayIdx] ?? dayRows[0];
-    const activeTip =
-      weather?.recommendations[selectedDayIdx] ??
-      weather?.recommendations[0] ??
-      t("care.weather.defaultTip");
 
     return (
       <View style={[styles.hubRoot, { paddingTop: insets.top }]}>
@@ -233,7 +228,10 @@ export function MorphCareScreen({ navigation }: Props) {
                 <Pressable
                   key={day.date}
                   style={[styles.dayPill, on && styles.dayPillOn]}
-                  onPress={() => setSelectedDayIdx(idx)}
+                  onPress={() => {
+                    setSelectedDayIdx(idx);
+                    openWeather();
+                  }}
                 >
                   <Text style={[styles.dayPillDate, on && styles.dayPillTextOn]}>
                     {formatDayNumber(day.date)}
@@ -246,32 +244,18 @@ export function MorphCareScreen({ navigation }: Props) {
             })}
           </View>
 
-          <View style={styles.featureWrap}>
-            <Pressable style={styles.featureBlock} onPress={openWeather}>
-              <View style={styles.featureTop}>
-                <Ionicons
-                  name={weatherIconName(activeDay?.condition_key ?? weather?.current.condition_key ?? "unknown")}
-                  size={22}
-                  color="#fff"
-                />
-                <Text style={styles.featureTitle}>
-                  {activeDay?.is_today
-                    ? t("care.weather.today")
-                    : t(`care.weather.weekdays.${activeDay?.weekday_key ?? "mon"}`)}
-                </Text>
+          <View style={styles.bannerWrap}>
+            <Pressable
+              style={styles.hubBanner}
+              onPress={() => openCatalog()}
+              accessibilityLabel={t("care.hubBannerTitle")}
+            >
+              <View style={styles.hubBannerTop}>
+                <Ionicons name="sparkles-outline" size={20} color="#fff" />
+                <Text style={styles.hubBannerTitle}>{t("care.hubBannerTitle")}</Text>
               </View>
-              <Text style={styles.featureMeta}>
-                {activeDay?.temperature_max_c != null && activeDay?.temperature_min_c != null
-                  ? `${Math.round(activeDay.temperature_max_c)}° / ${Math.round(activeDay.temperature_min_c)}°`
-                  : weather?.current.temperature_c != null
-                    ? `${Math.round(weather.current.temperature_c)}°`
-                    : "—"}
-                {weather?.current.humidity_pct != null
-                  ? ` · ${Math.round(weather.current.humidity_pct)}% ${t("care.weather.humidityShort")}`
-                  : ""}
-              </Text>
-              <Text style={styles.featureBody} numberOfLines={2}>
-                {activeTip}
+              <Text style={styles.hubBannerBody} numberOfLines={2}>
+                {t("care.hubBannerBody")}
               </Text>
             </Pressable>
           </View>
@@ -575,23 +559,24 @@ const styles = StyleSheet.create({
     color: "rgba(42,42,42,0.55)",
   },
   dayPillTextOn: { color: "#fff" },
-  featureWrap: {
+  bannerWrap: {
     flex: 1,
     justifyContent: "center",
   },
-  featureBlock: {
+  hubBanner: {
     height: 100,
+    flexGrow: 0,
+    flexShrink: 0,
     borderRadius: 24,
     backgroundColor: "#564746",
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 14,
     justifyContent: "center",
-    gap: 4,
+    gap: 6,
   },
-  featureTop: { flexDirection: "row", alignItems: "center", gap: 8 },
-  featureTitle: { ...morphFont, fontSize: 16, fontWeight: "700", color: "#fff" },
-  featureMeta: { ...morphFont, fontSize: 13, color: "rgba(255,255,255,0.72)" },
-  featureBody: {
+  hubBannerTop: { flexDirection: "row", alignItems: "center", gap: 8 },
+  hubBannerTitle: { ...morphFont, fontSize: 16, fontWeight: "700", color: "#fff" },
+  hubBannerBody: {
     ...morphFont,
     fontSize: 13,
     lineHeight: 18,
