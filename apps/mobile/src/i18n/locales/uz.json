@@ -69,6 +69,8 @@
       "wind": "Shamol",
       "recommendations": "Parvarish tavsiyalari",
       "defaultTip": "Ob-havoga qarab shaxsiy parvarish rejasi tayyorlanadi.",
+      "introTitle": "Ob-havo + soch holati",
+      "introSub": "Bugungi namlik va harorat bo‘yicha parvarish maslahatlari soch profilingizga moslashtiriladi.",
       "loadError": "Ob-havo ma'lumotini yuklab bo'lmadi.",
       "weekdays": {
         "mon": "Dushanba",
@@ -132,6 +134,43 @@
       "colorQ": "Rang?",
       "seePlan": "Davom etish",
       "retake": "Qayta"
+    },
+    "onboarding": {
+      "badge": "Soch tahlili",
+      "step1Title": "Sochingiz qanday his qilinadi?",
+      "step1Sub": "AI sizga shaxsiy parvarish rejasi tuzadi — ildiz va uchlarni hisobga olamiz.",
+      "step2Title": "Soch teksturasi qanday?",
+      "step2Sub": "To‘g‘ri, to‘lqinsimon yoki jingalak — styling va mahsulot tanloviga ta’sir qiladi.",
+      "step3Title": "Rang holati?",
+      "step3Sub": "Tabiiy, bo‘yalgan yoki ochilgan soch uchun alohida tavsiyalar beramiz.",
+      "finish": "Rejamni ko‘rish"
+    },
+    "routine": {
+      "title": "Siz uchun reja",
+      "dayLabel": "Kun",
+      "goodMorning": "Xayrli tong",
+      "goodAfternoon": "Xayrli kun",
+      "goodEvening": "Xayrli kech",
+      "buyTitle": "Mahsulot sotib oling",
+      "fitYou": "{{pct}}% mos",
+      "aiHelpTitle": "Qaysi shampunni tanlashni bilmayman",
+      "aiHelpSub": "AI sizning sochingizga mos mahsulotlarni tavsiya qiladi",
+      "slots": {
+        "morning": "Ertalab",
+        "evening": "Kechqurun",
+        "weekly": "Haftalik"
+      }
+    },
+    "myProducts": {
+      "title": "Mening mahsulotlarim",
+      "scan": "Skan",
+      "emptyTitle": "Hali mahsulot yo‘q",
+      "emptySub": "Tarkib skaneridan mahsulot qo‘shing yoki katalogdan tanlang",
+      "addFromScan": "Mening mahsulotlarimga qo‘shish",
+      "addFromCatalog": "Mening mahsulotlarimga qo‘shish",
+      "alreadyAdded": "Qo‘shilgan",
+      "addedTitle": "Qo‘shildi",
+      "addedSub": "Mahsulot parvarish rejangizda ko‘rinadi"
     },
     "catalog": {
       "badge": "Tarkib",

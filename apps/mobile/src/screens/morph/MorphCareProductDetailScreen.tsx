@@ -4,6 +4,7 @@ import { Image } from "expo-image";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -14,6 +15,7 @@ import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { fetchCareProduct, type CareProduct } from "../../api/care";
 import { useHideTabBar } from "../../hooks/useHideTabBar";
+import { addMyProduct, careProductToMy, isMyProduct } from "../../lib/morph-my-products";
 import type { MorphCareStackParamList } from "../../navigation/MorphCareStack";
 import { morphFont } from "../../theme/morph-font";
 
@@ -26,6 +28,8 @@ export function MorphCareProductDetailScreen({ navigation, route }: Props) {
   const productId = route.params.productId;
   const [data, setData] = useState<CareProduct | null>(null);
   const [loading, setLoading] = useState(true);
+  const [inMyProducts, setInMyProducts] = useState(false);
+  const [adding, setAdding] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -33,6 +37,7 @@ export function MorphCareProductDetailScreen({ navigation, route }: Props) {
     void fetchCareProduct(productId)
       .then((row) => {
         if (alive) setData(row);
+        if (alive) void isMyProduct(productId).then(setInMyProducts);
       })
       .catch(() => {
         if (alive) setData(null);
@@ -97,6 +102,25 @@ export function MorphCareProductDetailScreen({ navigation, route }: Props) {
           <Block title={t("care.catalog.ingredients")}>
             {data.ingredients_text || (data.ingredients || []).join(", ") || "—"}
           </Block>
+
+          <Pressable
+            style={[styles.addBtn, (inMyProducts || adding) && styles.addBtnDisabled]}
+            disabled={inMyProducts || adding}
+            onPress={() => {
+              setAdding(true);
+              void addMyProduct(careProductToMy(data, "catalog"))
+                .then(() => {
+                  setInMyProducts(true);
+                  Alert.alert(t("care.myProducts.addedTitle"), t("care.myProducts.addedSub"));
+                })
+                .finally(() => setAdding(false));
+            }}
+          >
+            <Ionicons name={inMyProducts ? "checkmark-circle" : "add-circle-outline"} size={20} color="#fff" />
+            <Text style={styles.addBtnText}>
+              {inMyProducts ? t("care.myProducts.alreadyAdded") : t("care.myProducts.addFromCatalog")}
+            </Text>
+          </Pressable>
         </View>
       )}
     </ScrollView>
@@ -171,4 +195,16 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     color: "rgba(255,255,255,0.75)",
   },
+  addBtn: {
+    marginTop: 24,
+    height: 52,
+    borderRadius: 999,
+    backgroundColor: "#8B7CFF",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  addBtnDisabled: { opacity: 0.55 },
+  addBtnText: { ...morphFont, fontSize: 14, fontWeight: "600", color: "#fff" },
 });

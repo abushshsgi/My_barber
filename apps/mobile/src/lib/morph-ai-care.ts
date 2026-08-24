@@ -1,9 +1,20 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import type {
+  CareProduct,
   HairColorStatus,
   HairCondition,
   HairTexture,
 } from "../api/care";
+
+export type RoutineSlot = "morning" | "evening" | "weekly";
+
+export type RoutineTask = {
+  id: string;
+  title: string;
+  subtitle: string;
+  icon: "water" | "flask" | "sparkles" | "shield" | "leaf" | "cut";
+  productHint?: string;
+};
 
 export type CareQuizAnswers = {
   condition: HairCondition;
@@ -165,4 +176,65 @@ export function buildCarePlan(quiz: CareQuizAnswers): CarePlan {
     stylingTips: buildStylingTips(texture, condition),
     avoid,
   };
+}
+
+export function estimateProductFit(product: CareProduct, quiz: CareQuizAnswers): number {
+  const tags = [
+    quiz.condition,
+    quiz.texture,
+    quiz.colorStatus === "natural" ? "natural" : quiz.colorStatus,
+  ];
+  const suitable = product.suitable_for || [];
+  const notSuitable = product.not_suitable_for || [];
+  let score = 72;
+  for (const tag of tags) {
+    if (suitable.includes(tag)) score += 8;
+    if (notSuitable.includes(tag)) score -= 14;
+  }
+  return Math.max(42, Math.min(98, score));
+}
+
+export function buildDailyRoutine(quiz: CareQuizAnswers, slot: RoutineSlot): RoutineTask[] {
+  const { condition, texture, colorStatus } = quiz;
+
+  if (slot === "morning") {
+    const wash =
+      condition === "oily"
+        ? { title: "Yengil shampun", subtitle: "Faqat ildizni yuving", icon: "water" as const }
+        : condition === "dry" || condition === "damaged"
+          ? { title: "Namlantiruvchi yuvish", subtitle: "Iliq suv, yumshoq massaj", icon: "water" as const }
+          : { title: "Balans shampun", subtitle: "2–3 kunda bir yuvish", icon: "water" as const };
+
+    const style =
+      texture === "curly"
+        ? { title: "Leave-in krem", subtitle: "Nam sochga, diffuzer bilan", icon: "leaf" as const }
+        : { title: "Styling krem", subtitle: "Kaftlarda eritib, kam miqdor", icon: "sparkles" as const };
+
+    return [
+      { id: "m-wash", ...wash, productHint: "shampoo" },
+      { id: "m-condition", title: "Konditsioner", subtitle: "Faqat uchlarga, 1–2 daqiqa", icon: "flask", productHint: "balsam" },
+      { id: "m-style", ...style, productHint: "spray" },
+      ...(condition === "damaged"
+        ? [{ id: "m-heat", title: "Issiqlik himoyasi", subtitle: "Fen oldidan sprey", icon: "shield" as const, productHint: "spray" }]
+        : []),
+    ];
+  }
+
+  if (slot === "evening") {
+    return [
+      { id: "e-brush", title: "Yengil tarash", subtitle: "Quruq sochda, yumshoq cho'tka", icon: "cut" },
+      { id: "e-oil", title: condition === "oily" ? "Scalp massaj" : "Uchlar uchun yog'", subtitle: condition === "oily" ? "5 daqiqa, yengil bosim" : "2–3 tomchi, uchlarga", icon: "leaf", productHint: "oil" },
+      { id: "e-prep", title: "Ertaga rejasi", subtitle: "Nam sochni yumshoq sochiq bilan quriting", icon: "sparkles" },
+      ...(colorStatus !== "natural"
+        ? [{ id: "e-color", title: "Rang himoyasi", subtitle: "Color-safe mahsulotdan foydalaning", icon: "shield" as const, productHint: "shampoo" }]
+        : []),
+    ];
+  }
+
+  return [
+    { id: "w-mask", title: "Chuqur maska", subtitle: condition === "damaged" ? "Protein + namlik" : "10 daqiqa parvarish", icon: "flask", productHint: "mask" },
+    { id: "w-scalp", title: "Scalp parvarishi", subtitle: condition === "oily" ? "Balans peel yoki skrab" : "Yengil massaj", icon: "water" },
+    { id: "w-trim", title: "Uchlarni tekshirish", subtitle: "Ajralish belgilarini kuzating", icon: "cut" },
+    { id: "w-reset", title: "Haftalik reset", subtitle: "Ortiqcha styling qoldiqlarini yuvib tashlang", icon: "sparkles" },
+  ];
 }

@@ -31,6 +31,7 @@ import {
   saveCareQuiz,
   type CareQuizAnswers,
 } from "../../lib/morph-ai-care";
+import { addMyProduct, isMyProduct } from "../../lib/morph-my-products";
 import {
   pickProductLabelFromCamera,
   pickProductLabelFromGallery,
@@ -82,6 +83,8 @@ export function MorphIngredientScreen({ navigation }: Props) {
   const [preview, setPreview] = useState<string | null>(null);
   const [result, setResult] = useState<IngredientScanResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [inMyProducts, setInMyProducts] = useState(false);
+  const [addingProduct, setAddingProduct] = useState(false);
 
   const phase: Phase = useMemo(() => {
     if (result) return "result";
@@ -155,10 +158,13 @@ export function MorphIngredientScreen({ navigation }: Props) {
     setBusy(true);
     setError(null);
     setResult(null);
+    setInMyProducts(false);
     setPreview(dataUrl);
     try {
       const analysis = await scanIngredient(dataUrl);
       setResult(analysis);
+      const pid = analysis.matched_product?.id ?? analysis.matched_product_id;
+      if (pid) setInMyProducts(await isMyProduct(pid));
     } catch (e) {
       const msg = e instanceof Error ? e.message : t("ingredient.scanFailed");
       setError(msg);
@@ -172,6 +178,27 @@ export function MorphIngredientScreen({ navigation }: Props) {
     setResult(null);
     setPreview(null);
     setError(null);
+    setInMyProducts(false);
+  };
+
+  const handleAddToMyProducts = async () => {
+    const matched = result?.matched_product;
+    if (!matched) return;
+    setAddingProduct(true);
+    try {
+      await addMyProduct({
+        id: matched.id,
+        name: matched.name,
+        brand: matched.brand,
+        category: matched.category,
+        image_url: matched.image_url,
+        source: "scan",
+      });
+      setInMyProducts(true);
+      Alert.alert(t("care.myProducts.addedTitle"), t("care.myProducts.addedSub"));
+    } finally {
+      setAddingProduct(false);
+    }
   };
 
   /** Tab ildizi — MySaloon’ga otib ketmasin; Parvarish (Morph) hubiga qaytamiz. */
@@ -476,8 +503,23 @@ export function MorphIngredientScreen({ navigation }: Props) {
           <Pressable style={[styles.primaryBtn, { marginTop: 28 }]} onPress={resetScan}>
             <Text style={styles.primaryBtnText}>{t("ingredient.scanAgain")}</Text>
           </Pressable>
+          {matched ? (
+            <Pressable
+              style={[
+                styles.secondaryBtnFull,
+                { marginTop: 10 },
+                inMyProducts && styles.secondaryBtnDisabled,
+              ]}
+              disabled={inMyProducts || addingProduct}
+              onPress={() => void handleAddToMyProducts()}
+            >
+              <Text style={styles.secondaryBtnText}>
+                {inMyProducts ? t("care.myProducts.alreadyAdded") : t("care.myProducts.addFromScan")}
+              </Text>
+            </Pressable>
+          ) : null}
           <Pressable
-            style={[styles.secondaryBtnFull, { marginTop: 10 }]}
+            style={[styles.secondaryBtnFull, { marginTop: matched ? 10 : 10 }]}
             onPress={() => navigation.navigate("CareProducts")}
           >
             <Text style={styles.secondaryBtnText}>{t("ingredient.openCatalog")}</Text>
@@ -669,6 +711,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   secondaryBtnText: { ...morphFont, fontSize: 14, fontWeight: "600", color: "#fff" },
+  secondaryBtnDisabled: { opacity: 0.45 },
   disabled: { opacity: 0.4 },
   lockWrap: { marginTop: 80, alignItems: "center", paddingHorizontal: 12 },
   lockTitle: {
