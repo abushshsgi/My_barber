@@ -216,7 +216,7 @@ export function MorphCareScreen({ navigation }: Props) {
               onPress={() => openCatalog()}
               accessibilityLabel={t("care.catalog.search")}
             >
-              <Ionicons name="search" size={20} color="#050505" />
+              <Ionicons name="search" size={45} color="#050505" />
             </Pressable>
           </View>
         </View>
@@ -420,7 +420,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#141414",
     paddingHorizontal: 18,
     paddingTop: 22,
-    gap: 14,
+    gap: 25,
   },
   hubCards: {
     flexDirection: "row",
@@ -477,7 +477,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 14,
-    gap: 8,
+    gap: 25,
   },
   hubSearchInput: {
     ...morphFont,
