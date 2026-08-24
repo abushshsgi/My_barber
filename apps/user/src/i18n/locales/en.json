@@ -1486,8 +1486,8 @@
       },
       "ingredientScan": {
         "badge": "Ingredient scan",
-        "title": "Check product ingredients",
-        "subtitle": "Photograph the Ingredients (INCI) list on a shampoo, balsam, or other hair product — AI flags what is good, bad, or risky for your hair.",
+        "title": "Scan your product",
+        "subtitle": "Then you can add it to My products. Place the ingredient list inside the frame — AI analyzes the formula instantly.",
         "cta": "Ingredient scan",
         "placeholder": "Make the Ingredients text clear",
         "analyzing": "Analyzing ingredients…",

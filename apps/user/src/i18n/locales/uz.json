@@ -1487,8 +1487,8 @@
       },
       "ingredientScan": {
         "badge": "Tarkib skani",
-        "title": "Mahsulot tarkibini tekshiring",
-        "subtitle": "Shampun, balzam yoki boshqa soch vositasi orqasidagi Ingredients yozuvini suratga oling — AI sochingizga qarab yaxshi, yomon va xavfli moddalarni aytadi.",
+        "title": "Mahsulotni skan qiling",
+        "subtitle": "Uni «Mening mahsulotlarim» ro‘yxatiga qo‘shishingiz mumkin. Tarkib yozuvini ramka ichiga joylashtiring — AI formulani darhol tahlil qiladi.",
         "cta": "Tarkib skani",
         "placeholder": "Ingredients yozuvi aniq ko‘rinsin",
         "analyzing": "Tarkib tahlil qilinmoqda…",

@@ -826,8 +826,8 @@
   },
   "ingredient": {
     "badge": "Tarkib",
-    "title": "Mahsulot tarkibini skan qiling",
-    "subtitle": "INCI yorlig‘ini suratga oling — AI sochingiz holatiga mos tahlil beradi.",
+    "title": "Mahsulotni skan qiling",
+    "subtitle": "Uni «Mening mahsulotlarim» ro‘yxatiga qo‘shishingiz mumkin. Tarkib yozuvini ramka ichiga joylashtiring — AI formulani darhol tahlil qiladi.",
     "quizHint": "Avval soch profilingizni belgilang — tahlil shunga moslanadi.",
     "frameHint": "Tarkib (Ingredients) yozuvini ramka ichiga joylashtiring",
     "camera": "Kamera",

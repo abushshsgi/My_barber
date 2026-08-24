@@ -530,79 +530,54 @@ export function MorphIngredientScreen({ navigation }: Props) {
   }
 
   return (
-    <View style={styles.root}>
-      <LinearGradient
-        colors={["rgba(255,255,255,0.07)", "transparent"]}
-        style={styles.topGlow}
-        pointerEvents="none"
-      />
-      <ScrollView
-        contentContainerStyle={{
-          paddingTop: insets.top + 12,
-          paddingBottom: insets.bottom + 32,
-          paddingHorizontal: 20,
-          flexGrow: 1,
-        }}
-        showsVerticalScrollIndicator={false}
+    <View style={styles.scanRoot}>
+      {preview ? (
+        <Image source={{ uri: preview }} style={StyleSheet.absoluteFill} contentFit="cover" />
+      ) : (
+        <View style={[StyleSheet.absoluteFill, styles.scanCamBg]} />
+      )}
+      <View style={styles.scanViewfinder} pointerEvents="none">
+        <View style={[styles.corner, styles.tl]} />
+        <View style={[styles.corner, styles.tr]} />
+        <View style={[styles.corner, styles.bl]} />
+        <View style={[styles.corner, styles.br]} />
+      </View>
+      <Pressable
+        style={[styles.closeX, { top: insets.top + 8 }]}
+        onPress={leaveIngredient}
+        accessibilityLabel={t("common.back")}
       >
-        <View style={styles.rowBetween}>
+        <Ionicons name="close" size={22} color="#fff" />
+      </Pressable>
+      {error ? <Text style={[styles.scanError, { top: insets.top + 56 }]}>{error}</Text> : null}
+      <View style={[styles.scanSheet, { paddingBottom: Math.max(insets.bottom, 16) + 8 }]}>
+        <Text style={styles.sheetTitle}>{t("ingredient.title")}</Text>
+        <Text style={styles.sheetSub}>{t("ingredient.subtitle")}</Text>
+        <Pressable
+          style={styles.sheetNext}
+          onPress={() =>
+            void pickProductLabelFromCamera().then((uri) => {
+              if (uri) void runScan(uri);
+            })
+          }
+        >
+          <Text style={styles.sheetNextText}>{t("common.next")}</Text>
+        </Pressable>
+        <View style={styles.sheetRow}>
           <Pressable
-            style={styles.iconBtn}
-            onPress={leaveIngredient}
-            accessibilityLabel={t("common.back")}
-          >
-            <Ionicons name="chevron-back" size={22} color="#fff" />
-          </Pressable>
-          <Text style={styles.badge}>{t("ingredient.badge")}</Text>
-          <Pressable onPress={() => navigation.navigate("CareProducts")}>
-            <Text style={styles.link}>{t("ingredient.openCatalog")}</Text>
-          </Pressable>
-        </View>
-
-        <Text style={styles.heroTitle}>{t("ingredient.title")}</Text>
-        <Text style={styles.heroSub}>{t("ingredient.subtitle")}</Text>
-
-        <View style={styles.scanStage}>
-          <View style={styles.scanFrame}>
-            <View style={[styles.corner, styles.tl]} />
-            <View style={[styles.corner, styles.tr]} />
-            <View style={[styles.corner, styles.bl]} />
-            <View style={[styles.corner, styles.br]} />
-            <Ionicons name="scan-outline" size={40} color="rgba(255,255,255,0.35)" />
-            <Text style={styles.scanHint}>{t("ingredient.frameHint")}</Text>
-          </View>
-        </View>
-
-        {error ? <Text style={styles.errorText}>{error}</Text> : null}
-
-        <View style={styles.ctaCol}>
-          <Pressable
-            style={styles.primaryBtn}
-            onPress={() =>
-              void pickProductLabelFromCamera().then((uri) => {
-                if (uri) void runScan(uri);
-              })
-            }
-          >
-            <Ionicons name="camera" size={18} color="#000" style={{ marginRight: 8 }} />
-            <Text style={styles.primaryBtnText}>{t("ingredient.camera")}</Text>
-          </Pressable>
-          <Pressable
-            style={styles.secondaryBtnFull}
             onPress={() =>
               void pickProductLabelFromGallery().then((uri) => {
                 if (uri) void runScan(uri);
               })
             }
           >
-            <Ionicons name="images-outline" size={18} color="#fff" style={{ marginRight: 8 }} />
-            <Text style={styles.secondaryBtnText}>{t("ingredient.gallery")}</Text>
+            <Text style={styles.sheetLink}>{t("ingredient.gallery")}</Text>
           </Pressable>
-          <Pressable style={styles.textLinkCenter} onPress={() => setForceQuiz(true)}>
-            <Text style={styles.link}>{t("ingredient.editProfile")}</Text>
+          <Pressable onPress={() => setForceQuiz(true)}>
+            <Text style={styles.sheetLink}>{t("ingredient.editProfile")}</Text>
           </Pressable>
         </View>
-      </ScrollView>
+      </View>
     </View>
   );
 }
@@ -728,51 +703,100 @@ const styles = StyleSheet.create({
     color: "rgba(255,255,255,0.45)",
     textAlign: "center",
   },
-  scanStage: { marginTop: 36, alignItems: "center" },
-  scanFrame: {
-    width: "100%",
-    maxWidth: 320,
-    aspectRatio: 3 / 4,
-    borderRadius: 28,
-    backgroundColor: "rgba(255,255,255,0.04)",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.08)",
+  scanRoot: { flex: 1, backgroundColor: "#111" },
+  scanCamBg: { backgroundColor: "#1a1a1a" },
+  scanViewfinder: {
+    position: "absolute",
+    top: "12%",
+    left: "12%",
+    right: "12%",
+    bottom: "42%",
+  },
+  closeX: {
+    position: "absolute",
+    right: 16,
+    zIndex: 4,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(0,0,0,0.45)",
     alignItems: "center",
     justifyContent: "center",
-    overflow: "hidden",
   },
+  scanError: {
+    ...morphFont,
+    position: "absolute",
+    left: 24,
+    right: 24,
+    zIndex: 4,
+    textAlign: "center",
+    color: "#FDA4AF",
+    fontSize: 13,
+  },
+  scanSheet: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "#fff",
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    paddingHorizontal: 24,
+    paddingTop: 28,
+  },
+  sheetTitle: {
+    ...morphFont,
+    fontSize: 23,
+    fontWeight: "700",
+    color: "#111",
+    letterSpacing: -0.4,
+    lineHeight: 28,
+  },
+  sheetSub: {
+    ...morphFont,
+    marginTop: 10,
+    fontSize: 15,
+    lineHeight: 22,
+    color: "#757575",
+  },
+  sheetNext: {
+    marginTop: 28,
+    height: 56,
+    borderRadius: 999,
+    backgroundColor: "#F2F2F2",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  sheetNextText: { ...morphFont, fontSize: 16, fontWeight: "600", color: "#111" },
+  sheetRow: {
+    marginTop: 12,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingHorizontal: 4,
+  },
+  sheetLink: { ...morphFont, fontSize: 13, fontWeight: "500", color: "#757575", paddingVertical: 8 },
   corner: {
     position: "absolute",
-    width: 28,
-    height: 28,
-    borderColor: "rgba(255,255,255,0.55)",
+    width: 36,
+    height: 36,
+    borderColor: "#fff",
   },
-  tl: { top: 18, left: 18, borderTopWidth: 2.5, borderLeftWidth: 2.5, borderTopLeftRadius: 8 },
-  tr: { top: 18, right: 18, borderTopWidth: 2.5, borderRightWidth: 2.5, borderTopRightRadius: 8 },
+  tl: { top: 0, left: 0, borderTopWidth: 3.5, borderLeftWidth: 3.5, borderTopLeftRadius: 12 },
+  tr: { top: 0, right: 0, borderTopWidth: 3.5, borderRightWidth: 3.5, borderTopRightRadius: 12 },
   bl: {
-    bottom: 18,
-    left: 18,
-    borderBottomWidth: 2.5,
-    borderLeftWidth: 2.5,
-    borderBottomLeftRadius: 8,
+    bottom: 0,
+    left: 0,
+    borderBottomWidth: 3.5,
+    borderLeftWidth: 3.5,
+    borderBottomLeftRadius: 12,
   },
   br: {
-    bottom: 18,
-    right: 18,
-    borderBottomWidth: 2.5,
-    borderRightWidth: 2.5,
-    borderBottomRightRadius: 8,
+    bottom: 0,
+    right: 0,
+    borderBottomWidth: 3.5,
+    borderRightWidth: 3.5,
+    borderBottomRightRadius: 12,
   },
-  scanHint: {
-    ...morphFont,
-    marginTop: 14,
-    fontSize: 13,
-    color: "rgba(255,255,255,0.35)",
-    textAlign: "center",
-    paddingHorizontal: 24,
-  },
-  ctaCol: { marginTop: 28, gap: 10 },
-  textLinkCenter: { alignItems: "center", paddingVertical: 12 },
   iconBtn: {
     width: 40,
     height: 40,

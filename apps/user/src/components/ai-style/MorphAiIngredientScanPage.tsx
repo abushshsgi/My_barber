@@ -2,16 +2,14 @@ import { Link } from "@tanstack/react-router";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
   AlertTriangle,
-  Camera,
   CheckCircle2,
   ChevronLeft,
-  FlaskConical,
   Images,
   Loader2,
   Lock,
-  Sparkles,
+  X,
 } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -63,8 +61,6 @@ export function MorphAiIngredientScanPage() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [result, setResult] = useState<IngredientScanResponse | null>(null);
   const [busy, setBusy] = useState(false);
-  const cameraInputRef = useRef<HTMLInputElement>(null);
-  const galleryInputRef = useRef<HTMLInputElement>(null);
 
   const profileComplete = Boolean(hairQ.data?.complete);
   const screen: Screen = result
@@ -91,7 +87,7 @@ export function MorphAiIngredientScanPage() {
         <div className="mx-auto mt-24 max-w-xs text-center">
           <Lock className="mx-auto size-6 text-white/50" />
           <h1 className="mt-4 text-lg font-semibold tracking-tight">
-            {t("aiStylePage.care.ingredientScan.title", { defaultValue: "Tarkib skani" })}
+            {t("aiStylePage.care.ingredientScan.badge", { defaultValue: "Tarkib skani" })}
           </h1>
           <p className="mt-2 text-sm text-white/50">
             {accessQ.data.detail ||
@@ -429,153 +425,246 @@ export function MorphAiIngredientScanPage() {
   }
 
   return (
-    <div className="relative min-h-[100dvh] overflow-hidden bg-[#050505] text-white">
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-64 bg-[radial-gradient(ellipse_at_50%_0%,rgba(255,255,255,0.08),transparent_60%)]" />
-      <div
-        className="relative z-[1] flex min-h-[100dvh] flex-col px-5 pb-[max(2rem,env(safe-area-inset-bottom))]"
-        style={{ paddingTop: "max(1rem, env(safe-area-inset-top))" }}
+    <IngredientScanCapture
+      busy={busy}
+      previewUrl={previewUrl}
+      onPickFile={onPickFile}
+      onEditProfile={() => {
+        setCondition(
+          hairQ.data?.condition && hairQ.data.condition !== "" ? hairQ.data.condition : null,
+        );
+        setTexture(
+          hairQ.data?.texture && hairQ.data.texture !== "" ? hairQ.data.texture : null,
+        );
+        setColorStatus(
+          hairQ.data?.color_status && hairQ.data.color_status !== ""
+            ? hairQ.data.color_status
+            : null,
+        );
+        setQuizStep(0);
+        setForceQuiz(true);
+      }}
+    />
+  );
+}
+
+function stopStream(stream: MediaStream | null) {
+  stream?.getTracks().forEach((track) => track.stop());
+}
+
+async function openLabelCamera(): Promise<MediaStream> {
+  const attempts: MediaStreamConstraints[] = [
+    { audio: false, video: { facingMode: { ideal: "environment" } } },
+    { audio: false, video: { facingMode: "environment" } },
+    { audio: false, video: true },
+  ];
+  let lastError: unknown;
+  for (const constraints of attempts) {
+    try {
+      return await navigator.mediaDevices.getUserMedia(constraints);
+    } catch (error) {
+      lastError = error;
+    }
+  }
+  throw lastError instanceof Error ? lastError : new Error("Camera unavailable");
+}
+
+function captureVideoFrame(video: HTMLVideoElement): string | null {
+  if (video.videoWidth < 8 || video.videoHeight < 8) return null;
+  const canvas = document.createElement("canvas");
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return null;
+  ctx.drawImage(video, 0, 0);
+  return canvas.toDataURL("image/jpeg", 0.88);
+}
+
+function ScanCorners() {
+  const arm = "h-8 w-8 border-white";
+  return (
+    <div
+      className="pointer-events-none absolute inset-x-[12%] z-[2]"
+      style={{ top: "12%", bottom: "42%" }}
+      aria-hidden
+    >
+      <span className={cn("absolute left-0 top-0 rounded-tl-xl border-l-[3.5px] border-t-[3.5px]", arm)} />
+      <span className={cn("absolute right-0 top-0 rounded-tr-xl border-r-[3.5px] border-t-[3.5px]", arm)} />
+      <span className={cn("absolute bottom-0 left-0 rounded-bl-xl border-b-[3.5px] border-l-[3.5px]", arm)} />
+      <span className={cn("absolute bottom-0 right-0 rounded-br-xl border-b-[3.5px] border-r-[3.5px]", arm)} />
+    </div>
+  );
+}
+
+function IngredientScanCapture({
+  busy,
+  previewUrl,
+  onPickFile,
+  onEditProfile,
+}: {
+  busy: boolean;
+  previewUrl: string | null;
+  onPickFile: (file: File | undefined) => Promise<void>;
+  onEditProfile: () => void;
+}) {
+  const { t } = useTranslation();
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
+  const [live, setLive] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const stream = await openLabelCamera();
+        if (cancelled) {
+          stopStream(stream);
+          return;
+        }
+        streamRef.current = stream;
+        const video = videoRef.current;
+        if (video) {
+          video.srcObject = stream;
+          await video.play();
+        }
+        if (!cancelled) setLive(true);
+      } catch {
+        if (!cancelled) setLive(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+      stopStream(streamRef.current);
+      streamRef.current = null;
+      const video = videoRef.current;
+      if (video) video.srcObject = null;
+    };
+  }, []);
+
+  const onNext = () => {
+    if (busy) return;
+    const frame = videoRef.current ? captureVideoFrame(videoRef.current) : null;
+    if (frame) {
+      void (async () => {
+        const res = await fetch(frame);
+        const blob = await res.blob();
+        const file = new File([blob], "label.jpg", { type: "image/jpeg" });
+        await onPickFile(file);
+      })();
+      return;
+    }
+    cameraInputRef.current?.click();
+  };
+
+  return (
+    <div className="relative min-h-[100dvh] overflow-hidden bg-black text-white">
+      <video
+        ref={videoRef}
+        className={cn(
+          "absolute inset-0 size-full object-cover",
+          previewUrl || !live ? "opacity-0" : "opacity-100",
+        )}
+        muted
+        playsInline
+        autoPlay
+      />
+      {previewUrl ? (
+        <img src={previewUrl} alt="" className="absolute inset-0 size-full object-cover" />
+      ) : null}
+      {!previewUrl && !live ? <div className="absolute inset-0 bg-[#1a1a1a]" /> : null}
+
+      <ScanCorners />
+
+      <Link
+        to="/ai-style/care"
+        aria-label={t("common.back")}
+        className="absolute right-4 z-[3] grid size-10 place-items-center rounded-full bg-black/45 text-white"
+        style={{ top: "max(0.85rem, env(safe-area-inset-top))" }}
       >
-        <div className="flex items-center justify-between">
-          <BackLink label={t("common.back")} />
-          <button
-            type="button"
-            onClick={() => {
-              setCondition(
-                hairQ.data?.condition && hairQ.data.condition !== "" ? hairQ.data.condition : null,
-              );
-              setTexture(
-                hairQ.data?.texture && hairQ.data.texture !== "" ? hairQ.data.texture : null,
-              );
-              setColorStatus(
-                hairQ.data?.color_status && hairQ.data.color_status !== ""
-                  ? hairQ.data.color_status
-                  : null,
-              );
-              setQuizStep(0);
-              setForceQuiz(true);
-            }}
-            className="cursor-pointer text-[13px] font-medium text-white/45"
-          >
-            {t("aiStylePage.care.ingredientScan.editProfile", {
-              defaultValue: "Profil",
-            })}
-          </button>
-        </div>
+        <X className="size-5" strokeWidth={2.25} />
+      </Link>
 
-        <motion.div
-          initial={reduce ? false : { opacity: 0, y: 14 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, ease }}
-          className="mt-8"
+      {busy ? (
+        <div className="absolute inset-0 z-[4] grid place-items-center bg-black/50">
+          <div className="flex flex-col items-center gap-2">
+            <Loader2 className="size-6 animate-spin text-white" />
+            <p className="text-[13px] text-white/80">
+              {t("aiStylePage.care.ingredientScan.analyzing", {
+                defaultValue: "Tarkib tahlil qilinmoqda…",
+              })}
+            </p>
+          </div>
+        </div>
+      ) : null}
+
+      <div
+        className="absolute inset-x-0 bottom-0 z-[3] rounded-t-[2rem] bg-white px-6 pt-7 text-black"
+        style={{ paddingBottom: "max(1.25rem, env(safe-area-inset-bottom))" }}
+      >
+        <h1 className="text-[1.45rem] font-semibold leading-[1.18] tracking-tight">
+          {t("aiStylePage.care.ingredientScan.title", {
+            defaultValue: "Mahsulotni skan qiling",
+          })}
+        </h1>
+        <p className="mt-2.5 text-[15px] leading-relaxed text-[#757575]">
+          {t("aiStylePage.care.ingredientScan.subtitle", {
+            defaultValue:
+              "Uni «Mening mahsulotlarim» ro‘yxatiga qo‘shishingiz mumkin. Tarkib yozuvini ramka ichiga joylashtiring — AI formulani darhol tahlil qiladi.",
+          })}
+        </p>
+        <button
+          type="button"
+          disabled={busy}
+          onClick={onNext}
+          className="mt-7 flex h-14 w-full items-center justify-center rounded-full bg-[#F2F2F2] text-[16px] font-semibold text-black disabled:opacity-50"
         >
-          <div className="mb-4 grid size-12 place-items-center rounded-2xl bg-white/[0.06] ring-1 ring-white/10">
-            <FlaskConical className="size-5 text-white" strokeWidth={1.75} />
-          </div>
-          <p className="text-[12px] font-medium tracking-wide text-white/35">
-            {t("aiStylePage.care.ingredientScan.badge", { defaultValue: "Tarkib skani" })}
-          </p>
-          <h1 className="mt-2 max-w-[18rem] text-[1.45rem] font-semibold leading-[1.12] tracking-tight">
-            {t("aiStylePage.care.ingredientScan.title", {
-              defaultValue: "Mahsulot tarkibini tekshiring",
-            })}
-          </h1>
-          <p className="mt-3 max-w-[22rem] text-[15px] leading-relaxed text-white/55">
-            {t("aiStylePage.care.ingredientScan.subtitle", {
-              defaultValue:
-                "Shampun, balzam yoki boshqa soch vositasi orqasidagi Ingredients yozuvini suratga oling — AI sochingizga qarab yaxshi, yomon va xavfli moddalarni aytadi.",
-            })}
-          </p>
-        </motion.div>
-
-        <div className="mt-8 flex-1">
-          <div className="relative overflow-hidden rounded-3xl bg-white/[0.04] ring-1 ring-white/10">
-            {previewUrl ? (
-              <img
-                src={previewUrl}
-                alt=""
-                className="aspect-[4/3] w-full object-cover object-center"
-              />
-            ) : (
-              <div className="flex aspect-[4/3] flex-col items-center justify-center gap-3 px-6 text-center">
-                <Sparkles className="size-6 text-white/30" />
-                <p className="text-[14px] text-white/40">
-                  {t("aiStylePage.care.ingredientScan.placeholder", {
-                    defaultValue: "Ingredients yozuvi aniq ko‘rinsin",
-                  })}
-                </p>
-              </div>
-            )}
-            {busy ? (
-              <div className="absolute inset-0 grid place-items-center bg-black/55 backdrop-blur-[2px]">
-                <div className="flex flex-col items-center gap-2">
-                  <Loader2 className="size-6 animate-spin text-white" />
-                  <p className="text-[13px] text-white/70">
-                    {t("aiStylePage.care.ingredientScan.analyzing", {
-                      defaultValue: "Tarkib tahlil qilinmoqda…",
-                    })}
-                  </p>
-                </div>
-              </div>
-            ) : null}
-          </div>
-        </div>
-
-        <div className="mt-6 grid grid-cols-2 gap-2">
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => {
-              void (async () => {
-                try {
-                  const { ensureCameraPermission } = await import("@/lib/native-camera");
-                  const ok = await ensureCameraPermission();
-                  if (!ok) return;
-                } catch {
-                  /* web */
-                }
-                cameraInputRef.current?.click();
-              })();
-            }}
-            className="flex h-12 items-center justify-center gap-2 rounded-full bg-white text-sm font-semibold text-black disabled:opacity-50"
-          >
-            <Camera className="size-4" />
-            {t("aiStylePage.openCamera", { defaultValue: "Kamera" })}
-          </button>
+          {t("common.next")}
+        </button>
+        <div className="mt-3 flex items-center justify-between px-1">
           <button
             type="button"
             disabled={busy}
             onClick={() => galleryInputRef.current?.click()}
-            className="flex h-12 items-center justify-center gap-2 rounded-full bg-white/10 text-sm font-semibold text-white disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 py-2 text-[13px] font-medium text-[#757575]"
           >
             <Images className="size-4" />
             {t("aiStylePage.pickFromGallery", { defaultValue: "Galereya" })}
           </button>
+          <button
+            type="button"
+            onClick={onEditProfile}
+            className="py-2 text-[13px] font-medium text-[#757575]"
+          >
+            {t("aiStylePage.care.ingredientScan.editProfile", { defaultValue: "Profil" })}
+          </button>
         </div>
-
-        <input
-          ref={cameraInputRef}
-          type="file"
-          accept="image/*"
-          capture="environment"
-          className="hidden"
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            e.target.value = "";
-            void onPickFile(file);
-          }}
-        />
-        <input
-          ref={galleryInputRef}
-          type="file"
-          accept="image/jpeg,image/png,image/webp"
-          className="hidden"
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            e.target.value = "";
-            void onPickFile(file);
-          }}
-        />
       </div>
+
+      <input
+        ref={cameraInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          e.target.value = "";
+          void onPickFile(file);
+        }}
+      />
+      <input
+        ref={galleryInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          e.target.value = "";
+          void onPickFile(file);
+        }}
+      />
     </div>
   );
 }
