@@ -53,6 +53,13 @@
     "hubSearchPlaceholder": "Shampun, balsam, gigiyena…",
     "hubBannerTitle": "Yangilik",
     "hubBannerBody": "Yangi parvarish maslahatlari va tanlangan mahsulotlar — shu yerda.",
+    "hubGuestName": "do'st",
+    "hubHello": "Salom {{name}} 👋",
+    "hubHeadline": "Parvarishingizni tekshiring",
+    "hubReport": "Hisobotingiz",
+    "hubReportFilter": "Parvarish",
+    "hubTarkibMetric": "Skan",
+    "hubAiAssistant": "AI Assistant",
     "weather": {
       "title": "Ob-havo",
       "today": "Bugun",

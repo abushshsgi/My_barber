@@ -53,6 +53,13 @@
     "hubSearchPlaceholder": "Шампунь, бальзам, гигиена…",
     "hubBannerTitle": "Новости",
     "hubBannerBody": "Новые советы по уходу и подборка продуктов — здесь.",
+    "hubGuestName": "друг",
+    "hubHello": "Привет, {{name}} 👋",
+    "hubHeadline": "Проверьте свой уход",
+    "hubReport": "Ваш отчёт",
+    "hubReportFilter": "Уход",
+    "hubTarkibMetric": "Скан",
+    "hubAiAssistant": "AI Assistant",
     "weather": {
       "title": "Погода",
       "today": "Сегодня",

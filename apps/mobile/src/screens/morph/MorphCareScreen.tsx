@@ -1,13 +1,14 @@
 import { Ionicons } from "@expo/vector-icons";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { LinearGradient } from "expo-linear-gradient";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
+  Image,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from "react-native";
 import { useTranslation } from "react-i18next";
@@ -23,6 +24,7 @@ import {
   type HairCondition,
   type HairTexture,
 } from "../../api/care";
+import { useAuth } from "../../auth/AuthContext";
 import {
   buildCarePlan,
   defaultQuiz,
@@ -72,11 +74,11 @@ function buildFallbackDays(): { date: string; weekday_key: string; is_today: boo
 export function MorphCareScreen({ navigation }: Props) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
-  const { goMorph } = useShellNavigation();
+  const { user } = useAuth();
+  const { goMorph, navigateRootTab } = useShellNavigation();
   const [loading, setLoading] = useState(true);
   const [access, setAccess] = useState<{ allowed: boolean; detail?: string } | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>("hub");
-  const [hubQuery, setHubQuery] = useState("");
   const [quiz, setQuiz] = useState<CareQuizAnswers>(defaultQuiz);
   const [step, setStep] = useState<QuizStep | "plan">(0);
   const [catalog, setCatalog] = useState<CareProduct[]>([]);
@@ -86,13 +88,14 @@ export function MorphCareScreen({ navigation }: Props) {
 
   const plan = useMemo(() => buildCarePlan(quiz), [quiz]);
 
-  const openCatalog = useCallback(
-    (q?: string) => {
-      const trimmed = (q ?? hubQuery).trim();
-      navigation.navigate("CareProducts", trimmed ? { q: trimmed } : undefined);
-    },
-    [hubQuery, navigation],
-  );
+  const displayName =
+    user?.first_name?.trim() ||
+    user?.full_name?.trim()?.split(/\s+/)[0] ||
+    t("care.hubGuestName");
+
+  const openCatalog = useCallback(() => {
+    navigation.navigate("CareProducts");
+  }, [navigation]);
 
   const openTarkib = useCallback(() => {
     goMorph(navigation, "MorphIngredient");
@@ -105,6 +108,14 @@ export function MorphCareScreen({ navigation }: Props) {
   const openWeather = useCallback(() => {
     navigation.navigate("CareWeather");
   }, [navigation]);
+
+  const openAssistant = useCallback(() => {
+    navigateRootTab(navigation, "MorphChat");
+  }, [navigation, navigateRootTab]);
+
+  const openProfile = useCallback(() => {
+    navigateRootTab(navigation, "Profile");
+  }, [navigation, navigateRootTab]);
 
   const bootstrap = useCallback(async () => {
     setLoading(true);
@@ -198,19 +209,48 @@ export function MorphCareScreen({ navigation }: Props) {
     const dayRows = weather?.days?.length
       ? weather.days.slice(0, 7)
       : buildFallbackDays();
+    const avatarUri = user?.avatar?.trim() || null;
+    const initial = displayName.slice(0, 1).toUpperCase();
 
     return (
-      <View style={[styles.hubRoot, { paddingTop: insets.top }]}>
-        <View style={styles.hubTop}>
+      <View style={styles.hubRoot}>
+        <LinearGradient
+          colors={["#EDE4FF", "#F7E8F0", "#F4F5F8"]}
+          start={{ x: 0.1, y: 0 }}
+          end={{ x: 0.9, y: 0.55 }}
+          style={StyleSheet.absoluteFill}
+        />
+        <View style={[styles.blob, styles.blobLilac]} />
+        <View style={[styles.blob, styles.blobPink]} />
+
+        <View style={[styles.hubTop, { paddingTop: insets.top + 8 }]}>
+          <View style={styles.hubHeader}>
+            <View style={styles.hubHeaderText}>
+              <Text style={styles.hubHello}>
+                {t("care.hubHello", { name: displayName })}
+              </Text>
+              <Text style={styles.hubHeadline}>{t("care.hubHeadline")}</Text>
+            </View>
+            <Pressable style={styles.hubAvatarBtn} onPress={openProfile}>
+              {avatarUri ? (
+                <Image source={{ uri: avatarUri }} style={styles.hubAvatar} />
+              ) : (
+                <View style={styles.hubAvatarFallback}>
+                  <Text style={styles.hubAvatarInitial}>{initial}</Text>
+                </View>
+              )}
+            </Pressable>
+          </View>
+
           <Pressable style={styles.weatherChip} onPress={openWeather}>
             {weatherLoading ? (
-              <ActivityIndicator size="small" color="#fff" />
+              <ActivityIndicator size="small" color="#5B4B8A" />
             ) : (
               <>
                 <Ionicons
                   name={weatherIconName(weather?.current.condition_key ?? "unknown")}
                   size={18}
-                  color="#fff"
+                  color="#5B4B8A"
                 />
                 <Text style={styles.weatherTemp}>
                   {weather?.current.temperature_c != null
@@ -243,22 +283,6 @@ export function MorphCareScreen({ navigation }: Props) {
               );
             })}
           </View>
-
-          <View style={styles.bannerWrap}>
-            <Pressable
-              style={styles.hubBanner}
-              onPress={() => openCatalog()}
-              accessibilityLabel={t("care.hubBannerTitle")}
-            >
-              <View style={styles.hubBannerTop}>
-                <Ionicons name="sparkles-outline" size={20} color="#fff" />
-                <Text style={styles.hubBannerTitle}>{t("care.hubBannerTitle")}</Text>
-              </View>
-              <Text style={styles.hubBannerBody} numberOfLines={2}>
-                {t("care.hubBannerBody")}
-              </Text>
-            </Pressable>
-          </View>
         </View>
 
         <View
@@ -267,52 +291,62 @@ export function MorphCareScreen({ navigation }: Props) {
             { paddingBottom: Math.max(insets.bottom, 12) + 72 },
           ]}
         >
+          <View style={styles.reportHead}>
+            <Text style={styles.reportTitle}>{t("care.hubReport")}</Text>
+            <Pressable style={styles.reportFilter} onPress={openCatalog}>
+              <Text style={styles.reportFilterText}>{t("care.hubReportFilter")}</Text>
+              <Ionicons name="chevron-down" size={14} color="#1a1a1a" />
+            </Pressable>
+          </View>
+
           <View style={styles.hubCards}>
-            <Pressable
-              style={[styles.hubCard, styles.hubCardActive]}
-              onPress={() => setViewMode("flow")}
-            >
-              <View style={styles.hubCardIcon}>
-                <Ionicons name="water-outline" size={22} color="#564746" />
+            <Pressable style={styles.hubCard} onPress={() => setViewMode("flow")}>
+              <View style={styles.hubCardHead}>
+                <Text style={styles.hubCardTitle}>{t("care.hubParvarish")}</Text>
+                <View style={[styles.hubCardIcon, styles.hubCardIconBlue]}>
+                  <Ionicons name="water" size={16} color="#3B82F6" />
+                </View>
               </View>
-              <Text style={styles.hubCardTitle}>{t("care.hubParvarish")}</Text>
+              <Text style={styles.hubCardMetric} numberOfLines={1}>
+                {t(`care.conditions.${quiz.condition}`)}
+              </Text>
               <Text style={styles.hubCardSub} numberOfLines={2}>
                 {t("care.hubParvarishSub")}
               </Text>
             </Pressable>
 
             <Pressable style={styles.hubCard} onPress={openTarkib}>
-              <View style={styles.hubCardIcon}>
-                <Ionicons name="flask-outline" size={22} color="#564746" />
+              <View style={styles.hubCardHead}>
+                <Text style={styles.hubCardTitle}>{t("care.hubTarkib")}</Text>
+                <View style={[styles.hubCardIcon, styles.hubCardIconRose]}>
+                  <Ionicons name="flask" size={16} color="#E11D48" />
+                </View>
               </View>
-              <Text style={styles.hubCardTitle}>{t("care.hubTarkib")}</Text>
+              <Text style={styles.hubCardMetric} numberOfLines={1}>
+                {t("care.hubTarkibMetric")}
+              </Text>
               <Text style={styles.hubCardSub} numberOfLines={2}>
                 {t("care.hubTarkibSub")}
               </Text>
             </Pressable>
           </View>
 
-          <View style={styles.hubSearchRow}>
-            <View style={styles.hubSearchField}>
-              <Ionicons name="search" size={16} color="rgba(42,42,42,0.35)" />
-              <TextInput
-                value={hubQuery}
-                onChangeText={setHubQuery}
-                placeholder={t("care.hubSearchPlaceholder")}
-                placeholderTextColor="rgba(42,42,42,0.35)"
-                style={styles.hubSearchInput}
-                returnKeyType="search"
-                onSubmitEditing={() => openCatalog()}
-              />
-            </View>
-            <Pressable
-              style={styles.hubSearchBtn}
-              onPress={() => openCatalog()}
-              accessibilityLabel={t("care.catalog.search")}
+          <Pressable
+            style={styles.aiAssistant}
+            onPress={openAssistant}
+            accessibilityLabel={t("care.hubAiAssistant")}
+          >
+            <LinearGradient
+              colors={["#8B7CFF", "#5B8CFF"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.aiAssistantIcon}
             >
-              <Ionicons name="search" size={22} color="#f2eeed" />
-            </Pressable>
-          </View>
+              <Ionicons name="sparkles" size={18} color="#fff" />
+            </LinearGradient>
+            <Text style={styles.aiAssistantText}>{t("care.hubAiAssistant")}</Text>
+            <Ionicons name="arrow-forward" size={18} color="#1a1a1a" />
+          </Pressable>
         </View>
       </View>
     );
@@ -507,14 +541,71 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: "#050505" },
   hubRoot: {
     flex: 1,
-    backgroundColor: "#d9d9d9",
+    backgroundColor: "#F4F5F8",
+  },
+  blob: {
+    position: "absolute",
+    borderRadius: 999,
+    opacity: 0.55,
+  },
+  blobLilac: {
+    width: 220,
+    height: 220,
+    top: 40,
+    right: -60,
+    backgroundColor: "#D9D0FF",
+  },
+  blobPink: {
+    width: 180,
+    height: 180,
+    top: 120,
+    left: -50,
+    backgroundColor: "#F5C9DE",
   },
   hubTop: {
-    flex: 1,
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 10,
+    paddingHorizontal: 20,
+    paddingBottom: 14,
+    gap: 14,
+  },
+  hubHeader: {
+    flexDirection: "row",
+    alignItems: "center",
     gap: 12,
+  },
+  hubHeaderText: { flex: 1, gap: 4 },
+  hubHello: {
+    ...morphFont,
+    fontSize: 15,
+    fontWeight: "500",
+    color: "rgba(26,26,26,0.72)",
+  },
+  hubHeadline: {
+    ...morphFont,
+    fontSize: 28,
+    fontWeight: "700",
+    color: "#111",
+    letterSpacing: -0.6,
+    lineHeight: 32,
+  },
+  hubAvatarBtn: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    overflow: "hidden",
+    backgroundColor: "rgba(255,255,255,0.7)",
+  },
+  hubAvatar: { width: "100%", height: "100%" },
+  hubAvatarFallback: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#E8E0FF",
+  },
+  hubAvatarInitial: {
+    ...morphFont,
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#5B4B8A",
   },
   weatherChip: {
     alignSelf: "flex-start",
@@ -525,18 +616,18 @@ const styles = StyleSheet.create({
     minHeight: 40,
     paddingHorizontal: 14,
     borderRadius: 999,
-    backgroundColor: "#96605e",
+    backgroundColor: "rgba(255,255,255,0.72)",
   },
-  weatherTemp: { ...morphFont, fontSize: 16, fontWeight: "700", color: "#fff" },
+  weatherTemp: { ...morphFont, fontSize: 16, fontWeight: "700", color: "#1a1a1a" },
   dayRow: {
     flexDirection: "row",
     gap: 6,
   },
   dayPill: {
     flex: 1,
-    minHeight: 74,
+    minHeight: 64,
     borderRadius: 16,
-    backgroundColor: "#e6bdb8",
+    backgroundColor: "rgba(255,255,255,0.55)",
     alignItems: "center",
     justifyContent: "center",
     paddingVertical: 8,
@@ -544,128 +635,133 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   dayPillOn: {
-    backgroundColor: "#96605e",
+    backgroundColor: "#fff",
   },
   dayPillDate: {
     ...morphFont,
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: "700",
-    color: "rgba(42,42,42,0.75)",
+    color: "rgba(26,26,26,0.7)",
   },
   dayPillWeek: {
     ...morphFont,
     fontSize: 10,
     fontWeight: "600",
-    color: "rgba(42,42,42,0.55)",
+    color: "rgba(26,26,26,0.45)",
   },
-  dayPillTextOn: { color: "#fff" },
-  bannerWrap: {
-    flex: 1,
-    justifyContent: "center",
-  },
-  hubBanner: {
-    height: 100,
-    flexGrow: 0,
-    flexShrink: 0,
-    borderRadius: 24,
-    backgroundColor: "#564746",
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    justifyContent: "center",
-    gap: 6,
-  },
-  hubBannerTop: { flexDirection: "row", alignItems: "center", gap: 8 },
-  hubBannerTitle: { ...morphFont, fontSize: 16, fontWeight: "700", color: "#fff" },
-  hubBannerBody: {
-    ...morphFont,
-    fontSize: 13,
-    lineHeight: 18,
-    color: "rgba(255,255,255,0.88)",
-  },
+  dayPillTextOn: { color: "#1a1a1a" },
   center: { alignItems: "center", justifyContent: "center" },
   pad: { flex: 1, paddingHorizontal: 20 },
   hubSpacer: { flex: 1 },
   hubSheet: {
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    backgroundColor: "#f2eeed",
+    marginTop: "auto",
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    backgroundColor: "#fff",
     paddingHorizontal: 18,
-    paddingTop: 16,
-    gap: 14,
+    paddingTop: 20,
+    gap: 16,
+  },
+  reportHead: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  reportTitle: {
+    ...morphFont,
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#111",
+  },
+  reportFilter: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+    backgroundColor: "#F2F2F4",
+  },
+  reportFilterText: {
+    ...morphFont,
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#1a1a1a",
   },
   hubCards: {
     flexDirection: "row",
     gap: 12,
-    height: 100,
   },
   hubCard: {
     flex: 1,
-    height: 100,
-    borderRadius: 20,
-    backgroundColor: "rgba(42,42,42,0.08)",
+    minHeight: 148,
+    borderRadius: 24,
+    backgroundColor: "#FAFAFB",
+    padding: 14,
+    gap: 8,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(42,42,42,0.08)",
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    justifyContent: "center",
-    gap: 2,
+    borderColor: "rgba(0,0,0,0.04)",
   },
-  hubCardActive: {
-    borderWidth: 1.5,
-    borderColor: "#2a2a2a",
+  hubCardHead: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
   },
   hubCardIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 12,
-    backgroundColor: "rgba(42,42,42,0.08)",
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 4,
   },
+  hubCardIconBlue: { backgroundColor: "rgba(59,130,246,0.12)" },
+  hubCardIconRose: { backgroundColor: "rgba(225,29,72,0.12)" },
   hubCardTitle: {
     ...morphFont,
-    fontSize: 15,
+    flex: 1,
+    fontSize: 13,
+    fontWeight: "600",
+    color: "rgba(26,26,26,0.7)",
+  },
+  hubCardMetric: {
+    ...morphFont,
+    fontSize: 22,
     fontWeight: "700",
-    color: "#2a2a2a",
+    color: "#111",
+    letterSpacing: -0.4,
   },
   hubCardSub: {
     ...morphFont,
     fontSize: 11,
-    lineHeight: 14,
-    color: "rgba(42,42,42,0.55)",
+    lineHeight: 15,
+    color: "rgba(26,26,26,0.45)",
+    marginTop: "auto",
   },
-  hubSearchRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
-  hubSearchField: {
-    flex: 1,
-    height: 70,
-    borderRadius: 16,
-    backgroundColor: "rgba(42,42,42,0.08)",
+  aiAssistant: {
+    height: 64,
+    borderRadius: 999,
+    backgroundColor: "rgba(245,245,248,0.95)",
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(42,42,42,0.08)",
+    borderColor: "rgba(0,0,0,0.04)",
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 14,
-    gap: 10,
+    paddingHorizontal: 10,
+    gap: 12,
   },
-  hubSearchInput: {
-    ...morphFont,
-    flex: 1,
-    fontSize: 14,
-    color: "#2a2a2a",
-    paddingVertical: 0,
-  },
-  hubSearchBtn: {
-    width: 70,
-    height: 48,
-    borderRadius: 16,
-    backgroundColor: "#564746",
+  aiAssistantIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: "center",
     justifyContent: "center",
+  },
+  aiAssistantText: {
+    ...morphFont,
+    flex: 1,
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#111",
   },
   rowBetween: {
     flexDirection: "row",
