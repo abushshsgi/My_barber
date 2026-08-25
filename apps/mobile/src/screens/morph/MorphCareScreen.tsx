@@ -25,6 +25,7 @@ import {
 } from "../../api/care";
 import { useAuth } from "../../auth/AuthContext";
 import { CareRoutineSheet } from "../../components/morph/care/CareRoutineSheet";
+import { DarkMeshAmbientBg } from "../../components/morph/care/DarkMeshAmbientBg";
 import { useCareWeather } from "../../hooks/useCareWeather";
 import {
   defaultQuiz,
@@ -224,14 +225,7 @@ export function MorphCareScreen({ navigation }: Props) {
 
     return (
       <View style={styles.hubRoot}>
-        <LinearGradient
-          colors={["#EDE4FF", "#F7E8F0", "#F4F5F8"]}
-          start={{ x: 0.1, y: 0 }}
-          end={{ x: 0.9, y: 0.55 }}
-          style={StyleSheet.absoluteFill}
-        />
-        <View style={[styles.blob, styles.blobLilac]} />
-        <View style={[styles.blob, styles.blobPink]} />
+        <DarkMeshAmbientBg />
 
         <View style={[styles.hubTop, { paddingTop: insets.top + 8 }]}>
           <View style={styles.hubHeader}>
@@ -252,13 +246,13 @@ export function MorphCareScreen({ navigation }: Props) {
 
           <Pressable style={styles.weatherChip} onPress={openWeather}>
             {weatherLoading ? (
-              <ActivityIndicator size="small" color="#5B4B8A" />
+              <ActivityIndicator size="small" color="rgba(255,255,255,0.85)" />
             ) : (
               <>
                 <Ionicons
                   name={weatherIconName(weather?.current.condition_key ?? "unknown")}
                   size={18}
-                  color="#5B4B8A"
+                  color="rgba(255,255,255,0.9)"
                 />
                 <Text style={styles.weatherTemp}>
                   {weather?.current.temperature_c != null
@@ -466,8 +460,8 @@ export function MorphCareScreen({ navigation }: Props) {
           <Text style={styles.routineTopTitle}>{t("care.hubParvarish")}</Text>
           <View style={{ width: 22 }} />
         </View>
-        <Text style={styles.hubHello}>{t("care.hubHello", { name: displayName })}</Text>
-        <Text style={styles.hubHeadline}>{t(greetingKey())}</Text>
+        <Text style={styles.routineHello}>{t("care.hubHello", { name: displayName })}</Text>
+        <Text style={styles.routineHeadline}>{t(greetingKey())}</Text>
       </View>
 
       <View style={[styles.hubSheet, { flex: 1, paddingBottom: Math.max(insets.bottom, 12) + 88 }]}>
@@ -508,21 +502,27 @@ const styles = StyleSheet.create({
   center: { alignItems: "center", justifyContent: "center" },
   pad: { flex: 1, paddingHorizontal: 20 },
   onboardPad: { flex: 1, paddingHorizontal: 20 },
-  hubRoot: { flex: 1, backgroundColor: "#F4F5F8" },
-  blob: { position: "absolute", borderRadius: 999, opacity: 0.55 },
-  blobLilac: { width: 220, height: 220, top: 40, right: -60, backgroundColor: "#D9D0FF" },
-  blobPink: { width: 180, height: 180, top: 120, left: -50, backgroundColor: "#F5C9DE" },
+  hubRoot: { flex: 1, backgroundColor: "#0c0e0c" },
   hubTop: { paddingHorizontal: 20, paddingBottom: 14, gap: 14 },
   routineTop: { paddingHorizontal: 20, paddingBottom: 8, gap: 4 },
   routineTopTitle: { ...morphFont, fontSize: 15, fontWeight: "600", color: "#111" },
-  hubHeader: { flexDirection: "row", alignItems: "center", gap: 12 },
-  hubHeaderText: { flex: 1, gap: 4 },
-  hubHello: { ...morphFont, fontSize: 15, fontWeight: "500", color: "rgba(26,26,26,0.72)" },
-  hubHeadline: {
+  routineHello: { ...morphFont, fontSize: 15, fontWeight: "500", color: "rgba(26,26,26,0.72)" },
+  routineHeadline: {
     ...morphFont,
     fontSize: 28,
     fontWeight: "700",
     color: "#111",
+    letterSpacing: -0.6,
+    lineHeight: 32,
+  },
+  hubHeader: { flexDirection: "row", alignItems: "center", gap: 12 },
+  hubHeaderText: { flex: 1, gap: 4 },
+  hubHello: { ...morphFont, fontSize: 15, fontWeight: "500", color: "rgba(255,255,255,0.72)" },
+  hubHeadline: {
+    ...morphFont,
+    fontSize: 28,
+    fontWeight: "700",
+    color: "#fff",
     letterSpacing: -0.6,
     lineHeight: 32,
   },
@@ -531,11 +531,18 @@ const styles = StyleSheet.create({
     height: 52,
     borderRadius: 26,
     overflow: "hidden",
-    backgroundColor: "rgba(255,255,255,0.7)",
+    backgroundColor: "rgba(255,255,255,0.18)",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(255,255,255,0.25)",
   },
   hubAvatar: { width: "100%", height: "100%" },
-  hubAvatarFallback: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#E8E0FF" },
-  hubAvatarInitial: { ...morphFont, fontSize: 20, fontWeight: "700", color: "#5B4B8A" },
+  hubAvatarFallback: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255,255,255,0.12)",
+  },
+  hubAvatarInitial: { ...morphFont, fontSize: 20, fontWeight: "700", color: "#fff" },
   weatherChip: {
     alignSelf: "flex-start",
     flexDirection: "row",
@@ -545,24 +552,28 @@ const styles = StyleSheet.create({
     minHeight: 40,
     paddingHorizontal: 14,
     borderRadius: 999,
-    backgroundColor: "rgba(255,255,255,0.72)",
+    backgroundColor: "rgba(255,255,255,0.14)",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(255,255,255,0.2)",
   },
-  weatherTemp: { ...morphFont, fontSize: 16, fontWeight: "700", color: "#1a1a1a" },
+  weatherTemp: { ...morphFont, fontSize: 16, fontWeight: "700", color: "#fff" },
   dayRow: { flexDirection: "row", gap: 6 },
   dayPill: {
     flex: 1,
     minHeight: 64,
     borderRadius: 16,
-    backgroundColor: "rgba(255,255,255,0.55)",
+    backgroundColor: "rgba(255,255,255,0.1)",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(255,255,255,0.14)",
     alignItems: "center",
     justifyContent: "center",
     paddingVertical: 8,
     paddingHorizontal: 2,
     gap: 2,
   },
-  dayPillOn: { backgroundColor: "#fff" },
-  dayPillDate: { ...morphFont, fontSize: 16, fontWeight: "700", color: "rgba(26,26,26,0.7)" },
-  dayPillWeek: { ...morphFont, fontSize: 10, fontWeight: "600", color: "rgba(26,26,26,0.45)" },
+  dayPillOn: { backgroundColor: "rgba(255,255,255,0.92)" },
+  dayPillDate: { ...morphFont, fontSize: 16, fontWeight: "700", color: "rgba(255,255,255,0.78)" },
+  dayPillWeek: { ...morphFont, fontSize: 10, fontWeight: "600", color: "rgba(255,255,255,0.45)" },
   dayPillTextOn: { color: "#1a1a1a" },
   hubSheet: {
     marginTop: "auto",
