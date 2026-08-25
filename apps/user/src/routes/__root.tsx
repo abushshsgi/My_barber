@@ -18,6 +18,7 @@ import { LangAwareOutlet } from "../components/LangAwareOutlet";
 import { UserLayout } from "../components/UserLayout";
 import { DeployRecovery } from "../components/DeployRecovery";
 import { ClientOnly } from "../components/ClientOnly";
+import { MonopoCursor } from "../components/ui/MonopoCursor";
 import { CLIENT_BOOT_SCRIPT } from "../lib/client-boot-script";
 import { Toaster } from "sonner";
 import { APP_BUILD_ID } from "../lib/app-build-id";
@@ -217,6 +218,7 @@ function AppShell() {
             <GoogleAnalytics />
             <DeployRecovery />
             <Toaster position="top-center" />
+            <MonopoCursor />
           </ClientOnly>
         </CurrencyProvider>
       </AudienceProvider>
