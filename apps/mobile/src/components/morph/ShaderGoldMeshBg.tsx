@@ -1,5 +1,5 @@
 import { LinearGradient } from "expo-linear-gradient";
-import { createElement, useEffect, useRef } from "react";
+import { createElement, useEffect } from "react";
 import { Platform, StyleSheet, useWindowDimensions, View } from "react-native";
 import Animated, {
   Easing,
@@ -10,142 +10,136 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 
-/** Shader palitra: qorong‘i / oltin / zaytun. */
-const COL1 = "#0D0F0A";
-const VERT = `
-attribute vec2 aPos;
-varying vec2 vUv;
-void main() {
-  vUv = aPos * 0.5 + 0.5;
-  gl_Position = vec4(aPos, 0.0, 1.0);
-}
-`;
+const BG = "#0c0d0b";
+const STYLE_ID = "morph-gold-mesh-html";
 
-const FRAG = `
-precision mediump float;
-uniform float uTime;
-uniform vec2 uResolution;
-varying vec2 vUv;
-
-void main() {
-  vec2 st = gl_FragCoord.xy / uResolution.xy;
-  vec3 col1 = vec3(0.05, 0.06, 0.04);
-  vec3 col2 = vec3(0.72, 0.58, 0.23);
-  vec3 col3 = vec3(0.22, 0.28, 0.18);
-  float noise = sin(st.x * 3.0 + uTime * 0.5) * cos(st.y * 3.0 + uTime * 0.5);
-  vec3 finalColor = mix(col1, mix(col2, col3, noise * 0.5 + 0.5), clamp(st.y + noise * 0.2, 0.0, 1.0));
-  float grain = fract(sin(dot(st.xy + uTime * 0.02, vec2(12.9898, 78.233))) * 43758.5453) * 0.08;
-  gl_FragColor = vec4(finalColor + grain, 1.0);
-}
-`;
-
-function compile(gl: WebGLRenderingContext, type: number, src: string) {
-  const sh = gl.createShader(type);
-  if (!sh) return null;
-  gl.shaderSource(sh, src);
-  gl.compileShader(sh);
-  if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) {
-    gl.deleteShader(sh);
-    return null;
-  }
-  return sh;
+/** Tailwind mesh + SVG grain — chat / parvarish. */
+function ensureWebStyles() {
+  if (typeof document === "undefined") return;
+  if (document.getElementById(STYLE_ID)) return;
+  const tag = document.createElement("style");
+  tag.id = STYLE_ID;
+  tag.textContent = `
+    @keyframes morphGoldBlobA {
+      0%, 100% { transform: translate(0, 0) rotate(-25deg) scale(1); }
+      50% { transform: translate(6%, 8%) rotate(-18deg) scale(1.08); }
+    }
+    @keyframes morphGoldBlobB {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      50% { transform: translate(-8%, 5%) scale(1.06); }
+    }
+    @keyframes morphGoldBlobC {
+      0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.5; }
+      50% { transform: translate(4%, -6%) scale(1.1); opacity: 0.65; }
+    }
+  `;
+  document.head.appendChild(tag);
 }
 
-function WebShaderMesh() {
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-
+function WebHtmlMesh() {
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const gl = canvas.getContext("webgl", {
-      alpha: false,
-      antialias: false,
-      preserveDrawingBuffer: false,
-    });
-    if (!gl) return;
-
-    const vs = compile(gl, gl.VERTEX_SHADER, VERT);
-    const fs = compile(gl, gl.FRAGMENT_SHADER, FRAG);
-    if (!vs || !fs) return;
-
-    const prog = gl.createProgram();
-    if (!prog) return;
-    gl.attachShader(prog, vs);
-    gl.attachShader(prog, fs);
-    gl.linkProgram(prog);
-    if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) return;
-    gl.useProgram(prog);
-
-    const buf = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, buf);
-    gl.bufferData(
-      gl.ARRAY_BUFFER,
-      new Float32Array([-1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1]),
-      gl.STATIC_DRAW,
-    );
-    const aPos = gl.getAttribLocation(prog, "aPos");
-    gl.enableVertexAttribArray(aPos);
-    gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
-
-    const uTime = gl.getUniformLocation(prog, "uTime");
-    const uRes = gl.getUniformLocation(prog, "uResolution");
-
-    let raf = 0;
-    let alive = true;
-    const t0 = performance.now();
-
-    const resize = () => {
-      const parent = canvas.parentElement;
-      const w = parent?.clientWidth || window.innerWidth;
-      const h = parent?.clientHeight || window.innerHeight;
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
-      canvas.width = Math.max(1, Math.floor(w * dpr));
-      canvas.height = Math.max(1, Math.floor(h * dpr));
-      canvas.style.width = `${w}px`;
-      canvas.style.height = `${h}px`;
-      gl.viewport(0, 0, canvas.width, canvas.height);
-      gl.uniform2f(uRes, canvas.width, canvas.height);
-    };
-
-    resize();
-    const ro =
-      typeof ResizeObserver !== "undefined"
-        ? new ResizeObserver(resize)
-        : null;
-    if (canvas.parentElement && ro) ro.observe(canvas.parentElement);
-
-    const frame = (now: number) => {
-      if (!alive) return;
-      gl.uniform1f(uTime, (now - t0) / 1000);
-      gl.drawArrays(gl.TRIANGLES, 0, 6);
-      raf = requestAnimationFrame(frame);
-    };
-    raf = requestAnimationFrame(frame);
-
-    return () => {
-      alive = false;
-      cancelAnimationFrame(raf);
-      ro?.disconnect();
-      gl.deleteProgram(prog);
-      gl.deleteShader(vs);
-      gl.deleteShader(fs);
-      gl.deleteBuffer(buf);
-    };
+    ensureWebStyles();
   }, []);
 
-  return createElement("canvas", {
-    ref: canvasRef,
-    "aria-hidden": true,
-    style: {
-      position: "absolute",
-      inset: 0,
-      width: "100%",
-      height: "100%",
-      pointerEvents: "none",
-      display: "block",
+  return createElement(
+    "div",
+    {
+      "aria-hidden": true,
+      style: {
+        position: "absolute",
+        inset: 0,
+        overflow: "hidden",
+        pointerEvents: "none",
+        backgroundColor: BG,
+      },
     },
-  });
+    createElement(
+      "div",
+      {
+        style: {
+          position: "absolute",
+          inset: 0,
+          opacity: 0.8,
+          mixBlendMode: "screen",
+          filter: "blur(80px)",
+          transform: "scale(1.1)",
+        },
+      },
+      createElement("div", {
+        style: {
+          position: "absolute",
+          top: "10%",
+          left: "15%",
+          width: 500,
+          height: 300,
+          borderRadius: "9999px",
+          background:
+            "linear-gradient(to top right, #8a7335, #d4af37, #3a4028)",
+          animation: "morphGoldBlobA 14s ease-in-out infinite",
+          willChange: "transform",
+        },
+      }),
+      createElement("div", {
+        style: {
+          position: "absolute",
+          top: "20%",
+          right: "10%",
+          width: 600,
+          height: 600,
+          borderRadius: "9999px",
+          background:
+            "linear-gradient(to bottom right, #2a301e, #6e5d28, #0d0e0a)",
+          animation: "morphGoldBlobB 18s ease-in-out infinite",
+          willChange: "transform",
+        },
+      }),
+      createElement("div", {
+        style: {
+          position: "absolute",
+          bottom: "5%",
+          left: "30%",
+          width: 400,
+          height: 400,
+          borderRadius: "9999px",
+          backgroundColor: "#a38b45",
+          opacity: 0.5,
+          animation: "morphGoldBlobC 16s ease-in-out infinite",
+          willChange: "transform",
+        },
+      }),
+    ),
+    createElement(
+      "div",
+      {
+        style: {
+          position: "absolute",
+          inset: 0,
+          opacity: 0.25,
+          pointerEvents: "none",
+          mixBlendMode: "overlay",
+        },
+      },
+      createElement(
+        "svg",
+        { style: { width: "100%", height: "100%" }, xmlns: "http://www.w3.org/2000/svg" },
+        createElement(
+          "filter",
+          { id: "morphGoldNoiseFilter" },
+          createElement("feTurbulence", {
+            type: "fractalNoise",
+            baseFrequency: "0.8",
+            numOctaves: "3",
+            stitchTiles: "stitch",
+          }),
+        ),
+        createElement("rect", {
+          width: "100%",
+          height: "100%",
+          filter: "url(#morphGoldNoiseFilter)",
+        }),
+      ),
+    ),
+  );
 }
 
 function MeshBlob({
@@ -162,7 +156,7 @@ function MeshBlob({
 }: {
   duration: number;
   dim: number;
-  colors: readonly [string, string, string];
+  colors: readonly [string, string, ...string[]];
   rotateFrom: number;
   rotateTo: number;
   xFrom: number;
@@ -186,7 +180,7 @@ function MeshBlob({
       { translateX: interpolate(p.value, [0, 1], [xFrom, xTo]) },
       { translateY: interpolate(p.value, [0, 1], [yFrom, yTo]) },
       { rotate: `${interpolate(p.value, [0, 1], [rotateFrom, rotateTo])}deg` },
-      { scale: interpolate(p.value, [0, 1], [1.04, 1.2]) },
+      { scale: interpolate(p.value, [0, 1], [1.02, 1.12]) },
     ],
   }));
 
@@ -209,79 +203,76 @@ function MeshBlob({
     >
       <LinearGradient
         colors={[...colors]}
-        start={{ x: 0.2, y: 0 }}
-        end={{ x: 0.85, y: 1 }}
+        start={{ x: 0.15, y: 0.1 }}
+        end={{ x: 0.9, y: 0.95 }}
         style={styles.fill}
       />
     </Animated.View>
   );
 }
 
-function NativeShaderMesh() {
+function NativeHtmlMesh() {
   const { width, height } = useWindowDimensions();
-  const dim = Math.max(width, height) * 1.95;
+  const dim = Math.max(width, height) * 1.6;
 
   return (
     <View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.clip]}>
-      <View style={[StyleSheet.absoluteFill, { backgroundColor: COL1 }]} />
+      <View style={[StyleSheet.absoluteFill, { backgroundColor: BG }]} />
       <MeshBlob
-        duration={12000}
-        dim={dim}
-        colors={["rgba(184,148,59,0.55)", "rgba(56,71,46,0.2)", "transparent"]}
-        rotateFrom={-16}
-        rotateTo={14}
-        xFrom={-width * 0.16}
-        xTo={width * 0.12}
-        yFrom={-height * 0.12}
-        yTo={height * 0.1}
-        opacity={0.95}
-      />
-      <MeshBlob
-        duration={17000}
-        dim={dim * 0.92}
-        colors={["rgba(56,71,46,0.5)", "rgba(13,15,10,0.15)", "transparent"]}
-        rotateFrom={12}
+        duration={14000}
+        dim={dim * 0.85}
+        colors={["#8a7335", "#d4af37", "#3a4028"]}
+        rotateFrom={-25}
         rotateTo={-18}
-        xFrom={width * 0.14}
-        xTo={-width * 0.1}
-        yFrom={height * 0.08}
-        yTo={-height * 0.1}
-        opacity={0.9}
+        xFrom={-width * 0.2}
+        xTo={-width * 0.08}
+        yFrom={-height * 0.28}
+        yTo={-height * 0.18}
+        opacity={0.75}
       />
       <MeshBlob
-        duration={22000}
-        dim={dim * 0.8}
-        colors={["rgba(184,148,59,0.28)", "rgba(56,71,46,0.18)", "transparent"]}
-        rotateFrom={-6}
-        rotateTo={20}
+        duration={18000}
+        dim={dim}
+        colors={["#2a301e", "#6e5d28", "#0d0e0a"]}
+        rotateFrom={8}
+        rotateTo={-6}
+        xFrom={width * 0.12}
+        xTo={width * 0.02}
+        yFrom={-height * 0.15}
+        yTo={-height * 0.05}
+        opacity={0.85}
+      />
+      <MeshBlob
+        duration={16000}
+        dim={dim * 0.7}
+        colors={["#a38b45", "rgba(163,139,69,0.35)", "transparent"]}
+        rotateFrom={-4}
+        rotateTo={10}
         xFrom={-width * 0.05}
-        xTo={width * 0.1}
-        yFrom={height * 0.12}
-        yTo={-height * 0.06}
-        opacity={0.8}
+        xTo={width * 0.05}
+        yFrom={height * 0.18}
+        yTo={height * 0.1}
+        opacity={0.55}
       />
       <View style={[StyleSheet.absoluteFill, styles.grain]} />
     </View>
   );
 }
 
-/** Dark gold / metallic green — chat + parvarish umumiy shader fon. */
+/** HTML mesh gradient (oltin / zaytun + grain) — chat va parvarish. */
 export function ShaderGoldMeshBg() {
   if (Platform.OS === "web") {
     return (
       <View pointerEvents="none" style={StyleSheet.absoluteFill}>
-        <WebShaderMesh />
+        <WebHtmlMesh />
       </View>
     );
   }
-  return <NativeShaderMesh />;
+  return <NativeHtmlMesh />;
 }
 
 const styles = StyleSheet.create({
   clip: { overflow: "hidden" },
   fill: { flex: 1, borderRadius: 999 },
-  grain: {
-    opacity: 0.14,
-    backgroundColor: "rgba(184,148,59,0.06)",
-  },
+  grain: { opacity: 0.2, backgroundColor: "rgba(163,139,69,0.08)" },
 });
