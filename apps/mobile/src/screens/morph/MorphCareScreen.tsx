@@ -256,6 +256,11 @@ export function MorphCareScreen({ navigation }: Props) {
             >
               <Ionicons name="chevron-back" size={20} color="#fff" />
             </Pressable>
+
+            <Text style={styles.navBarTitle} numberOfLines={1}>
+              {t("care.hubHeadline")}
+            </Text>
+
             <Pressable
               style={styles.navCircleBtn}
               onPress={openAssistant}
@@ -267,26 +272,31 @@ export function MorphCareScreen({ navigation }: Props) {
           </View>
 
           <View style={styles.hubTopContent}>
-            <Text style={styles.hubHeadline}>{t("care.hubHeadline")}</Text>
-
-            <Pressable style={styles.weatherChip} onPress={openWeather}>
-              {weatherLoading ? (
-                <ActivityIndicator size="small" color="rgba(255,255,255,0.85)" />
-              ) : (
-                <>
-                  <Ionicons
-                    name={weatherIconName(weather?.current.condition_key ?? "unknown")}
-                    size={18}
-                    color="rgba(255,255,255,0.9)"
-                  />
-                  <Text style={styles.weatherTemp}>
-                    {weather?.current.temperature_c != null
-                      ? `${Math.round(weather.current.temperature_c)}°`
-                      : "—"}
-                  </Text>
-                </>
-              )}
-            </Pressable>
+            <View style={styles.weatherRow}>
+              <Pressable style={styles.weatherChip} onPress={openWeather}>
+                {weatherLoading ? (
+                  <ActivityIndicator size="small" color="rgba(255,255,255,0.85)" />
+                ) : (
+                  <>
+                    <Ionicons
+                      name={weatherIconName(weather?.current.condition_key ?? "unknown")}
+                      size={18}
+                      color="rgba(255,255,255,0.95)"
+                    />
+                    <Text style={styles.weatherTemp}>
+                      {weather?.current.temperature_c != null
+                        ? `${Math.round(weather.current.temperature_c)}°`
+                        : "—"}
+                    </Text>
+                    {weather?.location_label ? (
+                      <Text style={styles.weatherLoc} numberOfLines={1}>
+                        {weather.location_label}
+                      </Text>
+                    ) : null}
+                  </>
+                )}
+              </Pressable>
+            </View>
 
             <View style={styles.dayRow}>
               {dayRows.map((day, idx) => {
@@ -294,18 +304,24 @@ export function MorphCareScreen({ navigation }: Props) {
                 return (
                   <Pressable
                     key={day.date}
-                    style={[styles.dayPill, on && styles.dayPillOn]}
+                    style={[styles.dayPill, on ? styles.dayPillOn : styles.dayPillOff]}
                     onPress={() => {
                       setSelectedDayIdx(idx);
                       openWeather();
                     }}
                   >
-                    <Text style={[styles.dayPillDate, on && styles.dayPillTextOn]}>
+                    <Text style={[styles.dayPillDate, on ? styles.dayPillDateOn : styles.dayPillDateOff]}>
                       {formatDayNumber(day.date)}
                     </Text>
-                    <Text style={[styles.dayPillWeek, on && styles.dayPillTextOn]} numberOfLines={1}>
+                    <Text
+                      style={[styles.dayPillWeek, on ? styles.dayPillWeekOn : styles.dayPillWeekOff]}
+                      numberOfLines={1}
+                    >
                       {t(`care.weather.weekdaysShort.${day.weekday_key}`)}
                     </Text>
+                    {day.is_today && (
+                      <View style={[styles.todayDot, on && styles.todayDotOn]} />
+                    )}
                   </Pressable>
                 );
               })}
@@ -583,46 +599,101 @@ const styles = StyleSheet.create({
     letterSpacing: -0.6,
     lineHeight: 32,
   },
-  hubHeadline: {
+  navBarTitle: {
     ...morphFont,
-    fontSize: 28,
+    fontSize: 16,
     fontWeight: "700",
-    color: "#fff",
-    letterSpacing: -0.6,
-    lineHeight: 32,
+    color: "#FFFFFF",
+    letterSpacing: -0.3,
+    textAlign: "center",
+    flex: 1,
+    marginHorizontal: 8,
+  },
+  weatherRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
   weatherChip: {
     alignSelf: "flex-start",
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    minWidth: 88,
     minHeight: 40,
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
     borderRadius: 999,
-    backgroundColor: "rgba(255,255,255,0.14)",
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(255,255,255,0.2)",
+    backgroundColor: "rgba(255,255,255,0.12)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.18)",
   },
   weatherTemp: { ...morphFont, fontSize: 16, fontWeight: "700", color: "#fff" },
-  dayRow: { flexDirection: "row", gap: 6 },
+  weatherLoc: {
+    ...morphFont,
+    fontSize: 12,
+    fontWeight: "500",
+    color: "rgba(255,255,255,0.65)",
+    marginLeft: 4,
+  },
+  dayRow: { flexDirection: "row", gap: 6, marginTop: 4 },
   dayPill: {
     flex: 1,
-    minHeight: 64,
-    borderRadius: 16,
-    backgroundColor: "rgba(255,255,255,0.1)",
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(255,255,255,0.14)",
+    minHeight: 74,
+    borderRadius: 20,
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 8,
+    paddingVertical: 10,
     paddingHorizontal: 2,
-    gap: 2,
+    gap: 3,
   },
-  dayPillOn: { backgroundColor: "rgba(255,255,255,0.92)" },
-  dayPillDate: { ...morphFont, fontSize: 16, fontWeight: "700", color: "rgba(255,255,255,0.78)" },
-  dayPillWeek: { ...morphFont, fontSize: 10, fontWeight: "600", color: "rgba(255,255,255,0.45)" },
-  dayPillTextOn: { color: "#1a1a1a" },
+  dayPillOn: {
+    backgroundColor: "#FFFFFF",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.18,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  dayPillOff: {
+    backgroundColor: "rgba(255,255,255,0.08)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.14)",
+  },
+  dayPillDate: {
+    ...morphFont,
+    fontSize: 18,
+    letterSpacing: -0.4,
+  },
+  dayPillDateOn: {
+    fontWeight: "800",
+    color: "#0F172A",
+  },
+  dayPillDateOff: {
+    fontWeight: "700",
+    color: "rgba(255,255,255,0.9)",
+  },
+  dayPillWeek: {
+    ...morphFont,
+    fontSize: 11,
+  },
+  dayPillWeekOn: {
+    fontWeight: "700",
+    color: "#64748B",
+  },
+  dayPillWeekOff: {
+    fontWeight: "600",
+    color: "rgba(255,255,255,0.45)",
+  },
+  todayDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "#8B5CF6",
+    marginTop: 1,
+  },
+  todayDotOn: {
+    backgroundColor: "#7C3AED",
+  },
   hubSheet: {
     marginTop: "auto",
     borderTopLeftRadius: 32,
