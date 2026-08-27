@@ -457,7 +457,7 @@ export function MorphAiStudioPage() {
   const busy = Boolean(loadingId);
 
   return (
-    <div className="relative flex min-h-[100dvh] flex-col overflow-hidden bg-[#070707] text-white">
+    <div className="relative flex min-h-[100dvh] flex-col overflow-x-hidden overflow-y-auto bg-[#070707] text-white">
       <style>{`
         @keyframes morf-studio-scan {
           0% { transform: translateY(-100%); opacity: 0; }
@@ -521,7 +521,7 @@ export function MorphAiStudioPage() {
               <div className="size-10" aria-hidden />
             </header>
 
-            <div className="flex min-h-0 flex-1 flex-col px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
+            <div className="flex min-h-0 flex-1 flex-col px-4 pb-[max(6rem,calc(env(safe-area-inset-bottom)+5rem))]">
               <div className="mb-3 mt-1 max-w-md">
                 <h2 className="text-[1.7rem] font-semibold leading-[1.12] tracking-tight">
                   {t("aiStylePage.studio.pickTitle")}

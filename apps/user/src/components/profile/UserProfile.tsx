@@ -50,7 +50,7 @@ export function UserProfile() {
   ];
 
   return (
-    <div className="min-h-[70vh] bg-background pb-4 pt-[calc(env(safe-area-inset-top)+6px)]">
+    <div className="min-h-[70vh] bg-background pb-[max(6rem,calc(env(safe-area-inset-bottom)+5rem))] pt-[calc(env(safe-area-inset-top)+6px)]">
       <div className="flex items-center justify-between gap-3 px-5">
         <span className="inline-flex items-center gap-1.5 rounded-full bg-surface px-2.5 py-1.5 text-[10px] font-bold text-muted-foreground">
           <Sparkles className="h-3 w-3" /> Bonus · tez orada

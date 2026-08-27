@@ -329,7 +329,7 @@ export function MorphAiHome({
         </Link>
       </header>
 
-      <div className="relative z-[1] mx-auto flex w-full max-w-lg flex-col px-5 pb-[max(2rem,env(safe-area-inset-bottom))] pt-6 md:max-w-2xl md:px-8 md:pt-10">
+      <div className="relative z-[1] mx-auto flex w-full max-w-lg flex-col px-5 pb-[max(6rem,calc(env(safe-area-inset-bottom)+5rem))] pt-6 md:max-w-2xl md:px-8 md:pt-10">
         <motion.section
           initial={reduceMotion ? false : { opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}

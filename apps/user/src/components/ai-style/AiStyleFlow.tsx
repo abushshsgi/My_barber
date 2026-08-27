@@ -181,8 +181,8 @@ export function AiStyleFlow({ audience, menPersonaId: menPersonaIdProp, focusSty
     document.documentElement.style.overflow = "hidden";
     document.body.style.overflow = "hidden";
     return () => {
-      document.documentElement.style.overflow = prevHtml;
-      document.body.style.overflow = prevBody;
+      document.documentElement.style.overflow = prevHtml === "hidden" ? "" : prevHtml;
+      document.body.style.overflow = prevBody === "hidden" ? "" : prevBody;
     };
   }, [showHome]);
 

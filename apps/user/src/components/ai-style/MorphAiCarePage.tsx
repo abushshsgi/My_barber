@@ -138,10 +138,10 @@ export function MorphAiCarePage() {
     const progress = ((step + 1) / questions.length) * 100;
 
     return (
-      <div className="relative min-h-[100dvh] overflow-hidden bg-[#050505] text-white">
+      <div className="relative min-h-[100dvh] overflow-x-hidden overflow-y-auto bg-[#050505] text-white">
         <div className="pointer-events-none absolute inset-x-0 top-0 h-56 bg-[radial-gradient(ellipse_at_50%_0%,rgba(255,255,255,0.07),transparent_65%)]" />
         <div
-          className="relative z-[1] flex min-h-[100dvh] flex-col px-5 pb-8"
+          className="relative z-[1] flex min-h-[100dvh] flex-col px-5 pb-[max(6rem,calc(env(safe-area-inset-bottom)+5rem))]"
           style={{ paddingTop: "max(1rem, env(safe-area-inset-top))" }}
         >
           <div className="flex items-center justify-between">
@@ -260,11 +260,11 @@ export function MorphAiCarePage() {
   ];
 
   return (
-    <div className="relative min-h-[100dvh] overflow-hidden bg-[#050505] text-white">
+    <div className="relative min-h-[100dvh] overflow-x-hidden overflow-y-auto bg-[#050505] text-white">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-64 bg-[radial-gradient(ellipse_at_50%_0%,rgba(255,255,255,0.08),transparent_60%)]" />
 
       <div
-        className="relative z-[1] px-5 pb-[max(2rem,env(safe-area-inset-bottom))]"
+        className="relative z-[1] px-5 pb-[max(6rem,calc(env(safe-area-inset-bottom)+5rem))]"
         style={{ paddingTop: "max(1rem, env(safe-area-inset-top))" }}
       >
         <div className="flex items-center justify-between">
