@@ -246,8 +246,8 @@ export function MorphCareScreen({ navigation }: Props) {
       <View style={styles.hubRoot}>
         <DarkMeshAmbientBg />
 
-        <View style={[styles.hubTop, { paddingTop: insets.top + 8 }]}>
-          <View style={styles.navBarRow}>
+        <View style={styles.hubTop}>
+          <View style={[styles.navBarRow, { paddingTop: insets.top + 8, paddingHorizontal: 20 }]}>
             <Pressable
               style={styles.navCircleBtn}
               onPress={handleBack}
@@ -266,48 +266,50 @@ export function MorphCareScreen({ navigation }: Props) {
             </Pressable>
           </View>
 
-          <Text style={styles.hubHeadline}>{t("care.hubHeadline")}</Text>
+          <View style={styles.hubTopContent}>
+            <Text style={styles.hubHeadline}>{t("care.hubHeadline")}</Text>
 
-          <Pressable style={styles.weatherChip} onPress={openWeather}>
-            {weatherLoading ? (
-              <ActivityIndicator size="small" color="rgba(255,255,255,0.85)" />
-            ) : (
-              <>
-                <Ionicons
-                  name={weatherIconName(weather?.current.condition_key ?? "unknown")}
-                  size={18}
-                  color="rgba(255,255,255,0.9)"
-                />
-                <Text style={styles.weatherTemp}>
-                  {weather?.current.temperature_c != null
-                    ? `${Math.round(weather.current.temperature_c)}°`
-                    : "—"}
-                </Text>
-              </>
-            )}
-          </Pressable>
+            <Pressable style={styles.weatherChip} onPress={openWeather}>
+              {weatherLoading ? (
+                <ActivityIndicator size="small" color="rgba(255,255,255,0.85)" />
+              ) : (
+                <>
+                  <Ionicons
+                    name={weatherIconName(weather?.current.condition_key ?? "unknown")}
+                    size={18}
+                    color="rgba(255,255,255,0.9)"
+                  />
+                  <Text style={styles.weatherTemp}>
+                    {weather?.current.temperature_c != null
+                      ? `${Math.round(weather.current.temperature_c)}°`
+                      : "—"}
+                  </Text>
+                </>
+              )}
+            </Pressable>
 
-          <View style={styles.dayRow}>
-            {dayRows.map((day, idx) => {
-              const on = idx === selectedDayIdx;
-              return (
-                <Pressable
-                  key={day.date}
-                  style={[styles.dayPill, on && styles.dayPillOn]}
-                  onPress={() => {
-                    setSelectedDayIdx(idx);
-                    openWeather();
-                  }}
-                >
-                  <Text style={[styles.dayPillDate, on && styles.dayPillTextOn]}>
-                    {formatDayNumber(day.date)}
-                  </Text>
-                  <Text style={[styles.dayPillWeek, on && styles.dayPillTextOn]} numberOfLines={1}>
-                    {t(`care.weather.weekdaysShort.${day.weekday_key}`)}
-                  </Text>
-                </Pressable>
-              );
-            })}
+            <View style={styles.dayRow}>
+              {dayRows.map((day, idx) => {
+                const on = idx === selectedDayIdx;
+                return (
+                  <Pressable
+                    key={day.date}
+                    style={[styles.dayPill, on && styles.dayPillOn]}
+                    onPress={() => {
+                      setSelectedDayIdx(idx);
+                      openWeather();
+                    }}
+                  >
+                    <Text style={[styles.dayPillDate, on && styles.dayPillTextOn]}>
+                      {formatDayNumber(day.date)}
+                    </Text>
+                    <Text style={[styles.dayPillWeek, on && styles.dayPillTextOn]} numberOfLines={1}>
+                      {t(`care.weather.weekdaysShort.${day.weekday_key}`)}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
           </View>
         </View>
 
@@ -543,7 +545,8 @@ const styles = StyleSheet.create({
   pad: { flex: 1, paddingHorizontal: 20 },
   onboardPad: { flex: 1, paddingHorizontal: 20 },
   hubRoot: { flex: 1, backgroundColor: "#0c0d0b" },
-  hubTop: { paddingHorizontal: 20, paddingBottom: 14, gap: 14 },
+  hubTop: { gap: 10, paddingBottom: 10 },
+  hubTopContent: { paddingHorizontal: 20, gap: 10 },
   navBarRow: {
     flexDirection: "row",
     alignItems: "center",
