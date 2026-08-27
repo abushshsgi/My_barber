@@ -168,7 +168,14 @@ export function MorphPreviewScreen({ navigation, route }: Props) {
 
           <Pressable
             style={[styles.backBtn, { top: Math.max(insets.top, 12) }]}
-            onPress={() => navigation.goBack()}
+            onPress={() => {
+              const routes = navigation.getState?.()?.routes;
+              if (routes && routes.length > 1) {
+                navigation.goBack();
+              } else {
+                navigation.navigate("MorphCapture");
+              }
+            }}
           >
             <Ionicons name="chevron-back" size={18} color="#FFF" />
             <Text style={styles.backText}>Orqaga</Text>
@@ -262,7 +269,17 @@ export function MorphPreviewScreen({ navigation, route }: Props) {
             <Text style={styles.secondaryBtnText}>AI Barber Consult</Text>
           </Pressable>
 
-          <Pressable style={styles.secondaryBtn} onPress={() => navigation.goBack()}>
+          <Pressable
+            style={styles.secondaryBtn}
+            onPress={() => {
+              const routes = navigation.getState?.()?.routes;
+              if (routes && routes.length > 1) {
+                navigation.goBack();
+              } else {
+                navigation.navigate("MorphCapture");
+              }
+            }}
+          >
             <Ionicons name="chevron-back" size={18} color="#0A0A0A" />
             <Text style={styles.secondaryBtnText}>Natijalarga qaytish</Text>
           </Pressable>
@@ -287,7 +304,14 @@ export function MorphPreviewScreen({ navigation, route }: Props) {
             <UtilBtn
               icon="grid-outline"
               label="Boshqa uslublar"
-              onPress={() => navigation.goBack()}
+              onPress={() => {
+                const routes = navigation.getState?.()?.routes;
+                if (routes && routes.length > 1) {
+                  navigation.goBack();
+                } else {
+                  navigation.navigate("MorphCapture");
+                }
+              }}
             />
           </View>
 

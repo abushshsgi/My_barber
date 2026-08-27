@@ -68,7 +68,17 @@ export function MorphCareProductsScreen({ navigation, route }: Props) {
   return (
     <View style={[styles.root, { paddingTop: insets.top + 8 }]}>
       <View style={styles.pad}>
-        <Pressable style={styles.back} onPress={() => navigation.goBack()}>
+        <Pressable
+          style={styles.back}
+          onPress={() => {
+            const routes = navigation.getState?.()?.routes;
+            if (routes && routes.length > 1) {
+              navigation.goBack();
+            } else {
+              navigation.navigate("CareHome");
+            }
+          }}
+        >
           <Ionicons name="chevron-back" size={22} color="#fff" />
         </Pressable>
         <Text style={styles.badge}>{t("care.catalog.badge")}</Text>

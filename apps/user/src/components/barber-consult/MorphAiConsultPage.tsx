@@ -1,8 +1,9 @@
-import { Link, useNavigate, useSearch } from "@tanstack/react-router";
+import { Link, useNavigate, useRouter, useSearch } from "@tanstack/react-router";
 import { ArrowLeft, RefreshCw } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
+import { navigateBack } from "@/lib/mobile-back";
 import { BarberMockPreview } from "@/components/barber-consult/BarberMockPreview";
 import { BookingModal } from "@/components/barber-consult/BookingModal";
 import { cameraStateFromUi, MasterCardUI } from "@/components/barber-consult/MasterCardUI";
@@ -39,6 +40,7 @@ function toApiStyleId(styleId: string): string {
 
 export function MorphAiConsultPage() {
   const { t } = useTranslation();
+  const router = useRouter();
   const navigate = useNavigate();
   const search = useSearch({ from: "/ai-style_/consult" });
   const previewMode = search.preview === "barber";
@@ -181,8 +183,8 @@ export function MorphAiConsultPage() {
       <div className="mb-4 flex items-center justify-between gap-2">
         <button
           type="button"
-          onClick={() => void navigate({ to: "/ai-style" })}
-          className="inline-flex min-h-10 items-center gap-1.5 rounded-full px-2 text-sm font-bold"
+          onClick={() => navigateBack(router, "/ai-style")}
+          className="inline-flex min-h-10 items-center gap-1.5 rounded-full px-2 text-sm font-bold cursor-pointer"
         >
           <ArrowLeft className="size-4" />
           {t("common.back", { defaultValue: "Orqaga" })}

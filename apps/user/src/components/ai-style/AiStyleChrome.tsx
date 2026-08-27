@@ -36,10 +36,10 @@ export function AiStyleChrome({ tone = "light", className, title, onBack }: Prop
     >
       <button
         type="button"
-        onClick={() => (onBack ? onBack() : navigateBack(router, "/"))}
+        onClick={() => (onBack ? onBack() : navigateBack(router, "/ai-style"))}
         className={iconBtn}
-        aria-label={t("nav.home")}
-        title={t("nav.home")}
+        aria-label={t("common.back")}
+        title={t("common.back")}
       >
         <ChevronLeft className="size-5" strokeWidth={2.25} />
       </button>

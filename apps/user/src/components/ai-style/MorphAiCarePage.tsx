@@ -1,9 +1,10 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useRouter } from "@tanstack/react-router";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ChevronLeft, Loader2, Lock } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
+import { navigateBack } from "@/lib/mobile-back";
 import {
   buildCarePlan,
   careOptionImage,
@@ -456,14 +457,16 @@ export function MorphAiCarePage() {
 }
 
 function BackLink({ label }: { label: string }) {
+  const router = useRouter();
   return (
-    <Link
-      to="/ai-style"
-      className="inline-flex size-11 items-center justify-center rounded-full bg-white/10 touch-manipulation"
+    <button
+      type="button"
+      onClick={() => navigateBack(router, "/ai-style")}
+      className="inline-flex size-11 items-center justify-center rounded-full bg-white/10 touch-manipulation cursor-pointer active:scale-95 transition-transform"
       aria-label={label}
     >
       <ChevronLeft className="size-5" strokeWidth={2.25} />
-    </Link>
+    </button>
   );
 }
 

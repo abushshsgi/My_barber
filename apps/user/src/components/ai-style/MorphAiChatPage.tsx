@@ -1,8 +1,9 @@
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate, useRouter } from "@tanstack/react-router";
 import { ChevronLeft, Loader2, Lock, Mic, Send, Settings2, Sparkles, TriangleAlert } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
+import { navigateBack } from "@/lib/mobile-back";
 import { MorphLimitUpsell } from "@/components/ai-style/MorphLimitUpsell";
 import { MorphToggle } from "@/components/ai-style/MorphToggle";
 import { MorphVoiceLiveOverlay } from "@/components/ai-style/MorphVoiceLiveOverlay";
@@ -69,6 +70,7 @@ function chatUsagePct(
 
 export function MorphAiChatPage() {
   const { t } = useTranslation();
+  const router = useRouter();
   const navigate = useNavigate();
   const loggedIn = hasValidUserSession();
   const gate = useMorphLimitGate();
@@ -228,8 +230,8 @@ export function MorphAiChatPage() {
       <header className="flex items-center gap-2 px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-2">
         <button
           type="button"
-          onClick={() => navigate({ to: "/ai-style" })}
-          className="grid size-10 cursor-pointer place-items-center rounded-full bg-white/12"
+          onClick={() => navigateBack(router, "/ai-style")}
+          className="grid size-10 cursor-pointer place-items-center rounded-full bg-white/12 active:scale-95 transition-transform"
           aria-label={t("common.back")}
         >
           <ChevronLeft className="size-5" strokeWidth={2.25} />

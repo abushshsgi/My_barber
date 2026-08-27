@@ -55,7 +55,14 @@ export function MorphCareWeatherScreen({ navigation }: Props) {
       <View style={styles.rowBetween}>
         <Pressable
           style={styles.navCircleBtn}
-          onPress={() => navigation.goBack()}
+          onPress={() => {
+            const routes = navigation.getState?.()?.routes;
+            if (routes && routes.length > 1) {
+              navigation.goBack();
+            } else {
+              navigation.navigate("CareHome");
+            }
+          }}
           hitSlop={8}
           accessibilityLabel={t("common.back")}
         >

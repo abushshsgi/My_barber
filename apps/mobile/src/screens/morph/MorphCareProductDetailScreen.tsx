@@ -61,7 +61,17 @@ export function MorphCareProductDetailScreen({ navigation, route }: Props) {
         paddingHorizontal: 20,
       }}
     >
-      <Pressable style={styles.back} onPress={() => navigation.goBack()}>
+      <Pressable
+        style={styles.back}
+        onPress={() => {
+          const routes = navigation.getState?.()?.routes;
+          if (routes && routes.length > 1) {
+            navigation.goBack();
+          } else {
+            navigation.navigate("CareProducts");
+          }
+        }}
+      >
         <Ionicons name="chevron-back" size={22} color="#fff" />
       </Pressable>
 

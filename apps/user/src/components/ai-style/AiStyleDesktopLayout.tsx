@@ -36,12 +36,12 @@ function DesktopNavChrome({
     <div className="flex flex-wrap items-center gap-2">
       <button
         type="button"
-        onClick={() => (onBack ? onBack() : navigateBack(router, "/", true))}
+        onClick={() => (onBack ? onBack() : navigateBack(router, "/ai-style"))}
         className={btn}
-        aria-label={t("nav.home")}
+        aria-label={t("common.back")}
       >
         <ChevronLeft className="h-4 w-4" strokeWidth={2.25} />
-        {t("nav.home")}
+        {t("common.back")}
       </button>
       <Link to="/explore" className={btn}>
         <Compass className="h-4 w-4" strokeWidth={2} />

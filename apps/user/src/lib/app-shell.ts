@@ -19,7 +19,12 @@ const MORPH_LAST_EXACT = new Set([
 ]);
 
 export function isMorphPath(pathname: string): boolean {
-  return pathname === "/ai-style" || pathname.startsWith("/ai-style/");
+  return (
+    pathname === "/ai-style" ||
+    pathname.startsWith("/ai-style/") ||
+    pathname.startsWith("/morf-ai/") ||
+    (pathname.startsWith("/explore/") && pathname.endsWith("/try"))
+  );
 }
 
 function canUseStorage(): boolean {

@@ -240,7 +240,14 @@ export function MorphCareProductGuideScreen({ navigation, route }: Props) {
       <View style={[styles.navBar, { paddingTop: insets.top + 8 }]}>
         <Pressable
           style={styles.backBtn}
-          onPress={() => navigation.goBack()}
+          onPress={() => {
+            const routes = navigation.getState?.()?.routes;
+            if (routes && routes.length > 1) {
+              navigation.goBack();
+            } else {
+              navigation.navigate("CareHome");
+            }
+          }}
           accessibilityLabel={t("common.back")}
           hitSlop={8}
         >

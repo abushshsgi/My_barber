@@ -1,15 +1,17 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useRouter } from "@tanstack/react-router";
 import { ChevronLeft, Loader2, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useCareProducts } from "@/hooks/use-care-products";
 import type { CareProductCategory } from "@/lib/api/care-products";
+import { navigateBack } from "@/lib/mobile-back";
 import { cn } from "@/lib/utils";
 
 const CATEGORIES: CareProductCategory[] = ["shampoo", "balsam", "mask", "oil", "spray", "other"];
 
 export function MorphAiCareProductsPage() {
   const { t } = useTranslation();
+  const router = useRouter();
   const [q, setQ] = useState("");
   const [category, setCategory] = useState<string>("all");
   const list = useCareProducts({
@@ -25,13 +27,14 @@ export function MorphAiCareProductsPage() {
         className="px-5 pb-10"
         style={{ paddingTop: "max(1rem, env(safe-area-inset-top))" }}
       >
-        <Link
-          to="/ai-style/care"
-          className="inline-flex size-11 items-center justify-center rounded-full bg-white/10"
+        <button
+          type="button"
+          onClick={() => navigateBack(router, "/ai-style/care")}
+          className="inline-flex size-11 items-center justify-center rounded-full bg-white/10 cursor-pointer active:scale-95 transition-transform"
           aria-label={t("common.back")}
         >
           <ChevronLeft className="size-5" strokeWidth={2.25} />
-        </Link>
+        </button>
         <p className="mt-6 text-[12px] font-medium tracking-wide text-white/35">
           {t("aiStylePage.care.catalog.badge", { defaultValue: "Tarkib" })}
         </p>

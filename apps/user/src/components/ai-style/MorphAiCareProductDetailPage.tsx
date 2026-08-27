@@ -1,7 +1,8 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useRouter } from "@tanstack/react-router";
 import { ChevronLeft, Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useCareProduct } from "@/hooks/use-care-products";
+import { navigateBack } from "@/lib/mobile-back";
 
 type Props = {
   productId: string;
@@ -9,6 +10,7 @@ type Props = {
 
 export function MorphAiCareProductDetailPage({ productId }: Props) {
   const { t } = useTranslation();
+  const router = useRouter();
   const id = Number(productId);
   const q = useCareProduct(id);
 
@@ -18,13 +20,14 @@ export function MorphAiCareProductDetailPage({ productId }: Props) {
         className="px-5 pb-12"
         style={{ paddingTop: "max(1rem, env(safe-area-inset-top))" }}
       >
-        <Link
-          to="/ai-style/care/products"
-          className="inline-flex size-11 items-center justify-center rounded-full bg-white/10"
+        <button
+          type="button"
+          onClick={() => navigateBack(router, "/ai-style/care/products")}
+          className="inline-flex size-11 items-center justify-center rounded-full bg-white/10 cursor-pointer active:scale-95 transition-transform"
           aria-label={t("common.back")}
         >
           <ChevronLeft className="size-5" strokeWidth={2.25} />
-        </Link>
+        </button>
 
         {q.isLoading ? (
           <div className="grid min-h-[40vh] place-items-center">

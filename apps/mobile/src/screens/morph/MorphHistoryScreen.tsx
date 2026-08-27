@@ -245,7 +245,17 @@ export function MorphHistoryScreen({ navigation, route }: Props) {
   return (
     <View style={[styles.root, { paddingBottom: insets.bottom }]}>
       <View style={[styles.topBar, { paddingTop: Math.max(insets.top, 8) }]}>
-        <Pressable style={styles.iconRound} onPress={() => navigation.goBack()}>
+        <Pressable
+          style={styles.iconRound}
+          onPress={() => {
+            const routes = navigation.getState?.()?.routes;
+            if (routes && routes.length > 1) {
+              navigation.goBack();
+            } else {
+              navigation.navigate("MorphCapture");
+            }
+          }}
+        >
           <Ionicons name="chevron-back" size={20} color="#FFF" />
         </Pressable>
         <View style={styles.topCenter}>

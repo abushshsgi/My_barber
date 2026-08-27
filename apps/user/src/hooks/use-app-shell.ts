@@ -9,6 +9,7 @@ import {
   writeAppShell,
   writeLastShellRoute,
 } from "@/lib/app-shell";
+import { recordRouteVisit } from "@/lib/mobile-back";
 import { hapticLight } from "@/lib/native-haptics";
 
 export function useAppShell() {
@@ -24,6 +25,8 @@ export function useAppShell() {
 
   useEffect(() => {
     if (pathname === "/auth" || pathname === "/onboarding") return;
+
+    recordRouteVisit(pathname);
 
     if (isMorphPath(pathname)) {
       writeAppShell("morph");

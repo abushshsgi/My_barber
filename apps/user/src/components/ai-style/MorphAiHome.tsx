@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate, useRouter } from "@tanstack/react-router";
 import { motion, useReducedMotion } from "framer-motion";
 import {
   ArrowUpRight,
@@ -27,6 +27,7 @@ import {
   type MorphAiGeneration,
 } from "@/lib/morph-ai-gallery";
 import { MobileBackButton } from "@/components/mobile/MobileBackButton";
+import { navigateBack } from "@/lib/mobile-back";
 import { APP_SHELL_DEFAULT_MYSALOON, writeAppShell } from "@/lib/app-shell";
 import type { Audience } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
@@ -130,6 +131,7 @@ export function MorphAiHome({
   ensureMorphStudio,
 }: Props) {
   const { t } = useTranslation();
+  const router = useRouter();
   const navigate = useNavigate();
   const reduceMotion = useReducedMotion();
   const meQ = useSubscriptionMe();
@@ -309,11 +311,10 @@ export function MorphAiHome({
       >
         <MobileBackButton
           onClick={() => {
-            writeAppShell("mysaloon");
-            void navigate({ to: APP_SHELL_DEFAULT_MYSALOON, resetScroll: true });
+            navigateBack(router, "/ai-style");
           }}
           className="border-white/15 bg-white/10 text-white hover:bg-white/15"
-          aria-label={t("nav.mysaloon")}
+          aria-label={t("common.back")}
         />
         <div className="min-w-0 flex-1" />
         <Link

@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useRouter } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import {
@@ -24,6 +24,7 @@ import {
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
+import { navigateBack } from "@/lib/mobile-back";
 import { AiStyleCamera } from "@/components/ai-style/AiStyleCamera";
 import { AiStylePhotoInput } from "@/components/ai-style/AiStyleUi";
 import { MorphLimitUpsell } from "@/components/ai-style/MorphLimitUpsell";
@@ -134,6 +135,7 @@ const toolBtn =
 
 export function MorphAiStudioPage() {
   const { t, i18n } = useTranslation();
+  const router = useRouter();
   const reduceMotion = useReducedMotion();
   const limitGate = useMorphLimitGate();
   const { sharing: storySharing, shareToStory, storyModal } = useMorfAiStoryShare("studio");
@@ -500,13 +502,14 @@ export function MorphAiStudioPage() {
               className="flex items-center justify-between gap-3 px-4 pb-2"
               style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}
             >
-              <Link
-                to="/ai-style"
+              <button
+                type="button"
+                onClick={() => navigateBack(router, "/ai-style")}
                 className="grid size-10 place-items-center rounded-full border border-white/12 bg-white/[0.06] text-white touch-manipulation cursor-pointer active:scale-95"
                 aria-label={t("common.back")}
               >
                 <ChevronLeft className="h-5 w-5" strokeWidth={2.25} />
-              </Link>
+              </button>
               <div className="min-w-0 text-center">
                 <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-white/40">
                   Morf AI
@@ -777,13 +780,14 @@ export function MorphAiStudioPage() {
                 <div className="space-y-2.5 px-3 pb-3 pt-3">
                   {/* Tools row: back, compare, undo, reset, change, surprise */}
                   <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
-                    <Link
-                      to="/ai-style"
-                      className={cn(toolBtn, "shrink-0 size-9 px-0")}
+                    <button
+                      type="button"
+                      onClick={() => navigateBack(router, "/ai-style")}
+                      className={cn(toolBtn, "shrink-0 size-9 px-0 cursor-pointer")}
                       aria-label={t("common.back")}
                     >
                       <ChevronLeft className="h-4 w-4" strokeWidth={2.5} />
-                    </Link>
+                    </button>
                     <button
                       type="button"
                       disabled={busy || !canCompare}

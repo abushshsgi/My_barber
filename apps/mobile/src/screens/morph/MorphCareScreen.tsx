@@ -176,9 +176,12 @@ export function MorphCareScreen({ navigation, route }: Props) {
       setStep("plan");
       return;
     }
-    if (navigation.canGoBack()) {
+    const routes = navigation.getState?.()?.routes;
+    if (routes && routes.length > 1) {
       navigation.goBack();
-    } else if (route.params?.returnTo) {
+      return;
+    }
+    if (route.params?.returnTo) {
       goMorph(navigation, route.params.returnTo);
     } else {
       goMorph(navigation, "MorphTryOn");

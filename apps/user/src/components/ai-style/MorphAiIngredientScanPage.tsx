@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useRouter } from "@tanstack/react-router";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
   AlertTriangle,
@@ -13,6 +13,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { navigateBack } from "@/lib/mobile-back";
 import { useIngredientScan } from "@/hooks/use-ingredient-scan";
 import { useHairCareProfile, useUpdateHairCareProfile } from "@/hooks/use-hair-care-profile";
 import { fetchCareAccess } from "@/lib/api/subscriptions";
@@ -43,6 +44,7 @@ const VERDICT_TONE: Record<string, string> = {
 
 export function MorphAiIngredientScanPage() {
   const { t } = useTranslation();
+  const router = useRouter();
   const reduce = useReducedMotion();
   const accessQ = useQuery({
     queryKey: ["subscriptions", "care-access"],
@@ -577,14 +579,15 @@ function IngredientScanCapture({
 
       <ScanCorners />
 
-      <Link
-        to="/ai-style/care"
+      <button
+        type="button"
+        onClick={() => navigateBack(router, "/ai-style/care")}
         aria-label={t("common.back")}
-        className="absolute right-4 z-[3] grid size-10 place-items-center rounded-full bg-black/45 text-white"
+        className="absolute right-4 z-[3] grid size-10 place-items-center rounded-full bg-black/45 text-white cursor-pointer"
         style={{ top: "max(0.85rem, env(safe-area-inset-top))" }}
       >
         <X className="size-5" strokeWidth={2.25} />
-      </Link>
+      </button>
 
       {busy ? (
         <div className="absolute inset-0 z-[4] grid place-items-center bg-black/50">
@@ -670,13 +673,15 @@ function IngredientScanCapture({
 }
 
 function BackLink({ label }: { label: string }) {
+  const router = useRouter();
   return (
-    <Link
-      to="/ai-style/care"
-      className="inline-flex size-11 items-center justify-center rounded-full bg-white/10 touch-manipulation"
+    <button
+      type="button"
+      onClick={() => navigateBack(router, "/ai-style/care")}
+      className="inline-flex size-11 items-center justify-center rounded-full bg-white/10 touch-manipulation cursor-pointer active:scale-95 transition-transform"
       aria-label={label}
     >
       <ChevronLeft className="size-5" strokeWidth={2.25} />
-    </Link>
+    </button>
   );
 }
