@@ -4,7 +4,9 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Image,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -42,6 +44,14 @@ type QuizStep = 0 | 1 | 2;
 type ViewMode = "hub" | "flow";
 
 const CARE_ACCESS_DEBUG = true;
+
+const CATEGORIES = [
+  { id: "all", label: "All" },
+  { id: "hair", label: "Hair Cut" },
+  { id: "face", label: "Face Care" },
+  { id: "eye", label: "Eye care" },
+  { id: "skin", label: "Skin Care" },
+];
 
 const CONDITION_OPTS: HairCondition[] = ["oily", "dry", "normal", "damaged"];
 const TEXTURE_OPTS: HairTexture[] = ["straight", "wavy", "curly"];
@@ -85,6 +95,7 @@ export function MorphCareScreen({ navigation }: Props) {
   const [loading, setLoading] = useState(true);
   const [access, setAccess] = useState<{ allowed: boolean; detail?: string } | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>("hub");
+  const [selectedCat, setSelectedCat] = useState("all");
   const [quiz, setQuiz] = useState<CareQuizAnswers>(() => defaultQuiz());
   const [step, setStep] = useState<QuizStep | "plan">(0);
   const [catalog, setCatalog] = useState<CareProduct[]>([]);
@@ -244,149 +255,166 @@ export function MorphCareScreen({ navigation }: Props) {
   if (viewMode === "hub") {
     return (
       <View style={styles.hubRoot}>
-        <DarkMeshAmbientBg />
+        <LinearGradient
+          colors={["#FFF0F4", "#FDE8EE", "#FCE2E9", "#121214"]}
+          locations={[0, 0.28, 0.52, 0.95]}
+          style={StyleSheet.absoluteFill}
+        />
 
-        <View style={styles.hubTop}>
-          <View style={[styles.navBarRow, { paddingTop: insets.top + 8, paddingHorizontal: 20 }]}>
+        <ScrollView
+          style={styles.hubScroll}
+          contentContainerStyle={{
+            paddingTop: insets.top + 8,
+            paddingBottom: Math.max(insets.bottom, 16) + 12,
+          }}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Top Nav Bar */}
+          <View style={[styles.navBarRow, { paddingHorizontal: 20 }]}>
             <Pressable
-              style={styles.navCircleBtn}
+              style={styles.navCircleBtnLight}
               onPress={handleBack}
               accessibilityLabel={t("common.back")}
               hitSlop={8}
             >
-              <Ionicons name="chevron-back" size={20} color="#fff" />
+              <Ionicons name="chevron-back" size={22} color="#111" />
+            </Pressable>
+            <View style={{ width: 42 }} />
+          </View>
+
+          {/* Promo Card Banner from Screenshot */}
+          <View style={styles.promoWrap}>
+            <LinearGradient
+              colors={["#FFE0EA", "#FFF0F5", "#FCE2E9"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.promoCard}
+            >
+              <View style={styles.promoLeft}>
+                <Text style={styles.promoTitle}>{"Your Glow,\nHalf the Price"}</Text>
+                <Pressable style={styles.promoBtn} onPress={openCatalog}>
+                  <Text style={styles.promoBtnText}>Get offer</Text>
+                </Pressable>
+              </View>
+              <Image
+                source={{
+                  uri: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=400&q=80",
+                }}
+                style={styles.promoImg}
+                resizeMode="cover"
+              />
+            </LinearGradient>
+
+            {/* Pagination Dots */}
+            <View style={styles.dotsRow}>
+              <View style={styles.dotActive} />
+              <View style={styles.dotInactive} />
+              <View style={styles.dotInactive} />
+            </View>
+          </View>
+
+          {/* Search Bar with Pink Filter & Voice Mic Button */}
+          <View style={styles.searchSection}>
+            <Pressable style={styles.searchBar} onPress={openCatalog}>
+              <Ionicons name="search-outline" size={20} color="#9CA3AF" />
+              <Text style={styles.searchPlaceholder}>Search...</Text>
+              <View style={styles.filterBtn}>
+                <Ionicons name="options-outline" size={18} color="#fff" />
+              </View>
             </Pressable>
 
-            <Text style={styles.navBarTitle} numberOfLines={1}>
-              {t("care.hubHeadline")}
-            </Text>
-
-            <Pressable
-              style={styles.navCircleBtn}
-              onPress={openAssistant}
-              accessibilityLabel="Help"
-              hitSlop={8}
-            >
-              <Ionicons name="help-outline" size={18} color="#fff" />
+            <Pressable style={styles.micBtn} onPress={openAssistant} accessibilityLabel="Voice">
+              <Ionicons name="mic-outline" size={22} color="#374151" />
             </Pressable>
           </View>
 
-          <View style={styles.hubTopContent}>
-            <View style={styles.weatherRow}>
-              <Pressable style={styles.weatherChip} onPress={openWeather}>
-                {weatherLoading ? (
-                  <ActivityIndicator size="small" color="rgba(255,255,255,0.85)" />
-                ) : (
-                  <>
-                    <Ionicons
-                      name={weatherIconName(weather?.current.condition_key ?? "unknown")}
-                      size={18}
-                      color="rgba(255,255,255,0.95)"
-                    />
-                    <Text style={styles.weatherTemp}>
-                      {weather?.current.temperature_c != null
-                        ? `${Math.round(weather.current.temperature_c)}°`
-                        : "—"}
-                    </Text>
-                    {weather?.location_label ? (
-                      <Text style={styles.weatherLoc} numberOfLines={1}>
-                        {weather.location_label}
-                      </Text>
-                    ) : null}
-                  </>
-                )}
+          {/* Category Pills (All, Hair Cut, Face Care, Eye care, etc.) */}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.categoryScroll}
+          >
+            {CATEGORIES.map((cat) => {
+              const active = selectedCat === cat.id;
+              return (
+                <Pressable
+                  key={cat.id}
+                  style={[styles.catPill, active ? styles.catPillActive : styles.catPillInactive]}
+                  onPress={() => setSelectedCat(cat.id)}
+                >
+                  <Text
+                    style={[
+                      styles.catText,
+                      active ? styles.catTextActive : styles.catTextInactive,
+                    ]}
+                  >
+                    {cat.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+
+          {/* Bottom Sheet - Parvarish, Tarkib Skan, AI Assistant */}
+          <View style={styles.hubSheet}>
+            <View style={styles.reportHead}>
+              <Text style={styles.reportTitle}>{t("care.hubReport")}</Text>
+              <Pressable style={styles.reportFilter} onPress={openCatalog}>
+                <Text style={styles.reportFilterText}>{t("care.hubReportFilter")}</Text>
+                <Ionicons name="chevron-down" size={14} color="#1a1a1a" />
               </Pressable>
             </View>
 
-            <View style={styles.dayRow}>
-              {dayRows.map((day, idx) => {
-                const on = idx === selectedDayIdx;
-                return (
-                  <Pressable
-                    key={day.date}
-                    style={[styles.dayPill, on ? styles.dayPillOn : styles.dayPillOff]}
-                    onPress={() => {
-                      setSelectedDayIdx(idx);
-                      openWeather();
-                    }}
-                  >
-                    <Text style={[styles.dayPillDate, on ? styles.dayPillDateOn : styles.dayPillDateOff]}>
-                      {formatDayNumber(day.date)}
-                    </Text>
-                    <Text
-                      style={[styles.dayPillWeek, on ? styles.dayPillWeekOn : styles.dayPillWeekOff]}
-                      numberOfLines={1}
-                    >
-                      {t(`care.weather.weekdaysShort.${day.weekday_key}`)}
-                    </Text>
-                    {day.is_today && (
-                      <View style={[styles.todayDot, on && styles.todayDotOn]} />
-                    )}
-                  </Pressable>
-                );
-              })}
+            <View style={styles.hubCards}>
+              <Pressable style={styles.hubCard} onPress={openParvarish}>
+                <View style={styles.hubCardHead}>
+                  <Text style={styles.hubCardTitle}>{t("care.hubParvarish")}</Text>
+                  <View style={[styles.hubCardIcon, styles.hubCardIconBlue]}>
+                    <Ionicons name="water" size={16} color="#3B82F6" />
+                  </View>
+                </View>
+                <Text style={styles.hubCardMetric} numberOfLines={1}>
+                  {t(`care.conditions.${quiz.condition}`)}
+                </Text>
+                <Text style={styles.hubCardSub} numberOfLines={2}>
+                  {t("care.hubParvarishSub")}
+                </Text>
+              </Pressable>
+
+              <Pressable style={styles.hubCard} onPress={openTarkib}>
+                <View style={styles.hubCardHead}>
+                  <Text style={styles.hubCardTitle}>{t("care.hubTarkib")}</Text>
+                  <View style={[styles.hubCardIcon, styles.hubCardIconRose]}>
+                    <Ionicons name="flask" size={16} color="#E11D48" />
+                  </View>
+                </View>
+                <Text style={styles.hubCardMetric} numberOfLines={1}>
+                  {t("care.hubTarkibMetric")}
+                </Text>
+                <Text style={styles.hubCardSub} numberOfLines={2}>
+                  {t("care.hubTarkibSub")}
+                </Text>
+              </Pressable>
             </View>
-          </View>
-        </View>
 
-        <View style={[styles.hubSheet, { paddingBottom: Math.max(insets.bottom, 16) + 8 }]}>
-          <View style={styles.reportHead}>
-            <Text style={styles.reportTitle}>{t("care.hubReport")}</Text>
-            <Pressable style={styles.reportFilter} onPress={openCatalog}>
-              <Text style={styles.reportFilterText}>{t("care.hubReportFilter")}</Text>
-              <Ionicons name="chevron-down" size={14} color="#1a1a1a" />
-            </Pressable>
-          </View>
-
-          <View style={styles.hubCards}>
-            <Pressable style={styles.hubCard} onPress={openParvarish}>
-              <View style={styles.hubCardHead}>
-                <Text style={styles.hubCardTitle}>{t("care.hubParvarish")}</Text>
-                <View style={[styles.hubCardIcon, styles.hubCardIconBlue]}>
-                  <Ionicons name="water" size={16} color="#3B82F6" />
-                </View>
-              </View>
-              <Text style={styles.hubCardMetric} numberOfLines={1}>
-                {t(`care.conditions.${quiz.condition}`)}
-              </Text>
-              <Text style={styles.hubCardSub} numberOfLines={2}>
-                {t("care.hubParvarishSub")}
-              </Text>
-            </Pressable>
-
-            <Pressable style={styles.hubCard} onPress={openTarkib}>
-              <View style={styles.hubCardHead}>
-                <Text style={styles.hubCardTitle}>{t("care.hubTarkib")}</Text>
-                <View style={[styles.hubCardIcon, styles.hubCardIconRose]}>
-                  <Ionicons name="flask" size={16} color="#E11D48" />
-                </View>
-              </View>
-              <Text style={styles.hubCardMetric} numberOfLines={1}>
-                {t("care.hubTarkibMetric")}
-              </Text>
-              <Text style={styles.hubCardSub} numberOfLines={2}>
-                {t("care.hubTarkibSub")}
-              </Text>
-            </Pressable>
-          </View>
-
-          <Pressable
-            style={styles.aiAssistant}
-            onPress={openAssistant}
-            accessibilityLabel={t("care.hubAiAssistant")}
-          >
-            <LinearGradient
-              colors={["#8B7CFF", "#5B8CFF"]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.aiAssistantIcon}
+            <Pressable
+              style={styles.aiAssistant}
+              onPress={openAssistant}
+              accessibilityLabel={t("care.hubAiAssistant")}
             >
-              <Ionicons name="sparkles" size={18} color="#fff" />
-            </LinearGradient>
-            <Text style={styles.aiAssistantText}>{t("care.hubAiAssistant")}</Text>
-            <Ionicons name="arrow-forward" size={18} color="#1a1a1a" />
-          </Pressable>
-        </View>
+              <LinearGradient
+                colors={["#8B7CFF", "#5B8CFF"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.aiAssistantIcon}
+              >
+                <Ionicons name="sparkles" size={18} color="#fff" />
+              </LinearGradient>
+              <Text style={styles.aiAssistantText}>{t("care.hubAiAssistant")}</Text>
+              <Ionicons name="arrow-forward" size={18} color="#1a1a1a" />
+            </Pressable>
+          </View>
+        </ScrollView>
       </View>
     );
   }
@@ -560,14 +588,14 @@ const styles = StyleSheet.create({
   center: { alignItems: "center", justifyContent: "center" },
   pad: { flex: 1, paddingHorizontal: 20 },
   onboardPad: { flex: 1, paddingHorizontal: 20 },
-  hubRoot: { flex: 1, backgroundColor: "#0c0d0b" },
-  hubTop: { gap: 10, paddingBottom: 10 },
-  hubTopContent: { paddingHorizontal: 20, gap: 10 },
+  hubRoot: { flex: 1, backgroundColor: "#FFF0F4" },
+  hubScroll: { flex: 1 },
   navBarRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     width: "100%",
+    marginBottom: 4,
   },
   navCircleBtn: {
     width: 42,
@@ -589,6 +617,160 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: "rgba(0,0,0,0.08)",
   },
+  promoWrap: {
+    paddingHorizontal: 20,
+    marginTop: 4,
+  },
+  promoCard: {
+    borderRadius: 24,
+    padding: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    minHeight: 135,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.7)",
+    shadowColor: "#E11D48",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    elevation: 2,
+  },
+  promoLeft: {
+    flex: 1,
+    gap: 12,
+    paddingRight: 8,
+  },
+  promoTitle: {
+    ...morphFont,
+    fontSize: 20,
+    fontWeight: "800",
+    color: "#18181B",
+    lineHeight: 26,
+    letterSpacing: -0.4,
+  },
+  promoBtn: {
+    backgroundColor: "#09090B",
+    borderRadius: 999,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    alignSelf: "flex-start",
+  },
+  promoBtnText: {
+    ...morphFont,
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#FFFFFF",
+  },
+  promoImg: {
+    width: 105,
+    height: 105,
+    borderRadius: 20,
+    backgroundColor: "rgba(255,255,255,0.4)",
+  },
+  dotsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    marginTop: 10,
+  },
+  dotActive: {
+    width: 22,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: "#E11D48",
+  },
+  dotInactive: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: "rgba(0,0,0,0.12)",
+  },
+  searchSection: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingHorizontal: 20,
+    marginTop: 12,
+  },
+  searchBar: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 999,
+    paddingLeft: 16,
+    paddingRight: 6,
+    height: 52,
+    borderWidth: 1,
+    borderColor: "rgba(0,0,0,0.06)",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  searchPlaceholder: {
+    ...morphFont,
+    flex: 1,
+    marginLeft: 10,
+    fontSize: 15,
+    color: "#9CA3AF",
+  },
+  filterBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#E11D48",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  micBtn: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: "#FFFFFF",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "rgba(0,0,0,0.06)",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  categoryScroll: {
+    paddingHorizontal: 20,
+    gap: 10,
+    paddingVertical: 14,
+  },
+  catPill: {
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: 999,
+  },
+  catPillActive: {
+    backgroundColor: "#09090B",
+  },
+  catPillInactive: {
+    backgroundColor: "rgba(255,255,255,0.75)",
+    borderWidth: 1,
+    borderColor: "rgba(0,0,0,0.06)",
+  },
+  catText: {
+    ...morphFont,
+    fontSize: 14,
+  },
+  catTextActive: {
+    color: "#FFFFFF",
+    fontWeight: "700",
+  },
+  catTextInactive: {
+    color: "#374151",
+    fontWeight: "600",
+  },
   routineTop: { paddingHorizontal: 20, paddingBottom: 8, gap: 10 },
   routineTopTitle: { ...morphFont, fontSize: 16, fontWeight: "700", color: "#111" },
   routineHeadline: {
@@ -598,101 +780,6 @@ const styles = StyleSheet.create({
     color: "#111",
     letterSpacing: -0.6,
     lineHeight: 32,
-  },
-  navBarTitle: {
-    ...morphFont,
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#FFFFFF",
-    letterSpacing: -0.3,
-    textAlign: "center",
-    flex: 1,
-    marginHorizontal: 8,
-  },
-  weatherRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  weatherChip: {
-    alignSelf: "flex-start",
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    minHeight: 40,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 999,
-    backgroundColor: "rgba(255,255,255,0.12)",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.18)",
-  },
-  weatherTemp: { ...morphFont, fontSize: 16, fontWeight: "700", color: "#fff" },
-  weatherLoc: {
-    ...morphFont,
-    fontSize: 12,
-    fontWeight: "500",
-    color: "rgba(255,255,255,0.65)",
-    marginLeft: 4,
-  },
-  dayRow: { flexDirection: "row", gap: 6, marginTop: 4 },
-  dayPill: {
-    flex: 1,
-    minHeight: 74,
-    borderRadius: 20,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 10,
-    paddingHorizontal: 2,
-    gap: 3,
-  },
-  dayPillOn: {
-    backgroundColor: "#FFFFFF",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.18,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  dayPillOff: {
-    backgroundColor: "rgba(255,255,255,0.08)",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.14)",
-  },
-  dayPillDate: {
-    ...morphFont,
-    fontSize: 18,
-    letterSpacing: -0.4,
-  },
-  dayPillDateOn: {
-    fontWeight: "800",
-    color: "#0F172A",
-  },
-  dayPillDateOff: {
-    fontWeight: "700",
-    color: "rgba(255,255,255,0.9)",
-  },
-  dayPillWeek: {
-    ...morphFont,
-    fontSize: 11,
-  },
-  dayPillWeekOn: {
-    fontWeight: "700",
-    color: "#64748B",
-  },
-  dayPillWeekOff: {
-    fontWeight: "600",
-    color: "rgba(255,255,255,0.45)",
-  },
-  todayDot: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: "#8B5CF6",
-    marginTop: 1,
-  },
-  todayDotOn: {
-    backgroundColor: "#7C3AED",
   },
   hubSheet: {
     marginTop: "auto",
