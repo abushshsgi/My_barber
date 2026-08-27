@@ -53,6 +53,44 @@ const CATEGORIES = [
   { id: "skin", label: "Skin Care" },
 ];
 
+interface FeaturedProductItem {
+  id: string;
+  title: string;
+  price: string;
+  duration?: string;
+  image: string;
+  bgColors: [string, string, string];
+  hasPlay?: boolean;
+}
+
+const FEATURED_PRODUCTS: FeaturedProductItem[] = [
+  {
+    id: "spray-1",
+    title: "Skin care Spray",
+    price: "$160",
+    duration: "2 Min",
+    image: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=600&q=80",
+    bgColors: ["#FFE4EC", "#FFF0F5", "#FCE4EC"],
+    hasPlay: true,
+  },
+  {
+    id: "eye-1",
+    title: "Eye Care",
+    price: "$150",
+    image: "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&w=600&q=80",
+    bgColors: ["#E0F7FA", "#E8F5E9", "#E0F2F1"],
+  },
+  {
+    id: "hair-1",
+    title: "Hair Serum",
+    price: "$135",
+    duration: "3 Min",
+    image: "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=600&q=80",
+    bgColors: ["#F3E8FF", "#FAF5FF", "#EDE9FE"],
+    hasPlay: true,
+  },
+];
+
 const CONDITION_OPTS: HairCondition[] = ["oily", "dry", "normal", "damaged"];
 const TEXTURE_OPTS: HairTexture[] = ["straight", "wavy", "curly"];
 const COLOR_OPTS: HairColorStatus[] = ["natural", "colored", "bleached"];
@@ -265,95 +303,168 @@ export function MorphCareScreen({ navigation }: Props) {
           style={styles.hubScroll}
           contentContainerStyle={{
             paddingTop: insets.top + 8,
-            paddingBottom: Math.max(insets.bottom, 16) + 12,
+            paddingBottom: Math.max(insets.bottom, 12),
+            flexGrow: 1,
+            justifyContent: "space-between",
           }}
           showsVerticalScrollIndicator={false}
         >
-          {/* Top Nav Bar */}
-          <View style={[styles.navBarRow, { paddingHorizontal: 20 }]}>
-            <Pressable
-              style={styles.navCircleBtnLight}
-              onPress={handleBack}
-              accessibilityLabel={t("common.back")}
-              hitSlop={8}
-            >
-              <Ionicons name="chevron-back" size={22} color="#111" />
-            </Pressable>
-            <View style={{ width: 42 }} />
-          </View>
-
-          {/* Promo Card Banner from Screenshot */}
-          <View style={styles.promoWrap}>
-            <LinearGradient
-              colors={["#FFE0EA", "#FFF0F5", "#FCE2E9"]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.promoCard}
-            >
-              <View style={styles.promoLeft}>
-                <Text style={styles.promoTitle}>{"Your Glow,\nHalf the Price"}</Text>
-                <Pressable style={styles.promoBtn} onPress={openCatalog}>
-                  <Text style={styles.promoBtnText}>Get offer</Text>
-                </Pressable>
-              </View>
-              <Image
-                source={{
-                  uri: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=400&q=80",
-                }}
-                style={styles.promoImg}
-                resizeMode="cover"
-              />
-            </LinearGradient>
-
-            {/* Pagination Dots */}
-            <View style={styles.dotsRow}>
-              <View style={styles.dotActive} />
-              <View style={styles.dotInactive} />
-              <View style={styles.dotInactive} />
+          <View>
+            {/* Top Nav Bar */}
+            <View style={[styles.navBarRow, { paddingHorizontal: 20 }]}>
+              <Pressable
+                style={styles.navCircleBtnLight}
+                onPress={handleBack}
+                accessibilityLabel={t("common.back")}
+                hitSlop={8}
+              >
+                <Ionicons name="chevron-back" size={22} color="#111" />
+              </Pressable>
+              <View style={{ width: 42 }} />
             </View>
-          </View>
 
-          {/* Search Bar with Pink Filter & Voice Mic Button */}
-          <View style={styles.searchSection}>
-            <Pressable style={styles.searchBar} onPress={openCatalog}>
-              <Ionicons name="search-outline" size={20} color="#9CA3AF" />
-              <Text style={styles.searchPlaceholder}>Search...</Text>
-              <View style={styles.filterBtn}>
-                <Ionicons name="options-outline" size={18} color="#fff" />
+            {/* Promo Card Banner from Screenshot */}
+            <View style={styles.promoWrap}>
+              <LinearGradient
+                colors={["#FFE0EA", "#FFF0F5", "#FCE2E9"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.promoCard}
+              >
+                <View style={styles.promoLeft}>
+                  <Text style={styles.promoTitle}>{"Your Glow,\nHalf the Price"}</Text>
+                  <Pressable style={styles.promoBtn} onPress={openCatalog}>
+                    <Text style={styles.promoBtnText}>Get offer</Text>
+                  </Pressable>
+                </View>
+                <Image
+                  source={{
+                    uri: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=400&q=80",
+                  }}
+                  style={styles.promoImg}
+                  resizeMode="cover"
+                />
+              </LinearGradient>
+
+              {/* Pagination Dots */}
+              <View style={styles.dotsRow}>
+                <View style={styles.dotActive} />
+                <View style={styles.dotInactive} />
+                <View style={styles.dotInactive} />
               </View>
-            </Pressable>
+            </View>
 
-            <Pressable style={styles.micBtn} onPress={openAssistant} accessibilityLabel="Voice">
-              <Ionicons name="mic-outline" size={22} color="#374151" />
-            </Pressable>
-          </View>
+            {/* Search Bar with Pink Filter & Voice Mic Button */}
+            <View style={styles.searchSection}>
+              <Pressable style={styles.searchBar} onPress={openCatalog}>
+                <Ionicons name="search-outline" size={20} color="#9CA3AF" />
+                <Text style={styles.searchPlaceholder}>Search...</Text>
+                <View style={styles.filterBtn}>
+                  <Ionicons name="options-outline" size={18} color="#fff" />
+                </View>
+              </Pressable>
 
-          {/* Category Pills (All, Hair Cut, Face Care, Eye care, etc.) */}
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.categoryScroll}
-          >
-            {CATEGORIES.map((cat) => {
-              const active = selectedCat === cat.id;
-              return (
-                <Pressable
-                  key={cat.id}
-                  style={[styles.catPill, active ? styles.catPillActive : styles.catPillInactive]}
-                  onPress={() => setSelectedCat(cat.id)}
-                >
-                  <Text
-                    style={[
-                      styles.catText,
-                      active ? styles.catTextActive : styles.catTextInactive,
-                    ]}
+              <Pressable style={styles.micBtn} onPress={openAssistant} accessibilityLabel="Voice">
+                <Ionicons name="mic-outline" size={22} color="#374151" />
+              </Pressable>
+            </View>
+
+            {/* Category Pills (All, Hair Cut, Face Care, Eye care, etc.) */}
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.categoryScroll}
+            >
+              {CATEGORIES.map((cat) => {
+                const active = selectedCat === cat.id;
+                return (
+                  <Pressable
+                    key={cat.id}
+                    style={[styles.catPill, active ? styles.catPillActive : styles.catPillInactive]}
+                    onPress={() => setSelectedCat(cat.id)}
                   >
-                    {cat.label}
-                  </Text>
+                    <Text
+                      style={[
+                        styles.catText,
+                        active ? styles.catTextActive : styles.catTextInactive,
+                      ]}
+                    >
+                      {cat.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+
+            {/* Featured Product Cards from Screenshot */}
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.featuredProductsScroll}
+            >
+              {FEATURED_PRODUCTS.map((prod) => (
+                <Pressable
+                  key={prod.id}
+                  style={styles.featuredCard}
+                  onPress={openCatalog}
+                >
+                  <LinearGradient
+                    colors={prod.bgColors}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={StyleSheet.absoluteFill}
+                  />
+
+                  <Image
+                    source={{ uri: prod.image }}
+                    style={styles.featuredCardImg}
+                    resizeMode="cover"
+                  />
+
+                  {/* Top Action Row (Heart, Duration, Play) */}
+                  <View style={styles.featuredTopRow}>
+                    <View style={styles.featuredActionBtn}>
+                      <Ionicons name="heart-outline" size={18} color="#1F2937" />
+                    </View>
+
+                    {prod.duration ? (
+                      <View style={styles.featuredDurationPill}>
+                        <Ionicons name="time-outline" size={14} color="#1F2937" />
+                        <Text style={styles.featuredDurationText}>{prod.duration}</Text>
+                      </View>
+                    ) : null}
+
+                    {prod.hasPlay ? (
+                      <View style={styles.featuredActionBtn}>
+                        <Ionicons name="play" size={14} color="#1F2937" style={{ marginLeft: 2 }} />
+                      </View>
+                    ) : null}
+                  </View>
+
+                  {/* Bottom Glass Overlay (Title, Price, Pink Arrow) */}
+                  <View style={styles.featuredBottomGlass}>
+                    <View style={styles.featuredBottomInfo}>
+                      <Text style={styles.featuredProdTitle} numberOfLines={1}>
+                        {prod.title}
+                      </Text>
+                      <Text style={styles.featuredProdPrice}>
+                        {prod.price}
+                      </Text>
+                    </View>
+
+                    <View style={styles.featuredArrowBtn}>
+                      <Ionicons
+                        name="arrow-up"
+                        size={16}
+                        color="#fff"
+                        style={{ transform: [{ rotate: "45deg" }] }}
+                      />
+                    </View>
+                  </View>
                 </Pressable>
-              );
-            })}
-          </ScrollView>
+              ))}
+            </ScrollView>
+          </View>
 
           {/* Bottom Sheet - Parvarish, Tarkib Skan, AI Assistant */}
           <View style={styles.hubSheet}>
@@ -770,6 +881,100 @@ const styles = StyleSheet.create({
   catTextInactive: {
     color: "#374151",
     fontWeight: "600",
+  },
+  featuredProductsScroll: {
+    paddingHorizontal: 20,
+    gap: 14,
+    paddingTop: 2,
+    paddingBottom: 16,
+  },
+  featuredCard: {
+    width: 220,
+    height: 260,
+    borderRadius: 28,
+    overflow: "hidden",
+    position: "relative",
+    justifyContent: "space-between",
+    padding: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    elevation: 3,
+  },
+  featuredCardImg: {
+    ...StyleSheet.absoluteFillObject,
+    width: "100%",
+    height: "100%",
+  },
+  featuredTopRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    zIndex: 2,
+  },
+  featuredActionBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "rgba(255,255,255,0.75)",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.9)",
+  },
+  featuredDurationPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "rgba(255,255,255,0.75)",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.9)",
+  },
+  featuredDurationText: {
+    ...morphFont,
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#1F2937",
+  },
+  featuredBottomGlass: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "rgba(255,255,255,0.78)",
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.9)",
+    zIndex: 2,
+  },
+  featuredBottomInfo: {
+    flex: 1,
+    marginRight: 8,
+  },
+  featuredProdTitle: {
+    ...morphFont,
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#374151",
+  },
+  featuredProdPrice: {
+    ...morphFont,
+    fontSize: 16,
+    fontWeight: "800",
+    color: "#111827",
+  },
+  featuredArrowBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: "#E11D48",
+    alignItems: "center",
+    justifyContent: "center",
   },
   routineTop: { paddingHorizontal: 20, paddingBottom: 8, gap: 10 },
   routineTopTitle: { ...morphFont, fontSize: 16, fontWeight: "700", color: "#111" },
