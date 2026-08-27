@@ -134,7 +134,7 @@ function greetingKey(): string {
   return "care.routine.goodEvening";
 }
 
-export function MorphCareScreen({ navigation }: Props) {
+export function MorphCareScreen({ navigation, route }: Props) {
   useHideTabBar();
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
@@ -178,10 +178,12 @@ export function MorphCareScreen({ navigation }: Props) {
     }
     if (navigation.canGoBack()) {
       navigation.goBack();
+    } else if (route.params?.returnTo) {
+      goMorph(navigation, route.params.returnTo);
     } else {
       goMorph(navigation, "MorphTryOn");
     }
-  }, [viewMode, step, navigation, goMorph]);
+  }, [viewMode, step, navigation, route.params, goMorph]);
 
   const dayRows = weather?.days?.length ? weather.days.slice(0, 7) : buildFallbackDays();
   const selectedDate = dayRows[selectedDayIdx]?.date ?? new Date().toISOString().slice(0, 10);

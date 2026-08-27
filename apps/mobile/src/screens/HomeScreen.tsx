@@ -101,10 +101,11 @@ export function HomeScreen({ onOpenMap, onOpenExplore }: Props) {
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.content}
+        nestedScrollEnabled={true}
+        keyboardShouldPersistTaps="handled"
         refreshControl={
           <RefreshControl refreshing={loading} onRefresh={refresh} tintColor={colors.fg} />
         }
-        removeClippedSubviews
       >
         <HomeHeader
           locationLabel={locationLabel}
@@ -139,6 +140,7 @@ export function HomeScreen({ onOpenMap, onOpenExplore }: Props) {
             <FlatList
               data={filteredSalons}
               horizontal
+              nestedScrollEnabled={true}
               keyExtractor={(item) => item.id}
               renderItem={renderSalon}
               showsHorizontalScrollIndicator={false}
@@ -149,7 +151,6 @@ export function HomeScreen({ onOpenMap, onOpenExplore }: Props) {
               initialNumToRender={4}
               windowSize={5}
               maxToRenderPerBatch={4}
-              removeClippedSubviews
               getItemLayout={(_, index) => ({
                 length: snap,
                 offset: snap * index,
@@ -165,6 +166,7 @@ export function HomeScreen({ onOpenMap, onOpenExplore }: Props) {
             <FlatList
               data={topBarbers}
               horizontal
+              nestedScrollEnabled={true}
               keyExtractor={(item) => item.id}
               renderItem={renderBarber}
               showsHorizontalScrollIndicator={false}
@@ -175,7 +177,6 @@ export function HomeScreen({ onOpenMap, onOpenExplore }: Props) {
               initialNumToRender={4}
               windowSize={5}
               maxToRenderPerBatch={4}
-              removeClippedSubviews
               getItemLayout={(_, index) => ({
                 length: snap,
                 offset: snap * index,

@@ -107,7 +107,10 @@ export function MorphHomeScreen({ navigation }: Props) {
 
   const openCareOrIngredient = useCallback(
     (kind: "care" | "ingredient") => {
-      goMorph(navigation, kind === "care" ? "MorphCare" : "MorphIngredient");
+      goMorph(navigation, kind === "care" ? "MorphCare" : "MorphIngredient", {
+        screen: kind === "care" ? "CareHome" : "IngredientScan",
+        params: { returnTo: "MorphTryOn" },
+      });
     },
     [navigation, goMorph],
   );

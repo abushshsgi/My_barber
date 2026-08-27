@@ -461,7 +461,7 @@ function RootTabsInner() {
             screenOptions={{
               headerShown: false,
               lazy: true,
-              freezeOnBlur: true,
+              freezeOnBlur: false,
               tabBarStyle: FLOATING_TAB_BAR_STYLE,
               sceneStyle: { backgroundColor: "transparent" },
               animation: "fade",

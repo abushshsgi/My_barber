@@ -36,7 +36,11 @@ export function navigateRootTab(
   if (!root) return;
   const nav = root.navigate as (name: string, params?: object) => void;
   if (tab === "MorphTryOn") {
-    nav("MorphTryOn", params ?? { screen: "MorphCapture" });
+    if (params) {
+      nav("MorphTryOn", params);
+    } else {
+      nav("MorphTryOn");
+    }
     return;
   }
   if (params) {
