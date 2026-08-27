@@ -1,7 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
+import { useFocusEffect } from "@react-navigation/native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { LinearGradient } from "expo-linear-gradient";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Image,
@@ -34,7 +35,13 @@ import {
   saveCareQuiz,
   type CareQuizAnswers,
 } from "../../lib/morph-ai-care";
-import { markCareOnboardingSeen } from "../../lib/morph-my-products";
+import {
+  addMyProduct,
+  loadMyProducts,
+  markCareOnboardingSeen,
+  removeMyProduct,
+  type MyCareProduct,
+} from "../../lib/morph-my-products";
 import type { MorphCareStackParamList } from "../../navigation/MorphCareStack";
 import { useShellNavigation } from "../../lib/shell-nav";
 import { morphFont } from "../../theme/morph-font";
@@ -137,9 +144,21 @@ export function MorphCareScreen({ navigation }: Props) {
   const [quiz, setQuiz] = useState<CareQuizAnswers>(() => defaultQuiz());
   const [step, setStep] = useState<QuizStep | "plan">(0);
   const [catalog, setCatalog] = useState<CareProduct[]>([]);
+  const [myProducts, setMyProducts] = useState<MyCareProduct[]>([]);
   const [saving, setSaving] = useState(false);
   const [selectedDayIdx, setSelectedDayIdx] = useState(0);
   const { data: weather, loading: weatherLoading } = useCareWeather();
+
+  const reloadMyProducts = useCallback(async () => {
+    const list = await loadMyProducts();
+    setMyProducts(list);
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      void reloadMyProducts();
+    }, [reloadMyProducts]),
+  );
 
   const handleBack = useCallback(() => {
     if (viewMode === "flow") {
@@ -192,6 +211,57 @@ export function MorphCareScreen({ navigation }: Props) {
     [navigation],
   );
 
+  const openProductGuide = useCallback(
+    (prod: {
+      productId?: number;
+      title: string;
+      brand?: string;
+      category?: string;
+      usageText?: string;
+      durationMinutes?: number;
+      image?: string;
+    }) => {
+      navigation.navigate("CareProductGuide", {
+        productId: prod.productId,
+        productTitle: prod.title,
+        brand: prod.brand,
+        category: prod.category,
+        usageText: prod.usageText,
+        durationMinutes: prod.durationMinutes || 2,
+        imageUrl: prod.image,
+      });
+    },
+    [navigation],
+  );
+
+  const toggleFavoriteProduct = useCallback(
+    async (prod: {
+      productId?: number;
+      title: string;
+      brand: string;
+      category: string;
+      image: string;
+    }) => {
+      if (!prod.productId) return;
+      const exists = myProducts.some((p) => p.id === prod.productId);
+      if (exists) {
+        const next = await removeMyProduct(prod.productId);
+        setMyProducts(next);
+      } else {
+        const next = await addMyProduct({
+          id: prod.productId,
+          name: prod.title,
+          brand: prod.brand,
+          category: prod.category,
+          image_url: prod.image,
+          source: "recommended",
+        });
+        setMyProducts(next);
+      }
+    },
+    [myProducts],
+  );
+
   const openParvarish = useCallback(() => {
     setViewMode("flow");
   }, []);
@@ -205,10 +275,12 @@ export function MorphCareScreen({ navigation }: Props) {
       setAccess(accessRes);
       if (!accessRes.allowed) return;
 
-      const [saved, profile] = await Promise.all([
+      const [saved, profile, myProds] = await Promise.all([
         loadCareQuiz(),
         fetchHairCareProfile().catch(() => null),
+        loadMyProducts().catch(() => []),
       ]);
+      setMyProducts(myProds);
 
       if (profile?.complete && profile.condition && profile.texture && profile.color_status) {
         const next: CareQuizAnswers = {
@@ -254,6 +326,77 @@ export function MorphCareScreen({ navigation }: Props) {
       setSaving(false);
     }
   };
+
+  const displayProducts = useMemo(() => {
+    const list: Array<{
+      id: string;
+      productId?: number;
+      title: string;
+      brand: string;
+      price: string;
+      category: string;
+      duration: string;
+      durationMinutes: number;
+      image: string;
+      bgColors: [string, string, string];
+      isUserAdded: boolean;
+      usageText?: string;
+    }> = [];
+
+    myProducts.forEach((mp) => {
+      list.push({
+        id: `my-${mp.id}`,
+        productId: mp.id,
+        title: mp.name,
+        brand: mp.brand || "Morf Tarkib",
+        price: "Tarkibda",
+        category: mp.category || "spray",
+        duration: "2 Min",
+        durationMinutes: 2,
+        image: mp.image_url || "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=600&q=80",
+        bgColors: ["#FFE4EC", "#FFF0F5", "#FCE4EC"],
+        isUserAdded: true,
+      });
+    });
+
+    catalog.forEach((cp) => {
+      if (!myProducts.some((mp) => mp.id === cp.id)) {
+        list.push({
+          id: `cat-${cp.id}`,
+          productId: cp.id,
+          title: cp.name,
+          brand: cp.brand,
+          price: `$${80 + (cp.id % 6) * 20}`,
+          category: cp.category,
+          duration: cp.category === "mask" ? "5 Min" : "2 Min",
+          durationMinutes: cp.category === "mask" ? 5 : 2,
+          image: cp.image_url || "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&w=600&q=80",
+          bgColors: cp.category === "mask" ? ["#E0F7FA", "#E8F5E9", "#E0F2F1"] : ["#F3E8FF", "#FAF5FF", "#EDE9FE"],
+          isUserAdded: false,
+          usageText: cp.usage_uz,
+        });
+      }
+    });
+
+    if (list.length === 0) {
+      return FEATURED_PRODUCTS.map((fp) => ({
+        ...fp,
+        productId: undefined,
+        brand: "Morf Care Pro",
+        category: "spray",
+        durationMinutes: 2,
+        isUserAdded: false,
+        usageText: undefined,
+      }));
+    }
+
+    if (selectedCat !== "all") {
+      const filtered = list.filter((p) => p.category.toLowerCase().includes(selectedCat.toLowerCase()));
+      return filtered.length > 0 ? filtered : list;
+    }
+
+    return list;
+  }, [myProducts, catalog, selectedCat]);
 
   if (loading) {
     return (
@@ -354,7 +497,7 @@ export function MorphCareScreen({ navigation }: Props) {
               </View>
             </View>
 
-            {/* Search Bar with Pink Filter & Voice Mic Button */}
+            {/* Search Bar with Pink Filter & AI Scan Button */}
             <View style={styles.searchSection}>
               <Pressable style={styles.searchBar} onPress={openCatalog}>
                 <Ionicons name="search-outline" size={20} color="#9CA3AF" />
@@ -364,8 +507,19 @@ export function MorphCareScreen({ navigation }: Props) {
                 </View>
               </Pressable>
 
-              <Pressable style={styles.micBtn} onPress={openAssistant} accessibilityLabel="Voice">
-                <Ionicons name="mic-outline" size={22} color="#374151" />
+              <Pressable
+                style={styles.aiScanBtn}
+                onPress={openTarkib}
+                accessibilityLabel="AI Skan"
+              >
+                <LinearGradient
+                  colors={["#09090B", "#27272A"]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={StyleSheet.absoluteFill}
+                />
+                <Ionicons name="scan" size={18} color="#FFFFFF" />
+                <Text style={styles.aiScanBtnText}>AI Skan</Text>
               </Pressable>
             </View>
 
@@ -396,73 +550,93 @@ export function MorphCareScreen({ navigation }: Props) {
               })}
             </ScrollView>
 
-            {/* Featured Product Cards from Screenshot */}
+            {/* Featured and User Care Products */}
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.featuredProductsScroll}
             >
-              {FEATURED_PRODUCTS.map((prod) => (
-                <Pressable
-                  key={prod.id}
-                  style={styles.featuredCard}
-                  onPress={openCatalog}
-                >
-                  <LinearGradient
-                    colors={prod.bgColors}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={StyleSheet.absoluteFill}
-                  />
+              {displayProducts.map((prod) => {
+                const isSaved = prod.isUserAdded || (prod.productId ? myProducts.some((p) => p.id === prod.productId) : false);
 
-                  <Image
-                    source={{ uri: prod.image }}
-                    style={styles.featuredCardImg}
-                    resizeMode="cover"
-                  />
+                return (
+                  <Pressable
+                    key={prod.id}
+                    style={styles.featuredCard}
+                    onPress={() => openProductGuide(prod)}
+                  >
+                    <LinearGradient
+                      colors={prod.bgColors}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={StyleSheet.absoluteFill}
+                    />
 
-                  {/* Top Action Row (Heart, Duration, Play) */}
-                  <View style={styles.featuredTopRow}>
-                    <View style={styles.featuredActionBtn}>
-                      <Ionicons name="heart-outline" size={18} color="#1F2937" />
-                    </View>
+                    <Image
+                      source={{ uri: prod.image }}
+                      style={styles.featuredCardImg}
+                      resizeMode="cover"
+                    />
 
-                    {prod.duration ? (
-                      <View style={styles.featuredDurationPill}>
-                        <Ionicons name="time-outline" size={14} color="#1F2937" />
-                        <Text style={styles.featuredDurationText}>{prod.duration}</Text>
-                      </View>
-                    ) : null}
+                    {/* Top Action Row (Heart, Duration, Play) */}
+                    <View style={styles.featuredTopRow}>
+                      <Pressable
+                        style={[styles.featuredActionBtn, isSaved && styles.featuredActionBtnActive]}
+                        onPress={(e) => {
+                          e.stopPropagation();
+                          void toggleFavoriteProduct(prod);
+                        }}
+                        hitSlop={6}
+                      >
+                        <Ionicons
+                          name={isSaved ? "heart" : "heart-outline"}
+                          size={18}
+                          color={isSaved ? "#E11D48" : "#1F2937"}
+                        />
+                      </Pressable>
 
-                    {prod.hasPlay ? (
-                      <View style={styles.featuredActionBtn}>
+                      {prod.duration ? (
+                        <View style={styles.featuredDurationPill}>
+                          <Ionicons name="time-outline" size={14} color="#1F2937" />
+                          <Text style={styles.featuredDurationText}>{prod.duration}</Text>
+                        </View>
+                      ) : null}
+
+                      <Pressable
+                        style={styles.featuredActionBtn}
+                        onPress={(e) => {
+                          e.stopPropagation();
+                          openProductGuide(prod);
+                        }}
+                        hitSlop={6}
+                      >
                         <Ionicons name="play" size={14} color="#1F2937" style={{ marginLeft: 2 }} />
+                      </Pressable>
+                    </View>
+
+                    {/* Bottom Glass Overlay (Title, Price/Brand, Pink Arrow) */}
+                    <View style={styles.featuredBottomGlass}>
+                      <View style={styles.featuredBottomInfo}>
+                        <Text style={styles.featuredProdTitle} numberOfLines={1}>
+                          {prod.title}
+                        </Text>
+                        <Text style={styles.featuredProdPrice}>
+                          {prod.price}
+                        </Text>
                       </View>
-                    ) : null}
-                  </View>
 
-                  {/* Bottom Glass Overlay (Title, Price, Pink Arrow) */}
-                  <View style={styles.featuredBottomGlass}>
-                    <View style={styles.featuredBottomInfo}>
-                      <Text style={styles.featuredProdTitle} numberOfLines={1}>
-                        {prod.title}
-                      </Text>
-                      <Text style={styles.featuredProdPrice}>
-                        {prod.price}
-                      </Text>
+                      <View style={styles.featuredArrowBtn}>
+                        <Ionicons
+                          name="arrow-up"
+                          size={16}
+                          color="#fff"
+                          style={{ transform: [{ rotate: "45deg" }] }}
+                        />
+                      </View>
                     </View>
-
-                    <View style={styles.featuredArrowBtn}>
-                      <Ionicons
-                        name="arrow-up"
-                        size={16}
-                        color="#fff"
-                        style={{ transform: [{ rotate: "45deg" }] }}
-                      />
-                    </View>
-                  </View>
-                </Pressable>
-              ))}
+                  </Pressable>
+                );
+              })}
             </ScrollView>
           </View>
 
@@ -837,20 +1011,31 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  micBtn: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: "#FFFFFF",
+  aiScanBtn: {
+    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "rgba(0,0,0,0.06)",
+    gap: 6,
+    height: 52,
+    paddingHorizontal: 16,
+    borderRadius: 999,
+    backgroundColor: "#09090B",
+    overflow: "hidden",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  aiScanBtnText: {
+    ...morphFont,
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#FFFFFF",
+  },
+  featuredActionBtnActive: {
+    backgroundColor: "#FFF1F2",
+    borderColor: "#FECDD3",
   },
   categoryScroll: {
     paddingHorizontal: 20,
@@ -903,7 +1088,11 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   featuredCardImg: {
-    ...StyleSheet.absoluteFillObject,
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     width: "100%",
     height: "100%",
   },
