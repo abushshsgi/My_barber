@@ -5037,3 +5037,17 @@ export async function deleteAdminCareProduct(id: number): Promise<void> {
     throw new Error((body as { detail?: string } | null)?.detail || "O'chirilmadi");
   }
 }
+
+export async function adminCareDemoAction(action: "seed" | "purge"): Promise<{
+  success: boolean;
+  message: string;
+  deleted_count?: number;
+  created_count?: number;
+}> {
+  return apiJson("/api/v1/admin/parvarish/demo-action/", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action }),
+  });
+}
+

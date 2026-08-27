@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ImagePlus, Pencil, Plus, Search, Trash2, X } from "lucide-react";
+import { ImagePlus, Pencil, Plus, Search, Sparkles, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { EmptyState } from "@/components/admin/EmptyState";
 import { CardSkeleton } from "@/components/admin/Skeletons";
@@ -20,6 +20,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  adminCareDemoAction,
   createAdminCareProduct,
   deleteAdminCareProduct,
   fetchAdminCareProducts,
@@ -151,6 +152,15 @@ function ParvarishTarkibPage() {
     onError: (e: Error) => toast.error(e.message || "O'chirilmadi"),
   });
 
+  const demoAction = useMutation({
+    mutationFn: (action: "seed" | "purge") => adminCareDemoAction(action),
+    onSuccess: (data) => {
+      toast.success(data.message);
+      void qc.invalidateQueries({ queryKey: ["admin", "parvarish"] });
+    },
+    onError: (e: Error) => toast.error(e.message || "Xato yuz berdi"),
+  });
+
   const rows = useMemo(() => list.data || [], [list.data]);
 
   const closeEditor = () => {
@@ -200,10 +210,34 @@ function ParvarishTarkibPage() {
             Katalog kartochkalari — tahrirlash o‘ng paneldan.
           </p>
         </div>
-        <Button type="button" onClick={openCreate} className="rounded-full px-4">
-          <Plus className="size-4" />
-          Yangi
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => demoAction.mutate("seed")}
+            disabled={demoAction.isPending}
+            className="rounded-full border-primary/25 bg-primary/5 text-primary hover:bg-primary/10"
+          >
+            <Sparkles className="size-3.5" />
+            20 ta Demo qo'shish
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => demoAction.mutate("purge")}
+            disabled={demoAction.isPending}
+            className="rounded-full border-destructive/25 text-destructive hover:bg-destructive/10"
+          >
+            <Trash2 className="size-3.5" />
+            Demolarni tozalash
+          </Button>
+          <Button type="button" onClick={openCreate} className="rounded-full px-4">
+            <Plus className="size-4" />
+            Yangi
+          </Button>
+        </div>
       </div>
 
       <div className="flex flex-wrap gap-2">

@@ -269,7 +269,7 @@ def score_against_hair(
     }
 
 
-def recommend_products(profile: HairCareProfile | None, *, limit: int = 12) -> list[CareProduct]:
+def recommend_products(profile: HairCareProfile | None, *, limit: int = 40) -> list[CareProduct]:
     qs = list(
         CareProduct.objects.filter(is_published=True).order_by("sort_order", "name")[:200]
     )

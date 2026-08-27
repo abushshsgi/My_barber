@@ -13,6 +13,7 @@ from accounts.permissions import IsAdmin
 from ai.care_serializers import CareProductSerializer
 from ai.models import CareProduct, IngredientScanEntry
 from ai.unthrottled import UnthrottledAPIView
+from ai.management.commands.seed_care_demo_products import DEMO_PRODUCTS, DEMO_SLUG_PREFIX
 
 
 def _unique_slug(name: str, brand: str = "", *, exclude_pk: int | None = None) -> str:
@@ -136,3 +137,69 @@ class AdminParvarishProductDetailView(UnthrottledAPIView):
             return Response({"detail": "Topilmadi"}, status=404)
         obj.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class AdminParvarishDemoActionView(UnthrottledAPIView):
+    permission_classes = [IsAdmin]
+
+    def post(self, request):
+        action = (request.data.get("action") or "").strip().lower()
+        if action == "purge":
+            deleted_count, _ = CareProduct.objects.filter(
+                slug__startswith=DEMO_SLUG_PREFIX
+            ).delete()
+            return Response(
+                {
+                    "success": True,
+                    "action": "purge",
+                    "deleted_count": deleted_count,
+                    "message": f"{deleted_count} ta demo mahsulot o'chirildi",
+                }
+            )
+
+        if action == "seed":
+            created_count = 0
+            updated_count = 0
+            for item in DEMO_PRODUCTS:
+                slug = item["slug"]
+                defaults = {
+                    "name": item["name"],
+                    "brand": item["brand"],
+                    "category": item["category"],
+                    "ingredients_text": item["ingredients_text"],
+                    "ingredients": item["ingredients"],
+                    "usage_uz": item["usage_uz"],
+                    "purpose_uz": item["purpose_uz"],
+                    "suitable_for": item["suitable_for"],
+                    "not_suitable_for": item["not_suitable_for"],
+                    "pros_uz": item["pros_uz"],
+                    "cons_uz": item["cons_uz"],
+                    "warnings_uz": item["warnings_uz"],
+                    "is_published": True,
+                    "sort_order": item["sort_order"],
+                }
+                _, created = CareProduct.objects.update_or_create(
+                    slug=slug,
+                    defaults=defaults,
+                )
+                if created:
+                    created_count += 1
+                else:
+                    updated_count += 1
+
+            return Response(
+                {
+                    "success": True,
+                    "action": "seed",
+                    "created_count": created_count,
+                    "updated_count": updated_count,
+                    "total": len(DEMO_PRODUCTS),
+                    "message": f"20 ta demo mahsulot tayyorlandi ({created_count} yangi, {updated_count} yangilandi)",
+                }
+            )
+
+        return Response(
+            {"detail": "Noto'g'ri action. 'seed' yoki 'purge' yuboring."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+

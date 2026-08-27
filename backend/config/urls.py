@@ -262,6 +262,7 @@ from ai.admin_views import (
     AdminMorphAiStudioView,
 )
 from ai.admin_parvarish_views import (
+    AdminParvarishDemoActionView,
     AdminParvarishProductDetailView,
     AdminParvarishProductListCreateView,
     AdminParvarishStatsView,
@@ -420,6 +421,7 @@ api_routes = [
     path("admin/parvarish/stats/", AdminParvarishStatsView.as_view()),
     path("admin/parvarish/products/", AdminParvarishProductListCreateView.as_view()),
     path("admin/parvarish/products/<int:product_id>/", AdminParvarishProductDetailView.as_view()),
+    path("admin/parvarish/demo-action/", AdminParvarishDemoActionView.as_view()),
     path("admin/subscriptions/stats/", AdminSubscriptionStatsView.as_view()),
     path("admin/subscriptions/analytics/", AdminSubscriptionAnalyticsView.as_view()),
     path("admin/subscriptions/", AdminSubscriptionListView.as_view()),
