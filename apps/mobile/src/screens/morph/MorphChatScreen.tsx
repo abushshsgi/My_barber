@@ -27,6 +27,7 @@ import { ChatInputBar } from "../../components/morph/chat/ChatInputBar";
 import { ChatMenuDrawer } from "../../components/morph/chat/ChatMenuDrawer";
 import { ChatNotice } from "../../components/morph/chat/ChatNotice";
 import { MorphChatWelcome } from "../../components/morph/chat/MorphChatWelcome";
+import { QuickPromptChips } from "../../components/morph/chat/QuickPromptChips";
 import { VoiceSessionOverlay } from "../../components/morph/chat/VoiceSessionOverlay";
 import { useHideTabBarWhen } from "../../hooks/useHideTabBar";
 import { useMorphChat } from "../../hooks/useMorphChat";
@@ -520,7 +521,19 @@ export function MorphChatScreen() {
               ) : null}
             </View>
           }
-          chips={null}
+          chips={
+            <QuickPromptChips
+              prompts={chat.quickPrompts}
+              onSelect={async (p) => {
+                const ok = await requireAccess();
+                if (!ok) return;
+                setChatOpen(true);
+                await chat.sendQuickPrompt(p.id as any);
+                scrollToEnd();
+              }}
+              disabled={chat.sending || voice.busy || chatLocked}
+            />
+          }
           notice={
             chat.error ? (
               <ChatNotice
@@ -579,17 +592,34 @@ export function MorphChatScreen() {
           <Ionicons name="menu" size={22} color={pal.fg} />
         </Pressable>
         <View style={styles.headerText}>
-          <Text style={[styles.title, { color: pal.fg }]} numberOfLines={1}>
-            {threadTitle}
-          </Text>
+          <View style={styles.headerTitleRow}>
+            <View style={styles.headerAiDot}>
+              <Ionicons name="sparkles" size={10} color="#C4B5FD" />
+            </View>
+            <Text style={[styles.title, { color: pal.fg }]} numberOfLines={1}>
+              {threadTitle}
+            </Text>
+          </View>
+          <Text style={[styles.subtitle, { color: pal.muted }]}>Morf AI • Pro Assistant</Text>
         </View>
+        <Pressable
+          onPress={() => {
+            chat.startNewChat();
+            setChatOpen(false);
+          }}
+          style={({ pressed }) => [styles.headerBtn, pressed && styles.pressed]}
+          accessibilityRole="button"
+          accessibilityLabel={t("chat.menu.newChat")}
+        >
+          <Ionicons name="create-outline" size={20} color={pal.fg} />
+        </Pressable>
         <Pressable
           onPress={leaveChat}
           style={({ pressed }) => [styles.headerBtn, pressed && styles.pressed]}
           accessibilityRole="button"
           accessibilityLabel={t("chat.home.backA11y")}
         >
-          <Ionicons name="chevron-forward" size={24} color={pal.fg} />
+          <Ionicons name="chevron-forward" size={22} color={pal.fg} />
         </Pressable>
       </View>
 
@@ -664,11 +694,11 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    gap: 4,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#E4E4E7",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    gap: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(255, 255, 255, 0.08)",
   },
   headerBtn: {
     width: 40,
@@ -678,17 +708,40 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   pressed: {
-    opacity: 0.78,
+    opacity: 0.72,
   },
   headerText: {
     flex: 1,
     minWidth: 0,
+    paddingHorizontal: 4,
+  },
+  headerTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  headerAiDot: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: "rgba(139, 92, 246, 0.2)",
+    borderWidth: 1,
+    borderColor: "rgba(167, 139, 250, 0.4)",
+    alignItems: "center",
+    justifyContent: "center",
   },
   title: {
-    fontSize: 16,
-    fontWeight: "600",
+    ...morphFont,
+    fontSize: 15,
+    fontWeight: "700",
     color: "#111111",
-    letterSpacing: -0.2,
+    letterSpacing: -0.3,
+  },
+  subtitle: {
+    ...morphFont,
+    fontSize: 11,
+    color: "#A1A1AA",
+    marginTop: 1,
   },
   composerDock: {
     paddingHorizontal: 16,
@@ -697,6 +750,7 @@ const styles = StyleSheet.create({
   },
   list: {
     paddingTop: 16,
+    paddingBottom: 8,
     flexGrow: 1,
     backgroundColor: "transparent",
   },

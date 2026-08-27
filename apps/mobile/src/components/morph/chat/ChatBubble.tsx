@@ -42,20 +42,35 @@ function Dot({ delay }: { delay: number }) {
 }
 
 function TypingDots() {
+  const { theme } = useMorphAppearance();
+  const isDark = theme === "dark";
+
   return (
-    <View style={styles.dots} accessibilityLabel="typing">
-      <Dot delay={0} />
-      <Dot delay={140} />
-      <Dot delay={280} />
+    <View
+      style={[
+        styles.typingWrap,
+        isDark ? styles.typingDark : styles.typingLight,
+      ]}
+      accessibilityLabel="typing"
+    >
+      <View style={styles.typingIcon}>
+        <Ionicons name="sparkles" size={12} color="#8B5CF6" />
+      </View>
+      <View style={styles.dots}>
+        <Dot delay={0} />
+        <Dot delay={140} />
+        <Dot delay={280} />
+      </View>
     </View>
   );
 }
 
 export function ChatBubble({ role, content, pending }: Props) {
   const isUser = role === "user";
-  const { colors: pal, chatFs } = useMorphAppearance();
-  const textSize = chatFs(13);
-  const line = chatFs(19);
+  const { colors: pal, chatFs, theme } = useMorphAppearance();
+  const isDark = theme === "dark";
+  const textSize = chatFs(14);
+  const line = chatFs(20);
 
   if (pending && !content && !isUser) {
     return (
@@ -71,7 +86,7 @@ export function ChatBubble({ role, content, pending }: Props) {
         <View
           style={[
             styles.userBubble,
-            { backgroundColor: pal.theme === "dark" ? pal.cardStrong : "#F4F4F5" },
+            isDark ? styles.userBubbleDark : styles.userBubbleLight,
           ]}
         >
           <Text style={[styles.userText, { color: pal.fg, fontSize: textSize, lineHeight: line }]}>
@@ -92,20 +107,34 @@ export function ChatBubble({ role, content, pending }: Props) {
 const styles = StyleSheet.create({
   userRow: {
     alignItems: "flex-end",
-    paddingHorizontal: 18,
-    marginBottom: 18,
+    paddingHorizontal: 16,
+    marginBottom: 16,
   },
   userBubble: {
-    maxWidth: "80%",
-    backgroundColor: "#F4F4F5",
-    borderRadius: 20,
+    maxWidth: "82%",
+    borderRadius: 22,
     borderBottomRightRadius: 6,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  userBubbleLight: {
+    backgroundColor: "#F4F4F6",
+    borderWidth: 1,
+    borderColor: "rgba(0,0,0,0.04)",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 1,
+  },
+  userBubbleDark: {
+    backgroundColor: "rgba(255, 255, 255, 0.09)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.12)",
+    shadowColor: "#8B5CF6",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
     elevation: 2,
   },
   userText: {
@@ -115,19 +144,56 @@ const styles = StyleSheet.create({
     color: "#111111",
   },
   assistantRow: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 18,
     marginBottom: 18,
+  },
+  typingWrap: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 20,
+    alignSelf: "flex-start",
+  },
+  typingLight: {
+    backgroundColor: "rgba(255, 255, 255, 0.9)",
+    borderWidth: 1,
+    borderColor: "rgba(139, 92, 246, 0.2)",
+    shadowColor: "#8B5CF6",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  typingDark: {
+    backgroundColor: "rgba(24, 24, 27, 0.8)",
+    borderWidth: 1,
+    borderColor: "rgba(167, 139, 250, 0.3)",
+    shadowColor: "#8B5CF6",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  typingIcon: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: "rgba(139, 92, 246, 0.15)",
+    alignItems: "center",
+    justifyContent: "center",
   },
   dots: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    height: 24,
+    gap: 5,
+    height: 18,
   },
   dot: {
-    width: 7,
-    height: 7,
-    borderRadius: 4,
-    backgroundColor: "#A1A1AA",
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: "#A78BFA",
   },
 });
