@@ -263,6 +263,9 @@ export function MorphStudioScreen({ navigation }: Props) {
       </View>
 
       <ScrollView
+        style={{ flex: 1 }}
+        nestedScrollEnabled={true}
+        keyboardShouldPersistTaps="handled"
         contentContainerStyle={styles.body}
         showsVerticalScrollIndicator={false}
       >

@@ -30,7 +30,7 @@ export function MorphCareStack() {
       screenOptions={{
         headerShown: false,
         animation: "slide_from_right",
-        contentStyle: { backgroundColor: "#050505" },
+        contentStyle: { backgroundColor: "#FFFFFF" },
       }}
     >
       <Stack.Screen name="CareHome" component={MorphCareScreen} />

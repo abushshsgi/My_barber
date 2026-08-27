@@ -66,7 +66,10 @@ export function MorphProfileScreen({ navigation }: Props) {
     <View style={[styles.root, { paddingTop: Math.max(insets.top, 10) }]}>
       <StatusBar style={pal.status} />
       <ScrollView
+        style={{ flex: 1 }}
         showsVerticalScrollIndicator={false}
+        nestedScrollEnabled={true}
+        keyboardShouldPersistTaps="handled"
         contentContainerStyle={[
           styles.content,
           { paddingBottom: TAB_DOCK_CLEARANCE + Math.max(insets.bottom, 16) },

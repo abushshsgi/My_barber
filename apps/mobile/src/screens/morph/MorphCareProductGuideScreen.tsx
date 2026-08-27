@@ -270,6 +270,8 @@ export function MorphCareProductGuideScreen({ navigation, route }: Props) {
 
       <ScrollView
         style={styles.scroll}
+        nestedScrollEnabled={true}
+        keyboardShouldPersistTaps="handled"
         contentContainerStyle={{
           paddingHorizontal: 20,
           paddingBottom: Math.max(insets.bottom, 20) + 24,

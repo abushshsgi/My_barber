@@ -62,7 +62,10 @@ function MysaloonProfileHome({ navigation }: Props) {
     <View style={[styles.root, { paddingTop: Math.max(insets.top, 10) }]}>
       <StatusBar style="dark" />
       <ScrollView
+        style={{ flex: 1 }}
         showsVerticalScrollIndicator={false}
+        nestedScrollEnabled={true}
+        keyboardShouldPersistTaps="handled"
         contentContainerStyle={styles.content}
         refreshControl={
           <RefreshControl refreshing={loading && !!dashboard} onRefresh={refresh} />

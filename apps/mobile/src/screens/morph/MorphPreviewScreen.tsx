@@ -146,6 +146,9 @@ export function MorphPreviewScreen({ navigation, route }: Props) {
   return (
     <View style={[styles.root, { paddingBottom: Math.max(insets.bottom, 12) }]}>
       <ScrollView
+        style={{ flex: 1 }}
+        nestedScrollEnabled={true}
+        keyboardShouldPersistTaps="handled"
         bounces={false}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 24 }}

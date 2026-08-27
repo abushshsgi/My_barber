@@ -46,6 +46,9 @@ export function MorphCareWeatherScreen({ navigation }: Props) {
   return (
     <ScrollView
       style={styles.root}
+      nestedScrollEnabled={true}
+      keyboardShouldPersistTaps="handled"
+      showsVerticalScrollIndicator={false}
       contentContainerStyle={{
         paddingTop: insets.top + 12,
         paddingBottom: Math.max(insets.bottom, 24) + 72,
