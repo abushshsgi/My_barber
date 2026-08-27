@@ -506,7 +506,12 @@ export function MorphCareScreen({ navigation, route }: Props) {
             <Text style={styles.onboardBadge}>{t("care.onboarding.badge")}</Text>
             <View style={{ width: 42 }} />
           </View>
-          <View style={{ flex: 1, justifyContent: "center" }}>
+          <ScrollView
+            style={{ flex: 1 }}
+            contentContainerStyle={{ flexGrow: 1, justifyContent: "center" }}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
             <Text style={styles.onboardH1}>{quizMeta.title}</Text>
             <Text style={styles.onboardSub}>{quizMeta.sub}</Text>
             <View style={styles.progressTrackLight}>
@@ -528,7 +533,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
                 );
               })}
             </View>
-          </View>
+          </ScrollView>
           <View style={styles.onboardFooter}>
             {typeof step === "number" && step > 0 ? (
               <Pressable

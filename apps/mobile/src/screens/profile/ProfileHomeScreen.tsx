@@ -70,7 +70,7 @@ function MysaloonProfileHome({ navigation }: Props) {
         overScrollMode="never"
         contentContainerStyle={[
           styles.content,
-          { paddingBottom: TAB_DOCK_CLEARANCE + Math.max(insets.bottom, 16) + 40 },
+          { paddingBottom: TAB_DOCK_CLEARANCE + Math.max(insets.bottom, 16) + 60 },
         ]}
         refreshControl={
           <RefreshControl refreshing={loading && !!dashboard} onRefresh={refresh} />

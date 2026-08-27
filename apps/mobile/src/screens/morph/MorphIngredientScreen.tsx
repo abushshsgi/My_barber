@@ -306,27 +306,34 @@ export function MorphIngredientScreen({ navigation }: Props) {
           <Text style={styles.badge}>{t("ingredient.badge")}</Text>
           <View style={{ width: 40 }} />
         </View>
-        <Text style={styles.quizHint}>{t("ingredient.quizHint")}</Text>
-        <Text style={styles.h1}>{current.title}</Text>
-        <View style={styles.progressTrack}>
-          <View style={[styles.progressFill, { width: `${progress}%` }]} />
-        </View>
-        <View style={styles.quizOpts}>
-          {current.options.map((value) => {
-            const on = current.value === value;
-            return (
-              <Pressable
-                key={value}
-                style={[styles.opt, on && styles.optOn]}
-                onPress={() => current.onPick(value)}
-              >
-                <Text style={[styles.optText, on && styles.optTextOn]}>
-                  {t(`${current.labelKey}.${value}`)}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={{ flexGrow: 1 }}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          <Text style={styles.quizHint}>{t("ingredient.quizHint")}</Text>
+          <Text style={styles.h1}>{current.title}</Text>
+          <View style={styles.progressTrack}>
+            <View style={[styles.progressFill, { width: `${progress}%` }]} />
+          </View>
+          <View style={styles.quizOpts}>
+            {current.options.map((value) => {
+              const on = current.value === value;
+              return (
+                <Pressable
+                  key={value}
+                  style={[styles.opt, on && styles.optOn]}
+                  onPress={() => current.onPick(value)}
+                >
+                  <Text style={[styles.optText, on && styles.optTextOn]}>
+                    {t(`${current.labelKey}.${value}`)}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </ScrollView>
         <View style={styles.quizActions}>
           {quizStep > 0 ? (
             <Pressable
