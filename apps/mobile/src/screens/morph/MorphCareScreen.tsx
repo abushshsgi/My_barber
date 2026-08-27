@@ -179,9 +179,9 @@ export function MorphCareScreen({ navigation }: Props) {
     if (navigation.canGoBack()) {
       navigation.goBack();
     } else {
-      navigateRootTab(navigation, "Home");
+      goMorph(navigation, "MorphChat");
     }
-  }, [viewMode, step, navigation, navigateRootTab]);
+  }, [viewMode, step, navigation, goMorph]);
 
   const dayRows = weather?.days?.length ? weather.days.slice(0, 7) : buildFallbackDays();
   const selectedDate = dayRows[selectedDayIdx]?.date ?? new Date().toISOString().slice(0, 10);
@@ -564,10 +564,10 @@ export function MorphCareScreen({ navigation }: Props) {
           style={styles.hubScroll}
           contentContainerStyle={{
             paddingTop: insets.top + 8,
-            paddingBottom: Math.max(insets.bottom, 12),
-            flexGrow: 1,
-            justifyContent: "space-between",
+            paddingBottom: Math.max(insets.bottom, 24) + 60,
           }}
+          nestedScrollEnabled={true}
+          keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
           <View>
@@ -629,6 +629,7 @@ export function MorphCareScreen({ navigation }: Props) {
             {/* Category Pills (All, Hair Cut, Face Care, Eye care, etc.) */}
             <ScrollView
               horizontal
+              nestedScrollEnabled={true}
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.categoryScroll}
             >
@@ -656,6 +657,7 @@ export function MorphCareScreen({ navigation }: Props) {
             {/* Featured and User Care Products */}
             <ScrollView
               horizontal
+              nestedScrollEnabled={true}
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.featuredProductsScroll}
             >
@@ -857,7 +859,7 @@ export function MorphCareScreen({ navigation }: Props) {
         <Text style={styles.routineHeadline}>{t(greetingKey())}</Text>
       </View>
 
-      <View style={[styles.hubSheet, { flex: 1, paddingBottom: Math.max(insets.bottom, 16) + 8 }]}>
+      <View style={[styles.hubSheet, styles.hubSheetFlow, { flex: 1, paddingBottom: Math.max(insets.bottom, 16) + 8 }]}>
         <CareRoutineSheet
           quiz={quiz}
           catalog={catalog}
@@ -1190,13 +1192,16 @@ const styles = StyleSheet.create({
     lineHeight: 32,
   },
   hubSheet: {
-    marginTop: "auto",
+    marginTop: 20,
     borderTopLeftRadius: 32,
     borderTopRightRadius: 32,
     backgroundColor: "#fff",
     paddingHorizontal: 18,
     paddingTop: 18,
     gap: 14,
+  },
+  hubSheetFlow: {
+    marginTop: 12,
   },
   reportHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   reportTitle: { ...morphFont, fontSize: 18, fontWeight: "700", color: "#111" },

@@ -115,6 +115,8 @@ export function CareRoutineSheet({
     <ScrollView
       style={styles.sheetScroll}
       contentContainerStyle={styles.sheetContent}
+      nestedScrollEnabled={true}
+      keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
     >
       <View style={styles.profileRow}>
