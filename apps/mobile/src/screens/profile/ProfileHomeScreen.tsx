@@ -66,7 +66,12 @@ function MysaloonProfileHome({ navigation }: Props) {
         showsVerticalScrollIndicator={false}
         nestedScrollEnabled={true}
         keyboardShouldPersistTaps="handled"
-        contentContainerStyle={styles.content}
+        bounces={true}
+        overScrollMode="never"
+        contentContainerStyle={[
+          styles.content,
+          { paddingBottom: TAB_DOCK_CLEARANCE + Math.max(insets.bottom, 16) + 40 },
+        ]}
         refreshControl={
           <RefreshControl refreshing={loading && !!dashboard} onRefresh={refresh} />
         }
