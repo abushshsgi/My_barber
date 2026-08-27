@@ -31,6 +31,7 @@ import { useCareWeather } from "../../hooks/useCareWeather";
 import { useHideTabBar } from "../../hooks/useHideTabBar";
 import {
   defaultQuiz,
+  estimateProductFit,
   loadCareQuiz,
   saveCareQuiz,
   type CareQuizAnswers,
@@ -68,6 +69,7 @@ interface FeaturedProductItem {
   image: string;
   bgColors: [string, string, string];
   hasPlay?: boolean;
+  fitScore?: number;
 }
 
 const FEATURED_PRODUCTS: FeaturedProductItem[] = [
@@ -322,6 +324,7 @@ export function MorphCareScreen({ navigation }: Props) {
       const products = await fetchCareProducts({ recommended: true }).catch(() => []);
       setCatalog(products);
       setStep("plan");
+      setViewMode("hub");
     } finally {
       setSaving(false);
     }
@@ -340,27 +343,35 @@ export function MorphCareScreen({ navigation }: Props) {
       image: string;
       bgColors: [string, string, string];
       isUserAdded: boolean;
+      fitScore?: number;
       usageText?: string;
     }> = [];
 
-    myProducts.forEach((mp) => {
-      list.push({
-        id: `my-${mp.id}`,
-        productId: mp.id,
-        title: mp.name,
-        brand: mp.brand || "Morf Tarkib",
-        price: "Tarkibda",
-        category: mp.category || "spray",
-        duration: "2 Min",
-        durationMinutes: 2,
-        image: mp.image_url || "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=600&q=80",
-        bgColors: ["#FFE4EC", "#FFF0F5", "#FCE4EC"],
-        isUserAdded: true,
+    if (myProducts.length > 0) {
+      myProducts.forEach((mp) => {
+        list.push({
+          id: `my-${mp.id}`,
+          productId: mp.id,
+          title: mp.name,
+          brand: mp.brand || "Morf Tarkib",
+          price: "Tarkibda",
+          category: mp.category || "spray",
+          duration: "2 Min",
+          durationMinutes: 2,
+          image: mp.image_url || "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=600&q=80",
+          bgColors: ["#FFE4EC", "#FFF0F5", "#FCE4EC"],
+          isUserAdded: true,
+        });
       });
-    });
+    } else {
+      const rankedCatalog = [...catalog]
+        .map((cp) => ({
+          product: cp,
+          fit: estimateProductFit(cp, quiz),
+        }))
+        .sort((a, b) => b.fit - a.fit);
 
-    catalog.forEach((cp) => {
-      if (!myProducts.some((mp) => mp.id === cp.id)) {
+      rankedCatalog.forEach(({ product: cp, fit }) => {
         list.push({
           id: `cat-${cp.id}`,
           productId: cp.id,
@@ -373,19 +384,26 @@ export function MorphCareScreen({ navigation }: Props) {
           image: cp.image_url || "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&w=600&q=80",
           bgColors: cp.category === "mask" ? ["#E0F7FA", "#E8F5E9", "#E0F2F1"] : ["#F3E8FF", "#FAF5FF", "#EDE9FE"],
           isUserAdded: false,
+          fitScore: fit,
           usageText: cp.usage_uz,
         });
-      }
-    });
+      });
+    }
 
     if (list.length === 0) {
       return FEATURED_PRODUCTS.map((fp) => ({
-        ...fp,
+        id: fp.id,
+        title: fp.title,
+        price: fp.price,
+        duration: fp.duration,
+        image: fp.image,
+        bgColors: fp.bgColors,
         productId: undefined,
         brand: "Morf Care Pro",
         category: "spray",
         durationMinutes: 2,
         isUserAdded: false,
+        fitScore: undefined,
         usageText: undefined,
       }));
     }
@@ -396,7 +414,7 @@ export function MorphCareScreen({ navigation }: Props) {
     }
 
     return list;
-  }, [myProducts, catalog, selectedCat]);
+  }, [myProducts, catalog, quiz, selectedCat]);
 
   if (loading) {
     return (
@@ -428,6 +446,106 @@ export function MorphCareScreen({ navigation }: Props) {
           <Pressable style={[styles.primaryBtnDark, { marginTop: 24 }]} onPress={openSubscriptions}>
             <Text style={styles.primaryBtnDarkText}>{t("care.seePlans")}</Text>
           </Pressable>
+        </View>
+      </View>
+    );
+  }
+
+  if (step !== "plan") {
+    const quizMeta =
+      step === 0
+        ? {
+            title: t("care.onboarding.step1Title"),
+            sub: t("care.onboarding.step1Sub"),
+            opts: CONDITION_OPTS,
+            value: quiz.condition,
+            labelKey: "care.conditions",
+            set: (v: HairCondition) => setQuiz((q) => ({ ...q, condition: v })),
+          }
+        : step === 1
+          ? {
+              title: t("care.onboarding.step2Title"),
+              sub: t("care.onboarding.step2Sub"),
+              opts: TEXTURE_OPTS,
+              value: quiz.texture,
+              labelKey: "care.textures",
+              set: (v: HairTexture) => setQuiz((q) => ({ ...q, texture: v })),
+            }
+          : {
+              title: t("care.onboarding.step3Title"),
+              sub: t("care.onboarding.step3Sub"),
+              opts: COLOR_OPTS,
+              value: quiz.colorStatus,
+              labelKey: "care.colors",
+              set: (v: HairColorStatus) => setQuiz((q) => ({ ...q, colorStatus: v })),
+            };
+
+    return (
+      <View style={styles.onboardRoot}>
+        <LinearGradient
+          colors={["#EDE4FF", "#F7E8F0", "#F4F5F8"]}
+          start={{ x: 0.1, y: 0 }}
+          end={{ x: 0.9, y: 0.55 }}
+          style={StyleSheet.absoluteFill}
+        />
+        <View style={[styles.onboardPad, { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 16 }]}>
+          <View style={styles.navBarRow}>
+            <Pressable
+              style={styles.navCircleBtnLight}
+              onPress={handleBack}
+              hitSlop={8}
+              accessibilityLabel={t("common.back")}
+            >
+              <Ionicons name="chevron-back" size={20} color="#111" />
+            </Pressable>
+            <Text style={styles.onboardBadge}>{t("care.onboarding.badge")}</Text>
+            <View style={{ width: 42 }} />
+          </View>
+          <View style={{ flex: 1, justifyContent: "center" }}>
+            <Text style={styles.onboardH1}>{quizMeta.title}</Text>
+            <Text style={styles.onboardSub}>{quizMeta.sub}</Text>
+            <View style={styles.progressTrackLight}>
+              <View style={[styles.progressFillLight, { width: `${((step + 1) / 3) * 100}%` }]} />
+            </View>
+            <View style={styles.optGridLight}>
+              {quizMeta.opts.map((opt) => {
+                const on = quizMeta.value === opt;
+                return (
+                  <Pressable
+                    key={opt}
+                    style={[styles.optCardLight, on && styles.optCardLightOn]}
+                    onPress={() => quizMeta.set(opt as never)}
+                  >
+                    <Text style={[styles.optTextLight, on && styles.optTextLightOn]}>
+                      {t(`${quizMeta.labelKey}.${opt}`)}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
+          <View style={styles.onboardFooter}>
+            {typeof step === "number" && step > 0 ? (
+              <Pressable
+                style={styles.ghostBtnLight}
+                onPress={() => setStep((s) => (typeof s === "number" && s > 0 ? ((s - 1) as QuizStep) : 0))}
+              >
+                <Text style={styles.ghostBtnLightText}>{t("common.back")}</Text>
+              </Pressable>
+            ) : null}
+            <Pressable
+              style={[styles.primaryBtnLight, styles.flexGrow, saving && styles.disabled]}
+              disabled={saving}
+              onPress={() => {
+                if (step === 2) void finishQuiz();
+                else setStep((step + 1) as QuizStep);
+              }}
+            >
+              <Text style={styles.primaryBtnLightText}>
+                {step === 2 ? t("care.onboarding.finish") : t("common.next")}
+              </Text>
+            </Pressable>
+          </View>
         </View>
       </View>
     );
@@ -548,7 +666,15 @@ export function MorphCareScreen({ navigation }: Props) {
                   <Pressable
                     key={prod.id}
                     style={styles.featuredCard}
-                    onPress={() => openProductGuide(prod)}
+                    onPress={() => {
+                      if (prod.isUserAdded) {
+                        openProductGuide(prod);
+                      } else if (prod.productId) {
+                        openProduct(prod.productId);
+                      } else {
+                        openCatalog();
+                      }
+                    }}
                   >
                     <LinearGradient
                       colors={prod.bgColors}
@@ -563,7 +689,7 @@ export function MorphCareScreen({ navigation }: Props) {
                       resizeMode="cover"
                     />
 
-                    {/* Top Action Row (Heart, Duration, Play) */}
+                    {/* Top Action Row (Heart, Duration/Fit, Play) */}
                     <View style={styles.featuredTopRow}>
                       <Pressable
                         style={[styles.featuredActionBtn, isSaved && styles.featuredActionBtnActive]}
@@ -572,6 +698,7 @@ export function MorphCareScreen({ navigation }: Props) {
                           void toggleFavoriteProduct(prod);
                         }}
                         hitSlop={6}
+                        accessibilityLabel="Save product"
                       >
                         <Ionicons
                           name={isSaved ? "heart" : "heart-outline"}
@@ -580,23 +707,33 @@ export function MorphCareScreen({ navigation }: Props) {
                         />
                       </Pressable>
 
-                      {prod.duration ? (
+                      {prod.isUserAdded && prod.duration ? (
                         <View style={styles.featuredDurationPill}>
                           <Ionicons name="time-outline" size={14} color="#1F2937" />
                           <Text style={styles.featuredDurationText}>{prod.duration}</Text>
                         </View>
+                      ) : !prod.isUserAdded && prod.fitScore ? (
+                        <View style={styles.featuredFitPill}>
+                          <Ionicons name="sparkles" size={12} color="#7C3AED" />
+                          <Text style={styles.featuredFitText}>{prod.fitScore}% mos</Text>
+                        </View>
                       ) : null}
 
-                      <Pressable
-                        style={styles.featuredActionBtn}
-                        onPress={(e) => {
-                          e.stopPropagation();
-                          openProductGuide(prod);
-                        }}
-                        hitSlop={6}
-                      >
-                        <Ionicons name="play" size={14} color="#1F2937" style={{ marginLeft: 2 }} />
-                      </Pressable>
+                      {prod.isUserAdded ? (
+                        <Pressable
+                          style={styles.featuredActionBtn}
+                          onPress={(e) => {
+                            e.stopPropagation();
+                            openProductGuide(prod);
+                          }}
+                          hitSlop={6}
+                          accessibilityLabel="Play guide"
+                        >
+                          <Ionicons name="play" size={14} color="#1F2937" style={{ marginLeft: 2 }} />
+                        </Pressable>
+                      ) : (
+                        <View style={{ width: 36 }} />
+                      )}
                     </View>
 
                     {/* Bottom Glass Overlay (Title, Price/Brand, Pink Arrow) */}
@@ -612,10 +749,10 @@ export function MorphCareScreen({ navigation }: Props) {
 
                       <View style={styles.featuredArrowBtn}>
                         <Ionicons
-                          name="arrow-up"
+                          name={prod.isUserAdded ? "play" : "arrow-up"}
                           size={16}
                           color="#fff"
-                          style={{ transform: [{ rotate: "45deg" }] }}
+                          style={prod.isUserAdded ? { marginLeft: 2 } : { transform: [{ rotate: "45deg" }] }}
                         />
                       </View>
                     </View>
@@ -685,106 +822,6 @@ export function MorphCareScreen({ navigation }: Props) {
             </Pressable>
           </View>
         </ScrollView>
-      </View>
-    );
-  }
-
-  if (step !== "plan") {
-    const quizMeta =
-      step === 0
-        ? {
-            title: t("care.onboarding.step1Title"),
-            sub: t("care.onboarding.step1Sub"),
-            opts: CONDITION_OPTS,
-            value: quiz.condition,
-            labelKey: "care.conditions",
-            set: (v: HairCondition) => setQuiz((q) => ({ ...q, condition: v })),
-          }
-        : step === 1
-          ? {
-              title: t("care.onboarding.step2Title"),
-              sub: t("care.onboarding.step2Sub"),
-              opts: TEXTURE_OPTS,
-              value: quiz.texture,
-              labelKey: "care.textures",
-              set: (v: HairTexture) => setQuiz((q) => ({ ...q, texture: v })),
-            }
-          : {
-              title: t("care.onboarding.step3Title"),
-              sub: t("care.onboarding.step3Sub"),
-              opts: COLOR_OPTS,
-              value: quiz.colorStatus,
-              labelKey: "care.colors",
-              set: (v: HairColorStatus) => setQuiz((q) => ({ ...q, colorStatus: v })),
-            };
-
-    return (
-      <View style={styles.onboardRoot}>
-        <LinearGradient
-          colors={["#EDE4FF", "#F7E8F0", "#F4F5F8"]}
-          start={{ x: 0.1, y: 0 }}
-          end={{ x: 0.9, y: 0.55 }}
-          style={StyleSheet.absoluteFill}
-        />
-        <View style={[styles.onboardPad, { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 16 }]}>
-          <View style={styles.navBarRow}>
-            <Pressable
-              style={styles.navCircleBtnLight}
-              onPress={handleBack}
-              hitSlop={8}
-              accessibilityLabel={t("common.back")}
-            >
-              <Ionicons name="chevron-back" size={20} color="#111" />
-            </Pressable>
-            <Text style={styles.onboardBadge}>{t("care.onboarding.badge")}</Text>
-            <View style={{ width: 42 }} />
-          </View>
-          <View style={{ flex: 1, justifyContent: "center" }}>
-            <Text style={styles.onboardH1}>{quizMeta.title}</Text>
-            <Text style={styles.onboardSub}>{quizMeta.sub}</Text>
-            <View style={styles.progressTrackLight}>
-              <View style={[styles.progressFillLight, { width: `${((step + 1) / 3) * 100}%` }]} />
-            </View>
-            <View style={styles.optGridLight}>
-              {quizMeta.opts.map((opt) => {
-                const on = quizMeta.value === opt;
-                return (
-                  <Pressable
-                    key={opt}
-                    style={[styles.optCardLight, on && styles.optCardLightOn]}
-                    onPress={() => quizMeta.set(opt as never)}
-                  >
-                    <Text style={[styles.optTextLight, on && styles.optTextLightOn]}>
-                      {t(`${quizMeta.labelKey}.${opt}`)}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-          </View>
-          <View style={styles.onboardFooter}>
-            {typeof step === "number" && step > 0 ? (
-              <Pressable
-                style={styles.ghostBtnLight}
-                onPress={() => setStep((s) => (typeof s === "number" && s > 0 ? ((s - 1) as QuizStep) : 0))}
-              >
-                <Text style={styles.ghostBtnLightText}>{t("common.back")}</Text>
-              </Pressable>
-            ) : null}
-            <Pressable
-              style={[styles.primaryBtnLight, styles.flexGrow, saving && styles.disabled]}
-              disabled={saving}
-              onPress={() => {
-                if (step === 2) void finishQuiz();
-                else setStep((step + 1) as QuizStep);
-              }}
-            >
-              <Text style={styles.primaryBtnLightText}>
-                {step === 2 ? t("care.onboarding.finish") : t("common.next")}
-              </Text>
-            </Pressable>
-          </View>
-        </View>
       </View>
     );
   }
@@ -1088,6 +1125,23 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "700",
     color: "#1F2937",
+  },
+  featuredFitPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "rgba(255,255,255,0.88)",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: "rgba(124,58,237,0.25)",
+  },
+  featuredFitText: {
+    ...morphFont,
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#7C3AED",
   },
   featuredBottomGlass: {
     flexDirection: "row",
