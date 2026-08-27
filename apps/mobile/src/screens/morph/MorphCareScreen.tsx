@@ -497,7 +497,7 @@ export function MorphCareScreen({ navigation }: Props) {
               </View>
             </View>
 
-            {/* Search Bar with Pink Filter & AI Scan Button */}
+            {/* Search Bar with Pink Filter */}
             <View style={styles.searchSection}>
               <Pressable style={styles.searchBar} onPress={openCatalog}>
                 <Ionicons name="search-outline" size={20} color="#9CA3AF" />
@@ -505,21 +505,6 @@ export function MorphCareScreen({ navigation }: Props) {
                 <View style={styles.filterBtn}>
                   <Ionicons name="options-outline" size={18} color="#fff" />
                 </View>
-              </Pressable>
-
-              <Pressable
-                style={styles.aiScanBtn}
-                onPress={openTarkib}
-                accessibilityLabel="AI Skan"
-              >
-                <LinearGradient
-                  colors={["#09090B", "#27272A"]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={StyleSheet.absoluteFill}
-                />
-                <Ionicons name="scan" size={18} color="#FFFFFF" />
-                <Text style={styles.aiScanBtnText}>AI Skan</Text>
               </Pressable>
             </View>
 
@@ -641,7 +626,7 @@ export function MorphCareScreen({ navigation }: Props) {
           </View>
 
           {/* Bottom Sheet - Parvarish, Tarkib Skan, AI Assistant */}
-          <View style={styles.hubSheet}>
+          <View style={[styles.hubSheet, { paddingBottom: Math.max(insets.bottom, 20) + 24 }]}>
             <View style={styles.reportHead}>
               <Text style={styles.reportTitle}>{t("care.hubReport")}</Text>
               <Pressable style={styles.reportFilter} onPress={openCatalog}>
@@ -973,14 +958,11 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0,0,0,0.12)",
   },
   searchSection: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
     paddingHorizontal: 20,
     marginTop: 12,
   },
   searchBar: {
-    flex: 1,
+    width: "100%",
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#FFFFFF",
@@ -1010,28 +992,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#E11D48",
     alignItems: "center",
     justifyContent: "center",
-  },
-  aiScanBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    height: 52,
-    paddingHorizontal: 16,
-    borderRadius: 999,
-    backgroundColor: "#09090B",
-    overflow: "hidden",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 3,
-  },
-  aiScanBtnText: {
-    ...morphFont,
-    fontSize: 13,
-    fontWeight: "700",
-    color: "#FFFFFF",
   },
   featuredActionBtnActive: {
     backgroundColor: "#FFF1F2",
@@ -1181,8 +1141,8 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 32,
     backgroundColor: "#fff",
     paddingHorizontal: 18,
-    paddingTop: 20,
-    gap: 16,
+    paddingTop: 18,
+    gap: 14,
   },
   reportHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   reportTitle: { ...morphFont, fontSize: 18, fontWeight: "700", color: "#111" },
@@ -1227,13 +1187,14 @@ const styles = StyleSheet.create({
     borderColor: "rgba(139, 92, 246, 0.18)",
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
     gap: 12,
     shadowColor: "#8B5CF6",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 8,
     elevation: 2,
+    marginBottom: 8,
   },
   aiAssistantIcon: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center" },
   aiAssistantText: { ...morphFont, flex: 1, fontSize: 16, fontWeight: "600", color: "#111" },
