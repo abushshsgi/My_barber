@@ -4,7 +4,6 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Image,
   Pressable,
   StyleSheet,
   Text,
@@ -23,7 +22,6 @@ import {
   type HairCondition,
   type HairTexture,
 } from "../../api/care";
-import { useAuth } from "../../auth/AuthContext";
 import { CareRoutineSheet } from "../../components/morph/care/CareRoutineSheet";
 import { DarkMeshAmbientBg } from "../../components/morph/care/DarkMeshAmbientBg";
 import { useCareWeather } from "../../hooks/useCareWeather";
@@ -81,7 +79,6 @@ function greetingKey(): string {
 export function MorphCareScreen({ navigation }: Props) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
-  const { user } = useAuth();
   const { goMorph, navigateRootTab } = useShellNavigation();
   const [loading, setLoading] = useState(true);
   const [access, setAccess] = useState<{ allowed: boolean; detail?: string } | null>(null);
@@ -92,11 +89,6 @@ export function MorphCareScreen({ navigation }: Props) {
   const [saving, setSaving] = useState(false);
   const [selectedDayIdx, setSelectedDayIdx] = useState(0);
   const { data: weather, loading: weatherLoading } = useCareWeather();
-
-  const displayName =
-    user?.first_name?.trim() ||
-    user?.full_name?.trim()?.split(/\s+/)[0] ||
-    t("care.hubGuestName");
 
   const dayRows = weather?.days?.length ? weather.days.slice(0, 7) : buildFallbackDays();
   const selectedDate = dayRows[selectedDayIdx]?.date ?? new Date().toISOString().slice(0, 10);
@@ -119,10 +111,6 @@ export function MorphCareScreen({ navigation }: Props) {
 
   const openAssistant = useCallback(() => {
     navigateRootTab(navigation, "MorphChat");
-  }, [navigation, navigateRootTab]);
-
-  const openProfile = useCallback(() => {
-    navigateRootTab(navigation, "Profile");
   }, [navigation, navigateRootTab]);
 
   const openProduct = useCallback(
@@ -220,9 +208,6 @@ export function MorphCareScreen({ navigation }: Props) {
   }
 
   if (viewMode === "hub") {
-    const avatarUri = user?.avatar?.trim() || null;
-    const initial = displayName.slice(0, 1).toUpperCase();
-
     return (
       <View style={styles.hubRoot}>
         <DarkMeshAmbientBg />
@@ -230,18 +215,9 @@ export function MorphCareScreen({ navigation }: Props) {
         <View style={[styles.hubTop, { paddingTop: insets.top + 8 }]}>
           <View style={styles.hubHeader}>
             <View style={styles.hubHeaderText}>
-              <Text style={styles.hubHello}>{t("care.hubHello", { name: displayName })}</Text>
+              <Text style={styles.hubHello}>{t("care.hubHello")}</Text>
               <Text style={styles.hubHeadline}>{t("care.hubHeadline")}</Text>
             </View>
-            <Pressable style={styles.hubAvatarBtn} onPress={openProfile}>
-              {avatarUri ? (
-                <Image source={{ uri: avatarUri }} style={styles.hubAvatar} />
-              ) : (
-                <View style={styles.hubAvatarFallback}>
-                  <Text style={styles.hubAvatarInitial}>{initial}</Text>
-                </View>
-              )}
-            </Pressable>
           </View>
 
           <Pressable style={styles.weatherChip} onPress={openWeather}>
@@ -460,7 +436,7 @@ export function MorphCareScreen({ navigation }: Props) {
           <Text style={styles.routineTopTitle}>{t("care.hubParvarish")}</Text>
           <View style={{ width: 22 }} />
         </View>
-        <Text style={styles.routineHello}>{t("care.hubHello", { name: displayName })}</Text>
+        <Text style={styles.routineHello}>{t("care.hubHello")}</Text>
         <Text style={styles.routineHeadline}>{t(greetingKey())}</Text>
       </View>
 
