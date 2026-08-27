@@ -179,7 +179,7 @@ export function MorphCareScreen({ navigation }: Props) {
     if (navigation.canGoBack()) {
       navigation.goBack();
     } else {
-      goMorph(navigation, "MorphChat");
+      goMorph(navigation, "MorphTryOn");
     }
   }, [viewMode, step, navigation, goMorph]);
 
