@@ -313,7 +313,7 @@ export function MorphCareScreen({ navigation }: Props) {
           </View>
         </View>
 
-        <View style={[styles.hubSheet, { paddingBottom: Math.max(insets.bottom, 12) + 72 }]}>
+        <View style={[styles.hubSheet, { paddingBottom: Math.max(insets.bottom, 16) + 8 }]}>
           <View style={styles.reportHead}>
             <Text style={styles.reportTitle}>{t("care.hubReport")}</Text>
             <Pressable style={styles.reportFilter} onPress={openCatalog}>
@@ -506,7 +506,7 @@ export function MorphCareScreen({ navigation }: Props) {
         <Text style={styles.routineHeadline}>{t(greetingKey())}</Text>
       </View>
 
-      <View style={[styles.hubSheet, { flex: 1, paddingBottom: Math.max(insets.bottom, 12) + 88 }]}>
+      <View style={[styles.hubSheet, { flex: 1, paddingBottom: Math.max(insets.bottom, 16) + 8 }]}>
         <CareRoutineSheet
           quiz={quiz}
           catalog={catalog}
@@ -520,7 +520,7 @@ export function MorphCareScreen({ navigation }: Props) {
       </View>
 
       <Pressable
-        style={[styles.fab, { bottom: Math.max(insets.bottom, 12) + 72 }]}
+        style={[styles.fab, { bottom: Math.max(insets.bottom, 16) + 16 }]}
         onPress={openAssistant}
         accessibilityLabel={t("care.hubAiAssistant")}
       >
