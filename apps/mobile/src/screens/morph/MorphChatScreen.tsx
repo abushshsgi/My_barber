@@ -46,6 +46,7 @@ import type { RootTabParamList } from "../../navigation/RootTabs";
 import { MorphChatSettingsScreen } from "./MorphChatSettingsScreen";
 import { useMorphAppearance } from "../../lib/MorphAppearanceContext";
 import { ChatAmbientBg } from "../../components/morph/chat/ChatAmbientBg";
+import { morphFont } from "../../theme/morph-font";
 
 export function MorphChatScreen() {
   const { t } = useTranslation();
