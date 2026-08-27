@@ -182,16 +182,24 @@ export function MorphIngredientScreen({ navigation }: Props) {
   };
 
   const handleAddToMyProducts = async () => {
-    const matched = result?.matched_product;
-    if (!matched) return;
+    if (!result) return;
+    const matched = result.matched_product;
+    const prodName =
+      matched?.name ||
+      result.product_analysis?.product_name ||
+      t("ingredient.unknownProduct");
+    const prodId =
+      matched?.id ??
+      (result.matched_product_id ? Number(result.matched_product_id) : 900000 + Math.floor(Math.random() * 90000));
+
     setAddingProduct(true);
     try {
       await addMyProduct({
-        id: matched.id,
-        name: matched.name,
-        brand: matched.brand,
-        category: matched.category,
-        image_url: matched.image_url,
+        id: prodId,
+        name: prodName,
+        brand: matched?.brand || result.product_analysis?.brand || "Skan mahsulot",
+        category: matched?.category || "other",
+        image_url: matched?.image_url || null,
         source: "scan",
       });
       setInMyProducts(true);
@@ -503,7 +511,7 @@ export function MorphIngredientScreen({ navigation }: Props) {
           <Pressable style={[styles.primaryBtn, { marginTop: 28 }]} onPress={resetScan}>
             <Text style={styles.primaryBtnText}>{t("ingredient.scanAgain")}</Text>
           </Pressable>
-          {matched ? (
+          {result ? (
             <Pressable
               style={[
                 styles.secondaryBtnFull,
