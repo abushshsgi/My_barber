@@ -25,6 +25,7 @@ import {
 import { CareRoutineSheet } from "../../components/morph/care/CareRoutineSheet";
 import { DarkMeshAmbientBg } from "../../components/morph/care/DarkMeshAmbientBg";
 import { useCareWeather } from "../../hooks/useCareWeather";
+import { useHideTabBar } from "../../hooks/useHideTabBar";
 import {
   defaultQuiz,
   loadCareQuiz,
@@ -77,6 +78,7 @@ function greetingKey(): string {
 }
 
 export function MorphCareScreen({ navigation }: Props) {
+  useHideTabBar();
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const { goMorph, navigateRootTab } = useShellNavigation();
@@ -89,6 +91,27 @@ export function MorphCareScreen({ navigation }: Props) {
   const [saving, setSaving] = useState(false);
   const [selectedDayIdx, setSelectedDayIdx] = useState(0);
   const { data: weather, loading: weatherLoading } = useCareWeather();
+
+  const handleBack = useCallback(() => {
+    if (viewMode === "flow") {
+      setViewMode("hub");
+      return;
+    }
+    if (step !== "plan") {
+      if (typeof step === "number" && step > 0) {
+        setStep((step - 1) as QuizStep);
+        return;
+      }
+      setViewMode("hub");
+      setStep("plan");
+      return;
+    }
+    if (navigation.canGoBack()) {
+      navigation.goBack();
+    } else {
+      navigateRootTab(navigation, "Home");
+    }
+  }, [viewMode, step, navigation, navigateRootTab]);
 
   const dayRows = weather?.days?.length ? weather.days.slice(0, 7) : buildFallbackDays();
   const selectedDate = dayRows[selectedDayIdx]?.date ?? new Date().toISOString().slice(0, 10);
@@ -194,7 +217,18 @@ export function MorphCareScreen({ navigation }: Props) {
   if (access && !access.allowed) {
     return (
       <View style={[styles.root, styles.pad, { paddingTop: insets.top + 12 }]}>
-        <Text style={styles.muted}>{t("care.badge")}</Text>
+        <View style={styles.navBarRow}>
+          <Pressable
+            style={styles.navCircleBtn}
+            onPress={handleBack}
+            accessibilityLabel={t("common.back")}
+            hitSlop={8}
+          >
+            <Ionicons name="chevron-back" size={20} color="#fff" />
+          </Pressable>
+          <View style={{ width: 42 }} />
+        </View>
+        <Text style={[styles.muted, { marginTop: 12 }]}>{t("care.badge")}</Text>
         <View style={styles.lockWrap}>
           <Ionicons name="lock-closed" size={28} color="rgba(255,255,255,0.5)" />
           <Text style={styles.lockTitle}>{t("care.badge")}</Text>
@@ -213,12 +247,26 @@ export function MorphCareScreen({ navigation }: Props) {
         <DarkMeshAmbientBg />
 
         <View style={[styles.hubTop, { paddingTop: insets.top + 8 }]}>
-          <View style={styles.hubHeader}>
-            <View style={styles.hubHeaderText}>
-              <Text style={styles.hubHello}>{t("care.hubHello")}</Text>
-              <Text style={styles.hubHeadline}>{t("care.hubHeadline")}</Text>
-            </View>
+          <View style={styles.navBarRow}>
+            <Pressable
+              style={styles.navCircleBtn}
+              onPress={handleBack}
+              accessibilityLabel={t("common.back")}
+              hitSlop={8}
+            >
+              <Ionicons name="chevron-back" size={20} color="#fff" />
+            </Pressable>
+            <Pressable
+              style={styles.navCircleBtn}
+              onPress={openAssistant}
+              accessibilityLabel="Help"
+              hitSlop={8}
+            >
+              <Ionicons name="help-outline" size={18} color="#fff" />
+            </Pressable>
           </View>
+
+          <Text style={styles.hubHeadline}>{t("care.hubHeadline")}</Text>
 
           <Pressable style={styles.weatherChip} onPress={openWeather}>
             {weatherLoading ? (
@@ -363,12 +411,17 @@ export function MorphCareScreen({ navigation }: Props) {
           style={StyleSheet.absoluteFill}
         />
         <View style={[styles.onboardPad, { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 16 }]}>
-          <View style={styles.rowBetweenLight}>
-            <Pressable onPress={() => setViewMode("hub")} hitSlop={12}>
-              <Ionicons name="chevron-back" size={22} color="#111" />
+          <View style={styles.navBarRow}>
+            <Pressable
+              style={styles.navCircleBtnLight}
+              onPress={handleBack}
+              hitSlop={8}
+              accessibilityLabel={t("common.back")}
+            >
+              <Ionicons name="chevron-back" size={20} color="#111" />
             </Pressable>
             <Text style={styles.onboardBadge}>{t("care.onboarding.badge")}</Text>
-            <View style={{ width: 22 }} />
+            <View style={{ width: 42 }} />
           </View>
           <View style={{ flex: 1, justifyContent: "center" }}>
             <Text style={styles.onboardH1}>{quizMeta.title}</Text>
@@ -429,14 +482,25 @@ export function MorphCareScreen({ navigation }: Props) {
         style={StyleSheet.absoluteFill}
       />
       <View style={[styles.routineTop, { paddingTop: insets.top + 8 }]}>
-        <View style={styles.rowBetweenLight}>
-          <Pressable onPress={() => setViewMode("hub")} hitSlop={12}>
-            <Ionicons name="chevron-back" size={22} color="#111" />
+        <View style={styles.navBarRow}>
+          <Pressable
+            style={styles.navCircleBtnLight}
+            onPress={() => setViewMode("hub")}
+            hitSlop={8}
+            accessibilityLabel={t("common.back")}
+          >
+            <Ionicons name="chevron-back" size={20} color="#111" />
           </Pressable>
           <Text style={styles.routineTopTitle}>{t("care.hubParvarish")}</Text>
-          <View style={{ width: 22 }} />
+          <Pressable
+            style={styles.navCircleBtnLight}
+            onPress={openAssistant}
+            hitSlop={8}
+            accessibilityLabel="Help"
+          >
+            <Ionicons name="help-outline" size={18} color="#111" />
+          </Pressable>
         </View>
-        <Text style={styles.routineHello}>{t("care.hubHello")}</Text>
         <Text style={styles.routineHeadline}>{t(greetingKey())}</Text>
       </View>
 
@@ -480,9 +544,34 @@ const styles = StyleSheet.create({
   onboardPad: { flex: 1, paddingHorizontal: 20 },
   hubRoot: { flex: 1, backgroundColor: "#0c0d0b" },
   hubTop: { paddingHorizontal: 20, paddingBottom: 14, gap: 14 },
-  routineTop: { paddingHorizontal: 20, paddingBottom: 8, gap: 4 },
-  routineTopTitle: { ...morphFont, fontSize: 15, fontWeight: "600", color: "#111" },
-  routineHello: { ...morphFont, fontSize: 15, fontWeight: "500", color: "rgba(26,26,26,0.72)" },
+  navBarRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    width: "100%",
+  },
+  navCircleBtn: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255,255,255,0.12)",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(255,255,255,0.2)",
+  },
+  navCircleBtnLight: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(0,0,0,0.06)",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(0,0,0,0.08)",
+  },
+  routineTop: { paddingHorizontal: 20, paddingBottom: 8, gap: 10 },
+  routineTopTitle: { ...morphFont, fontSize: 16, fontWeight: "700", color: "#111" },
   routineHeadline: {
     ...morphFont,
     fontSize: 28,
@@ -491,9 +580,6 @@ const styles = StyleSheet.create({
     letterSpacing: -0.6,
     lineHeight: 32,
   },
-  hubHeader: { flexDirection: "row", alignItems: "center", gap: 12 },
-  hubHeaderText: { flex: 1, gap: 4 },
-  hubHello: { ...morphFont, fontSize: 15, fontWeight: "500", color: "rgba(255,255,255,0.72)" },
   hubHeadline: {
     ...morphFont,
     fontSize: 28,
@@ -502,23 +588,6 @@ const styles = StyleSheet.create({
     letterSpacing: -0.6,
     lineHeight: 32,
   },
-  hubAvatarBtn: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    overflow: "hidden",
-    backgroundColor: "rgba(255,255,255,0.18)",
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(255,255,255,0.25)",
-  },
-  hubAvatar: { width: "100%", height: "100%" },
-  hubAvatarFallback: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(255,255,255,0.12)",
-  },
-  hubAvatarInitial: { ...morphFont, fontSize: 20, fontWeight: "700", color: "#fff" },
   weatherChip: {
     alignSelf: "flex-start",
     flexDirection: "row",

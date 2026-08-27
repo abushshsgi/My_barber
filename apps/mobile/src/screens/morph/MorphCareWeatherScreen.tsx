@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { fetchHairCareProfile } from "../../api/care";
 import { weatherIconName } from "../../api/weather";
 import { useCareWeather } from "../../hooks/useCareWeather";
+import { useHideTabBar } from "../../hooks/useHideTabBar";
 import { hasSeenWeatherIntro, markWeatherIntroSeen } from "../../lib/morph-my-products";
 import type { MorphCareStackParamList } from "../../navigation/MorphCareStack";
 import { morphFont } from "../../theme/morph-font";
@@ -14,6 +15,7 @@ import { morphFont } from "../../theme/morph-font";
 type Props = NativeStackScreenProps<MorphCareStackParamList, "CareWeather">;
 
 export function MorphCareWeatherScreen({ navigation }: Props) {
+  useHideTabBar();
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const { data, loading, error, refresh } = useCareWeather();
@@ -51,11 +53,16 @@ export function MorphCareWeatherScreen({ navigation }: Props) {
       }}
     >
       <View style={styles.rowBetween}>
-        <Pressable onPress={() => navigation.goBack()} hitSlop={12}>
-          <Ionicons name="chevron-back" size={22} color="#2a2a2a" />
+        <Pressable
+          style={styles.navCircleBtn}
+          onPress={() => navigation.goBack()}
+          hitSlop={8}
+          accessibilityLabel={t("common.back")}
+        >
+          <Ionicons name="chevron-back" size={20} color="#2a2a2a" />
         </Pressable>
         <Text style={styles.badge}>{t("care.weather.title")}</Text>
-        <View style={{ width: 22 }} />
+        <View style={{ width: 42 }} />
       </View>
 
       {loading ? (
@@ -164,6 +171,16 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+  },
+  navCircleBtn: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(0,0,0,0.06)",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(0,0,0,0.08)",
   },
   badge: {
     ...morphFont,
