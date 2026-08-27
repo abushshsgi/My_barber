@@ -26,7 +26,6 @@ import { LocationPickerScreen } from "./src/screens/LocationPickerScreen";
 import { OnboardingScreen } from "./src/screens/OnboardingScreen";
 import { SplashScreen } from "./src/screens/SplashScreen";
 import { ToastProvider } from "./src/components/ui/ToastProvider";
-import { MonopoCursor } from "./src/components/ui/MonopoCursor";
 import { colors } from "./src/theme/colors";
 import { NavigationContainer } from "@react-navigation/native";
 import { StatusBar } from "expo-status-bar";
@@ -170,7 +169,6 @@ export default function App() {
                 <NavigationContainer>
                   <StatusBar style="dark" />
                   <AppGate />
-                  <MonopoCursor />
                 </NavigationContainer>
               </ToastProvider>
             </GoogleAuthSessionProvider>
