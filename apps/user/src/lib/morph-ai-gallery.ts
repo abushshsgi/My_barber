@@ -5,6 +5,7 @@ import {
   type MorphAiGenerationApi,
 } from "@/lib/api/ai";
 import { resolveMediaUrl } from "@/lib/media-url";
+import { shouldPersistLooksToServer } from "@/lib/morph-ai-prefs";
 
 const KEY_PREFIX = "mysaloon.morphAi.generations";
 const MAX_ENTRIES = 60;
@@ -74,12 +75,8 @@ export function migrateGuestMorphAiGenerations(userId: number) {
     const guest = JSON.parse(guestRaw) as MorphAiGeneration[];
     if (!Array.isArray(guest) || guest.length === 0) return;
     const existingRaw = localStorage.getItem(userKey);
-    const existing = existingRaw
-      ? (JSON.parse(existingRaw) as MorphAiGeneration[])
-      : [];
-    const existingIds = new Set(
-      (Array.isArray(existing) ? existing : []).map((item) => item.id),
-    );
+    const existing = existingRaw ? (JSON.parse(existingRaw) as MorphAiGeneration[]) : [];
+    const existingIds = new Set((Array.isArray(existing) ? existing : []).map((item) => item.id));
     const merged = [
       ...guest.filter((item) => item?.id && !existingIds.has(item.id)),
       ...(Array.isArray(existing) ? existing : []),
@@ -152,7 +149,7 @@ export function saveMorphAiGeneration(
   );
   writeAll([next, ...rest]);
 
-  if (syncRemote && getActiveUserId() && next.previewImage) {
+  if (syncRemote && getActiveUserId() && next.previewImage && shouldPersistLooksToServer()) {
     void saveMorphAiGenerationRemote({
       style_id: next.styleId,
       title: next.title,

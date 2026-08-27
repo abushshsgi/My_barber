@@ -198,12 +198,12 @@ export function AiStyleFlow({ audience, menPersonaId: menPersonaIdProp, focusSty
       void limitGate.openFromApiLimit("tryon");
       return;
     }
-    toast.error(error, { duration: 4500 });
+    toast.error(error);
   }, [error, limitGate]);
 
   useEffect(() => {
     if (photo && faceHint?.source === "camera_scan") {
-      toast.success(t("aiStylePage.faceProfileSaved"), { duration: 3200 });
+      toast.success(t("aiStylePage.faceProfileSaved"));
     }
   }, [photo, faceHint, t]);
 

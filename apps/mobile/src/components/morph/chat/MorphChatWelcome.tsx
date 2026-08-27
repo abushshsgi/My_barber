@@ -63,14 +63,21 @@ export function MorphChatWelcome({
       </View>
 
       <View style={styles.hero}>
-        <Animated.View entering={FadeInDown.duration(360)} style={styles.copy}>
+        <Animated.View entering={FadeInDown.duration(320)} style={styles.badgeWrap}>
+          <View style={styles.aiBadge}>
+            <Ionicons name="sparkles" size={13} color="#C4B5FD" />
+            <Animated.Text style={styles.aiBadgeText}>Morf AI • Pro Assistant</Animated.Text>
+          </View>
+        </Animated.View>
+
+        <Animated.View entering={FadeInDown.duration(360).delay(60)} style={styles.copy}>
           <Animated.Text
-            style={[styles.headline, { fontSize: fs(26), lineHeight: fs(32) }]}
+            style={[styles.headline, { fontSize: fs(27), lineHeight: fs(34) }]}
           >
             {headline}
           </Animated.Text>
           <Animated.Text
-            style={[styles.lede, { fontSize: fs(13), lineHeight: fs(19) }]}
+            style={[styles.lede, { fontSize: fs(13.5), lineHeight: fs(20) }]}
           >
             {subtitle}
           </Animated.Text>
@@ -121,6 +128,34 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: 22,
     backgroundColor: "transparent",
+  },
+  badgeWrap: {
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  aiBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: "rgba(139, 92, 246, 0.15)",
+    borderWidth: 1,
+    borderColor: "rgba(167, 139, 250, 0.35)",
+    shadowColor: "#8B5CF6",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.45,
+    shadowRadius: 10,
+    elevation: 3,
+  },
+  aiBadgeText: {
+    ...morphFont,
+    fontSize: 12,
+    lineHeight: 15,
+    fontWeight: "600",
+    color: "#DDD6FE",
+    letterSpacing: 0.3,
   },
   copy: {
     alignItems: "center",

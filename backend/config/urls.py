@@ -271,6 +271,7 @@ from ai.care_views import (
     CareProductListView,
     HairCareProfileMeView,
 )
+from ai.weather_views import CareWeatherView
 from ai.views import (
     AiBarberCardView,
     AiFaceCheckView,
@@ -534,6 +535,7 @@ api_routes = [
     path("ai/ingredient-scan/", AiIngredientScanView.as_view()),
     path("ai/care/products/", CareProductListView.as_view()),
     path("ai/care/products/<int:product_id>/", CareProductDetailView.as_view()),
+    path("ai/care/weather/", CareWeatherView.as_view()),
     path("ai/barber-card/", AiBarberCardView.as_view()),
     path("ai/chat/", AiMorphChatView.as_view()),
     path("ai/chat/voice/voices/", AiMorphChatVoiceVoicesView.as_view()),
