@@ -69,14 +69,6 @@ const CATEGORIES = [
   { id: "skin", label: "Skin Care" },
 ];
 
-const QUICK_CATS: { id: string; labelKey: string }[] = [
-  { id: "shampoo", labelKey: "care.catalog.categories.shampoo" },
-  { id: "balsam", labelKey: "care.catalog.categories.balsam" },
-  { id: "mask", labelKey: "care.catalog.categories.mask" },
-  { id: "oil", labelKey: "care.catalog.categories.oil" },
-  { id: "spray", labelKey: "care.catalog.categories.spray" },
-];
-
 interface FeaturedProductItem {
   id: string;
   title: string;
@@ -219,7 +211,6 @@ export function MorphCareScreen({ navigation, route }: Props) {
   const [addToast, setAddToast] = useState<{ title: string; image: string } | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [quickCat, setQuickCat] = useState<string | null>(null);
   const [previewId, setPreviewId] = useState<number | null>(null);
   const addDropY = useRef(new Animated.Value(-140)).current;
   const addOpacity = useRef(new Animated.Value(0)).current;
@@ -228,11 +219,11 @@ export function MorphCareScreen({ navigation, route }: Props) {
   const searchInputRef = useRef<TextInput>(null);
   const { data: weather, loading: weatherLoading } = useCareWeather();
 
-  /** Search: input + kategoriyalar + tez filter ostigacha */
+  /** Search sheet: input + category chips ostidan pastgacha (bo‘sh joy qolmasin) */
   const searchSheetHeight = useMemo(() => {
     const winH = Dimensions.get("window").height;
-    const topBlock = insets.top + 12 + 48 + 10 + 44 + 8 + 96;
-    return Math.max(360, winH - topBlock);
+    const topBlock = insets.top + 8 + 48 + 10 + 44 + 6;
+    return Math.max(420, winH - topBlock);
   }, [insets.top]);
 
   const playAddedAnimation = useCallback(
@@ -339,7 +330,6 @@ export function MorphCareScreen({ navigation, route }: Props) {
   const openSearch = useCallback(() => {
     setSearchOpen(true);
     setPreviewId(null);
-    setQuickCat(null);
     searchSheetY.setValue(searchSheetHeight);
     Animated.spring(searchSheetY, {
       toValue: 0,
@@ -360,7 +350,6 @@ export function MorphCareScreen({ navigation, route }: Props) {
   const closeSearch = useCallback(() => {
     Keyboard.dismiss();
     setPreviewId(null);
-    setQuickCat(null);
     Animated.timing(searchSheetY, {
       toValue: searchSheetHeight,
       duration: 280,
@@ -623,9 +612,6 @@ export function MorphCareScreen({ navigation, route }: Props) {
       liked_by_me: Boolean(p.liked_by_me),
       added: mine.has(p.id),
     }));
-    if (quickCat) {
-      rows = rows.filter((p) => p.category === quickCat);
-    }
     if (q) {
       rows = rows.filter(
         (p) =>
@@ -636,7 +622,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
     }
     rows.sort((a, b) => b.likes_count - a.likes_count || a.title.localeCompare(b.title));
     return rows.slice(0, 40);
-  }, [catalog, myProducts, quickCat, searchQuery]);
+  }, [catalog, myProducts, searchQuery]);
 
   const previewProduct = useMemo(
     () => (previewId == null ? null : catalog.find((p) => p.id === previewId) ?? null),
@@ -1022,58 +1008,6 @@ export function MorphCareScreen({ navigation, route }: Props) {
               );
             })}
           </ScrollView>
-
-          {/* Search ochiq: tez filter + hint (bo‘sh joyni to‘ldiradi) */}
-          {searchOpen ? (
-            <View style={styles.searchAssist}>
-              <Text style={styles.searchAssistLabel}>
-                {t("care.catalog.quickFilters", { defaultValue: "Tez filter" })}
-              </Text>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.searchAssistChips}
-              >
-                <Pressable
-                  style={[styles.searchAssistChip, !quickCat && styles.searchAssistChipOn]}
-                  onPress={() => setQuickCat(null)}
-                >
-                  <Text
-                    style={[
-                      styles.searchAssistChipText,
-                      !quickCat && styles.searchAssistChipTextOn,
-                    ]}
-                  >
-                    {t("care.catalog.all")}
-                  </Text>
-                </Pressable>
-                {QUICK_CATS.map((cat) => {
-                  const on = quickCat === cat.id;
-                  return (
-                    <Pressable
-                      key={cat.id}
-                      style={[styles.searchAssistChip, on && styles.searchAssistChipOn]}
-                      onPress={() => setQuickCat(on ? null : cat.id)}
-                    >
-                      <Text
-                        style={[
-                          styles.searchAssistChipText,
-                          on && styles.searchAssistChipTextOn,
-                        ]}
-                      >
-                        {t(cat.labelKey)}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </ScrollView>
-              <Text style={styles.searchAssistHint}>
-                {t("care.catalog.searchHint", {
-                  defaultValue: "Mahsulotni qo‘shing — u parvarish rejangizda chiqadi",
-                })}
-              </Text>
-            </View>
-          ) : null}
 
           {/* Featured — qidiruv ochiq bo‘lsa yashirin */}
           {!searchOpen ? (
@@ -1714,53 +1648,6 @@ const styles = StyleSheet.create({
   searchSection: {
     paddingHorizontal: 20,
     marginTop: 10,
-  },
-  searchAssist: {
-    paddingHorizontal: 20,
-    paddingTop: 4,
-    paddingBottom: 8,
-    gap: 8,
-  },
-  searchAssistLabel: {
-    ...morphFont,
-    fontSize: 12,
-    fontWeight: "700",
-    color: "rgba(15,23,42,0.55)",
-  },
-  searchAssistChips: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    paddingRight: 8,
-  },
-  searchAssistChip: {
-    height: 32,
-    paddingHorizontal: 12,
-    borderRadius: 999,
-    backgroundColor: "#FFFFFF",
-    borderWidth: 1,
-    borderColor: "rgba(15,23,42,0.08)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  searchAssistChipOn: {
-    backgroundColor: "#0F172A",
-    borderColor: "#0F172A",
-  },
-  searchAssistChipText: {
-    ...morphFont,
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#334155",
-  },
-  searchAssistChipTextOn: {
-    color: "#fff",
-  },
-  searchAssistHint: {
-    ...morphFont,
-    fontSize: 12,
-    lineHeight: 17,
-    color: "rgba(15,23,42,0.45)",
   },
   searchBar: {
     width: "100%",
