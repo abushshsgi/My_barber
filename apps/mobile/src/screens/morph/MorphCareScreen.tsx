@@ -212,6 +212,8 @@ export function MorphCareScreen({ navigation, route }: Props) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [previewId, setPreviewId] = useState<number | null>(null);
+  /** Shu search sessiyasida qo‘shilganlar — qayta ochilganda tozalanadi */
+  const [sessionAddedIds, setSessionAddedIds] = useState<number[]>([]);
   const addDropY = useRef(new Animated.Value(-140)).current;
   const addOpacity = useRef(new Animated.Value(0)).current;
   const addScale = useRef(new Animated.Value(0.86)).current;
@@ -219,11 +221,11 @@ export function MorphCareScreen({ navigation, route }: Props) {
   const searchInputRef = useRef<TextInput>(null);
   const { data: weather, loading: weatherLoading } = useCareWeather();
 
-  /** Search sheet: input + category chips ostidan pastgacha (bo‘sh joy qolmasin) */
+  /** Sheet kategoriyalarga yaqin — o‘rtadagi gap minimal */
   const searchSheetHeight = useMemo(() => {
     const winH = Dimensions.get("window").height;
-    const topBlock = insets.top + 8 + 48 + 10 + 44 + 6;
-    return Math.max(420, winH - topBlock);
+    const topBlock = insets.top + 4 + 48 + 4 + 40;
+    return Math.max(520, winH - topBlock);
   }, [insets.top]);
 
   const playAddedAnimation = useCallback(
@@ -330,6 +332,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
   const openSearch = useCallback(() => {
     setSearchOpen(true);
     setPreviewId(null);
+    setSessionAddedIds([]);
     searchSheetY.setValue(searchSheetHeight);
     Animated.spring(searchSheetY, {
       toValue: 0,
@@ -340,16 +343,22 @@ export function MorphCareScreen({ navigation, route }: Props) {
       searchInputRef.current?.focus();
     });
     requestAnimationFrame(() => searchInputRef.current?.focus());
-    void fetchCareProducts({ order: "likes" })
+    const excludeIds = myProducts.map((p) => p.id);
+    void fetchCareProducts({
+      order: "likes",
+      exclude_mine: true,
+      exclude_ids: excludeIds.length ? excludeIds : undefined,
+    })
       .then((rows) => {
         if (rows.length) setCatalog(rows);
       })
       .catch(() => {});
-  }, [searchSheetHeight, searchSheetY]);
+  }, [myProducts, searchSheetHeight, searchSheetY]);
 
   const closeSearch = useCallback(() => {
     Keyboard.dismiss();
     setPreviewId(null);
+    setSessionAddedIds([]);
     Animated.timing(searchSheetY, {
       toValue: searchSheetHeight,
       duration: 280,
@@ -600,18 +609,22 @@ export function MorphCareScreen({ navigation, route }: Props) {
   const searchResults = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     const mine = new Set(myProducts.map((m) => m.id));
-    let rows = catalog.map((p) => ({
-      id: p.id,
-      title: p.name,
-      brand: p.brand,
-      category: p.category,
-      image: p.image_url,
-      purpose: p.purpose_uz,
-      usage: p.usage_uz,
-      likes_count: p.likes_count ?? 0,
-      liked_by_me: Boolean(p.liked_by_me),
-      added: mine.has(p.id),
-    }));
+    const session = new Set(sessionAddedIds);
+    // Oldindan qo‘shilganlar yashirin; faqat shu sessiyada qo‘shilganlar "Qo‘shilgan" bilan qoladi
+    let rows = catalog
+      .filter((p) => !mine.has(p.id) || session.has(p.id))
+      .map((p) => ({
+        id: p.id,
+        title: p.name,
+        brand: p.brand,
+        category: p.category,
+        image: p.image_url,
+        purpose: p.purpose_uz,
+        usage: p.usage_uz,
+        likes_count: p.likes_count ?? 0,
+        liked_by_me: Boolean(p.liked_by_me),
+        added: session.has(p.id),
+      }));
     if (q) {
       rows = rows.filter(
         (p) =>
@@ -622,24 +635,23 @@ export function MorphCareScreen({ navigation, route }: Props) {
     }
     rows.sort((a, b) => b.likes_count - a.likes_count || a.title.localeCompare(b.title));
     return rows.slice(0, 40);
-  }, [catalog, myProducts, searchQuery]);
+  }, [catalog, myProducts, searchQuery, sessionAddedIds]);
 
   const previewProduct = useMemo(
     () => (previewId == null ? null : catalog.find((p) => p.id === previewId) ?? null),
     [catalog, previewId],
   );
-  const previewAdded = previewProduct
-    ? myProducts.some((m) => m.id === previewProduct.id)
-    : false;
+  const previewAdded = previewProduct ? sessionAddedIds.includes(previewProduct.id) : false;
 
   const addFromSearch = useCallback(
     async (productId: number) => {
       const p = catalog.find((c) => c.id === productId);
       if (!p) return;
-      const exists = myProducts.some((m) => m.id === p.id);
-      if (exists) {
+      const inSession = sessionAddedIds.includes(p.id);
+      if (inSession) {
         const next = await removeMyProduct(p.id);
         setMyProducts(next);
+        setSessionAddedIds((prev) => prev.filter((id) => id !== p.id));
         return;
       }
       const next = await addMyProduct({
@@ -651,12 +663,13 @@ export function MorphCareScreen({ navigation, route }: Props) {
         source: "catalog",
       });
       setMyProducts(next);
+      setSessionAddedIds((prev) => (prev.includes(p.id) ? prev : [...prev, p.id]));
       playAddedAnimation({
         title: p.name,
         image: p.image_url || "",
       });
     },
-    [catalog, myProducts, playAddedAnimation],
+    [catalog, playAddedAnimation, sessionAddedIds],
   );
 
   const onToggleSearchLike = useCallback(
@@ -986,7 +999,10 @@ export function MorphCareScreen({ navigation, route }: Props) {
             horizontal
             nestedScrollEnabled={true}
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.categoryScroll}
+            contentContainerStyle={[
+              styles.categoryScroll,
+              searchOpen && styles.categoryScrollCompact,
+            ]}
           >
             {CATEGORIES.map((cat) => {
               const active = selectedCat === cat.id;
@@ -1148,7 +1164,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
                       <Pressable
                         key={`search-${item.id}`}
                         style={styles.searchCard}
-                        onPress={() => openProduct(item.id)}
+                        onPress={() => setPreviewId(item.id)}
                       >
                         <View style={styles.searchCardMedia}>
                           {item.image ? (
@@ -1224,82 +1240,72 @@ export function MorphCareScreen({ navigation, route }: Props) {
             <Modal
               visible={previewProduct != null}
               transparent
-              animationType="fade"
+              animationType="slide"
               onRequestClose={() => setPreviewId(null)}
             >
               <Pressable style={styles.previewBackdrop} onPress={() => setPreviewId(null)}>
                 <Pressable style={styles.previewCard} onPress={(e) => e.stopPropagation?.()}>
                   {previewProduct ? (
-                    <ScrollView
-                      showsVerticalScrollIndicator={false}
-                      contentContainerStyle={styles.previewScroll}
-                    >
-                      <View style={styles.previewMedia}>
-                        {previewProduct.image_url ? (
-                          <Image
-                            source={{ uri: previewProduct.image_url }}
-                            style={styles.previewImg}
-                          />
-                        ) : (
-                          <View style={[styles.previewImg, styles.searchRowPh]}>
-                            <Ionicons name="flask-outline" size={36} color="#6366F1" />
+                    <>
+                      <View style={styles.previewGrab} />
+                      <ScrollView
+                        showsVerticalScrollIndicator={false}
+                        contentContainerStyle={styles.previewScroll}
+                      >
+                        <View style={styles.previewMedia}>
+                          {previewProduct.image_url ? (
+                            <Image
+                              source={{ uri: previewProduct.image_url }}
+                              style={styles.previewImg}
+                            />
+                          ) : (
+                            <View style={[styles.previewImg, styles.searchRowPh]}>
+                              <Ionicons name="flask-outline" size={40} color="#6366F1" />
+                            </View>
+                          )}
+                          <Pressable
+                            style={styles.previewClose}
+                            onPress={() => setPreviewId(null)}
+                            hitSlop={8}
+                            accessibilityLabel={t("common.back")}
+                          >
+                            <Ionicons name="close" size={18} color="#0F172A" />
+                          </Pressable>
+                        </View>
+                        <Text style={styles.previewTitle}>{previewProduct.name}</Text>
+                        {previewProduct.brand ? (
+                          <Text style={styles.previewBrand}>{previewProduct.brand}</Text>
+                        ) : null}
+                        <Text style={styles.previewCat}>
+                          {t(`care.catalog.categories.${previewProduct.category}`, {
+                            defaultValue: previewProduct.category,
+                          })}
+                        </Text>
+                        {previewProduct.purpose_uz ? (
+                          <View style={styles.previewSection}>
+                            <Text style={styles.previewSectionTitle}>{t("care.catalog.purpose")}</Text>
+                            <Text style={styles.previewBody}>{previewProduct.purpose_uz}</Text>
                           </View>
-                        )}
-                        <Pressable
-                          style={styles.previewClose}
-                          onPress={() => setPreviewId(null)}
-                          hitSlop={8}
-                        >
-                          <Ionicons name="close" size={18} color="#0F172A" />
-                        </Pressable>
-                      </View>
-                      <Text style={styles.previewTitle}>{previewProduct.name}</Text>
-                      {previewProduct.brand ? (
-                        <Text style={styles.previewBrand}>{previewProduct.brand}</Text>
-                      ) : null}
-                      <Text style={styles.previewCat}>
-                        {t(`care.catalog.categories.${previewProduct.category}`, {
-                          defaultValue: previewProduct.category,
-                        })}
-                      </Text>
-
-                      {previewProduct.purpose_uz ? (
-                        <View style={styles.previewSection}>
-                          <Text style={styles.previewSectionTitle}>{t("care.catalog.purpose")}</Text>
-                          <Text style={styles.previewBody}>{previewProduct.purpose_uz}</Text>
-                        </View>
-                      ) : null}
-                      {previewProduct.usage_uz ? (
-                        <View style={styles.previewSection}>
-                          <Text style={styles.previewSectionTitle}>{t("care.catalog.usage")}</Text>
-                          <Text style={styles.previewBody}>{previewProduct.usage_uz}</Text>
-                        </View>
-                      ) : null}
-                      {(previewProduct.ingredients?.length || previewProduct.ingredients_text) ? (
-                        <View style={styles.previewSection}>
-                          <Text style={styles.previewSectionTitle}>
-                            {t("care.catalog.ingredients")}
-                          </Text>
-                          <Text style={styles.previewIngredients} numberOfLines={8}>
-                            {previewProduct.ingredients?.length
-                              ? previewProduct.ingredients.join(", ")
-                              : previewProduct.ingredients_text}
-                          </Text>
-                        </View>
-                      ) : null}
-                      {previewProduct.pros_uz ? (
-                        <View style={styles.previewSection}>
-                          <Text style={styles.previewSectionTitle}>{t("care.catalog.pros")}</Text>
-                          <Text style={styles.previewBody}>{previewProduct.pros_uz}</Text>
-                        </View>
-                      ) : null}
-                      {previewProduct.warnings_uz ? (
-                        <View style={styles.previewSection}>
-                          <Text style={styles.previewSectionTitle}>{t("care.catalog.warnings")}</Text>
-                          <Text style={styles.previewWarn}>{previewProduct.warnings_uz}</Text>
-                        </View>
-                      ) : null}
-
+                        ) : null}
+                        {previewProduct.usage_uz ? (
+                          <View style={styles.previewSection}>
+                            <Text style={styles.previewSectionTitle}>{t("care.catalog.usage")}</Text>
+                            <Text style={styles.previewBody}>{previewProduct.usage_uz}</Text>
+                          </View>
+                        ) : null}
+                        {previewProduct.pros_uz ? (
+                          <View style={styles.previewSection}>
+                            <Text style={styles.previewSectionTitle}>{t("care.catalog.pros")}</Text>
+                            <Text style={styles.previewBody}>{previewProduct.pros_uz}</Text>
+                          </View>
+                        ) : null}
+                        {previewProduct.warnings_uz ? (
+                          <View style={styles.previewSection}>
+                            <Text style={styles.previewSectionTitle}>{t("care.catalog.warnings")}</Text>
+                            <Text style={styles.previewWarn}>{previewProduct.warnings_uz}</Text>
+                          </View>
+                        ) : null}
+                      </ScrollView>
                       <Pressable
                         style={[
                           styles.previewAddBtn,
@@ -1309,7 +1315,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
                       >
                         <Ionicons
                           name={previewAdded ? "checkmark-circle" : "bag-add-outline"}
-                          size={16}
+                          size={18}
                           color={previewAdded ? "#4F46E5" : "#fff"}
                         />
                         <Text
@@ -1323,7 +1329,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
                             : t("care.myProducts.addFromCatalog")}
                         </Text>
                       </Pressable>
-                    </ScrollView>
+                    </>
                   ) : null}
                 </Pressable>
               </Pressable>
@@ -1858,24 +1864,34 @@ const styles = StyleSheet.create({
   },
   previewBackdrop: {
     flex: 1,
-    backgroundColor: "rgba(15,23,42,0.5)",
+    backgroundColor: "rgba(15,23,42,0.45)",
     justifyContent: "flex-end",
-    padding: 12,
   },
   previewCard: {
     backgroundColor: "#fff",
-    borderRadius: 22,
-    padding: 16,
-    maxHeight: "82%",
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 16,
+    maxHeight: "88%",
   },
-  previewScroll: { gap: 6, paddingBottom: 8 },
+  previewGrab: {
+    alignSelf: "center",
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "rgba(15,23,42,0.14)",
+    marginBottom: 10,
+  },
+  previewScroll: { gap: 4, paddingBottom: 12 },
   previewMedia: {
     width: "100%",
-    height: 160,
-    borderRadius: 16,
+    height: 180,
+    borderRadius: 18,
     overflow: "hidden",
     backgroundColor: "#EEF2FF",
-    marginBottom: 6,
+    marginBottom: 8,
   },
   previewImg: { width: "100%", height: "100%" },
   previewClose: {
@@ -1891,7 +1907,7 @@ const styles = StyleSheet.create({
   },
   previewTitle: {
     ...morphFont,
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: "800",
     color: "#0F172A",
   },
@@ -1899,12 +1915,20 @@ const styles = StyleSheet.create({
     ...morphFont,
     fontSize: 13,
     color: "rgba(15,23,42,0.55)",
+    marginTop: 2,
   },
   previewCat: {
     ...morphFont,
+    marginTop: 6,
+    alignSelf: "flex-start",
     fontSize: 12,
-    fontWeight: "600",
+    fontWeight: "700",
     color: "#4F46E5",
+    backgroundColor: "#EEF2FF",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+    overflow: "hidden",
     marginBottom: 4,
   },
   previewSection: {
@@ -1947,9 +1971,9 @@ const styles = StyleSheet.create({
     color: "rgba(15,23,42,0.55)",
   },
   previewAddBtn: {
-    marginTop: 12,
-    height: 48,
-    borderRadius: 14,
+    marginTop: 8,
+    height: 50,
+    borderRadius: 16,
     backgroundColor: "#4F46E5",
     flexDirection: "row",
     alignItems: "center",
@@ -1963,7 +1987,7 @@ const styles = StyleSheet.create({
   },
   previewAddBtnText: {
     ...morphFont,
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: "700",
     color: "#fff",
   },
@@ -1975,6 +1999,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     gap: 8,
     paddingVertical: 10,
+  },
+  categoryScrollCompact: {
+    paddingVertical: 4,
+    paddingBottom: 2,
   },
   catPill: {
     paddingHorizontal: 14,
