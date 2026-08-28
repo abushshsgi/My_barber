@@ -269,6 +269,10 @@ export function MorphCareScreen({ navigation, route }: Props) {
     [myProducts],
   );
 
+  const openParvarish = useCallback(() => {
+    setViewMode("flow");
+  }, []);
+
   const bootstrap = useCallback(async () => {
     setLoading(true);
     try {
@@ -779,6 +783,66 @@ export function MorphCareScreen({ navigation, route }: Props) {
                 );
               })}
             </ScrollView>
+          </View>
+
+          {/* Bottom Sheet - Parvarish, Tarkib Skan, AI Assistant */}
+          <View style={styles.hubSheet}>
+            <View style={styles.reportHead}>
+              <Text style={styles.reportTitle}>{t("care.hubReport")}</Text>
+              <Pressable style={styles.reportFilter} onPress={openCatalog}>
+                <Text style={styles.reportFilterText}>{t("care.hubReportFilter")}</Text>
+                <Ionicons name="chevron-down" size={13} color="#1a1a1a" />
+              </Pressable>
+            </View>
+
+            <View style={styles.hubCards}>
+              <Pressable style={styles.hubCard} onPress={openParvarish}>
+                <View style={styles.hubCardHead}>
+                  <Text style={styles.hubCardTitle}>{t("care.hubParvarish")}</Text>
+                  <View style={[styles.hubCardIcon, styles.hubCardIconBlue]}>
+                    <Ionicons name="water" size={15} color="#3B82F6" />
+                  </View>
+                </View>
+                <Text style={styles.hubCardMetric} numberOfLines={1}>
+                  {t(`care.conditions.${quiz.condition}`)}
+                </Text>
+                <Text style={styles.hubCardSub} numberOfLines={2}>
+                  {t("care.hubParvarishSub")}
+                </Text>
+              </Pressable>
+
+              <Pressable style={styles.hubCard} onPress={openTarkib}>
+                <View style={styles.hubCardHead}>
+                  <Text style={styles.hubCardTitle}>{t("care.hubTarkib")}</Text>
+                  <View style={[styles.hubCardIcon, styles.hubCardIconRose]}>
+                    <Ionicons name="flask" size={15} color="#E11D48" />
+                  </View>
+                </View>
+                <Text style={styles.hubCardMetric} numberOfLines={1}>
+                  {t("care.hubTarkibMetric")}
+                </Text>
+                <Text style={styles.hubCardSub} numberOfLines={2}>
+                  {t("care.hubTarkibSub")}
+                </Text>
+              </Pressable>
+            </View>
+
+            <Pressable
+              style={styles.aiAssistant}
+              onPress={openAssistant}
+              accessibilityLabel={t("care.hubAiAssistant")}
+            >
+              <LinearGradient
+                colors={["#8B7CFF", "#5B8CFF"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.aiAssistantIcon}
+              >
+                <Ionicons name="sparkles" size={16} color="#fff" />
+              </LinearGradient>
+              <Text style={styles.aiAssistantText}>{t("care.hubAiAssistant")}</Text>
+              <Ionicons name="arrow-forward" size={16} color="#1a1a1a" />
+            </Pressable>
           </View>
         </ScrollView>
       </View>
