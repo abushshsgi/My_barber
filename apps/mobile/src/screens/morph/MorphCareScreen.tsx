@@ -416,35 +416,6 @@ export function MorphCareScreen({ navigation, route }: Props) {
     [navigation],
   );
 
-  const toggleFavoriteProduct = useCallback(
-    async (prod: {
-      productId?: number;
-      title: string;
-      brand: string;
-      category: string;
-      image: string;
-    }) => {
-      if (!prod.productId) return;
-      const exists = myProducts.some((p) => p.id === prod.productId);
-      if (exists) {
-        const next = await removeMyProduct(prod.productId);
-        setMyProducts(next);
-      } else {
-        const next = await addMyProduct({
-          id: prod.productId,
-          name: prod.title,
-          brand: prod.brand,
-          category: prod.category,
-          image_url: prod.image,
-          source: "recommended",
-        });
-        setMyProducts(next);
-        playAddedAnimation({ title: prod.title, image: prod.image });
-      }
-    },
-    [myProducts, playAddedAnimation],
-  );
-
   const openParvarish = useCallback(() => {
     setViewMode("flow");
   }, []);
