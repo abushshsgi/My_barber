@@ -336,7 +336,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
   };
 
   const displayProducts = useMemo(() => {
-    const list: Array<{
+    type Card = {
       id: string;
       productId?: number;
       title: string;
@@ -350,50 +350,57 @@ export function MorphCareScreen({ navigation, route }: Props) {
       isUserAdded: boolean;
       fitScore?: number;
       usageText?: string;
-    }> = [];
+    };
+    const list: Card[] = [];
+    const myIds = new Set(myProducts.map((p) => p.id));
 
-    if (myProducts.length > 0) {
-      myProducts.forEach((mp) => {
-        list.push({
-          id: `my-${mp.id}`,
-          productId: mp.id,
-          title: mp.name,
-          brand: mp.brand || "Morf Tarkib",
-          price: "Tarkibda",
-          category: mp.category || "spray",
-          duration: "2 Min",
-          durationMinutes: 2,
-          image: mp.image_url || "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=600&q=80",
-          bgColors: ["#FFE4EC", "#FFF0F5", "#FCE4EC"],
-          isUserAdded: true,
-        });
+    // Mening mahsulotlarim — birinchi (agar bor bo‘lsa).
+    myProducts.forEach((mp) => {
+      list.push({
+        id: `my-${mp.id}`,
+        productId: mp.id,
+        title: mp.name,
+        brand: mp.brand || "Morf Tarkib",
+        price: "Mening",
+        category: mp.category || "spray",
+        duration: "2 Min",
+        durationMinutes: 2,
+        image:
+          mp.image_url ||
+          "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=600&q=80",
+        bgColors: ["#FFE4EC", "#FFF0F5", "#FCE4EC"],
+        isUserAdded: true,
       });
-    } else {
-      const rankedCatalog = [...catalog]
-        .map((cp) => ({
-          product: cp,
-          fit: estimateProductFit(cp, quiz),
-        }))
-        .sort((a, b) => b.fit - a.fit);
+    });
 
-      rankedCatalog.forEach(({ product: cp, fit }) => {
-        list.push({
-          id: `cat-${cp.id}`,
-          productId: cp.id,
-          title: cp.name,
-          brand: cp.brand,
-          price: `$${80 + (cp.id % 6) * 20}`,
-          category: cp.category,
-          duration: cp.category === "mask" ? "5 Min" : "2 Min",
-          durationMinutes: cp.category === "mask" ? 5 : 2,
-          image: cp.image_url || "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&w=600&q=80",
-          bgColors: cp.category === "mask" ? ["#E0F7FA", "#E8F5E9", "#E0F2F1"] : ["#F3E8FF", "#FAF5FF", "#EDE9FE"],
-          isUserAdded: false,
-          fitScore: fit,
-          usageText: cp.usage_uz,
-        });
+    // Soch holatiga mos tavsiyalar — har doim (mening mahsulotlaridan tashqari).
+    const rankedCatalog = [...catalog]
+      .filter((cp) => !myIds.has(cp.id))
+      .map((cp) => ({ product: cp, fit: estimateProductFit(cp, quiz) }))
+      .sort((a, b) => b.fit - a.fit);
+
+    rankedCatalog.forEach(({ product: cp, fit }) => {
+      list.push({
+        id: `cat-${cp.id}`,
+        productId: cp.id,
+        title: cp.name,
+        brand: cp.brand,
+        price: `$${80 + (cp.id % 6) * 20}`,
+        category: cp.category,
+        duration: cp.category === "mask" ? "5 Min" : "2 Min",
+        durationMinutes: cp.category === "mask" ? 5 : 2,
+        image:
+          cp.image_url ||
+          "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&w=600&q=80",
+        bgColors:
+          cp.category === "mask"
+            ? ["#E0F7FA", "#E8F5E9", "#E0F2F1"]
+            : ["#F3E8FF", "#FAF5FF", "#EDE9FE"],
+        isUserAdded: false,
+        fitScore: fit,
+        usageText: cp.usage_uz,
       });
-    }
+    });
 
     if (list.length === 0) {
       return FEATURED_PRODUCTS.map((fp) => ({
@@ -414,7 +421,9 @@ export function MorphCareScreen({ navigation, route }: Props) {
     }
 
     if (selectedCat !== "all") {
-      const filtered = list.filter((p) => p.category.toLowerCase().includes(selectedCat.toLowerCase()));
+      const filtered = list.filter((p) =>
+        p.category.toLowerCase().includes(selectedCat.toLowerCase()),
+      );
       return filtered.length > 0 ? filtered : list;
     }
 
