@@ -5,6 +5,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { StatusBar } from "expo-status-bar";
 import {
   ActivityIndicator,
+  Platform,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -66,22 +67,26 @@ export function MorphProfileScreen({ navigation }: Props) {
     <View style={[styles.root, { paddingTop: Math.max(insets.top, 10) }]}>
       <StatusBar style={pal.status} />
       <ScrollView
-        style={{ flex: 1 }}
+        style={styles.scroll}
         showsVerticalScrollIndicator={false}
-        nestedScrollEnabled={true}
+        nestedScrollEnabled
         keyboardShouldPersistTaps="handled"
-        bounces={true}
+        bounces
         overScrollMode="never"
         contentContainerStyle={[
           styles.content,
           { paddingBottom: TAB_DOCK_CLEARANCE + Math.max(insets.bottom, 16) + 60 },
         ]}
+        // RN-web: RefreshControl ScrollView style’ni o‘ziga ko‘chirib ikki nested
+        // overflow:auto hosil qiladi — vertikal scroll ishlamaydi.
         refreshControl={
-          <RefreshControl
-            refreshing={loading && !!dashboard}
-            onRefresh={refresh}
-            tintColor={pal.fg}
-          />
+          Platform.OS === "web" ? undefined : (
+            <RefreshControl
+              refreshing={loading && !!dashboard}
+              onRefresh={refresh}
+              tintColor={pal.fg}
+            />
+          )
         }
       >
         <View style={styles.topRow}>
@@ -235,9 +240,10 @@ export function MorphProfileScreen({ navigation }: Props) {
         ) : (
           <ScrollView
             horizontal
+            style={styles.historyScroll}
             showsHorizontalScrollIndicator={false}
-            nestedScrollEnabled={true}
-            directionalLockEnabled={true}
+            nestedScrollEnabled
+            directionalLockEnabled
             contentContainerStyle={styles.historyRow}
           >
             {history.map((item) => {
@@ -349,7 +355,9 @@ function MenuRow({
 function makeStyles(pal: MorphPalette, fs: (n: number) => number) {
   return StyleSheet.create({
     root: { flex: 1, backgroundColor: pal.bg },
-    content: { paddingHorizontal: 16 },
+    scroll: { flex: 1, minHeight: 0 },
+    content: { paddingHorizontal: 16, flexGrow: 0 },
+    historyScroll: { flexGrow: 0 },
     topRow: {
       flexDirection: "row",
       alignItems: "center",
