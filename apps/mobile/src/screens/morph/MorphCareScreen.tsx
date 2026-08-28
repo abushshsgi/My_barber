@@ -224,7 +224,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
   /** Sheet kategoriyalarga yaqin — o‘rtadagi gap minimal */
   const searchSheetHeight = useMemo(() => {
     const winH = Dimensions.get("window").height;
-    const topBlock = insets.top + 4 + 48 + 4 + 40;
+    const topBlock = insets.top + 4 + 48 + 4 + 40 + 33;
     return Math.max(520, winH - topBlock);
   }, [insets.top]);
 
