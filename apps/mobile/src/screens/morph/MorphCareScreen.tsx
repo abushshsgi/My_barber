@@ -641,7 +641,23 @@ export function MorphCareScreen({ navigation, route }: Props) {
     () => (previewId == null ? null : catalog.find((p) => p.id === previewId) ?? null),
     [catalog, previewId],
   );
-  const previewAdded = previewProduct ? sessionAddedIds.includes(previewProduct.id) : false;
+  const previewAdded = previewProduct
+    ? sessionAddedIds.includes(previewProduct.id) ||
+      myProducts.some((p) => p.id === previewProduct.id)
+    : false;
+
+  const openPreview = useCallback((productId?: number) => {
+    if (!productId) return;
+    setPreviewId(productId);
+  }, []);
+
+  const openPreviewCare = useCallback(() => {
+    setPreviewId(null);
+    setSearchOpen(false);
+    setSearchQuery("");
+    setSessionAddedIds([]);
+    setViewMode("flow");
+  }, []);
 
   const addFromSearch = useCallback(
     async (productId: number) => {
@@ -1113,10 +1129,10 @@ export function MorphCareScreen({ navigation, route }: Props) {
                         style={[styles.featuredActionBtn, styles.featuredSaveBtn]}
                         onPress={(e) => {
                           e.stopPropagation?.();
-                          void toggleFavoriteProduct(prod);
+                          openPreview(prod.productId);
                         }}
                         hitSlop={6}
-                        accessibilityLabel="Save"
+                        accessibilityLabel={t("care.myProducts.addShort", { defaultValue: "Qo‘shish" })}
                       >
                         <Ionicons name="add" size={14} color="#1F2937" />
                       </Pressable>
@@ -1209,7 +1225,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
                             ]}
                             onPress={(e) => {
                               e.stopPropagation?.();
-                              void addFromSearch(item.id);
+                              openPreview(item.id);
                             }}
                           >
                             <Ionicons
@@ -1236,104 +1252,6 @@ export function MorphCareScreen({ navigation, route }: Props) {
                 </View>
               )}
             </ScrollView>
-
-            <Modal
-              visible={previewProduct != null}
-              transparent
-              animationType="slide"
-              onRequestClose={() => setPreviewId(null)}
-            >
-              <Pressable style={styles.previewBackdrop} onPress={() => setPreviewId(null)}>
-                <Pressable style={styles.previewCard} onPress={(e) => e.stopPropagation?.()}>
-                  {previewProduct ? (
-                    <>
-                      <View style={styles.previewGrab} />
-                      <ScrollView
-                        showsVerticalScrollIndicator={false}
-                        contentContainerStyle={styles.previewScroll}
-                      >
-                        <View style={styles.previewMedia}>
-                          {previewProduct.image_url ? (
-                            <Image
-                              source={{ uri: previewProduct.image_url }}
-                              style={styles.previewImg}
-                            />
-                          ) : (
-                            <View style={[styles.previewImg, styles.searchRowPh]}>
-                              <Ionicons name="flask-outline" size={40} color="#6366F1" />
-                            </View>
-                          )}
-                          <Pressable
-                            style={styles.previewClose}
-                            onPress={() => setPreviewId(null)}
-                            hitSlop={8}
-                            accessibilityLabel={t("common.back")}
-                          >
-                            <Ionicons name="close" size={18} color="#0F172A" />
-                          </Pressable>
-                        </View>
-                        <Text style={styles.previewTitle}>{previewProduct.name}</Text>
-                        {previewProduct.brand ? (
-                          <Text style={styles.previewBrand}>{previewProduct.brand}</Text>
-                        ) : null}
-                        <Text style={styles.previewCat}>
-                          {t(`care.catalog.categories.${previewProduct.category}`, {
-                            defaultValue: previewProduct.category,
-                          })}
-                        </Text>
-                        {previewProduct.purpose_uz ? (
-                          <View style={styles.previewSection}>
-                            <Text style={styles.previewSectionTitle}>{t("care.catalog.purpose")}</Text>
-                            <Text style={styles.previewBody}>{previewProduct.purpose_uz}</Text>
-                          </View>
-                        ) : null}
-                        {previewProduct.usage_uz ? (
-                          <View style={styles.previewSection}>
-                            <Text style={styles.previewSectionTitle}>{t("care.catalog.usage")}</Text>
-                            <Text style={styles.previewBody}>{previewProduct.usage_uz}</Text>
-                          </View>
-                        ) : null}
-                        {previewProduct.pros_uz ? (
-                          <View style={styles.previewSection}>
-                            <Text style={styles.previewSectionTitle}>{t("care.catalog.pros")}</Text>
-                            <Text style={styles.previewBody}>{previewProduct.pros_uz}</Text>
-                          </View>
-                        ) : null}
-                        {previewProduct.warnings_uz ? (
-                          <View style={styles.previewSection}>
-                            <Text style={styles.previewSectionTitle}>{t("care.catalog.warnings")}</Text>
-                            <Text style={styles.previewWarn}>{previewProduct.warnings_uz}</Text>
-                          </View>
-                        ) : null}
-                      </ScrollView>
-                      <Pressable
-                        style={[
-                          styles.previewAddBtn,
-                          previewAdded && styles.previewAddBtnAdded,
-                        ]}
-                        onPress={() => void addFromSearch(previewProduct.id)}
-                      >
-                        <Ionicons
-                          name={previewAdded ? "checkmark-circle" : "bag-add-outline"}
-                          size={18}
-                          color={previewAdded ? "#4F46E5" : "#fff"}
-                        />
-                        <Text
-                          style={[
-                            styles.previewAddBtnText,
-                            previewAdded && styles.previewAddBtnTextAdded,
-                          ]}
-                        >
-                          {previewAdded
-                            ? t("care.myProducts.alreadyAdded")
-                            : t("care.myProducts.addFromCatalog")}
-                        </Text>
-                      </Pressable>
-                    </>
-                  ) : null}
-                </Pressable>
-              </Pressable>
-            </Modal>
           </Animated.View>
         ) : (
           <View style={styles.hubDockOuter}>
@@ -1402,6 +1320,124 @@ export function MorphCareScreen({ navigation, route }: Props) {
             </View>
           </View>
         )}
+
+        <Modal
+          visible={previewProduct != null}
+          transparent
+          animationType="slide"
+          onRequestClose={() => setPreviewId(null)}
+        >
+          <Pressable style={styles.previewBackdrop} onPress={() => setPreviewId(null)}>
+            <Pressable style={styles.previewCard} onPress={(e) => e.stopPropagation?.()}>
+              {previewProduct ? (
+                <>
+                  <View style={styles.previewGrab} />
+                  <ScrollView
+                    showsVerticalScrollIndicator={false}
+                    contentContainerStyle={styles.previewScroll}
+                  >
+                    <View style={styles.previewMedia}>
+                      {previewProduct.image_url ? (
+                        <Image
+                          source={{ uri: previewProduct.image_url }}
+                          style={styles.previewImg}
+                        />
+                      ) : (
+                        <View style={[styles.previewImg, styles.searchRowPh]}>
+                          <Ionicons name="flask-outline" size={40} color="#6366F1" />
+                        </View>
+                      )}
+                      <Pressable
+                        style={styles.previewClose}
+                        onPress={() => setPreviewId(null)}
+                        hitSlop={8}
+                        accessibilityLabel={t("common.back")}
+                      >
+                        <Ionicons name="close" size={18} color="#0F172A" />
+                      </Pressable>
+                    </View>
+                    <Text style={styles.previewTitle}>{previewProduct.name}</Text>
+                    {previewProduct.brand ? (
+                      <Text style={styles.previewBrand}>{previewProduct.brand}</Text>
+                    ) : null}
+                    <Text style={styles.previewCat}>
+                      {t(`care.catalog.categories.${previewProduct.category}`, {
+                        defaultValue: previewProduct.category,
+                      })}
+                    </Text>
+                    {previewProduct.purpose_uz ? (
+                      <View style={styles.previewSection}>
+                        <Text style={styles.previewSectionTitle}>{t("care.catalog.purpose")}</Text>
+                        <Text style={styles.previewBody}>{previewProduct.purpose_uz}</Text>
+                      </View>
+                    ) : null}
+                    {previewProduct.usage_uz ? (
+                      <View style={styles.previewSection}>
+                        <Text style={styles.previewSectionTitle}>{t("care.catalog.usage")}</Text>
+                        <Text style={styles.previewBody}>{previewProduct.usage_uz}</Text>
+                      </View>
+                    ) : null}
+                    {previewProduct.pros_uz ? (
+                      <View style={styles.previewSection}>
+                        <Text style={styles.previewSectionTitle}>{t("care.catalog.pros")}</Text>
+                        <Text style={styles.previewBody}>{previewProduct.pros_uz}</Text>
+                      </View>
+                    ) : null}
+                    {previewProduct.warnings_uz ? (
+                      <View style={styles.previewSection}>
+                        <Text style={styles.previewSectionTitle}>{t("care.catalog.warnings")}</Text>
+                        <Text style={styles.previewWarn}>{previewProduct.warnings_uz}</Text>
+                      </View>
+                    ) : null}
+                  </ScrollView>
+                  <View style={styles.previewActions}>
+                    <Pressable
+                      style={[
+                        styles.previewAddBtn,
+                        previewAdded && styles.previewAddBtnAdded,
+                        styles.previewAddBtnFlex,
+                      ]}
+                      onPress={() => {
+                        if (previewAdded) return;
+                        void addFromSearch(previewProduct.id);
+                      }}
+                      disabled={previewAdded}
+                    >
+                      <Ionicons
+                        name={previewAdded ? "checkmark-circle" : "lock-closed-outline"}
+                        size={18}
+                        color={previewAdded ? "#4F46E5" : "#fff"}
+                      />
+                      <Text
+                        style={[
+                          styles.previewAddBtnText,
+                          previewAdded && styles.previewAddBtnTextAdded,
+                        ]}
+                        numberOfLines={1}
+                      >
+                        {previewAdded
+                          ? t("care.myProducts.alreadyAdded")
+                          : t("care.myProducts.addFromCatalog")}
+                      </Text>
+                    </Pressable>
+                    {previewAdded ? (
+                      <Pressable
+                        style={styles.previewCareBtn}
+                        onPress={openPreviewCare}
+                        accessibilityLabel={t("care.myProducts.useInCare")}
+                      >
+                        <Ionicons name="water-outline" size={18} color="#fff" />
+                        <Text style={styles.previewCareBtnText} numberOfLines={1}>
+                          {t("care.myProducts.useInCare")}
+                        </Text>
+                      </Pressable>
+                    ) : null}
+                  </View>
+                </>
+              ) : null}
+            </Pressable>
+          </Pressable>
+        </Modal>
       </View>
     );
   }
@@ -1971,7 +2007,6 @@ const styles = StyleSheet.create({
     color: "rgba(15,23,42,0.55)",
   },
   previewAddBtn: {
-    marginTop: 8,
     height: 50,
     borderRadius: 16,
     backgroundColor: "#4F46E5",
@@ -1979,6 +2014,31 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
+  },
+  previewActions: {
+    marginTop: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  previewAddBtnFlex: {
+    flex: 1,
+  },
+  previewCareBtn: {
+    flex: 1,
+    height: 50,
+    borderRadius: 16,
+    backgroundColor: "#3B82F6",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  previewCareBtnText: {
+    ...morphFont,
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#fff",
   },
   previewAddBtnAdded: {
     backgroundColor: "#EEF2FF",
