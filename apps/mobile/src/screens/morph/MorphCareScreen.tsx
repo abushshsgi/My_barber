@@ -2,14 +2,20 @@ import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { LinearGradient } from "expo-linear-gradient";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Animated,
+  Dimensions,
+  Easing,
   Image,
+  Keyboard,
+  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from "react-native";
 import { useTranslation } from "react-i18next";
@@ -19,12 +25,14 @@ import { weatherIconName } from "../../api/weather";
 import {
   fetchCareProducts,
   fetchHairCareProfile,
+  toggleCareProductLike,
   updateHairCareProfile,
   type CareProduct,
   type HairColorStatus,
   type HairCondition,
   type HairTexture,
 } from "../../api/care";
+import { useAuth } from "../../auth/AuthContext";
 import { CareRoutineSheet } from "../../components/morph/care/CareRoutineSheet";
 import { DarkMeshAmbientBg } from "../../components/morph/care/DarkMeshAmbientBg";
 import { useCareWeather } from "../../hooks/useCareWeather";
@@ -61,6 +69,14 @@ const CATEGORIES = [
   { id: "skin", label: "Skin Care" },
 ];
 
+const QUICK_CATS: { id: string; labelKey: string }[] = [
+  { id: "shampoo", labelKey: "care.catalog.categories.shampoo" },
+  { id: "balsam", labelKey: "care.catalog.categories.balsam" },
+  { id: "mask", labelKey: "care.catalog.categories.mask" },
+  { id: "oil", labelKey: "care.catalog.categories.oil" },
+  { id: "spray", labelKey: "care.catalog.categories.spray" },
+];
+
 interface FeaturedProductItem {
   id: string;
   title: string;
@@ -79,7 +95,7 @@ const FEATURED_PRODUCTS: FeaturedProductItem[] = [
     price: "$160",
     duration: "2 Min",
     image: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=600&q=80",
-    bgColors: ["#FFE4EC", "#FFF0F5", "#FCE4EC"],
+    bgColors: ["#EEF2FF", "#E0E7FF", "#EDE9FE"],
     hasPlay: true,
   },
   {
@@ -87,7 +103,7 @@ const FEATURED_PRODUCTS: FeaturedProductItem[] = [
     title: "Eye Care",
     price: "$150",
     image: "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&w=600&q=80",
-    bgColors: ["#E0F7FA", "#E8F5E9", "#E0F2F1"],
+    bgColors: ["#ECFEFF", "#E0F2FE", "#DBEAFE"],
   },
   {
     id: "hair-1",
@@ -95,7 +111,7 @@ const FEATURED_PRODUCTS: FeaturedProductItem[] = [
     price: "$135",
     duration: "3 Min",
     image: "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=600&q=80",
-    bgColors: ["#F3E8FF", "#FAF5FF", "#EDE9FE"],
+    bgColors: ["#F5F3FF", "#EDE9FE", "#E0E7FF"],
     hasPlay: true,
   },
 ];
@@ -134,10 +150,61 @@ function greetingKey(): string {
   return "care.routine.goodEvening";
 }
 
+/** 1 like = 1 yurak; 2+ = 1.5 yurak; 0 da faqat raqam (tugma alohida). */
+function LikeHeartsBadge({ count }: { count: number }) {
+  const n = Math.max(0, count);
+  return (
+    <View style={likeStyles.wrap}>
+      {n === 1 ? <Ionicons name="heart" size={10} color="#EF4444" /> : null}
+      {n >= 2 ? (
+        <View style={likeStyles.pair}>
+          <Ionicons name="heart" size={10} color="#EF4444" />
+          <View style={likeStyles.halfMask}>
+            <Ionicons name="heart" size={10} color="#FECACA" />
+            <View style={likeStyles.halfClip}>
+              <Ionicons name="heart" size={10} color="#EF4444" />
+            </View>
+          </View>
+        </View>
+      ) : null}
+      <Text style={likeStyles.count}>{n}</Text>
+    </View>
+  );
+}
+
+const likeStyles = StyleSheet.create({
+  wrap: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 999,
+    backgroundColor: "rgba(255,255,255,0.95)",
+  },
+  pair: { flexDirection: "row", alignItems: "center", gap: 1 },
+  halfMask: { width: 10, height: 10, position: "relative" },
+  halfClip: {
+    position: "absolute",
+    left: 0,
+    top: 0,
+    width: 5,
+    height: 10,
+    overflow: "hidden",
+  },
+  count: {
+    ...morphFont,
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#0F172A",
+  },
+});
+
 export function MorphCareScreen({ navigation, route }: Props) {
   useHideTabBar();
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
+  const { isAuthenticated } = useAuth();
   const { goMorph, navigateRootTab } = useShellNavigation();
   const [loading, setLoading] = useState(true);
   const [access, setAccess] = useState<{ allowed: boolean; detail?: string } | null>(null);
@@ -149,7 +216,77 @@ export function MorphCareScreen({ navigation, route }: Props) {
   const [myProducts, setMyProducts] = useState<MyCareProduct[]>([]);
   const [saving, setSaving] = useState(false);
   const [selectedDayIdx, setSelectedDayIdx] = useState(0);
+  const [addToast, setAddToast] = useState<{ title: string; image: string } | null>(null);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [quickCat, setQuickCat] = useState<string | null>(null);
+  const [previewId, setPreviewId] = useState<number | null>(null);
+  const addDropY = useRef(new Animated.Value(-140)).current;
+  const addOpacity = useRef(new Animated.Value(0)).current;
+  const addScale = useRef(new Animated.Value(0.86)).current;
+  const searchSheetY = useRef(new Animated.Value(600)).current;
+  const searchInputRef = useRef<TextInput>(null);
   const { data: weather, loading: weatherLoading } = useCareWeather();
+
+  /** Search: input + kategoriyalar + tez filter ostigacha */
+  const searchSheetHeight = useMemo(() => {
+    const winH = Dimensions.get("window").height;
+    const topBlock = insets.top + 12 + 48 + 10 + 44 + 8 + 96;
+    return Math.max(360, winH - topBlock);
+  }, [insets.top]);
+
+  const playAddedAnimation = useCallback(
+    (prod: { title: string; image: string }) => {
+      setAddToast({ title: prod.title, image: prod.image });
+      addDropY.setValue(-160);
+      addOpacity.setValue(0);
+      addScale.setValue(0.82);
+      Animated.sequence([
+        Animated.parallel([
+          Animated.spring(addDropY, {
+            toValue: insets.top + 12,
+            friction: 7,
+            tension: 68,
+            useNativeDriver: true,
+          }),
+          Animated.timing(addOpacity, {
+            toValue: 1,
+            duration: 220,
+            easing: Easing.out(Easing.cubic),
+            useNativeDriver: true,
+          }),
+          Animated.spring(addScale, {
+            toValue: 1,
+            friction: 6,
+            tension: 90,
+            useNativeDriver: true,
+          }),
+        ]),
+        Animated.delay(780),
+        Animated.parallel([
+          Animated.timing(addDropY, {
+            toValue: -180,
+            duration: 420,
+            easing: Easing.in(Easing.cubic),
+            useNativeDriver: true,
+          }),
+          Animated.timing(addOpacity, {
+            toValue: 0,
+            duration: 360,
+            useNativeDriver: true,
+          }),
+          Animated.timing(addScale, {
+            toValue: 0.88,
+            duration: 360,
+            useNativeDriver: true,
+          }),
+        ]),
+      ]).start(({ finished }) => {
+        if (finished) setAddToast(null);
+      });
+    },
+    [addDropY, addOpacity, addScale, insets.top],
+  );
 
   const reloadMyProducts = useCallback(async () => {
     const list = await loadMyProducts();
@@ -194,6 +331,46 @@ export function MorphCareScreen({ navigation, route }: Props) {
   const openCatalog = useCallback(() => {
     navigation.navigate("CareProducts");
   }, [navigation]);
+
+  const openMyProducts = useCallback(() => {
+    navigation.navigate("CareMyProducts");
+  }, [navigation]);
+
+  const openSearch = useCallback(() => {
+    setSearchOpen(true);
+    setPreviewId(null);
+    setQuickCat(null);
+    searchSheetY.setValue(searchSheetHeight);
+    Animated.spring(searchSheetY, {
+      toValue: 0,
+      friction: 9,
+      tension: 68,
+      useNativeDriver: true,
+    }).start(() => {
+      searchInputRef.current?.focus();
+    });
+    requestAnimationFrame(() => searchInputRef.current?.focus());
+    void fetchCareProducts({ order: "likes" })
+      .then((rows) => {
+        if (rows.length) setCatalog(rows);
+      })
+      .catch(() => {});
+  }, [searchSheetHeight, searchSheetY]);
+
+  const closeSearch = useCallback(() => {
+    Keyboard.dismiss();
+    setPreviewId(null);
+    setQuickCat(null);
+    Animated.timing(searchSheetY, {
+      toValue: searchSheetHeight,
+      duration: 280,
+      easing: Easing.in(Easing.cubic),
+      useNativeDriver: true,
+    }).start(() => {
+      setSearchOpen(false);
+      setSearchQuery("");
+    });
+  }, [searchSheetHeight, searchSheetY]);
 
   const openTarkib = useCallback(() => {
     goMorph(navigation, "MorphIngredient");
@@ -264,9 +441,10 @@ export function MorphCareScreen({ navigation, route }: Props) {
           source: "recommended",
         });
         setMyProducts(next);
+        playAddedAnimation({ title: prod.title, image: prod.image });
       }
     },
-    [myProducts],
+    [myProducts, playAddedAnimation],
   );
 
   const openParvarish = useCallback(() => {
@@ -368,7 +546,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
         image:
           mp.image_url ||
           "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=600&q=80",
-        bgColors: ["#FFE4EC", "#FFF0F5", "#FCE4EC"],
+        bgColors: ["#EEF2FF", "#E0E7FF", "#EDE9FE"],
         isUserAdded: true,
       });
     });
@@ -429,6 +607,110 @@ export function MorphCareScreen({ navigation, route }: Props) {
 
     return list;
   }, [myProducts, catalog, quiz, selectedCat]);
+
+  const searchResults = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    const mine = new Set(myProducts.map((m) => m.id));
+    let rows = catalog.map((p) => ({
+      id: p.id,
+      title: p.name,
+      brand: p.brand,
+      category: p.category,
+      image: p.image_url,
+      purpose: p.purpose_uz,
+      usage: p.usage_uz,
+      likes_count: p.likes_count ?? 0,
+      liked_by_me: Boolean(p.liked_by_me),
+      added: mine.has(p.id),
+    }));
+    if (quickCat) {
+      rows = rows.filter((p) => p.category === quickCat);
+    }
+    if (q) {
+      rows = rows.filter(
+        (p) =>
+          p.title.toLowerCase().includes(q) ||
+          p.brand.toLowerCase().includes(q) ||
+          p.category.toLowerCase().includes(q),
+      );
+    }
+    rows.sort((a, b) => b.likes_count - a.likes_count || a.title.localeCompare(b.title));
+    return rows.slice(0, 40);
+  }, [catalog, myProducts, quickCat, searchQuery]);
+
+  const previewProduct = useMemo(
+    () => (previewId == null ? null : catalog.find((p) => p.id === previewId) ?? null),
+    [catalog, previewId],
+  );
+  const previewAdded = previewProduct
+    ? myProducts.some((m) => m.id === previewProduct.id)
+    : false;
+
+  const addFromSearch = useCallback(
+    async (productId: number) => {
+      const p = catalog.find((c) => c.id === productId);
+      if (!p) return;
+      const exists = myProducts.some((m) => m.id === p.id);
+      if (exists) {
+        const next = await removeMyProduct(p.id);
+        setMyProducts(next);
+        return;
+      }
+      const next = await addMyProduct({
+        id: p.id,
+        name: p.name,
+        brand: p.brand,
+        category: p.category,
+        image_url: p.image_url,
+        source: "catalog",
+      });
+      setMyProducts(next);
+      playAddedAnimation({
+        title: p.name,
+        image: p.image_url || "",
+      });
+    },
+    [catalog, myProducts, playAddedAnimation],
+  );
+
+  const onToggleSearchLike = useCallback(
+    async (productId: number) => {
+      if (!isAuthenticated) {
+        goMorph(navigation, "Profile");
+        return;
+      }
+      // Optimistic UI — tugma darhol javob bersin
+      setCatalog((prev) =>
+        prev.map((p) => {
+          if (p.id !== productId) return p;
+          const liked = !p.liked_by_me;
+          const count = Math.max(0, (p.likes_count ?? 0) + (liked ? 1 : -1));
+          return { ...p, liked_by_me: liked, likes_count: count };
+        }),
+      );
+      try {
+        const res = await toggleCareProductLike(productId);
+        setCatalog((prev) =>
+          prev.map((p) =>
+            p.id === productId
+              ? { ...p, liked_by_me: res.liked, likes_count: res.likes_count }
+              : p,
+          ),
+        );
+      } catch {
+        // Rollback
+        setCatalog((prev) =>
+          prev.map((p) => {
+            if (p.id !== productId) return p;
+            const liked = !p.liked_by_me;
+            const count = Math.max(0, (p.likes_count ?? 0) + (liked ? 1 : -1));
+            return { ...p, liked_by_me: liked, likes_count: count };
+          }),
+        );
+      }
+    },
+    [goMorph, isAuthenticated, navigation],
+  );
 
   if (loading) {
     return (
@@ -497,7 +779,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
     return (
       <View style={styles.onboardRoot}>
         <LinearGradient
-          colors={["#EDE4FF", "#F7E8F0", "#F4F5F8"]}
+          colors={["#EDE4FF", "#EEF2FF", "#F4F5F8"]}
           start={{ x: 0.1, y: 0 }}
           end={{ x: 0.9, y: 0.55 }}
           style={StyleSheet.absoluteFill}
@@ -573,9 +855,32 @@ export function MorphCareScreen({ navigation, route }: Props) {
   if (viewMode === "hub") {
     return (
       <View style={styles.hubRoot}>
+        {addToast ? (
+          <Animated.View
+            pointerEvents="none"
+            style={[
+              styles.addToast,
+              {
+                opacity: addOpacity,
+                transform: [{ translateY: addDropY }, { scale: addScale }],
+              },
+            ]}
+          >
+            <Image source={{ uri: addToast.image }} style={styles.addToastImg} />
+            <View style={styles.addToastBody}>
+              <Text style={styles.addToastEyebrow}>{t("care.myProducts.addedTitle")}</Text>
+              <Text style={styles.addToastTitle} numberOfLines={1}>
+                {addToast.title}
+              </Text>
+            </View>
+            <View style={styles.addToastCheck}>
+              <Ionicons name="checkmark" size={14} color="#fff" />
+            </View>
+          </Animated.View>
+        ) : null}
         <LinearGradient
-          colors={["#FFFFFF", "#FFF5F8", "#FFFFFF"]}
-          locations={[0, 0.45, 1]}
+          colors={["#FFFFFF", "#F5F3FF", "#EEF2FF"]}
+          locations={[0, 0.5, 1]}
           style={StyleSheet.absoluteFill}
         />
 
@@ -583,7 +888,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
           style={styles.hubScroll}
           contentContainerStyle={{
             paddingTop: insets.top + 6,
-            paddingBottom: Math.max(insets.bottom, 16) + 40,
+            paddingBottom: 16,
           }}
           nestedScrollEnabled={true}
           keyboardShouldPersistTaps="handled"
@@ -591,8 +896,8 @@ export function MorphCareScreen({ navigation, route }: Props) {
           bounces={true}
           overScrollMode="never"
         >
-          <View>
-            {/* Top Nav Bar */}
+          {/* Top Nav Bar — search ochiq bo‘lsa yashirin */}
+          {!searchOpen ? (
             <View style={[styles.navBarRow, { paddingHorizontal: 20 }]}>
               <Pressable
                 style={styles.navCircleBtnLight}
@@ -604,247 +909,559 @@ export function MorphCareScreen({ navigation, route }: Props) {
               </Pressable>
               <View style={{ width: 42 }} />
             </View>
+          ) : (
+            <View style={{ height: 4 }} />
+          )}
 
-            {/* Promo Card Banner */}
-            <View style={styles.promoWrap}>
-              <LinearGradient
-                colors={["#FFF0F5", "#FFE4ED", "#FCE2EC"]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.promoCard}
-              >
-                <View style={styles.promoLeft}>
-                  <Text style={styles.promoTitle}>{"Your Glow,\nHalf the Price"}</Text>
-                  <Pressable style={styles.promoBtn} onPress={openCatalog}>
-                    <Text style={styles.promoBtnText}>Get offer</Text>
-                  </Pressable>
-                </View>
-                <Image
-                  source={{
-                    uri: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=400&q=80",
-                  }}
-                  style={styles.promoImg}
-                  resizeMode="cover"
-                />
-              </LinearGradient>
-
-              {/* Pagination Dots */}
-              <View style={styles.dotsRow}>
-                <View style={styles.dotActive} />
-                <View style={styles.dotInactive} />
-                <View style={styles.dotInactive} />
+          {/* Promo Card Banner — qidiruv ochiq bo‘lsa yashirin */}
+          {!searchOpen ? (
+          <View style={styles.promoWrap}>
+            <LinearGradient
+              colors={["#EEF2FF", "#E0E7FF", "#EDE9FE"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.promoCard}
+            >
+              <View style={styles.promoLeft}>
+                <Text style={styles.promoEyebrow}>Morf Care</Text>
+                <Text style={styles.promoTitle}>{"Your Glow,\nHalf the Price"}</Text>
+                <Pressable style={styles.promoBtn} onPress={openCatalog}>
+                  <Text style={styles.promoBtnText}>Get offer</Text>
+                  <Ionicons name="arrow-forward" size={14} color="#fff" />
+                </Pressable>
               </View>
-            </View>
+              <Image
+                source={{
+                  uri: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=400&q=80",
+                }}
+                style={styles.promoImg}
+                resizeMode="cover"
+              />
+            </LinearGradient>
 
-            {/* Search Bar with Pink Filter */}
-            <View style={styles.searchSection}>
-              <Pressable style={styles.searchBar} onPress={openCatalog}>
-                <Ionicons name="search-outline" size={18} color="#9CA3AF" />
-                <Text style={styles.searchPlaceholder}>Search...</Text>
-                <View style={styles.filterBtn}>
-                  <Ionicons name="options-outline" size={16} color="#fff" />
-                </View>
-              </Pressable>
+            <View style={styles.dotsRow}>
+              <View style={styles.dotActive} />
+              <View style={styles.dotInactive} />
+              <View style={styles.dotInactive} />
             </View>
+          </View>
+          ) : null}
 
-            {/* Category Pills (All, Hair Cut, Face Care, Eye care, etc.) */}
-            <ScrollView
-              horizontal
-              nestedScrollEnabled={true}
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.categoryScroll}
-            >
-              {CATEGORIES.map((cat) => {
-                const active = selectedCat === cat.id;
-                return (
-                  <Pressable
-                    key={cat.id}
-                    style={[styles.catPill, active ? styles.catPillActive : styles.catPillInactive]}
-                    onPress={() => setSelectedCat(cat.id)}
+          {/* Search Bar */}
+          <View style={styles.searchSection}>
+            <View style={[styles.searchBar, searchOpen && styles.searchBarActive]}>
+              <Ionicons name="search-outline" size={18} color={searchOpen ? "#4F46E5" : "#9CA3AF"} />
+              {searchOpen ? (
+                <TextInput
+                  ref={searchInputRef}
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                  placeholder={t("care.catalog.search")}
+                  placeholderTextColor="#9CA3AF"
+                  style={styles.searchInput}
+                  autoFocus
+                  returnKeyType="search"
+                  clearButtonMode="while-editing"
+                />
+              ) : (
+                <Pressable style={styles.searchMain} onPress={openSearch}>
+                  <Text style={styles.searchPlaceholder}>{t("care.catalog.search")}...</Text>
+                </Pressable>
+              )}
+              {searchOpen ? (
+                <Pressable
+                  style={styles.searchCloseBtn}
+                  onPress={closeSearch}
+                  accessibilityLabel={t("common.back")}
+                >
+                  <Ionicons name="close" size={16} color="#0F172A" />
+                </Pressable>
+              ) : (
+                <Pressable
+                  style={styles.filterBtn}
+                  onPress={openCatalog}
+                  accessibilityLabel={t("care.catalog.title")}
+                >
+                  <LinearGradient
+                    colors={["#6366F1", "#4F46E5"]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.filterBtnGrad}
                   >
-                    <Text
-                      style={[
-                        styles.catText,
-                        active ? styles.catTextActive : styles.catTextInactive,
-                      ]}
+                    <Ionicons name="list" size={16} color="#fff" />
+                  </LinearGradient>
+                </Pressable>
+              )}
+            </View>
+          </View>
+
+          {/* Category Pills (All, Hair Cut, Face Care, Eye care, etc.) */}
+          <ScrollView
+            horizontal
+            nestedScrollEnabled={true}
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.categoryScroll}
+          >
+            {CATEGORIES.map((cat) => {
+              const active = selectedCat === cat.id;
+              return (
+                <Pressable
+                  key={cat.id}
+                  style={[styles.catPill, active ? styles.catPillActive : styles.catPillInactive]}
+                  onPress={() => setSelectedCat(cat.id)}
+                >
+                  <Text
+                    style={[
+                      styles.catText,
+                      active ? styles.catTextActive : styles.catTextInactive,
+                    ]}
+                  >
+                    {cat.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+
+          {/* Search ochiq: tez filter + hint (bo‘sh joyni to‘ldiradi) */}
+          {searchOpen ? (
+            <View style={styles.searchAssist}>
+              <Text style={styles.searchAssistLabel}>
+                {t("care.catalog.quickFilters", { defaultValue: "Tez filter" })}
+              </Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.searchAssistChips}
+              >
+                <Pressable
+                  style={[styles.searchAssistChip, !quickCat && styles.searchAssistChipOn]}
+                  onPress={() => setQuickCat(null)}
+                >
+                  <Text
+                    style={[
+                      styles.searchAssistChipText,
+                      !quickCat && styles.searchAssistChipTextOn,
+                    ]}
+                  >
+                    {t("care.catalog.all")}
+                  </Text>
+                </Pressable>
+                {QUICK_CATS.map((cat) => {
+                  const on = quickCat === cat.id;
+                  return (
+                    <Pressable
+                      key={cat.id}
+                      style={[styles.searchAssistChip, on && styles.searchAssistChipOn]}
+                      onPress={() => setQuickCat(on ? null : cat.id)}
                     >
-                      {cat.label}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </ScrollView>
+                      <Text
+                        style={[
+                          styles.searchAssistChipText,
+                          on && styles.searchAssistChipTextOn,
+                        ]}
+                      >
+                        {t(cat.labelKey)}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+              <Text style={styles.searchAssistHint}>
+                {t("care.catalog.searchHint", {
+                  defaultValue: "Mahsulotni qo‘shing — u parvarish rejangizda chiqadi",
+                })}
+              </Text>
+            </View>
+          ) : null}
 
-            {/* Featured and User Care Products */}
-            <ScrollView
-              horizontal
-              nestedScrollEnabled={true}
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.featuredProductsScroll}
-            >
-              {displayProducts.map((prod) => {
-                const isSaved = prod.isUserAdded || (prod.productId ? myProducts.some((p) => p.id === prod.productId) : false);
+          {/* Featured — qidiruv ochiq bo‘lsa yashirin */}
+          {!searchOpen ? (
+          <ScrollView
+            horizontal
+            nestedScrollEnabled={true}
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.featuredProductsScroll}
+          >
+            {displayProducts.map((prod) => {
+              const isMine =
+                prod.isUserAdded ||
+                (prod.productId ? myProducts.some((p) => p.id === prod.productId) : false);
+              const catalogRow = prod.productId
+                ? catalog.find((c) => c.id === prod.productId)
+                : undefined;
+              const liked = Boolean(catalogRow?.liked_by_me);
 
-                return (
-                  <Pressable
-                    key={prod.id}
-                    style={styles.featuredCard}
-                    onPress={() => {
-                      if (prod.isUserAdded) {
-                        openProductGuide(prod);
-                      } else if (prod.productId) {
-                        openProduct(prod.productId);
-                      } else {
-                        openCatalog();
-                      }
-                    }}
-                  >
+              return (
+                <Pressable
+                  key={prod.id}
+                  style={styles.featuredCard}
+                  onPress={() => {
+                    if (isMine) {
+                      openProductGuide(prod);
+                    } else if (prod.productId) {
+                      openProduct(prod.productId);
+                    } else {
+                      openCatalog();
+                    }
+                  }}
+                >
+                  <View style={styles.featuredMedia}>
                     <LinearGradient
                       colors={prod.bgColors}
                       start={{ x: 0, y: 0 }}
                       end={{ x: 1, y: 1 }}
                       style={StyleSheet.absoluteFill}
                     />
-
                     <Image
                       source={{ uri: prod.image }}
                       style={styles.featuredCardImg}
                       resizeMode="cover"
                     />
 
-                    {/* Top Action Row (Heart, Duration/Fit, Play) */}
-                    <View style={styles.featuredTopRow}>
+                    <Pressable
+                      style={[
+                        styles.featuredActionBtn,
+                        liked ? styles.featuredActionBtnActive : null,
+                        styles.featuredAddBtn,
+                      ]}
+                      onPress={(e) => {
+                        e.stopPropagation?.();
+                        if (prod.productId) void onToggleSearchLike(prod.productId);
+                      }}
+                      hitSlop={8}
+                      accessibilityLabel="Like"
+                    >
+                      <Ionicons
+                        name={liked ? "heart" : "heart-outline"}
+                        size={14}
+                        color={liked ? "#EF4444" : "#1F2937"}
+                      />
+                    </Pressable>
+
+                    {isMine && prod.duration ? (
+                      <View style={styles.featuredDurationPill}>
+                        <Ionicons name="time-outline" size={10} color="#1F2937" />
+                        <Text style={styles.featuredDurationText}>{prod.duration}</Text>
+                      </View>
+                    ) : null}
+
+                    {isMine ? (
                       <Pressable
-                        style={[styles.featuredActionBtn, isSaved && styles.featuredActionBtnActive]}
+                        style={styles.featuredPlayBtn}
                         onPress={(e) => {
-                          e.stopPropagation();
+                          e.stopPropagation?.();
+                          openProductGuide(prod);
+                        }}
+                        hitSlop={6}
+                        accessibilityLabel="Play guide"
+                      >
+                        <Ionicons name="play" size={12} color="#fff" style={{ marginLeft: 1 }} />
+                      </Pressable>
+                    ) : (
+                      <Pressable
+                        style={[styles.featuredActionBtn, styles.featuredSaveBtn]}
+                        onPress={(e) => {
+                          e.stopPropagation?.();
                           void toggleFavoriteProduct(prod);
                         }}
                         hitSlop={6}
-                        accessibilityLabel="Save product"
+                        accessibilityLabel="Save"
                       >
-                        <Ionicons
-                          name={isSaved ? "heart" : "heart-outline"}
-                          size={16}
-                          color={isSaved ? "#E11D48" : "#1F2937"}
-                        />
+                        <Ionicons name="add" size={14} color="#1F2937" />
                       </Pressable>
+                    )}
+                  </View>
 
-                      {prod.isUserAdded && prod.duration ? (
-                        <View style={styles.featuredDurationPill}>
-                          <Ionicons name="time-outline" size={12} color="#1F2937" />
-                          <Text style={styles.featuredDurationText}>{prod.duration}</Text>
+                  <View style={styles.featuredMeta}>
+                    <Text style={styles.featuredProdTitle} numberOfLines={2}>
+                      {prod.title}
+                    </Text>
+                    <Text style={styles.featuredProdPrice}>{prod.price}</Text>
+                  </View>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+          ) : null}
+        </ScrollView>
+
+        {/* Pastki dock yoki search panel */}
+        {searchOpen ? (
+          <Animated.View
+            style={[
+              styles.searchSheet,
+              {
+                height: searchSheetHeight,
+                paddingBottom: Math.max(insets.bottom, 14),
+                transform: [{ translateY: searchSheetY }],
+              },
+            ]}
+          >
+            <View style={styles.searchSheetHandle} />
+            <Text style={styles.searchSheetTitle}>{t("care.catalog.title")}</Text>
+            <ScrollView
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.searchSheetList}
+            >
+              {searchResults.length === 0 ? (
+                <Text style={styles.searchEmpty}>{t("care.catalog.empty")}</Text>
+              ) : (
+                <View style={styles.searchGrid}>
+                  {searchResults.map((item) => {
+                    return (
+                      <Pressable
+                        key={`search-${item.id}`}
+                        style={styles.searchCard}
+                        onPress={() => openProduct(item.id)}
+                      >
+                        <View style={styles.searchCardMedia}>
+                          {item.image ? (
+                            <Image source={{ uri: item.image }} style={styles.searchCardImg} />
+                          ) : (
+                            <View style={[styles.searchCardImg, styles.searchRowPh]}>
+                              <Ionicons name="flask-outline" size={22} color="#6366F1" />
+                            </View>
+                          )}
+                          <Pressable
+                            style={styles.searchLikeBtn}
+                            onPress={(e) => {
+                              e.stopPropagation?.();
+                              void onToggleSearchLike(item.id);
+                            }}
+                            hitSlop={6}
+                            accessibilityLabel="Like"
+                          >
+                            <Ionicons
+                              name={item.liked_by_me ? "heart" : "heart-outline"}
+                              size={13}
+                              color={item.liked_by_me ? "#EF4444" : "#0F172A"}
+                            />
+                          </Pressable>
+                          <View style={styles.searchLikeCount}>
+                            <LikeHeartsBadge count={item.likes_count} />
+                          </View>
                         </View>
-                      ) : !prod.isUserAdded && prod.fitScore ? (
-                        <View style={styles.featuredFitPill}>
-                          <Ionicons name="sparkles" size={11} color="#7C3AED" />
-                          <Text style={styles.featuredFitText}>{prod.fitScore}% mos</Text>
+                        <Text style={styles.searchCardTitle} numberOfLines={2}>
+                          {item.title}
+                        </Text>
+                        {item.brand ? (
+                          <Text style={styles.searchCardBrand} numberOfLines={1}>
+                            {item.brand}
+                          </Text>
+                        ) : null}
+                        <View style={styles.searchAddBtnRow}>
+                          <Pressable
+                            style={[
+                              styles.searchAddBtn,
+                              item.added && styles.searchAddBtnAdded,
+                            ]}
+                            onPress={(e) => {
+                              e.stopPropagation?.();
+                              void addFromSearch(item.id);
+                            }}
+                          >
+                            <Ionicons
+                              name={item.added ? "checkmark-circle" : "bag-add-outline"}
+                              size={13}
+                              color={item.added ? "#4F46E5" : "#fff"}
+                            />
+                            <Text
+                              style={[
+                                styles.searchAddBtnText,
+                                item.added && styles.searchAddBtnTextAdded,
+                              ]}
+                              numberOfLines={1}
+                            >
+                              {item.added
+                                ? t("care.myProducts.alreadyAdded")
+                                : t("care.myProducts.addShort", { defaultValue: "Qo‘shish" })}
+                            </Text>
+                          </Pressable>
+                        </View>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              )}
+            </ScrollView>
+
+            <Modal
+              visible={previewProduct != null}
+              transparent
+              animationType="fade"
+              onRequestClose={() => setPreviewId(null)}
+            >
+              <Pressable style={styles.previewBackdrop} onPress={() => setPreviewId(null)}>
+                <Pressable style={styles.previewCard} onPress={(e) => e.stopPropagation?.()}>
+                  {previewProduct ? (
+                    <ScrollView
+                      showsVerticalScrollIndicator={false}
+                      contentContainerStyle={styles.previewScroll}
+                    >
+                      <View style={styles.previewMedia}>
+                        {previewProduct.image_url ? (
+                          <Image
+                            source={{ uri: previewProduct.image_url }}
+                            style={styles.previewImg}
+                          />
+                        ) : (
+                          <View style={[styles.previewImg, styles.searchRowPh]}>
+                            <Ionicons name="flask-outline" size={36} color="#6366F1" />
+                          </View>
+                        )}
+                        <Pressable
+                          style={styles.previewClose}
+                          onPress={() => setPreviewId(null)}
+                          hitSlop={8}
+                        >
+                          <Ionicons name="close" size={18} color="#0F172A" />
+                        </Pressable>
+                      </View>
+                      <Text style={styles.previewTitle}>{previewProduct.name}</Text>
+                      {previewProduct.brand ? (
+                        <Text style={styles.previewBrand}>{previewProduct.brand}</Text>
+                      ) : null}
+                      <Text style={styles.previewCat}>
+                        {t(`care.catalog.categories.${previewProduct.category}`, {
+                          defaultValue: previewProduct.category,
+                        })}
+                      </Text>
+
+                      {previewProduct.purpose_uz ? (
+                        <View style={styles.previewSection}>
+                          <Text style={styles.previewSectionTitle}>{t("care.catalog.purpose")}</Text>
+                          <Text style={styles.previewBody}>{previewProduct.purpose_uz}</Text>
+                        </View>
+                      ) : null}
+                      {previewProduct.usage_uz ? (
+                        <View style={styles.previewSection}>
+                          <Text style={styles.previewSectionTitle}>{t("care.catalog.usage")}</Text>
+                          <Text style={styles.previewBody}>{previewProduct.usage_uz}</Text>
+                        </View>
+                      ) : null}
+                      {(previewProduct.ingredients?.length || previewProduct.ingredients_text) ? (
+                        <View style={styles.previewSection}>
+                          <Text style={styles.previewSectionTitle}>
+                            {t("care.catalog.ingredients")}
+                          </Text>
+                          <Text style={styles.previewIngredients} numberOfLines={8}>
+                            {previewProduct.ingredients?.length
+                              ? previewProduct.ingredients.join(", ")
+                              : previewProduct.ingredients_text}
+                          </Text>
+                        </View>
+                      ) : null}
+                      {previewProduct.pros_uz ? (
+                        <View style={styles.previewSection}>
+                          <Text style={styles.previewSectionTitle}>{t("care.catalog.pros")}</Text>
+                          <Text style={styles.previewBody}>{previewProduct.pros_uz}</Text>
+                        </View>
+                      ) : null}
+                      {previewProduct.warnings_uz ? (
+                        <View style={styles.previewSection}>
+                          <Text style={styles.previewSectionTitle}>{t("care.catalog.warnings")}</Text>
+                          <Text style={styles.previewWarn}>{previewProduct.warnings_uz}</Text>
                         </View>
                       ) : null}
 
-                      {prod.isUserAdded ? (
-                        <Pressable
-                          style={styles.featuredActionBtn}
-                          onPress={(e) => {
-                            e.stopPropagation();
-                            openProductGuide(prod);
-                          }}
-                          hitSlop={6}
-                          accessibilityLabel="Play guide"
-                        >
-                          <Ionicons name="play" size={13} color="#1F2937" style={{ marginLeft: 2 }} />
-                        </Pressable>
-                      ) : (
-                        <View style={{ width: 32 }} />
-                      )}
-                    </View>
-
-                    {/* Bottom Glass Overlay (Title, Price/Brand, Pink Arrow) */}
-                    <View style={styles.featuredBottomGlass}>
-                      <View style={styles.featuredBottomInfo}>
-                        <Text style={styles.featuredProdTitle} numberOfLines={1}>
-                          {prod.title}
-                        </Text>
-                        <Text style={styles.featuredProdPrice}>
-                          {prod.price}
-                        </Text>
-                      </View>
-
-                      <View style={styles.featuredArrowBtn}>
+                      <Pressable
+                        style={[
+                          styles.previewAddBtn,
+                          previewAdded && styles.previewAddBtnAdded,
+                        ]}
+                        onPress={() => void addFromSearch(previewProduct.id)}
+                      >
                         <Ionicons
-                          name={prod.isUserAdded ? "play" : "arrow-up"}
-                          size={14}
-                          color="#fff"
-                          style={prod.isUserAdded ? { marginLeft: 2 } : { transform: [{ rotate: "45deg" }] }}
+                          name={previewAdded ? "checkmark-circle" : "bag-add-outline"}
+                          size={16}
+                          color={previewAdded ? "#4F46E5" : "#fff"}
                         />
-                      </View>
-                    </View>
-                  </Pressable>
-                );
-              })}
-            </ScrollView>
-          </View>
-
-          {/* Bottom Sheet - Parvarish, Tarkib Skan, AI Assistant */}
-          <View style={styles.hubSheet}>
-            <View style={styles.reportHead}>
-              <Text style={styles.reportTitle}>{t("care.hubReport")}</Text>
-              <Pressable style={styles.reportFilter} onPress={openCatalog}>
-                <Text style={styles.reportFilterText}>{t("care.hubReportFilter")}</Text>
-                <Ionicons name="chevron-down" size={13} color="#1a1a1a" />
+                        <Text
+                          style={[
+                            styles.previewAddBtnText,
+                            previewAdded && styles.previewAddBtnTextAdded,
+                          ]}
+                        >
+                          {previewAdded
+                            ? t("care.myProducts.alreadyAdded")
+                            : t("care.myProducts.addFromCatalog")}
+                        </Text>
+                      </Pressable>
+                    </ScrollView>
+                  ) : null}
+                </Pressable>
               </Pressable>
-            </View>
-
-            <View style={styles.hubCards}>
-              <Pressable style={styles.hubCard} onPress={openParvarish}>
-                <View style={styles.hubCardHead}>
-                  <Text style={styles.hubCardTitle}>{t("care.hubParvarish")}</Text>
-                  <View style={[styles.hubCardIcon, styles.hubCardIconBlue]}>
-                    <Ionicons name="water" size={15} color="#3B82F6" />
-                  </View>
-                </View>
-                <Text style={styles.hubCardMetric} numberOfLines={1}>
-                  {t(`care.conditions.${quiz.condition}`)}
-                </Text>
-                <Text style={styles.hubCardSub} numberOfLines={2}>
-                  {t("care.hubParvarishSub")}
-                </Text>
-              </Pressable>
-
-              <Pressable style={styles.hubCard} onPress={openTarkib}>
-                <View style={styles.hubCardHead}>
-                  <Text style={styles.hubCardTitle}>{t("care.hubTarkib")}</Text>
-                  <View style={[styles.hubCardIcon, styles.hubCardIconRose]}>
-                    <Ionicons name="flask" size={15} color="#E11D48" />
-                  </View>
-                </View>
-                <Text style={styles.hubCardMetric} numberOfLines={1}>
-                  {t("care.hubTarkibMetric")}
-                </Text>
-                <Text style={styles.hubCardSub} numberOfLines={2}>
-                  {t("care.hubTarkibSub")}
-                </Text>
-              </Pressable>
-            </View>
-
-            <Pressable
-              style={styles.aiAssistant}
-              onPress={openAssistant}
-              accessibilityLabel={t("care.hubAiAssistant")}
+            </Modal>
+          </Animated.View>
+        ) : (
+          <View style={styles.hubDockOuter}>
+            <View
+              style={[
+                styles.hubSheet,
+                { paddingBottom: Math.max(insets.bottom, 14) },
+              ]}
             >
-              <LinearGradient
-                colors={["#8B7CFF", "#5B8CFF"]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.aiAssistantIcon}
+              <View style={styles.reportHead}>
+                <Text style={styles.reportTitle}>{t("care.hubReport")}</Text>
+                <Pressable style={styles.reportFilter} onPress={openMyProducts}>
+                  <Text style={styles.reportFilterText}>{t("care.myProducts.title")}</Text>
+                  <Ionicons name="chevron-forward" size={13} color="#1a1a1a" />
+                </Pressable>
+              </View>
+
+              <View style={styles.hubCards}>
+                <Pressable style={styles.hubCard} onPress={openParvarish}>
+                  <View style={styles.hubCardHead}>
+                    <Text style={styles.hubCardTitle}>{t("care.hubParvarish")}</Text>
+                    <View style={[styles.hubCardIcon, styles.hubCardIconBlue]}>
+                      <Ionicons name="water" size={14} color="#3B82F6" />
+                    </View>
+                  </View>
+                  <Text style={styles.hubCardMetric} numberOfLines={1}>
+                    {t(`care.conditions.${quiz.condition}`)}
+                  </Text>
+                  <Text style={styles.hubCardSub} numberOfLines={2}>
+                    {t("care.hubParvarishSub")}
+                  </Text>
+                </Pressable>
+
+                <Pressable style={styles.hubCard} onPress={openTarkib}>
+                  <View style={styles.hubCardHead}>
+                    <Text style={styles.hubCardTitle}>{t("care.hubTarkib")}</Text>
+                    <View style={[styles.hubCardIcon, styles.hubCardIconViolet]}>
+                      <Ionicons name="flask" size={14} color="#6366F1" />
+                    </View>
+                  </View>
+                  <Text style={styles.hubCardMetric} numberOfLines={1}>
+                    {t("care.hubTarkibMetric")}
+                  </Text>
+                  <Text style={styles.hubCardSub} numberOfLines={2}>
+                    {t("care.hubTarkibSub")}
+                  </Text>
+                </Pressable>
+              </View>
+
+              <Pressable
+                style={styles.aiAssistant}
+                onPress={openAssistant}
+                accessibilityLabel={t("care.hubAiAssistant")}
               >
-                <Ionicons name="sparkles" size={16} color="#fff" />
-              </LinearGradient>
-              <Text style={styles.aiAssistantText}>{t("care.hubAiAssistant")}</Text>
-              <Ionicons name="arrow-forward" size={16} color="#1a1a1a" />
-            </Pressable>
+                <LinearGradient
+                  colors={["#8B7CFF", "#5B8CFF"]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.aiAssistantIcon}
+                >
+                  <Ionicons name="sparkles" size={16} color="#fff" />
+                </LinearGradient>
+                <Text style={styles.aiAssistantText}>{t("care.hubAiAssistant")}</Text>
+                <Ionicons name="arrow-forward" size={16} color="#1a1a1a" />
+              </Pressable>
+            </View>
           </View>
-        </ScrollView>
+        )}
       </View>
     );
   }
@@ -852,7 +1469,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
   return (
     <View style={styles.routineRoot}>
       <LinearGradient
-        colors={["#EDE4FF", "#F7E8F0", "#F4F5F8"]}
+        colors={["#EDE4FF", "#EEF2FF", "#F4F5F8"]}
         start={{ x: 0.1, y: 0 }}
         end={{ x: 0.9, y: 0.55 }}
         style={StyleSheet.absoluteFill}
@@ -920,6 +1537,54 @@ const styles = StyleSheet.create({
   onboardPad: { flex: 1, paddingHorizontal: 20 },
   hubRoot: { flex: 1, backgroundColor: "#FFFFFF" },
   hubScroll: { flex: 1 },
+  addToast: {
+    position: "absolute",
+    top: 0,
+    left: 16,
+    right: 16,
+    zIndex: 40,
+    elevation: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 18,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "rgba(99,102,241,0.18)",
+    shadowColor: "#312E81",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.16,
+    shadowRadius: 18,
+  },
+  addToastImg: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: "#EEF2FF",
+  },
+  addToastBody: { flex: 1, minWidth: 0, gap: 1 },
+  addToastEyebrow: {
+    ...morphFont,
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#4F46E5",
+  },
+  addToastTitle: {
+    ...morphFont,
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#0F172A",
+  },
+  addToastCheck: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: "#4F46E5",
+    alignItems: "center",
+    justifyContent: "center",
+  },
   navBarRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -948,68 +1613,97 @@ const styles = StyleSheet.create({
     borderColor: "rgba(0,0,0,0.08)",
   },
   promoWrap: {
+    marginTop: 8,
     paddingHorizontal: 20,
-    marginTop: 2,
   },
   promoCard: {
-    borderRadius: 22,
-    padding: 14,
+    borderRadius: 28,
+    paddingVertical: 20,
+    paddingHorizontal: 18,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    minHeight: 116,
+    minHeight: 168,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.85)",
-    shadowColor: "#E11D48",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
+    borderColor: "rgba(99,102,241,0.12)",
+    shadowColor: "#4338CA",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.1,
+    shadowRadius: 18,
+    elevation: 4,
+    overflow: "hidden",
   },
   promoLeft: {
     flex: 1,
-    gap: 10,
-    paddingRight: 8,
+    gap: 12,
+    paddingRight: 10,
+    zIndex: 1,
+  },
+  promoEyebrow: {
+    ...morphFont,
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#6366F1",
+    letterSpacing: 0.6,
+    textTransform: "uppercase",
   },
   promoTitle: {
     ...morphFont,
-    fontSize: 18,
+    fontSize: 24,
     fontWeight: "800",
-    color: "#18181B",
-    lineHeight: 22,
-    letterSpacing: -0.3,
+    color: "#0F172A",
+    lineHeight: 28,
+    letterSpacing: -0.5,
+  },
+  promoChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "rgba(255,255,255,0.9)",
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  promoChipText: {
+    ...morphFont,
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#4F46E5",
   },
   promoBtn: {
-    backgroundColor: "#09090B",
+    backgroundColor: "#111827",
     borderRadius: 999,
-    paddingHorizontal: 14,
-    paddingVertical: 6.5,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
     alignSelf: "flex-start",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
   },
   promoBtnText: {
     ...morphFont,
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: "700",
     color: "#FFFFFF",
   },
   promoImg: {
-    width: 88,
-    height: 88,
-    borderRadius: 16,
-    backgroundColor: "rgba(255,255,255,0.4)",
+    width: 112,
+    height: 128,
+    borderRadius: 20,
+    backgroundColor: "rgba(255,255,255,0.45)",
   },
   dotsRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 5,
-    marginTop: 6,
+    marginTop: 10,
   },
   dotActive: {
     width: 18,
     height: 5,
     borderRadius: 2.5,
-    backgroundColor: "#E11D48",
+    backgroundColor: "#6366F1",
   },
   dotInactive: {
     width: 5,
@@ -1019,7 +1713,54 @@ const styles = StyleSheet.create({
   },
   searchSection: {
     paddingHorizontal: 20,
-    marginTop: 8,
+    marginTop: 10,
+  },
+  searchAssist: {
+    paddingHorizontal: 20,
+    paddingTop: 4,
+    paddingBottom: 8,
+    gap: 8,
+  },
+  searchAssistLabel: {
+    ...morphFont,
+    fontSize: 12,
+    fontWeight: "700",
+    color: "rgba(15,23,42,0.55)",
+  },
+  searchAssistChips: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingRight: 8,
+  },
+  searchAssistChip: {
+    height: 32,
+    paddingHorizontal: 12,
+    borderRadius: 999,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "rgba(15,23,42,0.08)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  searchAssistChipOn: {
+    backgroundColor: "#0F172A",
+    borderColor: "#0F172A",
+  },
+  searchAssistChipText: {
+    ...morphFont,
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#334155",
+  },
+  searchAssistChipTextOn: {
+    color: "#fff",
+  },
+  searchAssistHint: {
+    ...morphFont,
+    fontSize: 12,
+    lineHeight: 17,
+    color: "rgba(15,23,42,0.45)",
   },
   searchBar: {
     width: "100%",
@@ -1029,7 +1770,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     paddingLeft: 14,
     paddingRight: 5,
-    height: 46,
+    height: 48,
     borderWidth: 1,
     borderColor: "rgba(0,0,0,0.06)",
     shadowColor: "#000",
@@ -1037,26 +1778,312 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.03,
     shadowRadius: 6,
     elevation: 1,
+    gap: 8,
+  },
+  searchBarActive: {
+    borderColor: "rgba(79,70,229,0.35)",
+    shadowColor: "#4F46E5",
+    shadowOpacity: 0.1,
+  },
+  searchMain: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    height: "100%",
+  },
+  searchInput: {
+    ...morphFont,
+    flex: 1,
+    fontSize: 15,
+    color: "#0F172A",
+    paddingVertical: 0,
+    height: "100%",
   },
   searchPlaceholder: {
     ...morphFont,
     flex: 1,
-    marginLeft: 8,
     fontSize: 14,
     color: "#9CA3AF",
   },
+  searchCloseBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#F1F5F9",
+    marginRight: 2,
+  },
   filterBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: "#E11D48",
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    overflow: "hidden",
+  },
+  filterBtnGrad: {
+    flex: 1,
     alignItems: "center",
     justifyContent: "center",
   },
-  featuredActionBtnActive: {
-    backgroundColor: "#FFF1F2",
-    borderColor: "#FECDD3",
+  searchSheet: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "#FFFFFF",
+    borderTopLeftRadius: 22,
+    borderTopRightRadius: 22,
+    paddingTop: 8,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(0,0,0,0.06)",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -6 },
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    elevation: 16,
   },
+  searchSheetHandle: {
+    alignSelf: "center",
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "rgba(15,23,42,0.12)",
+    marginBottom: 10,
+  },
+  searchSheetTitle: {
+    ...morphFont,
+    paddingHorizontal: 16,
+    marginBottom: 8,
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#0F172A",
+  },
+  searchSheetList: {
+    paddingHorizontal: 12,
+    paddingBottom: 8,
+  },
+  searchEmpty: {
+    ...morphFont,
+    paddingVertical: 28,
+    textAlign: "center",
+    color: "rgba(15,23,42,0.45)",
+    fontSize: 13,
+  },
+  searchGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  searchCard: {
+    width: "47.5%",
+    flexGrow: 0,
+    maxWidth: "47.5%",
+    backgroundColor: "#F8FAFC",
+    borderRadius: 14,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "rgba(15,23,42,0.06)",
+    paddingBottom: 0,
+  },
+  searchCardMedia: {
+    width: "100%",
+    aspectRatio: 1.15,
+    backgroundColor: "#EEF2FF",
+    position: "relative",
+  },
+  searchCardImg: {
+    width: "100%",
+    height: "100%",
+  },
+  searchLikeBtn: {
+    position: "absolute",
+    top: 6,
+    right: 6,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: "rgba(255,255,255,0.95)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  searchLikeCount: {
+    position: "absolute",
+    left: 6,
+    bottom: 6,
+  },
+  searchLikeCountText: {
+    ...morphFont,
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#0F172A",
+  },
+  searchCardTitle: {
+    ...morphFont,
+    marginTop: 6,
+    paddingHorizontal: 8,
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#0F172A",
+    lineHeight: 14,
+    minHeight: 28,
+  },
+  searchCardBrand: {
+    ...morphFont,
+    marginTop: 1,
+    paddingHorizontal: 8,
+    fontSize: 10,
+    color: "rgba(15,23,42,0.5)",
+    marginBottom: 6,
+  },
+  searchAddBtnRow: {
+    paddingHorizontal: 8,
+    paddingBottom: 8,
+  },
+  searchAddBtn: {
+    height: 30,
+    borderRadius: 10,
+    backgroundColor: "#4F46E5",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 4,
+    paddingHorizontal: 8,
+  },
+  searchAddBtnAdded: {
+    backgroundColor: "#EEF2FF",
+    borderWidth: 1,
+    borderColor: "rgba(79,70,229,0.25)",
+  },
+  searchAddBtnDone: {
+    backgroundColor: "#4F46E5",
+  },
+  searchAddBtnText: {
+    ...morphFont,
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#fff",
+  },
+  searchAddBtnTextAdded: {
+    color: "#4F46E5",
+  },
+  searchAddBtnTextDone: {
+    color: "#fff",
+  },
+  previewBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(15,23,42,0.5)",
+    justifyContent: "flex-end",
+    padding: 12,
+  },
+  previewCard: {
+    backgroundColor: "#fff",
+    borderRadius: 22,
+    padding: 16,
+    maxHeight: "82%",
+  },
+  previewScroll: { gap: 6, paddingBottom: 8 },
+  previewMedia: {
+    width: "100%",
+    height: 160,
+    borderRadius: 16,
+    overflow: "hidden",
+    backgroundColor: "#EEF2FF",
+    marginBottom: 6,
+  },
+  previewImg: { width: "100%", height: "100%" },
+  previewClose: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "rgba(255,255,255,0.95)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  previewTitle: {
+    ...morphFont,
+    fontSize: 17,
+    fontWeight: "800",
+    color: "#0F172A",
+  },
+  previewBrand: {
+    ...morphFont,
+    fontSize: 13,
+    color: "rgba(15,23,42,0.55)",
+  },
+  previewCat: {
+    ...morphFont,
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#4F46E5",
+    marginBottom: 4,
+  },
+  previewSection: {
+    marginTop: 8,
+    padding: 12,
+    borderRadius: 14,
+    backgroundColor: "#F8FAFC",
+    gap: 4,
+  },
+  previewSectionTitle: {
+    ...morphFont,
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#64748B",
+    textTransform: "uppercase",
+    letterSpacing: 0.4,
+  },
+  previewBody: {
+    ...morphFont,
+    fontSize: 13,
+    lineHeight: 19,
+    color: "#334155",
+  },
+  previewIngredients: {
+    ...morphFont,
+    fontSize: 12,
+    lineHeight: 18,
+    color: "#475569",
+  },
+  previewWarn: {
+    ...morphFont,
+    fontSize: 12,
+    lineHeight: 17,
+    color: "#B45309",
+  },
+  previewUsage: {
+    ...morphFont,
+    fontSize: 12,
+    lineHeight: 17,
+    color: "rgba(15,23,42,0.55)",
+  },
+  previewAddBtn: {
+    marginTop: 12,
+    height: 48,
+    borderRadius: 14,
+    backgroundColor: "#4F46E5",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  previewAddBtnAdded: {
+    backgroundColor: "#EEF2FF",
+    borderWidth: 1,
+    borderColor: "rgba(79,70,229,0.25)",
+  },
+  previewAddBtnText: {
+    ...morphFont,
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#fff",
+  },
+  previewAddBtnTextAdded: {
+    color: "#4F46E5",
+  },
+  searchRowPh: { alignItems: "center", justifyContent: "center" },
   categoryScroll: {
     paddingHorizontal: 20,
     gap: 8,
@@ -1068,10 +2095,10 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
   catPillActive: {
-    backgroundColor: "#09090B",
+    backgroundColor: "#111827",
   },
   catPillInactive: {
-    backgroundColor: "rgba(255,255,255,0.85)",
+    backgroundColor: "rgba(255,255,255,0.9)",
     borderWidth: 1,
     borderColor: "rgba(0,0,0,0.06)",
   },
@@ -1090,22 +2117,36 @@ const styles = StyleSheet.create({
   featuredProductsScroll: {
     paddingHorizontal: 20,
     gap: 12,
-    paddingTop: 0,
-    paddingBottom: 10,
+    paddingTop: 4,
+    paddingBottom: 8,
+  },
+  featuredGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 12,
+    paddingHorizontal: 20,
+    paddingTop: 4,
+    paddingBottom: 8,
   },
   featuredCard: {
-    width: 175,
-    height: 215,
+    width: 172,
+    backgroundColor: "#FFFFFF",
     borderRadius: 22,
     overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "rgba(15,23,42,0.06)",
+    shadowColor: "#0F172A",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 3,
+  },
+  featuredMedia: {
+    width: "100%",
+    height: 172,
     position: "relative",
-    justifyContent: "space-between",
-    padding: 10,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
+    overflow: "hidden",
+    backgroundColor: "#EEF2FF",
   },
   featuredCardImg: {
     position: "absolute",
@@ -1116,91 +2157,81 @@ const styles = StyleSheet.create({
     width: "100%",
     height: "100%",
   },
-  featuredTopRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    zIndex: 2,
-  },
   featuredActionBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: "rgba(255,255,255,0.85)",
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: "rgba(255,255,255,0.95)",
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.95)",
+    borderColor: "rgba(255,255,255,1)",
+  },
+  featuredActionBtnActive: {
+    backgroundColor: "#EEF2FF",
+    borderColor: "#C7D2FE",
+  },
+  featuredAddBtn: {
+    position: "absolute",
+    top: 8,
+    right: 8,
+    zIndex: 2,
+  },
+  featuredSaveBtn: {
+    position: "absolute",
+    right: 8,
+    bottom: 8,
+    zIndex: 2,
+  },
+  featuredPlayBtn: {
+    position: "absolute",
+    right: 8,
+    bottom: 8,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: "#4F46E5",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 2,
   },
   featuredDurationPill: {
+    position: "absolute",
+    top: 8,
+    left: 8,
     flexDirection: "row",
     alignItems: "center",
     gap: 3,
-    backgroundColor: "rgba(255,255,255,0.85)",
-    paddingHorizontal: 8,
-    paddingVertical: 4.5,
+    backgroundColor: "rgba(255,255,255,0.95)",
+    paddingHorizontal: 7,
+    paddingVertical: 3,
     borderRadius: 999,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.95)",
+    zIndex: 2,
   },
   featuredDurationText: {
     ...morphFont,
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: "700",
     color: "#1F2937",
   },
-  featuredFitPill: {
-    flexDirection: "row",
-    alignItems: "center",
+  featuredMeta: {
+    paddingHorizontal: 12,
+    paddingTop: 10,
+    paddingBottom: 12,
     gap: 3,
-    backgroundColor: "rgba(255,255,255,0.88)",
-    paddingHorizontal: 8,
-    paddingVertical: 4.5,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: "rgba(124,58,237,0.2)",
-  },
-  featuredFitText: {
-    ...morphFont,
-    fontSize: 11,
-    fontWeight: "700",
-    color: "#7C3AED",
-  },
-  featuredBottomGlass: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    backgroundColor: "rgba(255,255,255,0.85)",
-    borderRadius: 16,
-    paddingHorizontal: 10,
-    paddingVertical: 7,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.95)",
-    zIndex: 2,
-  },
-  featuredBottomInfo: {
-    flex: 1,
-    marginRight: 6,
   },
   featuredProdTitle: {
     ...morphFont,
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: "600",
-    color: "#374151",
+    color: "#334155",
+    lineHeight: 16,
   },
   featuredProdPrice: {
     ...morphFont,
     fontSize: 14,
     fontWeight: "800",
-    color: "#111827",
-  },
-  featuredArrowBtn: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: "#E11D48",
-    alignItems: "center",
-    justifyContent: "center",
+    color: "#0F172A",
   },
   routineTop: { paddingHorizontal: 20, paddingBottom: 8, gap: 10 },
   routineTopTitle: { ...morphFont, fontSize: 16, fontWeight: "700", color: "#111" },
@@ -1212,69 +2243,83 @@ const styles = StyleSheet.create({
     letterSpacing: -0.6,
     lineHeight: 32,
   },
+  hubDockOuter: {
+    paddingHorizontal: 0,
+    paddingTop: 0,
+    backgroundColor: "transparent",
+  },
   hubSheet: {
-    marginTop: 4,
     backgroundColor: "#FFFFFF",
-    paddingHorizontal: 20,
-    paddingTop: 6,
+    paddingHorizontal: 14,
+    paddingTop: 14,
+    paddingBottom: 0,
     gap: 12,
+    minHeight: 300,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
+    overflow: "hidden",
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(0,0,0,0.06)",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 12,
   },
   hubSheetFlow: {
     marginTop: 12,
+    borderRadius: 26,
+    overflow: "hidden",
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    gap: 12,
   },
   reportHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  reportTitle: { ...morphFont, fontSize: 17, fontWeight: "700", color: "#111" },
+  reportTitle: { ...morphFont, fontSize: 15, fontWeight: "700", color: "#111" },
   reportFilter: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
     paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingVertical: 5,
     borderRadius: 999,
-    backgroundColor: "#F2F2F4",
+    backgroundColor: "#F1F5F9",
   },
   reportFilterText: { ...morphFont, fontSize: 11.5, fontWeight: "600", color: "#1a1a1a" },
-  hubCards: { flexDirection: "row", gap: 10 },
+  hubCards: { flexDirection: "row", gap: 8 },
   hubCard: {
     flex: 1,
-    minHeight: 120,
-    borderRadius: 20,
-    backgroundColor: "#FAFAFD",
-    padding: 14,
-    gap: 6,
+    height: 128,
+    borderRadius: 18,
+    backgroundColor: "#F8FAFC",
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    gap: 4,
     borderWidth: 1,
-    borderColor: "rgba(0,0,0,0.05)",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.03,
-    shadowRadius: 6,
-    elevation: 1,
+    borderColor: "rgba(15,23,42,0.06)",
   },
-  hubCardHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 },
-  hubCardIcon: { width: 32, height: 32, borderRadius: 16, alignItems: "center", justifyContent: "center" },
+  hubCardHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 6 },
+  hubCardIcon: { width: 28, height: 28, borderRadius: 14, alignItems: "center", justifyContent: "center" },
   hubCardIconBlue: { backgroundColor: "rgba(59,130,246,0.12)" },
-  hubCardIconRose: { backgroundColor: "rgba(225,29,72,0.12)" },
-  hubCardTitle: { ...morphFont, flex: 1, fontSize: 12.5, fontWeight: "600", color: "rgba(26,26,26,0.72)" },
-  hubCardMetric: { ...morphFont, fontSize: 19, fontWeight: "800", color: "#111", letterSpacing: -0.3 },
-  hubCardSub: { ...morphFont, fontSize: 11, lineHeight: 15, color: "rgba(26,26,26,0.48)", marginTop: "auto" },
+  hubCardIconViolet: { backgroundColor: "rgba(99,102,241,0.12)" },
+  hubCardTitle: { ...morphFont, flex: 1, fontSize: 11.5, fontWeight: "600", color: "rgba(26,26,26,0.65)" },
+  hubCardMetric: { ...morphFont, fontSize: 17, fontWeight: "800", color: "#0F172A", letterSpacing: -0.3 },
+  hubCardSub: { ...morphFont, fontSize: 10, lineHeight: 13, color: "rgba(26,26,26,0.45)", marginTop: "auto" },
   aiAssistant: {
-    height: 54,
-    borderRadius: 20,
-    backgroundColor: "#F9FAFD",
+    height: 64,
+    borderRadius: 18,
+    backgroundColor: "#F8FAFC",
     borderWidth: 1,
-    borderColor: "rgba(139, 92, 246, 0.16)",
+    borderColor: "rgba(99, 102, 241, 0.18)",
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 12,
     gap: 10,
-    shadowColor: "#8B5CF6",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    elevation: 1,
-    marginBottom: 4,
   },
-  aiAssistantIcon: { width: 38, height: 38, borderRadius: 19, alignItems: "center", justifyContent: "center" },
+  aiAssistantIcon: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center" },
   aiAssistantText: { ...morphFont, flex: 1, fontSize: 15, fontWeight: "600", color: "#111" },
   rowBetweenLight: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   onboardBadge: { ...morphFont, fontSize: 12, fontWeight: "600", color: "#5B4B8A" },

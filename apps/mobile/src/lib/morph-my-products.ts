@@ -1,5 +1,10 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import type { CareProduct } from "../api/care";
+import {
+  fetchMyCareProducts,
+  addMyCareProductApi,
+  removeMyCareProductApi,
+  type CareProduct,
+} from "../api/care";
 
 export type MyCareProduct = {
   id: number;
@@ -16,7 +21,11 @@ const ROUTINE_DONE_KEY = "mysaloon.morphAi.routineDone";
 const WEATHER_INTRO_KEY = "mysaloon.morphAi.weatherIntroSeen";
 const CARE_ONBOARDING_KEY = "mysaloon.morphAi.careOnboardingSeen";
 
-export async function loadMyProducts(): Promise<MyCareProduct[]> {
+async function saveLocal(rows: MyCareProduct[]) {
+  await AsyncStorage.setItem(MY_PRODUCTS_KEY, JSON.stringify(rows));
+}
+
+export async function loadMyProductsLocal(): Promise<MyCareProduct[]> {
   try {
     const raw = await AsyncStorage.getItem(MY_PRODUCTS_KEY);
     if (!raw) return [];
@@ -27,13 +36,46 @@ export async function loadMyProducts(): Promise<MyCareProduct[]> {
   }
 }
 
+/** Server + local cache. Auth bo‘lsa API ustuvor. */
+export async function loadMyProducts(): Promise<MyCareProduct[]> {
+  const local = await loadMyProductsLocal();
+  try {
+    const remote = await fetchMyCareProducts();
+    if (Array.isArray(remote)) {
+      const mapped: MyCareProduct[] = remote.map((r) => ({
+        id: r.id,
+        name: r.name,
+        brand: r.brand || "",
+        category: r.category || "other",
+        image_url: r.image_url,
+        added_at: r.added_at || new Date().toISOString(),
+        source: (r.source as MyCareProduct["source"]) || "catalog",
+      }));
+      await saveLocal(mapped);
+      return mapped;
+    }
+  } catch {
+    // offline / guest — local
+  }
+  return local;
+}
+
 export async function addMyProduct(
   product: Pick<MyCareProduct, "id" | "name" | "brand" | "category" | "image_url"> & {
     source?: MyCareProduct["source"];
   },
 ): Promise<MyCareProduct[]> {
-  const rows = await loadMyProducts();
-  if (rows.some((r) => r.id === product.id)) return rows;
+  const source = product.source ?? "catalog";
+  try {
+    await addMyCareProductApi({ product_id: product.id, source });
+  } catch {
+    // local fallback
+  }
+  const rows = await loadMyProductsLocal();
+  if (rows.some((r) => r.id === product.id)) {
+    // refresh from server if possible
+    return loadMyProducts();
+  }
   const next: MyCareProduct = {
     id: product.id,
     name: product.name,
@@ -41,16 +83,46 @@ export async function addMyProduct(
     category: product.category,
     image_url: product.image_url,
     added_at: new Date().toISOString(),
-    source: product.source ?? "catalog",
+    source,
   };
   const merged = [next, ...rows];
-  await AsyncStorage.setItem(MY_PRODUCTS_KEY, JSON.stringify(merged));
-  return merged;
+  await saveLocal(merged);
+  try {
+    return await loadMyProducts();
+  } catch {
+    return merged;
+  }
 }
 
 export async function removeMyProduct(id: number): Promise<MyCareProduct[]> {
-  const rows = (await loadMyProducts()).filter((r) => r.id !== id);
-  await AsyncStorage.setItem(MY_PRODUCTS_KEY, JSON.stringify(rows));
+  try {
+    await removeMyCareProductApi(id);
+  } catch {
+    // offline / guest — faqat local
+  }
+  const rows = (await loadMyProductsLocal()).filter((r) => r.id !== id);
+  await saveLocal(rows);
+  // Serverdan qayta yuklash — o‘chirilganini tasdiqlash; xato bo‘lsa local qaytadi
+  try {
+    const remote = await fetchMyCareProducts();
+    if (Array.isArray(remote)) {
+      const mapped: MyCareProduct[] = remote.map((r) => ({
+        id: r.id,
+        name: r.name,
+        brand: r.brand || "",
+        category: r.category || "other",
+        image_url: r.image_url,
+        added_at: r.added_at || new Date().toISOString(),
+        source: (r.source as MyCareProduct["source"]) || "catalog",
+      }));
+      // Agar API o‘chirgan bo‘lsa remote da yo‘q; agar API fail bo‘lsa ham local filter ustuvor
+      const synced = mapped.filter((r) => r.id !== id);
+      await saveLocal(synced);
+      return synced;
+    }
+  } catch {
+    // keep local
+  }
   return rows;
 }
 
@@ -59,7 +131,10 @@ export async function isMyProduct(id: number): Promise<boolean> {
   return rows.some((r) => r.id === id);
 }
 
-export function careProductToMy(product: CareProduct, source: MyCareProduct["source"] = "catalog"): MyCareProduct {
+export function careProductToMy(
+  product: CareProduct,
+  source: MyCareProduct["source"] = "catalog",
+): MyCareProduct {
   return {
     id: product.id,
     name: product.name,
@@ -93,24 +168,33 @@ export async function setRoutineTaskDone(
   taskId: string,
   done: boolean,
 ): Promise<Record<string, boolean>> {
-  const prev = await loadRoutineDone(date);
-  const next = { ...prev, [taskId]: done };
-  await AsyncStorage.setItem(routineKey(date), JSON.stringify(next));
-  return next;
+  const map = await loadRoutineDone(date);
+  if (done) map[taskId] = true;
+  else delete map[taskId];
+  await AsyncStorage.setItem(routineKey(date), JSON.stringify(map));
+  return map;
 }
 
 export async function hasSeenWeatherIntro(): Promise<boolean> {
-  return (await AsyncStorage.getItem(WEATHER_INTRO_KEY)) === "1";
+  try {
+    return (await AsyncStorage.getItem(WEATHER_INTRO_KEY)) === "1";
+  } catch {
+    return false;
+  }
 }
 
-export async function markWeatherIntroSeen(): Promise<void> {
+export async function markWeatherIntroSeen() {
   await AsyncStorage.setItem(WEATHER_INTRO_KEY, "1");
 }
 
 export async function hasSeenCareOnboarding(): Promise<boolean> {
-  return (await AsyncStorage.getItem(CARE_ONBOARDING_KEY)) === "1";
+  try {
+    return (await AsyncStorage.getItem(CARE_ONBOARDING_KEY)) === "1";
+  } catch {
+    return false;
+  }
 }
 
-export async function markCareOnboardingSeen(): Promise<void> {
+export async function markCareOnboardingSeen() {
   await AsyncStorage.setItem(CARE_ONBOARDING_KEY, "1");
 }
