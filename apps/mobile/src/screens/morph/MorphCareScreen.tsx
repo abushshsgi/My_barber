@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { LinearGradient } from "expo-linear-gradient";
+import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -905,7 +906,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
   if (viewMode === "hub") {
     return (
       <View style={styles.hubRoot}>
-        <StatusBar style="light" />
+        <StatusBar style="dark" />
         {addToast ? (
           <Animated.View
             pointerEvents="none"
@@ -929,7 +930,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
             </View>
           </Animated.View>
         ) : null}
-        <View style={[StyleSheet.absoluteFill, { backgroundColor: "#000000" }]} />
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: "#FAFAFA" }]} />
 
         <ScrollView
           style={styles.hubScroll}
@@ -1002,14 +1003,14 @@ export function MorphCareScreen({ navigation, route }: Props) {
           {/* Search Bar — filter icon ichida */}
           <View style={styles.searchSection}>
             <View style={[styles.searchBar, searchOpen && styles.searchBarActive]}>
-              <Ionicons name="search-outline" size={18} color={searchOpen ? "#FFFFFF" : "rgba(255,255,255,0.45)"} />
+              <Ionicons name="search-outline" size={18} color={searchOpen ? "#111111" : "#737373"} />
               {searchOpen ? (
                 <TextInput
                   ref={searchInputRef}
                   value={searchQuery}
                   onChangeText={setSearchQuery}
                   placeholder={t("care.catalog.search")}
-                  placeholderTextColor="rgba(255,255,255,0.4)"
+                  placeholderTextColor="#737373"
                   style={styles.searchInput}
                   autoFocus
                   returnKeyType="search"
@@ -1026,7 +1027,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
                   onPress={closeSearch}
                   accessibilityLabel={t("common.back")}
                 >
-                  <Ionicons name="close" size={16} color="#FFFFFF" />
+                  <Ionicons name="close" size={16} color="#111111" />
                 </Pressable>
               ) : (
                 <Pressable
@@ -1138,13 +1139,13 @@ export function MorphCareScreen({ navigation, route }: Props) {
                       <Ionicons
                         name={liked ? "heart" : "heart-outline"}
                         size={14}
-                        color={liked ? "#EF4444" : "#FFFFFF"}
+                        color={liked ? "#EF4444" : "#111111"}
                       />
                     </Pressable>
 
                     {isMine && prod.duration ? (
                       <View style={styles.featuredDurationPill}>
-                        <Ionicons name="time-outline" size={10} color="#FFFFFF" />
+                        <Ionicons name="time-outline" size={10} color="#111111" />
                         <Text style={styles.featuredDurationText}>{prod.duration}</Text>
                       </View>
                     ) : null}
@@ -1171,7 +1172,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
                         hitSlop={6}
                         accessibilityLabel={t("care.myProducts.addShort", { defaultValue: "Qo‘shish" })}
                       >
-                        <Ionicons name="add" size={14} color="#FFFFFF" />
+                        <Ionicons name="add" size={14} color="#111111" />
                       </Pressable>
                     )}
 
@@ -1304,7 +1305,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
                 <Text style={styles.reportTitle}>{t("care.hubReport")}</Text>
                 <Pressable style={styles.reportFilter} onPress={openMyProducts}>
                   <Text style={styles.reportFilterText}>{t("care.myProducts.title")}</Text>
-                  <Ionicons name="chevron-forward" size={13} color="rgba(255,255,255,0.7)" />
+                  <Ionicons name="chevron-forward" size={13} color="#737373" />
                 </Pressable>
               </View>
 
@@ -1320,7 +1321,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
                   <View style={styles.hubCardBody}>
                     <View style={styles.hubCardHead}>
                       <View style={styles.hubCardIconLg}>
-                        <Ionicons name="sparkles" size={18} color="#FFFFFF" />
+                        <Ionicons name="sparkles" size={18} color="#111111" />
                       </View>
                       <View style={styles.hubStatusBadge}>
                         <Text style={styles.hubStatusText}>
@@ -1349,7 +1350,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
                   <View style={styles.hubCardBody}>
                     <View style={styles.hubCardHead}>
                       <View style={styles.hubCardIconLg}>
-                        <Ionicons name="scan-outline" size={18} color="#FFFFFF" />
+                        <Ionicons name="scan-outline" size={18} color="#111111" />
                       </View>
                       <View style={styles.hubStatusBadge}>
                         <Text style={styles.hubStatusText}>
@@ -1382,7 +1383,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
                   <Ionicons name="sparkles" size={16} color="#fff" />
                 </LinearGradient>
                 <Text style={styles.aiAssistantText}>{t("care.hubAiAssistant")}</Text>
-                <Ionicons name="arrow-forward" size={16} color="rgba(255,255,255,0.7)" />
+                <Ionicons name="arrow-forward" size={16} color="#111111" />
               </Pressable>
             </View>
           </View>
@@ -1497,7 +1498,7 @@ const styles = StyleSheet.create({
   center: { alignItems: "center", justifyContent: "center" },
   pad: { flex: 1, paddingHorizontal: 20 },
   onboardPad: { flex: 1, paddingHorizontal: 20 },
-  hubRoot: { flex: 1, backgroundColor: "#000000" },
+  hubRoot: { flex: 1, backgroundColor: "#FAFAFA" },
   hubScroll: { flex: 1 },
   addToast: {
     position: "absolute",
@@ -1775,17 +1776,17 @@ const styles = StyleSheet.create({
     width: "100%",
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#161616",
+    backgroundColor: "#FFFFFF",
     borderRadius: 999,
     paddingLeft: 14,
     paddingRight: 5,
     height: 48,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.1)",
+    borderColor: "rgba(17,17,17,0.12)",
     gap: 8,
   },
   searchBarActive: {
-    borderColor: "rgba(255,255,255,0.28)",
+    borderColor: "#111111",
   },
   searchMain: {
     flex: 1,
@@ -1797,7 +1798,7 @@ const styles = StyleSheet.create({
     ...morphFont,
     flex: 1,
     fontSize: 15,
-    color: "#FFFFFF",
+    color: "#111111",
     paddingVertical: 0,
     height: "100%",
   },
@@ -1805,7 +1806,7 @@ const styles = StyleSheet.create({
     ...morphFont,
     flex: 1,
     fontSize: 14,
-    color: "rgba(255,255,255,0.4)",
+    color: "#737373",
   },
   searchCloseBtn: {
     width: 34,
@@ -1813,7 +1814,7 @@ const styles = StyleSheet.create({
     borderRadius: 17,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(255,255,255,0.1)",
+    backgroundColor: "#F0F0F0",
     marginRight: 2,
   },
   filterBtn: {
@@ -2153,30 +2154,30 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
   catPillActive: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#111111",
   },
   catPillInactive: {
-    backgroundColor: "transparent",
+    backgroundColor: "#FFFFFF",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.16)",
+    borderColor: "rgba(17,17,17,0.12)",
   },
   catText: {
     ...morphFont,
     fontSize: 13,
   },
   catTextActive: {
-    color: "#0A0A0A",
+    color: "#FFFFFF",
     fontWeight: "700",
   },
   catTextInactive: {
-    color: "rgba(255,255,255,0.72)",
+    color: "#111111",
     fontWeight: "600",
   },
   featuredProductsScroll: {
     paddingHorizontal: 16,
-    gap: 14,
-    paddingTop: 6,
-    paddingBottom: 10,
+    gap: 12,
+    paddingTop: 4,
+    paddingBottom: 6,
   },
   featuredGrid: {
     flexDirection: "row",
@@ -2187,20 +2188,20 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   featuredCard: {
-    width: 200,
-    height: 350,
-    borderRadius: 24,
+    width: 168,
+    height: 268,
+    borderRadius: 22,
     overflow: "hidden",
-    backgroundColor: "#141414",
+    backgroundColor: "#FFFFFF",
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(255,255,255,0.08)",
+    borderColor: "rgba(17,17,17,0.08)",
   },
   featuredMedia: {
     width: "100%",
     height: "100%",
     position: "relative",
     overflow: "hidden",
-    backgroundColor: "#1A1A1A",
+    backgroundColor: "#F0F0F0",
   },
   featuredCardImg: {
     position: "absolute",
@@ -2215,38 +2216,38 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
   },
   featuredActionBtn: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: "rgba(0,0,0,0.35)",
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: "rgba(255,255,255,0.92)",
     alignItems: "center",
     justifyContent: "center",
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(255,255,255,0.2)",
+    borderColor: "rgba(17,17,17,0.08)",
   },
   featuredActionBtnActive: {
-    backgroundColor: "rgba(0,0,0,0.5)",
-    borderColor: "rgba(255,255,255,0.28)",
+    backgroundColor: "#FFFFFF",
+    borderColor: "rgba(17,17,17,0.12)",
   },
   featuredAddBtn: {
     position: "absolute",
-    top: 12,
-    right: 12,
+    top: 10,
+    right: 10,
     zIndex: 2,
   },
   featuredSaveBtn: {
     position: "absolute",
-    right: 12,
-    bottom: 78,
+    right: 10,
+    bottom: 64,
     zIndex: 2,
   },
   featuredPlayBtn: {
     position: "absolute",
-    right: 12,
-    bottom: 78,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    right: 10,
+    bottom: 64,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     backgroundColor: "#FFFFFF",
     alignItems: "center",
     justifyContent: "center",
@@ -2254,49 +2255,47 @@ const styles = StyleSheet.create({
   },
   featuredDurationPill: {
     position: "absolute",
-    top: 12,
-    left: 12,
+    top: 10,
+    left: 10,
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    backgroundColor: "rgba(0,0,0,0.4)",
-    paddingHorizontal: 9,
-    paddingVertical: 5,
+    backgroundColor: "rgba(255,255,255,0.92)",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
     borderRadius: 999,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(255,255,255,0.18)",
     zIndex: 2,
   },
   featuredDurationText: {
     ...morphFont,
     fontSize: 10,
     fontWeight: "700",
-    color: "#FFFFFF",
+    color: "#111111",
   },
   featuredMeta: {
     position: "absolute",
     left: 0,
     right: 0,
     bottom: 0,
-    paddingHorizontal: 14,
-    paddingTop: 28,
-    paddingBottom: 16,
-    gap: 4,
+    paddingHorizontal: 12,
+    paddingTop: 24,
+    paddingBottom: 12,
+    gap: 3,
     zIndex: 2,
   },
   featuredProdTitle: {
     ...morphFont,
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "600",
     color: "#FFFFFF",
-    lineHeight: 19,
+    lineHeight: 17,
     letterSpacing: -0.2,
   },
   featuredProdBrand: {
     ...morphFont,
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: "600",
-    color: "rgba(255,255,255,0.55)",
+    color: "rgba(255,255,255,0.65)",
     letterSpacing: 0.4,
     textTransform: "uppercase",
   },
@@ -2322,19 +2321,19 @@ const styles = StyleSheet.create({
     backgroundColor: "transparent",
   },
   hubSheet: {
-    backgroundColor: "#111111",
+    backgroundColor: "#FFFFFF",
     paddingHorizontal: 14,
-    paddingTop: 14,
+    paddingTop: 10,
     paddingBottom: 0,
-    gap: 12,
-    minHeight: 300,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    gap: 8,
+    minHeight: 236,
+    borderTopLeftRadius: 22,
+    borderTopRightRadius: 22,
     borderBottomLeftRadius: 0,
     borderBottomRightRadius: 0,
     overflow: "hidden",
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(255,255,255,0.08)",
+    borderColor: "rgba(17,17,17,0.08)",
   },
   hubSheetFlow: {
     marginTop: 12,
@@ -2346,43 +2345,43 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   reportHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  reportTitle: { ...morphFont, fontSize: 15, fontWeight: "700", color: "#FFFFFF" },
+  reportTitle: { ...morphFont, fontSize: 14, fontWeight: "700", color: "#111111" },
   reportFilter: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
     paddingHorizontal: 10,
-    paddingVertical: 5,
+    paddingVertical: 4,
     borderRadius: 999,
-    backgroundColor: "rgba(255,255,255,0.08)",
+    backgroundColor: "#F0F0F0",
   },
-  reportFilterText: { ...morphFont, fontSize: 11.5, fontWeight: "600", color: "rgba(255,255,255,0.8)" },
+  reportFilterText: { ...morphFont, fontSize: 11, fontWeight: "600", color: "#737373" },
   hubCards: { flexDirection: "row", gap: 10 },
   hubCard: {
     flex: 1,
-    minHeight: 168,
-    borderRadius: 20,
-    backgroundColor: "#1A1A1A",
+    minHeight: 118,
+    borderRadius: 16,
+    backgroundColor: "#FAFAFA",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.08)",
+    borderColor: "rgba(17,17,17,0.08)",
     overflow: "hidden",
   },
   hubCardArt: {
     position: "absolute",
-    right: -8,
+    right: -6,
     bottom: -4,
-    width: 88,
-    height: 96,
-    borderRadius: 16,
-    opacity: 0.92,
+    width: 64,
+    height: 72,
+    borderRadius: 12,
+    opacity: 0.88,
   },
   hubCardBody: {
     flex: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+    gap: 2,
     zIndex: 1,
-    paddingRight: 72,
+    paddingRight: 64,
   },
   hubCardHead: {
     flexDirection: "row",
@@ -2399,59 +2398,59 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   hubCardIconLg: {
-    width: 36,
-    height: 36,
-    borderRadius: 12,
+    width: 30,
+    height: 30,
+    borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(255,255,255,0.1)",
+    backgroundColor: "#FFFFFF",
   },
   hubStatusBadge: {
     borderRadius: 999,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    backgroundColor: "rgba(255,255,255,0.1)",
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    backgroundColor: "#FFFFFF",
   },
   hubStatusText: {
     ...morphFont,
-    fontSize: 9.5,
+    fontSize: 9,
     fontWeight: "700",
     letterSpacing: 0.2,
-    color: "rgba(255,255,255,0.7)",
+    color: "#737373",
   },
   hubCardTitle: {
     ...morphFont,
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "600",
-    color: "rgba(255,255,255,0.5)",
+    color: "#737373",
   },
   hubCardMetric: {
     ...morphFont,
-    fontSize: 18,
+    fontSize: 15,
     fontWeight: "800",
-    color: "#FFFFFF",
+    color: "#111111",
     letterSpacing: -0.3,
   },
   hubCardSub: {
     ...morphFont,
-    fontSize: 11,
-    lineHeight: 14,
-    color: "rgba(255,255,255,0.42)",
+    fontSize: 10,
+    lineHeight: 13,
+    color: "#737373",
     marginTop: "auto",
   },
   aiAssistant: {
-    height: 64,
-    borderRadius: 18,
-    backgroundColor: "#1A1A1A",
+    height: 52,
+    borderRadius: 16,
+    backgroundColor: "#FAFAFA",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.1)",
+    borderColor: "rgba(17,17,17,0.08)",
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 12,
     gap: 10,
   },
-  aiAssistantIcon: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center" },
-  aiAssistantText: { ...morphFont, flex: 1, fontSize: 15, fontWeight: "600", color: "#FFFFFF" },
+  aiAssistantIcon: { width: 32, height: 32, borderRadius: 16, alignItems: "center", justifyContent: "center" },
+  aiAssistantText: { ...morphFont, flex: 1, fontSize: 14, fontWeight: "600", color: "#111111" },
   rowBetweenLight: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   onboardBadge: { ...morphFont, fontSize: 12, fontWeight: "600", color: "#111111" },
   onboardH1: { ...morphFont, fontSize: 28, fontWeight: "700", color: "#111", letterSpacing: -0.6, lineHeight: 34 },
