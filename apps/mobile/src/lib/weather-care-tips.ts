@@ -263,7 +263,7 @@ export function careHubLayout(
   const avail = Math.max(360, height - dockClearance);
 
   const searchBlock = rs(48, scale);
-  const catBlock = rs(34, scale);
+  const catBlock = 20;
   const reportHead = rs(22, scale);
   const gaps = rs(14, scale);
   const chrome = searchBlock + catBlock + reportHead + gaps;

@@ -1106,15 +1106,15 @@ export function MorphCareScreen({ navigation, route }: Props) {
           </View>
 
           {/* Category Pills (All, Hair Cut, Face Care, Eye care, etc.) */}
+          <View style={styles.categoryRow}>
           <ScrollView
             horizontal
             nestedScrollEnabled={true}
             showsHorizontalScrollIndicator={false}
-            style={{ height: hubLayout.catBlock, flexGrow: 0, flexShrink: 0 }}
+            style={styles.categoryScrollView}
             contentContainerStyle={[
               styles.categoryScroll,
               searchOpen && styles.categoryScrollCompact,
-              { height: hubLayout.catBlock, alignItems: "center" },
             ]}
           >
             {CATEGORIES.map((cat) => {
@@ -1137,6 +1137,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
               );
             })}
           </ScrollView>
+          </View>
 
           {/* Featured — qidiruv ochiq bo‘lsa yashirin */}
           {!searchOpen ? (
@@ -2290,7 +2291,22 @@ const styles = StyleSheet.create({
     color: "#111111",
   },
   searchRowPh: { alignItems: "center", justifyContent: "center" },
+  categoryRow: {
+    height: 20,
+    maxHeight: 20,
+    flexGrow: 0,
+    flexShrink: 0,
+    overflow: "hidden",
+  },
+  categoryScrollView: {
+    height: 20,
+    maxHeight: 20,
+    flexGrow: 0,
+    flexShrink: 0,
+  },
   categoryScroll: {
+    height: 20,
+    maxHeight: 20,
     paddingHorizontal: scale(16),
     gap: moderateScale(8),
     alignItems: "center",
@@ -2299,8 +2315,8 @@ const styles = StyleSheet.create({
     paddingVertical: 0,
   },
   catPill: {
-    height: verticalScale(30),
-    paddingHorizontal: scale(14),
+    height: 20,
+    paddingHorizontal: scale(12),
     alignItems: "center",
     justifyContent: "center",
     alignSelf: "center",
@@ -2316,7 +2332,8 @@ const styles = StyleSheet.create({
   },
   catText: {
     ...morphFont,
-    fontSize: fontSize(13),
+    fontSize: 11,
+    lineHeight: 14,
   },
   catTextActive: {
     color: "#FFFFFF",
