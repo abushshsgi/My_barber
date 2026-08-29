@@ -134,7 +134,7 @@ export function CareProductPreviewSheet({
   const isPage = mode === "page";
   const lang = (i18n.language || "uz").startsWith("ru") ? "ru" : "uz";
   const fb = FIT_FALLBACK[lang];
-  const [tarkibOpen, setTarkibOpen] = useState(true);
+  const [panel, setPanel] = useState<"info" | "tarkib">("info");
 
   const imageUri = useMemo(
     () => resolveMediaUrl(product.image_url, { width: 800 }) || product.image_url,
@@ -159,19 +159,96 @@ export function CareProductPreviewSheet({
   const notSuitable = product.not_suitable_for || [];
 
   const fitTitle = t("care.preview.fitTitle", { defaultValue: fb.fitTitle });
-  const yourHair = t("care.preview.yourHair", { defaultValue: fb.yourHair });
   const fitVerdict = t(`care.preview.fit.${tone.labelKey}`, {
     defaultValue: fb[tone.labelKey],
   });
 
-  const toggleTarkib = () => {
+  const openTarkib = () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    setTarkibOpen((v) => !v);
+    setPanel("tarkib");
   };
 
-  const body = (
+  const backToInfo = () => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setPanel("info");
+  };
+
+  const tarkibPanel = (
+    <View style={styles.tarkibFull}>
+      <LinearGradient
+        colors={["#16161A", "#0A0A0C"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
+        style={StyleSheet.absoluteFill}
+      />
+      <View style={styles.tarkibNav}>
+        <Pressable style={styles.tarkibBack} onPress={backToInfo} hitSlop={8}>
+          <Ionicons name="chevron-back" size={20} color="#fff" />
+        </Pressable>
+        <View style={styles.tarkibBadge}>
+          <Ionicons name="flask" size={12} color="#C4B5FD" />
+          <Text style={styles.tarkibBadgeText}>
+            {t("care.catalog.ingredients", { defaultValue: "Tarkib" })}
+          </Text>
+        </View>
+        <Pressable style={styles.tarkibBack} onPress={onClose} hitSlop={8}>
+          <Ionicons name="close" size={18} color="#fff" />
+        </Pressable>
+      </View>
+
+      <Text style={styles.tarkibProduct} numberOfLines={2}>
+        {product.name}
+      </Text>
+      {product.brand ? <Text style={styles.tarkibBrand}>{product.brand}</Text> : null}
+
+      <View style={styles.tarkibScoreRow}>
+        <Text style={[styles.tarkibScore, { color: tone.color }]}>{fit}</Text>
+        <Text style={styles.tarkibScoreDenom}>/ 100</Text>
+      </View>
+      <Text style={[styles.tarkibVerdict, { color: tone.color }]}>{fitVerdict}</Text>
+      <Text style={styles.tarkibHint}>
+        {t("care.routine.fitYou", { pct: fit, defaultValue: `${fit}% mos` })} ·{" "}
+        {t("ingredient.ingredientsCount", {
+          count: ingredients.length || 0,
+          defaultValue: fb.ingredientsCount.replace("{{count}}", String(ingredients.length)),
+        })}
+      </Text>
+
+      {product.warnings_uz?.trim() ? (
+        <View style={styles.tarkibWarn}>
+          <Ionicons name="warning-outline" size={14} color="#FDA4AF" />
+          <Text style={styles.tarkibWarnText}>{product.warnings_uz}</Text>
+        </View>
+      ) : null}
+
+      {product.pros_uz?.trim() ? (
+        <View style={styles.tarkibGood}>
+          <Ionicons name="checkmark-circle-outline" size={14} color="#6EE7B7" />
+          <Text style={styles.tarkibGoodText}>{product.pros_uz}</Text>
+        </View>
+      ) : null}
+
+      <Text style={styles.tarkibListTitle}>
+        {t("ingredient.listTitle", { defaultValue: "Ingredientlar" })}
+      </Text>
+      {ingredients.length > 0 ? (
+        <View style={styles.ingGrid}>
+          {ingredients.map((ing, i) => (
+            <View key={`${ing}-${i}`} style={styles.ingChip}>
+              <Text style={styles.ingChipText}>{ing}</Text>
+            </View>
+          ))}
+        </View>
+      ) : (
+        <Text style={styles.tarkibEmpty}>
+          {t("care.catalog.empty", { defaultValue: "Tarkib ma’lumoti yo‘q" })}
+        </Text>
+      )}
+    </View>
+  );
+
+  const infoBody = (
     <>
-      {/* Hero image */}
       <View style={[styles.hero, isPage && styles.heroPage]}>
         {imageUri ? (
           <Image source={{ uri: imageUri }} style={styles.heroImg} contentFit="cover" />
@@ -207,10 +284,19 @@ export function CareProductPreviewSheet({
       <Text style={styles.title}>{product.name}</Text>
       {product.brand ? <Text style={styles.brand}>{product.brand}</Text> : null}
 
-      {/* Light fit strip */}
       <View style={styles.fitLite}>
-        <View style={[styles.fitRingLite, { borderColor: tone.color === "#A78BFA" ? "#4F46E5" : tone.color }]}>
-          <Text style={[styles.fitPctLite, { color: tone.color === "#A78BFA" ? "#4F46E5" : tone.color }]}>
+        <View
+          style={[
+            styles.fitRingLite,
+            { borderColor: tone.color === "#A78BFA" ? "#4F46E5" : tone.color },
+          ]}
+        >
+          <Text
+            style={[
+              styles.fitPctLite,
+              { color: tone.color === "#A78BFA" ? "#4F46E5" : tone.color },
+            ]}
+          >
             {fit}%
           </Text>
         </View>
@@ -255,85 +341,29 @@ export function CareProductPreviewSheet({
         </View>
       ) : null}
 
-      {/* Tarkib — qora UI (tarkib page uslubi) */}
-      <Pressable style={styles.tarkibCard} onPress={toggleTarkib}>
+      {/* Tarkib CTA — bosilganda alohida panel */}
+      <Pressable style={styles.tarkibCta} onPress={openTarkib}>
         <LinearGradient
-          colors={["#1A1A1F", "#0C0C0E"]}
+          colors={["#1F1F24", "#121216"]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={StyleSheet.absoluteFill}
         />
-        <View style={styles.tarkibHead}>
-          <View style={styles.tarkibBadgeRow}>
-            <View style={styles.tarkibBadge}>
-              <Ionicons name="flask" size={12} color="#C4B5FD" />
-              <Text style={styles.tarkibBadgeText}>
-                {t("care.catalog.ingredients", { defaultValue: "Tarkib" })}
-              </Text>
-            </View>
-            <Ionicons
-              name={tarkibOpen ? "chevron-up" : "chevron-down"}
-              size={18}
-              color="rgba(255,255,255,0.45)"
-            />
-          </View>
-
-          <View style={styles.tarkibScoreRow}>
-            <Text style={[styles.tarkibScore, { color: tone.color }]}>{fit}</Text>
-            <Text style={styles.tarkibScoreDenom}>/ 100</Text>
-          </View>
-          <Text style={[styles.tarkibVerdict, { color: tone.color }]}>{fitVerdict}</Text>
-          <Text style={styles.tarkibHint}>
-            {t("care.routine.fitYou", { pct: fit, defaultValue: `${fit}% mos` })} ·{" "}
-            {t("ingredient.ingredientsCount", {
-              count: ingredients.length || 0,
-              defaultValue: fb.ingredientsCount.replace("{{count}}", String(ingredients.length)),
-            })}
+        <View style={styles.tarkibCtaIcon}>
+          <Ionicons name="flask" size={18} color="#C4B5FD" />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.tarkibCtaTitle}>
+            {t("care.catalog.ingredients", { defaultValue: "Tarkib" })}
+          </Text>
+          <Text style={styles.tarkibCtaSub}>
+            {t("care.preview.tarkibTap", { defaultValue: fb.tarkibTap })}
+            {ingredients.length > 0
+              ? ` · ${ingredients.length} ${lang === "ru" ? "ингр." : "ta"}`
+              : ""}
           </Text>
         </View>
-
-        {tarkibOpen ? (
-          <View style={styles.tarkibBody}>
-            {product.warnings_uz?.trim() ? (
-              <View style={styles.tarkibWarn}>
-                <Ionicons name="warning-outline" size={14} color="#FDA4AF" />
-                <Text style={styles.tarkibWarnText}>{product.warnings_uz}</Text>
-              </View>
-            ) : null}
-
-            {product.pros_uz?.trim() ? (
-              <View style={styles.tarkibGood}>
-                <Ionicons name="checkmark-circle-outline" size={14} color="#6EE7B7" />
-                <Text style={styles.tarkibGoodText}>{product.pros_uz}</Text>
-              </View>
-            ) : null}
-
-            {ingredients.length > 0 ? (
-              <View style={styles.ingGrid}>
-                {ingredients.slice(0, 24).map((ing, i) => (
-                  <View key={`${ing}-${i}`} style={styles.ingChip}>
-                    <Text style={styles.ingChipText} numberOfLines={1}>
-                      {ing}
-                    </Text>
-                  </View>
-                ))}
-                {ingredients.length > 24 ? (
-                  <View style={styles.ingChip}>
-                    <Text style={styles.ingChipText}>+{ingredients.length - 24}</Text>
-                  </View>
-                ) : null}
-              </View>
-            ) : (
-              <Text style={styles.tarkibEmpty}>
-                {t("care.catalog.empty", { defaultValue: "Tarkib ma’lumoti yo‘q" })}
-              </Text>
-            )}
-          </View>
-        ) : (
-          <Text style={styles.tarkibTapHint}>
-            {t("care.preview.tarkibTap", { defaultValue: fb.tarkibTap })}
-          </Text>
-        )}
+        <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.45)" />
       </Pressable>
 
       {(suitable.length > 0 || notSuitable.length > 0) ? (
@@ -438,20 +468,30 @@ export function CareProductPreviewSheet({
   );
 
   return (
-    <View style={[styles.card, isPage && styles.cardPage]}>
-      <StatusBar style="dark" />
-      {!isPage ? <View style={styles.grab} /> : null}
+    <View style={[styles.card, isPage && styles.cardPage, panel === "tarkib" && styles.cardTarkib]}>
+      <StatusBar style={panel === "tarkib" ? "light" : "dark"} />
+      {panel === "info" && !isPage ? <View style={styles.grab} /> : null}
       <ScrollView
         style={styles.scrollFlex}
         showsVerticalScrollIndicator={false}
         nestedScrollEnabled
         keyboardShouldPersistTaps="handled"
         bounces={false}
-        contentContainerStyle={styles.scroll}
+        contentContainerStyle={[styles.scroll, panel === "tarkib" && styles.scrollTarkib]}
       >
-        {body}
+        {panel === "tarkib" ? tarkibPanel : infoBody}
       </ScrollView>
-      {actions}
+      {panel === "info" ? actions : null}
+      {panel === "tarkib" ? (
+        <View style={[styles.actions, styles.actionsTarkib, { paddingBottom: Math.max(bottomInset, 10) }]}>
+          <Pressable style={styles.tarkibBackBtn} onPress={backToInfo}>
+            <Ionicons name="arrow-back" size={16} color="#fff" />
+            <Text style={styles.tarkibBackBtnText}>
+              {t("common.back", { defaultValue: "Orqaga" })}
+            </Text>
+          </Pressable>
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -586,19 +626,63 @@ const styles = StyleSheet.create({
   chipText: { ...morphFont, fontSize: 11.5, fontWeight: "600", color: "#475569" },
   chipTextOk: { color: "#059669" },
   chipTextBad: { color: "#DC2626" },
-  tarkibCard: {
-    borderRadius: 22,
+  cardTarkib: {
+    backgroundColor: "#0A0A0C",
+  },
+  scrollTarkib: {
+    paddingTop: 4,
+    flexGrow: 1,
+  },
+  tarkibCta: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    borderRadius: 18,
+    overflow: "hidden",
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+    minHeight: 64,
+  },
+  tarkibCtaIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(196,181,253,0.16)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  tarkibCtaTitle: {
+    ...morphFont,
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#fff",
+  },
+  tarkibCtaSub: {
+    ...morphFont,
+    fontSize: 12,
+    color: "rgba(255,255,255,0.45)",
+    marginTop: 2,
+  },
+  tarkibFull: {
+    borderRadius: 20,
     overflow: "hidden",
     padding: 16,
-    gap: 12,
-    minHeight: 120,
+    gap: 10,
+    minHeight: 360,
   },
-  tarkibHead: { gap: 4 },
-  tarkibBadgeRow: {
+  tarkibNav: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 6,
+    marginBottom: 4,
+  },
+  tarkibBack: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "rgba(255,255,255,0.1)",
+    alignItems: "center",
+    justifyContent: "center",
   },
   tarkibBadge: {
     flexDirection: "row",
@@ -616,13 +700,26 @@ const styles = StyleSheet.create({
     color: "#C4B5FD",
     letterSpacing: 0.3,
   },
-  tarkibScoreRow: { flexDirection: "row", alignItems: "flex-end", gap: 4 },
+  tarkibProduct: {
+    ...morphFont,
+    fontSize: 18,
+    fontWeight: "800",
+    color: "#fff",
+    letterSpacing: -0.3,
+  },
+  tarkibBrand: {
+    ...morphFont,
+    fontSize: 13,
+    color: "rgba(255,255,255,0.45)",
+    marginTop: -6,
+  },
+  tarkibScoreRow: { flexDirection: "row", alignItems: "flex-end", gap: 4, marginTop: 8 },
   tarkibScore: {
     ...morphFont,
-    fontSize: 40,
+    fontSize: 44,
     fontWeight: "800",
     letterSpacing: -1,
-    lineHeight: 44,
+    lineHeight: 48,
   },
   tarkibScoreDenom: {
     ...morphFont,
@@ -633,16 +730,23 @@ const styles = StyleSheet.create({
   },
   tarkibVerdict: {
     ...morphFont,
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: "700",
   },
   tarkibHint: {
     ...morphFont,
     fontSize: 12,
     color: "rgba(255,255,255,0.45)",
-    marginTop: 2,
   },
-  tarkibBody: { gap: 10, marginTop: 4 },
+  tarkibListTitle: {
+    ...morphFont,
+    marginTop: 8,
+    fontSize: 12,
+    fontWeight: "700",
+    color: "rgba(255,255,255,0.4)",
+    textTransform: "uppercase",
+    letterSpacing: 0.4,
+  },
   tarkibWarn: {
     flexDirection: "row",
     gap: 8,
@@ -698,10 +802,27 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "rgba(255,255,255,0.4)",
   },
-  tarkibTapHint: {
+  actionsTarkib: {
+    backgroundColor: "#0A0A0C",
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: "rgba(255,255,255,0.08)",
+    paddingTop: 10,
+  },
+  tarkibBackBtn: {
+    flex: 1,
+    height: 48,
+    borderRadius: 14,
+    backgroundColor: "rgba(255,255,255,0.12)",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  tarkibBackBtnText: {
     ...morphFont,
-    fontSize: 12,
-    color: "rgba(255,255,255,0.4)",
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#fff",
   },
   grid: {
     flexDirection: "row",
