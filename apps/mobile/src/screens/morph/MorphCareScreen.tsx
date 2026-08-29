@@ -2413,7 +2413,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingTop: 10,
     paddingBottom: 0,
-    gap: 10,
+    gap: 18,
     borderTopLeftRadius: 22,
     borderTopRightRadius: 22,
     borderBottomLeftRadius: 0,
@@ -2431,7 +2431,13 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     gap: 12,
   },
-  reportHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  reportHead: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 16,
+    marginBottom: 4,
+  },
   reportTitle: { ...morphFont, fontSize: 14, fontWeight: "700", color: "#111111" },
   reportFilter: {
     flexDirection: "row",
@@ -2445,7 +2451,9 @@ const styles = StyleSheet.create({
   reportFilterText: { ...morphFont, fontSize: 11, fontWeight: "600", color: "#737373" },
   hubCards: {
     flexDirection: "row",
-    gap: 8,
+    gap: 12,
+    justifyContent: "flex-start",
+    alignItems: "flex-start",
   },
   hubCard: {
     flex: 1,
@@ -2470,10 +2478,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingTop: 10,
     paddingBottom: 10,
-    gap: 2,
+    gap: 12,
     zIndex: 1,
     paddingRight: 58,
     justifyContent: "flex-start",
+    alignItems: "flex-start",
   },
   hubCardHead: {
     flexDirection: "row",

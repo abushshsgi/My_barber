@@ -254,8 +254,8 @@ export function careHubLayout(width: number, height: number) {
   const tall = height >= 900;
   const narrow = width < 360;
 
-  // Kartochkalar target 140; kichik (SE/Redmi mini) ekranlarda ham 140
-  const hubCardH = 140;
+  // Kartochkalar target 150
+  const hubCardH = 150;
   // AI qatori biroz balandroq
   const aiH = short ? 50 : tall ? 58 : 54;
   const promoH = short ? 168 : tall ? 200 : width >= 428 ? 192 : 184;
