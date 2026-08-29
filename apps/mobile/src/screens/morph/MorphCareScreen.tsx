@@ -947,6 +947,9 @@ export function MorphCareScreen({ navigation, route }: Props) {
           contentContainerStyle={{
             paddingTop: searchOpen ? insets.top + 6 : 0,
             paddingBottom: searchOpen ? 16 : 0,
+            gap: 12,
+            justifyContent: "flex-start",
+            alignItems: "stretch",
           }}
           nestedScrollEnabled={true}
           keyboardShouldPersistTaps="handled"
@@ -1538,7 +1541,7 @@ const styles = StyleSheet.create({
   pad: { flex: 1, paddingHorizontal: 20 },
   onboardPad: { flex: 1, paddingHorizontal: 20 },
   hubRoot: { flex: 1, backgroundColor: "#FAFAFA" },
-  hubScroll: { flex: 1 },
+  hubScroll: { height: 800 },
   addToast: {
     position: "absolute",
     top: 0,
