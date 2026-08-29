@@ -2326,7 +2326,7 @@ const styles = StyleSheet.create({
     paddingTop: 10,
     paddingBottom: 0,
     gap: 8,
-    minHeight: 236,
+    minHeight: 350,
     borderTopLeftRadius: 22,
     borderTopRightRadius: 22,
     borderBottomLeftRadius: 0,
