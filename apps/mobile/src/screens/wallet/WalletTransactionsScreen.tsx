@@ -25,7 +25,7 @@ const TABS = [
   { id: "out" as const, label: "Chiqim" },
 ];
 
-const TONES = ["#F5D0C5", "#C7D2FE", "#BBF7D0", "#FBCFE8", "#FDE68A"];
+const TONES = ["#E5E5E5", "#D4D4D4", "#A3A3A3", "#F0F0F0", "#737373"];
 
 function tone(id: string) {
   let h = 0;
@@ -63,7 +63,7 @@ export function WalletTransactionsScreen({ navigation }: Props) {
 
   return (
     <View style={[styles.root, { paddingBottom: insets.bottom }]}>
-      <LinearGradient colors={["#EEF2FF", "#F7F5F2"]} style={[styles.hero, { paddingTop: insets.top + 6 }]}>
+      <LinearGradient colors={["#F0F0F0", "#FAFAFA"]} style={[styles.hero, { paddingTop: insets.top + 6 }]}>
         <View style={styles.header}>
           <Pressable style={styles.backBtn} onPress={() => navigation.goBack()} hitSlop={8}>
             <Ionicons name="chevron-back" size={22} color="#111" />
@@ -157,7 +157,7 @@ export function WalletTransactionsScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: "#F7F5F2" },
+  root: { flex: 1, backgroundColor: "#FAFAFA" },
   hero: { paddingHorizontal: 16, paddingBottom: 14 },
   header: { flexDirection: "row", alignItems: "center", marginBottom: 14 },
   backBtn: { width: 40, height: 40, alignItems: "center", justifyContent: "center" },

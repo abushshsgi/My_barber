@@ -27,8 +27,8 @@ import type { WalletStackParamList } from "../../navigation/WalletStack";
 
 type Props = NativeStackScreenProps<WalletStackParamList, "WalletGift">;
 
-const PURPLE = "#7C5CFF";
-const AVATAR = ["#F5C542", "#A78BFA", "#34D399", "#FB923C", "#60A5FA", "#F472B6"];
+const PURPLE = "#111111";
+const AVATAR = ["#111111", "#737373", "#A3A3A3", "#D4D4D4", "#525252", "#E5E5E5"];
 
 const HINTS = [
   { icon: "person-outline" as const, label: "Ism", hint: "" },
@@ -116,7 +116,7 @@ export function WalletGiftScreen({ navigation }: Props) {
   return (
     <View style={[styles.root, { paddingBottom: insets.bottom + 12 }]}>
       <LinearGradient
-        colors={["#EDE7FF", "#F3EEFF", "#F7F5FF"]}
+        colors={["#F0F0F0", "#F3EEFF", "#FAFAFA"]}
         style={[styles.hero, { paddingTop: insets.top + 6 }]}
       >
         <View style={styles.header}>
@@ -214,7 +214,7 @@ export function WalletGiftScreen({ navigation }: Props) {
         ) : searching && results.length === 0 ? (
           <View style={styles.emptyBox}>
             <View style={styles.emptyIcon}>
-              <Ionicons name="search-outline" size={28} color="#C4B5FD" />
+              <Ionicons name="search-outline" size={28} color="#737373" />
             </View>
             <Text style={styles.emptyTitle}>Topilmadi</Text>
             <Text style={styles.empty}>
@@ -241,7 +241,7 @@ export function WalletGiftScreen({ navigation }: Props) {
         ) : history.length === 0 ? (
           <View style={styles.emptyBox}>
             <View style={styles.emptyIcon}>
-              <Ionicons name="people-outline" size={28} color="#C4B5FD" />
+              <Ionicons name="people-outline" size={28} color="#737373" />
             </View>
             <Text style={styles.emptyTitle}>Qidiruvni boshlang</Text>
             <Text style={styles.empty}>
@@ -287,7 +287,7 @@ function HistoryRow({
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: "#F7F5FF" },
+  root: { flex: 1, backgroundColor: "#FAFAFA" },
   hero: {
     paddingHorizontal: 16,
     paddingBottom: 16,
@@ -342,7 +342,7 @@ const styles = StyleSheet.create({
     height: 52,
     borderWidth: 1.5,
     borderColor: "rgba(124,92,255,0.22)",
-    shadowColor: "#7C5CFF",
+    shadowColor: "#111111",
     shadowOpacity: 0.1,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 4 },
@@ -373,7 +373,7 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: "#EDE9FE",
+    backgroundColor: "#F0F0F0",
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 14,
@@ -394,7 +394,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 14,
     marginBottom: 8,
-    shadowColor: "#7C5CFF",
+    shadowColor: "#111111",
     shadowOpacity: 0.05,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 2 },
@@ -414,7 +414,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 999,
-    backgroundColor: "#EDE9FE",
+    backgroundColor: "#F0F0F0",
   },
   badgeText: { fontSize: 10, fontWeight: "700", color: PURPLE },
   meta: { marginTop: 2, fontSize: 12, color: "#9CA3AF", letterSpacing: 0.6 },

@@ -435,7 +435,7 @@ export function MorphTryOnScreen({ navigation }: Props) {
         transition={300}
       />
       <LinearGradient
-        colors={["rgba(10,10,10,0.15)", "rgba(10,10,10,0.55)", "#1A1A1A"]}
+        colors={["rgba(17,17,17,0.08)", "rgba(17,17,17,0.35)", "#FAFAFA"]}
         locations={[0, 0.42, 0.72]}
         style={StyleSheet.absoluteFill}
       />
@@ -486,7 +486,7 @@ export function MorphTryOnScreen({ navigation }: Props) {
                 <Ionicons
                   name="time-outline"
                   size={16}
-                  color={historyOpen ? "#FFF" : "#0A0A0A"}
+                  color={historyOpen ? "#FFF" : "#111111"}
                 />
               </Pressable>
             </View>
@@ -550,7 +550,7 @@ export function MorphTryOnScreen({ navigation }: Props) {
                   onPress={() => void startWith("gallery")}
                 >
                   {busy === "gallery" ? (
-                    <ActivityIndicator color="#0A0A0A" />
+                    <ActivityIndicator color="#111111" />
                   ) : (
                     <>
                       <GalleryStackIcon size={26} />
@@ -583,12 +583,12 @@ export function MorphTryOnScreen({ navigation }: Props) {
                   accessibilityLabel="Barcha tarix"
                 >
                   <Text style={styles.seeAllText}>Barchasi</Text>
-                  <Ionicons name="chevron-forward" size={14} color="#0A0A0A" />
+                  <Ionicons name="chevron-forward" size={14} color="#111111" />
                 </Pressable>
               </View>
 
               {historyLoading && !historyFetched ? (
-                <ActivityIndicator color="#0A0A0A" style={{ marginTop: 28 }} />
+                <ActivityIndicator color="#111111" style={{ marginTop: 28 }} />
               ) : historyError ? (
                 <View style={styles.historyEmpty}>
                   <Text style={styles.historyEmptyText}>{historyError}</Text>
@@ -670,7 +670,7 @@ export function MorphTryOnScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: "#1A1A1A" },
+  root: { flex: 1, backgroundColor: "#FAFAFA" },
   centerCopy: {
     alignItems: "center",
     paddingHorizontal: 24,
@@ -742,7 +742,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   historyIconBtnOn: {
-    backgroundColor: "#0A0A0A",
+    backgroundColor: "#111111",
   },
   steps: {
     flexDirection: "row",
@@ -773,7 +773,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  stepDotOn: { backgroundColor: "#0A0A0A" },
+  stepDotOn: { backgroundColor: "#111111" },
   stepNum: {
     fontSize: 11,
     fontWeight: "700",
@@ -787,7 +787,7 @@ const styles = StyleSheet.create({
     color: "#A0A0A0",
     includeFontPadding: false,
   },
-  stepLabelOn: { color: "#0A0A0A", fontWeight: "700" },
+  stepLabelOn: { color: "#111111", fontWeight: "700" },
   errorBox: {
     backgroundColor: "rgba(185,28,28,0.08)",
     borderRadius: 10,
@@ -803,7 +803,7 @@ const styles = StyleSheet.create({
   },
   errorCta: {
     alignSelf: "flex-start",
-    backgroundColor: "#0A0A0A",
+    backgroundColor: "#111111",
     borderRadius: 999,
     paddingHorizontal: 10,
     paddingVertical: 5,
@@ -822,7 +822,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 6,
-    backgroundColor: "#0A0A0A",
+    backgroundColor: "#111111",
     borderRadius: 28,
     minHeight: 72,
     paddingHorizontal: 8,
@@ -851,7 +851,7 @@ const styles = StyleSheet.create({
     includeFontPadding: false,
   },
   gridTitleDark: {
-    color: "#0A0A0A",
+    color: "#111111",
     fontWeight: "700",
     fontSize: 12,
     textAlign: "center",
@@ -870,7 +870,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   historyTitle: {
-    color: "#0A0A0A",
+    color: "#111111",
     fontSize: 15,
     fontWeight: "800",
     letterSpacing: -0.2,
@@ -891,7 +891,7 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
   },
   seeAllText: {
-    color: "#0A0A0A",
+    color: "#111111",
     fontSize: 12,
     fontWeight: "700",
   },
@@ -903,12 +903,12 @@ const styles = StyleSheet.create({
   historyCard: {
     borderRadius: 16,
     overflow: "hidden",
-    backgroundColor: "#1A1A1A",
+    backgroundColor: "#FAFAFA",
   },
   historyImgWrap: {
     width: "100%",
     aspectRatio: 3 / 4,
-    backgroundColor: "#1A1A1A",
+    backgroundColor: "#FAFAFA",
     position: "relative",
   },
   historyImg: {
@@ -940,7 +940,7 @@ const styles = StyleSheet.create({
     minHeight: 120,
   },
   historyEmptyTitle: {
-    color: "#0A0A0A",
+    color: "#111111",
     fontSize: 16,
     fontWeight: "800",
   },
@@ -952,7 +952,7 @@ const styles = StyleSheet.create({
   },
   historyRetry: {
     marginTop: 10,
-    backgroundColor: "#0A0A0A",
+    backgroundColor: "#111111",
     borderRadius: 999,
     paddingHorizontal: 14,
     paddingVertical: 8,
@@ -963,7 +963,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    backgroundColor: "#0A0A0A",
+    backgroundColor: "#111111",
     borderRadius: 14,
     minHeight: 46,
     paddingHorizontal: 14,

@@ -26,9 +26,9 @@ import type { WalletStackParamList } from "../../navigation/WalletStack";
 
 type Props = NativeStackScreenProps<WalletStackParamList, "WalletGiftAmount">;
 
-const PURPLE = "#7C5CFF";
+const PURPLE = "#111111";
 const PRESETS = [50_000, 100_000, 200_000, 500_000, 1_000_000] as const;
-const AVATAR = ["#F5C542", "#A78BFA", "#34D399", "#FB923C", "#60A5FA", "#F472B6"];
+const AVATAR = ["#111111", "#737373", "#A3A3A3", "#D4D4D4", "#525252", "#E5E5E5"];
 const CARD_W = Math.min(Dimensions.get("window").width * 0.72, 280);
 const CARD_GAP = 14;
 const SIDE_PAD = (Dimensions.get("window").width - CARD_W) / 2;
@@ -147,7 +147,7 @@ export function WalletGiftAmountScreen({ navigation, route }: Props) {
 
   return (
     <LinearGradient
-      colors={["#EDE7FF", "#F7F5FF", "#FFFFFF"]}
+      colors={["#F0F0F0", "#FAFAFA", "#FFFFFF"]}
       locations={[0, 0.35, 1]}
       style={styles.root}
     >
@@ -323,7 +323,7 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     paddingHorizontal: 14,
     paddingVertical: 14,
-    shadowColor: "#7C5CFF",
+    shadowColor: "#111111",
     shadowOpacity: 0.08,
     shadowRadius: 16,
     shadowOffset: { width: 0, height: 6 },

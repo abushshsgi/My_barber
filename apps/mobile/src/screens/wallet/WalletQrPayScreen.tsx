@@ -147,8 +147,8 @@ export function WalletQrPayScreen({ navigation }: Props) {
           <Text style={styles.sheetTitle}>To'lash va yuborish</Text>
           <View style={styles.sheetRow}>
             <Pressable style={styles.sheetItem} onPress={() => setPhase("scan")}>
-              <View style={[styles.sheetIcon, { backgroundColor: "#EEF2FF" }]}>
-                <Ionicons name="qr-code-outline" size={26} color="#4338CA" />
+              <View style={[styles.sheetIcon, { backgroundColor: "#F0F0F0" }]}>
+                <Ionicons name="qr-code-outline" size={26} color="#111111" />
               </View>
               <Text style={styles.sheetLabel}>Kod skaner</Text>
             </Pressable>
@@ -157,7 +157,7 @@ export function WalletQrPayScreen({ navigation }: Props) {
               onPress={() => navigation.navigate("WalletGift")}
             >
               <View style={[styles.sheetIcon, { backgroundColor: "#FEF3C7" }]}>
-                <Ionicons name="wallet-outline" size={26} color="#B45309" />
+                <Ionicons name="wallet-outline" size={26} color="#111111" />
               </View>
               <Text style={styles.sheetLabel}>O'tkazma</Text>
             </Pressable>
@@ -234,7 +234,7 @@ export function WalletQrPayScreen({ navigation }: Props) {
         <View style={{ width: 40 }} />
       </View>
 
-      <LinearGradient colors={["#111827", "#1F2937"]} style={styles.payCard}>
+      <LinearGradient colors={["#111827", "#111111"]} style={styles.payCard}>
         <Text style={styles.payTo}>Kimga</Text>
         <Text style={styles.payName}>{resolved?.barber.full_name || "—"}</Text>
         <Text style={styles.payBal}>Balans: {formatSomLabel(me.balance)}</Text>
@@ -333,7 +333,7 @@ const styles = StyleSheet.create({
     width: 120,
     height: 160,
     borderRadius: 22,
-    backgroundColor: "#DBEAFE",
+    backgroundColor: "#F0F0F0",
     borderWidth: 6,
     borderColor: "#93C5FD",
     alignItems: "center",

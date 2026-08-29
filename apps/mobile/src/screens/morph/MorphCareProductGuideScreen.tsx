@@ -296,7 +296,7 @@ export function MorphCareProductGuideScreen({ navigation, route }: Props) {
 
           <Animated.View style={[styles.timerCircle, { transform: [{ scale: pulseAnim }] }]}>
             <LinearGradient
-              colors={isRunning ? ["#E11D48", "#FB7185"] : ["#09090B", "#27272A"]}
+              colors={isRunning ? ["#111111", "#737373"] : ["#09090B", "#27272A"]}
               style={StyleSheet.absoluteFill}
             />
             <Text style={styles.timerText}>{formatTime(timeLeft)}</Text>
@@ -349,7 +349,7 @@ export function MorphCareProductGuideScreen({ navigation, route }: Props) {
                   <Text style={styles.stepDesc}>{item.desc}</Text>
                 </View>
                 <View style={styles.stepIconWrap}>
-                  <Ionicons name={item.icon} size={20} color="#E11D48" />
+                  <Ionicons name={item.icon} size={20} color="#111111" />
                 </View>
               </View>
             ))}
@@ -370,7 +370,7 @@ export function MorphCareProductGuideScreen({ navigation, route }: Props) {
         {/* Complete button */}
         <Pressable style={styles.completeBtn} onPress={handleMarkDone}>
           <LinearGradient
-            colors={["#E11D48", "#BE123C"]}
+            colors={["#111111", "#111111"]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.completeBtnInner}
@@ -444,7 +444,7 @@ const styles = StyleSheet.create({
     ...morphFont,
     fontSize: 10,
     fontWeight: "800",
-    color: "#E11D48",
+    color: "#111111",
     letterSpacing: 0.5,
   },
   heroBrand: {
@@ -466,7 +466,7 @@ const styles = StyleSheet.create({
     padding: 20,
     alignItems: "center",
     marginTop: 16,
-    shadowColor: "#E11D48",
+    shadowColor: "#111111",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.08,
     shadowRadius: 14,
@@ -486,7 +486,7 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#E11D48",
+    shadowColor: "#111111",
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.25,
     shadowRadius: 12,
@@ -540,7 +540,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#09090B",
   },
   pauseBtn: {
-    backgroundColor: "#E11D48",
+    backgroundColor: "#111111",
   },
   mainActionBtnText: {
     ...morphFont,
@@ -583,7 +583,7 @@ const styles = StyleSheet.create({
     ...morphFont,
     fontSize: 14,
     fontWeight: "800",
-    color: "#E11D48",
+    color: "#111111",
   },
   stepContent: { flex: 1, gap: 2 },
   stepTitle: {

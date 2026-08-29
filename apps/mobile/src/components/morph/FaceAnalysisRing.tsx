@@ -46,7 +46,7 @@ function cardsFromAnalyze(analyze: AiStyleAnalyzeResponse): MetricCard[] {
       label: "Yuz",
       detail: faceShapeLabel(analyze.face_shape),
       percent: toPercent(analyze.face_confidence, 0.86),
-      color: "#E11D74",
+      color: "#111111",
       track,
     },
     {

@@ -148,7 +148,7 @@ export function InstagramShareModal({
         )}
       >
         <div
-          className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-pink-500/25 via-purple-500/10 to-transparent"
+          className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-black/20 via-neutral-500/10 to-transparent"
           aria-hidden
         />
 
@@ -190,7 +190,7 @@ export function InstagramShareModal({
                 key={index}
                 className="flex gap-3 rounded-2xl border border-white/8 bg-white/[0.04] px-3.5 py-3"
               >
-                <span className="grid size-7 shrink-0 place-items-center rounded-full bg-gradient-to-br from-pink-500 to-purple-600 text-[11px] font-bold text-white">
+                <span className="grid size-7 shrink-0 place-items-center rounded-full bg-[#111111] text-[11px] font-bold text-white">
                   {index === 0 ? (
                     native ? (
                       <Instagram className="size-3.5" />
@@ -216,8 +216,8 @@ export function InstagramShareModal({
             }}
             className={cn(
               "mt-5 flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl",
-              "bg-gradient-to-r from-pink-500 via-fuchsia-500 to-purple-600",
-              "text-sm font-bold text-white shadow-lg shadow-fuchsia-500/20",
+              "bg-[#111111]",
+              "text-sm font-bold text-white shadow-lg shadow-black/20",
               "transition hover:brightness-110 active:scale-[0.98]",
             )}
           >
@@ -285,7 +285,7 @@ export function InstagramStoryShareButton({
         onClick={() => void onClick()}
         className={cn(
           "inline-flex min-h-11 items-center justify-center gap-1.5 rounded-2xl",
-          "bg-gradient-to-r from-pink-500 via-fuchsia-500 to-purple-600",
+          "bg-[#111111]",
           "px-4 text-[13px] font-bold text-white touch-manipulation",
           "active:scale-[0.98] disabled:opacity-50",
           className,

@@ -50,7 +50,7 @@ export function useShellTheme(): ShellTheme {
     surface: colors.surface,
     card: colors.surface,
     border: colors.border,
-    accent: "#0A84FF",
+    accent: "#111111",
     iconTile: colors.surface,
     destructive: "#FF3B30",
     status: "dark",

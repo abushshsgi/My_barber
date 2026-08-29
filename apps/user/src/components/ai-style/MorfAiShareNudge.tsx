@@ -71,7 +71,7 @@ export function MorfAiShareNudge({
           onClick={onShare}
           className={cn(
             "inline-flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-2xl",
-            "bg-gradient-to-r from-pink-500 via-fuchsia-500 to-purple-600 px-3",
+            "bg-[#111111] px-3",
             "text-[12px] font-bold text-white touch-manipulation",
             "transition-opacity duration-200 active:opacity-90",
             "disabled:cursor-not-allowed disabled:opacity-50",

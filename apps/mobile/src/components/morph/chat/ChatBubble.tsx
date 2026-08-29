@@ -55,7 +55,7 @@ function TypingDots() {
       accessibilityLabel="typing"
     >
       <View style={styles.typingIcon}>
-        <Ionicons name="sparkles" size={12} color="#8B5CF6" />
+        <Ionicons name="sparkles" size={12} color="#111111" />
       </View>
       <View style={styles.dots}>
         <Dot delay={0} />
@@ -132,7 +132,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255, 255, 255, 0.09)",
     borderWidth: 1,
     borderColor: "rgba(255, 255, 255, 0.12)",
-    shadowColor: "#8B5CF6",
+    shadowColor: "#111111",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 6,
@@ -161,7 +161,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255, 255, 255, 0.9)",
     borderWidth: 1,
     borderColor: "rgba(139, 92, 246, 0.2)",
-    shadowColor: "#8B5CF6",
+    shadowColor: "#111111",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 6,
@@ -171,7 +171,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(24, 24, 27, 0.8)",
     borderWidth: 1,
     borderColor: "rgba(167, 139, 250, 0.3)",
-    shadowColor: "#8B5CF6",
+    shadowColor: "#111111",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 8,
@@ -195,6 +195,6 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: "#A78BFA",
+    backgroundColor: "#111111",
   },
 });

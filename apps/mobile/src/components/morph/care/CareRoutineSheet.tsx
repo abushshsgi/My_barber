@@ -12,7 +12,11 @@ import {
   View,
 } from "react-native";
 import { useTranslation } from "react-i18next";
-import type { CareProduct } from "../../../api/care";
+import {
+  generateCarePlan,
+  type AiCarePlan,
+  type CareProduct,
+} from "../../../api/care";
 import {
   buildDailyRoutine,
   estimateProductFit,
@@ -56,6 +60,29 @@ const TASK_ICONS: Record<RoutineTask["icon"], keyof typeof Ionicons.glyphMap> = 
   cut: "cut-outline",
 };
 
+function mapAiTasks(
+  plan: AiCarePlan | null,
+  slot: RoutineSlot,
+): RoutineTask[] | null {
+  if (!plan) return null;
+  const rows = plan[slot];
+  if (!Array.isArray(rows) || rows.length === 0) return null;
+  return rows.map((t) => {
+    const icon = (TASK_ICONS[t.icon as RoutineTask["icon"]]
+      ? t.icon
+      : "sparkles") as RoutineTask["icon"];
+    return {
+      id: t.id,
+      title: t.title,
+      subtitle: t.subtitle || t.product_name || "",
+      icon,
+      productId: t.product_id ?? undefined,
+      productName: t.product_name || undefined,
+      timeHint: t.time_hint || undefined,
+    };
+  });
+}
+
 export function CareRoutineSheet({
   quiz,
   catalog,
@@ -71,8 +98,16 @@ export function CareRoutineSheet({
   const [myProducts, setMyProducts] = useState<MyCareProduct[]>([]);
   const [doneMap, setDoneMap] = useState<Record<string, boolean>>({});
   const [loadingProducts, setLoadingProducts] = useState(true);
+  const [aiPlan, setAiPlan] = useState<AiCarePlan | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
 
-  const tasks = useMemo(() => buildDailyRoutine(quiz, slot), [quiz, slot]);
+  const fallbackTasks = useMemo(
+    () => buildDailyRoutine(quiz, slot, myProducts),
+    [quiz, slot, myProducts],
+  );
+  const aiTasks = useMemo(() => mapAiTasks(aiPlan, slot), [aiPlan, slot]);
+  const tasks = aiTasks ?? fallbackTasks;
 
   const recommended = useMemo(() => {
     return [...catalog]
@@ -90,14 +125,45 @@ export function CareRoutineSheet({
       ]);
       setMyProducts(mine);
       setDoneMap(done);
+      return mine;
     } finally {
       setLoadingProducts(false);
     }
   }, [selectedDate]);
 
+  const loadAiPlan = useCallback(
+    async (products: MyCareProduct[]) => {
+      setAiLoading(true);
+      setAiError(null);
+      try {
+        const plan = await generateCarePlan({
+          condition: quiz.condition,
+          texture: quiz.texture,
+          color_status: quiz.colorStatus,
+          products: products.map((p) => ({
+            id: p.id,
+            name: p.name,
+            brand: p.brand,
+            category: p.category,
+          })),
+        });
+        setAiPlan(plan);
+      } catch (e) {
+        setAiPlan(null);
+        setAiError(e instanceof Error ? e.message : t("care.routine.aiPlanError"));
+      } finally {
+        setAiLoading(false);
+      }
+    },
+    [quiz.colorStatus, quiz.condition, quiz.texture, t],
+  );
+
   useEffect(() => {
-    void refreshLocal();
-  }, [refreshLocal]);
+    void (async () => {
+      const mine = await refreshLocal();
+      await loadAiPlan(mine);
+    })();
+  }, [refreshLocal, loadAiPlan]);
 
   useFocusEffect(
     useCallback(() => {
@@ -132,6 +198,35 @@ export function CareRoutineSheet({
         </Pressable>
       </View>
 
+      {aiPlan?.summary ? (
+        <View style={styles.summaryCard}>
+          <View style={styles.summaryHead}>
+            <Ionicons name="sparkles" size={14} color="#111111" />
+            <Text style={styles.summaryLabel}>{t("care.routine.aiPlanBadge")}</Text>
+          </View>
+          <Text style={styles.summaryText}>{aiPlan.summary}</Text>
+        </View>
+      ) : null}
+
+      {aiLoading ? (
+        <View style={styles.aiLoadingRow}>
+          <ActivityIndicator size="small" color="#111111" />
+          <Text style={styles.aiLoadingText}>{t("care.routine.aiPlanLoading")}</Text>
+        </View>
+      ) : null}
+
+      {aiError && !aiPlan ? (
+        <Pressable
+          style={styles.aiErrorRow}
+          onPress={() => void loadAiPlan(myProducts)}
+        >
+          <Text style={styles.aiErrorText}>{aiError}</Text>
+          <Text style={styles.aiRetry}>
+            {t("care.routine.aiPlanRetry", { defaultValue: "Qayta urinish" })}
+          </Text>
+        </Pressable>
+      ) : null}
+
       <View style={styles.slotRow}>
         {SLOTS.map((s) => {
           const on = slot === s;
@@ -161,22 +256,52 @@ export function CareRoutineSheet({
             <Pressable
               key={task.id}
               style={[styles.taskRow, idx === 0 && styles.taskRowFirst]}
-              onPress={() => void toggleTask(task.id)}
+              onPress={() => {
+                if (task.productId) onOpenProduct(task.productId);
+                else void toggleTask(task.id);
+              }}
+              onLongPress={() => void toggleTask(task.id)}
             >
               <View style={styles.taskThumb}>
-                <Ionicons name={TASK_ICONS[task.icon]} size={18} color="#5B4B8A" />
+                <Ionicons name={TASK_ICONS[task.icon]} size={18} color="#111111" />
               </View>
               <View style={styles.taskBody}>
                 <Text style={styles.taskTitle}>{task.title}</Text>
-                <Text style={styles.taskSub}>{task.subtitle}</Text>
+                <Text style={styles.taskSub} numberOfLines={2}>
+                  {task.timeHint ? `${task.timeHint} · ` : ""}
+                  {task.subtitle}
+                </Text>
+                {task.productName ? (
+                  <Text style={styles.taskProduct} numberOfLines={1}>
+                    {task.productName}
+                  </Text>
+                ) : null}
               </View>
-              <View style={[styles.taskCheck, done && styles.taskCheckOn]}>
+              <Pressable
+                style={[styles.taskCheck, done && styles.taskCheckOn]}
+                onPress={() => void toggleTask(task.id)}
+                hitSlop={8}
+              >
                 {done ? <Ionicons name="checkmark" size={14} color="#fff" /> : null}
-              </View>
+              </Pressable>
             </Pressable>
           );
         })}
       </View>
+
+      {aiPlan?.weekly_schedule?.length ? (
+        <View style={styles.weekBlock}>
+          <Text style={styles.sectionTitle}>{t("care.weeklyTitle")}</Text>
+          <View style={styles.weekList}>
+            {aiPlan.weekly_schedule.map((row) => (
+              <View key={`${row.day}-${row.task}`} style={styles.weekRow}>
+                <Text style={styles.weekDay}>{row.day}</Text>
+                <Text style={styles.weekTask}>{row.task}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+      ) : null}
 
       <Pressable style={styles.seeAll} onPress={onOpenCatalog}>
         <Text style={styles.seeAllText}>{t("common.viewAll")}</Text>
@@ -185,16 +310,16 @@ export function CareRoutineSheet({
       <View style={styles.sectionHead}>
         <Text style={styles.sectionTitle}>{t("care.myProducts.title")}</Text>
         <Pressable style={styles.scanLink} onPress={onOpenScan}>
-          <Ionicons name="scan-outline" size={16} color="#3B82F6" />
+          <Ionicons name="scan-outline" size={16} color="#111111" />
           <Text style={styles.scanLinkText}>{t("care.myProducts.scan")}</Text>
         </Pressable>
       </View>
 
       {loadingProducts ? (
-        <ActivityIndicator color="#5B4B8A" style={{ marginVertical: 12 }} />
+        <ActivityIndicator color="#111111" style={{ marginVertical: 12 }} />
       ) : myProducts.length === 0 ? (
         <Pressable style={styles.emptyProducts} onPress={onOpenScan}>
-          <Ionicons name="add-circle-outline" size={28} color="#8B7CFF" />
+          <Ionicons name="add-circle-outline" size={28} color="#111111" />
           <Text style={styles.emptyProductsTitle}>{t("care.myProducts.emptyTitle")}</Text>
           <Text style={styles.emptyProductsSub}>{t("care.myProducts.emptySub")}</Text>
         </Pressable>
@@ -206,7 +331,7 @@ export function CareRoutineSheet({
                 <Image source={{ uri: p.image_url }} style={styles.myCardImg} contentFit="cover" />
               ) : (
                 <View style={[styles.myCardImg, styles.myCardPh]}>
-                  <Ionicons name="flask-outline" size={20} color="#8B7CFF" />
+                  <Ionicons name="flask-outline" size={20} color="#111111" />
                 </View>
               )}
               <Text style={styles.myCardName} numberOfLines={2}>
@@ -243,7 +368,7 @@ export function CareRoutineSheet({
                 <Image source={{ uri: product.image_url }} style={styles.recImg} contentFit="cover" />
               ) : (
                 <View style={[styles.recImg, styles.myCardPh]}>
-                  <Ionicons name="flask-outline" size={24} color="#8B7CFF" />
+                  <Ionicons name="flask-outline" size={24} color="#111111" />
                 </View>
               )}
               <Text style={styles.recName} numberOfLines={2}>
@@ -261,17 +386,17 @@ export function CareRoutineSheet({
 
       <Pressable style={styles.aiHelp} onPress={onOpenAssistant}>
         <LinearGradient
-          colors={["#EDE4FF", "#E8F0FF"]}
+          colors={["#F0F0F0", "#F0F0F0"]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.aiHelpInner}
         >
-          <Ionicons name="chatbubble-ellipses-outline" size={22} color="#5B4B8A" />
+          <Ionicons name="chatbubble-ellipses-outline" size={22} color="#111111" />
           <View style={{ flex: 1 }}>
             <Text style={styles.aiHelpTitle}>{t("care.routine.aiHelpTitle")}</Text>
             <Text style={styles.aiHelpSub}>{t("care.routine.aiHelpSub")}</Text>
           </View>
-          <Ionicons name="arrow-forward" size={18} color="#5B4B8A" />
+          <Ionicons name="arrow-forward" size={18} color="#111111" />
         </LinearGradient>
       </Pressable>
     </ScrollView>
@@ -297,6 +422,35 @@ const styles = StyleSheet.create({
     backgroundColor: "#F2F2F4",
   },
   retakeText: { ...morphFont, fontSize: 12, fontWeight: "600", color: "#1a1a1a" },
+  summaryCard: {
+    marginTop: 8,
+    marginBottom: 4,
+    borderRadius: 16,
+    padding: 14,
+    backgroundColor: "#FAFAFA",
+    borderWidth: 1,
+    borderColor: "rgba(99,102,241,0.15)",
+    gap: 6,
+  },
+  summaryHead: { flexDirection: "row", alignItems: "center", gap: 6 },
+  summaryLabel: { ...morphFont, fontSize: 11, fontWeight: "700", color: "#111111" },
+  summaryText: { ...morphFont, fontSize: 13, lineHeight: 18, color: "#111111" },
+  aiLoadingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingVertical: 8,
+  },
+  aiLoadingText: { ...morphFont, fontSize: 12, color: "rgba(26,26,26,0.5)" },
+  aiErrorRow: {
+    padding: 12,
+    borderRadius: 14,
+    backgroundColor: "#FEF2F2",
+    gap: 4,
+    marginBottom: 4,
+  },
+  aiErrorText: { ...morphFont, fontSize: 12, color: "#991B1B" },
+  aiRetry: { ...morphFont, fontSize: 12, fontWeight: "700", color: "#111111" },
   slotRow: { flexDirection: "row", gap: 8, marginTop: 8, marginBottom: 12 },
   slotPill: {
     flexDirection: "row",
@@ -331,13 +485,20 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 14,
-    backgroundColor: "#EDE4FF",
+    backgroundColor: "#F0F0F0",
     alignItems: "center",
     justifyContent: "center",
   },
   taskBody: { flex: 1, gap: 2 },
   taskTitle: { ...morphFont, fontSize: 14, fontWeight: "600", color: "#111" },
   taskSub: { ...morphFont, fontSize: 12, color: "rgba(26,26,26,0.45)" },
+  taskProduct: {
+    ...morphFont,
+    marginTop: 2,
+    fontSize: 11,
+    fontWeight: "600",
+    color: "#111111",
+  },
   taskCheck: {
     width: 26,
     height: 26,
@@ -347,7 +508,25 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  taskCheckOn: { backgroundColor: "#3B82F6", borderColor: "#3B82F6" },
+  taskCheckOn: { backgroundColor: "#111111", borderColor: "#111111" },
+  weekBlock: { marginTop: 16, gap: 8 },
+  weekList: {
+    borderRadius: 16,
+    backgroundColor: "#FAFAFA",
+    overflow: "hidden",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(0,0,0,0.05)",
+  },
+  weekRow: {
+    flexDirection: "row",
+    gap: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: "rgba(0,0,0,0.05)",
+  },
+  weekDay: { ...morphFont, width: 40, fontSize: 13, fontWeight: "700", color: "#111111" },
+  weekTask: { ...morphFont, flex: 1, fontSize: 13, color: "#111111" },
   seeAll: { alignSelf: "center", paddingVertical: 10 },
   seeAllText: { ...morphFont, fontSize: 13, fontWeight: "600", color: "rgba(26,26,26,0.45)" },
   sectionHead: {
@@ -359,7 +538,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: { ...morphFont, fontSize: 16, fontWeight: "700", color: "#111" },
   scanLink: { flexDirection: "row", alignItems: "center", gap: 4 },
-  scanLinkText: { ...morphFont, fontSize: 13, fontWeight: "600", color: "#3B82F6" },
+  scanLinkText: { ...morphFont, fontSize: 13, fontWeight: "600", color: "#111111" },
   emptyProducts: {
     borderRadius: 20,
     borderWidth: 1,
@@ -368,7 +547,7 @@ const styles = StyleSheet.create({
     padding: 20,
     alignItems: "center",
     gap: 6,
-    backgroundColor: "#FAFAFF",
+    backgroundColor: "#FAFAFA",
   },
   emptyProductsTitle: { ...morphFont, fontSize: 14, fontWeight: "600", color: "#111" },
   emptyProductsSub: {
@@ -377,6 +556,11 @@ const styles = StyleSheet.create({
     color: "rgba(26,26,26,0.45)",
     textAlign: "center",
     lineHeight: 16,
+  },
+  myGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
   },
   productRow: { gap: 12, paddingRight: 4 },
   myCard: {
@@ -389,7 +573,7 @@ const styles = StyleSheet.create({
     borderColor: "rgba(0,0,0,0.04)",
   },
   myCardImg: { width: "100%", height: 88, borderRadius: 12 },
-  myCardPh: { alignItems: "center", justifyContent: "center", backgroundColor: "#EDE4FF" },
+  myCardPh: { alignItems: "center", justifyContent: "center", backgroundColor: "#F0F0F0" },
   myCardName: { ...morphFont, fontSize: 12, fontWeight: "600", color: "#111" },
   myCardBrand: { ...morphFont, fontSize: 10, color: "rgba(26,26,26,0.45)" },
   recCard: {
@@ -406,9 +590,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 999,
-    backgroundColor: "#EDE4FF",
+    backgroundColor: "#F0F0F0",
   },
-  fitBadgeText: { ...morphFont, fontSize: 10, fontWeight: "700", color: "#5B4B8A" },
+  fitBadgeText: { ...morphFont, fontSize: 10, fontWeight: "700", color: "#111111" },
   recImg: { width: "100%", height: 110, borderRadius: 14 },
   recName: { ...morphFont, fontSize: 13, fontWeight: "600", color: "#111" },
   recBrand: { ...morphFont, fontSize: 11, color: "rgba(26,26,26,0.45)" },

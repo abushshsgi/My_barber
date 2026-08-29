@@ -39,9 +39,9 @@ const SOURCE_META: Record<
   MyCareProduct["source"],
   { icon: keyof typeof Ionicons.glyphMap; color: string; bg: string }
 > = {
-  scan: { icon: "scan-outline", color: "#0369A1", bg: "#E0F2FE" },
-  recommended: { icon: "sparkles-outline", color: "#6D28D9", bg: "#EDE9FE" },
-  catalog: { icon: "grid-outline", color: "#334155", bg: "#F1F5F9" },
+  scan: { icon: "scan-outline", color: "#111111", bg: "#F0F0F0" },
+  recommended: { icon: "sparkles-outline", color: "#111111", bg: "#F0F0F0" },
+  catalog: { icon: "grid-outline", color: "#334155", bg: "#F0F0F0" },
 };
 
 export function MorphCareMyProductsScreen({ navigation }: Props) {
@@ -160,7 +160,7 @@ export function MorphCareMyProductsScreen({ navigation }: Props) {
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
       <LinearGradient
-        colors={["#F8FAFC", "#EEF2FF", "#F8FAFC"]}
+        colors={["#FAFAFA", "#F0F0F0", "#FAFAFA"]}
         locations={[0, 0.35, 1]}
         style={StyleSheet.absoluteFill}
       />
@@ -198,7 +198,7 @@ export function MorphCareMyProductsScreen({ navigation }: Props) {
           hitSlop={8}
           accessibilityLabel={t("common.back")}
         >
-          <Ionicons name="chevron-back" size={20} color="#0F172A" />
+          <Ionicons name="chevron-back" size={20} color="#111111" />
         </Pressable>
         <View style={styles.headerCenter}>
           <Text style={styles.h1}>{t("care.myProducts.title")}</Text>
@@ -215,12 +215,12 @@ export function MorphCareMyProductsScreen({ navigation }: Props) {
 
       {loading ? (
         <View style={styles.center}>
-          <ActivityIndicator color="#6366F1" />
+          <ActivityIndicator color="#111111" />
         </View>
       ) : rows.length === 0 ? (
         <View style={styles.empty}>
           <View style={styles.emptyIcon}>
-            <Ionicons name="bag-handle-outline" size={30} color="#6366F1" />
+            <Ionicons name="bag-handle-outline" size={30} color="#111111" />
           </View>
           <Text style={styles.emptyTitle}>{t("care.myProducts.emptyTitle")}</Text>
           <Text style={styles.emptySub}>{t("care.myProducts.emptySub")}</Text>
@@ -251,13 +251,13 @@ export function MorphCareMyProductsScreen({ navigation }: Props) {
           <Text style={styles.pageSub}>{t("care.myProducts.pageSub")}</Text>
           <View style={styles.legend}>
             <View style={styles.legendItem}>
-              <Ionicons name="scan-outline" size={12} color="#0369A1" />
+              <Ionicons name="scan-outline" size={12} color="#111111" />
               <Text style={styles.legendText}>
                 {t("care.myProducts.source.scanHint", { defaultValue: "Skan orqali" })}
               </Text>
             </View>
             <View style={styles.legendItem}>
-              <Ionicons name="sparkles-outline" size={12} color="#6D28D9" />
+              <Ionicons name="sparkles-outline" size={12} color="#111111" />
               <Text style={styles.legendText}>
                 {t("care.myProducts.source.recommendedHint", {
                   defaultValue: "Morf tavsiyasi",
@@ -279,10 +279,10 @@ export function MorphCareMyProductsScreen({ navigation }: Props) {
                         <Image source={{ uri: p.image_url }} style={styles.cardImg} contentFit="cover" />
                       ) : (
                         <LinearGradient
-                          colors={["#EEF2FF", "#E0E7FF"]}
+                          colors={["#F0F0F0", "#F0F0F0"]}
                           style={[styles.cardImg, styles.cardPh]}
                         >
-                          <Ionicons name="flask-outline" size={22} color="#6366F1" />
+                          <Ionicons name="flask-outline" size={22} color="#111111" />
                         </LinearGradient>
                       )}
                       <View style={[styles.sourcePill, { backgroundColor: meta.bg }]}>
@@ -326,7 +326,7 @@ export function MorphCareMyProductsScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: "#F8FAFC" },
+  root: { flex: 1, backgroundColor: "#FAFAFA" },
   deleteToast: {
     position: "absolute",
     left: 16,
@@ -338,8 +338,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
     borderRadius: 16,
-    backgroundColor: "#0F172A",
-    shadowColor: "#0F172A",
+    backgroundColor: "#111111",
+    shadowColor: "#111111",
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.2,
     shadowRadius: 16,
@@ -389,14 +389,14 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#4F46E5",
+    backgroundColor: "#111111",
   },
   headerCenter: { flex: 1, alignItems: "center", gap: 2 },
   h1: {
     ...morphFont,
     fontSize: 17,
     fontWeight: "700",
-    color: "#0F172A",
+    color: "#111111",
   },
   count: {
     ...morphFont,
@@ -442,12 +442,12 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: 24,
-    backgroundColor: "#EEF2FF",
+    backgroundColor: "#F0F0F0",
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 8,
   },
-  emptyTitle: { ...morphFont, fontSize: 18, fontWeight: "700", color: "#0F172A", textAlign: "center" },
+  emptyTitle: { ...morphFont, fontSize: 18, fontWeight: "700", color: "#111111", textAlign: "center" },
   emptySub: {
     ...morphFont,
     fontSize: 13,
@@ -460,7 +460,7 @@ const styles = StyleSheet.create({
   primaryBtn: {
     height: 48,
     borderRadius: 999,
-    backgroundColor: "#4F46E5",
+    backgroundColor: "#111111",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -476,7 +476,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  secondaryBtnText: { ...morphFont, fontSize: 14, fontWeight: "600", color: "#0F172A" },
+  secondaryBtnText: { ...morphFont, fontSize: 14, fontWeight: "600", color: "#111111" },
   grid: { paddingHorizontal: H_PAD, paddingTop: 4 },
   gridRow: {
     flexDirection: "row",
@@ -498,7 +498,7 @@ const styles = StyleSheet.create({
   cardMedia: {
     width: "100%",
     height: COL_W * 0.78,
-    backgroundColor: "#EEF2FF",
+    backgroundColor: "#F0F0F0",
     position: "relative",
   },
   cardImg: { width: "100%", height: "100%" },
@@ -530,7 +530,7 @@ const styles = StyleSheet.create({
   },
   sourceText: { ...morphFont, fontSize: 9, fontWeight: "700" },
   cardBody: { paddingHorizontal: 8, paddingVertical: 8, gap: 1, minHeight: 58 },
-  cardName: { ...morphFont, fontSize: 12, fontWeight: "700", color: "#0F172A", lineHeight: 15 },
+  cardName: { ...morphFont, fontSize: 12, fontWeight: "700", color: "#111111", lineHeight: 15 },
   cardBrand: { ...morphFont, fontSize: 10, color: "rgba(15,23,42,0.55)" },
   cardMeta: { ...morphFont, fontSize: 9, color: "rgba(15,23,42,0.4)", marginTop: 1 },
 });

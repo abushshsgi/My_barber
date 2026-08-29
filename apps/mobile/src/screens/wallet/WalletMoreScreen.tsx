@@ -12,7 +12,7 @@ type Props = NativeStackScreenProps<WalletStackParamList, "WalletMore">;
 
 const INK = "#1A1A1A";
 const MUTED = "#8A8A8E";
-const SOFT_BG = "#F7F5F2";
+const SOFT_BG = "#FAFAFA";
 const ICON_BG = "#F0EEEA";
 
 type GridItem = {

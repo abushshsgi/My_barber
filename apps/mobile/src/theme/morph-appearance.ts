@@ -14,6 +14,21 @@ export const MORPH_FONT_SCALE: Record<MorphFontSize, number> = {
 
 export const MORPH_CHAT_FONT_STEPS: MorphChatFontSize[] = ["xs", "s", "m", "l", "xl"];
 
+/** Soft Paper (#2) — oq/qora kombinatsiya, barcha Morf AI sahifalari. */
+export const SOFT_PAPER = {
+  bg: "#FAFAFA",
+  card: "#FFFFFF",
+  cardStrong: "#F0F0F0",
+  line: "rgba(17, 17, 17, 0.12)",
+  fg: "#111111",
+  muted: "#737373",
+  accent: "#111111",
+  soft: "#F0F0F0",
+  track: "#E5E5E5",
+  destructive: "#FF3B30",
+  warn: "#FF9F0A",
+} as const;
+
 export type MorphPalette = {
   theme: MorphThemeName;
   bg: string;
@@ -45,41 +60,42 @@ export type MorphAppearance = {
 };
 
 export const DEFAULT_MORPH_APPEARANCE: MorphAppearance = {
-  theme: "dark",
+  theme: "light",
   fontSize: "m",
   chatFontSize: "m",
 };
 
 export const MORPH_PALETTES: Record<MorphThemeName, MorphPalette> = {
+  light: {
+    theme: "light",
+    bg: SOFT_PAPER.bg,
+    card: SOFT_PAPER.card,
+    cardStrong: SOFT_PAPER.cardStrong,
+    line: SOFT_PAPER.line,
+    fg: SOFT_PAPER.fg,
+    muted: SOFT_PAPER.muted,
+    accent: SOFT_PAPER.accent,
+    iconTile: SOFT_PAPER.soft,
+    track: SOFT_PAPER.track,
+    destructive: SOFT_PAPER.destructive,
+    warn: SOFT_PAPER.warn,
+    status: "dark",
+  },
+  /** Soft Paper dark twin — same accent language, inverted surfaces. */
   dark: {
     theme: "dark",
-    bg: "#0C0C0E",
-    card: "#161618",
-    cardStrong: "#222226",
-    line: "rgba(255,255,255,0.08)",
-    fg: "#F5F5F7",
-    muted: "#8E8E93",
-    accent: "#0A84FF",
-    iconTile: "#222226",
-    track: "#2A2A2E",
+    bg: "#111111",
+    card: "#1A1A1A",
+    cardStrong: "#2A2A2A",
+    line: "rgba(255,255,255,0.12)",
+    fg: "#FAFAFA",
+    muted: "#737373",
+    accent: "#FAFAFA",
+    iconTile: "#2A2A2A",
+    track: "#2A2A2A",
     destructive: "#FF453A",
     warn: "#FF9F0A",
     status: "light",
-  },
-  light: {
-    theme: "light",
-    bg: "#EEEFF3",
-    card: "#FFFFFF",
-    cardStrong: "#E6E7EC",
-    line: "rgba(60, 60, 67, 0.12)",
-    fg: "#111113",
-    muted: "#6E6E73",
-    accent: "#007AFF",
-    iconTile: "#E6E7EC",
-    track: "#D8D9DE",
-    destructive: "#FF3B30",
-    warn: "#FF9F0A",
-    status: "dark",
   },
 };
 
@@ -93,7 +109,7 @@ export async function readMorphAppearance(): Promise<MorphAppearance> {
     if (!raw) return { ...DEFAULT_MORPH_APPEARANCE };
     const parsed = JSON.parse(raw) as Partial<MorphAppearance>;
     return {
-      theme: parsed.theme === "light" ? "light" : "dark",
+      theme: parsed.theme === "dark" ? "dark" : "light",
       fontSize: parsed.fontSize === "s" || parsed.fontSize === "l" ? parsed.fontSize : "m",
       chatFontSize: MORPH_CHAT_FONT_STEPS.includes(parsed.chatFontSize as MorphChatFontSize)
         ? (parsed.chatFontSize as MorphChatFontSize)

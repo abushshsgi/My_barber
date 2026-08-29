@@ -90,7 +90,7 @@ const FEATURED_PRODUCTS: FeaturedProductItem[] = [
     price: "$160",
     duration: "2 Min",
     image: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=600&q=80",
-    bgColors: ["#EEF2FF", "#E0E7FF", "#EDE9FE"],
+    bgColors: ["#F0F0F0", "#F0F0F0", "#F0F0F0"],
     hasPlay: true,
   },
   {
@@ -98,7 +98,7 @@ const FEATURED_PRODUCTS: FeaturedProductItem[] = [
     title: "Eye Care",
     price: "$150",
     image: "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&w=600&q=80",
-    bgColors: ["#ECFEFF", "#E0F2FE", "#DBEAFE"],
+    bgColors: ["#FAFAFA", "#F0F0F0", "#F0F0F0"],
   },
   {
     id: "hair-1",
@@ -106,7 +106,7 @@ const FEATURED_PRODUCTS: FeaturedProductItem[] = [
     price: "$135",
     duration: "3 Min",
     image: "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=600&q=80",
-    bgColors: ["#F5F3FF", "#EDE9FE", "#E0E7FF"],
+    bgColors: ["#FAFAFA", "#F0F0F0", "#F0F0F0"],
     hasPlay: true,
   },
 ];
@@ -191,7 +191,7 @@ const likeStyles = StyleSheet.create({
     ...morphFont,
     fontSize: 11,
     fontWeight: "700",
-    color: "#0F172A",
+    color: "#111111",
   },
 });
 
@@ -541,7 +541,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
         image:
           mp.image_url ||
           "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=600&q=80",
-        bgColors: ["#EEF2FF", "#E0E7FF", "#EDE9FE"],
+        bgColors: ["#F0F0F0", "#F0F0F0", "#F0F0F0"],
         isUserAdded: true,
       });
     });
@@ -567,8 +567,8 @@ export function MorphCareScreen({ navigation, route }: Props) {
           "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&w=600&q=80",
         bgColors:
           cp.category === "mask"
-            ? ["#E0F7FA", "#E8F5E9", "#E0F2F1"]
-            : ["#F3E8FF", "#FAF5FF", "#EDE9FE"],
+            ? ["#F0F0F0", "#F0F0F0", "#F0F0F0"]
+            : ["#FAFAFA", "#FAFAFA", "#F0F0F0"],
         isUserAdded: false,
         fitScore: fit,
         usageText: cp.usage_uz,
@@ -829,7 +829,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
     return (
       <View style={styles.onboardRoot}>
         <LinearGradient
-          colors={["#EDE4FF", "#EEF2FF", "#F4F5F8"]}
+          colors={["#F0F0F0", "#F0F0F0", "#FAFAFA"]}
           start={{ x: 0.1, y: 0 }}
           end={{ x: 0.9, y: 0.55 }}
           style={StyleSheet.absoluteFill}
@@ -929,7 +929,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
           </Animated.View>
         ) : null}
         <LinearGradient
-          colors={["#FFFFFF", "#F5F3FF", "#EEF2FF"]}
+          colors={["#FFFFFF", "#FAFAFA", "#F0F0F0"]}
           locations={[0, 0.5, 1]}
           style={StyleSheet.absoluteFill}
         />
@@ -950,7 +950,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
           {!searchOpen ? (
           <View style={styles.promoWrap}>
             <LinearGradient
-              colors={["#7C6CF0", "#5B4FE0", "#4338CA"]}
+              colors={["#111111", "#111111", "#111111"]}
               start={{ x: 0.1, y: 0 }}
               end={{ x: 0.95, y: 1 }}
               style={[styles.promoCard, { paddingTop: insets.top + 10 }]}
@@ -995,7 +995,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
                     <Text style={styles.promoBtnText}>
                       {t("care.promoCta", { defaultValue: "Taklifni olish" })}
                     </Text>
-                    <Ionicons name="arrow-forward" size={14} color="#4338CA" />
+                    <Ionicons name="arrow-forward" size={14} color="#111111" />
                   </Pressable>
                 </View>
               </View>
@@ -1008,7 +1008,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
           {/* Search Bar — filter icon ichida */}
           <View style={styles.searchSection}>
             <View style={[styles.searchBar, searchOpen && styles.searchBarActive]}>
-              <Ionicons name="search-outline" size={18} color={searchOpen ? "#4F46E5" : "#9CA3AF"} />
+              <Ionicons name="search-outline" size={18} color={searchOpen ? "#111111" : "#9CA3AF"} />
               {searchOpen ? (
                 <TextInput
                   ref={searchInputRef}
@@ -1032,7 +1032,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
                   onPress={closeSearch}
                   accessibilityLabel={t("common.back")}
                 >
-                  <Ionicons name="close" size={16} color="#0F172A" />
+                  <Ionicons name="close" size={16} color="#111111" />
                 </Pressable>
               ) : (
                 <Pressable
@@ -1042,7 +1042,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
                   hitSlop={4}
                 >
                   <LinearGradient
-                    colors={["#6366F1", "#4F46E5"]}
+                    colors={["#111111", "#111111"]}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
                     style={styles.filterBtnGrad}
@@ -1145,13 +1145,13 @@ export function MorphCareScreen({ navigation, route }: Props) {
                       <Ionicons
                         name={liked ? "heart" : "heart-outline"}
                         size={14}
-                        color={liked ? "#EF4444" : "#1F2937"}
+                        color={liked ? "#EF4444" : "#111111"}
                       />
                     </Pressable>
 
                     {isMine && prod.duration ? (
                       <View style={styles.featuredDurationPill}>
-                        <Ionicons name="time-outline" size={10} color="#1F2937" />
+                        <Ionicons name="time-outline" size={10} color="#111111" />
                         <Text style={styles.featuredDurationText}>{prod.duration}</Text>
                       </View>
                     ) : null}
@@ -1178,7 +1178,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
                         hitSlop={6}
                         accessibilityLabel={t("care.myProducts.addShort", { defaultValue: "Qo‘shish" })}
                       >
-                        <Ionicons name="add" size={14} color="#1F2937" />
+                        <Ionicons name="add" size={14} color="#111111" />
                       </Pressable>
                     )}
                   </View>
@@ -1233,7 +1233,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
                             <Image source={{ uri: item.image }} style={styles.searchCardImg} />
                           ) : (
                             <View style={[styles.searchCardImg, styles.searchRowPh]}>
-                              <Ionicons name="flask-outline" size={22} color="#6366F1" />
+                              <Ionicons name="flask-outline" size={22} color="#111111" />
                             </View>
                           )}
                           <Pressable
@@ -1248,7 +1248,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
                             <Ionicons
                               name={item.liked_by_me ? "heart" : "heart-outline"}
                               size={13}
-                              color={item.liked_by_me ? "#EF4444" : "#0F172A"}
+                              color={item.liked_by_me ? "#EF4444" : "#111111"}
                             />
                           </Pressable>
                           <View style={styles.searchLikeCount}>
@@ -1277,7 +1277,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
                             <Ionicons
                               name={item.added ? "checkmark-circle" : "bag-add-outline"}
                               size={13}
-                              color={item.added ? "#4F46E5" : "#fff"}
+                              color={item.added ? "#111111" : "#fff"}
                             />
                             <Text
                               style={[
@@ -1327,7 +1327,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
                   <View style={styles.hubCardBody}>
                     <View style={styles.hubCardHead}>
                       <View style={styles.hubCardIconLg}>
-                        <Ionicons name="sparkles" size={18} color="#0F172A" />
+                        <Ionicons name="sparkles" size={18} color="#111111" />
                       </View>
                       <View style={styles.hubStatusBadge}>
                         <Text style={styles.hubStatusText}>
@@ -1356,7 +1356,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
                   <View style={styles.hubCardBody}>
                     <View style={styles.hubCardHead}>
                       <View style={styles.hubCardIconLg}>
-                        <Ionicons name="scan-outline" size={18} color="#0F172A" />
+                        <Ionicons name="scan-outline" size={18} color="#111111" />
                       </View>
                       <View style={styles.hubStatusBadge}>
                         <Text style={styles.hubStatusText}>
@@ -1381,7 +1381,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
                 accessibilityLabel={t("care.hubAiAssistant")}
               >
                 <LinearGradient
-                  colors={["#8B7CFF", "#5B8CFF"]}
+                  colors={["#111111", "#111111"]}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
                   style={styles.aiAssistantIcon}
@@ -1438,7 +1438,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
   return (
     <View style={styles.routineRoot}>
       <LinearGradient
-        colors={["#EDE4FF", "#EEF2FF", "#F4F5F8"]}
+        colors={["#F0F0F0", "#F0F0F0", "#FAFAFA"]}
         start={{ x: 0.1, y: 0 }}
         end={{ x: 0.9, y: 0.55 }}
         style={StyleSheet.absoluteFill}
@@ -1485,7 +1485,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
         accessibilityLabel={t("care.hubAiAssistant")}
       >
         <LinearGradient
-          colors={["#8B7CFF", "#5B8CFF"]}
+          colors={["#111111", "#111111"]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.fabInner}
@@ -1499,12 +1499,12 @@ export function MorphCareScreen({ navigation, route }: Props) {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: "#050505" },
-  routineRoot: { flex: 1, backgroundColor: "#F4F5F8" },
-  onboardRoot: { flex: 1, backgroundColor: "#F4F5F8" },
+  routineRoot: { flex: 1, backgroundColor: "#FAFAFA" },
+  onboardRoot: { flex: 1, backgroundColor: "#FAFAFA" },
   center: { alignItems: "center", justifyContent: "center" },
   pad: { flex: 1, paddingHorizontal: 20 },
   onboardPad: { flex: 1, paddingHorizontal: 20 },
-  hubRoot: { flex: 1, backgroundColor: "#FFFFFF" },
+  hubRoot: { flex: 1, backgroundColor: "#FAFAFA" },
   hubScroll: { flex: 1 },
   addToast: {
     position: "absolute",
@@ -1522,7 +1522,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     borderWidth: 1,
     borderColor: "rgba(99,102,241,0.18)",
-    shadowColor: "#312E81",
+    shadowColor: "#111111",
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.16,
     shadowRadius: 18,
@@ -1531,26 +1531,26 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 12,
-    backgroundColor: "#EEF2FF",
+    backgroundColor: "#F0F0F0",
   },
   addToastBody: { flex: 1, minWidth: 0, gap: 1 },
   addToastEyebrow: {
     ...morphFont,
     fontSize: 11,
     fontWeight: "700",
-    color: "#4F46E5",
+    color: "#111111",
   },
   addToastTitle: {
     ...morphFont,
     fontSize: 14,
     fontWeight: "700",
-    color: "#0F172A",
+    color: "#111111",
   },
   addToastCheck: {
     width: 26,
     height: 26,
     borderRadius: 13,
-    backgroundColor: "#4F46E5",
+    backgroundColor: "#111111",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -1595,7 +1595,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     minHeight: 210,
     borderWidth: 0,
-    shadowColor: "#4338CA",
+    shadowColor: "#111111",
     shadowOffset: { width: 0, height: 12 },
     shadowOpacity: 0.22,
     shadowRadius: 20,
@@ -1730,7 +1730,7 @@ const styles = StyleSheet.create({
     ...morphFont,
     fontSize: 12,
     fontWeight: "700",
-    color: "#4F46E5",
+    color: "#111111",
   },
   promoBtn: {
     backgroundColor: "#FFFFFF",
@@ -1746,7 +1746,7 @@ const styles = StyleSheet.create({
     ...morphFont,
     fontSize: 13,
     fontWeight: "700",
-    color: "#4338CA",
+    color: "#111111",
   },
   promoImg: {
     width: 112,
@@ -1765,7 +1765,7 @@ const styles = StyleSheet.create({
     width: 18,
     height: 5,
     borderRadius: 2.5,
-    backgroundColor: "#6366F1",
+    backgroundColor: "#111111",
   },
   dotInactive: {
     width: 5,
@@ -1797,7 +1797,7 @@ const styles = StyleSheet.create({
   },
   searchBarActive: {
     borderColor: "rgba(79,70,229,0.35)",
-    shadowColor: "#4F46E5",
+    shadowColor: "#111111",
     shadowOpacity: 0.1,
   },
   searchMain: {
@@ -1810,7 +1810,7 @@ const styles = StyleSheet.create({
     ...morphFont,
     flex: 1,
     fontSize: 15,
-    color: "#0F172A",
+    color: "#111111",
     paddingVertical: 0,
     height: "100%",
   },
@@ -1826,7 +1826,7 @@ const styles = StyleSheet.create({
     borderRadius: 17,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#F1F5F9",
+    backgroundColor: "#F0F0F0",
     marginRight: 2,
   },
   filterBtn: {
@@ -1872,7 +1872,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     fontSize: 15,
     fontWeight: "700",
-    color: "#0F172A",
+    color: "#111111",
   },
   searchSheetList: {
     paddingHorizontal: 12,
@@ -1894,7 +1894,7 @@ const styles = StyleSheet.create({
     width: "47.5%",
     flexGrow: 0,
     maxWidth: "47.5%",
-    backgroundColor: "#F8FAFC",
+    backgroundColor: "#FAFAFA",
     borderRadius: 14,
     overflow: "hidden",
     borderWidth: 1,
@@ -1904,7 +1904,7 @@ const styles = StyleSheet.create({
   searchCardMedia: {
     width: "100%",
     aspectRatio: 1.15,
-    backgroundColor: "#EEF2FF",
+    backgroundColor: "#F0F0F0",
     position: "relative",
   },
   searchCardImg: {
@@ -1931,7 +1931,7 @@ const styles = StyleSheet.create({
     ...morphFont,
     fontSize: 11,
     fontWeight: "700",
-    color: "#0F172A",
+    color: "#111111",
   },
   searchCardTitle: {
     ...morphFont,
@@ -1939,7 +1939,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     fontSize: 11,
     fontWeight: "700",
-    color: "#0F172A",
+    color: "#111111",
     lineHeight: 14,
     minHeight: 28,
   },
@@ -1958,7 +1958,7 @@ const styles = StyleSheet.create({
   searchAddBtn: {
     height: 30,
     borderRadius: 10,
-    backgroundColor: "#4F46E5",
+    backgroundColor: "#111111",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -1966,12 +1966,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
   },
   searchAddBtnAdded: {
-    backgroundColor: "#EEF2FF",
+    backgroundColor: "#F0F0F0",
     borderWidth: 1,
     borderColor: "rgba(79,70,229,0.25)",
   },
   searchAddBtnDone: {
-    backgroundColor: "#4F46E5",
+    backgroundColor: "#111111",
   },
   searchAddBtnText: {
     ...morphFont,
@@ -1980,7 +1980,7 @@ const styles = StyleSheet.create({
     color: "#fff",
   },
   searchAddBtnTextAdded: {
-    color: "#4F46E5",
+    color: "#111111",
   },
   searchAddBtnTextDone: {
     color: "#fff",
@@ -2022,7 +2022,7 @@ const styles = StyleSheet.create({
     height: 180,
     borderRadius: 18,
     overflow: "hidden",
-    backgroundColor: "#EEF2FF",
+    backgroundColor: "#F0F0F0",
     marginBottom: 8,
   },
   previewImg: { width: "100%", height: "100%" },
@@ -2041,7 +2041,7 @@ const styles = StyleSheet.create({
     ...morphFont,
     fontSize: 18,
     fontWeight: "800",
-    color: "#0F172A",
+    color: "#111111",
   },
   previewBrand: {
     ...morphFont,
@@ -2055,8 +2055,8 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
     fontSize: 12,
     fontWeight: "700",
-    color: "#4F46E5",
-    backgroundColor: "#EEF2FF",
+    color: "#111111",
+    backgroundColor: "#F0F0F0",
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 999,
@@ -2067,7 +2067,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
     padding: 12,
     borderRadius: 14,
-    backgroundColor: "#F8FAFC",
+    backgroundColor: "#FAFAFA",
     gap: 4,
   },
   previewSectionTitle: {
@@ -2094,7 +2094,7 @@ const styles = StyleSheet.create({
     ...morphFont,
     fontSize: 12,
     lineHeight: 17,
-    color: "#B45309",
+    color: "#111111",
   },
   previewUsage: {
     ...morphFont,
@@ -2105,7 +2105,7 @@ const styles = StyleSheet.create({
   previewAddBtn: {
     height: 50,
     borderRadius: 16,
-    backgroundColor: "#4F46E5",
+    backgroundColor: "#111111",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -2124,7 +2124,7 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 50,
     borderRadius: 16,
-    backgroundColor: "#3B82F6",
+    backgroundColor: "#111111",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -2137,7 +2137,7 @@ const styles = StyleSheet.create({
     color: "#fff",
   },
   previewAddBtnAdded: {
-    backgroundColor: "#EEF2FF",
+    backgroundColor: "#F0F0F0",
     borderWidth: 1,
     borderColor: "rgba(79,70,229,0.25)",
   },
@@ -2148,7 +2148,7 @@ const styles = StyleSheet.create({
     color: "#fff",
   },
   previewAddBtnTextAdded: {
-    color: "#4F46E5",
+    color: "#111111",
   },
   searchRowPh: { alignItems: "center", justifyContent: "center" },
   categoryScroll: {
@@ -2206,7 +2206,7 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     borderWidth: 1,
     borderColor: "rgba(15,23,42,0.06)",
-    shadowColor: "#0F172A",
+    shadowColor: "#111111",
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.08,
     shadowRadius: 12,
@@ -2217,7 +2217,7 @@ const styles = StyleSheet.create({
     height: 172,
     position: "relative",
     overflow: "hidden",
-    backgroundColor: "#EEF2FF",
+    backgroundColor: "#F0F0F0",
   },
   featuredCardImg: {
     position: "absolute",
@@ -2239,8 +2239,8 @@ const styles = StyleSheet.create({
     borderColor: "rgba(255,255,255,1)",
   },
   featuredActionBtnActive: {
-    backgroundColor: "#EEF2FF",
-    borderColor: "#C7D2FE",
+    backgroundColor: "#F0F0F0",
+    borderColor: "#E5E5E5",
   },
   featuredAddBtn: {
     position: "absolute",
@@ -2261,7 +2261,7 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: "#4F46E5",
+    backgroundColor: "#111111",
     alignItems: "center",
     justifyContent: "center",
     zIndex: 2,
@@ -2283,7 +2283,7 @@ const styles = StyleSheet.create({
     ...morphFont,
     fontSize: 10,
     fontWeight: "700",
-    color: "#1F2937",
+    color: "#111111",
   },
   featuredMeta: {
     paddingHorizontal: 12,
@@ -2295,7 +2295,7 @@ const styles = StyleSheet.create({
     ...morphFont,
     fontSize: 13,
     fontWeight: "600",
-    color: "#0F172A",
+    color: "#111111",
     lineHeight: 17,
   },
   featuredProdBrand: {
@@ -2363,7 +2363,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 999,
-    backgroundColor: "#F1F5F9",
+    backgroundColor: "#F0F0F0",
   },
   reportFilterText: { ...morphFont, fontSize: 11.5, fontWeight: "600", color: "#1a1a1a" },
   hubCards: { flexDirection: "row", gap: 10 },
@@ -2375,7 +2375,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(15,23,42,0.08)",
     overflow: "hidden",
-    shadowColor: "#0F172A",
+    shadowColor: "#111111",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.06,
     shadowRadius: 10,
@@ -2418,13 +2418,13 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#F1F5F9",
+    backgroundColor: "#F0F0F0",
   },
   hubStatusBadge: {
     borderRadius: 999,
     paddingHorizontal: 8,
     paddingVertical: 3,
-    backgroundColor: "#F1F5F9",
+    backgroundColor: "#F0F0F0",
   },
   hubStatusText: {
     ...morphFont,
@@ -2443,7 +2443,7 @@ const styles = StyleSheet.create({
     ...morphFont,
     fontSize: 18,
     fontWeight: "800",
-    color: "#0F172A",
+    color: "#111111",
     letterSpacing: -0.3,
   },
   hubCardSub: {
@@ -2456,7 +2456,7 @@ const styles = StyleSheet.create({
   aiAssistant: {
     height: 64,
     borderRadius: 18,
-    backgroundColor: "#F8FAFC",
+    backgroundColor: "#FAFAFA",
     borderWidth: 1,
     borderColor: "rgba(99, 102, 241, 0.18)",
     flexDirection: "row",
@@ -2467,7 +2467,7 @@ const styles = StyleSheet.create({
   aiAssistantIcon: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center" },
   aiAssistantText: { ...morphFont, flex: 1, fontSize: 15, fontWeight: "600", color: "#111" },
   rowBetweenLight: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  onboardBadge: { ...morphFont, fontSize: 12, fontWeight: "600", color: "#5B4B8A" },
+  onboardBadge: { ...morphFont, fontSize: 12, fontWeight: "600", color: "#111111" },
   onboardH1: { ...morphFont, fontSize: 28, fontWeight: "700", color: "#111", letterSpacing: -0.6, lineHeight: 34 },
   onboardSub: { marginTop: 10, ...morphFont, fontSize: 15, lineHeight: 22, color: "rgba(26,26,26,0.55)" },
   progressTrackLight: {
@@ -2477,7 +2477,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0,0,0,0.06)",
     overflow: "hidden",
   },
-  progressFillLight: { height: "100%", backgroundColor: "#8B7CFF", borderRadius: 99 },
+  progressFillLight: { height: "100%", backgroundColor: "#111111", borderRadius: 99 },
   optGridLight: { marginTop: 24, flexDirection: "row", flexWrap: "wrap", gap: 10 },
   optCardLight: {
     width: "47%",
@@ -2489,7 +2489,7 @@ const styles = StyleSheet.create({
     padding: 14,
     justifyContent: "center",
   },
-  optCardLightOn: { borderColor: "#8B7CFF", backgroundColor: "#fff" },
+  optCardLightOn: { borderColor: "#111111", backgroundColor: "#fff" },
   optTextLight: { ...morphFont, fontSize: 14, fontWeight: "600", color: "rgba(26,26,26,0.65)" },
   optTextLightOn: { color: "#111" },
   onboardFooter: { flexDirection: "row", gap: 8 },
@@ -2521,7 +2521,7 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     overflow: "hidden",
     elevation: 4,
-    shadowColor: "#5B8CFF",
+    shadowColor: "#111111",
     shadowOpacity: 0.35,
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 4 },

@@ -370,7 +370,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 18,
     marginBottom: 12,
-    shadowColor: "#8B5CF6",
+    shadowColor: "#111111",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 8,
@@ -378,7 +378,7 @@ const styles = StyleSheet.create({
   },
   newChatText: {
     ...morphFont,
-    color: "#DDD6FE",
+    color: "#737373",
     fontSize: 14,
     fontWeight: "600",
   },

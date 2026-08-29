@@ -28,17 +28,17 @@ import type { WalletStackParamList } from "../../navigation/WalletStack";
 
 type Props = NativeStackScreenProps<WalletStackParamList, "WalletHome">;
 
-const INK = "#1A1A1A";
-const MUTED = "#9CA3AF";
-const SOFT_BG = "#F7F5F2";
+const INK = "#111111";
+const MUTED = "#737373";
+const SOFT_BG = "#FAFAFA";
 const CARD_SHADOW = {
-  shadowColor: "#B8A99A",
+  shadowColor: "#111111",
   shadowOffset: { width: 0, height: 8 },
   shadowOpacity: 0.12,
   shadowRadius: 20,
   elevation: 4,
 };
-const AVATAR_TONES = ["#F5D0C5", "#C7D2FE", "#BBF7D0", "#FBCFE8", "#FDE68A", "#A5F3FC"];
+const AVATAR_TONES = ["#111111", "#737373", "#A3A3A3", "#D4D4D4", "#525252", "#E5E5E5"];
 
 const QUICK: {
   key: "WalletGift" | "WalletTopUp" | "WalletQrPay" | "WalletMore";
@@ -173,7 +173,7 @@ export function WalletHomeScreen({ navigation }: Props) {
         }
       >
         <LinearGradient
-          colors={["#F8E8DC", "#F3E4F0", "#E8EEF8", "#F7F5F2"]}
+          colors={["#F0F0F0", "#F0F0F0", "#F0F0F0", "#FAFAFA"]}
           locations={[0, 0.35, 0.7, 1]}
           start={{ x: 0.1, y: 0 }}
           end={{ x: 0.9, y: 1 }}
@@ -290,7 +290,7 @@ export function WalletHomeScreen({ navigation }: Props) {
           contentContainerStyle={styles.promoRow}
         >
           <LinearGradient
-            colors={["#D4E4F7", "#E8D4F0", "#F5D0E0"]}
+            colors={["#F0F0F0", "#E5E5E5", "#F0F0F0"]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.promoCard}
@@ -302,12 +302,12 @@ export function WalletHomeScreen({ navigation }: Props) {
               </Text>
             </View>
             <Pressable style={styles.promoGift} onPress={() => navigation.navigate("WalletGifts")}>
-              <Ionicons name="gift" size={28} color="#E11D48" />
+              <Ionicons name="gift" size={28} color="#111111" />
             </Pressable>
           </LinearGradient>
 
           <LinearGradient
-            colors={["#FDE8D0", "#F5E6D3", "#E8F0E8"]}
+            colors={["#F0F0F0", "#F0F0F0", "#F0F0F0"]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.promoCard}
@@ -322,7 +322,7 @@ export function WalletHomeScreen({ navigation }: Props) {
               style={styles.promoGift}
               onPress={() => navigation.navigate("WalletRequisites")}
             >
-              <Ionicons name="card-outline" size={26} color="#B45309" />
+              <Ionicons name="card-outline" size={26} color="#111111" />
             </Pressable>
           </LinearGradient>
         </ScrollView>
@@ -452,7 +452,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFF",
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#A89B8C",
+    shadowColor: "#111111",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.14,
     shadowRadius: 10,
@@ -488,7 +488,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 2,
-    borderColor: "#F7F5F2",
+    borderColor: "#FAFAFA",
   },
   contactInitials: { fontSize: 15, fontWeight: "700", color: INK },
   contactName: { fontSize: 12, fontWeight: "500", color: "#4B5563", textAlign: "center" },

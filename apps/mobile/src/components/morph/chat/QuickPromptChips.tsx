@@ -50,7 +50,7 @@ export function QuickPromptChips({ prompts, onSelect, disabled }: Props) {
           <Ionicons
             name={CHIP_ICONS[item.id] ?? "sparkles-outline"}
             size={13}
-            color={isDark ? "#C4B5FD" : "#7C3AED"}
+            color={isDark ? "#737373" : "#111111"}
           />
           <Text
             style={[
@@ -88,7 +88,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255, 255, 255, 0.9)",
     borderWidth: 1,
     borderColor: "rgba(124, 58, 237, 0.16)",
-    shadowColor: "#7C3AED",
+    shadowColor: "#111111",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
     shadowRadius: 6,
@@ -98,7 +98,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255, 255, 255, 0.08)",
     borderWidth: 1,
     borderColor: "rgba(167, 139, 250, 0.25)",
-    shadowColor: "#8B5CF6",
+    shadowColor: "#111111",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.15,
     shadowRadius: 8,

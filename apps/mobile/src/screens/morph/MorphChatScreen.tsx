@@ -595,7 +595,7 @@ export function MorphChatScreen() {
         <View style={styles.headerText}>
           <View style={styles.headerTitleRow}>
             <View style={styles.headerAiDot}>
-              <Ionicons name="sparkles" size={10} color="#C4B5FD" />
+              <Ionicons name="sparkles" size={10} color="#737373" />
             </View>
             <Text style={[styles.title, { color: pal.fg }]} numberOfLines={1}>
               {threadTitle}

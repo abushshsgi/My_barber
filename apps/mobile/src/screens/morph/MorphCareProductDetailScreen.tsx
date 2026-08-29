@@ -73,7 +73,7 @@ export function MorphCareProductDetailScreen({ navigation, route }: Props) {
     return (
       <View style={[styles.root, styles.center, { paddingTop: insets.top }]}>
         <StatusBar style="dark" />
-        <ActivityIndicator color="#4F46E5" />
+        <ActivityIndicator color="#111111" />
       </View>
     );
   }

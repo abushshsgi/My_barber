@@ -77,7 +77,7 @@ export function MorphCareWeatherScreen({ navigation }: Props) {
 
       {loading ? (
         <View style={styles.centerBox}>
-          <ActivityIndicator color="#564746" />
+          <ActivityIndicator color="#111111" />
         </View>
       ) : error ? (
         <View style={styles.centerBox}>
@@ -90,7 +90,7 @@ export function MorphCareWeatherScreen({ navigation }: Props) {
         <>
           {showIntro ? (
             <View style={styles.introCard}>
-              <Ionicons name="sparkles-outline" size={22} color="#5B4B8A" />
+              <Ionicons name="sparkles-outline" size={22} color="#111111" />
               <View style={{ flex: 1 }}>
                 <Text style={styles.introTitle}>{t("care.weather.introTitle")}</Text>
                 <Text style={styles.introSub}>{t("care.weather.introSub")}</Text>
@@ -103,7 +103,7 @@ export function MorphCareWeatherScreen({ navigation }: Props) {
 
           {profileLine ? (
             <View style={styles.profileCard}>
-              <Ionicons name="person-circle-outline" size={20} color="#5B4B8A" />
+              <Ionicons name="person-circle-outline" size={20} color="#111111" />
               <Text style={styles.profileText}>{profileLine}</Text>
             </View>
           ) : null}
@@ -125,14 +125,14 @@ export function MorphCareWeatherScreen({ navigation }: Props) {
 
           <View style={styles.statsRow}>
             <View style={styles.statCard}>
-              <Ionicons name="water-outline" size={18} color="#96605e" />
+              <Ionicons name="water-outline" size={18} color="#737373" />
               <Text style={styles.statLabel}>{t("care.weather.humidity")}</Text>
               <Text style={styles.statValue}>
                 {current?.humidity_pct != null ? `${Math.round(current.humidity_pct)}%` : "—"}
               </Text>
             </View>
             <View style={styles.statCard}>
-              <Ionicons name="speedometer-outline" size={18} color="#96605e" />
+              <Ionicons name="speedometer-outline" size={18} color="#737373" />
               <Text style={styles.statLabel}>{t("care.weather.wind")}</Text>
               <Text style={styles.statValue}>
                 {current?.wind_kmh != null ? `${Math.round(current.wind_kmh)} km/h` : "—"}
@@ -146,7 +146,7 @@ export function MorphCareWeatherScreen({ navigation }: Props) {
           <Text style={styles.section}>{t("care.weather.recommendations")}</Text>
           {data.recommendations.map((tip) => (
             <View key={tip} style={styles.tipRow}>
-              <Ionicons name="leaf-outline" size={16} color="#96605e" />
+              <Ionicons name="leaf-outline" size={16} color="#737373" />
               <Text style={styles.tipText}>{tip}</Text>
             </View>
           ))}
@@ -160,7 +160,7 @@ export function MorphCareWeatherScreen({ navigation }: Props) {
               <Ionicons
                 name={weatherIconName(day.condition_key)}
                 size={18}
-                color="#564746"
+                color="#111111"
               />
               <Text style={styles.dayTemp}>
                 {day.temperature_max_c != null ? `${Math.round(day.temperature_max_c)}°` : "—"}
@@ -176,7 +176,7 @@ export function MorphCareWeatherScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: "#d9d9d9" },
+  root: { flex: 1, backgroundColor: "#FAFAFA" },
   rowBetween: {
     flexDirection: "row",
     alignItems: "center",
@@ -199,19 +199,19 @@ const styles = StyleSheet.create({
     color: "rgba(42,42,42,0.55)",
   },
   centerBox: { marginTop: 80, alignItems: "center", gap: 12 },
-  errorText: { ...morphFont, fontSize: 14, color: "#564746", textAlign: "center" },
+  errorText: { ...morphFont, fontSize: 14, color: "#111111", textAlign: "center" },
   retryBtn: {
     marginTop: 8,
     paddingHorizontal: 18,
     paddingVertical: 10,
     borderRadius: 999,
-    backgroundColor: "#564746",
+    backgroundColor: "#111111",
   },
   retryText: { ...morphFont, fontSize: 13, fontWeight: "600", color: "#fff" },
   introCard: {
     marginTop: 16,
     borderRadius: 18,
-    backgroundColor: "#EDE4FF",
+    backgroundColor: "#F0F0F0",
     padding: 14,
     flexDirection: "row",
     alignItems: "flex-start",
@@ -231,14 +231,14 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     backgroundColor: "#fff",
   },
-  introBtnText: { ...morphFont, fontSize: 12, fontWeight: "600", color: "#5B4B8A" },
+  introBtnText: { ...morphFont, fontSize: 12, fontWeight: "600", color: "#111111" },
   profileCard: {
     marginTop: 12,
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
     borderRadius: 14,
-    backgroundColor: "#f2eeed",
+    backgroundColor: "#F0F0F0",
     paddingHorizontal: 14,
     paddingVertical: 10,
   },
@@ -246,7 +246,7 @@ const styles = StyleSheet.create({
   hero: {
     marginTop: 20,
     borderRadius: 24,
-    backgroundColor: "#564746",
+    backgroundColor: "#111111",
     padding: 22,
     gap: 6,
   },
@@ -258,7 +258,7 @@ const styles = StyleSheet.create({
   statCard: {
     flex: 1,
     borderRadius: 18,
-    backgroundColor: "#f2eeed",
+    backgroundColor: "#F0F0F0",
     padding: 14,
     gap: 4,
   },
@@ -285,7 +285,7 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
     gap: 10,
     borderRadius: 14,
-    backgroundColor: "#f2eeed",
+    backgroundColor: "#F0F0F0",
     paddingHorizontal: 14,
     paddingVertical: 12,
     marginBottom: 8,
@@ -296,7 +296,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 10,
     borderRadius: 14,
-    backgroundColor: "#f2eeed",
+    backgroundColor: "#F0F0F0",
     paddingHorizontal: 14,
     paddingVertical: 12,
     marginBottom: 6,
@@ -308,7 +308,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#2a2a2a",
   },
-  dayLabelToday: { color: "#96605e" },
+  dayLabelToday: { color: "#737373" },
   dayTemp: {
     flex: 1,
     textAlign: "right",

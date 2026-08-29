@@ -41,11 +41,11 @@ const SHEET_H = 560;
 const C = {
   glass: "rgba(255,255,255,0.96)",
   glassSoft: "rgba(248,250,252,0.92)",
-  glassChip: "#F1F5F9",
-  fg: "#0F172A",
+  glassChip: "#F0F0F0",
+  fg: "#111111",
   muted: "#64748B",
   line: "rgba(15,23,42,0.08)",
-  accent: "#0F172A",
+  accent: "#111111",
   ok: "#059669",
   bad: "#DC2626",
 };

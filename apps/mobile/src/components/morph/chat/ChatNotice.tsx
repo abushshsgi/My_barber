@@ -30,9 +30,9 @@ export function ChatNotice({
     tone === "warning"
       ? {
           bg: "#FFFBEB",
-          border: "#FDE68A",
+          border: "#E5E5E5",
           iconBg: "#FEF3C7",
-          icon: "#B45309" as const,
+          icon: "#111111" as const,
           iconName: "warning" as const,
         }
       : {

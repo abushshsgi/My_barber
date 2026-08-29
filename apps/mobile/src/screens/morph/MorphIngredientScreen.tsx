@@ -56,7 +56,7 @@ const VERDICT_COLOR: Record<string, string> = {
   good: "#6EE7B7",
   caution: "#FCD34D",
   bad: "#FB923C",
-  dangerous: "#FB7185",
+  dangerous: "#737373",
 };
 
 function scoreTone(verdict: string, score: number): string {
@@ -898,7 +898,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(167, 139, 250, 0.25)",
     padding: 16,
-    shadowColor: "#8B5CF6",
+    shadowColor: "#111111",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
     shadowRadius: 12,
@@ -914,7 +914,7 @@ const styles = StyleSheet.create({
   matchBadge: {
     ...morphFont,
     fontSize: 11.5,
-    color: "#DDD6FE",
+    color: "#737373",
     fontWeight: "500",
   },
   matchName: {
@@ -993,7 +993,7 @@ const styles = StyleSheet.create({
     ...morphFont,
     marginTop: 16,
     fontSize: 13,
-    color: "#FB7185",
+    color: "#737373",
     textAlign: "center",
   },
 });

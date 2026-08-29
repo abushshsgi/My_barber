@@ -23,7 +23,7 @@ import {
 const CARD = "#1C1C1E";
 const LINE = "rgba(84, 84, 88, 0.65)";
 const MUTED = "#8E8E93";
-const ACCENT = "#0A84FF";
+const ACCENT = "#111111";
 const INPUT = "#2C2C2E";
 
 type FaqItem = { q: string; a: string };

@@ -65,7 +65,7 @@ export function MorphChatWelcome({
       <View style={styles.hero}>
         <Animated.View entering={FadeInDown.duration(320)} style={styles.badgeWrap}>
           <View style={styles.aiBadge}>
-            <Ionicons name="sparkles" size={13} color="#C4B5FD" />
+            <Ionicons name="sparkles" size={13} color="#737373" />
             <Animated.Text style={styles.aiBadgeText}>Morf AI • Pro Assistant</Animated.Text>
           </View>
         </Animated.View>
@@ -143,7 +143,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(139, 92, 246, 0.15)",
     borderWidth: 1,
     borderColor: "rgba(167, 139, 250, 0.35)",
-    shadowColor: "#8B5CF6",
+    shadowColor: "#111111",
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.45,
     shadowRadius: 10,
@@ -154,7 +154,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 15,
     fontWeight: "600",
-    color: "#DDD6FE",
+    color: "#737373",
     letterSpacing: 0.3,
   },
   copy: {

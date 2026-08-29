@@ -110,7 +110,7 @@ export function ChatInputBar({
             : pal.theme === "dark"
               ? "rgba(255, 255, 255, 0.14)"
               : "rgba(0, 0, 0, 0.08)",
-          shadowColor: focused ? "#8B5CF6" : "#000",
+          shadowColor: focused ? "#111111" : "#000",
           shadowOpacity: focused ? 0.25 : 0.06,
           shadowRadius: focused ? 12 : 6,
           shadowOffset: { width: 0, height: 2 },
