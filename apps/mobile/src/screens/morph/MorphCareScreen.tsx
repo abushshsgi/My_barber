@@ -213,12 +213,15 @@ export function MorphCareScreen({ navigation, route }: Props) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [previewId, setPreviewId] = useState<number | null>(null);
+  const [previewVisible, setPreviewVisible] = useState(false);
   /** Shu search sessiyasida qo‘shilganlar — qayta ochilganda tozalanadi */
   const [sessionAddedIds, setSessionAddedIds] = useState<number[]>([]);
   const addDropY = useRef(new Animated.Value(-140)).current;
   const addOpacity = useRef(new Animated.Value(0)).current;
   const addScale = useRef(new Animated.Value(0.86)).current;
   const searchSheetY = useRef(new Animated.Value(600)).current;
+  const previewSheetY = useRef(new Animated.Value(Dimensions.get("window").height)).current;
+  const previewBackdropOp = useRef(new Animated.Value(0)).current;
   const searchInputRef = useRef<TextInput>(null);
   const { data: weather, loading: weatherLoading } = useCareWeather();
 
@@ -333,6 +336,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
   const openSearch = useCallback(() => {
     setSearchOpen(true);
     setPreviewId(null);
+    setPreviewVisible(false);
     setSessionAddedIds([]);
     searchSheetY.setValue(searchSheetHeight);
     Animated.spring(searchSheetY, {
@@ -359,6 +363,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
   const closeSearch = useCallback(() => {
     Keyboard.dismiss();
     setPreviewId(null);
+    setPreviewVisible(false);
     setSessionAddedIds([]);
     Animated.timing(searchSheetY, {
       toValue: searchSheetHeight,
@@ -621,15 +626,53 @@ export function MorphCareScreen({ navigation, route }: Props) {
   const openPreview = useCallback((productId?: number) => {
     if (!productId) return;
     setPreviewId(productId);
-  }, []);
+    setPreviewVisible(true);
+    previewSheetY.setValue(Dimensions.get("window").height);
+    previewBackdropOp.setValue(0);
+    Animated.parallel([
+      Animated.timing(previewBackdropOp, {
+        toValue: 1,
+        duration: 220,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.spring(previewSheetY, {
+        toValue: 0,
+        friction: 9,
+        tension: 65,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [previewBackdropOp, previewSheetY]);
+
+  const closePreview = useCallback(() => {
+    Animated.parallel([
+      Animated.timing(previewBackdropOp, {
+        toValue: 0,
+        duration: 200,
+        easing: Easing.in(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.timing(previewSheetY, {
+        toValue: Dimensions.get("window").height,
+        duration: 260,
+        easing: Easing.in(Easing.cubic),
+        useNativeDriver: true,
+      }),
+    ]).start(({ finished }) => {
+      if (!finished) return;
+      setPreviewVisible(false);
+      setPreviewId(null);
+    });
+  }, [previewBackdropOp, previewSheetY]);
 
   const openPreviewCare = useCallback(() => {
-    setPreviewId(null);
+    closePreview();
     setSearchOpen(false);
     setSearchQuery("");
     setSessionAddedIds([]);
     setViewMode("flow");
-  }, []);
+  }, [closePreview]);
 
   const addFromSearch = useCallback(
     async (productId: number) => {
@@ -1152,7 +1195,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
                       <Pressable
                         key={`search-${item.id}`}
                         style={styles.searchCard}
-                        onPress={() => setPreviewId(item.id)}
+                        onPress={() => openPreview(item.id)}
                       >
                         <View style={styles.searchCardMedia}>
                           {item.image ? (
@@ -1294,22 +1337,31 @@ export function MorphCareScreen({ navigation, route }: Props) {
         )}
 
         <Modal
-          visible={previewProduct != null}
+          visible={previewVisible}
           transparent
-          animationType="slide"
+          animationType="none"
           statusBarTranslucent
-          onRequestClose={() => setPreviewId(null)}
+          onRequestClose={closePreview}
         >
-          <View style={styles.previewBackdrop}>
-            <Pressable style={StyleSheet.absoluteFill} onPress={() => setPreviewId(null)} />
-            <View style={[styles.previewSheetWrap, { paddingTop: Math.max(insets.top, 6) }]}>
+          <View style={styles.previewBackdrop} pointerEvents="box-none">
+            <Animated.View
+              style={[styles.previewBackdropFill, { opacity: previewBackdropOp }]}
+            >
+              <Pressable style={StyleSheet.absoluteFill} onPress={closePreview} />
+            </Animated.View>
+            <Animated.View
+              style={[
+                styles.previewSheetWrap,
+                { transform: [{ translateY: previewSheetY }] },
+              ]}
+            >
               {previewProduct ? (
                 <CareProductPreviewSheet
                   product={previewProduct}
                   quiz={quiz}
                   added={previewAdded}
                   bottomInset={Math.max(insets.bottom, 12)}
-                  onClose={() => setPreviewId(null)}
+                  onClose={closePreview}
                   onAdd={() => {
                     if (previewAdded) return;
                     void addFromSearch(previewProduct.id);
@@ -1317,7 +1369,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
                   onUseInCare={previewAdded ? openPreviewCare : undefined}
                 />
               ) : null}
-            </View>
+            </Animated.View>
           </View>
         </Modal>
       </View>
@@ -1782,8 +1834,11 @@ const styles = StyleSheet.create({
   },
   previewBackdrop: {
     flex: 1,
-    backgroundColor: "rgba(15,23,42,0.42)",
     justifyContent: "flex-end",
+  },
+  previewBackdropFill: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(15,23,42,0.45)",
   },
   previewSheetWrap: {
     width: "100%",
