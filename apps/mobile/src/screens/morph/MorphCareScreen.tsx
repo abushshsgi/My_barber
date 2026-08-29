@@ -325,14 +325,6 @@ export function MorphCareScreen({ navigation, route }: Props) {
   const dayRows = weather?.days?.length ? weather.days.slice(0, 7) : buildFallbackDays();
   const selectedDate = dayRows[selectedDayIdx]?.date ?? new Date().toISOString().slice(0, 10);
 
-  const openCatalog = useCallback(() => {
-    navigation.navigate("CareProducts");
-  }, [navigation]);
-
-  const openMyProducts = useCallback(() => {
-    navigation.navigate("CareMyProducts");
-  }, [navigation]);
-
   const openSearch = useCallback(() => {
     setSearchOpen(true);
     setPreviewId(null);
@@ -359,6 +351,22 @@ export function MorphCareScreen({ navigation, route }: Props) {
       })
       .catch(() => {});
   }, [myProducts, searchSheetHeight, searchSheetY]);
+
+  const openCatalog = openSearch;
+
+  const openMyProducts = useCallback(() => {
+    navigation.navigate("CareMyProducts");
+  }, [navigation]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!route.params?.openSearch) return;
+      const q = route.params.q?.trim();
+      if (q) setSearchQuery(q);
+      navigation.setParams({ openSearch: undefined, q: undefined });
+      requestAnimationFrame(() => openSearch());
+    }, [route.params?.openSearch, route.params?.q, navigation, openSearch]),
+  );
 
   const closeSearch = useCallback(() => {
     Keyboard.dismiss();

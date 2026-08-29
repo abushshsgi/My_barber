@@ -1,14 +1,14 @@
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { MorphCareMyProductsScreen } from "../screens/morph/MorphCareMyProductsScreen";
 import { MorphCareProductDetailScreen } from "../screens/morph/MorphCareProductDetailScreen";
 import { MorphCareProductGuideScreen } from "../screens/morph/MorphCareProductGuideScreen";
-import { MorphCareProductsScreen } from "../screens/morph/MorphCareProductsScreen";
 import { MorphCareScreen } from "../screens/morph/MorphCareScreen";
 import { MorphCareWeatherScreen } from "../screens/morph/MorphCareWeatherScreen";
 
 export type MorphCareStackParamList = {
-  CareHome: { returnTo?: string } | undefined;
+  CareHome: { returnTo?: string; openSearch?: boolean; q?: string } | undefined;
   CareWeather: undefined;
-  CareProducts: { q?: string } | undefined;
+  CareMyProducts: undefined;
   CareProductDetail: { productId: number };
   CareProductGuide: {
     productId?: number;
@@ -35,7 +35,7 @@ export function MorphCareStack() {
     >
       <Stack.Screen name="CareHome" component={MorphCareScreen} />
       <Stack.Screen name="CareWeather" component={MorphCareWeatherScreen} />
-      <Stack.Screen name="CareProducts" component={MorphCareProductsScreen} />
+      <Stack.Screen name="CareMyProducts" component={MorphCareMyProductsScreen} />
       <Stack.Screen name="CareProductDetail" component={MorphCareProductDetailScreen} />
       <Stack.Screen name="CareProductGuide" component={MorphCareProductGuideScreen} />
     </Stack.Navigator>

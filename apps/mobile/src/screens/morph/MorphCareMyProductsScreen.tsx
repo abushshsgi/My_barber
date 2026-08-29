@@ -10,6 +10,7 @@ import {
   Animated,
   Dimensions,
   Easing,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -110,37 +111,48 @@ export function MorphCareMyProductsScreen({ navigation }: Props) {
 
   const onRemove = useCallback(
     (p: MyCareProduct) => {
-      Alert.alert(
-        t("care.myProducts.removeConfirmTitle", { defaultValue: "O‘chirish" }),
-        t("care.myProducts.removeConfirmBody", {
-          defaultValue: "Rostan ham «{{name}}» ni o‘chirasizmi?",
-          name: p.name,
-        }),
-        [
-          {
-            text: t("care.myProducts.removeConfirmNo", { defaultValue: "Yo‘q" }),
-            style: "cancel",
-          },
-          {
-            text: t("care.myProducts.removeConfirmYes", { defaultValue: "Ha, o‘chirish" }),
-            style: "destructive",
-            onPress: () => {
-              void (async () => {
-                // Optimistic — tugma bosilishi bilan kartochka yo‘qoladi
-                setRows((prev) => prev.filter((r) => r.id !== p.id));
-                try {
-                  const next = await removeMyProduct(p.id);
-                  setRows(next);
-                  playDeletedToast(p.name);
-                } catch {
-                  const restored = await loadMyProducts();
-                  setRows(restored);
-                }
-              })();
-            },
-          },
-        ],
-      );
+      const title = t("care.myProducts.removeConfirmTitle", {
+        defaultValue: "O‘chirish",
+      });
+      const body = t("care.myProducts.removeConfirmBody", {
+        defaultValue: "Rostan ham «{{name}}» ni o‘chirasizmi?",
+        name: p.name,
+      });
+
+      const doRemove = () => {
+        void (async () => {
+          // Optimistic — tugma bosilishi bilan kartochka yo‘qoladi
+          setRows((prev) => prev.filter((r) => r.id !== p.id));
+          try {
+            const next = await removeMyProduct(p.id);
+            setRows(next);
+            playDeletedToast(p.name);
+          } catch {
+            const restored = await loadMyProducts();
+            setRows(restored);
+          }
+        })();
+      };
+
+      // RN Web: Alert.alert tugma callbacklarini chaqirmaydi — window.confirm kerak
+      if (Platform.OS === "web" && typeof window !== "undefined") {
+        if (window.confirm(`${title}\n\n${body}`)) doRemove();
+        return;
+      }
+
+      Alert.alert(title, body, [
+        {
+          text: t("care.myProducts.removeConfirmNo", { defaultValue: "Yo‘q" }),
+          style: "cancel",
+        },
+        {
+          text: t("care.myProducts.removeConfirmYes", {
+            defaultValue: "Ha, o‘chirish",
+          }),
+          style: "destructive",
+          onPress: doRemove,
+        },
+      ]);
     },
     [playDeletedToast, t],
   );
@@ -220,7 +232,10 @@ export function MorphCareMyProductsScreen({ navigation }: Props) {
               <Ionicons name="scan" size={16} color="#fff" />
               <Text style={styles.primaryBtnText}>{t("care.myProducts.scan")}</Text>
             </Pressable>
-            <Pressable style={styles.secondaryBtn} onPress={() => navigation.navigate("CareProducts")}>
+            <Pressable
+              style={styles.secondaryBtn}
+              onPress={() => navigation.navigate("CareHome", { openSearch: true })}
+            >
               <Text style={styles.secondaryBtnText}>{t("care.catalog.title")}</Text>
             </Pressable>
           </View>

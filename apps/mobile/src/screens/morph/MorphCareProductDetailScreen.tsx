@@ -59,9 +59,14 @@ export function MorphCareProductDetailScreen({ navigation, route }: Props) {
   }, [productId]);
 
   const goBack = () => {
-    const routes = navigation.getState?.()?.routes;
-    if (routes && routes.length > 1) navigation.goBack();
-    else navigation.navigate("CareProducts");
+    if (navigation.canGoBack()) {
+      navigation.goBack();
+      return;
+    }
+    const names = navigation.getState?.()?.routeNames ?? [];
+    if (names.includes("CareHome")) {
+      navigation.navigate("CareHome", { openSearch: true });
+    }
   };
 
   if (loading) {

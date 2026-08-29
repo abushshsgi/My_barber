@@ -535,7 +535,12 @@ export function MorphIngredientScreen({ navigation }: Props) {
           ) : null}
           <Pressable
             style={[styles.secondaryBtnFull, { marginTop: matched ? 10 : 10 }]}
-            onPress={() => navigation.navigate("CareProducts")}
+            onPress={() =>
+              goMorph(navigation, "MorphCare", {
+                screen: "CareHome",
+                params: { openSearch: true },
+              })
+            }
           >
             <Text style={styles.secondaryBtnText}>{t("ingredient.openCatalog")}</Text>
           </Pressable>

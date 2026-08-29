@@ -116,7 +116,10 @@ export function MorphHomeScreen({ navigation }: Props) {
   );
 
   const openCareCatalog = useCallback(() => {
-    goMorph(navigation, "MorphCare", { screen: "CareProducts" });
+    goMorph(navigation, "MorphCare", {
+      screen: "CareHome",
+      params: { openSearch: true },
+    });
   }, [navigation, goMorph]);
 
   const onSamplePress = useCallback(
