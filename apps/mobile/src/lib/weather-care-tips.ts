@@ -248,17 +248,13 @@ export function generalWeatherExtras(ctx: {
   return out.slice(0, 4);
 }
 
-/** Hub sheet — iPhone 14 / Pro / Pro Max, Samsung, Redmi. */
-export function careHubLayout(width: number, height: number) {
-  const short = height < 740;
-  const tall = height >= 900;
+/** Hub sheet — barcha telefonlarda bir xil o‘lchamlar (dp). */
+export function careHubLayout(width: number, _height: number) {
   const narrow = width < 360;
 
-  // Kartochkalar target 150
   const hubCardH = 150;
-  // AI qatori
-  const aiH = 70;
-  const promoH = short ? 168 : tall ? 200 : width >= 428 ? 192 : 184;
+  const aiH = 65;
+  const promoH = 184;
   const sheetH = 28 + 10 + hubCardH + 10 + aiH + 12;
 
   return { hubCardH, aiH, promoH, sheetH, hPad: narrow ? 12 : 16 };

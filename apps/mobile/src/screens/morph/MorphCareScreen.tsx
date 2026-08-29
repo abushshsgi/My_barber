@@ -2549,7 +2549,7 @@ const styles = StyleSheet.create({
     justifyContent: "flex-start",
     paddingHorizontal: 12,
     gap: 12,
-    height: 70,
+    height: 65,
   },
   aiAssistantIcon: { width: 28, height: 28, borderRadius: 14, alignItems: "center", justifyContent: "center" },
   aiAssistantText: { ...morphFont, flex: 1, fontSize: 13, fontWeight: "600", color: "#111111" },
