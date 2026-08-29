@@ -30,6 +30,7 @@ export function MorphIngredientStack() {
       <Stack.Screen
         name="CareProductDetail"
         component={MorphCareProductDetailScreen as React.ComponentType<any>}
+        options={{ contentStyle: { backgroundColor: "#FFFFFF" } }}
       />
     </Stack.Navigator>
   );

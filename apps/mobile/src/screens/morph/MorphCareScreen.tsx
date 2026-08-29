@@ -33,6 +33,7 @@ import {
   type HairTexture,
 } from "../../api/care";
 import { useAuth } from "../../auth/AuthContext";
+import { CareProductPreviewSheet } from "../../components/morph/care/CareProductPreviewSheet";
 import { CareRoutineSheet } from "../../components/morph/care/CareRoutineSheet";
 import { DarkMeshAmbientBg } from "../../components/morph/care/DarkMeshAmbientBg";
 import { useCareWeather } from "../../hooks/useCareWeather";
@@ -1299,112 +1300,20 @@ export function MorphCareScreen({ navigation, route }: Props) {
           onRequestClose={() => setPreviewId(null)}
         >
           <Pressable style={styles.previewBackdrop} onPress={() => setPreviewId(null)}>
-            <Pressable style={styles.previewCard} onPress={(e) => e.stopPropagation?.()}>
+            <Pressable onPress={(e) => e.stopPropagation?.()}>
               {previewProduct ? (
-                <>
-                  <View style={styles.previewGrab} />
-                  <ScrollView
-                    showsVerticalScrollIndicator={false}
-                    contentContainerStyle={styles.previewScroll}
-                  >
-                    <View style={styles.previewMedia}>
-                      {previewProduct.image_url ? (
-                        <Image
-                          source={{ uri: previewProduct.image_url }}
-                          style={styles.previewImg}
-                        />
-                      ) : (
-                        <View style={[styles.previewImg, styles.searchRowPh]}>
-                          <Ionicons name="flask-outline" size={40} color="#6366F1" />
-                        </View>
-                      )}
-                      <Pressable
-                        style={styles.previewClose}
-                        onPress={() => setPreviewId(null)}
-                        hitSlop={8}
-                        accessibilityLabel={t("common.back")}
-                      >
-                        <Ionicons name="close" size={18} color="#0F172A" />
-                      </Pressable>
-                    </View>
-                    <Text style={styles.previewTitle}>{previewProduct.name}</Text>
-                    {previewProduct.brand ? (
-                      <Text style={styles.previewBrand}>{previewProduct.brand}</Text>
-                    ) : null}
-                    <Text style={styles.previewCat}>
-                      {t(`care.catalog.categories.${previewProduct.category}`, {
-                        defaultValue: previewProduct.category,
-                      })}
-                    </Text>
-                    {previewProduct.purpose_uz ? (
-                      <View style={styles.previewSection}>
-                        <Text style={styles.previewSectionTitle}>{t("care.catalog.purpose")}</Text>
-                        <Text style={styles.previewBody}>{previewProduct.purpose_uz}</Text>
-                      </View>
-                    ) : null}
-                    {previewProduct.usage_uz ? (
-                      <View style={styles.previewSection}>
-                        <Text style={styles.previewSectionTitle}>{t("care.catalog.usage")}</Text>
-                        <Text style={styles.previewBody}>{previewProduct.usage_uz}</Text>
-                      </View>
-                    ) : null}
-                    {previewProduct.pros_uz ? (
-                      <View style={styles.previewSection}>
-                        <Text style={styles.previewSectionTitle}>{t("care.catalog.pros")}</Text>
-                        <Text style={styles.previewBody}>{previewProduct.pros_uz}</Text>
-                      </View>
-                    ) : null}
-                    {previewProduct.warnings_uz ? (
-                      <View style={styles.previewSection}>
-                        <Text style={styles.previewSectionTitle}>{t("care.catalog.warnings")}</Text>
-                        <Text style={styles.previewWarn}>{previewProduct.warnings_uz}</Text>
-                      </View>
-                    ) : null}
-                  </ScrollView>
-                  <View style={styles.previewActions}>
-                    <Pressable
-                      style={[
-                        styles.previewAddBtn,
-                        previewAdded && styles.previewAddBtnAdded,
-                        styles.previewAddBtnFlex,
-                      ]}
-                      onPress={() => {
-                        if (previewAdded) return;
-                        void addFromSearch(previewProduct.id);
-                      }}
-                      disabled={previewAdded}
-                    >
-                      <Ionicons
-                        name={previewAdded ? "checkmark-circle" : "lock-closed-outline"}
-                        size={18}
-                        color={previewAdded ? "#4F46E5" : "#fff"}
-                      />
-                      <Text
-                        style={[
-                          styles.previewAddBtnText,
-                          previewAdded && styles.previewAddBtnTextAdded,
-                        ]}
-                        numberOfLines={1}
-                      >
-                        {previewAdded
-                          ? t("care.myProducts.alreadyAdded")
-                          : t("care.myProducts.addFromCatalog")}
-                      </Text>
-                    </Pressable>
-                    {previewAdded ? (
-                      <Pressable
-                        style={styles.previewCareBtn}
-                        onPress={openPreviewCare}
-                        accessibilityLabel={t("care.myProducts.useInCare")}
-                      >
-                        <Ionicons name="water-outline" size={18} color="#fff" />
-                        <Text style={styles.previewCareBtnText} numberOfLines={1}>
-                          {t("care.myProducts.useInCare")}
-                        </Text>
-                      </Pressable>
-                    ) : null}
-                  </View>
-                </>
+                <CareProductPreviewSheet
+                  product={previewProduct}
+                  quiz={quiz}
+                  added={previewAdded}
+                  bottomInset={Math.max(insets.bottom, 12)}
+                  onClose={() => setPreviewId(null)}
+                  onAdd={() => {
+                    if (previewAdded) return;
+                    void addFromSearch(previewProduct.id);
+                  }}
+                  onUseInCare={previewAdded ? openPreviewCare : undefined}
+                />
               ) : null}
             </Pressable>
           </Pressable>

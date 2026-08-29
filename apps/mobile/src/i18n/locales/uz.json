@@ -230,6 +230,16 @@
         "colored": "Bo‘yalgan",
         "bleached": "Ochilgan"
       }
+    },
+    "preview": {
+      "fitTitle": "Sochingizga mosligi",
+      "yourHair": "Sizning sochingiz",
+      "fit": {
+        "excellent": "Juda mos",
+        "good": "Yaxshi mos",
+        "ok": "O‘rtacha mos",
+        "poor": "Kam mos"
+      }
     }
   },
   "onboarding": {
