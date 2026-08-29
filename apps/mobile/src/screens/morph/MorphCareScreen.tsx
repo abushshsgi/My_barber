@@ -219,7 +219,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
   const addDropY = useRef(new Animated.Value(-140)).current;
   const addOpacity = useRef(new Animated.Value(0)).current;
   const addScale = useRef(new Animated.Value(0.86)).current;
-  const searchSheetY = useRef(new Animated.Value(600)).current;
+  const searchSheetY = useRef(new Animated.Value(829)).current;
   const previewSheetY = useRef(new Animated.Value(Dimensions.get("window").height)).current;
   const previewBackdropOp = useRef(new Animated.Value(0)).current;
   const searchInputRef = useRef<TextInput>(null);
@@ -229,7 +229,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
   const searchSheetHeight = useMemo(() => {
     const winH = Dimensions.get("window").height;
     const topBlock = insets.top + 4 + 48 + 4 + 40 + 33;
-    return Math.max(520, winH - topBlock);
+    return Math.max(829, winH - topBlock);
   }, [insets.top]);
 
   const playAddedAnimation = useCallback(
