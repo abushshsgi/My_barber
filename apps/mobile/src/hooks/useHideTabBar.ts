@@ -1,6 +1,9 @@
 import { useLayoutEffect } from "react";
 import { useIsFocused } from "@react-navigation/native";
 import { useTabBarHideControls } from "../lib/TabBarVisibility";
+import { TAB_DOCK_CLEARANCE } from "../lib/responsive";
+
+export { TAB_DOCK_CLEARANCE };
 
 /** Floating dock tab bar — Morph stack dan qaytganda tiklash uchun. */
 export const FLOATING_TAB_BAR_STYLE = {
@@ -13,9 +16,6 @@ export const FLOATING_TAB_BAR_STYLE = {
   elevation: 0,
   shadowOpacity: 0,
 };
-
-/** Custom dock balandligi — kontent ostida bo‘sh joy (markaz bump bilan). */
-export const TAB_DOCK_CLEARANCE = 84;
 
 /** Ichki Morph ekranlarida pastki tab bar ni yashirish. */
 export function useHideTabBar() {

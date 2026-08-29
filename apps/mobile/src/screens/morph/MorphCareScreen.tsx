@@ -240,7 +240,10 @@ export function MorphCareScreen({ navigation, route }: Props) {
   const searchInputRef = useRef<TextInput>(null);
   const { data: weather, loading: weatherLoading } = useCareWeather();
   const { width: winW, height: winH } = useWindowDimensions();
-  const hubLayout = useMemo(() => careHubLayout(winW, winH), [winW, winH]);
+  const hubLayout = useMemo(
+    () => careHubLayout(winW, winH, insets.top, insets.bottom),
+    [winW, winH, insets.top, insets.bottom],
+  );
   const weatherKey = weather?.current?.condition_key ?? "unknown";
   const weatherTemp =
     weather?.current?.temperature_c != null
@@ -915,7 +918,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
 
   if (viewMode === "hub") {
     return (
-      <View style={styles.hubRoot}>
+      <View style={[styles.hubRoot, { paddingBottom: hubLayout.dockClearance }]}>
         <StatusBar style="dark" />
         {addToast ? (
           <Animated.View
@@ -942,24 +945,16 @@ export function MorphCareScreen({ navigation, route }: Props) {
         ) : null}
         <View style={[StyleSheet.absoluteFill, { backgroundColor: "#FAFAFA" }]} />
 
-        <ScrollView
-          style={styles.hubScroll}
-          contentContainerStyle={{
-            paddingTop: searchOpen ? insets.top + 6 : 0,
-            paddingBottom: searchOpen ? 16 : 0,
-            gap: 12,
-            justifyContent: "flex-start",
-            alignItems: "stretch",
-          }}
-          nestedScrollEnabled={true}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-          bounces={true}
-          overScrollMode="never"
+        <View
+          style={[
+            styles.hubScroll,
+            {
+              paddingTop: searchOpen ? insets.top + 6 : 0,
+            },
+          ]}
         >
-          {/* Hero — ob-havo + ambient */}
           {!searchOpen ? (
-          <View style={[styles.promoWrap, { paddingTop: insets.top + 6, paddingHorizontal: hubLayout.hPad }]}>
+          <View style={[styles.promoWrap, { paddingTop: insets.top + 4, paddingHorizontal: hubLayout.hPad }]}>
             <View style={[styles.promoCard, { height: hubLayout.promoH }]}>
               <Image
                 source={{ uri: weatherImg }}
@@ -1017,9 +1012,22 @@ export function MorphCareScreen({ navigation, route }: Props) {
                   )}
                 </View>
                 <View style={styles.promoWeatherRow}>
-                  <Text style={styles.promoTemp}>{weatherTemp}</Text>
+                  <Text
+                    style={[
+                      styles.promoTemp,
+                      {
+                        fontSize: hubLayout.promoTempSize,
+                        lineHeight: hubLayout.promoTempSize + 4,
+                      },
+                    ]}
+                  >
+                    {weatherTemp}
+                  </Text>
                   <View style={{ flex: 1, minWidth: 0 }}>
-                    <Text style={styles.promoTitle} numberOfLines={2}>
+                    <Text
+                      style={[styles.promoTitle, { fontSize: hubLayout.promoTitleSize }]}
+                      numberOfLines={2}
+                    >
                       {t("care.promoTitle")}
                     </Text>
                     <Text style={styles.promoHint} numberOfLines={1}>
@@ -1239,7 +1247,8 @@ export function MorphCareScreen({ navigation, route }: Props) {
                 style={[
                   styles.hubSheet,
                   {
-                    paddingBottom: Math.max(insets.bottom, 12),
+                    gap: hubLayout.sheetGap,
+                    paddingBottom: 8,
                   },
                 ]}
               >
@@ -1330,7 +1339,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
               </View>
             </View>
           ) : null}
-        </ScrollView>
+        </View>
 
         {searchOpen ? (
           <Animated.View
@@ -1544,7 +1553,10 @@ const styles = StyleSheet.create({
   pad: { flex: 1, paddingHorizontal: 20 },
   onboardPad: { flex: 1, paddingHorizontal: 20 },
   hubRoot: { flex: 1, backgroundColor: "#FAFAFA" },
-  hubScroll: { flex: 1 },
+  hubScroll: {
+    flex: 1,
+    justifyContent: "flex-start",
+  },
   addToast: {
     position: "absolute",
     top: 0,
@@ -1622,15 +1634,15 @@ const styles = StyleSheet.create({
   },
   promoWrap: {
     marginTop: 0,
-    marginBottom: 10,
+    marginBottom: 4,
   },
   promoCard: {
     borderRadius: 22,
     overflow: "hidden",
     backgroundColor: "#0B1220",
     justifyContent: "space-between",
-    paddingBottom: 14,
-    paddingHorizontal: 14,
+    paddingBottom: 10,
+    paddingHorizontal: 12,
   },
   promoHeroImg: {
     ...StyleSheet.absoluteFill,
@@ -1862,8 +1874,9 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0,0,0,0.12)",
   },
   searchSection: {
-    paddingHorizontal: 20,
-    marginTop: 10,
+    paddingHorizontal: 16,
+    marginTop: 4,
+    marginBottom: 0,
   },
   searchBar: {
     width: "100%",
@@ -1873,7 +1886,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     paddingLeft: 14,
     paddingRight: 5,
-    height: 48,
+    height: 44,
     borderWidth: 1,
     borderColor: "rgba(17,17,17,0.12)",
     gap: 8,
@@ -2233,9 +2246,9 @@ const styles = StyleSheet.create({
   },
   searchRowPh: { alignItems: "center", justifyContent: "center" },
   categoryScroll: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     gap: 8,
-    paddingVertical: 10,
+    paddingVertical: 6,
   },
   categoryScrollCompact: {
     paddingVertical: 4,
@@ -2269,8 +2282,8 @@ const styles = StyleSheet.create({
   featuredProductsScroll: {
     paddingHorizontal: 16,
     gap: 12,
-    paddingTop: 4,
-    paddingBottom: 6,
+    paddingTop: 2,
+    paddingBottom: 2,
   },
   featuredGrid: {
     flexDirection: "row",
@@ -2409,7 +2422,8 @@ const styles = StyleSheet.create({
     lineHeight: 32,
   },
   hubDockOuter: {
-    marginTop: 8,
+    marginTop: 4,
+    flexGrow: 0,
     paddingHorizontal: 0,
     paddingTop: 0,
     backgroundColor: "transparent",
@@ -2417,9 +2431,9 @@ const styles = StyleSheet.create({
   hubSheet: {
     backgroundColor: "#FFFFFF",
     paddingHorizontal: 12,
-    paddingTop: 10,
+    paddingTop: 8,
     paddingBottom: 0,
-    gap: 25,
+    gap: 12,
     borderTopLeftRadius: 22,
     borderTopRightRadius: 22,
     borderBottomLeftRadius: 0,
@@ -2482,9 +2496,9 @@ const styles = StyleSheet.create({
   hubCardBody: {
     flex: 1,
     paddingHorizontal: 10,
-    paddingTop: 10,
-    paddingBottom: 10,
-    gap: 12,
+    paddingTop: 8,
+    paddingBottom: 8,
+    gap: 4,
     zIndex: 1,
     paddingRight: 58,
     justifyContent: "flex-start",
@@ -2555,7 +2569,6 @@ const styles = StyleSheet.create({
     justifyContent: "flex-start",
     paddingHorizontal: 12,
     gap: 12,
-    height: 65,
   },
   aiAssistantIcon: { width: 28, height: 28, borderRadius: 14, alignItems: "center", justifyContent: "center" },
   aiAssistantText: { ...morphFont, flex: 1, fontSize: 13, fontWeight: "600", color: "#111111" },

@@ -1,5 +1,6 @@
 import type { WeatherConditionKey, WeatherCarePayload } from "../api/weather";
 import type { MyCareProduct } from "./morph-my-products";
+import { TAB_DOCK_CLEARANCE, clamp, layoutScale, rs, screenContentHeight } from "./responsive";
 
 /** Ob-havo holatiga mos ambient hero rasmlar. */
 export function weatherHeroImage(key: WeatherConditionKey | undefined): string {
@@ -248,18 +249,61 @@ export function generalWeatherExtras(ctx: {
   return out.slice(0, 4);
 }
 
-/** Hub layout — qisqa ekranda promo/featured biroz kichik, hub kartalar fixed. */
-export function careHubLayout(width: number, height: number) {
-  const narrow = width < 360;
-  // SE (~667) → ~0.82; 852+ → 1. Kompozitsiya bir xil, viewportga sig‘adi.
-  const scale = Math.min(1, Math.max(0.8, height / 852));
+/** Hub — bitta ekranga sig‘adi (scroll yo‘q), SE→Pro Max scale. */
+export function careHubLayout(
+  width: number,
+  height: number,
+  topInset = 0,
+  bottomInset = 0,
+) {
+  const scale = layoutScale(width, height);
+  const avail = screenContentHeight(height, topInset, bottomInset, TAB_DOCK_CLEARANCE);
 
-  const hubCardH = 150;
-  const aiH = 65;
-  const promoH = Math.round(184 * scale);
-  const featuredH = Math.round(220 * scale);
-  const featuredW = Math.round(196 * scale);
-  const sheetH = 28 + 25 + hubCardH + 10 + aiH + 12;
+  // Chrome: search + cats + report head + gaps (taxminiy)
+  const searchBlock = rs(52, scale);
+  const catBlock = rs(38, scale);
+  const reportHead = rs(26, scale);
+  const gaps = rs(28, scale); // section + sheet ichidagi gaplar
+  const chrome = searchBlock + catBlock + reportHead + gaps;
 
-  return { hubCardH, aiH, promoH, featuredH, featuredW, sheetH, hPad: narrow ? 12 : 16 };
+  let remain = Math.max(280, avail - chrome);
+
+  // Qolgan joy: promo + featured + hubCards + AI
+  let promoH = clamp(Math.round(remain * 0.3), rs(100, scale), rs(168, scale));
+  let featuredH = clamp(Math.round(remain * 0.26), rs(100, scale), rs(180, scale));
+  let hubCardH = clamp(Math.round(remain * 0.28), rs(96, scale), rs(140, scale));
+  let aiH = clamp(remain - promoH - featuredH - hubCardH, rs(44, scale), rs(58, scale));
+
+  // Sig‘masa — proporsional qisqartirish
+  const used = promoH + featuredH + hubCardH + aiH;
+  if (used > remain) {
+    const k = remain / used;
+    promoH = Math.floor(promoH * k);
+    featuredH = Math.floor(featuredH * k);
+    hubCardH = Math.floor(hubCardH * k);
+    aiH = Math.max(rs(42, scale), remain - promoH - featuredH - hubCardH);
+  }
+
+  const featuredW = clamp(Math.round(featuredH * 0.9), rs(140, scale), rs(196, scale));
+  const sheetGap = rs(12, scale);
+  const hPad = width < 360 ? 12 : rs(16, scale);
+
+  return {
+    scale,
+    avail,
+    hubCardH,
+    aiH,
+    promoH,
+    featuredH,
+    featuredW,
+    searchBlock,
+    catBlock,
+    sheetGap,
+    sheetH: reportHead + sheetGap + hubCardH + sheetGap + aiH + rs(12, scale),
+    hPad,
+    dockClearance: TAB_DOCK_CLEARANCE,
+    promoTempSize: rs(42, scale),
+    promoTitleSize: rs(16, scale),
+  };
 }
+
