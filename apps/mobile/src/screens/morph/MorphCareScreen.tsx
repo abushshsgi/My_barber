@@ -521,8 +521,8 @@ export function MorphCareScreen({ navigation, route }: Props) {
         id: `my-${mp.id}`,
         productId: mp.id,
         title: mp.name,
-        brand: mp.brand || "Morf Tarkib",
-        price: "Mening",
+        brand: mp.brand || "MORF Care",
+        price: mp.brand || "MORF Care",
         category: mp.category || "spray",
         duration: "2 Min",
         durationMinutes: 2,
@@ -545,8 +545,8 @@ export function MorphCareScreen({ navigation, route }: Props) {
         id: `cat-${cp.id}`,
         productId: cp.id,
         title: cp.name,
-        brand: cp.brand,
-        price: `$${80 + (cp.id % 6) * 20}`,
+        brand: cp.brand || "MORF Care",
+        price: cp.brand || "MORF Care",
         category: cp.category,
         duration: cp.category === "mask" ? "5 Min" : "2 Min",
         durationMinutes: cp.category === "mask" ? 5 : 2,
@@ -961,10 +961,16 @@ export function MorphCareScreen({ navigation, route }: Props) {
               style={styles.promoCard}
             >
               <View style={styles.promoLeft}>
-                <Text style={styles.promoEyebrow}>Morf Care</Text>
-                <Text style={styles.promoTitle}>{"Your Glow,\nHalf the Price"}</Text>
+                <Text style={styles.promoEyebrow}>
+                  {t("care.promoEyebrow", { defaultValue: "MORF PARVARISH" })}
+                </Text>
+                <Text style={styles.promoTitle}>
+                  {t("care.promoTitle", { defaultValue: "Go‘zalligingiz,\nyarim narxida" })}
+                </Text>
                 <Pressable style={styles.promoBtn} onPress={openCatalog}>
-                  <Text style={styles.promoBtnText}>Get offer</Text>
+                  <Text style={styles.promoBtnText}>
+                    {t("care.promoCta", { defaultValue: "Taklifni olish" })}
+                  </Text>
                   <Ionicons name="arrow-forward" size={14} color="#fff" />
                 </Pressable>
               </View>
@@ -985,7 +991,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
           </View>
           ) : null}
 
-          {/* Search Bar */}
+          {/* Search Bar — filter icon ichida */}
           <View style={styles.searchSection}>
             <View style={[styles.searchBar, searchOpen && styles.searchBarActive]}>
               <Ionicons name="search-outline" size={18} color={searchOpen ? "#4F46E5" : "#9CA3AF"} />
@@ -1017,8 +1023,9 @@ export function MorphCareScreen({ navigation, route }: Props) {
               ) : (
                 <Pressable
                   style={styles.filterBtn}
-                  onPress={openCatalog}
+                  onPress={openSearch}
                   accessibilityLabel={t("care.catalog.title")}
+                  hitSlop={4}
                 >
                   <LinearGradient
                     colors={["#6366F1", "#4F46E5"]}
@@ -1026,7 +1033,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
                     end={{ x: 1, y: 1 }}
                     style={styles.filterBtnGrad}
                   >
-                    <Ionicons name="list" size={16} color="#fff" />
+                    <Ionicons name="options-outline" size={15} color="#fff" />
                   </LinearGradient>
                 </Pressable>
               )}
@@ -1166,7 +1173,9 @@ export function MorphCareScreen({ navigation, route }: Props) {
                     <Text style={styles.featuredProdTitle} numberOfLines={2}>
                       {prod.title}
                     </Text>
-                    <Text style={styles.featuredProdPrice}>{prod.price}</Text>
+                    <Text style={styles.featuredProdBrand} numberOfLines={1}>
+                      {prod.brand || "MORF Care"}
+                    </Text>
                   </View>
                 </Pressable>
               );
@@ -1293,32 +1302,42 @@ export function MorphCareScreen({ navigation, route }: Props) {
               </View>
 
               <View style={styles.hubCards}>
-                <Pressable style={styles.hubCard} onPress={openParvarish}>
+                <Pressable style={[styles.hubCard, styles.hubCardParvarish]} onPress={openParvarish}>
                   <View style={styles.hubCardHead}>
-                    <Text style={styles.hubCardTitle}>{t("care.hubParvarish")}</Text>
-                    <View style={[styles.hubCardIcon, styles.hubCardIconBlue]}>
-                      <Ionicons name="water" size={14} color="#3B82F6" />
+                    <View style={[styles.hubCardIconLg, styles.hubCardIconBlue]}>
+                      <Ionicons name="water" size={20} color="#2563EB" />
+                    </View>
+                    <View style={[styles.hubStatusBadge, styles.hubStatusBadgeBlue]}>
+                      <Text style={[styles.hubStatusText, styles.hubStatusTextBlue]}>
+                        {t("care.hubStatusActive", { defaultValue: "Faol" })}
+                      </Text>
                     </View>
                   </View>
+                  <Text style={styles.hubCardTitle}>{t("care.hubParvarish")}</Text>
                   <Text style={styles.hubCardMetric} numberOfLines={1}>
                     {t(`care.conditions.${quiz.condition}`)}
                   </Text>
-                  <Text style={styles.hubCardSub} numberOfLines={2}>
+                  <Text style={styles.hubCardSub} numberOfLines={3}>
                     {t("care.hubParvarishSub")}
                   </Text>
                 </Pressable>
 
-                <Pressable style={styles.hubCard} onPress={openTarkib}>
+                <Pressable style={[styles.hubCard, styles.hubCardTarkib]} onPress={openTarkib}>
                   <View style={styles.hubCardHead}>
-                    <Text style={styles.hubCardTitle}>{t("care.hubTarkib")}</Text>
-                    <View style={[styles.hubCardIcon, styles.hubCardIconViolet]}>
-                      <Ionicons name="flask" size={14} color="#6366F1" />
+                    <View style={[styles.hubCardIconLg, styles.hubCardIconViolet]}>
+                      <Ionicons name="flask" size={20} color="#4F46E5" />
+                    </View>
+                    <View style={[styles.hubStatusBadge, styles.hubStatusBadgeViolet]}>
+                      <Text style={[styles.hubStatusText, styles.hubStatusTextViolet]}>
+                        {t("care.hubStatusAnalyzed", { defaultValue: "Tahlil qilingan" })}
+                      </Text>
                     </View>
                   </View>
+                  <Text style={styles.hubCardTitle}>{t("care.hubTarkib")}</Text>
                   <Text style={styles.hubCardMetric} numberOfLines={1}>
                     {t("care.hubTarkibMetric")}
                   </Text>
-                  <Text style={styles.hubCardSub} numberOfLines={2}>
+                  <Text style={styles.hubCardSub} numberOfLines={3}>
                     {t("care.hubTarkibSub")}
                   </Text>
                 </Pressable>
@@ -1686,10 +1705,11 @@ const styles = StyleSheet.create({
     marginRight: 2,
   },
   filterBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     overflow: "hidden",
+    marginRight: 1,
   },
   filterBtnGrad: {
     flex: 1,
@@ -2150,14 +2170,20 @@ const styles = StyleSheet.create({
     ...morphFont,
     fontSize: 13,
     fontWeight: "600",
-    color: "#334155",
-    lineHeight: 16,
+    color: "#0F172A",
+    lineHeight: 17,
+  },
+  featuredProdBrand: {
+    ...morphFont,
+    fontSize: 12,
+    fontWeight: "500",
+    color: "#94A3B8",
   },
   featuredProdPrice: {
     ...morphFont,
-    fontSize: 14,
-    fontWeight: "800",
-    color: "#0F172A",
+    fontSize: 12,
+    fontWeight: "500",
+    color: "#94A3B8",
   },
   routineTop: { paddingHorizontal: 20, paddingBottom: 8, gap: 10 },
   routineTopTitle: { ...morphFont, fontSize: 16, fontWeight: "700", color: "#111" },
@@ -2215,25 +2241,83 @@ const styles = StyleSheet.create({
     backgroundColor: "#F1F5F9",
   },
   reportFilterText: { ...morphFont, fontSize: 11.5, fontWeight: "600", color: "#1a1a1a" },
-  hubCards: { flexDirection: "row", gap: 8 },
+  hubCards: { flexDirection: "row", gap: 10 },
   hubCard: {
     flex: 1,
-    height: 128,
-    borderRadius: 18,
-    backgroundColor: "#F8FAFC",
+    minHeight: 148,
+    borderRadius: 20,
     paddingHorizontal: 12,
     paddingVertical: 12,
-    gap: 4,
+    gap: 6,
     borderWidth: 1,
-    borderColor: "rgba(15,23,42,0.06)",
+    overflow: "hidden",
   },
-  hubCardHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 6 },
-  hubCardIcon: { width: 28, height: 28, borderRadius: 14, alignItems: "center", justifyContent: "center" },
-  hubCardIconBlue: { backgroundColor: "rgba(59,130,246,0.12)" },
-  hubCardIconViolet: { backgroundColor: "rgba(99,102,241,0.12)" },
-  hubCardTitle: { ...morphFont, flex: 1, fontSize: 11.5, fontWeight: "600", color: "rgba(26,26,26,0.65)" },
-  hubCardMetric: { ...morphFont, fontSize: 17, fontWeight: "800", color: "#0F172A", letterSpacing: -0.3 },
-  hubCardSub: { ...morphFont, fontSize: 10, lineHeight: 13, color: "rgba(26,26,26,0.45)", marginTop: "auto" },
+  hubCardParvarish: {
+    backgroundColor: "#EFF6FF",
+    borderColor: "rgba(37,99,235,0.12)",
+  },
+  hubCardTarkib: {
+    backgroundColor: "#EEF2FF",
+    borderColor: "rgba(79,70,229,0.14)",
+  },
+  hubCardHead: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 6,
+    marginBottom: 2,
+  },
+  hubCardIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  hubCardIconLg: {
+    width: 40,
+    height: 40,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  hubCardIconBlue: { backgroundColor: "rgba(37,99,235,0.14)" },
+  hubCardIconViolet: { backgroundColor: "rgba(79,70,229,0.16)" },
+  hubStatusBadge: {
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  hubStatusBadgeBlue: { backgroundColor: "rgba(37,99,235,0.12)" },
+  hubStatusBadgeViolet: { backgroundColor: "rgba(79,70,229,0.12)" },
+  hubStatusText: {
+    ...morphFont,
+    fontSize: 9.5,
+    fontWeight: "700",
+    letterSpacing: 0.2,
+  },
+  hubStatusTextBlue: { color: "#2563EB" },
+  hubStatusTextViolet: { color: "#4F46E5" },
+  hubCardTitle: {
+    ...morphFont,
+    fontSize: 12,
+    fontWeight: "600",
+    color: "rgba(15,23,42,0.55)",
+  },
+  hubCardMetric: {
+    ...morphFont,
+    fontSize: 18,
+    fontWeight: "800",
+    color: "#0F172A",
+    letterSpacing: -0.3,
+  },
+  hubCardSub: {
+    ...morphFont,
+    fontSize: 11,
+    lineHeight: 14,
+    color: "rgba(15,23,42,0.48)",
+    marginTop: "auto",
+  },
   aiAssistant: {
     height: 64,
     borderRadius: 18,
