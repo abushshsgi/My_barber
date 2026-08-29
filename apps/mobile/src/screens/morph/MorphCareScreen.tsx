@@ -226,8 +226,8 @@ export function MorphCareScreen({ navigation, route }: Props) {
   const [selectedCat, setSelectedCat] = useState("all");
   const [quiz, setQuiz] = useState<CareQuizAnswers>(() => defaultQuiz());
   const [step, setStep] = useState<QuizStep | "plan">(0);
-  /** Hub tab dockni ko‘rsatadi — onboarding/flow to‘liq ekran. */
-  useHideTabBarWhen(viewMode !== "hub" || step !== "plan");
+  /** Care hubda ham floating tab bar yo‘q — orqaga tugmasi bilan chiqiladi. */
+  useHideTabBarWhen(true);
   const [catalog, setCatalog] = useState<CareProduct[]>([]);
   const [myProducts, setMyProducts] = useState<MyCareProduct[]>([]);
   const [saving, setSaving] = useState(false);
@@ -997,7 +997,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
               </View>
 
               <Pressable
-                style={styles.promoCopy}
+                style={[styles.promoCopy, { marginTop: hubLayout.weatherNudge }]}
                 onPress={openWeather}
                 accessibilityRole="button"
                 accessibilityLabel={t("care.weather.title")}
@@ -1106,14 +1106,15 @@ export function MorphCareScreen({ navigation, route }: Props) {
           </View>
 
           {/* Category Pills (All, Hair Cut, Face Care, Eye care, etc.) */}
-          <View style={styles.categoryRow}>
+          <View style={[styles.categoryRow, { height: hubLayout.catBlock }]}>
           <ScrollView
             horizontal
             nestedScrollEnabled={true}
             showsHorizontalScrollIndicator={false}
-            style={styles.categoryScrollView}
+            style={[styles.categoryScrollView, { height: hubLayout.catBlock }]}
             contentContainerStyle={[
               styles.categoryScroll,
+              { height: hubLayout.catBlock },
               searchOpen && styles.categoryScrollCompact,
             ]}
           >
@@ -1122,7 +1123,11 @@ export function MorphCareScreen({ navigation, route }: Props) {
               return (
                 <Pressable
                   key={cat.id}
-                  style={[styles.catPill, active ? styles.catPillActive : styles.catPillInactive]}
+                  style={[
+                    styles.catPill,
+                    { height: hubLayout.catBlock - 2 },
+                    active ? styles.catPillActive : styles.catPillInactive,
+                  ]}
                   onPress={() => setSelectedCat(cat.id)}
                 >
                   <Text
@@ -1272,6 +1277,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
                   styles.hubSheet,
                   {
                     gap: hubLayout.sheetGap,
+                    paddingTop: hubLayout.sheetTop,
                     paddingBottom: 4,
                   },
                 ]}
@@ -1353,7 +1359,10 @@ export function MorphCareScreen({ navigation, route }: Props) {
                 </View>
 
                 <Pressable
-                  style={[styles.aiAssistant, { height: hubLayout.aiH }]}
+                  style={[
+                    styles.aiAssistant,
+                    { height: hubLayout.aiH, marginTop: Math.max(4, Math.round(hubLayout.sheetGap * 0.35)) },
+                  ]}
                   onPress={openAssistant}
                   accessibilityLabel={t("care.hubAiAssistant")}
                 >
@@ -2292,21 +2301,16 @@ const styles = StyleSheet.create({
   },
   searchRowPh: { alignItems: "center", justifyContent: "center" },
   categoryRow: {
-    height: 20,
-    maxHeight: 20,
     flexGrow: 0,
     flexShrink: 0,
-    overflow: "hidden",
+    overflow: "visible",
+    justifyContent: "center",
   },
   categoryScrollView: {
-    height: 20,
-    maxHeight: 20,
     flexGrow: 0,
     flexShrink: 0,
   },
   categoryScroll: {
-    height: 20,
-    maxHeight: 20,
     paddingHorizontal: scale(16),
     gap: moderateScale(8),
     alignItems: "center",
@@ -2315,8 +2319,7 @@ const styles = StyleSheet.create({
     paddingVertical: 0,
   },
   catPill: {
-    height: 20,
-    paddingHorizontal: scale(12),
+    paddingHorizontal: scale(14),
     alignItems: "center",
     justifyContent: "center",
     alignSelf: "center",
@@ -2332,8 +2335,9 @@ const styles = StyleSheet.create({
   },
   catText: {
     ...morphFont,
-    fontSize: 11,
-    lineHeight: 14,
+    fontSize: 12,
+    lineHeight: 16,
+    includeFontPadding: false,
   },
   catTextActive: {
     color: "#FFFFFF",
@@ -2495,9 +2499,9 @@ const styles = StyleSheet.create({
   hubSheet: {
     backgroundColor: "#FFFFFF",
     paddingHorizontal: scale(12),
-    paddingTop: verticalScale(6),
+    paddingTop: verticalScale(14),
     paddingBottom: 0,
-    gap: moderateScale(8),
+    gap: moderateScale(12),
     borderTopLeftRadius: moderateScale(22),
     borderTopRightRadius: moderateScale(22),
     borderBottomLeftRadius: 0,
