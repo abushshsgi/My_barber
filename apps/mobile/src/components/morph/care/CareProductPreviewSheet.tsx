@@ -212,7 +212,7 @@ export function CareProductPreviewSheet({
               <Image source={{ uri: imageUri }} style={styles.thumb} contentFit="cover" />
             ) : (
               <View style={[styles.thumb, styles.thumbPh]}>
-                <Ionicons name="flask-outline" size={26} color={C.muted} />
+                <Ionicons name="flask-outline" size={32} color={C.muted} />
               </View>
             )}
           </View>
@@ -276,29 +276,42 @@ export function CareProductPreviewSheet({
       </ScrollView>
 
       <View style={[styles.footer, { paddingBottom: padBottom }]}>
-        <Pressable
-          style={[styles.addBtn, added && styles.addBtnAdded]}
-          onPress={onAdd}
-          disabled={added}
-        >
-          <Ionicons
-            name={added ? "checkmark-circle" : "bag-add-outline"}
-            size={18}
-            color={added ? C.fg : "#fff"}
-          />
-          <Text style={[styles.addBtnText, added && styles.addBtnTextAdded]} numberOfLines={1}>
-            {added
-              ? t("care.myProducts.alreadyAdded")
-              : t("care.myProducts.addFromCatalog")}
-          </Text>
-        </Pressable>
         {added && onUseInCare ? (
-          <Pressable style={styles.careBtn} onPress={onUseInCare}>
-            <Text style={styles.careBtnText} numberOfLines={1}>
-              {t("care.myProducts.useInCare")}
+          <View style={styles.footerRow}>
+            <View style={[styles.addBtn, styles.addBtnAdded, styles.footerHalf]}>
+              <Ionicons name="checkmark-circle" size={18} color={C.fg} />
+              <Text style={[styles.addBtnText, styles.addBtnTextAdded]} numberOfLines={1}>
+                {t("care.myProducts.alreadyAdded")}
+              </Text>
+            </View>
+            <Pressable
+              style={[styles.careBtn, styles.careBtnPrimary, styles.footerHalf]}
+              onPress={onUseInCare}
+            >
+              <Ionicons name="sparkles" size={16} color="#fff" />
+              <Text style={[styles.careBtnText, styles.careBtnTextPrimary]} numberOfLines={1}>
+                {t("care.myProducts.useInCare")}
+              </Text>
+            </Pressable>
+          </View>
+        ) : (
+          <Pressable
+            style={[styles.addBtn, added && styles.addBtnAdded]}
+            onPress={onAdd}
+            disabled={added}
+          >
+            <Ionicons
+              name={added ? "checkmark-circle" : "bag-add-outline"}
+              size={18}
+              color={added ? C.fg : "#fff"}
+            />
+            <Text style={[styles.addBtnText, added && styles.addBtnTextAdded]} numberOfLines={1}>
+              {added
+                ? t("care.myProducts.alreadyAdded")
+                : t("care.myProducts.addFromCatalog")}
             </Text>
           </Pressable>
-        ) : null}
+        )}
       </View>
     </View>
   );
@@ -332,7 +345,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   scroll: { flex: 1 },
-  scrollBody: { paddingBottom: 2, gap: 8 },
+  scrollBody: { paddingBottom: 12, gap: 8 },
   topRow: {
     flexDirection: "row",
     alignItems: "flex-start",
@@ -457,7 +470,15 @@ const styles = StyleSheet.create({
   },
   footer: {
     gap: 6,
-    paddingTop: 4,
+    paddingTop: 8,
+  },
+  footerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  footerHalf: {
+    flex: 1,
   },
   addBtn: {
     height: 50,
@@ -467,6 +488,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
+    paddingHorizontal: 10,
   },
   addBtnAdded: {
     backgroundColor: C.glassChip,
@@ -482,19 +504,30 @@ const styles = StyleSheet.create({
   },
   addBtnTextAdded: { color: C.fg },
   careBtn: {
-    height: 42,
-    borderRadius: 12,
+    height: 50,
+    borderRadius: 14,
     backgroundColor: C.glassChip,
+    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
+    gap: 6,
+    paddingHorizontal: 10,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: C.line,
   },
+  careBtnPrimary: {
+    backgroundColor: C.accent,
+    borderWidth: 0,
+  },
   careBtnText: {
     ...morphFont,
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: "700",
     color: C.fg,
+    flexShrink: 1,
+  },
+  careBtnTextPrimary: {
+    color: "#fff",
   },
   tarkibTop: {
     flexDirection: "row",
