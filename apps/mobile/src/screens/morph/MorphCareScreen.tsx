@@ -946,7 +946,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
           style={styles.hubScroll}
           contentContainerStyle={{
             paddingTop: searchOpen ? insets.top + 6 : 0,
-            paddingBottom: 16,
+            paddingBottom: searchOpen ? 16 : 0,
           }}
           nestedScrollEnabled={true}
           keyboardShouldPersistTaps="handled"
@@ -1225,9 +1225,107 @@ export function MorphCareScreen({ navigation, route }: Props) {
             })}
           </ScrollView>
           ) : null}
+
+          {/* Hisobot sheet — featured kartochkalar ostida (scroll ichida) */}
+          {!searchOpen ? (
+            <View style={styles.hubDockOuter}>
+              <View
+                style={[
+                  styles.hubSheet,
+                  {
+                    paddingBottom: Math.max(insets.bottom, 12),
+                  },
+                ]}
+              >
+                <View style={styles.reportHead}>
+                  <Text style={styles.reportTitle}>{t("care.hubReport")}</Text>
+                  <Pressable style={styles.reportFilter} onPress={openMyProducts}>
+                    <Text style={styles.reportFilterText}>{t("care.myProducts.title")}</Text>
+                    <Ionicons name="chevron-forward" size={13} color="#737373" />
+                  </Pressable>
+                </View>
+
+                <View style={[styles.hubCards, { height: hubLayout.hubCardH }]}>
+                  <Pressable style={styles.hubCard} onPress={openParvarish}>
+                    <Image
+                      source={{
+                        uri: "https://images.unsplash.com/photo-1522338242992-e1a639acd9c4?auto=format&fit=crop&w=280&q=80",
+                      }}
+                      style={styles.hubCardArt}
+                      resizeMode="cover"
+                    />
+                    <View style={styles.hubCardBody}>
+                      <View style={styles.hubCardHead}>
+                        <View style={styles.hubCardIconLg}>
+                          <Ionicons name="sparkles" size={16} color="#111111" />
+                        </View>
+                        <View style={styles.hubStatusBadge}>
+                          <Text style={styles.hubStatusText}>
+                            {t("care.hubStatusActive", { defaultValue: "Faol" })}
+                          </Text>
+                        </View>
+                      </View>
+                      <Text style={styles.hubCardTitle}>{t("care.hubParvarish")}</Text>
+                      <Text style={styles.hubCardMetric} numberOfLines={1}>
+                        {t(`care.conditions.${quiz.condition}`)}
+                      </Text>
+                      <Text style={styles.hubCardSub} numberOfLines={2}>
+                        {t("care.hubParvarishSub")}
+                      </Text>
+                    </View>
+                  </Pressable>
+
+                  <Pressable style={styles.hubCard} onPress={openTarkib}>
+                    <Image
+                      source={{
+                        uri: "https://images.unsplash.com/photo-1556228578-0d85b1a4d571?auto=format&fit=crop&w=280&q=80",
+                      }}
+                      style={styles.hubCardArt}
+                      resizeMode="cover"
+                    />
+                    <View style={styles.hubCardBody}>
+                      <View style={styles.hubCardHead}>
+                        <View style={styles.hubCardIconLg}>
+                          <Ionicons name="scan-outline" size={16} color="#111111" />
+                        </View>
+                        <View style={styles.hubStatusBadge}>
+                          <Text style={styles.hubStatusText}>
+                            {t("care.hubStatusAnalyzed", { defaultValue: "Tahlil qilingan" })}
+                          </Text>
+                        </View>
+                      </View>
+                      <Text style={styles.hubCardTitle}>{t("care.hubTarkib")}</Text>
+                      <Text style={styles.hubCardMetric} numberOfLines={1}>
+                        {t("care.hubTarkibMetric")}
+                      </Text>
+                      <Text style={styles.hubCardSub} numberOfLines={2}>
+                        {t("care.hubTarkibSub")}
+                      </Text>
+                    </View>
+                  </Pressable>
+                </View>
+
+                <Pressable
+                  style={[styles.aiAssistant, { height: hubLayout.aiH }]}
+                  onPress={openAssistant}
+                  accessibilityLabel={t("care.hubAiAssistant")}
+                >
+                  <LinearGradient
+                    colors={["#111111", "#111111"]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.aiAssistantIcon}
+                  >
+                    <Ionicons name="sparkles" size={14} color="#fff" />
+                  </LinearGradient>
+                  <Text style={styles.aiAssistantText}>{t("care.hubAiAssistant")}</Text>
+                  <Ionicons name="arrow-forward" size={15} color="#111111" />
+                </Pressable>
+              </View>
+            </View>
+          ) : null}
         </ScrollView>
 
-        {/* Pastki dock yoki search panel */}
         {searchOpen ? (
           <Animated.View
             style={[
@@ -1328,104 +1426,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
               )}
             </ScrollView>
           </Animated.View>
-        ) : (
-          <View style={styles.hubDockOuter}>
-            <View
-              style={[
-                styles.hubSheet,
-                {
-                  height: 70,
-                  paddingBottom: Math.max(insets.bottom, 12),
-                },
-              ]}
-            >
-              <View style={styles.reportHead}>
-                <Text style={styles.reportTitle}>{t("care.hubReport")}</Text>
-                <Pressable style={styles.reportFilter} onPress={openMyProducts}>
-                  <Text style={styles.reportFilterText}>{t("care.myProducts.title")}</Text>
-                  <Ionicons name="chevron-forward" size={13} color="#737373" />
-                </Pressable>
-              </View>
-
-              <View style={[styles.hubCards, { height: hubLayout.hubCardH }]}>
-                <Pressable style={styles.hubCard} onPress={openParvarish}>
-                  <Image
-                    source={{
-                      uri: "https://images.unsplash.com/photo-1522338242992-e1a639acd9c4?auto=format&fit=crop&w=280&q=80",
-                    }}
-                    style={styles.hubCardArt}
-                    resizeMode="cover"
-                  />
-                  <View style={styles.hubCardBody}>
-                    <View style={styles.hubCardHead}>
-                      <View style={styles.hubCardIconLg}>
-                        <Ionicons name="sparkles" size={16} color="#111111" />
-                      </View>
-                      <View style={styles.hubStatusBadge}>
-                        <Text style={styles.hubStatusText}>
-                          {t("care.hubStatusActive", { defaultValue: "Faol" })}
-                        </Text>
-                      </View>
-                    </View>
-                    <Text style={styles.hubCardTitle}>{t("care.hubParvarish")}</Text>
-                    <Text style={styles.hubCardMetric} numberOfLines={1}>
-                      {t(`care.conditions.${quiz.condition}`)}
-                    </Text>
-                    <Text style={styles.hubCardSub} numberOfLines={2}>
-                      {t("care.hubParvarishSub")}
-                    </Text>
-                  </View>
-                </Pressable>
-
-                <Pressable style={styles.hubCard} onPress={openTarkib}>
-                  <Image
-                    source={{
-                      uri: "https://images.unsplash.com/photo-1556228578-0d85b1a4d571?auto=format&fit=crop&w=280&q=80",
-                    }}
-                    style={styles.hubCardArt}
-                    resizeMode="cover"
-                  />
-                  <View style={styles.hubCardBody}>
-                    <View style={styles.hubCardHead}>
-                      <View style={styles.hubCardIconLg}>
-                        <Ionicons name="scan-outline" size={16} color="#111111" />
-                      </View>
-                      <View style={styles.hubStatusBadge}>
-                        <Text style={styles.hubStatusText}>
-                          {t("care.hubStatusAnalyzed", { defaultValue: "Tahlil qilingan" })}
-                        </Text>
-                      </View>
-                    </View>
-                    <Text style={styles.hubCardTitle}>{t("care.hubTarkib")}</Text>
-                    <Text style={styles.hubCardMetric} numberOfLines={1}>
-                      {t("care.hubTarkibMetric")}
-                    </Text>
-                    <Text style={styles.hubCardSub} numberOfLines={2}>
-                      {t("care.hubTarkibSub")}
-                    </Text>
-                  </View>
-                </Pressable>
-              </View>
-
-              <Pressable
-                style={[styles.aiAssistant, { height: hubLayout.aiH }]}
-                onPress={openAssistant}
-                accessibilityLabel={t("care.hubAiAssistant")}
-              >
-                <LinearGradient
-                  colors={["#111111", "#111111"]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={styles.aiAssistantIcon}
-                >
-                  <Ionicons name="sparkles" size={14} color="#fff" />
-                </LinearGradient>
-                <Text style={styles.aiAssistantText}>{t("care.hubAiAssistant")}</Text>
-                <Ionicons name="arrow-forward" size={15} color="#111111" />
-              </Pressable>
-            </View>
-          </View>
-        )}
+        ) : null}
 
         <Modal
           visible={previewVisible}
@@ -2402,6 +2403,7 @@ const styles = StyleSheet.create({
     lineHeight: 32,
   },
   hubDockOuter: {
+    marginTop: 8,
     paddingHorizontal: 0,
     paddingTop: 0,
     backgroundColor: "transparent",
