@@ -1842,11 +1842,9 @@ const styles = StyleSheet.create({
   },
   previewSheetWrap: {
     width: "100%",
-    backgroundColor: "#FFFFFF",
-    borderTopLeftRadius: 22,
-    borderTopRightRadius: 22,
-    overflow: "hidden",
-    maxHeight: "86%",
+    backgroundColor: "transparent",
+    overflow: "visible",
+    maxHeight: 560,
   },
   previewCard: {
     backgroundColor: "#fff",
