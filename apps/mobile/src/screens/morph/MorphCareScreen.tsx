@@ -937,7 +937,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
         <ScrollView
           style={styles.hubScroll}
           contentContainerStyle={{
-            paddingTop: insets.top + 6,
+            paddingTop: searchOpen ? insets.top + 6 : 0,
             paddingBottom: 16,
           }}
           nestedScrollEnabled={true}
@@ -946,20 +946,18 @@ export function MorphCareScreen({ navigation, route }: Props) {
           bounces={true}
           overScrollMode="never"
         >
-          {/* Hero banner — yashil / oltin; user avatar */}
+          {/* Hero — tepaga jipslashgan, tizim binafsha */}
           {!searchOpen ? (
           <View style={styles.promoWrap}>
             <LinearGradient
-              colors={["#1B4D3E", "#143D32", "#0F3329"]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.promoCard}
+              colors={["#7C6CF0", "#5B4FE0", "#4338CA"]}
+              start={{ x: 0.1, y: 0 }}
+              end={{ x: 0.95, y: 1 }}
+              style={[styles.promoCard, { paddingTop: insets.top + 10 }]}
             >
               <View style={styles.promoDecor} pointerEvents="none">
-                <View style={[styles.promoChevron, { top: 10, right: 18, opacity: 0.55 }]} />
-                <View style={[styles.promoChevron, { top: 22, right: 34, opacity: 0.4 }]} />
-                <View style={[styles.promoChevron, { top: 34, right: 14, opacity: 0.28 }]} />
-                <View style={[styles.promoChevron, { top: 46, right: 40, opacity: 0.2 }]} />
+                <View style={[styles.promoBlob, styles.promoBlobA]} />
+                <View style={[styles.promoBlob, styles.promoBlobB]} />
               </View>
 
               <View style={styles.promoTop}>
@@ -969,7 +967,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
                   accessibilityLabel={t("common.back")}
                   hitSlop={8}
                 >
-                  <Ionicons name="chevron-back" size={20} color="#E8D5A8" />
+                  <Ionicons name="chevron-back" size={20} color="#FFFFFF" />
                 </Pressable>
                 <View style={styles.promoLogoRow}>
                   <Text style={styles.promoLogoMark}>M</Text>
@@ -997,7 +995,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
                     <Text style={styles.promoBtnText}>
                       {t("care.promoCta", { defaultValue: "Taklifni olish" })}
                     </Text>
-                    <Ionicons name="arrow-forward" size={14} color="#143D32" />
+                    <Ionicons name="arrow-forward" size={14} color="#4338CA" />
                   </Pressable>
                 </View>
               </View>
@@ -1584,41 +1582,52 @@ const styles = StyleSheet.create({
     borderColor: "rgba(0,0,0,0.08)",
   },
   promoWrap: {
-    marginTop: 4,
-    paddingHorizontal: 16,
+    marginTop: 0,
+    paddingHorizontal: 0,
+    marginBottom: 12,
   },
   promoCard: {
-    borderRadius: 28,
-    paddingTop: 14,
-    paddingBottom: 18,
-    paddingHorizontal: 16,
-    minHeight: 200,
-    borderWidth: 1,
-    borderColor: "rgba(232,213,168,0.18)",
-    shadowColor: "#0F3329",
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.28,
+    borderTopLeftRadius: 0,
+    borderTopRightRadius: 0,
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
+    paddingBottom: 22,
+    paddingHorizontal: 20,
+    minHeight: 210,
+    borderWidth: 0,
+    shadowColor: "#4338CA",
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.22,
     shadowRadius: 20,
-    elevation: 6,
+    elevation: 8,
     overflow: "hidden",
   },
   promoDecor: {
     ...StyleSheet.absoluteFillObject,
   },
-  promoChevron: {
+  promoBlob: {
     position: "absolute",
-    width: 22,
-    height: 22,
-    borderLeftWidth: 2,
-    borderBottomWidth: 2,
-    borderColor: "#E8D5A8",
-    transform: [{ rotate: "45deg" }],
+    borderRadius: 999,
+    backgroundColor: "rgba(255,255,255,0.08)",
+  },
+  promoBlobA: {
+    width: 160,
+    height: 160,
+    top: -40,
+    right: -36,
+  },
+  promoBlobB: {
+    width: 100,
+    height: 100,
+    bottom: -28,
+    left: -20,
+    backgroundColor: "rgba(255,255,255,0.06)",
   },
   promoTop: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 14,
+    marginBottom: 16,
     zIndex: 2,
   },
   promoBackBtn: {
@@ -1627,6 +1636,7 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
+    backgroundColor: "rgba(255,255,255,0.14)",
   },
   promoLogoRow: {
     flexDirection: "row",
@@ -1637,7 +1647,7 @@ const styles = StyleSheet.create({
     fontFamily: Platform.OS === "web" ? "Georgia, 'Times New Roman', serif" : undefined,
     fontSize: 26,
     fontWeight: "700",
-    color: "#E8D5A8",
+    color: "#FFFFFF",
     fontStyle: "italic",
     lineHeight: 28,
   },
@@ -1645,44 +1655,45 @@ const styles = StyleSheet.create({
     ...morphFont,
     fontSize: 13,
     fontWeight: "700",
-    color: "#E8D5A8",
+    color: "rgba(255,255,255,0.92)",
     letterSpacing: 2.4,
   },
   promoBody: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 14,
+    gap: 16,
     zIndex: 2,
   },
   promoAvatarRing: {
-    width: 108,
-    height: 108,
-    borderRadius: 54,
-    borderWidth: 2,
-    borderColor: "rgba(232,213,168,0.55)",
+    width: 112,
+    height: 112,
+    borderRadius: 56,
+    borderWidth: 3,
+    borderColor: "rgba(255,255,255,0.55)",
     padding: 3,
-    backgroundColor: "rgba(255,255,255,0.06)",
+    backgroundColor: "rgba(255,255,255,0.12)",
   },
   promoAvatar: {
     width: "100%",
     height: "100%",
-    borderRadius: 50,
+    borderRadius: 52,
   },
   promoAvatarFallback: {
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(232,213,168,0.18)",
+    backgroundColor: "rgba(255,255,255,0.2)",
   },
   promoAvatarInitials: {
     ...morphFont,
-    fontSize: 28,
+    fontSize: 30,
     fontWeight: "800",
-    color: "#E8D5A8",
+    color: "#FFFFFF",
   },
   promoCopy: {
     flex: 1,
     gap: 14,
-    paddingRight: 4,
+    justifyContent: "center",
+    minWidth: 0,
   },
   promoLeft: {
     flex: 1,
@@ -1694,17 +1705,17 @@ const styles = StyleSheet.create({
     ...morphFont,
     fontSize: 11,
     fontWeight: "700",
-    color: "#E8D5A8",
+    color: "rgba(255,255,255,0.8)",
     letterSpacing: 0.6,
     textTransform: "uppercase",
   },
   promoTitle: {
-    fontFamily: Platform.OS === "web" ? "Georgia, 'Times New Roman', serif" : undefined,
+    ...morphFont,
     fontSize: 22,
-    fontWeight: "600",
-    color: "#F3E6C8",
+    fontWeight: "800",
+    color: "#FFFFFF",
     lineHeight: 28,
-    letterSpacing: -0.3,
+    letterSpacing: -0.4,
   },
   promoChip: {
     flexDirection: "row",
@@ -1722,7 +1733,7 @@ const styles = StyleSheet.create({
     color: "#4F46E5",
   },
   promoBtn: {
-    backgroundColor: "#E0C78A",
+    backgroundColor: "#FFFFFF",
     borderRadius: 999,
     paddingHorizontal: 16,
     paddingVertical: 11,
@@ -1735,7 +1746,7 @@ const styles = StyleSheet.create({
     ...morphFont,
     fontSize: 13,
     fontWeight: "700",
-    color: "#143D32",
+    color: "#4338CA",
   },
   promoImg: {
     width: 112,
