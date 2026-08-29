@@ -18,6 +18,7 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { useTranslation } from "react-i18next";
@@ -55,6 +56,7 @@ import {
   removeMyProduct,
   type MyCareProduct,
 } from "../../lib/morph-my-products";
+import { careHubLayout, weatherHeroImage } from "../../lib/weather-care-tips";
 import type { MorphCareStackParamList } from "../../navigation/MorphCareStack";
 import { useShellNavigation } from "../../lib/shell-nav";
 import { morphFont } from "../../theme/morph-font";
@@ -237,6 +239,14 @@ export function MorphCareScreen({ navigation, route }: Props) {
   const previewBackdropOp = useRef(new Animated.Value(0)).current;
   const searchInputRef = useRef<TextInput>(null);
   const { data: weather, loading: weatherLoading } = useCareWeather();
+  const { width: winW, height: winH } = useWindowDimensions();
+  const hubLayout = useMemo(() => careHubLayout(winW, winH), [winW, winH]);
+  const weatherKey = weather?.current?.condition_key ?? "unknown";
+  const weatherTemp =
+    weather?.current?.temperature_c != null
+      ? `${Math.round(weather.current.temperature_c)}°`
+      : "—";
+  const weatherImg = weatherHeroImage(weatherKey);
 
   /** Sheet kategoriyalarga yaqin — o‘rtadagi gap minimal */
   const searchSheetHeight = useMemo(() => {
@@ -944,20 +954,18 @@ export function MorphCareScreen({ navigation, route }: Props) {
           bounces={true}
           overScrollMode="never"
         >
-          {/* Hero — editorial / full-bleed */}
+          {/* Hero — ob-havo + ambient */}
           {!searchOpen ? (
-          <View style={[styles.promoWrap, { paddingTop: insets.top + 8 }]}>
-            <View style={styles.promoCard}>
+          <View style={[styles.promoWrap, { paddingTop: insets.top + 6, paddingHorizontal: hubLayout.hPad }]}>
+            <View style={[styles.promoCard, { height: hubLayout.promoH }]}>
               <Image
-                source={{
-                  uri: "https://images.unsplash.com/photo-1522338140262-f46f5913618a?auto=format&fit=crop&w=1200&q=80",
-                }}
+                source={{ uri: weatherImg }}
                 style={styles.promoHeroImg}
                 resizeMode="cover"
               />
               <LinearGradient
-                colors={["rgba(0,0,0,0.15)", "rgba(0,0,0,0.55)", "rgba(0,0,0,0.92)"]}
-                locations={[0, 0.45, 1]}
+                colors={["rgba(8,12,20,0.35)", "rgba(8,12,20,0.15)", "rgba(8,12,20,0.82)"]}
+                locations={[0, 0.38, 1]}
                 style={StyleSheet.absoluteFill}
               />
 
@@ -968,7 +976,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
                   accessibilityLabel={t("common.back")}
                   hitSlop={8}
                 >
-                  <Ionicons name="chevron-back" size={20} color="#FFFFFF" />
+                  <Ionicons name="chevron-back" size={18} color="#FFFFFF" />
                 </Pressable>
                 <Text style={styles.promoLogoText}>PARVARISH</Text>
                 <View style={styles.promoAvatarRing}>
@@ -982,18 +990,45 @@ export function MorphCareScreen({ navigation, route }: Props) {
                 </View>
               </View>
 
-              <View style={styles.promoCopy}>
-                <Text style={styles.promoEyebrow}>MORF CARE</Text>
-                <Text style={styles.promoTitle}>
-                  {t("care.promoTitle", { defaultValue: "Go‘zalligingiz,\nyarim narxida" })}
-                </Text>
-                <Pressable style={styles.promoBtn} onPress={openCatalog}>
-                  <Text style={styles.promoBtnText}>
-                    {t("care.promoCta", { defaultValue: "Taklifni olish" })}
-                  </Text>
-                  <Ionicons name="arrow-forward" size={14} color="#0A0A0A" />
-                </Pressable>
-              </View>
+              <Pressable
+                style={styles.promoCopy}
+                onPress={openWeather}
+                accessibilityRole="button"
+                accessibilityLabel={t("care.weather.title")}
+              >
+                <View style={styles.promoChipRow}>
+                  <View style={styles.promoStatusChip}>
+                    <Ionicons name={weatherIconName(weatherKey)} size={12} color="#FFFFFF" />
+                    <Text style={styles.promoStatusChipText} numberOfLines={1}>
+                      {weatherLoading
+                        ? "…"
+                        : t(`care.weather.conditions.${weatherKey}`)}
+                    </Text>
+                  </View>
+                  {weather?.current?.humidity_pct != null ? (
+                    <Text style={styles.promoEyebrow}>
+                      {t("care.weather.humidityShort")} {Math.round(weather.current.humidity_pct)}%
+                    </Text>
+                  ) : (
+                    <Text style={styles.promoEyebrow}>{t("care.weather.title")}</Text>
+                  )}
+                </View>
+                <View style={styles.promoWeatherRow}>
+                  <Text style={styles.promoTemp}>{weatherTemp}</Text>
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <Text style={styles.promoTitle} numberOfLines={2}>
+                      {t("care.promoTitle")}
+                    </Text>
+                    <Text style={styles.promoHint} numberOfLines={1}>
+                      {weather?.location_label || t("care.promoHint")}
+                    </Text>
+                  </View>
+                </View>
+                <View style={styles.promoBtn}>
+                  <Text style={styles.promoBtnText}>{t("care.promoCta")}</Text>
+                  <Ionicons name="arrow-forward" size={13} color="#0A0A0A" />
+                </View>
+              </Pressable>
             </View>
           </View>
           ) : (
@@ -1298,7 +1333,10 @@ export function MorphCareScreen({ navigation, route }: Props) {
             <View
               style={[
                 styles.hubSheet,
-                { paddingBottom: Math.max(insets.bottom, 14) },
+                {
+                  height: 70,
+                  paddingBottom: Math.max(insets.bottom, 12),
+                },
               ]}
             >
               <View style={styles.reportHead}>
@@ -1309,7 +1347,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
                 </Pressable>
               </View>
 
-              <View style={styles.hubCards}>
+              <View style={[styles.hubCards, { height: hubLayout.hubCardH }]}>
                 <Pressable style={styles.hubCard} onPress={openParvarish}>
                   <Image
                     source={{
@@ -1321,7 +1359,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
                   <View style={styles.hubCardBody}>
                     <View style={styles.hubCardHead}>
                       <View style={styles.hubCardIconLg}>
-                        <Ionicons name="sparkles" size={18} color="#111111" />
+                        <Ionicons name="sparkles" size={16} color="#111111" />
                       </View>
                       <View style={styles.hubStatusBadge}>
                         <Text style={styles.hubStatusText}>
@@ -1350,7 +1388,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
                   <View style={styles.hubCardBody}>
                     <View style={styles.hubCardHead}>
                       <View style={styles.hubCardIconLg}>
-                        <Ionicons name="scan-outline" size={18} color="#111111" />
+                        <Ionicons name="scan-outline" size={16} color="#111111" />
                       </View>
                       <View style={styles.hubStatusBadge}>
                         <Text style={styles.hubStatusText}>
@@ -1370,7 +1408,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
               </View>
 
               <Pressable
-                style={styles.aiAssistant}
+                style={[styles.aiAssistant, { height: hubLayout.aiH }]}
                 onPress={openAssistant}
                 accessibilityLabel={t("care.hubAiAssistant")}
               >
@@ -1380,10 +1418,10 @@ export function MorphCareScreen({ navigation, route }: Props) {
                   end={{ x: 1, y: 1 }}
                   style={styles.aiAssistantIcon}
                 >
-                  <Ionicons name="sparkles" size={16} color="#fff" />
+                  <Ionicons name="sparkles" size={14} color="#fff" />
                 </LinearGradient>
                 <Text style={styles.aiAssistantText}>{t("care.hubAiAssistant")}</Text>
-                <Ionicons name="arrow-forward" size={16} color="#111111" />
+                <Ionicons name="arrow-forward" size={15} color="#111111" />
               </Pressable>
             </View>
           </View>
@@ -1577,25 +1615,23 @@ const styles = StyleSheet.create({
   },
   promoWrap: {
     marginTop: 0,
-    paddingHorizontal: 16,
-    marginBottom: 18,
+    marginBottom: 10,
   },
   promoCard: {
-    borderRadius: 28,
-    minHeight: 268,
+    borderRadius: 22,
     overflow: "hidden",
-    backgroundColor: "#111111",
+    backgroundColor: "#0B1220",
     justifyContent: "space-between",
-    paddingBottom: 22,
-    paddingHorizontal: 18,
+    paddingBottom: 14,
+    paddingHorizontal: 14,
   },
   promoHeroImg: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     width: "100%",
     height: "100%",
   },
   promoDecor: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
   },
   promoBlob: {
     position: "absolute",
@@ -1619,14 +1655,14 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 16,
+    marginBottom: 6,
     zIndex: 2,
-    paddingTop: 4,
+    paddingTop: 2,
   },
   promoBackBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "rgba(0,0,0,0.35)",
@@ -1660,9 +1696,9 @@ const styles = StyleSheet.create({
     zIndex: 2,
   },
   promoAvatarRing: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     borderWidth: 1.5,
     borderColor: "rgba(255,255,255,0.55)",
     overflow: "hidden",
@@ -1671,7 +1707,7 @@ const styles = StyleSheet.create({
   promoAvatar: {
     width: "100%",
     height: "100%",
-    borderRadius: 19,
+    borderRadius: 17,
   },
   promoAvatarFallback: {
     alignItems: "center",
@@ -1680,14 +1716,56 @@ const styles = StyleSheet.create({
   },
   promoAvatarInitials: {
     ...morphFont,
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "800",
     color: "#FFFFFF",
   },
   promoCopy: {
     zIndex: 2,
-    gap: 10,
-    maxWidth: "88%",
+    gap: 5,
+    maxWidth: "92%",
+  },
+  promoChipRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    flexWrap: "wrap",
+  },
+  promoStatusChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+    borderRadius: 999,
+    backgroundColor: "rgba(255,255,255,0.16)",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(255,255,255,0.28)",
+  },
+  promoStatusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: "#86EFAC",
+  },
+  promoStatusChipText: {
+    ...morphFont,
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#FFFFFF",
+  },
+  promoWeatherRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  promoTemp: {
+    ...morphFont,
+    fontSize: 42,
+    fontWeight: "700",
+    color: "#FFFFFF",
+    letterSpacing: -1.5,
+    lineHeight: 46,
   },
   promoLeft: {
     flex: 1,
@@ -1697,19 +1775,27 @@ const styles = StyleSheet.create({
   },
   promoEyebrow: {
     ...morphFont,
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: "700",
     color: "rgba(255,255,255,0.55)",
-    letterSpacing: 1.6,
+    letterSpacing: 1.2,
     textTransform: "uppercase",
   },
   promoTitle: {
     ...morphFont,
-    fontSize: 28,
+    fontSize: 16,
     fontWeight: "700",
     color: "#FFFFFF",
-    lineHeight: 34,
-    letterSpacing: -0.8,
+    lineHeight: 20,
+    letterSpacing: -0.3,
+  },
+  promoHint: {
+    ...morphFont,
+    fontSize: 12,
+    fontWeight: "500",
+    color: "rgba(255,255,255,0.72)",
+    lineHeight: 16,
+    marginTop: 2,
   },
   promoChip: {
     flexDirection: "row",
@@ -1727,19 +1813,19 @@ const styles = StyleSheet.create({
     color: "#111111",
   },
   promoBtn: {
-    marginTop: 4,
+    marginTop: 2,
     backgroundColor: "#FFFFFF",
     borderRadius: 999,
-    paddingHorizontal: 18,
-    paddingVertical: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
     alignSelf: "flex-start",
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: 6,
   },
   promoBtnText: {
     ...morphFont,
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: "700",
     color: "#0A0A0A",
   },
@@ -2188,9 +2274,9 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   featuredCard: {
-    width: 168,
-    height: 268,
-    borderRadius: 22,
+    width: 196,
+    height: 220,
+    borderRadius: 20,
     overflow: "hidden",
     backgroundColor: "#FFFFFF",
     borderWidth: StyleSheet.hairlineWidth,
@@ -2322,11 +2408,10 @@ const styles = StyleSheet.create({
   },
   hubSheet: {
     backgroundColor: "#FFFFFF",
-    paddingHorizontal: 14,
+    paddingHorizontal: 12,
     paddingTop: 10,
     paddingBottom: 0,
-    gap: 8,
-    minHeight: 350,
+    gap: 10,
     borderTopLeftRadius: 22,
     borderTopRightRadius: 22,
     borderBottomLeftRadius: 0,
@@ -2356,11 +2441,14 @@ const styles = StyleSheet.create({
     backgroundColor: "#F0F0F0",
   },
   reportFilterText: { ...morphFont, fontSize: 11, fontWeight: "600", color: "#737373" },
-  hubCards: { flexDirection: "row", gap: 10 },
+  hubCards: {
+    flexDirection: "row",
+    gap: 8,
+  },
   hubCard: {
     flex: 1,
-    minHeight: 118,
-    borderRadius: 16,
+    height: "100%",
+    borderRadius: 14,
     backgroundColor: "#FAFAFA",
     borderWidth: 1,
     borderColor: "rgba(17,17,17,0.08)",
@@ -2368,20 +2456,22 @@ const styles = StyleSheet.create({
   },
   hubCardArt: {
     position: "absolute",
-    right: -6,
-    bottom: -4,
-    width: 64,
-    height: 72,
+    right: -8,
+    bottom: -6,
+    width: 72,
+    height: 84,
     borderRadius: 12,
-    opacity: 0.88,
+    opacity: 0.9,
   },
   hubCardBody: {
     flex: 1,
     paddingHorizontal: 10,
-    paddingVertical: 10,
+    paddingTop: 10,
+    paddingBottom: 10,
     gap: 2,
     zIndex: 1,
-    paddingRight: 64,
+    paddingRight: 58,
+    justifyContent: "flex-start",
   },
   hubCardHead: {
     flexDirection: "row",
@@ -2398,9 +2488,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   hubCardIconLg: {
-    width: 30,
-    height: 30,
-    borderRadius: 10,
+    width: 28,
+    height: 28,
+    borderRadius: 9,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "#FFFFFF",
@@ -2439,8 +2529,7 @@ const styles = StyleSheet.create({
     marginTop: "auto",
   },
   aiAssistant: {
-    height: 52,
-    borderRadius: 16,
+    borderRadius: 14,
     backgroundColor: "#FAFAFA",
     borderWidth: 1,
     borderColor: "rgba(17,17,17,0.08)",
@@ -2449,8 +2538,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     gap: 10,
   },
-  aiAssistantIcon: { width: 32, height: 32, borderRadius: 16, alignItems: "center", justifyContent: "center" },
-  aiAssistantText: { ...morphFont, flex: 1, fontSize: 14, fontWeight: "600", color: "#111111" },
+  aiAssistantIcon: { width: 28, height: 28, borderRadius: 14, alignItems: "center", justifyContent: "center" },
+  aiAssistantText: { ...morphFont, flex: 1, fontSize: 13, fontWeight: "600", color: "#111111" },
   rowBetweenLight: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   onboardBadge: { ...morphFont, fontSize: 12, fontWeight: "600", color: "#111111" },
   onboardH1: { ...morphFont, fontSize: 28, fontWeight: "700", color: "#111", letterSpacing: -0.6, lineHeight: 34 },
