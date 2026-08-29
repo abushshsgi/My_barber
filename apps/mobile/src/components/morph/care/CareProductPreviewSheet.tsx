@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import { StatusBar } from "expo-status-bar";
 import { useMemo } from "react";
 import {
   Image,
@@ -21,27 +22,46 @@ type Props = {
   quiz: CareQuizAnswers;
   added: boolean;
   bottomInset?: number;
-  /** Full page (no grab / maxHeight) vs bottom sheet */
   mode?: "sheet" | "page";
   onClose: () => void;
   onAdd: () => void;
   onUseInCare?: () => void;
 };
 
-function fitTone(score: number): { color: string; bg: string; labelKey: string } {
+function fitTone(score: number): { color: string; bg: string; labelKey: "excellent" | "good" | "ok" | "poor" } {
   if (score >= 85) return { color: "#059669", bg: "#ECFDF5", labelKey: "excellent" };
   if (score >= 72) return { color: "#4F46E5", bg: "#EEF2FF", labelKey: "good" };
   if (score >= 58) return { color: "#D97706", bg: "#FFFBEB", labelKey: "ok" };
   return { color: "#DC2626", bg: "#FEF2F2", labelKey: "poor" };
 }
 
-function InfoBlock({
+const FIT_FALLBACK = {
+  uz: {
+    fitTitle: "Sochingizga mosligi",
+    yourHair: "Sizning sochingiz",
+    excellent: "Juda mos",
+    good: "Yaxshi mos",
+    ok: "O‘rtacha mos",
+    poor: "Kam mos",
+  },
+  ru: {
+    fitTitle: "Подходит вашим волосам",
+    yourHair: "Ваши волосы",
+    excellent: "Отлично подходит",
+    good: "Хорошо подходит",
+    ok: "Средне подходит",
+    poor: "Слабо подходит",
+  },
+} as const;
+
+function InfoTile({
   icon,
   iconColor,
   iconBg,
   title,
   children,
   warn,
+  half,
 }: {
   icon: keyof typeof Ionicons.glyphMap;
   iconColor: string;
@@ -49,17 +69,22 @@ function InfoBlock({
   title: string;
   children: string;
   warn?: boolean;
+  half?: boolean;
 }) {
   if (!children?.trim()) return null;
   return (
-    <View style={[styles.block, warn && styles.blockWarn]}>
-      <View style={styles.blockHead}>
-        <View style={[styles.blockIcon, { backgroundColor: iconBg }]}>
-          <Ionicons name={icon} size={14} color={iconColor} />
+    <View style={[styles.tile, half && styles.tileHalf, warn && styles.tileWarn]}>
+      <View style={styles.tileHead}>
+        <View style={[styles.tileIcon, { backgroundColor: iconBg }]}>
+          <Ionicons name={icon} size={13} color={iconColor} />
         </View>
-        <Text style={[styles.blockTitle, warn && styles.blockTitleWarn]}>{title}</Text>
+        <Text style={[styles.tileTitle, warn && styles.tileTitleWarn]} numberOfLines={1}>
+          {title}
+        </Text>
       </View>
-      <Text style={[styles.blockBody, warn && styles.blockBodyWarn]}>{children}</Text>
+      <Text style={[styles.tileBody, warn && styles.tileBodyWarn]} numberOfLines={half ? 5 : 8}>
+        {children}
+      </Text>
     </View>
   );
 }
@@ -74,11 +99,14 @@ export function CareProductPreviewSheet({
   onAdd,
   onUseInCare,
 }: Props) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const fit = useMemo(() => estimateProductFit(product, quiz), [product, quiz]);
   const tone = fitTone(fit);
-  const tagLabel = (tag: string) => t(`care.catalog.tags.${tag}`, { defaultValue: tag });
   const isPage = mode === "page";
+  const lang = (i18n.language || "uz").startsWith("ru") ? "ru" : "uz";
+  const fb = FIT_FALLBACK[lang];
+
+  const tagLabel = (tag: string) => t(`care.catalog.tags.${tag}`, { defaultValue: tag });
 
   const userTags = useMemo(
     () =>
@@ -96,35 +124,35 @@ export function CareProductPreviewSheet({
     product.ingredients_text?.trim() ||
     (product.ingredients || []).slice(0, 8).join(", ");
 
+  const fitTitle = t("care.preview.fitTitle", { defaultValue: fb.fitTitle });
+  const yourHair = t("care.preview.yourHair", { defaultValue: fb.yourHair });
+  const fitVerdict = t(`care.preview.fit.${tone.labelKey}`, {
+    defaultValue: fb[tone.labelKey],
+  });
+
   const body = (
     <>
-      <View style={[styles.media, isPage && styles.mediaPage]}>
+      {/* Hero */}
+      <View style={[styles.hero, isPage && styles.heroPage]}>
         {product.image_url ? (
-          <Image source={{ uri: product.image_url }} style={styles.img} />
+          <Image source={{ uri: product.image_url }} style={styles.heroImg} resizeMode="cover" />
         ) : (
-          <View style={[styles.img, styles.imgPh]}>
-            <Ionicons name="flask-outline" size={40} color="#6366F1" />
+          <View style={[styles.heroImg, styles.heroPh]}>
+            <Ionicons name="flask-outline" size={36} color="#6366F1" />
           </View>
         )}
-        {!isPage ? (
-          <Pressable
-            style={styles.close}
-            onPress={onClose}
-            hitSlop={8}
-            accessibilityLabel={t("common.back")}
-          >
-            <Ionicons name="close" size={18} color="#0F172A" />
-          </Pressable>
-        ) : null}
-      </View>
-
-      <Text style={styles.title}>{product.name}</Text>
-      {product.brand ? <Text style={styles.brand}>{product.brand}</Text> : null}
-
-      <View style={styles.metaRow}>
-        <View style={styles.catPill}>
-          <Ionicons name="pricetag-outline" size={12} color="#4F46E5" />
-          <Text style={styles.catText}>
+        <View style={styles.heroScrim} />
+        <Pressable
+          style={[styles.heroClose, isPage && { top: 10 }]}
+          onPress={onClose}
+          hitSlop={8}
+          accessibilityLabel={t("common.back")}
+        >
+          <Ionicons name={isPage ? "chevron-back" : "close"} size={18} color="#0F172A" />
+        </Pressable>
+        <View style={styles.heroCat}>
+          <Ionicons name="pricetag-outline" size={11} color="#4F46E5" />
+          <Text style={styles.heroCatText}>
             {t(`care.catalog.categories.${product.category}`, {
               defaultValue: product.category,
             })}
@@ -132,29 +160,35 @@ export function CareProductPreviewSheet({
         </View>
       </View>
 
-      <View style={[styles.fitCard, { backgroundColor: tone.bg }]}>
-        <View style={styles.fitLeft}>
+      <Text style={styles.title}>{product.name}</Text>
+      {product.brand ? <Text style={styles.brand}>{product.brand}</Text> : null}
+
+      {/* Fit + hair chips */}
+      <View style={styles.fitRow}>
+        <View style={[styles.fitCard, { backgroundColor: tone.bg }]}>
           <View style={[styles.fitRing, { borderColor: tone.color }]}>
             <Text style={[styles.fitPct, { color: tone.color }]}>{fit}</Text>
             <Text style={[styles.fitPctSub, { color: tone.color }]}>%</Text>
           </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.fitLabel}>{t("care.preview.fitTitle")}</Text>
-            <Text style={[styles.fitVerdict, { color: tone.color }]}>
-              {t(`care.preview.fit.${tone.labelKey}`)}
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text style={styles.fitLabel}>{fitTitle}</Text>
+            <Text style={[styles.fitVerdict, { color: tone.color }]} numberOfLines={1}>
+              {fitVerdict}
             </Text>
-            <Text style={styles.fitHint}>{t("care.routine.fitYou", { pct: fit })}</Text>
+            <Text style={styles.fitHint}>
+              {t("care.routine.fitYou", { pct: fit, defaultValue: `${fit}% mos` })}
+            </Text>
           </View>
         </View>
       </View>
 
       {userTags.length > 0 ? (
         <View style={styles.profileCard}>
-          <View style={styles.blockHead}>
-            <View style={[styles.blockIcon, { backgroundColor: "#EEF2FF" }]}>
-              <Ionicons name="person-outline" size={14} color="#4F46E5" />
+          <View style={styles.tileHead}>
+            <View style={[styles.tileIcon, { backgroundColor: "#EEF2FF" }]}>
+              <Ionicons name="person-outline" size={13} color="#4F46E5" />
             </View>
-            <Text style={styles.blockTitle}>{t("care.preview.yourHair")}</Text>
+            <Text style={styles.tileTitle}>{yourHair}</Text>
           </View>
           <View style={styles.chipRow}>
             {userTags.map((tag) => {
@@ -191,72 +225,79 @@ export function CareProductPreviewSheet({
         </View>
       ) : null}
 
-      {suitable.length > 0 || notSuitable.length > 0 ? (
-        <View style={styles.whoRow}>
+      {/* Who / Who not — grid */}
+      {(suitable.length > 0 || notSuitable.length > 0) ? (
+        <View style={styles.grid}>
           {suitable.length > 0 ? (
-            <View style={[styles.whoCard, styles.whoOk]}>
-              <View style={styles.blockHead}>
-                <Ionicons name="thumbs-up-outline" size={14} color="#059669" />
+            <View style={[styles.whoCard, styles.whoOk, styles.gridItem]}>
+              <View style={styles.tileHead}>
+                <Ionicons name="thumbs-up-outline" size={13} color="#059669" />
                 <Text style={[styles.whoTitle, { color: "#059669" }]}>
                   {t("care.catalog.who")}
                 </Text>
               </View>
-              <Text style={styles.whoBody}>{suitable.map(tagLabel).join(" · ")}</Text>
+              <Text style={styles.whoBody} numberOfLines={4}>
+                {suitable.map(tagLabel).join(" · ")}
+              </Text>
             </View>
           ) : null}
           {notSuitable.length > 0 ? (
-            <View style={[styles.whoCard, styles.whoBad]}>
-              <View style={styles.blockHead}>
-                <Ionicons name="thumbs-down-outline" size={14} color="#DC2626" />
+            <View style={[styles.whoCard, styles.whoBad, styles.gridItem]}>
+              <View style={styles.tileHead}>
+                <Ionicons name="thumbs-down-outline" size={13} color="#DC2626" />
                 <Text style={[styles.whoTitle, { color: "#DC2626" }]}>
                   {t("care.catalog.whoNot")}
                 </Text>
               </View>
-              <Text style={styles.whoBody}>{notSuitable.map(tagLabel).join(" · ")}</Text>
+              <Text style={styles.whoBody} numberOfLines={4}>
+                {notSuitable.map(tagLabel).join(" · ")}
+              </Text>
             </View>
           ) : null}
         </View>
       ) : null}
 
-      <InfoBlock
-        icon="bulb-outline"
-        iconColor="#4F46E5"
-        iconBg="#EEF2FF"
-        title={t("care.catalog.purpose")}
-      >
-        {product.purpose_uz}
-      </InfoBlock>
-
-      <InfoBlock
-        icon="hand-left-outline"
-        iconColor="#0284C7"
-        iconBg="#E0F2FE"
-        title={t("care.catalog.usage")}
-      >
-        {product.usage_uz}
-      </InfoBlock>
-
-      <InfoBlock
-        icon="sparkles-outline"
-        iconColor="#059669"
-        iconBg="#ECFDF5"
-        title={t("care.catalog.pros")}
-      >
-        {product.pros_uz}
-      </InfoBlock>
-
-      {product.cons_uz?.trim() ? (
-        <InfoBlock
+      {/* Info grid 2 cols */}
+      <View style={styles.grid}>
+        <InfoTile
+          half
+          icon="bulb-outline"
+          iconColor="#4F46E5"
+          iconBg="#EEF2FF"
+          title={t("care.catalog.purpose")}
+        >
+          {product.purpose_uz}
+        </InfoTile>
+        <InfoTile
+          half
+          icon="hand-left-outline"
+          iconColor="#0284C7"
+          iconBg="#E0F2FE"
+          title={t("care.catalog.usage")}
+        >
+          {product.usage_uz}
+        </InfoTile>
+        <InfoTile
+          half
+          icon="sparkles-outline"
+          iconColor="#059669"
+          iconBg="#ECFDF5"
+          title={t("care.catalog.pros")}
+        >
+          {product.pros_uz}
+        </InfoTile>
+        <InfoTile
+          half
           icon="remove-circle-outline"
           iconColor="#64748B"
           iconBg="#F1F5F9"
           title={t("care.catalog.cons")}
         >
           {product.cons_uz}
-        </InfoBlock>
-      ) : null}
+        </InfoTile>
+      </View>
 
-      <InfoBlock
+      <InfoTile
         icon="warning-outline"
         iconColor="#B45309"
         iconBg="#FFF7ED"
@@ -264,19 +305,48 @@ export function CareProductPreviewSheet({
         warn
       >
         {product.warnings_uz}
-      </InfoBlock>
+      </InfoTile>
 
       {ingredientsPreview ? (
-        <InfoBlock
+        <InfoTile
           icon="flask-outline"
           iconColor="#7C3AED"
           iconBg="#F5F3FF"
           title={t("care.catalog.ingredients")}
         >
           {ingredientsPreview}
-        </InfoBlock>
+        </InfoTile>
       ) : null}
     </>
+  );
+
+  const actions = (
+    <View style={[styles.actions, { paddingBottom: Math.max(bottomInset, 10) }]}>
+      <Pressable
+        style={[styles.addBtn, added && styles.addBtnAdded, styles.addBtnFlex]}
+        onPress={onAdd}
+        disabled={added}
+      >
+        <Ionicons
+          name={added ? "checkmark-circle" : "bag-add-outline"}
+          size={18}
+          color={added ? "#4F46E5" : "#fff"}
+        />
+        <Text style={[styles.addBtnText, added && styles.addBtnTextAdded]} numberOfLines={1}>
+          {added
+            ? t("care.myProducts.alreadyAdded")
+            : t("care.myProducts.addFromCatalog")}
+        </Text>
+      </Pressable>
+      {added && onUseInCare ? (
+        <Pressable style={styles.careBtn} onPress={onUseInCare}>
+          <Ionicons name="water-outline" size={18} color="#fff" />
+          <Text style={styles.careBtnText} numberOfLines={1}>
+            {t("care.myProducts.useInCare")}
+          </Text>
+        </Pressable>
+      ) : null}
+    </View>
   );
 
   return (
@@ -284,109 +354,97 @@ export function CareProductPreviewSheet({
       style={[
         styles.card,
         isPage && styles.cardPage,
-        { paddingBottom: Math.max(bottomInset, isPage ? 8 : 12) },
       ]}
     >
+      <StatusBar style="dark" />
       {!isPage ? <View style={styles.grab} /> : null}
-      {isPage ? (
-        <View style={styles.scroll}>{body}</View>
-      ) : (
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          nestedScrollEnabled
-          keyboardShouldPersistTaps="handled"
-          contentContainerStyle={styles.scroll}
-        >
-          {body}
-        </ScrollView>
-      )}
-
-      <View style={styles.actions}>
-        <Pressable
-          style={[styles.addBtn, added && styles.addBtnAdded, styles.addBtnFlex]}
-          onPress={onAdd}
-          disabled={added}
-        >
-          <Ionicons
-            name={added ? "checkmark-circle" : "bag-add-outline"}
-            size={18}
-            color={added ? "#4F46E5" : "#fff"}
-          />
-          <Text
-            style={[styles.addBtnText, added && styles.addBtnTextAdded]}
-            numberOfLines={1}
-          >
-            {added
-              ? t("care.myProducts.alreadyAdded")
-              : t("care.myProducts.addFromCatalog")}
-          </Text>
-        </Pressable>
-        {added && onUseInCare ? (
-          <Pressable
-            style={styles.careBtn}
-            onPress={onUseInCare}
-            accessibilityLabel={t("care.myProducts.useInCare")}
-          >
-            <Ionicons name="water-outline" size={18} color="#fff" />
-            <Text style={styles.careBtnText} numberOfLines={1}>
-              {t("care.myProducts.useInCare")}
-            </Text>
-          </Pressable>
-        ) : null}
-      </View>
+      <ScrollView
+        style={styles.scrollFlex}
+        showsVerticalScrollIndicator={false}
+        nestedScrollEnabled
+        keyboardShouldPersistTaps="handled"
+        bounces={false}
+        contentContainerStyle={styles.scroll}
+      >
+        {body}
+      </ScrollView>
+      {actions}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: "#fff",
+    backgroundColor: "#FFFFFF",
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    maxHeight: "92%",
+    paddingHorizontal: 14,
+    maxHeight: "94%",
+    overflow: "hidden",
   },
   cardPage: {
     maxHeight: undefined,
     borderTopLeftRadius: 0,
     borderTopRightRadius: 0,
+    flex: 1,
+    paddingTop: 0,
   },
   grab: {
     alignSelf: "center",
-    width: 40,
+    width: 36,
     height: 4,
     borderRadius: 2,
-    backgroundColor: "rgba(15,23,42,0.14)",
-    marginBottom: 10,
+    backgroundColor: "rgba(15,23,42,0.12)",
+    marginBottom: 8,
   },
-  scroll: { gap: 8, paddingBottom: 12 },
-  media: {
+  scrollFlex: { flexGrow: 0, flexShrink: 1 },
+  scroll: { gap: 8, paddingBottom: 8 },
+  hero: {
     width: "100%",
-    height: 160,
+    height: 148,
     borderRadius: 18,
     overflow: "hidden",
     backgroundColor: "#EEF2FF",
   },
-  mediaPage: {
-    height: 200,
+  heroPage: { height: 168 },
+  heroImg: { width: "100%", height: "100%", backgroundColor: "#EEF2FF" },
+  heroPh: { alignItems: "center", justifyContent: "center" },
+  heroScrim: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "transparent",
   },
-  img: { width: "100%", height: "100%" },
-  imgPh: { alignItems: "center", justifyContent: "center" },
-  close: {
+  heroClose: {
     position: "absolute",
     top: 10,
-    right: 10,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    left: 10,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     backgroundColor: "rgba(255,255,255,0.95)",
     alignItems: "center",
     justifyContent: "center",
   },
+  heroCat: {
+    position: "absolute",
+    bottom: 10,
+    left: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "rgba(255,255,255,0.95)",
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 999,
+  },
+  heroCatText: {
+    ...morphFont,
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#4F46E5",
+  },
   title: {
     ...morphFont,
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: "800",
     color: "#0F172A",
     letterSpacing: -0.3,
@@ -394,83 +452,74 @@ const styles = StyleSheet.create({
   brand: {
     ...morphFont,
     fontSize: 13,
-    color: "rgba(15,23,42,0.55)",
-    marginTop: -2,
+    color: "rgba(15,23,42,0.5)",
+    marginTop: -4,
   },
-  metaRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  catPill: {
+  fitRow: { marginTop: 2 },
+  fitCard: {
+    borderRadius: 16,
+    padding: 12,
     flexDirection: "row",
     alignItems: "center",
-    gap: 5,
-    backgroundColor: "#EEF2FF",
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 999,
+    gap: 12,
   },
-  catText: {
-    ...morphFont,
-    fontSize: 12,
-    fontWeight: "700",
-    color: "#4F46E5",
-  },
-  fitCard: {
-    borderRadius: 18,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: "rgba(15,23,42,0.04)",
-  },
-  fitLeft: { flexDirection: "row", alignItems: "center", gap: 12 },
   fitRing: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     borderWidth: 3,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "#fff",
     flexDirection: "row",
   },
-  fitPct: { ...morphFont, fontSize: 20, fontWeight: "800" },
-  fitPctSub: { ...morphFont, fontSize: 11, fontWeight: "700", marginTop: 4 },
+  fitPct: { ...morphFont, fontSize: 17, fontWeight: "800" },
+  fitPctSub: { ...morphFont, fontSize: 10, fontWeight: "700", marginTop: 3 },
   fitLabel: {
     ...morphFont,
     fontSize: 11,
     fontWeight: "600",
     color: "#64748B",
-    textTransform: "uppercase",
-    letterSpacing: 0.3,
   },
-  fitVerdict: { ...morphFont, fontSize: 16, fontWeight: "800", marginTop: 2 },
+  fitVerdict: { ...morphFont, fontSize: 15, fontWeight: "800", marginTop: 1 },
   fitHint: {
     ...morphFont,
-    fontSize: 12,
-    color: "rgba(15,23,42,0.5)",
-    marginTop: 2,
+    fontSize: 11,
+    color: "rgba(15,23,42,0.45)",
+    marginTop: 1,
   },
   profileCard: {
-    borderRadius: 16,
-    padding: 12,
+    borderRadius: 14,
+    padding: 11,
     backgroundColor: "#F8FAFC",
-    gap: 10,
+    gap: 8,
   },
   chipRow: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
   chip: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
     borderRadius: 999,
   },
   chipOk: { backgroundColor: "#ECFDF5" },
   chipBad: { backgroundColor: "#FEF2F2" },
   chipNeutral: { backgroundColor: "#F1F5F9" },
-  chipText: { ...morphFont, fontSize: 12, fontWeight: "600", color: "#475569" },
+  chipText: { ...morphFont, fontSize: 11.5, fontWeight: "600", color: "#475569" },
   chipTextOk: { color: "#059669" },
   chipTextBad: { color: "#DC2626" },
-  whoRow: { flexDirection: "row", gap: 8 },
+  grid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  gridItem: {
+    flexGrow: 1,
+    flexBasis: "47%",
+    minWidth: "46%",
+  },
   whoCard: {
-    flex: 1,
     borderRadius: 14,
     padding: 10,
     gap: 6,
@@ -480,54 +529,61 @@ const styles = StyleSheet.create({
   whoTitle: { ...morphFont, fontSize: 11, fontWeight: "700" },
   whoBody: {
     ...morphFont,
-    fontSize: 12,
+    fontSize: 11.5,
     lineHeight: 16,
     color: "#334155",
   },
-  block: {
+  tile: {
     borderRadius: 14,
-    padding: 12,
+    padding: 11,
     backgroundColor: "#F8FAFC",
-    gap: 8,
+    gap: 6,
+    width: "100%",
   },
-  blockWarn: {
+  tileHalf: {
+    width: "48%",
+    flexGrow: 1,
+    flexBasis: "47%",
+  },
+  tileWarn: {
     backgroundColor: "#FFF7ED",
     borderWidth: 1,
     borderColor: "rgba(180,83,9,0.15)",
   },
-  blockHead: { flexDirection: "row", alignItems: "center", gap: 8 },
-  blockIcon: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
+  tileHead: { flexDirection: "row", alignItems: "center", gap: 7 },
+  tileIcon: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
   },
-  blockTitle: {
+  tileTitle: {
     ...morphFont,
-    fontSize: 11,
+    flex: 1,
+    fontSize: 10.5,
     fontWeight: "700",
     color: "#64748B",
-    textTransform: "uppercase",
-    letterSpacing: 0.4,
+    letterSpacing: 0.2,
   },
-  blockTitleWarn: { color: "#B45309" },
-  blockBody: {
+  tileTitleWarn: { color: "#B45309" },
+  tileBody: {
     ...morphFont,
-    fontSize: 13,
-    lineHeight: 19,
+    fontSize: 12.5,
+    lineHeight: 17,
     color: "#334155",
   },
-  blockBodyWarn: { color: "#92400E" },
+  tileBodyWarn: { color: "#92400E" },
   actions: {
-    marginTop: 8,
+    marginTop: 4,
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+    gap: 8,
+    backgroundColor: "#FFFFFF",
   },
   addBtn: {
-    height: 50,
-    borderRadius: 16,
+    height: 48,
+    borderRadius: 14,
     backgroundColor: "#4F46E5",
     flexDirection: "row",
     alignItems: "center",
@@ -542,7 +598,7 @@ const styles = StyleSheet.create({
   },
   addBtnText: {
     ...morphFont,
-    fontSize: 14,
+    fontSize: 13.5,
     fontWeight: "700",
     color: "#fff",
     flexShrink: 1,
@@ -550,8 +606,8 @@ const styles = StyleSheet.create({
   addBtnTextAdded: { color: "#4F46E5" },
   careBtn: {
     flex: 1,
-    height: 50,
-    borderRadius: 16,
+    height: 48,
+    borderRadius: 14,
     backgroundColor: "#3B82F6",
     flexDirection: "row",
     alignItems: "center",
@@ -560,7 +616,7 @@ const styles = StyleSheet.create({
   },
   careBtnText: {
     ...morphFont,
-    fontSize: 14,
+    fontSize: 13.5,
     fontWeight: "700",
     color: "#fff",
     flexShrink: 1,

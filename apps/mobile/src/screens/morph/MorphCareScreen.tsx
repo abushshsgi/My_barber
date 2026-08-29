@@ -1297,10 +1297,12 @@ export function MorphCareScreen({ navigation, route }: Props) {
           visible={previewProduct != null}
           transparent
           animationType="slide"
+          statusBarTranslucent
           onRequestClose={() => setPreviewId(null)}
         >
-          <Pressable style={styles.previewBackdrop} onPress={() => setPreviewId(null)}>
-            <Pressable onPress={(e) => e.stopPropagation?.()}>
+          <View style={styles.previewBackdrop}>
+            <Pressable style={StyleSheet.absoluteFill} onPress={() => setPreviewId(null)} />
+            <View style={[styles.previewSheetWrap, { paddingTop: Math.max(insets.top, 6) }]}>
               {previewProduct ? (
                 <CareProductPreviewSheet
                   product={previewProduct}
@@ -1315,8 +1317,8 @@ export function MorphCareScreen({ navigation, route }: Props) {
                   onUseInCare={previewAdded ? openPreviewCare : undefined}
                 />
               ) : null}
-            </Pressable>
-          </Pressable>
+            </View>
+          </View>
         </Modal>
       </View>
     );
@@ -1780,8 +1782,16 @@ const styles = StyleSheet.create({
   },
   previewBackdrop: {
     flex: 1,
-    backgroundColor: "rgba(15,23,42,0.45)",
+    backgroundColor: "rgba(15,23,42,0.42)",
     justifyContent: "flex-end",
+  },
+  previewSheetWrap: {
+    width: "100%",
+    backgroundColor: "#FFFFFF",
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    overflow: "hidden",
+    maxHeight: "94%",
   },
   previewCard: {
     backgroundColor: "#fff",

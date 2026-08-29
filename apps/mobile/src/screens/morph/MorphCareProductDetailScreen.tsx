@@ -1,11 +1,9 @@
-import { Ionicons } from "@expo/vector-icons";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -69,6 +67,7 @@ export function MorphCareProductDetailScreen({ navigation, route }: Props) {
   if (loading) {
     return (
       <View style={[styles.root, styles.center, { paddingTop: insets.top }]}>
+        <StatusBar style="dark" />
         <ActivityIndicator color="#4F46E5" />
       </View>
     );
@@ -76,57 +75,34 @@ export function MorphCareProductDetailScreen({ navigation, route }: Props) {
 
   if (!data) {
     return (
-      <View style={[styles.root, { paddingTop: insets.top + 12, paddingHorizontal: 20 }]}>
-        <Pressable style={styles.back} onPress={goBack}>
-          <Ionicons name="chevron-back" size={22} color="#0F172A" />
-        </Pressable>
+      <View style={[styles.root, styles.center, { paddingTop: insets.top }]}>
+        <StatusBar style="dark" />
         <Text style={styles.empty}>{t("care.catalog.notFound")}</Text>
       </View>
     );
   }
 
   return (
-    <View style={[styles.root, { paddingTop: insets.top + 4 }]}>
-      <View style={styles.topBar}>
-        <Pressable
-          style={styles.back}
-          onPress={goBack}
-          accessibilityLabel={t("common.back")}
-        >
-          <Ionicons name="chevron-back" size={22} color="#0F172A" />
-        </Pressable>
-        <Text style={styles.topTitle} numberOfLines={1}>
-          {t("care.catalog.badge")}
-        </Text>
-        <View style={{ width: 42 }} />
-      </View>
-
-      <ScrollView
-        style={{ flex: 1 }}
-        showsVerticalScrollIndicator={false}
-        nestedScrollEnabled
-        keyboardShouldPersistTaps="handled"
-        contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 16) }}
-      >
-        <CareProductPreviewSheet
-          mode="page"
-          product={data}
-          quiz={quiz}
-          added={inMyProducts}
-          bottomInset={0}
-          onClose={goBack}
-          onAdd={() => {
-            if (inMyProducts || adding) return;
-            setAdding(true);
-            void addMyProduct(careProductToMy(data, "catalog"))
-              .then(() => {
-                setInMyProducts(true);
-                Alert.alert(t("care.myProducts.addedTitle"), t("care.myProducts.addedSub"));
-              })
-              .finally(() => setAdding(false));
-          }}
-        />
-      </ScrollView>
+    <View style={[styles.root, { paddingTop: insets.top }]}>
+      <StatusBar style="dark" />
+      <CareProductPreviewSheet
+        mode="page"
+        product={data}
+        quiz={quiz}
+        added={inMyProducts}
+        bottomInset={Math.max(insets.bottom, 12)}
+        onClose={goBack}
+        onAdd={() => {
+          if (inMyProducts || adding) return;
+          setAdding(true);
+          void addMyProduct(careProductToMy(data, "catalog"))
+            .then(() => {
+              setInMyProducts(true);
+              Alert.alert(t("care.myProducts.addedTitle"), t("care.myProducts.addedSub"));
+            })
+            .finally(() => setAdding(false));
+        }}
+      />
     </View>
   );
 }
@@ -134,29 +110,7 @@ export function MorphCareProductDetailScreen({ navigation, route }: Props) {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: "#FFFFFF" },
   center: { alignItems: "center", justifyContent: "center" },
-  topBar: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    marginBottom: 4,
-  },
-  back: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: "#F1F5F9",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  topTitle: {
-    ...morphFont,
-    fontSize: 15,
-    fontWeight: "700",
-    color: "#0F172A",
-  },
   empty: {
-    marginTop: 64,
     textAlign: "center",
     ...morphFont,
     fontSize: 14,
