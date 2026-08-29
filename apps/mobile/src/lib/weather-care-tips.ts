@@ -1,6 +1,7 @@
 import type { WeatherConditionKey, WeatherCarePayload } from "../api/weather";
 import type { MyCareProduct } from "./morph-my-products";
-import { TAB_DOCK_CLEARANCE, clamp, layoutScale, rs, screenContentHeight } from "./responsive";
+import { STYLE_SCALE, clamp, rs } from "./responsive";
+import { tabDockPadding } from "../utils/responsive";
 
 /** Ob-havo holatiga mos ambient hero rasmlar. */
 export function weatherHeroImage(key: WeatherConditionKey | undefined): string {
@@ -256,37 +257,67 @@ export function careHubLayout(
   topInset = 0,
   bottomInset = 0,
 ) {
-  const scale = layoutScale(width, height);
-  const avail = screenContentHeight(height, topInset, bottomInset, TAB_DOCK_CLEARANCE);
+  const scale = STYLE_SCALE;
+  const dockClearance = tabDockPadding(bottomInset);
+  /** Dock ayirilgan to‘liq oyna — hero status barni o‘z ichiga oladi. */
+  const avail = Math.max(360, height - dockClearance);
 
-  // Chrome: search + cats + report head + gaps (taxminiy)
-  const searchBlock = rs(52, scale);
-  const catBlock = rs(38, scale);
-  const reportHead = rs(26, scale);
-  const gaps = rs(28, scale); // section + sheet ichidagi gaplar
+  const searchBlock = rs(48, scale);
+  const catBlock = rs(34, scale);
+  const reportHead = rs(22, scale);
+  const gaps = rs(14, scale);
   const chrome = searchBlock + catBlock + reportHead + gaps;
 
-  let remain = Math.max(280, avail - chrome);
+  const remain = Math.max(rs(260, scale), avail - chrome);
 
-  // Qolgan joy: promo + featured + hubCards + AI
-  let promoH = clamp(Math.round(remain * 0.3), rs(100, scale), rs(168, scale));
-  let featuredH = clamp(Math.round(remain * 0.26), rs(100, scale), rs(180, scale));
-  let hubCardH = clamp(Math.round(remain * 0.28), rs(96, scale), rs(140, scale));
-  let aiH = clamp(remain - promoH - featuredH - hubCardH, rs(44, scale), rs(58, scale));
+  /**
+   * Hero `paddingTop: topInset` ni o‘z balandligida yutadi — tashqarida
+   * qayta qo‘shilmaydi, aks holda AI bar va tab dock kesiladi.
+   */
+  const MIN = {
+    promo: topInset + rs(88, scale),
+    featured: rs(112, scale),
+    hubCard: rs(96, scale),
+    ai: rs(42, scale),
+  };
+  const MAX = {
+    promo: topInset + rs(128, scale),
+    featured: rs(168, scale),
+    hubCard: rs(128, scale),
+    ai: rs(52, scale),
+  };
 
-  // Sig‘masa — proporsional qisqartirish
-  const used = promoH + featuredH + hubCardH + aiH;
-  if (used > remain) {
-    const k = remain / used;
-    promoH = Math.floor(promoH * k);
-    featuredH = Math.floor(featuredH * k);
-    hubCardH = Math.floor(hubCardH * k);
-    aiH = Math.max(rs(42, scale), remain - promoH - featuredH - hubCardH);
+  const minTotal = MIN.promo + MIN.featured + MIN.hubCard + MIN.ai;
+  const headroom =
+    MAX.promo - MIN.promo +
+    (MAX.featured - MIN.featured) +
+    (MAX.hubCard - MIN.hubCard) +
+    (MAX.ai - MIN.ai);
+
+  let promoH: number;
+  let featuredH: number;
+  let hubCardH: number;
+  let aiH: number;
+
+  if (remain <= minTotal) {
+    const k = remain / minTotal;
+    promoH = Math.floor(MIN.promo * k);
+    featuredH = Math.floor(MIN.featured * k);
+    hubCardH = Math.floor(MIN.hubCard * k);
+    aiH = Math.max(rs(40, scale), remain - promoH - featuredH - hubCardH);
+  } else {
+    const k = headroom > 0 ? Math.min(1, (remain - minTotal) / headroom) : 0;
+    const grow = (min: number, max: number) => Math.round(min + (max - min) * k);
+    promoH = grow(MIN.promo, MAX.promo);
+    featuredH = grow(MIN.featured, MAX.featured);
+    hubCardH = grow(MIN.hubCard, MAX.hubCard);
+    aiH = grow(MIN.ai, MAX.ai);
   }
 
-  const featuredW = clamp(Math.round(featuredH * 0.9), rs(140, scale), rs(196, scale));
-  const sheetGap = rs(12, scale);
+  const featuredW = clamp(Math.round(featuredH * 0.88), rs(128, scale), rs(176, scale));
+  const sheetGap = rs(8, scale);
   const hPad = width < 360 ? 12 : rs(16, scale);
+  const promoInner = Math.max(0, promoH - topInset);
 
   return {
     scale,
@@ -299,11 +330,14 @@ export function careHubLayout(
     searchBlock,
     catBlock,
     sheetGap,
-    sheetH: reportHead + sheetGap + hubCardH + sheetGap + aiH + rs(12, scale),
+    sheetH: reportHead + sheetGap + hubCardH + sheetGap + aiH + rs(8, scale),
     hPad,
-    dockClearance: TAB_DOCK_CLEARANCE,
-    promoTempSize: rs(42, scale),
-    promoTitleSize: rs(16, scale),
+    dockClearance,
+    promoTempSize: rs(promoInner >= rs(110, scale) ? 40 : 32, scale),
+    promoTitleSize: rs(15, scale),
+    promoRich: promoInner >= rs(118, scale),
+    hubCardRich: hubCardH >= rs(114, scale),
+    featuredRich: featuredH >= rs(132, scale),
   };
 }
 

@@ -2,9 +2,14 @@ import { useMemo } from "react";
 import { useWindowDimensions, PixelRatio } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { BASE_HEIGHT, BASE_WIDTH, TAB_DOCK_CLEARANCE } from "../utils/responsive";
+import {
+  BASE_HEIGHT,
+  BASE_WIDTH,
+  STYLE_SCALE,
+  TAB_DOCK_CLEARANCE,
+} from "../utils/responsive";
 
-export { TAB_DOCK_CLEARANCE };
+export { STYLE_SCALE, TAB_DOCK_CLEARANCE };
 
 /** Dizayn bazasi — iPhone 14 (390×844 logical). */
 export const BASE_W = BASE_WIDTH;

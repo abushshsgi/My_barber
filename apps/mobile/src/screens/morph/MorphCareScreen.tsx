@@ -41,7 +41,7 @@ import { CareProductPreviewSheet } from "../../components/morph/care/CareProduct
 import { CareRoutineSheet } from "../../components/morph/care/CareRoutineSheet";
 import { DarkMeshAmbientBg } from "../../components/morph/care/DarkMeshAmbientBg";
 import { useCareWeather } from "../../hooks/useCareWeather";
-import { useHideTabBar } from "../../hooks/useHideTabBar";
+import { useHideTabBarWhen } from "../../hooks/useHideTabBar";
 import {
   defaultQuiz,
   estimateProductFit,
@@ -206,7 +206,6 @@ const likeStyles = StyleSheet.create({
 });
 
 export function MorphCareScreen({ navigation, route }: Props) {
-  useHideTabBar();
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const { isAuthenticated, user } = useAuth();
@@ -227,6 +226,8 @@ export function MorphCareScreen({ navigation, route }: Props) {
   const [selectedCat, setSelectedCat] = useState("all");
   const [quiz, setQuiz] = useState<CareQuizAnswers>(() => defaultQuiz());
   const [step, setStep] = useState<QuizStep | "plan">(0);
+  /** Hub tab dockni ko‘rsatadi — onboarding/flow to‘liq ekran. */
+  useHideTabBarWhen(viewMode !== "hub" || step !== "plan");
   const [catalog, setCatalog] = useState<CareProduct[]>([]);
   const [myProducts, setMyProducts] = useState<MyCareProduct[]>([]);
   const [saving, setSaving] = useState(false);
@@ -961,8 +962,8 @@ export function MorphCareScreen({ navigation, route }: Props) {
           ]}
         >
           {!searchOpen ? (
-          <View style={[styles.promoWrap, { paddingTop: insets.top + 4, paddingHorizontal: hubLayout.hPad }]}>
-            <View style={[styles.promoCard, { height: hubLayout.promoH }]}>
+          <View style={[styles.promoWrap, { paddingHorizontal: hubLayout.hPad }]}>
+            <View style={[styles.promoCard, { height: hubLayout.promoH, paddingTop: insets.top + 4 }]}>
               <Image
                 source={{ uri: weatherImg }}
                 style={styles.promoHeroImg}
@@ -1010,13 +1011,11 @@ export function MorphCareScreen({ navigation, route }: Props) {
                         : t(`care.weather.conditions.${weatherKey}`)}
                     </Text>
                   </View>
-                  {weather?.current?.humidity_pct != null ? (
-                    <Text style={styles.promoEyebrow}>
-                      {t("care.weather.humidityShort")} {Math.round(weather.current.humidity_pct)}%
-                    </Text>
-                  ) : (
-                    <Text style={styles.promoEyebrow}>{t("care.weather.title")}</Text>
-                  )}
+                  <Text style={styles.promoEyebrow} numberOfLines={1}>
+                    {weather?.current?.humidity_pct != null
+                      ? `${t("care.weather.humidityShort")} ${Math.round(weather.current.humidity_pct)}%`
+                      : t("care.weather.title")}
+                  </Text>
                 </View>
                 <View style={styles.promoWeatherRow}>
                   <Text
@@ -1033,19 +1032,23 @@ export function MorphCareScreen({ navigation, route }: Props) {
                   <View style={{ flex: 1, minWidth: 0 }}>
                     <Text
                       style={[styles.promoTitle, { fontSize: hubLayout.promoTitleSize }]}
-                      numberOfLines={2}
+                      numberOfLines={hubLayout.promoRich ? 2 : 1}
                     >
                       {t("care.promoTitle")}
                     </Text>
-                    <Text style={styles.promoHint} numberOfLines={1}>
-                      {weather?.location_label || t("care.promoHint")}
-                    </Text>
+                    {hubLayout.promoRich ? (
+                      <Text style={styles.promoHint} numberOfLines={1}>
+                        {weather?.location_label || t("care.promoHint")}
+                      </Text>
+                    ) : null}
                   </View>
                 </View>
-                <View style={styles.promoBtn}>
-                  <Text style={styles.promoBtnText}>{t("care.promoCta")}</Text>
-                  <Ionicons name="arrow-forward" size={13} color="#0A0A0A" />
-                </View>
+                {hubLayout.promoRich ? (
+                  <View style={styles.promoBtn}>
+                    <Text style={styles.promoBtnText}>{t("care.promoCta")}</Text>
+                    <Ionicons name="arrow-forward" size={13} color="#0A0A0A" />
+                  </View>
+                ) : null}
               </Pressable>
             </View>
           </View>
@@ -1107,9 +1110,11 @@ export function MorphCareScreen({ navigation, route }: Props) {
             horizontal
             nestedScrollEnabled={true}
             showsHorizontalScrollIndicator={false}
+            style={{ height: hubLayout.catBlock, flexGrow: 0, flexShrink: 0 }}
             contentContainerStyle={[
               styles.categoryScroll,
               searchOpen && styles.categoryScrollCompact,
+              { height: hubLayout.catBlock, alignItems: "center" },
             ]}
           >
             {CATEGORIES.map((cat) => {
@@ -1139,7 +1144,11 @@ export function MorphCareScreen({ navigation, route }: Props) {
             horizontal
             nestedScrollEnabled={true}
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.featuredProductsScroll}
+            style={{ height: hubLayout.featuredH, flexGrow: 0, flexShrink: 0 }}
+            contentContainerStyle={[
+              styles.featuredProductsScroll,
+              { height: hubLayout.featuredH, alignItems: "stretch" },
+            ]}
           >
             {displayProducts.map((prod) => {
               const isMine =
@@ -1155,7 +1164,11 @@ export function MorphCareScreen({ navigation, route }: Props) {
                   key={prod.id}
                   style={[
                     styles.featuredCard,
-                    { width: hubLayout.featuredW, height: hubLayout.featuredH },
+                    {
+                      width: hubLayout.featuredW,
+                      height: hubLayout.featuredH,
+                      aspectRatio: hubLayout.featuredW / hubLayout.featuredH,
+                    },
                   ]}
                   onPress={() => {
                     if (isMine) {
@@ -1236,7 +1249,10 @@ export function MorphCareScreen({ navigation, route }: Props) {
                       <Text style={styles.featuredProdBrand} numberOfLines={1}>
                         {prod.brand || "MORF Care"}
                       </Text>
-                      <Text style={styles.featuredProdTitle} numberOfLines={2}>
+                      <Text
+                        style={styles.featuredProdTitle}
+                        numberOfLines={hubLayout.featuredRich ? 2 : 1}
+                      >
                         {prod.title}
                       </Text>
                     </View>
@@ -1255,7 +1271,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
                   styles.hubSheet,
                   {
                     gap: hubLayout.sheetGap,
-                    paddingBottom: 8,
+                    paddingBottom: 4,
                   },
                 ]}
               >
@@ -1287,13 +1303,17 @@ export function MorphCareScreen({ navigation, route }: Props) {
                           </Text>
                         </View>
                       </View>
-                      <Text style={styles.hubCardTitle}>{t("care.hubParvarish")}</Text>
+                      <Text style={styles.hubCardTitle} numberOfLines={1}>
+                        {t("care.hubParvarish")}
+                      </Text>
                       <Text style={styles.hubCardMetric} numberOfLines={1}>
                         {t(`care.conditions.${quiz.condition}`)}
                       </Text>
-                      <Text style={styles.hubCardSub} numberOfLines={2}>
-                        {t("care.hubParvarishSub")}
-                      </Text>
+                      {hubLayout.hubCardRich ? (
+                        <Text style={styles.hubCardSub} numberOfLines={2}>
+                          {t("care.hubParvarishSub")}
+                        </Text>
+                      ) : null}
                     </View>
                   </Pressable>
 
@@ -1316,13 +1336,17 @@ export function MorphCareScreen({ navigation, route }: Props) {
                           </Text>
                         </View>
                       </View>
-                      <Text style={styles.hubCardTitle}>{t("care.hubTarkib")}</Text>
+                      <Text style={styles.hubCardTitle} numberOfLines={1}>
+                        {t("care.hubTarkib")}
+                      </Text>
                       <Text style={styles.hubCardMetric} numberOfLines={1}>
                         {t("care.hubTarkibMetric")}
                       </Text>
-                      <Text style={styles.hubCardSub} numberOfLines={2}>
-                        {t("care.hubTarkibSub")}
-                      </Text>
+                      {hubLayout.hubCardRich ? (
+                        <Text style={styles.hubCardSub} numberOfLines={2}>
+                          {t("care.hubTarkibSub")}
+                        </Text>
+                      ) : null}
                     </View>
                   </Pressable>
                 </View>
@@ -1562,7 +1586,8 @@ const styles = StyleSheet.create({
   hubRoot: { flex: 1, backgroundColor: "#FAFAFA" },
   hubScroll: {
     flex: 1,
-    justifyContent: "flex-start",
+    minHeight: 0,
+    justifyContent: "space-between",
   },
   addToast: {
     position: "absolute",
@@ -1678,6 +1703,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.06)",
   },
   promoTop: {
+    flexShrink: 0,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
@@ -1748,6 +1774,8 @@ const styles = StyleSheet.create({
   },
   promoCopy: {
     zIndex: 2,
+    flexShrink: 1,
+    minHeight: 0,
     gap: moderateScale(5),
     maxWidth: "92%",
   },
@@ -1755,9 +1783,12 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: moderateScale(8),
-    flexWrap: "wrap",
+    /** Wrap qilinsa qator balandligi oshib, hero kontenti kesiladi. */
+    flexWrap: "nowrap",
   },
   promoStatusChip: {
+    flexShrink: 1,
+    minWidth: 0,
     flexDirection: "row",
     alignItems: "center",
     gap: moderateScale(5),
@@ -1781,6 +1812,7 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
   },
   promoWeatherRow: {
+    flexShrink: 0,
     flexDirection: "row",
     alignItems: "center",
     gap: moderateScale(12),
@@ -1801,6 +1833,7 @@ const styles = StyleSheet.create({
   },
   promoEyebrow: {
     ...morphFont,
+    flexShrink: 0,
     fontSize: fontSize(10),
     fontWeight: "700",
     color: "rgba(255,255,255,0.55)",
@@ -1839,6 +1872,7 @@ const styles = StyleSheet.create({
     color: "#111111",
   },
   promoBtn: {
+    flexShrink: 0,
     marginTop: verticalScale(2),
     backgroundColor: "#FFFFFF",
     borderRadius: 999,
@@ -2091,7 +2125,11 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   previewBackdropFill: {
-    ...StyleSheet.absoluteFillObject,
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     backgroundColor: "rgba(15,23,42,0.45)",
   },
   previewSheetWrap: {
@@ -2255,15 +2293,17 @@ const styles = StyleSheet.create({
   categoryScroll: {
     paddingHorizontal: scale(16),
     gap: moderateScale(8),
-    paddingVertical: verticalScale(6),
+    alignItems: "center",
   },
   categoryScrollCompact: {
-    paddingVertical: verticalScale(4),
-    paddingBottom: verticalScale(2),
+    paddingVertical: 0,
   },
   catPill: {
+    height: verticalScale(30),
     paddingHorizontal: scale(14),
-    paddingVertical: verticalScale(7),
+    alignItems: "center",
+    justifyContent: "center",
+    alignSelf: "center",
     borderRadius: 999,
   },
   catPillActive: {
@@ -2289,8 +2329,7 @@ const styles = StyleSheet.create({
   featuredProductsScroll: {
     paddingHorizontal: scale(16),
     gap: moderateScale(12),
-    paddingTop: verticalScale(2),
-    paddingBottom: verticalScale(2),
+    alignItems: "stretch",
   },
   featuredGrid: {
     flexDirection: "row",
@@ -2301,8 +2340,6 @@ const styles = StyleSheet.create({
     paddingBottom: verticalScale(8),
   },
   featuredCard: {
-    width: scale(196),
-    height: verticalScale(220),
     borderRadius: moderateScale(20),
     overflow: "hidden",
     backgroundColor: "#FFFFFF",
@@ -2310,9 +2347,11 @@ const styles = StyleSheet.create({
     borderColor: "rgba(17,17,17,0.08)",
   },
   featuredMedia: {
+    flex: 1,
     width: "100%",
-    height: "100%",
     position: "relative",
+    /** Matn bloki oddiy oqimda — karta pasti hech qachon kesilmaydi. */
+    justifyContent: "flex-end",
     overflow: "hidden",
     backgroundColor: "#F0F0F0",
   },
@@ -2326,7 +2365,11 @@ const styles = StyleSheet.create({
     height: "100%",
   },
   featuredScrim: {
-    ...StyleSheet.absoluteFillObject,
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
   },
   featuredActionBtn: {
     width: scale(28),
@@ -2351,13 +2394,13 @@ const styles = StyleSheet.create({
   featuredSaveBtn: {
     position: "absolute",
     right: scale(10),
-    bottom: verticalScale(64),
+    bottom: "30%",
     zIndex: 2,
   },
   featuredPlayBtn: {
     position: "absolute",
     right: scale(10),
-    bottom: verticalScale(64),
+    bottom: "30%",
     width: scale(30),
     height: scale(30),
     borderRadius: moderateScale(15),
@@ -2386,13 +2429,10 @@ const styles = StyleSheet.create({
     color: "#111111",
   },
   featuredMeta: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    bottom: 0,
+    flexShrink: 0,
     paddingHorizontal: scale(12),
-    paddingTop: verticalScale(24),
-    paddingBottom: verticalScale(12),
+    paddingTop: verticalScale(8),
+    paddingBottom: verticalScale(10),
     gap: moderateScale(3),
     zIndex: 2,
   },
@@ -2438,9 +2478,9 @@ const styles = StyleSheet.create({
   hubSheet: {
     backgroundColor: "#FFFFFF",
     paddingHorizontal: scale(12),
-    paddingTop: verticalScale(8),
+    paddingTop: verticalScale(6),
     paddingBottom: 0,
-    gap: moderateScale(12),
+    gap: moderateScale(8),
     borderTopLeftRadius: moderateScale(22),
     borderTopRightRadius: moderateScale(22),
     borderBottomLeftRadius: 0,
@@ -2495,13 +2535,14 @@ const styles = StyleSheet.create({
     position: "absolute",
     right: -scale(8),
     bottom: -verticalScale(6),
-    width: scale(72),
-    height: verticalScale(84),
+    width: scale(64),
+    aspectRatio: ASPECT.portrait,
     borderRadius: moderateScale(12),
     opacity: 0.9,
   },
   hubCardBody: {
     flex: 1,
+    minHeight: 0,
     paddingHorizontal: scale(10),
     paddingTop: verticalScale(8),
     paddingBottom: verticalScale(8),
@@ -2512,6 +2553,7 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
   },
   hubCardHead: {
+    flexShrink: 0,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
@@ -2548,19 +2590,26 @@ const styles = StyleSheet.create({
   },
   hubCardTitle: {
     ...morphFont,
+    /** Sarlavha va qiymat hech qachon siqilmaydi — faqat `hubCardSub` beriladi. */
+    flexShrink: 0,
     fontSize: fontSize(11),
+    lineHeight: fontSize(14),
     fontWeight: "600",
     color: "#737373",
   },
   hubCardMetric: {
     ...morphFont,
+    flexShrink: 0,
     fontSize: fontSize(15),
+    lineHeight: fontSize(19),
     fontWeight: "800",
     color: "#111111",
     letterSpacing: -0.3,
   },
   hubCardSub: {
     ...morphFont,
+    flexShrink: 1,
+    minHeight: 0,
     fontSize: fontSize(10),
     lineHeight: fontSize(13),
     color: "#737373",

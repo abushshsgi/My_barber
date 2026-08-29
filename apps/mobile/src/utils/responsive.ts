@@ -116,6 +116,11 @@ export function widthPercent(percent: number): number {
 /** Floating tab dock balandligi — kontent ostida qoldiriladigan bo'sh joy. */
 export const TAB_DOCK_CLEARANCE = IS_SMALL_DEVICE ? 76 : 84;
 
+/** Dock + Home Indicator — sahifa `paddingBottom` uchun. */
+export function tabDockPadding(bottomInset: number): number {
+  return TAB_DOCK_CLEARANCE + Math.max(bottomInset, 8);
+}
+
 /** Standart gorizontal chekka. */
 export const H_PADDING = IS_NARROW_DEVICE ? scale(14) : scale(18);
 
@@ -140,6 +145,19 @@ export const radius = {
 
 /** Minimal teginish maydoni (Apple HIG 44pt / Material 48dp). */
 export const HIT_SLOP_MIN = 44;
+
+/**
+ * `StyleSheet` ichidagi `scale` / `verticalScale` / `fontSize` qiymatlari
+ * modul yuklanganda bir marta hisoblanadi va keyin o'zgarmaydi.
+ *
+ * Fixed-height layout byudjetlari ham aynan shu bazani ishlatishi shart —
+ * aks holda ajratilgan balandlik kontentnikidan kichik chiqib, matn kesiladi.
+ */
+export const STYLE_SCALE = clamp(
+  Math.min(SCREEN_WIDTH / BASE_WIDTH, SCREEN_HEIGHT / BASE_HEIGHT),
+  0.72,
+  1.12,
+);
 
 /** Media konteynerlari uchun standart nisbatlar. */
 export const ASPECT = {

@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -30,17 +31,7 @@ import {
   verticalScale,
 } from "../../utils/responsive";
 
-type StudioNav = {
-  navigate: (
-    name: "MorphPaywall",
-    params?: MorphStackParamList["MorphPaywall"],
-  ) => void;
-  goBack: () => void;
-};
-
-type Props = {
-  navigation: StudioNav;
-};
+type Props = NativeStackScreenProps<MorphStackParamList, "MorphStudio">;
 
 const FALLBACK_CATEGORIES: MorphStudioCategory[] = [
   {

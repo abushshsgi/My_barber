@@ -39,7 +39,9 @@ export function MorphCareProductDetailScreen({ navigation, route }: Props) {
   const [quiz, setQuiz] = useState<CareQuizAnswers>(defaultQuiz());
 
   useEffect(() => {
-    void loadCareQuiz().then(setQuiz);
+    void loadCareQuiz().then((saved) => {
+      if (saved) setQuiz(saved);
+    });
   }, []);
 
   useEffect(() => {
@@ -48,7 +50,9 @@ export function MorphCareProductDetailScreen({ navigation, route }: Props) {
     void fetchCareProduct(productId)
       .then((row) => {
         if (alive) setData(row);
-        if (alive) void isMyProduct(productId).then(setInMyProducts);
+        if (alive) {
+          void isMyProduct(productId).then((mine) => setInMyProducts(mine));
+        }
       })
       .catch(() => {
         if (alive) setData(null);
