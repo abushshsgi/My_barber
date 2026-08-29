@@ -1302,44 +1302,62 @@ export function MorphCareScreen({ navigation, route }: Props) {
               </View>
 
               <View style={styles.hubCards}>
-                <Pressable style={[styles.hubCard, styles.hubCardParvarish]} onPress={openParvarish}>
-                  <View style={styles.hubCardHead}>
-                    <View style={[styles.hubCardIconLg, styles.hubCardIconBlue]}>
-                      <Ionicons name="water" size={20} color="#2563EB" />
+                <Pressable style={styles.hubCard} onPress={openParvarish}>
+                  <Image
+                    source={{
+                      uri: "https://images.unsplash.com/photo-1522338242992-e1a639acd9c4?auto=format&fit=crop&w=280&q=80",
+                    }}
+                    style={styles.hubCardArt}
+                    resizeMode="cover"
+                  />
+                  <View style={styles.hubCardBody}>
+                    <View style={styles.hubCardHead}>
+                      <View style={styles.hubCardIconLg}>
+                        <Ionicons name="sparkles" size={18} color="#0F172A" />
+                      </View>
+                      <View style={styles.hubStatusBadge}>
+                        <Text style={styles.hubStatusText}>
+                          {t("care.hubStatusActive", { defaultValue: "Faol" })}
+                        </Text>
+                      </View>
                     </View>
-                    <View style={[styles.hubStatusBadge, styles.hubStatusBadgeBlue]}>
-                      <Text style={[styles.hubStatusText, styles.hubStatusTextBlue]}>
-                        {t("care.hubStatusActive", { defaultValue: "Faol" })}
-                      </Text>
-                    </View>
+                    <Text style={styles.hubCardTitle}>{t("care.hubParvarish")}</Text>
+                    <Text style={styles.hubCardMetric} numberOfLines={1}>
+                      {t(`care.conditions.${quiz.condition}`)}
+                    </Text>
+                    <Text style={styles.hubCardSub} numberOfLines={2}>
+                      {t("care.hubParvarishSub")}
+                    </Text>
                   </View>
-                  <Text style={styles.hubCardTitle}>{t("care.hubParvarish")}</Text>
-                  <Text style={styles.hubCardMetric} numberOfLines={1}>
-                    {t(`care.conditions.${quiz.condition}`)}
-                  </Text>
-                  <Text style={styles.hubCardSub} numberOfLines={3}>
-                    {t("care.hubParvarishSub")}
-                  </Text>
                 </Pressable>
 
-                <Pressable style={[styles.hubCard, styles.hubCardTarkib]} onPress={openTarkib}>
-                  <View style={styles.hubCardHead}>
-                    <View style={[styles.hubCardIconLg, styles.hubCardIconViolet]}>
-                      <Ionicons name="flask" size={20} color="#4F46E5" />
+                <Pressable style={styles.hubCard} onPress={openTarkib}>
+                  <Image
+                    source={{
+                      uri: "https://images.unsplash.com/photo-1556228578-0d85b1a4d571?auto=format&fit=crop&w=280&q=80",
+                    }}
+                    style={styles.hubCardArt}
+                    resizeMode="cover"
+                  />
+                  <View style={styles.hubCardBody}>
+                    <View style={styles.hubCardHead}>
+                      <View style={styles.hubCardIconLg}>
+                        <Ionicons name="scan-outline" size={18} color="#0F172A" />
+                      </View>
+                      <View style={styles.hubStatusBadge}>
+                        <Text style={styles.hubStatusText}>
+                          {t("care.hubStatusAnalyzed", { defaultValue: "Tahlil qilingan" })}
+                        </Text>
+                      </View>
                     </View>
-                    <View style={[styles.hubStatusBadge, styles.hubStatusBadgeViolet]}>
-                      <Text style={[styles.hubStatusText, styles.hubStatusTextViolet]}>
-                        {t("care.hubStatusAnalyzed", { defaultValue: "Tahlil qilingan" })}
-                      </Text>
-                    </View>
+                    <Text style={styles.hubCardTitle}>{t("care.hubTarkib")}</Text>
+                    <Text style={styles.hubCardMetric} numberOfLines={1}>
+                      {t("care.hubTarkibMetric")}
+                    </Text>
+                    <Text style={styles.hubCardSub} numberOfLines={2}>
+                      {t("care.hubTarkibSub")}
+                    </Text>
                   </View>
-                  <Text style={styles.hubCardTitle}>{t("care.hubTarkib")}</Text>
-                  <Text style={styles.hubCardMetric} numberOfLines={1}>
-                    {t("care.hubTarkibMetric")}
-                  </Text>
-                  <Text style={styles.hubCardSub} numberOfLines={3}>
-                    {t("care.hubTarkibSub")}
-                  </Text>
                 </Pressable>
               </View>
 
@@ -2244,28 +2262,41 @@ const styles = StyleSheet.create({
   hubCards: { flexDirection: "row", gap: 10 },
   hubCard: {
     flex: 1,
-    minHeight: 148,
+    minHeight: 168,
     borderRadius: 20,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "rgba(15,23,42,0.08)",
+    overflow: "hidden",
+    shadowColor: "#0F172A",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    elevation: 2,
+  },
+  hubCardArt: {
+    position: "absolute",
+    right: -8,
+    bottom: -4,
+    width: 88,
+    height: 96,
+    borderRadius: 16,
+    opacity: 0.92,
+  },
+  hubCardBody: {
+    flex: 1,
     paddingHorizontal: 12,
     paddingVertical: 12,
-    gap: 6,
-    borderWidth: 1,
-    overflow: "hidden",
-  },
-  hubCardParvarish: {
-    backgroundColor: "#EFF6FF",
-    borderColor: "rgba(37,99,235,0.12)",
-  },
-  hubCardTarkib: {
-    backgroundColor: "#EEF2FF",
-    borderColor: "rgba(79,70,229,0.14)",
+    gap: 4,
+    zIndex: 1,
+    paddingRight: 72,
   },
   hubCardHead: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     gap: 6,
-    marginBottom: 2,
+    marginBottom: 4,
   },
   hubCardIcon: {
     width: 28,
@@ -2275,29 +2306,26 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   hubCardIconLg: {
-    width: 40,
-    height: 40,
-    borderRadius: 14,
+    width: 36,
+    height: 36,
+    borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
+    backgroundColor: "#F1F5F9",
   },
-  hubCardIconBlue: { backgroundColor: "rgba(37,99,235,0.14)" },
-  hubCardIconViolet: { backgroundColor: "rgba(79,70,229,0.16)" },
   hubStatusBadge: {
     borderRadius: 999,
     paddingHorizontal: 8,
     paddingVertical: 3,
+    backgroundColor: "#F1F5F9",
   },
-  hubStatusBadgeBlue: { backgroundColor: "rgba(37,99,235,0.12)" },
-  hubStatusBadgeViolet: { backgroundColor: "rgba(79,70,229,0.12)" },
   hubStatusText: {
     ...morphFont,
     fontSize: 9.5,
     fontWeight: "700",
     letterSpacing: 0.2,
+    color: "#475569",
   },
-  hubStatusTextBlue: { color: "#2563EB" },
-  hubStatusTextViolet: { color: "#4F46E5" },
   hubCardTitle: {
     ...morphFont,
     fontSize: 12,
