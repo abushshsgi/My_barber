@@ -1,5 +1,11 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { colors } from "../../theme/colors";
+import {
+  fontSize,
+  moderateScale,
+  scale,
+  verticalScale,
+} from "../../utils/responsive";
 
 type Tab = { key: string; label: string };
 
@@ -34,12 +40,12 @@ export function SegmentedTabs({ tabs, active, onChange }: Props) {
 const styles = StyleSheet.create({
   wrap: {
     flexDirection: "row",
-    gap: 8,
+    gap: moderateScale(8),
   },
   tab: {
     borderRadius: 999,
-    paddingHorizontal: 14,
-    paddingVertical: 9,
+    paddingHorizontal: scale(14),
+    paddingVertical: verticalScale(9),
   },
   tabOn: {
     backgroundColor: colors.fg,
@@ -50,7 +56,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   label: {
-    fontSize: 13,
+    fontSize: fontSize(13),
     fontWeight: "700",
   },
   labelOn: {

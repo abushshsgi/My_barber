@@ -5,6 +5,9 @@ import { NativeHeader } from "../../components/ui/NativeHeader";
 import { ToggleRow } from "../../components/ui/SettingsKit";
 import type { ProfileStackParamList } from "../../navigation/ProfileStack";
 import { colors } from "../../theme/colors";
+import {
+  scale,
+} from "../../utils/responsive";
 
 type Props = NativeStackScreenProps<ProfileStackParamList, "NotificationPrefs">;
 
@@ -35,5 +38,5 @@ export function NotificationPrefsScreen({ navigation }: Props) {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
-  body: { paddingHorizontal: 4 },
+  body: { paddingHorizontal: scale(4) },
 });

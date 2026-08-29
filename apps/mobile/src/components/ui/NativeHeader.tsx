@@ -4,6 +4,12 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useShellTheme } from "../../lib/useShellTheme";
 import { colors } from "../../theme/colors";
 import { NativeBackButton } from "./NativeBackButton";
+import {
+  fontSize,
+  moderateScale,
+  scale,
+  verticalScale,
+} from "../../utils/responsive";
 
 type Props = {
   title: string;
@@ -85,8 +91,8 @@ export function HeaderPill({
 const styles = StyleSheet.create({
   wrap: {
     backgroundColor: colors.bg,
-    paddingHorizontal: 16,
-    paddingBottom: 10,
+    paddingHorizontal: scale(16),
+    paddingBottom: verticalScale(10),
   },
   border: {
     borderBottomWidth: StyleSheet.hairlineWidth,
@@ -95,49 +101,49 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
-    minHeight: 44,
+    gap: moderateScale(10),
+    minHeight: verticalScale(44),
   },
   title: {
     flex: 1,
-    fontSize: 17,
+    fontSize: fontSize(17),
     fontWeight: "700",
     color: colors.fg,
     letterSpacing: -0.3,
   },
   right: {
-    minWidth: 40,
+    minWidth: scale(40),
     alignItems: "flex-end",
   },
   spacer: {
-    width: 40,
-    height: 40,
+    width: scale(40),
+    height: scale(40),
   },
   largeWrap: {
     backgroundColor: colors.bg,
-    paddingHorizontal: 16,
-    paddingBottom: 8,
+    paddingHorizontal: scale(16),
+    paddingBottom: verticalScale(8),
   },
   largeTop: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 8,
+    marginBottom: verticalScale(8),
   },
   largeTitle: {
-    fontSize: 28,
+    fontSize: fontSize(28),
     fontWeight: "800",
     color: colors.fg,
     letterSpacing: -0.6,
-    marginBottom: 4,
+    marginBottom: verticalScale(4),
   },
   pill: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
+    gap: moderateScale(6),
     borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingHorizontal: scale(12),
+    paddingVertical: verticalScale(8),
   },
   pillLight: {
     backgroundColor: colors.surface,
@@ -146,7 +152,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.fg,
   },
   pillText: {
-    fontSize: 12,
+    fontSize: fontSize(12),
     fontWeight: "700",
     color: colors.fg,
   },

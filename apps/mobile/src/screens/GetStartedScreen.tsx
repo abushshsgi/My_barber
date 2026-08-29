@@ -19,6 +19,12 @@ import {
 } from "../components/welcome/OnboardingIllustrations";
 import { setWelcomeSeen } from "../lib/guest";
 import { colors } from "../theme/colors";
+import {
+  fontSize,
+  moderateScale,
+  scale,
+  verticalScale,
+} from "../utils/responsive";
 
 export type LocationEntryMode = "map" | "search";
 
@@ -195,56 +201,56 @@ const styles = StyleSheet.create({
     paddingHorizontal: H_PAD,
     alignItems: "center",
     justifyContent: "flex-start",
-    gap: 12,
+    gap: moderateScale(12),
   },
   visual: {
     alignItems: "center",
     justifyContent: "center",
     overflow: "hidden",
-    marginBottom: 8,
+    marginBottom: verticalScale(8),
   },
   title: {
-    fontSize: 26,
-    lineHeight: 32,
+    fontSize: fontSize(26),
+    lineHeight: fontSize(32),
     fontWeight: "800",
     color: colors.fg,
     textAlign: "center",
     letterSpacing: -0.5,
   },
   subtitle: {
-    fontSize: 15,
-    lineHeight: 22,
+    fontSize: fontSize(15),
+    lineHeight: fontSize(22),
     fontWeight: "500",
     color: colors.muted,
     textAlign: "center",
-    maxWidth: 320,
+    maxWidth: scale(320),
   },
   footer: {
     paddingHorizontal: H_PAD,
-    gap: 12,
+    gap: moderateScale(12),
   },
   dots: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 8,
-    marginBottom: 4,
+    gap: moderateScale(8),
+    marginBottom: verticalScale(4),
   },
   dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: scale(8),
+    height: scale(8),
+    borderRadius: moderateScale(4),
     backgroundColor: "#E5E5EA",
   },
   dotActive: {
     backgroundColor: colors.fg,
-    width: 10,
-    height: 10,
-    borderRadius: 5,
+    width: scale(10),
+    height: scale(10),
+    borderRadius: moderateScale(5),
   },
   cta: {
-    minHeight: 56,
-    borderRadius: 28,
+    minHeight: verticalScale(56),
+    borderRadius: moderateScale(28),
     backgroundColor: colors.fg,
     alignItems: "center",
     justifyContent: "center",
@@ -252,17 +258,17 @@ const styles = StyleSheet.create({
   ctaPressed: { opacity: 0.88, transform: [{ scale: 0.985 }] },
   ctaText: {
     color: "#FFFFFF",
-    fontSize: 16,
+    fontSize: fontSize(16),
     fontWeight: "800",
   },
   secondary: {
     textAlign: "center",
-    fontSize: 15,
+    fontSize: fontSize(15),
     fontWeight: "700",
     color: colors.fg,
-    paddingVertical: 8,
+    paddingVertical: verticalScale(8),
   },
   secondarySpacer: {
-    height: 36,
+    height: verticalScale(36),
   },
 });

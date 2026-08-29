@@ -8,6 +8,12 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
 } from "react-native-reanimated";
+import {
+  fontSize,
+  moderateScale,
+  scale,
+  verticalScale,
+} from "../../utils/responsive";
 
 type Props = {
   beforeUri: string;
@@ -106,7 +112,7 @@ export function BeforeAfterSlider({
 const styles = StyleSheet.create({
   root: {
     overflow: "hidden",
-    borderRadius: 20,
+    borderRadius: moderateScale(20),
     backgroundColor: "#111111",
   },
   layer: {
@@ -128,12 +134,12 @@ const styles = StyleSheet.create({
   },
   title: {
     position: "absolute",
-    left: 14,
-    right: 14,
-    bottom: 14,
+    left: scale(14),
+    right: scale(14),
+    bottom: verticalScale(14),
     zIndex: 3,
     color: "#FFF",
-    fontSize: 16,
+    fontSize: fontSize(16),
     fontWeight: "800",
     letterSpacing: -0.2,
     textShadowColor: "rgba(0,0,0,0.45)",
@@ -142,33 +148,33 @@ const styles = StyleSheet.create({
   },
   tagLeft: {
     position: "absolute",
-    left: 10,
-    top: 10,
+    left: scale(10),
+    top: verticalScale(10),
     backgroundColor: "rgba(0,0,0,0.7)",
     borderRadius: 999,
-    paddingHorizontal: 9,
-    paddingVertical: 4,
+    paddingHorizontal: scale(9),
+    paddingVertical: verticalScale(4),
     zIndex: 3,
   },
   tagRight: {
     position: "absolute",
-    right: 10,
-    top: 10,
+    right: scale(10),
+    top: verticalScale(10),
     backgroundColor: "rgba(0,0,0,0.7)",
     borderRadius: 999,
-    paddingHorizontal: 9,
-    paddingVertical: 4,
+    paddingHorizontal: scale(9),
+    paddingVertical: verticalScale(4),
     zIndex: 3,
   },
   tagText: {
     color: "#FFF",
-    fontSize: 11,
+    fontSize: fontSize(11),
     fontWeight: "700",
   },
   handleHit: {
     position: "absolute",
     top: 0,
-    width: 36,
+    width: scale(36),
     alignItems: "center",
     justifyContent: "center",
     zIndex: 4,
@@ -177,13 +183,13 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 0,
     bottom: 0,
-    width: 2,
+    width: scale(2),
     backgroundColor: "#FFF",
   },
   handleKnob: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: scale(36),
+    height: scale(36),
+    borderRadius: moderateScale(18),
     backgroundColor: "#FFF",
     alignItems: "center",
     justifyContent: "center",

@@ -11,6 +11,12 @@ import Animated, {
 } from "react-native-reanimated";
 import { morfMarkWhite } from "../branding/morf-logo";
 import type { AppShell } from "../lib/app-shell";
+import {
+  fontSize,
+  moderateScale,
+  scale,
+  verticalScale,
+} from "../utils/responsive";
 
 const mysaloonIcon = require("../../assets/icon.png");
 
@@ -76,42 +82,42 @@ const styles = StyleSheet.create({
     backgroundColor: "#111111",
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 32,
+    paddingHorizontal: scale(32),
   },
   logoWrap: {
-    width: 88,
-    height: 88,
-    borderRadius: 44,
+    width: scale(88),
+    height: scale(88),
+    borderRadius: moderateScale(44),
     backgroundColor: "rgba(255,255,255,0.08)",
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 18,
+    marginBottom: verticalScale(18),
     overflow: "hidden",
     borderWidth: 2,
     borderColor: "rgba(255,255,255,0.14)",
   },
   logo: {
-    width: 44,
-    height: 44,
+    width: scale(44),
+    height: scale(44),
   },
   appIcon: {
-    width: 84,
-    height: 84,
-    borderRadius: 42,
+    width: scale(84),
+    height: scale(84),
+    borderRadius: moderateScale(42),
   },
   title: {
     color: "#FFF",
-    fontSize: 26,
+    fontSize: fontSize(26),
     fontWeight: "800",
     letterSpacing: -0.4,
   },
   sub: {
-    marginTop: 8,
+    marginTop: verticalScale(8),
     color: "rgba(255,255,255,0.55)",
-    fontSize: 15,
+    fontSize: fontSize(15),
     fontWeight: "600",
   },
   spinner: {
-    marginTop: 28,
+    marginTop: verticalScale(28),
   },
 });

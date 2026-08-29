@@ -25,6 +25,17 @@ import {
 } from "../../lib/recipient-history";
 import type { WalletTx } from "../../lib/wallet-format";
 import type { WalletStackParamList } from "../../navigation/WalletStack";
+import {
+  IS_SMALL_DEVICE,
+  fontSize,
+  moderateScale,
+  radius,
+  scale,
+  spacing,
+  useResponsive,
+  verticalScale,
+  widthPercent,
+} from "../../utils/responsive";
 
 type Props = NativeStackScreenProps<WalletStackParamList, "WalletHome">;
 
@@ -96,6 +107,7 @@ function avatarColor(id: string | number): string {
 
 export function WalletHomeScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
+  const { isSmall } = useResponsive();
   const { user, isAuthenticated } = useAuth();
   const me = useWalletMe();
   const tx = useWalletTransactions("all");
@@ -103,6 +115,11 @@ export function WalletHomeScreen({ navigation }: Props) {
   const [hidden, setHidden] = useState(false);
   const [selectedTx, setSelectedTx] = useState<WalletTx | null>(null);
   const [history, setHistory] = useState<RecipientHistoryItem[]>([]);
+
+  const dockPad = TAB_DOCK_CLEARANCE + Math.max(insets.bottom, 8);
+
+  /** Promo karuseli tranzaksiyalar ro'yxatini siqib qo'ymasligi kerak. */
+  const showPromo = !isSmall;
 
   const recent = tx.items.slice(0, 8);
   const greetName = firstName(user?.first_name || user?.full_name);
@@ -161,129 +178,131 @@ export function WalletHomeScreen({ navigation }: Props) {
   );
 
   return (
-    <View style={styles.root}>
+    <View style={[styles.root, { paddingBottom: dockPad }]}>
       <StatusBar style="dark" />
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{
-          paddingBottom: TAB_DOCK_CLEARANCE + Math.max(insets.bottom, 8) + 16,
-        }}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={INK} />
-        }
+
+      <LinearGradient
+        colors={["#F0F0F0", "#F0F0F0", "#F0F0F0", "#FAFAFA"]}
+        locations={[0, 0.35, 0.7, 1]}
+        start={{ x: 0.1, y: 0 }}
+        end={{ x: 0.9, y: 1 }}
+        style={[
+          styles.heroCard,
+          { paddingTop: Math.max(insets.top, verticalScale(12)) + spacing.xs },
+          CARD_SHADOW,
+        ]}
       >
-        <LinearGradient
-          colors={["#F0F0F0", "#F0F0F0", "#F0F0F0", "#FAFAFA"]}
-          locations={[0, 0.35, 0.7, 1]}
-          start={{ x: 0.1, y: 0 }}
-          end={{ x: 0.9, y: 1 }}
-          style={[styles.heroCard, { paddingTop: Math.max(insets.top, 12) + 8 }, CARD_SHADOW]}
-        >
-          <View style={styles.header}>
-            <Pressable style={styles.profileRow} onPress={goBackSafe} hitSlop={8}>
-              <View style={styles.profileAvatar}>
-                {user?.avatar ? (
-                  <Image source={{ uri: user.avatar }} style={styles.profileImg} contentFit="cover" />
-                ) : (
-                  <Text style={styles.profileInitials}>{initials(greetName)}</Text>
-                )}
-              </View>
-              <View>
-                <Text style={styles.hello}>Salom, {greetName}</Text>
-                <Text style={styles.welcome}>Xush kelibsiz</Text>
-              </View>
-            </Pressable>
-            <Pressable
-              style={styles.bellBtn}
-              onPress={() => navigation.navigate("WalletMore")}
-              accessibilityLabel="Ko'proq"
-            >
-              <Ionicons name="notifications-outline" size={20} color={INK} />
-            </Pressable>
-          </View>
-
-          <View style={styles.balanceBlock}>
-            {me.loading && !me.wallet ? (
-              <ActivityIndicator color={INK} />
-            ) : (
-              <Pressable onPress={() => setHidden((v) => !v)} style={styles.balancePress}>
-                <Text style={styles.balance}>{balanceText}</Text>
-                <Ionicons
-                  name={hidden ? "eye-off-outline" : "eye-outline"}
-                  size={16}
-                  color={MUTED}
-                  style={{ marginLeft: 8, marginBottom: 4 }}
-                />
-              </Pressable>
-            )}
-            <Text style={styles.balanceLabel}>Hamyon balansi</Text>
-          </View>
-
-          <View style={styles.quickRow}>
-            {QUICK.map((item) => (
-              <Pressable
-                key={item.key}
-                style={styles.quickItem}
-                onPress={() => {
-                  if (!requireAuth()) return;
-                  navigation.navigate(item.key);
-                }}
-              >
-                <View style={styles.quickBtn}>
-                  <Ionicons name={item.icon} size={22} color={INK} />
-                </View>
-                <Text style={styles.quickLabel}>{item.label}</Text>
-              </Pressable>
-            ))}
-          </View>
-        </LinearGradient>
-
-        <View style={styles.section}>
-          <View style={styles.sectionHead}>
-            <Text style={styles.sectionTitle}>Tezkor yuborish</Text>
-            <Pressable onPress={() => navigation.navigate("WalletGift")}>
-              <Text style={styles.seeAll}>Hammasi</Text>
-            </Pressable>
-          </View>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.contactsRow}
+        <View style={styles.header}>
+          <Pressable style={styles.profileRow} onPress={goBackSafe} hitSlop={8}>
+            <View style={styles.profileAvatar}>
+              {user?.avatar ? (
+                <Image source={{ uri: user.avatar }} style={styles.profileImg} contentFit="cover" />
+              ) : (
+                <Text style={styles.profileInitials}>{initials(greetName)}</Text>
+              )}
+            </View>
+            <View>
+              <Text style={styles.hello}>Salom, {greetName}</Text>
+              <Text style={styles.welcome}>Xush kelibsiz</Text>
+            </View>
+          </Pressable>
+          <Pressable
+            style={styles.bellBtn}
+            onPress={() => navigation.navigate("WalletMore")}
+            accessibilityLabel="Ko'proq"
           >
-            {quickContacts.map((h) => (
-              <Pressable
-                key={h.userId}
-                style={styles.contactItem}
-                onPress={() => openRecipient(h)}
-              >
-                <View style={[styles.contactAvatar, { backgroundColor: avatarColor(h.userId) }]}>
-                  <Text style={styles.contactInitials}>{initials(h.fullName)}</Text>
-                  {h.lastSentAt ? (
-                    <View style={styles.sentDot}>
-                      <Ionicons name="checkmark" size={8} color="#FFF" />
-                    </View>
-                  ) : null}
-                </View>
-                <Text style={styles.contactName} numberOfLines={1}>
-                  {h.fullName.split(/\s+/)[0]}
-                </Text>
-              </Pressable>
-            ))}
-            <Pressable
-              style={styles.contactItem}
-              onPress={() => {
-                if (!requireAuth()) return;
-                navigation.navigate("WalletGift");
-              }}
-            >
-              <View style={styles.addContact}>
-                <Ionicons name="add" size={22} color="#6B7280" />
-              </View>
-              <Text style={styles.contactName}>Yangi</Text>
-            </Pressable>
-          </ScrollView>
+            <Ionicons name="notifications-outline" size={ICON.md} color={INK} />
+          </Pressable>
         </View>
 
+        <View style={styles.balanceBlock}>
+          {me.loading && !me.wallet ? (
+            <ActivityIndicator color={INK} />
+          ) : (
+            <Pressable onPress={() => setHidden((v) => !v)} style={styles.balancePress}>
+              <Text style={styles.balance} numberOfLines={1} adjustsFontSizeToFit>
+                {balanceText}
+              </Text>
+              <Ionicons
+                name={hidden ? "eye-off-outline" : "eye-outline"}
+                size={ICON.sm}
+                color={MUTED}
+                style={styles.balanceEye}
+              />
+            </Pressable>
+          )}
+          <Text style={styles.balanceLabel}>Hamyon balansi</Text>
+        </View>
+
+        <View style={styles.quickRow}>
+          {QUICK.map((item) => (
+            <Pressable
+              key={item.key}
+              style={styles.quickItem}
+              onPress={() => {
+                if (!requireAuth()) return;
+                navigation.navigate(item.key);
+              }}
+            >
+              <View style={styles.quickBtn}>
+                <Ionicons name={item.icon} size={ICON.lg} color={INK} />
+              </View>
+              <Text style={styles.quickLabel} numberOfLines={1}>
+                {item.label}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+      </LinearGradient>
+
+      <View style={styles.section}>
+        <View style={styles.sectionHead}>
+          <Text style={styles.sectionTitle}>Tezkor yuborish</Text>
+          <Pressable onPress={() => navigation.navigate("WalletGift")}>
+            <Text style={styles.seeAll}>Hammasi</Text>
+          </Pressable>
+        </View>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.contactsRow}
+        >
+          {quickContacts.map((h) => (
+            <Pressable
+              key={h.userId}
+              style={styles.contactItem}
+              onPress={() => openRecipient(h)}
+            >
+              <View style={[styles.contactAvatar, { backgroundColor: avatarColor(h.userId) }]}>
+                <Text style={styles.contactInitials}>{initials(h.fullName)}</Text>
+                {h.lastSentAt ? (
+                  <View style={styles.sentDot}>
+                    <Ionicons name="checkmark" size={8} color="#FFF" />
+                  </View>
+                ) : null}
+              </View>
+              <Text style={styles.contactName} numberOfLines={1}>
+                {h.fullName.split(/\s+/)[0]}
+              </Text>
+            </Pressable>
+          ))}
+          <Pressable
+            style={styles.contactItem}
+            onPress={() => {
+              if (!requireAuth()) return;
+              navigation.navigate("WalletGift");
+            }}
+          >
+            <View style={styles.addContact}>
+              <Ionicons name="add" size={ICON.lg} color="#6B7280" />
+            </View>
+            <Text style={styles.contactName}>Yangi</Text>
+          </Pressable>
+        </ScrollView>
+      </View>
+
+      {/* Promo — faqat balandligi yetadigan ekranlarda; SE da tranzaksiyalarga joy qoladi. */}
+      {showPromo ? (
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -297,12 +316,12 @@ export function WalletHomeScreen({ navigation }: Props) {
           >
             <View style={styles.promoTextCol}>
               <Text style={styles.promoTitle}>Sovg'a bonusi</Text>
-              <Text style={styles.promoDesc}>
+              <Text style={styles.promoDesc} numberOfLines={3}>
                 Do'stlarga sovg'a yuboring — har bir yuborish bilan bonus o'sadi!
               </Text>
             </View>
             <Pressable style={styles.promoGift} onPress={() => navigation.navigate("WalletGifts")}>
-              <Ionicons name="gift" size={28} color="#111111" />
+              <Ionicons name="gift" size={ICON.xl} color="#111111" />
             </Pressable>
           </LinearGradient>
 
@@ -314,7 +333,7 @@ export function WalletHomeScreen({ navigation }: Props) {
           >
             <View style={styles.promoTextCol}>
               <Text style={styles.promoTitle}>Rekvizitlar</Text>
-              <Text style={styles.promoDesc}>
+              <Text style={styles.promoDesc} numberOfLines={3}>
                 Hamyon raqami va karta ma'lumotlarini bir joydan ko'ring.
               </Text>
             </View>
@@ -322,21 +341,31 @@ export function WalletHomeScreen({ navigation }: Props) {
               style={styles.promoGift}
               onPress={() => navigation.navigate("WalletRequisites")}
             >
-              <Ionicons name="card-outline" size={26} color="#111111" />
+              <Ionicons name="card-outline" size={ICON.lg} color="#111111" />
             </Pressable>
           </LinearGradient>
         </ScrollView>
+      ) : null}
 
-        <View style={[styles.section, { marginTop: 8 }]}>
-          <View style={styles.sectionHead}>
-            <Text style={styles.sectionTitle}>Tranzaksiyalar</Text>
-            <Pressable onPress={() => navigation.navigate("WalletTransactions")}>
-              <Text style={styles.seeAll}>Hammasi</Text>
-            </Pressable>
-          </View>
+      {/* Yagona scroll zonasi — sahifaning o'zi hech qachon scroll qilmaydi. */}
+      <View style={styles.txSection}>
+        <View style={styles.sectionHead}>
+          <Text style={styles.sectionTitle}>Tranzaksiyalar</Text>
+          <Pressable onPress={() => navigation.navigate("WalletTransactions")}>
+            <Text style={styles.seeAll}>Hammasi</Text>
+          </Pressable>
+        </View>
 
+        <ScrollView
+          style={styles.txScroll}
+          contentContainerStyle={styles.txScrollContent}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={INK} />
+          }
+        >
           {tx.loading ? (
-            <ActivityIndicator style={{ marginTop: 20 }} color={INK} />
+            <ActivityIndicator style={styles.txLoader} color={INK} />
           ) : recent.length === 0 ? (
             <View style={styles.emptyBox}>
               <Text style={styles.empty}>Hali tranzaksiya yo'q</Text>
@@ -351,8 +380,8 @@ export function WalletHomeScreen({ navigation }: Props) {
           )}
 
           {me.error ? <Text style={styles.err}>{me.error}</Text> : null}
-        </View>
-      </ScrollView>
+        </ScrollView>
+      </View>
 
       <WalletTransactionReceiptSheet
         tx={selectedTx}
@@ -387,68 +416,86 @@ function TxRow({ item, onPress }: { item: WalletTx; onPress: () => void }) {
   );
 }
 
+const ICON = {
+  sm: scale(16),
+  md: scale(20),
+  lg: scale(22),
+  xl: scale(28),
+} as const;
+
+const AVATAR = scale(IS_SMALL_DEVICE ? 40 : 46);
+const QUICK_TILE = scale(IS_SMALL_DEVICE ? 48 : 58);
+const CONTACT_TILE = scale(IS_SMALL_DEVICE ? 48 : 58);
+const TX_AVATAR = scale(IS_SMALL_DEVICE ? 40 : 48);
+
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: SOFT_BG },
   heroCard: {
-    marginHorizontal: 16,
-    marginBottom: 8,
-    borderRadius: 32,
-    paddingHorizontal: 20,
-    paddingBottom: 24,
+    marginHorizontal: scale(16),
+    marginBottom: spacing.xs,
+    borderRadius: moderateScale(32),
+    paddingHorizontal: scale(20),
+    paddingBottom: spacing.lg,
     overflow: "hidden",
   },
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 28,
+    marginBottom: spacing.xl,
   },
-  profileRow: { flexDirection: "row", alignItems: "center", gap: 12, flex: 1 },
+  profileRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: moderateScale(12),
+    flex: 1,
+  },
   profileAvatar: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
+    width: AVATAR,
+    height: AVATAR,
+    borderRadius: AVATAR / 2,
     backgroundColor: "rgba(255,255,255,0.85)",
     alignItems: "center",
     justifyContent: "center",
     overflow: "hidden",
   },
-  profileImg: { width: 46, height: 46 },
-  profileInitials: { fontSize: 15, fontWeight: "700", color: INK },
-  hello: { fontSize: 16, fontWeight: "700", color: INK },
-  welcome: { marginTop: 2, fontSize: 13, color: MUTED, fontWeight: "400" },
+  profileImg: { width: AVATAR, height: AVATAR },
+  profileInitials: { fontSize: fontSize(15), fontWeight: "700", color: INK },
+  hello: { fontSize: fontSize(16), fontWeight: "700", color: INK },
+  welcome: { marginTop: verticalScale(2), fontSize: fontSize(13), color: MUTED, fontWeight: "400" },
   bellBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: scale(44),
+    height: scale(44),
+    borderRadius: scale(44) / 2,
     backgroundColor: "rgba(255,255,255,0.92)",
     alignItems: "center",
     justifyContent: "center",
   },
-  balanceBlock: { alignItems: "center", marginBottom: 28 },
-  balancePress: { flexDirection: "row", alignItems: "flex-end" },
+  balanceBlock: { alignItems: "center", marginBottom: spacing.xl },
+  balancePress: { flexDirection: "row", alignItems: "flex-end", maxWidth: "100%" },
+  balanceEye: { marginLeft: scale(8), marginBottom: verticalScale(4) },
   balance: {
-    fontSize: 36,
+    fontSize: fontSize(IS_SMALL_DEVICE ? 30 : 36),
     fontWeight: "700",
     color: INK,
     letterSpacing: -0.8,
   },
   balanceLabel: {
-    marginTop: 6,
-    fontSize: 13,
+    marginTop: spacing.xs,
+    fontSize: fontSize(13),
     color: MUTED,
     fontWeight: "500",
   },
   quickRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    paddingHorizontal: 4,
+    paddingHorizontal: scale(4),
   },
-  quickItem: { alignItems: "center", gap: 8, width: 68 },
+  quickItem: { alignItems: "center", gap: spacing.xs, width: scale(68) },
   quickBtn: {
-    width: 58,
-    height: 58,
-    borderRadius: 20,
+    width: QUICK_TILE,
+    height: QUICK_TILE,
+    borderRadius: radius.lg,
     backgroundColor: "#FFF",
     alignItems: "center",
     justifyContent: "center",
@@ -458,22 +505,36 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 3,
   },
-  quickLabel: { fontSize: 12, fontWeight: "500", color: "#4B5563", textAlign: "center" },
-  section: { paddingHorizontal: 20, marginTop: 18 },
+  quickLabel: {
+    fontSize: fontSize(12),
+    fontWeight: "500",
+    color: "#4B5563",
+    textAlign: "center",
+  },
+  section: { paddingHorizontal: scale(20), marginTop: spacing.md },
+  txSection: {
+    flex: 1,
+    minHeight: 0,
+    paddingHorizontal: scale(20),
+    marginTop: spacing.md,
+  },
+  txScroll: { flex: 1 },
+  txScrollContent: { paddingBottom: spacing.sm },
+  txLoader: { marginTop: spacing.lg },
   sectionHead: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 14,
+    marginBottom: spacing.sm,
   },
-  sectionTitle: { fontSize: 17, fontWeight: "700", color: INK },
-  seeAll: { fontSize: 13, fontWeight: "500", color: MUTED },
-  contactsRow: { gap: 16, paddingRight: 8 },
-  contactItem: { alignItems: "center", width: 64, gap: 8 },
+  sectionTitle: { fontSize: fontSize(17), fontWeight: "700", color: INK },
+  seeAll: { fontSize: fontSize(13), fontWeight: "500", color: MUTED },
+  contactsRow: { gap: scale(16), paddingRight: scale(8) },
+  contactItem: { alignItems: "center", width: scale(64), gap: spacing.xs },
   contactAvatar: {
-    width: 58,
-    height: 58,
-    borderRadius: 20,
+    width: CONTACT_TILE,
+    height: CONTACT_TILE,
+    borderRadius: radius.lg,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -481,75 +542,101 @@ const styles = StyleSheet.create({
     position: "absolute",
     right: 0,
     bottom: 0,
-    width: 16,
-    height: 16,
-    borderRadius: 8,
+    width: scale(16),
+    height: scale(16),
+    borderRadius: scale(16) / 2,
     backgroundColor: "#16A34A",
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 2,
     borderColor: "#FAFAFA",
   },
-  contactInitials: { fontSize: 15, fontWeight: "700", color: INK },
-  contactName: { fontSize: 12, fontWeight: "500", color: "#4B5563", textAlign: "center" },
+  contactInitials: { fontSize: fontSize(15), fontWeight: "700", color: INK },
+  contactName: {
+    fontSize: fontSize(12),
+    fontWeight: "500",
+    color: "#4B5563",
+    textAlign: "center",
+  },
   addContact: {
-    width: 58,
-    height: 58,
-    borderRadius: 20,
+    width: CONTACT_TILE,
+    height: CONTACT_TILE,
+    borderRadius: radius.lg,
     backgroundColor: "#E5E7EB",
     alignItems: "center",
     justifyContent: "center",
   },
-  promoRow: { paddingHorizontal: 20, gap: 12, marginTop: 20, paddingBottom: 4 },
+  promoRow: {
+    paddingHorizontal: scale(20),
+    gap: moderateScale(12),
+    marginTop: spacing.md,
+    paddingBottom: verticalScale(4),
+  },
   promoCard: {
-    width: 280,
-    minHeight: 110,
-    borderRadius: 24,
-    padding: 18,
+    width: widthPercent(72),
+    maxWidth: scale(300),
+    minHeight: verticalScale(IS_SMALL_DEVICE ? 88 : 110),
+    borderRadius: radius.xl,
+    padding: moderateScale(IS_SMALL_DEVICE ? 14 : 18),
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+    gap: moderateScale(10),
   },
   promoTextCol: { flex: 1 },
-  promoTitle: { fontSize: 16, fontWeight: "700", color: INK, marginBottom: 6 },
-  promoDesc: { fontSize: 12, lineHeight: 17, color: "#6B7280", fontWeight: "400" },
+  promoTitle: {
+    fontSize: fontSize(16),
+    fontWeight: "700",
+    color: INK,
+    marginBottom: spacing.xs,
+  },
+  promoDesc: {
+    fontSize: fontSize(12),
+    lineHeight: fontSize(17),
+    color: "#6B7280",
+    fontWeight: "400",
+  },
   promoGift: {
-    width: 52,
-    height: 52,
-    borderRadius: 16,
+    width: scale(52),
+    height: scale(52),
+    borderRadius: radius.md,
     backgroundColor: "rgba(255,255,255,0.55)",
     alignItems: "center",
     justifyContent: "center",
   },
-  emptyBox: { alignItems: "center", paddingVertical: 28, gap: 12 },
-  empty: { color: MUTED, fontSize: 14 },
+  emptyBox: { alignItems: "center", paddingVertical: spacing.xl, gap: spacing.sm },
+  empty: { color: MUTED, fontSize: fontSize(14) },
   emptyCta: {
     backgroundColor: INK,
-    borderRadius: 999,
-    paddingHorizontal: 18,
-    paddingVertical: 10,
+    borderRadius: radius.pill,
+    paddingHorizontal: scale(18),
+    paddingVertical: spacing.sm,
   },
-  emptyCtaText: { color: "#FFF", fontWeight: "700", fontSize: 13 },
-  err: { marginTop: 12, color: "#DC2626", fontSize: 13, textAlign: "center" },
+  emptyCtaText: { color: "#FFF", fontWeight: "700", fontSize: fontSize(13) },
+  err: {
+    marginTop: spacing.sm,
+    color: "#DC2626",
+    fontSize: fontSize(13),
+    textAlign: "center",
+  },
   txRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
-    paddingVertical: 12,
+    gap: moderateScale(12),
+    paddingVertical: spacing.sm,
   },
   avatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: TX_AVATAR,
+    height: TX_AVATAR,
+    borderRadius: TX_AVATAR / 2,
     alignItems: "center",
     justifyContent: "center",
   },
-  avatarText: { fontWeight: "700", fontSize: 14, color: INK },
-  txTitle: { fontSize: 15, fontWeight: "600", color: INK },
-  txDate: { marginTop: 3, fontSize: 12, color: MUTED },
+  avatarText: { fontWeight: "700", fontSize: fontSize(14), color: INK },
+  txTitle: { fontSize: fontSize(15), fontWeight: "600", color: INK },
+  txDate: { marginTop: verticalScale(3), fontSize: fontSize(12), color: MUTED },
   txRight: { alignItems: "flex-end" },
-  txAmt: { fontSize: 15, fontWeight: "700" },
+  txAmt: { fontSize: fontSize(15), fontWeight: "700" },
   txOut: { color: "#EF4444" },
   txIn: { color: "#16A34A" },
-  txKind: { marginTop: 3, fontSize: 12, color: MUTED },
+  txKind: { marginTop: verticalScale(3), fontSize: fontSize(12), color: MUTED },
 });

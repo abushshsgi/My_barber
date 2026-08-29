@@ -1,6 +1,12 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useRef } from "react";
 import { Animated, StyleSheet, Text, type StyleProp, type ViewStyle } from "react-native";
+import {
+  fontSize,
+  moderateScale,
+  scale,
+  verticalScale,
+} from "../../utils/responsive";
 
 export type AppToastTone = "error" | "success" | "info" | "loading" | "warning";
 
@@ -117,7 +123,7 @@ const styles = StyleSheet.create({
   wrap: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: moderateScale(8),
     alignSelf: "center",
     maxWidth: "94%",
     shadowColor: "#000",
@@ -127,25 +133,25 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   pill: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: scale(16),
+    paddingVertical: verticalScale(12),
     borderRadius: 999,
   },
   card: {
     alignItems: "flex-start",
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    borderRadius: 16,
+    paddingHorizontal: scale(14),
+    paddingVertical: verticalScale(12),
+    borderRadius: moderateScale(16),
     width: "100%",
   },
   text: {
     flexShrink: 1,
     fontWeight: "700",
-    fontSize: 13,
+    fontSize: fontSize(13),
     letterSpacing: -0.1,
   },
   cardText: {
     fontWeight: "600",
-    lineHeight: 18,
+    lineHeight: fontSize(18),
   },
 });

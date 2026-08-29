@@ -17,6 +17,13 @@ import Animated, {
 
 import { morphFont } from "../../../theme/morph-font";
 import { useMorphAppearance } from "../../../lib/MorphAppearanceContext";
+import {
+  IS_SMALL_DEVICE,
+  fontSize,
+  moderateScale,
+  scale,
+  verticalScale,
+} from "../../../utils/responsive";
 
 type Props = {
   value: string;
@@ -203,15 +210,20 @@ export function ChatInputBar({
   );
 }
 
+const BAR_HEIGHT = verticalScale(IS_SMALL_DEVICE ? 46 : 52);
+const SIDE_BTN = scale(IS_SMALL_DEVICE ? 34 : 38);
+const ACTION_BTN = scale(IS_SMALL_DEVICE ? 32 : 36);
+const MIC_RING = ACTION_BTN + scale(10);
+
 const styles = StyleSheet.create({
   wrap: {
     flexDirection: "row",
     alignItems: "center",
-    minHeight: 52,
-    paddingLeft: 6,
-    paddingRight: 6,
-    paddingVertical: 6,
-    borderRadius: 26,
+    minHeight: BAR_HEIGHT,
+    paddingLeft: moderateScale(6),
+    paddingRight: moderateScale(6),
+    paddingVertical: moderateScale(6),
+    borderRadius: BAR_HEIGHT / 2,
     backgroundColor: "rgba(255,255,255,0.08)",
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: "rgba(255,255,255,0.14)",
@@ -220,31 +232,32 @@ const styles = StyleSheet.create({
     borderColor: "rgba(255,255,255,0.28)",
   },
   sideBtn: {
-    width: 38,
-    height: 38,
+    width: SIDE_BTN,
+    height: SIDE_BTN,
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: 19,
+    borderRadius: SIDE_BTN / 2,
   },
   pressed: {
     opacity: 0.78,
   },
   input: {
     flex: 1,
-    minHeight: 28,
-    maxHeight: 96,
-    paddingHorizontal: 8,
-    paddingVertical: 6,
+    minHeight: verticalScale(28),
+    /** Klaviatura ochilganda kontent tashqariga chiqmasligi uchun cheklangan. */
+    maxHeight: verticalScale(IS_SMALL_DEVICE ? 72 : 96),
+    paddingHorizontal: scale(8),
+    paddingVertical: moderateScale(6),
     ...morphFont,
-    fontSize: 16,
-    lineHeight: 22,
+    fontSize: fontSize(16),
+    lineHeight: fontSize(22),
     color: "#111111",
     textAlign: "left",
   },
   sendBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: ACTION_BTN,
+    height: ACTION_BTN,
+    borderRadius: ACTION_BTN / 2,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "#111111",
@@ -253,9 +266,9 @@ const styles = StyleSheet.create({
     backgroundColor: "#D4D4D8",
   },
   voiceBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: ACTION_BTN,
+    height: ACTION_BTN,
+    borderRadius: ACTION_BTN / 2,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "#111111",
@@ -265,22 +278,22 @@ const styles = StyleSheet.create({
   },
   micRing: {
     position: "absolute",
-    top: -5,
-    left: -5,
-    width: 46,
-    height: 46,
-    borderRadius: 23,
+    top: -scale(5),
+    left: -scale(5),
+    width: MIC_RING,
+    height: MIC_RING,
+    borderRadius: MIC_RING / 2,
     borderWidth: 1.5,
     borderColor: "#111111",
   },
   wave: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 1.5,
+    gap: moderateScale(1.5),
   },
   bar: {
-    width: 2,
-    borderRadius: 2,
+    width: scale(2),
+    borderRadius: moderateScale(2),
     backgroundColor: "#FFFFFF",
   },
 });

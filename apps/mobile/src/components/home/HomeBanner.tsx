@@ -14,6 +14,12 @@ import { pexelsPhotoUrl } from "../../api/media";
 import { BANNER_ASPECT, H_PAD, useHomeLayout } from "../../theme/layout";
 import { colors } from "../../theme/colors";
 import { ResponsiveImage } from "../ResponsiveImage";
+import {
+  fontSize,
+  moderateScale,
+  scale,
+  verticalScale,
+} from "../../utils/responsive";
 
 const AUTOPLAY_MS = 4500;
 
@@ -165,7 +171,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: H_PAD,
   },
   carousel: {
-    borderRadius: 20,
+    borderRadius: moderateScale(20),
     overflow: "hidden",
     alignSelf: "center",
   },
@@ -176,34 +182,34 @@ const styles = StyleSheet.create({
   },
   promoBadge: {
     position: "absolute",
-    top: 12,
-    right: 12,
+    top: verticalScale(12),
+    right: scale(12),
     zIndex: 2,
     backgroundColor: colors.promo,
     borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingHorizontal: scale(10),
+    paddingVertical: verticalScale(4),
   },
   promoText: {
-    fontSize: 11,
+    fontSize: fontSize(11),
     fontWeight: "800",
     color: colors.fg,
   },
   content: {
     flex: 1,
     justifyContent: "space-between",
-    padding: 14,
+    padding: moderateScale(14),
     zIndex: 2,
   },
   badge: {
     alignSelf: "flex-start",
     backgroundColor: "rgba(255,255,255,0.95)",
     borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingHorizontal: scale(10),
+    paddingVertical: verticalScale(4),
   },
   badgeText: {
-    fontSize: 10,
+    fontSize: fontSize(10),
     fontWeight: "800",
     letterSpacing: 1,
     color: colors.fg,
@@ -211,24 +217,24 @@ const styles = StyleSheet.create({
   },
   title: {
     maxWidth: "88%",
-    fontSize: 15,
+    fontSize: fontSize(15),
     fontWeight: "800",
-    lineHeight: 20,
+    lineHeight: fontSize(20),
     color: "#FFFFFF",
   },
   cta: {
-    marginTop: 8,
+    marginTop: verticalScale(8),
     alignSelf: "flex-start",
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
+    gap: moderateScale(6),
     backgroundColor: "#FFFFFF",
-    borderRadius: 10,
-    paddingHorizontal: 10,
-    paddingVertical: 7,
+    borderRadius: moderateScale(10),
+    paddingHorizontal: scale(10),
+    paddingVertical: verticalScale(7),
   },
   ctaText: {
-    fontSize: 11,
+    fontSize: fontSize(11),
     fontWeight: "800",
     color: colors.fg,
   },
@@ -236,21 +242,21 @@ const styles = StyleSheet.create({
     position: "absolute",
     left: 0,
     right: 0,
-    bottom: 10,
+    bottom: verticalScale(10),
     flexDirection: "row",
     justifyContent: "center",
-    gap: 4,
+    gap: moderateScale(4),
   },
   dot: {
-    height: 4,
+    height: verticalScale(4),
     borderRadius: 999,
   },
   dotActive: {
-    width: 16,
+    width: scale(16),
     backgroundColor: "#FFFFFF",
   },
   dotIdle: {
-    width: 4,
+    width: scale(4),
     backgroundColor: "rgba(255,255,255,0.45)",
   },
 });

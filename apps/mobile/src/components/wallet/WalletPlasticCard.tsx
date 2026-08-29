@@ -3,6 +3,12 @@ import { LinearGradient } from "expo-linear-gradient";
 import { StyleSheet, Text, View } from "react-native";
 import { colors } from "../../theme/colors";
 import { formatSomLabel } from "../../lib/wallet-format";
+import {
+  fontSize,
+  moderateScale,
+  scale,
+  verticalScale,
+} from "../../utils/responsive";
 
 type Props = {
   balance: number;
@@ -49,7 +55,7 @@ export function WalletPlasticCard({ balance, cardholderName, walletNumber }: Pro
 
 const styles = StyleSheet.create({
   wrap: {
-    borderRadius: 28,
+    borderRadius: moderateScale(28),
     overflow: "hidden",
     shadowColor: "#000",
     shadowOpacity: 0.22,
@@ -59,7 +65,7 @@ const styles = StyleSheet.create({
   },
   card: {
     aspectRatio: 1.586,
-    padding: 22,
+    padding: moderateScale(22),
     justifyContent: "space-between",
   },
   top: {
@@ -68,54 +74,54 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   chip: {
-    width: 38,
-    height: 28,
-    borderRadius: 5,
+    width: scale(38),
+    height: verticalScale(28),
+    borderRadius: moderateScale(5),
     backgroundColor: "#C4A574",
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.25)",
   },
   brand: {
     color: "#FFF",
-    fontSize: 15,
+    fontSize: fontSize(15),
     fontWeight: "700",
   },
   dot: { color: colors.brandDot },
-  mid: { marginTop: 8 },
+  mid: { marginTop: verticalScale(8) },
   balLabel: {
     color: "rgba(255,255,255,0.45)",
-    fontSize: 10,
+    fontSize: fontSize(10),
     fontWeight: "700",
     letterSpacing: 1.4,
   },
   bal: {
-    marginTop: 4,
+    marginTop: verticalScale(4),
     color: "#FFF",
-    fontSize: 26,
+    fontSize: fontSize(26),
     fontWeight: "800",
     letterSpacing: -0.5,
   },
   bottom: {
     flexDirection: "row",
     alignItems: "flex-end",
-    gap: 12,
+    gap: moderateScale(12),
   },
   holderLabel: {
     color: "rgba(255,255,255,0.4)",
-    fontSize: 9,
+    fontSize: fontSize(9),
     fontWeight: "700",
     letterSpacing: 1.2,
   },
   holder: {
-    marginTop: 2,
+    marginTop: verticalScale(2),
     color: "#FFF",
-    fontSize: 12,
+    fontSize: fontSize(12),
     fontWeight: "600",
   },
   number: {
-    marginTop: 10,
+    marginTop: verticalScale(10),
     color: "rgba(255,255,255,0.7)",
-    fontSize: 13,
+    fontSize: fontSize(13),
     fontWeight: "600",
     letterSpacing: 1.5,
     fontVariant: ["tabular-nums"],

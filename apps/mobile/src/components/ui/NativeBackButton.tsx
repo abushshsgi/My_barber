@@ -1,6 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Pressable, StyleSheet } from "react-native";
 import { useShellTheme } from "../../lib/useShellTheme";
+import {
+  moderateScale,
+  scale,
+} from "../../utils/responsive";
 
 type Props = {
   onPress: () => void;
@@ -33,9 +37,9 @@ export function NativeBackButton({
 
 const styles = StyleSheet.create({
   btn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: scale(40),
+    height: scale(40),
+    borderRadius: moderateScale(20),
     backgroundColor: "transparent",
     alignItems: "center",
     justifyContent: "center",

@@ -14,6 +14,12 @@ import Animated, {
 import { ChatMarkdown } from "./ChatMarkdown";
 import { useMorphAppearance } from "../../../lib/MorphAppearanceContext";
 import { morphFont } from "../../../theme/morph-font";
+import {
+  fontSize,
+  moderateScale,
+  scale,
+  verticalScale,
+} from "../../../utils/responsive";
 
 export type ChatRole = "user" | "assistant";
 
@@ -108,15 +114,15 @@ export function ChatBubble({ role, content, pending }: Props) {
 const styles = StyleSheet.create({
   userRow: {
     alignItems: "flex-end",
-    paddingHorizontal: 16,
-    marginBottom: 16,
+    paddingHorizontal: scale(16),
+    marginBottom: verticalScale(16),
   },
   userBubble: {
     maxWidth: "82%",
-    borderRadius: 22,
-    borderBottomRightRadius: 6,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    borderRadius: moderateScale(22),
+    borderBottomRightRadius: moderateScale(6),
+    paddingHorizontal: scale(16),
+    paddingVertical: verticalScale(12),
   },
   userBubbleLight: {
     backgroundColor: "#FFFFFF",
@@ -130,21 +136,21 @@ const styles = StyleSheet.create({
   },
   userText: {
     ...morphFont,
-    fontSize: 14,
-    lineHeight: 20,
+    fontSize: fontSize(14),
+    lineHeight: fontSize(20),
     color: "#111111",
   },
   assistantRow: {
-    paddingHorizontal: 18,
-    marginBottom: 18,
+    paddingHorizontal: scale(18),
+    marginBottom: verticalScale(18),
   },
   typingWrap: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 20,
+    gap: moderateScale(8),
+    paddingHorizontal: scale(14),
+    paddingVertical: verticalScale(10),
+    borderRadius: moderateScale(20),
     alignSelf: "flex-start",
   },
   typingLight: {
@@ -158,9 +164,9 @@ const styles = StyleSheet.create({
     borderColor: "rgba(17,17,17,0.12)",
   },
   typingIcon: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+    width: scale(20),
+    height: scale(20),
+    borderRadius: moderateScale(10),
     backgroundColor: "#F0F0F0",
     alignItems: "center",
     justifyContent: "center",
@@ -168,13 +174,13 @@ const styles = StyleSheet.create({
   dots: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 5,
-    height: 18,
+    gap: moderateScale(5),
+    height: verticalScale(18),
   },
   dot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
+    width: scale(6),
+    height: scale(6),
+    borderRadius: moderateScale(3),
     backgroundColor: "#111111",
   },
 });

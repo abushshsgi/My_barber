@@ -21,6 +21,9 @@ import {
 import { addMyProduct, careProductToMy, isMyProduct } from "../../lib/morph-my-products";
 import type { MorphCareStackParamList } from "../../navigation/MorphCareStack";
 import { morphFont } from "../../theme/morph-font";
+import {
+  fontSize,
+} from "../../utils/responsive";
 
 type Props = NativeStackScreenProps<MorphCareStackParamList, "CareProductDetail">;
 
@@ -118,7 +121,7 @@ const styles = StyleSheet.create({
   empty: {
     textAlign: "center",
     ...morphFont,
-    fontSize: 14,
+    fontSize: fontSize(14),
     color: "#64748B",
   },
 });

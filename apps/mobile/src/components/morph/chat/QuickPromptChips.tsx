@@ -2,6 +2,12 @@ import { Ionicons } from "@expo/vector-icons";
 import { Pressable, ScrollView, StyleSheet, Text } from "react-native";
 import { morphFont } from "../../../theme/morph-font";
 import { SOFT_PAPER } from "../../../theme/morph-appearance";
+import {
+  fontSize,
+  moderateScale,
+  scale,
+  verticalScale,
+} from "../../../utils/responsive";
 
 export type QuickPrompt = {
   id: string;
@@ -59,20 +65,20 @@ export function QuickPromptChips({ prompts, onSelect, disabled }: Props) {
 
 const styles = StyleSheet.create({
   row: {
-    paddingTop: 4,
-    paddingBottom: 2,
-    gap: 8,
+    paddingTop: verticalScale(4),
+    paddingBottom: verticalScale(2),
+    gap: moderateScale(8),
     flexGrow: 1,
     justifyContent: "flex-start",
   },
   chip: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    maxWidth: 220,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 16,
+    gap: moderateScale(6),
+    maxWidth: scale(220),
+    paddingHorizontal: scale(12),
+    paddingVertical: verticalScale(8),
+    borderRadius: moderateScale(16),
     backgroundColor: SOFT_PAPER.card,
     borderWidth: 1,
     borderColor: SOFT_PAPER.line,
@@ -86,8 +92,8 @@ const styles = StyleSheet.create({
   },
   chipText: {
     ...morphFont,
-    fontSize: 12.5,
-    lineHeight: 16,
+    fontSize: fontSize(12.5),
+    lineHeight: fontSize(16),
     fontWeight: "500",
     color: SOFT_PAPER.fg,
   },

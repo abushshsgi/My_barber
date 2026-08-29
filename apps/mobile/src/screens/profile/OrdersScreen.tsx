@@ -7,6 +7,12 @@ import { SegmentedTabs } from "../../components/ui/SegmentedTabs";
 import { useProfileData } from "../../hooks/useProfileData";
 import type { ProfileStackParamList } from "../../navigation/ProfileStack";
 import { colors } from "../../theme/colors";
+import {
+  fontSize,
+  moderateScale,
+  scale,
+  verticalScale,
+} from "../../utils/responsive";
 
 type Props = NativeStackScreenProps<ProfileStackParamList, "Orders">;
 
@@ -63,53 +69,53 @@ export function OrdersScreen({ navigation }: Props) {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
-  body: { flex: 1, paddingHorizontal: 16, paddingTop: 8 },
+  body: { flex: 1, paddingHorizontal: scale(16), paddingTop: verticalScale(8) },
   empty: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    paddingBottom: 80,
-    paddingHorizontal: 24,
+    paddingBottom: verticalScale(80),
+    paddingHorizontal: scale(24),
   },
   emptyGlow: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
+    width: scale(120),
+    height: scale(120),
+    borderRadius: moderateScale(60),
     backgroundColor: "rgba(0,0,0,0.03)",
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 18,
+    marginBottom: verticalScale(18),
   },
   emptyIcon: {
-    width: 72,
-    height: 72,
-    borderRadius: 20,
+    width: scale(72),
+    height: scale(72),
+    borderRadius: moderateScale(20),
     backgroundColor: colors.surface,
     alignItems: "center",
     justifyContent: "center",
   },
   emptyTitle: {
-    fontSize: 20,
+    fontSize: fontSize(20),
     fontWeight: "800",
     color: colors.fg,
-    marginBottom: 8,
+    marginBottom: verticalScale(8),
   },
   emptySub: {
-    fontSize: 14,
-    lineHeight: 20,
+    fontSize: fontSize(14),
+    lineHeight: fontSize(20),
     color: colors.muted,
     textAlign: "center",
-    marginBottom: 20,
+    marginBottom: verticalScale(20),
   },
   cta: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: moderateScale(8),
     backgroundColor: colors.fg,
-    borderRadius: 14,
-    paddingHorizontal: 18,
-    paddingVertical: 14,
+    borderRadius: moderateScale(14),
+    paddingHorizontal: scale(18),
+    paddingVertical: verticalScale(14),
   },
-  ctaText: { color: "#FFF", fontSize: 15, fontWeight: "700" },
-  listHint: { marginTop: 24, color: colors.muted, fontSize: 14 },
+  ctaText: { color: "#FFF", fontSize: fontSize(15), fontWeight: "700" },
+  listHint: { marginTop: verticalScale(24), color: colors.muted, fontSize: fontSize(14) },
 });

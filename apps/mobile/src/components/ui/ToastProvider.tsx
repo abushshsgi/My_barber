@@ -10,6 +10,9 @@ import { StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AppToast, type AppToastTone } from "./AppToast";
 import { sanitizeDisplayError } from "../../lib/network-error";
+import {
+  scale,
+} from "../../utils/responsive";
 
 export type ShowToastOptions = {
   tone?: AppToastTone;
@@ -88,6 +91,6 @@ const styles = StyleSheet.create({
     zIndex: 9999,
     elevation: 9999,
     alignItems: "center",
-    paddingHorizontal: 16,
+    paddingHorizontal: scale(16),
   },
 });

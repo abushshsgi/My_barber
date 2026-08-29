@@ -22,6 +22,11 @@ import { getGuestLocation } from "../lib/guest";
 import type { RootStackParamList } from "../navigation/RootNavigator";
 import { scaleFont } from "../theme/layout";
 import { colors } from "../theme/colors";
+import {
+  moderateScale,
+  scale,
+  verticalScale,
+} from "../utils/responsive";
 
 function parseCoord(v: string | number | null | undefined): number | null {
   if (v == null || v === "") return null;
@@ -196,41 +201,41 @@ export function MapScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.bg, paddingHorizontal: 16 },
+  root: { flex: 1, backgroundColor: colors.bg, paddingHorizontal: scale(16) },
   topBar: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 12,
+    marginBottom: verticalScale(12),
   },
   titlePill: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
+    gap: moderateScale(6),
     backgroundColor: colors.surface,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingHorizontal: scale(12),
+    paddingVertical: verticalScale(8),
     borderRadius: 999,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
   },
   titleText: { fontWeight: "800", color: colors.fg },
   locBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: scale(40),
+    height: scale(40),
+    borderRadius: moderateScale(20),
     backgroundColor: colors.fg,
     alignItems: "center",
     justifyContent: "center",
   },
-  hint: { color: colors.muted, marginBottom: 10, fontWeight: "500" },
-  err: { color: "#EF4444", marginBottom: 8 },
-  section: { fontWeight: "800", color: colors.fg, marginBottom: 10 },
-  listPad: { gap: 10 },
+  hint: { color: colors.muted, marginBottom: verticalScale(10), fontWeight: "500" },
+  err: { color: "#EF4444", marginBottom: verticalScale(8) },
+  section: { fontWeight: "800", color: colors.fg, marginBottom: verticalScale(10) },
+  listPad: { gap: moderateScale(10) },
   card: {
     backgroundColor: colors.surface,
-    borderRadius: 14,
-    padding: 14,
+    borderRadius: moderateScale(14),
+    padding: moderateScale(14),
     borderWidth: 1,
     borderColor: "transparent",
   },
@@ -239,6 +244,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFF",
   },
   cardName: { fontWeight: "700", color: colors.fg },
-  cardMeta: { marginTop: 4, color: colors.muted },
-  empty: { color: colors.muted, paddingTop: 24, textAlign: "center" },
+  cardMeta: { marginTop: verticalScale(4), color: colors.muted },
+  empty: { color: colors.muted, paddingTop: verticalScale(24), textAlign: "center" },
 });

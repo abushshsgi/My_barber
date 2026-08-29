@@ -24,6 +24,13 @@ import { useHomeCatalog } from "../hooks/useHomeCatalog";
 import type { RootStackParamList } from "../navigation/RootNavigator";
 import { CARD_GAP, H_PAD, useHomeLayout } from "../theme/layout";
 import { colors } from "../theme/colors";
+import {
+  moderateScale,
+  radius,
+  scale,
+  spacing,
+  verticalScale,
+} from "../utils/responsive";
 
 type Props = {
   onOpenMap?: () => void;
@@ -97,20 +104,30 @@ export function HomeScreen({ onOpenMap, onOpenExplore }: Props) {
   );
 
   return (
-    <View style={[styles.root, { paddingTop: Math.max(insets.top, 10) }]}>
+    <View
+      style={[
+        styles.root,
+        {
+          paddingTop: Math.max(insets.top, spacing.sm),
+          paddingBottom: TAB_DOCK_CLEARANCE + Math.max(insets.bottom, 8),
+        },
+      ]}
+    >
+      {/*
+        Kontent har doim bir ekranga sig'adi (`flexGrow: 1` + flex bo'limlar),
+        shuning uchun bu ScrollView amalda scroll qilmaydi — u faqat
+        pull-to-refresh imkoniyatini saqlab qoladi.
+      */}
       <ScrollView
-        showsVerticalScrollIndicator={false}
+        style={styles.flex}
         contentContainerStyle={styles.content}
-        nestedScrollEnabled={true}
+        showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         refreshControl={
           <RefreshControl refreshing={loading} onRefresh={refresh} tintColor={colors.fg} />
         }
       >
-        <HomeHeader
-          locationLabel={locationLabel}
-          onPressMap={openMap}
-        />
+        <HomeHeader locationLabel={locationLabel} onPressMap={openMap} />
 
         <HomeBanner />
 
@@ -133,14 +150,10 @@ export function HomeScreen({ onOpenMap, onOpenExplore }: Props) {
 
         {filteredSalons.length > 0 ? (
           <View style={styles.section}>
-            <SectionHeader
-              title={t("home.topSalons")}
-              onPressLink={openExplore}
-            />
+            <SectionHeader title={t("home.topSalons")} onPressLink={openExplore} />
             <FlatList
               data={filteredSalons}
               horizontal
-              nestedScrollEnabled={true}
               keyExtractor={(item) => item.id}
               renderItem={renderSalon}
               showsHorizontalScrollIndicator={false}
@@ -166,7 +179,6 @@ export function HomeScreen({ onOpenMap, onOpenExplore }: Props) {
             <FlatList
               data={topBarbers}
               horizontal
-              nestedScrollEnabled={true}
               keyExtractor={(item) => item.id}
               renderItem={renderBarber}
               showsHorizontalScrollIndicator={false}
@@ -195,28 +207,33 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.bg,
   },
+  flex: {
+    flex: 1,
+  },
   content: {
-    gap: 16,
-    paddingBottom: TAB_DOCK_CLEARANCE + 24,
+    flexGrow: 1,
+    gap: spacing.md,
+    paddingBottom: spacing.sm,
   },
   section: {
-    gap: 0,
+    flexShrink: 1,
+    minHeight: 0,
   },
   hRow: {
     gap: CARD_GAP,
     paddingHorizontal: H_PAD,
-    paddingBottom: 2,
+    paddingBottom: verticalScale(2),
   },
   loader: {
-    paddingVertical: 28,
+    paddingVertical: spacing.xl,
     alignItems: "center",
   },
   errorBox: {
-    marginHorizontal: 16,
-    padding: 12,
-    borderRadius: 12,
+    marginHorizontal: scale(16),
+    padding: moderateScale(12),
+    borderRadius: radius.sm,
     backgroundColor: colors.surface,
-    gap: 8,
+    gap: spacing.xs,
   },
   errorText: {
     color: colors.muted,
@@ -224,9 +241,9 @@ const styles = StyleSheet.create({
   retry: {
     alignSelf: "flex-start",
     backgroundColor: colors.fg,
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    borderRadius: radius.pill,
+    paddingHorizontal: scale(12),
+    paddingVertical: spacing.xs,
   },
   retryText: {
     fontWeight: "700",

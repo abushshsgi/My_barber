@@ -2,6 +2,12 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import type { HomeCategoryKey } from "../../api/types";
 import { CATEGORY_LABELS } from "../../lib/mappers";
 import { colors } from "../../theme/colors";
+import {
+  fontSize,
+  moderateScale,
+  scale,
+  verticalScale,
+} from "../../utils/responsive";
 
 const KEYS: HomeCategoryKey[] = ["all", "barber", "beauty", "nails"];
 
@@ -40,16 +46,16 @@ export function HomeCategories({ active, onChange }: Props) {
 
 const styles = StyleSheet.create({
   wrap: {
-    paddingLeft: 16,
+    paddingLeft: scale(16),
   },
   row: {
-    gap: 8,
-    paddingRight: 16,
+    gap: moderateScale(8),
+    paddingRight: scale(16),
   },
   chip: {
     borderRadius: 999,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingHorizontal: scale(16),
+    paddingVertical: verticalScale(8),
   },
   chipOn: {
     backgroundColor: colors.fg,
@@ -60,7 +66,7 @@ const styles = StyleSheet.create({
     borderColor: "rgba(10,10,10,0.85)",
   },
   label: {
-    fontSize: 12,
+    fontSize: fontSize(12),
     fontWeight: "700",
   },
   labelOn: {

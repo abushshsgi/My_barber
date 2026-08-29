@@ -2,12 +2,13 @@ import { useMemo } from "react";
 import { useWindowDimensions, PixelRatio } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-/** Floating tab dock balandligi — kontent ostida bo‘sh joy. */
-export const TAB_DOCK_CLEARANCE = 84;
+import { BASE_HEIGHT, BASE_WIDTH, TAB_DOCK_CLEARANCE } from "../utils/responsive";
+
+export { TAB_DOCK_CLEARANCE };
 
 /** Dizayn bazasi — iPhone 14 (390×844 logical). */
-export const BASE_W = 390;
-export const BASE_H = 844;
+export const BASE_W = BASE_WIDTH;
+export const BASE_H = BASE_HEIGHT;
 
 export function clamp(n: number, min: number, max: number) {
   return Math.min(max, Math.max(min, n));

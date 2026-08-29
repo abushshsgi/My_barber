@@ -2,8 +2,21 @@ import { Ionicons } from "@expo/vector-icons";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import type { HomeListing } from "../../api/types";
 import { shortPrice } from "../../lib/price";
-import { CARD_MEDIA_ASPECT, useHomeLayout } from "../../theme/layout";
+import {
+  CARD_BODY_HEIGHT,
+  CARD_MEDIA_ASPECT,
+  imageRequestWidth,
+  listingCardWidth,
+  scaleFont,
+} from "../../theme/layout";
 import { colors } from "../../theme/colors";
+import {
+  SCREEN_WIDTH,
+  moderateScale,
+  scale,
+  spacing,
+  verticalScale,
+} from "../../utils/responsive";
 import { ResponsiveImage } from "../ResponsiveImage";
 
 type Props = {
@@ -25,13 +38,12 @@ export function ListingCard({
   cardWidth,
   imageWidth,
 }: Props) {
-  const layout = useHomeLayout();
   // Parent width bersa — qayta dimension subscribe qilmaslik uchun shu qiymat.
-  const width = cardWidth ?? layout.cardW;
-  const imgW = imageWidth ?? layout.cardImageW;
-  const titleSize = layout.fs(13);
-  const metaSize = layout.fs(11);
-  const priceSize = layout.fs(12);
+  const width = cardWidth ?? listingCardWidth(SCREEN_WIDTH);
+  const imgW = imageWidth ?? imageRequestWidth(width);
+  const titleSize = scaleFont(13);
+  const metaSize = scaleFont(11);
+  const priceSize = scaleFont(12);
 
   const meta = [
     item.categoryLabel,
@@ -89,10 +101,12 @@ export function ListingCard({
   );
 }
 
+const HEART = scale(36);
+
 const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.bg,
-    borderRadius: 28,
+    borderRadius: moderateScale(28),
     overflow: "hidden",
     // RN native shadow
     shadowColor: "#000",
@@ -108,20 +122,20 @@ const styles = StyleSheet.create({
   },
   heart: {
     position: "absolute",
-    top: 12,
-    right: 12,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    top: scale(12),
+    right: scale(12),
+    width: HEART,
+    height: HEART,
+    borderRadius: HEART / 2,
     backgroundColor: colors.heartOverlay,
     alignItems: "center",
     justifyContent: "center",
   },
   body: {
-    minHeight: 64,
-    paddingHorizontal: 12,
-    paddingTop: 10,
-    paddingBottom: 12,
+    minHeight: CARD_BODY_HEIGHT,
+    paddingHorizontal: scale(12),
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.sm,
   },
   title: {
     fontWeight: "700",
@@ -129,15 +143,15 @@ const styles = StyleSheet.create({
     letterSpacing: -0.2,
   },
   meta: {
-    marginTop: 2,
+    marginTop: verticalScale(2),
     color: colors.muted,
   },
   metaSpacer: {
-    marginTop: 2,
-    height: 14,
+    marginTop: verticalScale(2),
+    height: verticalScale(14),
   },
   price: {
-    marginTop: 4,
+    marginTop: verticalScale(4),
     fontWeight: "700",
     color: colors.fg,
   },
@@ -146,7 +160,7 @@ const styles = StyleSheet.create({
     color: colors.fg,
   },
   priceSpacer: {
-    marginTop: 4,
-    height: 16,
+    marginTop: verticalScale(4),
+    height: verticalScale(16),
   },
 });

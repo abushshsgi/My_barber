@@ -14,6 +14,9 @@ export type RoutineTask = {
   subtitle: string;
   icon: "water" | "flask" | "sparkles" | "shield" | "leaf" | "cut";
   productHint?: string;
+  productId?: number;
+  productName?: string;
+  timeHint?: string;
 };
 
 export type CareQuizAnswers = {
@@ -194,47 +197,76 @@ export function estimateProductFit(product: CareProduct, quiz: CareQuizAnswers):
   return Math.max(42, Math.min(98, score));
 }
 
-export function buildDailyRoutine(quiz: CareQuizAnswers, slot: RoutineSlot): RoutineTask[] {
+export function buildDailyRoutine(
+  quiz: CareQuizAnswers,
+  slot: RoutineSlot,
+  myProducts?: { id: number; name: string; category: string }[],
+): RoutineTask[] {
   const { condition, texture, colorStatus } = quiz;
+
+  const pick = (hint?: string): { productId?: number; productName?: string } => {
+    if (!hint || !myProducts?.length) return {};
+    const hit = myProducts.find((p) => (p.category || "").toLowerCase() === hint);
+    return hit ? { productId: hit.id, productName: hit.name } : {};
+  };
+
+  const withProduct = (task: RoutineTask): RoutineTask => {
+    const matched = pick(task.productHint);
+    if (!matched.productName) return task;
+    return {
+      ...task,
+      ...matched,
+      subtitle: matched.productName
+        ? `${task.subtitle} · ${matched.productName}`
+        : task.subtitle,
+    };
+  };
 
   if (slot === "morning") {
     const wash =
       condition === "oily"
-        ? { title: "Yengil shampun", subtitle: "Faqat ildizni yuving", icon: "water" as const }
+        ? { title: "Yengil shampun", subtitle: "Faqat ildizni yuving", icon: "water" as const, timeHint: "Ertalab" }
         : condition === "dry" || condition === "damaged"
-          ? { title: "Namlantiruvchi yuvish", subtitle: "Iliq suv, yumshoq massaj", icon: "water" as const }
-          : { title: "Balans shampun", subtitle: "2–3 kunda bir yuvish", icon: "water" as const };
+          ? { title: "Namlantiruvchi yuvish", subtitle: "Iliq suv, yumshoq massaj", icon: "water" as const, timeHint: "Ertalab" }
+          : { title: "Balans shampun", subtitle: "2–3 kunda bir yuvish", icon: "water" as const, timeHint: "Ertalab" };
 
     const style =
       texture === "curly"
-        ? { title: "Leave-in krem", subtitle: "Nam sochga, diffuzer bilan", icon: "leaf" as const }
-        : { title: "Styling krem", subtitle: "Kaftlarda eritib, kam miqdor", icon: "sparkles" as const };
+        ? { title: "Leave-in krem", subtitle: "Nam sochga, diffuzer bilan", icon: "leaf" as const, timeHint: "Yuvishdan keyin" }
+        : { title: "Styling krem", subtitle: "Kaftlarda eritib, kam miqdor", icon: "sparkles" as const, timeHint: "Yuvishdan keyin" };
 
-    return [
+    return ([
       { id: "m-wash", ...wash, productHint: "shampoo" },
-      { id: "m-condition", title: "Konditsioner", subtitle: "Faqat uchlarga, 1–2 daqiqa", icon: "flask", productHint: "balsam" },
+      { id: "m-condition", title: "Konditsioner", subtitle: "Faqat uchlarga, 1–2 daqiqa", icon: "flask" as const, productHint: "balsam", timeHint: "Shampundan keyin" },
       { id: "m-style", ...style, productHint: "spray" },
       ...(condition === "damaged"
-        ? [{ id: "m-heat", title: "Issiqlik himoyasi", subtitle: "Fen oldidan sprey", icon: "shield" as const, productHint: "spray" }]
+        ? [{ id: "m-heat", title: "Issiqlik himoyasi", subtitle: "Fen oldidan sprey", icon: "shield" as const, productHint: "spray", timeHint: "Fen oldidan" }]
         : []),
-    ];
+    ] as RoutineTask[]).map(withProduct);
   }
 
   if (slot === "evening") {
-    return [
-      { id: "e-brush", title: "Yengil tarash", subtitle: "Quruq sochda, yumshoq cho'tka", icon: "cut" },
-      { id: "e-oil", title: condition === "oily" ? "Scalp massaj" : "Uchlar uchun yog'", subtitle: condition === "oily" ? "5 daqiqa, yengil bosim" : "2–3 tomchi, uchlarga", icon: "leaf", productHint: "oil" },
-      { id: "e-prep", title: "Ertaga rejasi", subtitle: "Nam sochni yumshoq sochiq bilan quriting", icon: "sparkles" },
+    return ([
+      { id: "e-brush", title: "Yengil tarash", subtitle: "Quruq sochda, yumshoq cho'tka", icon: "cut" as const, timeHint: "Kechqurun" },
+      {
+        id: "e-oil",
+        title: condition === "oily" ? "Scalp massaj" : "Uchlar uchun yog'",
+        subtitle: condition === "oily" ? "5 daqiqa, yengil bosim" : "2–3 tomchi, uchlarga",
+        icon: "leaf" as const,
+        productHint: "oil",
+        timeHint: "Uxlamasdan oldin",
+      },
+      { id: "e-prep", title: "Ertaga rejasi", subtitle: "Nam sochni yumshoq sochiq bilan quriting", icon: "sparkles" as const, timeHint: "Kechqurun" },
       ...(colorStatus !== "natural"
-        ? [{ id: "e-color", title: "Rang himoyasi", subtitle: "Color-safe mahsulotdan foydalaning", icon: "shield" as const, productHint: "shampoo" }]
+        ? [{ id: "e-color", title: "Rang himoyasi", subtitle: "Color-safe mahsulotdan foydalaning", icon: "shield" as const, productHint: "shampoo", timeHint: "Kerak bo'lganda" }]
         : []),
-    ];
+    ] as RoutineTask[]).map(withProduct);
   }
 
-  return [
-    { id: "w-mask", title: "Chuqur maska", subtitle: condition === "damaged" ? "Protein + namlik" : "10 daqiqa parvarish", icon: "flask", productHint: "mask" },
-    { id: "w-scalp", title: "Scalp parvarishi", subtitle: condition === "oily" ? "Balans peel yoki skrab" : "Yengil massaj", icon: "water" },
-    { id: "w-trim", title: "Uchlarni tekshirish", subtitle: "Ajralish belgilarini kuzating", icon: "cut" },
-    { id: "w-reset", title: "Haftalik reset", subtitle: "Ortiqcha styling qoldiqlarini yuvib tashlang", icon: "sparkles" },
-  ];
+  return ([
+    { id: "w-mask", title: "Chuqur maska", subtitle: condition === "damaged" ? "Protein + namlik" : "10 daqiqa parvarish", icon: "flask" as const, productHint: "mask", timeHint: "Haftada 1×" },
+    { id: "w-scalp", title: "Scalp parvarishi", subtitle: condition === "oily" ? "Balans peel yoki skrab" : "Yengil massaj", icon: "water" as const, timeHint: "Haftada 1×" },
+    { id: "w-trim", title: "Uchlarni tekshirish", subtitle: "Ajralish belgilarini kuzating", icon: "cut" as const, timeHint: "Yakshanba" },
+    { id: "w-reset", title: "Haftalik reset", subtitle: "Ortiqcha styling qoldiqlarini yuvib tashlang", icon: "sparkles" as const, timeHint: "Hafta oxiri" },
+  ] as RoutineTask[]).map(withProduct);
 }

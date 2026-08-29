@@ -1,6 +1,12 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { colors } from "../../theme/colors";
+import {
+  fontSize,
+  moderateScale,
+  scale,
+  verticalScale,
+} from "../../utils/responsive";
 
 type Props = {
   title: string;
@@ -27,11 +33,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "baseline",
     justifyContent: "space-between",
-    paddingHorizontal: 16,
-    marginBottom: 14,
+    paddingHorizontal: scale(16),
+    marginBottom: verticalScale(14),
   },
   title: {
-    fontSize: 15,
+    fontSize: fontSize(15),
     fontWeight: "700",
     color: colors.fg,
     letterSpacing: -0.2,
@@ -39,10 +45,10 @@ const styles = StyleSheet.create({
   link: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 2,
+    gap: moderateScale(2),
   },
   linkText: {
-    fontSize: 11,
+    fontSize: fontSize(11),
     fontWeight: "600",
     color: colors.muted,
   },

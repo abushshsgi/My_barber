@@ -16,6 +16,12 @@ import { setWalletFreeze } from "../../api/wallet";
 import { useHideTabBar } from "../../hooks/useHideTabBar";
 import { useWalletMe } from "../../hooks/useWallet";
 import type { WalletStackParamList } from "../../navigation/WalletStack";
+import {
+  fontSize,
+  moderateScale,
+  scale,
+  verticalScale,
+} from "../../utils/responsive";
 
 type Props = NativeStackScreenProps<WalletStackParamList, "WalletFreeze">;
 
@@ -179,56 +185,56 @@ const styles = StyleSheet.create({
   },
   dismissZone: {
     ...StyleSheet.absoluteFill,
-    bottom: 280,
+    bottom: verticalScale(280),
   },
   sheet: {
     backgroundColor: "#FFF",
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    paddingHorizontal: 20,
-    paddingTop: 10,
+    borderTopLeftRadius: moderateScale(28),
+    borderTopRightRadius: moderateScale(28),
+    paddingHorizontal: scale(20),
+    paddingTop: verticalScale(10),
     zIndex: 20,
   },
   handle: {
     alignSelf: "center",
-    width: 40,
-    height: 4,
-    borderRadius: 2,
+    width: scale(40),
+    height: verticalScale(4),
+    borderRadius: moderateScale(2),
     backgroundColor: "#D1D5DB",
-    marginBottom: 18,
+    marginBottom: verticalScale(18),
   },
   title: {
-    fontSize: 22,
+    fontSize: fontSize(22),
     fontWeight: "800",
     color: INK,
     letterSpacing: -0.4,
-    marginBottom: 10,
+    marginBottom: verticalScale(10),
   },
   desc: {
-    fontSize: 14,
-    lineHeight: 21,
+    fontSize: fontSize(14),
+    lineHeight: fontSize(21),
     color: MUTED,
-    marginBottom: 22,
+    marginBottom: verticalScale(22),
   },
   primary: {
     backgroundColor: INK,
-    borderRadius: 16,
-    paddingVertical: 16,
+    borderRadius: moderateScale(16),
+    paddingVertical: verticalScale(16),
     alignItems: "center",
-    marginBottom: 10,
-    minHeight: 54,
+    marginBottom: verticalScale(10),
+    minHeight: verticalScale(54),
     justifyContent: "center",
   },
-  loadingRow: { flexDirection: "row", alignItems: "center", gap: 10 },
-  primaryText: { color: "#FFF", fontSize: 16, fontWeight: "800" },
+  loadingRow: { flexDirection: "row", alignItems: "center", gap: moderateScale(10) },
+  primaryText: { color: "#FFF", fontSize: fontSize(16), fontWeight: "800" },
   secondary: {
     backgroundColor: "#F0EEEA",
-    borderRadius: 16,
-    paddingVertical: 16,
+    borderRadius: moderateScale(16),
+    paddingVertical: verticalScale(16),
     alignItems: "center",
-    minHeight: 54,
+    minHeight: verticalScale(54),
     justifyContent: "center",
   },
-  secondaryText: { color: INK, fontSize: 16, fontWeight: "700" },
+  secondaryText: { color: INK, fontSize: fontSize(16), fontWeight: "700" },
   disabled: { opacity: 0.7 },
 });

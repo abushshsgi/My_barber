@@ -1,6 +1,12 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from "react-native";
 import Animated, { FadeInUp } from "react-native-reanimated";
+import {
+  fontSize,
+  moderateScale,
+  scale,
+  verticalScale,
+} from "../../../utils/responsive";
 
 type Tone = "error" | "warning";
 
@@ -83,12 +89,12 @@ const styles = StyleSheet.create({
   wrap: {
     flexDirection: "row",
     alignItems: "flex-start",
-    gap: 10,
-    marginHorizontal: 16,
-    marginBottom: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    borderRadius: 16,
+    gap: moderateScale(10),
+    marginHorizontal: scale(16),
+    marginBottom: verticalScale(10),
+    paddingHorizontal: scale(14),
+    paddingVertical: verticalScale(12),
+    borderRadius: moderateScale(16),
     borderWidth: 1,
     shadowColor: "#000",
     shadowOpacity: 0.04,
@@ -97,50 +103,50 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   iconWrap: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: scale(28),
+    height: scale(28),
+    borderRadius: moderateScale(14),
     alignItems: "center",
     justifyContent: "center",
   },
   copy: {
     flex: 1,
     minWidth: 0,
-    gap: 4,
+    gap: moderateScale(4),
   },
   title: {
-    fontSize: 14,
+    fontSize: fontSize(14),
     fontWeight: "700",
     color: "#111111",
     letterSpacing: -0.2,
   },
   message: {
-    fontSize: 13,
-    lineHeight: 18,
+    fontSize: fontSize(13),
+    lineHeight: fontSize(18),
     color: "#52525B",
   },
   retry: {
     alignSelf: "flex-start",
     flexDirection: "row",
     alignItems: "center",
-    gap: 5,
-    marginTop: 6,
-    minHeight: 32,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    gap: moderateScale(5),
+    marginTop: verticalScale(6),
+    minHeight: verticalScale(32),
+    paddingHorizontal: scale(12),
+    paddingVertical: verticalScale(6),
     borderRadius: 999,
     backgroundColor: "#FFFFFF",
     borderWidth: 1,
     borderColor: "#E4E4E7",
   },
   retryText: {
-    fontSize: 13,
+    fontSize: fontSize(13),
     fontWeight: "600",
     color: "#111111",
   },
   close: {
-    width: 32,
-    height: 32,
+    width: scale(32),
+    height: scale(32),
     alignItems: "center",
     justifyContent: "center",
   },

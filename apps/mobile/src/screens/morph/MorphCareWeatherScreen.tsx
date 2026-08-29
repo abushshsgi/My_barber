@@ -1,16 +1,41 @@
 import { Ionicons } from "@expo/vector-icons";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import { useEffect, useMemo, useState } from "react";
+import {
+  ActivityIndicator,
+  Image,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { fetchHairCareProfile } from "../../api/care";
 import { weatherIconName } from "../../api/weather";
 import { useCareWeather } from "../../hooks/useCareWeather";
 import { useHideTabBar } from "../../hooks/useHideTabBar";
-import { hasSeenWeatherIntro, markWeatherIntroSeen } from "../../lib/morph-my-products";
+import {
+  hasSeenWeatherIntro,
+  loadMyProducts,
+  markWeatherIntroSeen,
+  type MyCareProduct,
+} from "../../lib/morph-my-products";
+import {
+  buildProductWeatherTips,
+  generalWeatherExtras,
+  weatherHeroImage,
+} from "../../lib/weather-care-tips";
 import type { MorphCareStackParamList } from "../../navigation/MorphCareStack";
 import { morphFont } from "../../theme/morph-font";
+import {
+  fontSize,
+  moderateScale,
+  scale,
+  verticalScale,
+} from "../../utils/responsive";
 
 type Props = NativeStackScreenProps<MorphCareStackParamList, "CareWeather">;
 
@@ -21,17 +46,22 @@ export function MorphCareWeatherScreen({ navigation }: Props) {
   const { data, loading, error, refresh } = useCareWeather();
   const [showIntro, setShowIntro] = useState(false);
   const [profileLine, setProfileLine] = useState<string | null>(null);
+  const [myProducts, setMyProducts] = useState<MyCareProduct[]>([]);
 
   useEffect(() => {
     void (async () => {
       const seen = await hasSeenWeatherIntro();
       setShowIntro(!seen);
-      const profile = await fetchHairCareProfile().catch(() => null);
+      const [profile, products] = await Promise.all([
+        fetchHairCareProfile().catch(() => null),
+        loadMyProducts().catch(() => [] as MyCareProduct[]),
+      ]);
       if (profile?.complete && profile.condition && profile.texture && profile.color_status) {
         setProfileLine(
           `${t(`care.conditions.${profile.condition}`)} · ${t(`care.textures.${profile.texture}`)} · ${t(`care.colors.${profile.color_status}`)}`,
         );
       }
+      setMyProducts(products);
     })();
   }, [t]);
 
@@ -41,7 +71,25 @@ export function MorphCareWeatherScreen({ navigation }: Props) {
   };
 
   const current = data?.current;
-  const icon = weatherIconName(current?.condition_key ?? "unknown");
+  const conditionKey = current?.condition_key ?? "unknown";
+  const icon = weatherIconName(conditionKey);
+  const heroImg = weatherHeroImage(conditionKey);
+
+  const productTips = useMemo(
+    () => buildProductWeatherTips(myProducts, data),
+    [myProducts, data],
+  );
+
+  const extras = useMemo(
+    () =>
+      generalWeatherExtras({
+        condition: conditionKey,
+        temp: current?.temperature_c ?? null,
+        humidity: current?.humidity_pct ?? null,
+        wind: current?.wind_kmh ?? null,
+      }),
+    [conditionKey, current?.humidity_pct, current?.temperature_c, current?.wind_kmh],
+  );
 
   return (
     <ScrollView
@@ -109,6 +157,11 @@ export function MorphCareWeatherScreen({ navigation }: Props) {
           ) : null}
 
           <View style={styles.hero}>
+            <Image source={{ uri: heroImg }} style={styles.heroImg} resizeMode="cover" />
+            <LinearGradient
+              colors={["rgba(8,12,20,0.25)", "rgba(8,12,20,0.75)"]}
+              style={StyleSheet.absoluteFill}
+            />
             <View style={styles.heroTop}>
               <Ionicons name={icon} size={42} color="#fff" />
               <Text style={styles.temp}>
@@ -116,7 +169,7 @@ export function MorphCareWeatherScreen({ navigation }: Props) {
               </Text>
             </View>
             <Text style={styles.condition}>
-              {t(`care.weather.conditions.${current?.condition_key ?? "unknown"}`)}
+              {t(`care.weather.conditions.${conditionKey}`)}
             </Text>
             {data.location_label ? (
               <Text style={styles.location}>{data.location_label}</Text>
@@ -142,6 +195,54 @@ export function MorphCareWeatherScreen({ navigation }: Props) {
 
           <Text style={styles.section}>{t("care.weather.today")}</Text>
           <Text style={styles.summary}>{data.summary}</Text>
+
+          <Text style={styles.section}>{t("care.weather.myProductsTitle")}</Text>
+          {productTips.length === 0 ? (
+            <View style={styles.emptyProducts}>
+              <Ionicons name="bag-handle-outline" size={22} color="#737373" />
+              <Text style={styles.emptyProductsTitle}>{t("care.weather.myProductsEmptyTitle")}</Text>
+              <Text style={styles.emptyProductsSub}>{t("care.weather.myProductsEmptySub")}</Text>
+              <Pressable
+                style={styles.emptyProductsBtn}
+                onPress={() => navigation.navigate("CareMyProducts")}
+              >
+                <Text style={styles.emptyProductsBtnText}>{t("care.myProducts.title")}</Text>
+              </Pressable>
+            </View>
+          ) : (
+            productTips.map((tip) => (
+              <View key={tip.productId} style={styles.productTipCard}>
+                {tip.imageUrl ? (
+                  <Image source={{ uri: tip.imageUrl }} style={styles.productTipImg} />
+                ) : (
+                  <View style={[styles.productTipImg, styles.productTipImgFallback]}>
+                    <Ionicons name="flask-outline" size={18} color="#737373" />
+                  </View>
+                )}
+                <View style={styles.productTipBody}>
+                  <Text style={styles.productTipBrand} numberOfLines={1}>
+                    {tip.brand || "MORF"}
+                  </Text>
+                  <Text style={styles.productTipName} numberOfLines={1}>
+                    {tip.name}
+                  </Text>
+                  <Text style={styles.productTipHow}>{tip.howToUse}</Text>
+                  <View style={styles.productTipHintRow}>
+                    <Ionicons name="bulb-outline" size={14} color="#737373" />
+                    <Text style={styles.productTipHint}>{tip.tip}</Text>
+                  </View>
+                </View>
+              </View>
+            ))
+          )}
+
+          <Text style={styles.section}>{t("care.weather.extrasTitle")}</Text>
+          {extras.map((line) => (
+            <View key={line} style={styles.tipRow}>
+              <Ionicons name="checkmark-circle-outline" size={16} color="#737373" />
+              <Text style={styles.tipText}>{line}</Text>
+            </View>
+          ))}
 
           <Text style={styles.section}>{t("care.weather.recommendations")}</Text>
           {data.recommendations.map((tip) => (
@@ -183,9 +284,9 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   navCircleBtn: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
+    width: scale(42),
+    height: scale(42),
+    borderRadius: moderateScale(21),
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "rgba(0,0,0,0.06)",
@@ -194,81 +295,100 @@ const styles = StyleSheet.create({
   },
   badge: {
     ...morphFont,
-    fontSize: 13,
+    fontSize: fontSize(13),
     fontWeight: "600",
     color: "rgba(42,42,42,0.55)",
   },
-  centerBox: { marginTop: 80, alignItems: "center", gap: 12 },
-  errorText: { ...morphFont, fontSize: 14, color: "#111111", textAlign: "center" },
+  centerBox: { marginTop: verticalScale(80), alignItems: "center", gap: moderateScale(12) },
+  errorText: { ...morphFont, fontSize: fontSize(14), color: "#111111", textAlign: "center" },
   retryBtn: {
-    marginTop: 8,
-    paddingHorizontal: 18,
-    paddingVertical: 10,
+    marginTop: verticalScale(8),
+    paddingHorizontal: scale(18),
+    paddingVertical: verticalScale(10),
     borderRadius: 999,
     backgroundColor: "#111111",
   },
-  retryText: { ...morphFont, fontSize: 13, fontWeight: "600", color: "#fff" },
+  retryText: { ...morphFont, fontSize: fontSize(13), fontWeight: "600", color: "#fff" },
   introCard: {
-    marginTop: 16,
-    borderRadius: 18,
+    marginTop: verticalScale(16),
+    borderRadius: moderateScale(18),
     backgroundColor: "#F0F0F0",
-    padding: 14,
+    padding: moderateScale(14),
     flexDirection: "row",
     alignItems: "flex-start",
-    gap: 10,
+    gap: moderateScale(10),
   },
-  introTitle: { ...morphFont, fontSize: 14, fontWeight: "700", color: "#111" },
+  introTitle: { ...morphFont, fontSize: fontSize(14), fontWeight: "700", color: "#111" },
   introSub: {
     ...morphFont,
-    marginTop: 4,
-    fontSize: 12,
-    lineHeight: 16,
+    marginTop: verticalScale(4),
+    fontSize: fontSize(12),
+    lineHeight: fontSize(16),
     color: "rgba(26,26,26,0.55)",
   },
   introBtn: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingHorizontal: scale(10),
+    paddingVertical: verticalScale(6),
     borderRadius: 999,
     backgroundColor: "#fff",
   },
-  introBtnText: { ...morphFont, fontSize: 12, fontWeight: "600", color: "#111111" },
+  introBtnText: { ...morphFont, fontSize: fontSize(12), fontWeight: "600", color: "#111111" },
   profileCard: {
-    marginTop: 12,
+    marginTop: verticalScale(12),
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
-    borderRadius: 14,
+    gap: moderateScale(8),
+    borderRadius: moderateScale(14),
     backgroundColor: "#F0F0F0",
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    paddingHorizontal: scale(14),
+    paddingVertical: verticalScale(10),
   },
-  profileText: { ...morphFont, flex: 1, fontSize: 13, fontWeight: "600", color: "#2a2a2a" },
+  profileText: { ...morphFont, flex: 1, fontSize: fontSize(13), fontWeight: "600", color: "#2a2a2a" },
   hero: {
-    marginTop: 20,
-    borderRadius: 24,
-    backgroundColor: "#111111",
-    padding: 22,
-    gap: 6,
+    marginTop: verticalScale(20),
+    borderRadius: moderateScale(24),
+    overflow: "hidden",
+    backgroundColor: "#0B1220",
+    padding: moderateScale(22),
+    gap: moderateScale(6),
+    minHeight: verticalScale(168),
+    justifyContent: "flex-end",
   },
-  heroTop: { flexDirection: "row", alignItems: "center", gap: 14 },
-  temp: { ...morphFont, fontSize: 44, fontWeight: "700", color: "#fff" },
-  condition: { ...morphFont, fontSize: 16, fontWeight: "600", color: "rgba(255,255,255,0.92)" },
-  location: { ...morphFont, fontSize: 13, color: "rgba(255,255,255,0.65)" },
-  statsRow: { marginTop: 14, flexDirection: "row", gap: 10 },
+  heroImg: {
+    ...StyleSheet.absoluteFill,
+    width: "100%",
+    height: "100%",
+  },
+  heroTop: { flexDirection: "row", alignItems: "center", gap: moderateScale(14), zIndex: 1 },
+  temp: { ...morphFont, fontSize: fontSize(44), fontWeight: "700", color: "#fff" },
+  condition: {
+    ...morphFont,
+    fontSize: fontSize(16),
+    fontWeight: "600",
+    color: "rgba(255,255,255,0.92)",
+    zIndex: 1,
+  },
+  location: {
+    ...morphFont,
+    fontSize: fontSize(13),
+    color: "rgba(255,255,255,0.65)",
+    zIndex: 1,
+  },
+  statsRow: { marginTop: verticalScale(14), flexDirection: "row", gap: moderateScale(10) },
   statCard: {
     flex: 1,
-    borderRadius: 18,
+    borderRadius: moderateScale(18),
     backgroundColor: "#F0F0F0",
-    padding: 14,
-    gap: 4,
+    padding: moderateScale(14),
+    gap: moderateScale(4),
   },
-  statLabel: { ...morphFont, fontSize: 11, color: "rgba(42,42,42,0.5)" },
-  statValue: { ...morphFont, fontSize: 16, fontWeight: "700", color: "#2a2a2a" },
+  statLabel: { ...morphFont, fontSize: fontSize(11), color: "rgba(42,42,42,0.5)" },
+  statValue: { ...morphFont, fontSize: fontSize(16), fontWeight: "700", color: "#2a2a2a" },
   section: {
-    marginTop: 24,
-    marginBottom: 10,
+    marginTop: verticalScale(24),
+    marginBottom: verticalScale(10),
     ...morphFont,
-    fontSize: 12,
+    fontSize: fontSize(12),
     fontWeight: "600",
     letterSpacing: 0.3,
     color: "rgba(42,42,42,0.45)",
@@ -276,35 +396,119 @@ const styles = StyleSheet.create({
   },
   summary: {
     ...morphFont,
-    fontSize: 15,
-    lineHeight: 22,
+    fontSize: fontSize(15),
+    lineHeight: fontSize(22),
     color: "#2a2a2a",
+  },
+  emptyProducts: {
+    borderRadius: moderateScale(18),
+    backgroundColor: "#F0F0F0",
+    padding: moderateScale(18),
+    alignItems: "center",
+    gap: moderateScale(6),
+  },
+  emptyProductsTitle: {
+    ...morphFont,
+    fontSize: fontSize(14),
+    fontWeight: "700",
+    color: "#111",
+    marginTop: verticalScale(4),
+  },
+  emptyProductsSub: {
+    ...morphFont,
+    fontSize: fontSize(13),
+    lineHeight: fontSize(18),
+    color: "rgba(26,26,26,0.55)",
+    textAlign: "center",
+  },
+  emptyProductsBtn: {
+    marginTop: verticalScale(8),
+    paddingHorizontal: scale(16),
+    paddingVertical: verticalScale(10),
+    borderRadius: 999,
+    backgroundColor: "#111111",
+  },
+  emptyProductsBtnText: { ...morphFont, fontSize: fontSize(13), fontWeight: "600", color: "#fff" },
+  productTipCard: {
+    flexDirection: "row",
+    gap: moderateScale(12),
+    borderRadius: moderateScale(18),
+    backgroundColor: "#FFFFFF",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(17,17,17,0.08)",
+    padding: moderateScale(12),
+    marginBottom: verticalScale(10),
+  },
+  productTipImg: {
+    width: scale(56),
+    height: scale(56),
+    borderRadius: moderateScale(14),
+    backgroundColor: "#F0F0F0",
+  },
+  productTipImgFallback: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  productTipBody: { flex: 1, minWidth: 0, gap: moderateScale(3) },
+  productTipBrand: {
+    ...morphFont,
+    fontSize: fontSize(10),
+    fontWeight: "700",
+    color: "#737373",
+    letterSpacing: 0.4,
+    textTransform: "uppercase",
+  },
+  productTipName: {
+    ...morphFont,
+    fontSize: fontSize(14),
+    fontWeight: "700",
+    color: "#111111",
+  },
+  productTipHow: {
+    ...morphFont,
+    fontSize: fontSize(13),
+    lineHeight: fontSize(18),
+    color: "#2a2a2a",
+    marginTop: verticalScale(2),
+  },
+  productTipHintRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: moderateScale(6),
+    marginTop: verticalScale(4),
+  },
+  productTipHint: {
+    ...morphFont,
+    flex: 1,
+    fontSize: fontSize(12),
+    lineHeight: fontSize(16),
+    color: "#737373",
   },
   tipRow: {
     flexDirection: "row",
     alignItems: "flex-start",
-    gap: 10,
-    borderRadius: 14,
+    gap: moderateScale(10),
+    borderRadius: moderateScale(14),
     backgroundColor: "#F0F0F0",
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    marginBottom: 8,
+    paddingHorizontal: scale(14),
+    paddingVertical: verticalScale(12),
+    marginBottom: verticalScale(8),
   },
-  tipText: { ...morphFont, flex: 1, fontSize: 14, lineHeight: 20, color: "#2a2a2a" },
+  tipText: { ...morphFont, flex: 1, fontSize: fontSize(14), lineHeight: fontSize(20), color: "#2a2a2a" },
   dayRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
-    borderRadius: 14,
+    gap: moderateScale(10),
+    borderRadius: moderateScale(14),
     backgroundColor: "#F0F0F0",
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    marginBottom: 6,
+    paddingHorizontal: scale(14),
+    paddingVertical: verticalScale(12),
+    marginBottom: verticalScale(6),
   },
   dayLabel: {
-    width: 72,
+    width: scale(72),
     ...morphFont,
-    fontSize: 14,
+    fontSize: fontSize(14),
     fontWeight: "600",
     color: "#2a2a2a",
   },
@@ -313,7 +517,7 @@ const styles = StyleSheet.create({
     flex: 1,
     textAlign: "right",
     ...morphFont,
-    fontSize: 13,
+    fontSize: fontSize(13),
     color: "rgba(42,42,42,0.65)",
   },
 });

@@ -12,6 +12,12 @@ import {
 } from "react-native";
 import type { AiStyleAnalyzeResponse } from "../../api/ai";
 import { FaceAnalysisRing } from "./FaceAnalysisRing";
+import {
+  fontSize,
+  moderateScale,
+  scale,
+  verticalScale,
+} from "../../utils/responsive";
 
 type Props = {
   analyze: AiStyleAnalyzeResponse;
@@ -253,11 +259,11 @@ const styles = StyleSheet.create({
   sheet: {
     width: "100%",
     backgroundColor: "#FFFFFF",
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    paddingTop: 18,
-    paddingHorizontal: 16,
-    gap: 16,
+    borderTopLeftRadius: moderateScale(28),
+    borderTopRightRadius: moderateScale(28),
+    paddingTop: verticalScale(18),
+    paddingHorizontal: scale(16),
+    gap: moderateScale(16),
   },
   sliderWrap: {
     borderRadius: 999,
@@ -284,7 +290,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     textAlign: "center",
-    fontSize: 16,
+    fontSize: fontSize(16),
     fontWeight: "700",
     color: "#0A0A0A",
     letterSpacing: 0.2,
@@ -300,7 +306,7 @@ const styles = StyleSheet.create({
   },
   sliderThumb: {
     position: "absolute",
-    left: 6,
+    left: scale(6),
     width: THUMB,
     height: THUMB,
     borderRadius: THUMB / 2,

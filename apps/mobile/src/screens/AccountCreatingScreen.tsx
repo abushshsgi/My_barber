@@ -1,6 +1,11 @@
 import { useEffect, useRef } from "react";
 import { ActivityIndicator, Animated, Easing, StyleSheet, Text, View } from "react-native";
 import { colors } from "../theme/colors";
+import {
+  fontSize,
+  scale,
+  verticalScale,
+} from "../utils/responsive";
 
 type Props = {
   message?: string;
@@ -62,10 +67,10 @@ const styles = StyleSheet.create({
   },
   brand: {
     alignItems: "center",
-    paddingHorizontal: 24,
+    paddingHorizontal: scale(24),
   },
   logo: {
-    fontSize: 42,
+    fontSize: fontSize(42),
     fontWeight: "900",
     color: colors.fg,
     letterSpacing: -1.2,
@@ -74,18 +79,18 @@ const styles = StyleSheet.create({
     color: colors.brandDot,
   },
   tag: {
-    marginTop: 10,
-    fontSize: 13,
+    marginTop: verticalScale(10),
+    fontSize: fontSize(13),
     fontWeight: "600",
     color: colors.muted,
     letterSpacing: 0.3,
   },
   spinner: {
-    marginTop: 36,
+    marginTop: verticalScale(36),
   },
   message: {
-    marginTop: 16,
-    fontSize: 15,
+    marginTop: verticalScale(16),
+    fontSize: fontSize(15),
     fontWeight: "700",
     color: colors.fg,
   },

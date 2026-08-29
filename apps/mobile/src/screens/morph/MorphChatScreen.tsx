@@ -47,6 +47,13 @@ import { MorphChatSettingsScreen } from "./MorphChatSettingsScreen";
 import { useMorphAppearance } from "../../lib/MorphAppearanceContext";
 import { ChatAmbientBg } from "../../components/morph/chat/ChatAmbientBg";
 import { morphFont } from "../../theme/morph-font";
+import {
+  IS_SMALL_DEVICE,
+  fontSize,
+  moderateScale,
+  scale,
+  spacing,
+} from "../../utils/responsive";
 
 export function MorphChatScreen() {
   const { t } = useTranslation();
@@ -580,7 +587,7 @@ export function MorphChatScreen() {
     chat.threads.find((th) => th.id === chat.activeThreadId)?.title || t("chat.title");
 
   return (
-    <View style={[styles.root, { paddingTop: insets.top }]}>
+    <View style={[styles.root, { paddingTop: Math.max(insets.top, spacing.xs) }]}>
       <ChatAmbientBg />
       <StatusBar style={pal.status} />
       <View style={[styles.header, { borderBottomColor: pal.line }]}>
@@ -590,12 +597,12 @@ export function MorphChatScreen() {
           accessibilityRole="button"
           accessibilityLabel={t("chat.menu.openA11y")}
         >
-          <Ionicons name="menu" size={22} color={pal.fg} />
+          <Ionicons name="menu" size={ICON.lg} color={pal.fg} />
         </Pressable>
         <View style={styles.headerText}>
           <View style={styles.headerTitleRow}>
             <View style={styles.headerAiDot}>
-              <Ionicons name="sparkles" size={10} color="#737373" />
+              <Ionicons name="sparkles" size={ICON.xs} color="#737373" />
             </View>
             <Text style={[styles.title, { color: pal.fg }]} numberOfLines={1}>
               {threadTitle}
@@ -612,7 +619,7 @@ export function MorphChatScreen() {
           accessibilityRole="button"
           accessibilityLabel={t("chat.menu.newChat")}
         >
-          <Ionicons name="create-outline" size={20} color={pal.fg} />
+          <Ionicons name="create-outline" size={ICON.md} color={pal.fg} />
         </Pressable>
         <Pressable
           onPress={leaveChat}
@@ -620,14 +627,14 @@ export function MorphChatScreen() {
           accessibilityRole="button"
           accessibilityLabel={t("chat.home.backA11y")}
         >
-          <Ionicons name="chevron-forward" size={22} color={pal.fg} />
+          <Ionicons name="chevron-forward" size={ICON.lg} color={pal.fg} />
         </Pressable>
       </View>
 
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
-        keyboardVerticalOffset={Platform.OS === "ios" ? insets.top + 8 : 0}
+        keyboardVerticalOffset={Platform.OS === "ios" ? insets.top + spacing.xs : 0}
       >
         <FlatList
           ref={listRef}
@@ -642,7 +649,7 @@ export function MorphChatScreen() {
               streaming={Boolean(item.streaming) && Boolean(item.content)}
             />
           )}
-          contentContainerStyle={[styles.list, { paddingBottom: 12 }]}
+          contentContainerStyle={styles.list}
           onContentSizeChange={scrollToEnd}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
@@ -654,7 +661,7 @@ export function MorphChatScreen() {
           style={[
             styles.composerDock,
             {
-              paddingBottom: Math.max(insets.bottom, 12),
+              paddingBottom: Math.max(insets.bottom, spacing.sm),
             },
           ]}
         >
@@ -680,6 +687,15 @@ export function MorphChatScreen() {
   );
 }
 
+const ICON = {
+  xs: scale(10),
+  md: scale(20),
+  lg: scale(22),
+} as const;
+
+const HEADER_BTN = scale(IS_SMALL_DEVICE ? 36 : 40);
+const AI_DOT = scale(18);
+
 const styles = StyleSheet.create({
   root: {
     flex: 1,
@@ -695,16 +711,16 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    gap: 6,
+    paddingHorizontal: scale(12),
+    paddingVertical: spacing.xs,
+    gap: moderateScale(6),
     borderBottomWidth: 1,
     borderBottomColor: "rgba(255, 255, 255, 0.08)",
   },
   headerBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: HEADER_BTN,
+    height: HEADER_BTN,
+    borderRadius: HEADER_BTN / 2,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -714,17 +730,17 @@ const styles = StyleSheet.create({
   headerText: {
     flex: 1,
     minWidth: 0,
-    paddingHorizontal: 4,
+    paddingHorizontal: scale(4),
   },
   headerTitleRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
+    gap: moderateScale(6),
   },
   headerAiDot: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
+    width: AI_DOT,
+    height: AI_DOT,
+    borderRadius: AI_DOT / 2,
     backgroundColor: "rgba(17, 17, 17, 0.08)",
     borderWidth: 1,
     borderColor: "rgba(167, 139, 250, 0.4)",
@@ -733,25 +749,25 @@ const styles = StyleSheet.create({
   },
   title: {
     ...morphFont,
-    fontSize: 15,
+    fontSize: fontSize(15),
     fontWeight: "700",
     color: "#111111",
     letterSpacing: -0.3,
   },
   subtitle: {
     ...morphFont,
-    fontSize: 11,
+    fontSize: fontSize(11),
     color: "#A1A1AA",
     marginTop: 1,
   },
   composerDock: {
-    paddingHorizontal: 16,
-    paddingTop: 8,
+    paddingHorizontal: scale(16),
+    paddingTop: spacing.xs,
     backgroundColor: "transparent",
   },
   list: {
-    paddingTop: 16,
-    paddingBottom: 8,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.sm,
     flexGrow: 1,
     backgroundColor: "transparent",
   },

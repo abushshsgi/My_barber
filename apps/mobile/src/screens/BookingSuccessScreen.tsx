@@ -4,6 +4,12 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { RootStackParamList } from "../navigation/RootNavigator";
 import { colors } from "../theme/colors";
+import {
+  fontSize,
+  moderateScale,
+  scale,
+  verticalScale,
+} from "../utils/responsive";
 
 type Props = NativeStackScreenProps<RootStackParamList, "BookingSuccess">;
 
@@ -45,50 +51,50 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: colors.bg,
-    paddingHorizontal: 24,
+    paddingHorizontal: scale(24),
     alignItems: "center",
   },
   iconWrap: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
+    width: scale(96),
+    height: scale(96),
+    borderRadius: moderateScale(48),
     backgroundColor: colors.surface,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 20,
+    marginBottom: verticalScale(20),
   },
   title: {
-    fontSize: 26,
+    fontSize: fontSize(26),
     fontWeight: "800",
     color: colors.fg,
     letterSpacing: -0.4,
   },
   sub: {
-    marginTop: 10,
+    marginTop: verticalScale(10),
     textAlign: "center",
-    fontSize: 14,
-    lineHeight: 22,
+    fontSize: fontSize(14),
+    lineHeight: fontSize(22),
     color: colors.muted,
     fontWeight: "600",
   },
   primary: {
-    marginTop: 36,
+    marginTop: verticalScale(36),
     alignSelf: "stretch",
     backgroundColor: colors.fg,
-    borderRadius: 16,
-    minHeight: 52,
+    borderRadius: moderateScale(16),
+    minHeight: verticalScale(52),
     alignItems: "center",
     justifyContent: "center",
   },
-  primaryText: { color: "#FFF", fontWeight: "800", fontSize: 15 },
+  primaryText: { color: "#FFF", fontWeight: "800", fontSize: fontSize(15) },
   secondary: {
-    marginTop: 12,
+    marginTop: verticalScale(12),
     alignSelf: "stretch",
-    borderRadius: 16,
-    minHeight: 48,
+    borderRadius: moderateScale(16),
+    minHeight: verticalScale(48),
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: colors.surface,
   },
-  secondaryText: { color: colors.fg, fontWeight: "700", fontSize: 14 },
+  secondaryText: { color: colors.fg, fontWeight: "700", fontSize: fontSize(14) },
 });

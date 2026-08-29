@@ -1,6 +1,12 @@
 import { Fragment, type ReactNode } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { morphFont } from "../../../theme/morph-font";
+import {
+  fontSize,
+  moderateScale,
+  scale,
+  verticalScale,
+} from "../../../utils/responsive";
 
 type Props = {
   content: string;
@@ -207,30 +213,30 @@ export function ChatMarkdown({ content, color = "#111111", scale = 1 }: Props) {
 
 const styles = StyleSheet.create({
   wrap: {
-    gap: 8,
+    gap: moderateScale(8),
   },
   p: {
     ...morphFont,
-    fontSize: 13,
-    lineHeight: 19,
+    fontSize: fontSize(13),
+    lineHeight: fontSize(19),
   },
   h: {
     ...morphFont,
     fontWeight: "600",
     letterSpacing: -0.2,
-    marginTop: 2,
+    marginTop: verticalScale(2),
   },
   h1: {
-    fontSize: 16,
-    lineHeight: 22,
+    fontSize: fontSize(16),
+    lineHeight: fontSize(22),
   },
   h2: {
-    fontSize: 14,
-    lineHeight: 20,
+    fontSize: fontSize(14),
+    lineHeight: fontSize(20),
   },
   h3: {
-    fontSize: 13,
-    lineHeight: 18,
+    fontSize: fontSize(13),
+    lineHeight: fontSize(18),
   },
   bold: {
     fontWeight: "700",
@@ -240,22 +246,22 @@ const styles = StyleSheet.create({
   },
   code: {
     fontFamily: "monospace",
-    fontSize: 13,
+    fontSize: fontSize(13),
     backgroundColor: "#F4F4F5",
     color: "#18181B",
   },
   list: {
-    gap: 5,
+    gap: moderateScale(5),
   },
   li: {
     flexDirection: "row",
     alignItems: "flex-start",
-    gap: 8,
+    gap: moderateScale(8),
   },
   mark: {
-    width: 16,
-    fontSize: 14,
-    lineHeight: 21,
+    width: scale(16),
+    fontSize: fontSize(14),
+    lineHeight: fontSize(21),
   },
   liText: {
     flex: 1,
@@ -263,7 +269,7 @@ const styles = StyleSheet.create({
   quote: {
     borderLeftWidth: 3,
     borderLeftColor: "#E4E4E7",
-    paddingLeft: 12,
+    paddingLeft: scale(12),
   },
   quoteText: {
     color: "#52525B",

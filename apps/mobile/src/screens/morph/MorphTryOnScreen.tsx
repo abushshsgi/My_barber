@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -38,6 +38,17 @@ import { hasCompletedMorphTryOnIntro, readMorphIntroStep } from "../../lib/morph
 import { useMorphSession } from "../../lib/morph-session";
 import { pickSelfieFromCamera, pickSelfieFromGallery } from "../../lib/selfie";
 import type { MorphStackParamList } from "../../navigation/MorphStack";
+import {
+  ASPECT,
+  IS_SMALL_DEVICE,
+  clamp,
+  fontSize,
+  moderateScale,
+  radius,
+  scale,
+  spacing,
+  verticalScale,
+} from "../../utils/responsive";
 
 type Props = NativeStackScreenProps<MorphStackParamList, "MorphCapture">;
 
@@ -200,10 +211,22 @@ export function MorphTryOnScreen({ navigation }: Props) {
   const gate = useMorphLimitGate();
 
   const dockPad = TAB_DOCK_CLEARANCE + Math.max(insets.bottom, 8);
-  const historyH = Math.min(Math.round(winH * 0.68), 560);
-  const gridGap = 8;
-  const gridPad = 28;
+  const gridGap = moderateScale(8);
+  const gridPad = scale(28);
   const cardW = (winW - gridPad * 2 - gridGap) / 2;
+
+  /**
+   * Sheet o'lchamlari — hammasi joriy ekran balandligidan hosil bo'ladi,
+   * shunda iPhone SE'da ham tugmalar dock ostiga tushib ketmaydi.
+   */
+  const { captureMaxHeight, historyH, sheetMinHeight } = useMemo(() => {
+    const usable = winH - insets.top - dockPad;
+    return {
+      historyH: clamp(Math.round(winH * 0.68), 320, Math.min(560, usable)),
+      captureMaxHeight: clamp(Math.round(usable * 0.34), 168, 250),
+      sheetMinHeight: clamp(Math.round(usable * 0.42), 240, 340),
+    };
+  }, [dockPad, insets.top, winH]);
 
   const [ready, setReady] = useState(false);
   const [busy, setBusy] = useState<"camera" | "gallery" | null>(null);
@@ -331,7 +354,7 @@ export function MorphTryOnScreen({ navigation }: Props) {
       maxHeight: interpolate(
         lift.value,
         [0, historyH * 0.55],
-        [250, 0],
+        [captureMaxHeight, 0],
         Extrapolation.CLAMP,
       ),
       marginBottom: interpolate(
@@ -442,7 +465,7 @@ export function MorphTryOnScreen({ navigation }: Props) {
 
       <Animated.View
         entering={FadeIn.duration(400)}
-        style={[styles.centerCopy, { paddingTop: insets.top + 40 }]}
+        style={[styles.centerCopy, { paddingTop: insets.top + verticalScale(40) }]}
         pointerEvents="none"
       >
         <Text style={styles.headline}>Selfie yuklang</Text>
@@ -457,7 +480,7 @@ export function MorphTryOnScreen({ navigation }: Props) {
           styles.sheet,
           {
             paddingBottom: dockPad,
-            minHeight: 320,
+            minHeight: sheetMinHeight,
           },
         ]}
       >
@@ -538,7 +561,7 @@ export function MorphTryOnScreen({ navigation }: Props) {
                     <ActivityIndicator color="#FFF" />
                   ) : (
                     <>
-                      <FaceScanIcon color="#FFF" size={26} />
+                      <FaceScanIcon color="#FFF" size={ACTION_ICON} />
                       <Text style={styles.gridTitleLight}>Kameradan olish</Text>
                     </>
                   )}
@@ -553,7 +576,7 @@ export function MorphTryOnScreen({ navigation }: Props) {
                     <ActivityIndicator color="#111111" />
                   ) : (
                     <>
-                      <GalleryStackIcon size={26} />
+                      <GalleryStackIcon size={ACTION_ICON} />
                       <Text style={styles.gridTitleDark}>Galereyadan tanlash</Text>
                     </>
                   )}
@@ -669,23 +692,25 @@ export function MorphTryOnScreen({ navigation }: Props) {
   );
 }
 
+const ACTION_ICON = scale(IS_SMALL_DEVICE ? 22 : 26);
+
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: "#FAFAFA" },
   centerCopy: {
     alignItems: "center",
-    paddingHorizontal: 24,
-    gap: 6,
+    paddingHorizontal: scale(24),
+    gap: spacing.xs,
   },
   headline: {
     color: "#FFF",
-    fontSize: 26,
+    fontSize: fontSize(26),
     fontWeight: "800",
     letterSpacing: -0.4,
     textAlign: "center",
   },
   sub: {
     color: "rgba(255,255,255,0.72)",
-    fontSize: 13,
+    fontSize: fontSize(13),
     fontWeight: "500",
     textAlign: "center",
   },
@@ -700,11 +725,11 @@ const styles = StyleSheet.create({
   sheet: {
     marginTop: "auto",
     backgroundColor: "#FFF",
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingHorizontal: 16,
-    paddingTop: 10,
-    gap: 12,
+    borderTopLeftRadius: radius.xl,
+    borderTopRightRadius: radius.xl,
+    paddingHorizontal: scale(16),
+    paddingTop: spacing.sm,
+    gap: spacing.sm,
     zIndex: 2,
     overflow: "hidden",
   },
@@ -712,31 +737,31 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    minHeight: 44,
-    paddingVertical: 6,
+    minHeight: verticalScale(IS_SMALL_DEVICE ? 36 : 44),
+    paddingVertical: spacing.xs,
   },
-  handleSpacer: { width: 34 },
+  handleSpacer: { width: scale(34) },
   handleCluster: {
     flex: 1,
     alignItems: "center",
-    gap: 4,
+    gap: moderateScale(4),
   },
   handle: {
-    width: 40,
-    height: 4,
-    borderRadius: 2,
+    width: scale(40),
+    height: verticalScale(4),
+    borderRadius: moderateScale(2),
     backgroundColor: "#D4D4D4",
   },
   handleHint: {
-    fontSize: 10,
+    fontSize: fontSize(10),
     fontWeight: "600",
     color: "#A0A0A0",
     includeFontPadding: false,
   },
   historyIconBtn: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    width: scale(34),
+    height: scale(34),
+    borderRadius: scale(34) / 2,
     backgroundColor: "#F2F2F2",
     alignItems: "center",
     justifyContent: "center",
@@ -748,41 +773,41 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-start",
     justifyContent: "space-between",
-    paddingHorizontal: 6,
+    paddingHorizontal: spacing.xs,
     position: "relative",
   },
   stepTrack: {
     position: "absolute",
-    left: 32,
-    right: 32,
-    top: 12,
-    height: 1.5,
+    left: scale(32),
+    right: scale(32),
+    top: scale(12),
+    height: verticalScale(1.5),
     backgroundColor: "#E8E8E8",
   },
   stepCol: {
     flex: 1,
     alignItems: "center",
-    gap: 5,
+    gap: moderateScale(5),
     zIndex: 1,
   },
   stepDot: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: scale(24),
+    height: scale(24),
+    borderRadius: scale(24) / 2,
     backgroundColor: "#F0F0F0",
     alignItems: "center",
     justifyContent: "center",
   },
   stepDotOn: { backgroundColor: "#111111" },
   stepNum: {
-    fontSize: 11,
+    fontSize: fontSize(11),
     fontWeight: "700",
     color: "#9A9A9A",
     includeFontPadding: false,
   },
   stepNumOn: { color: "#FFF" },
   stepLabel: {
-    fontSize: 11,
+    fontSize: fontSize(11),
     fontWeight: "600",
     color: "#A0A0A0",
     includeFontPadding: false,
@@ -790,55 +815,54 @@ const styles = StyleSheet.create({
   stepLabelOn: { color: "#111111", fontWeight: "700" },
   errorBox: {
     backgroundColor: "rgba(185,28,28,0.08)",
-    borderRadius: 10,
-    padding: 8,
-    gap: 6,
-    marginTop: 12,
+    borderRadius: radius.sm,
+    padding: spacing.xs,
+    gap: spacing.xs,
+    marginTop: spacing.sm,
   },
   errorText: {
     color: "#B91C1C",
-    fontSize: 11,
+    fontSize: fontSize(11),
     fontWeight: "600",
-    lineHeight: 15,
+    lineHeight: fontSize(15),
   },
   errorCta: {
     alignSelf: "flex-start",
     backgroundColor: "#111111",
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    borderRadius: radius.pill,
+    paddingHorizontal: scale(10),
+    paddingVertical: verticalScale(5),
   },
-  errorCtaText: { color: "#FFF", fontSize: 11, fontWeight: "700" },
+  errorCtaText: { color: "#FFF", fontSize: fontSize(11), fontWeight: "700" },
   actionGrid: {
     flexDirection: "row",
-    gap: 10,
-    marginTop: 44,
-    marginBottom: 0,
-    paddingHorizontal: 18,
+    gap: moderateScale(10),
+    marginTop: spacing.xl,
+    paddingHorizontal: scale(18),
     justifyContent: "center",
   },
   gridBtnDark: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    gap: 6,
+    gap: spacing.xs,
     backgroundColor: "#111111",
-    borderRadius: 28,
-    minHeight: 72,
-    paddingHorizontal: 8,
-    paddingVertical: 12,
+    borderRadius: radius.xl,
+    minHeight: verticalScale(IS_SMALL_DEVICE ? 60 : 72),
+    paddingHorizontal: scale(8),
+    paddingVertical: spacing.sm,
     overflow: "hidden",
   },
   gridBtnLight: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    gap: 6,
+    gap: spacing.xs,
     backgroundColor: "#FFF",
-    borderRadius: 28,
-    minHeight: 72,
-    paddingHorizontal: 8,
-    paddingVertical: 12,
+    borderRadius: radius.xl,
+    minHeight: verticalScale(IS_SMALL_DEVICE ? 60 : 72),
+    paddingHorizontal: scale(8),
+    paddingVertical: spacing.sm,
     borderWidth: 1.5,
     borderColor: "#D0D0D0",
     borderStyle: "dashed",
@@ -846,19 +870,19 @@ const styles = StyleSheet.create({
   gridTitleLight: {
     color: "#FFF",
     fontWeight: "700",
-    fontSize: 12,
+    fontSize: fontSize(12),
     textAlign: "center",
     includeFontPadding: false,
   },
   gridTitleDark: {
     color: "#111111",
     fontWeight: "700",
-    fontSize: 12,
+    fontSize: fontSize(12),
     textAlign: "center",
     includeFontPadding: false,
   },
   historyBody: {
-    gap: 10,
+    gap: spacing.sm,
   },
   historyScroll: {
     flex: 1,
@@ -867,47 +891,47 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    gap: 10,
+    gap: moderateScale(10),
   },
   historyTitle: {
     color: "#111111",
-    fontSize: 15,
+    fontSize: fontSize(15),
     fontWeight: "800",
     letterSpacing: -0.2,
   },
   historySub: {
-    marginTop: 2,
+    marginTop: verticalScale(2),
     color: "#8A8A8A",
-    fontSize: 11,
+    fontSize: fontSize(11),
     fontWeight: "600",
   },
   seeAllBtn: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 2,
+    gap: moderateScale(2),
     backgroundColor: "#F2F2F2",
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 7,
+    borderRadius: radius.pill,
+    paddingHorizontal: scale(10),
+    paddingVertical: verticalScale(7),
   },
   seeAllText: {
     color: "#111111",
-    fontSize: 12,
+    fontSize: fontSize(12),
     fontWeight: "700",
   },
   historyGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    paddingBottom: 4,
+    paddingBottom: verticalScale(4),
   },
   historyCard: {
-    borderRadius: 16,
+    borderRadius: radius.md,
     overflow: "hidden",
     backgroundColor: "#FAFAFA",
   },
   historyImgWrap: {
     width: "100%",
-    aspectRatio: 3 / 4,
+    aspectRatio: ASPECT.portrait,
     backgroundColor: "#FAFAFA",
     position: "relative",
   },
@@ -921,11 +945,11 @@ const styles = StyleSheet.create({
   },
   historyCardTitle: {
     position: "absolute",
-    left: 8,
-    right: 8,
-    bottom: 8,
+    left: scale(8),
+    right: scale(8),
+    bottom: scale(8),
     color: "#FFF",
-    fontSize: 11,
+    fontSize: fontSize(11),
     fontWeight: "800",
     textShadowColor: "rgba(0,0,0,0.45)",
     textShadowOffset: { width: 0, height: 1 },
@@ -935,42 +959,42 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 24,
-    gap: 6,
-    minHeight: 120,
+    paddingHorizontal: scale(24),
+    gap: spacing.xs,
+    minHeight: verticalScale(120),
   },
   historyEmptyTitle: {
     color: "#111111",
-    fontSize: 16,
+    fontSize: fontSize(16),
     fontWeight: "800",
   },
   historyEmptyText: {
     color: "#8A8A8A",
-    fontSize: 12,
+    fontSize: fontSize(12),
     textAlign: "center",
-    lineHeight: 17,
+    lineHeight: fontSize(17),
   },
   historyRetry: {
-    marginTop: 10,
+    marginTop: spacing.sm,
     backgroundColor: "#111111",
-    borderRadius: 999,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
+    borderRadius: radius.pill,
+    paddingHorizontal: scale(14),
+    paddingVertical: spacing.xs,
   },
-  historyRetryText: { color: "#FFF", fontWeight: "800", fontSize: 12 },
+  historyRetryText: { color: "#FFF", fontWeight: "800", fontSize: fontSize(12) },
   fullHistoryCta: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 8,
+    gap: moderateScale(8),
     backgroundColor: "#111111",
-    borderRadius: 14,
-    minHeight: 46,
-    paddingHorizontal: 14,
+    borderRadius: radius.md,
+    minHeight: verticalScale(46),
+    paddingHorizontal: scale(14),
   },
   fullHistoryCtaText: {
     color: "#FFF",
     fontWeight: "800",
-    fontSize: 13,
+    fontSize: fontSize(13),
   },
 });

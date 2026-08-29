@@ -5,6 +5,12 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHideTabBar } from "../../hooks/useHideTabBar";
 import type { WalletStackParamList } from "../../navigation/WalletStack";
+import {
+  fontSize,
+  moderateScale,
+  scale,
+  verticalScale,
+} from "../../utils/responsive";
 
 type Props = NativeStackScreenProps<WalletStackParamList, "WalletFaq">;
 
@@ -75,12 +81,12 @@ export function WalletFaqScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: SOFT_BG, paddingHorizontal: 16 },
-  header: { flexDirection: "row", alignItems: "center", marginBottom: 16 },
+  root: { flex: 1, backgroundColor: SOFT_BG, paddingHorizontal: scale(16) },
+  header: { flexDirection: "row", alignItems: "center", marginBottom: verticalScale(16) },
   back: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: scale(40),
+    height: scale(40),
+    borderRadius: moderateScale(20),
     backgroundColor: "#FFF",
     alignItems: "center",
     justifyContent: "center",
@@ -88,18 +94,18 @@ const styles = StyleSheet.create({
   headerTitle: {
     flex: 1,
     textAlign: "center",
-    fontSize: 17,
+    fontSize: fontSize(17),
     fontWeight: "800",
     color: INK,
   },
-  lead: { fontSize: 13, color: MUTED, marginBottom: 6 },
+  lead: { fontSize: fontSize(13), color: MUTED, marginBottom: verticalScale(6) },
   row: {
     backgroundColor: "#FFF",
-    borderRadius: 18,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    borderRadius: moderateScale(18),
+    paddingHorizontal: scale(16),
+    paddingVertical: verticalScale(14),
   },
-  rowHead: { flexDirection: "row", alignItems: "center", gap: 10 },
-  q: { flex: 1, fontSize: 14, fontWeight: "700", color: INK },
-  a: { marginTop: 10, fontSize: 13, lineHeight: 19, color: MUTED },
+  rowHead: { flexDirection: "row", alignItems: "center", gap: moderateScale(10) },
+  q: { flex: 1, fontSize: fontSize(14), fontWeight: "700", color: INK },
+  a: { marginTop: verticalScale(10), fontSize: fontSize(13), lineHeight: fontSize(19), color: MUTED },
 });

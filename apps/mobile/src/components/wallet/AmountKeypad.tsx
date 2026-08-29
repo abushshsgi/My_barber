@@ -1,5 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import {
+  fontSize,
+  moderateScale,
+} from "../../utils/responsive";
 
 const KEYS: { label: string; sub?: string; action?: "back" | "empty" }[] = [
   { label: "1" },
@@ -62,13 +66,13 @@ const styles = StyleSheet.create({
   grid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 10,
+    gap: moderateScale(10),
     justifyContent: "space-between",
   },
   key: {
     width: "31%",
     aspectRatio: 1.55,
-    borderRadius: 14,
+    borderRadius: moderateScale(14),
     backgroundColor: "#FFF",
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: "rgba(15,23,42,0.08)",
@@ -81,13 +85,13 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   digit: {
-    fontSize: 22,
+    fontSize: fontSize(22),
     fontWeight: "600",
     color: "#0A0A0A",
   },
   sub: {
     marginTop: 1,
-    fontSize: 8,
+    fontSize: fontSize(8),
     fontWeight: "600",
     letterSpacing: 0.8,
     color: "#9CA3AF",

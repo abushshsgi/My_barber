@@ -1,16 +1,20 @@
 import { Ionicons } from "@expo/vector-icons";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  Image,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import { fetchHairstyles } from "../../api/hairstyles";
+import { ScreenWrapper } from "../../components/layout/ScreenWrapper";
+import {
+  IS_SMALL_DEVICE,
+  clamp,
+  fontSize,
+  moderateScale,
+  radius,
+  scale,
+  spacing,
+  useResponsive,
+  verticalScale,
+} from "../../utils/responsive";
 import { morfWordmark, morfWordmarkWhite } from "../../branding/morf-logo";
 import {
   MorphSampleMarquee,
@@ -37,14 +41,18 @@ const TOOLS: {
   { key: "studio", label: "AI Studio", icon: "sparkles-outline" },
 ];
 
+/** Marquee ikki qatordan iborat — qolgan joy shu nisbatda bo'linadi. */
+const MARQUEE_ROWS = 2;
+
 export function MorphHomeScreen({ navigation }: Props) {
-  const insets = useSafeAreaInsets();
+  const { isSmall } = useResponsive();
   const { isAuthenticated } = useAuth();
   const session = useMorphSession();
   const gate = useMorphLimitGate();
   const { colors: pal, theme } = useMorphAppearance();
   const [samplesLoading, setSamplesLoading] = useState(true);
   const [samples, setSamples] = useState<MorphSampleCard[]>([]);
+  const [marqueeHeight, setMarqueeHeight] = useState(0);
 
   const loadSamples = useCallback(async () => {
     setSamplesLoading(true);
@@ -137,10 +145,22 @@ export function MorphHomeScreen({ navigation }: Props) {
   const showLimit =
     gate.allowed && gate.limit > 0 ? gate.remaining : null;
 
-  return (
-    <View style={[styles.root, { paddingTop: Math.max(insets.top, 8), backgroundColor: pal.bg }]}>
-      <View pointerEvents="none" style={styles.glow} />
+  /** Marquee kartochkalari qolgan bo'sh joyga qarab o'lchanadi — scroll kerak emas. */
+  const sampleCardHeight = useMemo(() => {
+    if (marqueeHeight <= 0) return undefined;
+    const rowGap = moderateScale(10);
+    const perRow = (marqueeHeight - rowGap * (MARQUEE_ROWS - 1)) / MARQUEE_ROWS;
+    return clamp(Math.floor(perRow), 72, verticalScale(150));
+  }, [marqueeHeight]);
 
+  return (
+    <ScreenWrapper
+      withTabDock
+      padded={false}
+      backgroundColor={pal.bg}
+      statusBarStyle={theme === "dark" ? "light" : "dark"}
+      contentStyle={styles.body}
+    >
       <View style={styles.header}>
         <View style={styles.headerBrand}>
           <Image
@@ -163,143 +183,156 @@ export function MorphHomeScreen({ navigation }: Props) {
         </View>
       </View>
 
-      <ScrollView
-        style={{ flex: 1 }}
-        nestedScrollEnabled={true}
-        keyboardShouldPersistTaps="handled"
-        contentContainerStyle={[
-          styles.body,
-          { paddingBottom: insets.bottom + 100 },
-        ]}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.hero}>
+      <View style={styles.hero}>
+        <Pressable
+          style={[styles.cta, { backgroundColor: pal.fg }]}
+          onPress={onNewTryOn}
+        >
+          <Text style={[styles.ctaText, { color: pal.bg }]}>Yangi try-on</Text>
+          <View style={[styles.ctaArrow, { backgroundColor: pal.bg }]}>
+            <Ionicons
+              name="arrow-up"
+              size={ICON.sm}
+              color={pal.fg}
+              style={styles.arrowRot}
+            />
+          </View>
+        </Pressable>
+      </View>
+
+      <View style={styles.tools}>
+        {TOOLS.map((tool) => (
           <Pressable
-            style={[styles.cta, { backgroundColor: pal.fg }]}
-            onPress={onNewTryOn}
+            key={tool.key}
+            style={styles.tool}
+            onPress={() => void onTool()}
           >
-            <Text style={[styles.ctaText, { color: pal.bg }]}>Yangi try-on</Text>
-            <View style={[styles.ctaArrow, { backgroundColor: pal.bg }]}>
-              <Ionicons
-                name="arrow-up"
-                size={16}
-                color={pal.fg}
-                style={styles.arrowRot}
-              />
+            <View style={[styles.toolIcon, { backgroundColor: pal.iconTile, borderColor: pal.line }]}>
+              <Ionicons name={tool.icon} size={ICON.md} color={pal.fg} />
             </View>
+            <Text style={[styles.toolLabel, { color: pal.muted }]} numberOfLines={2}>
+              {tool.label}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
+
+      <View style={[styles.careSheet, { backgroundColor: pal.card, borderColor: pal.line }]}>
+        <View style={styles.careRow}>
+          <Pressable
+            style={[
+              styles.careCard,
+              { backgroundColor: pal.iconTile, borderColor: pal.fg },
+              styles.careCardActive,
+            ]}
+            onPress={() => openCareOrIngredient("care")}
+          >
+            <View style={[styles.careIcon, { backgroundColor: pal.card }]}>
+              <Ionicons name="water-outline" size={ICON.md} color={pal.fg} />
+            </View>
+            <Text style={[styles.careTitle, { color: pal.fg }]}>Parvarish</Text>
+            <Text
+              style={[styles.careSub, { color: pal.muted }]}
+              numberOfLines={isSmall ? 1 : 2}
+            >
+              Sochingiz uchun shaxsiy tavsiyalar
+            </Text>
+          </Pressable>
+
+          <Pressable
+            style={[styles.careCard, { backgroundColor: pal.iconTile, borderColor: pal.line }]}
+            onPress={() => openCareOrIngredient("ingredient")}
+          >
+            <View style={[styles.careIcon, { backgroundColor: pal.card }]}>
+              <Ionicons name="flask-outline" size={ICON.md} color={pal.fg} />
+            </View>
+            <Text style={[styles.careTitle, { color: pal.fg }]}>Tarkib</Text>
+            <Text
+              style={[styles.careSub, { color: pal.muted }]}
+              numberOfLines={isSmall ? 1 : 2}
+            >
+              Mahsulot tarkibini skan qiling
+            </Text>
           </Pressable>
         </View>
 
-        <View style={styles.tools}>
-          {TOOLS.map((tool) => (
-            <Pressable
-              key={tool.key}
-              style={styles.tool}
-              onPress={() => void onTool()}
-            >
-              <View style={[styles.toolIcon, { backgroundColor: pal.iconTile, borderColor: pal.line }]}>
-                <Ionicons name={tool.icon} size={20} color={pal.fg} />
-              </View>
-              <Text style={[styles.toolLabel, { color: pal.muted }]} numberOfLines={2}>
-                {tool.label}
-              </Text>
-            </Pressable>
-          ))}
+        <View style={styles.careSearchRow}>
+          <Pressable
+            style={[styles.careSearchField, { backgroundColor: pal.iconTile, borderColor: pal.line }]}
+            onPress={openCareCatalog}
+          >
+            <Ionicons name="search" size={ICON.sm} color={pal.muted} />
+            <Text style={[styles.careSearchPlaceholder, { color: pal.muted }]} numberOfLines={1}>
+              Shampun, balsam, gigiyena…
+            </Text>
+          </Pressable>
+          <Pressable
+            style={[styles.careSearchBtn, { backgroundColor: pal.fg }]}
+            onPress={openCareCatalog}
+            accessibilityLabel="Qidiruv"
+          >
+            <Ionicons name="search" size={ICON.md} color={pal.bg} />
+          </Pressable>
         </View>
+      </View>
 
-        <View style={[styles.careSheet, { backgroundColor: pal.card, borderColor: pal.line }]}>
-          <View style={styles.careRow}>
-            <Pressable
-              style={[
-                styles.careCard,
-                { backgroundColor: pal.iconTile, borderColor: pal.fg },
-                styles.careCardActive,
-              ]}
-              onPress={() => openCareOrIngredient("care")}
-            >
-              <View style={[styles.careIcon, { backgroundColor: pal.card }]}>
-                <Ionicons name="water-outline" size={20} color={pal.fg} />
-              </View>
-              <Text style={[styles.careTitle, { color: pal.fg }]}>Parvarish</Text>
-              <Text style={[styles.careSub, { color: pal.muted }]} numberOfLines={2}>
-                Sochingiz uchun shaxsiy tavsiyalar
-              </Text>
-            </Pressable>
-
-            <Pressable
-              style={[styles.careCard, { backgroundColor: pal.iconTile, borderColor: pal.line }]}
-              onPress={() => openCareOrIngredient("ingredient")}
-            >
-              <View style={[styles.careIcon, { backgroundColor: pal.card }]}>
-                <Ionicons name="flask-outline" size={20} color={pal.fg} />
-              </View>
-              <Text style={[styles.careTitle, { color: pal.fg }]}>Tarkib</Text>
-              <Text style={[styles.careSub, { color: pal.muted }]} numberOfLines={2}>
-                Mahsulot tarkibini skan qiling
-              </Text>
-            </Pressable>
-          </View>
-
-          <View style={styles.careSearchRow}>
-            <Pressable
-              style={[styles.careSearchField, { backgroundColor: pal.iconTile, borderColor: pal.line }]}
-              onPress={openCareCatalog}
-            >
-              <Ionicons name="search" size={16} color={pal.muted} />
-              <Text style={[styles.careSearchPlaceholder, { color: pal.muted }]} numberOfLines={1}>
-                Shampun, balsam, gigiyena…
-              </Text>
-            </Pressable>
-            <Pressable
-              style={[styles.careSearchBtn, { backgroundColor: pal.fg }]}
-              onPress={openCareCatalog}
-              accessibilityLabel="Qidiruv"
-            >
-              <Ionicons name="search" size={18} color={pal.bg} />
-            </Pressable>
-          </View>
+      <View style={styles.section}>
+        <View style={styles.sectionHead}>
+          <Text style={styles.sectionTitle}>Namuna uslublar</Text>
+          <Pressable
+            style={styles.exploreLink}
+            onPress={() => navigation.getParent()?.navigate("Explore" as never)}
+          >
+            <Text style={styles.sectionLink}>Explore</Text>
+            <Ionicons
+              name="arrow-up"
+              size={ICON.xs}
+              color="rgba(255,255,255,0.4)"
+              style={styles.arrowRot}
+            />
+          </Pressable>
         </View>
-
-        <View style={styles.section}>
-          <View style={styles.sectionHead}>
-            <Text style={styles.sectionTitle}>Namuna uslublar</Text>
-            <Pressable
-              style={styles.exploreLink}
-              onPress={() => navigation.getParent()?.navigate("Explore" as never)}
-            >
-              <Text style={styles.sectionLink}>Explore</Text>
-              <Ionicons
-                name="arrow-up"
-                size={12}
-                color="rgba(255,255,255,0.4)"
-                style={styles.arrowRot}
-              />
-            </Pressable>
-          </View>
+        <View
+          style={styles.marqueeSlot}
+          onLayout={(e) => setMarqueeHeight(e.nativeEvent.layout.height)}
+        >
           <MorphSampleMarquee
             rowA={rowA}
             rowB={rowB}
             loading={samplesLoading}
+            cardHeight={sampleCardHeight}
             onPressStyle={onSamplePress}
           />
         </View>
-      </ScrollView>
-    </View>
+      </View>
+    </ScreenWrapper>
   );
 }
 
+/** Ionicons o'lchamlari — ekran kengligiga moslashadi. */
+const ICON = {
+  xs: scale(12),
+  sm: scale(16),
+  md: scale(20),
+} as const;
+
+const CTA_HEIGHT = verticalScale(IS_SMALL_DEVICE ? 44 : 48);
+const TOOL_TILE = scale(IS_SMALL_DEVICE ? 46 : 56);
+const CARE_ICON = scale(IS_SMALL_DEVICE ? 30 : 36);
+const FIELD_HEIGHT = verticalScale(IS_SMALL_DEVICE ? 40 : 44);
+
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: "#FAFAFA" },
-  glow: {
-    ...StyleSheet.absoluteFill,
-    backgroundColor: "transparent",
+  body: {
+    paddingHorizontal: scale(20),
+    justifyContent: "flex-start",
+    gap: spacing.xs,
   },
   header: {
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 16,
-    paddingBottom: 4,
-    minHeight: 44,
+    paddingHorizontal: scale(16),
+    paddingBottom: spacing.xxs,
+    minHeight: verticalScale(IS_SMALL_DEVICE ? 36 : 44),
   },
   headerBrand: {
     alignItems: "center",
@@ -307,17 +340,17 @@ const styles = StyleSheet.create({
     position: "relative",
   },
   wordmarkLogo: {
-    width: 168,
-    height: 34,
+    width: scale(IS_SMALL_DEVICE ? 140 : 168),
+    height: verticalScale(IS_SMALL_DEVICE ? 28 : 34),
   },
   limitBadge: {
     position: "absolute",
-    top: -2,
-    right: -8,
-    minWidth: 28,
-    height: 22,
-    paddingHorizontal: 6,
-    borderRadius: 999,
+    top: -verticalScale(2),
+    right: -scale(8),
+    minWidth: scale(28),
+    height: scale(22),
+    paddingHorizontal: scale(6),
+    borderRadius: radius.pill,
     backgroundColor: "#FFF",
     borderWidth: 2,
     borderColor: "#111111",
@@ -325,59 +358,62 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   limitLow: { backgroundColor: "#CA8A04" },
-  limitText: { ...morphFont, fontSize: 10, fontWeight: "700", color: "#111111" },
-  body: { paddingHorizontal: 20, gap: 8 },
+  limitText: {
+    ...morphFont,
+    fontSize: fontSize(10),
+    fontWeight: "700",
+    color: "#111111",
+  },
   hero: {
     alignItems: "center",
-    paddingTop: 18,
+    paddingTop: spacing.md,
   },
   cta: {
-    marginTop: 0,
     flexDirection: "row",
     alignItems: "center",
     width: "100%",
-    maxWidth: 360,
-    minHeight: 48,
-    borderRadius: 999,
+    maxWidth: scale(360),
+    minHeight: CTA_HEIGHT,
+    borderRadius: radius.pill,
     backgroundColor: "#FFF",
-    paddingLeft: 20,
-    paddingRight: 8,
-    paddingVertical: 8,
-    gap: 12,
+    paddingLeft: scale(20),
+    paddingRight: scale(8),
+    paddingVertical: moderateScale(8),
+    gap: moderateScale(12),
   },
   ctaText: {
     ...morphFont,
     flex: 1,
-    fontSize: 13,
+    fontSize: fontSize(13),
     fontWeight: "600",
     color: "#111111",
   },
   ctaArrow: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: CTA_HEIGHT - moderateScale(12),
+    height: CTA_HEIGHT - moderateScale(12),
+    borderRadius: (CTA_HEIGHT - moderateScale(12)) / 2,
     backgroundColor: "#FAFAFA",
     alignItems: "center",
     justifyContent: "center",
   },
   arrowRot: { transform: [{ rotate: "45deg" }] },
   tools: {
-    marginTop: 20,
+    marginTop: spacing.md,
     flexDirection: "row",
     justifyContent: "center",
-    gap: 8,
+    gap: moderateScale(8),
   },
   tool: {
     alignItems: "center",
-    gap: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    minWidth: 96,
+    gap: spacing.xs,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: scale(16),
+    minWidth: scale(96),
   },
   toolIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 18,
+    width: TOOL_TILE,
+    height: TOOL_TILE,
+    borderRadius: radius.lg,
     backgroundColor: "rgba(255,255,255,0.06)",
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: "rgba(255,255,255,0.1)",
@@ -387,96 +423,105 @@ const styles = StyleSheet.create({
   toolLabel: {
     ...morphFont,
     textAlign: "center",
-    fontSize: 10,
+    fontSize: fontSize(10),
     fontWeight: "500",
     color: "rgba(255,255,255,0.5)",
-    lineHeight: 13,
+    lineHeight: fontSize(13),
   },
-  section: { marginTop: 28 },
+  section: {
+    flex: 1,
+    minHeight: 0,
+    marginTop: spacing.lg,
+  },
+  marqueeSlot: {
+    flex: 1,
+    minHeight: 0,
+    justifyContent: "center",
+  },
   sectionHead: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 12,
+    marginBottom: spacing.sm,
   },
   sectionTitle: {
     ...morphFont,
-    fontSize: 12,
+    fontSize: fontSize(12),
     fontWeight: "600",
     color: "rgba(255,255,255,0.8)",
   },
   sectionLink: {
     ...morphFont,
-    fontSize: 11,
+    fontSize: fontSize(11),
     fontWeight: "500",
     color: "rgba(255,255,255,0.4)",
   },
-  exploreLink: { flexDirection: "row", alignItems: "center", gap: 2 },
+  exploreLink: { flexDirection: "row", alignItems: "center", gap: moderateScale(2) },
   careSheet: {
-    marginTop: 20,
-    borderRadius: 24,
+    marginTop: spacing.md,
+    borderRadius: radius.xl,
     borderWidth: StyleSheet.hairlineWidth,
-    padding: 14,
-    gap: 12,
+    padding: moderateScale(14),
+    gap: spacing.sm,
   },
   careRow: {
     flexDirection: "row",
-    gap: 10,
+    gap: moderateScale(10),
   },
   careCard: {
     flex: 1,
-    minHeight: 120,
-    borderRadius: 18,
+    minHeight: verticalScale(IS_SMALL_DEVICE ? 92 : 120),
+    borderRadius: radius.lg,
     borderWidth: StyleSheet.hairlineWidth,
-    padding: 14,
+    padding: moderateScale(IS_SMALL_DEVICE ? 10 : 14),
     justifyContent: "flex-end",
-    gap: 4,
+    gap: moderateScale(4),
   },
   careCardActive: {
     borderWidth: 1.5,
   },
   careIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 12,
+    width: CARE_ICON,
+    height: CARE_ICON,
+    borderRadius: radius.sm,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 8,
+    marginBottom: spacing.xs,
   },
   careTitle: {
     ...morphFont,
     fontWeight: "700",
-    fontSize: 13,
+    fontSize: fontSize(13),
   },
   careSub: {
     ...morphFont,
-    fontSize: 10,
-    lineHeight: 13,
+    fontSize: fontSize(10),
+    lineHeight: fontSize(13),
   },
   careSearchRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+    gap: moderateScale(10),
   },
   careSearchField: {
     flex: 1,
-    height: 44,
-    borderRadius: 14,
+    height: FIELD_HEIGHT,
+    borderRadius: radius.md,
     borderWidth: StyleSheet.hairlineWidth,
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 12,
-    gap: 8,
+    paddingHorizontal: scale(12),
+    gap: moderateScale(8),
   },
   careSearchPlaceholder: {
     ...morphFont,
     flex: 1,
-    fontSize: 12,
+    fontSize: fontSize(12),
   },
   careSearchBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
+    width: FIELD_HEIGHT,
+    height: FIELD_HEIGHT,
+    borderRadius: radius.md,
     alignItems: "center",
     justifyContent: "center",
   },

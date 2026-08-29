@@ -39,6 +39,13 @@ import { MorphCareStack } from "./MorphCareStack";
 import { MorphIngredientStack } from "./MorphIngredientStack";
 import { MorphStack } from "./MorphStack";
 import { ProfileStack } from "./ProfileStack";
+import {
+  IS_SMALL_DEVICE,
+  fontSize,
+  moderateScale,
+  scale,
+  verticalScale,
+} from "../utils/responsive";
 
 export type RootTabParamList = {
   Home: undefined;
@@ -87,8 +94,16 @@ const MORPH_RIGHT: TabDef[] = [
   { name: "Profile", labelKey: "nav.profile", icon: "person-outline", iconOn: "person" },
 ];
 
-const CENTER_SLOT = 54;
+const CENTER_SLOT = scale(54);
+const CENTER_BTN = scale(IS_SMALL_DEVICE ? 38 : 42);
+const TAB_ICON = scale(18);
 const SWITCH_MIN_MS = 720;
+
+/**
+ * Home Bar (iPhone) yoki gesture bar (Samsung) ostida dok kesilmasligi uchun
+ * minimal pastki chekka. Insets nolga teng bo'lgan Android'larda ham ishlaydi.
+ */
+const MIN_DOCK_BOTTOM = IS_SMALL_DEVICE ? 6 : 8;
 const mysaloonIcon = require("../../assets/icon.png");
 
 function isMorphTab(name: string | undefined): boolean {
@@ -123,7 +138,7 @@ function wait(ms: number) {
 function CustomTabBar({ state, navigation }: BottomTabBarProps) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
-  const bottomPad = Math.max(insets.bottom, 8);
+  const bottomPad = Math.max(insets.bottom, MIN_DOCK_BOTTOM);
   const tabBarHidden = useTabBarHidden();
   const { isAuthenticated } = useAuth();
   const prevAuth = useRef(isAuthenticated);
@@ -351,7 +366,7 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
           <View style={[styles.morphIconSlot, focused && styles.morphIconSlotOn]}>
             <Ionicons
               name={focused ? tab.iconOn : tab.icon}
-              size={18}
+              size={TAB_ICON}
               color={focused ? "#111111" : "#FFFFFF"}
             />
           </View>
@@ -360,7 +375,7 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
             <View style={styles.iconSlot}>
               <Ionicons
                 name={focused ? tab.iconOn : tab.icon}
-                size={18}
+                size={TAB_ICON}
                 color={focused ? colors.fg : colors.muted}
               />
               {focused ? <View style={styles.activeDot} /> : <View style={styles.activeDotSpacer} />}
@@ -503,23 +518,23 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    paddingHorizontal: 14,
-    paddingTop: 6,
+    paddingHorizontal: scale(14),
+    paddingTop: verticalScale(6),
     backgroundColor: "transparent",
   },
   dockOuterMorph: {
-    paddingHorizontal: 28,
+    paddingHorizontal: scale(28),
     alignItems: "center",
   },
   dock: {
-    minHeight: 56,
-    borderRadius: 26,
+    minHeight: verticalScale(56),
+    borderRadius: moderateScale(26),
     backgroundColor: "#FFFFFF",
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: "rgba(0,0,0,0.06)",
     justifyContent: "flex-end",
-    paddingBottom: 6,
-    paddingTop: 8,
+    paddingBottom: verticalScale(6),
+    paddingTop: verticalScale(8),
     ...Platform.select({
       web: { boxShadow: "0 8px 24px rgba(0,0,0,0.12)" },
       default: {
@@ -533,13 +548,13 @@ const styles = StyleSheet.create({
   },
   dockMorph: {
     width: "100%",
-    minHeight: 64,
-    borderRadius: 36,
+    minHeight: verticalScale(64),
+    borderRadius: moderateScale(36),
     backgroundColor: "#171717",
     borderWidth: 0,
     justifyContent: "center",
-    paddingBottom: 8,
-    paddingTop: 8,
+    paddingBottom: verticalScale(8),
+    paddingTop: verticalScale(8),
     ...Platform.select({
       web: { boxShadow: "0 10px 28px rgba(0,0,0,0.28)" },
       default: {
@@ -554,11 +569,11 @@ const styles = StyleSheet.create({
   sidesRow: {
     flexDirection: "row",
     alignItems: "flex-end",
-    paddingHorizontal: 6,
+    paddingHorizontal: scale(6),
   },
   sidesRowMorph: {
     alignItems: "center",
-    paddingHorizontal: 10,
+    paddingHorizontal: scale(10),
   },
   sideGroup: {
     flex: 1,
@@ -573,19 +588,19 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "flex-end",
-    gap: 2,
+    gap: moderateScale(2),
     minWidth: 0,
-    paddingHorizontal: 2,
+    paddingHorizontal: scale(2),
   },
   iconSlot: {
-    height: 22,
+    height: verticalScale(22),
     alignItems: "center",
     justifyContent: "center",
   },
   morphIconSlot: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: scale(40),
+    height: scale(40),
+    borderRadius: moderateScale(20),
     alignItems: "center",
     justifyContent: "center",
   },
@@ -593,34 +608,34 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
   },
   activeDot: {
-    marginTop: 2,
-    width: 3,
-    height: 3,
-    borderRadius: 1.5,
+    marginTop: verticalScale(2),
+    width: scale(3),
+    height: scale(3),
+    borderRadius: moderateScale(1.5),
     backgroundColor: colors.fg,
   },
   activeDotSpacer: {
-    marginTop: 2,
-    width: 3,
-    height: 3,
+    marginTop: verticalScale(2),
+    width: scale(3),
+    height: scale(3),
   },
   centerAnchor: {
     position: "absolute",
-    top: -14,
+    top: -verticalScale(14),
     left: 0,
     right: 0,
     alignItems: "center",
     zIndex: 2,
   },
   centerAnchorMorph: {
-    top: 4,
+    top: verticalScale(4),
   },
   centerWrap: {
     width: CENTER_SLOT,
     alignItems: "center",
   },
   centerBtnShadow: {
-    borderRadius: 22,
+    borderRadius: moderateScale(22),
     ...Platform.select({
       web: { boxShadow: "0 6px 16px rgba(0,0,0,0.22)" },
       default: {
@@ -633,9 +648,9 @@ const styles = StyleSheet.create({
     }),
   },
   centerBtn: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
+    width: CENTER_BTN,
+    height: CENTER_BTN,
+    borderRadius: CENTER_BTN / 2,
     backgroundColor: colors.fg,
     alignItems: "center",
     justifyContent: "center",
@@ -644,21 +659,21 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   centerLogo: {
-    width: 22,
-    height: 22,
+    width: scale(22),
+    height: scale(22),
   },
   centerAppIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: CENTER_BTN - scale(6),
+    height: CENTER_BTN - scale(6),
+    borderRadius: (CENTER_BTN - scale(6)) / 2,
   },
   label: {
-    fontSize: 9,
+    fontSize: fontSize(9),
     fontWeight: "700",
     letterSpacing: -0.15,
   },
   centerLabel: {
-    marginTop: 3,
+    marginTop: verticalScale(3),
     color: colors.muted,
   },
   labelOn: {

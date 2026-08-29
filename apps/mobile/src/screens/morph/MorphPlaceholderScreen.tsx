@@ -3,6 +3,12 @@ import { StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { morphFont } from "../../theme/morph-font";
+import {
+  fontSize,
+  moderateScale,
+  scale,
+  verticalScale,
+} from "../../utils/responsive";
 
 type Props = {
   title: string;
@@ -34,13 +40,13 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: "#FAFAFA",
-    paddingHorizontal: 28,
+    paddingHorizontal: scale(28),
     alignItems: "center",
   },
   iconWrap: {
-    width: 56,
-    height: 56,
-    borderRadius: 18,
+    width: scale(56),
+    height: scale(56),
+    borderRadius: moderateScale(18),
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "rgba(255,255,255,0.06)",
@@ -48,20 +54,20 @@ const styles = StyleSheet.create({
     borderColor: "rgba(255,255,255,0.12)",
   },
   title: {
-    marginTop: 18,
+    marginTop: verticalScale(18),
     ...morphFont,
-    fontSize: 18,
+    fontSize: fontSize(18),
     fontWeight: "600",
     color: "#FFFFFF",
     letterSpacing: -0.4,
     textAlign: "center",
   },
   subtitle: {
-    marginTop: 8,
-    maxWidth: 280,
+    marginTop: verticalScale(8),
+    maxWidth: scale(280),
     ...morphFont,
-    fontSize: 13,
-    lineHeight: 18,
+    fontSize: fontSize(13),
+    lineHeight: fontSize(18),
     color: "rgba(255,255,255,0.5)",
     textAlign: "center",
   },

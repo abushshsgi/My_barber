@@ -26,6 +26,8 @@ export type CareProduct = {
   warnings_uz: string;
   is_published: boolean;
   sort_order: number;
+  likes_count?: number;
+  liked_by_me?: boolean;
 };
 
 export type HairCondition = "oily" | "dry" | "normal" | "damaged";
@@ -51,18 +53,35 @@ export async function fetchCareProducts(params?: {
   q?: string;
   category?: string;
   recommended?: boolean;
+  order?: "likes" | "popular" | string;
+  exclude_mine?: boolean;
+  exclude_ids?: number[];
 }): Promise<CareProduct[]> {
   return apiJson(
     `/api/v1/ai/care/products/${qs({
       q: params?.q,
       category: params?.category,
       recommended: params?.recommended ? "1" : undefined,
+      order: params?.order,
+      exclude_mine: params?.exclude_mine ? "1" : undefined,
+      exclude_ids: params?.exclude_ids?.length
+        ? params.exclude_ids.join(",")
+        : undefined,
     })}`,
   );
 }
 
 export async function fetchCareProduct(id: number): Promise<CareProduct> {
   return apiJson(`/api/v1/ai/care/products/${id}/`);
+}
+
+export async function toggleCareProductLike(
+  productId: number,
+): Promise<{ liked: boolean; likes_count: number; product_id: number }> {
+  return apiJson(`/api/v1/ai/care/products/${productId}/like/`, {
+    method: "POST",
+    body: "{}",
+  });
 }
 
 export async function fetchHairCareProfile(): Promise<HairCareProfile> {
@@ -145,4 +164,82 @@ export async function scanIngredient(image: string): Promise<IngredientScanRespo
     throw new Error("Tarkib tahlili javobi noto'g'ri.");
   }
   return body as IngredientScanResponse;
+}
+
+export type AiCarePlanTask = {
+  id: string;
+  title: string;
+  subtitle: string;
+  time_hint?: string;
+  icon: "water" | "flask" | "sparkles" | "shield" | "leaf" | "cut" | string;
+  product_id?: number | null;
+  product_name?: string;
+};
+
+export type AiCarePlan = {
+  summary: string;
+  morning: AiCarePlanTask[];
+  evening: AiCarePlanTask[];
+  weekly: AiCarePlanTask[];
+  weekly_schedule: { day: string; task: string }[];
+  tips: string[];
+  avoid: string[];
+};
+
+export async function generateCarePlan(body: {
+  condition: HairCondition;
+  texture: HairTexture;
+  color_status: HairColorStatus;
+  products: {
+    id: number;
+    name: string;
+    brand?: string;
+    category?: string;
+  }[];
+}): Promise<AiCarePlan> {
+  const res = await apiFetch("/api/v1/ai/care/plan/", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+  const data = (await res.json().catch(() => null)) as
+    | { plan?: AiCarePlan; detail?: string }
+    | null;
+  if (!res.ok) {
+    throw new Error(
+      data && typeof data.detail === "string" ? data.detail : "Parvarish reja yaratilmadi.",
+    );
+  }
+  if (!data?.plan) throw new Error("Parvarish reja javobi noto'g'ri.");
+  return data.plan;
+}
+
+export type MyCareProductApi = {
+  id: number;
+  name: string;
+  brand: string;
+  category: string;
+  image_url: string | null;
+  source: string;
+  added_at: string | null;
+  save_id?: number;
+};
+
+export async function fetchMyCareProducts(): Promise<MyCareProductApi[]> {
+  return apiJson("/api/v1/ai/care/my-products/");
+}
+
+export async function addMyCareProductApi(body: {
+  product_id: number;
+  source?: string;
+}): Promise<MyCareProductApi> {
+  return apiJson("/api/v1/ai/care/my-products/", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export async function removeMyCareProductApi(productId: number): Promise<void> {
+  await apiJson(`/api/v1/ai/care/my-products/${productId}/`, {
+    method: "DELETE",
+  });
 }

@@ -3,6 +3,11 @@ import Svg, { Circle, G } from "react-native-svg";
 import type { ReactNode } from "react";
 import { useMorphAppearance } from "../../lib/MorphAppearanceContext";
 import { morphFont } from "../../theme/morph-font";
+import {
+  moderateScale,
+  scale,
+  verticalScale,
+} from "../../utils/responsive";
 
 export function UsageRing({
   pct,
@@ -114,12 +119,12 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   meter: {
-    borderRadius: 22,
+    borderRadius: moderateScale(22),
     borderWidth: StyleSheet.hairlineWidth,
-    paddingHorizontal: 20,
-    paddingTop: 22,
-    paddingBottom: 16,
-    gap: 12,
+    paddingHorizontal: scale(20),
+    paddingTop: verticalScale(22),
+    paddingBottom: verticalScale(16),
+    gap: moderateScale(12),
   },
   pct: {
     ...morphFont,
@@ -130,17 +135,17 @@ const styles = StyleSheet.create({
   caption: {
     ...morphFont,
     textAlign: "center",
-    marginTop: -4,
-    marginBottom: 6,
+    marginTop: -verticalScale(4),
+    marginBottom: verticalScale(6),
   },
   legend: {
     flexDirection: "row",
     justifyContent: "space-between",
-    gap: 12,
-    marginTop: 4,
+    gap: moderateScale(12),
+    marginTop: verticalScale(4),
   },
-  legendItem: { flexDirection: "row", alignItems: "center", gap: 8, flex: 1 },
-  dot: { width: 8, height: 8, borderRadius: 2 },
+  legendItem: { flexDirection: "row", alignItems: "center", gap: moderateScale(8), flex: 1 },
+  dot: { width: scale(8), height: scale(8), borderRadius: moderateScale(2) },
   legendText: { ...morphFont, fontWeight: "600", flex: 1 },
   scale: { flexDirection: "row", justifyContent: "space-between" },
   scaleText: { ...morphFont, fontWeight: "600" },

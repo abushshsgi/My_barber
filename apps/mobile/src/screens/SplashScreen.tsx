@@ -12,6 +12,12 @@ import { BrandLogo } from "../components/BrandLogo";
 import { type AppLang, setAppLang } from "../lib/guest";
 import { setAppLanguage } from "../i18n/config";
 import { colors } from "../theme/colors";
+import {
+  fontSize,
+  moderateScale,
+  scale,
+  verticalScale,
+} from "../utils/responsive";
 
 type Props = {
   /** Til tanlash kerak (birinchi marta). */
@@ -133,7 +139,7 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: "#FFFFFF",
-    paddingHorizontal: 24,
+    paddingHorizontal: scale(24),
   },
   center: {
     flex: 1,
@@ -141,14 +147,14 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   langBlock: {
-    gap: 12,
+    gap: moderateScale(12),
   },
   langSpacer: {
-    height: 128,
+    height: verticalScale(128),
   },
   langBtn: {
-    minHeight: 56,
-    borderRadius: 28,
+    minHeight: verticalScale(56),
+    borderRadius: moderateScale(28),
     borderWidth: 1.5,
     borderColor: colors.fg,
     backgroundColor: "#FFFFFF",
@@ -158,7 +164,7 @@ const styles = StyleSheet.create({
   pressed: { opacity: 0.88, transform: [{ scale: 0.985 }] },
   langTitle: {
     color: colors.fg,
-    fontSize: 16,
+    fontSize: fontSize(16),
     fontWeight: "700",
   },
 });

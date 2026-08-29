@@ -1,6 +1,12 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { colors } from "../../theme/colors";
+import {
+  fontSize,
+  moderateScale,
+  scale,
+  verticalScale,
+} from "../../utils/responsive";
 
 type Props = {
   locationLabel?: string;
@@ -51,18 +57,18 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 16,
-    gap: 12,
+    paddingHorizontal: scale(16),
+    gap: moderateScale(12),
   },
   left: {
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: moderateScale(8),
     minWidth: 0,
   },
   logo: {
-    fontSize: 17,
+    fontSize: fontSize(17),
     fontWeight: "800",
     color: colors.fg,
     letterSpacing: -0.3,
@@ -74,21 +80,21 @@ const styles = StyleSheet.create({
     flexShrink: 1,
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
+    gap: moderateScale(4),
     backgroundColor: colors.surface,
     borderRadius: 999,
-    paddingHorizontal: 9,
-    paddingVertical: 6,
+    paddingHorizontal: scale(9),
+    paddingVertical: verticalScale(6),
     maxWidth: "58%",
   },
   locationText: {
-    fontSize: 11,
+    fontSize: fontSize(11),
     fontWeight: "600",
     color: colors.fg,
   },
   mapBtn: {
-    width: 34,
-    height: 34,
+    width: scale(34),
+    height: scale(34),
     alignItems: "center",
     justifyContent: "center",
   },

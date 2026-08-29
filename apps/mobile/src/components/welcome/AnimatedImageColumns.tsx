@@ -12,6 +12,9 @@ import Animated, {
 } from "react-native-reanimated";
 import { colors } from "../../theme/colors";
 import { WELCOME_COLUMNS, type WelcomeTile } from "./welcomeImages";
+import {
+  verticalScale,
+} from "../../utils/responsive";
 
 const GAP = 10;
 const RADIUS = 18;
@@ -163,13 +166,13 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     top: 0,
-    height: 28,
+    height: verticalScale(28),
   },
   fadeBottom: {
     position: "absolute",
     left: 0,
     right: 0,
     bottom: 0,
-    height: 56,
+    height: verticalScale(56),
   },
 });

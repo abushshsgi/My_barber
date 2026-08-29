@@ -18,6 +18,11 @@ import {
 } from "../../api/sessions";
 import { useShellTheme } from "../../lib/useShellTheme";
 import type { ProfileStackParamList } from "../../navigation/ProfileStack";
+import {
+  fontSize,
+  moderateScale,
+  verticalScale,
+} from "../../utils/responsive";
 
 type Props = NativeStackScreenProps<ProfileStackParamList, "SecuritySessions">;
 
@@ -153,28 +158,28 @@ export function SecuritySessionsScreen({ navigation }: Props) {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  content: { padding: 16, paddingBottom: 40, gap: 12 },
-  err: { color: "#FF3B30", fontSize: 13, marginBottom: 8 },
-  empty: { fontSize: 14, marginTop: 12 },
+  content: { padding: moderateScale(16), paddingBottom: verticalScale(40), gap: moderateScale(12) },
+  err: { color: "#FF3B30", fontSize: fontSize(13), marginBottom: verticalScale(8) },
+  empty: { fontSize: fontSize(14), marginTop: verticalScale(12) },
   card: {
-    borderRadius: 16,
+    borderRadius: moderateScale(16),
     borderWidth: StyleSheet.hairlineWidth,
-    padding: 14,
-    gap: 4,
+    padding: moderateScale(14),
+    gap: moderateScale(4),
     shadowOpacity: 0,
     elevation: 0,
   },
-  device: { fontSize: 15, fontWeight: "700" },
-  meta: { fontSize: 13, lineHeight: 18 },
-  revoke: { alignSelf: "flex-start", marginTop: 8 },
-  revokeText: { fontSize: 13, fontWeight: "700" },
+  device: { fontSize: fontSize(15), fontWeight: "700" },
+  meta: { fontSize: fontSize(13), lineHeight: fontSize(18) },
+  revoke: { alignSelf: "flex-start", marginTop: verticalScale(8) },
+  revokeText: { fontSize: fontSize(13), fontWeight: "700" },
   others: {
-    marginTop: 8,
-    minHeight: 48,
-    borderRadius: 14,
+    marginTop: verticalScale(8),
+    minHeight: verticalScale(48),
+    borderRadius: moderateScale(14),
     borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
   },
-  othersText: { fontSize: 14, fontWeight: "700" },
+  othersText: { fontSize: fontSize(14), fontWeight: "700" },
 });

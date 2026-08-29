@@ -2,6 +2,12 @@ import { Ionicons } from "@expo/vector-icons";
 import { ReactNode } from "react";
 import { Pressable, StyleSheet, Switch, Text, View } from "react-native";
 import { colors } from "../../theme/colors";
+import {
+  fontSize,
+  moderateScale,
+  scale,
+  verticalScale,
+} from "../../utils/responsive";
 
 type RowProps = {
   title: string;
@@ -122,12 +128,12 @@ export function ToggleRow({
 
 const styles = StyleSheet.create({
   groupWrap: {
-    marginBottom: 20,
+    marginBottom: verticalScale(20),
   },
   groupTitle: {
-    marginBottom: 8,
-    marginLeft: 4,
-    fontSize: 12,
+    marginBottom: verticalScale(8),
+    marginLeft: scale(4),
+    fontSize: fontSize(12),
     fontWeight: "700",
     letterSpacing: 0.6,
     color: colors.muted,
@@ -135,7 +141,7 @@ const styles = StyleSheet.create({
   },
   group: {
     backgroundColor: colors.surface,
-    borderRadius: 22,
+    borderRadius: moderateScale(22),
     overflow: "hidden",
     borderWidth: 1,
     borderColor: "rgba(0,0,0,0.06)",
@@ -154,10 +160,10 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 15,
-    minHeight: 56,
+    gap: moderateScale(12),
+    paddingHorizontal: scale(16),
+    paddingVertical: verticalScale(15),
+    minHeight: verticalScale(56),
   },
   rowBorder: {
     borderBottomWidth: StyleSheet.hairlineWidth,
@@ -168,9 +174,9 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0,0,0,0.02)",
   },
   iconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 12,
+    width: scale(36),
+    height: scale(36),
+    borderRadius: moderateScale(12),
     backgroundColor: colors.bg,
     alignItems: "center",
     justifyContent: "center",
@@ -183,7 +189,7 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   title: {
-    fontSize: 15,
+    fontSize: fontSize(15),
     fontWeight: "600",
     color: colors.fg,
   },
@@ -191,10 +197,10 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
   },
   subtitle: {
-    marginTop: 2,
-    fontSize: 12,
+    marginTop: verticalScale(2),
+    fontSize: fontSize(12),
     color: colors.muted,
-    lineHeight: 16,
+    lineHeight: fontSize(16),
   },
   subtitleDark: {
     color: "rgba(255,255,255,0.7)",
@@ -203,10 +209,10 @@ const styles = StyleSheet.create({
     color: "#FF3B30",
   },
   badge: {
-    minWidth: 22,
-    height: 22,
-    borderRadius: 11,
-    paddingHorizontal: 6,
+    minWidth: scale(22),
+    height: verticalScale(22),
+    borderRadius: moderateScale(11),
+    paddingHorizontal: scale(6),
     backgroundColor: colors.fg,
     alignItems: "center",
     justifyContent: "center",
@@ -215,7 +221,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
   },
   badgeText: {
-    fontSize: 11,
+    fontSize: fontSize(11),
     fontWeight: "700",
     color: "#FFF",
   },

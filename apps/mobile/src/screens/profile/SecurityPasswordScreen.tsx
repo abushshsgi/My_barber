@@ -15,6 +15,12 @@ import { useAuth } from "../../auth/AuthContext";
 import { useProfileData } from "../../hooks/useProfileData";
 import { useShellTheme } from "../../lib/useShellTheme";
 import type { ProfileStackParamList } from "../../navigation/ProfileStack";
+import {
+  fontSize,
+  moderateScale,
+  scale,
+  verticalScale,
+} from "../../utils/responsive";
 
 type Props = NativeStackScreenProps<ProfileStackParamList, "SecurityPassword">;
 
@@ -123,23 +129,23 @@ export function SecurityPasswordScreen({ navigation }: Props) {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  body: { padding: 16, gap: 12 },
-  hint: { fontSize: 14, lineHeight: 20 },
+  body: { padding: moderateScale(16), gap: moderateScale(12) },
+  hint: { fontSize: fontSize(14), lineHeight: fontSize(20) },
   input: {
     borderWidth: 1,
-    borderRadius: 14,
-    paddingHorizontal: 14,
-    paddingVertical: 14,
-    fontSize: 16,
+    borderRadius: moderateScale(14),
+    paddingHorizontal: scale(14),
+    paddingVertical: verticalScale(14),
+    fontSize: fontSize(16),
   },
-  err: { color: "#FF3B30", fontSize: 13 },
-  ok: { fontSize: 13, fontWeight: "600" },
+  err: { color: "#FF3B30", fontSize: fontSize(13) },
+  ok: { fontSize: fontSize(13), fontWeight: "600" },
   cta: {
-    marginTop: 8,
-    minHeight: 48,
-    borderRadius: 14,
+    marginTop: verticalScale(8),
+    minHeight: verticalScale(48),
+    borderRadius: moderateScale(14),
     alignItems: "center",
     justifyContent: "center",
   },
-  ctaText: { fontSize: 16, fontWeight: "700" },
+  ctaText: { fontSize: fontSize(16), fontWeight: "700" },
 });

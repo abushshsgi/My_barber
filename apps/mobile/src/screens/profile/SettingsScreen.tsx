@@ -9,6 +9,11 @@ import { currentLang, setAppLanguage } from "../../i18n/config";
 import type { AppLang } from "../../lib/guest";
 import type { ProfileStackParamList } from "../../navigation/ProfileStack";
 import { colors } from "../../theme/colors";
+import {
+  moderateScale,
+  scale,
+  verticalScale,
+} from "../../utils/responsive";
 
 type Props = NativeStackScreenProps<ProfileStackParamList, "Settings">;
 
@@ -110,6 +115,6 @@ export function SettingsScreen({ navigation }: Props) {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
-  content: { padding: 16, paddingBottom: 32 },
-  infoPad: { paddingHorizontal: 14, paddingBottom: 10 },
+  content: { padding: moderateScale(16), paddingBottom: verticalScale(32) },
+  infoPad: { paddingHorizontal: scale(14), paddingBottom: verticalScale(10) },
 });

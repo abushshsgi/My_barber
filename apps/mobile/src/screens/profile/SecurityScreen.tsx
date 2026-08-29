@@ -6,6 +6,12 @@ import { NativeHeader } from "../../components/ui/NativeHeader";
 import { useProfileData } from "../../hooks/useProfileData";
 import { useShellTheme } from "../../lib/useShellTheme";
 import type { ProfileStackParamList } from "../../navigation/ProfileStack";
+import {
+  fontSize,
+  moderateScale,
+  scale,
+  verticalScale,
+} from "../../utils/responsive";
 
 type Props = NativeStackScreenProps<ProfileStackParamList, "Security">;
 
@@ -95,9 +101,9 @@ function SecRow({
 const styles = StyleSheet.create({
   root: { flex: 1 },
   card: {
-    marginHorizontal: 16,
-    marginTop: 8,
-    borderRadius: 18,
+    marginHorizontal: scale(16),
+    marginTop: verticalScale(8),
+    borderRadius: moderateScale(18),
     borderWidth: StyleSheet.hairlineWidth,
     overflow: "hidden",
     shadowOpacity: 0,
@@ -106,20 +112,20 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: "row",
     alignItems: "flex-start",
-    gap: 14,
-    paddingHorizontal: 14,
-    paddingVertical: 16,
+    gap: moderateScale(14),
+    paddingHorizontal: scale(14),
+    paddingVertical: verticalScale(16),
   },
   border: { borderBottomWidth: StyleSheet.hairlineWidth },
   iconTile: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
+    width: scale(34),
+    height: scale(34),
+    borderRadius: moderateScale(10),
     alignItems: "center",
     justifyContent: "center",
   },
   main: { flex: 1 },
-  title: { fontSize: 16, fontWeight: "700" },
-  sub: { marginTop: 4, fontSize: 13, lineHeight: 18 },
-  action: { fontSize: 13, fontWeight: "600", marginTop: 2 },
+  title: { fontSize: fontSize(16), fontWeight: "700" },
+  sub: { marginTop: verticalScale(4), fontSize: fontSize(13), lineHeight: fontSize(18) },
+  action: { fontSize: fontSize(13), fontWeight: "600", marginTop: verticalScale(2) },
 });

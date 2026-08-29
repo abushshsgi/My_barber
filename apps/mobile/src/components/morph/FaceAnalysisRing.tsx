@@ -7,6 +7,12 @@ import {
   hairColorLabel,
   hairTypeLabel,
 } from "../../lib/morph-labels";
+import {
+  fontSize,
+  moderateScale,
+  scale,
+  verticalScale,
+} from "../../utils/responsive";
 
 type Props = {
   analyze?: AiStyleAnalyzeResponse | null;
@@ -382,12 +388,12 @@ export function FaceAnalysisRing({
 
 const styles = StyleSheet.create({
   shell: {
-    gap: 12,
+    gap: moderateScale(12),
   },
   shellOnDark: {
-    paddingHorizontal: 2,
-    paddingTop: 2,
-    paddingBottom: 2,
+    paddingHorizontal: scale(2),
+    paddingTop: verticalScale(2),
+    paddingBottom: verticalScale(2),
   },
   shellOnLight: {
     paddingHorizontal: 0,
@@ -399,23 +405,23 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "stretch",
     justifyContent: "space-between",
-    gap: 8,
+    gap: moderateScale(8),
   },
   card: {
     flex: 1,
     minWidth: 0,
     alignItems: "center",
     justifyContent: "flex-start",
-    gap: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 4,
+    gap: moderateScale(8),
+    paddingVertical: verticalScale(8),
+    paddingHorizontal: scale(4),
   },
   cardSlot: {
     flex: 1,
     minWidth: 0,
   },
   cardLabel: {
-    fontSize: 11,
+    fontSize: fontSize(11),
     fontWeight: "800",
     letterSpacing: 0.6,
     textAlign: "center",
@@ -424,28 +430,28 @@ const styles = StyleSheet.create({
     includeFontPadding: false,
   },
   ringPct: {
-    fontSize: 13,
+    fontSize: fontSize(13),
     fontWeight: "800",
     letterSpacing: -0.4,
     textAlign: "center",
     includeFontPadding: false,
   },
   cardDetail: {
-    fontSize: 11,
+    fontSize: fontSize(11),
     fontWeight: "600",
     textAlign: "center",
-    lineHeight: 14,
-    paddingHorizontal: 2,
+    lineHeight: fontSize(14),
+    paddingHorizontal: scale(2),
     color: "#0A0A0A",
     includeFontPadding: false,
   },
   summary: {
-    fontSize: 12,
-    lineHeight: 17,
+    fontSize: fontSize(12),
+    lineHeight: fontSize(17),
     fontWeight: "500",
     letterSpacing: 0.1,
-    paddingHorizontal: 2,
-    paddingTop: 2,
+    paddingHorizontal: scale(2),
+    paddingTop: verticalScale(2),
   },
   summaryOnLight: {
     color: "#0A0A0A",

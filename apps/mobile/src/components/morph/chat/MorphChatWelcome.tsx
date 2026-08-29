@@ -8,6 +8,12 @@ import { morphFont } from "../../../theme/morph-font";
 import { SOFT_PAPER } from "../../../theme/morph-appearance";
 import { useMorphAppearance } from "../../../lib/MorphAppearanceContext";
 import { ChatAmbientBg } from "./ChatAmbientBg";
+import {
+  fontSize,
+  moderateScale,
+  scale,
+  verticalScale,
+} from "../../../utils/responsive";
 
 type Props = {
   headline: string;
@@ -110,13 +116,13 @@ const styles = StyleSheet.create({
     zIndex: 1,
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 16,
+    paddingHorizontal: scale(16),
   },
   headerSpacer: { flex: 1 },
   headerBtn: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
+    width: scale(42),
+    height: scale(42),
+    borderRadius: moderateScale(21),
     alignItems: "center",
     justifyContent: "center",
   },
@@ -127,19 +133,19 @@ const styles = StyleSheet.create({
     flex: 1,
     zIndex: 1,
     justifyContent: "center",
-    paddingHorizontal: 22,
+    paddingHorizontal: scale(22),
     backgroundColor: "transparent",
   },
   badgeWrap: {
     alignItems: "center",
-    marginBottom: 16,
+    marginBottom: verticalScale(16),
   },
   aiBadge: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    gap: moderateScale(6),
+    paddingHorizontal: scale(12),
+    paddingVertical: verticalScale(6),
     borderRadius: 999,
     backgroundColor: SOFT_PAPER.card,
     borderWidth: 1,
@@ -147,47 +153,47 @@ const styles = StyleSheet.create({
   },
   aiBadgeText: {
     ...morphFont,
-    fontSize: 12,
-    lineHeight: 15,
+    fontSize: fontSize(12),
+    lineHeight: fontSize(15),
     fontWeight: "600",
     color: SOFT_PAPER.muted,
     letterSpacing: 0.3,
   },
   copy: {
     alignItems: "center",
-    paddingHorizontal: 8,
+    paddingHorizontal: scale(8),
   },
   headline: {
     ...morphFont,
-    fontSize: 26,
-    lineHeight: 32,
+    fontSize: fontSize(26),
+    lineHeight: fontSize(32),
     fontWeight: "600",
     color: SOFT_PAPER.fg,
     letterSpacing: -0.6,
     textAlign: "center",
   },
   lede: {
-    marginTop: 8,
+    marginTop: verticalScale(8),
     ...morphFont,
-    fontSize: 13,
-    lineHeight: 19,
+    fontSize: fontSize(13),
+    lineHeight: fontSize(19),
     color: SOFT_PAPER.muted,
     textAlign: "center",
-    maxWidth: 340,
+    maxWidth: scale(340),
   },
   notice: {
-    marginHorizontal: -6,
-    marginBottom: 12,
+    marginHorizontal: -scale(6),
+    marginBottom: verticalScale(12),
   },
   composer: {
-    marginTop: 2,
+    marginTop: verticalScale(2),
   },
   chips: {
-    marginBottom: 12,
+    marginBottom: verticalScale(12),
   },
   dock: {
     zIndex: 1,
-    paddingHorizontal: 16,
-    paddingTop: 8,
+    paddingHorizontal: scale(16),
+    paddingTop: verticalScale(8),
   },
 });
