@@ -256,8 +256,8 @@ export function careHubLayout(width: number, height: number) {
 
   // Kartochkalar target 150
   const hubCardH = 150;
-  // AI qatori biroz balandroq
-  const aiH = short ? 50 : tall ? 58 : 54;
+  // AI qatori
+  const aiH = 70;
   const promoH = short ? 168 : tall ? 200 : width >= 428 ? 192 : 184;
   const sheetH = 28 + 10 + hubCardH + 10 + aiH + 12;
 
