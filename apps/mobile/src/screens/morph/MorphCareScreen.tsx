@@ -1138,7 +1138,10 @@ export function MorphCareScreen({ navigation, route }: Props) {
               return (
                 <Pressable
                   key={prod.id}
-                  style={styles.featuredCard}
+                  style={[
+                    styles.featuredCard,
+                    { width: hubLayout.featuredW, height: hubLayout.featuredH },
+                  ]}
                   onPress={() => {
                     if (isMine) {
                       openProductGuide(prod);
@@ -1541,7 +1544,7 @@ const styles = StyleSheet.create({
   pad: { flex: 1, paddingHorizontal: 20 },
   onboardPad: { flex: 1, paddingHorizontal: 20 },
   hubRoot: { flex: 1, backgroundColor: "#FAFAFA" },
-  hubScroll: { height: 800 },
+  hubScroll: { flex: 1 },
   addToast: {
     position: "absolute",
     top: 0,

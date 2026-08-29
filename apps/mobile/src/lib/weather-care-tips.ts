@@ -248,14 +248,18 @@ export function generalWeatherExtras(ctx: {
   return out.slice(0, 4);
 }
 
-/** Hub sheet — barcha telefonlarda bir xil o‘lchamlar (dp). */
-export function careHubLayout(width: number, _height: number) {
+/** Hub layout — qisqa ekranda promo/featured biroz kichik, hub kartalar fixed. */
+export function careHubLayout(width: number, height: number) {
   const narrow = width < 360;
+  // SE (~667) → ~0.82; 852+ → 1. Kompozitsiya bir xil, viewportga sig‘adi.
+  const scale = Math.min(1, Math.max(0.8, height / 852));
 
   const hubCardH = 150;
   const aiH = 65;
-  const promoH = 184;
-  const sheetH = 28 + 10 + hubCardH + 10 + aiH + 12;
+  const promoH = Math.round(184 * scale);
+  const featuredH = Math.round(220 * scale);
+  const featuredW = Math.round(196 * scale);
+  const sheetH = 28 + 25 + hubCardH + 10 + aiH + 12;
 
-  return { hubCardH, aiH, promoH, sheetH, hPad: narrow ? 12 : 16 };
+  return { hubCardH, aiH, promoH, featuredH, featuredW, sheetH, hPad: narrow ? 12 : 16 };
 }
