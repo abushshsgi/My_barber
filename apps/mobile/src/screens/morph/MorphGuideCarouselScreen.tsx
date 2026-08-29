@@ -336,7 +336,7 @@ export function MorphGuideCarouselScreen({ navigation, route }: Props) {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: "#0B0B0C",
+    backgroundColor: "#FAFAFA",
   },
   topBar: {
     flexDirection: "row",

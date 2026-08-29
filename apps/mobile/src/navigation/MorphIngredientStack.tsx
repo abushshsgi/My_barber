@@ -16,7 +16,7 @@ export function MorphIngredientStack() {
       screenOptions={{
         headerShown: false,
         animation: "slide_from_right",
-        contentStyle: { backgroundColor: "#050505" },
+        contentStyle: { backgroundColor: "#FAFAFA" },
       }}
     >
       <Stack.Screen name="IngredientScan" component={MorphIngredientScreen} />

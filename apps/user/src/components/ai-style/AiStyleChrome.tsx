@@ -22,7 +22,7 @@ export function AiStyleChrome({ tone = "light", className, title, onBack }: Prop
   const iconBtn = cn(
     "grid size-10 place-items-center rounded-full transition-opacity active:opacity-70",
     isDark
-      ? "bg-white/12 text-white backdrop-blur-md"
+      ? "bg-[#F0F0F0] text-white backdrop-blur-md"
       : "border border-foreground/10 bg-background/80 text-foreground backdrop-blur-md",
   );
 

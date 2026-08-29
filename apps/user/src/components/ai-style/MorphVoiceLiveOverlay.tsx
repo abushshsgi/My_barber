@@ -76,7 +76,7 @@ export function MorphVoiceLiveOverlay({
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-[#0B0B0D] text-white">
       <div className="flex items-center justify-between px-4 pt-[max(0.75rem,env(safe-area-inset-top))]">
-        <div className="flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5">
+        <div className="flex items-center gap-2 rounded-full bg-[#F0F0F0] px-3 py-1.5">
           <span
             className={cn(
               "size-2 rounded-full bg-white/35",
@@ -88,7 +88,7 @@ export function MorphVoiceLiveOverlay({
         <button
           type="button"
           onClick={onClose}
-          className="grid size-9 cursor-pointer place-items-center rounded-full bg-white/10"
+          className="grid size-9 cursor-pointer place-items-center rounded-full bg-[#F0F0F0]"
           aria-label={closeA11y}
         >
           <X className="size-4" />

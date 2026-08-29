@@ -15,7 +15,7 @@ export function MorphAiCareProductDetailPage({ productId }: Props) {
   const q = useCareProduct(id);
 
   return (
-    <div className="min-h-[100dvh] bg-[#050505] text-white">
+    <div className="min-h-[100dvh] bg-[#FAFAFA] text-[#111111]">
       <div
         className="px-5 pb-12"
         style={{ paddingTop: "max(1rem, env(safe-area-inset-top))" }}
@@ -23,7 +23,7 @@ export function MorphAiCareProductDetailPage({ productId }: Props) {
         <button
           type="button"
           onClick={() => navigateBack(router, "/ai-style/care/products")}
-          className="inline-flex size-11 items-center justify-center rounded-full bg-white/10 cursor-pointer active:scale-95 transition-transform"
+          className="inline-flex size-11 items-center justify-center rounded-full bg-[#F0F0F0] cursor-pointer active:scale-95 transition-transform"
           aria-label={t("common.back")}
         >
           <ChevronLeft className="size-5" strokeWidth={2.25} />
@@ -31,10 +31,10 @@ export function MorphAiCareProductDetailPage({ productId }: Props) {
 
         {q.isLoading ? (
           <div className="grid min-h-[40vh] place-items-center">
-            <Loader2 className="size-6 animate-spin text-white/40" />
+            <Loader2 className="size-6 animate-spin text-[#111111]/40" />
           </div>
         ) : !q.data ? (
-          <p className="mt-16 text-center text-sm text-white/40">
+          <p className="mt-16 text-center text-sm text-[#111111]/40">
             {t("aiStylePage.care.catalog.notFound", { defaultValue: "Mahsulot topilmadi." })}
           </p>
         ) : (
@@ -46,7 +46,7 @@ export function MorphAiCareProductDetailPage({ productId }: Props) {
                 className="aspect-[4/3] w-full rounded-3xl object-cover"
               />
             ) : null}
-            <p className="mt-5 text-[12px] font-medium tracking-wide text-white/35">
+            <p className="mt-5 text-[12px] font-medium tracking-wide text-[#111111]/35">
               {t(`aiStylePage.care.catalog.categories.${q.data.category}`, {
                 defaultValue: q.data.category,
               })}
@@ -54,7 +54,7 @@ export function MorphAiCareProductDetailPage({ productId }: Props) {
             <h1 className="mt-2 text-[1.7rem] font-semibold leading-tight tracking-tight">
               {q.data.name}
             </h1>
-            {q.data.brand ? <p className="mt-1 text-sm text-white/45">{q.data.brand}</p> : null}
+            {q.data.brand ? <p className="mt-1 text-sm text-[#111111]/45">{q.data.brand}</p> : null}
 
             <Block title={t("aiStylePage.care.catalog.purpose", { defaultValue: "Nima uchun" })}>
               {q.data.purpose_uz || "—"}
@@ -104,8 +104,8 @@ export function MorphAiCareProductDetailPage({ productId }: Props) {
 function Block({ title, children }: { title: string; children: string }) {
   return (
     <section className="mt-8">
-      <h2 className="text-[12px] font-medium tracking-wide text-white/35">{title}</h2>
-      <p className="mt-2 whitespace-pre-wrap text-[15px] leading-relaxed text-white/75">{children}</p>
+      <h2 className="text-[12px] font-medium tracking-wide text-[#111111]/35">{title}</h2>
+      <p className="mt-2 whitespace-pre-wrap text-[15px] leading-relaxed text-[#111111]/75">{children}</p>
     </section>
   );
 }

@@ -66,8 +66,8 @@ export function MorphAiCarePage() {
 
   if (accessQ.isLoading || hairQ.isLoading) {
     return (
-      <div className="grid min-h-[100dvh] place-items-center bg-[#050505] text-white">
-        <Loader2 className="size-6 animate-spin text-white/40" />
+      <div className="grid min-h-[100dvh] place-items-center bg-[#FAFAFA] text-[#111111]">
+        <Loader2 className="size-6 animate-spin text-[#111111]/40" />
       </div>
     );
   }
@@ -75,23 +75,23 @@ export function MorphAiCarePage() {
   if (accessQ.data && !accessQ.data.allowed) {
     return (
       <div
-        className="min-h-[100dvh] bg-[#050505] px-5 text-white"
+        className="min-h-[100dvh] bg-[#FAFAFA] px-5 text-[#111111]"
         style={{ paddingTop: "max(1rem, env(safe-area-inset-top))" }}
       >
         <BackLink label={t("common.back")} />
         <div className="mx-auto mt-24 max-w-xs text-center">
-          <Lock className="mx-auto size-6 text-white/50" />
+          <Lock className="mx-auto size-6 text-[#111111]/50" />
           <h1 className="mt-4 text-lg font-semibold tracking-tight">
             {t("aiStylePage.care.badge", { defaultValue: "Parvarish" })}
           </h1>
-          <p className="mt-2 text-sm text-white/50">
+          <p className="mt-2 text-sm text-[#111111]/50">
             {accessQ.data.detail ||
               t("aiStylePage.care.proOnly", { defaultValue: "Pro obunasida." })}
           </p>
           <Link
             to="/wallet"
             search={{ section: "subscriptions" }}
-            className="mt-8 inline-flex h-12 items-center rounded-full bg-white px-6 text-sm font-semibold text-black"
+            className="mt-8 inline-flex h-12 items-center rounded-full bg-[#111111] px-6 text-sm font-semibold text-white"
           >
             {t("aiStylePage.care.seePlans", { defaultValue: "Obunalar" })}
           </Link>
@@ -138,7 +138,7 @@ export function MorphAiCarePage() {
     const progress = ((step + 1) / questions.length) * 100;
 
     return (
-      <div className="relative min-h-[100dvh] overflow-x-hidden overflow-y-auto bg-[#050505] text-white">
+      <div className="relative min-h-[100dvh] overflow-x-hidden overflow-y-auto bg-[#FAFAFA] text-[#111111]">
         <div className="pointer-events-none absolute inset-x-0 top-0 h-56 bg-[radial-gradient(ellipse_at_50%_0%,rgba(255,255,255,0.07),transparent_65%)]" />
         <div
           className="relative z-[1] flex min-h-[100dvh] flex-col px-5 pb-[max(6rem,calc(env(safe-area-inset-bottom)+5rem))]"
@@ -146,12 +146,12 @@ export function MorphAiCarePage() {
         >
           <div className="flex items-center justify-between">
             <BackLink label={t("common.back")} />
-            <span className="text-[12px] tabular-nums text-white/35">
+            <span className="text-[12px] tabular-nums text-[#111111]/35">
               {step + 1}/3
             </span>
           </div>
 
-          <div className="mt-6 h-[2px] overflow-hidden rounded-full bg-white/[0.08]">
+          <div className="mt-6 h-[2px] overflow-hidden rounded-full bg-white">
             <motion.div
               className="h-full rounded-full bg-white"
               initial={false}
@@ -191,7 +191,7 @@ export function MorphAiCarePage() {
                       onClick={() => current.onPick(opt)}
                       className={cn(
                         "relative cursor-pointer overflow-hidden rounded-[20px] border text-left touch-manipulation",
-                        selected ? "border-white" : "border-white/10",
+                        selected ? "border-white" : "border-black/10",
                       )}
                     >
                       <div className="relative aspect-[3/4]">
@@ -218,7 +218,7 @@ export function MorphAiCarePage() {
               <button
                 type="button"
                 onClick={() => setStep((step - 1) as QuizStep)}
-                className="h-12 flex-1 cursor-pointer rounded-full border border-white/12 text-sm font-semibold"
+                className="h-12 flex-1 cursor-pointer rounded-full border border-black/10 text-sm font-semibold"
               >
                 {t("common.back")}
               </button>
@@ -229,7 +229,7 @@ export function MorphAiCarePage() {
                 if (step === 2) finishQuiz();
                 else setStep((step + 1) as QuizStep);
               }}
-              className="h-12 flex-[1.6] cursor-pointer rounded-full bg-white text-sm font-semibold text-black active:scale-[0.98]"
+              className="h-12 flex-[1.6] cursor-pointer rounded-full bg-[#111111] text-sm font-semibold text-white active:scale-[0.98]"
             >
               {step === 2
                 ? t("aiStylePage.care.quiz.seePlan", { defaultValue: "Davom etish" })
@@ -260,7 +260,7 @@ export function MorphAiCarePage() {
   ];
 
   return (
-    <div className="relative min-h-[100dvh] overflow-x-hidden overflow-y-auto bg-[#050505] text-white">
+    <div className="relative min-h-[100dvh] overflow-x-hidden overflow-y-auto bg-[#FAFAFA] text-[#111111]">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-64 bg-[radial-gradient(ellipse_at_50%_0%,rgba(255,255,255,0.08),transparent_60%)]" />
 
       <div
@@ -272,7 +272,7 @@ export function MorphAiCarePage() {
           <button
             type="button"
             onClick={() => setStep(0)}
-            className="cursor-pointer text-[13px] font-medium text-white/45"
+            className="cursor-pointer text-[13px] font-medium text-[#111111]/45"
           >
             {t("aiStylePage.care.quiz.retake", { defaultValue: "Qayta" })}
           </button>
@@ -284,13 +284,13 @@ export function MorphAiCarePage() {
           transition={{ duration: 0.4, ease }}
           className="mt-8"
         >
-          <p className="text-[12px] font-medium tracking-wide text-white/35">
+          <p className="text-[12px] font-medium tracking-wide text-[#111111]/35">
             {t("aiStylePage.care.badge", { defaultValue: "Parvarish" })}
           </p>
           <h1 className="mt-2 max-w-[17rem] text-[1.75rem] font-semibold leading-[1.12] tracking-tight">
             {t("aiStylePage.care.title", { defaultValue: "Sizning rejangiz" })}
           </h1>
-          <p className="mt-3 max-w-[22rem] text-[15px] leading-relaxed text-white/70">
+          <p className="mt-3 max-w-[22rem] text-[15px] leading-relaxed text-[#111111]/70">
             {plan.summary}
           </p>
         </motion.div>
@@ -302,14 +302,14 @@ export function MorphAiCarePage() {
           className="mt-6 grid grid-cols-3 gap-2"
         >
           {traits.map((item) => (
-            <div key={item.key} className="overflow-hidden rounded-2xl bg-white/[0.04]">
+            <div key={item.key} className="overflow-hidden rounded-2xl bg-white">
               <img
                 src={careOptionImage(item.key)}
                 alt=""
                 className="aspect-[4/5] w-full object-cover object-top"
               />
               <div className="px-2 py-2">
-                <p className="text-[10px] text-white/35">{item.label}</p>
+                <p className="text-[10px] text-[#111111]/35">{item.label}</p>
                 <p className="truncate text-[12px] font-semibold">{item.value}</p>
               </div>
             </div>
@@ -324,9 +324,9 @@ export function MorphAiCarePage() {
                 initial={reduce ? false : { opacity: 0, x: -8 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.14 + i * 0.04, duration: 0.3, ease }}
-                className="flex items-center gap-3 rounded-2xl bg-white/[0.04] px-3.5 py-3"
+                className="flex items-center gap-3 rounded-2xl bg-white px-3.5 py-3"
               >
-                <span className="w-8 text-[13px] font-semibold text-white/40">{row.day}</span>
+                <span className="w-8 text-[13px] font-semibold text-[#111111]/40">{row.day}</span>
                 <span className="text-[14px] font-medium">{row.task}</span>
               </motion.div>
             ))}
@@ -355,12 +355,12 @@ export function MorphAiCarePage() {
                 <>
                   <div className="flex items-baseline justify-between gap-3">
                     <p className="text-[14px] font-semibold">{p.name}</p>
-                    <p className="shrink-0 text-[11px] text-white/35">{p.role}</p>
+                    <p className="shrink-0 text-[11px] text-[#111111]/35">{p.role}</p>
                   </div>
-                  {p.tip ? <p className="mt-1 text-[13px] text-white/50">{p.tip}</p> : null}
+                  {p.tip ? <p className="mt-1 text-[13px] text-[#111111]/50">{p.tip}</p> : null}
                 </>
               );
-              const cls = "rounded-2xl bg-white/[0.04] px-3.5 py-3.5";
+              const cls = "rounded-2xl bg-white px-3.5 py-3.5";
               return (
                 <motion.div
                   key={p.id}
@@ -393,9 +393,9 @@ export function MorphAiCarePage() {
                 initial={reduce ? false : { opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 + i * 0.04, duration: 0.3, ease }}
-                className="flex gap-3 rounded-2xl bg-white/[0.04] px-3.5 py-3 text-[14px] leading-snug text-white/80"
+                className="flex gap-3 rounded-2xl bg-white px-3.5 py-3 text-[14px] leading-snug text-[#111111]/80"
               >
-                <span className="shrink-0 text-white/30">{i + 1}</span>
+                <span className="shrink-0 text-[#111111]/30">{i + 1}</span>
                 {tip}
               </motion.li>
             ))}
@@ -410,7 +410,7 @@ export function MorphAiCarePage() {
                 initial={reduce ? false : { opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.38 + i * 0.03, duration: 0.25, ease }}
-                className="rounded-full bg-white/[0.06] px-3.5 py-2 text-[13px] text-white/60"
+                className="rounded-full bg-[#F0F0F0] px-3.5 py-2 text-[13px] text-[#111111]/60"
               >
                 {item}
               </motion.span>
@@ -424,7 +424,7 @@ export function MorphAiCarePage() {
           transition={{ delay: 0.42, duration: 0.35, ease }}
           className="mt-10"
         >
-          <p className="text-[14px] text-white/55">
+          <p className="text-[14px] text-[#111111]/55">
             {t("aiStylePage.care.nextCut", {
               defaultValue: "Keyingi trim · ~{{days}} kun",
               days: plan.nextCutDays,
@@ -432,7 +432,7 @@ export function MorphAiCarePage() {
           </p>
           <Link
             to="/ai-style/care/ingredient"
-            className="mt-4 flex h-12 w-full items-center justify-center rounded-full bg-white/[0.08] text-sm font-semibold text-white ring-1 ring-white/15 active:scale-[0.98]"
+            className="mt-4 flex h-12 w-full items-center justify-center rounded-full bg-white text-sm font-semibold text-[#111111] ring-1 ring-black/10 active:scale-[0.98]"
           >
             {t("aiStylePage.care.ingredientScan.cta", {
               defaultValue: "Tarkib skani",
@@ -440,13 +440,13 @@ export function MorphAiCarePage() {
           </Link>
           <Link
             to="/ai-style/care/products"
-            className="mt-3 flex h-12 w-full items-center justify-center rounded-full bg-white/[0.08] text-sm font-semibold text-white ring-1 ring-white/15 active:scale-[0.98]"
+            className="mt-3 flex h-12 w-full items-center justify-center rounded-full bg-white text-sm font-semibold text-[#111111] ring-1 ring-black/10 active:scale-[0.98]"
           >
             {t("aiStylePage.care.catalog.cta", { defaultValue: "Barcha vositalar" })}
           </Link>
           <Link
             to="/explore"
-            className="mt-3 flex h-12 w-full items-center justify-center rounded-full bg-white text-sm font-semibold text-black active:scale-[0.98]"
+            className="mt-3 flex h-12 w-full items-center justify-center rounded-full bg-[#111111] text-sm font-semibold text-white active:scale-[0.98]"
           >
             {t("aiStylePage.care.exploreCta", { defaultValue: "Uslub tanlash" })}
           </Link>
@@ -462,7 +462,7 @@ function BackLink({ label }: { label: string }) {
     <button
       type="button"
       onClick={() => navigateBack(router, "/ai-style")}
-      className="inline-flex size-11 items-center justify-center rounded-full bg-white/10 touch-manipulation cursor-pointer active:scale-95 transition-transform"
+      className="inline-flex size-11 items-center justify-center rounded-full bg-[#F0F0F0] touch-manipulation cursor-pointer active:scale-95 transition-transform"
       aria-label={label}
     >
       <ChevronLeft className="size-5" strokeWidth={2.25} />
@@ -487,7 +487,7 @@ function Section({
       transition={{ delay, duration: 0.35, ease }}
       className="mt-9"
     >
-      <h2 className="mb-3 text-[12px] font-medium tracking-wide text-white/35">{title}</h2>
+      <h2 className="mb-3 text-[12px] font-medium tracking-wide text-[#111111]/35">{title}</h2>
       {children}
     </motion.section>
   );

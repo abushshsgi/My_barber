@@ -33,7 +33,7 @@ export function MorphPlaceholderScreen({
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: "#050505",
+    backgroundColor: "#FAFAFA",
     paddingHorizontal: 28,
     alignItems: "center",
   },

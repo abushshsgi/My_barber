@@ -38,9 +38,9 @@ function statusLabel(status: string, t: (k: string, o?: object) => string) {
 
 function statusClass(status: string) {
   if (status === "open") return "bg-emerald-400/15 text-emerald-200";
-  if (status === "pending") return "bg-amber-400/15 text-amber-200";
+  if (status === "pending") return "bg-amber-400/15 text-amber-800";
   if (status === "resolved") return "bg-sky-400/15 text-sky-200";
-  return "bg-white/10 text-white/50";
+  return "bg-[#F0F0F0] text-[#111111]/50";
 }
 
 function formatWhen(iso: string) {
@@ -64,20 +64,20 @@ export function MorphAiSupportPage({ mode }: Props) {
 
   return (
     <div
-      className="min-h-[100dvh] bg-[#050505] text-white"
+      className="min-h-[100dvh] bg-[#FAFAFA] text-[#111111]"
       style={{ paddingTop: "max(1rem, env(safe-area-inset-top))" }}
     >
       <div className="mx-auto flex w-full max-w-lg flex-col px-5 pb-[max(2rem,env(safe-area-inset-bottom))]">
         <div className="flex items-center gap-2">
           <Link
             to="/ai-style"
-            className="grid size-10 cursor-pointer place-items-center rounded-full bg-white/[0.06] text-white ring-1 ring-white/10 transition-colors duration-200 hover:bg-white/10"
+            className="grid size-10 cursor-pointer place-items-center rounded-full bg-[#F0F0F0] text-[#111111] ring-1 ring-black/10 transition-colors duration-200 hover:bg-[#F0F0F0]"
             aria-label={t("common.back")}
           >
             <ArrowLeft className="size-4" />
           </Link>
           <div className="min-w-0 flex-1">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/40">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#111111]/40">
               Morf AI
             </p>
             <h1 className="truncate text-lg font-semibold tracking-tight">
@@ -89,7 +89,7 @@ export function MorphAiSupportPage({ mode }: Props) {
           {mode === "help" ? (
             <Link
               to="/ai-style/report"
-              className="grid size-10 cursor-pointer place-items-center rounded-full bg-white/[0.06] text-white ring-1 ring-white/10 transition-colors duration-200 hover:bg-white/10"
+              className="grid size-10 cursor-pointer place-items-center rounded-full bg-[#F0F0F0] text-[#111111] ring-1 ring-black/10 transition-colors duration-200 hover:bg-[#F0F0F0]"
               aria-label={t("aiStylePage.support.reportTitle")}
             >
               <Flag className="size-4" />
@@ -97,7 +97,7 @@ export function MorphAiSupportPage({ mode }: Props) {
           ) : (
             <Link
               to="/ai-style/help"
-              className="grid size-10 cursor-pointer place-items-center rounded-full bg-white/[0.06] text-white ring-1 ring-white/10 transition-colors duration-200 hover:bg-white/10"
+              className="grid size-10 cursor-pointer place-items-center rounded-full bg-[#F0F0F0] text-[#111111] ring-1 ring-black/10 transition-colors duration-200 hover:bg-[#F0F0F0]"
               aria-label={t("aiStylePage.support.helpTitle")}
             >
               <HelpCircle className="size-4" />
@@ -116,9 +116,9 @@ export function MorphAiSupportPage({ mode }: Props) {
                 <TicketList kind={kind} onOpen={setTicketId} />
               </>
             ) : (
-              <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-sm text-white/60">
+              <div className="rounded-2xl border border-black/10 bg-white p-4 text-sm text-[#111111]/60">
                 {t("aiStylePage.support.loginHint")}{" "}
-                <Link to="/auth" className="font-semibold text-white underline">
+                <Link to="/auth" className="font-semibold text-[#111111] underline">
                   {t("common.login", { defaultValue: "Kirish" })}
                 </Link>
               </div>
@@ -148,19 +148,19 @@ function HelpFaq() {
             key={item.q}
             type="button"
             onClick={() => setOpen(expanded ? null : i)}
-            className="w-full cursor-pointer rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3.5 text-left transition-colors duration-200 hover:bg-white/[0.07]"
+            className="w-full cursor-pointer rounded-2xl border border-black/10 bg-white px-4 py-3.5 text-left transition-colors duration-200 hover:bg-white/[0.07]"
           >
             <div className="flex items-start justify-between gap-3">
               <p className="text-sm font-semibold">{item.q}</p>
               <HelpCircle
                 className={cn(
-                  "size-4 shrink-0 text-white/40 transition-transform duration-200",
-                  expanded && "rotate-12 text-white/70",
+                  "size-4 shrink-0 text-[#111111]/40 transition-transform duration-200",
+                  expanded && "rotate-12 text-[#111111]/70",
                 )}
               />
             </div>
             {expanded ? (
-              <p className="mt-2 text-sm leading-relaxed text-white/55">{item.a}</p>
+              <p className="mt-2 text-sm leading-relaxed text-[#111111]/55">{item.a}</p>
             ) : null}
           </button>
         );
@@ -172,14 +172,14 @@ function HelpFaq() {
 function ReportLead() {
   const { t } = useTranslation();
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-      <div className="flex items-center gap-2 text-white/70">
+    <div className="rounded-2xl border border-black/10 bg-white p-4">
+      <div className="flex items-center gap-2 text-[#111111]/70">
         <Flag className="size-4" />
         <p className="text-[11px] font-semibold uppercase tracking-[0.16em]">
           {t("aiStylePage.support.reportEyebrow")}
         </p>
       </div>
-      <p className="mt-2 text-sm leading-relaxed text-white/55">
+      <p className="mt-2 text-sm leading-relaxed text-[#111111]/55">
         {t("aiStylePage.support.reportLead")}
       </p>
     </div>
@@ -221,8 +221,8 @@ function ComposeCard({
   };
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04]">
-      <div className="flex items-center gap-2 px-4 pt-4 text-white/70">
+    <div className="overflow-hidden rounded-2xl border border-black/10 bg-white">
+      <div className="flex items-center gap-2 px-4 pt-4 text-[#111111]/70">
         <LifeBuoy className="size-4" />
         <p className="text-[11px] font-semibold uppercase tracking-[0.16em]">
           {mode === "help" ? t("aiStylePage.support.askTitle") : t("aiStylePage.support.formTitle")}
@@ -242,7 +242,7 @@ function ComposeCard({
                 }}
                 className={cn(
                   "cursor-pointer rounded-full px-3 py-1.5 text-xs font-semibold transition-colors duration-200",
-                  active ? "bg-white text-black" : "bg-white/10 text-white/70 hover:bg-white/15",
+                  active ? "bg-white text-black" : "bg-[#F0F0F0] text-[#111111]/70 hover:bg-white/15",
                 )}
               >
                 {t(`aiStylePage.support.topic.${item.id}`)}
@@ -256,7 +256,7 @@ function ComposeCard({
           value={subject}
           onChange={(e) => setSubject(e.target.value)}
           placeholder={t("aiStylePage.support.subjectPh")}
-          className="w-full rounded-xl border border-white/10 bg-white/[0.06] px-3 py-2.5 text-sm text-white outline-none placeholder:text-white/35 focus:border-white/25"
+          className="w-full rounded-xl border border-black/10 bg-[#F0F0F0] px-3 py-2.5 text-sm text-[#111111] outline-none placeholder:text-[#111111]/35 focus:border-white/25"
         />
         <textarea
           value={body}
@@ -267,13 +267,13 @@ function ComposeCard({
               ? t("aiStylePage.support.helpBodyPh")
               : t("aiStylePage.support.reportBodyPh")
           }
-          className="w-full resize-none rounded-xl border border-white/10 bg-white/[0.06] px-3 py-2.5 text-sm text-white outline-none placeholder:text-white/35 focus:border-white/25"
+          className="w-full resize-none rounded-xl border border-black/10 bg-[#F0F0F0] px-3 py-2.5 text-sm text-[#111111] outline-none placeholder:text-[#111111]/35 focus:border-white/25"
         />
         <button
           type="button"
           disabled={body.trim().length < 5 || create.isPending}
           onClick={submit}
-          className="inline-flex h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-white text-sm font-semibold text-black transition-opacity duration-200 disabled:opacity-40"
+          className="inline-flex h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-[#111111] text-sm font-semibold text-white transition-opacity duration-200 disabled:opacity-40"
         >
           <Send className="size-4" />
           {create.isPending
@@ -299,17 +299,17 @@ function TicketList({
   const rows = q.data ?? [];
   return (
     <div>
-      <p className="mb-2 px-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/40">
+      <p className="mb-2 px-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#111111]/40">
         {t("aiStylePage.support.myTickets")}
       </p>
       {q.isLoading ? (
         <div className="space-y-2">
           {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="h-16 animate-pulse rounded-2xl bg-white/[0.06]" />
+            <div key={i} className="h-16 animate-pulse rounded-2xl bg-[#F0F0F0]" />
           ))}
         </div>
       ) : rows.length === 0 ? (
-        <p className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-4 text-sm text-white/50">
+        <p className="rounded-2xl border border-black/10 bg-white px-4 py-4 text-sm text-[#111111]/50">
           {t("aiStylePage.support.empty")}
         </p>
       ) : (
@@ -319,7 +319,7 @@ function TicketList({
               <button
                 type="button"
                 onClick={() => onOpen(ticket.id)}
-                className="flex w-full cursor-pointer items-start justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-left transition-colors duration-200 hover:bg-white/[0.07]"
+                className="flex w-full cursor-pointer items-start justify-between gap-3 rounded-2xl border border-black/10 bg-white px-4 py-3 text-left transition-colors duration-200 hover:bg-white/[0.07]"
               >
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
@@ -333,10 +333,10 @@ function TicketList({
                       {statusLabel(ticket.status, t)}
                     </span>
                   </div>
-                  <p className="mt-1 line-clamp-2 text-xs text-white/50">
+                  <p className="mt-1 line-clamp-2 text-xs text-[#111111]/50">
                     {ticket.last_message || ticket.body}
                   </p>
-                  <p className="mt-1 text-[11px] text-white/35">
+                  <p className="mt-1 text-[11px] text-[#111111]/35">
                     #{ticket.id} · {formatWhen(ticket.updated_at)}
                   </p>
                 </div>
@@ -378,16 +378,16 @@ function TicketThread({ ticketId, onBack }: { ticketId: number; onBack: () => vo
       <button
         type="button"
         onClick={onBack}
-        className="mb-3 inline-flex cursor-pointer items-center gap-1.5 text-sm font-semibold text-white/50 transition-colors duration-200 hover:text-white"
+        className="mb-3 inline-flex cursor-pointer items-center gap-1.5 text-sm font-semibold text-[#111111]/50 transition-colors duration-200 hover:text-[#111111]"
       >
         <ArrowLeft className="size-4" />
         {t("aiStylePage.support.myTickets")}
       </button>
-      <div className="mb-3 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+      <div className="mb-3 rounded-2xl border border-black/10 bg-white p-4">
         <div className="flex items-start justify-between gap-2">
           <div>
             <p className="font-semibold">{ticket?.subject ?? "…"}</p>
-            <p className="mt-1 text-xs text-white/40">Ticket #{ticketId}</p>
+            <p className="mt-1 text-xs text-[#111111]/40">Ticket #{ticketId}</p>
           </div>
           {ticket ? (
             <span
@@ -404,7 +404,7 @@ function TicketThread({ ticketId, onBack }: { ticketId: number; onBack: () => vo
       <div className="flex-1 space-y-3 overflow-y-auto pb-4">
         {detailQ.isLoading
           ? Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="h-16 animate-pulse rounded-2xl bg-white/[0.06]" />
+              <div key={i} className="h-16 animate-pulse rounded-2xl bg-[#F0F0F0]" />
             ))
           : replies.map((r) => {
               const mine = r.author_role === "user";
@@ -418,13 +418,13 @@ function TicketThread({ ticketId, onBack }: { ticketId: number; onBack: () => vo
                       "max-w-[85%] rounded-2xl px-3.5 py-2.5 text-sm",
                       mine
                         ? "rounded-br-md bg-white text-black"
-                        : "rounded-bl-md border border-white/10 bg-white/[0.06]",
+                        : "rounded-bl-md border border-black/10 bg-[#F0F0F0]",
                     )}
                   >
                     <p
                       className={cn(
                         "mb-1 text-[10px] font-bold uppercase tracking-wide",
-                        mine ? "opacity-50" : "text-white/40",
+                        mine ? "opacity-50" : "text-[#111111]/40",
                       )}
                     >
                       {mine ? t("aiStylePage.support.you") : r.author_name || "Support"} ·{" "}
@@ -438,13 +438,13 @@ function TicketThread({ ticketId, onBack }: { ticketId: number; onBack: () => vo
         <div ref={bottomRef} />
       </div>
       {ticket?.can_reply !== false && ticket?.status !== "closed" ? (
-        <div className="flex items-end gap-2 border-t border-white/10 pt-3">
+        <div className="flex items-end gap-2 border-t border-black/10 pt-3">
           <textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
             rows={2}
             placeholder={t("aiStylePage.support.replyPh")}
-            className="min-h-[44px] flex-1 resize-none rounded-2xl border border-white/10 bg-white/[0.06] px-3 py-2.5 text-sm outline-none placeholder:text-white/35 focus:border-white/25"
+            className="min-h-[44px] flex-1 resize-none rounded-2xl border border-black/10 bg-[#F0F0F0] px-3 py-2.5 text-sm outline-none placeholder:text-[#111111]/35 focus:border-white/25"
           />
           <button
             type="button"
@@ -457,7 +457,7 @@ function TicketThread({ ticketId, onBack }: { ticketId: number; onBack: () => vo
           </button>
         </div>
       ) : (
-        <p className="rounded-xl bg-white/[0.06] px-3 py-2 text-center text-xs text-white/45">
+        <p className="rounded-xl bg-[#F0F0F0] px-3 py-2 text-center text-xs text-[#111111]/45">
           {t("aiStylePage.support.closedHint")}
         </p>
       )}

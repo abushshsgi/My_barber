@@ -461,7 +461,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     height: 54,
     borderRadius: 27,
-    backgroundColor: "#0A0A0A",
+    backgroundColor: "#111111",
     alignItems: "center",
     justifyContent: "center",
   },

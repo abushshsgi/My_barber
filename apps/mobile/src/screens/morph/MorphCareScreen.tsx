@@ -1498,7 +1498,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: "#050505" },
+  root: { flex: 1, backgroundColor: "#FAFAFA" },
   routineRoot: { flex: 1, backgroundColor: "#FAFAFA" },
   onboardRoot: { flex: 1, backgroundColor: "#FAFAFA" },
   center: { alignItems: "center", justifyContent: "center" },

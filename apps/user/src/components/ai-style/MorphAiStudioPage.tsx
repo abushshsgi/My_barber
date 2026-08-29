@@ -131,7 +131,7 @@ type SourceItem = {
 };
 
 const toolBtn =
-  "inline-flex h-9 items-center justify-center gap-1.5 rounded-full border border-white/12 bg-white/[0.07] px-3 text-[11px] font-semibold tracking-tight text-white/90 transition active:scale-95 disabled:opacity-35 touch-manipulation cursor-pointer";
+  "inline-flex h-9 items-center justify-center gap-1.5 rounded-full border border-black/10 bg-white/[0.07] px-3 text-[11px] font-semibold tracking-tight text-[#111111]/90 transition active:scale-95 disabled:opacity-35 touch-manipulation cursor-pointer";
 
 export function MorphAiStudioPage() {
   const { t, i18n } = useTranslation();
@@ -457,7 +457,7 @@ export function MorphAiStudioPage() {
   const busy = Boolean(loadingId);
 
   return (
-    <div className="relative flex min-h-[100dvh] flex-col overflow-x-hidden overflow-y-auto bg-[#070707] text-white">
+    <div className="relative flex min-h-[100dvh] flex-col overflow-x-hidden overflow-y-auto bg-[#070707] text-[#111111]">
       <style>{`
         @keyframes morf-studio-scan {
           0% { transform: translateY(-100%); opacity: 0; }
@@ -505,13 +505,13 @@ export function MorphAiStudioPage() {
               <button
                 type="button"
                 onClick={() => navigateBack(router, "/ai-style")}
-                className="grid size-10 place-items-center rounded-full border border-white/12 bg-white/[0.06] text-white touch-manipulation cursor-pointer active:scale-95"
+                className="grid size-10 place-items-center rounded-full border border-black/10 bg-[#F0F0F0] text-[#111111] touch-manipulation cursor-pointer active:scale-95"
                 aria-label={t("common.back")}
               >
                 <ChevronLeft className="h-5 w-5" strokeWidth={2.25} />
               </button>
               <div className="min-w-0 text-center">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-white/40">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-[#111111]/40">
                   Morf AI
                 </p>
                 <h1 className="truncate text-[15px] font-semibold tracking-tight">
@@ -526,10 +526,10 @@ export function MorphAiStudioPage() {
                 <h2 className="text-[1.7rem] font-semibold leading-[1.12] tracking-tight">
                   {t("aiStylePage.studio.pickTitle")}
                 </h2>
-                <p className="mt-1.5 text-sm leading-relaxed text-white/45">
+                <p className="mt-1.5 text-sm leading-relaxed text-[#111111]/45">
                   {t("aiStylePage.studio.pickLabel")}
                 </p>
-                <p className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[10px] font-semibold tracking-wide text-white/50">
+                <p className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-black/10 bg-white px-2.5 py-1 text-[10px] font-semibold tracking-wide text-[#111111]/50">
                   <Users className="h-3 w-3" />
                   {t("aiStylePage.studio.socialProof")}
                 </p>
@@ -537,8 +537,8 @@ export function MorphAiStudioPage() {
 
               <div className="mb-4">
                 <div className="mb-2.5 flex items-center gap-2">
-                  <Newspaper className="h-3.5 w-3.5 text-white/40" />
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/35">
+                  <Newspaper className="h-3.5 w-3.5 text-[#111111]/40" />
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#111111]/35">
                     {t("aiStylePage.studio.newsTitle")}
                   </p>
                 </div>
@@ -561,17 +561,17 @@ export function MorphAiStudioPage() {
                           "flex w-[9.75rem] shrink-0 flex-col gap-2 rounded-[20px] border px-3.5 py-3 text-left touch-manipulation cursor-pointer active:scale-[0.98] transition duration-200",
                           pulsed
                             ? "border-white/35 bg-white/[0.12]"
-                            : "border-white/10 bg-white/[0.05] hover:bg-white/[0.08]",
+                            : "border-black/10 bg-white/[0.05] hover:bg-white",
                         )}
                       >
-                        <span className="grid size-8 place-items-center rounded-full bg-white/10">
-                          <Icon className="h-3.5 w-3.5 text-white/85" />
+                        <span className="grid size-8 place-items-center rounded-full bg-[#F0F0F0]">
+                          <Icon className="h-3.5 w-3.5 text-[#111111]/85" />
                         </span>
                         <span>
-                          <span className="block text-[12px] font-semibold tracking-tight text-white/95">
+                          <span className="block text-[12px] font-semibold tracking-tight text-[#111111]/95">
                             {t(`aiStylePage.studio.news.${item.id}.title`)}
                           </span>
-                          <span className="mt-0.5 block text-[10px] leading-snug text-white/45">
+                          <span className="mt-0.5 block text-[10px] leading-snug text-[#111111]/45">
                             {t(`aiStylePage.studio.news.${item.id}.body`)}
                           </span>
                         </span>
@@ -597,12 +597,12 @@ export function MorphAiStudioPage() {
                 <button
                   type="button"
                   onClick={() => fileRef.current?.click()}
-                  className="group relative flex min-h-[92px] flex-col items-start justify-between overflow-hidden rounded-[22px] border border-white/12 bg-white/[0.06] px-4 py-3.5 text-left backdrop-blur-md touch-manipulation cursor-pointer active:scale-[0.98]"
+                  className="group relative flex min-h-[92px] flex-col items-start justify-between overflow-hidden rounded-[22px] border border-black/10 bg-[#F0F0F0] px-4 py-3.5 text-left backdrop-blur-md touch-manipulation cursor-pointer active:scale-[0.98]"
                 >
-                  <span className="grid size-9 place-items-center rounded-full bg-white/10">
+                  <span className="grid size-9 place-items-center rounded-full bg-[#F0F0F0]">
                     <ImagePlus className="h-4 w-4" />
                   </span>
-                  <span className="text-sm font-semibold tracking-tight text-white/90">
+                  <span className="text-sm font-semibold tracking-tight text-[#111111]/90">
                     {t("aiStylePage.pickFromGallery")}
                   </span>
                 </button>
@@ -611,10 +611,10 @@ export function MorphAiStudioPage() {
               {sources.length > 0 ? (
                 <div className="min-h-0 flex-1 overflow-y-auto">
                   <div className="mb-3 flex items-center justify-between">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/35">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#111111]/35">
                       {t("aiStylePage.studio.fromHistory")}
                     </p>
-                    <span className="text-[11px] text-white/30">{sources.length}</span>
+                    <span className="text-[11px] text-[#111111]/30">{sources.length}</span>
                   </div>
                   <div className="grid grid-cols-3 gap-2 pb-4 sm:grid-cols-4">
                     {sources.map((item, index) => (
@@ -635,7 +635,7 @@ export function MorphAiStudioPage() {
                             beforeImage: item.beforeImage || item.image,
                           })
                         }
-                        className="group relative aspect-[3/4] overflow-hidden rounded-[18px] bg-white/[0.04] ring-1 ring-white/10 touch-manipulation cursor-pointer active:scale-[0.97]"
+                        className="group relative aspect-[3/4] overflow-hidden rounded-[18px] bg-white ring-1 ring-black/10 touch-manipulation cursor-pointer active:scale-[0.97]"
                       >
                         <img
                           src={item.image}
@@ -643,7 +643,7 @@ export function MorphAiStudioPage() {
                           className="h-full w-full object-cover object-center transition duration-500 group-hover:scale-[1.03]"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
-                        <p className="absolute inset-x-0 bottom-0 truncate px-2 pb-2 text-[10px] font-medium text-white/85">
+                        <p className="absolute inset-x-0 bottom-0 truncate px-2 pb-2 text-[10px] font-medium text-[#111111]/85">
                           {item.title}
                         </p>
                       </motion.button>
@@ -651,14 +651,14 @@ export function MorphAiStudioPage() {
                   </div>
                 </div>
               ) : (
-                <div className="flex flex-1 flex-col items-center justify-center rounded-[28px] border border-dashed border-white/12 bg-white/[0.02] px-8 text-center">
-                  <div className="mb-4 grid size-14 place-items-center rounded-full bg-white/[0.06] ring-1 ring-white/10">
-                    <Images className="h-6 w-6 text-white/40" />
+                <div className="flex flex-1 flex-col items-center justify-center rounded-[28px] border border-dashed border-black/10 bg-white/[0.02] px-8 text-center">
+                  <div className="mb-4 grid size-14 place-items-center rounded-full bg-[#F0F0F0] ring-1 ring-black/10">
+                    <Images className="h-6 w-6 text-[#111111]/40" />
                   </div>
-                  <p className="text-sm font-semibold text-white/80">
+                  <p className="text-sm font-semibold text-[#111111]/80">
                     {t("aiStylePage.studio.emptyHistory")}
                   </p>
-                  <p className="mt-1.5 max-w-[220px] text-xs leading-relaxed text-white/40">
+                  <p className="mt-1.5 max-w-[220px] text-xs leading-relaxed text-[#111111]/40">
                     {t("aiStylePage.studio.emptyHint")}
                   </p>
                 </div>
@@ -668,7 +668,7 @@ export function MorphAiStudioPage() {
                 <button
                   type="button"
                   onClick={() => setPickerOpen(false)}
-                  className="mt-3 w-full rounded-2xl border border-white/12 bg-white/[0.06] py-3.5 text-sm font-semibold backdrop-blur-md cursor-pointer"
+                  className="mt-3 w-full rounded-2xl border border-black/10 bg-[#F0F0F0] py-3.5 text-sm font-semibold backdrop-blur-md cursor-pointer"
                 >
                   {t("aiStylePage.studio.keepEditing")}
                 </button>
@@ -716,8 +716,8 @@ export function MorphAiStudioPage() {
                     <div className="absolute inset-x-0 top-0 h-1/2 morf-studio-scan bg-gradient-to-b from-transparent via-white/12 to-transparent" />
                   ) : null}
                   <div className="relative inline-flex items-center gap-2 rounded-full border border-white/20 bg-black/30 px-3.5 py-2 backdrop-blur-md">
-                    <Loader2 className="h-3.5 w-3.5 animate-spin text-white/90" />
-                    <span className="text-[11px] font-semibold tracking-tight text-white/90">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin text-[#111111]/90" />
+                    <span className="text-[11px] font-semibold tracking-tight text-[#111111]/90">
                       {t("aiStylePage.studio.generating")}
                     </span>
                   </div>
@@ -729,7 +729,7 @@ export function MorphAiStudioPage() {
               className="pointer-events-none relative z-10 flex justify-center"
               style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}
             >
-              <span className="rounded-full border border-white/10 bg-black/35 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/70 backdrop-blur-md">
+              <span className="rounded-full border border-black/10 bg-black/35 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#111111]/70 backdrop-blur-md">
                 Morf · Studio
               </span>
             </div>
@@ -742,7 +742,7 @@ export function MorphAiStudioPage() {
                   exit={reduceMotion ? undefined : { opacity: 0 }}
                   className="pointer-events-none relative z-10 mt-3 flex justify-center"
                 >
-                  <span className="rounded-full border border-white/15 bg-black/45 px-3 py-1 text-[11px] font-semibold text-white backdrop-blur-md">
+                  <span className="rounded-full border border-black/10 bg-black/45 px-3 py-1 text-[11px] font-semibold text-[#111111] backdrop-blur-md">
                     {t("aiStylePage.studio.comparing")}
                   </span>
                 </motion.div>
@@ -759,7 +759,7 @@ export function MorphAiStudioPage() {
                 </motion.div>
               ) : activePresetLabel && hasEdits ? (
                 <div className="pointer-events-none relative z-10 mt-3 flex justify-center">
-                  <span className="morf-studio-chip-in rounded-full border border-white/15 bg-black/45 px-3 py-1 text-[11px] font-semibold text-white backdrop-blur-md">
+                  <span className="morf-studio-chip-in rounded-full border border-black/10 bg-black/45 px-3 py-1 text-[11px] font-semibold text-[#111111] backdrop-blur-md">
                     {t("aiStylePage.studio.appliedChip", {
                       name: activePresetLabel,
                       defaultValue: "{{name}} · qo‘llandi",
@@ -776,7 +776,7 @@ export function MorphAiStudioPage() {
               className="relative z-30 px-3 pt-2"
               style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
             >
-              <div className="overflow-hidden rounded-[26px] border border-white/12 bg-[#101010]/0.92 shadow-2xl shadow-black/50 backdrop-blur-xl">
+              <div className="overflow-hidden rounded-[26px] border border-black/10 bg-[#101010]/0.92 shadow-2xl shadow-black/50 backdrop-blur-xl">
                 <div className="space-y-2.5 px-3 pb-3 pt-3">
                   {/* Tools row: back, compare, undo, reset, change, surprise */}
                   <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
@@ -859,7 +859,7 @@ export function MorphAiStudioPage() {
                           onClick={() => setActiveCategory(cat.id)}
                           className={cn(
                             "relative flex min-h-9 flex-1 items-center justify-center gap-1 rounded-[12px] px-1.5 text-[11px] font-semibold tracking-tight transition-colors duration-200 touch-manipulation cursor-pointer sm:text-[12px]",
-                            active ? "text-black" : "text-white/55 hover:text-white/80",
+                            active ? "text-black" : "text-[#111111]/55 hover:text-[#111111]/80",
                           )}
                         >
                           {active ? (
@@ -907,7 +907,7 @@ export function MorphAiStudioPage() {
                             onClick={() => void applyPreset(opt.id)}
                             className={cn(
                               "flex w-[4.35rem] shrink-0 flex-col items-center gap-1.5 rounded-2xl px-1 py-1 transition duration-200 touch-manipulation cursor-pointer active:scale-[0.96] disabled:opacity-50",
-                              selected && "bg-white/[0.08]",
+                              selected && "bg-white",
                             )}
                           >
                             <span
@@ -924,17 +924,17 @@ export function MorphAiStudioPage() {
                               }}
                             >
                               {optBusy ? (
-                                <Loader2 className="h-4 w-4 animate-spin text-white drop-shadow" />
+                                <Loader2 className="h-4 w-4 animate-spin text-[#111111] drop-shadow" />
                               ) : selected ? (
-                                <Check className="h-4 w-4 text-white drop-shadow" strokeWidth={2.5} />
+                                <Check className="h-4 w-4 text-[#111111] drop-shadow" strokeWidth={2.5} />
                               ) : !swatch ? (
-                                <PresetIcon className="h-4 w-4 text-white/90 drop-shadow" />
+                                <PresetIcon className="h-4 w-4 text-[#111111]/90 drop-shadow" />
                               ) : null}
                             </span>
                             <span
                               className={cn(
                                 "w-full truncate text-center text-[10px] font-semibold leading-tight",
-                                selected ? "text-white" : "text-white/65",
+                                selected ? "text-white" : "text-[#111111]/65",
                               )}
                             >
                               {labelFor(opt, i18n.language)}
@@ -955,7 +955,7 @@ export function MorphAiStudioPage() {
                       type="button"
                       onClick={() => void handleDownload()}
                       disabled={!current || downloading || busy}
-                      className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-2xl border border-white/12 bg-white/[0.07] text-[13px] font-semibold tracking-tight disabled:opacity-40 cursor-pointer touch-manipulation"
+                      className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-2xl border border-black/10 bg-white/[0.07] text-[13px] font-semibold tracking-tight disabled:opacity-40 cursor-pointer touch-manipulation"
                     >
                       {downloading ? (
                         <Loader2 className="h-4 w-4 animate-spin" />

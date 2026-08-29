@@ -711,7 +711,7 @@ export function MorphResultsScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: "#0A0A0A" },
+  root: { flex: 1, backgroundColor: "#111111" },
   rootLight: { flex: 1, backgroundColor: "#F5F5F5", width: "100%" },
   scroll: { flex: 1, width: "100%" },
   bgPhoto: {
@@ -1004,7 +1004,7 @@ const styles = StyleSheet.create({
   },
   dotOn: {
     width: 18,
-    backgroundColor: "#0A0A0A",
+    backgroundColor: "#111111",
   },
   morePanel: {
     width: "100%",
@@ -1049,7 +1049,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 6,
-    backgroundColor: "#0A0A0A",
+    backgroundColor: "#111111",
     borderRadius: 12,
     paddingVertical: 8,
   },

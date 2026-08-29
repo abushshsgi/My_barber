@@ -102,17 +102,11 @@ export function ChatInputBar({
       style={[
         styles.wrap,
         {
-          backgroundColor: pal.theme === "dark" ? "rgba(24, 24, 27, 0.75)" : "rgba(255, 255, 255, 0.95)",
-          borderColor: focused
-            ? pal.theme === "dark"
-              ? "rgba(167, 139, 250, 0.55)"
-              : "rgba(124, 58, 237, 0.45)"
-            : pal.theme === "dark"
-              ? "rgba(255, 255, 255, 0.14)"
-              : "rgba(0, 0, 0, 0.08)",
-          shadowColor: focused ? "#111111" : "#000",
-          shadowOpacity: focused ? 0.25 : 0.06,
-          shadowRadius: focused ? 12 : 6,
+          backgroundColor: "#FFFFFF",
+          borderColor: focused ? "#111111" : "rgba(17,17,17,0.12)",
+          shadowColor: "#111111",
+          shadowOpacity: focused ? 0.12 : 0.04,
+          shadowRadius: focused ? 10 : 4,
           shadowOffset: { width: 0, height: 2 },
         },
       ]}

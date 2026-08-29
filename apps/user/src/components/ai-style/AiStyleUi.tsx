@@ -44,7 +44,7 @@ export function GalleryValidatingHero({ previewUrl }: { previewUrl: string }) {
           className="overflow-hidden rounded-[22px] border border-white/12 bg-white/[0.08] shadow-[0_20px_60px_-12px_rgba(0,0,0,0.65)] backdrop-blur-2xl"
         >
           <div className="flex items-center gap-4 px-5 py-4">
-            <div className="relative grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-white/12">
+            <div className="relative grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-[#F0F0F0]">
               <ScanFace className="h-6 w-6 text-white" strokeWidth={1.75} />
               <motion.span
                 className="absolute inset-0 rounded-2xl border border-white/35"
@@ -62,10 +62,10 @@ export function GalleryValidatingHero({ previewUrl }: { previewUrl: string }) {
             </div>
           </div>
 
-          <div className="h-px bg-white/10" />
+          <div className="h-px bg-[#F0F0F0]" />
 
           <div className="px-5 py-3.5">
-            <div className="h-1 overflow-hidden rounded-full bg-white/12">
+            <div className="h-1 overflow-hidden rounded-full bg-[#F0F0F0]">
               <motion.div
                 className="h-full w-[38%] rounded-full bg-white"
                 animate={{ x: ["-120%", "320%"] }}

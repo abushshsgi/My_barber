@@ -436,7 +436,7 @@ function makeStyles(pal: MorphPalette, fs: (n: number) => number) {
       padding: 14,
       marginBottom: 12,
       borderWidth: 1,
-      borderColor: pal.theme === "dark" ? "rgba(167, 139, 250, 0.3)" : "rgba(124, 58, 237, 0.16)",
+      borderColor: pal.theme === "dark" ? "rgba(17, 17, 17, 0.12)" : "rgba(17, 17, 17, 0.12)",
       shadowColor: "#8B5CF6",
       shadowOffset: { width: 0, height: 4 },
       shadowOpacity: pal.theme === "dark" ? 0.16 : 0.06,

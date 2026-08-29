@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { useMorphAppearance } from "../../../lib/MorphAppearanceContext";
+import { Pressable, ScrollView, StyleSheet, Text } from "react-native";
 import { morphFont } from "../../../theme/morph-font";
+import { SOFT_PAPER } from "../../../theme/morph-appearance";
 
 export type QuickPrompt = {
   id: string;
@@ -24,9 +24,6 @@ const CHIP_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
 };
 
 export function QuickPromptChips({ prompts, onSelect, disabled }: Props) {
-  const { colors: pal, theme } = useMorphAppearance();
-  const isDark = theme === "dark";
-
   return (
     <ScrollView
       horizontal
@@ -41,24 +38,17 @@ export function QuickPromptChips({ prompts, onSelect, disabled }: Props) {
           disabled={disabled}
           style={({ pressed }) => [
             styles.chip,
-            isDark ? styles.chipDark : styles.chipLight,
             disabled && styles.chipDisabled,
-            pressed && (isDark ? styles.chipPressedDark : styles.chipPressedLight),
+            pressed && styles.chipPressed,
           ]}
           accessibilityRole="button"
         >
           <Ionicons
             name={CHIP_ICONS[item.id] ?? "sparkles-outline"}
             size={13}
-            color={isDark ? "#737373" : "#111111"}
+            color={SOFT_PAPER.fg}
           />
-          <Text
-            style={[
-              styles.chipText,
-              { color: isDark ? "#E4E4E7" : "#3F3F46" },
-            ]}
-            numberOfLines={1}
-          >
+          <Text style={styles.chipText} numberOfLines={1}>
             {item.label}
           </Text>
         </Pressable>
@@ -83,44 +73,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 16,
-  },
-  chipLight: {
-    backgroundColor: "rgba(255, 255, 255, 0.9)",
+    backgroundColor: SOFT_PAPER.card,
     borderWidth: 1,
-    borderColor: "rgba(124, 58, 237, 0.16)",
-    shadowColor: "#111111",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
-    elevation: 2,
-  },
-  chipDark: {
-    backgroundColor: "rgba(255, 255, 255, 0.08)",
-    borderWidth: 1,
-    borderColor: "rgba(167, 139, 250, 0.25)",
-    shadowColor: "#111111",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 2,
+    borderColor: SOFT_PAPER.line,
   },
   chipDisabled: {
     opacity: 0.45,
   },
-  chipPressedLight: {
+  chipPressed: {
     opacity: 0.85,
-    backgroundColor: "rgba(237, 233, 254, 0.95)",
-    borderColor: "rgba(124, 58, 237, 0.4)",
-  },
-  chipPressedDark: {
-    opacity: 0.85,
-    backgroundColor: "rgba(139, 92, 246, 0.22)",
-    borderColor: "rgba(167, 139, 250, 0.5)",
+    backgroundColor: SOFT_PAPER.soft,
   },
   chipText: {
     ...morphFont,
     fontSize: 12.5,
     lineHeight: 16,
     fontWeight: "500",
+    color: SOFT_PAPER.fg,
   },
 });

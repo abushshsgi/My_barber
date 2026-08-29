@@ -65,7 +65,7 @@ function StepRail({ step }: { step: Step }) {
                 className={cn(
                   "grid h-8 w-8 place-items-center rounded-full text-[11px] font-bold transition-all",
                   reached
-                    ? "bg-foreground text-white shadow-sm"
+                    ? "bg-foreground text-[#111111] shadow-sm"
                     : "border border-border bg-neutral-50 text-muted-foreground",
                   current && "ring-4 ring-foreground/10",
                 )}
@@ -158,7 +158,7 @@ function GeneratingOverlay({
         className="absolute inset-x-5 z-10"
         style={{ bottom: "max(1.5rem, env(safe-area-inset-bottom))" }}
       >
-        <div className="overflow-hidden rounded-[22px] border border-white/12 bg-white/[0.08] backdrop-blur-2xl">
+        <div className="overflow-hidden rounded-[22px] border border-black/10 bg-white backdrop-blur-2xl">
           <div className="flex items-center gap-4 px-5 py-4">
             <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl ring-2 ring-white/30">
               <img
@@ -168,13 +168,13 @@ function GeneratingOverlay({
               />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-bold text-white">{message}</p>
-              <p className="mt-1 text-xs text-white/65">{t("styleTryOnPage.generatingHint")}</p>
+              <p className="text-sm font-bold text-[#111111]">{message}</p>
+              <p className="mt-1 text-xs text-[#111111]/65">{t("styleTryOnPage.generatingHint")}</p>
             </div>
-            <Loader2 className="h-5 w-5 shrink-0 animate-spin text-white" />
+            <Loader2 className="h-5 w-5 shrink-0 animate-spin text-[#111111]" />
           </div>
           <div className="px-5 pb-4">
-            <div className="h-1 overflow-hidden rounded-full bg-white/12">
+            <div className="h-1 overflow-hidden rounded-full bg-[#F0F0F0]">
               <motion.div
                 className="h-full rounded-full bg-white"
                 animate={{
@@ -255,10 +255,10 @@ function ResultView({
         style={{ paddingBottom: "max(1.5rem, env(safe-area-inset-bottom))" }}
       >
         <div className="text-center">
-          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/60">
+          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#111111]/60">
             {t("styleTryOnPage.resultTitle")}
           </p>
-          <h2 className="mt-1 text-xl font-bold text-white">{entry.titleUz}</h2>
+          <h2 className="mt-1 text-xl font-bold text-[#111111]">{entry.titleUz}</h2>
         </div>
         <button
           type="button"
@@ -271,7 +271,7 @@ function ResultView({
         <button
           type="button"
           onClick={openBarberConsult}
-          className="flex w-full items-center justify-center gap-2 rounded-2xl border border-white/30 bg-white/10 py-3.5 text-sm font-bold text-white backdrop-blur-md touch-manipulation active:scale-[0.98]"
+          className="flex w-full items-center justify-center gap-2 rounded-2xl border border-white/30 bg-[#F0F0F0] py-3.5 text-sm font-bold text-[#111111] backdrop-blur-md touch-manipulation active:scale-[0.98]"
         >
           <Sparkles className="h-4 w-4" />
           {t("barberConsult.openCta", { defaultValue: "AI Barber Consult" })}
@@ -280,14 +280,14 @@ function ResultView({
           <button
             type="button"
             onClick={onReset}
-            className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/30 bg-black/30 py-3.5 text-xs font-bold text-white backdrop-blur-md"
+            className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/30 bg-black/30 py-3.5 text-xs font-bold text-[#111111] backdrop-blur-md"
           >
             <RotateCcw className="h-4 w-4" />
             {t("styleTryOnPage.retry")}
           </button>
           <Link
             to="/map"
-            className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/20 bg-white/10 py-3.5 text-xs font-bold text-white backdrop-blur-md"
+            className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/20 bg-[#F0F0F0] py-3.5 text-xs font-bold text-[#111111] backdrop-blur-md"
           >
             <CalendarPlus className="h-4 w-4" />
             {t("styleTryOnPage.findSalon")}

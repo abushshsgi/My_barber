@@ -149,7 +149,7 @@ export function MorphAiIntroOverlay({ open, onComplete }: Props) {
               <button
                 type="button"
                 onClick={finish}
-                className="min-h-11 rounded-full border border-white/20 bg-white/10 px-5 text-[13px] font-bold text-white/90 backdrop-blur-md active:scale-[0.98]"
+                className="min-h-11 rounded-full border border-white/20 bg-[#F0F0F0] px-5 text-[13px] font-bold text-white/90 backdrop-blur-md active:scale-[0.98]"
               >
                 {t("aiStylePage.introVideo.skip")}
               </button>

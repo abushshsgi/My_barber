@@ -19,5 +19,5 @@ export function MorphWelcomeScreen({ navigation }: Props) {
     };
   }, [navigation]);
 
-  return <View style={{ flex: 1, backgroundColor: "#0B0B0C" }} />;
+  return <View style={{ flex: 1, backgroundColor: "#FAFAFA" }} />;
 }

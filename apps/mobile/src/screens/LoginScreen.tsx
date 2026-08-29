@@ -393,7 +393,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
   },
   rootMorph: {
-    backgroundColor: "#070708",
+    backgroundColor: "#FAFAFA",
   },
   morphMark: {
     width: 180,

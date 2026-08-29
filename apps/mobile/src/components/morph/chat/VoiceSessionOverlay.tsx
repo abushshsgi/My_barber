@@ -237,7 +237,7 @@ export function VoiceSessionOverlay({
 const styles = StyleSheet.create({
   root: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: "#0B0B0D",
+    backgroundColor: "#FAFAFA",
   },
   top: {
     flexDirection: "row",

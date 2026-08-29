@@ -439,7 +439,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: "#0A0A0A",
+    backgroundColor: "#111111",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -487,7 +487,7 @@ const styles = StyleSheet.create({
     gap: 8,
     minHeight: 52,
     borderRadius: 18,
-    backgroundColor: "#0A0A0A",
+    backgroundColor: "#111111",
   },
   primaryBtnText: { color: "#FFF", fontWeight: "800", fontSize: 14 },
   secondaryBtn: {
@@ -512,7 +512,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     backgroundColor: "#F5F5F5",
   },
-  utilBtnOn: { backgroundColor: "#0A0A0A" },
+  utilBtnOn: { backgroundColor: "#111111" },
   utilLabel: {
     fontSize: 11,
     fontWeight: "700",

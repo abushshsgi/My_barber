@@ -73,8 +73,8 @@ export function MorphAiIngredientScanPage() {
 
   if (accessQ.isLoading || hairQ.isLoading) {
     return (
-      <div className="grid min-h-[100dvh] place-items-center bg-[#050505] text-white">
-        <Loader2 className="size-6 animate-spin text-white/40" />
+      <div className="grid min-h-[100dvh] place-items-center bg-[#FAFAFA] text-[#111111]">
+        <Loader2 className="size-6 animate-spin text-[#111111]/40" />
       </div>
     );
   }
@@ -82,23 +82,23 @@ export function MorphAiIngredientScanPage() {
   if (accessQ.data && !accessQ.data.allowed) {
     return (
       <div
-        className="min-h-[100dvh] bg-[#050505] px-5 text-white"
+        className="min-h-[100dvh] bg-[#FAFAFA] px-5 text-[#111111]"
         style={{ paddingTop: "max(1rem, env(safe-area-inset-top))" }}
       >
         <BackLink label={t("common.back")} />
         <div className="mx-auto mt-24 max-w-xs text-center">
-          <Lock className="mx-auto size-6 text-white/50" />
+          <Lock className="mx-auto size-6 text-[#111111]/50" />
           <h1 className="mt-4 text-lg font-semibold tracking-tight">
             {t("aiStylePage.care.ingredientScan.badge", { defaultValue: "Tarkib skani" })}
           </h1>
-          <p className="mt-2 text-sm text-white/50">
+          <p className="mt-2 text-sm text-[#111111]/50">
             {accessQ.data.detail ||
               t("aiStylePage.care.proOnly", { defaultValue: "Pro obunasida." })}
           </p>
           <Link
             to="/wallet"
             search={{ section: "subscriptions" }}
-            className="mt-8 inline-flex h-12 items-center rounded-full bg-white px-6 text-sm font-semibold text-black"
+            className="mt-8 inline-flex h-12 items-center rounded-full bg-[#111111] px-6 text-sm font-semibold text-white"
           >
             {t("aiStylePage.care.seePlans", { defaultValue: "Obunalar" })}
           </Link>
@@ -186,20 +186,20 @@ export function MorphAiIngredientScanPage() {
     const progress = ((quizStep + 1) / questions.length) * 100;
 
     return (
-      <div className="relative min-h-[100dvh] overflow-x-hidden overflow-y-auto bg-[#050505] text-white">
+      <div className="relative min-h-[100dvh] overflow-x-hidden overflow-y-auto bg-[#FAFAFA] text-[#111111]">
         <div className="pointer-events-none absolute inset-x-0 top-0 h-56 bg-[radial-gradient(ellipse_at_50%_0%,rgba(255,255,255,0.07),transparent_65%)]" />
         <div
           className="relative z-[1] flex min-h-[100dvh] flex-col px-5 pb-[max(6rem,calc(env(safe-area-inset-bottom)+5rem))]"
           style={{ paddingTop: "max(1rem, env(safe-area-inset-top))" }}
         >
           <BackLink label={t("common.back")} />
-          <p className="mt-6 text-[12px] font-medium tracking-wide text-white/35">
+          <p className="mt-6 text-[12px] font-medium tracking-wide text-[#111111]/35">
             {t("aiStylePage.care.ingredientScan.hairProfile", { defaultValue: "Soch profili" })}
           </p>
           <h1 className="mt-2 max-w-[18rem] text-[1.45rem] font-semibold leading-[1.12] tracking-tight">
             {current.title}
           </h1>
-          <div className="mt-4 h-1 overflow-hidden rounded-full bg-white/10">
+          <div className="mt-4 h-1 overflow-hidden rounded-full bg-[#F0F0F0]">
             <div
               className="h-full rounded-full bg-white transition-all duration-300"
               style={{ width: `${progress}%` }}
@@ -224,7 +224,7 @@ export function MorphAiIngredientScanPage() {
                       "flex h-14 w-full items-center rounded-2xl px-4 text-left text-[15px] font-medium transition-colors",
                       current.selected === opt.value
                         ? "bg-white text-black"
-                        : "bg-white/[0.06] text-white active:bg-white/10",
+                        : "bg-[#F0F0F0] text-[#111111] active:bg-[#F0F0F0]",
                     )}
                   >
                     {opt.label}
@@ -238,7 +238,7 @@ export function MorphAiIngredientScanPage() {
               <button
                 type="button"
                 onClick={() => setQuizStep((s) => (s - 1) as QuizStep)}
-                className="h-12 flex-1 rounded-full bg-white/10 text-sm font-semibold"
+                className="h-12 flex-1 rounded-full bg-[#F0F0F0] text-sm font-semibold"
               >
                 {t("common.back")}
               </button>
@@ -250,7 +250,7 @@ export function MorphAiIngredientScanPage() {
                 if (quizStep === 2) void finishQuiz();
                 else setQuizStep((s) => (s + 1) as QuizStep);
               }}
-              className="h-12 flex-[1.6] rounded-full bg-white text-sm font-semibold text-black disabled:opacity-40"
+              className="h-12 flex-[1.6] rounded-full bg-[#111111] text-sm font-semibold text-white disabled:opacity-40"
             >
               {updateHair.isPending ? (
                 <Loader2 className="mx-auto size-5 animate-spin" />
@@ -273,7 +273,7 @@ export function MorphAiIngredientScanPage() {
     const matched = result.matched_product;
 
     return (
-      <div className="relative min-h-[100dvh] overflow-x-hidden overflow-y-auto bg-[#050505] text-white">
+      <div className="relative min-h-[100dvh] overflow-x-hidden overflow-y-auto bg-[#FAFAFA] text-[#111111]">
         <div className="pointer-events-none absolute inset-x-0 top-0 h-56 bg-[radial-gradient(ellipse_at_50%_0%,rgba(255,255,255,0.07),transparent_65%)]" />
         <div
           className="relative z-[1] px-5 pb-[max(6rem,calc(env(safe-area-inset-bottom)+5rem))]"
@@ -286,12 +286,12 @@ export function MorphAiIngredientScanPage() {
             transition={{ duration: 0.4, ease }}
             className="mt-8"
           >
-            <p className="text-[12px] font-medium tracking-wide text-white/35">
+            <p className="text-[12px] font-medium tracking-wide text-[#111111]/35">
               {t("aiStylePage.care.ingredientScan.badge", { defaultValue: "Tarkib skani" })}
             </p>
             <div className="mt-3 flex items-end gap-3">
               <p className={cn("text-5xl font-semibold tracking-tight", scoreColor)}>{score}</p>
-              <p className="mb-1.5 text-sm text-white/45">/ 100</p>
+              <p className="mb-1.5 text-sm text-[#111111]/45">/ 100</p>
             </div>
             {verdict ? (
               <p className={cn("mt-2 text-[13px] font-semibold uppercase tracking-wide", scoreColor)}>
@@ -307,15 +307,15 @@ export function MorphAiIngredientScanPage() {
                 })}
               </p>
             ) : null}
-            <p className="mt-2 max-w-[22rem] text-[15px] leading-relaxed text-white/75">
+            <p className="mt-2 max-w-[22rem] text-[15px] leading-relaxed text-[#111111]/75">
               {result.fit_uz || result.product_analysis.verdict}
             </p>
             {result.catalog_notes_uz ? (
-              <p className="mt-2 max-w-[22rem] text-[12px] leading-relaxed text-white/40">
+              <p className="mt-2 max-w-[22rem] text-[12px] leading-relaxed text-[#111111]/40">
                 {result.catalog_notes_uz}
               </p>
             ) : null}
-            <p className="mt-2 text-[12px] text-white/35">
+            <p className="mt-2 text-[12px] text-[#111111]/35">
               {t("aiStylePage.care.ingredientScan.ingredientsCount", {
                 defaultValue: "{{count}} ta modda",
                 count: result.product_analysis.total_ingredients_count,
@@ -327,18 +327,18 @@ export function MorphAiIngredientScanPage() {
             <Link
               to="/ai-style/care/products/$productId"
               params={{ productId: String(matched.id) }}
-              className="mt-8 block rounded-2xl bg-white/[0.06] px-3.5 py-3.5 ring-1 ring-white/10"
+              className="mt-8 block rounded-2xl bg-[#F0F0F0] px-3.5 py-3.5 ring-1 ring-black/10"
             >
-              <p className="text-[11px] text-white/35">
+              <p className="text-[11px] text-[#111111]/35">
                 {t("aiStylePage.care.catalog.match", { defaultValue: "Katalogdagi mahsulot" })}
               </p>
               <p className="mt-1 text-[15px] font-semibold">{matched.name}</p>
-              {matched.brand ? <p className="text-[12px] text-white/45">{matched.brand}</p> : null}
+              {matched.brand ? <p className="text-[12px] text-[#111111]/45">{matched.brand}</p> : null}
               {matched.purpose_uz ? (
-                <p className="mt-2 text-[13px] text-white/55">{matched.purpose_uz}</p>
+                <p className="mt-2 text-[13px] text-[#111111]/55">{matched.purpose_uz}</p>
               ) : null}
               {matched.warnings_uz ? (
-                <p className="mt-2 text-[12px] leading-snug text-amber-200/70">
+                <p className="mt-2 text-[12px] leading-snug text-amber-800/70">
                   {matched.warnings_uz}
                 </p>
               ) : null}
@@ -347,7 +347,7 @@ export function MorphAiIngredientScanPage() {
 
           {result.critical_alerts.length > 0 ? (
             <section className="mt-9">
-              <h2 className="mb-3 text-[12px] font-medium tracking-wide text-white/35">
+              <h2 className="mb-3 text-[12px] font-medium tracking-wide text-[#111111]/35">
                 {t("aiStylePage.care.ingredientScan.alertsTitle", {
                   defaultValue: "Ogohlantirishlar",
                 })}
@@ -368,7 +368,7 @@ export function MorphAiIngredientScanPage() {
                           {alert.ingredient}
                         </p>
                       ) : null}
-                      <p className="mt-0.5 text-[14px] leading-snug text-white/80">
+                      <p className="mt-0.5 text-[14px] leading-snug text-[#111111]/80">
                         {alert.message_uz}
                       </p>
                     </div>
@@ -380,7 +380,7 @@ export function MorphAiIngredientScanPage() {
 
           {result.beneficial_ingredients.length > 0 ? (
             <section className="mt-9">
-              <h2 className="mb-3 text-[12px] font-medium tracking-wide text-white/35">
+              <h2 className="mb-3 text-[12px] font-medium tracking-wide text-[#111111]/35">
                 {t("aiStylePage.care.ingredientScan.beneficialTitle", {
                   defaultValue: "Foydali moddalar",
                 })}
@@ -399,7 +399,7 @@ export function MorphAiIngredientScanPage() {
                       <p className="text-[12px] font-semibold text-emerald-200/90">
                         {item.ingredient}
                       </p>
-                      <p className="mt-0.5 text-[14px] leading-snug text-white/80">
+                      <p className="mt-0.5 text-[14px] leading-snug text-[#111111]/80">
                         {item.reason_uz}
                       </p>
                     </div>
@@ -415,7 +415,7 @@ export function MorphAiIngredientScanPage() {
               setResult(null);
               setPreviewUrl(null);
             }}
-            className="mt-10 flex h-12 w-full items-center justify-center rounded-full bg-white text-sm font-semibold text-black active:scale-[0.98]"
+            className="mt-10 flex h-12 w-full items-center justify-center rounded-full bg-[#111111] text-sm font-semibold text-white active:scale-[0.98]"
           >
             {t("aiStylePage.care.ingredientScan.scanAgain", {
               defaultValue: "Yana skanerlash",
@@ -561,7 +561,7 @@ function IngredientScanCapture({
   };
 
   return (
-    <div className="relative min-h-[100dvh] overflow-hidden bg-black text-white">
+    <div className="relative min-h-[100dvh] overflow-hidden bg-black text-[#111111]">
       <video
         ref={videoRef}
         className={cn(
@@ -583,7 +583,7 @@ function IngredientScanCapture({
         type="button"
         onClick={() => navigateBack(router, "/ai-style/care")}
         aria-label={t("common.back")}
-        className="absolute right-4 z-[3] grid size-10 place-items-center rounded-full bg-black/45 text-white cursor-pointer"
+        className="absolute right-4 z-[3] grid size-10 place-items-center rounded-full bg-black/45 text-[#111111] cursor-pointer"
         style={{ top: "max(0.85rem, env(safe-area-inset-top))" }}
       >
         <X className="size-5" strokeWidth={2.25} />
@@ -592,8 +592,8 @@ function IngredientScanCapture({
       {busy ? (
         <div className="absolute inset-0 z-[4] grid place-items-center bg-black/50">
           <div className="flex flex-col items-center gap-2">
-            <Loader2 className="size-6 animate-spin text-white" />
-            <p className="text-[13px] text-white/80">
+            <Loader2 className="size-6 animate-spin text-[#111111]" />
+            <p className="text-[13px] text-[#111111]/80">
               {t("aiStylePage.care.ingredientScan.analyzing", {
                 defaultValue: "Tarkib tahlil qilinmoqda…",
               })}
@@ -678,7 +678,7 @@ function BackLink({ label }: { label: string }) {
     <button
       type="button"
       onClick={() => navigateBack(router, "/ai-style/care")}
-      className="inline-flex size-11 items-center justify-center rounded-full bg-white/10 touch-manipulation cursor-pointer active:scale-95 transition-transform"
+      className="inline-flex size-11 items-center justify-center rounded-full bg-[#F0F0F0] touch-manipulation cursor-pointer active:scale-95 transition-transform"
       aria-label={label}
     >
       <ChevronLeft className="size-5" strokeWidth={2.25} />

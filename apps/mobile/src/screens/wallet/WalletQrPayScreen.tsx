@@ -418,7 +418,7 @@ const styles = StyleSheet.create({
   },
   sheetLabel: { fontSize: 12, fontWeight: "600", color: "#4B5563", textAlign: "center" },
 
-  scanRoot: { flex: 1, backgroundColor: "#0B0B0C", paddingHorizontal: 20 },
+  scanRoot: { flex: 1, backgroundColor: "#FAFAFA", paddingHorizontal: 20 },
   closeBtn: {
     width: 40,
     height: 40,

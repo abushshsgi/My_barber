@@ -128,7 +128,7 @@ const styles = StyleSheet.create({
   },
   sheet: {
     maxHeight: "78%",
-    backgroundColor: "#F5F4F2",
+    backgroundColor: "#FAFAFA",
     borderTopLeftRadius: 22,
     borderTopRightRadius: 22,
     paddingTop: 10,
@@ -139,7 +139,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 4,
     borderRadius: 2,
-    backgroundColor: "#D4D4D8",
+    backgroundColor: "#E5E5E5",
     marginBottom: 12,
   },
   header: {
@@ -158,7 +158,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
     alignSelf: "flex-start",
-    backgroundColor: "#7B4DFF",
+    backgroundColor: "#111111",
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: 14,
@@ -175,7 +175,7 @@ const styles = StyleSheet.create({
   },
   empty: {
     textAlign: "center",
-    color: "#8A8A8E",
+    color: "#737373",
     paddingVertical: 28,
     fontSize: 14,
   },
@@ -190,7 +190,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
   },
   rowActive: {
-    backgroundColor: "#EFE8FF",
+    backgroundColor: "#F0F0F0",
   },
   rowBody: {
     flex: 1,
@@ -204,12 +204,12 @@ const styles = StyleSheet.create({
   rowPreview: {
     marginTop: 3,
     fontSize: 12,
-    color: "#8A8A8E",
+    color: "#737373",
   },
   rowMeta: {
     marginTop: 4,
     fontSize: 11,
-    color: "#A1A1AA",
+    color: "#737373",
   },
   deleteBtn: {
     width: 32,

@@ -154,6 +154,12 @@
 
   .morph-ai-type {
     font-size: 15px;
+    --morph-bg: #fafafa;
+    --morph-card: #ffffff;
+    --morph-fg: #111111;
+    --morph-muted: #737373;
+    color: var(--morph-fg);
+    background-color: var(--morph-bg);
   }
 
   .morph-ai-type h1,

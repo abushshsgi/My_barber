@@ -94,7 +94,7 @@ function MorphLimitUpsellBody({
           >
             <span
               aria-hidden
-              className="absolute inset-0 animate-pulse rounded-[26px] bg-white/10 blur-xl"
+              className="absolute inset-0 animate-pulse rounded-[26px] bg-[#F0F0F0] blur-xl"
             />
             <span className="relative grid size-[72px] place-items-center rounded-[26px] border border-white/20 bg-white/[0.06] shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] backdrop-blur-md">
               {locked ? (
@@ -156,7 +156,7 @@ function MorphLimitUpsellBody({
                 {t("aiStylePage.limitSheet.usage", { pct: usagePct })}
               </p>
             </div>
-            <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
+            <div className="h-1.5 overflow-hidden rounded-full bg-[#F0F0F0]">
               <div className="h-full rounded-full bg-white" style={{ width: `${usagePct}%` }} />
             </div>
           </div>
@@ -263,7 +263,7 @@ function MorphLimitUpsellBody({
 
 const shellClass =
   "morph-ai-type border-white/10 bg-[#0a0a0a] text-white shadow-[0_40px_100px_-40px_rgba(0,0,0,0.9)] " +
-  "[&>button]:text-white/70 [&>button]:hover:text-white [&>button]:hover:bg-white/10 " +
+  "[&>button]:text-white/70 [&>button]:hover:text-white [&>button]:hover:bg-[#F0F0F0] " +
   "[&>button]:ring-offset-[#0a0a0a]";
 
 export function MorphLimitUpsell({ open, onOpenChange, kind, me }: Props) {

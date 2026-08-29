@@ -347,7 +347,7 @@ export function AiStyleCamera({ open, onClose, onCapture }: Props) {
                       ? "bg-emerald-400"
                       : quality.level === "ok"
                         ? "bg-amber-300"
-                        : "bg-white/50",
+                        : "bg-[#F0F0F0]0",
                   )}
                   style={{ width: `${Math.round(quality.score * 100)}%` }}
                 />

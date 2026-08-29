@@ -603,7 +603,7 @@ export function MorphIngredientScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: "#050505" },
+  root: { flex: 1, backgroundColor: "#FAFAFA" },
   center: { alignItems: "center", justifyContent: "center" },
   topGlow: { position: "absolute", left: 0, right: 0, top: 0, height: 220 },
   rowBetween: {
@@ -896,7 +896,7 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     backgroundColor: "rgba(255,255,255,0.08)",
     borderWidth: 1,
-    borderColor: "rgba(167, 139, 250, 0.25)",
+    borderColor: "rgba(17, 17, 17, 0.12)",
     padding: 16,
     shadowColor: "#111111",
     shadowOffset: { width: 0, height: 4 },

@@ -155,14 +155,14 @@ export function InstagramShareModal({
         <button
           type="button"
           onClick={() => onOpenChange(false)}
-          className="absolute right-3 top-3 z-10 grid size-9 place-items-center rounded-full border border-white/10 bg-white/5 text-zinc-300 transition hover:bg-white/10 hover:text-white"
+          className="absolute right-3 top-3 z-10 grid size-9 place-items-center rounded-full border border-white/10 bg-[#F0F0F0] text-zinc-300 transition hover:bg-[#F0F0F0] hover:text-white"
           aria-label={t("common.close")}
         >
           <X className="size-4" strokeWidth={2.25} />
         </button>
 
         <div className="relative px-5 pb-5 pt-6 sm:px-6">
-          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-300">
+          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-[#F0F0F0] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-300">
             <Instagram className="size-3.5" />
             Morf AI
           </div>
@@ -230,7 +230,7 @@ export function InstagramShareModal({
           <button
             type="button"
             onClick={() => onOpenChange(false)}
-            className="mt-2.5 flex min-h-11 w-full items-center justify-center rounded-2xl border border-white/10 bg-transparent text-sm font-semibold text-zinc-400 transition hover:bg-white/5 hover:text-zinc-200"
+            className="mt-2.5 flex min-h-11 w-full items-center justify-center rounded-2xl border border-white/10 bg-transparent text-sm font-semibold text-zinc-400 transition hover:bg-[#F0F0F0] hover:text-zinc-200"
           >
             {t("common.close", { defaultValue: "Yopish" })}
           </button>

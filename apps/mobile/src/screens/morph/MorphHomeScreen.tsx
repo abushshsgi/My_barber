@@ -289,7 +289,7 @@ export function MorphHomeScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: "#050505" },
+  root: { flex: 1, backgroundColor: "#FAFAFA" },
   glow: {
     ...StyleSheet.absoluteFill,
     backgroundColor: "transparent",
@@ -320,12 +320,12 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     backgroundColor: "#FFF",
     borderWidth: 2,
-    borderColor: "#050505",
+    borderColor: "#111111",
     alignItems: "center",
     justifyContent: "center",
   },
   limitLow: { backgroundColor: "#CA8A04" },
-  limitText: { ...morphFont, fontSize: 10, fontWeight: "700", color: "#050505" },
+  limitText: { ...morphFont, fontSize: 10, fontWeight: "700", color: "#111111" },
   body: { paddingHorizontal: 20, gap: 8 },
   hero: {
     alignItems: "center",
@@ -350,13 +350,13 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 13,
     fontWeight: "600",
-    color: "#050505",
+    color: "#111111",
   },
   ctaArrow: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: "#050505",
+    backgroundColor: "#FAFAFA",
     alignItems: "center",
     justifyContent: "center",
   },

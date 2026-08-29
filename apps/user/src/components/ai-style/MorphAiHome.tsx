@@ -95,7 +95,7 @@ function MarqueeRow({
               draggable={false}
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent" />
-            <p className="absolute inset-x-0 bottom-0 truncate px-2 pb-2 text-[10px] font-semibold text-white/90">
+            <p className="absolute inset-x-0 bottom-0 truncate px-2 pb-2 text-[10px] font-semibold text-[#111111]/90">
               {entry.title}
             </p>
           </Link>
@@ -265,10 +265,10 @@ export function MorphAiHome({
   ] as const;
 
   const iconBtn =
-    "grid size-10 place-items-center rounded-full bg-white/[0.06] text-white/90 ring-1 ring-white/10 transition-colors duration-200 cursor-pointer active:bg-white/12";
+    "grid size-10 place-items-center rounded-full bg-[#F0F0F0] text-[#111111]/90 ring-1 ring-black/10 transition-colors duration-200 cursor-pointer active:bg-[#F0F0F0]";
 
   return (
-    <div className="relative min-h-0 flex-1 touch-pan-y overflow-y-auto overscroll-y-contain bg-[#050505] text-white no-scrollbar [-webkit-overflow-scrolling:touch]">
+    <div className="relative min-h-0 flex-1 touch-pan-y overflow-y-auto overscroll-y-contain bg-[#FAFAFA] text-[#111111] no-scrollbar [-webkit-overflow-scrolling:touch]">
       <style>{`
         @keyframes morf-marquee-left {
           from { transform: translate3d(0, 0, 0); }
@@ -313,7 +313,7 @@ export function MorphAiHome({
           onClick={() => {
             navigateBack(router, "/ai-style");
           }}
-          className="border-white/15 bg-white/10 text-white hover:bg-white/15"
+          className="border-black/10 bg-[#F0F0F0] text-[#111111] hover:bg-white/15"
           aria-label={t("common.back")}
         />
         <div className="min-w-0 flex-1" />
@@ -358,7 +358,7 @@ export function MorphAiHome({
             ) : null}
           </motion.div>
 
-          <p className="max-w-[18rem] text-[13px] leading-snug text-white/55 md:text-[14px]">
+          <p className="max-w-[18rem] text-[13px] leading-snug text-[#111111]/55 md:text-[14px]">
             {t("aiStylePage.home.subtitle")}
           </p>
 
@@ -370,7 +370,7 @@ export function MorphAiHome({
             <span className="min-w-0 flex-1 truncate text-[13px] font-semibold">
               {t("aiStylePage.home.newLook")}
             </span>
-            <span className="grid size-9 shrink-0 place-items-center rounded-full bg-[#050505] text-white">
+            <span className="grid size-9 shrink-0 place-items-center rounded-full bg-[#FAFAFA] text-[#111111]">
               <ArrowUpRight className="size-4" strokeWidth={2.25} />
             </span>
           </button>
@@ -394,10 +394,10 @@ export function MorphAiHome({
                 transition={{ delay: 0.1 + i * 0.05, duration: 0.3, ease: "easeOut" }}
                 className="flex cursor-pointer flex-col items-center gap-2 rounded-2xl px-1 py-2 transition-colors duration-200 active:bg-white/[0.05]"
               >
-                <span className="grid size-12 place-items-center rounded-2xl bg-white/[0.06] ring-1 ring-white/10">
-                  <Icon className="size-[18px] text-white" strokeWidth={1.75} />
+                <span className="grid size-12 place-items-center rounded-2xl bg-[#F0F0F0] ring-1 ring-black/10">
+                  <Icon className="size-[18px] text-[#111111]" strokeWidth={1.75} />
                 </span>
-                <span className="line-clamp-2 text-center text-[10px] font-medium leading-tight text-white/50">
+                <span className="line-clamp-2 text-center text-[10px] font-medium leading-tight text-[#111111]/50">
                   {action.label}
                 </span>
               </motion.button>
@@ -412,7 +412,7 @@ export function MorphAiHome({
             transition={{ delay: 0.15, duration: 0.3 }}
             className="mt-6"
           >
-            <MorphSoftPaywall className="[&_a]:border-white/15 [&_a]:text-white/55 [&_a:hover]:bg-white/5" />
+            <MorphSoftPaywall className="[&_a]:border-black/10 [&_a]:text-[#111111]/55 [&_a:hover]:bg-[#F0F0F0]" />
           </motion.div>
         ) : null}
 
@@ -424,13 +424,13 @@ export function MorphAiHome({
             className="mt-8"
           >
             <div className="mb-3 flex items-center justify-between">
-              <p className="text-[12px] font-semibold text-white/80">
+              <p className="text-[12px] font-semibold text-[#111111]/80">
                 {t("aiStylePage.home.myLooksTitle")}
               </p>
               <button
                 type="button"
                 onClick={openHistory}
-                className="cursor-pointer text-[12px] font-medium text-white/40 transition-colors duration-200 hover:text-white/70"
+                className="cursor-pointer text-[12px] font-medium text-[#111111]/40 transition-colors duration-200 hover:text-[#111111]/70"
               >
                 {t("aiStylePage.historyViewAll")}
               </button>
@@ -444,7 +444,7 @@ export function MorphAiHome({
                   initial={reduceMotion ? false : { opacity: 0, scale: 0.92 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: 0.05 * i, duration: 0.25 }}
-                  className="relative h-[4.5rem] w-[4.5rem] shrink-0 cursor-pointer overflow-hidden rounded-full ring-1 ring-white/15 active:opacity-85"
+                  className="relative h-[4.5rem] w-[4.5rem] shrink-0 cursor-pointer overflow-hidden rounded-full ring-1 ring-black/10 active:opacity-85"
                   aria-label={look.title}
                 >
                   <img src={look.image} alt="" className="h-full w-full object-cover object-top" />
@@ -461,12 +461,12 @@ export function MorphAiHome({
           className="mt-9"
         >
           <div className="mb-3 flex items-center justify-between px-0.5">
-            <p className="text-[12px] font-semibold text-white/80">
+            <p className="text-[12px] font-semibold text-[#111111]/80">
               {t("aiStylePage.home.samplesTitle")}
             </p>
             <Link
               to="/explore"
-              className="inline-flex cursor-pointer items-center gap-0.5 text-[12px] font-medium text-white/40 transition-colors duration-200 hover:text-white/70"
+              className="inline-flex cursor-pointer items-center gap-0.5 text-[12px] font-medium text-[#111111]/40 transition-colors duration-200 hover:text-[#111111]/70"
             >
               {t("nav.explore")}
               <ArrowUpRight className="size-3.5" />
@@ -480,7 +480,7 @@ export function MorphAiHome({
                   {Array.from({ length: 4 }).map((_, i) => (
                     <div
                       key={i}
-                      className="h-[8.75rem] w-[6.5rem] shrink-0 animate-pulse rounded-2xl bg-white/[0.06]"
+                      className="h-[8.75rem] w-[6.5rem] shrink-0 animate-pulse rounded-2xl bg-[#F0F0F0]"
                     />
                   ))}
                 </div>
@@ -507,15 +507,15 @@ export function MorphAiHome({
         <div className="mt-10 flex items-center justify-center gap-4 text-[12px] font-medium">
           <Link
             to="/ai-style/help"
-            className="inline-flex cursor-pointer items-center gap-1.5 text-white/40 transition-colors duration-200 hover:text-white/75"
+            className="inline-flex cursor-pointer items-center gap-1.5 text-[#111111]/40 transition-colors duration-200 hover:text-[#111111]/75"
           >
             <HelpCircle className="size-3.5" />
             {t("aiStylePage.support.homeHelp")}
           </Link>
-          <span className="text-white/15">·</span>
+          <span className="text-[#111111]/15">·</span>
           <Link
             to="/ai-style/report"
-            className="inline-flex cursor-pointer items-center gap-1.5 text-white/40 transition-colors duration-200 hover:text-white/75"
+            className="inline-flex cursor-pointer items-center gap-1.5 text-[#111111]/40 transition-colors duration-200 hover:text-[#111111]/75"
           >
             <Flag className="size-3.5" />
             {t("aiStylePage.support.homeReport")}

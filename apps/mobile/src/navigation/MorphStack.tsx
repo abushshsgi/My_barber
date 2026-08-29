@@ -43,7 +43,7 @@ export function MorphStack() {
       screenOptions={{
         headerShown: false,
         animation: "slide_from_right",
-        contentStyle: { backgroundColor: "#0A0A0A" },
+        contentStyle: { backgroundColor: "#111111" },
       }}
     >
       <Stack.Screen name="MorphCapture" component={MorphTryOnScreen} />

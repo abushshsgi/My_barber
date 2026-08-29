@@ -5,6 +5,7 @@ import { Pressable, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { morphFont } from "../../../theme/morph-font";
+import { SOFT_PAPER } from "../../../theme/morph-appearance";
 import { useMorphAppearance } from "../../../lib/MorphAppearanceContext";
 import { ChatAmbientBg } from "./ChatAmbientBg";
 
@@ -21,7 +22,7 @@ type Props = {
   notice?: ReactNode;
 };
 
-/** Bo'sh chat — hamburger menyu, marketing matn va composer. */
+/** Bo'sh chat — Soft Paper welcome. */
 export function MorphChatWelcome({
   headline,
   subtitle,
@@ -40,7 +41,7 @@ export function MorphChatWelcome({
   return (
     <View style={styles.root}>
       <ChatAmbientBg />
-      <StatusBar style="light" />
+      <StatusBar style="dark" />
 
       <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
         <Pressable
@@ -49,7 +50,7 @@ export function MorphChatWelcome({
           accessibilityRole="button"
           accessibilityLabel={menuA11y}
         >
-          <Ionicons name="menu" size={22} color="#8E8E93" />
+          <Ionicons name="menu" size={22} color={SOFT_PAPER.fg} />
         </Pressable>
         <View style={styles.headerSpacer} />
         <Pressable
@@ -58,14 +59,14 @@ export function MorphChatWelcome({
           accessibilityRole="button"
           accessibilityLabel={exitA11y}
         >
-          <Ionicons name="chevron-forward" size={24} color="#F5F5F7" />
+          <Ionicons name="chevron-forward" size={24} color={SOFT_PAPER.fg} />
         </Pressable>
       </View>
 
       <View style={styles.hero}>
         <Animated.View entering={FadeInDown.duration(320)} style={styles.badgeWrap}>
           <View style={styles.aiBadge}>
-            <Ionicons name="sparkles" size={13} color="#737373" />
+            <Ionicons name="sparkles" size={13} color={SOFT_PAPER.fg} />
             <Animated.Text style={styles.aiBadgeText}>Morf AI • Pro Assistant</Animated.Text>
           </View>
         </Animated.View>
@@ -103,7 +104,7 @@ export function MorphChatWelcome({
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: "transparent",
+    backgroundColor: SOFT_PAPER.bg,
   },
   header: {
     zIndex: 1,
@@ -140,21 +141,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 999,
-    backgroundColor: "rgba(139, 92, 246, 0.15)",
+    backgroundColor: SOFT_PAPER.card,
     borderWidth: 1,
-    borderColor: "rgba(167, 139, 250, 0.35)",
-    shadowColor: "#111111",
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.45,
-    shadowRadius: 10,
-    elevation: 3,
+    borderColor: SOFT_PAPER.line,
   },
   aiBadgeText: {
     ...morphFont,
     fontSize: 12,
     lineHeight: 15,
     fontWeight: "600",
-    color: "#737373",
+    color: SOFT_PAPER.muted,
     letterSpacing: 0.3,
   },
   copy: {
@@ -166,7 +162,7 @@ const styles = StyleSheet.create({
     fontSize: 26,
     lineHeight: 32,
     fontWeight: "600",
-    color: "#FFFFFF",
+    color: SOFT_PAPER.fg,
     letterSpacing: -0.6,
     textAlign: "center",
   },
@@ -175,7 +171,7 @@ const styles = StyleSheet.create({
     ...morphFont,
     fontSize: 13,
     lineHeight: 19,
-    color: "#A1A1AA",
+    color: SOFT_PAPER.muted,
     textAlign: "center",
     maxWidth: 340,
   },
