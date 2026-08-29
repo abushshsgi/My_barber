@@ -11,6 +11,7 @@ import {
   Image,
   Keyboard,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -21,6 +22,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { fetchCareAccess } from "../../api/ai";
+import { resolveMediaUrl } from "../../api/media";
 import { weatherIconName } from "../../api/weather";
 import {
   fetchCareProducts,
@@ -197,7 +199,17 @@ export function MorphCareScreen({ navigation, route }: Props) {
   useHideTabBar();
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
+  const avatarUrl = useMemo(
+    () => resolveMediaUrl(user?.avatar, { width: 240 }) || "",
+    [user?.avatar],
+  );
+  const userInitials = useMemo(() => {
+    const name = (user?.full_name || user?.first_name || user?.email || "?").trim();
+    const parts = name.split(/\s+/).filter(Boolean);
+    if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+    return name.slice(0, 2).toUpperCase();
+  }, [user?.full_name, user?.first_name, user?.email]);
   const { goMorph, navigateRootTab } = useShellNavigation();
   const [loading, setLoading] = useState(true);
   const [access, setAccess] = useState<{ allowed: boolean; detail?: string } | null>(null);
@@ -934,62 +946,66 @@ export function MorphCareScreen({ navigation, route }: Props) {
           bounces={true}
           overScrollMode="never"
         >
-          {/* Top Nav Bar — search ochiq bo‘lsa yashirin */}
-          {!searchOpen ? (
-            <View style={[styles.navBarRow, { paddingHorizontal: 20 }]}>
-              <Pressable
-                style={styles.navCircleBtnLight}
-                onPress={handleBack}
-                accessibilityLabel={t("common.back")}
-                hitSlop={8}
-              >
-                <Ionicons name="chevron-back" size={22} color="#111" />
-              </Pressable>
-              <View style={{ width: 42 }} />
-            </View>
-          ) : (
-            <View style={{ height: 4 }} />
-          )}
-
-          {/* Promo Card Banner — qidiruv ochiq bo‘lsa yashirin */}
+          {/* Hero banner — yashil / oltin; user avatar */}
           {!searchOpen ? (
           <View style={styles.promoWrap}>
             <LinearGradient
-              colors={["#EEF2FF", "#E0E7FF", "#EDE9FE"]}
+              colors={["#1B4D3E", "#143D32", "#0F3329"]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={styles.promoCard}
             >
-              <View style={styles.promoLeft}>
-                <Text style={styles.promoEyebrow}>
-                  {t("care.promoEyebrow", { defaultValue: "MORF PARVARISH" })}
-                </Text>
-                <Text style={styles.promoTitle}>
-                  {t("care.promoTitle", { defaultValue: "Go‘zalligingiz,\nyarim narxida" })}
-                </Text>
-                <Pressable style={styles.promoBtn} onPress={openCatalog}>
-                  <Text style={styles.promoBtnText}>
-                    {t("care.promoCta", { defaultValue: "Taklifni olish" })}
-                  </Text>
-                  <Ionicons name="arrow-forward" size={14} color="#fff" />
-                </Pressable>
+              <View style={styles.promoDecor} pointerEvents="none">
+                <View style={[styles.promoChevron, { top: 10, right: 18, opacity: 0.55 }]} />
+                <View style={[styles.promoChevron, { top: 22, right: 34, opacity: 0.4 }]} />
+                <View style={[styles.promoChevron, { top: 34, right: 14, opacity: 0.28 }]} />
+                <View style={[styles.promoChevron, { top: 46, right: 40, opacity: 0.2 }]} />
               </View>
-              <Image
-                source={{
-                  uri: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=400&q=80",
-                }}
-                style={styles.promoImg}
-                resizeMode="cover"
-              />
-            </LinearGradient>
 
-            <View style={styles.dotsRow}>
-              <View style={styles.dotActive} />
-              <View style={styles.dotInactive} />
-              <View style={styles.dotInactive} />
-            </View>
+              <View style={styles.promoTop}>
+                <Pressable
+                  style={styles.promoBackBtn}
+                  onPress={handleBack}
+                  accessibilityLabel={t("common.back")}
+                  hitSlop={8}
+                >
+                  <Ionicons name="chevron-back" size={20} color="#E8D5A8" />
+                </Pressable>
+                <View style={styles.promoLogoRow}>
+                  <Text style={styles.promoLogoMark}>M</Text>
+                  <Text style={styles.promoLogoText}>PARVARISH</Text>
+                </View>
+                <View style={{ width: 36 }} />
+              </View>
+
+              <View style={styles.promoBody}>
+                <View style={styles.promoAvatarRing}>
+                  {avatarUrl ? (
+                    <Image source={{ uri: avatarUrl }} style={styles.promoAvatar} resizeMode="cover" />
+                  ) : (
+                    <View style={[styles.promoAvatar, styles.promoAvatarFallback]}>
+                      <Text style={styles.promoAvatarInitials}>{userInitials}</Text>
+                    </View>
+                  )}
+                </View>
+
+                <View style={styles.promoCopy}>
+                  <Text style={styles.promoTitle}>
+                    {t("care.promoTitle", { defaultValue: "Go‘zalligingiz,\nyarim narxida" })}
+                  </Text>
+                  <Pressable style={styles.promoBtn} onPress={openCatalog}>
+                    <Text style={styles.promoBtnText}>
+                      {t("care.promoCta", { defaultValue: "Taklifni olish" })}
+                    </Text>
+                    <Ionicons name="arrow-forward" size={14} color="#143D32" />
+                  </Pressable>
+                </View>
+              </View>
+            </LinearGradient>
           </View>
-          ) : null}
+          ) : (
+            <View style={{ height: 4 }} />
+          )}
 
           {/* Search Bar — filter icon ichida */}
           <View style={styles.searchSection}>
@@ -1568,25 +1584,105 @@ const styles = StyleSheet.create({
     borderColor: "rgba(0,0,0,0.08)",
   },
   promoWrap: {
-    marginTop: 8,
-    paddingHorizontal: 20,
+    marginTop: 4,
+    paddingHorizontal: 16,
   },
   promoCard: {
     borderRadius: 28,
-    paddingVertical: 20,
-    paddingHorizontal: 18,
+    paddingTop: 14,
+    paddingBottom: 18,
+    paddingHorizontal: 16,
+    minHeight: 200,
+    borderWidth: 1,
+    borderColor: "rgba(232,213,168,0.18)",
+    shadowColor: "#0F3329",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.28,
+    shadowRadius: 20,
+    elevation: 6,
+    overflow: "hidden",
+  },
+  promoDecor: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  promoChevron: {
+    position: "absolute",
+    width: 22,
+    height: 22,
+    borderLeftWidth: 2,
+    borderBottomWidth: 2,
+    borderColor: "#E8D5A8",
+    transform: [{ rotate: "45deg" }],
+  },
+  promoTop: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    minHeight: 168,
-    borderWidth: 1,
-    borderColor: "rgba(99,102,241,0.12)",
-    shadowColor: "#4338CA",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.1,
-    shadowRadius: 18,
-    elevation: 4,
-    overflow: "hidden",
+    marginBottom: 14,
+    zIndex: 2,
+  },
+  promoBackBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  promoLogoRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  promoLogoMark: {
+    fontFamily: Platform.OS === "web" ? "Georgia, 'Times New Roman', serif" : undefined,
+    fontSize: 26,
+    fontWeight: "700",
+    color: "#E8D5A8",
+    fontStyle: "italic",
+    lineHeight: 28,
+  },
+  promoLogoText: {
+    ...morphFont,
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#E8D5A8",
+    letterSpacing: 2.4,
+  },
+  promoBody: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+    zIndex: 2,
+  },
+  promoAvatarRing: {
+    width: 108,
+    height: 108,
+    borderRadius: 54,
+    borderWidth: 2,
+    borderColor: "rgba(232,213,168,0.55)",
+    padding: 3,
+    backgroundColor: "rgba(255,255,255,0.06)",
+  },
+  promoAvatar: {
+    width: "100%",
+    height: "100%",
+    borderRadius: 50,
+  },
+  promoAvatarFallback: {
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(232,213,168,0.18)",
+  },
+  promoAvatarInitials: {
+    ...morphFont,
+    fontSize: 28,
+    fontWeight: "800",
+    color: "#E8D5A8",
+  },
+  promoCopy: {
+    flex: 1,
+    gap: 14,
+    paddingRight: 4,
   },
   promoLeft: {
     flex: 1,
@@ -1598,17 +1694,17 @@ const styles = StyleSheet.create({
     ...morphFont,
     fontSize: 11,
     fontWeight: "700",
-    color: "#6366F1",
+    color: "#E8D5A8",
     letterSpacing: 0.6,
     textTransform: "uppercase",
   },
   promoTitle: {
-    ...morphFont,
-    fontSize: 24,
-    fontWeight: "800",
-    color: "#0F172A",
+    fontFamily: Platform.OS === "web" ? "Georgia, 'Times New Roman', serif" : undefined,
+    fontSize: 22,
+    fontWeight: "600",
+    color: "#F3E6C8",
     lineHeight: 28,
-    letterSpacing: -0.5,
+    letterSpacing: -0.3,
   },
   promoChip: {
     flexDirection: "row",
@@ -1626,10 +1722,10 @@ const styles = StyleSheet.create({
     color: "#4F46E5",
   },
   promoBtn: {
-    backgroundColor: "#111827",
+    backgroundColor: "#E0C78A",
     borderRadius: 999,
     paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingVertical: 11,
     alignSelf: "flex-start",
     flexDirection: "row",
     alignItems: "center",
@@ -1639,7 +1735,7 @@ const styles = StyleSheet.create({
     ...morphFont,
     fontSize: 13,
     fontWeight: "700",
-    color: "#FFFFFF",
+    color: "#143D32",
   },
   promoImg: {
     width: 112,
