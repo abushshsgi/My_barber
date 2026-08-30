@@ -1,6 +1,6 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { FlaskConical, Package, ScanLine, Sparkles } from "lucide-react";
+import { FlaskConical, Heart, Package, ScanLine, Sparkles } from "lucide-react";
 import { fetchAdminParvarishStats } from "@/lib/admin-api";
 import { KPICard } from "@/components/admin/KPICard";
 import { CardSkeleton } from "@/components/admin/Skeletons";
@@ -50,14 +50,21 @@ function ParvarishIndexPage() {
         </p>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         <KPICard label="Mahsulotlar" value={data.products_total} icon={Package} />
         <KPICard label="Nashr qilingan" value={data.products_published} icon={Sparkles} />
+        <KPICard label="Likes" value={data.likes_total ?? 0} icon={Heart} />
         <KPICard label="Skanlar" value={data.scans_total} icon={ScanLine} />
         <KPICard label="Bugun" value={data.scans_today} icon={FlaskConical} />
       </div>
 
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-4">
+        <Link
+          to="/admin/parvarish/likes"
+          className="text-sm font-medium text-primary hover:underline"
+        >
+          Likes sahifasi
+        </Link>
         <Link
           to="/admin/parvarish/tarkib"
           className="text-sm font-medium text-primary hover:underline"

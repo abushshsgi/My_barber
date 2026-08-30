@@ -28,6 +28,12 @@ export type CareProduct = {
   sort_order: number;
   likes_count?: number;
   liked_by_me?: boolean;
+  scalp_types?: string[];
+  concerns?: string[];
+  match_percent?: number | null;
+  fit_verdict?: string | null;
+  fit_reasons?: string[];
+  usage_steps?: Array<{ title: string; desc: string; icon?: string }>;
 };
 
 export type HairCondition = "oily" | "dry" | "normal" | "damaged";
@@ -38,6 +44,8 @@ export type HairCareProfile = {
   condition: HairCondition | "";
   texture: HairTexture | "";
   color_status: HairColorStatus | "";
+  scalp?: string;
+  concerns?: string[];
   complete: boolean;
   completed_at: string | null;
   updated_at: string | null;
@@ -47,6 +55,8 @@ export type HairCareProfileUpdate = {
   condition: HairCondition;
   texture: HairTexture;
   color_status: HairColorStatus;
+  scalp?: string;
+  concerns?: string[];
 };
 
 export async function fetchCareProducts(params?: {

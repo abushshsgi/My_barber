@@ -106,6 +106,7 @@ export function MorphAiCarePage() {
       condition: quiz.condition,
       texture: quiz.texture,
       color_status: quiz.colorStatus,
+      scalp: quiz.condition === "oily" ? "oily" : quiz.condition === "dry" || quiz.condition === "damaged" ? "dry" : "normal",
     }).catch(() => undefined);
     setStep("plan");
   };

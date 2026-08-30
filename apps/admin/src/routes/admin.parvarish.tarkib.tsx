@@ -56,6 +56,23 @@ const HAIR_TAGS: { value: string; label: string }[] = [
   { value: "bleached", label: "Ochilgan" },
 ];
 
+const SCALP_TAGS: { value: string; label: string }[] = [
+  { value: "oily", label: "Yog'li teri" },
+  { value: "dry", label: "Quruq teri" },
+  { value: "normal", label: "Normal teri" },
+  { value: "sensitive", label: "Sezgir teri" },
+];
+
+const CONCERN_TAGS: { value: string; label: string }[] = [
+  { value: "dandruff", label: "Kepek" },
+  { value: "hair_loss", label: "To'kilish" },
+  { value: "frizz", label: "Shishish" },
+  { value: "breakage", label: "Sinish" },
+  { value: "color_fade", label: "Rang oqishi" },
+  { value: "itch", label: "Qichishish" },
+  { value: "split_ends", label: "Yorilgan uchlar" },
+];
+
 type FormState = {
   name: string;
   brand: string;
@@ -65,6 +82,8 @@ type FormState = {
   purpose_uz: string;
   suitable_for: string[];
   not_suitable_for: string[];
+  scalp_types: string[];
+  concerns: string[];
   pros_uz: string;
   cons_uz: string;
   warnings_uz: string;
@@ -82,6 +101,8 @@ const emptyForm = (): FormState => ({
   purpose_uz: "",
   suitable_for: [],
   not_suitable_for: [],
+  scalp_types: [],
+  concerns: [],
   pros_uz: "",
   cons_uz: "",
   warnings_uz: "",
@@ -123,6 +144,8 @@ function ParvarishTarkibPage() {
         purpose_uz: form.purpose_uz,
         suitable_for: form.suitable_for,
         not_suitable_for: form.not_suitable_for,
+        scalp_types: form.scalp_types,
+        concerns: form.concerns,
         pros_uz: form.pros_uz,
         cons_uz: form.cons_uz,
         warnings_uz: form.warnings_uz,
@@ -187,6 +210,8 @@ function ParvarishTarkibPage() {
       purpose_uz: row.purpose_uz || "",
       suitable_for: row.suitable_for || [],
       not_suitable_for: row.not_suitable_for || [],
+      scalp_types: row.scalp_types || [],
+      concerns: row.concerns || [],
       pros_uz: row.pros_uz || "",
       cons_uz: row.cons_uz || "",
       warnings_uz: row.warnings_uz || "",
@@ -428,6 +453,7 @@ function ParvarishTarkibPage() {
 
               <TagGroup
                 label="Kimlarga mos"
+                tags={HAIR_TAGS}
                 selected={form.suitable_for}
                 onToggle={(tag) =>
                   setForm((p) => ({ ...p, suitable_for: toggleTag(p.suitable_for, tag) }))
@@ -435,12 +461,29 @@ function ParvarishTarkibPage() {
               />
               <TagGroup
                 label="Kimlarga mos emas"
+                tags={HAIR_TAGS}
                 selected={form.not_suitable_for}
                 onToggle={(tag) =>
                   setForm((p) => ({
                     ...p,
                     not_suitable_for: toggleTag(p.not_suitable_for, tag),
                   }))
+                }
+              />
+              <TagGroup
+                label="Bosh terisi"
+                tags={SCALP_TAGS}
+                selected={form.scalp_types}
+                onToggle={(tag) =>
+                  setForm((p) => ({ ...p, scalp_types: toggleTag(p.scalp_types, tag) }))
+                }
+              />
+              <TagGroup
+                label="Muammolar"
+                tags={CONCERN_TAGS}
+                selected={form.concerns}
+                onToggle={(tag) =>
+                  setForm((p) => ({ ...p, concerns: toggleTag(p.concerns, tag) }))
                 }
               />
 
@@ -553,10 +596,12 @@ function FilterPill({
 
 function TagGroup({
   label,
+  tags,
   selected,
   onToggle,
 }: {
   label: string;
+  tags: { value: string; label: string }[];
   selected: string[];
   onToggle: (tag: string) => void;
 }) {
@@ -564,7 +609,7 @@ function TagGroup({
     <div className="grid gap-2">
       <Label className="text-xs text-muted-foreground">{label}</Label>
       <div className="flex flex-wrap gap-1.5">
-        {HAIR_TAGS.map((tag) => {
+        {tags.map((tag) => {
           const on = selected.includes(tag.value);
           return (
             <label

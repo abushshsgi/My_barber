@@ -182,6 +182,9 @@ export function buildCarePlan(quiz: CareQuizAnswers): CarePlan {
 }
 
 export function estimateProductFit(product: CareProduct, quiz: CareQuizAnswers): number {
+  if (typeof product.match_percent === "number") {
+    return Math.max(0, Math.min(100, Math.round(product.match_percent)));
+  }
   const tags = [
     quiz.condition,
     quiz.texture,

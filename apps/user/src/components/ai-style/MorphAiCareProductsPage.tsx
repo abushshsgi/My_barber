@@ -99,6 +99,7 @@ export function MorphAiCareProductsPage() {
                   <p className="truncate text-[15px] font-semibold">{row.name}</p>
                   <p className="truncate text-[12px] text-[#111111]/40">
                     {row.brand || t(`aiStylePage.care.catalog.categories.${row.category}`, { defaultValue: row.category })}
+                    {typeof row.match_percent === "number" ? ` · ${row.match_percent}%` : ""}
                   </p>
                   {row.purpose_uz ? (
                     <p className="mt-1 line-clamp-2 text-[13px] text-[#111111]/55">{row.purpose_uz}</p>

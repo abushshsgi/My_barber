@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from django.db.models import Q
+from django.db.models import Count, Q
 from django.utils import timezone
 from django.utils.text import slugify
 from rest_framework import status
@@ -11,9 +11,14 @@ from rest_framework.response import Response
 
 from accounts.permissions import IsAdmin
 from ai.care_serializers import CareProductSerializer
-from ai.models import CareProduct, IngredientScanEntry
+from ai.models import CareProduct, CareProductLike, CareUserProduct, IngredientScanEntry
+from ai.serializers import _media_absolute_url
 from ai.unthrottled import UnthrottledAPIView
-from ai.management.commands.seed_care_demo_products import DEMO_PRODUCTS, DEMO_SLUG_PREFIX
+from ai.management.commands.seed_care_demo_products import (
+    DEMO_PRODUCTS,
+    DEMO_SLUG_PREFIX,
+    demo_product_defaults,
+)
 
 
 def _unique_slug(name: str, brand: str = "", *, exclude_pk: int | None = None) -> str:
@@ -39,6 +44,8 @@ class AdminParvarishStatsView(UnthrottledAPIView):
             {
                 "products_total": CareProduct.objects.count(),
                 "products_published": CareProduct.objects.filter(is_published=True).count(),
+                "likes_total": CareProductLike.objects.count(),
+                "my_products_total": CareUserProduct.objects.count(),
                 "scans_total": IngredientScanEntry.objects.count(),
                 "scans_today": IngredientScanEntry.objects.filter(created_at__date=today).count(),
                 "recent_scans": [
@@ -53,6 +60,106 @@ class AdminParvarishStatsView(UnthrottledAPIView):
                     }
                     for row in recent
                 ],
+            }
+        )
+
+
+class AdminParvarishLikesView(UnthrottledAPIView):
+    permission_classes = [IsAdmin]
+
+    def get(self, request):
+        q = (request.query_params.get("q") or "").strip()
+        products = (
+            CareProduct.objects.annotate(likes_count=Count("likes"))
+            .filter(likes_count__gt=0)
+            .order_by("-likes_count", "name")
+        )
+        if q:
+            products = products.filter(
+                Q(name__icontains=q) | Q(brand__icontains=q) | Q(slug__icontains=q)
+            )
+
+        rows = []
+        for product in products[:200]:
+            likes = (
+                CareProductLike.objects.filter(product=product)
+                .select_related("user")
+                .order_by("-created_at")[:50]
+            )
+            rows.append(
+                {
+                    "product_id": product.id,
+                    "product_name": product.name,
+                    "brand": product.brand,
+                    "category": product.category,
+                    "image_url": _media_absolute_url(request, product.image),
+                    "likes_count": int(product.likes_count),
+                    "likers": [
+                        {
+                            "user_id": like.user_id,
+                            "full_name": getattr(like.user, "full_name", "") or "",
+                            "phone": getattr(like.user, "phone", "") or "",
+                            "username": getattr(like.user, "username", "") or "",
+                            "liked_at": like.created_at.isoformat() if like.created_at else None,
+                        }
+                        for like in likes
+                    ],
+                }
+            )
+
+        return Response(
+            {
+                "total_likes": CareProductLike.objects.count(),
+                "products_liked": len(rows),
+                "products": rows,
+            }
+        )
+
+
+class AdminParvarishMyProductsView(UnthrottledAPIView):
+    """Admin — foydalanuvchilar saqlagan mahsulotlar."""
+
+    permission_classes = [IsAdmin]
+
+    def get(self, request):
+        q = (request.query_params.get("q") or "").strip()
+        qs = CareUserProduct.objects.select_related("user", "product").order_by("-created_at")
+        if q:
+            qs = qs.filter(
+                Q(product__name__icontains=q)
+                | Q(product__brand__icontains=q)
+                | Q(user__phone__icontains=q)
+                | Q(user__username__icontains=q)
+                | Q(user__full_name__icontains=q)
+            )
+        rows = []
+        for row in qs[:300]:
+            p = row.product
+            u = row.user
+            rows.append(
+                {
+                    "id": row.id,
+                    "source": row.source,
+                    "created_at": row.created_at.isoformat() if row.created_at else None,
+                    "user": {
+                        "id": u.id,
+                        "full_name": getattr(u, "full_name", "") or "",
+                        "phone": getattr(u, "phone", "") or "",
+                        "username": getattr(u, "username", "") or "",
+                    },
+                    "product": {
+                        "id": p.id,
+                        "name": p.name,
+                        "brand": p.brand,
+                        "category": p.category,
+                        "image_url": _media_absolute_url(request, p.image),
+                    },
+                }
+            )
+        return Response(
+            {
+                "total": CareUserProduct.objects.count(),
+                "rows": rows,
             }
         )
 
@@ -162,22 +269,7 @@ class AdminParvarishDemoActionView(UnthrottledAPIView):
             updated_count = 0
             for item in DEMO_PRODUCTS:
                 slug = item["slug"]
-                defaults = {
-                    "name": item["name"],
-                    "brand": item["brand"],
-                    "category": item["category"],
-                    "ingredients_text": item["ingredients_text"],
-                    "ingredients": item["ingredients"],
-                    "usage_uz": item["usage_uz"],
-                    "purpose_uz": item["purpose_uz"],
-                    "suitable_for": item["suitable_for"],
-                    "not_suitable_for": item["not_suitable_for"],
-                    "pros_uz": item["pros_uz"],
-                    "cons_uz": item["cons_uz"],
-                    "warnings_uz": item["warnings_uz"],
-                    "is_published": True,
-                    "sort_order": item["sort_order"],
-                }
+                defaults = demo_product_defaults(item)
                 _, created = CareProduct.objects.update_or_create(
                     slug=slug,
                     defaults=defaults,

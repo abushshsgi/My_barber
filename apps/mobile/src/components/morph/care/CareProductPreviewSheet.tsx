@@ -128,7 +128,13 @@ export function CareProductPreviewSheet({
   onUseInCare,
 }: Props) {
   const { t, i18n } = useTranslation();
-  const fit = useMemo(() => estimateProductFit(product, quiz), [product, quiz]);
+  const fit = useMemo(
+    () =>
+      typeof product.match_percent === "number"
+        ? Math.max(0, Math.min(100, Math.round(product.match_percent)))
+        : estimateProductFit(product, quiz),
+    [product, quiz],
+  );
   const labelKey = fitLabelKey(fit);
   const isPage = mode === "page";
   const lang = (i18n.language || "uz").startsWith("ru") ? "ru" : "uz";
@@ -255,6 +261,12 @@ export function CareProductPreviewSheet({
             <Text style={styles.fitVerdict}>{fitVerdict}</Text>
           </View>
         </View>
+
+        {(product.fit_reasons || []).slice(0, 3).map((reason) => (
+          <Text key={reason} style={styles.reasonText}>
+            {reason}
+          </Text>
+        ))}
 
         <Pressable style={styles.tarkibCta} onPress={openTarkib}>
           <Ionicons name="flask-outline" size={16} color={C.fg} />
@@ -431,6 +443,13 @@ const styles = StyleSheet.create({
   fitPct: { ...morphFont, fontSize: fontSize(12), fontWeight: "800", color: C.fg },
   fitLabel: { ...morphFont, fontSize: fontSize(11), fontWeight: "600", color: C.muted },
   fitVerdict: { ...morphFont, fontSize: fontSize(14), fontWeight: "700", color: C.fg, marginTop: 1 },
+  reasonText: {
+    ...morphFont,
+    fontSize: fontSize(13),
+    lineHeight: fontSize(18),
+    color: C.muted,
+    marginTop: verticalScale(6),
+  },
   tarkibCta: {
     flexDirection: "row",
     alignItems: "center",

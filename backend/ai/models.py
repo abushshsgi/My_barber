@@ -414,6 +414,8 @@ class CareProduct(models.Model):
     purpose_uz = models.TextField(blank=True, default="")
     suitable_for = models.JSONField(default=list, blank=True)
     not_suitable_for = models.JSONField(default=list, blank=True)
+    scalp_types = models.JSONField(default=list, blank=True)
+    concerns = models.JSONField(default=list, blank=True)
     pros_uz = models.TextField(blank=True, default="")
     cons_uz = models.TextField(blank=True, default="")
     warnings_uz = models.TextField(blank=True, default="")
@@ -439,6 +441,80 @@ class CareProduct(models.Model):
         return f"{self.brand} {self.name}".strip() or self.slug
 
 
+class CareProductLike(models.Model):
+    """Userning CareProduct like'i — public count + admin audit."""
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="care_product_likes",
+    )
+    product = models.ForeignKey(
+        CareProduct,
+        on_delete=models.CASCADE,
+        related_name="likes",
+    )
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "product"],
+                name="uniq_care_product_like_user_product",
+            ),
+        ]
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["product", "-created_at"]),
+            models.Index(fields=["user", "-created_at"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"CareProductLike(user={self.user_id}, product={self.product_id})"
+
+
+class CareUserProduct(models.Model):
+    """Foydalanuvchi «Mening mahsulotlarim» — DB + admin audit."""
+
+    class Source(models.TextChoices):
+        SCAN = "scan", "Scan"
+        CATALOG = "catalog", "Catalog"
+        RECOMMENDED = "recommended", "Recommended"
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="care_user_products",
+    )
+    product = models.ForeignKey(
+        CareProduct,
+        on_delete=models.CASCADE,
+        related_name="user_saves",
+    )
+    source = models.CharField(
+        max_length=16,
+        choices=Source.choices,
+        default=Source.CATALOG,
+    )
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "product"],
+                name="uniq_care_user_product_user_product",
+            ),
+        ]
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["user", "-created_at"]),
+            models.Index(fields=["product", "-created_at"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"CareUserProduct(user={self.user_id}, product={self.product_id})"
+
+
 class HairCareProfile(models.Model):
     """Mijoz soch profili — parvarish reja va INCI skani uchun."""
 
@@ -458,6 +534,12 @@ class HairCareProfile(models.Model):
         COLORED = "colored", "Colored"
         BLEACHED = "bleached", "Bleached"
 
+    class Scalp(models.TextChoices):
+        OILY = "oily", "Oily"
+        DRY = "dry", "Dry"
+        NORMAL = "normal", "Normal"
+        SENSITIVE = "sensitive", "Sensitive"
+
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -472,6 +554,10 @@ class HairCareProfile(models.Model):
     color_status = models.CharField(
         max_length=16, choices=ColorStatus.choices, blank=True, default=""
     )
+    scalp = models.CharField(
+        max_length=16, choices=Scalp.choices, blank=True, default=""
+    )
+    concerns = models.JSONField(default=list, blank=True)
     completed_at = models.DateTimeField(null=True, blank=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -489,10 +575,15 @@ class HairCareProfile(models.Model):
         cond = self.get_condition_display() if self.condition else "Unknown"
         tex = self.get_texture_display() if self.texture else "Unknown"
         color = self.get_color_status_display() if self.color_status else "Unknown"
+        scalp = self.get_scalp_display() if self.scalp else "Unknown"
+        raw_concerns = self.concerns if isinstance(self.concerns, list) else []
+        concerns = ", ".join(str(x) for x in raw_concerns if str(x).strip()) or "none"
         return (
             f"Hair condition: {cond}\n"
             f"Hair texture: {tex}\n"
-            f"Color status: {color}"
+            f"Color status: {color}\n"
+            f"Scalp: {scalp}\n"
+            f"Concerns: {concerns}"
         )
 
     def tag_set(self) -> set[str]:

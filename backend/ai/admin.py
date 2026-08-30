@@ -107,8 +107,8 @@ class CareProductAdmin(admin.ModelAdmin):
 
 @admin.register(HairCareProfile)
 class HairCareProfileAdmin(admin.ModelAdmin):
-    list_display = ("id", "user", "condition", "texture", "color_status", "completed_at")
-    list_filter = ("condition", "texture", "color_status")
+    list_display = ("id", "user", "condition", "texture", "color_status", "scalp", "completed_at")
+    list_filter = ("condition", "texture", "color_status", "scalp")
     search_fields = ("user__phone", "user__email")
     raw_id_fields = ("user",)
 

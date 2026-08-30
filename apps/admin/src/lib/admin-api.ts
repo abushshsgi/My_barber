@@ -4935,6 +4935,8 @@ export type AdminCareProduct = {
   purpose_uz: string;
   suitable_for: string[];
   not_suitable_for: string[];
+  scalp_types: string[];
+  concerns: string[];
   pros_uz: string;
   cons_uz: string;
   warnings_uz: string;
@@ -4947,6 +4949,7 @@ export type AdminCareProduct = {
 export type AdminParvarishStats = {
   products_total: number;
   products_published: number;
+  likes_total?: number;
   scans_total: number;
   scans_today: number;
   recent_scans: Array<{
@@ -4960,8 +4963,37 @@ export type AdminParvarishStats = {
   }>;
 };
 
+export type AdminCareProductLikesResponse = {
+  total_likes: number;
+  products_liked: number;
+  products: Array<{
+    product_id: number;
+    product_name: string;
+    brand: string;
+    category: string;
+    image_url: string | null;
+    likes_count: number;
+    likers: Array<{
+      user_id: number;
+      full_name: string;
+      phone: string;
+      username: string;
+      liked_at: string | null;
+    }>;
+  }>;
+};
+
 export async function fetchAdminParvarishStats(): Promise<AdminParvarishStats> {
   return apiJson("/api/v1/admin/parvarish/stats/");
+}
+
+export async function fetchAdminCareProductLikes(params?: {
+  q?: string;
+}): Promise<AdminCareProductLikesResponse> {
+  const sp = new URLSearchParams();
+  if (params?.q) sp.set("q", params.q);
+  const q = sp.toString();
+  return apiJson(`/api/v1/admin/parvarish/likes/${q ? `?${q}` : ""}`);
 }
 
 export async function fetchAdminCareProducts(params?: {
@@ -4986,6 +5018,8 @@ export type AdminCareProductPayload = {
   purpose_uz?: string;
   suitable_for?: string[];
   not_suitable_for?: string[];
+  scalp_types?: string[];
+  concerns?: string[];
   pros_uz?: string;
   cons_uz?: string;
   warnings_uz?: string;
@@ -5004,6 +5038,8 @@ function careProductFormData(body: AdminCareProductPayload): FormData {
   fd.set("purpose_uz", body.purpose_uz || "");
   fd.set("suitable_for", JSON.stringify(body.suitable_for || []));
   fd.set("not_suitable_for", JSON.stringify(body.not_suitable_for || []));
+  fd.set("scalp_types", JSON.stringify(body.scalp_types || []));
+  fd.set("concerns", JSON.stringify(body.concerns || []));
   fd.set("pros_uz", body.pros_uz || "");
   fd.set("cons_uz", body.cons_uz || "");
   fd.set("warnings_uz", body.warnings_uz || "");

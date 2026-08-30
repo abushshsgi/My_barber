@@ -537,6 +537,12 @@ export function MorphCareScreen({ navigation, route }: Props) {
         condition: quiz.condition,
         texture: quiz.texture,
         color_status: quiz.colorStatus,
+        scalp:
+          quiz.condition === "oily"
+            ? "oily"
+            : quiz.condition === "dry" || quiz.condition === "damaged"
+              ? "dry"
+              : "normal",
       }).catch(() => undefined);
       await markCareOnboardingSeen();
       const products = await fetchCareProducts({ recommended: true }).catch(() => []);
@@ -610,7 +616,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
             ? ["#F0F0F0", "#F0F0F0", "#F0F0F0"]
             : ["#FAFAFA", "#FAFAFA", "#F0F0F0"],
         isUserAdded: false,
-        fitScore: fit,
+        fitScore: typeof cp.match_percent === "number" ? cp.match_percent : fit,
         usageText: cp.usage_uz,
       });
     });

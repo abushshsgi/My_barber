@@ -263,12 +263,18 @@ from ai.admin_views import (
 )
 from ai.admin_parvarish_views import (
     AdminParvarishDemoActionView,
+    AdminParvarishLikesView,
+    AdminParvarishMyProductsView,
     AdminParvarishProductDetailView,
     AdminParvarishProductListCreateView,
     AdminParvarishStatsView,
 )
 from ai.care_views import (
+    CareMyProductDeleteView,
+    CareMyProductListCreateView,
+    CarePlanGenerateView,
     CareProductDetailView,
+    CareProductLikeToggleView,
     CareProductListView,
     HairCareProfileMeView,
 )
@@ -419,6 +425,8 @@ api_routes = [
     path("admin/morph-ai/catalog/", AdminMorphAiCatalogListCreateView.as_view()),
     path("admin/morph-ai/catalog/<str:style_id>/", AdminMorphAiCatalogDetailView.as_view()),
     path("admin/parvarish/stats/", AdminParvarishStatsView.as_view()),
+    path("admin/parvarish/likes/", AdminParvarishLikesView.as_view()),
+    path("admin/parvarish/my-products/", AdminParvarishMyProductsView.as_view()),
     path("admin/parvarish/products/", AdminParvarishProductListCreateView.as_view()),
     path("admin/parvarish/products/<int:product_id>/", AdminParvarishProductDetailView.as_view()),
     path("admin/parvarish/demo-action/", AdminParvarishDemoActionView.as_view()),
@@ -537,6 +545,10 @@ api_routes = [
     path("ai/ingredient-scan/", AiIngredientScanView.as_view()),
     path("ai/care/products/", CareProductListView.as_view()),
     path("ai/care/products/<int:product_id>/", CareProductDetailView.as_view()),
+    path("ai/care/products/<int:product_id>/like/", CareProductLikeToggleView.as_view()),
+    path("ai/care/my-products/", CareMyProductListCreateView.as_view()),
+    path("ai/care/my-products/<int:product_id>/", CareMyProductDeleteView.as_view()),
+    path("ai/care/plan/", CarePlanGenerateView.as_view()),
     path("ai/care/weather/", CareWeatherView.as_view()),
     path("ai/barber-card/", AiBarberCardView.as_view()),
     path("ai/chat/", AiMorphChatView.as_view()),

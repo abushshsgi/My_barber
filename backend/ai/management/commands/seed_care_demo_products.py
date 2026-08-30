@@ -14,6 +14,56 @@ from ai.models import CareProduct
 
 DEMO_SLUG_PREFIX = "demo-"
 
+
+def infer_demo_taxonomy(item: dict) -> tuple[list[str], list[str]]:
+    suitable = {str(x).strip().lower() for x in (item.get("suitable_for") or [])}
+    scalp: list[str] = []
+    if "oily" in suitable:
+        scalp.append("oily")
+    if "dry" in suitable or "damaged" in suitable:
+        scalp.append("dry")
+    if "normal" in suitable:
+        scalp.append("normal")
+    blob = f"{item.get('name', '')} {item.get('purpose_uz', '')} {item.get('slug', '')}".lower()
+    concerns: list[str] = []
+    if any(k in blob for k in ("qazg", "kepek", "dermax", "piroctone", "dandruff")):
+        concerns.append("dandruff")
+    if any(k in blob for k in ("to'kil", "tokil", "genesis", "anti-fall", "ildiz")):
+        concerns.append("hair_loss")
+    if any(k in blob for k in ("shikast", "bond", "olaplex", "repair", "tiklov")):
+        concerns.append("breakage")
+    if any(k in blob for k in ("bo'ya", "boya", "color", "ochil", "bleach")):
+        concerns.append("color_fade")
+    if any(k in blob for k in ("jingal", "frizz", "to'lqin", "curly")):
+        concerns.append("frizz")
+    if any(k in blob for k in ("uch", "split", "yoril")):
+        concerns.append("split_ends")
+    if any(k in blob for k in ("qichi", "itch", "sezgir")):
+        concerns.append("itch")
+    return scalp, concerns
+
+
+def demo_product_defaults(item: dict) -> dict:
+    scalp, concerns = infer_demo_taxonomy(item)
+    return {
+        "name": item["name"],
+        "brand": item["brand"],
+        "category": item["category"],
+        "ingredients_text": item["ingredients_text"],
+        "ingredients": item["ingredients"],
+        "usage_uz": item["usage_uz"],
+        "purpose_uz": item["purpose_uz"],
+        "suitable_for": item["suitable_for"],
+        "not_suitable_for": item["not_suitable_for"],
+        "scalp_types": item.get("scalp_types") or scalp,
+        "concerns": item.get("concerns") or concerns,
+        "pros_uz": item["pros_uz"],
+        "cons_uz": item["cons_uz"],
+        "warnings_uz": item["warnings_uz"],
+        "is_published": True,
+        "sort_order": item["sort_order"],
+    }
+
 DEMO_PRODUCTS = [
     # 1. Shampunlar
     {
@@ -370,22 +420,7 @@ class Command(BaseCommand):
         updated_count = 0
         for item in DEMO_PRODUCTS:
             slug = item["slug"]
-            defaults = {
-                "name": item["name"],
-                "brand": item["brand"],
-                "category": item["category"],
-                "ingredients_text": item["ingredients_text"],
-                "ingredients": item["ingredients"],
-                "usage_uz": item["usage_uz"],
-                "purpose_uz": item["purpose_uz"],
-                "suitable_for": item["suitable_for"],
-                "not_suitable_for": item["not_suitable_for"],
-                "pros_uz": item["pros_uz"],
-                "cons_uz": item["cons_uz"],
-                "warnings_uz": item["warnings_uz"],
-                "is_published": True,
-                "sort_order": item["sort_order"],
-            }
+            defaults = demo_product_defaults(item)
             obj, created = CareProduct.objects.update_or_create(
                 slug=slug,
                 defaults=defaults,

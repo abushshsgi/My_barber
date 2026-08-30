@@ -15,6 +15,12 @@ export type CareProduct = {
   purpose_uz: string;
   suitable_for: string[];
   not_suitable_for: string[];
+  scalp_types?: string[];
+  concerns?: string[];
+  match_percent?: number | null;
+  fit_verdict?: string | null;
+  fit_reasons?: string[];
+  usage_steps?: Array<{ title: string; desc: string; icon?: string }>;
   pros_uz: string;
   cons_uz: string;
   warnings_uz: string;

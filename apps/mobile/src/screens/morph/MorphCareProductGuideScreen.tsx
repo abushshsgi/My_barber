@@ -224,7 +224,17 @@ export function MorphCareProductGuideScreen({ navigation, route }: Props) {
   const image = product?.image_url || params.imageUrl || "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=600&q=80";
   const usageText = product?.usage_uz || params.usageText;
 
-  const steps = getStepsForCategory(category, usageText);
+  const steps =
+    product?.usage_steps && product.usage_steps.length
+      ? product.usage_steps.map((s, i) => ({
+          number: i + 1,
+          title: s.title,
+          desc: s.desc,
+          icon: (["water-outline", "hand-left-outline", "sparkles-outline", "checkmark-circle-outline"][
+            i % 4
+          ] || "sparkles-outline") as keyof typeof Ionicons.glyphMap,
+        }))
+      : getStepsForCategory(category, usageText);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);

@@ -56,12 +56,47 @@ export function MorphAiCareProductDetailPage({ productId }: Props) {
             </h1>
             {q.data.brand ? <p className="mt-1 text-sm text-[#111111]/45">{q.data.brand}</p> : null}
 
+            {typeof q.data.match_percent === "number" ? (
+              <div className="mt-5 rounded-2xl bg-white p-4 ring-1 ring-black/5">
+                <p className="text-[12px] font-medium tracking-wide text-[#111111]/35">
+                  {t("aiStylePage.care.catalog.fit", { defaultValue: "Sizga mosligi" })}
+                </p>
+                <p className="mt-1 text-[1.6rem] font-semibold tracking-tight">
+                  {q.data.match_percent}%
+                </p>
+                {(q.data.fit_reasons || []).length ? (
+                  <ul className="mt-3 space-y-1.5">
+                    {q.data.fit_reasons!.map((reason) => (
+                      <li key={reason} className="text-[14px] leading-relaxed text-[#111111]/70">
+                        {reason}
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+              </div>
+            ) : null}
+
             <Block title={t("aiStylePage.care.catalog.purpose", { defaultValue: "Nima uchun" })}>
               {q.data.purpose_uz || "—"}
             </Block>
             <Block title={t("aiStylePage.care.catalog.usage", { defaultValue: "Qo‘llanish" })}>
               {q.data.usage_uz || "—"}
             </Block>
+            {(q.data.usage_steps || []).length ? (
+              <section className="mt-8">
+                <h2 className="text-[12px] font-medium tracking-wide text-[#111111]/35">
+                  {t("aiStylePage.care.catalog.steps", { defaultValue: "Qanday ishlatish" })}
+                </h2>
+                <ol className="mt-3 space-y-3">
+                  {q.data.usage_steps!.map((step, i) => (
+                    <li key={`${step.title}-${i}`}>
+                      <p className="text-[15px] font-semibold">{i + 1}. {step.title}</p>
+                      <p className="mt-0.5 text-[14px] leading-relaxed text-[#111111]/70">{step.desc}</p>
+                    </li>
+                  ))}
+                </ol>
+              </section>
+            ) : null}
             <Block title={t("aiStylePage.care.catalog.who", { defaultValue: "Kimlarga" })}>
               {(q.data.suitable_for || []).length
                 ? q.data.suitable_for

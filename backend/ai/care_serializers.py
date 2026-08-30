@@ -4,22 +4,11 @@ from rest_framework import serializers
 
 from ai.models import CareProduct, HairCareProfile
 from ai.serializers import _media_absolute_url
-from ai.services.care_match import parse_ingredients_text
-
-
-HAIR_TAGS = frozenset(
-    {
-        "oily",
-        "dry",
-        "normal",
-        "damaged",
-        "straight",
-        "wavy",
-        "curly",
-        "natural",
-        "colored",
-        "bleached",
-    }
+from ai.services.care_match import (
+    CONCERN_TAGS,
+    HAIR_TAGS,
+    SCALP_TAGS,
+    parse_ingredients_text,
 )
 
 
@@ -39,7 +28,7 @@ def _maybe_json_list(raw):
     return raw
 
 
-def _clean_tags(raw) -> list[str]:
+def _clean_allowed(raw, allowed: frozenset[str]) -> list[str]:
     if isinstance(raw, str):
         raw = [part.strip() for part in raw.replace(";", ",").split(",")]
     if not isinstance(raw, list):
@@ -47,13 +36,19 @@ def _clean_tags(raw) -> list[str]:
     out: list[str] = []
     for item in raw:
         tag = str(item or "").strip().lower()
-        if tag in HAIR_TAGS and tag not in out:
+        if tag in allowed and tag not in out:
             out.append(tag)
     return out
 
 
+def _clean_tags(raw) -> list[str]:
+    return _clean_allowed(raw, HAIR_TAGS)
+
+
 class CareProductSerializer(serializers.ModelSerializer):
     image_url = serializers.SerializerMethodField()
+    likes_count = serializers.SerializerMethodField()
+    liked_by_me = serializers.SerializerMethodField()
 
     class Meta:
         model = CareProduct
@@ -70,19 +65,46 @@ class CareProductSerializer(serializers.ModelSerializer):
             "purpose_uz",
             "suitable_for",
             "not_suitable_for",
+            "scalp_types",
+            "concerns",
             "pros_uz",
             "cons_uz",
             "warnings_uz",
             "is_published",
             "sort_order",
+            "likes_count",
+            "liked_by_me",
             "created_at",
             "updated_at",
         )
-        read_only_fields = ("id", "slug", "image_url", "created_at", "updated_at")
+        read_only_fields = (
+            "id",
+            "slug",
+            "image_url",
+            "likes_count",
+            "liked_by_me",
+            "created_at",
+            "updated_at",
+        )
 
     def get_image_url(self, obj: CareProduct) -> str | None:
         request = self.context.get("request")
         return _media_absolute_url(request, obj.image)
+
+    def get_likes_count(self, obj: CareProduct) -> int:
+        annotated = getattr(obj, "likes_count", None)
+        if annotated is not None:
+            return int(annotated)
+        return int(obj.likes.count())
+
+    def get_liked_by_me(self, obj: CareProduct) -> bool:
+        liked_ids = self.context.get("liked_product_ids")
+        if isinstance(liked_ids, set):
+            return obj.id in liked_ids
+        request = self.context.get("request")
+        if not request or not getattr(request.user, "is_authenticated", False):
+            return False
+        return obj.likes.filter(user_id=request.user.id).exists()
 
     def validate_category(self, value: str) -> str:
         value = (value or "").strip().lower()
@@ -127,6 +149,12 @@ class CareProductSerializer(serializers.ModelSerializer):
     def validate_not_suitable_for(self, value) -> list[str]:
         return _clean_tags(_maybe_json_list(value))
 
+    def validate_scalp_types(self, value) -> list[str]:
+        return _clean_allowed(_maybe_json_list(value), SCALP_TAGS)
+
+    def validate_concerns(self, value) -> list[str]:
+        return _clean_allowed(_maybe_json_list(value), CONCERN_TAGS)
+
     def validate(self, attrs: dict) -> dict:
         text = attrs.get("ingredients_text")
         ingredients = attrs.get("ingredients")
@@ -150,6 +178,8 @@ class HairCareProfileSerializer(serializers.ModelSerializer):
             "condition",
             "texture",
             "color_status",
+            "scalp",
+            "concerns",
             "complete",
             "completed_at",
             "updated_at",
@@ -176,6 +206,18 @@ class HairCareProfileSerializer(serializers.ModelSerializer):
         if value not in valid:
             raise serializers.ValidationError("Noto'g'ri rang holati.")
         return value
+
+    def validate_scalp(self, value: str) -> str:
+        value = (value or "").strip().lower()
+        if not value:
+            return ""
+        valid = {c[0] for c in HairCareProfile.Scalp.choices}
+        if value not in valid:
+            raise serializers.ValidationError("Noto'g'ri bosh terisi turi.")
+        return value
+
+    def validate_concerns(self, value) -> list[str]:
+        return _clean_allowed(_maybe_json_list(value), CONCERN_TAGS)
 
     def update(self, instance: HairCareProfile, validated_data: dict) -> HairCareProfile:
         from django.utils import timezone

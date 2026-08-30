@@ -51,6 +51,8 @@ def format_product_line(product: CareProduct) -> str:
     ings_s = ", ".join(ings) if ings else "(inci yo'q)"
     suitable = ",".join(_tags(product.suitable_for)) or "-"
     unsuitable = ",".join(_tags(product.not_suitable_for)) or "-"
+    scalp = ",".join(_tags(getattr(product, "scalp_types", None))) or "-"
+    concerns = ",".join(_tags(getattr(product, "concerns", None))) or "-"
     parts = [
         f"id={product.pk}",
         f"name={_clip(product.name, 80)}",
@@ -58,6 +60,8 @@ def format_product_line(product: CareProduct) -> str:
         f"cat={product.category}",
         f"suitable={suitable}",
         f"not_suitable={unsuitable}",
+        f"scalp={scalp}",
+        f"concerns={concerns}",
         f"inci=[{ings_s}]",
     ]
     if product.pros_uz:
