@@ -146,14 +146,6 @@ function buildFallbackDays(): { date: string; weekday_key: string; is_today: boo
   return rows;
 }
 
-function greetingKey(): string {
-  const h = new Date().getHours();
-  if (h < 12) return "care.routine.goodMorning";
-  if (h < 18) return "care.routine.goodAfternoon";
-  return "care.routine.goodEvening";
-}
-
-/** 1 like = 1 yurak; 2+ = 1.5 yurak; 0 da faqat raqam (tugma alohida). */
 function LikeHeartsBadge({ count }: { count: number }) {
   const n = Math.max(0, count);
   return (
@@ -1581,61 +1573,51 @@ export function MorphCareScreen({ navigation, route }: Props) {
 
   return (
     <View style={styles.routineRoot}>
-      <LinearGradient
-        colors={["#F0F0F0", "#F0F0F0", "#FAFAFA"]}
-        start={{ x: 0.1, y: 0 }}
-        end={{ x: 0.9, y: 0.55 }}
-        style={StyleSheet.absoluteFill}
-      />
-      <View style={[styles.routineTop, { paddingTop: insets.top + 8 }]}>
-        <View style={styles.navBarRow}>
-          <Pressable
-            style={styles.navCircleBtnLight}
-            onPress={() => setViewMode("hub")}
-            hitSlop={8}
-            accessibilityLabel={t("common.back")}
-          >
-            <Ionicons name="chevron-back" size={20} color="#111" />
-          </Pressable>
-          <Text style={styles.routineTopTitle}>{t("care.hubParvarish")}</Text>
-          <Pressable
-            style={styles.navCircleBtnLight}
-            onPress={openAssistant}
-            hitSlop={8}
-            accessibilityLabel="Help"
-          >
-            <Ionicons name="help-outline" size={18} color="#111" />
-          </Pressable>
+      <StatusBar style="dark" />
+      <View style={[styles.routineHeader, { paddingTop: insets.top + 6 }]}>
+        <Pressable
+          style={styles.routineHeaderBtn}
+          onPress={() => setViewMode("hub")}
+          hitSlop={8}
+          accessibilityLabel={t("common.back")}
+        >
+          <Ionicons name="chevron-back" size={20} color="#111" />
+        </Pressable>
+        <View style={styles.routineHeaderCenter}>
+          <Text style={styles.routineHeaderTitle}>{t("care.hubParvarish")}</Text>
+          <Text style={styles.routineHeaderSub} numberOfLines={1}>
+            {t(`care.conditions.${quiz.condition}`)} · {t(`care.textures.${quiz.texture}`)}
+          </Text>
         </View>
-        <Text style={styles.routineHeadline}>{t(greetingKey())}</Text>
+        <Pressable
+          style={styles.routineHeaderBtn}
+          onPress={openAssistant}
+          hitSlop={8}
+          accessibilityLabel={t("care.hubAiAssistant")}
+        >
+          <Ionicons name="chatbubble-ellipses-outline" size={17} color="#111" />
+        </Pressable>
       </View>
 
-      <View style={[styles.hubSheet, styles.hubSheetFlow, { flex: 1, paddingBottom: Math.max(insets.bottom, 16) + 8 }]}>
-        <CareRoutineSheet
-          quiz={quiz}
-          catalog={catalog}
-          selectedDate={selectedDate}
-          onOpenCatalog={openCatalog}
-          onOpenScan={openTarkib}
-          onOpenProduct={openProduct}
-          onOpenAssistant={openAssistant}
-          onRetakeQuiz={() => setStep(0)}
-        />
-      </View>
+      <CareRoutineSheet
+        quiz={quiz}
+        catalog={catalog}
+        selectedDate={selectedDate}
+        onOpenCatalog={openCatalog}
+        onOpenScan={openTarkib}
+        onOpenProduct={openProduct}
+        onOpenAssistant={openAssistant}
+        onRetakeQuiz={() => setStep(0)}
+      />
 
       <Pressable
         style={[styles.fab, { bottom: Math.max(insets.bottom, 16) + 16 }]}
         onPress={openAssistant}
         accessibilityLabel={t("care.hubAiAssistant")}
       >
-        <LinearGradient
-          colors={["#111111", "#111111"]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.fabInner}
-        >
-          <Ionicons name="happy-outline" size={24} color="#fff" />
-        </LinearGradient>
+        <View style={styles.fabInner}>
+          <Ionicons name="sparkles" size={22} color="#fff" />
+        </View>
       </Pressable>
     </View>
   );
@@ -2540,6 +2522,45 @@ const styles = StyleSheet.create({
     letterSpacing: -0.6,
     lineHeight: fontSize(32),
   },
+  routineHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: moderateScale(10),
+    paddingHorizontal: scale(16),
+    paddingBottom: verticalScale(10),
+    backgroundColor: "#FAFAFA",
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "rgba(17,17,17,0.06)",
+    zIndex: 2,
+  },
+  routineHeaderBtn: {
+    width: scale(38),
+    height: scale(38),
+    borderRadius: moderateScale(19),
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#FFFFFF",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(17,17,17,0.08)",
+  },
+  routineHeaderCenter: {
+    flex: 1,
+    minWidth: 0,
+    gap: 2,
+  },
+  routineHeaderTitle: {
+    ...morphFont,
+    fontSize: fontSize(17),
+    fontWeight: "700",
+    color: "#111111",
+    letterSpacing: -0.3,
+  },
+  routineHeaderSub: {
+    ...morphFont,
+    fontSize: fontSize(12),
+    fontWeight: "500",
+    color: "rgba(17,17,17,0.45)",
+  },
   hubDockOuter: {
     marginTop: verticalScale(4),
     flexGrow: 0,
@@ -2760,7 +2781,13 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 4 },
   },
-  fabInner: { flex: 1, alignItems: "center", justifyContent: "center" },
+  fabInner: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#111111",
+    borderRadius: moderateScale(28),
+  },
   flexGrow: { flex: 1.6 },
   disabled: { opacity: 0.5 },
   muted: { ...morphFont, fontSize: fontSize(12), color: "rgba(255,255,255,0.35)", fontWeight: "500" },

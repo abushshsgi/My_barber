@@ -191,17 +191,30 @@ export function CareRoutineSheet({
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
     >
-      <View style={styles.profileRow}>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.routineTitle}>{t("care.routine.title")}</Text>
-          <Text style={styles.profileSummary} numberOfLines={2}>
-            {t(`care.conditions.${quiz.condition}`)} · {t(`care.textures.${quiz.texture}`)} ·{" "}
-            {t(`care.colors.${quiz.colorStatus}`)}
-          </Text>
+      <View style={styles.heroCard}>
+        <View style={styles.heroTop}>
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text style={styles.routineTitle}>{t("care.routine.title")}</Text>
+            <Text style={styles.heroHint} numberOfLines={1}>
+              {t("care.hubParvarishSub")}
+            </Text>
+          </View>
+          <Pressable style={styles.retakeBtn} onPress={onRetakeQuiz}>
+            <Ionicons name="refresh-outline" size={14} color="#111111" />
+            <Text style={styles.retakeText}>{t("care.quiz.retake")}</Text>
+          </Pressable>
         </View>
-        <Pressable style={styles.retakeBtn} onPress={onRetakeQuiz}>
-          <Text style={styles.retakeText}>{t("care.quiz.retake")}</Text>
-        </Pressable>
+        <View style={styles.chipRow}>
+          <View style={styles.chip}>
+            <Text style={styles.chipText}>{t(`care.conditions.${quiz.condition}`)}</Text>
+          </View>
+          <View style={styles.chip}>
+            <Text style={styles.chipText}>{t(`care.textures.${quiz.texture}`)}</Text>
+          </View>
+          <View style={styles.chip}>
+            <Text style={styles.chipText}>{t(`care.colors.${quiz.colorStatus}`)}</Text>
+          </View>
+        </View>
       </View>
 
       {aiPlan?.summary ? (
@@ -233,7 +246,7 @@ export function CareRoutineSheet({
         </Pressable>
       ) : null}
 
-      <View style={styles.slotRow}>
+      <View style={styles.slotTrack}>
         {SLOTS.map((s) => {
           const on = slot === s;
           return (
@@ -244,8 +257,8 @@ export function CareRoutineSheet({
             >
               <Ionicons
                 name={SLOT_ICONS[s]}
-                size={14}
-                color={on ? "#1a1a1a" : "rgba(26,26,26,0.45)"}
+                size={15}
+                color={on ? "#FFFFFF" : "rgba(17,17,17,0.45)"}
               />
               <Text style={[styles.slotText, on && styles.slotTextOn]}>
                 {t(`care.routine.slots.${s}`)}
@@ -256,23 +269,27 @@ export function CareRoutineSheet({
       </View>
 
       <View style={styles.taskList}>
-        {tasks.map((task, idx) => {
+        {tasks.map((task) => {
           const done = !!doneMap[task.id];
           return (
             <Pressable
               key={task.id}
-              style={[styles.taskRow, idx === 0 && styles.taskRowFirst]}
+              style={[styles.taskRow, done && styles.taskRowDone]}
               onPress={() => {
                 if (task.productId) onOpenProduct(task.productId);
                 else void toggleTask(task.id);
               }}
               onLongPress={() => void toggleTask(task.id)}
             >
-              <View style={styles.taskThumb}>
-                <Ionicons name={TASK_ICONS[task.icon]} size={18} color="#111111" />
+              <View style={[styles.taskThumb, done && styles.taskThumbDone]}>
+                <Ionicons
+                  name={TASK_ICONS[task.icon]}
+                  size={18}
+                  color={done ? "#FFFFFF" : "#111111"}
+                />
               </View>
               <View style={styles.taskBody}>
-                <Text style={styles.taskTitle}>{task.title}</Text>
+                <Text style={[styles.taskTitle, done && styles.taskTitleDone]}>{task.title}</Text>
                 <Text style={styles.taskSub} numberOfLines={2}>
                   {task.timeHint ? `${task.timeHint} · ` : ""}
                   {task.subtitle}
@@ -410,32 +427,73 @@ export function CareRoutineSheet({
 }
 
 const styles = StyleSheet.create({
-  sheetScroll: { flex: 1 },
-  sheetContent: { paddingBottom: verticalScale(120), gap: moderateScale(4) },
-  profileRow: { flexDirection: "row", alignItems: "flex-start", gap: moderateScale(10), marginBottom: verticalScale(4) },
-  routineTitle: { ...morphFont, fontSize: fontSize(18), fontWeight: "700", color: "#111" },
-  profileSummary: {
+  sheetScroll: { flex: 1, backgroundColor: "#FAFAFA" },
+  sheetContent: {
+    paddingHorizontal: scale(16),
+    paddingTop: verticalScale(12),
+    paddingBottom: verticalScale(120),
+    gap: moderateScale(12),
+  },
+  heroCard: {
+    borderRadius: moderateScale(22),
+    backgroundColor: "#FFFFFF",
+    padding: moderateScale(16),
+    gap: moderateScale(12),
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(17,17,17,0.06)",
+  },
+  heroTop: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: moderateScale(10),
+  },
+  routineTitle: {
     ...morphFont,
-    marginTop: verticalScale(4),
+    fontSize: fontSize(20),
+    fontWeight: "700",
+    color: "#111111",
+    letterSpacing: -0.4,
+  },
+  heroHint: {
+    ...morphFont,
+    marginTop: verticalScale(3),
     fontSize: fontSize(12),
     lineHeight: fontSize(16),
-    color: "rgba(26,26,26,0.5)",
+    color: "rgba(17,17,17,0.45)",
+  },
+  chipRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: moderateScale(6),
+  },
+  chip: {
+    paddingHorizontal: scale(10),
+    paddingVertical: verticalScale(6),
+    borderRadius: 999,
+    backgroundColor: "#F3F3F5",
+  },
+  chipText: {
+    ...morphFont,
+    fontSize: fontSize(11),
+    fontWeight: "600",
+    color: "#111111",
   },
   retakeBtn: {
-    paddingHorizontal: scale(12),
+    flexDirection: "row",
+    alignItems: "center",
+    gap: moderateScale(4),
+    paddingHorizontal: scale(10),
     paddingVertical: verticalScale(8),
     borderRadius: 999,
-    backgroundColor: "#F2F2F4",
+    backgroundColor: "#F3F3F5",
   },
-  retakeText: { ...morphFont, fontSize: fontSize(12), fontWeight: "600", color: "#1a1a1a" },
+  retakeText: { ...morphFont, fontSize: fontSize(12), fontWeight: "600", color: "#111111" },
   summaryCard: {
-    marginTop: verticalScale(8),
-    marginBottom: verticalScale(4),
-    borderRadius: moderateScale(16),
+    borderRadius: moderateScale(18),
     padding: moderateScale(14),
-    backgroundColor: "#FAFAFA",
-    borderWidth: 1,
-    borderColor: "rgba(99,102,241,0.15)",
+    backgroundColor: "#FFFFFF",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(17,17,17,0.06)",
     gap: moderateScale(6),
   },
   summaryHead: { flexDirection: "row", alignItems: "center", gap: moderateScale(6) },
@@ -446,47 +504,55 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: moderateScale(8),
     paddingVertical: verticalScale(8),
+    paddingHorizontal: scale(4),
   },
-  aiLoadingText: { ...morphFont, fontSize: fontSize(12), color: "rgba(26,26,26,0.5)" },
+  aiLoadingText: { ...morphFont, fontSize: fontSize(12), color: "rgba(17,17,17,0.5)" },
   aiErrorRow: {
     padding: moderateScale(12),
     borderRadius: moderateScale(14),
     backgroundColor: "#FEF2F2",
     gap: moderateScale(4),
-    marginBottom: verticalScale(4),
   },
   aiErrorText: { ...morphFont, fontSize: fontSize(12), color: "#991B1B" },
   aiRetry: { ...morphFont, fontSize: fontSize(12), fontWeight: "700", color: "#111111" },
-  slotRow: { flexDirection: "row", gap: moderateScale(8), marginTop: verticalScale(8), marginBottom: verticalScale(12) },
+  slotTrack: {
+    flexDirection: "row",
+    gap: moderateScale(6),
+    padding: moderateScale(4),
+    borderRadius: 999,
+    backgroundColor: "#EEEEF0",
+  },
   slotPill: {
+    flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    gap: moderateScale(6),
-    paddingHorizontal: scale(14),
+    justifyContent: "center",
+    gap: moderateScale(5),
     paddingVertical: verticalScale(10),
     borderRadius: 999,
-    backgroundColor: "#F2F2F4",
   },
-  slotPillOn: { backgroundColor: "#fff", borderWidth: 1, borderColor: "rgba(0,0,0,0.06)" },
-  slotText: { ...morphFont, fontSize: fontSize(13), fontWeight: "600", color: "rgba(26,26,26,0.45)" },
-  slotTextOn: { color: "#1a1a1a" },
+  slotPillOn: {
+    backgroundColor: "#111111",
+  },
+  slotText: { ...morphFont, fontSize: fontSize(12), fontWeight: "700", color: "rgba(17,17,17,0.45)" },
+  slotTextOn: { color: "#FFFFFF" },
   taskList: {
-    borderRadius: moderateScale(20),
-    backgroundColor: "#FAFAFB",
-    overflow: "hidden",
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(0,0,0,0.04)",
+    gap: moderateScale(8),
   },
   taskRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: moderateScale(12),
-    paddingHorizontal: scale(14),
-    paddingVertical: verticalScale(14),
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: "rgba(0,0,0,0.05)",
+    paddingHorizontal: scale(12),
+    paddingVertical: verticalScale(12),
+    borderRadius: moderateScale(18),
+    backgroundColor: "#FFFFFF",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(17,17,17,0.06)",
   },
-  taskRowFirst: { borderTopWidth: 0 },
+  taskRowDone: {
+    backgroundColor: "#F7F7F8",
+  },
   taskThumb: {
     width: scale(44),
     height: scale(44),
@@ -495,9 +561,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  taskBody: { flex: 1, gap: moderateScale(2) },
-  taskTitle: { ...morphFont, fontSize: fontSize(14), fontWeight: "600", color: "#111" },
-  taskSub: { ...morphFont, fontSize: fontSize(12), color: "rgba(26,26,26,0.45)" },
+  taskThumbDone: {
+    backgroundColor: "#111111",
+  },
+  taskBody: { flex: 1, gap: moderateScale(2), minWidth: 0 },
+  taskTitle: { ...morphFont, fontSize: fontSize(14), fontWeight: "700", color: "#111111" },
+  taskTitleDone: { color: "rgba(17,17,17,0.45)", textDecorationLine: "line-through" },
+  taskSub: { ...morphFont, fontSize: fontSize(12), color: "rgba(17,17,17,0.45)" },
   taskProduct: {
     ...morphFont,
     marginTop: verticalScale(2),
@@ -510,18 +580,18 @@ const styles = StyleSheet.create({
     height: scale(26),
     borderRadius: moderateScale(13),
     borderWidth: 1.5,
-    borderColor: "rgba(26,26,26,0.15)",
+    borderColor: "rgba(17,17,17,0.15)",
     alignItems: "center",
     justifyContent: "center",
   },
   taskCheckOn: { backgroundColor: "#111111", borderColor: "#111111" },
-  weekBlock: { marginTop: verticalScale(16), gap: moderateScale(8) },
+  weekBlock: { marginTop: verticalScale(4), gap: moderateScale(8) },
   weekList: {
     borderRadius: moderateScale(16),
-    backgroundColor: "#FAFAFA",
+    backgroundColor: "#FFFFFF",
     overflow: "hidden",
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(0,0,0,0.05)",
+    borderColor: "rgba(17,17,17,0.06)",
   },
   weekRow: {
     flexDirection: "row",
@@ -529,7 +599,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: scale(14),
     paddingVertical: verticalScale(10),
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: "rgba(0,0,0,0.05)",
+    borderTopColor: "rgba(17,17,17,0.05)",
   },
   weekDay: { ...morphFont, width: scale(40), fontSize: fontSize(13), fontWeight: "700", color: "#111111" },
   weekTask: { ...morphFont, flex: 1, fontSize: fontSize(13), color: "#111111" },
