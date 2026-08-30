@@ -70,7 +70,8 @@ def _fetch_open_meteo(lat: float, lon: float) -> dict[str, Any]:
         return json.loads(resp.read().decode("utf-8"))
 
 
-def _reverse_geocode(lat: float, lon: float) -> str:
+def _reverse_geocode(lat: float, lon: float) -> dict[str, str]:
+    """Open-Meteo reverse → hudud (place) + viloyat (region)."""
     params = urllib.parse.urlencode(
         {
             "latitude": f"{lat:.4f}",
@@ -81,22 +82,31 @@ def _reverse_geocode(lat: float, lon: float) -> str:
         }
     )
     url = f"https://geocoding-api.open-meteo.com/v1/reverse?{params}"
+    empty = {"location_label": "", "location_place": "", "location_region": ""}
     try:
         req = urllib.request.Request(url, headers={"Accept": "application/json"})
         with urllib.request.urlopen(req, timeout=8) as resp:
             data = json.loads(resp.read().decode("utf-8"))
         results = data.get("results") or []
-        if results:
-            row = results[0]
-            return (
-                row.get("name")
-                or row.get("admin1")
-                or row.get("country")
-                or ""
-            ).strip()
+        if not results:
+            return empty
+        row = results[0]
+        name = str(row.get("name") or "").strip()
+        admin1 = str(row.get("admin1") or "").strip()
+        admin2 = str(row.get("admin2") or "").strip()
+        place = name or admin2
+        region = admin1
+        if place and region and place.casefold() != region.casefold():
+            label = f"{place}, {region}"
+        else:
+            label = place or region
+        return {
+            "location_label": label,
+            "location_place": place,
+            "location_region": region,
+        }
     except (urllib.error.URLError, TimeoutError, ValueError, OSError):
-        pass
-    return ""
+        return empty
 
 
 def _hair_recommendations(
@@ -216,10 +226,12 @@ def build_weather_care_payload(
             }
         )
 
-    location_label = _reverse_geocode(safe_lat, safe_lon)
+    geo = _reverse_geocode(safe_lat, safe_lon)
 
     return {
-        "location_label": location_label,
+        "location_label": geo["location_label"],
+        "location_place": geo["location_place"],
+        "location_region": geo["location_region"],
         "latitude": safe_lat,
         "longitude": safe_lon,
         "current": {

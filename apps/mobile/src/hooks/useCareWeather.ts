@@ -11,6 +11,39 @@ function parseCoord(v: string | number | null | undefined): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+/** Avval GPS, keyin saqlangan profil / mehmon joylashuvi. */
+async function resolveCoords(
+  savedLat: number | null,
+  savedLon: number | null,
+): Promise<{ lat: number | null; lon: number | null }> {
+  try {
+    let perm = await Location.getForegroundPermissionsAsync();
+    if (perm.status !== "granted") {
+      perm = await Location.requestForegroundPermissionsAsync();
+    }
+    if (perm.status === "granted") {
+      const pos = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      }).catch(() => null);
+      if (pos) {
+        return { lat: pos.coords.latitude, lon: pos.coords.longitude };
+      }
+    }
+  } catch {
+    /* GPS yo‘q — fallback */
+  }
+
+  if (savedLat != null && savedLon != null) {
+    return { lat: savedLat, lon: savedLon };
+  }
+
+  const guest = await getGuestLocation().catch(() => null);
+  return {
+    lat: guest?.latitude ?? null,
+    lon: guest?.longitude ?? null,
+  };
+}
+
 export function useCareWeather() {
   const { user } = useAuth();
   const [data, setData] = useState<WeatherCarePayload | null>(null);
@@ -21,33 +54,9 @@ export function useCareWeather() {
     setLoading(true);
     setError(null);
     try {
-      const guest = await getGuestLocation();
-      let lat = parseCoord(user?.latitude) ?? guest?.latitude ?? null;
-      let lon = parseCoord(user?.longitude) ?? guest?.longitude ?? null;
-
-      if (lat == null || lon == null) {
-        const perm = await Location.getForegroundPermissionsAsync();
-        if (perm.status !== "granted") {
-          const req = await Location.requestForegroundPermissionsAsync();
-          if (req.status === "granted") {
-            const pos = await Location.getCurrentPositionAsync({
-              accuracy: Location.Accuracy.Balanced,
-            }).catch(() => null);
-            if (pos) {
-              lat = pos.coords.latitude;
-              lon = pos.coords.longitude;
-            }
-          }
-        } else {
-          const pos = await Location.getCurrentPositionAsync({
-            accuracy: Location.Accuracy.Balanced,
-          }).catch(() => null);
-          if (pos) {
-            lat = pos.coords.latitude;
-            lon = pos.coords.longitude;
-          }
-        }
-      }
+      const savedLat = parseCoord(user?.latitude);
+      const savedLon = parseCoord(user?.longitude);
+      const { lat, lon } = await resolveCoords(savedLat, savedLon);
 
       const quiz = await loadCareQuiz().catch(() => null);
       const payload = await fetchWeatherCare({

@@ -26,6 +26,10 @@ export type WeatherDay = {
 
 export type WeatherCarePayload = {
   location_label: string;
+  /** Mahalla / tuman / shahar — GPS reverse. */
+  location_place?: string;
+  /** Viloyat / shahar admin birligi. */
+  location_region?: string;
   latitude: number;
   longitude: number;
   current: {

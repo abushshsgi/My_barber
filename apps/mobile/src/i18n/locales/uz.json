@@ -73,6 +73,8 @@
       "humidity": "Namlik",
       "humidityShort": "namlik",
       "wind": "Shamol",
+      "locating": "Joylashuv aniqlanmoqda…",
+      "locationFallback": "Joylashuv",
       "recommendations": "Parvarish tavsiyalari",
       "myProductsTitle": "Mahsulotlaringiz — bugun qanday ishlatish",
       "myProductsEmptyTitle": "Mahsulot qo‘shilmagan",

@@ -171,8 +171,20 @@ export function MorphCareWeatherScreen({ navigation }: Props) {
             <Text style={styles.condition}>
               {t(`care.weather.conditions.${conditionKey}`)}
             </Text>
-            {data.location_label ? (
-              <Text style={styles.location}>{data.location_label}</Text>
+            {data.location_region || data.location_place || data.location_label ? (
+              <View style={styles.locationBlock}>
+                {data.location_region ? (
+                  <Text style={styles.locationRegion} numberOfLines={1}>
+                    {data.location_region}
+                  </Text>
+                ) : null}
+                {(data.location_place && data.location_place !== data.location_region) ||
+                (!data.location_region && data.location_label) ? (
+                  <Text style={styles.location} numberOfLines={1}>
+                    {data.location_place || data.location_label}
+                  </Text>
+                ) : null}
+              </View>
             ) : null}
           </View>
 
@@ -367,6 +379,17 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "rgba(255,255,255,0.92)",
     zIndex: 1,
+  },
+  locationBlock: {
+    zIndex: 1,
+    marginTop: verticalScale(4),
+    gap: 2,
+  },
+  locationRegion: {
+    ...morphFont,
+    fontSize: fontSize(14),
+    fontWeight: "700",
+    color: "rgba(255,255,255,0.92)",
   },
   location: {
     ...morphFont,

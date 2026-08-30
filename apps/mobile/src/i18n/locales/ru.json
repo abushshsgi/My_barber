@@ -73,6 +73,8 @@
       "humidity": "Влажность",
       "humidityShort": "влажность",
       "wind": "Ветер",
+      "locating": "Определяем местоположение…",
+      "locationFallback": "Местоположение",
       "recommendations": "Рекомендации по уходу",
       "myProductsTitle": "Ваши средства — как использовать сегодня",
       "myProductsEmptyTitle": "Нет добавленных средств",

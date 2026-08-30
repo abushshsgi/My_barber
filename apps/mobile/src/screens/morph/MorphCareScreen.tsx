@@ -24,7 +24,6 @@ import {
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { fetchCareAccess } from "../../api/ai";
-import { weatherIconName } from "../../api/weather";
 import {
   fetchCareProducts,
   fetchHairCareProfile,
@@ -991,21 +990,28 @@ export function MorphCareScreen({ navigation, route }: Props) {
                 accessibilityRole="button"
                 accessibilityLabel={t("care.weather.title")}
               >
-                <View style={styles.promoChipRow}>
-                  <View style={styles.promoStatusChip}>
-                    <Ionicons name={weatherIconName(weatherKey)} size={12} color="#FFFFFF" />
-                    <Text style={styles.promoStatusChipText} numberOfLines={1}>
-                      {weatherLoading
-                        ? "…"
-                        : t(`care.weather.conditions.${weatherKey}`)}
-                    </Text>
+                <View style={styles.promoLocRow}>
+                  <View style={styles.promoLocIcon}>
+                    <Ionicons name="location-outline" size={14} color="#FFFFFF" />
                   </View>
-                  <Text style={styles.promoEyebrow} numberOfLines={1}>
-                    {weather?.current?.humidity_pct != null
-                      ? `${t("care.weather.humidityShort")} ${Math.round(weather.current.humidity_pct)}%`
-                      : t("care.weather.title")}
-                  </Text>
+                  <View style={styles.promoLocText}>
+                    <Text style={styles.promoRegion} numberOfLines={1}>
+                      {weatherLoading
+                        ? t("care.weather.locating")
+                        : weather?.location_region ||
+                          weather?.location_label ||
+                          t("care.weather.locationFallback")}
+                    </Text>
+                    {!weatherLoading &&
+                    (weather?.location_place || weather?.location_label) &&
+                    weather?.location_place !== weather?.location_region ? (
+                      <Text style={styles.promoPlace} numberOfLines={1}>
+                        {weather?.location_place || weather?.location_label}
+                      </Text>
+                    ) : null}
+                  </View>
                 </View>
+
                 <View style={styles.promoWeatherRow}>
                   <Text
                     style={[
@@ -1018,20 +1024,24 @@ export function MorphCareScreen({ navigation, route }: Props) {
                   >
                     {weatherTemp}
                   </Text>
-                  <View style={{ flex: 1, minWidth: 0 }}>
-                    <Text
-                      style={[styles.promoTitle, { fontSize: hubLayout.promoTitleSize }]}
-                      numberOfLines={hubLayout.promoRich ? 2 : 1}
-                    >
-                      {t("care.promoTitle")}
+                  <View style={styles.promoMeta}>
+                    <Text style={styles.promoCondition} numberOfLines={1}>
+                      {weatherLoading
+                        ? "…"
+                        : t(`care.weather.conditions.${weatherKey}`)}
                     </Text>
-                    {hubLayout.promoRich ? (
-                      <Text style={styles.promoHint} numberOfLines={1}>
-                        {weather?.location_label || t("care.promoHint")}
+                    {weather?.current?.humidity_pct != null ? (
+                      <Text style={styles.promoHumidity} numberOfLines={1}>
+                        {t("care.weather.humidity")} {Math.round(weather.current.humidity_pct)}%
                       </Text>
-                    ) : null}
+                    ) : (
+                      <Text style={styles.promoHumidity} numberOfLines={1}>
+                        {t("care.promoHint")}
+                      </Text>
+                    )}
                   </View>
                 </View>
+
                 {hubLayout.promoShowCta ? (
                   <View style={styles.promoBtn}>
                     <Text style={styles.promoBtnText} numberOfLines={1}>
@@ -1712,7 +1722,7 @@ const styles = StyleSheet.create({
     flexShrink: 0,
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
+    justifyContent: "flex-start",
     marginBottom: verticalScale(6),
     zIndex: 2,
     paddingTop: verticalScale(2),
@@ -1727,30 +1737,6 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: "rgba(255,255,255,0.22)",
   },
-  promoTopSpacer: {
-    width: scale(34),
-    height: scale(34),
-  },
-  promoLogoRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: moderateScale(8),
-  },
-  promoLogoMark: {
-    fontFamily: Platform.OS === "web" ? "Georgia, 'Times New Roman', serif" : undefined,
-    fontSize: fontSize(26),
-    fontWeight: "700",
-    color: "#FFFFFF",
-    fontStyle: "italic",
-    lineHeight: fontSize(28),
-  },
-  promoLogoText: {
-    ...morphFont,
-    fontSize: fontSize(12),
-    fontWeight: "700",
-    color: "rgba(255,255,255,0.92)",
-    letterSpacing: 3,
-  },
   promoBody: {
     flexDirection: "row",
     alignItems: "center",
@@ -1761,9 +1747,62 @@ const styles = StyleSheet.create({
     zIndex: 2,
     flexShrink: 1,
     minHeight: 0,
-    gap: moderateScale(6),
+    gap: moderateScale(8),
     maxWidth: "100%",
     justifyContent: "flex-end",
+  },
+  promoLocRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: moderateScale(8),
+    maxWidth: "100%",
+  },
+  promoLocIcon: {
+    width: scale(28),
+    height: scale(28),
+    borderRadius: moderateScale(14),
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255,255,255,0.14)",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(255,255,255,0.22)",
+  },
+  promoLocText: {
+    flex: 1,
+    minWidth: 0,
+    gap: 1,
+  },
+  promoRegion: {
+    ...morphFont,
+    fontSize: fontSize(13),
+    fontWeight: "700",
+    color: "#FFFFFF",
+    letterSpacing: -0.2,
+  },
+  promoPlace: {
+    ...morphFont,
+    fontSize: fontSize(11),
+    fontWeight: "600",
+    color: "rgba(255,255,255,0.72)",
+  },
+  promoMeta: {
+    flex: 1,
+    minWidth: 0,
+    justifyContent: "center",
+    gap: 2,
+  },
+  promoCondition: {
+    ...morphFont,
+    fontSize: fontSize(15),
+    fontWeight: "700",
+    color: "#FFFFFF",
+    letterSpacing: -0.2,
+  },
+  promoHumidity: {
+    ...morphFont,
+    fontSize: fontSize(12),
+    fontWeight: "600",
+    color: "rgba(255,255,255,0.7)",
   },
   promoChipRow: {
     flexDirection: "row",
