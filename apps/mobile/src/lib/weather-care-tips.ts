@@ -1,6 +1,10 @@
 import type { WeatherConditionKey, WeatherCarePayload } from "../api/weather";
 import type { MyCareProduct } from "./morph-my-products";
-import { clamp, layoutScale, rs } from "./responsive";
+import { BASE_H, BASE_W, clamp, rs } from "./responsive";
+
+function hubLayoutScale(width: number, height: number) {
+  return clamp(Math.min(width / BASE_W, height / BASE_H), 0.72, 1.12);
+}
 
 /** Ob-havo holatiga mos ambient hero rasmlar. */
 export function weatherHeroImage(key: WeatherConditionKey | undefined): string {
@@ -257,7 +261,7 @@ export function careHubLayout(
   bottomInset = 0,
 ) {
   /** Window o‘lchami o‘zgaganda (web / rotate) qayta hisoblanadi. */
-  const scale = layoutScale(width, height);
+  const scale = hubLayoutScale(width, height);
   /** Faqat Home Indicator — floating tab bar Care hubda yashiriladi. */
   const dockClearance = Math.max(bottomInset, 10);
   const avail = Math.max(360, height - dockClearance);
