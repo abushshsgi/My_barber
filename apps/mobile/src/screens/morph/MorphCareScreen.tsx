@@ -12,6 +12,7 @@ import {
   Image,
   Keyboard,
   Modal,
+  PanResponder,
   Platform,
   Pressable,
   ScrollView,
@@ -239,12 +240,18 @@ export function MorphCareScreen({ navigation, route }: Props) {
       : "—";
   const weatherImg = weatherHeroImage(weatherKey);
 
-  /** Sheet kategoriyalarga yaqin — o‘rtadagi gap minimal */
+  /** Search sheet — ekran balandligiga mos (829 floor yo‘q). */
   const searchSheetHeight = useMemo(() => {
-    const winH = Dimensions.get("window").height;
-    const topBlock = insets.top + 4 + 48 + 4 + 40 + 33;
-    return Math.max(829, winH - topBlock);
-  }, [insets.top]);
+    const topGap = Math.max(insets.top + 10, Math.round(winH * 0.07));
+    return Math.max(360, winH - topGap);
+  }, [insets.top, winH]);
+
+  const searchCols = winW < 340 ? 1 : winW >= 720 ? 3 : 2;
+  const searchCardW = useMemo(() => {
+    const hPad = 24;
+    const gap = 8;
+    return Math.floor((winW - hPad - gap * (searchCols - 1)) / searchCols);
+  }, [winW, searchCols]);
 
   const playAddedAnimation = useCallback(
     (prod: { title: string; image: string }) => {
@@ -397,6 +404,37 @@ export function MorphCareScreen({ navigation, route }: Props) {
       setSearchQuery("");
     });
   }, [searchSheetHeight, searchSheetY]);
+
+  const closeSearchRef = useRef(closeSearch);
+  closeSearchRef.current = closeSearch;
+
+  const searchPan = useMemo(
+    () =>
+      PanResponder.create({
+        onMoveShouldSetPanResponder: (_, g) =>
+          g.dy > 8 && Math.abs(g.dy) > Math.abs(g.dx) * 1.15,
+        onPanResponderGrant: () => {
+          searchSheetY.stopAnimation();
+          Keyboard.dismiss();
+        },
+        onPanResponderMove: (_, g) => {
+          if (g.dy > 0) searchSheetY.setValue(g.dy);
+        },
+        onPanResponderRelease: (_, g) => {
+          if (g.dy > 100 || g.vy > 1.05) {
+            closeSearchRef.current();
+            return;
+          }
+          Animated.spring(searchSheetY, {
+            toValue: 0,
+            friction: 9,
+            tension: 70,
+            useNativeDriver: true,
+          }).start();
+        },
+      }),
+    [searchSheetY],
+  );
 
   const openTarkib = useCallback(() => {
     goMorph(navigation, "MorphIngredient");
@@ -1046,56 +1084,35 @@ export function MorphCareScreen({ navigation, route }: Props) {
             <View style={{ height: 4 }} />
           )}
 
-          {/* Search Bar — filter icon ichida */}
+          {/* Search Bar — sheet ochiq bo‘lsa yashirin (input sheet ichida) */}
+          {!searchOpen ? (
           <View style={styles.searchSection}>
-            <View style={[styles.searchBar, searchOpen && styles.searchBarActive]}>
-              <Ionicons name="search-outline" size={18} color={searchOpen ? "#111111" : "#737373"} />
-              {searchOpen ? (
-                <TextInput
-                  ref={searchInputRef}
-                  value={searchQuery}
-                  onChangeText={setSearchQuery}
-                  placeholder={t("care.catalog.search")}
-                  placeholderTextColor="#737373"
-                  style={styles.searchInput}
-                  autoFocus
-                  returnKeyType="search"
-                  clearButtonMode="while-editing"
-                />
-              ) : (
-                <Pressable style={styles.searchMain} onPress={openSearch}>
-                  <Text style={styles.searchPlaceholder}>{t("care.catalog.search")}...</Text>
-                </Pressable>
-              )}
-              {searchOpen ? (
-                <Pressable
-                  style={styles.searchCloseBtn}
-                  onPress={closeSearch}
-                  accessibilityLabel={t("common.back")}
+            <View style={[styles.searchBar, { width: "100%" }]}>
+              <Ionicons name="search-outline" size={18} color="#737373" />
+              <Pressable style={styles.searchMain} onPress={openSearch}>
+                <Text style={styles.searchPlaceholder}>{t("care.catalog.search")}...</Text>
+              </Pressable>
+              <Pressable
+                style={styles.filterBtn}
+                onPress={openSearch}
+                accessibilityLabel={t("care.catalog.title")}
+                hitSlop={4}
+              >
+                <LinearGradient
+                  colors={["#111111", "#111111"]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.filterBtnGrad}
                 >
-                  <Ionicons name="close" size={16} color="#111111" />
-                </Pressable>
-              ) : (
-                <Pressable
-                  style={styles.filterBtn}
-                  onPress={openSearch}
-                  accessibilityLabel={t("care.catalog.title")}
-                  hitSlop={4}
-                >
-                  <LinearGradient
-                    colors={["#111111", "#111111"]}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={styles.filterBtnGrad}
-                  >
-                    <Ionicons name="options-outline" size={15} color="#fff" />
-                  </LinearGradient>
-                </Pressable>
-              )}
+                  <Ionicons name="options-outline" size={15} color="#fff" />
+                </LinearGradient>
+              </Pressable>
             </View>
           </View>
+          ) : null}
 
-          {/* Category Pills (All, Hair Cut, Face Care, Eye care, etc.) */}
+          {/* Category Pills */}
+          {!searchOpen ? (
           <View style={[styles.categoryRow, { height: hubLayout.catBlock }]}>
           <ScrollView
             horizontal
@@ -1105,7 +1122,6 @@ export function MorphCareScreen({ navigation, route }: Props) {
             contentContainerStyle={[
               styles.categoryScroll,
               { height: hubLayout.catBlock },
-              searchOpen && styles.categoryScrollCompact,
             ]}
           >
             {CATEGORIES.map((cat) => {
@@ -1133,6 +1149,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
             })}
           </ScrollView>
           </View>
+          ) : null}
 
           {/* Featured — qidiruv ochiq bo‘lsa yashirin */}
           {!searchOpen ? (
@@ -1430,105 +1447,141 @@ export function MorphCareScreen({ navigation, route }: Props) {
         </View>
 
         {searchOpen ? (
-          <Animated.View
-            style={[
-              styles.searchSheet,
-              {
-                height: searchSheetHeight,
-                paddingBottom: Math.max(insets.bottom, 14),
-                transform: [{ translateY: searchSheetY }],
-              },
-            ]}
-          >
-            <View style={styles.searchSheetHandle} />
-            <Text style={styles.searchSheetTitle}>{t("care.catalog.title")}</Text>
-            <ScrollView
-              keyboardShouldPersistTaps="handled"
-              showsVerticalScrollIndicator={false}
-              contentContainerStyle={styles.searchSheetList}
+          <>
+            <Pressable
+              style={styles.searchBackdrop}
+              onPress={closeSearch}
+              accessibilityLabel={t("common.back")}
+            />
+            <Animated.View
+              style={[
+                styles.searchSheet,
+                {
+                  height: searchSheetHeight,
+                  paddingBottom: Math.max(insets.bottom, 12),
+                  transform: [{ translateY: searchSheetY }],
+                },
+              ]}
             >
-              {searchResults.length === 0 ? (
-                <Text style={styles.searchEmpty}>{t("care.catalog.empty")}</Text>
-              ) : (
-                <View style={styles.searchGrid}>
-                  {searchResults.map((item) => {
-                    return (
-                      <Pressable
-                        key={`search-${item.id}`}
-                        style={styles.searchCard}
-                        onPress={() => openPreview(item.id)}
-                      >
-                        <View style={styles.searchCardMedia}>
-                          {item.image ? (
-                            <Image source={{ uri: item.image }} style={styles.searchCardImg} />
-                          ) : (
-                            <View style={[styles.searchCardImg, styles.searchRowPh]}>
-                              <Ionicons name="flask-outline" size={22} color="#111111" />
-                            </View>
-                          )}
-                          <Pressable
-                            style={styles.searchLikeBtn}
-                            onPress={(e) => {
-                              e.stopPropagation?.();
-                              void onToggleSearchLike(item.id);
-                            }}
-                            hitSlop={6}
-                            accessibilityLabel="Like"
-                          >
-                            <Ionicons
-                              name={item.liked_by_me ? "heart" : "heart-outline"}
-                              size={13}
-                              color={item.liked_by_me ? "#EF4444" : "#111111"}
-                            />
-                          </Pressable>
-                          <View style={styles.searchLikeCount}>
-                            <LikeHeartsBadge count={item.likes_count} />
-                          </View>
-                        </View>
-                        <Text style={styles.searchCardTitle} numberOfLines={2}>
-                          {item.title}
-                        </Text>
-                        {item.brand ? (
-                          <Text style={styles.searchCardBrand} numberOfLines={1}>
-                            {item.brand}
-                          </Text>
-                        ) : null}
-                        <View style={styles.searchAddBtnRow}>
-                          <Pressable
-                            style={[
-                              styles.searchAddBtn,
-                              item.added && styles.searchAddBtnAdded,
-                            ]}
-                            onPress={(e) => {
-                              e.stopPropagation?.();
-                              openPreview(item.id);
-                            }}
-                          >
-                            <Ionicons
-                              name={item.added ? "checkmark-circle" : "bag-add-outline"}
-                              size={13}
-                              color={item.added ? "#111111" : "#fff"}
-                            />
-                            <Text
-                              style={[
-                                styles.searchAddBtnText,
-                                item.added && styles.searchAddBtnTextAdded,
-                              ]}
-                              numberOfLines={1}
-                            >
-                              {item.added
-                                ? t("care.myProducts.alreadyAdded")
-                                : t("care.myProducts.addShort", { defaultValue: "Qo‘shish" })}
-                            </Text>
-                          </Pressable>
-                        </View>
-                      </Pressable>
-                    );
-                  })}
+              <View {...searchPan.panHandlers} style={styles.searchSheetChrome}>
+                <View style={styles.searchSheetHandle} />
+                <View style={styles.searchSheetHeader}>
+                  <View style={[styles.searchBar, styles.searchBarInSheet, styles.searchBarActive]}>
+                    <Ionicons name="search-outline" size={18} color="#111111" />
+                    <TextInput
+                      ref={searchInputRef}
+                      value={searchQuery}
+                      onChangeText={setSearchQuery}
+                      placeholder={t("care.catalog.search")}
+                      placeholderTextColor="#737373"
+                      style={styles.searchInput}
+                      autoFocus
+                      returnKeyType="search"
+                      clearButtonMode="while-editing"
+                    />
+                  </View>
+                  <Pressable
+                    style={styles.searchCloseBtn}
+                    onPress={closeSearch}
+                    accessibilityLabel={t("common.back")}
+                    hitSlop={8}
+                  >
+                    <Ionicons name="close" size={18} color="#111111" />
+                  </Pressable>
                 </View>
-              )}
-            </ScrollView>
-          </Animated.View>
+                <Text style={styles.searchSheetTitle}>{t("care.catalog.title")}</Text>
+              </View>
+
+              <ScrollView
+                style={styles.searchSheetScroll}
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={styles.searchSheetList}
+                bounces
+              >
+                {searchResults.length === 0 ? (
+                  <Text style={styles.searchEmpty}>{t("care.catalog.empty")}</Text>
+                ) : (
+                  <View style={[styles.searchGrid, { gap: searchCols === 1 ? 10 : 8 }]}>
+                    {searchResults.map((item) => {
+                      return (
+                        <Pressable
+                          key={`search-${item.id}`}
+                          style={[styles.searchCard, { width: searchCardW, maxWidth: searchCardW }]}
+                          onPress={() => openPreview(item.id)}
+                        >
+                          <View style={styles.searchCardMedia}>
+                            {item.image ? (
+                              <Image source={{ uri: item.image }} style={styles.searchCardImg} />
+                            ) : (
+                              <View style={[styles.searchCardImg, styles.searchRowPh]}>
+                                <Ionicons name="flask-outline" size={22} color="#111111" />
+                              </View>
+                            )}
+                            <Pressable
+                              style={styles.searchLikeBtn}
+                              onPress={(e) => {
+                                e.stopPropagation?.();
+                                void onToggleSearchLike(item.id);
+                              }}
+                              hitSlop={6}
+                              accessibilityLabel="Like"
+                            >
+                              <Ionicons
+                                name={item.liked_by_me ? "heart" : "heart-outline"}
+                                size={13}
+                                color={item.liked_by_me ? "#EF4444" : "#111111"}
+                              />
+                            </Pressable>
+                            <View style={styles.searchLikeCount}>
+                              <LikeHeartsBadge count={item.likes_count} />
+                            </View>
+                          </View>
+                          <Text style={styles.searchCardTitle} numberOfLines={2}>
+                            {item.title}
+                          </Text>
+                          {item.brand ? (
+                            <Text style={styles.searchCardBrand} numberOfLines={1}>
+                              {item.brand}
+                            </Text>
+                          ) : null}
+                          <View style={styles.searchAddBtnRow}>
+                            <Pressable
+                              style={[
+                                styles.searchAddBtn,
+                                item.added && styles.searchAddBtnAdded,
+                              ]}
+                              onPress={(e) => {
+                                e.stopPropagation?.();
+                                openPreview(item.id);
+                              }}
+                            >
+                              <Ionicons
+                                name={item.added ? "checkmark-circle" : "bag-add-outline"}
+                                size={13}
+                                color={item.added ? "#111111" : "#fff"}
+                              />
+                              <Text
+                                style={[
+                                  styles.searchAddBtnText,
+                                  item.added && styles.searchAddBtnTextAdded,
+                                ]}
+                                numberOfLines={1}
+                              >
+                                {item.added
+                                  ? t("care.myProducts.alreadyAdded")
+                                  : t("care.myProducts.addShort", { defaultValue: "Qo‘shish" })}
+                              </Text>
+                            </Pressable>
+                          </View>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                )}
+              </ScrollView>
+            </Animated.View>
+          </>
         ) : null}
 
         <Modal
@@ -1993,7 +2046,6 @@ const styles = StyleSheet.create({
     marginBottom: 0,
   },
   searchBar: {
-    width: "100%",
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#FFFFFF",
@@ -2029,13 +2081,14 @@ const styles = StyleSheet.create({
     color: "#737373",
   },
   searchCloseBtn: {
-    width: scale(34),
-    height: scale(34),
-    borderRadius: moderateScale(17),
+    width: scale(40),
+    height: scale(40),
+    borderRadius: moderateScale(20),
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#F0F0F0",
-    marginRight: scale(2),
+    backgroundColor: "#F3F3F5",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(17,17,17,0.08)",
   },
   filterBtn: {
     width: scale(36),
@@ -2049,15 +2102,20 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  searchBackdrop: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: "rgba(8,12,20,0.35)",
+    zIndex: 20,
+  },
   searchSheet: {
     position: "absolute",
     left: 0,
     right: 0,
     bottom: 0,
+    zIndex: 21,
     backgroundColor: "#FFFFFF",
     borderTopLeftRadius: moderateScale(22),
     borderTopRightRadius: moderateScale(22),
-    paddingTop: verticalScale(8),
     borderTopWidth: StyleSheet.hairlineWidth,
     borderColor: "rgba(0,0,0,0.06)",
     shadowColor: "#000",
@@ -2065,26 +2123,46 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.12,
     shadowRadius: 16,
     elevation: 16,
+    overflow: "hidden",
+  },
+  searchSheetChrome: {
+    paddingTop: verticalScale(8),
+    paddingHorizontal: scale(12),
+    gap: moderateScale(10),
+    backgroundColor: "#FFFFFF",
+  },
+  searchSheetHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: moderateScale(8),
+  },
+  searchBarInSheet: {
+    flex: 1,
+    minWidth: 0,
+    paddingRight: scale(12),
   },
   searchSheetHandle: {
     alignSelf: "center",
     width: scale(40),
     height: verticalScale(4),
     borderRadius: moderateScale(2),
-    backgroundColor: "rgba(15,23,42,0.12)",
-    marginBottom: verticalScale(10),
+    backgroundColor: "rgba(15,23,42,0.18)",
   },
   searchSheetTitle: {
     ...morphFont,
-    paddingHorizontal: scale(16),
-    marginBottom: verticalScale(8),
+    marginBottom: verticalScale(4),
     fontSize: fontSize(15),
     fontWeight: "700",
     color: "#111111",
   },
+  searchSheetScroll: {
+    flex: 1,
+    minHeight: 0,
+  },
   searchSheetList: {
     paddingHorizontal: scale(12),
-    paddingBottom: verticalScale(8),
+    paddingTop: verticalScale(4),
+    paddingBottom: verticalScale(16),
   },
   searchEmpty: {
     ...morphFont,
@@ -2096,12 +2174,9 @@ const styles = StyleSheet.create({
   searchGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: moderateScale(8),
   },
   searchCard: {
-    width: "47.5%",
     flexGrow: 0,
-    maxWidth: "47.5%",
     backgroundColor: "#FAFAFA",
     borderRadius: moderateScale(14),
     overflow: "hidden",
