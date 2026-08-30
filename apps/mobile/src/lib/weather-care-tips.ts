@@ -333,7 +333,8 @@ export function careHubLayout(
     aiH = grow(MIN.ai, MAX.ai);
   }
 
-  const featuredW = clamp(Math.round(featuredH * 0.96), rs(148, scale), rs(208, scale));
+  const featuredWCap = width < 360 ? rs(148, scale) : width < 400 ? rs(168, scale) : rs(188, scale);
+  const featuredW = clamp(Math.round(featuredH * 0.92), rs(128, scale), featuredWCap);
   const sheetGap = rs(12, scale);
   const promoInner = Math.max(0, promoH - topInset);
   const narrow = width < 360;
@@ -368,23 +369,26 @@ export function careHubLayout(
     promoRich: promoInner >= rs(152, scale),
     hubCardRich: hubCardH >= rs(114, scale),
     featuredRich: featuredH >= rs(132, scale),
-    /** Featured UI scale — kichik kartada matn/tugmalar qisqaradi. */
+    /**
+     * Featured UI — karta kengligiga bog‘liq (ekran emas).
+     * 200pt dizayn: btn 26 / title 13; 150pt: btn ~19 / title ~10.
+     */
     featuredUi: (() => {
-      const k = clamp(featuredH / rs(180, scale), 0.72, 1);
-      const btn = Math.max(22, Math.round(28 * k));
+      const w = Math.max(120, featuredW);
+      const k = clamp(w / 200, 0.5, 1);
       return {
         k,
-        btn,
-        play: Math.max(24, Math.round(30 * k)),
-        icon: Math.max(11, Math.round(14 * k)),
-        playIcon: Math.max(10, Math.round(12 * k)),
-        durationIcon: Math.max(8, Math.round(10 * k)),
-        durationFs: Math.max(9, Math.round(10 * k)),
-        brandFs: Math.max(9, Math.round(11 * k)),
-        titleFs: Math.max(11, Math.round((featuredH >= rs(150, scale) ? 14 : 12) * k)),
-        metaPadH: Math.max(8, Math.round(12 * k)),
-        metaPadV: Math.max(5, Math.round(8 * k)),
-        ctrlInset: Math.max(6, Math.round(10 * k)),
+        btn: clamp(Math.round(26 * k), 16, 26),
+        play: clamp(Math.round(28 * k), 18, 28),
+        icon: clamp(Math.round(13 * k), 9, 13),
+        playIcon: clamp(Math.round(11 * k), 8, 11),
+        durationIcon: clamp(Math.round(9 * k), 7, 9),
+        durationFs: clamp(Math.round(10 * k), 8, 10),
+        brandFs: clamp(Math.round(10 * k), 8, 10),
+        titleFs: clamp(Math.round(13 * k), 9, 13),
+        metaPadH: clamp(Math.round(10 * k), 6, 10),
+        metaPadV: clamp(Math.round(7 * k), 4, 7),
+        ctrlInset: clamp(Math.round(8 * k), 5, 8),
       };
     })(),
   };

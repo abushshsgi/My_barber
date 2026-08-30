@@ -1172,7 +1172,6 @@ export function MorphCareScreen({ navigation, route }: Props) {
                     {
                       width: hubLayout.featuredW,
                       height: hubLayout.featuredH,
-                      aspectRatio: hubLayout.featuredW / hubLayout.featuredH,
                     },
                   ]}
                   onPress={() => {
