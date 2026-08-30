@@ -24,7 +24,6 @@ import {
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { fetchCareAccess } from "../../api/ai";
-import { resolveMediaUrl } from "../../api/media";
 import { weatherIconName } from "../../api/weather";
 import {
   fetchCareProducts,
@@ -208,7 +207,7 @@ const likeStyles = StyleSheet.create({
 export function MorphCareScreen({ navigation, route }: Props) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated } = useAuth();
   const { goMorph, navigateRootTab } = useShellNavigation();
   const [loading, setLoading] = useState(true);
   const [access, setAccess] = useState<{ allowed: boolean; detail?: string } | null>(null);
