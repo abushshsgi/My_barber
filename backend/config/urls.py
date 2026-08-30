@@ -271,6 +271,7 @@ from ai.admin_parvarish_views import (
 )
 from ai.admin_baza_views import (
     AdminBazaCountriesView,
+    AdminBazaDatasetView,
     AdminBazaExportView,
     AdminBazaOverviewView,
     AdminBazaProductsView,
@@ -450,6 +451,7 @@ api_routes = [
     path("admin/baza/products/", AdminBazaProductsView.as_view()),
     path("admin/baza/search/", AdminBazaSearchView.as_view()),
     path("admin/baza/export/", AdminBazaExportView.as_view()),
+    path("admin/baza/<str:kind>/", AdminBazaDatasetView.as_view()),
     path("admin/subscriptions/stats/", AdminSubscriptionStatsView.as_view()),
     path("admin/subscriptions/analytics/", AdminSubscriptionAnalyticsView.as_view()),
     path("admin/subscriptions/", AdminSubscriptionListView.as_view()),

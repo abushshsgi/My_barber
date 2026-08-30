@@ -5302,8 +5302,65 @@ export async function fetchBazaSearch(q: string): Promise<BazaSearchResponse> {
   return apiJson(`/api/v1/admin/baza/search/?${sp.toString()}`);
 }
 
+export type BazaDatasetKind = "wallets" | "users" | "transactions" | "hashes";
+
+export type BazaWalletRow = {
+  wallet_id: number;
+  wallet_number: string;
+  balance: number;
+  is_frozen: boolean;
+  user_id: number;
+  full_name: string;
+  phone: string;
+  email: string;
+};
+
+export type BazaUserRow = {
+  user_id: number;
+  full_name: string;
+  phone: string;
+  email: string;
+  username: string;
+  region: string;
+  wallet_number: string;
+  is_active: boolean;
+};
+
+export type BazaTxRow = {
+  id: string;
+  entry_type: string;
+  amount: number;
+  balance_after: number;
+  entry_hash: string;
+  prev_hash: string;
+  wallet_number: string;
+  user_id: number | null;
+  full_name: string;
+  created_at: string | null;
+};
+
+export type BazaHashRow = {
+  ledger_id: string;
+  entry_hash: string;
+  prev_hash: string;
+  wallet_number: string;
+  user_id: number | null;
+  full_name: string;
+  entry_type: string;
+};
+
+export async function fetchBazaDataset<T>(
+  kind: BazaDatasetKind,
+  q?: string,
+): Promise<{ kind: string; count: number; results: T[] }> {
+  const sp = new URLSearchParams();
+  if (q) sp.set("q", q);
+  const qs = sp.toString();
+  return apiJson(`/api/v1/admin/baza/${kind}/${qs ? `?${qs}` : ""}`);
+}
+
 export async function downloadBazaExport(params: {
-  kind: "overview" | "countries" | "products" | "search";
+  kind: "overview" | "countries" | "products" | "search" | BazaDatasetKind;
   format?: "csv" | "json";
   q?: string;
 }): Promise<void> {

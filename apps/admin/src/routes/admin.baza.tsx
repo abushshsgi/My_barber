@@ -20,10 +20,16 @@ import {
 import {
   downloadBazaExport,
   fetchBazaCountries,
+  fetchBazaDataset,
   fetchBazaOverview,
   fetchBazaProducts,
   fetchBazaSearch,
+  type BazaDatasetKind,
   type BazaDossier,
+  type BazaHashRow,
+  type BazaTxRow,
+  type BazaUserRow,
+  type BazaWalletRow,
 } from "@/lib/admin-api";
 import { formatAdminUzs } from "@/lib/admin-analytics";
 import { cn } from "@/lib/utils";
@@ -38,10 +44,20 @@ export const Route = createFileRoute("/admin/baza")({
 
 const TABS = [
   { id: "live", label: "Live statistika" },
+  { id: "wallets", label: "Hamyonlar" },
+  { id: "users", label: "User ID" },
+  { id: "transactions", label: "Tranzaksiyalar" },
+  { id: "hashes", label: "Hashlar" },
   { id: "search", label: "Qidiruv" },
   { id: "countries", label: "Davlat kodlari" },
   { id: "products", label: "Mahsulotlar" },
 ] as const;
+
+const DATASET_TABS = new Set(["wallets", "users", "transactions", "hashes"]);
+
+function isDatasetTab(tab: string): tab is BazaDatasetKind {
+  return DATASET_TABS.has(tab);
+}
 
 function AdminBazaPage() {
   const navigate = useNavigate({ from: "/admin/baza" });
@@ -70,12 +86,20 @@ function AdminBazaPage() {
     queryFn: () => fetchBazaSearch(qTrim),
     enabled: activeTab === "search" && qTrim.length >= 2,
   });
+  const dataset = useQuery({
+    queryKey: ["admin", "baza", "dataset", activeTab, qTrim],
+    queryFn: () => fetchBazaDataset(activeTab as BazaDatasetKind, qTrim || undefined),
+    enabled: isDatasetTab(activeTab),
+  });
 
   const runSearch = (value: string) => {
     void navigate({ search: { q: value.trim(), tab: "search" } });
   };
 
-  const exportKind = async (kind: "overview" | "countries" | "products" | "search", format: "csv" | "json") => {
+  const exportKind = async (
+    kind: "overview" | "countries" | "products" | "search" | BazaDatasetKind,
+    format: "csv" | "json",
+  ) => {
     try {
       await downloadBazaExport({ kind, format, q: qTrim || undefined });
       toast.success("Yuklab olindi");
@@ -83,6 +107,13 @@ function AdminBazaPage() {
       toast.error(e instanceof Error ? e.message : "Yuklab bo'lmadi");
     }
   };
+
+  const headerExportKind =
+    activeTab === "live"
+      ? "overview"
+      : activeTab === "search" || activeTab === "countries" || activeTab === "products" || isDatasetTab(activeTab)
+        ? activeTab
+        : "overview";
 
   return (
     <div className="mx-auto max-w-[1400px] space-y-6 p-4 sm:p-6 lg:p-8">
@@ -97,11 +128,11 @@ function AdminBazaPage() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button type="button" variant="outline" className="rounded-full" onClick={() => exportKind(activeTab === "live" ? "overview" : activeTab as "countries" | "products" | "search", "csv")}>
+          <Button type="button" variant="outline" className="rounded-full" onClick={() => exportKind(headerExportKind, "csv")}>
             <Download className="size-4" />
             CSV
           </Button>
-          <Button type="button" variant="outline" className="rounded-full" onClick={() => exportKind(activeTab === "live" ? "overview" : activeTab as "countries" | "products" | "search", "json")}>
+          <Button type="button" variant="outline" className="rounded-full" onClick={() => exportKind(headerExportKind, "json")}>
             <Download className="size-4" />
             JSON
           </Button>
@@ -172,6 +203,57 @@ function AdminBazaPage() {
         )
       ) : null}
 
+      {activeTab === "live" && overview.data ? (
+        <div className="grid gap-3 lg:grid-cols-2 xl:grid-cols-4">
+          {(
+            [
+              { kind: "wallets", title: "Hamyonlar", count: overview.data.wallets },
+              { kind: "users", title: "User ID", count: overview.data.users },
+              { kind: "transactions", title: "Tranzaksiyalar", count: overview.data.ledger_entries },
+              { kind: "hashes", title: "Hashlar", count: overview.data.ledger_entries },
+            ] as const
+          ).map((col) => (
+            <div key={col.kind} className="space-y-3 rounded-2xl border border-border bg-card p-4">
+              <div>
+                <p className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
+                  {col.title}
+                </p>
+                <p className="mt-1 font-heading text-2xl font-semibold">{col.count}</p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  className="rounded-full"
+                  onClick={() => void navigate({ search: { q: qParam, tab: col.kind } })}
+                >
+                  Ro'yxat
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="rounded-full"
+                  onClick={() => exportKind(col.kind, "csv")}
+                >
+                  <Download className="size-3.5" />
+                  CSV
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="rounded-full"
+                  onClick={() => exportKind(col.kind, "json")}
+                >
+                  JSON
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : null}
+
       {activeTab === "search" ? (
         search.isLoading ? (
           <CardSkeleton className="h-64" />
@@ -201,6 +283,41 @@ function AdminBazaPage() {
           <CardSkeleton className="h-64" />
         ) : (
           <ProductTable rows={products.data?.results || []} />
+        )
+      ) : null}
+
+      {isDatasetTab(activeTab) ? (
+        dataset.isLoading ? (
+          <CardSkeleton className="h-64" />
+        ) : (
+          <div className="space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-sm text-muted-foreground">
+                {dataset.data?.count ?? 0} ta yozuv (qidiruv joriy tabni filtrlashi mumkin)
+              </p>
+              <div className="flex gap-2">
+                <Button type="button" size="sm" variant="outline" className="rounded-full" onClick={() => exportKind(activeTab, "csv")}>
+                  <Download className="size-3.5" />
+                  {activeTab} CSV
+                </Button>
+                <Button type="button" size="sm" variant="outline" className="rounded-full" onClick={() => exportKind(activeTab, "json")}>
+                  {activeTab} JSON
+                </Button>
+              </div>
+            </div>
+            {activeTab === "wallets" ? (
+              <WalletTable rows={(dataset.data?.results || []) as BazaWalletRow[]} />
+            ) : null}
+            {activeTab === "users" ? (
+              <UserIdTable rows={(dataset.data?.results || []) as BazaUserRow[]} />
+            ) : null}
+            {activeTab === "transactions" ? (
+              <TxTable rows={(dataset.data?.results || []) as BazaTxRow[]} />
+            ) : null}
+            {activeTab === "hashes" ? (
+              <HashTable rows={(dataset.data?.results || []) as BazaHashRow[]} />
+            ) : null}
+          </div>
         )
       ) : null}
     </div>
@@ -402,6 +519,132 @@ function ProductTable({
               <TableCell className="max-w-[220px] truncate text-xs text-muted-foreground">
                 {row.ingredients_text || "—"}
               </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
+
+function WalletTable({ rows }: { rows: BazaWalletRow[] }) {
+  if (!rows.length) return <EmptyState title="Hamyon yo'q" description="Hali hamyon ochilmagan." />;
+  return (
+    <div className="overflow-auto rounded-2xl border border-border">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Hamyon</TableHead>
+            <TableHead>User ID</TableHead>
+            <TableHead>Ism</TableHead>
+            <TableHead>Telefon</TableHead>
+            <TableHead>Balans</TableHead>
+            <TableHead>Holat</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {rows.map((row) => (
+            <TableRow key={row.wallet_id}>
+              <TableCell className="font-mono text-xs">{row.wallet_number}</TableCell>
+              <TableCell>{row.user_id}</TableCell>
+              <TableCell>{row.full_name || "—"}</TableCell>
+              <TableCell>{row.phone || "—"}</TableCell>
+              <TableCell>{formatAdminUzs(row.balance)}</TableCell>
+              <TableCell>{row.is_frozen ? "Muzlatilgan" : "Faol"}</TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
+
+function UserIdTable({ rows }: { rows: BazaUserRow[] }) {
+  if (!rows.length) return <EmptyState title="User yo'q" description="Qidiruvni o'zgartiring." />;
+  return (
+    <div className="overflow-auto rounded-2xl border border-border">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>User ID</TableHead>
+            <TableHead>Ism</TableHead>
+            <TableHead>Telefon</TableHead>
+            <TableHead>Email</TableHead>
+            <TableHead>Hamyon</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {rows.map((row) => (
+            <TableRow key={row.user_id}>
+              <TableCell>{row.user_id}</TableCell>
+              <TableCell>{row.full_name || "—"}</TableCell>
+              <TableCell>{row.phone || "—"}</TableCell>
+              <TableCell className="text-xs">{row.email}</TableCell>
+              <TableCell className="font-mono text-xs">{row.wallet_number || "—"}</TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
+
+function TxTable({ rows }: { rows: BazaTxRow[] }) {
+  if (!rows.length) return <EmptyState title="Tranzaksiya yo'q" description="Hali yozuv yo'q." />;
+  return (
+    <div className="overflow-auto rounded-2xl border border-border">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>ID</TableHead>
+            <TableHead>Turi</TableHead>
+            <TableHead>Summa</TableHead>
+            <TableHead>Hamyon</TableHead>
+            <TableHead>User</TableHead>
+            <TableHead>Hash</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {rows.map((row) => (
+            <TableRow key={row.id}>
+              <TableCell className="font-mono text-xs">{row.id.slice(0, 8)}</TableCell>
+              <TableCell>{row.entry_type}</TableCell>
+              <TableCell>{formatAdminUzs(row.amount)}</TableCell>
+              <TableCell className="font-mono text-xs">{row.wallet_number}</TableCell>
+              <TableCell>
+                #{row.user_id} {row.full_name}
+              </TableCell>
+              <TableCell className="font-mono text-xs">{row.entry_hash.slice(0, 12)}</TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
+
+function HashTable({ rows }: { rows: BazaHashRow[] }) {
+  if (!rows.length) return <EmptyState title="Hash yo'q" description="Ledger bo'sh." />;
+  return (
+    <div className="overflow-auto rounded-2xl border border-border">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Ledger ID</TableHead>
+            <TableHead>entry_hash</TableHead>
+            <TableHead>prev_hash</TableHead>
+            <TableHead>Hamyon</TableHead>
+            <TableHead>User ID</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {rows.map((row) => (
+            <TableRow key={row.ledger_id}>
+              <TableCell className="font-mono text-xs">{row.ledger_id}</TableCell>
+              <TableCell className="font-mono text-xs">{row.entry_hash}</TableCell>
+              <TableCell className="font-mono text-xs">{row.prev_hash}</TableCell>
+              <TableCell className="font-mono text-xs">{row.wallet_number}</TableCell>
+              <TableCell>{row.user_id ?? "—"}</TableCell>
             </TableRow>
           ))}
         </TableBody>

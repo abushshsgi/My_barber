@@ -53,6 +53,172 @@ def baza_overview() -> dict[str, Any]:
     }
 
 
+LIST_LIMIT = 600
+EXPORT_LIMIT = 8000
+
+
+def baza_wallets(*, q: str = "", limit: int = LIST_LIMIT) -> list[dict[str, Any]]:
+    from wallet.models import Wallet
+
+    qs = Wallet.objects.select_related("user").order_by("-updated_at")
+    q = (q or "").strip()
+    if q:
+        filt = (
+            Q(wallet_number__icontains=q)
+            | Q(user__full_name__icontains=q)
+            | Q(user__phone__icontains=q)
+            | Q(user__email__icontains=q)
+        )
+        if q.isdigit():
+            filt = filt | Q(user_id=int(q))
+        qs = qs.filter(filt)
+    rows = []
+    for w in qs[:limit]:
+        u = w.user
+        rows.append(
+            {
+                "wallet_id": w.id,
+                "wallet_number": w.wallet_number,
+                "balance": _f(w.balance),
+                "is_frozen": w.is_frozen,
+                "freeze_reason": w.freeze_reason or "",
+                "user_id": u.id,
+                "full_name": u.full_name,
+                "phone": u.phone or "",
+                "email": u.email,
+                "updated_at": _iso(w.updated_at),
+            }
+        )
+    return rows
+
+
+def baza_users(*, q: str = "", limit: int = LIST_LIMIT) -> list[dict[str, Any]]:
+    from wallet.models import Wallet
+
+    qs = User.objects.order_by("-id")
+    q = (q or "").strip()
+    if q:
+        filt = Q(full_name__icontains=q) | Q(phone__icontains=q) | Q(email__icontains=q) | Q(username__icontains=q)
+        if q.isdigit():
+            filt = filt | Q(pk=int(q))
+        qs = qs.filter(filt)
+    wallets = {
+        w.user_id: w.wallet_number
+        for w in Wallet.objects.filter(user_id__in=list(qs.values_list("id", flat=True)[:limit]))
+    }
+    return [
+        {
+            "user_id": u.id,
+            "full_name": u.full_name,
+            "phone": u.phone or "",
+            "email": u.email,
+            "username": u.username,
+            "region": u.region,
+            "is_active": u.is_active,
+            "wallet_number": wallets.get(u.id, ""),
+            "date_joined": _iso(u.date_joined),
+        }
+        for u in qs[:limit]
+    ]
+
+
+def baza_transactions(*, q: str = "", limit: int = LIST_LIMIT) -> list[dict[str, Any]]:
+    from wallet.models import LedgerEntry
+
+    qs = LedgerEntry.objects.select_related("wallet__user").order_by("-created_at")
+    q = (q or "").strip()
+    if q:
+        filt = (
+            Q(entry_hash__icontains=q)
+            | Q(prev_hash__icontains=q)
+            | Q(reference_id__icontains=q)
+            | Q(idempotency_key__icontains=q)
+            | Q(wallet__wallet_number__icontains=q)
+            | Q(wallet__user__full_name__icontains=q)
+            | Q(wallet__user__phone__icontains=q)
+        )
+        if q.isdigit():
+            filt = filt | Q(wallet__user_id=int(q))
+        qs = qs.filter(filt)
+        if len(q) >= 8:
+            try:
+                from uuid import UUID
+
+                qs = qs | LedgerEntry.objects.filter(id=UUID(q))
+            except Exception:
+                pass
+    rows = []
+    for e in qs[:limit]:
+        u = e.wallet.user if e.wallet_id else None
+        rows.append(
+            {
+                "id": str(e.id),
+                "entry_type": e.entry_type,
+                "amount": _f(e.amount),
+                "balance_after": _f(e.balance_after),
+                "reference_type": e.reference_type,
+                "reference_id": e.reference_id,
+                "entry_hash": e.entry_hash,
+                "prev_hash": e.prev_hash,
+                "wallet_number": e.wallet.wallet_number if e.wallet_id else "",
+                "user_id": u.id if u else None,
+                "full_name": (u.full_name if u else "") or "",
+                "phone": (u.phone if u else "") or "",
+                "created_at": _iso(e.created_at),
+            }
+        )
+    return rows
+
+
+def baza_hashes(*, q: str = "", limit: int = LIST_LIMIT) -> list[dict[str, Any]]:
+    from wallet.models import LedgerEntry
+
+    qs = LedgerEntry.objects.select_related("wallet__user").order_by("-created_at")
+    q = (q or "").strip()
+    if q:
+        filt = Q(entry_hash__icontains=q) | Q(prev_hash__icontains=q) | Q(wallet__wallet_number__icontains=q)
+        qs = qs.filter(filt)
+        if len(q) >= 8:
+            try:
+                from uuid import UUID
+
+                qs = qs | LedgerEntry.objects.filter(id=UUID(q))
+            except Exception:
+                pass
+    rows = []
+    for e in qs[:limit]:
+        u = e.wallet.user if e.wallet_id else None
+        rows.append(
+            {
+                "ledger_id": str(e.id),
+                "entry_hash": e.entry_hash,
+                "prev_hash": e.prev_hash,
+                "wallet_number": e.wallet.wallet_number if e.wallet_id else "",
+                "user_id": u.id if u else None,
+                "full_name": (u.full_name if u else "") or "",
+                "entry_type": e.entry_type,
+                "created_at": _iso(e.created_at),
+            }
+        )
+    return rows
+
+
+def baza_dataset(kind: str, *, q: str = "", limit: int | None = None) -> dict[str, Any]:
+    cap = limit if limit is not None else LIST_LIMIT
+    kind = (kind or "").strip().lower()
+    if kind == "wallets":
+        results = baza_wallets(q=q, limit=cap)
+    elif kind == "users":
+        results = baza_users(q=q, limit=cap)
+    elif kind == "transactions":
+        results = baza_transactions(q=q, limit=cap)
+    elif kind == "hashes":
+        results = baza_hashes(q=q, limit=cap)
+    else:
+        results = []
+    return {"kind": kind, "count": len(results), "results": results}
+
+
 def baza_countries() -> list[dict[str, Any]]:
     rows = []
     for item in Gs1CountryCode.objects.all().order_by("prefix_start", "prefix_end"):
