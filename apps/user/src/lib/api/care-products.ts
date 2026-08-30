@@ -44,3 +44,18 @@ export async function fetchCareProducts(params?: {
 export async function fetchCareProduct(id: number): Promise<CareProduct> {
   return apiJson(`/api/v1/ai/care/products/${id}/`);
 }
+
+export async function fetchCareProductByBarcode(
+  barcode: string,
+  profile?: { condition?: string; texture?: string; color_status?: string; scalp?: string },
+) {
+  const sp = new URLSearchParams();
+  if (profile?.condition) sp.set("condition", profile.condition);
+  if (profile?.texture) sp.set("texture", profile.texture);
+  if (profile?.color_status) sp.set("color_status", profile.color_status);
+  if (profile?.scalp) sp.set("scalp", profile.scalp);
+  const q = sp.toString();
+  return apiJson(
+    `/api/v1/products/barcode/${encodeURIComponent(barcode)}/${q ? `?${q}` : ""}`,
+  );
+}

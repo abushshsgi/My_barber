@@ -13,6 +13,7 @@ HAIR_TAGS = frozenset(
         "dry",
         "normal",
         "damaged",
+        "fine",
         "straight",
         "wavy",
         "curly",
@@ -39,6 +40,7 @@ TAG_LABEL_UZ = {
     "dry": "quruq",
     "normal": "normal",
     "damaged": "shikastlangan",
+    "fine": "ingichka",
     "straight": "to'g'ri",
     "wavy": "to'lqinsimon",
     "curly": "jingalak",
@@ -363,6 +365,35 @@ CATEGORY_USAGE: dict[str, list[dict[str, str]]] = {
             "icon": "sparkles",
         },
     ],
+    "conditioner": [
+        {
+            "title": "Ortiqcha suvni siqish",
+            "desc": "Shampundan keyin sochni sochiq bilan muloyim siqing.",
+            "icon": "water",
+        },
+        {
+            "title": "Uchlarga surtish",
+            "desc": "Ildizdan 2–3 sm pastdan uchlargacha tekis taqsimlang.",
+            "icon": "leaf",
+        },
+        {
+            "title": "1–2 daqiqa ushlash",
+            "desc": "So'ng iliq suvda yuving. Ildizga tegizmang.",
+            "icon": "sparkles",
+        },
+    ],
+    "serum": [
+        {
+            "title": "Nam yoki quruq sochga",
+            "desc": "2–3 tomchi oling — avval kaftlarda isiting.",
+            "icon": "flask",
+        },
+        {
+            "title": "Uchlardan o‘rta qismgacha",
+            "desc": "Ildizga tegizmasdan tekis taqsimlang.",
+            "icon": "leaf",
+        },
+    ],
     "balsam": [
         {
             "title": "Ortiqcha suvni siqish",
@@ -462,7 +493,7 @@ def usage_steps_for(
         steps[1]["desc"] = "Yumshoq massaj, iliq suv. Quruq sochni qattiq ishqalamang."
     if cat == "oil" and (condition == "oily" or scalp == "oily") and len(steps) > 1:
         steps[1]["desc"] = "Juda oz — faqat uchlar. Ildiz va bosh terisiga tegizmang."
-    if color == "bleached" and cat in {"shampoo", "balsam", "mask"}:
+    if color == "bleached" and cat in {"shampoo", "balsam", "conditioner", "mask"}:
         steps.append(
             {
                 "title": "Ochilgan soch",

@@ -85,6 +85,42 @@ export async function fetchCareProduct(id: number): Promise<CareProduct> {
   return apiJson(`/api/v1/ai/care/products/${id}/`);
 }
 
+export type CareProductBarcodeLookup = {
+  found: boolean;
+  source: "db" | "open_beauty_facts" | "upcitemdb" | string | null;
+  barcode: string;
+  country: {
+    country_name: string;
+    prefix: string;
+    is_matched: boolean;
+  };
+  product: CareProduct & {
+    title?: string;
+    ingredients_raw?: string;
+    country_of_origin?: string;
+    country_code_prefix?: string;
+    is_verified?: boolean;
+  };
+  match_percent?: number | null;
+  fit_verdict?: string | null;
+  fit_reasons?: string[];
+  usage_steps?: Array<{ title: string; desc: string; icon?: string }>;
+  safety_score?: number;
+};
+
+export async function fetchCareProductByBarcode(
+  barcode: string,
+  profile?: { condition?: string; texture?: string; color_status?: string; scalp?: string },
+): Promise<CareProductBarcodeLookup> {
+  const sp = new URLSearchParams();
+  if (profile?.condition) sp.set("condition", profile.condition);
+  if (profile?.texture) sp.set("texture", profile.texture);
+  if (profile?.color_status) sp.set("color_status", profile.color_status);
+  if (profile?.scalp) sp.set("scalp", profile.scalp);
+  const q = sp.toString();
+  return apiJson(`/api/v1/products/barcode/${encodeURIComponent(barcode)}/${q ? `?${q}` : ""}`);
+}
+
 export async function toggleCareProductLike(
   productId: number,
 ): Promise<{ liked: boolean; likes_count: number; product_id: number }> {

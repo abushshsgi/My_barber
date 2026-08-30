@@ -179,7 +179,11 @@ class AdminParvarishProductListCreateView(UnthrottledAPIView):
             qs = qs.filter(is_published=published == "1")
         if q:
             qs = qs.filter(
-                Q(name__icontains=q) | Q(brand__icontains=q) | Q(slug__icontains=q)
+                Q(name__icontains=q)
+                | Q(brand__icontains=q)
+                | Q(slug__icontains=q)
+                | Q(barcode__icontains=q)
+                | Q(country_of_origin__icontains=q)
             )
         ser = CareProductSerializer(qs[:400], many=True, context={"request": request})
         return Response(ser.data)

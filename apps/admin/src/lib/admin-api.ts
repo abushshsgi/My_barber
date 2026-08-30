@@ -4920,22 +4920,40 @@ export async function fetchAdminBarberCustomerInvites(
   return apiJson(`/api/v1/admin/barbers/${barberId}/customer-invites/`);
 }
 
-export type CareProductCategory = "shampoo" | "balsam" | "mask" | "oil" | "spray" | "other";
+export type CareProductCategory =
+  | "shampoo"
+  | "balsam"
+  | "conditioner"
+  | "mask"
+  | "serum"
+  | "oil"
+  | "spray"
+  | "other";
 
 export type AdminCareProduct = {
   id: number;
   name: string;
+  title?: string;
   brand: string;
   slug: string;
   category: CareProductCategory | string;
+  barcode?: string | null;
+  country_of_origin?: string;
+  country_code_prefix?: string;
+  is_verified?: boolean;
   image_url: string | null;
+  external_image_url?: string;
   ingredients_text: string;
+  ingredients_raw?: string;
   ingredients: string[];
   usage_uz: string;
+  usage_instructions?: string;
   purpose_uz: string;
   suitable_for: string[];
+  target_hair_types?: string[];
   not_suitable_for: string[];
   scalp_types: string[];
+  target_scalp_types?: string[];
   concerns: string[];
   pros_uz: string;
   cons_uz: string;
@@ -4944,6 +4962,31 @@ export type AdminCareProduct = {
   sort_order: number;
   created_at: string;
   updated_at: string;
+};
+
+export type AdminProductLookup = {
+  barcode: string;
+  source: "db" | "open_beauty_facts" | "upcitemdb" | string | null;
+  country: {
+    country_name: string;
+    countryName?: string;
+    prefix: string;
+    is_matched: boolean;
+    isMatched?: boolean;
+  };
+  local: AdminCareProduct | null;
+  external: {
+    title?: string;
+    name?: string;
+    brand?: string;
+    category?: string;
+    image_url?: string;
+    ingredients_raw?: string;
+    ingredients_text?: string;
+    country_of_origin?: string;
+    country_code_prefix?: string;
+    source?: string;
+  } | null;
 };
 
 export type AdminParvarishStats = {
@@ -5013,6 +5056,11 @@ export type AdminCareProductPayload = {
   name: string;
   brand?: string;
   category?: string;
+  barcode?: string;
+  country_of_origin?: string;
+  country_code_prefix?: string;
+  is_verified?: boolean;
+  image_url?: string;
   ingredients_text?: string;
   usage_uz?: string;
   purpose_uz?: string;
@@ -5033,6 +5081,11 @@ function careProductFormData(body: AdminCareProductPayload): FormData {
   fd.set("name", body.name);
   fd.set("brand", body.brand || "");
   fd.set("category", body.category || "shampoo");
+  fd.set("barcode", body.barcode || "");
+  fd.set("country_of_origin", body.country_of_origin || "");
+  fd.set("country_code_prefix", body.country_code_prefix || "");
+  fd.set("is_verified", body.is_verified === false ? "0" : "1");
+  if (body.image_url) fd.set("image_url", body.image_url);
   fd.set("ingredients_text", body.ingredients_text || "");
   fd.set("usage_uz", body.usage_uz || "");
   fd.set("purpose_uz", body.purpose_uz || "");
@@ -5047,6 +5100,18 @@ function careProductFormData(body: AdminCareProductPayload): FormData {
   fd.set("sort_order", String(body.sort_order ?? 0));
   if (body.image) fd.set("image", body.image);
   return fd;
+}
+
+export async function lookupAdminCareProduct(barcode: string): Promise<AdminProductLookup> {
+  const sp = new URLSearchParams({ barcode });
+  return apiJson(`/api/v1/admin/products/lookup/?${sp.toString()}`);
+}
+
+export async function upsertAdminProduct(body: AdminCareProductPayload): Promise<AdminCareProduct> {
+  return apiJson("/api/v1/admin/products/", {
+    method: "POST",
+    body: careProductFormData(body),
+  });
 }
 
 export async function createAdminCareProduct(body: AdminCareProductPayload): Promise<AdminCareProduct> {

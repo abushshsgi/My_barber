@@ -393,7 +393,9 @@ class CareProduct(models.Model):
     class Category(models.TextChoices):
         SHAMPOO = "shampoo", "Shampun"
         BALSAM = "balsam", "Balzam"
+        CONDITIONER = "conditioner", "Konditsioner"
         MASK = "mask", "Maska"
+        SERUM = "serum", "Sarum"
         OIL = "oil", "Yog'"
         SPRAY = "spray", "Sprey"
         OTHER = "other", "Boshqa"
@@ -407,7 +409,19 @@ class CareProduct(models.Model):
         default=Category.SHAMPOO,
         db_index=True,
     )
+    barcode = models.CharField(
+        max_length=32,
+        unique=True,
+        null=True,
+        blank=True,
+        db_index=True,
+        help_text="GS1 / EAN / UPC raqami (faqat raqamlar).",
+    )
+    country_of_origin = models.CharField(max_length=80, blank=True, default="")
+    country_code_prefix = models.CharField(max_length=16, blank=True, default="")
+    is_verified = models.BooleanField(default=True)
     image = models.ImageField(upload_to="care/products/%Y/%m/", blank=True, null=True)
+    external_image_url = models.URLField(max_length=500, blank=True, default="")
     ingredients_text = models.TextField(blank=True, default="")
     ingredients = models.JSONField(default=list, blank=True)
     usage_uz = models.TextField(blank=True, default="")

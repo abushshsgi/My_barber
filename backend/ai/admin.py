@@ -98,9 +98,20 @@ class MorphAiUserPrefsAdmin(admin.ModelAdmin):
 
 @admin.register(CareProduct)
 class CareProductAdmin(admin.ModelAdmin):
-    list_display = ("id", "name", "brand", "category", "is_published", "sort_order", "updated_at")
-    list_filter = ("category", "is_published")
-    search_fields = ("name", "brand", "slug", "ingredients_text")
+    list_display = (
+        "id",
+        "name",
+        "brand",
+        "barcode",
+        "country_of_origin",
+        "category",
+        "is_verified",
+        "is_published",
+        "sort_order",
+        "updated_at",
+    )
+    list_filter = ("category", "is_published", "is_verified")
+    search_fields = ("name", "brand", "slug", "barcode", "ingredients_text", "country_of_origin")
     prepopulated_fields = {"slug": ("brand", "name")}
     raw_id_fields = ("created_by",)
 

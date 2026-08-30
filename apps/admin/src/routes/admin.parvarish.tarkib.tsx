@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ImagePlus, Pencil, Plus, Search, Sparkles, Trash2, X } from "lucide-react";
+import { Check, ImagePlus, Loader2, Pencil, Plus, Search, Sparkles, Trash2, WandSparkles, X } from "lucide-react";
 import { toast } from "sonner";
 import { EmptyState } from "@/components/admin/EmptyState";
 import { CardSkeleton } from "@/components/admin/Skeletons";
@@ -21,13 +21,15 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import {
   adminCareDemoAction,
-  createAdminCareProduct,
   deleteAdminCareProduct,
   fetchAdminCareProducts,
+  lookupAdminCareProduct,
   patchAdminCareProduct,
+  upsertAdminProduct,
   type AdminCareProduct,
   type CareProductCategory,
 } from "@/lib/admin-api";
+import { detectCountryFromBarcode, normalizeBarcode } from "@/lib/detect-country-from-barcode";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/admin/parvarish/tarkib")({
@@ -36,8 +38,10 @@ export const Route = createFileRoute("/admin/parvarish/tarkib")({
 
 const CATEGORIES: { value: CareProductCategory; label: string }[] = [
   { value: "shampoo", label: "Shampun" },
+  { value: "conditioner", label: "Konditsioner" },
   { value: "balsam", label: "Balzam" },
   { value: "mask", label: "Maska" },
+  { value: "serum", label: "Sarum" },
   { value: "oil", label: "Yog'" },
   { value: "spray", label: "Sprey" },
   { value: "other", label: "Boshqa" },
@@ -48,6 +52,7 @@ const HAIR_TAGS: { value: string; label: string }[] = [
   { value: "dry", label: "Quruq" },
   { value: "normal", label: "Normal" },
   { value: "damaged", label: "Shikastlangan" },
+  { value: "fine", label: "Ingichka" },
   { value: "straight", label: "To'g'ri" },
   { value: "wavy", label: "To'lqinsimon" },
   { value: "curly", label: "Jingalak" },
@@ -77,6 +82,11 @@ type FormState = {
   name: string;
   brand: string;
   category: CareProductCategory;
+  barcode: string;
+  country_of_origin: string;
+  country_code_prefix: string;
+  country_matched: boolean;
+  image_url: string;
   ingredients_text: string;
   usage_uz: string;
   purpose_uz: string;
@@ -88,6 +98,7 @@ type FormState = {
   cons_uz: string;
   warnings_uz: string;
   is_published: boolean;
+  is_verified: boolean;
   sort_order: string;
   image: File | null;
 };
@@ -96,6 +107,11 @@ const emptyForm = (): FormState => ({
   name: "",
   brand: "",
   category: "shampoo",
+  barcode: "",
+  country_of_origin: "",
+  country_code_prefix: "",
+  country_matched: false,
+  image_url: "",
   ingredients_text: "",
   usage_uz: "",
   purpose_uz: "",
@@ -107,9 +123,24 @@ const emptyForm = (): FormState => ({
   cons_uz: "",
   warnings_uz: "",
   is_published: true,
+  is_verified: true,
   sort_order: "0",
   image: null,
 });
+
+function applyBarcodeCountry(barcode: string): Pick<
+  FormState,
+  "barcode" | "country_of_origin" | "country_code_prefix" | "country_matched"
+> {
+  const digits = normalizeBarcode(barcode);
+  const hit = detectCountryFromBarcode(digits);
+  return {
+    barcode: digits,
+    country_of_origin: hit.isMatched ? hit.countryName : "",
+    country_code_prefix: hit.prefix,
+    country_matched: hit.isMatched,
+  };
+}
 
 function toggleTag(list: string[], tag: string): string[] {
   return list.includes(tag) ? list.filter((x) => x !== tag) : [...list, tag];
@@ -139,6 +170,11 @@ function ParvarishTarkibPage() {
         name: form.name.trim(),
         brand: form.brand.trim(),
         category: form.category,
+        barcode: form.barcode.trim(),
+        country_of_origin: form.country_of_origin.trim(),
+        country_code_prefix: form.country_code_prefix.trim(),
+        is_verified: form.is_verified,
+        image_url: form.image_url.trim(),
         ingredients_text: form.ingredients_text,
         usage_uz: form.usage_uz,
         purpose_uz: form.purpose_uz,
@@ -155,7 +191,7 @@ function ParvarishTarkibPage() {
       };
       if (!body.name) throw new Error("Mahsulot nomi kerak");
       if (editing) return patchAdminCareProduct(editing.id, body);
-      return createAdminCareProduct(body);
+      return upsertAdminProduct(body);
     },
     onSuccess: () => {
       toast.success(editing ? "Saqlandi" : "Qo'shildi");
@@ -184,6 +220,48 @@ function ParvarishTarkibPage() {
     onError: (e: Error) => toast.error(e.message || "Xato yuz berdi"),
   });
 
+  const autoFill = useMutation({
+    mutationFn: () => lookupAdminCareProduct(form.barcode.trim()),
+    onSuccess: (data) => {
+      const src = data.local || data.external;
+      if (!src && !data.country?.is_matched) {
+        toast.error("Tashqi manbalarda topilmadi");
+        return;
+      }
+      const countryName = data.country?.country_name || data.country?.countryName || "";
+      const prefix = data.country?.prefix || "";
+      const matched = Boolean(data.country?.is_matched || data.country?.isMatched);
+      setForm((p) => ({
+        ...p,
+        name: (data.local?.name || data.external?.name || data.external?.title || p.name).trim(),
+        brand: (data.local?.brand || data.external?.brand || p.brand).trim(),
+        category: ((data.local?.category || data.external?.category || p.category) as CareProductCategory),
+        country_of_origin: countryName || data.external?.country_of_origin || p.country_of_origin,
+        country_code_prefix: prefix || data.external?.country_code_prefix || p.country_code_prefix,
+        country_matched: matched,
+        image_url: data.local?.image_url || data.external?.image_url || p.image_url,
+        ingredients_text:
+          data.local?.ingredients_text
+          || data.external?.ingredients_text
+          || data.external?.ingredients_raw
+          || p.ingredients_text,
+        usage_uz: data.local?.usage_uz || p.usage_uz,
+        suitable_for: data.local?.suitable_for || p.suitable_for,
+        scalp_types: data.local?.scalp_types || p.scalp_types,
+      }));
+      toast.success(
+        data.source === "db"
+          ? "Mahsulot bazadan topildi"
+          : data.source === "open_beauty_facts"
+            ? "Open Beauty Facts'dan to'ldirildi"
+            : data.source === "upcitemdb"
+              ? "UPCitemdb'dan to'ldirildi"
+              : "Davlat aniqlandi",
+      );
+    },
+    onError: (e: Error) => toast.error(e.message || "Auto-fill ishlamadi"),
+  });
+
   const rows = useMemo(() => list.data || [], [list.data]);
 
   const closeEditor = () => {
@@ -201,10 +279,16 @@ function ParvarishTarkibPage() {
   const openEdit = (row: AdminCareProduct) => {
     setCreating(false);
     setEditing(row);
+    const detected = applyBarcodeCountry(row.barcode || "");
     setForm({
       name: row.name,
       brand: row.brand || "",
       category: (row.category as CareProductCategory) || "shampoo",
+      barcode: detected.barcode || row.barcode || "",
+      country_of_origin: row.country_of_origin || detected.country_of_origin,
+      country_code_prefix: row.country_code_prefix || detected.country_code_prefix,
+      country_matched: Boolean(row.country_of_origin) || detected.country_matched,
+      image_url: row.external_image_url || "",
       ingredients_text: row.ingredients_text || "",
       usage_uz: row.usage_uz || "",
       purpose_uz: row.purpose_uz || "",
@@ -216,6 +300,7 @@ function ParvarishTarkibPage() {
       cons_uz: row.cons_uz || "",
       warnings_uz: row.warnings_uz || "",
       is_published: row.is_published,
+      is_verified: row.is_verified !== false,
       sort_order: String(row.sort_order ?? 0),
       image: null,
     });
@@ -354,6 +439,13 @@ function ParvarishTarkibPage() {
                       <p className="line-clamp-2 text-xs text-muted-foreground">
                         {row.purpose_uz || row.usage_uz || "Tavsif yo‘q"}
                       </p>
+                      {row.barcode || row.country_of_origin ? (
+                        <p className="truncate text-[11px] text-muted-foreground">
+                          {row.barcode ? `${row.barcode}` : ""}
+                          {row.barcode && row.country_of_origin ? " · " : ""}
+                          {row.country_of_origin || ""}
+                        </p>
+                      ) : null}
                     </div>
                   </button>
                 );
@@ -379,6 +471,66 @@ function ParvarishTarkibPage() {
             </div>
 
             <div className="space-y-4">
+              <Field label="Barcode (EAN / UPC)">
+                <Input
+                  inputMode="numeric"
+                  autoComplete="off"
+                  placeholder="4781234567890"
+                  value={form.barcode}
+                  onChange={(e) =>
+                    setForm((p) => ({ ...p, ...applyBarcodeCountry(e.target.value) }))
+                  }
+                  onBlur={(e) =>
+                    setForm((p) => ({ ...p, ...applyBarcodeCountry(e.target.value) }))
+                  }
+                />
+              </Field>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Field label="Ishlab chiqarilgan davlat">
+                  <div className="relative">
+                    <Input
+                      value={form.country_of_origin}
+                      onChange={(e) =>
+                        setForm((p) => ({
+                          ...p,
+                          country_of_origin: e.target.value,
+                          country_matched: false,
+                        }))
+                      }
+                      placeholder="Avto-aniqlash"
+                      className={cn(form.country_matched && "pr-9 border-emerald-500/50")}
+                    />
+                    {form.country_matched ? (
+                      <Check
+                        className="pointer-events-none absolute top-1/2 right-2.5 size-4 -translate-y-1/2 text-emerald-600"
+                        aria-label="Davlat aniqlandi"
+                      />
+                    ) : null}
+                  </div>
+                  {form.country_code_prefix ? (
+                    <p className="text-[11px] text-muted-foreground">
+                      GS1 prefiks: {form.country_code_prefix}
+                    </p>
+                  ) : null}
+                </Field>
+                <div className="flex items-end">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full rounded-full"
+                    disabled={form.barcode.replace(/\D/g, "").length < 8 || autoFill.isPending}
+                    onClick={() => autoFill.mutate()}
+                  >
+                    {autoFill.isPending ? (
+                      <Loader2 className="size-4 animate-spin" />
+                    ) : (
+                      <WandSparkles className="size-4" />
+                    )}
+                    Auto-Fill Data
+                  </Button>
+                </div>
+              </div>
+
               <div className="grid gap-3 sm:grid-cols-2">
                 <Field label="Nomi">
                   <Input
@@ -414,7 +566,7 @@ function ParvarishTarkibPage() {
                     </SelectContent>
                   </Select>
                 </Field>
-                <Field label="Rasm">
+                <Field label="Rasm (fayl)">
                   <Input
                     type="file"
                     accept="image/*"
@@ -424,6 +576,14 @@ function ParvarishTarkibPage() {
                   />
                 </Field>
               </div>
+
+              <Field label="Rasm URL">
+                <Input
+                  value={form.image_url}
+                  onChange={(e) => setForm((p) => ({ ...p, image_url: e.target.value }))}
+                  placeholder="https://..."
+                />
+              </Field>
 
               <Field label="Tarkib (INCI)">
                 <Textarea
@@ -516,6 +676,13 @@ function ParvarishTarkibPage() {
                 <Switch
                   checked={form.is_published}
                   onCheckedChange={(v) => setForm((p) => ({ ...p, is_published: v }))}
+                />
+              </div>
+              <div className="flex items-center justify-between rounded-xl border border-border px-3 py-2.5">
+                <Label>Tasdiqlangan</Label>
+                <Switch
+                  checked={form.is_verified}
+                  onCheckedChange={(v) => setForm((p) => ({ ...p, is_verified: v }))}
                 />
               </div>
 

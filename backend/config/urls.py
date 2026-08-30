@@ -269,6 +269,11 @@ from ai.admin_parvarish_views import (
     AdminParvarishProductListCreateView,
     AdminParvarishStatsView,
 )
+from ai.product_barcode_views import (
+    AdminProductLookupView,
+    AdminProductUpsertView,
+    ProductBarcodeLookupView,
+)
 from ai.care_views import (
     CareMyProductDeleteView,
     CareMyProductListCreateView,
@@ -429,7 +434,10 @@ api_routes = [
     path("admin/parvarish/my-products/", AdminParvarishMyProductsView.as_view()),
     path("admin/parvarish/products/", AdminParvarishProductListCreateView.as_view()),
     path("admin/parvarish/products/<int:product_id>/", AdminParvarishProductDetailView.as_view()),
+    path("admin/parvarish/products/lookup/", AdminProductLookupView.as_view()),
     path("admin/parvarish/demo-action/", AdminParvarishDemoActionView.as_view()),
+    path("admin/products/", AdminProductUpsertView.as_view()),
+    path("admin/products/lookup/", AdminProductLookupView.as_view()),
     path("admin/subscriptions/stats/", AdminSubscriptionStatsView.as_view()),
     path("admin/subscriptions/analytics/", AdminSubscriptionAnalyticsView.as_view()),
     path("admin/subscriptions/", AdminSubscriptionListView.as_view()),
@@ -543,7 +551,9 @@ api_routes = [
     path("ai/style-studio/catalog/", AiStyleStudioCatalogView.as_view()),
     path("ai/face-check/", AiFaceCheckView.as_view()),
     path("ai/ingredient-scan/", AiIngredientScanView.as_view()),
+    path("products/barcode/<str:barcode>/", ProductBarcodeLookupView.as_view()),
     path("ai/care/products/", CareProductListView.as_view()),
+    path("ai/care/products/barcode/<str:barcode>/", ProductBarcodeLookupView.as_view()),
     path("ai/care/products/<int:product_id>/", CareProductDetailView.as_view()),
     path("ai/care/products/<int:product_id>/like/", CareProductLikeToggleView.as_view()),
     path("ai/care/my-products/", CareMyProductListCreateView.as_view()),
