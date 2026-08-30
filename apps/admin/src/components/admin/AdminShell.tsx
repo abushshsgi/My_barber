@@ -39,6 +39,7 @@ import {
   MessageCircle,
   FlaskConical,
   Droplets,
+  Database,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MysaloonLogo } from "@/components/brand/MysaloonLogo";
@@ -126,8 +127,9 @@ const SECTIONS: Section[] = [
     key: "ledger",
     label: "Ledger nazorat",
     icon: Fingerprint,
-    matchPrefixes: ["/admin/ledger"],
+    matchPrefixes: ["/admin/ledger", "/admin/baza"],
     items: [
+      { to: "/admin/baza", label: "Baza", icon: Database },
       { to: "/admin/ledger", label: "ID / Hash qidiruv", icon: Fingerprint },
       { to: "/admin/statistics/wallet", label: "Hamyon oqimi", icon: Wallet },
       { to: "/admin/audit", label: "Audit log", icon: History },

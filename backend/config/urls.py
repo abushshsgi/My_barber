@@ -269,6 +269,13 @@ from ai.admin_parvarish_views import (
     AdminParvarishProductListCreateView,
     AdminParvarishStatsView,
 )
+from ai.admin_baza_views import (
+    AdminBazaCountriesView,
+    AdminBazaExportView,
+    AdminBazaOverviewView,
+    AdminBazaProductsView,
+    AdminBazaSearchView,
+)
 from ai.product_barcode_views import (
     AdminProductLookupView,
     AdminProductUpsertView,
@@ -438,6 +445,11 @@ api_routes = [
     path("admin/parvarish/demo-action/", AdminParvarishDemoActionView.as_view()),
     path("admin/products/", AdminProductUpsertView.as_view()),
     path("admin/products/lookup/", AdminProductLookupView.as_view()),
+    path("admin/baza/overview/", AdminBazaOverviewView.as_view()),
+    path("admin/baza/countries/", AdminBazaCountriesView.as_view()),
+    path("admin/baza/products/", AdminBazaProductsView.as_view()),
+    path("admin/baza/search/", AdminBazaSearchView.as_view()),
+    path("admin/baza/export/", AdminBazaExportView.as_view()),
     path("admin/subscriptions/stats/", AdminSubscriptionStatsView.as_view()),
     path("admin/subscriptions/analytics/", AdminSubscriptionAnalyticsView.as_view()),
     path("admin/subscriptions/", AdminSubscriptionListView.as_view()),

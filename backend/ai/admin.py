@@ -4,6 +4,7 @@ from .models import (
     AiGenerationUsage,
     AiStyleHistoryEntry,
     CareProduct,
+    CareProductInsight,
     Gs1CountryCode,
     HairCareProfile,
     Hairstyle,
@@ -95,6 +96,13 @@ class MorphAiUserPrefsAdmin(admin.ModelAdmin):
     search_fields = ("user__phone", "user__email")
     raw_id_fields = ("user",)
     readonly_fields = ("updated_at",)
+
+
+@admin.register(CareProductInsight)
+class CareProductInsightAdmin(admin.ModelAdmin):
+    list_display = ("id", "user", "product", "views", "clicks", "last_seen_at")
+    search_fields = ("user__full_name", "user__phone", "product__name", "product__barcode")
+    raw_id_fields = ("user", "product")
 
 
 @admin.register(Gs1CountryCode)

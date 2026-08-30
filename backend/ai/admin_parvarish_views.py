@@ -169,7 +169,15 @@ class AdminParvarishProductListCreateView(UnthrottledAPIView):
     parser_classes = [MultiPartParser, FormParser, JSONParser]
 
     def get(self, request):
-        qs = CareProduct.objects.all().order_by("sort_order", "name")
+        qs = (
+            CareProduct.objects.annotate(
+                likes_count=Count("likes"),
+                viewers_count=Count("insights", filter=Q(insights__views__gt=0)),
+                clickers_count=Count("insights", filter=Q(insights__clicks__gt=0)),
+            )
+            .all()
+            .order_by("sort_order", "name")
+        )
         category = (request.query_params.get("category") or "").strip().lower()
         q = (request.query_params.get("q") or "").strip()
         published = request.query_params.get("published")

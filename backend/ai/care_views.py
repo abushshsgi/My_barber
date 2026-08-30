@@ -144,6 +144,11 @@ class CareProductListView(UnthrottledAPIView):
         else:
             qs = qs.order_by("sort_order", "name")
         products = list(qs[:200])
+        if getattr(request.user, "is_authenticated", False):
+            from ai.services.care_insights import record_product_event
+
+            for product in products[:40]:
+                record_product_event(product, request.user, kind="view")
         return Response(_serialize_products(request, products))
 
 
@@ -172,6 +177,9 @@ class CareProductDetailView(UnthrottledAPIView):
         data["fit_verdict"] = fit["fit_verdict"]
         data["fit_reasons"] = fit["fit_reasons"]
         data["usage_steps"] = fit["usage_steps"]
+        from ai.services.care_insights import record_product_event
+
+        record_product_event(obj, request.user, kind="click")
         return Response(data)
 
 

@@ -4959,6 +4959,10 @@ export type AdminCareProduct = {
   cons_uz: string;
   warnings_uz: string;
   is_published: boolean;
+  views_count?: number;
+  clicks_count?: number;
+  viewers_count?: number;
+  clickers_count?: number;
   sort_order: number;
   created_at: string;
   updated_at: string;
@@ -5150,5 +5154,177 @@ export async function adminCareDemoAction(action: "seed" | "purge"): Promise<{
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ action }),
   });
+}
+
+export type BazaOverview = {
+  users: number;
+  users_active: number;
+  barbers: number;
+  salons: number;
+  wallets: number;
+  wallet_balance_sum: number;
+  ledger_entries: number;
+  gifts: number;
+  bookings: number;
+  sessions: number;
+  care_products: number;
+  care_likes: number;
+  care_views: number;
+  care_clicks: number;
+  gs1_codes: number;
+};
+
+export type BazaCountry = {
+  id?: number;
+  prefix_label: string;
+  country_name: string;
+  iso: string;
+  flag: string;
+  flag_url?: string;
+  prefix_start?: number;
+  prefix_end?: number;
+};
+
+export type BazaProductRow = {
+  id: number;
+  name: string;
+  brand: string;
+  category: string;
+  barcode: string;
+  country_of_origin: string;
+  flag: string;
+  ingredients_text: string;
+  views_count: number;
+  clicks_count: number;
+  viewers_count: number;
+  clickers_count: number;
+  likes_count: number;
+};
+
+export type BazaDossier = {
+  user: {
+    id: number;
+    full_name: string;
+    phone: string | null;
+    email: string;
+    username: string;
+    region: string;
+    is_active: boolean;
+    date_joined: string | null;
+    last_login: string | null;
+    latitude: string | null;
+    longitude: string | null;
+    referral_code: string | null;
+  };
+  wallet: {
+    wallet_number: string;
+    balance: number;
+    is_frozen: boolean;
+    freeze_reason: string;
+  } | null;
+  barber: { id: number; full_name: string; phone: string } | null;
+  addresses: Array<{
+    id: number;
+    label: string;
+    address_line: string;
+    region: string;
+    is_default: boolean;
+  }>;
+  devices: Array<{
+    id: number;
+    device_name: string;
+    platform: string;
+    client_kind: string;
+    app_version: string;
+    ip_address: string | null;
+    last_seen_at: string | null;
+  }>;
+  transactions: Array<{
+    id: string;
+    entry_type: string;
+    amount: number;
+    balance_after: number;
+    reference_id: string;
+    created_at: string | null;
+  }>;
+  gifts: Array<{
+    id: string;
+    amount: number;
+    status: string;
+    direction: string;
+    from_user: string;
+    to_user: string;
+    from_wallet: string;
+    to_wallet: string;
+  }>;
+  bookings: Array<{
+    id: number;
+    status: string;
+    payment_status: string;
+    total_price: number;
+    start_at: string | null;
+  }>;
+  liked_products: Array<{ product_id: number; product_name: string; brand: string }>;
+  seen_products: Array<{
+    product_id: number;
+    product_name: string;
+    views: number;
+    clicks: number;
+  }>;
+};
+
+export type BazaSearchResponse = {
+  ok: boolean;
+  query: string;
+  dossiers: BazaDossier[];
+  countries: BazaCountry[];
+  products: BazaProductRow[];
+  ledger?: { ok?: boolean; results?: unknown[]; detail?: string };
+};
+
+export async function fetchBazaOverview(): Promise<BazaOverview> {
+  return apiJson("/api/v1/admin/baza/overview/");
+}
+
+export async function fetchBazaCountries(): Promise<{ results: BazaCountry[] }> {
+  return apiJson("/api/v1/admin/baza/countries/");
+}
+
+export async function fetchBazaProducts(q?: string): Promise<{ results: BazaProductRow[] }> {
+  const sp = new URLSearchParams();
+  if (q) sp.set("q", q);
+  const qs = sp.toString();
+  return apiJson(`/api/v1/admin/baza/products/${qs ? `?${qs}` : ""}`);
+}
+
+export async function fetchBazaSearch(q: string): Promise<BazaSearchResponse> {
+  const sp = new URLSearchParams({ q });
+  return apiJson(`/api/v1/admin/baza/search/?${sp.toString()}`);
+}
+
+export async function downloadBazaExport(params: {
+  kind: "overview" | "countries" | "products" | "search";
+  format?: "csv" | "json";
+  q?: string;
+}): Promise<void> {
+  const sp = new URLSearchParams({ kind: params.kind, format: params.format || "csv" });
+  if (params.q) sp.set("q", params.q);
+  const res = await apiFetch(`/api/v1/admin/baza/export/?${sp.toString()}`);
+  if (!res.ok) {
+    const j = (await res.json().catch(() => ({}))) as { detail?: string };
+    throw new Error(j.detail || "Yuklab olishda xatolik");
+  }
+  const blob = await res.blob();
+  const disposition = res.headers.get("Content-Disposition") || "";
+  const match = disposition.match(/filename="?([^"]+)"?/);
+  const filename = match?.[1] || `baza-${params.kind}.${params.format || "csv"}`;
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
 }
 

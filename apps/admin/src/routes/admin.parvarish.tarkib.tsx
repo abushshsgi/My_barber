@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, ImagePlus, Loader2, Pencil, Plus, Search, Sparkles, Trash2, WandSparkles, X } from "lucide-react";
+import { Check, Download, ImagePlus, Loader2, Pencil, Plus, Search, Sparkles, Trash2, WandSparkles, X } from "lucide-react";
 import { toast } from "sonner";
 import { EmptyState } from "@/components/admin/EmptyState";
 import { CardSkeleton } from "@/components/admin/Skeletons";
@@ -23,6 +23,7 @@ import {
   adminCareDemoAction,
   deleteAdminCareProduct,
   fetchAdminCareProducts,
+  downloadBazaExport,
   lookupAdminCareProduct,
   patchAdminCareProduct,
   upsertAdminProduct,
@@ -343,6 +344,19 @@ function ParvarishTarkibPage() {
             <Trash2 className="size-3.5" />
             Demolarni tozalash
           </Button>
+          <Button
+            type="button"
+            variant="outline"
+            className="rounded-full"
+            onClick={() => {
+              void downloadBazaExport({ kind: "products", format: "csv" })
+                .then(() => toast.success("Yuklab olindi"))
+                .catch((e: Error) => toast.error(e.message || "Yuklab bo'lmadi"));
+            }}
+          >
+            <Download className="size-4" />
+            Statistika
+          </Button>
           <Button type="button" onClick={openCreate} className="rounded-full px-4">
             <Plus className="size-4" />
             Yangi
@@ -446,6 +460,11 @@ function ParvarishTarkibPage() {
                           {row.country_of_origin || ""}
                         </p>
                       ) : null}
+                      <p className="text-[11px] text-muted-foreground">
+                        Ko‘rdi: {row.viewers_count ?? 0} kishi / {row.views_count ?? 0}
+                        {" · "}
+                        Bosdi: {row.clickers_count ?? 0} kishi / {row.clicks_count ?? 0}
+                      </p>
                     </div>
                   </button>
                 );

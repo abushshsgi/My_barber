@@ -454,6 +454,8 @@ class CareProduct(models.Model):
     cons_uz = models.TextField(blank=True, default="")
     warnings_uz = models.TextField(blank=True, default="")
     is_published = models.BooleanField(default=True, db_index=True)
+    views_count = models.PositiveIntegerField(default=0)
+    clicks_count = models.PositiveIntegerField(default=0)
     sort_order = models.PositiveSmallIntegerField(default=0)
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -473,6 +475,40 @@ class CareProduct(models.Model):
 
     def __str__(self) -> str:
         return f"{self.brand} {self.name}".strip() or self.slug
+
+
+class CareProductInsight(models.Model):
+    """User mahsulotni ko'rdi / ochdi — unique auditoriya."""
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="care_product_insights",
+    )
+    product = models.ForeignKey(
+        CareProduct,
+        on_delete=models.CASCADE,
+        related_name="insights",
+    )
+    views = models.PositiveIntegerField(default=0)
+    clicks = models.PositiveIntegerField(default=0)
+    first_seen_at = models.DateTimeField(auto_now_add=True)
+    last_seen_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "product"],
+                name="uniq_care_product_insight_user_product",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["product", "-last_seen_at"]),
+            models.Index(fields=["user", "-last_seen_at"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"CareProductInsight(user={self.user_id}, product={self.product_id})"
 
 
 class CareProductLike(models.Model):

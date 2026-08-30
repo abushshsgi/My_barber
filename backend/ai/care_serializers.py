@@ -50,6 +50,8 @@ class CareProductSerializer(serializers.ModelSerializer):
     image_url = serializers.SerializerMethodField()
     likes_count = serializers.SerializerMethodField()
     liked_by_me = serializers.SerializerMethodField()
+    viewers_count = serializers.SerializerMethodField()
+    clickers_count = serializers.SerializerMethodField()
     title = serializers.ReadOnlyField(source="name")
     ingredients_raw = serializers.ReadOnlyField(source="ingredients_text")
     usage_instructions = serializers.ReadOnlyField(source="usage_uz")
@@ -87,6 +89,10 @@ class CareProductSerializer(serializers.ModelSerializer):
             "cons_uz",
             "warnings_uz",
             "is_published",
+            "views_count",
+            "clicks_count",
+            "viewers_count",
+            "clickers_count",
             "sort_order",
             "likes_count",
             "liked_by_me",
@@ -99,6 +105,10 @@ class CareProductSerializer(serializers.ModelSerializer):
             "image_url",
             "likes_count",
             "liked_by_me",
+            "views_count",
+            "clicks_count",
+            "viewers_count",
+            "clickers_count",
             "created_at",
             "updated_at",
         )
@@ -130,6 +140,18 @@ class CareProductSerializer(serializers.ModelSerializer):
         if not request or not getattr(request.user, "is_authenticated", False):
             return False
         return obj.likes.filter(user_id=request.user.id).exists()
+
+    def get_viewers_count(self, obj: CareProduct) -> int:
+        annotated = getattr(obj, "viewers_count", None)
+        if annotated is not None:
+            return int(annotated)
+        return int(obj.insights.filter(views__gt=0).count())
+
+    def get_clickers_count(self, obj: CareProduct) -> int:
+        annotated = getattr(obj, "clickers_count", None)
+        if annotated is not None:
+            return int(annotated)
+        return int(obj.insights.filter(clicks__gt=0).count())
 
     def validate_category(self, value: str) -> str:
         value = (value or "").strip().lower()
