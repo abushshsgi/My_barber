@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, Download, ImagePlus, Loader2, Pencil, Plus, Search, Sparkles, Trash2, WandSparkles, X } from "lucide-react";
@@ -21,6 +21,7 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import {
   adminCareDemoAction,
+  aiFillAdminCareProduct,
   deleteAdminCareProduct,
   fetchAdminCareProducts,
   downloadBazaExport,
@@ -102,6 +103,8 @@ type FormState = {
   is_verified: boolean;
   sort_order: string;
   image: File | null;
+  image_back: File | null;
+  image_ingredients: File | null;
 };
 
 const emptyForm = (): FormState => ({
@@ -127,6 +130,8 @@ const emptyForm = (): FormState => ({
   is_verified: true,
   sort_order: "0",
   image: null,
+  image_back: null,
+  image_ingredients: null,
 });
 
 function applyBarcodeCountry(barcode: string): Pick<
@@ -147,6 +152,37 @@ function toggleTag(list: string[], tag: string): string[] {
   return list.includes(tag) ? list.filter((x) => x !== tag) : [...list, tag];
 }
 
+function photoFingerprint(file: File | null): string {
+  if (!file) return "";
+  return `${file.name}:${file.size}:${file.lastModified}`;
+}
+
+function takeImageFiles(list: FileList | File[] | null): File[] {
+  if (!list) return [];
+  return Array.from(list)
+    .filter((file) => file.type.startsWith("image/"))
+    .slice(0, 3);
+}
+
+function slotsFromRoles(
+  files: File[],
+  roles: Array<"front" | "back" | "ingredients"> | undefined,
+): Pick<FormState, "image" | "image_back" | "image_ingredients"> | null {
+  if (!roles?.length || roles.length !== files.length) return null;
+  const mapped = {
+    image: null as File | null,
+    image_back: null as File | null,
+    image_ingredients: null as File | null,
+  };
+  files.forEach((file, index) => {
+    const role = roles[index];
+    if (role === "front") mapped.image = file;
+    else if (role === "back") mapped.image_back = file;
+    else mapped.image_ingredients = file;
+  });
+  return mapped;
+}
+
 function ParvarishTarkibPage() {
   const qc = useQueryClient();
   const [q, setQ] = useState("");
@@ -154,6 +190,8 @@ function ParvarishTarkibPage() {
   const [editing, setEditing] = useState<AdminCareProduct | null>(null);
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState<FormState>(emptyForm);
+  const [batchFiles, setBatchFiles] = useState<File[]>([]);
+  const skipAutoFill = useRef(false);
   const editorOpen = creating || editing != null;
 
   const list = useQuery({
@@ -263,23 +301,118 @@ function ParvarishTarkibPage() {
     onError: (e: Error) => toast.error(e.message || "Auto-fill ishlamadi"),
   });
 
+  const applyAiFill = (data: Awaited<ReturnType<typeof aiFillAdminCareProduct>>, files: File[]) => {
+    const detected = applyBarcodeCountry(data.barcode || form.barcode);
+    const slots = slotsFromRoles(files, data.image_roles);
+    skipAutoFill.current = true;
+    setForm((p) => ({
+      ...p,
+      ...(slots || {}),
+      name: data.name || p.name,
+      brand: data.brand || p.brand,
+      category: (CATEGORIES.some((c) => c.value === data.category)
+        ? data.category
+        : p.category) as CareProductCategory,
+      barcode: detected.barcode || p.barcode,
+      country_of_origin: detected.country_of_origin || data.country_of_origin || p.country_of_origin,
+      country_code_prefix:
+        detected.country_code_prefix || data.country_code_prefix || p.country_code_prefix,
+      country_matched: detected.country_matched || data.country_matched,
+      ingredients_text: data.ingredients_text || p.ingredients_text,
+      usage_uz: data.usage_uz || p.usage_uz,
+      purpose_uz: data.purpose_uz || p.purpose_uz,
+      suitable_for: data.suitable_for?.length ? data.suitable_for : p.suitable_for,
+      not_suitable_for: data.not_suitable_for?.length
+        ? data.not_suitable_for
+        : p.not_suitable_for,
+      scalp_types: data.scalp_types?.length ? data.scalp_types : p.scalp_types,
+      concerns: data.concerns?.length ? data.concerns : p.concerns,
+      pros_uz: data.pros_uz || p.pros_uz,
+      cons_uz: data.cons_uz || p.cons_uz,
+      warnings_uz: data.warnings_uz || p.warnings_uz,
+    }));
+    setBatchFiles([]);
+    toast.success("AI maydonlarni to‘ldirdi — tekshirib saqlang");
+  };
+
+  const aiFill = useMutation({
+    mutationFn: (payload: { photos?: File[] }) =>
+      aiFillAdminCareProduct(
+        payload.photos?.length
+          ? { photos: payload.photos }
+          : {
+              front: form.image,
+              back: form.image_back,
+              ingredients: form.image_ingredients,
+            },
+      ),
+    onSuccess: (data, payload) => {
+      const files =
+        payload.photos?.length
+          ? payload.photos
+          : [form.image, form.image_back, form.image_ingredients].filter((x): x is File => !!x);
+      applyAiFill(data, files);
+    },
+    onError: (e: Error) => toast.error(e.message || "AI to'ldirish ishlamadi"),
+  });
+
+  const hasAiPhotos = Boolean(form.image || form.image_back || form.image_ingredients);
+  const photoKey = [
+    photoFingerprint(form.image),
+    photoFingerprint(form.image_back),
+    photoFingerprint(form.image_ingredients),
+  ].join("|");
+
+  useEffect(() => {
+    if (!editorOpen || !hasAiPhotos) return;
+    if (skipAutoFill.current) {
+      skipAutoFill.current = false;
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      if (!aiFill.isPending) aiFill.mutate({});
+    }, 700);
+    return () => window.clearTimeout(timer);
+    // photoKey — yangi rasm qo‘yilganda avtomatik AI
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [photoKey, editorOpen]);
+
+  const acceptProductPhotos = (list: FileList | File[] | null) => {
+    const files = takeImageFiles(list);
+    if (!files.length) return;
+    skipAutoFill.current = true;
+    setBatchFiles(files);
+    setForm((p) => ({
+      ...p,
+      image: files[0] || p.image,
+      image_back: files[1] ?? null,
+      image_ingredients: files[2] ?? null,
+    }));
+    window.setTimeout(() => aiFill.mutate({ photos: files }), 0);
+  };
+
   const rows = useMemo(() => list.data || [], [list.data]);
 
   const closeEditor = () => {
     setCreating(false);
     setEditing(null);
+    setBatchFiles([]);
     setForm(emptyForm());
   };
 
   const openCreate = () => {
     setEditing(null);
     setCreating(true);
+    setBatchFiles([]);
+    skipAutoFill.current = true;
     setForm(emptyForm());
   };
 
   const openEdit = (row: AdminCareProduct) => {
     setCreating(false);
     setEditing(row);
+    setBatchFiles([]);
+    skipAutoFill.current = true;
     const detected = applyBarcodeCountry(row.barcode || "");
     setForm({
       name: row.name,
@@ -304,6 +437,8 @@ function ParvarishTarkibPage() {
       is_verified: row.is_verified !== false,
       sort_order: String(row.sort_order ?? 0),
       image: null,
+      image_back: null,
+      image_ingredients: null,
     });
   };
 
@@ -490,6 +625,82 @@ function ParvarishTarkibPage() {
             </div>
 
             <div className="space-y-4">
+              <div className="rounded-2xl border border-primary/20 bg-primary/5 p-3">
+                <div className="mb-2 flex items-center justify-between gap-2">
+                  <div>
+                    <p className="text-xs font-semibold">AI avtomatik to‘ldirish</p>
+                    <p className="text-[11px] text-muted-foreground">
+                      Tayyor mahsulotning old, orqa va tarkib rasmini tashlang. AI o‘zi ustunlarga qo‘yadi va formani yozadi.
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    size="sm"
+                    className="shrink-0 rounded-full"
+                    disabled={!hasAiPhotos || aiFill.isPending}
+                    onClick={() =>
+                      aiFill.mutate(
+                        batchFiles.length ? { photos: batchFiles } : {},
+                      )
+                    }
+                  >
+                    {aiFill.isPending ? (
+                      <Loader2 className="size-4 animate-spin" />
+                    ) : (
+                      <Sparkles className="size-4" />
+                    )}
+                    {aiFill.isPending ? "O‘qilmoqda…" : "Qayta AI"}
+                  </Button>
+                </div>
+                <label
+                  className="mb-2 flex min-h-20 cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-primary/30 bg-background/70 px-3 py-3 text-center"
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    acceptProductPhotos(e.dataTransfer.files);
+                  }}
+                >
+                  <Sparkles className="mb-1 size-4 text-primary" />
+                  <span className="text-xs font-medium">1–3 ta rasmni birga tashlang</span>
+                  <span className="text-[11px] text-muted-foreground">
+                    Oldi · mahsulot orqasi · tarkib/INCI
+                  </span>
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    multiple
+                    className="sr-only"
+                    onChange={(e) => {
+                      acceptProductPhotos(e.target.files);
+                      e.target.value = "";
+                    }}
+                  />
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  <PhotoSlot
+                    label="Oldi"
+                    file={form.image}
+                    fallbackUrl={form.image_url}
+                    onPick={(file) => setForm((p) => ({ ...p, image: file }))}
+                  />
+                  <PhotoSlot
+                    label="Orqasi"
+                    file={form.image_back}
+                    onPick={(file) => setForm((p) => ({ ...p, image_back: file }))}
+                  />
+                  <PhotoSlot
+                    label="Tarkib"
+                    file={form.image_ingredients}
+                    onPick={(file) => setForm((p) => ({ ...p, image_ingredients: file }))}
+                  />
+                </div>
+                {aiFill.isPending ? (
+                  <p className="mt-2 text-[11px] text-muted-foreground">
+                    AI rasmni o‘qiyapti va maydonlarni to‘ldiryapti…
+                  </p>
+                ) : null}
+              </div>
+
               <Field label="Barcode (EAN / UPC)">
                 <Input
                   inputMode="numeric"
@@ -585,24 +796,14 @@ function ParvarishTarkibPage() {
                     </SelectContent>
                   </Select>
                 </Field>
-                <Field label="Rasm (fayl)">
+                <Field label="Rasm URL (ixtiyoriy)">
                   <Input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) =>
-                      setForm((p) => ({ ...p, image: e.target.files?.[0] || null }))
-                    }
+                    value={form.image_url}
+                    onChange={(e) => setForm((p) => ({ ...p, image_url: e.target.value }))}
+                    placeholder="https://..."
                   />
                 </Field>
               </div>
-
-              <Field label="Rasm URL">
-                <Input
-                  value={form.image_url}
-                  onChange={(e) => setForm((p) => ({ ...p, image_url: e.target.value }))}
-                  placeholder="https://..."
-                />
-              </Field>
 
               <Field label="Tarkib (INCI)">
                 <Textarea
@@ -743,6 +944,48 @@ function ParvarishTarkibPage() {
         ) : null}
       </div>
     </div>
+  );
+}
+
+function PhotoSlot({
+  label,
+  file,
+  fallbackUrl,
+  onPick,
+}: {
+  label: string;
+  file: File | null;
+  fallbackUrl?: string;
+  onPick: (file: File | null) => void;
+}) {
+  const [preview, setPreview] = useState("");
+  useEffect(() => {
+    if (!file) {
+      setPreview(fallbackUrl || "");
+      return;
+    }
+    const url = URL.createObjectURL(file);
+    setPreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [file, fallbackUrl]);
+
+  return (
+    <label className="relative flex aspect-[3/4] cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl border border-dashed border-border bg-background text-center">
+      {preview ? (
+        <img src={preview} alt={label} className="absolute inset-0 size-full object-cover" />
+      ) : (
+        <ImagePlus className="size-5 text-muted-foreground" />
+      )}
+      <span className="relative z-10 mt-1 rounded-full bg-background/85 px-2 py-0.5 text-[10px] font-medium backdrop-blur">
+        {label}
+      </span>
+      <input
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        className="sr-only"
+        onChange={(e) => onPick(e.target.files?.[0] || null)}
+      />
+    </label>
   );
 }
 

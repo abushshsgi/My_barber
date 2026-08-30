@@ -5106,6 +5106,47 @@ function careProductFormData(body: AdminCareProductPayload): FormData {
   return fd;
 }
 
+export type AdminCareAiFill = {
+  name: string;
+  brand: string;
+  category: CareProductCategory | string;
+  barcode: string;
+  country_of_origin: string;
+  country_code_prefix: string;
+  country_matched: boolean;
+  ingredients_text: string;
+  ingredients: string[];
+  usage_uz: string;
+  purpose_uz: string;
+  suitable_for: string[];
+  not_suitable_for: string[];
+  scalp_types: string[];
+  concerns: string[];
+  pros_uz: string;
+  cons_uz: string;
+  warnings_uz: string;
+  image_roles?: Array<"front" | "back" | "ingredients">;
+};
+
+export async function aiFillAdminCareProduct(files: {
+  front?: File | null;
+  back?: File | null;
+  ingredients?: File | null;
+  photos?: File[];
+}): Promise<AdminCareAiFill> {
+  const fd = new FormData();
+  if (files.photos?.length) {
+    for (const photo of files.photos.slice(0, 3)) {
+      fd.append("photos", photo);
+    }
+  } else {
+    if (files.front) fd.set("front", files.front);
+    if (files.back) fd.set("back", files.back);
+    if (files.ingredients) fd.set("ingredients", files.ingredients);
+  }
+  return apiJson("/api/v1/admin/products/ai-fill/", { method: "POST", body: fd });
+}
+
 export async function lookupAdminCareProduct(barcode: string): Promise<AdminProductLookup> {
   const sp = new URLSearchParams({ barcode });
   return apiJson(`/api/v1/admin/products/lookup/?${sp.toString()}`);

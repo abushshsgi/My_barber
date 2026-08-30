@@ -504,17 +504,36 @@ def _gemini_vision_json(
     mime: str,
     image_bytes: bytes,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
-    b64 = base64.b64encode(image_bytes).decode("ascii")
-    body = {
-        "contents": [
+    return _gemini_vision_json_multi(prompt, [(mime, image_bytes)])
+
+
+def _gemini_vision_json_multi(
+    prompt: str,
+    images: list[tuple[str, bytes]],
+    *,
+    timeout: int = 45,
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    if not images:
+        raise AiStyleError("Rasm yuborilmadi.", 400)
+    image_parts: list[dict[str, Any]] = []
+    for mime, image_bytes in images:
+        if mime not in ALLOWED_MIME:
+            raise AiStyleError("Faqat JPEG, PNG yoki WebP qabul qilinadi.", 400)
+        if not image_bytes:
+            raise AiStyleError("Rasm bo'sh.", 400)
+        if len(image_bytes) > MAX_IMAGE_BYTES:
+            raise AiStyleError("Rasm hajmi 5 MB dan oshmasligi kerak.", 400)
+        image_parts.append(
             {
-                "role": "user",
-                "parts": [
-                    {"text": prompt},
-                    {"inline_data": {"mime_type": mime, "data": b64}},
-                ],
+                "inline_data": {
+                    "mime_type": mime,
+                    "data": base64.b64encode(image_bytes).decode("ascii"),
+                }
             }
-        ],
+        )
+    parts = [{"text": prompt}, *image_parts]
+    body = {
+        "contents": [{"role": "user", "parts": parts}],
         "generationConfig": {
             "temperature": 0.2,
             "responseMimeType": "application/json",
@@ -527,7 +546,7 @@ def _gemini_vision_json(
 
     if vertex_configured():
         try:
-            payload = generate_content(model, body, timeout=45, kind="general")
+            payload = generate_content(model, body, timeout=timeout, kind="general")
         except AiStyleError:
             raise
         except Exception as exc:
@@ -542,14 +561,7 @@ def _gemini_vision_json(
                 503,
             )
         body_legacy = {
-            "contents": [
-                {
-                    "parts": [
-                        {"text": prompt},
-                        {"inline_data": {"mime_type": mime, "data": b64}},
-                    ]
-                }
-            ],
+            "contents": [{"parts": parts}],
             "generationConfig": body["generationConfig"],
         }
         try:
@@ -570,8 +582,11 @@ def _gemini_vision_json(
     if not candidates:
         raise AiStyleError("AI javob bermadi.", 502)
 
-    parts = (candidates[0].get("content") or {}).get("parts") or []
-    text_parts = [p.get("text", "") for p in parts if isinstance(p, dict) and p.get("text")]
+    text_parts = [
+        p.get("text", "")
+        for p in ((candidates[0].get("content") or {}).get("parts") or [])
+        if isinstance(p, dict) and p.get("text")
+    ]
     if not text_parts:
         raise AiStyleError("AI javob bermadi.", 502)
 

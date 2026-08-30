@@ -15,6 +15,8 @@ from ai.care_serializers import CareProductSerializer
 from ai.models import HairCareProfile
 from ai.services.barcode_country import detect_country_from_barcode, normalize_barcode
 from ai.services.care_match import parse_ingredients_text, score_against_hair, suitability_for_user
+from ai.services.errors import AiStyleError
+from ai.services.gemini_care_catalog import analyze_catalog_photos, decode_catalog_photo
 from ai.services.product_barcode_lookup import (
     external_as_product_payload,
     find_product_by_barcode,
@@ -100,6 +102,50 @@ class AdminProductUpsertView(UnthrottledAPIView):
             CareProductSerializer(obj, context={"request": request}).data,
             status=status.HTTP_201_CREATED if creating else status.HTTP_200_OK,
         )
+
+
+class AdminProductAiFillView(UnthrottledAPIView):
+    """POST — old/orqa/tarkib rasmlaridan katalog formasini AI to'ldiradi."""
+
+    permission_classes = [IsAdmin]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
+
+    def post(self, request):
+        photos: list[tuple[str, bytes]] = []
+        unlabeled = False
+        try:
+            batch = list(request.FILES.getlist("photos") or [])
+            if not batch:
+                raw = request.data.get("photos")
+                if isinstance(raw, list):
+                    batch = raw
+            if batch:
+                unlabeled = True
+                for upload in batch[:3]:
+                    decoded = decode_catalog_photo(upload)
+                    if decoded:
+                        photos.append(decoded)
+            else:
+                slots = (
+                    ("front", "image", "old"),
+                    ("back", "orqa"),
+                    ("ingredients", "tarkib"),
+                )
+                for names in slots:
+                    upload = None
+                    for name in names:
+                        upload = request.FILES.get(name) or request.data.get(name)
+                        if upload:
+                            break
+                    decoded = decode_catalog_photo(upload)
+                    if decoded:
+                        photos.append(decoded)
+            filled = analyze_catalog_photos(photos, unlabeled=unlabeled)
+        except AiStyleError as exc:
+            return Response({"detail": exc.message}, status=exc.status)
+
+        filled.pop("_usage", None)
+        return Response(filled)
 
 
 class AdminProductLookupView(UnthrottledAPIView):
