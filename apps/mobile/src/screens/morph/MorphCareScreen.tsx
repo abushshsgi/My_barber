@@ -983,8 +983,6 @@ export function MorphCareScreen({ navigation, route }: Props) {
                 >
                   <Ionicons name="chevron-back" size={18} color="#FFFFFF" />
                 </Pressable>
-                <Text style={styles.promoLogoText}>PARVARISH</Text>
-                <View style={styles.promoTopSpacer} />
               </View>
 
               <Pressable
