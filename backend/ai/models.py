@@ -387,6 +387,26 @@ class MorphAiUserPrefs(models.Model):
         return f"MorphAiUserPrefs({self.user_id})"
 
 
+class Gs1CountryCode(models.Model):
+    """GS1 barcode prefiksi → davlat. 114 ta kod seed qilinadi."""
+
+    prefix_label = models.CharField(max_length=16, unique=True, db_index=True)
+    country_name = models.CharField(max_length=80)
+    prefix_start = models.PositiveSmallIntegerField(db_index=True)
+    prefix_end = models.PositiveSmallIntegerField(db_index=True)
+
+    class Meta:
+        ordering = ["prefix_start", "prefix_end"]
+        indexes = [
+            models.Index(fields=["prefix_start", "prefix_end"]),
+        ]
+        verbose_name = "GS1 country code"
+        verbose_name_plural = "GS1 country codes"
+
+    def __str__(self) -> str:
+        return f"{self.prefix_label} — {self.country_name}"
+
+
 class CareProduct(models.Model):
     """Admin kiritadigan soch parvarishi mahsuloti — user katalogida ko'rinadi."""
 

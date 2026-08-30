@@ -4,6 +4,7 @@ from .models import (
     AiGenerationUsage,
     AiStyleHistoryEntry,
     CareProduct,
+    Gs1CountryCode,
     HairCareProfile,
     Hairstyle,
     IngredientScanEntry,
@@ -94,6 +95,14 @@ class MorphAiUserPrefsAdmin(admin.ModelAdmin):
     search_fields = ("user__phone", "user__email")
     raw_id_fields = ("user",)
     readonly_fields = ("updated_at",)
+
+
+@admin.register(Gs1CountryCode)
+class Gs1CountryCodeAdmin(admin.ModelAdmin):
+    list_display = ("id", "prefix_label", "country_name", "prefix_start", "prefix_end")
+    search_fields = ("prefix_label", "country_name")
+    list_filter = ("country_name",)
+    ordering = ("prefix_start", "prefix_end")
 
 
 @admin.register(CareProduct)

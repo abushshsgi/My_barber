@@ -1,5 +1,17 @@
-from ai.services.barcode_country import detect_country_from_barcode, normalize_barcode
+from ai.services.barcode_country import (
+    detect_country_from_barcode,
+    gs1_country_rows,
+    normalize_barcode,
+)
 from ai.services.product_barcode_lookup import infer_category, parse_open_beauty_facts, parse_upcitemdb
+
+
+def test_gs1_seed_has_114_codes():
+    rows = gs1_country_rows()
+    assert len(rows) == 114
+    labels = [r["prefix_label"] for r in rows]
+    assert len(set(labels)) == 114
+    assert any(r["prefix_label"] == "478" and r["country_name"] == "Uzbekistan" for r in rows)
 
 
 def test_normalize_strips_non_digits():

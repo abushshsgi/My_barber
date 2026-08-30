@@ -179,8 +179,83 @@ def _hit(name: str, prefix: str) -> CountryDetection:
     }
 
 
+def gs1_country_rows() -> list[dict[str, str | int]]:
+    """114 ta GS1 qoida — DB seed va fallback uchun."""
+    rows: list[dict[str, str | int]] = []
+    for prefix, name in _EXACT.items():
+        n = int(prefix)
+        rows.append(
+            {
+                "prefix_label": prefix,
+                "country_name": name,
+                "prefix_start": n,
+                "prefix_end": n,
+            }
+        )
+    for start, end, name, label in _RANGES:
+        rows.append(
+            {
+                "prefix_label": label,
+                "country_name": name,
+                "prefix_start": start,
+                "prefix_end": end,
+            }
+        )
+    return rows
+
+
+def sync_gs1_country_codes() -> int:
+    """114 ta kodni Gs1CountryCode jadvaliga yozadi (update_or_create)."""
+    from ai.models import Gs1CountryCode
+
+    count = 0
+    for row in gs1_country_rows():
+        Gs1CountryCode.objects.update_or_create(
+            prefix_label=row["prefix_label"],
+            defaults={
+                "country_name": row["country_name"],
+                "prefix_start": row["prefix_start"],
+                "prefix_end": row["prefix_end"],
+            },
+        )
+        count += 1
+    return count
+
+
+def _detect_from_static(n: int, prefix3: str) -> CountryDetection:
+    exact = _EXACT.get(prefix3)
+    if exact:
+        return _hit(exact, prefix3)
+    for start, end, name, label in _RANGES:
+        if start <= n <= end:
+            return _hit(name, label)
+    return _empty(prefix3)
+
+
+def _detect_from_db(n: int, prefix3: str) -> CountryDetection | None:
+    """Jadval bo'sh yoki mavjud bo'lmasa None — caller static fallback ishlatadi."""
+    try:
+        from ai.models import Gs1CountryCode
+
+        if not Gs1CountryCode.objects.exists():
+            return None
+        exact = Gs1CountryCode.objects.filter(prefix_start=n, prefix_end=n).first()
+        if exact:
+            return _hit(exact.country_name, exact.prefix_label)
+        row = (
+            Gs1CountryCode.objects.filter(prefix_start__lte=n, prefix_end__gte=n)
+            .order_by("prefix_start")
+            .first()
+        )
+        if row:
+            return _hit(row.country_name, row.prefix_label)
+        return _empty(prefix3)
+    except Exception:
+        return None
+
+
 def detect_country_from_barcode(barcode: str) -> CountryDetection:
-    """GS1 prefiksidan (2–3 raqam) davlatni aniqlaydi."""
+    """GS1 prefiksidan (2–3 raqam) davlatni aniqlaydi. Avval DB, keyin static xarita."""
     digits = normalize_barcode(barcode)
     if len(digits) < 8:
         return _empty()
@@ -190,12 +265,7 @@ def detect_country_from_barcode(barcode: str) -> CountryDetection:
     except ValueError:
         return _empty()
 
-    exact = _EXACT.get(prefix3)
-    if exact:
-        return _hit(exact, prefix3)
-
-    for start, end, name, label in _RANGES:
-        if start <= n <= end:
-            return _hit(name, label)
-
-    return _empty(prefix3)
+    db_hit = _detect_from_db(n, prefix3)
+    if db_hit is not None:
+        return db_hit
+    return _detect_from_static(n, prefix3)
