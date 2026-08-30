@@ -287,7 +287,8 @@ export function careHubLayout(
    * qayta qo‘shilmaydi, aks holda AI bar kesiladi.
    */
   const MIN = {
-    promo: topInset + Math.max(rs(96, scale), Math.min(promoByWidth, rs(118, scale))),
+    /** chip + temp + CTA sig‘ishi shart — aks holda tugma kesiladi. */
+    promo: topInset + Math.max(rs(128, scale), Math.min(promoByWidth, rs(148, scale))),
     featured: rs(128, scale),
     hubCard: rs(108, scale),
     ai: rs(44, scale),
@@ -296,9 +297,9 @@ export function careHubLayout(
     promo:
       topInset +
       clamp(
-        Math.max(rs(132, scale), promoByWidth),
-        rs(120, scale),
-        Math.min(rs(200, scale), Math.round(height * 0.26)),
+        Math.max(rs(148, scale), promoByWidth),
+        rs(140, scale),
+        Math.min(rs(210, scale), Math.round(height * 0.28)),
       ),
     featured: rs(196, scale),
     hubCard: rs(148, scale),
@@ -358,11 +359,13 @@ export function careHubLayout(
     promoPad,
     promoRadius,
     promoTempSize: rs(
-      promoInner >= rs(140, scale) ? 42 : promoInner >= rs(110, scale) ? 36 : 30,
+      promoInner >= rs(150, scale) ? 40 : promoInner >= rs(120, scale) ? 34 : 28,
       scale,
     ),
-    promoTitleSize: rs(narrow ? 14 : promoInner >= rs(130, scale) ? 16 : 15, scale),
-    promoRich: promoInner >= rs(118, scale),
+    promoTitleSize: rs(narrow ? 14 : promoInner >= rs(140, scale) ? 16 : 15, scale),
+    /** CTA uchun minimal joy; hint/2-qator title uchun boyroq. */
+    promoShowCta: promoInner >= rs(120, scale),
+    promoRich: promoInner >= rs(152, scale),
     hubCardRich: hubCardH >= rs(114, scale),
     featuredRich: featuredH >= rs(132, scale),
   };

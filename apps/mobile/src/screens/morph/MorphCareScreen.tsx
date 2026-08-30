@@ -1034,10 +1034,12 @@ export function MorphCareScreen({ navigation, route }: Props) {
                     ) : null}
                   </View>
                 </View>
-                {hubLayout.promoRich ? (
+                {hubLayout.promoShowCta ? (
                   <View style={styles.promoBtn}>
-                    <Text style={styles.promoBtnText}>{t("care.promoCta")}</Text>
-                    <Ionicons name="arrow-forward" size={13} color="#0A0A0A" />
+                    <Text style={styles.promoBtnText} numberOfLines={1}>
+                      {t("care.promoCta")}
+                    </Text>
+                    <Text style={styles.promoBtnArrow}>→</Text>
                   </View>
                 ) : null}
               </Pressable>
@@ -1761,8 +1763,9 @@ const styles = StyleSheet.create({
     zIndex: 2,
     flexShrink: 1,
     minHeight: 0,
-    gap: moderateScale(5),
-    maxWidth: "92%",
+    gap: moderateScale(6),
+    maxWidth: "100%",
+    justifyContent: "flex-end",
   },
   promoChipRow: {
     flexDirection: "row",
@@ -1858,21 +1861,35 @@ const styles = StyleSheet.create({
   },
   promoBtn: {
     flexShrink: 0,
-    marginTop: verticalScale(2),
+    marginTop: verticalScale(4),
     backgroundColor: "#FFFFFF",
     borderRadius: 999,
-    paddingHorizontal: scale(14),
-    paddingVertical: verticalScale(8),
+    paddingLeft: scale(14),
+    paddingRight: scale(12),
+    paddingVertical: verticalScale(9),
+    minHeight: 36,
     alignSelf: "flex-start",
     flexDirection: "row",
     alignItems: "center",
-    gap: moderateScale(6),
+    gap: moderateScale(8),
+    maxWidth: "100%",
   },
   promoBtnText: {
     ...morphFont,
-    fontSize: fontSize(12),
+    flexShrink: 1,
+    fontSize: fontSize(13),
     fontWeight: "700",
     color: "#0A0A0A",
+    letterSpacing: -0.2,
+  },
+  promoBtnArrow: {
+    ...morphFont,
+    flexShrink: 0,
+    fontSize: fontSize(15),
+    fontWeight: "700",
+    color: "#0A0A0A",
+    lineHeight: fontSize(18),
+    marginTop: -1,
   },
   promoImg: {
     width: scale(112),
