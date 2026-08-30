@@ -209,16 +209,6 @@ export function MorphCareScreen({ navigation, route }: Props) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const { isAuthenticated, user } = useAuth();
-  const avatarUrl = useMemo(
-    () => resolveMediaUrl(user?.avatar, { width: 240 }) || "",
-    [user?.avatar],
-  );
-  const userInitials = useMemo(() => {
-    const name = (user?.full_name || user?.first_name || user?.email || "?").trim();
-    const parts = name.split(/\s+/).filter(Boolean);
-    if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
-    return name.slice(0, 2).toUpperCase();
-  }, [user?.full_name, user?.first_name, user?.email]);
   const { goMorph, navigateRootTab } = useShellNavigation();
   const [loading, setLoading] = useState(true);
   const [access, setAccess] = useState<{ allowed: boolean; detail?: string } | null>(null);
@@ -995,15 +985,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
                   <Ionicons name="chevron-back" size={18} color="#FFFFFF" />
                 </Pressable>
                 <Text style={styles.promoLogoText}>PARVARISH</Text>
-                <View style={styles.promoAvatarRing}>
-                  {avatarUrl ? (
-                    <Image source={{ uri: avatarUrl }} style={styles.promoAvatar} resizeMode="cover" />
-                  ) : (
-                    <View style={[styles.promoAvatar, styles.promoAvatarFallback]}>
-                      <Text style={styles.promoAvatarInitials}>{userInitials}</Text>
-                    </View>
-                  )}
-                </View>
+                <View style={styles.promoTopSpacer} />
               </View>
 
               <Pressable
@@ -1746,6 +1728,10 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: "rgba(255,255,255,0.22)",
   },
+  promoTopSpacer: {
+    width: scale(34),
+    height: scale(34),
+  },
   promoLogoRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -1771,31 +1757,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: moderateScale(16),
     zIndex: 2,
-  },
-  promoAvatarRing: {
-    width: scale(34),
-    height: scale(34),
-    borderRadius: moderateScale(17),
-    borderWidth: 1.5,
-    borderColor: "rgba(255,255,255,0.55)",
-    overflow: "hidden",
-    backgroundColor: "rgba(255,255,255,0.12)",
-  },
-  promoAvatar: {
-    width: "100%",
-    height: "100%",
-    borderRadius: moderateScale(17),
-  },
-  promoAvatarFallback: {
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(255,255,255,0.2)",
-  },
-  promoAvatarInitials: {
-    ...morphFont,
-    fontSize: fontSize(11),
-    fontWeight: "800",
-    color: "#FFFFFF",
   },
   promoCopy: {
     zIndex: 2,
