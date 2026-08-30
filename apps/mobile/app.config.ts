@@ -94,11 +94,18 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         "expo-build-properties",
         {
           android: {
-            enableMinifyInReleaseBuilds: true,
-            enableShrinkResourcesInReleaseBuilds: true,
+            // R8 can strip Hermes/Reanimated; compressed .so fails dlopen on many phones.
+            enableMinifyInReleaseBuilds: false,
+            enableShrinkResourcesInReleaseBuilds: false,
             useLegacyPackaging: true,
-            // R8: expo-av references optional expo-modules types not always on classpath
             extraProguardRules: [
+              "-keep class expo.modules.** { *; }",
+              "-keep class com.facebook.react.** { *; }",
+              "-keep class com.facebook.hermes.** { *; }",
+              "-keep class com.swmansion.reanimated.** { *; }",
+              "-keep class com.swmansion.worklets.** { *; }",
+              "-keep class com.swmansion.rnscreens.** { *; }",
+              "-keep class com.swmansion.gesturehandler.** { *; }",
               "-dontwarn expo.modules.core.interfaces.services.KeepAwakeManager",
               "-dontwarn expo.modules.kotlin.types.AnyTypeProvider",
               "-dontwarn expo.modules.kotlin.types.LazyKType",
