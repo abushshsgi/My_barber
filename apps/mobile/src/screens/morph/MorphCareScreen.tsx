@@ -963,7 +963,17 @@ export function MorphCareScreen({ navigation, route }: Props) {
         >
           {!searchOpen ? (
           <View style={[styles.promoWrap, { paddingHorizontal: hubLayout.hPad }]}>
-            <View style={[styles.promoCard, { height: hubLayout.promoH, paddingTop: insets.top + 4 }]}>
+            <View
+              style={[
+                styles.promoCard,
+                {
+                  height: hubLayout.promoH,
+                  paddingTop: insets.top + 4,
+                  paddingHorizontal: hubLayout.promoPad,
+                  borderRadius: hubLayout.promoRadius,
+                },
+              ]}
+            >
               <Image
                 source={{ uri: weatherImg }}
                 style={styles.promoHeroImg}
@@ -972,7 +982,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
               <LinearGradient
                 colors={["rgba(8,12,20,0.35)", "rgba(8,12,20,0.15)", "rgba(8,12,20,0.82)"]}
                 locations={[0, 0.38, 1]}
-                style={StyleSheet.absoluteFill}
+                style={styles.promoScrim}
               />
 
               <View style={styles.promoTop}>
@@ -1677,19 +1687,24 @@ const styles = StyleSheet.create({
   promoWrap: {
     marginTop: 0,
     marginBottom: verticalScale(4),
+    width: "100%",
+    alignSelf: "stretch",
   },
   promoCard: {
-    borderRadius: moderateScale(22),
+    width: "100%",
+    alignSelf: "stretch",
     overflow: "hidden",
     backgroundColor: "#0B1220",
     justifyContent: "space-between",
     paddingBottom: verticalScale(10),
-    paddingHorizontal: scale(12),
   },
   promoHeroImg: {
     ...StyleSheet.absoluteFill,
     width: "100%",
     height: "100%",
+  },
+  promoScrim: {
+    ...StyleSheet.absoluteFill,
   },
   promoDecor: {
     ...StyleSheet.absoluteFill,

@@ -1,6 +1,6 @@
 import type { WeatherConditionKey, WeatherCarePayload } from "../api/weather";
 import type { MyCareProduct } from "./morph-my-products";
-import { STYLE_SCALE, clamp, rs } from "./responsive";
+import { clamp, layoutScale, rs } from "./responsive";
 
 /** Ob-havo holatiga mos ambient hero rasmlar. */
 export function weatherHeroImage(key: WeatherConditionKey | undefined): string {
@@ -256,7 +256,8 @@ export function careHubLayout(
   topInset = 0,
   bottomInset = 0,
 ) {
-  const scale = STYLE_SCALE;
+  /** Window o‘lchami o‘zgaganda (web / rotate) qayta hisoblanadi. */
+  const scale = layoutScale(width, height);
   /** Faqat Home Indicator — floating tab bar Care hubda yashiriladi. */
   const dockClearance = Math.max(bottomInset, 10);
   const avail = Math.max(360, height - dockClearance);
@@ -271,18 +272,30 @@ export function careHubLayout(
 
   const remain = Math.max(rs(260, scale), avail - chrome);
 
+  const hPad = width < 360 ? 12 : width < 400 ? rs(14, scale) : rs(16, scale);
+  const promoW = Math.max(240, width - 2 * hPad);
+  /** Home banner bilan bir xil ~2.15:1 — kenglikka mos hero balandligi. */
+  const PROMO_ASPECT = 2.15;
+  const promoByWidth = Math.round(promoW / PROMO_ASPECT);
+
   /**
    * Hero `paddingTop: topInset` ni o‘z balandligida yutadi — tashqarida
    * qayta qo‘shilmaydi, aks holda AI bar kesiladi.
    */
   const MIN = {
-    promo: topInset + rs(88, scale),
+    promo: topInset + Math.max(rs(96, scale), Math.min(promoByWidth, rs(118, scale))),
     featured: rs(128, scale),
     hubCard: rs(108, scale),
     ai: rs(44, scale),
   };
   const MAX = {
-    promo: topInset + rs(132, scale),
+    promo:
+      topInset +
+      clamp(
+        Math.max(rs(132, scale), promoByWidth),
+        rs(120, scale),
+        Math.min(rs(200, scale), Math.round(height * 0.26)),
+      ),
     featured: rs(196, scale),
     hubCard: rs(148, scale),
     ai: rs(54, scale),
@@ -317,8 +330,10 @@ export function careHubLayout(
 
   const featuredW = clamp(Math.round(featuredH * 0.96), rs(148, scale), rs(208, scale));
   const sheetGap = rs(12, scale);
-  const hPad = width < 360 ? 12 : rs(16, scale);
   const promoInner = Math.max(0, promoH - topInset);
+  const narrow = width < 360;
+  const promoPad = narrow ? 10 : width < 400 ? rs(12, scale) : rs(14, scale);
+  const promoRadius = narrow ? 18 : rs(22, scale);
 
   return {
     scale,
@@ -336,8 +351,13 @@ export function careHubLayout(
     sheetH: reportHead + sheetTop + sheetGap + hubCardH + sheetGap + aiH + rs(8, scale),
     hPad,
     dockClearance,
-    promoTempSize: rs(promoInner >= rs(110, scale) ? 40 : 32, scale),
-    promoTitleSize: rs(15, scale),
+    promoPad,
+    promoRadius,
+    promoTempSize: rs(
+      promoInner >= rs(140, scale) ? 42 : promoInner >= rs(110, scale) ? 36 : 30,
+      scale,
+    ),
+    promoTitleSize: rs(narrow ? 14 : promoInner >= rs(130, scale) ? 16 : 15, scale),
     promoRich: promoInner >= rs(118, scale),
     hubCardRich: hubCardH >= rs(114, scale),
     featuredRich: featuredH >= rs(132, scale),
