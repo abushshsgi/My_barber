@@ -368,6 +368,25 @@ export function careHubLayout(
     promoRich: promoInner >= rs(152, scale),
     hubCardRich: hubCardH >= rs(114, scale),
     featuredRich: featuredH >= rs(132, scale),
+    /** Featured UI scale — kichik kartada matn/tugmalar qisqaradi. */
+    featuredUi: (() => {
+      const k = clamp(featuredH / rs(180, scale), 0.72, 1);
+      const btn = Math.max(22, Math.round(28 * k));
+      return {
+        k,
+        btn,
+        play: Math.max(24, Math.round(30 * k)),
+        icon: Math.max(11, Math.round(14 * k)),
+        playIcon: Math.max(10, Math.round(12 * k)),
+        durationIcon: Math.max(8, Math.round(10 * k)),
+        durationFs: Math.max(9, Math.round(10 * k)),
+        brandFs: Math.max(9, Math.round(11 * k)),
+        titleFs: Math.max(11, Math.round((featuredH >= rs(150, scale) ? 14 : 12) * k)),
+        metaPadH: Math.max(8, Math.round(12 * k)),
+        metaPadV: Math.max(5, Math.round(8 * k)),
+        ctrlInset: Math.max(6, Math.round(10 * k)),
+      };
+    })(),
   };
 }
 

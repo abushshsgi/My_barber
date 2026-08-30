@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import * as Location from "expo-location";
+import { validateLocation } from "../api/geo";
 import { fetchWeatherCare, type WeatherCarePayload } from "../api/weather";
 import { useAuth } from "../auth/AuthContext";
 import { getGuestLocation } from "../lib/guest";
@@ -44,6 +45,39 @@ async function resolveCoords(
   };
 }
 
+async function enrichLocation(payload: WeatherCarePayload): Promise<WeatherCarePayload> {
+  const hasRegion = Boolean(payload.location_region?.trim());
+  const hasPlace = Boolean(payload.location_place?.trim());
+  if (hasRegion && hasPlace) return payload;
+
+  const lat = payload.latitude;
+  const lon = payload.longitude;
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) return payload;
+
+  const validated = await validateLocation(lat, lon).catch(() => null);
+  if (!validated) return payload;
+
+  const region =
+    payload.location_region?.trim() ||
+    validated.region_from_gps_label?.trim() ||
+    validated.region_from_gps?.trim() ||
+    "";
+  const place =
+    payload.location_place?.trim() ||
+    validated.city_label?.trim() ||
+    "";
+  const label =
+    payload.location_label?.trim() ||
+    [place, region].filter(Boolean).join(", ");
+
+  return {
+    ...payload,
+    location_region: region,
+    location_place: place,
+    location_label: label,
+  };
+}
+
 export function useCareWeather() {
   const { user } = useAuth();
   const [data, setData] = useState<WeatherCarePayload | null>(null);
@@ -65,7 +99,7 @@ export function useCareWeather() {
         condition: quiz?.condition,
         texture: quiz?.texture,
       });
-      setData(payload);
+      setData(await enrichLocation(payload));
     } catch {
       setError("care.weather.loadError");
     } finally {

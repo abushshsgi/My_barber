@@ -982,6 +982,25 @@ export function MorphCareScreen({ navigation, route }: Props) {
                 >
                   <Ionicons name="chevron-back" size={18} color="#FFFFFF" />
                 </Pressable>
+
+                <View style={styles.promoLocBadge} pointerEvents="none">
+                  <Ionicons name="location-outline" size={13} color="#FFFFFF" />
+                  <View style={styles.promoLocText}>
+                    <Text style={styles.promoRegion} numberOfLines={1}>
+                      {weatherLoading
+                        ? t("care.weather.locating", { defaultValue: "Joylashuv aniqlanmoqda…" })
+                        : weather?.location_region ||
+                          t("care.weather.locationFallback", { defaultValue: "Viloyat" })}
+                    </Text>
+                    <Text style={styles.promoPlace} numberOfLines={1}>
+                      {weatherLoading
+                        ? "…"
+                        : weather?.location_place ||
+                          weather?.location_label ||
+                          t("care.weather.cityFallback", { defaultValue: "Shahar" })}
+                    </Text>
+                  </View>
+                </View>
               </View>
 
               <Pressable
@@ -990,28 +1009,6 @@ export function MorphCareScreen({ navigation, route }: Props) {
                 accessibilityRole="button"
                 accessibilityLabel={t("care.weather.title")}
               >
-                <View style={styles.promoLocRow}>
-                  <View style={styles.promoLocIcon}>
-                    <Ionicons name="location-outline" size={14} color="#FFFFFF" />
-                  </View>
-                  <View style={styles.promoLocText}>
-                    <Text style={styles.promoRegion} numberOfLines={1}>
-                      {weatherLoading
-                        ? t("care.weather.locating")
-                        : weather?.location_region ||
-                          weather?.location_label ||
-                          t("care.weather.locationFallback")}
-                    </Text>
-                    {!weatherLoading &&
-                    (weather?.location_place || weather?.location_label) &&
-                    weather?.location_place !== weather?.location_region ? (
-                      <Text style={styles.promoPlace} numberOfLines={1}>
-                        {weather?.location_place || weather?.location_label}
-                      </Text>
-                    ) : null}
-                  </View>
-                </View>
-
                 <View style={styles.promoWeatherRow}>
                   <Text
                     style={[
@@ -1165,6 +1162,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
                 ? catalog.find((c) => c.id === prod.productId)
                 : undefined;
               const liked = Boolean(catalogRow?.liked_by_me);
+              const fui = hubLayout.featuredUi;
 
               return (
                 <Pressable
@@ -1202,8 +1200,14 @@ export function MorphCareScreen({ navigation, route }: Props) {
                     <Pressable
                       style={[
                         styles.featuredActionBtn,
+                        {
+                          width: fui.btn,
+                          height: fui.btn,
+                          borderRadius: fui.btn / 2,
+                          top: fui.ctrlInset,
+                          right: fui.ctrlInset,
+                        },
                         liked ? styles.featuredActionBtnActive : null,
-                        styles.featuredAddBtn,
                       ]}
                       onPress={(e) => {
                         e.stopPropagation?.();
@@ -1214,21 +1218,43 @@ export function MorphCareScreen({ navigation, route }: Props) {
                     >
                       <Ionicons
                         name={liked ? "heart" : "heart-outline"}
-                        size={14}
+                        size={fui.icon}
                         color={liked ? "#EF4444" : "#111111"}
                       />
                     </Pressable>
 
                     {isMine && prod.duration ? (
-                      <View style={styles.featuredDurationPill}>
-                        <Ionicons name="time-outline" size={10} color="#111111" />
-                        <Text style={styles.featuredDurationText}>{prod.duration}</Text>
+                      <View
+                        style={[
+                          styles.featuredDurationPill,
+                          {
+                            top: fui.ctrlInset,
+                            left: fui.ctrlInset,
+                            paddingHorizontal: Math.max(6, Math.round(8 * fui.k)),
+                            paddingVertical: Math.max(3, Math.round(4 * fui.k)),
+                            gap: Math.max(2, Math.round(4 * fui.k)),
+                          },
+                        ]}
+                      >
+                        <Ionicons name="time-outline" size={fui.durationIcon} color="#111111" />
+                        <Text style={[styles.featuredDurationText, { fontSize: fui.durationFs }]}>
+                          {prod.duration}
+                        </Text>
                       </View>
                     ) : null}
 
                     {isMine ? (
                       <Pressable
-                        style={styles.featuredPlayBtn}
+                        style={[
+                          styles.featuredPlayBtn,
+                          {
+                            width: fui.play,
+                            height: fui.play,
+                            borderRadius: fui.play / 2,
+                            right: fui.ctrlInset,
+                            bottom: "30%",
+                          },
+                        ]}
                         onPress={(e) => {
                           e.stopPropagation?.();
                           openProductGuide(prod);
@@ -1236,11 +1262,25 @@ export function MorphCareScreen({ navigation, route }: Props) {
                         hitSlop={6}
                         accessibilityLabel="Play guide"
                       >
-                        <Ionicons name="play" size={12} color="#0A0A0A" style={{ marginLeft: 1 }} />
+                        <Ionicons
+                          name="play"
+                          size={fui.playIcon}
+                          color="#0A0A0A"
+                          style={{ marginLeft: 1 }}
+                        />
                       </Pressable>
                     ) : (
                       <Pressable
-                        style={[styles.featuredActionBtn, styles.featuredSaveBtn]}
+                        style={[
+                          styles.featuredActionBtn,
+                          {
+                            width: fui.btn,
+                            height: fui.btn,
+                            borderRadius: fui.btn / 2,
+                            right: fui.ctrlInset,
+                            bottom: "30%",
+                          },
+                        ]}
                         onPress={(e) => {
                           e.stopPropagation?.();
                           openPreview(prod.productId);
@@ -1248,16 +1288,31 @@ export function MorphCareScreen({ navigation, route }: Props) {
                         hitSlop={6}
                         accessibilityLabel={t("care.myProducts.addShort", { defaultValue: "Qo‘shish" })}
                       >
-                        <Ionicons name="add" size={14} color="#111111" />
+                        <Ionicons name="add" size={fui.icon} color="#111111" />
                       </Pressable>
                     )}
 
-                    <View style={styles.featuredMeta}>
-                      <Text style={styles.featuredProdBrand} numberOfLines={1}>
+                    <View
+                      style={[
+                        styles.featuredMeta,
+                        {
+                          paddingHorizontal: fui.metaPadH,
+                          paddingTop: fui.metaPadV,
+                          paddingBottom: fui.metaPadV + 2,
+                        },
+                      ]}
+                    >
+                      <Text
+                        style={[styles.featuredProdBrand, { fontSize: fui.brandFs }]}
+                        numberOfLines={1}
+                      >
                         {prod.brand || "MORF Care"}
                       </Text>
                       <Text
-                        style={styles.featuredProdTitle}
+                        style={[
+                          styles.featuredProdTitle,
+                          { fontSize: fui.titleFs, lineHeight: fui.titleFs + 3 },
+                        ]}
                         numberOfLines={hubLayout.featuredRich ? 2 : 1}
                       >
                         {prod.title}
@@ -1722,7 +1777,8 @@ const styles = StyleSheet.create({
     flexShrink: 0,
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "flex-start",
+    justifyContent: "space-between",
+    gap: moderateScale(10),
     marginBottom: verticalScale(6),
     zIndex: 2,
     paddingTop: verticalScale(2),
@@ -1736,6 +1792,19 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0,0,0,0.35)",
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: "rgba(255,255,255,0.22)",
+  },
+  promoLocBadge: {
+    flexShrink: 1,
+    maxWidth: "72%",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: moderateScale(6),
+    paddingVertical: verticalScale(5),
+    paddingHorizontal: scale(10),
+    borderRadius: 999,
+    backgroundColor: "rgba(0,0,0,0.35)",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(255,255,255,0.2)",
   },
   promoBody: {
     flexDirection: "row",
@@ -1751,37 +1820,21 @@ const styles = StyleSheet.create({
     maxWidth: "100%",
     justifyContent: "flex-end",
   },
-  promoLocRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: moderateScale(8),
-    maxWidth: "100%",
-  },
-  promoLocIcon: {
-    width: scale(28),
-    height: scale(28),
-    borderRadius: moderateScale(14),
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(255,255,255,0.14)",
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(255,255,255,0.22)",
-  },
   promoLocText: {
-    flex: 1,
+    flexShrink: 1,
     minWidth: 0,
     gap: 1,
   },
   promoRegion: {
     ...morphFont,
-    fontSize: fontSize(13),
+    fontSize: fontSize(11),
     fontWeight: "700",
     color: "#FFFFFF",
-    letterSpacing: -0.2,
+    letterSpacing: -0.1,
   },
   promoPlace: {
     ...morphFont,
-    fontSize: fontSize(11),
+    fontSize: fontSize(10),
     fontWeight: "600",
     color: "rgba(255,255,255,0.72)",
   },
@@ -2422,9 +2475,8 @@ const styles = StyleSheet.create({
     bottom: 0,
   },
   featuredActionBtn: {
-    width: scale(28),
-    height: scale(28),
-    borderRadius: moderateScale(14),
+    position: "absolute",
+    zIndex: 2,
     backgroundColor: "rgba(255,255,255,0.92)",
     alignItems: "center",
     justifyContent: "center",
@@ -2435,25 +2487,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     borderColor: "rgba(17,17,17,0.12)",
   },
-  featuredAddBtn: {
-    position: "absolute",
-    top: verticalScale(10),
-    right: scale(10),
-    zIndex: 2,
-  },
-  featuredSaveBtn: {
-    position: "absolute",
-    right: scale(10),
-    bottom: "30%",
-    zIndex: 2,
-  },
   featuredPlayBtn: {
     position: "absolute",
-    right: scale(10),
-    bottom: "30%",
-    width: scale(30),
-    height: scale(30),
-    borderRadius: moderateScale(15),
     backgroundColor: "#FFFFFF",
     alignItems: "center",
     justifyContent: "center",
@@ -2461,42 +2496,30 @@ const styles = StyleSheet.create({
   },
   featuredDurationPill: {
     position: "absolute",
-    top: verticalScale(10),
-    left: scale(10),
     flexDirection: "row",
     alignItems: "center",
-    gap: moderateScale(4),
     backgroundColor: "rgba(255,255,255,0.92)",
-    paddingHorizontal: scale(8),
-    paddingVertical: verticalScale(4),
     borderRadius: 999,
     zIndex: 2,
   },
   featuredDurationText: {
     ...morphFont,
-    fontSize: fontSize(10),
     fontWeight: "700",
     color: "#111111",
   },
   featuredMeta: {
     flexShrink: 0,
-    paddingHorizontal: scale(12),
-    paddingTop: verticalScale(8),
-    paddingBottom: verticalScale(10),
-    gap: moderateScale(3),
+    gap: moderateScale(2),
     zIndex: 2,
   },
   featuredProdTitle: {
     ...morphFont,
-    fontSize: fontSize(13),
     fontWeight: "600",
     color: "#FFFFFF",
-    lineHeight: fontSize(17),
     letterSpacing: -0.2,
   },
   featuredProdBrand: {
     ...morphFont,
-    fontSize: fontSize(10),
     fontWeight: "600",
     color: "rgba(255,255,255,0.65)",
     letterSpacing: 0.4,
