@@ -10,6 +10,11 @@
     "morphAi": "Morf AI",
     "mysaloon": "MySaloon"
   },
+  "comingSoon": {
+    "title": "Tez orada salonlar qo'shiladi",
+    "sub": "MySaloon ochiq — hozir salonlar ulanmoqda. Shu paytgacha Morf AI bilan uslub tanlang.",
+    "cta": "Morf AI — uslubni sinash"
+  },
   "common": {
     "back": "Orqaga",
     "next": "Keyingi",
@@ -257,12 +262,12 @@
     }
   },
   "onboarding": {
-    "slide1Title": "Sartaroshxonani\noson bron qiling",
-    "slide1Sub": "Yaqin salonlar, usta va vaqt — bir necha bosishda.",
-    "slide2Title": "Morf AI bilan\nuslubni sinab ko'ring",
-    "slide2Sub": "O'z selfiingizda yangi soch turmaklarini ko'ring — saloniga borishdan oldin.",
+    "slide1Title": "Morf AI bilan\nuslubni sinab ko'ring",
+    "slide1Sub": "Selfieingizda yangi soch turmaklarini ko'ring — bir necha soniyada.",
+    "slide2Title": "Salonlar tez orada",
+    "slide2Sub": "MySaloon ochiq. Yaqin sartaroshxonalar tez orada shu yerda bron qilinadi.",
     "slide3Title": "Qayerdasiz?",
-    "slide3Sub": "Yaqin atrofdagi eng yaxshi sartaroshxonalarni ko'rsatishimiz uchun joylashuvingizdan foydalanamiz.",
+    "slide3Sub": "Parvarish maslahatlari va keyinchalik yaqin salonlar uchun joylashuv kerak.",
     "continue": "Davom etish",
     "detectLocation": "Joylashuvni aniqlash",
     "manualAddress": "Manzilni qo'lda ko'rsatish",
@@ -315,8 +320,11 @@
       "dealsSub": "Bugun bo'sh qolgan vaqtlarga 30% gacha chegirma",
       "book": "Bron qilish",
       "subscribe": "Obuna bo'lish",
-      "promo": "AKSIYALAR",
+      "promo": "TEZ ORADA",
       "morphAi": "MORF AI",
+      "morphTitle": "Yangi soch uslubini AI bilan sinab ko'ring",
+      "careTitle": "Sochingiz uchun shaxsiy parvarish",
+      "soonTitle": "Salonlar tez orada — uslubni hozir tanlang",
       "start": "Boshlash",
       "explore": "EXPLORE",
       "exploreSub": "Trend uslublar va yangi salonlar"

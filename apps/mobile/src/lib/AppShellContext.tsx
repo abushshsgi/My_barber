@@ -32,7 +32,7 @@ type AppShellContextValue = {
 export const AppShellContext = createContext<AppShellContextValue | null>(null);
 
 export function AppShellProvider({ children }: { children: ReactNode }) {
-  const [shell, setShellState] = useState<AppShell>("mysaloon");
+  const [shell, setShellState] = useState<AppShell>("morph");
   const [ready, setReady] = useState(false);
   const [switchingTo, setSwitchingTo] = useState<AppShell | null>(null);
 

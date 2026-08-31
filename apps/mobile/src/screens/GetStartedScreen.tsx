@@ -49,12 +49,12 @@ export function GetStartedScreen({ onFinish }: Props) {
   const SLIDES: Slide[] = useMemo(
     () => [
       {
-        key: "gallery",
+        key: "morph",
         title: t("onboarding.slide1Title"),
         subtitle: t("onboarding.slide1Sub"),
       },
       {
-        key: "morph",
+        key: "gallery",
         title: t("onboarding.slide2Title"),
         subtitle: t("onboarding.slide2Sub"),
       },

@@ -17,6 +17,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { fetchSalonsNearby } from "../api/catalog";
 import type { ApiNearbySalon } from "../api/types";
 import { useAuth } from "../auth/AuthContext";
+import { ComingSoonSalons } from "../components/ComingSoonSalons";
 import { DEFAULT_MAP_REGION } from "../components/onboarding/OnboardingMap";
 import { getGuestLocation } from "../lib/guest";
 import type { RootStackParamList } from "../navigation/RootNavigator";
@@ -187,11 +188,7 @@ export function MapScreen() {
             );
           }}
           ListEmptyComponent={
-            !loading ? (
-              <Text style={[styles.empty, { fontSize: fs(13) }]}>
-                Bu atrofda salon topilmadi
-              </Text>
-            ) : null
+            !loading ? <ComingSoonSalons compact /> : null
           }
           showsVerticalScrollIndicator={false}
         />

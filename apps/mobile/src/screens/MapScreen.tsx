@@ -11,6 +11,7 @@ import {
   View,
   useWindowDimensions,
 } from "react-native";
+import { useTranslation } from "react-i18next";
 import MapView, { Marker, PROVIDER_GOOGLE, type Region } from "react-native-maps";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { useNavigation } from "@react-navigation/native";
@@ -19,6 +20,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { fetchSalonsNearby } from "../api/catalog";
 import type { ApiNearbySalon } from "../api/types";
 import { useAuth } from "../auth/AuthContext";
+import { ComingSoonSalons } from "../components/ComingSoonSalons";
 import { LIGHT_MAP_STYLE } from "../components/onboarding/mapStyles";
 import { DEFAULT_MAP_REGION } from "../components/onboarding/OnboardingMap";
 import { getGuestLocation } from "../lib/guest";
@@ -64,6 +66,7 @@ function toMapSalon(row: ApiNearbySalon): MapSalon | null {
 
 /** Asosiy Xarita tab — yaqin salonlar markerlari. */
 export function MapScreen() {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const tabBarH = useBottomTabBarHeight();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -81,7 +84,9 @@ export function MapScreen() {
   const [mapReady, setMapReady] = useState(false);
   const [showUser, setShowUser] = useState(false);
 
-  const sheetH = Math.min(Math.max(height * 0.26, 160), 230);
+  const sheetH = !loading && salons.length === 0
+    ? Math.min(Math.max(height * 0.42, 280), 360)
+    : Math.min(Math.max(height * 0.26, 160), 230);
   const mapBottomPad = sheetH + 8;
 
   const loadAround = useCallback(async (lat: number, lng: number) => {
@@ -261,11 +266,13 @@ export function MapScreen() {
         <View style={styles.sheetHandle} />
         <View style={styles.sheetHead}>
           <Text style={[styles.sheetTitle, { fontSize: fs(15) }]}>
-            Yaqin salonlar
+            {salons.length === 0 && !loading ? t("comingSoon.title") : "Yaqin salonlar"}
           </Text>
-          <Text style={[styles.sheetCount, { fontSize: fs(12) }]}>
-            {loading ? "…" : `${salons.length} ta`}
-          </Text>
+          {salons.length > 0 || loading ? (
+            <Text style={[styles.sheetCount, { fontSize: fs(12) }]}>
+              {loading ? "…" : `${salons.length} ta`}
+            </Text>
+          ) : null}
         </View>
         {error ? <Text style={[styles.err, { fontSize: fs(12) }]}>{error}</Text> : null}
         {selected ? (
@@ -275,6 +282,10 @@ export function MapScreen() {
         ) : null}
         {loading && salons.length === 0 ? (
           <ActivityIndicator style={{ marginTop: 16 }} color={colors.fg} />
+        ) : salons.length === 0 ? (
+          <View style={styles.soonWrap}>
+            <ComingSoonSalons compact />
+          </View>
         ) : (
           <FlatList
             data={salons}
@@ -306,13 +317,6 @@ export function MapScreen() {
                 </Pressable>
               );
             }}
-            ListEmptyComponent={
-              !loading ? (
-                <Text style={[styles.empty, { fontSize: fs(12) }]}>
-                  Bu atrofda salon topilmadi
-                </Text>
-              ) : null
-            }
           />
         )}
       </View>
@@ -396,6 +400,7 @@ const styles = StyleSheet.create({
   },
   err: { paddingHorizontal: scale(16), color: "#EF4444", marginBottom: verticalScale(4) },
   listPad: { paddingHorizontal: scale(14), gap: moderateScale(10), paddingTop: verticalScale(4) },
+  soonWrap: { paddingHorizontal: scale(14), paddingTop: verticalScale(4), paddingBottom: verticalScale(8) },
   card: {
     backgroundColor: colors.surface,
     borderRadius: moderateScale(14),

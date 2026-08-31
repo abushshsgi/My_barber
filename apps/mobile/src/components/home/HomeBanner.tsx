@@ -1,6 +1,6 @@
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   NativeScrollEvent,
   NativeSyntheticEvent,
@@ -10,6 +10,7 @@ import {
   Text,
   View,
 } from "react-native";
+import { useTranslation } from "react-i18next";
 import { pexelsPhotoUrl } from "../../api/media";
 import { BANNER_ASPECT, H_PAD, useHomeLayout } from "../../theme/layout";
 import { colors } from "../../theme/colors";
@@ -23,69 +24,56 @@ import {
 
 const AUTOPLAY_MS = 4500;
 
-const SLIDES = [
-  {
-    id: "today",
-    photoId: 3992860,
-    badge: "TEZKOR TAKLIFLAR",
-    title: "Bugun bo'sh qolgan vaqtlarga 30% gacha chegirma",
-    cta: "Bron qilish",
-    promo: "-30%",
-  },
-  {
-    id: "sub",
-    photoId: 3993448,
-    badge: "OBUNA",
-    title: "Morf AI va chegirmalar — obuna bilan arzonroq",
-    cta: "Obuna bo'lish",
-    promo: "AI",
-  },
-  {
-    id: "offers",
-    photoId: 3288365,
-    badge: "AKSIYALAR",
-    title: "Salon aksiyalari va maxsus takliflar",
-    cta: "Hammasi",
-    promo: "-20%",
-  },
-  {
-    id: "ai",
-    photoId: 3785147,
-    badge: "MORF AI",
-    title: "Yangi soch uslubini AI bilan sinab ko'ring",
-    cta: "Boshlash",
-  },
-  {
-    id: "explore",
-    photoId: 1319460,
-    badge: "EXPLORE",
-    title: "Trend uslublar va yangi salonlar",
-    cta: "Ko'rish",
-  },
-] as const;
-
 type Props = {
   onPressSlide?: (id: string) => void;
 };
 
 /** Promo carousel — ekran kengligiga mos banner + responsive rasm. */
 export function HomeBanner({ onPressSlide }: Props) {
+  const { t } = useTranslation();
+  const slides = useMemo(
+    () => [
+      {
+        id: "ai",
+        photoId: 3785147,
+        badge: t("home.banner.morphAi"),
+        title: t("home.banner.morphTitle"),
+        cta: t("home.banner.start"),
+      },
+      {
+        id: "care",
+        photoId: 3993448,
+        badge: t("home.banner.morphAi"),
+        title: t("home.banner.careTitle"),
+        cta: t("home.banner.start"),
+      },
+      {
+        id: "soon",
+        photoId: 1319460,
+        badge: t("home.banner.promo"),
+        title: t("home.banner.soonTitle"),
+        cta: t("comingSoon.cta"),
+      },
+    ],
+    [t],
+  );
   const { bannerW, bannerImageW } = useHomeLayout();
   const scrollRef = useRef<ScrollView>(null);
   const [index, setIndex] = useState(0);
   const indexRef = useRef(0);
   const widthRef = useRef(bannerW);
   widthRef.current = bannerW;
+  const slidesLen = slides.length;
 
   useEffect(() => {
     const id = setInterval(() => {
-      const next = (indexRef.current + 1) % SLIDES.length;
+      const next = (indexRef.current + 1) % slidesLen;
       indexRef.current = next;
       setIndex(next);
       scrollRef.current?.scrollTo({ x: next * widthRef.current, animated: true });
     }, AUTOPLAY_MS);
     return () => clearInterval(id);
-  }, []);
+  }, [slidesLen]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ x: indexRef.current * bannerW, animated: false });
@@ -109,7 +97,7 @@ export function HomeBanner({ onPressSlide }: Props) {
         onMomentumScrollEnd={onScrollEnd}
         style={[styles.carousel, { width: bannerW }]}
       >
-        {SLIDES.map((slide) => (
+        {slides.map((slide) => (
           <Pressable
             key={slide.id}
             style={[styles.slide, { width: bannerW }]}
@@ -132,12 +120,6 @@ export function HomeBanner({ onPressSlide }: Props) {
               style={StyleSheet.absoluteFill}
             />
 
-            {"promo" in slide && slide.promo ? (
-              <View style={styles.promoBadge}>
-                <Text style={styles.promoText}>{slide.promo}</Text>
-              </View>
-            ) : null}
-
             <View style={styles.content}>
               <View style={styles.badge}>
                 <Text style={styles.badgeText}>{slide.badge}</Text>
@@ -155,7 +137,7 @@ export function HomeBanner({ onPressSlide }: Props) {
       </ScrollView>
 
       <View style={styles.dots} pointerEvents="box-none">
-        {SLIDES.map((slide, i) => (
+        {slides.map((slide, i) => (
           <View
             key={slide.id}
             style={[styles.dot, i === index ? styles.dotActive : styles.dotIdle]}

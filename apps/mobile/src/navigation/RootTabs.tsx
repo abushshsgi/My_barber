@@ -17,6 +17,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { morfMarkWhite } from "../branding/morf-logo";
+import { ComingSoonSalons } from "../components/ComingSoonSalons";
 import { ShellSwitchOverlay } from "../components/ShellSwitchOverlay";
 import { FLOATING_TAB_BAR_STYLE } from "../hooks/useHideTabBar";
 import { AppShellProvider, useAppShell } from "../lib/AppShellContext";
@@ -32,8 +33,6 @@ import { useAuth } from "../auth/AuthContext";
 import { HomeScreen } from "../screens/HomeScreen";
 import { MapScreen } from "../screens/MapScreen";
 import { MorphChatScreen } from "../screens/morph/MorphChatScreen";
-import { MorphPlaceholderScreen } from "../screens/morph/MorphPlaceholderScreen";
-import { PlaceholderScreen } from "../screens/PlaceholderScreen";
 import { colors } from "../theme/colors";
 import { MorphCareStack } from "./MorphCareStack";
 import { MorphIngredientStack } from "./MorphIngredientStack";
@@ -459,19 +458,28 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
 }
 
 function ExploreTab() {
-  const { t } = useTranslation();
-  return <PlaceholderScreen title={t("nav.explore")} />;
+  const insets = useSafeAreaInsets();
+  return (
+    <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: insets.top + 16 }}>
+      <ComingSoonSalons />
+    </View>
+  );
 }
 
 
 function RootTabsInner() {
-  const { switchingTo } = useAppShell();
+  const { switchingTo, shell, ready } = useAppShell();
+
+  if (!ready) {
+    return <View style={styles.root} />;
+  }
 
   return (
     <View style={styles.root}>
       <TabBarVisibilityProvider>
         <MorphSessionProvider>
           <Tab.Navigator
+            initialRouteName={shell === "mysaloon" ? "Home" : "MorphTryOn"}
             tabBar={(props) => <CustomTabBar {...props} />}
             screenOptions={{
               headerShown: false,

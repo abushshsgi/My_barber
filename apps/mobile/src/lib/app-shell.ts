@@ -21,9 +21,9 @@ const MORPH_TABS = new Set([
 export async function readAppShell(): Promise<AppShell> {
   try {
     const raw = await AsyncStorage.getItem(SHELL_KEY);
-    return raw === "morph" ? "morph" : "mysaloon";
+    return raw === "mysaloon" ? "mysaloon" : "morph";
   } catch {
-    return "mysaloon";
+    return "morph";
   }
 }
 

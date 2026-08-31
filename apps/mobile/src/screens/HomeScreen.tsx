@@ -15,12 +15,14 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { TAB_DOCK_CLEARANCE } from "../hooks/useHideTabBar";
 import type { HomeCategoryKey, HomeListing } from "../api/types";
+import { ComingSoonSalons } from "../components/ComingSoonSalons";
 import { HomeBanner } from "../components/home/HomeBanner";
 import { HomeCategories } from "../components/home/HomeCategories";
 import { HomeHeader } from "../components/home/HomeHeader";
 import { ListingCard } from "../components/home/ListingCard";
 import { SectionHeader } from "../components/home/SectionHeader";
 import { useHomeCatalog } from "../hooks/useHomeCatalog";
+import { useShellNavigation } from "../lib/shell-nav";
 import type { RootStackParamList } from "../navigation/RootNavigator";
 import { CARD_GAP, H_PAD, useHomeLayout } from "../theme/layout";
 import { colors } from "../theme/colors";
@@ -43,8 +45,10 @@ export function HomeScreen({ onOpenMap, onOpenExplore }: Props) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { goMorph } = useShellNavigation();
   const { cardW, cardImageW, fs } = useHomeLayout();
   const { topSalons, topBarbers, locationLabel, loading, error, refresh } = useHomeCatalog();
+  const catalogEmpty = !loading && topSalons.length === 0 && topBarbers.length === 0;
   const [category, setCategory] = useState<HomeCategoryKey>("all");
   const [favorites, setFavorites] = useState<Record<string, boolean>>({});
   const openMap = onOpenMap ?? (() => navigation.navigate("Map" as never));
@@ -129,9 +133,22 @@ export function HomeScreen({ onOpenMap, onOpenExplore }: Props) {
       >
         <HomeHeader locationLabel={locationLabel} onPressMap={openMap} />
 
-        <HomeBanner />
-
-        <HomeCategories active={category} onChange={setCategory} />
+        {catalogEmpty ? (
+          <ComingSoonSalons />
+        ) : (
+          <>
+            <HomeBanner
+              onPressSlide={(id) => {
+                if (id === "care") {
+                  goMorph(navigation as never, "MorphCare");
+                  return;
+                }
+                goMorph(navigation as never, "MorphTryOn");
+              }}
+            />
+            <HomeCategories active={category} onChange={setCategory} />
+          </>
+        )}
 
         {error ? (
           <View style={styles.errorBox}>

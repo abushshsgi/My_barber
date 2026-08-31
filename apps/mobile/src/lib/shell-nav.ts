@@ -9,20 +9,19 @@ import {
   writeLastShellTab,
 } from "./app-shell";
 
-/** Nested stack → Root tab navigator. */
+/** Nested stack yoki tab screen → Root tab navigator. */
 export function getRootTabNavigation(
   navigation: NavigationProp<ParamListBase>,
 ): NavigationProp<ParamListBase> | undefined {
   let nav: NavigationProp<ParamListBase> | undefined = navigation;
-  for (let i = 0; i < 4; i += 1) {
+  for (let i = 0; i < 5; i += 1) {
+    const names = nav?.getState?.()?.routeNames as string[] | undefined;
+    if (names?.includes("Home") && names?.includes("Profile")) {
+      return nav;
+    }
     const parent = nav?.getParent?.() as NavigationProp<ParamListBase> | undefined;
     if (!parent) break;
     nav = parent;
-    const state = parent.getState?.();
-    const names = state?.routeNames as string[] | undefined;
-    if (names?.includes("Home") && names?.includes("Profile")) {
-      return parent;
-    }
   }
   return navigation.getParent() as NavigationProp<ParamListBase> | undefined;
 }

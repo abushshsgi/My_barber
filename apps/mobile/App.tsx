@@ -16,6 +16,8 @@ import {
   type AppLang,
   type GuestLocation,
 } from "./src/lib/guest";
+import { writeAppShell } from "./src/lib/app-shell";
+import { markMorphTryOnIntroDone } from "./src/lib/morph-onboarding";
 import { needsOnboarding } from "./src/lib/onboarding";
 import { RootNavigator } from "./src/navigation/RootNavigator";
 import {
@@ -52,7 +54,8 @@ function userHasCoords(user: {
 
 /**
  * Birinchi ochilish:
- * Splash+til → Get Started → Location → Home (mehmon)
+ * Splash+til → Get Started → Location → Morf AI Try-on
+ * Markazdagi MySaloon — Home / Xarita / Explore (salonlar tez orada)
  * Profil → Login → ism/yosh → akkaunt
  */
 function AppGate() {
@@ -75,6 +78,8 @@ function AppGate() {
   const onWelcomeFinish = useCallback((mode: LocationEntryMode) => {
     setLocationMode(mode);
     setWelcomeSeenState(true);
+    void writeAppShell("morph");
+    void markMorphTryOnIntroDone();
   }, []);
   const onLocationFinish = useCallback(() => {
     void getGuestLocation().then((loc) => setGuestLocationState(loc));

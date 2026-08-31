@@ -34,7 +34,7 @@ import { TAB_DOCK_CLEARANCE } from "../../hooks/useHideTabBar";
 import { useMorphLimitGate } from "../../hooks/useMorphLimitGate";
 import { writeAppShell, writeLastShellTab } from "../../lib/app-shell";
 import { presentMorphPaywall } from "../../lib/morph-return";
-import { hasCompletedMorphTryOnIntro, readMorphIntroStep } from "../../lib/morph-onboarding";
+import { markMorphTryOnIntroDone } from "../../lib/morph-onboarding";
 import { useMorphSession } from "../../lib/morph-session";
 import { pickSelfieFromCamera, pickSelfieFromGallery } from "../../lib/selfie";
 import type { MorphStackParamList } from "../../navigation/MorphStack";
@@ -242,21 +242,9 @@ export function MorphTryOnScreen({ navigation }: Props) {
   const dragStart = useSharedValue(0);
 
   useEffect(() => {
-    let cancelled = false;
-    void hasCompletedMorphTryOnIntro().then(async (done) => {
-      if (cancelled) return;
-      if (!done) {
-        const startIndex = await readMorphIntroStep();
-        if (cancelled) return;
-        navigation.replace("MorphGuide", { startIndex });
-        return;
-      }
-      setReady(true);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [navigation]);
+    setReady(true);
+    void markMorphTryOnIntroDone();
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
