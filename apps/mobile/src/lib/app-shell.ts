@@ -5,6 +5,8 @@ export type AppShell = "mysaloon" | "morph";
 const SHELL_KEY = "mysaloon.appShell";
 const LAST_MYSALOON_KEY = "mysaloon.appShell.last.mysaloon";
 const LAST_MORPH_KEY = "mysaloon.appShell.last.morph";
+/** Bir marta: eski MySaloon defaultni Morf AI ga o‘tkazish. */
+const MORPH_FIRST_KEY = "mysaloon.appShell.morphFirst.v1";
 
 export const APP_SHELL_DEFAULT_MYSALOON = "Home" as const;
 export const APP_SHELL_DEFAULT_MORPH = "MorphTryOn" as const;
@@ -20,6 +22,14 @@ const MORPH_TABS = new Set([
 
 export async function readAppShell(): Promise<AppShell> {
   try {
+    const migrated = await AsyncStorage.getItem(MORPH_FIRST_KEY);
+    if (migrated !== "1") {
+      await AsyncStorage.multiSet([
+        [MORPH_FIRST_KEY, "1"],
+        [SHELL_KEY, "morph"],
+      ]);
+      return "morph";
+    }
     const raw = await AsyncStorage.getItem(SHELL_KEY);
     return raw === "mysaloon" ? "mysaloon" : "morph";
   } catch {
