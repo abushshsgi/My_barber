@@ -94,7 +94,7 @@ export function MorphAiCareProductsPage() {
                   <img
                     src={row.image_url}
                     alt=""
-                    className="h-[7.25rem] w-[7.25rem] shrink-0 rounded-2xl bg-[#F4F4F2] object-contain p-1.5"
+                    className="h-[7.25rem] w-[7.25rem] shrink-0 rounded-2xl bg-white object-contain p-1"
                   />
                 ) : (
                   <div className="h-[7.25rem] w-[7.25rem] shrink-0 rounded-2xl bg-[#F0F0F0]" />

@@ -1,4 +1,4 @@
-"""Admin Tarkib — mahsulot rasmini katalog oblojkasi (1:1 studio) qilish."""
+"""Admin Tarkib — mahsulot rasmini oq studio katalog oblojkasi qilish."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ import io
 import logging
 from typing import Any
 
-from PIL import Image
+from PIL import Image, ImageFilter
 
 from ai.services.errors import AiStyleError
 from ai.services.image_response import extract_image_bytes
@@ -17,43 +17,81 @@ from ai.services.vertex_image import generate_image_content, image_generation_co
 logger = logging.getLogger(__name__)
 
 COVER_SIDE = 1600
-COVER_PAD = 0.06
-COVER_BG = (248, 248, 246)
+COVER_PAD = 0.04
+COVER_BG = (255, 255, 255)
+BG_LUMA = 232
 TARGET_MIN_BYTES = 180 * 1024
 TARGET_MAX_BYTES = 600 * 1024
 HARD_MAX_BYTES = 1024 * 1024
 
-_COVER_PROMPT = """You are a product photographer preparing a catalog COVER photo.
+_COVER_PROMPT = """You are a marketplace catalog photographer (Uzum / Ozon / Wildberries style).
 
-TASK: Create a premium e-commerce cover of THIS exact hair-care product from the attached photo.
+TASK: Turn the attached photo into a PREMIUM 1:1 studio COVER of THIS exact hair-care product.
+
+LOOK (must match):
+- Pure WHITE seamless studio backdrop — RGB 255,255,255. No gray, no beige, no gradient, no floor line.
+- One product only, standing upright, front label fully readable.
+- The bottle/box fills 80–88% of the frame height. Tight crop. Do NOT leave a tiny bottle in the middle of empty space.
+- Centered. Soft even beauty lighting. Tiny contact shadow under the base only.
+- Sharp, high-end e-commerce packshot. Square 1:1.
 
 MUST KEEP:
-- The same bottle/box, shape, colors, label artwork, brand name, and packaging. Do not invent a different product.
-
-STUDIO STANDARD:
-- Square 1:1 composition
-- Soft white or very light gray seamless background
-- Product upright and centered
-- About 6–8% empty margin around the product so the bottle fills the frame but is never cropped
-- Even soft lighting, gentle shadow under the product only
-- Photorealistic, sharp, clean
+- Exact same packaging, shape, colors, brand, label text and pump/cap. Do not invent another SKU.
 
 FORBIDDEN:
-- Extra props, hands, text overlays, watermarks, logos that are not on the original pack
-- Do NOT add Mysaloon, Morf AI, or any app branding
-- No beauty-filter distortion of the label text
+- Infographic text, bullets, "how to use", before/after insets, hands, foam, extra products
+- Colored creative backgrounds, pink sets, lifestyle scenes
+- Watermarks, app logos, Mysaloon, Morf AI
+- Gray or off-white backgrounds. Background MUST be pure white.
 
-Return ONE square product photo only.
+Return ONE square studio packshot only.
 """
 
 
+def _as_rgb(src: Image.Image) -> Image.Image:
+    if src.mode == "RGB":
+        return src
+    if src.mode == "L":
+        return src.convert("RGB")
+    return src.convert("RGB")
+
+
+def _content_bbox(im: Image.Image) -> tuple[int, int, int, int] | None:
+    gray = im.convert("L")
+    mask = gray.point(lambda p: 0 if p >= BG_LUMA else 255)
+    mask = mask.filter(ImageFilter.MaxFilter(3))
+    return mask.getbbox()
+
+
+def _bleach_near_white(im: Image.Image) -> Image.Image:
+    """Kulrang studio fonni oppoq qiladi, etiketka ranglarini saqlaydi."""
+    src = _as_rgb(im)
+    px = src.load()
+    w, h = src.size
+    for y in range(h):
+        for x in range(w):
+            r, g, b = px[x, y]
+            if r >= BG_LUMA and g >= BG_LUMA and b >= BG_LUMA:
+                px[x, y] = COVER_BG
+    return src
+
+
 def compose_square_cover(raw: bytes, *, side: int = COVER_SIDE) -> bytes:
-    """Kvadrat 1600 canvas, markazda 12% chet, JPEG 200–600 KB (max 1 MB)."""
-    src = Image.open(io.BytesIO(raw))
-    if src.mode not in ("RGB", "L"):
-        src = src.convert("RGB")
-    elif src.mode == "L":
-        src = src.convert("RGB")
+    """Oq 1600 kvadrat, mahsulot katta (4% chet), JPEG 200–600 KB."""
+    src = _as_rgb(Image.open(io.BytesIO(raw)))
+    src = _bleach_near_white(src)
+    box = _content_bbox(src)
+    if box:
+        pad = 8
+        left, top, right, bottom = box
+        src = src.crop(
+            (
+                max(0, left - pad),
+                max(0, top - pad),
+                min(src.width, right + pad),
+                min(src.height, bottom + pad),
+            )
+        )
 
     canvas = Image.new("RGB", (side, side), COVER_BG)
     inner = int(round(side * (1 - 2 * COVER_PAD)))
@@ -97,6 +135,10 @@ def _studio_cover_bytes(mime: str, raw: bytes) -> bytes:
     configs: list[dict[str, Any]] = [
         {
             "responseModalities": ["IMAGE"],
+            "imageConfig": {"aspectRatio": "1:1", "imageSize": "2K"},
+        },
+        {
+            "responseModalities": ["IMAGE"],
             "imageConfig": {"aspectRatio": "1:1", "imageSize": "1K"},
         },
         {
@@ -126,7 +168,7 @@ def _studio_cover_bytes(mime: str, raw: bytes) -> bytes:
 
 
 def make_catalog_cover(mime: str, raw: bytes) -> tuple[bytes, str]:
-    """AI studio cover + kvadrat JPEG. AI ishlamasa originalni padronlab qaytaradi."""
+    """AI oq studio packshot + kvadrat JPEG. AI ishlamasa originalni oq fonda kattalashtiradi."""
     source = "pad"
     working = raw
     if image_generation_configured() or studio_image_configured():

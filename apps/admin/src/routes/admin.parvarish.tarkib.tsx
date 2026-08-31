@@ -1039,7 +1039,7 @@ function PhotoSlot({
       )}
     >
       {preview ? (
-        <img src={preview} alt={label} className="absolute inset-0 size-full object-contain bg-[#f8f8f6]" />
+        <img src={preview} alt={label} className="absolute inset-0 size-full object-contain bg-white" />
       ) : (
         <ImagePlus className="size-5 text-muted-foreground" />
       )}

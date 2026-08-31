@@ -41,11 +41,11 @@ export function MorphAiCareProductDetailPage({ productId }: Props) {
           <article className="mt-6">
             {q.data.image_url ? (
               <div className="overflow-hidden rounded-3xl bg-white ring-1 ring-black/5">
-                <div className="aspect-square w-full bg-[#F4F4F2]">
+                <div className="aspect-square w-full bg-white">
                   <img
                     src={q.data.image_url}
                     alt={q.data.name}
-                    className="size-full object-contain object-center p-3"
+                    className="size-full object-contain object-center p-2"
                   />
                 </div>
               </div>

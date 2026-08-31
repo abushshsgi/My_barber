@@ -487,7 +487,7 @@ const styles = StyleSheet.create({
   media: {
     width: "100%",
     aspectRatio: 1,
-    backgroundColor: "#F4F4F2",
+    backgroundColor: "#FFFFFF",
     position: "relative",
   },
   img: { width: "100%", height: "100%" },

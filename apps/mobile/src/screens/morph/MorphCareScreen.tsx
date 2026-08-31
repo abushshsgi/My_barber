@@ -2281,7 +2281,7 @@ const styles = StyleSheet.create({
   searchCardMedia: {
     width: "100%",
     aspectRatio: 1,
-    backgroundColor: "#F4F4F2",
+    backgroundColor: "#FFFFFF",
     position: "relative",
   },
   searchCardImg: {
