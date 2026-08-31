@@ -278,6 +278,7 @@ from ai.admin_baza_views import (
     AdminBazaSearchView,
 )
 from ai.product_barcode_views import (
+    AdminProductAiCoverView,
     AdminProductAiFillView,
     AdminProductLookupView,
     AdminProductUpsertView,
@@ -447,6 +448,7 @@ api_routes = [
     path("admin/parvarish/demo-action/", AdminParvarishDemoActionView.as_view()),
     path("admin/products/", AdminProductUpsertView.as_view()),
     path("admin/products/ai-fill/", AdminProductAiFillView.as_view()),
+    path("admin/products/ai-cover/", AdminProductAiCoverView.as_view()),
     path("admin/products/lookup/", AdminProductLookupView.as_view()),
     path("admin/baza/overview/", AdminBazaOverviewView.as_view()),
     path("admin/baza/countries/", AdminBazaCountriesView.as_view()),

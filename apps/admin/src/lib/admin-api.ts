@@ -5147,6 +5147,19 @@ export async function aiFillAdminCareProduct(files: {
   return apiJson("/api/v1/admin/products/ai-fill/", { method: "POST", body: fd });
 }
 
+export type AdminCareAiCover = {
+  cover_image: string;
+  source: "ai" | "pad" | string;
+  width: number;
+  height: number;
+};
+
+export async function aiCoverAdminCareProduct(file: File): Promise<AdminCareAiCover> {
+  const fd = new FormData();
+  fd.set("front", file);
+  return apiJson("/api/v1/admin/products/ai-cover/", { method: "POST", body: fd });
+}
+
 export async function lookupAdminCareProduct(barcode: string): Promise<AdminProductLookup> {
   const sp = new URLSearchParams({ barcode });
   return apiJson(`/api/v1/admin/products/lookup/?${sp.toString()}`);

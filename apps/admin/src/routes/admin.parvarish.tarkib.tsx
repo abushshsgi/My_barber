@@ -22,6 +22,7 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   adminCareDemoAction,
   aiFillAdminCareProduct,
+  aiCoverAdminCareProduct,
   deleteAdminCareProduct,
   fetchAdminCareProducts,
   downloadBazaExport,
@@ -105,6 +106,7 @@ type FormState = {
   image: File | null;
   image_back: File | null;
   image_ingredients: File | null;
+  cover: File | null;
 };
 
 const emptyForm = (): FormState => ({
@@ -132,6 +134,7 @@ const emptyForm = (): FormState => ({
   image: null,
   image_back: null,
   image_ingredients: null,
+  cover: null,
 });
 
 function applyBarcodeCountry(barcode: string): Pick<
@@ -155,6 +158,15 @@ function toggleTag(list: string[], tag: string): string[] {
 function photoFingerprint(file: File | null): string {
   if (!file) return "";
   return `${file.name}:${file.size}:${file.lastModified}`;
+}
+
+function dataUrlToFile(dataUrl: string, filename: string): File {
+  const [meta, payload] = dataUrl.split(",");
+  const mime = /data:(.*?);/.exec(meta || "")?.[1] || "image/jpeg";
+  const binary = atob(payload || "");
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+  return new File([bytes], filename, { type: mime });
 }
 
 function takeImageFiles(list: FileList | File[] | null): File[] {
@@ -226,7 +238,7 @@ function ParvarishTarkibPage() {
         warnings_uz: form.warnings_uz,
         is_published: form.is_published,
         sort_order: Number(form.sort_order) || 0,
-        image: form.image,
+        image: form.cover || form.image,
       };
       if (!body.name) throw new Error("Mahsulot nomi kerak");
       if (editing) return patchAdminCareProduct(editing.id, body);
@@ -308,6 +320,7 @@ function ParvarishTarkibPage() {
     setForm((p) => ({
       ...p,
       ...(slots || {}),
+      cover: null,
       name: data.name || p.name,
       brand: data.brand || p.brand,
       category: (CATEGORIES.some((c) => c.value === data.category)
@@ -352,8 +365,28 @@ function ParvarishTarkibPage() {
           ? payload.photos
           : [form.image, form.image_back, form.image_ingredients].filter((x): x is File => !!x);
       applyAiFill(data, files);
+      const mapped = slotsFromRoles(files, data.image_roles);
+      const front = mapped?.image || files[0];
+      if (front) aiCover.mutate(front);
     },
     onError: (e: Error) => toast.error(e.message || "AI to'ldirish ishlamadi"),
+  });
+
+  const aiCover = useMutation({
+    mutationFn: (file: File) => aiCoverAdminCareProduct(file),
+    onSuccess: (data) => {
+      skipAutoFill.current = true;
+      setForm((p) => ({
+        ...p,
+        cover: dataUrlToFile(data.cover_image, "cover-1600.jpg"),
+      }));
+      toast.success(
+        data.source === "ai"
+          ? "Oblojka studio rasmga aylantirildi"
+          : "Oblojka 1:1 kvadratga tayyorlandi",
+      );
+    },
+    onError: (e: Error) => toast.error(e.message || "Oblojka tayyorlanmadi"),
   });
 
   const hasAiPhotos = Boolean(form.image || form.image_back || form.image_ingredients);
@@ -439,6 +472,7 @@ function ParvarishTarkibPage() {
       image: null,
       image_back: null,
       image_ingredients: null,
+      cover: null,
     });
   };
 
@@ -699,6 +733,29 @@ function ParvarishTarkibPage() {
                     AI rasmni o‘qiyapti va maydonlarni to‘ldiryapti…
                   </p>
                 ) : null}
+                <div className="mt-3 rounded-xl border border-border bg-background p-2">
+                  <div className="mb-1.5 flex items-center justify-between">
+                    <p className="text-[11px] font-semibold">Oblojka (katalog)</p>
+                    <p className="text-[10px] text-muted-foreground">1:1 · 1600×1600</p>
+                  </div>
+                  <div className="relative mx-auto aspect-square w-full max-w-[220px] overflow-hidden rounded-xl bg-muted">
+                    <PhotoSlot
+                      label="Oblojka"
+                      file={form.cover}
+                      fallbackUrl={form.cover ? undefined : form.image_url}
+                      aspectClass="aspect-square"
+                      readOnly
+                    />
+                    {aiCover.isPending ? (
+                      <div className="absolute inset-0 grid place-items-center bg-background/70">
+                        <Loader2 className="size-6 animate-spin text-primary" />
+                      </div>
+                    ) : null}
+                  </div>
+                  <p className="mt-1.5 text-center text-[10px] text-muted-foreground">
+                    Saqlanganda shu rasm kartochkaga tushadi.
+                  </p>
+                </div>
               </div>
 
               <Field label="Barcode (EAN / UPC)">
@@ -952,11 +1009,15 @@ function PhotoSlot({
   file,
   fallbackUrl,
   onPick,
+  aspectClass = "aspect-[3/4]",
+  readOnly = false,
 }: {
   label: string;
   file: File | null;
   fallbackUrl?: string;
-  onPick: (file: File | null) => void;
+  onPick?: (file: File | null) => void;
+  aspectClass?: string;
+  readOnly?: boolean;
 }) {
   const [preview, setPreview] = useState("");
   useEffect(() => {
@@ -970,21 +1031,29 @@ function PhotoSlot({
   }, [file, fallbackUrl]);
 
   return (
-    <label className="relative flex aspect-[3/4] cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl border border-dashed border-border bg-background text-center">
+    <label
+      className={cn(
+        "relative flex w-full flex-col items-center justify-center overflow-hidden rounded-xl border border-dashed border-border bg-background text-center",
+        aspectClass,
+        readOnly ? "cursor-default" : "cursor-pointer",
+      )}
+    >
       {preview ? (
-        <img src={preview} alt={label} className="absolute inset-0 size-full object-cover" />
+        <img src={preview} alt={label} className="absolute inset-0 size-full object-contain bg-[#f8f8f6]" />
       ) : (
         <ImagePlus className="size-5 text-muted-foreground" />
       )}
       <span className="relative z-10 mt-1 rounded-full bg-background/85 px-2 py-0.5 text-[10px] font-medium backdrop-blur">
         {label}
       </span>
-      <input
-        type="file"
-        accept="image/jpeg,image/png,image/webp"
-        className="sr-only"
-        onChange={(e) => onPick(e.target.files?.[0] || null)}
-      />
+      {readOnly ? null : (
+        <input
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          className="sr-only"
+          onChange={(e) => onPick?.(e.target.files?.[0] || null)}
+        />
+      )}
     </label>
   );
 }

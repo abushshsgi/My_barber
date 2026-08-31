@@ -37,6 +37,7 @@ import {
 } from "../../api/care";
 import { useAuth } from "../../auth/AuthContext";
 import { CareProductPreviewSheet } from "../../components/morph/care/CareProductPreviewSheet";
+import { CareCatalogMark } from "../../components/morph/care/CareCatalogMark";
 import { CareRoutineSheet } from "../../components/morph/care/CareRoutineSheet";
 import { DarkMeshAmbientBg } from "../../components/morph/care/DarkMeshAmbientBg";
 import { useCareWeather } from "../../hooks/useCareWeather";
@@ -986,7 +987,15 @@ export function MorphCareScreen({ navigation, route }: Props) {
           ]}
         >
           {!searchOpen ? (
-          <View style={[styles.promoWrap, { paddingHorizontal: hubLayout.hPad }]}>
+          <View
+            style={[
+              styles.promoWrap,
+              {
+                paddingHorizontal: hubLayout.hPad,
+                marginTop: hubLayout.promoTopGap,
+              },
+            ]}
+          >
             <View
               style={[
                 styles.promoCard,
@@ -1011,24 +1020,54 @@ export function MorphCareScreen({ navigation, route }: Props) {
 
               <View style={styles.promoTop}>
                 <Pressable
-                  style={styles.promoBackBtn}
+                  style={[
+                    styles.promoBackBtn,
+                    {
+                      width: hubLayout.promoUi.back,
+                      height: hubLayout.promoUi.back,
+                      borderRadius: hubLayout.promoUi.back / 2,
+                    },
+                  ]}
                   onPress={handleBack}
                   accessibilityLabel={t("common.back")}
                   hitSlop={8}
                 >
-                  <Ionicons name="chevron-back" size={18} color="#FFFFFF" />
+                  <Ionicons
+                    name="chevron-back"
+                    size={hubLayout.promoUi.backIcon}
+                    color="#FFFFFF"
+                  />
                 </Pressable>
 
-                <View style={styles.promoLocBadge} pointerEvents="none">
-                  <Ionicons name="location-outline" size={13} color="#FFFFFF" />
+                <View
+                  style={[
+                    styles.promoLocBadge,
+                    {
+                      paddingVertical: hubLayout.promoUi.locPadV,
+                      paddingHorizontal: hubLayout.promoUi.locPadH,
+                    },
+                  ]}
+                  pointerEvents="none"
+                >
+                  <Ionicons
+                    name="location-outline"
+                    size={hubLayout.promoUi.locIcon}
+                    color="#FFFFFF"
+                  />
                   <View style={styles.promoLocText}>
-                    <Text style={styles.promoRegion} numberOfLines={1}>
+                    <Text
+                      style={[styles.promoRegion, { fontSize: hubLayout.promoUi.locFs }]}
+                      numberOfLines={1}
+                    >
                       {weatherLoading
                         ? t("care.weather.locating", { defaultValue: "Joylashuv aniqlanmoqda…" })
                         : weather?.location_region ||
                           t("care.weather.locationFallback", { defaultValue: "Viloyat" })}
                     </Text>
-                    <Text style={styles.promoPlace} numberOfLines={1}>
+                    <Text
+                      style={[styles.promoPlace, { fontSize: hubLayout.promoUi.locSubFs }]}
+                      numberOfLines={1}
+                    >
                       {weatherLoading
                         ? "…"
                         : weather?.location_place ||
@@ -1040,7 +1079,13 @@ export function MorphCareScreen({ navigation, route }: Props) {
               </View>
 
               <Pressable
-                style={[styles.promoCopy, { marginTop: hubLayout.weatherNudge }]}
+                style={[
+                  styles.promoCopy,
+                  {
+                    marginTop: hubLayout.weatherNudge,
+                    gap: hubLayout.promoUi.gap,
+                  },
+                ]}
                 onPress={openWeather}
                 accessibilityRole="button"
                 accessibilityLabel={t("care.weather.title")}
@@ -1050,25 +1095,43 @@ export function MorphCareScreen({ navigation, route }: Props) {
                     style={[
                       styles.promoTemp,
                       {
-                        fontSize: hubLayout.promoTempSize,
-                        lineHeight: hubLayout.promoTempSize + 4,
+                        fontSize: hubLayout.promoUi.tempFs,
+                        lineHeight: hubLayout.promoUi.tempFs + 4,
                       },
                     ]}
                   >
                     {weatherTemp}
                   </Text>
                   <View style={styles.promoMeta}>
-                    <Text style={styles.promoCondition} numberOfLines={1}>
+                    <Text
+                      style={[
+                        styles.promoCondition,
+                        { fontSize: hubLayout.promoUi.conditionFs },
+                      ]}
+                      numberOfLines={1}
+                    >
                       {weatherLoading
                         ? "…"
                         : t(`care.weather.conditions.${weatherKey}`)}
                     </Text>
                     {weather?.current?.humidity_pct != null ? (
-                      <Text style={styles.promoHumidity} numberOfLines={1}>
+                      <Text
+                        style={[
+                          styles.promoHumidity,
+                          { fontSize: hubLayout.promoUi.hintFs },
+                        ]}
+                        numberOfLines={1}
+                      >
                         {t("care.weather.humidity")} {Math.round(weather.current.humidity_pct)}%
                       </Text>
                     ) : (
-                      <Text style={styles.promoHumidity} numberOfLines={1}>
+                      <Text
+                        style={[
+                          styles.promoHumidity,
+                          { fontSize: hubLayout.promoUi.hintFs },
+                        ]}
+                        numberOfLines={1}
+                      >
                         {t("care.promoHint")}
                       </Text>
                     )}
@@ -1076,11 +1139,34 @@ export function MorphCareScreen({ navigation, route }: Props) {
                 </View>
 
                 {hubLayout.promoShowCta ? (
-                  <View style={styles.promoBtn}>
-                    <Text style={styles.promoBtnText} numberOfLines={1}>
+                  <View
+                    style={[
+                      styles.promoBtn,
+                      {
+                        minHeight: hubLayout.promoUi.btnMinH,
+                        paddingVertical: hubLayout.promoUi.btnPadV,
+                        paddingLeft: hubLayout.promoUi.btnPadH,
+                        paddingRight: hubLayout.promoUi.btnPadH - 2,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[styles.promoBtnText, { fontSize: hubLayout.promoUi.btnFs }]}
+                      numberOfLines={1}
+                    >
                       {t("care.promoCta")}
                     </Text>
-                    <Text style={styles.promoBtnArrow}>→</Text>
+                    <Text
+                      style={[
+                        styles.promoBtnArrow,
+                        {
+                          fontSize: hubLayout.promoUi.btnArrow,
+                          lineHeight: hubLayout.promoUi.btnArrow + 3,
+                        },
+                      ]}
+                    >
+                      →
+                    </Text>
                   </View>
                 ) : null}
               </Pressable>
@@ -1524,6 +1610,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
                                 <Ionicons name="flask-outline" size={22} color="#111111" />
                               </View>
                             )}
+                            <CareCatalogMark />
                             <Pressable
                               style={styles.searchLikeBtn}
                               onPress={(e) => {
@@ -1854,6 +1941,7 @@ const styles = StyleSheet.create({
   },
   promoCopy: {
     zIndex: 2,
+    flex: 1,
     flexShrink: 1,
     minHeight: 0,
     gap: moderateScale(8),

@@ -17,6 +17,8 @@ from ai.services.barcode_country import detect_country_from_barcode, normalize_b
 from ai.services.care_match import parse_ingredients_text, score_against_hair, suitability_for_user
 from ai.services.errors import AiStyleError
 from ai.services.gemini_care_catalog import analyze_catalog_photos, decode_catalog_photo
+from ai.services.gemini_care_cover import make_catalog_cover
+from ai.services.image_response import to_data_url
 from ai.services.product_barcode_lookup import (
     external_as_product_payload,
     find_product_by_barcode,
@@ -146,6 +148,38 @@ class AdminProductAiFillView(UnthrottledAPIView):
 
         filled.pop("_usage", None)
         return Response(filled)
+
+
+class AdminProductAiCoverView(UnthrottledAPIView):
+    """POST — oldi rasmdan 1:1 studio oblojka (katalog cover)."""
+
+    permission_classes = [IsAdmin]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
+
+    def post(self, request):
+        upload = (
+            request.FILES.get("front")
+            or request.FILES.get("image")
+            or request.FILES.get("cover")
+            or request.data.get("front")
+            or request.data.get("image")
+        )
+        try:
+            decoded = decode_catalog_photo(upload)
+            if not decoded:
+                raise AiStyleError("Oblojka uchun mahsulot oldi rasmini yuklang.", 400)
+            mime, raw = decoded
+            cover, source = make_catalog_cover(mime, raw)
+        except AiStyleError as exc:
+            return Response({"detail": exc.message}, status=exc.status)
+        return Response(
+            {
+                "cover_image": to_data_url("image/jpeg", cover),
+                "source": source,
+                "width": 1600,
+                "height": 1600,
+            }
+        )
 
 
 class AdminProductLookupView(UnthrottledAPIView):
