@@ -1604,7 +1604,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
                         >
                           <View style={styles.searchCardMedia}>
                             {item.image ? (
-                              <Image source={{ uri: item.image }} style={styles.searchCardImg} />
+                              <Image source={{ uri: item.image }} style={styles.searchCardImg} resizeMode="contain" />
                             ) : (
                               <View style={[styles.searchCardImg, styles.searchRowPh]}>
                                 <Ionicons name="flask-outline" size={22} color="#111111" />
@@ -2280,8 +2280,8 @@ const styles = StyleSheet.create({
   },
   searchCardMedia: {
     width: "100%",
-    aspectRatio: 1.15,
-    backgroundColor: "#F0F0F0",
+    aspectRatio: 1,
+    backgroundColor: "#F4F4F2",
     position: "relative",
   },
   searchCardImg: {

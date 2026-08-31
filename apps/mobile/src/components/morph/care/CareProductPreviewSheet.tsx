@@ -221,7 +221,7 @@ export function CareProductPreviewSheet({
         <View style={styles.topRow}>
           <View style={styles.thumbWrap}>
             {imageUri ? (
-              <Image source={{ uri: imageUri }} style={styles.thumb} contentFit="cover" />
+              <Image source={{ uri: imageUri }} style={styles.thumb} contentFit="contain" />
             ) : (
               <View style={[styles.thumb, styles.thumbPh]}>
                 <Ionicons name="flask-outline" size={32} color={C.muted} />
@@ -370,8 +370,8 @@ const styles = StyleSheet.create({
     gap: moderateScale(12),
   },
   thumbWrap: {
-    width: scale(96),
-    height: scale(96),
+    width: scale(120),
+    height: scale(120),
     borderRadius: moderateScale(18),
     overflow: "hidden",
     backgroundColor: C.glassSoft,

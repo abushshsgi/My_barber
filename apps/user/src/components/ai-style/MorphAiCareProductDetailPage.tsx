@@ -40,11 +40,15 @@ export function MorphAiCareProductDetailPage({ productId }: Props) {
         ) : (
           <article className="mt-6">
             {q.data.image_url ? (
-              <img
-                src={q.data.image_url}
-                alt=""
-                className="aspect-[4/3] w-full rounded-3xl object-cover"
-              />
+              <div className="overflow-hidden rounded-3xl bg-white ring-1 ring-black/5">
+                <div className="aspect-square w-full bg-[#F4F4F2]">
+                  <img
+                    src={q.data.image_url}
+                    alt={q.data.name}
+                    className="size-full object-contain object-center p-3"
+                  />
+                </div>
+              </div>
             ) : null}
             <p className="mt-5 text-[12px] font-medium tracking-wide text-[#111111]/35">
               {t(`aiStylePage.care.catalog.categories.${q.data.category}`, {

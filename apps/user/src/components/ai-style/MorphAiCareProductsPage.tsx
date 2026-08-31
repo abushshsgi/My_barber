@@ -88,12 +88,16 @@ export function MorphAiCareProductsPage() {
                 key={row.id}
                 to="/ai-style/care/products/$productId"
                 params={{ productId: String(row.id) }}
-                className="flex gap-3 rounded-2xl bg-white p-3 ring-1 ring-white/8"
+                className="flex items-stretch gap-3 rounded-2xl bg-white p-2.5 ring-1 ring-black/5"
               >
                 {row.image_url ? (
-                  <img src={row.image_url} alt="" className="size-16 shrink-0 rounded-xl object-cover" />
+                  <img
+                    src={row.image_url}
+                    alt=""
+                    className="h-[7.25rem] w-[7.25rem] shrink-0 rounded-2xl bg-[#F4F4F2] object-contain p-1.5"
+                  />
                 ) : (
-                  <div className="size-16 shrink-0 rounded-xl bg-[#F0F0F0]" />
+                  <div className="h-[7.25rem] w-[7.25rem] shrink-0 rounded-2xl bg-[#F0F0F0]" />
                 )}
                 <div className="min-w-0">
                   <p className="truncate text-[15px] font-semibold">{row.name}</p>

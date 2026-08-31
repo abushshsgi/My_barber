@@ -298,7 +298,7 @@ export function CareCatalogSheet({
                   >
                     <View style={styles.media}>
                       {item.image ? (
-                        <Image source={{ uri: item.image }} style={styles.img} contentFit="cover" />
+                        <Image source={{ uri: item.image }} style={styles.img} contentFit="contain" />
                       ) : (
                         <View style={[styles.img, styles.ph]}>
                           <Ionicons name="flask-outline" size={22} color="#111111" />
@@ -486,8 +486,8 @@ const styles = StyleSheet.create({
   },
   media: {
     width: "100%",
-    aspectRatio: 1.15,
-    backgroundColor: "#F0F0F0",
+    aspectRatio: 1,
+    backgroundColor: "#F4F4F2",
     position: "relative",
   },
   img: { width: "100%", height: "100%" },

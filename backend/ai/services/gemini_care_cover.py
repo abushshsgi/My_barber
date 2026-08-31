@@ -17,7 +17,7 @@ from ai.services.vertex_image import generate_image_content, image_generation_co
 logger = logging.getLogger(__name__)
 
 COVER_SIDE = 1600
-COVER_PAD = 0.12
+COVER_PAD = 0.06
 COVER_BG = (248, 248, 246)
 TARGET_MIN_BYTES = 180 * 1024
 TARGET_MAX_BYTES = 600 * 1024
@@ -34,7 +34,7 @@ STUDIO STANDARD:
 - Square 1:1 composition
 - Soft white or very light gray seamless background
 - Product upright and centered
-- About 10–15% empty margin around the product so nothing is cropped on a card
+- About 6–8% empty margin around the product so the bottle fills the frame but is never cropped
 - Even soft lighting, gentle shadow under the product only
 - Photorealistic, sharp, clean
 
