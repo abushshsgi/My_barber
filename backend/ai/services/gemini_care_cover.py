@@ -17,7 +17,7 @@ from ai.services.vertex_image import generate_image_content, image_generation_co
 logger = logging.getLogger(__name__)
 
 COVER_SIDE = 1600
-COVER_PAD = 0.04
+COVER_PAD = 0.018
 COVER_BG = (255, 255, 255)
 BG_LUMA = 232
 TARGET_MIN_BYTES = 180 * 1024
@@ -31,7 +31,7 @@ TASK: Turn the attached photo into a PREMIUM 1:1 studio COVER of THIS exact hair
 LOOK (must match):
 - Pure WHITE seamless studio backdrop — RGB 255,255,255. No gray, no beige, no gradient, no floor line.
 - One product only, standing upright, front label fully readable.
-- The bottle/box fills 80–88% of the frame height. Tight crop. Do NOT leave a tiny bottle in the middle of empty space.
+- The bottle/box fills 90–96% of the frame height — LARGE close-up packshot. Almost edge-to-edge. Tiny margin only so the cap and base are not cropped.
 - Centered. Soft even beauty lighting. Tiny contact shadow under the base only.
 - Sharp, high-end e-commerce packshot. Square 1:1.
 
@@ -77,12 +77,12 @@ def _bleach_near_white(im: Image.Image) -> Image.Image:
 
 
 def compose_square_cover(raw: bytes, *, side: int = COVER_SIDE) -> bytes:
-    """Oq 1600 kvadrat, mahsulot katta (4% chet), JPEG 200–600 KB."""
+    """Oq 1600 kvadrat, mahsulot katta (~2% chet), JPEG 200–600 KB."""
     src = _as_rgb(Image.open(io.BytesIO(raw)))
     src = _bleach_near_white(src)
     box = _content_bbox(src)
     if box:
-        pad = 8
+        pad = 2
         left, top, right, bottom = box
         src = src.crop(
             (

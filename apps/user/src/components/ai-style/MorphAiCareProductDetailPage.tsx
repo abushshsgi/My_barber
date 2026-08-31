@@ -45,7 +45,7 @@ export function MorphAiCareProductDetailPage({ productId }: Props) {
                   <img
                     src={q.data.image_url}
                     alt={q.data.name}
-                    className="size-full object-contain object-center p-2"
+                    className="size-full object-contain object-center p-0.5"
                   />
                 </div>
               </div>
