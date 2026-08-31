@@ -10,6 +10,7 @@ import {
   StyleSheet,
   Text,
   UIManager,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { useTranslation } from "react-i18next";
@@ -42,7 +43,7 @@ type Props = {
   onUseInCare?: () => void;
 };
 
-const SHEET_H = 560;
+const SHEET_H_FALLBACK = 560;
 
 const C = {
   glass: "rgba(255,255,255,0.96)",
@@ -128,6 +129,10 @@ export function CareProductPreviewSheet({
   onUseInCare,
 }: Props) {
   const { t, i18n } = useTranslation();
+  const { height: winH } = useWindowDimensions();
+  const sheetH = Math.round(
+    Math.min(SHEET_H_FALLBACK, Math.max(340, winH * (winH < 700 ? 0.72 : 0.78))),
+  );
   const fit = useMemo(
     () =>
       typeof product.match_percent === "number"
@@ -165,7 +170,7 @@ export function CareProductPreviewSheet({
   const padBottom = Math.max(bottomInset, 6);
   const shellStyle = [
     styles.card,
-    isPage ? styles.cardPage : { height: SHEET_H },
+    isPage ? styles.cardPage : { height: sheetH },
   ];
 
   /* —— Faqat mahsulot tarkibi —— */

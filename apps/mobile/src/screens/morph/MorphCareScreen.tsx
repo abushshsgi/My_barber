@@ -224,12 +224,16 @@ export function MorphCareScreen({ navigation, route }: Props) {
   const addDropY = useRef(new Animated.Value(-140)).current;
   const addOpacity = useRef(new Animated.Value(0)).current;
   const addScale = useRef(new Animated.Value(0.86)).current;
-  const searchSheetY = useRef(new Animated.Value(829)).current;
+  const addHideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const searchSheetY = useRef(new Animated.Value(Dimensions.get("window").height)).current;
   const previewSheetY = useRef(new Animated.Value(Dimensions.get("window").height)).current;
   const previewBackdropOp = useRef(new Animated.Value(0)).current;
   const searchInputRef = useRef<TextInput>(null);
   const { data: weather, loading: weatherLoading } = useCareWeather();
   const { width: winW, height: winH } = useWindowDimensions();
+  const [kbH, setKbH] = useState(0);
+  const fullWinH = useRef(winH);
+  if (kbH === 0) fullWinH.current = Math.max(fullWinH.current, winH);
   const hubLayout = useMemo(
     () => careHubLayout(winW, winH, insets.top, insets.bottom),
     [winW, winH, insets.top, insets.bottom],
@@ -241,11 +245,18 @@ export function MorphCareScreen({ navigation, route }: Props) {
       : "—";
   const weatherImg = weatherHeroImage(weatherKey);
 
-  /** Search sheet — ekran balandligiga mos (829 floor yo‘q). */
+  /** Search sheet — klaviatura va safe area ustida, overshoot yo‘q. */
+  const keyboardCover = useMemo(() => {
+    if (kbH <= 0) return 0;
+    const resizedByOs = fullWinH.current - winH > 80;
+    return resizedByOs ? 0 : kbH;
+  }, [kbH, winH]);
+
   const searchSheetHeight = useMemo(() => {
-    const topGap = Math.max(insets.top + 10, Math.round(winH * 0.07));
-    return Math.max(360, winH - topGap);
-  }, [insets.top, winH]);
+    const visible = Math.max(320, winH - keyboardCover);
+    const topGap = Math.max(insets.top + 12, Math.round(visible * 0.14));
+    return Math.max(260, visible - topGap);
+  }, [insets.top, winH, keyboardCover]);
 
   const searchCols = winW < 340 ? 1 : winW >= 720 ? 3 : 2;
   const searchCardW = useMemo(() => {
@@ -256,56 +267,95 @@ export function MorphCareScreen({ navigation, route }: Props) {
 
   const playAddedAnimation = useCallback(
     (prod: { title: string; image: string }) => {
+      if (addHideTimer.current) {
+        clearTimeout(addHideTimer.current);
+        addHideTimer.current = null;
+      }
+      addDropY.stopAnimation();
+      addOpacity.stopAnimation();
+      addScale.stopAnimation();
       setAddToast({ title: prod.title, image: prod.image });
       addDropY.setValue(-160);
       addOpacity.setValue(0);
       addScale.setValue(0.82);
-      Animated.sequence([
-        Animated.parallel([
-          Animated.spring(addDropY, {
-            toValue: insets.top + 12,
-            friction: 7,
-            tension: 68,
-            useNativeDriver: true,
-          }),
-          Animated.timing(addOpacity, {
-            toValue: 1,
-            duration: 220,
-            easing: Easing.out(Easing.cubic),
-            useNativeDriver: true,
-          }),
-          Animated.spring(addScale, {
-            toValue: 1,
-            friction: 6,
-            tension: 90,
-            useNativeDriver: true,
-          }),
-        ]),
-        Animated.delay(780),
+      const native = Platform.OS !== "web";
+      const restY = insets.top + 10;
+      Animated.parallel([
+        Animated.timing(addDropY, {
+          toValue: restY,
+          duration: 320,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: native,
+        }),
+        Animated.timing(addOpacity, {
+          toValue: 1,
+          duration: 220,
+          useNativeDriver: native,
+        }),
+        Animated.timing(addScale, {
+          toValue: 1,
+          duration: 280,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: native,
+        }),
+      ]).start();
+      addHideTimer.current = setTimeout(() => {
         Animated.parallel([
           Animated.timing(addDropY, {
             toValue: -180,
-            duration: 420,
+            duration: 280,
             easing: Easing.in(Easing.cubic),
-            useNativeDriver: true,
+            useNativeDriver: native,
           }),
           Animated.timing(addOpacity, {
             toValue: 0,
-            duration: 360,
-            useNativeDriver: true,
+            duration: 240,
+            useNativeDriver: native,
           }),
           Animated.timing(addScale, {
-            toValue: 0.88,
-            duration: 360,
-            useNativeDriver: true,
+            toValue: 0.9,
+            duration: 240,
+            useNativeDriver: native,
           }),
-        ]),
-      ]).start(({ finished }) => {
-        if (finished) setAddToast(null);
-      });
+        ]).start();
+        addHideTimer.current = setTimeout(() => {
+          setAddToast(null);
+          addHideTimer.current = null;
+        }, 320);
+      }, 1600);
     },
     [addDropY, addOpacity, addScale, insets.top],
   );
+
+  useEffect(() => {
+    const showEvt = Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
+    const hideEvt = Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
+    const show = Keyboard.addListener(showEvt, (e) => {
+      setKbH(Math.round(e.endCoordinates?.height ?? 0));
+    });
+    const hide = Keyboard.addListener(hideEvt, () => setKbH(0));
+    return () => {
+      show.remove();
+      hide.remove();
+      if (addHideTimer.current) clearTimeout(addHideTimer.current);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (Platform.OS !== "web" || typeof window === "undefined") return;
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const sync = () => {
+      const covered = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+      setKbH(covered > 60 ? Math.round(covered) : 0);
+    };
+    vv.addEventListener("resize", sync);
+    vv.addEventListener("scroll", sync);
+    return () => {
+      vv.removeEventListener("resize", sync);
+      vv.removeEventListener("scroll", sync);
+    };
+  }, []);
 
   const reloadMyProducts = useCallback(async () => {
     const list = await loadMyProducts();
@@ -357,11 +407,11 @@ export function MorphCareScreen({ navigation, route }: Props) {
       toValue: 0,
       friction: 9,
       tension: 68,
-      useNativeDriver: true,
-    }).start(() => {
-      searchInputRef.current?.focus();
+      overshootClamping: true,
+      useNativeDriver: Platform.OS !== "web",
+    }).start(({ finished }) => {
+      if (finished) searchInputRef.current?.focus();
     });
-    requestAnimationFrame(() => searchInputRef.current?.focus());
     const excludeIds = myProducts.map((p) => p.id);
     void fetchCareProducts({
       order: "likes",
@@ -399,7 +449,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
       toValue: searchSheetHeight,
       duration: 280,
       easing: Easing.in(Easing.cubic),
-      useNativeDriver: true,
+      useNativeDriver: Platform.OS !== "web",
     }).start(() => {
       setSearchOpen(false);
       setSearchQuery("");
@@ -430,7 +480,8 @@ export function MorphCareScreen({ navigation, route }: Props) {
             toValue: 0,
             friction: 9,
             tension: 70,
-            useNativeDriver: true,
+            overshootClamping: true,
+            useNativeDriver: Platform.OS !== "web",
           }).start();
         },
       }),
@@ -953,29 +1004,6 @@ export function MorphCareScreen({ navigation, route }: Props) {
     return (
       <View style={[styles.hubRoot, { paddingBottom: hubLayout.dockClearance }]}>
         <StatusBar style="dark" />
-        {addToast ? (
-          <Animated.View
-            pointerEvents="none"
-            style={[
-              styles.addToast,
-              {
-                opacity: addOpacity,
-                transform: [{ translateY: addDropY }, { scale: addScale }],
-              },
-            ]}
-          >
-            <Image source={{ uri: addToast.image }} style={styles.addToastImg} />
-            <View style={styles.addToastBody}>
-              <Text style={styles.addToastEyebrow}>{t("care.myProducts.addedTitle")}</Text>
-              <Text style={styles.addToastTitle} numberOfLines={1}>
-                {addToast.title}
-              </Text>
-            </View>
-            <View style={styles.addToastCheck}>
-              <Ionicons name="checkmark" size={14} color="#fff" />
-            </View>
-          </Animated.View>
-        ) : null}
         <View style={[StyleSheet.absoluteFill, { backgroundColor: "#FAFAFA" }]} />
 
         <View
@@ -1231,6 +1259,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
                   <Text
                     style={[
                       styles.catText,
+                      { fontSize: Math.max(10, Math.round(12 * hubLayout.scale)) },
                       active ? styles.catTextActive : styles.catTextInactive,
                     ]}
                   >
@@ -1550,6 +1579,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
                 styles.searchSheet,
                 {
                   height: searchSheetHeight,
+                  bottom: keyboardCover,
                   paddingBottom: Math.max(insets.bottom, 12),
                   transform: [{ translateY: searchSheetY }],
                 },
@@ -1567,9 +1597,14 @@ export function MorphCareScreen({ navigation, route }: Props) {
                       placeholder={t("care.catalog.search")}
                       placeholderTextColor="#737373"
                       style={styles.searchInput}
-                      autoFocus
+                      autoFocus={false}
                       returnKeyType="search"
-                      clearButtonMode="while-editing"
+                      blurOnSubmit
+                      onFocus={() => {
+                        if (Platform.OS === "web" && typeof window !== "undefined") {
+                          window.scrollTo(0, 0);
+                        }
+                      }}
                     />
                   </View>
                   <Pressable
@@ -1713,6 +1748,29 @@ export function MorphCareScreen({ navigation, route }: Props) {
             </Animated.View>
           </View>
         </Modal>
+        {addToast ? (
+          <Animated.View
+            pointerEvents="none"
+            style={[
+              styles.addToast,
+              {
+                opacity: addOpacity,
+                transform: [{ translateY: addDropY }, { scale: addScale }],
+              },
+            ]}
+          >
+            <Image source={{ uri: addToast.image }} style={styles.addToastImg} />
+            <View style={styles.addToastBody}>
+              <Text style={styles.addToastEyebrow}>{t("care.myProducts.addedTitle")}</Text>
+              <Text style={styles.addToastTitle} numberOfLines={1}>
+                {addToast.title}
+              </Text>
+            </View>
+            <View style={styles.addToastCheck}>
+              <Ionicons name="checkmark" size={14} color="#fff" />
+            </View>
+          </Animated.View>
+        ) : null}
       </View>
     );
   }
@@ -1776,7 +1834,7 @@ const styles = StyleSheet.create({
   center: { alignItems: "center", justifyContent: "center" },
   pad: { flex: 1, paddingHorizontal: scale(20) },
   onboardPad: { flex: 1, paddingHorizontal: scale(20) },
-  hubRoot: { flex: 1, backgroundColor: "#FAFAFA" },
+  hubRoot: { flex: 1, backgroundColor: "#FAFAFA", overflow: "hidden" },
   hubScroll: {
     flex: 1,
     minHeight: 0,
@@ -1787,8 +1845,8 @@ const styles = StyleSheet.create({
     top: 0,
     left: scale(16),
     right: scale(16),
-    zIndex: 40,
-    elevation: 20,
+    zIndex: 80,
+    elevation: 40,
     flexDirection: "row",
     alignItems: "center",
     gap: moderateScale(10),
@@ -2177,6 +2235,7 @@ const styles = StyleSheet.create({
   searchCloseBtn: {
     width: scale(40),
     height: scale(40),
+    flexShrink: 0,
     borderRadius: moderateScale(20),
     alignItems: "center",
     justifyContent: "center",
@@ -2220,6 +2279,7 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   searchSheetChrome: {
+    flexShrink: 0,
     paddingTop: verticalScale(8),
     paddingHorizontal: scale(12),
     gap: moderateScale(10),
@@ -2228,7 +2288,9 @@ const styles = StyleSheet.create({
   searchSheetHeader: {
     flexDirection: "row",
     alignItems: "center",
+    flexShrink: 0,
     gap: moderateScale(8),
+    minHeight: 44,
   },
   searchBarInSheet: {
     flex: 1,

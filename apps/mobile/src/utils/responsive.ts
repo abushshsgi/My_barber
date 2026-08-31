@@ -46,8 +46,13 @@ function round(value: number): number {
  * Gorizontal o'lchov — kenglik, padding, radius, ikonka o'lchamlari uchun.
  * Katta ekranlarda cheksiz o'smasligi uchun koeffitsiyent 0.82…1.15 orasida.
  */
+function liveWindow(): { w: number; h: number } {
+  const { width, height } = Dimensions.get("window");
+  return { w: Math.min(width, height), h: Math.max(width, height) };
+}
+
 export function scale(size: number): number {
-  const factor = clamp(SCREEN_WIDTH / BASE_WIDTH, 0.82, 1.15);
+  const factor = clamp(liveWindow().w / BASE_WIDTH, 0.72, 1.15);
   return round(size * factor);
 }
 
@@ -56,7 +61,7 @@ export function scale(size: number): number {
  * iPhone SE'da kartalar avtomatik pasayadi, Pro Max'da ortiqcha cho'zilmaydi.
  */
 export function verticalScale(size: number): number {
-  const factor = clamp(SCREEN_HEIGHT / BASE_HEIGHT, 0.78, 1.12);
+  const factor = clamp(liveWindow().h / BASE_HEIGHT, 0.72, 1.12);
   return round(size * factor);
 }
 
@@ -79,10 +84,11 @@ export function moderateVerticalScale(size: number, factor = 0.5): number {
  * font scale 1.15 bilan cheklanadi.
  */
 export function fontSize(size: number): number {
-  const widthFactor = clamp(SCREEN_WIDTH / BASE_WIDTH, 0.85, 1.1);
+  const { w, h } = liveWindow();
+  const widthFactor = clamp(w / BASE_WIDTH, 0.78, 1.1);
   const systemFactor = clamp(PixelRatio.getFontScale(), 0.85, 1.15);
-  const compact = IS_SMALL_DEVICE ? 0.94 : 1;
-  return Math.max(10, round(size * widthFactor * systemFactor * compact));
+  const compact = h < 700 ? 0.92 : 1;
+  return Math.max(9, round(size * widthFactor * systemFactor * compact));
 }
 
 /**

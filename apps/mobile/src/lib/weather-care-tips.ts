@@ -269,10 +269,11 @@ export function careHubLayout(
   const searchBlock = rs(52, scale);
   const catBlock = Math.max(32, rs(34, scale));
   const reportHead = rs(22, scale);
-  const weatherNudge = 5;
+  const weatherNudge = 8;
+  const promoTopGap = rs(12, scale);
   const sheetTop = rs(14, scale);
   const gaps = rs(16, scale) + weatherNudge;
-  const chrome = searchBlock + catBlock + reportHead + gaps + sheetTop;
+  const chrome = searchBlock + catBlock + reportHead + gaps + sheetTop + promoTopGap;
 
   const remain = Math.max(rs(260, scale), avail - chrome);
 
@@ -289,7 +290,7 @@ export function careHubLayout(
   const MIN = {
     /** chip + temp + CTA sig‘ishi shart — aks holda tugma kesiladi. */
     promo: topInset + Math.max(rs(128, scale), Math.min(promoByWidth, rs(148, scale))),
-    featured: rs(128, scale),
+    featured: rs(width < 360 ? 108 : 122, scale),
     hubCard: rs(108, scale),
     ai: rs(44, scale),
   };
@@ -333,8 +334,12 @@ export function careHubLayout(
     aiH = grow(MIN.ai, MAX.ai);
   }
 
-  const featuredWCap = width < 360 ? rs(148, scale) : width < 400 ? rs(168, scale) : rs(188, scale);
-  const featuredW = clamp(Math.round(featuredH * 0.92), rs(128, scale), featuredWCap);
+  const featuredWCap = width < 360 ? rs(132, scale) : width < 400 ? rs(160, scale) : rs(188, scale);
+  const featuredW = clamp(
+    Math.round(featuredH * 0.92),
+    width < 360 ? rs(100, scale) : rs(118, scale),
+    featuredWCap,
+  );
   const sheetGap = rs(12, scale);
   const promoInner = Math.max(0, promoH - topInset);
   const narrow = width < 360;
@@ -352,6 +357,7 @@ export function careHubLayout(
     searchBlock,
     catBlock,
     weatherNudge,
+    promoTopGap,
     sheetTop,
     sheetGap,
     sheetH: reportHead + sheetTop + sheetGap + hubCardH + sheetGap + aiH + rs(8, scale),
@@ -364,6 +370,35 @@ export function careHubLayout(
       scale,
     ),
     promoTitleSize: rs(narrow ? 14 : promoInner >= rs(140, scale) ? 16 : 15, scale),
+    /** Hero ichidagi matn/tugma — banner balandligi bilan birga kichrayadi. */
+    promoUi: (() => {
+      const k = clamp(promoInner / 168, 0.58, 1);
+      return {
+        k,
+        back: clamp(Math.round(34 * k), 26, 34),
+        backIcon: clamp(Math.round(18 * k), 14, 18),
+        locIcon: clamp(Math.round(13 * k), 10, 13),
+        locFs: clamp(Math.round(11 * k), 9, 11),
+        locSubFs: clamp(Math.round(10 * k), 8, 10),
+        locPadV: clamp(Math.round(5 * k), 3, 5),
+        locPadH: clamp(Math.round(10 * k), 7, 10),
+        tempFs: clamp(
+          Math.round(
+            (promoInner >= rs(150, scale) ? 40 : promoInner >= rs(120, scale) ? 34 : 28) * k,
+          ),
+          18,
+          40,
+        ),
+        conditionFs: clamp(Math.round(15 * k), 11, 15),
+        hintFs: clamp(Math.round(12 * k), 9, 12),
+        btnFs: clamp(Math.round(13 * k), 10, 13),
+        btnArrow: clamp(Math.round(15 * k), 11, 15),
+        btnPadV: clamp(Math.round(9 * k), 5, 9),
+        btnPadH: clamp(Math.round(14 * k), 9, 14),
+        btnMinH: clamp(Math.round(36 * k), 26, 36),
+        gap: clamp(Math.round(8 * k), 4, 8),
+      };
+    })(),
     /** CTA uchun minimal joy; hint/2-qator title uchun boyroq. */
     promoShowCta: promoInner >= rs(120, scale),
     promoRich: promoInner >= rs(152, scale),
