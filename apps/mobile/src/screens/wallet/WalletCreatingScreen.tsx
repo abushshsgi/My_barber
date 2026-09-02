@@ -306,7 +306,7 @@ const styles = StyleSheet.create({
   sub: {
     fontSize: fontSize(14),
     lineHeight: fontSize(21),
-    color: "rgba(15,61,46,0.72)",
+    color: "rgba(17,17,17,0.62)",
     maxWidth: scale(340),
   },
   cta: {
