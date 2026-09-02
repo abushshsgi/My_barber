@@ -110,7 +110,24 @@ def _format_prefs_block(context: dict[str, Any] | None) -> str:
         lines.append(
             "- Maslahat jinsi: "
             + ("erkak" if gender == "male" else "ayol")
-            + " uslublari ustuvor."
+            + " uslublari va parvarishi ustuvor."
+        )
+    care_cond = str(context.get("care_condition") or "").strip()
+    care_tex = str(context.get("care_texture") or "").strip()
+    care_color = str(context.get("care_color_status") or "").strip()
+    if care_cond or care_tex or care_color:
+        lines.append(
+            "- Soch profili (parvarish): "
+            + ", ".join(
+                x
+                for x in (
+                    f"holat={care_cond}" if care_cond else "",
+                    f"tekstura={care_tex}" if care_tex else "",
+                    f"rang={care_color}" if care_color else "",
+                )
+                if x
+            )
+            + ". Mahsulot va parvarish maslahatini shunga moslang."
         )
     if is_voice_mode(context):
         lines.append(

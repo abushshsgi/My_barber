@@ -1,11 +1,13 @@
 import { Ionicons } from "@expo/vector-icons";
+import { CameraView, useCameraPermissions } from "expo-camera";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -36,6 +38,7 @@ import {
   pickProductLabelFromCamera,
   pickProductLabelFromGallery,
 } from "../../lib/product-label";
+import { toDataUrl } from "../../lib/selfie";
 import { writeAppShell, writeLastShellTab } from "../../lib/app-shell";
 import { useShellNavigation } from "../../lib/shell-nav";
 import type { MorphIngredientStackParamList } from "../../navigation/MorphIngredientStack";
@@ -49,24 +52,22 @@ import {
 } from "../../utils/responsive";
 
 type Props = NativeStackScreenProps<MorphIngredientStackParamList, "IngredientScan">;
-type QuizStep = 0 | 1 | 2;
-type Phase = "quiz" | "capture" | "analyzing" | "result";
+type Phase = "capture" | "analyzing" | "result";
 
 /** Care bilan bir xil — production oldidan false qiling. */
 const CARE_ACCESS_DEBUG = true;
 
-const CONDITION_OPTS: HairCondition[] = ["oily", "dry", "normal", "damaged"];
-const TEXTURE_OPTS: HairTexture[] = ["straight", "wavy", "curly"];
-const COLOR_OPTS: HairColorStatus[] = ["natural", "colored", "bleached"];
-
-const VERDICT_COLOR: Record<string, string> = {
-  good: "#6EE7B7",
-  caution: "#FCD34D",
-  bad: "#FB923C",
-  dangerous: "#737373",
-};
+function hasQuizFields(q: CareQuizAnswers | null | undefined): boolean {
+  return Boolean(q?.condition && q?.texture && q?.colorStatus);
+}
 
 function scoreTone(verdict: string, score: number): string {
+  const VERDICT_COLOR: Record<string, string> = {
+    good: "#6EE7B7",
+    caution: "#FCD34D",
+    bad: "#FB923C",
+    dangerous: "#F87171",
+  };
   if (VERDICT_COLOR[verdict]) return VERDICT_COLOR[verdict];
   if (score >= 70) return VERDICT_COLOR.good;
   if (score >= 45) return VERDICT_COLOR.caution;
@@ -78,15 +79,15 @@ export function MorphIngredientScreen({ navigation }: Props) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const { goMorph } = useShellNavigation();
+  const cameraRef = useRef<CameraView>(null);
+  const [camPerm, requestCamPerm] = useCameraPermissions();
 
   const [booting, setBooting] = useState(true);
   const [access, setAccess] = useState<{ allowed: boolean; detail?: string } | null>(null);
   const [quiz, setQuiz] = useState<CareQuizAnswers>(defaultQuiz());
-  const [quizStep, setQuizStep] = useState<QuizStep>(0);
-  const [forceQuiz, setForceQuiz] = useState(false);
   const [profileOk, setProfileOk] = useState(false);
-  const [saving, setSaving] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [capturing, setCapturing] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
   const [result, setResult] = useState<IngredientScanResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -96,15 +97,68 @@ export function MorphIngredientScreen({ navigation }: Props) {
   const phase: Phase = useMemo(() => {
     if (result) return "result";
     if (busy) return "analyzing";
-    if (forceQuiz || (!profileOk && !booting)) return "quiz";
     return "capture";
-  }, [result, busy, forceQuiz, profileOk, booting]);
+  }, [result, busy]);
 
   useEffect(() => {
-    // Tarkib faqat Morph shellda — MySaloon dock aralashib ketmasin.
     void writeAppShell("morph");
     void writeLastShellTab("morph", "MorphCare");
   }, []);
+
+  useEffect(() => {
+    if (Platform.OS === "web") return;
+    if (!camPerm?.granted) void requestCamPerm();
+  }, [camPerm?.granted, requestCamPerm]);
+
+  const syncProfile = useCallback(async (answers: CareQuizAnswers) => {
+    await saveCareQuiz(answers);
+    await updateHairCareProfile({
+      condition: answers.condition,
+      texture: answers.texture,
+      color_status: answers.colorStatus,
+      scalp:
+        answers.condition === "oily"
+          ? "oily"
+          : answers.condition === "dry" || answers.condition === "damaged"
+            ? "dry"
+            : "normal",
+    });
+    setQuiz(answers);
+    setProfileOk(true);
+  }, []);
+
+  const ensureHairProfile = useCallback(async () => {
+    if (profileOk && hasQuizFields(quiz)) return true;
+    const [saved, profile] = await Promise.all([
+      loadCareQuiz().catch(() => null),
+      fetchHairCareProfile().catch(() => null),
+    ]);
+    if (profile?.condition && profile?.texture && profile?.color_status) {
+      const next: CareQuizAnswers = {
+        condition: profile.condition as HairCondition,
+        texture: profile.texture as HairTexture,
+        colorStatus: profile.color_status as HairColorStatus,
+      };
+      await saveCareQuiz(next);
+      setQuiz(next);
+      setProfileOk(true);
+      if (!profile.complete) {
+        await updateHairCareProfile({
+          condition: next.condition,
+          texture: next.texture,
+          color_status: next.colorStatus,
+        }).catch(() => undefined);
+      }
+      return true;
+    }
+    if (hasQuizFields(saved)) {
+      await syncProfile(saved!);
+      return true;
+    }
+    // Parvarish onboardingdan o‘tmagan — default + backend sync (scan quiz so‘ralmaydi).
+    await syncProfile(defaultQuiz());
+    return true;
+  }, [profileOk, quiz, syncProfile]);
 
   const bootstrap = useCallback(async () => {
     setBooting(true);
@@ -114,52 +168,15 @@ export function MorphIngredientScreen({ navigation }: Props) {
         : await fetchCareAccess().catch(() => ({ allowed: false, detail: undefined }));
       setAccess(accessRes);
       if (!accessRes.allowed) return;
-
-      const [saved, profile] = await Promise.all([
-        loadCareQuiz(),
-        fetchHairCareProfile().catch(() => null),
-      ]);
-
-      if (profile?.complete && profile.condition && profile.texture && profile.color_status) {
-        setQuiz({
-          condition: profile.condition as HairCondition,
-          texture: profile.texture as HairTexture,
-          colorStatus: profile.color_status as HairColorStatus,
-        });
-        setProfileOk(true);
-      } else if (saved) {
-        setQuiz(saved);
-        setProfileOk(true);
-      } else {
-        setProfileOk(false);
-        setQuizStep(0);
-      }
+      await ensureHairProfile();
     } finally {
       setBooting(false);
     }
-  }, []);
+  }, [ensureHairProfile]);
 
   useEffect(() => {
     void bootstrap();
   }, [bootstrap]);
-
-  const finishQuiz = async () => {
-    setSaving(true);
-    try {
-      await saveCareQuiz(quiz);
-      await updateHairCareProfile({
-        condition: quiz.condition,
-        texture: quiz.texture,
-        color_status: quiz.colorStatus,
-      });
-      setProfileOk(true);
-      setForceQuiz(false);
-    } catch (e) {
-      Alert.alert(t("common.error"), e instanceof Error ? e.message : t("common.retry"));
-    } finally {
-      setSaving(false);
-    }
-  };
 
   const runScan = async (dataUrl: string) => {
     setBusy(true);
@@ -168,6 +185,7 @@ export function MorphIngredientScreen({ navigation }: Props) {
     setInMyProducts(false);
     setPreview(dataUrl);
     try {
+      await ensureHairProfile();
       const analysis = await scanIngredient(dataUrl);
       setResult(analysis);
       const pid = analysis.matched_product?.id ?? analysis.matched_product_id;
@@ -178,6 +196,48 @@ export function MorphIngredientScreen({ navigation }: Props) {
       Alert.alert(t("ingredient.badge"), msg);
     } finally {
       setBusy(false);
+    }
+  };
+
+  const captureFromCamera = async () => {
+    if (capturing || busy) return;
+    setCapturing(true);
+    setError(null);
+    try {
+      if (Platform.OS !== "web" && cameraRef.current && camPerm?.granted) {
+        const photo = await cameraRef.current.takePictureAsync({
+          quality: 0.85,
+          base64: true,
+          skipProcessing: false,
+        });
+        if (photo?.base64) {
+          const dataUrl = toDataUrl(photo.base64, "image/jpeg");
+          await runScan(dataUrl);
+          return;
+        }
+        if (photo?.uri) {
+          const res = await fetch(photo.uri);
+          const blob = await res.blob();
+          const dataUrl = await new Promise<string | null>((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () =>
+              resolve(typeof reader.result === "string" ? reader.result : null);
+            reader.onerror = () => resolve(null);
+            reader.readAsDataURL(blob);
+          });
+          if (dataUrl) {
+            await runScan(dataUrl);
+            return;
+          }
+        }
+      }
+      const uri = await pickProductLabelFromCamera();
+      if (uri) await runScan(uri);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : t("ingredient.scanFailed");
+      setError(msg);
+    } finally {
+      setCapturing(false);
     }
   };
 
@@ -218,12 +278,8 @@ export function MorphIngredientScreen({ navigation }: Props) {
 
   /** Tab ildizi — MySaloon’ga otib ketmasin; Parvarish (Morph) hubiga qaytamiz. */
   const leaveIngredient = useCallback(() => {
-    if (forceQuiz) {
-      setForceQuiz(false);
-      return;
-    }
     goMorph(navigation, "MorphCare");
-  }, [forceQuiz, navigation, goMorph]);
+  }, [navigation, goMorph]);
 
   if (booting) {
     return (
@@ -257,116 +313,6 @@ export function MorphIngredientScreen({ navigation }: Props) {
             }
           >
             <Text style={styles.primaryBtnText}>{t("care.seePlans")}</Text>
-          </Pressable>
-        </View>
-      </View>
-    );
-  }
-
-  if (phase === "quiz") {
-    const questions = [
-      {
-        title: t("care.quiz.conditionQ"),
-        options: CONDITION_OPTS,
-        value: quiz.condition,
-        onPick: (v: string) => setQuiz((q) => ({ ...q, condition: v as HairCondition })),
-        labelKey: "care.conditions",
-      },
-      {
-        title: t("care.quiz.textureQ"),
-        options: TEXTURE_OPTS,
-        value: quiz.texture,
-        onPick: (v: string) => setQuiz((q) => ({ ...q, texture: v as HairTexture })),
-        labelKey: "care.textures",
-      },
-      {
-        title: t("care.quiz.colorQ"),
-        options: COLOR_OPTS,
-        value: quiz.colorStatus,
-        onPick: (v: string) => setQuiz((q) => ({ ...q, colorStatus: v as HairColorStatus })),
-        labelKey: "care.colors",
-      },
-    ] as const;
-    const current = questions[quizStep];
-    const canNext = Boolean(current.value);
-    const progress = ((quizStep + 1) / 3) * 100;
-
-    return (
-      <View
-        style={[
-          styles.root,
-          {
-            paddingTop: insets.top + 12,
-            paddingBottom: insets.bottom + 16,
-            paddingHorizontal: 20,
-          },
-        ]}
-      >
-        <View style={styles.rowBetween}>
-          <Pressable
-            style={styles.iconBtn}
-            onPress={leaveIngredient}
-            accessibilityLabel={t("common.back")}
-          >
-            <Ionicons name="chevron-back" size={22} color="#fff" />
-          </Pressable>
-          <Text style={styles.badge}>{t("ingredient.badge")}</Text>
-          <View style={{ width: 40 }} />
-        </View>
-        <ScrollView
-          style={{ flex: 1 }}
-          contentContainerStyle={{ flexGrow: 1 }}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-        >
-          <Text style={styles.quizHint}>{t("ingredient.quizHint")}</Text>
-          <Text style={styles.h1}>{current.title}</Text>
-          <View style={styles.progressTrack}>
-            <View style={[styles.progressFill, { width: `${progress}%` }]} />
-          </View>
-          <View style={styles.quizOpts}>
-            {current.options.map((value) => {
-              const on = current.value === value;
-              return (
-                <Pressable
-                  key={value}
-                  style={[styles.opt, on && styles.optOn]}
-                  onPress={() => current.onPick(value)}
-                >
-                  <Text style={[styles.optText, on && styles.optTextOn]}>
-                    {t(`${current.labelKey}.${value}`)}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
-        </ScrollView>
-        <View style={styles.quizActions}>
-          {quizStep > 0 ? (
-            <Pressable
-              style={styles.secondaryBtn}
-              onPress={() => setQuizStep((s) => (s - 1) as QuizStep)}
-            >
-              <Text style={styles.secondaryBtnText}>{t("common.back")}</Text>
-            </Pressable>
-          ) : (
-            <View style={{ flex: 1 }} />
-          )}
-          <Pressable
-            style={[styles.primaryBtnFlex, (!canNext || saving) && styles.disabled]}
-            disabled={!canNext || saving}
-            onPress={() => {
-              if (quizStep === 2) void finishQuiz();
-              else setQuizStep((s) => (s + 1) as QuizStep);
-            }}
-          >
-            {saving ? (
-              <ActivityIndicator color="#000" />
-            ) : (
-              <Text style={styles.primaryBtnText}>
-                {quizStep === 2 ? t("common.save") : t("common.next")}
-              </Text>
-            )}
           </Pressable>
         </View>
       </View>
@@ -418,9 +364,8 @@ export function MorphIngredientScreen({ navigation }: Props) {
             <Pressable style={styles.iconBtn} onPress={resetScan}>
               <Ionicons name="chevron-back" size={22} color="#fff" />
             </Pressable>
-            <Pressable onPress={() => setForceQuiz(true)}>
-              <Text style={styles.link}>{t("care.quiz.retake")}</Text>
-            </Pressable>
+            <Text style={styles.badge}>{t("ingredient.badge")}</Text>
+            <View style={{ width: 40 }} />
           </View>
 
           <View style={styles.scoreBlock}>
@@ -558,7 +503,14 @@ export function MorphIngredientScreen({ navigation }: Props) {
 
   return (
     <View style={styles.scanRoot}>
-      {preview ? (
+      {Platform.OS !== "web" && camPerm?.granted ? (
+        <CameraView
+          ref={cameraRef}
+          style={StyleSheet.absoluteFill}
+          facing="back"
+          mode="picture"
+        />
+      ) : preview ? (
         <Image source={{ uri: preview }} style={StyleSheet.absoluteFill} contentFit="cover" />
       ) : (
         <View style={[StyleSheet.absoluteFill, styles.scanCamBg]} />
@@ -577,40 +529,44 @@ export function MorphIngredientScreen({ navigation }: Props) {
         <Ionicons name="close" size={22} color="#fff" />
       </Pressable>
       {error ? <Text style={[styles.scanError, { top: insets.top + 56 }]}>{error}</Text> : null}
-      <View style={[styles.scanSheet, { paddingBottom: Math.max(insets.bottom, 16) + 8 }]}>
+      <View style={[styles.scanSheet, { paddingBottom: Math.max(insets.bottom, 16) + 12 }]}>
         <Text style={styles.sheetTitle}>{t("ingredient.title")}</Text>
         <Text style={styles.sheetSub}>{t("ingredient.subtitle")}</Text>
         <Pressable
-          style={styles.sheetNext}
+          style={[styles.captureBtn, (capturing || busy) && styles.disabled]}
+          disabled={capturing || busy}
+          onPress={() => void captureFromCamera()}
+          accessibilityLabel={t("ingredient.capture", { defaultValue: "Rasmga olish" })}
+        >
+          {capturing ? (
+            <ActivityIndicator color="#111" />
+          ) : (
+            <>
+              <Ionicons name="camera" size={22} color="#111" />
+              <Text style={styles.captureBtnText}>
+                {t("ingredient.capture", { defaultValue: "Rasmga olish" })}
+              </Text>
+            </>
+          )}
+        </Pressable>
+        <Pressable
+          style={styles.galleryBtn}
           onPress={() =>
-            void pickProductLabelFromCamera().then((uri) => {
+            void pickProductLabelFromGallery().then((uri) => {
               if (uri) void runScan(uri);
             })
           }
         >
-          <Text style={styles.sheetNextText}>{t("common.next")}</Text>
+          <Ionicons name="images-outline" size={18} color="#FFF" />
+          <Text style={styles.galleryBtnText}>{t("ingredient.gallery")}</Text>
         </Pressable>
-        <View style={styles.sheetRow}>
-          <Pressable
-            onPress={() =>
-              void pickProductLabelFromGallery().then((uri) => {
-                if (uri) void runScan(uri);
-              })
-            }
-          >
-            <Text style={styles.sheetLink}>{t("ingredient.gallery")}</Text>
-          </Pressable>
-          <Pressable onPress={() => setForceQuiz(true)}>
-            <Text style={styles.sheetLink}>{t("ingredient.editProfile")}</Text>
-          </Pressable>
-        </View>
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: "#FAFAFA" },
+  root: { flex: 1, backgroundColor: "#111111" },
   center: { alignItems: "center", justifyContent: "center" },
   topGlow: { position: "absolute", left: 0, right: 0, top: 0, height: verticalScale(220) },
   rowBetween: {
@@ -765,26 +721,60 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: "#fff",
-    borderTopLeftRadius: moderateScale(32),
-    borderTopRightRadius: moderateScale(32),
+    backgroundColor: "#171717",
+    borderTopLeftRadius: moderateScale(28),
+    borderTopRightRadius: moderateScale(28),
     paddingHorizontal: scale(24),
-    paddingTop: verticalScale(28),
+    paddingTop: verticalScale(22),
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(255,255,255,0.08)",
   },
   sheetTitle: {
     ...morphFont,
-    fontSize: fontSize(23),
+    fontSize: fontSize(22),
     fontWeight: "700",
-    color: "#111",
+    color: "#FFF",
     letterSpacing: -0.4,
     lineHeight: fontSize(28),
   },
   sheetSub: {
     ...morphFont,
-    marginTop: verticalScale(10),
-    fontSize: fontSize(15),
-    lineHeight: fontSize(22),
-    color: "#757575",
+    marginTop: verticalScale(8),
+    fontSize: fontSize(14),
+    lineHeight: fontSize(20),
+    color: "rgba(255,255,255,0.55)",
+  },
+  captureBtn: {
+    marginTop: verticalScale(18),
+    height: verticalScale(54),
+    borderRadius: 999,
+    backgroundColor: "#FFFFFF",
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    gap: moderateScale(10),
+  },
+  captureBtnText: {
+    ...morphFont,
+    fontSize: fontSize(16),
+    fontWeight: "700",
+    color: "#111111",
+  },
+  galleryBtn: {
+    marginTop: verticalScale(12),
+    height: verticalScale(46),
+    borderRadius: 999,
+    backgroundColor: "rgba(255,255,255,0.08)",
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    gap: moderateScale(8),
+  },
+  galleryBtnText: {
+    ...morphFont,
+    fontSize: fontSize(14),
+    fontWeight: "600",
+    color: "#FFF",
   },
   sheetNext: {
     marginTop: verticalScale(28),
@@ -801,7 +791,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: scale(4),
   },
-  sheetLink: { ...morphFont, fontSize: fontSize(13), fontWeight: "500", color: "#757575", paddingVertical: verticalScale(8) },
+  sheetLink: { ...morphFont, fontSize: fontSize(13), fontWeight: "500", color: "rgba(255,255,255,0.55)", paddingVertical: verticalScale(8) },
   corner: {
     position: "absolute",
     width: scale(36),

@@ -35,15 +35,29 @@ class HairProfileLike(Protocol):
     def profile_label(self) -> str: ...
 
 
-def _build_ingredient_prompt(profile: HairProfileLike, catalog_block: str) -> str:
-    profile_block = profile.profile_label()
+def _build_ingredient_prompt(
+    profile: HairProfileLike,
+    catalog_block: str,
+    gender: str = "",
+) -> str:
+    try:
+        profile_block = profile.profile_label(gender)  # type: ignore[call-arg]
+    except TypeError:
+        profile_block = profile.profile_label()
+    g = (gender or "").strip().lower()
+    gender_hint = ""
+    if g in ("male", "female"):
+        gender_hint = (
+            f"\nUSER GENDER: {g}. Tailor fit_uz and advice for "
+            f"{'men' if g == 'male' else 'women'}'s haircare products and routines.\n"
+        )
     return f"""You are an expert trichologist and cosmetic chemist for HAIR products
 (shampoo, balsam/conditioner, mask, oil, spray, scalp treatment).
 Analyze the attached image of the product label / INCI ingredient list.
 
 USER HAIR PROFILE:
 {profile_block}
-
+{gender_hint}
 ADMIN_CARE_CATALOG (MyBarber admin-published products — authoritative for match & fit):
 {catalog_block}
 
@@ -235,13 +249,14 @@ def analyze_ingredient_from_data_url(
     profile: HairProfileLike,
     *,
     catalog_block: str | None = None,
+    gender: str = "",
 ) -> dict[str, Any]:
     if not profile.is_complete:
         raise AiStyleError("Avval soch profilingizni to'ldiring.", 400)
 
     mime, image_bytes = parse_data_url(data_url)
     catalog = catalog_block if catalog_block is not None else build_care_catalog_context()
-    prompt = _build_ingredient_prompt(profile, catalog)
+    prompt = _build_ingredient_prompt(profile, catalog, gender=gender)
     data, usage = _gemini_vision_json(prompt, mime, image_bytes)
     if not isinstance(data, dict):
         raise AiStyleError("AI javobi noto'g'ri formatda.", 502)

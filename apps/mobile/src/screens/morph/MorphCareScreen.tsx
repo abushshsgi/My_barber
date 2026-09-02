@@ -562,7 +562,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
       if (!accessRes.allowed) return;
 
       const profile = await fetchHairCareProfile().catch(() => null);
-      if (profile?.complete && profile.condition && profile.texture && profile.color_status) {
+      if (profile?.condition && profile?.texture && profile?.color_status) {
         const next: CareQuizAnswers = {
           condition: profile.condition as HairCondition,
           texture: profile.texture as HairTexture,
@@ -570,6 +570,13 @@ export function MorphCareScreen({ navigation, route }: Props) {
         };
         setQuiz(next);
         void saveCareQuiz(next);
+        if (!profile.complete) {
+          void updateHairCareProfile({
+            condition: next.condition,
+            texture: next.texture,
+            color_status: next.colorStatus,
+          }).catch(() => undefined);
+        }
         setStep("plan");
         setViewMode("hub");
       }
@@ -589,7 +596,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
     setSaving(true);
     try {
       await saveCareQuiz(quiz);
-      void updateHairCareProfile({
+      await updateHairCareProfile({
         condition: quiz.condition,
         texture: quiz.texture,
         color_status: quiz.colorStatus,
@@ -599,7 +606,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
             : quiz.condition === "dry" || quiz.condition === "damaged"
               ? "dry"
               : "normal",
-      }).catch(() => undefined);
+      });
       void markCareOnboardingSeen();
       setStep("plan");
       setViewMode("hub");

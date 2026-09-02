@@ -87,12 +87,20 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       "expo-web-browser",
       "expo-secure-store",
       [
+        "expo-camera",
+        {
+          cameraPermission:
+            "Mahsulot tarkibini skan qilish uchun kamera kerak.",
+          recordAudioAndroid: false,
+        },
+      ],
+      [
         "expo-image-picker",
         {
           photosPermission:
             "Try-on va chek yuklash uchun galereyaga ruxsat kerak.",
           cameraPermission:
-            "Yuz skani uchun kameraga ruxsat kerak.",
+            "Yuz skani va mahsulot skani uchun kameraga ruxsat kerak.",
         },
       ],
       [

@@ -585,7 +585,10 @@ class AiIngredientScanView(UnthrottledAPIView):
         try:
             catalog_block = build_care_catalog_context()
             result = analyze_ingredient_from_data_url(
-                str(image), profile, catalog_block=catalog_block
+                str(image),
+                profile,
+                catalog_block=catalog_block,
+                gender=(getattr(user, "gender", None) or "").strip().lower(),
             )
             usage = result.pop("_usage", None) or {}
             analysis = result.get("product_analysis") if isinstance(result.get("product_analysis"), dict) else {}
@@ -824,6 +827,16 @@ class AiMorphChatView(UnthrottledAPIView):
                 context = {}
             if not str(context.get("advice_gender") or "").strip():
                 context["advice_gender"] = user_gender
+        # Soch parvarish profili — chat LLM ga
+        hair = HairCareProfile.objects.filter(user=user).first()
+        if hair and hair.is_complete:
+            if context is None:
+                context = {}
+            context.setdefault("care_condition", hair.condition)
+            context.setdefault("care_texture", hair.texture)
+            context.setdefault("care_color_status", hair.color_status)
+            if hair.scalp:
+                context.setdefault("care_scalp", hair.scalp)
         from ai.chat_prompts import is_voice_mode
 
         if is_voice_mode(context) and not can_use_morph_voice(user):

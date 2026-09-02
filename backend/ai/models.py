@@ -650,16 +650,21 @@ class HairCareProfile(models.Model):
 
     @property
     def is_complete(self) -> bool:
-        return bool(self.condition and self.texture and self.color_status and self.completed_at)
+        return bool(self.condition and self.texture and self.color_status)
 
-    def profile_label(self) -> str:
+    def profile_label(self, gender: str = "") -> str:
         cond = self.get_condition_display() if self.condition else "Unknown"
         tex = self.get_texture_display() if self.texture else "Unknown"
         color = self.get_color_status_display() if self.color_status else "Unknown"
         scalp = self.get_scalp_display() if self.scalp else "Unknown"
         raw_concerns = self.concerns if isinstance(self.concerns, list) else []
         concerns = ", ".join(str(x) for x in raw_concerns if str(x).strip()) or "none"
+        g = (gender or "").strip().lower()
+        gender_line = ""
+        if g in ("male", "female"):
+            gender_line = f"User gender: {'male' if g == 'male' else 'female'}\n"
         return (
+            f"{gender_line}"
             f"Hair condition: {cond}\n"
             f"Hair texture: {tex}\n"
             f"Color status: {color}\n"
