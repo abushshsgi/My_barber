@@ -12,7 +12,6 @@ import {
   Platform,
   Pressable,
   StyleSheet,
-  Text,
   UIManager,
   View,
 } from "react-native";
@@ -100,10 +99,8 @@ const CENTER_BTN = scale(IS_SMALL_DEVICE ? 34 : 36);
 const TAB_ICON = scale(22);
 const SWITCH_MIN_MS = 0;
 
-/** Material-style active pill (rasmdagi lavender). */
-const PILL_BG = "#EDE7F6";
-const PILL_FG = "#4527A0";
-const PILL_BG_MORPH = "rgba(255,255,255,0.18)";
+/** Active icon color only — pill yo‘q. */
+const PILL_FG = "#111111";
 const PILL_FG_MORPH = "#FFFFFF";
 
 /**
@@ -226,6 +223,10 @@ function CustomTabBar({ state, navigation, descriptors }: BottomTabBarProps) {
   useEffect(() => {
     if (Platform.OS === "android") {
       try {
+        const navBg = morphDock ? "#171717" : "#FFFFFF";
+        if (NavigationBar && typeof NavigationBar.setBackgroundColorAsync === "function") {
+          void NavigationBar.setBackgroundColorAsync(navBg);
+        }
         if (NavigationBar && typeof NavigationBar.setButtonStyleAsync === "function") {
           void NavigationBar.setButtonStyleAsync(morphDock ? "light" : "dark");
         }
@@ -282,6 +283,13 @@ function CustomTabBar({ state, navigation, descriptors }: BottomTabBarProps) {
     if (!ready || switchingRef.current) return;
 
     if (isMysaloonExclusiveTab(activeName)) {
+      // Morph shellda back orqali Home/Map ga tushib qolmasin.
+      if (shell === "morph") {
+        void readLastMorphContentTab().then((target) => {
+          navigateToShellTab(navigation, target);
+        });
+        return;
+      }
       if (shell !== "mysaloon") setShell("mysaloon");
       setDisplayShell("mysaloon");
       rememberTab("mysaloon", activeName!);
@@ -299,7 +307,7 @@ function CustomTabBar({ state, navigation, descriptors }: BottomTabBarProps) {
       setDisplayShell(shell);
       rememberTab(shell, "Profile");
     }
-  }, [activeName, ready, rememberTab, setShell, shell]);
+  }, [activeName, ready, rememberTab, setShell, shell, navigation]);
 
   // Ichki stack (Results/Paywall/Login…) — faqat asosiy tablarda dock.
   const nestHidden =
@@ -427,9 +435,8 @@ function CustomTabBar({ state, navigation, descriptors }: BottomTabBarProps) {
 
   const visibleLeft = displayShell === "morph" ? MORPH_LEFT : MYSALOON_LEFT;
   const visibleRight = displayShell === "morph" ? MORPH_RIGHT : MYSALOON_RIGHT;
-  const pillBg = morphDock ? PILL_BG_MORPH : PILL_BG;
   const pillFg = morphDock ? PILL_FG_MORPH : PILL_FG;
-  const idleIcon = morphDock ? "rgba(255,255,255,0.72)" : "#1A1A1A";
+  const idleIcon = morphDock ? "rgba(255,255,255,0.55)" : "#9CA3AF";
 
   const renderSideTab = (tab: TabDef) => {
     const focused = activeName === tab.name;
@@ -440,7 +447,7 @@ function CustomTabBar({ state, navigation, descriptors }: BottomTabBarProps) {
         onPress={() => pressTab(tab.name)}
         style={styles.tab}
         android_ripple={{
-          color: morphDock ? "rgba(255,255,255,0.12)" : "rgba(69,39,160,0.12)",
+          color: morphDock ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.08)",
           borderless: true,
           radius: 28,
         }}
@@ -448,24 +455,11 @@ function CustomTabBar({ state, navigation, descriptors }: BottomTabBarProps) {
         accessibilityState={{ selected: focused }}
         accessibilityLabel={label}
       >
-        <View
-          style={[
-            styles.pill,
-            focused && { backgroundColor: pillBg },
-            !focused && styles.pillIdle,
-          ]}
-        >
-          <Ionicons
-            name={focused ? tab.iconOn : tab.icon}
-            size={TAB_ICON}
-            color={focused ? pillFg : idleIcon}
-          />
-          {focused ? (
-            <Text style={[styles.pillLabel, { color: pillFg }]} numberOfLines={1}>
-              {label}
-            </Text>
-          ) : null}
-        </View>
+        <Ionicons
+          name={focused ? tab.iconOn : tab.icon}
+          size={TAB_ICON}
+          color={focused ? pillFg : idleIcon}
+        />
       </Pressable>
     );
   };
@@ -474,7 +468,11 @@ function CustomTabBar({ state, navigation, descriptors }: BottomTabBarProps) {
 
   return (
     <View
-      style={[styles.dockOuter, morphDock && styles.dockOuterMorph, { paddingBottom: bottomPad }]}
+      style={[
+        styles.dockOuter,
+        morphDock ? styles.dockOuterMorph : styles.dockOuterLight,
+        { paddingBottom: bottomPad },
+      ]}
       pointerEvents="box-none"
     >
       <View style={[styles.dock, morphDock && styles.dockMorph]}>
@@ -550,6 +548,7 @@ function RootTabsInner() {
           <Tab.Navigator
             initialRouteName={shell === "mysaloon" ? "Home" : "MorphTryOn"}
             tabBar={(props) => <CustomTabBar {...props} />}
+            backBehavior="none"
             screenOptions={{
               headerShown: false,
               lazy: false,
@@ -618,53 +617,40 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    paddingHorizontal: scale(10),
-    paddingTop: verticalScale(4),
-    backgroundColor: "transparent",
+    paddingHorizontal: 0,
+    paddingTop: 0,
+    backgroundColor: "#FFFFFF",
+  },
+  dockOuterLight: {
+    backgroundColor: "#FFFFFF",
   },
   dockOuterMorph: {
-    paddingHorizontal: scale(12),
-    alignItems: "center",
+    paddingHorizontal: 0,
+    alignItems: "stretch",
+    backgroundColor: "#171717",
   },
   dock: {
-    minHeight: verticalScale(58),
-    borderRadius: moderateScale(22),
+    minHeight: verticalScale(52),
+    borderRadius: 0,
     backgroundColor: "#FFFFFF",
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(0,0,0,0.06)",
+    borderWidth: 0,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: "rgba(0,0,0,0.08)",
     justifyContent: "center",
-    paddingBottom: verticalScale(6),
-    paddingTop: verticalScale(6),
-    ...Platform.select({
-      web: { boxShadow: "0 6px 20px rgba(0,0,0,0.10)" },
-      default: {
-        shadowColor: "#000",
-        shadowOpacity: 0.10,
-        shadowRadius: 14,
-        shadowOffset: { width: 0, height: 4 },
-        elevation: 12,
-      },
-    }),
+    paddingBottom: verticalScale(4),
+    paddingTop: verticalScale(8),
   },
   dockMorph: {
     width: "100%",
-    minHeight: verticalScale(58),
-    borderRadius: moderateScale(22),
+    minHeight: verticalScale(52),
+    borderRadius: 0,
     backgroundColor: "#171717",
     borderWidth: 0,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: "rgba(255,255,255,0.08)",
     justifyContent: "center",
-    paddingBottom: verticalScale(6),
-    paddingTop: verticalScale(6),
-    ...Platform.select({
-      web: { boxShadow: "0 8px 24px rgba(0,0,0,0.28)" },
-      default: {
-        shadowColor: "#000",
-        shadowOpacity: 0.28,
-        shadowRadius: 16,
-        shadowOffset: { width: 0, height: 6 },
-        elevation: 14,
-      },
-    }),
+    paddingBottom: verticalScale(4),
+    paddingTop: verticalScale(8),
   },
   sidesRow: {
     flexDirection: "row",
@@ -690,16 +676,16 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     minWidth: 0,
     paddingHorizontal: scale(1),
+    minHeight: scale(40),
   },
   pill: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: scale(6),
     minHeight: scale(36),
-    paddingHorizontal: scale(12),
+    paddingHorizontal: scale(8),
     paddingVertical: verticalScale(6),
-    borderRadius: moderateScale(20),
+    borderRadius: 0,
     maxWidth: "100%",
   },
   pillIdle: {

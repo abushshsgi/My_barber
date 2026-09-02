@@ -56,7 +56,7 @@ import {
   removeMyProduct,
   type MyCareProduct,
 } from "../../lib/morph-my-products";
-import { careHubLayout, weatherHeroImage } from "../../lib/weather-care-tips";
+import { careHubLayout, weatherLocationHeroImage } from "../../lib/weather-care-tips";
 import type { MorphCareStackParamList } from "../../navigation/MorphCareStack";
 import { useShellNavigation } from "../../lib/shell-nav";
 import { morphFont } from "../../theme/morph-font";
@@ -215,8 +215,8 @@ export function MorphCareScreen({ navigation, route }: Props) {
   const [selectedDayIdx, setSelectedDayIdx] = useState(0);
   const [addToast, setAddToast] = useState<{ title: string; image: string } | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
-  /** Hubda pill tab ko‘rinadi; quiz/search/ichki rejimlarda yashiriladi. */
-  useHideTabBarWhen(viewMode !== "hub" || searchOpen || step === "boot");
+  /** Hubda tab yashirin; quiz/search ham. */
+  useHideTabBarWhen(viewMode === "hub" || searchOpen || step === "boot");
   const [searchQuery, setSearchQuery] = useState("");
   const [previewId, setPreviewId] = useState<number | null>(null);
   const [previewVisible, setPreviewVisible] = useState(false);
@@ -244,7 +244,11 @@ export function MorphCareScreen({ navigation, route }: Props) {
     weather?.current?.temperature_c != null
       ? `${Math.round(weather.current.temperature_c)}°`
       : "—";
-  const weatherImg = weatherHeroImage(weatherKey);
+  const weatherImg = weatherLocationHeroImage(
+    weather?.location_region,
+    weather?.location_place || weather?.location_label,
+    weatherKey,
+  );
 
   /** Search sheet — klaviatura va safe area ustida, overshoot yo‘q. */
   const keyboardCover = useMemo(() => {
@@ -388,11 +392,8 @@ export function MorphCareScreen({ navigation, route }: Props) {
       navigation.goBack();
       return;
     }
-    if (route.params?.returnTo) {
-      goMorph(navigation, route.params.returnTo);
-    } else {
-      goMorph(navigation, "MorphTryOn");
-    }
+    // MySaloon Home ga otmasin — Morph ichida qoladi.
+    goMorph(navigation, route.params?.returnTo || "MorphTryOn");
   }, [viewMode, step, navigation, route.params, goMorph]);
 
   const dayRows = weather?.days?.length ? weather.days.slice(0, 7) : buildFallbackDays();
@@ -1056,7 +1057,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
                     {
                       width: hubLayout.promoUi.back,
                       height: hubLayout.promoUi.back,
-                      borderRadius: hubLayout.promoUi.back / 2,
+                      borderRadius: moderateScale(10),
                     },
                   ]}
                   onPress={handleBack}
@@ -1064,7 +1065,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
                   hitSlop={8}
                 >
                   <Ionicons
-                    name="chevron-back"
+                    name="arrow-back"
                     size={hubLayout.promoUi.backIcon}
                     color="#FFFFFF"
                   />
@@ -1481,14 +1482,6 @@ export function MorphCareScreen({ navigation, route }: Props) {
 
                 <View style={[styles.hubCards, { height: hubLayout.hubCardH }]}>
                   <Pressable style={styles.hubCard} onPress={openParvarish}>
-                    <Image
-                      source={{
-                        uri: "https://images.unsplash.com/photo-1522338242992-e1a639acd9c4?auto=format&fit=crop&w=280&q=80",
-                      }}
-                      style={styles.hubCardArt}
-                      contentFit="cover"
-                      cachePolicy="memory-disk"
-                    />
                     <View style={styles.hubCardBody}>
                       <View style={styles.hubCardHead}>
                         <View style={styles.hubCardIconLg}>
@@ -1515,14 +1508,6 @@ export function MorphCareScreen({ navigation, route }: Props) {
                   </Pressable>
 
                   <Pressable style={styles.hubCard} onPress={openTarkib}>
-                    <Image
-                      source={{
-                        uri: "https://images.unsplash.com/photo-1556228578-0d85b1a4d571?auto=format&fit=crop&w=280&q=80",
-                      }}
-                      style={styles.hubCardArt}
-                      contentFit="cover"
-                      cachePolicy="memory-disk"
-                    />
                     <View style={styles.hubCardBody}>
                       <View style={styles.hubCardHead}>
                         <View style={styles.hubCardIconLg}>
@@ -1979,12 +1964,12 @@ const styles = StyleSheet.create({
   promoBackBtn: {
     width: scale(34),
     height: scale(34),
-    borderRadius: moderateScale(17),
+    borderRadius: moderateScale(10),
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(0,0,0,0.35)",
+    backgroundColor: "rgba(0,0,0,0.45)",
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(255,255,255,0.22)",
+    borderColor: "rgba(255,255,255,0.28)",
   },
   promoLocBadge: {
     flexShrink: 1,
@@ -2202,8 +2187,8 @@ const styles = StyleSheet.create({
   },
   searchSection: {
     paddingHorizontal: scale(16),
-    marginTop: verticalScale(4),
-    marginBottom: 0,
+    marginTop: verticalScale(10),
+    marginBottom: verticalScale(12),
   },
   searchBar: {
     flexDirection: "row",
@@ -2880,7 +2865,7 @@ const styles = StyleSheet.create({
     paddingBottom: verticalScale(8),
     gap: moderateScale(4),
     zIndex: 1,
-    paddingRight: scale(58),
+    paddingRight: scale(10),
     justifyContent: "flex-start",
     alignItems: "flex-start",
   },

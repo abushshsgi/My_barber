@@ -32,6 +32,37 @@ export function weatherHeroImage(key: WeatherConditionKey | undefined): string {
   }
 }
 
+/** Joylashuv (viloyat/shahar) bo‘yicha hero — topilmasa weather holatiga qaytadi. */
+export function weatherLocationHeroImage(
+  region?: string | null,
+  place?: string | null,
+  condition?: WeatherConditionKey,
+): string {
+  const hay = `${region || ""} ${place || ""}`.toLowerCase();
+  if (/toshkent|tashkent/.test(hay)) {
+    return "https://images.unsplash.com/photo-1565008576549-57569a49371d?auto=format&fit=crop&w=1400&q=80";
+  }
+  if (/samarqand|samarkand/.test(hay)) {
+    return "https://images.unsplash.com/photo-1548013146-72479768bada?auto=format&fit=crop&w=1400&q=80";
+  }
+  if (/buxoro|bukhara/.test(hay)) {
+    return "https://images.unsplash.com/photo-1596306499312-7e0c7b5f0c0b?auto=format&fit=crop&w=1400&q=80";
+  }
+  if (/andijon|andijan/.test(hay)) {
+    return "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=1400&q=80";
+  }
+  if (/namangan/.test(hay)) {
+    return "https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=1400&q=80";
+  }
+  if (/farg.?ona|fergana/.test(hay)) {
+    return "https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?auto=format&fit=crop&w=1400&q=80";
+  }
+  if (/xorazm|khiva|xiva/.test(hay)) {
+    return "https://images.unsplash.com/photo-1587974928442-77dc3e0dba72?auto=format&fit=crop&w=1400&q=80";
+  }
+  return weatherHeroImage(condition);
+}
+
 export type ProductWeatherTip = {
   productId: number;
   name: string;
@@ -262,8 +293,8 @@ export function careHubLayout(
 ) {
   /** Window o‘lchami o‘zgaganda (web / rotate) qayta hisoblanadi. */
   const scale = hubLayoutScale(width, height);
-  /** Floating tab dock + Home Indicator. */
-  const dockClearance = Math.max(bottomInset, 10) + 64;
+  /** Floating tab dock yo‘q (hubda yashirin) — faqat home indicator. */
+  const dockClearance = Math.max(bottomInset, 12) + 8;
   const avail = Math.max(360, height - dockClearance);
 
   const searchBlock = rs(52, scale);
@@ -272,15 +303,17 @@ export function careHubLayout(
   const weatherNudge = 8;
   const promoTopGap = rs(12, scale);
   const sheetTop = rs(14, scale);
-  const gaps = rs(16, scale) + weatherNudge;
+  /** Search ↔ category orasidagi bo‘shliq. */
+  const searchCatGap = rs(14, scale);
+  const gaps = rs(16, scale) + weatherNudge + searchCatGap;
   const chrome = searchBlock + catBlock + reportHead + gaps + sheetTop + promoTopGap;
 
   const remain = Math.max(rs(260, scale), avail - chrome);
 
   const hPad = width < 360 ? 12 : width < 400 ? rs(14, scale) : rs(16, scale);
   const promoW = Math.max(240, width - 2 * hPad);
-  /** Home banner bilan bir xil ~2.15:1 — kenglikka mos hero balandligi. */
-  const PROMO_ASPECT = 2.15;
+  /** Home banner bilan bir xil ~2.0:1 — kenglikka mos hero balandligi. */
+  const PROMO_ASPECT = 2.0;
   const promoByWidth = Math.round(promoW / PROMO_ASPECT);
 
   /**
@@ -289,18 +322,18 @@ export function careHubLayout(
    */
   const MIN = {
     /** chip + temp + CTA sig‘ishi shart — aks holda tugma kesiladi. */
-    promo: Math.max(rs(128, scale), Math.min(promoByWidth, rs(148, scale))),
-    featured: rs(width < 360 ? 108 : 122, scale),
+    promo: Math.max(rs(140, scale), Math.min(promoByWidth, rs(168, scale))),
+    featured: rs(width < 360 ? 96 : 108, scale),
     hubCard: rs(108, scale),
     ai: rs(44, scale),
   };
   const MAX = {
     promo: clamp(
-      Math.max(rs(148, scale), promoByWidth),
-      rs(140, scale),
-      Math.min(rs(210, scale), Math.round(height * 0.28)),
+      Math.max(rs(160, scale), promoByWidth),
+      rs(150, scale),
+      Math.min(rs(220, scale), Math.round(height * 0.30)),
     ),
-    featured: rs(196, scale),
+    featured: rs(168, scale),
     hubCard: rs(148, scale),
     ai: rs(54, scale),
   };
@@ -332,10 +365,10 @@ export function careHubLayout(
     aiH = grow(MIN.ai, MAX.ai);
   }
 
-  const featuredWCap = width < 360 ? rs(132, scale) : width < 400 ? rs(160, scale) : rs(188, scale);
+  const featuredWCap = width < 360 ? rs(118, scale) : width < 400 ? rs(140, scale) : rs(158, scale);
   const featuredW = clamp(
-    Math.round(featuredH * 0.92),
-    width < 360 ? rs(100, scale) : rs(118, scale),
+    Math.round(featuredH * 0.86),
+    width < 360 ? rs(92, scale) : rs(108, scale),
     featuredWCap,
   );
   const sheetGap = rs(12, scale);
@@ -355,6 +388,7 @@ export function careHubLayout(
     searchBlock,
     catBlock,
     weatherNudge,
+    searchCatGap,
     promoTopGap,
     sheetTop,
     sheetGap,

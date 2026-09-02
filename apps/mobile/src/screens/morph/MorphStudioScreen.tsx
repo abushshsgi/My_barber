@@ -431,7 +431,7 @@ function ToolChip({
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: "#FAFAFA" },
+  root: { flex: 1, backgroundColor: "#111111" },
   topBar: {
     flexDirection: "row",
     alignItems: "center",

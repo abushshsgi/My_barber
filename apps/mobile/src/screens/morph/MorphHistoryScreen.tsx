@@ -346,7 +346,7 @@ export function MorphHistoryScreen({ navigation, route }: Props) {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: "#FAFAFA" },
+  root: { flex: 1, backgroundColor: "#111111" },
   topBar: {
     flexDirection: "row",
     alignItems: "center",
@@ -442,7 +442,7 @@ const styles = StyleSheet.create({
 
   detailRoot: {
     flex: 1,
-    backgroundColor: "#FAFAFA",
+    backgroundColor: "#111111",
   },
   detailTop: {
     flexDirection: "row",

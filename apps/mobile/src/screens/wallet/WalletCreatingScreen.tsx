@@ -33,11 +33,11 @@ type Props = {
   onGetStarted?: () => void;
 };
 
-const BG = "#F3F6F0";
-const INK = "#0F3D2E";
-const GREEN = "#1A5C45";
-const CARD = "#C8E06A";
-const CARD_BACK = "#1B3A2F";
+const BG = "#FAFAFA";
+const INK = "#111111";
+const GREEN = "#111111";
+const CARD = "#E8E8E8";
+const CARD_BACK = "#2A2A2A";
 
 /** Birinchi kirish — yashil kartali onboarding + hamyon yaratish. */
 export function WalletCreatingScreen({
@@ -100,7 +100,7 @@ export function WalletCreatingScreen({
         <View style={styles.cardBack} />
         <Animated.View style={[styles.cardFrontWrap, cardAnim]}>
           <LinearGradient
-            colors={[CARD, "#B5D45A"]}
+            colors={[CARD, "#D4D4D4"]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.cardFront}
@@ -222,7 +222,7 @@ const styles = StyleSheet.create({
     borderRadius: moderateScale(22),
     padding: moderateScale(22),
     justifyContent: "space-between",
-    shadowColor: "#0F3D2E",
+    shadowColor: "#111111",
     shadowOpacity: 0.22,
     shadowRadius: 18,
     shadowOffset: { width: 0, height: 10 },
@@ -236,7 +236,7 @@ const styles = StyleSheet.create({
   balLabel: {
     fontSize: fontSize(11),
     fontWeight: "600",
-    color: "rgba(15,61,46,0.65)",
+    color: "rgba(17,17,17,0.55)",
   },
   balValue: {
     marginTop: verticalScale(4),
@@ -249,9 +249,9 @@ const styles = StyleSheet.create({
     width: scale(36),
     height: verticalScale(26),
     borderRadius: moderateScale(5),
-    backgroundColor: "#D4B06A",
+    backgroundColor: "#C4C4C4",
     borderWidth: 1,
-    borderColor: "rgba(15,61,46,0.2)",
+    borderColor: "rgba(17,17,17,0.2)",
   },
   cardNumber: {
     fontSize: fontSize(16),
@@ -267,7 +267,7 @@ const styles = StyleSheet.create({
   holderLabel: {
     fontSize: fontSize(10),
     fontWeight: "600",
-    color: "rgba(15,61,46,0.55)",
+    color: "rgba(17,17,17,0.55)",
     letterSpacing: 0.4,
   },
   holderName: {

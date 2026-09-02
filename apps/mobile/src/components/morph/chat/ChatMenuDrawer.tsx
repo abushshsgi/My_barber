@@ -23,13 +23,22 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { MorphChatThread } from "../../../hooks/useMorphChat";
 
 import { morphFont } from "../../../theme/morph-font";
-import { SOFT_PAPER } from "../../../theme/morph-appearance";
 import {
   fontSize,
   moderateScale,
   scale,
   verticalScale,
 } from "../../../utils/responsive";
+
+const MENU = {
+  bg: "#171717",
+  card: "#222222",
+  line: "rgba(255,255,255,0.1)",
+  fg: "#FFFFFF",
+  muted: "rgba(255,255,255,0.5)",
+  soft: "#2A2A2A",
+  track: "rgba(255,255,255,0.12)",
+} as const;
 
 type Props = {
   visible: boolean;
@@ -164,7 +173,7 @@ export function ChatMenuDrawer({
               accessibilityRole="button"
               accessibilityLabel="Close"
             >
-              <Ionicons name="close" size={18} color={SOFT_PAPER.fg} />
+              <Ionicons name="close" size={18} color={MENU.fg} />
             </Pressable>
           </View>
 
@@ -173,18 +182,18 @@ export function ChatMenuDrawer({
             style={({ pressed }) => [styles.newChat, pressed && styles.pressed]}
             accessibilityRole="button"
           >
-            <Ionicons name="create-outline" size={18} color={SOFT_PAPER.fg} />
+            <Ionicons name="create-outline" size={18} color={MENU.fg} />
             <Text style={styles.newChatText}>{newChatLabel}</Text>
           </Pressable>
 
           {searchOpen ? (
             <View style={styles.searchBox}>
-              <Ionicons name="search" size={18} color={SOFT_PAPER.muted} />
+              <Ionicons name="search" size={18} color={MENU.muted} />
               <TextInput
                 value={query}
                 onChangeText={setQuery}
                 placeholder={searchPlaceholder}
-                placeholderTextColor={SOFT_PAPER.muted}
+                placeholderTextColor={MENU.muted}
                 style={styles.searchInput}
                 autoFocus
               />
@@ -195,7 +204,7 @@ export function ChatMenuDrawer({
                 }}
                 hitSlop={8}
               >
-                <Ionicons name="close" size={16} color={SOFT_PAPER.muted} />
+                <Ionicons name="close" size={16} color={MENU.muted} />
               </Pressable>
             </View>
           ) : (
@@ -204,7 +213,7 @@ export function ChatMenuDrawer({
               style={({ pressed }) => [styles.navRow, pressed && styles.pressed]}
               accessibilityRole="button"
             >
-              <Ionicons name="search" size={20} color={SOFT_PAPER.fg} />
+              <Ionicons name="search" size={20} color={MENU.fg} />
               <Text style={styles.navText}>{searchLabel}</Text>
             </Pressable>
           )}
@@ -214,7 +223,7 @@ export function ChatMenuDrawer({
             style={({ pressed }) => [styles.navRow, pressed && styles.pressed]}
             accessibilityRole="button"
           >
-            <Ionicons name="grid-outline" size={20} color={SOFT_PAPER.fg} />
+            <Ionicons name="grid-outline" size={20} color={MENU.fg} />
             <Text style={styles.navText}>{libraryLabel}</Text>
           </Pressable>
 
@@ -224,7 +233,7 @@ export function ChatMenuDrawer({
               style={({ pressed }) => [styles.navRow, pressed && styles.pressed]}
               accessibilityRole="button"
             >
-              <Ionicons name="sparkles-outline" size={20} color={SOFT_PAPER.fg} />
+              <Ionicons name="sparkles-outline" size={20} color={MENU.fg} />
               <Text style={styles.navText}>{tryOnLabel}</Text>
             </Pressable>
           ) : null}
@@ -235,7 +244,7 @@ export function ChatMenuDrawer({
               style={({ pressed }) => [styles.navRow, pressed && styles.pressed]}
               accessibilityRole="button"
             >
-              <Ionicons name="water-outline" size={20} color={SOFT_PAPER.fg} />
+              <Ionicons name="water-outline" size={20} color={MENU.fg} />
               <Text style={styles.navText}>{careLabel}</Text>
             </Pressable>
           ) : null}
@@ -246,7 +255,7 @@ export function ChatMenuDrawer({
               style={({ pressed }) => [styles.navRow, pressed && styles.pressed]}
               accessibilityRole="button"
             >
-              <Ionicons name="storefront-outline" size={20} color={SOFT_PAPER.fg} />
+              <Ionicons name="storefront-outline" size={20} color={MENU.fg} />
               <Text style={styles.navText}>{mysaloonLabel}</Text>
             </Pressable>
           ) : null}
@@ -274,7 +283,7 @@ export function ChatMenuDrawer({
                   <Ionicons
                     name="chatbubble-ellipses-outline"
                     size={16}
-                    color={th.id === activeThreadId ? SOFT_PAPER.fg : SOFT_PAPER.muted}
+                    color={th.id === activeThreadId ? MENU.fg : MENU.muted}
                   />
                   <Text style={styles.recentText} numberOfLines={1}>
                     {th.title || previewOf(th)}
@@ -308,7 +317,7 @@ export function ChatMenuDrawer({
               accessibilityRole="button"
               accessibilityLabel={settingsA11y}
             >
-              <Ionicons name="settings-outline" size={20} color={SOFT_PAPER.fg} />
+              <Ionicons name="settings-outline" size={20} color={MENU.fg} />
             </Pressable>
           </View>
         </Animated.View>
@@ -333,10 +342,10 @@ const styles = StyleSheet.create({
     zIndex: 2,
     maxWidth: scale(380),
     height: "100%",
-    backgroundColor: SOFT_PAPER.bg,
+    backgroundColor: MENU.bg,
     paddingHorizontal: scale(18),
     borderRightWidth: 1,
-    borderRightColor: SOFT_PAPER.line,
+    borderRightColor: MENU.line,
   },
   header: {
     flexDirection: "row",
@@ -348,16 +357,16 @@ const styles = StyleSheet.create({
     ...morphFont,
     fontSize: fontSize(18),
     fontWeight: "700",
-    color: SOFT_PAPER.fg,
+    color: MENU.fg,
     letterSpacing: -0.4,
   },
   closeBtn: {
     width: scale(38),
     height: scale(38),
     borderRadius: moderateScale(19),
-    backgroundColor: SOFT_PAPER.card,
+    backgroundColor: MENU.card,
     borderWidth: 1,
-    borderColor: SOFT_PAPER.line,
+    borderColor: MENU.line,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -370,9 +379,9 @@ const styles = StyleSheet.create({
     gap: moderateScale(10),
     alignSelf: "stretch",
     justifyContent: "center",
-    backgroundColor: SOFT_PAPER.card,
+    backgroundColor: MENU.card,
     borderWidth: 1,
-    borderColor: SOFT_PAPER.fg,
+    borderColor: MENU.fg,
     paddingHorizontal: scale(16),
     paddingVertical: verticalScale(12),
     borderRadius: moderateScale(18),
@@ -380,7 +389,7 @@ const styles = StyleSheet.create({
   },
   newChatText: {
     ...morphFont,
-    color: SOFT_PAPER.fg,
+    color: MENU.fg,
     fontSize: fontSize(14),
     fontWeight: "600",
   },
@@ -395,7 +404,7 @@ const styles = StyleSheet.create({
   navText: {
     ...morphFont,
     flex: 1,
-    color: SOFT_PAPER.fg,
+    color: MENU.fg,
     fontSize: fontSize(14),
     fontWeight: "500",
   },
@@ -403,9 +412,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: moderateScale(10),
-    backgroundColor: SOFT_PAPER.card,
+    backgroundColor: MENU.card,
     borderWidth: 1,
-    borderColor: SOFT_PAPER.line,
+    borderColor: MENU.line,
     borderRadius: moderateScale(16),
     paddingHorizontal: scale(14),
     paddingVertical: verticalScale(10),
@@ -414,7 +423,7 @@ const styles = StyleSheet.create({
   searchInput: {
     ...morphFont,
     flex: 1,
-    color: SOFT_PAPER.fg,
+    color: MENU.fg,
     fontSize: fontSize(14),
     paddingVertical: 0,
   },
@@ -431,13 +440,13 @@ const styles = StyleSheet.create({
     ...morphFont,
     fontSize: fontSize(11),
     fontWeight: "700",
-    color: SOFT_PAPER.muted,
+    color: MENU.muted,
     letterSpacing: 0.6,
     textTransform: "uppercase",
   },
   empty: {
     ...morphFont,
-    color: SOFT_PAPER.muted,
+    color: MENU.muted,
     fontSize: fontSize(13),
     paddingVertical: verticalScale(10),
   },
@@ -451,14 +460,14 @@ const styles = StyleSheet.create({
     marginBottom: verticalScale(4),
   },
   recentActive: {
-    backgroundColor: SOFT_PAPER.card,
+    backgroundColor: MENU.card,
     borderWidth: 1,
-    borderColor: SOFT_PAPER.line,
+    borderColor: MENU.line,
   },
   recentText: {
     ...morphFont,
     flex: 1,
-    color: SOFT_PAPER.fg,
+    color: MENU.fg,
     fontSize: fontSize(13.5),
     fontWeight: "500",
   },
@@ -468,7 +477,7 @@ const styles = StyleSheet.create({
     gap: moderateScale(12),
     paddingTop: verticalScale(14),
     borderTopWidth: 1,
-    borderTopColor: SOFT_PAPER.line,
+    borderTopColor: MENU.line,
   },
   footerProfile: {
     flex: 1,
@@ -487,7 +496,7 @@ const styles = StyleSheet.create({
     width: scale(36),
     height: scale(36),
     borderRadius: moderateScale(18),
-    backgroundColor: SOFT_PAPER.soft,
+    backgroundColor: MENU.soft,
   },
   avatarFallback: {
     alignItems: "center",
@@ -495,14 +504,14 @@ const styles = StyleSheet.create({
   },
   avatarText: {
     ...morphFont,
-    color: SOFT_PAPER.fg,
+    color: MENU.fg,
     fontSize: fontSize(11),
     fontWeight: "700",
   },
   footerName: {
     ...morphFont,
     flex: 1,
-    color: SOFT_PAPER.fg,
+    color: MENU.fg,
     fontSize: fontSize(13),
     fontWeight: "600",
   },
