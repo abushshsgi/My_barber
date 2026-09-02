@@ -25,7 +25,7 @@ export function AppStatusBar({ style = "dark" }: Props) {
     }
   }, [style]);
 
-  return <ExpoStatusBar style={style} translucent backgroundColor="transparent" />;
+  return <ExpoStatusBar style={style} />;
 }
 
 /** Notch/status bar ostidagi minimal yuqori padding (Android fallback bilan). */
