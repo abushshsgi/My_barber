@@ -9,7 +9,6 @@ import {
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { BrandLogo } from "../components/BrandLogo";
 import { type AppLang, setAppLang } from "../lib/guest";
 import { setAppLanguage } from "../i18n/config";
 import {
@@ -26,8 +25,14 @@ type Props = {
   onLanguagePick?: (lang: AppLang) => void;
 };
 
+const LANGS: { id: AppLang; label: string; flag: string }[] = [
+  { id: "uz", label: "O'zbek", flag: "🇺🇿" },
+  { id: "ru", label: "Русский", flag: "🇷🇺" },
+  { id: "en", label: "English", flag: "🇬🇧" },
+];
+
 /**
- * Uzum Tezkor uslubi: logo o'rtada, pastida outline pill til tugmalari.
+ * Til tanlash — oq fon, bayroqlar, qorong‘u status bar ikonlari.
  */
 export function SplashScreen({
   showLanguage = false,
@@ -96,12 +101,19 @@ export function SplashScreen({
         },
       ]}
     >
-      <StatusBar style="light" />
+      <StatusBar style="dark" />
       <View style={styles.center}>
         <Animated.View
-          style={{ opacity: logoOp, transform: [{ translateY: logoY }] }}
+          style={{
+            opacity: logoOp,
+            transform: [{ translateY: logoY }],
+            alignItems: "center",
+          }}
         >
-          <BrandLogo size="xl" />
+          <Text style={styles.brand}>
+            Mysaloon
+            <Text style={styles.brandDot}>.</Text>
+          </Text>
         </Animated.View>
       </View>
 
@@ -116,24 +128,18 @@ export function SplashScreen({
             },
           ]}
         >
-          <Pressable
-            style={({ pressed }) => [styles.langBtn, pressed && styles.pressed]}
-            onPress={() => void pick("uz")}
-          >
-            <Text style={styles.langTitle}>O'zbek</Text>
-          </Pressable>
-          <Pressable
-            style={({ pressed }) => [styles.langBtn, pressed && styles.pressed]}
-            onPress={() => void pick("ru")}
-          >
-            <Text style={styles.langTitle}>Русский</Text>
-          </Pressable>
-          <Pressable
-            style={({ pressed }) => [styles.langBtn, pressed && styles.pressed]}
-            onPress={() => void pick("en")}
-          >
-            <Text style={styles.langTitle}>English</Text>
-          </Pressable>
+          {LANGS.map((item) => (
+            <Pressable
+              key={item.id}
+              style={({ pressed }) => [styles.langBtn, pressed && styles.pressed]}
+              onPress={() => void pick(item.id)}
+              accessibilityRole="button"
+              accessibilityLabel={item.label}
+            >
+              <Text style={styles.flag}>{item.flag}</Text>
+              <Text style={styles.langTitle}>{item.label}</Text>
+            </Pressable>
+          ))}
         </Animated.View>
       ) : (
         <View style={styles.langSpacer} />
@@ -145,13 +151,22 @@ export function SplashScreen({
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: "#000000",
+    backgroundColor: "#FFFFFF",
     paddingHorizontal: scale(24),
   },
   center: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
+  },
+  brand: {
+    fontSize: fontSize(42),
+    fontWeight: "800",
+    color: "#111111",
+    letterSpacing: -1.2,
+  },
+  brandDot: {
+    color: "#F97316",
   },
   langBlock: {
     gap: moderateScale(12),
@@ -163,14 +178,20 @@ const styles = StyleSheet.create({
     minHeight: verticalScale(56),
     borderRadius: moderateScale(28),
     borderWidth: 1.5,
-    borderColor: "#FFFFFF",
-    backgroundColor: "transparent",
+    borderColor: "#111111",
+    backgroundColor: "#FFFFFF",
     alignItems: "center",
     justifyContent: "center",
+    flexDirection: "row",
+    gap: scale(12),
+    paddingHorizontal: scale(20),
   },
   pressed: { opacity: 0.88, transform: [{ scale: 0.985 }] },
+  flag: {
+    fontSize: fontSize(22),
+  },
   langTitle: {
-    color: "#FFFFFF",
+    color: "#111111",
     fontSize: fontSize(16),
     fontWeight: "700",
   },

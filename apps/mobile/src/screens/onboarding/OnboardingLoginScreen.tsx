@@ -1,5 +1,4 @@
 import { Ionicons } from "@expo/vector-icons";
-import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -11,38 +10,39 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   checkPhone,
   formatUzPhoneDisplay,
   normalizeUzPhone,
-} from "../api/auth";
-import { useAuth } from "../auth/AuthContext";
-import { useGoogleAuth } from "../auth/GoogleAuthSession";
-import { getLastPhone } from "../auth/storage";
-import { GoogleGlyph } from "../components/GoogleGlyph";
-import { useHideTabBar } from "../hooks/useHideTabBar";
-import { useAppShell } from "../lib/AppShellContext";
-import { setPendingReferralCode } from "../lib/referral-storage";
-import { colors } from "../theme/colors";
+} from "../../api/auth";
+import { useAuth } from "../../auth/AuthContext";
+import { useGoogleAuth } from "../../auth/GoogleAuthSession";
+import { getLastPhone } from "../../auth/storage";
+import { GoogleGlyph } from "../../components/GoogleGlyph";
+import { setPendingReferralCode } from "../../lib/referral-storage";
+import { colors } from "../../theme/colors";
 import {
   fontSize,
   moderateScale,
   scale,
   verticalScale,
-} from "../utils/responsive";
+} from "../../utils/responsive";
 
 type Step = "choose" | "phone" | "password" | "code";
 
-export function LoginScreen() {
-  useHideTabBar();
+type Props = {
+  onBack: () => void;
+};
+
+/**
+ * Onboarding ichidagi majburiy login — navigator/tab hooks yo‘q.
+ */
+export function OnboardingLoginScreen({ onBack }: Props) {
   const insets = useSafeAreaInsets();
   const auth = useAuth();
   const google = useGoogleAuth();
-  const { shell } = useAppShell();
-  const morph = shell === "morph";
-  const navigation = useNavigation();
 
   const [step, setStep] = useState<Step>("choose");
   const [phone, setPhone] = useState("");
@@ -57,8 +57,6 @@ export function LoginScreen() {
   const showError = error || google.error;
   const showBusy = busy || google.busy;
   const googleWaiting = showBusy || !google.ready;
-  const titleStyle = [styles.title, morph && styles.titleMorph];
-  const subStyle = [styles.sub, morph && styles.subMorph];
 
   useEffect(() => {
     void getLastPhone().then((p) => {
@@ -108,7 +106,11 @@ export function LoginScreen() {
     setBusy(true);
     setError(null);
     try {
-      await auth.signInWithPhoneCode(nine, code.trim(), referralCode.trim() || undefined);
+      await auth.signInWithPhoneCode(
+        nine,
+        code.trim(),
+        referralCode.trim() || undefined,
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : "Kod noto'g'ri");
     } finally {
@@ -148,7 +150,7 @@ export function LoginScreen() {
     }
   };
 
-  const onBack = () => {
+  const handleBack = () => {
     if (step === "code") {
       setStep(hasPassword ? "password" : "phone");
       setError(null);
@@ -164,29 +166,18 @@ export function LoginScreen() {
       setError(null);
       return;
     }
-    if (navigation.canGoBack()) {
-      navigation.goBack();
-      return;
-    }
-    const parent = navigation.getParent();
-    if (parent) {
-      parent.navigate(morph ? ("MorphChat" as never) : ("Home" as never));
-    }
+    onBack();
   };
 
   return (
     <KeyboardAvoidingView
-      style={[
-        styles.root,
-        morph && styles.rootMorph,
-        { paddingTop: insets.top + 8 },
-      ]}
+      style={[styles.root, { paddingTop: insets.top + 8 }]}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
       <StatusBar style="dark" />
       <View style={styles.body}>
         <Pressable
-          onPress={onBack}
+          onPress={handleBack}
           style={({ pressed }) => [styles.backBtn, pressed && styles.pressed]}
           accessibilityRole="button"
           accessibilityLabel="Orqaga"
@@ -198,21 +189,19 @@ export function LoginScreen() {
         <View style={styles.centerBlock}>
           {step === "choose" ? (
             <>
-              <Text style={titleStyle}>
-                {morph ? "Morf AI ga kiring" : "Mysaloon ga kiring"}
-              </Text>
-              <Text style={subStyle}>
+              <Text style={styles.title}>Mysaloon ga kiring</Text>
+              <Text style={styles.sub}>
                 Bitta akkaunt — MySaloon va Morf AI uchun
               </Text>
-              <Text style={[styles.refLabel, morph && styles.subMorph]}>Taklif kodi (ixtiyoriy)</Text>
+              <Text style={styles.refLabel}>Taklif kodi (ixtiyoriy)</Text>
               <TextInput
                 value={referralCode}
                 onChangeText={(v) => setReferralCode(v.toUpperCase())}
                 autoCapitalize="characters"
                 autoCorrect={false}
                 placeholder="ABCD1234"
-                placeholderTextColor={morph ? "rgba(255,255,255,0.35)" : colors.muted}
-                style={[styles.field, morph && styles.fieldMorph]}
+                placeholderTextColor={colors.muted}
+                style={styles.field}
                 maxLength={8}
               />
             </>
@@ -220,17 +209,17 @@ export function LoginScreen() {
 
           {step === "phone" ? (
             <>
-              <Text style={titleStyle}>Raqam bilan davom eting</Text>
-              <Text style={subStyle}>SMS kod yuboriladi</Text>
-              <View style={[styles.phoneRow, morph && styles.phoneRowMorph]}>
-                <Text style={[styles.prefix, morph && styles.prefixMorph]}>+998</Text>
+              <Text style={styles.title}>Raqam bilan davom eting</Text>
+              <Text style={styles.sub}>SMS kod yuboriladi</Text>
+              <View style={styles.phoneRow}>
+                <Text style={styles.prefix}>+998</Text>
                 <TextInput
                   value={phone}
                   onChangeText={(t) => setPhone(formatUzPhoneDisplay(t))}
                   keyboardType="phone-pad"
                   placeholder="90 123 45 67"
                   placeholderTextColor={colors.muted}
-                  style={[styles.phoneInput, morph && styles.phoneInputMorph]}
+                  style={styles.phoneInput}
                   maxLength={12}
                   autoFocus
                 />
@@ -240,84 +229,67 @@ export function LoginScreen() {
 
           {step === "password" ? (
             <>
-              <Text style={titleStyle}>Parolingizni kiriting</Text>
-              <Text style={subStyle}>+998 {formatUzPhoneDisplay(phone)}</Text>
+              <Text style={styles.title}>Parolingizni kiriting</Text>
+              <Text style={styles.sub}>+998 {formatUzPhoneDisplay(phone)}</Text>
               <TextInput
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry
                 placeholder="Parol"
-                placeholderTextColor={morph ? "rgba(255,255,255,0.35)" : colors.muted}
-                style={[styles.field, morph && styles.fieldMorph]}
+                placeholderTextColor={colors.muted}
+                style={styles.field}
                 autoFocus
               />
-              <Pressable onPress={onSendOtpInstead} disabled={busy} hitSlop={8}>
-                <Text style={[styles.link, morph && styles.titleMorph]}>SMS kod bilan kirish</Text>
+              <Pressable onPress={() => void onSendOtpInstead()} disabled={busy} hitSlop={8}>
+                <Text style={styles.link}>SMS kod bilan kirish</Text>
               </Pressable>
             </>
           ) : null}
 
           {step === "code" ? (
             <>
-              <Text style={titleStyle}>SMS kodni kiriting</Text>
-              <Text style={subStyle}>+998 {formatUzPhoneDisplay(phone)}</Text>
+              <Text style={styles.title}>SMS kodni kiriting</Text>
+              <Text style={styles.sub}>+998 {formatUzPhoneDisplay(phone)}</Text>
               <TextInput
                 value={code}
                 onChangeText={(t) => setCode(t.replace(/\D/g, "").slice(0, 4))}
                 keyboardType="number-pad"
                 placeholder="••••"
                 placeholderTextColor={colors.muted}
-                style={[styles.field, styles.codeField, morph && styles.fieldMorph]}
+                style={[styles.field, styles.codeField]}
                 maxLength={4}
                 autoFocus
               />
-              {hint ? (
-                <Text style={[styles.hint, morph && styles.subMorph]}>{hint}</Text>
-              ) : null}
+              {hint ? <Text style={styles.hint}>{hint}</Text> : null}
             </>
           ) : null}
 
           {showError ? <Text style={styles.error}>{showError}</Text> : null}
         </View>
 
-        {/* Past — pill tugmalar */}
         <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 12) + 12 }]}>
           {step === "choose" ? (
             <View style={styles.actions}>
               <Pressable
                 style={({ pressed }) => [
                   styles.outlineBtn,
-                  morph && styles.outlineBtnMorph,
                   googleWaiting && styles.btnDisabled,
                   pressed && !googleWaiting && styles.pressed,
                 ]}
                 onPress={() => void onGoogle()}
                 disabled={showBusy || !google.ready}
-                accessibilityRole="button"
-                accessibilityLabel="Google bilan davom etish"
               >
                 <GoogleGlyph size={22} />
-                <Text style={[styles.outlineBtnText, morph && styles.outlineBtnTextMorph]}>
-                  Google bilan davom etish
-                </Text>
-                {googleWaiting ? (
-                  <ActivityIndicator color={morph ? "#FFF" : colors.muted} />
-                ) : null}
+                <Text style={styles.outlineBtnText}>Google bilan davom etish</Text>
+                {googleWaiting ? <ActivityIndicator color={colors.muted} /> : null}
               </Pressable>
 
               <Pressable
-                style={({ pressed }) => [
-                  styles.primaryBtn,
-                  morph && styles.primaryBtnMorph,
-                  pressed && styles.pressed,
-                ]}
+                style={({ pressed }) => [styles.primaryBtn, pressed && styles.pressed]}
                 onPress={() => setStep("phone")}
-                accessibilityRole="button"
               >
-                <Ionicons name="call-outline" size={18} color={morph ? "#0A0A0A" : "#FFF"} />
-                <Text style={[styles.primaryBtnText, morph && styles.primaryBtnTextMorph]}>
-                  Telefon bilan kirish
-                </Text>
+                <Ionicons name="call-outline" size={18} color="#FFF" />
+                <Text style={styles.primaryBtnText}>Telefon bilan kirish</Text>
               </Pressable>
             </View>
           ) : null}
@@ -327,23 +299,17 @@ export function LoginScreen() {
               <Pressable
                 style={({ pressed }) => [
                   styles.primaryBtn,
-                  morph && styles.primaryBtnMorph,
                   busy && styles.btnDisabled,
                   pressed && !busy && styles.pressed,
                 ]}
-                onPress={onContinuePhone}
+                onPress={() => void onContinuePhone()}
                 disabled={busy}
               >
                 {busy ? (
-                  <ActivityIndicator color={morph ? "#0A0A0A" : "#FFF"} />
+                  <ActivityIndicator color="#FFF" />
                 ) : (
-                  <Text style={[styles.primaryBtnText, morph && styles.primaryBtnTextMorph]}>
-                    Davom etish
-                  </Text>
+                  <Text style={styles.primaryBtnText}>Davom etish</Text>
                 )}
-              </Pressable>
-              <Pressable onPress={() => setStep("choose")} hitSlop={8}>
-                <Text style={[styles.secondaryLink, morph && styles.subMorph]}>Orqaga</Text>
               </Pressable>
             </View>
           ) : null}
@@ -353,23 +319,17 @@ export function LoginScreen() {
               <Pressable
                 style={({ pressed }) => [
                   styles.primaryBtn,
-                  morph && styles.primaryBtnMorph,
                   busy && styles.btnDisabled,
                   pressed && !busy && styles.pressed,
                 ]}
-                onPress={onPasswordLogin}
+                onPress={() => void onPasswordLogin()}
                 disabled={busy}
               >
                 {busy ? (
-                  <ActivityIndicator color={morph ? "#0A0A0A" : "#FFF"} />
+                  <ActivityIndicator color="#FFF" />
                 ) : (
-                  <Text style={[styles.primaryBtnText, morph && styles.primaryBtnTextMorph]}>
-                    Kirish
-                  </Text>
+                  <Text style={styles.primaryBtnText}>Kirish</Text>
                 )}
-              </Pressable>
-              <Pressable onPress={() => setStep("phone")} hitSlop={8}>
-                <Text style={[styles.secondaryLink, morph && styles.subMorph]}>Orqaga</Text>
               </Pressable>
             </View>
           ) : null}
@@ -379,39 +339,25 @@ export function LoginScreen() {
               <Pressable
                 style={({ pressed }) => [
                   styles.primaryBtn,
-                  morph && styles.primaryBtnMorph,
                   busy && styles.btnDisabled,
                   pressed && !busy && styles.pressed,
                 ]}
-                onPress={onVerifyCode}
+                onPress={() => void onVerifyCode()}
                 disabled={busy}
               >
                 {busy ? (
-                  <ActivityIndicator color={morph ? "#0A0A0A" : "#FFF"} />
+                  <ActivityIndicator color="#FFF" />
                 ) : (
-                  <Text style={[styles.primaryBtnText, morph && styles.primaryBtnTextMorph]}>
-                    Tasdiqlash
-                  </Text>
+                  <Text style={styles.primaryBtnText}>Tasdiqlash</Text>
                 )}
-              </Pressable>
-              <Pressable
-                onPress={() => setStep(hasPassword ? "password" : "phone")}
-                hitSlop={8}
-              >
-                <Text style={[styles.secondaryLink, morph && styles.subMorph]}>Orqaga</Text>
               </Pressable>
             </View>
           ) : null}
 
-          <Text style={[styles.legal, morph && styles.subMorph]}>
+          <Text style={styles.legal}>
             Davom etish orqali{" "}
-            <Text style={[styles.legalLink, morph && styles.titleMorph]}>
-              foydalanish shartlari
-            </Text>{" "}
-            va{" "}
-            <Text style={[styles.legalLink, morph && styles.titleMorph]}>
-              maxfiylik siyosati
-            </Text>
+            <Text style={styles.legalLink}>foydalanish shartlari</Text> va{" "}
+            <Text style={styles.legalLink}>maxfiylik siyosati</Text>
             ga rozilik bildirasiz. Akkaunt MySaloon va Morf AI da ishlaydi.
           </Text>
         </View>
@@ -421,13 +367,7 @@ export function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: "#FFFFFF",
-  },
-  rootMorph: {
-    backgroundColor: "#FFFFFF",
-  },
+  root: { flex: 1, backgroundColor: "#FFFFFF" },
   body: {
     flex: 1,
     paddingHorizontal: scale(24),
@@ -438,9 +378,7 @@ const styles = StyleSheet.create({
     width: scale(40),
     height: scale(40),
     borderRadius: moderateScale(14),
-    backgroundColor: "#FFFFFF",
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(17,17,17,0.12)",
+    backgroundColor: "#F4F4F5",
     alignItems: "center",
     justifyContent: "center",
     marginBottom: verticalScale(4),
@@ -485,14 +423,12 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     color: colors.fg,
     marginRight: scale(10),
-    letterSpacing: -0.3,
   },
   phoneInput: {
     flex: 1,
     fontSize: fontSize(20),
     fontWeight: "800",
     color: colors.fg,
-    letterSpacing: -0.3,
     paddingVertical: 0,
   },
   field: {
@@ -500,7 +436,7 @@ const styles = StyleSheet.create({
     alignSelf: "stretch",
     minHeight: verticalScale(56),
     borderRadius: moderateScale(16),
-    backgroundColor: colors.surface,
+    backgroundColor: "#F4F4F5",
     paddingHorizontal: scale(18),
     fontSize: fontSize(17),
     fontWeight: "600",
@@ -536,17 +472,11 @@ const styles = StyleSheet.create({
   error: {
     marginTop: verticalScale(16),
     fontSize: fontSize(13),
-    lineHeight: fontSize(18),
     color: "#FF3B30",
     textAlign: "center",
-    maxWidth: scale(300),
   },
-  footer: {
-    gap: moderateScale(14),
-  },
-  actions: {
-    gap: moderateScale(12),
-  },
+  footer: { gap: moderateScale(14) },
+  actions: { gap: moderateScale(12) },
   outlineBtn: {
     minHeight: verticalScale(56),
     borderRadius: moderateScale(28),
@@ -581,13 +511,6 @@ const styles = StyleSheet.create({
   },
   btnDisabled: { opacity: 0.55 },
   pressed: { opacity: 0.88, transform: [{ scale: 0.985 }] },
-  secondaryLink: {
-    textAlign: "center",
-    fontSize: fontSize(15),
-    fontWeight: "700",
-    color: colors.muted,
-    paddingVertical: verticalScale(4),
-  },
   legal: {
     marginTop: verticalScale(4),
     fontSize: fontSize(12),
@@ -596,27 +519,5 @@ const styles = StyleSheet.create({
     textAlign: "center",
     paddingHorizontal: scale(8),
   },
-  legalLink: {
-    color: colors.fg,
-    fontWeight: "700",
-  },
-  titleMorph: { color: colors.fg },
-  subMorph: { color: colors.muted },
-  outlineBtnMorph: {
-    borderColor: colors.border,
-    backgroundColor: "transparent",
-  },
-  outlineBtnTextMorph: { color: colors.fg },
-  primaryBtnMorph: { backgroundColor: colors.fg },
-  primaryBtnTextMorph: { color: "#FFFFFF" },
-  phoneRowMorph: {
-    borderColor: colors.fg,
-    backgroundColor: "#FFFFFF",
-  },
-  prefixMorph: { color: colors.fg },
-  phoneInputMorph: { color: colors.fg },
-  fieldMorph: {
-    backgroundColor: colors.surface,
-    color: colors.fg,
-  },
+  legalLink: { color: colors.fg, fontWeight: "700" },
 });

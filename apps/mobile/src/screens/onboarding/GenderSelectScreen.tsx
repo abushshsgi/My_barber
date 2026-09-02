@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { StatusBar } from "expo-status-bar";
 import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -11,9 +12,12 @@ import {
   verticalScale,
 } from "../../utils/responsive";
 
-type Props = { onFinish: (gender: AppGender) => void };
+type Props = {
+  onFinish: (gender: AppGender) => void;
+  onBack?: () => void;
+};
 
-export function GenderSelectScreen({ onFinish }: Props) {
+export function GenderSelectScreen({ onFinish, onBack }: Props) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
 
@@ -23,7 +27,20 @@ export function GenderSelectScreen({ onFinish }: Props) {
   };
 
   return (
-    <View style={[styles.root, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24 }]}>
+    <View
+      style={[
+        styles.root,
+        { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 24 },
+      ]}
+    >
+      <StatusBar style="dark" />
+      {onBack ? (
+        <Pressable onPress={onBack} style={styles.backBtn} accessibilityRole="button" hitSlop={8}>
+          <Ionicons name="chevron-back" size={22} color="#111" />
+        </Pressable>
+      ) : (
+        <View style={styles.backSpacer} />
+      )}
       <Animated.Text entering={FadeInDown.duration(400)} style={styles.title}>
         {t("onboarding.genderTitle")}
       </Animated.Text>
@@ -50,13 +67,23 @@ export function GenderSelectScreen({ onFinish }: Props) {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: "#FAFAFA", paddingHorizontal: scale(24) },
+  root: { flex: 1, backgroundColor: "#FFFFFF", paddingHorizontal: scale(24) },
+  backBtn: {
+    width: scale(40),
+    height: scale(40),
+    borderRadius: moderateScale(14),
+    backgroundColor: "#F4F4F5",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: verticalScale(8),
+  },
+  backSpacer: { height: verticalScale(12) },
   title: {
     fontSize: fontSize(28),
     fontWeight: "800",
     color: "#111",
     letterSpacing: -0.6,
-    marginTop: verticalScale(40),
+    marginTop: verticalScale(16),
   },
   sub: {
     marginTop: verticalScale(10),

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { StatusBar } from "expo-status-bar";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -25,7 +26,13 @@ export function TermsAcceptScreen({ onFinish }: Props) {
   };
 
   return (
-    <View style={[styles.root, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 20 }]}>
+    <View
+      style={[
+        styles.root,
+        { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 20 },
+      ]}
+    >
+      <StatusBar style="dark" />
       <Animated.Text entering={FadeInDown} style={styles.title}>
         {t("onboarding.termsTitle")}
       </Animated.Text>
@@ -57,7 +64,7 @@ export function TermsAcceptScreen({ onFinish }: Props) {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: "#FAFAFA", paddingHorizontal: scale(24) },
+  root: { flex: 1, backgroundColor: "#FFFFFF", paddingHorizontal: scale(24) },
   title: {
     marginTop: verticalScale(36),
     fontSize: fontSize(28),

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
+import { StatusBar } from "expo-status-bar";
 import Animated, {
   Easing,
   FadeIn,
@@ -75,6 +76,7 @@ export function AccountCreatingScreen({
 
   return (
     <View style={styles.root}>
+      <StatusBar style="light" />
       <Animated.View entering={FadeIn.duration(360)} style={styles.brandBlock}>
         <Animated.View style={[styles.ring, ringStyle]} />
         <Text style={styles.logo}>Mysaloon</Text>

@@ -12,6 +12,7 @@ import {
 import { initI18n, setAppLanguage } from "./src/i18n/config";
 import i18n from "./src/i18n/config";
 import {
+  getAccountReadySeen,
   getAppGender,
   getAppLang,
   getFeaturesSeen,
@@ -20,7 +21,9 @@ import {
   getScanPromoSeen,
   getTermsAccepted,
   getWelcomeSeen,
+  setAccountReadySeen,
   setAppGender,
+  clearFeaturesSeen,
   setWelcomeSeen,
   type AppGender,
   type AppLang,
@@ -33,6 +36,7 @@ import { RootNavigator } from "./src/navigation/RootNavigator";
 import { OnboardingScreen } from "./src/screens/OnboardingScreen";
 import { SplashScreen } from "./src/screens/SplashScreen";
 import { FeatureOnboardingCarousel } from "./src/screens/onboarding/FeatureOnboardingCarousel";
+import { OnboardingLoginScreen } from "./src/screens/onboarding/OnboardingLoginScreen";
 import { GenderSelectScreen } from "./src/screens/onboarding/GenderSelectScreen";
 import { TermsAcceptScreen } from "./src/screens/onboarding/TermsAcceptScreen";
 import { ScanPromoScreen } from "./src/screens/onboarding/ScanPromoScreen";
@@ -71,8 +75,8 @@ function userHasCoords(user: {
 }
 
 /**
- * Splash+til → Feature carousel → Gender → Terms → Location
- * → (login/profil) → Scan promo → Notifications → Creating → Morph Try-on
+ * Splash+til → Feature (chat/try-on/care) → Login (majburiy)
+ * → Gender → Terms → Location → Profil → Creating → App
  */
 function AppGate() {
   const { loading, isAuthenticated, user, needsOnboarding: mustOnboard } = useAuth();
@@ -86,7 +90,7 @@ function AppGate() {
   const [termsOk, setTermsOk] = useState(skipIntro);
   const [scanSeen, setScanSeen] = useState(skipIntro);
   const [notifSeen, setNotifSeen] = useState(skipIntro);
-  const [showCreating, setShowCreating] = useState(false);
+  const [accountReadySeen, setAccountReadySeenState] = useState(skipIntro);
   const [guestLocation, setGuestLocationState] = useState<GuestLocation | null>(null);
 
   const onSplashFinish = useCallback(() => setSplashDone(true), []);
@@ -115,8 +119,9 @@ function AppGate() {
       getScanPromoSeen(),
       getNotifPromoSeen(),
       getGuestLocation(),
+      getAccountReadySeen(),
     ]).then(
-      async ([appLang, features, welcome, g, terms, scan, notif, loc]) => {
+      async ([appLang, features, welcome, g, terms, scan, notif, loc, ready]) => {
         if (!alive) return;
         const resolved = appLang ?? "ru";
         await initI18n(resolved);
@@ -127,6 +132,7 @@ function AppGate() {
         setScanSeen(scan);
         setNotifSeen(notif);
         setGuestLocationState(loc);
+        setAccountReadySeenState(ready || welcome);
         setBootReady(true);
       },
     );
@@ -180,6 +186,16 @@ function AppGate() {
     );
   }
 
+  if (!isAuthenticated) {
+    return (
+      <OnboardingLoginScreen
+        onBack={() => {
+          void clearFeaturesSeen().then(() => setFeaturesSeenState(false));
+        }}
+      />
+    );
+  }
+
   if (!gender) {
     return (
       <GenderSelectScreen
@@ -194,7 +210,7 @@ function AppGate() {
     return <TermsAcceptScreen onFinish={() => setTermsOk(true)} />;
   }
 
-  const hasLocation = !!guestLocation || (isAuthenticated && userHasCoords(user));
+  const hasLocation = !!guestLocation || userHasCoords(user);
   if (!hasLocation) {
     const {
       LocationPickerScreen,
@@ -209,33 +225,34 @@ function AppGate() {
     );
   }
 
-  if (isAuthenticated && (mustOnboard || needsOnboarding(user))) {
+  if (mustOnboard || needsOnboarding(user)) {
     return (
       <OnboardingScreen
         onComplete={() => {
-          setShowCreating(true);
+          setAccountReadySeenState(false);
         }}
       />
     );
   }
 
-  if (isAuthenticated && !scanSeen) {
-    return <ScanPromoScreen onFinish={() => setScanSeen(true)} />;
-  }
-
-  if (isAuthenticated && !notifSeen) {
-    return <NotificationPromoScreen onFinish={() => setNotifSeen(true)} />;
-  }
-
-  if (showCreating) {
+  if (!accountReadySeen) {
     return (
       <AccountCreatingScreen
         onDone={() => {
-          setShowCreating(false);
+          setAccountReadySeenState(true);
+          void setAccountReadySeen();
           void writeAppShell("morph");
         }}
       />
     );
+  }
+
+  if (!scanSeen) {
+    return <ScanPromoScreen onFinish={() => setScanSeen(true)} />;
+  }
+
+  if (!notifSeen) {
+    return <NotificationPromoScreen onFinish={() => setNotifSeen(true)} />;
   }
 
   return <RootNavigator />;
@@ -276,7 +293,7 @@ export default function App() {
               <GoogleAuthSessionProvider>
                 <ToastProvider>
                   <NavigationContainer>
-                    <StatusBar style="light" />
+                    <StatusBar style="dark" />
                     <AppGate />
                   </NavigationContainer>
                 </ToastProvider>
@@ -294,6 +311,6 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: colors.bg,
+    backgroundColor: "#FFFFFF",
   },
 });

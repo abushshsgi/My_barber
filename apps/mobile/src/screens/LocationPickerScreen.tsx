@@ -11,6 +11,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   geocodeAddress,
@@ -267,6 +268,7 @@ export function LocationPickerScreen({
           },
         ]}
       >
+        <StatusBar style="dark" />
         <View style={styles.searchNav}>
           <Pressable
             onPress={openMap}
@@ -356,6 +358,7 @@ export function LocationPickerScreen({
 
   return (
     <View style={styles.mapRoot}>
+      <StatusBar style="dark" />
       <View style={styles.mapLayer}>
         {mapReady ? (
           <OnboardingMap

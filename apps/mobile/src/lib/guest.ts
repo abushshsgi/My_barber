@@ -5,10 +5,12 @@ const LANG_KEY = "mysaloon.lang";
 const WELCOME_SEEN_KEY = "mysaloon.welcome.seen.v3";
 const LOCATION_KEY = "mysaloon.guest.location";
 const GENDER_KEY = "mysaloon.gender";
-const FEATURES_SEEN_KEY = "mysaloon.intro.featuresSeen";
+/** v2 — chat/try-on/care demo + login gate. */
+const FEATURES_SEEN_KEY = "mysaloon.intro.featuresSeen.v2";
 const TERMS_KEY = "mysaloon.intro.termsAccepted";
 const SCAN_PROMO_KEY = "mysaloon.intro.scanPromoSeen";
 const NOTIF_PROMO_KEY = "mysaloon.intro.notifPromoSeen";
+const ACCOUNT_READY_KEY = "mysaloon.intro.accountReadyAnim";
 
 export type AppLang = "uz" | "ru" | "en";
 export type AppGender = "male" | "female";
@@ -58,6 +60,10 @@ export async function setFeaturesSeen(): Promise<void> {
   await AsyncStorage.setItem(FEATURES_SEEN_KEY, "1");
 }
 
+export async function clearFeaturesSeen(): Promise<void> {
+  await AsyncStorage.removeItem(FEATURES_SEEN_KEY);
+}
+
 export async function getTermsAccepted(): Promise<boolean> {
   return (await AsyncStorage.getItem(TERMS_KEY)) === "1";
 }
@@ -80,6 +86,14 @@ export async function getNotifPromoSeen(): Promise<boolean> {
 
 export async function setNotifPromoSeen(): Promise<void> {
   await AsyncStorage.setItem(NOTIF_PROMO_KEY, "1");
+}
+
+export async function getAccountReadySeen(): Promise<boolean> {
+  return (await AsyncStorage.getItem(ACCOUNT_READY_KEY)) === "1";
+}
+
+export async function setAccountReadySeen(): Promise<void> {
+  await AsyncStorage.setItem(ACCOUNT_READY_KEY, "1");
 }
 
 export async function getWelcomeSeen(): Promise<boolean> {
