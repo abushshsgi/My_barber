@@ -1,4 +1,11 @@
-import { Audio } from "expo-av";
+import {
+  RecordingPresets,
+  createAudioPlayer,
+  requestRecordingPermissionsAsync,
+  setAudioModeAsync,
+  useAudioRecorder,
+  type AudioPlayer,
+} from "expo-audio";
 import * as FileSystem from "expo-file-system/legacy";
 import * as Speech from "expo-speech";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -40,13 +47,13 @@ type Args = {
   onOpenChat?: () => void;
 };
 
-const RECORD_OPTS = {
-  ...Audio.RecordingOptionsPresets.HIGH_QUALITY,
-  isMeteringEnabled: true,
-};
-
 const MIN_RECORD_MS = 520;
 const NEXT_TURN_MS = 420;
+
+const RECORD_OPTS = {
+  ...RecordingPresets.HIGH_QUALITY,
+  isMeteringEnabled: true,
+};
 
 export function useMorphVoice({
   sendText,
@@ -70,8 +77,9 @@ export function useMorphVoice({
     setMetering(db);
   }, []);
 
-  const recordingRef = useRef<Audio.Recording | null>(null);
-  const soundRef = useRef<Audio.Sound | null>(null);
+  const recorder = useAudioRecorder(RECORD_OPTS);
+  const recordingActiveRef = useRef(false);
+  const playerRef = useRef<AudioPlayer | null>(null);
   const htmlAudioRef = useRef<HTMLAudioElement | null>(null);
   const webRecRef = useRef<ReturnType<typeof createWebRecorder> | null>(null);
   const liveRef = useRef(false);
@@ -112,16 +120,16 @@ export function useMorphVoice({
         /* ignore */
       }
     }
-    const sound = soundRef.current;
-    soundRef.current = null;
-    if (sound) {
+    const player = playerRef.current;
+    playerRef.current = null;
+    if (player) {
       try {
-        await sound.stopAsync();
+        player.pause();
       } catch {
         /* ignore */
       }
       try {
-        await sound.unloadAsync();
+        player.remove();
       } catch {
         /* ignore */
       }
@@ -147,22 +155,21 @@ export function useMorphVoice({
       if (!result) return { uri: null };
       return { uri: result.uri, blob: result.blob, mime: result.mime };
     }
-    const rec = recordingRef.current;
-    recordingRef.current = null;
-    if (!rec) return { uri: null };
+    if (!recordingActiveRef.current) return { uri: null };
+    recordingActiveRef.current = false;
     try {
-      await rec.stopAndUnloadAsync();
+      await recorder.stop();
     } catch {
       /* already stopped */
     }
     try {
-      await Audio.setAudioModeAsync({ allowsRecordingIOS: false });
+      await setAudioModeAsync({ allowsRecording: false, playsInSilentMode: true });
     } catch {
       /* ignore */
     }
     setMetering(-160);
-    return { uri: rec.getURI() };
-  }, [stopPoll]);
+    return { uri: recorder.uri };
+  }, [recorder, stopPoll]);
 
   const cancelSession = useCallback(async () => {
     cancelledRef.current = true;
@@ -230,27 +237,28 @@ export function useMorphVoice({
         htmlAudioRef.current = null;
         return;
       }
-      const ext = mime.includes("mpeg") || mime.includes("mp3") ? "mp3" : "wav";
+      const ext = mime.includes("mpeg") || mime.includes("mp3") ? "mp3" : "m4a";
       const dir = FileSystem.cacheDirectory || FileSystem.documentDirectory || "";
       const path = `${dir}morph-tts-${Date.now()}.${ext}`;
       await FileSystem.writeAsStringAsync(path, base64, {
         encoding: FileSystem.EncodingType.Base64,
       });
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: false,
-        playsInSilentModeIOS: true,
-        staysActiveInBackground: false,
+      await setAudioModeAsync({
+        allowsRecording: false,
+        playsInSilentMode: true,
       });
-      const { sound } = await Audio.Sound.createAsync(
-        { uri: path },
-        { shouldPlay: true, volume: 1 },
-      );
-      soundRef.current = sound;
+      await unloadSound();
+      const player = createAudioPlayer({ uri: path });
+      player.volume = 1;
+      playerRef.current = player;
       await new Promise<void>((resolve) => {
-        sound.setOnPlaybackStatusUpdate((status) => {
-          if (!status.isLoaded) return;
-          if (status.didJustFinish) resolve();
+        const sub = player.addListener("playbackStatusUpdate", (status) => {
+          if (status.didJustFinish) {
+            sub.remove();
+            resolve();
+          }
         });
+        player.play();
       });
       await unloadSound();
       FileSystem.deleteAsync(path, { idempotent: true }).catch(() => undefined);
@@ -502,28 +510,25 @@ export function useMorphVoice({
       return;
     }
 
-    const perm = await Audio.requestPermissionsAsync();
+    const perm = await requestRecordingPermissionsAsync();
     if (!perm.granted) {
       setError("Mikrofon ruxsati berilmagan.");
       return;
     }
-    await Audio.setAudioModeAsync({
-      allowsRecordingIOS: true,
-      playsInSilentModeIOS: true,
-      staysActiveInBackground: false,
+    await setAudioModeAsync({
+      allowsRecording: true,
+      playsInSilentMode: true,
     });
-    const rec = new Audio.Recording();
-    await rec.prepareToRecordAsync(RECORD_OPTS);
-    recordingRef.current = rec;
-    await rec.startAsync();
+    await recorder.prepareToRecordAsync();
+    recorder.record();
+    recordingActiveRef.current = true;
     setPhaseSafe("recording");
     stopPoll();
     pollRef.current = setInterval(() => {
       void (async () => {
-        const current = recordingRef.current;
-        if (!current) return;
+        if (!recordingActiveRef.current) return;
         try {
-          const status = await current.getStatusAsync();
+          const status = recorder.getStatus();
           if (!status.isRecording) return;
           const elapsed = Date.now() - startedAtRef.current;
           const next = shouldAutoStopListening({
@@ -548,6 +553,7 @@ export function useMorphVoice({
     finishTurn,
     loadPrefs,
     pushMeter,
+    recorder,
     requireAccess,
     requireVoice,
     setPhaseSafe,

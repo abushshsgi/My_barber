@@ -27,6 +27,18 @@ class User(AbstractUser):
         db_index=True,
     )
     birth_year = models.PositiveSmallIntegerField(null=True, blank=True)
+
+    class Gender(models.TextChoices):
+        MALE = "male", "Male"
+        FEMALE = "female", "Female"
+
+    gender = models.CharField(
+        max_length=16,
+        blank=True,
+        default="",
+        choices=Gender.choices,
+        db_index=True,
+    )
     latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
     longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
     onboarding_completed = models.BooleanField(default=False, db_index=True)

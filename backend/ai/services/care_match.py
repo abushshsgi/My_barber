@@ -5,6 +5,8 @@ from __future__ import annotations
 import re
 from typing import Any, Iterable
 
+from django.db.models import Q
+
 from ai.models import CareProduct, HairCareProfile
 
 HAIR_TAGS = frozenset(
@@ -603,14 +605,22 @@ def suitability_for_user(
     }
 
 
-def recommend_products(profile: HairCareProfile | None, *, limit: int = 40) -> list[CareProduct]:
-    qs = list(
-        CareProduct.objects.filter(is_published=True).order_by("sort_order", "name")[:200]
-    )
+def recommend_products(
+    profile: HairCareProfile | None,
+    *,
+    limit: int = 40,
+    audience: str | None = None,
+) -> list[CareProduct]:
+    qs = CareProduct.objects.filter(is_published=True)
+    if audience in ("men", "women"):
+        qs = qs.filter(
+            Q(audience__in=[audience, "unisex"]) | Q(audience="")
+        )
+    products = list(qs.order_by("sort_order", "name")[:200])
     if not profile or not profile.is_complete:
-        return qs[:limit]
+        return products[:limit]
     ranked: list[tuple[int, CareProduct]] = []
-    for product in qs:
+    for product in products:
         fit = suitability_for_user(product, profile)
         ranked.append((int(fit.get("match_percent") or 0), product))
     ranked.sort(key=lambda row: (-row[0], row[1].sort_order, row[1].name))

@@ -3,6 +3,7 @@ import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import { fetchHairstyles } from "../../api/hairstyles";
+import { genderToAudience, getAppGender } from "../../lib/guest";
 import { ScreenWrapper } from "../../components/layout/ScreenWrapper";
 import {
   IS_SMALL_DEVICE,
@@ -57,7 +58,8 @@ export function MorphHomeScreen({ navigation }: Props) {
   const loadSamples = useCallback(async () => {
     setSamplesLoading(true);
     try {
-      const rows = await fetchHairstyles("men");
+      const gender = await getAppGender();
+      const rows = await fetchHairstyles(genderToAudience(gender));
       setSamples(
         rows.map((entry) => ({
           id: entry.id,

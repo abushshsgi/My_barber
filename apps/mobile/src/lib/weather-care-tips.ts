@@ -262,8 +262,8 @@ export function careHubLayout(
 ) {
   /** Window o‘lchami o‘zgaganda (web / rotate) qayta hisoblanadi. */
   const scale = hubLayoutScale(width, height);
-  /** Faqat Home Indicator — floating tab bar Care hubda yashiriladi. */
-  const dockClearance = Math.max(bottomInset, 10);
+  /** Floating tab dock + Home Indicator. */
+  const dockClearance = Math.max(bottomInset, 10) + 64;
   const avail = Math.max(360, height - dockClearance);
 
   const searchBlock = rs(52, scale);
@@ -284,24 +284,22 @@ export function careHubLayout(
   const promoByWidth = Math.round(promoW / PROMO_ASPECT);
 
   /**
-   * Hero `paddingTop: topInset` ni o‘z balandligida yutadi — tashqarida
-   * qayta qo‘shilmaydi, aks holda AI bar kesiladi.
+   * Hero status bar ostida boshlanadi (`marginTop: topInset` CareScreen da).
+   * Balandlikka inset qo‘shilmaydi — aks holda banner kesiladi.
    */
   const MIN = {
     /** chip + temp + CTA sig‘ishi shart — aks holda tugma kesiladi. */
-    promo: topInset + Math.max(rs(128, scale), Math.min(promoByWidth, rs(148, scale))),
+    promo: Math.max(rs(128, scale), Math.min(promoByWidth, rs(148, scale))),
     featured: rs(width < 360 ? 108 : 122, scale),
     hubCard: rs(108, scale),
     ai: rs(44, scale),
   };
   const MAX = {
-    promo:
-      topInset +
-      clamp(
-        Math.max(rs(148, scale), promoByWidth),
-        rs(140, scale),
-        Math.min(rs(210, scale), Math.round(height * 0.28)),
-      ),
+    promo: clamp(
+      Math.max(rs(148, scale), promoByWidth),
+      rs(140, scale),
+      Math.min(rs(210, scale), Math.round(height * 0.28)),
+    ),
     featured: rs(196, scale),
     hubCard: rs(148, scale),
     ai: rs(54, scale),
@@ -341,7 +339,7 @@ export function careHubLayout(
     featuredWCap,
   );
   const sheetGap = rs(12, scale);
-  const promoInner = Math.max(0, promoH - topInset);
+  const promoInner = promoH;
   const narrow = width < 360;
   const promoPad = narrow ? 10 : width < 400 ? rs(12, scale) : rs(14, scale);
   const promoRadius = narrow ? 18 : rs(22, scale);

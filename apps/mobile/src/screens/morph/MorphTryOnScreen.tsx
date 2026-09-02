@@ -28,6 +28,7 @@ import {
   type MorphAiGeneration,
 } from "../../api/ai";
 import { fetchHairstyles } from "../../api/hairstyles";
+import { genderToAudience, getAppGender } from "../../lib/guest";
 import { pexelsPhotoUrl } from "../../api/media";
 import { useAuth } from "../../auth/AuthContext";
 import { TAB_DOCK_CLEARANCE } from "../../hooks/useHideTabBar";
@@ -248,7 +249,8 @@ export function MorphTryOnScreen({ navigation }: Props) {
 
   useEffect(() => {
     let cancelled = false;
-    void fetchHairstyles("men")
+    void getAppGender()
+      .then((g) => fetchHairstyles(genderToAudience(g)))
       .then((rows) => {
         if (cancelled) return;
         const uri = rows[0]?.image_url?.trim();

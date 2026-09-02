@@ -19,6 +19,7 @@ import {
 } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { CareCatalogSheet } from "../../components/morph/care/CareCatalogSheet";
 import { useHideTabBar } from "../../hooks/useHideTabBar";
 import { useShellNavigation } from "../../lib/shell-nav";
 import {
@@ -57,6 +58,7 @@ export function MorphCareMyProductsScreen({ navigation }: Props) {
   const { goMorph } = useShellNavigation();
   const [rows, setRows] = useState<MyCareProduct[]>([]);
   const [loading, setLoading] = useState(true);
+  const [catalogOpen, setCatalogOpen] = useState(false);
   const [deletedToast, setDeletedToast] = useState<string | null>(null);
   const toastY = useRef(new Animated.Value(-120)).current;
   const toastOp = useRef(new Animated.Value(0)).current;
@@ -100,12 +102,12 @@ export function MorphCareMyProductsScreen({ navigation }: Props) {
     [insets.top, toastOp, toastY],
   );
 
-  const reload = useCallback(async () => {
-    setLoading(true);
+  const reload = useCallback(async (opts?: { silent?: boolean }) => {
+    if (!opts?.silent) setLoading(true);
     try {
       setRows(await loadMyProducts());
     } finally {
-      setLoading(false);
+      if (!opts?.silent) setLoading(false);
     }
   }, []);
 
@@ -240,7 +242,7 @@ export function MorphCareMyProductsScreen({ navigation }: Props) {
             </Pressable>
             <Pressable
               style={styles.secondaryBtn}
-              onPress={() => navigation.navigate("CareHome", { openSearch: true })}
+              onPress={() => setCatalogOpen(true)}
             >
               <Text style={styles.secondaryBtnText}>{t("care.catalog.title")}</Text>
             </Pressable>
@@ -327,6 +329,16 @@ export function MorphCareMyProductsScreen({ navigation }: Props) {
           </View>
         </ScrollView>
       )}
+
+      <CareCatalogSheet
+        visible={catalogOpen}
+        excludeIds={rows.map((r) => r.id)}
+        bottomInset={insets.bottom}
+        onClose={() => setCatalogOpen(false)}
+        onAdded={() => {
+          void reload({ silent: true });
+        }}
+      />
     </View>
   );
 }

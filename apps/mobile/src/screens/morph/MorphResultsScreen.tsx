@@ -24,6 +24,7 @@ import {
   type AiStyleSuggestion,
 } from "../../api/ai";
 import { fetchHairstyles, type ApiHairstyle } from "../../api/hairstyles";
+import { genderToAudience, getAppGender } from "../../lib/guest";
 import { resolveMediaUrl } from "../../api/media";
 import { useAuth } from "../../auth/AuthContext";
 import { FaceAnalysisRing } from "../../components/morph/FaceAnalysisRing";
@@ -83,7 +84,8 @@ export function MorphResultsScreen({ navigation }: Props) {
 
   useEffect(() => {
     let cancelled = false;
-    void fetchHairstyles("men")
+    void getAppGender()
+      .then((g) => fetchHairstyles(genderToAudience(g)))
       .then((rows) => {
         if (!cancelled) setMoreStyles(rows);
       })
@@ -153,7 +155,8 @@ export function MorphResultsScreen({ navigation }: Props) {
       try {
         // Face-check alohida Vertex chaqiruv — 429 beradi.
         // Analyze ichida has_face tekshiruvi bor.
-        const result = await analyzeAiStyle(photo, "men");
+        const gender = await getAppGender();
+        const result = await analyzeAiStyle(photo, genderToAudience(gender));
         session.setAnalyze(result);
         setError(null);
         void saveAiStyleHistory({
@@ -303,7 +306,7 @@ export function MorphResultsScreen({ navigation }: Props) {
           <Image
             source={{ uri: session.selfieDataUrl }}
             style={styles.scanPhoto}
-            resizeMode="cover"
+            contentFit="contain"
           />
         ) : (
           <View style={styles.scanPhotoFallback} />
@@ -336,7 +339,7 @@ export function MorphResultsScreen({ navigation }: Props) {
           <Image
             source={{ uri: session.selfieDataUrl }}
             style={styles.scanPhoto}
-            resizeMode="cover"
+            contentFit="contain"
           />
         ) : (
           <View style={styles.scanPhotoFallback} />
@@ -452,7 +455,7 @@ export function MorphResultsScreen({ navigation }: Props) {
                             undefined,
                         }}
                         style={styles.spotlightImg}
-                        resizeMode="cover"
+                        resizeMode="contain"
                       />
                       {loading ? (
                         <View style={styles.spotlightBusy}>

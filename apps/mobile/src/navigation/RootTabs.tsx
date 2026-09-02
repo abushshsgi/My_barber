@@ -8,17 +8,19 @@ import { useEffect, useRef, useState } from "react";
 import {
   Animated,
   Easing,
+  LayoutAnimation,
   Platform,
   Pressable,
   StyleSheet,
   Text,
+  UIManager,
   View,
 } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import * as NavigationBar from "expo-navigation-bar";
 import { morfMarkWhite } from "../branding/morf-logo";
 import { ComingSoonSalons } from "../components/ComingSoonSalons";
-import { ShellSwitchOverlay } from "../components/ShellSwitchOverlay";
 import { FLOATING_TAB_BAR_STYLE } from "../hooks/useHideTabBar";
 import { AppShellProvider, useAppShell } from "../lib/AppShellContext";
 import { MorphAppearanceProvider } from "../lib/MorphAppearanceContext";
@@ -93,10 +95,16 @@ const MORPH_RIGHT: TabDef[] = [
   { name: "Profile", labelKey: "nav.profile", icon: "person-outline", iconOn: "person" },
 ];
 
-const CENTER_SLOT = scale(54);
-const CENTER_BTN = scale(IS_SMALL_DEVICE ? 38 : 42);
-const TAB_ICON = scale(18);
-const SWITCH_MIN_MS = 720;
+const CENTER_SLOT = scale(48);
+const CENTER_BTN = scale(IS_SMALL_DEVICE ? 34 : 36);
+const TAB_ICON = scale(22);
+const SWITCH_MIN_MS = 0;
+
+/** Material-style active pill (rasmdagi lavender). */
+const PILL_BG = "#EDE7F6";
+const PILL_FG = "#4527A0";
+const PILL_BG_MORPH = "rgba(255,255,255,0.18)";
+const PILL_FG_MORPH = "#FFFFFF";
 
 /**
  * Home Bar (iPhone) yoki gesture bar (Samsung) ostida dok kesilmasligi uchun
@@ -104,6 +112,10 @@ const SWITCH_MIN_MS = 720;
  */
 const MIN_DOCK_BOTTOM = IS_SMALL_DEVICE ? 6 : 8;
 const mysaloonIcon = require("../../assets/icon.png");
+
+if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 function isMorphTab(name: string | undefined): boolean {
   return (
@@ -134,30 +146,94 @@ function wait(ms: number) {
   return new Promise<void>((resolve) => setTimeout(resolve, ms));
 }
 
-function CustomTabBar({ state, navigation }: BottomTabBarProps) {
+import { getFocusedRouteNameFromRoute, RouteProp } from "@react-navigation/native";
+
+// ... (existing imports)
+
+function getTabBarVisibility(route: RouteProp<RootTabParamList, keyof RootTabParamList>) {
+  const routeName = getFocusedRouteNameFromRoute(route) ?? "";
+  // Yashirish kerak bo'lgan ichki stack sahifalari
+  const hideOnScreens = [
+    "MorphResults",
+    "MorphPreview",
+    "MorphStudio",
+    "MorphHistory",
+    "MorphPaywall",
+    "MorphGuide",
+    "MorphWelcome",
+    "MorphHome",
+    "CareProductDetail",
+    "CareProductGuide",
+    "CareWeather",
+    "CareMyProducts",
+    "PersonalInfo",
+    "Settings",
+    "Orders",
+    "Security",
+    "SecurityPassword",
+    "SecuritySessions",
+    "NotificationPrefs",
+    "Notifications",
+    "HelpCenter",
+    "Subscriptions",
+    "Referrals",
+    "MorphAiSettings",
+    "WalletGate",
+    "WalletHome",
+    "WalletTopUp",
+    "WalletGift",
+    "WalletGiftAmount",
+    "WalletGifts",
+    "WalletMore",
+    "WalletQrPay",
+    "WalletTransactions",
+    "WalletRequisites",
+    "WalletFreeze",
+    "WalletFaq",
+    "Login",
+  ];
+  if (hideOnScreens.includes(routeName)) return false;
+  return true;
+}
+
+function CustomTabBar({ state, navigation, descriptors }: BottomTabBarProps) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
-  const bottomPad = Math.max(insets.bottom, MIN_DOCK_BOTTOM);
   const tabBarHidden = useTabBarHidden();
   const { isAuthenticated } = useAuth();
-  const prevAuth = useRef(isAuthenticated);
   const {
     shell,
     ready,
     rememberTab,
     setShell,
-    beginSwitch,
-    endSwitch,
     switchToMorphTarget,
     switchToMysaloonTarget,
   } = useAppShell();
-  const activeName = state.routes[state.index]?.name as keyof RootTabParamList | undefined;
+  const focusedRoute = state.routes[state.index];
+  const focusedDescriptor = descriptors[focusedRoute.key];
+  const focusedOptions = focusedDescriptor.options;
+  const activeName = focusedRoute.name as keyof RootTabParamList | undefined;
+  const prevAuth = useRef(isAuthenticated);
   const switchingRef = useRef(false);
   const hydratedRef = useRef(false);
   const [displayShell, setDisplayShell] = useState(shell);
   const sidesY = useRef(new Animated.Value(0)).current;
   const sidesOpacity = useRef(new Animated.Value(1)).current;
   const centerScale = useRef(new Animated.Value(1)).current;
+  const morphDock = displayShell === "morph";
+  const bottomPad = Math.max(insets.bottom, MIN_DOCK_BOTTOM);
+
+  useEffect(() => {
+    if (Platform.OS === "android") {
+      try {
+        if (NavigationBar && typeof NavigationBar.setButtonStyleAsync === "function") {
+          void NavigationBar.setButtonStyleAsync(morphDock ? "light" : "dark");
+        }
+      } catch (err) {
+        console.warn("NavigationBar error", err);
+      }
+    }
+  }, [morphDock]);
 
   // Login dan keyin — obuna/chat qayerda ochilgan bo‘lsa, shu yerga qaytarish.
   useEffect(() => {
@@ -225,8 +301,23 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
     }
   }, [activeName, ready, rememberTab, setShell, shell]);
 
+  // Ichki stack (Results/Paywall/Login…) — faqat asosiy tablarda dock.
+  const nestHidden =
+    (focusedRoute.name === "MorphTryOn" ||
+      focusedRoute.name === "MorphCare" ||
+      focusedRoute.name === "MorphIngredient" ||
+      focusedRoute.name === "Profile") &&
+    !getTabBarVisibility(focusedRoute as never);
+  const isVisible = focusedOptions.tabBarVisible !== false;
+  if (!isVisible || nestHidden || tabBarHidden) {
+    return null;
+  }
+
   const pressTab = (name: keyof RootTabParamList) => {
     if (switchingRef.current) return;
+    LayoutAnimation.configureNext(
+      LayoutAnimation.create(220, "easeInEaseOut", "opacity"),
+    );
     if (name === "MorphTryOn") {
       // Qayta bosilsa Capture ga qaytadi; boshqa tabdan esa stack holatini saqlaydi.
       if (activeName === "MorphTryOn") {
@@ -309,13 +400,9 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
   const runShellSwitch = (toMorph: boolean) => {
     if (switchingRef.current) return;
     switchingRef.current = true;
-    const targetShell = toMorph ? "morph" : "mysaloon";
-    beginSwitch(targetShell);
-
+    // Overlay/spinner yo‘q — darhol shell almashtirish.
     void (async () => {
-      const started = Date.now();
       try {
-        await animateSidesOut();
         if (toMorph) {
           const target = await switchToMorphTarget();
           setDisplayShell("morph");
@@ -325,11 +412,10 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
           setDisplayShell("mysaloon");
           navigateToShellTab(navigation, target);
         }
-        const elapsed = Date.now() - started;
-        if (elapsed < SWITCH_MIN_MS) await wait(SWITCH_MIN_MS - elapsed);
+        sidesY.setValue(0);
+        sidesOpacity.setValue(1);
+        centerScale.setValue(1);
       } finally {
-        await animateSidesIn();
-        endSwitch();
         switchingRef.current = false;
       }
     })();
@@ -341,8 +427,9 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
 
   const visibleLeft = displayShell === "morph" ? MORPH_LEFT : MYSALOON_LEFT;
   const visibleRight = displayShell === "morph" ? MORPH_RIGHT : MYSALOON_RIGHT;
-
-  const morphDock = displayShell === "morph";
+  const pillBg = morphDock ? PILL_BG_MORPH : PILL_BG;
+  const pillFg = morphDock ? PILL_FG_MORPH : PILL_FG;
+  const idleIcon = morphDock ? "rgba(255,255,255,0.72)" : "#1A1A1A";
 
   const renderSideTab = (tab: TabDef) => {
     const focused = activeName === tab.name;
@@ -353,7 +440,7 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
         onPress={() => pressTab(tab.name)}
         style={styles.tab}
         android_ripple={{
-          color: morphDock ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.08)",
+          color: morphDock ? "rgba(255,255,255,0.12)" : "rgba(69,39,160,0.12)",
           borderless: true,
           radius: 28,
         }}
@@ -361,39 +448,27 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
         accessibilityState={{ selected: focused }}
         accessibilityLabel={label}
       >
-        {morphDock ? (
-          <View style={[styles.morphIconSlot, focused && styles.morphIconSlotOn]}>
-            <Ionicons
-              name={focused ? tab.iconOn : tab.icon}
-              size={TAB_ICON}
-              color={focused ? "#111111" : "#FFFFFF"}
-            />
-          </View>
-        ) : (
-          <>
-            <View style={styles.iconSlot}>
-              <Ionicons
-                name={focused ? tab.iconOn : tab.icon}
-                size={TAB_ICON}
-                color={focused ? colors.fg : colors.muted}
-              />
-              {focused ? <View style={styles.activeDot} /> : <View style={styles.activeDotSpacer} />}
-            </View>
-            <Text
-              style={[styles.label, focused ? styles.labelOn : styles.labelOff]}
-              numberOfLines={1}
-            >
+        <View
+          style={[
+            styles.pill,
+            focused && { backgroundColor: pillBg },
+            !focused && styles.pillIdle,
+          ]}
+        >
+          <Ionicons
+            name={focused ? tab.iconOn : tab.icon}
+            size={TAB_ICON}
+            color={focused ? pillFg : idleIcon}
+          />
+          {focused ? (
+            <Text style={[styles.pillLabel, { color: pillFg }]} numberOfLines={1}>
               {label}
             </Text>
-          </>
-        )}
+          ) : null}
+        </View>
       </Pressable>
     );
   };
-
-  if (tabBarHidden) {
-    return null;
-  }
 
   const centerIsMorphEntry = displayShell === "mysaloon";
 
@@ -422,34 +497,27 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
           <Pressable
             onPress={onCenterPress}
             style={styles.centerWrap}
-            android_ripple={{ color: "rgba(255,255,255,0.2)", borderless: true, radius: 30 }}
+            android_ripple={{ color: "rgba(255,255,255,0.2)", borderless: true, radius: 28 }}
             accessibilityRole="button"
             accessibilityLabel={centerIsMorphEntry ? t("nav.morphAi") : t("nav.mysaloon")}
           >
             <Animated.View style={{ transform: [{ scale: centerScale }] }}>
-              <View style={styles.centerBtnShadow}>
-                <View style={styles.centerBtn}>
-                  {centerIsMorphEntry ? (
-                    <Image
-                      source={morfMarkWhite}
-                      style={styles.centerLogo}
-                      contentFit="contain"
-                    />
-                  ) : (
-                    <Image
-                      source={mysaloonIcon}
-                      style={styles.centerAppIcon}
-                      contentFit="cover"
-                    />
-                  )}
-                </View>
+              <View style={[styles.centerBtn, morphDock && styles.centerBtnMorph]}>
+                {centerIsMorphEntry ? (
+                  <Image
+                    source={morfMarkWhite}
+                    style={styles.centerLogo}
+                    contentFit="contain"
+                  />
+                ) : (
+                  <Image
+                    source={mysaloonIcon}
+                    style={styles.centerAppIcon}
+                    contentFit="cover"
+                  />
+                )}
               </View>
             </Animated.View>
-            {morphDock ? null : (
-              <Text style={[styles.label, styles.centerLabel]} numberOfLines={1}>
-                {centerIsMorphEntry ? t("nav.morphAi") : t("nav.mysaloon")}
-              </Text>
-            )}
           </Pressable>
         </View>
       </View>
@@ -468,14 +536,15 @@ function ExploreTab() {
 
 
 function RootTabsInner() {
-  const { switchingTo, shell, ready } = useAppShell();
+  const { shell, ready } = useAppShell();
+  const morphDock = shell === "morph";
 
   if (!ready) {
     return <View style={styles.root} />;
   }
 
   return (
-    <View style={styles.root}>
+    <View style={[styles.root, { backgroundColor: morphDock ? "#171717" : "#FFFFFF" }]}>
       <TabBarVisibilityProvider>
         <MorphSessionProvider>
           <Tab.Navigator
@@ -483,24 +552,47 @@ function RootTabsInner() {
             tabBar={(props) => <CustomTabBar {...props} />}
             screenOptions={{
               headerShown: false,
-              lazy: true,
-              freezeOnBlur: false,
+              lazy: false,
+              freezeOnBlur: true,
               tabBarStyle: FLOATING_TAB_BAR_STYLE,
               sceneStyle: { backgroundColor: "transparent" },
-              animation: "fade",
+              animation: "none",
             }}
           >
             <Tab.Screen name="Home" component={HomeScreen} />
             <Tab.Screen name="Map" component={MapScreen} />
             <Tab.Screen name="Explore" component={ExploreTab} />
-            <Tab.Screen name="Profile" component={ProfileStack} />
+            <Tab.Screen
+              name="Profile"
+              component={ProfileStack}
+              options={({ route }) => ({
+                tabBarStyle: getTabBarVisibility(route)
+                  ? FLOATING_TAB_BAR_STYLE
+                  : { display: "none" },
+              })}
+            />
 
             <Tab.Screen name="MorphChat" component={MorphChatScreen} />
-            <Tab.Screen name="MorphCare" component={MorphCareStack} />
+            <Tab.Screen
+              name="MorphCare"
+              component={MorphCareStack}
+              options={({ route }) => ({
+                tabBarStyle: getTabBarVisibility(route)
+                  ? FLOATING_TAB_BAR_STYLE
+                  : { display: "none" },
+              })}
+            />
             <Tab.Screen name="MorphIngredient" component={MorphIngredientStack} />
-            <Tab.Screen name="MorphTryOn" component={MorphStack} />
+            <Tab.Screen
+              name="MorphTryOn"
+              component={MorphStack}
+              options={({ route }) => ({
+                tabBarStyle: getTabBarVisibility(route)
+                  ? FLOATING_TAB_BAR_STYLE
+                  : { display: "none" },
+              })}
+            />
           </Tab.Navigator>
-          <ShellSwitchOverlay visible={switchingTo != null} target={switchingTo} />
         </MorphSessionProvider>
       </TabBarVisibilityProvider>
     </View>
@@ -526,67 +618,67 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    paddingHorizontal: scale(14),
-    paddingTop: verticalScale(6),
+    paddingHorizontal: scale(10),
+    paddingTop: verticalScale(4),
     backgroundColor: "transparent",
   },
   dockOuterMorph: {
-    paddingHorizontal: scale(28),
+    paddingHorizontal: scale(12),
     alignItems: "center",
   },
   dock: {
-    minHeight: verticalScale(56),
-    borderRadius: moderateScale(26),
+    minHeight: verticalScale(58),
+    borderRadius: moderateScale(22),
     backgroundColor: "#FFFFFF",
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: "rgba(0,0,0,0.06)",
-    justifyContent: "flex-end",
+    justifyContent: "center",
     paddingBottom: verticalScale(6),
-    paddingTop: verticalScale(8),
+    paddingTop: verticalScale(6),
     ...Platform.select({
-      web: { boxShadow: "0 8px 24px rgba(0,0,0,0.12)" },
+      web: { boxShadow: "0 6px 20px rgba(0,0,0,0.10)" },
       default: {
         shadowColor: "#000",
-        shadowOpacity: 0.12,
+        shadowOpacity: 0.10,
+        shadowRadius: 14,
+        shadowOffset: { width: 0, height: 4 },
+        elevation: 12,
+      },
+    }),
+  },
+  dockMorph: {
+    width: "100%",
+    minHeight: verticalScale(58),
+    borderRadius: moderateScale(22),
+    backgroundColor: "#171717",
+    borderWidth: 0,
+    justifyContent: "center",
+    paddingBottom: verticalScale(6),
+    paddingTop: verticalScale(6),
+    ...Platform.select({
+      web: { boxShadow: "0 8px 24px rgba(0,0,0,0.28)" },
+      default: {
+        shadowColor: "#000",
+        shadowOpacity: 0.28,
         shadowRadius: 16,
         shadowOffset: { width: 0, height: 6 },
         elevation: 14,
       },
     }),
   },
-  dockMorph: {
-    width: "100%",
-    minHeight: verticalScale(64),
-    borderRadius: moderateScale(36),
-    backgroundColor: "#171717",
-    borderWidth: 0,
-    justifyContent: "center",
-    paddingBottom: verticalScale(8),
-    paddingTop: verticalScale(8),
-    ...Platform.select({
-      web: { boxShadow: "0 10px 28px rgba(0,0,0,0.28)" },
-      default: {
-        shadowColor: "#000",
-        shadowOpacity: 0.28,
-        shadowRadius: 18,
-        shadowOffset: { width: 0, height: 8 },
-        elevation: 16,
-      },
-    }),
-  },
   sidesRow: {
     flexDirection: "row",
-    alignItems: "flex-end",
-    paddingHorizontal: scale(6),
+    alignItems: "center",
+    paddingHorizontal: scale(4),
   },
   sidesRowMorph: {
     alignItems: "center",
-    paddingHorizontal: scale(10),
+    paddingHorizontal: scale(6),
   },
   sideGroup: {
     flex: 1,
     flexDirection: "row",
-    alignItems: "flex-end",
+    alignItems: "center",
     minWidth: 0,
   },
   centerSpacer: {
@@ -595,65 +687,45 @@ const styles = StyleSheet.create({
   tab: {
     flex: 1,
     alignItems: "center",
-    justifyContent: "flex-end",
-    gap: moderateScale(2),
+    justifyContent: "center",
     minWidth: 0,
-    paddingHorizontal: scale(2),
+    paddingHorizontal: scale(1),
   },
-  iconSlot: {
-    height: verticalScale(22),
+  pill: {
+    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-  },
-  morphIconSlot: {
-    width: scale(40),
-    height: scale(40),
+    gap: scale(6),
+    minHeight: scale(36),
+    paddingHorizontal: scale(12),
+    paddingVertical: verticalScale(6),
     borderRadius: moderateScale(20),
-    alignItems: "center",
-    justifyContent: "center",
+    maxWidth: "100%",
   },
-  morphIconSlotOn: {
-    backgroundColor: "#FFFFFF",
+  pillIdle: {
+    paddingHorizontal: scale(8),
   },
-  activeDot: {
-    marginTop: verticalScale(2),
-    width: scale(3),
-    height: scale(3),
-    borderRadius: moderateScale(1.5),
-    backgroundColor: colors.fg,
-  },
-  activeDotSpacer: {
-    marginTop: verticalScale(2),
-    width: scale(3),
-    height: scale(3),
+  pillLabel: {
+    fontSize: fontSize(12),
+    fontWeight: "700",
+    letterSpacing: -0.2,
+    maxWidth: scale(72),
   },
   centerAnchor: {
     position: "absolute",
-    top: -verticalScale(14),
+    top: 0,
+    bottom: 0,
     left: 0,
     right: 0,
     alignItems: "center",
+    justifyContent: "center",
     zIndex: 2,
   },
-  centerAnchorMorph: {
-    top: verticalScale(4),
-  },
+  centerAnchorMorph: {},
   centerWrap: {
     width: CENTER_SLOT,
     alignItems: "center",
-  },
-  centerBtnShadow: {
-    borderRadius: moderateScale(22),
-    ...Platform.select({
-      web: { boxShadow: "0 6px 16px rgba(0,0,0,0.22)" },
-      default: {
-        shadowColor: "#000",
-        shadowOpacity: 0.22,
-        shadowRadius: 10,
-        shadowOffset: { width: 0, height: 4 },
-        elevation: 10,
-      },
-    }),
+    justifyContent: "center",
   },
   centerBtn: {
     width: CENTER_BTN,
@@ -662,32 +734,20 @@ const styles = StyleSheet.create({
     backgroundColor: colors.fg,
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 2.5,
-    borderColor: "#FFFFFF",
     overflow: "hidden",
   },
+  centerBtnMorph: {
+    backgroundColor: "#2A2A2A",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(255,255,255,0.2)",
+  },
   centerLogo: {
-    width: scale(22),
-    height: scale(22),
+    width: scale(18),
+    height: scale(18),
   },
   centerAppIcon: {
-    width: CENTER_BTN - scale(6),
-    height: CENTER_BTN - scale(6),
-    borderRadius: (CENTER_BTN - scale(6)) / 2,
-  },
-  label: {
-    fontSize: fontSize(9),
-    fontWeight: "700",
-    letterSpacing: -0.15,
-  },
-  centerLabel: {
-    marginTop: verticalScale(3),
-    color: colors.muted,
-  },
-  labelOn: {
-    color: colors.fg,
-  },
-  labelOff: {
-    color: colors.muted,
+    width: CENTER_BTN - scale(4),
+    height: CENTER_BTN - scale(4),
+    borderRadius: (CENTER_BTN - scale(4)) / 2,
   },
 });

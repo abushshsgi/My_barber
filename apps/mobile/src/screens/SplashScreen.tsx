@@ -7,11 +7,11 @@ import {
   Text,
   View,
 } from "react-native";
+import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BrandLogo } from "../components/BrandLogo";
 import { type AppLang, setAppLang } from "../lib/guest";
 import { setAppLanguage } from "../i18n/config";
-import { colors } from "../theme/colors";
 import {
   fontSize,
   moderateScale,
@@ -96,6 +96,7 @@ export function SplashScreen({
         },
       ]}
     >
+      <StatusBar style="light" />
       <View style={styles.center}>
         <Animated.View
           style={{ opacity: logoOp, transform: [{ translateY: logoY }] }}
@@ -117,15 +118,21 @@ export function SplashScreen({
         >
           <Pressable
             style={({ pressed }) => [styles.langBtn, pressed && styles.pressed]}
+            onPress={() => void pick("uz")}
+          >
+            <Text style={styles.langTitle}>O'zbek</Text>
+          </Pressable>
+          <Pressable
+            style={({ pressed }) => [styles.langBtn, pressed && styles.pressed]}
             onPress={() => void pick("ru")}
           >
             <Text style={styles.langTitle}>Русский</Text>
           </Pressable>
           <Pressable
             style={({ pressed }) => [styles.langBtn, pressed && styles.pressed]}
-            onPress={() => void pick("uz")}
+            onPress={() => void pick("en")}
           >
-            <Text style={styles.langTitle}>O'zbek</Text>
+            <Text style={styles.langTitle}>English</Text>
           </Pressable>
         </Animated.View>
       ) : (
@@ -138,7 +145,7 @@ export function SplashScreen({
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#000000",
     paddingHorizontal: scale(24),
   },
   center: {
@@ -156,14 +163,14 @@ const styles = StyleSheet.create({
     minHeight: verticalScale(56),
     borderRadius: moderateScale(28),
     borderWidth: 1.5,
-    borderColor: colors.fg,
-    backgroundColor: "#FFFFFF",
+    borderColor: "#FFFFFF",
+    backgroundColor: "transparent",
     alignItems: "center",
     justifyContent: "center",
   },
   pressed: { opacity: 0.88, transform: [{ scale: 0.985 }] },
   langTitle: {
-    color: colors.fg,
+    color: "#FFFFFF",
     fontSize: fontSize(16),
     fontWeight: "700",
   },

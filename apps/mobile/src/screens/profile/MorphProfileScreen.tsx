@@ -4,7 +4,6 @@ import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { StatusBar } from "expo-status-bar";
 import {
-  ActivityIndicator,
   Platform,
   Pressable,
   RefreshControl,
@@ -18,7 +17,6 @@ import { planLabel } from "../../api/dashboard";
 import { resolveMediaUrl } from "../../api/media";
 import { formatSom, initials } from "../../api/user";
 import { useAuth } from "../../auth/AuthContext";
-import { morfWordmark, morfWordmarkWhite } from "../../branding/morf-logo";
 import { useProfileDashboard } from "../../hooks/useProfileDashboard";
 import { TAB_DOCK_CLEARANCE } from "../../hooks/useHideTabBar";
 import { UsageRing } from "../../components/morph/UsageMeter";
@@ -41,7 +39,7 @@ export function MorphProfileScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
   const { signOut, user: authUser } = useAuth();
   const { dashboard, unreadCount, loading, error, refresh } = useProfileDashboard();
-  const { colors: pal, fs, theme } = useMorphAppearance();
+  const { colors: pal, fs } = useMorphAppearance();
   const { setShell, rememberTab } = useAppShell();
 
   const user = dashboard?.user ?? authUser;
@@ -83,8 +81,6 @@ export function MorphProfileScreen({ navigation }: Props) {
           styles.content,
           { paddingBottom: TAB_DOCK_CLEARANCE + Math.max(insets.bottom, 16) + 60 },
         ]}
-        // RN-web: RefreshControl ScrollView style’ni o‘ziga ko‘chirib ikki nested
-        // overflow:auto hosil qiladi — vertikal scroll ishlamaydi.
         refreshControl={
           Platform.OS === "web" ? undefined : (
             <RefreshControl
@@ -95,13 +91,7 @@ export function MorphProfileScreen({ navigation }: Props) {
           )
         }
       >
-        <View style={styles.topRow}>
-          <Image
-            source={theme === "dark" ? morfWordmarkWhite : morfWordmark}
-            style={styles.wordmark}
-            contentFit="contain"
-          />
-        </View>
+        <Text style={styles.pageTitle}>Profil</Text>
 
         {error ? (
           <Pressable
@@ -123,14 +113,15 @@ export function MorphProfileScreen({ navigation }: Props) {
         >
           <View style={styles.avatarWrap}>
             {avatarUrl ? (
-              <Image source={{ uri: avatarUrl }} style={styles.avatarImg} contentFit="cover" />
+              <Image
+                source={{ uri: avatarUrl }}
+                style={styles.avatarImg}
+                contentFit="cover"
+                cachePolicy="memory-disk"
+              />
             ) : (
               <LinearGradient colors={["#2A9B8F", "#1D6F68"]} style={styles.avatar}>
-                {loading && !dashboard ? (
-                  <ActivityIndicator color="#FFF" />
-                ) : (
-                  <Text style={styles.avatarText}>{initials(display)}</Text>
-                )}
+                <Text style={styles.avatarText}>{initials(display)}</Text>
               </LinearGradient>
             )}
             {verified ? (
@@ -144,10 +135,14 @@ export function MorphProfileScreen({ navigation }: Props) {
               {display}
             </Text>
             <Text style={styles.metaPlan} numberOfLines={1}>
-              {sub?.has_active && days != null ? `${plan} · ${days} kun` : plan}
+              {sub?.has_active
+                ? days != null
+                  ? `${plan} · ${days} kun qoldi`
+                  : plan
+                : "Obuna yo‘q"}
             </Text>
           </View>
-          <Ionicons name="chevron-forward" size={16} color={pal.muted} />
+          <Ionicons name="chevron-forward" size={18} color={pal.muted} />
         </Pressable>
 
         <Pressable
@@ -157,7 +152,7 @@ export function MorphProfileScreen({ navigation }: Props) {
         >
           <View style={styles.usageTop}>
             <View style={styles.usageCopy}>
-              <Text style={styles.usageEyebrow}>Morph AI</Text>
+              <Text style={styles.usageEyebrow}>Obuna</Text>
               <Text style={styles.usageTitle}>
                 {sub?.has_active
                   ? aiLimit > 0
@@ -179,14 +174,45 @@ export function MorphProfileScreen({ navigation }: Props) {
           </View>
           <View style={styles.usageBottom}>
             <Text style={styles.usageCta}>{sub?.has_active ? "Boshqarish" : "Sotib olish"}</Text>
+            <Ionicons name="chevron-forward" size={14} color={pal.accent} />
           </View>
         </Pressable>
+
+        <View style={styles.quickRow}>
+          <QuickTile
+            pal={pal}
+            styles={styles}
+            icon="images-outline"
+            label="Looks"
+            value={String(photoCount)}
+            onPress={() => openMorphStack(navigation, "MorphHistory")}
+          />
+          <QuickTile
+            pal={pal}
+            styles={styles}
+            icon="color-wand-outline"
+            label="Studio"
+            onPress={() => openMorphStack(navigation, "MorphStudio")}
+          />
+          <QuickTile
+            pal={pal}
+            styles={styles}
+            icon="wallet-outline"
+            label="Hamyon"
+            value={formatSom(wallet?.balance ?? 0).replace(" so'm", "")}
+            onPress={() => {
+              setShell("morph");
+              rememberTab("morph", "Profile");
+              navigation.navigate("WalletGate");
+            }}
+          />
+        </View>
 
         <View style={styles.menu}>
           <MenuRow
             pal={pal}
             styles={styles}
-            icon="settings"
+            icon="settings-outline"
             title="Sozlamalar"
             subtitle="Ko'rinish, limit, maxfiylik"
             onPress={openSettings}
@@ -194,29 +220,17 @@ export function MorphProfileScreen({ navigation }: Props) {
           <MenuRow
             pal={pal}
             styles={styles}
-            icon="images"
-            title="Looks"
-            value={String(photoCount)}
-            onPress={() => openMorphStack(navigation, "MorphHistory")}
+            icon="notifications-outline"
+            title="Bildirishnomalar"
+            badge={unreadCount}
+            onPress={() => navigation.navigate("Notifications")}
           />
           <MenuRow
             pal={pal}
             styles={styles}
-            icon="color-wand"
-            title="Studio"
-            onPress={() => openMorphStack(navigation, "MorphStudio")}
-          />
-          <MenuRow
-            pal={pal}
-            styles={styles}
-            icon="wallet"
-            title="Hamyon"
-            value={formatSom(wallet?.balance ?? 0).replace(" so'm", "")}
-            onPress={() => {
-              setShell("morph");
-              rememberTab("morph", "Profile");
-              navigation.navigate("WalletGate");
-            }}
+            icon="lock-closed-outline"
+            title="Xavfsizlik"
+            onPress={() => navigation.navigate("Security")}
             last
           />
         </View>
@@ -264,7 +278,12 @@ export function MorphProfileScreen({ navigation }: Props) {
                   accessibilityRole="button"
                 >
                   {uri ? (
-                    <Image source={{ uri }} style={styles.thumbImg} contentFit="cover" />
+                    <Image
+                      source={{ uri }}
+                      style={styles.thumbImg}
+                      contentFit="cover"
+                      cachePolicy="memory-disk"
+                    />
                   ) : (
                     <View style={[styles.thumbImg, styles.thumbFallback]} />
                   )}
@@ -281,25 +300,6 @@ export function MorphProfileScreen({ navigation }: Props) {
           </ScrollView>
         )}
 
-        <View style={[styles.menu, { marginTop: 4 }]}>
-          <MenuRow
-            pal={pal}
-            styles={styles}
-            icon="notifications"
-            title="Bildirishnomalar"
-            badge={unreadCount}
-            onPress={() => navigation.navigate("Notifications")}
-          />
-          <MenuRow
-            pal={pal}
-            styles={styles}
-            icon="lock-closed"
-            title="Xavfsizlik"
-            onPress={() => navigation.navigate("Security")}
-            last
-          />
-        </View>
-
         <Pressable
           style={({ pressed }) => [styles.logout, pressed && styles.pressed]}
           onPress={() => void signOut()}
@@ -310,6 +310,42 @@ export function MorphProfileScreen({ navigation }: Props) {
         </Pressable>
       </ScrollView>
     </View>
+  );
+}
+
+function QuickTile({
+  pal,
+  styles,
+  icon,
+  label,
+  value,
+  onPress,
+}: {
+  pal: MorphPalette;
+  styles: ReturnType<typeof makeStyles>;
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  value?: string;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [styles.quickTile, pressed && styles.pressed]}
+      accessibilityRole="button"
+    >
+      <View style={styles.quickIcon}>
+        <Ionicons name={icon} size={18} color={pal.fg} />
+      </View>
+      <Text style={styles.quickLabel} numberOfLines={1}>
+        {label}
+      </Text>
+      {value ? (
+        <Text style={styles.quickValue} numberOfLines={1}>
+          {value}
+        </Text>
+      ) : null}
+    </Pressable>
   );
 }
 
@@ -362,14 +398,17 @@ function makeStyles(pal: MorphPalette, fs: (n: number) => number) {
   return StyleSheet.create({
     root: { flex: 1, backgroundColor: pal.bg },
     scroll: { flex: 1, minHeight: 0 },
-    content: { paddingHorizontal: scale(16), flexGrow: 0 },
+    content: { paddingHorizontal: scale(16), flexGrow: 0, gap: 0 },
     historyScroll: { flexGrow: 0 },
-    topRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      marginBottom: verticalScale(12),
+    pageTitle: {
+      ...morphFont,
+      fontSize: fs(28),
+      fontWeight: "800",
+      color: pal.fg,
+      letterSpacing: -0.8,
+      marginBottom: verticalScale(14),
+      marginTop: verticalScale(2),
     },
-    wordmark: { width: scale(104), height: verticalScale(24) },
     errorBanner: {
       flexDirection: "row",
       alignItems: "center",
@@ -491,6 +530,44 @@ function makeStyles(pal: MorphPalette, fs: (n: number) => number) {
     },
     usageHint: { flex: 1, ...morphFont, fontSize: fs(11.5), lineHeight: fs(15), color: pal.muted },
     usageCta: { ...morphFont, fontSize: fs(12.5), fontWeight: "600", color: pal.accent },
+    quickRow: {
+      flexDirection: "row",
+      gap: moderateScale(8),
+      marginBottom: verticalScale(12),
+    },
+    quickTile: {
+      flex: 1,
+      backgroundColor: pal.card,
+      borderRadius: moderateScale(16),
+      paddingVertical: verticalScale(12),
+      paddingHorizontal: scale(10),
+      borderWidth: 1,
+      borderColor: pal.line,
+      alignItems: "flex-start",
+      gap: verticalScale(6),
+      minHeight: verticalScale(78),
+    },
+    quickIcon: {
+      width: scale(30),
+      height: scale(30),
+      borderRadius: moderateScale(10),
+      backgroundColor: pal.theme === "dark" ? "rgba(255,255,255,0.08)" : "#F3F4F6",
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    quickLabel: {
+      ...morphFont,
+      fontSize: fs(12),
+      fontWeight: "600",
+      color: pal.muted,
+    },
+    quickValue: {
+      ...morphFont,
+      fontSize: fs(14),
+      fontWeight: "700",
+      color: pal.fg,
+      letterSpacing: -0.2,
+    },
     sectionHead: {
       flexDirection: "row",
       alignItems: "center",

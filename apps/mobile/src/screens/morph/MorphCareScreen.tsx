@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { LinearGradient } from "expo-linear-gradient";
+import { Image } from "expo-image";
 import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -9,7 +10,6 @@ import {
   Animated,
   Dimensions,
   Easing,
-  Image,
   Keyboard,
   Modal,
   PanResponder,
@@ -202,20 +202,21 @@ export function MorphCareScreen({ navigation, route }: Props) {
   const insets = useSafeAreaInsets();
   const { isAuthenticated } = useAuth();
   const { goMorph, navigateRootTab } = useShellNavigation();
-  const [loading, setLoading] = useState(true);
-  const [access, setAccess] = useState<{ allowed: boolean; detail?: string } | null>(null);
+  const [access, setAccess] = useState<{ allowed: boolean; detail?: string } | null>({
+    allowed: true,
+  });
   const [viewMode, setViewMode] = useState<ViewMode>("hub");
   const [selectedCat, setSelectedCat] = useState("all");
   const [quiz, setQuiz] = useState<CareQuizAnswers>(() => defaultQuiz());
-  const [step, setStep] = useState<QuizStep | "plan">(0);
-  /** Care hubda ham floating tab bar yo‘q — orqaga tugmasi bilan chiqiladi. */
-  useHideTabBarWhen(true);
+  const [step, setStep] = useState<QuizStep | "plan" | "boot">("boot");
   const [catalog, setCatalog] = useState<CareProduct[]>([]);
   const [myProducts, setMyProducts] = useState<MyCareProduct[]>([]);
   const [saving, setSaving] = useState(false);
   const [selectedDayIdx, setSelectedDayIdx] = useState(0);
   const [addToast, setAddToast] = useState<{ title: string; image: string } | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
+  /** Hubda pill tab ko‘rinadi; quiz/search/ichki rejimlarda yashiriladi. */
+  useHideTabBarWhen(viewMode !== "hub" || searchOpen || step === "boot");
   const [searchQuery, setSearchQuery] = useState("");
   const [previewId, setPreviewId] = useState<number | null>(null);
   const [previewVisible, setPreviewVisible] = useState(false);
@@ -539,7 +540,19 @@ export function MorphCareScreen({ navigation, route }: Props) {
   }, []);
 
   const bootstrap = useCallback(async () => {
-    setLoading(true);
+    // Lokal quiz darrov — spinner yo‘q.
+    const saved = await loadCareQuiz().catch(() => null);
+    const myProds = await loadMyProducts().catch(() => []);
+    setMyProducts(myProds);
+    if (saved?.condition && saved?.texture && saved?.colorStatus) {
+      setQuiz(saved);
+      setStep("plan");
+      setViewMode("hub");
+    } else {
+      setStep(0);
+      setViewMode("flow");
+    }
+
     try {
       const accessRes = CARE_ACCESS_DEBUG
         ? { allowed: true as const, detail: undefined }
@@ -547,13 +560,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
       setAccess(accessRes);
       if (!accessRes.allowed) return;
 
-      const [saved, profile, myProds] = await Promise.all([
-        loadCareQuiz(),
-        fetchHairCareProfile().catch(() => null),
-        loadMyProducts().catch(() => []),
-      ]);
-      setMyProducts(myProds);
-
+      const profile = await fetchHairCareProfile().catch(() => null);
       if (profile?.complete && profile.condition && profile.texture && profile.color_status) {
         const next: CareQuizAnswers = {
           condition: profile.condition as HairCondition,
@@ -561,19 +568,15 @@ export function MorphCareScreen({ navigation, route }: Props) {
           colorStatus: profile.color_status as HairColorStatus,
         };
         setQuiz(next);
-        await saveCareQuiz(next);
+        void saveCareQuiz(next);
         setStep("plan");
-      } else if (saved) {
-        setQuiz(saved);
-        setStep("plan");
-      } else {
-        setStep(0);
+        setViewMode("hub");
       }
 
       const products = await fetchCareProducts({ recommended: true }).catch(() => []);
       setCatalog(products);
-    } finally {
-      setLoading(false);
+    } catch {
+      /* hub ochiq qoladi */
     }
   }, []);
 
@@ -585,7 +588,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
     setSaving(true);
     try {
       await saveCareQuiz(quiz);
-      await updateHairCareProfile({
+      void updateHairCareProfile({
         condition: quiz.condition,
         texture: quiz.texture,
         color_status: quiz.colorStatus,
@@ -596,11 +599,13 @@ export function MorphCareScreen({ navigation, route }: Props) {
               ? "dry"
               : "normal",
       }).catch(() => undefined);
-      await markCareOnboardingSeen();
-      const products = await fetchCareProducts({ recommended: true }).catch(() => []);
-      setCatalog(products);
+      void markCareOnboardingSeen();
       setStep("plan");
       setViewMode("hub");
+      // Catalog fonida — hub darrov ochiladi.
+      void fetchCareProducts({ recommended: true })
+        .then((products) => setCatalog(products))
+        .catch(() => undefined);
     } finally {
       setSaving(false);
     }
@@ -860,12 +865,8 @@ export function MorphCareScreen({ navigation, route }: Props) {
     [goMorph, isAuthenticated, navigation],
   );
 
-  if (loading) {
-    return (
-      <View style={[styles.root, styles.center, { paddingTop: insets.top }]}>
-        <ActivityIndicator color="rgba(255,255,255,0.5)" />
-      </View>
-    );
+  if (step === "boot") {
+    return <View style={[styles.root, { backgroundColor: "#FAFAFA" }]} />;
   }
 
   if (access && !access.allowed) {
@@ -1010,7 +1011,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
           style={[
             styles.hubScroll,
             {
-              paddingTop: searchOpen ? insets.top + 6 : 0,
+              paddingTop: searchOpen ? insets.top + 6 : insets.top + 8,
             },
           ]}
         >
@@ -1029,7 +1030,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
                 styles.promoCard,
                 {
                   height: hubLayout.promoH,
-                  paddingTop: insets.top + 4,
+                  paddingTop: 12,
                   paddingHorizontal: hubLayout.promoPad,
                   borderRadius: hubLayout.promoRadius,
                 },
@@ -1038,7 +1039,9 @@ export function MorphCareScreen({ navigation, route }: Props) {
               <Image
                 source={{ uri: weatherImg }}
                 style={styles.promoHeroImg}
-                resizeMode="cover"
+                contentFit="cover"
+                cachePolicy="memory-disk"
+                priority="high"
               />
               <LinearGradient
                 colors={["rgba(8,12,20,0.35)", "rgba(8,12,20,0.15)", "rgba(8,12,20,0.82)"]}
@@ -1318,7 +1321,8 @@ export function MorphCareScreen({ navigation, route }: Props) {
                     <Image
                       source={{ uri: prod.image }}
                       style={styles.featuredCardImg}
-                      resizeMode="cover"
+                      contentFit="cover"
+                      cachePolicy="memory-disk"
                     />
                     <LinearGradient
                       colors={["transparent", "rgba(0,0,0,0.25)", "rgba(0,0,0,0.88)"]}
@@ -1482,7 +1486,8 @@ export function MorphCareScreen({ navigation, route }: Props) {
                         uri: "https://images.unsplash.com/photo-1522338242992-e1a639acd9c4?auto=format&fit=crop&w=280&q=80",
                       }}
                       style={styles.hubCardArt}
-                      resizeMode="cover"
+                      contentFit="cover"
+                      cachePolicy="memory-disk"
                     />
                     <View style={styles.hubCardBody}>
                       <View style={styles.hubCardHead}>
@@ -1515,7 +1520,8 @@ export function MorphCareScreen({ navigation, route }: Props) {
                         uri: "https://images.unsplash.com/photo-1556228578-0d85b1a4d571?auto=format&fit=crop&w=280&q=80",
                       }}
                       style={styles.hubCardArt}
-                      resizeMode="cover"
+                      contentFit="cover"
+                      cachePolicy="memory-disk"
                     />
                     <View style={styles.hubCardBody}>
                       <View style={styles.hubCardHead}>
@@ -1639,7 +1645,8 @@ export function MorphCareScreen({ navigation, route }: Props) {
                         >
                           <View style={styles.searchCardMedia}>
                             {item.image ? (
-                              <Image source={{ uri: item.image }} style={styles.searchCardImg} resizeMode="contain" />
+                              <Image source={{ uri: item.image }} style={styles.searchCardImg} contentFit="contain"
+                                cachePolicy="memory-disk" />
                             ) : (
                               <View style={[styles.searchCardImg, styles.searchRowPh]}>
                                 <Ionicons name="flask-outline" size={22} color="#111111" />
@@ -1759,7 +1766,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
               },
             ]}
           >
-            <Image source={{ uri: addToast.image }} style={styles.addToastImg} />
+            <Image source={{ uri: addToast.image }} style={styles.addToastImg} contentFit="cover" cachePolicy="memory-disk" />
             <View style={styles.addToastBody}>
               <Text style={styles.addToastEyebrow}>{t("care.myProducts.addedTitle")}</Text>
               <Text style={styles.addToastTitle} numberOfLines={1}>
@@ -1933,6 +1940,7 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFill,
     width: "100%",
     height: "100%",
+    opacity: 0.95,
   },
   promoScrim: {
     ...StyleSheet.absoluteFill,

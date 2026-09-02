@@ -80,6 +80,7 @@ class UserSerializer(serializers.ModelSerializer):
             "role",
             "region",
             "birth_year",
+            "gender",
             "age",
             "latitude",
             "longitude",

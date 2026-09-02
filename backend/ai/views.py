@@ -817,7 +817,13 @@ class AiMorphChatView(UnthrottledAPIView):
 
         history = request.data.get("history")
         context_raw = request.data.get("context")
-        context = context_raw if isinstance(context_raw, dict) else None
+        context = dict(context_raw) if isinstance(context_raw, dict) else None
+        user_gender = (getattr(user, "gender", None) or "").strip().lower()
+        if user_gender in ("male", "female"):
+            if context is None:
+                context = {}
+            if not str(context.get("advice_gender") or "").strip():
+                context["advice_gender"] = user_gender
         from ai.chat_prompts import is_voice_mode
 
         if is_voice_mode(context) and not can_use_morph_voice(user):

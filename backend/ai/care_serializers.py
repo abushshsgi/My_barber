@@ -67,6 +67,7 @@ class CareProductSerializer(serializers.ModelSerializer):
             "brand",
             "slug",
             "category",
+            "audience",
             "barcode",
             "country_of_origin",
             "country_code_prefix",

@@ -65,8 +65,8 @@ function MysaloonProfileHome({ navigation }: Props) {
   const plan = planLabel(sub);
 
   return (
-    <View style={[styles.root, { paddingTop: Math.max(insets.top, 10) }]}>
-      <StatusBar style="dark" />
+    <View style={[styles.root, { backgroundColor: colors.bg }]}>
+      <View style={{ height: insets.top, backgroundColor: colors.bg }} />
       <ScrollView
         style={{ flex: 1 }}
         showsVerticalScrollIndicator={false}
@@ -220,7 +220,7 @@ function MysaloonProfileHome({ navigation }: Props) {
         </Pressable>
 
         <Text style={styles.guestHint}>
-          Shu akkaunt Morf AI try-on va MySaloon bronlari uchun bir xil
+          Shu akkaunt MySaloon bronlari uchun ishlaydi
         </Text>
       </ScrollView>
     </View>

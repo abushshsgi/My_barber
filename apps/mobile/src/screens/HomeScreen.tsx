@@ -112,16 +112,11 @@ export function HomeScreen({ onOpenMap, onOpenExplore }: Props) {
       style={[
         styles.root,
         {
-          paddingTop: Math.max(insets.top, spacing.sm),
-          paddingBottom: TAB_DOCK_CLEARANCE + Math.max(insets.bottom, 8),
+          backgroundColor: colors.bg,
         },
       ]}
     >
-      {/*
-        Kontent har doim bir ekranga sig'adi (`flexGrow: 1` + flex bo'limlar),
-        shuning uchun bu ScrollView amalda scroll qilmaydi — u faqat
-        pull-to-refresh imkoniyatini saqlab qoladi.
-      */}
+      <View style={{ height: insets.top, backgroundColor: colors.bg }} />
       <ScrollView
         style={styles.flex}
         contentContainerStyle={styles.content}

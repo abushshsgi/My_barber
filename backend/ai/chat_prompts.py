@@ -105,7 +105,7 @@ def _format_prefs_block(context: dict[str, Any] | None) -> str:
             "- Javob uslubi: chuqur maslahat (standart). "
             "Savolga to'liq javob ber, 1–2 jumlada yopma."
         )
-    gender = str(context.get("advice_gender") or "").strip().lower()
+    gender = str(context.get("advice_gender") or context.get("user_gender") or "").strip().lower()
     if gender in ("male", "female"):
         lines.append(
             "- Maslahat jinsi: "

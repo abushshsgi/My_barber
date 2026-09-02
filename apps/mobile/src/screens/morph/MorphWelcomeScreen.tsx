@@ -1,23 +1,17 @@
 import { useEffect } from "react";
 import { View } from "react-native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { readMorphIntroStep } from "../../lib/morph-onboarding";
+import { markMorphTryOnIntroDone } from "../../lib/morph-onboarding";
 import type { MorphStackParamList } from "../../navigation/MorphStack";
 
 type Props = NativeStackScreenProps<MorphStackParamList, "MorphWelcome">;
 
-/** Eski Welcome — yangi 3 slaydli carouselga yo‘naltiradi. */
+/** Eski Welcome/Guide o‘rniga to‘g‘ridan-to‘g‘ri Try-on capture. */
 export function MorphWelcomeScreen({ navigation }: Props) {
   useEffect(() => {
-    let alive = true;
-    void readMorphIntroStep().then((startIndex) => {
-      if (!alive) return;
-      navigation.replace("MorphGuide", { startIndex });
-    });
-    return () => {
-      alive = false;
-    };
+    void markMorphTryOnIntroDone();
+    navigation.replace("MorphCapture");
   }, [navigation]);
 
-  return <View style={{ flex: 1, backgroundColor: "#FAFAFA" }} />;
+  return <View style={{ flex: 1, backgroundColor: "#111111" }} />;
 }

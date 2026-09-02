@@ -1,4 +1,4 @@
-/** Expo web — MediaRecorder + AnalyserNode (expo-av metering webda ishlamaydi). */
+/** Expo web — MediaRecorder + AnalyserNode. */
 
 export function rmsToMetering(rms: number): number {
   if (rms <= 0.0001) return -160;

@@ -17,6 +17,7 @@ export type ApiUser = {
   onboarding_completed?: boolean;
   avatar?: string | null;
   has_password?: boolean;
+  gender?: "male" | "female" | null;
 };
 
 export type UpdateMePayload = Partial<
@@ -31,6 +32,7 @@ export type UpdateMePayload = Partial<
     | "latitude"
     | "longitude"
     | "onboarding_completed"
+    | "gender"
   >
 >;
 

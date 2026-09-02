@@ -3,13 +3,11 @@ import { Image } from "expo-image";
 import { StatusBar } from "expo-status-bar";
 import { useMemo, useState } from "react";
 import {
-  LayoutAnimation,
   Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
-  UIManager,
   useWindowDimensions,
   View,
 } from "react-native";
@@ -27,10 +25,6 @@ import {
   scale,
   verticalScale,
 } from "../../../utils/responsive";
-
-if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
 
 type Props = {
   product: CareProduct;
@@ -159,11 +153,9 @@ export function CareProductPreviewSheet({
   const fitVerdict = t(`care.preview.fit.${labelKey}`, { defaultValue: fb[labelKey] });
 
   const openTarkib = () => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setPanel("tarkib");
   };
   const backToInfo = () => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setPanel("info");
   };
 
@@ -499,8 +491,12 @@ const styles = StyleSheet.create({
     color: C.fg,
   },
   footer: {
-    gap: moderateScale(6),
-    paddingTop: verticalScale(8),
+    gap: moderateScale(10),
+    paddingTop: verticalScale(16),
+    paddingHorizontal: scale(16),
+    backgroundColor: "#FFFFFF",
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: "rgba(0,0,0,0.05)",
   },
   footerRow: {
     flexDirection: "row",

@@ -32,14 +32,13 @@ import Animated, {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { updateMe } from "../api/user";
 import { useAuth } from "../auth/AuthContext";
-import { getGuestLocation } from "../lib/guest";
+import { getAppGender, getGuestLocation } from "../lib/guest";
 import { roundCoord } from "../lib/onboarding";
 import {
   sanitizeDisplayNameInput,
   validateDisplayName,
   type DisplayNameErrorKey,
 } from "../lib/validate-display-name";
-import { AccountCreatingScreen } from "./AccountCreatingScreen";
 import { colors } from "../theme/colors";
 import {
   fontSize,
@@ -90,7 +89,7 @@ function initialsOf(first: string, last: string): string {
  * Login dan keyin — ism, familiya va yosh bitta sahifada.
  * Animatsiya + avatar preview + ikonali maydonlar.
  */
-export function OnboardingScreen() {
+export function OnboardingScreen({ onComplete }: { onComplete?: () => void }) {
   const insets = useSafeAreaInsets();
   const { user, refreshMe } = useAuth();
 
@@ -228,11 +227,13 @@ export function OnboardingScreen() {
     const startedAt = Date.now();
     try {
       const guest = await getGuestLocation();
+      const gender = await getAppGender();
       await updateMe({
         first_name: first ?? "",
         last_name: rest.join(" "),
         birth_year: birthYear,
         onboarding_completed: true,
+        ...(gender ? { gender } : {}),
         ...(guest
           ? {
               latitude: roundCoord(guest.latitude),
@@ -244,15 +245,20 @@ export function OnboardingScreen() {
       await refreshMe();
       const wait = Math.max(0, 900 - (Date.now() - startedAt));
       if (wait > 0) await new Promise((r) => setTimeout(r, wait));
+      onComplete?.();
     } catch (e) {
       finishingRef.current = false;
       setSaving(false);
       setError(e instanceof Error ? e.message : "Saqlashda xatolik");
     }
-  }, [age, ctaScale, firstName, lastName, refreshMe]);
+  }, [age, ctaScale, firstName, lastName, onComplete, refreshMe]);
 
   if (saving) {
-    return <AccountCreatingScreen />;
+    return (
+      <View style={[styles.root, { alignItems: "center", justifyContent: "center" }]}>
+        <Text style={{ color: colors.fg, fontSize: fontSize(15) }}>Saqlanmoqda…</Text>
+      </View>
+    );
   }
 
   const initials = initialsOf(firstName, lastName);

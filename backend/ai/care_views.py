@@ -113,9 +113,23 @@ class CareProductListView(UnthrottledAPIView):
         if exclude_ids:
             qs = qs.exclude(id__in=exclude_ids)
 
+        # Auth user jinsi bo‘yicha mahsulot filtri (tavsiya qilinmagan ro‘yxat ham).
+        if getattr(request.user, "is_authenticated", False):
+            gender = (getattr(request.user, "gender", None) or "").strip().lower()
+            if gender == "male":
+                qs = qs.filter(Q(audience__in=["men", "unisex"]) | Q(audience=""))
+            elif gender == "female":
+                qs = qs.filter(Q(audience__in=["women", "unisex"]) | Q(audience=""))
+
         if recommended and request.user.is_authenticated:
             profile = HairCareProfile.objects.filter(user=request.user).first()
-            products = recommend_products(profile, limit=40)
+            audience = None
+            gender = (getattr(request.user, "gender", None) or "").strip().lower()
+            if gender == "male":
+                audience = "men"
+            elif gender == "female":
+                audience = "women"
+            products = recommend_products(profile, limit=40, audience=audience)
             if category:
                 products = [p for p in products if p.category == category]
             if q:
@@ -295,6 +309,7 @@ class CarePlanGenerateView(UnthrottledAPIView):
                 scalp=scalp,
                 concerns=concerns,
                 products=product_payload,
+                gender=(getattr(request.user, "gender", None) or "").strip().lower(),
             )
         except AiStyleError as exc:
             return Response({"detail": str(exc)}, status=exc.status or 502)

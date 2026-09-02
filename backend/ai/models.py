@@ -420,6 +420,11 @@ class CareProduct(models.Model):
         SPRAY = "spray", "Sprey"
         OTHER = "other", "Boshqa"
 
+    class Audience(models.TextChoices):
+        MEN = "men", "Men"
+        WOMEN = "women", "Women"
+        UNISEX = "unisex", "Unisex"
+
     name = models.CharField(max_length=160)
     brand = models.CharField(max_length=120, blank=True, default="")
     slug = models.SlugField(max_length=180, unique=True, db_index=True)
@@ -427,6 +432,12 @@ class CareProduct(models.Model):
         max_length=16,
         choices=Category.choices,
         default=Category.SHAMPOO,
+        db_index=True,
+    )
+    audience = models.CharField(
+        max_length=8,
+        choices=Audience.choices,
+        default=Audience.UNISEX,
         db_index=True,
     )
     barcode = models.CharField(

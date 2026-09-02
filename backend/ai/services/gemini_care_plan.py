@@ -28,6 +28,7 @@ def _build_prompt(
     scalp: str,
     concerns: list[str],
     products: list[dict[str, Any]],
+    gender: str = "",
 ) -> str:
     lines: list[str] = []
     for p in products[:24]:
@@ -58,6 +59,10 @@ def _build_prompt(
     catalog = "\n".join(lines) if lines else "(foydalanuvchida mahsulot yo'q — umumiy tavsiya bering)"
     concern_s = ", ".join(concerns) if concerns else "none"
     scalp_s = scalp or "unknown"
+    gender_s = (gender or "").strip().lower()
+    gender_line = ""
+    if gender_s in ("male", "female"):
+        gender_line = f"\n- gender: {gender_s}"
 
     return f"""You are a senior trichologist for Morf AI (MyBarber).
 Build a PERSONAL hair-care routine for THIS user using THEIR products when possible.
@@ -67,7 +72,7 @@ USER HAIR PROFILE:
 - texture: {texture}
 - color_status: {color_status}
 - scalp: {scalp_s}
-- concerns: {concern_s}
+- concerns: {concern_s}{gender_line}
 
 USER PRODUCTS (prefer these by name in every task; respect fit% and why):
 {catalog}
@@ -177,6 +182,7 @@ def generate_care_plan(
     products: list[dict[str, Any]],
     scalp: str = "",
     concerns: list[str] | None = None,
+    gender: str = "",
 ) -> dict[str, Any]:
     prompt = _build_prompt(
         condition=condition,
@@ -185,6 +191,7 @@ def generate_care_plan(
         scalp=scalp or "",
         concerns=concerns or [],
         products=products,
+        gender=gender or "",
     )
     body = {
         "contents": [{"role": "user", "parts": [{"text": prompt}]}],

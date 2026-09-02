@@ -23,6 +23,7 @@ import { getLastPhone } from "../auth/storage";
 import { morfWordmarkWhite } from "../branding/morf-logo";
 import { BrandLogo } from "../components/BrandLogo";
 import { GoogleGlyph } from "../components/GoogleGlyph";
+import { useHideTabBar } from "../hooks/useHideTabBar";
 import { useAppShell } from "../lib/AppShellContext";
 import { setPendingReferralCode } from "../lib/referral-storage";
 import { colors } from "../theme/colors";
@@ -36,6 +37,7 @@ import {
 type Step = "choose" | "phone" | "password" | "code";
 
 export function LoginScreen() {
+  useHideTabBar();
   const insets = useSafeAreaInsets();
   const auth = useAuth();
   const google = useGoogleAuth();
@@ -565,23 +567,23 @@ const styles = StyleSheet.create({
     color: colors.fg,
     fontWeight: "700",
   },
-  titleMorph: { color: "#FFFFFF" },
-  subMorph: { color: "rgba(255,255,255,0.55)" },
+  titleMorph: { color: colors.fg },
+  subMorph: { color: colors.muted },
   outlineBtnMorph: {
-    borderColor: "rgba(255,255,255,0.85)",
+    borderColor: colors.border,
     backgroundColor: "transparent",
   },
-  outlineBtnTextMorph: { color: "#FFFFFF" },
-  primaryBtnMorph: { backgroundColor: "#FFFFFF" },
-  primaryBtnTextMorph: { color: "#0A0A0A" },
+  outlineBtnTextMorph: { color: colors.fg },
+  primaryBtnMorph: { backgroundColor: colors.fg },
+  primaryBtnTextMorph: { color: "#FFFFFF" },
   phoneRowMorph: {
-    borderColor: "rgba(255,255,255,0.55)",
-    backgroundColor: "rgba(255,255,255,0.08)",
+    borderColor: colors.fg,
+    backgroundColor: "#FFFFFF",
   },
-  prefixMorph: { color: "#FFFFFF" },
-  phoneInputMorph: { color: "#FFFFFF" },
+  prefixMorph: { color: colors.fg },
+  phoneInputMorph: { color: colors.fg },
   fieldMorph: {
-    backgroundColor: "rgba(255,255,255,0.08)",
-    color: "#FFFFFF",
+    backgroundColor: colors.surface,
+    color: colors.fg,
   },
 });

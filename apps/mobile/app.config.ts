@@ -21,6 +21,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     icon: "./assets/icon.png",
     userInterfaceStyle: "light",
     scheme: "mysaloon",
+    // Reanimated 4 + worklets — faqat New Architecture.
+    newArchEnabled: true,
     ios: {
       supportsTablet: true,
       bundleIdentifier: "uz.mysaloon.app",
@@ -37,6 +39,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     },
     android: {
       package: "uz.mysaloon.app",
+      googleServicesFile: "./google-services.json",
       permissions: ["ACCESS_COARSE_LOCATION", "ACCESS_FINE_LOCATION", "RECORD_AUDIO"],
       adaptiveIcon: {
         backgroundColor: "#FFFFFF",
@@ -54,7 +57,25 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     },
     plugins: [
       [
-        "expo-av",
+        "expo-navigation-bar",
+        {
+          appearance: "light",
+          behavior: "overlay-pan",
+          visibility: "show",
+          position: "absolute",
+        },
+      ],
+      "./plugins/withUncompressedNativeLibs",
+      [
+        "expo-splash-screen",
+        {
+          backgroundColor: "#000000",
+          image: "./assets/splash-icon.png",
+          imageWidth: 220,
+        },
+      ],
+      [
+        "expo-audio",
         {
           microphonePermission:
             "Morf AI bilan ovozli suhbat uchun mikrofon kerak.",
@@ -94,10 +115,12 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         "expo-build-properties",
         {
           android: {
-            // R8 can strip Hermes/Reanimated; compressed .so fails dlopen on many phones.
+            // Uncompressed .so + extractNativeLibs=false (plugin) —
+            // compressed JNI dlopen crash; extracted libs fail 16 KB pages.
             enableMinifyInReleaseBuilds: false,
             enableShrinkResourcesInReleaseBuilds: false,
-            useLegacyPackaging: true,
+            useLegacyPackaging: false,
+            buildArchs: ["armeabi-v7a", "arm64-v8a"],
             extraProguardRules: [
               "-keep class expo.modules.** { *; }",
               "-keep class com.facebook.react.** { *; }",
@@ -119,7 +142,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         process.env.EXPO_PUBLIC_API_URL?.trim() || "https://api.mysaloon.uz",
       googleClientId:
         process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID ||
-        "990469146793-ep627vhgbidpuojfrv0crlsh3a5o52tn.apps.googleusercontent.com",
+        "990469146793-tkfiilj8078mrqhovup9l19qv6pce857.apps.googleusercontent.com",
       googleMapsApiKey: googleMapsApiKey || undefined,
       eas: {
         projectId: "7a541b52-f3c6-4bef-a463-8feaf27eba52",
