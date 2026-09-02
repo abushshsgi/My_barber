@@ -327,7 +327,11 @@ export function MapScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.surface },
   mapBoot: {
-    ...StyleSheet.absoluteFill,
+    position: "absolute",
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: colors.surface,

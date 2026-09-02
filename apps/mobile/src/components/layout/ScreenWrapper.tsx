@@ -9,13 +9,10 @@ import {
   type StyleProp,
   type ViewStyle,
 } from "react-native";
-import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colors } from "../../theme/colors";
 import { H_PADDING, TAB_DOCK_CLEARANCE, spacing } from "../../utils/responsive";
-
-/** Notch/Dynamic Island bo'lmagan qurilmalarda ham minimal yuqori chekka. */
-const MIN_TOP_PAD = 8;
+import { AppStatusBar, safeTop } from "../ui/AppStatusBar";
 
 /** Home indicator bo'lmagan Android'da ham minimal pastki chekka. */
 const MIN_BOTTOM_PAD = 10;
@@ -94,7 +91,7 @@ export function ScreenWrapper({
 
   const frame = useMemo(() => {
     const dock = withTabDock ? TAB_DOCK_CLEARANCE : 0;
-    const top = applyTop ? Math.max(insets.top, MIN_TOP_PAD) : 0;
+    const top = applyTop ? safeTop(insets.top) : 0;
     const safeBottom = applyBottom ? Math.max(insets.bottom, MIN_BOTTOM_PAD) : 0;
 
     return {
@@ -166,7 +163,7 @@ export function ScreenWrapper({
 
   return (
     <View style={[styles.root, { backgroundColor }, style]} testID={testID}>
-      {statusBarStyle ? <StatusBar style={statusBarStyle} /> : null}
+      {statusBarStyle ? <AppStatusBar style={statusBarStyle} /> : null}
       {backdrop ? (
         <View style={StyleSheet.absoluteFill} pointerEvents="none">
           {backdrop}

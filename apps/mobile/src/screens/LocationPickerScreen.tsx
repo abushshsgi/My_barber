@@ -11,7 +11,6 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   geocodeAddress,
@@ -26,6 +25,7 @@ import {
   OnboardingMap,
   type OnboardingMapHandle,
 } from "../components/onboarding/OnboardingMap";
+import { AppStatusBar, safeTop } from "../components/ui/AppStatusBar";
 import { setGuestLocation } from "../lib/guest";
 import type { LocationEntryMode } from "./GetStartedScreen";
 import { colors } from "../theme/colors";
@@ -263,12 +263,12 @@ export function LocationPickerScreen({
         style={[
           styles.searchRoot,
           {
-            paddingTop: insets.top + 8,
+            paddingTop: safeTop(insets.top, 8),
             paddingBottom: Math.max(insets.bottom, 12),
           },
         ]}
       >
-        <StatusBar style="dark" />
+        <AppStatusBar style="dark" />
         <View style={styles.searchNav}>
           <Pressable
             onPress={openMap}
@@ -358,7 +358,7 @@ export function LocationPickerScreen({
 
   return (
     <View style={styles.mapRoot}>
-      <StatusBar style="dark" />
+      <AppStatusBar style="dark" />
       <View style={styles.mapLayer}>
         {mapReady ? (
           <OnboardingMap
@@ -384,7 +384,7 @@ export function LocationPickerScreen({
         <View style={styles.pinDot} />
       </View>
 
-      <View style={[styles.mapTopBar, { paddingTop: insets.top + 10 }]}>
+      <View style={[styles.mapTopBar, { paddingTop: safeTop(insets.top, 10) }]}>
         <Pressable
           onPress={openSearch}
           style={styles.backCircle}
@@ -583,7 +583,11 @@ const styles = StyleSheet.create({
 
   mapRoot: { flex: 1, backgroundColor: "#EEF0F3" },
   mapLayer: {
-    ...StyleSheet.absoluteFill,
+    position: "absolute",
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
     zIndex: 0,
   },
   mapBoot: {

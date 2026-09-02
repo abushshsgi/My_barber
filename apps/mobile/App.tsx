@@ -45,7 +45,6 @@ import { AccountCreatingScreen } from "./src/screens/AccountCreatingScreen";
 import { ToastProvider } from "./src/components/ui/ToastProvider";
 import { colors } from "./src/theme/colors";
 import { NavigationContainer } from "@react-navigation/native";
-import { StatusBar } from "expo-status-bar";
 import * as NavigationBar from "expo-navigation-bar";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import {
@@ -53,6 +52,7 @@ import {
   initialWindowMetrics,
 } from "react-native-safe-area-context";
 import { AppErrorBoundary } from "./src/components/AppErrorBoundary";
+import { AppStatusBar } from "./src/components/ui/AppStatusBar";
 import { updateMe } from "./src/api/user";
 
 void ExpoSplashScreen.preventAutoHideAsync().catch(() => {});
@@ -293,7 +293,7 @@ export default function App() {
               <GoogleAuthSessionProvider>
                 <ToastProvider>
                   <NavigationContainer>
-                    <StatusBar style="dark" />
+                    <AppStatusBar style="dark" />
                     <AppGate />
                   </NavigationContainer>
                 </ToastProvider>

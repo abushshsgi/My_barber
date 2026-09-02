@@ -3,7 +3,6 @@ import { useFocusEffect } from "@react-navigation/native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { LinearGradient } from "expo-linear-gradient";
 import { Image } from "expo-image";
-import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -40,6 +39,7 @@ import { CareProductPreviewSheet } from "../../components/morph/care/CareProduct
 import { CareCatalogMark } from "../../components/morph/care/CareCatalogMark";
 import { CareRoutineSheet } from "../../components/morph/care/CareRoutineSheet";
 import { DarkMeshAmbientBg } from "../../components/morph/care/DarkMeshAmbientBg";
+import { AppStatusBar, safeTop } from "../../components/ui/AppStatusBar";
 import { useCareWeather } from "../../hooks/useCareWeather";
 import { useHideTabBarWhen } from "../../hooks/useHideTabBar";
 import {
@@ -215,8 +215,13 @@ export function MorphCareScreen({ navigation, route }: Props) {
   const [selectedDayIdx, setSelectedDayIdx] = useState(0);
   const [addToast, setAddToast] = useState<{ title: string; image: string } | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
-  /** Hubda tab yashirin; quiz/search ham. */
-  useHideTabBarWhen(viewMode === "hub" || searchOpen || step === "boot");
+  /** Hubda tab yashirin; quiz/search ham — soch tahlili to‘liq ekran. */
+  useHideTabBarWhen(
+    viewMode === "hub" ||
+      searchOpen ||
+      step === "boot" ||
+      typeof step === "number",
+  );
   const [searchQuery, setSearchQuery] = useState("");
   const [previewId, setPreviewId] = useState<number | null>(null);
   const [previewVisible, setPreviewVisible] = useState(false);
@@ -879,7 +884,8 @@ export function MorphCareScreen({ navigation, route }: Props) {
 
   if (access && !access.allowed) {
     return (
-      <View style={[styles.root, styles.pad, { paddingTop: insets.top + 12 }]}>
+      <View style={[styles.root, styles.pad, { paddingTop: safeTop(insets.top, 12) }]}>
+        <AppStatusBar style="dark" />
         <View style={styles.navBarRow}>
           <Pressable
             style={styles.navCircleBtn}
@@ -935,13 +941,22 @@ export function MorphCareScreen({ navigation, route }: Props) {
 
     return (
       <View style={styles.onboardRoot}>
+        <AppStatusBar style="dark" />
         <LinearGradient
           colors={["#F0F0F0", "#F0F0F0", "#FAFAFA"]}
           start={{ x: 0.1, y: 0 }}
           end={{ x: 0.9, y: 0.55 }}
           style={StyleSheet.absoluteFill}
         />
-        <View style={[styles.onboardPad, { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 16 }]}>
+        <View
+          style={[
+            styles.onboardPad,
+            {
+              paddingTop: safeTop(insets.top, 12),
+              paddingBottom: Math.max(insets.bottom, 12) + 16,
+            },
+          ]}
+        >
           <View style={styles.navBarRow}>
             <Pressable
               style={styles.navCircleBtnLight}
@@ -956,14 +971,14 @@ export function MorphCareScreen({ navigation, route }: Props) {
           </View>
           <ScrollView
             style={{ flex: 1 }}
-            contentContainerStyle={{ flexGrow: 1, justifyContent: "center" }}
+            contentContainerStyle={{ flexGrow: 1, paddingBottom: verticalScale(16) }}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
           >
             <Text style={styles.onboardH1}>{quizMeta.title}</Text>
             <Text style={styles.onboardSub}>{quizMeta.sub}</Text>
             <View style={styles.progressTrackLight}>
-              <View style={[styles.progressFillLight, { width: `${((step + 1) / 3) * 100}%` }]} />
+              <View style={[styles.progressFillLight, { width: `${((Number(step) + 1) / 3) * 100}%` }]} />
             </View>
             <View style={styles.optGridLight}>
               {quizMeta.opts.map((opt) => {
@@ -986,13 +1001,15 @@ export function MorphCareScreen({ navigation, route }: Props) {
             {typeof step === "number" && step > 0 ? (
               <Pressable
                 style={styles.ghostBtnLight}
-                onPress={() => setStep((s) => (typeof s === "number" && s > 0 ? ((s - 1) as QuizStep) : 0))}
+                onPress={() =>
+                  setStep((s) => (typeof s === "number" && s > 0 ? ((s - 1) as QuizStep) : 0))
+                }
               >
                 <Text style={styles.ghostBtnLightText}>{t("common.back")}</Text>
               </Pressable>
             ) : null}
             <Pressable
-              style={[styles.primaryBtnLight, styles.flexGrow, saving && styles.disabled]}
+              style={[styles.primaryBtnLight, styles.primaryBtnLightGrow, saving && styles.disabled]}
               disabled={saving}
               onPress={() => {
                 if (step === 2) void finishQuiz();
@@ -1012,14 +1029,14 @@ export function MorphCareScreen({ navigation, route }: Props) {
   if (viewMode === "hub") {
     return (
       <View style={[styles.hubRoot, { paddingBottom: hubLayout.dockClearance }]}>
-        <StatusBar style="dark" />
+        <AppStatusBar style="dark" />
         <View style={[StyleSheet.absoluteFill, { backgroundColor: "#FAFAFA" }]} />
 
         <View
           style={[
             styles.hubScroll,
             {
-              paddingTop: searchOpen ? insets.top + 6 : insets.top + 8,
+              paddingTop: searchOpen ? safeTop(insets.top, 6) : safeTop(insets.top, 8),
             },
           ]}
         >
@@ -1776,8 +1793,8 @@ export function MorphCareScreen({ navigation, route }: Props) {
 
   return (
     <View style={styles.routineRoot}>
-      <StatusBar style="dark" />
-      <View style={[styles.routineHeader, { paddingTop: insets.top + 6 }]}>
+      <AppStatusBar style="dark" />
+      <View style={[styles.routineHeader, { paddingTop: safeTop(insets.top, 6) }]}>
         <Pressable
           style={styles.routineHeaderBtn}
           onPress={() => setViewMode("hub")}
@@ -2978,18 +2995,19 @@ const styles = StyleSheet.create({
   optCardLightOn: { borderColor: "#111111", backgroundColor: "#fff" },
   optTextLight: { ...morphFont, fontSize: fontSize(14), fontWeight: "600", color: "rgba(26,26,26,0.65)" },
   optTextLightOn: { color: "#111" },
-  onboardFooter: { flexDirection: "row", gap: moderateScale(8) },
+  onboardFooter: { flexDirection: "row", gap: moderateScale(8), width: "100%" },
   primaryBtnLight: {
-    height: verticalScale(48),
+    height: verticalScale(52),
     borderRadius: 999,
     backgroundColor: "#111",
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: scale(24),
   },
+  primaryBtnLightGrow: { flex: 1 },
   primaryBtnLightText: { ...morphFont, fontSize: fontSize(14), fontWeight: "600", color: "#fff" },
   ghostBtnLight: {
-    height: verticalScale(48),
+    height: verticalScale(52),
     flex: 1,
     borderRadius: 999,
     borderWidth: 1,

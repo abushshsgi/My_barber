@@ -85,7 +85,7 @@ export const OnboardingMap = forwardRef<OnboardingMapHandle, Props>(
       <View style={styles.fill}>
         <MapView
           ref={mapRef}
-          style={styles.fill}
+          style={styles.map}
           provider={Platform.OS === "android" ? PROVIDER_GOOGLE : undefined}
           initialRegion={{
             latitude,
@@ -145,5 +145,12 @@ export const OnboardingMap = forwardRef<OnboardingMapHandle, Props>(
 );
 
 const styles = StyleSheet.create({
-  fill: { ...StyleSheet.absoluteFill },
+  fill: { flex: 1 },
+  map: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+  },
 });

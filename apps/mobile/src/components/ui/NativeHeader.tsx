@@ -1,8 +1,9 @@
-import { ReactNode } from "react";
+import type { ReactNode } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useShellTheme } from "../../lib/useShellTheme";
 import { colors } from "../../theme/colors";
+import { AppStatusBar, safeTop } from "./AppStatusBar";
 import { NativeBackButton } from "./NativeBackButton";
 import {
   fontSize,
@@ -29,10 +30,12 @@ export function NativeHeader({
 }: Props) {
   const insets = useSafeAreaInsets();
   const pal = useShellTheme();
+  const topPad = safeTop(insets.top);
 
   if (largeTitle) {
     return (
-      <View style={[styles.largeWrap, { paddingTop: Math.max(insets.top, 12), backgroundColor: pal.bg }]}>
+      <View style={[styles.largeWrap, { paddingTop: topPad, backgroundColor: pal.bg }]}>
+        <AppStatusBar style="dark" />
         <View style={styles.largeTop}>
           {onBack ? <NativeBackButton onPress={onBack} /> : <View style={styles.spacer} />}
           {right ?? <View style={styles.spacer} />}
@@ -48,10 +51,11 @@ export function NativeHeader({
     <View
       style={[
         styles.wrap,
-        { paddingTop: Math.max(insets.top, 8), backgroundColor: pal.bg },
+        { paddingTop: topPad, backgroundColor: pal.bg },
         border && [styles.border, { borderBottomColor: pal.border }],
       ]}
     >
+      <AppStatusBar style="dark" />
       <View style={styles.row}>
         {onBack ? <NativeBackButton onPress={onBack} /> : <View style={styles.spacer} />}
         <Text
