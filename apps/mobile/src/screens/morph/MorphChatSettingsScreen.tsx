@@ -27,7 +27,6 @@ import { useAuth } from "../../auth/AuthContext";
 import type { MorphChatThread } from "../../hooks/useMorphChat";
 import {
   DEFAULT_MORPH_CHAT_PREFS,
-  defaultVoiceForGender,
   morphChatUsagePercent,
   readMorphChatLimitsSnapshot,
   readMorphChatPrefs,
@@ -36,11 +35,8 @@ import {
   type MorphChatPrefs,
   type MorphChatReplyLang,
   type MorphChatReplyStyle,
-  type MorphVoiceGenderPref,
   type MorphVoiceId,
-  type MorphVoiceLangPref,
 } from "../../lib/morph-chat-prefs";
-import { MORPH_VOICE_CATALOG } from "../../lib/morph-voice";
 import { MorphToggle } from "../../components/morph/MorphToggle";
 import { PersonalInfoPanel } from "../profile/PersonalInfoPanel";
 import { useMorphAppearance } from "../../lib/MorphAppearanceContext";
@@ -372,9 +368,11 @@ export function MorphChatSettingsScreen({
   onClearAllChats,
   onOpenSubscription,
   onSaveHistoryOff,
-  onPreviewVoice,
-  voicePreviewing,
+  onPreviewVoice: _onPreviewVoice,
+  voicePreviewing: _voicePreviewing,
 }: Props) {
+  void _onPreviewVoice;
+  void _voicePreviewing;
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
@@ -597,16 +595,6 @@ export function MorphChatSettingsScreen({
     { value: "male", label: t("chat.settings.genderMale") },
     { value: "female", label: t("chat.settings.genderFemale") },
   ];
-  const voiceGenderOptions: ChipOption<MorphVoiceGenderPref>[] = [
-    { value: "male", label: t("chat.settings.voiceMale") },
-    { value: "female", label: t("chat.settings.voiceFemale") },
-  ];
-  const voiceLangOptions: ChipOption<MorphVoiceLangPref>[] = [
-    { value: "auto", label: t("chat.settings.voiceLangAuto") },
-    { value: "uz", label: t("chat.settings.langUz") },
-    { value: "ru", label: t("chat.settings.langRu") },
-  ];
-
   const pageTitle =
     page === "account"
       ? t("profile.personalInfo")
@@ -803,12 +791,10 @@ export function MorphChatSettingsScreen({
                   <SettingsItem
                     icon="mic"
                     title={t("chat.settings.voiceInput")}
-                    subtitle={
-                      prefs.voiceInput
-                        ? t("chat.settings.voiceOn")
-                        : t("chat.settings.voiceOff")
-                    }
-                    onPress={() => setPage("voice")}
+                    subtitle={t("chat.settings.voiceSoon")}
+                    titleColor="#A3A3A3"
+                    iconColor="#A3A3A3"
+                    showChevron={false}
                   />
                   <SettingsItem
                     icon="lock-closed"
@@ -905,100 +891,17 @@ export function MorphChatSettingsScreen({
         ) : null}
 
         {page === "voice" && prefs ? (
-          <>
-            <SettingsSection>
-              <PrefToggle
-                title={t("chat.settings.voiceInput")}
-                subtitle={t("chat.settings.voiceInputHint")}
-                value={prefs.voiceInput}
-                onChange={(v) => void patchPrefs({ voiceInput: v })}
-              />
-              <PrefToggle
-                title={t("chat.settings.autoSpeak")}
-                subtitle={t("chat.settings.autoSpeakHint")}
-                value={prefs.autoSpeak}
-                onChange={(v) => void patchPrefs({ autoSpeak: v })}
-              />
-              <PrefToggle
-                title={t("chat.settings.conversationMode")}
-                subtitle={t("chat.settings.conversationModeHint")}
-                value={prefs.conversationMode}
-                onChange={(v) => void patchPrefs({ conversationMode: v })}
-                last
-              />
-            </SettingsSection>
-            <SettingsSection title={t("chat.settings.voiceModel")}>
-              <FieldBlock
-                title={t("chat.settings.voiceGender")}
-                subtitle={t("chat.settings.voiceGenderHint")}
-              >
-                <ChipRow
-                  options={voiceGenderOptions}
-                  value={prefs.voiceGender}
-                  onChange={(v) =>
-                    void patchPrefs({
-                      voiceGender: v,
-                      voiceId: defaultVoiceForGender(v),
-                    })
-                  }
-                />
-              </FieldBlock>
-              <FieldBlock
-                title={t("chat.settings.voiceLang")}
-                subtitle={t("chat.settings.voiceLangHint")}
-                last
-              >
-                <ChipRow
-                  options={voiceLangOptions}
-                  value={prefs.voiceLang}
-                  onChange={(v) => void patchPrefs({ voiceLang: v })}
-                />
-              </FieldBlock>
-            </SettingsSection>
-            <SettingsSection title={t("chat.settings.voicePick")}>
-              {MORPH_VOICE_CATALOG.filter((row) => row.gender === prefs.voiceGender).map(
-                (row, index, arr) => {
-                  const active = prefs.voiceId === row.id;
-                  const last = index === arr.length - 1;
-                  return (
-                    <View key={row.id} style={[styles.voiceRow, !last && styles.itemBorder]}>
-                      <Pressable
-                        onPress={() => void patchPrefs({ voiceId: row.id })}
-                        style={({ pressed }) => [styles.voiceMain, pressed && styles.pressed]}
-                        accessibilityRole="button"
-                        accessibilityState={{ selected: active }}
-                      >
-                        <View style={styles.itemCopy}>
-                          <Text style={styles.itemTitle}>{t(row.nameKey)}</Text>
-                          <Text style={styles.itemSubtitle}>{t(row.hintKey)}</Text>
-                        </View>
-                        {active ? (
-                          <Ionicons name="checkmark-circle" size={22} color={ACCENT_BLUE} />
-                        ) : (
-                          <View style={styles.voiceDot} />
-                        )}
-                      </Pressable>
-                      {onPreviewVoice ? (
-                        <Pressable
-                          onPress={() => onPreviewVoice(row.id)}
-                          disabled={voicePreviewing}
-                          style={({ pressed }) => [styles.previewBtn, pressed && styles.pressed]}
-                          accessibilityRole="button"
-                          accessibilityLabel={t("chat.settings.voicePreview")}
-                        >
-                          <Ionicons
-                            name={voicePreviewing && active ? "hourglass-outline" : "play"}
-                            size={16}
-                            color="#FFFFFF"
-                          />
-                        </Pressable>
-                      ) : null}
-                    </View>
-                  );
-                },
-              )}
-            </SettingsSection>
-          </>
+          <SettingsSection>
+            <View style={styles.voiceBlocked}>
+              <Ionicons name="mic-off" size={22} color="#A3A3A3" />
+              <Text style={[styles.voiceBlockedTitle, { color: pal.muted }]}>
+                {t("chat.settings.voiceInput")}
+              </Text>
+              <Text style={[styles.voiceBlockedSub, { color: pal.muted }]}>
+                {t("chat.settings.voiceSoon")}
+              </Text>
+            </View>
+          </SettingsSection>
         ) : null}
 
         {page === "help" ? (
@@ -1447,6 +1350,26 @@ const styles = StyleSheet.create({
     paddingRight: scale(10),
     minHeight: verticalScale(64),
     gap: moderateScale(8),
+  },
+  voiceBlocked: {
+    alignItems: "center",
+    justifyContent: "center",
+    gap: moderateScale(8),
+    paddingVertical: verticalScale(28),
+    paddingHorizontal: scale(20),
+    opacity: 0.72,
+  },
+  voiceBlockedTitle: {
+    ...morphFont,
+    fontSize: fontSize(16),
+    fontWeight: "700",
+    textAlign: "center",
+  },
+  voiceBlockedSub: {
+    ...morphFont,
+    fontSize: fontSize(13),
+    textAlign: "center",
+    lineHeight: fontSize(18),
   },
   voiceMain: {
     flex: 1,

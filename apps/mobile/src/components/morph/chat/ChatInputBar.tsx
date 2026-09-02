@@ -41,17 +41,6 @@ type Props = {
   voiceA11y?: string;
 };
 
-function WaveIcon() {
-  return (
-    <View style={styles.wave}>
-      <View style={[styles.bar, { height: 5 }]} />
-      <View style={[styles.bar, { height: 10 }]} />
-      <View style={[styles.bar, { height: 7 }]} />
-      <View style={[styles.bar, { height: 12 }]} />
-    </View>
-  );
-}
-
 function MicPulse({ children }: { children: ReactNode }) {
   const reduced = useReducedMotion();
   const pulse = useSharedValue(0);
@@ -128,7 +117,17 @@ export function ChatInputBar({
         <Ionicons name="add" size={22} color={pal.fg} />
       </Pressable>
       <TextInput
-        style={[styles.input, { color: pal.fg, fontSize: chatFs(16), lineHeight: chatFs(22) }]}
+        style={[
+          styles.input,
+          {
+            color: pal.fg,
+            fontSize: chatFs(16),
+            lineHeight: chatFs(22),
+            ...(Platform.OS === "android"
+              ? { paddingVertical: moderateScale(8), textAlignVertical: "center" as const }
+              : null),
+          },
+        ]}
         value={value}
         onChangeText={onChange}
         placeholder={placeholder}
@@ -138,6 +137,10 @@ export function ChatInputBar({
         editable={!disabled && !sending}
         returnKeyType="send"
         blurOnSubmit={false}
+        underlineColorAndroid="transparent"
+        importantForAutofill="no"
+        autoCorrect
+        autoCapitalize="sentences"
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
         onSubmitEditing={() => {
@@ -200,10 +203,16 @@ export function ChatInputBar({
         <Animated.View
           entering={FadeIn.duration(140)}
           exiting={FadeOut.duration(100)}
-          style={styles.voiceBtn}
-          importantForAccessibility="no-hide-descendants"
         >
-          <WaveIcon />
+          <Pressable
+            disabled
+            style={[styles.voiceBtn, styles.voiceBtnBlocked]}
+            accessibilityRole="button"
+            accessibilityLabel={voiceA11y}
+            accessibilityState={{ disabled: true }}
+          >
+            <Ionicons name="mic" size={18} color="rgba(17,17,17,0.28)" />
+          </Pressable>
         </Animated.View>
       )}
     </Animated.View>
@@ -276,6 +285,10 @@ const styles = StyleSheet.create({
   voiceBtnLive: {
     backgroundColor: "#FF3B30",
   },
+  voiceBtnBlocked: {
+    backgroundColor: "rgba(17,17,17,0.06)",
+    opacity: 0.72,
+  },
   micRing: {
     position: "absolute",
     top: -scale(5),
@@ -285,15 +298,5 @@ const styles = StyleSheet.create({
     borderRadius: MIC_RING / 2,
     borderWidth: 1.5,
     borderColor: "#111111",
-  },
-  wave: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: moderateScale(1.5),
-  },
-  bar: {
-    width: scale(2),
-    borderRadius: moderateScale(2),
-    backgroundColor: "#FFFFFF",
   },
 });

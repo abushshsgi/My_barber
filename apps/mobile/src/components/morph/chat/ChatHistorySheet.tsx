@@ -71,7 +71,7 @@ export function ChatHistorySheet({
           <View style={styles.header}>
             <Text style={styles.title}>{title}</Text>
             <Pressable onPress={onClose} hitSlop={10} accessibilityRole="button">
-              <Ionicons name="close" size={22} color="rgba(255,255,255,0.7)" />
+              <Ionicons name="close" size={22} color="#737373" />
             </Pressable>
           </View>
 
@@ -80,7 +80,7 @@ export function ChatHistorySheet({
             onPress={onNewChat}
             accessibilityRole="button"
           >
-            <Ionicons name="add" size={18} color="#111111" />
+            <Ionicons name="add" size={18} color="#FFFFFF" />
             <Text style={styles.newBtnText}>{newChatLabel}</Text>
           </Pressable>
 
@@ -134,7 +134,7 @@ const styles = StyleSheet.create({
   },
   sheet: {
     maxHeight: "78%",
-    backgroundColor: "#171717",
+    backgroundColor: "#FAFAFA",
     borderTopLeftRadius: moderateScale(22),
     borderTopRightRadius: moderateScale(22),
     paddingTop: verticalScale(10),
@@ -145,7 +145,7 @@ const styles = StyleSheet.create({
     width: scale(40),
     height: verticalScale(4),
     borderRadius: moderateScale(2),
-    backgroundColor: "rgba(255,255,255,0.2)",
+    backgroundColor: "rgba(17,17,17,0.18)",
     marginBottom: verticalScale(12),
   },
   header: {
@@ -157,21 +157,21 @@ const styles = StyleSheet.create({
   title: {
     fontSize: fontSize(17),
     fontWeight: "700",
-    color: "#FFFFFF",
+    color: "#111111",
   },
   newBtn: {
     flexDirection: "row",
     alignItems: "center",
     gap: moderateScale(8),
     alignSelf: "flex-start",
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#111111",
     paddingHorizontal: scale(14),
     paddingVertical: verticalScale(10),
     borderRadius: moderateScale(14),
     marginBottom: verticalScale(12),
   },
   newBtnText: {
-    color: "#111111",
+    color: "#FFFFFF",
     fontWeight: "700",
     fontSize: fontSize(14),
   },
@@ -181,7 +181,7 @@ const styles = StyleSheet.create({
   },
   empty: {
     textAlign: "center",
-    color: "rgba(255,255,255,0.45)",
+    color: "#737373",
     paddingVertical: verticalScale(28),
     fontSize: fontSize(14),
   },
@@ -193,10 +193,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: scale(12),
     borderRadius: moderateScale(14),
     marginBottom: verticalScale(8),
-    backgroundColor: "#222222",
+    backgroundColor: "#FFFFFF",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(17,17,17,0.08)",
   },
   rowActive: {
-    backgroundColor: "#2A2A2A",
+    backgroundColor: "#F0F0F0",
   },
   rowBody: {
     flex: 1,
@@ -205,17 +207,17 @@ const styles = StyleSheet.create({
   rowTitle: {
     fontSize: fontSize(14),
     fontWeight: "700",
-    color: "#FFFFFF",
+    color: "#111111",
   },
   rowPreview: {
     marginTop: verticalScale(3),
     fontSize: fontSize(12),
-    color: "rgba(255,255,255,0.5)",
+    color: "#737373",
   },
   rowMeta: {
     marginTop: verticalScale(4),
     fontSize: fontSize(11),
-    color: "rgba(255,255,255,0.35)",
+    color: "#A3A3A3",
   },
   deleteBtn: {
     width: scale(32),

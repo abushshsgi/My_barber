@@ -99,9 +99,9 @@ const CENTER_BTN = scale(IS_SMALL_DEVICE ? 34 : 36);
 const TAB_ICON = scale(22);
 const SWITCH_MIN_MS = 0;
 
-/** Active icon color only — pill yo‘q. */
+/** Active icon — qora; idle — kulrang (oq dock). */
 const PILL_FG = "#111111";
-const PILL_FG_MORPH = "#FFFFFF";
+const PILL_FG_MORPH = "#111111";
 
 /**
  * Home Bar (iPhone) yoki gesture bar (Samsung) ostida dok kesilmasligi uchun
@@ -223,12 +223,12 @@ function CustomTabBar({ state, navigation, descriptors }: BottomTabBarProps) {
   useEffect(() => {
     if (Platform.OS === "android") {
       try {
-        const navBg = morphDock ? "#171717" : "#FFFFFF";
+        const navBg = "#FFFFFF";
         if (NavigationBar && typeof NavigationBar.setBackgroundColorAsync === "function") {
           void NavigationBar.setBackgroundColorAsync(navBg);
         }
         if (NavigationBar && typeof NavigationBar.setButtonStyleAsync === "function") {
-          void NavigationBar.setButtonStyleAsync(morphDock ? "light" : "dark");
+          void NavigationBar.setButtonStyleAsync("dark");
         }
       } catch (err) {
         console.warn("NavigationBar error", err);
@@ -435,8 +435,8 @@ function CustomTabBar({ state, navigation, descriptors }: BottomTabBarProps) {
 
   const visibleLeft = displayShell === "morph" ? MORPH_LEFT : MYSALOON_LEFT;
   const visibleRight = displayShell === "morph" ? MORPH_RIGHT : MYSALOON_RIGHT;
-  const pillFg = morphDock ? PILL_FG_MORPH : PILL_FG;
-  const idleIcon = morphDock ? "rgba(255,255,255,0.55)" : "#9CA3AF";
+  const pillFg = PILL_FG;
+  const idleIcon = "#9CA3AF";
 
   const renderSideTab = (tab: TabDef) => {
     const focused = activeName === tab.name;
@@ -447,7 +447,7 @@ function CustomTabBar({ state, navigation, descriptors }: BottomTabBarProps) {
         onPress={() => pressTab(tab.name)}
         style={styles.tab}
         android_ripple={{
-          color: morphDock ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.08)",
+          color: "rgba(0,0,0,0.08)",
           borderless: true,
           radius: 28,
         }}
@@ -468,18 +468,13 @@ function CustomTabBar({ state, navigation, descriptors }: BottomTabBarProps) {
 
   return (
     <View
-      style={[
-        styles.dockOuter,
-        morphDock ? styles.dockOuterMorph : styles.dockOuterLight,
-        { paddingBottom: bottomPad },
-      ]}
+      style={[styles.dockOuter, styles.dockOuterLight, { paddingBottom: bottomPad }]}
       pointerEvents="box-none"
     >
-      <View style={[styles.dock, morphDock && styles.dockMorph]}>
+      <View style={styles.dock}>
         <Animated.View
           style={[
             styles.sidesRow,
-            morphDock && styles.sidesRowMorph,
             {
               opacity: sidesOpacity,
               transform: [{ translateY: sidesY }],
@@ -491,16 +486,16 @@ function CustomTabBar({ state, navigation, descriptors }: BottomTabBarProps) {
           <View style={styles.sideGroup}>{visibleRight.map(renderSideTab)}</View>
         </Animated.View>
 
-        <View style={[styles.centerAnchor, morphDock && styles.centerAnchorMorph]} pointerEvents="box-none">
+        <View style={styles.centerAnchor} pointerEvents="box-none">
           <Pressable
             onPress={onCenterPress}
             style={styles.centerWrap}
-            android_ripple={{ color: "rgba(255,255,255,0.2)", borderless: true, radius: 28 }}
+            android_ripple={{ color: "rgba(0,0,0,0.08)", borderless: true, radius: 28 }}
             accessibilityRole="button"
             accessibilityLabel={centerIsMorphEntry ? t("nav.morphAi") : t("nav.mysaloon")}
           >
             <Animated.View style={{ transform: [{ scale: centerScale }] }}>
-              <View style={[styles.centerBtn, morphDock && styles.centerBtnMorph]}>
+              <View style={[styles.centerBtn, morphDock && styles.centerBtnOnWhite]}>
                 {centerIsMorphEntry ? (
                   <Image
                     source={morfMarkWhite}
@@ -542,7 +537,7 @@ function RootTabsInner() {
   }
 
   return (
-    <View style={[styles.root, { backgroundColor: morphDock ? "#171717" : "#FFFFFF" }]}>
+    <View style={[styles.root, { backgroundColor: "#FFFFFF" }]}>
       <TabBarVisibilityProvider>
         <MorphSessionProvider>
           <Tab.Navigator
@@ -627,7 +622,7 @@ const styles = StyleSheet.create({
   dockOuterMorph: {
     paddingHorizontal: 0,
     alignItems: "stretch",
-    backgroundColor: "#171717",
+    backgroundColor: "#FFFFFF",
   },
   dock: {
     minHeight: verticalScale(52),
@@ -644,10 +639,10 @@ const styles = StyleSheet.create({
     width: "100%",
     minHeight: verticalScale(52),
     borderRadius: 0,
-    backgroundColor: "#171717",
+    backgroundColor: "#FFFFFF",
     borderWidth: 0,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: "rgba(255,255,255,0.08)",
+    borderTopColor: "rgba(0,0,0,0.08)",
     justifyContent: "center",
     paddingBottom: verticalScale(4),
     paddingTop: verticalScale(8),
@@ -723,9 +718,12 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   centerBtnMorph: {
-    backgroundColor: "#2A2A2A",
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(255,255,255,0.2)",
+    backgroundColor: "#111111",
+    borderWidth: 0,
+  },
+  centerBtnOnWhite: {
+    backgroundColor: "#111111",
+    borderWidth: 0,
   },
   centerLogo: {
     width: scale(18),

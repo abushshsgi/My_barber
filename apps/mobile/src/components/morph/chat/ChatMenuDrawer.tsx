@@ -31,13 +31,13 @@ import {
 } from "../../../utils/responsive";
 
 const MENU = {
-  bg: "#171717",
-  card: "#222222",
-  line: "rgba(255,255,255,0.1)",
-  fg: "#FFFFFF",
-  muted: "rgba(255,255,255,0.5)",
-  soft: "#2A2A2A",
-  track: "rgba(255,255,255,0.12)",
+  bg: "#FAFAFA",
+  card: "#FFFFFF",
+  line: "rgba(17,17,17,0.12)",
+  fg: "#111111",
+  muted: "#737373",
+  soft: "#F0F0F0",
+  track: "#E5E5E5",
 } as const;
 
 type Props = {

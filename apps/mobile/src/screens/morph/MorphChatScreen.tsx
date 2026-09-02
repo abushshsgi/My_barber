@@ -35,7 +35,6 @@ import { useMorphVoice } from "../../hooks/useMorphVoice";
 import { useMorphLimitGate } from "../../hooks/useMorphLimitGate";
 import { readLastMorphContentTab, writeAppShell, writeLastShellTab } from "../../lib/app-shell";
 import { MORPH_CHAT_DEBUG } from "../../lib/morph-debug";
-import { readMorphChatPrefs } from "../../lib/morph-chat-prefs";
 import {
   consumeMorphReturn,
   peekMorphReturn,
@@ -68,20 +67,7 @@ export function MorphChatScreen() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [paywall, setPaywall] = useState<PaywallReason | null>(null);
-
-  useFocusEffect(
-    useCallback(() => {
-      let cancelled = false;
-      void readMorphChatPrefs().then((p) => {
-        if (!cancelled) setVoiceEnabled(p.voiceInput);
-      });
-      return () => {
-        cancelled = true;
-      };
-    }, []),
-  );
 
   const showPaywall = useCallback(
     (reason: PaywallReason, draft?: string) => {
@@ -256,14 +242,11 @@ export function MorphChatScreen() {
       sendA11y: t("chat.sendA11y"),
       cameraA11y: t("chat.home.cameraA11y"),
       voiceA11y: t("chat.settings.voiceInput"),
-      voiceEnabled: voiceEnabled && !chatLocked,
-      voiceState: (voice.recording ? "recording" : voice.busy ? "busy" : "idle") as
-        | "idle"
-        | "recording"
-        | "busy",
-      onVoice: () => void voice.toggleMic(),
+      voiceEnabled: false,
+      voiceState: "idle" as const,
+      onVoice: undefined,
     }),
-    [chat.input, chat.sending, chat.setInput, chatLocked, t, voice, voiceEnabled],
+    [chat.input, chat.sending, chat.setInput, chatLocked, t, voice],
   );
 
   const onSend = useCallback(async () => {
@@ -336,11 +319,7 @@ export function MorphChatScreen() {
   }, []);
 
   const closeSettings = useCallback(() => {
-    void (async () => {
-      await chat.reloadPrefs();
-      const p = await readMorphChatPrefs();
-      setVoiceEnabled(p.voiceInput);
-    })();
+    void chat.reloadPrefs();
     setSettingsOpen(false);
   }, [chat]);
 
@@ -604,7 +583,7 @@ export function MorphChatScreen() {
             <View style={styles.headerAiDot}>
               <Ionicons name="sparkles" size={ICON.xs} color="#737373" />
             </View>
-            <Text style={[styles.title, { color: pal.fg }]} numberOfLines={1}>
+            <Text style={[styles.title, { color: pal.fg, flex: 1, flexShrink: 1, minWidth: 0 }]} numberOfLines={1} ellipsizeMode="tail">
               {threadTitle}
             </Text>
           </View>
@@ -736,6 +715,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: moderateScale(6),
+    flex: 1,
+    minWidth: 0,
+    paddingRight: scale(4),
   },
   headerAiDot: {
     width: AI_DOT,
@@ -743,12 +725,15 @@ const styles = StyleSheet.create({
     borderRadius: AI_DOT / 2,
     backgroundColor: "rgba(17, 17, 17, 0.08)",
     borderWidth: 1,
-    borderColor: "rgba(167, 139, 250, 0.4)",
+    borderColor: "rgba(17, 17, 17, 0.12)",
     alignItems: "center",
     justifyContent: "center",
+    flexShrink: 0,
   },
   title: {
     ...morphFont,
+    flexShrink: 1,
+    minWidth: 0,
     fontSize: fontSize(15),
     fontWeight: "700",
     color: "#111111",

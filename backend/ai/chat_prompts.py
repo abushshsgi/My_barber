@@ -89,21 +89,21 @@ def _format_prefs_block(context: dict[str, Any] | None) -> str:
         )
     style = str(context.get("reply_style") or "").strip().lower()
     if style == "short":
-        lines.append("- Javob uslubi: qisqa (3–6 jumla, faqat eng muhim).")
+        lines.append("- Javob uslubi: qisqa (2–4 jumla, faqat eng muhim).")
     elif style == "barber":
         lines.append(
             "- Javob uslubi: barberga tayyor ko'rsatma "
-            "(guard #, fade balandligi, clipper yo'nalishi — ro'yxat)."
+            "(guard #, fade balandligi, clipper yo'nalishi — qisqa ro'yxat, 6–10 qator)."
         )
     elif style == "detailed":
         lines.append(
-            "- Javob uslubi: chuqur va to'liq — nima, nima uchun, qanday qilish, "
-            "muqobil va ehtiyot. Qisqartirma."
+            "- Javob uslubi: batafsil lekin ixcham — nima, nima uchun, qanday qilish. "
+            "Maksimum 8–12 jumla yoki qisqa ro'yxat; essay yozma."
         )
     else:
         lines.append(
-            "- Javob uslubi: chuqur maslahat (standart). "
-            "Savolga to'liq javob ber, 1–2 jumlada yopma."
+            "- Javob uslubi: ixcham maslahat (standart). "
+            "Savol murakkabligiga qarab 3–7 jumla; uzun essay va takrorlamaslik."
         )
     gender = str(context.get("advice_gender") or context.get("user_gender") or "").strip().lower()
     if gender in ("male", "female"):
@@ -239,21 +239,21 @@ Ohang: ChatGPT / Claude kabi — sokin, aniq, foydali. Do'stona, lekin marketing
 - Faqat **shu suhbat** tarixiga tayangan holda javob ber. Boshqa suhbatlarni o'ylab qo'shma.
 
 ## Javob chuqurligi
-Matnli chatda **teroq** javob ber: faqat nom aytma, sababini, yuz/sochga qanday mosligini, qanday so'rashni va nimalardan saqlanishni yoz.
-- Kamida 3 qism: to'g'ridan-to'g'ri javob, tushuntirish, amaliy qadam.
-- 2–3 aniq variant ber (qachon qaysi biri yaxshi).
-- Agar kontekst (yuz shakli, soch) bo'lsa — shu ma'lumotga bog'la.
-- Qisqa uslub so'ralmaguncha 1–2 jumlada yopma.
+Matnli chatda **ixcham** javob ber: savolga mos uzunlik — oddiy savolga 2–4 jumla, murakkabga 5–8 jumla. Essay va takrorlamaslik.
+- Birinchi jumla — to'g'ridan-to'g'ri javob.
+- Kerak bo'lsa 1–2 qisqa sabab yoki amaliy qadam.
+- Variantlar: eng ko'pi 2–3 ta, har biri 1 qator.
+- Kontekst (yuz/soch) bo'lsa — qisqa bog'la.
+- Standart rejimda 150–220 so‘zdan oshirma; “batafsil”da ham 320 so‘zdan oshirma.
 
 ## Javob formati
 Agar ovozli suhbat yoqilgan bo'lsa — markdown yo'q, faqat qisqa og'zaki gaplar.
-Aks holda ChatGPT / Claude kabi o'qiladigan markdown yoz:
+Aks holda o'qiladigan, ixcham markdown yoz:
 - Birinchi jumla — to'g'ridan-to'g'ri javob.
-- Kerak bo'lsa `##` kichik sarlavha.
-- Ro'yxat: `-` yoki `1.`
+- Kerak bo'lsa qisqa ro'yxat: `-` yoki `1.`
 - Muhim so'zlarni **qalin** qil.
 - Kod bloki deyarli ishlatma.
 - Sozlamadagi uslubga rioya qil (qisqa / batafsil / barber ko'rsatma).
-- Oxirida **Keyingi qadam:** (1 ta aniq taklif).
+- Oxirida ixtiyoriy **Keyingi qadam:** (1 ta qator).
 
 {context_block}"""

@@ -168,7 +168,7 @@ export function MorphHistoryScreen({ navigation, route }: Props) {
 
         <View style={styles.detailTop}>
           <Pressable style={styles.pillBtn} onPress={closeDetail}>
-            <Ionicons name="chevron-back" size={18} color="#FFF" />
+            <Ionicons name="chevron-back" size={18} color="#111111" />
             <Text style={styles.pillBtnText}>Tarix</Text>
           </Pressable>
           <Text style={[styles.detailTitle, { fontSize: fs(16) }]} numberOfLines={1}>
@@ -218,7 +218,7 @@ export function MorphHistoryScreen({ navigation, route }: Props) {
               <ActivityIndicator color="#0A0A0A" />
             ) : (
               <>
-                <Ionicons name="download-outline" size={18} color="#0A0A0A" />
+                <Ionicons name="download-outline" size={18} color="#FFFFFF" />
                 <Text style={styles.primaryActionText}>Yuklab olish</Text>
               </>
             )}
@@ -230,16 +230,16 @@ export function MorphHistoryScreen({ navigation, route }: Props) {
               disabled={!!busyAction}
             >
               {busyAction === "share" ? (
-                <ActivityIndicator color="#FFF" />
+                <ActivityIndicator color="#111111" />
               ) : (
                 <>
-                  <Ionicons name="share-social-outline" size={16} color="#FFF" />
+                  <Ionicons name="share-social-outline" size={16} color="#111111" />
                   <Text style={styles.secondaryActionText}>Ulashish</Text>
                 </>
               )}
             </Pressable>
             <Pressable style={styles.secondaryAction} onPress={openStudio}>
-              <Ionicons name="color-palette-outline" size={16} color="#FFF" />
+              <Ionicons name="color-palette-outline" size={16} color="#111111" />
               <Text style={styles.secondaryActionText}>Studio</Text>
             </Pressable>
           </View>
@@ -262,7 +262,7 @@ export function MorphHistoryScreen({ navigation, route }: Props) {
             }
           }}
         >
-          <Ionicons name="chevron-back" size={20} color="#FFF" />
+          <Ionicons name="chevron-back" size={20} color="#111111" />
         </Pressable>
         <View style={styles.topCenter}>
           <Text style={[styles.topTitle, { fontSize: fs(17) }]}>Tarix</Text>
@@ -274,7 +274,7 @@ export function MorphHistoryScreen({ navigation, route }: Props) {
       </View>
 
       {loading ? (
-        <ActivityIndicator style={{ marginTop: 40 }} color="#FFF" />
+        <ActivityIndicator style={{ marginTop: 40 }} color="#111111" />
       ) : error ? (
         <View style={styles.center}>
           <Text style={styles.err}>{error}</Text>
@@ -285,7 +285,7 @@ export function MorphHistoryScreen({ navigation, route }: Props) {
       ) : items.length === 0 ? (
         <View style={styles.center}>
           <View style={styles.emptyIcon}>
-            <Ionicons name="images-outline" size={28} color="rgba(255,255,255,0.45)" />
+            <Ionicons name="images-outline" size={28} color="#A3A3A3" />
           </View>
           <Text style={styles.emptyTitle}>Hali try-on yo‘q</Text>
           <Text style={styles.emptySub}>
@@ -325,7 +325,7 @@ export function MorphHistoryScreen({ navigation, route }: Props) {
                 />
                 {item.before_url && item.after_url ? (
                   <View style={styles.cardChip}>
-                    <Ionicons name="swap-horizontal" size={11} color="#FFF" />
+                    <Ionicons name="swap-horizontal" size={11} color="#111111" />
                     <Text style={styles.cardChipText}>Taqqos</Text>
                   </View>
                 ) : null}
@@ -346,7 +346,7 @@ export function MorphHistoryScreen({ navigation, route }: Props) {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: "#111111" },
+  root: { flex: 1, backgroundColor: "#FAFAFA" },
   topBar: {
     flexDirection: "row",
     alignItems: "center",
@@ -355,15 +355,15 @@ const styles = StyleSheet.create({
     paddingBottom: verticalScale(12),
   },
   topCenter: { alignItems: "center", gap: moderateScale(2) },
-  topTitle: { color: "#FFF", fontWeight: "800", letterSpacing: -0.3 },
-  topSub: { color: "rgba(255,255,255,0.45)", fontSize: fontSize(11), fontWeight: "600" },
+  topTitle: { color: "#111111", fontWeight: "800", letterSpacing: -0.3 },
+  topSub: { color: "#737373", fontSize: fontSize(11), fontWeight: "600" },
   iconRound: {
     width: scale(40),
     height: scale(40),
     borderRadius: moderateScale(14),
-    backgroundColor: "rgba(255,255,255,0.07)",
+    backgroundColor: "#FFFFFF",
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(255,255,255,0.1)",
+    borderColor: "rgba(17,17,17,0.1)",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -372,11 +372,11 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: moderateScale(18),
     overflow: "hidden",
-    backgroundColor: "#151517",
+    backgroundColor: "#FFFFFF",
   },
   cardMedia: {
     aspectRatio: 3 / 4,
-    backgroundColor: "#0F0F10",
+    backgroundColor: "#F0F0F0",
     position: "relative",
   },
   cardImg: { width: "100%", height: "100%" },
@@ -418,31 +418,31 @@ const styles = StyleSheet.create({
     width: scale(64),
     height: scale(64),
     borderRadius: moderateScale(20),
-    backgroundColor: "rgba(255,255,255,0.05)",
+    backgroundColor: "#F0F0F0",
     alignItems: "center",
     justifyContent: "center",
     marginBottom: verticalScale(6),
   },
-  emptyTitle: { fontWeight: "800", fontSize: fontSize(18), color: "#FFF" },
+  emptyTitle: { fontWeight: "800", fontSize: fontSize(18), color: "#111111" },
   emptySub: {
     textAlign: "center",
-    color: "rgba(255,255,255,0.5)",
+    color: "#737373",
     fontSize: fontSize(13),
     lineHeight: fontSize(18),
   },
-  err: { color: "rgba(255,255,255,0.55)", textAlign: "center" },
+  err: { color: "#737373", textAlign: "center" },
   retry: {
     marginTop: verticalScale(10),
-    backgroundColor: "#FFF",
+    backgroundColor: "#111111",
     borderRadius: 999,
     paddingHorizontal: scale(16),
     paddingVertical: verticalScale(10),
   },
-  retryText: { color: "#050505", fontWeight: "800" },
+  retryText: { color: "#FFFFFF", fontWeight: "800" },
 
   detailRoot: {
     flex: 1,
-    backgroundColor: "#111111",
+    backgroundColor: "#FAFAFA",
   },
   detailTop: {
     flexDirection: "row",
@@ -455,15 +455,17 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: moderateScale(4),
-    backgroundColor: "rgba(255,255,255,0.08)",
+    backgroundColor: "#FFFFFF",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(17,17,17,0.1)",
     borderRadius: 999,
     paddingHorizontal: scale(10),
     paddingVertical: verticalScale(8),
   },
-  pillBtnText: { color: "#FFF", fontWeight: "700", fontSize: fontSize(12) },
+  pillBtnText: { color: "#111111", fontWeight: "700", fontSize: fontSize(12) },
   detailTitle: {
     flex: 1,
-    color: "#FFF",
+    color: "#111111",
     fontWeight: "800",
     letterSpacing: -0.2,
   },
@@ -495,7 +497,7 @@ const styles = StyleSheet.create({
     letterSpacing: -0.2,
   },
   sliderHint: {
-    color: "rgba(255,255,255,0.4)",
+    color: "#A3A3A3",
     fontSize: fontSize(12),
     fontWeight: "600",
   },
@@ -507,25 +509,25 @@ const styles = StyleSheet.create({
   primaryAction: {
     minHeight: verticalScale(50),
     borderRadius: moderateScale(16),
-    backgroundColor: "#FFF",
+    backgroundColor: "#111111",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: moderateScale(8),
   },
-  primaryActionText: { color: "#0A0A0A", fontWeight: "800", fontSize: fontSize(14) },
+  primaryActionText: { color: "#FFFFFF", fontWeight: "800", fontSize: fontSize(14) },
   actionRow: { flexDirection: "row", gap: moderateScale(10) },
   secondaryAction: {
     flex: 1,
     minHeight: verticalScale(46),
     borderRadius: moderateScale(14),
-    backgroundColor: "rgba(255,255,255,0.08)",
+    backgroundColor: "#FFFFFF",
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(255,255,255,0.1)",
+    borderColor: "rgba(17,17,17,0.12)",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: moderateScale(6),
   },
-  secondaryActionText: { color: "#FFF", fontWeight: "700", fontSize: fontSize(13) },
+  secondaryActionText: { color: "#111111", fontWeight: "700", fontSize: fontSize(13) },
 });

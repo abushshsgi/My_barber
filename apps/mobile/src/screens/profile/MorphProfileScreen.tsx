@@ -91,8 +91,6 @@ export function MorphProfileScreen({ navigation }: Props) {
           )
         }
       >
-        <Text style={styles.pageTitle}>Profil</Text>
-
         {error ? (
           <Pressable
             onPress={refresh}
