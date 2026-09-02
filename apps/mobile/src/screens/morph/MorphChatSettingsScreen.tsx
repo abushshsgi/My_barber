@@ -788,14 +788,16 @@ export function MorphChatSettingsScreen({
                     }
                     onPress={() => setPage("limits")}
                   />
-                  <SettingsItem
-                    icon="mic"
-                    title={t("chat.settings.voiceInput")}
-                    subtitle={t("chat.settings.voiceSoon")}
-                    titleColor="#A3A3A3"
-                    iconColor="#A3A3A3"
-                    showChevron={false}
-                  />
+                  <View style={{ opacity: 0.55 }}>
+                    <SettingsItem
+                      icon="mic"
+                      title={t("chat.settings.voiceInput")}
+                      subtitle={t("chat.settings.voiceSoon")}
+                      titleColor="#A3A3A3"
+                      iconColor="#A3A3A3"
+                      showChevron={false}
+                    />
+                  </View>
                   <SettingsItem
                     icon="lock-closed"
                     title={t("chat.settings.privacyLocal")}

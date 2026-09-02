@@ -5,7 +5,6 @@ import {
   useMemo,
   useRef,
   useState,
-  type ReactNode,
 } from "react";
 import {
   KeyboardAvoidingView,
@@ -33,7 +32,6 @@ import {
   validateDisplayName,
   type DisplayNameErrorKey,
 } from "../lib/validate-display-name";
-import { colors } from "../theme/colors";
 import {
   fontSize,
   moderateScale,
@@ -72,16 +70,8 @@ function splitPrefillName(user: {
   };
 }
 
-function initialsOf(first: string, last: string): string {
-  const a = first.trim().charAt(0);
-  const b = last.trim().charAt(0);
-  const out = `${a}${b}`.toUpperCase();
-  return out || "?";
-}
-
 /**
- * Login dan keyin — ism, familiya va yosh bitta sahifada.
- * Animatsiya + avatar preview + ikonali maydonlar.
+ * Login dan keyin — ism, familiya, yosh. Minimal Morph B&W.
  */
 export function OnboardingScreen({ onComplete }: { onComplete?: () => void }) {
   const insets = useSafeAreaInsets();
@@ -97,7 +87,6 @@ export function OnboardingScreen({ onComplete }: { onComplete?: () => void }) {
   const [error, setError] = useState<string | null>(null);
   const [prefilled, setPrefilled] = useState(false);
   const finishingRef = useRef(false);
-
   const ctaScale = useSharedValue(1);
 
   useEffect(() => {
@@ -197,18 +186,16 @@ export function OnboardingScreen({ onComplete }: { onComplete?: () => void }) {
 
   if (saving) {
     return (
-      <View style={[styles.root, { alignItems: "center", justifyContent: "center" }]}>
-        <Text style={{ color: colors.fg, fontSize: fontSize(15) }}>Saqlanmoqda…</Text>
+      <View style={[styles.root, styles.center]}>
+        <Text style={styles.saving}>Saqlanmoqda…</Text>
       </View>
     );
   }
 
-  const initials = initialsOf(firstName, lastName);
-
   return (
     <KeyboardAvoidingView
       style={[styles.root, { paddingTop: insets.top + 8 }]}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <ScrollView
         keyboardShouldPersistTaps="handled"
@@ -218,119 +205,66 @@ export function OnboardingScreen({ onComplete }: { onComplete?: () => void }) {
           { paddingBottom: Math.max(insets.bottom, 16) + 28 },
         ]}
       >
-        <View style={styles.topRow}>
-          <Text style={styles.brandText}>Profil</Text>
-          <View style={styles.progressRow}>
-            {[0, 1, 2].map((i) => (
-              <View
-                key={i}
-                style={[styles.progressSeg, i < filledCount && styles.progressSegOn]}
-              />
-            ))}
-          </View>
+        <View style={styles.progressRow}>
+          {[0, 1, 2].map((i) => (
+            <View
+              key={i}
+              style={[styles.progressSeg, i < filledCount && styles.progressSegOn]}
+            />
+          ))}
         </View>
 
-        <View style={styles.avatarBlock}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{initials}</Text>
-          </View>
-        </View>
+        <Text style={styles.title}>Ismingizni{"\n"}kiriting</Text>
+        <Text style={styles.sub}>
+          MySaloon va Morf AI uchun bitta profil.
+        </Text>
 
-        <View style={styles.hero}>
-          <Text style={styles.title}>Profilingizni{"\n"}to‘ldiring</Text>
-          <Text style={styles.sub}>
-            Ism, familiya va yosh — bitta qadam. Shu akkaunt MySaloon va Morf AI uchun.
-          </Text>
-        </View>
-
-        <View style={styles.fields}>
-          <FieldShell
-            icon="person-outline"
+        <View style={styles.card}>
+          <Field
             label="Ism"
             active={focus === "first"}
-            done={Boolean(firstName.trim())}
-          >
-            <TextInput
-              value={firstName}
-              onChangeText={setFirstName}
-              placeholder="Ali"
-              placeholderTextColor={colors.muted}
-              autoComplete="given-name"
-              autoFocus
-              onFocus={() => setFocus("first")}
-              onBlur={() => setFocus(null)}
-              style={styles.input}
-            />
-          </FieldShell>
-
-          <FieldShell
-            icon="people-outline"
+            value={firstName}
+            onChangeText={setFirstName}
+            placeholder="Ali"
+            autoComplete="given-name"
+            autoFocus
+            onFocus={() => setFocus("first")}
+            onBlur={() => setFocus(null)}
+          />
+          <View style={styles.divider} />
+          <Field
             label="Familiya"
             active={focus === "last"}
-            done={Boolean(lastName.trim())}
-          >
-            <TextInput
-              value={lastName}
-              onChangeText={setLastName}
-              placeholder="Karimov"
-              placeholderTextColor={colors.muted}
-              autoComplete="family-name"
-              onFocus={() => setFocus("last")}
-              onBlur={() => setFocus(null)}
-              style={styles.input}
-            />
-          </FieldShell>
-
-          {nameError ? (
-            <View style={styles.errorRow}>
-              <Ionicons name="alert-circle" size={14} color="#FF3B30" />
-              <Text style={styles.fieldError}>{nameError}</Text>
-            </View>
-          ) : null}
-
-          <FieldShell
-            icon="calendar-outline"
+            value={lastName}
+            onChangeText={setLastName}
+            placeholder="Karimov"
+            autoComplete="family-name"
+            onFocus={() => setFocus("last")}
+            onBlur={() => setFocus(null)}
+          />
+          <View style={styles.divider} />
+          <Field
             label="Yosh"
             active={focus === "age"}
-            done={ageOk}
-            trailing={
-              age ? (
-                <View style={styles.ageChip}>
-                  <Text style={styles.ageChipText}>{age} yosh</Text>
-                </View>
-              ) : null
-            }
-          >
-            <TextInput
-              value={age}
-              onChangeText={(v) => {
-                setAgeTouched(true);
-                setAge(v.replace(/\D/g, "").slice(0, 2));
-              }}
-              placeholder="25"
-              placeholderTextColor={colors.muted}
-              keyboardType="number-pad"
-              maxLength={2}
-              onFocus={() => setFocus("age")}
-              onBlur={() => setFocus(null)}
-              style={styles.input}
-            />
-          </FieldShell>
-
-          {ageError ? (
-            <View style={styles.errorRow}>
-              <Ionicons name="alert-circle" size={14} color="#FF3B30" />
-              <Text style={styles.fieldError}>{ageError}</Text>
-            </View>
-          ) : null}
-
-          {error && !nameError && !ageError ? (
-            <View style={styles.errorRow}>
-              <Ionicons name="alert-circle" size={14} color="#FF3B30" />
-              <Text style={styles.fieldError}>{error}</Text>
-            </View>
-          ) : null}
+            value={age}
+            onChangeText={(v) => {
+              setAgeTouched(true);
+              setAge(v.replace(/\D/g, "").slice(0, 2));
+            }}
+            placeholder="25"
+            keyboardType="number-pad"
+            maxLength={2}
+            onFocus={() => setFocus("age")}
+            onBlur={() => setFocus(null)}
+          />
         </View>
+
+        {nameError || ageError || error ? (
+          <View style={styles.errorRow}>
+            <Ionicons name="alert-circle" size={14} color="#FF3B30" />
+            <Text style={styles.fieldError}>{nameError || ageError || error}</Text>
+          </View>
+        ) : null}
 
         <Animated.View style={ctaAnimStyle}>
           <Pressable
@@ -341,53 +275,63 @@ export function OnboardingScreen({ onComplete }: { onComplete?: () => void }) {
             accessibilityLabel="Davom etish"
           >
             <Text style={styles.primaryText}>Davom etish</Text>
-            <View style={styles.primaryIcon}>
-              <Ionicons name="arrow-forward" size={18} color={colors.fg} />
-            </View>
+            <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />
           </Pressable>
         </Animated.View>
 
-        <View>
-          <Text style={styles.foot}>
-            Keyin Morf AI try-on va bronlarga o‘sha akkaunt bilan kirasiz
-          </Text>
-        </View>
+        <Text style={styles.foot}>
+          Keyin try-on va bronlarga shu akkaunt bilan kirasiz.
+        </Text>
       </ScrollView>
     </KeyboardAvoidingView>
   );
 }
 
-function FieldShell({
-  icon,
+function Field({
   label,
   active,
-  done,
-  trailing,
-  children,
+  value,
+  onChangeText,
+  placeholder,
+  autoComplete,
+  autoFocus,
+  keyboardType,
+  maxLength,
+  onFocus,
+  onBlur,
 }: {
-  icon: keyof typeof Ionicons.glyphMap;
   label: string;
   active: boolean;
-  done: boolean;
-  trailing?: ReactNode;
-  children: ReactNode;
+  value: string;
+  onChangeText: (v: string) => void;
+  placeholder: string;
+  autoComplete?: "given-name" | "family-name";
+  autoFocus?: boolean;
+  keyboardType?: "number-pad";
+  maxLength?: number;
+  onFocus: () => void;
+  onBlur: () => void;
 }) {
   return (
-    <View style={[styles.fieldShell, active && styles.fieldShellActive]}>
-      <View style={[styles.fieldIcon, done && styles.fieldIconDone]}>
-        <Ionicons
-          name={done ? "checkmark" : icon}
-          size={16}
-          color={done ? "#FFF" : colors.fg}
-        />
-      </View>
-      <View style={styles.fieldBody}>
-        <View style={styles.fieldLabelRow}>
-          <Text style={styles.fieldLabel}>{label}</Text>
-          {trailing}
-        </View>
-        {children}
-      </View>
+    <View style={[styles.field, active && styles.fieldActive]}>
+      <Text style={styles.fieldLabel}>{label}</Text>
+      <TextInput
+        value={value}
+        onChangeText={onChangeText}
+        placeholder={placeholder}
+        placeholderTextColor="#A3A3A3"
+        autoComplete={autoComplete}
+        autoFocus={autoFocus}
+        keyboardType={keyboardType}
+        maxLength={maxLength}
+        onFocus={onFocus}
+        onBlur={onBlur}
+        style={styles.input}
+        underlineColorAndroid="transparent"
+        {...(Platform.OS === "android"
+          ? { includeFontPadding: false, textAlignVertical: "center" as const }
+          : null)}
+      />
     </View>
   );
 }
@@ -397,130 +341,89 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#FAFAFA",
   },
+  center: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  saving: {
+    color: "#111111",
+    fontSize: fontSize(15),
+    fontWeight: "600",
+  },
   scroll: {
     flexGrow: 1,
-    paddingHorizontal: scale(20),
+    paddingHorizontal: scale(24),
+    justifyContent: "center",
   },
-  topRow: {
+  progressRow: {
     flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginTop: verticalScale(4),
-    marginBottom: verticalScale(20),
+    gap: moderateScale(6),
+    marginBottom: verticalScale(28),
   },
-  brandText: {
-    fontSize: fontSize(15),
-    fontWeight: "700",
-    color: "#111111",
-    letterSpacing: -0.2,
-  },
-  progressRow: { flexDirection: "row", gap: moderateScale(5) },
   progressSeg: {
-    width: scale(18),
-    height: verticalScale(5),
-    borderRadius: moderateScale(3),
-    backgroundColor: "rgba(10,10,10,0.12)",
+    flex: 1,
+    height: verticalScale(3),
+    borderRadius: moderateScale(2),
+    backgroundColor: "#E5E5E5",
   },
-  progressSegOn: { backgroundColor: colors.fg, width: scale(22) },
-  avatarBlock: {
-    alignSelf: "center",
-    marginBottom: verticalScale(20),
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  avatar: {
-    width: scale(88),
-    height: scale(88),
-    borderRadius: moderateScale(44),
+  progressSegOn: {
     backgroundColor: "#111111",
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(17,17,17,0.12)",
-    alignItems: "center",
-    justifyContent: "center",
   },
-  avatarText: {
-    color: "#FFFFFF",
-    fontSize: fontSize(28),
-    fontWeight: "800",
-    letterSpacing: 1,
-  },
-  hero: { marginBottom: verticalScale(20), gap: moderateScale(8) },
   title: {
-    fontSize: fontSize(30),
-    lineHeight: fontSize(36),
+    fontSize: fontSize(32),
+    lineHeight: fontSize(38),
     fontWeight: "800",
-    color: colors.fg,
-    letterSpacing: -0.8,
+    color: "#111111",
+    letterSpacing: -1,
+    marginBottom: verticalScale(10),
   },
   sub: {
     fontSize: fontSize(15),
     lineHeight: fontSize(22),
-    fontWeight: "500",
-    color: colors.muted,
-    maxWidth: scale(340),
+    color: "#737373",
+    marginBottom: verticalScale(28),
   },
-  fields: { gap: moderateScale(12) },
-  fieldShell: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: moderateScale(12),
+  card: {
     backgroundColor: "#FFFFFF",
-    borderRadius: moderateScale(16),
-    paddingHorizontal: scale(14),
-    paddingVertical: verticalScale(12),
+    borderRadius: moderateScale(20),
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(17,17,17,0.12)",
+    borderColor: "rgba(17,17,17,0.1)",
+    overflow: "hidden",
   },
-  fieldShellActive: {
-    borderColor: "#111111",
-    borderWidth: 1.5,
+  field: {
+    paddingHorizontal: scale(16),
+    paddingTop: verticalScale(12),
+    paddingBottom: verticalScale(10),
   },
-  fieldIcon: {
-    width: scale(40),
-    height: scale(40),
-    borderRadius: moderateScale(14),
-    backgroundColor: "#F0F0F0",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  fieldIconDone: {
-    backgroundColor: colors.fg,
-  },
-  fieldBody: { flex: 1, gap: moderateScale(2) },
-  fieldLabelRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
+  fieldActive: {
+    backgroundColor: "#F7F7F7",
   },
   fieldLabel: {
     fontSize: fontSize(12),
     fontWeight: "700",
-    color: colors.muted,
+    color: "#737373",
     letterSpacing: 0.2,
+    marginBottom: verticalScale(4),
+    textTransform: "uppercase",
   },
   input: {
-    paddingVertical: verticalScale(2),
-    fontSize: fontSize(17),
+    fontSize: fontSize(18),
     fontWeight: "700",
-    color: colors.fg,
-    letterSpacing: -0.2,
-  },
-  ageChip: {
-    backgroundColor: "#F0F0F0",
-    borderRadius: 999,
-    paddingHorizontal: scale(8),
-    paddingVertical: verticalScale(2),
-  },
-  ageChipText: {
-    fontSize: fontSize(11),
-    fontWeight: "800",
     color: "#111111",
+    letterSpacing: -0.3,
+    paddingVertical: Platform.OS === "android" ? verticalScale(4) : verticalScale(2),
+  },
+  divider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: "rgba(17,17,17,0.08)",
+    marginLeft: scale(16),
   },
   errorRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: moderateScale(6),
-    paddingHorizontal: scale(4),
+    marginTop: verticalScale(14),
+    paddingHorizontal: scale(2),
   },
   fieldError: {
     flex: 1,
@@ -530,32 +433,29 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   primary: {
-    marginTop: verticalScale(22),
-    minHeight: verticalScale(58),
-    borderRadius: moderateScale(29),
-    backgroundColor: colors.fg,
-    paddingLeft: scale(22),
-    paddingRight: scale(8),
+    marginTop: verticalScale(28),
+    minHeight: verticalScale(54),
+    borderRadius: moderateScale(16),
+    backgroundColor: "#111111",
+    paddingHorizontal: scale(20),
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-  },
-  primaryText: { color: "#FFF", fontSize: fontSize(16), fontWeight: "800" },
-  primaryIcon: {
-    width: scale(42),
-    height: scale(42),
-    borderRadius: moderateScale(21),
-    backgroundColor: "#FFF",
-    alignItems: "center",
     justifyContent: "center",
+    gap: moderateScale(8),
   },
-  disabled: { opacity: 0.4 },
+  primaryText: {
+    color: "#FFFFFF",
+    fontSize: fontSize(16),
+    fontWeight: "800",
+  },
+  disabled: {
+    opacity: 0.4,
+  },
   foot: {
-    marginTop: verticalScale(14),
+    marginTop: verticalScale(18),
     textAlign: "center",
     fontSize: fontSize(12),
-    lineHeight: fontSize(17),
-    color: colors.muted,
-    paddingHorizontal: scale(12),
+    lineHeight: fontSize(18),
+    color: "#A3A3A3",
   },
 });

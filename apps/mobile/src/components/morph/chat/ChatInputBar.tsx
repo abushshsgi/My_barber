@@ -124,7 +124,12 @@ export function ChatInputBar({
             fontSize: chatFs(16),
             lineHeight: chatFs(22),
             ...(Platform.OS === "android"
-              ? { paddingVertical: moderateScale(8), textAlignVertical: "center" as const }
+              ? {
+                  paddingTop: moderateScale(8),
+                  paddingBottom: moderateScale(8),
+                  textAlignVertical: "center" as const,
+                  includeFontPadding: false,
+                }
               : null),
           },
         ]}
@@ -141,6 +146,7 @@ export function ChatInputBar({
         importantForAutofill="no"
         autoCorrect
         autoCapitalize="sentences"
+        disableFullscreenUI={Platform.OS === "android"}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
         onSubmitEditing={() => {

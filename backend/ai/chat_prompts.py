@@ -7,8 +7,8 @@ from typing import Any
 MORF_CHAT_DAILY_LIMIT = 40  # legacy alias — oylik token kvota ishlatiladi
 MORF_CHAT_MAX_HISTORY = 24
 MORF_CHAT_MAX_MESSAGE_LEN = 4000
-MORF_CHAT_MAX_OUTPUT_TOKENS = 4096
-MORF_CHAT_VOICE_MAX_OUTPUT_TOKENS = 384
+MORF_CHAT_MAX_OUTPUT_TOKENS = 640
+MORF_CHAT_VOICE_MAX_OUTPUT_TOKENS = 220
 MORF_CHAT_MAX_THREADS = 200
 
 QUICK_PROMPT_IDS = (
@@ -103,7 +103,7 @@ def _format_prefs_block(context: dict[str, Any] | None) -> str:
     else:
         lines.append(
             "- Javob uslubi: ixcham maslahat (standart). "
-            "Savol murakkabligiga qarab 3–7 jumla; uzun essay va takrorlamaslik."
+            "Savolga mos: oddiy — 2–4 jumla; murakkab — 5–7 jumla. Essay yozma."
         )
     gender = str(context.get("advice_gender") or context.get("user_gender") or "").strip().lower()
     if gender in ("male", "female"):

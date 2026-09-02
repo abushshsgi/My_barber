@@ -62,7 +62,7 @@ export const DEFAULT_MORPH_CHAT_PREFS: MorphChatPrefs = {
   useTryOnContext: true,
   saveHistory: true,
   replyLang: "app",
-  replyStyle: "detailed",
+  replyStyle: "short",
   streaming: true,
   voiceInput: true,
   autoSpeak: true,
@@ -85,7 +85,7 @@ function asReplyLang(v: unknown): MorphChatReplyLang {
 }
 
 function asReplyStyle(v: unknown): MorphChatReplyStyle {
-  return v === "short" || v === "detailed" || v === "barber" ? v : "detailed";
+  return v === "short" || v === "detailed" || v === "barber" ? v : "short";
 }
 
 function asAdviceGender(v: unknown): MorphChatAdviceGender {

@@ -583,7 +583,11 @@ export function MorphChatScreen() {
             <View style={styles.headerAiDot}>
               <Ionicons name="sparkles" size={ICON.xs} color="#737373" />
             </View>
-            <Text style={[styles.title, { color: pal.fg, flex: 1, flexShrink: 1, minWidth: 0 }]} numberOfLines={1} ellipsizeMode="tail">
+            <Text
+              style={[styles.title, { color: pal.fg }]}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+            >
               {threadTitle}
             </Text>
           </View>
@@ -612,7 +616,7 @@ export function MorphChatScreen() {
 
       <KeyboardAvoidingView
         style={styles.flex}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
         keyboardVerticalOffset={Platform.OS === "ios" ? insets.top + spacing.xs : 0}
       >
         <FlatList
@@ -709,15 +713,16 @@ const styles = StyleSheet.create({
   headerText: {
     flex: 1,
     minWidth: 0,
-    paddingHorizontal: scale(4),
+    marginRight: scale(4),
+    paddingRight: scale(6),
+    overflow: "hidden",
   },
   headerTitleRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: moderateScale(6),
-    flex: 1,
     minWidth: 0,
-    paddingRight: scale(4),
+    maxWidth: "100%",
   },
   headerAiDot: {
     width: AI_DOT,
@@ -733,7 +738,9 @@ const styles = StyleSheet.create({
   title: {
     ...morphFont,
     flexShrink: 1,
+    flexGrow: 0,
     minWidth: 0,
+    maxWidth: "100%",
     fontSize: fontSize(15),
     fontWeight: "700",
     color: "#111111",
