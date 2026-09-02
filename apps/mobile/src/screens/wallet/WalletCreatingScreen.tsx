@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { useEffect } from "react";
 import {
@@ -17,6 +18,7 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { morfWordmark } from "../../branding/morf-logo";
 import { useAppShell } from "../../lib/AppShellContext";
 import {
   fontSize,
@@ -91,9 +93,20 @@ export function WalletCreatingScreen({
       ]}
     >
       <View style={styles.logoRow}>
-        <View style={styles.logoBlock} />
-        <View style={[styles.logoBlock, styles.logoBlockOffset]} />
-        <Text style={styles.logoText}>{brand}</Text>
+        {isMorph ? (
+          <Image
+            source={morfWordmark}
+            style={styles.morphLogo}
+            contentFit="contain"
+            accessibilityLabel="Morf AI"
+          />
+        ) : (
+          <>
+            <View style={styles.logoBlock} />
+            <View style={[styles.logoBlock, styles.logoBlockOffset]} />
+            <Text style={styles.logoText}>{brand}</Text>
+          </>
+        )}
       </View>
 
       <View style={styles.stage}>
@@ -197,6 +210,10 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: INK,
     letterSpacing: -0.2,
+  },
+  morphLogo: {
+    width: scale(120),
+    height: verticalScale(28),
   },
   stage: {
     flex: 1,

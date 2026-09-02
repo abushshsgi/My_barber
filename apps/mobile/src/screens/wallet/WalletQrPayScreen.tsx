@@ -134,15 +134,17 @@ export function WalletQrPayScreen({ navigation }: Props) {
           </View>
           <View style={styles.artPhone}>
             <View style={styles.artPhoneScreen}>
-              <Ionicons name="scan-outline" size={36} color="#5B8DEF" />
+              <Ionicons name="scan-outline" size={36} color="#111111" />
             </View>
           </View>
         </View>
 
-        <Text style={styles.heroTitle}>Tezroq to'lov?{"\n"}Ha, skanerlash!</Text>
-        <Text style={styles.heroSub}>
-          Sartarosh, do'st va oilaga QR orqali bir zumda to'lang
-        </Text>
+        <View style={styles.heroCopy}>
+          <Text style={styles.heroTitle}>Tezroq to'lov?{"\n"}Ha, skanerlash!</Text>
+          <Text style={styles.heroSub}>
+            Sartarosh, do'st va oilaga QR orqali bir zumda to'lang
+          </Text>
+        </View>
 
         <Pressable style={styles.enableBtn} onPress={() => setPhase("scan")}>
           <Text style={styles.enableText}>QR skanerni yoqish</Text>
@@ -162,7 +164,7 @@ export function WalletQrPayScreen({ navigation }: Props) {
               style={styles.sheetItem}
               onPress={() => navigation.navigate("WalletGift")}
             >
-              <View style={[styles.sheetIcon, { backgroundColor: "#FEF3C7" }]}>
+              <View style={[styles.sheetIcon, { backgroundColor: "#F0F0F0" }]}>
                 <Ionicons name="wallet-outline" size={26} color="#111111" />
               </View>
               <Text style={styles.sheetLabel}>O'tkazma</Text>
@@ -171,8 +173,8 @@ export function WalletQrPayScreen({ navigation }: Props) {
               style={styles.sheetItem}
               onPress={() => navigation.navigate("WalletGift")}
             >
-              <View style={[styles.sheetIcon, { backgroundColor: "#DCFCE7" }]}>
-                <Ionicons name="flash-outline" size={26} color="#15803D" />
+              <View style={[styles.sheetIcon, { backgroundColor: "#F0F0F0" }]}>
+                <Ionicons name="flash-outline" size={26} color="#111111" />
               </View>
               <Text style={styles.sheetLabel}>Tezkor</Text>
             </Pressable>
@@ -186,7 +188,7 @@ export function WalletQrPayScreen({ navigation }: Props) {
     return (
       <View style={[styles.scanRoot, { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 24 }]}>
         <Pressable style={styles.closeBtn} onPress={() => setPhase("intro")}>
-          <Ionicons name="close" size={20} color="#FFF" />
+          <Ionicons name="close" size={20} color="#111111" />
         </Pressable>
 
         <View style={styles.scanCenter}>
@@ -208,7 +210,7 @@ export function WalletQrPayScreen({ navigation }: Props) {
           <TextInput
             style={styles.manualInput}
             placeholder="yoki kodni joylashtiring…"
-            placeholderTextColor="rgba(255,255,255,0.45)"
+            placeholderTextColor="#A3A3A3"
             autoCapitalize="none"
             autoCorrect={false}
             value={code}
@@ -220,9 +222,9 @@ export function WalletQrPayScreen({ navigation }: Props) {
             onPress={() => void onResolve()}
           >
             {resolving ? (
-              <ActivityIndicator color="#111" />
+              <ActivityIndicator color="#FFFFFF" />
             ) : (
-              <Ionicons name="arrow-forward" size={20} color="#111" />
+              <Ionicons name="arrow-forward" size={20} color="#FFFFFF" />
             )}
           </Pressable>
         </View>
@@ -315,14 +317,14 @@ const styles = StyleSheet.create({
   artBack: {
     width: scale(110),
     height: scale(110),
-    backgroundColor: "#BFDBFE",
+    backgroundColor: "#E5E5E5",
     right: scale(48),
     top: verticalScale(28),
   },
   artMid: {
     width: scale(100),
     height: verticalScale(130),
-    backgroundColor: "#86EFAC",
+    backgroundColor: "#D4D4D4",
     left: scale(56),
     top: verticalScale(36),
     alignItems: "center",
@@ -332,35 +334,43 @@ const styles = StyleSheet.create({
     width: scale(48),
     height: scale(48),
     borderWidth: 3,
-    borderColor: "#166534",
+    borderColor: "#111111",
     borderRadius: moderateScale(8),
   },
   artPhone: {
     width: scale(120),
     height: verticalScale(160),
     borderRadius: moderateScale(22),
-    backgroundColor: "#F0F0F0",
+    backgroundColor: "#FFFFFF",
     borderWidth: 6,
-    borderColor: "#93C5FD",
+    borderColor: "#111111",
     alignItems: "center",
     justifyContent: "center",
     zIndex: 2,
     shadowColor: "#000",
-    shadowOpacity: 0.12,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 6,
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 4,
   },
   artPhoneScreen: {
     width: scale(88),
     height: verticalScale(120),
     borderRadius: moderateScale(12),
-    backgroundColor: "#EFF6FF",
+    backgroundColor: "#F5F5F5",
     alignItems: "center",
     justifyContent: "center",
   },
+  heroCopy: {
+    alignItems: "center",
+    justifyContent: "center",
+    alignSelf: "center",
+    width: "100%",
+    paddingHorizontal: scale(8),
+  },
   heroTitle: {
     textAlign: "center",
+    alignSelf: "center",
     fontSize: fontSize(28),
     fontWeight: "800",
     color: "#111",
@@ -370,6 +380,7 @@ const styles = StyleSheet.create({
   },
   heroSub: {
     textAlign: "center",
+    alignSelf: "center",
     marginTop: verticalScale(10),
     fontSize: fontSize(14),
     lineHeight: fontSize(20),
@@ -429,7 +440,9 @@ const styles = StyleSheet.create({
     width: scale(40),
     height: scale(40),
     borderRadius: moderateScale(20),
-    backgroundColor: "rgba(255,255,255,0.12)",
+    backgroundColor: "#FFFFFF",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(17,17,17,0.12)",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -438,7 +451,9 @@ const styles = StyleSheet.create({
     width: scale(260),
     height: scale(260),
     borderRadius: moderateScale(28),
-    backgroundColor: "rgba(20,20,22,0.92)",
+    backgroundColor: "#F0F0F0",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(17,17,17,0.12)",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -462,34 +477,39 @@ const styles = StyleSheet.create({
   cBR: { bottom: verticalScale(14), right: scale(14), borderBottomWidth: 4, borderRightWidth: 4, borderBottomRightRadius: moderateScale(10) },
   scanTitle: {
     textAlign: "center",
-    color: "#FFF",
+    alignSelf: "center",
+    color: "#111111",
     fontSize: fontSize(28),
     fontWeight: "800",
     letterSpacing: -0.4,
   },
   scanSub: {
     textAlign: "center",
-    color: "rgba(255,255,255,0.55)",
+    alignSelf: "center",
+    color: "#737373",
     fontSize: fontSize(14),
     marginTop: verticalScale(8),
     marginBottom: verticalScale(20),
+    paddingHorizontal: scale(12),
   },
   manualBox: {
     flexDirection: "row",
     alignItems: "center",
     gap: moderateScale(10),
-    backgroundColor: "rgba(255,255,255,0.08)",
+    backgroundColor: "#FFFFFF",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(17,17,17,0.12)",
     borderRadius: moderateScale(16),
     paddingLeft: scale(14),
     paddingRight: scale(6),
     paddingVertical: verticalScale(6),
   },
-  manualInput: { flex: 1, color: "#FFF", fontSize: fontSize(14), paddingVertical: verticalScale(10) },
+  manualInput: { flex: 1, color: "#111111", fontSize: fontSize(14), paddingVertical: verticalScale(10) },
   manualGo: {
     width: scale(44),
     height: scale(44),
     borderRadius: moderateScale(14),
-    backgroundColor: "#FFF",
+    backgroundColor: "#111111",
     alignItems: "center",
     justifyContent: "center",
   },

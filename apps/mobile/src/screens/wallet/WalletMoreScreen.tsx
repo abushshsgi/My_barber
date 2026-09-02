@@ -16,10 +16,10 @@ import {
 
 type Props = NativeStackScreenProps<WalletStackParamList, "WalletMore">;
 
-const INK = "#1A1A1A";
-const MUTED = "#8A8A8E";
+const INK = "#111111";
+const MUTED = "#737373";
 const SOFT_BG = "#FAFAFA";
-const ICON_BG = "#F0EEEA";
+const ICON_BG = "#F0F0F0";
 
 type GridItem = {
   key: keyof WalletStackParamList;
@@ -226,13 +226,13 @@ const styles = StyleSheet.create({
   soonText: { fontSize: fontSize(11), fontWeight: "700", color: MUTED },
   bonusBlur: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: "rgba(247,245,242,0.45)",
+    backgroundColor: "rgba(250,250,250,0.55)",
   },
   frozenBanner: {
     flexDirection: "row",
     alignItems: "center",
     gap: moderateScale(8),
-    backgroundColor: "#EEEAE4",
+    backgroundColor: "#F0F0F0",
     borderRadius: moderateScale(16),
     paddingHorizontal: scale(14),
     paddingVertical: verticalScale(12),

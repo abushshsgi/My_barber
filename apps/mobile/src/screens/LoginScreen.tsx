@@ -2,7 +2,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -11,6 +10,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { useNavigation } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   checkPhone,
@@ -20,8 +20,6 @@ import {
 import { useAuth } from "../auth/AuthContext";
 import { useGoogleAuth } from "../auth/GoogleAuthSession";
 import { getLastPhone } from "../auth/storage";
-import { morfWordmarkWhite } from "../branding/morf-logo";
-import { BrandLogo } from "../components/BrandLogo";
 import { GoogleGlyph } from "../components/GoogleGlyph";
 import { useHideTabBar } from "../hooks/useHideTabBar";
 import { useAppShell } from "../lib/AppShellContext";
@@ -43,6 +41,7 @@ export function LoginScreen() {
   const google = useGoogleAuth();
   const { shell } = useAppShell();
   const morph = shell === "morph";
+  const navigation = useNavigation();
 
   const [step, setStep] = useState<Step>("choose");
   const [phone, setPhone] = useState("");
@@ -148,6 +147,32 @@ export function LoginScreen() {
     }
   };
 
+  const onBack = () => {
+    if (step === "code") {
+      setStep(hasPassword ? "password" : "phone");
+      setError(null);
+      return;
+    }
+    if (step === "password") {
+      setStep("phone");
+      setError(null);
+      return;
+    }
+    if (step === "phone") {
+      setStep("choose");
+      setError(null);
+      return;
+    }
+    if (navigation.canGoBack()) {
+      navigation.goBack();
+      return;
+    }
+    const parent = navigation.getParent();
+    if (parent) {
+      parent.navigate(morph ? ("MorphChat" as never) : ("Home" as never));
+    }
+  };
+
   return (
     <KeyboardAvoidingView
       style={[
@@ -158,19 +183,17 @@ export function LoginScreen() {
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
       <View style={styles.body}>
-        {/* Markaz — logo + sarlavha (Uzum Tezkor uslubi) */}
-        <View style={styles.centerBlock}>
-          {morph ? (
-            <Image
-              source={morfWordmarkWhite}
-              style={styles.morphMark}
-              resizeMode="contain"
-              accessibilityLabel="Morf AI"
-            />
-          ) : (
-            <BrandLogo size="xl" />
-          )}
+        <Pressable
+          onPress={onBack}
+          style={({ pressed }) => [styles.backBtn, pressed && styles.pressed]}
+          accessibilityRole="button"
+          accessibilityLabel="Orqaga"
+          hitSlop={8}
+        >
+          <Ionicons name="chevron-back" size={22} color="#111111" />
+        </Pressable>
 
+        <View style={styles.centerBlock}>
           {step === "choose" ? (
             <>
               <Text style={titleStyle}>
@@ -204,9 +227,9 @@ export function LoginScreen() {
                   onChangeText={(t) => setPhone(formatUzPhoneDisplay(t))}
                   keyboardType="phone-pad"
                   placeholder="90 123 45 67"
-                  placeholderTextColor={morph ? "rgba(255,255,255,0.35)" : colors.muted}
+                  placeholderTextColor={colors.muted}
                   style={[styles.phoneInput, morph && styles.phoneInputMorph]}
-                  maxLength={13}
+                  maxLength={12}
                   autoFocus
                 />
               </View>
@@ -238,12 +261,12 @@ export function LoginScreen() {
               <Text style={subStyle}>+998 {formatUzPhoneDisplay(phone)}</Text>
               <TextInput
                 value={code}
-                onChangeText={setCode}
+                onChangeText={(t) => setCode(t.replace(/\D/g, "").slice(0, 4))}
                 keyboardType="number-pad"
                 placeholder="••••"
-                placeholderTextColor={morph ? "rgba(255,255,255,0.35)" : colors.muted}
+                placeholderTextColor={colors.muted}
                 style={[styles.field, styles.codeField, morph && styles.fieldMorph]}
-                maxLength={6}
+                maxLength={4}
                 autoFocus
               />
               {hint ? (
@@ -403,14 +426,22 @@ const styles = StyleSheet.create({
   rootMorph: {
     backgroundColor: "#FAFAFA",
   },
-  morphMark: {
-    width: scale(180),
-    height: verticalScale(44),
-  },
   body: {
     flex: 1,
     paddingHorizontal: scale(24),
     justifyContent: "space-between",
+  },
+  backBtn: {
+    alignSelf: "flex-start",
+    width: scale(40),
+    height: scale(40),
+    borderRadius: moderateScale(14),
+    backgroundColor: "#FFFFFF",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(17,17,17,0.12)",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: verticalScale(4),
   },
   centerBlock: {
     flex: 1,
@@ -420,7 +451,7 @@ const styles = StyleSheet.create({
     gap: moderateScale(10),
   },
   title: {
-    marginTop: verticalScale(28),
+    marginTop: verticalScale(8),
     fontSize: fontSize(26),
     fontWeight: "800",
     color: colors.fg,

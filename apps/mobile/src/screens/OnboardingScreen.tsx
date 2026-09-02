@@ -18,16 +18,10 @@ import {
   View,
 } from "react-native";
 import Animated, {
-  Easing,
-  FadeInDown,
-  interpolate,
   useAnimatedStyle,
   useSharedValue,
-  withDelay,
-  withRepeat,
   withSequence,
   withSpring,
-  withTiming,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { updateMe } from "../api/user";
@@ -104,40 +98,7 @@ export function OnboardingScreen({ onComplete }: { onComplete?: () => void }) {
   const [prefilled, setPrefilled] = useState(false);
   const finishingRef = useRef(false);
 
-  const floatA = useSharedValue(0);
-  const floatB = useSharedValue(0);
-  const avatarPulse = useSharedValue(0);
   const ctaScale = useSharedValue(1);
-
-  useEffect(() => {
-    floatA.value = withRepeat(
-      withSequence(
-        withTiming(1, { duration: 3200, easing: Easing.inOut(Easing.sin) }),
-        withTiming(0, { duration: 3200, easing: Easing.inOut(Easing.sin) }),
-      ),
-      -1,
-      false,
-    );
-    floatB.value = withDelay(
-      500,
-      withRepeat(
-        withSequence(
-          withTiming(1, { duration: 2800, easing: Easing.inOut(Easing.sin) }),
-          withTiming(0, { duration: 2800, easing: Easing.inOut(Easing.sin) }),
-        ),
-        -1,
-        false,
-      ),
-    );
-    avatarPulse.value = withRepeat(
-      withSequence(
-        withTiming(1, { duration: 1400, easing: Easing.inOut(Easing.quad) }),
-        withTiming(0, { duration: 1400, easing: Easing.inOut(Easing.quad) }),
-      ),
-      -1,
-      false,
-    );
-  }, [avatarPulse, floatA, floatB]);
 
   useEffect(() => {
     if (prefilled || !user) return;
@@ -175,25 +136,6 @@ export function OnboardingScreen({ onComplete }: { onComplete?: () => void }) {
   const canSubmit = nameValidation.ok && ageOk && !saving;
   const filledCount =
     (firstName.trim() ? 1 : 0) + (lastName.trim() ? 1 : 0) + (ageOk ? 1 : 0);
-
-  const shapeAStyle = useAnimatedStyle(() => ({
-    transform: [
-      { translateY: interpolate(floatA.value, [0, 1], [0, -14]) },
-      { translateX: interpolate(floatA.value, [0, 1], [0, 8]) },
-    ],
-  }));
-
-  const shapeBStyle = useAnimatedStyle(() => ({
-    transform: [
-      { translateY: interpolate(floatB.value, [0, 1], [0, 12]) },
-      { rotate: `${interpolate(floatB.value, [0, 1], [-8, 10])}deg` },
-    ],
-  }));
-
-  const avatarRingStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: interpolate(avatarPulse.value, [0, 1], [1, 1.04]) }],
-    opacity: interpolate(avatarPulse.value, [0, 1], [0.45, 0.85]),
-  }));
 
   const ctaAnimStyle = useAnimatedStyle(() => ({
     transform: [{ scale: ctaScale.value }],
@@ -265,13 +207,9 @@ export function OnboardingScreen({ onComplete }: { onComplete?: () => void }) {
 
   return (
     <KeyboardAvoidingView
-      style={[styles.root, { paddingTop: insets.top + 4 }]}
+      style={[styles.root, { paddingTop: insets.top + 8 }]}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-      <Animated.View style={[styles.blobA, shapeAStyle]} pointerEvents="none" />
-      <Animated.View style={[styles.blobB, shapeBStyle]} pointerEvents="none" />
-      <View style={styles.blobC} pointerEvents="none" />
-
       <ScrollView
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
@@ -280,11 +218,8 @@ export function OnboardingScreen({ onComplete }: { onComplete?: () => void }) {
           { paddingBottom: Math.max(insets.bottom, 16) + 28 },
         ]}
       >
-        <Animated.View entering={FadeInDown.duration(480).delay(40)} style={styles.topRow}>
-          <View style={styles.brandPill}>
-            <View style={styles.brandDot} />
-            <Text style={styles.brandText}>Mysaloon</Text>
-          </View>
+        <View style={styles.topRow}>
+          <Text style={styles.brandText}>Profil</Text>
           <View style={styles.progressRow}>
             {[0, 1, 2].map((i) => (
               <View
@@ -293,29 +228,22 @@ export function OnboardingScreen({ onComplete }: { onComplete?: () => void }) {
               />
             ))}
           </View>
-        </Animated.View>
+        </View>
 
-        <Animated.View
-          entering={FadeInDown.duration(520).delay(120)}
-          style={styles.avatarBlock}
-        >
-          <Animated.View style={[styles.avatarRing, avatarRingStyle]} />
+        <View style={styles.avatarBlock}>
           <View style={styles.avatar}>
             <Text style={styles.avatarText}>{initials}</Text>
           </View>
-          <View style={styles.avatarBadge}>
-            <Ionicons name="sparkles" size={12} color="#FFF" />
-          </View>
-        </Animated.View>
+        </View>
 
-        <Animated.View entering={FadeInDown.duration(500).delay(180)} style={styles.hero}>
+        <View style={styles.hero}>
           <Text style={styles.title}>Profilingizni{"\n"}to‘ldiring</Text>
           <Text style={styles.sub}>
             Ism, familiya va yosh — bitta qadam. Shu akkaunt MySaloon va Morf AI uchun.
           </Text>
-        </Animated.View>
+        </View>
 
-        <Animated.View entering={FadeInDown.duration(520).delay(260)} style={styles.fields}>
+        <View style={styles.fields}>
           <FieldShell
             icon="person-outline"
             label="Ism"
@@ -402,9 +330,9 @@ export function OnboardingScreen({ onComplete }: { onComplete?: () => void }) {
               <Text style={styles.fieldError}>{error}</Text>
             </View>
           ) : null}
-        </Animated.View>
+        </View>
 
-        <Animated.View entering={FadeInDown.duration(480).delay(360)} style={ctaAnimStyle}>
+        <Animated.View style={ctaAnimStyle}>
           <Pressable
             style={[styles.primary, !canSubmit && styles.disabled]}
             onPress={() => void finish()}
@@ -419,11 +347,11 @@ export function OnboardingScreen({ onComplete }: { onComplete?: () => void }) {
           </Pressable>
         </Animated.View>
 
-        <Animated.View entering={FadeInDown.duration(420).delay(420)}>
+        <View>
           <Text style={styles.foot}>
             Keyin Morf AI try-on va bronlarga o‘sha akkaunt bilan kirasiz
           </Text>
-        </Animated.View>
+        </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -467,69 +395,23 @@ function FieldShell({
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: "#FAFAF8",
-  },
-  blobA: {
-    position: "absolute",
-    top: -verticalScale(40),
-    right: -scale(50),
-    width: scale(180),
-    height: scale(180),
-    borderRadius: moderateScale(90),
-    backgroundColor: "rgba(255,92,92,0.12)",
-  },
-  blobB: {
-    position: "absolute",
-    top: verticalScale(180),
-    left: -scale(60),
-    width: scale(140),
-    height: scale(140),
-    borderRadius: moderateScale(36),
-    backgroundColor: "rgba(10,10,10,0.05)",
-    transform: [{ rotate: "18deg" }],
-  },
-  blobC: {
-    position: "absolute",
-    bottom: verticalScale(120),
-    right: -scale(30),
-    width: scale(100),
-    height: scale(100),
-    borderRadius: moderateScale(50),
-    borderWidth: 14,
-    borderColor: "rgba(250,204,21,0.28)",
+    backgroundColor: "#FAFAFA",
   },
   scroll: {
     flexGrow: 1,
-    paddingHorizontal: scale(22),
+    paddingHorizontal: scale(20),
   },
   topRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginTop: verticalScale(8),
-    marginBottom: verticalScale(18),
-  },
-  brandPill: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: moderateScale(8),
-    backgroundColor: "#FFF",
-    borderRadius: 999,
-    paddingHorizontal: scale(12),
-    paddingVertical: verticalScale(7),
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-  },
-  brandDot: {
-    width: scale(8),
-    height: scale(8),
-    borderRadius: moderateScale(4),
-    backgroundColor: colors.brandDot,
+    marginTop: verticalScale(4),
+    marginBottom: verticalScale(20),
   },
   brandText: {
-    fontSize: fontSize(13),
-    fontWeight: "800",
-    color: colors.fg,
+    fontSize: fontSize(15),
+    fontWeight: "700",
+    color: "#111111",
     letterSpacing: -0.2,
   },
   progressRow: { flexDirection: "row", gap: moderateScale(5) },
@@ -542,46 +424,25 @@ const styles = StyleSheet.create({
   progressSegOn: { backgroundColor: colors.fg, width: scale(22) },
   avatarBlock: {
     alignSelf: "center",
-    marginBottom: verticalScale(18),
-    width: scale(104),
-    height: scale(104),
+    marginBottom: verticalScale(20),
     alignItems: "center",
     justifyContent: "center",
-  },
-  avatarRing: {
-    position: "absolute",
-    width: scale(104),
-    height: scale(104),
-    borderRadius: moderateScale(52),
-    borderWidth: 2,
-    borderColor: colors.brandDot,
   },
   avatar: {
     width: scale(88),
     height: scale(88),
     borderRadius: moderateScale(44),
-    backgroundColor: colors.fg,
+    backgroundColor: "#111111",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(17,17,17,0.12)",
     alignItems: "center",
     justifyContent: "center",
   },
   avatarText: {
-    color: "#FFF",
+    color: "#FFFFFF",
     fontSize: fontSize(28),
     fontWeight: "800",
     letterSpacing: 1,
-  },
-  avatarBadge: {
-    position: "absolute",
-    right: scale(2),
-    bottom: verticalScale(4),
-    width: scale(28),
-    height: scale(28),
-    borderRadius: moderateScale(14),
-    backgroundColor: colors.brandDot,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 2,
-    borderColor: "#FAFAF8",
   },
   hero: { marginBottom: verticalScale(20), gap: moderateScale(8) },
   title: {
@@ -603,26 +464,22 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: moderateScale(12),
-    backgroundColor: "#FFF",
-    borderRadius: moderateScale(18),
+    backgroundColor: "#FFFFFF",
+    borderRadius: moderateScale(16),
     paddingHorizontal: scale(14),
     paddingVertical: verticalScale(12),
-    borderWidth: 1.5,
-    borderColor: "transparent",
-    shadowColor: "#0A0A0A",
-    shadowOpacity: 0.04,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 1,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(17,17,17,0.12)",
   },
   fieldShellActive: {
-    borderColor: colors.fg,
+    borderColor: "#111111",
+    borderWidth: 1.5,
   },
   fieldIcon: {
     width: scale(40),
     height: scale(40),
     borderRadius: moderateScale(14),
-    backgroundColor: colors.surface,
+    backgroundColor: "#F0F0F0",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -649,7 +506,7 @@ const styles = StyleSheet.create({
     letterSpacing: -0.2,
   },
   ageChip: {
-    backgroundColor: "rgba(255,92,92,0.12)",
+    backgroundColor: "#F0F0F0",
     borderRadius: 999,
     paddingHorizontal: scale(8),
     paddingVertical: verticalScale(2),
@@ -657,7 +514,7 @@ const styles = StyleSheet.create({
   ageChipText: {
     fontSize: fontSize(11),
     fontWeight: "800",
-    color: colors.brandDot,
+    color: "#111111",
   },
   errorRow: {
     flexDirection: "row",

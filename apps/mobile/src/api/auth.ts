@@ -137,9 +137,8 @@ export function getGoogleClientId(): string {
 
 export function normalizeUzPhone(input: string): string {
   const digits = input.replace(/\D/g, "");
-  if (digits.startsWith("998") && digits.length >= 12) return digits.slice(3, 12);
-  if (digits.length > 9) return digits.slice(-9);
-  return digits;
+  if (digits.startsWith("998")) return digits.slice(3, 12);
+  return digits.slice(0, 9);
 }
 
 export function formatUzPhoneDisplay(nine: string): string {
