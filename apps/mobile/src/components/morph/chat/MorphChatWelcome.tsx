@@ -49,7 +49,7 @@ export function MorphChatWelcome({
       <ChatAmbientBg />
       <StatusBar style="dark" />
 
-      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
+      <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
         <Pressable
           onPress={onMenu}
           style={({ pressed }) => [styles.headerBtn, pressed && styles.pressed]}
@@ -70,13 +70,6 @@ export function MorphChatWelcome({
       </View>
 
       <View style={styles.hero}>
-        <Animated.View entering={FadeInDown.duration(320)} style={styles.badgeWrap}>
-          <View style={styles.aiBadge}>
-            <Ionicons name="sparkles" size={13} color={SOFT_PAPER.fg} />
-            <Animated.Text style={styles.aiBadgeText}>Morf AI • Pro Assistant</Animated.Text>
-          </View>
-        </Animated.View>
-
         <Animated.View entering={FadeInDown.duration(360).delay(60)} style={styles.copy}>
           <Animated.Text
             style={[styles.headline, { fontSize: fs(27), lineHeight: fs(34) }]}
@@ -135,29 +128,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: scale(22),
     backgroundColor: "transparent",
-  },
-  badgeWrap: {
-    alignItems: "center",
-    marginBottom: verticalScale(16),
-  },
-  aiBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: moderateScale(6),
-    paddingHorizontal: scale(12),
-    paddingVertical: verticalScale(6),
-    borderRadius: 999,
-    backgroundColor: SOFT_PAPER.card,
-    borderWidth: 1,
-    borderColor: SOFT_PAPER.line,
-  },
-  aiBadgeText: {
-    ...morphFont,
-    fontSize: fontSize(12),
-    lineHeight: fontSize(15),
-    fontWeight: "600",
-    color: SOFT_PAPER.muted,
-    letterSpacing: 0.3,
   },
   copy: {
     alignItems: "center",

@@ -67,19 +67,14 @@ export function MorphResultsScreen({ navigation }: Props) {
   const [moreStyles, setMoreStyles] = useState<ApiHairstyle[]>([]);
   const [shareTarget, setShareTarget] = useState<AiStyleSuggestion | null>(null);
   const carouselRef = useRef<FlatList<AiStyleSuggestion>>(null);
+  /** Shu selfie allaqachon tahlil qilingan — qayta API chaqirmaslik. */
+  const analyzedPhotoRef = useRef<string | null>(null);
+  const allowLeaveRef = useRef(false);
   const analyzingBusy = phase === "analyzing";
   const summaryBusy = phase === "summary";
 
   useEffect(() => {
     navigation.setOptions({ gestureEnabled: !analyzingBusy });
-  }, [navigation, analyzingBusy]);
-
-  useEffect(() => {
-    const sub = navigation.addListener("beforeRemove", (e) => {
-      if (!analyzingBusy) return;
-      e.preventDefault();
-    });
-    return sub;
   }, [navigation, analyzingBusy]);
 
   useEffect(() => {
@@ -150,6 +145,16 @@ export function MorphResultsScreen({ navigation }: Props) {
         setPhase("error");
         return;
       }
+      // Bir xil rasmni qayta tahlil qilmaslik.
+      if (analyzedPhotoRef.current === photo && session.analyze) {
+        setPhase("ready");
+        return;
+      }
+      if (analyzedPhotoRef.current === photo && !session.analyze) {
+        // Tahlil allaqachon ketmoqda / xato — qayta ishga tushirmaslik.
+        return;
+      }
+      analyzedPhotoRef.current = photo;
       setPhase("analyzing");
       setError(null);
       try {
@@ -172,6 +177,8 @@ export function MorphResultsScreen({ navigation }: Props) {
 
         setPhase("summary");
       } catch (err) {
+        // Xatoda qayta urinishga ruxsat (Yangi rasm emas — Retry).
+        analyzedPhotoRef.current = null;
         if (gate.handleError(err)) {
           presentMorphPaywall(navigation, "limit", "MorphResults");
           return;
@@ -189,7 +196,19 @@ export function MorphResultsScreen({ navigation }: Props) {
   );
 
   useEffect(() => {
-    void runAnalyze();
+    const photo = session.selfieDataUrl;
+    if (!photo) {
+      setError("Selfie topilmadi");
+      setPhase("error");
+      return;
+    }
+    // Remount / back: mavjud tahlil bo‘lsa API chaqirilmasin.
+    if (session.analyze) {
+      analyzedPhotoRef.current = photo;
+      setPhase("ready");
+      return;
+    }
+    void runAnalyze(photo);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- bir marta selfie bilan
   }, []);
 
@@ -264,11 +283,27 @@ export function MorphResultsScreen({ navigation }: Props) {
 
   const goCapture = useCallback(() => {
     toast.hide();
+    analyzedPhotoRef.current = null;
+    allowLeaveRef.current = true;
     session.clear();
     setError(null);
     setSpotlightIndex(0);
     navigation.replace("MorphCapture");
   }, [navigation, session, toast]);
+
+  useEffect(() => {
+    const sub = navigation.addListener("beforeRemove", (e) => {
+      if (allowLeaveRef.current) return;
+      if (analyzingBusy) {
+        e.preventDefault();
+        return;
+      }
+      // Hardware back / gesture: default pop o‘rniga capture — eski rasm qayta tahlil bo‘lmasin.
+      e.preventDefault();
+      goCapture();
+    });
+    return sub;
+  }, [navigation, analyzingBusy, goCapture]);
 
   const onBack = useCallback(() => {
     if (analyzingBusy) return;
@@ -860,12 +895,12 @@ const styles = StyleSheet.create({
   scanBackBtnDisabled: {
     backgroundColor: "rgba(255,255,255,0.05)",
   },
-  /** Analyzing / error CTA — pastga dock. */
+  /** Analyzing / error CTA — pastki chekka ustida biroz yuqoriroq. */
   scanBottomDock: {
     position: "absolute",
     left: 0,
     right: 0,
-    bottom: 0,
+    bottom: verticalScale(56),
     zIndex: 3,
     paddingHorizontal: scale(16),
   },

@@ -68,7 +68,7 @@ export function MorphProfileScreen({ navigation }: Props) {
   const openSettings = () => navigation.navigate("MorphAiSettings");
 
   return (
-    <View style={[styles.root, { paddingTop: Math.max(insets.top, 10) }]}>
+    <View style={[styles.root, { paddingTop: Math.max(insets.top, 10) + 12 }]}>
       <StatusBar style={pal.status} />
       <ScrollView
         style={styles.scroll}

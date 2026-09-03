@@ -5,6 +5,7 @@ import { StatusBar } from "expo-status-bar";
 import { useCallback, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   BackHandler,
   FlatList,
   KeyboardAvoidingView,
@@ -180,6 +181,20 @@ export function MorphChatScreen() {
   const voiceOverlayOpen = voice.live || voice.phase !== "idle" || Boolean(voice.error);
   useHideTabBarWhen(true);
 
+  const leaveChat = useCallback(() => {
+    void readLastMorphContentTab().then((tab) => {
+      const target = (tab === "MorphChat" ? "MorphTryOn" : tab) as keyof RootTabParamList;
+      navigation.navigate(target);
+    });
+  }, [navigation]);
+
+  const confirmLeaveChat = useCallback(() => {
+    Alert.alert("Chiqish", "Rostdan ham chiqmoqchimisiz?", [
+      { text: "Bekor qilish", style: "cancel" },
+      { text: "Chiqish", style: "destructive", onPress: leaveChat },
+    ]);
+  }, [leaveChat]);
+
   useFocusEffect(
     useCallback(() => {
       const sub = BackHandler.addEventListener("hardwareBackPress", () => {
@@ -203,10 +218,21 @@ export function MorphChatScreen() {
           setChatOpen(false);
           return true;
         }
-        return false;
+        confirmLeaveChat();
+        return true;
       });
       return () => sub.remove();
-    }, [chatOpen, closePaywall, menuOpen, paywall, settingsOpen, voice.cancelSession, voice.live, voice.phase]),
+    }, [
+      chatOpen,
+      closePaywall,
+      confirmLeaveChat,
+      menuOpen,
+      paywall,
+      settingsOpen,
+      voice.cancelSession,
+      voice.live,
+      voice.phase,
+    ]),
   );
 
   const tokenRemaining = Number(
@@ -304,13 +330,6 @@ export function MorphChatScreen() {
   const openProfile = useCallback(() => {
     setMenuOpen(false);
     navigation.navigate("Profile");
-  }, [navigation]);
-
-  const leaveChat = useCallback(() => {
-    void readLastMorphContentTab().then((tab) => {
-      const target = (tab === "MorphChat" ? "MorphTryOn" : tab) as keyof RootTabParamList;
-      navigation.navigate(target);
-    });
   }, [navigation]);
 
   const openSettings = useCallback(() => {
@@ -492,9 +511,9 @@ export function MorphChatScreen() {
           subtitle={t("chat.home.subtitle")}
           menuA11y={t("chat.menu.openA11y")}
           onMenu={() => setMenuOpen(true)}
-          onExit={leaveChat}
+          onExit={confirmLeaveChat}
           exitA11y={t("chat.home.backA11y")}
-          bottomPad={Math.max(insets.bottom, 10)}
+          bottomPad={Math.max(insets.bottom, 10) + 18}
           composer={
             <View>
               <ChatInputBar {...composer} onSend={() => void onSend()} onCamera={onCamera} />
@@ -566,7 +585,7 @@ export function MorphChatScreen() {
     chat.threads.find((th) => th.id === chat.activeThreadId)?.title || t("chat.title");
 
   return (
-    <View style={[styles.root, { paddingTop: Math.max(insets.top, spacing.xs) }]}>
+    <View style={[styles.root, { paddingTop: Math.max(insets.top, spacing.xs) + 10 }]}>
       <ChatAmbientBg />
       <StatusBar style={pal.status} />
       <View style={[styles.header, { borderBottomColor: pal.line }]}>
@@ -578,21 +597,16 @@ export function MorphChatScreen() {
         >
           <Ionicons name="menu" size={ICON.lg} color={pal.fg} />
         </Pressable>
-        <View style={styles.headerText}>
-          <View style={styles.headerTitleRow}>
-            <View style={styles.headerAiDot}>
-              <Ionicons name="sparkles" size={ICON.xs} color="#737373" />
-            </View>
-            <Text
-              style={[styles.title, { color: pal.fg }]}
-              numberOfLines={1}
-              ellipsizeMode="tail"
-            >
-              {threadTitle}
-            </Text>
-          </View>
-          <Text style={[styles.subtitle, { color: pal.muted }]}>Morf AI • Pro Assistant</Text>
+        <View style={styles.headerTitleCenter} pointerEvents="none">
+          <Text
+            style={[styles.title, { color: pal.fg }]}
+            numberOfLines={1}
+            ellipsizeMode="tail"
+          >
+            {threadTitle}
+          </Text>
         </View>
+        <View style={styles.headerSpacer} />
         <Pressable
           onPress={() => {
             chat.startNewChat();
@@ -605,7 +619,7 @@ export function MorphChatScreen() {
           <Ionicons name="create-outline" size={ICON.md} color={pal.fg} />
         </Pressable>
         <Pressable
-          onPress={leaveChat}
+          onPress={confirmLeaveChat}
           style={({ pressed }) => [styles.headerBtn, pressed && styles.pressed]}
           accessibilityRole="button"
           accessibilityLabel={t("chat.home.backA11y")}
@@ -644,7 +658,7 @@ export function MorphChatScreen() {
           style={[
             styles.composerDock,
             {
-              paddingBottom: Math.max(insets.bottom, spacing.sm),
+              paddingBottom: Math.max(insets.bottom, spacing.sm) + 14,
             },
           ]}
         >
@@ -671,13 +685,11 @@ export function MorphChatScreen() {
 }
 
 const ICON = {
-  xs: scale(10),
   md: scale(20),
   lg: scale(22),
 } as const;
 
 const HEADER_BTN = scale(IS_SMALL_DEVICE ? 36 : 40);
-const AI_DOT = scale(18);
 
 const styles = StyleSheet.create({
   root: {
@@ -699,6 +711,7 @@ const styles = StyleSheet.create({
     gap: moderateScale(6),
     borderBottomWidth: 1,
     borderBottomColor: "rgba(255, 255, 255, 0.08)",
+    position: "relative",
   },
   headerBtn: {
     width: HEADER_BTN,
@@ -706,51 +719,27 @@ const styles = StyleSheet.create({
     borderRadius: HEADER_BTN / 2,
     alignItems: "center",
     justifyContent: "center",
+    zIndex: 2,
   },
   pressed: {
     opacity: 0.72,
   },
-  headerText: {
+  headerSpacer: {
     flex: 1,
-    minWidth: 0,
-    marginRight: scale(4),
-    paddingRight: scale(6),
-    overflow: "hidden",
   },
-  headerTitleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: moderateScale(6),
-    minWidth: 0,
-    maxWidth: "100%",
-  },
-  headerAiDot: {
-    width: AI_DOT,
-    height: AI_DOT,
-    borderRadius: AI_DOT / 2,
-    backgroundColor: "rgba(17, 17, 17, 0.08)",
-    borderWidth: 1,
-    borderColor: "rgba(17, 17, 17, 0.12)",
+  headerTitleCenter: {
+    ...StyleSheet.absoluteFillObject,
     alignItems: "center",
     justifyContent: "center",
-    flexShrink: 0,
+    paddingHorizontal: HEADER_BTN * 2 + scale(24),
   },
   title: {
     ...morphFont,
-    flexShrink: 1,
-    flexGrow: 0,
-    minWidth: 0,
-    maxWidth: "100%",
     fontSize: fontSize(15),
     fontWeight: "700",
     color: "#111111",
     letterSpacing: -0.3,
-  },
-  subtitle: {
-    ...morphFont,
-    fontSize: fontSize(11),
-    color: "#A1A1AA",
-    marginTop: 1,
+    textAlign: "center",
   },
   composerDock: {
     paddingHorizontal: scale(16),

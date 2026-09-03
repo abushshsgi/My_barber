@@ -28,8 +28,8 @@ export function AppStatusBar({ style = "dark" }: Props) {
   return <ExpoStatusBar style={style} />;
 }
 
-/** Notch/status bar ostidagi minimal yuqori padding (Android fallback bilan). */
-export function safeTop(insetsTop: number, extra = 0): number {
+/** Notch/status bar ostidagi yuqori padding — kontent safe area dan biroz pastroq. */
+export function safeTop(insetsTop: number, extra = 10): number {
   const androidFallback =
     Platform.OS === "android" ? (RNStatusBar.currentHeight ?? 24) : 0;
   return Math.max(insetsTop, androidFallback, 8) + extra;
