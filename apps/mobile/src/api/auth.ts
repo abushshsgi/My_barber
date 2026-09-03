@@ -136,8 +136,8 @@ export function getGoogleClientId(): string {
 }
 
 /**
- * expo-auth-session browser OAuth uchun Web client ID kerak.
- * Android client ID (...tkfiilj...) → Google 400 invalid_request.
+ * Web OAuth client ID (client_type 3) — native Google Sign-In da idToken uchun kerak.
+ * Android client ID Cloud Console da package+SHA-1 bilan qoladi (google-services.json).
  */
 export function getGoogleWebClientId(): string {
   return getGoogleClientId();

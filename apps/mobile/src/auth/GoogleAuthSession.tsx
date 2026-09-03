@@ -7,6 +7,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -15,6 +16,8 @@ import { getGoogleWebClientId } from "../api/auth";
 import { useAuth } from "./AuthContext";
 
 WebBrowser.maybeCompleteAuthSession();
+
+const IS_NATIVE = Platform.OS === "ios" || Platform.OS === "android";
 
 type GoogleAuthContextValue = {
   ready: boolean;
@@ -38,25 +41,124 @@ function oauthCallbackPending(): boolean {
   );
 }
 
-/** OAuth redirect qaytganda Splash o'tkazib yuborilsin. */
+/** OAuth redirect qaytganda Splash o'tkazib yuborilsin (faqat web). */
 export function shouldSkipSplashForOAuth(): boolean {
   return oauthCallbackPending();
 }
 
+async function completeBackendSignIn(
+  auth: ReturnType<typeof useAuth>,
+  idToken: string,
+): Promise<void> {
+  const { consumePendingReferralCode } = await import("../lib/referral-storage");
+  const referral = await consumePendingReferralCode();
+  await auth.signInWithGoogle(idToken, referral);
+}
+
 /**
- * Har doim mount — Splash paytida ham Google redirect javobini ushlaydi.
- * Aks holda localhost:8081 da account tanlab qaytganda login ekraniga qaytadi.
- *
- * Muhim: useIdTokenAuthRequest brauzer oqimi — FAQAT Web OAuth client ID.
- * Android client ID (SHA-1 / package) bu yerda ishlamaydi → 400 invalid_request.
+ * Native (Android/iOS): tizim Google hisoblar oynasi — brauzer yo'q.
+ * Web: expo-auth-session (redirect).
  */
 export function GoogleAuthSessionProvider({ children }: { children: ReactNode }) {
   const auth = useAuth();
   const googleClientId = getGoogleWebClientId();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [handled, setHandled] = useState<string | null>(null);
+  const [nativeReady, setNativeReady] = useState(!IS_NATIVE);
+  const configuredRef = useRef(false);
+  const handledRef = useRef<string | null>(null);
 
+  // —— Native Google Sign-In configure ——
+  useEffect(() => {
+    if (!IS_NATIVE || !googleClientId || configuredRef.current) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const { GoogleSignin } = await import("@react-native-google-signin/google-signin");
+        GoogleSignin.configure({
+          webClientId: googleClientId,
+          offlineAccess: false,
+        });
+        configuredRef.current = true;
+        if (!cancelled) setNativeReady(true);
+      } catch (err) {
+        if (__DEV__) console.warn("[google-auth] native configure failed", err);
+        if (!cancelled) {
+          setNativeReady(false);
+          setError(
+            "Native Google Sign-In yuklanmadi. Yangi development/APK build kerak.",
+          );
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [googleClientId]);
+
+  useEffect(() => {
+    if (!auth.isAuthenticated) setBusy(false);
+  }, [auth.isAuthenticated]);
+
+  const promptNativeGoogle = useCallback(async () => {
+    setError(null);
+    if (!googleClientId) {
+      setError("Google Client ID sozlanmagan (Web OAuth client).");
+      return;
+    }
+    setBusy(true);
+    try {
+      const {
+        GoogleSignin,
+        isSuccessResponse,
+      } = await import("@react-native-google-signin/google-signin");
+
+      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+      const response = await GoogleSignin.signIn();
+
+      if (!isSuccessResponse(response)) {
+        setBusy(false);
+        return;
+      }
+
+      let idToken = response.data.idToken;
+      if (!idToken) {
+        const tokens = await GoogleSignin.getTokens();
+        idToken = tokens.idToken;
+      }
+      if (!idToken) {
+        setBusy(false);
+        setError("Google token olinmadi. Qayta urinib ko'ring.");
+        return;
+      }
+      await completeBackendSignIn(auth, idToken);
+    } catch (err: unknown) {
+      const { isErrorWithCode, statusCodes } = await import(
+        "@react-native-google-signin/google-signin"
+      );
+      if (isErrorWithCode(err) && err.code === statusCodes.SIGN_IN_CANCELLED) {
+        setError(null);
+      } else if (isErrorWithCode(err) && err.code === statusCodes.IN_PROGRESS) {
+        setError(null);
+      } else if (
+        isErrorWithCode(err) &&
+        err.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE
+      ) {
+        setError("Google Play Services mavjud emas yoki yangilanishi kerak.");
+      } else {
+        const msg = err instanceof Error ? err.message : "Google kirish xato";
+        setError(
+          /DEVELOPER_ERROR|10:|ApiException:\s*10/i.test(msg)
+            ? "Google sozlamasi xato: Android SHA-1 fingerprint Cloud Console da mos emas. EAS/debug keystore SHA-1 ni qo'shing."
+            : msg,
+        );
+      }
+    } finally {
+      setBusy(false);
+    }
+  }, [auth, googleClientId]);
+
+  // —— Web: AuthSession (brauzer) ——
   const redirectUri = useMemo(
     () =>
       AuthSession.makeRedirectUri({
@@ -67,12 +169,9 @@ export function GoogleAuthSessionProvider({ children }: { children: ReactNode })
   );
 
   const [request, response, promptAsync] = Google.useIdTokenAuthRequest(
-    googleClientId
+    !IS_NATIVE && googleClientId
       ? {
-          // Barcha platformalar uchun Web client — AuthSession browser flow.
           clientId: googleClientId,
-          iosClientId: googleClientId,
-          androidClientId: googleClientId,
           webClientId: googleClientId,
           redirectUri,
         }
@@ -80,20 +179,7 @@ export function GoogleAuthSessionProvider({ children }: { children: ReactNode })
   );
 
   useEffect(() => {
-    if (__DEV__) {
-      console.log("[google-auth] redirectUri =", redirectUri, "response =", response?.type);
-    }
-  }, [redirectUri, response?.type]);
-
-  // Chiqish / dismiss / cancel dan keyin spinner qolib ketmasin (web popup).
-  useEffect(() => {
-    if (!auth.isAuthenticated) {
-      setBusy(false);
-    }
-  }, [auth.isAuthenticated]);
-
-  useEffect(() => {
-    if (!response) return;
+    if (IS_NATIVE || !response) return;
 
     if (response.type !== "success") {
       setBusy(false);
@@ -108,7 +194,7 @@ export function GoogleAuthSessionProvider({ children }: { children: ReactNode })
       (response as { authentication?: { idToken?: string } }).authentication?.idToken;
 
     const key = idToken?.slice(0, 24) || "ok";
-    if (handled === key) {
+    if (handledRef.current === key) {
       setBusy(false);
       return;
     }
@@ -119,29 +205,25 @@ export function GoogleAuthSessionProvider({ children }: { children: ReactNode })
       return;
     }
 
-    setHandled(key);
+    handledRef.current = key;
     setBusy(true);
     setError(null);
     void (async () => {
-      const { consumePendingReferralCode } = await import("../lib/referral-storage");
-      const referral = await consumePendingReferralCode();
       try {
-        await auth.signInWithGoogle(idToken, referral);
+        await completeBackendSignIn(auth, idToken);
       } catch (err) {
-        setHandled(null);
+        handledRef.current = null;
         setError(err instanceof Error ? err.message : "Google kirish xato");
       } finally {
         setBusy(false);
       }
     })();
-  }, [response, auth, handled]);
+  }, [response, auth]);
 
-  const promptGoogle = useCallback(async () => {
+  const promptWebGoogle = useCallback(async () => {
     setError(null);
     if (!googleClientId) {
-      setError(
-        "Google Client ID sozlanmagan. EXPO_PUBLIC_GOOGLE_CLIENT_ID yoki app.json extra.googleClientId qo'shing.",
-      );
+      setError("Google Client ID sozlanmagan.");
       return;
     }
     if (!request) {
@@ -151,34 +233,32 @@ export function GoogleAuthSessionProvider({ children }: { children: ReactNode })
     setBusy(true);
     try {
       const result = await promptAsync();
-      // success: API chaqiruvini useEffect boshqaradi (busy ni u yoqadi).
-      // dismiss/cancel/error yoki allaqachon handled — spinner qolmasin.
       setBusy(false);
       if (result.type === "error") {
         setError(result.error?.message || "Google kirish xato");
-      } else if (result.type === "dismiss" || result.type === "cancel") {
-        setError(null);
       }
     } catch (err) {
       setBusy(false);
-      const msg = err instanceof Error ? err.message : "Google ochilmadi";
-      setError(
-        /redirect|origin/i.test(msg)
-          ? `${msg}\n\nGoogle Console → origins/redirect:\n${redirectUri}`
-          : msg,
-      );
+      setError(err instanceof Error ? err.message : "Google ochilmadi");
     }
-  }, [googleClientId, request, promptAsync, redirectUri]);
+  }, [googleClientId, request, promptAsync]);
+
+  const promptGoogle = useCallback(async () => {
+    if (IS_NATIVE) return promptNativeGoogle();
+    return promptWebGoogle();
+  }, [promptNativeGoogle, promptWebGoogle]);
 
   const value = useMemo(
     () => ({
-      ready: Boolean(googleClientId && request),
+      ready: IS_NATIVE
+        ? Boolean(googleClientId && nativeReady)
+        : Boolean(googleClientId && request),
       busy,
       error,
       clearError: () => setError(null),
       promptGoogle,
     }),
-    [googleClientId, request, busy, error, promptGoogle],
+    [googleClientId, nativeReady, request, busy, error, promptGoogle],
   );
 
   return <GoogleAuthContext.Provider value={value}>{children}</GoogleAuthContext.Provider>;

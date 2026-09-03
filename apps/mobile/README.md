@@ -13,30 +13,26 @@ npm start
 
 - Splash animatsiya → Login (Google + telefon OTP / parol) → Home
 - Tokenlar: SecureStore / AsyncStorage (`mybarber_user_access`)
-- Google: `EXPO_PUBLIC_GOOGLE_CLIENT_ID` yoki `app.json` → `extra.googleClientId`
-  (**Web** OAuth client ID — `client_type: 3`. Android client ID (...tkfiilj...)
-  AuthSession brauzer oqimida `400 invalid_request` beradi.)
-  Backend `GOOGLE_OAUTH_CLIENT_ID` ham shu Web client bilan mos bo‘lsin.
+- Google: `EXPO_PUBLIC_GOOGLE_CLIENT_ID` — **Web** OAuth client ID (`client_type: 3`).
+  Native Android/iOS da `@react-native-google-signin/google-signin` tizim hisoblar
+  oynasini ochadi (brauzer emas). Android client (package + SHA-1) `google-services.json`
+  orqali avtomatik. Backend `GOOGLE_OAUTH_CLIENT_ID` ham Web client bilan mos bo‘lsin.
+  Native modul o‘zgarganda **yangi APK/dev build** kerak (`eas build` yoki `npx expo run:android`).
 
 ```bash
 EXPO_PUBLIC_GOOGLE_CLIENT_ID=xxxx.apps.googleusercontent.com npm start
 ```
 
-### Google Console (redirect_uri_mismatch)
+### Google Console
 
-Web client (Firebase / Cloud Console) da qo'shing:
+**Android client** (mavjud): package `uz.mysaloon.app` + APK imzolovchi SHA-1
+(EAS credentials / debug keystore).
 
-**Authorized JavaScript origins**
-- `http://localhost:8081`
-- `http://127.0.0.1:8081`
+**Web client** (idToken): `EXPO_PUBLIC_GOOGLE_CLIENT_ID` va backend audience.
 
-**Authorized redirect URIs**
-- `http://localhost:8081`
-- `http://localhost:8081/`
-- `http://127.0.0.1:8081`
-- `mysaloon://`
-
-DevTools console da `[google-auth] redirectUri = ...` chiqadi — shu URLni ham qo'shing.
+Web/dev redirect (faqat web login):
+- origins: `http://localhost:8081`
+- redirect: `http://localhost:8081`, `mysaloon://`
 ## API
 
 Default: `https://api.mysaloon.uz`  
