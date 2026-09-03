@@ -135,6 +135,14 @@ export function getGoogleClientId(): string {
   return fromEnv || getExtraGoogleClientId();
 }
 
+/**
+ * expo-auth-session browser OAuth uchun Web client ID kerak.
+ * Android client ID (...tkfiilj...) → Google 400 invalid_request.
+ */
+export function getGoogleWebClientId(): string {
+  return getGoogleClientId();
+}
+
 export function normalizeUzPhone(input: string): string {
   const digits = input.replace(/\D/g, "");
   if (digits.startsWith("998")) return digits.slice(3, 12);

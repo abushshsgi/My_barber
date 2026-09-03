@@ -150,6 +150,10 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         process.env.EXPO_PUBLIC_API_URL?.trim() || "https://api.mysaloon.uz",
       googleClientId:
         process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID ||
+        // Web OAuth client (client_type 3) — Android client browser OAuth da 400 beradi.
+        "990469146793-jtjdkj187hmn98r3snfqfuiqnd3ctjui.apps.googleusercontent.com",
+      googleAndroidClientId:
+        process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID ||
         "990469146793-tkfiilj8078mrqhovup9l19qv6pce857.apps.googleusercontent.com",
       googleMapsApiKey: googleMapsApiKey || undefined,
       eas: {

@@ -14,7 +14,9 @@ npm start
 - Splash animatsiya → Login (Google + telefon OTP / parol) → Home
 - Tokenlar: SecureStore / AsyncStorage (`mybarber_user_access`)
 - Google: `EXPO_PUBLIC_GOOGLE_CLIENT_ID` yoki `app.json` → `extra.googleClientId`
-  (Web OAuth client ID — backend `GOOGLE_OAUTH_CLIENT_ID` bilan mos)
+  (**Web** OAuth client ID — `client_type: 3`. Android client ID (...tkfiilj...)
+  AuthSession brauzer oqimida `400 invalid_request` beradi.)
+  Backend `GOOGLE_OAUTH_CLIENT_ID` ham shu Web client bilan mos bo‘lsin.
 
 ```bash
 EXPO_PUBLIC_GOOGLE_CLIENT_ID=xxxx.apps.googleusercontent.com npm start

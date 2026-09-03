@@ -11,7 +11,7 @@ import {
   type ReactNode,
 } from "react";
 import { Platform } from "react-native";
-import { getGoogleClientId } from "../api/auth";
+import { getGoogleWebClientId } from "../api/auth";
 import { useAuth } from "./AuthContext";
 
 WebBrowser.maybeCompleteAuthSession();
@@ -46,10 +46,13 @@ export function shouldSkipSplashForOAuth(): boolean {
 /**
  * Har doim mount — Splash paytida ham Google redirect javobini ushlaydi.
  * Aks holda localhost:8081 da account tanlab qaytganda login ekraniga qaytadi.
+ *
+ * Muhim: useIdTokenAuthRequest brauzer oqimi — FAQAT Web OAuth client ID.
+ * Android client ID (SHA-1 / package) bu yerda ishlamaydi → 400 invalid_request.
  */
 export function GoogleAuthSessionProvider({ children }: { children: ReactNode }) {
   const auth = useAuth();
-  const googleClientId = getGoogleClientId();
+  const googleClientId = getGoogleWebClientId();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [handled, setHandled] = useState<string | null>(null);
@@ -66,6 +69,7 @@ export function GoogleAuthSessionProvider({ children }: { children: ReactNode })
   const [request, response, promptAsync] = Google.useIdTokenAuthRequest(
     googleClientId
       ? {
+          // Barcha platformalar uchun Web client — AuthSession browser flow.
           clientId: googleClientId,
           iosClientId: googleClientId,
           androidClientId: googleClientId,

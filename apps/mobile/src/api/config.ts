@@ -6,6 +6,7 @@ const DEFAULT_API = "https://api.mysaloon.uz";
 const extra = (Constants.expoConfig?.extra ?? {}) as {
   apiUrl?: string;
   googleClientId?: string;
+  googleAndroidClientId?: string;
 };
 
 const fromExtra =
@@ -29,4 +30,11 @@ export const API_ORIGIN = (fromExtra || DEFAULT_API).replace(/\/+$/, "");
 
 export function getExtraGoogleClientId(): string {
   return typeof extra.googleClientId === "string" ? extra.googleClientId.trim() : "";
+}
+
+/** Native Google Sign-In uchun (AuthSession browser oqimida ishlatilmaydi). */
+export function getExtraGoogleAndroidClientId(): string {
+  return typeof extra.googleAndroidClientId === "string"
+    ? extra.googleAndroidClientId.trim()
+    : "";
 }
