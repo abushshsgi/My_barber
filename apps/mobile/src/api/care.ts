@@ -252,6 +252,8 @@ export async function generateCarePlan(body: {
   }[];
   mode?: "full" | "append";
   existing_plan?: AiCarePlan;
+  morning_time?: string;
+  evening_time?: string;
 }): Promise<AiCarePlan> {
   const res = await apiFetch("/api/v1/ai/care/plan/", {
     method: "POST",

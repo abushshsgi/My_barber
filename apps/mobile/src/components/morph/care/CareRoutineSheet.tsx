@@ -20,11 +20,16 @@ import { resolveMediaUrl } from "../../../api/media";
 import {
   buildDailyRoutine,
   careProfileKey,
-  estimateProductFit,
   loadCachedCarePlan,
+  loadCareSchedule,
+  saveCareSchedule,
   saveCachedCarePlan,
+  shiftRoutineTimes,
   sortProductIds,
   stripPlanProducts,
+  type CareSchedulePrefs,
+  MORNING_TIME_OPTIONS,
+  EVENING_TIME_OPTIONS,
   type CareQuizAnswers,
   type RoutineSlot,
   type RoutineTask,
@@ -202,12 +207,15 @@ function mapSlotTasks(
   products: MyCareProduct[],
   quiz: CareQuizAnswers,
   catalog?: CareProduct[],
+  schedule?: CareSchedulePrefs | null,
 ): RoutineTask[] {
   if (plan && Array.isArray(plan[slot]) && plan[slot].length > 0) {
-    return plan[slot].map((t) => enrichTask(t, products, slot, catalog));
+    const rows = plan[slot].map((t) => enrichTask(t, products, slot, catalog));
+    const anchor = slot === "morning" ? schedule?.morningTime : schedule?.eveningTime;
+    return shiftRoutineTimes(rows, anchor);
   }
-  const catalogById = new Map((catalog || []).map((c) => [c.id, c]));
-  return buildDailyRoutine(quiz, slot, products).map((task) => {
+  return buildDailyRoutine(quiz, slot, products, schedule).map((task) => {
+    const catalogById = new Map((catalog || []).map((c) => [c.id, c]));
     const product = products.find((p) => p.id === task.productId);
     const catalogRow = task.productId ? catalogById.get(task.productId) : undefined;
     const rawImage = product?.image_url || catalogRow?.image_url || null;
@@ -263,21 +271,26 @@ export function CareRoutineSheet({
   const [aiAppending, setAiAppending] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
   const [remindersOn, setRemindersOn] = useState(false);
+  const [schedule, setSchedule] = useState<CareSchedulePrefs | null>(null);
+  const [draftMorning, setDraftMorning] = useState<string>("07:30");
+  const [draftEvening, setDraftEvening] = useState<string>("21:00");
+  const [editingSchedule, setEditingSchedule] = useState(false);
+  const [scheduleReady, setScheduleReady] = useState(false);
   const knownIdsRef = useRef<number[]>([]);
   const planRef = useRef<AiCarePlan | null>(null);
   const syncingRef = useRef(false);
 
   const morningTasks = useMemo(
-    () => mapSlotTasks(aiPlan, "morning", myProducts, quiz, catalog),
-    [aiPlan, myProducts, quiz, catalog],
+    () => mapSlotTasks(aiPlan, "morning", myProducts, quiz, catalog, schedule),
+    [aiPlan, myProducts, quiz, catalog, schedule],
   );
   const eveningTasks = useMemo(
-    () => mapSlotTasks(aiPlan, "evening", myProducts, quiz, catalog),
-    [aiPlan, myProducts, quiz, catalog],
+    () => mapSlotTasks(aiPlan, "evening", myProducts, quiz, catalog, schedule),
+    [aiPlan, myProducts, quiz, catalog, schedule],
   );
   const weeklyTasks = useMemo(
-    () => mapSlotTasks(aiPlan, "weekly", myProducts, quiz, catalog),
-    [aiPlan, myProducts, quiz, catalog],
+    () => mapSlotTasks(aiPlan, "weekly", myProducts, quiz, catalog, schedule),
+    [aiPlan, myProducts, quiz, catalog, schedule],
   );
 
   const tasks = useMemo(() => {
@@ -297,17 +310,10 @@ export function CareRoutineSheet({
   );
   const progress = tasks.length ? doneCount / tasks.length : 0;
 
-  const recommended = useMemo(() => {
-    return [...catalog]
-      .map((p) => ({ product: p, fit: estimateProductFit(p, quiz) }))
-      .sort((a, b) => b.fit - a.fit)
-      .slice(0, 6);
-  }, [catalog, quiz]);
-
   const syncReminders = useCallback(
     async (plan: AiCarePlan, products: MyCareProduct[]) => {
       const toNotif = (slot: RoutineSlot) =>
-        mapSlotTasks(plan, slot, products, quiz, catalog).map((task) => ({
+        mapSlotTasks(plan, slot, products, quiz, catalog, schedule).map((task) => ({
           id: task.id,
           title: task.title,
           subtitle: task.subtitle,
@@ -325,7 +331,7 @@ export function CareRoutineSheet({
       });
       setRemindersOn(n > 0);
     },
-    [catalog, quiz, userName],
+    [catalog, quiz, schedule, userName],
   );
 
   const persistPlan = useCallback(
@@ -337,16 +343,18 @@ export function CareRoutineSheet({
       await saveCachedCarePlan({
         plan,
         productIds: ids,
-        profileKey: careProfileKey(quiz),
+        profileKey: careProfileKey(quiz, schedule),
         updatedAt: new Date().toISOString(),
       });
       void syncReminders(plan, products);
     },
-    [quiz, syncReminders],
+    [quiz, schedule, syncReminders],
   );
 
   const generateFull = useCallback(
-    async (products: MyCareProduct[]) => {
+    async (products: MyCareProduct[], prefs?: CareSchedulePrefs | null) => {
+      const sched = prefs ?? schedule;
+      if (!sched?.morningTime || !sched?.eveningTime) return;
       setAiLoading(true);
       setAiAppending(false);
       setAiError(null);
@@ -357,6 +365,8 @@ export function CareRoutineSheet({
           color_status: quiz.colorStatus,
           products: productPayload(products),
           mode: "full",
+          morning_time: sched.morningTime,
+          evening_time: sched.eveningTime,
         });
         await persistPlan(plan, products);
       } catch (e) {
@@ -367,11 +377,12 @@ export function CareRoutineSheet({
         setAiLoading(false);
       }
     },
-    [persistPlan, quiz.colorStatus, quiz.condition, quiz.texture, t],
+    [persistPlan, quiz.colorStatus, quiz.condition, quiz.texture, schedule, t],
   );
 
   const appendForProducts = useCallback(
     async (allProducts: MyCareProduct[], newOnes: MyCareProduct[], existing: AiCarePlan) => {
+      if (!schedule?.morningTime || !schedule?.eveningTime) return;
       setAiAppending(true);
       setAiError(null);
       try {
@@ -382,6 +393,8 @@ export function CareRoutineSheet({
           products: productPayload(newOnes),
           mode: "append",
           existing_plan: existing,
+          morning_time: schedule.morningTime,
+          evening_time: schedule.eveningTime,
         });
         await persistPlan(plan, allProducts);
       } catch (e) {
@@ -391,19 +404,21 @@ export function CareRoutineSheet({
         setAiAppending(false);
       }
     },
-    [persistPlan, quiz.colorStatus, quiz.condition, quiz.texture, t],
+    [persistPlan, quiz.colorStatus, quiz.condition, quiz.texture, schedule, t],
   );
 
   const syncPlanWithProducts = useCallback(
-    async (products: MyCareProduct[], opts?: { forceFull?: boolean }) => {
+    async (products: MyCareProduct[], opts?: { forceFull?: boolean; prefs?: CareSchedulePrefs | null }) => {
       if (syncingRef.current) return;
+      const sched = opts?.prefs ?? schedule;
+      if (!sched?.morningTime || !sched?.eveningTime) return;
       syncingRef.current = true;
       try {
-        const profile = careProfileKey(quiz);
+        const profile = careProfileKey(quiz, sched);
         const currentIds = sortProductIds(products.map((p) => p.id));
 
         if (opts?.forceFull) {
-          await generateFull(products);
+          await generateFull(products, sched);
           return;
         }
 
@@ -427,7 +442,7 @@ export function CareRoutineSheet({
         }
 
         if (!plan) {
-          await generateFull(products);
+          await generateFull(products, sched);
           return;
         }
 
@@ -460,18 +475,41 @@ export function CareRoutineSheet({
         syncingRef.current = false;
       }
     },
-    [appendForProducts, generateFull, persistPlan, quiz, syncReminders],
+    [appendForProducts, generateFull, persistPlan, quiz, schedule, syncReminders],
   );
+
+  const confirmSchedule = useCallback(async () => {
+    const prefs: CareSchedulePrefs = {
+      morningTime: draftMorning,
+      eveningTime: draftEvening,
+    };
+    await saveCareSchedule(prefs);
+    setSchedule(prefs);
+    setEditingSchedule(false);
+    const mine = myProducts.length ? myProducts : await loadMyProducts();
+    setMyProducts(mine);
+    await syncPlanWithProducts(mine, { forceFull: true, prefs });
+  }, [draftEvening, draftMorning, myProducts, syncPlanWithProducts]);
 
   const refreshLocal = useCallback(async () => {
     setLoadingProducts(true);
     try {
-      const [mine, done] = await Promise.all([
+      const [mine, done, sched] = await Promise.all([
         loadMyProducts(),
         loadRoutineDone(selectedDate),
+        loadCareSchedule(),
       ]);
       setMyProducts(mine);
       setDoneMap(done);
+      setSchedule(sched);
+      if (sched) {
+        setDraftMorning(sched.morningTime);
+        setDraftEvening(sched.eveningTime);
+        setEditingSchedule(false);
+      } else {
+        setEditingSchedule(true);
+      }
+      setScheduleReady(true);
       return mine;
     } finally {
       setLoadingProducts(false);
@@ -567,6 +605,83 @@ export function CareRoutineSheet({
         ) : null}
       </View>
 
+      {scheduleReady && (editingSchedule || !schedule) ? (
+        <View style={styles.scheduleCard}>
+          <Text style={styles.scheduleTitle}>
+            {t("care.routine.scheduleTitle", { defaultValue: "Qulay vaqtingiz" })}
+          </Text>
+          <Text style={styles.scheduleSub}>
+            {t("care.routine.scheduleSub", {
+              defaultValue: "Ertalab va kechqurun qachon parvarish qilasiz? Shu asosida shaxsiy sxema tuziladi.",
+            })}
+          </Text>
+
+          <Text style={styles.scheduleLabel}>
+            {t("care.routine.slots.morning")}
+          </Text>
+          <View style={styles.timeRow}>
+            {MORNING_TIME_OPTIONS.map((opt) => {
+              const on = draftMorning === opt;
+              return (
+                <Pressable
+                  key={opt}
+                  style={[styles.timeChip, on && styles.timeChipOn]}
+                  onPress={() => setDraftMorning(opt)}
+                >
+                  <Text style={[styles.timeChipText, on && styles.timeChipTextOn]}>{opt}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+
+          <Text style={styles.scheduleLabel}>
+            {t("care.routine.slots.evening")}
+          </Text>
+          <View style={styles.timeRow}>
+            {EVENING_TIME_OPTIONS.map((opt) => {
+              const on = draftEvening === opt;
+              return (
+                <Pressable
+                  key={opt}
+                  style={[styles.timeChip, on && styles.timeChipOn]}
+                  onPress={() => setDraftEvening(opt)}
+                >
+                  <Text style={[styles.timeChipText, on && styles.timeChipTextOn]}>{opt}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+
+          <Pressable style={styles.scheduleSave} onPress={() => void confirmSchedule()}>
+            <Text style={styles.scheduleSaveText}>
+              {t("care.routine.scheduleSave", { defaultValue: "Shu vaqtga reja tuzish" })}
+            </Text>
+          </Pressable>
+          {schedule ? (
+            <Pressable onPress={() => setEditingSchedule(false)}>
+              <Text style={styles.scheduleCancel}>
+                {t("common.cancel", { defaultValue: "Bekor qilish" })}
+              </Text>
+            </Pressable>
+          ) : null}
+        </View>
+      ) : schedule ? (
+        <Pressable style={styles.scheduleSummary} onPress={() => setEditingSchedule(true)}>
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text style={styles.scheduleSummaryTitle}>
+              {t("care.routine.scheduleActive", { defaultValue: "Sizning oynangiz" })}
+            </Text>
+            <Text style={styles.scheduleSummaryMeta}>
+              {t("care.routine.slots.morning")} {schedule.morningTime} ·{" "}
+              {t("care.routine.slots.evening")} {schedule.eveningTime}
+            </Text>
+          </View>
+          <Ionicons name="create-outline" size={18} color="#111" />
+        </Pressable>
+      ) : null}
+
+      {schedule && !editingSchedule ? (
+      <>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.modeRow}>
         {DAY_MODES.map((item) => {
           const on = mode === item.id;
@@ -770,38 +885,7 @@ export function CareRoutineSheet({
           </Pressable>
         </ScrollView>
       )}
-
-      {recommended.length > 0 ? (
-        <>
-          <View style={[styles.sectionHead, { marginTop: 8 }]}>
-            <Text style={styles.sectionTitle}>{t("care.routine.buyTitle")}</Text>
-            <Pressable onPress={onOpenCatalog}>
-              <Text style={styles.seeAllText}>{t("common.viewAll")}</Text>
-            </Pressable>
-          </View>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.productRow}>
-            {recommended.map(({ product, fit }) => {
-              const img = productImageUri(product.image_url);
-              return (
-              <Pressable key={product.id} style={styles.recCard} onPress={() => onOpenProduct(product.id)}>
-                <View style={styles.fitBadge}>
-                  <Text style={styles.fitBadgeText}>{t("care.routine.fitYou", { pct: fit })}</Text>
-                </View>
-                {img ? (
-                  <Image source={{ uri: img }} style={styles.recImg} contentFit="cover" />
-                ) : (
-                  <View style={[styles.recImg, styles.productPh]}>
-                    <Ionicons name="flask-outline" size={22} color="#111" />
-                  </View>
-                )}
-                <Text style={styles.recName} numberOfLines={2}>
-                  {product.name}
-                </Text>
-              </Pressable>
-              );
-            })}
-          </ScrollView>
-        </>
+      </>
       ) : null}
 
       <Pressable style={styles.profileLink} onPress={onRetakeQuiz}>
@@ -894,6 +978,73 @@ const styles = StyleSheet.create({
     fontSize: fontSize(12),
     fontWeight: "600",
     color: "#111",
+  },
+  scheduleCard: {
+    borderRadius: moderateScale(24),
+    backgroundColor: "#FFFFFF",
+    padding: moderateScale(16),
+    gap: moderateScale(10),
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(17,17,17,0.08)",
+  },
+  scheduleTitle: { ...morphFont, fontSize: fontSize(17), fontWeight: "700", color: "#111" },
+  scheduleSub: {
+    ...morphFont,
+    fontSize: fontSize(13),
+    lineHeight: fontSize(18),
+    color: "rgba(17,17,17,0.55)",
+  },
+  scheduleLabel: {
+    ...morphFont,
+    fontSize: fontSize(12),
+    fontWeight: "700",
+    color: "rgba(17,17,17,0.45)",
+    marginTop: verticalScale(4),
+  },
+  timeRow: { flexDirection: "row", flexWrap: "wrap", gap: moderateScale(8) },
+  timeChip: {
+    paddingHorizontal: scale(12),
+    paddingVertical: verticalScale(8),
+    borderRadius: 999,
+    backgroundColor: "#F3F1EC",
+  },
+  timeChipOn: { backgroundColor: "#111" },
+  timeChipText: { ...morphFont, fontSize: fontSize(13), fontWeight: "600", color: "#111" },
+  timeChipTextOn: { color: "#fff" },
+  scheduleSave: {
+    marginTop: verticalScale(6),
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: verticalScale(14),
+    borderRadius: 999,
+    backgroundColor: "#111",
+  },
+  scheduleSaveText: { ...morphFont, fontSize: fontSize(14), fontWeight: "700", color: "#fff" },
+  scheduleCancel: {
+    ...morphFont,
+    textAlign: "center",
+    fontSize: fontSize(13),
+    fontWeight: "600",
+    color: "rgba(17,17,17,0.45)",
+    marginTop: verticalScale(4),
+  },
+  scheduleSummary: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: moderateScale(10),
+    borderRadius: moderateScale(18),
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: scale(14),
+    paddingVertical: verticalScale(12),
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(17,17,17,0.08)",
+  },
+  scheduleSummaryTitle: { ...morphFont, fontSize: fontSize(13), fontWeight: "700", color: "#111" },
+  scheduleSummaryMeta: {
+    ...morphFont,
+    fontSize: fontSize(12),
+    color: "rgba(17,17,17,0.55)",
+    marginTop: 2,
   },
   modeRow: { gap: moderateScale(8), paddingRight: scale(4) },
   modeChip: {

@@ -88,6 +88,8 @@ def _build_prompt(
     concerns: list[str],
     products: list[dict[str, Any]],
     gender: str = "",
+    morning_time: str = "",
+    evening_time: str = "",
 ) -> str:
     catalog = _format_products(products)
     has_products = bool(products)
@@ -97,6 +99,9 @@ def _build_prompt(
     gender_line = ""
     if gender_s in ("male", "female"):
         gender_line = f"\n- gender: {gender_s}"
+
+    m_anchor = _normalize_clock(morning_time) or "07:30"
+    e_anchor = _normalize_clock(evening_time) or "21:00"
 
     product_rule = (
         "CRITICAL: User HAS products. Almost EVERY step MUST use one of them "
@@ -118,6 +123,11 @@ USER HAIR PROFILE:
 - scalp: {scalp_s}
 - concerns: {concern_s}{gender_line}
 
+USER PREFERRED WINDOWS (HARD CONSTRAINT):
+- morning ritual MUST start at {m_anchor} (first morning step time = {m_anchor}, then +5–10 min steps)
+- evening ritual MUST start at {e_anchor} (first evening step time = {e_anchor}, then ascending)
+- Adapt step density to hair condition ({condition}) — oily may wash more days; dry/damaged fewer washes + more leave-in/mask.
+
 USER PRODUCTS:
 {catalog}
 
@@ -125,21 +135,21 @@ USER PRODUCTS:
 
 ARCHITECTURE RULES:
 1. Output RAW JSON only (no markdown). All user strings in Uzbek Latin.
-2. morning: 3–5 steps, times 06:30–09:30 ascending (e.g. 07:00 → 07:08 → 07:15).
-3. evening: 3–5 steps, times 20:00–22:30 ascending.
+2. morning: 3–5 steps, times ascending starting at {m_anchor}.
+3. evening: 3–5 steps, times ascending starting at {e_anchor}.
 4. Each morning/evening/weekly task MUST include:
    - "time": "HH:MM" (24h, REQUIRED)
-   - "time_hint": clock + short context (e.g. "07:15 · Yuvishdan keyin")
+   - "time_hint": clock + short context (e.g. "{m_anchor} · Ertalab")
    - "duration_min": integer 1–30
    - title, subtitle (how-to for THIS hair)
    - icon: water|flask|sparkles|shield|leaf|cut
    - product_id / product_name per rules above
-5. weekly: 3–4 deep-care steps (mask, scalp, trim…) with concrete time like "20:30".
+5. weekly: 3–4 deep-care steps (mask, scalp, trim…) near evening window when possible.
 6. weekly_schedule: EXACTLY 7 days in order Du,Se,Chor,Pay,Ju,Shan,Ya — each with:
    day, time (HH:MM), task, product_name, product_id (or null).
    Wash architecture: {_wash_architecture(condition)}
    Non-wash days still get a short timed task (leave-in, scalp massage, pillowcare…).
-7. summary: 1–2 sentences naming wash frequency + focus + products if any.
+7. summary: 1–2 sentences naming wash frequency + focus + preferred windows + products if any.
 8. tips: 3 tips; avoid: 3 things to skip.
 9. Sort every slot by "time" ascending.
 10. NEVER use vague-only time_hint like "Ertalab" without HH:MM.
@@ -152,8 +162,8 @@ OUTPUT SCHEMA:
       "id": "m1",
       "title": "...",
       "subtitle": "...",
-      "time": "07:00",
-      "time_hint": "07:00 · Ertalab",
+      "time": "{m_anchor}",
+      "time_hint": "{m_anchor} · Ertalab",
       "duration_min": 5,
       "icon": "water",
       "product_id": 12,
@@ -163,12 +173,82 @@ OUTPUT SCHEMA:
   "evening": [],
   "weekly": [],
   "weekly_schedule": [
-    {{ "day": "Du", "time": "07:00", "task": "...", "product_id": 12, "product_name": "..." }}
+    {{ "day": "Du", "time": "{m_anchor}", "task": "...", "product_id": 12, "product_name": "..." }}
   ],
   "tips": ["...", "..."],
   "avoid": ["...", "..."]
 }}
 """
+
+
+def _clock_to_min(clock: str) -> int:
+    parts = clock.split(":")
+    return int(parts[0]) * 60 + int(parts[1])
+
+
+def _min_to_clock(total: int) -> str:
+    x = total % 1440
+    if x < 0:
+        x += 1440
+    return f"{x // 60:02d}:{x % 60:02d}"
+
+
+def _anchor_task_list(tasks: list[dict[str, Any]], anchor: str) -> list[dict[str, Any]]:
+    """Shift slot so first timed step lands on preferred anchor; keep gaps."""
+    if not tasks or not anchor:
+        return tasks
+    clocks = [_normalize_clock(t.get("time")) for t in tasks]
+    first = next((c for c in clocks if c), "")
+    if not first:
+        base = _clock_to_min(anchor)
+        out: list[dict[str, Any]] = []
+        for i, t in enumerate(tasks):
+            clock = _min_to_clock(base + i * 8)
+            hint = str(t.get("time_hint") or "").strip()
+            rest = hint
+            for old in clocks:
+                if old and hint.startswith(old):
+                    rest = hint[len(old) :].lstrip(" ·")
+                    break
+            row = dict(t)
+            row["time"] = clock
+            row["time_hint"] = f"{clock} · {rest}" if rest else clock
+            out.append(row)
+        return out
+    delta = _clock_to_min(anchor) - _clock_to_min(first)
+    out = []
+    for t in tasks:
+        row = dict(t)
+        clock = _normalize_clock(row.get("time"))
+        if clock:
+            new_c = _min_to_clock(_clock_to_min(clock) + delta)
+            hint = str(row.get("time_hint") or "")
+            if hint.startswith(clock):
+                hint = new_c + hint[len(clock) :]
+            elif hint:
+                hint = f"{new_c} · {hint}"
+            else:
+                hint = new_c
+            row["time"] = new_c
+            row["time_hint"] = hint
+        out.append(row)
+    return out
+
+
+def _apply_preferred_times(
+    plan: dict[str, Any],
+    *,
+    morning_time: str,
+    evening_time: str,
+) -> dict[str, Any]:
+    m = _normalize_clock(morning_time)
+    e = _normalize_clock(evening_time)
+    if m:
+        plan["morning"] = _anchor_task_list(list(plan.get("morning") or []), m)
+    if e:
+        plan["evening"] = _anchor_task_list(list(plan.get("evening") or []), e)
+        plan["weekly"] = _anchor_task_list(list(plan.get("weekly") or []), e)
+    return plan
 
 
 def _normalize_task(raw: Any, *, prefix: str, idx: int) -> dict[str, Any] | None:
@@ -483,8 +563,12 @@ def generate_care_plan(
     gender: str = "",
     mode: str = "full",
     existing_plan: dict[str, Any] | None = None,
+    morning_time: str = "",
+    evening_time: str = "",
 ) -> dict[str, Any]:
     mode_s = (mode or "full").strip().lower()
+    m_time = _normalize_clock(morning_time)
+    e_time = _normalize_clock(evening_time)
     if mode_s == "append":
         if not products:
             raise AiStyleError("Yangi mahsulot kerak.", 400)
@@ -505,6 +589,7 @@ def generate_care_plan(
         if not patch["morning"] and not patch["evening"] and not patch["weekly"]:
             raise AiStyleError("AI yangi qadam qo'shmadi. Qayta urinib ko'ring.", 502)
         merged = merge_care_plan_patch(existing_plan, patch)
+        merged = _apply_preferred_times(merged, morning_time=m_time, evening_time=e_time)
         if usage:
             merged["_usage"] = usage
         return merged
@@ -517,8 +602,10 @@ def generate_care_plan(
         concerns=concerns or [],
         products=products,
         gender=gender or "",
+        morning_time=m_time,
+        evening_time=e_time,
     )
     plan = _call_gemini_plan(prompt)
     if not plan["morning"] and not plan["evening"] and not plan["weekly"]:
         raise AiStyleError("AI reja bo'sh qaytdi. Qayta urinib ko'ring.", 502)
-    return plan
+    return _apply_preferred_times(plan, morning_time=m_time, evening_time=e_time)

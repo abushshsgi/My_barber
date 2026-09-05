@@ -32,6 +32,96 @@ export type CareQuizAnswers = {
   colorStatus: HairColorStatus;
 };
 
+/** Foydalanuvchi tanlagan parvarish oynasi (HH:MM). */
+export type CareSchedulePrefs = {
+  morningTime: string;
+  eveningTime: string;
+};
+
+export const MORNING_TIME_OPTIONS = ["06:30", "07:00", "07:30", "08:00", "09:00"] as const;
+export const EVENING_TIME_OPTIONS = ["20:00", "20:30", "21:00", "21:30", "22:00"] as const;
+
+const CARE_SCHEDULE_KEY = "mysaloon.morphAi.careSchedule";
+
+function isClock(v: string | undefined | null): v is string {
+  return !!v && /^\d{1,2}:\d{2}$/.test(v.trim());
+}
+
+export async function loadCareSchedule(): Promise<CareSchedulePrefs | null> {
+  try {
+    const raw = await AsyncStorage.getItem(CARE_SCHEDULE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as CareSchedulePrefs;
+    if (!isClock(parsed?.morningTime) || !isClock(parsed?.eveningTime)) return null;
+    return {
+      morningTime: normalizeClock(parsed.morningTime),
+      eveningTime: normalizeClock(parsed.eveningTime),
+    };
+  } catch {
+    return null;
+  }
+}
+
+export async function saveCareSchedule(prefs: CareSchedulePrefs): Promise<void> {
+  await AsyncStorage.setItem(
+    CARE_SCHEDULE_KEY,
+    JSON.stringify({
+      morningTime: normalizeClock(prefs.morningTime),
+      eveningTime: normalizeClock(prefs.eveningTime),
+    }),
+  );
+}
+
+export function normalizeClock(raw: string): string {
+  const m = raw.trim().match(/^(\d{1,2}):(\d{2})$/);
+  if (!m) return raw.trim();
+  const h = Math.min(23, Math.max(0, Number(m[1])));
+  const min = Math.min(59, Math.max(0, Number(m[2])));
+  return `${String(h).padStart(2, "0")}:${String(min).padStart(2, "0")}`;
+}
+
+function clockToMin(t: string): number {
+  const [h, m] = normalizeClock(t).split(":").map(Number);
+  return h * 60 + m;
+}
+
+function minToClock(total: number): string {
+  const x = ((total % 1440) + 1440) % 1440;
+  return `${String(Math.floor(x / 60)).padStart(2, "0")}:${String(x % 60).padStart(2, "0")}`;
+}
+
+/** Birinchi qadamni `anchor` ga siljitadi, oralig‘lar saqlanadi. */
+export function shiftRoutineTimes<T extends { time?: string; timeHint?: string }>(
+  tasks: T[],
+  anchor: string | undefined | null,
+): T[] {
+  if (!tasks.length || !isClock(anchor)) return tasks;
+  const first = tasks.map((t) => t.time).find((t) => isClock(t));
+  if (!first) {
+    let base = clockToMin(anchor);
+    return tasks.map((t, i) => {
+      const clock = minToClock(base + i * 8);
+      const label = (t.timeHint || "").replace(/^\d{1,2}:\d{2}\s*·\s*/, "").trim();
+      return {
+        ...t,
+        time: clock,
+        timeHint: label ? `${clock} · ${label}` : clock,
+      };
+    });
+  }
+  const delta = clockToMin(anchor) - clockToMin(first);
+  return tasks.map((t) => {
+    if (!isClock(t.time)) return t;
+    const clock = minToClock(clockToMin(t.time) + delta);
+    const rest = (t.timeHint || "").replace(/^\d{1,2}:\d{2}/, clock).trim();
+    return {
+      ...t,
+      time: clock,
+      timeHint: rest.includes(clock) ? rest : `${clock}${t.timeHint ? ` · ${t.timeHint.replace(/^\d{1,2}:\d{2}\s*·\s*/, "")}` : ""}`.trim(),
+    };
+  });
+}
+
 export type CarePlanProduct = {
   name: string;
   role: string;
@@ -211,6 +301,7 @@ export function buildDailyRoutine(
   quiz: CareQuizAnswers,
   slot: RoutineSlot,
   myProducts?: { id: number; name: string; category: string }[],
+  schedule?: CareSchedulePrefs | null,
 ): RoutineTask[] {
   const { condition, texture, colorStatus } = quiz;
 
@@ -251,18 +342,22 @@ export function buildDailyRoutine(
         ? { title: "Leave-in krem", subtitle: "Nam sochga, diffuzer bilan", icon: "leaf" as const, time: "07:15", timeHint: "07:15 · Yuvishdan keyin", durationMin: 4 }
         : { title: "Styling krem", subtitle: "Kaftlarda eritib, kam miqdor", icon: "sparkles" as const, time: "07:15", timeHint: "07:15 · Yuvishdan keyin", durationMin: 3 };
 
-    return ([
+    return shiftRoutineTimes(
+      ([
       { id: "m-wash", ...wash, productHint: "shampoo" },
       { id: "m-condition", title: "Konditsioner", subtitle: "Faqat uchlarga, 1–2 daqiqa", icon: "flask" as const, productHint: "balsam", time: "07:08", timeHint: "07:08 · Shampundan keyin", durationMin: 3 },
       { id: "m-style", ...style, productHint: "spray" },
       ...(condition === "damaged"
         ? [{ id: "m-heat", title: "Issiqlik himoyasi", subtitle: "Fen oldidan sprey", icon: "shield" as const, productHint: "spray", time: "07:20", timeHint: "07:20 · Fen oldidan", durationMin: 1 }]
         : []),
-    ] as RoutineTask[]).map(withProduct);
+    ] as RoutineTask[]).map(withProduct),
+      schedule?.morningTime,
+    );
   }
 
   if (slot === "evening") {
-    return ([
+    return shiftRoutineTimes(
+      ([
       { id: "e-brush", title: "Yengil tarash", subtitle: "Quruq sochda, yumshoq cho'tka", icon: "cut" as const, time: "21:00", timeHint: "21:00 · Kechqurun", durationMin: 3 },
       {
         id: "e-oil",
@@ -278,15 +373,20 @@ export function buildDailyRoutine(
       ...(colorStatus !== "natural"
         ? [{ id: "e-color", title: "Rang himoyasi", subtitle: "Color-safe mahsulotdan foydalaning", icon: "shield" as const, productHint: "shampoo", time: "21:25", timeHint: "21:25 · Kerak bo'lganda", durationMin: 2 }]
         : []),
-    ] as RoutineTask[]).map(withProduct);
+    ] as RoutineTask[]).map(withProduct),
+      schedule?.eveningTime,
+    );
   }
 
-  return ([
+  return shiftRoutineTimes(
+    ([
     { id: "w-mask", title: "Chuqur maska", subtitle: condition === "damaged" ? "Protein + namlik" : "10 daqiqa parvarish", icon: "flask" as const, productHint: "mask", time: "20:30", timeHint: "20:30 · Haftada 1×", durationMin: 15 },
     { id: "w-scalp", title: "Scalp parvarishi", subtitle: condition === "oily" ? "Balans peel yoki skrab" : "Yengil massaj", icon: "water" as const, time: "20:45", timeHint: "20:45 · Haftada 1×", durationMin: 5 },
     { id: "w-trim", title: "Uchlarni tekshirish", subtitle: "Ajralish belgilarini kuzating", icon: "cut" as const, time: "11:00", timeHint: "11:00 · Yakshanba", durationMin: 5 },
     { id: "w-reset", title: "Haftalik reset", subtitle: "Ortiqcha styling qoldiqlarini yuvib tashlang", icon: "sparkles" as const, time: "19:00", timeHint: "19:00 · Hafta oxiri", durationMin: 10 },
-  ] as RoutineTask[]).map(withProduct);
+  ] as RoutineTask[]).map(withProduct),
+    schedule?.eveningTime,
+  );
 }
 
 /** Cached AI care plan keyed by hair profile + product ids. */
@@ -314,10 +414,12 @@ export type CachedCarePlan = {
 };
 
 const CARE_PLAN_CACHE_KEY = "mysaloon.morphAi.carePlanCache";
-export const CARE_PLAN_SCHEMA_VERSION = 2;
+export const CARE_PLAN_SCHEMA_VERSION = 3;
 
-export function careProfileKey(quiz: CareQuizAnswers): string {
-  return `${quiz.condition}|${quiz.texture}|${quiz.colorStatus}`;
+export function careProfileKey(quiz: CareQuizAnswers, schedule?: CareSchedulePrefs | null): string {
+  const base = `${quiz.condition}|${quiz.texture}|${quiz.colorStatus}`;
+  if (!schedule?.morningTime || !schedule?.eveningTime) return base;
+  return `${base}|${schedule.morningTime}|${schedule.eveningTime}`;
 }
 
 export function sortProductIds(ids: number[]): number[] {
