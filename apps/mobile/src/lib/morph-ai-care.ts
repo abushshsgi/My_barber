@@ -216,7 +216,13 @@ export function buildDailyRoutine(
 
   const pick = (hint?: string): { productId?: number; productName?: string } => {
     if (!hint || !myProducts?.length) return {};
-    const hit = myProducts.find((p) => (p.category || "").toLowerCase() === hint);
+    const aliases =
+      hint === "balsam" || hint === "conditioner"
+        ? ["balsam", "conditioner"]
+        : [hint];
+    const hit = myProducts.find((p) =>
+      aliases.includes((p.category || "").toLowerCase()),
+    );
     return hit ? { productId: hit.id, productName: hit.name } : {};
   };
 

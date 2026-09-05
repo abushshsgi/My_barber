@@ -34,6 +34,7 @@ import {
   type HairCondition,
   type HairTexture,
 } from "../../api/care";
+import { resolveMediaUrl } from "../../api/media";
 import { useAuth } from "../../auth/AuthContext";
 import { CareProductPreviewSheet } from "../../components/morph/care/CareProductPreviewSheet";
 import { CareCatalogMark } from "../../components/morph/care/CareCatalogMark";
@@ -645,6 +646,8 @@ export function MorphCareScreen({ navigation, route }: Props) {
 
     // Mening mahsulotlarim — birinchi (agar bor bo‘lsa).
     myProducts.forEach((mp) => {
+      const fromCatalog = catalog.find((c) => c.id === mp.id);
+      const rawImg = mp.image_url || fromCatalog?.image_url;
       list.push({
         id: `my-${mp.id}`,
         productId: mp.id,
@@ -655,10 +658,12 @@ export function MorphCareScreen({ navigation, route }: Props) {
         duration: "2 Min",
         durationMinutes: 2,
         image:
-          mp.image_url ||
+          resolveMediaUrl(rawImg, { width: 600 }) ||
+          rawImg ||
           "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=600&q=80",
         bgColors: ["#F0F0F0", "#F0F0F0", "#F0F0F0"],
         isUserAdded: true,
+        usageText: mp.usage_uz || fromCatalog?.usage_uz,
       });
     });
 
@@ -679,6 +684,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
         duration: cp.category === "mask" ? "5 Min" : "2 Min",
         durationMinutes: cp.category === "mask" ? 5 : 2,
         image:
+          resolveMediaUrl(cp.image_url, { width: 600 }) ||
           cp.image_url ||
           "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&w=600&q=80",
         bgColors:
@@ -731,7 +737,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
         title: p.name,
         brand: p.brand,
         category: p.category,
-        image: p.image_url,
+        image: resolveMediaUrl(p.image_url, { width: 360 }) || p.image_url,
         purpose: p.purpose_uz,
         usage: p.usage_uz,
         likes_count: p.likes_count ?? 0,

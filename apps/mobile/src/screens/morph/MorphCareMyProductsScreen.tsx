@@ -27,6 +27,7 @@ import {
   removeMyProduct,
   type MyCareProduct,
 } from "../../lib/morph-my-products";
+import { resolveMediaUrl } from "../../api/media";
 import type { MorphCareStackParamList } from "../../navigation/MorphCareStack";
 import { morphFont } from "../../theme/morph-font";
 import {
@@ -276,6 +277,7 @@ export function MorphCareMyProductsScreen({ navigation }: Props) {
           <View style={styles.gridRow}>
             {rows.map((p) => {
               const meta = SOURCE_META[p.source] ?? SOURCE_META.catalog;
+              const img = resolveMediaUrl(p.image_url, { width: 400 }) || p.image_url;
               return (
                 <View key={p.id} style={styles.card}>
                   <Pressable
@@ -283,8 +285,8 @@ export function MorphCareMyProductsScreen({ navigation }: Props) {
                     onPress={() => navigation.navigate("CareProductDetail", { productId: p.id })}
                   >
                     <View style={styles.cardMedia}>
-                      {p.image_url ? (
-                        <Image source={{ uri: p.image_url }} style={styles.cardImg} contentFit="cover" />
+                      {img ? (
+                        <Image source={{ uri: img }} style={styles.cardImg} contentFit="cover" />
                       ) : (
                         <LinearGradient
                           colors={["#F0F0F0", "#F0F0F0"]}

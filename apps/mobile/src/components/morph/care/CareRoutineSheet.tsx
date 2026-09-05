@@ -16,6 +16,7 @@ import {
   type AiCarePlan,
   type CareProduct,
 } from "../../../api/care";
+import { resolveMediaUrl } from "../../../api/media";
 import {
   buildDailyRoutine,
   careProfileKey,
@@ -35,6 +36,33 @@ import {
   setRoutineTaskDone,
   type MyCareProduct,
 } from "../../../lib/morph-my-products";
+
+/** Kategoriya sinonimlari — AI / offline reja moslashuvi. */
+const CAT_ALIASES: Record<string, string[]> = {
+  shampoo: ["shampoo"],
+  balsam: ["balsam", "conditioner"],
+  conditioner: ["conditioner", "balsam"],
+  mask: ["mask"],
+  oil: ["oil"],
+  spray: ["spray"],
+  serum: ["serum", "spray"],
+};
+
+function productImageUri(url: string | null | undefined): string | null {
+  if (!url?.trim()) return null;
+  return resolveMediaUrl(url, { width: 360 }) || url.trim();
+}
+
+function findByCategory(
+  byCat: Map<string, MyCareProduct>,
+  hint: string,
+): MyCareProduct | undefined {
+  for (const key of CAT_ALIASES[hint] || [hint]) {
+    const hit = byCat.get(key);
+    if (hit) return hit;
+  }
+  return undefined;
+}
 import { morphFont } from "../../../theme/morph-font";
 import {
   fontSize,
@@ -97,6 +125,7 @@ function enrichTask(
   },
   products: MyCareProduct[],
   slot: RoutineSlot,
+  catalog?: CareProduct[],
 ): RoutineTask {
   const byId = new Map(products.map((p) => [p.id, p]));
   const byCat = new Map<string, MyCareProduct>();
@@ -104,33 +133,39 @@ function enrichTask(
     const cat = (p.category || "").toLowerCase();
     if (cat && !byCat.has(cat)) byCat.set(cat, p);
   }
-  const GENERIC = /^(shampun|konditsioner|balsam|maska|yog'|yog|spray|sprey|serum)/i;
+  const catalogById = new Map((catalog || []).map((c) => [c.id, c]));
+  const GENERIC = /^(shampun|konditsioner|balsam|balzam|maska|yog'|yog|spray|sprey|serum)/i;
 
   let productId = t.product_id ?? undefined;
   let product = productId ? byId.get(productId) : undefined;
   let productName = t.product_name || product?.name;
 
   if ((!product || !productName || GENERIC.test(productName || "")) && products.length) {
-    const blob = `${t.title} ${productName || ""}`;
+    const blob = `${t.title} ${productName || ""} ${t.subtitle || ""}`;
     const hint =
       /shamp/i.test(blob)
         ? "shampoo"
-        : /kondits|balsam/i.test(blob)
+        : /kondits|balsam|balzam|condition/i.test(blob)
           ? "balsam"
           : /mask/i.test(blob)
             ? "mask"
             : /yog|oil/i.test(blob)
               ? "oil"
-              : /sprey|spray|himoya/i.test(blob)
-                ? "spray"
-                : null;
-    const hit = hint ? byCat.get(hint) : undefined;
+              : /serum/i.test(blob)
+                ? "serum"
+                : /sprey|spray|himoya/i.test(blob)
+                  ? "spray"
+                  : null;
+    const hit = hint ? findByCategory(byCat, hint) : undefined;
     if (hit) {
       product = hit;
       productId = hit.id;
       productName = hit.name;
     }
   }
+
+  const catalogRow = productId ? catalogById.get(productId) : undefined;
+  const rawImage = product?.image_url || catalogRow?.image_url || null;
 
   const icon = (TASK_ICONS[t.icon as RoutineTask["icon"]]
     ? t.icon
@@ -139,6 +174,7 @@ function enrichTask(
   const usageHow =
     product?.usage_uz ||
     product?.purpose_uz ||
+    catalogRow?.usage_uz ||
     t.subtitle ||
     "";
 
@@ -152,10 +188,10 @@ function enrichTask(
     time: clock || undefined,
     timeHint: t.time_hint || clock || undefined,
     durationMin: typeof t.duration_min === "number" ? t.duration_min : undefined,
-    imageUrl: product?.image_url ?? null,
+    imageUrl: productImageUri(rawImage),
     usageHow,
-    brand: product?.brand,
-    category: product?.category,
+    brand: product?.brand || catalogRow?.brand,
+    category: product?.category || catalogRow?.category,
     slot,
   };
 }
@@ -165,16 +201,20 @@ function mapSlotTasks(
   slot: RoutineSlot,
   products: MyCareProduct[],
   quiz: CareQuizAnswers,
+  catalog?: CareProduct[],
 ): RoutineTask[] {
   if (plan && Array.isArray(plan[slot]) && plan[slot].length > 0) {
-    return plan[slot].map((t) => enrichTask(t, products, slot));
+    return plan[slot].map((t) => enrichTask(t, products, slot, catalog));
   }
+  const catalogById = new Map((catalog || []).map((c) => [c.id, c]));
   return buildDailyRoutine(quiz, slot, products).map((task) => {
     const product = products.find((p) => p.id === task.productId);
+    const catalogRow = task.productId ? catalogById.get(task.productId) : undefined;
+    const rawImage = product?.image_url || catalogRow?.image_url || null;
     return {
       ...task,
       slot,
-      imageUrl: product?.image_url ?? null,
+      imageUrl: productImageUri(rawImage),
       usageHow: product?.usage_uz || product?.purpose_uz || task.subtitle,
       brand: product?.brand || task.brand,
       category: product?.category || task.category,
@@ -228,16 +268,16 @@ export function CareRoutineSheet({
   const syncingRef = useRef(false);
 
   const morningTasks = useMemo(
-    () => mapSlotTasks(aiPlan, "morning", myProducts, quiz),
-    [aiPlan, myProducts, quiz],
+    () => mapSlotTasks(aiPlan, "morning", myProducts, quiz, catalog),
+    [aiPlan, myProducts, quiz, catalog],
   );
   const eveningTasks = useMemo(
-    () => mapSlotTasks(aiPlan, "evening", myProducts, quiz),
-    [aiPlan, myProducts, quiz],
+    () => mapSlotTasks(aiPlan, "evening", myProducts, quiz, catalog),
+    [aiPlan, myProducts, quiz, catalog],
   );
   const weeklyTasks = useMemo(
-    () => mapSlotTasks(aiPlan, "weekly", myProducts, quiz),
-    [aiPlan, myProducts, quiz],
+    () => mapSlotTasks(aiPlan, "weekly", myProducts, quiz, catalog),
+    [aiPlan, myProducts, quiz, catalog],
   );
 
   const tasks = useMemo(() => {
@@ -267,7 +307,7 @@ export function CareRoutineSheet({
   const syncReminders = useCallback(
     async (plan: AiCarePlan, products: MyCareProduct[]) => {
       const toNotif = (slot: RoutineSlot) =>
-        mapSlotTasks(plan, slot, products, quiz).map((task) => ({
+        mapSlotTasks(plan, slot, products, quiz, catalog).map((task) => ({
           id: task.id,
           title: task.title,
           subtitle: task.subtitle,
@@ -285,7 +325,7 @@ export function CareRoutineSheet({
       });
       setRemindersOn(n > 0);
     },
-    [quiz, userName],
+    [catalog, quiz, userName],
   );
 
   const persistPlan = useCallback(
@@ -707,10 +747,12 @@ export function CareRoutineSheet({
         <ActivityIndicator color="#111" style={{ marginVertical: 12 }} />
       ) : (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.productRow}>
-          {myProducts.map((p) => (
+          {myProducts.map((p) => {
+            const img = productImageUri(p.image_url);
+            return (
             <Pressable key={p.id} style={styles.myCard} onPress={() => onOpenProduct(p.id)}>
-              {p.image_url ? (
-                <Image source={{ uri: p.image_url }} style={styles.myCardImg} contentFit="cover" />
+              {img ? (
+                <Image source={{ uri: img }} style={styles.myCardImg} contentFit="cover" />
               ) : (
                 <View style={[styles.myCardImg, styles.productPh]}>
                   <Ionicons name="flask-outline" size={20} color="#111" />
@@ -720,7 +762,8 @@ export function CareRoutineSheet({
                 {p.name}
               </Text>
             </Pressable>
-          ))}
+            );
+          })}
           <Pressable style={styles.addCard} onPress={onOpenCatalog}>
             <Ionicons name="add" size={22} color="#111" />
             <Text style={styles.addCardText}>{t("care.myProducts.addShort")}</Text>
@@ -737,13 +780,15 @@ export function CareRoutineSheet({
             </Pressable>
           </View>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.productRow}>
-            {recommended.map(({ product, fit }) => (
+            {recommended.map(({ product, fit }) => {
+              const img = productImageUri(product.image_url);
+              return (
               <Pressable key={product.id} style={styles.recCard} onPress={() => onOpenProduct(product.id)}>
                 <View style={styles.fitBadge}>
                   <Text style={styles.fitBadgeText}>{t("care.routine.fitYou", { pct: fit })}</Text>
                 </View>
-                {product.image_url ? (
-                  <Image source={{ uri: product.image_url }} style={styles.recImg} contentFit="cover" />
+                {img ? (
+                  <Image source={{ uri: img }} style={styles.recImg} contentFit="cover" />
                 ) : (
                   <View style={[styles.recImg, styles.productPh]}>
                     <Ionicons name="flask-outline" size={22} color="#111" />
@@ -753,7 +798,8 @@ export function CareRoutineSheet({
                   {product.name}
                 </Text>
               </Pressable>
-            ))}
+              );
+            })}
           </ScrollView>
         </>
       ) : null}
@@ -946,11 +992,13 @@ const styles = StyleSheet.create({
   checkBtnOn: { backgroundColor: "#111", borderColor: "#111" },
   productBlock: { flexDirection: "row", alignItems: "center", gap: moderateScale(12) },
   productImgWrap: {
-    width: scale(72),
-    height: scale(72),
-    borderRadius: moderateScale(18),
+    width: scale(88),
+    height: scale(88),
+    borderRadius: moderateScale(20),
     overflow: "hidden",
     backgroundColor: "#F3F1EC",
+    borderWidth: 1,
+    borderColor: "rgba(17,17,17,0.06)",
   },
   productImg: { width: "100%", height: "100%" },
   productPh: { alignItems: "center", justifyContent: "center", backgroundColor: "#F3F1EC" },
@@ -1027,7 +1075,7 @@ const styles = StyleSheet.create({
     padding: moderateScale(10),
     gap: moderateScale(6),
   },
-  myCardImg: { width: "100%", height: verticalScale(80), borderRadius: moderateScale(12) },
+  myCardImg: { width: "100%", height: verticalScale(100), borderRadius: moderateScale(14) },
   myCardName: { ...morphFont, fontSize: fontSize(12), fontWeight: "600", color: "#111" },
   addCard: {
     width: scale(96),
