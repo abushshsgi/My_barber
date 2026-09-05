@@ -1267,11 +1267,29 @@ export function MorphCareScreen({ navigation, route }: Props) {
             </Pressable>
           ) : null}
 
+          {/* Search Bar — sheet ochiq bo‘lsa yashirin (input sheet ichida) */}
+          {!searchOpen ? (
+          <View style={[styles.searchSection, { marginBottom: verticalScale(8) }]}>
+            <Pressable
+              style={[styles.searchBar, styles.searchHubBtn, { width: "100%" }]}
+              onPress={openSearch}
+              accessibilityRole="button"
+              accessibilityLabel={t("care.catalog.title")}
+            >
+              <Ionicons name="search-outline" size={18} color="#737373" />
+              <Text style={styles.searchPlaceholder}>{t("care.catalog.search")}...</Text>
+              <View style={styles.searchHubTail}>
+                <Ionicons name="options-outline" size={15} color="#fff" />
+              </View>
+            </Pressable>
+          </View>
+          ) : null}
+
           {!searchOpen ? (
             <Pressable
               style={[
                 styles.shelfBtn,
-                { marginHorizontal: hubLayout.hPad, marginTop: verticalScale(8) },
+                { marginHorizontal: hubLayout.hPad, marginTop: verticalScale(2) },
               ]}
               onPress={() => setShelfOpen(true)}
               accessibilityRole="button"
@@ -1303,33 +1321,6 @@ export function MorphCareScreen({ navigation, route }: Props) {
                 <Ionicons name="arrow-forward" size={moderateScale(15)} color="#FFFFFF" />
               </LinearGradient>
             </Pressable>
-          ) : null}
-
-          {/* Search Bar — sheet ochiq bo‘lsa yashirin (input sheet ichida) */}
-          {!searchOpen ? (
-          <View style={styles.searchSection}>
-            <View style={[styles.searchBar, { width: "100%" }]}>
-              <Ionicons name="search-outline" size={18} color="#737373" />
-              <Pressable style={styles.searchMain} onPress={openSearch}>
-                <Text style={styles.searchPlaceholder}>{t("care.catalog.search")}...</Text>
-              </Pressable>
-              <Pressable
-                style={styles.filterBtn}
-                onPress={openSearch}
-                accessibilityLabel={t("care.catalog.title")}
-                hitSlop={4}
-              >
-                <LinearGradient
-                  colors={["#111111", "#111111"]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={styles.filterBtnGrad}
-                >
-                  <Ionicons name="options-outline" size={15} color="#fff" />
-                </LinearGradient>
-              </Pressable>
-            </View>
-          </View>
           ) : null}
 
           {/* Hair Growth & Health Tracker */}
@@ -2358,6 +2349,18 @@ const styles = StyleSheet.create({
   },
   searchBarActive: {
     borderColor: "#111111",
+  },
+  searchHubBtn: {
+    display: "flex",
+    height: verticalScale(49),
+  },
+  searchHubTail: {
+    width: scale(36),
+    height: scale(36),
+    borderRadius: moderateScale(18),
+    backgroundColor: "#111111",
+    alignItems: "center",
+    justifyContent: "center",
   },
   searchMain: {
     flex: 1,
