@@ -1462,6 +1462,50 @@
       "exploreCta": "Uslub tanlash",
       "proOnly": "Pro obunasida.",
       "seePlans": "Obunalar",
+      "tabs": {
+        "plan": "Reja",
+        "album": "Parvarish Albomi"
+      },
+      "album": {
+        "badge": "Parvarish Albomi",
+        "title": "Mening Parvarish Albomim",
+        "resultReady": "Natija tayyor",
+        "weeklyReady": "7 Kunlik Natijangiz Tayyor!",
+        "monthlyReady": "1 Oylik AI Before & After Reelingiz!",
+        "viewAndShare": "Natijani Ko'rish va Ulashish",
+        "helper": "Kamida 2 ta rasm va 7 kunlik farq bo'lsa AI natija ochiladi.",
+        "productsForToday": "Bugun ishlatilgan mahsulotlar",
+        "addPhoto": "Yangi rasm qo'shish",
+        "noProducts": "Mahsulot belgilanmagan",
+        "emptyTitle": "Parvarish albomingiz hali bo'sh.",
+        "emptySub": "Har hafta rasm qo'shib, progressni kuzating.",
+        "metrics": {
+          "total": "Jami rasmlar",
+          "duration": "Davomiylik",
+          "durationValue": "{{count}} kundan beri",
+          "notStarted": "Hali boshlanmagan"
+        },
+        "upload": {
+          "invalid": "Faqat rasm yuklash mumkin.",
+          "success": "Parvarish albomiga rasm qo'shildi.",
+          "failed": "Rasmni yuklab bo'lmadi. Qayta urinib ko'ring."
+        },
+        "story": {
+          "modalTitle": "Before & After Story",
+          "progressTag": "{{count}} Kunlik Soch Parvarishi Natijasi",
+          "before": "OLDIN",
+          "after": "KEYIN",
+          "products": "Care Routine",
+          "verdictFallback": "Sochdagi ijobiy o'zgarishlar sezilarli darajada yaxshilandi.",
+          "aiError": "AI xulosani tayyorlab bo'lmadi.",
+          "share": "Instagram Story-ga joylash",
+          "save": "Galereyaga saqlash",
+          "saved": "Story galereyaga saqlandi.",
+          "saveError": "Story saqlanmadi.",
+          "shareReady": "Story ulashishga tayyor.",
+          "shareError": "Story ulashib bo'lmadi."
+        }
+      },
       "sos": {
         "cta": "Sochim bugun yomon ko'rinayapti (SOS)",
         "ctaSub": "2 daqiqalik tezkor yechim olish",

@@ -22,6 +22,7 @@ import { cn } from "@/lib/utils";
 import { useHairCareProfile, useUpdateHairCareProfile } from "@/hooks/use-hair-care-profile";
 import { useCareProducts } from "@/hooks/use-care-products";
 import { BadHairDaySosSheet } from "@/components/ai-style/BadHairDaySosSheet";
+import { CareAlbumTab } from "@/components/ai-style/CareAlbumTab";
 import { CareShelfTracker } from "@/components/ai-style/CareShelfTracker";
 
 const CONDITION_OPTS: HairCondition[] = ["oily", "dry", "normal", "damaged"];
@@ -49,6 +50,7 @@ export function MorphAiCarePage() {
     () => savedQuiz ?? defaultQuizFromProfile(profile),
   );
   const [step, setStep] = useState<QuizStep | "plan">(savedQuiz ? "plan" : 0);
+  const [activeTab, setActiveTab] = useState<"plan" | "album">("plan");
   const [sosOpen, setSosOpen] = useState(false);
   const plan = useMemo(() => buildCarePlan(profile, quiz), [profile, quiz]);
   const catalogProducts = catalogQ.data || [];
@@ -105,12 +107,19 @@ export function MorphAiCarePage() {
 
   const finishQuiz = () => {
     saveCareQuiz(quiz);
-    void updateHair.mutateAsync({
-      condition: quiz.condition,
-      texture: quiz.texture,
-      color_status: quiz.colorStatus,
-      scalp: quiz.condition === "oily" ? "oily" : quiz.condition === "dry" || quiz.condition === "damaged" ? "dry" : "normal",
-    }).catch(() => undefined);
+    void updateHair
+      .mutateAsync({
+        condition: quiz.condition,
+        texture: quiz.texture,
+        color_status: quiz.colorStatus,
+        scalp:
+          quiz.condition === "oily"
+            ? "oily"
+            : quiz.condition === "dry" || quiz.condition === "damaged"
+              ? "dry"
+              : "normal",
+      })
+      .catch(() => undefined);
     setStep("plan");
   };
 
@@ -150,9 +159,7 @@ export function MorphAiCarePage() {
         >
           <div className="flex items-center justify-between">
             <BackLink label={t("common.back")} />
-            <span className="text-[12px] tabular-nums text-[#111111]/35">
-              {step + 1}/3
-            </span>
+            <span className="text-[12px] tabular-nums text-[#111111]/35">{step + 1}/3</span>
           </div>
 
           <div className="mt-6 h-[2px] overflow-hidden rounded-full bg-white">
@@ -282,214 +289,268 @@ export function MorphAiCarePage() {
           </button>
         </div>
 
-        <motion.div
-          initial={reduce ? false : { opacity: 0, y: 14 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, ease }}
-          className="mt-8"
-        >
-          <p className="text-[12px] font-medium tracking-wide text-[#111111]/35">
-            {t("aiStylePage.care.badge", { defaultValue: "Parvarish" })}
-          </p>
-          <h1 className="mt-2 max-w-[17rem] text-[1.75rem] font-semibold leading-[1.12] tracking-tight">
-            {t("aiStylePage.care.title", { defaultValue: "Sizning rejangiz" })}
-          </h1>
-          <p className="mt-3 max-w-[22rem] text-[15px] leading-relaxed text-[#111111]/70">
-            {plan.summary}
-          </p>
-        </motion.div>
+        <div className="mt-5 inline-flex rounded-full bg-white p-1 ring-1 ring-black/10">
+          <button
+            type="button"
+            onClick={() => setActiveTab("plan")}
+            className={cn(
+              "h-9 rounded-full px-4 text-[13px] font-semibold transition-colors",
+              activeTab === "plan" ? "bg-[#111111] text-white" : "text-[#111111]/50",
+            )}
+          >
+            {t("aiStylePage.care.tabs.plan", { defaultValue: "Reja" })}
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("album")}
+            className={cn(
+              "h-9 rounded-full px-4 text-[13px] font-semibold transition-colors",
+              activeTab === "album" ? "bg-[#111111] text-white" : "text-[#111111]/50",
+            )}
+          >
+            {t("aiStylePage.care.tabs.album", { defaultValue: "Parvarish Albomi" })}
+          </button>
+        </div>
 
-        <motion.button
-          type="button"
-          onClick={() => setSosOpen(true)}
-          initial={reduce ? false : { opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.04, duration: 0.35, ease }}
-          whileTap={reduce ? undefined : { scale: 0.985 }}
-          className="group relative mt-5 flex w-full cursor-pointer items-center gap-3 overflow-hidden rounded-[22px] bg-gradient-to-r from-[#FF6B57] via-[#FF8A5B] to-[#E9527A] px-4 py-3.5 text-left text-white shadow-[0_10px_28px_-10px_rgba(233,82,122,0.65)]"
-        >
-          <span className="grid size-10 shrink-0 place-items-center rounded-full bg-white/20">
-            <Zap className="size-[18px]" strokeWidth={2.5} />
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className="block text-[14px] font-semibold leading-tight">
-              {t("aiStylePage.care.sos.cta", {
-                defaultValue: "Sochim bugun yomon ko'rinayapti (SOS)",
-              })}
-            </span>
-            <span className="mt-0.5 block text-[12px] text-white/75">
-              {t("aiStylePage.care.sos.ctaSub", {
-                defaultValue: "2 daqiqalik tezkor yechim olish",
-              })}
-            </span>
-          </span>
-          <motion.span
-            aria-hidden
-            className="pointer-events-none absolute inset-y-0 -left-1/3 w-1/3 bg-gradient-to-r from-transparent via-white/25 to-transparent"
-            initial={false}
-            animate={reduce ? undefined : { x: ["0%", "420%"] }}
-            transition={{ duration: 2.6, repeat: Infinity, repeatDelay: 2.4, ease: "easeInOut" }}
-          />
-        </motion.button>
+        {activeTab === "plan" ? (
+          <>
+            <motion.div
+              initial={reduce ? false : { opacity: 0, y: 14 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, ease }}
+              className="mt-8"
+            >
+              <p className="text-[12px] font-medium tracking-wide text-[#111111]/35">
+                {t("aiStylePage.care.badge", { defaultValue: "Parvarish" })}
+              </p>
+              <h1 className="mt-2 max-w-[17rem] text-[1.75rem] font-semibold leading-[1.12] tracking-tight">
+                {t("aiStylePage.care.title", { defaultValue: "Sizning rejangiz" })}
+              </h1>
+              <p className="mt-3 max-w-[22rem] text-[15px] leading-relaxed text-[#111111]/70">
+                {plan.summary}
+              </p>
+            </motion.div>
 
-        <motion.div
-          initial={reduce ? false : { opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.08, duration: 0.35, ease }}
-          className="mt-6 grid grid-cols-3 gap-2"
-        >
-          {traits.map((item) => (
-            <div key={item.key} className="overflow-hidden rounded-2xl bg-white">
-              <img
-                src={careOptionImage(item.key)}
-                alt=""
-                className="aspect-[4/5] w-full object-cover object-top"
-              />
-              <div className="px-2 py-2">
-                <p className="text-[10px] text-[#111111]/35">{item.label}</p>
-                <p className="truncate text-[12px] font-semibold">{item.value}</p>
-              </div>
-            </div>
-          ))}
-        </motion.div>
-
-        <CareShelfTracker />
-
-        <Section title={t("aiStylePage.care.weeklyTitle", { defaultValue: "Hafta" })} delay={0.12}>
-          <div className="space-y-1.5">
-            {plan.weekly.map((row, i) => (
-              <motion.div
-                key={row.day}
-                initial={reduce ? false : { opacity: 0, x: -8 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.14 + i * 0.04, duration: 0.3, ease }}
-                className="flex items-center gap-3 rounded-2xl bg-white px-3.5 py-3"
-              >
-                <span className="w-8 text-[13px] font-semibold text-[#111111]/40">{row.day}</span>
-                <span className="text-[14px] font-medium">{row.task}</span>
-              </motion.div>
-            ))}
-          </div>
-        </Section>
-
-        <Section title={t("aiStylePage.care.productsTitle", { defaultValue: "Mahsulotlar" })} delay={0.2}>
-          <div className="space-y-1.5">
-            {(catalogProducts.length > 0
-              ? catalogProducts.slice(0, 4).map((p) => ({
-                  id: p.id,
-                  href: true as const,
-                  name: p.name,
-                  role: p.brand || p.category,
-                  tip: p.purpose_uz || p.usage_uz,
-                }))
-              : plan.products.map((p) => ({
-                  id: p.name,
-                  href: false as const,
-                  name: p.name,
-                  role: p.role,
-                  tip: p.tip,
-                }))
-            ).map((p, i) => {
-              const inner = (
-                <>
-                  <div className="flex items-baseline justify-between gap-3">
-                    <p className="text-[14px] font-semibold">{p.name}</p>
-                    <p className="shrink-0 text-[11px] text-[#111111]/35">{p.role}</p>
-                  </div>
-                  {p.tip ? <p className="mt-1 text-[13px] text-[#111111]/50">{p.tip}</p> : null}
-                </>
-              );
-              const cls = "rounded-2xl bg-white px-3.5 py-3.5";
-              return (
-                <motion.div
-                  key={p.id}
-                  initial={reduce ? false : { opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.22 + i * 0.04, duration: 0.3, ease }}
-                >
-                  {p.href ? (
-                    <Link
-                      to="/ai-style/care/products/$productId"
-                      params={{ productId: String(p.id) }}
-                      className={cn(cls, "block")}
-                    >
-                      {inner}
-                    </Link>
-                  ) : (
-                    <div className={cls}>{inner}</div>
-                  )}
-                </motion.div>
-              );
-            })}
-          </div>
-        </Section>
-
-        <Section title={t("aiStylePage.care.stylingTitle", { defaultValue: "Styling" })} delay={0.28}>
-          <ol className="space-y-1.5">
-            {plan.stylingTips.map((tip, i) => (
-              <motion.li
-                key={tip}
-                initial={reduce ? false : { opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 + i * 0.04, duration: 0.3, ease }}
-                className="flex gap-3 rounded-2xl bg-white px-3.5 py-3 text-[14px] leading-snug text-[#111111]/80"
-              >
-                <span className="shrink-0 text-[#111111]/30">{i + 1}</span>
-                {tip}
-              </motion.li>
-            ))}
-          </ol>
-        </Section>
-
-        <Section title={t("aiStylePage.care.avoidTitle", { defaultValue: "Qilmang" })} delay={0.36}>
-          <div className="flex flex-wrap gap-2">
-            {plan.avoid.map((item, i) => (
+            <motion.button
+              type="button"
+              onClick={() => setSosOpen(true)}
+              initial={reduce ? false : { opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.04, duration: 0.35, ease }}
+              whileTap={reduce ? undefined : { scale: 0.985 }}
+              className="group relative mt-5 flex w-full cursor-pointer items-center gap-3 overflow-hidden rounded-[22px] bg-gradient-to-r from-[#FF6B57] via-[#FF8A5B] to-[#E9527A] px-4 py-3.5 text-left text-white shadow-[0_10px_28px_-10px_rgba(233,82,122,0.65)]"
+            >
+              <span className="grid size-10 shrink-0 place-items-center rounded-full bg-white/20">
+                <Zap className="size-[18px]" strokeWidth={2.5} />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-[14px] font-semibold leading-tight">
+                  {t("aiStylePage.care.sos.cta", {
+                    defaultValue: "Sochim bugun yomon ko'rinayapti (SOS)",
+                  })}
+                </span>
+                <span className="mt-0.5 block text-[12px] text-white/75">
+                  {t("aiStylePage.care.sos.ctaSub", {
+                    defaultValue: "2 daqiqalik tezkor yechim olish",
+                  })}
+                </span>
+              </span>
               <motion.span
-                key={item}
-                initial={reduce ? false : { opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.38 + i * 0.03, duration: 0.25, ease }}
-                className="rounded-full bg-[#F0F0F0] px-3.5 py-2 text-[13px] text-[#111111]/60"
-              >
-                {item}
-              </motion.span>
-            ))}
-          </div>
-        </Section>
+                aria-hidden
+                className="pointer-events-none absolute inset-y-0 -left-1/3 w-1/3 bg-gradient-to-r from-transparent via-white/25 to-transparent"
+                initial={false}
+                animate={reduce ? undefined : { x: ["0%", "420%"] }}
+                transition={{
+                  duration: 2.6,
+                  repeat: Infinity,
+                  repeatDelay: 2.4,
+                  ease: "easeInOut",
+                }}
+              />
+            </motion.button>
 
-        <motion.div
-          initial={reduce ? false : { opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.42, duration: 0.35, ease }}
-          className="mt-10"
-        >
-          <p className="text-[14px] text-[#111111]/55">
-            {t("aiStylePage.care.nextCut", {
-              defaultValue: "Keyingi trim · ~{{days}} kun",
-              days: plan.nextCutDays,
-            })}
-          </p>
-          <Link
-            to="/ai-style/care/ingredient"
-            className="mt-4 flex h-12 w-full items-center justify-center rounded-full bg-white text-sm font-semibold text-[#111111] ring-1 ring-black/10 active:scale-[0.98]"
-          >
-            {t("aiStylePage.care.ingredientScan.cta", {
-              defaultValue: "Tarkib skani",
-            })}
-          </Link>
-          <Link
-            to="/ai-style/care/products"
-            className="mt-3 flex h-12 w-full items-center justify-center rounded-full bg-white text-sm font-semibold text-[#111111] ring-1 ring-black/10 active:scale-[0.98]"
-          >
-            {t("aiStylePage.care.catalog.cta", { defaultValue: "Barcha vositalar" })}
-          </Link>
-          <Link
-            to="/explore"
-            className="mt-3 flex h-12 w-full items-center justify-center rounded-full bg-[#111111] text-sm font-semibold text-white active:scale-[0.98]"
-          >
-            {t("aiStylePage.care.exploreCta", { defaultValue: "Uslub tanlash" })}
-          </Link>
-        </motion.div>
+            <motion.div
+              initial={reduce ? false : { opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.08, duration: 0.35, ease }}
+              className="mt-6 grid grid-cols-3 gap-2"
+            >
+              {traits.map((item) => (
+                <div key={item.key} className="overflow-hidden rounded-2xl bg-white">
+                  <img
+                    src={careOptionImage(item.key)}
+                    alt=""
+                    className="aspect-[4/5] w-full object-cover object-top"
+                  />
+                  <div className="px-2 py-2">
+                    <p className="text-[10px] text-[#111111]/35">{item.label}</p>
+                    <p className="truncate text-[12px] font-semibold">{item.value}</p>
+                  </div>
+                </div>
+              ))}
+            </motion.div>
+
+            <CareShelfTracker />
+
+            <Section
+              title={t("aiStylePage.care.weeklyTitle", { defaultValue: "Hafta" })}
+              delay={0.12}
+            >
+              <div className="space-y-1.5">
+                {plan.weekly.map((row, i) => (
+                  <motion.div
+                    key={row.day}
+                    initial={reduce ? false : { opacity: 0, x: -8 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.14 + i * 0.04, duration: 0.3, ease }}
+                    className="flex items-center gap-3 rounded-2xl bg-white px-3.5 py-3"
+                  >
+                    <span className="w-8 text-[13px] font-semibold text-[#111111]/40">
+                      {row.day}
+                    </span>
+                    <span className="text-[14px] font-medium">{row.task}</span>
+                  </motion.div>
+                ))}
+              </div>
+            </Section>
+
+            <Section
+              title={t("aiStylePage.care.productsTitle", { defaultValue: "Mahsulotlar" })}
+              delay={0.2}
+            >
+              <div className="space-y-1.5">
+                {(catalogProducts.length > 0
+                  ? catalogProducts.slice(0, 4).map((p) => ({
+                      id: p.id,
+                      href: true as const,
+                      name: p.name,
+                      role: p.brand || p.category,
+                      tip: p.purpose_uz || p.usage_uz,
+                    }))
+                  : plan.products.map((p) => ({
+                      id: p.name,
+                      href: false as const,
+                      name: p.name,
+                      role: p.role,
+                      tip: p.tip,
+                    }))
+                ).map((p, i) => {
+                  const inner = (
+                    <>
+                      <div className="flex items-baseline justify-between gap-3">
+                        <p className="text-[14px] font-semibold">{p.name}</p>
+                        <p className="shrink-0 text-[11px] text-[#111111]/35">{p.role}</p>
+                      </div>
+                      {p.tip ? <p className="mt-1 text-[13px] text-[#111111]/50">{p.tip}</p> : null}
+                    </>
+                  );
+                  const cls = "rounded-2xl bg-white px-3.5 py-3.5";
+                  return (
+                    <motion.div
+                      key={p.id}
+                      initial={reduce ? false : { opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.22 + i * 0.04, duration: 0.3, ease }}
+                    >
+                      {p.href ? (
+                        <Link
+                          to="/ai-style/care/products/$productId"
+                          params={{ productId: String(p.id) }}
+                          className={cn(cls, "block")}
+                        >
+                          {inner}
+                        </Link>
+                      ) : (
+                        <div className={cls}>{inner}</div>
+                      )}
+                    </motion.div>
+                  );
+                })}
+              </div>
+            </Section>
+
+            <Section
+              title={t("aiStylePage.care.stylingTitle", { defaultValue: "Styling" })}
+              delay={0.28}
+            >
+              <ol className="space-y-1.5">
+                {plan.stylingTips.map((tip, i) => (
+                  <motion.li
+                    key={tip}
+                    initial={reduce ? false : { opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3 + i * 0.04, duration: 0.3, ease }}
+                    className="flex gap-3 rounded-2xl bg-white px-3.5 py-3 text-[14px] leading-snug text-[#111111]/80"
+                  >
+                    <span className="shrink-0 text-[#111111]/30">{i + 1}</span>
+                    {tip}
+                  </motion.li>
+                ))}
+              </ol>
+            </Section>
+
+            <Section
+              title={t("aiStylePage.care.avoidTitle", { defaultValue: "Qilmang" })}
+              delay={0.36}
+            >
+              <div className="flex flex-wrap gap-2">
+                {plan.avoid.map((item, i) => (
+                  <motion.span
+                    key={item}
+                    initial={reduce ? false : { opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.38 + i * 0.03, duration: 0.25, ease }}
+                    className="rounded-full bg-[#F0F0F0] px-3.5 py-2 text-[13px] text-[#111111]/60"
+                  >
+                    {item}
+                  </motion.span>
+                ))}
+              </div>
+            </Section>
+
+            <motion.div
+              initial={reduce ? false : { opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.42, duration: 0.35, ease }}
+              className="mt-10"
+            >
+              <p className="text-[14px] text-[#111111]/55">
+                {t("aiStylePage.care.nextCut", {
+                  defaultValue: "Keyingi trim · ~{{days}} kun",
+                  days: plan.nextCutDays,
+                })}
+              </p>
+              <Link
+                to="/ai-style/care/ingredient"
+                className="mt-4 flex h-12 w-full items-center justify-center rounded-full bg-white text-sm font-semibold text-[#111111] ring-1 ring-black/10 active:scale-[0.98]"
+              >
+                {t("aiStylePage.care.ingredientScan.cta", {
+                  defaultValue: "Tarkib skani",
+                })}
+              </Link>
+              <Link
+                to="/ai-style/care/products"
+                className="mt-3 flex h-12 w-full items-center justify-center rounded-full bg-white text-sm font-semibold text-[#111111] ring-1 ring-black/10 active:scale-[0.98]"
+              >
+                {t("aiStylePage.care.catalog.cta", { defaultValue: "Barcha vositalar" })}
+              </Link>
+              <Link
+                to="/explore"
+                className="mt-3 flex h-12 w-full items-center justify-center rounded-full bg-[#111111] text-sm font-semibold text-white active:scale-[0.98]"
+              >
+                {t("aiStylePage.care.exploreCta", { defaultValue: "Uslub tanlash" })}
+              </Link>
+            </motion.div>
+          </>
+        ) : (
+          <CareAlbumTab
+            goalHint={plan.summary}
+            fallbackProducts={catalogProducts.slice(0, 8).map((item) => ({
+              id: `catalog:${item.id}`,
+              name: [item.brand, item.name].filter(Boolean).join(" · ") || item.name,
+            }))}
+          />
+        )}
       </div>
 
       <BadHairDaySosSheet open={sosOpen} onClose={() => setSosOpen(false)} />

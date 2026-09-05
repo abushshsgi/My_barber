@@ -1461,6 +1461,50 @@
       "exploreCta": "Pick a style",
       "proOnly": "Pro only.",
       "seePlans": "Plans",
+      "tabs": {
+        "plan": "Plan",
+        "album": "Care Album"
+      },
+      "album": {
+        "badge": "Care Album",
+        "title": "My Care Album",
+        "resultReady": "Result ready",
+        "weeklyReady": "Your 7-day result is ready!",
+        "monthlyReady": "Your 1-month AI Before & After Reel!",
+        "viewAndShare": "View & Share Result",
+        "helper": "Add at least 2 photos with 7 days gap to unlock AI result.",
+        "productsForToday": "Products used today",
+        "addPhoto": "Add new photo",
+        "noProducts": "No products tagged",
+        "emptyTitle": "Your care album is empty.",
+        "emptySub": "Add weekly photos and track your progress.",
+        "metrics": {
+          "total": "Total photos",
+          "duration": "Duration",
+          "durationValue": "{{count}} days so far",
+          "notStarted": "Not started yet"
+        },
+        "upload": {
+          "invalid": "Only images can be uploaded.",
+          "success": "Photo added to care album.",
+          "failed": "Could not upload photo. Please retry."
+        },
+        "story": {
+          "modalTitle": "Before & After Story",
+          "progressTag": "{{count}}-day Hair Care Result",
+          "before": "BEFORE",
+          "after": "AFTER",
+          "products": "Care Routine",
+          "verdictFallback": "Hair quality shows visible positive improvement.",
+          "aiError": "Could not prepare AI summary.",
+          "share": "Post to Instagram Story",
+          "save": "Save to gallery",
+          "saved": "Story saved to gallery.",
+          "saveError": "Story was not saved.",
+          "shareReady": "Story is ready to share.",
+          "shareError": "Could not share story."
+        }
+      },
       "sos": {
         "cta": "My hair looks bad today (SOS)",
         "ctaSub": "Get a 2-minute quick fix",
