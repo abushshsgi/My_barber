@@ -95,6 +95,7 @@ type Props = {
   userName?: string | null;
   onOpenCatalog: () => void;
   onOpenScan: () => void;
+  onOpenShelf: () => void;
   onOpenProduct: (id: number) => void;
   onOpenGuide: (payload: GuidePayload) => void;
   onRetakeQuiz: () => void;
@@ -257,6 +258,7 @@ export function CareRoutineSheet({
   userName,
   onOpenCatalog,
   onOpenScan,
+  onOpenShelf,
   onOpenProduct,
   onOpenGuide,
   onRetakeQuiz,
@@ -603,6 +605,21 @@ export function CareRoutineSheet({
             </Text>
           </View>
         ) : null}
+
+        <Pressable style={styles.shelfLink} onPress={onOpenShelf}>
+          <View style={styles.shelfLinkIcon}>
+            <Ionicons name="cube-outline" size={14} color="#111" />
+          </View>
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text style={styles.shelfLinkTitle}>
+              {t("care.shelf.cta", { defaultValue: "Mahsulot tugash muddatini kuzatish" })}
+            </Text>
+            <Text style={styles.shelfLinkSub}>
+              {t("care.shelf.ctaSub", { defaultValue: "PAO va refill eslatmalarini yoqish" })}
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={16} color="#111" />
+        </Pressable>
       </View>
 
       {scheduleReady && (editingSchedule || !schedule) ? (
@@ -978,6 +995,37 @@ const styles = StyleSheet.create({
     fontSize: fontSize(12),
     fontWeight: "600",
     color: "#111",
+  },
+  shelfLink: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: moderateScale(8),
+    borderRadius: moderateScale(14),
+    paddingHorizontal: scale(10),
+    paddingVertical: verticalScale(9),
+    backgroundColor: "#F7F5F1",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(17,17,17,0.08)",
+  },
+  shelfLinkIcon: {
+    width: scale(28),
+    height: scale(28),
+    borderRadius: moderateScale(10),
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#ECE7DE",
+  },
+  shelfLinkTitle: {
+    ...morphFont,
+    fontSize: fontSize(12.5),
+    fontWeight: "700",
+    color: "#111",
+  },
+  shelfLinkSub: {
+    ...morphFont,
+    marginTop: 1,
+    fontSize: fontSize(10.5),
+    color: "rgba(17,17,17,0.52)",
   },
   scheduleCard: {
     borderRadius: moderateScale(24),

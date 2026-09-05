@@ -1912,6 +1912,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
         }
         onOpenCatalog={openCatalog}
         onOpenScan={openTarkib}
+        onOpenShelf={() => setShelfOpen(true)}
         onOpenProduct={openProduct}
         onOpenGuide={openProductGuide}
         onRetakeQuiz={() => setStep(0)}
