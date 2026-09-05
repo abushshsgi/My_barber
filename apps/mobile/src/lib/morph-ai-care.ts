@@ -19,6 +19,11 @@ export type RoutineTask = {
   timeHint?: string;
   time?: string;
   durationMin?: number;
+  imageUrl?: string | null;
+  usageHow?: string;
+  brand?: string;
+  category?: string;
+  slot?: RoutineSlot;
 };
 
 export type CareQuizAnswers = {

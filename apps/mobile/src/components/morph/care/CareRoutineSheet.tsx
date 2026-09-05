@@ -1,7 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
 import { Image } from "expo-image";
-import { LinearGradient } from "expo-linear-gradient";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -29,6 +28,7 @@ import {
   type RoutineSlot,
   type RoutineTask,
 } from "../../../lib/morph-ai-care";
+import { scheduleCareReminders } from "../../../lib/care-reminders";
 import {
   loadMyProducts,
   loadRoutineDone,
@@ -43,23 +43,36 @@ import {
   verticalScale,
 } from "../../../utils/responsive";
 
+type DayMode = "today" | RoutineSlot;
+
+type GuidePayload = {
+  productId?: number;
+  title: string;
+  brand?: string;
+  category?: string;
+  usageText?: string;
+  durationMinutes?: number;
+  image?: string;
+};
+
 type Props = {
   quiz: CareQuizAnswers;
   catalog: CareProduct[];
   selectedDate: string;
+  userName?: string | null;
   onOpenCatalog: () => void;
   onOpenScan: () => void;
   onOpenProduct: (id: number) => void;
+  onOpenGuide: (payload: GuidePayload) => void;
   onRetakeQuiz: () => void;
 };
 
-const SLOTS: RoutineSlot[] = ["morning", "evening", "weekly"];
-
-const SLOT_ICONS: Record<RoutineSlot, keyof typeof Ionicons.glyphMap> = {
-  morning: "sunny-outline",
-  evening: "moon-outline",
-  weekly: "calendar-outline",
-};
+const DAY_MODES: { id: DayMode; icon: keyof typeof Ionicons.glyphMap; labelKey: string }[] = [
+  { id: "today", icon: "today-outline", labelKey: "care.routine.dayToday" },
+  { id: "morning", icon: "sunny-outline", labelKey: "care.routine.slots.morning" },
+  { id: "evening", icon: "moon-outline", labelKey: "care.routine.slots.evening" },
+  { id: "weekly", icon: "calendar-outline", labelKey: "care.routine.slots.weekly" },
+];
 
 const TASK_ICONS: Record<RoutineTask["icon"], keyof typeof Ionicons.glyphMap> = {
   water: "water-outline",
@@ -70,69 +83,101 @@ const TASK_ICONS: Record<RoutineTask["icon"], keyof typeof Ionicons.glyphMap> = 
   cut: "cut-outline",
 };
 
-const WEEK_ORDER = ["Du", "Se", "Chor", "Pay", "Ju", "Shan", "Ya"] as const;
-
-function mapAiTasks(
-  plan: AiCarePlan | null,
-  slot: RoutineSlot,
+function enrichTask(
+  t: {
+    id: string;
+    title: string;
+    subtitle?: string;
+    icon?: string;
+    product_id?: number | null;
+    product_name?: string;
+    time?: string;
+    time_hint?: string;
+    duration_min?: number | null;
+  },
   products: MyCareProduct[],
-): RoutineTask[] | null {
-  if (!plan) return null;
-  const rows = plan[slot];
-  if (!Array.isArray(rows) || rows.length === 0) return null;
-
+  slot: RoutineSlot,
+): RoutineTask {
   const byId = new Map(products.map((p) => [p.id, p]));
   const byCat = new Map<string, MyCareProduct>();
   for (const p of products) {
     const cat = (p.category || "").toLowerCase();
     if (cat && !byCat.has(cat)) byCat.set(cat, p);
   }
-
   const GENERIC = /^(shampun|konditsioner|balsam|maska|yog'|yog|spray|sprey|serum)/i;
 
-  return rows.map((t) => {
-    const icon = (TASK_ICONS[t.icon as RoutineTask["icon"]]
-      ? t.icon
-      : "sparkles") as RoutineTask["icon"];
+  let productId = t.product_id ?? undefined;
+  let product = productId ? byId.get(productId) : undefined;
+  let productName = t.product_name || product?.name;
 
-    let productId = t.product_id ?? undefined;
-    let productName = t.product_name || undefined;
-
-    if (productId && byId.has(productId)) {
-      productName = byId.get(productId)!.name;
-    } else if ((!productId || !productName || GENERIC.test(productName)) && products.length) {
-      const hint =
-        /shamp/i.test(t.title + (productName || ""))
-          ? "shampoo"
-          : /kondits|balsam/i.test(t.title + (productName || ""))
-            ? "balsam"
-            : /mask/i.test(t.title + (productName || ""))
-              ? "mask"
-              : /yog|oil/i.test(t.title + (productName || ""))
-                ? "oil"
-                : /sprey|spray|himoya/i.test(t.title + (productName || ""))
-                  ? "spray"
-                  : null;
-      const hit = hint ? byCat.get(hint) : undefined;
-      if (hit) {
-        productId = hit.id;
-        productName = hit.name;
-      }
+  if ((!product || !productName || GENERIC.test(productName || "")) && products.length) {
+    const blob = `${t.title} ${productName || ""}`;
+    const hint =
+      /shamp/i.test(blob)
+        ? "shampoo"
+        : /kondits|balsam/i.test(blob)
+          ? "balsam"
+          : /mask/i.test(blob)
+            ? "mask"
+            : /yog|oil/i.test(blob)
+              ? "oil"
+              : /sprey|spray|himoya/i.test(blob)
+                ? "spray"
+                : null;
+    const hit = hint ? byCat.get(hint) : undefined;
+    if (hit) {
+      product = hit;
+      productId = hit.id;
+      productName = hit.name;
     }
+  }
 
-    const clock = (t.time || "").trim();
-    const timeHint = t.time_hint || clock || undefined;
+  const icon = (TASK_ICONS[t.icon as RoutineTask["icon"]]
+    ? t.icon
+    : "sparkles") as RoutineTask["icon"];
+  const clock = (t.time || "").trim();
+  const usageHow =
+    product?.usage_uz ||
+    product?.purpose_uz ||
+    t.subtitle ||
+    "";
 
+  return {
+    id: t.id,
+    title: t.title,
+    subtitle: t.subtitle || usageHow || productName || "",
+    icon,
+    productId,
+    productName,
+    time: clock || undefined,
+    timeHint: t.time_hint || clock || undefined,
+    durationMin: typeof t.duration_min === "number" ? t.duration_min : undefined,
+    imageUrl: product?.image_url ?? null,
+    usageHow,
+    brand: product?.brand,
+    category: product?.category,
+    slot,
+  };
+}
+
+function mapSlotTasks(
+  plan: AiCarePlan | null,
+  slot: RoutineSlot,
+  products: MyCareProduct[],
+  quiz: CareQuizAnswers,
+): RoutineTask[] {
+  if (plan && Array.isArray(plan[slot]) && plan[slot].length > 0) {
+    return plan[slot].map((t) => enrichTask(t, products, slot));
+  }
+  return buildDailyRoutine(quiz, slot, products).map((task) => {
+    const product = products.find((p) => p.id === task.productId);
     return {
-      id: t.id,
-      title: t.title,
-      subtitle: t.subtitle || productName || "",
-      icon,
-      productId,
-      productName,
-      time: clock || undefined,
-      timeHint,
-      durationMin: typeof t.duration_min === "number" ? t.duration_min : undefined,
+      ...task,
+      slot,
+      imageUrl: product?.image_url ?? null,
+      usageHow: product?.usage_uz || product?.purpose_uz || task.subtitle,
+      brand: product?.brand || task.brand,
+      category: product?.category || task.category,
     };
   });
 }
@@ -153,18 +198,23 @@ function idsEqual(a: number[], b: number[]): boolean {
   return sa.every((id, i) => id === sb[i]);
 }
 
+function clockSortKey(task: RoutineTask): string {
+  return task.time || task.timeHint || "99:99";
+}
+
 export function CareRoutineSheet({
   quiz,
   catalog,
   selectedDate,
+  userName,
   onOpenCatalog,
   onOpenScan,
   onOpenProduct,
+  onOpenGuide,
   onRetakeQuiz,
 }: Props) {
   const { t } = useTranslation();
-  const [slot, setSlot] = useState<RoutineSlot>("morning");
-  const [weekDayIdx, setWeekDayIdx] = useState(0);
+  const [mode, setMode] = useState<DayMode>("today");
   const [myProducts, setMyProducts] = useState<MyCareProduct[]>([]);
   const [doneMap, setDoneMap] = useState<Record<string, boolean>>({});
   const [loadingProducts, setLoadingProducts] = useState(true);
@@ -172,51 +222,71 @@ export function CareRoutineSheet({
   const [aiLoading, setAiLoading] = useState(false);
   const [aiAppending, setAiAppending] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
+  const [remindersOn, setRemindersOn] = useState(false);
   const knownIdsRef = useRef<number[]>([]);
   const planRef = useRef<AiCarePlan | null>(null);
   const syncingRef = useRef(false);
 
-  const fallbackTasks = useMemo(
-    () => buildDailyRoutine(quiz, slot, myProducts),
-    [quiz, slot, myProducts],
+  const morningTasks = useMemo(
+    () => mapSlotTasks(aiPlan, "morning", myProducts, quiz),
+    [aiPlan, myProducts, quiz],
   );
-  const aiTasks = useMemo(
-    () => mapAiTasks(aiPlan, slot, myProducts),
-    [aiPlan, slot, myProducts],
+  const eveningTasks = useMemo(
+    () => mapSlotTasks(aiPlan, "evening", myProducts, quiz),
+    [aiPlan, myProducts, quiz],
   );
-  const tasks = aiTasks ?? fallbackTasks;
+  const weeklyTasks = useMemo(
+    () => mapSlotTasks(aiPlan, "weekly", myProducts, quiz),
+    [aiPlan, myProducts, quiz],
+  );
+
+  const tasks = useMemo(() => {
+    if (mode === "today") {
+      return [...morningTasks, ...eveningTasks].sort((a, b) =>
+        clockSortKey(a).localeCompare(clockSortKey(b)),
+      );
+    }
+    if (mode === "morning") return morningTasks;
+    if (mode === "evening") return eveningTasks;
+    return weeklyTasks;
+  }, [mode, morningTasks, eveningTasks, weeklyTasks]);
 
   const doneCount = useMemo(
     () => tasks.filter((task) => doneMap[task.id]).length,
     [tasks, doneMap],
   );
+  const progress = tasks.length ? doneCount / tasks.length : 0;
 
   const recommended = useMemo(() => {
     return [...catalog]
       .map((p) => ({ product: p, fit: estimateProductFit(p, quiz) }))
       .sort((a, b) => b.fit - a.fit)
-      .slice(0, 8);
+      .slice(0, 6);
   }, [catalog, quiz]);
 
-  const weekRows = useMemo(() => {
-    const schedule = aiPlan?.weekly_schedule ?? [];
-    return WEEK_ORDER.map((day) => {
-      const match = schedule.find((r) => {
-        const d = (r.day || "").toLowerCase();
-        const key = day.toLowerCase();
-        return d === key || d.startsWith(key.slice(0, 2)) || key.startsWith(d.slice(0, 2));
+  const syncReminders = useCallback(
+    async (plan: AiCarePlan, products: MyCareProduct[]) => {
+      const toNotif = (slot: RoutineSlot) =>
+        mapSlotTasks(plan, slot, products, quiz).map((task) => ({
+          id: task.id,
+          title: task.title,
+          subtitle: task.subtitle,
+          time: task.time,
+          time_hint: task.timeHint,
+          icon: task.icon,
+          product_id: task.productId ?? null,
+          product_name: task.productName,
+          duration_min: task.durationMin ?? null,
+        }));
+      const n = await scheduleCareReminders({
+        userName,
+        morning: toNotif("morning"),
+        evening: toNotif("evening"),
       });
-      return {
-        day,
-        task: match?.task ?? "",
-        time: match?.time ?? "",
-        productName: match?.product_name ?? "",
-        productId: match?.product_id ?? null,
-      };
-    });
-  }, [aiPlan?.weekly_schedule]);
-
-  const selectedWeek = weekRows[weekDayIdx] ?? weekRows[0];
+      setRemindersOn(n > 0);
+    },
+    [quiz, userName],
+  );
 
   const persistPlan = useCallback(
     async (plan: AiCarePlan, products: MyCareProduct[]) => {
@@ -230,8 +300,9 @@ export function CareRoutineSheet({
         profileKey: careProfileKey(quiz),
         updatedAt: new Date().toISOString(),
       });
+      void syncReminders(plan, products);
     },
-    [quiz],
+    [quiz, syncReminders],
   );
 
   const generateFull = useCallback(
@@ -274,7 +345,6 @@ export function CareRoutineSheet({
         });
         await persistPlan(plan, allProducts);
       } catch (e) {
-        // Keep old plan; surface soft error
         setAiError(e instanceof Error ? e.message : t("care.routine.aiPlanError"));
         knownIdsRef.current = sortProductIds(allProducts.map((p) => p.id));
       } finally {
@@ -305,6 +375,7 @@ export function CareRoutineSheet({
           planRef.current = plan;
           setAiPlan(plan);
           knownIdsRef.current = sortProductIds(cached.productIds);
+          void syncReminders(plan, products);
         }
 
         if (cached && cached.profileKey !== profile) {
@@ -349,7 +420,7 @@ export function CareRoutineSheet({
         syncingRef.current = false;
       }
     },
-    [appendForProducts, generateFull, persistPlan, quiz],
+    [appendForProducts, generateFull, persistPlan, quiz, syncReminders],
   );
 
   const refreshLocal = useCallback(async () => {
@@ -389,99 +460,103 @@ export function CareRoutineSheet({
     setDoneMap(updated);
   };
 
-  const onRefreshPlan = () => {
-    void syncPlanWithProducts(myProducts, { forceFull: true });
+  const openGuideFor = (task: RoutineTask) => {
+    onOpenGuide({
+      productId: task.productId,
+      title: task.productName || task.title,
+      brand: task.brand,
+      category: task.category,
+      usageText: task.usageHow || task.subtitle,
+      durationMinutes: task.durationMin || 3,
+      image: task.imageUrl || undefined,
+    });
   };
+
+  const greeting = userName?.trim().split(/\s+/)[0] || t("care.routine.friendFallback", { defaultValue: "Do‘stim" });
 
   return (
     <ScrollView
       style={styles.sheetScroll}
       contentContainerStyle={styles.sheetContent}
-      nestedScrollEnabled={true}
+      nestedScrollEnabled
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
     >
-      <LinearGradient
-        colors={["#1A1A1C", "#2C2C30"]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.hero}
-      >
-        <View style={styles.heroTop}>
-          <View style={styles.heroBadge}>
-            <Ionicons name="sparkles" size={12} color="#F5F5F5" />
-            <Text style={styles.heroBadgeText}>{t("care.routine.aiPlanBadge")}</Text>
+      <View style={styles.dayHero}>
+        <View style={styles.dayHeroTop}>
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text style={styles.dayEyebrow}>
+              {t("care.routine.dayRitual", { defaultValue: "Bugungi ritual" })}
+            </Text>
+            <Text style={styles.dayHello}>
+              {t("care.routine.helloName", {
+                name: greeting,
+                defaultValue: "Salom, {{name}}",
+              })}
+            </Text>
+            <Text style={styles.daySub} numberOfLines={2}>
+              {aiPlan?.summary ||
+                t("care.routine.daySub", {
+                  defaultValue: "Mahsulotlaringiz bilan 1 kunlik to‘liq soch parvarishi",
+                })}
+            </Text>
           </View>
-          <Pressable style={styles.refreshBtn} onPress={onRefreshPlan} hitSlop={8}>
-            <Ionicons name="refresh-outline" size={15} color="#F5F5F5" />
-            <Text style={styles.refreshText}>{t("care.quiz.retake")}</Text>
+          <Pressable style={styles.refreshBtn} onPress={() => void syncPlanWithProducts(myProducts, { forceFull: true })}>
+            <Ionicons name="refresh-outline" size={16} color="#111" />
           </Pressable>
         </View>
 
-        <Text style={styles.heroTitle}>{t("care.routine.title")}</Text>
-        <Text style={styles.heroSub}>
-          {aiPlan?.summary || t("care.hubParvarishSub")}
-        </Text>
-
-        <View style={styles.chipRow}>
-          <View style={styles.chipDark}>
-            <Text style={styles.chipDarkText}>{t(`care.conditions.${quiz.condition}`)}</Text>
+        <View style={styles.progressWrap}>
+          <View style={styles.progressTrack}>
+            <View style={[styles.progressFill, { width: `${Math.round(progress * 100)}%` }]} />
           </View>
-          <View style={styles.chipDark}>
-            <Text style={styles.chipDarkText}>{t(`care.textures.${quiz.texture}`)}</Text>
-          </View>
-          <View style={styles.chipDark}>
-            <Text style={styles.chipDarkText}>{t(`care.colors.${quiz.colorStatus}`)}</Text>
-          </View>
-        </View>
-
-        <View style={styles.heroMeta}>
-          <Text style={styles.heroMetaText}>
-            {myProducts.length > 0
-              ? t("care.routine.aiPlanProducts", {
-                  count: myProducts.length,
-                  defaultValue: "{{count}} ta mahsulotingiz asosida",
-                })
-              : t("care.routine.aiPlanNoProducts", {
-                  defaultValue: "Mahsulot qo‘shing — reja aniqroq bo‘ladi",
-                })}
+          <Text style={styles.progressText}>
+            {doneCount}/{tasks.length || 0} · {Math.round(progress * 100)}%
           </Text>
-          {tasks.length > 0 ? (
-            <Text style={styles.heroMetaText}>
-              {doneCount}/{tasks.length}
-            </Text>
-          ) : null}
         </View>
 
-        {myProducts.length > 0 ? (
-          <View style={styles.heroProducts}>
-            {myProducts.slice(0, 5).map((p, idx) => (
-              <Pressable
-                key={p.id}
-                onPress={() => onOpenProduct(p.id)}
-                style={[styles.heroProductAvatar, { marginLeft: idx === 0 ? 0 : -scale(8) }]}
-              >
-                {p.image_url ? (
-                  <Image source={{ uri: p.image_url }} style={styles.heroProductImg} contentFit="cover" />
-                ) : (
-                  <View style={[styles.heroProductImg, styles.heroProductPh]}>
-                    <Ionicons name="flask-outline" size={14} color="#111" />
-                  </View>
-                )}
-              </Pressable>
-            ))}
-            {myProducts.length > 5 ? (
-              <View style={[styles.heroProductAvatar, styles.heroProductMore, { marginLeft: -scale(8) }]}>
-                <Text style={styles.heroProductMoreText}>+{myProducts.length - 5}</Text>
-              </View>
-            ) : null}
+        {remindersOn ? (
+          <View style={styles.remindBanner}>
+            <Ionicons name="notifications" size={14} color="#111" />
+            <Text style={styles.remindText}>
+              {t("care.routine.remindOn", {
+                defaultValue: "Vaqti kelganda eslatma yuboriladi",
+              })}
+            </Text>
           </View>
         ) : null}
-      </LinearGradient>
+      </View>
+
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.modeRow}>
+        {DAY_MODES.map((item) => {
+          const on = mode === item.id;
+          return (
+            <Pressable
+              key={item.id}
+              style={[styles.modeChip, on && styles.modeChipOn]}
+              onPress={() => setMode(item.id)}
+            >
+              <Ionicons name={item.icon} size={14} color={on ? "#fff" : "#111"} />
+              <Text style={[styles.modeChipText, on && styles.modeChipTextOn]}>
+                {t(item.labelKey, {
+                  defaultValue:
+                    item.id === "today"
+                      ? "Bugun"
+                      : item.id === "morning"
+                        ? "Ertalab"
+                        : item.id === "evening"
+                          ? "Kechqurun"
+                          : "Haftalik",
+                })}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </ScrollView>
 
       {aiLoading || aiAppending ? (
         <View style={styles.aiLoadingRow}>
-          <ActivityIndicator size="small" color="#111111" />
+          <ActivityIndicator size="small" color="#111" />
           <Text style={styles.aiLoadingText}>
             {aiAppending
               ? t("care.routine.aiPlanAppending")
@@ -491,179 +566,145 @@ export function CareRoutineSheet({
       ) : null}
 
       {aiError && !aiPlan ? (
-        <Pressable style={styles.aiErrorRow} onPress={onRefreshPlan}>
+        <Pressable
+          style={styles.aiErrorRow}
+          onPress={() => void syncPlanWithProducts(myProducts, { forceFull: true })}
+        >
           <Text style={styles.aiErrorText}>{aiError}</Text>
           <Text style={styles.aiRetry}>{t("care.routine.aiPlanRetry")}</Text>
         </Pressable>
       ) : null}
 
-      <View style={styles.slotRow}>
-        {SLOTS.map((s) => {
-          const on = slot === s;
-          return (
-            <Pressable
-              key={s}
-              style={[styles.slotCard, on && styles.slotCardOn]}
-              onPress={() => setSlot(s)}
-            >
-              <View style={[styles.slotIconWrap, on && styles.slotIconWrapOn]}>
-                <Ionicons
-                  name={SLOT_ICONS[s]}
-                  size={16}
-                  color={on ? "#FFFFFF" : "rgba(17,17,17,0.55)"}
-                />
-              </View>
-              <Text style={[styles.slotLabel, on && styles.slotLabelOn]}>
-                {t(`care.routine.slots.${s}`)}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
+      {myProducts.length === 0 ? (
+        <Pressable style={styles.emptyProducts} onPress={onOpenScan}>
+          <Ionicons name="bag-add-outline" size={28} color="#111" />
+          <Text style={styles.emptyProductsTitle}>{t("care.myProducts.emptyTitle")}</Text>
+          <Text style={styles.emptyProductsSub}>
+            {t("care.routine.needProducts", {
+              defaultValue: "Reja sizning mahsulotlaringiz bilan tuziladi — avval qo‘shing",
+            })}
+          </Text>
+        </Pressable>
+      ) : null}
 
-      <View style={styles.timeline}>
+      <View style={styles.stepStack}>
         {tasks.map((task, index) => {
           const done = !!doneMap[task.id];
-          const isLast = index === tasks.length - 1;
           return (
-            <View key={task.id} style={styles.timelineItem}>
-              <View style={styles.timelineRail}>
-                <Pressable
-                  style={[styles.stepNum, done && styles.stepNumDone]}
-                  onPress={() => void toggleTask(task.id)}
-                >
-                  {done ? (
-                    <Ionicons name="checkmark" size={14} color="#fff" />
-                  ) : (
-                    <Text style={styles.stepNumText}>{index + 1}</Text>
-                  )}
-                </Pressable>
-                {!isLast ? <View style={[styles.timelineLine, done && styles.timelineLineDone]} /> : null}
-              </View>
-
-              <Pressable
-                style={[styles.stepCard, done && styles.stepCardDone]}
-                onPress={() => {
-                  if (task.productId) onOpenProduct(task.productId);
-                  else void toggleTask(task.id);
-                }}
-                onLongPress={() => void toggleTask(task.id)}
-              >
-                <View style={styles.stepHead}>
-                  <View style={[styles.stepIcon, done && styles.stepIconDone]}>
-                    <Ionicons
-                      name={TASK_ICONS[task.icon]}
-                      size={18}
-                      color={done ? "#FFFFFF" : "#111111"}
-                    />
-                  </View>
-                  <View style={styles.stepBody}>
-                    <Text style={[styles.stepTitle, done && styles.stepTitleDone]}>
-                      {task.title}
-                    </Text>
-                    <View style={styles.stepMetaRow}>
-                      {task.time || task.timeHint ? (
-                        <View style={styles.timeBadge}>
-                          <Ionicons name="time-outline" size={11} color="#111" />
-                          <Text style={styles.timeBadgeText}>
-                            {task.time || task.timeHint}
-                          </Text>
-                        </View>
-                      ) : null}
-                      {task.durationMin ? (
-                        <Text style={styles.durationText}>{task.durationMin} daq</Text>
-                      ) : null}
-                    </View>
-                  </View>
+            <View key={task.id} style={[styles.ritualCard, done && styles.ritualCardDone]}>
+              <View style={styles.ritualTop}>
+                <View style={styles.ritualIndex}>
+                  <Text style={styles.ritualIndexText}>{index + 1}</Text>
                 </View>
-                {task.subtitle ? (
-                  <Text style={styles.stepSub} numberOfLines={3}>
-                    {task.subtitle}
+                {(task.time || task.timeHint) ? (
+                  <View style={styles.timePill}>
+                    <Ionicons name="time-outline" size={12} color="#111" />
+                    <Text style={styles.timePillText}>{task.time || task.timeHint}</Text>
+                  </View>
+                ) : null}
+                {task.slot ? (
+                  <Text style={styles.slotTag}>
+                    {task.slot === "morning"
+                      ? t("care.routine.slots.morning")
+                      : task.slot === "evening"
+                        ? t("care.routine.slots.evening")
+                        : t("care.routine.slots.weekly")}
                   </Text>
                 ) : null}
-                {task.productName ? (
-                  <View style={styles.productPill}>
-                    <Ionicons name="flask-outline" size={12} color="#111" />
-                    <Text style={styles.productPillText} numberOfLines={1}>
+                <View style={{ flex: 1 }} />
+                <Pressable
+                  style={[styles.checkBtn, done && styles.checkBtnOn]}
+                  onPress={() => void toggleTask(task.id)}
+                  hitSlop={8}
+                >
+                  {done ? <Ionicons name="checkmark" size={16} color="#fff" /> : null}
+                </Pressable>
+              </View>
+
+              <View style={styles.productBlock}>
+                <Pressable
+                  style={styles.productImgWrap}
+                  onPress={() => (task.productId ? onOpenProduct(task.productId) : undefined)}
+                >
+                  {task.imageUrl ? (
+                    <Image source={{ uri: task.imageUrl }} style={styles.productImg} contentFit="cover" />
+                  ) : (
+                    <View style={[styles.productImg, styles.productPh]}>
+                      <Ionicons name={TASK_ICONS[task.icon]} size={22} color="#111" />
+                    </View>
+                  )}
+                </Pressable>
+
+                <View style={styles.productCopy}>
+                  <Text style={[styles.ritualTitle, done && styles.ritualTitleDone]} numberOfLines={2}>
+                    {task.title}
+                  </Text>
+                  {task.productName ? (
+                    <Text style={styles.productName} numberOfLines={1}>
                       {task.productName}
+                      {task.brand ? ` · ${task.brand}` : ""}
                     </Text>
-                  </View>
-                ) : null}
-              </Pressable>
+                  ) : null}
+                  {task.durationMin ? (
+                    <Text style={styles.durationLabel}>{task.durationMin} daq</Text>
+                  ) : null}
+                </View>
+
+                <Pressable
+                  style={styles.playBtn}
+                  onPress={() => openGuideFor(task)}
+                  accessibilityLabel={t("care.routine.playHow", { defaultValue: "Qanday ishlatish" })}
+                >
+                  <Ionicons name="play" size={18} color="#fff" />
+                </Pressable>
+              </View>
+
+              <View style={styles.howBox}>
+                <Text style={styles.howLabel}>
+                  {t("care.routine.howToUse", { defaultValue: "Qanday ishlatish" })}
+                </Text>
+                <Text style={styles.howText} numberOfLines={4}>
+                  {task.usageHow ||
+                    task.subtitle ||
+                    t("care.routine.howFallback", {
+                      defaultValue: "Play tugmasini bosing — bosqichma-bosqich yo‘riqnoma ochiladi",
+                    })}
+                </Text>
+              </View>
+
+              <View style={styles.ritualActions}>
+                <Pressable style={styles.secondaryAct} onPress={() => openGuideFor(task)}>
+                  <Ionicons name="play-circle-outline" size={16} color="#111" />
+                  <Text style={styles.secondaryActText}>
+                    {t("care.routine.startGuide", { defaultValue: "Yo‘riqnoma" })}
+                  </Text>
+                </Pressable>
+                <Pressable
+                  style={[styles.primaryAct, done && styles.primaryActDone]}
+                  onPress={() => void toggleTask(task.id)}
+                >
+                  <Text style={[styles.primaryActText, done && styles.primaryActTextDone]}>
+                    {done
+                      ? t("care.routine.stepDone", { defaultValue: "Bajarildi" })
+                      : t("care.routine.stepTodo", { defaultValue: "Bajarildi deb belgilash" })}
+                  </Text>
+                </Pressable>
+              </View>
             </View>
           );
         })}
       </View>
 
-      <View style={styles.weekCard}>
-        <View style={styles.weekHead}>
-          <Text style={styles.sectionTitle}>{t("care.weeklyTitle")}</Text>
-          <Text style={styles.weekHint}>{t("care.routine.weekHint")}</Text>
-        </View>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.weekDays}
-        >
-          {weekRows.map((row, idx) => {
-            const on = idx === weekDayIdx;
-            return (
-              <Pressable
-                key={row.day}
-                style={[styles.weekDayChip, on && styles.weekDayChipOn]}
-                onPress={() => setWeekDayIdx(idx)}
-              >
-                <Text style={[styles.weekDayLabel, on && styles.weekDayLabelOn]}>{row.day}</Text>
-                <View style={[styles.weekDot, row.task ? styles.weekDotOn : null, on && styles.weekDotActive]} />
-              </Pressable>
-            );
-          })}
-        </ScrollView>
-        <View style={styles.weekTaskCard}>
-          <View style={styles.weekTaskTop}>
-            <Text style={styles.weekTaskDay}>{selectedWeek?.day}</Text>
-            {selectedWeek?.time ? (
-              <View style={styles.timeBadge}>
-                <Ionicons name="time-outline" size={11} color="#111" />
-                <Text style={styles.timeBadgeText}>{selectedWeek.time}</Text>
-              </View>
-            ) : null}
-          </View>
-          <Text style={styles.weekTaskText}>
-            {selectedWeek?.task || t("care.routine.noWeekTask")}
-          </Text>
-          {selectedWeek?.productName ? (
-            <Pressable
-              style={styles.productPill}
-              onPress={() => {
-                if (selectedWeek.productId) onOpenProduct(Number(selectedWeek.productId));
-              }}
-            >
-              <Ionicons name="flask-outline" size={12} color="#111" />
-              <Text style={styles.productPillText} numberOfLines={1}>
-                {selectedWeek.productName}
-              </Text>
-            </Pressable>
-          ) : null}
-        </View>
-      </View>
-
       <View style={styles.sectionHead}>
         <Text style={styles.sectionTitle}>{t("care.myProducts.title")}</Text>
         <Pressable style={styles.scanLink} onPress={onOpenScan}>
-          <Ionicons name="scan-outline" size={16} color="#111111" />
+          <Ionicons name="scan-outline" size={16} color="#111" />
           <Text style={styles.scanLinkText}>{t("care.myProducts.scan")}</Text>
         </Pressable>
       </View>
 
       {loadingProducts ? (
-        <ActivityIndicator color="#111111" style={{ marginVertical: 12 }} />
-      ) : myProducts.length === 0 ? (
-        <Pressable style={styles.emptyProducts} onPress={onOpenScan}>
-          <Ionicons name="add-circle-outline" size={28} color="#111111" />
-          <Text style={styles.emptyProductsTitle}>{t("care.myProducts.emptyTitle")}</Text>
-          <Text style={styles.emptyProductsSub}>{t("care.myProducts.emptySub")}</Text>
-        </Pressable>
+        <ActivityIndicator color="#111" style={{ marginVertical: 12 }} />
       ) : (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.productRow}>
           {myProducts.map((p) => (
@@ -671,62 +712,51 @@ export function CareRoutineSheet({
               {p.image_url ? (
                 <Image source={{ uri: p.image_url }} style={styles.myCardImg} contentFit="cover" />
               ) : (
-                <View style={[styles.myCardImg, styles.myCardPh]}>
-                  <Ionicons name="flask-outline" size={20} color="#111111" />
+                <View style={[styles.myCardImg, styles.productPh]}>
+                  <Ionicons name="flask-outline" size={20} color="#111" />
                 </View>
               )}
               <Text style={styles.myCardName} numberOfLines={2}>
                 {p.name}
               </Text>
-              {p.brand ? (
-                <Text style={styles.myCardBrand} numberOfLines={1}>
-                  {p.brand}
-                </Text>
-              ) : null}
             </Pressable>
           ))}
+          <Pressable style={styles.addCard} onPress={onOpenCatalog}>
+            <Ionicons name="add" size={22} color="#111" />
+            <Text style={styles.addCardText}>{t("care.myProducts.addShort")}</Text>
+          </Pressable>
         </ScrollView>
       )}
 
-      <View style={[styles.sectionHead, { marginTop: 8 }]}>
-        <Text style={styles.sectionTitle}>{t("care.routine.buyTitle")}</Text>
-        <Pressable onPress={onOpenCatalog}>
-          <Text style={styles.seeAllText}>{t("common.viewAll")}</Text>
-        </Pressable>
-      </View>
-
-      {recommended.length === 0 ? (
-        <Text style={styles.emptyHint}>{t("care.catalog.empty")}</Text>
-      ) : (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.productRow}>
-          {recommended.map(({ product, fit }) => (
-            <Pressable
-              key={product.id}
-              style={styles.recCard}
-              onPress={() => onOpenProduct(product.id)}
-            >
-              <View style={styles.fitBadge}>
-                <Text style={styles.fitBadgeText}>{t("care.routine.fitYou", { pct: fit })}</Text>
-              </View>
-              {product.image_url ? (
-                <Image source={{ uri: product.image_url }} style={styles.recImg} contentFit="cover" />
-              ) : (
-                <View style={[styles.recImg, styles.myCardPh]}>
-                  <Ionicons name="flask-outline" size={24} color="#111111" />
+      {recommended.length > 0 ? (
+        <>
+          <View style={[styles.sectionHead, { marginTop: 8 }]}>
+            <Text style={styles.sectionTitle}>{t("care.routine.buyTitle")}</Text>
+            <Pressable onPress={onOpenCatalog}>
+              <Text style={styles.seeAllText}>{t("common.viewAll")}</Text>
+            </Pressable>
+          </View>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.productRow}>
+            {recommended.map(({ product, fit }) => (
+              <Pressable key={product.id} style={styles.recCard} onPress={() => onOpenProduct(product.id)}>
+                <View style={styles.fitBadge}>
+                  <Text style={styles.fitBadgeText}>{t("care.routine.fitYou", { pct: fit })}</Text>
                 </View>
-              )}
-              <Text style={styles.recName} numberOfLines={2}>
-                {product.name}
-              </Text>
-              {product.brand ? (
-                <Text style={styles.recBrand} numberOfLines={1}>
-                  {product.brand}
+                {product.image_url ? (
+                  <Image source={{ uri: product.image_url }} style={styles.recImg} contentFit="cover" />
+                ) : (
+                  <View style={[styles.recImg, styles.productPh]}>
+                    <Ionicons name="flask-outline" size={22} color="#111" />
+                  </View>
+                )}
+                <Text style={styles.recName} numberOfLines={2}>
+                  {product.name}
                 </Text>
-              ) : null}
-            </Pressable>
-          ))}
-        </ScrollView>
-      )}
+              </Pressable>
+            ))}
+          </ScrollView>
+        </>
+      ) : null}
 
       <Pressable style={styles.profileLink} onPress={onRetakeQuiz}>
         <Text style={styles.profileLinkText}>
@@ -738,128 +768,106 @@ export function CareRoutineSheet({
 }
 
 const styles = StyleSheet.create({
-  sheetScroll: { flex: 1, backgroundColor: "#F4F4F6" },
+  sheetScroll: { flex: 1, backgroundColor: "#EFEDE8" },
   sheetContent: {
     paddingHorizontal: scale(16),
-    paddingTop: verticalScale(10),
+    paddingTop: verticalScale(8),
     paddingBottom: verticalScale(110),
     gap: moderateScale(14),
   },
-  hero: {
+  dayHero: {
     borderRadius: moderateScale(28),
+    backgroundColor: "#FFFFFF",
     padding: moderateScale(18),
-    gap: moderateScale(10),
-    overflow: "hidden",
+    gap: moderateScale(12),
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(17,17,17,0.06)",
   },
-  heroTop: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  heroBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: moderateScale(5),
-    paddingHorizontal: scale(10),
-    paddingVertical: verticalScale(5),
-    borderRadius: 999,
-    backgroundColor: "rgba(255,255,255,0.12)",
-  },
-  heroBadgeText: {
+  dayHeroTop: { flexDirection: "row", gap: moderateScale(10), alignItems: "flex-start" },
+  dayEyebrow: {
     ...morphFont,
     fontSize: fontSize(11),
     fontWeight: "700",
-    color: "#F5F5F5",
+    letterSpacing: 0.6,
+    textTransform: "uppercase",
+    color: "rgba(17,17,17,0.4)",
   },
-  refreshBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: moderateScale(4),
-    paddingHorizontal: scale(10),
-    paddingVertical: verticalScale(6),
-    borderRadius: 999,
-    backgroundColor: "rgba(255,255,255,0.1)",
-  },
-  refreshText: {
+  dayHello: {
     ...morphFont,
-    fontSize: fontSize(12),
-    fontWeight: "600",
-    color: "#F5F5F5",
-  },
-  heroTitle: {
-    ...morphFont,
+    marginTop: verticalScale(4),
     fontSize: fontSize(24),
     fontWeight: "700",
-    color: "#FFFFFF",
+    color: "#111",
     letterSpacing: -0.5,
   },
-  heroSub: {
+  daySub: {
     ...morphFont,
+    marginTop: verticalScale(4),
     fontSize: fontSize(13),
-    lineHeight: fontSize(19),
-    color: "rgba(255,255,255,0.72)",
+    lineHeight: fontSize(18),
+    color: "rgba(17,17,17,0.55)",
   },
-  chipRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: moderateScale(6),
-    marginTop: verticalScale(2),
-  },
-  chipDark: {
-    paddingHorizontal: scale(10),
-    paddingVertical: verticalScale(5),
-    borderRadius: 999,
-    backgroundColor: "rgba(255,255,255,0.12)",
-  },
-  chipDarkText: {
-    ...morphFont,
-    fontSize: fontSize(11),
-    fontWeight: "600",
-    color: "#FFFFFF",
-  },
-  heroMeta: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: verticalScale(4),
-  },
-  heroMetaText: {
-    ...morphFont,
-    fontSize: fontSize(11),
-    fontWeight: "600",
-    color: "rgba(255,255,255,0.55)",
-  },
-  heroProducts: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: verticalScale(4),
-  },
-  heroProductAvatar: {
-    width: scale(32),
-    height: scale(32),
-    borderRadius: moderateScale(16),
-    borderWidth: 2,
-    borderColor: "#2C2C30",
-    overflow: "hidden",
-    backgroundColor: "#EEE",
-  },
-  heroProductImg: { width: "100%", height: "100%" },
-  heroProductPh: { alignItems: "center", justifyContent: "center" },
-  heroProductMore: {
+  refreshBtn: {
+    width: scale(40),
+    height: scale(40),
+    borderRadius: moderateScale(14),
+    backgroundColor: "#F3F1EC",
     alignItems: "center",
     justifyContent: "center",
+  },
+  progressWrap: { gap: moderateScale(6) },
+  progressTrack: {
+    height: 8,
+    borderRadius: 999,
+    backgroundColor: "#E8E4DC",
+    overflow: "hidden",
+  },
+  progressFill: {
+    height: "100%",
+    borderRadius: 999,
     backgroundColor: "#111",
   },
-  heroProductMoreText: {
+  progressText: {
     ...morphFont,
-    fontSize: fontSize(10),
-    fontWeight: "700",
-    color: "#fff",
+    fontSize: fontSize(11),
+    fontWeight: "600",
+    color: "rgba(17,17,17,0.45)",
   },
+  remindBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: moderateScale(6),
+    paddingVertical: verticalScale(8),
+    paddingHorizontal: scale(10),
+    borderRadius: moderateScale(12),
+    backgroundColor: "#F3F1EC",
+  },
+  remindText: {
+    ...morphFont,
+    flex: 1,
+    fontSize: fontSize(12),
+    fontWeight: "600",
+    color: "#111",
+  },
+  modeRow: { gap: moderateScale(8), paddingRight: scale(4) },
+  modeChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: moderateScale(6),
+    paddingHorizontal: scale(14),
+    paddingVertical: verticalScale(10),
+    borderRadius: 999,
+    backgroundColor: "#FFFFFF",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(17,17,17,0.08)",
+  },
+  modeChipOn: { backgroundColor: "#111", borderColor: "#111" },
+  modeChipText: { ...morphFont, fontSize: fontSize(12), fontWeight: "700", color: "#111" },
+  modeChipTextOn: { color: "#fff" },
   aiLoadingRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: moderateScale(8),
-    paddingVertical: verticalScale(6),
     paddingHorizontal: scale(4),
   },
   aiLoadingText: { ...morphFont, fontSize: fontSize(12), color: "rgba(17,17,17,0.5)" },
@@ -870,259 +878,9 @@ const styles = StyleSheet.create({
     gap: moderateScale(4),
   },
   aiErrorText: { ...morphFont, fontSize: fontSize(12), color: "#991B1B" },
-  aiRetry: { ...morphFont, fontSize: fontSize(12), fontWeight: "700", color: "#111111" },
-  slotRow: {
-    flexDirection: "row",
-    gap: moderateScale(8),
-  },
-  slotCard: {
-    flex: 1,
-    alignItems: "center",
-    gap: moderateScale(6),
-    paddingVertical: verticalScale(12),
-    borderRadius: moderateScale(18),
-    backgroundColor: "#FFFFFF",
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(17,17,17,0.06)",
-  },
-  slotCardOn: {
-    backgroundColor: "#111111",
-    borderColor: "#111111",
-  },
-  slotIconWrap: {
-    width: scale(32),
-    height: scale(32),
-    borderRadius: moderateScale(12),
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#F0F0F2",
-  },
-  slotIconWrapOn: {
-    backgroundColor: "rgba(255,255,255,0.15)",
-  },
-  slotLabel: {
-    ...morphFont,
-    fontSize: fontSize(11),
-    fontWeight: "700",
-    color: "rgba(17,17,17,0.55)",
-  },
-  slotLabelOn: { color: "#FFFFFF" },
-  timeline: { gap: 0 },
-  timelineItem: {
-    flexDirection: "row",
-    gap: moderateScale(12),
-    minHeight: verticalScale(88),
-  },
-  timelineRail: {
-    width: scale(28),
-    alignItems: "center",
-  },
-  stepNum: {
-    width: scale(28),
-    height: scale(28),
-    borderRadius: moderateScale(14),
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#FFFFFF",
-    borderWidth: 1.5,
-    borderColor: "rgba(17,17,17,0.12)",
-    zIndex: 1,
-  },
-  stepNumDone: {
-    backgroundColor: "#111111",
-    borderColor: "#111111",
-  },
-  stepNumText: {
-    ...morphFont,
-    fontSize: fontSize(12),
-    fontWeight: "700",
-    color: "#111",
-  },
-  timelineLine: {
-    flex: 1,
-    width: 2,
-    backgroundColor: "rgba(17,17,17,0.1)",
-    marginVertical: verticalScale(2),
-  },
-  timelineLineDone: {
-    backgroundColor: "rgba(17,17,17,0.35)",
-  },
-  stepCard: {
-    flex: 1,
-    marginBottom: verticalScale(10),
-    padding: moderateScale(14),
-    borderRadius: moderateScale(20),
-    backgroundColor: "#FFFFFF",
-    gap: moderateScale(8),
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(17,17,17,0.06)",
-  },
-  stepCardDone: {
-    backgroundColor: "#F7F7F8",
-    opacity: 0.92,
-  },
-  stepHead: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: moderateScale(10),
-  },
-  stepIcon: {
-    width: scale(40),
-    height: scale(40),
-    borderRadius: moderateScale(14),
-    backgroundColor: "#F0F0F2",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  stepIconDone: {
-    backgroundColor: "#111111",
-  },
-  stepBody: { flex: 1, minWidth: 0, gap: 2 },
-  stepTitle: {
-    ...morphFont,
-    fontSize: fontSize(15),
-    fontWeight: "700",
-    color: "#111111",
-  },
-  stepTitleDone: {
-    color: "rgba(17,17,17,0.4)",
-    textDecorationLine: "line-through",
-  },
-  stepMetaRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: moderateScale(8),
-    marginTop: verticalScale(2),
-    flexWrap: "wrap",
-  },
-  timeBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: moderateScale(4),
-    paddingHorizontal: scale(8),
-    paddingVertical: verticalScale(3),
-    borderRadius: 999,
-    backgroundColor: "#F0F0F2",
-  },
-  timeBadgeText: {
-    ...morphFont,
-    fontSize: fontSize(11),
-    fontWeight: "700",
-    color: "#111",
-  },
-  durationText: {
-    ...morphFont,
-    fontSize: fontSize(11),
-    fontWeight: "600",
-    color: "rgba(17,17,17,0.4)",
-  },
-  stepSub: {
-    ...morphFont,
-    fontSize: fontSize(12),
-    lineHeight: fontSize(17),
-    color: "rgba(17,17,17,0.5)",
-  },
-  productPill: {
-    alignSelf: "flex-start",
-    flexDirection: "row",
-    alignItems: "center",
-    gap: moderateScale(5),
-    paddingHorizontal: scale(10),
-    paddingVertical: verticalScale(5),
-    borderRadius: 999,
-    backgroundColor: "#F0F0F2",
-  },
-  productPillText: {
-    ...morphFont,
-    fontSize: fontSize(11),
-    fontWeight: "600",
-    color: "#111",
-    maxWidth: scale(200),
-  },
-  weekCard: {
-    borderRadius: moderateScale(24),
-    backgroundColor: "#FFFFFF",
-    padding: moderateScale(16),
-    gap: moderateScale(12),
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(17,17,17,0.06)",
-  },
-  weekHead: { gap: moderateScale(4) },
-  weekHint: {
-    ...morphFont,
-    fontSize: fontSize(12),
-    color: "rgba(17,17,17,0.45)",
-  },
-  weekDays: {
-    gap: moderateScale(8),
-    paddingRight: scale(4),
-  },
-  weekDayChip: {
-    width: scale(48),
-    alignItems: "center",
-    gap: moderateScale(6),
-    paddingVertical: verticalScale(10),
-    borderRadius: moderateScale(16),
-    backgroundColor: "#F4F4F6",
-  },
-  weekDayChipOn: {
-    backgroundColor: "#111111",
-  },
-  weekDayLabel: {
-    ...morphFont,
-    fontSize: fontSize(12),
-    fontWeight: "700",
-    color: "#111",
-  },
-  weekDayLabelOn: { color: "#fff" },
-  weekDot: {
-    width: 5,
-    height: 5,
-    borderRadius: 3,
-    backgroundColor: "transparent",
-  },
-  weekDotOn: {
-    backgroundColor: "rgba(17,17,17,0.25)",
-  },
-  weekDotActive: {
-    backgroundColor: "#fff",
-  },
-  weekTaskCard: {
-    borderRadius: moderateScale(16),
-    backgroundColor: "#F7F7F8",
-    padding: moderateScale(14),
-    gap: moderateScale(8),
-  },
-  weekTaskTop: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: moderateScale(8),
-  },
-  weekTaskDay: {
-    ...morphFont,
-    fontSize: fontSize(12),
-    fontWeight: "700",
-    color: "rgba(17,17,17,0.45)",
-  },
-  weekTaskText: {
-    ...morphFont,
-    fontSize: fontSize(14),
-    lineHeight: fontSize(20),
-    fontWeight: "600",
-    color: "#111",
-  },
-  sectionHead: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginTop: verticalScale(4),
-  },
-  sectionTitle: { ...morphFont, fontSize: fontSize(16), fontWeight: "700", color: "#111" },
-  scanLink: { flexDirection: "row", alignItems: "center", gap: moderateScale(4) },
-  scanLinkText: { ...morphFont, fontSize: fontSize(13), fontWeight: "600", color: "#111111" },
+  aiRetry: { ...morphFont, fontSize: fontSize(12), fontWeight: "700", color: "#111" },
   emptyProducts: {
-    borderRadius: moderateScale(20),
+    borderRadius: moderateScale(22),
     borderWidth: 1,
     borderColor: "rgba(17,17,17,0.12)",
     borderStyle: "dashed",
@@ -1131,54 +889,178 @@ const styles = StyleSheet.create({
     gap: moderateScale(6),
     backgroundColor: "#FFFFFF",
   },
-  emptyProductsTitle: { ...morphFont, fontSize: fontSize(14), fontWeight: "600", color: "#111" },
+  emptyProductsTitle: { ...morphFont, fontSize: fontSize(14), fontWeight: "700", color: "#111" },
   emptyProductsSub: {
     ...morphFont,
     fontSize: fontSize(12),
-    color: "rgba(26,26,26,0.45)",
+    color: "rgba(26,26,26,0.5)",
     textAlign: "center",
     lineHeight: fontSize(16),
   },
-  productRow: { gap: moderateScale(12), paddingRight: scale(4) },
+  stepStack: { gap: moderateScale(12) },
+  ritualCard: {
+    borderRadius: moderateScale(26),
+    backgroundColor: "#FFFFFF",
+    padding: moderateScale(14),
+    gap: moderateScale(12),
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(17,17,17,0.06)",
+  },
+  ritualCardDone: { opacity: 0.78, backgroundColor: "#F7F5F1" },
+  ritualTop: { flexDirection: "row", alignItems: "center", gap: moderateScale(8) },
+  ritualIndex: {
+    width: scale(26),
+    height: scale(26),
+    borderRadius: moderateScale(10),
+    backgroundColor: "#111",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  ritualIndexText: { ...morphFont, fontSize: fontSize(12), fontWeight: "700", color: "#fff" },
+  timePill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: scale(8),
+    paddingVertical: verticalScale(4),
+    borderRadius: 999,
+    backgroundColor: "#F3F1EC",
+  },
+  timePillText: { ...morphFont, fontSize: fontSize(11), fontWeight: "700", color: "#111" },
+  slotTag: {
+    ...morphFont,
+    fontSize: fontSize(10),
+    fontWeight: "700",
+    color: "rgba(17,17,17,0.4)",
+    textTransform: "uppercase",
+  },
+  checkBtn: {
+    width: scale(30),
+    height: scale(30),
+    borderRadius: moderateScale(15),
+    borderWidth: 1.5,
+    borderColor: "rgba(17,17,17,0.18)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  checkBtnOn: { backgroundColor: "#111", borderColor: "#111" },
+  productBlock: { flexDirection: "row", alignItems: "center", gap: moderateScale(12) },
+  productImgWrap: {
+    width: scale(72),
+    height: scale(72),
+    borderRadius: moderateScale(18),
+    overflow: "hidden",
+    backgroundColor: "#F3F1EC",
+  },
+  productImg: { width: "100%", height: "100%" },
+  productPh: { alignItems: "center", justifyContent: "center", backgroundColor: "#F3F1EC" },
+  productCopy: { flex: 1, minWidth: 0, gap: 2 },
+  ritualTitle: { ...morphFont, fontSize: fontSize(16), fontWeight: "700", color: "#111" },
+  ritualTitleDone: { textDecorationLine: "line-through", color: "rgba(17,17,17,0.4)" },
+  productName: { ...morphFont, fontSize: fontSize(13), fontWeight: "600", color: "rgba(17,17,17,0.65)" },
+  durationLabel: { ...morphFont, fontSize: fontSize(11), color: "rgba(17,17,17,0.4)", marginTop: 2 },
+  playBtn: {
+    width: scale(48),
+    height: scale(48),
+    borderRadius: moderateScale(24),
+    backgroundColor: "#111",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  howBox: {
+    borderRadius: moderateScale(16),
+    backgroundColor: "#F7F5F1",
+    padding: moderateScale(12),
+    gap: moderateScale(4),
+  },
+  howLabel: {
+    ...morphFont,
+    fontSize: fontSize(11),
+    fontWeight: "700",
+    color: "rgba(17,17,17,0.4)",
+    textTransform: "uppercase",
+    letterSpacing: 0.4,
+  },
+  howText: {
+    ...morphFont,
+    fontSize: fontSize(13),
+    lineHeight: fontSize(18),
+    color: "#111",
+  },
+  ritualActions: { flexDirection: "row", gap: moderateScale(8) },
+  secondaryAct: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: moderateScale(6),
+    paddingVertical: verticalScale(12),
+    borderRadius: 999,
+    backgroundColor: "#F3F1EC",
+  },
+  secondaryActText: { ...morphFont, fontSize: fontSize(12), fontWeight: "700", color: "#111" },
+  primaryAct: {
+    flex: 1.2,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: verticalScale(12),
+    borderRadius: 999,
+    backgroundColor: "#111",
+  },
+  primaryActDone: { backgroundColor: "#D8D4CB" },
+  primaryActText: { ...morphFont, fontSize: fontSize(12), fontWeight: "700", color: "#fff" },
+  primaryActTextDone: { color: "#111" },
+  sectionHead: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: verticalScale(4),
+  },
+  sectionTitle: { ...morphFont, fontSize: fontSize(16), fontWeight: "700", color: "#111" },
+  scanLink: { flexDirection: "row", alignItems: "center", gap: moderateScale(4) },
+  scanLinkText: { ...morphFont, fontSize: fontSize(13), fontWeight: "600", color: "#111" },
+  productRow: { gap: moderateScale(10), paddingRight: scale(4) },
   myCard: {
-    width: scale(120),
+    width: scale(110),
     borderRadius: moderateScale(18),
     backgroundColor: "#FFFFFF",
     padding: moderateScale(10),
     gap: moderateScale(6),
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(0,0,0,0.04)",
   },
-  myCardImg: { width: "100%", height: verticalScale(88), borderRadius: moderateScale(12) },
-  myCardPh: { alignItems: "center", justifyContent: "center", backgroundColor: "#F0F0F0" },
+  myCardImg: { width: "100%", height: verticalScale(80), borderRadius: moderateScale(12) },
   myCardName: { ...morphFont, fontSize: fontSize(12), fontWeight: "600", color: "#111" },
-  myCardBrand: { ...morphFont, fontSize: fontSize(10), color: "rgba(26,26,26,0.45)" },
-  recCard: {
-    width: scale(160),
-    borderRadius: moderateScale(20),
+  addCard: {
+    width: scale(96),
+    borderRadius: moderateScale(18),
     backgroundColor: "#FFFFFF",
-    padding: moderateScale(12),
+    borderWidth: 1,
+    borderStyle: "dashed",
+    borderColor: "rgba(17,17,17,0.15)",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 4,
+    padding: moderateScale(10),
+  },
+  addCardText: { ...morphFont, fontSize: fontSize(11), fontWeight: "600", color: "#111" },
+  recCard: {
+    width: scale(148),
+    borderRadius: moderateScale(18),
+    backgroundColor: "#FFFFFF",
+    padding: moderateScale(10),
     gap: moderateScale(8),
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(0,0,0,0.04)",
   },
   fitBadge: {
     alignSelf: "flex-start",
     paddingHorizontal: scale(8),
-    paddingVertical: verticalScale(4),
+    paddingVertical: verticalScale(3),
     borderRadius: 999,
-    backgroundColor: "#F0F0F0",
+    backgroundColor: "#F3F1EC",
   },
-  fitBadgeText: { ...morphFont, fontSize: fontSize(10), fontWeight: "700", color: "#111111" },
-  recImg: { width: "100%", height: verticalScale(110), borderRadius: moderateScale(14) },
-  recName: { ...morphFont, fontSize: fontSize(13), fontWeight: "600", color: "#111" },
-  recBrand: { ...morphFont, fontSize: fontSize(11), color: "rgba(26,26,26,0.45)" },
-  emptyHint: { ...morphFont, fontSize: fontSize(13), color: "rgba(26,26,26,0.45)" },
+  fitBadgeText: { ...morphFont, fontSize: fontSize(10), fontWeight: "700", color: "#111" },
+  recImg: { width: "100%", height: verticalScale(96), borderRadius: moderateScale(12) },
+  recName: { ...morphFont, fontSize: fontSize(12), fontWeight: "600", color: "#111" },
   seeAllText: { ...morphFont, fontSize: fontSize(13), fontWeight: "600", color: "rgba(26,26,26,0.45)" },
-  profileLink: {
-    alignSelf: "center",
-    paddingVertical: verticalScale(12),
-  },
+  profileLink: { alignSelf: "center", paddingVertical: verticalScale(12) },
   profileLinkText: {
     ...morphFont,
     fontSize: fontSize(12),

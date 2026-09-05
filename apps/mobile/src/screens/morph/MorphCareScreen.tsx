@@ -200,7 +200,7 @@ const likeStyles = StyleSheet.create({
 export function MorphCareScreen({ navigation, route }: Props) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const { goMorph, navigateRootTab } = useShellNavigation();
   const [access, setAccess] = useState<{ allowed: boolean; detail?: string } | null>({
     allowed: true,
@@ -1816,9 +1816,16 @@ export function MorphCareScreen({ navigation, route }: Props) {
         quiz={quiz}
         catalog={catalog}
         selectedDate={selectedDate}
+        userName={
+          user?.full_name ||
+          [user?.first_name, user?.last_name].filter(Boolean).join(" ") ||
+          user?.first_name ||
+          null
+        }
         onOpenCatalog={openCatalog}
         onOpenScan={openTarkib}
         onOpenProduct={openProduct}
+        onOpenGuide={openProductGuide}
         onRetakeQuiz={() => setStep(0)}
       />
     </View>
@@ -1827,7 +1834,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: "#FAFAFA" },
-  routineRoot: { flex: 1, backgroundColor: "#FAFAFA" },
+  routineRoot: { flex: 1, backgroundColor: "#EFEDE8" },
   onboardRoot: { flex: 1, backgroundColor: "#FAFAFA" },
   center: { alignItems: "center", justifyContent: "center" },
   pad: { flex: 1, paddingHorizontal: scale(20) },
