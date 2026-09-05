@@ -217,6 +217,8 @@ export type AiCarePlanTask = {
   title: string;
   subtitle: string;
   time_hint?: string;
+  time?: string;
+  duration_min?: number | null;
   icon: "water" | "flask" | "sparkles" | "shield" | "leaf" | "cut" | string;
   product_id?: number | null;
   product_name?: string;
@@ -227,7 +229,13 @@ export type AiCarePlan = {
   morning: AiCarePlanTask[];
   evening: AiCarePlanTask[];
   weekly: AiCarePlanTask[];
-  weekly_schedule: { day: string; task: string }[];
+  weekly_schedule: {
+    day: string;
+    task: string;
+    time?: string;
+    product_id?: number | null;
+    product_name?: string;
+  }[];
   tips: string[];
   avoid: string[];
 };

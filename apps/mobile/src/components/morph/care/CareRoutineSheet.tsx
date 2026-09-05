@@ -75,22 +75,64 @@ const WEEK_ORDER = ["Du", "Se", "Chor", "Pay", "Ju", "Shan", "Ya"] as const;
 function mapAiTasks(
   plan: AiCarePlan | null,
   slot: RoutineSlot,
+  products: MyCareProduct[],
 ): RoutineTask[] | null {
   if (!plan) return null;
   const rows = plan[slot];
   if (!Array.isArray(rows) || rows.length === 0) return null;
+
+  const byId = new Map(products.map((p) => [p.id, p]));
+  const byCat = new Map<string, MyCareProduct>();
+  for (const p of products) {
+    const cat = (p.category || "").toLowerCase();
+    if (cat && !byCat.has(cat)) byCat.set(cat, p);
+  }
+
+  const GENERIC = /^(shampun|konditsioner|balsam|maska|yog'|yog|spray|sprey|serum)/i;
+
   return rows.map((t) => {
     const icon = (TASK_ICONS[t.icon as RoutineTask["icon"]]
       ? t.icon
       : "sparkles") as RoutineTask["icon"];
+
+    let productId = t.product_id ?? undefined;
+    let productName = t.product_name || undefined;
+
+    if (productId && byId.has(productId)) {
+      productName = byId.get(productId)!.name;
+    } else if ((!productId || !productName || GENERIC.test(productName)) && products.length) {
+      const hint =
+        /shamp/i.test(t.title + (productName || ""))
+          ? "shampoo"
+          : /kondits|balsam/i.test(t.title + (productName || ""))
+            ? "balsam"
+            : /mask/i.test(t.title + (productName || ""))
+              ? "mask"
+              : /yog|oil/i.test(t.title + (productName || ""))
+                ? "oil"
+                : /sprey|spray|himoya/i.test(t.title + (productName || ""))
+                  ? "spray"
+                  : null;
+      const hit = hint ? byCat.get(hint) : undefined;
+      if (hit) {
+        productId = hit.id;
+        productName = hit.name;
+      }
+    }
+
+    const clock = (t.time || "").trim();
+    const timeHint = t.time_hint || clock || undefined;
+
     return {
       id: t.id,
       title: t.title,
-      subtitle: t.subtitle || t.product_name || "",
+      subtitle: t.subtitle || productName || "",
       icon,
-      productId: t.product_id ?? undefined,
-      productName: t.product_name || undefined,
-      timeHint: t.time_hint || undefined,
+      productId,
+      productName,
+      time: clock || undefined,
+      timeHint,
+      durationMin: typeof t.duration_min === "number" ? t.duration_min : undefined,
     };
   });
 }
@@ -138,7 +180,10 @@ export function CareRoutineSheet({
     () => buildDailyRoutine(quiz, slot, myProducts),
     [quiz, slot, myProducts],
   );
-  const aiTasks = useMemo(() => mapAiTasks(aiPlan, slot), [aiPlan, slot]);
+  const aiTasks = useMemo(
+    () => mapAiTasks(aiPlan, slot, myProducts),
+    [aiPlan, slot, myProducts],
+  );
   const tasks = aiTasks ?? fallbackTasks;
 
   const doneCount = useMemo(
@@ -156,12 +201,18 @@ export function CareRoutineSheet({
   const weekRows = useMemo(() => {
     const schedule = aiPlan?.weekly_schedule ?? [];
     return WEEK_ORDER.map((day) => {
-      const match = schedule.find(
-        (r) => r.day.toLowerCase().startsWith(day.toLowerCase().slice(0, 2))
-          || r.day === day
-          || r.day.startsWith(day.slice(0, 2)),
-      );
-      return { day, task: match?.task ?? "" };
+      const match = schedule.find((r) => {
+        const d = (r.day || "").toLowerCase();
+        const key = day.toLowerCase();
+        return d === key || d.startsWith(key.slice(0, 2)) || key.startsWith(d.slice(0, 2));
+      });
+      return {
+        day,
+        task: match?.task ?? "",
+        time: match?.time ?? "",
+        productName: match?.product_name ?? "",
+        productId: match?.product_id ?? null,
+      };
     });
   }, [aiPlan?.weekly_schedule]);
 
@@ -386,7 +437,14 @@ export function CareRoutineSheet({
 
         <View style={styles.heroMeta}>
           <Text style={styles.heroMetaText}>
-            {t("care.routine.aiPlanProducts", { count: myProducts.length })}
+            {myProducts.length > 0
+              ? t("care.routine.aiPlanProducts", {
+                  count: myProducts.length,
+                  defaultValue: "{{count}} ta mahsulotingiz asosida",
+                })
+              : t("care.routine.aiPlanNoProducts", {
+                  defaultValue: "Mahsulot qo‘shing — reja aniqroq bo‘ladi",
+                })}
           </Text>
           {tasks.length > 0 ? (
             <Text style={styles.heroMetaText}>
@@ -503,9 +561,19 @@ export function CareRoutineSheet({
                     <Text style={[styles.stepTitle, done && styles.stepTitleDone]}>
                       {task.title}
                     </Text>
-                    {task.timeHint ? (
-                      <Text style={styles.stepTime}>{task.timeHint}</Text>
-                    ) : null}
+                    <View style={styles.stepMetaRow}>
+                      {task.time || task.timeHint ? (
+                        <View style={styles.timeBadge}>
+                          <Ionicons name="time-outline" size={11} color="#111" />
+                          <Text style={styles.timeBadgeText}>
+                            {task.time || task.timeHint}
+                          </Text>
+                        </View>
+                      ) : null}
+                      {task.durationMin ? (
+                        <Text style={styles.durationText}>{task.durationMin} daq</Text>
+                      ) : null}
+                    </View>
                   </View>
                 </View>
                 {task.subtitle ? (
@@ -552,10 +620,31 @@ export function CareRoutineSheet({
           })}
         </ScrollView>
         <View style={styles.weekTaskCard}>
-          <Text style={styles.weekTaskDay}>{selectedWeek?.day}</Text>
+          <View style={styles.weekTaskTop}>
+            <Text style={styles.weekTaskDay}>{selectedWeek?.day}</Text>
+            {selectedWeek?.time ? (
+              <View style={styles.timeBadge}>
+                <Ionicons name="time-outline" size={11} color="#111" />
+                <Text style={styles.timeBadgeText}>{selectedWeek.time}</Text>
+              </View>
+            ) : null}
+          </View>
           <Text style={styles.weekTaskText}>
             {selectedWeek?.task || t("care.routine.noWeekTask")}
           </Text>
+          {selectedWeek?.productName ? (
+            <Pressable
+              style={styles.productPill}
+              onPress={() => {
+                if (selectedWeek.productId) onOpenProduct(Number(selectedWeek.productId));
+              }}
+            >
+              <Ionicons name="flask-outline" size={12} color="#111" />
+              <Text style={styles.productPillText} numberOfLines={1}>
+                {selectedWeek.productName}
+              </Text>
+            </Pressable>
+          ) : null}
         </View>
       </View>
 
@@ -899,7 +988,29 @@ const styles = StyleSheet.create({
     color: "rgba(17,17,17,0.4)",
     textDecorationLine: "line-through",
   },
-  stepTime: {
+  stepMetaRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: moderateScale(8),
+    marginTop: verticalScale(2),
+    flexWrap: "wrap",
+  },
+  timeBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: moderateScale(4),
+    paddingHorizontal: scale(8),
+    paddingVertical: verticalScale(3),
+    borderRadius: 999,
+    backgroundColor: "#F0F0F2",
+  },
+  timeBadgeText: {
+    ...morphFont,
+    fontSize: fontSize(11),
+    fontWeight: "700",
+    color: "#111",
+  },
+  durationText: {
     ...morphFont,
     fontSize: fontSize(11),
     fontWeight: "600",
@@ -980,7 +1091,13 @@ const styles = StyleSheet.create({
     borderRadius: moderateScale(16),
     backgroundColor: "#F7F7F8",
     padding: moderateScale(14),
-    gap: moderateScale(4),
+    gap: moderateScale(8),
+  },
+  weekTaskTop: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: moderateScale(8),
   },
   weekTaskDay: {
     ...morphFont,

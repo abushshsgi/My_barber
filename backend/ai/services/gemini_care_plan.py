@@ -21,160 +21,6 @@ SLOT_KEYS = ("morning", "evening", "weekly")
 ICON_KEYS = frozenset({"water", "flask", "sparkles", "shield", "leaf", "cut"})
 
 
-def _build_prompt(
-    *,
-    condition: str,
-    texture: str,
-    color_status: str,
-    scalp: str,
-    concerns: list[str],
-    products: list[dict[str, Any]],
-    gender: str = "",
-) -> str:
-    lines: list[str] = []
-    for p in products[:24]:
-        pid = p.get("id")
-        name = str(p.get("name") or "").strip() or "Nomsiz"
-        brand = str(p.get("brand") or "").strip()
-        cat = str(p.get("category") or "other").strip()
-        usage = str(p.get("usage_uz") or "").strip()[:160]
-        purpose = str(p.get("purpose_uz") or "").strip()[:120]
-        bit = f"- id={pid} | {name}"
-        if brand:
-            bit += f" ({brand})"
-        bit += f" | category={cat}"
-        if purpose:
-            bit += f" | purpose: {purpose}"
-        if usage:
-            bit += f" | usage: {usage}"
-        percent = p.get("match_percent")
-        if percent is not None:
-            bit += f" | fit={percent}%"
-        reasons = p.get("fit_reasons") if isinstance(p.get("fit_reasons"), list) else []
-        if reasons:
-            bit += f" | why: {'; '.join(str(x) for x in reasons[:2])}"
-        steps = p.get("usage_steps") if isinstance(p.get("usage_steps"), list) else []
-        if steps and isinstance(steps[0], dict):
-            bit += f" | step: {str(steps[0].get('desc') or '')[:80]}"
-        lines.append(bit)
-    catalog = "\n".join(lines) if lines else "(foydalanuvchida mahsulot yo'q — umumiy tavsiya bering)"
-    concern_s = ", ".join(concerns) if concerns else "none"
-    scalp_s = scalp or "unknown"
-    gender_s = (gender or "").strip().lower()
-    gender_line = ""
-    if gender_s in ("male", "female"):
-        gender_line = f"\n- gender: {gender_s}"
-
-    return f"""You are a senior trichologist for Morf AI (MyBarber).
-Build a PERSONAL hair-care routine for THIS user using THEIR products when possible.
-
-USER HAIR PROFILE:
-- condition: {condition}
-- texture: {texture}
-- color_status: {color_status}
-- scalp: {scalp_s}
-- concerns: {concern_s}{gender_line}
-
-USER PRODUCTS (prefer these by name in every task; respect fit% and why):
-{catalog}
-
-RULES:
-1. Output RAW JSON only (no markdown).
-2. All user-facing strings MUST be Uzbek (Latin script), short and actionable.
-3. morning / evening: 3–5 steps each. weekly: 3–4 steps.
-4. When a user product fits a step, set product_id to that id and product_name to its name.
-5. If no product fits, product_id=null and give a generic product_name hint (e.g. "Shampun").
-6. time_hint: when to do it (e.g. "Ertalab", "Yuvishdan keyin", "Haftada 1 marta").
-7. icon must be one of: water, flask, sparkles, shield, leaf, cut.
-8. summary: 1–2 sentences about the overall plan for this hair + products.
-9. weekly_schedule: 4–7 day entries with day short label (Du/Se/Chor/…) and task.
-
-OUTPUT SCHEMA:
-{{
-  "summary": "...",
-  "morning": [
-    {{
-      "id": "m1",
-      "title": "...",
-      "subtitle": "...",
-      "time_hint": "Ertalab",
-      "icon": "water",
-      "product_id": 12,
-      "product_name": "..."
-    }}
-  ],
-  "evening": [],
-  "weekly": [],
-  "weekly_schedule": [{{ "day": "Du", "task": "..." }}],
-  "tips": ["...", "..."],
-  "avoid": ["...", "..."]
-}}
-"""
-
-
-def _normalize_task(raw: Any, *, prefix: str, idx: int) -> dict[str, Any] | None:
-    if not isinstance(raw, dict):
-        return None
-    title = str(raw.get("title") or "").strip()
-    if not title:
-        return None
-    icon = str(raw.get("icon") or "sparkles").strip().lower()
-    if icon not in ICON_KEYS:
-        icon = "sparkles"
-    pid = raw.get("product_id")
-    product_id: int | None = None
-    if isinstance(pid, int) and pid > 0:
-        product_id = pid
-    elif isinstance(pid, str) and pid.isdigit():
-        product_id = int(pid)
-    return {
-        "id": str(raw.get("id") or f"{prefix}{idx}"),
-        "title": title[:80],
-        "subtitle": str(raw.get("subtitle") or "").strip()[:140],
-        "time_hint": str(raw.get("time_hint") or "").strip()[:60],
-        "icon": icon,
-        "product_id": product_id,
-        "product_name": str(raw.get("product_name") or "").strip()[:80],
-    }
-
-
-def _normalize_plan(data: dict[str, Any]) -> dict[str, Any]:
-    slots: dict[str, list[dict[str, Any]]] = {}
-    for key in SLOT_KEYS:
-        rows: list[dict[str, Any]] = []
-        raw_list = data.get(key)
-        if isinstance(raw_list, list):
-            for i, item in enumerate(raw_list[:6]):
-                task = _normalize_task(item, prefix=key[0], idx=i + 1)
-                if task:
-                    rows.append(task)
-        slots[key] = rows
-
-    schedule: list[dict[str, str]] = []
-    raw_sched = data.get("weekly_schedule")
-    if isinstance(raw_sched, list):
-        for item in raw_sched[:7]:
-            if not isinstance(item, dict):
-                continue
-            day = str(item.get("day") or "").strip()[:8]
-            task = str(item.get("task") or "").strip()[:100]
-            if day and task:
-                schedule.append({"day": day, "task": task})
-
-    tips = [str(x).strip()[:120] for x in (data.get("tips") or []) if str(x).strip()][:5]
-    avoid = [str(x).strip()[:120] for x in (data.get("avoid") or []) if str(x).strip()][:5]
-
-    return {
-        "summary": str(data.get("summary") or "").strip()[:280],
-        "morning": slots["morning"],
-        "evening": slots["evening"],
-        "weekly": slots["weekly"],
-        "weekly_schedule": schedule,
-        "tips": tips,
-        "avoid": avoid,
-    }
-
-
 def _format_products(products: list[dict[str, Any]]) -> str:
     lines: list[str] = []
     for p in products[:24]:
@@ -202,7 +48,230 @@ def _format_products(products: list[dict[str, Any]]) -> str:
         if steps and isinstance(steps[0], dict):
             bit += f" | step: {str(steps[0].get('desc') or '')[:80]}"
         lines.append(bit)
-    return "\n".join(lines) if lines else "(foydalanuvchida mahsulot yo'q — umumiy tavsiya bering)"
+    return "\n".join(lines) if lines else "(foydalanuvchida mahsulot yo'q)"
+
+
+def _normalize_clock(raw: Any) -> str:
+    """Return HH:MM or empty."""
+    s = str(raw or "").strip()
+    if not s:
+        return ""
+    s = s.replace(".", ":")
+    parts = s.split(":")
+    if len(parts) < 2:
+        return ""
+    try:
+        h = int(parts[0].strip())
+        m = int("".join(ch for ch in parts[1].strip() if ch.isdigit())[:2] or "0")
+    except ValueError:
+        return ""
+    if h < 0 or h > 23 or m < 0 or m > 59:
+        return ""
+    return f"{h:02d}:{m:02d}"
+
+
+def _wash_architecture(condition: str) -> str:
+    return {
+        "oily": "Yuvish 3–4×/hafta (masalan Du, Chor, Ju, Yak). Boshqa kunlar: ildizni yangilash / yengil leave-in.",
+        "dry": "Yuvish 2×/hafta (masalan Se, Shan). Boshqa kunlar: leave-in / suv bilan yangilash.",
+        "damaged": "Yuvish 2×/hafta + 1 maska kechasi. Har kuni shampun yo‘q.",
+        "normal": "Yuvish 2–3×/hafta. Oraliq kunlarda yengil styling.",
+    }.get(condition, "Yuvish 2–3×/hafta.")
+
+
+def _build_prompt(
+    *,
+    condition: str,
+    texture: str,
+    color_status: str,
+    scalp: str,
+    concerns: list[str],
+    products: list[dict[str, Any]],
+    gender: str = "",
+) -> str:
+    catalog = _format_products(products)
+    has_products = bool(products)
+    concern_s = ", ".join(concerns) if concerns else "none"
+    scalp_s = scalp or "unknown"
+    gender_s = (gender or "").strip().lower()
+    gender_line = ""
+    if gender_s in ("male", "female"):
+        gender_line = f"\n- gender: {gender_s}"
+
+    product_rule = (
+        "CRITICAL: User HAS products. Almost EVERY step MUST use one of them "
+        "(product_id + exact product_name from the list). Do NOT invent generic "
+        "'Shampun'/'Konditsioner' if a matching category exists. "
+        "Map: shampoo→shampoo, balsam/conditioner→balsam, mask→mask, oil→oil, spray→spray."
+        if has_products
+        else "User has NO products yet — still give a timed architecture with product_name as "
+        "category hints (e.g. 'Namlantiruvchi shampun') and product_id=null."
+    )
+
+    return f"""You are a senior trichologist + routine ARCHITECT for Morf AI (MyBarber).
+Build a REAL daily/weekly schedule with CLOCK TIMES — not a vague tip list.
+
+USER HAIR PROFILE:
+- condition: {condition}
+- texture: {texture}
+- color_status: {color_status}
+- scalp: {scalp_s}
+- concerns: {concern_s}{gender_line}
+
+USER PRODUCTS:
+{catalog}
+
+{product_rule}
+
+ARCHITECTURE RULES:
+1. Output RAW JSON only (no markdown). All user strings in Uzbek Latin.
+2. morning: 3–5 steps, times 06:30–09:30 ascending (e.g. 07:00 → 07:08 → 07:15).
+3. evening: 3–5 steps, times 20:00–22:30 ascending.
+4. Each morning/evening/weekly task MUST include:
+   - "time": "HH:MM" (24h, REQUIRED)
+   - "time_hint": clock + short context (e.g. "07:15 · Yuvishdan keyin")
+   - "duration_min": integer 1–30
+   - title, subtitle (how-to for THIS hair)
+   - icon: water|flask|sparkles|shield|leaf|cut
+   - product_id / product_name per rules above
+5. weekly: 3–4 deep-care steps (mask, scalp, trim…) with concrete time like "20:30".
+6. weekly_schedule: EXACTLY 7 days in order Du,Se,Chor,Pay,Ju,Shan,Ya — each with:
+   day, time (HH:MM), task, product_name, product_id (or null).
+   Wash architecture: {_wash_architecture(condition)}
+   Non-wash days still get a short timed task (leave-in, scalp massage, pillowcare…).
+7. summary: 1–2 sentences naming wash frequency + focus + products if any.
+8. tips: 3 tips; avoid: 3 things to skip.
+9. Sort every slot by "time" ascending.
+10. NEVER use vague-only time_hint like "Ertalab" without HH:MM.
+
+OUTPUT SCHEMA:
+{{
+  "summary": "...",
+  "morning": [
+    {{
+      "id": "m1",
+      "title": "...",
+      "subtitle": "...",
+      "time": "07:00",
+      "time_hint": "07:00 · Ertalab",
+      "duration_min": 5,
+      "icon": "water",
+      "product_id": 12,
+      "product_name": "Exact product name"
+    }}
+  ],
+  "evening": [],
+  "weekly": [],
+  "weekly_schedule": [
+    {{ "day": "Du", "time": "07:00", "task": "...", "product_id": 12, "product_name": "..." }}
+  ],
+  "tips": ["...", "..."],
+  "avoid": ["...", "..."]
+}}
+"""
+
+
+def _normalize_task(raw: Any, *, prefix: str, idx: int) -> dict[str, Any] | None:
+    if not isinstance(raw, dict):
+        return None
+    title = str(raw.get("title") or "").strip()
+    if not title:
+        return None
+    icon = str(raw.get("icon") or "sparkles").strip().lower()
+    if icon not in ICON_KEYS:
+        icon = "sparkles"
+    pid = raw.get("product_id")
+    product_id: int | None = None
+    if isinstance(pid, int) and pid > 0:
+        product_id = pid
+    elif isinstance(pid, str) and pid.isdigit():
+        product_id = int(pid)
+
+    clock = _normalize_clock(raw.get("time") or raw.get("clock"))
+    time_hint = str(raw.get("time_hint") or "").strip()[:60]
+    if clock and clock not in time_hint:
+        time_hint = f"{clock} · {time_hint}" if time_hint else clock
+    elif not time_hint and clock:
+        time_hint = clock
+
+    duration = raw.get("duration_min")
+    duration_min: int | None = None
+    if isinstance(duration, int) and 1 <= duration <= 60:
+        duration_min = duration
+    elif isinstance(duration, str) and duration.isdigit():
+        n = int(duration)
+        if 1 <= n <= 60:
+            duration_min = n
+
+    return {
+        "id": str(raw.get("id") or f"{prefix}{idx}"),
+        "title": title[:80],
+        "subtitle": str(raw.get("subtitle") or "").strip()[:140],
+        "time": clock,
+        "time_hint": time_hint[:60],
+        "duration_min": duration_min,
+        "icon": icon,
+        "product_id": product_id,
+        "product_name": str(raw.get("product_name") or "").strip()[:80],
+    }
+
+
+def _normalize_schedule_row(item: dict[str, Any]) -> dict[str, Any] | None:
+    day = str(item.get("day") or "").strip()[:8]
+    task = str(item.get("task") or "").strip()[:120]
+    if not day or not task:
+        return None
+    clock = _normalize_clock(item.get("time"))
+    pid = item.get("product_id")
+    product_id: int | None = None
+    if isinstance(pid, int) and pid > 0:
+        product_id = pid
+    elif isinstance(pid, str) and pid.isdigit():
+        product_id = int(pid)
+    return {
+        "day": day,
+        "time": clock,
+        "task": task,
+        "product_id": product_id,
+        "product_name": str(item.get("product_name") or "").strip()[:80],
+    }
+
+
+def _normalize_plan(data: dict[str, Any]) -> dict[str, Any]:
+    slots: dict[str, list[dict[str, Any]]] = {}
+    for key in SLOT_KEYS:
+        rows: list[dict[str, Any]] = []
+        raw_list = data.get(key)
+        if isinstance(raw_list, list):
+            for i, item in enumerate(raw_list[:6]):
+                task = _normalize_task(item, prefix=key[0], idx=i + 1)
+                if task:
+                    rows.append(task)
+        rows.sort(key=lambda r: r.get("time") or "99:99")
+        slots[key] = rows
+
+    schedule: list[dict[str, Any]] = []
+    raw_sched = data.get("weekly_schedule")
+    if isinstance(raw_sched, list):
+        for item in raw_sched[:7]:
+            if not isinstance(item, dict):
+                continue
+            row = _normalize_schedule_row(item)
+            if row:
+                schedule.append(row)
+
+    tips = [str(x).strip()[:120] for x in (data.get("tips") or []) if str(x).strip()][:5]
+    avoid = [str(x).strip()[:120] for x in (data.get("avoid") or []) if str(x).strip()][:5]
+
+    return {
+        "summary": str(data.get("summary") or "").strip()[:280],
+        "morning": slots["morning"],
+        "evening": slots["evening"],
+        "weekly": slots["weekly"],
+        "weekly_schedule": schedule,
+        "tips": tips,
+        "avoid": avoid,
+    }
 
 
 def _build_append_prompt(
@@ -224,7 +293,6 @@ def _build_append_prompt(
     if gender_s in ("male", "female"):
         gender_line = f"\n- gender: {gender_s}"
 
-    # Keep existing plan compact for context — do not ask model to rewrite it.
     existing_compact = {
         "morning": existing_plan.get("morning") or [],
         "evening": existing_plan.get("evening") or [],
@@ -234,9 +302,8 @@ def _build_append_prompt(
     existing_json = json.dumps(existing_compact, ensure_ascii=False)[:3500]
 
     return f"""You are a senior trichologist for Morf AI (MyBarber).
-The user ALREADY has a care plan. They just ADDED new product(s).
-You must ONLY create NEW routine steps for the NEW products.
-Do NOT rewrite, renumber, remove, or alter any existing steps.
+The user ALREADY has a timed care architecture. They ADDED new product(s).
+ONLY create NEW timed steps for the NEW products. Do NOT rewrite existing steps.
 
 USER HAIR PROFILE:
 - condition: {condition}
@@ -245,23 +312,21 @@ USER HAIR PROFILE:
 - scalp: {scalp_s}
 - concerns: {concern_s}{gender_line}
 
-EXISTING PLAN (read-only context — leave untouched):
+EXISTING PLAN (read-only):
 {existing_json}
 
-NEW PRODUCTS ONLY (create steps for these):
+NEW PRODUCTS ONLY:
 {catalog}
 
 RULES:
-1. Output RAW JSON only (no markdown).
-2. All user-facing strings MUST be Uzbek (Latin script), short and actionable.
-3. Return ONLY new steps to APPEND. Prefer 1–2 steps per new product, split across morning/evening/weekly as appropriate.
-4. Every new step MUST set product_id to the new product id and product_name to its name.
-5. Use unique ids that do NOT collide with existing ids (prefix with "n").
-6. time_hint: when to do it.
-7. icon must be one of: water, flask, sparkles, shield, leaf, cut.
-8. summary: ONE short sentence about what was ADDED only (not a full plan rewrite).
-9. weekly_schedule: ONLY extra day notes for the new product(s). Do not repeat old days unless adding a new task for that day.
-10. tips / avoid: only NEW tips for the new product(s), or empty arrays.
+1. RAW JSON only. Uzbek Latin strings.
+2. 1–2 new steps per new product across morning/evening/weekly as fits.
+3. Every new step MUST have product_id + exact product_name, "time": "HH:MM", time_hint, duration_min.
+4. Choose times that do NOT collide with existing clocks (e.g. +5–10 min after a related step).
+5. Unique ids prefixed with "n".
+6. weekly_schedule: only EXTRA day notes for new products (day+time+task+product).
+7. summary: one short sentence about what was ADDED.
+8. tips/avoid: only new ones or [].
 
 OUTPUT SCHEMA:
 {{
@@ -269,7 +334,7 @@ OUTPUT SCHEMA:
   "morning": [],
   "evening": [],
   "weekly": [],
-  "weekly_schedule": [{{ "day": "Du", "task": "..." }}],
+  "weekly_schedule": [{{ "day": "Se", "time": "20:30", "task": "...", "product_id": 9, "product_name": "..." }}],
   "tips": [],
   "avoid": []
 }}
@@ -368,6 +433,7 @@ def merge_care_plan_patch(
                 tid = f"n{tid}{i + 1}"
             existing_ids.add(tid)
             out[key].append({**row, "id": tid})
+        out[key].sort(key=lambda r: (r.get("time") or "99:99") if isinstance(r, dict) else "99:99")
 
     seen_sched = {
         (str(r.get("day")), str(r.get("task")))
@@ -381,7 +447,15 @@ def merge_care_plan_patch(
         if not key[0] or not key[1] or key in seen_sched:
             continue
         seen_sched.add(key)
-        out["weekly_schedule"].append({"day": key[0][:8], "task": key[1][:100]})
+        out["weekly_schedule"].append(
+            {
+                "day": key[0][:8],
+                "time": _normalize_clock(row.get("time")),
+                "task": key[1][:120],
+                "product_id": row.get("product_id"),
+                "product_name": str(row.get("product_name") or "").strip()[:80],
+            }
+        )
 
     for tip in patch.get("tips") or []:
         s = str(tip).strip()[:120]
@@ -394,7 +468,7 @@ def merge_care_plan_patch(
 
     out["tips"] = out["tips"][:8]
     out["avoid"] = out["avoid"][:8]
-    out["weekly_schedule"] = out["weekly_schedule"][:10]
+    out["weekly_schedule"] = out["weekly_schedule"][:14]
     return out
 
 

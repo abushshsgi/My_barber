@@ -17,6 +17,8 @@ export type RoutineTask = {
   productId?: number;
   productName?: string;
   timeHint?: string;
+  time?: string;
+  durationMin?: number;
 };
 
 export type CareQuizAnswers = {
@@ -228,49 +230,51 @@ export function buildDailyRoutine(
   if (slot === "morning") {
     const wash =
       condition === "oily"
-        ? { title: "Yengil shampun", subtitle: "Faqat ildizni yuving", icon: "water" as const, timeHint: "Ertalab" }
+        ? { title: "Yengil shampun", subtitle: "Faqat ildizni yuving", icon: "water" as const, time: "07:00", timeHint: "07:00 · Ertalab", durationMin: 5 }
         : condition === "dry" || condition === "damaged"
-          ? { title: "Namlantiruvchi yuvish", subtitle: "Iliq suv, yumshoq massaj", icon: "water" as const, timeHint: "Ertalab" }
-          : { title: "Balans shampun", subtitle: "2–3 kunda bir yuvish", icon: "water" as const, timeHint: "Ertalab" };
+          ? { title: "Namlantiruvchi yuvish", subtitle: "Iliq suv, yumshoq massaj", icon: "water" as const, time: "07:00", timeHint: "07:00 · Ertalab", durationMin: 6 }
+          : { title: "Balans shampun", subtitle: "2–3 kunda bir yuvish", icon: "water" as const, time: "07:00", timeHint: "07:00 · Ertalab", durationMin: 5 };
 
     const style =
       texture === "curly"
-        ? { title: "Leave-in krem", subtitle: "Nam sochga, diffuzer bilan", icon: "leaf" as const, timeHint: "Yuvishdan keyin" }
-        : { title: "Styling krem", subtitle: "Kaftlarda eritib, kam miqdor", icon: "sparkles" as const, timeHint: "Yuvishdan keyin" };
+        ? { title: "Leave-in krem", subtitle: "Nam sochga, diffuzer bilan", icon: "leaf" as const, time: "07:15", timeHint: "07:15 · Yuvishdan keyin", durationMin: 4 }
+        : { title: "Styling krem", subtitle: "Kaftlarda eritib, kam miqdor", icon: "sparkles" as const, time: "07:15", timeHint: "07:15 · Yuvishdan keyin", durationMin: 3 };
 
     return ([
       { id: "m-wash", ...wash, productHint: "shampoo" },
-      { id: "m-condition", title: "Konditsioner", subtitle: "Faqat uchlarga, 1–2 daqiqa", icon: "flask" as const, productHint: "balsam", timeHint: "Shampundan keyin" },
+      { id: "m-condition", title: "Konditsioner", subtitle: "Faqat uchlarga, 1–2 daqiqa", icon: "flask" as const, productHint: "balsam", time: "07:08", timeHint: "07:08 · Shampundan keyin", durationMin: 3 },
       { id: "m-style", ...style, productHint: "spray" },
       ...(condition === "damaged"
-        ? [{ id: "m-heat", title: "Issiqlik himoyasi", subtitle: "Fen oldidan sprey", icon: "shield" as const, productHint: "spray", timeHint: "Fen oldidan" }]
+        ? [{ id: "m-heat", title: "Issiqlik himoyasi", subtitle: "Fen oldidan sprey", icon: "shield" as const, productHint: "spray", time: "07:20", timeHint: "07:20 · Fen oldidan", durationMin: 1 }]
         : []),
     ] as RoutineTask[]).map(withProduct);
   }
 
   if (slot === "evening") {
     return ([
-      { id: "e-brush", title: "Yengil tarash", subtitle: "Quruq sochda, yumshoq cho'tka", icon: "cut" as const, timeHint: "Kechqurun" },
+      { id: "e-brush", title: "Yengil tarash", subtitle: "Quruq sochda, yumshoq cho'tka", icon: "cut" as const, time: "21:00", timeHint: "21:00 · Kechqurun", durationMin: 3 },
       {
         id: "e-oil",
         title: condition === "oily" ? "Scalp massaj" : "Uchlar uchun yog'",
         subtitle: condition === "oily" ? "5 daqiqa, yengil bosim" : "2–3 tomchi, uchlarga",
         icon: "leaf" as const,
         productHint: "oil",
-        timeHint: "Uxlamasdan oldin",
+        time: "21:10",
+        timeHint: "21:10 · Uxlamasdan oldin",
+        durationMin: 5,
       },
-      { id: "e-prep", title: "Ertaga rejasi", subtitle: "Nam sochni yumshoq sochiq bilan quriting", icon: "sparkles" as const, timeHint: "Kechqurun" },
+      { id: "e-prep", title: "Ertaga rejasi", subtitle: "Nam sochni yumshoq sochiq bilan quriting", icon: "sparkles" as const, time: "21:20", timeHint: "21:20 · Kechqurun", durationMin: 2 },
       ...(colorStatus !== "natural"
-        ? [{ id: "e-color", title: "Rang himoyasi", subtitle: "Color-safe mahsulotdan foydalaning", icon: "shield" as const, productHint: "shampoo", timeHint: "Kerak bo'lganda" }]
+        ? [{ id: "e-color", title: "Rang himoyasi", subtitle: "Color-safe mahsulotdan foydalaning", icon: "shield" as const, productHint: "shampoo", time: "21:25", timeHint: "21:25 · Kerak bo'lganda", durationMin: 2 }]
         : []),
     ] as RoutineTask[]).map(withProduct);
   }
 
   return ([
-    { id: "w-mask", title: "Chuqur maska", subtitle: condition === "damaged" ? "Protein + namlik" : "10 daqiqa parvarish", icon: "flask" as const, productHint: "mask", timeHint: "Haftada 1×" },
-    { id: "w-scalp", title: "Scalp parvarishi", subtitle: condition === "oily" ? "Balans peel yoki skrab" : "Yengil massaj", icon: "water" as const, timeHint: "Haftada 1×" },
-    { id: "w-trim", title: "Uchlarni tekshirish", subtitle: "Ajralish belgilarini kuzating", icon: "cut" as const, timeHint: "Yakshanba" },
-    { id: "w-reset", title: "Haftalik reset", subtitle: "Ortiqcha styling qoldiqlarini yuvib tashlang", icon: "sparkles" as const, timeHint: "Hafta oxiri" },
+    { id: "w-mask", title: "Chuqur maska", subtitle: condition === "damaged" ? "Protein + namlik" : "10 daqiqa parvarish", icon: "flask" as const, productHint: "mask", time: "20:30", timeHint: "20:30 · Haftada 1×", durationMin: 15 },
+    { id: "w-scalp", title: "Scalp parvarishi", subtitle: condition === "oily" ? "Balans peel yoki skrab" : "Yengil massaj", icon: "water" as const, time: "20:45", timeHint: "20:45 · Haftada 1×", durationMin: 5 },
+    { id: "w-trim", title: "Uchlarni tekshirish", subtitle: "Ajralish belgilarini kuzating", icon: "cut" as const, time: "11:00", timeHint: "11:00 · Yakshanba", durationMin: 5 },
+    { id: "w-reset", title: "Haftalik reset", subtitle: "Ortiqcha styling qoldiqlarini yuvib tashlang", icon: "sparkles" as const, time: "19:00", timeHint: "19:00 · Hafta oxiri", durationMin: 10 },
   ] as RoutineTask[]).map(withProduct);
 }
 
@@ -281,16 +285,25 @@ export type CachedCarePlan = {
     morning: Array<Record<string, unknown>>;
     evening: Array<Record<string, unknown>>;
     weekly: Array<Record<string, unknown>>;
-    weekly_schedule: { day: string; task: string }[];
+    weekly_schedule: {
+      day: string;
+      task: string;
+      time?: string;
+      product_id?: number | null;
+      product_name?: string;
+    }[];
     tips: string[];
     avoid: string[];
   };
   productIds: number[];
   profileKey: string;
   updatedAt: string;
+  /** Bump to invalidate old vague plans without clock times. */
+  schemaVersion?: number;
 };
 
 const CARE_PLAN_CACHE_KEY = "mysaloon.morphAi.carePlanCache";
+export const CARE_PLAN_SCHEMA_VERSION = 2;
 
 export function careProfileKey(quiz: CareQuizAnswers): string {
   return `${quiz.condition}|${quiz.texture}|${quiz.colorStatus}`;
@@ -306,6 +319,7 @@ export async function loadCachedCarePlan(): Promise<CachedCarePlan | null> {
     if (!raw) return null;
     const parsed = JSON.parse(raw) as CachedCarePlan;
     if (!parsed?.plan || !Array.isArray(parsed.productIds) || !parsed.profileKey) return null;
+    if ((parsed.schemaVersion ?? 1) < CARE_PLAN_SCHEMA_VERSION) return null;
     return parsed;
   } catch {
     return null;
@@ -313,7 +327,10 @@ export async function loadCachedCarePlan(): Promise<CachedCarePlan | null> {
 }
 
 export async function saveCachedCarePlan(cache: CachedCarePlan): Promise<void> {
-  await AsyncStorage.setItem(CARE_PLAN_CACHE_KEY, JSON.stringify(cache));
+  await AsyncStorage.setItem(
+    CARE_PLAN_CACHE_KEY,
+    JSON.stringify({ ...cache, schemaVersion: CARE_PLAN_SCHEMA_VERSION }),
+  );
 }
 
 /** Drop tasks tied to removed products; keep the rest unchanged. */
