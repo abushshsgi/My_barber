@@ -16,6 +16,7 @@ import {
   type AiCarePlan,
   type CareProduct,
 } from "../../../api/care";
+import { HairGrowthTrackerSheet } from "./HairGrowthTrackerSheet";
 import { resolveMediaUrl } from "../../../api/media";
 import {
   buildDailyRoutine,
@@ -626,6 +627,8 @@ export function CareRoutineSheet({
           <Ionicons name="chevron-forward" size={16} color="#111" />
         </Pressable>
       </View>
+
+      <HairGrowthTrackerSheet myProducts={myProducts} />
 
       {scheduleReady && (editingSchedule || !schedule) ? (
         <View style={styles.scheduleCard}>

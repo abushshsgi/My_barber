@@ -285,6 +285,7 @@ from ai.product_barcode_views import (
     ProductBarcodeLookupView,
 )
 from ai.care_views import (
+    CareGrowthForecastView,
     CareMyProductDeleteView,
     CareMyProductListCreateView,
     CarePlanGenerateView,
@@ -581,6 +582,7 @@ api_routes = [
     path("ai/care/my-products/", CareMyProductListCreateView.as_view()),
     path("ai/care/my-products/<int:product_id>/", CareMyProductDeleteView.as_view()),
     path("ai/care/plan/", CarePlanGenerateView.as_view()),
+    path("ai/care/growth-forecast/", CareGrowthForecastView.as_view()),
     path("ai/care/shelf/", CareShelfListCreateView.as_view()),
     path("ai/care/shelf/estimate/", CareShelfEstimateView.as_view()),
     path("ai/care/shelf/<int:item_id>/", CareShelfDetailView.as_view()),

@@ -24,6 +24,7 @@ from ai.services.care_refill_tracker import (
 from ai.services.care_match import recommend_products, suitability_for_user
 from ai.services.errors import AiStyleError
 from ai.services.gemini_care_plan import generate_care_plan
+from ai.services.gemini_growth_forecast import generate_hair_growth_forecast
 from ai.services.gemini_sos_style import generate_sos_fix
 from ai.unthrottled import UnthrottledAPIView
 from subscriptions.services import can_use_morph_care
@@ -345,6 +346,51 @@ class CarePlanGenerateView(UnthrottledAPIView):
 
         usage = plan.pop("_usage", None)
         return Response({"plan": plan, "usage": usage})
+
+
+class CareGrowthForecastView(UnthrottledAPIView):
+    """POST — Hair Growth & Health Tracker uchun 3 oylik prognoz."""
+
+    permission_classes = [IsAuthenticatedCustomer]
+
+    def post(self, request):
+        if not can_use_morph_care(request.user):
+            return Response(
+                {"detail": "Morph AI Parvarish Pro obunasida mavjud."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        try:
+            current_length_cm = float(request.data.get("current_length_cm"))
+        except (TypeError, ValueError):
+            return Response({"detail": "current_length_cm raqam bo'lishi kerak."}, status=400)
+        if current_length_cm <= 0:
+            return Response({"detail": "current_length_cm 0 dan katta bo'lishi kerak."}, status=400)
+
+        raw_count = request.data.get("check_ins_count")
+        try:
+            check_ins_count = int(raw_count if raw_count is not None else 0)
+        except (TypeError, ValueError):
+            check_ins_count = 0
+        check_ins_count = max(0, min(4, check_ins_count))
+
+        raw_products = request.data.get("products_used")
+        products_used = (
+            [str(x or "").strip() for x in raw_products[:16] if str(x or "").strip()]
+            if isinstance(raw_products, list)
+            else []
+        )
+
+        try:
+            forecast = generate_hair_growth_forecast(
+                current_length_cm=current_length_cm,
+                check_ins_count=check_ins_count,
+                products_used=products_used,
+            )
+        except AiStyleError as exc:
+            return Response({"detail": str(exc)}, status=exc.status or 502)
+
+        usage = forecast.pop("_usage", None)
+        return Response({"forecast": forecast, "usage": usage})
 
 
 SOS_TIME_CHOICES = {"2min", "5-10min", "15min+"}

@@ -466,3 +466,121 @@ export function stripPlanProducts<T extends CachedCarePlan["plan"]>(
   };
 }
 
+export type HairGrowthDensity = "sparse" | "medium" | "thick";
+
+export type HairGrowthCheckIn = {
+  id: string;
+  created_at: string;
+  length_cm: number;
+  density: HairGrowthDensity;
+  products_used: string[];
+  photo_data_url?: string;
+};
+
+export type HairGrowthForecastStatus = "EXCELLENT" | "NORMAL" | "NEEDS_IMPROVEMENT";
+
+export type HairGrowthForecast = {
+  projected_length_3_months: number;
+  growth_rate_status: HairGrowthForecastStatus;
+  ai_commentary: string;
+  recommended_action: string;
+  updated_at: string;
+};
+
+export type HairGrowthTrackerState = {
+  check_ins: HairGrowthCheckIn[];
+  forecast: HairGrowthForecast | null;
+};
+
+const HAIR_GROWTH_TRACKER_KEY = "mysaloon.morphAi.hairGrowthTracker";
+
+function isDensity(v: unknown): v is HairGrowthDensity {
+  return v === "sparse" || v === "medium" || v === "thick";
+}
+
+function normalizeCheckIn(row: unknown): HairGrowthCheckIn | null {
+  if (!row || typeof row !== "object") return null;
+  const src = row as Record<string, unknown>;
+  const lengthRaw = Number(src.length_cm);
+  if (!Number.isFinite(lengthRaw)) return null;
+  const createdAt = String(src.created_at || "").trim();
+  if (!createdAt) return null;
+  const densityRaw = src.density;
+  if (!isDensity(densityRaw)) return null;
+  const products = Array.isArray(src.products_used)
+    ? src.products_used.map((x) => String(x || "").trim()).filter(Boolean).slice(0, 12)
+    : [];
+  const photo = typeof src.photo_data_url === "string" && src.photo_data_url.trim()
+    ? src.photo_data_url.trim()
+    : undefined;
+
+  return {
+    id: String(src.id || `${Date.now()}`),
+    created_at: createdAt,
+    length_cm: Math.max(0, Math.min(200, Number(lengthRaw.toFixed(1)))),
+    density: densityRaw,
+    products_used: products,
+    photo_data_url: photo,
+  };
+}
+
+function normalizeForecast(row: unknown): HairGrowthForecast | null {
+  if (!row || typeof row !== "object") return null;
+  const src = row as Record<string, unknown>;
+  const projected = Number(src.projected_length_3_months);
+  const status = String(src.growth_rate_status || "").trim().toUpperCase();
+  if (!Number.isFinite(projected)) return null;
+  if (status !== "EXCELLENT" && status !== "NORMAL" && status !== "NEEDS_IMPROVEMENT") return null;
+  return {
+    projected_length_3_months: Math.max(0, Math.min(300, Number(projected.toFixed(1)))),
+    growth_rate_status: status,
+    ai_commentary: String(src.ai_commentary || "").trim().slice(0, 220),
+    recommended_action: String(src.recommended_action || "").trim().slice(0, 180),
+    updated_at: String(src.updated_at || new Date().toISOString()),
+  };
+}
+
+export async function loadHairGrowthTracker(): Promise<HairGrowthTrackerState> {
+  try {
+    const raw = await AsyncStorage.getItem(HAIR_GROWTH_TRACKER_KEY);
+    if (!raw) {
+      return { check_ins: [], forecast: null };
+    }
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    const checkInsRaw = Array.isArray(parsed.check_ins) ? parsed.check_ins : [];
+    const checkIns = checkInsRaw
+      .map(normalizeCheckIn)
+      .filter((row): row is HairGrowthCheckIn => row != null)
+      .sort((a, b) => a.created_at.localeCompare(b.created_at))
+      .slice(-24);
+    return {
+      check_ins: checkIns,
+      forecast: normalizeForecast(parsed.forecast),
+    };
+  } catch {
+    return { check_ins: [], forecast: null };
+  }
+}
+
+export async function saveHairGrowthTracker(payload: HairGrowthTrackerState): Promise<void> {
+  const cleanedCheckIns = [...payload.check_ins]
+    .map(normalizeCheckIn)
+    .filter((row): row is HairGrowthCheckIn => row != null)
+    .sort((a, b) => a.created_at.localeCompare(b.created_at))
+    .slice(-24);
+  const cleaned: HairGrowthTrackerState = {
+    check_ins: cleanedCheckIns,
+    forecast: payload.forecast ? normalizeForecast(payload.forecast) : null,
+  };
+  await AsyncStorage.setItem(HAIR_GROWTH_TRACKER_KEY, JSON.stringify(cleaned));
+}
+
+export function countRecentCheckIns(checkIns: HairGrowthCheckIn[], days = 28): number {
+  const now = Date.now();
+  const threshold = now - Math.max(1, days) * 24 * 60 * 60 * 1000;
+  return checkIns.filter((row) => {
+    const ts = Date.parse(row.created_at);
+    return Number.isFinite(ts) && ts >= threshold;
+  }).length;
+}
+

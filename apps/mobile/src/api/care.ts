@@ -455,3 +455,33 @@ export async function removeMyCareProductApi(productId: number): Promise<void> {
     method: "DELETE",
   });
 }
+
+export type HairGrowthForecastResponse = {
+  projected_length_3_months: number;
+  growth_rate_status: "EXCELLENT" | "NORMAL" | "NEEDS_IMPROVEMENT";
+  ai_commentary: string;
+  recommended_action: string;
+};
+
+export async function generateHairGrowthForecast(body: {
+  current_length_cm: number;
+  check_ins_count: number;
+  products_used: string[];
+}): Promise<HairGrowthForecastResponse> {
+  const res = await apiFetch("/api/v1/ai/care/growth-forecast/", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+  const data = (await res.json().catch(() => null)) as
+    | { forecast?: HairGrowthForecastResponse; detail?: string }
+    | null;
+  if (!res.ok) {
+    throw new Error(
+      data && typeof data.detail === "string"
+        ? data.detail
+        : "Soch o'sish prognozi yaratilmagan.",
+    );
+  }
+  if (!data?.forecast) throw new Error("Soch o'sish prognozi javobi noto'g'ri.");
+  return data.forecast;
+}
