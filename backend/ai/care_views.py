@@ -8,8 +8,19 @@ from rest_framework.response import Response
 from rest_framework import status
 
 from accounts.customer_permissions import IsAuthenticatedCustomer
-from ai.care_serializers import CareProductSerializer, HairCareProfileSerializer
-from ai.models import CareProduct, CareProductLike, CareUserProduct, HairCareProfile
+from ai.care_serializers import (
+    CareProductSerializer,
+    CareShelfEstimateInputSerializer,
+    CareShelfItemSerializer,
+    HairCareProfileSerializer,
+)
+from ai.models import CareProduct, CareProductLike, CareShelfItem, CareUserProduct, HairCareProfile
+from ai.services.care_refill_tracker import (
+    STATUS_EXPIRED,
+    STATUS_REFILL_SOON,
+    build_refill_estimate,
+    calculate_refill_metrics,
+)
 from ai.services.care_match import recommend_products, suitability_for_user
 from ai.services.errors import AiStyleError
 from ai.services.gemini_care_plan import generate_care_plan
@@ -356,6 +367,14 @@ def _pick_choices(raw, allowed: set[str], limit: int) -> list[str]:
     return out
 
 
+def _as_bool(raw, default: bool = True) -> bool:
+    if raw is None:
+        return default
+    if isinstance(raw, bool):
+        return raw
+    return str(raw).strip().lower() not in {"0", "false", "no", "off"}
+
+
 class CareSosFixView(UnthrottledAPIView):
     """POST — "Bad Hair Day" tezkor styling yechimi (salon tavsiyasisiz)."""
 
@@ -399,6 +418,240 @@ class CareSosFixView(UnthrottledAPIView):
         )
         usage = fix.pop("_usage", None)
         return Response({"fix": fix, "usage": usage})
+
+
+def _shelf_status_label(*, status_flag: str, days_left: int, days_to_pao: int) -> str:
+    if status_flag == STATUS_EXPIRED:
+        return "Muddati o'tgan (PAO)"
+    if days_to_pao <= 7:
+        return f"PAO tugashiga {max(days_to_pao, 0)} kun qoldi"
+    if status_flag == STATUS_REFILL_SOON:
+        return "1 haftada tugaydi — Yangilash vaqti keldi"
+    return f"Yana {max(days_left, 0)} kunga yetadi"
+
+
+def _serialize_shelf_item(request, row: CareShelfItem) -> dict:
+    metrics = calculate_refill_metrics(
+        volume_ml=row.volume_ml,
+        uses_per_day=row.uses_per_day,
+        dose_ml_per_use=row.dose_ml_per_use,
+        opened_at=row.opened_at,
+        pao_months=row.pao_months,
+    )
+    image_url = None
+    if row.product_id:
+        image_url = CareProductSerializer(
+            row.product, context={"request": request, "liked_product_ids": set()}
+        ).data.get("image_url")
+    return {
+        "id": row.id,
+        "product_id": row.product_id,
+        "image_url": image_url,
+        "name": row.name,
+        "brand": row.brand,
+        "category": row.category,
+        "volume_ml": row.volume_ml,
+        "usage_frequency": row.usage_frequency,
+        "uses_per_day": row.uses_per_day,
+        "dose_ml_per_use": row.dose_ml_per_use,
+        "opened_at": row.opened_at.isoformat(),
+        "pao_months": row.pao_months,
+        "pao_code": f"{row.pao_months}M",
+        "ai_advice": row.ai_advice,
+        "status_flag": metrics["status_flag"],
+        "status_label": _shelf_status_label(
+            status_flag=metrics["status_flag"],
+            days_left=metrics["estimated_days_left"],
+            days_to_pao=metrics["days_to_pao"],
+        ),
+        **metrics,
+        "created_at": row.created_at.isoformat() if row.created_at else None,
+        "updated_at": row.updated_at.isoformat() if row.updated_at else None,
+    }
+
+
+class CareShelfEstimateView(UnthrottledAPIView):
+    permission_classes = [IsAuthenticatedCustomer]
+
+    def post(self, request):
+        if not can_use_morph_care(request.user):
+            return Response(
+                {"detail": "Morph AI Parvarish Pro obunasida mavjud."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        ser = CareShelfEstimateInputSerializer(data=request.data)
+        ser.is_valid(raise_exception=True)
+        d = ser.validated_data
+        estimate = build_refill_estimate(
+            product_name=str(d["product_name"]),
+            category=str(d["category"]),
+            volume_ml=int(d["volume_ml"]),
+            usage_frequency=str(d["usage_frequency"]),
+            opened_at=d["opened_at"],
+            pao_months=int(d["pao_months"]),
+            dose_ml_per_use=float(d["dose_ml_per_use"]) if d.get("dose_ml_per_use") else None,
+            with_ai=True,
+        )
+        usage = estimate.pop("_usage", None)
+        return Response({"estimate": estimate, "usage": usage})
+
+
+class CareShelfListCreateView(UnthrottledAPIView):
+    permission_classes = [IsAuthenticatedCustomer]
+
+    def get(self, request):
+        if not can_use_morph_care(request.user):
+            return Response(
+                {"detail": "Morph AI Parvarish Pro obunasida mavjud."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        rows = (
+            CareShelfItem.objects.filter(user=request.user)
+            .select_related("product")
+            .order_by("-updated_at")
+        )
+        items = [_serialize_shelf_item(request, r) for r in rows]
+        summary = {
+            "active": sum(1 for i in items if i["status_flag"] == "OK"),
+            "refill_soon": sum(1 for i in items if i["status_flag"] == STATUS_REFILL_SOON),
+            "expired": sum(1 for i in items if i["status_flag"] == STATUS_EXPIRED),
+        }
+        return Response({"items": items, "summary": summary})
+
+    def post(self, request):
+        if not can_use_morph_care(request.user):
+            return Response(
+                {"detail": "Morph AI Parvarish Pro obunasida mavjud."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        product = None
+        raw_product_id = request.data.get("product_id")
+        if raw_product_id not in (None, "", 0, "0"):
+            try:
+                product = CareProduct.objects.get(id=int(raw_product_id), is_published=True)
+            except (TypeError, ValueError, CareProduct.DoesNotExist):
+                return Response({"detail": "Noto'g'ri product_id."}, status=400)
+
+        payload = {
+            "product": product.id if product else None,
+            "name": str(request.data.get("name") or (product.name if product else "")).strip(),
+            "brand": str(request.data.get("brand") or (product.brand if product else "")).strip(),
+            "category": str(request.data.get("category") or "hair").strip().lower(),
+            "volume_ml": request.data.get("volume_ml") or 100,
+            "usage_frequency": str(request.data.get("usage_frequency") or "kuniga_1").strip(),
+            "opened_at": request.data.get("opened_at"),
+            "pao_months": request.data.get("pao_months") or 12,
+        }
+        ser = CareShelfItemSerializer(data=payload)
+        ser.is_valid(raise_exception=True)
+        d = ser.validated_data
+        estimate = build_refill_estimate(
+            product_name=str(d["name"]),
+            category=str(d["category"]),
+            volume_ml=int(d["volume_ml"]),
+            usage_frequency=str(d["usage_frequency"]),
+            opened_at=d["opened_at"],
+            pao_months=int(d["pao_months"]),
+            with_ai=_as_bool(request.data.get("with_ai"), default=True),
+        )
+        row = CareShelfItem.objects.create(
+            user=request.user,
+            product=product,
+            name=d["name"],
+            brand=d.get("brand") or "",
+            category=d["category"],
+            volume_ml=int(d["volume_ml"]),
+            usage_frequency=str(d["usage_frequency"]),
+            uses_per_day=float(estimate["uses_per_day"]),
+            dose_ml_per_use=float(estimate["dose_ml_per_use"]),
+            opened_at=d["opened_at"],
+            pao_months=int(d["pao_months"]),
+            ai_advice=str(estimate.get("ai_advice") or "")[:220],
+        )
+        usage = estimate.pop("_usage", None)
+        return Response(
+            {"item": _serialize_shelf_item(request, row), "usage": usage},
+            status=status.HTTP_201_CREATED,
+        )
+
+
+class CareShelfDetailView(UnthrottledAPIView):
+    permission_classes = [IsAuthenticatedCustomer]
+
+    def patch(self, request, item_id: int):
+        if not can_use_morph_care(request.user):
+            return Response(
+                {"detail": "Morph AI Parvarish Pro obunasida mavjud."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        row = CareShelfItem.objects.filter(user=request.user, id=item_id).select_related("product").first()
+        if not row:
+            return Response({"detail": "Topilmadi"}, status=404)
+        payload = {
+            "product": row.product_id,
+            "name": request.data.get("name", row.name),
+            "brand": request.data.get("brand", row.brand),
+            "category": request.data.get("category", row.category),
+            "volume_ml": request.data.get("volume_ml", row.volume_ml),
+            "usage_frequency": request.data.get("usage_frequency", row.usage_frequency),
+            "opened_at": request.data.get("opened_at", row.opened_at),
+            "pao_months": request.data.get("pao_months", row.pao_months),
+        }
+        if "product_id" in request.data:
+            raw_product_id = request.data.get("product_id")
+            if raw_product_id in (None, "", 0, "0"):
+                payload["product"] = None
+            else:
+                try:
+                    product = CareProduct.objects.get(id=int(raw_product_id), is_published=True)
+                except (TypeError, ValueError, CareProduct.DoesNotExist):
+                    return Response({"detail": "Noto'g'ri product_id."}, status=400)
+                payload["product"] = product.id
+
+        ser = CareShelfItemSerializer(instance=row, data=payload, partial=True)
+        ser.is_valid(raise_exception=True)
+        d = ser.validated_data
+
+        if "product" in d:
+            row.product = d.get("product")
+        elif payload.get("product") is None:
+            row.product = None
+        row.name = d.get("name", row.name)
+        row.brand = d.get("brand", row.brand)
+        row.category = d.get("category", row.category)
+        row.volume_ml = int(d.get("volume_ml", row.volume_ml))
+        row.usage_frequency = str(d.get("usage_frequency", row.usage_frequency))
+        row.opened_at = d.get("opened_at", row.opened_at)
+        row.pao_months = int(d.get("pao_months", row.pao_months))
+
+        estimate = build_refill_estimate(
+            product_name=row.name,
+            category=row.category,
+            volume_ml=row.volume_ml,
+            usage_frequency=row.usage_frequency,
+            opened_at=row.opened_at,
+            pao_months=row.pao_months,
+            with_ai=_as_bool(request.data.get("with_ai"), default=True),
+        )
+        row.uses_per_day = float(estimate["uses_per_day"])
+        row.dose_ml_per_use = float(estimate["dose_ml_per_use"])
+        row.ai_advice = str(estimate.get("ai_advice") or row.ai_advice)[:220]
+        row.save()
+        usage = estimate.pop("_usage", None)
+        row.refresh_from_db()
+        return Response({"item": _serialize_shelf_item(request, row), "usage": usage})
+
+    def delete(self, request, item_id: int):
+        if not can_use_morph_care(request.user):
+            return Response(
+                {"detail": "Morph AI Parvarish Pro obunasida mavjud."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        row = CareShelfItem.objects.filter(user=request.user, id=item_id).first()
+        if not row:
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        row.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 def _serialize_my_product(request, row: CareUserProduct) -> dict:

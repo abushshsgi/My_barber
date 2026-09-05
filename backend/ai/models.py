@@ -596,6 +596,60 @@ class CareUserProduct(models.Model):
         return f"CareUserProduct(user={self.user_id}, product={self.product_id})"
 
 
+class CareShelfItem(models.Model):
+    """Parvarish vositasi lifecycle tracking (tugash + PAO muddati)."""
+
+    class Category(models.TextChoices):
+        HAIR = "hair", "Soch"
+        FACE = "face", "Yuz"
+        SCALP = "scalp", "Bosh terisi"
+        BEARD = "beard", "Soqol"
+        OTHER = "other", "Boshqa"
+
+    PAO_CHOICES = (
+        (3, "3M"),
+        (6, "6M"),
+        (12, "12M"),
+        (24, "24M"),
+    )
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="care_shelf_items",
+    )
+    product = models.ForeignKey(
+        CareProduct,
+        on_delete=models.SET_NULL,
+        related_name="shelf_items",
+        blank=True,
+        null=True,
+    )
+    name = models.CharField(max_length=120)
+    brand = models.CharField(max_length=80, blank=True, default="")
+    category = models.CharField(max_length=16, choices=Category.choices, default=Category.HAIR)
+    volume_ml = models.PositiveIntegerField(default=100)
+    usage_frequency = models.CharField(max_length=48, default="kuniga_1")
+    uses_per_day = models.FloatField(default=1.0)
+    dose_ml_per_use = models.FloatField(default=1.0)
+    opened_at = models.DateField()
+    pao_months = models.PositiveSmallIntegerField(choices=PAO_CHOICES, default=12)
+    ai_advice = models.CharField(max_length=240, blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-updated_at"]
+        indexes = [
+            models.Index(fields=["user", "-updated_at"]),
+            models.Index(fields=["user", "opened_at"]),
+            models.Index(fields=["user", "pao_months"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"CareShelfItem(user={self.user_id}, name={self.name})"
+
+
 class HairCareProfile(models.Model):
     """Mijoz soch profili — parvarish reja va INCI skani uchun."""
 

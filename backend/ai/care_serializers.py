@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from rest_framework import serializers
 
-from ai.models import CareProduct, HairCareProfile
+from ai.models import CareProduct, CareShelfItem, HairCareProfile
 from ai.serializers import _media_absolute_url
 from ai.services.barcode_country import detect_country_from_barcode, normalize_barcode
 from ai.services.care_match import (
@@ -324,3 +324,63 @@ class HairCareProfileSerializer(serializers.ModelSerializer):
             instance.completed_at = timezone.now()
         instance.save()
         return instance
+
+
+class CareShelfItemSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CareShelfItem
+        fields = (
+            "id",
+            "product",
+            "name",
+            "brand",
+            "category",
+            "volume_ml",
+            "usage_frequency",
+            "uses_per_day",
+            "dose_ml_per_use",
+            "opened_at",
+            "pao_months",
+            "ai_advice",
+            "created_at",
+            "updated_at",
+        )
+        read_only_fields = ("id", "uses_per_day", "dose_ml_per_use", "ai_advice", "created_at", "updated_at")
+
+    def validate_name(self, value: str) -> str:
+        s = str(value or "").strip()
+        if len(s) < 2:
+            raise serializers.ValidationError("Mahsulot nomini kiriting.")
+        return s[:120]
+
+    def validate_brand(self, value: str) -> str:
+        return str(value or "").strip()[:80]
+
+    def validate_category(self, value: str) -> str:
+        value = (value or "").strip().lower()
+        valid = {c[0] for c in CareShelfItem.Category.choices}
+        if value not in valid:
+            raise serializers.ValidationError("Kategoriya noto'g'ri.")
+        return value
+
+    def validate_volume_ml(self, value: int) -> int:
+        n = int(value or 0)
+        if n < 10 or n > 3000:
+            raise serializers.ValidationError("Hajm 10ml dan 3000ml gacha bo'lishi kerak.")
+        return n
+
+    def validate_pao_months(self, value: int) -> int:
+        n = int(value or 0)
+        if n not in {3, 6, 12, 24}:
+            raise serializers.ValidationError("PAO 3M/6M/12M/24M bo'lishi kerak.")
+        return n
+
+
+class CareShelfEstimateInputSerializer(serializers.Serializer):
+    product_name = serializers.CharField(max_length=120)
+    category = serializers.ChoiceField(choices=CareShelfItem.Category.choices, default=CareShelfItem.Category.HAIR)
+    volume_ml = serializers.IntegerField(min_value=10, max_value=3000)
+    usage_frequency = serializers.CharField(max_length=48)
+    opened_at = serializers.DateField()
+    pao_months = serializers.ChoiceField(choices=[3, 6, 12, 24], default=12)
+    dose_ml_per_use = serializers.FloatField(min_value=0.1, max_value=30, required=False)

@@ -5,6 +5,7 @@ from .models import (
     AiStyleHistoryEntry,
     CareProduct,
     CareProductInsight,
+    CareShelfItem,
     Gs1CountryCode,
     HairCareProfile,
     Hairstyle,
@@ -131,6 +132,25 @@ class CareProductAdmin(admin.ModelAdmin):
     search_fields = ("name", "brand", "slug", "barcode", "ingredients_text", "country_of_origin")
     prepopulated_fields = {"slug": ("brand", "name")}
     raw_id_fields = ("created_by",)
+
+
+@admin.register(CareShelfItem)
+class CareShelfItemAdmin(admin.ModelAdmin):
+    list_display = (
+        "id",
+        "user",
+        "name",
+        "brand",
+        "category",
+        "volume_ml",
+        "uses_per_day",
+        "pao_months",
+        "opened_at",
+        "updated_at",
+    )
+    list_filter = ("category", "pao_months")
+    search_fields = ("name", "brand", "user__phone", "user__email")
+    raw_id_fields = ("user", "product")
 
 
 @admin.register(HairCareProfile)

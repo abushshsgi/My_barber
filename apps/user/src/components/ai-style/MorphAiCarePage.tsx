@@ -22,6 +22,7 @@ import { cn } from "@/lib/utils";
 import { useHairCareProfile, useUpdateHairCareProfile } from "@/hooks/use-hair-care-profile";
 import { useCareProducts } from "@/hooks/use-care-products";
 import { BadHairDaySosSheet } from "@/components/ai-style/BadHairDaySosSheet";
+import { CareShelfTracker } from "@/components/ai-style/CareShelfTracker";
 
 const CONDITION_OPTS: HairCondition[] = ["oily", "dry", "normal", "damaged"];
 const TEXTURE_OPTS: HairTexture[] = ["straight", "wavy", "curly"];
@@ -351,6 +352,8 @@ export function MorphAiCarePage() {
             </div>
           ))}
         </motion.div>
+
+        <CareShelfTracker />
 
         <Section title={t("aiStylePage.care.weeklyTitle", { defaultValue: "Hafta" })} delay={0.12}>
           <div className="space-y-1.5">
