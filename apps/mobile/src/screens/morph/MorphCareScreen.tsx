@@ -77,14 +77,6 @@ type ViewMode = "hub" | "flow";
 
 const CARE_ACCESS_DEBUG = true;
 
-const CATEGORIES = [
-  { id: "all", label: "All" },
-  { id: "hair", label: "Hair Cut" },
-  { id: "face", label: "Face Care" },
-  { id: "eye", label: "Eye care" },
-  { id: "skin", label: "Skin Care" },
-];
-
 interface FeaturedProductItem {
   id: string;
   title: string;
@@ -209,7 +201,6 @@ export function MorphCareScreen({ navigation, route }: Props) {
     allowed: true,
   });
   const [viewMode, setViewMode] = useState<ViewMode>("hub");
-  const [selectedCat, setSelectedCat] = useState("all");
   const [quiz, setQuiz] = useState<CareQuizAnswers>(() => defaultQuiz());
   const [step, setStep] = useState<QuizStep | "plan" | "boot">("boot");
   const [catalog, setCatalog] = useState<CareProduct[]>([]);
@@ -546,6 +537,10 @@ export function MorphCareScreen({ navigation, route }: Props) {
     [navigation],
   );
 
+  const openGrowthTracker = useCallback(() => {
+    navigation.navigate("CareGrowthTracker");
+  }, [navigation]);
+
   const openParvarish = useCallback(() => {
     setViewMode("flow");
   }, []);
@@ -719,15 +714,8 @@ export function MorphCareScreen({ navigation, route }: Props) {
       }));
     }
 
-    if (selectedCat !== "all") {
-      const filtered = list.filter((p) =>
-        p.category.toLowerCase().includes(selectedCat.toLowerCase()),
-      );
-      return filtered.length > 0 ? filtered : list;
-    }
-
     return list;
-  }, [myProducts, catalog, quiz, selectedCat]);
+  }, [myProducts, catalog, quiz]);
 
   const searchResults = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
@@ -1101,7 +1089,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
                   <Ionicons
                     name="arrow-back"
                     size={hubLayout.promoUi.backIcon}
-                    color="#FFFFFF"
+                    color="#111111"
                   />
                 </Pressable>
 
@@ -1302,13 +1290,13 @@ export function MorphCareScreen({ navigation, route }: Props) {
                 </View>
                 <View style={styles.shelfCopy}>
                   <Text style={styles.shelfTitle} numberOfLines={2}>
-                    {t("care.shelf.cta", {
-                      defaultValue: "Mahsulot tugash muddatini kuzatish",
+                    {t("care.shelf.title", {
+                      defaultValue: "Mening parvarish vositalarim",
                     })}
                   </Text>
                   <Text style={styles.shelfSub} numberOfLines={1}>
-                    {t("care.shelf.ctaSub", {
-                      defaultValue: "PAO va refill eslatmalarini yoqish",
+                    {t("care.shelf.sub", {
+                      defaultValue: "Tugash muddati, PAO va refill eslatmalarini kuzating",
                     })}
                   </Text>
                 </View>
@@ -1344,45 +1332,32 @@ export function MorphCareScreen({ navigation, route }: Props) {
           </View>
           ) : null}
 
-          {/* Category Pills */}
+          {/* Hair Growth & Health Tracker */}
           {!searchOpen ? (
-          <View style={[styles.categoryRow, { height: hubLayout.catBlock }]}>
-          <ScrollView
-            horizontal
-            nestedScrollEnabled={true}
-            showsHorizontalScrollIndicator={false}
-            style={[styles.categoryScrollView, { height: hubLayout.catBlock }]}
-            contentContainerStyle={[
-              styles.categoryScroll,
-              { height: hubLayout.catBlock },
-            ]}
-          >
-            {CATEGORIES.map((cat) => {
-              const active = selectedCat === cat.id;
-              return (
-                <Pressable
-                  key={cat.id}
-                  style={[
-                    styles.catPill,
-                    { height: hubLayout.catBlock - 2 },
-                    active ? styles.catPillActive : styles.catPillInactive,
-                  ]}
-                  onPress={() => setSelectedCat(cat.id)}
-                >
-                  <Text
-                    style={[
-                      styles.catText,
-                      { fontSize: Math.max(10, Math.round(12 * hubLayout.scale)) },
-                      active ? styles.catTextActive : styles.catTextInactive,
-                    ]}
-                  >
-                    {cat.label}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </ScrollView>
-          </View>
+            <Pressable
+              style={[
+                styles.growthTrackerCta,
+                { marginHorizontal: hubLayout.hPad, marginTop: verticalScale(8) },
+              ]}
+              onPress={openGrowthTracker}
+              accessibilityRole="button"
+              accessibilityLabel={t("care.growthTracker.title", {
+                defaultValue: "Hair Growth & Health Tracker",
+              })}
+            >
+              <View style={styles.growthTrackerIcon}>
+                <Ionicons name="trending-up-outline" size={moderateScale(17)} color="#111111" />
+              </View>
+              <View style={styles.growthTrackerCopy}>
+                <Text style={styles.growthTrackerTitle} numberOfLines={1}>
+                  {t("care.growthTracker.title", { defaultValue: "Hair Growth & Health Tracker" })}
+                </Text>
+                <Text style={styles.growthTrackerSub} numberOfLines={1}>
+                  {t("care.growthTracker.sub", { defaultValue: "3 oylik progress va AI prognoz" })}
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={moderateScale(16)} color="#111111" />
+            </Pressable>
           ) : null}
 
           {/* Featured — qidiruv ochiq bo‘lsa yashirin */}
@@ -2145,9 +2120,9 @@ const styles = StyleSheet.create({
     borderRadius: moderateScale(10),
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(0,0,0,0.45)",
+    backgroundColor: "#FFFFFF",
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(255,255,255,0.28)",
+    borderColor: "rgba(15,23,42,0.12)",
   },
   promoLocBadge: {
     flexShrink: 1,
@@ -2765,52 +2740,37 @@ const styles = StyleSheet.create({
     color: "#111111",
   },
   searchRowPh: { alignItems: "center", justifyContent: "center" },
-  categoryRow: {
-    flexGrow: 0,
-    flexShrink: 0,
-    overflow: "visible",
-    justifyContent: "center",
-  },
-  categoryScrollView: {
-    flexGrow: 0,
-    flexShrink: 0,
-  },
-  categoryScroll: {
-    paddingHorizontal: scale(16),
-    gap: moderateScale(8),
-    alignItems: "center",
-  },
-  categoryScrollCompact: {
-    paddingVertical: 0,
-  },
-  catPill: {
-    paddingHorizontal: scale(14),
-    alignItems: "center",
-    justifyContent: "center",
-    alignSelf: "center",
-    borderRadius: 999,
-  },
-  catPillActive: {
-    backgroundColor: "#111111",
-  },
-  catPillInactive: {
-    backgroundColor: "#FFFFFF",
-    borderWidth: 1,
+  growthTrackerCta: {
+    borderRadius: moderateScale(16),
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: "rgba(17,17,17,0.12)",
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: scale(12),
+    paddingVertical: verticalScale(10),
+    flexDirection: "row",
+    alignItems: "center",
+    gap: moderateScale(10),
   },
-  catText: {
+  growthTrackerIcon: {
+    width: moderateScale(34),
+    height: moderateScale(34),
+    borderRadius: moderateScale(12),
+    backgroundColor: "#F3F4F6",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  growthTrackerCopy: { flex: 1, minWidth: 0 },
+  growthTrackerTitle: {
     ...morphFont,
-    fontSize: 12,
-    lineHeight: 16,
-    includeFontPadding: false,
-  },
-  catTextActive: {
-    color: "#FFFFFF",
-    fontWeight: "700",
-  },
-  catTextInactive: {
+    fontSize: fontSize(13),
+    fontWeight: "800",
     color: "#111111",
-    fontWeight: "600",
+  },
+  growthTrackerSub: {
+    ...morphFont,
+    marginTop: 1,
+    fontSize: fontSize(11),
+    color: "rgba(17,17,17,0.55)",
   },
   featuredProductsScroll: {
     paddingHorizontal: scale(16),
