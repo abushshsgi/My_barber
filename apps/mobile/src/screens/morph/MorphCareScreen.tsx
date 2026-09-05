@@ -1809,14 +1809,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
             {t(`care.conditions.${quiz.condition}`)} · {t(`care.textures.${quiz.texture}`)}
           </Text>
         </View>
-        <Pressable
-          style={styles.routineHeaderBtn}
-          onPress={openAssistant}
-          hitSlop={8}
-          accessibilityLabel={t("care.hubAiAssistant")}
-        >
-          <Ionicons name="chatbubble-ellipses-outline" size={17} color="#111" />
-        </Pressable>
+        <View style={styles.routineHeaderBtn} />
       </View>
 
       <CareRoutineSheet
@@ -1826,19 +1819,8 @@ export function MorphCareScreen({ navigation, route }: Props) {
         onOpenCatalog={openCatalog}
         onOpenScan={openTarkib}
         onOpenProduct={openProduct}
-        onOpenAssistant={openAssistant}
         onRetakeQuiz={() => setStep(0)}
       />
-
-      <Pressable
-        style={[styles.fab, { bottom: Math.max(insets.bottom, 16) + 16 }]}
-        onPress={openAssistant}
-        accessibilityLabel={t("care.hubAiAssistant")}
-      >
-        <View style={styles.fabInner}>
-          <Ionicons name="sparkles" size={22} color="#fff" />
-        </View>
-      </Pressable>
     </View>
   );
 }

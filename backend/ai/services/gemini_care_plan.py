@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import logging
 import time
 import urllib.error
@@ -174,25 +175,108 @@ def _normalize_plan(data: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def generate_care_plan(
+def _format_products(products: list[dict[str, Any]]) -> str:
+    lines: list[str] = []
+    for p in products[:24]:
+        pid = p.get("id")
+        name = str(p.get("name") or "").strip() or "Nomsiz"
+        brand = str(p.get("brand") or "").strip()
+        cat = str(p.get("category") or "other").strip()
+        usage = str(p.get("usage_uz") or "").strip()[:160]
+        purpose = str(p.get("purpose_uz") or "").strip()[:120]
+        bit = f"- id={pid} | {name}"
+        if brand:
+            bit += f" ({brand})"
+        bit += f" | category={cat}"
+        if purpose:
+            bit += f" | purpose: {purpose}"
+        if usage:
+            bit += f" | usage: {usage}"
+        percent = p.get("match_percent")
+        if percent is not None:
+            bit += f" | fit={percent}%"
+        reasons = p.get("fit_reasons") if isinstance(p.get("fit_reasons"), list) else []
+        if reasons:
+            bit += f" | why: {'; '.join(str(x) for x in reasons[:2])}"
+        steps = p.get("usage_steps") if isinstance(p.get("usage_steps"), list) else []
+        if steps and isinstance(steps[0], dict):
+            bit += f" | step: {str(steps[0].get('desc') or '')[:80]}"
+        lines.append(bit)
+    return "\n".join(lines) if lines else "(foydalanuvchida mahsulot yo'q — umumiy tavsiya bering)"
+
+
+def _build_append_prompt(
     *,
     condition: str,
     texture: str,
     color_status: str,
-    products: list[dict[str, Any]],
-    scalp: str = "",
-    concerns: list[str] | None = None,
+    scalp: str,
+    concerns: list[str],
+    new_products: list[dict[str, Any]],
+    existing_plan: dict[str, Any],
     gender: str = "",
-) -> dict[str, Any]:
-    prompt = _build_prompt(
-        condition=condition,
-        texture=texture,
-        color_status=color_status,
-        scalp=scalp or "",
-        concerns=concerns or [],
-        products=products,
-        gender=gender or "",
-    )
+) -> str:
+    catalog = _format_products(new_products)
+    concern_s = ", ".join(concerns) if concerns else "none"
+    scalp_s = scalp or "unknown"
+    gender_s = (gender or "").strip().lower()
+    gender_line = ""
+    if gender_s in ("male", "female"):
+        gender_line = f"\n- gender: {gender_s}"
+
+    # Keep existing plan compact for context — do not ask model to rewrite it.
+    existing_compact = {
+        "morning": existing_plan.get("morning") or [],
+        "evening": existing_plan.get("evening") or [],
+        "weekly": existing_plan.get("weekly") or [],
+        "weekly_schedule": existing_plan.get("weekly_schedule") or [],
+    }
+    existing_json = json.dumps(existing_compact, ensure_ascii=False)[:3500]
+
+    return f"""You are a senior trichologist for Morf AI (MyBarber).
+The user ALREADY has a care plan. They just ADDED new product(s).
+You must ONLY create NEW routine steps for the NEW products.
+Do NOT rewrite, renumber, remove, or alter any existing steps.
+
+USER HAIR PROFILE:
+- condition: {condition}
+- texture: {texture}
+- color_status: {color_status}
+- scalp: {scalp_s}
+- concerns: {concern_s}{gender_line}
+
+EXISTING PLAN (read-only context — leave untouched):
+{existing_json}
+
+NEW PRODUCTS ONLY (create steps for these):
+{catalog}
+
+RULES:
+1. Output RAW JSON only (no markdown).
+2. All user-facing strings MUST be Uzbek (Latin script), short and actionable.
+3. Return ONLY new steps to APPEND. Prefer 1–2 steps per new product, split across morning/evening/weekly as appropriate.
+4. Every new step MUST set product_id to the new product id and product_name to its name.
+5. Use unique ids that do NOT collide with existing ids (prefix with "n").
+6. time_hint: when to do it.
+7. icon must be one of: water, flask, sparkles, shield, leaf, cut.
+8. summary: ONE short sentence about what was ADDED only (not a full plan rewrite).
+9. weekly_schedule: ONLY extra day notes for the new product(s). Do not repeat old days unless adding a new task for that day.
+10. tips / avoid: only NEW tips for the new product(s), or empty arrays.
+
+OUTPUT SCHEMA:
+{{
+  "summary": "...",
+  "morning": [],
+  "evening": [],
+  "weekly": [],
+  "weekly_schedule": [{{ "day": "Du", "task": "..." }}],
+  "tips": [],
+  "avoid": []
+}}
+"""
+
+
+def _call_gemini_plan(prompt: str) -> dict[str, Any]:
     body = {
         "contents": [{"role": "user", "parts": [{"text": prompt}]}],
         "generationConfig": {
@@ -244,9 +328,6 @@ def generate_care_plan(
 
     data = _extract_json("".join(text_parts))
     plan = _normalize_plan(data)
-    if not plan["morning"] and not plan["evening"] and not plan["weekly"]:
-        raise AiStyleError("AI reja bo'sh qaytdi. Qayta urinib ko'ring.", 502)
-
     usage_nums = finalize_usage(payload, kind="analyze")
     plan["_usage"] = {
         **usage_nums,
@@ -254,4 +335,116 @@ def generate_care_plan(
         "model": model,
         "latency_ms": latency_ms,
     }
+    return plan
+
+
+def merge_care_plan_patch(
+    existing: dict[str, Any],
+    patch: dict[str, Any],
+) -> dict[str, Any]:
+    """Append-only merge: keep existing steps, add patch steps with unique ids."""
+    existing_ids: set[str] = set()
+    for key in SLOT_KEYS:
+        for row in existing.get(key) or []:
+            if isinstance(row, dict) and row.get("id"):
+                existing_ids.add(str(row["id"]))
+
+    out: dict[str, Any] = {
+        "summary": str(existing.get("summary") or "").strip()[:280],
+        "morning": list(existing.get("morning") or []),
+        "evening": list(existing.get("evening") or []),
+        "weekly": list(existing.get("weekly") or []),
+        "weekly_schedule": list(existing.get("weekly_schedule") or []),
+        "tips": list(existing.get("tips") or []),
+        "avoid": list(existing.get("avoid") or []),
+    }
+
+    for key in SLOT_KEYS:
+        for i, row in enumerate(patch.get(key) or []):
+            if not isinstance(row, dict):
+                continue
+            tid = str(row.get("id") or f"n{key[0]}{i + 1}")
+            if tid in existing_ids:
+                tid = f"n{tid}{i + 1}"
+            existing_ids.add(tid)
+            out[key].append({**row, "id": tid})
+
+    seen_sched = {
+        (str(r.get("day")), str(r.get("task")))
+        for r in out["weekly_schedule"]
+        if isinstance(r, dict)
+    }
+    for row in patch.get("weekly_schedule") or []:
+        if not isinstance(row, dict):
+            continue
+        key = (str(row.get("day") or ""), str(row.get("task") or ""))
+        if not key[0] or not key[1] or key in seen_sched:
+            continue
+        seen_sched.add(key)
+        out["weekly_schedule"].append({"day": key[0][:8], "task": key[1][:100]})
+
+    for tip in patch.get("tips") or []:
+        s = str(tip).strip()[:120]
+        if s and s not in out["tips"]:
+            out["tips"].append(s)
+    for tip in patch.get("avoid") or []:
+        s = str(tip).strip()[:120]
+        if s and s not in out["avoid"]:
+            out["avoid"].append(s)
+
+    out["tips"] = out["tips"][:8]
+    out["avoid"] = out["avoid"][:8]
+    out["weekly_schedule"] = out["weekly_schedule"][:10]
+    return out
+
+
+def generate_care_plan(
+    *,
+    condition: str,
+    texture: str,
+    color_status: str,
+    products: list[dict[str, Any]],
+    scalp: str = "",
+    concerns: list[str] | None = None,
+    gender: str = "",
+    mode: str = "full",
+    existing_plan: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    mode_s = (mode or "full").strip().lower()
+    if mode_s == "append":
+        if not products:
+            raise AiStyleError("Yangi mahsulot kerak.", 400)
+        if not isinstance(existing_plan, dict):
+            raise AiStyleError("Mavjud reja kerak.", 400)
+        prompt = _build_append_prompt(
+            condition=condition,
+            texture=texture,
+            color_status=color_status,
+            scalp=scalp or "",
+            concerns=concerns or [],
+            new_products=products,
+            existing_plan=existing_plan,
+            gender=gender or "",
+        )
+        patch = _call_gemini_plan(prompt)
+        usage = patch.pop("_usage", None)
+        if not patch["morning"] and not patch["evening"] and not patch["weekly"]:
+            raise AiStyleError("AI yangi qadam qo'shmadi. Qayta urinib ko'ring.", 502)
+        merged = merge_care_plan_patch(existing_plan, patch)
+        if usage:
+            merged["_usage"] = usage
+        return merged
+
+    prompt = _build_prompt(
+        condition=condition,
+        texture=texture,
+        color_status=color_status,
+        scalp=scalp or "",
+        concerns=concerns or [],
+        products=products,
+        gender=gender or "",
+    )
+    plan = _call_gemini_plan(prompt)
+    if not plan["morning"] and not plan["evening"] and not plan["weekly"]:
+        raise AiStyleError("AI reja bo'sh qaytdi. Qayta urinib ko'ring.", 502)
     return plan

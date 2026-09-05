@@ -273,3 +273,66 @@ export function buildDailyRoutine(
     { id: "w-reset", title: "Haftalik reset", subtitle: "Ortiqcha styling qoldiqlarini yuvib tashlang", icon: "sparkles" as const, timeHint: "Hafta oxiri" },
   ] as RoutineTask[]).map(withProduct);
 }
+
+/** Cached AI care plan keyed by hair profile + product ids. */
+export type CachedCarePlan = {
+  plan: {
+    summary: string;
+    morning: Array<Record<string, unknown>>;
+    evening: Array<Record<string, unknown>>;
+    weekly: Array<Record<string, unknown>>;
+    weekly_schedule: { day: string; task: string }[];
+    tips: string[];
+    avoid: string[];
+  };
+  productIds: number[];
+  profileKey: string;
+  updatedAt: string;
+};
+
+const CARE_PLAN_CACHE_KEY = "mysaloon.morphAi.carePlanCache";
+
+export function careProfileKey(quiz: CareQuizAnswers): string {
+  return `${quiz.condition}|${quiz.texture}|${quiz.colorStatus}`;
+}
+
+export function sortProductIds(ids: number[]): number[] {
+  return [...ids].sort((a, b) => a - b);
+}
+
+export async function loadCachedCarePlan(): Promise<CachedCarePlan | null> {
+  try {
+    const raw = await AsyncStorage.getItem(CARE_PLAN_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as CachedCarePlan;
+    if (!parsed?.plan || !Array.isArray(parsed.productIds) || !parsed.profileKey) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+export async function saveCachedCarePlan(cache: CachedCarePlan): Promise<void> {
+  await AsyncStorage.setItem(CARE_PLAN_CACHE_KEY, JSON.stringify(cache));
+}
+
+/** Drop tasks tied to removed products; keep the rest unchanged. */
+export function stripPlanProducts<T extends CachedCarePlan["plan"]>(
+  plan: T,
+  keepIds: Set<number>,
+): T {
+  const filterTasks = <R extends { product_id?: number | null }>(rows: R[]): R[] =>
+    rows.filter((r) => {
+      const pid = r.product_id;
+      if (pid == null || pid === 0) return true;
+      return keepIds.has(Number(pid));
+    });
+
+  return {
+    ...plan,
+    morning: filterTasks(plan.morning as { product_id?: number | null }[]),
+    evening: filterTasks(plan.evening as { product_id?: number | null }[]),
+    weekly: filterTasks(plan.weekly as { product_id?: number | null }[]),
+  };
+}
+

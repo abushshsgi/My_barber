@@ -301,6 +301,13 @@ class CarePlanGenerateView(UnthrottledAPIView):
                     }
                 )
 
+        mode = str(request.data.get("mode") or "full").strip().lower()
+        existing_plan = request.data.get("existing_plan")
+        if mode == "append" and not isinstance(existing_plan, dict):
+            return Response({"detail": "Append uchun existing_plan kerak."}, status=400)
+        if mode == "append" and not product_payload:
+            return Response({"detail": "Append uchun yangi mahsulot kerak."}, status=400)
+
         try:
             plan = generate_care_plan(
                 condition=condition,
@@ -310,6 +317,8 @@ class CarePlanGenerateView(UnthrottledAPIView):
                 concerns=concerns,
                 products=product_payload,
                 gender=(getattr(request.user, "gender", None) or "").strip().lower(),
+                mode=mode,
+                existing_plan=existing_plan if isinstance(existing_plan, dict) else None,
             )
         except AiStyleError as exc:
             return Response({"detail": str(exc)}, status=exc.status or 502)
