@@ -40,6 +40,7 @@ import { CareProductPreviewSheet } from "../../components/morph/care/CareProduct
 import { CareCatalogMark } from "../../components/morph/care/CareCatalogMark";
 import { CareRoutineSheet } from "../../components/morph/care/CareRoutineSheet";
 import { CareSosSheet } from "../../components/morph/care/CareSosSheet";
+import { CareShelfTrackerSheet } from "../../components/morph/care/CareShelfTrackerSheet";
 import { DarkMeshAmbientBg } from "../../components/morph/care/DarkMeshAmbientBg";
 import { AppStatusBar, safeTop } from "../../components/ui/AppStatusBar";
 import { useCareWeather } from "../../hooks/useCareWeather";
@@ -226,6 +227,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
   );
   const [searchQuery, setSearchQuery] = useState("");
   const [sosOpen, setSosOpen] = useState(false);
+  const [shelfOpen, setShelfOpen] = useState(false);
   const [previewId, setPreviewId] = useState<number | null>(null);
   const [previewVisible, setPreviewVisible] = useState(false);
   /** Shu search sessiyasida qo‘shilganlar — qayta ochilganda tozalanadi */
@@ -1277,6 +1279,44 @@ export function MorphCareScreen({ navigation, route }: Props) {
             </Pressable>
           ) : null}
 
+          {!searchOpen ? (
+            <Pressable
+              style={[
+                styles.shelfBtn,
+                { marginHorizontal: hubLayout.hPad, marginTop: verticalScale(8) },
+              ]}
+              onPress={() => setShelfOpen(true)}
+              accessibilityRole="button"
+              accessibilityLabel={t("care.shelf.cta", {
+                defaultValue: "Mahsulot tugash muddatini kuzatish",
+              })}
+            >
+              <LinearGradient
+                colors={["#0F172A", "#111827", "#1E293B"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.shelfFill}
+              >
+                <View style={styles.shelfIcon}>
+                  <Ionicons name="cube-outline" size={moderateScale(16)} color="#FFFFFF" />
+                </View>
+                <View style={styles.shelfCopy}>
+                  <Text style={styles.shelfTitle} numberOfLines={2}>
+                    {t("care.shelf.cta", {
+                      defaultValue: "Mahsulot tugash muddatini kuzatish",
+                    })}
+                  </Text>
+                  <Text style={styles.shelfSub} numberOfLines={1}>
+                    {t("care.shelf.ctaSub", {
+                      defaultValue: "PAO va refill eslatmalarini yoqish",
+                    })}
+                  </Text>
+                </View>
+                <Ionicons name="arrow-forward" size={moderateScale(15)} color="#FFFFFF" />
+              </LinearGradient>
+            </Pressable>
+          ) : null}
+
           {/* Search Bar — sheet ochiq bo‘lsa yashirin (input sheet ichida) */}
           {!searchOpen ? (
           <View style={styles.searchSection}>
@@ -1774,6 +1814,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
         ) : null}
 
         <CareSosSheet visible={sosOpen} onClose={() => setSosOpen(false)} />
+        <CareShelfTrackerSheet visible={shelfOpen} onClose={() => setShelfOpen(false)} />
 
         <Modal
           visible={previewVisible}
@@ -1917,6 +1958,44 @@ const styles = StyleSheet.create({
     ...morphFont,
     fontSize: fontSize(11),
     color: "rgba(255,255,255,0.78)",
+    marginTop: 1,
+  },
+  shelfBtn: {
+    borderRadius: moderateScale(18),
+    overflow: "hidden",
+    shadowColor: "#0F172A",
+    shadowOpacity: 0.22,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 3,
+  },
+  shelfFill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: moderateScale(10),
+    paddingHorizontal: scale(14),
+    paddingVertical: verticalScale(10),
+  },
+  shelfIcon: {
+    width: moderateScale(30),
+    height: moderateScale(30),
+    borderRadius: moderateScale(15),
+    backgroundColor: "rgba(255,255,255,0.15)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  shelfCopy: { flex: 1 },
+  shelfTitle: {
+    ...morphFont,
+    fontSize: fontSize(12.5),
+    fontWeight: "800",
+    color: "#FFFFFF",
+    lineHeight: fontSize(16),
+  },
+  shelfSub: {
+    ...morphFont,
+    fontSize: fontSize(10.5),
+    color: "rgba(255,255,255,0.75)",
     marginTop: 1,
   },
   routineRoot: { flex: 1, backgroundColor: "#EFEDE8" },
