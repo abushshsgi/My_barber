@@ -39,6 +39,7 @@ import { useAuth } from "../../auth/AuthContext";
 import { CareProductPreviewSheet } from "../../components/morph/care/CareProductPreviewSheet";
 import { CareCatalogMark } from "../../components/morph/care/CareCatalogMark";
 import { CareRoutineSheet } from "../../components/morph/care/CareRoutineSheet";
+import { CareSosSheet } from "../../components/morph/care/CareSosSheet";
 import { DarkMeshAmbientBg } from "../../components/morph/care/DarkMeshAmbientBg";
 import { AppStatusBar, safeTop } from "../../components/ui/AppStatusBar";
 import { useCareWeather } from "../../hooks/useCareWeather";
@@ -224,6 +225,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
       typeof step === "number",
   );
   const [searchQuery, setSearchQuery] = useState("");
+  const [sosOpen, setSosOpen] = useState(false);
   const [previewId, setPreviewId] = useState<number | null>(null);
   const [previewVisible, setPreviewVisible] = useState(false);
   /** Shu search sessiyasida qo‘shilganlar — qayta ochilganda tozalanadi */
@@ -1238,6 +1240,43 @@ export function MorphCareScreen({ navigation, route }: Props) {
             <View style={{ height: 4 }} />
           )}
 
+          {/* Bad Hair Day — tezkor SOS yechimi */}
+          {!searchOpen ? (
+            <Pressable
+              style={[
+                styles.sosBtn,
+                { marginHorizontal: hubLayout.hPad, marginTop: verticalScale(10) },
+              ]}
+              onPress={() => setSosOpen(true)}
+              accessibilityRole="button"
+              accessibilityLabel={t("care.sos.cta", {
+                defaultValue: "Sochim bugun yomon ko‘rinayapti (SOS)",
+              })}
+            >
+              <LinearGradient
+                colors={["#FF6B57", "#FF8A5B", "#E9527A"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.sosFill}
+              >
+                <View style={styles.sosIcon}>
+                  <Ionicons name="flash" size={moderateScale(16)} color="#FFFFFF" />
+                </View>
+                <View style={styles.sosCopy}>
+                  <Text style={styles.sosTitle} numberOfLines={2}>
+                    {t("care.sos.cta", {
+                      defaultValue: "Sochim bugun yomon ko‘rinayapti (SOS)",
+                    })}
+                  </Text>
+                  <Text style={styles.sosSub} numberOfLines={1}>
+                    {t("care.sos.ctaSub", { defaultValue: "2 daqiqalik tezkor yechim olish" })}
+                  </Text>
+                </View>
+                <Ionicons name="arrow-forward" size={moderateScale(15)} color="#FFFFFF" />
+              </LinearGradient>
+            </Pressable>
+          ) : null}
+
           {/* Search Bar — sheet ochiq bo‘lsa yashirin (input sheet ichida) */}
           {!searchOpen ? (
           <View style={styles.searchSection}>
@@ -1734,6 +1773,8 @@ export function MorphCareScreen({ navigation, route }: Props) {
           </>
         ) : null}
 
+        <CareSosSheet visible={sosOpen} onClose={() => setSosOpen(false)} />
+
         <Modal
           visible={previewVisible}
           transparent
@@ -1840,6 +1881,44 @@ export function MorphCareScreen({ navigation, route }: Props) {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: "#FAFAFA" },
+  sosBtn: {
+    borderRadius: moderateScale(20),
+    overflow: "hidden",
+    shadowColor: "#E9527A",
+    shadowOpacity: 0.28,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 4,
+  },
+  sosFill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: moderateScale(10),
+    paddingHorizontal: scale(14),
+    paddingVertical: verticalScale(11),
+  },
+  sosIcon: {
+    width: moderateScale(32),
+    height: moderateScale(32),
+    borderRadius: moderateScale(16),
+    backgroundColor: "rgba(255,255,255,0.22)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  sosCopy: { flex: 1 },
+  sosTitle: {
+    ...morphFont,
+    fontSize: fontSize(13),
+    fontWeight: "800",
+    color: "#FFFFFF",
+    lineHeight: fontSize(17),
+  },
+  sosSub: {
+    ...morphFont,
+    fontSize: fontSize(11),
+    color: "rgba(255,255,255,0.78)",
+    marginTop: 1,
+  },
   routineRoot: { flex: 1, backgroundColor: "#EFEDE8" },
   onboardRoot: { flex: 1, backgroundColor: "#FAFAFA" },
   center: { alignItems: "center", justifyContent: "center" },

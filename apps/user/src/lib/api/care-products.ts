@@ -45,6 +45,37 @@ export async function fetchCareProduct(id: number): Promise<CareProduct> {
   return apiJson(`/api/v1/ai/care/products/${id}/`);
 }
 
+export type SosTime = "2min" | "5-10min" | "15min+";
+export type SosIssue = "frizzy" | "oily" | "bedhead" | "dry";
+export type SosTool =
+  | "dryer"
+  | "dry_shampoo"
+  | "water_spray"
+  | "comb"
+  | "wax_gel"
+  | "nothing";
+
+export type SosFix = {
+  title: string;
+  steps: string[];
+  suggested_hairstyle: string;
+  pro_tip: string;
+  source?: "ai" | "fallback" | string;
+};
+
+export async function generateSosFix(body: {
+  time_available: SosTime;
+  hair_issue: SosIssue[];
+  tools_available: SosTool[];
+}): Promise<SosFix> {
+  const data = await apiJson<{ fix?: SosFix }>("/api/v1/ai/care/sos/", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+  if (!data?.fix) throw new Error("Tezkor yechim javobi noto'g'ri.");
+  return data.fix;
+}
+
 export async function fetchCareProductByBarcode(
   barcode: string,
   profile?: { condition?: string; texture?: string; color_status?: string; scalp?: string },

@@ -269,6 +269,45 @@ export async function generateCarePlan(body: {
   return data.plan;
 }
 
+export type SosTime = "2min" | "5-10min" | "15min+";
+export type SosIssue = "frizzy" | "oily" | "bedhead" | "dry";
+export type SosTool =
+  | "dryer"
+  | "dry_shampoo"
+  | "water_spray"
+  | "comb"
+  | "wax_gel"
+  | "nothing";
+
+export type SosFix = {
+  title: string;
+  steps: string[];
+  suggested_hairstyle: string;
+  pro_tip: string;
+  source?: "ai" | "fallback" | string;
+};
+
+export async function generateSosFix(body: {
+  time_available: SosTime;
+  hair_issue: SosIssue[];
+  tools_available: SosTool[];
+}): Promise<SosFix> {
+  const res = await apiFetch("/api/v1/ai/care/sos/", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+  const data = (await res.json().catch(() => null)) as
+    | { fix?: SosFix; detail?: string }
+    | null;
+  if (!res.ok) {
+    throw new Error(
+      data && typeof data.detail === "string" ? data.detail : "Tezkor yechim topilmadi.",
+    );
+  }
+  if (!data?.fix) throw new Error("Tezkor yechim javobi noto'g'ri.");
+  return data.fix;
+}
+
 export type MyCareProductApi = {
   id: number;
   name: string;
@@ -278,6 +317,8 @@ export type MyCareProductApi = {
   source: string;
   added_at: string | null;
   save_id?: number;
+  usage_uz?: string;
+  purpose_uz?: string;
 };
 
 export async function fetchMyCareProducts(): Promise<MyCareProductApi[]> {

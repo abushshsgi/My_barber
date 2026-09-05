@@ -291,6 +291,7 @@ from ai.care_views import (
     CareProductDetailView,
     CareProductLikeToggleView,
     CareProductListView,
+    CareSosFixView,
     HairCareProfileMeView,
 )
 from ai.weather_views import CareWeatherView
@@ -577,6 +578,7 @@ api_routes = [
     path("ai/care/my-products/", CareMyProductListCreateView.as_view()),
     path("ai/care/my-products/<int:product_id>/", CareMyProductDeleteView.as_view()),
     path("ai/care/plan/", CarePlanGenerateView.as_view()),
+    path("ai/care/sos/", CareSosFixView.as_view()),
     path("ai/care/weather/", CareWeatherView.as_view()),
     path("ai/barber-card/", AiBarberCardView.as_view()),
     path("ai/chat/", AiMorphChatView.as_view()),

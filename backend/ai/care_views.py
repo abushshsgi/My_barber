@@ -13,6 +13,7 @@ from ai.models import CareProduct, CareProductLike, CareUserProduct, HairCarePro
 from ai.services.care_match import recommend_products, suitability_for_user
 from ai.services.errors import AiStyleError
 from ai.services.gemini_care_plan import generate_care_plan
+from ai.services.gemini_sos_style import generate_sos_fix
 from ai.unthrottled import UnthrottledAPIView
 from subscriptions.services import can_use_morph_care
 
@@ -327,6 +328,71 @@ class CarePlanGenerateView(UnthrottledAPIView):
         return Response({"plan": plan, "usage": usage})
 
 
+SOS_TIME_CHOICES = {"2min", "5-10min", "15min+"}
+SOS_ISSUE_CHOICES = {"frizzy", "oily", "bedhead", "dry"}
+SOS_TOOL_CHOICES = {"dryer", "dry_shampoo", "water_spray", "comb", "wax_gel", "nothing"}
+
+
+def _pick_choices(raw, allowed: set[str], limit: int) -> list[str]:
+    if isinstance(raw, str):
+        raw = [raw]
+    if not isinstance(raw, list):
+        return []
+    out: list[str] = []
+    for item in raw:
+        key = str(item or "").strip().lower()
+        if key in allowed and key not in out:
+            out.append(key)
+        if len(out) >= limit:
+            break
+    return out
+
+
+class CareSosFixView(UnthrottledAPIView):
+    """POST — "Bad Hair Day" tezkor styling yechimi (salon tavsiyasisiz)."""
+
+    permission_classes = [IsAuthenticatedCustomer]
+
+    def post(self, request):
+        if not can_use_morph_care(request.user):
+            return Response(
+                {"detail": "Morph AI Parvarish Pro obunasida mavjud."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        time_available = str(request.data.get("time_available") or "").strip().lower()
+        if time_available not in SOS_TIME_CHOICES:
+            return Response({"detail": "Qancha vaqtingiz borligini tanlang."}, status=400)
+
+        issues = _pick_choices(
+            request.data.get("hair_issue") or request.data.get("issues"),
+            SOS_ISSUE_CHOICES,
+            limit=4,
+        )
+        if not issues:
+            return Response({"detail": "Asosiy muammoni tanlang."}, status=400)
+
+        tools = _pick_choices(
+            request.data.get("tools_available") or request.data.get("tools"),
+            SOS_TOOL_CHOICES,
+            limit=6,
+        )
+        if "nothing" in tools and len(tools) > 1:
+            tools = [t for t in tools if t != "nothing"]
+
+        profile = HairCareProfile.objects.filter(user=request.user).first()
+        fix = generate_sos_fix(
+            time_available=time_available,
+            issues=issues,
+            tools=tools,
+            condition=(profile.condition if profile else "") or "",
+            texture=(profile.texture if profile else "") or "",
+            gender=(getattr(request.user, "gender", None) or "").strip().lower(),
+        )
+        usage = fix.pop("_usage", None)
+        return Response({"fix": fix, "usage": usage})
+
+
 def _serialize_my_product(request, row: CareUserProduct) -> dict:
     p = row.product
     return {
@@ -337,6 +403,8 @@ def _serialize_my_product(request, row: CareUserProduct) -> dict:
         "image_url": CareProductSerializer(
             p, context={"request": request, "liked_product_ids": set()}
         ).data.get("image_url"),
+        "usage_uz": (p.usage_uz or "")[:400],
+        "purpose_uz": (p.purpose_uz or "")[:240],
         "source": row.source,
         "added_at": row.created_at.isoformat() if row.created_at else None,
         "save_id": row.id,

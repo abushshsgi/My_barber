@@ -1,6 +1,6 @@
 import { Link, useRouter } from "@tanstack/react-router";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { ChevronLeft, Loader2, Lock } from "lucide-react";
+import { ChevronLeft, Loader2, Lock, Zap } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
@@ -21,6 +21,7 @@ import { fetchCareAccess } from "@/lib/api/subscriptions";
 import { cn } from "@/lib/utils";
 import { useHairCareProfile, useUpdateHairCareProfile } from "@/hooks/use-hair-care-profile";
 import { useCareProducts } from "@/hooks/use-care-products";
+import { BadHairDaySosSheet } from "@/components/ai-style/BadHairDaySosSheet";
 
 const CONDITION_OPTS: HairCondition[] = ["oily", "dry", "normal", "damaged"];
 const TEXTURE_OPTS: HairTexture[] = ["straight", "wavy", "curly"];
@@ -47,6 +48,7 @@ export function MorphAiCarePage() {
     () => savedQuiz ?? defaultQuizFromProfile(profile),
   );
   const [step, setStep] = useState<QuizStep | "plan">(savedQuiz ? "plan" : 0);
+  const [sosOpen, setSosOpen] = useState(false);
   const plan = useMemo(() => buildCarePlan(profile, quiz), [profile, quiz]);
   const catalogProducts = catalogQ.data || [];
   const hydratedHair = useRef(false);
@@ -296,6 +298,39 @@ export function MorphAiCarePage() {
           </p>
         </motion.div>
 
+        <motion.button
+          type="button"
+          onClick={() => setSosOpen(true)}
+          initial={reduce ? false : { opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.04, duration: 0.35, ease }}
+          whileTap={reduce ? undefined : { scale: 0.985 }}
+          className="group relative mt-5 flex w-full cursor-pointer items-center gap-3 overflow-hidden rounded-[22px] bg-gradient-to-r from-[#FF6B57] via-[#FF8A5B] to-[#E9527A] px-4 py-3.5 text-left text-white shadow-[0_10px_28px_-10px_rgba(233,82,122,0.65)]"
+        >
+          <span className="grid size-10 shrink-0 place-items-center rounded-full bg-white/20">
+            <Zap className="size-[18px]" strokeWidth={2.5} />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-[14px] font-semibold leading-tight">
+              {t("aiStylePage.care.sos.cta", {
+                defaultValue: "Sochim bugun yomon ko'rinayapti (SOS)",
+              })}
+            </span>
+            <span className="mt-0.5 block text-[12px] text-white/75">
+              {t("aiStylePage.care.sos.ctaSub", {
+                defaultValue: "2 daqiqalik tezkor yechim olish",
+              })}
+            </span>
+          </span>
+          <motion.span
+            aria-hidden
+            className="pointer-events-none absolute inset-y-0 -left-1/3 w-1/3 bg-gradient-to-r from-transparent via-white/25 to-transparent"
+            initial={false}
+            animate={reduce ? undefined : { x: ["0%", "420%"] }}
+            transition={{ duration: 2.6, repeat: Infinity, repeatDelay: 2.4, ease: "easeInOut" }}
+          />
+        </motion.button>
+
         <motion.div
           initial={reduce ? false : { opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
@@ -453,6 +488,8 @@ export function MorphAiCarePage() {
           </Link>
         </motion.div>
       </div>
+
+      <BadHairDaySosSheet open={sosOpen} onClose={() => setSosOpen(false)} />
     </div>
   );
 }
