@@ -553,16 +553,21 @@ export function CareRoutineSheet({
   };
 
   const greeting = userName?.trim().split(/\s+/)[0] || t("care.routine.friendFallback", { defaultValue: "Do‘stim" });
+  const showStickyShelfCta = !!schedule && !editingSchedule;
 
   return (
-    <ScrollView
-      style={styles.sheetScroll}
-      contentContainerStyle={styles.sheetContent}
-      nestedScrollEnabled
-      keyboardShouldPersistTaps="handled"
-      showsVerticalScrollIndicator={false}
-    >
-      <View style={styles.dayHero}>
+    <View style={styles.sheetWrap}>
+      <ScrollView
+        style={styles.sheetScroll}
+        contentContainerStyle={[
+          styles.sheetContent,
+          showStickyShelfCta ? styles.sheetContentWithStickyCta : null,
+        ]}
+        nestedScrollEnabled
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.dayHero}>
         <View style={styles.dayHeroTop}>
           <View style={{ flex: 1, minWidth: 0 }}>
             <Text style={styles.dayEyebrow}>
@@ -905,22 +910,46 @@ export function CareRoutineSheet({
       </>
       ) : null}
 
-      <Pressable style={styles.profileLink} onPress={onRetakeQuiz}>
-        <Text style={styles.profileLinkText}>
-          {t("care.quiz.retake")} · {t("care.onboarding.badge")}
-        </Text>
-      </Pressable>
-    </ScrollView>
+        <Pressable style={styles.profileLink} onPress={onRetakeQuiz}>
+          <Text style={styles.profileLinkText}>
+            {t("care.quiz.retake")} · {t("care.onboarding.badge")}
+          </Text>
+        </Pressable>
+      </ScrollView>
+
+      {showStickyShelfCta ? (
+        <View pointerEvents="box-none" style={styles.stickyShelfWrap}>
+          <Pressable style={styles.stickyShelfBtn} onPress={onOpenShelf}>
+            <View style={styles.stickyShelfIcon}>
+              <Ionicons name="cube-outline" size={16} color="#fff" />
+            </View>
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text style={styles.stickyShelfTitle} numberOfLines={1}>
+                {t("care.shelf.cta", { defaultValue: "Mahsulot tugash muddatini kuzatish" })}
+              </Text>
+              <Text style={styles.stickyShelfSub} numberOfLines={1}>
+                {t("care.shelf.ctaSub", { defaultValue: "PAO va refill eslatmalarini yoqish" })}
+              </Text>
+            </View>
+            <Ionicons name="arrow-forward" size={16} color="#fff" />
+          </Pressable>
+        </View>
+      ) : null}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  sheetWrap: { flex: 1, position: "relative" },
   sheetScroll: { flex: 1, backgroundColor: "#EFEDE8" },
   sheetContent: {
     paddingHorizontal: scale(16),
     paddingTop: verticalScale(8),
     paddingBottom: verticalScale(110),
     gap: moderateScale(14),
+  },
+  sheetContentWithStickyCta: {
+    paddingBottom: verticalScale(186),
   },
   dayHero: {
     borderRadius: moderateScale(28),
@@ -1313,5 +1342,45 @@ const styles = StyleSheet.create({
     fontSize: fontSize(12),
     fontWeight: "600",
     color: "rgba(17,17,17,0.4)",
+  },
+  stickyShelfWrap: {
+    position: "absolute",
+    left: scale(16),
+    right: scale(16),
+    bottom: verticalScale(20),
+  },
+  stickyShelfBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: moderateScale(10),
+    borderRadius: moderateScale(16),
+    backgroundColor: "#111111",
+    paddingHorizontal: scale(12),
+    paddingVertical: verticalScale(10),
+    shadowColor: "#111111",
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 5 },
+    elevation: 4,
+  },
+  stickyShelfIcon: {
+    width: scale(30),
+    height: scale(30),
+    borderRadius: moderateScale(12),
+    backgroundColor: "rgba(255,255,255,0.14)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  stickyShelfTitle: {
+    ...morphFont,
+    fontSize: fontSize(12.5),
+    fontWeight: "700",
+    color: "#FFFFFF",
+  },
+  stickyShelfSub: {
+    ...morphFont,
+    marginTop: 1,
+    fontSize: fontSize(10.5),
+    color: "rgba(255,255,255,0.72)",
   },
 });
