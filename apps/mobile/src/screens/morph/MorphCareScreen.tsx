@@ -1529,7 +1529,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
                   <Text style={styles.reportTitle}>{t("care.hubReport")}</Text>
                   <Pressable style={styles.reportFilter} onPress={openMyProducts}>
                     <Text style={styles.reportFilterText}>{t("care.myProducts.title")}</Text>
-                    <Ionicons name="chevron-forward" size={13} color="rgba(255,255,255,0.55)" />
+                    <Ionicons name="chevron-forward" size={13} color="#737373" />
                   </Pressable>
                 </View>
 
@@ -1610,7 +1610,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
                   accessibilityLabel={t("care.hubAiAssistant")}
                 >
                   <LinearGradient
-                    colors={["#111111", "#2A2A2A"]}
+                    colors={["#111111", "#111111"]}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
                     style={styles.aiAssistantIcon}
@@ -2851,26 +2851,26 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   hubSheet: {
-    backgroundColor: "#171717",
+    backgroundColor: "#FFFFFF",
     paddingHorizontal: scale(12),
     paddingTop: verticalScale(14),
     paddingBottom: 0,
     gap: moderateScale(12),
     borderRadius: moderateScale(22),
     overflow: "hidden",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.12)",
-    shadowColor: "#000000",
-    shadowOpacity: 0.45,
-    shadowRadius: 22,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 16,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(17,17,17,0.08)",
+    shadowColor: "#111111",
+    shadowOpacity: 0.14,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: -4 },
+    elevation: 12,
   },
   hubSheetFlow: {
     marginTop: verticalScale(12),
     borderRadius: moderateScale(26),
     overflow: "hidden",
-    backgroundColor: "#171717",
+    backgroundColor: "#FFFFFF",
     paddingHorizontal: scale(20),
     paddingTop: verticalScale(12),
     gap: moderateScale(12),
@@ -2882,7 +2882,7 @@ const styles = StyleSheet.create({
     gap: moderateScale(16),
     marginBottom: verticalScale(4),
   },
-  reportTitle: { ...morphFont, fontSize: fontSize(14), fontWeight: "700", color: "#FFFFFF" },
+  reportTitle: { ...morphFont, fontSize: fontSize(14), fontWeight: "700", color: "#111111" },
   reportFilter: {
     flexDirection: "row",
     alignItems: "center",
@@ -2890,9 +2890,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: scale(10),
     paddingVertical: verticalScale(4),
     borderRadius: 999,
-    backgroundColor: "rgba(255,255,255,0.1)",
+    backgroundColor: "#F0F0F0",
   },
-  reportFilterText: { ...morphFont, fontSize: fontSize(11), fontWeight: "600", color: "rgba(255,255,255,0.72)" },
+  reportFilterText: { ...morphFont, fontSize: fontSize(11), fontWeight: "600", color: "#737373" },
   hubCards: {
     flexDirection: "row",
     gap: moderateScale(12),
@@ -2903,9 +2903,9 @@ const styles = StyleSheet.create({
     flex: 1,
     height: "100%",
     borderRadius: moderateScale(14),
-    backgroundColor: "#2A2A2A",
+    backgroundColor: "#F0F0F0",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.1)",
+    borderColor: "rgba(17,17,17,0.08)",
     overflow: "hidden",
     position: "relative",
   },
