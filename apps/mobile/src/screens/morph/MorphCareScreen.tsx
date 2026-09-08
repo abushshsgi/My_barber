@@ -1306,28 +1306,6 @@ export function MorphCareScreen({ navigation, route }: Props) {
                     style={StyleSheet.absoluteFill}
                     contentFit="cover"
                   />
-                  <LinearGradient
-                    colors={["transparent", "rgba(17,17,17,0.28)", "rgba(17,17,17,0.72)"]}
-                    locations={[0, 0.45, 1]}
-                    style={styles.quickActionScrim}
-                    pointerEvents="none"
-                  />
-                  <View
-                    style={[
-                      styles.quickActionBody,
-                      { padding: hubLayout.quickActionUi.pad },
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.quickActionLabel,
-                        { fontSize: hubLayout.quickActionUi.labelFs },
-                      ]}
-                      numberOfLines={1}
-                    >
-                      {card.label}
-                    </Text>
-                  </View>
                 </Pressable>
               ))}
             </ScrollView>
