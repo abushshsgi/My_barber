@@ -173,7 +173,15 @@ export function MorphCareWeatherScreen({ navigation }: Props) {
               </Pressable>
             </View>
           ) : (
-            <View style={styles.heroBody}>
+            <View style={[styles.heroBody, refreshing && styles.heroBodyRefreshing]}>
+              {refreshing ? (
+                <View style={styles.heroRefreshBadge}>
+                  <ActivityIndicator color="#fff" size="small" />
+                  <Text style={styles.heroRefreshText}>
+                    {t("care.weather.updating", { defaultValue: "Yangilanmoqda…" })}
+                  </Text>
+                </View>
+              ) : null}
               <Text style={styles.heroEyebrow}>{t("care.weather.title")}</Text>
               <View style={styles.heroTempRow}>
                 <Text style={styles.heroTemp}>
@@ -260,11 +268,22 @@ export function MorphCareWeatherScreen({ navigation }: Props) {
               </View>
             ) : null}
 
-            {/* UV tip */}
-            {uv && (uv.level === "high" || uv.level === "very_high" || uv.level === "extreme") ? (
-              <View style={styles.uvCard}>
+            {/* UV tip — har doim (yuqori UV da kuchliroq) */}
+            {uv?.tip ? (
+              <View
+                style={[
+                  styles.uvCard,
+                  (uv.level === "high" || uv.level === "very_high" || uv.level === "extreme") &&
+                    styles.uvCardHot,
+                ]}
+              >
                 <Ionicons name="sunny" size={18} color="#111" />
-                <Text style={styles.uvText}>{uv.tip}</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.uvTitle}>
+                    UV {uv.index != null ? Math.round(uv.index) : "—"} · {uv.level}
+                  </Text>
+                  <Text style={styles.uvText}>{uv.tip}</Text>
+                </View>
               </View>
             ) : null}
 
@@ -511,6 +530,24 @@ const styles = StyleSheet.create({
   },
   retryGhostText: { ...morphFont, fontSize: fontSize(12), fontWeight: "700", color: "#fff" },
   heroBody: { zIndex: 2, gap: moderateScale(6) },
+  heroBodyRefreshing: { opacity: 0.92 },
+  heroRefreshBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    gap: moderateScale(6),
+    backgroundColor: "rgba(0,0,0,0.35)",
+    paddingHorizontal: scale(10),
+    paddingVertical: verticalScale(4),
+    borderRadius: 999,
+    marginBottom: verticalScale(2),
+  },
+  heroRefreshText: {
+    ...morphFont,
+    fontSize: fontSize(11),
+    fontWeight: "700",
+    color: "#fff",
+  },
   heroEyebrow: {
     ...morphFont,
     fontSize: fontSize(11),
@@ -592,6 +629,19 @@ const styles = StyleSheet.create({
     borderRadius: moderateScale(14),
     padding: moderateScale(12),
     marginBottom: verticalScale(8),
+  },
+  uvCardHot: {
+    backgroundColor: "#FFEDD5",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(234,88,12,0.25)",
+  },
+  uvTitle: {
+    ...morphFont,
+    fontSize: fontSize(12),
+    fontWeight: "800",
+    color: "#111",
+    marginBottom: 2,
+    textTransform: "capitalize",
   },
   uvText: { ...morphFont, flex: 1, fontSize: fontSize(12), lineHeight: fontSize(17), color: "#111", fontWeight: "600" },
 
