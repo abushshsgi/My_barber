@@ -27,9 +27,6 @@ import {
   formatMorphUserError,
   type MorphAiGeneration,
 } from "../../api/ai";
-import { fetchHairstyles } from "../../api/hairstyles";
-import { genderToAudience, getAppGender } from "../../lib/guest";
-import { pexelsPhotoUrl } from "../../api/media";
 import { useAuth } from "../../auth/AuthContext";
 import { TAB_DOCK_CLEARANCE } from "../../hooks/useHideTabBar";
 import { useMorphLimitGate } from "../../hooks/useMorphLimitGate";
@@ -53,7 +50,7 @@ import {
 
 type Props = NativeStackScreenProps<MorphStackParamList, "MorphCapture">;
 
-const FALLBACK_HERO = pexelsPhotoUrl(3998429, 1400);
+const SELFIE_HERO = require("../../../assets/morph/try-on-selfie-hero.png");
 const SPRING = { damping: 22, stiffness: 220, mass: 0.85 };
 const PREVIEW_LIMIT = 6;
 
@@ -231,7 +228,6 @@ export function MorphTryOnScreen({ navigation }: Props) {
 
   const [ready, setReady] = useState(false);
   const [busy, setBusy] = useState<"camera" | "gallery" | null>(null);
-  const [heroUri, setHeroUri] = useState(FALLBACK_HERO);
   const [error, setError] = useState<string | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [historyItems, setHistoryItems] = useState<MorphAiGeneration[]>([]);
@@ -245,21 +241,6 @@ export function MorphTryOnScreen({ navigation }: Props) {
   useEffect(() => {
     setReady(true);
     void markMorphTryOnIntroDone();
-  }, []);
-
-  useEffect(() => {
-    let cancelled = false;
-    void getAppGender()
-      .then((g) => fetchHairstyles(genderToAudience(g)))
-      .then((rows) => {
-        if (cancelled) return;
-        const uri = rows[0]?.image_url?.trim();
-        if (uri) setHeroUri(uri);
-      })
-      .catch(() => undefined);
-    return () => {
-      cancelled = true;
-    };
   }, []);
 
   const loadHistory = useCallback(async () => {
@@ -388,6 +369,20 @@ export function MorphTryOnScreen({ navigation }: Props) {
     opacity: interpolate(lift.value, [0, historyH * 0.4], [1, 0.55], Extrapolation.CLAMP),
   }));
 
+  /** «Barchasi» chiqqanda history icon yo‘qoladi (bir vaqtda ikkalasi ko‘rinmasin). */
+  const historyIconAnim = useAnimatedStyle(() => {
+    const t = interpolate(
+      lift.value,
+      [historyH * 0.12, historyH * 0.42],
+      [1, 0],
+      Extrapolation.CLAMP,
+    );
+    return {
+      opacity: t,
+      transform: [{ scale: interpolate(t, [0, 1], [0.88, 1]) }],
+    };
+  });
+
   const startWith = useCallback(
     async (source: "camera" | "gallery") => {
       if (!isAuthenticated) {
@@ -441,21 +436,40 @@ export function MorphTryOnScreen({ navigation }: Props) {
 
   return (
     <View style={styles.root}>
-      <Image
-        source={{ uri: heroUri }}
-        style={StyleSheet.absoluteFill}
-        contentFit="cover"
-        transition={300}
-      />
+      <View
+        style={[
+          styles.heroWrap,
+          {
+            top: insets.top + verticalScale(8),
+            height: Math.round(winH * 0.42),
+            width: winW - scale(28),
+            marginLeft: scale(14),
+          },
+        ]}
+        pointerEvents="none"
+      >
+        <Image
+          source={SELFIE_HERO}
+          style={styles.heroImg}
+          contentFit="cover"
+          transition={300}
+        />
+        <LinearGradient
+          colors={["rgba(17,17,17,0.42)", "rgba(17,17,17,0.12)", "rgba(250,250,250,0.92)"]}
+          locations={[0, 0.48, 1]}
+          style={StyleSheet.absoluteFill}
+        />
+      </View>
       <LinearGradient
-        colors={["rgba(17,17,17,0.08)", "rgba(17,17,17,0.35)", "#FAFAFA"]}
-        locations={[0, 0.42, 0.72]}
+        colors={["transparent", "#FAFAFA"]}
+        locations={[0.55, 0.78]}
         style={StyleSheet.absoluteFill}
+        pointerEvents="none"
       />
 
       <Animated.View
         entering={FadeIn.duration(400)}
-        style={[styles.centerCopy, { paddingTop: insets.top + verticalScale(40) }]}
+        style={[styles.centerCopy, { paddingTop: insets.top + verticalScale(28) }]}
         pointerEvents="none"
       >
         <Text style={styles.headline}>Selfie yuklang</Text>
@@ -484,24 +498,19 @@ export function MorphTryOnScreen({ navigation }: Props) {
                   {historyOpen ? "Yopish · pastga" : "Tarix · yuqoriga"}
                 </Text>
               </Animated.View>
-              <Pressable
-                style={[
-                  styles.historyIconBtn,
-                  historyOpen && styles.historyIconBtnOn,
-                ]}
-                onPress={() => {
-                  if (historyOpen) closeHistoryPanel();
-                  else openHistoryPanel();
-                }}
-                accessibilityLabel="Tarix"
-                hitSlop={8}
+              <Animated.View
+                style={historyIconAnim}
+                pointerEvents={historyOpen ? "none" : "auto"}
               >
-                <Ionicons
-                  name="time-outline"
-                  size={16}
-                  color={historyOpen ? "#FFF" : "#111111"}
-                />
-              </Pressable>
+                <Pressable
+                  style={styles.historyIconBtn}
+                  onPress={openHistoryPanel}
+                  accessibilityLabel="Tarix"
+                  hitSlop={8}
+                >
+                  <Ionicons name="time-outline" size={16} color="#111111" />
+                </Pressable>
+              </Animated.View>
             </View>
 
             {/* Capture — yopiq holat (pan faqat handle orqali; tugmalar bosiladi) */}
@@ -686,10 +695,22 @@ const ACTION_ICON = scale(IS_SMALL_DEVICE ? 22 : 26);
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: "#FAFAFA" },
+  heroWrap: {
+    position: "absolute",
+    left: 0,
+    overflow: "hidden",
+    borderRadius: radius.xl,
+    backgroundColor: "#E8E8E8",
+  },
+  heroImg: {
+    width: "100%",
+    height: "100%",
+  },
   centerCopy: {
     alignItems: "center",
     paddingHorizontal: scale(24),
     gap: spacing.xs,
+    zIndex: 2,
   },
   headline: {
     color: "#FFF",
@@ -697,12 +718,18 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     letterSpacing: -0.4,
     textAlign: "center",
+    textShadowColor: "rgba(0,0,0,0.35)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 6,
   },
   sub: {
-    color: "rgba(255,255,255,0.72)",
+    color: "rgba(255,255,255,0.88)",
     fontSize: fontSize(13),
     fontWeight: "500",
     textAlign: "center",
+    textShadowColor: "rgba(0,0,0,0.3)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 4,
   },
   dockBleed: {
     position: "absolute",
@@ -755,9 +782,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#F2F2F2",
     alignItems: "center",
     justifyContent: "center",
-  },
-  historyIconBtnOn: {
-    backgroundColor: "#111111",
   },
   steps: {
     flexDirection: "row",
