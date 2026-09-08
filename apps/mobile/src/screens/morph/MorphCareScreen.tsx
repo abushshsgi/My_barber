@@ -1056,8 +1056,8 @@ export function MorphCareScreen({ navigation, route }: Props) {
   if (viewMode === "hub") {
     return (
       <View style={[styles.hubRoot, { paddingBottom: hubLayout.dockClearance }]}>
-        <AppStatusBar style="dark" />
-        <View style={[StyleSheet.absoluteFill, { backgroundColor: "#FAFAFA" }]} />
+        <AppStatusBar style="light" />
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: "#111111" }]} />
 
         <View
           style={[
@@ -1907,7 +1907,7 @@ const styles = StyleSheet.create({
   center: { alignItems: "center", justifyContent: "center" },
   pad: { flex: 1, paddingHorizontal: scale(20) },
   onboardPad: { flex: 1, paddingHorizontal: scale(20) },
-  hubRoot: { flex: 1, backgroundColor: "#FAFAFA", overflow: "hidden" },
+  hubRoot: { flex: 1, backgroundColor: "#111111", overflow: "hidden" },
   hubScroll: {
     flex: 1,
     minHeight: 0,
