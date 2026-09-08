@@ -5,7 +5,9 @@ import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Image,
+  Modal,
   Pressable,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -14,20 +16,16 @@ import {
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { fetchHairCareProfile } from "../../api/care";
-import { weatherIconName } from "../../api/weather";
+import { weatherIconName, type WeatherDay } from "../../api/weather";
+import { NativeBackButton } from "../../components/ui/NativeBackButton";
 import { useCareWeather } from "../../hooks/useCareWeather";
 import { useHideTabBar } from "../../hooks/useHideTabBar";
 import {
   hasSeenWeatherIntro,
-  loadMyProducts,
   markWeatherIntroSeen,
-  type MyCareProduct,
 } from "../../lib/morph-my-products";
-import {
-  buildProductWeatherTips,
-  generalWeatherExtras,
-  weatherHeroImage,
-} from "../../lib/weather-care-tips";
+import { weatherLocationHeroSource } from "../../lib/weather-care-tips";
+import { regionLabel, UZ_REGIONS, type UzRegionId } from "../../lib/uz-regions";
 import type { MorphCareStackParamList } from "../../navigation/MorphCareStack";
 import { morphFont } from "../../theme/morph-font";
 import {
@@ -39,29 +37,51 @@ import {
 
 type Props = NativeStackScreenProps<MorphCareStackParamList, "CareWeather">;
 
+function takeThreeDays(days: WeatherDay[]): WeatherDay[] {
+  if (!days.length) return [];
+  const todayIdx = days.findIndex((d) => d.is_today);
+  const start = todayIdx >= 0 ? todayIdx : 0;
+  return days.slice(start, start + 3);
+}
+
+function dayTitle(
+  day: WeatherDay,
+  index: number,
+  t: (key: string, opts?: { defaultValue?: string }) => string,
+): string {
+  if (day.is_today || index === 0) return t("care.weather.today", { defaultValue: "Bugun" });
+  if (index === 1) return t("care.weather.tomorrow", { defaultValue: "Ertaga" });
+  return t(`care.weather.weekdaysShort.${day.weekday_key}`);
+}
+
 export function MorphCareWeatherScreen({ navigation }: Props) {
   useHideTabBar();
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
-  const { data, loading, error, refresh } = useCareWeather();
+  const {
+    data,
+    regionId,
+    loading,
+    refreshing,
+    error,
+    refresh,
+    setRegion,
+    clearManualRegion,
+  } = useCareWeather();
   const [showIntro, setShowIntro] = useState(false);
   const [profileLine, setProfileLine] = useState<string | null>(null);
-  const [myProducts, setMyProducts] = useState<MyCareProduct[]>([]);
+  const [regionOpen, setRegionOpen] = useState(false);
 
   useEffect(() => {
     void (async () => {
       const seen = await hasSeenWeatherIntro();
       setShowIntro(!seen);
-      const [profile, products] = await Promise.all([
-        fetchHairCareProfile().catch(() => null),
-        loadMyProducts().catch(() => [] as MyCareProduct[]),
-      ]);
+      const profile = await fetchHairCareProfile().catch(() => null);
       if (profile?.complete && profile.condition && profile.texture && profile.color_status) {
         setProfileLine(
           `${t(`care.conditions.${profile.condition}`)} · ${t(`care.textures.${profile.texture}`)} · ${t(`care.colors.${profile.color_status}`)}`,
         );
       }
-      setMyProducts(products);
     })();
   }, [t]);
 
@@ -73,474 +93,641 @@ export function MorphCareWeatherScreen({ navigation }: Props) {
   const current = data?.current;
   const conditionKey = current?.condition_key ?? "unknown";
   const icon = weatherIconName(conditionKey);
-  const heroImg = weatherHeroImage(conditionKey);
+  const cityName = regionId
+    ? regionLabel(regionId)
+    : t("care.weather.cityFallback", { defaultValue: "Shahar" });
 
-  const productTips = useMemo(
-    () => buildProductWeatherTips(myProducts, data),
-    [myProducts, data],
-  );
+  const heroImg = weatherLocationHeroSource({
+    region: data?.location_region,
+    place: data?.location_place || data?.location_label,
+    condition: conditionKey,
+    lat: data?.latitude,
+    lon: data?.longitude,
+    regionId,
+  });
 
-  const extras = useMemo(
-    () =>
-      generalWeatherExtras({
-        condition: conditionKey,
-        temp: current?.temperature_c ?? null,
-        humidity: current?.humidity_pct ?? null,
-        wind: current?.wind_kmh ?? null,
-      }),
-    [conditionKey, current?.humidity_pct, current?.temperature_c, current?.wind_kmh],
-  );
+  const threeDays = useMemo(() => takeThreeDays(data?.days ?? []), [data?.days]);
+  const hours = data?.hours?.slice(0, 8) ?? [];
+  const productPlan = data?.product_plan ?? [];
+  const primary = data?.primary_action;
+  const uv = data?.uv;
+
+  const onPickRegion = async (id: UzRegionId) => {
+    setRegionOpen(false);
+    await setRegion(id);
+  };
 
   return (
-    <ScrollView
-      style={styles.root}
-      nestedScrollEnabled={true}
-      keyboardShouldPersistTaps="handled"
-      showsVerticalScrollIndicator={false}
-      contentContainerStyle={{
-        paddingTop: insets.top + 12,
-        paddingBottom: Math.max(insets.bottom, 24) + 72,
-        paddingHorizontal: 20,
-      }}
-    >
-      <View style={styles.rowBetween}>
-        <Pressable
-          style={styles.navCircleBtn}
-          onPress={() => {
-            const routes = navigation.getState?.()?.routes;
-            if (routes && routes.length > 1) {
-              navigation.goBack();
-            } else {
-              navigation.navigate("CareHome");
-            }
-          }}
-          hitSlop={8}
-          accessibilityLabel={t("common.back")}
-        >
-          <Ionicons name="chevron-back" size={20} color="#2a2a2a" />
-        </Pressable>
-        <Text style={styles.badge}>{t("care.weather.title")}</Text>
-        <View style={{ width: 42 }} />
-      </View>
+    <View style={styles.root}>
+      <ScrollView
+        nestedScrollEnabled
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => void refresh()}
+            tintColor="#111"
+          />
+        }
+        contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 20) + 28 }}
+      >
+        <View style={[styles.hero, { paddingTop: insets.top + 8 }]}>
+          <Image source={heroImg} style={styles.heroImg} resizeMode="cover" />
+          <LinearGradient
+            colors={["rgba(8,10,16,0.45)", "rgba(8,10,16,0.15)", "rgba(8,10,16,0.88)"]}
+            locations={[0, 0.4, 1]}
+            style={StyleSheet.absoluteFill}
+          />
 
-      {loading ? (
-        <View style={styles.centerBox}>
-          <ActivityIndicator color="#111111" />
-        </View>
-      ) : error ? (
-        <View style={styles.centerBox}>
-          <Text style={styles.errorText}>{t(error)}</Text>
-          <Pressable style={styles.retryBtn} onPress={() => void refresh()}>
-            <Text style={styles.retryText}>{t("common.retry")}</Text>
-          </Pressable>
-        </View>
-      ) : data ? (
-        <>
-          {showIntro ? (
-            <View style={styles.introCard}>
-              <Ionicons name="sparkles-outline" size={22} color="#111111" />
-              <View style={{ flex: 1 }}>
-                <Text style={styles.introTitle}>{t("care.weather.introTitle")}</Text>
-                <Text style={styles.introSub}>{t("care.weather.introSub")}</Text>
-              </View>
-              <Pressable style={styles.introBtn} onPress={dismissIntro}>
-                <Text style={styles.introBtnText}>{t("common.ok")}</Text>
-              </Pressable>
-            </View>
-          ) : null}
-
-          {profileLine ? (
-            <View style={styles.profileCard}>
-              <Ionicons name="person-circle-outline" size={20} color="#111111" />
-              <Text style={styles.profileText}>{profileLine}</Text>
-            </View>
-          ) : null}
-
-          <View style={styles.hero}>
-            <Image source={{ uri: heroImg }} style={styles.heroImg} resizeMode="cover" />
-            <LinearGradient
-              colors={["rgba(8,12,20,0.25)", "rgba(8,12,20,0.75)"]}
-              style={StyleSheet.absoluteFill}
+          <View style={styles.heroNav}>
+            <NativeBackButton
+              onPress={() => {
+                const routes = navigation.getState?.()?.routes;
+                if (routes && routes.length > 1) navigation.goBack();
+                else navigation.navigate("CareHome");
+              }}
+              accessibilityLabel={t("common.back")}
+              color="#111111"
+              backgroundColor="rgba(255,255,255,0.96)"
+              style={styles.heroBack}
             />
-            <View style={styles.heroTop}>
-              <Ionicons name={icon} size={42} color="#fff" />
-              <Text style={styles.temp}>
-                {current?.temperature_c != null ? `${Math.round(current.temperature_c)}°` : "—"}
+            <View style={styles.heroNavSpacer} />
+            <Pressable style={styles.cityChip} onPress={() => setRegionOpen(true)}>
+              <Text style={styles.cityChipText} numberOfLines={1}>
+                {cityName}
               </Text>
-            </View>
-            <Text style={styles.condition}>
-              {t(`care.weather.conditions.${conditionKey}`)}
-            </Text>
-            {data.location_region || data.location_place || data.location_label ? (
-              <View style={styles.locationBlock}>
-                {data.location_region ? (
-                  <Text style={styles.locationRegion} numberOfLines={1}>
-                    {data.location_region}
-                  </Text>
-                ) : null}
-                {(data.location_place && data.location_place !== data.location_region) ||
-                (!data.location_region && data.location_label) ? (
-                  <Text style={styles.location} numberOfLines={1}>
-                    {data.location_place || data.location_label}
-                  </Text>
-                ) : null}
-              </View>
-            ) : null}
+              <Ionicons name="chevron-down" size={14} color="#111" />
+            </Pressable>
           </View>
 
-          <View style={styles.statsRow}>
-            <View style={styles.statCard}>
-              <Ionicons name="water-outline" size={18} color="#737373" />
-              <Text style={styles.statLabel}>{t("care.weather.humidity")}</Text>
-              <Text style={styles.statValue}>
-                {current?.humidity_pct != null ? `${Math.round(current.humidity_pct)}%` : "—"}
-              </Text>
+          {loading && !data ? (
+            <View style={styles.heroLoading}>
+              <ActivityIndicator color="#fff" />
             </View>
-            <View style={styles.statCard}>
-              <Ionicons name="speedometer-outline" size={18} color="#737373" />
-              <Text style={styles.statLabel}>{t("care.weather.wind")}</Text>
-              <Text style={styles.statValue}>
-                {current?.wind_kmh != null ? `${Math.round(current.wind_kmh)} km/h` : "—"}
-              </Text>
-            </View>
-          </View>
-
-          <Text style={styles.section}>{t("care.weather.today")}</Text>
-          <Text style={styles.summary}>{data.summary}</Text>
-
-          <Text style={styles.section}>{t("care.weather.myProductsTitle")}</Text>
-          {productTips.length === 0 ? (
-            <View style={styles.emptyProducts}>
-              <Ionicons name="bag-handle-outline" size={22} color="#737373" />
-              <Text style={styles.emptyProductsTitle}>{t("care.weather.myProductsEmptyTitle")}</Text>
-              <Text style={styles.emptyProductsSub}>{t("care.weather.myProductsEmptySub")}</Text>
-              <Pressable
-                style={styles.emptyProductsBtn}
-                onPress={() => navigation.navigate("CareMyProducts")}
-              >
-                <Text style={styles.emptyProductsBtnText}>{t("care.myProducts.title")}</Text>
+          ) : error && !data ? (
+            <View style={styles.heroLoading}>
+              <Text style={styles.heroError}>{t(error)}</Text>
+              <Pressable style={styles.retryGhost} onPress={() => void refresh()}>
+                <Text style={styles.retryGhostText}>{t("common.retry")}</Text>
               </Pressable>
             </View>
           ) : (
-            productTips.map((tip) => (
-              <View key={tip.productId} style={styles.productTipCard}>
-                {tip.imageUrl ? (
-                  <Image source={{ uri: tip.imageUrl }} style={styles.productTipImg} />
-                ) : (
-                  <View style={[styles.productTipImg, styles.productTipImgFallback]}>
-                    <Ionicons name="flask-outline" size={18} color="#737373" />
-                  </View>
-                )}
-                <View style={styles.productTipBody}>
-                  <Text style={styles.productTipBrand} numberOfLines={1}>
-                    {tip.brand || "MORF"}
+            <View style={styles.heroBody}>
+              <Text style={styles.heroEyebrow}>{t("care.weather.title")}</Text>
+              <View style={styles.heroTempRow}>
+                <Text style={styles.heroTemp}>
+                  {current?.temperature_c != null
+                    ? `${Math.round(current.temperature_c)}°`
+                    : "—"}
+                </Text>
+                <View style={styles.heroCondCol}>
+                  <Ionicons name={icon} size={22} color="#fff" />
+                  <Text style={styles.heroCond} numberOfLines={2}>
+                    {t(`care.weather.conditions.${conditionKey}`)}
                   </Text>
-                  <Text style={styles.productTipName} numberOfLines={1}>
-                    {tip.name}
-                  </Text>
-                  <Text style={styles.productTipHow}>{tip.howToUse}</Text>
-                  <View style={styles.productTipHintRow}>
-                    <Ionicons name="bulb-outline" size={14} color="#737373" />
-                    <Text style={styles.productTipHint}>{tip.tip}</Text>
-                  </View>
                 </View>
               </View>
-            ))
+              <View style={styles.heroStats}>
+                <View style={styles.heroStat}>
+                  <Ionicons name="water-outline" size={14} color="rgba(255,255,255,0.95)" />
+                  <Text style={styles.heroStatText}>
+                    {current?.humidity_pct != null
+                      ? `${Math.round(current.humidity_pct)}%`
+                      : "—"}
+                  </Text>
+                </View>
+                <View style={styles.heroStatSep} />
+                <View style={styles.heroStat}>
+                  <Ionicons name="navigate-outline" size={14} color="rgba(255,255,255,0.95)" />
+                  <Text style={styles.heroStatText}>
+                    {current?.wind_kmh != null
+                      ? `${Math.round(current.wind_kmh)} km/h`
+                      : "—"}
+                  </Text>
+                </View>
+                {uv?.index != null ? (
+                  <>
+                    <View style={styles.heroStatSep} />
+                    <View style={styles.heroStat}>
+                      <Ionicons name="sunny-outline" size={14} color="rgba(255,255,255,0.95)" />
+                      <Text style={styles.heroStatText}>UV {Math.round(uv.index)}</Text>
+                    </View>
+                  </>
+                ) : null}
+                {profileLine ? (
+                  <>
+                    <View style={styles.heroStatSep} />
+                    <Text style={styles.heroProfile} numberOfLines={1}>
+                      {profileLine}
+                    </Text>
+                  </>
+                ) : null}
+              </View>
+            </View>
           )}
+        </View>
 
-          <Text style={styles.section}>{t("care.weather.extrasTitle")}</Text>
-          {extras.map((line) => (
-            <View key={line} style={styles.tipRow}>
-              <Ionicons name="checkmark-circle-outline" size={16} color="#737373" />
-              <Text style={styles.tipText}>{line}</Text>
+        {data ? (
+          <View style={styles.sheet}>
+            {showIntro ? (
+              <Pressable style={styles.introStrip} onPress={dismissIntro}>
+                <Ionicons name="sparkles" size={14} color="#111" />
+                <Text style={styles.introStripText} numberOfLines={2}>
+                  {t("care.weather.introSub")}
+                </Text>
+                <Text style={styles.introOk}>{t("common.ok")}</Text>
+              </Pressable>
+            ) : null}
+
+            {/* Bugun nima qilish — CTA */}
+            {primary ? (
+              <View style={styles.ctaCard}>
+                <View style={styles.ctaIcon}>
+                  <Ionicons
+                    name={(primary.icon as keyof typeof Ionicons.glyphMap) || "sparkles-outline"}
+                    size={22}
+                    color="#fff"
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.ctaEyebrow}>
+                    {t("care.weather.todayAction", { defaultValue: "Bugun nima qilish" })}
+                  </Text>
+                  <Text style={styles.ctaTitle}>{primary.title}</Text>
+                  <Text style={styles.ctaSub}>{primary.subtitle}</Text>
+                </View>
+              </View>
+            ) : null}
+
+            {/* UV tip */}
+            {uv && (uv.level === "high" || uv.level === "very_high" || uv.level === "extreme") ? (
+              <View style={styles.uvCard}>
+                <Ionicons name="sunny" size={18} color="#111" />
+                <Text style={styles.uvText}>{uv.tip}</Text>
+              </View>
+            ) : null}
+
+            {/* Soatlik */}
+            {hours.length > 0 ? (
+              <>
+                <Text style={styles.blockTitle}>
+                  {t("care.weather.hourly", { defaultValue: "Bugun — soatlik" })}
+                </Text>
+                {data.hourly_highlight ? (
+                  <Text style={styles.highlight}>{data.hourly_highlight}</Text>
+                ) : null}
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.hoursRow}
+                >
+                  {hours.map((h) => (
+                    <View key={h.time} style={styles.hourCard}>
+                      <Text style={styles.hourTime}>{h.time}</Text>
+                      <Ionicons
+                        name={weatherIconName(h.condition_key)}
+                        size={18}
+                        color="#111"
+                      />
+                      <Text style={styles.hourTemp}>
+                        {h.temperature_c != null ? `${Math.round(h.temperature_c)}°` : "—"}
+                      </Text>
+                      {h.precip_probability != null && h.precip_probability >= 30 ? (
+                        <Text style={styles.hourPop}>{Math.round(h.precip_probability)}%</Text>
+                      ) : (
+                        <Text style={styles.hourPopMuted}> </Text>
+                      )}
+                    </View>
+                  ))}
+                </ScrollView>
+              </>
+            ) : null}
+
+            {/* 3 kun */}
+            <Text style={styles.blockTitle}>
+              {t("care.weather.nextDays", { defaultValue: "Bugun va keyingi 2 kun" })}
+            </Text>
+            <View style={styles.daysRow}>
+              {threeDays.map((day, index) => {
+                const active = day.is_today || index === 0;
+                return (
+                  <View key={day.date} style={[styles.dayCard, active && styles.dayCardActive]}>
+                    <Text style={[styles.dayName, active && styles.dayNameActive]}>
+                      {dayTitle(day, index, t)}
+                    </Text>
+                    <Ionicons
+                      name={weatherIconName(day.condition_key)}
+                      size={22}
+                      color={active ? "#fff" : "#111"}
+                    />
+                    <Text style={[styles.dayHi, active && styles.dayHiActive]}>
+                      {day.temperature_max_c != null
+                        ? `${Math.round(day.temperature_max_c)}°`
+                        : "—"}
+                    </Text>
+                    <Text style={[styles.dayLo, active && styles.dayLoActive]}>
+                      {day.temperature_min_c != null
+                        ? `${Math.round(day.temperature_min_c)}°`
+                        : "—"}
+                    </Text>
+                  </View>
+                );
+              })}
             </View>
-          ))}
 
-          <Text style={styles.section}>{t("care.weather.recommendations")}</Text>
-          {data.recommendations.map((tip) => (
-            <View key={tip} style={styles.tipRow}>
-              <Ionicons name="leaf-outline" size={16} color="#737373" />
-              <Text style={styles.tipText}>{tip}</Text>
-            </View>
-          ))}
+            {data.summary ? <Text style={styles.summaryOne}>{data.summary}</Text> : null}
 
-          <Text style={styles.section}>{t("care.weather.week")}</Text>
-          {data.days.map((day) => (
-            <View key={day.date} style={styles.dayRow}>
-              <Text style={[styles.dayLabel, day.is_today && styles.dayLabelToday]}>
-                {t(`care.weather.weekdays.${day.weekday_key}`)}
+            {/* Mening mahsulotlarim rejasi */}
+            <Text style={styles.blockTitle}>
+              {t("care.weather.myProductsTitle", {
+                defaultValue: "Mahsulotlaringiz — bugungi reja",
+              })}
+            </Text>
+            {productPlan.length === 0 ? (
+              <Pressable
+                style={styles.emptyProducts}
+                onPress={() => navigation.navigate("CareMyProducts")}
+              >
+                <Ionicons name="bag-add-outline" size={20} color="#737373" />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.emptyProductsTitle}>
+                    {t("care.weather.myProductsEmptyTitle")}
+                  </Text>
+                  <Text style={styles.emptyProductsSub} numberOfLines={2}>
+                    {t("care.weather.myProductsEmptySub")}
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={16} color="#111" />
+              </Pressable>
+            ) : (
+              productPlan.map((tip) => (
+                <View key={`${tip.product_id}-${tip.name}`} style={styles.productTipCard}>
+                  {tip.image_url ? (
+                    <Image source={{ uri: tip.image_url }} style={styles.productTipImg} />
+                  ) : (
+                    <View style={[styles.productTipImg, styles.productTipImgFallback]}>
+                      <Ionicons name="flask-outline" size={18} color="#737373" />
+                    </View>
+                  )}
+                  <View style={styles.productTipBody}>
+                    <Text style={styles.productTipName} numberOfLines={1}>
+                      {tip.name}
+                    </Text>
+                    <Text style={styles.productTipHow} numberOfLines={2}>
+                      {tip.how_to_use}
+                    </Text>
+                    <Text style={styles.productTipHint} numberOfLines={2}>
+                      {tip.tip}
+                    </Text>
+                  </View>
+                </View>
+              ))
+            )}
+
+            {data.tomorrow_alert ? (
+              <View style={styles.alertCard}>
+                <Ionicons name="notifications-outline" size={16} color="#111" />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.alertTitle}>{data.tomorrow_alert.title}</Text>
+                  <Text style={styles.alertBody}>{data.tomorrow_alert.body}</Text>
+                  <Text style={styles.alertMeta}>
+                    {t("care.weather.alertScheduled", {
+                      defaultValue: "Ertaga ertalab eslatma rejalashtirildi",
+                    })}
+                  </Text>
+                </View>
+              </View>
+            ) : null}
+          </View>
+        ) : null}
+      </ScrollView>
+
+      <Modal visible={regionOpen} transparent animationType="slide" onRequestClose={() => setRegionOpen(false)}>
+        <View style={styles.modalRoot}>
+          <Pressable style={styles.modalBackdrop} onPress={() => setRegionOpen(false)} />
+          <View style={[styles.modalSheet, { paddingBottom: Math.max(insets.bottom, 16) }]}>
+            <View style={styles.modalHandle} />
+            <Text style={styles.modalTitle}>
+              {t("care.weather.pickRegion", { defaultValue: "Viloyatni tanlang" })}
+            </Text>
+            <Text style={styles.modalSub}>
+              {t("care.weather.pickRegionSub", {
+                defaultValue: "GPS noto‘g‘ri bo‘lsa — qo‘lda tanlang",
+              })}
+            </Text>
+            <ScrollView style={{ maxHeight: verticalScale(360) }}>
+              {UZ_REGIONS.map((r) => {
+                const on = regionId === r.id;
+                return (
+                  <Pressable
+                    key={r.id}
+                    style={[styles.regionRow, on && styles.regionRowOn]}
+                    onPress={() => void onPickRegion(r.id)}
+                  >
+                    <Text style={[styles.regionName, on && styles.regionNameOn]}>{r.labelUz}</Text>
+                    {on ? <Ionicons name="checkmark" size={18} color="#fff" /> : null}
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+            <Pressable
+              style={styles.gpsBtn}
+              onPress={() => {
+                setRegionOpen(false);
+                void clearManualRegion();
+              }}
+            >
+              <Ionicons name="locate-outline" size={16} color="#111" />
+              <Text style={styles.gpsBtnText}>
+                {t("care.weather.useGps", { defaultValue: "GPS joylashuvini ishlatish" })}
               </Text>
-              <Ionicons
-                name={weatherIconName(day.condition_key)}
-                size={18}
-                color="#111111"
-              />
-              <Text style={styles.dayTemp}>
-                {day.temperature_max_c != null ? `${Math.round(day.temperature_max_c)}°` : "—"}
-                {" / "}
-                {day.temperature_min_c != null ? `${Math.round(day.temperature_min_c)}°` : "—"}
-              </Text>
-            </View>
-          ))}
-        </>
-      ) : null}
-    </ScrollView>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: "#FAFAFA" },
-  rowBetween: {
+  root: { flex: 1, backgroundColor: "#F4F4F5" },
+  hero: {
+    minHeight: verticalScale(280),
+    paddingHorizontal: scale(16),
+    paddingBottom: verticalScale(22),
+    justifyContent: "space-between",
+    overflow: "hidden",
+  },
+  heroImg: { ...StyleSheet.absoluteFill, width: "100%", height: "100%" },
+  heroNav: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    zIndex: 2,
   },
-  navCircleBtn: {
-    width: scale(42),
-    height: scale(42),
-    borderRadius: moderateScale(21),
+  heroNavSpacer: { flex: 1 },
+  heroBack: {
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(15,23,42,0.12)",
+    shadowColor: "#000",
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
+  },
+  cityChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: moderateScale(6),
+    backgroundColor: "rgba(255,255,255,0.96)",
+    paddingHorizontal: scale(12),
+    paddingVertical: verticalScale(7),
+    borderRadius: moderateScale(12),
+    maxWidth: "58%",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(15,23,42,0.1)",
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
+  cityChipText: { ...morphFont, fontSize: fontSize(13), fontWeight: "800", color: "#111" },
+  heroLoading: {
+    flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(0,0,0,0.06)",
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(0,0,0,0.08)",
-  },
-  badge: {
-    ...morphFont,
-    fontSize: fontSize(13),
-    fontWeight: "600",
-    color: "rgba(42,42,42,0.55)",
-  },
-  centerBox: { marginTop: verticalScale(80), alignItems: "center", gap: moderateScale(12) },
-  errorText: { ...morphFont, fontSize: fontSize(14), color: "#111111", textAlign: "center" },
-  retryBtn: {
-    marginTop: verticalScale(8),
-    paddingHorizontal: scale(18),
-    paddingVertical: verticalScale(10),
-    borderRadius: 999,
-    backgroundColor: "#111111",
-  },
-  retryText: { ...morphFont, fontSize: fontSize(13), fontWeight: "600", color: "#fff" },
-  introCard: {
-    marginTop: verticalScale(16),
-    borderRadius: moderateScale(18),
-    backgroundColor: "#F0F0F0",
-    padding: moderateScale(14),
-    flexDirection: "row",
-    alignItems: "flex-start",
     gap: moderateScale(10),
+    zIndex: 2,
+    minHeight: verticalScale(120),
   },
-  introTitle: { ...morphFont, fontSize: fontSize(14), fontWeight: "700", color: "#111" },
-  introSub: {
-    ...morphFont,
-    marginTop: verticalScale(4),
-    fontSize: fontSize(12),
-    lineHeight: fontSize(16),
-    color: "rgba(26,26,26,0.55)",
-  },
-  introBtn: {
-    paddingHorizontal: scale(10),
-    paddingVertical: verticalScale(6),
+  heroError: { ...morphFont, fontSize: fontSize(13), color: "#fff", textAlign: "center" },
+  retryGhost: {
+    paddingHorizontal: scale(14),
+    paddingVertical: verticalScale(8),
     borderRadius: 999,
-    backgroundColor: "#fff",
+    backgroundColor: "rgba(255,255,255,0.2)",
   },
-  introBtnText: { ...morphFont, fontSize: fontSize(12), fontWeight: "600", color: "#111111" },
-  profileCard: {
-    marginTop: verticalScale(12),
+  retryGhostText: { ...morphFont, fontSize: fontSize(12), fontWeight: "700", color: "#fff" },
+  heroBody: { zIndex: 2, gap: moderateScale(6) },
+  heroEyebrow: {
+    ...morphFont,
+    fontSize: fontSize(11),
+    fontWeight: "600",
+    color: "rgba(255,255,255,0.88)",
+    textTransform: "uppercase",
+    letterSpacing: 0.6,
+  },
+  heroTempRow: { flexDirection: "row", alignItems: "flex-end", gap: moderateScale(14) },
+  heroTemp: {
+    ...morphFont,
+    fontSize: fontSize(64),
+    fontWeight: "800",
+    color: "#fff",
+    lineHeight: fontSize(68),
+    letterSpacing: -1.5,
+  },
+  heroCondCol: { flex: 1, paddingBottom: verticalScale(10), gap: moderateScale(4) },
+  heroCond: { ...morphFont, fontSize: fontSize(15), fontWeight: "600", color: "#FFFFFF" },
+  heroStats: { flexDirection: "row", alignItems: "center", marginTop: verticalScale(8), gap: moderateScale(8) },
+  heroStat: { flexDirection: "row", alignItems: "center", gap: 4 },
+  heroStatText: { ...morphFont, fontSize: fontSize(12), fontWeight: "600", color: "rgba(255,255,255,0.95)" },
+  heroStatSep: { width: 1, height: verticalScale(12), backgroundColor: "rgba(255,255,255,0.4)" },
+  heroProfile: { ...morphFont, flex: 1, fontSize: fontSize(11), fontWeight: "600", color: "rgba(255,255,255,0.9)" },
+
+  sheet: {
+    marginTop: -moderateScale(14),
+    backgroundColor: "#F4F4F5",
+    borderTopLeftRadius: moderateScale(22),
+    borderTopRightRadius: moderateScale(22),
+    paddingHorizontal: scale(16),
+    paddingTop: verticalScale(18),
+  },
+  introStrip: {
     flexDirection: "row",
     alignItems: "center",
     gap: moderateScale(8),
+    backgroundColor: "#fff",
     borderRadius: moderateScale(14),
-    backgroundColor: "#F0F0F0",
-    paddingHorizontal: scale(14),
+    paddingHorizontal: scale(12),
     paddingVertical: verticalScale(10),
-  },
-  profileText: { ...morphFont, flex: 1, fontSize: fontSize(13), fontWeight: "600", color: "#2a2a2a" },
-  hero: {
-    marginTop: verticalScale(20),
-    borderRadius: moderateScale(24),
-    overflow: "hidden",
-    backgroundColor: "#0B1220",
-    padding: moderateScale(22),
-    gap: moderateScale(6),
-    minHeight: verticalScale(168),
-    justifyContent: "flex-end",
-  },
-  heroImg: {
-    ...StyleSheet.absoluteFill,
-    width: "100%",
-    height: "100%",
-  },
-  heroTop: { flexDirection: "row", alignItems: "center", gap: moderateScale(14), zIndex: 1 },
-  temp: { ...morphFont, fontSize: fontSize(44), fontWeight: "700", color: "#fff" },
-  condition: {
-    ...morphFont,
-    fontSize: fontSize(16),
-    fontWeight: "600",
-    color: "rgba(255,255,255,0.92)",
-    zIndex: 1,
-  },
-  locationBlock: {
-    zIndex: 1,
-    marginTop: verticalScale(4),
-    gap: 2,
-  },
-  locationRegion: {
-    ...morphFont,
-    fontSize: fontSize(14),
-    fontWeight: "700",
-    color: "rgba(255,255,255,0.92)",
-  },
-  location: {
-    ...morphFont,
-    fontSize: fontSize(13),
-    color: "rgba(255,255,255,0.65)",
-    zIndex: 1,
-  },
-  statsRow: { marginTop: verticalScale(14), flexDirection: "row", gap: moderateScale(10) },
-  statCard: {
-    flex: 1,
-    borderRadius: moderateScale(18),
-    backgroundColor: "#F0F0F0",
-    padding: moderateScale(14),
-    gap: moderateScale(4),
-  },
-  statLabel: { ...morphFont, fontSize: fontSize(11), color: "rgba(42,42,42,0.5)" },
-  statValue: { ...morphFont, fontSize: fontSize(16), fontWeight: "700", color: "#2a2a2a" },
-  section: {
-    marginTop: verticalScale(24),
     marginBottom: verticalScale(10),
-    ...morphFont,
-    fontSize: fontSize(12),
-    fontWeight: "600",
-    letterSpacing: 0.3,
-    color: "rgba(42,42,42,0.45)",
-    textTransform: "uppercase",
   },
-  summary: {
-    ...morphFont,
-    fontSize: fontSize(15),
-    lineHeight: fontSize(22),
-    color: "#2a2a2a",
-  },
-  emptyProducts: {
-    borderRadius: moderateScale(18),
-    backgroundColor: "#F0F0F0",
-    padding: moderateScale(18),
-    alignItems: "center",
-    gap: moderateScale(6),
-  },
-  emptyProductsTitle: {
-    ...morphFont,
-    fontSize: fontSize(14),
-    fontWeight: "700",
-    color: "#111",
-    marginTop: verticalScale(4),
-  },
-  emptyProductsSub: {
-    ...morphFont,
-    fontSize: fontSize(13),
-    lineHeight: fontSize(18),
-    color: "rgba(26,26,26,0.55)",
-    textAlign: "center",
-  },
-  emptyProductsBtn: {
-    marginTop: verticalScale(8),
-    paddingHorizontal: scale(16),
-    paddingVertical: verticalScale(10),
-    borderRadius: 999,
-    backgroundColor: "#111111",
-  },
-  emptyProductsBtnText: { ...morphFont, fontSize: fontSize(13), fontWeight: "600", color: "#fff" },
-  productTipCard: {
+  introStripText: { ...morphFont, flex: 1, fontSize: fontSize(12), color: "#525252", lineHeight: fontSize(16) },
+  introOk: { ...morphFont, fontSize: fontSize(12), fontWeight: "800", color: "#111" },
+
+  ctaCard: {
     flexDirection: "row",
     gap: moderateScale(12),
+    backgroundColor: "#111",
     borderRadius: moderateScale(18),
-    backgroundColor: "#FFFFFF",
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(17,17,17,0.08)",
-    padding: moderateScale(12),
+    padding: moderateScale(14),
     marginBottom: verticalScale(10),
   },
-  productTipImg: {
-    width: scale(56),
-    height: scale(56),
+  ctaIcon: {
+    width: scale(44),
+    height: scale(44),
     borderRadius: moderateScale(14),
-    backgroundColor: "#F0F0F0",
-  },
-  productTipImgFallback: {
+    backgroundColor: "rgba(255,255,255,0.12)",
     alignItems: "center",
     justifyContent: "center",
   },
-  productTipBody: { flex: 1, minWidth: 0, gap: moderateScale(3) },
-  productTipBrand: {
+  ctaEyebrow: {
     ...morphFont,
     fontSize: fontSize(10),
     fontWeight: "700",
-    color: "#737373",
-    letterSpacing: 0.4,
+    color: "rgba(255,255,255,0.5)",
     textTransform: "uppercase",
+    letterSpacing: 0.4,
   },
-  productTipName: {
-    ...morphFont,
-    fontSize: fontSize(14),
-    fontWeight: "700",
-    color: "#111111",
-  },
-  productTipHow: {
-    ...morphFont,
-    fontSize: fontSize(13),
-    lineHeight: fontSize(18),
-    color: "#2a2a2a",
-    marginTop: verticalScale(2),
-  },
-  productTipHintRow: {
+  ctaTitle: { ...morphFont, marginTop: 2, fontSize: fontSize(17), fontWeight: "800", color: "#fff" },
+  ctaSub: { ...morphFont, marginTop: 4, fontSize: fontSize(12), lineHeight: fontSize(17), color: "rgba(255,255,255,0.7)" },
+
+  uvCard: {
     flexDirection: "row",
-    alignItems: "flex-start",
-    gap: moderateScale(6),
-    marginTop: verticalScale(4),
-  },
-  productTipHint: {
-    ...morphFont,
-    flex: 1,
-    fontSize: fontSize(12),
-    lineHeight: fontSize(16),
-    color: "#737373",
-  },
-  tipRow: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: moderateScale(10),
+    alignItems: "center",
+    gap: moderateScale(8),
+    backgroundColor: "#FFF7ED",
     borderRadius: moderateScale(14),
-    backgroundColor: "#F0F0F0",
-    paddingHorizontal: scale(14),
-    paddingVertical: verticalScale(12),
+    padding: moderateScale(12),
     marginBottom: verticalScale(8),
   },
-  tipText: { ...morphFont, flex: 1, fontSize: fontSize(14), lineHeight: fontSize(20), color: "#2a2a2a" },
-  dayRow: {
+  uvText: { ...morphFont, flex: 1, fontSize: fontSize(12), lineHeight: fontSize(17), color: "#111", fontWeight: "600" },
+
+  blockTitle: {
+    ...morphFont,
+    marginTop: verticalScale(14),
+    marginBottom: verticalScale(10),
+    fontSize: fontSize(13),
+    fontWeight: "800",
+    color: "#111",
+  },
+  highlight: {
+    ...morphFont,
+    marginTop: -verticalScale(4),
+    marginBottom: verticalScale(8),
+    fontSize: fontSize(12),
+    color: "#525252",
+    lineHeight: fontSize(17),
+  },
+  hoursRow: { gap: moderateScale(8), paddingRight: scale(8) },
+  hourCard: {
+    width: scale(64),
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "#fff",
+    borderRadius: moderateScale(14),
+    paddingVertical: verticalScale(10),
+  },
+  hourTime: { ...morphFont, fontSize: fontSize(10), fontWeight: "700", color: "#737373" },
+  hourTemp: { ...morphFont, fontSize: fontSize(14), fontWeight: "800", color: "#111" },
+  hourPop: { ...morphFont, fontSize: fontSize(10), fontWeight: "600", color: "#3B82F6" },
+  hourPopMuted: { ...morphFont, fontSize: fontSize(10), color: "transparent" },
+
+  daysRow: { flexDirection: "row", gap: moderateScale(8) },
+  dayCard: {
+    flex: 1,
+    alignItems: "center",
+    gap: moderateScale(6),
+    backgroundColor: "#fff",
+    borderRadius: moderateScale(16),
+    paddingVertical: verticalScale(14),
+  },
+  dayCardActive: { backgroundColor: "#111" },
+  dayName: { ...morphFont, fontSize: fontSize(11), fontWeight: "700", color: "#737373" },
+  dayNameActive: { color: "rgba(255,255,255,0.7)" },
+  dayHi: { ...morphFont, fontSize: fontSize(18), fontWeight: "800", color: "#111" },
+  dayHiActive: { color: "#fff" },
+  dayLo: { ...morphFont, fontSize: fontSize(12), fontWeight: "600", color: "#A3A3A3" },
+  dayLoActive: { color: "rgba(255,255,255,0.45)" },
+  summaryOne: {
+    ...morphFont,
+    marginTop: verticalScale(12),
+    fontSize: fontSize(13),
+    lineHeight: fontSize(19),
+    color: "#525252",
+  },
+
+  emptyProducts: {
     flexDirection: "row",
     alignItems: "center",
     gap: moderateScale(10),
-    borderRadius: moderateScale(14),
-    backgroundColor: "#F0F0F0",
-    paddingHorizontal: scale(14),
-    paddingVertical: verticalScale(12),
+    backgroundColor: "#fff",
+    borderRadius: moderateScale(16),
+    padding: moderateScale(14),
+  },
+  emptyProductsTitle: { ...morphFont, fontSize: fontSize(13), fontWeight: "700", color: "#111" },
+  emptyProductsSub: { ...morphFont, marginTop: 2, fontSize: fontSize(11), color: "#737373", lineHeight: fontSize(15) },
+  productTipCard: {
+    flexDirection: "row",
+    gap: moderateScale(12),
+    backgroundColor: "#fff",
+    borderRadius: moderateScale(16),
+    padding: moderateScale(12),
+    marginBottom: verticalScale(8),
+  },
+  productTipImg: { width: scale(48), height: scale(48), borderRadius: moderateScale(12), backgroundColor: "#F0F0F0" },
+  productTipImgFallback: { alignItems: "center", justifyContent: "center" },
+  productTipBody: { flex: 1, minWidth: 0, gap: 3, justifyContent: "center" },
+  productTipName: { ...morphFont, fontSize: fontSize(13), fontWeight: "700", color: "#111" },
+  productTipHow: { ...morphFont, fontSize: fontSize(12), lineHeight: fontSize(16), color: "#404040" },
+  productTipHint: { ...morphFont, fontSize: fontSize(11), lineHeight: fontSize(15), color: "#737373" },
+
+  alertCard: {
+    flexDirection: "row",
+    gap: moderateScale(10),
+    marginTop: verticalScale(12),
+    backgroundColor: "#fff",
+    borderRadius: moderateScale(16),
+    padding: moderateScale(14),
+  },
+  alertTitle: { ...morphFont, fontSize: fontSize(13), fontWeight: "800", color: "#111" },
+  alertBody: { ...morphFont, marginTop: 2, fontSize: fontSize(12), lineHeight: fontSize(16), color: "#525252" },
+  alertMeta: { ...morphFont, marginTop: 6, fontSize: fontSize(10), fontWeight: "600", color: "#A3A3A3" },
+
+  modalRoot: { flex: 1, justifyContent: "flex-end" },
+  modalBackdrop: { ...StyleSheet.absoluteFill, backgroundColor: "rgba(0,0,0,0.4)" },
+  modalSheet: {
+    backgroundColor: "#fff",
+    borderTopLeftRadius: moderateScale(22),
+    borderTopRightRadius: moderateScale(22),
+    paddingHorizontal: scale(16),
+    paddingTop: verticalScale(10),
+  },
+  modalHandle: {
+    alignSelf: "center",
+    width: scale(40),
+    height: 4,
+    borderRadius: 99,
+    backgroundColor: "#E5E5E5",
+    marginBottom: verticalScale(10),
+  },
+  modalTitle: { ...morphFont, fontSize: fontSize(17), fontWeight: "800", color: "#111" },
+  modalSub: { ...morphFont, marginTop: 4, marginBottom: verticalScale(10), fontSize: fontSize(12), color: "#737373" },
+  regionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: verticalScale(13),
+    paddingHorizontal: scale(12),
+    borderRadius: moderateScale(12),
+    marginBottom: 4,
+    backgroundColor: "#F4F4F5",
+  },
+  regionRowOn: { backgroundColor: "#111" },
+  regionName: { ...morphFont, fontSize: fontSize(14), fontWeight: "700", color: "#111" },
+  regionNameOn: { color: "#fff" },
+  gpsBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    marginTop: verticalScale(10),
     marginBottom: verticalScale(6),
+    paddingVertical: verticalScale(14),
+    borderRadius: moderateScale(14),
+    backgroundColor: "#F4F4F5",
   },
-  dayLabel: {
-    width: scale(72),
-    ...morphFont,
-    fontSize: fontSize(14),
-    fontWeight: "600",
-    color: "#2a2a2a",
-  },
-  dayLabelToday: { color: "#737373" },
-  dayTemp: {
-    flex: 1,
-    textAlign: "right",
-    ...morphFont,
-    fontSize: fontSize(13),
-    color: "rgba(42,42,42,0.65)",
-  },
+  gpsBtnText: { ...morphFont, fontSize: fontSize(13), fontWeight: "700", color: "#111" },
 });

@@ -59,7 +59,7 @@ import {
   removeMyProduct,
   type MyCareProduct,
 } from "../../lib/morph-my-products";
-import { careHubLayout, weatherLocationHeroImage } from "../../lib/weather-care-tips";
+import { careHubLayout, weatherLocationHeroSource } from "../../lib/weather-care-tips";
 import type { MorphCareStackParamList } from "../../navigation/MorphCareStack";
 import { useShellNavigation } from "../../lib/shell-nav";
 import { morphFont } from "../../theme/morph-font";
@@ -76,6 +76,13 @@ type QuizStep = 0 | 1 | 2;
 type ViewMode = "hub" | "flow";
 
 const CARE_ACCESS_DEBUG = true;
+
+const QUICK_SOS = require("../../../assets/care/care-quick-sos.png");
+const QUICK_SHELF = require("../../../assets/care/care-quick-shelf.png");
+const QUICK_GROWTH = require("../../../assets/care/care-quick-growth.png");
+const QUICK_ALBUM = require("../../../assets/care/care-quick-album.png");
+const HUB_ROUTINE = require("../../../assets/care/care-hub-routine-v2.png");
+const HUB_SCAN = require("../../../assets/care/care-hub-scan-v2.png");
 
 interface FeaturedProductItem {
   id: string;
@@ -231,7 +238,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
   const previewSheetY = useRef(new Animated.Value(Dimensions.get("window").height)).current;
   const previewBackdropOp = useRef(new Animated.Value(0)).current;
   const searchInputRef = useRef<TextInput>(null);
-  const { data: weather, loading: weatherLoading } = useCareWeather();
+  const { data: weather, regionId: weatherRegionId } = useCareWeather();
   const { width: winW, height: winH } = useWindowDimensions();
   const [kbH, setKbH] = useState(0);
   const fullWinH = useRef(winH);
@@ -245,11 +252,14 @@ export function MorphCareScreen({ navigation, route }: Props) {
     weather?.current?.temperature_c != null
       ? `${Math.round(weather.current.temperature_c)}°`
       : "—";
-  const weatherImg = weatherLocationHeroImage(
-    weather?.location_region,
-    weather?.location_place || weather?.location_label,
-    weatherKey,
-  );
+  const weatherImg = weatherLocationHeroSource({
+    region: weather?.location_region,
+    place: weather?.location_place || weather?.location_label,
+    condition: weatherKey,
+    lat: weather?.latitude,
+    lon: weather?.longitude,
+    regionId: weatherRegionId,
+  });
 
   /** Search sheet — klaviatura va safe area ustida, overshoot yo‘q. */
   const keyboardCover = useMemo(() => {
@@ -539,6 +549,10 @@ export function MorphCareScreen({ navigation, route }: Props) {
 
   const openGrowthTracker = useCallback(() => {
     navigation.navigate("CareGrowthTracker");
+  }, [navigation]);
+
+  const openCareAlbum = useCallback(() => {
+    navigation.navigate("CareAlbum");
   }, [navigation]);
 
   const openParvarish = useCallback(() => {
@@ -1060,7 +1074,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
               ]}
             >
               <Image
-                source={{ uri: weatherImg }}
+                source={weatherImg}
                 style={styles.promoHeroImg}
                 contentFit="cover"
                 cachePolicy="memory-disk"
@@ -1092,44 +1106,6 @@ export function MorphCareScreen({ navigation, route }: Props) {
                     color="#111111"
                   />
                 </Pressable>
-
-                <View
-                  style={[
-                    styles.promoLocBadge,
-                    {
-                      paddingVertical: hubLayout.promoUi.locPadV,
-                      paddingHorizontal: hubLayout.promoUi.locPadH,
-                    },
-                  ]}
-                  pointerEvents="none"
-                >
-                  <Ionicons
-                    name="location-outline"
-                    size={hubLayout.promoUi.locIcon}
-                    color="#FFFFFF"
-                  />
-                  <View style={styles.promoLocText}>
-                    <Text
-                      style={[styles.promoRegion, { fontSize: hubLayout.promoUi.locFs }]}
-                      numberOfLines={1}
-                    >
-                      {weatherLoading
-                        ? t("care.weather.locating", { defaultValue: "Joylashuv aniqlanmoqda…" })
-                        : weather?.location_region ||
-                          t("care.weather.locationFallback", { defaultValue: "Viloyat" })}
-                    </Text>
-                    <Text
-                      style={[styles.promoPlace, { fontSize: hubLayout.promoUi.locSubFs }]}
-                      numberOfLines={1}
-                    >
-                      {weatherLoading
-                        ? "…"
-                        : weather?.location_place ||
-                          weather?.location_label ||
-                          t("care.weather.cityFallback", { defaultValue: "Shahar" })}
-                    </Text>
-                  </View>
-                </View>
               </View>
 
               <Pressable
@@ -1164,9 +1140,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
                       ]}
                       numberOfLines={1}
                     >
-                      {weatherLoading
-                        ? "…"
-                        : t(`care.weather.conditions.${weatherKey}`)}
+                      {t(`care.weather.conditions.${weatherKey}`)}
                     </Text>
                     {weather?.current?.humidity_pct != null ? (
                       <Text
@@ -1230,41 +1204,108 @@ export function MorphCareScreen({ navigation, route }: Props) {
             <View style={{ height: 4 }} />
           )}
 
-          {/* Bad Hair Day — tezkor SOS yechimi */}
+          {/* Tezkor kartochkalar — SOS, shelf, growth, album */}
           {!searchOpen ? (
-            <Pressable
-              style={[
-                styles.sosBtn,
-                { marginHorizontal: hubLayout.hPad, marginTop: verticalScale(10) },
+            <ScrollView
+              horizontal
+              nestedScrollEnabled={true}
+              showsHorizontalScrollIndicator={false}
+              style={{
+                height: hubLayout.quickActionH,
+                flexGrow: 0,
+                flexShrink: 0,
+                marginTop: verticalScale(8),
+              }}
+              contentContainerStyle={[
+                styles.quickActionScroll,
+                {
+                  height: hubLayout.quickActionH,
+                  paddingHorizontal: hubLayout.hPad,
+                },
               ]}
-              onPress={() => setSosOpen(true)}
-              accessibilityRole="button"
-              accessibilityLabel={t("care.sos.cta", {
-                defaultValue: "Sochim bugun yomon ko‘rinayapti (SOS)",
-              })}
             >
-              <LinearGradient
-                colors={["#FF6B57", "#FF8A5B", "#E9527A"]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.sosFill}
-              >
-                <View style={styles.sosIcon}>
-                  <Ionicons name="flash" size={moderateScale(16)} color="#FFFFFF" />
-                </View>
-                <View style={styles.sosCopy}>
-                  <Text style={styles.sosTitle} numberOfLines={2}>
-                    {t("care.sos.cta", {
+              {(
+                [
+                  {
+                    key: "sos",
+                    img: QUICK_SOS,
+                    label: t("care.quick.sos", { defaultValue: "SOS" }),
+                    a11y: t("care.sos.cta", {
                       defaultValue: "Sochim bugun yomon ko‘rinayapti (SOS)",
-                    })}
-                  </Text>
-                  <Text style={styles.sosSub} numberOfLines={1}>
-                    {t("care.sos.ctaSub", { defaultValue: "2 daqiqalik tezkor yechim olish" })}
-                  </Text>
-                </View>
-                <Ionicons name="arrow-forward" size={moderateScale(15)} color="#FFFFFF" />
-              </LinearGradient>
-            </Pressable>
+                    }),
+                    onPress: () => setSosOpen(true),
+                  },
+                  {
+                    key: "shelf",
+                    img: QUICK_SHELF,
+                    label: t("care.quick.shelf", { defaultValue: "Javon" }),
+                    a11y: t("care.shelf.title", {
+                      defaultValue: "Mening parvarish vositalarim",
+                    }),
+                    onPress: () => setShelfOpen(true),
+                  },
+                  {
+                    key: "growth",
+                    img: QUICK_GROWTH,
+                    label: t("care.quick.growth", { defaultValue: "O'sish" }),
+                    a11y: t("care.growthTracker.title", {
+                      defaultValue: "Hair Growth & Health Tracker",
+                    }),
+                    onPress: openGrowthTracker,
+                  },
+                  {
+                    key: "album",
+                    img: QUICK_ALBUM,
+                    label: t("care.quick.album", { defaultValue: "Albom" }),
+                    a11y: t("care.album.screenTitle", {
+                      defaultValue: "Parvarish Albomi",
+                    }),
+                    onPress: openCareAlbum,
+                  },
+                ] as const
+              ).map((card) => (
+                <Pressable
+                  key={card.key}
+                  style={[
+                    styles.quickActionCard,
+                    {
+                      width: hubLayout.quickActionW,
+                      height: hubLayout.quickActionH,
+                    },
+                  ]}
+                  onPress={card.onPress}
+                  accessibilityRole="button"
+                  accessibilityLabel={card.a11y}
+                >
+                  <Image
+                    source={card.img}
+                    style={StyleSheet.absoluteFill}
+                    contentFit="cover"
+                  />
+                  <LinearGradient
+                    colors={["transparent", "rgba(17,17,17,0.55)"]}
+                    style={styles.quickActionScrim}
+                    pointerEvents="none"
+                  />
+                  <View
+                    style={[
+                      styles.quickActionBody,
+                      { padding: hubLayout.quickActionUi.pad },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.quickActionLabel,
+                        { fontSize: hubLayout.quickActionUi.labelFs },
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {card.label}
+                    </Text>
+                  </View>
+                </Pressable>
+              ))}
+            </ScrollView>
           ) : null}
 
           {/* Search Bar — sheet ochiq bo‘lsa yashirin (input sheet ichida) */}
@@ -1283,72 +1324,6 @@ export function MorphCareScreen({ navigation, route }: Props) {
               </View>
             </Pressable>
           </View>
-          ) : null}
-
-          {!searchOpen ? (
-            <Pressable
-              style={[
-                styles.shelfBtn,
-                { marginHorizontal: hubLayout.hPad, marginTop: verticalScale(2) },
-              ]}
-              onPress={() => setShelfOpen(true)}
-              accessibilityRole="button"
-              accessibilityLabel={t("care.shelf.cta", {
-                defaultValue: "Mahsulot tugash muddatini kuzatish",
-              })}
-            >
-              <LinearGradient
-                colors={["#0F172A", "#111827", "#1E293B"]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.shelfFill}
-              >
-                <View style={styles.shelfIcon}>
-                  <Ionicons name="cube-outline" size={moderateScale(16)} color="#FFFFFF" />
-                </View>
-                <View style={styles.shelfCopy}>
-                  <Text style={styles.shelfTitle} numberOfLines={2}>
-                    {t("care.shelf.title", {
-                      defaultValue: "Mening parvarish vositalarim",
-                    })}
-                  </Text>
-                  <Text style={styles.shelfSub} numberOfLines={1}>
-                    {t("care.shelf.sub", {
-                      defaultValue: "Tugash muddati, PAO va refill eslatmalarini kuzating",
-                    })}
-                  </Text>
-                </View>
-                <Ionicons name="arrow-forward" size={moderateScale(15)} color="#FFFFFF" />
-              </LinearGradient>
-            </Pressable>
-          ) : null}
-
-          {/* Hair Growth & Health Tracker */}
-          {!searchOpen ? (
-            <Pressable
-              style={[
-                styles.growthTrackerCta,
-                { marginHorizontal: hubLayout.hPad, marginTop: verticalScale(8) },
-              ]}
-              onPress={openGrowthTracker}
-              accessibilityRole="button"
-              accessibilityLabel={t("care.growthTracker.title", {
-                defaultValue: "Hair Growth & Health Tracker",
-              })}
-            >
-              <View style={styles.growthTrackerIcon}>
-                <Ionicons name="trending-up-outline" size={moderateScale(17)} color="#111111" />
-              </View>
-              <View style={styles.growthTrackerCopy}>
-                <Text style={styles.growthTrackerTitle} numberOfLines={1}>
-                  {t("care.growthTracker.title", { defaultValue: "Hair Growth & Health Tracker" })}
-                </Text>
-                <Text style={styles.growthTrackerSub} numberOfLines={1}>
-                  {t("care.growthTracker.sub", { defaultValue: "3 oylik progress va AI prognoz" })}
-                </Text>
-              </View>
-              <Ionicons name="chevron-forward" size={moderateScale(16)} color="#111111" />
-            </Pressable>
           ) : null}
 
           {/* Featured — qidiruv ochiq bo‘lsa yashirin */}
@@ -1556,55 +1531,69 @@ export function MorphCareScreen({ navigation, route }: Props) {
                 </View>
 
                 <View style={[styles.hubCards, { height: hubLayout.hubCardH }]}>
-                  <Pressable style={styles.hubCard} onPress={openParvarish}>
+                  <Pressable
+                    style={styles.hubCard}
+                    onPress={openParvarish}
+                    accessibilityRole="button"
+                    accessibilityLabel={t("care.hubParvarish")}
+                  >
+                    <Image
+                      source={HUB_ROUTINE}
+                      style={StyleSheet.absoluteFill}
+                      contentFit="cover"
+                    />
+                    <LinearGradient
+                      colors={["transparent", "rgba(17,17,17,0.58)"]}
+                      style={styles.hubCardScrim}
+                      pointerEvents="none"
+                    />
                     <View style={styles.hubCardBody}>
-                      <View style={styles.hubCardHead}>
-                        <View style={styles.hubCardIconLg}>
-                          <Ionicons name="sparkles" size={16} color="#111111" />
-                        </View>
-                        <View style={styles.hubStatusBadge}>
-                          <Text style={styles.hubStatusText}>
-                            {t("care.hubStatusActive", { defaultValue: "Faol" })}
-                          </Text>
-                        </View>
-                      </View>
-                      <Text style={styles.hubCardTitle} numberOfLines={1}>
-                        {t("care.hubParvarish")}
-                      </Text>
-                      <Text style={styles.hubCardMetric} numberOfLines={1}>
-                        {t(`care.conditions.${quiz.condition}`)}
-                      </Text>
-                      {hubLayout.hubCardRich ? (
-                        <Text style={styles.hubCardSub} numberOfLines={2}>
-                          {t("care.hubParvarishSub")}
+                      <View style={styles.hubStatusBadge}>
+                        <Text style={styles.hubStatusText}>
+                          {t("care.hubStatusActive", { defaultValue: "Faol" })}
                         </Text>
-                      ) : null}
+                      </View>
+                      <View style={styles.hubCardFooter}>
+                        <Text style={styles.hubCardTitle} numberOfLines={1}>
+                          {t("care.hubParvarish")}
+                        </Text>
+                        <Text style={styles.hubCardMetric} numberOfLines={1}>
+                          {t(`care.conditions.${quiz.condition}`)}
+                        </Text>
+                      </View>
                     </View>
                   </Pressable>
 
-                  <Pressable style={styles.hubCard} onPress={openTarkib}>
+                  <Pressable
+                    style={styles.hubCard}
+                    onPress={openTarkib}
+                    accessibilityRole="button"
+                    accessibilityLabel={t("care.hubTarkib")}
+                  >
+                    <Image
+                      source={HUB_SCAN}
+                      style={StyleSheet.absoluteFill}
+                      contentFit="cover"
+                    />
+                    <LinearGradient
+                      colors={["transparent", "rgba(17,17,17,0.58)"]}
+                      style={styles.hubCardScrim}
+                      pointerEvents="none"
+                    />
                     <View style={styles.hubCardBody}>
-                      <View style={styles.hubCardHead}>
-                        <View style={styles.hubCardIconLg}>
-                          <Ionicons name="scan-outline" size={16} color="#111111" />
-                        </View>
-                        <View style={styles.hubStatusBadge}>
-                          <Text style={styles.hubStatusText}>
-                            {t("care.hubStatusAnalyzed", { defaultValue: "Tahlil qilingan" })}
-                          </Text>
-                        </View>
-                      </View>
-                      <Text style={styles.hubCardTitle} numberOfLines={1}>
-                        {t("care.hubTarkib")}
-                      </Text>
-                      <Text style={styles.hubCardMetric} numberOfLines={1}>
-                        {t("care.hubTarkibMetric")}
-                      </Text>
-                      {hubLayout.hubCardRich ? (
-                        <Text style={styles.hubCardSub} numberOfLines={2}>
-                          {t("care.hubTarkibSub")}
+                      <View style={styles.hubStatusBadge}>
+                        <Text style={styles.hubStatusText}>
+                          {t("care.hubStatusAnalyzed", { defaultValue: "Tahlil qilingan" })}
                         </Text>
-                      ) : null}
+                      </View>
+                      <View style={styles.hubCardFooter}>
+                        <Text style={styles.hubCardTitle} numberOfLines={1}>
+                          {t("care.hubTarkib")}
+                        </Text>
+                        <Text style={styles.hubCardMetric} numberOfLines={1}>
+                          {t("care.hubTarkibMetric")}
+                        </Text>
+                      </View>
                     </View>
                   </Pressable>
                 </View>
@@ -1889,82 +1878,37 @@ export function MorphCareScreen({ navigation, route }: Props) {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: "#FAFAFA" },
-  sosBtn: {
-    borderRadius: moderateScale(20),
-    overflow: "hidden",
-    shadowColor: "#E9527A",
-    shadowOpacity: 0.28,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 4,
+  quickActionScroll: {
+    gap: moderateScale(8),
+    alignItems: "stretch",
   },
-  sosFill: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: moderateScale(10),
-    paddingHorizontal: scale(14),
-    paddingVertical: verticalScale(11),
-  },
-  sosIcon: {
-    width: moderateScale(32),
-    height: moderateScale(32),
+  quickActionCard: {
     borderRadius: moderateScale(16),
-    backgroundColor: "rgba(255,255,255,0.22)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  sosCopy: { flex: 1 },
-  sosTitle: {
-    ...morphFont,
-    fontSize: fontSize(13),
-    fontWeight: "800",
-    color: "#FFFFFF",
-    lineHeight: fontSize(17),
-  },
-  sosSub: {
-    ...morphFont,
-    fontSize: fontSize(11),
-    color: "rgba(255,255,255,0.78)",
-    marginTop: 1,
-  },
-  shelfBtn: {
-    borderRadius: 999,
     overflow: "hidden",
-    shadowColor: "#0F172A",
-    shadowOpacity: 0.22,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 3,
+    position: "relative",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(17,17,17,0.08)",
+    shadowColor: "#111111",
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
+    backgroundColor: "#F0F0F0",
   },
-  shelfFill: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: moderateScale(10),
-    paddingHorizontal: scale(14),
-    paddingVertical: verticalScale(12),
-    minHeight: verticalScale(50),
+  quickActionScrim: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 1,
   },
-  shelfIcon: {
-    width: moderateScale(30),
-    height: moderateScale(30),
-    borderRadius: moderateScale(15),
-    backgroundColor: "rgba(255,255,255,0.15)",
-    alignItems: "center",
-    justifyContent: "center",
+  quickActionBody: {
+    flex: 1,
+    justifyContent: "flex-end",
+    zIndex: 2,
   },
-  shelfCopy: { flex: 1 },
-  shelfTitle: {
+  quickActionLabel: {
     ...morphFont,
-    fontSize: fontSize(12.5),
     fontWeight: "800",
     color: "#FFFFFF",
-    lineHeight: fontSize(16),
-  },
-  shelfSub: {
-    ...morphFont,
-    fontSize: fontSize(10.5),
-    color: "rgba(255,255,255,0.75)",
-    marginTop: 1,
+    letterSpacing: -0.2,
   },
   routineRoot: { flex: 1, backgroundColor: "#EFEDE8" },
   onboardRoot: { flex: 1, backgroundColor: "#FAFAFA" },
@@ -2116,19 +2060,6 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: "rgba(15,23,42,0.12)",
   },
-  promoLocBadge: {
-    flexShrink: 1,
-    maxWidth: "72%",
-    flexDirection: "row",
-    alignItems: "center",
-    gap: moderateScale(6),
-    paddingVertical: verticalScale(5),
-    paddingHorizontal: scale(10),
-    borderRadius: 999,
-    backgroundColor: "rgba(0,0,0,0.35)",
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(255,255,255,0.2)",
-  },
   promoBody: {
     flexDirection: "row",
     alignItems: "center",
@@ -2143,24 +2074,6 @@ const styles = StyleSheet.create({
     gap: moderateScale(8),
     maxWidth: "100%",
     justifyContent: "flex-end",
-  },
-  promoLocText: {
-    flexShrink: 1,
-    minWidth: 0,
-    gap: 1,
-  },
-  promoRegion: {
-    ...morphFont,
-    fontSize: fontSize(11),
-    fontWeight: "700",
-    color: "#FFFFFF",
-    letterSpacing: -0.1,
-  },
-  promoPlace: {
-    ...morphFont,
-    fontSize: fontSize(10),
-    fontWeight: "600",
-    color: "rgba(255,255,255,0.72)",
   },
   promoMeta: {
     flex: 1,
@@ -2744,39 +2657,6 @@ const styles = StyleSheet.create({
     color: "#111111",
   },
   searchRowPh: { alignItems: "center", justifyContent: "center" },
-  growthTrackerCta: {
-    borderRadius: 999,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(17,17,17,0.12)",
-    backgroundColor: "#FFFFFF",
-    paddingHorizontal: scale(12),
-    paddingVertical: verticalScale(12),
-    minHeight: verticalScale(52),
-    flexDirection: "row",
-    alignItems: "center",
-    gap: moderateScale(10),
-  },
-  growthTrackerIcon: {
-    width: moderateScale(34),
-    height: moderateScale(34),
-    borderRadius: moderateScale(12),
-    backgroundColor: "#F3F4F6",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  growthTrackerCopy: { flex: 1, minWidth: 0 },
-  growthTrackerTitle: {
-    ...morphFont,
-    fontSize: fontSize(13),
-    fontWeight: "800",
-    color: "#111111",
-  },
-  growthTrackerSub: {
-    ...morphFont,
-    marginTop: 1,
-    fontSize: fontSize(11),
-    color: "rgba(17,17,17,0.55)",
-  },
   featuredProductsScroll: {
     paddingHorizontal: scale(16),
     gap: moderateScale(12),
@@ -2986,76 +2866,50 @@ const styles = StyleSheet.create({
     flex: 1,
     height: "100%",
     borderRadius: moderateScale(14),
-    backgroundColor: "#FAFAFA",
+    backgroundColor: "#F0F0F0",
     borderWidth: 1,
     borderColor: "rgba(17,17,17,0.08)",
     overflow: "hidden",
+    position: "relative",
   },
-  hubCardArt: {
-    position: "absolute",
-    right: -scale(8),
-    bottom: -verticalScale(6),
-    width: scale(64),
-    aspectRatio: ASPECT.portrait,
-    borderRadius: moderateScale(12),
-    opacity: 0.9,
+  hubCardScrim: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 1,
   },
   hubCardBody: {
     flex: 1,
     minHeight: 0,
     paddingHorizontal: scale(10),
     paddingTop: verticalScale(8),
-    paddingBottom: verticalScale(8),
-    gap: moderateScale(4),
-    zIndex: 1,
-    paddingRight: scale(10),
-    justifyContent: "flex-start",
+    paddingBottom: verticalScale(10),
+    zIndex: 2,
+    justifyContent: "space-between",
     alignItems: "flex-start",
   },
-  hubCardHead: {
-    flexShrink: 0,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: moderateScale(6),
-    marginBottom: verticalScale(4),
-  },
-  hubCardIcon: {
-    width: scale(28),
-    height: scale(28),
-    borderRadius: moderateScale(14),
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  hubCardIconLg: {
-    width: scale(28),
-    height: scale(28),
-    borderRadius: moderateScale(9),
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#FFFFFF",
+  hubCardFooter: {
+    gap: 2,
+    alignSelf: "stretch",
   },
   hubStatusBadge: {
     borderRadius: 999,
-    paddingHorizontal: scale(7),
-    paddingVertical: verticalScale(2),
-    backgroundColor: "#FFFFFF",
+    paddingHorizontal: scale(8),
+    paddingVertical: verticalScale(3),
+    backgroundColor: "rgba(255,255,255,0.92)",
   },
   hubStatusText: {
     ...morphFont,
     fontSize: fontSize(9),
     fontWeight: "700",
     letterSpacing: 0.2,
-    color: "#737373",
+    color: "#111111",
   },
   hubCardTitle: {
     ...morphFont,
-    /** Sarlavha va qiymat hech qachon siqilmaydi — faqat `hubCardSub` beriladi. */
     flexShrink: 0,
     fontSize: fontSize(11),
     lineHeight: fontSize(14),
     fontWeight: "600",
-    color: "#737373",
+    color: "rgba(255,255,255,0.78)",
   },
   hubCardMetric: {
     ...morphFont,
@@ -3063,17 +2917,8 @@ const styles = StyleSheet.create({
     fontSize: fontSize(15),
     lineHeight: fontSize(19),
     fontWeight: "800",
-    color: "#111111",
+    color: "#FFFFFF",
     letterSpacing: -0.3,
-  },
-  hubCardSub: {
-    ...morphFont,
-    flexShrink: 1,
-    minHeight: 0,
-    fontSize: fontSize(10),
-    lineHeight: fontSize(13),
-    color: "#737373",
-    marginTop: "auto",
   },
   aiAssistant: {
     borderRadius: moderateScale(14),
