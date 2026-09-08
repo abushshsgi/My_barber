@@ -436,40 +436,23 @@ export function MorphTryOnScreen({ navigation }: Props) {
 
   return (
     <View style={styles.root}>
-      <View
-        style={[
-          styles.heroWrap,
-          {
-            top: insets.top + verticalScale(8),
-            height: Math.round(winH * 0.42),
-            width: winW - scale(28),
-            marginLeft: scale(14),
-          },
-        ]}
-        pointerEvents="none"
-      >
-        <Image
-          source={SELFIE_HERO}
-          style={styles.heroImg}
-          contentFit="cover"
-          transition={300}
-        />
-        <LinearGradient
-          colors={["rgba(17,17,17,0.42)", "rgba(17,17,17,0.12)", "rgba(250,250,250,0.92)"]}
-          locations={[0, 0.48, 1]}
-          style={StyleSheet.absoluteFill}
-        />
-      </View>
+      <Image
+        source={SELFIE_HERO}
+        style={styles.heroImg}
+        contentFit="cover"
+        contentPosition="top"
+        transition={300}
+      />
       <LinearGradient
-        colors={["transparent", "#FAFAFA"]}
-        locations={[0.55, 0.78]}
+        colors={["rgba(17,17,17,0.38)", "rgba(17,17,17,0.08)", "rgba(250,250,250,0.55)", "#FAFAFA"]}
+        locations={[0, 0.28, 0.58, 0.78]}
         style={StyleSheet.absoluteFill}
         pointerEvents="none"
       />
 
       <Animated.View
         entering={FadeIn.duration(400)}
-        style={[styles.centerCopy, { paddingTop: insets.top + verticalScale(28) }]}
+        style={[styles.centerCopy, { paddingTop: insets.top + verticalScale(36) }]}
         pointerEvents="none"
       >
         <Text style={styles.headline}>Selfie yuklang</Text>
@@ -695,14 +678,8 @@ const ACTION_ICON = scale(IS_SMALL_DEVICE ? 22 : 26);
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: "#FAFAFA" },
-  heroWrap: {
-    position: "absolute",
-    left: 0,
-    overflow: "hidden",
-    borderRadius: radius.xl,
-    backgroundColor: "#E8E8E8",
-  },
   heroImg: {
+    ...StyleSheet.absoluteFillObject,
     width: "100%",
     height: "100%",
   },
@@ -718,18 +695,18 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     letterSpacing: -0.4,
     textAlign: "center",
-    textShadowColor: "rgba(0,0,0,0.35)",
+    textShadowColor: "rgba(0,0,0,0.4)",
     textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 6,
+    textShadowRadius: 8,
   },
   sub: {
-    color: "rgba(255,255,255,0.88)",
+    color: "rgba(255,255,255,0.9)",
     fontSize: fontSize(13),
     fontWeight: "500",
     textAlign: "center",
-    textShadowColor: "rgba(0,0,0,0.3)",
+    textShadowColor: "rgba(0,0,0,0.35)",
     textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 4,
+    textShadowRadius: 5,
   },
   dockBleed: {
     position: "absolute",
