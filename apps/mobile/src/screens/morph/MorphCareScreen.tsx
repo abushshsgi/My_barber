@@ -1234,11 +1234,11 @@ export function MorphCareScreen({ navigation, route }: Props) {
               horizontal
               nestedScrollEnabled={true}
               showsHorizontalScrollIndicator={false}
-              style={{
+                style={{
                 height: hubLayout.quickActionH,
                 flexGrow: 0,
                 flexShrink: 0,
-                marginTop: verticalScale(8),
+                marginTop: verticalScale(4),
               }}
               contentContainerStyle={[
                 styles.quickActionScroll,
@@ -1343,7 +1343,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
 
           {/* Search Bar — sheet ochiq bo‘lsa yashirin (input sheet ichida) */}
           {!searchOpen ? (
-          <View style={[styles.searchSection, { marginBottom: verticalScale(8) }]}>
+          <View style={[styles.searchSection, { marginBottom: verticalScale(4) }]}>
             <Pressable
               style={[styles.searchBar, styles.searchHubBtn, { width: "100%" }]}
               onPress={openSearch}
@@ -1551,8 +1551,8 @@ export function MorphCareScreen({ navigation, route }: Props) {
                   {
                     gap: hubLayout.sheetGap,
                     paddingTop: hubLayout.sheetTop,
-                    paddingBottom: Math.max(8, Math.round(hubLayout.sheetGap * 0.55)),
-                    minHeight: Math.round(hubLayout.sheetH * 0.98),
+                    paddingBottom: Math.max(12, Math.round(hubLayout.sheetGap * 0.9)),
+                    minHeight: Math.round(hubLayout.sheetH * 1.08),
                   },
                 ]}
               >
@@ -2308,8 +2308,8 @@ const styles = StyleSheet.create({
   },
   searchSection: {
     paddingHorizontal: scale(16),
-    marginTop: verticalScale(10),
-    marginBottom: verticalScale(12),
+    marginTop: verticalScale(6),
+    marginBottom: verticalScale(8),
   },
   searchBar: {
     flexDirection: "row",
@@ -2872,11 +2872,13 @@ const styles = StyleSheet.create({
     color: "rgba(17,17,17,0.45)",
   },
   hubDockOuter: {
-    marginTop: verticalScale(-6),
-    flexGrow: 0,
-    paddingHorizontal: 0,
+    marginTop: verticalScale(10),
+    flexGrow: 1,
+    paddingHorizontal: scale(10),
     paddingTop: 0,
+    paddingBottom: verticalScale(6),
     backgroundColor: "transparent",
+    justifyContent: "flex-end",
   },
   hubSheet: {
     backgroundColor: "#FFFFFF",
@@ -2884,13 +2886,15 @@ const styles = StyleSheet.create({
     paddingTop: verticalScale(14),
     paddingBottom: 0,
     gap: moderateScale(12),
-    borderTopLeftRadius: moderateScale(22),
-    borderTopRightRadius: moderateScale(22),
-    borderBottomLeftRadius: 0,
-    borderBottomRightRadius: 0,
+    borderRadius: moderateScale(22),
     overflow: "hidden",
-    borderTopWidth: StyleSheet.hairlineWidth,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: "rgba(17,17,17,0.08)",
+    shadowColor: "#111111",
+    shadowOpacity: 0.14,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: -4 },
+    elevation: 12,
   },
   hubSheetFlow: {
     marginTop: verticalScale(12),

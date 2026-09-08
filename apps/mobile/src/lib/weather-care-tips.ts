@@ -309,13 +309,13 @@ export function careHubLayout(
   const avail = Math.max(360, height - dockClearance);
 
   const searchBlock = rs(52, scale);
-  const reportHead = rs(22, scale);
-  const weatherNudge = 8;
-  const promoTopGap = rs(12, scale);
-  const sheetTop = rs(10, scale);
+  const reportHead = rs(24, scale);
+  const weatherNudge = 6;
+  const promoTopGap = rs(8, scale);
+  const sheetTop = rs(14, scale);
   /** Search ↔ category orasidagi bo‘shliq. */
-  const searchCatGap = rs(14, scale);
-  const gaps = rs(16, scale) + weatherNudge + searchCatGap;
+  const searchCatGap = rs(8, scale);
+  const gaps = rs(10, scale) + weatherNudge + searchCatGap;
   const quickActionWCap =
     width < 360 ? rs(108, scale) : width < 400 ? rs(118, scale) : rs(128, scale);
   const quickActionW = clamp(
@@ -329,7 +329,7 @@ export function careHubLayout(
     rs(124, scale),
   );
   /** SOS + shelf + growth + album — bitta gorizontal qator (Yandex Go promo uslubi). */
-  const quickActionBlock = quickActionH + rs(8, scale);
+  const quickActionBlock = quickActionH + rs(6, scale);
 
   const chrome = searchBlock + quickActionBlock + reportHead + gaps + sheetTop + promoTopGap;
 
@@ -337,8 +337,8 @@ export function careHubLayout(
 
   const hPad = width < 360 ? 12 : width < 400 ? rs(14, scale) : rs(16, scale);
   const promoW = Math.max(240, width - 2 * hPad);
-  /** Home banner bilan bir xil ~2.0:1 — kenglikka mos hero balandligi. */
-  const PROMO_ASPECT = 2.0;
+  /** Hero biroz pastroq — sheet asosiy fokus. */
+  const PROMO_ASPECT = 2.25;
   const promoByWidth = Math.round(promoW / PROMO_ASPECT);
 
   /**
@@ -347,20 +347,20 @@ export function careHubLayout(
    */
   const MIN = {
     /** chip + temp + CTA sig‘ishi shart — aks holda tugma kesiladi. */
-    promo: Math.max(rs(140, scale), Math.min(promoByWidth, rs(168, scale))),
-    featured: rs(width < 360 ? 96 : 108, scale),
-    hubCard: rs(108, scale),
-    ai: rs(44, scale),
+    promo: Math.max(rs(118, scale), Math.min(promoByWidth, rs(148, scale))),
+    featured: rs(width < 360 ? 84 : 92, scale),
+    hubCard: rs(128, scale),
+    ai: rs(48, scale),
   };
   const MAX = {
     promo: clamp(
-      Math.max(rs(160, scale), promoByWidth),
-      rs(150, scale),
-      Math.min(rs(220, scale), Math.round(height * 0.30)),
+      Math.max(rs(132, scale), promoByWidth),
+      rs(128, scale),
+      Math.min(rs(176, scale), Math.round(height * 0.24)),
     ),
-    featured: rs(168, scale),
-    hubCard: rs(148, scale),
-    ai: rs(54, scale),
+    featured: rs(128, scale),
+    hubCard: rs(176, scale),
+    ai: rs(58, scale),
   };
 
   const minTotal = MIN.promo + MIN.featured + MIN.hubCard + MIN.ai;
@@ -390,13 +390,13 @@ export function careHubLayout(
     aiH = grow(MIN.ai, MAX.ai);
   }
 
-  const featuredWCap = width < 360 ? rs(118, scale) : width < 400 ? rs(140, scale) : rs(158, scale);
+  const featuredWCap = width < 360 ? rs(104, scale) : width < 400 ? rs(118, scale) : rs(132, scale);
   const featuredW = clamp(
-    Math.round(featuredH * 0.86),
-    width < 360 ? rs(92, scale) : rs(108, scale),
+    Math.round(featuredH * 0.82),
+    width < 360 ? rs(80, scale) : rs(92, scale),
     featuredWCap,
   );
-  const sheetGap = rs(8, scale);
+  const sheetGap = rs(12, scale);
   const promoInner = promoH;
   const narrow = width < 360;
   const promoPad = narrow ? 10 : width < 400 ? rs(12, scale) : rs(14, scale);
@@ -419,7 +419,7 @@ export function careHubLayout(
     promoTopGap,
     sheetTop,
     sheetGap,
-    sheetH: reportHead + sheetTop + sheetGap + hubCardH + sheetGap + aiH + rs(8, scale),
+    sheetH: reportHead + sheetTop + sheetGap + hubCardH + sheetGap + aiH + rs(14, scale),
     hPad,
     dockClearance,
     promoPad,
