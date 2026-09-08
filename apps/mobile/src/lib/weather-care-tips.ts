@@ -317,16 +317,16 @@ export function careHubLayout(
   const searchCatGap = rs(8, scale);
   const gaps = rs(10, scale) + weatherNudge + searchCatGap;
   const quickActionWCap =
-    width < 360 ? rs(108, scale) : width < 400 ? rs(118, scale) : rs(128, scale);
+    width < 360 ? rs(96, scale) : width < 400 ? rs(104, scale) : rs(112, scale);
   const quickActionW = clamp(
-    Math.round(rs(112, scale)),
-    width < 360 ? rs(100, scale) : rs(106, scale),
+    Math.round(rs(100, scale)),
+    width < 360 ? rs(88, scale) : rs(94, scale),
     quickActionWCap,
   );
   const quickActionH = clamp(
-    Math.round(quickActionW * 0.98),
-    rs(96, scale),
-    rs(124, scale),
+    Math.round(quickActionW * 0.96),
+    rs(86, scale),
+    rs(108, scale),
   );
   /** SOS + shelf + growth + album — bitta gorizontal qator (Yandex Go promo uslubi). */
   const quickActionBlock = quickActionH + rs(6, scale);
@@ -486,11 +486,11 @@ export function careHubLayout(
       };
     })(),
     quickActionUi: (() => {
-      const w = Math.max(96, quickActionW);
-      const k = clamp(w / 112, 0.55, 1);
+      const w = Math.max(88, quickActionW);
+      const k = clamp(w / 100, 0.55, 1);
       return {
-        labelFs: clamp(Math.round(15 * k), 13, 16),
-        pad: clamp(Math.round(9 * k), 7, 11),
+        labelFs: clamp(Math.round(14 * k), 12, 15),
+        pad: clamp(Math.round(8 * k), 6, 9),
       };
     })(),
   };

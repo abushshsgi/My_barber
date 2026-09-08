@@ -1309,26 +1309,35 @@ export function MorphCareScreen({ navigation, route }: Props) {
                     source={card.img}
                     style={styles.quickActionImg}
                     contentFit="cover"
-                    contentPosition="top"
+                    contentPosition="center"
                   />
                   <LinearGradient
                     colors={[
                       "transparent",
-                      "rgba(250,247,242,0.55)",
-                      "rgba(250,247,242,0.96)",
+                      "rgba(250,247,242,0.35)",
+                      "rgba(250,247,242,0.92)",
                     ]}
-                    locations={[0.42, 0.68, 1]}
+                    locations={[0.5, 0.72, 1]}
                     style={styles.quickActionScrim}
                     pointerEvents="none"
                   />
-                  <View style={styles.quickActionBody} pointerEvents="none">
+                  <View
+                    style={[
+                      styles.quickActionBody,
+                      {
+                        paddingHorizontal: hubLayout.quickActionUi.pad,
+                        paddingBottom: hubLayout.quickActionUi.pad,
+                      },
+                    ]}
+                    pointerEvents="none"
+                  >
                     <Text
                       style={[
                         styles.quickActionLabel,
                         {
                           color: card.labelColor,
-                          fontSize: Math.round(hubLayout.quickActionW * 0.195),
-                          lineHeight: Math.round(hubLayout.quickActionW * 0.22),
+                          fontSize: hubLayout.quickActionUi.labelFs,
+                          lineHeight: hubLayout.quickActionUi.labelFs + 2,
                         },
                       ]}
                       numberOfLines={1}
@@ -1929,10 +1938,9 @@ const styles = StyleSheet.create({
     elevation: 2,
     backgroundColor: "#F0F0F0",
   },
-  /** Pastki baked-in matnni kesish — overlay label bir xil qatorda. */
+  /** Yangi tile rasmlar — matnsiz; label overlay bir xil qatorda. */
   quickActionImg: {
     ...StyleSheet.absoluteFillObject,
-    height: "118%",
   },
   quickActionScrim: {
     ...StyleSheet.absoluteFillObject,
@@ -1941,8 +1949,6 @@ const styles = StyleSheet.create({
   quickActionBody: {
     ...StyleSheet.absoluteFillObject,
     justifyContent: "flex-end",
-    paddingHorizontal: scale(10),
-    paddingBottom: verticalScale(9),
     zIndex: 2,
   },
   quickActionLabel: {
