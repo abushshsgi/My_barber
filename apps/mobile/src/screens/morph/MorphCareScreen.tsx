@@ -60,6 +60,7 @@ import {
   type MyCareProduct,
 } from "../../lib/morph-my-products";
 import { careHubLayout, weatherLocationHeroSource } from "../../lib/weather-care-tips";
+import { regionLabel } from "../../lib/uz-regions";
 import type { MorphCareStackParamList } from "../../navigation/MorphCareStack";
 import { useShellNavigation } from "../../lib/shell-nav";
 import { morphFont } from "../../theme/morph-font";
@@ -260,6 +261,20 @@ export function MorphCareScreen({ navigation, route }: Props) {
     lon: weather?.longitude,
     regionId: weatherRegionId,
   });
+  const weatherCityName = useMemo(() => {
+    if (weatherRegionId) return regionLabel(weatherRegionId);
+    const raw = `${weather?.location_region || ""} ${weather?.location_label || ""}`.trim();
+    if (!raw) return t("care.weather.cityFallback", { defaultValue: "Shahar" });
+    const cleaned = raw
+      .replace(/\b(shahri|viloyati|viloyat|область|город|шаҳри)\b/gi, "")
+      .replace(/\s+/g, " ")
+      .trim();
+    const first = cleaned.split(/[,·|/]/)[0]?.trim() || cleaned;
+    if (/\b(махалл|mahalla|ko'cha|куча|улица)\b/i.test(first)) {
+      return t("care.weather.cityFallback", { defaultValue: "Shahar" });
+    }
+    return first.slice(0, 18) || t("care.weather.cityFallback", { defaultValue: "Shahar" });
+  }, [t, weather?.location_label, weather?.location_region, weatherRegionId]);
 
   /** Search sheet — klaviatura va safe area ustida, overshoot yo‘q. */
   const keyboardCover = useMemo(() => {
@@ -1106,6 +1121,14 @@ export function MorphCareScreen({ navigation, route }: Props) {
                     color="#111111"
                   />
                 </Pressable>
+
+                <Text
+                  style={[styles.promoRegionLabel, { fontSize: hubLayout.promoUi.locFs + 2 }]}
+                  numberOfLines={1}
+                  pointerEvents="none"
+                >
+                  {weatherCityName}
+                </Text>
               </View>
 
               <Pressable
@@ -2059,6 +2082,19 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: "rgba(15,23,42,0.12)",
+  },
+  promoRegionLabel: {
+    ...morphFont,
+    flexShrink: 1,
+    maxWidth: "62%",
+    fontWeight: "800",
+    color: "#FFFFFF",
+    letterSpacing: -0.2,
+    textAlign: "right",
+    textShadowColor: "rgba(0,0,0,0.45)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 4,
+    includeFontPadding: false,
   },
   promoBody: {
     flexDirection: "row",
