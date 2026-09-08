@@ -309,7 +309,7 @@ export function careHubLayout(
   const avail = Math.max(360, height - dockClearance);
 
   const searchBlock = rs(52, scale);
-  const reportHead = rs(24, scale);
+  const reportHead = rs(32, scale);
   const weatherNudge = 6;
   const promoTopGap = rs(8, scale);
   const sheetTop = rs(14, scale);
@@ -347,20 +347,21 @@ export function careHubLayout(
    */
   const MIN = {
     /** chip + temp + CTA sig‘ishi shart — aks holda tugma kesiladi. */
-    promo: Math.max(rs(118, scale), Math.min(promoByWidth, rs(148, scale))),
-    featured: rs(width < 360 ? 108 : 120, scale),
-    hubCard: rs(128, scale),
-    ai: rs(40, scale),
+    promo: Math.max(rs(112, scale), Math.min(promoByWidth, rs(140, scale))),
+    featured: rs(width < 360 ? 100 : 112, scale),
+    /** Hisobot sheet — kirishda asosiy fokus. */
+    hubCard: rs(148, scale),
+    ai: rs(44, scale),
   };
   const MAX = {
     promo: clamp(
-      Math.max(rs(132, scale), promoByWidth),
-      rs(128, scale),
-      Math.min(rs(176, scale), Math.round(height * 0.24)),
+      Math.max(rs(124, scale), promoByWidth),
+      rs(120, scale),
+      Math.min(rs(160, scale), Math.round(height * 0.22)),
     ),
-    featured: rs(156, scale),
-    hubCard: rs(176, scale),
-    ai: rs(48, scale),
+    featured: rs(136, scale),
+    hubCard: rs(200, scale),
+    ai: rs(52, scale),
   };
 
   const minTotal = MIN.promo + MIN.featured + MIN.hubCard + MIN.ai;
@@ -461,8 +462,8 @@ export function careHubLayout(
     /** CTA uchun minimal joy; hint/2-qator title uchun boyroq. */
     promoShowCta: promoInner >= rs(120, scale),
     promoRich: promoInner >= rs(152, scale),
-    hubCardRich: hubCardH >= rs(130, scale),
-    featuredRich: featuredH >= rs(124, scale),
+    hubCardRich: hubCardH >= rs(150, scale),
+    featuredRich: featuredH >= rs(118, scale),
     /**
      * Featured UI — karta kengligiga bog‘liq (ekran emas).
      * 200pt dizayn: btn 26 / title 13; 150pt: btn ~19 / title ~10.
