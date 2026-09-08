@@ -1328,15 +1328,24 @@ export function MorphCareScreen({ navigation, route }: Props) {
 
           {/* Featured — qidiruv ochiq bo‘lsa yashirin */}
           {!searchOpen ? (
-          <View style={styles.featuredRail}>
           <ScrollView
             horizontal
             nestedScrollEnabled={true}
             showsHorizontalScrollIndicator={false}
-            style={{ height: hubLayout.featuredH, flexGrow: 0, flexShrink: 0 }}
+            style={{
+              height: hubLayout.featuredH + verticalScale(8),
+              flexGrow: 0,
+              flexShrink: 0,
+              marginTop: verticalScale(4),
+              marginBottom: verticalScale(4),
+            }}
             contentContainerStyle={[
               styles.featuredProductsScroll,
-              { height: hubLayout.featuredH, alignItems: "stretch" },
+              {
+                height: hubLayout.featuredH,
+                alignItems: "stretch",
+                paddingVertical: verticalScale(4),
+              },
             ]}
           >
             {displayProducts.map((prod) => {
@@ -1508,7 +1517,6 @@ export function MorphCareScreen({ navigation, route }: Props) {
               );
             })}
           </ScrollView>
-          </View>
           ) : null}
 
           {/* Hisobot sheet — featured kartochkalar ostida (scroll ichida) */}
@@ -1528,6 +1536,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
                 <View style={styles.reportHead}>
                   <Text style={styles.reportTitle}>{t("care.hubReport")}</Text>
                   <Pressable style={styles.reportFilter} onPress={openMyProducts}>
+                    <Ionicons name="cube-outline" size={14} color="#111111" />
                     <Text style={styles.reportFilterText}>{t("care.myProducts.title")}</Text>
                     <Ionicons name="chevron-forward" size={13} color="#737373" />
                   </Pressable>
@@ -2685,11 +2694,6 @@ const styles = StyleSheet.create({
     color: "#111111",
   },
   searchRowPh: { alignItems: "center", justifyContent: "center" },
-  featuredRail: {
-    backgroundColor: "transparent",
-    paddingVertical: verticalScale(12),
-    marginTop: verticalScale(2),
-  },
   featuredProductsScroll: {
     paddingHorizontal: scale(16),
     gap: moderateScale(12),
@@ -2707,13 +2711,13 @@ const styles = StyleSheet.create({
     borderRadius: moderateScale(20),
     overflow: "hidden",
     backgroundColor: "#FFFFFF",
-    borderWidth: 1.5,
-    borderColor: "#111111",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.55)",
     shadowColor: "#FFFFFF",
-    shadowOpacity: 0.35,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 0 },
-    elevation: 10,
+    shadowOpacity: 0.28,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 8,
   },
   featuredMedia: {
     flex: 1,
@@ -2891,13 +2895,13 @@ const styles = StyleSheet.create({
   reportFilter: {
     flexDirection: "row",
     alignItems: "center",
-    gap: moderateScale(4),
+    gap: moderateScale(6),
     paddingHorizontal: scale(10),
-    paddingVertical: verticalScale(4),
+    paddingVertical: verticalScale(5),
     borderRadius: 999,
     backgroundColor: "#F0F0F0",
   },
-  reportFilterText: { ...morphFont, fontSize: fontSize(11), fontWeight: "600", color: "#737373" },
+  reportFilterText: { ...morphFont, fontSize: fontSize(11), fontWeight: "600", color: "#111111" },
   hubCards: {
     flexDirection: "row",
     gap: moderateScale(12),

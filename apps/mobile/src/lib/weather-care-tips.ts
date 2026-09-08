@@ -350,7 +350,7 @@ export function careHubLayout(
     promo: Math.max(rs(118, scale), Math.min(promoByWidth, rs(148, scale))),
     featured: rs(width < 360 ? 108 : 120, scale),
     hubCard: rs(128, scale),
-    ai: rs(48, scale),
+    ai: rs(40, scale),
   };
   const MAX = {
     promo: clamp(
@@ -360,7 +360,7 @@ export function careHubLayout(
     ),
     featured: rs(156, scale),
     hubCard: rs(176, scale),
-    ai: rs(58, scale),
+    ai: rs(48, scale),
   };
 
   const minTotal = MIN.promo + MIN.featured + MIN.hubCard + MIN.ai;
@@ -380,7 +380,7 @@ export function careHubLayout(
     promoH = Math.floor(MIN.promo * k);
     featuredH = Math.floor(MIN.featured * k);
     hubCardH = Math.floor(MIN.hubCard * k);
-    aiH = Math.max(rs(40, scale), remain - promoH - featuredH - hubCardH);
+    aiH = Math.max(rs(36, scale), remain - promoH - featuredH - hubCardH);
   } else {
     const k = headroom > 0 ? Math.min(1, (remain - minTotal) / headroom) : 0;
     const grow = (min: number, max: number) => Math.round(min + (max - min) * k);
