@@ -1254,6 +1254,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
                     key: "sos",
                     img: QUICK_SOS,
                     label: t("care.quick.sos", { defaultValue: "SOS" }),
+                    labelColor: "#303030",
                     a11y: t("care.sos.cta", {
                       defaultValue: "Sochim bugun yomon ko‘rinayapti (SOS)",
                     }),
@@ -1263,6 +1264,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
                     key: "shelf",
                     img: QUICK_SHELF,
                     label: t("care.quick.shelf", { defaultValue: "Javon" }),
+                    labelColor: "#107058",
                     a11y: t("care.shelf.title", {
                       defaultValue: "Mening parvarish vositalarim",
                     }),
@@ -1272,6 +1274,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
                     key: "growth",
                     img: QUICK_GROWTH,
                     label: t("care.quick.growth", { defaultValue: "O'sish" }),
+                    labelColor: "#D84858",
                     a11y: t("care.growthTracker.title", {
                       defaultValue: "Hair Growth & Health Tracker",
                     }),
@@ -1281,6 +1284,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
                     key: "album",
                     img: QUICK_ALBUM,
                     label: t("care.quick.album", { defaultValue: "Albom" }),
+                    labelColor: "#5B4B8A",
                     a11y: t("care.album.screenTitle", {
                       defaultValue: "Parvarish Albomi",
                     }),
@@ -1303,9 +1307,35 @@ export function MorphCareScreen({ navigation, route }: Props) {
                 >
                   <Image
                     source={card.img}
-                    style={StyleSheet.absoluteFill}
+                    style={styles.quickActionImg}
                     contentFit="cover"
+                    contentPosition="top"
                   />
+                  <LinearGradient
+                    colors={[
+                      "transparent",
+                      "rgba(250,247,242,0.55)",
+                      "rgba(250,247,242,0.96)",
+                    ]}
+                    locations={[0.42, 0.68, 1]}
+                    style={styles.quickActionScrim}
+                    pointerEvents="none"
+                  />
+                  <View style={styles.quickActionBody} pointerEvents="none">
+                    <Text
+                      style={[
+                        styles.quickActionLabel,
+                        {
+                          color: card.labelColor,
+                          fontSize: Math.round(hubLayout.quickActionW * 0.195),
+                          lineHeight: Math.round(hubLayout.quickActionW * 0.22),
+                        },
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {card.label}
+                    </Text>
+                  </View>
                 </Pressable>
               ))}
             </ScrollView>
@@ -1521,7 +1551,8 @@ export function MorphCareScreen({ navigation, route }: Props) {
                   {
                     gap: hubLayout.sheetGap,
                     paddingTop: hubLayout.sheetTop,
-                    paddingBottom: 4,
+                    paddingBottom: Math.max(8, Math.round(hubLayout.sheetGap * 0.55)),
+                    minHeight: Math.round(hubLayout.sheetH * 0.98),
                   },
                 ]}
               >
@@ -1604,7 +1635,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
                 <Pressable
                   style={[
                     styles.aiAssistant,
-                    { height: hubLayout.aiH, marginTop: Math.max(4, Math.round(hubLayout.sheetGap * 0.35)) },
+                    { height: hubLayout.aiH, marginTop: 0 },
                   ]}
                   onPress={openAssistant}
                   accessibilityLabel={t("care.hubAiAssistant")}
@@ -1898,23 +1929,26 @@ const styles = StyleSheet.create({
     elevation: 2,
     backgroundColor: "#F0F0F0",
   },
+  /** Pastki baked-in matnni kesish — overlay label bir xil qatorda. */
+  quickActionImg: {
+    ...StyleSheet.absoluteFillObject,
+    height: "118%",
+  },
   quickActionScrim: {
     ...StyleSheet.absoluteFillObject,
     zIndex: 1,
   },
   quickActionBody: {
-    flex: 1,
+    ...StyleSheet.absoluteFillObject,
     justifyContent: "flex-end",
+    paddingHorizontal: scale(10),
+    paddingBottom: verticalScale(9),
     zIndex: 2,
   },
   quickActionLabel: {
     ...morphFont,
     fontWeight: "800",
-    color: "#FFFFFF",
-    letterSpacing: -0.2,
-    textShadowColor: "rgba(0,0,0,0.45)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
+    letterSpacing: -0.35,
   },
   routineRoot: { flex: 1, backgroundColor: "#EFEDE8" },
   onboardRoot: { flex: 1, backgroundColor: "#FAFAFA" },
@@ -2838,7 +2872,7 @@ const styles = StyleSheet.create({
     color: "rgba(17,17,17,0.45)",
   },
   hubDockOuter: {
-    marginTop: verticalScale(4),
+    marginTop: verticalScale(-6),
     flexGrow: 0,
     paddingHorizontal: 0,
     paddingTop: 0,

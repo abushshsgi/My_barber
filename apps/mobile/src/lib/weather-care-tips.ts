@@ -312,7 +312,7 @@ export function careHubLayout(
   const reportHead = rs(22, scale);
   const weatherNudge = 8;
   const promoTopGap = rs(12, scale);
-  const sheetTop = rs(14, scale);
+  const sheetTop = rs(10, scale);
   /** Search ↔ category orasidagi bo‘shliq. */
   const searchCatGap = rs(14, scale);
   const gaps = rs(16, scale) + weatherNudge + searchCatGap;
@@ -396,7 +396,7 @@ export function careHubLayout(
     width < 360 ? rs(92, scale) : rs(108, scale),
     featuredWCap,
   );
-  const sheetGap = rs(12, scale);
+  const sheetGap = rs(8, scale);
   const promoInner = promoH;
   const narrow = width < 360;
   const promoPad = narrow ? 10 : width < 400 ? rs(12, scale) : rs(14, scale);
