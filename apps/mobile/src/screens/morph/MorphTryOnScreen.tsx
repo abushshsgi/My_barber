@@ -157,10 +157,13 @@ function FaceScanIcon({ color = "#FFF", size = 28 }: { color?: string; size?: nu
 }
 
 /** Uchta ustma-ust kartochka — galereya tugmasi uchun. */
-function GalleryStackIcon({ size = 28 }: { size?: number }) {
+function GalleryStackIcon({ size = 28, color = "#9A9A9A" }: { size?: number; color?: string }) {
   const w = size * 0.52;
   const h = size * 0.62;
   const r = 4;
+  const mid = color === "#FFFFFF" ? "rgba(255,255,255,0.72)" : "#BDBDBD";
+  const back = color === "#FFFFFF" ? "rgba(255,255,255,0.4)" : "#D8D8D8";
+  const border = color === "#FFFFFF" ? "rgba(255,255,255,0.55)" : "#7A7A7A";
   return (
     <View style={{ width: size, height: size, alignItems: "center", justifyContent: "center" }}>
       <View
@@ -169,7 +172,7 @@ function GalleryStackIcon({ size = 28 }: { size?: number }) {
           width: w,
           height: h,
           borderRadius: r,
-          backgroundColor: "#D8D8D8",
+          backgroundColor: back,
           transform: [{ rotate: "-14deg" }, { translateX: -size * 0.16 }],
         }}
       />
@@ -179,7 +182,7 @@ function GalleryStackIcon({ size = 28 }: { size?: number }) {
           width: w,
           height: h,
           borderRadius: r,
-          backgroundColor: "#BDBDBD",
+          backgroundColor: mid,
           transform: [{ rotate: "10deg" }, { translateX: size * 0.14 }],
         }}
       />
@@ -188,9 +191,9 @@ function GalleryStackIcon({ size = 28 }: { size?: number }) {
           width: w,
           height: h,
           borderRadius: r,
-          backgroundColor: "#9A9A9A",
+          backgroundColor: color,
           borderWidth: StyleSheet.hairlineWidth,
-          borderColor: "#7A7A7A",
+          borderColor: border,
         }}
       />
     </View>
@@ -444,7 +447,7 @@ export function MorphTryOnScreen({ navigation }: Props) {
         transition={300}
       />
       <LinearGradient
-        colors={["rgba(17,17,17,0.38)", "rgba(17,17,17,0.08)", "rgba(250,250,250,0.55)", "#FAFAFA"]}
+        colors={["rgba(0,0,0,0.55)", "rgba(0,0,0,0.2)", "rgba(255,255,255,0.55)", "#FFFFFF"]}
         locations={[0, 0.28, 0.58, 0.78]}
         style={StyleSheet.absoluteFill}
         pointerEvents="none"
@@ -491,7 +494,7 @@ export function MorphTryOnScreen({ navigation }: Props) {
                   accessibilityLabel="Tarix"
                   hitSlop={8}
                 >
-                  <Ionicons name="time-outline" size={16} color="#111111" />
+                  <Ionicons name="time-outline" size={16} color="#0A0A0A" />
                 </Pressable>
               </Animated.View>
             </View>
@@ -540,10 +543,10 @@ export function MorphTryOnScreen({ navigation }: Props) {
                   onPress={() => void startWith("camera")}
                 >
                   {busy === "camera" ? (
-                    <ActivityIndicator color="#FFF" />
+                    <ActivityIndicator color="#FFFFFF" />
                   ) : (
                     <>
-                      <FaceScanIcon color="#FFF" size={ACTION_ICON} />
+                      <FaceScanIcon color="#FFFFFF" size={ACTION_ICON} />
                       <Text style={styles.gridTitleLight}>Kameradan olish</Text>
                     </>
                   )}
@@ -555,10 +558,10 @@ export function MorphTryOnScreen({ navigation }: Props) {
                   onPress={() => void startWith("gallery")}
                 >
                   {busy === "gallery" ? (
-                    <ActivityIndicator color="#111111" />
+                    <ActivityIndicator color="#0A0A0A" />
                   ) : (
                     <>
-                      <GalleryStackIcon size={ACTION_ICON} />
+                      <GalleryStackIcon size={ACTION_ICON} color="#0A0A0A" />
                       <Text style={styles.gridTitleDark}>Galereyadan tanlash</Text>
                     </>
                   )}
@@ -588,12 +591,12 @@ export function MorphTryOnScreen({ navigation }: Props) {
                   accessibilityLabel="Barcha tarix"
                 >
                   <Text style={styles.seeAllText}>Barchasi</Text>
-                  <Ionicons name="chevron-forward" size={14} color="#111111" />
+                  <Ionicons name="chevron-forward" size={14} color="#0A0A0A" />
                 </Pressable>
               </View>
 
               {historyLoading && !historyFetched ? (
-                <ActivityIndicator color="#111111" style={{ marginTop: 28 }} />
+                <ActivityIndicator color="#0A0A0A" style={{ marginTop: 28 }} />
               ) : historyError ? (
                 <View style={styles.historyEmpty}>
                   <Text style={styles.historyEmptyText}>{historyError}</Text>
@@ -677,7 +680,7 @@ export function MorphTryOnScreen({ navigation }: Props) {
 const ACTION_ICON = scale(IS_SMALL_DEVICE ? 22 : 26);
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: "#FAFAFA" },
+  root: { flex: 1, backgroundColor: "#0A0A0A" },
   heroImg: {
     ...StyleSheet.absoluteFillObject,
     width: "100%",
@@ -713,12 +716,12 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: "#FFF",
+    backgroundColor: "#FFFFFF",
     zIndex: 1,
   },
   sheet: {
     marginTop: "auto",
-    backgroundColor: "#FFF",
+    backgroundColor: "#FFFFFF",
     borderTopLeftRadius: radius.xl,
     borderTopRightRadius: radius.xl,
     paddingHorizontal: scale(16),
@@ -744,19 +747,19 @@ const styles = StyleSheet.create({
     width: scale(40),
     height: verticalScale(4),
     borderRadius: moderateScale(2),
-    backgroundColor: "#D4D4D4",
+    backgroundColor: "rgba(0,0,0,0.18)",
   },
   handleHint: {
     fontSize: fontSize(10),
     fontWeight: "600",
-    color: "#A0A0A0",
+    color: "rgba(0,0,0,0.4)",
     includeFontPadding: false,
   },
   historyIconBtn: {
     width: scale(34),
     height: scale(34),
     borderRadius: scale(34) / 2,
-    backgroundColor: "#F2F2F2",
+    backgroundColor: "rgba(0,0,0,0.06)",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -773,7 +776,7 @@ const styles = StyleSheet.create({
     right: scale(32),
     top: scale(12),
     height: verticalScale(1.5),
-    backgroundColor: "#E8E8E8",
+    backgroundColor: "rgba(0,0,0,0.1)",
   },
   stepCol: {
     flex: 1,
@@ -785,25 +788,25 @@ const styles = StyleSheet.create({
     width: scale(24),
     height: scale(24),
     borderRadius: scale(24) / 2,
-    backgroundColor: "#F0F0F0",
+    backgroundColor: "rgba(0,0,0,0.08)",
     alignItems: "center",
     justifyContent: "center",
   },
-  stepDotOn: { backgroundColor: "#111111" },
+  stepDotOn: { backgroundColor: "#0A0A0A" },
   stepNum: {
     fontSize: fontSize(11),
     fontWeight: "700",
-    color: "#9A9A9A",
+    color: "rgba(0,0,0,0.35)",
     includeFontPadding: false,
   },
-  stepNumOn: { color: "#FFF" },
+  stepNumOn: { color: "#FFFFFF" },
   stepLabel: {
     fontSize: fontSize(11),
     fontWeight: "600",
-    color: "#A0A0A0",
+    color: "rgba(0,0,0,0.4)",
     includeFontPadding: false,
   },
-  stepLabelOn: { color: "#111111", fontWeight: "700" },
+  stepLabelOn: { color: "#0A0A0A", fontWeight: "700" },
   errorBox: {
     backgroundColor: "rgba(185,28,28,0.08)",
     borderRadius: radius.sm,
@@ -837,7 +840,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: spacing.xs,
-    backgroundColor: "#111111",
+    backgroundColor: "#0A0A0A",
     borderRadius: radius.xl,
     minHeight: verticalScale(IS_SMALL_DEVICE ? 60 : 72),
     paddingHorizontal: scale(8),
@@ -849,24 +852,24 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: spacing.xs,
-    backgroundColor: "#FFF",
+    backgroundColor: "transparent",
     borderRadius: radius.xl,
     minHeight: verticalScale(IS_SMALL_DEVICE ? 60 : 72),
     paddingHorizontal: scale(8),
     paddingVertical: spacing.sm,
     borderWidth: 1.5,
-    borderColor: "#D0D0D0",
+    borderColor: "rgba(0,0,0,0.22)",
     borderStyle: "dashed",
   },
   gridTitleLight: {
-    color: "#FFF",
+    color: "#FFFFFF",
     fontWeight: "700",
     fontSize: fontSize(12),
     textAlign: "center",
     includeFontPadding: false,
   },
   gridTitleDark: {
-    color: "#111111",
+    color: "#0A0A0A",
     fontWeight: "700",
     fontSize: fontSize(12),
     textAlign: "center",
@@ -885,14 +888,14 @@ const styles = StyleSheet.create({
     gap: moderateScale(10),
   },
   historyTitle: {
-    color: "#111111",
+    color: "#0A0A0A",
     fontSize: fontSize(15),
     fontWeight: "800",
     letterSpacing: -0.2,
   },
   historySub: {
     marginTop: verticalScale(2),
-    color: "#8A8A8A",
+    color: "rgba(0,0,0,0.45)",
     fontSize: fontSize(11),
     fontWeight: "600",
   },
@@ -900,13 +903,13 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: moderateScale(2),
-    backgroundColor: "#F2F2F2",
+    backgroundColor: "rgba(0,0,0,0.06)",
     borderRadius: radius.pill,
     paddingHorizontal: scale(10),
     paddingVertical: verticalScale(7),
   },
   seeAllText: {
-    color: "#111111",
+    color: "#0A0A0A",
     fontSize: fontSize(12),
     fontWeight: "700",
   },
@@ -918,12 +921,12 @@ const styles = StyleSheet.create({
   historyCard: {
     borderRadius: radius.md,
     overflow: "hidden",
-    backgroundColor: "#FAFAFA",
+    backgroundColor: "#F3F3F3",
   },
   historyImgWrap: {
     width: "100%",
     aspectRatio: ASPECT.portrait,
-    backgroundColor: "#FAFAFA",
+    backgroundColor: "#F3F3F3",
     position: "relative",
   },
   historyImg: {
@@ -955,12 +958,12 @@ const styles = StyleSheet.create({
     minHeight: verticalScale(120),
   },
   historyEmptyTitle: {
-    color: "#111111",
+    color: "#0A0A0A",
     fontSize: fontSize(16),
     fontWeight: "800",
   },
   historyEmptyText: {
-    color: "#8A8A8A",
+    color: "rgba(0,0,0,0.45)",
     fontSize: fontSize(12),
     textAlign: "center",
     lineHeight: fontSize(17),
@@ -978,7 +981,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: moderateScale(8),
-    backgroundColor: "#111111",
+    backgroundColor: "#0A0A0A",
     borderRadius: radius.md,
     minHeight: verticalScale(46),
     paddingHorizontal: scale(14),
