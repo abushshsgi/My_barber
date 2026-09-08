@@ -317,16 +317,16 @@ export function careHubLayout(
   const searchCatGap = rs(8, scale);
   const gaps = rs(10, scale) + weatherNudge + searchCatGap;
   const quickActionWCap =
-    width < 360 ? rs(96, scale) : width < 400 ? rs(104, scale) : rs(112, scale);
+    width < 360 ? rs(88, scale) : width < 400 ? rs(94, scale) : rs(100, scale);
   const quickActionW = clamp(
-    Math.round(rs(100, scale)),
-    width < 360 ? rs(88, scale) : rs(94, scale),
+    Math.round(rs(92, scale)),
+    width < 360 ? rs(80, scale) : rs(86, scale),
     quickActionWCap,
   );
   const quickActionH = clamp(
     Math.round(quickActionW * 0.96),
-    rs(86, scale),
-    rs(108, scale),
+    rs(78, scale),
+    rs(96, scale),
   );
   /** SOS + shelf + growth + album — bitta gorizontal qator (Yandex Go promo uslubi). */
   const quickActionBlock = quickActionH + rs(6, scale);
@@ -348,7 +348,7 @@ export function careHubLayout(
   const MIN = {
     /** chip + temp + CTA sig‘ishi shart — aks holda tugma kesiladi. */
     promo: Math.max(rs(118, scale), Math.min(promoByWidth, rs(148, scale))),
-    featured: rs(width < 360 ? 84 : 92, scale),
+    featured: rs(width < 360 ? 108 : 120, scale),
     hubCard: rs(128, scale),
     ai: rs(48, scale),
   };
@@ -358,7 +358,7 @@ export function careHubLayout(
       rs(128, scale),
       Math.min(rs(176, scale), Math.round(height * 0.24)),
     ),
-    featured: rs(128, scale),
+    featured: rs(156, scale),
     hubCard: rs(176, scale),
     ai: rs(58, scale),
   };
@@ -390,10 +390,10 @@ export function careHubLayout(
     aiH = grow(MIN.ai, MAX.ai);
   }
 
-  const featuredWCap = width < 360 ? rs(104, scale) : width < 400 ? rs(118, scale) : rs(132, scale);
+  const featuredWCap = width < 360 ? rs(118, scale) : width < 400 ? rs(132, scale) : rs(148, scale);
   const featuredW = clamp(
-    Math.round(featuredH * 0.82),
-    width < 360 ? rs(80, scale) : rs(92, scale),
+    Math.round(featuredH * 0.84),
+    width < 360 ? rs(96, scale) : rs(108, scale),
     featuredWCap,
   );
   const sheetGap = rs(12, scale);
@@ -462,7 +462,7 @@ export function careHubLayout(
     promoShowCta: promoInner >= rs(120, scale),
     promoRich: promoInner >= rs(152, scale),
     hubCardRich: hubCardH >= rs(130, scale),
-    featuredRich: featuredH >= rs(110, scale),
+    featuredRich: featuredH >= rs(124, scale),
     /**
      * Featured UI — karta kengligiga bog‘liq (ekran emas).
      * 200pt dizayn: btn 26 / title 13; 150pt: btn ~19 / title ~10.

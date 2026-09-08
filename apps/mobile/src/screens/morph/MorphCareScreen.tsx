@@ -1253,8 +1253,6 @@ export function MorphCareScreen({ navigation, route }: Props) {
                   {
                     key: "sos",
                     img: QUICK_SOS,
-                    label: t("care.quick.sos", { defaultValue: "SOS" }),
-                    labelColor: "#303030",
                     a11y: t("care.sos.cta", {
                       defaultValue: "Sochim bugun yomon ko‘rinayapti (SOS)",
                     }),
@@ -1263,8 +1261,6 @@ export function MorphCareScreen({ navigation, route }: Props) {
                   {
                     key: "shelf",
                     img: QUICK_SHELF,
-                    label: t("care.quick.shelf", { defaultValue: "Javon" }),
-                    labelColor: "#107058",
                     a11y: t("care.shelf.title", {
                       defaultValue: "Mening parvarish vositalarim",
                     }),
@@ -1273,8 +1269,6 @@ export function MorphCareScreen({ navigation, route }: Props) {
                   {
                     key: "growth",
                     img: QUICK_GROWTH,
-                    label: t("care.quick.growth", { defaultValue: "O'sish" }),
-                    labelColor: "#D84858",
                     a11y: t("care.growthTracker.title", {
                       defaultValue: "Hair Growth & Health Tracker",
                     }),
@@ -1283,8 +1277,6 @@ export function MorphCareScreen({ navigation, route }: Props) {
                   {
                     key: "album",
                     img: QUICK_ALBUM,
-                    label: t("care.quick.album", { defaultValue: "Albom" }),
-                    labelColor: "#5B4B8A",
                     a11y: t("care.album.screenTitle", {
                       defaultValue: "Parvarish Albomi",
                     }),
@@ -1311,40 +1303,6 @@ export function MorphCareScreen({ navigation, route }: Props) {
                     contentFit="cover"
                     contentPosition="center"
                   />
-                  <LinearGradient
-                    colors={[
-                      "transparent",
-                      "rgba(250,247,242,0.35)",
-                      "rgba(250,247,242,0.92)",
-                    ]}
-                    locations={[0.5, 0.72, 1]}
-                    style={styles.quickActionScrim}
-                    pointerEvents="none"
-                  />
-                  <View
-                    style={[
-                      styles.quickActionBody,
-                      {
-                        paddingHorizontal: hubLayout.quickActionUi.pad,
-                        paddingBottom: hubLayout.quickActionUi.pad,
-                      },
-                    ]}
-                    pointerEvents="none"
-                  >
-                    <Text
-                      style={[
-                        styles.quickActionLabel,
-                        {
-                          color: card.labelColor,
-                          fontSize: hubLayout.quickActionUi.labelFs,
-                          lineHeight: hubLayout.quickActionUi.labelFs + 2,
-                        },
-                      ]}
-                      numberOfLines={1}
-                    >
-                      {card.label}
-                    </Text>
-                  </View>
                 </Pressable>
               ))}
             </ScrollView>
@@ -1352,14 +1310,14 @@ export function MorphCareScreen({ navigation, route }: Props) {
 
           {/* Search Bar — sheet ochiq bo‘lsa yashirin (input sheet ichida) */}
           {!searchOpen ? (
-          <View style={[styles.searchSection, { marginBottom: verticalScale(4) }]}>
+          <View style={[styles.searchSection, { marginBottom: verticalScale(8) }]}>
             <Pressable
               style={[styles.searchBar, styles.searchHubBtn, { width: "100%" }]}
               onPress={openSearch}
               accessibilityRole="button"
               accessibilityLabel={t("care.catalog.title")}
             >
-              <Ionicons name="search-outline" size={18} color="#737373" />
+              <Ionicons name="search-outline" size={19} color="#111111" />
               <Text style={styles.searchPlaceholder}>{t("care.catalog.search")}...</Text>
               <View style={styles.searchHubTail}>
                 <Ionicons name="options-outline" size={15} color="#fff" />
@@ -1370,6 +1328,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
 
           {/* Featured — qidiruv ochiq bo‘lsa yashirin */}
           {!searchOpen ? (
+          <View style={styles.featuredRail}>
           <ScrollView
             horizontal
             nestedScrollEnabled={true}
@@ -1549,6 +1508,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
               );
             })}
           </ScrollView>
+          </View>
           ) : null}
 
           {/* Hisobot sheet — featured kartochkalar ostida (scroll ichida) */}
@@ -1938,23 +1898,9 @@ const styles = StyleSheet.create({
     elevation: 2,
     backgroundColor: "#F0F0F0",
   },
-  /** Yangi tile rasmlar — matnsiz; label overlay bir xil qatorda. */
+  /** Matn rasm ichida baked — overlay yo‘q. */
   quickActionImg: {
     ...StyleSheet.absoluteFillObject,
-  },
-  quickActionScrim: {
-    ...StyleSheet.absoluteFillObject,
-    zIndex: 1,
-  },
-  quickActionBody: {
-    ...StyleSheet.absoluteFillObject,
-    justifyContent: "flex-end",
-    zIndex: 2,
-  },
-  quickActionLabel: {
-    ...morphFont,
-    fontWeight: "800",
-    letterSpacing: -0.35,
   },
   routineRoot: { flex: 1, backgroundColor: "#EFEDE8" },
   onboardRoot: { flex: 1, backgroundColor: "#FAFAFA" },
@@ -2314,7 +2260,7 @@ const styles = StyleSheet.create({
   },
   searchSection: {
     paddingHorizontal: scale(16),
-    marginTop: verticalScale(6),
+    marginTop: verticalScale(8),
     marginBottom: verticalScale(8),
   },
   searchBar: {
@@ -2324,22 +2270,27 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     paddingLeft: scale(14),
     paddingRight: scale(5),
-    height: verticalScale(44),
-    borderWidth: 1,
-    borderColor: "rgba(17,17,17,0.12)",
+    height: verticalScale(48),
+    borderWidth: 1.5,
+    borderColor: "rgba(17,17,17,0.22)",
     gap: moderateScale(8),
+    shadowColor: "#111111",
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
   },
   searchBarActive: {
     borderColor: "#111111",
   },
   searchHubBtn: {
     display: "flex",
-    height: verticalScale(49),
+    height: verticalScale(52),
   },
   searchHubTail: {
-    width: scale(36),
-    height: scale(36),
-    borderRadius: moderateScale(18),
+    width: scale(38),
+    height: scale(38),
+    borderRadius: moderateScale(19),
     backgroundColor: "#111111",
     alignItems: "center",
     justifyContent: "center",
@@ -2361,8 +2312,9 @@ const styles = StyleSheet.create({
   searchPlaceholder: {
     ...morphFont,
     flex: 1,
-    fontSize: fontSize(14),
-    color: "#737373",
+    fontSize: fontSize(15),
+    fontWeight: "500",
+    color: "#525252",
   },
   searchCloseBtn: {
     width: scale(40),
@@ -2726,6 +2678,11 @@ const styles = StyleSheet.create({
     color: "#111111",
   },
   searchRowPh: { alignItems: "center", justifyContent: "center" },
+  featuredRail: {
+    backgroundColor: "#111111",
+    paddingVertical: verticalScale(12),
+    marginTop: verticalScale(2),
+  },
   featuredProductsScroll: {
     paddingHorizontal: scale(16),
     gap: moderateScale(12),
@@ -2744,7 +2701,7 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     backgroundColor: "#FFFFFF",
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(17,17,17,0.08)",
+    borderColor: "rgba(255,255,255,0.12)",
   },
   featuredMedia: {
     flex: 1,
