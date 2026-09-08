@@ -461,8 +461,8 @@ export function careHubLayout(
     /** CTA uchun minimal joy; hint/2-qator title uchun boyroq. */
     promoShowCta: promoInner >= rs(120, scale),
     promoRich: promoInner >= rs(152, scale),
-    hubCardRich: hubCardH >= rs(114, scale),
-    featuredRich: featuredH >= rs(132, scale),
+    hubCardRich: hubCardH >= rs(130, scale),
+    featuredRich: featuredH >= rs(110, scale),
     /**
      * Featured UI — karta kengligiga bog‘liq (ekran emas).
      * 200pt dizayn: btn 26 / title 13; 150pt: btn ~19 / title ~10.
