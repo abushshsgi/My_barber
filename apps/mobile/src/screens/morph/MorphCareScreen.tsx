@@ -1122,13 +1122,14 @@ export function MorphCareScreen({ navigation, route }: Props) {
                   />
                 </Pressable>
 
-                <Text
-                  style={[styles.promoRegionLabel, { fontSize: hubLayout.promoUi.locFs + 2 }]}
-                  numberOfLines={1}
-                  pointerEvents="none"
-                >
-                  {weatherCityName}
-                </Text>
+                <View style={styles.promoRegionChip} pointerEvents="none">
+                  <Text
+                    style={[styles.promoRegionLabel, { fontSize: hubLayout.promoUi.locFs + 1 }]}
+                    numberOfLines={1}
+                  >
+                    {weatherCityName}
+                  </Text>
+                </View>
               </View>
 
               <Pressable
@@ -1306,7 +1307,8 @@ export function MorphCareScreen({ navigation, route }: Props) {
                     contentFit="cover"
                   />
                   <LinearGradient
-                    colors={["transparent", "rgba(17,17,17,0.55)"]}
+                    colors={["transparent", "rgba(17,17,17,0.28)", "rgba(17,17,17,0.72)"]}
+                    locations={[0, 0.45, 1]}
                     style={styles.quickActionScrim}
                     pointerEvents="none"
                   />
@@ -1932,6 +1934,9 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     color: "#FFFFFF",
     letterSpacing: -0.2,
+    textShadowColor: "rgba(0,0,0,0.45)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
   },
   routineRoot: { flex: 1, backgroundColor: "#EFEDE8" },
   onboardRoot: { flex: 1, backgroundColor: "#FAFAFA" },
@@ -2083,17 +2088,27 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: "rgba(15,23,42,0.12)",
   },
-  promoRegionLabel: {
-    ...morphFont,
+  promoRegionChip: {
     flexShrink: 1,
     maxWidth: "62%",
+    backgroundColor: "#FFFFFF",
+    paddingVertical: verticalScale(6),
+    paddingHorizontal: scale(12),
+    borderRadius: moderateScale(12),
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(15,23,42,0.1)",
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
+  promoRegionLabel: {
+    ...morphFont,
     fontWeight: "800",
-    color: "#FFFFFF",
+    color: "#111111",
     letterSpacing: -0.2,
     textAlign: "right",
-    textShadowColor: "rgba(0,0,0,0.45)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 4,
     includeFontPadding: false,
   },
   promoBody: {

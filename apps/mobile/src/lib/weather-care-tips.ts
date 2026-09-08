@@ -1,6 +1,12 @@
+import type { ImageSourcePropType } from "react-native";
 import type { WeatherConditionKey, WeatherCarePayload } from "../api/weather";
 import type { MyCareProduct } from "./morph-my-products";
 import { BASE_H, BASE_W, clamp, rs } from "./responsive";
+import {
+  resolveUzRegion,
+  uzRegionImageSource,
+  type UzRegionId,
+} from "./uz-regions";
 
 function hubLayoutScale(width: number, height: number) {
   return clamp(Math.min(width / BASE_W, height / BASE_H), 0.72, 1.12);
@@ -32,33 +38,38 @@ export function weatherHeroImage(key: WeatherConditionKey | undefined): string {
   }
 }
 
-/** Joylashuv (viloyat/shahar) bo‘yicha hero — topilmasa weather holatiga qaytadi. */
+/** Joylashuv bo‘yicha local viloyat hero (o‘ngda mashhur joy). */
+export function weatherLocationHeroSource(opts: {
+  region?: string | null;
+  place?: string | null;
+  condition?: WeatherConditionKey;
+  lat?: number | null;
+  lon?: number | null;
+  regionId?: UzRegionId | null;
+}): ImageSourcePropType {
+  const id =
+    opts.regionId ||
+    resolveUzRegion({
+      region: opts.region,
+      place: opts.place,
+      lat: opts.lat,
+      lon: opts.lon,
+    });
+  const local = uzRegionImageSource(id);
+  if (local) return local;
+  return { uri: weatherHeroImage(opts.condition) };
+}
+
+/** @deprecated — weatherLocationHeroSource ishlating */
 export function weatherLocationHeroImage(
   region?: string | null,
   place?: string | null,
   condition?: WeatherConditionKey,
 ): string {
-  const hay = `${region || ""} ${place || ""}`.toLowerCase();
-  if (/toshkent|tashkent/.test(hay)) {
-    return "https://images.unsplash.com/photo-1565008576549-57569a49371d?auto=format&fit=crop&w=1400&q=80";
-  }
-  if (/samarqand|samarkand/.test(hay)) {
-    return "https://images.unsplash.com/photo-1548013146-72479768bada?auto=format&fit=crop&w=1400&q=80";
-  }
-  if (/buxoro|bukhara/.test(hay)) {
-    return "https://images.unsplash.com/photo-1596306499312-7e0c7b5f0c0b?auto=format&fit=crop&w=1400&q=80";
-  }
-  if (/andijon|andijan/.test(hay)) {
-    return "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=1400&q=80";
-  }
-  if (/namangan/.test(hay)) {
-    return "https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=1400&q=80";
-  }
-  if (/farg.?ona|fergana/.test(hay)) {
-    return "https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?auto=format&fit=crop&w=1400&q=80";
-  }
-  if (/xorazm|khiva|xiva/.test(hay)) {
-    return "https://images.unsplash.com/photo-1587974928442-77dc3e0dba72?auto=format&fit=crop&w=1400&q=80";
+  const id = resolveUzRegion({ region, place });
+  if (id) {
+    // Local asset URI emas — chaqiruvchilar Source ga o‘tishi kerak
+    return weatherHeroImage(condition);
   }
   return weatherHeroImage(condition);
 }
@@ -298,7 +309,6 @@ export function careHubLayout(
   const avail = Math.max(360, height - dockClearance);
 
   const searchBlock = rs(52, scale);
-  const catBlock = Math.max(32, rs(34, scale));
   const reportHead = rs(22, scale);
   const weatherNudge = 8;
   const promoTopGap = rs(12, scale);
@@ -306,7 +316,22 @@ export function careHubLayout(
   /** Search ↔ category orasidagi bo‘shliq. */
   const searchCatGap = rs(14, scale);
   const gaps = rs(16, scale) + weatherNudge + searchCatGap;
-  const chrome = searchBlock + catBlock + reportHead + gaps + sheetTop + promoTopGap;
+  const quickActionWCap =
+    width < 360 ? rs(108, scale) : width < 400 ? rs(118, scale) : rs(128, scale);
+  const quickActionW = clamp(
+    Math.round(rs(112, scale)),
+    width < 360 ? rs(100, scale) : rs(106, scale),
+    quickActionWCap,
+  );
+  const quickActionH = clamp(
+    Math.round(quickActionW * 0.98),
+    rs(96, scale),
+    rs(124, scale),
+  );
+  /** SOS + shelf + growth + album — bitta gorizontal qator (Yandex Go promo uslubi). */
+  const quickActionBlock = quickActionH + rs(8, scale);
+
+  const chrome = searchBlock + quickActionBlock + reportHead + gaps + sheetTop + promoTopGap;
 
   const remain = Math.max(rs(260, scale), avail - chrome);
 
@@ -386,7 +411,9 @@ export function careHubLayout(
     featuredH,
     featuredW,
     searchBlock,
-    catBlock,
+    quickActionW,
+    quickActionH,
+    quickActionBlock,
     weatherNudge,
     searchCatGap,
     promoTopGap,
@@ -456,6 +483,14 @@ export function careHubLayout(
         metaPadH: clamp(Math.round(10 * k), 6, 10),
         metaPadV: clamp(Math.round(7 * k), 4, 7),
         ctrlInset: clamp(Math.round(8 * k), 5, 8),
+      };
+    })(),
+    quickActionUi: (() => {
+      const w = Math.max(96, quickActionW);
+      const k = clamp(w / 112, 0.55, 1);
+      return {
+        labelFs: clamp(Math.round(15 * k), 13, 16),
+        pad: clamp(Math.round(9 * k), 7, 11),
       };
     })(),
   };
