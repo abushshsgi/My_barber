@@ -22,7 +22,9 @@
         "simulator": false
       },
       "env": {
-        "ORG_GRADLE_PROJECT_reactNativeArchitectures": "armeabi-v7a,arm64-v8a"
+        "ORG_GRADLE_PROJECT_reactNativeArchitectures": "armeabi-v7a,arm64-v8a",
+        "EXPO_PUBLIC_API_URL": "https://api.mysaloon.uz",
+        "EXPO_PUBLIC_GOOGLE_CLIENT_ID": "990469146793-jtjdkj187hmn98r3snfqfuiqnd3ctjui.apps.googleusercontent.com"
       }
     },
     "preview-ios-simulator": {
@@ -33,11 +35,26 @@
     },
     "production": {
       "environment": "production",
+      "autoIncrement": true,
       "android": {
         "buildType": "app-bundle"
       },
       "env": {
-        "ORG_GRADLE_PROJECT_reactNativeArchitectures": "armeabi-v7a,arm64-v8a"
+        "ORG_GRADLE_PROJECT_reactNativeArchitectures": "armeabi-v7a,arm64-v8a",
+        "EXPO_PUBLIC_API_URL": "https://api.mysaloon.uz",
+        "EXPO_PUBLIC_GOOGLE_CLIENT_ID": "990469146793-jtjdkj187hmn98r3snfqfuiqnd3ctjui.apps.googleusercontent.com"
+      }
+    },
+    "production-apk": {
+      "environment": "production",
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "ORG_GRADLE_PROJECT_reactNativeArchitectures": "armeabi-v7a,arm64-v8a",
+        "EXPO_PUBLIC_API_URL": "https://api.mysaloon.uz",
+        "EXPO_PUBLIC_GOOGLE_CLIENT_ID": "990469146793-jtjdkj187hmn98r3snfqfuiqnd3ctjui.apps.googleusercontent.com"
       }
     }
   },

@@ -22,7 +22,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     userInterfaceStyle: "light",
     scheme: "mysaloon",
     // Reanimated 4 + worklets — faqat New Architecture.
-    newArchEnabled: true,
+    // ExpoConfig tipida hali yo‘q, runtime da qo‘llaniladi.
+    ...( { newArchEnabled: true } as object ),
     ios: {
       supportsTablet: true,
       bundleIdentifier: "uz.mysaloon.app",
@@ -81,12 +82,27 @@ export default ({ config }: ConfigContext): ExpoConfig => {
             "Morf AI bilan ovozli suhbat uchun mikrofon kerak.",
         },
       ],
+      [
+        "expo-notifications",
+        {
+          icon: "./assets/icon.png",
+          color: "#111111",
+          sounds: [],
+        },
+      ],
       "expo-image",
       "expo-asset",
       "expo-font",
       "expo-web-browser",
       "expo-secure-store",
-      "@react-native-google-signin/google-signin",
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          // iOS URL scheme = reversed Web client ID (client_type 3)
+          iosUrlScheme:
+            "com.googleusercontent.apps.990469146793-jtjdkj187hmn98r3snfqfuiqnd3ctjui",
+        },
+      ],
       [
         "expo-camera",
         {
@@ -102,6 +118,15 @@ export default ({ config }: ConfigContext): ExpoConfig => {
             "Try-on va chek yuklash uchun galereyaga ruxsat kerak.",
           cameraPermission:
             "Yuz skani va mahsulot skani uchun kameraga ruxsat kerak.",
+        },
+      ],
+      [
+        "expo-media-library",
+        {
+          photosPermission:
+            "Parvarish story rasmini galereyaga saqlash uchun ruxsat kerak.",
+          savePhotosPermission:
+            "Parvarish story rasmini galereyaga saqlash uchun ruxsat kerak.",
         },
       ],
       [
