@@ -42,6 +42,7 @@ import { CareRoutineSheet } from "../../components/morph/care/CareRoutineSheet";
 import { CareSosSheet } from "../../components/morph/care/CareSosSheet";
 import { CareShelfTrackerSheet } from "../../components/morph/care/CareShelfTrackerSheet";
 import { DarkMeshAmbientBg } from "../../components/morph/care/DarkMeshAmbientBg";
+import { WeatherHeaderCard } from "../../components/morph/care/WeatherHeaderCard";
 import { AppStatusBar, safeTop } from "../../components/ui/AppStatusBar";
 import { useCareWeather } from "../../hooks/useCareWeather";
 import { useHideTabBarWhen } from "../../hooks/useHideTabBar";
@@ -59,6 +60,7 @@ import {
   removeMyProduct,
   type MyCareProduct,
 } from "../../lib/morph-my-products";
+import { setCareCatalogCache } from "../../lib/care-catalog-cache";
 import { careHubLayout, weatherLocationHeroSource } from "../../lib/weather-care-tips";
 import { regionLabel } from "../../lib/uz-regions";
 import type { MorphCareStackParamList } from "../../navigation/MorphCareStack";
@@ -447,7 +449,10 @@ export function MorphCareScreen({ navigation, route }: Props) {
       exclude_ids: excludeIds.length ? excludeIds : undefined,
     })
       .then((rows) => {
-        if (rows.length) setCatalog(rows);
+        if (rows.length) {
+          setCatalog(rows);
+          setCareCatalogCache(rows);
+        }
       })
       .catch(() => {});
   }, [myProducts, searchSheetHeight, searchSheetY]);
@@ -686,9 +691,9 @@ export function MorphCareScreen({ navigation, route }: Props) {
         duration: "2 Min",
         durationMinutes: 2,
         image:
-          resolveMediaUrl(rawImg, { width: 600 }) ||
+          resolveMediaUrl(rawImg, { width: 360 }) ||
           rawImg ||
-          "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=600&q=80",
+          "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=360&q=75",
         bgColors: ["#F0F0F0", "#F0F0F0", "#F0F0F0"],
         isUserAdded: true,
         usageText: mp.usage_uz || fromCatalog?.usage_uz,
@@ -712,9 +717,9 @@ export function MorphCareScreen({ navigation, route }: Props) {
         duration: cp.category === "mask" ? "5 Min" : "2 Min",
         durationMinutes: cp.category === "mask" ? 5 : 2,
         image:
-          resolveMediaUrl(cp.image_url, { width: 600 }) ||
+          resolveMediaUrl(cp.image_url, { width: 360 }) ||
           cp.image_url ||
-          "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&w=600&q=80",
+          "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&w=360&q=75",
         bgColors:
           cp.category === "mask"
             ? ["#F0F0F0", "#F0F0F0", "#F0F0F0"]
@@ -1054,16 +1059,17 @@ export function MorphCareScreen({ navigation, route }: Props) {
   }
 
   if (viewMode === "hub") {
+    const hubTopPad = searchOpen ? safeTop(insets.top, 6) : 0;
     return (
       <View style={[styles.hubRoot, { paddingBottom: hubLayout.dockClearance }]}>
-        <AppStatusBar style="light" />
-        <View style={[StyleSheet.absoluteFill, { backgroundColor: "#111111" }]} />
+        {searchOpen ? <AppStatusBar style="dark" /> : null}
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: "#FAFAFA" }]} />
 
         <View
           style={[
             styles.hubScroll,
             {
-              paddingTop: searchOpen ? safeTop(insets.top, 6) : safeTop(insets.top, 8),
+              paddingTop: hubTopPad,
             },
           ]}
         >
@@ -1073,35 +1079,20 @@ export function MorphCareScreen({ navigation, route }: Props) {
               styles.promoWrap,
               {
                 paddingHorizontal: hubLayout.hPad,
-                marginTop: hubLayout.promoTopGap,
+                marginTop: 0,
               },
             ]}
           >
-            <View
-              style={[
-                styles.promoCard,
-                {
-                  height: hubLayout.promoH,
-                  paddingTop: 12,
-                  paddingHorizontal: hubLayout.promoPad,
-                  borderRadius: hubLayout.promoRadius,
-                },
-              ]}
-            >
-              <Image
-                source={weatherImg}
-                style={styles.promoHeroImg}
-                contentFit="cover"
-                cachePolicy="memory-disk"
-                priority="high"
-              />
-              <LinearGradient
-                colors={["rgba(8,12,20,0.22)", "rgba(8,12,20,0.08)", "rgba(8,12,20,0.88)"]}
-                locations={[0, 0.42, 1]}
-                style={styles.promoScrim}
-              />
-
-              <View style={styles.promoTop}>
+            <WeatherHeaderCard
+              source={weatherImg}
+              height={hubLayout.promoH}
+              edgeToEdge
+              topExtra={8}
+              borderRadius={hubLayout.promoRadius}
+              paddingHorizontal={hubLayout.promoPad}
+              paddingBottom={verticalScale(10)}
+              lightStatusBar
+              topLeft={
                 <Pressable
                   style={[
                     styles.promoBackBtn,
@@ -1121,7 +1112,8 @@ export function MorphCareScreen({ navigation, route }: Props) {
                     color="#111111"
                   />
                 </Pressable>
-
+              }
+              topRight={
                 <View style={styles.promoRegionChip} pointerEvents="none">
                   <Text
                     style={[styles.promoRegionLabel, { fontSize: hubLayout.promoUi.locFs + 1 }]}
@@ -1130,8 +1122,8 @@ export function MorphCareScreen({ navigation, route }: Props) {
                     {weatherCityName}
                   </Text>
                 </View>
-              </View>
-
+              }
+            >
               <Pressable
                 style={[
                   styles.promoCopy,
@@ -1222,7 +1214,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
                   </View>
                 ) : null}
               </Pressable>
-            </View>
+            </WeatherHeaderCard>
           </View>
           ) : (
             <View style={{ height: 4 }} />
@@ -1238,7 +1230,8 @@ export function MorphCareScreen({ navigation, route }: Props) {
                 height: hubLayout.quickActionH,
                 flexGrow: 0,
                 flexShrink: 0,
-                marginTop: verticalScale(4),
+                marginTop: hubLayout.sectionGap,
+                marginBottom: Math.max(4, Math.round(hubLayout.sectionGap * 0.4)),
               }}
               contentContainerStyle={[
                 styles.quickActionScroll,
@@ -1302,6 +1295,9 @@ export function MorphCareScreen({ navigation, route }: Props) {
                     style={styles.quickActionImg}
                     contentFit="cover"
                     contentPosition="center"
+                    cachePolicy="memory-disk"
+                    priority="high"
+                    transition={0}
                   />
                 </Pressable>
               ))}
@@ -1310,17 +1306,46 @@ export function MorphCareScreen({ navigation, route }: Props) {
 
           {/* Search Bar — sheet ochiq bo‘lsa yashirin (input sheet ichida) */}
           {!searchOpen ? (
-          <View style={[styles.searchSection, { marginBottom: verticalScale(8) }]}>
+          <View
+            style={[
+              styles.searchSection,
+              {
+                paddingHorizontal: hubLayout.hPad,
+                marginTop: hubLayout.sectionGap,
+                marginBottom: hubLayout.searchCatGap,
+              },
+            ]}
+          >
             <Pressable
-              style={[styles.searchBar, styles.searchHubBtn, { width: "100%" }]}
+              style={[
+                styles.searchBar,
+                styles.searchHubBtn,
+                {
+                  width: "100%",
+                  height: hubLayout.searchUi.h,
+                  paddingLeft: hubLayout.searchUi.padL,
+                  paddingRight: hubLayout.searchUi.padR,
+                },
+              ]}
               onPress={openSearch}
               accessibilityRole="button"
               accessibilityLabel={t("care.catalog.title")}
             >
-              <Ionicons name="search-outline" size={19} color="#111111" />
-              <Text style={styles.searchPlaceholder}>{t("care.catalog.search")}...</Text>
-              <View style={styles.searchHubTail}>
-                <Ionicons name="options-outline" size={15} color="#fff" />
+              <Ionicons name="search-outline" size={hubLayout.searchUi.icon} color="#111111" />
+              <Text style={[styles.searchPlaceholder, { fontSize: hubLayout.searchUi.fs }]}>
+                {t("care.catalog.search")}...
+              </Text>
+              <View
+                style={[
+                  styles.searchHubTail,
+                  {
+                    width: hubLayout.searchUi.tail,
+                    height: hubLayout.searchUi.tail,
+                    borderRadius: hubLayout.searchUi.tail / 2,
+                  },
+                ]}
+              >
+                <Ionicons name="options-outline" size={hubLayout.searchUi.filterIcon} color="#fff" />
               </View>
             </Pressable>
           </View>
@@ -1333,11 +1358,11 @@ export function MorphCareScreen({ navigation, route }: Props) {
             nestedScrollEnabled={true}
             showsHorizontalScrollIndicator={false}
             style={{
-              height: hubLayout.featuredH + verticalScale(8),
+              height: hubLayout.featuredH + Math.max(2, Math.round(hubLayout.sectionGap * 0.35)),
               flexGrow: 0,
               flexShrink: 0,
-              marginTop: verticalScale(4),
-              marginBottom: verticalScale(4),
+              marginTop: Math.max(4, Math.round(hubLayout.sectionGap * 0.55)),
+              marginBottom: hubLayout.sectionGap,
             }}
             contentContainerStyle={[
               styles.featuredProductsScroll,
@@ -1384,6 +1409,9 @@ export function MorphCareScreen({ navigation, route }: Props) {
                       style={styles.featuredCardImg}
                       contentFit="cover"
                       cachePolicy="memory-disk"
+                      priority="high"
+                      recyclingKey={prod.id}
+                      transition={80}
                     />
                     <LinearGradient
                       colors={["transparent", "rgba(0,0,0,0.25)", "rgba(0,0,0,0.88)"]}
@@ -1528,17 +1556,42 @@ export function MorphCareScreen({ navigation, route }: Props) {
                   {
                     gap: hubLayout.sheetGap,
                     paddingTop: hubLayout.sheetTop,
-                    paddingBottom: Math.max(12, Math.round(hubLayout.sheetGap * 0.9)),
-                    minHeight: Math.round(hubLayout.sheetH * 1.08),
+                    paddingBottom: Math.max(8, Math.round(hubLayout.sheetGap * 0.75)),
+                    minHeight: hubLayout.sheetH,
+                    paddingHorizontal: Math.max(12, hubLayout.hPad - 2),
+                    borderRadius: hubLayout.narrow ? 18 : 24,
                   },
                 ]}
               >
                 <View style={styles.reportHead}>
-                  <Text style={styles.reportTitle}>{t("care.hubReport")}</Text>
-                  <Pressable style={styles.reportFilter} onPress={openMyProducts}>
-                    <Ionicons name="bag-handle-outline" size={15} color="#111111" />
-                    <Text style={styles.reportFilterText}>{t("care.myProducts.title")}</Text>
-                    <Ionicons name="chevron-forward" size={13} color="#737373" />
+                  <Pressable
+                    style={[
+                      styles.reportFilter,
+                      {
+                        paddingHorizontal: hubLayout.sheetUi.filterPadH,
+                        paddingVertical: hubLayout.sheetUi.filterPadV,
+                      },
+                    ]}
+                    onPress={openMyProducts}
+                  >
+                    <Ionicons
+                      name="bag-handle-outline"
+                      size={hubLayout.sheetUi.filterIcon}
+                      color="#111111"
+                    />
+                    <Text
+                      style={[
+                        styles.reportFilterText,
+                        { fontSize: hubLayout.sheetUi.filterFs },
+                      ]}
+                    >
+                      {t("care.myProducts.title")}
+                    </Text>
+                    <Ionicons
+                      name="chevron-forward"
+                      size={Math.max(10, hubLayout.sheetUi.filterIcon - 2)}
+                      color="#737373"
+                    />
                   </Pressable>
                 </View>
 
@@ -1551,8 +1604,11 @@ export function MorphCareScreen({ navigation, route }: Props) {
                   >
                     <Image
                       source={HUB_ROUTINE}
-                      style={StyleSheet.absoluteFill}
+                      style={styles.hubCardImg}
                       contentFit="cover"
+                      cachePolicy="memory-disk"
+                      priority="high"
+                      transition={0}
                     />
                     <LinearGradient
                       colors={["transparent", "rgba(17,17,17,0.58)"]}
@@ -1561,15 +1617,21 @@ export function MorphCareScreen({ navigation, route }: Props) {
                     />
                     <View style={styles.hubCardBody}>
                       <View style={styles.hubStatusBadge}>
-                        <Text style={styles.hubStatusText}>
+                        <Text style={[styles.hubStatusText, { fontSize: hubLayout.sheetUi.statusFs }]}>
                           {t("care.hubStatusActive", { defaultValue: "Faol" })}
                         </Text>
                       </View>
                       <View style={styles.hubCardFooter}>
-                        <Text style={styles.hubCardTitle} numberOfLines={1}>
+                        <Text
+                          style={[styles.hubCardTitle, { fontSize: hubLayout.sheetUi.cardTitleFs }]}
+                          numberOfLines={1}
+                        >
                           {t("care.hubParvarish")}
                         </Text>
-                        <Text style={styles.hubCardMetric} numberOfLines={1}>
+                        <Text
+                          style={[styles.hubCardMetric, { fontSize: hubLayout.sheetUi.cardMetricFs }]}
+                          numberOfLines={1}
+                        >
                           {t(`care.conditions.${quiz.condition}`)}
                         </Text>
                       </View>
@@ -1584,8 +1646,11 @@ export function MorphCareScreen({ navigation, route }: Props) {
                   >
                     <Image
                       source={HUB_SCAN}
-                      style={StyleSheet.absoluteFill}
+                      style={styles.hubCardImg}
                       contentFit="cover"
+                      cachePolicy="memory-disk"
+                      priority="high"
+                      transition={0}
                     />
                     <LinearGradient
                       colors={["transparent", "rgba(17,17,17,0.58)"]}
@@ -1594,15 +1659,21 @@ export function MorphCareScreen({ navigation, route }: Props) {
                     />
                     <View style={styles.hubCardBody}>
                       <View style={styles.hubStatusBadge}>
-                        <Text style={styles.hubStatusText}>
+                        <Text style={[styles.hubStatusText, { fontSize: hubLayout.sheetUi.statusFs }]}>
                           {t("care.hubStatusAnalyzed", { defaultValue: "Tahlil qilingan" })}
                         </Text>
                       </View>
                       <View style={styles.hubCardFooter}>
-                        <Text style={styles.hubCardTitle} numberOfLines={1}>
+                        <Text
+                          style={[styles.hubCardTitle, { fontSize: hubLayout.sheetUi.cardTitleFs }]}
+                          numberOfLines={1}
+                        >
                           {t("care.hubTarkib")}
                         </Text>
-                        <Text style={styles.hubCardMetric} numberOfLines={1}>
+                        <Text
+                          style={[styles.hubCardMetric, { fontSize: hubLayout.sheetUi.cardMetricFs }]}
+                          numberOfLines={1}
+                        >
                           {t("care.hubTarkibMetric")}
                         </Text>
                       </View>
@@ -1706,8 +1777,15 @@ export function MorphCareScreen({ navigation, route }: Props) {
                         >
                           <View style={styles.searchCardMedia}>
                             {item.image ? (
-                              <Image source={{ uri: item.image }} style={styles.searchCardImg} contentFit="contain"
-                                cachePolicy="memory-disk" />
+                              <Image
+                                source={{ uri: item.image }}
+                                style={styles.searchCardImg}
+                                contentFit="contain"
+                                cachePolicy="memory-disk"
+                                priority="high"
+                                recyclingKey={String(item.id)}
+                                transition={60}
+                              />
                             ) : (
                               <View style={[styles.searchCardImg, styles.searchRowPh]}>
                                 <Ionicons name="flask-outline" size={22} color="#111111" />
@@ -1842,6 +1920,25 @@ export function MorphCareScreen({ navigation, route }: Props) {
             </View>
           </Animated.View>
         ) : null}
+
+        {!searchOpen ? (
+          <Pressable
+            style={[
+              styles.fab,
+              {
+                bottom: hubLayout.dockClearance + verticalScale(8),
+                right: hubLayout.hPad,
+              },
+            ]}
+            onPress={openAssistant}
+            accessibilityRole="button"
+            accessibilityLabel={t("care.hubAiAssistant")}
+          >
+            <View style={styles.fabInner}>
+              <Ionicons name="sparkles" size={22} color="#FFFFFF" />
+            </View>
+          </Pressable>
+        ) : null}
       </View>
     );
   }
@@ -1907,16 +2004,22 @@ const styles = StyleSheet.create({
     elevation: 2,
     backgroundColor: "#F0F0F0",
   },
-  /** Matn rasm ichida baked — overlay yo‘q. */
+  /** Android expo-image: absoluteFill yetarli emas — 100% W/H majburiy. */
   quickActionImg: {
-    ...StyleSheet.absoluteFillObject,
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: "100%",
+    height: "100%",
   },
-  routineRoot: { flex: 1, backgroundColor: "#EFEDE8" },
+  routineRoot: { flex: 1, backgroundColor: "#FAFAFA" },
   onboardRoot: { flex: 1, backgroundColor: "#FAFAFA" },
   center: { alignItems: "center", justifyContent: "center" },
   pad: { flex: 1, paddingHorizontal: scale(20) },
   onboardPad: { flex: 1, paddingHorizontal: scale(20) },
-  hubRoot: { flex: 1, backgroundColor: "#111111", overflow: "hidden" },
+  hubRoot: { flex: 1, backgroundColor: "#FAFAFA", overflow: "hidden" },
   hubScroll: {
     flex: 1,
     minHeight: 0,
@@ -2010,19 +2113,17 @@ const styles = StyleSheet.create({
     backgroundColor: "#0B1220",
     justifyContent: "space-between",
     paddingBottom: verticalScale(10),
-    borderWidth: 1.5,
-    borderColor: "rgba(255,255,255,0.28)",
-    shadowColor: "#FFFFFF",
-    shadowOpacity: 0.18,
-    shadowRadius: 20,
-    shadowOffset: { width: 0, height: 0 },
-    elevation: 10,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(17,17,17,0.12)",
+  },
+  promoHeroBg: {
+    width: "100%",
+    height: "100%",
   },
   promoHeroImg: {
     ...StyleSheet.absoluteFill,
     width: "100%",
     height: "100%",
-    opacity: 0.95,
   },
   promoScrim: {
     ...StyleSheet.absoluteFill,
@@ -2275,38 +2376,37 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0,0,0,0.12)",
   },
   searchSection: {
-    paddingHorizontal: scale(16),
-    marginTop: verticalScale(8),
-    marginBottom: verticalScale(8),
+    paddingHorizontal: scale(10),
+    marginTop: verticalScale(12),
+    marginBottom: verticalScale(10),
   },
   searchBar: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#FFFFFF",
-    borderRadius: 999,
+    borderRadius: moderateScale(20),
     paddingLeft: scale(14),
-    paddingRight: scale(5),
+    paddingRight: scale(6),
     height: verticalScale(48),
-    borderWidth: 1.5,
-    borderColor: "rgba(17,17,17,0.22)",
+    borderWidth: 1,
+    borderColor: "rgba(17,17,17,0.12)",
     gap: moderateScale(8),
     shadowColor: "#111111",
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 4,
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
   },
   searchBarActive: {
     borderColor: "#111111",
   },
   searchHubBtn: {
     display: "flex",
-    height: verticalScale(52),
   },
   searchHubTail: {
-    width: scale(38),
-    height: scale(38),
-    borderRadius: moderateScale(19),
+    width: scale(32),
+    height: scale(32),
+    borderRadius: moderateScale(16),
     backgroundColor: "#111111",
     alignItems: "center",
     justifyContent: "center",
@@ -2328,7 +2428,7 @@ const styles = StyleSheet.create({
   searchPlaceholder: {
     ...morphFont,
     flex: 1,
-    fontSize: fontSize(15),
+    fontSize: fontSize(13),
     fontWeight: "500",
     color: "#525252",
   },
@@ -2877,9 +2977,9 @@ const styles = StyleSheet.create({
   reportHead: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    gap: moderateScale(12),
-    marginBottom: verticalScale(2),
+    justifyContent: "flex-end",
+    gap: moderateScale(8),
+    marginBottom: verticalScale(0),
   },
   reportTitle: {
     ...morphFont,
@@ -2893,16 +2993,16 @@ const styles = StyleSheet.create({
   reportFilter: {
     flexDirection: "row",
     alignItems: "center",
-    gap: moderateScale(6),
-    paddingHorizontal: scale(12),
-    paddingVertical: verticalScale(8),
+    gap: moderateScale(4),
+    paddingHorizontal: scale(9),
+    paddingVertical: verticalScale(5),
     borderRadius: 999,
     backgroundColor: "#F4F4F5",
     borderWidth: 1,
     borderColor: "rgba(17,17,17,0.08)",
     flexShrink: 0,
   },
-  reportFilterText: { ...morphFont, fontSize: fontSize(12), fontWeight: "700", color: "#111111" },
+  reportFilterText: { ...morphFont, fontSize: fontSize(11), fontWeight: "700", color: "#111111" },
   hubCards: {
     flexDirection: "row",
     gap: moderateScale(12),
@@ -2919,8 +3019,17 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     position: "relative",
   },
+  hubCardImg: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: "100%",
+    height: "100%",
+  },
   hubCardScrim: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     zIndex: 1,
   },
   hubCardBody: {
@@ -2968,14 +3077,14 @@ const styles = StyleSheet.create({
     letterSpacing: -0.35,
   },
   aiAssistant: {
-    borderRadius: moderateScale(16),
-    backgroundColor: "#FAFAFA",
+    borderRadius: moderateScale(20),
+    backgroundColor: "#FFFFFF",
     borderWidth: 1,
     borderColor: "rgba(17,17,17,0.1)",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "flex-start",
-    paddingHorizontal: scale(14),
+    paddingHorizontal: scale(16),
     gap: moderateScale(12),
   },
   aiAssistantIcon: {

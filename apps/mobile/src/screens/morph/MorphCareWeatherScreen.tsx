@@ -1,10 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { LinearGradient } from "expo-linear-gradient";
+import { Image } from "expo-image";
 import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
-  Image,
   Modal,
   Pressable,
   RefreshControl,
@@ -17,6 +16,8 @@ import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { fetchHairCareProfile } from "../../api/care";
 import { weatherIconName, type WeatherDay } from "../../api/weather";
+import { WeatherHeaderCard } from "../../components/morph/care/WeatherHeaderCard";
+import { AppStatusBar } from "../../components/ui/AppStatusBar";
 import { NativeBackButton } from "../../components/ui/NativeBackButton";
 import { useCareWeather } from "../../hooks/useCareWeather";
 import { useHideTabBar } from "../../hooks/useHideTabBar";
@@ -117,8 +118,11 @@ export function MorphCareWeatherScreen({ navigation }: Props) {
     await setRegion(id);
   };
 
+  const heroContentH = verticalScale(280);
+
   return (
     <View style={styles.root}>
+      <AppStatusBar style="light" />
       <ScrollView
         nestedScrollEnabled
         keyboardShouldPersistTaps="handled"
@@ -130,17 +134,19 @@ export function MorphCareWeatherScreen({ navigation }: Props) {
             tintColor="#111"
           />
         }
-        contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 20) + 28 }}
+        contentContainerStyle={{
+          paddingBottom: Math.max(insets.bottom, 24) + 32,
+        }}
       >
-        <View style={[styles.hero, { paddingTop: insets.top + 8 }]}>
-          <Image source={heroImg} style={styles.heroImg} resizeMode="cover" />
-          <LinearGradient
-            colors={["rgba(8,10,16,0.45)", "rgba(8,10,16,0.15)", "rgba(8,10,16,0.88)"]}
-            locations={[0, 0.4, 1]}
-            style={StyleSheet.absoluteFill}
-          />
-
-          <View style={styles.heroNav}>
+        <WeatherHeaderCard
+          source={heroImg}
+          height={heroContentH}
+          edgeToEdge
+          topExtra={8}
+          borderRadius={0}
+          paddingHorizontal={scale(16)}
+          paddingBottom={verticalScale(22)}
+          topLeft={
             <NativeBackButton
               onPress={() => {
                 const routes = navigation.getState?.()?.routes;
@@ -152,15 +158,16 @@ export function MorphCareWeatherScreen({ navigation }: Props) {
               backgroundColor="rgba(255,255,255,0.96)"
               style={styles.heroBack}
             />
-            <View style={styles.heroNavSpacer} />
+          }
+          topRight={
             <Pressable style={styles.cityChip} onPress={() => setRegionOpen(true)}>
               <Text style={styles.cityChipText} numberOfLines={1}>
                 {cityName}
               </Text>
               <Ionicons name="chevron-down" size={14} color="#111" />
             </Pressable>
-          </View>
-
+          }
+        >
           {loading && !data ? (
             <View style={styles.heroLoading}>
               <ActivityIndicator color="#fff" />
@@ -234,7 +241,7 @@ export function MorphCareWeatherScreen({ navigation }: Props) {
               </View>
             </View>
           )}
-        </View>
+        </WeatherHeaderCard>
 
         {data ? (
           <View style={styles.sheet}>
@@ -470,22 +477,7 @@ export function MorphCareWeatherScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: "#F4F4F5" },
-  hero: {
-    minHeight: verticalScale(280),
-    paddingHorizontal: scale(16),
-    paddingBottom: verticalScale(22),
-    justifyContent: "space-between",
-    overflow: "hidden",
-  },
-  heroImg: { ...StyleSheet.absoluteFill, width: "100%", height: "100%" },
-  heroNav: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    zIndex: 2,
-  },
-  heroNavSpacer: { flex: 1 },
+  root: { flex: 1, backgroundColor: "#FAFAFA" },
   heroBack: {
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: "rgba(15,23,42,0.12)",
@@ -575,7 +567,7 @@ const styles = StyleSheet.create({
 
   sheet: {
     marginTop: -moderateScale(14),
-    backgroundColor: "#F4F4F5",
+    backgroundColor: "#FAFAFA",
     borderTopLeftRadius: moderateScale(22),
     borderTopRightRadius: moderateScale(22),
     paddingHorizontal: scale(16),
@@ -763,7 +755,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: scale(12),
     borderRadius: moderateScale(12),
     marginBottom: 4,
-    backgroundColor: "#F4F4F5",
+    backgroundColor: "#FAFAFA",
   },
   regionRowOn: { backgroundColor: "#111" },
   regionName: { ...morphFont, fontSize: fontSize(14), fontWeight: "700", color: "#111" },
@@ -777,7 +769,7 @@ const styles = StyleSheet.create({
     marginBottom: verticalScale(6),
     paddingVertical: verticalScale(14),
     borderRadius: moderateScale(14),
-    backgroundColor: "#F4F4F5",
+    backgroundColor: "#FAFAFA",
   },
   gpsBtnText: { ...morphFont, fontSize: fontSize(13), fontWeight: "700", color: "#111" },
 });
