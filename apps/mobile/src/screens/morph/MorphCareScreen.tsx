@@ -56,11 +56,12 @@ import {
 import {
   addMyProduct,
   loadMyProducts,
+  loadMyProductsLocal,
   markCareOnboardingSeen,
   removeMyProduct,
   type MyCareProduct,
 } from "../../lib/morph-my-products";
-import { setCareCatalogCache } from "../../lib/care-catalog-cache";
+import { setCareCatalogCache, getCareCatalogCache, hydrateCareCatalogCache, prefetchCareCatalog } from "../../lib/care-catalog-cache";
 import { careHubLayout, weatherLocationHeroSource } from "../../lib/weather-care-tips";
 import { regionLabel } from "../../lib/uz-regions";
 import type { MorphCareStackParamList } from "../../navigation/MorphCareStack";
@@ -86,45 +87,6 @@ const QUICK_GROWTH = require("../../../assets/care/care-quick-growth.png");
 const QUICK_ALBUM = require("../../../assets/care/care-quick-album.png");
 const HUB_ROUTINE = require("../../../assets/care/care-hub-routine-v2.png");
 const HUB_SCAN = require("../../../assets/care/care-hub-scan-v2.png");
-
-interface FeaturedProductItem {
-  id: string;
-  title: string;
-  price: string;
-  duration?: string;
-  image: string;
-  bgColors: [string, string, string];
-  hasPlay?: boolean;
-  fitScore?: number;
-}
-
-const FEATURED_PRODUCTS: FeaturedProductItem[] = [
-  {
-    id: "spray-1",
-    title: "Skin care Spray",
-    price: "$160",
-    duration: "2 Min",
-    image: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=600&q=80",
-    bgColors: ["#F0F0F0", "#F0F0F0", "#F0F0F0"],
-    hasPlay: true,
-  },
-  {
-    id: "eye-1",
-    title: "Eye Care",
-    price: "$150",
-    image: "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&w=600&q=80",
-    bgColors: ["#FAFAFA", "#F0F0F0", "#F0F0F0"],
-  },
-  {
-    id: "hair-1",
-    title: "Hair Serum",
-    price: "$135",
-    duration: "3 Min",
-    image: "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=600&q=80",
-    bgColors: ["#FAFAFA", "#F0F0F0", "#F0F0F0"],
-    hasPlay: true,
-  },
-];
 
 const CONDITION_OPTS: HairCondition[] = ["oily", "dry", "normal", "damaged"];
 const TEXTURE_OPTS: HairTexture[] = ["straight", "wavy", "curly"];
@@ -213,8 +175,13 @@ export function MorphCareScreen({ navigation, route }: Props) {
   const [viewMode, setViewMode] = useState<ViewMode>("hub");
   const [quiz, setQuiz] = useState<CareQuizAnswers>(() => defaultQuiz());
   const [step, setStep] = useState<QuizStep | "plan" | "boot">("boot");
-  const [catalog, setCatalog] = useState<CareProduct[]>([]);
+  const [catalog, setCatalog] = useState<CareProduct[]>(
+    () => getCareCatalogCache() ?? [],
+  );
   const [myProducts, setMyProducts] = useState<MyCareProduct[]>([]);
+  const [catalogReady, setCatalogReady] = useState(
+    () => Boolean(getCareCatalogCache()?.length),
+  );
   const [saving, setSaving] = useState(false);
   const [selectedDayIdx, setSelectedDayIdx] = useState(0);
   const [addToast, setAddToast] = useState<{ title: string; image: string } | null>(null);
@@ -580,10 +547,17 @@ export function MorphCareScreen({ navigation, route }: Props) {
   }, []);
 
   const bootstrap = useCallback(async () => {
-    // Lokal quiz darrov — spinner yo‘q.
-    const saved = await loadCareQuiz().catch(() => null);
-    const myProds = await loadMyProducts().catch(() => []);
-    setMyProducts(myProds);
+    // 1) Disk cache — hub ochilishi bilan bizning rasmlar (demo emas).
+    const [saved, localMine, diskCatalog] = await Promise.all([
+      loadCareQuiz().catch(() => null),
+      loadMyProductsLocal().catch(() => []),
+      hydrateCareCatalogCache().catch(() => [] as CareProduct[]),
+    ]);
+    if (localMine.length) setMyProducts(localMine);
+    if (diskCatalog.length) {
+      setCatalog(diskCatalog);
+      setCatalogReady(true);
+    }
     if (saved?.condition && saved?.texture && saved?.colorStatus) {
       setQuiz(saved);
       setStep("plan");
@@ -600,7 +574,19 @@ export function MorphCareScreen({ navigation, route }: Props) {
       setAccess(accessRes);
       if (!accessRes.allowed) return;
 
-      const profile = await fetchHairCareProfile().catch(() => null);
+      // 2) Network parallel — my products + recommended catalog.
+      const [myProds, products, profile] = await Promise.all([
+        loadMyProducts().catch(() => localMine),
+        prefetchCareCatalog({ recommended: true }).catch(() => diskCatalog),
+        fetchHairCareProfile().catch(() => null),
+      ]);
+      setMyProducts(myProds);
+      if (products.length) {
+        setCatalog(products);
+        setCareCatalogCache(products);
+      }
+      setCatalogReady(true);
+
       if (profile?.condition && profile?.texture && profile?.color_status) {
         const next: CareQuizAnswers = {
           condition: profile.condition as HairCondition,
@@ -618,12 +604,12 @@ export function MorphCareScreen({ navigation, route }: Props) {
         }
         setStep("plan");
         setViewMode("hub");
+      } else if (!saved?.condition) {
+        setStep(0);
+        setViewMode("flow");
       }
-
-      const products = await fetchCareProducts({ recommended: true }).catch(() => []);
-      setCatalog(products);
     } catch {
-      /* hub ochiq qoladi */
+      setCatalogReady(true);
     }
   }, []);
 
@@ -650,9 +636,15 @@ export function MorphCareScreen({ navigation, route }: Props) {
       setStep("plan");
       setViewMode("hub");
       // Catalog fonida — hub darrov ochiladi.
-      void fetchCareProducts({ recommended: true })
-        .then((products) => setCatalog(products))
-        .catch(() => undefined);
+      void prefetchCareCatalog({ recommended: true, force: true })
+        .then((products) => {
+          if (products.length) {
+            setCatalog(products);
+            setCareCatalogCache(products);
+          }
+          setCatalogReady(true);
+        })
+        .catch(() => setCatalogReady(true));
     } finally {
       setSaving(false);
     }
@@ -690,10 +682,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
         category: mp.category || "spray",
         duration: "2 Min",
         durationMinutes: 2,
-        image:
-          resolveMediaUrl(rawImg, { width: 360 }) ||
-          rawImg ||
-          "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=360&q=75",
+        image: resolveMediaUrl(rawImg, { width: 360 }) || rawImg || "",
         bgColors: ["#F0F0F0", "#F0F0F0", "#F0F0F0"],
         isUserAdded: true,
         usageText: mp.usage_uz || fromCatalog?.usage_uz,
@@ -716,10 +705,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
         category: cp.category,
         duration: cp.category === "mask" ? "5 Min" : "2 Min",
         durationMinutes: cp.category === "mask" ? 5 : 2,
-        image:
-          resolveMediaUrl(cp.image_url, { width: 360 }) ||
-          cp.image_url ||
-          "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&w=360&q=75",
+        image: resolveMediaUrl(cp.image_url, { width: 360 }) || cp.image_url || "",
         bgColors:
           cp.category === "mask"
             ? ["#F0F0F0", "#F0F0F0", "#F0F0F0"]
@@ -730,24 +716,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
       });
     });
 
-    if (list.length === 0) {
-      return FEATURED_PRODUCTS.map((fp) => ({
-        id: fp.id,
-        title: fp.title,
-        price: fp.price,
-        duration: fp.duration,
-        image: fp.image,
-        bgColors: fp.bgColors,
-        productId: undefined,
-        brand: "Morf Care Pro",
-        category: "spray",
-        durationMinutes: 2,
-        isUserAdded: false,
-        fitScore: undefined,
-        usageText: undefined,
-      }));
-    }
-
+    // Demo/Unsplash yo‘q — bo‘sh yoki skeleton.
     return list;
   }, [myProducts, catalog, quiz]);
 
@@ -1373,6 +1342,21 @@ export function MorphCareScreen({ navigation, route }: Props) {
               },
             ]}
           >
+            {displayProducts.length === 0 && !catalogReady
+              ? [0, 1, 2].map((i) => (
+                  <View
+                    key={`sk-${i}`}
+                    style={[
+                      styles.featuredCard,
+                      {
+                        width: hubLayout.featuredW,
+                        height: hubLayout.featuredH,
+                        backgroundColor: "#ECECEC",
+                      },
+                    ]}
+                  />
+                ))
+              : null}
             {displayProducts.map((prod) => {
               const isMine =
                 prod.isUserAdded ||
@@ -1404,15 +1388,19 @@ export function MorphCareScreen({ navigation, route }: Props) {
                   }}
                 >
                   <View style={styles.featuredMedia}>
-                    <Image
-                      source={{ uri: prod.image }}
-                      style={styles.featuredCardImg}
-                      contentFit="cover"
-                      cachePolicy="memory-disk"
-                      priority="high"
-                      recyclingKey={prod.id}
-                      transition={80}
-                    />
+                    {prod.image ? (
+                      <Image
+                        source={{ uri: prod.image }}
+                        style={styles.featuredCardImg}
+                        contentFit="cover"
+                        cachePolicy="memory-disk"
+                        priority="high"
+                        recyclingKey={prod.id}
+                        transition={0}
+                      />
+                    ) : (
+                      <View style={[styles.featuredCardImg, { backgroundColor: "#E8E8E8" }]} />
+                    )}
                     <LinearGradient
                       colors={["transparent", "rgba(0,0,0,0.25)", "rgba(0,0,0,0.88)"]}
                       locations={[0.35, 0.65, 1]}

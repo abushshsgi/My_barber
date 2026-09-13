@@ -223,7 +223,7 @@ export function MorphCareProductGuideScreen({ navigation, route }: Props) {
   const title = product?.name || params.productTitle || "Soch parvarishi vositasi";
   const brand = product?.brand || params.brand || "Morf Care Pro";
   const category = product?.category || params.category || "spray";
-  const image = product?.image_url || params.imageUrl || "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=600&q=80";
+  const image = product?.image_url || params.imageUrl || "";
   const usageText = product?.usage_uz || params.usageText;
 
   const steps =
@@ -294,7 +294,11 @@ export function MorphCareProductGuideScreen({ navigation, route }: Props) {
       >
         {/* Product Hero Card */}
         <View style={styles.heroCard}>
-          <Image source={{ uri: image }} style={styles.heroImg} resizeMode="cover" />
+          {image ? (
+            <Image source={{ uri: image }} style={styles.heroImg} resizeMode="cover" />
+          ) : (
+            <View style={[styles.heroImg, { backgroundColor: "#E8E8E8" }]} />
+          )}
           <View style={styles.heroInfo}>
             <View style={styles.catBadge}>
               <Text style={styles.catBadgeText}>{category.toUpperCase()}</Text>

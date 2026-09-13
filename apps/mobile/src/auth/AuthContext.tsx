@@ -17,6 +17,8 @@ import {
 } from "../api/auth";
 import { fetchMe, type ApiUser } from "../api/user";
 import { needsOnboarding } from "../lib/onboarding";
+import { prefetchCareCatalog } from "../lib/care-catalog-cache";
+import { prefetchCareWeather } from "../hooks/useCareWeather";
 import {
   clearSession,
   getAccessToken,
@@ -153,6 +155,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         if (cached && !cancelled && !signedInRef.current) {
           setUser(storedToApiUser(cached));
+          void prefetchCareWeather({
+            savedLat: cached.latitude != null ? Number(cached.latitude) : null,
+            savedLon: cached.longitude != null ? Number(cached.longitude) : null,
+          });
         }
 
         try {
@@ -160,6 +166,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (!cancelled && gen === bootGenRef.current && !signedInRef.current) {
             setUser(me);
             await persistUserCache(me);
+            void prefetchCareWeather({
+              savedLat: me.latitude != null ? Number(me.latitude) : null,
+              savedLon: me.longitude != null ? Number(me.longitude) : null,
+            });
           } else if (!cancelled && signedInRef.current) {
             // Login allaqachon bo'lgan — faqat cache yangilash
             await persistUserCache(me);
@@ -187,11 +197,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const user = await persistAuth(data);
     setUser(user);
     setLoading(false);
+    // Parvarish home: geo + ob-havo + katalog oldindan — demo kutish bo‘lmasin
+    void prefetchCareWeather({
+      savedLat: user.latitude != null ? Number(user.latitude) : null,
+      savedLon: user.longitude != null ? Number(user.longitude) : null,
+    });
+    void prefetchCareCatalog({ recommended: true });
     try {
       const me = await fetchMe();
       const merged = data.is_new_user ? { ...me, onboarding_completed: false } : me;
       setUser(merged);
       await persistUserCache(merged);
+      void prefetchCareWeather({
+        savedLat: merged.latitude != null ? Number(merged.latitude) : null,
+        savedLon: merged.longitude != null ? Number(merged.longitude) : null,
+      });
+      void prefetchCareCatalog({ recommended: true });
     } catch {
       /* login user bilan davom */
     }

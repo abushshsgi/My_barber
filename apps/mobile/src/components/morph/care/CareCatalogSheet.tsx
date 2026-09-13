@@ -90,9 +90,16 @@ export function CareCatalogSheet({
       setLoading(true);
     }
     try {
-      const rows = await prefetchCareCatalog({ force: Boolean(seed?.length) });
-      setCareCatalogCache(rows);
-      setCatalog(rows);
+      const rows = await prefetchCareCatalog({
+        force: !seed?.length,
+        recommended: false,
+        order: "likes",
+        exclude_mine: true,
+      });
+      if (rows.length) {
+        setCareCatalogCache(rows);
+        setCatalog(rows);
+      }
     } catch {
       if (!seed?.length) setCatalog([]);
     } finally {
