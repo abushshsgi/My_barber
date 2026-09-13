@@ -24,7 +24,7 @@
       "env": {
         "ORG_GRADLE_PROJECT_reactNativeArchitectures": "armeabi-v7a,arm64-v8a",
         "EXPO_PUBLIC_API_URL": "https://api.mysaloon.uz",
-        "EXPO_PUBLIC_GOOGLE_CLIENT_ID": "990469146793-jtjdkj187hmn98r3snfqfuiqnd3ctjui.apps.googleusercontent.com"
+        "EXPO_PUBLIC_GOOGLE_CLIENT_ID": "1080867624985-2c0i66qgdsaap0vqm0mickmk574h8cor.apps.googleusercontent.com"
       }
     },
     "preview-ios-simulator": {
@@ -42,7 +42,7 @@
       "env": {
         "ORG_GRADLE_PROJECT_reactNativeArchitectures": "armeabi-v7a,arm64-v8a",
         "EXPO_PUBLIC_API_URL": "https://api.mysaloon.uz",
-        "EXPO_PUBLIC_GOOGLE_CLIENT_ID": "990469146793-jtjdkj187hmn98r3snfqfuiqnd3ctjui.apps.googleusercontent.com"
+        "EXPO_PUBLIC_GOOGLE_CLIENT_ID": "1080867624985-2c0i66qgdsaap0vqm0mickmk574h8cor.apps.googleusercontent.com"
       }
     },
     "production-apk": {
@@ -54,7 +54,7 @@
       "env": {
         "ORG_GRADLE_PROJECT_reactNativeArchitectures": "armeabi-v7a,arm64-v8a",
         "EXPO_PUBLIC_API_URL": "https://api.mysaloon.uz",
-        "EXPO_PUBLIC_GOOGLE_CLIENT_ID": "990469146793-jtjdkj187hmn98r3snfqfuiqnd3ctjui.apps.googleusercontent.com"
+        "EXPO_PUBLIC_GOOGLE_CLIENT_ID": "1080867624985-2c0i66qgdsaap0vqm0mickmk574h8cor.apps.googleusercontent.com"
       }
     }
   },

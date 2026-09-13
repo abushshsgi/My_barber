@@ -1,6 +1,6 @@
 # Mobil production
 
-Mijoz native ilova: **Expo React Native** — `apps/mobile` (`uz.mysaloon.app`).
+Mijoz native ilova: **Expo React Native** — `apps/mobile` (`uz.mysaloon.mobile`).
 
 Web:
 - User: `apps/user` → `www.mysaloon.uz` (PWA)

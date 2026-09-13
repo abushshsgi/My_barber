@@ -26,7 +26,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     ...( { newArchEnabled: true } as object ),
     ios: {
       supportsTablet: true,
-      bundleIdentifier: "uz.mysaloon.app",
+      bundleIdentifier: "uz.mysaloon.mobile",
       infoPlist: {
         NSLocationWhenInUseUsageDescription:
           "Yaqin salonlarni ko'rsatish uchun joylashuvingiz kerak.",
@@ -39,7 +39,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         : undefined,
     },
     android: {
-      package: "uz.mysaloon.app",
+      package: "uz.mysaloon.mobile",
       googleServicesFile: "./google-services.json",
       permissions: ["ACCESS_COARSE_LOCATION", "ACCESS_FINE_LOCATION", "RECORD_AUDIO"],
       adaptiveIcon: {
@@ -100,7 +100,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         {
           // iOS URL scheme = reversed Web client ID (client_type 3)
           iosUrlScheme:
-            "com.googleusercontent.apps.990469146793-jtjdkj187hmn98r3snfqfuiqnd3ctjui",
+            "com.googleusercontent.apps.1080867624985-2c0i66qgdsaap0vqm0mickmk574h8cor",
         },
       ],
       [
@@ -176,11 +176,10 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         process.env.EXPO_PUBLIC_API_URL?.trim() || "https://api.mysaloon.uz",
       googleClientId:
         process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID ||
-        // Web OAuth client (client_type 3) — Android client browser OAuth da 400 beradi.
-        "990469146793-jtjdkj187hmn98r3snfqfuiqnd3ctjui.apps.googleusercontent.com",
+        // Web OAuth client (client_type 3) — Firebase mysaloon-4227d
+        "1080867624985-2c0i66qgdsaap0vqm0mickmk574h8cor.apps.googleusercontent.com",
       googleAndroidClientId:
-        process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID ||
-        "990469146793-tkfiilj8078mrqhovup9l19qv6pce857.apps.googleusercontent.com",
+        process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID || "",
       googleMapsApiKey: googleMapsApiKey || undefined,
       eas: {
         projectId: "7a541b52-f3c6-4bef-a463-8feaf27eba52",

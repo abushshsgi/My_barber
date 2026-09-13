@@ -1,41 +1,33 @@
 {
   "project_info": {
-    "project_number": "990469146793",
-    "project_id": "mysaloon-cb921",
-    "storage_bucket": "mysaloon-cb921.firebasestorage.app"
+    "project_number": "1080867624985",
+    "project_id": "mysaloon-4227d",
+    "storage_bucket": "mysaloon-4227d.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:990469146793:android:b78461626ccd318cefc1b8",
+        "mobilesdk_app_id": "1:1080867624985:android:ca58ce198c8a42c4933288",
         "android_client_info": {
-          "package_name": "uz.mysaloon.app"
+          "package_name": "uz.mysaloon.mobile"
         }
       },
       "oauth_client": [
         {
-          "client_id": "990469146793-tkfiilj8078mrqhovup9l19qv6pce857.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "uz.mysaloon.app",
-            "certificate_hash": "6ac8aa16923532e0674f913224a70488261f3f2b"
-          }
-        },
-        {
-          "client_id": "990469146793-jtjdkj187hmn98r3snfqfuiqnd3ctjui.apps.googleusercontent.com",
+          "client_id": "1080867624985-2c0i66qgdsaap0vqm0mickmk574h8cor.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyDuoLeisBzto2A3ygbAbdt60QhZVxCeqXE"
+          "current_key": "AIzaSyChVUPMA-DyQqvGN9TYHosy-H-gFl10c1g"
         }
       ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "990469146793-jtjdkj187hmn98r3snfqfuiqnd3ctjui.apps.googleusercontent.com",
+              "client_id": "1080867624985-2c0i66qgdsaap0vqm0mickmk574h8cor.apps.googleusercontent.com",
               "client_type": 3
             }
           ]

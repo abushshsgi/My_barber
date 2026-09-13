@@ -25,17 +25,18 @@ EXPO_PUBLIC_GOOGLE_CLIENT_ID=xxxx.apps.googleusercontent.com npm start
 
 ### Google Console
 
-**Android client**: package `uz.mysaloon.app` + **har bir** imzo SHA-1
+**Android client**: package `uz.mysaloon.mobile` + **har bir** imzo SHA-1
 (Firebase → Project settings → Your apps → Android → Add fingerprint).
 
-Majburiy fingerprintlar:
+Majburiy fingerprintlar (Firebase `mysaloon-4227d`):
 - **Debug** (`~/.android/debug.keystore`): `6A:C8:AA:16:92:35:32:E0:67:4F:91:32:24:A7:04:88:26:1F:3F:2B`
-- **EAS production/preview APK** (oxirgi artifact): `C1:C4:4C:6F:F9:EC:11:5B:39:AA:A8:90:7C:1F:FD:B3:D9:54:1F:FE`
+- **EAS production/preview APK**: `C1:C4:4C:6F:F9:EC:11:5B:39:AA:A8:90:7C:1F:FD:B3:D9:54:1F:FE`
 
 SHA qo‘shilgach `google-services.json` ni qayta yuklab `apps/mobile/` ga qo‘ying va **yangi APK** build qiling.
-Faqat debug SHA bo‘lsa release APK da `DEVELOPER_ERROR` / `ApiException: 10` chiqadi.
+SHA qo‘shilmasa native Google Sign-In `DEVELOPER_ERROR` / `ApiException: 10` beradi.
 
-**Web client** (idToken): `EXPO_PUBLIC_GOOGLE_CLIENT_ID` va backend `GOOGLE_OAUTH_CLIENT_ID` audience.
+**Web client** (idToken): `EXPO_PUBLIC_GOOGLE_CLIENT_ID` va backend `GOOGLE_OAUTH_CLIENT_ID` — hozir:
+`1080867624985-2c0i66qgdsaap0vqm0mickmk574h8cor.apps.googleusercontent.com`
 
 Web/dev redirect (faqat web login):
 - origins: `http://localhost:8081`

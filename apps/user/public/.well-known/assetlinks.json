@@ -3,9 +3,9 @@
     "relation": ["delegate_permission/common.handle_all_urls"],
     "target": {
       "namespace": "android_app",
-      "package_name": "uz.mysaloon.app",
+      "package_name": "uz.mysaloon.mobile",
       "sha256_cert_fingerprints": [
-        "REPLACE_WITH_UPLOAD_KEYSTORE_SHA256"
+        "DC:3A:1A:E9:CE:7A:1B:8E:EC:C7:2A:91:FD:22:16:3E:A8:2D:E6:79:2C:92:3A:24:6F:D9:88:C6:26:94:7A:2A"
       ]
     }
   }
