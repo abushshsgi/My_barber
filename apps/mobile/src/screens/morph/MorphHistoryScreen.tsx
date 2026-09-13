@@ -16,12 +16,14 @@ import {
   useWindowDimensions,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { safeBottom, safeTop } from "../../lib/safe-area";
 import {
   fetchMorphAiGenerations,
   formatMorphUserError,
   type MorphAiGeneration,
 } from "../../api/ai";
 import { BeforeAfterSlider } from "../../components/morph/BeforeAfterSlider";
+import { NativeBackButton, NativeBackSpacer } from "../../components/ui/NativeBackButton";
 import { useHideTabBar } from "../../hooks/useHideTabBar";
 import { shareMorphLook } from "../../lib/morph-share";
 import { useMorphSession } from "../../lib/morph-session";
@@ -159,7 +161,7 @@ export function MorphHistoryScreen({ navigation, route }: Props) {
     const lookTitle = selected.title || selected.style_id || "Look";
 
     return (
-      <View style={[styles.detailRoot, { paddingTop: Math.max(insets.top, 10) }]}>
+      <View style={[styles.detailRoot, { paddingTop: safeTop(insets.top, 0) }]}>
         <LinearGradient
           colors={["#1A1210", "#070708", "#050505"]}
           locations={[0, 0.45, 1]}
@@ -167,14 +169,11 @@ export function MorphHistoryScreen({ navigation, route }: Props) {
         />
 
         <View style={styles.detailTop}>
-          <Pressable style={styles.pillBtn} onPress={closeDetail}>
-            <Ionicons name="chevron-back" size={18} color="#111111" />
-            <Text style={styles.pillBtnText}>Tarix</Text>
-          </Pressable>
+          <NativeBackButton onPress={closeDetail} />
           <Text style={[styles.detailTitle, { fontSize: fs(16) }]} numberOfLines={1}>
             {lookTitle}
           </Text>
-          <View style={{ width: 40 }} />
+          <NativeBackSpacer />
         </View>
 
         <View style={styles.compareStage}>
@@ -208,7 +207,7 @@ export function MorphHistoryScreen({ navigation, route }: Props) {
           ) : null}
         </View>
 
-        <View style={[styles.detailActions, { paddingBottom: Math.max(insets.bottom, 16) }]}>
+        <View style={[styles.detailActions, { paddingBottom: safeBottom(insets.bottom, 0) }]}>
           <Pressable
             style={styles.primaryAction}
             onPress={() => void onDownload()}
@@ -250,9 +249,8 @@ export function MorphHistoryScreen({ navigation, route }: Props) {
 
   return (
     <View style={[styles.root, { paddingBottom: insets.bottom }]}>
-      <View style={[styles.topBar, { paddingTop: Math.max(insets.top, 8) }]}>
-        <Pressable
-          style={styles.iconRound}
+      <View style={[styles.topBar, { paddingTop: safeTop(insets.top, 0) }]}>
+        <NativeBackButton
           onPress={() => {
             const routes = navigation.getState?.()?.routes;
             if (routes && routes.length > 1) {
@@ -261,16 +259,14 @@ export function MorphHistoryScreen({ navigation, route }: Props) {
               navigation.navigate("MorphCapture");
             }
           }}
-        >
-          <Ionicons name="chevron-back" size={20} color="#111111" />
-        </Pressable>
+        />
         <View style={styles.topCenter}>
           <Text style={[styles.topTitle, { fontSize: fs(17) }]}>Tarix</Text>
           <Text style={styles.topSub}>
             {loading ? "…" : `${items.length} ta look`}
           </Text>
         </View>
-        <View style={{ width: 40 }} />
+        <NativeBackSpacer />
       </View>
 
       {loading ? (

@@ -3,7 +3,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -19,8 +19,11 @@ import {
 } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { safeBottom, safeTop } from "../../lib/safe-area";
 import { CareCatalogSheet } from "../../components/morph/care/CareCatalogSheet";
+import { NativeBackButton } from "../../components/ui/NativeBackButton";
 import { useHideTabBar } from "../../hooks/useHideTabBar";
+import { prefetchCareCatalog } from "../../lib/care-catalog-cache";
 import { useShellNavigation } from "../../lib/shell-nav";
 import {
   loadMyProducts,
@@ -118,6 +121,11 @@ export function MorphCareMyProductsScreen({ navigation }: Props) {
     }, [reload]),
   );
 
+  // Sheet ochilganda spinner kutmaslik — katalogni oldindan yuklash
+  useEffect(() => {
+    void prefetchCareCatalog();
+  }, []);
+
   const onRemove = useCallback(
     (p: MyCareProduct) => {
       const title = t("care.myProducts.removeConfirmTitle", {
@@ -197,18 +205,14 @@ export function MorphCareMyProductsScreen({ navigation }: Props) {
       ) : null}
 
       <View style={styles.header}>
-        <Pressable
-          style={styles.iconBtn}
+        <NativeBackButton
           onPress={() => {
             const routes = navigation.getState?.()?.routes;
             if (routes && routes.length > 1) navigation.goBack();
             else navigation.navigate("CareHome");
           }}
-          hitSlop={8}
           accessibilityLabel={t("common.back")}
-        >
-          <Ionicons name="chevron-back" size={20} color="#111111" />
-        </Pressable>
+        />
         <View style={styles.headerCenter}>
           <Text style={styles.h1}>{t("care.myProducts.title")}</Text>
           <Text style={styles.count}>{rows.length} ta</Text>
@@ -253,7 +257,7 @@ export function MorphCareMyProductsScreen({ navigation }: Props) {
         <ScrollView
           contentContainerStyle={[
             styles.grid,
-            { paddingBottom: Math.max(insets.bottom, 20) + 20 },
+            { paddingBottom: safeBottom(insets.bottom, 20) },
           ]}
           showsVerticalScrollIndicator={false}
         >

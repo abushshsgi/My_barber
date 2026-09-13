@@ -2,14 +2,15 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Clipboard from "expo-clipboard";
 import { useCallback, useState } from "react";
 import {
-  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from "react-native";
+import { SafeModal } from "../ui/SafeModal";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { safeBottom, safeTop } from "../../lib/safe-area";
 import { formatSomLabel, type WalletTx } from "../../lib/wallet-format";
 import {
   fontSize,
@@ -63,9 +64,9 @@ export function WalletTransactionReceiptSheet({ tx, visible, onClose }: Props) {
     tx.entryType === "booking_pay";
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+    <SafeModal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <Pressable style={styles.backdrop} onPress={onClose} />
-      <View style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, 16) + 8 }]}>
+      <View style={[styles.sheet, { paddingBottom: safeBottom(insets.bottom, 8) }]}>
         <View style={styles.handle} />
         <Pressable style={styles.close} onPress={onClose} hitSlop={10}>
           <Ionicons name="close" size={18} color="#64748B" />
@@ -141,7 +142,7 @@ export function WalletTransactionReceiptSheet({ tx, visible, onClose }: Props) {
           </Text>
         </ScrollView>
       </View>
-    </Modal>
+    </SafeModal>
   );
 }
 

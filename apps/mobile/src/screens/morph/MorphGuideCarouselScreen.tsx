@@ -15,6 +15,7 @@ import {
   type ViewToken,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { safeBottom, safeTop } from "../../lib/safe-area";
 import { formatMorphUserError } from "../../api/ai";
 import { pexelsPhotoUrl } from "../../api/media";
 import { useAuth } from "../../auth/AuthContext";
@@ -230,8 +231,8 @@ export function MorphGuideCarouselScreen({ navigation, route }: Props) {
       style={[
         styles.root,
         {
-          paddingTop: insets.top + 4,
-          paddingBottom: Math.max(insets.bottom, 12) + 16,
+          paddingTop: safeTop(insets.top, 4),
+          paddingBottom: safeBottom(insets.bottom, 16),
         },
       ]}
     >

@@ -4,7 +4,6 @@ import { StatusBar } from "expo-status-bar";
 import { useEffect, useMemo, useState } from "react";
 import {
   Dimensions,
-  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -12,6 +11,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { SafeModal } from "../../ui/SafeModal";
 import Animated, {
   Easing,
   runOnJS,
@@ -20,6 +20,7 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { safeBottom, safeTop } from "../../../lib/safe-area";
 import type { MorphChatThread } from "../../../hooks/useMorphChat";
 
 import { morphFont } from "../../../theme/morph-font";
@@ -152,7 +153,7 @@ export function ChatMenuDrawer({
   if (!mounted) return null;
 
   return (
-    <Modal visible transparent animationType="none" onRequestClose={requestClose}>
+    <SafeModal visible transparent animationType="none" onRequestClose={requestClose}>
       <View style={styles.root} pointerEvents="box-none">
         <StatusBar style="dark" />
         <Animated.View style={[styles.scrimFill, scrimStyle]}>
@@ -162,7 +163,7 @@ export function ChatMenuDrawer({
           style={[
             styles.drawer,
             drawerStyle,
-            { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 8, width: DRAWER_W },
+            { paddingTop: safeTop(insets.top, 8), paddingBottom: safeBottom(insets.bottom, 8), width: DRAWER_W },
           ]}
         >
           <View style={styles.header}>
@@ -322,7 +323,7 @@ export function ChatMenuDrawer({
           </View>
         </Animated.View>
       </View>
-    </Modal>
+    </SafeModal>
   );
 }
 

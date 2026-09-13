@@ -12,14 +12,17 @@ import {
   Platform,
   Pressable,
   StyleSheet,
+  Text,
   UIManager,
   View,
 } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { safeBottom, safeTop } from "../lib/safe-area";
 import * as NavigationBar from "expo-navigation-bar";
 import { morfMarkWhite } from "../branding/morf-logo";
 import { ComingSoonSalons } from "../components/ComingSoonSalons";
+import { AppStatusBar } from "../components/ui/AppStatusBar";
 import { FLOATING_TAB_BAR_STYLE } from "../hooks/useHideTabBar";
 import { AppShellProvider, useAppShell } from "../lib/AppShellContext";
 import { MorphAppearanceProvider } from "../lib/MorphAppearanceContext";
@@ -99,9 +102,9 @@ const CENTER_BTN = scale(IS_SMALL_DEVICE ? 34 : 36);
 const TAB_ICON = scale(22);
 const SWITCH_MIN_MS = 0;
 
-/** Active icon — qora; idle — kulrang (oq dock). */
-const PILL_FG = "#111111";
-const PILL_FG_MORPH = "#111111";
+/** Active / idle — oq dockda oq ikonka bo‘lmasin. */
+const PILL_FG = "#1E1E1E";
+const PILL_IDLE = "#6B7280";
 
 /**
  * Home Bar (iPhone) yoki gesture bar (Samsung) ostida dok kesilmasligi uchun
@@ -221,18 +224,12 @@ function CustomTabBar({ state, navigation, descriptors }: BottomTabBarProps) {
   const bottomPad = Math.max(insets.bottom, MIN_DOCK_BOTTOM);
 
   useEffect(() => {
-    if (Platform.OS === "android") {
-      try {
-        const navBg = "#FFFFFF";
-        if (NavigationBar && typeof NavigationBar.setBackgroundColorAsync === "function") {
-          void NavigationBar.setBackgroundColorAsync(navBg);
-        }
-        if (NavigationBar && typeof NavigationBar.setButtonStyleAsync === "function") {
-          void NavigationBar.setButtonStyleAsync("dark");
-        }
-      } catch (err) {
-        console.warn("NavigationBar error", err);
-      }
+    if (Platform.OS !== "android") return;
+    try {
+      // light = ochiq system nav + qora tugmalar (oq dock bilan mos).
+      NavigationBar.setStyle("light");
+    } catch (err) {
+      console.warn("NavigationBar error", err);
     }
   }, [morphDock]);
 
@@ -316,8 +313,7 @@ function CustomTabBar({ state, navigation, descriptors }: BottomTabBarProps) {
       focusedRoute.name === "MorphIngredient" ||
       focusedRoute.name === "Profile") &&
     !getTabBarVisibility(focusedRoute as never);
-  const isVisible = focusedOptions.tabBarVisible !== false;
-  if (!isVisible || nestHidden || tabBarHidden) {
+  if (nestHidden || tabBarHidden) {
     return null;
   }
 
@@ -435,12 +431,11 @@ function CustomTabBar({ state, navigation, descriptors }: BottomTabBarProps) {
 
   const visibleLeft = displayShell === "morph" ? MORPH_LEFT : MYSALOON_LEFT;
   const visibleRight = displayShell === "morph" ? MORPH_RIGHT : MYSALOON_RIGHT;
-  const pillFg = PILL_FG;
-  const idleIcon = "#9CA3AF";
 
   const renderSideTab = (tab: TabDef) => {
     const focused = activeName === tab.name;
     const label = t(tab.labelKey);
+    const tint = focused ? PILL_FG : PILL_IDLE;
     return (
       <Pressable
         key={tab.name}
@@ -458,8 +453,14 @@ function CustomTabBar({ state, navigation, descriptors }: BottomTabBarProps) {
         <Ionicons
           name={focused ? tab.iconOn : tab.icon}
           size={TAB_ICON}
-          color={focused ? pillFg : idleIcon}
+          color={tint}
         />
+        <Text
+          style={[styles.tabLabel, focused && styles.tabLabelOn, { color: tint }]}
+          numberOfLines={1}
+        >
+          {label}
+        </Text>
       </Pressable>
     );
   };
@@ -521,7 +522,7 @@ function CustomTabBar({ state, navigation, descriptors }: BottomTabBarProps) {
 function ExploreTab() {
   const insets = useSafeAreaInsets();
   return (
-    <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: insets.top + 16 }}>
+    <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: safeTop(insets.top, 16) }}>
       <ComingSoonSalons />
     </View>
   );
@@ -538,6 +539,7 @@ function RootTabsInner() {
 
   return (
     <View style={[styles.root, { backgroundColor: "#FFFFFF" }]}>
+      <AppStatusBar style="dark" />
       <TabBarVisibilityProvider>
         <MorphSessionProvider>
           <Tab.Navigator
@@ -549,7 +551,7 @@ function RootTabsInner() {
               lazy: false,
               freezeOnBlur: true,
               tabBarStyle: FLOATING_TAB_BAR_STYLE,
-              sceneStyle: { backgroundColor: "transparent" },
+              sceneStyle: { backgroundColor: "#FFFFFF" },
               animation: "none",
             }}
           >
@@ -670,8 +672,19 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     minWidth: 0,
-    paddingHorizontal: scale(1),
-    minHeight: scale(40),
+    paddingHorizontal: scale(2),
+    minHeight: scale(44),
+    gap: verticalScale(2),
+  },
+  tabLabel: {
+    fontSize: fontSize(10),
+    fontWeight: "600",
+    letterSpacing: -0.15,
+    maxWidth: "100%",
+    textAlign: "center",
+  },
+  tabLabelOn: {
+    fontWeight: "700",
   },
   pill: {
     flexDirection: "row",
@@ -712,18 +725,27 @@ const styles = StyleSheet.create({
     width: CENTER_BTN,
     height: CENTER_BTN,
     borderRadius: CENTER_BTN / 2,
-    backgroundColor: colors.fg,
+    backgroundColor: "#1E1E1E",
     alignItems: "center",
     justifyContent: "center",
     overflow: "hidden",
+    borderWidth: 2,
+    borderColor: "#FFFFFF",
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOpacity: 0.18,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
   },
   centerBtnMorph: {
-    backgroundColor: "#111111",
-    borderWidth: 0,
+    backgroundColor: "#1E1E1E",
+    borderWidth: 2,
+    borderColor: "#FFFFFF",
   },
   centerBtnOnWhite: {
-    backgroundColor: "#111111",
-    borderWidth: 0,
+    backgroundColor: "#1E1E1E",
+    borderWidth: 2,
+    borderColor: "#FFFFFF",
   },
   centerLogo: {
     width: scale(18),

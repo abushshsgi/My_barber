@@ -13,6 +13,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { safeBottom, safeTop } from "../../lib/safe-area";
 import { fetchMyReferral, type ReferralInfo } from "../../api/referrals";
 import { NativeHeader } from "../../components/ui/NativeHeader";
 import { useHideTabBar } from "../../hooks/useHideTabBar";
@@ -80,7 +81,7 @@ export function ReferralScreen({ navigation }: Props) {
   const invites = info?.invites ?? [];
 
   return (
-    <View style={[styles.root, { paddingBottom: Math.max(insets.bottom, 12) }]}>
+    <View style={[styles.root, { paddingBottom: safeBottom(insets.bottom, 0) }]}>
       <StatusBar style="dark" />
       <NativeHeader title="Do'stlarni taklif" onBack={() => navigation.goBack()} />
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>

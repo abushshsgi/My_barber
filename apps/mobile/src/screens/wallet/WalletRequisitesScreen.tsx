@@ -13,6 +13,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { safeBottom, safeTop } from "../../lib/safe-area";
 import { useAuth } from "../../auth/AuthContext";
 import { useHideTabBar } from "../../hooks/useHideTabBar";
 import { useWalletMe } from "../../hooks/useWallet";
@@ -91,7 +92,7 @@ export function WalletRequisitesScreen({ navigation }: Props) {
   }, [walletRaw]);
 
   return (
-    <View style={[styles.root, { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 12 }]}>
+    <View style={[styles.root, { paddingTop: safeTop(insets.top, 8), paddingBottom: safeBottom(insets.bottom, 12) }]}>
       <View style={styles.header}>
         <Pressable style={styles.iconBtn} onPress={() => navigation.goBack()} hitSlop={8}>
           <Ionicons name="chevron-back" size={22} color={INK} />

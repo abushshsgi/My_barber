@@ -10,7 +10,6 @@ import {
   Dimensions,
   Easing,
   Keyboard,
-  Modal,
   PanResponder,
   Platform,
   Pressable,
@@ -22,11 +21,7 @@ import {
   View,
 } from "react-native";
 import { useTranslation } from "react-i18next";
-import {
-  initialWindowMetrics,
-  SafeAreaProvider,
-  useSafeAreaInsets,
-} from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { fetchCareAccess } from "../../api/ai";
 import {
   fetchCareProducts,
@@ -47,7 +42,8 @@ import { CareSosSheet } from "../../components/morph/care/CareSosSheet";
 import { CareShelfTrackerSheet } from "../../components/morph/care/CareShelfTrackerSheet";
 import { DarkMeshAmbientBg } from "../../components/morph/care/DarkMeshAmbientBg";
 import { WeatherHeaderCard } from "../../components/morph/care/WeatherHeaderCard";
-import { AppStatusBar, safeTop } from "../../components/ui/AppStatusBar";
+import { AppStatusBar, safeBottom, safeTop } from "../../components/ui/AppStatusBar";
+import { SafeModal } from "../../components/ui/SafeModal";
 import { useCareWeather } from "../../hooks/useCareWeather";
 import { useHideTabBarWhen } from "../../hooks/useHideTabBar";
 import {
@@ -989,7 +985,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
             styles.onboardPad,
             {
               paddingTop: safeTop(insets.top, 12),
-              paddingBottom: Math.max(insets.bottom, 12) + 16,
+              paddingBottom: safeBottom(insets.bottom, 16),
             },
           ]}
         >
@@ -1722,7 +1718,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
                 {
                   height: searchSheetHeight,
                   bottom: keyboardCover,
-                  paddingBottom: Math.max(insets.bottom, 12),
+                  paddingBottom: safeBottom(insets.bottom, 0),
                   transform: [{ translateY: searchSheetY }],
                 },
               ]}
@@ -1865,48 +1861,44 @@ export function MorphCareScreen({ navigation, route }: Props) {
         <CareSosSheet visible={sosOpen} onClose={() => setSosOpen(false)} />
         <CareShelfTrackerSheet visible={shelfOpen} onClose={() => setShelfOpen(false)} />
 
-        <Modal
+        <SafeModal
           visible={previewVisible}
           transparent
           animationType="none"
-          statusBarTranslucent
-          navigationBarTranslucent
           onRequestClose={closePreview}
         >
-          <SafeAreaProvider initialMetrics={initialWindowMetrics}>
-            <View style={styles.previewBackdrop} pointerEvents="box-none">
-              <Animated.View
-                style={[styles.previewBackdropFill, { opacity: previewBackdropOp }]}
-              >
-                <Pressable style={StyleSheet.absoluteFill} onPress={closePreview} />
-              </Animated.View>
-              <Animated.View
-                style={[
-                  styles.previewSheetWrap,
-                  {
-                    transform: [{ translateY: previewSheetY }],
-                    maxHeight: Math.round(winH * 0.92),
-                  },
-                ]}
-              >
-                {previewProduct ? (
-                  <CareProductPreviewSheet
-                    product={previewProduct}
-                    quiz={quiz}
-                    added={previewAdded}
-                    bottomInset={insets.bottom}
-                    onClose={closePreview}
-                    onAdd={() => {
-                      if (previewAdded) return;
-                      void addFromSearch(previewProduct.id);
-                    }}
-                    onUseInCare={previewAdded ? openPreviewCare : undefined}
-                  />
-                ) : null}
-              </Animated.View>
-            </View>
-          </SafeAreaProvider>
-        </Modal>
+          <View style={styles.previewBackdrop} pointerEvents="box-none">
+            <Animated.View
+              style={[styles.previewBackdropFill, { opacity: previewBackdropOp }]}
+            >
+              <Pressable style={StyleSheet.absoluteFill} onPress={closePreview} />
+            </Animated.View>
+            <Animated.View
+              style={[
+                styles.previewSheetWrap,
+                {
+                  transform: [{ translateY: previewSheetY }],
+                  maxHeight: Math.round(winH * 0.92),
+                },
+              ]}
+            >
+              {previewProduct ? (
+                <CareProductPreviewSheet
+                  product={previewProduct}
+                  quiz={quiz}
+                  added={previewAdded}
+                  bottomInset={insets.bottom}
+                  onClose={closePreview}
+                  onAdd={() => {
+                    if (previewAdded) return;
+                    void addFromSearch(previewProduct.id);
+                  }}
+                  onUseInCare={previewAdded ? openPreviewCare : undefined}
+                />
+              ) : null}
+            </Animated.View>
+          </View>
+        </SafeModal>
         {addToast ? (
           <Animated.View
             pointerEvents="none"

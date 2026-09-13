@@ -2,10 +2,10 @@ import { Ionicons } from "@expo/vector-icons";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { LinearGradient } from "expo-linear-gradient";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Image } from "expo-image";
 import {
   ActivityIndicator,
   FlatList,
-  Image,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -14,6 +14,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { safeBottom, safeTop } from "../../lib/safe-area";
 import {
   analyzeAiStyle,
   formatMorphUserError,
@@ -341,13 +342,14 @@ export function MorphResultsScreen({ navigation }: Props) {
           <Image
             source={{ uri: session.selfieDataUrl }}
             style={styles.scanPhoto}
-            contentFit="contain"
+            contentFit="cover"
+            contentPosition="center"
           />
         ) : (
           <View style={styles.scanPhotoFallback} />
         )}
 
-        <View style={[styles.scanChrome, { paddingTop: Math.max(insets.top, 10) }]}>
+        <View style={[styles.scanChrome, { paddingTop: safeTop(insets.top, 0) }]}>
           <Pressable style={styles.summaryBackOnPhoto} onPress={onBack} accessibilityLabel="Orqaga">
             <Ionicons name="chevron-back" size={18} color="#0A0A0A" />
           </Pressable>
@@ -374,14 +376,15 @@ export function MorphResultsScreen({ navigation }: Props) {
           <Image
             source={{ uri: session.selfieDataUrl }}
             style={styles.scanPhoto}
-            contentFit="contain"
+            contentFit="cover"
+            contentPosition="center"
           />
         ) : (
           <View style={styles.scanPhotoFallback} />
         )}
         <View style={styles.summaryScrim} />
 
-        <View style={[styles.scanChrome, { paddingTop: Math.max(insets.top, 10) }]}>
+        <View style={[styles.scanChrome, { paddingTop: safeTop(insets.top, 0) }]}>
           <Pressable
             style={[styles.scanBackBtn, analyzingBusy && styles.scanBackBtnDisabled]}
             onPress={onBack}
@@ -400,7 +403,7 @@ export function MorphResultsScreen({ navigation }: Props) {
         </View>
 
         {phase === "error" ? (
-          <View style={[styles.scanBottomDock, { paddingBottom: Math.max(insets.bottom, 16) }]}>
+          <View style={[styles.scanBottomDock, { paddingBottom: safeBottom(insets.bottom, 0) }]}>
             <Text style={styles.scanHintAbove}>Yuz aniq ko‘rinadigan selfie yuklang</Text>
             <Pressable
               style={({ pressed }) => [styles.analyzeBtn, pressed && { opacity: 0.88 }]}
@@ -412,7 +415,7 @@ export function MorphResultsScreen({ navigation }: Props) {
             </Pressable>
           </View>
         ) : (
-          <View style={[styles.scanBottomDock, { paddingBottom: Math.max(insets.bottom, 16) }]}>
+          <View style={[styles.scanBottomDock, { paddingBottom: safeBottom(insets.bottom, 0) }]}>
             <View style={styles.analyzeBtn}>
               <ActivityIndicator color="#FFF" />
               <Text style={styles.analyzeBtnText}>Tahlil qilinmoqda…</Text>
@@ -437,7 +440,7 @@ export function MorphResultsScreen({ navigation }: Props) {
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={{
-          paddingBottom: Math.max(insets.bottom, 16) + 28,
+          paddingBottom: safeBottom(insets.bottom, 28),
           gap: 0,
         }}
         showsVerticalScrollIndicator={false}
@@ -556,7 +559,7 @@ export function MorphResultsScreen({ navigation }: Props) {
               />
 
               <View
-                style={[styles.imageChrome, { paddingTop: Math.max(insets.top, 10) }]}
+                style={[styles.imageChrome, { paddingTop: safeTop(insets.top, 0) }]}
                 pointerEvents="box-none"
               >
                 <Pressable
@@ -634,7 +637,7 @@ export function MorphResultsScreen({ navigation }: Props) {
             ) : null}
           </View>
         ) : (
-          <View style={[styles.fallbackTop, { paddingTop: Math.max(insets.top, 10) }]}>
+          <View style={[styles.fallbackTop, { paddingTop: safeTop(insets.top, 0) }]}>
             <Pressable style={styles.imageBackBtn} onPress={onBack} accessibilityLabel="Orqaga">
               <Ionicons name="chevron-back" size={18} color="#0A0A0A" />
             </Pressable>
@@ -755,8 +758,8 @@ export function MorphResultsScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: "#111111" },
-  rootLight: { flex: 1, backgroundColor: "#F5F5F5", width: "100%" },
+  root: { flex: 1, backgroundColor: "#0A0A0A" },
+  rootLight: { flex: 1, backgroundColor: "#FAFAFA", width: "100%" },
   scroll: { flex: 1, width: "100%" },
   bgPhoto: {
     ...StyleSheet.absoluteFill,
@@ -766,7 +769,7 @@ const styles = StyleSheet.create({
   },
   bgDim: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: "rgba(245,245,245,0.88)",
+    backgroundColor: "rgba(250,250,250,0.92)",
   },
   summaryScrim: {
     ...StyleSheet.absoluteFill,

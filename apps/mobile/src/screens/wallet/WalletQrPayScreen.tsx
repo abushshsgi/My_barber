@@ -12,6 +12,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { safeBottom, safeTop } from "../../lib/safe-area";
 import {
   MAX_QR_AMOUNT,
   MIN_QR_AMOUNT,
@@ -100,7 +101,7 @@ export function WalletQrPayScreen({ navigation }: Props) {
 
   if (phase === "intro") {
     return (
-      <View style={[styles.root, { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 8 }]}>
+      <View style={[styles.root, { paddingTop: safeTop(insets.top, 8), paddingBottom: safeBottom(insets.bottom, 8) }]}>
         <View style={styles.introTop}>
           <Pressable style={styles.backPlain} onPress={() => navigation.goBack()} hitSlop={8}>
             <Ionicons name="chevron-back" size={24} color="#111" />
@@ -150,7 +151,7 @@ export function WalletQrPayScreen({ navigation }: Props) {
           <Text style={styles.enableText}>QR skanerni yoqish</Text>
         </Pressable>
 
-        <View style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, 16) }]}>
+        <View style={[styles.sheet, { paddingBottom: safeBottom(insets.bottom, 0) }]}>
           <View style={styles.handle} />
           <Text style={styles.sheetTitle}>To'lash va yuborish</Text>
           <View style={styles.sheetRow}>
@@ -186,7 +187,7 @@ export function WalletQrPayScreen({ navigation }: Props) {
 
   if (phase === "scan") {
     return (
-      <View style={[styles.scanRoot, { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 24 }]}>
+      <View style={[styles.scanRoot, { paddingTop: safeTop(insets.top, 8), paddingBottom: safeBottom(insets.bottom, 24) }]}>
         <Pressable style={styles.closeBtn} onPress={() => setPhase("intro")}>
           <Ionicons name="close" size={20} color="#111111" />
         </Pressable>
@@ -233,7 +234,7 @@ export function WalletQrPayScreen({ navigation }: Props) {
   }
 
   return (
-    <View style={[styles.root, { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 16 }]}>
+    <View style={[styles.root, { paddingTop: safeTop(insets.top, 8), paddingBottom: safeBottom(insets.bottom, 16) }]}>
       <View style={styles.payHeader}>
         <Pressable style={styles.backPlain} onPress={() => setPhase("scan")} hitSlop={8}>
           <Ionicons name="chevron-back" size={24} color="#111" />

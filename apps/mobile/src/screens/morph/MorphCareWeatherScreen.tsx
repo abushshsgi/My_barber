@@ -4,7 +4,6 @@ import { Image } from "expo-image";
 import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
-  Modal,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -12,8 +11,10 @@ import {
   Text,
   View,
 } from "react-native";
+import { SafeModal } from "../../components/ui/SafeModal";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { safeBottom, safeTop } from "../../lib/safe-area";
 import { fetchHairCareProfile } from "../../api/care";
 import { weatherIconName, type WeatherDay } from "../../api/weather";
 import { WeatherHeaderCard } from "../../components/morph/care/WeatherHeaderCard";
@@ -135,7 +136,7 @@ export function MorphCareWeatherScreen({ navigation }: Props) {
           />
         }
         contentContainerStyle={{
-          paddingBottom: Math.max(insets.bottom, 24) + 32,
+          paddingBottom: safeBottom(insets.bottom, 32),
         }}
       >
         <WeatherHeaderCard
@@ -429,10 +430,10 @@ export function MorphCareWeatherScreen({ navigation }: Props) {
         ) : null}
       </ScrollView>
 
-      <Modal visible={regionOpen} transparent animationType="slide" onRequestClose={() => setRegionOpen(false)}>
+      <SafeModal visible={regionOpen} transparent animationType="slide" onRequestClose={() => setRegionOpen(false)}>
         <View style={styles.modalRoot}>
           <Pressable style={styles.modalBackdrop} onPress={() => setRegionOpen(false)} />
-          <View style={[styles.modalSheet, { paddingBottom: Math.max(insets.bottom, 16) }]}>
+          <View style={[styles.modalSheet, { paddingBottom: safeBottom(insets.bottom, 0) }]}>
             <View style={styles.modalHandle} />
             <Text style={styles.modalTitle}>
               {t("care.weather.pickRegion", { defaultValue: "Viloyatni tanlang" })}
@@ -471,7 +472,7 @@ export function MorphCareWeatherScreen({ navigation }: Props) {
             </Pressable>
           </View>
         </View>
-      </Modal>
+      </SafeModal>
     </View>
   );
 }

@@ -1,11 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Animated,
   Easing,
-  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -21,6 +19,10 @@ import {
   type SosTime,
   type SosTool,
 } from "../../../api/care";
+import { NativeBackButton } from "../../ui/NativeBackButton";
+import { SafeModal } from "../../ui/SafeModal";
+import { safeBottom } from "../../../lib/safe-area";
+import { colors } from "../../../theme/colors";
 import { morphFont } from "../../../theme/morph-font";
 import { fontSize, moderateScale, scale, verticalScale } from "../../../utils/responsive";
 
@@ -32,12 +34,13 @@ type Props = {
 };
 
 const C = {
-  fg: "#111111",
-  muted: "#737373",
-  soft: "#F5F5F5",
-  line: "rgba(15,23,42,0.08)",
-  coral: "#FF6B57",
-  rose: "#E9527A",
+  fg: colors.fg,
+  muted: colors.muted,
+  bg: colors.bg,
+  card: colors.surface,
+  soft: colors.promo,
+  line: colors.border,
+  warn: "#FF9F0A",
 };
 
 const TIME_OPTS: { value: SosTime; emoji: string; key: string; fallback: string; hintKey: string; hint: string }[] = [
@@ -198,7 +201,7 @@ export function CareSosSheet({ visible, onClose }: Props) {
   const progressStep = phase === "loading" ? 3 : phase === "result" ? 3 : phase;
 
   return (
-    <Modal visible transparent animationType="none" statusBarTranslucent onRequestClose={onClose}>
+    <SafeModal visible transparent animationType="none" onRequestClose={onClose}>
       <View style={styles.root} pointerEvents="box-none">
         <Animated.View style={[StyleSheet.absoluteFill, styles.backdrop, { opacity: backdrop }]}>
           <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
@@ -207,50 +210,43 @@ export function CareSosSheet({ visible, onClose }: Props) {
         <Animated.View
           style={[
             styles.sheet,
-            { paddingBottom: Math.max(insets.bottom, verticalScale(12)), transform: [{ translateY }] },
+            { paddingBottom: safeBottom(insets.bottom, 8), transform: [{ translateY }] },
           ]}
         >
-          <LinearGradient
-            colors={[C.coral, "#FF8A5B", C.rose]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.head}
-          >
-            <View style={styles.headRow}>
-              <View style={styles.headIcon}>
-                <Ionicons name="flash" size={moderateScale(16)} color="#FFFFFF" />
-              </View>
-              <View style={styles.headText}>
-                <Text style={styles.headEyebrow}>SOS</Text>
-                <Text style={styles.headTitle}>
-                  {t("care.sos.sheetTitle", { defaultValue: "Tezkor yechim" })}
-                </Text>
-              </View>
-              <Pressable
-                style={styles.headClose}
-                onPress={onClose}
-                hitSlop={8}
-                accessibilityLabel={t("common.close", { defaultValue: "Yopish" })}
-              >
-                <Ionicons name="close" size={moderateScale(16)} color="#FFFFFF" />
-              </Pressable>
-            </View>
+          <View style={styles.handleWrap}>
+            <View style={styles.handle} />
+          </View>
 
-            {phase !== "result" ? (
-              <View style={styles.progress}>
-                {[1, 2, 3].map((n) => (
-                  <View key={n} style={styles.progressTrack}>
-                    <View
-                      style={[
-                        styles.progressFill,
-                        { width: n <= (progressStep as number) ? "100%" : "0%" },
-                      ]}
-                    />
-                  </View>
-                ))}
-              </View>
-            ) : null}
-          </LinearGradient>
+          <View style={styles.topBar}>
+            <View style={styles.headIcon}>
+              <Ionicons name="flash" size={moderateScale(16)} color={C.fg} />
+            </View>
+            <View style={styles.headText}>
+              <Text style={styles.headEyebrow}>SOS</Text>
+              <Text style={styles.headTitle}>
+                {t("care.sos.sheetTitle", { defaultValue: "Tezkor yechim" })}
+              </Text>
+            </View>
+            <NativeBackButton
+              onPress={onClose}
+              accessibilityLabel={t("common.back", { defaultValue: "Orqaga" })}
+            />
+          </View>
+
+          {phase !== "result" ? (
+            <View style={styles.progress}>
+              {[1, 2, 3].map((n) => (
+                <View key={n} style={styles.progressTrack}>
+                  <View
+                    style={[
+                      styles.progressFill,
+                      { width: n <= (progressStep as number) ? "100%" : "0%" },
+                    ]}
+                  />
+                </View>
+              ))}
+            </View>
+          ) : null}
 
           <ScrollView
             style={styles.scroll}
@@ -261,7 +257,7 @@ export function CareSosSheet({ visible, onClose }: Props) {
             <Animated.View style={stepStyle}>
               {phase === "loading" ? (
                 <View style={styles.loadingWrap}>
-                  <ActivityIndicator size="small" color={C.coral} />
+                  <ActivityIndicator size="small" color={C.fg} />
                   <Text style={styles.loadingText}>
                     {t(`care.sos.${LOADING_KEYS[line]}`, { defaultValue: LOADING_FALLBACKS[line] })}
                   </Text>
@@ -356,18 +352,11 @@ export function CareSosSheet({ visible, onClose }: Props) {
                         else setPhase(((phase as number) + 1) as Phase);
                       }}
                     >
-                      <LinearGradient
-                        colors={canNext ? [C.coral, C.rose] : ["#E5E5E5", "#E5E5E5"]}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 0 }}
-                        style={styles.primaryFill}
-                      >
-                        <Text style={[styles.primaryText, !canNext && styles.primaryTextOff]}>
-                          {phase === 3
-                            ? t("care.sos.generate", { defaultValue: "Yechim topish" })
-                            : t("common.next")}
-                        </Text>
-                      </LinearGradient>
+                      <Text style={[styles.primaryText, !canNext && styles.primaryTextOff]}>
+                        {phase === 3
+                          ? t("care.sos.generate", { defaultValue: "Yechim topish" })
+                          : t("common.next")}
+                      </Text>
                     </Pressable>
                   </View>
                 </>
@@ -393,7 +382,7 @@ export function CareSosSheet({ visible, onClose }: Props) {
           </Animated.View>
         </Animated.View>
       </View>
-    </Modal>
+    </SafeModal>
   );
 }
 
@@ -481,16 +470,9 @@ function ResultBody({
           <Ionicons name="refresh" size={moderateScale(16)} color={C.fg} />
         </Pressable>
         <Pressable style={styles.primaryBtn} onPress={onDone}>
-          <LinearGradient
-            colors={[C.coral, C.rose]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.primaryFill}
-          >
-            <Text style={styles.primaryText}>
-              {t("care.sos.done", { defaultValue: "Bajarildi!" })}
-            </Text>
-          </LinearGradient>
+          <Text style={styles.primaryText}>
+            {t("care.sos.done", { defaultValue: "Bajarildi!" })}
+          </Text>
         </Pressable>
       </View>
     </View>
@@ -499,59 +481,79 @@ function ResultBody({
 
 const styles = StyleSheet.create({
   root: { flex: 1, justifyContent: "flex-end" },
-  backdrop: { backgroundColor: "rgba(8,12,20,0.45)" },
+  backdrop: { backgroundColor: "rgba(8,12,20,0.42)" },
   sheet: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: C.bg,
     borderTopLeftRadius: moderateScale(28),
     borderTopRightRadius: moderateScale(28),
     overflow: "hidden",
     maxHeight: "88%",
   },
-  head: {
-    paddingHorizontal: scale(18),
-    paddingTop: verticalScale(14),
-    paddingBottom: verticalScale(14),
+  handleWrap: { alignItems: "center", paddingTop: verticalScale(8) },
+  handle: {
+    width: scale(42),
+    height: verticalScale(4),
+    borderRadius: 999,
+    backgroundColor: "rgba(17,17,17,0.14)",
   },
-  headRow: { flexDirection: "row", alignItems: "center", gap: moderateScale(10) },
+  topBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: moderateScale(10),
+    paddingHorizontal: scale(18),
+    paddingTop: verticalScale(6),
+    paddingBottom: verticalScale(10),
+  },
   headIcon: {
-    width: moderateScale(32),
-    height: moderateScale(32),
-    borderRadius: moderateScale(16),
-    backgroundColor: "rgba(255,255,255,0.22)",
+    width: moderateScale(34),
+    height: moderateScale(34),
+    borderRadius: moderateScale(17),
+    backgroundColor: C.card,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: C.line,
     alignItems: "center",
     justifyContent: "center",
   },
-  headText: { flex: 1 },
+  headText: { flex: 1, minWidth: 0 },
   headEyebrow: {
     ...morphFont,
     fontSize: fontSize(10),
     fontWeight: "700",
     letterSpacing: 0.6,
-    color: "rgba(255,255,255,0.8)",
+    color: C.warn,
+    textTransform: "uppercase",
   },
   headTitle: {
     ...morphFont,
     fontSize: fontSize(15),
     fontWeight: "800",
-    color: "#FFFFFF",
+    color: C.fg,
+    letterSpacing: -0.2,
   },
   headClose: {
-    width: moderateScale(30),
-    height: moderateScale(30),
-    borderRadius: moderateScale(15),
-    backgroundColor: "rgba(255,255,255,0.18)",
+    width: moderateScale(34),
+    height: moderateScale(34),
+    borderRadius: moderateScale(17),
+    backgroundColor: C.card,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: C.line,
     alignItems: "center",
     justifyContent: "center",
   },
-  progress: { flexDirection: "row", gap: moderateScale(6), marginTop: verticalScale(12) },
+  progress: {
+    flexDirection: "row",
+    gap: moderateScale(6),
+    paddingHorizontal: scale(18),
+    paddingBottom: verticalScale(4),
+  },
   progressTrack: {
     flex: 1,
     height: 3,
     borderRadius: 2,
-    backgroundColor: "rgba(255,255,255,0.28)",
+    backgroundColor: "rgba(17,17,17,0.1)",
     overflow: "hidden",
   },
-  progressFill: { height: "100%", borderRadius: 2, backgroundColor: "#FFFFFF" },
+  progressFill: { height: "100%", borderRadius: 2, backgroundColor: C.fg },
   scroll: { flexGrow: 0 },
   scrollBody: {
     paddingHorizontal: scale(18),
@@ -577,12 +579,14 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: moderateScale(12),
-    backgroundColor: C.soft,
+    backgroundColor: C.card,
     borderRadius: moderateScale(18),
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: C.line,
     paddingHorizontal: scale(14),
     paddingVertical: verticalScale(12),
   },
-  rowOn: { backgroundColor: C.fg },
+  rowOn: { backgroundColor: C.fg, borderColor: C.fg },
   rowEmoji: { fontSize: fontSize(18) },
   rowBody: { flex: 1 },
   rowLabel: { ...morphFont, fontSize: fontSize(14), fontWeight: "700", color: C.fg },
@@ -594,7 +598,7 @@ const styles = StyleSheet.create({
     height: moderateScale(20),
     borderRadius: moderateScale(10),
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(15,23,42,0.18)",
+    borderColor: C.line,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -609,12 +613,14 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: moderateScale(6),
-    backgroundColor: "#F2F2F2",
+    backgroundColor: C.card,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: C.line,
     borderRadius: 999,
     paddingHorizontal: scale(12),
     paddingVertical: verticalScale(9),
   },
-  chipOn: { backgroundColor: C.fg },
+  chipOn: { backgroundColor: C.fg, borderColor: C.fg },
   chipEmoji: { fontSize: fontSize(13) },
   chipText: { ...morphFont, fontSize: fontSize(12), fontWeight: "700", color: "rgba(17,17,17,0.7)" },
   chipTextOn: { color: "#FFFFFF" },
@@ -622,8 +628,10 @@ const styles = StyleSheet.create({
     ...morphFont,
     fontSize: fontSize(12),
     color: "#C2410C",
-    backgroundColor: "#FFF1EE",
+    backgroundColor: "#FFF7ED",
     borderRadius: moderateScale(14),
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(255,159,10,0.25)",
     paddingHorizontal: scale(12),
     paddingVertical: verticalScale(10),
     marginTop: verticalScale(14),
@@ -639,18 +647,21 @@ const styles = StyleSheet.create({
     height: verticalScale(46),
     borderRadius: 999,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(15,23,42,0.14)",
+    borderColor: C.line,
+    backgroundColor: C.card,
     alignItems: "center",
     justifyContent: "center",
   },
   backBtnText: { ...morphFont, fontSize: fontSize(13), fontWeight: "700", color: C.fg },
-  primaryBtn: { flex: 1.7, borderRadius: 999, overflow: "hidden" },
-  primaryBtnOff: { opacity: 0.9 },
-  primaryFill: {
+  primaryBtn: {
+    flex: 1.7,
     height: verticalScale(46),
+    borderRadius: 999,
+    backgroundColor: C.fg,
     alignItems: "center",
     justifyContent: "center",
   },
+  primaryBtnOff: { backgroundColor: C.soft },
   primaryText: { ...morphFont, fontSize: fontSize(13), fontWeight: "800", color: "#FFFFFF" },
   primaryTextOff: { color: "rgba(17,17,17,0.35)" },
   retryBtn: {
@@ -658,7 +669,8 @@ const styles = StyleSheet.create({
     height: verticalScale(46),
     borderRadius: 999,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(15,23,42,0.14)",
+    borderColor: C.line,
+    backgroundColor: C.card,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -696,8 +708,10 @@ const styles = StyleSheet.create({
   stepRow: {
     flexDirection: "row",
     gap: moderateScale(10),
-    backgroundColor: C.soft,
+    backgroundColor: C.card,
     borderRadius: moderateScale(18),
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: C.line,
     paddingHorizontal: scale(14),
     paddingVertical: verticalScale(12),
   },
@@ -719,8 +733,10 @@ const styles = StyleSheet.create({
   },
   styleCard: {
     marginTop: verticalScale(16),
-    backgroundColor: "#FFF3EF",
+    backgroundColor: C.card,
     borderRadius: moderateScale(18),
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: C.line,
     paddingHorizontal: scale(14),
     paddingVertical: verticalScale(12),
   },
@@ -730,7 +746,7 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     letterSpacing: 0.5,
     textTransform: "uppercase",
-    color: C.rose,
+    color: C.muted,
   },
   styleValue: {
     ...morphFont,

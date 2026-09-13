@@ -4,6 +4,7 @@ import { StatusBar } from "expo-status-bar";
 import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { safeBottom, safeTop } from "../../lib/safe-area";
 import { setAppGender, type AppGender } from "../../lib/guest";
 import {
   fontSize,
@@ -30,7 +31,7 @@ export function GenderSelectScreen({ onFinish, onBack }: Props) {
     <View
       style={[
         styles.root,
-        { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 24 },
+        { paddingTop: safeTop(insets.top, 12), paddingBottom: safeBottom(insets.bottom, 24) },
       ]}
     >
       <StatusBar style="dark" />

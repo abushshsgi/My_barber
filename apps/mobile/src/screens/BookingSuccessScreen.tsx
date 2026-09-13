@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { safeBottom, safeTop } from "../lib/safe-area";
 import type { RootStackParamList } from "../navigation/RootNavigator";
 import { colors } from "../theme/colors";
 import {
@@ -18,7 +19,7 @@ export function BookingSuccessScreen({ route, navigation }: Props) {
   const insets = useSafeAreaInsets();
 
   return (
-    <View style={[styles.root, { paddingTop: insets.top + 40, paddingBottom: insets.bottom + 24 }]}>
+    <View style={[styles.root, { paddingTop: safeTop(insets.top, 40), paddingBottom: safeBottom(insets.bottom, 24) }]}>
       <View style={styles.iconWrap}>
         <Ionicons name="checkmark-circle" size={64} color={colors.fg} />
       </View>

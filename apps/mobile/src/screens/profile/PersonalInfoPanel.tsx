@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
-  Modal,
   Platform,
   Pressable,
   StyleSheet,
@@ -10,6 +9,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { SafeModal } from "../../components/ui/SafeModal";
 import { fetchUserAddresses, upsertDefaultAddress, type ApiUserAddress } from "../../api/addresses";
 import { sendEmailVerificationCode, updateMe, verifyEmailCode } from "../../api/user";
 import { useAuth } from "../../auth/AuthContext";
@@ -164,7 +164,7 @@ export function PersonalInfoPanel() {
         </Text>
       </View>
 
-      <Modal visible={edit != null} transparent animationType="fade" onRequestClose={closeEdit}>
+      <SafeModal visible={edit != null} transparent animationType="fade" onRequestClose={closeEdit}>
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : undefined}
           style={styles.modalRoot}
@@ -220,7 +220,7 @@ export function PersonalInfoPanel() {
             </View>
           </View>
         </KeyboardAvoidingView>
-      </Modal>
+      </SafeModal>
     </View>
   );
 }

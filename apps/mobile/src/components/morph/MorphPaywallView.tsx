@@ -1,5 +1,4 @@
 import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -12,6 +11,7 @@ import {
 } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { safeBottom, safeTop } from "../../lib/safe-area";
 import {
   isPlanUpgrade,
   type SubscriptionPlan,
@@ -20,6 +20,8 @@ import { useAuth } from "../../auth/AuthContext";
 import { useSubscriptions } from "../../hooks/useSubscriptions";
 import { pickFeatureLabel, pickPlanName } from "../../lib/plan-labels";
 import type { PaywallReason } from "../../lib/morph-return";
+import { morphFont } from "../../theme/morph-font";
+import { colors } from "../../theme/colors";
 import {
   fontSize,
   moderateScale,
@@ -35,17 +37,11 @@ type Props = {
   onOpenReferral?: () => void;
 };
 
-function planIcon(code: string): keyof typeof Ionicons.glyphMap {
-  if (code === "pro") return "diamond-outline";
-  if (code === "plus") return "flash-outline";
-  return "sparkles-outline";
-}
-
 function pickCards(plans: SubscriptionPlan[]): SubscriptionPlan[] {
   return [...plans].sort((a, b) => a.sort_order - b.sort_order);
 }
 
-function planQuota(
+function planQuotaLine(
   plan: SubscriptionPlan,
   t: (key: string, opts?: Record<string, string | number>) => string,
 ): string {
@@ -113,13 +109,6 @@ export function MorphPaywallView({
           ? "morph.paywall.titleStudio"
           : "morph.paywall.titleSubscribe";
 
-  const taglineKey =
-    selectedPlan?.code === "pro"
-      ? "morph.paywall.taglinePro"
-      : selectedPlan?.code === "plus"
-        ? "morph.paywall.taglinePlus"
-        : "morph.paywall.taglineStarter";
-
   const onBuy = async () => {
     if (!selectedPlan) return;
     if (!isAuthenticated) {
@@ -136,186 +125,199 @@ export function MorphPaywallView({
     setError(res.message);
   };
 
+  const ctaDisabled = Boolean(busyCode) || (!canBuy && isAuthenticated);
+  const bottomPad = Math.max(insets.bottom, 12);
+
   return (
     <View style={styles.root}>
       <StatusBar style="dark" />
-      <LinearGradient
-        colors={["#F6F1EC", "#F3F5FA", "#F8EEE8"]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={StyleSheet.absoluteFill}
-      />
+
+      <View style={[styles.topBar, { paddingTop: safeTop(insets.top, 8) }]}>
+        <View style={styles.topBarSide}>
+          <Pressable
+            onPress={onClose}
+            style={({ pressed }) => [styles.closeBtn, pressed && styles.pressed]}
+            accessibilityRole="button"
+            accessibilityLabel={t("common.back")}
+          >
+            <Ionicons name="close" size={18} color={colors.fg} />
+          </Pressable>
+        </View>
+        <Text style={styles.topTitle} numberOfLines={1}>
+          Morf AI
+        </Text>
+        <View style={styles.topBarSide} />
+      </View>
 
       <ScrollView
-        contentContainerStyle={[
-          styles.body,
-          { paddingTop: insets.top + 8, paddingBottom: Math.max(insets.bottom, 16) + 12 },
-        ]}
+        style={styles.scroll}
+        contentContainerStyle={styles.body}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        <Pressable
-          onPress={onClose}
-          style={({ pressed }) => [styles.closeBtn, pressed && styles.pressed]}
-          accessibilityRole="button"
-          accessibilityLabel={t("common.back")}
-        >
-          <Ionicons name="close" size={18} color="#111111" />
-        </Pressable>
-
         <Text style={styles.title}>{t(titleKey)}</Text>
         <Text style={styles.lead}>{t("morph.paywall.subtitle")}</Text>
-        {refGenOn ? <Text style={styles.orHint}>{t("morph.paywall.orReferral")}</Text> : null}
 
-        {me?.usage && (reason === "limit" || me.has_active) ? (
-          <Text style={styles.usage}>
-            {chatBlocked
-              ? t("morph.paywall.usageChat", {
-                  used: me.usage.morph_chat_tokens_used ?? 0,
-                  limit: me.usage.morph_chat_tokens_limit ?? 0,
-                })
-              : t("morph.paywall.usage", {
-                  used: me.usage.morph_ai_used,
-                  limit: me.usage.morph_ai_limit,
-                })}
-          </Text>
+        {(me?.usage && (reason === "limit" || me.has_active)) || (refGenOn && credits > 0) ? (
+          <View style={styles.metaRow}>
+            {me?.usage && (reason === "limit" || me.has_active) ? (
+              <View style={styles.metaChip}>
+                <Text style={styles.metaChipText}>
+                  {chatBlocked
+                    ? t("morph.paywall.usageChat", {
+                        used: me.usage.morph_chat_tokens_used ?? 0,
+                        limit: me.usage.morph_chat_tokens_limit ?? 0,
+                      })
+                    : t("morph.paywall.usage", {
+                        used: me.usage.morph_ai_used,
+                        limit: me.usage.morph_ai_limit,
+                      })}
+                </Text>
+              </View>
+            ) : null}
+            {refGenOn && credits > 0 ? (
+              <View style={styles.metaChip}>
+                <Text style={styles.metaChipText}>
+                  {t("morph.paywall.credits", { count: credits })}
+                </Text>
+              </View>
+            ) : null}
+          </View>
         ) : null}
-        {refGenOn && credits > 0 ? (
-          <Text style={styles.usage}>
-            {t("morph.paywall.credits", {
-              count: credits,
-            })}
-          </Text>
-        ) : null}
 
-        <View style={styles.planCard}>
-          <Text style={styles.planName}>
-            {selectedPlan ? pickPlanName(selectedPlan, lang) : "Plus"}
-          </Text>
-          <Text style={styles.planTag}>{t(taglineKey)}</Text>
+        {loading && cards.length === 0 ? (
+          <ActivityIndicator color={colors.fg} style={styles.loader} />
+        ) : (
+          <View style={styles.planList}>
+            {cards.map((plan) => {
+              const on = plan.code === selectedPlan?.code;
+              const isCurrent = activeCode === plan.code;
+              const popular = Boolean(plan.highlight) && !isCurrent;
+              const discount = saveOn(plan.code);
 
-          {loading && cards.length === 0 ? (
-            <ActivityIndicator color="#111" style={{ marginVertical: 24 }} />
-          ) : (
-            <View style={styles.billingRow}>
-              {cards.map((plan) => {
-                const on = plan.code === selectedPlan?.code;
-                const current = activeCode === plan.code;
-                const inner = (
-                  <Pressable
-                    onPress={() => setSelected(plan.code)}
-                    style={[styles.billingInner, !on && styles.billingInnerOff]}
-                  >
-                    <View style={styles.billingTop}>
-                      <Ionicons name={planIcon(plan.code)} size={16} color="#111111" />
-                      {saveOn(plan.code) ? (
-                        <View style={styles.saveBadge}>
-                          <Text style={styles.saveText}>
-                            {t("morph.paywall.savePct", { pct: savePct })}
-                          </Text>
-                        </View>
-                      ) : current ? (
-                        <View style={styles.nowBadge}>
-                          <Text style={styles.nowText}>{t("morph.paywall.currentPlan")}</Text>
-                        </View>
-                      ) : null}
+              return (
+                <Pressable
+                  key={plan.code}
+                  onPress={() => setSelected(plan.code)}
+                  style={({ pressed }) => [
+                    styles.planCard,
+                    on && styles.planCardOn,
+                    pressed && styles.pressed,
+                  ]}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected: on }}
+                >
+                  <View style={styles.planLeft}>
+                    <View style={[styles.radio, on && styles.radioOn]}>
+                      {on ? <View style={styles.radioDot} /> : null}
                     </View>
-                    <Text style={styles.cardName}>{pickPlanName(plan, lang)}</Text>
-                    <Text style={styles.price}>
+                    <View style={styles.planCopy}>
+                      <View style={styles.planNameRow}>
+                        <Text style={[styles.planName, on && styles.planNameOn]}>
+                          {pickPlanName(plan, lang)}
+                        </Text>
+                        {popular ? (
+                          <View style={styles.badgeHot}>
+                            <Text style={styles.badgeHotText}>{t("morph.paywall.popular")}</Text>
+                          </View>
+                        ) : null}
+                        {isCurrent ? (
+                          <View style={styles.badgeNow}>
+                            <Text style={styles.badgeNowText}>
+                              {t("morph.paywall.currentPlan")}
+                            </Text>
+                          </View>
+                        ) : null}
+                        {discount ? (
+                          <View style={styles.badgeSave}>
+                            <Text style={styles.badgeSaveText}>
+                              {t("morph.paywall.savePct", { pct: savePct })}
+                            </Text>
+                          </View>
+                        ) : null}
+                      </View>
+                      <Text style={styles.planQuota} numberOfLines={2}>
+                        {planQuotaLine(plan, t)}
+                      </Text>
+                    </View>
+                  </View>
+                  <View style={styles.planPriceCol}>
+                    <Text style={[styles.planPrice, on && styles.planPriceOn]}>
                       {plan.price_uzs.toLocaleString(numberLocale)}
                     </Text>
-                    <Text style={styles.priceUnit}>
+                    <Text style={styles.planUnit}>
                       {t("morph.paywall.currencyShort")}/{t("morph.paywall.monthShort")}
                     </Text>
-                    <Text style={styles.billed}>{t("morph.paywall.billedMonthly")}</Text>
-                    <Text style={styles.quota}>{planQuota(plan, t)}</Text>
-                  </Pressable>
-                );
-
-                if (on) {
-                  return (
-                    <LinearGradient
-                      key={plan.code}
-                      colors={["#6EA8FF", "#FF9A56"]}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 1 }}
-                      style={styles.billingWrapOn}
-                    >
-                      {inner}
-                    </LinearGradient>
-                  );
-                }
-                return (
-                  <View key={plan.code} style={styles.billingWrapOff}>
-                    {inner}
                   </View>
-                );
-              })}
-            </View>
-          )}
-        </View>
+                </Pressable>
+              );
+            })}
+          </View>
+        )}
 
-        <View style={styles.featCard}>
-          <Text style={styles.featTitle}>{t("morph.paywall.featuresTitle")}</Text>
-          {(features.length
-            ? features
-            : [{ key: "ai", label_uz: t("morph.paywall.fallbackFeature") }]
-          ).map((item) => (
-              <View key={item.key} style={styles.featRow}>
-                <View style={styles.check}>
-                  <Ionicons name="checkmark" size={12} color="#FFFFFF" />
+        {selectedPlan ? (
+          <View style={styles.featCard}>
+            <Text style={styles.featTitle}>{t("morph.paywall.featuresTitle")}</Text>
+            <Text style={styles.featSub}>{t("morph.paywall.billedMonthly")}</Text>
+            <View style={styles.featList}>
+              {(features.length
+                ? features
+                : [{ key: "ai", label_uz: t("morph.paywall.fallbackFeature") }]
+              ).map((item) => (
+                <View key={item.key} style={styles.featRow}>
+                  <Ionicons name="checkmark-circle" size={18} color={colors.fg} />
+                  <Text style={styles.featText}>{pickFeatureLabel(item, lang)}</Text>
                 </View>
-                <Text style={styles.featText}>{pickFeatureLabel(item, lang)}</Text>
-              </View>
-            ))}
+              ))}
+            </View>
+          </View>
+        ) : null}
 
-          {error ? <Text style={styles.error}>{error}</Text> : null}
+        {error ? <Text style={styles.error}>{error}</Text> : null}
+        {!canBuy && selectedPlan && activeCode === selectedPlan.code && reason === "limit" ? (
+          <Text style={styles.maxHint}>{t("morph.paywall.maxPlanLimit")}</Text>
+        ) : null}
 
-          {!canBuy && selectedPlan && activeCode === selectedPlan.code && reason === "limit" ? (
-            <Text style={styles.maxHint}>{t("morph.paywall.maxPlanLimit")}</Text>
-          ) : null}
+        {refGenOn ? <Text style={styles.orHint}>{t("morph.paywall.orReferral")}</Text> : null}
+      </ScrollView>
 
+      <View style={[styles.sticky, { paddingBottom: bottomPad }]}>
+        <Pressable
+          onPress={() => void onBuy()}
+          disabled={ctaDisabled}
+          style={({ pressed }) => [
+            styles.cta,
+            ctaDisabled && styles.ctaOff,
+            pressed && !ctaDisabled && styles.pressed,
+          ]}
+          accessibilityRole="button"
+        >
+          {busyCode ? (
+            <ActivityIndicator color="#FFFFFF" />
+          ) : (
+            <>
+              <Text style={styles.ctaText}>
+                {isAuthenticated
+                  ? t("morph.paywall.cta", {
+                      plan: selectedPlan ? pickPlanName(selectedPlan, lang) : "Plus",
+                    })
+                  : t("morph.paywall.ctaLogin")}
+              </Text>
+              <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />
+            </>
+          )}
+        </Pressable>
+
+        {refGenOn && onOpenReferral ? (
           <Pressable
-            onPress={() => void onBuy()}
-            disabled={Boolean(busyCode) || (!canBuy && isAuthenticated)}
-            style={({ pressed }) => [pressed && styles.pressed, { marginTop: 14 }]}
+            onPress={onOpenReferral}
+            style={({ pressed }) => [styles.referralBtn, pressed && styles.pressed]}
             accessibilityRole="button"
           >
-            <LinearGradient
-              colors={["#5B9DFF", "#FF8A3D"]}
-              start={{ x: 0, y: 0.5 }}
-              end={{ x: 1, y: 0.5 }}
-              style={[
-                styles.cta,
-                ((!canBuy && isAuthenticated) || busyCode) && styles.ctaOff,
-              ]}
-            >
-              {busyCode ? (
-                <ActivityIndicator color="#FFFFFF" />
-              ) : (
-                <Text style={styles.ctaText}>
-                  {isAuthenticated
-                    ? t("morph.paywall.cta", {
-                        plan: selectedPlan ? pickPlanName(selectedPlan, lang) : "Plus",
-                      })
-                    : t("morph.paywall.ctaLogin")}
-                </Text>
-              )}
-            </LinearGradient>
+            <Text style={styles.referralText}>{t("morph.paywall.referralCta")}</Text>
           </Pressable>
-
-          {refGenOn && onOpenReferral ? (
-            <Pressable
-              onPress={onOpenReferral}
-              style={({ pressed }) => [styles.referralBtn, pressed && styles.pressed]}
-              accessibilityRole="button"
-            >
-              <Ionicons name="people-outline" size={16} color="#111111" />
-              <Text style={styles.referralText}>{t("morph.paywall.referralCta")}</Text>
-            </Pressable>
-          ) : null}
-        </View>
-      </ScrollView>
+        ) : null}
+      </View>
     </View>
   );
 }
@@ -323,235 +325,319 @@ export function MorphPaywallView({
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: "#F5F4F2",
+    backgroundColor: "#FAFAFA",
   },
-  body: {
-    paddingHorizontal: scale(20),
+  topBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: scale(16),
+    paddingBottom: verticalScale(6),
+  },
+  topBarSide: {
+    width: scale(40),
+  },
+  topTitle: {
+    ...morphFont,
+    flex: 1,
+    textAlign: "center",
+    fontSize: fontSize(15),
+    fontWeight: "700",
+    color: colors.fg,
+    letterSpacing: -0.2,
   },
   closeBtn: {
-    width: scale(36),
-    height: scale(36),
-    borderRadius: moderateScale(18),
-    backgroundColor: "rgba(0,0,0,0.08)",
+    width: scale(40),
+    height: scale(40),
+    borderRadius: moderateScale(20),
+    backgroundColor: "#FFFFFF",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(17,17,17,0.12)",
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: verticalScale(18),
   },
   pressed: {
     opacity: 0.82,
   },
+  scroll: {
+    flex: 1,
+  },
+  body: {
+    paddingHorizontal: scale(18),
+    paddingBottom: verticalScale(28),
+  },
   title: {
-    fontSize: fontSize(22),
-    lineHeight: fontSize(28),
+    ...morphFont,
+    marginTop: verticalScale(8),
+    fontSize: fontSize(28),
+    lineHeight: fontSize(34),
     fontWeight: "800",
-    color: "#111111",
-    letterSpacing: -0.6,
-    textAlign: "center",
+    color: colors.fg,
+    letterSpacing: -0.8,
   },
   lead: {
-    marginTop: verticalScale(6),
-    fontSize: fontSize(13),
-    lineHeight: fontSize(18),
-    color: "#8A8A8E",
-    textAlign: "center",
+    ...morphFont,
+    marginTop: verticalScale(8),
+    fontSize: fontSize(14),
+    lineHeight: fontSize(20),
+    color: colors.muted,
   },
   orHint: {
-    marginTop: verticalScale(8),
-    fontSize: fontSize(12),
-    fontWeight: "600",
-    color: "#52525B",
+    ...morphFont,
+    marginTop: verticalScale(18),
     textAlign: "center",
+    fontSize: fontSize(12),
+    lineHeight: fontSize(17),
+    fontWeight: "600",
+    color: colors.muted,
   },
-  usage: {
-    marginTop: verticalScale(8),
+  metaRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: moderateScale(8),
+    marginTop: verticalScale(14),
+  },
+  metaChip: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: moderateScale(999),
+    paddingHorizontal: scale(12),
+    paddingVertical: verticalScale(6),
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(17,17,17,0.12)",
+  },
+  metaChipText: {
+    ...morphFont,
     fontSize: fontSize(12),
-    color: "#6B6B70",
-    textAlign: "center",
     fontWeight: "600",
+    color: colors.fg,
+  },
+  loader: {
+    marginTop: verticalScale(48),
+  },
+  planList: {
+    marginTop: verticalScale(20),
+    gap: moderateScale(10),
   },
   planCard: {
-    marginTop: verticalScale(16),
-    backgroundColor: "#FFFFFF",
-    borderRadius: moderateScale(20),
-    padding: moderateScale(14),
-  },
-  planName: {
-    fontSize: fontSize(18),
-    fontWeight: "800",
-    color: "#111111",
-    letterSpacing: -0.3,
-  },
-  planTag: {
-    marginTop: verticalScale(2),
-    fontSize: fontSize(12),
-    color: "#8A8A8E",
-  },
-  billingRow: {
-    flexDirection: "row",
-    gap: moderateScale(8),
-    marginTop: verticalScale(16),
-  },
-  billingWrapOn: {
-    flex: 1,
-    minWidth: 0,
-    borderRadius: moderateScale(16),
-    padding: moderateScale(2),
-  },
-  billingWrapOff: {
-    flex: 1,
-    minWidth: 0,
-    borderRadius: moderateScale(16),
-    backgroundColor: "#F2F2F4",
-    padding: moderateScale(2),
-  },
-  billingInner: {
-    borderRadius: moderateScale(14),
-    backgroundColor: "#FFFFFF",
-    paddingHorizontal: scale(8),
-    paddingVertical: verticalScale(10),
-    minHeight: verticalScale(168),
-  },
-  billingInnerOff: {
-    backgroundColor: "transparent",
-  },
-  billingTop: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    minHeight: verticalScale(22),
+    gap: moderateScale(12),
+    backgroundColor: "#FFFFFF",
+    borderRadius: moderateScale(18),
+    paddingHorizontal: scale(14),
+    paddingVertical: verticalScale(14),
+    borderWidth: 1.5,
+    borderColor: "rgba(17,17,17,0.1)",
   },
-  saveBadge: {
-    backgroundColor: "#FDE7D2",
-    borderRadius: 999,
-    paddingHorizontal: scale(8),
-    paddingVertical: verticalScale(3),
+  planCardOn: {
+    borderColor: "#111111",
+    backgroundColor: "#FFFFFF",
+    shadowColor: "#000",
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
   },
-  saveText: {
-    fontSize: fontSize(10),
+  planLeft: {
+    flex: 1,
+    minWidth: 0,
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: moderateScale(12),
+  },
+  radio: {
+    width: scale(22),
+    height: scale(22),
+    borderRadius: scale(11),
+    borderWidth: 1.5,
+    borderColor: "rgba(17,17,17,0.25)",
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: verticalScale(2),
+  },
+  radioOn: {
+    borderColor: "#111111",
+  },
+  radioDot: {
+    width: scale(12),
+    height: scale(12),
+    borderRadius: scale(6),
+    backgroundColor: "#111111",
+  },
+  planCopy: {
+    flex: 1,
+    minWidth: 0,
+    gap: moderateScale(4),
+  },
+  planNameRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "center",
+    gap: moderateScale(6),
+  },
+  planName: {
+    ...morphFont,
+    fontSize: fontSize(16),
     fontWeight: "700",
-    color: "#C2410C",
+    color: colors.fg,
+    letterSpacing: -0.3,
   },
-  nowBadge: {
-    backgroundColor: "#E5E5EA",
-    borderRadius: 999,
-    paddingHorizontal: scale(8),
-    paddingVertical: verticalScale(3),
+  planNameOn: {
+    fontWeight: "800",
   },
-  nowText: {
-    fontSize: fontSize(10),
-    fontWeight: "700",
-    color: "#3F3F46",
-  },
-  cardName: {
-    marginTop: verticalScale(8),
+  planQuota: {
+    ...morphFont,
     fontSize: fontSize(12),
-    fontWeight: "800",
-    color: "#111111",
+    lineHeight: fontSize(16),
+    color: colors.muted,
   },
-  price: {
-    marginTop: verticalScale(8),
-    fontSize: fontSize(15),
+  planPriceCol: {
+    alignItems: "flex-end",
+  },
+  planPrice: {
+    ...morphFont,
+    fontSize: fontSize(16),
     fontWeight: "800",
-    color: "#111111",
+    color: colors.fg,
     letterSpacing: -0.4,
   },
-  priceUnit: {
+  planPriceOn: {
+    fontSize: fontSize(17),
+  },
+  planUnit: {
+    ...morphFont,
     marginTop: verticalScale(2),
     fontSize: fontSize(11),
     fontWeight: "600",
-    color: "#8A8A8E",
+    color: colors.muted,
   },
-  billed: {
-    marginTop: verticalScale(4),
-    fontSize: fontSize(11),
-    color: "#8A8A8E",
+  badgeHot: {
+    backgroundColor: "#111111",
+    borderRadius: moderateScale(6),
+    paddingHorizontal: scale(7),
+    paddingVertical: verticalScale(3),
   },
-  quota: {
-    marginTop: verticalScale(8),
+  badgeHotText: {
+    ...morphFont,
     fontSize: fontSize(10),
-    lineHeight: fontSize(13),
-    fontWeight: "600",
-    color: "#52525B",
+    fontWeight: "800",
+    color: "#FFFFFF",
+  },
+  badgeNow: {
+    backgroundColor: "#F4F4F5",
+    borderRadius: moderateScale(6),
+    paddingHorizontal: scale(7),
+    paddingVertical: verticalScale(3),
+  },
+  badgeNowText: {
+    ...morphFont,
+    fontSize: fontSize(10),
+    fontWeight: "700",
+    color: colors.fg,
+  },
+  badgeSave: {
+    backgroundColor: "#F5E6D8",
+    borderRadius: moderateScale(6),
+    paddingHorizontal: scale(7),
+    paddingVertical: verticalScale(3),
+  },
+  badgeSaveText: {
+    ...morphFont,
+    fontSize: fontSize(10),
+    fontWeight: "800",
+    color: "#9A5220",
   },
   featCard: {
-    marginTop: verticalScale(12),
+    marginTop: verticalScale(18),
     backgroundColor: "#FFFFFF",
-    borderRadius: moderateScale(20),
-    padding: moderateScale(14),
+    borderRadius: moderateScale(18),
+    paddingHorizontal: scale(16),
+    paddingVertical: verticalScale(16),
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(17,17,17,0.1)",
   },
   featTitle: {
+    ...morphFont,
     fontSize: fontSize(15),
     fontWeight: "800",
-    color: "#111111",
-    marginBottom: verticalScale(10),
+    color: colors.fg,
     letterSpacing: -0.2,
+  },
+  featSub: {
+    ...morphFont,
+    marginTop: verticalScale(4),
+    marginBottom: verticalScale(12),
+    fontSize: fontSize(12),
+    color: colors.muted,
+  },
+  featList: {
+    gap: moderateScale(10),
   },
   featRow: {
     flexDirection: "row",
     alignItems: "flex-start",
-    gap: moderateScale(8),
-    marginBottom: verticalScale(8),
-  },
-  check: {
-    width: scale(18),
-    height: scale(18),
-    borderRadius: moderateScale(9),
-    backgroundColor: "#111111",
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 1,
+    gap: moderateScale(10),
   },
   featText: {
+    ...morphFont,
     flex: 1,
-    fontSize: fontSize(13),
-    lineHeight: fontSize(18),
-    color: "#1F1F1F",
+    fontSize: fontSize(14),
+    lineHeight: fontSize(20),
+    color: colors.fg,
   },
   error: {
-    marginTop: verticalScale(4),
-    marginBottom: verticalScale(4),
+    ...morphFont,
+    marginTop: verticalScale(14),
     fontSize: fontSize(12),
     lineHeight: fontSize(16),
     color: "#B91C1C",
   },
   maxHint: {
-    marginTop: verticalScale(4),
+    ...morphFont,
+    marginTop: verticalScale(12),
     fontSize: fontSize(12),
     lineHeight: fontSize(16),
-    color: "#8A8A8E",
+    color: colors.muted,
+  },
+  sticky: {
+    paddingHorizontal: scale(18),
+    paddingTop: verticalScale(12),
+    backgroundColor: "#FAFAFA",
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: "rgba(17,17,17,0.08)",
+    gap: moderateScale(8),
   },
   cta: {
-    minHeight: verticalScale(48),
-    borderRadius: 999,
+    minHeight: verticalScale(52),
+    borderRadius: moderateScale(16),
     alignItems: "center",
     justifyContent: "center",
+    flexDirection: "row",
+    gap: moderateScale(8),
     paddingHorizontal: scale(16),
+    backgroundColor: "#111111",
   },
   ctaOff: {
-    opacity: 0.45,
+    opacity: 0.4,
   },
   ctaText: {
+    ...morphFont,
     color: "#FFFFFF",
-    fontSize: fontSize(14),
+    fontSize: fontSize(15),
     fontWeight: "800",
     letterSpacing: -0.2,
   },
   referralBtn: {
-    marginTop: verticalScale(10),
     minHeight: verticalScale(44),
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: "#E4E4E7",
-    backgroundColor: "#FAFAFA",
-    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: moderateScale(8),
     paddingHorizontal: scale(14),
   },
   referralText: {
-    fontSize: fontSize(13),
+    ...morphFont,
+    fontSize: fontSize(14),
     fontWeight: "700",
-    color: "#111111",
+    color: colors.fg,
+    textDecorationLine: "underline",
   },
 });

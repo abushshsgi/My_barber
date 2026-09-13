@@ -23,6 +23,7 @@ import Animated, {
   withSpring,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { safeBottom, safeTop } from "../lib/safe-area";
 import { updateMe } from "../api/user";
 import { useAuth } from "../auth/AuthContext";
 import { getAppGender, getGuestLocation } from "../lib/guest";
@@ -32,6 +33,7 @@ import {
   validateDisplayName,
   type DisplayNameErrorKey,
 } from "../lib/validate-display-name";
+import { colors } from "../theme/colors";
 import {
   fontSize,
   moderateScale,
@@ -71,7 +73,7 @@ function splitPrefillName(user: {
 }
 
 /**
- * Login dan keyin — ism, familiya, yosh. Minimal Morph B&W.
+ * Login dan keyin — ism, familiya, yosh. Soft Paper onboarding.
  */
 export function OnboardingScreen({ onComplete }: { onComplete?: () => void }) {
   const insets = useSafeAreaInsets();
@@ -194,7 +196,7 @@ export function OnboardingScreen({ onComplete }: { onComplete?: () => void }) {
 
   return (
     <KeyboardAvoidingView
-      style={[styles.root, { paddingTop: insets.top + 8 }]}
+      style={[styles.root, { paddingTop: safeTop(insets.top, 12) }]}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <ScrollView
@@ -202,22 +204,35 @@ export function OnboardingScreen({ onComplete }: { onComplete?: () => void }) {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[
           styles.scroll,
-          { paddingBottom: Math.max(insets.bottom, 16) + 28 },
+          { paddingBottom: safeBottom(insets.bottom, 32) },
         ]}
       >
-        <View style={styles.progressRow}>
-          {[0, 1, 2].map((i) => (
-            <View
-              key={i}
-              style={[styles.progressSeg, i < filledCount && styles.progressSegOn]}
-            />
-          ))}
-        </View>
+        <View style={styles.header}>
+          <View style={styles.progressRow}>
+            {[0, 1, 2].map((i) => {
+              const on = i < filledCount;
+              const current = i === filledCount;
+              return (
+                <View
+                  key={i}
+                  style={[
+                    styles.progressSeg,
+                    on && styles.progressSegOn,
+                    current && styles.progressSegCurrent,
+                  ]}
+                />
+              );
+            })}
+          </View>
+          <Text style={styles.stepHint}>
+            {filledCount}/3 to'ldirildi
+          </Text>
 
-        <Text style={styles.title}>Ismingizni{"\n"}kiriting</Text>
-        <Text style={styles.sub}>
-          MySaloon va Morf AI uchun bitta profil.
-        </Text>
+          <Text style={styles.title}>Ismingizni{"\n"}kiriting</Text>
+          <Text style={styles.sub}>
+            MySaloon va Morf AI uchun bitta profil.
+          </Text>
+        </View>
 
         <View style={styles.card}>
           <Field
@@ -261,27 +276,35 @@ export function OnboardingScreen({ onComplete }: { onComplete?: () => void }) {
 
         {nameError || ageError || error ? (
           <View style={styles.errorRow}>
-            <Ionicons name="alert-circle" size={14} color="#FF3B30" />
+            <Ionicons name="alert-circle" size={15} color="#FF3B30" />
             <Text style={styles.fieldError}>{nameError || ageError || error}</Text>
           </View>
-        ) : null}
+        ) : (
+          <Text style={styles.helper}>Ism, familiya va yoshni kiriting.</Text>
+        )}
 
-        <Animated.View style={ctaAnimStyle}>
-          <Pressable
-            style={[styles.primary, !canSubmit && styles.disabled]}
-            onPress={() => void finish()}
-            disabled={saving}
-            accessibilityRole="button"
-            accessibilityLabel="Davom etish"
-          >
-            <Text style={styles.primaryText}>Davom etish</Text>
-            <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />
-          </Pressable>
-        </Animated.View>
+        <View style={styles.footer}>
+          <Animated.View style={ctaAnimStyle}>
+            <Pressable
+              style={({ pressed }) => [
+                styles.primary,
+                !canSubmit && styles.disabled,
+                pressed && canSubmit && styles.pressed,
+              ]}
+              onPress={() => void finish()}
+              disabled={saving}
+              accessibilityRole="button"
+              accessibilityLabel="Davom etish"
+            >
+              <Text style={styles.primaryText}>Davom etish</Text>
+              <Ionicons name="arrow-forward" size={18} color={colors.surface} />
+            </Pressable>
+          </Animated.View>
 
-        <Text style={styles.foot}>
-          Keyin try-on va bronlarga shu akkaunt bilan kirasiz.
-        </Text>
+          <Text style={styles.foot}>
+            Keyin try-on va bronlarga shu akkaunt bilan kirasiz.
+          </Text>
+        </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -314,12 +337,14 @@ function Field({
 }) {
   return (
     <View style={[styles.field, active && styles.fieldActive]}>
-      <Text style={styles.fieldLabel}>{label}</Text>
+      <Text style={[styles.fieldLabel, active && styles.fieldLabelActive]}>
+        {label}
+      </Text>
       <TextInput
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
-        placeholderTextColor="#A3A3A3"
+        placeholderTextColor={colors.muted}
         autoComplete={autoComplete}
         autoFocus={autoFocus}
         keyboardType={keyboardType}
@@ -328,6 +353,7 @@ function Field({
         onBlur={onBlur}
         style={styles.input}
         underlineColorAndroid="transparent"
+        selectionColor={colors.fg}
         {...(Platform.OS === "android"
           ? { includeFontPadding: false, textAlignVertical: "center" as const }
           : null)}
@@ -339,14 +365,14 @@ function Field({
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: "#FAFAFA",
+    backgroundColor: colors.bg,
   },
   center: {
     alignItems: "center",
     justifyContent: "center",
   },
   saving: {
-    color: "#111111",
+    color: colors.fg,
     fontSize: fontSize(15),
     fontWeight: "600",
   },
@@ -355,68 +381,99 @@ const styles = StyleSheet.create({
     paddingHorizontal: scale(24),
     justifyContent: "center",
   },
+  header: {
+    marginBottom: verticalScale(8),
+  },
   progressRow: {
     flexDirection: "row",
-    gap: moderateScale(6),
-    marginBottom: verticalScale(28),
+    alignItems: "center",
+    gap: moderateScale(8),
+    marginBottom: verticalScale(10),
   },
   progressSeg: {
     flex: 1,
-    height: verticalScale(3),
-    borderRadius: moderateScale(2),
-    backgroundColor: "#E5E5E5",
+    height: verticalScale(4),
+    borderRadius: moderateScale(999),
+    backgroundColor: colors.promo,
   },
   progressSegOn: {
-    backgroundColor: "#111111",
+    backgroundColor: colors.fg,
+  },
+  progressSegCurrent: {
+    backgroundColor: colors.fg,
+    opacity: 0.35,
+  },
+  stepHint: {
+    fontSize: fontSize(12),
+    fontWeight: "600",
+    color: colors.muted,
+    letterSpacing: 0.2,
+    marginBottom: verticalScale(22),
   },
   title: {
-    fontSize: fontSize(32),
-    lineHeight: fontSize(38),
+    fontSize: fontSize(34),
+    lineHeight: fontSize(40),
     fontWeight: "800",
-    color: "#111111",
-    letterSpacing: -1,
+    color: colors.fg,
+    letterSpacing: -1.2,
     marginBottom: verticalScale(10),
   },
   sub: {
     fontSize: fontSize(15),
     lineHeight: fontSize(22),
-    color: "#737373",
+    color: colors.muted,
     marginBottom: verticalScale(28),
+    maxWidth: scale(300),
   },
   card: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: moderateScale(20),
+    backgroundColor: colors.surface,
+    borderRadius: moderateScale(24),
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(17,17,17,0.1)",
+    borderColor: colors.border,
     overflow: "hidden",
+    shadowColor: colors.fg,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.04,
+    shadowRadius: 20,
+    elevation: 2,
   },
   field: {
-    paddingHorizontal: scale(16),
-    paddingTop: verticalScale(12),
-    paddingBottom: verticalScale(10),
+    paddingHorizontal: scale(18),
+    paddingTop: verticalScale(14),
+    paddingBottom: verticalScale(12),
   },
   fieldActive: {
-    backgroundColor: "#F7F7F7",
+    backgroundColor: colors.promo,
   },
   fieldLabel: {
-    fontSize: fontSize(12),
+    fontSize: fontSize(11),
     fontWeight: "700",
-    color: "#737373",
-    letterSpacing: 0.2,
-    marginBottom: verticalScale(4),
+    color: colors.muted,
+    letterSpacing: 0.8,
+    marginBottom: verticalScale(6),
     textTransform: "uppercase",
   },
+  fieldLabelActive: {
+    color: colors.fg,
+  },
   input: {
-    fontSize: fontSize(18),
+    fontSize: fontSize(19),
     fontWeight: "700",
-    color: "#111111",
-    letterSpacing: -0.3,
+    color: colors.fg,
+    letterSpacing: -0.4,
     paddingVertical: Platform.OS === "android" ? verticalScale(4) : verticalScale(2),
   },
   divider: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: "rgba(17,17,17,0.08)",
-    marginLeft: scale(16),
+    backgroundColor: colors.border,
+    marginLeft: scale(18),
+  },
+  helper: {
+    marginTop: verticalScale(14),
+    paddingHorizontal: scale(2),
+    fontSize: fontSize(13),
+    lineHeight: fontSize(18),
+    color: colors.muted,
   },
   errorRow: {
     flexDirection: "row",
@@ -432,30 +489,38 @@ const styles = StyleSheet.create({
     color: "#FF3B30",
     fontWeight: "600",
   },
-  primary: {
+  footer: {
     marginTop: verticalScale(28),
-    minHeight: verticalScale(54),
-    borderRadius: moderateScale(16),
-    backgroundColor: "#111111",
-    paddingHorizontal: scale(20),
+  },
+  primary: {
+    minHeight: verticalScale(56),
+    borderRadius: moderateScale(28),
+    backgroundColor: colors.fg,
+    paddingHorizontal: scale(22),
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: moderateScale(8),
   },
   primaryText: {
-    color: "#FFFFFF",
+    color: colors.surface,
     fontSize: fontSize(16),
     fontWeight: "800",
+    letterSpacing: -0.2,
   },
   disabled: {
     opacity: 0.4,
   },
+  pressed: {
+    opacity: 0.88,
+    transform: [{ scale: 0.985 }],
+  },
   foot: {
-    marginTop: verticalScale(18),
+    marginTop: verticalScale(16),
     textAlign: "center",
     fontSize: fontSize(12),
     lineHeight: fontSize(18),
-    color: "#A3A3A3",
+    color: colors.muted,
+    paddingHorizontal: scale(8),
   },
 });

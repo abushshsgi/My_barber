@@ -13,9 +13,11 @@ import {
 } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { safeBottom, safeTop } from "../../lib/safe-area";
 import type { MorphAiPrivacyDataCounts, MorphChatLimits } from "../../api/ai";
 import { UsageBar, UsageMeter } from "../../components/morph/UsageMeter";
 import { TelegramAppearancePanel } from "../../components/morph/TelegramAppearancePanel";
+import { NativeBackButton, NativeBackSpacer } from "../../components/ui/NativeBackButton";
 import {
   deleteMorphAiPrivacyData,
   fetchMorphAiPrivacy,
@@ -635,34 +637,29 @@ export function MorphChatSettingsScreen({
   };
 
   return (
-    <View style={[styles.root, { paddingTop: Math.max(insets.top, 8), backgroundColor: pal.bg }]}>
+    <View style={[styles.root, { paddingTop: safeTop(insets.top, 0), backgroundColor: pal.bg }]}>
       <StatusBar style={pal.status} />
 
       {page === "hub" ? (
         <View style={styles.hubTop}>
+          <NativeBackButton
+            onPress={onClose}
+            accessibilityLabel={t("chat.errorDismissA11y")}
+          />
           <View style={styles.hubTopSpacer} />
-          <CloseButton onPress={onClose} label={t("chat.errorDismissA11y")} />
         </View>
       ) : (
         <View style={styles.subTop}>
-          <Pressable
-            onPress={onBack}
-            hitSlop={10}
-            accessibilityRole="button"
-            accessibilityLabel={t("common.back")}
-            style={({ pressed }) => [styles.backBtn, pressed && styles.pressed]}
-          >
-            <Ionicons name="chevron-back" size={20} color={pal.fg} />
-          </Pressable>
+          <NativeBackButton onPress={onBack} accessibilityLabel={t("common.back")} />
           <Text style={[styles.subTitle, { color: pal.fg, fontSize: fs(15) }]} numberOfLines={1}>
             {pageTitle}
           </Text>
-          <CloseButton onPress={onClose} label={t("chat.errorDismissA11y")} />
+          <NativeBackSpacer />
         </View>
       )}
 
       {page === "ticket" && ticketId ? (
-        <View style={[styles.content, { flex: 1, paddingBottom: Math.max(insets.bottom, 12) }]}>
+        <View style={[styles.content, { flex: 1, paddingBottom: safeBottom(insets.bottom, 0) }]}>
           <MorphTicketThreadView ticketId={ticketId} />
         </View>
       ) : page === "appearance" ? (
@@ -671,7 +668,7 @@ export function MorphChatSettingsScreen({
       <ScrollView
         contentContainerStyle={[
           styles.content,
-          { paddingBottom: Math.max(insets.bottom, 28) },
+          { paddingBottom: safeBottom(insets.bottom, 0) },
         ]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
@@ -1111,7 +1108,7 @@ const styles = StyleSheet.create({
   hubTop: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "flex-end",
+    justifyContent: "flex-start",
     paddingHorizontal: scale(16),
     paddingBottom: verticalScale(4),
     minHeight: verticalScale(44),

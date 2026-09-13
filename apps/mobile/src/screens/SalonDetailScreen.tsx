@@ -12,6 +12,7 @@ import {
   useWindowDimensions,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { safeBottom, safeTop } from "../lib/safe-area";
 import { ResponsiveImage } from "../components/ResponsiveImage";
 import { NativeBackButton } from "../components/ui/NativeBackButton";
 import { useSalonDetail } from "../hooks/useSalonDetail";
@@ -68,7 +69,7 @@ export function SalonDetailScreen({ route, navigation }: Props) {
     <View style={styles.root}>
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: insets.bottom + 96 }}
+        contentContainerStyle={{ paddingBottom: safeBottom(insets.bottom, 96) }}
       >
         <View style={styles.heroWrap}>
           {images.length > 0 ? (
@@ -94,7 +95,7 @@ export function SalonDetailScreen({ route, navigation }: Props) {
             <View style={[styles.heroPlaceholder, { width, height: width * 0.72 }]} />
           )}
 
-          <View style={[styles.heroChrome, { paddingTop: Math.max(insets.top, 10) }]}>
+          <View style={[styles.heroChrome, { paddingTop: safeTop(insets.top, 0) }]}>
             <NativeBackButton onPress={() => navigation.goBack()} />
             <View style={styles.heroActions}>
               <Pressable style={styles.glassBtn} accessibilityLabel="Ulashish">
@@ -247,7 +248,7 @@ export function SalonDetailScreen({ route, navigation }: Props) {
         </View>
       </ScrollView>
 
-      <View style={[styles.ctaBar, { paddingBottom: Math.max(insets.bottom, 12) }]}>
+      <View style={[styles.ctaBar, { paddingBottom: safeBottom(insets.bottom, 0) }]}>
         <Pressable style={styles.ctaBtn} onPress={onBook}>
           <Text style={[styles.ctaText, { fontSize: fs(15) }]}>Boshlash</Text>
         </Pressable>

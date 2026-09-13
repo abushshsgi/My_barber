@@ -12,10 +12,10 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colors } from "../../theme/colors";
 import { H_PADDING, TAB_DOCK_CLEARANCE, spacing } from "../../utils/responsive";
-import { AppStatusBar, safeTop } from "../ui/AppStatusBar";
+import { AppStatusBar, safeBottom, safeTop } from "../ui/AppStatusBar";
 
 /** Home indicator bo'lmagan Android'da ham minimal pastki chekka. */
-const MIN_BOTTOM_PAD = 10;
+const MIN_BOTTOM_PAD = 16;
 
 export type ScreenWrapperProps = {
   children: ReactNode;
@@ -92,11 +92,11 @@ export function ScreenWrapper({
   const frame = useMemo(() => {
     const dock = withTabDock ? TAB_DOCK_CLEARANCE : 0;
     const top = applyTop ? safeTop(insets.top) : 0;
-    const safeBottom = applyBottom ? Math.max(insets.bottom, MIN_BOTTOM_PAD) : 0;
+    const bottom = applyBottom ? safeBottom(insets.bottom, 0) : 0;
 
     return {
       paddingTop: top,
-      paddingBottom: safeBottom + dock,
+      paddingBottom: Math.max(bottom, MIN_BOTTOM_PAD) + dock,
       /** Landscape notch — chap/o'ng tomondagi kesilishning oldini oladi. */
       paddingLeft: applyHorizontal ? insets.left : 0,
       paddingRight: applyHorizontal ? insets.right : 0,

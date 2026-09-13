@@ -11,6 +11,7 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { safeBottom, safeTop } from "../../../lib/safe-area";
 import type { MorphVoicePhase } from "../../../hooks/useMorphVoice";
 import {
   fontSize,
@@ -179,7 +180,7 @@ export function VoiceSessionOverlay({
   const caption = listening ? null : speaking || busy ? reply || transcript : transcript;
 
   return (
-    <View style={[styles.root, { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 28 }]}>
+    <View style={[styles.root, { paddingTop: safeTop(insets.top, 8), paddingBottom: safeBottom(insets.bottom, 28) }]}>
       <View style={styles.top}>
         <View style={styles.livePill}>
           <View style={[styles.liveDot, listening && styles.liveDotOn]} />

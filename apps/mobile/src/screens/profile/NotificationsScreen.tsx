@@ -13,6 +13,7 @@ import { timeAgo } from "../../api/user";
 import type { ProfileStackParamList } from "../../navigation/ProfileStack";
 import { colors } from "../../theme/colors";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { safeBottom, safeTop } from "../../lib/safe-area";
 import {
   fontSize,
   moderateScale,
@@ -27,7 +28,7 @@ export function NotificationsScreen({ navigation }: Props) {
   const data = useProfileData();
 
   return (
-    <View style={[styles.root, { paddingTop: Math.max(insets.top, 8) }]}>
+    <View style={[styles.root, { paddingTop: safeTop(insets.top, 0) }]}>
       <View style={styles.header}>
         <NativeBackButton onPress={() => navigation.goBack()} />
         <Text style={styles.title}>Bildirishnomalar</Text>

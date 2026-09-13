@@ -12,6 +12,7 @@ import {
   useWindowDimensions,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { safeBottom, safeTop } from "../lib/safe-area";
 import {
   createBooking,
   fetchBookingAvailability,
@@ -232,7 +233,7 @@ export function BookingScreen({ route, navigation }: Props) {
       </View>
 
       <ScrollView
-        contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + 100 }]}
+        contentContainerStyle={[styles.body, { paddingBottom: safeBottom(insets.bottom, 100) }]}
         showsVerticalScrollIndicator={false}
       >
         {step === 0 ? (
@@ -358,7 +359,7 @@ export function BookingScreen({ route, navigation }: Props) {
         ) : null}
       </ScrollView>
 
-      <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 12) }]}>
+      <View style={[styles.footer, { paddingBottom: safeBottom(insets.bottom, 0) }]}>
         <Pressable
           style={[styles.cta, (!canNext || submitting || !isAuthenticated) && styles.ctaDisabled]}
           disabled={!canNext || submitting || !isAuthenticated}

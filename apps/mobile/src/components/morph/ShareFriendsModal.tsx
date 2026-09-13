@@ -4,13 +4,13 @@ import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Linking,
-  Modal,
   Pressable,
   StyleSheet,
   Text,
   useWindowDimensions,
   View,
 } from "react-native";
+import { SafeModal } from "../ui/SafeModal";
 import Animated, {
   Easing,
   interpolate,
@@ -21,6 +21,7 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { safeBottom, safeTop } from "../../lib/safe-area";
 import { createMorphAiLookShare } from "../../api/ai";
 import {
   composeInstagramStoryImage,
@@ -232,11 +233,10 @@ export function ShareFriendsModal({
   if (!visible) return null;
 
   return (
-    <Modal
+    <SafeModal
       visible
       transparent
       animationType="none"
-      statusBarTranslucent
       presentationStyle="overFullScreen"
       onRequestClose={requestClose}
     >
@@ -250,7 +250,7 @@ export function ShareFriendsModal({
             styles.sheet,
             {
               height: sheetH,
-              paddingBottom: Math.max(insets.bottom, 14) + 10,
+              paddingBottom: safeBottom(insets.bottom, 10),
             },
             sheetStyle,
           ]}
@@ -327,7 +327,7 @@ export function ShareFriendsModal({
           </Pressable>
         </Animated.View>
       </View>
-    </Modal>
+    </SafeModal>
   );
 }
 

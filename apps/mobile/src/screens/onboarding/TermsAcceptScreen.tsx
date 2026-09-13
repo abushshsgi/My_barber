@@ -4,6 +4,7 @@ import { StatusBar } from "expo-status-bar";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { safeBottom, safeTop } from "../../lib/safe-area";
 import { setTermsAccepted } from "../../lib/guest";
 import {
   fontSize,
@@ -29,7 +30,7 @@ export function TermsAcceptScreen({ onFinish }: Props) {
     <View
       style={[
         styles.root,
-        { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 20 },
+        { paddingTop: safeTop(insets.top, 24), paddingBottom: safeBottom(insets.bottom, 20) },
       ]}
     >
       <StatusBar style="dark" />

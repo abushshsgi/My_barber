@@ -14,7 +14,9 @@ import {
 } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { safeBottom, safeTop } from "../../lib/safe-area";
 import { fetchCareProduct, type CareProduct } from "../../api/care";
+import { NativeBackButton } from "../../components/ui/NativeBackButton";
 import { useHideTabBar } from "../../hooks/useHideTabBar";
 import { setRoutineTaskDone } from "../../lib/morph-my-products";
 import type { MorphCareStackParamList } from "../../navigation/MorphCareStack";
@@ -253,9 +255,8 @@ export function MorphCareProductGuideScreen({ navigation, route }: Props) {
       />
 
       {/* Header */}
-      <View style={[styles.navBar, { paddingTop: insets.top + 8 }]}>
-        <Pressable
-          style={styles.backBtn}
+      <View style={[styles.navBar, { paddingTop: safeTop(insets.top, 8) }]}>
+        <NativeBackButton
           onPress={() => {
             const routes = navigation.getState?.()?.routes;
             if (routes && routes.length > 1) {
@@ -265,17 +266,14 @@ export function MorphCareProductGuideScreen({ navigation, route }: Props) {
             }
           }}
           accessibilityLabel={t("common.back")}
-          hitSlop={8}
-        >
-          <Ionicons name="chevron-back" size={22} color="#111" />
-        </Pressable>
+        />
 
         <Text style={styles.navTitle} numberOfLines={1}>
           Qo'llash va Taymer
         </Text>
 
         <Pressable
-          style={styles.backBtn}
+          style={styles.navAction}
           onPress={resetTimer}
           accessibilityLabel="Reset"
           hitSlop={8}
@@ -290,7 +288,7 @@ export function MorphCareProductGuideScreen({ navigation, route }: Props) {
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={{
           paddingHorizontal: 20,
-          paddingBottom: Math.max(insets.bottom, 20) + 24,
+          paddingBottom: safeBottom(insets.bottom, 24),
         }}
         showsVerticalScrollIndicator={false}
       >
@@ -401,7 +399,7 @@ export function MorphCareProductGuideScreen({ navigation, route }: Props) {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: "#09090B" },
+  root: { flex: 1, backgroundColor: "#FAFAFA" },
   navBar: {
     flexDirection: "row",
     alignItems: "center",
@@ -409,14 +407,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: scale(20),
     paddingBottom: verticalScale(12),
   },
-  backBtn: {
-    width: scale(42),
-    height: scale(42),
-    borderRadius: moderateScale(21),
-    backgroundColor: "rgba(255,255,255,0.85)",
+  navAction: {
+    width: scale(40),
+    height: scale(40),
+    borderRadius: moderateScale(20),
+    backgroundColor: "rgba(255,255,255,0.95)",
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: "rgba(0,0,0,0.06)",
   },
   navTitle: {
@@ -429,7 +427,7 @@ const styles = StyleSheet.create({
   heroCard: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(255,255,255,0.9)",
+    backgroundColor: "rgba(255,255,255,0.95)",
     borderRadius: moderateScale(24),
     padding: moderateScale(14),
     gap: moderateScale(14),

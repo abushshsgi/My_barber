@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { safeBottom, safeTop } from "../lib/safe-area";
 import { type AppLang, setAppLang } from "../lib/guest";
 import { setAppLanguage } from "../i18n/config";
 import {
@@ -97,7 +98,7 @@ export function SplashScreen({
         styles.root,
         {
           paddingTop: insets.top,
-          paddingBottom: Math.max(insets.bottom, 12) + 16,
+          paddingBottom: safeBottom(insets.bottom, 16),
         },
       ]}
     >

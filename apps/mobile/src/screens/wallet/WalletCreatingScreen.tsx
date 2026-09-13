@@ -18,6 +18,7 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { safeBottom, safeTop } from "../../lib/safe-area";
 import { morfWordmark } from "../../branding/morf-logo";
 import { useAppShell } from "../../lib/AppShellContext";
 import {
@@ -87,8 +88,8 @@ export function WalletCreatingScreen({
       style={[
         styles.root,
         {
-          paddingTop: insets.top + 20,
-          paddingBottom: Math.max(insets.bottom, 16) + 12,
+          paddingTop: safeTop(insets.top, 20),
+          paddingBottom: safeBottom(insets.bottom, 12),
         },
       ]}
     >

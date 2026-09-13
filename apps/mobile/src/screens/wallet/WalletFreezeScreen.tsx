@@ -12,6 +12,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { safeBottom, safeTop } from "../../lib/safe-area";
 import { setWalletFreeze } from "../../api/wallet";
 import { useHideTabBar } from "../../hooks/useHideTabBar";
 import { useWalletMe } from "../../hooks/useWallet";
@@ -135,7 +136,7 @@ export function WalletFreezeScreen({ navigation, route }: Props) {
         style={[
           styles.sheet,
           {
-            paddingBottom: Math.max(insets.bottom, 16) + 8,
+            paddingBottom: safeBottom(insets.bottom, 8),
             transform: [{ translateY: sheetY }],
           },
         ]}

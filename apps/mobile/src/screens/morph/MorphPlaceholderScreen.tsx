@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { safeBottom, safeTop } from "../../lib/safe-area";
 import { morphFont } from "../../theme/morph-font";
 import {
   fontSize,
@@ -26,7 +27,7 @@ export function MorphPlaceholderScreen({
   const insets = useSafeAreaInsets();
   const sub = subtitle ?? t("placeholder.comingSoon");
   return (
-    <View style={[styles.root, { paddingTop: insets.top + 48 }]}>
+    <View style={[styles.root, { paddingTop: safeTop(insets.top, 48) }]}>
       <View style={styles.iconWrap}>
         <Ionicons name={icon} size={28} color="rgba(255,255,255,0.85)" />
       </View>

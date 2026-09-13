@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { safeBottom, safeTop } from "../lib/safe-area";
 import { AnimatedImageColumns } from "../components/welcome/AnimatedImageColumns";
 import {
   LocationIllustration,
@@ -133,8 +134,8 @@ export function GetStartedScreen({ onFinish }: Props) {
       style={[
         styles.root,
         {
-          paddingTop: insets.top + 4,
-          paddingBottom: Math.max(insets.bottom, 12) + 16,
+          paddingTop: safeTop(insets.top, 4),
+          paddingBottom: safeBottom(insets.bottom, 16),
         },
       ]}
     >

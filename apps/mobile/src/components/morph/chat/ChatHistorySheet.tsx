@@ -1,13 +1,14 @@
 import { Ionicons } from "@expo/vector-icons";
 import {
   FlatList,
-  Modal,
   Pressable,
   StyleSheet,
   Text,
   View,
 } from "react-native";
+import { SafeModal } from "../../ui/SafeModal";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { safeBottom, safeTop } from "../../../lib/safe-area";
 import type { MorphChatThread } from "../../../hooks/useMorphChat";
 import {
   fontSize,
@@ -63,10 +64,10 @@ export function ChatHistorySheet({
   const insets = useSafeAreaInsets();
 
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
+    <SafeModal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <View style={styles.backdrop}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
-        <View style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, 16) }]}>
+        <View style={[styles.sheet, { paddingBottom: safeBottom(insets.bottom, 0) }]}>
           <View style={styles.handle} />
           <View style={styles.header}>
             <Text style={styles.title}>{title}</Text>
@@ -122,7 +123,7 @@ export function ChatHistorySheet({
           />
         </View>
       </View>
-    </Modal>
+    </SafeModal>
   );
 }
 

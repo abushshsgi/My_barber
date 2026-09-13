@@ -3,6 +3,7 @@ import { Linking, Platform, Pressable, StyleSheet, Text, View } from "react-nati
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { safeBottom, safeTop } from "../../lib/safe-area";
 import { setNotifPromoSeen } from "../../lib/guest";
 import {
   fontSize,
@@ -31,7 +32,7 @@ export function NotificationPromoScreen({ onFinish }: Props) {
   };
 
   return (
-    <View style={[styles.root, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 20 }]}>
+    <View style={[styles.root, { paddingTop: safeTop(insets.top, 24), paddingBottom: safeBottom(insets.bottom, 20) }]}>
       <Animated.View entering={FadeInDown} style={styles.bell}>
         <Ionicons name="notifications" size={40} color="#111" />
       </Animated.View>

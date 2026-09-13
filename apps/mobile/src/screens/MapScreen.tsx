@@ -17,6 +17,7 @@ import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { safeBottom, safeTop } from "../lib/safe-area";
 import { fetchSalonsNearby } from "../api/catalog";
 import type { ApiNearbySalon } from "../api/types";
 import { useAuth } from "../auth/AuthContext";
@@ -239,7 +240,7 @@ export function MapScreen() {
         </View>
       )}
 
-      <View style={[styles.topBar, { paddingTop: Math.max(insets.top, 10) }]}>
+      <View style={[styles.topBar, { paddingTop: safeTop(insets.top, 0) }]}>
         <View style={styles.titlePill}>
           <Ionicons name="map" size={14} color={colors.fg} />
           <Text style={[styles.titleText, { fontSize: fs(14) }]}>Xarita</Text>

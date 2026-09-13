@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { safeBottom, safeTop } from "../../lib/safe-area";
 import { useAuth } from "../../auth/AuthContext";
 import type { ApiWalletRecipient } from "../../api/wallet";
 import { useHideTabBar } from "../../hooks/useHideTabBar";
@@ -120,10 +121,10 @@ export function WalletGiftScreen({ navigation }: Props) {
   const searchedOnly = history.filter((h) => !(h.lastSentAt ?? 0));
 
   return (
-    <View style={[styles.root, { paddingBottom: insets.bottom + 12 }]}>
+    <View style={[styles.root, { paddingBottom: safeBottom(insets.bottom, 12) }]}>
       <LinearGradient
         colors={["#F0F0F0", "#F3EEFF", "#FAFAFA"]}
-        style={[styles.hero, { paddingTop: insets.top + 6 }]}
+        style={[styles.hero, { paddingTop: safeTop(insets.top, 6) }]}
       >
         <View style={styles.header}>
           <Pressable style={styles.backBtn} onPress={() => navigation.goBack()} hitSlop={8}>

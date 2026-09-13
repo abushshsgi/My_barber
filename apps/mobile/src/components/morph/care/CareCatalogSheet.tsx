@@ -6,7 +6,6 @@ import {
   Animated,
   Easing,
   Keyboard,
-  Modal,
   PanResponder,
   Pressable,
   ScrollView,
@@ -17,10 +16,6 @@ import {
   View,
 } from "react-native";
 import { useTranslation } from "react-i18next";
-import {
-  initialWindowMetrics,
-  SafeAreaProvider,
-} from "react-native-safe-area-context";
 import { toggleCareProductLike, type CareProduct } from "../../../api/care";
 import { resolveMediaUrl } from "../../../api/media";
 import { useAuth } from "../../../auth/AuthContext";
@@ -30,6 +25,7 @@ import {
   setCareCatalogCache,
 } from "../../../lib/care-catalog-cache";
 import { addMyProduct } from "../../../lib/morph-my-products";
+import { safeBottom } from "../../../lib/safe-area";
 import { morphFont } from "../../../theme/morph-font";
 import {
   fontSize,
@@ -39,6 +35,7 @@ import {
 } from "../../../utils/responsive";
 import { CareProductPreviewSheet } from "./CareProductPreviewSheet";
 import { CareCatalogMark } from "./CareCatalogMark";
+import { SafeModal } from "../../ui/SafeModal";
 
 type Props = {
   visible: boolean;
@@ -252,7 +249,7 @@ export function CareCatalogSheet({
           styles.sheet,
           {
             height: sheetH,
-            paddingBottom: Math.max(bottomInset, 12),
+            paddingBottom: safeBottom(bottomInset, 0),
             transform: [{ translateY: sheetY }],
           },
         ]}
@@ -381,33 +378,29 @@ export function CareCatalogSheet({
         )}
       </Animated.View>
 
-      <Modal
+      <SafeModal
         visible={preview != null}
         transparent
         animationType="fade"
-        statusBarTranslucent
-        navigationBarTranslucent
         onRequestClose={() => setPreviewId(null)}
       >
-        <SafeAreaProvider initialMetrics={initialWindowMetrics}>
-          <View style={styles.previewWrap} pointerEvents="box-none">
-            <Pressable style={styles.previewBackdrop} onPress={() => setPreviewId(null)} />
-            {preview ? (
-              <CareProductPreviewSheet
-                product={preview}
-                quiz={DEFAULT_QUIZ}
-                added={previewAdded}
-                bottomInset={bottomInset}
-                onClose={() => setPreviewId(null)}
-                onAdd={() => {
-                  if (previewAdded) return;
-                  void addProduct(preview);
-                }}
-              />
-            ) : null}
-          </View>
-        </SafeAreaProvider>
-      </Modal>
+        <View style={styles.previewWrap} pointerEvents="box-none">
+          <Pressable style={styles.previewBackdrop} onPress={() => setPreviewId(null)} />
+          {preview ? (
+            <CareProductPreviewSheet
+              product={preview}
+              quiz={DEFAULT_QUIZ}
+              added={previewAdded}
+              bottomInset={bottomInset}
+              onClose={() => setPreviewId(null)}
+              onAdd={() => {
+                if (previewAdded) return;
+                void addProduct(preview);
+              }}
+            />
+          ) : null}
+        </View>
+      </SafeModal>
     </>
   );
 }

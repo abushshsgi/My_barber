@@ -1,6 +1,7 @@
 import { StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { safeBottom, safeTop } from "../lib/safe-area";
 import { colors } from "../theme/colors";
 import {
   fontSize,
@@ -18,7 +19,7 @@ export function PlaceholderScreen({ title, subtitle }: Props) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   return (
-    <View style={[styles.root, { paddingTop: insets.top + 24 }]}>
+    <View style={[styles.root, { paddingTop: safeTop(insets.top, 24) }]}>
       <Text style={styles.title}>{title}</Text>
       <Text style={styles.subtitle}>{subtitle ?? t("placeholder.pageDev")}</Text>
     </View>

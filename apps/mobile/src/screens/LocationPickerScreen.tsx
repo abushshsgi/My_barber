@@ -25,7 +25,7 @@ import {
   OnboardingMap,
   type OnboardingMapHandle,
 } from "../components/onboarding/OnboardingMap";
-import { AppStatusBar, safeTop } from "../components/ui/AppStatusBar";
+import { AppStatusBar, safeBottom, safeTop } from "../components/ui/AppStatusBar";
 import { setGuestLocation } from "../lib/guest";
 import type { LocationEntryMode } from "./GetStartedScreen";
 import { colors } from "../theme/colors";
@@ -264,7 +264,7 @@ export function LocationPickerScreen({
           styles.searchRoot,
           {
             paddingTop: safeTop(insets.top, 8),
-            paddingBottom: Math.max(insets.bottom, 12),
+            paddingBottom: safeBottom(insets.bottom, 0),
           },
         ]}
       >
@@ -418,7 +418,7 @@ export function LocationPickerScreen({
       </Pressable>
 
       <View
-        style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, 14) + 8 }]}
+        style={[styles.sheet, { paddingBottom: safeBottom(insets.bottom, 8) }]}
         onLayout={(e) => {
           const h = e.nativeEvent.layout.height;
           if (h > 80 && Math.abs(h - sheetH) > 2) setSheetH(h);

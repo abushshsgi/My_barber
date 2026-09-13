@@ -14,6 +14,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { safeBottom, safeTop } from "../../lib/safe-area";
 import {
   generateAiStyleTryOn,
   saveMorphAiGeneration,
@@ -151,7 +152,7 @@ export function MorphPreviewScreen({ navigation, route }: Props) {
   }, [salonId]);
 
   return (
-    <View style={[styles.root, { paddingBottom: Math.max(insets.bottom, 12) }]}>
+    <View style={[styles.root, { paddingBottom: safeBottom(insets.bottom, 0) }]}>
       <ScrollView
         style={{ flex: 1 }}
         nestedScrollEnabled={true}

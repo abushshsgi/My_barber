@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { safeBottom, safeTop } from "../../lib/safe-area";
 import {
   checkPhone,
   formatUzPhoneDisplay,
@@ -64,11 +65,12 @@ export function OnboardingLoginScreen({ onBack }: Props) {
     });
   }, []);
 
-  const onGoogle = async () => {
+  const onGoogle = () => {
     setError(null);
     google.clearError();
-    await setPendingReferralCode(referralCode);
-    await google.promptGoogle();
+    // Redirect/popup user-gesture ichida ochilsin — await qilmaymiz
+    void setPendingReferralCode(referralCode);
+    void google.promptGoogle();
   };
 
   const onContinuePhone = async () => {
@@ -171,7 +173,7 @@ export function OnboardingLoginScreen({ onBack }: Props) {
 
   return (
     <KeyboardAvoidingView
-      style={[styles.root, { paddingTop: insets.top + 8 }]}
+      style={[styles.root, { paddingTop: safeTop(insets.top, 8) }]}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
       <StatusBar style="dark" />
@@ -267,7 +269,7 @@ export function OnboardingLoginScreen({ onBack }: Props) {
           {showError ? <Text style={styles.error}>{showError}</Text> : null}
         </View>
 
-        <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 12) + 12 }]}>
+        <View style={[styles.footer, { paddingBottom: safeBottom(insets.bottom, 12) }]}>
           {step === "choose" ? (
             <View style={styles.actions}>
               <Pressable
@@ -276,7 +278,7 @@ export function OnboardingLoginScreen({ onBack }: Props) {
                   googleWaiting && styles.btnDisabled,
                   pressed && !googleWaiting && styles.pressed,
                 ]}
-                onPress={() => void onGoogle()}
+                onPress={onGoogle}
                 disabled={showBusy || !google.ready}
               >
                 <GoogleGlyph size={22} />

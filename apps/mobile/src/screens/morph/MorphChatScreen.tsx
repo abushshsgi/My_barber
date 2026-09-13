@@ -5,11 +5,9 @@ import { StatusBar } from "expo-status-bar";
 import { useCallback, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   BackHandler,
   FlatList,
   KeyboardAvoidingView,
-  Modal,
   Platform,
   Pressable,
   StyleSheet,
@@ -30,6 +28,8 @@ import { ChatNotice } from "../../components/morph/chat/ChatNotice";
 import { MorphChatWelcome } from "../../components/morph/chat/MorphChatWelcome";
 import { QuickPromptChips } from "../../components/morph/chat/QuickPromptChips";
 import { VoiceSessionOverlay } from "../../components/morph/chat/VoiceSessionOverlay";
+import { SafeModal } from "../../components/ui/SafeModal";
+import { safeBottom, safeTop } from "../../lib/safe-area";
 import { useHideTabBarWhen } from "../../hooks/useHideTabBar";
 import { useMorphChat } from "../../hooks/useMorphChat";
 import { useMorphVoice } from "../../hooks/useMorphVoice";
@@ -46,6 +46,7 @@ import type { RootTabParamList } from "../../navigation/RootTabs";
 import { MorphChatSettingsScreen } from "./MorphChatSettingsScreen";
 import { useMorphAppearance } from "../../lib/MorphAppearanceContext";
 import { ChatAmbientBg } from "../../components/morph/chat/ChatAmbientBg";
+import { NativeBackButton } from "../../components/ui/NativeBackButton";
 import { morphFont } from "../../theme/morph-font";
 import {
   IS_SMALL_DEVICE,
@@ -146,12 +147,24 @@ export function MorphChatScreen() {
         return false;
       }
       if (MORPH_CHAT_DEBUG) return true;
-      const result = await gate.ensureChatDetailed();
-      if (result.ok) return true;
-      showPaywall(result.reason === "limit" ? "limit" : "subscription", draft);
-      return false;
+
+      // Sync cache — network kutmasdan darhol yuborish
+      const me = gate.me;
+      const remaining = me?.usage?.morph_chat_tokens_remaining;
+      if (typeof remaining === "number" && remaining < 200) {
+        showPaywall("limit", draft);
+        return false;
+      }
+      if (me?.access?.morph_chat_allowed === false) {
+        showPaywall("limit", draft);
+        return false;
+      }
+
+      // Fonida yangilash (UI bloklanmasin)
+      void gate.refresh();
+      return true;
     },
-    [gate.ensureChatDetailed, isAuthenticated, showPaywall],
+    [gate.me, gate.refresh, isAuthenticated, showPaywall],
   );
 
   const requireVoice = useCallback(async () => {
@@ -188,16 +201,10 @@ export function MorphChatScreen() {
     });
   }, [navigation]);
 
-  const confirmLeaveChat = useCallback(() => {
-    Alert.alert("Chiqish", "Rostdan ham chiqmoqchimisiz?", [
-      { text: "Bekor qilish", style: "cancel" },
-      { text: "Chiqish", style: "destructive", onPress: leaveChat },
-    ]);
-  }, [leaveChat]);
-
+  /** Android tizim Back — UI orqaga bilan bir xil: Try-on / oldingi sahifa. */
   useFocusEffect(
     useCallback(() => {
-      const sub = BackHandler.addEventListener("hardwareBackPress", () => {
+      const onHardwareBack = () => {
         if (paywall) {
           closePaywall();
           return true;
@@ -214,18 +221,15 @@ export function MorphChatScreen() {
           setMenuOpen(false);
           return true;
         }
-        if (chatOpen) {
-          setChatOpen(false);
-          return true;
-        }
-        confirmLeaveChat();
+        leaveChat();
         return true;
-      });
+      };
+
+      const sub = BackHandler.addEventListener("hardwareBackPress", onHardwareBack);
       return () => sub.remove();
     }, [
-      chatOpen,
       closePaywall,
-      confirmLeaveChat,
+      leaveChat,
       menuOpen,
       paywall,
       settingsOpen,
@@ -277,11 +281,14 @@ export function MorphChatScreen() {
 
   const onSend = useCallback(async () => {
     const draft = chat.input.trim();
-    if (!draft) return;
+    if (!draft || chat.sending) return;
     const ok = await requireAccess(draft);
     if (!ok) return;
+    // Avval yuborish (optimistic), keyin chat UI — birinchi bosishda yo‘qolmasin
+    const sentPromise = chat.sendText(draft);
     setChatOpen(true);
-    const sent = await chat.sendText(draft);
+    requestAnimationFrame(() => scrollToEnd());
+    const sent = await sentPromise;
     if (sent === "limit") {
       showPaywall("limit", draft);
       return;
@@ -368,6 +375,7 @@ export function MorphChatScreen() {
       message={t("chat.tokenEmpty")}
       retryLabel={t("chat.tokenEmptyCta")}
       dismissA11y={t("chat.errorDismissA11y")}
+      tone="upgrade"
       onRetry={() => showPaywall("limit")}
       onDismiss={() => showPaywall("limit")}
     />
@@ -419,7 +427,7 @@ export function MorphChatScreen() {
   );
 
   const paywallModal = (
-    <Modal visible={paywall != null} animationType="slide" onRequestClose={closePaywall}>
+    <SafeModal visible={paywall != null} animationType="slide" onRequestClose={closePaywall}>
       <MorphPaywallView
         reason={paywall ?? "subscription"}
         onClose={closePaywall}
@@ -433,11 +441,11 @@ export function MorphChatScreen() {
           } as never);
         }}
       />
-    </Modal>
+    </SafeModal>
   );
 
   const settingsModal = (
-    <Modal visible={settingsOpen} animationType="slide" onRequestClose={closeSettings}>
+    <SafeModal visible={settingsOpen} animationType="slide" onRequestClose={closeSettings}>
       <MorphChatSettingsScreen
         limits={chat.limits}
         threadCount={chat.threads.length}
@@ -453,11 +461,11 @@ export function MorphChatScreen() {
         }}
         voicePreviewing={voice.previewing}
       />
-    </Modal>
+    </SafeModal>
   );
 
   const voiceOverlay = (
-    <Modal
+    <SafeModal
       visible={voiceOverlayOpen}
       animationType="fade"
       onRequestClose={() => void voice.cancelSession()}
@@ -488,7 +496,7 @@ export function MorphChatScreen() {
           else void voice.cancelSession();
         }}
       />
-    </Modal>
+    </SafeModal>
   );
 
   if (!chat.hydrated) {
@@ -511,9 +519,9 @@ export function MorphChatScreen() {
           subtitle={t("chat.home.subtitle")}
           menuA11y={t("chat.menu.openA11y")}
           onMenu={() => setMenuOpen(true)}
-          onExit={confirmLeaveChat}
+          onExit={leaveChat}
           exitA11y={t("chat.home.backA11y")}
-          bottomPad={Math.max(insets.bottom, 10) + 18}
+          bottomPad={safeBottom(insets.bottom, 18)}
           composer={
             <View>
               <ChatInputBar {...composer} onSend={() => void onSend()} onCamera={onCamera} />
@@ -557,6 +565,7 @@ export function MorphChatScreen() {
                 message={t("chat.tokenEmpty")}
                 retryLabel={t("chat.tokenEmptyCta")}
                 dismissA11y={t("chat.errorDismissA11y")}
+                tone="upgrade"
                 onRetry={() => showPaywall("limit")}
                 onDismiss={() => showPaywall("limit")}
                 style={{ marginHorizontal: 0, marginBottom: 0 }}
@@ -585,7 +594,7 @@ export function MorphChatScreen() {
     chat.threads.find((th) => th.id === chat.activeThreadId)?.title || t("chat.title");
 
   return (
-    <View style={[styles.root, { paddingTop: Math.max(insets.top, spacing.xs) + 10 }]}>
+    <View style={[styles.root, { paddingTop: safeTop(insets.top, 4) }]}>
       <ChatAmbientBg />
       <StatusBar style={pal.status} />
       <View style={[styles.header, { borderBottomColor: pal.line }]}>
@@ -594,6 +603,7 @@ export function MorphChatScreen() {
           style={({ pressed }) => [styles.headerBtn, pressed && styles.pressed]}
           accessibilityRole="button"
           accessibilityLabel={t("chat.menu.openA11y")}
+          hitSlop={8}
         >
           <Ionicons name="menu" size={ICON.lg} color={pal.fg} />
         </Pressable>
@@ -615,17 +625,15 @@ export function MorphChatScreen() {
           style={({ pressed }) => [styles.headerBtn, pressed && styles.pressed]}
           accessibilityRole="button"
           accessibilityLabel={t("chat.menu.newChat")}
+          hitSlop={8}
         >
           <Ionicons name="create-outline" size={ICON.md} color={pal.fg} />
         </Pressable>
-        <Pressable
-          onPress={confirmLeaveChat}
-          style={({ pressed }) => [styles.headerBtn, pressed && styles.pressed]}
-          accessibilityRole="button"
+        <NativeBackButton
+          onPress={leaveChat}
+          forward
           accessibilityLabel={t("chat.home.backA11y")}
-        >
-          <Ionicons name="chevron-forward" size={ICON.lg} color={pal.fg} />
-        </Pressable>
+        />
       </View>
 
       <KeyboardAvoidingView
@@ -658,7 +666,7 @@ export function MorphChatScreen() {
           style={[
             styles.composerDock,
             {
-              paddingBottom: Math.max(insets.bottom, spacing.sm) + 14,
+              paddingBottom: safeBottom(insets.bottom, 8),
             },
           ]}
         >
@@ -689,7 +697,7 @@ const ICON = {
   lg: scale(22),
 } as const;
 
-const HEADER_BTN = scale(IS_SMALL_DEVICE ? 36 : 40);
+const HEADER_BTN = scale(40);
 
 const styles = StyleSheet.create({
   root: {
@@ -728,10 +736,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   headerTitleCenter: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: HEADER_BTN * 2 + scale(24),
+    paddingHorizontal: HEADER_BTN * 2.5 + scale(16),
   },
   title: {
     ...morphFont,

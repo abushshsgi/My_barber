@@ -1,6 +1,7 @@
 import { Image } from "expo-image";
 import { useEffect } from "react";
-import { ActivityIndicator, Modal, StyleSheet, Text } from "react-native";
+import { ActivityIndicator, StyleSheet, Text } from "react-native";
+import { SafeModal } from "./ui/SafeModal";
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -59,7 +60,7 @@ export function ShellSwitchOverlay({ visible, target }: Props) {
   const toMorph = target === "morph";
 
   return (
-    <Modal visible animationType="none" statusBarTranslucent>
+    <SafeModal visible animationType="none">
       <Animated.View style={[styles.root, rootAnim]}>
         <Animated.View style={[styles.logoWrap, logoAnim]}>
           {toMorph ? (
@@ -72,7 +73,7 @@ export function ShellSwitchOverlay({ visible, target }: Props) {
         <Text style={styles.sub}>Yuklanmoqda…</Text>
         <ActivityIndicator color="#FFF" style={styles.spinner} size="large" />
       </Animated.View>
-    </Modal>
+    </SafeModal>
   );
 }
 

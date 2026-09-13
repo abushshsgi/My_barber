@@ -8,6 +8,7 @@ import {
 } from "react";
 import { StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { safeBottom, safeTop } from "../../lib/safe-area";
 import { AppToast, type AppToastTone } from "./AppToast";
 import { sanitizeDisplayError } from "../../lib/network-error";
 import {
@@ -61,7 +62,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       {children}
       <View
         pointerEvents="box-none"
-        style={[styles.host, { paddingTop: Math.max(insets.top, 10) + 6 }]}
+        style={[styles.host, { paddingTop: safeTop(insets.top, 0) + 6 }]}
       >
         {toast ? (
           <AppToast

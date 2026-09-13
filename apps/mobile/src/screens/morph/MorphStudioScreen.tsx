@@ -11,6 +11,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { safeBottom, safeTop } from "../../lib/safe-area";
 import {
   fetchMorphStudioCatalog,
   formatMorphUserError,
@@ -19,6 +20,7 @@ import {
   type MorphStudioCategory,
 } from "../../api/ai";
 import { useHideTabBar } from "../../hooks/useHideTabBar";
+import { NativeBackButton } from "../../components/ui/NativeBackButton";
 import { useMorphLimitGate } from "../../hooks/useMorphLimitGate";
 import { presentMorphPaywall } from "../../lib/morph-return";
 import { pickSelfieFromCamera, pickSelfieFromGallery } from "../../lib/selfie";
@@ -234,9 +236,10 @@ export function MorphStudioScreen({ navigation }: Props) {
 
   return (
     <View style={[styles.root, { paddingBottom: insets.bottom }]}>
-      <View style={[styles.topBar, { paddingTop: Math.max(insets.top, 8) }]}>
-        <Pressable
-          style={styles.iconBtn}
+      <View style={[styles.topBar, { paddingTop: safeTop(insets.top, 0) }]}>
+        <NativeBackButton
+          color="#FFF"
+          backgroundColor="rgba(255,255,255,0.14)"
           onPress={() => {
             const routes = navigation.getState?.()?.routes;
             if (routes && routes.length > 1) {
@@ -245,9 +248,7 @@ export function MorphStudioScreen({ navigation }: Props) {
               navigation.navigate("MorphCapture");
             }
           }}
-        >
-          <Ionicons name="chevron-back" size={20} color="#FFF" />
-        </Pressable>
+        />
         <View style={styles.topTitleWrap}>
           <Ionicons name="sparkles" size={14} color="#FFF" />
           <Text style={styles.topTitle}>AI Studio</Text>
