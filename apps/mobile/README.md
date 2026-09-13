@@ -19,6 +19,14 @@ npm start
   orqali avtomatik. Backend `GOOGLE_OAUTH_CLIENT_ID` ham Web client bilan mos bo‘lsin.
   Native modul o‘zgarganda **yangi APK/dev build** kerak (`eas build` yoki `npx expo run:android`).
 
+### Firebase Analytics (Android)
+
+- `@react-native-firebase/app` + `@react-native-firebase/analytics`
+- `google-services.json` (package `uz.mysaloon.mobile`) majburiy
+- Eventlar: `app_open`, `login` / `sign_up` (google | phone | password)
+- iOS uchun keyinroq `GoogleService-Info.plist` kerak
+- Native o‘zgarish → **yangi APK** build
+
 ```bash
 EXPO_PUBLIC_GOOGLE_CLIENT_ID=xxxx.apps.googleusercontent.com npm start
 ```

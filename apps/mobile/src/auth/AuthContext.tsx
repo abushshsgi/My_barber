@@ -224,6 +224,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async (idToken: string, referralCode?: string) => {
       const data = await apiGoogle(idToken, referralCode);
       await applyAuthSuccess(data);
+      const { trackAuthSuccess } = await import("../lib/analytics");
+      trackAuthSuccess({ isNewUser: Boolean(data.is_new_user), method: "google" });
     },
     [applyAuthSuccess],
   );
@@ -232,6 +234,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async (phone: string, code: string, referralCode?: string) => {
       const data = await verifyPhoneCode(phone, code, "login", referralCode);
       await applyAuthSuccess(data);
+      const { trackAuthSuccess } = await import("../lib/analytics");
+      trackAuthSuccess({ isNewUser: Boolean(data.is_new_user), method: "phone" });
     },
     [applyAuthSuccess],
   );
@@ -240,6 +244,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async (phone: string, password: string) => {
       const data = await apiPassword(phone, password);
       await applyAuthSuccess(data);
+      const { trackAuthSuccess } = await import("../lib/analytics");
+      trackAuthSuccess({ isNewUser: Boolean(data.is_new_user), method: "password" });
     },
     [applyAuthSuccess],
   );

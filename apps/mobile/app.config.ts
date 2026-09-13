@@ -95,6 +95,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       "expo-font",
       "expo-web-browser",
       "expo-secure-store",
+      "@react-native-firebase/app",
+      "@react-native-firebase/analytics",
       [
         "@react-native-google-signin/google-signin",
         {

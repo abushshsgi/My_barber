@@ -57,6 +57,11 @@ import { updateMe } from "./src/api/user";
 
 void ExpoSplashScreen.preventAutoHideAsync().catch(() => {});
 
+// Android Firebase Analytics — app ochilishi
+if (Platform.OS === "android") {
+  void import("./src/lib/analytics").then((m) => m.logAppOpen()).catch(() => {});
+}
+
 function userHasCoords(user: {
   latitude?: string | number | null;
   longitude?: string | number | null;
@@ -265,14 +270,13 @@ export default function App() {
 
   useEffect(() => {
     if (Platform.OS !== "android") return;
-    void (async () => {
-      try {
-        await NavigationBar.setPositionAsync("absolute");
-        await NavigationBar.setBackgroundColorAsync("#00000000");
-      } catch (err) {
-        console.warn("NavigationBar boot", err);
-      }
-    })();
+    try {
+      // Position/transparency — expo-navigation-bar plugin (app.config).
+      // SDK 57+: setPositionAsync / setBackgroundColorAsync olib tashlangan.
+      NavigationBar.setStyle("dark");
+    } catch (err) {
+      console.warn("NavigationBar boot", err);
+    }
   }, []);
 
   useEffect(() => {
