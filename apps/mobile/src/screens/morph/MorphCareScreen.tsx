@@ -22,7 +22,11 @@ import {
   View,
 } from "react-native";
 import { useTranslation } from "react-i18next";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import {
+  initialWindowMetrics,
+  SafeAreaProvider,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import { fetchCareAccess } from "../../api/ai";
 import {
   fetchCareProducts,
@@ -1866,36 +1870,42 @@ export function MorphCareScreen({ navigation, route }: Props) {
           transparent
           animationType="none"
           statusBarTranslucent
+          navigationBarTranslucent
           onRequestClose={closePreview}
         >
-          <View style={styles.previewBackdrop} pointerEvents="box-none">
-            <Animated.View
-              style={[styles.previewBackdropFill, { opacity: previewBackdropOp }]}
-            >
-              <Pressable style={StyleSheet.absoluteFill} onPress={closePreview} />
-            </Animated.View>
-            <Animated.View
-              style={[
-                styles.previewSheetWrap,
-                { transform: [{ translateY: previewSheetY }] },
-              ]}
-            >
-              {previewProduct ? (
-                <CareProductPreviewSheet
-                  product={previewProduct}
-                  quiz={quiz}
-                  added={previewAdded}
-                  bottomInset={Math.max(insets.bottom, 12)}
-                  onClose={closePreview}
-                  onAdd={() => {
-                    if (previewAdded) return;
-                    void addFromSearch(previewProduct.id);
-                  }}
-                  onUseInCare={previewAdded ? openPreviewCare : undefined}
-                />
-              ) : null}
-            </Animated.View>
-          </View>
+          <SafeAreaProvider initialMetrics={initialWindowMetrics}>
+            <View style={styles.previewBackdrop} pointerEvents="box-none">
+              <Animated.View
+                style={[styles.previewBackdropFill, { opacity: previewBackdropOp }]}
+              >
+                <Pressable style={StyleSheet.absoluteFill} onPress={closePreview} />
+              </Animated.View>
+              <Animated.View
+                style={[
+                  styles.previewSheetWrap,
+                  {
+                    transform: [{ translateY: previewSheetY }],
+                    maxHeight: Math.round(winH * 0.92),
+                  },
+                ]}
+              >
+                {previewProduct ? (
+                  <CareProductPreviewSheet
+                    product={previewProduct}
+                    quiz={quiz}
+                    added={previewAdded}
+                    bottomInset={insets.bottom}
+                    onClose={closePreview}
+                    onAdd={() => {
+                      if (previewAdded) return;
+                      void addFromSearch(previewProduct.id);
+                    }}
+                    onUseInCare={previewAdded ? openPreviewCare : undefined}
+                  />
+                ) : null}
+              </Animated.View>
+            </View>
+          </SafeAreaProvider>
         </Modal>
         {addToast ? (
           <Animated.View
@@ -2640,7 +2650,6 @@ const styles = StyleSheet.create({
     width: "100%",
     backgroundColor: "transparent",
     overflow: "visible",
-    maxHeight: verticalScale(560),
   },
   previewCard: {
     backgroundColor: "#fff",

@@ -17,9 +17,18 @@ import {
   View,
 } from "react-native";
 import { useTranslation } from "react-i18next";
-import { fetchCareProducts, toggleCareProductLike, type CareProduct } from "../../../api/care";
+import {
+  initialWindowMetrics,
+  SafeAreaProvider,
+} from "react-native-safe-area-context";
+import { toggleCareProductLike, type CareProduct } from "../../../api/care";
 import { resolveMediaUrl } from "../../../api/media";
 import { useAuth } from "../../../auth/AuthContext";
+import {
+  getCareCatalogCache,
+  prefetchCareCatalog,
+  setCareCatalogCache,
+} from "../../../lib/care-catalog-cache";
 import { addMyProduct } from "../../../lib/morph-my-products";
 import { morphFont } from "../../../theme/morph-font";
 import {
@@ -55,8 +64,10 @@ export function CareCatalogSheet({
   const { t } = useTranslation();
   const { isAuthenticated } = useAuth();
   const { width: winW, height: winH } = useWindowDimensions();
-  const [catalog, setCatalog] = useState<CareProduct[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [catalog, setCatalog] = useState<CareProduct[]>(
+    () => getCareCatalogCache() ?? [],
+  );
+  const [loading, setLoading] = useState(() => !(getCareCatalogCache()?.length));
   const [query, setQuery] = useState("");
   const [sessionAddedIds, setSessionAddedIds] = useState<number[]>([]);
   const [previewId, setPreviewId] = useState<number | null>(null);
@@ -73,21 +84,20 @@ export function CareCatalogSheet({
   const hPad = 24;
   const cardW = Math.floor((winW - hPad - gap * (cols - 1)) / cols);
 
-  const excludeRef = useRef(excludeIds);
-  excludeRef.current = excludeIds;
-
   const load = useCallback(async () => {
-    setLoading(true);
+    const seed = getCareCatalogCache();
+    if (seed?.length) {
+      setCatalog(seed);
+      setLoading(false);
+    } else {
+      setLoading(true);
+    }
     try {
-      const ids = excludeRef.current;
-      const rows = await fetchCareProducts({
-        order: "likes",
-        exclude_mine: true,
-        exclude_ids: ids.length ? ids : undefined,
-      });
+      const rows = await prefetchCareCatalog({ force: Boolean(seed?.length) });
+      setCareCatalogCache(rows);
       setCatalog(rows);
     } catch {
-      setCatalog([]);
+      if (!seed?.length) setCatalog([]);
     } finally {
       setLoading(false);
     }
@@ -275,7 +285,7 @@ export function CareCatalogSheet({
           <Text style={styles.title}>{t("care.catalog.title")}</Text>
         </View>
 
-        {loading ? (
+        {loading && catalog.length === 0 ? (
           <View style={styles.center}>
             <ActivityIndicator color="#111111" />
           </View>
@@ -298,7 +308,15 @@ export function CareCatalogSheet({
                   >
                     <View style={styles.media}>
                       {item.image ? (
-                        <Image source={{ uri: item.image }} style={styles.img} contentFit="contain" />
+                        <Image
+                          source={{ uri: item.image }}
+                          style={styles.img}
+                          contentFit="contain"
+                          cachePolicy="memory-disk"
+                          priority="high"
+                          recyclingKey={String(item.id)}
+                          transition={60}
+                        />
                       ) : (
                         <View style={[styles.img, styles.ph]}>
                           <Ionicons name="flask-outline" size={22} color="#111111" />
@@ -368,24 +386,27 @@ export function CareCatalogSheet({
         transparent
         animationType="fade"
         statusBarTranslucent
+        navigationBarTranslucent
         onRequestClose={() => setPreviewId(null)}
       >
-        <View style={styles.previewWrap} pointerEvents="box-none">
-          <Pressable style={styles.previewBackdrop} onPress={() => setPreviewId(null)} />
-          {preview ? (
-            <CareProductPreviewSheet
-              product={preview}
-              quiz={DEFAULT_QUIZ}
-              added={previewAdded}
-              bottomInset={Math.max(bottomInset, 12)}
-              onClose={() => setPreviewId(null)}
-              onAdd={() => {
-                if (previewAdded) return;
-                void addProduct(preview);
-              }}
-            />
-          ) : null}
-        </View>
+        <SafeAreaProvider initialMetrics={initialWindowMetrics}>
+          <View style={styles.previewWrap} pointerEvents="box-none">
+            <Pressable style={styles.previewBackdrop} onPress={() => setPreviewId(null)} />
+            {preview ? (
+              <CareProductPreviewSheet
+                product={preview}
+                quiz={DEFAULT_QUIZ}
+                added={previewAdded}
+                bottomInset={bottomInset}
+                onClose={() => setPreviewId(null)}
+                onAdd={() => {
+                  if (previewAdded) return;
+                  void addProduct(preview);
+                }}
+              />
+            ) : null}
+          </View>
+        </SafeAreaProvider>
       </Modal>
     </>
   );

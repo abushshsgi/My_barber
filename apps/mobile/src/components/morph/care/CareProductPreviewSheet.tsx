@@ -3,7 +3,6 @@ import { Image } from "expo-image";
 import { StatusBar } from "expo-status-bar";
 import { useMemo, useState } from "react";
 import {
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -12,6 +11,9 @@ import {
   View,
 } from "react-native";
 import { useTranslation } from "react-i18next";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { NativeBackButton } from "../../../components/ui/NativeBackButton";
+import { safeBottom } from "../../../components/ui/AppStatusBar";
 import { resolveMediaUrl } from "../../../api/media";
 import type { CareProduct } from "../../../api/care";
 import {
@@ -30,6 +32,7 @@ type Props = {
   product: CareProduct;
   quiz: CareQuizAnswers;
   added: boolean;
+  /** Qo‘shimcha pastki offset (masalan parent Modal). Hook insets asosiy manba. */
   bottomInset?: number;
   mode?: "sheet" | "page";
   onClose: () => void;
@@ -116,13 +119,14 @@ export function CareProductPreviewSheet({
   product,
   quiz,
   added,
-  bottomInset = 16,
+  bottomInset = 0,
   mode = "sheet",
   onClose,
   onAdd,
   onUseInCare,
 }: Props) {
   const { t, i18n } = useTranslation();
+  const insets = useSafeAreaInsets();
   const { height: winH } = useWindowDimensions();
   const sheetH = Math.round(
     Math.min(SHEET_H_FALLBACK, Math.max(340, winH * (winH < 700 ? 0.72 : 0.78))),
@@ -141,7 +145,7 @@ export function CareProductPreviewSheet({
   const [panel, setPanel] = useState<"info" | "tarkib">("info");
 
   const imageUri = useMemo(
-    () => resolveMediaUrl(product.image_url, { width: 640 }) || product.image_url,
+    () => resolveMediaUrl(product.image_url, { width: 480 }) || product.image_url,
     [product.image_url],
   );
   const ingredients = useMemo(() => parseIngredients(product), [product]);
@@ -159,7 +163,8 @@ export function CareProductPreviewSheet({
     setPanel("info");
   };
 
-  const padBottom = Math.max(bottomInset, 6);
+  /** System nav / gesture bar dan dinamik masofa (Android 3-button + iOS home). */
+  const padBottom = safeBottom(Math.max(insets.bottom, bottomInset), 12);
   const shellStyle = [
     styles.card,
     isPage ? styles.cardPage : { height: sheetH },
@@ -173,18 +178,16 @@ export function CareProductPreviewSheet({
         {!isPage ? <View style={styles.grab} /> : null}
 
         <View style={styles.tarkibTop}>
-          <Pressable style={styles.navBtn} onPress={backToInfo} hitSlop={8}>
-            <Ionicons name="chevron-back" size={20} color={C.fg} />
-          </Pressable>
+          <NativeBackButton onPress={backToInfo} accessibilityLabel={t("common.back")} />
           <Text style={styles.tarkibHeadTitle}>
             {t("care.catalog.ingredients", { defaultValue: "Tarkib" })}
           </Text>
-          <View style={{ width: 36 }} />
+          <View style={{ width: 40 }} />
         </View>
 
         <ScrollView
           style={styles.scroll}
-          contentContainerStyle={styles.tarkibBody}
+          contentContainerStyle={[styles.tarkibBody, { paddingBottom: padBottom + verticalScale(12) }]}
           showsVerticalScrollIndicator={false}
         >
           {ingredients.length === 0 ? (
@@ -215,10 +218,20 @@ export function CareProductPreviewSheet({
         showsVerticalScrollIndicator={false}
         bounces
       >
+        <View style={styles.sheetNav}>
+          <NativeBackButton onPress={onClose} accessibilityLabel={t("common.back")} />
+        </View>
         <View style={styles.topRow}>
           <View style={styles.thumbWrap}>
             {imageUri ? (
-              <Image source={{ uri: imageUri }} style={styles.thumb} contentFit="contain" />
+              <Image
+                source={{ uri: imageUri }}
+                style={styles.thumb}
+                contentFit="contain"
+                cachePolicy="memory-disk"
+                priority="high"
+                transition={60}
+              />
             ) : (
               <View style={[styles.thumb, styles.thumbPh]}>
                 <Ionicons name="flask-outline" size={32} color={C.muted} />
@@ -243,10 +256,6 @@ export function CareProductPreviewSheet({
               </Text>
             ) : null}
           </View>
-
-          <Pressable style={styles.closeBtn} onPress={onClose} hitSlop={10}>
-            <Ionicons name="close" size={18} color={C.fg} />
-          </Pressable>
         </View>
 
         <View style={styles.fitRow}>
@@ -361,6 +370,11 @@ const styles = StyleSheet.create({
   },
   scroll: { flex: 1 },
   scrollBody: { paddingBottom: verticalScale(12), gap: moderateScale(8) },
+  sheetNav: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: verticalScale(2),
+  },
   topRow: {
     flexDirection: "row",
     alignItems: "flex-start",

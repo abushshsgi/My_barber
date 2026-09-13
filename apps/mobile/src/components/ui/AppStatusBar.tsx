@@ -36,3 +36,13 @@ export function safeTop(insetsTop: number, extra = 10): number {
   const iosFallback = Platform.OS === "ios" && insetsTop < 20 ? 47 : 0;
   return Math.max(insetsTop, androidFallback, iosFallback, 8) + extra;
 }
+
+/**
+ * Pastki system nav / home indicator uchun padding.
+ * Android edge-to-edge + Modal ichida insets.bottom ba’zan 0 — minimal bo‘shliq kafolatlanadi.
+ */
+export function safeBottom(insetsBottom: number, extra = 12): number {
+  const androidMin = Platform.OS === "android" ? 24 : 0;
+  const iosMin = Platform.OS === "ios" && insetsBottom < 8 ? 20 : 0;
+  return Math.max(insetsBottom, androidMin, iosMin, 16) + extra;
+}
