@@ -1,6 +1,6 @@
-/** Google Analytics 4 — www.mysaloon.uz web stream. Measurement ID is public. */
+/** Google Analytics 4 — Firebase mysaloon-4227d web stream (https://www.mysaloon.uz). */
 export const GA_MEASUREMENT_ID =
-  (import.meta.env.VITE_GA_MEASUREMENT_ID as string | undefined)?.trim() || "G-38QNBFBNZG";
+  (import.meta.env.VITE_GA_MEASUREMENT_ID as string | undefined)?.trim() || "G-E6F8X2K4R3";
 
 /** Production web only — skip local/dev. */
 export const GA_ENABLED =
