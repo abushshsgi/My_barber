@@ -179,7 +179,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         // Web OAuth client (client_type 3) — Firebase mysaloon-4227d
         "1080867624985-2c0i66qgdsaap0vqm0mickmk574h8cor.apps.googleusercontent.com",
       googleAndroidClientId:
-        process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID || "",
+        process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID ||
+        "1080867624985-guoljb9e2legcamq73qaekrf98frk85e.apps.googleusercontent.com",
       googleMapsApiKey: googleMapsApiKey || undefined,
       eas: {
         projectId: "7a541b52-f3c6-4bef-a463-8feaf27eba52",

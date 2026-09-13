@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "1080867624985-guoljb9e2legcamq73qaekrf98frk85e.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "uz.mysaloon.mobile",
+            "certificate_hash": "c1c44c6ff9ec115b39aaa8907c1ffdb3d9541ffe"
+          }
+        },
+        {
           "client_id": "1080867624985-2c0i66qgdsaap0vqm0mickmk574h8cor.apps.googleusercontent.com",
           "client_type": 3
         }
