@@ -182,7 +182,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         "1080867624985-2c0i66qgdsaap0vqm0mickmk574h8cor.apps.googleusercontent.com",
       googleAndroidClientId:
         process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID ||
-        "1080867624985-guoljb9e2legcamq73qaekrf98frk85e.apps.googleusercontent.com",
+        "1080867624985-4vh8ldmm2c2ftvp1rd3ft961evn289tj.apps.googleusercontent.com",
       googleMapsApiKey: googleMapsApiKey || undefined,
       eas: {
         projectId: "7a541b52-f3c6-4bef-a463-8feaf27eba52",
