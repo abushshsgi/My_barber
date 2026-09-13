@@ -159,6 +159,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             savedLat: cached.latitude != null ? Number(cached.latitude) : null,
             savedLon: cached.longitude != null ? Number(cached.longitude) : null,
           });
+          void prefetchCareCatalog({ recommended: true });
         }
 
         try {
@@ -170,6 +171,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               savedLat: me.latitude != null ? Number(me.latitude) : null,
               savedLon: me.longitude != null ? Number(me.longitude) : null,
             });
+            void prefetchCareCatalog({ recommended: true });
           } else if (!cancelled && signedInRef.current) {
             // Login allaqachon bo'lgan — faqat cache yangilash
             await persistUserCache(me);
