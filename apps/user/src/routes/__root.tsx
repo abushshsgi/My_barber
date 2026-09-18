@@ -28,6 +28,7 @@ import { CurrencyProvider } from "../hooks/use-currency";
 import { AuthSessionGuard } from "../components/AuthSessionGuard";
 import { OnboardingGuard } from "../components/OnboardingGuard";
 import { GoogleAnalytics } from "../components/GoogleAnalytics";
+import { FirebaseInit } from "../components/FirebaseInit";
 import { GA_ENABLED, GA_MEASUREMENT_ID } from "../lib/ga";
 
 const GA_BOOTSTRAP = GA_ENABLED
@@ -214,6 +215,7 @@ function AppShell() {
             </OnboardingGuard>
           </AuthSessionGuard>
           <ClientOnly>
+            <FirebaseInit />
             <GoogleAnalytics />
             <DeployRecovery />
             <Toaster position="top-center" />
