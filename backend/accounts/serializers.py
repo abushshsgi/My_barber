@@ -228,7 +228,10 @@ class UserSerializer(serializers.ModelSerializer):
                         "onboarding_completed": "Profil to'liq emas — yosh talab qilinadi.",
                     }
                 )
-            if lat is None or lng is None:
+            # GPS faqat REQUIRE_PROFILE_LOCATION=true bo'lsa majburiy (default: o'chirilgan).
+            if getattr(settings, "REQUIRE_PROFILE_LOCATION", False) and (
+                lat is None or lng is None
+            ):
                 raise serializers.ValidationError(
                     {
                         "onboarding_completed": (
