@@ -387,17 +387,28 @@ export function MorphCareScreen({ navigation, route }: Props) {
   );
 
   const handleBack = useCallback(() => {
-    if (viewMode === "flow") {
-      setViewMode("hub");
+    // Soch holati quiz tugamaguncha Care hub/plan ochilmasin.
+    if (typeof step === "number") {
+      if (step > 0) {
+        setStep((step - 1) as QuizStep);
+        setViewMode("flow");
+        return;
+      }
+      const routes = navigation.getState?.()?.routes;
+      if (routes && routes.length > 1) {
+        navigation.goBack();
+        return;
+      }
+      goMorph(navigation, route.params?.returnTo || "MorphTryOn");
       return;
     }
-    if (step !== "plan") {
-      if (typeof step === "number" && step > 0) {
-        setStep((step - 1) as QuizStep);
+    if (viewMode === "flow") {
+      if (!isCareQuizComplete(quiz)) {
+        setStep(0);
+        setViewMode("flow");
         return;
       }
       setViewMode("hub");
-      setStep("plan");
       return;
     }
     const routes = navigation.getState?.()?.routes;
@@ -407,7 +418,16 @@ export function MorphCareScreen({ navigation, route }: Props) {
     }
     // MySaloon Home ga otmasin — Morph ichida qoladi.
     goMorph(navigation, route.params?.returnTo || "MorphTryOn");
-  }, [viewMode, step, navigation, route.params, goMorph]);
+  }, [viewMode, step, quiz, navigation, route.params, goMorph]);
+
+  // Hub/plan faqat to‘liq quizdan keyin — aks holda qayta quizga.
+  useEffect(() => {
+    if (step === "boot") return;
+    if ((step === "plan" || viewMode === "hub") && !isCareQuizComplete(quiz)) {
+      setStep(0);
+      setViewMode("flow");
+    }
+  }, [step, viewMode, quiz]);
 
   const dayRows = weather?.days?.length ? weather.days.slice(0, 7) : buildFallbackDays();
   const selectedDate = dayRows[selectedDayIdx]?.date ?? new Date().toISOString().slice(0, 10);

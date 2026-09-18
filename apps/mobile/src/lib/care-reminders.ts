@@ -68,6 +68,18 @@ async function getNotifications(): Promise<typeof import("expo-notifications") |
 export async function ensureCareNotificationPermission(): Promise<boolean> {
   const Notifications = await getNotifications();
   if (!Notifications) return false;
+  if (Platform.OS === "android") {
+    try {
+      await Notifications.setNotificationChannelAsync("default", {
+        name: "Mysaloon",
+        importance: Notifications.AndroidImportance.DEFAULT,
+        vibrationPattern: [0, 250, 250, 250],
+        lightColor: "#2EE6A8",
+      });
+    } catch {
+      /* channel optional on older devices */
+    }
+  }
   const current = await Notifications.getPermissionsAsync();
   if (current.granted) return true;
   const asked = await Notifications.requestPermissionsAsync();

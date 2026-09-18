@@ -1,10 +1,12 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Linking, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { safeBottom, safeTop } from "../../lib/safe-area";
 import { setNotifPromoSeen } from "../../lib/guest";
+import { ensureCareNotificationPermission } from "../../lib/care-reminders";
 import {
   fontSize,
   moderateScale,
@@ -14,35 +16,66 @@ import {
 
 type Props = { onFinish: () => void };
 
+const C = {
+  bg: "#07080C",
+  card: "#121620",
+  fg: "#F4F6FB",
+  muted: "#9AA3B5",
+  accent: "#2EE6A8",
+  accentDim: "rgba(46, 230, 168, 0.16)",
+} as const;
+
 export function NotificationPromoScreen({ onFinish }: Props) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
+  const [busy, setBusy] = useState(false);
 
   const done = async (request: boolean) => {
-    if (request && Platform.OS === "android") {
-      try {
-        // Opens system app notification settings when available.
-        await Linking.openSettings();
-      } catch {
-        /* optional */
+    if (busy) return;
+    setBusy(true);
+    try {
+      if (request) {
+        const granted = await ensureCareNotificationPermission();
+        // Android 13+: ruxsat rad etilsa yoki so‘rov ishlamasa — sozlamalar.
+        if (!granted && Platform.OS === "android") {
+          try {
+            await Linking.openSettings();
+          } catch {
+            /* optional */
+          }
+        }
       }
+      await setNotifPromoSeen();
+      onFinish();
+    } finally {
+      setBusy(false);
     }
-    await setNotifPromoSeen();
-    onFinish();
   };
 
   return (
-    <View style={[styles.root, { paddingTop: safeTop(insets.top, 24), paddingBottom: safeBottom(insets.bottom, 20) }]}>
+    <View
+      style={[
+        styles.root,
+        {
+          paddingTop: safeTop(insets.top, 24),
+          paddingBottom: safeBottom(insets.bottom, 20),
+        },
+      ]}
+    >
       <Animated.View entering={FadeInDown} style={styles.bell}>
-        <Ionicons name="notifications" size={40} color="#111" />
+        <Ionicons name="notifications" size={36} color={C.accent} />
       </Animated.View>
       <Text style={styles.title}>{t("onboarding.notifTitle")}</Text>
       <Text style={styles.sub}>{t("onboarding.notifSub")}</Text>
 
-      <Pressable style={styles.cta} onPress={() => void done(true)}>
+      <Pressable
+        style={[styles.cta, busy && styles.ctaDisabled]}
+        disabled={busy}
+        onPress={() => void done(true)}
+      >
         <Text style={styles.ctaText}>{t("onboarding.notifEnable")}</Text>
       </Pressable>
-      <Pressable style={styles.skip} onPress={() => void done(false)}>
+      <Pressable style={styles.skip} disabled={busy} onPress={() => void done(false)}>
         <Text style={styles.skipText}>{t("onboarding.notifSkip")}</Text>
       </Pressable>
     </View>
@@ -50,23 +83,25 @@ export function NotificationPromoScreen({ onFinish }: Props) {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: "#FAFAFA", paddingHorizontal: scale(24) },
+  root: { flex: 1, backgroundColor: C.bg, paddingHorizontal: scale(24) },
   bell: {
     marginTop: verticalScale(64),
     alignSelf: "center",
-    width: scale(84),
-    height: scale(84),
+    width: scale(88),
+    height: scale(88),
     borderRadius: scale(28),
-    backgroundColor: "#F4F4F5",
+    backgroundColor: C.accentDim,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: verticalScale(24),
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(46,230,168,0.35)",
   },
   title: {
     textAlign: "center",
     fontSize: fontSize(28),
     fontWeight: "800",
-    color: "#111",
+    color: C.fg,
     letterSpacing: -0.6,
   },
   sub: {
@@ -74,17 +109,18 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontSize: fontSize(15),
     lineHeight: fontSize(22),
-    color: "#737373",
+    color: C.muted,
   },
   cta: {
     marginTop: "auto",
-    backgroundColor: "#111",
-    borderRadius: moderateScale(28),
+    backgroundColor: C.accent,
+    borderRadius: moderateScale(18),
     minHeight: verticalScale(54),
     alignItems: "center",
     justifyContent: "center",
   },
-  ctaText: { color: "#FFF", fontWeight: "700", fontSize: fontSize(16) },
+  ctaDisabled: { opacity: 0.6 },
+  ctaText: { color: "#04140F", fontWeight: "800", fontSize: fontSize(16) },
   skip: { marginTop: verticalScale(12), alignItems: "center", paddingVertical: 12 },
-  skipText: { color: "#737373", fontWeight: "600", fontSize: fontSize(15) },
+  skipText: { color: C.muted, fontWeight: "600", fontSize: fontSize(15) },
 });

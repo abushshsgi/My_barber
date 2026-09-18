@@ -1,10 +1,20 @@
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import Animated, { FadeIn, FadeInDown, FadeInUp } from "react-native-reanimated";
+import Animated, {
+  FadeIn,
+  FadeInDown,
+  FadeInUp,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from "react-native-reanimated";
+import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { setScanPromoSeen } from "../../lib/guest";
-import { colors } from "../../theme/colors";
 import {
   fontSize,
   moderateScale,
@@ -14,287 +24,331 @@ import {
 
 type Props = { onFinish: () => void };
 
+/** Morph AI — timZ / dark neon accent (Soft Paper emas). */
+const C = {
+  bg: "#07080C",
+  bgMid: "#0E121A",
+  card: "rgba(18, 22, 32, 0.92)",
+  line: "rgba(255,255,255,0.1)",
+  fg: "#F4F6FB",
+  muted: "#9AA3B5",
+  accent: "#2EE6A8",
+  accentDim: "rgba(46, 230, 168, 0.18)",
+  accentGlow: "rgba(46, 230, 168, 0.35)",
+} as const;
+
 const TIP_KEYS = ["scanTip1", "scanTip2", "scanTip3"] as const;
 const TIP_ICONS: Array<keyof typeof Ionicons.glyphMap> = [
-  "sunny-outline",
-  "person-outline",
-  "glasses-outline",
+  "sunny",
+  "eye",
+  "glasses",
 ];
 
 export function ScanPromoScreen({ onFinish }: Props) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
+  const pulse = useSharedValue(1);
+
+  useEffect(() => {
+    pulse.value = withRepeat(
+      withSequence(
+        withTiming(1.06, { duration: 1100 }),
+        withTiming(1, { duration: 1100 }),
+      ),
+      -1,
+      false,
+    );
+  }, [pulse]);
+
+  const ringStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: pulse.value }],
+    opacity: 0.55 + (pulse.value - 1) * 4,
+  }));
 
   return (
-    <View
-      style={[
-        styles.root,
-        {
-          paddingTop: insets.top + verticalScale(12),
-          paddingBottom: insets.bottom + verticalScale(16),
-        },
-      ]}
-    >
-      {/* Soft hero — illustrated face frame, not a centered purple blob */}
-      <Animated.View entering={FadeIn.duration(420)} style={styles.heroPane}>
-        <View style={styles.heroBadge}>
-          <Text style={styles.heroBadgeText}>Morph AI</Text>
-        </View>
+    <View style={styles.root}>
+      <LinearGradient
+        colors={[C.bg, C.bgMid, "#0A1620"]}
+        start={{ x: 0.1, y: 0 }}
+        end={{ x: 0.9, y: 1 }}
+        style={StyleSheet.absoluteFill}
+      />
+      <View style={[styles.glowOrb, styles.glowTop]} />
+      <View style={[styles.glowOrb, styles.glowBottom]} />
 
-        <View style={styles.frameWrap}>
-          <View style={styles.frameOuter}>
-            <View style={styles.cornerTL} />
-            <View style={styles.cornerTR} />
-            <View style={styles.cornerBL} />
-            <View style={styles.cornerBR} />
-            <View style={styles.faceSilhouette}>
-              <Ionicons name="scan-outline" size={scale(36)} color={colors.fg} />
-            </View>
+      <View
+        style={[
+          styles.content,
+          {
+            paddingTop: insets.top + verticalScale(10),
+            paddingBottom: insets.bottom + verticalScale(14),
+          },
+        ]}
+      >
+        <Animated.View entering={FadeIn.duration(400)} style={styles.topRow}>
+          <View style={styles.brandChip}>
+            <View style={styles.brandDot} />
+            <Text style={styles.brandText}>Morph AI</Text>
           </View>
-          <View style={styles.stepRow}>
-            {[1, 2, 3].map((n) => (
-              <View key={n} style={styles.stepPill}>
-                <Text style={styles.stepPillText}>{n}</Text>
+        </Animated.View>
+
+        <Animated.View entering={FadeIn.delay(60).duration(500)} style={styles.hero}>
+          <Animated.View style={[styles.pulseRing, ringStyle]} />
+          <View style={styles.frame}>
+            <View style={[styles.corner, styles.tl]} />
+            <View style={[styles.corner, styles.tr]} />
+            <View style={[styles.corner, styles.bl]} />
+            <View style={[styles.corner, styles.br]} />
+            <LinearGradient
+              colors={["rgba(46,230,168,0.12)", "transparent", "rgba(46,230,168,0.08)"]}
+              style={styles.frameInner}
+            >
+              <View style={styles.scanBadge}>
+                <Ionicons name="scan" size={scale(28)} color={C.accent} />
               </View>
+              <Text style={styles.frameHint}>FACE LOCK</Text>
+            </LinearGradient>
+          </View>
+        </Animated.View>
+
+        <Animated.View entering={FadeInUp.delay(100).duration(480)} style={styles.sheet}>
+          <View style={styles.sheetAccent} />
+          <Text style={styles.kicker}>{t("onboarding.scanTitle")}</Text>
+          <Text style={styles.sub}>{t("onboarding.scanSub")}</Text>
+
+          <View style={styles.tipList}>
+            {TIP_KEYS.map((key, i) => (
+              <Animated.View
+                key={key}
+                entering={FadeInDown.delay(160 + i * 70)}
+                style={styles.tipRow}
+              >
+                <View style={styles.tipIcon}>
+                  <Ionicons name={TIP_ICONS[i]} size={17} color={C.accent} />
+                </View>
+                <Text style={styles.tipText}>{t(`onboarding.${key}`)}</Text>
+              </Animated.View>
             ))}
           </View>
-        </View>
-      </Animated.View>
 
-      {/* Bottom sheet–style Soft Paper card */}
-      <Animated.View entering={FadeInUp.delay(80).duration(480)} style={styles.sheet}>
-        <View style={styles.sheetHandle} />
-
-        <Animated.Text entering={FadeInDown.delay(120)} style={styles.title}>
-          {t("onboarding.scanTitle")}
-        </Animated.Text>
-        <Animated.Text entering={FadeInDown.delay(160)} style={styles.sub}>
-          {t("onboarding.scanSub")}
-        </Animated.Text>
-
-        <View style={styles.tipList}>
-          {TIP_KEYS.map((key, i) => (
-            <Animated.View
-              key={key}
-              entering={FadeInDown.delay(200 + i * 60)}
-              style={styles.tipRow}
+          <Pressable
+            style={({ pressed }) => [styles.cta, pressed && styles.ctaPressed]}
+            onPress={() => {
+              void setScanPromoSeen().then(onFinish);
+            }}
+          >
+            <LinearGradient
+              colors={[C.accent, "#1BC48A"]}
+              start={{ x: 0, y: 0.5 }}
+              end={{ x: 1, y: 0.5 }}
+              style={styles.ctaGrad}
             >
-              <View style={styles.tipIcon}>
-                <Ionicons name={TIP_ICONS[i]} size={18} color={colors.fg} />
-              </View>
-              <Text style={styles.tipText}>{t(`onboarding.${key}`)}</Text>
-            </Animated.View>
-          ))}
-        </View>
-
-        <Pressable
-          style={({ pressed }) => [styles.cta, pressed && styles.ctaPressed]}
-          onPress={() => {
-            void setScanPromoSeen().then(onFinish);
-          }}
-        >
-          <Text style={styles.ctaText}>{t("onboarding.scanCta")}</Text>
-        </Pressable>
-      </Animated.View>
+              <Text style={styles.ctaText}>{t("onboarding.scanCta")}</Text>
+              <Ionicons name="arrow-forward" size={18} color="#04140F" />
+            </LinearGradient>
+          </Pressable>
+        </Animated.View>
+      </View>
     </View>
   );
 }
 
-const CORNER = moderateScale(18);
-const CORNER_W = moderateScale(22);
-const CORNER_H = 2.5;
+const CORNER = moderateScale(20);
+const CORNER_T = 2.5;
 
 const styles = StyleSheet.create({
-  root: {
+  root: { flex: 1, backgroundColor: C.bg },
+  content: {
     flex: 1,
-    backgroundColor: colors.bg,
-    paddingHorizontal: scale(16),
+    paddingHorizontal: scale(18),
     justifyContent: "space-between",
   },
-  heroPane: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    minHeight: verticalScale(220),
-    paddingVertical: verticalScale(12),
-  },
-  heroBadge: {
-    alignSelf: "flex-start",
-    marginBottom: verticalScale(20),
-    marginLeft: scale(8),
-    paddingHorizontal: scale(10),
-    paddingVertical: verticalScale(5),
-    borderRadius: moderateScale(999),
-    backgroundColor: colors.surface,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-  },
-  heroBadgeText: {
-    fontSize: fontSize(11),
-    fontWeight: "700",
-    letterSpacing: 0.4,
-    color: colors.muted,
-    textTransform: "uppercase",
-  },
-  frameWrap: {
-    alignItems: "center",
-    gap: verticalScale(18),
-  },
-  frameOuter: {
-    width: scale(168),
-    height: scale(210),
-    borderRadius: moderateScale(28),
-    backgroundColor: colors.surface,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-    alignItems: "center",
-    justifyContent: "center",
-    overflow: "hidden",
-  },
-  cornerTL: {
+  glowOrb: {
     position: "absolute",
-    top: scale(14),
-    left: scale(14),
-    width: CORNER_W,
-    height: CORNER,
-    borderTopWidth: CORNER_H,
-    borderLeftWidth: CORNER_H,
-    borderColor: colors.fg,
-    borderTopLeftRadius: 4,
+    width: scale(220),
+    height: scale(220),
+    borderRadius: scale(110),
+    backgroundColor: C.accentGlow,
   },
-  cornerTR: {
-    position: "absolute",
-    top: scale(14),
-    right: scale(14),
-    width: CORNER_W,
-    height: CORNER,
-    borderTopWidth: CORNER_H,
-    borderRightWidth: CORNER_H,
-    borderColor: colors.fg,
-    borderTopRightRadius: 4,
-  },
-  cornerBL: {
-    position: "absolute",
-    bottom: scale(14),
-    left: scale(14),
-    width: CORNER_W,
-    height: CORNER,
-    borderBottomWidth: CORNER_H,
-    borderLeftWidth: CORNER_H,
-    borderColor: colors.fg,
-    borderBottomLeftRadius: 4,
-  },
-  cornerBR: {
-    position: "absolute",
-    bottom: scale(14),
-    right: scale(14),
-    width: CORNER_W,
-    height: CORNER,
-    borderBottomWidth: CORNER_H,
-    borderRightWidth: CORNER_H,
-    borderColor: colors.fg,
-    borderBottomRightRadius: 4,
-  },
-  faceSilhouette: {
-    width: scale(72),
-    height: scale(72),
-    borderRadius: scale(36),
-    backgroundColor: colors.promo,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  stepRow: {
+  glowTop: { top: -scale(40), right: -scale(60), opacity: 0.35 },
+  glowBottom: { bottom: scale(80), left: -scale(80), opacity: 0.2 },
+  topRow: { flexDirection: "row", alignItems: "center" },
+  brandChip: {
     flexDirection: "row",
-    gap: scale(8),
-  },
-  stepPill: {
-    width: scale(28),
-    height: scale(28),
-    borderRadius: scale(14),
-    backgroundColor: colors.surface,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
     alignItems: "center",
-    justifyContent: "center",
+    gap: scale(8),
+    paddingHorizontal: scale(12),
+    paddingVertical: verticalScale(7),
+    borderRadius: moderateScale(999),
+    backgroundColor: "rgba(255,255,255,0.06)",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: C.line,
   },
-  stepPillText: {
+  brandDot: {
+    width: scale(7),
+    height: scale(7),
+    borderRadius: scale(4),
+    backgroundColor: C.accent,
+  },
+  brandText: {
+    color: C.fg,
     fontSize: fontSize(12),
     fontWeight: "700",
-    color: colors.fg,
+    letterSpacing: 0.6,
+    textTransform: "uppercase",
+  },
+  hero: {
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: verticalScale(240),
+  },
+  pulseRing: {
+    position: "absolute",
+    width: scale(210),
+    height: scale(250),
+    borderRadius: moderateScale(36),
+    borderWidth: 1.5,
+    borderColor: C.accent,
+  },
+  frame: {
+    width: scale(176),
+    height: scale(220),
+    borderRadius: moderateScale(28),
+    overflow: "hidden",
+    backgroundColor: "rgba(255,255,255,0.04)",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: C.line,
+  },
+  frameInner: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: verticalScale(10),
+  },
+  scanBadge: {
+    width: scale(64),
+    height: scale(64),
+    borderRadius: scale(20),
+    backgroundColor: C.accentDim,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  frameHint: {
+    color: C.accent,
+    fontSize: fontSize(10),
+    fontWeight: "800",
+    letterSpacing: 2,
+  },
+  corner: {
+    position: "absolute",
+    width: CORNER,
+    height: CORNER,
+    borderColor: C.accent,
+    zIndex: 2,
+  },
+  tl: {
+    top: scale(12),
+    left: scale(12),
+    borderTopWidth: CORNER_T,
+    borderLeftWidth: CORNER_T,
+    borderTopLeftRadius: 6,
+  },
+  tr: {
+    top: scale(12),
+    right: scale(12),
+    borderTopWidth: CORNER_T,
+    borderRightWidth: CORNER_T,
+    borderTopRightRadius: 6,
+  },
+  bl: {
+    bottom: scale(12),
+    left: scale(12),
+    borderBottomWidth: CORNER_T,
+    borderLeftWidth: CORNER_T,
+    borderBottomLeftRadius: 6,
+  },
+  br: {
+    bottom: scale(12),
+    right: scale(12),
+    borderBottomWidth: CORNER_T,
+    borderRightWidth: CORNER_T,
+    borderBottomRightRadius: 6,
   },
   sheet: {
-    backgroundColor: colors.surface,
     borderRadius: moderateScale(28),
+    backgroundColor: C.card,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-    paddingHorizontal: scale(22),
-    paddingTop: verticalScale(10),
+    borderColor: C.line,
+    paddingHorizontal: scale(20),
+    paddingTop: verticalScale(22),
     paddingBottom: verticalScale(18),
+    overflow: "hidden",
   },
-  sheetHandle: {
-    alignSelf: "center",
-    width: scale(36),
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: "rgba(17,17,17,0.12)",
-    marginBottom: verticalScale(16),
+  sheetAccent: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 2,
+    backgroundColor: C.accent,
+    opacity: 0.85,
   },
-  title: {
+  kicker: {
+    color: C.fg,
     fontSize: fontSize(26),
     fontWeight: "800",
-    color: colors.fg,
-    letterSpacing: -0.5,
+    letterSpacing: -0.6,
   },
   sub: {
     marginTop: verticalScale(8),
-    fontSize: fontSize(15),
-    lineHeight: fontSize(22),
-    color: colors.muted,
+    color: C.muted,
+    fontSize: fontSize(14),
+    lineHeight: fontSize(21),
   },
-  tipList: {
-    marginTop: verticalScale(18),
-    gap: verticalScale(10),
-  },
+  tipList: { marginTop: verticalScale(18), gap: verticalScale(10) },
   tipRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: scale(12),
-    backgroundColor: colors.bg,
-    borderRadius: moderateScale(16),
     paddingVertical: verticalScale(12),
     paddingHorizontal: scale(12),
+    borderRadius: moderateScale(16),
+    backgroundColor: "rgba(255,255,255,0.04)",
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
+    borderColor: C.line,
   },
   tipIcon: {
     width: scale(36),
     height: scale(36),
-    borderRadius: moderateScale(12),
-    backgroundColor: colors.surface,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
+    borderRadius: scale(12),
+    backgroundColor: C.accentDim,
     alignItems: "center",
     justifyContent: "center",
   },
   tipText: {
     flex: 1,
-    fontSize: fontSize(14),
-    lineHeight: fontSize(20),
-    fontWeight: "500",
-    color: colors.fg,
+    color: C.fg,
+    fontSize: fontSize(13),
+    fontWeight: "600",
+    lineHeight: fontSize(18),
   },
   cta: {
     marginTop: verticalScale(20),
-    backgroundColor: colors.fg,
-    borderRadius: moderateScale(28),
+    borderRadius: moderateScale(18),
+    overflow: "hidden",
+  },
+  ctaPressed: { opacity: 0.9, transform: [{ scale: 0.98 }] },
+  ctaGrad: {
     minHeight: verticalScale(54),
+    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
+    gap: scale(8),
+    paddingHorizontal: scale(18),
   },
-  ctaPressed: { opacity: 0.88 },
   ctaText: {
-    color: "#FFF",
-    fontWeight: "700",
+    color: "#04140F",
     fontSize: fontSize(16),
+    fontWeight: "800",
   },
 });
