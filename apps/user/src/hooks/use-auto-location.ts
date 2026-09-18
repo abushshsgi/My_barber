@@ -17,6 +17,8 @@ export function useAutoLocationSync() {
   useEffect(() => {
     if (!hasValidUserSession() || !me || attempted.current) return;
 
+    if (me.require_profile_location !== true) return;
+
     const needsLocation =
       !me.region?.trim() || me.latitude == null || me.longitude == null;
     if (!needsLocation) return;

@@ -17,6 +17,7 @@ export type ApiUser = {
   avatar: string | null;
   has_password?: boolean;
   date_joined: string;
+  require_profile_location?: boolean;
 };
 
 export type PhoneCheckResponse = {

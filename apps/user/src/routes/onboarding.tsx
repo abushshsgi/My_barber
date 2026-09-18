@@ -2,10 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { DesktopPageSplit } from "@/components/desktop/DesktopPageSplit";
 import { OnboardingDesktopPage } from "@/components/desktop/pages/OnboardingDesktopPage";
 import { OnboardingSteps } from "@/components/onboarding/OnboardingSteps";
-import {
-  ONBOARDING_STEPS,
-  useOnboardingFlow,
-} from "@/components/onboarding/useOnboardingFlow";
+import { useOnboardingFlow } from "@/components/onboarding/useOnboardingFlow";
 import { Stepper } from "@/components/Stepper";
 import { cn } from "@/lib/utils";
 
@@ -15,7 +12,7 @@ export const Route = createFileRoute("/onboarding")({
 });
 
 function OnboardingMobile({ state }: { state: ReturnType<typeof useOnboardingFlow> }) {
-  const { step, setStep, canNext, onPrimary, busy } = state;
+  const { step, setStep, canNext, onPrimary, busy, lastStep, steps } = state;
 
   return (
     <div className="mobile-neo neo-page flex min-h-[100dvh] flex-col px-6 py-8 pt-safe">
@@ -26,7 +23,7 @@ function OnboardingMobile({ state }: { state: ReturnType<typeof useOnboardingFlo
       </p>
 
       <div className="mt-6">
-        <Stepper steps={[...ONBOARDING_STEPS]} current={step} />
+        <Stepper steps={[...steps]} current={step} />
       </div>
 
       <div className="flex flex-1 flex-col justify-center py-8">
@@ -53,7 +50,7 @@ function OnboardingMobile({ state }: { state: ReturnType<typeof useOnboardingFlo
             step > 1 ? "flex-[2]" : "w-full",
           )}
         >
-          {busy ? "Kutilmoqda…" : step === 3 ? "Boshlash" : "Keyingi"}
+          {busy ? "Kutilmoqda…" : step === lastStep ? "Boshlash" : "Keyingi"}
         </button>
       </div>
     </div>

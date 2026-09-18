@@ -1,9 +1,6 @@
 import { Stepper } from "@/components/Stepper";
 import { OnboardingSteps } from "@/components/onboarding/OnboardingSteps";
-import {
-  ONBOARDING_STEPS,
-  type OnboardingFlowState,
-} from "@/components/onboarding/useOnboardingFlow";
+import { type OnboardingFlowState } from "@/components/onboarding/useOnboardingFlow";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -11,7 +8,7 @@ type Props = {
 };
 
 export function OnboardingDesktopPage({ state }: Props) {
-  const { step, setStep, canNext, onPrimary, busy } = state;
+  const { step, setStep, canNext, onPrimary, busy, lastStep, steps } = state;
   const isLocationStep = step === 3;
 
   return (
@@ -45,7 +42,7 @@ export function OnboardingDesktopPage({ state }: Props) {
         </header>
 
         <div className="mt-5 max-w-[520px]">
-          <Stepper steps={[...ONBOARDING_STEPS]} current={step} />
+          <Stepper steps={[...steps]} current={step} />
         </div>
 
         <div key={step} className={cn("mt-6", isLocationStep ? "pb-4" : "py-8")}>
@@ -77,7 +74,7 @@ export function OnboardingDesktopPage({ state }: Props) {
               step > 1 ? "flex-[2]" : "w-full",
             )}
           >
-            {busy ? "Kutilmoqda…" : step === 3 ? "Boshlash" : "Keyingi"}
+            {busy ? "Kutilmoqda…" : step === lastStep ? "Boshlash" : "Keyingi"}
           </button>
         </div>
       </div>

@@ -161,25 +161,41 @@ export function userRecommendContext(user?: {
   return buildRecommendContext(user);
 }
 
-export function needsOnboarding(user?: {
-  onboarding_completed?: boolean;
-  birth_year?: number | null;
+export function userHasProfileCoords(user?: {
   latitude?: string | number | null;
   longitude?: string | number | null;
 } | null): boolean {
-  if (!user) return true;
-
-  const hasBirth = user.birth_year != null && Number(user.birth_year) > 1900;
+  if (!user) return false;
   const lat = user.latitude;
   const lng = user.longitude;
-  const hasLoc =
+  return (
     lat != null &&
     lat !== "" &&
     lng != null &&
     lng !== "" &&
     Number.isFinite(Number(lat)) &&
-    Number.isFinite(Number(lng));
+    Number.isFinite(Number(lng))
+  );
+}
 
+export function isProfileLocationRequired(user?: {
+  require_profile_location?: boolean;
+} | null): boolean {
+  return user?.require_profile_location === true;
+}
+
+export function needsOnboarding(user?: {
+  onboarding_completed?: boolean;
+  birth_year?: number | null;
+  latitude?: string | number | null;
+  longitude?: string | number | null;
+  require_profile_location?: boolean;
+} | null): boolean {
+  if (!user) return true;
+
+  const hasBirth = user.birth_year != null && Number(user.birth_year) > 1900;
   if (user.onboarding_completed !== true) return true;
-  return !hasBirth || !hasLoc;
+  if (!hasBirth) return true;
+  if (isProfileLocationRequired(user) && !userHasProfileCoords(user)) return true;
+  return false;
 }

@@ -2,15 +2,19 @@ import { useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { GeolocationError, getAccuratePosition } from "@/lib/native-geolocation";
-import { useUpdateMe } from "@/hooks/use-me";
+import { useMe, useUpdateMe } from "@/hooks/use-me";
 import { roundCoord } from "@/lib/api/list-utils";
+import {
+  isProfileLocationRequired,
+  userHasProfileCoords,
+} from "@/lib/recommendations";
 import {
   sanitizeDisplayNameInput,
   validateDisplayName,
   type DisplayNameErrorKey,
 } from "@/lib/validate-display-name";
 
-export const ONBOARDING_STEPS = ["Ism", "Yosh", "Joylashuv"] as const;
+export const ONBOARDING_STEPS = ["Ism", "Yosh"] as const;
 
 const NAME_ERROR_DEFAULTS: Record<DisplayNameErrorKey, string> = {
   nameRequired: "Ism va familiyani kiriting",
@@ -23,7 +27,13 @@ const NAME_ERROR_DEFAULTS: Record<DisplayNameErrorKey, string> = {
 
 export function useOnboardingFlow() {
   const navigate = useNavigate();
+  const { data: me } = useMe();
   const updateMe = useUpdateMe();
+  const locationRequired = isProfileLocationRequired(me);
+  const lastStep = locationRequired ? 3 : 2;
+  const steps = locationRequired
+    ? (["Ism", "Yosh", "Joylashuv"] as const)
+    : ONBOARDING_STEPS;
 
   const [step, setStep] = useState(1);
   const [firstName, setFirstNameRaw] = useState("");
@@ -34,6 +44,30 @@ export function useOnboardingFlow() {
   const [locating, setLocating] = useState(false);
   const [gpsAttempted, setGpsAttempted] = useState(false);
   const [nameTouched, setNameTouched] = useState(false);
+  const [prefilled, setPrefilled] = useState(false);
+
+  const hasBirth = me?.birth_year != null && Number(me.birth_year) > 1900;
+  const locationOnly =
+    locationRequired &&
+    me?.onboarding_completed === true &&
+    hasBirth &&
+    !userHasProfileCoords(me);
+
+  useEffect(() => {
+    if (!me || prefilled) return;
+    const first = (me.first_name || "").trim();
+    const last = (me.last_name || "").trim();
+    if (first) setFirstNameRaw(sanitizeDisplayNameInput(first));
+    if (last) setLastNameRaw(sanitizeDisplayNameInput(last));
+    if (hasBirth) {
+      setAge(String(new Date().getFullYear() - Number(me.birth_year)));
+    }
+    setPrefilled(true);
+  }, [me, prefilled, hasBirth]);
+
+  useEffect(() => {
+    if (locationOnly) setStep(3);
+  }, [locationOnly]);
 
   const setFirstName = useCallback((value: string) => {
     setNameTouched(true);
@@ -82,20 +116,42 @@ export function useOnboardingFlow() {
   }, []);
 
   useEffect(() => {
-    if (step !== 3 || gpsAttempted) return;
+    if (!locationRequired || step !== 3 || gpsAttempted) return;
     void detectLocation();
-  }, [step, gpsAttempted, detectLocation]);
+  }, [step, gpsAttempted, detectLocation, locationRequired]);
 
+  const ageOk = parseInt(age, 10) >= 10 && parseInt(age, 10) <= 100;
   const canNext =
     (step === 1 && nameValidation.ok) ||
-    (step === 2 && parseInt(age, 10) >= 10 && parseInt(age, 10) <= 100) ||
-    (step === 3 && lat != null && lng != null && !locating);
+    (step === 2 && ageOk) ||
+    (step === 3 && locationRequired && lat != null && lng != null && !locating);
 
   const finish = async () => {
-    if (lat == null || lng == null) {
+    if (locationRequired && (lat == null || lng == null)) {
       toast.error("GPS orqali joylashuvni aniqlang");
       return;
     }
+
+    if (locationOnly) {
+      try {
+        await updateMe.mutateAsync({
+          latitude: roundCoord(lat!),
+          longitude: roundCoord(lng!),
+        });
+        try {
+          const { writeDiscoveryLocation } = await import("@/lib/discovery-location");
+          writeDiscoveryLocation({ lat: lat!, lng: lng! });
+        } catch {
+          /* */
+        }
+        toast.success("Joylashuv saqlandi");
+        void navigate({ to: "/", replace: true });
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : "Saqlashda xatolik");
+      }
+      return;
+    }
+
     const checked = validateDisplayName(`${firstName} ${lastName}`);
     if (!checked.ok) {
       setNameTouched(true);
@@ -111,15 +167,18 @@ export function useOnboardingFlow() {
         first_name: first ?? "",
         last_name: rest.join(" "),
         birth_year: birthYear,
-        latitude: roundCoord(lat),
-        longitude: roundCoord(lng),
         onboarding_completed: true,
+        ...(locationRequired && lat != null && lng != null
+          ? { latitude: roundCoord(lat), longitude: roundCoord(lng) }
+          : {}),
       });
-      try {
-        const { writeDiscoveryLocation } = await import("@/lib/discovery-location");
-        writeDiscoveryLocation({ lat, lng });
-      } catch {
-        /* */
+      if (locationRequired && lat != null && lng != null) {
+        try {
+          const { writeDiscoveryLocation } = await import("@/lib/discovery-location");
+          writeDiscoveryLocation({ lat, lng });
+        } catch {
+          /* */
+        }
       }
       toast.success("Profil tayyor!");
       void navigate({ to: "/", replace: true });
@@ -134,7 +193,7 @@ export function useOnboardingFlow() {
       toast.error(NAME_ERROR_DEFAULTS[nameValidation.errorKey]);
       return;
     }
-    if (step < 3) {
+    if (step < lastStep) {
       if (canNext) setStep((s) => s + 1);
       return;
     }
@@ -162,6 +221,9 @@ export function useOnboardingFlow() {
     onPrimary,
     busy,
     nameError,
+    lastStep,
+    steps,
+    locationRequired,
   };
 }
 
