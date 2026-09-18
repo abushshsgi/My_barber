@@ -50,6 +50,7 @@ import { useHideTabBarWhen } from "../../hooks/useHideTabBar";
 import {
   defaultQuiz,
   estimateProductFit,
+  isCareQuizComplete,
   loadCareQuiz,
   saveCareQuiz,
   type CareQuizAnswers,
@@ -616,7 +617,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
       setCatalog(diskCatalog);
       setCatalogReady(true);
     }
-    if (saved?.condition && saved?.texture && saved?.colorStatus) {
+    if (isCareQuizComplete(saved)) {
       setQuiz(saved);
       setStep("plan");
       setViewMode("hub");
@@ -645,7 +646,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
       }
       setCatalogReady(true);
 
-      if (profile?.condition && profile?.texture && profile?.color_status) {
+      if (profile?.complete && profile.condition && profile.texture && profile.color_status) {
         const next: CareQuizAnswers = {
           condition: profile.condition as HairCondition,
           texture: profile.texture as HairTexture,
@@ -662,7 +663,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
         }
         setStep("plan");
         setViewMode("hub");
-      } else if (!saved?.condition) {
+      } else if (!isCareQuizComplete(saved)) {
         setStep(0);
         setViewMode("flow");
       }
@@ -676,6 +677,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
   }, [bootstrap]);
 
   const finishQuiz = async () => {
+    if (!isCareQuizComplete(quiz)) return;
     setSaving(true);
     try {
       await saveCareQuiz(quiz);
@@ -1074,8 +1076,12 @@ export function MorphCareScreen({ navigation, route }: Props) {
               </Pressable>
             ) : null}
             <Pressable
-              style={[styles.primaryBtnLight, styles.primaryBtnLightGrow, saving && styles.disabled]}
-              disabled={saving}
+              style={[
+                styles.primaryBtnLight,
+                styles.primaryBtnLightGrow,
+                (saving || !quizMeta.value) && styles.disabled,
+              ]}
+              disabled={saving || !quizMeta.value}
               onPress={() => {
                 if (step === 2) void finishQuiz();
                 else setStep((step + 1) as QuizStep);

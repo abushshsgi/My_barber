@@ -27,10 +27,20 @@ export type RoutineTask = {
 };
 
 export type CareQuizAnswers = {
+  condition: HairCondition | "";
+  texture: HairTexture | "";
+  colorStatus: HairColorStatus | "";
+};
+
+export function isCareQuizComplete(
+  q: CareQuizAnswers | null | undefined,
+): q is CareQuizAnswers & {
   condition: HairCondition;
   texture: HairTexture;
   colorStatus: HairColorStatus;
-};
+} {
+  return Boolean(q?.condition && q?.texture && q?.colorStatus);
+}
 
 /** Foydalanuvchi tanlagan parvarish oynasi (HH:MM). */
 export type CareSchedulePrefs = {
@@ -220,11 +230,13 @@ function buildStylingTips(texture: HairTexture, condition: HairCondition): strin
 }
 
 export function defaultQuiz(): CareQuizAnswers {
-  return { condition: "normal", texture: "straight", colorStatus: "natural" };
+  return { condition: "", texture: "", colorStatus: "" };
 }
 
 export function buildCarePlan(quiz: CareQuizAnswers): CarePlan {
-  const { condition, texture, colorStatus } = quiz;
+  const condition: HairCondition = quiz.condition || "normal";
+  const texture: HairTexture = quiz.texture || "straight";
+  const colorStatus: HairColorStatus = quiz.colorStatus || "natural";
   const summaryByCondition: Record<HairCondition, string> = {
     oily: "Ildiz tez yog‘lanadi. Yengil yuvish va kam mahsulot.",
     dry: "Uchlar quruqroq. Namlantirish + leave-in.",

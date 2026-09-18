@@ -20,7 +20,7 @@ import type { MorphChatMessage } from "../../api/ai";
 import { resolveMediaUrl } from "../../api/media";
 import { displayName, initials } from "../../api/user";
 import { useAuth } from "../../auth/AuthContext";
-import { MorphPaywallView } from "../../components/morph/MorphPaywallView";
+import { HairProfileGate } from "../../components/morph/HairProfileGate";
 import { ChatBubble } from "../../components/morph/chat/ChatBubble";
 import { ChatInputBar } from "../../components/morph/chat/ChatInputBar";
 import { ChatMenuDrawer } from "../../components/morph/chat/ChatMenuDrawer";
@@ -89,6 +89,12 @@ export function MorphChatScreen() {
     consumeMorphReturn();
     setPaywall(null);
   }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      void chat.refreshHairProfile();
+    }, [chat.refreshHairProfile]),
+  );
 
   useFocusEffect(
     useCallback(() => {
@@ -499,11 +505,27 @@ export function MorphChatScreen() {
     </SafeModal>
   );
 
-  if (!chat.hydrated) {
+  if (!chat.hydrated || !chat.hairReady) {
     return (
       <View style={[styles.root, styles.boot, { backgroundColor: pal.bg }]}>
         <StatusBar style={pal.status} />
         <ActivityIndicator color={pal.fg} />
+      </View>
+    );
+  }
+
+  if (!chat.hairComplete) {
+    return (
+      <View style={[styles.root, { backgroundColor: pal.bg }]}>
+        <StatusBar style={pal.status} />
+        <HairProfileGate
+          title={t("chat.hairGate.title")}
+          body={t("chat.hairGate.body")}
+          cta={t("chat.hairGate.cta")}
+          backA11y={t("chat.home.backA11y")}
+          onOpenCare={() => navigation.navigate("MorphCare")}
+          onBack={leaveChat}
+        />
       </View>
     );
   }

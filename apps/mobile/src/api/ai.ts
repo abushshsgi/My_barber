@@ -9,6 +9,14 @@ export class MorphPlanLimitError extends Error {
   }
 }
 
+export class MorphHairProfileRequiredError extends Error {
+  code = "hair_profile_required" as const;
+  constructor(message: string) {
+    super(message);
+    this.name = "MorphHairProfileRequiredError";
+  }
+}
+
 /** Yuz emas rasm yuklanganda foydalanuvchiga ko‘rinadigan yagona matn. */
 export const NO_FACE_MESSAGE =
   "Yuzdan boshqa narsa yuklandi. Iltimos, yuz shaklingizni yuboring!";
@@ -69,6 +77,9 @@ function throwFromMorphApiError(
   const { detail, code, noFace } = morphErrorDetail(body, fallback);
   if (res.status === 403 && code === "morph_plan_limit") {
     throw new MorphPlanLimitError(detail);
+  }
+  if (res.status === 403 && code === "hair_profile_required") {
+    throw new MorphHairProfileRequiredError(detail);
   }
   if (noFace) {
     throw new MorphNoFaceError(NO_FACE_MESSAGE);
@@ -486,6 +497,11 @@ export type MorphChatContext = {
   days_count?: number;
   products_list?: string[];
   user_goal?: string;
+  care_condition?: string;
+  care_texture?: string;
+  care_color_status?: string;
+  care_scalp?: string;
+  care_concerns?: string;
 };
 
 export type CareProgressStoryPayload = {

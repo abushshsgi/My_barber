@@ -16,7 +16,9 @@ import {
   type MorphChatMessage,
   type MorphChatThreadRemote,
 } from "../api/ai";
+import { fetchHairCareProfile, updateHairCareProfile } from "../api/care";
 import { createPacedWriter } from "../lib/chat-pace";
+import { isCareQuizComplete, loadCareQuiz } from "../lib/morph-ai-care";
 import {
   DEFAULT_MORPH_CHAT_PREFS,
   readMorphChatPrefs,
@@ -205,6 +207,9 @@ export function useMorphChat() {
   const [error, setError] = useState<string | null>(null);
   const [limits, setLimits] = useState<MorphChatLimits | null>(null);
   const [hydrated, setHydrated] = useState(false);
+  const [hairComplete, setHairComplete] = useState(false);
+  const [hairReady, setHairReady] = useState(false);
+  const hairContextRef = useRef<MorphChatContext>({});
 
   const activeThreadIdRef = useRef<string | null>(null);
   const messagesRef = useRef<MorphChatMessage[]>([]);
@@ -215,6 +220,51 @@ export function useMorphChat() {
   const [limitWarning, setLimitWarning] = useState<string | null>(null);
 
   const context = useMemo(() => buildContextFromSession(session), [session]);
+
+  const refreshHairProfile = useCallback(async () => {
+    try {
+      const [profile, local] = await Promise.all([
+        fetchHairCareProfile().catch(() => null),
+        loadCareQuiz().catch(() => null),
+      ]);
+      let complete = Boolean(profile?.complete);
+      if (!complete && isCareQuizComplete(local)) {
+        try {
+          await updateHairCareProfile({
+            condition: local.condition,
+            texture: local.texture,
+            color_status: local.colorStatus,
+            scalp:
+              local.condition === "oily"
+                ? "oily"
+                : local.condition === "dry" || local.condition === "damaged"
+                  ? "dry"
+                  : "normal",
+          });
+          complete = true;
+        } catch {
+          complete = false;
+        }
+      }
+      const cond = profile?.condition || local?.condition || "";
+      const tex = profile?.texture || local?.texture || "";
+      const color = profile?.color_status || local?.colorStatus || "";
+      hairContextRef.current = complete
+        ? {
+            care_condition: cond,
+            care_texture: tex,
+            care_color_status: color,
+            ...(profile?.scalp ? { care_scalp: profile.scalp } : {}),
+            ...(profile?.concerns?.length
+              ? { care_concerns: profile.concerns.join(", ") }
+              : {}),
+          }
+        : {};
+      setHairComplete(complete);
+    } finally {
+      setHairReady(true);
+    }
+  }, []);
 
   useEffect(() => {
     void readMorphChatPrefs().then((p) => {
@@ -370,6 +420,12 @@ export function useMorphChat() {
         }
 
         try {
+          await refreshHairProfile();
+        } catch {
+          if (!cancelled) setHairReady(true);
+        }
+
+        try {
           const remoteLimits = await fetchMorphChatLimits();
           if (!cancelled) {
             setLimits(remoteLimits);
@@ -413,7 +469,7 @@ export function useMorphChat() {
     return () => {
       cancelled = true;
     };
-  }, [t]);
+  }, [t, refreshHairProfile]);
 
   const promptText = useCallback(
     (id: (typeof MORPH_QUICK_PROMPT_IDS)[number]) => t(`chat.prompts.${QUICK_I18N[id]}`),
@@ -483,6 +539,7 @@ export function useMorphChat() {
             : prefs.replyLang;
         const prefContext: MorphChatContext = {
           ...(prefs.useTryOnContext && context ? context : {}),
+          ...hairContextRef.current,
           reply_lang: lang,
           reply_style: prefs.replyStyle,
           ...(prefs.adviceGender !== "auto"
@@ -684,6 +741,9 @@ export function useMorphChat() {
     welcomeSeen,
     markWelcomeSeen,
     hydrated,
+    hairComplete,
+    hairReady,
+    refreshHairProfile,
     messages: realMessages(messages),
     input,
     setInput,

@@ -716,7 +716,12 @@
       "subtitle": "Mikrofonni bosing: Morf tinglaydi, keyin ovozda javob beradi. Yuz, soch va soqol bo'yicha shaxsiy maslahat.",
       "askAnything": "Istalgan narsani so'rang...",
       "cameraA11y": "Kamera",
-      "backA11y": "Back",
+      "backA11y": "Back"
+    },
+    "hairGate": {
+      "title": "Tell us your hair condition first",
+      "body": "Chat and care stay locked until you complete this. Then we can give a matching plan, advice, and products.",
+      "cta": "Set my hair profile"
     },
     "menu": {
       "brand": "Morf AI",

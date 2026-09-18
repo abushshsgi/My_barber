@@ -113,6 +113,7 @@ export function MorphIngredientScreen({ navigation }: Props) {
   }, [camPerm?.granted, requestCamPerm]);
 
   const syncProfile = useCallback(async (answers: CareQuizAnswers) => {
+    if (!hasQuizFields(answers)) return;
     await saveCareQuiz(answers);
     await updateHairCareProfile({
       condition: answers.condition,
