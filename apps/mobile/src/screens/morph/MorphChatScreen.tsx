@@ -21,6 +21,7 @@ import { resolveMediaUrl } from "../../api/media";
 import { displayName, initials } from "../../api/user";
 import { useAuth } from "../../auth/AuthContext";
 import { HairProfileGate } from "../../components/morph/HairProfileGate";
+import { MorphPaywallView } from "../../components/morph/MorphPaywallView";
 import { ChatBubble } from "../../components/morph/chat/ChatBubble";
 import { ChatInputBar } from "../../components/morph/chat/ChatInputBar";
 import { ChatMenuDrawer } from "../../components/morph/chat/ChatMenuDrawer";
