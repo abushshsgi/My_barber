@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from decimal import Decimal
 
+from django.conf import settings
+
 from accounts.models import User, UserAddress
 from accounts.uz_regions import UzRegion
 from geo.region_resolver import resolve_region_from_coords
@@ -10,6 +12,8 @@ from geo.services.dgis import DgisGeocoderError, reverse_geocode
 
 def sync_user_active_location(user: User) -> None:
     """Asosiy manzil bo'yicha profil region va GPS ni yangilash (tavsiya algoritmi uchun)."""
+    if not getattr(settings, "REQUIRE_PROFILE_LOCATION", False):
+        return
     addr = (
         UserAddress.objects.filter(user=user, is_default=True)
         .order_by("-updated_at")

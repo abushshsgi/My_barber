@@ -246,6 +246,7 @@ class PhoneAuthTests(TestCase):
         )
         self.assertEqual(me.status_code, 200)
         self.assertEqual(me.json()["phone"], "+998907776655")
+        self.assertFalse(me.json()["require_profile_location"])
 
     def test_resend_blocked_returns_retry_after(self):
         first = self.client.post(

@@ -1,5 +1,6 @@
 from decimal import Decimal, ROUND_HALF_UP
 
+from django.conf import settings
 from django.db import transaction
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
@@ -65,6 +66,7 @@ class UserSerializer(serializers.ModelSerializer):
     age = serializers.SerializerMethodField()
     display_email = serializers.SerializerMethodField()
     email_verified = serializers.SerializerMethodField()
+    require_profile_location = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -88,6 +90,7 @@ class UserSerializer(serializers.ModelSerializer):
             "avatar",
             "has_password",
             "date_joined",
+            "require_profile_location",
         )
         read_only_fields = (
             "id",
@@ -97,6 +100,7 @@ class UserSerializer(serializers.ModelSerializer):
             "age",
             "display_email",
             "email_verified",
+            "require_profile_location",
         )
 
     def get_display_email(self, obj: User) -> str | None:
@@ -111,6 +115,9 @@ class UserSerializer(serializers.ModelSerializer):
 
     def get_has_password(self, obj: User) -> bool:
         return obj.has_usable_password()
+
+    def get_require_profile_location(self, obj: User) -> bool:
+        return bool(getattr(settings, "REQUIRE_PROFILE_LOCATION", False))
 
     def get_age(self, obj: User) -> int | None:
         if obj.birth_year is None:

@@ -30,6 +30,13 @@ WALLET_DEBUG_TOPUP_MAX = int(os.environ.get("WALLET_DEBUG_TOPUP_MAX", "1000000")
 
 DEBUG = os.environ.get("DJANGO_DEBUG", "true").lower() in ("1", "true", "yes")
 
+# Bron ishga tushgach True: profil GPS sahifasi (web + native) chiqadi.
+REQUIRE_PROFILE_LOCATION = os.environ.get("REQUIRE_PROFILE_LOCATION", "").lower() in (
+    "1",
+    "true",
+    "yes",
+)
+
 # Request body size limit — salon/gallery rasmlari (telefon 8–12MB) uchun yetarli bo‘lsin.
 # Env bilan override: DATA_UPLOAD_MAX_MEMORY_SIZE=20971520
 DATA_UPLOAD_MAX_MEMORY_SIZE = int(
