@@ -3,6 +3,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import type { ReactNode } from "react";
 import {
   StyleSheet,
+  useWindowDimensions,
   View,
   type ImageSourcePropType,
   type StyleProp,
@@ -32,9 +33,25 @@ type Props = {
   lightStatusBar?: boolean;
 };
 
+/** Ekran kengligiga qarab chrome inset — chip/back chetga yopishmasin. */
+function autoChromePadX(width: number, override?: number): number {
+  const floor =
+    width < 360 ? scale(14) : width < 400 ? scale(16) : width < 480 ? scale(18) : scale(20);
+  if (override == null) return floor;
+  return Math.max(override, floor);
+}
+
+function autoChromePadTop(edgeToEdge: boolean, insetsTop: number, topExtra: number): number {
+  const floor = scale(12);
+  if (edgeToEdge) {
+    return safeTop(insetsTop, Math.max(topExtra, floor));
+  }
+  return Math.max(topExtra, floor);
+}
+
 /**
  * Care hub + Weather sahifalari uchun yagona ob-havo banneri:
- * cover rasm konteynerni to‘liq to‘ldiradi (web/native), overflow clip, gradient.
+ * cover rasm konteynerni to‘liq to‘ldiradi; chrome avtomatik responsive inset.
  */
 export function WeatherHeaderCard({
   source,
@@ -45,14 +62,16 @@ export function WeatherHeaderCard({
   edgeToEdge = true,
   topExtra = 8,
   borderRadius = 0,
-  paddingHorizontal = scale(16),
+  paddingHorizontal,
   paddingBottom = verticalScale(16),
   contentPosition = "center",
   style,
   lightStatusBar = true,
 }: Props) {
   const insets = useSafeAreaInsets();
-  const topPad = edgeToEdge ? safeTop(insets.top, topExtra) : topExtra;
+  const { width } = useWindowDimensions();
+  const padX = autoChromePadX(width, paddingHorizontal);
+  const topPad = autoChromePadTop(edgeToEdge, insets.top, topExtra);
   const totalHeight = edgeToEdge ? height + topPad : height;
 
   return (
@@ -64,14 +83,13 @@ export function WeatherHeaderCard({
           width: "100%",
           borderRadius,
           paddingTop: topPad,
-          paddingHorizontal,
+          paddingHorizontal: padX,
           paddingBottom,
         },
         style,
       ]}
     >
       {lightStatusBar ? <AppStatusBar style="light" /> : null}
-      {/* Wrapper: expo-image webda absoluteFill ba’zan ichki img ga o‘tmaydi */}
       <View style={styles.media} pointerEvents="none">
         <Image
           source={source}
@@ -95,8 +113,8 @@ export function WeatherHeaderCard({
       </View>
       {topLeft || topRight ? (
         <View style={styles.topRow}>
-          {topLeft ?? <View />}
-          {topRight ?? <View />}
+          <View style={styles.topSlotStart}>{topLeft ?? null}</View>
+          <View style={styles.topSlotEnd}>{topRight ?? null}</View>
         </View>
       ) : null}
       <View style={styles.body}>{children}</View>
@@ -122,10 +140,22 @@ const styles = StyleSheet.create({
   },
   topRow: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-start",
     justifyContent: "space-between",
     zIndex: 2,
-    gap: scale(10),
+    gap: scale(12),
+    width: "100%",
+  },
+  topSlotStart: {
+    flexShrink: 0,
+    alignItems: "flex-start",
+  },
+  topSlotEnd: {
+    flex: 1,
+    flexShrink: 1,
+    minWidth: 0,
+    alignItems: "flex-end",
+    paddingLeft: scale(8),
   },
   body: {
     zIndex: 2,

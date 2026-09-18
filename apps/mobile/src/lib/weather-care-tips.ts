@@ -407,8 +407,8 @@ export function careHubLayout(
   );
   const sheetGap = rs(Math.round((short ? 8 : 12) * density), scale);
   const promoInner = promoH;
-  const promoPad = narrow ? Math.max(8, rs(10, scale)) : width < 400 ? rs(12, scale) : rs(14, scale);
-  const promoRadius = narrow ? Math.max(14, rs(16, scale)) : rs(22, scale);
+  const promoPad = narrow ? Math.max(14, rs(14, scale)) : width < 400 ? rs(16, scale) : rs(18, scale);
+  const promoRadius = narrow ? Math.max(16, rs(18, scale)) : rs(22, scale);
 
   return {
     scale,

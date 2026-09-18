@@ -1138,10 +1138,10 @@ export function MorphCareScreen({ navigation, route }: Props) {
               source={weatherImg}
               height={hubLayout.promoH}
               edgeToEdge={false}
-              topExtra={8}
+              topExtra={scale(12)}
               borderRadius={hubLayout.promoRadius}
               paddingHorizontal={hubLayout.promoPad}
-              paddingBottom={verticalScale(10)}
+              paddingBottom={verticalScale(12)}
               lightStatusBar={false}
               style={{
                 marginHorizontal: hubLayout.hPad,
@@ -1173,6 +1173,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
                   <Text
                     style={[styles.promoRegionLabel, { fontSize: hubLayout.promoUi.locFs + 1 }]}
                     numberOfLines={1}
+                    ellipsizeMode="tail"
                   >
                     {weatherCityName}
                   </Text>
@@ -2207,9 +2208,10 @@ const styles = StyleSheet.create({
   },
   promoRegionChip: {
     flexShrink: 1,
-    maxWidth: "62%",
+    maxWidth: "100%",
+    alignSelf: "flex-end",
     backgroundColor: "#FFFFFF",
-    paddingVertical: verticalScale(6),
+    paddingVertical: verticalScale(7),
     paddingHorizontal: scale(12),
     borderRadius: moderateScale(12),
     borderWidth: StyleSheet.hairlineWidth,

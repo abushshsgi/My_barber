@@ -143,7 +143,7 @@ export function MorphCareWeatherScreen({ navigation }: Props) {
           source={heroImg}
           height={heroContentH}
           edgeToEdge
-          topExtra={8}
+          topExtra={scale(12)}
           borderRadius={0}
           paddingHorizontal={scale(16)}
           paddingBottom={verticalScale(22)}
@@ -162,7 +162,7 @@ export function MorphCareWeatherScreen({ navigation }: Props) {
           }
           topRight={
             <Pressable style={styles.cityChip} onPress={() => setRegionOpen(true)}>
-              <Text style={styles.cityChipText} numberOfLines={1}>
+              <Text style={styles.cityChipText} numberOfLines={1} ellipsizeMode="tail">
                 {cityName}
               </Text>
               <Ionicons name="chevron-down" size={14} color="#111" />
@@ -496,7 +496,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: scale(12),
     paddingVertical: verticalScale(7),
     borderRadius: moderateScale(12),
-    maxWidth: "58%",
+    maxWidth: "100%",
+    flexShrink: 1,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: "rgba(15,23,42,0.1)",
     shadowColor: "#000",
@@ -505,7 +506,13 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     elevation: 2,
   },
-  cityChipText: { ...morphFont, fontSize: fontSize(13), fontWeight: "800", color: "#111" },
+  cityChipText: {
+    ...morphFont,
+    fontSize: fontSize(13),
+    fontWeight: "800",
+    color: "#111",
+    flexShrink: 1,
+  },
   heroLoading: {
     flex: 1,
     alignItems: "center",
