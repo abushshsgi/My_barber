@@ -33,16 +33,24 @@ type Props = {
   lightStatusBar?: boolean;
 };
 
-/** Ekran kengligiga qarab chrome inset — chip/back chetga yopishmasin. */
-function autoChromePadX(width: number, override?: number): number {
-  const floor =
-    width < 360 ? scale(14) : width < 400 ? scale(16) : width < 480 ? scale(18) : scale(20);
+/** Ekran + banner radiusiga qarab chrome inset — chip/back chet/burchakka yopishmasin. */
+function autoChromePadX(width: number, borderRadius: number, override?: number): number {
+  const byWidth =
+    width < 360 ? scale(18) : width < 400 ? scale(20) : width < 480 ? scale(22) : scale(24);
+  // Rounded corner ichida vizual bo‘shliq — radiusning ~55% i qo‘shimcha.
+  const byRadius = Math.ceil(borderRadius * 0.55);
+  const floor = Math.max(byWidth, byRadius, scale(16));
   if (override == null) return floor;
   return Math.max(override, floor);
 }
 
-function autoChromePadTop(edgeToEdge: boolean, insetsTop: number, topExtra: number): number {
-  const floor = scale(12);
+function autoChromePadTop(
+  edgeToEdge: boolean,
+  insetsTop: number,
+  topExtra: number,
+  borderRadius: number,
+): number {
+  const floor = Math.max(scale(14), Math.ceil(borderRadius * 0.45));
   if (edgeToEdge) {
     return safeTop(insetsTop, Math.max(topExtra, floor));
   }
@@ -70,8 +78,8 @@ export function WeatherHeaderCard({
 }: Props) {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
-  const padX = autoChromePadX(width, paddingHorizontal);
-  const topPad = autoChromePadTop(edgeToEdge, insets.top, topExtra);
+  const padX = autoChromePadX(width, borderRadius, paddingHorizontal);
+  const topPad = autoChromePadTop(edgeToEdge, insets.top, topExtra, borderRadius);
   const totalHeight = edgeToEdge ? height + topPad : height;
 
   return (
