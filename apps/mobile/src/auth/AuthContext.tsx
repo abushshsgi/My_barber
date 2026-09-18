@@ -56,6 +56,7 @@ function storedToApiUser(stored: StoredUser): ApiUser {
     latitude: stored.latitude,
     longitude: stored.longitude,
     onboarding_completed: stored.onboarding_completed,
+    require_profile_location: stored.require_profile_location,
   };
 }
 
@@ -71,6 +72,7 @@ function apiUserToStored(user: ApiUser): StoredUser {
     latitude: user.latitude ?? null,
     longitude: user.longitude ?? null,
     onboarding_completed: user.onboarding_completed,
+    require_profile_location: user.require_profile_location,
   };
 }
 

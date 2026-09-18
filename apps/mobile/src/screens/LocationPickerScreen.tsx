@@ -26,7 +26,10 @@ import {
   type OnboardingMapHandle,
 } from "../components/onboarding/OnboardingMap";
 import { AppStatusBar, safeBottom, safeTop } from "../components/ui/AppStatusBar";
+import { updateMe } from "../api/user";
+import { useAuth } from "../auth/AuthContext";
 import { setGuestLocation } from "../lib/guest";
+import { roundCoord } from "../lib/onboarding";
 import type { LocationEntryMode } from "./GetStartedScreen";
 import { colors } from "../theme/colors";
 import {
@@ -48,6 +51,7 @@ export function LocationPickerScreen({
   initialMode = "map",
 }: Props) {
   const insets = useSafeAreaInsets();
+  const { isAuthenticated, refreshMe } = useAuth();
   const mapRef = useRef<OnboardingMapHandle | null>(null);
   const reverseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const gpsOnceRef = useRef(false);
@@ -243,6 +247,14 @@ export function LocationPickerScreen({
         address: addressLabel,
         region: geo?.region_from_gps,
       });
+      if (isAuthenticated) {
+        await updateMe({
+          latitude: roundCoord(lat),
+          longitude: roundCoord(lng),
+          ...(geo?.region_from_gps ? { region: geo.region_from_gps } : {}),
+        });
+        await refreshMe();
+      }
       onFinish();
     } catch (e) {
       finishingRef.current = false;

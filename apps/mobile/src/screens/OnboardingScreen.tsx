@@ -161,13 +161,14 @@ export function OnboardingScreen({ onComplete }: { onComplete?: () => void }) {
     try {
       const guest = await getGuestLocation();
       const gender = await getAppGender();
+      const saveLocation = user?.require_profile_location === true && guest;
       await updateMe({
         first_name: first ?? "",
         last_name: rest.join(" "),
         birth_year: birthYear,
         onboarding_completed: true,
         ...(gender ? { gender } : {}),
-        ...(guest
+        ...(saveLocation
           ? {
               latitude: roundCoord(guest.latitude),
               longitude: roundCoord(guest.longitude),
@@ -184,7 +185,7 @@ export function OnboardingScreen({ onComplete }: { onComplete?: () => void }) {
       setSaving(false);
       setError(e instanceof Error ? e.message : "Saqlashda xatolik");
     }
-  }, [age, ctaScale, firstName, lastName, onComplete, refreshMe]);
+  }, [age, ctaScale, firstName, lastName, onComplete, refreshMe, user?.require_profile_location]);
 
   if (saving) {
     return (

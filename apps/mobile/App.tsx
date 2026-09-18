@@ -31,7 +31,7 @@ import {
 } from "./src/lib/guest";
 import { writeAppShell } from "./src/lib/app-shell";
 import { markMorphTryOnIntroDone } from "./src/lib/morph-onboarding";
-import { needsOnboarding } from "./src/lib/onboarding";
+import { needsOnboarding, isProfileLocationRequired, userHasProfileCoords } from "./src/lib/onboarding";
 import { RootNavigator } from "./src/navigation/RootNavigator";
 import { OnboardingScreen } from "./src/screens/OnboardingScreen";
 import { SplashScreen } from "./src/screens/SplashScreen";
@@ -62,26 +62,9 @@ if (Platform.OS === "android") {
   void import("./src/lib/analytics").then((m) => m.logAppOpen()).catch(() => {});
 }
 
-function userHasCoords(user: {
-  latitude?: string | number | null;
-  longitude?: string | number | null;
-} | null): boolean {
-  if (!user) return false;
-  const lat = user.latitude;
-  const lng = user.longitude;
-  return (
-    lat != null &&
-    lat !== "" &&
-    lng != null &&
-    lng !== "" &&
-    Number.isFinite(Number(lat)) &&
-    Number.isFinite(Number(lng))
-  );
-}
-
 /**
  * Splash+til → Feature (chat/try-on/care) → Login (majburiy)
- * → Gender → Terms → Location → Profil → Creating → App
+ * → Gender → Terms → (Location: faqat REQUIRE_PROFILE_LOCATION) → Profil → Creating → App
  */
 function AppGate() {
   const { loading, isAuthenticated, user, needsOnboarding: mustOnboard } = useAuth();
@@ -215,8 +198,7 @@ function AppGate() {
     return <TermsAcceptScreen onFinish={() => setTermsOk(true)} />;
   }
 
-  const hasLocation = !!guestLocation || userHasCoords(user);
-  if (!hasLocation) {
+  if (isProfileLocationRequired(user) && !userHasProfileCoords(user)) {
     const {
       LocationPickerScreen,
     } = require("./src/screens/LocationPickerScreen") as typeof import("./src/screens/LocationPickerScreen");

@@ -18,6 +18,7 @@ export type ApiUser = {
   avatar?: string | null;
   has_password?: boolean;
   gender?: "male" | "female" | null;
+  require_profile_location?: boolean;
 };
 
 export type UpdateMePayload = Partial<

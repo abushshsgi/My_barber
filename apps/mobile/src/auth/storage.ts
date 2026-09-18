@@ -33,6 +33,7 @@ export type StoredUser = {
   latitude?: string | number | null;
   longitude?: string | number | null;
   onboarding_completed?: boolean;
+  require_profile_location?: boolean;
 };
 
 export async function saveSession(payload: {
