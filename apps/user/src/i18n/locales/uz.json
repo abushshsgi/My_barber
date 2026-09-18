@@ -1094,6 +1094,11 @@
       "comingSoon": "Soch, parvarish va uslub bo‘yicha AI yordamchi.",
       "welcomeTitle": "Morf AI chatbot",
       "welcomeBody": "Mikrofonni bosing: gapiring, AI eshitadi, keyin ovozda javob beradi.",
+      "hairGate": {
+        "title": "Avval soch holatingizni ayting",
+        "body": "To‘liq holatni tanlamaguncha chatbot va parvarish rejasini ocholmaymiz. Shunga qarab mos maslahat, reja va mahsulot beramiz.",
+        "cta": "Holatimni belgilash"
+      },
       "placeholder": "Xabar yozing yoki gapiring…",
       "send": "Yuborish",
       "voiceStart": "Jonli suhbat",

@@ -1093,6 +1093,11 @@
       "comingSoon": "An AI assistant for hair, care, and style.",
       "welcomeTitle": "Morf AI chatbot",
       "welcomeBody": "Tap the mic: speak, AI listens, then replies out loud.",
+      "hairGate": {
+        "title": "Tell us your hair condition first",
+        "body": "Chat and care stay locked until you complete this. Then we can give a matching plan, advice, and products.",
+        "cta": "Set my hair profile"
+      },
       "placeholder": "Type or speak…",
       "send": "Send",
       "voiceStart": "Live conversation",

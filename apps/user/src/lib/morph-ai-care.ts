@@ -7,10 +7,20 @@ export type ScalpType = "oily" | "dry" | "sensitive";
 export type ColorStatus = "natural" | "colored" | "bleached";
 
 export type CareQuizAnswers = {
+  condition: HairCondition | "";
+  texture: HairTexture | "";
+  colorStatus: ColorStatus | "";
+};
+
+export function isCareQuizComplete(
+  q: CareQuizAnswers | null | undefined,
+): q is CareQuizAnswers & {
   condition: HairCondition;
   texture: HairTexture;
   colorStatus: ColorStatus;
-};
+} {
+  return Boolean(q?.condition && q?.texture && q?.colorStatus);
+}
 
 export type CareProduct = {
   name: string;
@@ -161,13 +171,8 @@ function buildStylingTips(texture: HairTexture, condition: HairCondition): strin
   return tips.slice(0, 4);
 }
 
-export function defaultQuizFromProfile(profile?: SavedFaceProfile | null): CareQuizAnswers {
-  const face = profile ?? loadFaceProfile();
-  return {
-    condition: pickCondition(face),
-    texture: pickTexture(face?.faceShapeKey),
-    colorStatus: "natural",
-  };
+export function defaultQuizFromProfile(_profile?: SavedFaceProfile | null): CareQuizAnswers {
+  return { condition: "", texture: "", colorStatus: "" };
 }
 
 export function buildCarePlan(
@@ -176,8 +181,8 @@ export function buildCarePlan(
 ): CarePlan {
   const face = profile ?? loadFaceProfile();
   const answers = quiz ?? loadCareQuiz();
-  const condition = answers?.condition ?? pickCondition(face);
-  const texture = answers?.texture ?? pickTexture(face?.faceShapeKey);
+  const condition: HairCondition = answers?.condition || pickCondition(face);
+  const texture: HairTexture = answers?.texture || pickTexture(face?.faceShapeKey);
   const density = pickDensity(face?.hairTypeKey);
   const scalp: ScalpType =
     condition === "oily" ? "oily" : condition === "dry" || condition === "damaged" ? "dry" : "sensitive";

@@ -8,7 +8,7 @@ import { navigateBack } from "@/lib/mobile-back";
 import {
   buildCarePlan,
   careOptionImage,
-  defaultQuizFromProfile,
+  isCareQuizComplete,
   loadCareQuiz,
   saveCareQuiz,
   type CareQuizAnswers,
@@ -47,9 +47,11 @@ export function MorphAiCarePage() {
   const profile = useMemo(() => loadFaceProfile(), []);
   const savedQuiz = useMemo(() => loadCareQuiz(), []);
   const [quiz, setQuiz] = useState<CareQuizAnswers>(
-    () => savedQuiz ?? defaultQuizFromProfile(profile),
+    () => (savedQuiz && isCareQuizComplete(savedQuiz) ? savedQuiz : { condition: "", texture: "", colorStatus: "" }),
   );
-  const [step, setStep] = useState<QuizStep | "plan">(savedQuiz ? "plan" : 0);
+  const [step, setStep] = useState<QuizStep | "plan">(
+    savedQuiz && isCareQuizComplete(savedQuiz) ? "plan" : 0,
+  );
   const [activeTab, setActiveTab] = useState<"plan" | "album">("plan");
   const [sosOpen, setSosOpen] = useState(false);
   const plan = useMemo(() => buildCarePlan(profile, quiz), [profile, quiz]);
@@ -106,6 +108,7 @@ export function MorphAiCarePage() {
   }
 
   const finishQuiz = () => {
+    if (!isCareQuizComplete(quiz)) return;
     saveCareQuiz(quiz);
     void updateHair
       .mutateAsync({
@@ -236,11 +239,12 @@ export function MorphAiCarePage() {
             ) : null}
             <button
               type="button"
+              disabled={!current.value}
               onClick={() => {
                 if (step === 2) finishQuiz();
                 else setStep((step + 1) as QuizStep);
               }}
-              className="h-12 flex-[1.6] cursor-pointer rounded-full bg-[#111111] text-sm font-semibold text-white active:scale-[0.98]"
+              className="h-12 flex-[1.6] cursor-pointer rounded-full bg-[#111111] text-sm font-semibold text-white active:scale-[0.98] disabled:opacity-40"
             >
               {step === 2
                 ? t("aiStylePage.care.quiz.seePlan", { defaultValue: "Davom etish" })

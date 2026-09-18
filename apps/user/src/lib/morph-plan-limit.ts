@@ -1,5 +1,13 @@
 import type { SubscriptionMe, SubscriptionUsage } from "@/lib/api/subscriptions";
 
+export class MorphHairProfileRequiredError extends Error {
+  readonly code = "hair_profile_required" as const;
+  constructor(message: string) {
+    super(message);
+    this.name = "MorphHairProfileRequiredError";
+  }
+}
+
 export class MorphPlanLimitError extends Error {
   readonly code = "morph_plan_limit" as const;
 
@@ -71,6 +79,9 @@ export function throwFromMorphApiError(res: Response, body: unknown, fallback: s
 
   if (res.status === 403 && code === "morph_plan_limit") {
     throw new MorphPlanLimitError(detail);
+  }
+  if (res.status === 403 && code === "hair_profile_required") {
+    throw new MorphHairProfileRequiredError(detail);
   }
   if (isMorphPlanLimitMessage(detail)) {
     throw new MorphPlanLimitError(detail);

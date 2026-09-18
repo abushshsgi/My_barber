@@ -13,12 +13,13 @@ import { useMorphLimitGate } from "@/hooks/use-morph-limit-gate";
 import { useMorphVoiceChat } from "@/hooks/use-morph-voice";
 import { hasValidUserSession } from "@/lib/api/client";
 import { sendMorphChatMessage, streamMorphChatMessage, type MorphChatLimits } from "@/lib/api/ai";
+import { useHairCareProfile } from "@/hooks/use-hair-care-profile";
 import {
   patchMorphAiPrefs,
   readMorphAiPrefs,
   shouldPersistChatToServer,
 } from "@/lib/morph-ai-prefs";
-import { isMorphPlanLimitError } from "@/lib/morph-plan-limit";
+import { isMorphPlanLimitError, MorphHairProfileRequiredError } from "@/lib/morph-plan-limit";
 import { cn } from "@/lib/utils";
 
 type ChatMsg = { id: string; role: "user" | "assistant"; content: string };
@@ -73,6 +74,7 @@ export function MorphAiChatPage() {
   const router = useRouter();
   const navigate = useNavigate();
   const loggedIn = hasValidUserSession();
+  const hairQ = useHairCareProfile();
   const gate = useMorphLimitGate();
   const privacy = useMorphAiPrivacy();
   const [messages, setMessages] = useState<ChatMsg[]>([]);
@@ -138,6 +140,10 @@ export function MorphAiChatPage() {
         void navigate({ to: "/auth" });
         return null;
       }
+      if (!hairQ.data?.complete) {
+        void navigate({ to: "/ai-style/care" });
+        return null;
+      }
       const allowed = await gate.ensureChat();
       if (!allowed) return null;
 
@@ -157,7 +163,20 @@ export function MorphAiChatPage() {
           history,
           thread_id: threadId,
           persist,
-          ...(raw ? { context: { voice_mode: true } } : {}),
+          context: {
+            ...(raw ? { voice_mode: true } : {}),
+            ...(hairQ.data?.complete
+              ? {
+                  care_condition: hairQ.data.condition,
+                  care_texture: hairQ.data.texture,
+                  care_color_status: hairQ.data.color_status,
+                  ...(hairQ.data.scalp ? { care_scalp: hairQ.data.scalp } : {}),
+                  ...(hairQ.data.concerns?.length
+                    ? { care_concerns: hairQ.data.concerns.join(", ") }
+                    : {}),
+                }
+              : {}),
+          },
         };
         let reply = "";
         let limits: MorphChatLimits;
@@ -189,13 +208,17 @@ export function MorphAiChatPage() {
           await gate.openFromApiLimit(raw ? "voice" : "chat");
           return null;
         }
+        if (err instanceof MorphHairProfileRequiredError) {
+          void navigate({ to: "/ai-style/care" });
+          return null;
+        }
         toast.error(err instanceof Error ? err.message : t("aiStylePage.chat.error"));
         return null;
       } finally {
         setSending(false);
       }
     },
-    [applyLimits, gate, input, loggedIn, messages, navigate, sending, t, threadId],
+    [applyLimits, gate, hairQ.data, input, loggedIn, messages, navigate, sending, t, threadId],
   );
 
   const voice = useMorphVoiceChat({
@@ -250,6 +273,34 @@ export function MorphAiChatPage() {
           <Settings2 className="size-[18px]" strokeWidth={2} />
         </button>
       </header>
+
+      {loggedIn && (hairQ.isLoading || hairQ.isPending) ? (
+        <div className="grid flex-1 place-items-center">
+          <Loader2 className="size-6 animate-spin text-[#111111]/40" />
+        </div>
+      ) : loggedIn && !hairQ.data?.complete ? (
+        <div className="mx-auto flex min-h-0 flex-1 max-w-sm flex-col items-center justify-center px-6 text-center">
+          <Lock className="size-6 text-[#111111]/45" />
+          <h1 className="mt-4 text-xl font-semibold tracking-tight">
+            {t("aiStylePage.chat.hairGate.title", {
+              defaultValue: "Avval soch holatingizni ayting",
+            })}
+          </h1>
+          <p className="mt-2 text-sm leading-relaxed text-[#111111]/55">
+            {t("aiStylePage.chat.hairGate.body", {
+              defaultValue:
+                "To‘liq holatni tanlamaguncha chatbot va parvarish rejasini ocholmaymiz. Shunga qarab mos maslahat, reja va mahsulot beramiz.",
+            })}
+          </p>
+          <Link
+            to="/ai-style/care"
+            className="mt-8 inline-flex h-12 items-center rounded-full bg-[#111111] px-6 text-sm font-semibold text-white"
+          >
+            {t("aiStylePage.chat.hairGate.cta", { defaultValue: "Holatimni belgilash" })}
+          </Link>
+        </div>
+      ) : (
+        <>
 
       {limitWarning ? (
         <div className="mx-4 mb-2 flex items-start gap-2 rounded-2xl bg-amber-100 px-3 py-2.5 text-sm text-amber-800">
@@ -389,6 +440,8 @@ export function MorphAiChatPage() {
           </button>
         )}
       </form>
+        </>
+      )}
 
       {settingsOpen ? (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-3 sm:items-center">
