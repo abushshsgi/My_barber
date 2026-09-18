@@ -6,6 +6,17 @@ const https = require("https");
 const projectRoot = __dirname;
 const config = getDefaultConfig(projectRoot);
 
+/** Native build artifactlari Metro watcher limitini to‘ldiradi (ENOSPC). */
+const prevBlockList = config.resolver.blockList;
+config.resolver.blockList = [
+  ...(Array.isArray(prevBlockList) ? prevBlockList : prevBlockList ? [prevBlockList] : []),
+  /\/android\/\.cxx\/.*/,
+  /\/android\/app\/build\/.*/,
+  /\/android\/build\/.*/,
+  /\/ios\/Pods\/.*/,
+  /\/ios\/build\/.*/,
+];
+
 /** Web: react-native-maps native codegen — stub (MapScreen.web / OnboardingMap.web ishlatiladi). */
 try {
   // Expo CLI odatda .env ni yuklaydi; Metro alohida ishga tushganda ham UPSTREAM to‘g‘ri bo‘lsin.
@@ -20,6 +31,15 @@ config.resolver.resolveRequest = (context, moduleName, platform) => {
     return {
       type: "sourceFile",
       filePath: path.resolve(projectRoot, "src/shims/react-native-maps.web.js"),
+    };
+  }
+  if (
+    platform === "web" &&
+    (moduleName === "expo-media-library" || moduleName === "expo-media-library/legacy")
+  ) {
+    return {
+      type: "sourceFile",
+      filePath: path.resolve(projectRoot, "src/shims/expo-media-library.web.js"),
     };
   }
   if (upstreamResolveRequest) {

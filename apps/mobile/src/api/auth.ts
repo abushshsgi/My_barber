@@ -47,14 +47,12 @@ export async function checkPhone(phone: string): Promise<{
   has_password: boolean;
   registered: boolean;
 }> {
-  try {
-    return await apiJson("/api/v1/auth/phone/check/", {
-      method: "POST",
-      body: JSON.stringify({ phone }),
-    });
-  } catch {
-    return { phone, has_password: false, registered: false };
-  }
+  // Network/5xx ni yutib yubormaymiz — LoginScreen catch da ko‘rsatiladi.
+  // Aks holda offline bo‘lsa ham “yangi user” kabi kod yuborishga o‘tib ketardi.
+  return apiJson("/api/v1/auth/phone/check/", {
+    method: "POST",
+    body: JSON.stringify({ phone }),
+  });
 }
 
 export async function sendPhoneCode(

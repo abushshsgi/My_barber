@@ -298,7 +298,7 @@ from ai.care_views import (
     CareSosFixView,
     HairCareProfileMeView,
 )
-from ai.weather_views import CareWeatherView
+from ai.weather_views import CareWeatherPlanView, CareWeatherRegionsView, CareWeatherView
 from ai.views import (
     AiBarberCardView,
     AiFaceCheckView,
@@ -588,6 +588,8 @@ api_routes = [
     path("ai/care/shelf/<int:item_id>/", CareShelfDetailView.as_view()),
     path("ai/care/sos/", CareSosFixView.as_view()),
     path("ai/care/weather/", CareWeatherView.as_view()),
+    path("ai/care/weather/regions/", CareWeatherRegionsView.as_view()),
+    path("ai/care/weather/plan/", CareWeatherPlanView.as_view()),
     path("ai/barber-card/", AiBarberCardView.as_view()),
     path("ai/chat/", AiMorphChatView.as_view()),
     path("ai/chat/voice/voices/", AiMorphChatVoiceVoicesView.as_view()),

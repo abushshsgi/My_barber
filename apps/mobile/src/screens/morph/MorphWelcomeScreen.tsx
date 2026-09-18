@@ -13,5 +13,5 @@ export function MorphWelcomeScreen({ navigation }: Props) {
     navigation.replace("MorphCapture");
   }, [navigation]);
 
-  return <View style={{ flex: 1, backgroundColor: "#111111" }} />;
+  return <View style={{ flex: 1, backgroundColor: "#FAFAFA" }} />;
 }

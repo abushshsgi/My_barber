@@ -1,9 +1,15 @@
 import { StyleSheet, View } from "react-native";
-import { SOFT_PAPER } from "../../../theme/morph-appearance";
+import { useMorphAppearance } from "../../../lib/MorphAppearanceContext";
 
-/** Soft Paper ambient — ochiq fon, gradient yo‘q. */
+/** Soft Paper ambient — theme palette fon. */
 export function ChatAmbientBg() {
-  return <View pointerEvents="none" style={styles.root} />;
+  const { colors } = useMorphAppearance();
+  return (
+    <View
+      pointerEvents="none"
+      style={[styles.root, { backgroundColor: colors.bg }]}
+    />
+  );
 }
 
 const styles = StyleSheet.create({
@@ -13,6 +19,5 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: SOFT_PAPER.bg,
   },
 });

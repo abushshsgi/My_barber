@@ -26,14 +26,15 @@ export function ResponsiveImage({
       {uri ? (
         <Image
           source={{ uri }}
-          style={StyleSheet.absoluteFill}
+          style={styles.img}
           contentFit={contentFit}
           recyclingKey={recyclingKey ?? uri}
           transition={transition}
           cachePolicy="memory-disk"
+          priority="high"
         />
       ) : (
-        <View style={[StyleSheet.absoluteFill, styles.placeholder]} />
+        <View style={[styles.img, styles.placeholder]} />
       )}
     </View>
   );
@@ -43,6 +44,15 @@ const styles = StyleSheet.create({
   frame: {
     overflow: "hidden",
     backgroundColor: colors.surface,
+  },
+  img: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: "100%",
+    height: "100%",
   },
   placeholder: {
     backgroundColor: colors.surface,

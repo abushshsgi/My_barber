@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { LinearGradient } from "expo-linear-gradient";
+import { Asset } from "expo-asset";
 import { Image } from "expo-image";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -88,6 +89,18 @@ const QUICK_ALBUM = require("../../../assets/care/care-quick-album.png");
 const HUB_ROUTINE = require("../../../assets/care/care-hub-routine-v2.png");
 const HUB_SCAN = require("../../../assets/care/care-hub-scan-v2.png");
 
+const CARE_HUB_LOCAL_ASSETS = [
+  QUICK_SOS,
+  QUICK_SHELF,
+  QUICK_GROWTH,
+  QUICK_ALBUM,
+  HUB_ROUTINE,
+  HUB_SCAN,
+] as const;
+
+/** Local PNG lar modul yuklanganda xotiraga olinadi — UI ochilganda darhol. */
+void Asset.loadAsync([...CARE_HUB_LOCAL_ASSETS]).catch(() => undefined);
+
 const CONDITION_OPTS: HairCondition[] = ["oily", "dry", "normal", "damaged"];
 const TEXTURE_OPTS: HairTexture[] = ["straight", "wavy", "curly"];
 const COLOR_OPTS: HairColorStatus[] = ["natural", "colored", "bleached"];
@@ -168,7 +181,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const { isAuthenticated, user } = useAuth();
-  const { goMorph, navigateRootTab } = useShellNavigation();
+  const { goMorph } = useShellNavigation();
   const [access, setAccess] = useState<{ allowed: boolean; detail?: string } | null>({
     allowed: true,
   });
@@ -186,6 +199,8 @@ export function MorphCareScreen({ navigation, route }: Props) {
   const [selectedDayIdx, setSelectedDayIdx] = useState(0);
   const [addToast, setAddToast] = useState<{ title: string; image: string } | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
+  /** Sheet ochilib bo‘lgach grid — ochilish animatsiyasini bloklamaslik uchun. */
+  const [searchListReady, setSearchListReady] = useState(false);
   /** Hubda tab yashirin; quiz/search ham — soch tahlili to‘liq ekran. */
   useHideTabBarWhen(
     viewMode === "hub" ||
@@ -205,6 +220,8 @@ export function MorphCareScreen({ navigation, route }: Props) {
   const addScale = useRef(new Animated.Value(0.86)).current;
   const addHideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchSheetY = useRef(new Animated.Value(Dimensions.get("window").height)).current;
+  const searchBackdropOp = useRef(new Animated.Value(0)).current;
+  const searchAnimPending = useRef(false);
   const previewSheetY = useRef(new Animated.Value(Dimensions.get("window").height)).current;
   const previewBackdropOp = useRef(new Animated.Value(0)).current;
   const searchInputRef = useRef<TextInput>(null);
@@ -395,34 +412,66 @@ export function MorphCareScreen({ navigation, route }: Props) {
   const selectedDate = dayRows[selectedDayIdx]?.date ?? new Date().toISOString().slice(0, 10);
 
   const openSearch = useCallback(() => {
-    setSearchOpen(true);
     setPreviewId(null);
     setPreviewVisible(false);
     setSessionAddedIds([]);
+    setSearchListReady(false);
+    searchSheetY.stopAnimation();
+    searchBackdropOp.stopAnimation();
     searchSheetY.setValue(searchSheetHeight);
-    Animated.spring(searchSheetY, {
-      toValue: 0,
-      friction: 9,
-      tension: 68,
-      overshootClamping: true,
-      useNativeDriver: Platform.OS !== "web",
-    }).start(({ finished }) => {
-      if (finished) searchInputRef.current?.focus();
-    });
-    const excludeIds = myProducts.map((p) => p.id);
-    void fetchCareProducts({
-      order: "likes",
-      exclude_mine: true,
-      exclude_ids: excludeIds.length ? excludeIds : undefined,
-    })
-      .then((rows) => {
-        if (rows.length) {
-          setCatalog(rows);
-          setCareCatalogCache(rows);
+    searchBackdropOp.setValue(0);
+    searchAnimPending.current = true;
+    setSearchOpen(true);
+  }, [searchSheetHeight, searchSheetY, searchBackdropOp]);
+
+  useEffect(() => {
+    if (!searchOpen || !searchAnimPending.current) return;
+    searchAnimPending.current = false;
+    const native = Platform.OS !== "web";
+    let listTimer: ReturnType<typeof setTimeout> | null = null;
+    let fetchTimer: ReturnType<typeof setTimeout> | null = null;
+    const frame = requestAnimationFrame(() => {
+      Animated.parallel([
+        Animated.timing(searchBackdropOp, {
+          toValue: 1,
+          duration: 240,
+          easing: Easing.out(Easing.quad),
+          useNativeDriver: native,
+        }),
+        Animated.timing(searchSheetY, {
+          toValue: 0,
+          duration: 340,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: native,
+        }),
+      ]).start(({ finished }) => {
+        if (finished) {
+          searchInputRef.current?.focus();
         }
-      })
-      .catch(() => {});
-  }, [myProducts, searchSheetHeight, searchSheetY]);
+      });
+      listTimer = setTimeout(() => setSearchListReady(true), 90);
+      fetchTimer = setTimeout(() => {
+        const excludeIds = myProducts.map((p) => p.id);
+        void fetchCareProducts({
+          order: "likes",
+          exclude_mine: true,
+          exclude_ids: excludeIds.length ? excludeIds : undefined,
+        })
+          .then((rows) => {
+            if (rows.length) {
+              setCatalog(rows);
+              setCareCatalogCache(rows);
+            }
+          })
+          .catch(() => {});
+      }, 220);
+    });
+    return () => {
+      cancelAnimationFrame(frame);
+      if (listTimer) clearTimeout(listTimer);
+      if (fetchTimer) clearTimeout(fetchTimer);
+    };
+  }, [searchOpen, searchSheetY, searchBackdropOp, myProducts]);
 
   const openCatalog = openSearch;
 
@@ -445,16 +494,29 @@ export function MorphCareScreen({ navigation, route }: Props) {
     setPreviewId(null);
     setPreviewVisible(false);
     setSessionAddedIds([]);
-    Animated.timing(searchSheetY, {
-      toValue: searchSheetHeight,
-      duration: 280,
-      easing: Easing.in(Easing.cubic),
-      useNativeDriver: Platform.OS !== "web",
-    }).start(() => {
+    searchSheetY.stopAnimation();
+    searchBackdropOp.stopAnimation();
+    const native = Platform.OS !== "web";
+    Animated.parallel([
+      Animated.timing(searchBackdropOp, {
+        toValue: 0,
+        duration: 220,
+        easing: Easing.in(Easing.quad),
+        useNativeDriver: native,
+      }),
+      Animated.timing(searchSheetY, {
+        toValue: searchSheetHeight,
+        duration: 280,
+        easing: Easing.in(Easing.cubic),
+        useNativeDriver: native,
+      }),
+    ]).start(({ finished }) => {
+      if (!finished) return;
       setSearchOpen(false);
+      setSearchListReady(false);
       setSearchQuery("");
     });
-  }, [searchSheetHeight, searchSheetY]);
+  }, [searchSheetHeight, searchSheetY, searchBackdropOp]);
 
   const closeSearchRef = useRef(closeSearch);
   closeSearchRef.current = closeSearch;
@@ -476,12 +538,12 @@ export function MorphCareScreen({ navigation, route }: Props) {
             closeSearchRef.current();
             return;
           }
-          Animated.spring(searchSheetY, {
+          const native = Platform.OS !== "web";
+          Animated.timing(searchSheetY, {
             toValue: 0,
-            friction: 9,
-            tension: 70,
-            overshootClamping: true,
-            useNativeDriver: Platform.OS !== "web",
+            duration: 240,
+            easing: Easing.out(Easing.cubic),
+            useNativeDriver: native,
           }).start();
         },
       }),
@@ -499,10 +561,6 @@ export function MorphCareScreen({ navigation, route }: Props) {
   const openWeather = useCallback(() => {
     navigation.navigate("CareWeather");
   }, [navigation]);
-
-  const openAssistant = useCallback(() => {
-    navigateRootTab(navigation, "MorphChat");
-  }, [navigation, navigateRootTab]);
 
   const openProduct = useCallback(
     (productId: number) => {
@@ -682,7 +740,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
         category: mp.category || "spray",
         duration: "2 Min",
         durationMinutes: 2,
-        image: resolveMediaUrl(rawImg, { width: 360 }) || rawImg || "",
+        image: resolveMediaUrl(rawImg, { width: 480 }) || rawImg || "",
         bgColors: ["#F0F0F0", "#F0F0F0", "#F0F0F0"],
         isUserAdded: true,
         usageText: mp.usage_uz || fromCatalog?.usage_uz,
@@ -705,7 +763,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
         category: cp.category,
         duration: cp.category === "mask" ? "5 Min" : "2 Min",
         durationMinutes: cp.category === "mask" ? 5 : 2,
-        image: resolveMediaUrl(cp.image_url, { width: 360 }) || cp.image_url || "",
+        image: resolveMediaUrl(cp.image_url, { width: 480 }) || cp.image_url || "",
         bgColors:
           cp.category === "mask"
             ? ["#F0F0F0", "#F0F0F0", "#F0F0F0"]
@@ -719,6 +777,12 @@ export function MorphCareScreen({ navigation, route }: Props) {
     // Demo/Unsplash yo‘q — bo‘sh yoki skeleton.
     return list;
   }, [myProducts, catalog, quiz]);
+
+  useEffect(() => {
+    displayProducts.slice(0, 16).forEach((p) => {
+      if (p.image) void Image.prefetch(p.image).catch(() => undefined);
+    });
+  }, [displayProducts]);
 
   const searchResults = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
@@ -1028,10 +1092,11 @@ export function MorphCareScreen({ navigation, route }: Props) {
   }
 
   if (viewMode === "hub") {
-    const hubTopPad = searchOpen ? safeTop(insets.top, 6) : 0;
+    const hubTopPad = safeTop(insets.top, 10);
+    const hubBottomPad = Math.max(hubLayout.dockClearance, safeBottom(insets.bottom, 28));
     return (
-      <View style={[styles.hubRoot, { paddingBottom: hubLayout.dockClearance }]}>
-        {searchOpen ? <AppStatusBar style="dark" /> : null}
+      <View style={[styles.hubRoot, { paddingBottom: hubBottomPad }]}>
+        <AppStatusBar style="dark" />
         <View style={[StyleSheet.absoluteFill, { backgroundColor: "#FAFAFA" }]} />
 
         <View
@@ -1041,26 +1106,21 @@ export function MorphCareScreen({ navigation, route }: Props) {
               paddingTop: hubTopPad,
             },
           ]}
+          pointerEvents={searchOpen ? "none" : "auto"}
         >
-          {!searchOpen ? (
-          <View
-            style={[
-              styles.promoWrap,
-              {
-                paddingHorizontal: hubLayout.hPad,
-                marginTop: 0,
-              },
-            ]}
-          >
             <WeatherHeaderCard
               source={weatherImg}
               height={hubLayout.promoH}
-              edgeToEdge
+              edgeToEdge={false}
               topExtra={8}
               borderRadius={hubLayout.promoRadius}
               paddingHorizontal={hubLayout.promoPad}
               paddingBottom={verticalScale(10)}
-              lightStatusBar
+              lightStatusBar={false}
+              style={{
+                marginHorizontal: hubLayout.hPad,
+                marginBottom: verticalScale(4),
+              }}
               topLeft={
                 <Pressable
                   style={[
@@ -1184,13 +1244,8 @@ export function MorphCareScreen({ navigation, route }: Props) {
                 ) : null}
               </Pressable>
             </WeatherHeaderCard>
-          </View>
-          ) : (
-            <View style={{ height: 4 }} />
-          )}
 
           {/* Tezkor kartochkalar — SOS, shelf, growth, album */}
-          {!searchOpen ? (
             <ScrollView
               horizontal
               nestedScrollEnabled={true}
@@ -1267,14 +1322,13 @@ export function MorphCareScreen({ navigation, route }: Props) {
                     cachePolicy="memory-disk"
                     priority="high"
                     transition={0}
+                    recyclingKey={`quick-${card.key}`}
                   />
                 </Pressable>
               ))}
             </ScrollView>
-          ) : null}
 
-          {/* Search Bar — sheet ochiq bo‘lsa yashirin (input sheet ichida) */}
-          {!searchOpen ? (
+          {/* Search Bar */}
           <View
             style={[
               styles.searchSection,
@@ -1318,10 +1372,8 @@ export function MorphCareScreen({ navigation, route }: Props) {
               </View>
             </Pressable>
           </View>
-          ) : null}
 
-          {/* Featured — qidiruv ochiq bo‘lsa yashirin */}
-          {!searchOpen ? (
+          {/* Featured */}
           <ScrollView
             horizontal
             nestedScrollEnabled={true}
@@ -1397,6 +1449,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
                         priority="high"
                         recyclingKey={prod.id}
                         transition={0}
+                        placeholderContentFit="cover"
                       />
                     ) : (
                       <View style={[styles.featuredCardImg, { backgroundColor: "#E8E8E8" }]} />
@@ -1533,10 +1586,8 @@ export function MorphCareScreen({ navigation, route }: Props) {
               );
             })}
           </ScrollView>
-          ) : null}
 
-          {/* Hisobot sheet — featured kartochkalar ostida (scroll ichida) */}
-          {!searchOpen ? (
+          {/* Hisobot sheet — featured kartochkalar ostida */}
             <View style={styles.hubDockOuter}>
               <View
                 style={[
@@ -1594,9 +1645,11 @@ export function MorphCareScreen({ navigation, route }: Props) {
                       source={HUB_ROUTINE}
                       style={styles.hubCardImg}
                       contentFit="cover"
+                      contentPosition="center"
                       cachePolicy="memory-disk"
                       priority="high"
                       transition={0}
+                      recyclingKey="hub-routine"
                     />
                     <LinearGradient
                       colors={["transparent", "rgba(17,17,17,0.58)"]}
@@ -1636,9 +1689,11 @@ export function MorphCareScreen({ navigation, route }: Props) {
                       source={HUB_SCAN}
                       style={styles.hubCardImg}
                       contentFit="cover"
+                      contentPosition="center"
                       cachePolicy="memory-disk"
                       priority="high"
                       transition={0}
+                      recyclingKey="hub-scan"
                     />
                     <LinearGradient
                       colors={["transparent", "rgba(17,17,17,0.58)"]}
@@ -1669,37 +1724,22 @@ export function MorphCareScreen({ navigation, route }: Props) {
                   </Pressable>
                 </View>
 
-                <Pressable
-                  style={[
-                    styles.aiAssistant,
-                    { height: hubLayout.aiH, marginTop: 0 },
-                  ]}
-                  onPress={openAssistant}
-                  accessibilityLabel={t("care.hubAiAssistant")}
-                >
-                  <LinearGradient
-                    colors={["#111111", "#111111"]}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={styles.aiAssistantIcon}
-                  >
-                    <Ionicons name="sparkles" size={14} color="#fff" />
-                  </LinearGradient>
-                  <Text style={styles.aiAssistantText}>{t("care.hubAiAssistant")}</Text>
-                  <Ionicons name="arrow-forward" size={15} color="#111111" />
-                </Pressable>
               </View>
             </View>
-          ) : null}
         </View>
 
         {searchOpen ? (
           <>
-            <Pressable
-              style={styles.searchBackdrop}
-              onPress={closeSearch}
-              accessibilityLabel={t("common.back")}
-            />
+            <Animated.View
+              pointerEvents="box-none"
+              style={[styles.searchBackdrop, { opacity: searchBackdropOp }]}
+            >
+              <Pressable
+                style={StyleSheet.absoluteFill}
+                onPress={closeSearch}
+                accessibilityLabel={t("common.back")}
+              />
+            </Animated.View>
             <Animated.View
               style={[
                 styles.searchSheet,
@@ -1752,7 +1792,11 @@ export function MorphCareScreen({ navigation, route }: Props) {
                 contentContainerStyle={styles.searchSheetList}
                 bounces
               >
-                {searchResults.length === 0 ? (
+                {!searchListReady ? (
+                  <View style={styles.searchLoading}>
+                    <ActivityIndicator color="#111111" />
+                  </View>
+                ) : searchResults.length === 0 ? (
                   <Text style={styles.searchEmpty}>{t("care.catalog.empty")}</Text>
                 ) : (
                   <View style={[styles.searchGrid, { gap: searchCols === 1 ? 10 : 8 }]}>
@@ -1911,24 +1955,6 @@ export function MorphCareScreen({ navigation, route }: Props) {
           </Animated.View>
         ) : null}
 
-        {!searchOpen ? (
-          <Pressable
-            style={[
-              styles.fab,
-              {
-                bottom: hubLayout.dockClearance + verticalScale(8),
-                right: hubLayout.hPad,
-              },
-            ]}
-            onPress={openAssistant}
-            accessibilityRole="button"
-            accessibilityLabel={t("care.hubAiAssistant")}
-          >
-            <View style={styles.fabInner}>
-              <Ionicons name="sparkles" size={22} color="#FFFFFF" />
-            </View>
-          </Pressable>
-        ) : null}
       </View>
     );
   }
@@ -2089,12 +2115,6 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0,0,0,0.05)",
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: "rgba(0,0,0,0.08)",
-  },
-  promoWrap: {
-    marginTop: 0,
-    marginBottom: verticalScale(4),
-    width: "100%",
-    alignSelf: "stretch",
   },
   promoCard: {
     width: "100%",
@@ -2516,6 +2536,11 @@ const styles = StyleSheet.create({
     textAlign: "center",
     color: "rgba(15,23,42,0.45)",
     fontSize: fontSize(13),
+  },
+  searchLoading: {
+    paddingVertical: verticalScale(40),
+    alignItems: "center",
+    justifyContent: "center",
   },
   searchGrid: {
     flexDirection: "row",
@@ -2939,7 +2964,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     paddingHorizontal: scale(10),
     paddingTop: 0,
-    paddingBottom: verticalScale(6),
+    paddingBottom: verticalScale(4),
     backgroundColor: "transparent",
     justifyContent: "flex-end",
   },
@@ -3065,31 +3090,6 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     letterSpacing: -0.35,
   },
-  aiAssistant: {
-    borderRadius: moderateScale(20),
-    backgroundColor: "#FFFFFF",
-    borderWidth: 1,
-    borderColor: "rgba(17,17,17,0.1)",
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "flex-start",
-    paddingHorizontal: scale(16),
-    gap: moderateScale(12),
-  },
-  aiAssistantIcon: {
-    width: scale(30),
-    height: scale(30),
-    borderRadius: moderateScale(15),
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  aiAssistantText: {
-    ...morphFont,
-    flex: 1,
-    fontSize: fontSize(14),
-    fontWeight: "700",
-    color: "#111111",
-  },
   rowBetweenLight: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   onboardBadge: { ...morphFont, fontSize: fontSize(12), fontWeight: "600", color: "#111111" },
   onboardH1: { ...morphFont, fontSize: fontSize(28), fontWeight: "700", color: "#111", letterSpacing: -0.6, lineHeight: fontSize(34) },
@@ -3138,26 +3138,6 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.6)",
   },
   ghostBtnLightText: { ...morphFont, fontSize: fontSize(14), fontWeight: "600", color: "#111" },
-  fab: {
-    position: "absolute",
-    right: scale(20),
-    width: scale(56),
-    height: scale(56),
-    borderRadius: moderateScale(28),
-    overflow: "hidden",
-    elevation: 4,
-    shadowColor: "#111111",
-    shadowOpacity: 0.35,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-  },
-  fabInner: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#111111",
-    borderRadius: moderateScale(28),
-  },
   flexGrow: { flex: 1.6 },
   disabled: { opacity: 0.5 },
   muted: { ...morphFont, fontSize: fontSize(12), color: "rgba(255,255,255,0.35)", fontWeight: "500" },

@@ -29,13 +29,14 @@ class ChatPromptTests(SimpleTestCase):
         prompt = build_morf_chat_system_prompt({"face_shape": "round"})
         self.assertIn("markdown", prompt.lower())
         self.assertIn("dumaloq", prompt)
-        self.assertIn("teroq", prompt.lower())
+        self.assertIn("jadval", prompt.lower())
+        self.assertIn("xotirasi", prompt.lower())
 
     def test_sanitize_keeps_last_turns(self):
-        rows = [{"role": "user", "content": f"m{i}"} for i in range(30)]
+        rows = [{"role": "user", "content": f"m{i}"} for i in range(40)]
         cleaned = sanitize_chat_history(rows)
-        self.assertEqual(len(cleaned), 24)
-        self.assertEqual(cleaned[0]["content"], "m6")
+        self.assertEqual(len(cleaned), 32)
+        self.assertEqual(cleaned[0]["content"], "m8")
 
     def test_build_contents_drops_duplicate_user_message(self):
         history = sanitize_chat_history(

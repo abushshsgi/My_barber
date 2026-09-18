@@ -16,6 +16,7 @@ import {
 } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { safeBottom, safeTop } from "../../lib/safe-area";
 import { fetchCareAccess } from "../../api/ai";
 import {
   fetchHairCareProfile,
@@ -27,6 +28,7 @@ import {
   type IngredientScanResponse,
 } from "../../api/care";
 import { useHideTabBar } from "../../hooks/useHideTabBar";
+import { NativeBackButton } from "../../components/ui/NativeBackButton";
 import {
   defaultQuiz,
   loadCareQuiz,
@@ -291,14 +293,13 @@ export function MorphIngredientScreen({ navigation }: Props) {
 
   if (access && !access.allowed) {
     return (
-      <View style={[styles.root, { paddingTop: insets.top + 12, paddingHorizontal: 20 }]}>
-        <Pressable
-          style={styles.iconBtn}
+      <View style={[styles.root, { paddingTop: safeTop(insets.top, 12), paddingHorizontal: 20 }]}>
+        <NativeBackButton
           onPress={leaveIngredient}
           accessibilityLabel={t("common.back")}
-        >
-          <Ionicons name="chevron-back" size={22} color="#fff" />
-        </Pressable>
+          color="#fff"
+          backgroundColor="rgba(0,0,0,0.35)"
+        />
         <View style={styles.lockWrap}>
           <Ionicons name="lock-closed-outline" size={24} color="rgba(255,255,255,0.5)" />
           <Text style={styles.lockTitle}>{t("ingredient.badge")}</Text>
@@ -354,16 +355,18 @@ export function MorphIngredientScreen({ navigation }: Props) {
         />
         <ScrollView
           contentContainerStyle={{
-            paddingTop: insets.top + 8,
-            paddingBottom: insets.bottom + 28,
+            paddingTop: safeTop(insets.top, 8),
+            paddingBottom: safeBottom(insets.bottom, 28),
             paddingHorizontal: 20,
           }}
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.rowBetween}>
-            <Pressable style={styles.iconBtn} onPress={resetScan}>
-              <Ionicons name="chevron-back" size={22} color="#fff" />
-            </Pressable>
+            <NativeBackButton
+              onPress={resetScan}
+              color="#fff"
+              backgroundColor="rgba(0,0,0,0.35)"
+            />
             <Text style={styles.badge}>{t("ingredient.badge")}</Text>
             <View style={{ width: 40 }} />
           </View>
@@ -521,15 +524,15 @@ export function MorphIngredientScreen({ navigation }: Props) {
         <View style={[styles.corner, styles.bl]} />
         <View style={[styles.corner, styles.br]} />
       </View>
-      <Pressable
-        style={[styles.closeX, { top: insets.top + 8 }]}
+      <NativeBackButton
         onPress={leaveIngredient}
         accessibilityLabel={t("common.back")}
-      >
-        <Ionicons name="close" size={22} color="#fff" />
-      </Pressable>
+        color="#fff"
+        backgroundColor="rgba(0,0,0,0.35)"
+        style={[styles.closeX, { top: insets.top + 8 }]}
+      />
       {error ? <Text style={[styles.scanError, { top: insets.top + 56 }]}>{error}</Text> : null}
-      <View style={[styles.scanSheet, { paddingBottom: Math.max(insets.bottom, 16) + 12 }]}>
+      <View style={[styles.scanSheet, { paddingBottom: safeBottom(insets.bottom, 12) }]}>
         <Text style={styles.sheetTitle}>{t("ingredient.title")}</Text>
         <Text style={styles.sheetSub}>{t("ingredient.subtitle")}</Text>
         <Pressable
@@ -690,21 +693,15 @@ const styles = StyleSheet.create({
   scanCamBg: { backgroundColor: "#1a1a1a" },
   scanViewfinder: {
     position: "absolute",
-    top: "12%",
+    top: "18%",
     left: "12%",
     right: "12%",
     bottom: "42%",
   },
   closeX: {
     position: "absolute",
-    right: scale(16),
+    left: scale(16),
     zIndex: 4,
-    width: scale(40),
-    height: scale(40),
-    borderRadius: moderateScale(20),
-    backgroundColor: "rgba(0,0,0,0.45)",
-    alignItems: "center",
-    justifyContent: "center",
   },
   scanError: {
     ...morphFont,
@@ -794,25 +791,25 @@ const styles = StyleSheet.create({
   sheetLink: { ...morphFont, fontSize: fontSize(13), fontWeight: "500", color: "rgba(255,255,255,0.55)", paddingVertical: verticalScale(8) },
   corner: {
     position: "absolute",
-    width: scale(36),
-    height: scale(36),
+    width: scale(28),
+    height: scale(28),
     borderColor: "#fff",
   },
-  tl: { top: 0, left: 0, borderTopWidth: 3.5, borderLeftWidth: 3.5, borderTopLeftRadius: moderateScale(12) },
-  tr: { top: 0, right: 0, borderTopWidth: 3.5, borderRightWidth: 3.5, borderTopRightRadius: moderateScale(12) },
+  tl: { top: 0, left: 0, borderTopWidth: 3, borderLeftWidth: 3, borderTopLeftRadius: moderateScale(10) },
+  tr: { top: 0, right: 0, borderTopWidth: 3, borderRightWidth: 3, borderTopRightRadius: moderateScale(10) },
   bl: {
     bottom: 0,
     left: 0,
-    borderBottomWidth: 3.5,
-    borderLeftWidth: 3.5,
-    borderBottomLeftRadius: moderateScale(12),
+    borderBottomWidth: 3,
+    borderLeftWidth: 3,
+    borderBottomLeftRadius: moderateScale(10),
   },
   br: {
     bottom: 0,
     right: 0,
-    borderBottomWidth: 3.5,
-    borderRightWidth: 3.5,
-    borderBottomRightRadius: moderateScale(12),
+    borderBottomWidth: 3,
+    borderRightWidth: 3,
+    borderBottomRightRadius: moderateScale(10),
   },
   iconBtn: {
     width: scale(40),

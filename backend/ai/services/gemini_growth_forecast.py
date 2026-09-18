@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import time
-import urllib.error
 from typing import Any
 
 from django.conf import settings
@@ -22,12 +21,14 @@ USER INPUT context:
 - Products Used: {products_list}
 
 RULES:
-1. Calculate a realistic 3-month projected length.
-2. Provide motivational feedback on their progress.
-3. Keep response concise, friendly, and structured.
+1. First pick a realistic monthly growth rate in cm (typically 0.8–1.8; with strong actives up to ~2.2).
+2. projected_length_3_months MUST equal current_length_cm + monthly_growth_cm * 3 (exact arithmetic).
+3. Provide motivational feedback on their progress.
+4. Keep response concise, friendly, and structured.
 
 OUTPUT FORMAT (JSON):
 {
+  "monthly_growth_cm": number,
   "projected_length_3_months": number,
   "growth_rate_status": "EXCELLENT" | "NORMAL" | "NEEDS_IMPROVEMENT",
   "ai_commentary": "1-2 sentences of encouraging feedback in Uzbek.",
@@ -90,7 +91,6 @@ def _fallback_forecast(
     base = _baseline_monthly_growth(check_ins_count)
     boost = _boost_monthly_growth(products_used, check_ins_count)
     monthly = round(base + boost, 2)
-    projected = round(current_length_cm + monthly * 3, 1)
     status = _status_from_monthly(monthly)
     if status == "EXCELLENT":
         commentary = "Barakalla, rejimni juda yaxshi ushlayapsiz. Shu ritmda 3 oyda sezilarli natija ko'rasiz."
@@ -104,7 +104,8 @@ def _fallback_forecast(
         else "Kelasi hafta kamida 4 ta check-in va bitta faol ingredientli serum qo'shing."
     )
     return {
-        "projected_length_3_months": max(round(current_length_cm + 0.6, 1), projected),
+        "monthly_growth_cm": monthly,
+        "projected_length_3_months": round(current_length_cm + monthly * 3, 1),
         "growth_rate_status": status,
         "ai_commentary": commentary,
         "recommended_action": action,
@@ -175,24 +176,40 @@ def _call_gemini_growth_forecast(
 
 
 def _normalize_ai_forecast(raw: dict[str, Any], *, current_length_cm: float) -> dict[str, Any]:
+    monthly_raw = raw.get("monthly_growth_cm")
     projected_raw = raw.get("projected_length_3_months")
+    monthly: float | None = None
     try:
-        projected = float(projected_raw)
+        if monthly_raw is not None:
+            monthly = float(monthly_raw)
     except (TypeError, ValueError):
-        raise AiStyleError("AI prognoz formati noto'g'ri.", 502) from None
+        monthly = None
+    try:
+        projected = float(projected_raw) if projected_raw is not None else None
+    except (TypeError, ValueError):
+        projected = None
+
+    if monthly is None and projected is None:
+        raise AiStyleError("AI prognoz formati noto'g'ri.", 502)
+    if monthly is None and projected is not None:
+        monthly = (projected - current_length_cm) / 3.0
+    assert monthly is not None
+    monthly = max(0.3, min(2.5, monthly))
+    # Bitta manba: oy sur'ati → 3 oy prognoz (UI bilan mos)
+    projected = round(current_length_cm + monthly * 3, 1)
+
     status = str(raw.get("growth_rate_status") or "").strip().upper()
     if status not in _ALLOWED_STATUS:
-        raise AiStyleError("AI status formati noto'g'ri.", 502)
+        status = _status_from_monthly(monthly)
     commentary = str(raw.get("ai_commentary") or "").strip()
     action = str(raw.get("recommended_action") or "").strip()
     if not commentary:
         commentary = "Siz yaxshi yo'ldasiz, davom etsangiz o'sish sur'ati barqaror bo'ladi."
     if not action:
         action = "Kelasi hafta bosh terisini muntazam massaj qilib, check-inlarni to'liq kiriting."
-    projected = max(current_length_cm + 0.6, projected)
-    projected = min(projected, current_length_cm + 8.0)
     return {
-        "projected_length_3_months": round(projected, 1),
+        "monthly_growth_cm": round(monthly, 2),
+        "projected_length_3_months": projected,
         "growth_rate_status": status,
         "ai_commentary": commentary[:240],
         "recommended_action": action[:180],
@@ -226,5 +243,6 @@ def generate_hair_growth_forecast(
         out = _normalize_ai_forecast(data, current_length_cm=current)
         out["_usage"] = usage
         return out
-    except (AiStyleError, urllib.error.HTTPError, urllib.error.URLError, TimeoutError):
+    except Exception:
+        # Gemini/JSON/tarmoq — hech qachon 500 bermasin; lokal fallback.
         return fallback

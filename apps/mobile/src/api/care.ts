@@ -458,6 +458,7 @@ export async function removeMyCareProductApi(productId: number): Promise<void> {
 
 export type HairGrowthForecastResponse = {
   projected_length_3_months: number;
+  monthly_growth_cm?: number;
   growth_rate_status: "EXCELLENT" | "NORMAL" | "NEEDS_IMPROVEMENT";
   ai_commentary: string;
   recommended_action: string;
@@ -470,12 +471,35 @@ export async function generateHairGrowthForecast(body: {
 }): Promise<HairGrowthForecastResponse> {
   const res = await apiFetch("/api/v1/ai/care/growth-forecast/", {
     method: "POST",
-    body: JSON.stringify(body),
+    body: JSON.stringify({
+      current_length_cm: Number(body.current_length_cm),
+      check_ins_count: Math.max(0, Math.min(4, Number(body.check_ins_count) || 0)),
+      products_used: Array.isArray(body.products_used)
+        ? body.products_used.map((x) => String(x || "").trim()).filter(Boolean).slice(0, 16)
+        : [],
+    }),
+    timeoutMs: 60_000,
   });
   const data = (await res.json().catch(() => null)) as
-    | { forecast?: HairGrowthForecastResponse; detail?: string }
+    | {
+        forecast?: HairGrowthForecastResponse;
+        detail?: string;
+        code?: string;
+      }
     | null;
   if (!res.ok) {
+    if (res.status === 403) {
+      throw new Error(
+        data && typeof data.detail === "string"
+          ? data.detail
+          : "Morph AI Parvarish Pro obunasida mavjud.",
+      );
+    }
+    if (res.status === 502 || res.status === 503 || res.status === 504) {
+      throw new Error(
+        "Server vaqtincha javob bermayapti. Bir necha soniyadan keyin qayta urinib ko'ring.",
+      );
+    }
     throw new Error(
       data && typeof data.detail === "string"
         ? data.detail

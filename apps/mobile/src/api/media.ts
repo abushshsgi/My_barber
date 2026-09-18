@@ -1,17 +1,63 @@
 import { API_BASE, API_ORIGIN } from "./config";
 
 const PEXELS_RE = /(?:https?:\/\/)?images\.pexels\.com\/photos\/(\d+)/i;
-const API_MEDIA_RE =
-  /^https?:\/\/(?:api\.mysaloon\.uz|[a-z0-9-]+\.up\.railway\.app)(\/media\/.+)$/i;
 /** Static Explore assets — Vercel CDN (api hostda emas). */
-const SITE_STATIC_RE =
-  /^https?:\/\/(?:api\.mysaloon\.uz|[a-z0-9-]+\.up\.railway\.app)(\/hairstyles\/.+)$/i;
 const SITE_ORIGIN = "https://www.mysaloon.uz";
+
+const FALLBACK_API_HOSTS = ["api.mysaloon.uz", "up.railway.app"];
+
+function escapeRe(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function configuredApiHosts(): string[] {
+  const hosts = new Set<string>(FALLBACK_API_HOSTS);
+  try {
+    const h = new URL(API_ORIGIN).hostname.toLowerCase();
+    if (h) hosts.add(h);
+  } catch {
+    /* ignore */
+  }
+  try {
+    if (API_BASE) {
+      const h = new URL(API_BASE).hostname.toLowerCase();
+      if (h) hosts.add(h);
+    }
+  } catch {
+    /* ignore */
+  }
+  return [...hosts];
+}
+
+/** api.mysaloon.uz, Railway, yoki sozlangan API hostdagi /media/... */
+function matchApiMedia(url: string): string | null {
+  for (const host of configuredApiHosts()) {
+    const re =
+      host === "up.railway.app"
+        ? new RegExp(`^https?:\\/\\/[a-z0-9-]+\\.${escapeRe(host)}(\\/media\\/.+)$`, "i")
+        : new RegExp(`^https?:\\/\\/${escapeRe(host)}(\\/media\\/.+)$`, "i");
+    const m = url.match(re);
+    if (m) return m[1];
+  }
+  return null;
+}
+
+function matchSiteStaticOnApiHost(url: string): string | null {
+  for (const host of configuredApiHosts()) {
+    const re =
+      host === "up.railway.app"
+        ? new RegExp(`^https?:\\/\\/[a-z0-9-]+\\.${escapeRe(host)}(\\/hairstyles\\/.+)$`, "i")
+        : new RegExp(`^https?:\\/\\/${escapeRe(host)}(\\/hairstyles\\/.+)$`, "i");
+    const m = url.match(re);
+    if (m) return m[1];
+  }
+  return null;
+}
 
 function withWidthParam(url: string, width?: number): string {
   if (!width || width <= 0) return url;
   try {
-    const u = new URL(url, "https://api.mysaloon.uz");
+    const u = new URL(url, API_ORIGIN || "https://api.mysaloon.uz");
     if (u.hostname.includes("pexels.com") || u.pathname.includes("/covers/pexels/")) {
       u.searchParams.set("w", String(width));
       if (u.hostname.includes("pexels.com")) {
@@ -29,8 +75,8 @@ function withWidthParam(url: string, width?: number): string {
 function toAppMediaUrl(absoluteOrPath: string): string {
   // Web proxy: absolute api hostni same-origin /media ga aylantirish.
   if (!API_BASE) {
-    const m = absoluteOrPath.match(API_MEDIA_RE);
-    if (m) return m[1];
+    const mediaPath = matchApiMedia(absoluteOrPath);
+    if (mediaPath) return mediaPath;
     if (absoluteOrPath.startsWith("/media/")) return absoluteOrPath;
   }
   return absoluteOrPath;
@@ -53,16 +99,16 @@ export function resolveMediaUrl(
     return pexelsPhotoUrl(Number(pexels[1]), opts?.width ?? 900);
   }
 
-  const misplacedStatic = raw.match(SITE_STATIC_RE);
+  const misplacedStatic = matchSiteStaticOnApiHost(raw);
   if (misplacedStatic) {
-    return siteStaticUrl(misplacedStatic[1]);
+    return siteStaticUrl(misplacedStatic);
   }
 
-  const apiMedia = raw.match(API_MEDIA_RE);
-  if (apiMedia) {
-    const local = toAppMediaUrl(`${API_ORIGIN}${apiMedia[1]}`);
+  const apiMediaPath = matchApiMedia(raw);
+  if (apiMediaPath) {
+    const local = toAppMediaUrl(`${API_ORIGIN}${apiMediaPath}`);
     if (!API_BASE) return local;
-    return withWidthParam(`${API_BASE}${apiMedia[1]}`, opts?.width);
+    return withWidthParam(`${API_BASE}${apiMediaPath}`, opts?.width);
   }
 
   if (raw.startsWith("http://") || raw.startsWith("https://") || raw.startsWith("data:")) {

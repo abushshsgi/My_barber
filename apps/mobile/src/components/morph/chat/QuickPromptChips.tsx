@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Pressable, ScrollView, StyleSheet, Text } from "react-native";
 import { morphFont } from "../../../theme/morph-font";
-import { SOFT_PAPER } from "../../../theme/morph-appearance";
+import { useMorphAppearance } from "../../../lib/MorphAppearanceContext";
 import {
   fontSize,
   moderateScale,
@@ -30,6 +30,8 @@ const CHIP_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
 };
 
 export function QuickPromptChips({ prompts, onSelect, disabled }: Props) {
+  const { colors: pal } = useMorphAppearance();
+
   return (
     <ScrollView
       horizontal
@@ -44,17 +46,21 @@ export function QuickPromptChips({ prompts, onSelect, disabled }: Props) {
           disabled={disabled}
           style={({ pressed }) => [
             styles.chip,
+            {
+              backgroundColor: pal.card,
+              borderColor: pal.line,
+            },
             disabled && styles.chipDisabled,
-            pressed && styles.chipPressed,
+            pressed && { opacity: 0.85, backgroundColor: pal.cardStrong },
           ]}
           accessibilityRole="button"
         >
           <Ionicons
             name={CHIP_ICONS[item.id] ?? "sparkles-outline"}
             size={13}
-            color={SOFT_PAPER.fg}
+            color={pal.fg}
           />
-          <Text style={styles.chipText} numberOfLines={1}>
+          <Text style={[styles.chipText, { color: pal.fg }]} numberOfLines={1}>
             {item.label}
           </Text>
         </Pressable>
@@ -79,22 +85,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: scale(12),
     paddingVertical: verticalScale(8),
     borderRadius: moderateScale(16),
-    backgroundColor: SOFT_PAPER.card,
     borderWidth: 1,
-    borderColor: SOFT_PAPER.line,
   },
   chipDisabled: {
     opacity: 0.45,
-  },
-  chipPressed: {
-    opacity: 0.85,
-    backgroundColor: SOFT_PAPER.soft,
   },
   chipText: {
     ...morphFont,
     fontSize: fontSize(12.5),
     lineHeight: fontSize(16),
     fontWeight: "500",
-    color: SOFT_PAPER.fg,
   },
 });

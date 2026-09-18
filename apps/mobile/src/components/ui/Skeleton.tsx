@@ -1,10 +1,12 @@
 import React, { useEffect, useRef } from "react";
 import { Animated, StyleSheet, View, ViewStyle } from "react-native";
 
+type Dim = number | `${number}%` | "auto";
+
 type Props = {
   style?: ViewStyle;
-  width?: number | string;
-  height?: number | string;
+  width?: Dim;
+  height?: Dim;
   radius?: number;
 };
 

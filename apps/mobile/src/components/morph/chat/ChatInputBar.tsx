@@ -6,13 +6,13 @@ import Animated, {
   FadeIn,
   FadeOut,
   LinearTransition,
+  interpolate,
   useAnimatedStyle,
   useReducedMotion,
   useSharedValue,
   withRepeat,
+  withSequence,
   withTiming,
-  ZoomIn,
-  ZoomOut,
 } from "react-native-reanimated";
 
 import { morphFont } from "../../../theme/morph-font";
@@ -85,27 +85,55 @@ export function ChatInputBar({
   cameraA11y = "Kamera",
   voiceA11y = "Mikrofon",
 }: Props) {
-  const { colors: pal, chatFs } = useMorphAppearance();
+  const { chatFs } = useMorphAppearance();
+  const reduced = useReducedMotion();
   const [focused, setFocused] = useState(false);
   const hasText = value.trim().length > 0;
   const canSend = !disabled && !sending && hasText;
   const voiceBusy = voiceState === "busy";
   const voiceRecording = voiceState === "recording";
 
+  const breathe = useSharedValue(0);
+  const focusAnim = useSharedValue(0);
+
+  useEffect(() => {
+    if (reduced) {
+      breathe.value = 0;
+      return;
+    }
+    breathe.value = withRepeat(
+      withSequence(
+        withTiming(1, { duration: 1800, easing: Easing.inOut(Easing.quad) }),
+        withTiming(0, { duration: 1800, easing: Easing.inOut(Easing.quad) }),
+      ),
+      -1,
+      false,
+    );
+  }, [breathe, reduced]);
+
+  useEffect(() => {
+    focusAnim.value = withTiming(focused ? 1 : 0, {
+      duration: 220,
+      easing: Easing.out(Easing.cubic),
+    });
+  }, [focusAnim, focused]);
+
+  const wrapAnim = useAnimatedStyle(() => {
+    const breatheScale = focused ? 1 : 1 + breathe.value * 0.008;
+    const focusScale = 1 + focusAnim.value * 0.012;
+    return {
+      transform: [{ scale: breatheScale * focusScale }],
+      borderColor: focused ? "#000000" : "#111111",
+      borderWidth: interpolate(focusAnim.value, [0, 1], [2, 2.5]),
+      shadowOpacity: interpolate(focusAnim.value, [0, 1], [0.08, 0.22]),
+      shadowRadius: interpolate(focusAnim.value, [0, 1], [8, 16]),
+    };
+  });
+
   return (
     <Animated.View
       layout={LinearTransition.duration(180).easing(Easing.out(Easing.cubic))}
-      style={[
-        styles.wrap,
-        {
-          backgroundColor: "#FFFFFF",
-          borderColor: focused ? "#111111" : "rgba(17,17,17,0.12)",
-          shadowColor: "#111111",
-          shadowOpacity: focused ? 0.12 : 0.04,
-          shadowRadius: focused ? 10 : 4,
-          shadowOffset: { width: 0, height: 2 },
-        },
-      ]}
+      style={[styles.wrap, wrapAnim]}
     >
       <Pressable
         onPress={onCamera}
@@ -114,13 +142,12 @@ export function ChatInputBar({
         accessibilityRole="button"
         accessibilityLabel={cameraA11y}
       >
-        <Ionicons name="add" size={22} color={pal.fg} />
+        <Ionicons name="add" size={22} color="#111111" />
       </Pressable>
       <TextInput
         style={[
           styles.input,
           {
-            color: pal.fg,
             fontSize: chatFs(16),
             lineHeight: chatFs(22),
             ...(Platform.OS === "android"
@@ -136,7 +163,7 @@ export function ChatInputBar({
         value={value}
         onChangeText={onChange}
         placeholder={placeholder}
-        placeholderTextColor={pal.muted}
+        placeholderTextColor="#737373"
         multiline
         maxLength={600}
         editable={!disabled && !sending}
@@ -156,34 +183,38 @@ export function ChatInputBar({
         {...(Platform.OS === "web" ? { rows: 1 } : {})}
       />
       {hasText || sending ? (
-        <Animated.View
-          entering={ZoomIn.duration(160).easing(Easing.out(Easing.cubic))}
-          exiting={ZoomOut.duration(120)}
-        >
+        <View>
           <Pressable
-            onPress={onSend}
-            disabled={!canSend && !sending}
+            onPress={() => {
+              if (canSend) onSend();
+            }}
+            // Web: input blur birinchi clickni yutib yubormasin
+            {...(Platform.OS === "web"
+              ? {
+                  onMouseDown: (e: { preventDefault: () => void }) => {
+                    e.preventDefault();
+                  },
+                }
+              : null)}
+            disabled={sending || disabled}
             style={({ pressed }) => [
               styles.sendBtn,
-              { backgroundColor: pal.fg },
-              !canSend && !sending && { backgroundColor: pal.track },
+              !canSend && !sending && styles.sendBtnIdle,
               pressed && canSend && styles.pressed,
             ]}
             accessibilityRole="button"
             accessibilityLabel={sendA11y}
+            accessibilityState={{ disabled: !canSend }}
           >
             {sending ? (
-              <ActivityIndicator size="small" color={pal.bg} />
+              <ActivityIndicator size="small" color="#FFFFFF" />
             ) : (
-              <Ionicons name="arrow-up" size={18} color={pal.bg} />
+              <Ionicons name="arrow-up" size={18} color="#FFFFFF" />
             )}
           </Pressable>
-        </Animated.View>
+        </View>
       ) : voiceEnabled ? (
-        <Animated.View
-          entering={FadeIn.duration(140)}
-          exiting={FadeOut.duration(100)}
-        >
+        <Animated.View entering={FadeIn.duration(140)} exiting={FadeOut.duration(100)}>
           <MicPulse>
             <Pressable
               onPress={onVoice}
@@ -206,10 +237,7 @@ export function ChatInputBar({
           </MicPulse>
         </Animated.View>
       ) : (
-        <Animated.View
-          entering={FadeIn.duration(140)}
-          exiting={FadeOut.duration(100)}
-        >
+        <Animated.View entering={FadeIn.duration(140)} exiting={FadeOut.duration(100)}>
           <Pressable
             disabled
             style={[styles.voiceBtn, styles.voiceBtnBlocked]}
@@ -239,12 +267,12 @@ const styles = StyleSheet.create({
     paddingRight: moderateScale(6),
     paddingVertical: moderateScale(6),
     borderRadius: BAR_HEIGHT / 2,
-    backgroundColor: "rgba(255,255,255,0.08)",
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(255,255,255,0.14)",
-  },
-  wrapFocused: {
-    borderColor: "rgba(255,255,255,0.28)",
+    backgroundColor: "#FFFFFF",
+    borderWidth: 2,
+    borderColor: "#111111",
+    shadowColor: "#000000",
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 6,
   },
   sideBtn: {
     width: SIDE_BTN,
@@ -259,7 +287,6 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     minHeight: verticalScale(28),
-    /** Klaviatura ochilganda kontent tashqariga chiqmasligi uchun cheklangan. */
     maxHeight: verticalScale(IS_SMALL_DEVICE ? 72 : 96),
     paddingHorizontal: scale(8),
     paddingVertical: moderateScale(6),

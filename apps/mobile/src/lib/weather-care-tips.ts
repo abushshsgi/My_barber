@@ -9,7 +9,10 @@ import {
 } from "./uz-regions";
 
 function hubLayoutScale(width: number, height: number) {
-  return clamp(Math.min(width / BASE_W, height / BASE_H), 0.72, 1.12);
+  // Tor/past telefonlarda kuchliroq ixchamlash; Pro Max'da yumshoq o'sish.
+  const w = clamp(width / BASE_W, 0.68, 1.14);
+  const h = clamp(height / BASE_H, 0.68, 1.1);
+  return clamp(Math.min(w, h), 0.68, 1.12);
 }
 
 /** Ob-havo holatiga mos ambient hero rasmlar. */
@@ -304,107 +307,115 @@ export function careHubLayout(
 ) {
   /** Window o‘lchami o‘zgaganda (web / rotate) qayta hisoblanadi. */
   const scale = hubLayoutScale(width, height);
-  /** Floating tab dock yo‘q (hubda yashirin) — faqat home indicator. */
-  const dockClearance = Math.max(bottomInset, 12) + 8;
-  const avail = Math.max(360, height - dockClearance);
+  const short = height < 700;
+  const tiny = height < 640;
+  const narrow = width < 360;
+  const tall = height >= 900;
 
-  const searchBlock = rs(52, scale);
-  const reportHead = rs(32, scale);
-  const weatherNudge = 6;
-  const promoTopGap = rs(8, scale);
-  const sheetTop = rs(14, scale);
-  /** Search ↔ category orasidagi bo‘shliq. */
-  const searchCatGap = rs(8, scale);
-  const gaps = rs(10, scale) + weatherNudge + searchCatGap;
+  /** Floating tab dock yo‘q — Android nav / home indicator ustida qolsin. */
+  const dockClearance = Math.max(bottomInset, 32) + (short ? 14 : 18);
+  const avail = Math.max(320, height - dockClearance - Math.max(topInset, 0));
+
+  const density = tiny ? 0.86 : short ? 0.92 : tall ? 1.04 : 1;
+  const gapScale = tiny ? 0.72 : short ? 0.82 : 1;
+
+  const searchH = rs(Math.round(40 * density), scale);
+  const searchBlock = searchH + rs(Math.round(18 * gapScale), scale);
+  const reportHead = rs(Math.round(22 * density), scale);
+  const sheetTop = rs(Math.round(12 * density), scale);
+  const promoTopGap = rs(Math.round((short ? 4 : 8) * gapScale), scale);
+  const weatherNudge = rs(Math.round(4 * gapScale), scale);
+  const searchCatGap = rs(Math.round((short ? 10 : 14) * gapScale), scale);
+  const sectionGap = rs(Math.round((short ? 8 : 12) * gapScale), scale);
+  const gaps = rs(Math.round(14 * gapScale), scale) + weatherNudge + searchCatGap + sectionGap;
+
+  const hPad = narrow ? Math.max(10, rs(12, scale)) : width < 400 ? rs(14, scale) : rs(16, scale);
+
+  const quickSlots = 3.45;
   const quickActionWCap =
-    width < 360 ? rs(88, scale) : width < 400 ? rs(94, scale) : rs(100, scale);
+    narrow ? rs(Math.round(100 * density), scale)
+      : width < 400 ? rs(Math.round(112 * density), scale)
+      : rs(Math.round(124 * density), scale);
   const quickActionW = clamp(
-    Math.round(rs(92, scale)),
-    width < 360 ? rs(80, scale) : rs(86, scale),
+    Math.round((width - hPad * 2 - rs(16, scale)) / quickSlots),
+    narrow ? rs(Math.round(84 * density), scale) : rs(Math.round(92 * density), scale),
     quickActionWCap,
   );
   const quickActionH = clamp(
-    Math.round(quickActionW * 0.96),
-    rs(78, scale),
-    rs(96, scale),
+    Math.round(quickActionW * (short ? 0.98 : 1.02)),
+    narrow ? rs(Math.round(84 * density), scale) : rs(Math.round(92 * density), scale),
+    short ? rs(Math.round(108 * density), scale) : rs(Math.round(118 * density), scale),
   );
-  /** SOS + shelf + growth + album — bitta gorizontal qator (Yandex Go promo uslubi). */
-  const quickActionBlock = quickActionH + rs(6, scale);
+  const quickActionBlock = quickActionH + sectionGap;
 
   const chrome = searchBlock + quickActionBlock + reportHead + gaps + sheetTop + promoTopGap;
+  const remain = Math.max(rs(240, scale), avail - chrome);
 
-  const remain = Math.max(rs(260, scale), avail - chrome);
-
-  const hPad = width < 360 ? 12 : width < 400 ? rs(14, scale) : rs(16, scale);
-  const promoW = Math.max(240, width - 2 * hPad);
-  /** Hero biroz pastroq — sheet asosiy fokus. */
-  const PROMO_ASPECT = 2.25;
+  const promoW = Math.max(220, width - 2 * hPad);
+  /** Androidda viloyat rasmlari konteynerga to‘liq yopsin — biroz balandroq promo. */
+  const PROMO_ASPECT = short ? 2.15 : 2.0;
   const promoByWidth = Math.round(promoW / PROMO_ASPECT);
 
-  /**
-   * Hero status bar ostida boshlanadi (`marginTop: topInset` CareScreen da).
-   * Balandlikka inset qo‘shilmaydi — aks holda banner kesiladi.
-   */
+  /** AI Assistant qatori olib tashlangan — joy promo + kartochkalarga beriladi. */
   const MIN = {
-    /** chip + temp + CTA sig‘ishi shart — aks holda tugma kesiladi. */
-    promo: Math.max(rs(112, scale), Math.min(promoByWidth, rs(140, scale))),
-    featured: rs(width < 360 ? 100 : 112, scale),
-    /** Hisobot sheet — kirishda asosiy fokus. */
-    hubCard: rs(148, scale),
-    ai: rs(44, scale),
+    promo: Math.max(rs(Math.round(110 * density), scale), Math.min(promoByWidth, rs(Math.round(140 * density), scale))),
+    featured: rs(Math.round((narrow ? 104 : 122) * density), scale),
+    hubCard: rs(Math.round((short ? 148 : 172) * density), scale),
   };
   const MAX = {
     promo: clamp(
-      Math.max(rs(124, scale), promoByWidth),
-      rs(120, scale),
-      Math.min(rs(160, scale), Math.round(height * 0.22)),
+      Math.max(rs(Math.round(124 * density), scale), promoByWidth),
+      rs(Math.round(116 * density), scale),
+      Math.min(rs(Math.round(172 * density), scale), Math.round(height * (short ? 0.22 : 0.25))),
     ),
-    featured: rs(136, scale),
-    hubCard: rs(200, scale),
-    ai: rs(52, scale),
+    featured: rs(Math.round((short ? 142 : 158) * density), scale),
+    hubCard: rs(Math.round((short ? 200 : 228) * density), scale),
   };
 
-  const minTotal = MIN.promo + MIN.featured + MIN.hubCard + MIN.ai;
+  const minTotal = MIN.promo + MIN.featured + MIN.hubCard;
   const headroom =
     MAX.promo - MIN.promo +
     (MAX.featured - MIN.featured) +
-    (MAX.hubCard - MIN.hubCard) +
-    (MAX.ai - MIN.ai);
+    (MAX.hubCard - MIN.hubCard);
 
   let promoH: number;
   let featuredH: number;
   let hubCardH: number;
-  let aiH: number;
 
   if (remain <= minTotal) {
     const k = remain / minTotal;
     promoH = Math.floor(MIN.promo * k);
     featuredH = Math.floor(MIN.featured * k);
-    hubCardH = Math.floor(MIN.hubCard * k);
-    aiH = Math.max(rs(36, scale), remain - promoH - featuredH - hubCardH);
+    hubCardH = Math.max(1, remain - promoH - featuredH);
   } else {
     const k = headroom > 0 ? Math.min(1, (remain - minTotal) / headroom) : 0;
     const grow = (min: number, max: number) => Math.round(min + (max - min) * k);
     promoH = grow(MIN.promo, MAX.promo);
     featuredH = grow(MIN.featured, MAX.featured);
     hubCardH = grow(MIN.hubCard, MAX.hubCard);
-    aiH = grow(MIN.ai, MAX.ai);
   }
+  const aiH = 0;
 
-  const featuredWCap = width < 360 ? rs(118, scale) : width < 400 ? rs(132, scale) : rs(148, scale);
+  const featuredWCap =
+    narrow ? rs(Math.round(122 * density), scale)
+      : width < 400 ? rs(Math.round(140 * density), scale)
+      : rs(Math.round(162 * density), scale);
   const featuredW = clamp(
-    Math.round(featuredH * 0.84),
-    width < 360 ? rs(96, scale) : rs(108, scale),
+    Math.round(featuredH * 0.88),
+    narrow ? rs(Math.round(98 * density), scale) : rs(Math.round(112 * density), scale),
     featuredWCap,
   );
-  const sheetGap = rs(12, scale);
+  const sheetGap = rs(Math.round((short ? 8 : 12) * density), scale);
   const promoInner = promoH;
-  const narrow = width < 360;
-  const promoPad = narrow ? 10 : width < 400 ? rs(12, scale) : rs(14, scale);
-  const promoRadius = narrow ? 18 : rs(22, scale);
+  const promoPad = narrow ? Math.max(8, rs(10, scale)) : width < 400 ? rs(12, scale) : rs(14, scale);
+  const promoRadius = narrow ? Math.max(14, rs(16, scale)) : rs(22, scale);
 
   return {
     scale,
+    density,
+    short,
+    tiny,
+    narrow,
     avail,
     hubCardH,
     aiH,
@@ -412,6 +423,8 @@ export function careHubLayout(
     featuredH,
     featuredW,
     searchBlock,
+    searchH,
+    sectionGap,
     quickActionW,
     quickActionH,
     quickActionBlock,
@@ -420,7 +433,7 @@ export function careHubLayout(
     promoTopGap,
     sheetTop,
     sheetGap,
-    sheetH: reportHead + sheetTop + sheetGap + hubCardH + sheetGap + aiH + rs(14, scale),
+    sheetH: reportHead + sheetTop + sheetGap + hubCardH + rs(Math.round(12 * density), scale),
     hPad,
     dockClearance,
     promoPad,
@@ -432,11 +445,11 @@ export function careHubLayout(
     promoTitleSize: rs(narrow ? 14 : promoInner >= rs(140, scale) ? 16 : 15, scale),
     /** Hero ichidagi matn/tugma — banner balandligi bilan birga kichrayadi. */
     promoUi: (() => {
-      const k = clamp(promoInner / 168, 0.58, 1);
+      const k = clamp(promoInner / (short ? 148 : 168), 0.52, 1) * density;
       return {
         k,
-        back: clamp(Math.round(34 * k), 26, 34),
-        backIcon: clamp(Math.round(18 * k), 14, 18),
+        back: clamp(Math.round(34 * k), 24, 34),
+        backIcon: clamp(Math.round(18 * k), 13, 18),
         locIcon: clamp(Math.round(13 * k), 10, 13),
         locFs: clamp(Math.round(11 * k), 9, 11),
         locSubFs: clamp(Math.round(10 * k), 8, 10),
@@ -446,52 +459,71 @@ export function careHubLayout(
           Math.round(
             (promoInner >= rs(150, scale) ? 40 : promoInner >= rs(120, scale) ? 34 : 28) * k,
           ),
-          18,
+          16,
           40,
         ),
-        conditionFs: clamp(Math.round(15 * k), 11, 15),
+        conditionFs: clamp(Math.round(15 * k), 10, 15),
         hintFs: clamp(Math.round(12 * k), 9, 12),
         btnFs: clamp(Math.round(13 * k), 10, 13),
         btnArrow: clamp(Math.round(15 * k), 11, 15),
         btnPadV: clamp(Math.round(9 * k), 5, 9),
-        btnPadH: clamp(Math.round(14 * k), 9, 14),
-        btnMinH: clamp(Math.round(36 * k), 26, 36),
-        gap: clamp(Math.round(8 * k), 4, 8),
+        btnPadH: clamp(Math.round(14 * k), 8, 14),
+        btnMinH: clamp(Math.round(36 * k), 24, 36),
+        gap: clamp(Math.round(8 * k), 3, 8),
       };
     })(),
-    /** CTA uchun minimal joy; hint/2-qator title uchun boyroq. */
-    promoShowCta: promoInner >= rs(120, scale),
-    promoRich: promoInner >= rs(152, scale),
-    hubCardRich: hubCardH >= rs(150, scale),
-    featuredRich: featuredH >= rs(118, scale),
-    /**
-     * Featured UI — karta kengligiga bog‘liq (ekran emas).
-     * 200pt dizayn: btn 26 / title 13; 150pt: btn ~19 / title ~10.
-     */
+    promoShowCta: promoInner >= rs(short ? 108 : 120, scale),
+    promoRich: promoInner >= rs(short ? 136 : 152, scale),
+    hubCardRich: hubCardH >= rs(short ? 132 : 150, scale),
+    featuredRich: featuredH >= rs(short ? 104 : 118, scale),
     featuredUi: (() => {
-      const w = Math.max(120, featuredW);
-      const k = clamp(w / 200, 0.5, 1);
+      const w = Math.max(100, featuredW);
+      const k = clamp(w / 200, 0.48, 1) * density;
       return {
         k,
-        btn: clamp(Math.round(26 * k), 16, 26),
-        play: clamp(Math.round(28 * k), 18, 28),
-        icon: clamp(Math.round(13 * k), 9, 13),
-        playIcon: clamp(Math.round(11 * k), 8, 11),
-        durationIcon: clamp(Math.round(9 * k), 7, 9),
-        durationFs: clamp(Math.round(10 * k), 8, 10),
-        brandFs: clamp(Math.round(10 * k), 8, 10),
-        titleFs: clamp(Math.round(13 * k), 9, 13),
-        metaPadH: clamp(Math.round(10 * k), 6, 10),
-        metaPadV: clamp(Math.round(7 * k), 4, 7),
-        ctrlInset: clamp(Math.round(8 * k), 5, 8),
+        btn: clamp(Math.round(26 * k), 15, 26),
+        play: clamp(Math.round(28 * k), 17, 28),
+        icon: clamp(Math.round(13 * k), 8, 13),
+        playIcon: clamp(Math.round(11 * k), 7, 11),
+        durationIcon: clamp(Math.round(9 * k), 6, 9),
+        durationFs: clamp(Math.round(10 * k), 7, 10),
+        brandFs: clamp(Math.round(10 * k), 7, 10),
+        titleFs: clamp(Math.round(13 * k), 8, 13),
+        metaPadH: clamp(Math.round(10 * k), 5, 10),
+        metaPadV: clamp(Math.round(7 * k), 3, 7),
+        ctrlInset: clamp(Math.round(8 * k), 4, 8),
       };
     })(),
     quickActionUi: (() => {
-      const w = Math.max(88, quickActionW);
-      const k = clamp(w / 100, 0.55, 1);
+      const w = Math.max(76, quickActionW);
+      const k = clamp(w / 100, 0.5, 1) * density;
       return {
-        labelFs: clamp(Math.round(14 * k), 12, 15),
-        pad: clamp(Math.round(8 * k), 6, 9),
+        labelFs: clamp(Math.round(14 * k), 11, 15),
+        pad: clamp(Math.round(8 * k), 5, 9),
+      };
+    })(),
+    searchUi: (() => {
+      const k = clamp(searchH / 42, 0.72, 1.08);
+      return {
+        h: searchH,
+        icon: clamp(Math.round(16 * k), 13, 17),
+        filterIcon: clamp(Math.round(13 * k), 11, 14),
+        tail: clamp(Math.round(32 * k), 26, 34),
+        fs: clamp(Math.round(13 * k), 11, 14),
+        padL: clamp(Math.round(12 * k), 9, 14),
+        padR: clamp(Math.round(4 * k), 3, 6),
+      };
+    })(),
+    sheetUi: (() => {
+      const k = clamp(hubCardH / 160, 0.7, 1.05) * density;
+      return {
+        filterFs: clamp(Math.round(11 * k), 9, 12),
+        filterIcon: clamp(Math.round(13 * k), 11, 14),
+        filterPadH: clamp(Math.round(9 * k), 7, 11),
+        filterPadV: clamp(Math.round(5 * k), 3, 7),
+        cardTitleFs: clamp(Math.round(14 * k), 11, 15),
+        cardMetricFs: clamp(Math.round(11 * k), 9, 12),
+        statusFs: clamp(Math.round(10 * k), 8, 11),
       };
     })(),
   };

@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useShellTheme } from "../../lib/useShellTheme";
 import { colors } from "../../theme/colors";
 import { AppStatusBar, safeTop } from "./AppStatusBar";
-import { NativeBackButton } from "./NativeBackButton";
+import { NativeBackButton, NativeBackSpacer } from "./NativeBackButton";
 import {
   fontSize,
   moderateScale,
@@ -37,8 +37,8 @@ export function NativeHeader({
       <View style={[styles.largeWrap, { paddingTop: topPad, backgroundColor: pal.bg }]}>
         <AppStatusBar style="dark" />
         <View style={styles.largeTop}>
-          {onBack ? <NativeBackButton onPress={onBack} /> : <View style={styles.spacer} />}
-          {right ?? <View style={styles.spacer} />}
+          {onBack ? <NativeBackButton onPress={onBack} /> : <NativeBackSpacer />}
+          {right ?? <NativeBackSpacer />}
         </View>
         <Text style={[styles.largeTitle, { color: pal.fg, fontFamily: pal.font.fontFamily }]}>
           {title}
@@ -57,14 +57,14 @@ export function NativeHeader({
     >
       <AppStatusBar style="dark" />
       <View style={styles.row}>
-        {onBack ? <NativeBackButton onPress={onBack} /> : <View style={styles.spacer} />}
+        {onBack ? <NativeBackButton onPress={onBack} /> : <NativeBackSpacer />}
         <Text
           style={[styles.title, { color: pal.fg, fontFamily: pal.font.fontFamily }]}
           numberOfLines={1}
         >
           {title}
         </Text>
-        <View style={styles.right}>{right ?? <View style={styles.spacer} />}</View>
+        <View style={styles.right}>{right ?? <NativeBackSpacer />}</View>
       </View>
     </View>
   );
@@ -118,10 +118,6 @@ const styles = StyleSheet.create({
   right: {
     minWidth: scale(40),
     alignItems: "flex-end",
-  },
-  spacer: {
-    width: scale(40),
-    height: scale(40),
   },
   largeWrap: {
     backgroundColor: colors.bg,

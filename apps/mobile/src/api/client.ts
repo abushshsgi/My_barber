@@ -147,7 +147,12 @@ export async function apiJson<T>(path: string, init?: RequestInit): Promise<T> {
           "Server vaqtincha javob bermayapti (502). Bir necha soniyadan keyin qayta urinib ko'ring.",
         );
       }
-      throw new Error(detail.startsWith("API ") ? detail : `API ${res.status}: ${detail}`);
+      // API javob xatosi — alohida marker (catch da network bilan aralashtirilmasin).
+      const err = new Error(
+        detail.startsWith("API ") ? detail : `API ${res.status}: ${detail}`,
+      );
+      (err as Error & { isApiError?: boolean }).isApiError = true;
+      throw err;
     }
 
     if (res.status === 204) return undefined as T;
@@ -155,6 +160,21 @@ export async function apiJson<T>(path: string, init?: RequestInit): Promise<T> {
   } catch (err) {
     if (err instanceof Error && err.name === "AbortError") {
       throw new Error("Backend javob bermadi (timeout). Internetni tekshiring.");
+    }
+    if (
+      err instanceof Error &&
+      (err.message.startsWith("Server vaqtincha") ||
+        err.message.startsWith("Backend javob bermadi"))
+    ) {
+      throw err;
+    }
+    // Backend detail (4xx) — faqat texnik matnni tozalash, network deb o‘qimaslik.
+    if (
+      err instanceof Error &&
+      ((err as Error & { isApiError?: boolean }).isApiError ||
+        /^API\s+\d+:/i.test(err.message))
+    ) {
+      throw new Error(friendlyNetworkError(err, API_BASE || API_ORIGIN));
     }
     throw new Error(friendlyNetworkError(err, API_BASE || API_ORIGIN));
   } finally {
@@ -178,15 +198,16 @@ export async function apiFetch(
   const url = buildUrl(path);
   const method = (init?.method || "GET").toUpperCase();
   const timeoutMs = init?.timeoutMs ?? 120_000;
+  const { timeoutMs: _timeoutMs, ...fetchInit } = init ?? {};
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
 
   const headers: Record<string, string> = {
     Accept: "application/json",
-    ...(init?.headers as Record<string, string> | undefined),
+    ...(fetchInit.headers as Record<string, string> | undefined),
   };
   const isFormData =
-    typeof FormData !== "undefined" && init?.body instanceof FormData;
+    typeof FormData !== "undefined" && fetchInit.body instanceof FormData;
   if (
     method !== "GET" &&
     method !== "HEAD" &&
@@ -206,9 +227,9 @@ export async function apiFetch(
 
   try {
     let res = await fetch(url, {
-      ...init,
+      ...fetchInit,
       method,
-      signal: init?.signal ?? controller.signal,
+      signal: fetchInit.signal ?? controller.signal,
       headers,
     });
 
@@ -217,9 +238,9 @@ export async function apiFetch(
       if (next) {
         headers.Authorization = `Bearer ${next}`;
         res = await fetch(url, {
-          ...init,
+          ...fetchInit,
           method,
-          signal: init?.signal ?? controller.signal,
+          signal: fetchInit.signal ?? controller.signal,
           headers,
         });
       }

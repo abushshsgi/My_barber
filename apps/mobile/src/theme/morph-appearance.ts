@@ -1,6 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const KEY = "morph_appearance_v2_soft_paper";
+const KEY = "morph_appearance_v3_dark";
 
 export type MorphThemeName = "dark" | "light";
 export type MorphFontSize = "s" | "m" | "l";
@@ -81,21 +81,20 @@ export const MORPH_PALETTES: Record<MorphThemeName, MorphPalette> = {
     warn: SOFT_PAPER.warn,
     status: "dark",
   },
-  /** Soft Paper — dark toggle ham ochiq Soft Paper. */
   dark: {
     theme: "dark",
-    bg: SOFT_PAPER.bg,
-    card: SOFT_PAPER.card,
-    cardStrong: SOFT_PAPER.cardStrong,
-    line: SOFT_PAPER.line,
-    fg: SOFT_PAPER.fg,
-    muted: SOFT_PAPER.muted,
-    accent: SOFT_PAPER.accent,
-    iconTile: SOFT_PAPER.soft,
-    track: SOFT_PAPER.track,
-    destructive: SOFT_PAPER.destructive,
-    warn: SOFT_PAPER.warn,
-    status: "dark",
+    bg: "#0A0A0A",
+    card: "#141414",
+    cardStrong: "#1C1C1C",
+    line: "rgba(255,255,255,0.14)",
+    fg: "#FFFFFF",
+    muted: "#A3A3A3",
+    accent: "#FFFFFF",
+    iconTile: "#222222",
+    track: "#2A2A2A",
+    destructive: "#FF453A",
+    warn: "#FF9F0A",
+    status: "light",
   },
 };
 

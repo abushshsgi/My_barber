@@ -1,9 +1,10 @@
 import { useEffect } from "react";
 import { StyleSheet, Text, View } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import Animated, {
+  Easing,
   FadeIn,
   FadeInDown,
+  interpolate,
   useAnimatedStyle,
   useSharedValue,
   withDelay,
@@ -30,27 +31,38 @@ type Props = {
   streaming?: boolean;
 };
 
-function Dot({ delay }: { delay: number }) {
-  const opacity = useSharedValue(0.28);
+function TypingDot({ delayMs, color }: { delayMs: number; color: string }) {
+  const bounce = useSharedValue(0);
 
   useEffect(() => {
-    opacity.value = withDelay(
-      delay,
+    bounce.value = withDelay(
+      delayMs,
       withRepeat(
-        withSequence(withTiming(1, { duration: 280 }), withTiming(0.28, { duration: 280 })),
+        withSequence(
+          withTiming(1, { duration: 340, easing: Easing.out(Easing.quad) }),
+          withTiming(0, { duration: 340, easing: Easing.in(Easing.quad) }),
+        ),
         -1,
         false,
       ),
     );
-  }, [delay, opacity]);
+  }, [bounce, delayMs]);
 
-  const style = useAnimatedStyle(() => ({ opacity: opacity.value }));
-  return <Animated.View style={[styles.dot, style]} />;
+  const style = useAnimatedStyle(() => ({
+    opacity: interpolate(bounce.value, [0, 1], [0.35, 1]),
+    transform: [
+      { translateY: interpolate(bounce.value, [0, 1], [0, -5]) },
+      { scale: interpolate(bounce.value, [0, 1], [0.85, 1.08]) },
+    ],
+  }));
+
+  return <Animated.View style={[styles.dot, { backgroundColor: color }, style]} />;
 }
 
 function TypingDots() {
   const { theme } = useMorphAppearance();
   const isDark = theme === "dark";
+  const dotColor = isDark ? "rgba(255,255,255,0.85)" : "rgba(17,17,17,0.55)";
 
   return (
     <View
@@ -60,14 +72,9 @@ function TypingDots() {
       ]}
       accessibilityLabel="typing"
     >
-      <View style={styles.typingIcon}>
-        <Ionicons name="sparkles" size={12} color="#111111" />
-      </View>
-      <View style={styles.dots}>
-        <Dot delay={0} />
-        <Dot delay={140} />
-        <Dot delay={280} />
-      </View>
+      <TypingDot delayMs={0} color={dotColor} />
+      <TypingDot delayMs={140} color={dotColor} />
+      <TypingDot delayMs={280} color={dotColor} />
     </View>
   );
 }
@@ -96,7 +103,7 @@ export function ChatBubble({ role, content, pending }: Props) {
             isDark ? styles.userBubbleDark : styles.userBubbleLight,
           ]}
         >
-          <Text style={[styles.userText, { color: pal.fg, fontSize: textSize, lineHeight: line }]}>
+          <Text style={[styles.userText, { color: isDark ? "#FFFFFF" : pal.fg, fontSize: textSize, lineHeight: line }]}>
             {content}
           </Text>
         </View>
@@ -130,9 +137,9 @@ const styles = StyleSheet.create({
     borderColor: "rgba(17,17,17,0.12)",
   },
   userBubbleDark: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#1C1C1C",
     borderWidth: 1,
-    borderColor: "rgba(17,17,17,0.12)",
+    borderColor: "rgba(255,255,255,0.14)",
   },
   userText: {
     ...morphFont,
@@ -147,9 +154,9 @@ const styles = StyleSheet.create({
   typingWrap: {
     flexDirection: "row",
     alignItems: "center",
-    gap: moderateScale(8),
-    paddingHorizontal: scale(14),
-    paddingVertical: verticalScale(10),
+    gap: moderateScale(6),
+    paddingHorizontal: scale(16),
+    paddingVertical: verticalScale(14),
     borderRadius: moderateScale(20),
     alignSelf: "flex-start",
   },
@@ -159,28 +166,13 @@ const styles = StyleSheet.create({
     borderColor: "rgba(17,17,17,0.12)",
   },
   typingDark: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#1C1C1C",
     borderWidth: 1,
-    borderColor: "rgba(17,17,17,0.12)",
-  },
-  typingIcon: {
-    width: scale(20),
-    height: scale(20),
-    borderRadius: moderateScale(10),
-    backgroundColor: "#F0F0F0",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  dots: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: moderateScale(5),
-    height: verticalScale(18),
+    borderColor: "rgba(255,255,255,0.14)",
   },
   dot: {
-    width: scale(6),
-    height: scale(6),
-    borderRadius: moderateScale(3),
-    backgroundColor: "#111111",
+    width: scale(7),
+    height: scale(7),
+    borderRadius: moderateScale(3.5),
   },
 });

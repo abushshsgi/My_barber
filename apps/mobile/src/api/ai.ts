@@ -482,7 +482,34 @@ export type MorphChatContext = {
   reply_style?: "short" | "detailed" | "barber";
   advice_gender?: "male" | "female";
   voice_mode?: boolean;
+  feature?: string;
+  days_count?: number;
+  products_list?: string[];
+  user_goal?: string;
 };
+
+export type CareProgressStoryPayload = {
+  days_count: number;
+  products_list: string[];
+  user_goal: string;
+};
+
+export type CareProgressStoryResult = {
+  progress_headline: string;
+  ai_verdict: string;
+  growth_tag: string;
+};
+
+function extractFirstJsonObject(text: string): string {
+  const raw = text.trim();
+  if (raw.startsWith("{") && raw.endsWith("}")) return raw;
+  const start = raw.indexOf("{");
+  const end = raw.lastIndexOf("}");
+  if (start === -1 || end === -1 || end <= start) {
+    throw new Error("AI progress JSON topilmadi.");
+  }
+  return raw.slice(start, end + 1);
+}
 
 export type MorphChatLimits = {
   period?: "month" | "day" | "lifetime";
@@ -517,6 +544,65 @@ export type MorphChatSendPayload = {
   thread_id?: string;
   persist?: boolean;
 };
+
+/** Parvarish albomi story kartasi uchun qisqa AI verdict. */
+export async function generateCareProgressStory(
+  payload: CareProgressStoryPayload,
+): Promise<CareProgressStoryResult> {
+  const daysCount = Math.max(1, Number(payload.days_count) || 1);
+  const products =
+    payload.products_list
+      .map((item) => item.trim())
+      .filter(Boolean)
+      .slice(0, 8)
+      .join(", ") || "Mahsulot ko'rsatilmagan";
+  const goal = payload.user_goal.trim() || "Soch parvarishi";
+
+  const prompt = `You are Morf AI, an expert hair & skin care progress analyzer for the MySaloon app.
+Analyze the user's care duration, products used, and progress to generate a catchy 1-sentence compliment and progress badge in Uzbek suitable for an Instagram Story overlay.
+
+USER INPUT context:
+- Care Duration: ${daysCount} days
+- Products Used: ${products}
+- Goal: ${goal}
+
+RULES:
+1. Output a very short, highly encouraging statement in Uzbek (Max 12 words).
+2. Must sound aesthetic and shareable on social media.
+
+OUTPUT FORMAT (JSON):
+{
+  "progress_headline": "Short catchy title (e.g., 30 Kunlik Transformatsiya 🔥)",
+  "ai_verdict": "Short 1-sentence compliment (e.g., Sochlar sezilarli darajada qalin va sog'lom ko'rinishga keldi!)",
+  "growth_tag": "+15% Zichlik"
+}`;
+
+  const { reply } = await sendMorphChatMessage({
+    message: prompt,
+    persist: false,
+    context: {
+      feature: "care_album_progress_story",
+      days_count: daysCount,
+      products_list: payload.products_list,
+      user_goal: goal,
+    },
+  });
+
+  let parsed: Partial<CareProgressStoryResult> = {};
+  try {
+    parsed = JSON.parse(extractFirstJsonObject(reply)) as CareProgressStoryResult;
+  } catch {
+    throw new Error("AI progress javobi noto'g'ri formatda keldi.");
+  }
+
+  const progress_headline = (parsed.progress_headline || "").trim();
+  const ai_verdict = (parsed.ai_verdict || "").trim();
+  const growth_tag = (parsed.growth_tag || "").trim();
+  if (!progress_headline || !ai_verdict || !growth_tag) {
+    throw new Error("AI progress javobi to'liq emas.");
+  }
+  return { progress_headline, ai_verdict, growth_tag };
+}
 
 export async function sendMorphChatMessage(
   payload: MorphChatSendPayload,

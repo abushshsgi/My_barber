@@ -5,6 +5,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -217,15 +218,14 @@ export function MorphTryOnScreen({ navigation }: Props) {
   const cardW = (winW - gridPad * 2 - gridGap) / 2;
 
   /**
-   * Sheet o'lchamlari — hammasi joriy ekran balandligidan hosil bo'ladi,
-   * shunda iPhone SE'da ham tugmalar dock ostiga tushib ketmaydi.
+   * Sheet o'lchamlari — eski ixcham balandlik (kamera/galereya kesilmasin).
    */
   const { captureMaxHeight, historyH, sheetMinHeight } = useMemo(() => {
     const usable = winH - insets.top - dockPad;
     return {
       historyH: clamp(Math.round(winH * 0.68), 320, Math.min(560, usable)),
-      captureMaxHeight: clamp(Math.round(usable * 0.34), 168, 250),
-      sheetMinHeight: clamp(Math.round(usable * 0.42), 240, 340),
+      captureMaxHeight: clamp(Math.round(usable * 0.28), 150, 210),
+      sheetMinHeight: 300,
     };
   }, [dockPad, insets.top, winH]);
 
@@ -295,26 +295,61 @@ export function MorphTryOnScreen({ navigation }: Props) {
     onHistoryClosed();
   }, [lift, onHistoryClosed]);
 
+  const toggleHistory = useCallback(() => {
+    if (historyOpen) closeHistoryPanel();
+    else openHistoryPanel();
+  }, [closeHistoryPanel, historyOpen, openHistoryPanel]);
+
   const scrollNative = Gesture.Native();
-  const pan = Gesture.Pan()
-    .activeOffsetY([-12, 12])
-    .failOffsetX([-40, 40])
-    .simultaneousWithExternalGesture(scrollNative)
-    .onBegin(() => {
-      dragStart.value = lift.value;
-    })
-    .onUpdate((e) => {
-      const next = dragStart.value - e.translationY;
-      lift.value = Math.min(historyH, Math.max(0, next));
-    })
-    .onEnd((e) => {
-      let open = lift.value > historyH * 0.35;
-      if (e.velocityY < -550) open = true;
-      if (e.velocityY > 550) open = false;
-      lift.value = withSpring(open ? historyH : 0, SPRING);
-      runOnJS(setOpenProgress)(open);
+
+  /** Handle / header — yuqoriga ochish, pastga yopish (ScrollView bilan urushmasin). */
+  const handleGesture = useMemo(() => {
+    const pan = Gesture.Pan()
+      .activeOffsetY([-6, 6])
+      .failOffsetX([-32, 32])
+      .enableTrackpadTwoFingerGesture(true)
+      .onBegin(() => {
+        dragStart.value = lift.value;
+      })
+      .onUpdate((e) => {
+        const next = dragStart.value - e.translationY;
+        lift.value = Math.min(historyH, Math.max(0, next));
+      })
+      .onEnd((e) => {
+        let open = lift.value > historyH * 0.28;
+        if (e.velocityY < -400) open = true;
+        if (e.velocityY > 280) open = false;
+        lift.value = withSpring(open ? historyH : 0, SPRING);
+        runOnJS(setOpenProgress)(open);
+      });
+
+    const tap = Gesture.Tap().onEnd(() => {
+      runOnJS(toggleHistory)();
     });
 
+    return Gesture.Exclusive(pan, tap);
+  }, [dragStart, historyH, lift, setOpenProgress, toggleHistory]);
+
+  const historyHeaderPan = useMemo(() => {
+    return Gesture.Pan()
+      .activeOffsetY([-6, 6])
+      .failOffsetX([-32, 32])
+      .enableTrackpadTwoFingerGesture(true)
+      .onBegin(() => {
+        dragStart.value = lift.value;
+      })
+      .onUpdate((e) => {
+        const next = dragStart.value - e.translationY;
+        lift.value = Math.min(historyH, Math.max(0, next));
+      })
+      .onEnd((e) => {
+        let open = lift.value > historyH * 0.28;
+        if (e.velocityY < -400) open = true;
+        if (e.velocityY > 280) open = false;
+        lift.value = withSpring(open ? historyH : 0, SPRING);
+        runOnJS(setOpenProgress)(open);
+      });
+  }, [dragStart, historyH, lift, setOpenProgress]);
   /** Sheet pastidan o‘sadi — translate kerak emas. */
   const captureAnim = useAnimatedStyle(() => {
     const t = interpolate(
@@ -323,20 +358,16 @@ export function MorphTryOnScreen({ navigation }: Props) {
       [1, 0],
       Extrapolation.CLAMP,
     );
+    const h = interpolate(
+      lift.value,
+      [0, historyH * 0.55],
+      [captureMaxHeight, 0],
+      Extrapolation.CLAMP,
+    );
     return {
       opacity: t,
-      maxHeight: interpolate(
-        lift.value,
-        [0, historyH * 0.55],
-        [captureMaxHeight, 0],
-        Extrapolation.CLAMP,
-      ),
-      marginBottom: interpolate(
-        lift.value,
-        [0, historyH * 0.4],
-        [0, -12],
-        Extrapolation.CLAMP,
-      ),
+      height: h,
+      maxHeight: h,
       overflow: "hidden" as const,
     };
   });
@@ -368,10 +399,6 @@ export function MorphTryOnScreen({ navigation }: Props) {
     };
   });
 
-  const handleOpacity = useAnimatedStyle(() => ({
-    opacity: interpolate(lift.value, [0, historyH * 0.4], [1, 0.55], Extrapolation.CLAMP),
-  }));
-
   /** «Barchasi» chiqqanda history icon yo‘qoladi (bir vaqtda ikkalasi ko‘rinmasin). */
   const historyIconAnim = useAnimatedStyle(() => {
     const t = interpolate(
@@ -383,6 +410,20 @@ export function MorphTryOnScreen({ navigation }: Props) {
     return {
       opacity: t,
       transform: [{ scale: interpolate(t, [0, 1], [0.88, 1]) }],
+    };
+  });
+
+  /** Sheet pastidan yuqoriga o‘sadi — history ochilganda balandlik qo‘shiladi. */
+  const sheetAnim = useAnimatedStyle(() => {
+    const captureH = interpolate(
+      lift.value,
+      [0, historyH * 0.55],
+      [captureMaxHeight, 0],
+      Extrapolation.CLAMP,
+    );
+    const chrome = sheetMinHeight - captureMaxHeight;
+    return {
+      height: Math.max(sheetMinHeight, chrome + captureH + lift.value),
     };
   });
 
@@ -470,38 +511,40 @@ export function MorphTryOnScreen({ navigation }: Props) {
           styles.sheet,
           {
             paddingBottom: dockPad,
-            minHeight: sheetMinHeight,
           },
+          sheetAnim,
         ]}
       >
-        <GestureDetector gesture={pan}>
-          <View>
-            <View style={styles.handleRow}>
-              <View style={styles.handleSpacer} />
-              <Animated.View style={[styles.handleCluster, handleOpacity]}>
-                <View style={styles.handle} />
-                <Text style={styles.handleHint}>
-                  {historyOpen ? "Yopish · pastga" : "Tarix · yuqoriga"}
-                </Text>
-              </Animated.View>
-              <Animated.View
-                style={historyIconAnim}
-                pointerEvents={historyOpen ? "none" : "auto"}
-              >
-                <Pressable
-                  style={styles.historyIconBtn}
-                  onPress={openHistoryPanel}
-                  accessibilityLabel="Tarix"
-                  hitSlop={8}
-                >
-                  <Ionicons name="time-outline" size={16} color="#0A0A0A" />
-                </Pressable>
-              </Animated.View>
-            </View>
-
-            {/* Capture — yopiq holat (pan faqat handle orqali; tugmalar bosiladi) */}
+        <GestureDetector gesture={handleGesture}>
+          <View
+            style={[
+              styles.handleRow,
+              Platform.OS === "web" ? ({ touchAction: "none" } as object) : null,
+            ]}
+            accessibilityRole="adjustable"
+            accessibilityLabel={historyOpen ? "Tarixni yopish" : "Tarixni ochish"}
+          >
+            <View style={styles.handle} />
             <Animated.View
-              style={captureAnim}
+              style={[styles.historyIconWrap, historyIconAnim]}
+              pointerEvents={historyOpen ? "none" : "auto"}
+            >
+              <Pressable
+                style={styles.historyIconBtn}
+                onPress={openHistoryPanel}
+                accessibilityLabel="Tarix"
+                hitSlop={8}
+              >
+                <Ionicons name="time-outline" size={16} color="#0A0A0A" />
+              </Pressable>
+            </Animated.View>
+          </View>
+        </GestureDetector>
+
+        <View style={styles.sheetInner}>
+            {/* Capture — qadamlar tepada, tugmalar pastda */}
+            <Animated.View
+              style={[styles.captureWrap, captureAnim]}
               pointerEvents={historyOpen ? "none" : "auto"}
             >
               <View style={styles.steps}>
@@ -569,31 +612,40 @@ export function MorphTryOnScreen({ navigation }: Props) {
               </View>
             </Animated.View>
 
-            {/* History — ochiq holat */}
+            {/* History — handle ostida sarlavha + Barchasi */}
             <Animated.View
               style={[styles.historyBody, historyAnim]}
               pointerEvents={historyOpen ? "auto" : "none"}
             >
-              <View style={styles.historyHeader}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.historyTitle}>So‘nggi looklar</Text>
-                  <Text style={styles.historySub}>
-                    {historyLoading
-                      ? "Yuklanmoqda…"
-                      : historyItems.length > 0
-                        ? `${Math.min(previewItems.length, PREVIEW_LIMIT)} / ${historyItems.length}`
-                        : "Try-on tarixi"}
-                  </Text>
-                </View>
-                <Pressable
-                  style={styles.seeAllBtn}
-                  onPress={() => navigation.navigate("MorphHistory")}
-                  accessibilityLabel="Barcha tarix"
+              <GestureDetector gesture={historyHeaderPan}>
+                <View
+                  style={[
+                    styles.historyHeader,
+                    Platform.OS === "web" ? ({ touchAction: "none" } as object) : null,
+                  ]}
                 >
-                  <Text style={styles.seeAllText}>Barchasi</Text>
-                  <Ionicons name="chevron-forward" size={14} color="#0A0A0A" />
-                </Pressable>
-              </View>
+                  <View style={styles.historyTitles}>
+                    <Text style={styles.historyTitle} numberOfLines={1}>
+                      So‘nggi looklar
+                    </Text>
+                    <Text style={styles.historySub} numberOfLines={1}>
+                      {historyLoading
+                        ? "Yuklanmoqda…"
+                        : historyItems.length > 0
+                          ? `${Math.min(previewItems.length, PREVIEW_LIMIT)} / ${historyItems.length}`
+                          : "Try-on tarixi"}
+                    </Text>
+                  </View>
+                  <Pressable
+                    style={styles.seeAllBtn}
+                    onPress={() => navigation.navigate("MorphHistory")}
+                    accessibilityLabel="Barcha tarix"
+                  >
+                    <Text style={styles.seeAllText}>Barchasi</Text>
+                    <Ionicons name="chevron-forward" size={14} color="#0A0A0A" />
+                  </Pressable>
+                </View>
+              </GestureDetector>
 
               {historyLoading && !historyFetched ? (
                 <ActivityIndicator color="#0A0A0A" style={{ marginTop: 28 }} />
@@ -670,8 +722,7 @@ export function MorphTryOnScreen({ navigation }: Props) {
                 </Animated.View>
               ) : null}
             </Animated.View>
-          </View>
-        </GestureDetector>
+        </View>
       </Animated.View>
     </View>
   );
@@ -680,9 +731,9 @@ export function MorphTryOnScreen({ navigation }: Props) {
 const ACTION_ICON = scale(IS_SMALL_DEVICE ? 22 : 26);
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: "#0A0A0A" },
+  root: { flex: 1, backgroundColor: "#FAFAFA" },
   heroImg: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     width: "100%",
     height: "100%",
   },
@@ -725,35 +776,38 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: radius.xl,
     borderTopRightRadius: radius.xl,
     paddingHorizontal: scale(16),
-    paddingTop: spacing.sm,
-    gap: spacing.sm,
+    paddingTop: verticalScale(4),
+    gap: spacing.xs,
     zIndex: 2,
     overflow: "hidden",
+    justifyContent: "flex-start",
+  },
+  sheetInner: {
+    flex: 1,
+    justifyContent: "flex-start",
   },
   handleRow: {
-    flexDirection: "row",
+    position: "relative",
     alignItems: "center",
-    justifyContent: "space-between",
-    minHeight: verticalScale(IS_SMALL_DEVICE ? 36 : 44),
-    paddingVertical: spacing.xs,
+    justifyContent: "center",
+    height: verticalScale(28),
+    marginBottom: verticalScale(2),
   },
-  handleSpacer: { width: scale(34) },
-  handleCluster: {
-    flex: 1,
-    alignItems: "center",
-    gap: moderateScale(4),
+  captureWrap: {
+    justifyContent: "flex-start",
+    gap: spacing.sm,
+    paddingTop: verticalScale(2),
   },
   handle: {
-    width: scale(40),
-    height: verticalScale(4),
-    borderRadius: moderateScale(2),
-    backgroundColor: "rgba(0,0,0,0.18)",
+    width: scale(42),
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "rgba(0,0,0,0.22)",
   },
-  handleHint: {
-    fontSize: fontSize(10),
-    fontWeight: "600",
-    color: "rgba(0,0,0,0.4)",
-    includeFontPadding: false,
+  historyIconWrap: {
+    position: "absolute",
+    right: 0,
+    top: verticalScale(0),
   },
   historyIconBtn: {
     width: scale(34),
@@ -769,6 +823,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: spacing.xs,
     position: "relative",
+    marginTop: verticalScale(2),
   },
   stepTrack: {
     position: "absolute",
@@ -812,7 +867,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.sm,
     padding: spacing.xs,
     gap: spacing.xs,
-    marginTop: spacing.sm,
+    marginTop: spacing.xs,
   },
   errorText: {
     color: "#B91C1C",
@@ -831,9 +886,11 @@ const styles = StyleSheet.create({
   actionGrid: {
     flexDirection: "row",
     gap: moderateScale(10),
-    marginTop: spacing.xl,
-    paddingHorizontal: scale(18),
+    marginTop: spacing.sm,
+    marginBottom: spacing.xs,
+    paddingHorizontal: scale(12),
     justifyContent: "center",
+    flexShrink: 0,
   },
   gridBtnDark: {
     flex: 1,
@@ -842,7 +899,7 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
     backgroundColor: "#0A0A0A",
     borderRadius: radius.xl,
-    minHeight: verticalScale(IS_SMALL_DEVICE ? 60 : 72),
+    minHeight: verticalScale(IS_SMALL_DEVICE ? 56 : 64),
     paddingHorizontal: scale(8),
     paddingVertical: spacing.sm,
     overflow: "hidden",
@@ -854,7 +911,7 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
     backgroundColor: "transparent",
     borderRadius: radius.xl,
-    minHeight: verticalScale(IS_SMALL_DEVICE ? 60 : 72),
+    minHeight: verticalScale(IS_SMALL_DEVICE ? 56 : 64),
     paddingHorizontal: scale(8),
     paddingVertical: spacing.sm,
     borderWidth: 1.5,
@@ -885,7 +942,13 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    gap: moderateScale(10),
+    gap: moderateScale(12),
+    paddingBottom: verticalScale(4),
+  },
+  historyTitles: {
+    flex: 1,
+    minWidth: 0,
+    paddingRight: scale(8),
   },
   historyTitle: {
     color: "#0A0A0A",
@@ -902,6 +965,7 @@ const styles = StyleSheet.create({
   seeAllBtn: {
     flexDirection: "row",
     alignItems: "center",
+    flexShrink: 0,
     gap: moderateScale(2),
     backgroundColor: "rgba(0,0,0,0.06)",
     borderRadius: radius.pill,

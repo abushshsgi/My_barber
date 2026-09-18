@@ -481,6 +481,8 @@ export type HairGrowthForecastStatus = "EXCELLENT" | "NORMAL" | "NEEDS_IMPROVEME
 
 export type HairGrowthForecast = {
   projected_length_3_months: number;
+  /** Oyiga cm — projected bilan mos: current + monthly * 3 */
+  monthly_growth_cm?: number;
   growth_rate_status: HairGrowthForecastStatus;
   ai_commentary: string;
   recommended_action: string;
@@ -528,11 +530,17 @@ function normalizeForecast(row: unknown): HairGrowthForecast | null {
   if (!row || typeof row !== "object") return null;
   const src = row as Record<string, unknown>;
   const projected = Number(src.projected_length_3_months);
+  const monthlyRaw = Number(src.monthly_growth_cm);
   const status = String(src.growth_rate_status || "").trim().toUpperCase();
   if (!Number.isFinite(projected)) return null;
   if (status !== "EXCELLENT" && status !== "NORMAL" && status !== "NEEDS_IMPROVEMENT") return null;
+  const monthly =
+    Number.isFinite(monthlyRaw) && monthlyRaw > 0
+      ? Math.max(0.3, Math.min(2.5, Number(monthlyRaw.toFixed(2))))
+      : undefined;
   return {
     projected_length_3_months: Math.max(0, Math.min(300, Number(projected.toFixed(1)))),
+    ...(monthly != null ? { monthly_growth_cm: monthly } : {}),
     growth_rate_status: status,
     ai_commentary: String(src.ai_commentary || "").trim().slice(0, 220),
     recommended_action: String(src.recommended_action || "").trim().slice(0, 180),

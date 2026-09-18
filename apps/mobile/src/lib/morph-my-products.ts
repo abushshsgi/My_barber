@@ -14,6 +14,8 @@ export type MyCareProduct = {
   image_url: string | null;
   added_at: string;
   source: "scan" | "catalog" | "recommended";
+  usage_uz?: string;
+  purpose_uz?: string;
 };
 
 const MY_PRODUCTS_KEY = "mysaloon.morphAi.myProducts";
@@ -50,6 +52,8 @@ export async function loadMyProducts(): Promise<MyCareProduct[]> {
         image_url: r.image_url,
         added_at: r.added_at || new Date().toISOString(),
         source: (r.source as MyCareProduct["source"]) || "catalog",
+        usage_uz: r.usage_uz || "",
+        purpose_uz: r.purpose_uz || "",
       }));
       await saveLocal(mapped);
       return mapped;
@@ -114,6 +118,8 @@ export async function removeMyProduct(id: number): Promise<MyCareProduct[]> {
         image_url: r.image_url,
         added_at: r.added_at || new Date().toISOString(),
         source: (r.source as MyCareProduct["source"]) || "catalog",
+        usage_uz: r.usage_uz || "",
+        purpose_uz: r.purpose_uz || "",
       }));
       // Agar API o‘chirgan bo‘lsa remote da yo‘q; agar API fail bo‘lsa ham local filter ustuvor
       const synced = mapped.filter((r) => r.id !== id);

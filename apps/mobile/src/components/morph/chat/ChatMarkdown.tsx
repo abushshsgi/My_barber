@@ -1,5 +1,5 @@
 import { Fragment, type ReactNode } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { morphFont } from "../../../theme/morph-font";
 import {
   fontSize,
@@ -19,7 +19,19 @@ type Block =
   | { type: "p"; text: string }
   | { type: "ul"; items: string[] }
   | { type: "ol"; items: string[] }
-  | { type: "quote"; text: string };
+  | { type: "quote"; text: string }
+  | { type: "table"; headers: string[]; rows: string[][] };
+
+function splitTableRow(line: string): string[] {
+  const raw = line.trim().replace(/^\|/, "").replace(/\|$/, "");
+  return raw.split("|").map((c) => c.trim());
+}
+
+function isTableSep(line: string): boolean {
+  const cells = splitTableRow(line);
+  if (!cells.length) return false;
+  return cells.every((c) => /^:?-{3,}:?$/.test(c));
+}
 
 function parseBlocks(raw: string): Block[] {
   const lines = raw.replace(/\r\n/g, "\n").split("\n");
@@ -50,6 +62,29 @@ function parseBlocks(raw: string): Block[] {
       }
       if (i < lines.length) i += 1;
       if (code.length) blocks.push({ type: "p", text: code.join("\n") });
+      continue;
+    }
+
+    // Markdown table: | h | h | + |---|---| + rows
+    if (
+      trimmed.includes("|") &&
+      i + 1 < lines.length &&
+      isTableSep((lines[i + 1] ?? "").trim())
+    ) {
+      const headers = splitTableRow(trimmed);
+      i += 2;
+      const rows: string[][] = [];
+      while (i < lines.length) {
+        const rowLine = (lines[i] ?? "").trim();
+        if (!rowLine.includes("|") || isTableSep(rowLine)) break;
+        const cells = splitTableRow(rowLine);
+        if (cells.some((c) => c.length > 0)) {
+          while (cells.length < headers.length) cells.push("");
+          rows.push(cells.slice(0, Math.max(headers.length, cells.length)));
+        }
+        i += 1;
+      }
+      if (headers.length) blocks.push({ type: "table", headers, rows });
       continue;
     }
 
@@ -100,7 +135,10 @@ function parseBlocks(raw: string): Block[] {
         /^#{1,3}\s+/.test(next) ||
         /^[-*]\s+/.test(next) ||
         /^\d+\.\s+/.test(next) ||
-        next.startsWith("> ")
+        next.startsWith("> ") ||
+        (next.includes("|") &&
+          i + 1 < lines.length &&
+          isTableSep((lines[i + 1] ?? "").trim()))
       ) {
         break;
       }
@@ -114,7 +152,8 @@ function parseBlocks(raw: string): Block[] {
 }
 
 function renderInline(text: string, color: string, keyPrefix: string): ReactNode[] {
-  const parts = text.split(/(\*\*[^*]+\*\*|`[^`]+`|\*[^*]+\*)/g);
+  // **bold**, `code`, *italic*, $formula$
+  const parts = text.split(/(\*\*[^*]+\*\*|`[^`]+`|\*[^*]+\*|\$[^$]+\$)/g);
   return parts.map((part, idx) => {
     const key = `${keyPrefix}-${idx}`;
     if (!part) return null;
@@ -128,6 +167,13 @@ function renderInline(text: string, color: string, keyPrefix: string): ReactNode
     if (part.startsWith("`") && part.endsWith("`") && part.length > 2) {
       return (
         <Text key={key} style={styles.code}>
+          {part.slice(1, -1)}
+        </Text>
+      );
+    }
+    if (part.startsWith("$") && part.endsWith("$") && part.length > 2) {
+      return (
+        <Text key={key} style={styles.formula}>
           {part.slice(1, -1)}
         </Text>
       );
@@ -199,6 +245,52 @@ export function ChatMarkdown({ content, color = "#111111", scale = 1 }: Props) {
             </View>
           );
         }
+        if (block.type === "table") {
+          const colCount = Math.max(
+            block.headers.length,
+            ...block.rows.map((r) => r.length),
+            1,
+          );
+          return (
+            <ScrollView
+              key={`t-${idx}`}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.tableScroll}
+            >
+              <View style={styles.table}>
+                <View style={[styles.tr, styles.trHead]}>
+                  {Array.from({ length: colCount }, (_, c) => (
+                    <View key={`th-${idx}-${c}`} style={styles.td}>
+                      <Text style={[styles.thText, { fontSize: fs(12), lineHeight: fs(17) }]}>
+                        {renderInline(block.headers[c] ?? "", "#111111", `th-${idx}-${c}`)}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+                {block.rows.map((row, rIdx) => (
+                  <View
+                    key={`tr-${idx}-${rIdx}`}
+                    style={[styles.tr, rIdx % 2 === 1 ? styles.trAlt : null]}
+                  >
+                    {Array.from({ length: colCount }, (_, c) => (
+                      <View key={`td-${idx}-${rIdx}-${c}`} style={styles.td}>
+                        <Text
+                          style={[
+                            styles.tdText,
+                            { color, fontSize: fs(12), lineHeight: fs(17) },
+                          ]}
+                        >
+                          {renderInline(row[c] ?? "", color, `td-${idx}-${rIdx}-${c}`)}
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+                ))}
+              </View>
+            </ScrollView>
+          );
+        }
         return (
           <Text key={`p-${idx}`} style={[styles.p, { color, fontSize: fs(13), lineHeight: fs(19) }]}>
             {renderInline(block.text, color, `p-${idx}`).map((node, nIdx) => (
@@ -226,18 +318,6 @@ const styles = StyleSheet.create({
     letterSpacing: -0.2,
     marginTop: verticalScale(2),
   },
-  h1: {
-    fontSize: fontSize(16),
-    lineHeight: fontSize(22),
-  },
-  h2: {
-    fontSize: fontSize(14),
-    lineHeight: fontSize(20),
-  },
-  h3: {
-    fontSize: fontSize(13),
-    lineHeight: fontSize(18),
-  },
   bold: {
     fontWeight: "700",
   },
@@ -249,6 +329,13 @@ const styles = StyleSheet.create({
     fontSize: fontSize(13),
     backgroundColor: "#F4F4F5",
     color: "#18181B",
+  },
+  formula: {
+    fontFamily: "monospace",
+    fontSize: fontSize(13),
+    color: "#18181B",
+    backgroundColor: "#EEF2FF",
+    fontWeight: "600",
   },
   list: {
     gap: moderateScale(5),
@@ -273,5 +360,40 @@ const styles = StyleSheet.create({
   },
   quoteText: {
     color: "#52525B",
+  },
+  tableScroll: {
+    paddingVertical: verticalScale(2),
+  },
+  table: {
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(17,17,17,0.14)",
+    borderRadius: moderateScale(12),
+    overflow: "hidden",
+    minWidth: scale(260),
+  },
+  tr: {
+    flexDirection: "row",
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "rgba(17,17,17,0.1)",
+  },
+  trHead: {
+    backgroundColor: "#F4F4F5",
+  },
+  trAlt: {
+    backgroundColor: "rgba(17,17,17,0.03)",
+  },
+  td: {
+    minWidth: scale(88),
+    maxWidth: scale(140),
+    paddingHorizontal: scale(10),
+    paddingVertical: verticalScale(8),
+  },
+  thText: {
+    ...morphFont,
+    fontWeight: "700",
+    color: "#111111",
+  },
+  tdText: {
+    ...morphFont,
   },
 });

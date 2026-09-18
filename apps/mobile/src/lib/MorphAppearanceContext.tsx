@@ -103,10 +103,10 @@ export function useMorphAppearance(): MorphAppearanceContextValue {
   if (!ctx) {
     const fontScale = MORPH_FONT_SCALE.m;
     const chatFontScale = MORPH_CHAT_FONT_SCALE.m;
-    const colors = paletteFor("light");
+    const colors = paletteFor("dark");
     return {
       ready: true,
-      theme: "light",
+      theme: "dark",
       fontSize: "m",
       chatFontSize: "m",
       fontScale,

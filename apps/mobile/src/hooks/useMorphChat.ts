@@ -60,7 +60,7 @@ export async function wipeMorphChatsEverywhere(): Promise<void> {
   if (remoteError) throw new Error(remoteError);
 }
 const MAX_CHAT_THREADS = 200;
-const CHAT_HISTORY_TURNS = 24;
+const CHAT_HISTORY_TURNS = 32;
 
 export const MORPH_QUICK_PROMPT_IDS = [
   "face_shape",
@@ -470,8 +470,11 @@ export function useMorphChat() {
       });
 
       try {
-        const prefs = await readMorphChatPrefs();
-        prefsRef.current = prefs;
+        // Prefs allaqachon hydrate — AsyncStorage kutmasdan darhol so‘rov
+        const prefs = prefsRef.current;
+        void readMorphChatPrefs().then((p) => {
+          prefsRef.current = p;
+        });
         const lang =
           prefs.replyLang === "app"
             ? currentLang() === "ru"

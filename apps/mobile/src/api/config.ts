@@ -12,21 +12,28 @@ const extra = (Constants.expoConfig?.extra ?? {}) as {
 const fromExtra =
   typeof extra.apiUrl === "string" ? extra.apiUrl.trim() : "";
 
-function resolveApiBase(): string {
-  const env = process.env.EXPO_PUBLIC_API_URL?.trim() || fromExtra || "";
+/** Env → app.config extra → production default (trailing slash yo‘q). */
+function configuredApiUrl(): string {
+  const env = process.env.EXPO_PUBLIC_API_URL?.trim() || "";
+  return (env || fromExtra || DEFAULT_API).replace(/\/+$/, "");
+}
 
+function resolveApiBase(): string {
   // Expo web (localhost): Metro `/api` + `/media` proxy — CORS yo‘q.
   if (Platform.OS === "web" && typeof __DEV__ !== "undefined" && __DEV__) {
     return "";
   }
-
-  return (env || DEFAULT_API).replace(/\/+$/, "");
+  return configuredApiUrl();
 }
 
-/** Native: api.mysaloon.uz. Web dev: same-origin (proxy). */
+/** Native: to‘liq API URL. Web dev: same-origin (proxy) → "". */
 export const API_BASE = resolveApiBase();
 
-export const API_ORIGIN = (fromExtra || DEFAULT_API).replace(/\/+$/, "");
+/**
+ * Absolute origin (media, refresh, map-config).
+ * Web proxy rejimida ham haqiqiy backend host kerak — API_BASE bilan bir xil manbadan.
+ */
+export const API_ORIGIN = configuredApiUrl();
 
 export function getExtraGoogleClientId(): string {
   return typeof extra.googleClientId === "string" ? extra.googleClientId.trim() : "";

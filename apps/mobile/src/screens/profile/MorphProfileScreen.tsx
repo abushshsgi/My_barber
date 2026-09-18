@@ -13,9 +13,10 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { safeBottom, safeTop } from "../../lib/safe-area";
 import { planLabel } from "../../api/dashboard";
 import { resolveMediaUrl } from "../../api/media";
-import { formatSom, initials } from "../../api/user";
+import { initials } from "../../api/user";
 import { useAuth } from "../../auth/AuthContext";
 import { useProfileDashboard } from "../../hooks/useProfileDashboard";
 import { TAB_DOCK_CLEARANCE } from "../../hooks/useHideTabBar";
@@ -51,7 +52,6 @@ export function MorphProfileScreen({ navigation }: Props) {
   const verified = dashboard?.verified ?? Boolean(user?.phone || user?.email_verified);
   const sub = dashboard?.subscription;
   const usage = sub?.usage;
-  const wallet = dashboard?.wallet;
   const history = dashboard?.morph.history ?? [];
   const photoCount = dashboard?.morph.photo_count ?? 0;
   const plan = planLabel(sub);
@@ -62,14 +62,20 @@ export function MorphProfileScreen({ navigation }: Props) {
   const progress = aiLimit > 0 ? Math.min(1, aiUsed / aiLimit) : 0;
   const usagePct = Math.round(progress * 100);
   const meterColor =
-    usagePct >= 90 ? pal.destructive : usagePct >= 70 ? pal.warn : pal.accent;
+    usagePct >= 90
+      ? pal.destructive
+      : usagePct >= 70
+        ? pal.warn
+        : pal.theme === "dark"
+          ? "#FFFFFF"
+          : "#1E1E1E";
   const styles = makeStyles(pal, fs);
 
   const openSettings = () => navigation.navigate("MorphAiSettings");
 
   return (
-    <View style={[styles.root, { paddingTop: Math.max(insets.top, 10) + 12 }]}>
-      <StatusBar style={pal.status} />
+    <View style={[styles.root, { paddingTop: safeTop(insets.top, 0) + verticalScale(36) }]}>
+      <StatusBar style="dark" />
       <ScrollView
         style={styles.scroll}
         showsVerticalScrollIndicator={false}
@@ -165,7 +171,16 @@ export function MorphProfileScreen({ navigation }: Props) {
               </Text>
             </View>
             <UsageRing pct={usagePct} color={meterColor} size={64} stroke={6}>
-              <Text style={[styles.usagePct, { color: meterColor, fontSize: fs(12) }]}>
+              <Text
+                style={[
+                  styles.usagePct,
+                  {
+                    color: pal.theme === "dark" ? "#FFFFFF" : "#1E1E1E",
+                    fontSize: fs(13),
+                    fontWeight: "800",
+                  },
+                ]}
+              >
                 {usagePct}%
               </Text>
             </UsageRing>
@@ -180,7 +195,23 @@ export function MorphProfileScreen({ navigation }: Props) {
           <QuickTile
             pal={pal}
             styles={styles}
+            icon="wallet-outline"
+            accent={pal.fg}
+            soft={pal.theme === "dark" ? "rgba(255,255,255,0.1)" : "#F3F4F6"}
+            label="Hamyon"
+            labelLow
+            onPress={() => {
+              setShell("morph");
+              rememberTab("morph", "Profile");
+              navigation.navigate("WalletGate");
+            }}
+          />
+          <QuickTile
+            pal={pal}
+            styles={styles}
             icon="images-outline"
+            accent="#2563EB"
+            soft={pal.theme === "dark" ? "rgba(37,99,235,0.22)" : "rgba(37,99,235,0.12)"}
             label="Looks"
             value={String(photoCount)}
             onPress={() => openMorphStack(navigation, "MorphHistory")}
@@ -189,20 +220,10 @@ export function MorphProfileScreen({ navigation }: Props) {
             pal={pal}
             styles={styles}
             icon="color-wand-outline"
+            accent="#0F766E"
+            soft={pal.theme === "dark" ? "rgba(15,118,110,0.22)" : "rgba(15,118,110,0.12)"}
             label="Studio"
             onPress={() => openMorphStack(navigation, "MorphStudio")}
-          />
-          <QuickTile
-            pal={pal}
-            styles={styles}
-            icon="wallet-outline"
-            label="Hamyon"
-            value={formatSom(wallet?.balance ?? 0).replace(" so'm", "")}
-            onPress={() => {
-              setShell("morph");
-              rememberTab("morph", "Profile");
-              navigation.navigate("WalletGate");
-            }}
           />
         </View>
 
@@ -315,15 +336,21 @@ function QuickTile({
   pal,
   styles,
   icon,
+  accent,
+  soft,
   label,
   value,
+  labelLow,
   onPress,
 }: {
   pal: MorphPalette;
   styles: ReturnType<typeof makeStyles>;
   icon: keyof typeof Ionicons.glyphMap;
+  accent: string;
+  soft: string;
   label: string;
   value?: string;
+  labelLow?: boolean;
   onPress: () => void;
 }) {
   return (
@@ -331,18 +358,25 @@ function QuickTile({
       onPress={onPress}
       style={({ pressed }) => [styles.quickTile, pressed && styles.pressed]}
       accessibilityRole="button"
+      accessibilityLabel={value ? `${label} ${value}` : label}
     >
-      <View style={styles.quickIcon}>
-        <Ionicons name={icon} size={18} color={pal.fg} />
+      <View style={styles.quickTop}>
+        <View style={[styles.quickIcon, { backgroundColor: soft }]}>
+          <Ionicons name={icon} size={18} color={accent} />
+        </View>
+        {value ? (
+          <View style={[styles.quickChip, { backgroundColor: soft }]}>
+            <Text style={[styles.quickChipText, { color: accent }]} numberOfLines={1}>
+              {value}
+            </Text>
+          </View>
+        ) : (
+          <Ionicons name="chevron-forward" size={14} color={pal.muted} />
+        )}
       </View>
-      <Text style={styles.quickLabel} numberOfLines={1}>
+      <Text style={[styles.quickLabel, labelLow && styles.quickLabelLow]} numberOfLines={1}>
         {label}
       </Text>
-      {value ? (
-        <Text style={styles.quickValue} numberOfLines={1}>
-          {value}
-        </Text>
-      ) : null}
     </Pressable>
   );
 }
@@ -474,15 +508,15 @@ function makeStyles(pal: MorphPalette, fs: (n: number) => number) {
     },
     metaPlan: { marginTop: verticalScale(2), ...morphFont, fontSize: fs(12), color: pal.muted },
     usageCard: {
-      backgroundColor: pal.card,
+      backgroundColor: pal.theme === "dark" ? pal.card : "#FFFFFF",
       borderRadius: moderateScale(20),
-      padding: moderateScale(14),
+      padding: moderateScale(16),
       marginBottom: verticalScale(12),
       borderWidth: 1,
-      borderColor: pal.theme === "dark" ? "rgba(17, 17, 17, 0.12)" : "rgba(17, 17, 17, 0.12)",
-      shadowColor: "#8B5CF6",
+      borderColor: pal.theme === "dark" ? "rgba(255,255,255,0.14)" : "rgba(17, 17, 17, 0.12)",
+      shadowColor: "#111111",
       shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: pal.theme === "dark" ? 0.16 : 0.06,
+      shadowOpacity: pal.theme === "dark" ? 0.2 : 0.06,
       shadowRadius: 10,
       elevation: 3,
     },
@@ -497,8 +531,8 @@ function makeStyles(pal: MorphPalette, fs: (n: number) => number) {
     usageEyebrow: {
       ...morphFont,
       fontSize: fs(10.5),
-      fontWeight: "600",
-      color: pal.accent,
+      fontWeight: "700",
+      color: pal.theme === "dark" ? "#A3A3A3" : "#525252",
       letterSpacing: 0.6,
       textTransform: "uppercase",
       marginBottom: verticalScale(3),
@@ -506,16 +540,16 @@ function makeStyles(pal: MorphPalette, fs: (n: number) => number) {
     usageTitle: {
       ...morphFont,
       fontSize: fs(15),
-      fontWeight: "600",
-      color: pal.fg,
+      fontWeight: "700",
+      color: pal.theme === "dark" ? "#FFFFFF" : "#1E1E1E",
       letterSpacing: -0.3,
     },
     usagePctWrap: { alignItems: "flex-end" },
-    usagePct: { ...morphFont, fontSize: fs(20), fontWeight: "600", letterSpacing: -0.6 },
+    usagePct: { ...morphFont, fontSize: fs(20), fontWeight: "800", letterSpacing: -0.6 },
     track: {
       height: verticalScale(7),
       borderRadius: moderateScale(3.5),
-      backgroundColor: pal.track,
+      backgroundColor: pal.theme === "dark" ? "#2A2A2A" : "#E5E5E5",
       overflow: "hidden",
     },
     trackFill: { height: "100%", borderRadius: moderateScale(3.5) },
@@ -526,8 +560,19 @@ function makeStyles(pal: MorphPalette, fs: (n: number) => number) {
       justifyContent: "space-between",
       gap: moderateScale(10),
     },
-    usageHint: { flex: 1, ...morphFont, fontSize: fs(11.5), lineHeight: fs(15), color: pal.muted },
-    usageCta: { ...morphFont, fontSize: fs(12.5), fontWeight: "600", color: pal.accent },
+    usageHint: {
+      flex: 1,
+      ...morphFont,
+      fontSize: fs(11.5),
+      lineHeight: fs(15),
+      color: pal.theme === "dark" ? "#A3A3A3" : "#525252",
+    },
+    usageCta: {
+      ...morphFont,
+      fontSize: fs(12.5),
+      fontWeight: "700",
+      color: pal.theme === "dark" ? "#FFFFFF" : "#1E1E1E",
+    },
     quickRow: {
       flexDirection: "row",
       gap: moderateScale(8),
@@ -536,35 +581,56 @@ function makeStyles(pal: MorphPalette, fs: (n: number) => number) {
     quickTile: {
       flex: 1,
       backgroundColor: pal.card,
-      borderRadius: moderateScale(16),
-      paddingVertical: verticalScale(12),
-      paddingHorizontal: scale(10),
-      borderWidth: 1,
+      borderRadius: moderateScale(20),
+      borderWidth: StyleSheet.hairlineWidth,
       borderColor: pal.line,
-      alignItems: "flex-start",
-      gap: verticalScale(6),
-      minHeight: verticalScale(78),
+      paddingTop: verticalScale(12),
+      paddingBottom: verticalScale(12),
+      paddingHorizontal: scale(12),
+      minHeight: verticalScale(92),
+      justifyContent: "space-between",
+      gap: verticalScale(14),
+      shadowColor: "#111111",
+      shadowOpacity: pal.theme === "dark" ? 0 : 0.05,
+      shadowRadius: 10,
+      shadowOffset: { width: 0, height: 4 },
+      elevation: pal.theme === "dark" ? 0 : 2,
+    },
+    quickTop: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: moderateScale(6),
     },
     quickIcon: {
-      width: scale(30),
-      height: scale(30),
-      borderRadius: moderateScale(10),
-      backgroundColor: pal.theme === "dark" ? "rgba(255,255,255,0.08)" : "#F3F4F6",
+      width: scale(36),
+      height: scale(36),
+      borderRadius: moderateScale(12),
       alignItems: "center",
       justifyContent: "center",
     },
+    quickChip: {
+      borderRadius: 999,
+      paddingHorizontal: scale(8),
+      paddingVertical: verticalScale(3),
+      minWidth: scale(24),
+      alignItems: "center",
+    },
+    quickChipText: {
+      ...morphFont,
+      fontSize: fs(11),
+      fontWeight: "800",
+      letterSpacing: -0.2,
+    },
     quickLabel: {
       ...morphFont,
-      fontSize: fs(12),
-      fontWeight: "600",
-      color: pal.muted,
-    },
-    quickValue: {
-      ...morphFont,
-      fontSize: fs(14),
+      fontSize: fs(13),
       fontWeight: "700",
       color: pal.fg,
       letterSpacing: -0.2,
+    },
+    quickLabelLow: {
+      marginTop: verticalScale(4),
     },
     sectionHead: {
       flexDirection: "row",
