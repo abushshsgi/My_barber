@@ -827,16 +827,28 @@ class AiMorphChatView(UnthrottledAPIView):
                 context = {}
             if not str(context.get("advice_gender") or "").strip():
                 context["advice_gender"] = user_gender
-        # Soch parvarish profili — chat LLM ga
+        # Soch parvarish profili — chat LLM ga (to‘liq bo‘lmasa blok)
         hair = HairCareProfile.objects.filter(user=user).first()
-        if hair and hair.is_complete:
-            if context is None:
-                context = {}
-            context.setdefault("care_condition", hair.condition)
-            context.setdefault("care_texture", hair.texture)
-            context.setdefault("care_color_status", hair.color_status)
-            if hair.scalp:
-                context.setdefault("care_scalp", hair.scalp)
+        if not hair or not hair.is_complete:
+            return Response(
+                {
+                    "detail": "Avval soch holatingizni Parvarish sahifasida to'ldiring.",
+                    "code": "hair_profile_required",
+                },
+                status=403,
+            )
+        if context is None:
+            context = {}
+        context.setdefault("care_condition", hair.condition)
+        context.setdefault("care_texture", hair.texture)
+        context.setdefault("care_color_status", hair.color_status)
+        if hair.scalp:
+            context.setdefault("care_scalp", hair.scalp)
+        raw_concerns = hair.concerns if isinstance(hair.concerns, list) else []
+        concerns = [str(x).strip() for x in raw_concerns if str(x).strip()]
+        if concerns:
+            context.setdefault("care_concerns", ", ".join(concerns))
+        context.setdefault("care_profile_label", hair.profile_label(user_gender))
         from ai.chat_prompts import is_voice_mode
 
         if is_voice_mode(context) and not can_use_morph_voice(user):

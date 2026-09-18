@@ -112,22 +112,31 @@ def _format_prefs_block(context: dict[str, Any] | None) -> str:
             + ("erkak" if gender == "male" else "ayol")
             + " uslublari va parvarishi ustuvor."
         )
+    care_label = str(context.get("care_profile_label") or "").strip()
     care_cond = str(context.get("care_condition") or "").strip()
     care_tex = str(context.get("care_texture") or "").strip()
     care_color = str(context.get("care_color_status") or "").strip()
-    if care_cond or care_tex or care_color:
+    care_scalp = str(context.get("care_scalp") or "").strip()
+    care_concerns = str(context.get("care_concerns") or "").strip()
+    if care_label or care_cond or care_tex or care_color:
+        lines.append("- Soch holati (majburiy moslash):")
+        if care_label:
+            for raw in care_label.splitlines():
+                bit = raw.strip()
+                if bit:
+                    lines.append(f"  {bit}")
+        else:
+            bits = [
+                f"holat={care_cond}" if care_cond else "",
+                f"tekstura={care_tex}" if care_tex else "",
+                f"rang={care_color}" if care_color else "",
+                f"bosh terisi={care_scalp}" if care_scalp else "",
+                f"muammolar={care_concerns}" if care_concerns else "",
+            ]
+            lines.append("  " + ", ".join(x for x in bits if x))
         lines.append(
-            "- Soch profili (parvarish): "
-            + ", ".join(
-                x
-                for x in (
-                    f"holat={care_cond}" if care_cond else "",
-                    f"tekstura={care_tex}" if care_tex else "",
-                    f"rang={care_color}" if care_color else "",
-                )
-                if x
-            )
-            + ". Mahsulot va parvarish maslahatini shunga moslang."
+            "- HAR bir javob, reja, mahsulot va maslahatni SHU soch holatiga mosla. "
+            "Umumiy shablon yoki boshqa soch turiga maslahat berma."
         )
     if is_voice_mode(context):
         lines.append(
@@ -194,10 +203,19 @@ def _format_context_block(context: dict[str, Any] | None) -> str:
             lines.append(f"- AI tavsiya etgan uslublar: {', '.join(titles)}")
 
     if len(lines) == 1:
-        base = (
-            "Foydalanuvchi konteksti: hali try-on tahlili yo'q. "
-            "Umumiy, xavfsiz maslahat bering va try-on qilishni taklif qiling."
-        )
+        if context and (
+            context.get("care_condition")
+            or context.get("care_profile_label")
+        ):
+            base = (
+                "Try-on tahlili yo'q, lekin soch holati ma'lum. "
+                "Maslahat va parvarish rejasini faqat shu holatga qarab bering."
+            )
+        else:
+            base = (
+                "Foydalanuvchi konteksti: hali try-on tahlili yo'q. "
+                "Umumiy, xavfsiz maslahat bering va try-on qilishni taklif qiling."
+            )
         return f"{base}\n\n{prefs}".strip() if prefs else base
 
     lines.append(
@@ -218,6 +236,7 @@ Sen suhbatni **eslab qoladigan** LLM miyasiz: oldingi gaplarga tayangan holda ke
 - Professional barber va tricholog maslahatchisi kabi gapir, sodda tilda.
 - Foydalanuvchi try-on, yuz tahlili va uslub tanlashida yordam berasan.
 - Mybarber: try-on, Studio rang tahriri, barberga yozilish, Master Card.
+- Soch holati berilgan bo‘lsa: parvarish, reja, mahsulot va uslubni **faqat shu holatga** mosla.
 
 ## Suhbat xotirasi (qat'iy)
 - Historydagi **oldingi user va assistant** xabarlarini diqqat bilan o‘qi va hisobga ol.
