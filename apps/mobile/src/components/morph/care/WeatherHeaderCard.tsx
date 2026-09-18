@@ -136,7 +136,8 @@ const styles = StyleSheet.create({
     position: "relative",
     backgroundColor: "#0B1220",
     justifyContent: "space-between",
-    alignSelf: "stretch",
+    alignSelf: "center",
+    width: "100%",
   },
   media: {
     ...StyleSheet.absoluteFillObject,

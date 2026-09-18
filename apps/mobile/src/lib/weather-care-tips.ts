@@ -330,6 +330,8 @@ export function careHubLayout(
   const gaps = rs(Math.round(14 * gapScale), scale) + weatherNudge + searchCatGap + sectionGap;
 
   const hPad = narrow ? Math.max(10, rs(12, scale)) : width < 400 ? rs(14, scale) : rs(16, scale);
+  /** Wide web/tablet: banner telefon kengligida qolsin (835px stretch emas). */
+  const promoMaxW = Math.min(Math.max(220, width - 2 * hPad), rs(400, scale));
 
   const quickSlots = 3.45;
   const quickActionWCap =
@@ -351,7 +353,7 @@ export function careHubLayout(
   const chrome = searchBlock + quickActionBlock + reportHead + gaps + sheetTop + promoTopGap;
   const remain = Math.max(rs(240, scale), avail - chrome);
 
-  const promoW = Math.max(220, width - 2 * hPad);
+  const promoW = promoMaxW;
   /** Androidda viloyat rasmlari konteynerga to‘liq yopsin — biroz balandroq promo. */
   const PROMO_ASPECT = short ? 2.15 : 2.0;
   const promoByWidth = Math.round(promoW / PROMO_ASPECT);
@@ -435,6 +437,7 @@ export function careHubLayout(
     sheetGap,
     sheetH: reportHead + sheetTop + sheetGap + hubCardH + rs(Math.round(12 * density), scale),
     hPad,
+    promoMaxW,
     dockClearance,
     promoPad,
     promoRadius,

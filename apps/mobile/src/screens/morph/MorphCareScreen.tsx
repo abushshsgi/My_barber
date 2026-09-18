@@ -1144,7 +1144,9 @@ export function MorphCareScreen({ navigation, route }: Props) {
               paddingBottom={verticalScale(12)}
               lightStatusBar={false}
               style={{
-                marginHorizontal: hubLayout.hPad,
+                width: "100%",
+                maxWidth: hubLayout.promoMaxW,
+                alignSelf: "center",
                 marginBottom: verticalScale(4),
               }}
               topLeft={
