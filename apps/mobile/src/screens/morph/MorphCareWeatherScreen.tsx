@@ -28,7 +28,10 @@ import {
   GO_OUT_IMAGES,
   weatherLocationHeroSource,
 } from "../../lib/weather-care-tips";
-import { buildWeatherShieldState } from "../../services/weatherRecommendationEngine";
+import {
+  buildWeatherShieldState,
+  shieldImageForTag,
+} from "../../services/weatherRecommendationEngine";
 import { WeatherShieldContainer } from "../../components/WeatherShield";
 import {
   fetchWeatherShieldCatalog,
@@ -114,7 +117,9 @@ export function MorphCareWeatherScreen({ navigation }: Props) {
           priority: r.priority,
           icon: r.icon || "flask-outline",
           productTag: r.productTag,
-          image: r.image_url ? { uri: r.image_url } : null,
+          image: r.image_url
+            ? { uri: r.image_url }
+            : shieldImageForTag(r.productTag, r.id),
           trigger: (r.trigger as HairRecommendation["trigger"]) || "high_uv_hot",
         }));
         setApiRecs(mapped.length ? mapped : null);
