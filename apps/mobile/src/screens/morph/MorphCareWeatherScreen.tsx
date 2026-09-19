@@ -5,11 +5,14 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Animated,
+  Easing,
+  PanResponder,
   Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { SafeModal } from "../../components/ui/SafeModal";
@@ -71,12 +74,117 @@ export function MorphCareWeatherScreen({ navigation }: Props) {
   } = useCareWeather();
   const [regionOpen, setRegionOpen] = useState(false);
   const [goOutOpen, setGoOutOpen] = useState(false);
+  const [goOutExpanded, setGoOutExpanded] = useState(false);
+  const { height: winH } = useWindowDimensions();
+  const goOutMidH = Math.round(winH * 0.62);
+  const goOutFullH = Math.round(winH * 0.92);
+  const goOutSheetH = useRef(new Animated.Value(goOutMidH)).current;
+  const goOutDragY = useRef(new Animated.Value(0)).current;
+  const goOutExpandedRef = useRef(false);
+  const closeGoOutRef = useRef(() => setGoOutOpen(false));
+  closeGoOutRef.current = () => {
+    setGoOutOpen(false);
+    setGoOutExpanded(false);
+    goOutExpandedRef.current = false;
+  };
   const [myProducts, setMyProducts] = useState<MyCareProduct[]>([]);
   const [doneIds, setDoneIds] = useState<Set<string>>(new Set());
   const [doneToast, setDoneToast] = useState(false);
   const toastOpacity = useRef(new Animated.Value(0)).current;
   const toastY = useRef(new Animated.Value(-24)).current;
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (!goOutOpen) return;
+    goOutExpandedRef.current = false;
+    setGoOutExpanded(false);
+    goOutDragY.setValue(0);
+    goOutSheetH.setValue(goOutMidH);
+  }, [goOutOpen, goOutDragY, goOutMidH, goOutSheetH]);
+
+  const goOutPan = useMemo(
+    () =>
+      PanResponder.create({
+        onMoveShouldSetPanResponder: (_, g) =>
+          Math.abs(g.dy) > 8 && Math.abs(g.dy) > Math.abs(g.dx) * 1.1,
+        onPanResponderGrant: () => {
+          goOutSheetH.stopAnimation();
+          goOutDragY.stopAnimation();
+        },
+        onPanResponderMove: (_, g) => {
+          const expanded = goOutExpandedRef.current;
+          if (g.dy < 0) {
+            goOutDragY.setValue(0);
+            const base = expanded ? goOutFullH : goOutMidH;
+            const next = Math.min(goOutFullH, base - g.dy);
+            goOutSheetH.setValue(next);
+            return;
+          }
+          if (expanded) {
+            const next = Math.max(goOutMidH * 0.85, goOutFullH - g.dy);
+            goOutSheetH.setValue(next);
+            goOutDragY.setValue(Math.max(0, g.dy - (goOutFullH - goOutMidH)));
+          } else {
+            goOutDragY.setValue(Math.max(0, g.dy));
+          }
+        },
+        onPanResponderRelease: (_, g) => {
+          const expanded = goOutExpandedRef.current;
+
+          if (!expanded && (g.dy > 110 || g.vy > 1.05)) {
+            closeGoOutRef.current();
+            return;
+          }
+          if (expanded && (g.dy > 200 || g.vy > 1.4)) {
+            closeGoOutRef.current();
+            return;
+          }
+
+          const wantFull =
+            (!expanded && (g.dy < -48 || g.vy < -0.85)) ||
+            (expanded && g.dy < 90 && g.vy < 0.6);
+          const wantMid = expanded && (g.dy > 70 || g.vy > 0.75);
+
+          if (wantFull && !wantMid) {
+            goOutExpandedRef.current = true;
+            setGoOutExpanded(true);
+            Animated.parallel([
+              Animated.timing(goOutSheetH, {
+                toValue: goOutFullH,
+                duration: 260,
+                easing: Easing.out(Easing.cubic),
+                useNativeDriver: false,
+              }),
+              Animated.timing(goOutDragY, {
+                toValue: 0,
+                duration: 220,
+                easing: Easing.out(Easing.cubic),
+                useNativeDriver: false,
+              }),
+            ]).start();
+            return;
+          }
+
+          goOutExpandedRef.current = false;
+          setGoOutExpanded(false);
+          Animated.parallel([
+            Animated.timing(goOutSheetH, {
+              toValue: goOutMidH,
+              duration: 260,
+              easing: Easing.out(Easing.cubic),
+              useNativeDriver: false,
+            }),
+            Animated.timing(goOutDragY, {
+              toValue: 0,
+              duration: 220,
+              easing: Easing.out(Easing.cubic),
+              useNativeDriver: false,
+            }),
+          ]).start();
+        },
+      }),
+    [goOutDragY, goOutFullH, goOutMidH, goOutSheetH],
+  );
   const [apiRecs, setApiRecs] = useState<HairRecommendation[] | null>(null);
   const [apiAlerts, setApiAlerts] = useState<WeatherAlert[] | null>(null);
 
@@ -504,21 +612,42 @@ export function MorphCareWeatherScreen({ navigation }: Props) {
       <SafeModal
         visible={goOutOpen}
         transparent
-        animationType="slide"
-        onRequestClose={() => setGoOutOpen(false)}
+        animationType="fade"
+        onRequestClose={() => closeGoOutRef.current()}
       >
         <View style={styles.modalRoot}>
-          <Pressable style={styles.modalBackdrop} onPress={() => setGoOutOpen(false)} />
-          <View style={[styles.goOutSheet, { paddingBottom: safeBottom(insets.bottom, 12) }]}>
-            <View style={styles.modalHandle} />
-            <Text style={styles.modalTitle}>
-              {t("care.weather.goOutTitle", { defaultValue: "Uydan chiqishda oling" })}
-            </Text>
-            <Text style={styles.modalSub}>{goOutSummary}</Text>
+          <Pressable style={styles.modalBackdrop} onPress={() => closeGoOutRef.current()} />
+          <Animated.View
+            style={[
+              styles.goOutSheet,
+              {
+                height: goOutSheetH,
+                paddingBottom: safeBottom(insets.bottom, 12),
+                transform: [{ translateY: goOutDragY }],
+              },
+            ]}
+          >
+            <View style={styles.goOutHandleHit} {...goOutPan.panHandlers}>
+              <View style={styles.modalHandle} />
+              <Text style={styles.modalTitle}>
+                {t("care.weather.goOutTitle", { defaultValue: "Uydan chiqishda oling" })}
+              </Text>
+              <Text style={styles.modalSub}>{goOutSummary}</Text>
+              <Text style={styles.goOutSwipeHint}>
+                {goOutExpanded
+                  ? t("care.weather.swipeDown", {
+                      defaultValue: "Pastga suring — yopish yoki qisqartirish",
+                    })
+                  : t("care.weather.swipeUp", {
+                      defaultValue: "Yuqoriga suring — to‘liq ochish · pastga — yopish",
+                    })}
+              </Text>
+            </View>
             <ScrollView
               showsVerticalScrollIndicator={false}
-              style={{ maxHeight: verticalScale(520) }}
+              style={styles.goOutScroll}
               contentContainerStyle={styles.goOutList}
+              bounces
             >
               <View style={styles.goOutGrid}>
                 {goOutKit.map((item) => (
@@ -561,7 +690,7 @@ export function MorphCareWeatherScreen({ navigation }: Props) {
                 ))}
               </View>
             </ScrollView>
-          </View>
+          </Animated.View>
         </View>
       </SafeModal>
     </View>
@@ -774,8 +903,22 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: moderateScale(24),
     borderTopRightRadius: moderateScale(24),
     paddingHorizontal: scale(14),
-    paddingTop: verticalScale(10),
-    maxHeight: "90%",
+    paddingTop: verticalScale(6),
+    overflow: "hidden",
+  },
+  goOutHandleHit: {
+    paddingBottom: verticalScale(6),
+  },
+  goOutSwipeHint: {
+    ...morphFont,
+    marginTop: verticalScale(2),
+    marginBottom: verticalScale(4),
+    fontSize: fontSize(11),
+    fontWeight: "600",
+    color: colors.muted,
+  },
+  goOutScroll: {
+    flex: 1,
   },
   goOutList: {
     paddingBottom: verticalScale(10),

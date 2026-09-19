@@ -292,6 +292,9 @@ export const GO_OUT_IMAGES = {
   rainKit: require("../../assets/care/go-out/rain-kit.png") as ImageSourcePropType,
   winterSet: require("../../assets/care/go-out/winter-set.png") as ImageSourcePropType,
   hairTie: require("../../assets/care/go-out/hair-tie.png") as ImageSourcePropType,
+  sanitizer: require("../../assets/care/go-out/sanitizer.png") as ImageSourcePropType,
+  snack: require("../../assets/care/go-out/snack.png") as ImageSourcePropType,
+  earbuds: require("../../assets/care/go-out/earbuds.png") as ImageSourcePropType,
 };
 
 /** Mening mahsulotlarimdan SPF / quyosh kremi. */
@@ -505,7 +508,33 @@ export function buildGoOutKit(opts: {
       accent: "#65A30D",
       image: GO_OUT_IMAGES.hat,
     });
+    items.push({
+      id: "snack",
+      icon: "nutrition-outline",
+      title: "Yengil gazak",
+      howToUse: "Issiqda energiya tushishi mumkin — meva yoki bar oling.",
+      accent: "#CA8A04",
+      image: GO_OUT_IMAGES.snack,
+    });
   }
+
+  // Har kuni foydali asosiy narsalar
+  items.push({
+    id: "sanitizer",
+    icon: "shield-outline",
+    title: "Antiseptik",
+    howToUse: "Qo‘lni tez tozalash uchun mini sprey — transport va do‘konlarda.",
+    accent: "#0D9488",
+    image: GO_OUT_IMAGES.sanitizer,
+  });
+  items.push({
+    id: "earbuds",
+    icon: "headset-outline",
+    title: "Quloqchin / case",
+    howToUse: "Yo‘lda podcast yoki chaqiruv uchun — case bilan oling.",
+    accent: "#475569",
+    image: GO_OUT_IMAGES.earbuds,
+  });
 
   if (!items.length) {
     items.push({
@@ -524,7 +553,7 @@ export function buildGoOutKit(opts: {
     seen.add(i.id);
     return true;
   });
-  return unique.slice(0, 10);
+  return unique.slice(0, 14);
 }
 
 /** Uydan chiqish uchun qisqa ob-havo xulosasi (soch emas). */

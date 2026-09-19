@@ -24,14 +24,14 @@ const TYPE_LABEL: Record<HairRecommendation["type"], string> = {
 function DoneCheck({
   done,
   onToggle,
-  size = 20,
+  size = 22,
 }: {
   done: boolean;
   onToggle?: () => void;
   size?: number;
 }) {
   if (!onToggle) return null;
-  const iconSize = Math.max(10, Math.round(size * 0.62));
+  const iconSize = Math.max(11, Math.round(size * 0.55));
   return (
     <Pressable
       onPress={onToggle}
@@ -41,14 +41,14 @@ function DoneCheck({
       accessibilityLabel={done ? "Bajarildi" : "Belgila"}
       style={[
         styles.checkBtn,
-        { width: scale(size), height: scale(size) },
+        { width: scale(size), height: scale(size), borderRadius: moderateScale(7) },
         done ? styles.checkBtnOn : styles.checkBtnOff,
       ]}
     >
       <Ionicons
-        name={done ? "checkmark" : "checkmark-outline"}
+        name={done ? "checkmark" : "add"}
         size={iconSize}
-        color={done ? "#fff" : colors.muted}
+        color={done ? "#fff" : colors.fg}
       />
     </Pressable>
   );
@@ -93,7 +93,7 @@ export function RecommendationCard({
             {item.description}
           </Text>
         </View>
-        <DoneCheck done={done} onToggle={onToggleDone} size={22} />
+        <DoneCheck done={done} onToggle={onToggleDone} size={24} />
       </View>
     );
   }
@@ -113,7 +113,7 @@ export function RecommendationCard({
             />
           )}
           <View style={styles.tileCheckWrap}>
-            <DoneCheck done={done} onToggle={onToggleDone} size={20} />
+            <DoneCheck done={done} onToggle={onToggleDone} size={22} />
           </View>
         </View>
         <Text style={styles.tileType}>{TYPE_LABEL[item.type]}</Text>
@@ -197,19 +197,23 @@ const styles = StyleSheet.create({
   },
 
   checkBtn: {
-    borderRadius: 999,
     alignItems: "center",
     justifyContent: "center",
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 2,
   },
   checkBtnOff: {
-    backgroundColor: colors.surface,
+    backgroundColor: "#FFFDF9",
     borderWidth: 1.5,
-    borderColor: colors.muted,
+    borderColor: "rgba(28,25,23,0.18)",
   },
   checkBtnOn: {
     backgroundColor: "#16A34A",
     borderWidth: 1.5,
-    borderColor: "#16A34A",
+    borderColor: "#15803D",
   },
 
   tile: {
