@@ -9,4 +9,6 @@ export const colors = {
   promo: "#F0F0F0",
   heartOverlay: "rgba(17,17,17,0.25)",
   bannerScrim: "rgba(17,17,17,0.45)",
+  lime: "#C6EF4A",
+  forest: "#1C4A32",
 } as const;

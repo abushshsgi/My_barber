@@ -5,12 +5,14 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
+import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { safeBottom, safeTop } from "../../lib/safe-area";
 import {
@@ -21,7 +23,7 @@ import {
 import { useAuth } from "../../auth/AuthContext";
 import { useGoogleAuth } from "../../auth/GoogleAuthSession";
 import { getLastPhone } from "../../auth/storage";
-import { GoogleGlyph } from "../../components/GoogleGlyph";
+import { AuthLandingHero } from "../../components/auth/AuthLandingHero";
 import { setPendingReferralCode } from "../../lib/referral-storage";
 import { colors } from "../../theme/colors";
 import {
@@ -41,6 +43,7 @@ type Props = {
  * Onboarding ichidagi majburiy login — navigator/tab hooks yo‘q.
  */
 export function OnboardingLoginScreen({ onBack }: Props) {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const auth = useAuth();
   const google = useGoogleAuth();
@@ -188,27 +191,41 @@ export function OnboardingLoginScreen({ onBack }: Props) {
           <Ionicons name="chevron-back" size={22} color="#111111" />
         </Pressable>
 
+        {step === "choose" ? (
+          <ScrollView
+            style={styles.chooseScroll}
+            contentContainerStyle={styles.chooseContent}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
+            <AuthLandingHero
+              title={t("auth.heroTitle")}
+              subtitle={t("auth.heroSub")}
+              googleLabel={t("auth.googleContinue")}
+              phoneLabel={t("auth.phoneLogin")}
+              onGoogle={onGoogle}
+              onPhone={() => setStep("phone")}
+              googleWaiting={googleWaiting}
+              extra={
+                <View style={styles.refWrap}>
+                  <Text style={styles.refLabel}>Taklif kodi (ixtiyoriy)</Text>
+                  <TextInput
+                    value={referralCode}
+                    onChangeText={(v) => setReferralCode(v.toUpperCase())}
+                    autoCapitalize="characters"
+                    autoCorrect={false}
+                    placeholder="ABCD1234"
+                    placeholderTextColor={colors.muted}
+                    style={styles.refField}
+                    maxLength={8}
+                  />
+                </View>
+              }
+            />
+            {showError ? <Text style={styles.error}>{showError}</Text> : null}
+          </ScrollView>
+        ) : (
         <View style={styles.centerBlock}>
-          {step === "choose" ? (
-            <>
-              <Text style={styles.title}>Mysaloon ga kiring</Text>
-              <Text style={styles.sub}>
-                Bitta akkaunt — MySaloon va Morf AI uchun
-              </Text>
-              <Text style={styles.refLabel}>Taklif kodi (ixtiyoriy)</Text>
-              <TextInput
-                value={referralCode}
-                onChangeText={(v) => setReferralCode(v.toUpperCase())}
-                autoCapitalize="characters"
-                autoCorrect={false}
-                placeholder="ABCD1234"
-                placeholderTextColor={colors.muted}
-                style={styles.field}
-                maxLength={8}
-              />
-            </>
-          ) : null}
-
           {step === "phone" ? (
             <>
               <Text style={styles.title}>Raqam bilan davom eting</Text>
@@ -268,34 +285,9 @@ export function OnboardingLoginScreen({ onBack }: Props) {
 
           {showError ? <Text style={styles.error}>{showError}</Text> : null}
         </View>
+        )}
 
         <View style={[styles.footer, { paddingBottom: safeBottom(insets.bottom, 12) }]}>
-          {step === "choose" ? (
-            <View style={styles.actions}>
-              <Pressable
-                style={({ pressed }) => [
-                  styles.outlineBtn,
-                  googleWaiting && styles.btnDisabled,
-                  pressed && !googleWaiting && styles.pressed,
-                ]}
-                onPress={onGoogle}
-                disabled={showBusy || !google.ready}
-              >
-                <GoogleGlyph size={22} />
-                <Text style={styles.outlineBtnText}>Google bilan davom etish</Text>
-                {googleWaiting ? <ActivityIndicator color={colors.muted} /> : null}
-              </Pressable>
-
-              <Pressable
-                style={({ pressed }) => [styles.primaryBtn, pressed && styles.pressed]}
-                onPress={() => setStep("phone")}
-              >
-                <Ionicons name="call-outline" size={18} color="#FFF" />
-                <Text style={styles.primaryBtnText}>Telefon bilan kirish</Text>
-              </Pressable>
-            </View>
-          ) : null}
-
           {step === "phone" ? (
             <View style={styles.actions}>
               <Pressable
@@ -308,7 +300,7 @@ export function OnboardingLoginScreen({ onBack }: Props) {
                 disabled={busy}
               >
                 {busy ? (
-                  <ActivityIndicator color="#FFF" />
+                  <ActivityIndicator color={colors.forest} />
                 ) : (
                   <Text style={styles.primaryBtnText}>Davom etish</Text>
                 )}
@@ -328,7 +320,7 @@ export function OnboardingLoginScreen({ onBack }: Props) {
                 disabled={busy}
               >
                 {busy ? (
-                  <ActivityIndicator color="#FFF" />
+                  <ActivityIndicator color={colors.forest} />
                 ) : (
                   <Text style={styles.primaryBtnText}>Kirish</Text>
                 )}
@@ -348,7 +340,7 @@ export function OnboardingLoginScreen({ onBack }: Props) {
                 disabled={busy}
               >
                 {busy ? (
-                  <ActivityIndicator color="#FFF" />
+                  <ActivityIndicator color={colors.forest} />
                 ) : (
                   <Text style={styles.primaryBtnText}>Tasdiqlash</Text>
                 )}
@@ -384,6 +376,28 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     marginBottom: verticalScale(4),
+  },
+  chooseScroll: { flex: 1 },
+  chooseContent: {
+    flexGrow: 1,
+    justifyContent: "center",
+    paddingBottom: verticalScale(8),
+  },
+  refWrap: {
+    alignSelf: "stretch",
+    marginTop: verticalScale(16),
+  },
+  refField: {
+    marginTop: verticalScale(6),
+    alignSelf: "stretch",
+    minHeight: verticalScale(48),
+    borderRadius: moderateScale(16),
+    backgroundColor: "#F4F4F5",
+    paddingHorizontal: scale(16),
+    fontSize: fontSize(15),
+    fontWeight: "600",
+    color: colors.fg,
+    textAlign: "center",
   },
   centerBlock: {
     flex: 1,
@@ -446,11 +460,10 @@ const styles = StyleSheet.create({
   },
   refLabel: {
     alignSelf: "stretch",
-    marginTop: verticalScale(16),
-    marginBottom: -verticalScale(12),
     fontSize: fontSize(12),
     fontWeight: "600",
     color: colors.muted,
+    textAlign: "center",
   },
   codeField: {
     textAlign: "center",
@@ -479,27 +492,10 @@ const styles = StyleSheet.create({
   },
   footer: { gap: moderateScale(14) },
   actions: { gap: moderateScale(12) },
-  outlineBtn: {
-    minHeight: verticalScale(56),
-    borderRadius: moderateScale(28),
-    borderWidth: 1.5,
-    borderColor: colors.fg,
-    backgroundColor: "#FFFFFF",
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: moderateScale(10),
-    paddingHorizontal: scale(20),
-  },
-  outlineBtnText: {
-    fontSize: fontSize(16),
-    fontWeight: "700",
-    color: colors.fg,
-  },
   primaryBtn: {
     minHeight: verticalScale(56),
     borderRadius: moderateScale(28),
-    backgroundColor: colors.fg,
+    backgroundColor: colors.lime,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -507,7 +503,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: scale(20),
   },
   primaryBtnText: {
-    color: "#FFFFFF",
+    color: colors.forest,
     fontSize: fontSize(16),
     fontWeight: "800",
   },

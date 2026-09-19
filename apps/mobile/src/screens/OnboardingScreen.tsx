@@ -22,10 +22,12 @@ import Animated, {
   withSequence,
   withSpring,
 } from "react-native-reanimated";
+import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { safeBottom, safeTop } from "../lib/safe-area";
 import { updateMe } from "../api/user";
 import { useAuth } from "../auth/AuthContext";
+import { ProfileHeroIllustration } from "../components/welcome/LoginHeroIllustration";
 import { getAppGender, getGuestLocation } from "../lib/guest";
 import { roundCoord } from "../lib/onboarding";
 import {
@@ -76,6 +78,7 @@ function splitPrefillName(user: {
  * Login dan keyin — ism, familiya, yosh. Soft Paper onboarding.
  */
 export function OnboardingScreen({ onComplete }: { onComplete?: () => void }) {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const { user, refreshMe } = useAuth();
 
@@ -190,7 +193,7 @@ export function OnboardingScreen({ onComplete }: { onComplete?: () => void }) {
   if (saving) {
     return (
       <View style={[styles.root, styles.center]}>
-        <Text style={styles.saving}>Saqlanmoqda…</Text>
+        <Text style={styles.saving}>{t("onboarding.saving")}</Text>
       </View>
     );
   }
@@ -205,39 +208,30 @@ export function OnboardingScreen({ onComplete }: { onComplete?: () => void }) {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[
           styles.scroll,
-          { paddingBottom: safeBottom(insets.bottom, 32) },
+          { paddingBottom: safeBottom(insets.bottom, 28) },
         ]}
       >
-        <View style={styles.header}>
+        <View style={styles.hero}>
+          <ProfileHeroIllustration size={scale(148)} />
+          <Text style={styles.title}>{t("onboarding.nameTitle")}</Text>
+          <Text style={styles.sub}>{t("onboarding.nameHeroSub")}</Text>
           <View style={styles.progressRow}>
             {[0, 1, 2].map((i) => {
               const on = i < filledCount;
-              const current = i === filledCount;
               return (
                 <View
                   key={i}
-                  style={[
-                    styles.progressSeg,
-                    on && styles.progressSegOn,
-                    current && styles.progressSegCurrent,
-                  ]}
+                  style={[styles.progressSeg, on && styles.progressSegOn]}
                 />
               );
             })}
           </View>
-          <Text style={styles.stepHint}>
-            {filledCount}/3 to'ldirildi
-          </Text>
-
-          <Text style={styles.title}>Ismingizni{"\n"}kiriting</Text>
-          <Text style={styles.sub}>
-            MySaloon va Morf AI uchun bitta profil.
-          </Text>
         </View>
 
-        <View style={styles.card}>
+        <View style={styles.fields}>
           <Field
-            label="Ism"
+            icon="person-outline"
+            label={t("onboarding.firstName")}
             active={focus === "first"}
             value={firstName}
             onChangeText={setFirstName}
@@ -247,9 +241,9 @@ export function OnboardingScreen({ onComplete }: { onComplete?: () => void }) {
             onFocus={() => setFocus("first")}
             onBlur={() => setFocus(null)}
           />
-          <View style={styles.divider} />
           <Field
-            label="Familiya"
+            icon="people-outline"
+            label={t("onboarding.lastName")}
             active={focus === "last"}
             value={lastName}
             onChangeText={setLastName}
@@ -258,9 +252,9 @@ export function OnboardingScreen({ onComplete }: { onComplete?: () => void }) {
             onFocus={() => setFocus("last")}
             onBlur={() => setFocus(null)}
           />
-          <View style={styles.divider} />
           <Field
-            label="Yosh"
+            icon="calendar-outline"
+            label={t("onboarding.age")}
             active={focus === "age"}
             value={age}
             onChangeText={(v) => {
@@ -281,7 +275,7 @@ export function OnboardingScreen({ onComplete }: { onComplete?: () => void }) {
             <Text style={styles.fieldError}>{nameError || ageError || error}</Text>
           </View>
         ) : (
-          <Text style={styles.helper}>Ism, familiya va yoshni kiriting.</Text>
+          <Text style={styles.helper}>{t("onboarding.nameHelper")}</Text>
         )}
 
         <View style={styles.footer}>
@@ -295,16 +289,14 @@ export function OnboardingScreen({ onComplete }: { onComplete?: () => void }) {
               onPress={() => void finish()}
               disabled={saving}
               accessibilityRole="button"
-              accessibilityLabel="Davom etish"
+              accessibilityLabel={t("onboarding.continue")}
             >
-              <Text style={styles.primaryText}>Davom etish</Text>
-              <Ionicons name="arrow-forward" size={18} color={colors.surface} />
+              <Text style={styles.primaryText}>{t("onboarding.continue")}</Text>
+              <Ionicons name="arrow-forward" size={18} color={colors.forest} />
             </Pressable>
           </Animated.View>
 
-          <Text style={styles.foot}>
-            Keyin try-on va bronlarga shu akkaunt bilan kirasiz.
-          </Text>
+          <Text style={styles.foot}>{t("onboarding.nameFoot")}</Text>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -312,6 +304,7 @@ export function OnboardingScreen({ onComplete }: { onComplete?: () => void }) {
 }
 
 function Field({
+  icon,
   label,
   active,
   value,
@@ -324,6 +317,7 @@ function Field({
   onFocus,
   onBlur,
 }: {
+  icon: keyof typeof Ionicons.glyphMap;
   label: string;
   active: boolean;
   value: string;
@@ -338,27 +332,32 @@ function Field({
 }) {
   return (
     <View style={[styles.field, active && styles.fieldActive]}>
-      <Text style={[styles.fieldLabel, active && styles.fieldLabelActive]}>
-        {label}
-      </Text>
-      <TextInput
-        value={value}
-        onChangeText={onChangeText}
-        placeholder={placeholder}
-        placeholderTextColor={colors.muted}
-        autoComplete={autoComplete}
-        autoFocus={autoFocus}
-        keyboardType={keyboardType}
-        maxLength={maxLength}
-        onFocus={onFocus}
-        onBlur={onBlur}
-        style={styles.input}
-        underlineColorAndroid="transparent"
-        selectionColor={colors.fg}
-        {...(Platform.OS === "android"
-          ? { includeFontPadding: false, textAlignVertical: "center" as const }
-          : null)}
-      />
+      <View style={[styles.iconWrap, active && styles.iconWrapActive]}>
+        <Ionicons name={icon} size={18} color={active ? colors.forest : colors.muted} />
+      </View>
+      <View style={styles.fieldBody}>
+        <Text style={[styles.fieldLabel, active && styles.fieldLabelActive]}>
+          {label}
+        </Text>
+        <TextInput
+          value={value}
+          onChangeText={onChangeText}
+          placeholder={placeholder}
+          placeholderTextColor={colors.muted}
+          autoComplete={autoComplete}
+          autoFocus={autoFocus}
+          keyboardType={keyboardType}
+          maxLength={maxLength}
+          onFocus={onFocus}
+          onBlur={onBlur}
+          style={styles.input}
+          underlineColorAndroid="transparent"
+          selectionColor={colors.forest}
+          {...(Platform.OS === "android"
+            ? { includeFontPadding: false, textAlignVertical: "center" as const }
+            : null)}
+        />
+      </View>
     </View>
   );
 }
@@ -366,14 +365,14 @@ function Field({
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: colors.bg,
+    backgroundColor: colors.surface,
   },
   center: {
     alignItems: "center",
     justifyContent: "center",
   },
   saving: {
-    color: colors.fg,
+    color: colors.forest,
     fontSize: fontSize(15),
     fontWeight: "600",
   },
@@ -382,92 +381,91 @@ const styles = StyleSheet.create({
     paddingHorizontal: scale(24),
     justifyContent: "center",
   },
-  header: {
-    marginBottom: verticalScale(8),
+  hero: {
+    alignItems: "center",
+    marginBottom: verticalScale(18),
   },
   progressRow: {
     flexDirection: "row",
     alignItems: "center",
+    alignSelf: "stretch",
     gap: moderateScale(8),
-    marginBottom: verticalScale(10),
+    marginTop: verticalScale(18),
   },
   progressSeg: {
     flex: 1,
-    height: verticalScale(4),
+    height: verticalScale(5),
     borderRadius: moderateScale(999),
-    backgroundColor: colors.promo,
+    backgroundColor: "#EEF6E0",
   },
   progressSegOn: {
-    backgroundColor: colors.fg,
-  },
-  progressSegCurrent: {
-    backgroundColor: colors.fg,
-    opacity: 0.35,
-  },
-  stepHint: {
-    fontSize: fontSize(12),
-    fontWeight: "600",
-    color: colors.muted,
-    letterSpacing: 0.2,
-    marginBottom: verticalScale(22),
+    backgroundColor: colors.lime,
   },
   title: {
-    fontSize: fontSize(34),
-    lineHeight: fontSize(40),
+    marginTop: verticalScale(6),
+    fontSize: fontSize(28),
+    lineHeight: fontSize(34),
     fontWeight: "800",
-    color: colors.fg,
-    letterSpacing: -1.2,
-    marginBottom: verticalScale(10),
+    color: colors.forest,
+    letterSpacing: -0.6,
+    textAlign: "center",
   },
   sub: {
+    marginTop: verticalScale(8),
     fontSize: fontSize(15),
     lineHeight: fontSize(22),
     color: colors.muted,
-    marginBottom: verticalScale(28),
+    textAlign: "center",
     maxWidth: scale(300),
   },
-  card: {
-    backgroundColor: colors.surface,
-    borderRadius: moderateScale(24),
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-    overflow: "hidden",
-    shadowColor: colors.fg,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.04,
-    shadowRadius: 20,
-    elevation: 2,
+  fields: {
+    gap: moderateScale(10),
   },
   field: {
-    paddingHorizontal: scale(18),
-    paddingTop: verticalScale(14),
-    paddingBottom: verticalScale(12),
+    flexDirection: "row",
+    alignItems: "center",
+    gap: moderateScale(12),
+    backgroundColor: "#F7F8F5",
+    borderRadius: moderateScale(20),
+    borderWidth: 1.5,
+    borderColor: "transparent",
+    paddingHorizontal: scale(14),
+    paddingVertical: verticalScale(10),
   },
   fieldActive: {
-    backgroundColor: colors.promo,
+    backgroundColor: "#F4FBE6",
+    borderColor: colors.lime,
+  },
+  iconWrap: {
+    width: scale(36),
+    height: scale(36),
+    borderRadius: moderateScale(12),
+    backgroundColor: colors.surface,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  iconWrapActive: {
+    backgroundColor: colors.lime,
+  },
+  fieldBody: {
+    flex: 1,
   },
   fieldLabel: {
     fontSize: fontSize(11),
     fontWeight: "700",
     color: colors.muted,
-    letterSpacing: 0.8,
-    marginBottom: verticalScale(6),
-    textTransform: "uppercase",
+    letterSpacing: 0.4,
+    marginBottom: verticalScale(2),
   },
   fieldLabelActive: {
-    color: colors.fg,
+    color: colors.forest,
   },
   input: {
-    fontSize: fontSize(19),
+    fontSize: fontSize(17),
     fontWeight: "700",
     color: colors.fg,
-    letterSpacing: -0.4,
-    paddingVertical: Platform.OS === "android" ? verticalScale(4) : verticalScale(2),
-  },
-  divider: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: colors.border,
-    marginLeft: scale(18),
+    letterSpacing: -0.3,
+    paddingVertical: Platform.OS === "android" ? verticalScale(2) : 0,
   },
   helper: {
     marginTop: verticalScale(14),
@@ -475,6 +473,7 @@ const styles = StyleSheet.create({
     fontSize: fontSize(13),
     lineHeight: fontSize(18),
     color: colors.muted,
+    textAlign: "center",
   },
   errorRow: {
     flexDirection: "row",
@@ -491,12 +490,12 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   footer: {
-    marginTop: verticalScale(28),
+    marginTop: verticalScale(24),
   },
   primary: {
     minHeight: verticalScale(56),
     borderRadius: moderateScale(28),
-    backgroundColor: colors.fg,
+    backgroundColor: colors.lime,
     paddingHorizontal: scale(22),
     flexDirection: "row",
     alignItems: "center",
@@ -504,7 +503,7 @@ const styles = StyleSheet.create({
     gap: moderateScale(8),
   },
   primaryText: {
-    color: colors.surface,
+    color: colors.forest,
     fontSize: fontSize(16),
     fontWeight: "800",
     letterSpacing: -0.2,
