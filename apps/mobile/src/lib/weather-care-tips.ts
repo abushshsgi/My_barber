@@ -263,6 +263,294 @@ export function buildProductWeatherTips(
   });
 }
 
+/** Uydan chiqishda ob-havoga mos olinadigan vositalar. */
+export type GoOutKitItem = {
+  id: string;
+  icon: string;
+  title: string;
+  howToUse: string;
+  accent: string;
+  /** Mahalliy yoki remote rasm */
+  image?: ImageSourcePropType | null;
+  /** Foydalanuvchi mahsulotidan (masalan SPF) */
+  fromMyProduct?: boolean;
+  productName?: string | null;
+};
+
+export const GO_OUT_IMAGES = {
+  sunglasses: require("../../assets/care/go-out/sunglasses.png") as ImageSourcePropType,
+  spf: require("../../assets/care/go-out/spf.png") as ImageSourcePropType,
+  hat: require("../../assets/care/go-out/hat.png") as ImageSourcePropType,
+  umbrella: require("../../assets/care/go-out/umbrella.png") as ImageSourcePropType,
+  water: require("../../assets/care/go-out/water.png") as ImageSourcePropType,
+  lightClothes: require("../../assets/care/go-out/light-clothes.png") as ImageSourcePropType,
+  lipBalm: require("../../assets/care/go-out/lip-balm.png") as ImageSourcePropType,
+  moisturizer: require("../../assets/care/go-out/moisturizer.png") as ImageSourcePropType,
+  cooling: require("../../assets/care/go-out/cooling.png") as ImageSourcePropType,
+  powerbank: require("../../assets/care/go-out/powerbank.png") as ImageSourcePropType,
+  tissues: require("../../assets/care/go-out/tissues.png") as ImageSourcePropType,
+  rainKit: require("../../assets/care/go-out/rain-kit.png") as ImageSourcePropType,
+  winterSet: require("../../assets/care/go-out/winter-set.png") as ImageSourcePropType,
+  hairTie: require("../../assets/care/go-out/hair-tie.png") as ImageSourcePropType,
+};
+
+/** Mening mahsulotlarimdan SPF / quyosh kremi. */
+export function findSpfMyProduct(products: MyCareProduct[]): MyCareProduct | null {
+  const re =
+    /\b(spf|sunscreen|sun\s*screen|quyosh\s*krem|uv\s*himoya|uv\s*protect|sun\s*cream|blokator)\b/i;
+  for (const p of products) {
+    const blob = `${p.name} ${p.brand} ${p.category} ${p.purpose_uz || ""} ${p.usage_uz || ""}`;
+    if (re.test(blob)) return p;
+  }
+  return null;
+}
+
+function uvLevel(index: number | null | undefined): string {
+  if (index == null || Number.isNaN(index)) return "unknown";
+  if (index >= 11) return "extreme";
+  if (index >= 8) return "very_high";
+  if (index >= 6) return "high";
+  if (index >= 3) return "moderate";
+  return "low";
+}
+
+export function buildGoOutKit(opts: {
+  condition: WeatherConditionKey;
+  temp: number | null;
+  humidity: number | null;
+  wind: number | null;
+  uvIndex?: number | null;
+  myProducts?: MyCareProduct[];
+}): GoOutKitItem[] {
+  const { condition, temp, humidity, wind, uvIndex, myProducts = [] } = opts;
+  const items: GoOutKitItem[] = [];
+  const isWet = wet({ condition, temp, humidity, wind });
+  const isHot = hot({ condition, temp, humidity, wind });
+  const isCold = cold({ condition, temp, humidity, wind });
+  const uv = uvLevel(uvIndex);
+  const uvHigh = uv === "high" || uv === "very_high" || uv === "extreme" || uv === "moderate";
+  const windy = wind != null && wind >= 25;
+  const dry = dryAir({ condition, temp, humidity, wind });
+  const humid = humidAir({ condition, temp, humidity, wind });
+  const spfProduct = findSpfMyProduct(myProducts);
+  const spfImage: ImageSourcePropType =
+    spfProduct?.image_url
+      ? ({ uri: spfProduct.image_url } as ImageSourcePropType)
+      : GO_OUT_IMAGES.spf;
+
+  if (isWet) {
+    items.push({
+      id: "umbrella",
+      icon: "umbrella-outline",
+      title: "Soyabon",
+      howToUse: "Sumkaga solib chiqing — yomg‘ir boshlansa ochib yuring, kiyim quruq qoladi.",
+      accent: "#2563EB",
+      image: GO_OUT_IMAGES.umbrella,
+    });
+    items.push({
+      id: "raincoat",
+      icon: "shirt-outline",
+      title: "Yomg‘irplash / telefon qopchasi",
+      howToUse: "Yengil yomg‘irplash va suv o‘tkazmaydigan qopcha — kiyim va telefon quruq qoladi.",
+      accent: "#1D4ED8",
+      image: GO_OUT_IMAGES.rainKit,
+    });
+  }
+
+  if (condition === "snow" || isCold) {
+    items.push({
+      id: "winter_set",
+      icon: "snow-outline",
+      title: "Sharf + qo‘lqop",
+      howToUse: "Bo‘yin va qo‘llarni sovuqdan himoya qiling — chiqishdan oldin kiyib oling.",
+      accent: "#64748B",
+      image: GO_OUT_IMAGES.winterSet,
+    });
+    if (isCold) {
+      items.push({
+        id: "jacket",
+        icon: "shirt-outline",
+        title: "Issiq kurtka",
+        howToUse: "Qatlamlab kiying — tashqi issiq kurtka, ichida yengil kiyim.",
+        accent: "#0F172A",
+        image: GO_OUT_IMAGES.winterSet,
+      });
+    }
+  }
+
+  if (uvHigh || condition === "clear" || condition === "mainly_clear" || isHot) {
+    items.push({
+      id: "sunglasses",
+      icon: "eye-outline",
+      title: "Quyosh ko‘zoynagi",
+      howToUse: "Ko‘zni UV va yorug‘likdan himoya qiling — chiqishda darhol taqing.",
+      accent: "#EA580C",
+      image: GO_OUT_IMAGES.sunglasses,
+    });
+    items.push({
+      id: "sunscreen",
+      icon: "shield-checkmark-outline",
+      title: spfProduct ? spfProduct.name : "Quyosh kremi (SPF)",
+      howToUse: spfProduct
+        ? `${spfProduct.usage_uz?.trim() || "Chiqishdan 15 daqiqa oldin yuz va ochiq teriga surting."}${spfProduct.brand ? ` · ${spfProduct.brand}` : ""}`
+        : "Chiqishdan 15 daqiqa oldin yuz, bo‘yin va qo‘llarga surting.",
+      accent: "#F59E0B",
+      image: spfImage,
+      fromMyProduct: Boolean(spfProduct),
+      productName: spfProduct?.name ?? null,
+    });
+    items.push({
+      id: "hat",
+      icon: "sunny-outline",
+      title: "Shlyapa / kepka",
+      howToUse: "Bosh va yuzni to‘g‘ridan-to‘g‘ri quyoshdan yoping — issiq urishni kamaytiradi.",
+      accent: "#D97706",
+      image: GO_OUT_IMAGES.hat,
+    });
+  }
+
+  if (isHot || (temp != null && temp >= 26)) {
+    items.push({
+      id: "water",
+      icon: "water-outline",
+      title: "Suv idishi",
+      howToUse: "Yo‘lda ichish uchun suv oling — issiqda har 30–40 daqiqada iching.",
+      accent: "#0EA5E9",
+      image: GO_OUT_IMAGES.water,
+    });
+    items.push({
+      id: "light_clothes",
+      icon: "shirt-outline",
+      title: "Yengil ochiq kiyim",
+      howToUse: "Paxta yoki yengil mato — terlash va qizarishni kamaytiradi.",
+      accent: "#0284C7",
+      image: GO_OUT_IMAGES.lightClothes,
+    });
+    items.push({
+      id: "cooling",
+      icon: "snow-outline",
+      title: "Mini ventilyator / so‘rg‘ich",
+      howToUse: "Issiqda yuz va bo‘yinni salqinlantirish uchun oling.",
+      accent: "#06B6D4",
+      image: GO_OUT_IMAGES.cooling,
+    });
+    items.push({
+      id: "powerbank",
+      icon: "battery-half-outline",
+      title: "Powerbank",
+      howToUse: "Issiqda navigatsiya/telefon tez tugaydi — zaryadlagich oling.",
+      accent: "#334155",
+      image: GO_OUT_IMAGES.powerbank,
+    });
+  }
+
+  if (windy) {
+    items.push({
+      id: "tie_hair",
+      icon: "cut-outline",
+      title: "Soch bog‘ich",
+      howToUse: "Kuchli shamolda chalkashishni kamaytirish uchun sochni bog‘lab yuring.",
+      accent: "#4F46E5",
+      image: GO_OUT_IMAGES.hairTie,
+    });
+  }
+
+  if (dry) {
+    items.push({
+      id: "lip_balm",
+      icon: "happy-outline",
+      title: "Lab balzami",
+      howToUse: "Quruq havoda lablar yoriladi — chiqishdan oldin balzam surting.",
+      accent: "#EC4899",
+      image: GO_OUT_IMAGES.lipBalm,
+    });
+    items.push({
+      id: "moisturizer",
+      icon: "water-outline",
+      title: "Yuz namlovchi",
+      howToUse: "SPF ostiga yengil moisturizer — terini qurib ketishdan saqlaydi.",
+      accent: "#DB2777",
+      image: GO_OUT_IMAGES.moisturizer,
+    });
+  }
+
+  if (humid && !isWet) {
+    items.push({
+      id: "tissue",
+      icon: "document-outline",
+      title: "Salfetka / mendil",
+      howToUse: "Namlikda terlash tez — salfetka oling, yuzni yumshoq artib turing.",
+      accent: "#14B8A6",
+      image: GO_OUT_IMAGES.tissues,
+    });
+  }
+
+  if (condition === "fog") {
+    items.push({
+      id: "bright",
+      icon: "flashlight-outline",
+      title: "Yorqin kiyim / chiroq",
+      howToUse: "Ko‘rinish past — yorqinroq kiyim yoki telefon chirog‘ini tayyor tuting.",
+      accent: "#A855F7",
+      image: GO_OUT_IMAGES.lightClothes,
+    });
+  }
+
+  if (temp != null && temp >= 30) {
+    items.push({
+      id: "shade_plan",
+      icon: "leaf-outline",
+      title: "Soya / tanaffus",
+      howToUse: "12:00–16:00 oralig‘ida ochiq quyoshda uzoq turmang — soyaga o‘ting.",
+      accent: "#65A30D",
+      image: GO_OUT_IMAGES.hat,
+    });
+  }
+
+  if (!items.length) {
+    items.push({
+      id: "casual",
+      icon: "checkmark-circle-outline",
+      title: "Oddiy kiyim yetarli",
+      howToUse: "Ob-havo yumshoq — oddiy kiyim bilan chiqing, ortiqcha yuk olmang.",
+      accent: "#16A34A",
+      image: GO_OUT_IMAGES.lightClothes,
+    });
+  }
+
+  const seen = new Set<string>();
+  const unique = items.filter((i) => {
+    if (seen.has(i.id)) return false;
+    seen.add(i.id);
+    return true;
+  });
+  return unique.slice(0, 10);
+}
+
+/** Uydan chiqish uchun qisqa ob-havo xulosasi (soch emas). */
+export function buildGoOutSummary(opts: {
+  condition: WeatherConditionKey;
+  temp: number | null;
+  humidity: number | null;
+  wind: number | null;
+}): string {
+  const parts: string[] = [];
+  if (opts.temp != null) {
+    if (opts.temp >= 32) parts.push("juda issiq");
+    else if (opts.temp >= 24) parts.push("iliq");
+    else if (opts.temp <= 5) parts.push("sovuq");
+    else parts.push("mo‘tadil");
+  }
+  if (wet({ condition: opts.condition, temp: opts.temp, humidity: opts.humidity, wind: opts.wind })) {
+    parts.push("yomg‘ir ehtimoli bor");
+  } else if (opts.humidity != null && opts.humidity <= 35) {
+    parts.push("havo quruq");
+  }
+  if (opts.wind != null && opts.wind >= 25) parts.push("shamol kuchli");
+  if (!parts.length) return "Bugun ob-havo barqaror — quyidagi vositalarni oling.";
+  return `Bugun havo ${parts.join(", ")}. Chiqishdan oldin quyidagilarni oling.`;
+}
+
 export function generalWeatherExtras(ctx: {
   condition: WeatherConditionKey;
   temp: number | null;
