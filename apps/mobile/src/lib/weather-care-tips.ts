@@ -768,13 +768,13 @@ export function careHubLayout(
       const k = clamp(promoInner / (short ? 148 : 168), 0.52, 1) * density;
       return {
         k,
-        back: clamp(Math.round(34 * k), 24, 34),
-        backIcon: clamp(Math.round(18 * k), 13, 18),
-        locIcon: clamp(Math.round(13 * k), 10, 13),
-        locFs: clamp(Math.round(11 * k), 9, 11),
-        locSubFs: clamp(Math.round(10 * k), 8, 10),
-        locPadV: clamp(Math.round(5 * k), 3, 5),
-        locPadH: clamp(Math.round(10 * k), 7, 10),
+        back: clamp(Math.round(42 * k), 34, 44),
+        backIcon: clamp(Math.round(22 * k), 18, 24),
+        locIcon: clamp(Math.round(12 * k), 9, 12),
+        locFs: clamp(Math.round(10 * k), 9, 11),
+        locSubFs: clamp(Math.round(9 * k), 8, 9),
+        locPadV: clamp(Math.round(4 * k), 3, 5),
+        locPadH: clamp(Math.round(8 * k), 6, 9),
         tempFs: clamp(
           Math.round(
             (promoInner >= rs(150, scale) ? 40 : promoInner >= rs(120, scale) ? 34 : 28) * k,
@@ -784,11 +784,11 @@ export function careHubLayout(
         ),
         conditionFs: clamp(Math.round(15 * k), 10, 15),
         hintFs: clamp(Math.round(12 * k), 9, 12),
-        btnFs: clamp(Math.round(13 * k), 10, 13),
-        btnArrow: clamp(Math.round(15 * k), 11, 15),
-        btnPadV: clamp(Math.round(9 * k), 5, 9),
-        btnPadH: clamp(Math.round(14 * k), 8, 14),
-        btnMinH: clamp(Math.round(36 * k), 24, 36),
+        btnFs: clamp(Math.round(11 * k), 9, 11),
+        btnArrow: clamp(Math.round(12 * k), 10, 13),
+        btnPadV: clamp(Math.round(5 * k), 4, 6),
+        btnPadH: clamp(Math.round(10 * k), 7, 11),
+        btnMinH: clamp(Math.round(28 * k), 22, 30),
         gap: clamp(Math.round(8 * k), 3, 8),
       };
     })(),
