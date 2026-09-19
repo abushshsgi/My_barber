@@ -1,9 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { Image } from "expo-image";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Animated,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -14,7 +15,7 @@ import {
 import { SafeModal } from "../../components/ui/SafeModal";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { safeBottom } from "../../lib/safe-area";
+import { safeBottom, safeTop } from "../../lib/safe-area";
 import { weatherIconName } from "../../api/weather";
 import { WeatherHeaderCard } from "../../components/morph/care/WeatherHeaderCard";
 import { AppStatusBar } from "../../components/ui/AppStatusBar";
@@ -72,6 +73,10 @@ export function MorphCareWeatherScreen({ navigation }: Props) {
   const [goOutOpen, setGoOutOpen] = useState(false);
   const [myProducts, setMyProducts] = useState<MyCareProduct[]>([]);
   const [doneIds, setDoneIds] = useState<Set<string>>(new Set());
+  const [doneToast, setDoneToast] = useState(false);
+  const toastOpacity = useRef(new Animated.Value(0)).current;
+  const toastY = useRef(new Animated.Value(-24)).current;
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [apiRecs, setApiRecs] = useState<HairRecommendation[] | null>(null);
   const [apiAlerts, setApiAlerts] = useState<WeatherAlert[] | null>(null);
 
@@ -221,12 +226,38 @@ export function MorphCareWeatherScreen({ navigation }: Props) {
     await AsyncStorage.setItem(DONE_KEY, JSON.stringify([...next])).catch(() => undefined);
   };
 
+  const showDoneToast = () => {
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    setDoneToast(true);
+    toastOpacity.setValue(0);
+    toastY.setValue(-20);
+    Animated.parallel([
+      Animated.timing(toastOpacity, { toValue: 1, duration: 220, useNativeDriver: true }),
+      Animated.timing(toastY, { toValue: 0, duration: 220, useNativeDriver: true }),
+    ]).start();
+    toastTimer.current = setTimeout(() => {
+      Animated.parallel([
+        Animated.timing(toastOpacity, { toValue: 0, duration: 280, useNativeDriver: true }),
+        Animated.timing(toastY, { toValue: -16, duration: 280, useNativeDriver: true }),
+      ]).start(({ finished }) => {
+        if (finished) setDoneToast(false);
+      });
+    }, 2200);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (toastTimer.current) clearTimeout(toastTimer.current);
+    };
+  }, []);
+
   const onToggleDone = (id: string) => {
     const next = new Set(doneIds);
     const completed = !next.has(id);
     if (completed) next.add(id);
     else next.delete(id);
     void persistDone(next);
+    if (completed) showDoneToast();
     const productId = id.startsWith("ws-") ? Number(id.slice(3)) : undefined;
     void postWeatherShieldAction({
       product_id: Number.isFinite(productId) ? productId : undefined,
@@ -252,6 +283,26 @@ export function MorphCareWeatherScreen({ navigation }: Props) {
   return (
     <View style={styles.root}>
       <AppStatusBar style="light" />
+      {doneToast ? (
+        <Animated.View
+          pointerEvents="none"
+          style={[
+            styles.doneToast,
+            {
+              top: safeTop(insets.top, 8),
+              opacity: toastOpacity,
+              transform: [{ translateY: toastY }],
+            },
+          ]}
+        >
+          <View style={styles.doneToastIcon}>
+            <Ionicons name="checkmark" size={14} color="#fff" />
+          </View>
+          <Text style={styles.doneToastText}>
+            {t("care.weather.doneToast", { defaultValue: "Yaxshi bajardingiz!" })}
+          </Text>
+        </Animated.View>
+      ) : null}
       <ScrollView
         nestedScrollEnabled
         keyboardShouldPersistTaps="handled"
@@ -519,6 +570,39 @@ export function MorphCareWeatherScreen({ navigation }: Props) {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
+  doneToast: {
+    position: "absolute",
+    left: scale(16),
+    right: scale(16),
+    zIndex: 50,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: moderateScale(10),
+    backgroundColor: "#16A34A",
+    borderRadius: moderateScale(14),
+    paddingVertical: verticalScale(12),
+    paddingHorizontal: scale(14),
+    shadowColor: "#000",
+    shadowOpacity: 0.18,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 6,
+  },
+  doneToastIcon: {
+    width: scale(26),
+    height: scale(26),
+    borderRadius: 999,
+    backgroundColor: "rgba(255,255,255,0.22)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  doneToastText: {
+    ...morphFont,
+    flex: 1,
+    fontSize: fontSize(14),
+    fontWeight: "800",
+    color: "#fff",
+  },
   heroBack: {
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,

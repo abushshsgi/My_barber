@@ -24,17 +24,18 @@ const TYPE_LABEL: Record<HairRecommendation["type"], string> = {
 function DoneCheck({
   done,
   onToggle,
-  size = 28,
+  size = 20,
 }: {
   done: boolean;
   onToggle?: () => void;
   size?: number;
 }) {
   if (!onToggle) return null;
+  const iconSize = Math.max(10, Math.round(size * 0.62));
   return (
     <Pressable
       onPress={onToggle}
-      hitSlop={10}
+      hitSlop={8}
       accessibilityRole="checkbox"
       accessibilityState={{ checked: done }}
       accessibilityLabel={done ? "Bajarildi" : "Belgila"}
@@ -44,11 +45,11 @@ function DoneCheck({
         done ? styles.checkBtnOn : styles.checkBtnOff,
       ]}
     >
-      {done ? (
-        <Ionicons name="checkmark" size={Math.round(size * 0.55)} color="#fff" />
-      ) : (
-        <View style={styles.checkEmpty} />
-      )}
+      <Ionicons
+        name={done ? "checkmark" : "checkmark-outline"}
+        size={iconSize}
+        color={done ? "#fff" : colors.muted}
+      />
     </Pressable>
   );
 }
@@ -92,7 +93,7 @@ export function RecommendationCard({
             {item.description}
           </Text>
         </View>
-        <DoneCheck done={done} onToggle={onToggleDone} size={30} />
+        <DoneCheck done={done} onToggle={onToggleDone} size={22} />
       </View>
     );
   }
@@ -112,7 +113,7 @@ export function RecommendationCard({
             />
           )}
           <View style={styles.tileCheckWrap}>
-            <DoneCheck done={done} onToggle={onToggleDone} size={26} />
+            <DoneCheck done={done} onToggle={onToggleDone} size={20} />
           </View>
         </View>
         <Text style={styles.tileType}>{TYPE_LABEL[item.type]}</Text>
@@ -128,7 +129,7 @@ export function RecommendationCard({
 
   return (
     <View style={[styles.stepRow, done && styles.cardDone]}>
-      <DoneCheck done={done} onToggle={onToggleDone} size={28} />
+      <DoneCheck done={done} onToggle={onToggleDone} size={20} />
       <View style={styles.stepBody}>
         <Text style={styles.stepType}>
           {step} · {TYPE_LABEL[item.type]}
@@ -200,22 +201,15 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  /** Bo‘sh — «hali bosilmagan» ko‘rinishi, bosishga chorlaydi */
   checkBtnOff: {
     backgroundColor: colors.surface,
-    borderWidth: 2,
-    borderColor: colors.fg,
+    borderWidth: 1.5,
+    borderColor: colors.muted,
   },
   checkBtnOn: {
-    backgroundColor: colors.fg,
-    borderWidth: 2,
-    borderColor: colors.fg,
-  },
-  checkEmpty: {
-    width: "38%",
-    height: "38%",
-    borderRadius: 999,
-    backgroundColor: "transparent",
+    backgroundColor: "#16A34A",
+    borderWidth: 1.5,
+    borderColor: "#16A34A",
   },
 
   tile: {
