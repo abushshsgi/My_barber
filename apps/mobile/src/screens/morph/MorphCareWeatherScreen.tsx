@@ -79,26 +79,79 @@ export function MorphCareWeatherScreen({ navigation }: Props) {
   const goOutMidH = Math.round(winH * 0.8);
   const goOutFullH = Math.round(winH * 0.96);
   const goOutSheetH = useRef(new Animated.Value(goOutMidH)).current;
+  const goOutY = useRef(new Animated.Value(goOutMidH)).current;
+  const goOutBackdrop = useRef(new Animated.Value(0)).current;
   const goOutExpandedRef = useRef(false);
-  const closeGoOutRef = useRef(() => setGoOutOpen(false));
-  closeGoOutRef.current = () => {
-    setGoOutOpen(false);
-    setGoOutExpanded(false);
+  const goOutOpenPending = useRef(false);
+  const goOutClosing = useRef(false);
+
+  const openGoOut = () => {
+    if (goOutOpen || goOutClosing.current) return;
     goOutExpandedRef.current = false;
+    setGoOutExpanded(false);
+    goOutSheetH.stopAnimation();
+    goOutY.stopAnimation();
+    goOutBackdrop.stopAnimation();
+    goOutSheetH.setValue(goOutMidH);
+    goOutY.setValue(goOutMidH);
+    goOutBackdrop.setValue(0);
+    goOutOpenPending.current = true;
+    setGoOutOpen(true);
   };
-  const [myProducts, setMyProducts] = useState<MyCareProduct[]>([]);
-  const [doneIds, setDoneIds] = useState<Set<string>>(new Set());
-  const [doneToast, setDoneToast] = useState(false);
-  const toastOpacity = useRef(new Animated.Value(0)).current;
-  const toastY = useRef(new Animated.Value(-24)).current;
-  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const closeGoOut = () => {
+    if (!goOutOpen || goOutClosing.current) return;
+    goOutClosing.current = true;
+    goOutSheetH.stopAnimation();
+    goOutY.stopAnimation();
+    goOutBackdrop.stopAnimation();
+    const slideOut = goOutExpandedRef.current ? goOutFullH : goOutMidH;
+    Animated.parallel([
+      Animated.timing(goOutBackdrop, {
+        toValue: 0,
+        duration: 200,
+        easing: Easing.in(Easing.quad),
+        useNativeDriver: false,
+      }),
+      Animated.timing(goOutY, {
+        toValue: slideOut,
+        duration: 300,
+        easing: Easing.in(Easing.cubic),
+        useNativeDriver: false,
+      }),
+    ]).start(({ finished }) => {
+      goOutClosing.current = false;
+      if (!finished) return;
+      setGoOutOpen(false);
+      setGoOutExpanded(false);
+      goOutExpandedRef.current = false;
+    });
+  };
+
+  const closeGoOutRef = useRef(closeGoOut);
+  closeGoOutRef.current = closeGoOut;
 
   useEffect(() => {
-    if (!goOutOpen) return;
-    goOutExpandedRef.current = false;
-    setGoOutExpanded(false);
-    goOutSheetH.setValue(goOutMidH);
-  }, [goOutOpen, goOutMidH, goOutSheetH]);
+    if (!goOutOpen || !goOutOpenPending.current) return;
+    goOutOpenPending.current = false;
+    const frame = requestAnimationFrame(() => {
+      Animated.parallel([
+        Animated.timing(goOutBackdrop, {
+          toValue: 1,
+          duration: 240,
+          easing: Easing.out(Easing.quad),
+          useNativeDriver: false,
+        }),
+        Animated.timing(goOutY, {
+          toValue: 0,
+          duration: 340,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: false,
+        }),
+      ]).start();
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [goOutOpen, goOutBackdrop, goOutY]);
 
   const goOutPan = useMemo(
     () =>
@@ -109,45 +162,69 @@ export function MorphCareWeatherScreen({ navigation }: Props) {
         onPanResponderTerminationRequest: () => false,
         onPanResponderGrant: () => {
           goOutSheetH.stopAnimation();
+          goOutY.stopAnimation();
         },
         onPanResponderMove: (_, g) => {
+          if (g.dy > 0) {
+            // Pastga siljitish — sheet bilan birga pastga
+            goOutY.setValue(g.dy);
+            return;
+          }
+          // Yuqoriga — balandlikni oshirish
+          goOutY.setValue(0);
           const base = goOutExpandedRef.current ? goOutFullH : goOutMidH;
-          const next = Math.min(goOutFullH, Math.max(goOutMidH * 0.35, base - g.dy));
+          const next = Math.min(goOutFullH, Math.max(goOutMidH, base - g.dy));
           goOutSheetH.setValue(next);
         },
         onPanResponderRelease: (_, g) => {
           const expanded = goOutExpandedRef.current;
-          const snap = (to: "mid" | "full") => {
+          const snapHeight = (to: "mid" | "full") => {
             const h = to === "full" ? goOutFullH : goOutMidH;
             goOutExpandedRef.current = to === "full";
             setGoOutExpanded(to === "full");
-            Animated.timing(goOutSheetH, {
-              toValue: h,
-              duration: 240,
-              easing: Easing.out(Easing.cubic),
-              useNativeDriver: false,
-            }).start();
+            Animated.parallel([
+              Animated.timing(goOutSheetH, {
+                toValue: h,
+                duration: 240,
+                easing: Easing.out(Easing.cubic),
+                useNativeDriver: false,
+              }),
+              Animated.timing(goOutY, {
+                toValue: 0,
+                duration: 220,
+                easing: Easing.out(Easing.cubic),
+                useNativeDriver: false,
+              }),
+            ]).start();
           };
 
+          // Pastga — animatsiya bilan yopish
           if (g.dy > 70 || g.vy > 0.85) {
-            if (!expanded || g.dy > 120 || g.vy > 1.2) {
+            if (!expanded || g.dy > 110 || g.vy > 1.1) {
               closeGoOutRef.current();
               return;
             }
-            snap("mid");
+            snapHeight("mid");
             return;
           }
 
+          // Yuqoriga — to‘liq ochish
           if (g.dy < -35 || g.vy < -0.65) {
-            snap("full");
+            snapHeight("full");
             return;
           }
 
-          snap(expanded ? "full" : "mid");
+          snapHeight(expanded ? "full" : "mid");
         },
       }),
-    [goOutFullH, goOutMidH, goOutSheetH],
+    [goOutFullH, goOutMidH, goOutSheetH, goOutY],
   );
+  const [myProducts, setMyProducts] = useState<MyCareProduct[]>([]);
+  const [doneIds, setDoneIds] = useState<Set<string>>(new Set());
+  const [doneToast, setDoneToast] = useState(false);
+  const toastOpacity = useRef(new Animated.Value(0)).current;
+  const toastY = useRef(new Animated.Value(-24)).current;
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [apiRecs, setApiRecs] = useState<HairRecommendation[] | null>(null);
   const [apiAlerts, setApiAlerts] = useState<WeatherAlert[] | null>(null);
 
@@ -495,7 +572,7 @@ export function MorphCareWeatherScreen({ navigation }: Props) {
               </Text>
               <Pressable
                 style={styles.goOutFab}
-                onPress={() => setGoOutOpen(true)}
+                onPress={openGoOut}
                 accessibilityLabel={t("care.weather.goOutTitle", {
                   defaultValue: "Uydan chiqishda oling",
                 })}
@@ -575,17 +652,25 @@ export function MorphCareWeatherScreen({ navigation }: Props) {
       <SafeModal
         visible={goOutOpen}
         transparent
-        animationType="fade"
+        animationType="none"
         onRequestClose={() => closeGoOutRef.current()}
       >
         <View style={styles.modalRoot}>
-          <Pressable style={styles.modalBackdrop} onPress={() => closeGoOutRef.current()} />
+          <Animated.View
+            pointerEvents="none"
+            style={[styles.modalBackdrop, { opacity: goOutBackdrop }]}
+          />
+          <Pressable
+            style={StyleSheet.absoluteFill}
+            onPress={() => closeGoOutRef.current()}
+          />
           <Animated.View
             style={[
               styles.goOutSheet,
               {
                 height: goOutSheetH,
                 paddingBottom: safeBottom(insets.bottom, 12),
+                transform: [{ translateY: goOutY }],
               },
             ]}
           >
