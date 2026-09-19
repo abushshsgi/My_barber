@@ -773,3 +773,116 @@ class IngredientScanEntry(models.Model):
 
     def __str__(self) -> str:
         return f"IngredientScan({self.user_id}, {self.verdict})"
+
+class WeatherShieldCategory(models.Model):
+    """Ob-havo sharoiti bo''yicha soch himoyasi kategoriyasi (admin boshqaradi)."""
+
+    key = models.CharField(max_length=40, unique=True, db_index=True)
+    title_uz = models.CharField(max_length=120)
+    description_uz = models.TextField(blank=True, default="")
+    icon = models.CharField(max_length=48, blank=True, default="sunny-outline")
+    sort_order = models.PositiveSmallIntegerField(default=0)
+    is_active = models.BooleanField(default=True, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["sort_order", "title_uz"]
+
+    def __str__(self) -> str:
+        return f"{self.title_uz} ({self.key})"
+
+
+class WeatherShieldProduct(models.Model):
+    """Kategoriyaga bog''langan himoya mahsuloti / rutina."""
+
+    class Kind(models.TextChoices):
+        PRODUCT = "product", "Mahsulot"
+        ROUTINE = "routine", "Rutina"
+
+    category = models.ForeignKey(
+        WeatherShieldCategory,
+        on_delete=models.CASCADE,
+        related_name="products",
+    )
+    name = models.CharField(max_length=160)
+    description_uz = models.TextField(blank=True, default="")
+    kind = models.CharField(
+        max_length=16, choices=Kind.choices, default=Kind.PRODUCT, db_index=True
+    )
+    product_tag = models.CharField(max_length=64, blank=True, default="")
+    icon = models.CharField(max_length=48, blank=True, default="flask-outline")
+    image = models.ImageField(
+        upload_to="care/weather-shield/%Y/%m/", blank=True, null=True
+    )
+    external_image_url = models.URLField(max_length=500, blank=True, default="")
+    priority = models.PositiveSmallIntegerField(default=2)
+    hair_conditions = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="Bo''sh = barcha soch holatlari; masalan [\"oily\",\"dry\"]",
+    )
+    is_published = models.BooleanField(default=True, db_index=True)
+    sort_order = models.PositiveSmallIntegerField(default=0)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="weather_shield_products_created",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["priority", "sort_order", "name"]
+        indexes = [
+            models.Index(fields=["is_published", "category", "priority"]),
+        ]
+
+    def __str__(self) -> str:
+        return self.name
+
+
+class WeatherShieldUserAction(models.Model):
+    """User bugungi himoya qadamini bajarib belgilashi — admin faoliyat ko''radi."""
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="weather_shield_actions",
+    )
+    product = models.ForeignKey(
+        WeatherShieldProduct,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="user_actions",
+    )
+    action_key = models.CharField(max_length=64, blank=True, default="", db_index=True)
+    completed = models.BooleanField(default=True)
+    weather_snapshot = models.JSONField(default=dict, blank=True)
+    completed_at = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-completed_at"]
+        indexes = [
+            models.Index(fields=["user", "-completed_at"]),
+            models.Index(fields=["-completed_at"]),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "product"],
+                condition=models.Q(product__isnull=False),
+                name="uniq_ws_user_product",
+            ),
+            models.UniqueConstraint(
+                fields=["user", "action_key"],
+                condition=~models.Q(action_key=""),
+                name="uniq_ws_user_action_key",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"WSAction({self.user_id}, {self.product_id or self.action_key})"

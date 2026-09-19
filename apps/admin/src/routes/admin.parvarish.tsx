@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 const TABS = [
   { to: "/admin/parvarish" as const, label: "Umumiy", exact: true },
   { to: "/admin/parvarish/tarkib" as const, label: "Tarkib" },
+  { to: "/admin/parvarish/ob-havo" as const, label: "Ob-havo" },
   { to: "/admin/parvarish/likes" as const, label: "Likes" },
 ] as const;
 

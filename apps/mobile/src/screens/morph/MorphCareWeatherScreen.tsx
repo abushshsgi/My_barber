@@ -76,10 +76,9 @@ export function MorphCareWeatherScreen({ navigation }: Props) {
   const [goOutOpen, setGoOutOpen] = useState(false);
   const [goOutExpanded, setGoOutExpanded] = useState(false);
   const { height: winH } = useWindowDimensions();
-  const goOutMidH = Math.round(winH * 0.62);
-  const goOutFullH = Math.round(winH * 0.92);
+  const goOutMidH = Math.round(winH * 0.8);
+  const goOutFullH = Math.round(winH * 0.96);
   const goOutSheetH = useRef(new Animated.Value(goOutMidH)).current;
-  const goOutDragY = useRef(new Animated.Value(0)).current;
   const goOutExpandedRef = useRef(false);
   const closeGoOutRef = useRef(() => setGoOutOpen(false));
   closeGoOutRef.current = () => {
@@ -98,92 +97,56 @@ export function MorphCareWeatherScreen({ navigation }: Props) {
     if (!goOutOpen) return;
     goOutExpandedRef.current = false;
     setGoOutExpanded(false);
-    goOutDragY.setValue(0);
     goOutSheetH.setValue(goOutMidH);
-  }, [goOutOpen, goOutDragY, goOutMidH, goOutSheetH]);
+  }, [goOutOpen, goOutMidH, goOutSheetH]);
 
   const goOutPan = useMemo(
     () =>
       PanResponder.create({
+        onStartShouldSetPanResponder: () => true,
         onMoveShouldSetPanResponder: (_, g) =>
-          Math.abs(g.dy) > 8 && Math.abs(g.dy) > Math.abs(g.dx) * 1.1,
+          Math.abs(g.dy) > 4 && Math.abs(g.dy) > Math.abs(g.dx),
+        onPanResponderTerminationRequest: () => false,
         onPanResponderGrant: () => {
           goOutSheetH.stopAnimation();
-          goOutDragY.stopAnimation();
         },
         onPanResponderMove: (_, g) => {
-          const expanded = goOutExpandedRef.current;
-          if (g.dy < 0) {
-            goOutDragY.setValue(0);
-            const base = expanded ? goOutFullH : goOutMidH;
-            const next = Math.min(goOutFullH, base - g.dy);
-            goOutSheetH.setValue(next);
-            return;
-          }
-          if (expanded) {
-            const next = Math.max(goOutMidH * 0.85, goOutFullH - g.dy);
-            goOutSheetH.setValue(next);
-            goOutDragY.setValue(Math.max(0, g.dy - (goOutFullH - goOutMidH)));
-          } else {
-            goOutDragY.setValue(Math.max(0, g.dy));
-          }
+          const base = goOutExpandedRef.current ? goOutFullH : goOutMidH;
+          const next = Math.min(goOutFullH, Math.max(goOutMidH * 0.35, base - g.dy));
+          goOutSheetH.setValue(next);
         },
         onPanResponderRelease: (_, g) => {
           const expanded = goOutExpandedRef.current;
-
-          if (!expanded && (g.dy > 110 || g.vy > 1.05)) {
-            closeGoOutRef.current();
-            return;
-          }
-          if (expanded && (g.dy > 200 || g.vy > 1.4)) {
-            closeGoOutRef.current();
-            return;
-          }
-
-          const wantFull =
-            (!expanded && (g.dy < -48 || g.vy < -0.85)) ||
-            (expanded && g.dy < 90 && g.vy < 0.6);
-          const wantMid = expanded && (g.dy > 70 || g.vy > 0.75);
-
-          if (wantFull && !wantMid) {
-            goOutExpandedRef.current = true;
-            setGoOutExpanded(true);
-            Animated.parallel([
-              Animated.timing(goOutSheetH, {
-                toValue: goOutFullH,
-                duration: 260,
-                easing: Easing.out(Easing.cubic),
-                useNativeDriver: false,
-              }),
-              Animated.timing(goOutDragY, {
-                toValue: 0,
-                duration: 220,
-                easing: Easing.out(Easing.cubic),
-                useNativeDriver: false,
-              }),
-            ]).start();
-            return;
-          }
-
-          goOutExpandedRef.current = false;
-          setGoOutExpanded(false);
-          Animated.parallel([
+          const snap = (to: "mid" | "full") => {
+            const h = to === "full" ? goOutFullH : goOutMidH;
+            goOutExpandedRef.current = to === "full";
+            setGoOutExpanded(to === "full");
             Animated.timing(goOutSheetH, {
-              toValue: goOutMidH,
-              duration: 260,
+              toValue: h,
+              duration: 240,
               easing: Easing.out(Easing.cubic),
               useNativeDriver: false,
-            }),
-            Animated.timing(goOutDragY, {
-              toValue: 0,
-              duration: 220,
-              easing: Easing.out(Easing.cubic),
-              useNativeDriver: false,
-            }),
-          ]).start();
+            }).start();
+          };
+
+          if (g.dy > 70 || g.vy > 0.85) {
+            if (!expanded || g.dy > 120 || g.vy > 1.2) {
+              closeGoOutRef.current();
+              return;
+            }
+            snap("mid");
+            return;
+          }
+
+          if (g.dy < -35 || g.vy < -0.65) {
+            snap("full");
+            return;
+          }
+
+          snap(expanded ? "full" : "mid");
         },
       }),
-    [goOutDragY, goOutFullH, goOutMidH, goOutSheetH],
+    [goOutFullH, goOutMidH, goOutSheetH],
   );
   const [apiRecs, setApiRecs] = useState<HairRecommendation[] | null>(null);
   const [apiAlerts, setApiAlerts] = useState<WeatherAlert[] | null>(null);
@@ -623,7 +586,6 @@ export function MorphCareWeatherScreen({ navigation }: Props) {
               {
                 height: goOutSheetH,
                 paddingBottom: safeBottom(insets.bottom, 12),
-                transform: [{ translateY: goOutDragY }],
               },
             ]}
           >

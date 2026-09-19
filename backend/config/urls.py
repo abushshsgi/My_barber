@@ -299,6 +299,15 @@ from ai.care_views import (
     HairCareProfileMeView,
 )
 from ai.weather_views import CareWeatherPlanView, CareWeatherRegionsView, CareWeatherView
+from ai.weather_shield_views import (
+    AdminWeatherShieldActivityView,
+    AdminWeatherShieldCategoryListView,
+    AdminWeatherShieldProductDetailView,
+    AdminWeatherShieldProductListCreateView,
+    AdminWeatherShieldStatsView,
+    WeatherShieldActionView,
+    WeatherShieldCatalogView,
+)
 from ai.views import (
     AiBarberCardView,
     AiFaceCheckView,
@@ -451,6 +460,14 @@ api_routes = [
     path("admin/parvarish/products/<int:product_id>/", AdminParvarishProductDetailView.as_view()),
     path("admin/parvarish/products/lookup/", AdminProductLookupView.as_view()),
     path("admin/parvarish/demo-action/", AdminParvarishDemoActionView.as_view()),
+    path("admin/parvarish/weather-shield/stats/", AdminWeatherShieldStatsView.as_view()),
+    path("admin/parvarish/weather-shield/categories/", AdminWeatherShieldCategoryListView.as_view()),
+    path("admin/parvarish/weather-shield/products/", AdminWeatherShieldProductListCreateView.as_view()),
+    path(
+        "admin/parvarish/weather-shield/products/<int:product_id>/",
+        AdminWeatherShieldProductDetailView.as_view(),
+    ),
+    path("admin/parvarish/weather-shield/activity/", AdminWeatherShieldActivityView.as_view()),
     path("admin/products/", AdminProductUpsertView.as_view()),
     path("admin/products/ai-fill/", AdminProductAiFillView.as_view()),
     path("admin/products/ai-cover/", AdminProductAiCoverView.as_view()),
@@ -590,6 +607,8 @@ api_routes = [
     path("ai/care/weather/", CareWeatherView.as_view()),
     path("ai/care/weather/regions/", CareWeatherRegionsView.as_view()),
     path("ai/care/weather/plan/", CareWeatherPlanView.as_view()),
+    path("ai/care/weather-shield/", WeatherShieldCatalogView.as_view()),
+    path("ai/care/weather-shield/actions/", WeatherShieldActionView.as_view()),
     path("ai/barber-card/", AiBarberCardView.as_view()),
     path("ai/chat/", AiMorphChatView.as_view()),
     path("ai/chat/voice/voices/", AiMorphChatVoiceVoicesView.as_view()),

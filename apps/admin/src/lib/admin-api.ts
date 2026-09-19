@@ -5439,3 +5439,134 @@ export async function downloadBazaExport(params: {
   URL.revokeObjectURL(url);
 }
 
+/* ── Weather Shield (Ob-havo soch himoyasi) ───────────────────────── */
+
+export type AdminWeatherShieldStats = {
+  categories_total: number;
+  products_total: number;
+  products_published: number;
+  actions_today: number;
+  actions_total: number;
+};
+
+export type AdminWeatherShieldCategory = {
+  id: number;
+  key: string;
+  title_uz: string;
+  description_uz: string;
+  icon: string;
+  sort_order: number;
+  is_active: boolean;
+  products_count: number;
+};
+
+export type AdminWeatherShieldProduct = {
+  id: string;
+  product_id: number;
+  name: string;
+  title: string;
+  description: string;
+  description_uz: string;
+  kind: string;
+  type: string;
+  product_tag: string;
+  productTag: string;
+  image_url: string;
+  icon: string;
+  priority: number;
+  sort_order: number;
+  is_published: boolean;
+  category_id: number;
+  category_key: string;
+  category_title: string;
+  hair_conditions: string[];
+};
+
+export type AdminWeatherShieldActivity = {
+  id: number;
+  user_id: number;
+  user_email: string;
+  product_id: number | null;
+  product_name: string;
+  category_key: string;
+  category_title: string;
+  weather_snapshot: Record<string, unknown>;
+  completed_at: string;
+};
+
+export async function fetchAdminWeatherShieldStats(): Promise<AdminWeatherShieldStats> {
+  return apiJson("/api/v1/admin/parvarish/weather-shield/stats/");
+}
+
+export async function fetchAdminWeatherShieldCategories(): Promise<AdminWeatherShieldCategory[]> {
+  return apiJson("/api/v1/admin/parvarish/weather-shield/categories/");
+}
+
+export async function fetchAdminWeatherShieldProducts(
+  category?: string,
+): Promise<AdminWeatherShieldProduct[]> {
+  const sp = new URLSearchParams();
+  if (category) sp.set("category", category);
+  const q = sp.toString();
+  return apiJson(`/api/v1/admin/parvarish/weather-shield/products/${q ? `?${q}` : ""}`);
+}
+
+export async function fetchAdminWeatherShieldActivity(
+  limit = 50,
+): Promise<AdminWeatherShieldActivity[]> {
+  return apiJson(`/api/v1/admin/parvarish/weather-shield/activity/?limit=${limit}`);
+}
+
+export type AdminWeatherShieldProductPayload = {
+  name: string;
+  category_id?: number;
+  category_key?: string;
+  description_uz?: string;
+  kind?: string;
+  product_tag?: string;
+  icon?: string;
+  priority?: number;
+  sort_order?: number;
+  is_published?: boolean;
+  hair_conditions?: string;
+  external_image_url?: string;
+  image?: File | null;
+};
+
+function weatherShieldFormData(body: AdminWeatherShieldProductPayload): FormData {
+  const fd = new FormData();
+  fd.set("name", body.name);
+  if (body.category_id != null) fd.set("category_id", String(body.category_id));
+  if (body.category_key) fd.set("category_key", body.category_key);
+  fd.set("description_uz", body.description_uz || "");
+  fd.set("kind", body.kind || "product");
+  fd.set("product_tag", body.product_tag || "");
+  fd.set("icon", body.icon || "flask-outline");
+  fd.set("priority", String(body.priority ?? 2));
+  fd.set("sort_order", String(body.sort_order ?? 0));
+  fd.set("is_published", body.is_published === false ? "0" : "1");
+  if (body.hair_conditions) fd.set("hair_conditions", body.hair_conditions);
+  if (body.external_image_url) fd.set("external_image_url", body.external_image_url);
+  if (body.image) fd.set("image", body.image);
+  return fd;
+}
+
+export async function createAdminWeatherShieldProduct(
+  body: AdminWeatherShieldProductPayload,
+): Promise<AdminWeatherShieldProduct> {
+  return apiJson("/api/v1/admin/parvarish/weather-shield/products/", {
+    method: "POST",
+    body: weatherShieldFormData(body),
+  });
+}
+
+export async function deleteAdminWeatherShieldProduct(productId: number): Promise<void> {
+  const res = await apiFetch(`/api/v1/admin/parvarish/weather-shield/products/${productId}/`, {
+    method: "DELETE",
+  });
+  if (!res.ok && res.status !== 204) {
+    const body = await res.json().catch(() => null);
+    throw new Error((body as { detail?: string } | null)?.detail || "O'chirilmadi");
+  }
+}
+

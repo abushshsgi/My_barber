@@ -39,6 +39,7 @@ import {
   MessageCircle,
   FlaskConical,
   Droplets,
+  CloudSun,
   Database,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -181,6 +182,8 @@ const SECTIONS: Section[] = [
     items: [
       { to: "/admin/parvarish", label: "Umumiy", icon: LayoutDashboard },
       { to: "/admin/parvarish/tarkib", label: "Tarkib", icon: FlaskConical },
+      { to: "/admin/parvarish/ob-havo", label: "Ob-havo", icon: CloudSun },
+      { to: "/admin/parvarish/likes", label: "Likes", icon: Star },
     ],
   },
   {
