@@ -380,9 +380,9 @@ const styles = StyleSheet.create({
   chooseScroll: { flex: 1 },
   chooseContent: {
     flexGrow: 1,
-    justifyContent: "flex-start",
-    paddingTop: verticalScale(4),
-    paddingBottom: verticalScale(4),
+    justifyContent: "center",
+    paddingTop: verticalScale(12),
+    paddingBottom: verticalScale(8),
   },
   refWrap: {
     alignSelf: "stretch",
