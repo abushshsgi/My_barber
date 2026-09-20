@@ -413,7 +413,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   backBtn: {
-    alignSelf: "flex-start",
+    alignSelf: "flex-end",
     width: scale(40),
     height: scale(40),
     borderRadius: moderateScale(14),
