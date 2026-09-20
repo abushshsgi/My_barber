@@ -193,7 +193,9 @@ export function OnboardingScreen({ onComplete }: { onComplete?: () => void }) {
   if (saving) {
     return (
       <View style={[styles.root, styles.center]}>
-        <Text style={styles.saving}>{t("onboarding.saving")}</Text>
+        <Text style={styles.saving}>
+          {t("onboarding.saving", { defaultValue: "Saqlanmoqda..." })}
+        </Text>
       </View>
     );
   }

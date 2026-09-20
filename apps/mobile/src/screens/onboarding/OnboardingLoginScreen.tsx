@@ -188,7 +188,7 @@ export function OnboardingLoginScreen({ onBack }: Props) {
           accessibilityLabel="Orqaga"
           hitSlop={8}
         >
-          <Ionicons name="chevron-back" size={22} color="#111111" />
+          <Ionicons name="chevron-back" size={22} color={colors.forest} />
         </Pressable>
 
         {step === "choose" ? (
@@ -372,7 +372,7 @@ const styles = StyleSheet.create({
     width: scale(40),
     height: scale(40),
     borderRadius: moderateScale(14),
-    backgroundColor: "#F4F4F5",
+    backgroundColor: "#F4FBE6",
     alignItems: "center",
     justifyContent: "center",
     marginBottom: verticalScale(4),
@@ -392,7 +392,7 @@ const styles = StyleSheet.create({
     alignSelf: "stretch",
     minHeight: verticalScale(48),
     borderRadius: moderateScale(16),
-    backgroundColor: "#F4F4F5",
+    backgroundColor: "#F7F8F5",
     paddingHorizontal: scale(16),
     fontSize: fontSize(15),
     fontWeight: "600",
@@ -410,7 +410,7 @@ const styles = StyleSheet.create({
     marginTop: verticalScale(8),
     fontSize: fontSize(26),
     fontWeight: "800",
-    color: colors.fg,
+    color: colors.forest,
     textAlign: "center",
     letterSpacing: -0.5,
   },
@@ -428,16 +428,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
     alignSelf: "stretch",
     borderWidth: 1.5,
-    borderColor: colors.fg,
+    borderColor: colors.lime,
     borderRadius: moderateScale(16),
     paddingVertical: verticalScale(12),
     paddingHorizontal: scale(14),
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#F4FBE6",
   },
   prefix: {
     fontSize: fontSize(20),
     fontWeight: "800",
-    color: colors.fg,
+    color: colors.forest,
     marginRight: scale(10),
   },
   phoneInput: {
@@ -452,7 +452,7 @@ const styles = StyleSheet.create({
     alignSelf: "stretch",
     minHeight: verticalScale(56),
     borderRadius: moderateScale(16),
-    backgroundColor: "#F4F4F5",
+    backgroundColor: "#F7F8F5",
     paddingHorizontal: scale(18),
     fontSize: fontSize(17),
     fontWeight: "600",
@@ -481,7 +481,7 @@ const styles = StyleSheet.create({
     marginTop: verticalScale(14),
     fontSize: fontSize(15),
     fontWeight: "700",
-    color: colors.fg,
+    color: colors.forest,
     textAlign: "center",
   },
   error: {
@@ -517,5 +517,5 @@ const styles = StyleSheet.create({
     textAlign: "center",
     paddingHorizontal: scale(8),
   },
-  legalLink: { color: colors.fg, fontWeight: "700" },
+  legalLink: { color: colors.forest, fontWeight: "700" },
 });

@@ -123,8 +123,8 @@ const styles = StyleSheet.create({
   googleBtn: {
     minHeight: verticalScale(56),
     borderRadius: moderateScale(28),
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderWidth: 1.5,
+    borderColor: "rgba(28,74,50,0.14)",
     backgroundColor: colors.surface,
     flexDirection: "row",
     alignItems: "center",
@@ -135,7 +135,7 @@ const styles = StyleSheet.create({
   googleText: {
     fontSize: fontSize(16),
     fontWeight: "700",
-    color: colors.fg,
+    color: colors.forest,
   },
   phoneBtn: {
     minHeight: verticalScale(56),
