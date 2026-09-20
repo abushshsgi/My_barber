@@ -845,7 +845,7 @@ class WeatherShieldProduct(models.Model):
 
 
 class WeatherShieldUserAction(models.Model):
-    """User bugungi himoya qadamini bajarib belgilashi — admin faoliyat ko''radi."""
+    """User marks today's weather-shield step complete; admin sees the activity."""
 
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
