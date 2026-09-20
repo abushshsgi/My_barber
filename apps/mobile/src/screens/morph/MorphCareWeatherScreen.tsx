@@ -44,17 +44,19 @@ import {
 import type { HairRecommendation, WeatherAlert, WeatherData } from "../../types/weatherShield";
 import { regionLabel, UZ_REGIONS, type UzRegionId } from "../../lib/uz-regions";
 import type { MorphCareStackParamList } from "../../navigation/MorphCareStack";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { colors } from "../../theme/colors";
 import { morphFont } from "../../theme/morph-font";
+import {
+  loadTodayShieldDone,
+  saveTodayShieldDone,
+  scheduleDailyWeatherShieldReminders,
+} from "../../lib/weather-shield-daily";
 import {
   fontSize,
   moderateScale,
   scale,
   verticalScale,
 } from "../../utils/responsive";
-
-const DONE_KEY = "mysaloon.morphAi.weatherShieldDone";
 
 type Props = NativeStackScreenProps<MorphCareStackParamList, "CareWeather">;
 
@@ -232,13 +234,9 @@ export function MorphCareWeatherScreen({ navigation }: Props) {
     void loadMyProducts()
       .then(setMyProducts)
       .catch(() => setMyProducts([]));
-    void AsyncStorage.getItem(DONE_KEY)
-      .then((raw) => {
-        if (!raw) return;
-        const arr = JSON.parse(raw) as string[];
-        if (Array.isArray(arr)) setDoneIds(new Set(arr));
-      })
-      .catch(() => undefined);
+    void loadTodayShieldDone()
+      .then(setDoneIds)
+      .catch(() => setDoneIds(new Set()));
   }, [refreshing]);
 
   const current = data?.current;
@@ -277,13 +275,6 @@ export function MorphCareWeatherScreen({ navigation }: Props) {
         }));
         setApiRecs(mapped.length ? mapped : null);
         setApiAlerts((res.alerts || []) as WeatherAlert[]);
-        if (res.done_ids?.length) {
-          setDoneIds((prev) => {
-            const next = new Set(prev);
-            res.done_ids.forEach((id) => next.add(id));
-            return next;
-          });
-        }
       })
       .catch(() => {
         if (!cancelled) {
@@ -361,17 +352,20 @@ export function MorphCareWeatherScreen({ navigation }: Props) {
   );
 
   const shieldState = useMemo(() => {
-    if (!apiRecs?.length) return localShield;
+    // API bo‘sh yoki faqat style qaytarsa — lokal kunlik tavsiyalar (har kuni checklist)
+    const localHair = localShield.recommendations.filter((r) => r.type !== "style");
+    const apiHair = (apiRecs || []).filter((r) => r.type !== "style");
+    if (!apiHair.length) return localShield;
     return {
       ...localShield,
-      recommendations: apiRecs,
+      recommendations: apiRecs!.length ? apiRecs! : localHair,
       activeAlerts: apiAlerts?.length ? apiAlerts : localShield.activeAlerts,
     };
   }, [apiAlerts, apiRecs, localShield]);
 
   const persistDone = async (next: Set<string>) => {
     setDoneIds(next);
-    await AsyncStorage.setItem(DONE_KEY, JSON.stringify([...next])).catch(() => undefined);
+    await saveTodayShieldDone(next);
   };
 
   const showDoneToast = () => {
@@ -398,6 +392,16 @@ export function MorphCareWeatherScreen({ navigation }: Props) {
       if (toastTimer.current) clearTimeout(toastTimer.current);
     };
   }, []);
+
+  useEffect(() => {
+    if (!shieldWeather) return;
+    const hair = shieldState.recommendations.filter((r) => r.type !== "style");
+    const pending = hair.filter((r) => !doneIds.has(r.id)).length;
+    void scheduleDailyWeatherShieldReminders({
+      weather: shieldWeather,
+      pendingCount: pending,
+    });
+  }, [doneIds, shieldState.recommendations, shieldWeather]);
 
   const onToggleDone = (id: string) => {
     const next = new Set(doneIds);

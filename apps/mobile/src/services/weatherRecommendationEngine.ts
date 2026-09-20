@@ -283,6 +283,48 @@ export function getWeatherHairRecommendations(
     );
   }
 
+  // Yumshoq kun — baribir kunlik checklist (har kuni galochka)
+  if (out.length === 0) {
+    out.push(
+      {
+        id: "daily-hydrate",
+        type: "product",
+        title: "Yengil namlantirish",
+        description:
+          "Bugun ob-havo yumshoq — leave-in yoki engil sprey bilan namlikni yangilang.",
+        priority: 1,
+        icon: "water-outline",
+        productTag: "leave-in",
+        image: SHIELD_IMAGES.leaveIn,
+        trigger: "daily_calm",
+      },
+      {
+        id: "daily-scalp",
+        type: "routine",
+        title: "1 daqiqa scalp massaji",
+        description:
+          "Barmoq uchlari bilan 60 soniya yumshoq massaj — qon aylanishi va porloqlik uchun.",
+        priority: 2,
+        icon: "hand-left-outline",
+        productTag: "scalp-massager",
+        image: SHIELD_IMAGES.scalpMassager,
+        trigger: "daily_calm",
+      },
+      {
+        id: "daily-ends",
+        type: "routine",
+        title: "Uchlarni tekshirish",
+        description:
+          "Soch uchlariga 1 tomchi moy — quruqlik va yorilishni oldini oladi.",
+        priority: 3,
+        icon: "leaf-outline",
+        productTag: "argan-oil",
+        image: SHIELD_IMAGES.arganOil,
+        trigger: "daily_calm",
+      },
+    );
+  }
+
   // Dedupe by id, sort by priority
   const seen = new Set<string>();
   return out

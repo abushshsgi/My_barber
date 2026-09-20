@@ -38,8 +38,9 @@ export function WeatherShieldContainer({ state, doneIds, onToggleDone }: Props) 
           />
         </View>
         <View style={styles.headerText}>
-          <Text style={styles.eyebrow}>Morf Shield</Text>
+          <Text style={styles.eyebrow}>Morf Shield · Bugun</Text>
           <Text style={styles.title}>Soch himoyasi</Text>
+          <Text style={styles.dayHint}>Har kuni belgilang — ertaga yangilanadi</Text>
         </View>
         <View style={styles.headerRight}>
           {topAlert ? (
@@ -149,6 +150,13 @@ const styles = StyleSheet.create({
     fontSize: fontSize(15),
     fontWeight: "800",
     color: colors.fg,
+  },
+  dayHint: {
+    ...morphFont,
+    fontSize: fontSize(10),
+    fontWeight: "600",
+    color: colors.muted,
+    marginTop: 1,
   },
   headerRight: { alignItems: "flex-end", gap: 4, maxWidth: "42%" },
   alertPill: {

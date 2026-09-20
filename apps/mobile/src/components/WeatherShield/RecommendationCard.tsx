@@ -46,7 +46,7 @@ function DoneCheck({
       ]}
     >
       <Ionicons
-        name={done ? "checkmark" : "add"}
+        name={done ? "checkmark" : "square-outline"}
         size={iconSize}
         color={done ? "#fff" : colors.fg}
       />

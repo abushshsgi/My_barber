@@ -176,6 +176,28 @@ async function fetchAndCache(opts: {
     savedAt: Date.now(),
   });
   void scheduleWeatherMorningAlert(payload.tomorrow_alert);
+  // Kunlik shield eslatmalari — ob-havo snapshot bilan
+  try {
+    const { scheduleDailyWeatherShieldReminders } = await import(
+      "../lib/weather-shield-daily"
+    );
+    const current = payload.current;
+    if (current) {
+      void scheduleDailyWeatherShieldReminders({
+        weather: {
+          temp: current.temperature_c,
+          humidity: current.humidity_pct,
+          uvIndex: payload.uv?.index ?? current.uv_index ?? null,
+          windSpeed: current.wind_kmh,
+          aqi: null,
+          location: payload.location_place || payload.location_label || "Shahar",
+          condition: current.condition_key || "",
+        },
+      });
+    }
+  } catch {
+    /* optional */
+  }
   return { payload, regionId };
 }
 
