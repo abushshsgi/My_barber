@@ -661,9 +661,9 @@ export function careHubLayout(
     quickActionWCap,
   );
   const quickActionH = clamp(
-    Math.round(quickActionW * (short ? 0.98 : 1.02)),
-    narrow ? rs(Math.round(84 * density), scale) : rs(Math.round(92 * density), scale),
-    short ? rs(Math.round(108 * density), scale) : rs(Math.round(118 * density), scale),
+    Math.round(quickActionW * (short ? 0.86 : 0.9)),
+    narrow ? rs(Math.round(76 * density), scale) : rs(Math.round(82 * density), scale),
+    short ? rs(Math.round(96 * density), scale) : rs(Math.round(104 * density), scale),
   );
   const quickActionBlock = quickActionH + sectionGap;
 
@@ -671,21 +671,21 @@ export function careHubLayout(
   const remain = Math.max(rs(240, scale), avail - chrome);
 
   const promoW = promoMaxW;
-  /** Androidda viloyat rasmlari konteynerga to‘liq yopsin — biroz balandroq promo. */
-  const PROMO_ASPECT = short ? 2.15 : 2.0;
+  /** Banner biroz balandroq — temp + CTA sig‘sin. */
+  const PROMO_ASPECT = short ? 1.95 : 1.8;
   const promoByWidth = Math.round(promoW / PROMO_ASPECT);
 
   /** AI Assistant qatori olib tashlangan — joy promo + kartochkalarga beriladi. */
   const MIN = {
-    promo: Math.max(rs(Math.round(110 * density), scale), Math.min(promoByWidth, rs(Math.round(140 * density), scale))),
+    promo: Math.max(rs(Math.round(124 * density), scale), Math.min(promoByWidth, rs(Math.round(156 * density), scale))),
     featured: rs(Math.round((narrow ? 104 : 122) * density), scale),
     hubCard: rs(Math.round((short ? 148 : 172) * density), scale),
   };
   const MAX = {
     promo: clamp(
-      Math.max(rs(Math.round(124 * density), scale), promoByWidth),
-      rs(Math.round(116 * density), scale),
-      Math.min(rs(Math.round(172 * density), scale), Math.round(height * (short ? 0.22 : 0.25))),
+      Math.max(rs(Math.round(140 * density), scale), promoByWidth),
+      rs(Math.round(128 * density), scale),
+      Math.min(rs(Math.round(200 * density), scale), Math.round(height * (short ? 0.26 : 0.29))),
     ),
     featured: rs(Math.round((short ? 142 : 158) * density), scale),
     hubCard: rs(Math.round((short ? 200 : 228) * density), scale),
@@ -765,7 +765,7 @@ export function careHubLayout(
     promoTitleSize: rs(narrow ? 14 : promoInner >= rs(140, scale) ? 16 : 15, scale),
     /** Hero ichidagi matn/tugma — banner balandligi bilan birga kichrayadi. */
     promoUi: (() => {
-      const k = clamp(promoInner / (short ? 148 : 168), 0.52, 1) * density;
+      const k = clamp(promoInner / (short ? 160 : 188), 0.52, 1) * density;
       return {
         k,
         back: clamp(Math.round(42 * k), 34, 44),
