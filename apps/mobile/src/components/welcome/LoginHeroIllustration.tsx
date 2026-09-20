@@ -1,83 +1,76 @@
 import { View } from "react-native";
 import Svg, { Circle, Ellipse, G, Path, Rect } from "react-native-svg";
 
-/** Login landing — chiziqli illustratsiya (naushnik, noutbuk, qo‘l silkitish). */
-export function LoginHeroIllustration({ size = 240 }: { size?: number }) {
+/**
+ * Login landing — Soft Paper: profil + soch try-on oynasi (naushnik o‘rniga).
+ */
+export function LoginHeroIllustration({ size = 200 }: { size?: number }) {
   return (
     <View style={{ width: size, height: size, alignItems: "center", justifyContent: "center" }}>
       <Svg width={size} height={size} viewBox="0 0 240 240">
-        <Ellipse cx="120" cy="208" rx="78" ry="10" fill="#E8F5D8" />
-        <Path
-          d="M28 168c18-28 38-22 46 6 4 14-8 28-22 30-22 4-36-14-24-36z"
-          fill="#C6EF4A"
-        />
-        <Path
-          d="M34 150c6-18 22-16 26 2 2 10-6 18-14 18-12 2-18-8-12-20z"
-          fill="#1C4A32"
-        />
-        <Path
-          d="M186 172c-14-24-36-18-42 6-4 16 10 30 24 30 22 2 32-16 18-36z"
-          fill="#C6EF4A"
-        />
-        <Path
-          d="M198 154c-6-16-20-14-24 2-2 10 6 16 14 16 12 0 16-8 10-18z"
-          fill="#1C4A32"
-        />
+        <Circle cx="120" cy="120" r="108" fill="#F4F4F5" />
+        <Circle cx="120" cy="120" r="88" fill="#FAFAFA" />
 
-        <G transform="translate(58 46)">
+        {/* Soft ground */}
+        <Ellipse cx="120" cy="198" rx="64" ry="8" fill="#E5E5E5" />
+
+        {/* Mirror / try-on frame */}
+        <G transform="translate(132 54)">
+          <Rect x="0" y="0" width="72" height="96" rx="16" fill="#111111" />
+          <Rect x="6" y="8" width="60" height="72" rx="10" fill="#FFFFFF" />
+          {/* Mini hairstyle preview */}
           <Path
-            d="M42 38c-18 0-30 16-28 34 2 12 12 20 28 20s26-8 28-20c2-18-10-34-28-34z"
+            d="M36 28c-12 0-20 10-18 22 1 8 8 14 18 14s17-6 18-14c2-12-6-22-18-22z"
             fill="#111111"
           />
-          <Path d="M22 58c0-16 10-28 22-30 4 10 2 22-4 28-8 2-14 4-18 2z" fill="#C6EF4A" />
-          <Circle cx="42" cy="62" r="22" fill="#FFF8F0" />
-          <Path d="M28 58c4-2 8-2 12 0M44 58c4-2 8-2 12 0" stroke="#111" strokeWidth="2.2" strokeLinecap="round" />
-          <Circle cx="34" cy="64" r="2.2" fill="#111" />
-          <Circle cx="50" cy="64" r="2.2" fill="#111" />
-          <Path d="M36 74c4 4 8 4 12 0" stroke="#111" strokeWidth="2" strokeLinecap="round" fill="none" />
-          <Path
-            d="M18 58c-8 2-12 12-8 22 8 4 14 2 16-4"
-            stroke="#111"
-            strokeWidth="6"
-            strokeLinecap="round"
-            fill="none"
-          />
-          <Path
-            d="M66 58c8 2 12 12 8 22-8 4-14 2-16-4"
-            stroke="#111"
-            strokeWidth="6"
-            strokeLinecap="round"
-            fill="none"
-          />
-          <Path d="M18 56h48" stroke="#111" strokeWidth="5" strokeLinecap="round" />
+          <Circle cx="36" cy="44" r="11" fill="#FFF8F0" />
+          <Circle cx="32" cy="43" r="1.6" fill="#111" />
+          <Circle cx="40" cy="43" r="1.6" fill="#111" />
+          <Path d="M32 49c2.5 2.5 5.5 2.5 8 0" stroke="#111" strokeWidth="1.4" strokeLinecap="round" fill="none" />
+          <Path d="M24 66c2-8 8-12 12-12s10 4 12 12" fill="#111111" />
+          {/* Spark */}
+          <Path d="M58 18l1.8 4 4 1.8-4 1.8-1.8 4-1.8-4-4-1.8 4-1.8 1.8-4z" fill="#C6EF4A" />
+        </G>
 
+        {/* Person (left) */}
+        <G transform="translate(48 62)">
           <Path
-            d="M22 96c-6 18 2 44 20 52 18 8 32-4 36-22 4-16-4-36-16-46-8 14-26 18-40 16z"
+            d="M44 36c-16 0-28 14-26 30 2 10 11 18 26 18s24-8 26-18c2-16-10-30-26-30z"
+            fill="#111111"
+          />
+          <Circle cx="44" cy="58" r="20" fill="#FFF8F0" />
+          <Path d="M30 54c3.5-1.5 7-1.5 10.5 0M47.5 54c3.5-1.5 7-1.5 10.5 0" stroke="#111" strokeWidth="2" strokeLinecap="round" />
+          <Circle cx="36" cy="60" r="2" fill="#111" />
+          <Circle cx="52" cy="60" r="2" fill="#111" />
+          <Path d="M38 68c3.5 3.5 8.5 3.5 12 0" stroke="#111" strokeWidth="1.8" strokeLinecap="round" fill="none" />
+          {/* Body */}
+          <Path
+            d="M20 98c-2 22 8 42 24 46 16 4 28-10 30-28 2-14-4-32-14-42-6 12-22 16-40 24z"
             fill="#111111"
           />
           <Path
-            d="M28 102c2 22 10 38 22 42 10 4 20-6 22-18"
+            d="M28 104c2 16 8 28 16 32"
             stroke="#C6EF4A"
-            strokeWidth="3"
+            strokeWidth="2.5"
             fill="none"
             strokeLinecap="round"
           />
-
+          {/* Hand pointing to mirror */}
           <Path
-            d="M78 78c18-10 32 6 28 24-4 12-18 16-28 10"
+            d="M72 92c14-4 28 6 26 18-2 8-12 12-22 8"
             stroke="#111"
-            strokeWidth="8"
+            strokeWidth="7"
             strokeLinecap="round"
             fill="none"
           />
-          <Circle cx="108" cy="88" r="10" fill="#FFF8F0" stroke="#111" strokeWidth="3" />
-          <Path d="M104 84l8 8M112 84l-8 8" stroke="#111" strokeWidth="2" strokeLinecap="round" />
+          <Circle cx="98" cy="104" r="8" fill="#FFF8F0" stroke="#111" strokeWidth="2.5" />
+        </G>
 
-          <Rect x="18" y="128" width="72" height="44" rx="8" fill="#111111" />
-          <Rect x="24" y="134" width="60" height="28" rx="4" fill="#F4FBE6" />
-          <Path d="M36 148h36" stroke="#1C4A32" strokeWidth="3" strokeLinecap="round" />
-          <Path d="M40 156h20" stroke="#C6EF4A" strokeWidth="3" strokeLinecap="round" />
-          <Rect x="8" y="168" width="92" height="10" rx="4" fill="#1C4A32" />
+        {/* Floating scissors accent */}
+        <G transform="translate(42 158)">
+          <Circle cx="10" cy="10" r="7" fill="none" stroke="#111" strokeWidth="2.2" />
+          <Circle cx="28" cy="10" r="7" fill="none" stroke="#111" strokeWidth="2.2" />
+          <Path d="M15 14l18 22M23 14L5 36" stroke="#111" strokeWidth="2.2" strokeLinecap="round" />
         </G>
       </Svg>
     </View>
@@ -89,15 +82,15 @@ export function ProfileHeroIllustration({ size = 180 }: { size?: number }) {
   return (
     <View style={{ width: size, height: size, alignItems: "center", justifyContent: "center" }}>
       <Svg width={size} height={size} viewBox="0 0 180 180">
-        <Circle cx="90" cy="90" r="78" fill="#F4FBE6" />
+        <Circle cx="90" cy="90" r="78" fill="#F4F4F5" />
         <Circle cx="90" cy="72" r="28" fill="#111111" />
         <Circle cx="90" cy="76" r="20" fill="#FFF8F0" />
         <Circle cx="82" cy="74" r="2.4" fill="#111" />
         <Circle cx="98" cy="74" r="2.4" fill="#111" />
         <Path d="M84 84c4 4 8 4 12 0" stroke="#111" strokeWidth="2" strokeLinecap="round" fill="none" />
         <Path d="M62 128c4-22 16-32 28-32s24 10 28 32" fill="#111111" />
-        <Rect x="48" y="132" width="84" height="22" rx="11" fill="#C6EF4A" />
-        <Path d="M64 143h52" stroke="#1C4A32" strokeWidth="4" strokeLinecap="round" />
+        <Rect x="48" y="132" width="84" height="22" rx="11" fill="#111111" />
+        <Path d="M64 143h52" stroke="#FAFAFA" strokeWidth="4" strokeLinecap="round" />
       </Svg>
     </View>
   );

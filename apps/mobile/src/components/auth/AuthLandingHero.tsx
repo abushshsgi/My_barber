@@ -40,7 +40,7 @@ export function AuthLandingHero({
 }: Props) {
   return (
     <View style={styles.wrap}>
-      <LoginHeroIllustration size={scale(236)} />
+      <LoginHeroIllustration size={scale(188)} />
       <Text style={styles.title}>{title}</Text>
       <Text style={styles.sub}>{subtitle}</Text>
       <View style={styles.progressTrack}>
@@ -58,7 +58,7 @@ export function AuthLandingHero({
           accessibilityRole="button"
           accessibilityLabel={googleLabel}
         >
-          <GoogleGlyph size={20} />
+          <GoogleGlyph size={17} />
           <Text style={styles.googleText}>{googleLabel}</Text>
           {googleWaiting ? <ActivityIndicator color={colors.muted} /> : null}
         </Pressable>
@@ -69,7 +69,7 @@ export function AuthLandingHero({
           accessibilityRole="button"
           accessibilityLabel={phoneLabel}
         >
-          <Ionicons name="call" size={18} color="#FFF" />
+          <Ionicons name="call" size={15} color="#FFF" />
           <Text style={styles.phoneText}>{phoneLabel}</Text>
         </Pressable>
       </View>
@@ -84,30 +84,30 @@ const styles = StyleSheet.create({
     paddingHorizontal: scale(8),
   },
   title: {
-    marginTop: verticalScale(8),
-    fontSize: fontSize(28),
-    lineHeight: fontSize(34),
+    marginTop: verticalScale(4),
+    fontSize: fontSize(24),
+    lineHeight: fontSize(30),
     fontWeight: "800",
     color: colors.fg,
     textAlign: "center",
-    letterSpacing: -0.6,
+    letterSpacing: -0.5,
   },
   sub: {
-    marginTop: verticalScale(10),
-    fontSize: fontSize(15),
-    lineHeight: fontSize(22),
+    marginTop: verticalScale(6),
+    fontSize: fontSize(13),
+    lineHeight: fontSize(19),
     color: colors.muted,
     textAlign: "center",
-    maxWidth: scale(300),
+    maxWidth: scale(280),
     paddingHorizontal: scale(8),
   },
   progressTrack: {
     alignSelf: "stretch",
-    height: verticalScale(5),
+    height: verticalScale(4),
     borderRadius: moderateScale(999),
     backgroundColor: "#E5E5E5",
-    marginTop: verticalScale(22),
-    marginBottom: verticalScale(22),
+    marginTop: verticalScale(14),
+    marginBottom: verticalScale(14),
     overflow: "hidden",
   },
   progressFill: {
@@ -118,37 +118,37 @@ const styles = StyleSheet.create({
   },
   actions: {
     alignSelf: "stretch",
-    gap: moderateScale(12),
+    gap: moderateScale(8),
   },
   googleBtn: {
-    minHeight: verticalScale(56),
-    borderRadius: moderateScale(16),
+    minHeight: verticalScale(46),
+    borderRadius: moderateScale(14),
     borderWidth: 1.5,
     borderColor: colors.border,
     backgroundColor: colors.surface,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: moderateScale(10),
-    paddingHorizontal: scale(20),
+    gap: moderateScale(8),
+    paddingHorizontal: scale(16),
   },
   googleText: {
-    fontSize: fontSize(16),
+    fontSize: fontSize(14),
     fontWeight: "700",
     color: colors.fg,
   },
   phoneBtn: {
-    minHeight: verticalScale(56),
-    borderRadius: moderateScale(16),
+    minHeight: verticalScale(46),
+    borderRadius: moderateScale(14),
     backgroundColor: colors.fg,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: moderateScale(10),
-    paddingHorizontal: scale(20),
+    gap: moderateScale(8),
+    paddingHorizontal: scale(16),
   },
   phoneText: {
-    fontSize: fontSize(16),
+    fontSize: fontSize(14),
     fontWeight: "800",
     color: "#FFF",
   },
