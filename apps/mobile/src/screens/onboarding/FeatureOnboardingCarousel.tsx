@@ -43,10 +43,8 @@ const SLIDE_IMAGES = {
   care: require("../../../assets/onboarding/slide-3-care.png"),
 } as const;
 
-const BLUE = "#4A6CF7";
-
 /**
- * Feature onboarding — MORF AI maket (rasm + markaziy matn + ko‘k Continue).
+ * Feature onboarding — oq fon, bir xil qatorli hero, qora-oq Continue.
  */
 export function FeatureOnboardingCarousel({ onFinish }: Props) {
   const { t } = useTranslation();
@@ -79,7 +77,9 @@ export function FeatureOnboardingCarousel({ onFinish }: Props) {
     [t],
   );
 
-  const imageH = Math.min(Math.max(winH * 0.48, 280), 440);
+  /** Barcha slaydlarda bir xil hero balandligi — past-baland sakrash yo‘q */
+  const imageH = Math.min(Math.max(winH * 0.42, 260), 360);
+  const textBlockH = verticalScale(108);
 
   const onViewableItemsChanged = useRef(
     ({ viewableItems }: { viewableItems: ViewToken[] }) => {
@@ -137,8 +137,14 @@ export function FeatureOnboardingCarousel({ onFinish }: Props) {
                 accessibilityLabel={item.title}
               />
             </View>
-            <Text style={styles.cardTitle}>{item.title}</Text>
-            <Text style={styles.cardSub}>{item.subtitle}</Text>
+            <View style={[styles.textBlock, { height: textBlockH }]}>
+              <Text style={styles.cardTitle} numberOfLines={2}>
+                {item.title}
+              </Text>
+              <Text style={styles.cardSub} numberOfLines={3}>
+                {item.subtitle}
+              </Text>
+            </View>
           </View>
         )}
       />
@@ -166,63 +172,72 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: "#FFFFFF" },
   page: {
     paddingHorizontal: scale(28),
-    paddingTop: verticalScale(8),
+    paddingTop: verticalScale(4),
     flex: 1,
     alignItems: "center",
+    justifyContent: "flex-start",
   },
   heroWrap: {
     width: "100%",
-    marginBottom: verticalScale(28),
+    marginBottom: verticalScale(16),
     alignItems: "center",
     justifyContent: "center",
+    backgroundColor: "#FFFFFF",
   },
   heroImage: {
     width: "100%",
     height: "100%",
   },
+  textBlock: {
+    width: "100%",
+    alignItems: "center",
+    justifyContent: "flex-start",
+    paddingHorizontal: scale(4),
+  },
   cardTitle: {
-    color: "#1A1A1A",
-    fontSize: fontSize(26),
-    fontWeight: "800",
-    letterSpacing: -0.4,
+    color: "#111111",
+    fontSize: fontSize(22),
+    fontWeight: "700",
+    letterSpacing: -0.35,
     textAlign: "center",
-    marginBottom: verticalScale(10),
+    marginBottom: verticalScale(6),
   },
   cardSub: {
     color: "#6B7280",
-    fontSize: fontSize(15),
-    lineHeight: fontSize(22),
+    fontSize: fontSize(13),
+    lineHeight: fontSize(19),
     fontWeight: "500",
     textAlign: "center",
-    maxWidth: scale(320),
-    paddingHorizontal: scale(8),
+    maxWidth: scale(300),
   },
   footer: {
     paddingHorizontal: scale(28),
-    gap: verticalScale(18),
+    gap: verticalScale(16),
     alignItems: "center",
   },
   cta: {
     alignSelf: "stretch",
-    height: verticalScale(54),
-    borderRadius: moderateScale(28),
-    backgroundColor: BLUE,
+    height: verticalScale(52),
+    borderRadius: moderateScale(26),
+    backgroundColor: "#111111",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "#111111",
     alignItems: "center",
     justifyContent: "center",
   },
-  ctaPressed: { opacity: 0.9, transform: [{ scale: 0.985 }] },
+  ctaPressed: { opacity: 0.88, transform: [{ scale: 0.985 }] },
   ctaText: {
     color: "#FFFFFF",
-    fontSize: fontSize(17),
+    fontSize: fontSize(16),
     fontWeight: "700",
     letterSpacing: -0.2,
   },
   dots: { flexDirection: "row", justifyContent: "center", gap: 8 },
   dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: "#D1D5DB",
+    width: 7,
+    height: 7,
+    borderRadius: 3.5,
+    backgroundColor: "#E5E7EB",
   },
-  dotOn: { backgroundColor: BLUE },
+  dotOn: { backgroundColor: "#111111" },
 });
