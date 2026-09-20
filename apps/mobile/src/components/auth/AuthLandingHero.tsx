@@ -69,7 +69,7 @@ export function AuthLandingHero({
           accessibilityRole="button"
           accessibilityLabel={phoneLabel}
         >
-          <Ionicons name="call" size={18} color={colors.forest} />
+          <Ionicons name="call" size={18} color="#FFF" />
           <Text style={styles.phoneText}>{phoneLabel}</Text>
         </Pressable>
       </View>
@@ -88,7 +88,7 @@ const styles = StyleSheet.create({
     fontSize: fontSize(28),
     lineHeight: fontSize(34),
     fontWeight: "800",
-    color: colors.forest,
+    color: colors.fg,
     textAlign: "center",
     letterSpacing: -0.6,
   },
@@ -105,7 +105,7 @@ const styles = StyleSheet.create({
     alignSelf: "stretch",
     height: verticalScale(5),
     borderRadius: moderateScale(999),
-    backgroundColor: "#EEF6E0",
+    backgroundColor: "#E5E5E5",
     marginTop: verticalScale(22),
     marginBottom: verticalScale(22),
     overflow: "hidden",
@@ -114,7 +114,7 @@ const styles = StyleSheet.create({
     width: "42%",
     height: "100%",
     borderRadius: moderateScale(999),
-    backgroundColor: colors.lime,
+    backgroundColor: colors.fg,
   },
   actions: {
     alignSelf: "stretch",
@@ -122,9 +122,9 @@ const styles = StyleSheet.create({
   },
   googleBtn: {
     minHeight: verticalScale(56),
-    borderRadius: moderateScale(28),
+    borderRadius: moderateScale(16),
     borderWidth: 1.5,
-    borderColor: "rgba(28,74,50,0.14)",
+    borderColor: colors.border,
     backgroundColor: colors.surface,
     flexDirection: "row",
     alignItems: "center",
@@ -135,12 +135,12 @@ const styles = StyleSheet.create({
   googleText: {
     fontSize: fontSize(16),
     fontWeight: "700",
-    color: colors.forest,
+    color: colors.fg,
   },
   phoneBtn: {
     minHeight: verticalScale(56),
-    borderRadius: moderateScale(28),
-    backgroundColor: colors.lime,
+    borderRadius: moderateScale(16),
+    backgroundColor: colors.fg,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -150,7 +150,7 @@ const styles = StyleSheet.create({
   phoneText: {
     fontSize: fontSize(16),
     fontWeight: "800",
-    color: colors.forest,
+    color: "#FFF",
   },
   disabled: { opacity: 0.55 },
   pressed: { opacity: 0.88, transform: [{ scale: 0.985 }] },

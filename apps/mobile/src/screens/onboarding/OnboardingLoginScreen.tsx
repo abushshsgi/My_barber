@@ -188,7 +188,7 @@ export function OnboardingLoginScreen({ onBack }: Props) {
           accessibilityLabel="Orqaga"
           hitSlop={8}
         >
-          <Ionicons name="chevron-back" size={22} color={colors.forest} />
+          <Ionicons name="chevron-forward" size={22} color={colors.fg} />
         </Pressable>
 
         {step === "choose" ? (
@@ -300,7 +300,7 @@ export function OnboardingLoginScreen({ onBack }: Props) {
                 disabled={busy}
               >
                 {busy ? (
-                  <ActivityIndicator color={colors.forest} />
+                  <ActivityIndicator color="#FFF" />
                 ) : (
                   <Text style={styles.primaryBtnText}>Davom etish</Text>
                 )}
@@ -320,7 +320,7 @@ export function OnboardingLoginScreen({ onBack }: Props) {
                 disabled={busy}
               >
                 {busy ? (
-                  <ActivityIndicator color={colors.forest} />
+                  <ActivityIndicator color="#FFF" />
                 ) : (
                   <Text style={styles.primaryBtnText}>Kirish</Text>
                 )}
@@ -340,7 +340,7 @@ export function OnboardingLoginScreen({ onBack }: Props) {
                 disabled={busy}
               >
                 {busy ? (
-                  <ActivityIndicator color={colors.forest} />
+                  <ActivityIndicator color="#FFF" />
                 ) : (
                   <Text style={styles.primaryBtnText}>Tasdiqlash</Text>
                 )}
@@ -361,7 +361,7 @@ export function OnboardingLoginScreen({ onBack }: Props) {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: "#FFFFFF" },
+  root: { flex: 1, backgroundColor: colors.bg },
   body: {
     flex: 1,
     paddingHorizontal: scale(24),
@@ -372,7 +372,7 @@ const styles = StyleSheet.create({
     width: scale(40),
     height: scale(40),
     borderRadius: moderateScale(14),
-    backgroundColor: "#F4FBE6",
+    backgroundColor: "#F4F4F5",
     alignItems: "center",
     justifyContent: "center",
     marginBottom: verticalScale(4),
@@ -392,7 +392,9 @@ const styles = StyleSheet.create({
     alignSelf: "stretch",
     minHeight: verticalScale(48),
     borderRadius: moderateScale(16),
-    backgroundColor: "#F7F8F5",
+    backgroundColor: "#F4F4F5",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
     paddingHorizontal: scale(16),
     fontSize: fontSize(15),
     fontWeight: "600",
@@ -410,7 +412,7 @@ const styles = StyleSheet.create({
     marginTop: verticalScale(8),
     fontSize: fontSize(26),
     fontWeight: "800",
-    color: colors.forest,
+    color: colors.fg,
     textAlign: "center",
     letterSpacing: -0.5,
   },
@@ -428,16 +430,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
     alignSelf: "stretch",
     borderWidth: 1.5,
-    borderColor: colors.lime,
+    borderColor: colors.border,
     borderRadius: moderateScale(16),
     paddingVertical: verticalScale(12),
     paddingHorizontal: scale(14),
-    backgroundColor: "#F4FBE6",
+    backgroundColor: colors.surface,
   },
   prefix: {
     fontSize: fontSize(20),
     fontWeight: "800",
-    color: colors.forest,
+    color: colors.fg,
     marginRight: scale(10),
   },
   phoneInput: {
@@ -452,7 +454,9 @@ const styles = StyleSheet.create({
     alignSelf: "stretch",
     minHeight: verticalScale(56),
     borderRadius: moderateScale(16),
-    backgroundColor: "#F7F8F5",
+    backgroundColor: "#F4F4F5",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
     paddingHorizontal: scale(18),
     fontSize: fontSize(17),
     fontWeight: "600",
@@ -481,7 +485,7 @@ const styles = StyleSheet.create({
     marginTop: verticalScale(14),
     fontSize: fontSize(15),
     fontWeight: "700",
-    color: colors.forest,
+    color: colors.fg,
     textAlign: "center",
   },
   error: {
@@ -494,8 +498,8 @@ const styles = StyleSheet.create({
   actions: { gap: moderateScale(12) },
   primaryBtn: {
     minHeight: verticalScale(56),
-    borderRadius: moderateScale(28),
-    backgroundColor: colors.lime,
+    borderRadius: moderateScale(16),
+    backgroundColor: colors.fg,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -503,7 +507,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: scale(20),
   },
   primaryBtnText: {
-    color: colors.forest,
+    color: "#FFF",
     fontSize: fontSize(16),
     fontWeight: "800",
   },
@@ -517,5 +521,5 @@ const styles = StyleSheet.create({
     textAlign: "center",
     paddingHorizontal: scale(8),
   },
-  legalLink: { color: colors.forest, fontWeight: "700" },
+  legalLink: { color: colors.fg, fontWeight: "700" },
 });
