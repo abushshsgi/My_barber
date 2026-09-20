@@ -1,4 +1,3 @@
-import { Ionicons } from "@expo/vector-icons";
 import { useCallback, useMemo, useRef, useState } from "react";
 import {
   FlatList,
@@ -14,7 +13,7 @@ import {
   type ViewToken,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
-import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
+import Animated, { FadeInUp } from "react-native-reanimated";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { safeBottom, safeTop } from "../../lib/safe-area";
@@ -28,7 +27,7 @@ import {
 
 type Props = { onFinish: () => void };
 
-type SlideKey = "chat" | "tryon" | "care";
+type SlideKey = "tryon" | "chat" | "care";
 
 type Slide = {
   key: SlideKey;
@@ -37,14 +36,17 @@ type Slide = {
   image: ImageSourcePropType;
 };
 
+/** Maket: Soch Generatsiyasi → Chatbot → Mahsulot skaneri */
 const SLIDE_IMAGES = {
-  chat: require("../../../assets/onboarding/slide-1-chat.png"),
   tryon: require("../../../assets/onboarding/slide-2-tryon.png"),
+  chat: require("../../../assets/onboarding/slide-1-chat.png"),
   care: require("../../../assets/onboarding/slide-3-care.png"),
 } as const;
 
+const BLUE = "#4A6CF7";
+
 /**
- * Chat → Try-on → Care. Rasm + pastdagi matn.
+ * Feature onboarding — MORF AI maket (rasm + markaziy matn + ko‘k Continue).
  */
 export function FeatureOnboardingCarousel({ onFinish }: Props) {
   const { t } = useTranslation();
@@ -56,16 +58,16 @@ export function FeatureOnboardingCarousel({ onFinish }: Props) {
   const slides: Slide[] = useMemo(
     () => [
       {
-        key: "chat",
-        title: t("onboarding.featureChatTitle"),
-        subtitle: t("onboarding.featureChatSub"),
-        image: SLIDE_IMAGES.chat,
-      },
-      {
         key: "tryon",
         title: t("onboarding.featureTryonTitle"),
         subtitle: t("onboarding.featureTryonSub"),
         image: SLIDE_IMAGES.tryon,
+      },
+      {
+        key: "chat",
+        title: t("onboarding.featureChatTitle"),
+        subtitle: t("onboarding.featureChatSub"),
+        image: SLIDE_IMAGES.chat,
       },
       {
         key: "care",
@@ -77,7 +79,7 @@ export function FeatureOnboardingCarousel({ onFinish }: Props) {
     [t],
   );
 
-  const imageH = Math.min(Math.max(winH * 0.42, 260), 420);
+  const imageH = Math.min(Math.max(winH * 0.48, 280), 440);
 
   const onViewableItemsChanged = useRef(
     ({ viewableItems }: { viewableItems: ViewToken[] }) => {
@@ -99,41 +101,17 @@ export function FeatureOnboardingCarousel({ onFinish }: Props) {
     void finish();
   }, [finish, index, slides.length]);
 
-  const goBack = useCallback(() => {
-    if (index <= 0) return;
-    listRef.current?.scrollToIndex({ index: index - 1, animated: true });
-  }, [index]);
-
   return (
     <View
       style={[
         styles.root,
         {
-          paddingTop: safeTop(insets.top, 4),
-          paddingBottom: safeBottom(insets.bottom, 16),
+          paddingTop: safeTop(insets.top, 12),
+          paddingBottom: safeBottom(insets.bottom, 20),
         },
       ]}
     >
       <StatusBar style="dark" />
-      <View style={styles.topBar}>
-        {index > 0 ? (
-          <Pressable
-            onPress={goBack}
-            style={({ pressed }) => [styles.backBtn, pressed && { opacity: 0.7 }]}
-            accessibilityRole="button"
-            accessibilityLabel={t("common.back", { defaultValue: "Back" })}
-            hitSlop={8}
-          >
-            <Ionicons name="chevron-back" size={22} color="#111" />
-          </Pressable>
-        ) : (
-          <View style={styles.backBtnSpacer} />
-        )}
-        <Animated.Text entering={FadeInDown.duration(360)} style={styles.brand}>
-          Morf AI
-        </Animated.Text>
-        <View style={styles.backBtnSpacer} />
-      </View>
 
       <FlatList
         ref={listRef}
@@ -149,84 +127,52 @@ export function FeatureOnboardingCarousel({ onFinish }: Props) {
           if (i !== index) setIndex(i);
         }}
         getItemLayout={(_, i) => ({ length: winW, offset: winW * i, index: i })}
-        renderItem={({ item }) => {
-          // Chat rasmida matn yuqorida — kesib, faqat illustratsiya ko‘rsatiladi.
-          const clipChat = item.key === "chat";
-          return (
-            <View style={[styles.page, { width: winW }]}>
-              <View style={[styles.heroWrap, { height: imageH }]}>
-                <Image
-                  source={item.image}
-                  style={
-                    clipChat
-                      ? [styles.heroImageChat, { height: imageH * 1.55, marginTop: -(imageH * 0.42) }]
-                      : styles.heroImage
-                  }
-                  resizeMode={clipChat ? "cover" : "contain"}
-                  accessibilityLabel={item.title}
-                />
-              </View>
-              <Text style={styles.cardTitle}>{item.title}</Text>
-              <Text style={styles.cardSub}>{item.subtitle}</Text>
+        renderItem={({ item }) => (
+          <View style={[styles.page, { width: winW }]}>
+            <View style={[styles.heroWrap, { height: imageH }]}>
+              <Image
+                source={item.image}
+                style={styles.heroImage}
+                resizeMode="contain"
+                accessibilityLabel={item.title}
+              />
             </View>
-          );
-        }}
+            <Text style={styles.cardTitle}>{item.title}</Text>
+            <Text style={styles.cardSub}>{item.subtitle}</Text>
+          </View>
+        )}
       />
 
       <Animated.View entering={FadeInUp.delay(80)} style={styles.footer}>
+        <Pressable
+          style={({ pressed }) => [styles.cta, pressed && styles.ctaPressed]}
+          onPress={goNext}
+          accessibilityRole="button"
+          accessibilityLabel={t("onboarding.continue")}
+        >
+          <Text style={styles.ctaText}>{t("onboarding.continue")}</Text>
+        </Pressable>
         <View style={styles.dots}>
           {slides.map((s, i) => (
             <View key={s.key} style={[styles.dot, i === index && styles.dotOn]} />
           ))}
         </View>
-        <Pressable style={styles.cta} onPress={goNext}>
-          <Text style={styles.ctaText}>
-            {index === slides.length - 1
-              ? t("onboarding.continue")
-              : t("common.next", { defaultValue: "Next" })}
-          </Text>
-        </Pressable>
       </Animated.View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: "#FAFAFA" },
-  topBar: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: scale(16),
-    marginBottom: verticalScale(4),
-  },
-  backBtn: {
-    width: scale(40),
-    height: scale(40),
-    borderRadius: moderateScale(14),
-    backgroundColor: "#F4F4F5",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  backBtnSpacer: { width: scale(40) },
-  brand: {
-    flex: 1,
-    textAlign: "center",
-    fontSize: fontSize(20),
-    fontWeight: "900",
-    letterSpacing: -0.6,
-    color: "#111",
-  },
+  root: { flex: 1, backgroundColor: "#FFFFFF" },
   page: {
-    paddingHorizontal: scale(20),
+    paddingHorizontal: scale(28),
     paddingTop: verticalScale(8),
     flex: 1,
+    alignItems: "center",
   },
   heroWrap: {
     width: "100%",
-    borderRadius: moderateScale(24),
-    overflow: "hidden",
-    backgroundColor: "#F3F4F6",
-    marginBottom: verticalScale(20),
+    marginBottom: verticalScale(28),
     alignItems: "center",
     justifyContent: "center",
   },
@@ -234,42 +180,49 @@ const styles = StyleSheet.create({
     width: "100%",
     height: "100%",
   },
-  heroImageChat: {
-    width: "100%",
-  },
   cardTitle: {
-    color: "#111",
-    fontSize: fontSize(24),
+    color: "#1A1A1A",
+    fontSize: fontSize(26),
     fontWeight: "800",
-    letterSpacing: -0.5,
-    marginBottom: verticalScale(8),
+    letterSpacing: -0.4,
+    textAlign: "center",
+    marginBottom: verticalScale(10),
   },
   cardSub: {
-    color: "#525252",
+    color: "#6B7280",
     fontSize: fontSize(15),
     lineHeight: fontSize(22),
     fontWeight: "500",
+    textAlign: "center",
+    maxWidth: scale(320),
+    paddingHorizontal: scale(8),
   },
-  footer: { paddingHorizontal: scale(24), gap: verticalScale(14) },
+  footer: {
+    paddingHorizontal: scale(28),
+    gap: verticalScale(18),
+    alignItems: "center",
+  },
+  cta: {
+    alignSelf: "stretch",
+    height: verticalScale(54),
+    borderRadius: moderateScale(28),
+    backgroundColor: BLUE,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  ctaPressed: { opacity: 0.9, transform: [{ scale: 0.985 }] },
+  ctaText: {
+    color: "#FFFFFF",
+    fontSize: fontSize(17),
+    fontWeight: "700",
+    letterSpacing: -0.2,
+  },
   dots: { flexDirection: "row", justifyContent: "center", gap: 8 },
   dot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: "rgba(0,0,0,0.15)",
+    backgroundColor: "#D1D5DB",
   },
-  dotOn: { width: 22, backgroundColor: "#111" },
-  cta: {
-    height: verticalScale(54),
-    borderRadius: moderateScale(16),
-    backgroundColor: "#111",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  ctaText: {
-    color: "#FFF",
-    fontSize: fontSize(16),
-    fontWeight: "700",
-    letterSpacing: -0.2,
-  },
+  dotOn: { backgroundColor: BLUE },
 });
