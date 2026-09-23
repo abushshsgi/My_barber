@@ -18,6 +18,7 @@ import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { safeBottom, safeTop } from "../../lib/safe-area";
 import { setFeaturesSeen } from "../../lib/guest";
+import { morphFont } from "../../theme/morph-font";
 import {
   fontSize,
   moderateScale,
@@ -79,8 +80,10 @@ export function FeatureOnboardingCarousel({ onFinish }: Props) {
 
   const heroSize = Math.min(winW, Math.round(winH * 0.54));
   const heroTop = Math.round(winH * 0.14);
-  const titleH = Math.round(fontSize(16) * 1.3);
-  const subLine = Math.round(fontSize(12) * 1.35);
+  const titleSize = fontSize(18);
+  const titleH = Math.round(titleSize * 1.25);
+  const subSize = fontSize(13);
+  const subLine = Math.round(subSize * 1.35);
   const subH = subLine * 2;
 
   const onViewableItemsChanged = useRef(
@@ -140,10 +143,16 @@ export function FeatureOnboardingCarousel({ onFinish }: Props) {
               />
             </View>
             <View style={styles.textBlock}>
-              <Text style={[styles.cardTitle, { height: titleH, lineHeight: titleH }]} numberOfLines={1}>
+              <Text
+                style={[styles.cardTitle, { height: titleH, lineHeight: titleH, fontSize: titleSize }]}
+                numberOfLines={1}
+              >
                 {item.title}
               </Text>
-              <Text style={[styles.cardSub, { height: subH, lineHeight: subLine }]} numberOfLines={2}>
+              <Text
+                style={[styles.cardSub, { height: subH, lineHeight: subLine, fontSize: subSize }]}
+                numberOfLines={2}
+              >
                 {item.subtitle}
               </Text>
             </View>
@@ -190,24 +199,26 @@ const styles = StyleSheet.create({
   },
   textBlock: {
     width: "100%",
-    maxWidth: scale(300),
+    maxWidth: scale(320),
     alignItems: "center",
     justifyContent: "flex-start",
   },
   cardTitle: {
+    ...morphFont,
     width: "100%",
     color: "#111111",
-    fontSize: fontSize(16),
+    fontSize: fontSize(18),
     fontWeight: "700",
-    letterSpacing: -0.2,
+    letterSpacing: -0.3,
     textAlign: "center",
-    marginBottom: verticalScale(4),
+    marginBottom: verticalScale(6),
     includeFontPadding: false,
   },
   cardSub: {
+    ...morphFont,
     width: "100%",
-    color: "#6B7280",
-    fontSize: fontSize(12),
+    color: "#5C6370",
+    fontSize: fontSize(13),
     fontWeight: "500",
     textAlign: "center",
     includeFontPadding: false,
@@ -229,6 +240,7 @@ const styles = StyleSheet.create({
   },
   ctaPressed: { opacity: 0.88, transform: [{ scale: 0.985 }] },
   ctaText: {
+    ...morphFont,
     color: "#FFFFFF",
     fontSize: fontSize(16),
     fontWeight: "700",
