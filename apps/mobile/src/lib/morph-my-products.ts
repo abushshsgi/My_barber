@@ -74,22 +74,37 @@ export async function loadMyProducts(): Promise<MyCareProduct[]> {
   return local;
 }
 
+function mapRemoteProduct(r: {
+  id: number;
+  name: string;
+  brand?: string;
+  category?: string;
+  image_url: string | null;
+  added_at?: string;
+  source?: string;
+  usage_uz?: string;
+  purpose_uz?: string;
+}): MyCareProduct {
+  return {
+    id: r.id,
+    name: r.name,
+    brand: r.brand || "",
+    category: r.category || "other",
+    image_url: r.image_url,
+    added_at: r.added_at || new Date().toISOString(),
+    source: (r.source as MyCareProduct["source"]) || "catalog",
+    usage_uz: r.usage_uz || "",
+    purpose_uz: r.purpose_uz || "",
+  };
+}
+
 export async function addMyProduct(
   product: Pick<MyCareProduct, "id" | "name" | "brand" | "category" | "image_url"> & {
     source?: MyCareProduct["source"];
   },
 ): Promise<MyCareProduct[]> {
   const source = product.source ?? "catalog";
-  try {
-    await addMyCareProductApi({ product_id: product.id, source });
-  } catch {
-    // local fallback
-  }
   const rows = await loadMyProductsLocal();
-  if (rows.some((r) => r.id === product.id)) {
-    // refresh from server if possible
-    return loadMyProducts();
-  }
   const next: MyCareProduct = {
     id: product.id,
     name: product.name,
@@ -99,10 +114,24 @@ export async function addMyProduct(
     added_at: new Date().toISOString(),
     source,
   };
-  const merged = [next, ...rows];
+  const merged = [next, ...rows.filter((r) => r.id !== product.id)];
   await saveLocal(merged);
+
   try {
-    return await loadMyProducts();
+    await addMyCareProductApi({ product_id: product.id, source });
+  } catch {
+    return merged;
+  }
+
+  try {
+    const remote = await fetchMyCareProducts();
+    if (!Array.isArray(remote)) return merged;
+    const mapped = remote.map(mapRemoteProduct);
+    const kept = mapped.some((r) => r.id === product.id)
+      ? mapped
+      : [next, ...mapped.filter((r) => r.id !== product.id)];
+    await saveLocal(kept);
+    return kept;
   } catch {
     return merged;
   }

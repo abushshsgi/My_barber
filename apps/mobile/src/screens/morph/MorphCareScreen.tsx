@@ -66,7 +66,6 @@ import {
   loadMyProducts,
   loadMyProductsLocal,
   markCareOnboardingSeen,
-  removeMyProduct,
   type MyCareProduct,
 } from "../../lib/morph-my-products";
 import { setCareCatalogCache, getCareCatalogCache, hydrateCareCatalogCache, prefetchCareCatalog } from "../../lib/care-catalog-cache";
@@ -940,13 +939,28 @@ export function MorphCareScreen({ navigation, route }: Props) {
     async (productId: number) => {
       const p = catalog.find((c) => c.id === productId);
       if (!p) return;
-      const inSession = sessionAddedIds.includes(p.id);
-      if (inSession) {
-        const next = await removeMyProduct(p.id);
-        setMyProducts(next);
-        setSessionAddedIds((prev) => prev.filter((id) => id !== p.id));
-        return;
-      }
+      if (sessionAddedIds.includes(p.id) || myProducts.some((row) => row.id === p.id)) return;
+      setSessionAddedIds((prev) => (prev.includes(p.id) ? prev : [...prev, p.id]));
+      setMyProducts((prev) =>
+        prev.some((row) => row.id === p.id)
+          ? prev
+          : [
+              {
+                id: p.id,
+                name: p.name,
+                brand: p.brand,
+                category: p.category,
+                image_url: p.image_url,
+                added_at: new Date().toISOString(),
+                source: "catalog",
+              },
+              ...prev,
+            ],
+      );
+      playAddedAnimation({
+        title: p.name,
+        image: p.image_url || "",
+      });
       const next = await addMyProduct({
         id: p.id,
         name: p.name,
@@ -956,13 +970,8 @@ export function MorphCareScreen({ navigation, route }: Props) {
         source: "catalog",
       });
       setMyProducts(next);
-      setSessionAddedIds((prev) => (prev.includes(p.id) ? prev : [...prev, p.id]));
-      playAddedAnimation({
-        title: p.name,
-        image: p.image_url || "",
-      });
     },
-    [catalog, playAddedAnimation, sessionAddedIds],
+    [catalog, myProducts, playAddedAnimation, sessionAddedIds],
   );
 
   const onToggleSearchLike = useCallback(
@@ -1995,7 +2004,8 @@ export function MorphCareScreen({ navigation, route }: Props) {
                               ]}
                               onPress={(e) => {
                                 e.stopPropagation?.();
-                                openPreview(item.id);
+                                if (item.added) return;
+                                void addFromSearch(item.id);
                               }}
                             >
                               <Ionicons
@@ -2059,7 +2069,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
                   onClose={closePreview}
                   onAdd={() => {
                     if (previewAdded) return;
-                    void addFromSearch(previewProduct.id);
+                    return addFromSearch(previewProduct.id);
                   }}
                   onUseInCare={previewAdded ? openPreviewCare : undefined}
                 />
@@ -2809,10 +2819,12 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
+    zIndex: 0,
     backgroundColor: "rgba(15,23,42,0.45)",
   },
   previewSheetWrap: {
     width: "100%",
+    zIndex: 2,
     backgroundColor: "transparent",
     overflow: "visible",
   },

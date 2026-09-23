@@ -36,7 +36,7 @@ type Props = {
   bottomInset?: number;
   mode?: "sheet" | "page";
   onClose: () => void;
-  onAdd: () => void;
+  onAdd: () => void | Promise<void>;
   onUseInCare?: () => void;
 };
 
@@ -143,6 +143,21 @@ export function CareProductPreviewSheet({
   const lang = (i18n.language || "uz").startsWith("ru") ? "ru" : "uz";
   const fb = FIT_FALLBACK[lang];
   const [panel, setPanel] = useState<"info" | "tarkib">("info");
+  const [justAdded, setJustAdded] = useState(false);
+  const shownAdded = added || justAdded;
+
+  const pressAdd = () => {
+    if (shownAdded) return;
+    setJustAdded(true);
+    try {
+      const pending = onAdd();
+      if (pending && typeof (pending as Promise<void>).then === "function") {
+        void Promise.resolve(pending).catch(() => setJustAdded(false));
+      }
+    } catch {
+      setJustAdded(false);
+    }
+  };
 
   const imageUri = useMemo(
     () => resolveMediaUrl(product.image_url, { width: 480 }) || product.image_url,
@@ -300,7 +315,7 @@ export function CareProductPreviewSheet({
       </ScrollView>
 
       <View style={[styles.footer, { paddingBottom: padBottom }]}>
-        {added && onUseInCare ? (
+        {shownAdded && onUseInCare ? (
           <View style={styles.footerRow}>
             <View style={[styles.addBtn, styles.addBtnAdded, styles.footerHalf]}>
               <Ionicons name="checkmark-circle" size={18} color={C.fg} />
@@ -320,17 +335,17 @@ export function CareProductPreviewSheet({
           </View>
         ) : (
           <Pressable
-            style={[styles.addBtn, added && styles.addBtnAdded]}
-            onPress={onAdd}
-            disabled={added}
+            style={[styles.addBtn, shownAdded && styles.addBtnAdded]}
+            onPress={pressAdd}
+            disabled={shownAdded}
           >
             <Ionicons
-              name={added ? "checkmark-circle" : "bag-add-outline"}
+              name={shownAdded ? "checkmark-circle" : "bag-add-outline"}
               size={18}
-              color={added ? C.fg : "#fff"}
+              color={shownAdded ? C.fg : "#fff"}
             />
-            <Text style={[styles.addBtnText, added && styles.addBtnTextAdded]} numberOfLines={1}>
-              {added
+            <Text style={[styles.addBtnText, shownAdded && styles.addBtnTextAdded]} numberOfLines={1}>
+              {shownAdded
                 ? t("care.myProducts.alreadyAdded")
                 : t("care.myProducts.addFromCatalog")}
             </Text>
@@ -505,6 +520,7 @@ const styles = StyleSheet.create({
     color: C.fg,
   },
   footer: {
+    zIndex: 4,
     gap: moderateScale(10),
     paddingTop: verticalScale(16),
     paddingHorizontal: scale(16),

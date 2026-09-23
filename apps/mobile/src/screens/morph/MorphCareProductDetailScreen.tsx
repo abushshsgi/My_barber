@@ -107,11 +107,12 @@ export function MorphCareProductDetailScreen({ navigation, route }: Props) {
         onAdd={() => {
           if (inMyProducts || adding) return;
           setAdding(true);
-          void addMyProduct(careProductToMy(data, "catalog"))
+          setInMyProducts(true);
+          return addMyProduct(careProductToMy(data, "catalog"))
             .then(() => {
-              setInMyProducts(true);
               Alert.alert(t("care.myProducts.addedTitle"), t("care.myProducts.addedSub"));
             })
+            .catch(() => setInMyProducts(false))
             .finally(() => setAdding(false));
         }}
       />

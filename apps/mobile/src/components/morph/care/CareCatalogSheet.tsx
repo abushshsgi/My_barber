@@ -198,6 +198,8 @@ export function CareCatalogSheet({
   const addProduct = useCallback(
     async (product: CareProduct) => {
       if (sessionAddedIds.includes(product.id)) return;
+      setSessionAddedIds((prev) => (prev.includes(product.id) ? prev : [...prev, product.id]));
+      onAdded();
       await addMyProduct({
         id: product.id,
         name: product.name,
@@ -206,8 +208,6 @@ export function CareCatalogSheet({
         image_url: product.image_url,
         source: "catalog",
       });
-      setSessionAddedIds((prev) => (prev.includes(product.id) ? prev : [...prev, product.id]));
-      onAdded();
     },
     [onAdded, sessionAddedIds],
   );
@@ -394,17 +394,19 @@ export function CareCatalogSheet({
         <View style={styles.previewWrap} pointerEvents="box-none">
           <Pressable style={styles.previewBackdrop} onPress={() => setPreviewId(null)} />
           {preview ? (
-            <CareProductPreviewSheet
-              product={preview}
-              quiz={DEFAULT_QUIZ}
-              added={previewAdded}
-              bottomInset={bottomInset}
-              onClose={() => setPreviewId(null)}
-              onAdd={() => {
-                if (previewAdded) return;
-                void addProduct(preview);
-              }}
-            />
+            <View style={styles.previewSheet}>
+              <CareProductPreviewSheet
+                product={preview}
+                quiz={DEFAULT_QUIZ}
+                added={previewAdded}
+                bottomInset={bottomInset}
+                onClose={() => setPreviewId(null)}
+                onAdd={() => {
+                  if (previewAdded) return;
+                  return addProduct(preview);
+                }}
+              />
+            </View>
           ) : null}
         </View>
       </SafeModal>
@@ -592,6 +594,10 @@ const styles = StyleSheet.create({
   },
   previewBackdrop: {
     ...StyleSheet.absoluteFill,
+    zIndex: 0,
     backgroundColor: "rgba(8,12,20,0.4)",
+  },
+  previewSheet: {
+    zIndex: 2,
   },
 });
