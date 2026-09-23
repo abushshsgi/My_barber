@@ -77,9 +77,11 @@ export function FeatureOnboardingCarousel({ onFinish }: Props) {
     [t],
   );
 
-  /** Barcha slaydlarda bir xil hero balandligi — past-baland sakrash yo‘q */
-  const imageH = Math.min(Math.max(winH * 0.42, 260), 360);
-  const textBlockH = verticalScale(108);
+  /** Barcha slaydlarda bir xil kvadrat hero va bir xil matn qatori */
+  const heroSize = Math.min(winW - scale(56), Math.min(Math.max(winH * 0.4, 220), 320));
+  const titleH = Math.round(fontSize(16) * 1.3);
+  const subLine = Math.round(fontSize(12) * 1.35);
+  const subH = subLine * 2;
 
   const onViewableItemsChanged = useRef(
     ({ viewableItems }: { viewableItems: ViewToken[] }) => {
@@ -129,7 +131,7 @@ export function FeatureOnboardingCarousel({ onFinish }: Props) {
         getItemLayout={(_, i) => ({ length: winW, offset: winW * i, index: i })}
         renderItem={({ item }) => (
           <View style={[styles.page, { width: winW }]}>
-            <View style={[styles.heroWrap, { height: imageH }]}>
+            <View style={[styles.heroWrap, { width: heroSize, height: heroSize }]}>
               <Image
                 source={item.image}
                 style={styles.heroImage}
@@ -137,11 +139,11 @@ export function FeatureOnboardingCarousel({ onFinish }: Props) {
                 accessibilityLabel={item.title}
               />
             </View>
-            <View style={[styles.textBlock, { height: textBlockH }]}>
-              <Text style={styles.cardTitle} numberOfLines={2}>
+            <View style={styles.textBlock}>
+              <Text style={[styles.cardTitle, { height: titleH, lineHeight: titleH }]} numberOfLines={1}>
                 {item.title}
               </Text>
-              <Text style={styles.cardSub} numberOfLines={3}>
+              <Text style={[styles.cardSub, { height: subH, lineHeight: subLine }]} numberOfLines={2}>
                 {item.subtitle}
               </Text>
             </View>
@@ -178,8 +180,7 @@ const styles = StyleSheet.create({
     justifyContent: "flex-start",
   },
   heroWrap: {
-    width: "100%",
-    marginBottom: verticalScale(16),
+    marginBottom: verticalScale(14),
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "#FFFFFF",
@@ -190,25 +191,27 @@ const styles = StyleSheet.create({
   },
   textBlock: {
     width: "100%",
+    maxWidth: scale(300),
     alignItems: "center",
     justifyContent: "flex-start",
-    paddingHorizontal: scale(4),
   },
   cardTitle: {
+    width: "100%",
     color: "#111111",
-    fontSize: fontSize(22),
+    fontSize: fontSize(16),
     fontWeight: "700",
-    letterSpacing: -0.35,
+    letterSpacing: -0.2,
     textAlign: "center",
-    marginBottom: verticalScale(6),
+    marginBottom: verticalScale(4),
+    includeFontPadding: false,
   },
   cardSub: {
+    width: "100%",
     color: "#6B7280",
-    fontSize: fontSize(13),
-    lineHeight: fontSize(19),
+    fontSize: fontSize(12),
     fontWeight: "500",
     textAlign: "center",
-    maxWidth: scale(300),
+    includeFontPadding: false,
   },
   footer: {
     paddingHorizontal: scale(28),
