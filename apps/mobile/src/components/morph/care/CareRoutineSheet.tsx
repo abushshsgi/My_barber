@@ -592,7 +592,15 @@ export function CareRoutineSheet({
   const showFirstGen = hasProducts && !aiPlan && (aiLoading || aiAppending);
   const shelfGap = moderateScale(8);
   const cardGap = moderateScale(8);
-  const addW = scale(56);
+  const addWRoomy = scale(86);
+  const addWTight = scale(60);
+  const cardCap = scale(104);
+  const cardsNeed =
+    myProducts.length === 0
+      ? 0
+      : myProducts.length * cardCap + Math.max(0, myProducts.length - 1) * cardGap;
+  const addRoomy = shelfW <= 0 || cardsNeed + shelfGap + addWRoomy <= shelfW + 1;
+  const addW = addRoomy ? addWRoomy : addWTight;
   const scrollW = Math.max(0, shelfW - addW - shelfGap);
   const fitted = scrollW > 0 ? (scrollW - cardGap * 2) / 2.5 : scale(100);
   const peekCardW = myProducts.length >= 3 ? fitted : Math.min(fitted, scale(104));
@@ -840,9 +848,17 @@ export function CareRoutineSheet({
                         );
                       })}
                     </ScrollView>
-                    <Pressable style={styles.addCard} onPress={onOpenCatalog}>
-                      <Ionicons name="add" size={16} color="#111" />
-                      <Text style={styles.addCardText}>{t("care.myProducts.addShort")}</Text>
+                    <Pressable
+                      style={[styles.addCard, { width: addW }]}
+                      onPress={onOpenCatalog}
+                    >
+                      <Ionicons name="add" size={addRoomy ? 18 : 15} color="#111" />
+                      <Text
+                        style={[styles.addCardText, addRoomy && styles.addCardTextRoomy]}
+                        numberOfLines={addRoomy ? 1 : 2}
+                      >
+                        {t("care.myProducts.addShort")}
+                      </Text>
                     </Pressable>
                   </View>
                 )}
@@ -1381,7 +1397,6 @@ const styles = StyleSheet.create({
   myCardImg: { width: "100%", height: verticalScale(100), borderRadius: moderateScale(14) },
   myCardName: { ...morphFont, fontSize: fontSize(12), fontWeight: "600", color: "#111" },
   addCard: {
-    width: scale(56),
     flexShrink: 0,
     borderRadius: moderateScale(14),
     backgroundColor: "#FFFFFF",
@@ -1391,10 +1406,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 2,
-    paddingHorizontal: scale(4),
+    paddingHorizontal: scale(6),
     paddingVertical: verticalScale(6),
   },
   addCardText: { ...morphFont, fontSize: fontSize(9), fontWeight: "600", color: "#111", textAlign: "center" },
+  addCardTextRoomy: { fontSize: fontSize(12) },
   recCard: {
     width: scale(148),
     borderRadius: moderateScale(18),
