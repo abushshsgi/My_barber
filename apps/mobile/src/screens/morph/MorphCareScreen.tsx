@@ -1118,7 +1118,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
             <View style={{ width: 42 }} />
           </View>
           <ScrollView
-            style={{ flex: 1 }}
+            style={{ flex: 1, minHeight: 0 }}
             contentContainerStyle={{ flexGrow: 1, paddingBottom: verticalScale(16) }}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
@@ -1240,13 +1240,15 @@ export function MorphCareScreen({ navigation, route }: Props) {
         <AppStatusBar style="dark" />
         <View style={[StyleSheet.absoluteFill, { backgroundColor: "#FAFAFA" }]} />
 
-        <View
-          style={[
-            styles.hubScroll,
-            {
-              paddingTop: hubTopPad,
-            },
+        <ScrollView
+          style={styles.hubScroll}
+          contentContainerStyle={[
+            styles.hubScrollContent,
+            { paddingTop: hubTopPad },
           ]}
+          keyboardShouldPersistTaps="handled"
+          nestedScrollEnabled
+          showsVerticalScrollIndicator={false}
           pointerEvents={searchOpen ? "none" : "auto"}
         >
             <WeatherHeaderCard
@@ -1871,7 +1873,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
 
               </View>
             </View>
-        </View>
+        </ScrollView>
 
         {searchOpen ? (
           <>
@@ -2180,15 +2182,18 @@ const styles = StyleSheet.create({
     width: "100%",
     height: "100%",
   },
-  routineRoot: { flex: 1, backgroundColor: "#FAFAFA" },
-  onboardRoot: { flex: 1, backgroundColor: "#FAFAFA" },
+  routineRoot: { flex: 1, minHeight: 0, backgroundColor: "#FAFAFA" },
+  onboardRoot: { flex: 1, minHeight: 0, backgroundColor: "#FAFAFA" },
   center: { alignItems: "center", justifyContent: "center" },
   pad: { flex: 1, paddingHorizontal: scale(20) },
   onboardPad: { flex: 1, paddingHorizontal: scale(20) },
-  hubRoot: { flex: 1, backgroundColor: "#FAFAFA", overflow: "hidden" },
+  hubRoot: { flex: 1, minHeight: 0, backgroundColor: "#FAFAFA", overflow: "hidden" },
   hubScroll: {
     flex: 1,
     minHeight: 0,
+  },
+  hubScrollContent: {
+    flexGrow: 1,
     justifyContent: "space-between",
   },
   addToast: {

@@ -90,7 +90,7 @@ export function MorphCareAlbumScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: "#FAFAFA" },
+  root: { flex: 1, minHeight: 0, backgroundColor: "#FAFAFA" },
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -113,6 +113,6 @@ const styles = StyleSheet.create({
     color: "rgba(17,17,17,0.45)",
     textAlign: "center",
   },
-  body: { flex: 1 },
+  body: { flex: 1, minHeight: 0 },
   loadingWrap: { flex: 1, alignItems: "center", justifyContent: "center" },
 });

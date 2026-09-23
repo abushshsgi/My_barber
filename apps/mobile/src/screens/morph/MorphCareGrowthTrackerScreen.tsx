@@ -87,7 +87,7 @@ export function MorphCareGrowthTrackerScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: SOFT_PAPER.bg },
+  root: { flex: 1, minHeight: 0, backgroundColor: SOFT_PAPER.bg },
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -103,7 +103,7 @@ const styles = StyleSheet.create({
     color: SOFT_PAPER.fg,
     textAlign: "center",
   },
-  body: { flex: 1, paddingHorizontal: scale(14) },
+  body: { flex: 1, minHeight: 0, paddingHorizontal: scale(14) },
   loadingWrap: {
     flex: 1,
     alignItems: "center",

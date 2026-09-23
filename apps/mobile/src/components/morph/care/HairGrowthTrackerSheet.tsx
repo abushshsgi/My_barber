@@ -434,7 +434,11 @@ export function HairGrowthTrackerSheet({ myProducts }: Props) {
 
   return (
     <>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        style={styles.pageScroll}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
         {/* Asosiy panel — uzunlik + prognoz bir qator */}
         <View style={styles.hero}>
           <View style={styles.heroMain}>
@@ -790,6 +794,7 @@ export function HairGrowthTrackerSheet({ myProducts }: Props) {
 }
 
 const styles = StyleSheet.create({
+  pageScroll: { flex: 1, minHeight: 0 },
   loadingWrap: { gap: moderateScale(10), paddingTop: verticalScale(4) },
   scrollContent: { paddingTop: verticalScale(4), gap: moderateScale(12), paddingBottom: verticalScale(8) },
 

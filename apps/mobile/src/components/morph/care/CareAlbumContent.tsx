@@ -369,6 +369,7 @@ export function CareAlbumContent({ fallbackProducts, goalHint }: Props) {
   return (
     <>
       <ScrollView
+        style={styles.pageScroll}
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void onRefresh()} />}
         contentContainerStyle={{ paddingBottom: verticalScale(120) }}
@@ -713,6 +714,7 @@ function StoryFrame({
 }
 
 const styles = StyleSheet.create({
+  pageScroll: { flex: 1, minHeight: 0 },
   loadingWrap: { gap: moderateScale(10), marginTop: verticalScale(8) },
   loadingGrid: { flexDirection: "row", gap: moderateScale(8) },
   badge: {

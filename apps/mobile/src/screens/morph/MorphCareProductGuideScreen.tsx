@@ -430,7 +430,7 @@ export function MorphCareProductGuideScreen({ navigation, route }: Props) {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: "#FAFAFA" },
+  root: { flex: 1, minHeight: 0, backgroundColor: "#FAFAFA" },
   navBar: {
     flexDirection: "row",
     alignItems: "center",
@@ -454,7 +454,7 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#111827",
   },
-  scroll: { flex: 1 },
+  scroll: { flex: 1, minHeight: 0 },
   heroCard: {
     flexDirection: "row",
     alignItems: "center",

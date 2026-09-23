@@ -12,6 +12,8 @@ import {
 } from "react-native";
 import { useTranslation } from "react-i18next";
 import Reanimated, { FadeIn, FadeOut } from "react-native-reanimated";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { TAB_DOCK_CLEARANCE } from "../../../hooks/useHideTabBar";
 import {
   generateCarePlan,
   type AiCarePlan,
@@ -274,6 +276,7 @@ export function CareRoutineSheet({
   onOpenGuide,
 }: Props) {
   const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
   const cachedOnOpen = peekCachedCarePlan();
   const shelfOnOpen = peekMyProducts();
   const initialPlan = cachedOnOpen?.plan ? (cachedOnOpen.plan as AiCarePlan) : null;
@@ -606,7 +609,10 @@ export function CareRoutineSheet({
     <View style={styles.sheetWrap}>
       <ScrollView
         style={styles.sheetScroll}
-        contentContainerStyle={styles.sheetContent}
+        contentContainerStyle={[
+          styles.sheetContent,
+          { paddingBottom: TAB_DOCK_CLEARANCE + Math.max(insets.bottom, 12) },
+        ]}
         nestedScrollEnabled
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
@@ -800,6 +806,7 @@ export function CareRoutineSheet({
                   >
                     <ScrollView
                       horizontal
+                      nestedScrollEnabled
                       showsHorizontalScrollIndicator={false}
                       style={styles.productScroll}
                       contentContainerStyle={styles.productRow}
@@ -850,8 +857,8 @@ export function CareRoutineSheet({
 }
 
 const styles = StyleSheet.create({
-  sheetWrap: { flex: 1, position: "relative" },
-  sheetScroll: { flex: 1, backgroundColor: colors.bg },
+  sheetWrap: { flex: 1, minHeight: 0, position: "relative" },
+  sheetScroll: { flex: 1, minHeight: 0, backgroundColor: colors.bg },
   sheetContent: {
     paddingHorizontal: scale(16),
     paddingTop: verticalScale(10),

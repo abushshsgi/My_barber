@@ -255,6 +255,7 @@ export function MorphCareMyProductsScreen({ navigation }: Props) {
         </View>
       ) : (
         <ScrollView
+          style={styles.pageScroll}
           contentContainerStyle={[
             styles.grid,
             { paddingBottom: safeBottom(insets.bottom, 20) },
@@ -350,7 +351,8 @@ export function MorphCareMyProductsScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: "#FAFAFA" },
+  root: { flex: 1, minHeight: 0, backgroundColor: "#FAFAFA" },
+  pageScroll: { flex: 1, minHeight: 0 },
   deleteToast: {
     position: "absolute",
     left: scale(16),
