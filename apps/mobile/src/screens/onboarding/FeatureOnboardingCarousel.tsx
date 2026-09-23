@@ -39,7 +39,7 @@ type Slide = {
 /** Maket: Soch Generatsiyasi → Chatbot → Mahsulot skaneri */
 const SLIDE_IMAGES = {
   tryon: require("../../../assets/onboarding/slide-2-tryon.png"),
-  chat: require("../../../assets/onboarding/slide-1-chat.png"),
+  chat: require("../../../assets/onboarding/slide-1-chat.jpg"),
   care: require("../../../assets/onboarding/slide-3-care.png"),
 } as const;
 
