@@ -78,6 +78,7 @@ export function isAccountNavActive(pathname: string, to: string) {
       pathname === "/family" ||
       pathname === "/referrals" ||
       pathname === "/privacy" ||
+      pathname === "/privacy-policy" ||
       pathname === "/support"
     );
   }

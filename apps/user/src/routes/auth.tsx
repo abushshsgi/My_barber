@@ -656,7 +656,7 @@ function Auth() {
             <p className="mt-6 text-center text-[11px] leading-relaxed text-muted-foreground">
               {t("auth.privacyPrefix")}{" "}
               <a
-                href="/privacy"
+                href="/privacy-policy?backTo=/auth"
                 className="font-semibold text-foreground/80 underline decoration-foreground/25 underline-offset-2 transition-colors hover:text-foreground hover:decoration-foreground/50"
               >
                 {t("auth.privacyLink")}

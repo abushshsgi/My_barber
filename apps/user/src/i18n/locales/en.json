@@ -57,6 +57,7 @@
     "contact": "Contact us",
     "business": "For salon owners",
     "terms": "Terms of use",
+    "privacyPolicy": "Privacy Policy",
     "joinSalon": "List your salon",
     "partnership": "Partnership",
     "partnerApp": "Partner app",
@@ -906,6 +907,7 @@
     "morphPrivacy": {
       "policyTitle": "Your data",
       "policyBody": "mysaloon.uz uses personal data only to provide the service. We do not sell it. Manage Morph AI chats and looks from these settings.",
+      "fullPolicy": "Full privacy policy",
       "locationTitle": "Location",
       "locationBody": "Location is requested to show nearby salons and is optional.",
       "loginHint": "Sign in to manage Morph AI data and privacy settings.",

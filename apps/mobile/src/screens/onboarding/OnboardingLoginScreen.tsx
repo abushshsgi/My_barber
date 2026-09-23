@@ -14,6 +14,7 @@ import {
 import { StatusBar } from "expo-status-bar";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { PrivacyPolicyView } from "../../components/legal/PrivacyPolicyView";
 import { safeBottom, safeTop } from "../../lib/safe-area";
 import {
   checkPhone,
@@ -57,6 +58,7 @@ export function OnboardingLoginScreen({ onBack }: Props) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hint, setHint] = useState<string | null>(null);
+  const [policyOpen, setPolicyOpen] = useState(false);
 
   const showError = error || google.error;
   const showBusy = busy || google.busy;
@@ -173,6 +175,10 @@ export function OnboardingLoginScreen({ onBack }: Props) {
     }
     onBack();
   };
+
+  if (policyOpen) {
+    return <PrivacyPolicyView onBack={() => setPolicyOpen(false)} />;
+  }
 
   return (
     <KeyboardAvoidingView
@@ -351,7 +357,9 @@ export function OnboardingLoginScreen({ onBack }: Props) {
           <Text style={styles.legal}>
             Davom etish orqali{" "}
             <Text style={styles.legalLink}>foydalanish shartlari</Text> va{" "}
-            <Text style={styles.legalLink}>maxfiylik siyosati</Text>
+            <Text style={styles.legalLink} onPress={() => setPolicyOpen(true)}>
+              maxfiylik siyosati
+            </Text>
             ga rozilik bildirasiz. Akkaunt MySaloon va Morf AI da ishlaydi.
           </Text>
         </View>

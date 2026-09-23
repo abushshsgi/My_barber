@@ -175,6 +175,7 @@ function getTabBarVisibility(route: RouteProp<RootTabParamList, keyof RootTabPar
     "NotificationPrefs",
     "Notifications",
     "HelpCenter",
+    "PrivacyPolicy",
     "Subscriptions",
     "Referrals",
     "MorphAiSettings",

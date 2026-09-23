@@ -173,8 +173,8 @@ export function SiteFooter({ insetClassName, className }: Props) {
       <div className="mt-8 flex flex-col gap-3 border-t border-border/60 pt-5 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-xs text-muted-foreground">© {year} mysaloon.uz</p>
         <nav className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-semibold">
-          <Link to="/privacy" className="text-foreground hover:underline">
-            {t("profile.privacy", { defaultValue: "Maxfiylik" })}
+          <Link to="/privacy-policy" className="text-foreground hover:underline">
+            {t("footer.privacyPolicy", { defaultValue: "Maxfiylik siyosati" })}
           </Link>
           <Link to="/privacy" className="text-foreground hover:underline">
             {t("footer.terms", { defaultValue: "Foydalanish shartlari" })}

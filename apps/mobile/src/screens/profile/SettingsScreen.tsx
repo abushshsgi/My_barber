@@ -68,7 +68,7 @@ export function SettingsScreen({ navigation }: Props) {
           <SettingsRow
             title={t("profile.privacyRow")}
             icon="shield-checkmark-outline"
-            onPress={() => undefined}
+            onPress={() => navigation.navigate("PrivacyPolicy")}
             last
           />
         </SettingsGroup>

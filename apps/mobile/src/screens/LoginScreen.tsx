@@ -25,6 +25,7 @@ import { useAuth } from "../auth/AuthContext";
 import { useGoogleAuth } from "../auth/GoogleAuthSession";
 import { getLastPhone } from "../auth/storage";
 import { AuthLandingHero } from "../components/auth/AuthLandingHero";
+import { PrivacyPolicyView } from "../components/legal/PrivacyPolicyView";
 import { useHideTabBar } from "../hooks/useHideTabBar";
 import { useAppShell } from "../lib/AppShellContext";
 import { setPendingReferralCode } from "../lib/referral-storage";
@@ -57,6 +58,7 @@ export function LoginScreen() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hint, setHint] = useState<string | null>(null);
+  const [policyOpen, setPolicyOpen] = useState(false);
 
   const showError = error || google.error;
   const showBusy = busy || google.busy;
@@ -178,6 +180,10 @@ export function LoginScreen() {
       parent.navigate(morph ? ("MorphChat" as never) : ("Home" as never));
     }
   };
+
+  if (policyOpen) {
+    return <PrivacyPolicyView onBack={() => setPolicyOpen(false)} />;
+  }
 
   return (
     <KeyboardAvoidingView
@@ -388,7 +394,10 @@ export function LoginScreen() {
               foydalanish shartlari
             </Text>{" "}
             va{" "}
-            <Text style={[styles.legalLink, morph && styles.titleMorph]}>
+            <Text
+              style={[styles.legalLink, morph && styles.titleMorph]}
+              onPress={() => setPolicyOpen(true)}
+            >
               maxfiylik siyosati
             </Text>
             ga rozilik bildirasiz. Akkaunt MySaloon va Morf AI da ishlaydi.

@@ -120,6 +120,7 @@ export function getPageTitleKey(pathname: string): string | null {
   if (pathname === "/favorites") return "profile.favorites";
   if (pathname === "/support") return "profile.support";
   if (pathname === "/privacy") return "profile.privacy";
+  if (pathname === "/privacy-policy") return "footer.privacyPolicy";
   if (pathname.startsWith("/salon/")) return "common.salon";
   return null;
 }

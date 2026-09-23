@@ -57,6 +57,7 @@
     "contact": "Biz bilan bog'lanish",
     "business": "Salon egalari uchun",
     "terms": "Foydalanish shartlari",
+    "privacyPolicy": "Maxfiylik siyosati",
     "joinSalon": "Saloningizni qo'shing",
     "partnership": "Hamkorlik",
     "partnerApp": "Partner panel",
@@ -906,6 +907,7 @@
     "morphPrivacy": {
       "policyTitle": "Ma'lumotlaringiz",
       "policyBody": "mysaloon.uz shaxsiy ma'lumotlarni faqat xizmat ko'rsatish uchun ishlatadi va uchinchi shaxslarga sotilmaydi. Morf AI suhbat va looklarini shu yerdan boshqarasiz.",
+      "fullPolicy": "To'liq maxfiylik siyosati",
       "locationTitle": "Lokatsiya",
       "locationBody": "Joylashuv ixtiyoriy — yaqin salonlarni ko'rsatish uchun so'raladi.",
       "loginHint": "Morf AI ma'lumotlari va maxfiylik sozlamalarini boshqarish uchun kiring.",

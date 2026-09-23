@@ -4,6 +4,8 @@ import { StatusBar } from "expo-status-bar";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { PrivacyPolicyView } from "../../components/legal/PrivacyPolicyView";
+import { getPrivacyPolicy } from "../../content/privacy-policy";
 import { safeBottom, safeTop } from "../../lib/safe-area";
 import { setTermsAccepted } from "../../lib/guest";
 import {
@@ -16,15 +18,20 @@ import {
 type Props = { onFinish: () => void };
 
 export function TermsAcceptScreen({ onFinish }: Props) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const insets = useSafeAreaInsets();
   const [accepted, setAccepted] = useState(false);
+  const [policyOpen, setPolicyOpen] = useState(false);
 
   const continueNext = async () => {
     if (!accepted) return;
     await setTermsAccepted();
     onFinish();
   };
+
+  if (policyOpen) {
+    return <PrivacyPolicyView onBack={() => setPolicyOpen(false)} />;
+  }
 
   return (
     <View
@@ -40,6 +47,9 @@ export function TermsAcceptScreen({ onFinish }: Props) {
       <Animated.Text entering={FadeInDown.delay(60)} style={styles.body}>
         {t("onboarding.termsBody")}
       </Animated.Text>
+      <Pressable onPress={() => setPolicyOpen(true)} hitSlop={8}>
+        <Text style={styles.policyLink}>{getPrivacyPolicy(i18n.language).title}</Text>
+      </Pressable>
 
       <Pressable
         style={styles.checkRow}
@@ -78,6 +88,13 @@ const styles = StyleSheet.create({
     fontSize: fontSize(15),
     lineHeight: fontSize(22),
     color: "#525252",
+  },
+  policyLink: {
+    marginTop: verticalScale(16),
+    fontSize: fontSize(15),
+    fontWeight: "700",
+    color: "#111",
+    textDecorationLine: "underline",
   },
   checkRow: {
     marginTop: "auto",

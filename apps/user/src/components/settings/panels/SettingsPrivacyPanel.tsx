@@ -60,6 +60,13 @@ export function SettingsPrivacyPanel({ embedded = false }: { embedded?: boolean 
             <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
               {t("settings.morphPrivacy.policyBody")}
             </p>
+            <Link
+              to="/privacy-policy"
+              search={{ backTo: "/privacy" }}
+              className="mt-3 inline-flex text-sm font-semibold text-foreground underline decoration-foreground/30 underline-offset-2"
+            >
+              {t("settings.morphPrivacy.fullPolicy")}
+            </Link>
           </div>
         </div>
       </ProfileSubpageCard>
