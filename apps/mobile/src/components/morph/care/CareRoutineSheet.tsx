@@ -290,7 +290,6 @@ export function CareRoutineSheet({
     eveningTime: "21:00",
   });
   const [celebrate, setCelebrate] = useState(false);
-  const [howOpenId, setHowOpenId] = useState<string | null>(null);
   const knownIdsRef = useRef<number[]>([]);
   const planRef = useRef<AiCarePlan | null>(null);
   const syncingRef = useRef(false);
@@ -783,126 +782,55 @@ export function CareRoutineSheet({
                 </ScrollView>
 
                 <View style={styles.stepStack}>
-                  {tasks.map((task, index) => {
+                  {tasks.map((task) => {
                     const done = !!doneMap[task.id];
                     const pname = displayProductName(task.productName);
-                    const howExpanded = howOpenId === task.id;
+                    const when = task.time || task.timeHint;
                     return (
-                      <View key={task.id} style={[styles.ritualCard, done && styles.ritualCardDone]}>
-                        <View style={styles.ritualTop}>
-                          <View style={styles.ritualIndex}>
-                            <Text style={styles.ritualIndexText}>{index + 1}</Text>
+                      <Pressable
+                        key={task.id}
+                        style={[styles.ritualCard, done && styles.ritualCardDone]}
+                        onPress={() => openGuideFor(task)}
+                      >
+                        {task.imageUrl ? (
+                          <Image
+                            source={{ uri: task.imageUrl }}
+                            style={styles.productImg}
+                            contentFit="cover"
+                            cachePolicy="memory-disk"
+                            transition={0}
+                            recyclingKey={`task-${task.id}`}
+                          />
+                        ) : (
+                          <View style={[styles.productImg, styles.productPh]}>
+                            <Ionicons name={TASK_ICONS[task.icon]} size={16} color="#111" />
                           </View>
-                          {task.time || task.timeHint ? (
-                            <View style={styles.timePill}>
-                              <Ionicons name="time-outline" size={11} color="#111" />
-                              <Text style={styles.timePillText}>{task.time || task.timeHint}</Text>
-                            </View>
-                          ) : null}
-                          {task.slot ? (
-                            <Text style={styles.slotTag}>
-                              {task.slot === "morning"
-                                ? t("care.routine.slots.morning")
-                                : task.slot === "evening"
-                                  ? t("care.routine.slots.evening")
-                                  : t("care.routine.slots.weekly")}
-                            </Text>
-                          ) : null}
-                          <View style={{ flex: 1 }} />
-                          <Pressable
-                            style={[styles.checkBtn, done && styles.checkBtnOn]}
-                            onPress={() => void toggleTask(task.id)}
-                            hitSlop={8}
+                        )}
+                        <View style={styles.productCopy}>
+                          <Text
+                            style={[styles.ritualTitle, done && styles.ritualTitleDone]}
+                            numberOfLines={1}
                           >
-                            {done ? <Ionicons name="checkmark" size={14} color="#fff" /> : null}
-                          </Pressable>
-                        </View>
-
-                        <View style={styles.productBlock}>
-                          <Pressable
-                            style={styles.productImgWrap}
-                            onPress={() => (task.productId ? onOpenProduct(task.productId) : undefined)}
-                          >
-                            {task.imageUrl ? (
-                              <Image
-                                source={{ uri: task.imageUrl }}
-                                style={styles.productImg}
-                                contentFit="cover"
-                                cachePolicy="memory-disk"
-                                transition={0}
-                                recyclingKey={`task-${task.id}`}
-                              />
-                            ) : (
-                              <View style={[styles.productImg, styles.productPh]}>
-                                <Ionicons name={TASK_ICONS[task.icon]} size={18} color="#111" />
-                              </View>
-                            )}
-                          </Pressable>
-
-                          <View style={styles.productCopy}>
-                            <Text
-                              style={[styles.ritualTitle, done && styles.ritualTitleDone]}
-                              numberOfLines={2}
-                            >
-                              {task.title}
-                            </Text>
-                            {pname ? (
-                              <Text style={styles.productName} numberOfLines={1}>
-                                {pname}
-                                {task.brand ? ` · ${task.brand}` : ""}
-                              </Text>
-                            ) : null}
-                            {task.durationMin ? (
-                              <Text style={styles.durationLabel}>{task.durationMin} daq</Text>
-                            ) : null}
-                          </View>
-                        </View>
-
-                        <Pressable
-                          style={styles.howBox}
-                          onPress={() => setHowOpenId(howExpanded ? null : task.id)}
-                        >
-                          <View style={styles.howBoxHead}>
-                            <Text style={styles.howLabel}>
-                              {t("care.routine.howToUse", { defaultValue: "Qanday ishlatish" })}
-                            </Text>
-                            <Ionicons
-                              name={howExpanded ? "chevron-up" : "chevron-down"}
-                              size={14}
-                              color="rgba(17,17,17,0.45)"
-                            />
-                          </View>
-                          <Text style={styles.howText} numberOfLines={howExpanded ? 6 : 2}>
-                            {task.usageHow ||
-                              task.subtitle ||
-                              t("care.routine.howFallback", {
-                                defaultValue:
-                                  "Play tugmasini bosing — bosqichma-bosqich yo‘riqnoma ochiladi",
-                              })}
+                            {task.title}
                           </Text>
-                        </Pressable>
-
-                        <View style={styles.ritualActions}>
-                          <Pressable style={styles.secondaryAct} onPress={() => openGuideFor(task)}>
-                            <Ionicons name="play-circle-outline" size={15} color="#111" />
-                            <Text style={styles.secondaryActText}>
-                              {t("care.routine.startGuide", { defaultValue: "Yo‘riqnoma" })}
+                          {pname ? (
+                            <Text style={styles.productName} numberOfLines={1}>
+                              {pname}
                             </Text>
-                          </Pressable>
-                          <Pressable
-                            style={[styles.primaryAct, done && styles.primaryActDone]}
-                            onPress={() => void toggleTask(task.id)}
-                          >
-                            <Text style={[styles.primaryActText, done && styles.primaryActTextDone]}>
-                              {done
-                                ? t("care.routine.stepDone", { defaultValue: "Bajarildi" })
-                                : t("care.routine.stepTodo", {
-                                    defaultValue: "Bajarildi deb belgilash",
-                                  })}
-                            </Text>
-                          </Pressable>
+                          ) : null}
                         </View>
-                      </View>
+                        {when ? <Text style={styles.timeText}>{when}</Text> : null}
+                        <Pressable
+                          style={[styles.checkBtn, done && styles.checkBtnOn]}
+                          onPress={(e) => {
+                            e.stopPropagation?.();
+                            void toggleTask(task.id);
+                          }}
+                          hitSlop={8}
+                        >
+                          {done ? <Ionicons name="checkmark" size={13} color="#fff" /> : null}
+                        </Pressable>
+                      </Pressable>
                     );
                   })}
                 </View>
@@ -918,40 +846,43 @@ export function CareRoutineSheet({
                 {loadingProducts ? (
                   <ActivityIndicator color="#111" style={{ marginVertical: 12 }} />
                 ) : (
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.productRow}
-                  >
-                    {myProducts.map((p) => {
-                      const img = productImageUri(p.image_url);
-                      return (
-                        <Pressable key={p.id} style={styles.myCard} onPress={() => onOpenProduct(p.id)}>
-                          {img ? (
-                            <Image
-                              source={{ uri: img }}
-                              style={styles.myCardImg}
-                              contentFit="cover"
-                              cachePolicy="memory-disk"
-                              transition={0}
-                              recyclingKey={`mine-${p.id}`}
-                            />
-                          ) : (
-                            <View style={[styles.myCardImg, styles.productPh]}>
-                              <Ionicons name="flask-outline" size={20} color="#111" />
-                            </View>
-                          )}
-                          <Text style={styles.myCardName} numberOfLines={2}>
-                            {p.name}
-                          </Text>
-                        </Pressable>
-                      );
-                    })}
+                  <View style={styles.productShelf}>
+                    <ScrollView
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      style={styles.productScroll}
+                      contentContainerStyle={styles.productRow}
+                    >
+                      {myProducts.map((p) => {
+                        const img = productImageUri(p.image_url);
+                        return (
+                          <Pressable key={p.id} style={styles.myCard} onPress={() => onOpenProduct(p.id)}>
+                            {img ? (
+                              <Image
+                                source={{ uri: img }}
+                                style={styles.myCardImg}
+                                contentFit="cover"
+                                cachePolicy="memory-disk"
+                                transition={0}
+                                recyclingKey={`mine-${p.id}`}
+                              />
+                            ) : (
+                              <View style={[styles.myCardImg, styles.productPh]}>
+                                <Ionicons name="flask-outline" size={20} color="#111" />
+                              </View>
+                            )}
+                            <Text style={styles.myCardName} numberOfLines={2}>
+                              {p.name}
+                            </Text>
+                          </Pressable>
+                        );
+                      })}
+                    </ScrollView>
                     <Pressable style={styles.addCard} onPress={onOpenCatalog}>
                       <Ionicons name="add" size={22} color="#111" />
                       <Text style={styles.addCardText}>{t("care.myProducts.addShort")}</Text>
                     </Pressable>
-                  </ScrollView>
+                  </View>
                 )}
               </Reanimated.View>
             ) : null}
@@ -1386,76 +1317,41 @@ const styles = StyleSheet.create({
     textAlign: "center",
     lineHeight: fontSize(16),
   },
-  stepStack: { gap: moderateScale(10) },
+  stepStack: { gap: moderateScale(6) },
   ritualCard: {
-    borderRadius: moderateScale(20),
-    backgroundColor: colors.surface,
-    padding: moderateScale(12),
-    gap: moderateScale(9),
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-    shadowColor: "#111",
-    shadowOpacity: 0.03,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 1,
-  },
-  ritualCardDone: { opacity: 0.72, backgroundColor: colors.promo },
-  ritualTop: { flexDirection: "row", alignItems: "center", gap: moderateScale(6) },
-  ritualIndex: {
-    width: scale(24),
-    height: scale(24),
-    borderRadius: scale(12),
-    backgroundColor: colors.fg,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  ritualIndexText: { ...morphFont, fontSize: fontSize(11), fontWeight: "700", color: "#fff" },
-  timePill: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 3,
-    paddingHorizontal: scale(8),
-    paddingVertical: verticalScale(4),
-    borderRadius: 999,
-    backgroundColor: colors.promo,
-  },
-  timePillText: { ...morphFont, fontSize: fontSize(10), fontWeight: "700", color: colors.fg },
-  slotTag: {
-    ...morphFont,
-    fontSize: fontSize(9),
-    fontWeight: "700",
-    color: colors.muted,
-    textTransform: "uppercase",
-  },
-  checkBtn: {
-    width: scale(28),
-    height: scale(28),
-    borderRadius: scale(14),
-    borderWidth: 1.5,
-    borderColor: "rgba(17,17,17,0.16)",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: colors.surface,
-  },
-  checkBtnOn: { backgroundColor: "#16A34A", borderColor: "#16A34A" },
-  productBlock: { flexDirection: "row", alignItems: "center", gap: moderateScale(10) },
-  productImgWrap: {
-    width: scale(58),
-    height: scale(58),
+    gap: moderateScale(10),
     borderRadius: moderateScale(14),
-    overflow: "hidden",
-    backgroundColor: colors.promo,
-    borderWidth: 1,
+    backgroundColor: colors.surface,
+    paddingVertical: verticalScale(8),
+    paddingHorizontal: scale(10),
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
   },
-  productImg: { width: "100%", height: "100%" },
-  productPh: { alignItems: "center", justifyContent: "center", backgroundColor: colors.promo },
-  productCopy: { flex: 1, minWidth: 0, gap: 2 },
-  ritualTitle: { ...morphFont, fontSize: fontSize(14), fontWeight: "800", color: colors.fg },
+  ritualCardDone: { opacity: 0.55 },
+  checkBtn: {
+    width: scale(22),
+    height: scale(22),
+    borderRadius: scale(11),
+    borderWidth: 1.5,
+    borderColor: "rgba(17,17,17,0.18)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  checkBtnOn: { backgroundColor: "#16A34A", borderColor: "#16A34A" },
+  productImg: {
+    width: scale(36),
+    height: scale(36),
+    borderRadius: moderateScale(10),
+    backgroundColor: colors.promo,
+  },
+  productPh: { alignItems: "center", justifyContent: "center" },
+  productCopy: { flex: 1, minWidth: 0 },
+  ritualTitle: { ...morphFont, fontSize: fontSize(13), fontWeight: "700", color: colors.fg },
   ritualTitleDone: { textDecorationLine: "line-through", color: colors.muted },
-  productName: { ...morphFont, fontSize: fontSize(12), fontWeight: "600", color: "rgba(17,17,17,0.62)" },
-  durationLabel: { ...morphFont, fontSize: fontSize(10), color: colors.muted, marginTop: 1 },
+  productName: { ...morphFont, fontSize: fontSize(11), color: "rgba(17,17,17,0.5)", marginTop: 1 },
+  timeText: { ...morphFont, fontSize: fontSize(12), fontWeight: "700", color: colors.fg },
   playBtn: {
     width: scale(40),
     height: scale(40),
@@ -1520,7 +1416,13 @@ const styles = StyleSheet.create({
   sectionTitle: { ...morphFont, fontSize: fontSize(16), fontWeight: "700", color: "#111" },
   scanLink: { flexDirection: "row", alignItems: "center", gap: moderateScale(4) },
   scanLinkText: { ...morphFont, fontSize: fontSize(13), fontWeight: "600", color: "#111" },
-  productRow: { gap: moderateScale(10), paddingRight: scale(4) },
+  productShelf: {
+    flexDirection: "row",
+    alignItems: "stretch",
+    gap: moderateScale(8),
+  },
+  productScroll: { flex: 1, minWidth: 0 },
+  productRow: { gap: moderateScale(10), paddingRight: scale(2) },
   myCard: {
     width: scale(110),
     borderRadius: moderateScale(18),
@@ -1531,16 +1433,16 @@ const styles = StyleSheet.create({
   myCardImg: { width: "100%", height: verticalScale(100), borderRadius: moderateScale(14) },
   myCardName: { ...morphFont, fontSize: fontSize(12), fontWeight: "600", color: "#111" },
   addCard: {
-    width: scale(96),
+    width: scale(78),
+    flexShrink: 0,
     borderRadius: moderateScale(18),
     backgroundColor: "#FFFFFF",
     borderWidth: 1,
-    borderStyle: "dashed",
-    borderColor: "rgba(17,17,17,0.15)",
+    borderColor: "rgba(17,17,17,0.12)",
     alignItems: "center",
     justifyContent: "center",
     gap: 4,
-    padding: moderateScale(10),
+    padding: moderateScale(8),
   },
   addCardText: { ...morphFont, fontSize: fontSize(11), fontWeight: "600", color: "#111" },
   recCard: {
