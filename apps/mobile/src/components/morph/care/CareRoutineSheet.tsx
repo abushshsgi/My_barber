@@ -284,12 +284,13 @@ export function CareRoutineSheet({
   const [aiLoading, setAiLoading] = useState(false);
   const [aiAppending, setAiAppending] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
-  const [remindersOn, setRemindersOn] = useState(false);
+  const [, setRemindersOn] = useState(false);
   const [schedule, setSchedule] = useState<CareSchedulePrefs | null>({
     morningTime: "07:30",
     eveningTime: "21:00",
   });
   const [celebrate, setCelebrate] = useState(false);
+  const [shelfW, setShelfW] = useState(0);
   const knownIdsRef = useRef<number[]>([]);
   const planRef = useRef<AiCarePlan | null>(null);
   const syncingRef = useRef(false);
@@ -616,6 +617,12 @@ export function CareRoutineSheet({
     [myProducts],
   );
   const showPlans = hasProducts && !!schedule && !!aiPlan && !aiLoading;
+  const shelfGap = moderateScale(8);
+  const cardGap = moderateScale(8);
+  const addW = scale(72);
+  const scrollW = Math.max(0, shelfW - addW - shelfGap);
+  const fitted = scrollW > 0 ? (scrollW - cardGap * 2) / 2.5 : scale(100);
+  const peekCardW = myProducts.length >= 3 ? fitted : Math.min(fitted, scale(104));
   const showAiThinking = hasProducts && !!schedule && !aiPlan && (aiLoading || aiAppending);
   const showStickyShelfCta = showPlans;
   const emptyOnly = !loadingProducts && !hasProducts;
@@ -673,63 +680,39 @@ export function CareRoutineSheet({
           <>
             <View style={styles.dayHero}>
               <View style={styles.dayHeroTop}>
-                <View style={{ flex: 1, minWidth: 0 }}>
-                  <Text style={styles.dayEyebrow}>
-                    {showPlans
-                      ? t("care.routine.planKicker", { defaultValue: "Morf AI" })
-                      : t("care.routine.dayRitual", { defaultValue: "Bugungi ritual" })}
-                  </Text>
-                  <Text style={styles.dayHello} numberOfLines={2}>
-                    {showPlans
-                      ? t("care.routine.planTitle", { defaultValue: "Morf AI Parvarish Rejasi" })
-                      : t("care.routine.helloName", {
-                          name: greeting,
-                          defaultValue: "Salom, {{name}}",
-                        })}
-                  </Text>
-                  <Text style={styles.daySub} numberOfLines={2}>
-                    {showPlans
-                      ? aiPlan?.summary ||
-                        t("care.routine.daySub", {
-                          defaultValue: "Mahsulotlaringiz bilan 1 kunlik to‘liq soch parvarishi",
-                        })
-                      : t("care.routine.daySubWaiting", {
-                          defaultValue: "Mahsulotlaringiz asosida AI shaxsiy reja tuzadi",
-                        })}
-                  </Text>
-                </View>
+                <Text style={styles.dayHello} numberOfLines={1}>
+                  {showPlans
+                    ? t("care.routine.planTitle", { defaultValue: "Morf AI Parvarish Rejasi" })
+                    : t("care.routine.helloName", {
+                        name: greeting,
+                        defaultValue: "Salom, {{name}}",
+                      })}
+                </Text>
                 {hasProducts ? (
                   <Pressable
                     style={styles.refreshBtn}
                     onPress={() => void syncPlanWithProducts(myProducts)}
                   >
-                    <Ionicons name="refresh-outline" size={16} color={colors.fg} />
+                    <Ionicons name="refresh-outline" size={15} color={colors.fg} />
                   </Pressable>
                 ) : null}
               </View>
-
               {showPlans ? (
-                <>
-                  <View style={styles.progressWrap}>
-                    <View style={styles.progressTrack}>
-                      <View style={[styles.progressFill, { width: `${Math.round(progress * 100)}%` }]} />
-                    </View>
-                    <Text style={styles.progressText}>
-                      {doneCount}/{tasks.length || 0} · {Math.round(progress * 100)}%
-                    </Text>
+                <View style={styles.progressWrap}>
+                  <View style={styles.progressTrack}>
+                    <View style={[styles.progressFill, { width: `${Math.round(progress * 100)}%` }]} />
                   </View>
-                  {remindersOn ? (
-                    <View style={styles.remindBanner}>
-                      <Ionicons name="notifications" size={13} color={colors.fg} />
-                      <Text style={styles.remindText}>
-                        {t("care.routine.remindOn", {
-                          defaultValue: "Vaqti kelganda eslatma yuboriladi",
-                        })}
-                      </Text>
-                    </View>
-                  ) : null}
-                </>
-              ) : null}
+                  <Text style={styles.progressText}>
+                    {doneCount}/{tasks.length || 0}
+                  </Text>
+                </View>
+              ) : (
+                <Text style={styles.daySub} numberOfLines={1}>
+                  {t("care.routine.daySubWaiting", {
+                    defaultValue: "Mahsulotlaringiz asosida AI shaxsiy reja tuzadi",
+                  })}
+                </Text>
+              )}
             </View>
 
             {showAiThinking ? (
@@ -750,21 +733,19 @@ export function CareRoutineSheet({
 
             {showPlans ? (
               <Reanimated.View entering={FadeIn.duration(420)}>
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.modeRow}
-                >
+                <View style={styles.segment}>
                   {DAY_MODES.map((item) => {
                     const on = mode === item.id;
                     return (
                       <Pressable
                         key={item.id}
-                        style={[styles.modeChip, on && styles.modeChipOn]}
+                        style={[styles.segmentItem, on && styles.segmentItemOn]}
                         onPress={() => setMode(item.id)}
                       >
-                        <Ionicons name={item.icon} size={14} color={on ? "#fff" : "#111"} />
-                        <Text style={[styles.modeChipText, on && styles.modeChipTextOn]}>
+                        <Text
+                          style={[styles.segmentText, on && styles.segmentTextOn]}
+                          numberOfLines={1}
+                        >
                           {t(item.labelKey, {
                             defaultValue:
                               item.id === "today"
@@ -772,14 +753,14 @@ export function CareRoutineSheet({
                                 : item.id === "morning"
                                   ? "Ertalab"
                                   : item.id === "evening"
-                                    ? "Kechqurun"
-                                    : "Haftalik",
+                                    ? "Kech"
+                                    : "Hafta",
                           })}
                         </Text>
                       </Pressable>
                     );
                   })}
-                </ScrollView>
+                </View>
 
                 <View style={styles.stepStack}>
                   {tasks.map((task) => {
@@ -819,7 +800,11 @@ export function CareRoutineSheet({
                             </Text>
                           ) : null}
                         </View>
-                        {when ? <Text style={styles.timeText}>{when}</Text> : null}
+                        {when ? (
+                          <View style={styles.timePill}>
+                            <Text style={styles.timeText}>{when}</Text>
+                          </View>
+                        ) : null}
                         <Pressable
                           style={[styles.checkBtn, done && styles.checkBtnOn]}
                           onPress={(e) => {
@@ -846,7 +831,13 @@ export function CareRoutineSheet({
                 {loadingProducts ? (
                   <ActivityIndicator color="#111" style={{ marginVertical: 12 }} />
                 ) : (
-                  <View style={styles.productShelf}>
+                  <View
+                    style={styles.productShelf}
+                    onLayout={(e) => {
+                      const next = Math.round(e.nativeEvent.layout.width);
+                      setShelfW((prev) => (prev === next ? prev : next));
+                    }}
+                  >
                     <ScrollView
                       horizontal
                       showsHorizontalScrollIndicator={false}
@@ -856,7 +847,11 @@ export function CareRoutineSheet({
                       {myProducts.map((p) => {
                         const img = productImageUri(p.image_url);
                         return (
-                          <Pressable key={p.id} style={styles.myCard} onPress={() => onOpenProduct(p.id)}>
+                          <Pressable
+                            key={p.id}
+                            style={[styles.myCard, { width: peekCardW }]}
+                            onPress={() => onOpenProduct(p.id)}
+                          >
                             {img ? (
                               <Image
                                 source={{ uri: img }}
@@ -965,7 +960,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     elevation: 2,
   },
-  dayHeroTop: { flexDirection: "row", gap: moderateScale(10), alignItems: "flex-start" },
+  dayHeroTop: { flexDirection: "row", gap: moderateScale(8), alignItems: "center" },
   dayEyebrow: {
     ...morphFont,
     fontSize: fontSize(10),
@@ -976,11 +971,12 @@ const styles = StyleSheet.create({
   },
   dayHello: {
     ...morphFont,
-    marginTop: verticalScale(3),
-    fontSize: fontSize(20),
+    flex: 1,
+    minWidth: 0,
+    fontSize: fontSize(17),
     fontWeight: "800",
     color: colors.fg,
-    letterSpacing: -0.5,
+    letterSpacing: -0.4,
   },
   daySub: {
     ...morphFont,
@@ -997,9 +993,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  progressWrap: { gap: moderateScale(5) },
+  progressWrap: { flexDirection: "row", alignItems: "center", gap: moderateScale(8) },
   progressTrack: {
-    height: 7,
+    flex: 1,
+    height: 5,
     borderRadius: 999,
     backgroundColor: "#EDEAE4",
     overflow: "hidden",
@@ -1267,6 +1264,30 @@ const styles = StyleSheet.create({
     color: "rgba(17,17,17,0.55)",
     marginTop: 2,
   },
+  segment: {
+    flexDirection: "row",
+    backgroundColor: "#F3F1EC",
+    borderRadius: moderateScale(12),
+    padding: 3,
+  },
+  segmentItem: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: verticalScale(32),
+    borderRadius: moderateScale(9),
+    paddingHorizontal: scale(2),
+  },
+  segmentItemOn: {
+    backgroundColor: "#fff",
+    shadowColor: "#111",
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 1,
+  },
+  segmentText: { ...morphFont, fontSize: fontSize(12), fontWeight: "600", color: "rgba(17,17,17,0.45)" },
+  segmentTextOn: { color: colors.fg, fontWeight: "700" },
   modeRow: { gap: moderateScale(8), paddingRight: scale(4), paddingVertical: verticalScale(2) },
   modeChip: {
     flexDirection: "row",
@@ -1322,10 +1343,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: moderateScale(10),
-    borderRadius: moderateScale(14),
+    borderRadius: moderateScale(16),
     backgroundColor: colors.surface,
-    paddingVertical: verticalScale(8),
-    paddingHorizontal: scale(10),
+    paddingVertical: verticalScale(9),
+    paddingLeft: scale(8),
+    paddingRight: scale(10),
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
   },
@@ -1351,7 +1373,13 @@ const styles = StyleSheet.create({
   ritualTitle: { ...morphFont, fontSize: fontSize(13), fontWeight: "700", color: colors.fg },
   ritualTitleDone: { textDecorationLine: "line-through", color: colors.muted },
   productName: { ...morphFont, fontSize: fontSize(11), color: "rgba(17,17,17,0.5)", marginTop: 1 },
-  timeText: { ...morphFont, fontSize: fontSize(12), fontWeight: "700", color: colors.fg },
+  timePill: {
+    paddingHorizontal: scale(7),
+    paddingVertical: verticalScale(3),
+    borderRadius: 999,
+    backgroundColor: "#F3F1EC",
+  },
+  timeText: { ...morphFont, fontSize: fontSize(11), fontWeight: "700", color: colors.fg },
   playBtn: {
     width: scale(40),
     height: scale(40),
@@ -1422,9 +1450,8 @@ const styles = StyleSheet.create({
     gap: moderateScale(8),
   },
   productScroll: { flex: 1, minWidth: 0 },
-  productRow: { gap: moderateScale(10), paddingRight: scale(2) },
+  productRow: { gap: moderateScale(8) },
   myCard: {
-    width: scale(110),
     borderRadius: moderateScale(18),
     backgroundColor: "#FFFFFF",
     padding: moderateScale(10),
@@ -1433,12 +1460,13 @@ const styles = StyleSheet.create({
   myCardImg: { width: "100%", height: verticalScale(100), borderRadius: moderateScale(14) },
   myCardName: { ...morphFont, fontSize: fontSize(12), fontWeight: "600", color: "#111" },
   addCard: {
-    width: scale(78),
+    width: scale(72),
     flexShrink: 0,
     borderRadius: moderateScale(18),
     backgroundColor: "#FFFFFF",
-    borderWidth: 1,
-    borderColor: "rgba(17,17,17,0.12)",
+    borderWidth: 1.5,
+    borderStyle: "dashed",
+    borderColor: "rgba(17,17,17,0.28)",
     alignItems: "center",
     justifyContent: "center",
     gap: 4,
