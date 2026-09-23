@@ -52,9 +52,14 @@ import {
   estimateProductFit,
   isCareQuizComplete,
   loadCareQuiz,
+  loadCareSchedule,
   saveCareQuiz,
+  saveCareSchedule,
+  MORNING_TIME_OPTIONS,
+  EVENING_TIME_OPTIONS,
   type CareQuizAnswers,
 } from "../../lib/morph-ai-care";
+import { scheduleCareWelcomeNotification } from "../../lib/care-reminders";
 import {
   addMyProduct,
   loadMyProducts,
@@ -78,7 +83,7 @@ import {
 } from "../../utils/responsive";
 
 type Props = NativeStackScreenProps<MorphCareStackParamList, "CareHome">;
-type QuizStep = 0 | 1 | 2;
+type QuizStep = 0 | 1 | 2 | 3;
 type ViewMode = "hub" | "flow";
 
 const CARE_ACCESS_DEBUG = true;
@@ -197,6 +202,8 @@ export function MorphCareScreen({ navigation, route }: Props) {
     () => Boolean(getCareCatalogCache()?.length),
   );
   const [saving, setSaving] = useState(false);
+  const [draftMorning, setDraftMorning] = useState("07:30");
+  const [draftEvening, setDraftEvening] = useState("21:00");
   const [selectedDayIdx, setSelectedDayIdx] = useState(0);
   const [addToast, setAddToast] = useState<{ title: string; image: string } | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -645,6 +652,13 @@ export function MorphCareScreen({ navigation, route }: Props) {
       setStep(0);
       setViewMode("flow");
     }
+    const sched = await loadCareSchedule().catch(() => null);
+    if (sched?.morningTime) setDraftMorning(sched.morningTime);
+    if (sched?.eveningTime) setDraftEvening(sched.eveningTime);
+    if (!sched?.morningTime || !sched?.eveningTime) {
+      // Eski foydalanuvchilar — default oynani saqlab qo‘yamiz
+      void saveCareSchedule({ morningTime: "07:30", eveningTime: "21:00" });
+    }
 
     try {
       const accessRes = CARE_ACCESS_DEBUG
@@ -701,6 +715,10 @@ export function MorphCareScreen({ navigation, route }: Props) {
     setSaving(true);
     try {
       await saveCareQuiz(quiz);
+      await saveCareSchedule({
+        morningTime: draftMorning,
+        eveningTime: draftEvening,
+      });
       await updateHairCareProfile({
         condition: quiz.condition,
         texture: quiz.texture,
@@ -713,6 +731,16 @@ export function MorphCareScreen({ navigation, route }: Props) {
               : "normal",
       });
       void markCareOnboardingSeen();
+      const greet =
+        user?.full_name ||
+        [user?.first_name, user?.last_name].filter(Boolean).join(" ") ||
+        user?.first_name ||
+        null;
+      void scheduleCareWelcomeNotification({
+        userName: greet,
+        morningTime: draftMorning,
+        eveningTime: draftEvening,
+      });
       setStep("plan");
       setViewMode("hub");
       // Catalog fonida — hub darrov ochiladi.
@@ -998,6 +1026,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
   }
 
   if (step !== "plan") {
+    const isScheduleStep = step === 3;
     const quizMeta =
       step === 0
         ? {
@@ -1017,14 +1046,26 @@ export function MorphCareScreen({ navigation, route }: Props) {
               labelKey: "care.textures",
               set: (v: HairTexture) => setQuiz((q) => ({ ...q, texture: v })),
             }
-          : {
-              title: t("care.onboarding.step3Title"),
-              sub: t("care.onboarding.step3Sub"),
-              opts: COLOR_OPTS,
-              value: quiz.colorStatus,
-              labelKey: "care.colors",
-              set: (v: HairColorStatus) => setQuiz((q) => ({ ...q, colorStatus: v })),
-            };
+          : step === 2
+            ? {
+                title: t("care.onboarding.step3Title"),
+                sub: t("care.onboarding.step3Sub"),
+                opts: COLOR_OPTS,
+                value: quiz.colorStatus,
+                labelKey: "care.colors",
+                set: (v: HairColorStatus) => setQuiz((q) => ({ ...q, colorStatus: v })),
+              }
+            : {
+                title: t("care.onboarding.step4Title", { defaultValue: "Qulay vaqtingiz" }),
+                sub: t("care.onboarding.step4Sub", {
+                  defaultValue:
+                    "Ertalab va kechqurun qachon parvarish qilasiz? Shu asosida reja va eslatmalar tuziladi.",
+                }),
+                opts: [] as string[],
+                value: "ok",
+                labelKey: "",
+                set: (_v: never) => undefined,
+              };
 
     return (
       <View style={styles.onboardRoot}>
@@ -1065,24 +1106,78 @@ export function MorphCareScreen({ navigation, route }: Props) {
             <Text style={styles.onboardH1}>{quizMeta.title}</Text>
             <Text style={styles.onboardSub}>{quizMeta.sub}</Text>
             <View style={styles.progressTrackLight}>
-              <View style={[styles.progressFillLight, { width: `${((Number(step) + 1) / 3) * 100}%` }]} />
+              <View
+                style={[
+                  styles.progressFillLight,
+                  { width: `${((Number(step) + 1) / 4) * 100}%` },
+                ]}
+              />
             </View>
-            <View style={styles.optGridLight}>
-              {quizMeta.opts.map((opt) => {
-                const on = quizMeta.value === opt;
-                return (
-                  <Pressable
-                    key={opt}
-                    style={[styles.optCardLight, on && styles.optCardLightOn]}
-                    onPress={() => quizMeta.set(opt as never)}
-                  >
-                    <Text style={[styles.optTextLight, on && styles.optTextLightOn]}>
-                      {t(`${quizMeta.labelKey}.${opt}`)}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
+            {isScheduleStep ? (
+              <View style={styles.scheduleOnboard}>
+                <Text style={styles.scheduleOnboardLabel}>{t("care.routine.slots.morning")}</Text>
+                <View style={styles.scheduleOnboardRow}>
+                  {MORNING_TIME_OPTIONS.map((opt) => {
+                    const on = draftMorning === opt;
+                    return (
+                      <Pressable
+                        key={opt}
+                        style={[styles.scheduleOnboardChip, on && styles.scheduleOnboardChipOn]}
+                        onPress={() => setDraftMorning(opt)}
+                      >
+                        <Text
+                          style={[
+                            styles.scheduleOnboardChipText,
+                            on && styles.scheduleOnboardChipTextOn,
+                          ]}
+                        >
+                          {opt}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+                <Text style={styles.scheduleOnboardLabel}>{t("care.routine.slots.evening")}</Text>
+                <View style={styles.scheduleOnboardRow}>
+                  {EVENING_TIME_OPTIONS.map((opt) => {
+                    const on = draftEvening === opt;
+                    return (
+                      <Pressable
+                        key={opt}
+                        style={[styles.scheduleOnboardChip, on && styles.scheduleOnboardChipOn]}
+                        onPress={() => setDraftEvening(opt)}
+                      >
+                        <Text
+                          style={[
+                            styles.scheduleOnboardChipText,
+                            on && styles.scheduleOnboardChipTextOn,
+                          ]}
+                        >
+                          {opt}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </View>
+            ) : (
+              <View style={styles.optGridLight}>
+                {quizMeta.opts.map((opt) => {
+                  const on = quizMeta.value === opt;
+                  return (
+                    <Pressable
+                      key={opt}
+                      style={[styles.optCardLight, on && styles.optCardLightOn]}
+                      onPress={() => quizMeta.set(opt as never)}
+                    >
+                      <Text style={[styles.optTextLight, on && styles.optTextLightOn]}>
+                        {t(`${quizMeta.labelKey}.${opt}`)}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            )}
           </ScrollView>
           <View style={styles.onboardFooter}>
             {typeof step === "number" && step > 0 ? (
@@ -1099,16 +1194,16 @@ export function MorphCareScreen({ navigation, route }: Props) {
               style={[
                 styles.primaryBtnLight,
                 styles.primaryBtnLightGrow,
-                (saving || !quizMeta.value) && styles.disabled,
+                (saving || (!isScheduleStep && !quizMeta.value)) && styles.disabled,
               ]}
-              disabled={saving || !quizMeta.value}
+              disabled={saving || (!isScheduleStep && !quizMeta.value)}
               onPress={() => {
-                if (step === 2) void finishQuiz();
+                if (step === 3) void finishQuiz();
                 else setStep((step + 1) as QuizStep);
               }}
             >
               <Text style={styles.primaryBtnLightText}>
-                {step === 2 ? t("care.onboarding.finish") : t("common.next")}
+                {step === 3 ? t("care.onboarding.finish") : t("common.next")}
               </Text>
             </Pressable>
           </View>
@@ -1999,15 +2094,17 @@ export function MorphCareScreen({ navigation, route }: Props) {
           hitSlop={8}
           accessibilityLabel={t("common.back")}
         >
-          <Ionicons name="chevron-back" size={20} color="#111" />
+          <Ionicons name="arrow-back" size={18} color="#111" />
         </Pressable>
         <View style={styles.routineHeaderCenter}>
-          <Text style={styles.routineHeaderTitle}>{t("care.hubParvarish")}</Text>
+          <Text style={styles.routineHeaderTitle} numberOfLines={1}>
+            {t("care.routine.planTitle", { defaultValue: "Morf AI Parvarish Rejasi" })}
+          </Text>
           <Text style={styles.routineHeaderSub} numberOfLines={1}>
             {t(`care.conditions.${quiz.condition}`)} · {t(`care.textures.${quiz.texture}`)}
           </Text>
         </View>
-        <View style={styles.routineHeaderBtn} />
+        <View style={styles.routineHeaderBtnSpacer} />
       </View>
 
       <CareRoutineSheet
@@ -2020,12 +2117,19 @@ export function MorphCareScreen({ navigation, route }: Props) {
           user?.first_name ||
           null
         }
-        onOpenCatalog={openCatalog}
+        onOpenCatalog={() => {
+          // Search sheet faqat hubda render — hubga o‘tib ochamiz
+          setViewMode("hub");
+          setTimeout(() => openSearch(), 80);
+        }}
         onOpenScan={openTarkib}
         onOpenShelf={() => setShelfOpen(true)}
         onOpenProduct={openProduct}
         onOpenGuide={openProductGuide}
-        onRetakeQuiz={() => setStep(0)}
+        onRetakeQuiz={() => {
+          setViewMode("flow");
+          setStep(0);
+        }}
       />
     </View>
   );
@@ -2982,14 +3086,23 @@ const styles = StyleSheet.create({
     zIndex: 2,
   },
   routineHeaderBtn: {
-    width: scale(38),
-    height: scale(38),
-    borderRadius: moderateScale(19),
+    width: scale(40),
+    height: scale(40),
+    borderRadius: scale(20),
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "#FFFFFF",
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: "rgba(17,17,17,0.08)",
+    shadowColor: "#111111",
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 1,
+  },
+  routineHeaderBtnSpacer: {
+    width: scale(40),
+    height: scale(40),
   },
   routineHeaderCenter: {
     flex: 1,
@@ -2999,7 +3112,7 @@ const styles = StyleSheet.create({
   routineHeaderTitle: {
     ...morphFont,
     fontSize: fontSize(17),
-    fontWeight: "700",
+    fontWeight: "800",
     color: "#111111",
     letterSpacing: -0.3,
   },
@@ -3153,6 +3266,33 @@ const styles = StyleSheet.create({
   },
   progressFillLight: { height: "100%", backgroundColor: "#111111", borderRadius: moderateScale(99) },
   optGridLight: { marginTop: verticalScale(24), flexDirection: "row", flexWrap: "wrap", gap: moderateScale(10) },
+  scheduleOnboard: { marginTop: verticalScale(20), gap: moderateScale(10) },
+  scheduleOnboardLabel: {
+    ...morphFont,
+    fontSize: fontSize(12),
+    fontWeight: "700",
+    color: "rgba(17,17,17,0.45)",
+    textTransform: "uppercase",
+    letterSpacing: 0.4,
+    marginTop: verticalScale(4),
+  },
+  scheduleOnboardRow: { flexDirection: "row", flexWrap: "wrap", gap: moderateScale(8) },
+  scheduleOnboardChip: {
+    paddingHorizontal: scale(14),
+    paddingVertical: verticalScale(10),
+    borderRadius: 999,
+    backgroundColor: "#FFFFFF",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(17,17,17,0.1)",
+  },
+  scheduleOnboardChipOn: { backgroundColor: "#111", borderColor: "#111" },
+  scheduleOnboardChipText: {
+    ...morphFont,
+    fontSize: fontSize(13),
+    fontWeight: "700",
+    color: "#111",
+  },
+  scheduleOnboardChipTextOn: { color: "#fff" },
   optCardLight: {
     width: "47%",
     minHeight: verticalScale(72),

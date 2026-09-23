@@ -1,11 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
   Animated,
-  Image,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -127,6 +127,23 @@ function getStepsForCategory(category?: string, usageText?: string): StepItem[] 
   ];
 }
 
+const TimerBackdrop = memo(function TimerBackdrop({
+  running,
+  scale,
+}: {
+  running: boolean;
+  scale: Animated.Value;
+}) {
+  return (
+    <Animated.View style={[StyleSheet.absoluteFill, { transform: [{ scale }] }]}>
+      <LinearGradient
+        colors={running ? ["#111111", "#737373"] : ["#09090B", "#27272A"]}
+        style={StyleSheet.absoluteFill}
+      />
+    </Animated.View>
+  );
+});
+
 export function MorphCareProductGuideScreen({ navigation, route }: Props) {
   useHideTabBar();
   const { t } = useTranslation();
@@ -150,45 +167,48 @@ export function MorphCareProductGuideScreen({ navigation, route }: Props) {
     }
   }, [params.productId]);
 
-  useEffect(() => {
-    let interval: ReturnType<typeof setInterval> | null = null;
-    if (isRunning && timeLeft > 0) {
-      interval = setInterval(() => {
-        setTimeLeft((prev) => {
-          if (prev <= 1) {
-            setIsRunning(false);
-            setIsCompleted(true);
-            Alert.alert("Vaqt tugadi! 🎉", "Mahsulotni qo'llash bosqichi muvaffaqiyatli yakunlandi.");
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    }
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [isRunning, timeLeft]);
+  const leftRef = useRef(timeLeft);
+  leftRef.current = timeLeft;
 
   useEffect(() => {
-    if (isRunning) {
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(pulseAnim, {
-            toValue: 1.05,
-            duration: 800,
-            useNativeDriver: true,
-          }),
-          Animated.timing(pulseAnim, {
-            toValue: 1,
-            duration: 800,
-            useNativeDriver: true,
-          }),
-        ]),
-      ).start();
-    } else {
+    if (!isRunning) return;
+    const interval = setInterval(() => {
+      const next = leftRef.current - 1;
+      if (next <= 0) {
+        leftRef.current = 0;
+        setTimeLeft(0);
+        setIsRunning(false);
+        setIsCompleted(true);
+        Alert.alert("Vaqt tugadi! 🎉", "Mahsulotni qo'llash bosqichi muvaffaqiyatli yakunlandi.");
+        return;
+      }
+      leftRef.current = next;
+      setTimeLeft(next);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [isRunning]);
+
+  useEffect(() => {
+    if (!isRunning) {
       pulseAnim.setValue(1);
+      return;
     }
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1.05,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
   }, [isRunning, pulseAnim]);
 
   const toggleTimer = useCallback(() => {
@@ -224,6 +244,7 @@ export function MorphCareProductGuideScreen({ navigation, route }: Props) {
   const brand = product?.brand || params.brand || "Morf Care Pro";
   const category = product?.category || params.category || "spray";
   const image = product?.image_url || params.imageUrl || "";
+  const heroSource = useMemo(() => (image ? { uri: image } : null), [image]);
   const usageText = product?.usage_uz || params.usageText;
 
   const steps =
@@ -294,8 +315,15 @@ export function MorphCareProductGuideScreen({ navigation, route }: Props) {
       >
         {/* Product Hero Card */}
         <View style={styles.heroCard}>
-          {image ? (
-            <Image source={{ uri: image }} style={styles.heroImg} resizeMode="cover" />
+          {heroSource ? (
+            <Image
+              source={heroSource}
+              style={styles.heroImg}
+              contentFit="cover"
+              cachePolicy="memory-disk"
+              transition={0}
+              recyclingKey={image}
+            />
           ) : (
             <View style={[styles.heroImg, { backgroundColor: "#E8E8E8" }]} />
           )}
@@ -312,16 +340,15 @@ export function MorphCareProductGuideScreen({ navigation, route }: Props) {
         <View style={styles.timerCard}>
           <Text style={styles.timerSubtitle}>Tavsiya etilgan ta'sir vaqti</Text>
 
-          <Animated.View style={[styles.timerCircle, { transform: [{ scale: pulseAnim }] }]}>
-            <LinearGradient
-              colors={isRunning ? ["#111111", "#737373"] : ["#09090B", "#27272A"]}
-              style={StyleSheet.absoluteFill}
-            />
-            <Text style={styles.timerText}>{formatTime(timeLeft)}</Text>
-            <Text style={styles.timerStateLabel}>
-              {isRunning ? "Ta'sir qilmoqda..." : isCompleted ? "Bajarildi ✨" : "Tayyormisiz?"}
-            </Text>
-          </Animated.View>
+          <View style={styles.timerCircle}>
+            <TimerBackdrop running={isRunning} scale={pulseAnim} />
+            <View pointerEvents="none" style={styles.timerLabel}>
+              <Text style={styles.timerText}>{formatTime(timeLeft)}</Text>
+              <Text style={styles.timerStateLabel}>
+                {isRunning ? "Ta'sir qilmoqda..." : isCompleted ? "Bajarildi ✨" : "Tayyormisiz?"}
+              </Text>
+            </View>
+          </View>
 
           {/* Quick adjust buttons */}
           <View style={styles.adjustRow}>
@@ -509,6 +536,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 12,
     elevation: 6,
+  },
+  timerLabel: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: "center",
+    justifyContent: "center",
   },
   timerText: {
     ...morphFont,

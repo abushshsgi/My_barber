@@ -4,6 +4,7 @@ import { Image } from "expo-image";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Animated,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -11,6 +12,7 @@ import {
   View,
 } from "react-native";
 import { useTranslation } from "react-i18next";
+import Reanimated, { FadeIn, FadeOut } from "react-native-reanimated";
 import {
   generateCarePlan,
   type AiCarePlan,
@@ -28,8 +30,6 @@ import {
   sortProductIds,
   stripPlanProducts,
   type CareSchedulePrefs,
-  MORNING_TIME_OPTIONS,
-  EVENING_TIME_OPTIONS,
   type CareQuizAnswers,
   type RoutineSlot,
   type RoutineTask,
@@ -41,6 +41,15 @@ import {
   setRoutineTaskDone,
   type MyCareProduct,
 } from "../../../lib/morph-my-products";
+import { AiPlanThinkingOverlay, type AiScanProduct } from "./AiPlanThinkingOverlay";
+import { colors } from "../../../theme/colors";
+import { morphFont } from "../../../theme/morph-font";
+import {
+  fontSize,
+  moderateScale,
+  scale,
+  verticalScale,
+} from "../../../utils/responsive";
 
 /** Kategoriya sinonimlari — AI / offline reja moslashuvi. */
 const CAT_ALIASES: Record<string, string[]> = {
@@ -68,13 +77,6 @@ function findByCategory(
   }
   return undefined;
 }
-import { morphFont } from "../../../theme/morph-font";
-import {
-  fontSize,
-  moderateScale,
-  scale,
-  verticalScale,
-} from "../../../utils/responsive";
 
 type DayMode = "today" | RoutineSlot;
 
@@ -145,6 +147,10 @@ function enrichTask(
   let productId = t.product_id ?? undefined;
   let product = productId ? byId.get(productId) : undefined;
   let productName = t.product_name || product?.name;
+  if (!productName || productName === "null" || productName === "undefined") {
+    productName = product?.name || undefined;
+  }
+  if (productName === "null" || productName === "undefined") productName = undefined;
 
   if ((!product || !productName || GENERIC.test(productName || "")) && products.length) {
     const blob = `${t.title} ${productName || ""} ${t.subtitle || ""}`;
@@ -210,6 +216,8 @@ function mapSlotTasks(
   catalog?: CareProduct[],
   schedule?: CareSchedulePrefs | null,
 ): RoutineTask[] {
+  // Mahsulotsiz — offline fallback ham yo‘q (faqat qo‘shish CTA)
+  if (!products.length) return [];
   if (plan && Array.isArray(plan[slot]) && plan[slot].length > 0) {
     const rows = plan[slot].map((t) => enrichTask(t, products, slot, catalog));
     const anchor = slot === "morning" ? schedule?.morningTime : schedule?.eveningTime;
@@ -220,8 +228,12 @@ function mapSlotTasks(
     const product = products.find((p) => p.id === task.productId);
     const catalogRow = task.productId ? catalogById.get(task.productId) : undefined;
     const rawImage = product?.image_url || catalogRow?.image_url || null;
+    const rawName = task.productName || product?.name;
+    const productName =
+      rawName && rawName !== "null" && rawName !== "undefined" ? rawName : undefined;
     return {
       ...task,
+      productName,
       slot,
       imageUrl: productImageUri(rawImage),
       usageHow: product?.usage_uz || product?.purpose_uz || task.subtitle,
@@ -274,13 +286,15 @@ export function CareRoutineSheet({
   const [aiError, setAiError] = useState<string | null>(null);
   const [remindersOn, setRemindersOn] = useState(false);
   const [schedule, setSchedule] = useState<CareSchedulePrefs | null>(null);
-  const [draftMorning, setDraftMorning] = useState<string>("07:30");
-  const [draftEvening, setDraftEvening] = useState<string>("21:00");
-  const [editingSchedule, setEditingSchedule] = useState(false);
-  const [scheduleReady, setScheduleReady] = useState(false);
+  const [celebrate, setCelebrate] = useState(false);
+  const [howOpenId, setHowOpenId] = useState<string | null>(null);
   const knownIdsRef = useRef<number[]>([]);
   const planRef = useRef<AiCarePlan | null>(null);
   const syncingRef = useRef(false);
+  const loadedOnceRef = useRef(false);
+  const prevProductCountRef = useRef<number | null>(null);
+  const celebrateScale = useRef(new Animated.Value(0.7)).current;
+  const celebrateOpacity = useRef(new Animated.Value(0)).current;
 
   const morningTasks = useMemo(
     () => mapSlotTasks(aiPlan, "morning", myProducts, quiz, catalog, schedule),
@@ -357,9 +371,16 @@ export function CareRoutineSheet({
     async (products: MyCareProduct[], prefs?: CareSchedulePrefs | null) => {
       const sched = prefs ?? schedule;
       if (!sched?.morningTime || !sched?.eveningTime) return;
+      if (!products.length) {
+        setAiPlan(null);
+        planRef.current = null;
+        return;
+      }
       setAiLoading(true);
       setAiAppending(false);
       setAiError(null);
+      setAiPlan(null);
+      planRef.current = null;
       try {
         const plan = await generateCarePlan({
           condition: quiz.condition,
@@ -414,6 +435,12 @@ export function CareRoutineSheet({
       if (syncingRef.current) return;
       const sched = opts?.prefs ?? schedule;
       if (!sched?.morningTime || !sched?.eveningTime) return;
+      if (!products.length) {
+        setAiPlan(null);
+        planRef.current = null;
+        knownIdsRef.current = [];
+        return;
+      }
       syncingRef.current = true;
       try {
         const profile = careProfileKey(quiz, sched);
@@ -480,38 +507,23 @@ export function CareRoutineSheet({
     [appendForProducts, generateFull, persistPlan, quiz, schedule, syncReminders],
   );
 
-  const confirmSchedule = useCallback(async () => {
-    const prefs: CareSchedulePrefs = {
-      morningTime: draftMorning,
-      eveningTime: draftEvening,
-    };
-    await saveCareSchedule(prefs);
-    setSchedule(prefs);
-    setEditingSchedule(false);
-    const mine = myProducts.length ? myProducts : await loadMyProducts();
-    setMyProducts(mine);
-    await syncPlanWithProducts(mine, { forceFull: true, prefs });
-  }, [draftEvening, draftMorning, myProducts, syncPlanWithProducts]);
-
   const refreshLocal = useCallback(async () => {
-    setLoadingProducts(true);
+    if (!loadedOnceRef.current) setLoadingProducts(true);
     try {
-      const [mine, done, sched] = await Promise.all([
+      const [mine, done, schedRaw] = await Promise.all([
         loadMyProducts(),
         loadRoutineDone(selectedDate),
         loadCareSchedule(),
       ]);
       setMyProducts(mine);
       setDoneMap(done);
-      setSchedule(sched);
-      if (sched) {
-        setDraftMorning(sched.morningTime);
-        setDraftEvening(sched.eveningTime);
-        setEditingSchedule(false);
-      } else {
-        setEditingSchedule(true);
+      let sched = schedRaw;
+      if (!sched?.morningTime || !sched?.eveningTime) {
+        sched = { morningTime: "07:30", eveningTime: "21:00" };
+        await saveCareSchedule(sched);
       }
-      setScheduleReady(true);
+      setSchedule(sched);
+      loadedOnceRef.current = true;
       return mine;
     } finally {
       setLoadingProducts(false);
@@ -534,6 +546,47 @@ export function CareRoutineSheet({
     }, [refreshLocal, syncPlanWithProducts]),
   );
 
+  useEffect(() => {
+    const prev = prevProductCountRef.current;
+    const next = myProducts.length;
+    if (prev === null) {
+      prevProductCountRef.current = next;
+      return;
+    }
+    if (prev === 0 && next > 0) {
+      setCelebrate(true);
+      celebrateOpacity.setValue(0);
+      celebrateScale.setValue(0.65);
+      Animated.parallel([
+        Animated.spring(celebrateScale, {
+          toValue: 1,
+          friction: 5,
+          tension: 80,
+          useNativeDriver: true,
+        }),
+        Animated.timing(celebrateOpacity, {
+          toValue: 1,
+          duration: 220,
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        setTimeout(() => {
+          Animated.timing(celebrateOpacity, {
+            toValue: 0,
+            duration: 280,
+            useNativeDriver: true,
+          }).start(() => setCelebrate(false));
+        }, 900);
+      });
+    }
+    if (next === 0) {
+      setAiPlan(null);
+      planRef.current = null;
+      knownIdsRef.current = [];
+    }
+    prevProductCountRef.current = next;
+  }, [celebrateOpacity, celebrateScale, myProducts.length]);
+
   const toggleTask = async (taskId: string) => {
     const next = !doneMap[taskId];
     const updated = await setRoutineTaskDone(selectedDate, taskId, next);
@@ -553,7 +606,26 @@ export function CareRoutineSheet({
   };
 
   const greeting = userName?.trim().split(/\s+/)[0] || t("care.routine.friendFallback", { defaultValue: "Do‘stim" });
-  const showStickyShelfCta = !!schedule && !editingSchedule;
+  const hasProducts = myProducts.length > 0;
+  const scanProducts = useMemo<AiScanProduct[]>(
+    () =>
+      myProducts.map((p) => ({
+        id: p.id,
+        name: p.name,
+        image: productImageUri(p.image_url),
+      })),
+    [myProducts],
+  );
+  const showPlans =
+    hasProducts && !!schedule && !!aiPlan && !aiLoading && !aiAppending;
+  const showAiThinking = hasProducts && !!schedule && (aiLoading || aiAppending);
+  const showStickyShelfCta = showPlans;
+  const emptyOnly = !loadingProducts && !hasProducts;
+
+  const displayProductName = (name?: string | null) => {
+    if (!name || name === "null" || name === "undefined") return null;
+    return name;
+  };
 
   return (
     <View style={styles.sheetWrap}>
@@ -567,355 +639,354 @@ export function CareRoutineSheet({
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.dayHero}>
-        <View style={styles.dayHeroTop}>
-          <View style={{ flex: 1, minWidth: 0 }}>
-            <Text style={styles.dayEyebrow}>
-              {t("care.routine.dayRitual", { defaultValue: "Bugungi ritual" })}
-            </Text>
-            <Text style={styles.dayHello}>
-              {t("care.routine.helloName", {
-                name: greeting,
-                defaultValue: "Salom, {{name}}",
-              })}
-            </Text>
-            <Text style={styles.daySub} numberOfLines={2}>
-              {aiPlan?.summary ||
-                t("care.routine.daySub", {
-                  defaultValue: "Mahsulotlaringiz bilan 1 kunlik to‘liq soch parvarishi",
-                })}
-            </Text>
-          </View>
-          <Pressable style={styles.refreshBtn} onPress={() => void syncPlanWithProducts(myProducts, { forceFull: true })}>
-            <Ionicons name="refresh-outline" size={16} color="#111" />
-          </Pressable>
-        </View>
-
-        <View style={styles.progressWrap}>
-          <View style={styles.progressTrack}>
-            <View style={[styles.progressFill, { width: `${Math.round(progress * 100)}%` }]} />
-          </View>
-          <Text style={styles.progressText}>
-            {doneCount}/{tasks.length || 0} · {Math.round(progress * 100)}%
-          </Text>
-        </View>
-
-        {remindersOn ? (
-          <View style={styles.remindBanner}>
-            <Ionicons name="notifications" size={14} color="#111" />
-            <Text style={styles.remindText}>
-              {t("care.routine.remindOn", {
-                defaultValue: "Vaqti kelganda eslatma yuboriladi",
-              })}
-            </Text>
-          </View>
-        ) : null}
-
-        <Pressable style={styles.shelfLink} onPress={onOpenShelf}>
-          <View style={styles.shelfLinkIcon}>
-            <Ionicons name="cube-outline" size={14} color="#111" />
-          </View>
-          <View style={{ flex: 1, minWidth: 0 }}>
-            <Text style={styles.shelfLinkTitle}>
-              {t("care.shelf.cta", { defaultValue: "Mahsulot tugash muddatini kuzatish" })}
-            </Text>
-            <Text style={styles.shelfLinkSub}>
-              {t("care.shelf.ctaSub", { defaultValue: "PAO va refill eslatmalarini yoqish" })}
-            </Text>
-          </View>
-          <Ionicons name="chevron-forward" size={16} color="#111" />
-        </Pressable>
-      </View>
-
-      {scheduleReady && (editingSchedule || !schedule) ? (
-        <View style={styles.scheduleCard}>
-          <Text style={styles.scheduleTitle}>
-            {t("care.routine.scheduleTitle", { defaultValue: "Qulay vaqtingiz" })}
-          </Text>
-          <Text style={styles.scheduleSub}>
-            {t("care.routine.scheduleSub", {
-              defaultValue: "Ertalab va kechqurun qachon parvarish qilasiz? Shu asosida shaxsiy sxema tuziladi.",
-            })}
-          </Text>
-
-          <Text style={styles.scheduleLabel}>
-            {t("care.routine.slots.morning")}
-          </Text>
-          <View style={styles.timeRow}>
-            {MORNING_TIME_OPTIONS.map((opt) => {
-              const on = draftMorning === opt;
-              return (
-                <Pressable
-                  key={opt}
-                  style={[styles.timeChip, on && styles.timeChipOn]}
-                  onPress={() => setDraftMorning(opt)}
-                >
-                  <Text style={[styles.timeChipText, on && styles.timeChipTextOn]}>{opt}</Text>
-                </Pressable>
-              );
-            })}
-          </View>
-
-          <Text style={styles.scheduleLabel}>
-            {t("care.routine.slots.evening")}
-          </Text>
-          <View style={styles.timeRow}>
-            {EVENING_TIME_OPTIONS.map((opt) => {
-              const on = draftEvening === opt;
-              return (
-                <Pressable
-                  key={opt}
-                  style={[styles.timeChip, on && styles.timeChipOn]}
-                  onPress={() => setDraftEvening(opt)}
-                >
-                  <Text style={[styles.timeChipText, on && styles.timeChipTextOn]}>{opt}</Text>
-                </Pressable>
-              );
-            })}
-          </View>
-
-          <Pressable style={styles.scheduleSave} onPress={() => void confirmSchedule()}>
-            <Text style={styles.scheduleSaveText}>
-              {t("care.routine.scheduleSave", { defaultValue: "Shu vaqtga reja tuzish" })}
-            </Text>
-          </Pressable>
-          {schedule ? (
-            <Pressable onPress={() => setEditingSchedule(false)}>
-              <Text style={styles.scheduleCancel}>
-                {t("common.cancel", { defaultValue: "Bekor qilish" })}
-              </Text>
-            </Pressable>
-          ) : null}
-        </View>
-      ) : schedule ? (
-        <Pressable style={styles.scheduleSummary} onPress={() => setEditingSchedule(true)}>
-          <View style={{ flex: 1, minWidth: 0 }}>
-            <Text style={styles.scheduleSummaryTitle}>
-              {t("care.routine.scheduleActive", { defaultValue: "Sizning oynangiz" })}
-            </Text>
-            <Text style={styles.scheduleSummaryMeta}>
-              {t("care.routine.slots.morning")} {schedule.morningTime} ·{" "}
-              {t("care.routine.slots.evening")} {schedule.eveningTime}
-            </Text>
-          </View>
-          <Ionicons name="create-outline" size={18} color="#111" />
-        </Pressable>
-      ) : null}
-
-      {schedule && !editingSchedule ? (
-      <>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.modeRow}>
-        {DAY_MODES.map((item) => {
-          const on = mode === item.id;
-          return (
-            <Pressable
-              key={item.id}
-              style={[styles.modeChip, on && styles.modeChipOn]}
-              onPress={() => setMode(item.id)}
-            >
-              <Ionicons name={item.icon} size={14} color={on ? "#fff" : "#111"} />
-              <Text style={[styles.modeChipText, on && styles.modeChipTextOn]}>
-                {t(item.labelKey, {
-                  defaultValue:
-                    item.id === "today"
-                      ? "Bugun"
-                      : item.id === "morning"
-                        ? "Ertalab"
-                        : item.id === "evening"
-                          ? "Kechqurun"
-                          : "Haftalik",
-                })}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </ScrollView>
-
-      {aiLoading || aiAppending ? (
-        <View style={styles.aiLoadingRow}>
-          <ActivityIndicator size="small" color="#111" />
-          <Text style={styles.aiLoadingText}>
-            {aiAppending
-              ? t("care.routine.aiPlanAppending")
-              : t("care.routine.aiPlanLoading")}
-          </Text>
-        </View>
-      ) : null}
-
-      {aiError && !aiPlan ? (
-        <Pressable
-          style={styles.aiErrorRow}
-          onPress={() => void syncPlanWithProducts(myProducts, { forceFull: true })}
-        >
-          <Text style={styles.aiErrorText}>{aiError}</Text>
-          <Text style={styles.aiRetry}>{t("care.routine.aiPlanRetry")}</Text>
-        </Pressable>
-      ) : null}
-
-      {myProducts.length === 0 ? (
-        <Pressable style={styles.emptyProducts} onPress={onOpenScan}>
-          <Ionicons name="bag-add-outline" size={28} color="#111" />
-          <Text style={styles.emptyProductsTitle}>{t("care.myProducts.emptyTitle")}</Text>
-          <Text style={styles.emptyProductsSub}>
-            {t("care.routine.needProducts", {
-              defaultValue: "Reja sizning mahsulotlaringiz bilan tuziladi — avval qo‘shing",
-            })}
-          </Text>
-        </Pressable>
-      ) : null}
-
-      <View style={styles.stepStack}>
-        {tasks.map((task, index) => {
-          const done = !!doneMap[task.id];
-          return (
-            <View key={task.id} style={[styles.ritualCard, done && styles.ritualCardDone]}>
-              <View style={styles.ritualTop}>
-                <View style={styles.ritualIndex}>
-                  <Text style={styles.ritualIndexText}>{index + 1}</Text>
-                </View>
-                {(task.time || task.timeHint) ? (
-                  <View style={styles.timePill}>
-                    <Ionicons name="time-outline" size={12} color="#111" />
-                    <Text style={styles.timePillText}>{task.time || task.timeHint}</Text>
-                  </View>
-                ) : null}
-                {task.slot ? (
-                  <Text style={styles.slotTag}>
-                    {task.slot === "morning"
-                      ? t("care.routine.slots.morning")
-                      : task.slot === "evening"
-                        ? t("care.routine.slots.evening")
-                        : t("care.routine.slots.weekly")}
-                  </Text>
-                ) : null}
-                <View style={{ flex: 1 }} />
-                <Pressable
-                  style={[styles.checkBtn, done && styles.checkBtnOn]}
-                  onPress={() => void toggleTask(task.id)}
-                  hitSlop={8}
-                >
-                  {done ? <Ionicons name="checkmark" size={16} color="#fff" /> : null}
-                </Pressable>
-              </View>
-
-              <View style={styles.productBlock}>
-                <Pressable
-                  style={styles.productImgWrap}
-                  onPress={() => (task.productId ? onOpenProduct(task.productId) : undefined)}
-                >
-                  {task.imageUrl ? (
-                    <Image source={{ uri: task.imageUrl }} style={styles.productImg} contentFit="cover" />
-                  ) : (
-                    <View style={[styles.productImg, styles.productPh]}>
-                      <Ionicons name={TASK_ICONS[task.icon]} size={22} color="#111" />
-                    </View>
-                  )}
-                </Pressable>
-
-                <View style={styles.productCopy}>
-                  <Text style={[styles.ritualTitle, done && styles.ritualTitleDone]} numberOfLines={2}>
-                    {task.title}
-                  </Text>
-                  {task.productName ? (
-                    <Text style={styles.productName} numberOfLines={1}>
-                      {task.productName}
-                      {task.brand ? ` · ${task.brand}` : ""}
-                    </Text>
-                  ) : null}
-                  {task.durationMin ? (
-                    <Text style={styles.durationLabel}>{task.durationMin} daq</Text>
-                  ) : null}
-                </View>
-
-                <Pressable
-                  style={styles.playBtn}
-                  onPress={() => openGuideFor(task)}
-                  accessibilityLabel={t("care.routine.playHow", { defaultValue: "Qanday ishlatish" })}
-                >
-                  <Ionicons name="play" size={18} color="#fff" />
-                </Pressable>
-              </View>
-
-              <View style={styles.howBox}>
-                <Text style={styles.howLabel}>
-                  {t("care.routine.howToUse", { defaultValue: "Qanday ishlatish" })}
-                </Text>
-                <Text style={styles.howText} numberOfLines={4}>
-                  {task.usageHow ||
-                    task.subtitle ||
-                    t("care.routine.howFallback", {
-                      defaultValue: "Play tugmasini bosing — bosqichma-bosqich yo‘riqnoma ochiladi",
-                    })}
-                </Text>
-              </View>
-
-              <View style={styles.ritualActions}>
-                <Pressable style={styles.secondaryAct} onPress={() => openGuideFor(task)}>
-                  <Ionicons name="play-circle-outline" size={16} color="#111" />
-                  <Text style={styles.secondaryActText}>
-                    {t("care.routine.startGuide", { defaultValue: "Yo‘riqnoma" })}
-                  </Text>
-                </Pressable>
-                <Pressable
-                  style={[styles.primaryAct, done && styles.primaryActDone]}
-                  onPress={() => void toggleTask(task.id)}
-                >
-                  <Text style={[styles.primaryActText, done && styles.primaryActTextDone]}>
-                    {done
-                      ? t("care.routine.stepDone", { defaultValue: "Bajarildi" })
-                      : t("care.routine.stepTodo", { defaultValue: "Bajarildi deb belgilash" })}
-                  </Text>
-                </Pressable>
-              </View>
+        {emptyOnly ? (
+          <View style={styles.emptyHero}>
+            <View style={styles.emptyGlow} />
+            <View style={styles.emptyIconRing}>
+              <Ionicons name="leaf-outline" size={30} color={colors.fg} />
             </View>
-          );
-        })}
-      </View>
-
-      <View style={styles.sectionHead}>
-        <Text style={styles.sectionTitle}>{t("care.myProducts.title")}</Text>
-        <Pressable style={styles.scanLink} onPress={onOpenScan}>
-          <Ionicons name="scan-outline" size={16} color="#111" />
-          <Text style={styles.scanLinkText}>{t("care.myProducts.scan")}</Text>
-        </Pressable>
-      </View>
-
-      {loadingProducts ? (
-        <ActivityIndicator color="#111" style={{ marginVertical: 12 }} />
-      ) : (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.productRow}>
-          {myProducts.map((p) => {
-            const img = productImageUri(p.image_url);
-            return (
-            <Pressable key={p.id} style={styles.myCard} onPress={() => onOpenProduct(p.id)}>
-              {img ? (
-                <Image source={{ uri: img }} style={styles.myCardImg} contentFit="cover" />
-              ) : (
-                <View style={[styles.myCardImg, styles.productPh]}>
-                  <Ionicons name="flask-outline" size={20} color="#111" />
-                </View>
-              )}
-              <Text style={styles.myCardName} numberOfLines={2}>
-                {p.name}
+            <Text style={styles.emptyEyebrow}>
+              {t("care.hubParvarish", { defaultValue: "Parvarish" })}
+            </Text>
+            <Text style={styles.emptyHeroTitle}>
+              {t("care.myProducts.emptyTitle", { defaultValue: "Hali mahsulot yo‘q" })}
+            </Text>
+            <Text style={styles.emptyHeroSub}>
+              {t("care.routine.needProducts", {
+                defaultValue: "Reja sizning mahsulotlaringiz bilan tuziladi — avval qo‘shing",
+              })}
+            </Text>
+            <Pressable style={styles.emptyPrimaryCta} onPress={onOpenCatalog}>
+              <Ionicons name="search-outline" size={18} color="#fff" />
+              <Text style={styles.emptyPrimaryCtaText}>
+                {t("care.catalog.title", { defaultValue: "Tavsiya etilgan mahsulotlar" })}
               </Text>
             </Pressable>
-            );
-          })}
-          <Pressable style={styles.addCard} onPress={onOpenCatalog}>
-            <Ionicons name="add" size={22} color="#111" />
-            <Text style={styles.addCardText}>{t("care.myProducts.addShort")}</Text>
-          </Pressable>
-        </ScrollView>
-      )}
-      </>
-      ) : null}
+            <Pressable style={styles.emptySecondaryCta} onPress={onOpenScan}>
+              <View style={styles.emptySecondaryIcon}>
+                <Ionicons name="scan-outline" size={16} color={colors.fg} />
+              </View>
+              <Text style={styles.emptySecondaryCtaText}>
+                {t("care.myProducts.scan", { defaultValue: "Skaner" })}
+              </Text>
+            </Pressable>
+          </View>
+        ) : (
+          <>
+            <View style={styles.dayHero}>
+              <View style={styles.dayHeroTop}>
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text style={styles.dayEyebrow}>
+                    {showPlans
+                      ? t("care.routine.planKicker", { defaultValue: "Morf AI" })
+                      : t("care.routine.dayRitual", { defaultValue: "Bugungi ritual" })}
+                  </Text>
+                  <Text style={styles.dayHello} numberOfLines={2}>
+                    {showPlans
+                      ? t("care.routine.planTitle", { defaultValue: "Morf AI Parvarish Rejasi" })
+                      : t("care.routine.helloName", {
+                          name: greeting,
+                          defaultValue: "Salom, {{name}}",
+                        })}
+                  </Text>
+                  <Text style={styles.daySub} numberOfLines={2}>
+                    {showPlans
+                      ? aiPlan?.summary ||
+                        t("care.routine.daySub", {
+                          defaultValue: "Mahsulotlaringiz bilan 1 kunlik to‘liq soch parvarishi",
+                        })
+                      : t("care.routine.daySubWaiting", {
+                          defaultValue: "Mahsulotlaringiz asosida AI shaxsiy reja tuzadi",
+                        })}
+                  </Text>
+                </View>
+                {hasProducts ? (
+                  <Pressable
+                    style={styles.refreshBtn}
+                    onPress={() => void syncPlanWithProducts(myProducts, { forceFull: true })}
+                  >
+                    <Ionicons name="refresh-outline" size={16} color={colors.fg} />
+                  </Pressable>
+                ) : null}
+              </View>
 
-        <Pressable style={styles.profileLink} onPress={onRetakeQuiz}>
-          <Text style={styles.profileLinkText}>
-            {t("care.quiz.retake")} · {t("care.onboarding.badge")}
-          </Text>
-        </Pressable>
+              {showPlans ? (
+                <>
+                  <View style={styles.progressWrap}>
+                    <View style={styles.progressTrack}>
+                      <View style={[styles.progressFill, { width: `${Math.round(progress * 100)}%` }]} />
+                    </View>
+                    <Text style={styles.progressText}>
+                      {doneCount}/{tasks.length || 0} · {Math.round(progress * 100)}%
+                    </Text>
+                  </View>
+                  {remindersOn ? (
+                    <View style={styles.remindBanner}>
+                      <Ionicons name="notifications" size={13} color={colors.fg} />
+                      <Text style={styles.remindText}>
+                        {t("care.routine.remindOn", {
+                          defaultValue: "Vaqti kelganda eslatma yuboriladi",
+                        })}
+                      </Text>
+                    </View>
+                  ) : null}
+                </>
+              ) : null}
+            </View>
+
+            {showAiThinking ? (
+              <Reanimated.View entering={FadeIn.duration(280)} exiting={FadeOut.duration(220)}>
+                <AiPlanThinkingOverlay appending={aiAppending} products={scanProducts} />
+              </Reanimated.View>
+            ) : null}
+
+            {aiError && !aiPlan && hasProducts && !showAiThinking ? (
+              <Pressable
+                style={styles.aiErrorRow}
+                onPress={() => void syncPlanWithProducts(myProducts, { forceFull: true })}
+              >
+                <Text style={styles.aiErrorText}>{aiError}</Text>
+                <Text style={styles.aiRetry}>{t("care.routine.aiPlanRetry")}</Text>
+              </Pressable>
+            ) : null}
+
+            {showPlans ? (
+              <Reanimated.View entering={FadeIn.duration(420)}>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.modeRow}
+                >
+                  {DAY_MODES.map((item) => {
+                    const on = mode === item.id;
+                    return (
+                      <Pressable
+                        key={item.id}
+                        style={[styles.modeChip, on && styles.modeChipOn]}
+                        onPress={() => setMode(item.id)}
+                      >
+                        <Ionicons name={item.icon} size={14} color={on ? "#fff" : "#111"} />
+                        <Text style={[styles.modeChipText, on && styles.modeChipTextOn]}>
+                          {t(item.labelKey, {
+                            defaultValue:
+                              item.id === "today"
+                                ? "Bugun"
+                                : item.id === "morning"
+                                  ? "Ertalab"
+                                  : item.id === "evening"
+                                    ? "Kechqurun"
+                                    : "Haftalik",
+                          })}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </ScrollView>
+
+                <View style={styles.stepStack}>
+                  {tasks.map((task, index) => {
+                    const done = !!doneMap[task.id];
+                    const pname = displayProductName(task.productName);
+                    const howExpanded = howOpenId === task.id;
+                    return (
+                      <View key={task.id} style={[styles.ritualCard, done && styles.ritualCardDone]}>
+                        <View style={styles.ritualTop}>
+                          <View style={styles.ritualIndex}>
+                            <Text style={styles.ritualIndexText}>{index + 1}</Text>
+                          </View>
+                          {task.time || task.timeHint ? (
+                            <View style={styles.timePill}>
+                              <Ionicons name="time-outline" size={11} color="#111" />
+                              <Text style={styles.timePillText}>{task.time || task.timeHint}</Text>
+                            </View>
+                          ) : null}
+                          {task.slot ? (
+                            <Text style={styles.slotTag}>
+                              {task.slot === "morning"
+                                ? t("care.routine.slots.morning")
+                                : task.slot === "evening"
+                                  ? t("care.routine.slots.evening")
+                                  : t("care.routine.slots.weekly")}
+                            </Text>
+                          ) : null}
+                          <View style={{ flex: 1 }} />
+                          <Pressable
+                            style={[styles.checkBtn, done && styles.checkBtnOn]}
+                            onPress={() => void toggleTask(task.id)}
+                            hitSlop={8}
+                          >
+                            {done ? <Ionicons name="checkmark" size={14} color="#fff" /> : null}
+                          </Pressable>
+                        </View>
+
+                        <View style={styles.productBlock}>
+                          <Pressable
+                            style={styles.productImgWrap}
+                            onPress={() => (task.productId ? onOpenProduct(task.productId) : undefined)}
+                          >
+                            {task.imageUrl ? (
+                              <Image
+                                source={{ uri: task.imageUrl }}
+                                style={styles.productImg}
+                                contentFit="cover"
+                                cachePolicy="memory-disk"
+                                transition={0}
+                                recyclingKey={`task-${task.id}`}
+                              />
+                            ) : (
+                              <View style={[styles.productImg, styles.productPh]}>
+                                <Ionicons name={TASK_ICONS[task.icon]} size={18} color="#111" />
+                              </View>
+                            )}
+                          </Pressable>
+
+                          <View style={styles.productCopy}>
+                            <Text
+                              style={[styles.ritualTitle, done && styles.ritualTitleDone]}
+                              numberOfLines={2}
+                            >
+                              {task.title}
+                            </Text>
+                            {pname ? (
+                              <Text style={styles.productName} numberOfLines={1}>
+                                {pname}
+                                {task.brand ? ` · ${task.brand}` : ""}
+                              </Text>
+                            ) : null}
+                            {task.durationMin ? (
+                              <Text style={styles.durationLabel}>{task.durationMin} daq</Text>
+                            ) : null}
+                          </View>
+                        </View>
+
+                        <Pressable
+                          style={styles.howBox}
+                          onPress={() => setHowOpenId(howExpanded ? null : task.id)}
+                        >
+                          <View style={styles.howBoxHead}>
+                            <Text style={styles.howLabel}>
+                              {t("care.routine.howToUse", { defaultValue: "Qanday ishlatish" })}
+                            </Text>
+                            <Ionicons
+                              name={howExpanded ? "chevron-up" : "chevron-down"}
+                              size={14}
+                              color="rgba(17,17,17,0.45)"
+                            />
+                          </View>
+                          <Text style={styles.howText} numberOfLines={howExpanded ? 6 : 2}>
+                            {task.usageHow ||
+                              task.subtitle ||
+                              t("care.routine.howFallback", {
+                                defaultValue:
+                                  "Play tugmasini bosing — bosqichma-bosqich yo‘riqnoma ochiladi",
+                              })}
+                          </Text>
+                        </Pressable>
+
+                        <View style={styles.ritualActions}>
+                          <Pressable style={styles.secondaryAct} onPress={() => openGuideFor(task)}>
+                            <Ionicons name="play-circle-outline" size={15} color="#111" />
+                            <Text style={styles.secondaryActText}>
+                              {t("care.routine.startGuide", { defaultValue: "Yo‘riqnoma" })}
+                            </Text>
+                          </Pressable>
+                          <Pressable
+                            style={[styles.primaryAct, done && styles.primaryActDone]}
+                            onPress={() => void toggleTask(task.id)}
+                          >
+                            <Text style={[styles.primaryActText, done && styles.primaryActTextDone]}>
+                              {done
+                                ? t("care.routine.stepDone", { defaultValue: "Bajarildi" })
+                                : t("care.routine.stepTodo", {
+                                    defaultValue: "Bajarildi deb belgilash",
+                                  })}
+                            </Text>
+                          </Pressable>
+                        </View>
+                      </View>
+                    );
+                  })}
+                </View>
+
+                <View style={styles.sectionHead}>
+                  <Text style={styles.sectionTitle}>{t("care.myProducts.title")}</Text>
+                  <Pressable style={styles.scanLink} onPress={onOpenScan}>
+                    <Ionicons name="scan-outline" size={16} color="#111" />
+                    <Text style={styles.scanLinkText}>{t("care.myProducts.scan")}</Text>
+                  </Pressable>
+                </View>
+
+                {loadingProducts ? (
+                  <ActivityIndicator color="#111" style={{ marginVertical: 12 }} />
+                ) : (
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.productRow}
+                  >
+                    {myProducts.map((p) => {
+                      const img = productImageUri(p.image_url);
+                      return (
+                        <Pressable key={p.id} style={styles.myCard} onPress={() => onOpenProduct(p.id)}>
+                          {img ? (
+                            <Image
+                              source={{ uri: img }}
+                              style={styles.myCardImg}
+                              contentFit="cover"
+                              cachePolicy="memory-disk"
+                              transition={0}
+                              recyclingKey={`mine-${p.id}`}
+                            />
+                          ) : (
+                            <View style={[styles.myCardImg, styles.productPh]}>
+                              <Ionicons name="flask-outline" size={20} color="#111" />
+                            </View>
+                          )}
+                          <Text style={styles.myCardName} numberOfLines={2}>
+                            {p.name}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
+                    <Pressable style={styles.addCard} onPress={onOpenCatalog}>
+                      <Ionicons name="add" size={22} color="#111" />
+                      <Text style={styles.addCardText}>{t("care.myProducts.addShort")}</Text>
+                    </Pressable>
+                  </ScrollView>
+                )}
+              </Reanimated.View>
+            ) : null}
+          </>
+        )}
+
+        {!emptyOnly ? (
+          <Pressable style={styles.profileLink} onPress={onRetakeQuiz}>
+            <Text style={styles.profileLinkText}>
+              {t("care.quiz.retake")} · {t("care.onboarding.badge")}
+            </Text>
+          </Pressable>
+        ) : null}
       </ScrollView>
+
+      {celebrate ? (
+        <Animated.View
+          pointerEvents="none"
+          style={[
+            styles.celebrateOverlay,
+            { opacity: celebrateOpacity, transform: [{ scale: celebrateScale }] },
+          ]}
+        >
+          <View style={styles.celebrateCard}>
+            <Ionicons name="checkmark-circle" size={36} color="#16A34A" />
+            <Text style={styles.celebrateTitle}>
+              {t("care.routine.productAdded", { defaultValue: "Mahsulot qo‘shildi!" })}
+            </Text>
+            <Text style={styles.celebrateSub}>
+              {t("care.routine.aiWillPlan", { defaultValue: "AI endi reja tuzadi…" })}
+            </Text>
+          </View>
+        </Animated.View>
+      ) : null}
 
       {showStickyShelfCta ? (
         <View pointerEvents="box-none" style={styles.stickyShelfWrap}>
@@ -941,89 +1012,232 @@ export function CareRoutineSheet({
 
 const styles = StyleSheet.create({
   sheetWrap: { flex: 1, position: "relative" },
-  sheetScroll: { flex: 1, backgroundColor: "#EFEDE8" },
+  sheetScroll: { flex: 1, backgroundColor: colors.bg },
   sheetContent: {
     paddingHorizontal: scale(16),
-    paddingTop: verticalScale(8),
+    paddingTop: verticalScale(10),
     paddingBottom: verticalScale(110),
-    gap: moderateScale(14),
+    gap: moderateScale(12),
   },
   sheetContentWithStickyCta: {
     paddingBottom: verticalScale(186),
   },
   dayHero: {
-    borderRadius: moderateScale(28),
-    backgroundColor: "#FFFFFF",
-    padding: moderateScale(18),
-    gap: moderateScale(12),
+    borderRadius: moderateScale(22),
+    backgroundColor: colors.surface,
+    padding: moderateScale(14),
+    gap: moderateScale(10),
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(17,17,17,0.06)",
+    borderColor: colors.border,
+    shadowColor: "#111",
+    shadowOpacity: 0.04,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
   },
   dayHeroTop: { flexDirection: "row", gap: moderateScale(10), alignItems: "flex-start" },
   dayEyebrow: {
     ...morphFont,
-    fontSize: fontSize(11),
+    fontSize: fontSize(10),
     fontWeight: "700",
-    letterSpacing: 0.6,
+    letterSpacing: 0.7,
     textTransform: "uppercase",
-    color: "rgba(17,17,17,0.4)",
+    color: colors.muted,
   },
   dayHello: {
     ...morphFont,
-    marginTop: verticalScale(4),
-    fontSize: fontSize(24),
-    fontWeight: "700",
-    color: "#111",
+    marginTop: verticalScale(3),
+    fontSize: fontSize(20),
+    fontWeight: "800",
+    color: colors.fg,
     letterSpacing: -0.5,
   },
   daySub: {
     ...morphFont,
-    marginTop: verticalScale(4),
-    fontSize: fontSize(13),
-    lineHeight: fontSize(18),
+    marginTop: verticalScale(3),
+    fontSize: fontSize(12.5),
+    lineHeight: fontSize(17),
     color: "rgba(17,17,17,0.55)",
   },
   refreshBtn: {
-    width: scale(40),
-    height: scale(40),
-    borderRadius: moderateScale(14),
-    backgroundColor: "#F3F1EC",
+    width: scale(36),
+    height: scale(36),
+    borderRadius: scale(18),
+    backgroundColor: colors.promo,
     alignItems: "center",
     justifyContent: "center",
   },
-  progressWrap: { gap: moderateScale(6) },
+  progressWrap: { gap: moderateScale(5) },
   progressTrack: {
-    height: 8,
+    height: 7,
     borderRadius: 999,
-    backgroundColor: "#E8E4DC",
+    backgroundColor: "#EDEAE4",
     overflow: "hidden",
   },
   progressFill: {
     height: "100%",
     borderRadius: 999,
-    backgroundColor: "#111",
+    backgroundColor: colors.fg,
   },
   progressText: {
     ...morphFont,
-    fontSize: fontSize(11),
+    fontSize: fontSize(10),
     fontWeight: "600",
-    color: "rgba(17,17,17,0.45)",
+    color: colors.muted,
   },
   remindBanner: {
     flexDirection: "row",
     alignItems: "center",
     gap: moderateScale(6),
-    paddingVertical: verticalScale(8),
+    paddingVertical: verticalScale(7),
     paddingHorizontal: scale(10),
     borderRadius: moderateScale(12),
-    backgroundColor: "#F3F1EC",
+    backgroundColor: colors.promo,
   },
   remindText: {
     ...morphFont,
     flex: 1,
-    fontSize: fontSize(12),
+    fontSize: fontSize(11),
     fontWeight: "600",
-    color: "#111",
+    color: colors.fg,
+  },
+  emptyHero: {
+    borderRadius: moderateScale(26),
+    backgroundColor: colors.surface,
+    paddingVertical: verticalScale(32),
+    paddingHorizontal: scale(22),
+    alignItems: "center",
+    gap: moderateScale(10),
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+    overflow: "hidden",
+    shadowColor: "#111",
+    shadowOpacity: 0.05,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 2,
+  },
+  emptyGlow: {
+    position: "absolute",
+    top: -40,
+    width: scale(180),
+    height: scale(180),
+    borderRadius: scale(90),
+    backgroundColor: colors.promo,
+    opacity: 0.9,
+  },
+  emptyIconRing: {
+    width: scale(64),
+    height: scale(64),
+    borderRadius: scale(32),
+    backgroundColor: colors.promo,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: verticalScale(2),
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+  },
+  emptyEyebrow: {
+    ...morphFont,
+    fontSize: fontSize(10),
+    fontWeight: "700",
+    letterSpacing: 0.8,
+    textTransform: "uppercase",
+    color: colors.muted,
+  },
+  emptyHeroTitle: {
+    ...morphFont,
+    fontSize: fontSize(20),
+    fontWeight: "800",
+    color: colors.fg,
+    textAlign: "center",
+    letterSpacing: -0.4,
+  },
+  emptyHeroSub: {
+    ...morphFont,
+    fontSize: fontSize(13),
+    lineHeight: fontSize(18),
+    color: "rgba(17,17,17,0.55)",
+    textAlign: "center",
+    marginBottom: verticalScale(4),
+  },
+  emptyHeroHint: {
+    ...morphFont,
+    fontSize: fontSize(11),
+    color: colors.muted,
+    textAlign: "center",
+  },
+  emptyPrimaryCta: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: moderateScale(8),
+    backgroundColor: colors.fg,
+    borderRadius: 999,
+    paddingHorizontal: scale(20),
+    paddingVertical: verticalScale(13),
+    minWidth: "86%",
+    justifyContent: "center",
+    marginTop: verticalScale(4),
+  },
+  emptyPrimaryCtaText: {
+    ...morphFont,
+    fontSize: fontSize(14),
+    fontWeight: "700",
+    color: "#fff",
+  },
+  emptySecondaryCta: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: moderateScale(8),
+    paddingVertical: verticalScale(10),
+    paddingHorizontal: scale(14),
+  },
+  emptySecondaryIcon: {
+    width: scale(28),
+    height: scale(28),
+    borderRadius: scale(14),
+    backgroundColor: colors.promo,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  emptySecondaryCtaText: {
+    ...morphFont,
+    fontSize: fontSize(13),
+    fontWeight: "600",
+    color: colors.fg,
+  },
+  celebrateOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 40,
+    backgroundColor: "rgba(250,250,250,0.72)",
+  },
+  celebrateCard: {
+    backgroundColor: colors.surface,
+    borderRadius: moderateScale(22),
+    paddingVertical: verticalScale(22),
+    paddingHorizontal: scale(26),
+    alignItems: "center",
+    gap: moderateScale(6),
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+    shadowColor: "#111",
+    shadowOpacity: 0.1,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 5,
+  },
+  celebrateTitle: {
+    ...morphFont,
+    fontSize: fontSize(16),
+    fontWeight: "800",
+    color: colors.fg,
+  },
+  celebrateSub: {
+    ...morphFont,
+    fontSize: fontSize(12),
+    color: colors.muted,
   },
   shelfLink: {
     flexDirection: "row",
@@ -1123,20 +1337,20 @@ const styles = StyleSheet.create({
     color: "rgba(17,17,17,0.55)",
     marginTop: 2,
   },
-  modeRow: { gap: moderateScale(8), paddingRight: scale(4) },
+  modeRow: { gap: moderateScale(8), paddingRight: scale(4), paddingVertical: verticalScale(2) },
   modeChip: {
     flexDirection: "row",
     alignItems: "center",
     gap: moderateScale(6),
     paddingHorizontal: scale(14),
-    paddingVertical: verticalScale(10),
+    paddingVertical: verticalScale(9),
     borderRadius: 999,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: colors.surface,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(17,17,17,0.08)",
+    borderColor: colors.border,
   },
-  modeChipOn: { backgroundColor: "#111", borderColor: "#111" },
-  modeChipText: { ...morphFont, fontSize: fontSize(12), fontWeight: "700", color: "#111" },
+  modeChipOn: { backgroundColor: colors.fg, borderColor: colors.fg },
+  modeChipText: { ...morphFont, fontSize: fontSize(12), fontWeight: "700", color: colors.fg },
   modeChipTextOn: { color: "#fff" },
   aiLoadingRow: {
     flexDirection: "row",
@@ -1144,148 +1358,160 @@ const styles = StyleSheet.create({
     gap: moderateScale(8),
     paddingHorizontal: scale(4),
   },
-  aiLoadingText: { ...morphFont, fontSize: fontSize(12), color: "rgba(17,17,17,0.5)" },
+  aiLoadingText: { ...morphFont, fontSize: fontSize(12), color: colors.muted },
   aiErrorRow: {
-    padding: moderateScale(12),
-    borderRadius: moderateScale(14),
+    padding: moderateScale(14),
+    borderRadius: moderateScale(16),
     backgroundColor: "#FEF2F2",
     gap: moderateScale(4),
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(153,27,27,0.15)",
   },
   aiErrorText: { ...morphFont, fontSize: fontSize(12), color: "#991B1B" },
-  aiRetry: { ...morphFont, fontSize: fontSize(12), fontWeight: "700", color: "#111" },
+  aiRetry: { ...morphFont, fontSize: fontSize(12), fontWeight: "700", color: colors.fg },
   emptyProducts: {
     borderRadius: moderateScale(22),
     borderWidth: 1,
-    borderColor: "rgba(17,17,17,0.12)",
+    borderColor: colors.border,
     borderStyle: "dashed",
     padding: moderateScale(20),
     alignItems: "center",
     gap: moderateScale(6),
-    backgroundColor: "#FFFFFF",
+    backgroundColor: colors.surface,
   },
-  emptyProductsTitle: { ...morphFont, fontSize: fontSize(14), fontWeight: "700", color: "#111" },
+  emptyProductsTitle: { ...morphFont, fontSize: fontSize(14), fontWeight: "700", color: colors.fg },
   emptyProductsSub: {
     ...morphFont,
     fontSize: fontSize(12),
-    color: "rgba(26,26,26,0.5)",
+    color: colors.muted,
     textAlign: "center",
     lineHeight: fontSize(16),
   },
-  stepStack: { gap: moderateScale(12) },
+  stepStack: { gap: moderateScale(10) },
   ritualCard: {
-    borderRadius: moderateScale(26),
-    backgroundColor: "#FFFFFF",
-    padding: moderateScale(14),
-    gap: moderateScale(12),
+    borderRadius: moderateScale(20),
+    backgroundColor: colors.surface,
+    padding: moderateScale(12),
+    gap: moderateScale(9),
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(17,17,17,0.06)",
+    borderColor: colors.border,
+    shadowColor: "#111",
+    shadowOpacity: 0.03,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 1,
   },
-  ritualCardDone: { opacity: 0.78, backgroundColor: "#F7F5F1" },
-  ritualTop: { flexDirection: "row", alignItems: "center", gap: moderateScale(8) },
+  ritualCardDone: { opacity: 0.72, backgroundColor: colors.promo },
+  ritualTop: { flexDirection: "row", alignItems: "center", gap: moderateScale(6) },
   ritualIndex: {
-    width: scale(26),
-    height: scale(26),
-    borderRadius: moderateScale(10),
-    backgroundColor: "#111",
+    width: scale(24),
+    height: scale(24),
+    borderRadius: scale(12),
+    backgroundColor: colors.fg,
     alignItems: "center",
     justifyContent: "center",
   },
-  ritualIndexText: { ...morphFont, fontSize: fontSize(12), fontWeight: "700", color: "#fff" },
+  ritualIndexText: { ...morphFont, fontSize: fontSize(11), fontWeight: "700", color: "#fff" },
   timePill: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
+    gap: 3,
     paddingHorizontal: scale(8),
     paddingVertical: verticalScale(4),
     borderRadius: 999,
-    backgroundColor: "#F3F1EC",
+    backgroundColor: colors.promo,
   },
-  timePillText: { ...morphFont, fontSize: fontSize(11), fontWeight: "700", color: "#111" },
+  timePillText: { ...morphFont, fontSize: fontSize(10), fontWeight: "700", color: colors.fg },
   slotTag: {
     ...morphFont,
-    fontSize: fontSize(10),
+    fontSize: fontSize(9),
     fontWeight: "700",
-    color: "rgba(17,17,17,0.4)",
+    color: colors.muted,
     textTransform: "uppercase",
   },
   checkBtn: {
-    width: scale(30),
-    height: scale(30),
-    borderRadius: moderateScale(15),
+    width: scale(28),
+    height: scale(28),
+    borderRadius: scale(14),
     borderWidth: 1.5,
-    borderColor: "rgba(17,17,17,0.18)",
+    borderColor: "rgba(17,17,17,0.16)",
     alignItems: "center",
     justifyContent: "center",
+    backgroundColor: colors.surface,
   },
-  checkBtnOn: { backgroundColor: "#111", borderColor: "#111" },
-  productBlock: { flexDirection: "row", alignItems: "center", gap: moderateScale(12) },
+  checkBtnOn: { backgroundColor: "#16A34A", borderColor: "#16A34A" },
+  productBlock: { flexDirection: "row", alignItems: "center", gap: moderateScale(10) },
   productImgWrap: {
-    width: scale(88),
-    height: scale(88),
-    borderRadius: moderateScale(20),
+    width: scale(58),
+    height: scale(58),
+    borderRadius: moderateScale(14),
     overflow: "hidden",
-    backgroundColor: "#F3F1EC",
+    backgroundColor: colors.promo,
     borderWidth: 1,
-    borderColor: "rgba(17,17,17,0.06)",
+    borderColor: colors.border,
   },
   productImg: { width: "100%", height: "100%" },
-  productPh: { alignItems: "center", justifyContent: "center", backgroundColor: "#F3F1EC" },
+  productPh: { alignItems: "center", justifyContent: "center", backgroundColor: colors.promo },
   productCopy: { flex: 1, minWidth: 0, gap: 2 },
-  ritualTitle: { ...morphFont, fontSize: fontSize(16), fontWeight: "700", color: "#111" },
-  ritualTitleDone: { textDecorationLine: "line-through", color: "rgba(17,17,17,0.4)" },
-  productName: { ...morphFont, fontSize: fontSize(13), fontWeight: "600", color: "rgba(17,17,17,0.65)" },
-  durationLabel: { ...morphFont, fontSize: fontSize(11), color: "rgba(17,17,17,0.4)", marginTop: 2 },
+  ritualTitle: { ...morphFont, fontSize: fontSize(14), fontWeight: "800", color: colors.fg },
+  ritualTitleDone: { textDecorationLine: "line-through", color: colors.muted },
+  productName: { ...morphFont, fontSize: fontSize(12), fontWeight: "600", color: "rgba(17,17,17,0.62)" },
+  durationLabel: { ...morphFont, fontSize: fontSize(10), color: colors.muted, marginTop: 1 },
   playBtn: {
-    width: scale(48),
-    height: scale(48),
-    borderRadius: moderateScale(24),
-    backgroundColor: "#111",
+    width: scale(40),
+    height: scale(40),
+    borderRadius: moderateScale(20),
+    backgroundColor: colors.fg,
     alignItems: "center",
     justifyContent: "center",
   },
   howBox: {
-    borderRadius: moderateScale(16),
-    backgroundColor: "#F7F5F1",
-    padding: moderateScale(12),
-    gap: moderateScale(4),
+    borderRadius: moderateScale(12),
+    backgroundColor: colors.promo,
+    padding: moderateScale(9),
+    gap: 2,
+  },
+  howBoxHead: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
   howLabel: {
     ...morphFont,
-    fontSize: fontSize(11),
+    fontSize: fontSize(9),
     fontWeight: "700",
-    color: "rgba(17,17,17,0.4)",
+    color: colors.muted,
     textTransform: "uppercase",
     letterSpacing: 0.4,
   },
   howText: {
     ...morphFont,
-    fontSize: fontSize(13),
-    lineHeight: fontSize(18),
-    color: "#111",
+    fontSize: fontSize(12),
+    lineHeight: fontSize(16),
+    color: "rgba(17,17,17,0.65)",
   },
-  ritualActions: { flexDirection: "row", gap: moderateScale(8) },
+  ritualActions: { flexDirection: "row", gap: moderateScale(6) },
   secondaryAct: {
-    flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    gap: moderateScale(6),
-    paddingVertical: verticalScale(12),
-    borderRadius: 999,
-    backgroundColor: "#F3F1EC",
+    gap: 4,
+    paddingHorizontal: scale(12),
+    paddingVertical: verticalScale(9),
+    borderRadius: moderateScale(12),
+    backgroundColor: colors.promo,
   },
-  secondaryActText: { ...morphFont, fontSize: fontSize(12), fontWeight: "700", color: "#111" },
+  secondaryActText: { ...morphFont, fontSize: fontSize(11), fontWeight: "700", color: colors.fg },
   primaryAct: {
-    flex: 1.2,
+    flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: verticalScale(12),
-    borderRadius: 999,
-    backgroundColor: "#111",
+    paddingVertical: verticalScale(9),
+    borderRadius: moderateScale(12),
+    backgroundColor: colors.fg,
   },
-  primaryActDone: { backgroundColor: "#D8D4CB" },
-  primaryActText: { ...morphFont, fontSize: fontSize(12), fontWeight: "700", color: "#fff" },
-  primaryActTextDone: { color: "#111" },
+  primaryActDone: { backgroundColor: "#E8E4DC" },
+  primaryActText: { ...morphFont, fontSize: fontSize(11), fontWeight: "700", color: "#fff" },
+  primaryActTextDone: { color: colors.fg },
   sectionHead: {
     flexDirection: "row",
     alignItems: "center",

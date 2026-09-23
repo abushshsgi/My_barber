@@ -1,6 +1,6 @@
 import { Image, type ImageContentPosition } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
-import type { ReactNode } from "react";
+import { memo, type ReactNode } from "react";
 import {
   StyleSheet,
   useWindowDimensions,
@@ -34,6 +34,56 @@ type Props = {
 };
 
 /** Ekran + banner radiusiga qarab chrome inset — chip/back chet/burchakka yopishmasin. */
+function imageSourceKey(source: ImageSourcePropType): string {
+  if (typeof source === "number") return `n:${source}`;
+  if (Array.isArray(source)) return source.map(imageSourceKey).join("|");
+  if (source && typeof source === "object" && "uri" in source && source.uri) {
+    return `u:${String(source.uri)}`;
+  }
+  return "hero";
+}
+
+const HeroScrim = memo(function HeroScrim() {
+  return (
+    <LinearGradient
+      colors={[
+        "rgba(6,8,14,0.55)",
+        "rgba(6,8,14,0.18)",
+        "rgba(6,8,14,0.28)",
+        "rgba(6,8,14,0.72)",
+      ]}
+      locations={[0, 0.28, 0.62, 1]}
+      style={StyleSheet.absoluteFill}
+    />
+  );
+});
+
+const HeroPhoto = memo(
+  function HeroPhoto({
+    source,
+    contentPosition,
+  }: {
+    source: ImageSourcePropType;
+    contentPosition: ImageContentPosition;
+  }) {
+    return (
+      <Image
+        source={source}
+        style={styles.image}
+        contentFit="cover"
+        contentPosition={contentPosition}
+        cachePolicy="memory-disk"
+        priority="high"
+        transition={0}
+        recyclingKey={imageSourceKey(source)}
+      />
+    );
+  },
+  (a, b) =>
+    imageSourceKey(a.source) === imageSourceKey(b.source) &&
+    a.contentPosition === b.contentPosition,
+);
+
 function autoChromePadX(width: number, borderRadius: number, override?: number): number {
   const byWidth =
     width < 360 ? scale(18) : width < 400 ? scale(20) : width < 480 ? scale(22) : scale(24);
@@ -99,25 +149,8 @@ export function WeatherHeaderCard({
     >
       {lightStatusBar ? <AppStatusBar style="light" /> : null}
       <View style={styles.media} pointerEvents="none">
-        <Image
-          source={source}
-          style={styles.image}
-          contentFit="cover"
-          contentPosition={contentPosition}
-          cachePolicy="memory-disk"
-          priority="high"
-          transition={0}
-        />
-        <LinearGradient
-          colors={[
-            "rgba(6,8,14,0.55)",
-            "rgba(6,8,14,0.18)",
-            "rgba(6,8,14,0.28)",
-            "rgba(6,8,14,0.72)",
-          ]}
-          locations={[0, 0.28, 0.62, 1]}
-          style={StyleSheet.absoluteFill}
-        />
+        <HeroPhoto source={source} contentPosition={contentPosition} />
+        <HeroScrim />
       </View>
       {topLeft || topRight ? (
         <View style={styles.topRow}>
