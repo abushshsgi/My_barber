@@ -19,11 +19,19 @@ export type MyCareProduct = {
 };
 
 const MY_PRODUCTS_KEY = "mysaloon.morphAi.myProducts";
+
+/** Shu sessiyadagi javon — Parvarish qayta ochilganda bo‘sh kadr chiqmasin. */
+let memoryProducts: MyCareProduct[] | null = null;
+
+export function peekMyProducts(): MyCareProduct[] | null {
+  return memoryProducts;
+}
 const ROUTINE_DONE_KEY = "mysaloon.morphAi.routineDone";
 const WEATHER_INTRO_KEY = "mysaloon.morphAi.weatherIntroSeen";
 const CARE_ONBOARDING_KEY = "mysaloon.morphAi.careOnboardingSeen";
 
 async function saveLocal(rows: MyCareProduct[]) {
+  memoryProducts = rows;
   await AsyncStorage.setItem(MY_PRODUCTS_KEY, JSON.stringify(rows));
 }
 
@@ -32,7 +40,9 @@ export async function loadMyProductsLocal(): Promise<MyCareProduct[]> {
     const raw = await AsyncStorage.getItem(MY_PRODUCTS_KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw) as MyCareProduct[];
-    return Array.isArray(parsed) ? parsed : [];
+    const rows = Array.isArray(parsed) ? parsed : [];
+    memoryProducts = rows;
+    return rows;
   } catch {
     return [];
   }

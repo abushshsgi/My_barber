@@ -51,6 +51,7 @@ import {
   defaultQuiz,
   estimateProductFit,
   isCareQuizComplete,
+  loadCachedCarePlan,
   loadCareQuiz,
   loadCareSchedule,
   saveCareQuiz,
@@ -645,6 +646,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
       loadCareQuiz().catch(() => null),
       loadMyProductsLocal().catch(() => []),
       hydrateCareCatalogCache().catch(() => [] as CareProduct[]),
+      loadCachedCarePlan().catch(() => null),
     ]);
     if (localMine.length) setMyProducts(localMine);
     if (diskCatalog.length) {

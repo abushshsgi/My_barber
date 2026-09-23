@@ -428,6 +428,13 @@ export type CachedCarePlan = {
 const CARE_PLAN_CACHE_KEY = "mysaloon.morphAi.carePlanCache";
 export const CARE_PLAN_SCHEMA_VERSION = 3;
 
+/** Shu sessiyada oxirgi reja — sahifa qayta ochilganda disk kutmasdan. */
+let memoryCarePlan: CachedCarePlan | null = null;
+
+export function peekCachedCarePlan(): CachedCarePlan | null {
+  return memoryCarePlan;
+}
+
 export function careProfileKey(quiz: CareQuizAnswers, schedule?: CareSchedulePrefs | null): string {
   const base = `${quiz.condition}|${quiz.texture}|${quiz.colorStatus}`;
   if (!schedule?.morningTime || !schedule?.eveningTime) return base;
@@ -449,6 +456,7 @@ export async function loadCachedCarePlan(): Promise<CachedCarePlan | null> {
     if (!parsed?.plan || !hasSteps) return null;
     if (!Array.isArray(parsed.productIds)) parsed.productIds = [];
     if (!parsed.profileKey) parsed.profileKey = "";
+    memoryCarePlan = parsed;
     return parsed;
   } catch {
     return null;
@@ -456,10 +464,14 @@ export async function loadCachedCarePlan(): Promise<CachedCarePlan | null> {
 }
 
 export async function saveCachedCarePlan(cache: CachedCarePlan): Promise<void> {
-  await AsyncStorage.setItem(
-    CARE_PLAN_CACHE_KEY,
-    JSON.stringify({ ...cache, schemaVersion: CARE_PLAN_SCHEMA_VERSION }),
-  );
+  const next = { ...cache, schemaVersion: CARE_PLAN_SCHEMA_VERSION };
+  memoryCarePlan = next;
+  await AsyncStorage.setItem(CARE_PLAN_CACHE_KEY, JSON.stringify(next));
+}
+
+export async function clearCachedCarePlan(): Promise<void> {
+  memoryCarePlan = null;
+  await AsyncStorage.removeItem(CARE_PLAN_CACHE_KEY);
 }
 
 /** Drop tasks tied to removed products; keep the rest unchanged. */
