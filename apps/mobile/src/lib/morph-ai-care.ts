@@ -443,8 +443,12 @@ export async function loadCachedCarePlan(): Promise<CachedCarePlan | null> {
     const raw = await AsyncStorage.getItem(CARE_PLAN_CACHE_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as CachedCarePlan;
-    if (!parsed?.plan || !Array.isArray(parsed.productIds) || !parsed.profileKey) return null;
-    if ((parsed.schemaVersion ?? 1) < CARE_PLAN_SCHEMA_VERSION) return null;
+    const morning = parsed?.plan?.morning;
+    const evening = parsed?.plan?.evening;
+    const hasSteps = Array.isArray(morning) || Array.isArray(evening);
+    if (!parsed?.plan || !hasSteps) return null;
+    if (!Array.isArray(parsed.productIds)) parsed.productIds = [];
+    if (!parsed.profileKey) parsed.profileKey = "";
     return parsed;
   } catch {
     return null;
