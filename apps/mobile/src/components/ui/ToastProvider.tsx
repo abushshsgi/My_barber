@@ -61,7 +61,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     <ToastContext.Provider value={value}>
       {children}
       <View
-        pointerEvents="box-none"
+        pointerEvents={toast ? "box-none" : "none"}
         style={[styles.host, { paddingTop: safeTop(insets.top, 0) + 6 }]}
       >
         {toast ? (

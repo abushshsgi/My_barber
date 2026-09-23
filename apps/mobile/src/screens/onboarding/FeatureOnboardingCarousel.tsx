@@ -77,8 +77,8 @@ export function FeatureOnboardingCarousel({ onFinish }: Props) {
     [t],
   );
 
-  /** Barcha slaydlarda bir xil kvadrat hero va bir xil matn qatori */
-  const heroSize = Math.min(winW - scale(56), Math.min(Math.max(winH * 0.4, 220), 320));
+  const heroSize = Math.min(winW, Math.round(winH * 0.54));
+  const heroTop = Math.round(winH * 0.14);
   const titleH = Math.round(fontSize(16) * 1.3);
   const subLine = Math.round(fontSize(12) * 1.35);
   const subH = subLine * 2;
@@ -130,7 +130,7 @@ export function FeatureOnboardingCarousel({ onFinish }: Props) {
         }}
         getItemLayout={(_, i) => ({ length: winW, offset: winW * i, index: i })}
         renderItem={({ item }) => (
-          <View style={[styles.page, { width: winW }]}>
+          <View style={[styles.page, { width: winW, paddingTop: heroTop }]}>
             <View style={[styles.heroWrap, { width: heroSize, height: heroSize }]}>
               <Image
                 source={item.image}
@@ -173,8 +173,7 @@ export function FeatureOnboardingCarousel({ onFinish }: Props) {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: "#FFFFFF" },
   page: {
-    paddingHorizontal: scale(28),
-    paddingTop: verticalScale(4),
+    paddingHorizontal: scale(8),
     flex: 1,
     alignItems: "center",
     justifyContent: "flex-start",

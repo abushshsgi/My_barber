@@ -109,24 +109,10 @@ function patchJsx(runtime: JsxRuntime | null) {
   const wrap = (orig: JsxFn | undefined): JsxFn | undefined => {
     if (!orig) return orig;
     return (type, props, key) => {
-      if (!props || (props.pointerEvents == null && !styleNeedsMigrate(props.style))) {
+      if (!props || !styleNeedsMigrate(props.style)) {
         return orig(type, props, key);
       }
-      const next: StyleRecord = { ...props };
-      if (next.pointerEvents != null) {
-        const pointerEvents = next.pointerEvents;
-        delete next.pointerEvents;
-        const extra = { pointerEvents };
-        next.style =
-          next.style == null
-            ? extra
-            : Array.isArray(next.style)
-              ? [...next.style, extra]
-              : [next.style, extra];
-      }
-      if (styleNeedsMigrate(next.style)) {
-        next.style = migrateStyleProp(next.style);
-      }
+      const next: StyleRecord = { ...props, style: migrateStyleProp(props.style) };
       return orig(type, next, key);
     };
   };
