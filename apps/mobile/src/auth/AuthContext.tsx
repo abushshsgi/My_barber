@@ -18,7 +18,6 @@ import {
 import { fetchMe, type ApiUser } from "../api/user";
 import { needsOnboarding } from "../lib/onboarding";
 import { prefetchCareCatalog } from "../lib/care-catalog-cache";
-import { prefetchCareWeather } from "../hooks/useCareWeather";
 import {
   clearSession,
   getAccessToken,
@@ -28,6 +27,18 @@ import {
   setLastPhone,
   type StoredUser,
 } from "./storage";
+
+function warmCareWeather(
+  lat: number | string | null | undefined,
+  lon: number | string | null | undefined,
+) {
+  void import("../hooks/useCareWeather").then(({ prefetchCareWeather }) => {
+    void prefetchCareWeather({
+      savedLat: lat != null ? Number(lat) : null,
+      savedLon: lon != null ? Number(lon) : null,
+    });
+  });
+}
 
 type AuthContextValue = {
   user: ApiUser | null;
@@ -157,10 +168,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         if (cached && !cancelled && !signedInRef.current) {
           setUser(storedToApiUser(cached));
-          void prefetchCareWeather({
-            savedLat: cached.latitude != null ? Number(cached.latitude) : null,
-            savedLon: cached.longitude != null ? Number(cached.longitude) : null,
-          });
+          warmCareWeather(cached.latitude, cached.longitude);
           void prefetchCareCatalog({ recommended: true });
         }
 
@@ -169,10 +177,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (!cancelled && gen === bootGenRef.current && !signedInRef.current) {
             setUser(me);
             await persistUserCache(me);
-            void prefetchCareWeather({
-              savedLat: me.latitude != null ? Number(me.latitude) : null,
-              savedLon: me.longitude != null ? Number(me.longitude) : null,
-            });
+            warmCareWeather(me.latitude, me.longitude);
             void prefetchCareCatalog({ recommended: true });
           } else if (!cancelled && signedInRef.current) {
             // Login allaqachon bo'lgan — faqat cache yangilash
@@ -202,20 +207,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(user);
     setLoading(false);
     // Parvarish home: geo + ob-havo + katalog oldindan — demo kutish bo‘lmasin
-    void prefetchCareWeather({
-      savedLat: user.latitude != null ? Number(user.latitude) : null,
-      savedLon: user.longitude != null ? Number(user.longitude) : null,
-    });
+    warmCareWeather(user.latitude, user.longitude);
     void prefetchCareCatalog({ recommended: true });
     try {
       const me = await fetchMe();
       const merged = data.is_new_user ? { ...me, onboarding_completed: false } : me;
       setUser(merged);
       await persistUserCache(merged);
-      void prefetchCareWeather({
-        savedLat: merged.latitude != null ? Number(merged.latitude) : null,
-        savedLon: merged.longitude != null ? Number(merged.longitude) : null,
-      });
+      warmCareWeather(merged.latitude, merged.longitude);
       void prefetchCareCatalog({ recommended: true });
     } catch {
       /* login user bilan davom */
