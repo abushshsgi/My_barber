@@ -97,10 +97,8 @@ type Props = {
   userName?: string | null;
   onOpenCatalog: () => void;
   onOpenScan: () => void;
-  onOpenShelf: () => void;
   onOpenProduct: (id: number) => void;
   onOpenGuide: (payload: GuidePayload) => void;
-  onRetakeQuiz: () => void;
 };
 
 const DAY_MODES: { id: DayMode; icon: keyof typeof Ionicons.glyphMap; labelKey: string }[] = [
@@ -270,10 +268,8 @@ export function CareRoutineSheet({
   userName,
   onOpenCatalog,
   onOpenScan,
-  onOpenShelf,
   onOpenProduct,
   onOpenGuide,
-  onRetakeQuiz,
 }: Props) {
   const { t } = useTranslation();
   const [mode, setMode] = useState<DayMode>("today");
@@ -619,12 +615,11 @@ export function CareRoutineSheet({
   const showPlans = hasProducts && !!schedule && !!aiPlan && !aiLoading;
   const shelfGap = moderateScale(8);
   const cardGap = moderateScale(8);
-  const addW = scale(72);
+  const addW = scale(56);
   const scrollW = Math.max(0, shelfW - addW - shelfGap);
   const fitted = scrollW > 0 ? (scrollW - cardGap * 2) / 2.5 : scale(100);
   const peekCardW = myProducts.length >= 3 ? fitted : Math.min(fitted, scale(104));
   const showAiThinking = hasProducts && !!schedule && !aiPlan && (aiLoading || aiAppending);
-  const showStickyShelfCta = showPlans;
   const emptyOnly = !loadingProducts && !hasProducts;
 
   const displayProductName = (name?: string | null) => {
@@ -636,10 +631,7 @@ export function CareRoutineSheet({
     <View style={styles.sheetWrap}>
       <ScrollView
         style={styles.sheetScroll}
-        contentContainerStyle={[
-          styles.sheetContent,
-          showStickyShelfCta ? styles.sheetContentWithStickyCta : null,
-        ]}
+        contentContainerStyle={styles.sheetContent}
         nestedScrollEnabled
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
@@ -874,7 +866,7 @@ export function CareRoutineSheet({
                       })}
                     </ScrollView>
                     <Pressable style={styles.addCard} onPress={onOpenCatalog}>
-                      <Ionicons name="add" size={22} color="#111" />
+                      <Ionicons name="add" size={16} color="#111" />
                       <Text style={styles.addCardText}>{t("care.myProducts.addShort")}</Text>
                     </Pressable>
                   </View>
@@ -884,13 +876,6 @@ export function CareRoutineSheet({
           </>
         )}
 
-        {!emptyOnly ? (
-          <Pressable style={styles.profileLink} onPress={onRetakeQuiz}>
-            <Text style={styles.profileLinkText}>
-              {t("care.quiz.retake")} · {t("care.onboarding.badge")}
-            </Text>
-          </Pressable>
-        ) : null}
       </ScrollView>
 
       {celebrate ? (
@@ -912,25 +897,6 @@ export function CareRoutineSheet({
           </View>
         </Animated.View>
       ) : null}
-
-      {showStickyShelfCta ? (
-        <View pointerEvents="box-none" style={styles.stickyShelfWrap}>
-          <Pressable style={styles.stickyShelfBtn} onPress={onOpenShelf}>
-            <View style={styles.stickyShelfIcon}>
-              <Ionicons name="cube-outline" size={16} color="#fff" />
-            </View>
-            <View style={{ flex: 1, minWidth: 0 }}>
-              <Text style={styles.stickyShelfTitle} numberOfLines={1}>
-                {t("care.shelf.cta", { defaultValue: "Mahsulot tugash muddatini kuzatish" })}
-              </Text>
-              <Text style={styles.stickyShelfSub} numberOfLines={1}>
-                {t("care.shelf.ctaSub", { defaultValue: "PAO va refill eslatmalarini yoqish" })}
-              </Text>
-            </View>
-            <Ionicons name="arrow-forward" size={16} color="#fff" />
-          </Pressable>
-        </View>
-      ) : null}
     </View>
   );
 }
@@ -941,7 +907,7 @@ const styles = StyleSheet.create({
   sheetContent: {
     paddingHorizontal: scale(16),
     paddingTop: verticalScale(10),
-    paddingBottom: verticalScale(110),
+    paddingBottom: verticalScale(28),
     gap: moderateScale(12),
   },
   sheetContentWithStickyCta: {
@@ -1460,19 +1426,20 @@ const styles = StyleSheet.create({
   myCardImg: { width: "100%", height: verticalScale(100), borderRadius: moderateScale(14) },
   myCardName: { ...morphFont, fontSize: fontSize(12), fontWeight: "600", color: "#111" },
   addCard: {
-    width: scale(72),
+    width: scale(56),
     flexShrink: 0,
-    borderRadius: moderateScale(18),
+    borderRadius: moderateScale(14),
     backgroundColor: "#FFFFFF",
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderStyle: "dashed",
     borderColor: "rgba(17,17,17,0.28)",
     alignItems: "center",
     justifyContent: "center",
-    gap: 4,
-    padding: moderateScale(8),
+    gap: 2,
+    paddingHorizontal: scale(4),
+    paddingVertical: verticalScale(6),
   },
-  addCardText: { ...morphFont, fontSize: fontSize(11), fontWeight: "600", color: "#111" },
+  addCardText: { ...morphFont, fontSize: fontSize(9), fontWeight: "600", color: "#111", textAlign: "center" },
   recCard: {
     width: scale(148),
     borderRadius: moderateScale(18),

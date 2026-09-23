@@ -230,6 +230,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
   const searchSheetY = useRef(new Animated.Value(Dimensions.get("window").height)).current;
   const searchBackdropOp = useRef(new Animated.Value(0)).current;
   const searchAnimPending = useRef(false);
+  const retakeQuizRef = useRef(false);
   const previewSheetY = useRef(new Animated.Value(Dimensions.get("window").height)).current;
   const previewBackdropOp = useRef(new Animated.Value(0)).current;
   const searchInputRef = useRef<TextInput>(null);
@@ -509,12 +510,18 @@ export function MorphCareScreen({ navigation, route }: Props) {
 
   useFocusEffect(
     useCallback(() => {
+      if (route.params?.retakeQuiz) {
+        retakeQuizRef.current = true;
+        navigation.setParams({ retakeQuiz: undefined });
+        setStep(0);
+        setViewMode("flow");
+      }
       if (!route.params?.openSearch) return;
       const q = route.params.q?.trim();
       if (q) setSearchQuery(q);
       navigation.setParams({ openSearch: undefined, q: undefined });
       requestAnimationFrame(() => openSearch());
-    }, [route.params?.openSearch, route.params?.q, navigation, openSearch]),
+    }, [route.params?.openSearch, route.params?.q, route.params?.retakeQuiz, navigation, openSearch]),
   );
 
   const closeSearch = useCallback(() => {
@@ -644,7 +651,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
       setCatalog(diskCatalog);
       setCatalogReady(true);
     }
-    if (isCareQuizComplete(saved)) {
+    if (isCareQuizComplete(saved) && !retakeQuizRef.current) {
       setQuiz(saved);
       setStep("plan");
       setViewMode("flow");
@@ -695,8 +702,10 @@ export function MorphCareScreen({ navigation, route }: Props) {
             color_status: next.colorStatus,
           }).catch(() => undefined);
         }
-        setStep("plan");
-        setViewMode("flow");
+        if (!retakeQuizRef.current) {
+          setStep("plan");
+          setViewMode("flow");
+        }
       } else if (!isCareQuizComplete(saved)) {
         setStep(0);
         setViewMode("flow");
@@ -2123,13 +2132,8 @@ export function MorphCareScreen({ navigation, route }: Props) {
           setTimeout(() => openSearch(), 80);
         }}
         onOpenScan={openTarkib}
-        onOpenShelf={() => setShelfOpen(true)}
         onOpenProduct={openProduct}
         onOpenGuide={openProductGuide}
-        onRetakeQuiz={() => {
-          setViewMode("flow");
-          setStep(0);
-        }}
       />
     </View>
   );

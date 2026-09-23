@@ -8,7 +8,7 @@ import { MorphCareScreen } from "../screens/morph/MorphCareScreen";
 import { MorphCareWeatherScreen } from "../screens/morph/MorphCareWeatherScreen";
 
 export type MorphCareStackParamList = {
-  CareHome: { returnTo?: string; openSearch?: boolean; q?: string } | undefined;
+  CareHome: { returnTo?: string; openSearch?: boolean; q?: string; retakeQuiz?: boolean } | undefined;
   CareWeather: undefined;
   CareGrowthTracker: undefined;
   CareAlbum: undefined;

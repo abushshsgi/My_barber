@@ -11,7 +11,10 @@ import {
   Text,
   View,
 } from "react-native";
+import { useNavigation } from "@react-navigation/native";
+import type { NavigationProp, ParamListBase } from "@react-navigation/native";
 import { useTranslation } from "react-i18next";
+import { useShellNavigation } from "../../lib/shell-nav";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { safeBottom, safeTop } from "../../lib/safe-area";
 import type { MorphAiPrivacyDataCounts, MorphChatLimits } from "../../api/ai";
@@ -376,6 +379,8 @@ export function MorphChatSettingsScreen({
   void _onPreviewVoice;
   void _voicePreviewing;
   const { t } = useTranslation();
+  const navigation = useNavigation<NavigationProp<ParamListBase>>();
+  const { goMorph } = useShellNavigation();
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const { colors: pal, fs } = useMorphAppearance();
@@ -765,6 +770,18 @@ export function MorphChatSettingsScreen({
                 </SettingsSection>
 
                 <SettingsSection title={t("chat.settings.appSettingsGroup")}>
+                  <SettingsItem
+                    icon="refresh-outline"
+                    title={t("care.quiz.retake", { defaultValue: "Qayta" })}
+                    subtitle={t("care.onboarding.badge", { defaultValue: "Soch tahlili" })}
+                    onPress={() => {
+                      onClose();
+                      goMorph(navigation, "MorphCare", {
+                        screen: "CareHome",
+                        params: { retakeQuiz: true },
+                      });
+                    }}
+                  />
                   <SettingsItem
                     icon="contrast"
                     title={t("chat.settings.appearance")}
