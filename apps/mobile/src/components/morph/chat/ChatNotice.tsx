@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from "react-native";
 import Animated, { FadeInUp } from "react-native-reanimated";
+import { useMorphAppearance } from "../../../lib/MorphAppearanceContext";
 import { morphFont } from "../../../theme/morph-font";
 import {
   fontSize,
@@ -17,6 +18,8 @@ type Props = {
   retryLabel?: string;
   dismissA11y: string;
   tone?: Tone;
+  /** Ogohlantirish kartasidagi ingichka limit chizig'i (0–100). */
+  meterPct?: number;
   onRetry?: () => void;
   onDismiss: () => void;
   style?: StyleProp<ViewStyle>;
@@ -29,10 +32,13 @@ export function ChatNotice({
   retryLabel,
   dismissA11y,
   tone = "error",
+  meterPct,
   onRetry,
   onDismiss,
   style,
 }: Props) {
+  const { colors: pal } = useMorphAppearance();
+  const meter = Math.max(0, Math.min(100, meterPct ?? 0));
   const palette =
     tone === "upgrade"
       ? {
@@ -50,17 +56,17 @@ export function ChatNotice({
         }
       : tone === "warning"
         ? {
-            bg: "#FFFBEB",
-            border: "#F5E6C8",
-            iconBg: "#FEF3C7",
-            icon: "#92400E" as const,
-            iconName: "warning" as const,
-            title: "#111111",
-            message: "#78716C",
-            ctaBg: "#111111",
-            ctaFg: "#FFFFFF",
+            bg: pal.card,
+            border: pal.line,
+            iconBg: pal.cardStrong,
+            icon: pal.fg,
+            iconName: "pie-chart-outline" as const,
+            title: pal.fg,
+            message: pal.muted,
+            ctaBg: pal.fg,
+            ctaFg: pal.bg,
             ctaIcon: "refresh" as const,
-            close: "#A8A29E",
+            close: pal.muted,
           }
         : {
             bg: "#FAFAFA",
@@ -87,7 +93,7 @@ export function ChatNotice({
       ]}
       accessibilityRole="alert"
     >
-      <View style={styles.topRow}>
+      <View style={[styles.topRow, tone === "warning" && styles.topRowCenter]}>
         {tone !== "upgrade" ? (
           <View style={[styles.iconWrap, { backgroundColor: palette.iconBg }]}>
             <Ionicons name={palette.iconName} size={18} color={palette.icon} />
@@ -109,6 +115,14 @@ export function ChatNotice({
           <Ionicons name="close" size={16} color={palette.close} />
         </Pressable>
       </View>
+
+      {tone === "warning" && meterPct != null ? (
+        <View style={[styles.meterTrack, { backgroundColor: pal.track }]}>
+          <View
+            style={[styles.meterFill, { width: `${meter}%`, backgroundColor: pal.fg }]}
+          />
+        </View>
+      ) : null}
 
       {retryLabel && onRetry ? (
         <Pressable
@@ -136,7 +150,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: scale(14),
     paddingTop: verticalScale(12),
     paddingBottom: verticalScale(12),
-    borderRadius: moderateScale(18),
+    borderRadius: moderateScale(16),
     borderWidth: 1,
     gap: moderateScale(12),
     shadowColor: "#000",
@@ -155,6 +169,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-start",
     gap: moderateScale(10),
+  },
+  topRowCenter: {
+    alignItems: "center",
   },
   iconWrap: {
     width: scale(34),
@@ -179,6 +196,16 @@ const styles = StyleSheet.create({
     ...morphFont,
     fontSize: fontSize(13),
     lineHeight: fontSize(18),
+  },
+  meterTrack: {
+    marginTop: verticalScale(8),
+    height: 3,
+    borderRadius: 2,
+    overflow: "hidden",
+  },
+  meterFill: {
+    height: 3,
+    borderRadius: 2,
   },
   cta: {
     alignSelf: "stretch",

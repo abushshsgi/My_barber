@@ -37,6 +37,7 @@ import { useMorphVoice } from "../../hooks/useMorphVoice";
 import { useMorphLimitGate } from "../../hooks/useMorphLimitGate";
 import { readLastMorphContentTab, writeAppShell, writeLastShellTab } from "../../lib/app-shell";
 import { MORPH_CHAT_DEBUG } from "../../lib/morph-debug";
+import { morphChatUsagePercent } from "../../lib/morph-chat-prefs";
 import {
   consumeMorphReturn,
   peekMorphReturn,
@@ -367,6 +368,8 @@ export function MorphChatScreen() {
     showPaywall("subscription");
   }, [showPaywall]);
 
+  const usagePct = morphChatUsagePercent(chat.limits);
+
   const errorNotice = chat.error ? (
     <ChatNotice
       title={t("chat.errorTitle")}
@@ -396,6 +399,7 @@ export function MorphChatScreen() {
       message={chat.limitWarning}
       dismissA11y={t("chat.errorDismissA11y")}
       tone="warning"
+      meterPct={usagePct}
       onDismiss={chat.clearLimitWarning}
     />
   ) : null;
@@ -599,6 +603,7 @@ export function MorphChatScreen() {
                 message={chat.limitWarning}
                 dismissA11y={t("chat.errorDismissA11y")}
                 tone="warning"
+                meterPct={usagePct}
                 onDismiss={chat.clearLimitWarning}
                 style={{ marginHorizontal: 0, marginBottom: 0 }}
               />
