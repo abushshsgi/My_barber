@@ -91,7 +91,6 @@ const CARE_ACCESS_DEBUG = true;
 const QUICK_SOS = require("../../../assets/care/care-quick-sos.png");
 const QUICK_SHELF = require("../../../assets/care/care-quick-shelf.png");
 const QUICK_GROWTH = require("../../../assets/care/care-quick-growth.png");
-const QUICK_ALBUM = require("../../../assets/care/care-quick-album.png");
 const HUB_ROUTINE = require("../../../assets/care/care-hub-routine-v2.png");
 const HUB_SCAN = require("../../../assets/care/care-hub-scan-v2.png");
 
@@ -99,7 +98,6 @@ const CARE_HUB_LOCAL_ASSETS = [
   QUICK_SOS,
   QUICK_SHELF,
   QUICK_GROWTH,
-  QUICK_ALBUM,
   HUB_ROUTINE,
   HUB_SCAN,
 ] as const;
@@ -629,10 +627,6 @@ export function MorphCareScreen({ navigation, route }: Props) {
 
   const openGrowthTracker = useCallback(() => {
     navigation.navigate("CareGrowthTracker");
-  }, [navigation]);
-
-  const openCareAlbum = useCallback(() => {
-    navigation.navigate("CareAlbum");
   }, [navigation]);
 
   const openParvarish = useCallback(() => {
@@ -1392,7 +1386,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
               </Pressable>
             </WeatherHeaderCard>
 
-          {/* Tezkor kartochkalar — SOS, shelf, growth, album */}
+          {/* Tezkor kartochkalar — SOS, shelf, growth. Albom hozircha yopiq. */}
             <ScrollView
               horizontal
               nestedScrollEnabled={true}
@@ -1437,14 +1431,6 @@ export function MorphCareScreen({ navigation, route }: Props) {
                       defaultValue: "Hair Growth & Health Tracker",
                     }),
                     onPress: openGrowthTracker,
-                  },
-                  {
-                    key: "album",
-                    img: QUICK_ALBUM,
-                    a11y: t("care.album.screenTitle", {
-                      defaultValue: "Parvarish Albomi",
-                    }),
-                    onPress: openCareAlbum,
                   },
                 ] as const
               ).map((card) => (
