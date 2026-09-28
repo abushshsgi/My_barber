@@ -1386,23 +1386,16 @@ export function MorphCareScreen({ navigation, route }: Props) {
               </Pressable>
             </WeatherHeaderCard>
 
-          {/* Tezkor kartochkalar — SOS, shelf, growth. Albom hozircha yopiq. */}
-            <ScrollView
-              horizontal
-              nestedScrollEnabled={true}
-              showsHorizontalScrollIndicator={false}
-                style={{
-                height: hubLayout.quickActionH,
-                flexGrow: 0,
-                flexShrink: 0,
-                marginTop: hubLayout.sectionGap,
-                marginBottom: Math.max(4, Math.round(hubLayout.sectionGap * 0.4)),
-              }}
-              contentContainerStyle={[
-                styles.quickActionScroll,
+          {/* Tezkor kartochkalar — 3 tasi qatorni to‘ldiradi va markazda. */}
+            <View
+              style={[
+                styles.quickActionRow,
                 {
                   height: hubLayout.quickActionH,
+                  marginTop: hubLayout.sectionGap,
+                  marginBottom: Math.max(4, Math.round(hubLayout.sectionGap * 0.4)),
                   paddingHorizontal: hubLayout.hPad,
+                  gap: hubLayout.quickGap,
                 },
               ]}
             >
@@ -1441,6 +1434,8 @@ export function MorphCareScreen({ navigation, route }: Props) {
                     {
                       width: hubLayout.quickActionW,
                       height: hubLayout.quickActionH,
+                      flexGrow: 0,
+                      flexShrink: 1,
                     },
                   ]}
                   onPress={card.onPress}
@@ -1459,7 +1454,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
                   />
                 </Pressable>
               ))}
-            </ScrollView>
+            </View>
 
           {/* Search Bar */}
           <View
@@ -2141,9 +2136,11 @@ export function MorphCareScreen({ navigation, route }: Props) {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: "#FAFAFA" },
-  quickActionScroll: {
-    gap: moderateScale(8),
-    alignItems: "stretch",
+  quickActionRow: {
+    width: "100%",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
   },
   quickActionCard: {
     borderRadius: moderateScale(16),

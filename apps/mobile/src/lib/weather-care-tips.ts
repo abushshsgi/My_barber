@@ -650,20 +650,16 @@ export function careHubLayout(
   /** Wide web/tablet: banner telefon kengligida qolsin (835px stretch emas). */
   const promoMaxW = Math.min(Math.max(220, width - 2 * hPad), rs(400, scale));
 
-  const quickSlots = 3.45;
-  const quickActionWCap =
-    narrow ? rs(Math.round(100 * density), scale)
-      : width < 400 ? rs(Math.round(112 * density), scale)
-      : rs(Math.round(124 * density), scale);
-  const quickActionW = clamp(
-    Math.round((width - hPad * 2 - rs(16, scale)) / quickSlots),
-    narrow ? rs(Math.round(84 * density), scale) : rs(Math.round(92 * density), scale),
-    quickActionWCap,
-  );
+  const quickCount = 3;
+  const quickGap = narrow ? 6 : width < 420 ? 8 : 10;
+  const quickInner = Math.max(0, width - hPad * 2);
+  const quickFitted = Math.floor((quickInner - quickGap * (quickCount - 1)) / quickCount);
+  const quickCap = width >= 840 ? 176 : width >= 560 ? 164 : quickFitted;
+  const quickActionW = Math.max(72, Math.min(quickFitted, quickCap));
   const quickActionH = clamp(
-    Math.round(quickActionW * (short ? 0.86 : 0.9)),
-    narrow ? rs(Math.round(76 * density), scale) : rs(Math.round(82 * density), scale),
-    short ? rs(Math.round(96 * density), scale) : rs(Math.round(104 * density), scale),
+    Math.round(quickActionW * (short ? 0.78 : 0.82)),
+    narrow ? 72 : 80,
+    short ? 112 : 128,
   );
   const quickActionBlock = quickActionH + sectionGap;
 
@@ -746,6 +742,8 @@ export function careHubLayout(
     sectionGap,
     quickActionW,
     quickActionH,
+    quickGap,
+    quickCount,
     quickActionBlock,
     weatherNudge,
     searchCatGap,
