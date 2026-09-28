@@ -14,7 +14,14 @@ from ai.care_serializers import (
     CareShelfItemSerializer,
     HairCareProfileSerializer,
 )
-from ai.models import CareProduct, CareProductLike, CareShelfItem, CareUserProduct, HairCareProfile
+from ai.models import (
+    CareProduct,
+    CareProductLike,
+    CareShelfItem,
+    CareUserProduct,
+    HairCareProfile,
+    UserCarePlan,
+)
 from ai.services.care_refill_tracker import (
     STATUS_EXPIRED,
     STATUS_REFILL_SOON,
@@ -23,6 +30,7 @@ from ai.services.care_refill_tracker import (
 )
 from ai.services.care_match import recommend_products, suitability_for_user
 from ai.services.errors import AiStyleError
+from ai.services.care_plan_algo import hair_profile_key
 from ai.services.gemini_care_plan import generate_care_plan
 from ai.services.gemini_growth_forecast import generate_hair_growth_forecast
 from ai.services.gemini_sos_style import generate_sos_fix
@@ -231,10 +239,83 @@ class CareProductLikeToggleView(UnthrottledAPIView):
         return Response({"liked": liked, "likes_count": likes_count, "product_id": product.id})
 
 
+def _sorted_ids(raw) -> list[int]:
+    if isinstance(raw, str):
+        raw = [part.strip() for part in raw.split(",") if part.strip()]
+    if not isinstance(raw, list):
+        return []
+    ids: list[int] = []
+    for item in raw:
+        try:
+            pid = int(item)
+        except (TypeError, ValueError):
+            continue
+        if pid > 0 and pid not in ids:
+            ids.append(pid)
+    return sorted(ids)
+
+
+def _plan_payload(row: UserCarePlan | None, *, product_ids: list[int], profile_key: str) -> dict:
+    if row is None or not isinstance(row.plan, dict) or not row.plan:
+        return {
+            "plan": None,
+            "analyses": [],
+            "product_ids": [],
+            "profile_key": "",
+            "source": "",
+            "updated_at": None,
+            "stale": True,
+        }
+    stored_ids = _sorted_ids(row.product_ids)
+    stored_key = (row.profile_key or "").strip()
+    stale = stored_ids != product_ids or (bool(profile_key) and stored_key != profile_key)
+    return {
+        "plan": row.plan,
+        "analyses": row.analyses if isinstance(row.analyses, list) else [],
+        "product_ids": stored_ids,
+        "profile_key": stored_key,
+        "source": row.source or "rules",
+        "updated_at": row.updated_at.isoformat() if row.updated_at else None,
+        "stale": stale,
+    }
+
+
+def _save_user_plan(*, user, plan: dict, analyses: list, product_ids: list[int], profile_key: str, source: str) -> UserCarePlan:
+    row, _ = UserCarePlan.objects.update_or_create(
+        user=user,
+        defaults={
+            "plan": plan,
+            "analyses": analyses,
+            "product_ids": product_ids,
+            "profile_key": profile_key,
+            "source": source or "rules",
+        },
+    )
+    return row
+
+
 class CarePlanGenerateView(UnthrottledAPIView):
-    """POST — soch profili + foydalanuvchi mahsulotlaridan AI parvarish rejasi."""
+    """GET — saqlangan reja. POST — mahsulotlar bo'yicha yangi reja va tahlil."""
 
     permission_classes = [IsAuthenticatedCustomer]
+
+    def get(self, request):
+        if not can_use_morph_care(request.user):
+            return Response(
+                {"detail": "Morph AI Parvarish Pro obunasida mavjud."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        profile = HairCareProfile.objects.filter(user=request.user).first()
+        product_ids = _sorted_ids(request.query_params.get("product_ids"))
+        profile_key = (request.query_params.get("profile_key") or "").strip()
+        if not profile_key and profile:
+            profile_key = hair_profile_key(profile.condition, profile.texture, profile.color_status)
+        row = UserCarePlan.objects.filter(user=request.user).first()
+        return Response(_plan_payload(row, product_ids=product_ids, profile_key=profile_key))
+
+    def delete(self, request):
+        UserCarePlan.objects.filter(user=request.user).delete()
+        return Response({"ok": True})
 
     def post(self, request):
         user = request.user
@@ -344,8 +425,29 @@ class CarePlanGenerateView(UnthrottledAPIView):
         except AiStyleError as exc:
             return Response({"detail": str(exc)}, status=exc.status or 502)
 
+        analyses = plan.pop("_analyses", None)
+        if not isinstance(analyses, list):
+            analyses = []
         usage = plan.pop("_usage", None)
-        return Response({"plan": plan, "usage": usage})
+        product_ids = _sorted_ids([p.get("id") for p in product_payload])
+        if mode == "append":
+            prev = UserCarePlan.objects.filter(user=user).first()
+            if prev:
+                product_ids = _sorted_ids(list(prev.product_ids or []) + product_ids)
+        profile_key = hair_profile_key(condition, texture, color_status)
+        source = str((usage or {}).get("model") or "rules")
+        row = _save_user_plan(
+            user=user,
+            plan=plan,
+            analyses=analyses,
+            product_ids=product_ids,
+            profile_key=profile_key,
+            source=source,
+        )
+        payload = _plan_payload(row, product_ids=product_ids, profile_key=profile_key)
+        payload["stale"] = False
+        payload["usage"] = usage
+        return Response(payload)
 
 
 class CareGrowthForecastView(UnthrottledAPIView):

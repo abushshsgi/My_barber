@@ -731,6 +731,29 @@ class HairCareProfile(models.Model):
         return {t for t in tags if t}
 
 
+class UserCarePlan(models.Model):
+    """Foydalanuvchining saqlangan parvarish rejasi va mahsulot tahlillari."""
+
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="care_plan",
+    )
+    plan = models.JSONField(default=dict, blank=True)
+    analyses = models.JSONField(default=list, blank=True)
+    product_ids = models.JSONField(default=list, blank=True)
+    profile_key = models.CharField(max_length=80, blank=True, default="")
+    source = models.CharField(max_length=24, blank=True, default="rules")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-updated_at"]
+
+    def __str__(self) -> str:
+        return f"UserCarePlan(user={self.user_id}, products={len(self.product_ids or [])})"
+
+
 class IngredientScanEntry(models.Model):
     """User mahsulot tarkibi skani — audit va moslash tarixi."""
 

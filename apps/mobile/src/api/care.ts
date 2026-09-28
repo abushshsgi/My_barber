@@ -271,6 +271,30 @@ export async function generateCarePlan(body: {
   return data.plan;
 }
 
+export type SavedCarePlan = {
+  plan: AiCarePlan | null;
+  analyses: unknown[];
+  product_ids: number[];
+  profile_key: string;
+  updated_at: string | null;
+  stale: boolean;
+};
+
+export async function fetchSavedCarePlan(params: {
+  productIds: number[];
+  profileKey: string;
+}): Promise<SavedCarePlan> {
+  const q = new URLSearchParams({
+    product_ids: params.productIds.join(","),
+    profile_key: params.profileKey,
+  });
+  return apiJson(`/api/v1/ai/care/plan/?${q.toString()}`);
+}
+
+export async function clearSavedCarePlan(): Promise<void> {
+  await apiJson("/api/v1/ai/care/plan/", { method: "DELETE" });
+}
+
 export type SosTime = "2min" | "5-10min" | "15min+";
 export type SosIssue = "frizzy" | "oily" | "bedhead" | "dry";
 export type SosTool =

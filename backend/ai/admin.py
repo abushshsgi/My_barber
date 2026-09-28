@@ -9,6 +9,7 @@ from .models import (
     Gs1CountryCode,
     HairCareProfile,
     Hairstyle,
+    UserCarePlan,
     IngredientScanEntry,
     MorphAiLookShare,
     MorphAiSettings,
@@ -159,6 +160,15 @@ class HairCareProfileAdmin(admin.ModelAdmin):
     list_filter = ("condition", "texture", "color_status", "scalp")
     search_fields = ("user__phone", "user__email")
     raw_id_fields = ("user",)
+
+
+@admin.register(UserCarePlan)
+class UserCarePlanAdmin(admin.ModelAdmin):
+    list_display = ("id", "user", "profile_key", "source", "updated_at")
+    list_filter = ("source",)
+    search_fields = ("user__phone", "user__email", "profile_key")
+    raw_id_fields = ("user",)
+    readonly_fields = ("created_at", "updated_at")
 
 
 @admin.register(IngredientScanEntry)

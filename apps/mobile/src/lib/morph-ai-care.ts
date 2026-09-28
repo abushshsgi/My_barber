@@ -435,6 +435,11 @@ export function peekCachedCarePlan(): CachedCarePlan | null {
   return memoryCarePlan;
 }
 
+/** Soch profili — reja eskirishini aniqlash (soatlar kirmaydi). */
+export function hairProfileKey(quiz: CareQuizAnswers): string {
+  return `${quiz.condition}|${quiz.texture}|${quiz.colorStatus}`;
+}
+
 export function careProfileKey(quiz: CareQuizAnswers, schedule?: CareSchedulePrefs | null): string {
   const base = `${quiz.condition}|${quiz.texture}|${quiz.colorStatus}`;
   if (!schedule?.morningTime || !schedule?.eveningTime) return base;

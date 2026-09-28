@@ -15,6 +15,8 @@ import Reanimated, { FadeIn, FadeOut } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { TAB_DOCK_CLEARANCE } from "../../../hooks/useHideTabBar";
 import {
+  clearSavedCarePlan,
+  fetchSavedCarePlan,
   generateCarePlan,
   type AiCarePlan,
   type CareProduct,
@@ -24,6 +26,7 @@ import {
   buildDailyRoutine,
   careProfileKey,
   clearCachedCarePlan,
+  hairProfileKey,
   loadCachedCarePlan,
   loadCareSchedule,
   peekCachedCarePlan,
@@ -31,7 +34,6 @@ import {
   saveCachedCarePlan,
   shiftRoutineTimes,
   sortProductIds,
-  stripPlanProducts,
   type CareSchedulePrefs,
   type CareQuizAnswers,
   type RoutineSlot,
@@ -294,6 +296,8 @@ export function CareRoutineSheet({
     morningTime: "07:30",
     eveningTime: "21:00",
   });
+  const scheduleRef = useRef(schedule);
+  scheduleRef.current = schedule;
   const [shelfW, setShelfW] = useState(0);
   const knownIdsRef = useRef<number[]>(sortProductIds(cachedOnOpen?.productIds ?? []));
   const planRef = useRef<AiCarePlan | null>(initialPlan);
@@ -301,6 +305,7 @@ export function CareRoutineSheet({
   const loadedOnceRef = useRef(false);
   const openedWithPlanRef = useRef(initialPlan != null);
   const productCountRef = useRef((shelfOnOpen ?? []).length);
+  const readySigRef = useRef("");
 
   const morningTasks = useMemo(
     () => mapSlotTasks(aiPlan, "morning", myProducts, quiz, catalog, schedule),
@@ -365,17 +370,17 @@ export function CareRoutineSheet({
       await saveCachedCarePlan({
         plan,
         productIds: ids,
-        profileKey: careProfileKey(quiz, schedule),
+        profileKey: careProfileKey(quiz, scheduleRef.current),
         updatedAt: new Date().toISOString(),
       });
       void syncReminders(plan, products);
     },
-    [quiz, schedule, syncReminders],
+    [quiz, syncReminders],
   );
 
   const generateFull = useCallback(
     async (products: MyCareProduct[], prefs?: CareSchedulePrefs | null) => {
-      const sched = prefs ?? schedule;
+      const sched = prefs ?? scheduleRef.current;
       if (!sched?.morningTime || !sched?.eveningTime) return;
       if (!products.length) {
         setAiPlan(null);
@@ -403,100 +408,63 @@ export function CareRoutineSheet({
         setAiLoading(false);
       }
     },
-    [persistPlan, quiz.colorStatus, quiz.condition, quiz.texture, schedule, t],
-  );
-
-  const appendForProducts = useCallback(
-    async (allProducts: MyCareProduct[], newOnes: MyCareProduct[], existing: AiCarePlan) => {
-      if (!schedule?.morningTime || !schedule?.eveningTime) return;
-      setAiAppending(true);
-      setAiError(null);
-      try {
-        const plan = await generateCarePlan({
-          condition: quiz.condition,
-          texture: quiz.texture,
-          color_status: quiz.colorStatus,
-          products: productPayload(newOnes),
-          mode: "append",
-          existing_plan: existing,
-          morning_time: schedule.morningTime,
-          evening_time: schedule.eveningTime,
-        });
-        await persistPlan(plan, allProducts);
-      } catch (e) {
-        setAiError(e instanceof Error ? e.message : t("care.routine.aiPlanError"));
-        knownIdsRef.current = sortProductIds(allProducts.map((p) => p.id));
-      } finally {
-        setAiAppending(false);
-      }
-    },
-    [persistPlan, quiz.colorStatus, quiz.condition, quiz.texture, schedule, t],
+    [persistPlan, quiz.colorStatus, quiz.condition, quiz.texture, t],
   );
 
   const syncPlanWithProducts = useCallback(
     async (products: MyCareProduct[], opts?: { forceFull?: boolean; prefs?: CareSchedulePrefs | null }) => {
       if (syncingRef.current) return;
-      const sched = opts?.prefs ?? schedule;
+      const sched = opts?.prefs ?? scheduleRef.current;
       if (!sched?.morningTime || !sched?.eveningTime) return;
-      if (!products.length) return;
+      if (!products.length) {
+        planRef.current = null;
+        knownIdsRef.current = [];
+        readySigRef.current = "";
+        setAiPlan(null);
+        await clearCachedCarePlan();
+        void clearSavedCarePlan().catch(() => undefined);
+        return;
+      }
+      const currentIds = sortProductIds(products.map((p) => p.id));
+      const quizReady = Boolean(quiz.condition && quiz.texture && quiz.colorStatus);
+      const hairKey = quizReady ? hairProfileKey(quiz) : "";
+      const sig = `${currentIds.join(",")}|${hairKey}`;
+      const localMatches =
+        !!planRef.current && idsEqual(knownIdsRef.current, currentIds) && !opts?.forceFull;
+
+      if (localMatches && readySigRef.current === sig) return;
+
       syncingRef.current = true;
       try {
-        const currentIds = sortProductIds(products.map((p) => p.id));
-
-        let cached = await loadCachedCarePlan();
-        let plan = planRef.current;
-
-        if (!plan && cached?.plan) {
-          plan = cached.plan as AiCarePlan;
-          planRef.current = plan;
-          setAiPlan(plan);
-          knownIdsRef.current = sortProductIds(cached.productIds);
-          void syncReminders(plan, products);
+        if (!opts?.forceFull) {
+          try {
+            const saved = await fetchSavedCarePlan({
+              productIds: currentIds,
+              profileKey: hairKey,
+            });
+            if (saved?.plan && saved.stale === false) {
+              openedWithPlanRef.current = true;
+              await persistPlan(saved.plan, products);
+              readySigRef.current = sig;
+              return;
+            }
+          } catch {
+            if (localMatches) {
+              openedWithPlanRef.current = true;
+              readySigRef.current = sig;
+              return;
+            }
+          }
         }
 
-        if (!plan) {
-          if (opts?.forceFull !== false) await generateFull(products, sched);
-          return;
-        }
-
-        if (opts?.forceFull) return;
-
-        const prevIds = knownIdsRef.current.length
-          ? knownIdsRef.current
-          : sortProductIds(cached?.productIds ?? []);
-
-        if (idsEqual(prevIds, currentIds)) {
-          knownIdsRef.current = currentIds;
-          return;
-        }
-
-        if (!prevIds.length) {
-          knownIdsRef.current = currentIds;
-          await persistPlan(plan, products);
-          return;
-        }
-
-        const prevSet = new Set(prevIds);
-        const currSet = new Set(currentIds);
-        const added = products.filter((p) => !prevSet.has(p.id));
-        const removed = prevIds.filter((id) => !currSet.has(id));
-
-        if (removed.length) {
-          const keep = new Set(currentIds);
-          plan = stripPlanProducts(plan, keep) as AiCarePlan;
-          await persistPlan(plan, products);
-        }
-
-        if (added.length) {
-          await appendForProducts(products, added, planRef.current ?? plan);
-        } else {
-          knownIdsRef.current = currentIds;
-        }
+        openedWithPlanRef.current = false;
+        await generateFull(products, sched);
+        if (planRef.current) readySigRef.current = sig;
       } finally {
         syncingRef.current = false;
       }
     },
-    [appendForProducts, generateFull, persistPlan, quiz, schedule, syncReminders],
+    [generateFull, persistPlan, quiz],
   );
 
   const refreshLocal = useCallback(async () => {
@@ -517,7 +485,11 @@ export function CareRoutineSheet({
         sched = { morningTime: "07:30", eveningTime: "21:00" };
         await saveCareSchedule(sched);
       }
-      setSchedule(sched);
+      setSchedule((prev) =>
+        prev?.morningTime === sched.morningTime && prev?.eveningTime === sched.eveningTime
+          ? prev
+          : sched,
+      );
       loadedOnceRef.current = true;
       return { mine, sched };
     } finally {
@@ -532,11 +504,15 @@ export function CareRoutineSheet({
         if (!planRef.current) {
           const cached = await loadCachedCarePlan();
           if (!live) return;
-          if (cached?.plan) {
+          const shelfIds = sortProductIds((peekMyProducts() ?? []).map((p) => p.id));
+          const cacheIds = sortProductIds(cached?.productIds || []);
+          const idsOk = shelfIds.length === 0 || idsEqual(shelfIds, cacheIds);
+          if (cached?.plan && idsOk) {
             const plan = cached.plan as AiCarePlan;
             planRef.current = plan;
-            knownIdsRef.current = sortProductIds(cached.productIds || []);
+            knownIdsRef.current = cacheIds;
             openedWithPlanRef.current = true;
+            readySigRef.current = "";
             setAiPlan(plan);
           }
         }
@@ -588,8 +564,8 @@ export function CareRoutineSheet({
       })),
     [myProducts],
   );
-  const showPlans = hasProducts && !!aiPlan;
-  const showFirstGen = hasProducts && !aiPlan && (aiLoading || aiAppending);
+  const regenerating = hasProducts && (aiLoading || aiAppending);
+  const showPlans = hasProducts && !!aiPlan && !regenerating;
   const shelfGap = moderateScale(8);
   const cardGap = moderateScale(8);
   const addWRoomy = scale(86);
@@ -604,9 +580,9 @@ export function CareRoutineSheet({
   const scrollW = Math.max(0, shelfW - addW - shelfGap);
   const fitted = scrollW > 0 ? (scrollW - cardGap * 2) / 2.5 : scale(100);
   const peekCardW = myProducts.length >= 3 ? fitted : Math.min(fitted, scale(104));
-  const showAiThinking = showFirstGen;
+  const showAiThinking = regenerating;
   const emptyOnly = !bootingPlan && !loadingProducts && !hasProducts && !aiPlan;
-  const showRestoring = !emptyOnly && !showPlans && !showFirstGen;
+  const showRestoring = !emptyOnly && !showPlans && !showAiThinking;
 
   const displayProductName = (name?: string | null) => {
     if (!name || name === "null" || name === "undefined") return null;
@@ -669,12 +645,17 @@ export function CareRoutineSheet({
                 {hasProducts ? (
                   <Pressable
                     style={styles.refreshBtn}
-                    onPress={() => void syncPlanWithProducts(myProducts)}
+                    onPress={() => void syncPlanWithProducts(myProducts, { forceFull: true })}
                   >
                     <Ionicons name="refresh-outline" size={15} color={colors.fg} />
                   </Pressable>
                 ) : null}
               </View>
+              {showPlans && aiPlan?.summary ? (
+                <Text style={styles.daySub} numberOfLines={3}>
+                  {aiPlan.summary}
+                </Text>
+              ) : null}
               {showPlans ? (
                 <View style={styles.progressWrap}>
                   <View style={styles.progressTrack}>
@@ -740,7 +721,7 @@ export function CareRoutineSheet({
                   {tasks.map((task) => {
                     const done = !!doneMap[task.id];
                     const pname = displayProductName(task.productName);
-                    const when = task.time || task.timeHint;
+                    const when = task.time;
                     return (
                       <Pressable
                         key={task.id}

@@ -566,35 +566,20 @@ def generate_care_plan(
     morning_time: str = "",
     evening_time: str = "",
 ) -> dict[str, Any]:
+    """Reja qoidalari — Gemini kutmasdan, mahsulot va soch profiliga qarab."""
+    from ai.services.care_plan_algo import compose_care_plan
+
     mode_s = (mode or "full").strip().lower()
     m_time = _normalize_clock(morning_time)
     e_time = _normalize_clock(evening_time)
+    started = time.perf_counter()
     if mode_s == "append":
         if not products:
             raise AiStyleError("Yangi mahsulot kerak.", 400)
         if not isinstance(existing_plan, dict):
             raise AiStyleError("Mavjud reja kerak.", 400)
-        prompt = _build_append_prompt(
-            condition=condition,
-            texture=texture,
-            color_status=color_status,
-            scalp=scalp or "",
-            concerns=concerns or [],
-            new_products=products,
-            existing_plan=existing_plan,
-            gender=gender or "",
-        )
-        patch = _call_gemini_plan(prompt)
-        usage = patch.pop("_usage", None)
-        if not patch["morning"] and not patch["evening"] and not patch["weekly"]:
-            raise AiStyleError("AI yangi qadam qo'shmadi. Qayta urinib ko'ring.", 502)
-        merged = merge_care_plan_patch(existing_plan, patch)
-        merged = _apply_preferred_times(merged, morning_time=m_time, evening_time=e_time)
-        if usage:
-            merged["_usage"] = usage
-        return merged
 
-    prompt = _build_prompt(
+    built = compose_care_plan(
         condition=condition,
         texture=texture,
         color_status=color_status,
@@ -605,7 +590,18 @@ def generate_care_plan(
         morning_time=m_time,
         evening_time=e_time,
     )
-    plan = _call_gemini_plan(prompt)
+    analyses = built.pop("_analyses", [])
+    if mode_s == "append":
+        built = merge_care_plan_patch(existing_plan, built)
+    plan = _apply_preferred_times(built, morning_time=m_time, evening_time=e_time)
     if not plan["morning"] and not plan["evening"] and not plan["weekly"]:
-        raise AiStyleError("AI reja bo'sh qaytdi. Qayta urinib ko'ring.", 502)
-    return _apply_preferred_times(plan, morning_time=m_time, evening_time=e_time)
+        raise AiStyleError("Reja bo'sh qaytdi. Qayta urinib ko'ring.", 502)
+    plan["_analyses"] = analyses
+    plan["_usage"] = {
+        "provider": "rules",
+        "model": "care-plan-algo",
+        "latency_ms": int((time.perf_counter() - started) * 1000),
+        "input_tokens": 0,
+        "output_tokens": 0,
+    }
+    return plan
