@@ -34,6 +34,22 @@ function buildUrl(path: string): string {
 
 let refreshPromise: Promise<string | null> | null = null;
 
+function accessTokenStale(token: string): boolean {
+  const part = token.split(".")[1];
+  if (!part) return false;
+  try {
+    const padded = part.replace(/-/g, "+").replace(/_/g, "/");
+    const pad = padded + "=".repeat((4 - (padded.length % 4)) % 4);
+    const decode = globalThis.atob;
+    if (typeof decode !== "function") return false;
+    const json = JSON.parse(decode(pad)) as { exp?: number };
+    if (typeof json.exp !== "number") return false;
+    return json.exp * 1000 <= Date.now() + 20_000;
+  } catch {
+    return false;
+  }
+}
+
 async function tryRefresh(): Promise<string | null> {
   if (refreshPromise) return refreshPromise;
   refreshPromise = (async () => {
@@ -101,7 +117,10 @@ export async function apiJson<T>(path: string, init?: RequestInit): Promise<T> {
   }
 
   if (!isAuthPath(path) && !headers.Authorization) {
-    const token = await getAccessToken();
+    let token = await getAccessToken();
+    if (token && accessTokenStale(token)) {
+      token = await tryRefresh();
+    }
     if (token) headers.Authorization = `Bearer ${token}`;
     const sessionId = await getSessionId();
     if (sessionId) headers["X-Session-Id"] = sessionId;
@@ -219,7 +238,10 @@ export async function apiFetch(
   if (isFormData) delete headers["Content-Type"];
 
   if (!isAuthPath(path) && !headers.Authorization) {
-    const token = await getAccessToken();
+    let token = await getAccessToken();
+    if (token && accessTokenStale(token)) {
+      token = await tryRefresh();
+    }
     if (token) headers.Authorization = `Bearer ${token}`;
     const sessionId = await getSessionId();
     if (sessionId) headers["X-Session-Id"] = sessionId;

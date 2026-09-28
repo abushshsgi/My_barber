@@ -671,6 +671,7 @@ export function MorphChatSettingsScreen({
         <TelegramAppearancePanel bottomInset={Math.max(insets.bottom, 16)} />
       ) : (
       <ScrollView
+        style={styles.scroll}
         contentContainerStyle={[
           styles.content,
           { paddingBottom: safeBottom(insets.bottom, 0) },
@@ -1119,8 +1120,13 @@ export function MorphChatSettingsScreen({
 const styles = StyleSheet.create({
   root: {
     flex: 1,
+    minHeight: 0,
     backgroundColor: BG,
     position: "relative",
+  },
+  scroll: {
+    flex: 1,
+    minHeight: 0,
   },
   hubTop: {
     flexDirection: "row",

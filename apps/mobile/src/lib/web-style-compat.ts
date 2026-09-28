@@ -104,15 +104,27 @@ function patchStyleSheet() {
   }) as typeof StyleSheet.create;
 }
 
+function movePointerEvents(props: StyleRecord): StyleRecord {
+  if (props.pointerEvents == null) return props;
+  const { pointerEvents, style, ...rest } = props;
+  const extra = { pointerEvents };
+  const nextStyle =
+    style == null ? extra : Array.isArray(style) ? [...style, extra] : [style, extra];
+  return { ...rest, style: nextStyle };
+}
+
 function patchJsx(runtime: JsxRuntime | null) {
   if (!runtime) return;
   const wrap = (orig: JsxFn | undefined): JsxFn | undefined => {
     if (!orig) return orig;
     return (type, props, key) => {
-      if (!props || !styleNeedsMigrate(props.style)) {
-        return orig(type, props, key);
-      }
-      const next: StyleRecord = { ...props, style: migrateStyleProp(props.style) };
+      if (!props) return orig(type, props, key);
+      const needsStyle = styleNeedsMigrate(props.style);
+      const needsPointer = props.pointerEvents != null;
+      if (!needsStyle && !needsPointer) return orig(type, props, key);
+      let next: StyleRecord = props;
+      if (needsStyle) next = { ...next, style: migrateStyleProp(next.style) };
+      if (needsPointer) next = movePointerEvents(next);
       return orig(type, next, key);
     };
   };

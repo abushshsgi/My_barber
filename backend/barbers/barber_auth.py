@@ -52,8 +52,21 @@ class BarberJWTAuthentication(BaseAuthentication):
                 settings.JWT_HS256_SIGNING_KEY,
                 algorithms=["HS256"],
             )
-        except jwt.ExpiredSignatureError as exc:
-            raise AuthenticationFailed("Token expired.") from exc
+        except jwt.ExpiredSignatureError:
+            # Mijoz/admin tokeni ham shu kalitda. Turini tekshirmasdan 401
+            # ko'tarilsa, public endpointlar (ob-havo) ham yiqiladi.
+            try:
+                payload = jwt.decode(
+                    raw,
+                    settings.JWT_HS256_SIGNING_KEY,
+                    algorithms=["HS256"],
+                    options={"verify_exp": False},
+                )
+            except jwt.PyJWTError:
+                return None
+            if payload.get("type") != "barber_access":
+                return None
+            raise AuthenticationFailed("Token expired.")
         except jwt.PyJWTError:
             return None
         if payload.get("type") != "barber_access":
