@@ -1,5 +1,5 @@
 import { Image } from "expo-image";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import Animated, {
@@ -28,81 +28,67 @@ type Props = {
 type ProcessStep = { title: string; body: string };
 
 const STEP_MS = CARE_PROCESS_STEP_MS;
-const LAP_MS = 6800;
-const THUMB = scale(72);
-const ORBIT_X = scale(108);
+const HERO = scale(78);
+const SIDE = scale(52);
 
-function ProductFace({ product }: { product: AiScanProduct }) {
+function ProductFace({ product, size }: { product: AiScanProduct; size: number }) {
   if (product.image) {
     return (
       <Image
         source={{ uri: product.image }}
-        style={styles.face}
+        style={{ width: size, height: size }}
         contentFit="cover"
         cachePolicy="memory-disk"
-        recyclingKey={`reel-${product.id}`}
+        recyclingKey={`plan-${product.id}`}
       />
     );
   }
   return (
-    <View style={[styles.face, styles.thumbPh]}>
-      <Text style={styles.thumbLetter}>{(product.name || "?").slice(0, 1)}</Text>
+    <View style={[styles.letter, { width: size, height: size }]}>
+      <Text style={styles.letterText}>{(product.name || "?").slice(0, 1)}</Text>
     </View>
   );
 }
 
-/** Mahsulot gorizontal karuselda aylanadi, oldinda turgani kattalashadi. */
-function ReelProduct({
+function ProductSlot({
   product,
-  index,
-  count,
-  spin,
+  active,
+  turn,
 }: {
   product: AiScanProduct;
-  index: number;
-  count: number;
-  spin: SharedValue<number>;
+  active: boolean;
+  turn: SharedValue<number>;
 }) {
+  const size = active ? HERO : SIDE;
   const style = useAnimatedStyle(() => {
-    if (count <= 1) {
-      const yaw = Math.sin(spin.value * Math.PI * 2) * 32;
-      return {
-        zIndex: 2,
-        opacity: 1,
-        transform: [{ perspective: 640 }, { rotateY: `${yaw}deg` }, { scale: 1.08 }],
-      };
-    }
-    const angle = (index / Math.max(count, 1) + spin.value) * Math.PI * 2;
-    const depth = Math.cos(angle);
-    const front = (depth + 1) / 2;
-    const yaw = Math.sin(angle) * (18 + front * 16);
+    const yaw = active ? Math.sin(turn.value * Math.PI * 2) * 18 : 0;
     return {
-      zIndex: Math.round(front * 20),
-      opacity: 0.4 + front * 0.6,
-      transform: [
-        { translateX: Math.sin(angle) * ORBIT_X },
-        { translateY: (1 - depth) * 8 },
-        { perspective: 640 },
-        { rotateY: `${yaw}deg` },
-        { scale: 0.56 + front * 0.52 },
-      ],
+      transform: [{ perspective: 520 }, { rotateY: `${yaw}deg` }],
     };
   });
 
   return (
-    <Animated.View style={[styles.thumb, style]}>
-      <ProductFace product={product} />
+    <Animated.View
+      style={[
+        styles.slot,
+        !active && styles.slotOff,
+        { width: size, height: size, borderRadius: moderateScale(active ? 22 : 16) },
+        style,
+      ]}
+    >
+      <ProductFace product={product} size={size} />
     </Animated.View>
   );
 }
 
-/** Mahsulotlar karuselda aylanadi, pastda jarayon sekin aytiladi. */
+/** Bitta mahsulot qatori va bitta jarayon qadami. Takroriy sarlavha yo‘q. */
 export function AiPlanThinkingOverlay({ appending, products }: Props) {
   const { t } = useTranslation();
   const [stepIdx, setStepIdx] = useState(0);
-  const [prodIdx, setProdIdx] = useState(0);
-  const spin = useSharedValue(0);
+  const turn = useSharedValue(0);
   const copy = useSharedValue(1);
+  const fill = useSharedValue(0.25);
+  const opened = useRef(false);
 
   const steps = useMemo<ProcessStep[]>(() => {
     if (appending) {
@@ -155,20 +141,25 @@ export function AiPlanThinkingOverlay({ appending, products }: Props) {
     ];
   }, [appending, t]);
 
-  const list = (products || []).filter((p) => p.name || p.image).slice(0, 6);
-  const items = list.length ? list : [{ id: "hair", name: "" } satisfies AiScanProduct];
+  const items = useMemo(() => {
+    const list = (products || []).filter((p) => p.name || p.image).slice(0, 6);
+    return list.length ? list : [{ id: "hair", name: "" } satisfies AiScanProduct];
+  }, [products]);
+
   const count = items.length;
-  const current = items[((prodIdx % count) + count) % count];
+  const focus = stepIdx % count;
+  const current = items[focus];
+  const prev = count > 1 ? items[(focus - 1 + count) % count] : null;
+  const next = count > 2 ? items[(focus + 1) % count] : null;
   const step = steps[stepIdx % steps.length];
 
   useEffect(() => {
-    spin.value = 0;
-    spin.value = withRepeat(
-      withTiming(1, { duration: LAP_MS, easing: Easing.linear }),
+    turn.value = withRepeat(
+      withTiming(1, { duration: 2600, easing: Easing.inOut(Easing.sin) }),
       -1,
-      false,
+      true,
     );
-  }, [spin]);
+  }, [turn]);
 
   useEffect(() => {
     const tick = setInterval(() => {
@@ -178,46 +169,34 @@ export function AiPlanThinkingOverlay({ appending, products }: Props) {
   }, [steps.length]);
 
   useEffect(() => {
-    if (count < 2) return;
-    const started = Date.now();
-    const tick = setInterval(() => {
-      const t = ((Date.now() - started) % LAP_MS) / LAP_MS;
-      const front = (count - Math.round(t * count)) % count;
-      setProdIdx(front < 0 ? front + count : front);
-    }, 180);
-    return () => clearInterval(tick);
-  }, [count]);
-
-  useEffect(() => {
-    copy.value = 0.15;
-    copy.value = withTiming(1, { duration: 420, easing: Easing.out(Easing.cubic) });
-  }, [copy, stepIdx]);
+    const next = (stepIdx + 1) / steps.length;
+    if (!opened.current) {
+      opened.current = true;
+      fill.value = next;
+      return;
+    }
+    copy.value = 0;
+    copy.value = withTiming(1, { duration: 360, easing: Easing.out(Easing.cubic) });
+    fill.value = withTiming(next, { duration: 480, easing: Easing.out(Easing.cubic) });
+  }, [copy, fill, stepIdx, steps.length]);
 
   const copyStyle = useAnimatedStyle(() => ({ opacity: copy.value }));
+  const fillStyle = useAnimatedStyle(() => ({
+    transform: [{ scaleX: Math.max(0.08, fill.value) }],
+  }));
 
-  const title = appending
-    ? t("care.routine.aiPlanAppending", { defaultValue: "Yangi mahsulot qo‘shilmoqda" })
-    : t("care.routine.aiAnimTitle", { defaultValue: "Reja tuzilmoqda" });
-
-  const showName = Boolean(current.name && current.name !== "AI");
+  const showName = Boolean(current.name);
 
   return (
     <View
       style={styles.root}
       accessibilityRole="progressbar"
-      accessibilityLabel={`${title}. ${step.title}. ${step.body}`}
+      accessibilityLabel={`${step.title}. ${step.body}`}
     >
-      <View style={styles.stage}>
-        <View style={styles.platter} />
-        {items.map((item, index) => (
-          <ReelProduct
-            key={`${item.id}-${index}`}
-            product={item}
-            index={index}
-            count={count}
-            spin={spin}
-          />
-        ))}
+      <View style={styles.reel}>
+        {prev ? <ProductSlot product={prev} active={false} turn={turn} /> : <View style={styles.sideGap} />}
+        <ProductSlot key={String(current.id)} product={current} active turn={turn} />
+        {next ? <ProductSlot product={next} active={false} turn={turn} /> : <View style={styles.sideGap} />}
       </View>
 
       {showName ? (
@@ -226,28 +205,20 @@ export function AiPlanThinkingOverlay({ appending, products }: Props) {
         </Text>
       ) : null}
 
-      <Text style={styles.title} numberOfLines={1}>
-        {title}
-      </Text>
-
-      <Animated.View style={[styles.copy, copyStyle]}>
-        <Text style={styles.kicker}>
-          {t("care.routine.aiProcessKicker", { defaultValue: "Jarayon" })}
-          {"  "}
-          {stepIdx + 1}/{steps.length}
-        </Text>
-        <Text style={styles.stepTitle} numberOfLines={1}>
-          {step.title}
-        </Text>
-        <Text style={styles.stepBody} numberOfLines={3}>
+      <Animated.View style={copyStyle}>
+        <View style={styles.head}>
+          <Text style={styles.index}>{stepIdx + 1}</Text>
+          <Text style={styles.stepTitle} numberOfLines={1}>
+            {step.title}
+          </Text>
+        </View>
+        <Text style={styles.stepBody} numberOfLines={2}>
           {step.body}
         </Text>
       </Animated.View>
 
-      <View style={styles.dots}>
-        {steps.map((item, index) => (
-          <View key={item.title} style={[styles.dot, index === stepIdx && styles.dotOn]} />
-        ))}
+      <View style={styles.track}>
+        <Animated.View style={[styles.fill, fillStyle]} />
       </View>
     </View>
   );
@@ -255,124 +226,91 @@ export function AiPlanThinkingOverlay({ appending, products }: Props) {
 
 const styles = StyleSheet.create({
   root: {
-    marginTop: verticalScale(8),
     borderRadius: moderateScale(22),
     backgroundColor: "#FFFFFF",
-    paddingTop: verticalScale(14),
+    paddingTop: verticalScale(16),
     paddingBottom: verticalScale(14),
     paddingHorizontal: scale(16),
-    alignItems: "center",
-    overflow: "hidden",
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: "rgba(17,17,17,0.08)",
-    shadowColor: "#111",
-    shadowOpacity: 0.06,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 2,
   },
-  stage: {
-    width: "100%",
-    height: scale(128),
+  reel: {
+    height: HERO,
+    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
+    gap: scale(14),
   },
-  platter: {
-    position: "absolute",
-    width: scale(220),
-    height: scale(36),
-    borderRadius: scale(18),
-    backgroundColor: "#F3F3F4",
-    bottom: scale(8),
+  sideGap: {
+    width: SIDE,
   },
-  thumb: {
-    position: "absolute",
-    width: THUMB,
-    height: THUMB,
-    borderRadius: THUMB / 2,
+  slot: {
     overflow: "hidden",
     backgroundColor: "#F4F4F5",
-    borderWidth: 2,
-    borderColor: "#FFFFFF",
   },
-  face: {
-    width: "100%",
-    height: "100%",
+  slotOff: {
+    opacity: 0.45,
   },
-  thumbPh: {
+  letter: {
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "#EFEFF1",
   },
-  thumbLetter: {
+  letterText: {
     ...morphFont,
-    fontSize: fontSize(16),
+    fontSize: fontSize(18),
     fontWeight: "800",
     color: "#111",
   },
   productName: {
     ...morphFont,
-    marginTop: verticalScale(6),
+    marginTop: verticalScale(10),
     fontSize: fontSize(12),
     fontWeight: "700",
     color: "#111",
     textAlign: "center",
-    maxWidth: "86%",
   },
-  title: {
-    ...morphFont,
-    marginTop: verticalScale(4),
-    fontSize: fontSize(15),
-    fontWeight: "800",
-    color: "#111",
-    letterSpacing: -0.3,
-    textAlign: "center",
-  },
-  copy: {
-    marginTop: verticalScale(8),
+  head: {
+    marginTop: verticalScale(14),
+    flexDirection: "row",
     alignItems: "center",
-    minHeight: verticalScale(62),
+    gap: scale(8),
   },
-  kicker: {
+  index: {
     ...morphFont,
-    fontSize: fontSize(11),
-    fontWeight: "700",
-    letterSpacing: 0.6,
-    textTransform: "uppercase",
+    width: scale(22),
+    fontSize: fontSize(13),
+    fontWeight: "800",
     color: "#A3A3A3",
-    textAlign: "center",
   },
   stepTitle: {
     ...morphFont,
-    marginTop: verticalScale(3),
-    fontSize: fontSize(14),
+    flex: 1,
+    fontSize: fontSize(16),
     fontWeight: "800",
     color: "#111",
-    textAlign: "center",
+    letterSpacing: -0.3,
   },
   stepBody: {
     ...morphFont,
-    marginTop: verticalScale(2),
-    fontSize: fontSize(12),
-    lineHeight: fontSize(17),
+    marginTop: verticalScale(4),
+    marginLeft: scale(30),
+    fontSize: fontSize(13),
+    lineHeight: fontSize(18),
     color: "#525252",
-    textAlign: "center",
-    maxWidth: scale(300),
   },
-  dots: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: scale(6),
-    marginTop: verticalScale(10),
+  track: {
+    marginTop: verticalScale(14),
+    height: 3,
+    borderRadius: 999,
+    backgroundColor: "#F4F4F5",
+    overflow: "hidden",
   },
-  dot: {
-    width: scale(6),
-    height: scale(6),
-    borderRadius: scale(3),
-    backgroundColor: "#E5E5E5",
-  },
-  dotOn: {
-    width: scale(16),
+  fill: {
+    height: "100%",
+    width: "100%",
+    borderRadius: 999,
     backgroundColor: "#111",
+    transformOrigin: "left",
   },
 });
