@@ -28,15 +28,16 @@ type Props = {
 type ProcessStep = { title: string; body: string };
 
 const STEP_MS = CARE_PROCESS_STEP_MS;
-const HERO = scale(78);
-const SIDE = scale(52);
+const THUMB = scale(58);
+const ORBIT = scale(62);
+const LAP_MS = 6400;
 
-function ProductFace({ product, size }: { product: AiScanProduct; size: number }) {
+function ProductFace({ product }: { product: AiScanProduct }) {
   if (product.image) {
     return (
       <Image
         source={{ uri: product.image }}
-        style={{ width: size, height: size }}
+        style={styles.face}
         contentFit="cover"
         cachePolicy="memory-disk"
         recyclingKey={`plan-${product.id}`}
@@ -44,39 +45,46 @@ function ProductFace({ product, size }: { product: AiScanProduct; size: number }
     );
   }
   return (
-    <View style={[styles.letter, { width: size, height: size }]}>
+    <View style={[styles.face, styles.letter]}>
       <Text style={styles.letterText}>{(product.name || "?").slice(0, 1)}</Text>
     </View>
   );
 }
 
-function ProductSlot({
+/** 2D aylana — webda rotateY ko‘rinmaydi, shu yerda rasm o‘zi ham buriladi. */
+function OrbitPhoto({
   product,
-  active,
-  turn,
+  index,
+  count,
+  spin,
 }: {
   product: AiScanProduct;
-  active: boolean;
-  turn: SharedValue<number>;
+  index: number;
+  count: number;
+  spin: SharedValue<number>;
 }) {
-  const size = active ? HERO : SIDE;
   const style = useAnimatedStyle(() => {
-    const yaw = active ? Math.sin(turn.value * Math.PI * 2) * 18 : 0;
+    const base = (index / Math.max(count, 1)) * 360;
+    const lap = spin.value * 360;
+    const place = base + lap;
+    const deg = ((place % 360) + 360) % 360;
+    const nearTop = Math.min(deg, 360 - deg);
+    const front = nearTop < 42;
     return {
-      transform: [{ perspective: 520 }, { rotateY: `${yaw}deg` }],
+      zIndex: front ? 3 : 1,
+      opacity: front ? 1 : 0.72,
+      transform: [
+        { rotate: `${place}deg` },
+        { translateY: -ORBIT },
+        { rotate: `${-place + lap}deg` },
+        { scale: front ? 1.08 : 0.86 },
+      ],
     };
   });
 
   return (
-    <Animated.View
-      style={[
-        styles.slot,
-        !active && styles.slotOff,
-        { width: size, height: size, borderRadius: moderateScale(active ? 22 : 16) },
-        style,
-      ]}
-    >
-      <ProductFace product={product} size={size} />
+    <Animated.View style={[styles.slot, style]}>
+      <ProductFace product={product} />
     </Animated.View>
   );
 }
@@ -147,18 +155,11 @@ export function AiPlanThinkingOverlay({ appending, products }: Props) {
   }, [products]);
 
   const count = items.length;
-  const focus = stepIdx % count;
-  const current = items[focus];
-  const prev = count > 1 ? items[(focus - 1 + count) % count] : null;
-  const next = count > 2 ? items[(focus + 1) % count] : null;
   const step = steps[stepIdx % steps.length];
 
   useEffect(() => {
-    turn.value = withRepeat(
-      withTiming(1, { duration: 2600, easing: Easing.inOut(Easing.sin) }),
-      -1,
-      true,
-    );
+    turn.value = 0;
+    turn.value = withRepeat(withTiming(1, { duration: LAP_MS, easing: Easing.linear }), -1, false);
   }, [turn]);
 
   useEffect(() => {
@@ -185,8 +186,6 @@ export function AiPlanThinkingOverlay({ appending, products }: Props) {
     transform: [{ scaleX: Math.max(0.08, fill.value) }],
   }));
 
-  const showName = Boolean(current.name);
-
   return (
     <View
       style={styles.root}
@@ -194,16 +193,16 @@ export function AiPlanThinkingOverlay({ appending, products }: Props) {
       accessibilityLabel={`${step.title}. ${step.body}`}
     >
       <View style={styles.reel}>
-        {prev ? <ProductSlot product={prev} active={false} turn={turn} /> : <View style={styles.sideGap} />}
-        <ProductSlot key={String(current.id)} product={current} active turn={turn} />
-        {next ? <ProductSlot product={next} active={false} turn={turn} /> : <View style={styles.sideGap} />}
+        {items.map((item, index) => (
+          <OrbitPhoto
+            key={`${item.id}-${index}`}
+            product={item}
+            index={index}
+            count={count}
+            spin={turn}
+          />
+        ))}
       </View>
-
-      {showName ? (
-        <Text style={styles.productName} numberOfLines={1}>
-          {current.name}
-        </Text>
-      ) : null}
 
       <Animated.View style={copyStyle}>
         <View style={styles.head}>
@@ -235,21 +234,23 @@ const styles = StyleSheet.create({
     borderColor: "rgba(17,17,17,0.08)",
   },
   reel: {
-    height: HERO,
-    flexDirection: "row",
+    height: ORBIT * 2 + THUMB,
     alignItems: "center",
     justifyContent: "center",
-    gap: scale(14),
-  },
-  sideGap: {
-    width: SIDE,
   },
   slot: {
+    position: "absolute",
+    width: THUMB,
+    height: THUMB,
+    borderRadius: THUMB / 2,
     overflow: "hidden",
     backgroundColor: "#F4F4F5",
+    borderWidth: 2,
+    borderColor: "#FFFFFF",
   },
-  slotOff: {
-    opacity: 0.45,
+  face: {
+    width: "100%",
+    height: "100%",
   },
   letter: {
     alignItems: "center",
@@ -261,14 +262,6 @@ const styles = StyleSheet.create({
     fontSize: fontSize(18),
     fontWeight: "800",
     color: "#111",
-  },
-  productName: {
-    ...morphFont,
-    marginTop: verticalScale(10),
-    fontSize: fontSize(12),
-    fontWeight: "700",
-    color: "#111",
-    textAlign: "center",
   },
   head: {
     marginTop: verticalScale(14),
