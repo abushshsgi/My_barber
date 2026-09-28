@@ -567,7 +567,7 @@ def generate_care_plan(
     evening_time: str = "",
 ) -> dict[str, Any]:
     """Reja qoidalari — Gemini kutmasdan, mahsulot va soch profiliga qarab."""
-    from ai.services.care_plan_algo import compose_care_plan
+    from ai.services.care_plan_algo import care_plan_is_complete, compose_care_plan
 
     mode_s = (mode or "full").strip().lower()
     m_time = _normalize_clock(morning_time)
@@ -594,7 +594,7 @@ def generate_care_plan(
     if mode_s == "append":
         built = merge_care_plan_patch(existing_plan, built)
     plan = _apply_preferred_times(built, morning_time=m_time, evening_time=e_time)
-    if not plan["morning"] and not plan["evening"] and not plan["weekly"]:
+    if not care_plan_is_complete(plan):
         raise AiStyleError("Reja bo'sh qaytdi. Qayta urinib ko'ring.", 502)
     plan["_analyses"] = analyses
     plan["_usage"] = {

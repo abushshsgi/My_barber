@@ -22,6 +22,7 @@ import {
   type CareProduct,
 } from "../../../api/care";
 import { resolveMediaUrl } from "../../../api/media";
+import { waitUntilPlanShown } from "../../../lib/care-think";
 import {
   buildDailyRoutine,
   careProfileKey,
@@ -387,6 +388,7 @@ export function CareRoutineSheet({
         planRef.current = null;
         return;
       }
+      const started = Date.now();
       setAiLoading(true);
       setAiAppending(false);
       setAiError(null);
@@ -401,6 +403,7 @@ export function CareRoutineSheet({
           evening_time: sched.eveningTime,
         });
         await persistPlan(plan, products);
+        await waitUntilPlanShown(started, 4);
       } catch (e) {
         if (!planRef.current) setAiPlan(null);
         setAiError(e instanceof Error ? e.message : t("care.routine.aiPlanError"));

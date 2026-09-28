@@ -30,7 +30,7 @@ from ai.services.care_refill_tracker import (
 )
 from ai.services.care_match import recommend_products, suitability_for_user
 from ai.services.errors import AiStyleError
-from ai.services.care_plan_algo import hair_profile_key
+from ai.services.care_plan_algo import care_plan_is_complete, hair_profile_key
 from ai.services.gemini_care_plan import generate_care_plan
 from ai.services.gemini_growth_forecast import generate_hair_growth_forecast
 from ai.services.gemini_sos_style import generate_sos_fix
@@ -446,7 +446,13 @@ class CarePlanGenerateView(UnthrottledAPIView):
         )
         payload = _plan_payload(row, product_ids=product_ids, profile_key=profile_key)
         payload["stale"] = False
+        payload["ready"] = care_plan_is_complete(plan)
         payload["usage"] = usage
+        if not payload["ready"]:
+            return Response(
+                {"detail": "Reja hali tayyor emas.", "ready": False},
+                status=502,
+            )
         return Response(payload)
 
 

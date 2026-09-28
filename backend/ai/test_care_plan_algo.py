@@ -1,4 +1,4 @@
-from ai.services.care_plan_algo import compose_care_plan, hair_profile_key
+from ai.services.care_plan_algo import care_plan_is_complete, compose_care_plan, hair_profile_key
 from ai.services.gemini_care_plan import generate_care_plan
 
 
@@ -49,3 +49,6 @@ def test_generate_skips_empty_and_keeps_schema():
     assert plan["morning"][0]["product_name"] == "Clear"
     assert plan["_usage"]["provider"] == "rules"
     assert isinstance(plan["_analyses"], list)
+    assert care_plan_is_complete(plan)
+    assert not care_plan_is_complete({"morning": [], "evening": [], "weekly": []})
+    assert not care_plan_is_complete(None)

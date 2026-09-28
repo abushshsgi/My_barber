@@ -135,6 +135,17 @@ def _wash_phrase(condition: str) -> str:
     return f"Yuvish {len(ordered)}×/hafta ({', '.join(ordered)})"
 
 
+def care_plan_is_complete(plan: dict[str, Any] | None) -> bool:
+    """Ertalab, kech yoki haftalik qadam bo‘lmasa reja tayyor emas."""
+    if not isinstance(plan, dict):
+        return False
+    for slot in ("morning", "evening", "weekly"):
+        rows = plan.get(slot)
+        if isinstance(rows, list) and len(rows) > 0:
+            return True
+    return False
+
+
 def compose_care_plan(
     *,
     condition: str,

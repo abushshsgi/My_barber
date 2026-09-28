@@ -260,9 +260,9 @@ export async function generateCarePlan(body: {
     body: JSON.stringify(body),
   });
   const data = (await res.json().catch(() => null)) as
-    | { plan?: AiCarePlan; detail?: string }
+    | { plan?: AiCarePlan; ready?: boolean; detail?: string }
     | null;
-  if (!res.ok) {
+  if (!res.ok || data?.ready === false) {
     throw new Error(
       data && typeof data.detail === "string" ? data.detail : "Parvarish reja yaratilmadi.",
     );

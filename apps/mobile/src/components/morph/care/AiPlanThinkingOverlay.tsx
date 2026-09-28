@@ -10,6 +10,7 @@ import Animated, {
   withTiming,
   type SharedValue,
 } from "react-native-reanimated";
+import { CARE_PROCESS_STEP_MS } from "../../../lib/care-think";
 import { morphFont } from "../../../theme/morph-font";
 import { fontSize, moderateScale, scale, verticalScale } from "../../../utils/responsive";
 
@@ -26,7 +27,7 @@ type Props = {
 
 type ProcessStep = { title: string; body: string };
 
-const STEP_MS = 2800;
+const STEP_MS = CARE_PROCESS_STEP_MS;
 const LAP_MS = 6800;
 const THUMB = scale(72);
 const ORBIT_X = scale(108);
