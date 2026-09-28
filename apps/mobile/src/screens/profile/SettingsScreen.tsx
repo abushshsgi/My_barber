@@ -1,12 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { Alert, ScrollView, StyleSheet, View } from "react-native";
+import { ScrollView, StyleSheet, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { HeaderPill, NativeHeader } from "../../components/ui/NativeHeader";
 import { SettingsGroup, SettingsRow } from "../../components/ui/SettingsKit";
 import { PersonalInfoPanel } from "./PersonalInfoPanel";
-import { currentLang, setAppLanguage } from "../../i18n/config";
-import type { AppLang } from "../../lib/guest";
+import { setAppLanguage, type AppLang } from "../../i18n/config";
 import type { ProfileStackParamList } from "../../navigation/ProfileStack";
 import { colors } from "../../theme/colors";
 import {
@@ -17,22 +16,19 @@ import {
 
 type Props = NativeStackScreenProps<ProfileStackParamList, "Settings">;
 
-export function SettingsScreen({ navigation }: Props) {
-  const { t } = useTranslation();
-  const lang = currentLang();
+const LANGS: { id: AppLang; labelKey: "profile.languageUz" | "profile.languageRu" | "profile.languageEn" }[] = [
+  { id: "uz", labelKey: "profile.languageUz" },
+  { id: "ru", labelKey: "profile.languageRu" },
+  { id: "en", labelKey: "profile.languageEn" },
+];
 
-  const pickLanguage = () => {
-    Alert.alert(t("profile.language"), undefined, [
-      {
-        text: t("profile.languageRu"),
-        onPress: () => void setAppLanguage("ru"),
-      },
-      {
-        text: t("profile.languageUz"),
-        onPress: () => void setAppLanguage("uz"),
-      },
-      { text: t("common.cancel"), style: "cancel" },
-    ]);
+export function SettingsScreen({ navigation }: Props) {
+  const { t, i18n } = useTranslation();
+  const lang = (i18n.resolvedLanguage || i18n.language || "uz").slice(0, 2) as AppLang;
+
+  const chooseLanguage = (next: AppLang) => {
+    if (next === lang) return;
+    void setAppLanguage(next).catch(() => undefined);
   };
 
   return (
@@ -78,14 +74,27 @@ export function SettingsScreen({ navigation }: Props) {
             title={t("profile.notificationPrefs")}
             icon="notifications-outline"
             onPress={() => navigation.navigate("NotificationPrefs")}
-          />
-          <SettingsRow
-            title={t("profile.languagePrefs")}
-            subtitle={lang === "ru" ? t("profile.languageRu") : t("profile.languageUz")}
-            icon="globe-outline"
-            onPress={pickLanguage}
             last
           />
+        </SettingsGroup>
+
+        <SettingsGroup title={t("profile.language")}>
+          {LANGS.map((item, index) => (
+            <SettingsRow
+              key={item.id}
+              title={t(item.labelKey)}
+              icon="globe-outline"
+              onPress={() => chooseLanguage(item.id)}
+              last={index === LANGS.length - 1}
+              trailing={
+                lang === item.id ? (
+                  <Ionicons name="checkmark" size={18} color={colors.fg} />
+                ) : (
+                  <View style={styles.langSpacer} />
+                )
+              }
+            />
+          ))}
         </SettingsGroup>
 
         <SettingsGroup title={t("profile.paymentGroup")}>
@@ -117,4 +126,5 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
   content: { padding: moderateScale(16), paddingBottom: verticalScale(32) },
   infoPad: { paddingHorizontal: scale(14), paddingBottom: verticalScale(10) },
+  langSpacer: { width: 18 },
 });

@@ -78,6 +78,14 @@ const FIT_FALLBACK = {
     poor: "Слабо",
     ingredientsCount: "{{count}} шт.",
   },
+  en: {
+    fitTitle: "Fit for your hair",
+    excellent: "Excellent fit",
+    good: "Good fit",
+    ok: "Average fit",
+    poor: "Poor fit",
+    ingredientsCount: "{{count}}",
+  },
 } as const;
 
 function parseIngredients(product: CareProduct): string[] {
@@ -140,7 +148,8 @@ export function CareProductPreviewSheet({
   );
   const labelKey = fitLabelKey(fit);
   const isPage = mode === "page";
-  const lang = (i18n.language || "uz").startsWith("ru") ? "ru" : "uz";
+  const code = (i18n.resolvedLanguage || i18n.language || "uz").slice(0, 2);
+  const lang = code === "en" || code === "ru" ? code : "uz";
   const fb = FIT_FALLBACK[lang];
   const [panel, setPanel] = useState<"info" | "tarkib">("info");
   const [justAdded, setJustAdded] = useState(false);

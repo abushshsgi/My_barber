@@ -1,7 +1,10 @@
 import i18n, { currentLang } from "../i18n/config";
 
 function dateLocale(): string {
-  return currentLang() === "ru" ? "ru-RU" : "uz-UZ";
+  const lang = currentLang();
+  if (lang === "ru") return "ru-RU";
+  if (lang === "en") return "en-US";
+  return "uz-UZ";
 }
 
 /** Keyingi N kun — bron kalendari. */

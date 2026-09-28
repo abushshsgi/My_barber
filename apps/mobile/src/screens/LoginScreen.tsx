@@ -83,7 +83,7 @@ export function LoginScreen() {
   const onContinuePhone = async () => {
     const nine = normalizeUzPhone(phone);
     if (nine.length !== 9) {
-      setError("Telefon raqamini to'liq kiriting (90 123 45 67).");
+      setError(t("auth.phoneFull"));
       return;
     }
     setBusy(true);
@@ -109,7 +109,7 @@ export function LoginScreen() {
   const onVerifyCode = async () => {
     const nine = normalizeUzPhone(phone);
     if (code.trim().length < 4) {
-      setError("SMS kodni kiriting.");
+      setError(t("auth.smsRequired"));
       return;
     }
     setBusy(true);
@@ -117,7 +117,7 @@ export function LoginScreen() {
     try {
       await auth.signInWithPhoneCode(nine, code.trim(), referralCode.trim() || undefined);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Kod noto'g'ri");
+      setError(err instanceof Error ? err.message : t("auth.wrongCode"));
     } finally {
       setBusy(false);
     }
@@ -126,7 +126,7 @@ export function LoginScreen() {
   const onPasswordLogin = async () => {
     const nine = normalizeUzPhone(phone);
     if (!password.trim()) {
-      setError("Parolni kiriting.");
+      setError(t("auth.passwordRequired"));
       return;
     }
     setBusy(true);
@@ -134,7 +134,7 @@ export function LoginScreen() {
     try {
       await auth.signInWithPassword(nine, password);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Parol noto'g'ri");
+      setError(err instanceof Error ? err.message : t("auth.wrongPassword"));
     } finally {
       setBusy(false);
     }
@@ -265,7 +265,7 @@ export function LoginScreen() {
 
           {step === "password" ? (
             <>
-              <Text style={titleStyle}>Parolingizni kiriting</Text>
+              <Text style={titleStyle}>{t("auth.passwordHint")}</Text>
               <Text style={subStyle}>+998 {formatUzPhoneDisplay(phone)}</Text>
               <TextInput
                 value={password}
@@ -284,7 +284,7 @@ export function LoginScreen() {
 
           {step === "code" ? (
             <>
-              <Text style={titleStyle}>SMS kodni kiriting</Text>
+              <Text style={titleStyle}>{t("auth.smsCode")}</Text>
               <Text style={subStyle}>+998 {formatUzPhoneDisplay(phone)}</Text>
               <TextInput
                 value={code}

@@ -2,7 +2,7 @@ import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { Image } from "expo-image";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -48,30 +48,29 @@ type Slide = {
   isLast?: boolean;
 };
 
-const SLIDES: Slide[] = [
-  {
-    key: "look",
-    title: "Look yaratish\nAI bilan",
-    subtitle:
-      "Selfie yuklang — Morf AI yuz shaklingizga mos soch uslublarini bir necha soniyada yaratadi.",
-    visual: "look",
-  },
-  {
-    key: "angle",
-    title: "Yaxshi selfie\nqanday olinadi",
-    subtitle:
-      "Kamerani ko‘z balandligida tuting. Yuz to‘g‘ri qarasin, yorug‘lik yuzingizga tushsin.",
-    visual: "angle",
-  },
-  {
-    key: "upload",
-    title: "Rasmni tanlang",
-    subtitle:
-      "Kameradan oling yoki galereyadan yuklang. Yuz aniq ko‘rinsin — keyin look yaratiladi.",
-    visual: "upload",
-    isLast: true,
-  },
-];
+function buildSlides(t: (key: string) => string): Slide[] {
+  return [
+    {
+      key: "look",
+      title: t("morph.guide.s1Title"),
+      subtitle: t("morph.guide.s1Sub"),
+      visual: "look",
+    },
+    {
+      key: "angle",
+      title: t("morph.guide.s2Title"),
+      subtitle: t("morph.guide.s2Sub"),
+      visual: "angle",
+    },
+    {
+      key: "upload",
+      title: t("morph.guide.s3Title"),
+      subtitle: t("morph.guide.s3Sub"),
+      visual: "upload",
+      isLast: true,
+    },
+  ];
+}
 
 const H_PAD = 24;
 const LOOK_URI = pexelsPhotoUrl(3998445, 1400);
@@ -85,6 +84,7 @@ async function rememberMorphTryOnTab() {
 
 export function MorphGuideCarouselScreen({ navigation, route }: Props) {
   const { t } = useTranslation();
+  const slides = useMemo(() => buildSlides(t), [t]);
   useHideTabBar();
   const insets = useSafeAreaInsets();
   const { height: winH, width: winW } = useWindowDimensions();
@@ -95,7 +95,7 @@ export function MorphGuideCarouselScreen({ navigation, route }: Props) {
 
   const initial = Math.min(
     Math.max(route.params?.startIndex ?? 0, 0),
-    SLIDES.length - 1,
+    slides.length - 1,
   );
   const [index, setIndex] = useState(initial);
   const [busy, setBusy] = useState<"camera" | "gallery" | null>(null);
@@ -126,13 +126,13 @@ export function MorphGuideCarouselScreen({ navigation, route }: Props) {
   const viewabilityConfig = useRef({ viewAreaCoveragePercentThreshold: 60 }).current;
 
   const goLogin = useCallback(async () => {
-    await writeMorphIntroStep(SLIDES.length - 1);
+    await writeMorphIntroStep(slides.length - 1);
     await rememberMorphTryOnTab();
     navigation.getParent()?.navigate("Profile" as never);
   }, [navigation]);
 
   const goNext = useCallback(() => {
-    if (index < SLIDES.length - 1) {
+    if (index < slides.length - 1) {
       const next = index + 1;
       listRef.current?.scrollToIndex({ index: next, animated: true });
       setIndex(next);
@@ -202,7 +202,7 @@ export function MorphGuideCarouselScreen({ navigation, route }: Props) {
     navigation.getParent()?.navigate("Home" as never);
   };
 
-  const slide = SLIDES[index] ?? SLIDES[0];
+  const slide = slides[index] ?? slides[0];
   const isLast = Boolean(slide.isLast);
 
   const renderItem = ({ item }: { item: Slide }) => (
@@ -252,7 +252,7 @@ export function MorphGuideCarouselScreen({ navigation, route }: Props) {
 
       <FlatList
         ref={listRef}
-        data={SLIDES}
+        data={slides}
         keyExtractor={(s) => s.key}
         renderItem={renderItem}
         horizontal
@@ -277,7 +277,7 @@ export function MorphGuideCarouselScreen({ navigation, route }: Props) {
 
       <View style={styles.footer}>
         <View style={styles.dots}>
-          {SLIDES.map((s, i) => (
+          {slides.map((s, i) => (
             <View key={s.key} style={[styles.dot, i === index && styles.dotOn]} />
           ))}
         </View>

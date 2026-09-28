@@ -64,7 +64,7 @@ export function MorphPaywallView({
 }: Props) {
   const { t, i18n } = useTranslation();
   const lang = i18n.language;
-  const numberLocale = lang.startsWith("ru") ? "ru-RU" : "uz-UZ";
+  const numberLocale = lang.startsWith("en") ? "en-US" : lang.startsWith("ru") ? "ru-RU" : "uz-UZ";
   const insets = useSafeAreaInsets();
   const { isAuthenticated } = useAuth();
   const { plans, me, loading, busyCode, subscribeWallet, activeCode } = useSubscriptions();

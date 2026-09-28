@@ -70,10 +70,10 @@ export function BookingScreen({ route, navigation }: Props) {
 
   useEffect(() => {
     if (!isAuthenticated) {
-      Alert.alert("Kirish kerak", "Bron qilish uchun avval akkauntga kiring.", [
-        { text: "Bekor", style: "cancel", onPress: () => navigation.goBack() },
+      Alert.alert(t("common.loginRequired"), t("booking.loginBody"), [
+        { text: t("common.cancel"), style: "cancel", onPress: () => navigation.goBack() },
         {
-          text: "Kirish",
+          text: t("auth.login"),
           onPress: () => navigation.navigate("MainTabs", { screen: "Profile" }),
         },
       ]);
@@ -126,7 +126,7 @@ export function BookingScreen({ route, navigation }: Props) {
         const labels = (data.slots ?? []).map(slotLabel);
         setSlots(labels);
         if (labels.length === 0) {
-          setSlotsError(data.closed_reason || data.detail || "Bu kunda bo'sh vaqt yo'q");
+          setSlotsError(data.closed_reason || data.detail || t("booking.noSlots"));
         }
       })
       .catch((err) => {
@@ -190,7 +190,7 @@ export function BookingScreen({ route, navigation }: Props) {
         ],
       );
     } catch (err) {
-      Alert.alert("Xato", err instanceof Error ? err.message : "Bron qilinmadi");
+      Alert.alert(t("common.error"), err instanceof Error ? err.message : t("booking.bookFail"));
     } finally {
       setSubmitting(false);
     }
@@ -354,7 +354,7 @@ export function BookingScreen({ route, navigation }: Props) {
                 label={t("booking.time")}
                 value={`${days[dayIdx]?.label ?? ""} · ${slot ?? ""}`}
               />
-              <SummaryRow label="To'lov" value="Naqd / joyida" />
+              <SummaryRow label={t("booking.payment")} value={t("booking.cash")} />
               <SummaryRow label={t("booking.total")} value={`${shortPrice(total)} so'm`} bold />
             </View>
           </View>
@@ -374,7 +374,7 @@ export function BookingScreen({ route, navigation }: Props) {
             <ActivityIndicator color="#FFF" />
           ) : (
             <Text style={[styles.ctaText, { fontSize: fs(15) }]}>
-              {step < 3 ? "Davom etish" : "Bron qilish"}
+              {step < 3 ? t("common.continue") : t("booking.book")}
             </Text>
           )}
         </Pressable>

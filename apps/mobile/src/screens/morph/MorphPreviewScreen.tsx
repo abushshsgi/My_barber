@@ -117,7 +117,7 @@ export function MorphPreviewScreen({ navigation, route }: Props) {
     setSharing(true);
     try {
       let pageUrl = `${WEB_ORIGIN}/morf-ai/look/${encodeURIComponent(styleId)}`;
-      const text = `${title} — Morf AI da sinab ko‘ring`;
+      const text = t("morph.shareCaption", { title });
       if (preview) {
         try {
           const { createMorphAiLookShare } = await import("../../api/ai");
@@ -135,11 +135,11 @@ export function MorphPreviewScreen({ navigation, route }: Props) {
       }
       await openTelegramShare(pageUrl, text);
     } catch (err) {
-      Alert.alert("Ulashish", err instanceof Error ? err.message : "Xatolik");
+      Alert.alert(t("morph.share"), err instanceof Error ? err.message : t("profile.genericError"));
     } finally {
       setSharing(false);
     }
-  }, [styleId, title, preview]);
+  }, [styleId, title, preview, t]);
 
   const openMap = useCallback(() => {
     void Linking.openURL(`${WEB_ORIGIN}/map`);
@@ -168,7 +168,7 @@ export function MorphPreviewScreen({ navigation, route }: Props) {
             <Image source={{ uri: imageSrc }} style={styles.heroImg} />
           ) : (
             <View style={[styles.heroImg, styles.heroEmpty]}>
-              <Text style={styles.heroEmptyText}>Rasm yo‘q</Text>
+              <Text style={styles.heroEmptyText}>{t("morph.noImage")}</Text>
             </View>
           )}
 
@@ -212,11 +212,8 @@ export function MorphPreviewScreen({ navigation, route }: Props) {
                   <Ionicons name="paper-plane" size={16} color="#FFF" />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.cardTitle}>Do'stlarga ulashing</Text>
-                  <Text style={styles.cardSub}>
-                    Telegram yoki Instagram Story orqali yuboring — do'stlaringiz ham o'zida
-                    sinab ko'radi.
-                  </Text>
+                  <Text style={styles.cardTitle}>{t("morph.shareFriendsTitle")}</Text>
+                  <Text style={styles.cardSub}>{t("morph.shareFriendsBody")}</Text>
                 </View>
               </View>
               <View style={styles.shareRow}>
@@ -248,13 +245,11 @@ export function MorphPreviewScreen({ navigation, route }: Props) {
 
           {preview ? (
             <View style={styles.card}>
-              <Text style={styles.cardTitle}>Yaqin salonlarda kesib oling</Text>
-              <Text style={styles.cardSub}>
-                Yaqin salonlarni ko'rish uchun xaritani oching
-              </Text>
+              <Text style={styles.cardTitle}>{t("morph.cutNearby")}</Text>
+              <Text style={styles.cardSub}>{t("morph.nearbyMap")}</Text>
               <Pressable style={styles.mapLink} onPress={openMap}>
                 <Ionicons name="location-outline" size={16} color="#0A0A0A" />
-                <Text style={styles.mapLinkText}>Xaritani ochish</Text>
+                <Text style={styles.mapLinkText}>{t("morph.openMap")}</Text>
               </Pressable>
             </View>
           ) : null}
@@ -347,7 +342,7 @@ export function MorphPreviewScreen({ navigation, route }: Props) {
 
           <Pressable style={styles.primaryBtn} onPress={openBooking}>
             <Ionicons name="calendar-outline" size={18} color="#FFF" />
-            <Text style={styles.primaryBtnText}>Bron qilish</Text>
+            <Text style={styles.primaryBtnText}>{t("booking.book")}</Text>
           </Pressable>
 
           <Pressable

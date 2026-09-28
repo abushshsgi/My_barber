@@ -52,15 +52,15 @@ const CARD_SHADOW = {
 };
 const AVATAR_TONES = ["#111111", "#737373", "#A3A3A3", "#D4D4D4", "#525252", "#E5E5E5"];
 
-const QUICK: {
+const QUICK_META: {
   key: "WalletGift" | "WalletTopUp" | "WalletQrPay" | "WalletMore";
-  label: string;
+  labelKey: "walletPages.transfer" | "walletPages.payment" | "walletPages.topUp" | "walletPages.moreTitle";
   icon: keyof typeof Ionicons.glyphMap;
 }[] = [
-  { key: "WalletGift", label: "O'tkazma", icon: "arrow-up-outline" },
-  { key: "WalletQrPay", label: "To'lov", icon: "arrow-down-outline" },
-  { key: "WalletTopUp", label: "To'ldirish", icon: "add" },
-  { key: "WalletMore", label: "Ko'proq", icon: "grid-outline" },
+  { key: "WalletGift", labelKey: "walletPages.transfer", icon: "arrow-up-outline" },
+  { key: "WalletQrPay", labelKey: "walletPages.payment", icon: "arrow-down-outline" },
+  { key: "WalletTopUp", labelKey: "walletPages.topUp", icon: "add" },
+  { key: "WalletMore", labelKey: "walletPages.moreTitle", icon: "grid-outline" },
 ];
 
 function formatMoney(n: number): string {
@@ -77,16 +77,16 @@ function formatTxTime(iso: string): string {
   return d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true });
 }
 
-function txStatusLabel(item: WalletTx): string {
-  if (item.kind === "in") return "Qabul";
-  if (item.entryType === "topup") return "To'ldirish";
-  if (item.entryType.startsWith("gift")) return "Yuborildi";
-  return "To'lov";
+function txStatusLabel(item: WalletTx, label: (key: string) => string): string {
+  if (item.kind === "in") return label("walletPages.received");
+  if (item.entryType === "topup") return label("walletPages.topUp");
+  if (item.entryType.startsWith("gift")) return label("walletPages.sent");
+  return label("walletPages.payment");
 }
 
-function firstName(full?: string | null): string {
+function firstName(full: string | null | undefined, fallback: string): string {
   const clean = (full || "").trim();
-  if (!clean) return "do'st";
+  if (!clean) return fallback;
   return clean.split(/\s+/)[0]!;
 }
 
@@ -124,7 +124,7 @@ export function WalletHomeScreen({ navigation }: Props) {
   const showPromo = !isSmall;
 
   const recent = tx.items.slice(0, 8);
-  const greetName = firstName(user?.first_name || user?.full_name);
+  const greetName = firstName(user?.first_name || user?.full_name, t("walletPages.friend"));
   const balanceText = useMemo(
     () => (hidden ? "••••••" : formatMoney(me.balance)),
     [hidden, me.balance],
@@ -204,14 +204,14 @@ export function WalletHomeScreen({ navigation }: Props) {
               )}
             </View>
             <View>
-              <Text style={styles.hello}>Salom, {greetName}</Text>
-              <Text style={styles.welcome}>Xush kelibsiz</Text>
+              <Text style={styles.hello}>{t("walletPages.hello")}, {greetName}</Text>
+              <Text style={styles.welcome}>{t("walletPages.welcome")}</Text>
             </View>
           </Pressable>
           <Pressable
             style={styles.bellBtn}
             onPress={() => navigation.navigate("WalletMore")}
-            accessibilityLabel="Ko'proq"
+            accessibilityLabel={t("walletPages.moreTitle")}
           >
             <Ionicons name="notifications-outline" size={ICON.md} color={INK} />
           </Pressable>
@@ -233,11 +233,11 @@ export function WalletHomeScreen({ navigation }: Props) {
               />
             </Pressable>
           )}
-          <Text style={styles.balanceLabel}>Hamyon balansi</Text>
+          <Text style={styles.balanceLabel}>{t("walletPages.balanceLabel")}</Text>
         </View>
 
         <View style={styles.quickRow}>
-          {QUICK.map((item) => (
+          {QUICK_META.map((item) => (
             <Pressable
               key={item.key}
               style={styles.quickItem}
@@ -250,7 +250,7 @@ export function WalletHomeScreen({ navigation }: Props) {
                 <Ionicons name={item.icon} size={ICON.lg} color={INK} />
               </View>
               <Text style={styles.quickLabel} numberOfLines={1}>
-                {item.label}
+                {t(item.labelKey)}
               </Text>
             </Pressable>
           ))}
@@ -259,7 +259,7 @@ export function WalletHomeScreen({ navigation }: Props) {
 
       <View style={styles.section}>
         <View style={styles.sectionHead}>
-          <Text style={styles.sectionTitle}>Tezkor yuborish</Text>
+          <Text style={styles.sectionTitle}>{t("walletPages.quickSend")}</Text>
           <Pressable onPress={() => navigation.navigate("WalletGift")}>
             <Text style={styles.seeAll}>Hammasi</Text>
           </Pressable>
@@ -298,7 +298,7 @@ export function WalletHomeScreen({ navigation }: Props) {
             <View style={styles.addContact}>
               <Ionicons name="add" size={ICON.lg} color="#6B7280" />
             </View>
-            <Text style={styles.contactName}>Yangi</Text>
+            <Text style={styles.contactName}>{t("walletPages.newContact")}</Text>
           </Pressable>
         </ScrollView>
       </View>
@@ -317,9 +317,9 @@ export function WalletHomeScreen({ navigation }: Props) {
             style={styles.promoCard}
           >
             <View style={styles.promoTextCol}>
-              <Text style={styles.promoTitle}>Sovg'a bonusi</Text>
+              <Text style={styles.promoTitle}>{t("walletPages.giftBonus")}</Text>
               <Text style={styles.promoDesc} numberOfLines={3}>
-                Do'stlarga sovg'a yuboring — har bir yuborish bilan bonus o'sadi!
+                {t("walletPages.giftPromoBody")}
               </Text>
             </View>
             <Pressable style={styles.promoGift} onPress={() => navigation.navigate("WalletGifts")}>
@@ -334,9 +334,9 @@ export function WalletHomeScreen({ navigation }: Props) {
             style={styles.promoCard}
           >
             <View style={styles.promoTextCol}>
-              <Text style={styles.promoTitle}>Rekvizitlar</Text>
+              <Text style={styles.promoTitle}>{t("walletPages.requisites")}</Text>
               <Text style={styles.promoDesc} numberOfLines={3}>
-                Hamyon raqami va karta ma'lumotlarini bir joydan ko'ring.
+                {t("walletPages.cardPromoBody")}
               </Text>
             </View>
             <Pressable
@@ -352,9 +352,9 @@ export function WalletHomeScreen({ navigation }: Props) {
       {/* Yagona scroll zonasi — sahifaning o'zi hech qachon scroll qilmaydi. */}
       <View style={styles.txSection}>
         <View style={styles.sectionHead}>
-          <Text style={styles.sectionTitle}>Tranzaksiyalar</Text>
+          <Text style={styles.sectionTitle}>{t("walletPages.transactions")}</Text>
           <Pressable onPress={() => navigation.navigate("WalletTransactions")}>
-            <Text style={styles.seeAll}>Hammasi</Text>
+            <Text style={styles.seeAll}>{t("common.viewAll")}</Text>
           </Pressable>
         </View>
 
@@ -370,7 +370,7 @@ export function WalletHomeScreen({ navigation }: Props) {
             <ActivityIndicator style={styles.txLoader} color={INK} />
           ) : recent.length === 0 ? (
             <View style={styles.emptyBox}>
-              <Text style={styles.empty}>Hali tranzaksiya yo'q</Text>
+              <Text style={styles.empty}>{t("walletPages.noTx")}</Text>
               <Pressable style={styles.emptyCta} onPress={() => navigation.navigate("WalletTopUp")}>
                 <Text style={styles.emptyCtaText}>{t("wallet.topUp")}</Text>
               </Pressable>
@@ -395,6 +395,7 @@ export function WalletHomeScreen({ navigation }: Props) {
 }
 
 function TxRow({ item, onPress }: { item: WalletTx; onPress: () => void }) {
+  const { t } = useTranslation();
   const out = item.kind === "out";
   return (
     <Pressable style={styles.txRow} onPress={onPress}>
@@ -412,7 +413,7 @@ function TxRow({ item, onPress }: { item: WalletTx; onPress: () => void }) {
           {out ? "-" : "+"}
           {formatMoney(Math.abs(item.amount))}
         </Text>
-        <Text style={styles.txKind}>{txStatusLabel(item)}</Text>
+        <Text style={styles.txKind}>{txStatusLabel(item, t)}</Text>
       </View>
     </Pressable>
   );

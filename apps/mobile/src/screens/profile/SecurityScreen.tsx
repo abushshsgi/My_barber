@@ -30,23 +30,23 @@ export function SecurityScreen({ navigation }: Props) {
         <SecRow
           pal={pal}
           icon="key"
-          title="Parol"
-          subtitle={hasPassword ? "Parol o'rnatilgan" : "SMS orqali kirish"}
-          action={hasPassword ? "O'zgartirish" : "Qo'shish"}
+          title={t("profile.password")}
+          subtitle={hasPassword ? t("profile.passwordSet") : t("profile.smsLogin")}
+          action={hasPassword ? t("profile.change") : t("profile.add")}
           onAction={() => navigation.navigate("SecurityPassword")}
         />
         <SecRow
           pal={pal}
           icon="phone-portrait"
-          title="Kirish usuli"
-          subtitle="Hisobingiz telefon raqami orqali tasdiqlangan."
+          title={t("profile.signInMethod")}
+          subtitle={t("profile.phoneVerified")}
         />
         <SecRow
           pal={pal}
           icon="laptop-outline"
-          title="Faol sessiyalar"
-          subtitle="Hisobingiz ochiq bo'lgan qurilmalarni ko'ring va bekor qiling."
-          action="Boshqarish"
+          title={t("profile.sessions")}
+          subtitle={t("profile.sessionsSub")}
+          action={t("profile.manage")}
           onAction={() => navigation.navigate("SecuritySessions")}
           last
         />

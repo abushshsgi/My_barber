@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { safeBottom, safeTop } from "../../lib/safe-area";
@@ -19,34 +20,22 @@ const INK = "#1A1A1A";
 const MUTED = "#8A8A8E";
 const SOFT_BG = "#FAFAFA";
 
-const FAQ: { q: string; a: string }[] = [
-  {
-    q: "Hamyonni qanday to'ldiraman?",
-    a: "Ko'proq → To'ldirish orqali karta rekvizitiga o'tkazma qiling va chekni yuboring. Admin tasdiqlagach balans yangilanadi.",
-  },
-  {
-    q: "O'tkazma va sovg'a farqi nima?",
-    a: "O'tkazma — do'stingizga summa yuborish. Sovg'a dizayni bo'lsa, dizayn uchun alohida to'lov qo'shilishi mumkin.",
-  },
-  {
-    q: "Kartani muzlatish nima qiladi?",
-    a: "Chiqimlar (o'tkazma, QR) vaqtincha bloklanadi. Siz yoki admin istalgan paytda ochishi mumkin.",
-  },
-  {
-    q: "Hamyon raqamimni qayerdan ko'raman?",
-    a: "Mening kartam sahifasida to'liq rekvizit va nusxa olish mavjud.",
-  },
-  {
-    q: "Bonuslar qachon?",
-    a: "Bonuslar bo'limi tez orada ochiladi — hozircha faqat ko'rsatilgan banner.",
-  },
-];
+const FAQ_KEYS = ["q1", "q2", "q3", "q4", "q5"] as const;
 
 /** Savol-javob (vopros i otvet). */
 export function WalletFaqScreen({ navigation }: Props) {
+  const { t } = useTranslation();
   useHideTabBar();
   const insets = useSafeAreaInsets();
   const [open, setOpen] = useState<number | null>(0);
+  const faq = useMemo(
+    () =>
+      FAQ_KEYS.map((key) => ({
+        q: t(`walletPages.faq.${key}`),
+        a: t(`walletPages.faq.a${key.slice(1)}`),
+      })),
+    [t],
+  );
 
   return (
     <View style={[styles.root, { paddingTop: safeTop(insets.top, 8), paddingBottom: safeBottom(insets.bottom, 16) }]}>
@@ -54,13 +43,13 @@ export function WalletFaqScreen({ navigation }: Props) {
         <Pressable style={styles.back} onPress={() => navigation.goBack()} hitSlop={8}>
           <Ionicons name="chevron-back" size={22} color={INK} />
         </Pressable>
-        <Text style={styles.headerTitle}>Savol-javob</Text>
+        <Text style={styles.headerTitle}>{t("walletPages.faqTitle")}</Text>
         <View style={styles.back} />
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 10 }}>
-        <Text style={styles.lead}>Vopros i otvet — eng ko'p so'raladigan savollar</Text>
-        {FAQ.map((item, i) => {
+        <Text style={styles.lead}>{t("walletPages.faqLead")}</Text>
+        {faq.map((item, i) => {
           const isOpen = open === i;
           return (
             <Pressable

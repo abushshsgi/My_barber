@@ -77,7 +77,7 @@ export function WalletTransactionsScreen({ navigation }: Props) {
           <Pressable style={styles.backBtn} onPress={() => navigation.goBack()} hitSlop={8}>
             <Ionicons name="chevron-back" size={22} color="#111" />
           </Pressable>
-          <Text style={styles.headerTitle}>Tarix</Text>
+          <Text style={styles.headerTitle}>{t("walletPages.historyTitle")}</Text>
           <View style={styles.backBtn} />
         </View>
 

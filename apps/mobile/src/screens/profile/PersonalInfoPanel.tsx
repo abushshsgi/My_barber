@@ -72,14 +72,14 @@ export function PersonalInfoPanel() {
     try {
       if (edit === "name") {
         const name = draft.trim();
-        if (name.length < 2) throw new Error("Ism kamida 2 belgi bo'lsin.");
+        if (name.length < 2) throw new Error(t("profile.nameMin"));
         await updateMe({ full_name: name });
         await refreshMe();
         data.refresh();
       } else if (edit === "email") {
         if (emailStep === "input") {
           const next = draft.trim();
-          if (!next.includes("@")) throw new Error("To'g'ri email kiriting.");
+          if (!next.includes("@")) throw new Error(t("profile.badEmail"));
           const res = await sendEmailVerificationCode(next);
           setEmailStep("code");
           setDraft(res.debug_code || "");
@@ -91,7 +91,7 @@ export function PersonalInfoPanel() {
         data.refresh();
       } else if (edit === "address") {
         const line = draft.trim();
-        if (line.length < 3) throw new Error("Manzilni kiriting.");
+        if (line.length < 3) throw new Error(t("profile.addressRequired"));
         const region = data.user?.region || "TOSHKENT_SH";
         await upsertDefaultAddress({
           id: address?.id,
@@ -102,7 +102,7 @@ export function PersonalInfoPanel() {
       }
       closeEdit();
     } catch (e) {
-      setError(e instanceof Error ? e.message.replace(/^API \d+:\s*/, "") : "Xatolik");
+      setError(e instanceof Error ? e.message.replace(/^API \d+:\s*/, "") : t("profile.genericError"));
     } finally {
       setBusy(false);
     }
@@ -116,13 +116,13 @@ export function PersonalInfoPanel() {
   };
 
   const addressValue =
-    address?.address_line?.trim() || data.user?.region || "Ko'rsatilmagan";
+    address?.address_line?.trim() || data.user?.region || t("profile.notShown");
 
   return (
     <View>
       <Field
         pal={pal}
-        label="Rasmiy ism"
+        label={t("profile.officialName")}
         value={data.name}
         onEdit={() => open("name", data.name === "Mehmon" ? "" : data.name)}
       />
@@ -132,18 +132,18 @@ export function PersonalInfoPanel() {
         value={
           email
             ? verified
-              ? `${email} · Tasdiqlangan`
+              ? `${email} · ${t("profile.verifiedMark")}`
               : email
-            : "Ko'rsatilmagan"
+            : t("profile.notShown")
         }
-        hint={verified ? "Email tasdiqlangan." : undefined}
+        hint={verified ? t("profile.emailVerified") : undefined}
         onEdit={() => open("email", email.includes("@phone.") ? "" : email)}
       />
       <Field
         pal={pal}
-        label="Telefon"
-        value={phone || "Ko'rsatilmagan"}
-        hint="Telefon raqamini o'zgartirish uchun yordam markaziga murojaat qiling."
+        label={t("profile.phone")}
+        value={phone || t("profile.notShown")}
+        hint={t("profile.phoneChangeHint")}
         last={hideAddress}
       />
       {hideAddress ? null : (
@@ -158,11 +158,10 @@ export function PersonalInfoPanel() {
 
       <View style={[styles.infoBox, { borderColor: pal.border, backgroundColor: pal.surface }]}>
         <Text style={[styles.infoTitle, { color: pal.fg, fontFamily: pal.font.fontFamily }]}>
-          Nima uchun ba'zi ma'lumotlar ko'rinmaydi?
+          {t("profile.whyHiddenTitle")}
         </Text>
         <Text style={[styles.infoBody, { color: pal.muted, fontFamily: pal.font.fontFamily }]}>
-          Ba'zi ma'lumotlar faqat tegishli bo'limda ko'rsatiladi. Morf AI da manzil yashirinadi,
-          MySaloon da esa bron uchun ishlatiladi.
+          {t("profile.whyHiddenBody")}
         </Text>
       </View>
 
@@ -175,19 +174,19 @@ export function PersonalInfoPanel() {
           <View style={[styles.sheet, { backgroundColor: pal.card }]}>
             <Text style={[styles.sheetTitle, { color: pal.fg, fontFamily: pal.font.fontFamily }]}>
               {edit === "name"
-                ? "Ismni tahrirlash"
+                ? t("profile.editName")
                 : edit === "email"
                   ? emailStep === "code"
-                    ? "Tasdiq kodi"
-                    : "Emailni tahrirlash"
-                  : "Manzilni tahrirlash"}
+                    ? t("profile.confirmCode")
+                    : t("profile.editEmail")
+                  : t("profile.editAddress")}
             </Text>
             <TextInput
               value={draft}
               onChangeText={setDraft}
               autoFocus
               placeholder={
-                edit === "email" && emailStep === "code" ? "4 raqamli kod" : "Yozing"
+                edit === "email" && emailStep === "code" ? t("profile.codeHint") : t("profile.typeHint")
               }
               placeholderTextColor={pal.muted}
               keyboardType={edit === "email" && emailStep === "code" ? "number-pad" : "default"}
@@ -204,7 +203,7 @@ export function PersonalInfoPanel() {
             {error ? <Text style={styles.err}>{error}</Text> : null}
             <View style={styles.sheetRow}>
               <Pressable onPress={closeEdit} disabled={busy} style={styles.sheetBtn}>
-                <Text style={[styles.sheetBtnText, { color: pal.muted }]}>Bekor</Text>
+                <Text style={[styles.sheetBtnText, { color: pal.muted }]}>{t("common.cancel")}</Text>
               </Pressable>
               <Pressable
                 onPress={() => void save()}
@@ -215,7 +214,7 @@ export function PersonalInfoPanel() {
                   <ActivityIndicator color={pal.bg} />
                 ) : (
                   <Text style={[styles.sheetBtnText, { color: pal.bg }]}>
-                    {edit === "email" && emailStep === "input" ? "Kod yuborish" : "Saqlash"}
+                    {edit === "email" && emailStep === "input" ? t("profile.sendCode") : t("common.save")}
                   </Text>
                 )}
               </Pressable>

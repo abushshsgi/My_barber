@@ -37,94 +37,35 @@ interface StepItem {
   icon: keyof typeof Ionicons.glyphMap;
 }
 
-function getStepsForCategory(category?: string, usageText?: string): StepItem[] {
+function getStepsForCategory(
+  t: (key: string) => string,
+  category?: string,
+  usageText?: string,
+): StepItem[] {
   const cat = (category || "").toLowerCase();
-  if (cat.includes("shampoo") || cat.includes("shampun")) {
-    return [
-      {
-        number: 1,
-        title: "Iliq suv bilan ho'llash",
-        desc: "Sochni va bosh terisini iliq suv bilan to'liq namlang. Qaynoq suvdan saqlaning.",
-        icon: "water-outline",
-      },
-      {
-        number: 2,
-        title: "Bosh terisiga massaj qilish",
-        desc: "Kichik miqdorda kaftingizda ko'pirtirib, barmoq uchlari bilan bosh terisini 2 daqiqa massaj qiling.",
-        icon: "hand-left-outline",
-      },
-      {
-        number: 3,
-        title: "Yaxshilab chayish",
-        desc: "Iliq suv bilan qoldiq qolmasdan yaxshilab yuving va sochiq bilan muloyim quriting.",
-        icon: "sparkles-outline",
-      },
-    ];
-  }
-  if (cat.includes("mask") || cat.includes("niqob")) {
-    return [
-      {
-        number: 1,
-        title: "Toza nam sochga surtish",
-        desc: "Yuvilgandan so'ng ortiqcha namlikni sochiq bilan shimdiring va ildizdan 2-3 sm qoldirib surting.",
-        icon: "leaf-outline",
-      },
-      {
-        number: 2,
-        title: "Taymer bo'yicha kutish",
-        desc: usageText || "Niqobning faol moddalari chuqur singishi uchun 3-5 daqiqa kuting.",
-        icon: "timer-outline",
-      },
-      {
-        number: 3,
-        title: "Iliq suv bilan yuvish",
-        desc: "Iliq suv bilan sochlaringiz ipakdek silliq bo'lguncha chayib tashlang.",
-        icon: "checkmark-circle-outline",
-      },
-    ];
-  }
-  if (cat.includes("oil") || cat.includes("serum") || cat.includes("yog")) {
-    return [
-      {
-        number: 1,
-        title: "2-3 tomchi dozalash",
-        desc: "Kaftingizga 2-3 tomchi tomizib, kaftlaringizni bir-biriga ishqab iliting.",
-        icon: "color-wand-outline",
-      },
-      {
-        number: 2,
-        title: "Soch uchlariga surtish",
-        desc: "Sochning o'rta qismi va uchlariga bir tekis taqsimlang, ildizga surtmang.",
-        icon: "finger-print-outline",
-      },
-      {
-        number: 3,
-        title: "Shakllantirish",
-        desc: "Sochni taroq bilan tarab, odatdagidek quritishingiz yoki shakl berishingiz mumkin.",
-        icon: "sparkles-outline",
-      },
-    ];
-  }
-  return [
-    {
-      number: 1,
-      title: "Tayyorlash va purkash",
-      desc: "Idishni chayqang va sochingizga 15-20 sm masofadan bir tekisda seping.",
-      icon: "color-wand-outline",
-    },
-    {
-      number: 2,
-      title: "Singishini kutish",
-      desc: usageText || "Barmoqlar yordamida soch bo'ylab yengil taqsimlang va 2 daqiqa kuting.",
-      icon: "timer-outline",
-    },
-    {
-      number: 3,
-      title: "Natijani his qilish",
-      desc: "Sochlar yumshoq, yaltiroq va himoyalangan holatga keladi.",
-      icon: "checkmark-circle-outline",
-    },
-  ];
+  const group =
+    cat.includes("shampoo") || cat.includes("shampun")
+      ? "shampoo"
+      : cat.includes("mask") || cat.includes("niqob")
+        ? "mask"
+        : cat.includes("oil") || cat.includes("serum") || cat.includes("yog")
+          ? "oil"
+          : "spray";
+  const icons: Record<string, (keyof typeof Ionicons.glyphMap)[]> = {
+    shampoo: ["water-outline", "hand-left-outline", "sparkles-outline"],
+    mask: ["leaf-outline", "timer-outline", "checkmark-circle-outline"],
+    oil: ["color-wand-outline", "finger-print-outline", "sparkles-outline"],
+    spray: ["color-wand-outline", "timer-outline", "checkmark-circle-outline"],
+  };
+  return [1, 2, 3].map((number) => ({
+    number,
+    title: t(`care.guide.${group}.s${number}Title`),
+    desc:
+      usageText && ((group === "mask" && number === 2) || (group === "spray" && number === 2))
+        ? usageText
+        : t(`care.guide.${group}.s${number}Desc`),
+    icon: icons[group]![number - 1]!,
+  }));
 }
 
 const TimerBackdrop = memo(function TimerBackdrop({
@@ -257,7 +198,7 @@ export function MorphCareProductGuideScreen({ navigation, route }: Props) {
             i % 4
           ] || "sparkles-outline") as keyof typeof Ionicons.glyphMap,
         }))
-      : getStepsForCategory(category, usageText);
+      : getStepsForCategory(t, category, usageText);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -290,7 +231,7 @@ export function MorphCareProductGuideScreen({ navigation, route }: Props) {
         />
 
         <Text style={styles.navTitle} numberOfLines={1}>
-          Qo'llash va Taymer
+          {t("care.guide.applyTimer")}
         </Text>
 
         <Pressable
@@ -338,7 +279,7 @@ export function MorphCareProductGuideScreen({ navigation, route }: Props) {
 
         {/* Live Timer Section */}
         <View style={styles.timerCard}>
-          <Text style={styles.timerSubtitle}>Tavsiya etilgan ta'sir vaqti</Text>
+          <Text style={styles.timerSubtitle}>{t("care.guide.timerHint")}</Text>
 
           <View style={styles.timerCircle}>
             <TimerBackdrop running={isRunning} scale={pulseAnim} />
@@ -381,7 +322,7 @@ export function MorphCareProductGuideScreen({ navigation, route }: Props) {
 
         {/* Step by Step Instructions */}
         <View style={styles.stepsSection}>
-          <Text style={styles.sectionHeader}>Bosqichma-bosqich qo'llash</Text>
+          <Text style={styles.sectionHeader}>{t("care.guide.stepsTitle")}</Text>
 
           <View style={styles.stepsList}>
             {steps.map((item) => (
@@ -405,10 +346,8 @@ export function MorphCareProductGuideScreen({ navigation, route }: Props) {
         <View style={styles.tipCard}>
           <Ionicons name="information-circle" size={24} color="#3B82F6" />
           <View style={{ flex: 1 }}>
-            <Text style={styles.tipTitle}>Morf Barber Maslahati</Text>
-            <Text style={styles.tipDesc}>
-              {usageText || "Mahsulotni qo'llagandan keyin sochni qattiq siqmang. Tabiiy qurishiga yoki past haroratli fen bilan fenlashga ruxsat bering."}
-            </Text>
+            <Text style={styles.tipTitle}>{t("care.guide.tipTitle")}</Text>
+            <Text style={styles.tipDesc}>{usageText || t("care.guide.tipBody")}</Text>
           </View>
         </View>
 
@@ -421,7 +360,7 @@ export function MorphCareProductGuideScreen({ navigation, route }: Props) {
             style={styles.completeBtnInner}
           >
             <Ionicons name="checkmark-done" size={20} color="#fff" />
-            <Text style={styles.completeBtnText}>Parvarishni yakunlash</Text>
+            <Text style={styles.completeBtnText}>{t("care.guide.finish")}</Text>
           </LinearGradient>
         </Pressable>
       </ScrollView>

@@ -95,7 +95,7 @@ export function MorphHistoryScreen({ navigation, route }: Props) {
         setSelected(hit);
       }
     } catch (err) {
-      setError(formatMorphUserError(err instanceof Error ? err.message : "", "Tarix yuklanmadi"));
+      setError(formatMorphUserError(err instanceof Error ? err.message : "", t("morph.historyLoadFail")));
     } finally {
       setLoading(false);
     }
@@ -263,7 +263,7 @@ export function MorphHistoryScreen({ navigation, route }: Props) {
           }}
         />
         <View style={styles.topCenter}>
-          <Text style={[styles.topTitle, { fontSize: fs(17) }]}>Tarix</Text>
+            <Text style={[styles.topTitle, { fontSize: fs(17) }]}>{t("morph.history")}</Text>
           <Text style={styles.topSub}>
             {loading ? "…" : `${items.length} ta look`}
           </Text>
@@ -285,7 +285,7 @@ export function MorphHistoryScreen({ navigation, route }: Props) {
           <View style={styles.emptyIcon}>
             <Ionicons name="images-outline" size={28} color="#A3A3A3" />
           </View>
-          <Text style={styles.emptyTitle}>Hali try-on yo‘q</Text>
+          <Text style={styles.emptyTitle}>{t("morph.noTryOn")}</Text>
           <Text style={styles.emptySub}>
             Yangi look yarating — bu yerda saqlanadi.
           </Text>

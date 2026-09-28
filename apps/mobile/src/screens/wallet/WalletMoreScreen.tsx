@@ -2,7 +2,7 @@ import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { safeBottom, safeTop } from "../../lib/safe-area";
@@ -30,56 +30,18 @@ type GridItem = {
   icon: keyof typeof Ionicons.glyphMap;
 };
 
-const GRID: GridItem[] = [
-  {
-    key: "WalletTopUp",
-    title: "To'ldirish",
-    subtitle: "Balansni oshirish",
-    icon: "add-outline",
-  },
-  {
-    key: "WalletGift",
-    title: "O'tkazma",
-    subtitle: "Do'stga yuborish",
-    icon: "send-outline",
-  },
-  {
-    key: "WalletGifts",
-    title: "Olingan sovg'alar",
-    subtitle: "Kelgan sovg'alar",
-    icon: "gift-outline",
-  },
-  {
-    key: "WalletTransactions",
-    title: "Tarix",
-    subtitle: "Kirim va chiqim",
-    icon: "time-outline",
-  },
-  {
-    key: "WalletRequisites",
-    title: "Mening kartam",
-    subtitle: "Rekvizitlar",
-    icon: "card-outline",
-  },
-  {
-    key: "WalletFreeze",
-    title: "Kartani muzlatish",
-    subtitle: "Xavfsizlik",
-    icon: "snow-outline",
-  },
-  {
-    key: "WalletFaq",
-    title: "Savol-javob",
-    subtitle: "Vopros i otvet",
-    icon: "help-circle-outline",
-  },
-  {
-    key: "WalletQrPay",
-    title: "QR to'lov",
-    subtitle: "Skaner orqali",
-    icon: "qr-code-outline",
-  },
-];
+function buildGrid(t: (key: string) => string): GridItem[] {
+  return [
+    { key: "WalletTopUp", title: t("walletPages.topUp"), subtitle: t("walletPages.topUpSub"), icon: "add-outline" },
+    { key: "WalletGift", title: t("walletPages.transfer"), subtitle: t("walletPages.transferSub"), icon: "send-outline" },
+    { key: "WalletGifts", title: t("walletPages.receivedGifts"), subtitle: t("walletPages.incomingGifts"), icon: "gift-outline" },
+    { key: "WalletTransactions", title: t("walletPages.historyTitle"), subtitle: t("walletPages.historySub"), icon: "time-outline" },
+    { key: "WalletRequisites", title: t("walletPages.myCard"), subtitle: t("walletPages.requisites"), icon: "card-outline" },
+    { key: "WalletFreeze", title: t("walletPages.freezeCard"), subtitle: t("walletPages.security"), icon: "snow-outline" },
+    { key: "WalletFaq", title: t("walletPages.faqTitle"), subtitle: t("walletPages.faqSub"), icon: "help-circle-outline" },
+    { key: "WalletQrPay", title: t("walletPages.qrPay"), subtitle: t("walletPages.qrSub"), icon: "qr-code-outline" },
+  ];
+}
 
 /** Ko'proq — bonus banner (tez orada) + monoxrom grid. */
 export function WalletMoreScreen({ navigation }: Props) {
@@ -87,6 +49,7 @@ export function WalletMoreScreen({ navigation }: Props) {
   useHideTabBar();
   const insets = useSafeAreaInsets();
   const me = useWalletMe();
+  const grid = useMemo(() => buildGrid(t), [t]);
 
   useFocusEffect(
     useCallback(() => {
@@ -101,7 +64,7 @@ export function WalletMoreScreen({ navigation }: Props) {
         <Pressable style={styles.iconBtn} onPress={() => navigation.goBack()} hitSlop={8}>
           <Ionicons name="chevron-back" size={22} color={INK} />
         </Pressable>
-        <Text style={styles.headerTitle}>Ko'proq</Text>
+        <Text style={styles.headerTitle}>{t("walletPages.moreTitle")}</Text>
         <View style={styles.iconBtn} />
       </View>
 
@@ -112,8 +75,8 @@ export function WalletMoreScreen({ navigation }: Props) {
               <Ionicons name="sparkles-outline" size={22} color={INK} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.bonusTitle}>Bonuslar</Text>
-              <Text style={styles.bonusSub}>Cashback va aksiyalar tez orada</Text>
+              <Text style={styles.bonusTitle}>{t("walletPages.bonuses")}</Text>
+              <Text style={styles.bonusSub}>{t("walletPages.bonusSoon")}</Text>
             </View>
             <View style={styles.soonPill}>
               <Text style={styles.soonText}>{t("profile.soon")}</Text>
@@ -128,23 +91,23 @@ export function WalletMoreScreen({ navigation }: Props) {
             onPress={() => navigation.navigate("WalletFreeze", { isFrozen: true })}
           >
             <Ionicons name="snow-outline" size={18} color={INK} />
-            <Text style={styles.frozenText}>Karta muzlatilgan — boshqarish</Text>
+            <Text style={styles.frozenText}>{t("walletPages.frozenManage")}</Text>
             <Ionicons name="chevron-forward" size={16} color={MUTED} />
           </Pressable>
         ) : null}
 
-        <Text style={styles.section}>Amallar</Text>
+        <Text style={styles.section}>{t("walletPages.actions")}</Text>
         <View style={styles.grid}>
-          {GRID.map((item) => {
+          {grid.map((item) => {
             const isFreeze = item.key === "WalletFreeze";
             const title = isFreeze
               ? me.isFrozen
-                ? "Kartani ochish"
-                : "Kartani muzlatish"
+                ? t("walletPages.unfreezeCard")
+                : t("walletPages.freezeCard")
               : item.title;
             const subtitle = isFreeze
               ? me.isFrozen
-                ? "Hamyonni yana faollashtirish"
+                ? t("walletPages.reactivate")
                 : item.subtitle
               : item.subtitle;
             return (

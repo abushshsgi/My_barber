@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
   Pressable,
@@ -49,11 +50,12 @@ export function WalletCreatingScreen({
   cardholderName,
   onGetStarted,
 }: Props) {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const { shell } = useAppShell();
   const isMorph = shell === "morph";
   const brand = isMorph ? "Morf AI" : "Mysaloon";
-  const holder = (cardholderName || "Foydalanuvchi").trim();
+  const holder = (cardholderName || t("common.user")).trim();
   const tilt = useSharedValue(-8);
   const floatY = useSharedValue(0);
 
@@ -76,12 +78,12 @@ export function WalletCreatingScreen({
   const busy = phase === "creating" || phase === "ready";
   const ctaLabel =
     phase === "error"
-      ? "Qayta urinish"
+      ? t("walletPages.retry")
       : phase === "creating"
-        ? "Yaratilmoqda…"
+        ? t("walletPages.creating")
         : phase === "ready"
-          ? "Tayyor!"
-          : "Get Started";
+          ? t("walletPages.readyCta")
+          : t("walletPages.getStarted");
 
   return (
     <View
@@ -121,15 +123,15 @@ export function WalletCreatingScreen({
           >
             <View style={styles.cardTop}>
               <View>
-                <Text style={styles.balLabel}>Mavjud balans</Text>
-                <Text style={styles.balValue}>0 so'm</Text>
+                <Text style={styles.balLabel}>{t("walletPages.creatingBalance")}</Text>
+                <Text style={styles.balValue}>{t("walletPages.creatingZero")}</Text>
               </View>
               <View style={styles.chip} />
             </View>
             <Text style={styles.cardNumber}>•••• •••• •••• ••••</Text>
             <View style={styles.cardBottom}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.holderLabel}>Karta egasi</Text>
+                <Text style={styles.holderLabel}>{t("walletPages.cardHolder")}</Text>
                 <Text style={styles.holderName} numberOfLines={1}>
                   {holder}
                 </Text>
@@ -146,21 +148,21 @@ export function WalletCreatingScreen({
       <View style={styles.copy}>
         <Text style={styles.title}>
           {phase === "error"
-            ? "Hamyon ochilmadi"
+            ? t("walletPages.failTitle")
             : phase === "creating"
-              ? "Hamyoningiz yaratilmoqda"
+              ? t("walletPages.creatingTitle")
               : phase === "ready"
-                ? "Hamyon tayyor!"
-                : "Kundalik xarajatlaringizni oson kuzating"}
+                ? t("walletPages.readyTitle")
+                : t("walletPages.welcomeTitle")}
         </Text>
         <Text style={styles.sub}>
           {error
             ? error
             : phase === "creating"
-              ? "Raqam berilmoqda va karta chiqarilmoqda…"
+              ? t("walletPages.issuing")
               : phase === "ready"
-                ? "Balans va rekvizitlar tayyor."
-                : "Byudjet, o'tkazma va to'lovlarni bitta hamyonda boshqaring — oddiy va xavfsiz."}
+                ? t("walletPages.readySub")
+                : t("walletPages.welcomeSub")}
         </Text>
       </View>
 

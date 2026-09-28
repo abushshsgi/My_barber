@@ -108,7 +108,7 @@ export function LocationPickerScreen({
       setLng(nextLng);
       mapRef.current?.panTo(nextLat, nextLng);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Joylashuvni aniqlab bo'lmadi");
+      setError(e instanceof Error ? e.message : t("onboarding.locationGpsFail"));
     } finally {
       setLocating(false);
     }
@@ -188,7 +188,7 @@ export function LocationPickerScreen({
           setSearchResults(rows);
           setSearching(false);
           if (rows.length === 0) {
-            setSearchError("Natija topilmadi — boshqa nom yoki shahar bilan urinib ko'ring");
+            setSearchError(t("onboarding.locationNotFound"));
           }
         })
         .catch((e) => {
@@ -328,7 +328,7 @@ export function LocationPickerScreen({
               <Text style={styles.searchEmpty}>
                 {searchQuery.trim().length >= 2
                   ? searchError || "Natija topilmadi"
-                  : "Ko'cha yoki joy nomini yozing"}
+                  : t("onboarding.streetPlaceholder")}
               </Text>
             }
             ListFooterComponent={
@@ -338,7 +338,7 @@ export function LocationPickerScreen({
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.mapPickTitle}>{t("onboarding.locationMap")}</Text>
-                  <Text style={styles.mapPickSub}>Xaritadan pin qo'ying</Text>
+                  <Text style={styles.mapPickSub}>{t("onboarding.mapPinHint")}</Text>
                 </View>
                 <Ionicons name="chevron-forward" size={18} color={colors.muted} />
               </Pressable>

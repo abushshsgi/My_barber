@@ -251,7 +251,7 @@ export function MorphTryOnScreen({ navigation }: Props) {
   const loadHistory = useCallback(async () => {
     if (!isAuthenticated) {
       setHistoryItems([]);
-      setHistoryError("Tarix uchun tizimga kiring");
+      setHistoryError(t("morph.historyLogin"));
       setHistoryFetched(true);
       return;
     }
@@ -262,7 +262,7 @@ export function MorphTryOnScreen({ navigation }: Props) {
       setHistoryItems(rows);
       setHistoryFetched(true);
     } catch (err) {
-      setHistoryError(err instanceof Error ? err.message : "Tarix yuklanmadi");
+      setHistoryError(err instanceof Error ? err.message : t("morph.historyLoadFail"));
     } finally {
       setHistoryLoading(false);
     }
@@ -502,7 +502,7 @@ export function MorphTryOnScreen({ navigation }: Props) {
         pointerEvents="none"
       >
         <Text style={styles.headline}>{t("morph.selfieTitle")}</Text>
-        <Text style={styles.sub}>Yuz aniq ko‘rinsin · yaxshi yorug‘lik</Text>
+        <Text style={styles.sub}>{t("morph.selfieHint")}</Text>
       </Animated.View>
 
       {/* Nav ostidagi oq fon — qora bo‘shliq bo‘lmasin */}
@@ -524,7 +524,7 @@ export function MorphTryOnScreen({ navigation }: Props) {
               Platform.OS === "web" ? ({ touchAction: "none" } as object) : null,
             ]}
             accessibilityRole="adjustable"
-            accessibilityLabel={historyOpen ? "Tarixni yopish" : "Tarixni ochish"}
+            accessibilityLabel={historyOpen ? t("morph.closeHistory") : t("morph.openHistory")}
           >
             <View style={styles.handle} />
             <Animated.View
@@ -534,7 +534,7 @@ export function MorphTryOnScreen({ navigation }: Props) {
               <Pressable
                 style={styles.historyIconBtn}
                 onPress={openHistoryPanel}
-                accessibilityLabel="Tarix"
+                accessibilityLabel={t("morph.history")}
                 hitSlop={8}
               >
                 <Ionicons name="time-outline" size={16} color="#0A0A0A" />
@@ -628,7 +628,7 @@ export function MorphTryOnScreen({ navigation }: Props) {
                 >
                   <View style={styles.historyTitles}>
                     <Text style={styles.historyTitle} numberOfLines={1}>
-                      So‘nggi looklar
+                      {t("morph.recentLooks")}
                     </Text>
                     <Text style={styles.historySub} numberOfLines={1}>
                       {historyLoading
@@ -663,7 +663,7 @@ export function MorphTryOnScreen({ navigation }: Props) {
                 </View>
               ) : previewItems.length === 0 ? (
                 <View style={styles.historyEmpty}>
-                  <Text style={styles.historyEmptyTitle}>Hali try-on yo‘q</Text>
+                  <Text style={styles.historyEmptyTitle}>{t("morph.noTryOn")}</Text>
                   <Text style={styles.historyEmptyText}>
                     Yangi look yarating — bu yerda saqlanadi.
                   </Text>
@@ -718,7 +718,7 @@ export function MorphTryOnScreen({ navigation }: Props) {
                     style={styles.fullHistoryCta}
                     onPress={() => navigation.navigate("MorphHistory")}
                   >
-                    <Text style={styles.fullHistoryCtaText}>To‘liq tarixni ko‘rish</Text>
+                    <Text style={styles.fullHistoryCtaText}>{t("morph.fullHistory")}</Text>
                     <Ionicons name="arrow-forward" size={16} color="#FFF" />
                   </Pressable>
                 </Animated.View>

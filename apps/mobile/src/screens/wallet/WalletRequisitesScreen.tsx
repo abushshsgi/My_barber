@@ -3,6 +3,7 @@ import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import * as Clipboard from "expo-clipboard";
 import { useFocusEffect } from "@react-navigation/native";
 import { useCallback, useMemo, useState, type ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
   Pressable,
@@ -41,6 +42,7 @@ function groupNumber(raw: string): string {
 
 /** Mening kartam — soft list layout (plastic cardsiz). */
 export function WalletRequisitesScreen({ navigation }: Props) {
+  const { t } = useTranslation();
   useHideTabBar();
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
@@ -83,13 +85,13 @@ export function WalletRequisitesScreen({ navigation }: Props) {
     if (!walletRaw) return;
     try {
       await Share.share({
-        message: `Mening Mysaloon hamyon raqamim: ${walletRaw}`,
-        title: "Hamyon rekvizitlari",
+        message: t("walletPages.shareBody", { number: walletRaw }),
+        title: t("walletPages.walletDetails"),
       });
     } catch {
       /* ignore */
     }
-  }, [walletRaw]);
+  }, [walletRaw, t]);
 
   return (
     <View style={[styles.root, { paddingTop: safeTop(insets.top, 8), paddingBottom: safeBottom(insets.bottom, 12) }]}>
@@ -97,7 +99,7 @@ export function WalletRequisitesScreen({ navigation }: Props) {
         <Pressable style={styles.iconBtn} onPress={() => navigation.goBack()} hitSlop={8}>
           <Ionicons name="chevron-back" size={22} color={INK} />
         </Pressable>
-        <Text style={styles.headerTitle}>Mening kartam</Text>
+        <Text style={styles.headerTitle}>{t("walletPages.myCard")}</Text>
         <Pressable style={styles.iconBtn} onPress={() => void onShare()} hitSlop={8}>
           <Ionicons name="share-outline" size={18} color={INK} />
         </Pressable>
@@ -108,13 +110,13 @@ export function WalletRequisitesScreen({ navigation }: Props) {
           <ActivityIndicator color={INK} style={{ marginVertical: 40 }} />
         ) : (
           <View style={styles.hero}>
-            <Text style={styles.heroLabel}>Hamyon raqami</Text>
+            <Text style={styles.heroLabel}>{t("walletPages.walletNumber")}</Text>
             <Text style={styles.heroNumber}>{displayNumber}</Text>
             <Text style={styles.heroBal}>{formatSomLabel(me.balance)}</Text>
             {me.isFrozen ? (
               <View style={styles.frozenChip}>
                 <Ionicons name="snow-outline" size={14} color={INK} />
-                <Text style={styles.frozenText}>Muzlatilgan</Text>
+                <Text style={styles.frozenText}>{t("walletPages.frozen")}</Text>
               </View>
             ) : null}
           </View>
@@ -123,8 +125,8 @@ export function WalletRequisitesScreen({ navigation }: Props) {
         <View style={styles.list}>
           <Row
             icon="card-outline"
-            title="Karta ma'lumotlari"
-            subtitle="Raqam, egasi va balans"
+            title={t("walletPages.cardInfo")}
+            subtitle={t("walletPages.cardInfoSub")}
             trailing={
               <Pressable onPress={() => setRevealed((v) => !v)} hitSlop={8} style={styles.eyeBtn}>
                 <Ionicons name={revealed ? "eye-off-outline" : "eye-outline"} size={18} color={MUTED} />
@@ -135,7 +137,7 @@ export function WalletRequisitesScreen({ navigation }: Props) {
           <Divider />
           <Row
             icon="person-outline"
-            title="Karta egasi"
+            title={t("walletPages.cardHolder")}
             subtitle={cardholder}
             onPress={() => void copy(cardholder, "holder")}
             trailing={
@@ -149,7 +151,7 @@ export function WalletRequisitesScreen({ navigation }: Props) {
           <Divider />
           <Row
             icon="keypad-outline"
-            title="Hamyon raqami"
+            title={t("walletPages.walletNumber")}
             subtitle={revealed ? groupNumber(walletRaw) : masked}
             onPress={() => void copy(walletRaw, "number")}
             trailing={
@@ -165,24 +167,24 @@ export function WalletRequisitesScreen({ navigation }: Props) {
         <View style={[styles.list, { marginTop: 12 }]}>
           <Row
             icon="share-social-outline"
-            title="Ulashish"
-            subtitle="Raqamni do'stga yuborish"
+            title={t("morph.share")}
+            subtitle={t("walletPages.shareNumber")}
             onPress={() => void onShare()}
             chevron
           />
           <Divider />
           <Row
             icon="snow-outline"
-            title={me.isFrozen ? "Kartani ochish" : "Kartani muzlatish"}
-            subtitle={me.isFrozen ? "Hamyonni yana faollashtirish" : "Har doim ochishingiz mumkin"}
+            title={me.isFrozen ? t("walletPages.unfreezeCard") : t("walletPages.freezeCard")}
+            subtitle={me.isFrozen ? t("walletPages.reactivate") : t("walletPages.alwaysUnfreeze")}
             onPress={() => navigation.navigate("WalletFreeze", { isFrozen: me.isFrozen })}
             chevron
           />
           <Divider />
           <Row
             icon="time-outline"
-            title="Tarix"
-            subtitle="Kirim va chiqimlar"
+            title={t("walletPages.historyTitle")}
+            subtitle={t("walletPages.historyInOut")}
             onPress={() => navigation.navigate("WalletTransactions")}
             chevron
           />

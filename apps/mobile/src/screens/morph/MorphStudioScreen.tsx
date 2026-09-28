@@ -74,8 +74,38 @@ const FALLBACK_CATEGORIES: MorphStudioCategory[] = [
   },
 ];
 
+const STUDIO_RU: Record<string, string> = {
+  hair_color: "Цвет",
+  hair_blonde: "Блонд",
+  hair_brunette: "Шатен",
+  hair_black: "Чёрный",
+  hair_auburn: "Медный",
+  hair_ash: "Пепельный",
+  hair_platinum: "Платина",
+  beard: "Борода",
+  beard_clean: "Чисто",
+  beard_stubble: "Щетина",
+  beard_full: "Полная",
+  beard_shape: "Форма",
+  finish: "Финиш",
+  finish_wet: "Мокрый",
+  finish_matte: "Матовый",
+  finish_gloss: "Глянец",
+  finish_volume: "Объём",
+};
+
+function studioLabel(
+  item: { id: string; label_uz: string; label_en: string },
+  lang: string,
+): string {
+  const code = (lang || "uz").slice(0, 2);
+  if (code === "en") return item.label_en;
+  if (code === "ru") return STUDIO_RU[item.id] || item.label_en;
+  return item.label_uz;
+}
+
 export function MorphStudioScreen({ navigation }: Props) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   useHideTabBar();
   const insets = useSafeAreaInsets();
   const session = useMorphSession();
@@ -327,13 +357,13 @@ export function MorphStudioScreen({ navigation }: Props) {
           />
           <ToolChip
             icon="refresh-outline"
-            label="Reset"
+            label={t("morph.studio.reset")}
             onPress={reset}
             disabled={!baseImage || !!busyId}
           />
           <ToolChip
             icon="eye-outline"
-            label="Taqqos"
+            label={t("morph.studio.compare")}
             onPressIn={() => baseImage && current !== baseImage && setComparing(true)}
             onPressOut={() => setComparing(false)}
             disabled={!baseImage || current === baseImage}
@@ -360,7 +390,7 @@ export function MorphStudioScreen({ navigation }: Props) {
                     onPress={() => setActiveCategory(cat.id)}
                   >
                     <Text style={[styles.catChipText, on && styles.catChipTextOn]}>
-                      {cat.label_uz}
+                      {studioLabel(cat, i18n.resolvedLanguage || i18n.language)}
                     </Text>
                   </Pressable>
                 );
@@ -389,7 +419,9 @@ export function MorphStudioScreen({ navigation }: Props) {
                         <Ionicons name="sparkles" size={12} color="#FFF" />
                       </View>
                     )}
-                    <Text style={styles.optText}>{opt.label_uz}</Text>
+                    <Text style={styles.optText}>
+                      {studioLabel(opt, i18n.resolvedLanguage || i18n.language)}
+                    </Text>
                     {busy ? (
                       <ActivityIndicator size="small" color="#FFF" />
                     ) : null}

@@ -109,12 +109,12 @@ export function WalletFreezeScreen({ navigation, route }: Props) {
       closingRef.current = false;
       setBusy(false);
       setStatusLabel("idle");
-      Alert.alert("Xato", e instanceof Error ? e.message : "Amal bajarilmadi");
+      Alert.alert(t("common.error"), e instanceof Error ? e.message : t("walletPages.actionFailed"));
     }
   };
 
-  const primaryTitle = frozen ? "Ochish" : "Muzlatish";
-  const loadingTitle = statusLabel === "unfreeze" ? "Ochilmoqda…" : "Muzlatilmoqda…";
+  const primaryTitle = frozen ? t("walletPages.unfreeze") : t("walletPages.freeze");
+  const loadingTitle = statusLabel === "unfreeze" ? t("walletPages.unfreezing") : t("walletPages.freezing");
 
   return (
     <View style={styles.root}>
@@ -144,11 +144,9 @@ export function WalletFreezeScreen({ navigation, route }: Props) {
         ]}
       >
         <View style={styles.handle} />
-        <Text style={styles.title}>{frozen ? "Kartani ochish?" : "Kartani muzlatish?"}</Text>
+        <Text style={styles.title}>{frozen ? t("walletPages.unfreezeAsk") : t("walletPages.freezeAsk")}</Text>
         <Text style={styles.desc}>
-          {frozen
-            ? "Ochilgach o'tkazma, sovg'a va QR to'lov yana ishlaydi."
-            : "To'lov va o'tkazmalar to'xtaydi. Istalgan paytda ochishingiz mumkin."}
+          {frozen ? t("walletPages.unfreezeBody") : t("walletPages.freezeBody")}
         </Text>
 
         <Pressable

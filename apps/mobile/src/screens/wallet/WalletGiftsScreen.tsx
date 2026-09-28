@@ -78,7 +78,7 @@ export function WalletGiftsScreen({ navigation }: Props) {
   return (
     <View style={styles.root}>
       <NativeHeader title={t("profile.wallet")} onBack={() => navigation.goBack()} />
-      <Text style={styles.sub}>Mening sovg'alarim</Text>
+      <Text style={styles.sub}>{t("walletPages.myGifts")}</Text>
 
       <ScrollView
         contentContainerStyle={styles.content}
@@ -87,26 +87,24 @@ export function WalletGiftsScreen({ navigation }: Props) {
       >
         <LinearGradient colors={["#1A1A1A", "#0A0A0A"]} style={styles.hero}>
           <View style={styles.heroTop}>
-            <Text style={styles.heroLabel}>KOLLEKSIYA</Text>
+            <Text style={styles.heroLabel}>{t("walletPages.collection")}</Text>
             <View style={styles.heroIcon}>
               <Ionicons name="gift-outline" size={16} color="#FFF" />
             </View>
           </View>
           <Text style={styles.heroAmt}>{formatSomLabel(collection)}</Text>
           <Text style={styles.heroSub}>
-            {gifts.length} ta sovg'a · balans {formatSomLabel(me.balance)}
+            {t("walletPages.giftCount", { count: gifts.length, balance: formatSomLabel(me.balance) })}
           </Text>
         </LinearGradient>
 
-        <Text style={styles.h2}>Sovg'ani ishlatish</Text>
-        <Text style={styles.hint}>
-          Pul hamyonga tushgan — bron, obuna yoki AI uchun sarflang.
-        </Text>
+        <Text style={styles.h2}>{t("walletPages.useGift")}</Text>
+        <Text style={styles.hint}>{t("walletPages.useGiftHint")}</Text>
         <View style={styles.useRow}>
           {[
-            { icon: "calendar-outline" as const, title: "Bron", hint: "Xarita · hamyon" },
-            { icon: "diamond-outline" as const, title: "Obuna", hint: "Pro · AI" },
-            { icon: "sparkles-outline" as const, title: "AI stil", hint: "Explore" },
+            { icon: "calendar-outline" as const, title: t("walletPages.useBook"), hint: t("walletPages.useBookHint") },
+            { icon: "diamond-outline" as const, title: t("walletPages.usePlan"), hint: t("walletPages.usePlanHint") },
+            { icon: "sparkles-outline" as const, title: t("walletPages.useAi"), hint: t("walletPages.useAiHint") },
           ].map((u) => (
             <View key={u.title} style={styles.useCard}>
               <Ionicons name={u.icon} size={18} color={colors.fg} />
@@ -139,13 +137,13 @@ export function WalletGiftsScreen({ navigation }: Props) {
           <View style={styles.plus}>
             <Ionicons name="add" size={18} color="#FFF" />
           </View>
-          <Text style={styles.sendText}>Sovg'a yuborish</Text>
+          <Text style={styles.sendText}>{t("walletPages.sendGift")}</Text>
         </Pressable>
 
         {loading ? (
           <ActivityIndicator style={{ marginTop: 24 }} color={colors.fg} />
         ) : visible.length === 0 ? (
-          <Text style={styles.empty}>Sovg'alar yo'q</Text>
+          <Text style={styles.empty}>{t("walletPages.noGifts")}</Text>
         ) : (
           visible.map((g) => (
             <GiftCard
