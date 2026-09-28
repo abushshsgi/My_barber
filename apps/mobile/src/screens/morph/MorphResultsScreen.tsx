@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { LinearGradient } from "expo-linear-gradient";
@@ -52,6 +53,7 @@ const H_PAD = 16;
 const CARD_GAP = 0;
 
 export function MorphResultsScreen({ navigation }: Props) {
+  const { t } = useTranslation();
   useHideTabBar();
   const insets = useSafeAreaInsets();
   const { width: screenW } = useWindowDimensions();
@@ -418,7 +420,7 @@ export function MorphResultsScreen({ navigation }: Props) {
           <View style={[styles.scanBottomDock, { paddingBottom: safeBottom(insets.bottom, 0) }]}>
             <View style={styles.analyzeBtn}>
               <ActivityIndicator color="#FFF" />
-              <Text style={styles.analyzeBtnText}>Tahlil qilinmoqda…</Text>
+              <Text style={styles.analyzeBtnText}>{t("morph.analyzing")}</Text>
             </View>
           </View>
         )}
@@ -498,7 +500,7 @@ export function MorphResultsScreen({ navigation }: Props) {
                       {loading ? (
                         <View style={styles.spotlightBusy}>
                           <ActivityIndicator color="#FFF" size="large" />
-                          <Text style={styles.spotlightBusyText}>AI yaratmoqda...</Text>
+                          <Text style={styles.spotlightBusyText}>{t("morph.generating")}</Text>
                         </View>
                       ) : null}
                       <LinearGradient
@@ -508,7 +510,7 @@ export function MorphResultsScreen({ navigation }: Props) {
                         <View style={styles.spotlightMeta}>
                           <View style={{ flex: 1, minWidth: 0 }}>
                             {preview && !loading ? (
-                              <Text style={styles.previewInline}>Sizning preview</Text>
+                              <Text style={styles.previewInline}>{t("morph.yourPreview")}</Text>
                             ) : (
                               <Text style={styles.spotlightIndex}>#{index + 1}</Text>
                             )}
@@ -632,7 +634,7 @@ export function MorphResultsScreen({ navigation }: Props) {
                 onPress={openStudio}
               >
                 <Ionicons name="color-palette-outline" size={18} color="#0A0A0A" />
-                <Text style={styles.studioBtnText}>Studio</Text>
+                <Text style={styles.studioBtnText}>{t("morph.studio")}</Text>
               </Pressable>
             ) : null}
           </View>
@@ -646,7 +648,7 @@ export function MorphResultsScreen({ navigation }: Props) {
 
         {session.analyze ? (
           <View style={styles.analyzePanel}>
-            <Text style={styles.analyzePanelTitle}>Yuz tahlili</Text>
+            <Text style={styles.analyzePanelTitle}>{t("morph.faceAnalysis")}</Text>
             <FaceAnalysisRing analyze={session.analyze} tone="onLight" />
             <Pressable
               style={({ pressed }) => [styles.aiChatBtn, pressed && { opacity: 0.9 }]}
@@ -654,7 +656,7 @@ export function MorphResultsScreen({ navigation }: Props) {
               onPress={openAiChat}
             >
               <Ionicons name="chatbubble-ellipses-outline" size={17} color="#0A0A0A" />
-              <Text style={styles.aiChatBtnText}>AI chat — maslahat olish</Text>
+              <Text style={styles.aiChatBtnText}>{t("morph.aiChatAdvice")}</Text>
               <Ionicons name="chevron-forward" size={16} color="#8E8E93" />
             </Pressable>
           </View>
@@ -662,7 +664,7 @@ export function MorphResultsScreen({ navigation }: Props) {
 
         {otherStyles.length > 0 ? (
           <View style={styles.morePanel}>
-            <Text style={styles.moreTitle}>Boshqa uslublar</Text>
+            <Text style={styles.moreTitle}>{t("morph.moreStyles")}</Text>
             <Text style={styles.moreSub}>
               Uslubni tanlang — AI sizning suratingizda ko'rsatadi
             </Text>

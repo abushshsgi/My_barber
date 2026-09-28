@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { useTranslation } from "react-i18next";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { safeBottom, safeTop } from "../lib/safe-area";
@@ -15,6 +16,7 @@ import {
 type Props = NativeStackScreenProps<RootStackParamList, "BookingSuccess">;
 
 export function BookingSuccessScreen({ route, navigation }: Props) {
+  const { t } = useTranslation();
   const { salonName, whenLabel } = route.params;
   const insets = useSafeAreaInsets();
 
@@ -23,7 +25,7 @@ export function BookingSuccessScreen({ route, navigation }: Props) {
       <View style={styles.iconWrap}>
         <Ionicons name="checkmark-circle" size={64} color={colors.fg} />
       </View>
-      <Text style={styles.title}>Bron tayyor!</Text>
+      <Text style={styles.title}>{t("booking.successTitle")}</Text>
       <Text style={styles.sub}>
         {salonName}
         {"\n"}
@@ -39,10 +41,10 @@ export function BookingSuccessScreen({ route, navigation }: Props) {
           })
         }
       >
-        <Text style={styles.primaryText}>Buyurtmalarga o'tish</Text>
+        <Text style={styles.primaryText}>{t("booking.goOrders")}</Text>
       </Pressable>
       <Pressable style={styles.secondary} onPress={() => navigation.popToTop()}>
-        <Text style={styles.secondaryText}>Bosh sahifa</Text>
+        <Text style={styles.secondaryText}>{t("booking.goHome")}</Text>
       </Pressable>
     </View>
   );

@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { LinearGradient } from "expo-linear-gradient";
@@ -48,6 +49,7 @@ function dayKey(iso: string) {
 
 /** Tranzaksiyalar — guruhlangan timeline UI. */
 export function WalletTransactionsScreen({ navigation }: Props) {
+  const { t } = useTranslation();
   useHideTabBar();
   const insets = useSafeAreaInsets();
   const [tab, setTab] = useState<"all" | "in" | "out">("all");
@@ -81,11 +83,11 @@ export function WalletTransactionsScreen({ navigation }: Props) {
 
         <View style={styles.stats}>
           <View style={styles.statCard}>
-            <Text style={styles.statLabel}>Kirim</Text>
+            <Text style={styles.statLabel}>{t("wallet.income")}</Text>
             <Text style={[styles.statVal, { color: "#16A34A" }]}>+{formatSomLabel(inSum)}</Text>
           </View>
           <View style={styles.statCard}>
-            <Text style={styles.statLabel}>Chiqim</Text>
+            <Text style={styles.statLabel}>{t("wallet.expense")}</Text>
             <Text style={[styles.statVal, { color: "#EF4444" }]}>−{formatSomLabel(outSum)}</Text>
           </View>
         </View>
@@ -113,7 +115,7 @@ export function WalletTransactionsScreen({ navigation }: Props) {
           ListEmptyComponent={
             <View style={styles.emptyBox}>
               <Ionicons name="receipt-outline" size={36} color="#D1D5DB" />
-              <Text style={styles.empty}>Hali harakatlar yo'q</Text>
+              <Text style={styles.empty}>{t("wallet.noActivity")}</Text>
             </View>
           }
           renderItem={({ item: [day, rows] }) => (

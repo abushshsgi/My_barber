@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -41,9 +42,10 @@ import {
 
 type Props = NativeStackScreenProps<RootStackParamList, "Booking">;
 
-const STEPS = ["Usta", "Xizmat", "Vaqt", "Tasdiq"] as const;
+const STEP_KEYS = ["booking.barber", "booking.service", "booking.time", "booking.confirmStep"] as const;
 
 export function BookingScreen({ route, navigation }: Props) {
+  const { t } = useTranslation();
   const { salonId } = route.params;
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
@@ -215,18 +217,18 @@ export function BookingScreen({ route, navigation }: Props) {
   return (
     <View style={styles.root}>
       <NativeHeader
-        title={salon?.name ?? "Bron"}
+        title={salon?.name ?? t("booking.book")}
         onBack={() => (step > 0 ? setStep((s) => s - 1) : navigation.goBack())}
       />
 
       <View style={styles.steps}>
-        {STEPS.map((label, i) => (
-          <View key={label} style={styles.stepItem}>
+        {STEP_KEYS.map((key, i) => (
+          <View key={key} style={styles.stepItem}>
             <View style={[styles.stepDot, i <= step && styles.stepDotOn]}>
               <Text style={[styles.stepNum, i <= step && styles.stepNumOn]}>{i + 1}</Text>
             </View>
             <Text style={[styles.stepLabel, { fontSize: fs(10) }, i === step && styles.stepLabelOn]}>
-              {label}
+              {t(key)}
             </Text>
           </View>
         ))}
@@ -238,9 +240,9 @@ export function BookingScreen({ route, navigation }: Props) {
       >
         {step === 0 ? (
           <View style={styles.block}>
-            <Text style={[styles.blockTitle, { fontSize: fs(16) }]}>Ustani tanlang</Text>
+            <Text style={[styles.blockTitle, { fontSize: fs(16) }]}>{t("booking.pickBarber")}</Text>
             {staff.length === 0 ? (
-              <Text style={styles.empty}>Ustalar topilmadi</Text>
+              <Text style={styles.empty}>{t("booking.noBarbers")}</Text>
             ) : (
               staff.map((s) => {
                 const on = s.id === barberId;
@@ -265,11 +267,11 @@ export function BookingScreen({ route, navigation }: Props) {
 
         {step === 1 ? (
           <View style={styles.block}>
-            <Text style={[styles.blockTitle, { fontSize: fs(16) }]}>Xizmatni tanlang</Text>
+            <Text style={[styles.blockTitle, { fontSize: fs(16) }]}>{t("booking.pickService")}</Text>
             {servicesLoading ? (
               <ActivityIndicator color={colors.fg} style={{ marginTop: 20 }} />
             ) : services.length === 0 ? (
-              <Text style={styles.empty}>Bu usta uchun xizmat yo'q</Text>
+              <Text style={styles.empty}>{t("booking.noServices")}</Text>
             ) : (
               services.map((svc) => {
                 const id = String(svc.id);
@@ -298,7 +300,7 @@ export function BookingScreen({ route, navigation }: Props) {
 
         {step === 2 ? (
           <View style={styles.block}>
-            <Text style={[styles.blockTitle, { fontSize: fs(16) }]}>Kun va soat</Text>
+            <Text style={[styles.blockTitle, { fontSize: fs(16) }]}>{t("booking.pickTime")}</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.dayRow}>
               {days.map((d, i) => (
                 <Pressable
@@ -342,18 +344,18 @@ export function BookingScreen({ route, navigation }: Props) {
           <View style={styles.block}>
             <Text style={[styles.blockTitle, { fontSize: fs(16) }]}>Tasdiqlash</Text>
             <View style={styles.summary}>
-              <SummaryRow label="Salon" value={salon?.name ?? "—"} />
-              <SummaryRow label="Usta" value={selectedBarber?.name ?? "—"} />
+              <SummaryRow label={t("booking.salon")} value={salon?.name ?? "—"} />
+              <SummaryRow label={t("booking.barber")} value={selectedBarber?.name ?? "—"} />
               <SummaryRow
-                label="Xizmat"
+                label={t("booking.service")}
                 value={selectedServices.map((s) => s.name).join(", ") || "—"}
               />
               <SummaryRow
-                label="Vaqt"
+                label={t("booking.time")}
                 value={`${days[dayIdx]?.label ?? ""} · ${slot ?? ""}`}
               />
               <SummaryRow label="To'lov" value="Naqd / joyida" />
-              <SummaryRow label="Jami" value={`${shortPrice(total)} so'm`} bold />
+              <SummaryRow label={t("booking.total")} value={`${shortPrice(total)} so'm`} bold />
             </View>
           </View>
         ) : null}

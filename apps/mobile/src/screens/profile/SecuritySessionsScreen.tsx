@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { useCallback, useEffect, useState } from "react";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { StatusBar } from "expo-status-bar";
@@ -40,6 +41,7 @@ function formatWhen(iso: string) {
 }
 
 export function SecuritySessionsScreen({ navigation }: Props) {
+  const { t } = useTranslation();
   const pal = useShellTheme();
   const [sessions, setSessions] = useState<ApiUserSession[]>([]);
   const [loading, setLoading] = useState(true);
@@ -129,7 +131,7 @@ export function SecuritySessionsScreen({ navigation }: Props) {
                   {busyId === session.id ? (
                     <ActivityIndicator color={pal.destructive} />
                   ) : (
-                    <Text style={[styles.revokeText, { color: pal.destructive }]}>Bekor qilish</Text>
+                    <Text style={[styles.revokeText, { color: pal.destructive }]}>{t("common.cancel")}</Text>
                   )}
                 </Pressable>
               )}

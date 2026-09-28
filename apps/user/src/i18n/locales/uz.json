@@ -16,7 +16,7 @@
     "profile": "Profil",
     "wallet": "Hamyon",
     "more": "Ko'proq",
-    "explore": "Explore",
+    "explore": "Kashfiyot",
     "offers": "Aksiyalar",
     "discovery": "Kashf etish",
     "account": "Hisob"
@@ -953,7 +953,9 @@
       "addresses": {
         "title": "Manzillar",
         "desc": "Uy, ish va boshqa saqlangan manzillar.",
-        "meta": "{{count}} ta manzil"
+        "meta": "{{count}} ta manzil",
+        "meta_one": "{{count}} ta manzil",
+        "meta_other": "{{count}} ta manzil"
       },
       "family": {
         "title": "Oilaviy profil",
@@ -1263,7 +1265,7 @@
       "backToHome": "Morf AI Home",
       "myLooksLabel": "Sizniki",
       "myLooksTitle": "Saqlangan va yaratilgan",
-      "myLooksEmptyHint": "Try-on qiling — natijalar shu yerda va Historyda chiqadi",
+      "myLooksEmptyHint": "Try-on qiling — natijalar shu yerda va tarixda chiqadi",
       "toolsLabel": "Vositalar",
       "toolsTitle": "Nima qilmoqchisiz?",
       "samplesLabel": "Ilhom",
@@ -1412,7 +1414,7 @@
           "body": "Toza, qisqa, to‘liq yoki shakllangan"
         },
         "compare": {
-          "title": "Before / After",
+          "title": "Oldin / keyin",
           "body": "Tahrirdan keyin ko‘zni bosib ushlang"
         },
         "plan": {
@@ -1422,10 +1424,10 @@
       }
     },
     "beforeAfter": {
-      "before": "Before",
-      "after": "After",
-      "hint": "O‘ngga — Before · Chapga — After",
-      "noBefore": "Before selfie saqlanmagan — yangi try-on qiling"
+      "before": "Oldin",
+      "after": "Keyin",
+      "hint": "O‘ngga — oldin · Chapga — keyin",
+      "noBefore": "Oldingi selfie saqlanmagan — yangi try-on qiling"
     },
     "shareLook": {
       "defaultTitle": "Yangi uslub",
@@ -1498,11 +1500,11 @@
           "failed": "Rasmni yuklab bo'lmadi. Qayta urinib ko'ring."
         },
         "story": {
-          "modalTitle": "Before & After Story",
+          "modalTitle": "Oldin va keyin",
           "progressTag": "{{count}} Kunlik Soch Parvarishi Natijasi",
           "before": "OLDIN",
           "after": "KEYIN",
-          "products": "Care Routine",
+          "products": "Parvarish rejasi",
           "verdictFallback": "Sochdagi ijobiy o'zgarishlar sezilarli darajada yaxshilandi.",
           "aiError": "AI xulosani tayyorlab bo'lmadi.",
           "share": "Instagram Story-ga joylash",
@@ -2030,18 +2032,18 @@
     }
   },
   "barberConsult": {
-    "title": "Hair Trends & AI Barber Consult",
-    "subtitle": "Try-on preview + texnik Barber Master Card",
-    "openCta": "AI Barber Consult",
+    "title": "Soch trendlari va AI barber maslahati",
+    "subtitle": "Try-on ko‘rinish va texnik barber karta",
+    "openCta": "AI barber maslahati",
     "goAiStyle": "Morf AI ga o‘tish",
     "empty": "Avval try-on qiling, keyin Barber Consult ochiladi.",
     "noImage": "Try-on yoki uslub rasmi topilmadi.",
     "loadFailed": "Master Card yuklanmadi",
     "retry": "Qayta yaratish",
-    "prescription": "Barber Master Card",
+    "prescription": "Barber karta",
     "bookCta": "Barberga yozilish",
     "shareCta": "Barber bilan ulashish",
-    "shareText": "Morf AI Barber Master Card",
+    "shareText": "Morf AI barber karta",
     "shareSaved": "Master Card saqlandi",
     "shareFailed": "Ulashib bo‘lmadi",
     "fallbackNotice": "AI javobi to‘liq emas — xavfsiz fallback retsept ko‘rsatilmoqda.",
@@ -2050,8 +2052,8 @@
     "webglFallback": "3D zonalar ishlamadi — try-on ko‘rinishiga qaytdik",
     "viewerAlt": "Soch turmagi preview",
     "singleViewHint": "Bu uslub uchun chap/o‘ng/orqa rasmlar hali yo‘q — try-on / old ko‘rinish ko‘rsatilmoqda.",
-    "showBarberPreview": "Barber dashboard preview",
-    "hideBarberPreview": "Barber previewni yashirish",
+    "showBarberPreview": "Barber panelini ko‘rish",
+    "hideBarberPreview": "Barber ko‘rinishini yashirish",
     "views": {
       "front": "Old",
       "left": "Chap",

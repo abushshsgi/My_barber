@@ -2,7 +2,7 @@
   "nav": {
     "home": "Asosiy",
     "map": "Xarita",
-    "explore": "Explore",
+    "explore": "Kashfiyot",
     "profile": "Profil",
     "morphChat": "Chatbot",
     "morphCare": "Parvarish",
@@ -36,7 +36,8 @@
     "subscriptionRequired": "Obuna kerak",
     "limitReached": "Limit tugadi",
     "studioUnavailable": "Studio yo'q",
-    "studioLimit": "Studio limiti"
+    "studioLimit": "Studio limiti",
+    "user": "Foydalanuvchi"
   },
   "placeholder": {
     "comingSoon": "Tez orada — Morph AI ichida ochiladi.",
@@ -66,11 +67,11 @@
     "hubTarkibMetric": "Skan",
     "hubStatusActive": "Faol",
     "hubStatusAnalyzed": "Tahlil qilingan",
-    "hubAiAssistant": "AI Assistant",
+    "hubAiAssistant": "AI yordamchi",
     "promoEyebrow": "MORF CARE",
     "promoTitle": "Bugungi ob-havo\nparvarishi",
     "promoHint": "Mahsulotlaringiz uchun maslahatlar",
-      "promoCta": "Maslahatlarni ko‘rish",
+    "promoCta": "Maslahatlarni ko‘rish",
     "quick": {
       "sos": "SOS",
       "shelf": "Javon",
@@ -141,14 +142,14 @@
       "errDate": "Sana YYYY-MM-DD formatda bo'lsin."
     },
     "growthTracker": {
-      "title": "Hair Growth & Health Tracker",
+      "title": "Soch o'sishi va salomatlik",
       "sub": "3 oylik progress va AI prognoz"
     },
     "album": {
       "badge": "Parvarish Albomi",
       "title": "Mening Parvarish Albomim",
       "screenTitle": "Parvarish Albomi",
-      "screenSub": "Before/After story va progress",
+      "screenSub": "Oldin/keyin va progress",
       "metrics": {
         "total": "Jami rasmlar",
         "duration": "Davomiylik",
@@ -176,11 +177,11 @@
         "persistOff": "Chat sozlamalarida tarix saqlash yoqilgan bo'lishi kerak."
       },
       "story": {
-        "modalTitle": "Before & After Story",
+        "modalTitle": "Oldin va keyin",
         "interactive": "Siljitib solishtiring",
         "before": "OLDIN",
         "after": "KEYIN",
-        "products": "Care Routine",
+        "products": "Parvarish rejasi",
         "progressTag": "{{count}} Kunlik Soch Parvarishi Natijasi",
         "verdictFallback": "Sochdagi ijobiy o'zgarishlar sezilarli darajada yaxshilandi.",
         "aiError": "AI xulosani tayyorlab bo'lmadi.",
@@ -598,7 +599,7 @@
   },
   "profile": {
     "orders": "Buyurtmalar",
-    "referrals": "Referrals",
+    "referrals": "Tavsiyalar",
     "addresses": "Manzillar",
     "settings": "Sozlamalar",
     "wallet": "Hamyon",
@@ -645,10 +646,17 @@
     "inactive": "Faol emas",
     "currentPlan": "Joriy",
     "popular": "Mashhur",
-    "upgrade": "Upgrade",
+    "upgrade": "Yangilash",
     "currentSubscription": "Joriy obuna",
     "payFromWallet": "Hamyondan to'lash",
-    "plans": "Tariflar"
+    "plans": "Tariflar",
+    "guestName": "Foydalanuvchi",
+    "statsLine": "{{bookings}} bron · {{favorites}} sevimli",
+    "activitySub": "Sharhlar, sevimlilar, ustalar, sovg'a",
+    "soon": "Tez orada",
+    "guestHint": "Shu akkaunt MySaloon bronlari uchun ishlaydi",
+    "ordersEmptySub": "Yaqin atrofdagi salonlardan vaqtni tanlab, birinchi broningizni qiling.",
+    "ordersCount": "{{count}} ta buyurtma"
   },
   "wallet": {
     "balance": "Sizning balansingiz",
@@ -693,7 +701,7 @@
     "plansTitle": "Morph AI tariflar",
     "lookCreate": "Look yaratish",
     "withAi": "AI BILAN",
-    "getStarted": "Get Started",
+    "getStarted": "Boshlash",
     "subscriptionNeeded": "Morph AI uchun obuna kerak — tarifni tanlang.",
     "limitMonthly": "Oylik Morph AI limiti tugagan ({{used}}/{{limit}}). Plus yoki Pro ga o'ting.",
     "subscriptionDefault": "Morph AI faqat obuna bilan ishlaydi. Tarif tanlang.",
@@ -731,7 +739,13 @@
       "ctaWallet": "Hamyondan to'lash",
       "ctaLower": "Pastroq tarif",
       "ctaCurrent": "Joriy obuna",
-      "plansUpgrade": "Upgrade"
+      "plansUpgrade": "Yangilash"
+    },
+    "home": {
+      "newTryOn": "Yangi try-on",
+      "careSub": "Sochingiz uchun shaxsiy tavsiyalar",
+      "ingredientSub": "Mahsulot tarkibini skan qiling",
+      "samples": "Namuna uslublar"
     }
   },
   "chat": {
@@ -906,15 +920,15 @@
       "accountGroup": "Hisob",
       "email": "Elektron pochta",
       "emailEmpty": "Pochta ulanmagan",
-      "planFree": "Free",
+      "planFree": "Bepul",
       "upgradePlan": "Tarifni yangilash",
       "appSettingsGroup": "Ilova sozlamalari",
       "appearance": "Ko'rinish",
       "themeGroup": "Mavzu",
       "theme": "Rejim",
       "themeHint": "Morf AI butun ilovasiga tatbiq etiladi",
-      "themeDark": "Dark mode",
-      "themeLight": "Light mode",
+      "themeDark": "Qorong'i rejim",
+      "themeLight": "Yorug' rejim",
       "fontGroup": "Matn",
       "fontSize": "Shrift o'lchami",
       "fontHint": "Kichik, o'rtacha yoki katta",
@@ -991,7 +1005,7 @@
     "tokenEmptyShort": "Limit tugadi — obuna kerak",
     "tokenEmptyCta": "Obuna olish",
     "marketing": {
-      "headline": "One assistant.\nMany ways\nto help.",
+      "headline": "Bitta yordamchi.\nKo'p usul bilan\nyordam beradi.",
       "cta": "Boshlash"
     },
     "history": {

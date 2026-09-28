@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -27,6 +28,7 @@ type EditKind = "name" | "email" | "address" | null;
 
 /** Ism, email, telefon — sozlamalar ichida. */
 export function PersonalInfoPanel() {
+  const { t } = useTranslation();
   const data = useProfileData();
   const { refreshMe } = useAuth();
   const { shell } = useAppShell();
@@ -147,7 +149,7 @@ export function PersonalInfoPanel() {
       {hideAddress ? null : (
         <Field
           pal={pal}
-          label="Manzil"
+          label={t("salon.addressFallback")}
           value={addressValue}
           onEdit={() => open("address", address?.address_line || "")}
           last
@@ -264,7 +266,7 @@ function Field({
       {onEdit ? (
         <Pressable onPress={onEdit} hitSlop={8}>
           <Text style={[styles.edit, { color: pal.accent, fontFamily: pal.font.fontFamily }]}>
-            Tahrirlash
+            {t("profile.edit")}
           </Text>
         </Pressable>
       ) : null}

@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { Image } from "expo-image";
@@ -206,6 +207,7 @@ function GalleryStackIcon({ size = 28, color = "#9A9A9A" }: { size?: number; col
  * Ochilganda capture UI yashirinadi; oxirgi 6 ta look 2 ustunli gridda.
  */
 export function MorphTryOnScreen({ navigation }: Props) {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const { height: winH, width: winW } = useWindowDimensions();
   const { isAuthenticated } = useAuth();
@@ -499,7 +501,7 @@ export function MorphTryOnScreen({ navigation }: Props) {
         style={[styles.centerCopy, { paddingTop: insets.top + verticalScale(36) }]}
         pointerEvents="none"
       >
-        <Text style={styles.headline}>Selfie yuklang</Text>
+        <Text style={styles.headline}>{t("morph.selfieTitle")}</Text>
         <Text style={styles.sub}>Yuz aniq ko‘rinsin · yaxshi yorug‘lik</Text>
       </Animated.View>
 
@@ -573,7 +575,7 @@ export function MorphTryOnScreen({ navigation }: Props) {
                         presentMorphPaywall(navigation, "subscription", "MorphCapture")
                       }
                     >
-                      <Text style={styles.errorCtaText}>Tariflar</Text>
+                      <Text style={styles.errorCtaText}>{t("profile.plans")}</Text>
                     </Pressable>
                   ) : null}
                 </View>
@@ -590,7 +592,7 @@ export function MorphTryOnScreen({ navigation }: Props) {
                   ) : (
                     <>
                       <FaceScanIcon color="#FFFFFF" size={ACTION_ICON} />
-                      <Text style={styles.gridTitleLight}>Kameradan olish</Text>
+                      <Text style={styles.gridTitleLight}>{t("morph.camera")}</Text>
                     </>
                   )}
                 </Pressable>
@@ -641,7 +643,7 @@ export function MorphTryOnScreen({ navigation }: Props) {
                     onPress={() => navigation.navigate("MorphHistory")}
                     accessibilityLabel="Barcha tarix"
                   >
-                    <Text style={styles.seeAllText}>Barchasi</Text>
+                    <Text style={styles.seeAllText}>{t("home.categories.all")}</Text>
                     <Ionicons name="chevron-forward" size={14} color="#0A0A0A" />
                   </Pressable>
                 </View>

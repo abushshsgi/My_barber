@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
@@ -82,6 +83,7 @@ const GRID: GridItem[] = [
 
 /** Ko'proq — bonus banner (tez orada) + monoxrom grid. */
 export function WalletMoreScreen({ navigation }: Props) {
+  const { t } = useTranslation();
   useHideTabBar();
   const insets = useSafeAreaInsets();
   const me = useWalletMe();
@@ -114,7 +116,7 @@ export function WalletMoreScreen({ navigation }: Props) {
               <Text style={styles.bonusSub}>Cashback va aksiyalar tez orada</Text>
             </View>
             <View style={styles.soonPill}>
-              <Text style={styles.soonText}>Tez orada</Text>
+              <Text style={styles.soonText}>{t("profile.soon")}</Text>
             </View>
           </View>
           <View style={styles.bonusBlur} />

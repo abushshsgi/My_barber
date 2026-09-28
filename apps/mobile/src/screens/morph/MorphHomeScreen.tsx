@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -46,6 +47,7 @@ const TOOLS: {
 const MARQUEE_ROWS = 2;
 
 export function MorphHomeScreen({ navigation }: Props) {
+  const { t } = useTranslation();
   const { isSmall } = useResponsive();
   const { isAuthenticated } = useAuth();
   const session = useMorphSession();
@@ -190,7 +192,7 @@ export function MorphHomeScreen({ navigation }: Props) {
           style={[styles.cta, { backgroundColor: pal.fg }]}
           onPress={onNewTryOn}
         >
-          <Text style={[styles.ctaText, { color: pal.bg }]}>Yangi try-on</Text>
+          <Text style={[styles.ctaText, { color: pal.bg }]}>{t("morph.home.newTryOn")}</Text>
           <View style={[styles.ctaArrow, { backgroundColor: pal.bg }]}>
             <Ionicons
               name="arrow-up"
@@ -232,12 +234,12 @@ export function MorphHomeScreen({ navigation }: Props) {
             <View style={[styles.careIcon, { backgroundColor: pal.card }]}>
               <Ionicons name="water-outline" size={ICON.md} color={pal.fg} />
             </View>
-            <Text style={[styles.careTitle, { color: pal.fg }]}>Parvarish</Text>
+            <Text style={[styles.careTitle, { color: pal.fg }]}>{t("care.hubParvarish")}</Text>
             <Text
               style={[styles.careSub, { color: pal.muted }]}
               numberOfLines={isSmall ? 1 : 2}
             >
-              Sochingiz uchun shaxsiy tavsiyalar
+              {t("morph.home.careSub")}
             </Text>
           </Pressable>
 
@@ -248,12 +250,12 @@ export function MorphHomeScreen({ navigation }: Props) {
             <View style={[styles.careIcon, { backgroundColor: pal.card }]}>
               <Ionicons name="flask-outline" size={ICON.md} color={pal.fg} />
             </View>
-            <Text style={[styles.careTitle, { color: pal.fg }]}>Tarkib</Text>
+            <Text style={[styles.careTitle, { color: pal.fg }]}>{t("care.hubTarkib")}</Text>
             <Text
               style={[styles.careSub, { color: pal.muted }]}
               numberOfLines={isSmall ? 1 : 2}
             >
-              Mahsulot tarkibini skan qiling
+              {t("morph.home.ingredientSub")}
             </Text>
           </Pressable>
         </View>
@@ -265,7 +267,7 @@ export function MorphHomeScreen({ navigation }: Props) {
           >
             <Ionicons name="search" size={ICON.sm} color={pal.muted} />
             <Text style={[styles.careSearchPlaceholder, { color: pal.muted }]} numberOfLines={1}>
-              Shampun, balsam, gigiyena…
+              {t("care.hubSearchPlaceholder")}
             </Text>
           </Pressable>
           <Pressable
@@ -280,12 +282,12 @@ export function MorphHomeScreen({ navigation }: Props) {
 
       <View style={styles.section}>
         <View style={styles.sectionHead}>
-          <Text style={styles.sectionTitle}>Namuna uslublar</Text>
+          <Text style={styles.sectionTitle}>{t("morph.home.samples")}</Text>
           <Pressable
             style={styles.exploreLink}
             onPress={() => navigation.getParent()?.navigate("Explore" as never)}
           >
-            <Text style={styles.sectionLink}>Explore</Text>
+            <Text style={styles.sectionLink}>{t("nav.explore")}</Text>
             <Ionicons
               name="arrow-up"
               size={ICON.xs}

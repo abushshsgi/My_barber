@@ -2,7 +2,7 @@
   "nav": {
     "home": "Главная",
     "map": "Карта",
-    "explore": "Explore",
+    "explore": "Идеи",
     "profile": "Профиль",
     "morphChat": "Чатбот",
     "morphCare": "Уход",
@@ -36,7 +36,8 @@
     "subscriptionRequired": "Нужна подписка",
     "limitReached": "Лимит исчерпан",
     "studioUnavailable": "Studio недоступен",
-    "studioLimit": "Лимит Studio"
+    "studioLimit": "Лимит Studio",
+    "user": "Пользователь"
   },
   "placeholder": {
     "comingSoon": "Скоро — откроется в Morph AI.",
@@ -66,7 +67,7 @@
     "hubTarkibMetric": "Скан",
     "hubStatusActive": "Активно",
     "hubStatusAnalyzed": "Проанализировано",
-    "hubAiAssistant": "AI Assistant",
+    "hubAiAssistant": "AI-помощник",
     "promoEyebrow": "MORF CARE",
     "promoTitle": "Уход по\nпогоде сегодня",
     "promoHint": "Советы по вашим продуктам",
@@ -148,7 +149,7 @@
       "badge": "Альбом ухода",
       "title": "Мой альбом ухода",
       "screenTitle": "Альбом ухода",
-      "screenSub": "Before/After story и прогресс",
+      "screenSub": "История «до и после» и прогресс",
       "metrics": {
         "total": "Всего фото",
         "duration": "Длительность",
@@ -176,11 +177,11 @@
         "persistOff": "Включите сохранение истории в настройках чата."
       },
       "story": {
-        "modalTitle": "Before & After Story",
+        "modalTitle": "История «до и после»",
         "interactive": "Сдвиньте для сравнения",
         "before": "ДО",
         "after": "ПОСЛЕ",
-        "products": "Care Routine",
+        "products": "Уход",
         "progressTag": "Результат ухода за {{count}} дней",
         "verdictFallback": "Заметные положительные изменения в состоянии волос.",
         "aiError": "Не удалось сгенерировать AI-вердикт.",
@@ -249,7 +250,13 @@
         "showers": "Ливень",
         "storm": "Гроза",
         "unknown": "Неизвестно"
-      }
+      },
+      "hourly": "Сегодня — по часам",
+      "todayAction": "Что сделать сегодня",
+      "pickRegion": "Выберите область",
+      "pickRegionSub": "Если GPS неверен — выберите вручную",
+      "useGps": "Использовать GPS",
+      "alertScheduled": "Напоминание на завтрашнее утро запланировано"
     },
     "condition": "Состояние",
     "texture": "Текстура",
@@ -342,7 +349,12 @@
         "morning": "Утро",
         "evening": "Вечер",
         "weekly": "Неделя"
-      }
+      },
+      "aiAnimTitle": "Составляем план",
+      "aiAnimScan": "Читаем продукты",
+      "aiAnimMatch": "Подбираем под волосы",
+      "aiAnimSlots": "Утро / вечер…",
+      "aiAnimWrite": "Записываем план"
     },
     "myProducts": {
       "title": "Мои средства",
@@ -587,7 +599,7 @@
   },
   "profile": {
     "orders": "Заказы",
-    "referrals": "Referrals",
+    "referrals": "Рефералы",
     "addresses": "Адреса",
     "settings": "Настройки",
     "wallet": "Кошелёк",
@@ -634,10 +646,17 @@
     "inactive": "Не активна",
     "currentPlan": "Текущий",
     "popular": "Популярный",
-    "upgrade": "Upgrade",
+    "upgrade": "Улучшить",
     "currentSubscription": "Текущая подписка",
     "payFromWallet": "Оплатить из кошелька",
-    "plans": "Тарифы"
+    "plans": "Тарифы",
+    "guestName": "Пользователь",
+    "statsLine": "{{bookings}} записей · {{favorites}} избранных",
+    "activitySub": "Отзывы, избранное, мастера, подарки",
+    "soon": "Скоро",
+    "guestHint": "Этот аккаунт используется для записей MySaloon",
+    "ordersEmptySub": "Выберите время в ближайшем салоне и сделайте первую запись.",
+    "ordersCount": "{{count}} записей"
   },
   "wallet": {
     "balance": "Ваш баланс",
@@ -720,7 +739,13 @@
       "ctaWallet": "Оплатить с кошелька",
       "ctaLower": "Более низкий тариф",
       "ctaCurrent": "Текущая подписка",
-      "plansUpgrade": "Upgrade"
+      "plansUpgrade": "Улучшить"
+    },
+    "home": {
+      "newTryOn": "Новый try-on",
+      "careSub": "Личные советы для ваших волос",
+      "ingredientSub": "Сканируйте состав продукта",
+      "samples": "Примеры стилей"
     }
   },
   "chat": {
@@ -895,15 +920,15 @@
       "accountGroup": "Учётная запись",
       "email": "Электронная почта",
       "emailEmpty": "Почта не привязана",
-      "planFree": "Free",
+      "planFree": "Бесплатно",
       "upgradePlan": "Обновить план",
       "appSettingsGroup": "Настройки приложения",
       "appearance": "Оформление",
       "themeGroup": "Тема",
       "theme": "Режим",
       "themeHint": "Применяется ко всему Morf AI",
-      "themeDark": "Dark mode",
-      "themeLight": "Light mode",
+      "themeDark": "Тёмная тема",
+      "themeLight": "Светлая тема",
       "fontGroup": "Текст",
       "fontSize": "Размер шрифта",
       "fontHint": "Мелкий, средний или крупный",
@@ -980,8 +1005,8 @@
     "tokenEmptyShort": "Лимит закончился — нужна подписка",
     "tokenEmptyCta": "Оформить подписку",
     "marketing": {
-      "headline": "One assistant.\nMany ways\nto help.",
-      "cta": "Get Started"
+      "headline": "Один помощник.\nМного способов\nпомочь.",
+      "cta": "Начать"
     },
     "history": {
       "title": "История чатов",

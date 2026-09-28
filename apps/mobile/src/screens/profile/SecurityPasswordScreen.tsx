@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { useState } from "react";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { StatusBar } from "expo-status-bar";
@@ -25,6 +26,7 @@ import {
 type Props = NativeStackScreenProps<ProfileStackParamList, "SecurityPassword">;
 
 export function SecurityPasswordScreen({ navigation }: Props) {
+  const { t } = useTranslation();
   const pal = useShellTheme();
   const data = useProfileData();
   const { refreshMe } = useAuth();
@@ -118,7 +120,7 @@ export function SecurityPasswordScreen({ navigation }: Props) {
             <ActivityIndicator color={pal.bg} />
           ) : (
             <Text style={[styles.ctaText, { color: pal.bg, fontFamily: pal.font.fontFamily }]}>
-              Saqlash
+              {t("common.save")}
             </Text>
           )}
         </Pressable>

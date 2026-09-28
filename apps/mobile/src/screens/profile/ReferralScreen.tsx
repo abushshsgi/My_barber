@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import * as Clipboard from "expo-clipboard";
@@ -32,6 +33,7 @@ type Props =
   | NativeStackScreenProps<MorphStackParamList, "Referrals">;
 
 export function ReferralScreen({ navigation }: Props) {
+  const { t } = useTranslation();
   useHideTabBar();
   const insets = useSafeAreaInsets();
   const [info, setInfo] = useState<ReferralInfo | null>(null);
@@ -83,7 +85,7 @@ export function ReferralScreen({ navigation }: Props) {
   return (
     <View style={[styles.root, { paddingBottom: safeBottom(insets.bottom, 0) }]}>
       <StatusBar style="dark" />
-      <NativeHeader title="Do'stlarni taklif" onBack={() => navigation.goBack()} />
+      <NativeHeader title={t("chat.settings.referral")} onBack={() => navigation.goBack()} />
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.hero}>
           {refGenOn ? (

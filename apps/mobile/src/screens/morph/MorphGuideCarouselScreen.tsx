@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { Image } from "expo-image";
@@ -83,6 +84,7 @@ async function rememberMorphTryOnTab() {
 }
 
 export function MorphGuideCarouselScreen({ navigation, route }: Props) {
+  const { t } = useTranslation();
   useHideTabBar();
   const insets = useSafeAreaInsets();
   const { height: winH, width: winW } = useWindowDimensions();
@@ -293,14 +295,14 @@ export function MorphGuideCarouselScreen({ navigation, route }: Props) {
               disabled={!!busy}
               onPress={() => void pickSelfie("camera")}
               accessibilityRole="button"
-              accessibilityLabel="Kameradan olish"
+              accessibilityLabel={t("morph.camera")}
             >
               {busy === "camera" ? (
                 <ActivityIndicator color="#0A0A0A" />
               ) : (
                 <>
                   <Ionicons name="camera" size={18} color="#0A0A0A" />
-                  <Text style={styles.ctaText}>Kameradan olish</Text>
+                  <Text style={styles.ctaText}>{t("morph.camera")}</Text>
                 </>
               )}
             </Pressable>

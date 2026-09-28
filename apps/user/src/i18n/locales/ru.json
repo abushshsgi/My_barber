@@ -16,7 +16,7 @@
     "profile": "Профиль",
     "wallet": "Кошелёк",
     "more": "Ещё",
-    "explore": "Explore",
+    "explore": "Идеи",
     "offers": "Акции",
     "discovery": "Обзор",
     "account": "Аккаунт"
@@ -935,7 +935,8 @@
       "deleteChatsBody": "Все диалоги Morf AI на сервере будут удалены.",
       "deleteLooksBody": "Try-on фото на сервере будут удалены.",
       "deleteAllBody": "Все данные Morf AI (чаты, look'и, селфи, ссылки) будут удалены. Это нельзя отменить.",
-      "deleted": "Удалено"
+      "deleted": "Удалено",
+      "limitHint": "Использовано: {{pct}}%"
     },
     "hubs": {
       "personal": {
@@ -955,7 +956,8 @@
         "meta_one": "{{count}} адрес",
         "meta_few": "{{count}} адреса",
         "meta_many": "{{count}} адресов",
-        "meta_other": "{{count}} адресов"
+        "meta_other": "{{count}} адресов",
+        "meta": "{{count}} адресов"
       },
       "family": {
         "title": "Семейный профиль",
@@ -1283,7 +1285,8 @@
         "ingredientDesc": "Проверка состава средства для волос с помощью AI",
         "gallery": "Галерея",
         "galleryDesc": "Загрузите селфи для нового try-on"
-      }
+      },
+      "myLooksEmptyHint": "Сделайте try-on — результаты появятся здесь и в истории"
     },
     "faceChecking": "Проверка лица…",
     "preparingPhoto": "Подготовка фото…",
@@ -1400,7 +1403,7 @@
       "surpriseHint": "Случайный look",
       "shareStory": "Story",
       "shareNudge": "В Story — пусть друзья тоже попробуют",
-      "socialProof": "12k+ look · Morf AI Studio",
+      "socialProof": "12k+ образов · Morf AI Studio",
       "tools": "Инструменты",
       "newsTitle": "Новости",
       "news": {
@@ -1413,7 +1416,7 @@
           "body": "Чистый, щетина, полная или форма"
         },
         "compare": {
-          "title": "Before / After",
+          "title": "До / после",
           "body": "После правки удерживайте кнопку глаза"
         },
         "plan": {
@@ -1423,10 +1426,10 @@
       }
     },
     "beforeAfter": {
-      "before": "Before",
-      "after": "After",
-      "hint": "Вправо — Before · влево — After",
-      "noBefore": "Before-селфи не сохранено — сделайте новый try-on"
+      "before": "До",
+      "after": "После",
+      "hint": "Вправо — до · влево — после",
+      "noBefore": "Селфи «до» не сохранено — сделайте новый try-on"
     },
     "shareLook": {
       "defaultTitle": "Новый стиль",
@@ -1446,7 +1449,15 @@
       "shareTextAlt3": "{{style}} — друзья спрашивают. Примерь на себе в Morf AI!",
       "shareTextAlt4": "Селфи + Morf AI = {{style}}. Реальный результат — попробуй сейчас!",
       "shareTextAlt5": "{{style}} мне подошёл. Как будет у тебя в Morf AI?",
-      "shareHint": "Отправляется только ссылка. Друг откроет вашу before/after страницу и сможет примерить на себе."
+      "shareHint": "Отправляется только ссылка. Друг откроет вашу before/after страницу и сможет примерить на себе.",
+      "defaultSharer": "Ваш друг",
+      "personalHeadlineName": "Новый образ {{name}}",
+      "personalHeadlineLook": "{{name}} обновился в Morf AI",
+      "personalHeadlineFresh": "Новый стиль {{name}}",
+      "personalHeadlineGlow": "{{name}} — новый образ",
+      "personalSubtitleResult": "{{style}} — реальный результат AI. Примерьте на себе.",
+      "personalSubtitleTry": "{{name}} выбрал этот стиль. Как будет у вас?",
+      "personalSubtitleViral": "Посмотрите на своём селфи за 10 секунд — Morf AI."
     },
     "care": {
       "badge": "Уход",
@@ -1491,11 +1502,11 @@
           "failed": "Не удалось загрузить фото. Попробуйте ещё раз."
         },
         "story": {
-          "modalTitle": "Before & After Story",
+          "modalTitle": "История «до и после»",
           "progressTag": "Результат ухода за {{count}} дней",
           "before": "ДО",
           "after": "ПОСЛЕ",
-          "products": "Care Routine",
+          "products": "Уход",
           "verdictFallback": "По волосам заметен положительный прогресс.",
           "aiError": "Не удалось подготовить AI-вывод.",
           "share": "Опубликовать в Instagram Story",
@@ -2023,18 +2034,18 @@
     }
   },
   "barberConsult": {
-    "title": "Hair Trends & AI Barber Consult",
-    "subtitle": "Try-on превью + техническая Barber Master Card",
-    "openCta": "AI Barber Consult",
+    "title": "Тренды волос и AI-консультация барбера",
+    "subtitle": "Превью try-on и техническая карта барбера",
+    "openCta": "AI-консультация барбера",
     "goAiStyle": "Перейти в Morf AI",
     "empty": "Сначала сделайте try-on, затем откройте Barber Consult.",
     "noImage": "Изображение try-on или стиля не найдено.",
     "loadFailed": "Не удалось загрузить Master Card",
     "retry": "Создать снова",
-    "prescription": "Barber Master Card",
+    "prescription": "Карта барбера",
     "bookCta": "Записаться к барберу",
     "shareCta": "Поделиться с барбером",
-    "shareText": "Morf AI Barber Master Card",
+    "shareText": "Карта барбера Morf AI",
     "shareSaved": "Master Card сохранена",
     "shareFailed": "Не удалось поделиться",
     "fallbackNotice": "Ответ AI неполный — показан безопасный fallback-рецепт.",
@@ -2043,7 +2054,7 @@
     "webglFallback": "Зоны 3D недоступны — вернулись к try-on",
     "viewerAlt": "Превью причёски",
     "singleViewHint": "Для этого стиля пока нет боковых/задних фото — показан try-on / вид спереди.",
-    "showBarberPreview": "Превью кабинета барбера",
+    "showBarberPreview": "Показать панель барбера",
     "hideBarberPreview": "Скрыть превью барбера",
     "views": {
       "front": "Спереди",

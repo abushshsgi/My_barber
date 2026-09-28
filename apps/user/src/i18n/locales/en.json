@@ -935,7 +935,8 @@
       "deleteChatsBody": "All Morf AI chats on the server will be deleted.",
       "deleteLooksBody": "Try-on images on the server will be deleted.",
       "deleteAllBody": "All Morph AI data (chats, looks, selfies, shares) will be deleted. This cannot be undone.",
-      "deleted": "Deleted"
+      "deleted": "Deleted",
+      "limitHint": "Used: {{pct}}%"
     },
     "hubs": {
       "personal": {
@@ -952,7 +953,9 @@
       "addresses": {
         "title": "Addresses",
         "desc": "Home, work, and other saved locations.",
-        "meta": "{{count}} addresses"
+        "meta": "{{count}} addresses",
+        "meta_one": "{{count}} address",
+        "meta_other": "{{count}} addresses"
       },
       "family": {
         "title": "Family profile",
@@ -1411,7 +1414,7 @@
           "body": "Clean, stubble, full, or shaped"
         },
         "compare": {
-          "title": "Before / After",
+          "title": "Before / after",
           "body": "Hold the eye button after an edit"
         },
         "plan": {
@@ -1501,7 +1504,7 @@
           "progressTag": "{{count}}-day Hair Care Result",
           "before": "BEFORE",
           "after": "AFTER",
-          "products": "Care Routine",
+          "products": "Care routine",
           "verdictFallback": "Hair quality shows visible positive improvement.",
           "aiError": "Could not prepare AI summary.",
           "share": "Post to Instagram Story",
@@ -2029,18 +2032,18 @@
     }
   },
   "barberConsult": {
-    "title": "Hair Trends & AI Barber Consult",
-    "subtitle": "Try-on preview + technical Barber Master Card",
-    "openCta": "AI Barber Consult",
+    "title": "Hair trends and AI barber consult",
+    "subtitle": "Try-on preview and a technical barber card",
+    "openCta": "AI barber consult",
     "goAiStyle": "Go to Morf AI",
     "empty": "Try a style first, then open Barber Consult.",
     "noImage": "Try-on or style image not found.",
     "loadFailed": "Could not load Master Card",
     "retry": "Regenerate",
-    "prescription": "Barber Master Card",
+    "prescription": "Barber card",
     "bookCta": "Book Barber Appointment",
     "shareCta": "Share with Barber",
-    "shareText": "Morf AI Barber Master Card",
+    "shareText": "Morf AI barber card",
     "shareSaved": "Master Card saved",
     "shareFailed": "Could not share",
     "fallbackNotice": "AI response incomplete — showing a safe fallback recipe.",
@@ -2049,7 +2052,7 @@
     "webglFallback": "Zone viewer failed — back to try-on view",
     "viewerAlt": "Hairstyle preview",
     "singleViewHint": "Side/back photos are not available for this style yet — showing the try-on / front view.",
-    "showBarberPreview": "Barber dashboard preview",
+    "showBarberPreview": "Show barber panel",
     "hideBarberPreview": "Hide barber preview",
     "views": {
       "front": "Front",

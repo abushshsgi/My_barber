@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import {
@@ -24,6 +25,7 @@ import {
 type Props = NativeStackScreenProps<ProfileStackParamList, "Notifications">;
 
 export function NotificationsScreen({ navigation }: Props) {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const data = useProfileData();
 
@@ -43,7 +45,7 @@ export function NotificationsScreen({ navigation }: Props) {
         contentContainerStyle={styles.list}
         ListEmptyComponent={
           <View style={styles.empty}>
-            <Text style={styles.emptyTitle}>Bildirishnomalar yo'q</Text>
+            <Text style={styles.emptyTitle}>{t("profile.noNotifications")}</Text>
             <Text style={styles.emptySub}>
               Yangi bron, to'lov va chat xabarlari shu yerda chiqadi.
             </Text>

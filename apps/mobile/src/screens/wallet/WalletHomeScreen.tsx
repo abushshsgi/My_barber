@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { Image } from "expo-image";
@@ -106,6 +107,7 @@ function avatarColor(id: string | number): string {
 }
 
 export function WalletHomeScreen({ navigation }: Props) {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const { isSmall } = useResponsive();
   const { user, isAuthenticated } = useAuth();
@@ -370,7 +372,7 @@ export function WalletHomeScreen({ navigation }: Props) {
             <View style={styles.emptyBox}>
               <Text style={styles.empty}>Hali tranzaksiya yo'q</Text>
               <Pressable style={styles.emptyCta} onPress={() => navigation.navigate("WalletTopUp")}>
-                <Text style={styles.emptyCtaText}>To'ldirish</Text>
+                <Text style={styles.emptyCtaText}>{t("wallet.topUp")}</Text>
               </Pressable>
             </View>
           ) : (

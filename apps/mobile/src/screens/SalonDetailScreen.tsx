@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useCallback, useState } from "react";
@@ -31,6 +32,7 @@ import {
 type Props = NativeStackScreenProps<RootStackParamList, "SalonDetail">;
 
 export function SalonDetailScreen({ route, navigation }: Props) {
+  const { t } = useTranslation();
   const { salonId, distanceKm = 0 } = route.params;
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
@@ -101,7 +103,7 @@ export function SalonDetailScreen({ route, navigation }: Props) {
               <Pressable style={styles.glassBtn} accessibilityLabel="Ulashish">
                 <Ionicons name="share-outline" size={18} color={colors.fg} />
               </Pressable>
-              <Pressable style={styles.glassBtn} accessibilityLabel="Sevimli">
+              <Pressable style={styles.glassBtn} accessibilityLabel={t("home.favoriteA11y")}>
                 <Ionicons name="heart-outline" size={18} color={colors.fg} />
               </Pressable>
             </View>
@@ -158,14 +160,14 @@ export function SalonDetailScreen({ route, navigation }: Props) {
 
           {salon.about ? (
             <View style={styles.block}>
-              <Text style={[styles.blockTitle, { fontSize: fs(15) }]}>Haqida</Text>
+              <Text style={[styles.blockTitle, { fontSize: fs(15) }]}>{t("salon.about")}</Text>
               <Text style={[styles.body, { fontSize: fs(13) }]}>{salon.about}</Text>
             </View>
           ) : null}
 
           {salon.services.length > 0 ? (
             <View style={styles.block}>
-              <Text style={[styles.blockTitle, { fontSize: fs(15) }]}>Xizmatlar</Text>
+              <Text style={[styles.blockTitle, { fontSize: fs(15) }]}>{t("salon.services")}</Text>
               {salon.services.slice(0, 8).map((svc) => (
                 <View key={svc.id} style={styles.serviceRow}>
                   <View style={styles.serviceInfo}>
@@ -191,7 +193,7 @@ export function SalonDetailScreen({ route, navigation }: Props) {
 
           {salon.staff.length > 0 ? (
             <View style={styles.block}>
-              <Text style={[styles.blockTitle, { fontSize: fs(15) }]}>Ustalar</Text>
+              <Text style={[styles.blockTitle, { fontSize: fs(15) }]}>{t("salon.barbers")}</Text>
               <FlatList
                 data={salon.staff}
                 horizontal
@@ -219,7 +221,7 @@ export function SalonDetailScreen({ route, navigation }: Props) {
 
           {salon.amenities.length > 0 ? (
             <View style={styles.block}>
-              <Text style={[styles.blockTitle, { fontSize: fs(15) }]}>Qulayliklar</Text>
+              <Text style={[styles.blockTitle, { fontSize: fs(15) }]}>{t("salon.amenities")}</Text>
               <View style={styles.chips}>
                 {salon.amenities.map((a) => (
                   <View key={a.code} style={styles.chip}>
@@ -232,7 +234,7 @@ export function SalonDetailScreen({ route, navigation }: Props) {
 
           {salon.hours.length > 0 ? (
             <View style={styles.block}>
-              <Text style={[styles.blockTitle, { fontSize: fs(15) }]}>Ish vaqti</Text>
+              <Text style={[styles.blockTitle, { fontSize: fs(15) }]}>{t("salon.hours")}</Text>
               {salon.hours.map((h) => (
                 <View key={h.weekday} style={styles.hourRow}>
                   <Text style={[styles.hourDay, { fontSize: fs(13) }]}>

@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { LinearGradient } from "expo-linear-gradient";
@@ -43,6 +44,7 @@ type Props = NativeStackScreenProps<MorphStackParamList, "MorphPreview">;
  * Web `AiStylePreviewSheet` — generatsiya qilingan rasm ustiga bosilganda.
  */
 export function MorphPreviewScreen({ navigation, route }: Props) {
+  const { t } = useTranslation();
   useHideTabBar();
   const insets = useSafeAreaInsets();
   const session = useMorphSession();
@@ -173,7 +175,7 @@ export function MorphPreviewScreen({ navigation, route }: Props) {
           {busy ? (
             <View style={styles.busy}>
               <ActivityIndicator color="#FFF" size="large" />
-              <Text style={styles.busyText}>AI yaratmoqda...</Text>
+              <Text style={styles.busyText}>{t("morph.generating")}</Text>
             </View>
           ) : null}
 
@@ -314,7 +316,7 @@ export function MorphPreviewScreen({ navigation, route }: Props) {
             />
             <UtilBtn
               icon="grid-outline"
-              label="Boshqa uslublar"
+              label={t("morph.moreStyles")}
               onPress={() => {
                 const routes = navigation.getState?.()?.routes;
                 if (routes && routes.length > 1) {

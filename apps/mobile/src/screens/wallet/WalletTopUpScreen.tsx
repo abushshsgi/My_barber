@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import * as ImagePicker from "expo-image-picker";
@@ -43,6 +44,7 @@ function parseDigits(raw: string) {
 }
 
 export function WalletTopUpScreen({ navigation }: Props) {
+  const { t } = useTranslation();
   useHideTabBar();
   const me = useWalletMe();
   const [amount, setAmount] = useState(100_000);
@@ -149,7 +151,7 @@ export function WalletTopUpScreen({ navigation }: Props) {
   return (
     <View style={styles.root}>
       <NativeHeader
-        title="To'ldirish"
+        title={t("wallet.topUp")}
         onBack={() => navigation.goBack()}
         border
       />

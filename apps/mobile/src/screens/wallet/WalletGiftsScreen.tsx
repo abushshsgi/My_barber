@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -34,6 +35,7 @@ function favKey(userId: number) {
 }
 
 export function WalletGiftsScreen({ navigation }: Props) {
+  const { t } = useTranslation();
   useHideTabBar();
   const { user } = useAuth();
   const me = useWalletMe();
@@ -75,7 +77,7 @@ export function WalletGiftsScreen({ navigation }: Props) {
 
   return (
     <View style={styles.root}>
-      <NativeHeader title="Hamyon" onBack={() => navigation.goBack()} />
+      <NativeHeader title={t("profile.wallet")} onBack={() => navigation.goBack()} />
       <Text style={styles.sub}>Mening sovg'alarim</Text>
 
       <ScrollView
@@ -120,7 +122,7 @@ export function WalletGiftsScreen({ navigation }: Props) {
             onPress={() => setFilter("all")}
           >
             <Text style={[styles.filterText, filter === "all" && styles.filterTextActive]}>
-              Barchasi
+              {t("home.categories.all")}
             </Text>
           </Pressable>
           <Pressable
@@ -212,7 +214,7 @@ function GiftCard({
               size={14}
               color={palette.accent}
             />
-            <Text style={[styles.starText, { color: palette.accent }]}>Saqlash</Text>
+            <Text style={[styles.starText, { color: palette.accent }]}>{t("common.save")}</Text>
           </Pressable>
         </View>
       </LinearGradient>

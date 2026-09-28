@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -74,6 +75,7 @@ const FALLBACK_CATEGORIES: MorphStudioCategory[] = [
 ];
 
 export function MorphStudioScreen({ navigation }: Props) {
+  const { t } = useTranslation();
   useHideTabBar();
   const insets = useSafeAreaInsets();
   const session = useMorphSession();
@@ -304,7 +306,7 @@ export function MorphStudioScreen({ navigation }: Props) {
           />
           <ToolChip
             icon="images-outline"
-            label="Galereya"
+            label={t("ingredient.gallery")}
             onPress={() =>
               void pickSelfieFromGallery().then((uri) => {
                 if (uri) selectImage(uri);

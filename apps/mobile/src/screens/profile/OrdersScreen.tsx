@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { NativeHeader } from "../../components/ui/NativeHeader";
 import { SegmentedTabs } from "../../components/ui/SegmentedTabs";
@@ -17,6 +18,7 @@ import {
 type Props = NativeStackScreenProps<ProfileStackParamList, "Orders">;
 
 export function OrdersScreen({ navigation }: Props) {
+  const { t } = useTranslation();
   const data = useProfileData();
   const [tab, setTab] = useState<"upcoming" | "history">("upcoming");
   const count = tab === "upcoming" ? data.upcomingCount : data.historyCount;
@@ -24,7 +26,7 @@ export function OrdersScreen({ navigation }: Props) {
   return (
     <View style={styles.root}>
       <NativeHeader
-        title="Buyurtmalarim"
+        title={t("profile.ordersTitle")}
         onBack={() => navigation.goBack()}
         largeTitle
         border={false}
@@ -33,8 +35,8 @@ export function OrdersScreen({ navigation }: Props) {
       <View style={styles.body}>
         <SegmentedTabs
           tabs={[
-            { key: "upcoming", label: `Kelayotgan ${data.upcomingCount}` },
-            { key: "history", label: `Tarix ${data.historyCount}` },
+            { key: "upcoming", label: `${t("profile.upcoming")} ${data.upcomingCount}` },
+            { key: "history", label: `${t("profile.history")} ${data.historyCount}` },
           ]}
           active={tab}
           onChange={(k) => setTab(k as "upcoming" | "history")}
@@ -47,20 +49,18 @@ export function OrdersScreen({ navigation }: Props) {
                 <Ionicons name="calendar-outline" size={32} color={colors.muted} />
               </View>
             </View>
-            <Text style={styles.emptyTitle}>Hali bron yo'q</Text>
-            <Text style={styles.emptySub}>
-              Yaqin atrofdagi salonlardan vaqtni tanlab, birinchi broningizni qiling.
-            </Text>
+            <Text style={styles.emptyTitle}>{t("profile.noBookings")}</Text>
+            <Text style={styles.emptySub}>{t("profile.ordersEmptySub")}</Text>
             <Pressable
               style={styles.cta}
               onPress={() => navigation.getParent()?.navigate("Home" as never)}
             >
               <Ionicons name="calendar" size={18} color="#FFF" />
-              <Text style={styles.ctaText}>Bron qilish</Text>
+              <Text style={styles.ctaText}>{t("booking.book")}</Text>
             </Pressable>
           </View>
         ) : (
-          <Text style={styles.listHint}>{count} ta buyurtma</Text>
+          <Text style={styles.listHint}>{t("profile.ordersCount", { count })}</Text>
         )}
       </View>
     </View>

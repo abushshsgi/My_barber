@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import * as Location from "expo-location";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -50,6 +51,7 @@ export function LocationPickerScreen({
   onFinish,
   initialMode = "map",
 }: Props) {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const { isAuthenticated, refreshMe } = useAuth();
   const mapRef = useRef<OnboardingMapHandle | null>(null);
@@ -60,7 +62,7 @@ export function LocationPickerScreen({
   const [mode, setMode] = useState<LocationEntryMode>(initialMode);
   const [lat, setLat] = useState(DEFAULT_MAP_REGION.latitude);
   const [lng, setLng] = useState(DEFAULT_MAP_REGION.longitude);
-  const [addressLabel, setAddressLabel] = useState("Joylashuvni tanlang");
+  const [addressLabel, setAddressLabel] = useState(() => t("onboarding.locationTitle"));
   const [cityLabel, setCityLabel] = useState("");
   const [locating, setLocating] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -290,7 +292,7 @@ export function LocationPickerScreen({
           >
             <Ionicons name="arrow-back" size={22} color={colors.fg} />
           </Pressable>
-          <Text style={styles.searchNavTitle}>Joylashuvni tanlang</Text>
+          <Text style={styles.searchNavTitle}>{t("onboarding.locationTitle")}</Text>
           <View style={{ width: 44 }} />
         </View>
 
@@ -299,7 +301,7 @@ export function LocationPickerScreen({
           <TextInput
             value={searchQuery}
             onChangeText={setSearchQuery}
-            placeholder="Ko'cha, mahalla yoki manzil"
+            placeholder={t("onboarding.locationSearch")}
             placeholderTextColor={colors.muted}
             autoFocus
             style={styles.searchFieldInput}
@@ -335,7 +337,7 @@ export function LocationPickerScreen({
                   <Ionicons name="map" size={20} color="#FFF" />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.mapPickTitle}>Kartada tanlash</Text>
+                  <Text style={styles.mapPickTitle}>{t("onboarding.locationMap")}</Text>
                   <Text style={styles.mapPickSub}>Xaritadan pin qo'ying</Text>
                 </View>
                 <Ionicons name="chevron-forward" size={18} color={colors.muted} />
@@ -420,7 +422,7 @@ export function LocationPickerScreen({
         style={[styles.gpsFab, { bottom: gpsBottom }, locating && styles.disabled]}
         onPress={() => void detectLocation()}
         disabled={busy}
-        accessibilityLabel="Joylashuvni aniqlash"
+        accessibilityLabel={t("onboarding.detectLocation")}
       >
         {locating ? (
           <ActivityIndicator color={colors.fg} />
@@ -437,7 +439,7 @@ export function LocationPickerScreen({
         }}
       >
         <View style={styles.sheetHandle} />
-        <Text style={styles.sheetTitle}>Manzilni tasdiqlang</Text>
+        <Text style={styles.sheetTitle}>{t("onboarding.locationConfirm")}</Text>
 
         <View style={styles.addressRow}>
           <View style={styles.addressIcon}>
@@ -469,7 +471,7 @@ export function LocationPickerScreen({
           {saving ? (
             <ActivityIndicator color="#FFF" />
           ) : (
-            <Text style={styles.confirmText}>Manzilni tasdiqlash</Text>
+            <Text style={styles.confirmText}>{t("onboarding.locationConfirmBtn")}</Text>
           )}
         </Pressable>
       </View>

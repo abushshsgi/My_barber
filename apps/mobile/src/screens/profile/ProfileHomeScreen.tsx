@@ -15,6 +15,7 @@ import { HeaderPill } from "../../components/ui/NativeHeader";
 import { SettingsGroup, SettingsRow } from "../../components/ui/SettingsKit";
 import { useProfileDashboard } from "../../hooks/useProfileDashboard";
 import { TAB_DOCK_CLEARANCE } from "../../hooks/useHideTabBar";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "../../auth/AuthContext";
 import { planLabel } from "../../api/dashboard";
 import { formatSom, initials } from "../../api/user";
@@ -32,10 +33,10 @@ import {
 type Props = NativeStackScreenProps<ProfileStackParamList, "ProfileHome">;
 
 const QUICK = [
-  { key: "Orders", label: "Buyurtmalar", icon: "calendar-outline" as const },
-  { key: "Notifications", label: "Bildirishnomalar", icon: "notifications-outline" as const },
-  { key: "Addresses", label: "Manzillar", icon: "location-outline" as const },
-  { key: "Settings", label: "Sozlamalar", icon: "settings-outline" as const },
+  { key: "Orders", labelKey: "profile.orders", icon: "calendar-outline" as const },
+  { key: "Notifications", labelKey: "profile.notifications", icon: "notifications-outline" as const },
+  { key: "Addresses", labelKey: "profile.addresses", icon: "location-outline" as const },
+  { key: "Settings", labelKey: "profile.settings", icon: "settings-outline" as const },
 ] as const;
 
 export function ProfileHomeScreen(props: Props) {
@@ -47,6 +48,7 @@ export function ProfileHomeScreen(props: Props) {
 }
 
 function MysaloonProfileHome({ navigation }: Props) {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const { dashboard, unreadCount, loading, refresh } = useProfileDashboard();
   const { signOut, user: authUser } = useAuth();
@@ -55,7 +57,7 @@ function MysaloonProfileHome({ navigation }: Props) {
   const display =
     user?.full_name?.trim() ||
     [user?.first_name, user?.last_name].filter(Boolean).join(" ").trim() ||
-    "Foydalanuvchi";
+    t("profile.guestName");
   const verified = dashboard?.verified ?? Boolean(user?.phone || user?.email_verified);
   const sub = dashboard?.subscription;
   const wallet = dashboard?.wallet;
@@ -84,11 +86,11 @@ function MysaloonProfileHome({ navigation }: Props) {
       >
         <View style={styles.topRow}>
           <HeaderPill
-            label="Bonus · tez orada"
+            label={t("profile.bonusSoon")}
             icon={<Ionicons name="star" size={13} color={colors.fg} />}
           />
           <HeaderPill
-            label={sub?.has_active ? plan : "Obuna"}
+            label={sub?.has_active ? plan : t("profile.subscription")}
             dark
             icon={<Ionicons name="diamond" size={13} color="#FFF" />}
             onPress={() => navigation.navigate("Subscriptions")}
@@ -119,7 +121,7 @@ function MysaloonProfileHome({ navigation }: Props) {
             </Text>
           </View>
           <Text style={styles.stats}>
-            {upcoming + history} bron · {favorites} sevimli
+            {t("profile.statsLine", { bookings: upcoming + history, favorites })}
           </Text>
         </View>
 
@@ -138,14 +140,14 @@ function MysaloonProfileHome({ navigation }: Props) {
               <View style={styles.quickIcon}>
                 <Ionicons name={item.icon} size={22} color={colors.fg} />
               </View>
-              <Text style={styles.quickLabel}>{item.label}</Text>
+              <Text style={styles.quickLabel}>{t(item.labelKey)}</Text>
             </Pressable>
           ))}
         </View>
 
         <SettingsGroup dark>
           <SettingsRow
-            title="Hamyon"
+            title={t("profile.wallet")}
             subtitle={formatSom(wallet?.balance ?? 0)}
             icon="wallet-outline"
             iconDark
@@ -165,14 +167,14 @@ function MysaloonProfileHome({ navigation }: Props) {
 
         <SettingsGroup>
           <SettingsRow
-            title="Faoliyatim"
-            subtitle="Sharhlar, sevimlilar, ustalar, sovg'a"
+            title={t("profile.activity")}
+            subtitle={t("profile.activitySub")}
             icon="calendar-outline"
             onPress={() => navigation.navigate("Orders")}
           />
           <SettingsRow
-            title="Aksiyalar"
-            subtitle="Tez orada"
+            title={t("profile.promos")}
+            subtitle={t("profile.soon")}
             icon="pricetag-outline"
             last
           />
@@ -180,8 +182,8 @@ function MysaloonProfileHome({ navigation }: Props) {
 
         <SettingsGroup dark>
           <SettingsRow
-            title="Bonus dasturi"
-            subtitle="Tez orada"
+            title={t("profile.bonusProgram")}
+            subtitle={t("profile.soon")}
             icon="sparkles"
             iconDark
             darkText
@@ -192,12 +194,12 @@ function MysaloonProfileHome({ navigation }: Props) {
 
         <SettingsGroup>
           <SettingsRow
-            title="Maxfiylik"
+            title={t("profile.privacy")}
             icon="shield-checkmark-outline"
             onPress={() => navigation.navigate("Settings")}
           />
           <SettingsRow
-            title="Bildirishnomalar"
+            title={t("profile.notifications")}
             icon="notifications-outline"
             badge={unreadCount}
             onPress={() => navigation.navigate("Notifications")}
@@ -207,7 +209,7 @@ function MysaloonProfileHome({ navigation }: Props) {
 
         <SettingsGroup>
           <SettingsRow
-            title="Ma'lumot"
+            title={t("profile.about")}
             icon="information-circle-outline"
             onPress={() => navigation.navigate("Settings")}
             last
@@ -216,11 +218,11 @@ function MysaloonProfileHome({ navigation }: Props) {
 
         <Pressable style={styles.logout} onPress={() => void signOut()}>
           <Ionicons name="log-out-outline" size={18} color={colors.fg} />
-          <Text style={styles.logoutText}>Chiqish</Text>
+          <Text style={styles.logoutText}>{t("profile.logout")}</Text>
         </Pressable>
 
         <Text style={styles.guestHint}>
-          Shu akkaunt MySaloon bronlari uchun ishlaydi
+          {t("profile.guestHint")}
         </Text>
       </ScrollView>
     </View>

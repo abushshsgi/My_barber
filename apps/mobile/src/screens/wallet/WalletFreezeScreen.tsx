@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -34,6 +35,7 @@ const USE_NATIVE = Platform.OS !== "web";
 
 /** Pastdan 480ms sheet — 1 click muzlatish / ochish. Intent route paramda qotadi (miltiltmasin). */
 export function WalletFreezeScreen({ navigation, route }: Props) {
+  const { t } = useTranslation();
   useHideTabBar();
   const insets = useSafeAreaInsets();
   const me = useWalletMe();
@@ -130,7 +132,7 @@ export function WalletFreezeScreen({ navigation, route }: Props) {
       />
 
       {/* Faqat sheet ustidagi bo'sh joy — tugmalarni yopmaydi */}
-      <Pressable style={styles.dismissZone} onPress={close} accessibilityLabel="Yopish" />
+      <Pressable style={styles.dismissZone} onPress={close} accessibilityLabel={t("chat.errorDismissA11y")} />
 
       <Animated.View
         style={[
@@ -171,7 +173,7 @@ export function WalletFreezeScreen({ navigation, route }: Props) {
           onPress={close}
           accessibilityRole="button"
         >
-          <Text style={styles.secondaryText}>Bekor qilish</Text>
+          <Text style={styles.secondaryText}>{t("common.cancel")}</Text>
         </Pressable>
       </Animated.View>
     </View>

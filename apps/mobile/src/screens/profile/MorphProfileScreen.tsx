@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { Image } from "expo-image";
@@ -37,6 +38,7 @@ import {
 type Props = NativeStackScreenProps<ProfileStackParamList, "ProfileHome">;
 
 export function MorphProfileScreen({ navigation }: Props) {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const { signOut, user: authUser } = useAuth();
   const { dashboard, unreadCount, loading, error, refresh } = useProfileDashboard();
@@ -113,7 +115,7 @@ export function MorphProfileScreen({ navigation }: Props) {
           onPress={openSettings}
           style={({ pressed }) => [styles.identity, pressed && styles.pressed]}
           accessibilityRole="button"
-          accessibilityLabel="Sozlamalar"
+          accessibilityLabel={t("profile.settings")}
         >
           <View style={styles.avatarWrap}>
             {avatarUrl ? (
@@ -198,7 +200,7 @@ export function MorphProfileScreen({ navigation }: Props) {
             icon="wallet-outline"
             accent={pal.fg}
             soft={pal.theme === "dark" ? "rgba(255,255,255,0.1)" : "#F3F4F6"}
-            label="Hamyon"
+            label={t("profile.wallet")}
             labelLow
             onPress={() => {
               setShell("morph");
@@ -222,7 +224,7 @@ export function MorphProfileScreen({ navigation }: Props) {
             icon="color-wand-outline"
             accent="#0F766E"
             soft={pal.theme === "dark" ? "rgba(15,118,110,0.22)" : "rgba(15,118,110,0.12)"}
-            label="Studio"
+            label={t("morph.studio")}
             onPress={() => openMorphStack(navigation, "MorphStudio")}
           />
         </View>
@@ -232,7 +234,7 @@ export function MorphProfileScreen({ navigation }: Props) {
             pal={pal}
             styles={styles}
             icon="settings-outline"
-            title="Sozlamalar"
+            title={t("profile.settings")}
             subtitle="Ko'rinish, limit, maxfiylik"
             onPress={openSettings}
           />
@@ -325,7 +327,7 @@ export function MorphProfileScreen({ navigation }: Props) {
           accessibilityRole="button"
         >
           <Ionicons name="log-out-outline" size={18} color={pal.destructive} />
-          <Text style={styles.logoutText}>Chiqish</Text>
+          <Text style={styles.logoutText}>{t("profile.logout")}</Text>
         </Pressable>
       </ScrollView>
     </View>

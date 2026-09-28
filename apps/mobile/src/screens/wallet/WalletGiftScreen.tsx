@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { LinearGradient } from "expo-linear-gradient";
@@ -58,6 +59,7 @@ function avatarTone(id: number | string): string {
 
 /** 1-qadam: kimga yuborish — tarix + maxfiy mask. */
 export function WalletGiftScreen({ navigation }: Props) {
+  const { t } = useTranslation();
   useHideTabBar();
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
@@ -223,7 +225,7 @@ export function WalletGiftScreen({ navigation }: Props) {
             <View style={styles.emptyIcon}>
               <Ionicons name="search-outline" size={28} color="#737373" />
             </View>
-            <Text style={styles.emptyTitle}>Topilmadi</Text>
+            <Text style={styles.emptyTitle}>{t("salon.notFound")}</Text>
             <Text style={styles.empty}>
               Ismning bir qismini yozing yoki to‘liq 16 xonali hamyon / telefon kiriting
             </Text>

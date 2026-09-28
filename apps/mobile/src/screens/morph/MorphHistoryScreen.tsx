@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { Image } from "expo-image";
@@ -69,6 +70,7 @@ async function downloadImage(url: string, title: string): Promise<void> {
 }
 
 export function MorphHistoryScreen({ navigation, route }: Props) {
+  const { t } = useTranslation();
   useHideTabBar();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
@@ -239,7 +241,7 @@ export function MorphHistoryScreen({ navigation, route }: Props) {
             </Pressable>
             <Pressable style={styles.secondaryAction} onPress={openStudio}>
               <Ionicons name="color-palette-outline" size={16} color="#111111" />
-              <Text style={styles.secondaryActionText}>Studio</Text>
+              <Text style={styles.secondaryActionText}>{t("morph.studio")}</Text>
             </Pressable>
           </View>
         </View>

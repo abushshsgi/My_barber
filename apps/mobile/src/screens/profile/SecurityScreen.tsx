@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { StatusBar } from "expo-status-bar";
@@ -16,6 +17,7 @@ import {
 type Props = NativeStackScreenProps<ProfileStackParamList, "Security">;
 
 export function SecurityScreen({ navigation }: Props) {
+  const { t } = useTranslation();
   const data = useProfileData();
   const pal = useShellTheme();
   const hasPassword = Boolean(data.user?.has_password);
@@ -23,7 +25,7 @@ export function SecurityScreen({ navigation }: Props) {
   return (
     <View style={[styles.root, { backgroundColor: pal.bg }]}>
       <StatusBar style={pal.status} />
-      <NativeHeader title="Kirish va xavfsizlik" onBack={() => navigation.goBack()} />
+      <NativeHeader title={t("profile.security")} onBack={() => navigation.goBack()} />
       <View style={[styles.card, { backgroundColor: pal.card, borderColor: pal.border }]}>
         <SecRow
           pal={pal}
