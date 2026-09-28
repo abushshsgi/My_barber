@@ -24,13 +24,34 @@ type Props = {
   products?: AiScanProduct[];
 };
 
-const STEP_MS = 700;
-const STAGE = scale(168);
-const THUMB = scale(46);
-const ORBIT = scale(52);
-const LAP_MS = 3200;
+type ProcessStep = { title: string; body: string };
 
-function OrbitPhoto({
+const STEP_MS = 2800;
+const LAP_MS = 6800;
+const THUMB = scale(72);
+const ORBIT_X = scale(108);
+
+function ProductFace({ product }: { product: AiScanProduct }) {
+  if (product.image) {
+    return (
+      <Image
+        source={{ uri: product.image }}
+        style={styles.face}
+        contentFit="cover"
+        cachePolicy="memory-disk"
+        recyclingKey={`reel-${product.id}`}
+      />
+    );
+  }
+  return (
+    <View style={[styles.face, styles.thumbPh]}>
+      <Text style={styles.thumbLetter}>{(product.name || "?").slice(0, 1)}</Text>
+    </View>
+  );
+}
+
+/** Mahsulot gorizontal karuselda aylanadi, oldinda turgani kattalashadi. */
+function ReelProduct({
   product,
   index,
   count,
@@ -41,119 +62,191 @@ function OrbitPhoto({
   count: number;
   spin: SharedValue<number>;
 }) {
-  const base = (index / Math.max(count, 1)) * 360;
   const style = useAnimatedStyle(() => {
-    const turn = spin.value * 360;
-    const angle = (((base + turn) % 360) + 360) % 360;
-    const nearTop = Math.min(angle, 360 - angle);
-    const scaleN = nearTop < 36 ? 1.08 : 0.94;
+    if (count <= 1) {
+      const yaw = Math.sin(spin.value * Math.PI * 2) * 32;
+      return {
+        zIndex: 2,
+        opacity: 1,
+        transform: [{ perspective: 640 }, { rotateY: `${yaw}deg` }, { scale: 1.08 }],
+      };
+    }
+    const angle = (index / Math.max(count, 1) + spin.value) * Math.PI * 2;
+    const depth = Math.cos(angle);
+    const front = (depth + 1) / 2;
+    const yaw = Math.sin(angle) * (18 + front * 16);
     return {
-      zIndex: nearTop < 36 ? 3 : 1,
+      zIndex: Math.round(front * 20),
+      opacity: 0.4 + front * 0.6,
       transform: [
-        { rotate: `${base + turn}deg` },
-        { translateY: -ORBIT },
-        { rotate: `${-(base + turn)}deg` },
-        { scale: scaleN },
+        { translateX: Math.sin(angle) * ORBIT_X },
+        { translateY: (1 - depth) * 8 },
+        { perspective: 640 },
+        { rotateY: `${yaw}deg` },
+        { scale: 0.56 + front * 0.52 },
       ],
     };
   });
 
   return (
-    <Animated.View style={[styles.orbitSlot, style]}>
-      {product.image ? (
-        <Image
-          source={{ uri: product.image }}
-          style={styles.thumb}
-          contentFit="cover"
-          cachePolicy="memory-disk"
-          recyclingKey={`orbit-${product.id}`}
-        />
-      ) : (
-        <View style={[styles.thumb, styles.thumbPh]}>
-          <Text style={styles.thumbLetter}>{(product.name || "AI").slice(0, 1)}</Text>
-        </View>
-      )}
+    <Animated.View style={[styles.thumb, style]}>
+      <ProductFace product={product} />
     </Animated.View>
   );
 }
 
-/** Mahsulot rasmlari halqa bo‘ylab aylanadi, o‘zlari tik turadi. */
+/** Mahsulotlar karuselda aylanadi, pastda jarayon sekin aytiladi. */
 export function AiPlanThinkingOverlay({ appending, products }: Props) {
   const { t } = useTranslation();
   const [stepIdx, setStepIdx] = useState(0);
+  const [prodIdx, setProdIdx] = useState(0);
   const spin = useSharedValue(0);
-  const ring = useSharedValue(0);
-  const progress = useSharedValue(0.2);
+  const copy = useSharedValue(1);
 
-  const labels = useMemo(
-    () => [
-      t("care.routine.aiAnimScan", { defaultValue: "Mahsulotlar o‘qilmoqda" }),
-      t("care.routine.aiAnimMatch", { defaultValue: "Sochga moslanmoqda" }),
-      t("care.routine.aiAnimWrite", { defaultValue: "Reja yozilmoqda" }),
-    ],
-    [t],
-  );
+  const steps = useMemo<ProcessStep[]>(() => {
+    if (appending) {
+      return [
+        {
+          title: t("care.routine.aiProcessAdd", { defaultValue: "Yangi mahsulot o‘qilmoqda" }),
+          body: t("care.routine.aiProcessAddBody", {
+            defaultValue: "Turi aniqlanib, mavjud rejaga joylanmoqda.",
+          }),
+        },
+        {
+          title: t("care.routine.aiProcessMatch", { defaultValue: "Soch holatiga moslash" }),
+          body: t("care.routine.aiProcessMatchBody", {
+            defaultValue: "Sochingiz holatiga qarab, qaysi mahsulot qachon kerakligi ajratilmoqda.",
+          }),
+        },
+        {
+          title: t("care.routine.aiProcessWrite", { defaultValue: "Reja yozilmoqda" }),
+          body: t("care.routine.aiProcessWriteBody", {
+            defaultValue: "Shaxsiy parvarish rejasi yakunlanmoqda.",
+          }),
+        },
+      ];
+    }
+    return [
+      {
+        title: t("care.routine.aiProcessRead", { defaultValue: "Mahsulotlar o‘qilmoqda" }),
+        body: t("care.routine.aiProcessReadBody", {
+          defaultValue: "Har bir vositaning nomi va turi ko‘rib chiqilmoqda.",
+        }),
+      },
+      {
+        title: t("care.routine.aiProcessMatch", { defaultValue: "Soch holatiga moslash" }),
+        body: t("care.routine.aiProcessMatchBody", {
+          defaultValue: "Sochingiz holatiga qarab, qaysi mahsulot qachon kerakligi ajratilmoqda.",
+        }),
+      },
+      {
+        title: t("care.routine.aiProcessOrder", { defaultValue: "Kun tartibi tuzilmoqda" }),
+        body: t("care.routine.aiProcessOrderBody", {
+          defaultValue: "Ertalab, kechqurun va haftalik qadamlar joylashtirilmoqda.",
+        }),
+      },
+      {
+        title: t("care.routine.aiProcessWrite", { defaultValue: "Reja yozilmoqda" }),
+        body: t("care.routine.aiProcessWriteBody", {
+          defaultValue: "Shaxsiy parvarish rejasi yakunlanmoqda.",
+        }),
+      },
+    ];
+  }, [appending, t]);
 
-  const list = (products || []).slice(0, 6);
-  const orbitItems = list.length
-    ? list
-    : [{ id: "ai", name: "AI" } satisfies AiScanProduct];
+  const list = (products || []).filter((p) => p.name || p.image).slice(0, 6);
+  const items = list.length ? list : [{ id: "hair", name: "" } satisfies AiScanProduct];
+  const count = items.length;
+  const current = items[((prodIdx % count) + count) % count];
+  const step = steps[stepIdx % steps.length];
 
   useEffect(() => {
     spin.value = 0;
-    spin.value = withRepeat(withTiming(1, { duration: LAP_MS, easing: Easing.linear }), -1, false);
-    ring.value = 0;
-    ring.value = withRepeat(withTiming(1, { duration: 2200, easing: Easing.linear }), -1, false);
-    progress.value = withTiming(0.92, { duration: 1600, easing: Easing.out(Easing.cubic) });
-  }, [progress, ring, spin]);
+    spin.value = withRepeat(
+      withTiming(1, { duration: LAP_MS, easing: Easing.linear }),
+      -1,
+      false,
+    );
+  }, [spin]);
 
   useEffect(() => {
     const tick = setInterval(() => {
-      setStepIdx((i) => (i + 1) % labels.length);
+      setStepIdx((i) => (i + 1) % steps.length);
     }, STEP_MS);
     return () => clearInterval(tick);
-  }, [labels.length]);
+  }, [steps.length]);
 
-  const ringStyle = useAnimatedStyle(() => ({
-    transform: [{ rotate: `${ring.value * 360}deg` }],
-  }));
-  const barStyle = useAnimatedStyle(() => ({
-    transform: [{ scaleX: Math.max(0.08, progress.value) }],
-  }));
+  useEffect(() => {
+    if (count < 2) return;
+    const started = Date.now();
+    const tick = setInterval(() => {
+      const t = ((Date.now() - started) % LAP_MS) / LAP_MS;
+      const front = (count - Math.round(t * count)) % count;
+      setProdIdx(front < 0 ? front + count : front);
+    }, 180);
+    return () => clearInterval(tick);
+  }, [count]);
+
+  useEffect(() => {
+    copy.value = 0.15;
+    copy.value = withTiming(1, { duration: 420, easing: Easing.out(Easing.cubic) });
+  }, [copy, stepIdx]);
+
+  const copyStyle = useAnimatedStyle(() => ({ opacity: copy.value }));
 
   const title = appending
     ? t("care.routine.aiPlanAppending", { defaultValue: "Yangi mahsulot qo‘shilmoqda" })
     : t("care.routine.aiAnimTitle", { defaultValue: "Reja tuzilmoqda" });
 
+  const showName = Boolean(current.name && current.name !== "AI");
+
   return (
-    <View style={styles.root} accessibilityRole="progressbar">
+    <View
+      style={styles.root}
+      accessibilityRole="progressbar"
+      accessibilityLabel={`${title}. ${step.title}. ${step.body}`}
+    >
       <View style={styles.stage}>
-        <View style={styles.ringTrack} />
-        <Animated.View style={[styles.ringArcWrap, ringStyle]}>
-          <View style={styles.ringArc} />
-        </Animated.View>
-        <View style={styles.core}>
-          <Text style={styles.coreText}>AI</Text>
-        </View>
-        {orbitItems.map((item, index) => (
-          <OrbitPhoto
-            key={String(item.id)}
+        <View style={styles.platter} />
+        {items.map((item, index) => (
+          <ReelProduct
+            key={`${item.id}-${index}`}
             product={item}
             index={index}
-            count={orbitItems.length}
+            count={count}
             spin={spin}
           />
         ))}
       </View>
 
+      {showName ? (
+        <Text style={styles.productName} numberOfLines={1}>
+          {current.name}
+        </Text>
+      ) : null}
+
       <Text style={styles.title} numberOfLines={1}>
         {title}
       </Text>
-      <Text style={styles.sub} numberOfLines={1}>
-        {labels[stepIdx]}
-      </Text>
-      <View style={styles.barTrack}>
-        <Animated.View style={[styles.barFill, barStyle]} />
+
+      <Animated.View style={[styles.copy, copyStyle]}>
+        <Text style={styles.kicker}>
+          {t("care.routine.aiProcessKicker", { defaultValue: "Jarayon" })}
+          {"  "}
+          {stepIdx + 1}/{steps.length}
+        </Text>
+        <Text style={styles.stepTitle} numberOfLines={1}>
+          {step.title}
+        </Text>
+        <Text style={styles.stepBody} numberOfLines={3}>
+          {step.body}
+        </Text>
+      </Animated.View>
+
+      <View style={styles.dots}>
+        {steps.map((item, index) => (
+          <View key={item.title} style={[styles.dot, index === stepIdx && styles.dotOn]} />
+        ))}
       </View>
     </View>
   );
@@ -164,8 +257,8 @@ const styles = StyleSheet.create({
     marginTop: verticalScale(8),
     borderRadius: moderateScale(22),
     backgroundColor: "#FFFFFF",
-    paddingTop: verticalScale(6),
-    paddingBottom: verticalScale(12),
+    paddingTop: verticalScale(14),
+    paddingBottom: verticalScale(14),
     paddingHorizontal: scale(16),
     alignItems: "center",
     overflow: "hidden",
@@ -178,50 +271,20 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   stage: {
-    width: STAGE,
-    height: STAGE,
+    width: "100%",
+    height: scale(128),
     alignItems: "center",
     justifyContent: "center",
   },
-  ringTrack: {
+  platter: {
     position: "absolute",
-    width: ORBIT * 2 + scale(8),
-    height: ORBIT * 2 + scale(8),
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: "rgba(17,17,17,0.08)",
-    backgroundColor: "#FAFAFA",
+    width: scale(220),
+    height: scale(36),
+    borderRadius: scale(18),
+    backgroundColor: "#F3F3F4",
+    bottom: scale(8),
   },
-  ringArcWrap: {
-    position: "absolute",
-    width: ORBIT * 2 + scale(8),
-    height: ORBIT * 2 + scale(8),
-    alignItems: "center",
-  },
-  ringArc: {
-    width: scale(10),
-    height: scale(10),
-    borderRadius: scale(5),
-    backgroundColor: "#111",
-    marginTop: -scale(4),
-  },
-  core: {
-    width: scale(44),
-    height: scale(44),
-    borderRadius: scale(22),
-    backgroundColor: "#111",
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: 2,
-  },
-  coreText: {
-    ...morphFont,
-    color: "#FFFFFF",
-    fontSize: fontSize(13),
-    fontWeight: "800",
-    letterSpacing: 0.6,
-  },
-  orbitSlot: {
+  thumb: {
     position: "absolute",
     width: THUMB,
     height: THUMB,
@@ -230,55 +293,85 @@ const styles = StyleSheet.create({
     backgroundColor: "#F4F4F5",
     borderWidth: 2,
     borderColor: "#FFFFFF",
-    shadowColor: "#111",
-    shadowOpacity: 0.12,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 3,
   },
-  thumb: {
+  face: {
     width: "100%",
     height: "100%",
   },
   thumbPh: {
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#F4F4F5",
+    backgroundColor: "#EFEFF1",
   },
   thumbLetter: {
     ...morphFont,
-    fontSize: fontSize(14),
+    fontSize: fontSize(16),
     fontWeight: "800",
     color: "#111",
   },
+  productName: {
+    ...morphFont,
+    marginTop: verticalScale(6),
+    fontSize: fontSize(12),
+    fontWeight: "700",
+    color: "#111",
+    textAlign: "center",
+    maxWidth: "86%",
+  },
   title: {
     ...morphFont,
+    marginTop: verticalScale(4),
     fontSize: fontSize(15),
     fontWeight: "800",
     color: "#111",
     letterSpacing: -0.3,
     textAlign: "center",
   },
-  sub: {
+  copy: {
+    marginTop: verticalScale(8),
+    alignItems: "center",
+    minHeight: verticalScale(62),
+  },
+  kicker: {
+    ...morphFont,
+    fontSize: fontSize(11),
+    fontWeight: "700",
+    letterSpacing: 0.6,
+    textTransform: "uppercase",
+    color: "#A3A3A3",
+    textAlign: "center",
+  },
+  stepTitle: {
+    ...morphFont,
+    marginTop: verticalScale(3),
+    fontSize: fontSize(14),
+    fontWeight: "800",
+    color: "#111",
+    textAlign: "center",
+  },
+  stepBody: {
     ...morphFont,
     marginTop: verticalScale(2),
     fontSize: fontSize(12),
-    color: "#737373",
+    lineHeight: fontSize(17),
+    color: "#525252",
     textAlign: "center",
+    maxWidth: scale(300),
   },
-  barTrack: {
+  dots: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: scale(6),
     marginTop: verticalScale(10),
-    width: "72%",
-    height: 3,
-    borderRadius: 999,
-    backgroundColor: "#F4F4F5",
-    overflow: "hidden",
   },
-  barFill: {
-    height: "100%",
-    width: "100%",
-    borderRadius: 999,
+  dot: {
+    width: scale(6),
+    height: scale(6),
+    borderRadius: scale(3),
+    backgroundColor: "#E5E5E5",
+  },
+  dotOn: {
+    width: scale(16),
     backgroundColor: "#111",
-    transformOrigin: "left",
   },
 });

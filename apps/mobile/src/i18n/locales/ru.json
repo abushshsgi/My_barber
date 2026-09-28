@@ -354,7 +354,18 @@
       "aiAnimScan": "Читаем продукты",
       "aiAnimMatch": "Подбираем под волосы",
       "aiAnimSlots": "Утро / вечер…",
-      "aiAnimWrite": "Записываем план"
+      "aiAnimWrite": "Записываем план",
+      "aiProcessKicker": "Процесс",
+      "aiProcessRead": "Читаем ваши средства",
+      "aiProcessReadBody": "Проверяем название и тип каждого средства.",
+      "aiProcessMatch": "Подбираем под волосы",
+      "aiProcessMatchBody": "Решаем, какое средство и когда нужно вашим волосам.",
+      "aiProcessOrder": "Собираем распорядок",
+      "aiProcessOrderBody": "Расставляем утренние, вечерние и недельные шаги.",
+      "aiProcessWrite": "Записываем план",
+      "aiProcessWriteBody": "Личный план ухода почти готов.",
+      "aiProcessAdd": "Читаем новое средство",
+      "aiProcessAddBody": "Определяем тип и добавляем его в план."
     },
     "myProducts": {
       "title": "Мои средства",

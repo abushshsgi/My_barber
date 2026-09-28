@@ -354,7 +354,18 @@
       "aiAnimScan": "Reading products",
       "aiAnimMatch": "Matching to your hair",
       "aiAnimSlots": "Morning / evening order…",
-      "aiAnimWrite": "Writing the plan"
+      "aiAnimWrite": "Writing the plan",
+      "aiProcessKicker": "Process",
+      "aiProcessRead": "Reading your products",
+      "aiProcessReadBody": "Each product’s name and type is being checked.",
+      "aiProcessMatch": "Matching your hair",
+      "aiProcessMatchBody": "Deciding which product you need, and when, for your hair.",
+      "aiProcessOrder": "Building the daily order",
+      "aiProcessOrderBody": "Morning, evening, and weekly steps are being placed.",
+      "aiProcessWrite": "Writing the plan",
+      "aiProcessWriteBody": "Your personal care plan is almost ready.",
+      "aiProcessAdd": "Reading the new product",
+      "aiProcessAddBody": "Its type is being matched and added to your plan."
     },
     "myProducts": {
       "title": "My products",
