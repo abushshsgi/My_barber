@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from ai.chat_language import language_directive, resolve_chat_language
+
 MORF_CHAT_DAILY_LIMIT = 40  # legacy alias — oylik token kvota ishlatiladi
 MORF_CHAT_MAX_HISTORY = 32
 MORF_CHAT_MAX_MESSAGE_LEN = 4000
@@ -80,13 +82,6 @@ def _format_prefs_block(context: dict[str, Any] | None) -> str:
     if not context:
         return ""
     lines: list[str] = ["Foydalanuvchi sozlamalari:"]
-    lang = str(context.get("reply_lang") or "").strip().lower()
-    if lang in ("uz", "ru"):
-        lines.append(
-            "- Javob tili: "
-            + ("o'zbek (lotin)" if lang == "uz" else "rus")
-            + " — savol tilidan qat'i nazar shu tilda yoz."
-        )
     style = str(context.get("reply_style") or "").strip().lower()
     if style == "short":
         lines.append("- Javob uslubi: qisqa (2–4 jumla, faqat eng muhim).")
@@ -143,7 +138,8 @@ def _format_prefs_block(context: dict[str, Any] | None) -> str:
             "- Ovozli suhbat: faqat og'zaki aytiladigan matn. "
             "2–4 qisqa jumla, jami 40 so‘zdan oshirma. "
             "Markdown, ro'yxat, sarlavha va **qalin** yo'q. "
-            "Adabiy o'zbek (Toshkent talaffuzi), turkcha yoki aralash sheva yo'q. "
+            "Javob tili — oxirgi xabar tili. O'zbek bo'lsa Adabiy o'zbek (Toshkent talaffuzi), "
+            "turkcha yoki aralash sheva yo'q. "
             "Tabiiy suhbatdosh kabi, birinchi jumlada javob."
         )
     return "\n".join(lines) if len(lines) > 1 else ""
@@ -225,11 +221,17 @@ def _format_context_block(context: dict[str, Any] | None) -> str:
     return f"{block}\n\n{prefs}".strip() if prefs else block
 
 
-def build_morf_chat_system_prompt(context: dict[str, Any] | None = None) -> str:
+def build_morf_chat_system_prompt(
+    context: dict[str, Any] | None = None,
+    user_message: str = "",
+    history: list[Any] | None = None,
+) -> str:
     """Morf AI chatbot uchun asosiy system prompt."""
     context_block = _format_context_block(context)
+    reply_lang = resolve_chat_language(user_message, history)
+    language_block = language_directive(reply_lang)
     return f"""Sen **Morf AI** — Mybarber ilovasidagi aqlli soch uslubi va parvarish maslahatchisisan.
-Ohang: ChatGPT / Claude kabi — sokin, aniq, foydali. Do'stona, lekin marketing sloganlarisiz.
+Ohang: do'stona, professional, tushunarli va yordamga tayyor. Sokin va aniq, marketing sloganlarisiz.
 Sen suhbatni **eslab qoladigan** LLM miyasiz: oldingi gaplarga tayangan holda keyingi javob berasan.
 
 ## Roling
@@ -246,10 +248,19 @@ Sen suhbatni **eslab qoladigan** LLM miyasiz: oldingi gaplarga tayangan holda ke
 - Faqat **shu suhbat** tarixiga tayangan holda javob ber. Boshqa suhbatlarni o‘ylab qo‘shma.
 - Try-on / profil konteksti berilgan bo‘lsa — uni ham birlashtirib shaxsiy javob ber.
 
-## Til
-- Asosiy til: **o'zbek (lotin)** (agar sozlamada boshqa til berilmasa).
-- Barber terminlari inglizcha bo'lishi mumkin (fade, undercut, taper, clipper guard #2) — qisqa izoh bilan.
-- Sozlamadagi javob tili ustuvor; aks holda savol tiliga moslash.
+## Til (eng yuqori ustuvorlik)
+Interfeys tili va ilova sozlamasi (`reply_lang`) javob tilini belgilamaydi.
+Har doim foydalanuvchining **eng oxirgi** xabaridagi tilda va yozuvda javob ber.
+Oxirgi xabarda til belgisi bo'lmasa (faqat "ok" yoki uslub nomi), oldingi aniq foydalanuvchi tilida davom et.
+
+{language_block}
+
+- O'zbek (lotin) yozilsa → javob faqat o'zbek (lotin), adabiy imlo (o', g').
+- O'zbek (kirill) yozilsa → javob faqat o'zbek (kirill), adabiy imlo (ў, қ, ғ, ҳ).
+- Rus tilida yozilsa → javob faqat rus tilida.
+- Boshqa tilda yozilsa (ingliz va hokazo) → javob o'sha tilda va o'sha yozuvda. O'zbek yoki rusga o'tma.
+- Aralash xabar (masalan: "Salom, menga sobsheniye kelmadi"): fikr asosan qaysi tilda bo'lsa, javob o'sha tilda, ravon va imlo qoidalariga mos. Alohida o'zlashgan so'z butun tilni o'zgartirmaydi.
+- Barber terminlari (fade, undercut, taper, clipper guard #2) gap ichida qolishi mumkin — qisqa izoh bilan.
 
 ## Nima qilasan
 1. Yuz shakliga mos soch uslublari

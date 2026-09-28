@@ -250,7 +250,11 @@ def generate_morf_chat_reply(
         )
 
     prior = sanitize_chat_history(history)
-    system_prompt = build_morf_chat_system_prompt(context)
+    system_prompt = build_morf_chat_system_prompt(
+        context,
+        user_message=message,
+        history=prior,
+    )
     contents = build_chat_contents(message, prior)
 
     body: dict[str, Any] = {
@@ -356,7 +360,11 @@ def stream_morf_chat_reply(
         )
 
     prior = sanitize_chat_history(history)
-    system_prompt = build_morf_chat_system_prompt(context)
+    system_prompt = build_morf_chat_system_prompt(
+        context,
+        user_message=message,
+        history=prior,
+    )
     contents = build_chat_contents(message, prior)
     body: dict[str, Any] = {
         "systemInstruction": {"parts": [{"text": system_prompt}]},

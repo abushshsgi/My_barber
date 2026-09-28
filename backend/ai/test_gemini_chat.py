@@ -1,5 +1,6 @@
 from django.test import SimpleTestCase
 
+from ai.chat_language import detect_chat_language, resolve_chat_language
 from ai.chat_prompts import _format_context_block, build_morf_chat_system_prompt
 from ai.services.gemini_chat import build_chat_contents, sanitize_chat_history
 
@@ -86,3 +87,76 @@ class ChatPromptTests(SimpleTestCase):
         from ai.services.gemini_chat import extract_delta_text
 
         self.assertEqual("".join(extract_delta_text(p) for p in payloads), "AB")
+
+
+class ChatLanguageTests(SimpleTestCase):
+    def test_uzbek_latin(self):
+        lang = detect_chat_language("Yuz shaklimga qaysi soch uslublari mos keladi?")
+        self.assertEqual(lang.code, "uz-latn")
+        self.assertTrue(lang.confident)
+
+    def test_uzbek_latin_with_apostrophe(self):
+        lang = detect_chat_language("O'zbekcha qisqa maslahat bering")
+        self.assertEqual(lang.code, "uz-latn")
+
+    def test_uzbek_cyrillic(self):
+        lang = detect_chat_language("Менга соч учун маслаҳат беринг")
+        self.assertEqual(lang.code, "uz-cyrl")
+        self.assertTrue(lang.confident)
+
+    def test_russian(self):
+        lang = detect_chat_language("Мне нужна короткая стрижка")
+        self.assertEqual(lang.code, "ru")
+        self.assertTrue(lang.confident)
+
+    def test_english_is_other(self):
+        lang = detect_chat_language("What haircut suits a round face?")
+        self.assertEqual(lang.code, "other")
+        self.assertEqual(lang.label, "ingliz")
+        self.assertTrue(lang.confident)
+
+    def test_mixed_uzbek_sentence_stays_latin(self):
+        lang = detect_chat_language("Salom, menga sobsheniye kelmadi")
+        self.assertEqual(lang.code, "uz-latn")
+
+    def test_english_wrapper_around_uzbek_thought(self):
+        lang = detect_chat_language("Hello, menga fade kerak")
+        self.assertEqual(lang.code, "uz-latn")
+
+    def test_uzbek_greeting_with_english_question(self):
+        lang = detect_chat_language("Salom, how are you?")
+        self.assertEqual(lang.code, "other")
+        self.assertEqual(lang.label, "ingliz")
+
+    def test_other_latin_language(self):
+        lang = detect_chat_language("Merhaba, saç modeli önerir misin")
+        self.assertEqual(lang.code, "other")
+        self.assertNotEqual(lang.label, "ingliz")
+
+    def test_short_followup_uses_previous_user_language(self):
+        lang = resolve_chat_language(
+            "fade",
+            history=[
+                {"role": "user", "content": "Мне нужна стрижка"},
+                {"role": "assistant", "content": "Короткая или подлиннее?"},
+            ],
+        )
+        self.assertEqual(lang.code, "ru")
+
+    def test_prompt_follows_last_message_not_settings(self):
+        prompt = build_morf_chat_system_prompt(
+            {"reply_lang": "ru", "face_shape": "round"},
+            user_message="What haircut suits a round face?",
+        )
+        self.assertIn("ingliz", prompt.lower())
+        self.assertNotIn("savol tilidan qat'i nazar", prompt)
+        self.assertIn("eng oxirgi", prompt.lower())
+        self.assertIn("dumaloq", prompt)
+
+    def test_prompt_uzbek_cyrillic_directive(self):
+        prompt = build_morf_chat_system_prompt(
+            {"reply_lang": "uz"},
+            user_message="Менга соч учун маслаҳат беринг",
+        )
+        self.assertIn("o'zbek (kirill)", prompt)
+        self.assertNotIn("savol tilidan qat'i nazar", prompt)
