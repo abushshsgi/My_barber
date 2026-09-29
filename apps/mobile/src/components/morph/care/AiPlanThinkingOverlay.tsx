@@ -1,6 +1,6 @@
 import { Image } from "expo-image";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { useEffect, useMemo, useState } from "react";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import Animated, {
   Easing,
@@ -27,12 +27,105 @@ type Props = {
 
 type ProcessStep = { title: string; body: string };
 
+type Spot = { x: number; y: number; s: number; z: number };
+
 const STEP_MS = CARE_PROCESS_STEP_MS;
-const LAP_MS = 5200;
-const THUMB = scale(62);
-const ORBIT_X = scale(118);
-const ORBIT_Y = scale(46);
-const STAGE_H = verticalScale(196);
+const LAP_MS = 4200;
+const FACE = scale(58);
+const STAGE_H = verticalScale(248);
+const R = scale(108);
+const R_CIRCLE = scale(88);
+const R_WIDE = scale(120);
+const R_FLAT = scale(36);
+const R_TALL = scale(96);
+const R_NARROW = scale(28);
+const R_EIGHT = scale(78);
+const R_IN = scale(42);
+const R_OUT = scale(70);
+const R_DEEP = scale(70);
+
+const VARIANTS = [
+  "Aylana",
+  "Yotiq",
+  "G‘ildirak",
+  "Sakkiz",
+  "Spiral",
+  "Qarama-qarshi",
+  "Yoy",
+  "Karusel",
+  "Ikki halqa",
+  "Markaz",
+];
+
+let pickedVariant = 0;
+
+function spotFor(mode: number, spin: number, index: number, count: number): Spot {
+  "worklet";
+  const n = Math.max(count, 1);
+  const base = index / n;
+
+  if (mode === 1) {
+    const t = (spin + base) * Math.PI * 2;
+    const z = (Math.sin(t) + 1) / 2;
+    return { x: Math.cos(t) * R_WIDE, y: Math.sin(t) * R_FLAT, s: 0.72 + z * 0.38, z };
+  }
+  if (mode === 2) {
+    const t = (spin + base) * Math.PI * 2;
+    const z = (Math.cos(t) + 1) / 2;
+    return { x: Math.cos(t) * R_NARROW, y: Math.sin(t) * R_TALL, s: 0.62 + z * 0.5, z };
+  }
+  if (mode === 3) {
+    const t = (spin + base) * Math.PI * 2;
+    const z = (Math.cos(t) + 1) / 2;
+    return { x: Math.sin(t) * R, y: Math.sin(t) * Math.cos(t) * R_EIGHT, s: 0.7 + z * 0.35, z };
+  }
+  if (mode === 4) {
+    const t = (spin + base) * Math.PI * 2;
+    const rad = R_IN + R_OUT * (0.5 + 0.5 * Math.sin(t));
+    return { x: Math.cos(t) * rad, y: Math.sin(t) * rad * 0.72, s: 0.78 + (rad / (R_IN + R_OUT)) * 0.28, z: rad };
+  }
+  if (mode === 5) {
+    const dir = index % 2 === 0 ? 1 : -1;
+    const t = (dir * spin + base) * Math.PI * 2;
+    return { x: Math.cos(t) * R, y: Math.sin(t) * R * 0.78, s: 0.9, z: Math.sin(t) };
+  }
+  if (mode === 6) {
+    const swing = Math.sin((spin + base) * Math.PI * 2);
+    const ang = Math.PI * (1.15 + swing * 0.7);
+    return { x: Math.cos(ang) * R_WIDE, y: Math.sin(ang) * R_DEEP + 10, s: 0.92, z: -Math.sin(ang) };
+  }
+  if (mode === 7) {
+    const t = (spin + base) * Math.PI * 2;
+    const z = (Math.sin(t) + 1) / 2;
+    return { x: Math.cos(t) * R, y: Math.sin(t) * R_DEEP, s: 0.5 + z * 0.7, z };
+  }
+  if (mode === 8) {
+    const ring = index % 2 === 0 ? 0.62 : 1;
+    const dir = index % 2 === 0 ? 1 : -1;
+    const t = (dir * spin + base) * Math.PI * 2;
+    return {
+      x: Math.cos(t) * R * ring,
+      y: Math.sin(t) * R_EIGHT * ring,
+      s: ring > 0.8 ? 0.95 : 0.72,
+      z: ring + Math.sin(t),
+    };
+  }
+  if (mode === 9) {
+    const p = spin * n;
+    const active = ((p % n) + n) % n;
+    const dist = Math.min(Math.abs(index - active), n - Math.abs(index - active));
+    const focus = Math.max(0, 1 - dist);
+    const t = (spin + base) * Math.PI * 2;
+    return {
+      x: Math.cos(t) * R_CIRCLE * (1 - focus),
+      y: Math.sin(t) * R_CIRCLE * (1 - focus),
+      s: 0.7 + focus * 0.55,
+      z: focus,
+    };
+  }
+  const t = (spin + base) * Math.PI * 2;
+  return { x: Math.cos(t) * R_CIRCLE, y: Math.sin(t) * R_CIRCLE, s: 1, z: Math.sin(t) };
+}
 
 function ProductFace({ product }: { product: AiScanProduct }) {
   if (product.image) {
@@ -42,7 +135,7 @@ function ProductFace({ product }: { product: AiScanProduct }) {
         style={styles.face}
         contentFit="cover"
         cachePolicy="memory-disk"
-        recyclingKey={`plan-${product.id}`}
+        recyclingKey={`spin-${product.id}`}
       />
     );
   }
@@ -53,82 +146,39 @@ function ProductFace({ product }: { product: AiScanProduct }) {
   );
 }
 
-/** Mahsulotlar aylana bo‘ylab yuradi va o‘z o‘qi atrofida aylanadi. */
-function SpinningProducts({
-  items,
-  spin,
-}: {
-  items: AiScanProduct[];
-  spin: SharedValue<number>;
-}) {
-  return (
-    <View style={styles.stage}>
-      <View
-        style={[
-          styles.trackRing,
-          {
-            width: ORBIT_X * 2,
-            height: ORBIT_Y * 2,
-            borderRadius: ORBIT_X,
-            marginLeft: -ORBIT_X,
-            marginTop: -ORBIT_Y,
-          },
-        ]}
-      />
-      {items.map((product, index) => (
-        <SpinningProduct
-          key={`${product.id}-${index}`}
-          product={product}
-          index={index}
-          count={items.length}
-          spin={spin}
-        />
-      ))}
-    </View>
-  );
-}
-
-function SpinningProduct({
+function SpinFace({
   product,
   index,
   count,
   spin,
+  mode,
 }: {
   product: AiScanProduct;
   index: number;
   count: number;
   spin: SharedValue<number>;
+  mode: number;
 }) {
   const animStyle = useAnimatedStyle(() => {
-    const n = Math.max(count, 1);
-    const t = (spin.value + index / n) * Math.PI * 2;
-    const front = (Math.sin(t) + 1) / 2;
+    const spot = spotFor(mode, spin.value, index, count);
     return {
-      zIndex: Math.round(front * 20),
-      transform: [
-        { translateX: Math.cos(t) * ORBIT_X },
-        { translateY: Math.sin(t) * ORBIT_Y },
-        { rotate: `${spin.value * 360}deg` },
-        { scale: 0.74 + front * 0.42 },
-      ],
+      zIndex: Math.round(10 + spot.z * 10),
+      transform: [{ translateX: spot.x }, { translateY: spot.y }, { scale: spot.s }],
     };
   });
-
   return (
-    <Animated.View style={[styles.disc, animStyle]}>
+    <Animated.View style={[styles.faceWrap, animStyle]}>
       <ProductFace product={product} />
     </Animated.View>
   );
 }
 
-/** Bitta mahsulot qatori va bitta jarayon qadami. Takroriy sarlavha yo‘q. */
+/** Mahsulotlar to‘g‘ri turib, 10 xil yo‘l bilan aylanadi. */
 export function AiPlanThinkingOverlay({ appending, products }: Props) {
   const { t } = useTranslation();
   const [stepIdx, setStepIdx] = useState(0);
+  const [variant, setVariant] = useState(pickedVariant);
   const turn = useSharedValue(0);
-  const copy = useSharedValue(1);
-  const fill = useSharedValue(0.25);
-  const opened = useRef(false);
 
   const steps = useMemo<ProcessStep[]>(() => {
     if (appending) {
@@ -194,52 +244,49 @@ export function AiPlanThinkingOverlay({ appending, products }: Props) {
   }, [turn]);
 
   useEffect(() => {
-    const tick = setInterval(() => {
-      setStepIdx((i) => (i + 1) % steps.length);
-    }, STEP_MS);
+    const tick = setInterval(() => setStepIdx((i) => (i + 1) % steps.length), STEP_MS);
     return () => clearInterval(tick);
   }, [steps.length]);
 
-  useEffect(() => {
-    const next = (stepIdx + 1) / steps.length;
-    if (!opened.current) {
-      opened.current = true;
-      fill.value = next;
-      return;
-    }
-    copy.value = 0;
-    copy.value = withTiming(1, { duration: 360, easing: Easing.out(Easing.cubic) });
-    fill.value = withTiming(next, { duration: 480, easing: Easing.out(Easing.cubic) });
-  }, [copy, fill, stepIdx, steps.length]);
-
-  const copyStyle = useAnimatedStyle(() => ({ opacity: copy.value }));
-  const fillStyle = useAnimatedStyle(() => ({
-    transform: [{ scaleX: Math.max(0.08, fill.value) }],
-  }));
-
   return (
-    <View
-      style={styles.root}
-      accessibilityRole="progressbar"
-      accessibilityLabel={`${step.title}. ${step.body}`}
-    >
-      <SpinningProducts items={items} spin={turn} />
-
-      <Animated.View style={copyStyle}>
-        <View style={styles.head}>
-          <Text style={styles.index}>{stepIdx + 1}</Text>
-          <Text style={styles.stepTitle} numberOfLines={1}>
-            {step.title}
-          </Text>
-        </View>
-        <Text style={styles.stepBody} numberOfLines={2}>
-          {step.body}
-        </Text>
-      </Animated.View>
-
-      <View style={styles.track}>
-        <Animated.View style={[styles.fill, fillStyle]} />
+    <View style={styles.root} accessibilityRole="progressbar" accessibilityLabel={`${step.title}. ${step.body}`}>
+      <View style={styles.stage}>
+        {items.map((product, index) => (
+          <SpinFace
+            key={`${product.id}-${index}`}
+            product={product}
+            index={index}
+            count={items.length}
+            spin={turn}
+            mode={variant}
+          />
+        ))}
       </View>
+      <Text style={styles.title} numberOfLines={1}>
+        {step.title}
+      </Text>
+      <View style={styles.picker}>
+        {VARIANTS.map((name, index) => {
+          const on = index === variant;
+          return (
+            <Pressable
+              key={name}
+              accessibilityRole="button"
+              accessibilityLabel={`${index + 1}. ${name}`}
+              onPress={() => {
+                pickedVariant = index;
+                setVariant(index);
+              }}
+              style={[styles.chip, on && styles.chipOn]}
+            >
+              <Text style={[styles.chipText, on && styles.chipTextOn]}>{index + 1}</Text>
+            </Pressable>
+          );
+        })}
+      </View>
+      <Text style={styles.variantName}>
+        {variant + 1}. {VARIANTS[variant]}
+      </Text>
     </View>
   );
 }
@@ -248,9 +295,9 @@ const styles = StyleSheet.create({
   root: {
     borderRadius: moderateScale(22),
     backgroundColor: "#FFFFFF",
-    paddingTop: verticalScale(8),
-    paddingBottom: verticalScale(14),
-    paddingHorizontal: scale(16),
+    paddingTop: verticalScale(6),
+    paddingBottom: verticalScale(12),
+    paddingHorizontal: scale(12),
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: "rgba(17,17,17,0.08)",
   },
@@ -260,70 +307,52 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     overflow: "hidden",
   },
-  trackRing: {
+  faceWrap: {
     position: "absolute",
     left: "50%",
     top: "50%",
-    borderWidth: 1,
-    borderColor: "rgba(17,17,17,0.08)",
-  },
-  disc: {
-    position: "absolute",
-    left: "50%",
-    top: "50%",
-    width: THUMB,
-    height: THUMB,
-    marginLeft: -THUMB / 2,
-    marginTop: -THUMB / 2,
-    borderRadius: THUMB / 2,
+    width: FACE,
+    height: FACE,
+    marginLeft: -FACE / 2,
+    marginTop: -FACE / 2,
+    borderRadius: FACE / 2,
     overflow: "hidden",
-    backgroundColor: "#FFFFFF",
-    borderWidth: 2,
-    borderColor: "#FFFFFF",
-    shadowColor: "#111",
-    shadowOpacity: 0.14,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 3,
+    backgroundColor: "#F3F3F4",
   },
   face: { width: "100%", height: "100%" },
-  letter: { alignItems: "center", justifyContent: "center", backgroundColor: "#EFEFF1" },
-  letterText: { ...morphFont, fontSize: fontSize(18), fontWeight: "800", color: "#111" },
-  head: {
-    marginTop: verticalScale(4),
-    flexDirection: "row",
-    alignItems: "center",
-    gap: scale(8),
-  },
-  index: { ...morphFont, width: scale(22), fontSize: fontSize(13), fontWeight: "800", color: "#A3A3A3" },
-  stepTitle: {
+  letter: { alignItems: "center", justifyContent: "center" },
+  letterText: { ...morphFont, fontSize: fontSize(16), fontWeight: "800", color: "#111" },
+  title: {
     ...morphFont,
-    flex: 1,
-    fontSize: fontSize(16),
+    textAlign: "center",
+    fontSize: fontSize(15),
     fontWeight: "800",
     color: "#111",
     letterSpacing: -0.3,
   },
-  stepBody: {
-    ...morphFont,
-    marginTop: verticalScale(4),
-    marginLeft: scale(30),
-    fontSize: fontSize(13),
-    lineHeight: fontSize(18),
-    color: "#525252",
+  picker: {
+    marginTop: verticalScale(10),
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: scale(4),
   },
-  track: {
-    marginTop: verticalScale(14),
-    height: 3,
-    borderRadius: 999,
+  chip: {
+    width: scale(26),
+    height: scale(26),
+    borderRadius: scale(13),
+    alignItems: "center",
+    justifyContent: "center",
     backgroundColor: "#F4F4F5",
-    overflow: "hidden",
   },
-  fill: {
-    height: "100%",
-    width: "100%",
-    borderRadius: 999,
-    backgroundColor: "#111",
-    transformOrigin: "left",
+  chipOn: { backgroundColor: "#111" },
+  chipText: { ...morphFont, fontSize: fontSize(11), fontWeight: "800", color: "#111" },
+  chipTextOn: { color: "#fff" },
+  variantName: {
+    ...morphFont,
+    marginTop: verticalScale(6),
+    textAlign: "center",
+    fontSize: fontSize(12),
+    fontWeight: "700",
+    color: "#737373",
   },
 });
