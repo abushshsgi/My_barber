@@ -25,7 +25,6 @@ import {
   saveMorphAiGeneration,
   type AiStyleSuggestion,
 } from "../../api/ai";
-import { fetchHairstyles, type ApiHairstyle } from "../../api/hairstyles";
 import { genderToAudience, getAppGender } from "../../lib/guest";
 import { resolveMediaUrl } from "../../api/media";
 import { useAuth } from "../../auth/AuthContext";
@@ -67,7 +66,6 @@ export function MorphResultsScreen({ navigation }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [activeStyleId, setActiveStyleId] = useState<string | null>(null);
   const [spotlightIndex, setSpotlightIndex] = useState(0);
-  const [moreStyles, setMoreStyles] = useState<ApiHairstyle[]>([]);
   const [shareTarget, setShareTarget] = useState<AiStyleSuggestion | null>(null);
   const carouselRef = useRef<FlatList<AiStyleSuggestion>>(null);
   /** Shu selfie allaqachon tahlil qilingan — qayta API chaqirmaslik. */
@@ -79,19 +77,6 @@ export function MorphResultsScreen({ navigation }: Props) {
   useEffect(() => {
     navigation.setOptions({ gestureEnabled: !analyzingBusy });
   }, [navigation, analyzingBusy]);
-
-  useEffect(() => {
-    let cancelled = false;
-    void getAppGender()
-      .then((g) => fetchHairstyles(genderToAudience(g)))
-      .then((rows) => {
-        if (!cancelled) setMoreStyles(rows);
-      })
-      .catch(() => undefined);
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   const runTryOn = useCallback(
     async (style: AiStyleSuggestion, photoOverride?: string) => {
@@ -236,24 +221,15 @@ export function MorphResultsScreen({ navigation }: Props) {
     return () => toast.hide();
   }, [toast]);
 
-  const suggestions = useMemo(() => {
-    const raw = session.analyze?.suggestions ?? [];
-    const preferredId = session.preferredStyleId;
-    if (!preferredId) return raw.slice(0, 3);
-    const preferred = raw.find((s) => s.id === preferredId);
-    const rest = raw.filter((s) => s.id !== preferredId);
-    return (preferred ? [preferred, ...rest] : raw).slice(0, 3);
-  }, [session.analyze?.suggestions, session.preferredStyleId]);
+  const rankedSuggestions = session.analyze?.suggestions ?? [];
+  /** Karusel — yuzga eng mos 3 ta. Pastki grid — 4-o'rindan keyin shu tartibda. */
+  const suggestions = useMemo(() => rankedSuggestions.slice(0, 3), [rankedSuggestions]);
+  const otherSuggestions = useMemo(() => rankedSuggestions.slice(3), [rankedSuggestions]);
   const activeSuggestion = suggestions[spotlightIndex] ?? suggestions[0] ?? null;
   const activePreview = activeSuggestion
     ? session.tryOnByStyle[activeSuggestion.id] ||
       (session.tryOnStyleId === activeSuggestion.id ? session.tryOnPreview : null)
     : session.tryOnPreview;
-  const suggestionIds = useMemo(() => new Set(suggestions.map((s) => s.id)), [suggestions]);
-  const otherStyles = useMemo(
-    () => moreStyles.filter((s) => !suggestionIds.has(s.id)),
-    [moreStyles, suggestionIds],
-  );
 
   const goToSuggestion = useCallback(
     (index: number) => {
@@ -662,17 +638,18 @@ export function MorphResultsScreen({ navigation }: Props) {
           </View>
         ) : null}
 
-        {otherStyles.length > 0 ? (
+        {otherSuggestions.length > 0 ? (
           <View style={styles.morePanel}>
             <Text style={styles.moreTitle}>{t("morph.moreStyles")}</Text>
             <Text style={styles.moreSub}>
-              Uslubni tanlang — AI sizning suratingizda ko'rsatadi
+              Yuzingizga keyingi mos keladigan uslublar
             </Text>
             <View style={styles.moreGrid}>
-              {otherStyles.map((item) => {
+              {otherSuggestions.map((item, index) => {
                 const preview = session.tryOnByStyle[item.id];
                 const loading = activeStyleId === item.id;
-                const title = item.title_uz || item.title;
+                const title = item.title;
+                const rank = index + 4;
                 return (
                   <Pressable
                     key={item.id}
@@ -680,32 +657,10 @@ export function MorphResultsScreen({ navigation }: Props) {
                     disabled={!!activeStyleId && !preview}
                     onPress={() => {
                       if (preview) {
-                        openPreview({
-                          id: item.id,
-                          title,
-                          match: 80,
-                          reason_uz: "",
-                          category: item.category,
-                          seed: item.slug,
-                          image_url: item.image_url,
-                          salon_id: null,
-                          salon_name: null,
-                          barber_name: null,
-                        });
+                        openPreview(item);
                         return;
                       }
-                      void runTryOn({
-                        id: item.id,
-                        title,
-                        match: 80,
-                        reason_uz: "",
-                        category: item.category,
-                        seed: item.slug,
-                        image_url: item.image_url,
-                        salon_id: null,
-                        salon_name: null,
-                        barber_name: null,
-                      });
+                      void runTryOn(item);
                     }}
                   >
                     <View style={styles.moreImgWrap}>
@@ -733,7 +688,7 @@ export function MorphResultsScreen({ navigation }: Props) {
                       )}
                     </View>
                     <Text style={styles.moreCardTitle} numberOfLines={1}>
-                      {title}
+                      #{rank} {title}
                     </Text>
                   </Pressable>
                 );

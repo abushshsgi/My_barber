@@ -5,22 +5,6 @@ from ai.hairstyle_catalog import get_published_catalog, pick_catalog_suggestions
 from ai.services.gemini_style import AiStyleError
 from ai.style_recommend import assert_gender_matches_profile, build_suggestions_from_analysis
 
-CLASSIC_SLUGS = {
-    "mid-fade",
-    "low-fade",
-    "skin-fade",
-    "buzz-cut",
-    "textured-crop",
-    "pompadour",
-    "undercut",
-    "side-part",
-    "french-crop",
-    "slick-back",
-    "curly-top-fade",
-    "modern-mullet",
-}
-
-
 class AgeGroupTests(SimpleTestCase):
     def test_age_to_group(self):
         self.assertEqual(age_to_group(11), "kids")
@@ -65,21 +49,46 @@ class HairstyleCatalogTests(TestCase):
             face_shape="oval",
             hair_type="medium",
         )
-        self.assertEqual(len(suggestions), 3)
+        catalog = get_published_catalog("men")
+        self.assertEqual(len(suggestions), len(catalog))
+        self.assertGreater(len(suggestions), 3)
         self.assertTrue(all(item["id"].startswith("men-") for item in suggestions))
-        self.assertEqual(suggestions[0]["match"], 94)
-        self.assertTrue({item["seed"] for item in suggestions} <= CLASSIC_SLUGS)
+        matches = [item["match"] for item in suggestions]
+        self.assertEqual(matches, sorted(matches, reverse=True))
+        self.assertGreaterEqual(suggestions[0]["match"], suggestions[2]["match"])
 
-    def test_pick_mature_men_prefers_catalog_styles(self):
-        suggestions = pick_catalog_suggestions(
+    def test_try_on_ranks_full_catalog_not_age_slice(self):
+        ranked = pick_catalog_suggestions(
+            audience="men",
+            face_shape="round",
+            hair_type="short",
+            age_group="mature",
+        )
+        mature = get_published_catalog("men", "mature")
+        self.assertGreater(len(ranked), len(mature))
+        top_seeds = {item["seed"] for item in ranked[:3]}
+        # skin-fade round yuzga kirmaydi — top 3 da bo'lmasin.
+        self.assertNotIn("skin-fade", top_seeds)
+        self.assertIn("buzz-cut", {item["seed"] for item in ranked[:8]})
+
+    def test_hair_length_changes_top_matches(self):
+        short = pick_catalog_suggestions(
+            audience="men",
+            face_shape="oval",
+            hair_type="short",
+            limit=3,
+        )
+        medium = pick_catalog_suggestions(
             audience="men",
             face_shape="oval",
             hair_type="medium",
-            age_group="mature",
+            limit=3,
         )
-        self.assertEqual(len(suggestions), 3)
-        slugs = {item["seed"] for item in suggestions}
-        self.assertTrue(slugs <= CLASSIC_SLUGS)
+        self.assertEqual(len(short), 3)
+        self.assertNotEqual(
+            [item["seed"] for item in short],
+            [item["seed"] for item in medium],
+        )
 
     def test_catalog_filters_by_age_group(self):
         mature = get_published_catalog("men", "mature")
@@ -165,5 +174,7 @@ class GenderGuardIntegrationTests(TestCase):
             },
             age_group="teen",
         )
-        slugs = {item["seed"] for item in teen}
-        self.assertTrue(slugs <= CLASSIC_SLUGS)
+        mature_only = {item["slug"] for item in get_published_catalog("men", "teen")}
+        self.assertGreater(len(teen), len(mature_only))
+        matches = [item["match"] for item in teen]
+        self.assertEqual(matches, sorted(matches, reverse=True))

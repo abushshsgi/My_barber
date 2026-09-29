@@ -10,7 +10,8 @@ from ai.models import Hairstyle
 FACE_SHAPES = frozenset({"oval", "round", "square"})
 HAIR_LENGTHS = frozenset({"short", "medium", "long"})
 HAIR_LENGTH_ORDER = {"short": 0, "medium": 1, "long": 2}
-MATCH_SCORES = (94, 88, 82)
+# Yuz 30 + aniq yuz bonusi 8 + soch uzunligi 20.
+_MAX_MATCH_SCORE = 58
 
 StyleEntry = dict[str, Any]
 
@@ -68,9 +69,16 @@ def score_hairstyle(
     hair_type: str,
     age_group: str | None = None,
 ) -> int:
+    """Yuz shakli va soch uzunligi. Yosh bonusi faqat trending uchun — try-on uni uzatmaydi."""
     score = 0
-    if face_shape in style["face_shapes"]:
+    shapes = style["face_shapes"] or []
+    if face_shape in shapes:
         score += 30
+        # Faqat shu yuz uchun belgilangan uslub umumiy ro'yxatdan ustun.
+        if len(shapes) == 1:
+            score += 8
+        elif len(shapes) == 2:
+            score += 4
     style_len = style["hair_length"]
     if style_len == hair_type:
         score += 20
@@ -86,6 +94,11 @@ def score_hairstyle(
     return score
 
 
+def match_percent(score: int) -> int:
+    clamped = max(0, min(score, _MAX_MATCH_SCORE))
+    return 58 + int(round(clamped * 38 / _MAX_MATCH_SCORE))
+
+
 def pick_catalog_suggestions(
     *,
     audience: str,
@@ -93,33 +106,39 @@ def pick_catalog_suggestions(
     hair_type: str,
     age_group: str | None = None,
     persona_id: str | None = None,
-    limit: int = 3,
+    limit: int | None = None,
 ) -> list[dict[str, Any]]:
+    """Jins bo'yicha butun katalogni yuzga qarab tartiblash.
+
+    Yosh guruhi ro'yxatni kesmaydi — bir xil 2–3 uslub qayta-qayta chiqmasin.
+    `limit` berilmasa hammasi qaytadi: dastlabki 3 tasi eng mos, qolgani shu tartibda.
+    """
+    del age_group
     if face_shape not in FACE_SHAPES:
         face_shape = "oval"
     if hair_type not in HAIR_LENGTHS:
         hair_type = "medium"
 
     men_persona = persona_id if audience == "men" else None
-    pool = get_published_catalog(audience, age_group, men_persona)
-    if not pool and age_group:
-        pool = get_published_catalog(audience, persona_id=men_persona)
+    pool = get_published_catalog(audience, persona_id=men_persona)
     ranked = sorted(
         pool,
         key=lambda style: (
-            score_hairstyle(style, face_shape, hair_type, age_group),
+            score_hairstyle(style, face_shape, hair_type),
             style["slug"],
         ),
         reverse=True,
     )
-    top = ranked[:limit]
+    if limit is not None:
+        ranked = ranked[: max(0, limit)]
     suggestions: list[dict[str, Any]] = []
-    for idx, style in enumerate(top):
+    for style in ranked:
+        score = score_hairstyle(style, face_shape, hair_type)
         suggestions.append(
             {
                 "id": style["id"],
                 "title": style["title_uz"],
-                "match": MATCH_SCORES[idx] if idx < len(MATCH_SCORES) else 80,
+                "match": match_percent(score),
                 "reason_uz": style["description_uz"],
                 "category": style["category"],
                 "seed": style["slug"],

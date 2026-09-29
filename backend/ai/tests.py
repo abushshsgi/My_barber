@@ -61,8 +61,10 @@ class AiStyleAnalyzeTests(TestCase):
         self.assertEqual(res.status_code, 200)
         body = res.json()
         self.assertEqual(body["face_shape"], "oval")
-        self.assertEqual(len(body["suggestions"]), 3)
+        self.assertGreater(len(body["suggestions"]), 3)
         self.assertTrue(body["suggestions"][0]["id"].startswith("men-"))
+        matches = [item["match"] for item in body["suggestions"]]
+        self.assertEqual(matches, sorted(matches, reverse=True))
         self.assertIn("image_url", body["suggestions"][0])
         self.assertEqual(body["suggestions"][0]["salon_name"], "Test Salon")
 
