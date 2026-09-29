@@ -4,6 +4,7 @@ import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import { fetchHairstyles } from "../../api/hairstyles";
+import { resolveMediaUrl } from "../../api/media";
 import { genderToAudience, getAppGender } from "../../lib/guest";
 import { ScreenWrapper } from "../../components/layout/ScreenWrapper";
 import {
@@ -66,7 +67,7 @@ export function MorphHomeScreen({ navigation }: Props) {
         rows.map((entry) => ({
           id: entry.id,
           title: entry.title_uz || entry.title,
-          image: entry.image_url,
+          image: resolveMediaUrl(entry.image_url, { width: 600 }) || entry.image_url,
         })),
       );
     } catch {

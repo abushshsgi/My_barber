@@ -82,8 +82,20 @@ function toAppMediaUrl(absoluteOrPath: string): string {
   return absoluteOrPath;
 }
 
+/**
+ * Yosh guruhi yo'li (`/hairstyles/men/mature/low-fade.webp`) CDN da yo'q — 404.
+ * Katalogdagi haqiqiy fayl persona papkasida.
+ */
+function preferDeployedHairstyleUrl(url: string): string {
+  return url.replace(
+    /\/hairstyles\/men\/(?:kids|teen|adult|mature)\//gi,
+    "/hairstyles/men/personas/irland/",
+  );
+}
+
 function siteStaticUrl(path: string): string {
-  return `${SITE_ORIGIN}${path.startsWith("/") ? path : `/${path}`}`;
+  const normalized = preferDeployedHairstyleUrl(path);
+  return `${SITE_ORIGIN}${normalized.startsWith("/") ? normalized : `/${normalized}`}`;
 }
 
 /** RN / web uchun yuklanadigan media URL. */
@@ -112,7 +124,7 @@ export function resolveMediaUrl(
   }
 
   if (raw.startsWith("http://") || raw.startsWith("https://") || raw.startsWith("data:")) {
-    return withWidthParam(toAppMediaUrl(raw), opts?.width);
+    return withWidthParam(toAppMediaUrl(preferDeployedHairstyleUrl(raw)), opts?.width);
   }
 
   if (raw.startsWith("/hairstyles/") || raw.startsWith("/covers/")) {
