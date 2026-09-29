@@ -55,7 +55,9 @@ class HairstyleCatalogTests(TestCase):
         self.assertTrue(all(item["id"].startswith("men-") for item in suggestions))
         matches = [item["match"] for item in suggestions]
         self.assertEqual(matches, sorted(matches, reverse=True))
-        self.assertGreaterEqual(suggestions[0]["match"], suggestions[2]["match"])
+        self.assertGreater(suggestions[0]["match"], suggestions[1]["match"])
+        self.assertGreater(suggestions[1]["match"], suggestions[2]["match"])
+        self.assertEqual(len({item["match"] for item in suggestions[:3]}), 3)
 
     def test_try_on_ranks_full_catalog_not_age_slice(self):
         ranked = pick_catalog_suggestions(

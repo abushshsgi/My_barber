@@ -10,8 +10,6 @@ from ai.models import Hairstyle
 FACE_SHAPES = frozenset({"oval", "round", "square"})
 HAIR_LENGTHS = frozenset({"short", "medium", "long"})
 HAIR_LENGTH_ORDER = {"short": 0, "medium": 1, "long": 2}
-# Yuz 30 + aniq yuz bonusi 8 + soch uzunligi 20.
-_MAX_MATCH_SCORE = 58
 
 StyleEntry = dict[str, Any]
 
@@ -94,9 +92,11 @@ def score_hairstyle(
     return score
 
 
-def match_percent(score: int) -> int:
-    clamped = max(0, min(score, _MAX_MATCH_SCORE))
-    return 58 + int(round(clamped * 38 / _MAX_MATCH_SCORE))
+def ranked_match(rank: int, score: int, best_score: int) -> int:
+    """O'rin bo'yicha pasayadi. Teng ball ham bir xil foiz bermaydi."""
+    gap = max(0, best_score - score)
+    value = 96 - rank * 4 - min(gap, 20)
+    return max(52, min(96, value))
 
 
 def pick_catalog_suggestions(
@@ -131,14 +131,15 @@ def pick_catalog_suggestions(
     )
     if limit is not None:
         ranked = ranked[: max(0, limit)]
+    best_score = score_hairstyle(ranked[0], face_shape, hair_type) if ranked else 0
     suggestions: list[dict[str, Any]] = []
-    for style in ranked:
+    for rank, style in enumerate(ranked):
         score = score_hairstyle(style, face_shape, hair_type)
         suggestions.append(
             {
                 "id": style["id"],
                 "title": style["title_uz"],
-                "match": match_percent(score),
+                "match": ranked_match(rank, score, best_score),
                 "reason_uz": style["description_uz"],
                 "category": style["category"],
                 "seed": style["slug"],
