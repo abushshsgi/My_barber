@@ -284,6 +284,8 @@ export function CareRoutineSheet({
   const shelfOnOpen = peekMyProducts();
   const initialPlan = cachedOnOpen?.plan ? (cachedOnOpen.plan as AiCarePlan) : null;
   const [mode, setMode] = useState<DayMode>("today");
+  const [planOpen, setPlanOpen] = useState(false);
+  const [productDockH, setProductDockH] = useState(0);
   const [myProducts, setMyProducts] = useState<MyCareProduct[]>(() => shelfOnOpen ?? []);
   const [doneMap, setDoneMap] = useState<Record<string, boolean>>({});
   const [loadingProducts, setLoadingProducts] = useState(() => shelfOnOpen == null);
@@ -331,6 +333,10 @@ export function CareRoutineSheet({
     if (mode === "evening") return eveningTasks;
     return weeklyTasks;
   }, [mode, morningTasks, eveningTasks, weeklyTasks]);
+
+  const PLAN_PREVIEW = 3;
+  const planCanFold = tasks.length > PLAN_PREVIEW;
+  const visibleTasks = planOpen || !planCanFold ? tasks : tasks.slice(0, PLAN_PREVIEW);
 
   const doneCount = useMemo(
     () => tasks.filter((task) => doneMap[task.id]).length,
@@ -569,20 +575,11 @@ export function CareRoutineSheet({
   );
   const regenerating = hasProducts && (aiLoading || aiAppending);
   const showPlans = hasProducts && !!aiPlan && !regenerating;
-  const shelfGap = moderateScale(8);
   const cardGap = moderateScale(8);
-  const addWRoomy = scale(86);
-  const addWTight = scale(60);
-  const cardCap = scale(104);
-  const cardsNeed =
-    myProducts.length === 0
-      ? 0
-      : myProducts.length * cardCap + Math.max(0, myProducts.length - 1) * cardGap;
-  const addRoomy = shelfW <= 0 || cardsNeed + shelfGap + addWRoomy <= shelfW + 1;
-  const addW = addRoomy ? addWRoomy : addWTight;
-  const scrollW = Math.max(0, shelfW - addW - shelfGap);
-  const fitted = scrollW > 0 ? (scrollW - cardGap * 2) / 2.5 : scale(100);
-  const peekCardW = myProducts.length >= 3 ? fitted : Math.min(fitted, scale(104));
+  const addW = scale(72);
+  const rowW = shelfW > 0 ? shelfW : scale(360);
+  const scrollW = Math.max(scale(160), rowW - addW - cardGap);
+  const peekCardW = Math.max(scale(96), (scrollW - cardGap) / 2);
   const showAiThinking = regenerating;
   const emptyOnly = !bootingPlan && !loadingProducts && !hasProducts && !aiPlan;
   const showRestoring = !emptyOnly && !showPlans && !showAiThinking;
@@ -598,7 +595,11 @@ export function CareRoutineSheet({
         style={styles.sheetScroll}
         contentContainerStyle={[
           styles.sheetContent,
-          { paddingBottom: TAB_DOCK_CLEARANCE + Math.max(insets.bottom, 12) },
+          {
+            paddingBottom:
+              TAB_DOCK_CLEARANCE +
+              (hasProducts && !emptyOnly ? productDockH + verticalScale(10) : Math.max(insets.bottom, 12)),
+          },
         ]}
         nestedScrollEnabled
         keyboardShouldPersistTaps="handled"
@@ -654,11 +655,6 @@ export function CareRoutineSheet({
                   </Pressable>
                 ) : null}
               </View>
-              {showPlans && aiPlan?.summary ? (
-                <Text style={styles.daySub} numberOfLines={3}>
-                  {aiPlan.summary}
-                </Text>
-              ) : null}
               {showPlans ? (
                 <View style={styles.progressWrap}>
                   <View style={styles.progressTrack}>
@@ -698,7 +694,10 @@ export function CareRoutineSheet({
                       <Pressable
                         key={item.id}
                         style={[styles.segmentItem, on && styles.segmentItemOn]}
-                        onPress={() => setMode(item.id)}
+                        onPress={() => {
+                          setMode(item.id);
+                          setPlanOpen(false);
+                        }}
                       >
                         <Text
                           style={[styles.segmentText, on && styles.segmentTextOn]}
@@ -721,7 +720,7 @@ export function CareRoutineSheet({
                 </View>
 
                 <View style={styles.stepStack}>
-                  {tasks.map((task) => {
+                  {visibleTasks.map((task) => {
                     const done = !!doneMap[task.id];
                     const pname = displayProductName(task.productName);
                     const when = task.time;
@@ -777,81 +776,104 @@ export function CareRoutineSheet({
                     );
                   })}
                 </View>
-
-                <View style={styles.sectionHead}>
-                  <Text style={styles.sectionTitle}>{t("care.myProducts.title")}</Text>
-                  <Pressable style={styles.scanLink} onPress={onOpenScan}>
-                    <Ionicons name="scan-outline" size={16} color="#111" />
-                    <Text style={styles.scanLinkText}>{t("care.myProducts.scan")}</Text>
-                  </Pressable>
-                </View>
-
-                {loadingProducts ? (
-                  <ActivityIndicator color="#111" style={{ marginVertical: 12 }} />
-                ) : (
-                  <View
-                    style={styles.productShelf}
-                    onLayout={(e) => {
-                      const next = Math.round(e.nativeEvent.layout.width);
-                      setShelfW((prev) => (prev === next ? prev : next));
-                    }}
+                {planCanFold ? (
+                  <Pressable
+                    style={styles.planToggle}
+                    onPress={() => setPlanOpen((open) => !open)}
+                    accessibilityRole="button"
                   >
-                    <ScrollView
-                      horizontal
-                      nestedScrollEnabled
-                      showsHorizontalScrollIndicator={false}
-                      style={styles.productScroll}
-                      contentContainerStyle={styles.productRow}
-                    >
-                      {myProducts.map((p) => {
-                        const img = productImageUri(p.image_url);
-                        return (
-                          <Pressable
-                            key={p.id}
-                            style={[styles.myCard, { width: peekCardW }]}
-                            onPress={() => onOpenProduct(p.id)}
-                          >
-                            {img ? (
-                              <Image
-                                source={{ uri: img }}
-                                style={styles.myCardImg}
-                                contentFit="cover"
-                                cachePolicy="memory-disk"
-                                transition={0}
-                                recyclingKey={`mine-${p.id}`}
-                              />
-                            ) : (
-                              <View style={[styles.myCardImg, styles.productPh]}>
-                                <Ionicons name="flask-outline" size={20} color="#111" />
-                              </View>
-                            )}
-                            <Text style={styles.myCardName} numberOfLines={2}>
-                              {p.name}
-                            </Text>
-                          </Pressable>
-                        );
-                      })}
-                    </ScrollView>
-                    <Pressable
-                      style={[styles.addCard, { width: addW }]}
-                      onPress={onOpenCatalog}
-                    >
-                      <Ionicons name="add" size={addRoomy ? 18 : 15} color="#111" />
-                      <Text
-                        style={[styles.addCardText, addRoomy && styles.addCardTextRoomy]}
-                        numberOfLines={addRoomy ? 1 : 2}
-                      >
-                        {t("care.myProducts.addShort")}
-                      </Text>
-                    </Pressable>
-                  </View>
-                )}
+                    <Text style={styles.planToggleText}>
+                      {planOpen
+                        ? t("care.routine.collapsePlan", { defaultValue: "Yig‘ish" })
+                        : t("care.routine.expandPlan", {
+                            count: tasks.length - PLAN_PREVIEW,
+                            defaultValue: "Yana {{count}} ta",
+                          })}
+                    </Text>
+                    <Ionicons
+                      name={planOpen ? "chevron-up" : "chevron-down"}
+                      size={16}
+                      color="#111"
+                    />
+                  </Pressable>
+                ) : null}
               </Reanimated.View>
             ) : null}
           </>
         )}
 
       </ScrollView>
+      {hasProducts && !emptyOnly ? (
+        <View
+          style={[styles.productDock, { bottom: TAB_DOCK_CLEARANCE + verticalScale(6) }]}
+          onLayout={(e) => {
+            const next = Math.round(e.nativeEvent.layout.height);
+            setProductDockH((prev) => (prev === next ? prev : next));
+          }}
+        >
+          <View style={styles.sectionHead}>
+            <Text style={styles.sectionTitle}>{t("care.myProducts.title")}</Text>
+            <Pressable style={styles.scanLink} onPress={onOpenScan}>
+              <Ionicons name="scan-outline" size={16} color="#111" />
+              <Text style={styles.scanLinkText}>{t("care.myProducts.scan")}</Text>
+            </Pressable>
+          </View>
+          {loadingProducts ? (
+            <ActivityIndicator color="#111" style={{ marginVertical: 8 }} />
+          ) : (
+            <View
+              style={styles.productShelf}
+              onLayout={(e) => {
+                const next = Math.round(e.nativeEvent.layout.width);
+                setShelfW((prev) => (prev === next ? prev : next));
+              }}
+            >
+              <ScrollView
+                horizontal
+                nestedScrollEnabled
+                showsHorizontalScrollIndicator={false}
+                style={styles.productScroll}
+                contentContainerStyle={styles.productRow}
+              >
+                {myProducts.map((p) => {
+                  const img = productImageUri(p.image_url);
+                  return (
+                    <Pressable
+                      key={p.id}
+                      style={[styles.myCard, { width: peekCardW }]}
+                      onPress={() => onOpenProduct(p.id)}
+                    >
+                      {img ? (
+                        <Image
+                          source={{ uri: img }}
+                          style={styles.myCardImg}
+                          contentFit="cover"
+                          cachePolicy="memory-disk"
+                          transition={0}
+                          recyclingKey={`mine-${p.id}`}
+                        />
+                      ) : (
+                        <View style={[styles.myCardImg, styles.productPh]}>
+                          <Ionicons name="flask-outline" size={20} color="#111" />
+                        </View>
+                      )}
+                      <Text style={styles.myCardName} numberOfLines={2}>
+                        {p.name}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+              <Pressable style={[styles.addCard, { width: addW }]} onPress={onOpenCatalog}>
+                <Ionicons name="add" size={18} color="#111" />
+                <Text style={styles.addCardText} numberOfLines={1}>
+                  {t("care.myProducts.addShort")}
+                </Text>
+              </Pressable>
+            </View>
+          )}
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -1356,11 +1378,35 @@ const styles = StyleSheet.create({
   primaryActDone: { backgroundColor: "#E8E4DC" },
   primaryActText: { ...morphFont, fontSize: fontSize(11), fontWeight: "700", color: "#fff" },
   primaryActTextDone: { color: colors.fg },
+  planToggle: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: moderateScale(4),
+    paddingVertical: verticalScale(8),
+  },
+  planToggleText: {
+    ...morphFont,
+    fontSize: fontSize(13),
+    fontWeight: "700",
+    color: "#111",
+  },
+  productDock: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    paddingHorizontal: scale(16),
+    paddingTop: verticalScale(8),
+    paddingBottom: verticalScale(8),
+    gap: moderateScale(8),
+    backgroundColor: colors.bg,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: "rgba(17,17,17,0.08)",
+  },
   sectionHead: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginTop: verticalScale(4),
   },
   sectionTitle: { ...morphFont, fontSize: fontSize(16), fontWeight: "700", color: "#111" },
   scanLink: { flexDirection: "row", alignItems: "center", gap: moderateScale(4) },
@@ -1369,9 +1415,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "stretch",
     gap: moderateScale(8),
+    overflow: "hidden",
   },
-  productScroll: { flex: 1, minWidth: 0 },
-  productRow: { gap: moderateScale(8) },
+  productScroll: { flex: 1, minWidth: 0, overflow: "hidden" },
+  productRow: { flexDirection: "row", alignItems: "stretch", gap: moderateScale(8) },
   myCard: {
     borderRadius: moderateScale(18),
     backgroundColor: "#FFFFFF",
