@@ -8,7 +8,6 @@ const GENDER_KEY = "mysaloon.gender";
 /** v2 — chat/try-on/care demo + login gate. */
 const FEATURES_SEEN_KEY = "mysaloon.intro.featuresSeen.v2";
 const TERMS_KEY = "mysaloon.intro.termsAccepted";
-const SCAN_PROMO_KEY = "mysaloon.intro.scanPromoSeen";
 const NOTIF_PROMO_KEY = "mysaloon.intro.notifPromoSeen";
 const ACCOUNT_READY_KEY = "mysaloon.intro.accountReadyAnim";
 
@@ -70,14 +69,6 @@ export async function getTermsAccepted(): Promise<boolean> {
 
 export async function setTermsAccepted(): Promise<void> {
   await AsyncStorage.setItem(TERMS_KEY, "1");
-}
-
-export async function getScanPromoSeen(): Promise<boolean> {
-  return (await AsyncStorage.getItem(SCAN_PROMO_KEY)) === "1";
-}
-
-export async function setScanPromoSeen(): Promise<void> {
-  await AsyncStorage.setItem(SCAN_PROMO_KEY, "1");
 }
 
 export async function getNotifPromoSeen(): Promise<boolean> {

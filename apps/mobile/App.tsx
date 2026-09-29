@@ -18,7 +18,6 @@ import {
   getFeaturesSeen,
   getGuestLocation,
   getNotifPromoSeen,
-  getScanPromoSeen,
   getTermsAccepted,
   getWelcomeSeen,
   setAccountReadySeen,
@@ -39,7 +38,6 @@ import { FeatureOnboardingCarousel } from "./src/screens/onboarding/FeatureOnboa
 import { OnboardingLoginScreen } from "./src/screens/onboarding/OnboardingLoginScreen";
 import { GenderSelectScreen } from "./src/screens/onboarding/GenderSelectScreen";
 import { TermsAcceptScreen } from "./src/screens/onboarding/TermsAcceptScreen";
-import { ScanPromoScreen } from "./src/screens/onboarding/ScanPromoScreen";
 import { NotificationPromoScreen } from "./src/screens/onboarding/NotificationPromoScreen";
 import { AccountCreatingScreen } from "./src/screens/AccountCreatingScreen";
 import { ToastProvider } from "./src/components/ui/ToastProvider";
@@ -57,6 +55,39 @@ import { updateMe } from "./src/api/user";
 
 void ExpoSplashScreen.preventAutoHideAsync().catch(() => {});
 
+function blurFocusInsideHidden() {
+  if (Platform.OS !== "web" || typeof document === "undefined") return;
+  const active = document.activeElement;
+  if (!(active instanceof HTMLElement) || active === document.body) return;
+  if (active.closest('[aria-hidden="true"]')) active.blur();
+}
+
+/**
+ * Web: React Navigation `pointerEvents="box-none"` ni inline style qilib beradi.
+ * `box-none` haqiqiy CSS emas, shuning uchun brauzer oldingi `pointer-events: none`
+ * ni o'zgartirmaydi va butun faol ekran bosilmay qoladi.
+ * Klass orqali konteyner o'tkazib yuboradi, bolalari esa bosiladi.
+ */
+function repairWebBoxNone() {
+  if (Platform.OS !== "web" || typeof document === "undefined") return;
+  const styleId = "rn-box-none-fix";
+  if (!document.getElementById(styleId)) {
+    const style = document.createElement("style");
+    style.id = styleId;
+    style.textContent =
+      ".rn-box-none{pointer-events:none !important}.rn-box-none>*{pointer-events:auto !important}";
+    document.head.appendChild(style);
+  }
+  document.querySelectorAll("div").forEach((el) => {
+    const key = Object.keys(el).find((k) => k.startsWith("__reactProps"));
+    const pointerEvents = key
+      ? (el as unknown as Record<string, { style?: { pointerEvents?: string } }>)[key]
+          ?.style?.pointerEvents
+      : undefined;
+    el.classList.toggle("rn-box-none", pointerEvents === "box-none");
+  });
+}
+
 // Android Firebase Analytics — app ochilishi
 if (Platform.OS === "android") {
   void import("./src/lib/analytics").then((m) => m.logAppOpen()).catch(() => {});
@@ -64,7 +95,7 @@ if (Platform.OS === "android") {
 
 /**
  * Splash+til → Feature (chat/try-on/care) → Login (majburiy)
- * → Gender → Terms → (Location: faqat REQUIRE_PROFILE_LOCATION) → Profil → Creating → App
+ * → Gender → Terms → (Location: faqat REQUIRE_PROFILE_LOCATION) → Profil → Creating → Notif → App
  */
 function AppGate() {
   const { loading, isAuthenticated, user, needsOnboarding: mustOnboard } = useAuth();
@@ -76,7 +107,6 @@ function AppGate() {
   const [featuresSeen, setFeaturesSeenState] = useState(skipIntro);
   const [gender, setGenderState] = useState<AppGender | null>(skipIntro ? "male" : null);
   const [termsOk, setTermsOk] = useState(skipIntro);
-  const [scanSeen, setScanSeen] = useState(skipIntro);
   const [notifSeen, setNotifSeen] = useState(skipIntro);
   const [accountReadySeen, setAccountReadySeenState] = useState(skipIntro);
   const [guestLocation, setGuestLocationState] = useState<GuestLocation | null>(null);
@@ -104,12 +134,11 @@ function AppGate() {
       getWelcomeSeen(),
       getAppGender(),
       getTermsAccepted(),
-      getScanPromoSeen(),
       getNotifPromoSeen(),
       getGuestLocation(),
       getAccountReadySeen(),
     ]).then(
-      async ([appLang, features, welcome, g, terms, scan, notif, loc, ready]) => {
+      async ([appLang, features, welcome, g, terms, notif, loc, ready]) => {
         if (!alive) return;
         const resolved = appLang ?? "ru";
         await initI18n(resolved);
@@ -117,7 +146,6 @@ function AppGate() {
         setFeaturesSeenState(features || welcome);
         setGenderState(g);
         setTermsOk(terms);
-        setScanSeen(scan);
         setNotifSeen(notif);
         setGuestLocationState(loc);
         setAccountReadySeenState(ready || welcome);
@@ -234,10 +262,6 @@ function AppGate() {
     );
   }
 
-  if (!scanSeen) {
-    return <ScanPromoScreen onFinish={() => setScanSeen(true)} />;
-  }
-
   if (!notifSeen) {
     return <NotificationPromoScreen onFinish={() => setNotifSeen(true)} />;
   }
@@ -266,6 +290,12 @@ export default function App() {
     void ExpoSplashScreen.hideAsync().catch(() => {});
   }, [fontsLoaded]);
 
+  useEffect(() => {
+    if (Platform.OS !== "web") return;
+    const id = requestAnimationFrame(() => repairWebBoxNone());
+    return () => cancelAnimationFrame(id);
+  }, []);
+
   if (!fontsLoaded) {
     return null;
   }
@@ -278,7 +308,15 @@ export default function App() {
             <AuthProvider>
               <GoogleAuthSessionProvider>
                 <ToastProvider>
-                  <NavigationContainer>
+                  <NavigationContainer
+                    onStateChange={() => {
+                      requestAnimationFrame(() => {
+                        blurFocusInsideHidden();
+                        repairWebBoxNone();
+                        requestAnimationFrame(repairWebBoxNone);
+                      });
+                    }}
+                  >
                     <AppStatusBar style="dark" />
                     <AppGate />
                   </NavigationContainer>

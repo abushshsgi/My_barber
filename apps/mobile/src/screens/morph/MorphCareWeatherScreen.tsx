@@ -36,7 +36,7 @@ import {
   buildWeatherShieldState,
   shieldImageForTag,
 } from "../../services/weatherRecommendationEngine";
-import { WeatherShieldContainer } from "../../components/WeatherShield";
+import { WeatherShieldContainer } from "../../components/WeatherShield/WeatherShieldContainer";
 import {
   fetchWeatherShieldCatalog,
   postWeatherShieldAction,

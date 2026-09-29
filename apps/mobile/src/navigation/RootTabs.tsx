@@ -471,7 +471,6 @@ function CustomTabBar({ state, navigation, descriptors }: BottomTabBarProps) {
   return (
     <View
       style={[styles.dockOuter, styles.dockOuterLight, { paddingBottom: bottomPad }]}
-      pointerEvents="box-none"
     >
       <View style={styles.dock}>
         <Animated.View
@@ -488,7 +487,7 @@ function CustomTabBar({ state, navigation, descriptors }: BottomTabBarProps) {
           <View style={styles.sideGroup}>{visibleRight.map(renderSideTab)}</View>
         </Animated.View>
 
-        <View style={styles.centerAnchor} pointerEvents="box-none">
+        <View style={styles.centerAnchor}>
           <Pressable
             onPress={onCenterPress}
             style={styles.centerWrap}
@@ -618,6 +617,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 0,
     paddingTop: 0,
     backgroundColor: "#FFFFFF",
+    pointerEvents: "box-none",
   },
   dockOuterLight: {
     backgroundColor: "#FFFFFF",
@@ -715,6 +715,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     zIndex: 2,
+    pointerEvents: "box-none",
   },
   centerAnchorMorph: {},
   centerWrap: {

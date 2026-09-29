@@ -65,7 +65,22 @@ async function getNotifications(): Promise<typeof import("expo-notifications") |
   }
 }
 
+async function requestWebNotificationPermission(): Promise<boolean> {
+  if (typeof Notification === "undefined") return false;
+  if (Notification.permission === "granted") return true;
+  if (Notification.permission === "denied") return false;
+  const result = await Notification.requestPermission();
+  return result === "granted";
+}
+
 export async function ensureCareNotificationPermission(): Promise<boolean> {
+  if (Platform.OS === "web") {
+    try {
+      return await requestWebNotificationPermission();
+    } catch {
+      return false;
+    }
+  }
   const Notifications = await getNotifications();
   if (!Notifications) return false;
   if (Platform.OS === "android") {
@@ -171,4 +186,108 @@ export async function scheduleCareReminders(opts: {
   }
 
   return created;
+}
+
+/** After onboarding: confirm the plan and pin daily reminders at the chosen clocks. */
+export async function scheduleCareWelcomeNotification(opts: {
+  userName?: string | null;
+  morningTime?: string;
+  eveningTime?: string;
+}): Promise<void> {
+  try {
+    const Notifications = await getNotifications();
+    if (!Notifications) return;
+
+    const granted = await ensureCareNotificationPermission();
+    if (!granted) return;
+
+    Notifications.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldShowBanner: true,
+        shouldShowList: true,
+        shouldPlaySound: true,
+        shouldSetBadge: false,
+      }),
+    });
+
+    const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+    await Promise.all(
+      scheduled
+        .filter((n) => {
+          const id = String(n.identifier || "");
+          return id.startsWith("care-welcome-") || id.startsWith(`${CARE_NOTIF_PREFIX}welcome-`);
+        })
+        .map((n) => Notifications.cancelScheduledNotificationAsync(n.identifier)),
+    );
+
+    const name = firstName(opts.userName);
+    const morningLabel = opts.morningTime || "";
+    const eveningLabel = opts.eveningTime || "";
+    await Notifications.scheduleNotificationAsync({
+      identifier: "care-welcome-hello",
+      content: {
+        title: `${name}, parvarish rejangiz tayyor ✨`,
+        body:
+          morningLabel && eveningLabel
+            ? `Ertalab ${morningLabel} va kechqurun ${eveningLabel} da eslatamiz.`
+            : "Soch parvarishi rejangiz saqlandi.",
+        data: { type: "care_welcome" },
+        sound: "default",
+      },
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.DATE,
+        date: new Date(Date.now() + 3_000),
+      },
+    });
+
+    const slots = [
+      parseClock(opts.morningTime) && opts.morningTime
+        ? { id: "welcome-morning", time: opts.morningTime, title: "Ertalabki parvarish" }
+        : null,
+      parseClock(opts.eveningTime) && opts.eveningTime
+        ? { id: "welcome-evening", time: opts.eveningTime, title: "Kechki parvarish" }
+        : null,
+    ].filter((slot): slot is { id: string; time: string; title: string } => slot != null);
+
+    for (const slot of slots) {
+      const clock = parseClock(slot.time);
+      if (!clock) continue;
+      const copy = buildCareReminderCopy(opts.userName, {
+        id: slot.id,
+        title: slot.title,
+        time: slot.time,
+      });
+      const content = {
+        title: copy.title,
+        body: copy.body,
+        data: { type: "care_routine", taskId: slot.id },
+        sound: "default" as const,
+      };
+      try {
+        await Notifications.scheduleNotificationAsync({
+          identifier: `${CARE_NOTIF_PREFIX}${slot.id}`,
+          content,
+          trigger: {
+            type: Notifications.SchedulableTriggerInputTypes.DAILY,
+            hour: clock.h,
+            minute: clock.m,
+          },
+        });
+      } catch {
+        const when = new Date();
+        when.setHours(clock.h, clock.m, 0, 0);
+        if (when.getTime() <= Date.now() + 60_000) when.setDate(when.getDate() + 1);
+        await Notifications.scheduleNotificationAsync({
+          identifier: `${CARE_NOTIF_PREFIX}${slot.id}`,
+          content,
+          trigger: {
+            type: Notifications.SchedulableTriggerInputTypes.DATE,
+            date: when,
+          },
+        });
+      }
+    }
+  } catch {
+    // Eslatma xatosi onboardingni to‘xtatmasin.
+  }
 }

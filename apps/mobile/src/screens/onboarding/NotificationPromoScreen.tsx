@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
-import { Linking, Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import { StatusBar } from "expo-status-bar";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -16,15 +17,6 @@ import {
 
 type Props = { onFinish: () => void };
 
-const C = {
-  bg: "#07080C",
-  card: "#121620",
-  fg: "#F4F6FB",
-  muted: "#9AA3B5",
-  accent: "#2EE6A8",
-  accentDim: "rgba(46, 230, 168, 0.16)",
-} as const;
-
 export function NotificationPromoScreen({ onFinish }: Props) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
@@ -35,15 +27,7 @@ export function NotificationPromoScreen({ onFinish }: Props) {
     setBusy(true);
     try {
       if (request) {
-        const granted = await ensureCareNotificationPermission();
-        // Android 13+: ruxsat rad etilsa yoki so‘rov ishlamasa — sozlamalar.
-        if (!granted && Platform.OS === "android") {
-          try {
-            await Linking.openSettings();
-          } catch {
-            /* optional */
-          }
-        }
+        await ensureCareNotificationPermission();
       }
       await setNotifPromoSeen();
       onFinish();
@@ -62,8 +46,9 @@ export function NotificationPromoScreen({ onFinish }: Props) {
         },
       ]}
     >
+      <StatusBar style="dark" />
       <Animated.View entering={FadeInDown} style={styles.bell}>
-        <Ionicons name="notifications" size={36} color={C.accent} />
+        <Ionicons name="notifications" size={36} color="#111" />
       </Animated.View>
       <Text style={styles.title}>{t("onboarding.notifTitle")}</Text>
       <Text style={styles.sub}>{t("onboarding.notifSub")}</Text>
@@ -83,25 +68,23 @@ export function NotificationPromoScreen({ onFinish }: Props) {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: C.bg, paddingHorizontal: scale(24) },
+  root: { flex: 1, backgroundColor: "#FFFFFF", paddingHorizontal: scale(24) },
   bell: {
     marginTop: verticalScale(64),
     alignSelf: "center",
     width: scale(88),
     height: scale(88),
-    borderRadius: scale(28),
-    backgroundColor: C.accentDim,
+    borderRadius: scale(44),
+    backgroundColor: "#F4F4F5",
     alignItems: "center",
     justifyContent: "center",
     marginBottom: verticalScale(24),
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(46,230,168,0.35)",
   },
   title: {
     textAlign: "center",
     fontSize: fontSize(28),
     fontWeight: "800",
-    color: C.fg,
+    color: "#111",
     letterSpacing: -0.6,
   },
   sub: {
@@ -109,18 +92,18 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontSize: fontSize(15),
     lineHeight: fontSize(22),
-    color: C.muted,
+    color: "#525252",
   },
   cta: {
     marginTop: "auto",
-    backgroundColor: C.accent,
-    borderRadius: moderateScale(18),
+    backgroundColor: "#111",
+    borderRadius: moderateScale(28),
     minHeight: verticalScale(54),
     alignItems: "center",
     justifyContent: "center",
   },
-  ctaDisabled: { opacity: 0.6 },
-  ctaText: { color: "#04140F", fontWeight: "800", fontSize: fontSize(16) },
+  ctaDisabled: { opacity: 0.35 },
+  ctaText: { color: "#FFF", fontWeight: "700", fontSize: fontSize(16) },
   skip: { marginTop: verticalScale(12), alignItems: "center", paddingVertical: 12 },
-  skipText: { color: C.muted, fontWeight: "600", fontSize: fontSize(15) },
+  skipText: { color: "#737373", fontWeight: "600", fontSize: fontSize(15) },
 });
