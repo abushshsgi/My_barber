@@ -28,9 +28,11 @@ type Props = {
 type ProcessStep = { title: string; body: string };
 
 const STEP_MS = CARE_PROCESS_STEP_MS;
-const THUMB = scale(58);
-const ORBIT = scale(62);
-const LAP_MS = 6400;
+const LAP_MS = 5200;
+const THUMB = scale(62);
+const ORBIT_X = scale(118);
+const ORBIT_Y = scale(46);
+const STAGE_H = verticalScale(196);
 
 function ProductFace({ product }: { product: AiScanProduct }) {
   if (product.image) {
@@ -51,8 +53,42 @@ function ProductFace({ product }: { product: AiScanProduct }) {
   );
 }
 
-/** 2D aylana — webda rotateY ko‘rinmaydi, shu yerda rasm o‘zi ham buriladi. */
-function OrbitPhoto({
+/** Mahsulotlar aylana bo‘ylab yuradi va o‘z o‘qi atrofida aylanadi. */
+function SpinningProducts({
+  items,
+  spin,
+}: {
+  items: AiScanProduct[];
+  spin: SharedValue<number>;
+}) {
+  return (
+    <View style={styles.stage}>
+      <View
+        style={[
+          styles.trackRing,
+          {
+            width: ORBIT_X * 2,
+            height: ORBIT_Y * 2,
+            borderRadius: ORBIT_X,
+            marginLeft: -ORBIT_X,
+            marginTop: -ORBIT_Y,
+          },
+        ]}
+      />
+      {items.map((product, index) => (
+        <SpinningProduct
+          key={`${product.id}-${index}`}
+          product={product}
+          index={index}
+          count={items.length}
+          spin={spin}
+        />
+      ))}
+    </View>
+  );
+}
+
+function SpinningProduct({
   product,
   index,
   count,
@@ -63,27 +99,23 @@ function OrbitPhoto({
   count: number;
   spin: SharedValue<number>;
 }) {
-  const style = useAnimatedStyle(() => {
-    const base = (index / Math.max(count, 1)) * 360;
-    const lap = spin.value * 360;
-    const place = base + lap;
-    const deg = ((place % 360) + 360) % 360;
-    const nearTop = Math.min(deg, 360 - deg);
-    const front = nearTop < 42;
+  const animStyle = useAnimatedStyle(() => {
+    const n = Math.max(count, 1);
+    const t = (spin.value + index / n) * Math.PI * 2;
+    const front = (Math.sin(t) + 1) / 2;
     return {
-      zIndex: front ? 3 : 1,
-      opacity: front ? 1 : 0.72,
+      zIndex: Math.round(front * 20),
       transform: [
-        { rotate: `${place}deg` },
-        { translateY: -ORBIT },
-        { rotate: `${-place + lap}deg` },
-        { scale: front ? 1.08 : 0.86 },
+        { translateX: Math.cos(t) * ORBIT_X },
+        { translateY: Math.sin(t) * ORBIT_Y },
+        { rotate: `${spin.value * 360}deg` },
+        { scale: 0.74 + front * 0.42 },
       ],
     };
   });
 
   return (
-    <Animated.View style={[styles.slot, style]}>
+    <Animated.View style={[styles.disc, animStyle]}>
       <ProductFace product={product} />
     </Animated.View>
   );
@@ -154,7 +186,6 @@ export function AiPlanThinkingOverlay({ appending, products }: Props) {
     return list.length ? list : [{ id: "hair", name: "" } satisfies AiScanProduct];
   }, [products]);
 
-  const count = items.length;
   const step = steps[stepIdx % steps.length];
 
   useEffect(() => {
@@ -192,17 +223,7 @@ export function AiPlanThinkingOverlay({ appending, products }: Props) {
       accessibilityRole="progressbar"
       accessibilityLabel={`${step.title}. ${step.body}`}
     >
-      <View style={styles.reel}>
-        {items.map((item, index) => (
-          <OrbitPhoto
-            key={`${item.id}-${index}`}
-            product={item}
-            index={index}
-            count={count}
-            spin={turn}
-          />
-        ))}
-      </View>
+      <SpinningProducts items={items} spin={turn} />
 
       <Animated.View style={copyStyle}>
         <View style={styles.head}>
@@ -227,55 +248,54 @@ const styles = StyleSheet.create({
   root: {
     borderRadius: moderateScale(22),
     backgroundColor: "#FFFFFF",
-    paddingTop: verticalScale(16),
+    paddingTop: verticalScale(8),
     paddingBottom: verticalScale(14),
     paddingHorizontal: scale(16),
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: "rgba(17,17,17,0.08)",
   },
-  reel: {
-    height: ORBIT * 2 + THUMB,
+  stage: {
+    height: STAGE_H,
     alignItems: "center",
     justifyContent: "center",
+    overflow: "hidden",
   },
-  slot: {
+  trackRing: {
     position: "absolute",
+    left: "50%",
+    top: "50%",
+    borderWidth: 1,
+    borderColor: "rgba(17,17,17,0.08)",
+  },
+  disc: {
+    position: "absolute",
+    left: "50%",
+    top: "50%",
     width: THUMB,
     height: THUMB,
+    marginLeft: -THUMB / 2,
+    marginTop: -THUMB / 2,
     borderRadius: THUMB / 2,
     overflow: "hidden",
-    backgroundColor: "#F4F4F5",
+    backgroundColor: "#FFFFFF",
     borderWidth: 2,
     borderColor: "#FFFFFF",
+    shadowColor: "#111",
+    shadowOpacity: 0.14,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
   },
-  face: {
-    width: "100%",
-    height: "100%",
-  },
-  letter: {
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#EFEFF1",
-  },
-  letterText: {
-    ...morphFont,
-    fontSize: fontSize(18),
-    fontWeight: "800",
-    color: "#111",
-  },
+  face: { width: "100%", height: "100%" },
+  letter: { alignItems: "center", justifyContent: "center", backgroundColor: "#EFEFF1" },
+  letterText: { ...morphFont, fontSize: fontSize(18), fontWeight: "800", color: "#111" },
   head: {
-    marginTop: verticalScale(14),
+    marginTop: verticalScale(4),
     flexDirection: "row",
     alignItems: "center",
     gap: scale(8),
   },
-  index: {
-    ...morphFont,
-    width: scale(22),
-    fontSize: fontSize(13),
-    fontWeight: "800",
-    color: "#A3A3A3",
-  },
+  index: { ...morphFont, width: scale(22), fontSize: fontSize(13), fontWeight: "800", color: "#A3A3A3" },
   stepTitle: {
     ...morphFont,
     flex: 1,
