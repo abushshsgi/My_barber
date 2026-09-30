@@ -598,7 +598,9 @@ export function CareRoutineSheet({
           {
             paddingBottom:
               TAB_DOCK_CLEARANCE +
-              (hasProducts && !emptyOnly ? productDockH + verticalScale(10) : Math.max(insets.bottom, 12)),
+              (hasProducts && !emptyOnly && !planOpen
+                ? productDockH + verticalScale(10)
+                : Math.max(insets.bottom, 12)),
           },
         ]}
         nestedScrollEnabled
@@ -805,7 +807,14 @@ export function CareRoutineSheet({
       </ScrollView>
       {hasProducts && !emptyOnly ? (
         <View
-          style={[styles.productDock, { bottom: TAB_DOCK_CLEARANCE + verticalScale(6) }]}
+          pointerEvents={planOpen ? "none" : "auto"}
+          style={[
+            styles.productDock,
+            { bottom: TAB_DOCK_CLEARANCE + verticalScale(6) },
+            planOpen && {
+              transform: [{ translateY: productDockH + verticalScale(24) }],
+            },
+          ]}
           onLayout={(e) => {
             const next = Math.round(e.nativeEvent.layout.height);
             setProductDockH((prev) => (prev === next ? prev : next));
