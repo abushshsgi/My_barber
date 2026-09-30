@@ -11,8 +11,7 @@ import {
   View,
 } from "react-native";
 import { useTranslation } from "react-i18next";
-import Reanimated, { FadeIn, FadeOut } from "react-native-reanimated";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Reanimated, { FadeIn, FadeInDown, FadeOut, FadeOutUp, LinearTransition } from "react-native-reanimated";
 import { TAB_DOCK_CLEARANCE } from "../../../hooks/useHideTabBar";
 import {
   clearSavedCarePlan,
@@ -279,13 +278,11 @@ export function CareRoutineSheet({
   onOpenGuide,
 }: Props) {
   const { t } = useTranslation();
-  const insets = useSafeAreaInsets();
   const cachedOnOpen = peekCachedCarePlan();
   const shelfOnOpen = peekMyProducts();
   const initialPlan = cachedOnOpen?.plan ? (cachedOnOpen.plan as AiCarePlan) : null;
   const [mode, setMode] = useState<DayMode>("today");
   const [planOpen, setPlanOpen] = useState(false);
-  const [productDockH, setProductDockH] = useState(0);
   const [myProducts, setMyProducts] = useState<MyCareProduct[]>(() => shelfOnOpen ?? []);
   const [doneMap, setDoneMap] = useState<Record<string, boolean>>({});
   const [loadingProducts, setLoadingProducts] = useState(() => shelfOnOpen == null);
@@ -596,11 +593,7 @@ export function CareRoutineSheet({
         contentContainerStyle={[
           styles.sheetContent,
           {
-            paddingBottom:
-              TAB_DOCK_CLEARANCE +
-              (hasProducts && !emptyOnly && !planOpen
-                ? productDockH + verticalScale(10)
-                : Math.max(insets.bottom, 12)),
+            paddingBottom: TAB_DOCK_CLEARANCE + verticalScale(20),
           },
         ]}
         nestedScrollEnabled
@@ -721,17 +714,23 @@ export function CareRoutineSheet({
                   })}
                 </View>
 
-                <View style={styles.stepStack}>
-                  {visibleTasks.map((task) => {
+                <Reanimated.View layout={LinearTransition.duration(280)} style={styles.stepStack}>
+                  {visibleTasks.map((task, index) => {
                     const done = !!doneMap[task.id];
                     const pname = displayProductName(task.productName);
                     const when = task.time;
+                    const extra = index >= PLAN_PREVIEW;
                     return (
-                      <Pressable
+                      <Reanimated.View
                         key={task.id}
-                        style={[styles.ritualCard, done && styles.ritualCardDone]}
-                        onPress={() => openGuideFor(task)}
+                        layout={LinearTransition.duration(260)}
+                        entering={extra ? FadeInDown.duration(240) : undefined}
+                        exiting={extra ? FadeOutUp.duration(180) : undefined}
                       >
+                        <Pressable
+                          style={[styles.ritualCard, done && styles.ritualCardDone]}
+                          onPress={() => openGuideFor(task)}
+                        >
                         {task.imageUrl ? (
                           <Image
                             source={{ uri: task.imageUrl }}
@@ -774,10 +773,11 @@ export function CareRoutineSheet({
                         >
                           {done ? <Ionicons name="checkmark" size={13} color="#fff" /> : null}
                         </Pressable>
-                      </Pressable>
+                        </Pressable>
+                      </Reanimated.View>
                     );
                   })}
-                </View>
+                </Reanimated.View>
                 {planCanFold ? (
                   <Pressable
                     style={styles.planToggle}
@@ -801,88 +801,76 @@ export function CareRoutineSheet({
                 ) : null}
               </Reanimated.View>
             ) : null}
+
+            {hasProducts && !emptyOnly ? (
+              <Reanimated.View layout={LinearTransition.duration(280)} style={styles.productSection}>
+                <View style={styles.sectionHead}>
+                  <Text style={styles.sectionTitle}>{t("care.myProducts.title")}</Text>
+                  <Pressable style={styles.scanLink} onPress={onOpenScan}>
+                    <Ionicons name="scan-outline" size={16} color="#111" />
+                    <Text style={styles.scanLinkText}>{t("care.myProducts.scan")}</Text>
+                  </Pressable>
+                </View>
+                {loadingProducts ? (
+                  <ActivityIndicator color="#111" style={{ marginVertical: 8 }} />
+                ) : (
+                  <View
+                    style={styles.productShelf}
+                    onLayout={(e) => {
+                      const next = Math.round(e.nativeEvent.layout.width);
+                      setShelfW((prev) => (prev === next ? prev : next));
+                    }}
+                  >
+                    <ScrollView
+                      horizontal
+                      nestedScrollEnabled
+                      showsHorizontalScrollIndicator={false}
+                      style={styles.productScroll}
+                      contentContainerStyle={styles.productRow}
+                    >
+                      {myProducts.map((p) => {
+                        const img = productImageUri(p.image_url);
+                        return (
+                          <Pressable
+                            key={p.id}
+                            style={[styles.myCard, { width: peekCardW }]}
+                            onPress={() => onOpenProduct(p.id)}
+                          >
+                            {img ? (
+                              <Image
+                                source={{ uri: img }}
+                                style={styles.myCardImg}
+                                contentFit="cover"
+                                cachePolicy="memory-disk"
+                                transition={0}
+                                recyclingKey={`mine-${p.id}`}
+                              />
+                            ) : (
+                              <View style={[styles.myCardImg, styles.productPh]}>
+                                <Ionicons name="flask-outline" size={20} color="#111" />
+                              </View>
+                            )}
+                            <Text style={styles.myCardName} numberOfLines={2}>
+                              {p.name}
+                            </Text>
+                          </Pressable>
+                        );
+                      })}
+                    </ScrollView>
+                    <Pressable style={[styles.addCard, { width: addW }]} onPress={onOpenCatalog}>
+                      <Ionicons name="add" size={18} color="#111" />
+                      <Text style={styles.addCardText} numberOfLines={1}>
+                        {t("care.myProducts.addShort")}
+                      </Text>
+                    </Pressable>
+                  </View>
+                )}
+              </Reanimated.View>
+            ) : null}
           </>
         )}
 
       </ScrollView>
-      {hasProducts && !emptyOnly ? (
-        <View
-          pointerEvents={planOpen ? "none" : "auto"}
-          style={[
-            styles.productDock,
-            { bottom: TAB_DOCK_CLEARANCE + verticalScale(6) },
-            planOpen && {
-              transform: [{ translateY: productDockH + verticalScale(24) }],
-            },
-          ]}
-          onLayout={(e) => {
-            const next = Math.round(e.nativeEvent.layout.height);
-            setProductDockH((prev) => (prev === next ? prev : next));
-          }}
-        >
-          <View style={styles.sectionHead}>
-            <Text style={styles.sectionTitle}>{t("care.myProducts.title")}</Text>
-            <Pressable style={styles.scanLink} onPress={onOpenScan}>
-              <Ionicons name="scan-outline" size={16} color="#111" />
-              <Text style={styles.scanLinkText}>{t("care.myProducts.scan")}</Text>
-            </Pressable>
-          </View>
-          {loadingProducts ? (
-            <ActivityIndicator color="#111" style={{ marginVertical: 8 }} />
-          ) : (
-            <View
-              style={styles.productShelf}
-              onLayout={(e) => {
-                const next = Math.round(e.nativeEvent.layout.width);
-                setShelfW((prev) => (prev === next ? prev : next));
-              }}
-            >
-              <ScrollView
-                horizontal
-                nestedScrollEnabled
-                showsHorizontalScrollIndicator={false}
-                style={styles.productScroll}
-                contentContainerStyle={styles.productRow}
-              >
-                {myProducts.map((p) => {
-                  const img = productImageUri(p.image_url);
-                  return (
-                    <Pressable
-                      key={p.id}
-                      style={[styles.myCard, { width: peekCardW }]}
-                      onPress={() => onOpenProduct(p.id)}
-                    >
-                      {img ? (
-                        <Image
-                          source={{ uri: img }}
-                          style={styles.myCardImg}
-                          contentFit="cover"
-                          cachePolicy="memory-disk"
-                          transition={0}
-                          recyclingKey={`mine-${p.id}`}
-                        />
-                      ) : (
-                        <View style={[styles.myCardImg, styles.productPh]}>
-                          <Ionicons name="flask-outline" size={20} color="#111" />
-                        </View>
-                      )}
-                      <Text style={styles.myCardName} numberOfLines={2}>
-                        {p.name}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </ScrollView>
-              <Pressable style={[styles.addCard, { width: addW }]} onPress={onOpenCatalog}>
-                <Ionicons name="add" size={18} color="#111" />
-                <Text style={styles.addCardText} numberOfLines={1}>
-                  {t("care.myProducts.addShort")}
-                </Text>
-              </Pressable>
-            </View>
-          )}
-        </View>
-      ) : null}
     </View>
   );
 }
@@ -1400,17 +1388,8 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#111",
   },
-  productDock: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    paddingHorizontal: scale(16),
-    paddingTop: verticalScale(8),
-    paddingBottom: verticalScale(8),
+  productSection: {
     gap: moderateScale(8),
-    backgroundColor: colors.bg,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: "rgba(17,17,17,0.08)",
   },
   sectionHead: {
     flexDirection: "row",
