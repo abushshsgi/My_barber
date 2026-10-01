@@ -17,6 +17,7 @@ import {
 import { useHideTabBar } from "../../hooks/useHideTabBar";
 import {
   claimCardDeposit,
+  fetchReceivingCard,
   initCardDeposit,
   MIN_TOPUP_AMOUNT,
   type CardDeposit,
@@ -43,6 +44,11 @@ function parseDigits(raw: string) {
   return d ? Number(d) : 0;
 }
 
+function groupCard(raw: string) {
+  const digits = raw.replace(/\D/g, "");
+  return digits.replace(/(\d{4})(?=\d)/g, "$1 ").trim();
+}
+
 export function WalletTopUpScreen({ navigation }: Props) {
   const { t } = useTranslation();
   useHideTabBar();
@@ -54,7 +60,16 @@ export function WalletTopUpScreen({ navigation }: Props) {
   const [claiming, setClaiming] = useState(false);
   const [pendingReview, setPendingReview] = useState(false);
   const [receiptUri, setReceiptUri] = useState<string | null>(null);
+  const [cardError, setCardError] = useState<string | null>(null);
   const deposits = useCardDeposits(pendingReview);
+
+  useEffect(() => {
+    void fetchReceivingCard()
+      .then(() => setCardError(null))
+      .catch((e) => {
+        setCardError(e instanceof Error ? e.message.replace(/^API \d+:\s*/, "") : "Karta sozlanmagan");
+      });
+  }, []);
 
   useEffect(() => {
     const open = deposits.deposits.find((d) => OPEN.has(d.status));
@@ -166,11 +181,18 @@ export function WalletTopUpScreen({ navigation }: Props) {
           </View>
         </View>
         <View style={styles.method}>
-          <Ionicons name="card-outline" size={16} color={colors.fg} />
-          <Text style={styles.methodText}>
-            Hozirgi usul: karta o'tkazmasi. Chekni yuklaysiz, admin tasdiqlagach balansga tushadi.
-          </Text>
+          <Text style={styles.methodStep}>1</Text>
+          <Text style={styles.methodText}>Summani tanlang</Text>
         </View>
+        <View style={styles.method}>
+          <Text style={styles.methodStep}>2</Text>
+          <Text style={styles.methodText}>Kartaga o'tkazing va izohga kodni yozing</Text>
+        </View>
+        <View style={styles.method}>
+          <Text style={styles.methodStep}>3</Text>
+          <Text style={styles.methodText}>Chek rasmini yuklang. Admin tasdiqlagach balans oshadi</Text>
+        </View>
+        {cardError ? <Text style={styles.cardError}>{cardError}</Text> : null}
 
         {!deposit || deposit.status === "approved" || deposit.status === "rejected" ? (
           <>
@@ -213,9 +235,9 @@ export function WalletTopUpScreen({ navigation }: Props) {
             <Text style={styles.help}>Kamida {formatSomLabel(MIN_TOPUP_AMOUNT)}</Text>
 
             <Pressable
-              style={[styles.cta, submitting && styles.ctaDisabled]}
+              style={[styles.cta, (submitting || !!cardError) && styles.ctaDisabled]}
               onPress={start}
-              disabled={submitting}
+              disabled={submitting || !!cardError}
             >
               {submitting ? (
                 <ActivityIndicator color="#FFF" />
@@ -228,18 +250,26 @@ export function WalletTopUpScreen({ navigation }: Props) {
           </>
         ) : (
           <>
-            <Text style={styles.section}>KARTA ORQALI O'TKAZING</Text>
-            <Text style={styles.help}>
-              Aniq {formatSomLabel(parseDigits(String(deposit.amount)))} o'tkazing va chekni yuklang.
-              Admin tasdiqlagach balansga tushadi.
+            <Text style={styles.payTitle}>
+              Aniq {formatSomLabel(parseDigits(String(deposit.amount)))} o'tkazing
             </Text>
+            <Text style={styles.help}>
+              Izohga pastdagi kodni yozing. Keyin o'tkazma chekini shu yerga yuklang.
+            </Text>
+            <Pressable
+              style={styles.refBox}
+              onPress={() => void copy(deposit.transaction_ref, "Izoh kodi")}
+            >
+              <Text style={styles.refLabel}>Izohga yoziladigan kod · bosing, nusxa olinadi</Text>
+              <Text style={styles.refValue}>{deposit.transaction_ref}</Text>
+            </Pressable>
 
             {card ? (
               <View style={styles.copyBlock}>
                 <CopyRow
                   label="Karta raqami"
-                  value={card.number || card.masked}
-                  onCopy={() => void copy(card.number || card.masked, "Karta")}
+                  value={groupCard(card.number || card.masked)}
+                  onCopy={() => void copy((card.number || card.masked).replace(/\D/g, ""), "Karta")}
                 />
                 <CopyRow
                   label="Egasi"
@@ -266,7 +296,7 @@ export function WalletTopUpScreen({ navigation }: Props) {
                 <Pressable style={styles.pickBtn} onPress={pickReceipt}>
                   <Ionicons name="image-outline" size={20} color={colors.fg} />
                   <Text style={styles.pickText}>
-                    {receiptUri ? "Chek tanlandi — almashtirish" : "Chek rasmini yuklash"}
+                    {receiptUri ? "Chek tanlandi. Boshqa rasm qo'yish" : "O'tkazma chekining rasmini tanlang"}
                   </Text>
                 </Pressable>
                 {receiptUri ? (
@@ -340,15 +370,38 @@ const styles = StyleSheet.create({
   balLabel: { fontSize: fontSize(12), color: colors.muted, fontWeight: "600" },
   balValue: { marginTop: verticalScale(2), color: colors.fg, fontSize: fontSize(22), fontWeight: "800" },
   method: {
-    marginTop: verticalScale(12),
+    marginTop: verticalScale(8),
     flexDirection: "row",
-    gap: moderateScale(8),
-    alignItems: "flex-start",
+    gap: moderateScale(10),
+    alignItems: "center",
     backgroundColor: colors.surface,
-    borderRadius: moderateScale(14),
-    padding: moderateScale(12),
+    borderRadius: moderateScale(16),
+    paddingHorizontal: scale(14),
+    paddingVertical: verticalScale(12),
   },
-  methodText: { flex: 1, fontSize: fontSize(13), lineHeight: fontSize(18), color: colors.fg },
+  methodStep: {
+    width: scale(26),
+    height: scale(26),
+    borderRadius: moderateScale(13),
+    backgroundColor: colors.fg,
+    color: "#FFF",
+    textAlign: "center",
+    lineHeight: scale(26),
+    fontSize: fontSize(13),
+    fontWeight: "800",
+    overflow: "hidden",
+  },
+  methodText: { flex: 1, fontSize: fontSize(14), lineHeight: fontSize(19), color: colors.fg, fontWeight: "600" },
+  cardError: { marginTop: verticalScale(10), color: "#B42318", fontSize: fontSize(13), lineHeight: fontSize(18) },
+  payTitle: { marginTop: verticalScale(8), fontSize: fontSize(20), fontWeight: "800", color: colors.fg },
+  refBox: {
+    marginTop: verticalScale(14),
+    backgroundColor: colors.fg,
+    borderRadius: moderateScale(18),
+    padding: moderateScale(16),
+  },
+  refLabel: { color: "rgba(255,255,255,0.62)", fontSize: fontSize(12), fontWeight: "600" },
+  refValue: { marginTop: verticalScale(6), color: "#FFF", fontSize: fontSize(28), fontWeight: "800", letterSpacing: 1 },
   section: {
     marginTop: verticalScale(22),
     marginBottom: verticalScale(10),

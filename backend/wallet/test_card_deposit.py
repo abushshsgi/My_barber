@@ -79,6 +79,19 @@ class CardDepositServiceTests(TestCase):
         self.assertEqual(wallet.balance, Decimal("100000"))
         self.assertEqual(again.ledger_entry_id, approved.ledger_entry_id)
 
+    def test_approve_without_receipt_is_rejected(self):
+        deposit, _resumed = CardDepositService.init_deposit(
+            user=self.user,
+            amount=Decimal("50000"),
+            idempotency_key="init-noreceipt",
+        )
+        with self.assertRaises(WalletServiceError):
+            CardDepositService.approve_deposit(
+                deposit_id=str(deposit.pk),
+                admin_id=1,
+                admin_email="admin@test.com",
+            )
+
     def test_claim_requires_receipt(self):
         deposit, _ = CardDepositService.init_deposit(
             user=self.user,
@@ -164,3 +177,22 @@ class CardDepositApiTests(TestCase):
         self.assertEqual(txs.status_code, 200)
         results = txs.data.get("results") or txs.data
         self.assertTrue(len(results) >= 1)
+        self.assertIn("/receipt/", claim.data["receipt_url"])
+        self.assertNotIn("/media/", claim.data["receipt_url"])
+
+
+@override_settings(
+    DEBUG=False,
+    WALLET_RECEIVING_CARD_NUMBER='"8600 1234 5678 9012"',
+    WALLET_RECEIVING_CARDHOLDER="'ALI VALIYEV'",
+    WALLET_RECEIVING_BANK="",
+    WALLET_MERCHANT_REF="MYSALOON",
+)
+class ReceivingCardParseTests(TestCase):
+    def test_quotes_spaces_are_stripped(self):
+        from wallet.services.card_deposit import receiving_card_config
+
+        cfg = receiving_card_config()
+        self.assertEqual(cfg["card_number"], "8600123456789012")
+        self.assertEqual(cfg["cardholder"], "ALI VALIYEV")
+        self.assertEqual(cfg["bank"], "Bank")

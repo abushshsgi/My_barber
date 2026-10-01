@@ -21,6 +21,8 @@ def serve_media(request, path: str):
     rel = normalize_media_name(path)
     if not rel or ".." in rel.split("/"):
         raise Http404()
+    if rel.startswith("wallet/card_receipts/"):
+        raise Http404()
 
     # 1) DB birinchi (production — redeploydan keyin ham ishlasin)
     try:

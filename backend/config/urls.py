@@ -346,6 +346,7 @@ from wallet.card_deposit_views import (
     WalletCardDepositClaimView,
     WalletCardDepositInitView,
     WalletCardDepositListView,
+    WalletCardReceiptView,
     WalletReceivingCardView,
 )
 from wallet.qr_pay_views import (
@@ -739,6 +740,7 @@ api_routes = [
     path("wallet/top-up/receiving-card/", WalletReceivingCardView.as_view()),
     path("wallet/top-up/card/init/", WalletCardDepositInitView.as_view()),
     path("wallet/top-up/card/<uuid:deposit_id>/claim/", WalletCardDepositClaimView.as_view()),
+    path("wallet/top-up/card/<uuid:deposit_id>/receipt/", WalletCardReceiptView.as_view()),
     path("wallet/top-up/card/deposits/", WalletCardDepositListView.as_view()),
     path("wallet/gift/designs/", WalletGiftDesignsView.as_view()),
     path("wallet/gift/send/", WalletGiftSendView.as_view()),

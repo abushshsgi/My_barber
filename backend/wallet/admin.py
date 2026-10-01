@@ -1,6 +1,10 @@
 from django.contrib import admin
 
+from django.contrib import messages
+
 from wallet.models import GiftTransfer, LedgerEntry, ManualCardDeposit, Wallet, WalletCard
+from wallet.services.card_deposit import CardDepositService
+from wallet.services.wallet_service import WalletServiceError
 
 
 class WalletCardInline(admin.StackedInline):
@@ -126,6 +130,42 @@ class ManualCardDepositAdmin(admin.ModelAdmin):
         "created_at",
         "updated_at",
     )
+
+    actions = ("approve_with_receipt", "reject_deposit")
+
+    @admin.action(description="Chek borlarini tasdiqlash va balansga yozish")
+    def approve_with_receipt(self, request, queryset):
+        ok = 0
+        for deposit in queryset:
+            try:
+                CardDepositService.approve_deposit(
+                    deposit_id=str(deposit.pk),
+                    admin_id=getattr(request.user, "pk", None),
+                    admin_email=getattr(request.user, "email", "") or "",
+                    note="Django admin tasdiqladi",
+                )
+                ok += 1
+            except WalletServiceError as exc:
+                messages.error(request, f"{deposit.transaction_ref}: {exc}")
+        if ok:
+            messages.success(request, f"{ok} ta so'rov tasdiqlandi.")
+
+    @admin.action(description="So'rovni rad etish")
+    def reject_deposit(self, request, queryset):
+        ok = 0
+        for deposit in queryset:
+            try:
+                CardDepositService.reject_deposit(
+                    deposit_id=str(deposit.pk),
+                    admin_id=getattr(request.user, "pk", None),
+                    admin_email=getattr(request.user, "email", "") or "",
+                    note="Django admin rad etdi",
+                )
+                ok += 1
+            except WalletServiceError as exc:
+                messages.error(request, f"{deposit.transaction_ref}: {exc}")
+        if ok:
+            messages.success(request, f"{ok} ta so'rov rad etildi.")
 
     def has_add_permission(self, request):
         return False

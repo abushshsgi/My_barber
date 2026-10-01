@@ -4,7 +4,10 @@ from __future__ import annotations
 
 from decimal import Decimal, InvalidOperation
 
+from django.core.signing import BadSignature, SignatureExpired
+from django.http import FileResponse
 from rest_framework import status
+from rest_framework.permissions import AllowAny
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -17,10 +20,12 @@ from accounts.throttles import (
     WalletCardInitThrottle,
     WalletTopUpThrottle,
 )
+from wallet.models import ManualCardDeposit
 from wallet.services.card_deposit import (
     CardDepositService,
     admin_deposit_to_dict,
     deposit_to_dict,
+    receipt_signer,
     receiving_card_config,
 )
 from wallet.services.wallet_service import WalletServiceError
@@ -109,14 +114,52 @@ class WalletCardDepositClaimView(FriendlyThrottleMixin, APIView):
         return Response(deposit_to_dict(deposit, include_full_card=True, request=request))
 
 
+class WalletCardReceiptView(APIView):
+    """Chek faqat imzolangan havola bilan ochiladi. /media/ orqali ochiq emas."""
+
+    permission_classes = [AllowAny]
+    authentication_classes = []
+
+    def get(self, request, deposit_id: str):
+        token = (request.query_params.get("t") or "").strip()
+        try:
+            raw = receipt_signer().unsign(token, max_age=6 * 60 * 60)
+        except (BadSignature, SignatureExpired):
+            return Response({"detail": "Chek havolasi yaroqsiz yoki eskirgan."}, status=status.HTTP_403_FORBIDDEN)
+        if raw != str(deposit_id):
+            return Response({"detail": "Chek havolasi yaroqsiz."}, status=status.HTTP_403_FORBIDDEN)
+        deposit = ManualCardDeposit.objects.filter(pk=deposit_id).first()
+        if not deposit or not deposit.receipt_image:
+            return Response({"detail": "Chek topilmadi."}, status=status.HTTP_404_NOT_FOUND)
+        name = (deposit.receipt_image.name or "").lower()
+        content_type = "image/jpeg"
+        if name.endswith(".png"):
+            content_type = "image/png"
+        elif name.endswith(".webp"):
+            content_type = "image/webp"
+        handle = deposit.receipt_image.open("rb")
+        response = FileResponse(handle, content_type=content_type)
+        response["Cache-Control"] = "private, max-age=300"
+        response["X-Content-Type-Options"] = "nosniff"
+        return response
+
+
 class WalletCardDepositListView(APIView):
     permission_classes = [IsAuthenticated]
     throttle_classes = [WalletTopUpThrottle, AuthIPThrottle]
 
     def get(self, request):
         rows = CardDepositService.list_for_user(request.user)
-        # O'z so'rovlari — to'liq karta raqami kerak (resume uchun)
-        return Response([deposit_to_dict(d, include_full_card=True, request=request) for d in rows])
+        return Response(
+            [
+                deposit_to_dict(
+                    d,
+                    include_full_card=d.status == ManualCardDeposit.Status.AWAITING_PAYMENT,
+                    request=request,
+                )
+                for d in rows
+            ]
+        )
 
 
 class AdminWalletDepositsView(APIView):

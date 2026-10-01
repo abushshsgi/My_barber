@@ -10,6 +10,7 @@ from typing import Any
 
 from django.conf import settings
 from django.core.mail import send_mail
+from django.core.signing import TimestampSigner
 from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
@@ -41,19 +42,21 @@ def _mask_card(number: str) -> str:
     return f"{digits[:4]} **** **** {digits[-4:]}"
 
 
+def receipt_signer() -> TimestampSigner:
+    return TimestampSigner(salt="wallet-card-receipt")
+
+
 def _receipt_url(deposit: ManualCardDeposit, request=None) -> str:
     if not getattr(deposit, "receipt_image", None):
         return ""
-    try:
-        url = deposit.receipt_image.url
-    except Exception:
-        return ""
+    token = receipt_signer().sign(str(deposit.pk))
+    path = f"/api/v1/wallet/top-up/card/{deposit.pk}/receipt/?t={token}"
     if request is not None:
         try:
-            return request.build_absolute_uri(url)
+            return request.build_absolute_uri(path)
         except Exception:
-            return url
-    return url
+            return path
+    return path
 
 
 def _validate_receipt_file(receipt_file) -> None:
@@ -73,28 +76,39 @@ def _validate_receipt_file(receipt_file) -> None:
         raise WalletServiceError("Faqat rasm yuklash mumkin (JPG, PNG, WEBP).")
 
 
+def _env_text(value: object) -> str:
+    text = str(value or "").strip()
+    if len(text) >= 2 and text[0] == text[-1] and text[0] in {'"', "'"}:
+        text = text[1:-1].strip()
+    return text
+
+
 def receiving_card_config() -> dict[str, str]:
-    number = (getattr(settings, "WALLET_RECEIVING_CARD_NUMBER", "") or "").strip()
-    holder = (getattr(settings, "WALLET_RECEIVING_CARDHOLDER", "") or "").strip()
-    bank = (getattr(settings, "WALLET_RECEIVING_BANK", "") or "").strip()
-    merchant = (getattr(settings, "WALLET_MERCHANT_REF", "") or "").strip() or "MYSALOON"
+    number = _env_text(getattr(settings, "WALLET_RECEIVING_CARD_NUMBER", ""))
+    holder = _env_text(getattr(settings, "WALLET_RECEIVING_CARDHOLDER", ""))
+    bank = _env_text(getattr(settings, "WALLET_RECEIVING_BANK", ""))
+    merchant = _env_text(getattr(settings, "WALLET_MERCHANT_REF", "")) or "MYSALOON"
     if not number or not holder:
         if getattr(settings, "DEBUG", False):
-            number = "8600123456789012"
-            holder = "MYSALOON LLC"
+            number = number or "8600123456789012"
+            holder = holder or "MYSALOON LLC"
             bank = bank or "Test Bank"
-        else:
+        elif not number and not holder:
             raise WalletServiceError(
-                "Karta orqali to'ldirish hozircha sozlanmagan. Keyinroq urinib ko'ring."
+                "Qabul qiluvchi karta sozlanmagan. Railway da WALLET_RECEIVING_CARD_NUMBER va WALLET_RECEIVING_CARDHOLDER ni to'ldiring."
             )
+        elif not number:
+            raise WalletServiceError("WALLET_RECEIVING_CARD_NUMBER bo'sh.")
+        else:
+            raise WalletServiceError("WALLET_RECEIVING_CARDHOLDER bo'sh. Kartadagi ismni yozing.")
     digits = "".join(c for c in number if c.isdigit())
-    if len(digits) < 16:
-        raise WalletServiceError("Qabul qiluvchi karta sozlamasi noto'g'ri.")
+    if len(digits) < 16 or len(digits) > 19:
+        raise WalletServiceError("Karta raqami 16–19 ta raqamdan iborat bo'lishi kerak. Bo'sh joy va chiziq hisobga olinmaydi.")
     return {
         "card_number": digits,
         "card_masked": _mask_card(digits),
         "cardholder": holder,
-        "bank": bank,
+        "bank": bank or "Bank",
         "merchant_ref": merchant[:64],
     }
 
@@ -285,7 +299,23 @@ class CardDepositService:
                 amount=amount,
                 status=ManualCardDeposit.Status.AWAITING_PAYMENT,
             ).first()
-            return same_amount or open_qs.first(), True
+            deposit = same_amount or open_qs.first()
+            if deposit and deposit.status == ManualCardDeposit.Status.AWAITING_PAYMENT:
+                cfg = receiving_card_config()
+                deposit.receiving_card_number = cfg["card_number"]
+                deposit.receiving_card_masked = cfg["card_masked"]
+                deposit.receiving_cardholder = cfg["cardholder"]
+                deposit.receiving_bank = cfg["bank"]
+                deposit.save(
+                    update_fields=[
+                        "receiving_card_number",
+                        "receiving_card_masked",
+                        "receiving_cardholder",
+                        "receiving_bank",
+                        "updated_at",
+                    ]
+                )
+            return deposit, True
 
         cfg = receiving_card_config()
         wallet = WalletService.ensure_wallet(user)
@@ -402,11 +432,8 @@ class CardDepositService:
             raise WalletServiceError("So'rov topilmadi.")
         if deposit.status == ManualCardDeposit.Status.APPROVED and deposit.ledger_entry_id:
             return deposit
-        if deposit.status not in (
-            ManualCardDeposit.Status.CLAIMED,
-            ManualCardDeposit.Status.AWAITING_PAYMENT,
-        ):
-            raise WalletServiceError("Faqat kutilayotgan so'rovlarni tasdiqlash mumkin.")
+        if deposit.status != ManualCardDeposit.Status.CLAIMED or not deposit.receipt_image:
+            raise WalletServiceError("Avval foydalanuvchi chek yuklashi kerak. Cheksiz so'rovni tasdiqlab bo'lmaydi.")
 
         entry = WalletService.top_up(
             wallet=deposit.wallet,

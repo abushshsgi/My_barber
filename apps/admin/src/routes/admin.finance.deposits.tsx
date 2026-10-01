@@ -149,7 +149,14 @@ function AdminWalletDepositsPage() {
       </div>
 
       <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-card">
-        {listQ.isLoading ? (
+        {listQ.isError ? (
+          <div className="p-8">
+            <EmptyState
+              title="Ro'yxat yuklanmadi"
+              description={listQ.error instanceof Error ? listQ.error.message : "Qayta urinib ko'ring."}
+            />
+          </div>
+        ) : listQ.isLoading ? (
           <TableSkeleton rows={8} cols={7} />
         ) : rows.length === 0 ? (
           <div className="p-8">
@@ -247,7 +254,16 @@ function AdminWalletDepositsPage() {
                       <p className="mt-0.5">Tekshiruv · {formatWhen(row.reviewed_at)}</p>
                     </td>
                     <td className="px-4 py-3 text-right">
-                      {row.status === "claimed" || row.status === "awaiting_payment" ? (
+                      {row.status === "awaiting_payment" ? (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={rejectM.isPending}
+                          onClick={() => rejectM.mutate(row)}
+                        >
+                          Bekor qilish
+                        </Button>
+                      ) : row.status === "claimed" ? (
                         <div className="flex flex-col items-end gap-1.5">
                           {row.receipt_url ? (
                             <Button
@@ -323,9 +339,7 @@ function AdminWalletDepositsPage() {
           ) : (
             <p className="text-sm text-muted-foreground">Chek rasmi yo'q.</p>
           )}
-          {receiptPreview &&
-          (receiptPreview.status === "claimed" ||
-            receiptPreview.status === "awaiting_payment") ? (
+          {receiptPreview && receiptPreview.status === "claimed" ? (
             <div className="flex flex-wrap justify-end gap-2 pt-2">
               <Button
                 variant="outline"

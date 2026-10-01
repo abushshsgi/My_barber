@@ -90,6 +90,13 @@ function isAuthPath(path: string): boolean {
   );
 }
 
+function isMultipartBody(body: BodyInit | null | undefined): boolean {
+  if (!body || typeof body === "string") return false;
+  if (typeof FormData !== "undefined" && body instanceof FormData) return true;
+  const name = (body as { constructor?: { name?: string } }).constructor?.name;
+  return name === "FormData";
+}
+
 /** Backend REST — Bearer token + 401 da refresh. */
 export async function apiJson<T>(path: string, init?: RequestInit): Promise<T> {
   const url = buildUrl(path);
@@ -101,8 +108,7 @@ export async function apiJson<T>(path: string, init?: RequestInit): Promise<T> {
     Accept: "application/json",
     ...(init?.headers as Record<string, string> | undefined),
   };
-  const isFormData =
-    typeof FormData !== "undefined" && init?.body instanceof FormData;
+  const isFormData = isMultipartBody(init?.body);
   // FormData: browser/RN sets multipart boundary — do not force JSON Content-Type.
   if (
     method !== "GET" &&
@@ -161,9 +167,16 @@ export async function apiJson<T>(path: string, init?: RequestInit): Promise<T> {
       } catch {
         /* ignore */
       }
-      if (res.status === 502 || res.status === 503 || res.status === 504) {
+      const gateway = res.status === 502 || res.status === 503 || res.status === 504;
+      const specific =
+        detail &&
+        !detail.startsWith("<") &&
+        !detail.startsWith("{") &&
+        detail.length < 240 &&
+        !/bad gateway|application failed to respond|upstream/i.test(detail);
+      if (gateway && !specific) {
         throw new Error(
-          "Server vaqtincha javob bermayapti (502). Bir necha soniyadan keyin qayta urinib ko'ring.",
+          "Server vaqtincha javob bermayapti. Bir necha soniyadan keyin qayta urinib ko'ring.",
         );
       }
       // API javob xatosi — alohida marker (catch da network bilan aralashtirilmasin).
@@ -225,8 +238,7 @@ export async function apiFetch(
     Accept: "application/json",
     ...(fetchInit.headers as Record<string, string> | undefined),
   };
-  const isFormData =
-    typeof FormData !== "undefined" && fetchInit.body instanceof FormData;
+  const isFormData = isMultipartBody(fetchInit.body);
   if (
     method !== "GET" &&
     method !== "HEAD" &&

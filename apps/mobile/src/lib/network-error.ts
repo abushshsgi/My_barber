@@ -24,7 +24,7 @@ export function sanitizeDisplayError(message: string, apiBase?: string): string 
   if (/API\s+406\b/i.test(raw) || TECH_API_RE.test(probe)) {
     return i18n.t("errors.aiUnavailable");
   }
-  if (GATEWAY_RE.test(probe) || /\b(429|502|503|504)\b/.test(raw)) {
+  if (GATEWAY_RE.test(cleaned)) {
     return i18n.t("errors.server");
   }
   if (/java\.|exception|at com\.|at java\./i.test(probe)) {
