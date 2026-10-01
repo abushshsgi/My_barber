@@ -63,6 +63,7 @@ class SkinProfileSerializer(serializers.ModelSerializer):
 class UserSerializer(serializers.ModelSerializer):
     role = serializers.SerializerMethodField()
     has_password = serializers.SerializerMethodField()
+    sign_in_method = serializers.SerializerMethodField()
     age = serializers.SerializerMethodField()
     display_email = serializers.SerializerMethodField()
     email_verified = serializers.SerializerMethodField()
@@ -89,6 +90,7 @@ class UserSerializer(serializers.ModelSerializer):
             "onboarding_completed",
             "avatar",
             "has_password",
+            "sign_in_method",
             "date_joined",
             "require_profile_location",
         )
@@ -96,6 +98,7 @@ class UserSerializer(serializers.ModelSerializer):
             "id",
             "role",
             "has_password",
+            "sign_in_method",
             "date_joined",
             "age",
             "display_email",
@@ -115,6 +118,11 @@ class UserSerializer(serializers.ModelSerializer):
 
     def get_has_password(self, obj: User) -> bool:
         return obj.has_usable_password()
+
+    def get_sign_in_method(self, obj: User) -> str:
+        if (obj.google_sub or "").strip() and not (obj.phone or "").strip():
+            return "google"
+        return "phone"
 
     def get_require_profile_location(self, obj: User) -> bool:
         return bool(getattr(settings, "REQUIRE_PROFILE_LOCATION", False))

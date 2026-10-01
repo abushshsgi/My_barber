@@ -12,6 +12,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { NativeBackButton } from "../../components/ui/NativeBackButton";
 import { safeBottom, safeTop } from "../../lib/safe-area";
 import { WalletTransactionReceiptSheet } from "../../components/wallet/WalletTransactionReceiptSheet";
 import { useHideTabBar } from "../../hooks/useHideTabBar";
@@ -74,9 +75,7 @@ export function WalletTransactionsScreen({ navigation }: Props) {
     <View style={[styles.root, { paddingBottom: insets.bottom }]}>
       <LinearGradient colors={["#F0F0F0", "#FAFAFA"]} style={[styles.hero, { paddingTop: safeTop(insets.top, 6) }]}>
         <View style={styles.header}>
-          <Pressable style={styles.backBtn} onPress={() => navigation.goBack()} hitSlop={8}>
-            <Ionicons name="chevron-back" size={22} color="#111" />
-          </Pressable>
+          <NativeBackButton onPress={() => navigation.goBack()} />
           <Text style={styles.headerTitle}>{t("walletPages.historyTitle")}</Text>
           <View style={styles.backBtn} />
         </View>

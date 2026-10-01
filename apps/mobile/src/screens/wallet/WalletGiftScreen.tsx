@@ -14,6 +14,7 @@ import {
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { NativeBackButton } from "../../components/ui/NativeBackButton";
 import { safeBottom, safeTop } from "../../lib/safe-area";
 import { useAuth } from "../../auth/AuthContext";
 import type { ApiWalletRecipient } from "../../api/wallet";
@@ -129,9 +130,7 @@ export function WalletGiftScreen({ navigation }: Props) {
         style={[styles.hero, { paddingTop: safeTop(insets.top, 6) }]}
       >
         <View style={styles.header}>
-          <Pressable style={styles.backBtn} onPress={() => navigation.goBack()} hitSlop={8}>
-            <Ionicons name="chevron-back" size={22} color="#0A0A0A" />
-          </Pressable>
+          <NativeBackButton onPress={() => navigation.goBack()} />
           <Text style={styles.headerTitle}>Kimga yuborish</Text>
           <View style={styles.backBtn} />
         </View>

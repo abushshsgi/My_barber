@@ -101,61 +101,61 @@ export function TelegramAppearancePanel({ bottomInset }: { bottomInset: number }
           { backgroundColor: pal.bg, borderTopColor: pal.line, paddingBottom: bottomInset },
         ]}
       >
-        <View style={styles.dockRow}>
-          <Text style={[styles.dockLabel, { color: pal.fg, fontSize: fs(15) }]}>
-            {t("chat.settings.theme")}
-          </Text>
-          <View style={[styles.seg, { backgroundColor: pal.cardStrong }]}>
-            {(["dark", "light"] as MorphThemeName[]).map((item) => {
-              const on = theme === item;
-              return (
-                <Pressable
-                  key={item}
-                  onPress={() => setTheme(item)}
-                  style={[styles.segBtn, on && { backgroundColor: pal.fg }]}
-                >
-                  <Text
-                    style={[
-                      styles.segText,
-                      { color: on ? pal.bg : pal.muted, fontSize: fs(12) },
-                    ]}
-                  >
-                    {item === "dark" ? t("chat.settings.themeDark") : t("chat.settings.themeLight")}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
+        <Text style={[styles.dockLabel, { color: pal.muted, fontSize: fs(12) }]}>
+          {t("chat.settings.theme")}
+        </Text>
+        <View style={styles.choiceRow}>
+          {(["light", "dark"] as MorphThemeName[]).map((item) => {
+            const on = theme === item;
+            return (
+              <Pressable
+                key={item}
+                onPress={() => setTheme(item)}
+                style={[
+                  styles.choice,
+                  {
+                    backgroundColor: on ? pal.fg : pal.cardStrong,
+                    borderColor: on ? pal.fg : pal.line,
+                  },
+                ]}
+              >
+                <Ionicons
+                  name={item === "dark" ? "moon" : "sunny"}
+                  size={16}
+                  color={on ? pal.bg : pal.fg}
+                />
+                <Text style={[styles.segText, { color: on ? pal.bg : pal.fg, fontSize: fs(13) }]}>
+                  {item === "dark" ? t("chat.settings.themeDark") : t("chat.settings.themeLight")}
+                </Text>
+              </Pressable>
+            );
+          })}
         </View>
 
-        <View style={styles.dockRow}>
-          <Text style={[styles.dockLabel, { color: pal.fg, fontSize: fs(15) }]}>
-            {t("chat.settings.uiFontSize")}
-          </Text>
-          <View style={[styles.seg, { backgroundColor: pal.cardStrong }]}>
-            {(["s", "m", "l"] as MorphFontSize[]).map((item) => {
-              const on = fontSize === item;
-              const label =
-                item === "s"
-                  ? t("chat.settings.fontSmall")
-                  : item === "m"
-                    ? t("chat.settings.fontMedium")
-                    : t("chat.settings.fontLarge");
-              return (
-                <Pressable
-                  key={item}
-                  onPress={() => setFontSize(item)}
-                  style={[styles.segBtn, on && { backgroundColor: pal.fg }]}
-                >
-                  <Text
-                    style={[styles.segText, { color: on ? pal.bg : pal.muted, fontSize: fs(12) }]}
-                  >
-                    {label}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
+        <Text style={[styles.dockLabel, { color: pal.muted, fontSize: fs(12) }]}>
+          {t("chat.settings.uiFontSize")}
+        </Text>
+        <View style={[styles.seg, { backgroundColor: pal.cardStrong }]}>
+          {(["s", "m", "l"] as MorphFontSize[]).map((item) => {
+            const on = fontSize === item;
+            const label =
+              item === "s"
+                ? t("chat.settings.fontSmall")
+                : item === "m"
+                  ? t("chat.settings.fontMedium")
+                  : t("chat.settings.fontLarge");
+            return (
+              <Pressable
+                key={item}
+                onPress={() => setFontSize(item)}
+                style={[styles.segBtn, on && { backgroundColor: pal.fg }]}
+              >
+                <Text style={[styles.segText, { color: on ? pal.bg : pal.muted, fontSize: fs(13) }]}>
+                  {label}
+                </Text>
+              </Pressable>
+            );
+          })}
         </View>
 
         <Text style={[styles.sliderCaption, { color: pal.muted, fontSize: fs(12) }]}>
@@ -311,27 +311,33 @@ const styles = StyleSheet.create({
   time: { ...morphFont, fontWeight: "500" },
   dock: {
     borderTopWidth: StyleSheet.hairlineWidth,
-    paddingHorizontal: scale(18),
-    paddingTop: verticalScale(14),
-    gap: moderateScale(12),
+    paddingHorizontal: scale(16),
+    paddingTop: verticalScale(16),
+    gap: moderateScale(8),
   },
-  dockRow: {
+  dockLabel: { ...morphFont, fontWeight: "700", letterSpacing: 0.2 },
+  choiceRow: { flexDirection: "row", gap: moderateScale(8), marginBottom: verticalScale(6) },
+  choice: {
+    flex: 1,
+    minHeight: verticalScale(44),
+    borderRadius: moderateScale(14),
+    borderWidth: StyleSheet.hairlineWidth,
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    gap: moderateScale(12),
+    justifyContent: "center",
+    gap: moderateScale(8),
   },
-  dockLabel: { ...morphFont, fontWeight: "600", flex: 1 },
   seg: {
     flexDirection: "row",
-    borderRadius: moderateScale(10),
-    padding: moderateScale(3),
-    gap: moderateScale(2),
+    borderRadius: moderateScale(14),
+    padding: moderateScale(4),
+    gap: moderateScale(4),
   },
   segBtn: {
-    paddingHorizontal: scale(10),
-    paddingVertical: verticalScale(6),
-    borderRadius: moderateScale(8),
+    flex: 1,
+    alignItems: "center",
+    paddingVertical: verticalScale(10),
+    borderRadius: moderateScale(11),
   },
   segText: { ...morphFont, fontWeight: "700" },
   sliderCaption: { ...morphFont, marginTop: verticalScale(2) },

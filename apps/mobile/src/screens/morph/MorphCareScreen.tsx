@@ -44,6 +44,7 @@ import { CareShelfTrackerSheet } from "../../components/morph/care/CareShelfTrac
 import { DarkMeshAmbientBg } from "../../components/morph/care/DarkMeshAmbientBg";
 import { WeatherHeaderCard } from "../../components/morph/care/WeatherHeaderCard";
 import { AppStatusBar, safeBottom, safeTop } from "../../components/ui/AppStatusBar";
+import { NativeBackButton } from "../../components/ui/NativeBackButton";
 import { SafeModal } from "../../components/ui/SafeModal";
 import { useCareWeather } from "../../hooks/useCareWeather";
 import { useHideTabBarWhen } from "../../hooks/useHideTabBar";
@@ -1016,14 +1017,12 @@ export function MorphCareScreen({ navigation, route }: Props) {
       <View style={[styles.root, styles.pad, { paddingTop: safeTop(insets.top, 12) }]}>
         <AppStatusBar style="dark" />
         <View style={styles.navBarRow}>
-          <Pressable
-            style={styles.navCircleBtn}
+          <NativeBackButton
             onPress={handleBack}
             accessibilityLabel={t("common.back")}
-            hitSlop={8}
-          >
-            <Ionicons name="chevron-back" size={20} color="#fff" />
-          </Pressable>
+            color="#fff"
+            backgroundColor="rgba(255,255,255,0.16)"
+          />
           <View style={{ width: 42 }} />
         </View>
         <Text style={[styles.muted, { marginTop: 12 }]}>{t("care.badge")}</Text>
@@ -1100,14 +1099,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
           ]}
         >
           <View style={styles.navBarRow}>
-            <Pressable
-              style={styles.navCircleBtnLight}
-              onPress={handleBack}
-              hitSlop={8}
-              accessibilityLabel={t("common.back")}
-            >
-              <Ionicons name="chevron-back" size={20} color="#111" />
-            </Pressable>
+            <NativeBackButton onPress={handleBack} accessibilityLabel={t("common.back")} />
             <Text style={styles.onboardBadge}>{t("care.onboarding.badge")}</Text>
             <View style={{ width: 42 }} />
           </View>

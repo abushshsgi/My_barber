@@ -1,20 +1,18 @@
 import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { StatusBar } from "expo-status-bar";
 import {
   FlatList,
-  Pressable,
   StyleSheet,
   Text,
   View,
 } from "react-native";
-import { NativeBackButton } from "../../components/ui/NativeBackButton";
+import { NativeHeader } from "../../components/ui/NativeHeader";
 import { useProfileData } from "../../hooks/useProfileData";
 import { timeAgo } from "../../api/user";
+import { useShellTheme } from "../../lib/useShellTheme";
 import type { ProfileStackParamList } from "../../navigation/ProfileStack";
-import { colors } from "../../theme/colors";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { safeBottom, safeTop } from "../../lib/safe-area";
 import {
   fontSize,
   moderateScale,
@@ -26,18 +24,13 @@ type Props = NativeStackScreenProps<ProfileStackParamList, "Notifications">;
 
 export function NotificationsScreen({ navigation }: Props) {
   const { t } = useTranslation();
-  const insets = useSafeAreaInsets();
+  const pal = useShellTheme();
   const data = useProfileData();
 
   return (
-    <View style={[styles.root, { paddingTop: safeTop(insets.top, 0) }]}>
-      <View style={styles.header}>
-        <NativeBackButton onPress={() => navigation.goBack()} />
-        <Text style={styles.title}>Bildirishnomalar</Text>
-        <Pressable style={styles.filterBtn}>
-          <Ionicons name="options-outline" size={18} color={colors.fg} />
-        </Pressable>
-      </View>
+    <View style={[styles.root, { backgroundColor: pal.bg }]}>
+      <StatusBar style={pal.status} />
+      <NativeHeader title="Bildirishnomalar" onBack={() => navigation.goBack()} />
 
       <FlatList
         data={data.notifications}
@@ -45,8 +38,13 @@ export function NotificationsScreen({ navigation }: Props) {
         contentContainerStyle={styles.list}
         ListEmptyComponent={
           <View style={styles.empty}>
-            <Text style={styles.emptyTitle}>{t("profile.noNotifications")}</Text>
-            <Text style={styles.emptySub}>
+            <View style={[styles.emptyIcon, { backgroundColor: pal.iconTile }]}>
+              <Ionicons name="notifications-off-outline" size={28} color={pal.fg} />
+            </View>
+            <Text style={[styles.emptyTitle, { color: pal.fg, fontFamily: pal.font.fontFamily }]}>
+              {t("profile.noNotifications")}
+            </Text>
+            <Text style={[styles.emptySub, { color: pal.muted, fontFamily: pal.font.fontFamily }]}>
               Yangi bron, to'lov va chat xabarlari shu yerda chiqadi.
             </Text>
           </View>
@@ -55,22 +53,24 @@ export function NotificationsScreen({ navigation }: Props) {
           const unread = !(item.is_read ?? item.read);
           const body = item.body || item.message || "";
           return (
-            <View style={styles.item}>
-              <View style={styles.iconWrap}>
-                {unread ? <View style={styles.dot} /> : null}
-                <Ionicons name="calendar" size={16} color={colors.fg} />
+            <View style={[styles.item, { backgroundColor: pal.card, borderColor: pal.border }]}>
+              <View style={[styles.iconWrap, { backgroundColor: pal.iconTile }]}>
+                {unread ? <View style={[styles.dot, { backgroundColor: pal.fg, borderColor: pal.card }]} /> : null}
+                <Ionicons name="notifications-outline" size={16} color={pal.fg} />
               </View>
               <View style={styles.textCol}>
-                <Text style={styles.itemTitle} numberOfLines={1}>
+                <Text style={[styles.itemTitle, { color: pal.fg, fontFamily: pal.font.fontFamily }]} numberOfLines={1}>
                   {item.title}
                 </Text>
                 {body ? (
-                  <Text style={styles.itemBody} numberOfLines={2}>
+                  <Text style={[styles.itemBody, { color: pal.muted, fontFamily: pal.font.fontFamily }]} numberOfLines={2}>
                     {body}
                   </Text>
                 ) : null}
               </View>
-              <Text style={styles.ago}>{timeAgo(item.created_at)}</Text>
+              <Text style={[styles.ago, { color: pal.muted, fontFamily: pal.font.fontFamily }]}>
+                {timeAgo(item.created_at)}
+              </Text>
             </View>
           );
         }}
@@ -81,64 +81,55 @@ export function NotificationsScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.bg },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
+  root: { flex: 1 },
+  list: {
     paddingHorizontal: scale(16),
-    paddingBottom: verticalScale(12),
+    paddingTop: verticalScale(12),
+    paddingBottom: verticalScale(28),
     gap: moderateScale(10),
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
   },
-  title: {
-    flex: 1,
-    fontSize: fontSize(17),
-    fontWeight: "700",
-    color: colors.fg,
-    textAlign: "center",
-  },
-  filterBtn: {
-    width: scale(40),
-    height: scale(40),
-    borderRadius: moderateScale(20),
-    backgroundColor: colors.surface,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  list: { paddingBottom: verticalScale(24) },
   item: {
     flexDirection: "row",
     alignItems: "flex-start",
     gap: moderateScale(12),
-    paddingHorizontal: scale(16),
-    paddingVertical: verticalScale(14),
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
+    padding: moderateScale(14),
+    borderRadius: moderateScale(16),
+    borderWidth: StyleSheet.hairlineWidth,
   },
   iconWrap: {
     width: scale(40),
     height: scale(40),
-    borderRadius: moderateScale(20),
-    backgroundColor: colors.surface,
+    borderRadius: moderateScale(12),
     alignItems: "center",
     justifyContent: "center",
   },
   dot: {
     position: "absolute",
-    top: verticalScale(4),
-    left: scale(4),
+    top: verticalScale(2),
+    right: scale(2),
     width: scale(8),
     height: scale(8),
     borderRadius: moderateScale(4),
-    backgroundColor: colors.fg,
+    borderWidth: 1.5,
     zIndex: 1,
   },
   textCol: { flex: 1, minWidth: 0 },
-  itemTitle: { fontSize: fontSize(15), fontWeight: "700", color: colors.fg },
-  itemBody: { marginTop: verticalScale(3), fontSize: fontSize(13), lineHeight: fontSize(17), color: colors.muted },
-  ago: { fontSize: fontSize(12), color: colors.muted, marginTop: verticalScale(2) },
-  empty: { padding: moderateScale(40), alignItems: "center" },
-  emptyTitle: { fontSize: fontSize(17), fontWeight: "700", color: colors.fg, marginBottom: verticalScale(6) },
-  emptySub: { fontSize: fontSize(13), color: colors.muted, textAlign: "center", lineHeight: fontSize(18) },
+  itemTitle: { fontSize: fontSize(15), fontWeight: "700" },
+  itemBody: { marginTop: verticalScale(3), fontSize: fontSize(13), lineHeight: fontSize(18) },
+  ago: { fontSize: fontSize(12), marginTop: verticalScale(2) },
+  empty: {
+    paddingTop: verticalScale(72),
+    paddingHorizontal: moderateScale(28),
+    alignItems: "center",
+  },
+  emptyIcon: {
+    width: scale(72),
+    height: scale(72),
+    borderRadius: moderateScale(24),
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: verticalScale(16),
+  },
+  emptyTitle: { fontSize: fontSize(18), fontWeight: "800", marginBottom: verticalScale(6), textAlign: "center" },
+  emptySub: { fontSize: fontSize(14), textAlign: "center", lineHeight: fontSize(20) },
 });

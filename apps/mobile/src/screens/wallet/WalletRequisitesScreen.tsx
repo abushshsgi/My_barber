@@ -14,6 +14,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { NativeBackButton } from "../../components/ui/NativeBackButton";
 import { safeBottom, safeTop } from "../../lib/safe-area";
 import { useAuth } from "../../auth/AuthContext";
 import { useHideTabBar } from "../../hooks/useHideTabBar";
@@ -96,9 +97,7 @@ export function WalletRequisitesScreen({ navigation }: Props) {
   return (
     <View style={[styles.root, { paddingTop: safeTop(insets.top, 8), paddingBottom: safeBottom(insets.bottom, 12) }]}>
       <View style={styles.header}>
-        <Pressable style={styles.iconBtn} onPress={() => navigation.goBack()} hitSlop={8}>
-          <Ionicons name="chevron-back" size={22} color={INK} />
-        </Pressable>
+        <NativeBackButton onPress={() => navigation.goBack()} />
         <Text style={styles.headerTitle}>{t("walletPages.myCard")}</Text>
         <Pressable style={styles.iconBtn} onPress={() => void onShare()} hitSlop={8}>
           <Ionicons name="share-outline" size={18} color={INK} />

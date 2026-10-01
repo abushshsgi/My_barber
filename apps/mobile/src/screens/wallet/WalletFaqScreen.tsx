@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { NativeBackButton } from "../../components/ui/NativeBackButton";
 import { safeBottom, safeTop } from "../../lib/safe-area";
 import { useHideTabBar } from "../../hooks/useHideTabBar";
 import type { WalletStackParamList } from "../../navigation/WalletStack";
@@ -40,9 +41,7 @@ export function WalletFaqScreen({ navigation }: Props) {
   return (
     <View style={[styles.root, { paddingTop: safeTop(insets.top, 8), paddingBottom: safeBottom(insets.bottom, 16) }]}>
       <View style={styles.header}>
-        <Pressable style={styles.back} onPress={() => navigation.goBack()} hitSlop={8}>
-          <Ionicons name="chevron-back" size={22} color={INK} />
-        </Pressable>
+        <NativeBackButton onPress={() => navigation.goBack()} />
         <Text style={styles.headerTitle}>{t("walletPages.faqTitle")}</Text>
         <View style={styles.back} />
       </View>

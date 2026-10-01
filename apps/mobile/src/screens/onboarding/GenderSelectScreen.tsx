@@ -4,6 +4,7 @@ import { StatusBar } from "expo-status-bar";
 import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { NativeBackButton } from "../../components/ui/NativeBackButton";
 import { safeBottom, safeTop } from "../../lib/safe-area";
 import { setAppGender, type AppGender } from "../../lib/guest";
 import {
@@ -36,9 +37,7 @@ export function GenderSelectScreen({ onFinish, onBack }: Props) {
     >
       <StatusBar style="dark" />
       {onBack ? (
-        <Pressable onPress={onBack} style={styles.backBtn} accessibilityRole="button" hitSlop={8}>
-          <Ionicons name="chevron-back" size={22} color="#111" />
-        </Pressable>
+        <NativeBackButton onPress={onBack} />
       ) : (
         <View style={styles.backSpacer} />
       )}

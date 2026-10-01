@@ -3,8 +3,8 @@ import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from "rea
 import { useShellTheme } from "../../lib/useShellTheme";
 import { moderateScale, scale } from "../../utils/responsive";
 
-export const NATIVE_BACK_SIZE = scale(40);
-export const NATIVE_BACK_ICON = 22;
+export const NATIVE_BACK_SIZE = scale(38);
+export const NATIVE_BACK_ICON = 20;
 
 type Props = {
   onPress: () => void;
@@ -18,7 +18,7 @@ type Props = {
   style?: StyleProp<ViewStyle>;
 };
 
-/** Haqiqiy mobil orqaga — bir xil 40×40 dumaloq hit area. */
+/** Bir xil orqaga — yumaloq kvadrat, ingichka chegara, strelka. */
 export function NativeBackButton({
   onPress,
   accessibilityLabel = "Orqaga",
@@ -29,24 +29,27 @@ export function NativeBackButton({
 }: Props) {
   const pal = useShellTheme();
   const iconColor = color ?? pal.fg;
-  const tile = backgroundColor ?? pal.iconTile;
+  const tile = backgroundColor ?? pal.card;
 
   return (
     <Pressable
       onPress={onPress}
-      hitSlop={8}
+      hitSlop={10}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
-      android_ripple={{ color: "rgba(0,0,0,0.1)", borderless: true, radius: 22 }}
+      android_ripple={{ color: "rgba(0,0,0,0.08)", borderless: false, radius: 18 }}
       style={({ pressed }) => [
         styles.btn,
-        { backgroundColor: tile },
+        {
+          backgroundColor: tile,
+          borderColor: pal.border,
+        },
         pressed && styles.pressed,
         style,
       ]}
     >
       <Ionicons
-        name={forward ? "chevron-forward" : "chevron-back"}
+        name={forward ? "arrow-forward" : "arrow-back"}
         size={NATIVE_BACK_ICON}
         color={iconColor}
       />
@@ -63,7 +66,8 @@ const styles = StyleSheet.create({
   btn: {
     width: NATIVE_BACK_SIZE,
     height: NATIVE_BACK_SIZE,
-    borderRadius: moderateScale(20),
+    borderRadius: moderateScale(13),
+    borderWidth: StyleSheet.hairlineWidth,
     alignItems: "center",
     justifyContent: "center",
   },

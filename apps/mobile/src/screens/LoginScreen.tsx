@@ -1,4 +1,3 @@
-import { Ionicons } from "@expo/vector-icons";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
 import {
@@ -25,6 +24,7 @@ import { useAuth } from "../auth/AuthContext";
 import { useGoogleAuth } from "../auth/GoogleAuthSession";
 import { getLastPhone } from "../auth/storage";
 import { AuthLandingHero } from "../components/auth/AuthLandingHero";
+import { NativeBackButton } from "../components/ui/NativeBackButton";
 import { PrivacyPolicyView } from "../components/legal/PrivacyPolicyView";
 import { useHideTabBar } from "../hooks/useHideTabBar";
 import { useAppShell } from "../lib/AppShellContext";
@@ -196,15 +196,7 @@ export function LoginScreen() {
     >
       <StatusBar style="dark" />
       <View style={styles.body}>
-        <Pressable
-          onPress={onBack}
-          style={({ pressed }) => [styles.backBtn, pressed && styles.pressed]}
-          accessibilityRole="button"
-          accessibilityLabel="Orqaga"
-          hitSlop={8}
-        >
-          <Ionicons name="chevron-back" size={22} color={colors.forest} />
-        </Pressable>
+        <NativeBackButton onPress={onBack} />
 
         {step === "choose" ? (
           <ScrollView

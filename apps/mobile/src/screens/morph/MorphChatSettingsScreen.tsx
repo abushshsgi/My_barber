@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { StatusBar } from "expo-status-bar";
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -385,8 +385,8 @@ export function MorphChatSettingsScreen({
   const { user } = useAuth();
   const { colors: pal, fs } = useMorphAppearance();
   const [page, setPage] = useState<Page>("hub");
+  const pageHistory = useRef<Page[]>([]);
   const [ticketId, setTicketId] = useState<number | null>(null);
-  const [ticketFrom, setTicketFrom] = useState<"help" | "report">("help");
   const [prefs, setPrefs] = useState<MorphChatPrefs | null>(null);
   const [snap, setSnap] = useState<MorphChatLimits | null>(limits);
   const [counts, setCounts] = useState<MorphAiPrivacyDataCounts>(EMPTY_COUNTS);
@@ -629,16 +629,22 @@ export function MorphChatSettingsScreen({
               ? t("chat.support.ticketTitle")
               : t("chat.settings.title");
 
+  const openPage = useCallback((next: Page) => {
+    setPage((current) => {
+      pageHistory.current.push(current);
+      return next;
+    });
+  }, []);
+
   const onBack = () => {
-    if (page === "hub") onClose();
-    else if (page === "ticket") setPage(ticketFrom);
-    else setPage("hub");
+    const prev = pageHistory.current.pop();
+    if (prev) setPage(prev);
+    else onClose();
   };
 
-  const openTicket = (id: number, from: "help" | "report") => {
-    setTicketFrom(from);
+  const openTicket = (id: number, _from: "help" | "report") => {
     setTicketId(id);
-    setPage("ticket");
+    openPage("ticket");
   };
 
   return (
@@ -689,7 +695,7 @@ export function MorphChatSettingsScreen({
           <>
             <View style={styles.profileBlock}>
               <Pressable
-                onPress={() => setPage("account")}
+                onPress={() => openPage("account")}
                 accessibilityRole="button"
                 accessibilityLabel={t("profile.personalInfo")}
               >
@@ -713,7 +719,7 @@ export function MorphChatSettingsScreen({
                   <SettingsItem
                     icon="options"
                     title={t("chat.settings.personalization")}
-                    onPress={() => setPage("reply")}
+                    onPress={() => openPage("reply")}
                     last
                   />
                 </SettingsSection>
@@ -726,7 +732,7 @@ export function MorphChatSettingsScreen({
                     showChevron={false}
                   />
                   <Pressable
-                    onPress={() => setPage("limits")}
+                    onPress={() => openPage("limits")}
                     style={({ pressed }) => pressed && styles.pressed}
                     accessibilityRole="button"
                   >
@@ -791,7 +797,7 @@ export function MorphChatSettingsScreen({
                         ? t("chat.settings.themeDark")
                         : t("chat.settings.themeLight")
                     }
-                    onPress={() => setPage("appearance")}
+                    onPress={() => openPage("appearance")}
                   />
                   <SettingsItem
                     icon="notifications"
@@ -801,7 +807,7 @@ export function MorphChatSettingsScreen({
                         ? t("chat.settings.limitNotifyOn")
                         : t("chat.settings.limitNotifyOff")
                     }
-                    onPress={() => setPage("limits")}
+                    onPress={() => openPage("limits")}
                   />
                   <View style={{ opacity: 0.55 }}>
                     <SettingsItem
@@ -821,7 +827,7 @@ export function MorphChatSettingsScreen({
                         ? t("chat.settings.privacyOn")
                         : t("chat.settings.privacyOff")
                     }
-                    onPress={() => setPage("data")}
+                    onPress={() => openPage("data")}
                   />
                   <SettingsItem
                     icon="folder"
@@ -830,7 +836,7 @@ export function MorphChatSettingsScreen({
                       chats: counts.chat_threads,
                       looks: counts.looks,
                     })}
-                    onPress={() => setPage("data")}
+                    onPress={() => openPage("data")}
                     last
                   />
                 </SettingsSection>
@@ -839,12 +845,12 @@ export function MorphChatSettingsScreen({
                   <SettingsItem
                     icon="flag"
                     title={t("chat.settings.reportProblem")}
-                    onPress={() => setPage("report")}
+                    onPress={() => openPage("report")}
                   />
                   <SettingsItem
                     icon="help-circle"
                     title={t("chat.settings.helpCenter")}
-                    onPress={() => setPage("help")}
+                    onPress={() => openPage("help")}
                     last
                   />
                 </SettingsSection>

@@ -21,25 +21,39 @@ export function SecurityScreen({ navigation }: Props) {
   const data = useProfileData();
   const pal = useShellTheme();
   const hasPassword = Boolean(data.user?.has_password);
+  const isGoogle = Boolean(data.user) && (data.user?.sign_in_method === "google" || !data.user?.phone);
 
   return (
     <View style={[styles.root, { backgroundColor: pal.bg }]}>
       <StatusBar style={pal.status} />
       <NativeHeader title={t("profile.security")} onBack={() => navigation.goBack()} />
       <View style={[styles.card, { backgroundColor: pal.card, borderColor: pal.border }]}>
+        {isGoogle ? (
+          <SecRow
+            pal={pal}
+            icon="logo-google"
+            title="Google hisobi"
+            subtitle="Bu hisobda parol yo'q. Kirish Google orqali qoladi."
+          />
+        ) : (
+          <SecRow
+            pal={pal}
+            icon="key"
+            title={t("profile.password")}
+            subtitle={
+              hasPassword
+                ? "Parol saqlangan. Keyingi safar shu parol bilan kirasiz."
+                : "SMS o'rniga parol qo'ying va keyin shu parol bilan kiring."
+            }
+            action={hasPassword ? t("profile.change") : t("profile.add")}
+            onAction={() => navigation.navigate("SecurityPassword")}
+          />
+        )}
         <SecRow
           pal={pal}
-          icon="key"
-          title={t("profile.password")}
-          subtitle={hasPassword ? t("profile.passwordSet") : t("profile.smsLogin")}
-          action={hasPassword ? t("profile.change") : t("profile.add")}
-          onAction={() => navigation.navigate("SecurityPassword")}
-        />
-        <SecRow
-          pal={pal}
-          icon="phone-portrait"
+          icon={isGoogle ? "mail-outline" : "phone-portrait"}
           title={t("profile.signInMethod")}
-          subtitle={t("profile.phoneVerified")}
+          subtitle={isGoogle ? "Google" : t("profile.phoneVerified")}
         />
         <SecRow
           pal={pal}

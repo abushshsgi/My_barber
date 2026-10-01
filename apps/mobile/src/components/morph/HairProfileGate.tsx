@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useMorphAppearance } from "../../lib/MorphAppearanceContext";
+import { NativeBackButton } from "../ui/NativeBackButton";
 import { safeBottom, safeTop } from "../../lib/safe-area";
 import { morphFont } from "../../theme/morph-font";
 import { fontSize, scale, verticalScale } from "../../utils/responsive";
@@ -29,9 +30,7 @@ export function HairProfileGate({ title, body, cta, backA11y, onOpenCare, onBack
         },
       ]}
     >
-      <Pressable style={styles.back} onPress={onBack} accessibilityLabel={backA11y} hitSlop={8}>
-        <Ionicons name="chevron-back" size={22} color={pal.fg} />
-      </Pressable>
+      <NativeBackButton onPress={onBack} accessibilityLabel={backA11y} />
       <View style={styles.card}>
         <View style={[styles.iconWrap, { backgroundColor: pal.fg + "10" }]}>
           <Ionicons name="leaf-outline" size={28} color={pal.fg} />

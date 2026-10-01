@@ -1,4 +1,3 @@
-import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -25,6 +24,7 @@ import { useAuth } from "../../auth/AuthContext";
 import { useGoogleAuth } from "../../auth/GoogleAuthSession";
 import { getLastPhone } from "../../auth/storage";
 import { AuthLandingHero } from "../../components/auth/AuthLandingHero";
+import { NativeBackButton } from "../../components/ui/NativeBackButton";
 import { setPendingReferralCode } from "../../lib/referral-storage";
 import { colors } from "../../theme/colors";
 import {
@@ -187,15 +187,7 @@ export function OnboardingLoginScreen({ onBack }: Props) {
     >
       <StatusBar style="dark" />
       <View style={styles.body}>
-        <Pressable
-          onPress={handleBack}
-          style={({ pressed }) => [styles.backBtn, pressed && styles.pressed]}
-          accessibilityRole="button"
-          accessibilityLabel="Orqaga"
-          hitSlop={8}
-        >
-          <Ionicons name="chevron-forward" size={22} color={colors.fg} />
-        </Pressable>
+        <NativeBackButton onPress={handleBack} />
 
         {step === "choose" ? (
           <ScrollView

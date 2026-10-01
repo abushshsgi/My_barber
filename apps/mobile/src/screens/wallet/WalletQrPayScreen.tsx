@@ -12,6 +12,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { NativeBackButton } from "../../components/ui/NativeBackButton";
 import { safeBottom, safeTop } from "../../lib/safe-area";
 import {
   MAX_QR_AMOUNT,
@@ -103,9 +104,7 @@ export function WalletQrPayScreen({ navigation }: Props) {
     return (
       <View style={[styles.root, { paddingTop: safeTop(insets.top, 8), paddingBottom: safeBottom(insets.bottom, 8) }]}>
         <View style={styles.introTop}>
-          <Pressable style={styles.backPlain} onPress={() => navigation.goBack()} hitSlop={8}>
-            <Ionicons name="chevron-back" size={24} color="#111" />
-          </Pressable>
+          <NativeBackButton onPress={() => navigation.goBack()} />
           <View style={styles.toolPill}>
             <Pressable
               style={styles.toolBtn}
@@ -236,9 +235,7 @@ export function WalletQrPayScreen({ navigation }: Props) {
   return (
     <View style={[styles.root, { paddingTop: safeTop(insets.top, 8), paddingBottom: safeBottom(insets.bottom, 16) }]}>
       <View style={styles.payHeader}>
-        <Pressable style={styles.backPlain} onPress={() => setPhase("scan")} hitSlop={8}>
-          <Ionicons name="chevron-back" size={24} color="#111" />
-        </Pressable>
+        <NativeBackButton onPress={() => setPhase("scan")} />
         <Text style={styles.payHeaderTitle}>To'lovni tasdiqlash</Text>
         <View style={{ width: 40 }} />
       </View>

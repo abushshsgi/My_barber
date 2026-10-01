@@ -16,6 +16,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { NativeBackButton } from "../../components/ui/NativeBackButton";
 import { safeBottom, safeTop } from "../../lib/safe-area";
 import { MAX_GIFT_AMOUNT, MIN_GIFT_AMOUNT, parseWalletBalance, sendGift } from "../../api/wallet";
 import { useAuth } from "../../auth/AuthContext";
@@ -160,9 +161,7 @@ export function WalletGiftAmountScreen({ navigation, route }: Props) {
     >
       <View style={[styles.safe, { paddingTop: safeTop(insets.top, 6), paddingBottom: safeBottom(insets.bottom, 12) }]}>
         <View style={styles.header}>
-          <Pressable style={styles.backBtn} onPress={() => navigation.goBack()} hitSlop={8}>
-            <Ionicons name="chevron-back" size={22} color="#0A0A0A" />
-          </Pressable>
+          <NativeBackButton onPress={() => navigation.goBack()} />
           <Text style={styles.headerTitle}>Pul yuborish</Text>
           <View style={styles.backBtn} />
         </View>

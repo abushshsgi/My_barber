@@ -1,7 +1,7 @@
-import { useTranslation } from "react-i18next";
 import { useCallback, useEffect, useState } from "react";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { StatusBar } from "expo-status-bar";
+import { Ionicons } from "@expo/vector-icons";
 import {
   ActivityIndicator,
   Pressable,
@@ -27,21 +27,38 @@ import {
 
 type Props = NativeStackScreenProps<ProfileStackParamList, "SecuritySessions">;
 
+const MONTHS = [
+  "yanvar",
+  "fevral",
+  "mart",
+  "aprel",
+  "may",
+  "iyun",
+  "iyul",
+  "avgust",
+  "sentabr",
+  "oktabr",
+  "noyabr",
+  "dekabr",
+];
+
 function formatWhen(iso: string) {
-  try {
-    return new Date(iso).toLocaleString("uz-UZ", {
-      day: "2-digit",
-      month: "short",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  } catch {
-    return iso;
-  }
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mm = String(d.getMinutes()).padStart(2, "0");
+  const time = `${hh}:${mm}`;
+  const now = new Date();
+  const startOf = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+  const dayDiff = Math.round((startOf(now) - startOf(d)) / 86400000);
+  if (dayDiff === 0) return `Bugun, ${time}`;
+  if (dayDiff === 1) return `Kecha, ${time}`;
+  const mon = MONTHS[d.getMonth()] ?? "";
+  if (d.getFullYear() === now.getFullYear()) return `${d.getDate()} ${mon}, ${time}`;
+  return `${d.getDate()} ${mon} ${d.getFullYear()}, ${time}`;
 }
 
 export function SecuritySessionsScreen({ navigation }: Props) {
-  const { t } = useTranslation();
   const pal = useShellTheme();
   const [sessions, setSessions] = useState<ApiUserSession[]>([]);
   const [loading, setLoading] = useState(true);
@@ -110,28 +127,52 @@ export function SecuritySessionsScreen({ navigation }: Props) {
           sessions.map((session) => (
             <View
               key={session.id}
-              style={[styles.card, { backgroundColor: pal.card, borderColor: pal.border }]}
+              style={[
+                styles.card,
+                {
+                  backgroundColor: pal.card,
+                  borderColor: session.is_current ? pal.fg : pal.border,
+                },
+              ]}
             >
-              <Text style={[styles.device, { color: pal.fg, fontFamily: pal.font.fontFamily }]}>
-                {session.device_name}
-              </Text>
-              <Text style={[styles.meta, { color: pal.muted, fontFamily: pal.font.fontFamily }]}>
-                {session.platform}
-                {session.is_current ? " · Joriy" : ""}
-              </Text>
-              <Text style={[styles.meta, { color: pal.muted, fontFamily: pal.font.fontFamily }]}>
-                Oxirgi faollik: {formatWhen(session.last_seen_at)}
-              </Text>
+              <View style={styles.cardTop}>
+                <View style={[styles.iconTile, { backgroundColor: pal.iconTile }]}>
+                  <Ionicons
+                    name={session.platform === "web" ? "laptop-outline" : "phone-portrait-outline"}
+                    size={18}
+                    color={pal.fg}
+                  />
+                </View>
+                <View style={styles.cardMain}>
+                  <Text style={[styles.device, { color: pal.fg, fontFamily: pal.font.fontFamily }]}>
+                    {session.device_name}
+                  </Text>
+                  <Text style={[styles.meta, { color: pal.muted, fontFamily: pal.font.fontFamily }]}>
+                    {session.platform}
+                  </Text>
+                </View>
+                {session.is_current ? (
+                  <View style={[styles.badge, { backgroundColor: pal.fg }]}>
+                    <Text style={[styles.badgeText, { color: pal.bg }]}>Joriy</Text>
+                  </View>
+                ) : null}
+              </View>
+              <View style={styles.whenRow}>
+                <Ionicons name="time-outline" size={14} color={pal.muted} />
+                <Text style={[styles.meta, { color: pal.muted, fontFamily: pal.font.fontFamily }]}>
+                  {formatWhen(session.last_seen_at)}
+                </Text>
+              </View>
               {session.is_current ? null : (
                 <Pressable
                   onPress={() => void revoke(session.id)}
                   disabled={busyId === session.id}
-                  style={styles.revoke}
+                  style={[styles.revoke, { backgroundColor: "rgba(255,59,48,0.08)" }]}
                 >
                   {busyId === session.id ? (
                     <ActivityIndicator color={pal.destructive} />
                   ) : (
-                    <Text style={[styles.revokeText, { color: pal.destructive }]}>{t("common.cancel")}</Text>
+                    <Text style={[styles.revokeText, { color: pal.destructive }]}>Bekor qilish</Text>
                   )}
                 </Pressable>
               )}
@@ -164,16 +205,37 @@ const styles = StyleSheet.create({
   err: { color: "#FF3B30", fontSize: fontSize(13), marginBottom: verticalScale(8) },
   empty: { fontSize: fontSize(14), marginTop: verticalScale(12) },
   card: {
-    borderRadius: moderateScale(16),
+    borderRadius: moderateScale(18),
     borderWidth: StyleSheet.hairlineWidth,
     padding: moderateScale(14),
-    gap: moderateScale(4),
-    shadowOpacity: 0,
-    elevation: 0,
+    gap: moderateScale(10),
   },
+  cardTop: { flexDirection: "row", alignItems: "center", gap: moderateScale(12) },
+  cardMain: { flex: 1, minWidth: 0 },
+  iconTile: {
+    width: moderateScale(40),
+    height: moderateScale(40),
+    borderRadius: moderateScale(12),
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  badge: {
+    borderRadius: moderateScale(999),
+    paddingHorizontal: moderateScale(8),
+    paddingVertical: moderateScale(3),
+  },
+  badgeText: { fontSize: fontSize(11), fontWeight: "700" },
+  whenRow: { flexDirection: "row", alignItems: "center", gap: moderateScale(6) },
   device: { fontSize: fontSize(15), fontWeight: "700" },
   meta: { fontSize: fontSize(13), lineHeight: fontSize(18) },
-  revoke: { alignSelf: "flex-start", marginTop: verticalScale(8) },
+  revoke: {
+    alignSelf: "flex-start",
+    minHeight: verticalScale(36),
+    paddingHorizontal: moderateScale(12),
+    borderRadius: moderateScale(10),
+    alignItems: "center",
+    justifyContent: "center",
+  },
   revokeText: { fontSize: fontSize(13), fontWeight: "700" },
   others: {
     marginTop: verticalScale(8),

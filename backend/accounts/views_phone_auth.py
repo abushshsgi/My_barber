@@ -260,6 +260,11 @@ class PhoneSetPasswordView(APIView):
 
     def post(self, request):
         user = request.user
+        if not (user.phone or "").strip():
+            return Response(
+                {"detail": "Google hisobida parol yo'q. Parol faqat telefon raqam bilan kirishda ishlaydi."},
+                status=400,
+            )
         if user.has_usable_password():
             return Response(
                 {"detail": "Parol allaqachon o'rnatilgan. Sozlamalardan o'zgartiring."},

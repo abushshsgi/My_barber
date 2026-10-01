@@ -16,6 +16,7 @@ import {
   type ViewToken,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { NativeBackButton } from "../../components/ui/NativeBackButton";
 import { safeBottom, safeTop } from "../../lib/safe-area";
 import { formatMorphUserError } from "../../api/ai";
 import { pexelsPhotoUrl } from "../../api/media";
@@ -239,13 +240,11 @@ export function MorphGuideCarouselScreen({ navigation, route }: Props) {
       ]}
     >
       <View style={styles.topBar}>
-        <Pressable
-          style={styles.backBtn}
+        <NativeBackButton
           onPress={onBack}
-          accessibilityLabel="Orqaga"
-        >
-          <Ionicons name="chevron-back" size={20} color="#FFF" />
-        </Pressable>
+          color="#fff"
+          backgroundColor="rgba(255,255,255,0.16)"
+        />
         <Text style={styles.topTitle}>Morf AI</Text>
         <View style={styles.backBtnGhost} />
       </View>
