@@ -68,6 +68,28 @@ function blurFocusInsideHidden() {
  * ni o'zgartirmaydi va butun faol ekran bosilmay qoladi.
  * Klass orqali konteyner o'tkazib yuboradi, bolalari esa bosiladi.
  */
+function fitWebViewport() {
+  if (Platform.OS !== "web" || typeof document === "undefined") return;
+  const styleId = "app-viewport-fit";
+  if (!document.getElementById(styleId)) {
+    const style = document.createElement("style");
+    style.id = styleId;
+    style.textContent = [
+      "html,body,#root{height:100%;width:100%;max-width:100%;margin:0;overflow:hidden}",
+      "#root{display:flex;flex-direction:column;min-width:0}",
+      "img,video,canvas,svg{max-width:100%;height:auto}",
+    ].join("");
+    document.head.appendChild(style);
+  }
+  const meta = document.querySelector('meta[name="viewport"]');
+  if (meta) {
+    meta.setAttribute(
+      "content",
+      "width=device-width, initial-scale=1, minimum-scale=1, viewport-fit=cover",
+    );
+  }
+}
+
 function repairWebBoxNone() {
   if (Platform.OS !== "web" || typeof document === "undefined") return;
   const styleId = "rn-box-none-fix";
@@ -292,6 +314,7 @@ export default function App() {
 
   useEffect(() => {
     if (Platform.OS !== "web") return;
+    fitWebViewport();
     const id = requestAnimationFrame(() => repairWebBoxNone());
     return () => cancelAnimationFrame(id);
   }, []);
@@ -303,7 +326,7 @@ export default function App() {
   return (
     <AppErrorBoundary>
       <I18nextProvider i18n={i18n}>
-        <GestureHandlerRootView style={{ flex: 1 }}>
+        <GestureHandlerRootView style={{ flex: 1, width: "100%", maxWidth: "100%", minWidth: 0, minHeight: 0 }}>
           <SafeAreaProvider initialMetrics={initialWindowMetrics}>
             <AuthProvider>
               <GoogleAuthSessionProvider>

@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Dimensions, PixelRatio, useWindowDimensions } from "react-native";
+import { Dimensions, PixelRatio, Platform, useWindowDimensions } from "react-native";
 import { useSafeAreaInsets, type EdgeInsets } from "react-native-safe-area-context";
 
 /**
@@ -48,11 +48,16 @@ function round(value: number): number {
  */
 function liveWindow(): { w: number; h: number } {
   const { width, height } = Dimensions.get("window");
+  // Vebda haqiqiy oyna. Telefonni yonlama aylantirishda esa kichik qirra kenglik bo‘lib qoladi.
+  if (Platform.OS === "web") return { w: width, h: height };
   return { w: Math.min(width, height), h: Math.max(width, height) };
 }
 
 export function scale(size: number): number {
-  const factor = clamp(liveWindow().w / BASE_WIDTH, 0.72, 1.15);
+  const w = liveWindow().w;
+  // Planshet va desktopda cheksiz kattalashmasin, telefon tor bo‘lsa ham o‘qiladigan qolsin.
+  const cap = w >= 1024 ? 1.28 : w >= 700 ? 1.18 : 1.12;
+  const factor = clamp(w / BASE_WIDTH, 0.82, cap);
   return round(size * factor);
 }
 

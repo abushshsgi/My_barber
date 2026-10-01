@@ -95,6 +95,8 @@ export function HeaderPill({
 const styles = StyleSheet.create({
   wrap: {
     backgroundColor: colors.bg,
+    width: "100%",
+    maxWidth: "100%",
     paddingHorizontal: scale(16),
     paddingBottom: verticalScale(10),
   },
@@ -110,6 +112,8 @@ const styles = StyleSheet.create({
   },
   title: {
     flex: 1,
+    flexShrink: 1,
+    minWidth: 0,
     fontSize: fontSize(17),
     fontWeight: "700",
     color: colors.fg,

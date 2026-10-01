@@ -170,7 +170,7 @@ export function WalletTopUpScreen({ navigation }: Props) {
         onBack={() => navigation.goBack()}
         border
       />
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+      <ScrollView style={{ flex: 1, width: "100%" }} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
         <View style={styles.balCard}>
           <View style={styles.balIcon}>
             <Ionicons name="wallet-outline" size={18} color={colors.fg} />
@@ -348,8 +348,8 @@ function CopyRow({
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.bg },
-  content: { padding: moderateScale(20), paddingBottom: verticalScale(40) },
+  root: { flex: 1, width: "100%", maxWidth: "100%", minWidth: 0, backgroundColor: colors.bg },
+  content: { width: "100%", maxWidth: "100%", padding: moderateScale(16), paddingBottom: verticalScale(40) },
   sub: { fontSize: fontSize(13), color: colors.muted, marginBottom: verticalScale(16), marginTop: -verticalScale(4) },
   balCard: {
     flexDirection: "row",
@@ -380,18 +380,19 @@ const styles = StyleSheet.create({
     paddingVertical: verticalScale(12),
   },
   methodStep: {
-    width: scale(26),
-    height: scale(26),
-    borderRadius: moderateScale(13),
+    width: scale(28),
+    height: scale(28),
+    borderRadius: moderateScale(14),
     backgroundColor: colors.fg,
     color: "#FFF",
     textAlign: "center",
-    lineHeight: scale(26),
+    textAlignVertical: "center",
     fontSize: fontSize(13),
     fontWeight: "800",
-    overflow: "hidden",
+    lineHeight: fontSize(16),
+    overflow: "visible",
   },
-  methodText: { flex: 1, fontSize: fontSize(14), lineHeight: fontSize(19), color: colors.fg, fontWeight: "600" },
+  methodText: { flex: 1, flexShrink: 1, minWidth: 0, fontSize: fontSize(14), lineHeight: fontSize(19), color: colors.fg, fontWeight: "600" },
   cardError: { marginTop: verticalScale(10), color: "#B42318", fontSize: fontSize(13), lineHeight: fontSize(18) },
   payTitle: { marginTop: verticalScale(8), fontSize: fontSize(20), fontWeight: "800", color: colors.fg },
   refBox: {
@@ -411,6 +412,8 @@ const styles = StyleSheet.create({
   },
   grid: { gap: moderateScale(8) },
   preset: {
+    width: "100%",
+    maxWidth: "100%",
     flexDirection: "row",
     alignItems: "center",
     gap: moderateScale(8),
