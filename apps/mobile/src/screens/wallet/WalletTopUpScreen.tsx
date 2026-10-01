@@ -156,16 +156,25 @@ export function WalletTopUpScreen({ navigation }: Props) {
         border
       />
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-        <Text style={styles.sub}>Hamyon balansini oshiring</Text>
-
         <View style={styles.balCard}>
-          <Text style={styles.balLabel}>JORIY BALANS</Text>
-          <Text style={styles.balValue}>{formatSomLabel(me.balance)}</Text>
+          <View style={styles.balIcon}>
+            <Ionicons name="wallet-outline" size={18} color={colors.fg} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.balLabel}>Hamyon balansi</Text>
+            <Text style={styles.balValue}>{formatSomLabel(me.balance)}</Text>
+          </View>
+        </View>
+        <View style={styles.method}>
+          <Ionicons name="card-outline" size={16} color={colors.fg} />
+          <Text style={styles.methodText}>
+            Hozirgi usul: karta o'tkazmasi. Chekni yuklaysiz, admin tasdiqlagach balansga tushadi.
+          </Text>
         </View>
 
         {!deposit || deposit.status === "approved" || deposit.status === "rejected" ? (
           <>
-            <Text style={styles.section}>SUMMANI TANLANG</Text>
+            <Text style={styles.section}>Summa</Text>
             <View style={styles.grid}>
               {PRESETS.map((p) => {
                 const active = !activeCustom && amount === p;
@@ -179,30 +188,29 @@ export function WalletTopUpScreen({ navigation }: Props) {
                     }}
                   >
                     <Text style={[styles.presetLabel, active && styles.presetLabelActive]}>
-                      {p >= 1_000_000 ? `${p / 1_000_000}M` : `${p / 1000}k`}
+                      {formatSomAmount(p)}
                     </Text>
-                    <Text style={[styles.presetSub, active && styles.presetSubActive]}>
-                      {formatSomAmount(p)} SO'M
-                    </Text>
+                    <Text style={[styles.presetSub, active && styles.presetSubActive]}>so'm</Text>
+                    {active ? <Ionicons name="checkmark-circle" size={16} color={colors.fg} /> : <View style={styles.dot} />}
                   </Pressable>
                 );
               })}
             </View>
 
-            <Text style={styles.section}>BOSHQA SUMMA</Text>
+            <Text style={styles.section}>Boshqa summa</Text>
             <TextInput
               style={styles.input}
-              placeholder="Masalan, 150 000"
+              placeholder="150 000"
               placeholderTextColor={colors.muted}
               keyboardType="number-pad"
               value={custom}
-              onChangeText={(t) => {
-                const n = parseDigits(t);
+              onChangeText={(raw) => {
+                const n = parseDigits(raw);
                 setCustom(n ? formatSomAmount(n) : "");
                 if (n) setAmount(n);
               }}
             />
-            <Text style={styles.help}>Minimal summa — {formatSomLabel(MIN_TOPUP_AMOUNT)}</Text>
+            <Text style={styles.help}>Kamida {formatSomLabel(MIN_TOPUP_AMOUNT)}</Text>
 
             <Pressable
               style={[styles.cta, submitting && styles.ctaDisabled]}
@@ -314,44 +322,64 @@ const styles = StyleSheet.create({
   content: { padding: moderateScale(20), paddingBottom: verticalScale(40) },
   sub: { fontSize: fontSize(13), color: colors.muted, marginBottom: verticalScale(16), marginTop: -verticalScale(4) },
   balCard: {
-    backgroundColor: colors.fg,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: moderateScale(12),
+    backgroundColor: colors.surface,
     borderRadius: moderateScale(18),
-    padding: moderateScale(20),
+    padding: moderateScale(16),
   },
-  balLabel: {
-    color: "rgba(255,255,255,0.45)",
-    fontSize: fontSize(10),
-    fontWeight: "700",
-    letterSpacing: 1.2,
+  balIcon: {
+    width: scale(40),
+    height: scale(40),
+    borderRadius: moderateScale(14),
+    backgroundColor: colors.bg,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  balValue: {
-    marginTop: verticalScale(8),
-    color: "#FFF",
-    fontSize: fontSize(26),
-    fontWeight: "800",
+  balLabel: { fontSize: fontSize(12), color: colors.muted, fontWeight: "600" },
+  balValue: { marginTop: verticalScale(2), color: colors.fg, fontSize: fontSize(22), fontWeight: "800" },
+  method: {
+    marginTop: verticalScale(12),
+    flexDirection: "row",
+    gap: moderateScale(8),
+    alignItems: "flex-start",
+    backgroundColor: colors.surface,
+    borderRadius: moderateScale(14),
+    padding: moderateScale(12),
   },
+  methodText: { flex: 1, fontSize: fontSize(13), lineHeight: fontSize(18), color: colors.fg },
   section: {
     marginTop: verticalScale(22),
     marginBottom: verticalScale(10),
-    fontSize: fontSize(11),
+    fontSize: fontSize(15),
     fontWeight: "700",
-    color: colors.muted,
-    letterSpacing: 1.1,
+    color: colors.fg,
   },
-  grid: { flexDirection: "row", flexWrap: "wrap", gap: moderateScale(10) },
+  grid: { gap: moderateScale(8) },
   preset: {
-    width: "48%",
-    flexGrow: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: moderateScale(8),
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: moderateScale(14),
-    padding: moderateScale(14),
+    paddingHorizontal: scale(14),
+    paddingVertical: verticalScale(14),
+    backgroundColor: colors.bg,
   },
-  presetActive: { backgroundColor: colors.fg, borderColor: colors.fg },
-  presetLabel: { fontSize: fontSize(18), fontWeight: "800", color: colors.fg },
-  presetLabelActive: { color: "#FFF" },
-  presetSub: { marginTop: verticalScale(4), fontSize: fontSize(11), color: colors.muted, fontWeight: "600" },
-  presetSubActive: { color: "rgba(255,255,255,0.65)" },
+  presetActive: { borderColor: colors.fg, backgroundColor: colors.surface },
+  presetLabel: { flex: 1, fontSize: fontSize(16), fontWeight: "800", color: colors.fg },
+  presetLabelActive: { color: colors.fg },
+  presetSub: { fontSize: fontSize(12), color: colors.muted, fontWeight: "600" },
+  presetSubActive: { color: colors.muted },
+  dot: {
+    width: scale(16),
+    height: scale(16),
+    borderRadius: moderateScale(8),
+    borderWidth: 1.5,
+    borderColor: colors.border,
+  },
   input: {
     borderWidth: 1,
     borderColor: colors.border,
