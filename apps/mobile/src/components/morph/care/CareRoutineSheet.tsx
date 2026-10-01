@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
 import { Image } from "expo-image";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -11,7 +11,15 @@ import {
   View,
 } from "react-native";
 import { useTranslation } from "react-i18next";
-import Reanimated, { FadeIn, FadeInDown, FadeOut, FadeOutUp, LinearTransition } from "react-native-reanimated";
+import Reanimated, {
+  Easing,
+  FadeIn,
+  FadeOut,
+  LinearTransition,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
 import { TAB_DOCK_CLEARANCE } from "../../../hooks/useHideTabBar";
 import {
   clearSavedCarePlan,
@@ -263,6 +271,44 @@ function idsEqual(a: number[], b: number[]): boolean {
   return sa.every((id, i) => id === sb[i]);
 }
 
+const FOLD_EASE = Easing.bezier(0.22, 1, 0.36, 1);
+const FOLD_MS = 520;
+
+function PlanFold({ open, children }: { open: boolean; children: ReactNode }) {
+  const progress = useSharedValue(open ? 1 : 0);
+
+  useEffect(() => {
+    progress.value = withTiming(open ? 1 : 0, { duration: FOLD_MS, easing: FOLD_EASE });
+  }, [open, progress]);
+
+  const clipStyle = useAnimatedStyle(() => ({
+    maxHeight: progress.value * 1600,
+    opacity: progress.value,
+    transform: [{ translateY: (1 - progress.value) * -10 }],
+  }));
+
+  return (
+    <Reanimated.View style={[styles.extraClip, clipStyle]} pointerEvents={open ? "auto" : "none"}>
+      {children}
+    </Reanimated.View>
+  );
+}
+
+function FoldChevron({ open }: { open: boolean }) {
+  const turn = useSharedValue(open ? 1 : 0);
+  useEffect(() => {
+    turn.value = withTiming(open ? 1 : 0, { duration: FOLD_MS, easing: FOLD_EASE });
+  }, [open, turn]);
+  const spin = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${turn.value * 180}deg` }],
+  }));
+  return (
+    <Reanimated.View style={spin}>
+      <Ionicons name="chevron-down" size={16} color="#111" />
+    </Reanimated.View>
+  );
+}
+
 function clockSortKey(task: RoutineTask): string {
   return task.time || task.timeHint || "99:99";
 }
@@ -333,7 +379,8 @@ export function CareRoutineSheet({
 
   const PLAN_PREVIEW = 3;
   const planCanFold = tasks.length > PLAN_PREVIEW;
-  const visibleTasks = planOpen || !planCanFold ? tasks : tasks.slice(0, PLAN_PREVIEW);
+  const previewTasks = tasks.slice(0, PLAN_PREVIEW);
+  const extraTasks = planCanFold ? tasks.slice(PLAN_PREVIEW) : [];
 
   const doneCount = useMemo(
     () => tasks.filter((task) => doneMap[task.id]).length,
@@ -714,23 +761,17 @@ export function CareRoutineSheet({
                   })}
                 </View>
 
-                <Reanimated.View layout={LinearTransition.duration(280)} style={styles.stepStack}>
-                  {visibleTasks.map((task, index) => {
+                <View style={styles.stepStack}>
+                  {previewTasks.map((task) => {
                     const done = !!doneMap[task.id];
                     const pname = displayProductName(task.productName);
                     const when = task.time;
-                    const extra = index >= PLAN_PREVIEW;
                     return (
-                      <Reanimated.View
+                      <Pressable
                         key={task.id}
-                        layout={LinearTransition.duration(260)}
-                        entering={extra ? FadeInDown.duration(240) : undefined}
-                        exiting={extra ? FadeOutUp.duration(180) : undefined}
+                        style={[styles.ritualCard, done && styles.ritualCardDone]}
+                        onPress={() => openGuideFor(task)}
                       >
-                        <Pressable
-                          style={[styles.ritualCard, done && styles.ritualCardDone]}
-                          onPress={() => openGuideFor(task)}
-                        >
                         {task.imageUrl ? (
                           <Image
                             source={{ uri: task.imageUrl }}
@@ -773,11 +814,71 @@ export function CareRoutineSheet({
                         >
                           {done ? <Ionicons name="checkmark" size={13} color="#fff" /> : null}
                         </Pressable>
-                        </Pressable>
-                      </Reanimated.View>
+                      </Pressable>
                     );
                   })}
-                </Reanimated.View>
+                  {extraTasks.length > 0 ? (
+                    <PlanFold open={planOpen}>
+                      <View style={styles.stepStack}>
+                        {extraTasks.map((task) => {
+                          const done = !!doneMap[task.id];
+                          const pname = displayProductName(task.productName);
+                          const when = task.time;
+                          return (
+                            <Pressable
+                              key={task.id}
+                              style={[styles.ritualCard, done && styles.ritualCardDone]}
+                              onPress={() => openGuideFor(task)}
+                            >
+                              {task.imageUrl ? (
+                                <Image
+                                  source={{ uri: task.imageUrl }}
+                                  style={styles.productImg}
+                                  contentFit="cover"
+                                  cachePolicy="memory-disk"
+                                  transition={0}
+                                  recyclingKey={`task-${task.id}`}
+                                />
+                              ) : (
+                                <View style={[styles.productImg, styles.productPh]}>
+                                  <Ionicons name={TASK_ICONS[task.icon]} size={16} color="#111" />
+                                </View>
+                              )}
+                              <View style={styles.productCopy}>
+                                <Text
+                                  style={[styles.ritualTitle, done && styles.ritualTitleDone]}
+                                  numberOfLines={1}
+                                >
+                                  {task.title}
+                                </Text>
+                                {pname ? (
+                                  <Text style={styles.productName} numberOfLines={1}>
+                                    {pname}
+                                  </Text>
+                                ) : null}
+                              </View>
+                              {when ? (
+                                <View style={styles.timePill}>
+                                  <Text style={styles.timeText}>{when}</Text>
+                                </View>
+                              ) : null}
+                              <Pressable
+                                style={[styles.checkBtn, done && styles.checkBtnOn]}
+                                onPress={(e) => {
+                                  e.stopPropagation?.();
+                                  void toggleTask(task.id);
+                                }}
+                                hitSlop={8}
+                              >
+                                {done ? <Ionicons name="checkmark" size={13} color="#fff" /> : null}
+                              </Pressable>
+                            </Pressable>
+                          );
+                        })}
+                      </View>
+                    </PlanFold>
+                  ) : null}
+                </View>
                 {planCanFold ? (
                   <Pressable
                     style={styles.planToggle}
@@ -792,18 +893,14 @@ export function CareRoutineSheet({
                             defaultValue: "Yana {{count}} ta",
                           })}
                     </Text>
-                    <Ionicons
-                      name={planOpen ? "chevron-up" : "chevron-down"}
-                      size={16}
-                      color="#111"
-                    />
+                    <FoldChevron open={planOpen} />
                   </Pressable>
                 ) : null}
               </Reanimated.View>
             ) : null}
 
             {hasProducts && !emptyOnly ? (
-              <Reanimated.View layout={LinearTransition.duration(280)} style={styles.productSection}>
+              <Reanimated.View layout={LinearTransition.duration(FOLD_MS)} style={styles.productSection}>
                 <View style={styles.sectionHead}>
                   <Text style={styles.sectionTitle}>{t("care.myProducts.title")}</Text>
                   <Pressable style={styles.scanLink} onPress={onOpenScan}>
@@ -1279,6 +1376,7 @@ const styles = StyleSheet.create({
     lineHeight: fontSize(16),
   },
   stepStack: { gap: moderateScale(6) },
+  extraClip: { overflow: "hidden" },
   ritualCard: {
     flexDirection: "row",
     alignItems: "center",
