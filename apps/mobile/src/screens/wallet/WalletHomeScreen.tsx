@@ -203,9 +203,9 @@ export function WalletHomeScreen({ navigation }: Props) {
                 <Text style={styles.profileInitials}>{initials(greetName)}</Text>
               )}
             </View>
-            <View>
-              <Text style={styles.hello}>{t("walletPages.hello")}, {greetName}</Text>
-              <Text style={styles.welcome}>{t("walletPages.welcome")}</Text>
+            <View style={styles.helloCol}>
+              <Text style={styles.hello} numberOfLines={1}>{t("walletPages.hello")}, {greetName}</Text>
+              <Text style={styles.welcome} numberOfLines={1}>{t("walletPages.welcome")}</Text>
             </View>
           </Pressable>
           <Pressable
@@ -249,7 +249,7 @@ export function WalletHomeScreen({ navigation }: Props) {
               <View style={styles.quickBtn}>
                 <Ionicons name={item.icon} size={ICON.lg} color={INK} />
               </View>
-              <Text style={styles.quickLabel} numberOfLines={1}>
+              <Text style={styles.quickLabel} numberOfLines={2}>
                 {t(item.labelKey)}
               </Text>
             </Pressable>
@@ -437,9 +437,9 @@ const styles = StyleSheet.create({
     marginHorizontal: scale(16),
     marginBottom: spacing.xs,
     borderRadius: moderateScale(32),
-    paddingHorizontal: scale(20),
+    paddingHorizontal: scale(16),
     paddingBottom: spacing.lg,
-    overflow: "hidden",
+    overflow: "visible",
   },
   header: {
     flexDirection: "row",
@@ -464,6 +464,7 @@ const styles = StyleSheet.create({
   },
   profileImg: { width: AVATAR, height: AVATAR },
   profileInitials: { fontSize: fontSize(15), fontWeight: "700", color: INK },
+  helloCol: { flex: 1, minWidth: 0 },
   hello: { fontSize: fontSize(16), fontWeight: "700", color: INK },
   welcome: { marginTop: verticalScale(2), fontSize: fontSize(13), color: MUTED, fontWeight: "400" },
   bellBtn: {
@@ -491,13 +492,15 @@ const styles = StyleSheet.create({
   },
   quickRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    paddingHorizontal: scale(4),
+    alignItems: "flex-start",
+    width: "100%",
+    gap: scale(6),
   },
-  quickItem: { alignItems: "center", gap: spacing.xs, width: scale(68) },
+  quickItem: { flex: 1, minWidth: 0, alignItems: "center", gap: spacing.xs },
   quickBtn: {
-    width: QUICK_TILE,
-    height: QUICK_TILE,
+    width: "100%",
+    maxWidth: QUICK_TILE,
+    aspectRatio: 1,
     borderRadius: radius.lg,
     backgroundColor: "#FFF",
     alignItems: "center",
@@ -509,8 +512,10 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   quickLabel: {
-    fontSize: fontSize(12),
-    fontWeight: "500",
+    width: "100%",
+    fontSize: fontSize(11),
+    lineHeight: fontSize(14),
+    fontWeight: "600",
     color: "#4B5563",
     textAlign: "center",
   },

@@ -261,7 +261,9 @@ export function WalletTopUpScreen({ navigation }: Props) {
               onPress={() => void copy(deposit.transaction_ref, "Izoh kodi")}
             >
               <Text style={styles.refLabel}>Izohga yoziladigan kod · bosing, nusxa olinadi</Text>
-              <Text style={styles.refValue}>{deposit.transaction_ref}</Text>
+              <Text style={styles.refValue} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>
+                {deposit.transaction_ref}
+              </Text>
             </Pressable>
 
             {card ? (
@@ -340,7 +342,7 @@ function CopyRow({
     <Pressable style={styles.copyRow} onPress={onCopy}>
       <View style={{ flex: 1 }}>
         <Text style={styles.copyLabel}>{label}</Text>
-        <Text style={styles.copyValue}>{value}</Text>
+        <Text style={styles.copyValue} numberOfLines={2}>{value}</Text>
       </View>
       <Ionicons name="copy-outline" size={18} color={colors.muted} />
     </Pressable>
@@ -402,7 +404,7 @@ const styles = StyleSheet.create({
     padding: moderateScale(16),
   },
   refLabel: { color: "rgba(255,255,255,0.62)", fontSize: fontSize(12), fontWeight: "600" },
-  refValue: { marginTop: verticalScale(6), color: "#FFF", fontSize: fontSize(28), fontWeight: "800", letterSpacing: 1 },
+  refValue: { marginTop: verticalScale(6), color: "#FFF", fontSize: fontSize(26), fontWeight: "800", letterSpacing: 0.4 },
   section: {
     marginTop: verticalScale(22),
     marginBottom: verticalScale(10),
