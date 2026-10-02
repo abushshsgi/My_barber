@@ -60,6 +60,42 @@ function remainMs(iso: string | null | undefined, now: number) {
   return Math.max(0, end - now);
 }
 
+function InfoLine({
+  label,
+  value,
+  onPress,
+  copied,
+  last,
+}: {
+  label: string;
+  value: string;
+  onPress?: () => void;
+  copied?: boolean;
+  last?: boolean;
+}) {
+  const body = (
+    <View style={[styles.infoLine, !last && styles.infoLineBorder]}>
+      <Text style={styles.infoLabel}>{label}</Text>
+      <Text style={styles.infoValue} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>
+        {value}
+      </Text>
+      {onPress ? (
+        <Ionicons
+          name={copied ? "checkmark" : "copy-outline"}
+          size={scale(14)}
+          color={colors.muted}
+        />
+      ) : null}
+    </View>
+  );
+  if (!onPress) return body;
+  return (
+    <Pressable onPress={onPress} accessibilityRole="button">
+      {body}
+    </Pressable>
+  );
+}
+
 function formatRemain(ms: number) {
   const total = Math.floor(ms / 1000);
   const h = Math.floor(total / 3600);
@@ -83,6 +119,7 @@ export function WalletTopUpScreen({ navigation }: Props) {
   const { height: windowHeight } = useWindowDimensions();
   const [cardError, setCardError] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
+  const [boxH, setBoxH] = useState(0);
   const [now, setNow] = useState(() => Date.now());
   const copyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const deposits = useCardDeposits(true);
@@ -217,13 +254,21 @@ export function WalletTopUpScreen({ navigation }: Props) {
           <ActivityIndicator color={colors.fg} />
         </View>
       ) : (
-        <View style={styles.body}>
+        <View
+          style={styles.body}
+          onLayout={(e) => {
+            const next = Math.round(e.nativeEvent.layout.height);
+            if (next > 0 && Math.abs(next - boxH) > 1) setBoxH(next);
+          }}
+        >
         <ScrollView
-          style={styles.scroll}
+          style={[styles.scroll, boxH > 0 ? { height: boxH, maxHeight: boxH } : null]}
           contentContainerStyle={styles.content}
           keyboardShouldPersistTaps="handled"
           nestedScrollEnabled
-          showsVerticalScrollIndicator={false}
+          scrollEnabled
+          bounces
+          showsVerticalScrollIndicator
         >
           <View style={styles.balCard}>
             <View style={styles.balIcon}>
@@ -296,124 +341,86 @@ export function WalletTopUpScreen({ navigation }: Props) {
               </Pressable>
             </>
           ) : (
-            <>
+            <View style={styles.sheet}>
               {paying ? (
-                <View style={styles.timerCard}>
-                  <Text style={styles.timerLabel}>Qolgan vaqt</Text>
-                  <Text style={styles.timerValue}>{formatRemain(left)}</Text>
-                  <View style={styles.track}>
-                    <View style={[styles.trackFill, { width: `${Math.round(timerRatio * 100)}%` }]} />
+                <View style={styles.metaRow}>
+                  <View style={styles.metaCell}>
+                    <Text style={styles.kicker}>Qolgan vaqt</Text>
+                    <Text style={styles.metaValue}>{formatRemain(left)}</Text>
                   </View>
-                  <Text style={styles.timerHint}>
-                    120 daqiqa. Shu vaqt ichida chiqib, to'ldirishga qaytib kirsangiz ham shu karta ochiladi.
-                  </Text>
+                  <View style={styles.metaRule} />
+                  <View style={[styles.metaCell, styles.metaEnd]}>
+                    <Text style={styles.kicker}>Summa</Text>
+                    <Text style={styles.metaValue} numberOfLines={1} adjustsFontSizeToFit>
+                      {formatSomLabel(parseDigits(String(deposit?.amount ?? 0)))}
+                    </Text>
+                  </View>
                 </View>
               ) : (
-                <View style={styles.reviewCard}>
-                  <ActivityIndicator color={colors.forest} />
-                  <Text style={styles.reviewTitle}>Admin tekshirmoqda</Text>
-                  <Text style={styles.reviewHint}>
-                    Chek yuborilgan. Balans tasdiqdan keyin oshadi. Sahifani yopsangiz ham shu so'rov saqlanadi.
-                  </Text>
+                <View style={styles.reviewLine}>
+                  <ActivityIndicator color={colors.fg} size="small" />
+                  <Text style={styles.reviewText}>Admin tekshirmoqda. Chek saqlangan.</Text>
                 </View>
               )}
-
-              <View style={styles.amountLock}>
-                <Text style={styles.amountLockLabel}>O'tkazma summasi</Text>
-                <Text style={styles.amountLockValue}>
-                  {formatSomLabel(parseDigits(String(deposit?.amount ?? 0)))}
-                </Text>
-              </View>
+              {paying ? (
+                <View style={styles.track}>
+                  <View style={[styles.trackFill, { width: `${Math.round(timerRatio * 100)}%` }]} />
+                </View>
+              ) : null}
 
               {card ? (
-                <View style={styles.bankCard}>
-                  <View style={styles.bankTop}>
-                    <Text style={styles.bankName} numberOfLines={1}>
-                      {card.bank}
-                    </Text>
-                    <Ionicons name="card-outline" size={scale(22)} color="#C6EF4A" />
-                  </View>
-                  <Text style={styles.pan} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
-                    {groupCard(card.number || card.masked)}
-                  </Text>
-                  <Text style={styles.holder} numberOfLines={1}>
-                    {card.cardholder}
-                  </Text>
-                  <Pressable
-                    style={styles.copyPill}
-                    onPress={() => void copy((card.number || card.masked).replace(/\D/g, ""), "Karta")}
-                  >
-                    <Ionicons
-                      name={copied === "Karta" ? "checkmark" : "copy-outline"}
-                      size={scale(16)}
-                      color={colors.forest}
-                    />
-                    <Text style={styles.copyPillText}>
-                      {copied === "Karta" ? "Nusxa olindi" : "Karta raqami"}
-                    </Text>
-                  </Pressable>
-                </View>
+                <InfoLine
+                  label="Karta"
+                  value={groupCard(card.number || card.masked)}
+                  copied={copied === "Karta"}
+                  onPress={() => void copy((card.number || card.masked).replace(/\D/g, ""), "Karta")}
+                />
               ) : null}
-
+              {card ? <InfoLine label="Egasi" value={card.cardholder} /> : null}
+              {card ? <InfoLine label="Bank" value={card.bank} /> : null}
               {deposit ? (
-                <Pressable
-                  style={styles.refBox}
+                <InfoLine
+                  label="Izoh kodi"
+                  value={deposit.transaction_ref}
+                  copied={copied === "Izoh"}
                   onPress={() => void copy(deposit.transaction_ref, "Izoh")}
-                >
-                  <View style={styles.refCopy}>
-                    <Text style={styles.refLabel}>Izoh kodi · admin shu kod bilan solishtiradi</Text>
-                    <Text
-                      style={styles.refValue}
-                      numberOfLines={1}
-                      adjustsFontSizeToFit
-                      minimumFontScale={0.6}
-                    >
-                      {deposit.transaction_ref}
-                    </Text>
-                  </View>
-                  <Ionicons
-                    name={copied === "Izoh" ? "checkmark-circle" : "copy-outline"}
-                    size={scale(22)}
-                    color={colors.lime}
-                  />
-                </Pressable>
+                  last
+                />
               ) : null}
+            </View>
 
-              {paying ? (
-                <>
-                  <Text style={styles.stepHint}>Chek rasmini tanlang. Yuborish tugmasi pastda turadi.</Text>
-                  <Pressable style={styles.pickBtn} onPress={pickReceipt}>
-                    <Ionicons name="image-outline" size={scale(20)} color={colors.fg} />
-                    <Text style={styles.pickText}>
-                      {receipt ? "Boshqa chek tanlash" : "O'tkazma chekini qo'shish"}
-                    </Text>
-                  </Pressable>
-                  {receipt ? (
-                    <Image
-                      source={{ uri: receipt.uri }}
-                      style={[styles.preview, { height: Math.max(verticalScale(96), Math.round(windowHeight * 0.18)) }]}
-                    />
-                  ) : null}
-                </>
-              ) : null}
-            </>
+            {paying ? (
+              <>
+                <Pressable style={styles.pickBtn} onPress={pickReceipt}>
+                  <Ionicons name="image-outline" size={scale(16)} color={colors.fg} />
+                  <Text style={styles.pickText}>
+                    {receipt ? "Boshqa chek" : "Chek rasmini tanlang"}
+                  </Text>
+                </Pressable>
+                <Pressable
+                  style={[styles.cta, styles.inlineCta, (!receipt || claiming) && styles.ctaDisabled]}
+                  onPress={claim}
+                  disabled={!receipt || claiming}
+                >
+                  {claiming ? (
+                    <ActivityIndicator color="#FFF" />
+                  ) : (
+                    <Text style={styles.ctaText}>{receipt ? "Davom etish" : "Avval chek tanlang"}</Text>
+                  )}
+                </Pressable>
+                {receipt ? (
+                  <Image
+                    source={{ uri: receipt.uri }}
+                    style={[
+                      styles.preview,
+                      { height: Math.min(verticalScale(120), Math.round(windowHeight * 0.16)) },
+                    ]}
+                  />
+                ) : null}
+              </>
+            ) : null}
           )}
         </ScrollView>
-        {paying ? (
-          <View style={styles.footer}>
-            <Pressable
-              style={[styles.cta, styles.footerCta, (!receipt || claiming) && styles.ctaDisabled]}
-              onPress={claim}
-              disabled={!receipt || claiming}
-            >
-              {claiming ? (
-                <ActivityIndicator color="#FFF" />
-              ) : (
-                <Text style={styles.ctaText}>{receipt ? "Davom etish" : "Avval chek rasmini tanlang"}</Text>
-              )}
-            </Pressable>
-          </View>
-        ) : null}
         </View>
       )}
     </SafeAreaView>
@@ -422,18 +429,8 @@ export function WalletTopUpScreen({ navigation }: Props) {
 
 const styles = StyleSheet.create({
   root: { flex: 1, width: "100%", backgroundColor: colors.bg },
-  body: { flex: 1, width: "100%", minHeight: 0 },
-  scroll: { flex: 1, width: "100%", minHeight: 0 },
-  footer: {
-    width: "100%",
-    paddingHorizontal: scale(16),
-    paddingTop: verticalScale(8),
-    paddingBottom: verticalScale(8),
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.border,
-    backgroundColor: colors.bg,
-  },
-  footerCta: { marginTop: 0 },
+  body: { flex: 1, width: "100%", minHeight: 0, overflow: "hidden" },
+  scroll: { width: "100%", flexGrow: 0 },
   content: {
     width: "100%",
     paddingHorizontal: scale(16),
@@ -444,10 +441,11 @@ const styles = StyleSheet.create({
   balCard: {
     flexDirection: "row",
     alignItems: "center",
-    gap: moderateScale(12),
+    gap: moderateScale(10),
     backgroundColor: colors.surface,
-    borderRadius: moderateScale(20),
-    padding: moderateScale(16),
+    borderRadius: moderateScale(16),
+    paddingHorizontal: scale(12),
+    paddingVertical: verticalScale(10),
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
   },
@@ -461,7 +459,7 @@ const styles = StyleSheet.create({
   },
   balCopy: { flex: 1, minWidth: 0 },
   balLabel: { fontSize: fontSize(12), color: colors.muted, fontWeight: "600" },
-  balValue: { marginTop: verticalScale(2), color: colors.fg, fontSize: fontSize(22), fontWeight: "800" },
+  balValue: { marginTop: verticalScale(1), color: colors.fg, fontSize: fontSize(16), fontWeight: "800" },
   lead: {
     marginTop: verticalScale(18),
     fontSize: fontSize(14),
@@ -496,7 +494,7 @@ const styles = StyleSheet.create({
   },
   preset: {
     width: "48%",
-    minHeight: verticalScale(72),
+    minHeight: verticalScale(52),
     borderRadius: moderateScale(16),
     paddingHorizontal: scale(12),
     paddingVertical: verticalScale(12),
@@ -505,8 +503,8 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     justifyContent: "center",
   },
-  presetActive: { backgroundColor: colors.forest, borderColor: colors.forest },
-  presetLabel: { fontSize: fontSize(16), fontWeight: "800", color: colors.fg },
+  presetActive: { backgroundColor: colors.fg, borderColor: colors.fg },
+  presetLabel: { fontSize: fontSize(14), fontWeight: "800", color: colors.fg },
   presetLabelActive: { color: "#FFFFFF" },
   presetSub: { marginTop: verticalScale(2), fontSize: fontSize(12), color: colors.muted, fontWeight: "600" },
   presetSubActive: { color: "rgba(255,255,255,0.72)" },
@@ -524,113 +522,59 @@ const styles = StyleSheet.create({
   },
   help: { marginTop: verticalScale(8), fontSize: fontSize(12), color: colors.muted },
   cta: {
-    marginTop: verticalScale(20),
-    minHeight: verticalScale(54),
-    borderRadius: moderateScale(16),
+    marginTop: verticalScale(16),
+    minHeight: verticalScale(46),
+    borderRadius: moderateScale(14),
     backgroundColor: colors.fg,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: scale(16),
   },
+  inlineCta: { marginTop: verticalScale(8) },
   ctaDisabled: { opacity: 0.45 },
-  ctaText: { color: "#FFF", fontSize: fontSize(16), fontWeight: "800", textAlign: "center" },
-  timerCard: {
-    marginTop: verticalScale(16),
-    backgroundColor: colors.forest,
-    borderRadius: moderateScale(22),
-    padding: moderateScale(16),
-  },
-  timerLabel: { color: "rgba(255,255,255,0.72)", fontSize: fontSize(12), fontWeight: "700" },
-  timerValue: {
-    marginTop: verticalScale(4),
-    color: colors.lime,
-    fontSize: fontSize(36),
-    fontWeight: "800",
-    letterSpacing: 1,
-  },
-  track: {
-    marginTop: verticalScale(12),
-    height: verticalScale(6),
-    borderRadius: moderateScale(6),
-    backgroundColor: "rgba(255,255,255,0.16)",
-    overflow: "hidden",
-    width: "100%",
-  },
-  trackFill: { height: "100%", backgroundColor: colors.lime, borderRadius: moderateScale(6) },
-  timerHint: {
+  ctaText: { color: colors.surface, fontSize: fontSize(14), fontWeight: "800", textAlign: "center" },
+  sheet: {
     marginTop: verticalScale(10),
-    color: "rgba(255,255,255,0.82)",
-    fontSize: fontSize(12),
-    lineHeight: fontSize(17),
-  },
-  reviewCard: {
-    marginTop: verticalScale(16),
-    backgroundColor: colors.surface,
-    borderRadius: moderateScale(22),
-    padding: moderateScale(16),
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-    gap: moderateScale(8),
-  },
-  reviewTitle: { fontSize: fontSize(18), fontWeight: "800", color: colors.fg },
-  reviewHint: { fontSize: fontSize(13), lineHeight: fontSize(18), color: colors.muted },
-  amountLock: {
-    marginTop: verticalScale(12),
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: moderateScale(12),
     backgroundColor: colors.surface,
     borderRadius: moderateScale(16),
-    paddingHorizontal: scale(14),
-    paddingVertical: verticalScale(14),
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
+    overflow: "hidden",
   },
-  amountLockLabel: { flex: 1, fontSize: fontSize(13), color: colors.muted, fontWeight: "600" },
-  amountLockValue: { fontSize: fontSize(16), fontWeight: "800", color: colors.fg },
-  bankCard: {
-    marginTop: verticalScale(12),
-    backgroundColor: "#143528",
-    borderRadius: moderateScale(22),
-    padding: moderateScale(18),
-    minHeight: verticalScale(168),
-    justifyContent: "space-between",
+  metaRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: scale(12), paddingTop: verticalScale(10) },
+  metaCell: { flex: 1, minWidth: 0 },
+  metaEnd: { alignItems: "flex-end" },
+  metaRule: { width: StyleSheet.hairlineWidth, alignSelf: "stretch", backgroundColor: colors.border, marginHorizontal: scale(10) },
+  kicker: { fontSize: fontSize(11), color: colors.muted, fontWeight: "600" },
+  metaValue: { marginTop: verticalScale(2), fontSize: fontSize(15), fontWeight: "800", color: colors.fg },
+  track: {
+    marginTop: verticalScale(8),
+    marginHorizontal: scale(12),
+    height: verticalScale(3),
+    borderRadius: moderateScale(3),
+    backgroundColor: colors.promo,
+    overflow: "hidden",
   },
-  bankTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: moderateScale(8) },
-  bankName: { flex: 1, color: "rgba(255,255,255,0.72)", fontSize: fontSize(13), fontWeight: "700" },
-  pan: {
-    marginTop: verticalScale(18),
-    color: "#FFFFFF",
-    fontSize: fontSize(22),
-    fontWeight: "800",
-    letterSpacing: 0.6,
-  },
-  holder: { marginTop: verticalScale(8), color: colors.lime, fontSize: fontSize(13), fontWeight: "700" },
-  copyPill: {
-    marginTop: verticalScale(14),
-    alignSelf: "flex-start",
+  trackFill: { height: "100%", backgroundColor: colors.fg },
+  reviewLine: {
     flexDirection: "row",
     alignItems: "center",
-    gap: moderateScale(6),
-    backgroundColor: colors.lime,
-    borderRadius: moderateScale(999),
+    gap: moderateScale(8),
     paddingHorizontal: scale(12),
-    paddingVertical: verticalScale(8),
+    paddingVertical: verticalScale(12),
   },
-  copyPillText: { color: colors.forest, fontSize: fontSize(12), fontWeight: "800" },
-  refBox: {
-    marginTop: verticalScale(12),
+  reviewText: { flex: 1, fontSize: fontSize(13), fontWeight: "600", color: colors.fg },
+  infoLine: {
     flexDirection: "row",
     alignItems: "center",
-    gap: moderateScale(12),
-    backgroundColor: colors.fg,
-    borderRadius: moderateScale(18),
-    padding: moderateScale(16),
+    gap: moderateScale(8),
+    paddingHorizontal: scale(12),
+    paddingVertical: verticalScale(9),
+    minHeight: verticalScale(36),
   },
-  refCopy: { flex: 1, minWidth: 0 },
-  refLabel: { color: "rgba(255,255,255,0.62)", fontSize: fontSize(12), fontWeight: "600" },
-  refValue: { marginTop: verticalScale(4), color: "#FFFFFF", fontSize: fontSize(22), fontWeight: "800" },
+  infoLineBorder: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
+  infoLabel: { width: scale(72), fontSize: fontSize(11), color: colors.muted, fontWeight: "600" },
+  infoValue: { flex: 1, minWidth: 0, fontSize: fontSize(13), fontWeight: "700", color: colors.fg },
   pickBtn: {
     marginTop: verticalScale(16),
     flexDirection: "row",
@@ -640,7 +584,8 @@ const styles = StyleSheet.create({
     borderStyle: "dashed",
     borderColor: colors.border,
     borderRadius: moderateScale(16),
-    padding: moderateScale(14),
+    paddingHorizontal: scale(12),
+    paddingVertical: verticalScale(10),
     backgroundColor: colors.surface,
   },
   stepHint: {
