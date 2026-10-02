@@ -96,6 +96,73 @@ function InfoLine({
   );
 }
 
+function ResultStep({
+  sending,
+  status,
+  amount,
+  comment,
+  merchant,
+  note,
+  onWallet,
+  onRetry,
+}: {
+  sending: boolean;
+  status: string;
+  amount: string;
+  comment: string;
+  merchant: string;
+  note: string;
+  onWallet: () => void;
+  onRetry: () => void;
+}) {
+  const rejected = status === "rejected";
+  const approved = status === "approved";
+  const title = sending
+    ? "Chek yuborilmoqda"
+    : approved
+      ? "Balans to'ldirildi"
+      : rejected
+        ? "To'lov rad etildi"
+        : "Tekshiruvga yuborildi";
+  const body = sending
+    ? "Chek admin paneliga ketmoqda. Shu sahifada qoling."
+    : approved
+      ? "Admin tasdiqladi. Summa hamyoningizga tushdi."
+      : rejected
+        ? note || "Admin to'lovni rad etdi. Yangi so'rov ochishingiz mumkin."
+        : "Admin chekni izoh kodi bilan solishtiradi. Tasdiqlangach balans yangilanadi.";
+  return (
+    <View style={styles.resultCard}>
+      <View style={styles.resultIcon}>
+        {sending ? (
+          <ActivityIndicator color={colors.fg} />
+        ) : (
+          <Ionicons
+            name={rejected ? "close" : approved ? "checkmark" : "time-outline"}
+            size={scale(22)}
+            color={colors.fg}
+          />
+        )}
+      </View>
+      <Text style={styles.resultTitle}>{title}</Text>
+      <Text style={styles.resultBody}>{body}</Text>
+      <Text style={styles.resultAmount}>{amount}</Text>
+      {comment ? <Text style={styles.resultMeta}>Izoh · {comment}</Text> : null}
+      {merchant ? <Text style={styles.resultMeta}>Merchant · {merchant}</Text> : null}
+      {!sending && rejected ? (
+        <Pressable style={styles.cta} onPress={onRetry}>
+          <Text style={styles.ctaText}>Qayta urinish</Text>
+        </Pressable>
+      ) : null}
+      {!sending ? (
+        <Pressable style={[styles.cta, rejected && styles.secondaryCta]} onPress={onWallet}>
+          <Text style={[styles.ctaText, rejected && styles.secondaryCtaText]}>Hamyonga qaytish</Text>
+        </Pressable>
+      ) : null}
+    </View>
+  );
+}
+
 function formatRemain(ms: number) {
   const total = Math.floor(ms / 1000);
   const h = Math.floor(total / 3600);
@@ -116,6 +183,8 @@ export function WalletTopUpScreen({ navigation }: Props) {
   const [claiming, setClaiming] = useState(false);
   const [pendingReview, setPendingReview] = useState(false);
   const [receipt, setReceipt] = useState<{ uri: string; name: string; type: string } | null>(null);
+  const [claimError, setClaimError] = useState<string | null>(null);
+  const [phase, setPhase] = useState<"idle" | "sending" | "done">("idle");
   const { height: windowHeight } = useWindowDimensions();
   const [cardError, setCardError] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
@@ -231,20 +300,30 @@ export function WalletTopUpScreen({ navigation }: Props) {
 
   const claim = async () => {
     if (!deposit || !receipt || claiming) return;
+    setClaimError(null);
     setClaiming(true);
+    setPhase("sending");
     try {
       const updated = await claimCardDeposit(deposit.id, receipt);
       setDeposit(updated);
       setPendingReview(true);
+      setPhase("done");
       deposits.refresh();
-      Alert.alert("Yuborildi", "Chek yuborildi. Admin tekshiradi.");
     } catch (e) {
       const raw = e instanceof Error ? e.message : "Yuklash xatosi";
-      Alert.alert("Xato", raw.replace(/^API \d+:\s*/, ""));
+      setClaimError(raw.replace(/^API \d+:\s*/, ""));
+      setPhase("idle");
     } finally {
       setClaiming(false);
     }
   };
+
+  const showResult =
+    phase === "sending" ||
+    phase === "done" ||
+    deposit?.status === "claimed" ||
+    deposit?.status === "approved" ||
+    deposit?.status === "rejected";
 
   return (
     <SafeAreaView style={styles.root} edges={["bottom", "left", "right"]}>
@@ -253,6 +332,25 @@ export function WalletTopUpScreen({ navigation }: Props) {
         <View style={styles.boot}>
           <ActivityIndicator color={colors.fg} />
         </View>
+      ) : showResult ? (
+        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+          <ResultStep
+            sending={phase === "sending"}
+            status={deposit?.status || "claimed"}
+            amount={formatSomLabel(parseDigits(String(deposit?.amount ?? 0)))}
+            comment={deposit?.transaction_ref || ""}
+            merchant={deposit?.merchant_ref || ""}
+            note={deposit?.review_note || ""}
+            onWallet={() => navigation.goBack()}
+            onRetry={() => {
+              setPhase("idle");
+              setDeposit(null);
+              setReceipt(null);
+              setPendingReview(false);
+              setClaimError(null);
+            }}
+          />
+        </ScrollView>
       ) : (
         <View
           style={styles.body}
@@ -262,7 +360,14 @@ export function WalletTopUpScreen({ navigation }: Props) {
           }}
         >
         <ScrollView
-          style={[styles.scroll, boxH > 0 ? { height: boxH, maxHeight: boxH } : null]}
+          style={[
+            styles.scroll,
+            paying
+              ? styles.scrollFlex
+              : boxH > 0
+                ? { height: boxH, maxHeight: boxH }
+                : null,
+          ]}
           contentContainerStyle={styles.content}
           keyboardShouldPersistTaps="handled"
           nestedScrollEnabled
@@ -385,6 +490,14 @@ export function WalletTopUpScreen({ navigation }: Props) {
                   value={deposit.transaction_ref}
                   copied={copied === "Izoh"}
                   onPress={() => void copy(deposit.transaction_ref, "Izoh")}
+                />
+              ) : null}
+              {deposit?.merchant_ref ? (
+                <InfoLine
+                  label="Merchant"
+                  value={deposit.merchant_ref}
+                  copied={copied === "Merchant"}
+                  onPress={() => void copy(deposit.merchant_ref, "Merchant")}
                   last
                 />
               ) : null}
@@ -392,22 +505,14 @@ export function WalletTopUpScreen({ navigation }: Props) {
 
             {paying ? (
               <>
+                <Text style={styles.stepHint}>
+                  O'tkazma izohiga kodni yozing, chek rasmini tanlang va Davom etish ni bosing.
+                </Text>
                 <Pressable style={styles.pickBtn} onPress={pickReceipt}>
                   <Ionicons name="image-outline" size={scale(16)} color={colors.fg} />
                   <Text style={styles.pickText}>
                     {receipt ? "Boshqa chek" : "Chek rasmini tanlang"}
                   </Text>
-                </Pressable>
-                <Pressable
-                  style={[styles.cta, styles.inlineCta, (!receipt || claiming) && styles.ctaDisabled]}
-                  onPress={claim}
-                  disabled={!receipt || claiming}
-                >
-                  {claiming ? (
-                    <ActivityIndicator color="#FFF" />
-                  ) : (
-                    <Text style={styles.ctaText}>{receipt ? "Davom etish" : "Avval chek tanlang"}</Text>
-                  )}
                 </Pressable>
                 {receipt ? (
                   <Image
@@ -423,6 +528,22 @@ export function WalletTopUpScreen({ navigation }: Props) {
             </>
           )}
         </ScrollView>
+        {paying ? (
+          <View style={styles.footer}>
+            {claimError ? <Text style={styles.cardError}>{claimError}</Text> : null}
+            <Pressable
+              style={[styles.cta, styles.footerCta, (!receipt || claiming) && styles.ctaDisabled]}
+              onPress={() => void claim()}
+              disabled={!receipt || claiming}
+            >
+              {claiming ? (
+                <ActivityIndicator color="#FFF" />
+              ) : (
+                <Text style={styles.ctaText}>{receipt ? "Davom etish" : "Avval chek tanlang"}</Text>
+              )}
+            </Pressable>
+          </View>
+        ) : null}
         </View>
       )}
     </SafeAreaView>
@@ -433,6 +554,7 @@ const styles = StyleSheet.create({
   root: { flex: 1, width: "100%", backgroundColor: colors.bg },
   body: { flex: 1, width: "100%", minHeight: 0, overflow: "hidden" },
   scroll: { width: "100%", flexGrow: 0 },
+  scrollFlex: { flex: 1, flexGrow: 1, minHeight: 0 },
   content: {
     width: "100%",
     paddingHorizontal: scale(16),
@@ -603,5 +725,62 @@ const styles = StyleSheet.create({
     borderRadius: moderateScale(16),
     width: "100%",
     backgroundColor: colors.promo,
+  },
+  footer: {
+    paddingHorizontal: scale(16),
+    paddingTop: verticalScale(8),
+    paddingBottom: verticalScale(10),
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
+    backgroundColor: colors.bg,
+  },
+  footerCta: { marginTop: 0 },
+  secondaryCta: {
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  secondaryCtaText: { color: colors.fg },
+  resultCard: {
+    marginTop: verticalScale(8),
+    backgroundColor: colors.surface,
+    borderRadius: moderateScale(20),
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+    paddingHorizontal: scale(16),
+    paddingVertical: verticalScale(22),
+  },
+  resultIcon: {
+    width: scale(48),
+    height: scale(48),
+    borderRadius: moderateScale(16),
+    backgroundColor: colors.promo,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  resultTitle: {
+    marginTop: verticalScale(14),
+    fontSize: fontSize(22),
+    fontWeight: "800",
+    color: colors.fg,
+  },
+  resultBody: {
+    marginTop: verticalScale(8),
+    fontSize: fontSize(14),
+    lineHeight: fontSize(20),
+    color: colors.muted,
+    fontWeight: "600",
+  },
+  resultAmount: {
+    marginTop: verticalScale(16),
+    fontSize: fontSize(20),
+    fontWeight: "800",
+    color: colors.fg,
+  },
+  resultMeta: {
+    marginTop: verticalScale(6),
+    fontSize: fontSize(13),
+    fontWeight: "700",
+    color: colors.fg,
   },
 });

@@ -23,12 +23,14 @@ from accounts.throttles import (
 )
 from wallet.models import ManualCardDeposit
 from wallet.services.card_deposit import (
+    MAX_RECEIPT_BYTES,
     CardDepositService,
     admin_deposit_to_dict,
     deposit_to_dict,
     receipt_signer,
     receiving_card_config,
 )
+from wallet.services.deposit_abuse import claim_locked, clear_claim_failures, register_claim_failure
 from wallet.services.wallet_service import WalletServiceError
 from wallet.views import _idempotency_key
 
@@ -105,6 +107,21 @@ class WalletCardDepositClaimView(FriendlyThrottleMixin, APIView):
     throttle_detail = "Juda ko'p 'to'ladim' so'rovi. Biroz kutib qayta urinib ko'ring."
 
     def post(self, request, deposit_id: str):
+        if claim_locked(request.user.pk):
+            return Response(
+                {"detail": "Juda ko'p muvaffaqiyatsiz urinish. Biroz kutib qayta urinib ko'ring."},
+                status=status.HTTP_429_TOO_MANY_REQUESTS,
+            )
+        try:
+            length = int(request.META.get("CONTENT_LENGTH") or 0)
+        except (TypeError, ValueError):
+            length = 0
+        if length > MAX_RECEIPT_BYTES + 256 * 1024:
+            register_claim_failure(request.user.pk)
+            return Response(
+                {"detail": "Chek hajmi 8 MB dan oshmasin."},
+                status=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            )
         receipt = request.FILES.get("receipt") or request.FILES.get("receipt_image")
         try:
             deposit = CardDepositService.claim_deposit(
@@ -113,13 +130,16 @@ class WalletCardDepositClaimView(FriendlyThrottleMixin, APIView):
                 receipt_file=receipt,
             )
         except WalletServiceError as exc:
+            register_claim_failure(request.user.pk)
             return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
         except Exception:
+            register_claim_failure(request.user.pk)
             logger.exception("card deposit claim failed deposit_id=%s", deposit_id)
             return Response(
                 {"detail": "Chek saqlanmadi. Rasmni qayta yuboring."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+        clear_claim_failures(request.user.pk)
         return Response(deposit_to_dict(deposit, include_full_card=True, request=request))
 
 

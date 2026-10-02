@@ -9,7 +9,7 @@ from rest_framework.test import APIClient
 from accounts.models import AdminAccount, User
 from accounts.admin_auth import encode_admin_tokens
 from wallet.models import ManualCardDeposit
-from wallet.services.card_deposit import CardDepositService
+from wallet.services.card_deposit import CardDepositService, admin_deposit_to_dict
 from wallet.services.wallet_service import WalletService, WalletServiceError
 
 
@@ -58,6 +58,11 @@ class CardDepositServiceTests(TestCase):
         )
         self.assertEqual(claimed.status, ManualCardDeposit.Status.CLAIMED)
         self.assertTrue(bool(claimed.receipt_image))
+        admin_row = admin_deposit_to_dict(claimed)
+        self.assertEqual(admin_row["user"]["id"], self.user.pk)
+        self.assertEqual(admin_row["wallet_id"], claimed.wallet_id)
+        self.assertEqual(admin_row["merchant_ref"], claimed.merchant_ref)
+        self.assertEqual(admin_row["id"], str(claimed.pk))
 
         approved = CardDepositService.approve_deposit(
             deposit_id=str(deposit.pk),
@@ -90,6 +95,24 @@ class CardDepositServiceTests(TestCase):
                 deposit_id=str(deposit.pk),
                 admin_id=1,
                 admin_email="admin@test.com",
+            )
+
+    def test_html_disguised_as_jpeg_is_rejected(self):
+        deposit, _resumed = CardDepositService.init_deposit(
+            user=self.user,
+            amount=Decimal("50000"),
+            idempotency_key="init-html",
+        )
+        fake = SimpleUploadedFile(
+            "receipt.jpg",
+            b"<html><script>alert(1)</script></html>",
+            content_type="image/jpeg",
+        )
+        with self.assertRaises(WalletServiceError):
+            CardDepositService.claim_deposit(
+                user=self.user,
+                deposit_id=str(deposit.pk),
+                receipt_file=fake,
             )
 
     def test_claim_requires_receipt(self):

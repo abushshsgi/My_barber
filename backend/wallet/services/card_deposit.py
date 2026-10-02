@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import secrets
 import string
+import uuid
 from datetime import timedelta
 from decimal import Decimal, ROUND_DOWN
 from typing import Any
@@ -61,24 +62,62 @@ def _receipt_url(deposit: ManualCardDeposit, request=None) -> str:
     return path
 
 
+def _read_head(receipt_file, n: int = 32) -> bytes:
+    if not hasattr(receipt_file, "read"):
+        return b""
+    pos = receipt_file.tell() if hasattr(receipt_file, "tell") else None
+    head = receipt_file.read(n) or b""
+    if not isinstance(head, (bytes, bytearray)):
+        head = bytes(head)
+    if pos is not None and hasattr(receipt_file, "seek"):
+        receipt_file.seek(pos)
+    return bytes(head)
+
+
+def _looks_like_image(head: bytes) -> bool:
+    if head.startswith(b"\xff\xd8\xff"):
+        return True
+    if head.startswith(b"\x89PNG\r\n\x1a\n"):
+        return True
+    if head.startswith(b"RIFF") and b"WEBP" in head[:16]:
+        return True
+    if len(head) >= 12 and head[4:8] == b"ftyp":
+        brand = head[8:12]
+        return brand in {b"heic", b"heif", b"mif1", b"msf1", b"heix", b"hevc"}
+    return False
+
+
 def _validate_receipt_file(receipt_file) -> None:
     if receipt_file is None:
         raise WalletServiceError("To'lov cheki (rasm) majburiy.")
     size = int(getattr(receipt_file, "size", 0) or 0)
+    if size <= 0 and hasattr(receipt_file, "read"):
+        blob = receipt_file.read(MAX_RECEIPT_BYTES + 1) or b""
+        if hasattr(receipt_file, "seek"):
+            receipt_file.seek(0)
+        size = len(blob) if isinstance(blob, (bytes, bytearray)) else 0
     if size <= 0:
         raise WalletServiceError("Chek fayli bo'sh.")
     if size > MAX_RECEIPT_BYTES:
         raise WalletServiceError("Chek rasmi 8 MB dan oshmasligi kerak.")
     content_type = (getattr(receipt_file, "content_type", "") or "").lower().strip()
-    name = (getattr(receipt_file, "name", "") or "").lower()
+    name = (getattr(receipt_file, "name", "") or "").replace("\\", "/").split("/")[-1].lower()
+    if any(part in name for part in ("..", "\x00", ".svg", ".html", ".htm", ".js", ".php")):
+        raise WalletServiceError("Bu fayl turi qabul qilinmaydi.")
     ext_ok = name.endswith((".jpg", ".jpeg", ".png", ".webp", ".heic", ".heif"))
-    generic = content_type in {"application/octet-stream", "binary/octet-stream"}
-    if generic and not ext_ok:
+    generic = content_type in {"application/octet-stream", "binary/octet-stream", ""}
+    if content_type.startswith(("text/", "application/javascript", "image/svg")):
         raise WalletServiceError("Faqat rasm yuklash mumkin (JPG, PNG, WEBP).")
-    if content_type and content_type not in ALLOWED_RECEIPT_CONTENT_TYPES and not ext_ok:
+    if not generic and content_type not in ALLOWED_RECEIPT_CONTENT_TYPES and not ext_ok:
         raise WalletServiceError("Faqat rasm yuklash mumkin (JPG, PNG, WEBP).")
     if not content_type and not ext_ok:
         raise WalletServiceError("Faqat rasm yuklash mumkin (JPG, PNG, WEBP).")
+    head = _read_head(receipt_file)
+    lowered = head.lstrip().lower()
+    if lowered.startswith((b"<", b"%pdf", b"pk\x03\x04", b"<!doc", b"<?xml")):
+        raise WalletServiceError("Chek haqiqiy rasm emas. JPG yoki PNG yuklang.")
+    if head and not _looks_like_image(head):
+        raise WalletServiceError("Chek haqiqiy rasm emas. JPG yoki PNG yuklang.")
 
 
 def _env_text(value: object) -> str:
@@ -193,6 +232,8 @@ def deposit_to_dict(
 
 def admin_deposit_to_dict(deposit: ManualCardDeposit, request=None) -> dict[str, Any]:
     user = deposit.user
+    wallet = deposit.wallet
+    ledger = getattr(deposit, "ledger_entry", None)
     payload = deposit_to_dict(deposit, include_full_card=True, request=request)
     payload.update(
         {
@@ -202,7 +243,12 @@ def admin_deposit_to_dict(deposit: ManualCardDeposit, request=None) -> dict[str,
                 "phone": user.phone or "",
                 "email": user.email or "",
             },
-            "wallet_number": deposit.wallet.wallet_number,
+            "wallet_id": wallet.pk,
+            "wallet_number": wallet.wallet_number,
+            "wallet_balance": wallet.balance,
+            "wallet_frozen": bool(wallet.is_frozen),
+            "idempotency_key": deposit.idempotency_key,
+            "ledger_entry_hash": ledger.entry_hash if ledger else None,
             "client_ip": deposit.client_ip,
             "user_agent": deposit.user_agent[:200],
             "reviewed_by_admin_id": deposit.reviewed_by_admin_id,
@@ -558,7 +604,9 @@ class CardDepositService:
     @classmethod
     def list_for_admin(cls, *, status: str | None = None, q: str = "", limit: int = 100):
         expire_stale_deposits()
-        qs = ManualCardDeposit.objects.select_related("user", "wallet").order_by("-created_at")
+        qs = ManualCardDeposit.objects.select_related("user", "wallet", "ledger_entry").order_by(
+            "-created_at"
+        )
         if status:
             qs = qs.filter(status=status)
         else:
@@ -572,12 +620,22 @@ class CardDepositService:
             )
         q = (q or "").strip()
         if q:
-            qs = qs.filter(
+            filters = (
                 Q(transaction_ref__icontains=q)
                 | Q(merchant_ref__icontains=q)
+                | Q(idempotency_key__icontains=q)
                 | Q(user__phone__icontains=q)
                 | Q(user__full_name__icontains=q)
                 | Q(user__email__icontains=q)
                 | Q(wallet__wallet_number__icontains=q)
             )
+            if q.isdigit():
+                filters |= Q(user_id=int(q)) | Q(wallet_id=int(q))
+            try:
+                uuid.UUID(q)
+            except ValueError:
+                pass
+            else:
+                filters |= Q(pk=q) | Q(ledger_entry_id=q)
+            qs = qs.filter(filters)
         return list(qs[:limit])

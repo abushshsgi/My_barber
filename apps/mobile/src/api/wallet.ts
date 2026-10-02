@@ -1,5 +1,6 @@
 import * as Crypto from "expo-crypto";
-import { apiJson, apiList, qs } from "./client";
+import { Platform } from "react-native";
+import { apiFetch, apiJson, apiList, qs } from "./client";
 
 export type ApiWalletCard = {
   cardholder_name: string;
@@ -283,6 +284,22 @@ export async function initCardDeposit(amount: number): Promise<CardDeposit> {
   });
 }
 
+async function appendReceipt(
+  fd: FormData,
+  receipt: { uri: string; name: string; type: string },
+) {
+  const name = receipt.name || "receipt.jpg";
+  const type = receipt.type || "image/jpeg";
+  if (Platform.OS === "web") {
+    const blob = await fetch(receipt.uri).then((r) => r.blob());
+    const mime = blob.type.startsWith("image/") ? blob.type : type;
+    const named = blob.type === mime ? blob : new Blob([blob], { type: mime });
+    fd.append("receipt", named, name);
+    return;
+  }
+  fd.append("receipt", { uri: receipt.uri, name, type } as unknown as Blob);
+}
+
 export async function claimCardDeposit(
   depositId: string,
   receipt: { uri: string; name: string; type: string },
@@ -290,19 +307,27 @@ export async function claimCardDeposit(
   if (!depositId || /[^a-zA-Z0-9-]/.test(depositId)) {
     throw new Error("Noto'g'ri depozit ID.");
   }
-  if (!receipt.type.startsWith("image/")) {
+  if (!receipt.type.startsWith("image/") && Platform.OS !== "web") {
     throw new Error("Faqat rasm yuklash mumkin.");
   }
   const fd = new FormData();
-  fd.append("receipt", {
-    uri: receipt.uri,
-    name: receipt.name || "receipt.jpg",
-    type: receipt.type || "image/jpeg",
-  } as unknown as Blob);
-  return apiJson<CardDeposit>(`/api/v1/wallet/top-up/card/${depositId}/claim/`, {
+  await appendReceipt(fd, receipt);
+  const res = await apiFetch(`/api/v1/wallet/top-up/card/${depositId}/claim/`, {
     method: "POST",
     body: fd,
+    timeoutMs: 90_000,
   });
+  const body = (await res.json().catch(() => null)) as
+    | (CardDeposit & { detail?: string })
+    | null;
+  if (!res.ok) {
+    const detail = typeof body?.detail === "string" ? body.detail : "Chek yuborilmadi.";
+    throw new Error(detail.replace(/^API \d+:\s*/, ""));
+  }
+  if (!body || typeof body !== "object" || !("id" in body)) {
+    throw new Error("Server javobi noto'g'ri. Qayta urinib ko'ring.");
+  }
+  return body;
 }
 
 export async function fetchMyCardDeposits(): Promise<CardDeposit[]> {

@@ -4590,13 +4590,18 @@ export type AdminCardDeposit = {
   expires_at: string;
   created_at: string;
   ledger_entry_id: string | null;
+  ledger_entry_hash: string;
+  idempotency_key: string;
   user: {
     id: number;
     full_name: string;
     phone: string;
     email: string;
   };
+  wallet_id: number;
   wallet_number: string;
+  wallet_balance: number;
+  wallet_frozen: boolean;
   client_ip: string | null;
   user_agent: string;
   reviewed_by_admin_id: number | null;
@@ -4624,13 +4629,18 @@ function mapAdminCardDeposit(d: Record<string, any>, fallbackId?: string): Admin
     expires_at: String(d.expires_at ?? ""),
     created_at: String(d.created_at ?? ""),
     ledger_entry_id: d.ledger_entry_id ? String(d.ledger_entry_id) : null,
+    ledger_entry_hash: String(d.ledger_entry_hash ?? ""),
+    idempotency_key: String(d.idempotency_key ?? ""),
     user: {
       id: toInt(d.user?.id, 0),
       full_name: String(d.user?.full_name ?? ""),
       phone: String(d.user?.phone ?? ""),
       email: String(d.user?.email ?? ""),
     },
+    wallet_id: toInt(d.wallet_id, 0),
     wallet_number: String(d.wallet_number ?? ""),
+    wallet_balance: toInt(d.wallet_balance, 0),
+    wallet_frozen: Boolean(d.wallet_frozen),
     client_ip: d.client_ip ?? null,
     user_agent: String(d.user_agent ?? ""),
     reviewed_by_admin_id: d.reviewed_by_admin_id != null ? toInt(d.reviewed_by_admin_id) : null,
