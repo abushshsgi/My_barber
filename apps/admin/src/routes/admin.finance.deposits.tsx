@@ -106,9 +106,9 @@ function AdminWalletDepositsPage() {
           <h1 className="font-heading text-3xl font-semibold tracking-tight text-foreground">
             Karta to'ldirishlar
           </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Chek rasmini tekshiring — to'g'ri bo'lsa tasdiqlang, aks holda rad eting.
-            {pendingCount > 0 ? ` · ${pendingCount} ta kutilmoqda` : ""}
+          <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
+            Bank izohidagi kodni shu yerdagi izoh kodi bilan solishtiring. Kod, foydalanuvchi va summa bir xil bo'lsa tasdiqlang.
+            {pendingCount > 0 ? ` · ${pendingCount} ta tekshiruvda` : ""}
           </p>
         </div>
       </div>
@@ -139,7 +139,7 @@ function AdminWalletDepositsPage() {
           <Input
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Tranzaksiya / telefon / ism…"
+            placeholder="Izoh kodi, telefon yoki ism…"
             className="w-56"
           />
           <Button type="submit" variant="secondary">
@@ -166,67 +166,51 @@ function AdminWalletDepositsPage() {
             />
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="border-b border-border bg-background text-xs uppercase tracking-wider text-muted-foreground">
-                <tr>
-                  <th className="px-4 py-3 font-medium">Tranzaksiya</th>
-                  <th className="px-4 py-3 font-medium">Foydalanuvchi</th>
-                  <th className="px-4 py-3 font-medium text-right">Summa</th>
-                  <th className="px-4 py-3 font-medium">Chek</th>
-                  <th className="px-4 py-3 font-medium">Holat</th>
-                  <th className="px-4 py-3 font-medium">Vaqt</th>
-                  <th className="px-4 py-3 font-medium text-right">Amallar</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {rows.map((row) => (
-                  <tr key={row.id} className="align-top hover:bg-background/50">
-                    <td className="px-4 py-3">
-                      <p className="font-mono text-xs font-semibold tracking-wide">
-                        {row.transaction_ref}
-                      </p>
-                      <p className="mt-1 text-[11px] text-muted-foreground">
-                        Merchant · {row.merchant_ref}
-                      </p>
-                      <p className="mt-0.5 text-[11px] text-muted-foreground">
-                        IP · {row.client_ip || "—"}
-                      </p>
-                    </td>
-                    <td className="px-4 py-3">
-                      <Link
-                        to="/admin/users/$userId"
-                        params={{ userId: String(row.user.id) }}
-                        className="font-medium text-foreground hover:underline"
-                      >
-                        {row.user.full_name || row.user.phone || `User #${row.user.id}`}
-                      </Link>
-                      <p className="mt-0.5 text-xs text-muted-foreground">{row.user.phone || "—"}</p>
-                      <p className="text-[11px] text-muted-foreground">
-                        Hamyon · {row.wallet_number}
-                      </p>
-                    </td>
-                    <td className="px-4 py-3 text-right font-semibold tabular-nums">
-                      {formatAdminUzs(row.amount)}
-                    </td>
-                    <td className="px-4 py-3">
-                      {row.receipt_url ? (
-                        <button
-                          type="button"
-                          onClick={() => setReceiptPreview(row)}
-                          className="group block overflow-hidden rounded-lg border border-border bg-muted/40 transition-opacity hover:opacity-90"
-                        >
-                          <img
-                            src={row.receipt_url}
-                            alt={`Chek ${row.transaction_ref}`}
-                            className="h-16 w-14 object-cover"
-                          />
-                        </button>
-                      ) : (
-                        <span className="text-xs text-muted-foreground">Yo'q</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3">
+          <div className="grid gap-3 p-3 sm:p-4">
+            {rows.map((row) => {
+              const code = row.comment_code || row.transaction_ref;
+              return (
+                <article
+                  key={row.id}
+                  className="grid gap-4 rounded-2xl border border-border bg-background/60 p-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_auto]"
+                >
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      Izoh kodi
+                    </p>
+                    <p className="mt-1 break-all font-mono text-xl font-bold tracking-wide text-foreground sm:text-2xl">
+                      {code}
+                    </p>
+                    <button
+                      type="button"
+                      className="mt-2 text-xs font-semibold text-foreground underline-offset-2 hover:underline"
+                      onClick={() => {
+                        void navigator.clipboard.writeText(code).then(
+                          () => toast.success("Izoh kodi nusxa olindi"),
+                          () => toast.error("Nusxa olinmadi"),
+                        );
+                      }}
+                    >
+                      Kodni nusxalash
+                    </button>
+                    <p className="mt-3 text-xs text-muted-foreground">
+                      Merchant · {row.merchant_ref || "—"}
+                    </p>
+                  </div>
+
+                  <div className="min-w-0">
+                    <Link
+                      to="/admin/users/$userId"
+                      params={{ userId: String(row.user.id) }}
+                      className="font-semibold text-foreground hover:underline"
+                    >
+                      {row.user.full_name || row.user.phone || `User #${row.user.id}`}
+                    </Link>
+                    <p className="mt-0.5 text-sm text-muted-foreground">{row.user.phone || "—"}</p>
+                    <p className="text-xs text-muted-foreground">{row.user.email || "—"}</p>
+                    <p className="mt-2 text-lg font-semibold tabular-nums">{formatAdminUzs(row.amount)}</p>
+                    <p className="text-xs text-muted-foreground">Hamyon · {row.wallet_number}</p>
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
                       <Badge
                         variant="secondary"
                         className={cn(
@@ -237,73 +221,68 @@ function AdminWalletDepositsPage() {
                       >
                         {STATUS_LABEL[row.status] || row.status}
                       </Badge>
-                      {row.reviewed_by_admin_email ? (
-                        <p className="mt-1 text-[11px] text-muted-foreground">
-                          {row.reviewed_by_admin_email}
-                        </p>
-                      ) : null}
-                      {row.review_note ? (
-                        <p className="mt-0.5 max-w-[180px] text-[11px] text-muted-foreground">
-                          {row.review_note}
-                        </p>
-                      ) : null}
-                    </td>
-                    <td className="px-4 py-3 text-xs text-muted-foreground tabular-nums">
-                      <p>Yaratilgan · {formatWhen(row.created_at)}</p>
-                      <p className="mt-0.5">To'ladim · {formatWhen(row.claimed_at)}</p>
-                      <p className="mt-0.5">Tekshiruv · {formatWhen(row.reviewed_at)}</p>
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      {row.status === "awaiting_payment" ? (
+                      <span className="text-[11px] text-muted-foreground">
+                        {formatWhen(row.claimed_at || row.created_at)}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center lg:w-56 lg:flex-col lg:items-stretch">
+                    {row.receipt_url ? (
+                      <button
+                        type="button"
+                        onClick={() => setReceiptPreview(row)}
+                        className="overflow-hidden rounded-xl border border-border bg-muted/40"
+                      >
+                        <img
+                          src={row.receipt_url}
+                          alt={`Chek ${code}`}
+                          className="h-28 w-full object-cover sm:h-24"
+                        />
+                      </button>
+                    ) : (
+                      <p className="rounded-xl border border-dashed border-border px-3 py-4 text-center text-xs text-muted-foreground">
+                        Chek hali yo'q
+                      </p>
+                    )}
+                    {row.status === "awaiting_payment" ? (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={rejectM.isPending}
+                        onClick={() => rejectM.mutate(row)}
+                      >
+                        Bekor qilish
+                      </Button>
+                    ) : row.status === "claimed" ? (
+                      <div className="flex flex-col gap-1.5">
+                        <Button
+                          size="sm"
+                          disabled={approveM.isPending || rejectM.isPending}
+                          onClick={() => {
+                            if (!row.receipt_url) {
+                              toast.error("Chek yuklanmagan — avval foydalanuvchi chek yuborsin");
+                              return;
+                            }
+                            approveM.mutate(row);
+                          }}
+                        >
+                          Tasdiqlash
+                        </Button>
                         <Button
                           size="sm"
                           variant="outline"
-                          disabled={rejectM.isPending}
+                          disabled={approveM.isPending || rejectM.isPending}
                           onClick={() => rejectM.mutate(row)}
                         >
-                          Bekor qilish
+                          Rad etish
                         </Button>
-                      ) : row.status === "claimed" ? (
-                        <div className="flex flex-col items-end gap-1.5">
-                          {row.receipt_url ? (
-                            <Button
-                              size="sm"
-                              variant="secondary"
-                              onClick={() => setReceiptPreview(row)}
-                            >
-                              Chekni ko'rish
-                            </Button>
-                          ) : null}
-                          <Button
-                            size="sm"
-                            disabled={approveM.isPending || rejectM.isPending}
-                            onClick={() => {
-                              if (!row.receipt_url) {
-                                toast.error("Chek yuklanmagan — avval foydalanuvchi chek yuborsin");
-                                return;
-                              }
-                              approveM.mutate(row);
-                            }}
-                          >
-                            Tasdiqlash
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            disabled={approveM.isPending || rejectM.isPending}
-                            onClick={() => rejectM.mutate(row)}
-                          >
-                            Rad etish
-                          </Button>
-                        </div>
-                      ) : (
-                        <span className="text-xs text-muted-foreground">—</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                      </div>
+                    ) : null}
+                  </div>
+                </article>
+              );
+            })}
           </div>
         )}
       </div>
@@ -319,7 +298,7 @@ function AdminWalletDepositsPage() {
             <DialogTitle>To'lov cheki</DialogTitle>
             <DialogDescription>
               {receiptPreview
-                ? `${receiptPreview.transaction_ref} · ${formatAdminUzs(receiptPreview.amount)}`
+                ? `${receiptPreview.comment_code || receiptPreview.transaction_ref} · ${receiptPreview.user.full_name || receiptPreview.user.phone} · ${formatAdminUzs(receiptPreview.amount)}`
                 : null}
             </DialogDescription>
           </DialogHeader>

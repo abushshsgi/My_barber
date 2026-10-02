@@ -12,6 +12,7 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -78,7 +79,8 @@ export function WalletTopUpScreen({ navigation }: Props) {
   const [submitting, setSubmitting] = useState(false);
   const [claiming, setClaiming] = useState(false);
   const [pendingReview, setPendingReview] = useState(false);
-  const [receiptUri, setReceiptUri] = useState<string | null>(null);
+  const [receipt, setReceipt] = useState<{ uri: string; name: string; type: string } | null>(null);
+  const { height: windowHeight } = useWindowDimensions();
   const [cardError, setCardError] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
   const [now, setNow] = useState(() => Date.now());
@@ -146,7 +148,7 @@ export function WalletTopUpScreen({ navigation }: Props) {
     try {
       const d = await initCardDeposit(effective);
       setDeposit(d);
-      setReceiptUri(null);
+      setReceipt(null);
       setNow(Date.now());
     } catch (e) {
       Alert.alert("Xato", e instanceof Error ? e.message : "Boshlab bo'lmadi");
@@ -183,24 +185,25 @@ export function WalletTopUpScreen({ navigation }: Props) {
       Alert.alert("Xato", "Rasm 8 MB dan katta bo'lmasin.");
       return;
     }
-    setReceiptUri(asset.uri);
+    const type =
+      asset.mimeType && asset.mimeType.startsWith("image/") ? asset.mimeType : "image/jpeg";
+    const rawName = asset.fileName || "receipt.jpg";
+    const name = /\.(jpe?g|png|webp|heic|heif)$/i.test(rawName) ? rawName : "receipt.jpg";
+    setReceipt({ uri: asset.uri, name, type });
   };
 
   const claim = async () => {
-    if (!deposit || !receiptUri || claiming) return;
+    if (!deposit || !receipt || claiming) return;
     setClaiming(true);
     try {
-      const updated = await claimCardDeposit(deposit.id, {
-        uri: receiptUri,
-        name: "receipt.jpg",
-        type: "image/jpeg",
-      });
+      const updated = await claimCardDeposit(deposit.id, receipt);
       setDeposit(updated);
       setPendingReview(true);
       deposits.refresh();
       Alert.alert("Yuborildi", "Chek yuborildi. Admin tekshiradi.");
     } catch (e) {
-      Alert.alert("Xato", e instanceof Error ? e.message : "Yuklash xatosi");
+      const raw = e instanceof Error ? e.message : "Yuklash xatosi";
+      Alert.alert("Xato", raw.replace(/^API \d+:\s*/, ""));
     } finally {
       setClaiming(false);
     }
@@ -214,6 +217,7 @@ export function WalletTopUpScreen({ navigation }: Props) {
           <ActivityIndicator color={colors.fg} />
         </View>
       ) : (
+        <View style={styles.body}>
         <ScrollView
           style={styles.scroll}
           contentContainerStyle={styles.content}
@@ -357,7 +361,7 @@ export function WalletTopUpScreen({ navigation }: Props) {
                   onPress={() => void copy(deposit.transaction_ref, "Izoh")}
                 >
                   <View style={styles.refCopy}>
-                    <Text style={styles.refLabel}>Izohga shu kodni yozing</Text>
+                    <Text style={styles.refLabel}>Izoh kodi · admin shu kod bilan solishtiradi</Text>
                     <Text
                       style={styles.refValue}
                       numberOfLines={1}
@@ -377,29 +381,40 @@ export function WalletTopUpScreen({ navigation }: Props) {
 
               {paying ? (
                 <>
+                  <Text style={styles.stepHint}>Chek rasmini tanlang. Yuborish tugmasi pastda turadi.</Text>
                   <Pressable style={styles.pickBtn} onPress={pickReceipt}>
                     <Ionicons name="image-outline" size={scale(20)} color={colors.fg} />
                     <Text style={styles.pickText}>
-                      {receiptUri ? "Boshqa chek tanlash" : "O'tkazma chekini qo'shish"}
+                      {receipt ? "Boshqa chek tanlash" : "O'tkazma chekini qo'shish"}
                     </Text>
                   </Pressable>
-                  {receiptUri ? <Image source={{ uri: receiptUri }} style={styles.preview} /> : null}
-                  <Pressable
-                    style={[styles.cta, (!receiptUri || claiming) && styles.ctaDisabled]}
-                    onPress={claim}
-                    disabled={!receiptUri || claiming}
-                  >
-                    {claiming ? (
-                      <ActivityIndicator color="#FFF" />
-                    ) : (
-                      <Text style={styles.ctaText}>Chekni yuborish</Text>
-                    )}
-                  </Pressable>
+                  {receipt ? (
+                    <Image
+                      source={{ uri: receipt.uri }}
+                      style={[styles.preview, { height: Math.max(verticalScale(96), Math.round(windowHeight * 0.18)) }]}
+                    />
+                  ) : null}
                 </>
               ) : null}
             </>
           )}
         </ScrollView>
+        {paying ? (
+          <View style={styles.footer}>
+            <Pressable
+              style={[styles.cta, styles.footerCta, (!receipt || claiming) && styles.ctaDisabled]}
+              onPress={claim}
+              disabled={!receipt || claiming}
+            >
+              {claiming ? (
+                <ActivityIndicator color="#FFF" />
+              ) : (
+                <Text style={styles.ctaText}>{receipt ? "Davom etish" : "Avval chek rasmini tanlang"}</Text>
+              )}
+            </Pressable>
+          </View>
+        ) : null}
+        </View>
       )}
     </SafeAreaView>
   );
@@ -407,7 +422,18 @@ export function WalletTopUpScreen({ navigation }: Props) {
 
 const styles = StyleSheet.create({
   root: { flex: 1, width: "100%", backgroundColor: colors.bg },
+  body: { flex: 1, width: "100%", minHeight: 0 },
   scroll: { flex: 1, width: "100%", minHeight: 0 },
+  footer: {
+    width: "100%",
+    paddingHorizontal: scale(16),
+    paddingTop: verticalScale(8),
+    paddingBottom: verticalScale(8),
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
+    backgroundColor: colors.bg,
+  },
+  footerCta: { marginTop: 0 },
   content: {
     width: "100%",
     paddingHorizontal: scale(16),
@@ -617,11 +643,18 @@ const styles = StyleSheet.create({
     padding: moderateScale(14),
     backgroundColor: colors.surface,
   },
-  pickText: { flex: 1, fontSize: fontSize(14), fontWeight: "700", color: colors.fg },
+  stepHint: {
+    marginTop: verticalScale(14),
+    fontSize: fontSize(13),
+    lineHeight: fontSize(18),
+    color: colors.muted,
+    fontWeight: "600",
+  },
+  pickText: { flex: 1, minWidth: 0, fontSize: fontSize(14), fontWeight: "700", color: colors.fg },
   preview: {
     marginTop: verticalScale(12),
-    height: verticalScale(160),
     borderRadius: moderateScale(16),
     width: "100%",
+    backgroundColor: colors.promo,
   },
 });

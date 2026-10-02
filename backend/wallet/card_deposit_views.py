@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from decimal import Decimal, InvalidOperation
 
 from django.core.signing import BadSignature, SignatureExpired
@@ -30,6 +31,8 @@ from wallet.services.card_deposit import (
 )
 from wallet.services.wallet_service import WalletServiceError
 from wallet.views import _idempotency_key
+
+logger = logging.getLogger(__name__)
 
 
 def _client_ip(request) -> str | None:
@@ -111,6 +114,12 @@ class WalletCardDepositClaimView(FriendlyThrottleMixin, APIView):
             )
         except WalletServiceError as exc:
             return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception:
+            logger.exception("card deposit claim failed deposit_id=%s", deposit_id)
+            return Response(
+                {"detail": "Chek saqlanmadi. Rasmni qayta yuboring."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         return Response(deposit_to_dict(deposit, include_full_card=True, request=request))
 
 

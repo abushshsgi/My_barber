@@ -32,6 +32,8 @@ ALLOWED_RECEIPT_CONTENT_TYPES = {
     "image/webp",
     "image/heic",
     "image/heif",
+    "application/octet-stream",
+    "binary/octet-stream",
 }
 
 
@@ -70,6 +72,9 @@ def _validate_receipt_file(receipt_file) -> None:
     content_type = (getattr(receipt_file, "content_type", "") or "").lower().strip()
     name = (getattr(receipt_file, "name", "") or "").lower()
     ext_ok = name.endswith((".jpg", ".jpeg", ".png", ".webp", ".heic", ".heif"))
+    generic = content_type in {"application/octet-stream", "binary/octet-stream"}
+    if generic and not ext_ok:
+        raise WalletServiceError("Faqat rasm yuklash mumkin (JPG, PNG, WEBP).")
     if content_type and content_type not in ALLOWED_RECEIPT_CONTENT_TYPES and not ext_ok:
         raise WalletServiceError("Faqat rasm yuklash mumkin (JPG, PNG, WEBP).")
     if not content_type and not ext_ok:
@@ -168,6 +173,7 @@ def deposit_to_dict(
         "amount": deposit.amount,
         "status": deposit.status,
         "transaction_ref": deposit.transaction_ref,
+        "comment_code": deposit.transaction_ref,
         "merchant_ref": deposit.merchant_ref,
         "receiving_card": {
             "number": card_number,
@@ -219,6 +225,7 @@ def _alert_admins(deposit: ManualCardDeposit) -> None:
     subject = f"[mysaloon] Karta to'ldirish · {deposit.transaction_ref}"
     body = (
         f"Yangi karta to'ldirish so'rovi.\n\n"
+        f"Izoh kodi: {deposit.transaction_ref}\n"
         f"Tranzaksiya: {deposit.transaction_ref}\n"
         f"Merchant: {deposit.merchant_ref}\n"
         f"Summa: {deposit.amount} so'm\n"
@@ -378,10 +385,11 @@ class CardDepositService:
         # Yangi claim yoki cheksiz eski claim — rasm majburiy
         if not deposit.receipt_image:
             _validate_receipt_file(receipt_file)
-            deposit.receipt_image = receipt_file
         elif receipt_file is not None:
-            # Ixtiyoriy qayta yuklash (yangi chek)
             _validate_receipt_file(receipt_file)
+        if receipt_file is not None:
+            if hasattr(receipt_file, "seek"):
+                receipt_file.seek(0)
             deposit.receipt_image = receipt_file
 
         now = timezone.now()
@@ -398,18 +406,23 @@ class CardDepositService:
             ]
         )
 
-        notify_user(
-            user,
-            "wallet_deposit_claimed",
-            "To'lov tekshiruvda",
-            f"{deposit.amount} so'm · {deposit.transaction_ref}. Admin tasdiqlagach balansga tushadi.",
-            payload={
-                "deposit_id": str(deposit.pk),
-                "transaction_ref": deposit.transaction_ref,
-                "amount": str(deposit.amount),
-            },
-        )
-        _alert_admins(deposit)
+        try:
+            notify_user(
+                user,
+                "wallet_deposit_claimed",
+                "To'lov tekshiruvda",
+                f"{deposit.amount} so'm · izoh {deposit.transaction_ref}. Admin tasdiqlagach balansga tushadi.",
+                payload={
+                    "deposit_id": str(deposit.pk),
+                    "transaction_ref": deposit.transaction_ref,
+                    "comment_code": deposit.transaction_ref,
+                    "amount": str(deposit.amount),
+                },
+            )
+            _alert_admins(deposit)
+        except Exception:
+            # Chek va holat allaqachon saqlangan — xabar xatosi tranzaksiyani qaytarmasin.
+            pass
         return deposit
 
     @classmethod

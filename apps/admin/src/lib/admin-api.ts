@@ -4575,6 +4575,7 @@ export type AdminCardDeposit = {
   amount: number;
   status: string;
   transaction_ref: string;
+  comment_code: string;
   merchant_ref: string;
   receiving_card: {
     number: string;
@@ -4608,6 +4609,7 @@ function mapAdminCardDeposit(d: Record<string, any>, fallbackId?: string): Admin
     amount: toInt(d.amount, 0),
     status: String(d.status ?? ""),
     transaction_ref: String(d.transaction_ref ?? ""),
+    comment_code: String(d.comment_code ?? d.transaction_ref ?? ""),
     merchant_ref: String(d.merchant_ref ?? ""),
     receiving_card: {
       number: String(d.receiving_card?.number ?? ""),
