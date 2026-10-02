@@ -1,14 +1,15 @@
 import { Ionicons } from "@expo/vector-icons";
 import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { GestureHandlerRootView, ScrollView } from "react-native-gesture-handler";
 import {
   ActivityIndicator,
   Alert,
   Pressable,
-  ScrollView,
   Share,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
@@ -382,6 +383,7 @@ export function MorphChatSettingsScreen({
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
   const { goMorph } = useShellNavigation();
   const insets = useSafeAreaInsets();
+  const { height: windowHeight } = useWindowDimensions();
   const { user } = useAuth();
   const { colors: pal, fs } = useMorphAppearance();
   const [page, setPage] = useState<Page>("hub");
@@ -647,8 +649,18 @@ export function MorphChatSettingsScreen({
     openPage("ticket");
   };
 
+  const topPad = safeTop(insets.top, 0);
+  // Aniq viewport: aks holda ScrollView kontent bo'yicha cho'ziladi,
+  // navigator/modal pastini kesadi va scroll ishlamaydi.
+  const scrollViewport = Math.max(
+    verticalScale(220),
+    windowHeight - topPad - verticalScale(56),
+  );
+
   return (
-    <View style={[styles.root, { paddingTop: safeTop(insets.top, 0), backgroundColor: pal.bg }]}>
+    <GestureHandlerRootView
+      style={[styles.root, { paddingTop: topPad, backgroundColor: pal.bg }]}
+    >
       <StatusBar style={pal.status} />
 
       {page === "hub" ? (
@@ -670,20 +682,32 @@ export function MorphChatSettingsScreen({
       )}
 
       {page === "ticket" && ticketId ? (
-        <View style={[styles.content, { flex: 1, paddingBottom: safeBottom(insets.bottom, 0) }]}>
+        <View
+          style={[
+            styles.content,
+            styles.scroll,
+            { height: scrollViewport, paddingBottom: safeBottom(insets.bottom, 0) },
+          ]}
+        >
           <MorphTicketThreadView ticketId={ticketId} />
         </View>
       ) : page === "appearance" ? (
-        <TelegramAppearancePanel bottomInset={Math.max(insets.bottom, 16)} />
+        <View style={[styles.scroll, { height: scrollViewport }]}>
+          <TelegramAppearancePanel bottomInset={Math.max(insets.bottom, 16)} />
+        </View>
       ) : (
       <ScrollView
-        style={styles.scroll}
+        style={[styles.scroll, { height: scrollViewport }]}
         contentContainerStyle={[
           styles.content,
-          { paddingBottom: safeBottom(insets.bottom, 0) },
+          { paddingBottom: safeBottom(insets.bottom, verticalScale(28)) },
         ]}
         keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
+        nestedScrollEnabled
+        scrollEnabled
+        bounces
+        removeClippedSubviews={false}
+        showsVerticalScrollIndicator
       >
         {actionError ? (
           <View style={styles.errorBanner}>
@@ -1119,7 +1143,7 @@ export function MorphChatSettingsScreen({
           onConfirm={runConfirm}
         />
       ) : null}
-    </View>
+    </GestureHandlerRootView>
   );
 }
 
@@ -1131,8 +1155,9 @@ const styles = StyleSheet.create({
     position: "relative",
   },
   scroll: {
-    flex: 1,
-    minHeight: 0,
+    width: "100%",
+    alignSelf: "stretch",
+    flexGrow: 0,
   },
   hubTop: {
     flexDirection: "row",
