@@ -341,6 +341,7 @@ export function WalletTopUpScreen({ navigation }: Props) {
               </Pressable>
             </>
           ) : (
+            <>
             <View style={styles.sheet}>
               {paying ? (
                 <View style={styles.metaRow}>
@@ -419,6 +420,7 @@ export function WalletTopUpScreen({ navigation }: Props) {
                 ) : null}
               </>
             ) : null}
+            </>
           )}
         </ScrollView>
         </View>
