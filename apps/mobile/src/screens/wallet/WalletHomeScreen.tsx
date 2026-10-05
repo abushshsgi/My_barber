@@ -33,7 +33,6 @@ import {
   radius,
   scale,
   spacing,
-  useResponsive,
   verticalScale,
   widthPercent,
 } from "../../utils/responsive";
@@ -109,7 +108,6 @@ function avatarColor(id: string | number): string {
 export function WalletHomeScreen({ navigation }: Props) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
-  const { isSmall } = useResponsive();
   const { user, isAuthenticated } = useAuth();
   const me = useWalletMe();
   const tx = useWalletTransactions("all");
@@ -119,9 +117,6 @@ export function WalletHomeScreen({ navigation }: Props) {
   const [history, setHistory] = useState<RecipientHistoryItem[]>([]);
 
   const dockPad = TAB_DOCK_CLEARANCE + Math.max(insets.bottom, 8);
-
-  /** Promo karuseli tranzaksiyalar ro'yxatini siqib qo'ymasligi kerak. */
-  const showPromo = !isSmall;
 
   const recent = tx.items.slice(0, 8);
   const greetName = firstName(user?.first_name || user?.full_name, t("walletPages.friend"));
@@ -303,9 +298,8 @@ export function WalletHomeScreen({ navigation }: Props) {
         </ScrollView>
       </View>
 
-      {/* Promo — faqat balandligi yetadigan ekranlarda; SE da tranzaksiyalarga joy qoladi. */}
-      {showPromo ? (
-        <ScrollView
+      {/* Sovg'a va karta kartochkalari — bo'sh tasma qolmasin. */}
+      <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.promoRow}
@@ -346,8 +340,7 @@ export function WalletHomeScreen({ navigation }: Props) {
               <Ionicons name="card-outline" size={ICON.lg} color="#111111" />
             </Pressable>
           </LinearGradient>
-        </ScrollView>
-      ) : null}
+      </ScrollView>
 
       {/* Yagona scroll zonasi — sahifaning o'zi hech qachon scroll qilmaydi. */}
       <View style={styles.txSection}>

@@ -1,7 +1,9 @@
 import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { useFocusEffect } from "@react-navigation/native";
 import { StatusBar } from "expo-status-bar";
+import { useCallback, useState } from "react";
 import {
   FlatList,
   StyleSheet,
@@ -9,8 +11,8 @@ import {
   View,
 } from "react-native";
 import { NativeHeader } from "../../components/ui/NativeHeader";
-import { useProfileData } from "../../hooks/useProfileData";
-import { timeAgo } from "../../api/user";
+import { timeAgo, type ApiNotification } from "../../api/user";
+import { loadNotifications, peekNotifications } from "../../lib/notification-cache";
 import { useShellTheme } from "../../lib/useShellTheme";
 import type { ProfileStackParamList } from "../../navigation/ProfileStack";
 import {
@@ -25,7 +27,23 @@ type Props = NativeStackScreenProps<ProfileStackParamList, "Notifications">;
 export function NotificationsScreen({ navigation }: Props) {
   const { t } = useTranslation();
   const pal = useShellTheme();
-  const data = useProfileData();
+  const [items, setItems] = useState<ApiNotification[] | null>(() => peekNotifications());
+
+  useFocusEffect(
+    useCallback(() => {
+      let cancelled = false;
+      void loadNotifications()
+        .then((rows) => {
+          if (!cancelled) setItems(rows);
+        })
+        .catch(() => {
+          if (!cancelled) setItems((prev) => prev ?? []);
+        });
+      return () => {
+        cancelled = true;
+      };
+    }, []),
+  );
 
   return (
     <View style={[styles.root, { backgroundColor: pal.bg }]}>
@@ -33,10 +51,11 @@ export function NotificationsScreen({ navigation }: Props) {
       <NativeHeader title="Bildirishnomalar" onBack={() => navigation.goBack()} />
 
       <FlatList
-        data={data.notifications}
+        data={items ?? []}
         keyExtractor={(item) => String(item.id)}
         contentContainerStyle={styles.list}
         ListEmptyComponent={
+          items == null ? null : (
           <View style={styles.empty}>
             <View style={[styles.emptyIcon, { backgroundColor: pal.iconTile }]}>
               <Ionicons name="notifications-off-outline" size={28} color={pal.fg} />
@@ -48,6 +67,7 @@ export function NotificationsScreen({ navigation }: Props) {
               Yangi bron, to'lov va chat xabarlari shu yerda chiqadi.
             </Text>
           </View>
+          )
         }
         renderItem={({ item }) => {
           const unread = !(item.is_read ?? item.read);

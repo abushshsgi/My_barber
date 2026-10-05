@@ -4,6 +4,7 @@ import { useAuth } from "../../auth/AuthContext";
 import { useAppToast } from "../ui/ToastProvider";
 import { startUserPush } from "../../lib/register-user-push";
 import { formatSomLabel } from "../../lib/wallet-format";
+import { loadNotifications } from "../../lib/notification-cache";
 import { startWalletTopUpLive, subscribeWalletTopUp } from "../../lib/wallet-topup-live";
 
 /** Ilova ochiq turganida admin tasdig'ini real vaqtda ushlaydi. */
@@ -17,6 +18,7 @@ export function WalletTopUpLive() {
       seen.current.clear();
       return;
     }
+    void loadNotifications().catch(() => {});
     let stopLive = () => {};
     let stopPush = () => {};
     let cancelled = false;
