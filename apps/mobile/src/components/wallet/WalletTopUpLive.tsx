@@ -5,11 +5,12 @@ import { useAppToast } from "../ui/ToastProvider";
 import { startUserPush } from "../../lib/register-user-push";
 import { formatSomLabel } from "../../lib/wallet-format";
 import { loadNotifications } from "../../lib/notification-cache";
+import { loadWallet, loadWalletTx } from "../../lib/wallet-home-cache";
 import { startWalletTopUpLive, subscribeWalletTopUp } from "../../lib/wallet-topup-live";
 
 /** Ilova ochiq turganida admin tasdig'ini real vaqtda ushlaydi. */
 export function WalletTopUpLive() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const toast = useAppToast();
   const seen = useRef(new Set<string>());
 
@@ -19,6 +20,11 @@ export function WalletTopUpLive() {
       return;
     }
     void loadNotifications().catch(() => {});
+    if (user?.id) {
+      const id = String(user.id);
+      void loadWallet(id).catch(() => {});
+      void loadWalletTx(id, "all", undefined, 50).catch(() => {});
+    }
     let stopLive = () => {};
     let stopPush = () => {};
     let cancelled = false;
@@ -39,7 +45,7 @@ export function WalletTopUpLive() {
       stopLive();
       unsub();
     };
-  }, [isAuthenticated, toast]);
+  }, [isAuthenticated, toast, user?.id]);
 
   return null;
 }

@@ -359,7 +359,7 @@ export function WalletHomeScreen({ navigation }: Props) {
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={INK} />
           }
         >
-          {tx.loading ? (
+          {tx.loading && recent.length === 0 ? (
             <ActivityIndicator style={styles.txLoader} color={INK} />
           ) : recent.length === 0 ? (
             <View style={styles.emptyBox}>

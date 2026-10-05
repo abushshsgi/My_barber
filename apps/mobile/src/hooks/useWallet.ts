@@ -3,8 +3,6 @@ import {
   fetchGiftDesigns,
   fetchMyCardDeposits,
   fetchReceivedGifts,
-  fetchWalletMe,
-  fetchWalletTransactions,
   openWallet,
   parseWalletBalance,
   searchWalletRecipients,
@@ -14,7 +12,8 @@ import {
   type ApiWalletRecipient,
   type CardDeposit,
 } from "../api/wallet";
-import { mapLedgerEntry as mapTx, type WalletTx } from "../lib/wallet-format";
+import type { WalletTx } from "../lib/wallet-format";
+import { loadWallet, loadWalletTx, peekWallet, peekWalletTx } from "../lib/wallet-home-cache";
 import { subscribeWalletRefresh } from "../lib/wallet-topup-live";
 import { isWalletOpened, markWalletOpened } from "../lib/wallet-onboarding";
 import { useAuth } from "../auth/AuthContext";
@@ -23,8 +22,10 @@ export { parseWalletBalance, openWallet };
 
 export function useWalletMe() {
   const { user } = useAuth();
-  const [wallet, setWallet] = useState<ApiWalletMe | null>(null);
-  const [loading, setLoading] = useState(true);
+  const userId = user?.id ? String(user.id) : "";
+  const known = userId ? peekWallet(userId) : null;
+  const [wallet, setWallet] = useState<ApiWalletMe | null>(known);
+  const [loading, setLoading] = useState(!known);
   const [error, setError] = useState<string | null>(null);
   const [tick, setTick] = useState(0);
 
@@ -33,20 +34,24 @@ export function useWalletMe() {
   useEffect(() => subscribeWalletRefresh(refresh), [refresh]);
 
   useEffect(() => {
-    if (!user?.id) {
+    if (!userId) {
       setWallet(null);
       setLoading(false);
       return;
     }
+    const cached = peekWallet(userId);
+    if (cached) setWallet(cached);
     let cancelled = false;
-    setLoading(true);
-    setError(null);
-    fetchWalletMe()
+    if (!cached) setLoading(true);
+    loadWallet(userId)
       .then((w) => {
-        if (!cancelled) setWallet(w);
+        if (!cancelled) {
+          setWallet(w);
+          setError(null);
+        }
       })
       .catch((e: Error) => {
-        if (!cancelled) {
+        if (!cancelled && !peekWallet(userId)) {
           setError(e.message);
           setWallet(null);
         }
@@ -57,7 +62,7 @@ export function useWalletMe() {
     return () => {
       cancelled = true;
     };
-  }, [user?.id, tick]);
+  }, [userId, tick]);
 
   return {
     wallet,
@@ -79,27 +84,31 @@ export function useWalletTransactions(
   pageSize = 50,
 ) {
   const { user } = useAuth();
-  const [items, setItems] = useState<WalletTx[]>([]);
-  const [loading, setLoading] = useState(true);
+  const userId = user?.id ? String(user.id) : "";
+  const known = userId ? peekWalletTx(userId, direction, entryType, pageSize) : null;
+  const [items, setItems] = useState<WalletTx[]>(known ?? []);
+  const [loading, setLoading] = useState(known == null);
   const [tick, setTick] = useState(0);
   const refresh = useCallback(() => setTick((n) => n + 1), []);
 
   useEffect(() => subscribeWalletRefresh(refresh), [refresh]);
 
   useEffect(() => {
-    if (!user?.id) {
+    if (!userId) {
       setItems([]);
       setLoading(false);
       return;
     }
+    const cached = peekWalletTx(userId, direction, entryType, pageSize);
+    if (cached) setItems(cached);
     let cancelled = false;
-    setLoading(true);
-    fetchWalletTransactions({ direction, entry_type: entryType, page_size: pageSize })
+    if (!cached) setLoading(true);
+    loadWalletTx(userId, direction, entryType, pageSize)
       .then((rows) => {
-        if (!cancelled) setItems(rows.map(mapTx));
+        if (!cancelled) setItems(rows);
       })
       .catch(() => {
-        if (!cancelled) setItems([]);
+        if (!cancelled && !peekWalletTx(userId, direction, entryType, pageSize)) setItems([]);
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -107,7 +116,7 @@ export function useWalletTransactions(
     return () => {
       cancelled = true;
     };
-  }, [user?.id, direction, entryType, pageSize, tick]);
+  }, [userId, direction, entryType, pageSize, tick]);
 
   return { items, loading, refresh };
 }
