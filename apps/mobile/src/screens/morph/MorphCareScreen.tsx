@@ -2,7 +2,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { LinearGradient } from "expo-linear-gradient";
-import { Asset } from "expo-asset";
 import { Image } from "expo-image";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -42,6 +41,7 @@ import {
   CareHubRoutineIllustration,
   CareHubScanIllustration,
 } from "../../components/illustrations/CareHubIllustrations";
+import { CareQuickIllustration } from "../../components/illustrations/CareQuickIllustrations";
 import { CareRoutineSheet } from "../../components/morph/care/CareRoutineSheet";
 import { CareSosSheet } from "../../components/morph/care/CareSosSheet";
 import { CareShelfTrackerSheet } from "../../components/morph/care/CareShelfTrackerSheet";
@@ -92,14 +92,6 @@ type QuizStep = 0 | 1 | 2 | 3;
 type ViewMode = "hub" | "flow";
 
 const CARE_ACCESS_DEBUG = true;
-
-const QUICK_SOS = require("../../../assets/care/care-quick-sos.png");
-const QUICK_SHELF = require("../../../assets/care/care-quick-shelf.png");
-const QUICK_GROWTH = require("../../../assets/care/care-quick-growth.png");
-const CARE_HUB_LOCAL_ASSETS = [QUICK_SOS, QUICK_SHELF, QUICK_GROWTH] as const;
-
-/** Local PNG lar modul yuklanganda xotiraga olinadi — UI ochilganda darhol. */
-void Asset.loadAsync([...CARE_HUB_LOCAL_ASSETS]).catch(() => undefined);
 
 const CONDITION_OPTS: HairCondition[] = ["oily", "dry", "normal", "damaged"];
 const TEXTURE_OPTS: HairTexture[] = ["straight", "wavy", "curly"];
@@ -1390,7 +1382,6 @@ export function MorphCareScreen({ navigation, route }: Props) {
                 [
                   {
                     key: "sos",
-                    img: QUICK_SOS,
                     a11y: t("care.sos.cta", {
                       defaultValue: "Sochim bugun yomon ko‘rinayapti (SOS)",
                     }),
@@ -1398,7 +1389,6 @@ export function MorphCareScreen({ navigation, route }: Props) {
                   },
                   {
                     key: "shelf",
-                    img: QUICK_SHELF,
                     a11y: t("care.shelf.title", {
                       defaultValue: "Mening parvarish vositalarim",
                     }),
@@ -1406,7 +1396,6 @@ export function MorphCareScreen({ navigation, route }: Props) {
                   },
                   {
                     key: "growth",
-                    img: QUICK_GROWTH,
                     a11y: t("care.growthTracker.title", {
                       defaultValue: "Hair Growth & Health Tracker",
                     }),
@@ -1429,16 +1418,12 @@ export function MorphCareScreen({ navigation, route }: Props) {
                   accessibilityRole="button"
                   accessibilityLabel={card.a11y}
                 >
-                  <Image
-                    source={card.img}
-                    style={styles.quickActionImg}
-                    contentFit="cover"
-                    contentPosition="center"
-                    cachePolicy="memory-disk"
-                    priority="high"
-                    transition={0}
-                    recyclingKey={`quick-${card.key}`}
-                  />
+                  <View style={styles.quickActionImg} pointerEvents="none">
+                    <CareQuickIllustration
+                      kind={card.key}
+                      label={t(`care.quick.${card.key}`)}
+                    />
+                  </View>
                 </Pressable>
               ))}
             </View>
