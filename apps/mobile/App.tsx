@@ -41,6 +41,7 @@ import { TermsAcceptScreen } from "./src/screens/onboarding/TermsAcceptScreen";
 import { NotificationPromoScreen } from "./src/screens/onboarding/NotificationPromoScreen";
 import { AccountCreatingScreen } from "./src/screens/AccountCreatingScreen";
 import { ToastProvider } from "./src/components/ui/ToastProvider";
+import { WalletTopUpLive } from "./src/components/wallet/WalletTopUpLive";
 import { colors } from "./src/theme/colors";
 import { NavigationContainer } from "@react-navigation/native";
 import * as NavigationBar from "expo-navigation-bar";
@@ -331,6 +332,7 @@ export default function App() {
             <AuthProvider>
               <GoogleAuthSessionProvider>
                 <ToastProvider>
+                  <WalletTopUpLive />
                   <NavigationContainer
                     onStateChange={() => {
                       requestAnimationFrame(() => {

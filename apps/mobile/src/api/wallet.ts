@@ -193,12 +193,14 @@ export async function setWalletFreeze(action: "freeze" | "unfreeze", reason?: st
 
 export async function fetchWalletTransactions(params?: {
   direction?: "all" | "in" | "out";
+  entry_type?: string;
   page?: number;
   page_size?: number;
 }): Promise<ApiLedgerEntry[]> {
   return apiList<ApiLedgerEntry>(
     `/api/v1/wallet/transactions/${qs({
       direction: params?.direction && params.direction !== "all" ? params.direction : undefined,
+      entry_type: params?.entry_type,
       page: params?.page,
       page_size: params?.page_size ?? 50,
     })}`,

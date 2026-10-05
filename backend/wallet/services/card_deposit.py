@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import secrets
 import string
 import uuid
@@ -17,11 +18,45 @@ from django.db.models import Q
 from django.utils import timezone
 
 from accounts.models import User
+from accounts.sms_otp import send_transactional_sms
 from notifications.utils import notify_user
 from wallet.models import ManualCardDeposit
 from wallet.services.wallet_service import MIN_TOPUP_AMOUNT, WalletService, WalletServiceError
 
+logger = logging.getLogger(__name__)
+
 MAX_TOPUP_AMOUNT = Decimal("5000000")
+
+
+def _format_som(amount: Decimal) -> str:
+    whole = int(Decimal(amount).quantize(Decimal("1"), rounding=ROUND_DOWN))
+    return f"{whole:,}".replace(",", " ")
+
+
+def schedule_wallet_topup_notice(user, amount, *, payload: dict) -> None:
+    """Pul tushgach: ilova xabari, websocket va SMS. Tranzaksiya commitdan keyin."""
+    amount_label = _format_som(Decimal(amount))
+    phone = (getattr(user, "phone", None) or "").strip()
+    notice_payload = dict(payload)
+
+    def _notify() -> None:
+        try:
+            notify_user(
+                user,
+                "wallet_topup",
+                "Hamyoningiz to'ldirildi",
+                f"+{amount_label} so'm hisobingizga tushdi.",
+                payload=notice_payload,
+            )
+        except Exception:
+            logger.exception("Hamyon to'ldirish xabari yuborilmadi")
+        if phone:
+            send_transactional_sms(
+                phone,
+                f"MySaloon: Hamyoningiz {amount_label} so'mga to'ldirildi.",
+            )
+
+    transaction.on_commit(_notify)
 INIT_TTL_HOURS = 2
 CLAIM_TTL_HOURS = 24
 REF_ALPHABET = string.ascii_uppercase + string.digits
@@ -526,11 +561,9 @@ class CardDepositService:
             ]
         )
 
-        notify_user(
+        schedule_wallet_topup_notice(
             deposit.user,
-            "wallet_topup",
-            "Hamyon to'ldirildi",
-            f"+{deposit.amount} so'm · {deposit.transaction_ref}",
+            deposit.amount,
             payload={
                 "deposit_id": str(deposit.pk),
                 "transaction_ref": deposit.transaction_ref,

@@ -15,6 +15,7 @@ import {
   type CardDeposit,
 } from "../api/wallet";
 import { mapLedgerEntry as mapTx, type WalletTx } from "../lib/wallet-format";
+import { subscribeWalletRefresh } from "../lib/wallet-topup-live";
 import { isWalletOpened, markWalletOpened } from "../lib/wallet-onboarding";
 import { useAuth } from "../auth/AuthContext";
 
@@ -28,6 +29,8 @@ export function useWalletMe() {
   const [tick, setTick] = useState(0);
 
   const refresh = useCallback(() => setTick((n) => n + 1), []);
+
+  useEffect(() => subscribeWalletRefresh(refresh), [refresh]);
 
   useEffect(() => {
     if (!user?.id) {
@@ -70,12 +73,17 @@ export function useWalletMe() {
   };
 }
 
-export function useWalletTransactions(direction: "all" | "in" | "out" = "all") {
+export function useWalletTransactions(
+  direction: "all" | "in" | "out" = "all",
+  entryType?: string,
+) {
   const { user } = useAuth();
   const [items, setItems] = useState<WalletTx[]>([]);
   const [loading, setLoading] = useState(true);
   const [tick, setTick] = useState(0);
   const refresh = useCallback(() => setTick((n) => n + 1), []);
+
+  useEffect(() => subscribeWalletRefresh(refresh), [refresh]);
 
   useEffect(() => {
     if (!user?.id) {
@@ -85,7 +93,7 @@ export function useWalletTransactions(direction: "all" | "in" | "out" = "all") {
     }
     let cancelled = false;
     setLoading(true);
-    fetchWalletTransactions({ direction, page_size: 50 })
+    fetchWalletTransactions({ direction, entry_type: entryType, page_size: 50 })
       .then((rows) => {
         if (!cancelled) setItems(rows.map(mapTx));
       })
@@ -98,7 +106,7 @@ export function useWalletTransactions(direction: "all" | "in" | "out" = "all") {
     return () => {
       cancelled = true;
     };
-  }, [user?.id, direction, tick]);
+  }, [user?.id, direction, entryType, tick]);
 
   return { items, loading, refresh };
 }

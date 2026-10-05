@@ -29,6 +29,7 @@ from wallet.services.wallet_number import (
     mask_wallet_number,
     normalize_wallet_number,
 )
+from wallet.services.card_deposit import schedule_wallet_topup_notice
 from wallet.services.wallet_service import (
     InsufficientBalanceError,
     WalletService,
@@ -74,6 +75,9 @@ class WalletTransactionsView(ListAPIView):
             qs = qs.filter(amount__gte=0)
         elif direction == "out":
             qs = qs.filter(amount__lt=0)
+        entry_type = (self.request.query_params.get("entry_type") or "").strip()
+        if entry_type:
+            qs = qs.filter(entry_type=entry_type)
         return qs
 
     def list(self, request, *args, **kwargs):
@@ -333,6 +337,15 @@ class AdminWalletTopUpView(APIView):
         except WalletServiceError as exc:
             return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
 
+        schedule_wallet_topup_notice(
+            user,
+            amount,
+            payload={
+                "entry_id": str(entry.pk),
+                "amount": str(amount),
+                "source": "admin_topup",
+            },
+        )
         wallet.refresh_from_db()
         return Response(
             {

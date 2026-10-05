@@ -122,6 +122,25 @@ def _send_telegram_gateway(phone: str, code: str) -> None:
         raise RuntimeError(f"Telegram Gateway xato: {body.get('error', body)}")
 
 
+def send_transactional_sms(phone: str, message: str) -> bool:
+    """Hamyon kabi xabarlar. OTP dan alohida. Ulanmasa yoki xato bo'lsa False."""
+    digits = "".join(ch for ch in (phone or "") if ch.isdigit())
+    text = (message or "").strip()
+    if not digits or not text:
+        return False
+    provider = _provider()
+    if provider == "eskiz" and is_sms_provider_configured():
+        try:
+            _send_eskiz_sms(digits, text)
+            logger.info("Transactional SMS (eskiz) %s", digits)
+            return True
+        except (urllib.error.URLError, RuntimeError, json.JSONDecodeError, TimeoutError) as exc:
+            logger.exception("Transactional SMS yuborilmadi: %s", exc)
+            return False
+    logger.info("Transactional SMS (provider yo'q) %s", digits)
+    return False
+
+
 def send_login_otp(phone: str, code: str) -> None:
     provider = _provider()
     message = f"mysaloon.uz kirish kodi: {code}. Hech kimga bermang."
