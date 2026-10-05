@@ -592,7 +592,7 @@ export function WalletTopUpScreen({ navigation }: Props) {
       <Modal visible={historyOpen} animationType="slide" onRequestClose={() => setHistoryOpen(false)}>
         <SafeAreaView style={styles.historyModal} edges={["top", "bottom", "left", "right"]}>
           <NativeHeader title="To'ldirishlar" onBack={() => setHistoryOpen(false)} border />
-          <ScrollView contentContainerStyle={styles.historyModalBody}>
+          <ScrollView style={styles.historyScroll} contentContainerStyle={styles.historyModalBody}>
             <View style={styles.historyCard}>
               <TopUpHistoryRows items={topups.items} />
             </View>
@@ -804,6 +804,7 @@ const styles = StyleSheet.create({
   historyHeadTitle: { fontSize: fontSize(15), fontWeight: "700", color: colors.fg },
   historyMore: { fontSize: fontSize(13), fontWeight: "700", color: colors.fg },
   historyModal: { flex: 1, backgroundColor: colors.bg },
+  historyScroll: { flex: 1, minHeight: 0 },
   historyModalBody: {
     paddingHorizontal: scale(16),
     paddingTop: verticalScale(16),
