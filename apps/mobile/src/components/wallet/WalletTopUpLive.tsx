@@ -1,29 +1,29 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
+import { parseWalletBalance } from "../../api/wallet";
 import { useAuth } from "../../auth/AuthContext";
+import { useAppToast } from "../ui/ToastProvider";
 import { startUserPush } from "../../lib/register-user-push";
-import {
-  startWalletTopUpLive,
-  subscribeWalletTopUp,
-  type WalletTopUpEvent,
-} from "../../lib/wallet-topup-live";
-import { WalletTopUpCelebration } from "./WalletTopUpCelebration";
+import { formatSomLabel } from "../../lib/wallet-format";
+import { startWalletTopUpLive, subscribeWalletTopUp } from "../../lib/wallet-topup-live";
 
 /** Ilova ochiq turganida admin tasdig'ini real vaqtda ushlaydi. */
 export function WalletTopUpLive() {
   const { isAuthenticated } = useAuth();
-  const [event, setEvent] = useState<WalletTopUpEvent | null>(null);
+  const toast = useAppToast();
   const seen = useRef(new Set<string>());
 
   useEffect(() => {
     if (!isAuthenticated) {
       seen.current.clear();
-      setEvent(null);
       return;
     }
     let stopLive = () => {};
     let stopPush = () => {};
     let cancelled = false;
-    const unsub = subscribeWalletTopUp(setEvent);
+    const unsub = subscribeWalletTopUp((event) => {
+      const label = formatSomLabel(parseWalletBalance(event.amount));
+      toast.show(`Hisobingizga qo'shildi · +${label}`, { tone: "success", durationMs: 3200 });
+    });
     stopLive = startWalletTopUpLive(seen.current);
     void startUserPush(seen.current)
       .then((stop) => {
@@ -37,15 +37,7 @@ export function WalletTopUpLive() {
       stopLive();
       unsub();
     };
-  }, [isAuthenticated]);
+  }, [isAuthenticated, toast]);
 
-  const close = useCallback(() => setEvent(null), []);
-
-  return (
-    <WalletTopUpCelebration
-      visible={event != null}
-      amount={event?.amount || "0"}
-      onClose={close}
-    />
-  );
+  return null;
 }
