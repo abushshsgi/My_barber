@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -26,7 +27,7 @@ import {
 } from "../../api/wallet";
 import { NativeHeader } from "../../components/ui/NativeHeader";
 import { useCardDeposits, useWalletMe, useWalletTransactions } from "../../hooks/useWallet";
-import { formatSomAmount, formatSomLabel } from "../../lib/wallet-format";
+import { formatSomAmount, formatSomLabel, type WalletTx } from "../../lib/wallet-format";
 import type { WalletStackParamList } from "../../navigation/WalletStack";
 import { colors } from "../../theme/colors";
 import {
@@ -37,6 +38,28 @@ import {
 } from "../../utils/responsive";
 
 type Props = NativeStackScreenProps<WalletStackParamList, "WalletTopUp">;
+
+const TOPUP_PREVIEW = 3;
+
+function TopUpHistoryRows({ items }: { items: WalletTx[] }) {
+  return (
+    <>
+      {items.map((tx, idx) => (
+        <View key={tx.id} style={[styles.historyRow, idx > 0 && styles.historyBorder]}>
+          <View style={styles.historyCopy}>
+            <Text style={styles.historyTitle} numberOfLines={1}>
+              {tx.title}
+            </Text>
+            <Text style={styles.historyDate} numberOfLines={1}>
+              {tx.date}
+            </Text>
+          </View>
+          <Text style={styles.historyAmt}>+{formatSomLabel(Math.abs(tx.amount))}</Text>
+        </View>
+      ))}
+    </>
+  );
+}
 
 const PRESETS = [50_000, 100_000, 200_000, 500_000] as const;
 const OPEN = new Set(["awaiting_payment", "claimed"]);
@@ -192,7 +215,8 @@ export function WalletTopUpScreen({ navigation }: Props) {
   const [now, setNow] = useState(() => Date.now());
   const copyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const deposits = useCardDeposits(true);
-  const topups = useWalletTransactions("all", "topup");
+  const topups = useWalletTransactions("all", "topup", 100);
+  const [historyOpen, setHistoryOpen] = useState(false);
 
   useEffect(() => {
     void fetchReceivingCard()
@@ -446,29 +470,21 @@ export function WalletTopUpScreen({ navigation }: Props) {
                 )}
               </Pressable>
 
-              <Text style={styles.section}>To'ldirishlar</Text>
+              <View style={styles.historyHead}>
+                <Text style={styles.historyHeadTitle}>To'ldirishlar</Text>
+                {topups.items.length > TOPUP_PREVIEW ? (
+                  <Pressable onPress={() => setHistoryOpen(true)} hitSlop={8}>
+                    <Text style={styles.historyMore}>Barchasi</Text>
+                  </Pressable>
+                ) : null}
+              </View>
               {topups.loading ? (
                 <ActivityIndicator color={colors.fg} />
               ) : topups.items.length === 0 ? (
                 <Text style={styles.help}>Hali pul tashlagan to'ldirish yo'q</Text>
               ) : (
                 <View style={styles.historyCard}>
-                  {topups.items.slice(0, 12).map((tx, idx) => (
-                    <View
-                      key={tx.id}
-                      style={[styles.historyRow, idx > 0 && styles.historyBorder]}
-                    >
-                      <View style={styles.historyCopy}>
-                        <Text style={styles.historyTitle} numberOfLines={1}>
-                          {tx.title}
-                        </Text>
-                        <Text style={styles.historyDate} numberOfLines={1}>
-                          {tx.date}
-                        </Text>
-                      </View>
-                      <Text style={styles.historyAmt}>+{formatSomLabel(Math.abs(tx.amount))}</Text>
-                    </View>
-                  ))}
+                  <TopUpHistoryRows items={topups.items.slice(0, TOPUP_PREVIEW)} />
                 </View>
               )}
             </>
@@ -573,6 +589,16 @@ export function WalletTopUpScreen({ navigation }: Props) {
         ) : null}
         </View>
       )}
+      <Modal visible={historyOpen} animationType="slide" onRequestClose={() => setHistoryOpen(false)}>
+        <SafeAreaView style={styles.historyModal} edges={["top", "bottom", "left", "right"]}>
+          <NativeHeader title="To'ldirishlar" onBack={() => setHistoryOpen(false)} border />
+          <ScrollView contentContainerStyle={styles.historyModalBody}>
+            <View style={styles.historyCard}>
+              <TopUpHistoryRows items={topups.items} />
+            </View>
+          </ScrollView>
+        </SafeAreaView>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -768,6 +794,21 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   secondaryCtaText: { color: colors.fg },
+  historyHead: {
+    marginTop: verticalScale(18),
+    marginBottom: verticalScale(8),
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  historyHeadTitle: { fontSize: fontSize(15), fontWeight: "700", color: colors.fg },
+  historyMore: { fontSize: fontSize(13), fontWeight: "700", color: colors.fg },
+  historyModal: { flex: 1, backgroundColor: colors.bg },
+  historyModalBody: {
+    paddingHorizontal: scale(16),
+    paddingTop: verticalScale(16),
+    paddingBottom: verticalScale(28),
+  },
   historyCard: {
     marginTop: verticalScale(4),
     backgroundColor: colors.surface,

@@ -76,6 +76,7 @@ export function useWalletMe() {
 export function useWalletTransactions(
   direction: "all" | "in" | "out" = "all",
   entryType?: string,
+  pageSize = 50,
 ) {
   const { user } = useAuth();
   const [items, setItems] = useState<WalletTx[]>([]);
@@ -93,7 +94,7 @@ export function useWalletTransactions(
     }
     let cancelled = false;
     setLoading(true);
-    fetchWalletTransactions({ direction, entry_type: entryType, page_size: 50 })
+    fetchWalletTransactions({ direction, entry_type: entryType, page_size: pageSize })
       .then((rows) => {
         if (!cancelled) setItems(rows.map(mapTx));
       })
@@ -106,7 +107,7 @@ export function useWalletTransactions(
     return () => {
       cancelled = true;
     };
-  }, [user?.id, direction, entryType, tick]);
+  }, [user?.id, direction, entryType, pageSize, tick]);
 
   return { items, loading, refresh };
 }
