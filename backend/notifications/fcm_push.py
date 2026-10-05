@@ -194,7 +194,11 @@ def send_user_fcm_push(
         return
     from .models import UserPushToken
 
-    tokens = list(UserPushToken.objects.filter(user=user).values_list("token", flat=True))
+    tokens = [
+        token
+        for token in UserPushToken.objects.filter(user=user).values_list("token", flat=True)
+        if token and not str(token).startswith("ExponentPushToken")
+    ]
     send_fcm_push(tokens, title=title, body=body or title, data=payload)
 
 

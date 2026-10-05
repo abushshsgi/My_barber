@@ -18,7 +18,6 @@ from django.db.models import Q
 from django.utils import timezone
 
 from accounts.models import User
-from accounts.sms_otp import send_transactional_sms
 from notifications.utils import notify_user
 from wallet.models import ManualCardDeposit
 from wallet.services.wallet_service import MIN_TOPUP_AMOUNT, WalletService, WalletServiceError
@@ -34,9 +33,8 @@ def _format_som(amount: Decimal) -> str:
 
 
 def schedule_wallet_topup_notice(user, amount, *, payload: dict) -> None:
-    """Pul tushgach: ilova xabari, websocket va SMS. Tranzaksiya commitdan keyin."""
+    """Pul tushgach: ilova yopiq bo'lsa ham tizim pushi. OTP SMS emas."""
     amount_label = _format_som(Decimal(amount))
-    phone = (getattr(user, "phone", None) or "").strip()
     notice_payload = dict(payload)
 
     def _notify() -> None:
@@ -49,12 +47,7 @@ def schedule_wallet_topup_notice(user, amount, *, payload: dict) -> None:
                 payload=notice_payload,
             )
         except Exception:
-            logger.exception("Hamyon to'ldirish xabari yuborilmadi")
-        if phone:
-            send_transactional_sms(
-                phone,
-                f"MySaloon: Hamyoningiz {amount_label} so'mga to'ldirildi.",
-            )
+            logger.exception("Hamyon to'ldirish pushi yuborilmadi")
 
     transaction.on_commit(_notify)
 INIT_TTL_HOURS = 2

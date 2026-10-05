@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAuth } from "../../auth/AuthContext";
+import { startUserPush } from "../../lib/register-user-push";
 import {
   startWalletTopUpLive,
   subscribeWalletTopUp,
@@ -19,10 +20,21 @@ export function WalletTopUpLive() {
       setEvent(null);
       return;
     }
+    let stopLive = () => {};
+    let stopPush = () => {};
+    let cancelled = false;
     const unsub = subscribeWalletTopUp(setEvent);
-    const stop = startWalletTopUpLive(seen.current);
+    stopLive = startWalletTopUpLive(seen.current);
+    void startUserPush(seen.current)
+      .then((stop) => {
+        if (cancelled) stop();
+        else stopPush = stop;
+      })
+      .catch(() => {});
     return () => {
-      stop();
+      cancelled = true;
+      stopPush();
+      stopLive();
       unsub();
     };
   }, [isAuthenticated]);

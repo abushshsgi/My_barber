@@ -19,6 +19,7 @@ def send_expo_push(
     title: str,
     body: str,
     data: dict | None = None,
+    channel_id: str | None = None,
 ) -> None:
     clean = [t for t in tokens if t and str(t).startswith("ExponentPushToken")]
     if not clean:
@@ -33,6 +34,8 @@ def send_expo_push(
                 "body": body or title,
                 "data": payload_data,
                 "sound": "default",
+                "priority": "high",
+                **({"channelId": channel_id} if channel_id else {}),
             }
             for token in chunk
         ]
@@ -51,6 +54,25 @@ def send_expo_push(
                     logger.warning("Expo push HTTP %s", resp.status)
         except urllib.error.URLError as e:
             logger.warning("Expo push failed: %s", e)
+
+
+def send_user_expo_push(
+    user,
+    *,
+    title: str,
+    body: str,
+    payload: dict | None = None,
+) -> None:
+    """Ilova yopiq bo'lsa ham tizim pushi (Expo). OTP/SMS emas."""
+    from .models import UserPushToken
+
+    tokens = list(
+        UserPushToken.objects.filter(user=user, token__startswith="ExponentPushToken").values_list(
+            "token", flat=True
+        )
+    )
+    data = {key: "" if value is None else str(value) for key, value in (payload or {}).items()}
+    send_expo_push(tokens, title=title, body=body, data=data, channel_id="wallet")
 
 
 def send_barber_expo_push(
