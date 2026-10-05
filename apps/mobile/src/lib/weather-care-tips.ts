@@ -652,10 +652,12 @@ export function careHubLayout(
 
   const quickCount = 3;
   const quickGap = narrow ? 6 : width < 420 ? 8 : 10;
-  const quickInner = Math.max(0, width - hPad * 2);
-  const quickFitted = Math.floor((quickInner - quickGap * (quickCount - 1)) / quickCount);
-  const quickCap = width >= 840 ? 176 : width >= 560 ? 164 : quickFitted;
-  const quickActionW = Math.max(72, Math.min(quickFitted, quickCap));
+  /** Ob-havo banneri bilan bir ustun: telefon to‘liq, kompyuterda banner kengligi. */
+  const quickInner = Math.min(Math.max(0, width - hPad * 2), promoMaxW);
+  const quickActionW = Math.max(
+    72,
+    Math.floor((quickInner - quickGap * (quickCount - 1)) / quickCount),
+  );
   const quickActionH = clamp(
     Math.round(quickActionW * (short ? 0.78 : 0.82)),
     narrow ? 72 : 80,

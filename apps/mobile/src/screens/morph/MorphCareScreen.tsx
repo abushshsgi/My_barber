@@ -1370,10 +1370,12 @@ export function MorphCareScreen({ navigation, route }: Props) {
               style={[
                 styles.quickActionRow,
                 {
+                  width: "100%",
+                  maxWidth: hubLayout.promoMaxW,
+                  alignSelf: "center",
                   height: hubLayout.quickActionH,
                   marginTop: hubLayout.sectionGap,
                   marginBottom: Math.max(4, Math.round(hubLayout.sectionGap * 0.4)),
-                  paddingHorizontal: hubLayout.hPad,
                   gap: hubLayout.quickGap,
                 },
               ]}
@@ -1408,10 +1410,9 @@ export function MorphCareScreen({ navigation, route }: Props) {
                   style={[
                     styles.quickActionCard,
                     {
-                      width: hubLayout.quickActionW,
+                      flex: 1,
+                      minWidth: 0,
                       height: hubLayout.quickActionH,
-                      flexGrow: 0,
-                      flexShrink: 1,
                     },
                   ]}
                   onPress={card.onPress}
@@ -1419,11 +1420,22 @@ export function MorphCareScreen({ navigation, route }: Props) {
                   accessibilityLabel={card.a11y}
                 >
                   <View style={styles.quickActionImg} pointerEvents="none">
-                    <CareQuickIllustration
-                      kind={card.key}
-                      label={t(`care.quick.${card.key}`)}
-                    />
+                    <CareQuickIllustration kind={card.key} />
                   </View>
+                  <LinearGradient
+                    colors={["transparent", "rgba(17,17,17,0.42)"]}
+                    style={styles.quickActionScrim}
+                    pointerEvents="none"
+                  />
+                  <Text
+                    style={[
+                      styles.quickActionLabel,
+                      { fontSize: hubLayout.quickActionUi.labelFs },
+                    ]}
+                    numberOfLines={1}
+                  >
+                    {t(`care.quick.${card.key}`)}
+                  </Text>
                 </Pressable>
               ))}
             </View>
@@ -2122,6 +2134,25 @@ const styles = StyleSheet.create({
     bottom: 0,
     width: "100%",
     height: "100%",
+  },
+  quickActionScrim: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 40,
+  },
+  quickActionLabel: {
+    position: "absolute",
+    left: 10,
+    right: 8,
+    bottom: 8,
+    color: "#FFFFFF",
+    fontWeight: "700",
+    letterSpacing: 0.15,
+    textShadowColor: "rgba(17,17,17,0.45)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
   },
   routineRoot: { flex: 1, minHeight: 0, backgroundColor: "#FAFAFA" },
   onboardRoot: { flex: 1, minHeight: 0, backgroundColor: "#FAFAFA" },

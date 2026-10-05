@@ -3,48 +3,17 @@ import Svg, {
   Circle,
   Defs,
   Ellipse,
-  G,
   LinearGradient,
   Path,
   Rect,
   Stop,
-  Text as SvgText,
 } from "react-native-svg";
-import { MORPH_FONT } from "../../theme/morph-font";
 
 const fill = StyleSheet.absoluteFillObject;
 
 type Kind = "sos" | "shelf" | "growth";
 
-function QuickLabel({ label, shadow }: { label: string; shadow: string }) {
-  const size = label.length > 7 ? 18 : 22;
-  return (
-    <G>
-      <SvgText
-        x={12}
-        y={114}
-        fontSize={size}
-        fontWeight="700"
-        fontFamily={MORPH_FONT}
-        fill={shadow}
-      >
-        {label}
-      </SvgText>
-      <SvgText
-        x={11}
-        y={112}
-        fontSize={size}
-        fontWeight="700"
-        fontFamily={MORPH_FONT}
-        fill="#FFFFFF"
-      >
-        {label}
-      </SvgText>
-    </G>
-  );
-}
-
-function CareQuickSosIllustration({ label }: { label: string }) {
+function CareQuickSosIllustration() {
   return (
     <Svg width="100%" height="100%" viewBox="0 0 160 124" preserveAspectRatio="xMidYMid slice" style={fill}>
       <Defs>
@@ -67,12 +36,11 @@ function CareQuickSosIllustration({ label }: { label: string }) {
       <Circle cx="58" cy="72" r="1.2" fill="#F6C56B" />
       <Circle cx="128" cy="64" r="1.5" fill="#F6C56B" />
       <Path d="M42 46l1.4 3.2 3.2 1.4-3.2 1.4-1.4 3.2-1.4-3.2-3.2-1.4 3.2-1.4 1.4-3.2z" fill="#F6C56B" />
-      <QuickLabel label={label} shadow="#C48962" />
     </Svg>
   );
 }
 
-function CareQuickShelfIllustration({ label }: { label: string }) {
+function CareQuickShelfIllustration() {
   return (
     <Svg width="100%" height="100%" viewBox="0 0 160 124" preserveAspectRatio="xMidYMid slice" style={fill}>
       <Defs>
@@ -95,12 +63,11 @@ function CareQuickShelfIllustration({ label }: { label: string }) {
       <Path d="M80 52c2-4 6-4 6 0 0 4-3 6-3 6s-3-2-3-6z" fill="none" stroke="#C6A15A" strokeWidth="1.2" />
       <Path d="M102 38h24c2 0 4 2 4 6v22c0 4-2 6-6 6h-20c-2 0-4-2-4-6V42c0-2 1-4 2-4z" fill="#C9E4D4" />
       <Rect x="108" y="58" width="16" height="8" rx="2" fill="#C6A15A" />
-      <QuickLabel label={label} shadow="#7EA892" />
     </Svg>
   );
 }
 
-function CareQuickGrowthIllustration({ label }: { label: string }) {
+function CareQuickGrowthIllustration() {
   return (
     <Svg width="100%" height="100%" viewBox="0 0 160 124" preserveAspectRatio="xMidYMid slice" style={fill}>
       <Defs>
@@ -127,13 +94,12 @@ function CareQuickGrowthIllustration({ label }: { label: string }) {
       <Circle cx="36" cy="40" r="1.5" fill="#F6C56B" />
       <Circle cx="128" cy="36" r="1.4" fill="#F6C56B" />
       <Circle cx="24" cy="70" r="1.2" fill="#F6C56B" />
-      <QuickLabel label={label} shadow="#C48962" />
     </Svg>
   );
 }
 
-export function CareQuickIllustration({ kind, label }: { kind: Kind; label: string }) {
-  if (kind === "sos") return <CareQuickSosIllustration label={label} />;
-  if (kind === "shelf") return <CareQuickShelfIllustration label={label} />;
-  return <CareQuickGrowthIllustration label={label} />;
+export function CareQuickIllustration({ kind }: { kind: Kind }) {
+  if (kind === "sos") return <CareQuickSosIllustration />;
+  if (kind === "shelf") return <CareQuickShelfIllustration />;
+  return <CareQuickGrowthIllustration />;
 }
