@@ -28,6 +28,12 @@ import {
 
 type Props = NativeStackScreenProps<WalletStackParamList, "WalletTransactions">;
 
+const TABS = [
+  { id: "all" as const, label: "Hammasi" },
+  { id: "in" as const, label: "Kirim" },
+  { id: "out" as const, label: "Chiqim" },
+];
+
 const TONES = ["#E5E5E5", "#D4D4D4", "#A3A3A3", "#F0F0F0", "#737373"];
 
 function tone(id: string) {
@@ -47,7 +53,8 @@ export function WalletTransactionsScreen({ navigation }: Props) {
   const { t } = useTranslation();
   useHideTabBar();
   const insets = useSafeAreaInsets();
-  const { items, loading } = useWalletTransactions("all", "topup");
+  const [tab, setTab] = useState<"all" | "in" | "out">("all");
+  const { items, loading } = useWalletTransactions(tab);
   const [selected, setSelected] = useState<WalletTx | null>(null);
 
   const grouped = useMemo(() => {
@@ -61,7 +68,8 @@ export function WalletTransactionsScreen({ navigation }: Props) {
     return [...map.entries()];
   }, [items]);
 
-  const total = items.reduce((s, i) => s + Math.abs(i.amount), 0);
+  const inSum = items.filter((i) => i.kind === "in").reduce((s, i) => s + i.amount, 0);
+  const outSum = items.filter((i) => i.kind === "out").reduce((s, i) => s + Math.abs(i.amount), 0);
 
   return (
     <View style={[styles.root, { paddingBottom: insets.bottom }]}>
@@ -72,9 +80,27 @@ export function WalletTransactionsScreen({ navigation }: Props) {
           <View style={styles.backBtn} />
         </View>
 
-        <View style={styles.statCard}>
-          <Text style={styles.statLabel}>{t("walletPages.topupHistoryTotal")}</Text>
-          <Text style={[styles.statVal, { color: "#16A34A" }]}>+{formatSomLabel(total)}</Text>
+        <View style={styles.stats}>
+          <View style={styles.statCard}>
+            <Text style={styles.statLabel}>{t("wallet.income")}</Text>
+            <Text style={[styles.statVal, { color: "#16A34A" }]}>+{formatSomLabel(inSum)}</Text>
+          </View>
+          <View style={styles.statCard}>
+            <Text style={styles.statLabel}>{t("wallet.expense")}</Text>
+            <Text style={[styles.statVal, { color: "#EF4444" }]}>−{formatSomLabel(outSum)}</Text>
+          </View>
+        </View>
+
+        <View style={styles.tabs}>
+          {TABS.map((t) => (
+            <Pressable
+              key={t.id}
+              style={[styles.tab, tab === t.id && styles.tabOn]}
+              onPress={() => setTab(t.id)}
+            >
+              <Text style={[styles.tabText, tab === t.id && styles.tabTextOn]}>{t.label}</Text>
+            </Pressable>
+          ))}
         </View>
       </LinearGradient>
 
@@ -88,7 +114,7 @@ export function WalletTransactionsScreen({ navigation }: Props) {
           ListEmptyComponent={
             <View style={styles.emptyBox}>
               <Ionicons name="receipt-outline" size={36} color="#D1D5DB" />
-              <Text style={styles.empty}>{t("walletPages.topupHistoryEmpty")}</Text>
+              <Text style={styles.empty}>{t("wallet.noActivity")}</Text>
             </View>
           }
           renderItem={({ item: [day, rows] }) => (
@@ -150,13 +176,31 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     color: "#111",
   },
+  stats: { flexDirection: "row", gap: moderateScale(10), marginBottom: verticalScale(14) },
   statCard: {
+    flex: 1,
     backgroundColor: "rgba(255,255,255,0.85)",
     borderRadius: moderateScale(18),
     padding: moderateScale(14),
   },
   statLabel: { fontSize: fontSize(12), fontWeight: "600", color: "#9CA3AF" },
   statVal: { marginTop: verticalScale(4), fontSize: fontSize(15), fontWeight: "800" },
+  tabs: {
+    flexDirection: "row",
+    backgroundColor: "rgba(255,255,255,0.7)",
+    borderRadius: moderateScale(14),
+    padding: moderateScale(4),
+    gap: moderateScale(4),
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: verticalScale(10),
+    borderRadius: moderateScale(11),
+    alignItems: "center",
+  },
+  tabOn: { backgroundColor: "#111" },
+  tabText: { fontSize: fontSize(13), fontWeight: "600", color: "#6B7280" },
+  tabTextOn: { color: "#FFF" },
   list: { padding: moderateScale(16), paddingBottom: verticalScale(32) },
   emptyBox: { alignItems: "center", paddingTop: verticalScale(48), gap: moderateScale(10) },
   empty: { color: "#9CA3AF", fontSize: fontSize(14) },

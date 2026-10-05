@@ -25,7 +25,7 @@ import {
   type CardDeposit,
 } from "../../api/wallet";
 import { NativeHeader } from "../../components/ui/NativeHeader";
-import { useCardDeposits, useWalletMe } from "../../hooks/useWallet";
+import { useCardDeposits, useWalletMe, useWalletTransactions } from "../../hooks/useWallet";
 import { formatSomAmount, formatSomLabel } from "../../lib/wallet-format";
 import type { WalletStackParamList } from "../../navigation/WalletStack";
 import { colors } from "../../theme/colors";
@@ -192,6 +192,7 @@ export function WalletTopUpScreen({ navigation }: Props) {
   const [now, setNow] = useState(() => Date.now());
   const copyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const deposits = useCardDeposits(true);
+  const topups = useWalletTransactions("all", "topup");
 
   useEffect(() => {
     void fetchReceivingCard()
@@ -444,6 +445,32 @@ export function WalletTopUpScreen({ navigation }: Props) {
                   <Text style={styles.ctaText}>Kartani ochish · {formatSomLabel(effective || amount)}</Text>
                 )}
               </Pressable>
+
+              <Text style={styles.section}>To'ldirishlar</Text>
+              {topups.loading ? (
+                <ActivityIndicator color={colors.fg} />
+              ) : topups.items.length === 0 ? (
+                <Text style={styles.help}>Hali pul tashlagan to'ldirish yo'q</Text>
+              ) : (
+                <View style={styles.historyCard}>
+                  {topups.items.slice(0, 12).map((tx, idx) => (
+                    <View
+                      key={tx.id}
+                      style={[styles.historyRow, idx > 0 && styles.historyBorder]}
+                    >
+                      <View style={styles.historyCopy}>
+                        <Text style={styles.historyTitle} numberOfLines={1}>
+                          {tx.title}
+                        </Text>
+                        <Text style={styles.historyDate} numberOfLines={1}>
+                          {tx.date}
+                        </Text>
+                      </View>
+                      <Text style={styles.historyAmt}>+{formatSomLabel(Math.abs(tx.amount))}</Text>
+                    </View>
+                  ))}
+                </View>
+              )}
             </>
           ) : (
             <>
@@ -741,6 +768,29 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   secondaryCtaText: { color: colors.fg },
+  historyCard: {
+    marginTop: verticalScale(4),
+    backgroundColor: colors.surface,
+    borderRadius: moderateScale(16),
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+    overflow: "hidden",
+  },
+  historyRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: moderateScale(10),
+    paddingHorizontal: scale(14),
+    paddingVertical: verticalScale(12),
+  },
+  historyBorder: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
+  },
+  historyCopy: { flex: 1, minWidth: 0 },
+  historyTitle: { fontSize: fontSize(14), fontWeight: "700", color: colors.fg },
+  historyDate: { marginTop: 2, fontSize: fontSize(11), color: colors.muted },
+  historyAmt: { fontSize: fontSize(13), fontWeight: "800", color: "#16A34A" },
   resultCard: {
     marginTop: verticalScale(8),
     backgroundColor: colors.surface,
