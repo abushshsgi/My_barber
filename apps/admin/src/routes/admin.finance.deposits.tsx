@@ -97,6 +97,9 @@ function AdminWalletDepositsPage() {
   const [search, setSearch] = useState("");
   const [receiptPreview, setReceiptPreview] = useState<AdminCardDeposit | null>(null);
   const [note, setNote] = useState("");
+  const [approveTarget, setApproveTarget] = useState<AdminCardDeposit | null>(null);
+  const [approveStep, setApproveStep] = useState<1 | 2>(1);
+  const [confirmCode, setConfirmCode] = useState("");
 
   const listQ = useQuery({
     queryKey: ["admin", "wallet-deposits", status, search],
@@ -110,11 +113,14 @@ function AdminWalletDepositsPage() {
 
   const approveM = useMutation({
     mutationFn: (row: AdminCardDeposit) =>
-      approveAdminCardDeposit(row.id, note.trim() || "Bank o'tkazma OK"),
+      approveAdminCardDeposit(row.id, note.trim() || "Bank o'tkazma OK", confirmCode.trim()),
     onSuccess: () => {
       toast.success("Tasdiqlandi — pul hamyonga tushdi");
       void qc.invalidateQueries({ queryKey: ["admin", "wallet-deposits"] });
       setReceiptPreview(null);
+      setApproveTarget(null);
+      setApproveStep(1);
+      setConfirmCode("");
       setNote("");
     },
     onError: (e: Error) => toast.error(e.message),
@@ -131,6 +137,24 @@ function AdminWalletDepositsPage() {
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
+  function askApprove(row: AdminCardDeposit) {
+    if (!row.receipt_url) {
+      toast.error("Chek yuklanmagan — avval foydalanuvchi chek yuborsin");
+      return;
+    }
+    if (row.wallet_frozen) {
+      toast.error("Hamyon muzlatilgan. Avval oching.");
+      return;
+    }
+    setApproveTarget(row);
+    setApproveStep(1);
+    setConfirmCode("");
+  }
+
+  const expectedCode = (approveTarget?.transaction_ref || "").replace(/\s/g, "").toUpperCase();
+  const typedCode = confirmCode.replace(/\s/g, "").toUpperCase();
+  const codeMatches = typedCode.length > 0 && typedCode === expectedCode;
 
   const rows = listQ.data?.results ?? [];
   const pendingCount = useMemo(
@@ -307,13 +331,7 @@ function AdminWalletDepositsPage() {
                           <Button
                             size="sm"
                             disabled={approveM.isPending || rejectM.isPending}
-                            onClick={() => {
-                              if (!row.receipt_url) {
-                                toast.error("Chek yuklanmagan — avval foydalanuvchi chek yuborsin");
-                                return;
-                              }
-                              approveM.mutate(row);
-                            }}
+                            onClick={() => askApprove(row)}
                           >
                             Tasdiqlash
                           </Button>
@@ -389,12 +407,80 @@ function AdminWalletDepositsPage() {
               </Button>
               <Button
                 disabled={approveM.isPending || rejectM.isPending || !receiptPreview.receipt_url}
-                onClick={() => approveM.mutate(receiptPreview)}
+                onClick={() => askApprove(receiptPreview)}
               >
                 Tasdiqlash
               </Button>
             </div>
           ) : null}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={!!approveTarget}
+        onOpenChange={(open) => {
+          if (!open && !approveM.isPending) {
+            setApproveTarget(null);
+            setApproveStep(1);
+            setConfirmCode("");
+          }
+        }}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{approveStep === 1 ? "Tasdiqlashni boshlaysizmi?" : "Izoh kodini qayta kiriting"}</DialogTitle>
+            <DialogDescription>
+              {approveTarget
+                ? `${approveTarget.user.full_name || approveTarget.user.phone || "User"} · ${formatAdminUzs(approveTarget.amount)}`
+                : null}
+            </DialogDescription>
+          </DialogHeader>
+          {approveStep === 1 ? (
+            <p className="text-sm text-muted-foreground">
+              Tasdiqlangach pul foydalanuvchi hamyoniga tushadi. Keyingi qadamda izoh kodini qo'lda yozmasangiz, so'rov yuborilmaydi.
+            </p>
+          ) : (
+            <div className="space-y-2">
+              <p className="text-sm text-muted-foreground">
+                Chekdagi izoh kodini shu yerga yozing. Kod mos kelmasa pul tushmaydi.
+              </p>
+              <Input
+                value={confirmCode}
+                autoFocus
+                autoComplete="off"
+                placeholder="Izoh kodi"
+                onChange={(e) => setConfirmCode(e.target.value)}
+              />
+            </div>
+          )}
+          <div className="flex justify-end gap-2 pt-2">
+            <Button
+              variant="outline"
+              disabled={approveM.isPending}
+              onClick={() => {
+                if (approveStep === 2) {
+                  setApproveStep(1);
+                  setConfirmCode("");
+                  return;
+                }
+                setApproveTarget(null);
+              }}
+            >
+              {approveStep === 2 ? "Orqaga" : "Bekor"}
+            </Button>
+            {approveStep === 1 ? (
+              <Button onClick={() => setApproveStep(2)}>Davom etish</Button>
+            ) : (
+              <Button
+                disabled={!codeMatches || approveM.isPending || !approveTarget}
+                onClick={() => {
+                  if (approveTarget) approveM.mutate(approveTarget);
+                }}
+              >
+                Tasdiqlash
+              </Button>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </div>

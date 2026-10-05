@@ -4669,12 +4669,13 @@ export async function fetchAdminCardDeposits(params?: {
 export async function approveAdminCardDeposit(
   id: string,
   note?: string,
+  confirmRef?: string,
 ): Promise<{ deposit: AdminCardDeposit; balance: number }> {
   const raw = await apiJson<{ deposit: Record<string, any>; balance: string | number }>(
     `/api/v1/admin/wallet/deposits/${id}/approve/`,
     {
       method: "POST",
-      body: JSON.stringify({ note: note || "" }),
+      body: JSON.stringify({ note: note || "", confirm_ref: confirmRef || "" }),
     },
   );
   return {

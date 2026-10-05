@@ -183,9 +183,17 @@ class CardDepositApiTests(TestCase):
         self.assertEqual(claim.data["status"], "claimed")
         self.assertTrue(claim.data.get("receipt_url"))
 
+        ref = init.data["transaction_ref"]
+        blocked = self.admin_client.post(
+            f"/api/v1/admin/wallet/deposits/{deposit_id}/approve/",
+            {"note": "bank ok", "confirm_ref": "WRONG"},
+            format="json",
+        )
+        self.assertEqual(blocked.status_code, 400, blocked.content)
+
         approve = self.admin_client.post(
             f"/api/v1/admin/wallet/deposits/{deposit_id}/approve/",
-            {"note": "bank ok"},
+            {"note": "bank ok", "confirm_ref": ref},
             format="json",
         )
         self.assertEqual(approve.status_code, 200, approve.content)

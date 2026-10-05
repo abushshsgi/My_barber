@@ -213,6 +213,20 @@ class AdminWalletDepositApproveView(FriendlyThrottleMixin, APIView):
 
     def post(self, request, deposit_id: str):
         note = str(request.data.get("note") or "").strip()
+        confirm_ref = "".join(str(request.data.get("confirm_ref") or "").split()).upper()
+        pending = (
+            ManualCardDeposit.objects.filter(pk=deposit_id)
+            .only("transaction_ref", "status")
+            .first()
+        )
+        if not pending:
+            return Response({"detail": "So'rov topilmadi."}, status=status.HTTP_404_NOT_FOUND)
+        expected = "".join(str(pending.transaction_ref or "").split()).upper()
+        if pending.status != ManualCardDeposit.Status.APPROVED and confirm_ref != expected:
+            return Response(
+                {"detail": "Tasdiqlash uchun izoh kodini qayta kiriting. Kod mos kelmadi."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         admin = getattr(request.user, "admin_account", None)
         try:
             deposit = CardDepositService.approve_deposit(

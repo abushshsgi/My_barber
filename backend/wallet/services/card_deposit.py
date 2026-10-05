@@ -521,6 +521,8 @@ class CardDepositService:
             return deposit
         if deposit.status != ManualCardDeposit.Status.CLAIMED or not deposit.receipt_image:
             raise WalletServiceError("Avval foydalanuvchi chek yuklashi kerak. Cheksiz so'rovni tasdiqlab bo'lmaydi.")
+        if deposit.wallet.is_frozen:
+            raise WalletServiceError("Hamyon muzlatilgan. Avval oching, keyin tasdiqlang.")
 
         entry = WalletService.top_up(
             wallet=deposit.wallet,
