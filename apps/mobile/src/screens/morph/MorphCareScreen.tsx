@@ -38,6 +38,10 @@ import { resolveMediaUrl } from "../../api/media";
 import { useAuth } from "../../auth/AuthContext";
 import { CareProductPreviewSheet } from "../../components/morph/care/CareProductPreviewSheet";
 import { CareCatalogMark } from "../../components/morph/care/CareCatalogMark";
+import {
+  CareHubRoutineIllustration,
+  CareHubScanIllustration,
+} from "../../components/illustrations/CareHubIllustrations";
 import { CareRoutineSheet } from "../../components/morph/care/CareRoutineSheet";
 import { CareSosSheet } from "../../components/morph/care/CareSosSheet";
 import { CareShelfTrackerSheet } from "../../components/morph/care/CareShelfTrackerSheet";
@@ -92,16 +96,7 @@ const CARE_ACCESS_DEBUG = true;
 const QUICK_SOS = require("../../../assets/care/care-quick-sos.png");
 const QUICK_SHELF = require("../../../assets/care/care-quick-shelf.png");
 const QUICK_GROWTH = require("../../../assets/care/care-quick-growth.png");
-const HUB_ROUTINE = require("../../../assets/care/care-hub-routine-v2.png");
-const HUB_SCAN = require("../../../assets/care/care-hub-scan-v2.png");
-
-const CARE_HUB_LOCAL_ASSETS = [
-  QUICK_SOS,
-  QUICK_SHELF,
-  QUICK_GROWTH,
-  HUB_ROUTINE,
-  HUB_SCAN,
-] as const;
+const CARE_HUB_LOCAL_ASSETS = [QUICK_SOS, QUICK_SHELF, QUICK_GROWTH] as const;
 
 /** Local PNG lar modul yuklanganda xotiraga olinadi — UI ochilganda darhol. */
 void Asset.loadAsync([...CARE_HUB_LOCAL_ASSETS]).catch(() => undefined);
@@ -1761,16 +1756,9 @@ export function MorphCareScreen({ navigation, route }: Props) {
                     accessibilityRole="button"
                     accessibilityLabel={t("care.hubParvarish")}
                   >
-                    <Image
-                      source={HUB_ROUTINE}
-                      style={styles.hubCardImg}
-                      contentFit="cover"
-                      contentPosition="center"
-                      cachePolicy="memory-disk"
-                      priority="high"
-                      transition={0}
-                      recyclingKey="hub-routine"
-                    />
+                    <View style={styles.hubCardImg} pointerEvents="none">
+                      <CareHubRoutineIllustration />
+                    </View>
                     <LinearGradient
                       colors={["transparent", "rgba(17,17,17,0.58)"]}
                       style={styles.hubCardScrim}
@@ -1805,16 +1793,9 @@ export function MorphCareScreen({ navigation, route }: Props) {
                     accessibilityRole="button"
                     accessibilityLabel={t("care.hubTarkib")}
                   >
-                    <Image
-                      source={HUB_SCAN}
-                      style={styles.hubCardImg}
-                      contentFit="cover"
-                      contentPosition="center"
-                      cachePolicy="memory-disk"
-                      priority="high"
-                      transition={0}
-                      recyclingKey="hub-scan"
-                    />
+                    <View style={styles.hubCardImg} pointerEvents="none">
+                      <CareHubScanIllustration />
+                    </View>
                     <LinearGradient
                       colors={["transparent", "rgba(17,17,17,0.58)"]}
                       style={styles.hubCardScrim}
