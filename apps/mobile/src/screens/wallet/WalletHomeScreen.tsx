@@ -2,7 +2,6 @@ import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { Image } from "expo-image";
-import { LinearGradient } from "expo-linear-gradient";
 import { StatusBar } from "expo-status-bar";
 import { useCallback, useMemo, useState } from "react";
 import {
@@ -12,6 +11,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
@@ -34,21 +34,13 @@ import {
   scale,
   spacing,
   verticalScale,
-  widthPercent,
 } from "../../utils/responsive";
 
 type Props = NativeStackScreenProps<WalletStackParamList, "WalletHome">;
 
 const INK = "#111111";
 const MUTED = "#737373";
-const SOFT_BG = "#FAFAFA";
-const CARD_SHADOW = {
-  shadowColor: "#111111",
-  shadowOffset: { width: 0, height: 8 },
-  shadowOpacity: 0.12,
-  shadowRadius: 20,
-  elevation: 4,
-};
+const SOFT_BG = "#FFFFFF";
 const AVATAR_TONES = ["#111111", "#737373", "#A3A3A3", "#D4D4D4", "#525252", "#E5E5E5"];
 
 const QUICK_META: {
@@ -116,7 +108,11 @@ export function WalletHomeScreen({ navigation }: Props) {
   const [selectedTx, setSelectedTx] = useState<WalletTx | null>(null);
   const [history, setHistory] = useState<RecipientHistoryItem[]>([]);
 
+  const { width: windowWidth } = useWindowDimensions();
   const dockPad = TAB_DOCK_CLEARANCE + Math.max(insets.bottom, 8);
+  const promoWidth = Math.round(
+    Math.min(scale(248), Math.max(scale(188), windowWidth - scale(88))),
+  );
 
   const recent = tx.items.slice(0, 8);
   const greetName = firstName(user?.first_name || user?.full_name, t("walletPages.friend"));
@@ -178,15 +174,10 @@ export function WalletHomeScreen({ navigation }: Props) {
     <View style={[styles.root, { paddingBottom: dockPad }]}>
       <StatusBar style="dark" />
 
-      <LinearGradient
-        colors={["#F0F0F0", "#F0F0F0", "#F0F0F0", "#FAFAFA"]}
-        locations={[0, 0.35, 0.7, 1]}
-        start={{ x: 0.1, y: 0 }}
-        end={{ x: 0.9, y: 1 }}
+      <View
         style={[
           styles.heroCard,
           { paddingTop: Math.max(insets.top, verticalScale(12)) + spacing.xs },
-          CARD_SHADOW,
         ]}
       >
         <View style={styles.header}>
@@ -250,7 +241,7 @@ export function WalletHomeScreen({ navigation }: Props) {
             </Pressable>
           ))}
         </View>
-      </LinearGradient>
+      </View>
 
       <View style={styles.section}>
         <View style={styles.sectionHead}>
@@ -302,44 +293,54 @@ export function WalletHomeScreen({ navigation }: Props) {
       <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
+          style={styles.promoScroll}
           contentContainerStyle={styles.promoRow}
         >
-          <LinearGradient
-            colors={["#F0F0F0", "#E5E5E5", "#F0F0F0"]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.promoCard}
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => navigation.navigate("WalletGifts")}
+            style={({ pressed }) => [
+              styles.promoCard,
+              { width: promoWidth },
+              pressed && styles.promoPressed,
+            ]}
           >
+            <View style={styles.promoIcon}>
+              <Ionicons name="gift-outline" size={ICON.md} color={INK} />
+            </View>
             <View style={styles.promoTextCol}>
-              <Text style={styles.promoTitle}>{t("walletPages.giftBonus")}</Text>
-              <Text style={styles.promoDesc} numberOfLines={3}>
+              <Text style={styles.promoTitle} numberOfLines={1}>
+                {t("walletPages.giftBonus")}
+              </Text>
+              <Text style={styles.promoDesc} numberOfLines={2}>
                 {t("walletPages.giftPromoBody")}
               </Text>
             </View>
-            <Pressable style={styles.promoGift} onPress={() => navigation.navigate("WalletGifts")}>
-              <Ionicons name="gift" size={ICON.xl} color="#111111" />
-            </Pressable>
-          </LinearGradient>
+            <Ionicons name="chevron-forward" size={ICON.sm} color="#A3A3A3" />
+          </Pressable>
 
-          <LinearGradient
-            colors={["#F0F0F0", "#F0F0F0", "#F0F0F0"]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.promoCard}
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => navigation.navigate("WalletRequisites")}
+            style={({ pressed }) => [
+              styles.promoCard,
+              { width: promoWidth },
+              pressed && styles.promoPressed,
+            ]}
           >
+            <View style={styles.promoIcon}>
+              <Ionicons name="card-outline" size={ICON.md} color={INK} />
+            </View>
             <View style={styles.promoTextCol}>
-              <Text style={styles.promoTitle}>{t("walletPages.requisites")}</Text>
-              <Text style={styles.promoDesc} numberOfLines={3}>
+              <Text style={styles.promoTitle} numberOfLines={1}>
+                {t("walletPages.requisites")}
+              </Text>
+              <Text style={styles.promoDesc} numberOfLines={2}>
                 {t("walletPages.cardPromoBody")}
               </Text>
             </View>
-            <Pressable
-              style={styles.promoGift}
-              onPress={() => navigation.navigate("WalletRequisites")}
-            >
-              <Ionicons name="card-outline" size={ICON.lg} color="#111111" />
-            </Pressable>
-          </LinearGradient>
+            <Ionicons name="chevron-forward" size={ICON.sm} color="#A3A3A3" />
+          </Pressable>
       </ScrollView>
 
       {/* Yagona scroll zonasi — sahifaning o'zi hech qachon scroll qilmaydi. */}
@@ -427,12 +428,10 @@ const TX_AVATAR = scale(IS_SMALL_DEVICE ? 40 : 48);
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: SOFT_BG },
   heroCard: {
-    marginHorizontal: scale(16),
     marginBottom: spacing.xs,
-    borderRadius: moderateScale(32),
-    paddingHorizontal: scale(16),
+    paddingHorizontal: scale(20),
     paddingBottom: spacing.lg,
-    overflow: "visible",
+    backgroundColor: SOFT_BG,
   },
   header: {
     flexDirection: "row",
@@ -450,7 +449,9 @@ const styles = StyleSheet.create({
     width: AVATAR,
     height: AVATAR,
     borderRadius: AVATAR / 2,
-    backgroundColor: "rgba(255,255,255,0.85)",
+    backgroundColor: SOFT_BG,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "#E7E7E7",
     alignItems: "center",
     justifyContent: "center",
     overflow: "hidden",
@@ -464,7 +465,9 @@ const styles = StyleSheet.create({
     width: scale(44),
     height: scale(44),
     borderRadius: scale(44) / 2,
-    backgroundColor: "rgba(255,255,255,0.92)",
+    backgroundColor: SOFT_BG,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "#E7E7E7",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -495,14 +498,11 @@ const styles = StyleSheet.create({
     maxWidth: QUICK_TILE,
     aspectRatio: 1,
     borderRadius: radius.lg,
-    backgroundColor: "#FFF",
+    backgroundColor: SOFT_BG,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "#E7E7E7",
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#111111",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.14,
-    shadowRadius: 10,
-    elevation: 3,
   },
   quickLabel: {
     width: "100%",
@@ -550,7 +550,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 2,
-    borderColor: "#FAFAFA",
+    borderColor: SOFT_BG,
   },
   contactInitials: { fontSize: fontSize(15), fontWeight: "700", color: INK },
   contactName: {
@@ -563,46 +563,63 @@ const styles = StyleSheet.create({
     width: CONTACT_TILE,
     height: CONTACT_TILE,
     borderRadius: radius.lg,
-    backgroundColor: "#E5E7EB",
+    backgroundColor: SOFT_BG,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "#E7E7E7",
     alignItems: "center",
     justifyContent: "center",
   },
+  promoScroll: {
+    flexGrow: 0,
+    flexShrink: 0,
+    alignSelf: "stretch",
+  },
   promoRow: {
-    paddingHorizontal: scale(20),
-    gap: moderateScale(12),
-    marginTop: spacing.md,
-    paddingBottom: verticalScale(4),
+    paddingHorizontal: scale(16),
+    gap: moderateScale(10),
+    marginTop: spacing.sm,
+    paddingBottom: verticalScale(2),
+    alignItems: "flex-start",
   },
   promoCard: {
-    width: widthPercent(72),
-    maxWidth: scale(300),
-    minHeight: verticalScale(IS_SMALL_DEVICE ? 88 : 110),
-    borderRadius: radius.xl,
-    padding: moderateScale(IS_SMALL_DEVICE ? 14 : 18),
     flexDirection: "row",
     alignItems: "center",
     gap: moderateScale(10),
+    height: scale(72),
+    maxWidth: scale(248),
+    paddingHorizontal: moderateScale(12),
+    borderRadius: radius.lg,
+    backgroundColor: SOFT_BG,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "#E7E7E7",
+    shadowColor: "#111111",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    elevation: 2,
   },
-  promoTextCol: { flex: 1 },
-  promoTitle: {
-    fontSize: fontSize(16),
-    fontWeight: "700",
-    color: INK,
-    marginBottom: spacing.xs,
-  },
-  promoDesc: {
-    fontSize: fontSize(12),
-    lineHeight: fontSize(17),
-    color: "#6B7280",
-    fontWeight: "400",
-  },
-  promoGift: {
-    width: scale(52),
-    height: scale(52),
-    borderRadius: radius.md,
-    backgroundColor: "rgba(255,255,255,0.55)",
+  promoPressed: { opacity: 0.86 },
+  promoIcon: {
+    width: scale(36),
+    height: scale(36),
+    borderRadius: radius.sm,
+    backgroundColor: SOFT_BG,
     alignItems: "center",
     justifyContent: "center",
+  },
+  promoTextCol: { flex: 1, minWidth: 0 },
+  promoTitle: {
+    fontSize: fontSize(14),
+    fontWeight: "700",
+    color: INK,
+    letterSpacing: -0.2,
+  },
+  promoDesc: {
+    marginTop: verticalScale(2),
+    fontSize: fontSize(12),
+    lineHeight: fontSize(16),
+    color: "#6B7280",
+    fontWeight: "400",
   },
   emptyBox: { alignItems: "center", paddingVertical: spacing.xl, gap: spacing.sm },
   empty: { color: MUTED, fontSize: fontSize(14) },

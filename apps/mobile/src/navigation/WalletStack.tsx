@@ -58,7 +58,7 @@ export function WalletStack() {
       <Stack.Screen
         name="WalletHome"
         component={WalletHomeScreen}
-        options={{ cardStyle: { backgroundColor: "#F7F5F2" } }}
+        options={{ cardStyle: { backgroundColor: "#FFFFFF" } }}
       />
       <Stack.Screen name="WalletTopUp" component={WalletTopUpScreen} options={walletFromRight} />
       <Stack.Screen name="WalletGift" component={WalletGiftScreen} options={walletFromRight} />
