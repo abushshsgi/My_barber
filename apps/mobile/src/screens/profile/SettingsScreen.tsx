@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { ScrollView, StyleSheet, View } from "react-native";
+import { useShellTheme } from "../../lib/useShellTheme";
 import { useTranslation } from "react-i18next";
 import { HeaderPill, NativeHeader } from "../../components/ui/NativeHeader";
 import { SettingsGroup, SettingsRow } from "../../components/ui/SettingsKit";
@@ -24,6 +25,7 @@ const LANGS: { id: AppLang; labelKey: "profile.languageUz" | "profile.languageRu
 
 export function SettingsScreen({ navigation }: Props) {
   const { t, i18n } = useTranslation();
+  const pal = useShellTheme();
   const lang = (i18n.resolvedLanguage || i18n.language || "uz").slice(0, 2) as AppLang;
 
   const chooseLanguage = (next: AppLang) => {
@@ -32,7 +34,7 @@ export function SettingsScreen({ navigation }: Props) {
   };
 
   return (
-    <View style={styles.root}>
+    <View style={[styles.root, { backgroundColor: pal.bg }]}>
       <NativeHeader
         title={t("profile.settingsTitle")}
         onBack={() => navigation.goBack()}
@@ -88,7 +90,7 @@ export function SettingsScreen({ navigation }: Props) {
               last={index === LANGS.length - 1}
               trailing={
                 lang === item.id ? (
-                  <Ionicons name="checkmark" size={18} color={colors.fg} />
+                  <Ionicons name="checkmark" size={18} color={pal.fg} />
                 ) : (
                   <View style={styles.langSpacer} />
                 )

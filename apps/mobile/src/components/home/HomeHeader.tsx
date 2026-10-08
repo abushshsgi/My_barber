@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { colors } from "../../theme/colors";
+import { useShellTheme } from "../../lib/useShellTheme";
 import {
   fontSize,
   moderateScale,
@@ -20,21 +20,22 @@ export function HomeHeader({
   onPressLocation,
   onPressMap,
 }: Props) {
+  const pal = useShellTheme();
   return (
     <View style={styles.row}>
       <View style={styles.left}>
-        <Text style={styles.logo} accessibilityRole="header">
+        <Text style={[styles.logo, { color: pal.fg }]} accessibilityRole="header">
           Mysaloon
-          <Text style={styles.dot}>.</Text>
+          <Text style={[styles.dot, { color: pal.fg }]}>.</Text>
         </Text>
         <Pressable
           onPress={onPressLocation}
-          style={styles.locationPill}
+          style={[styles.locationPill, { backgroundColor: pal.card }]}
           accessibilityRole="button"
           accessibilityLabel="Hudud"
         >
-          <Ionicons name="location-sharp" size={14} color={colors.muted} />
-          <Text style={styles.locationText} numberOfLines={1}>
+          <Ionicons name="location-sharp" size={14} color={pal.muted} />
+          <Text style={[styles.locationText, { color: pal.fg }]} numberOfLines={1}>
             {locationLabel}
           </Text>
         </Pressable>
@@ -46,7 +47,7 @@ export function HomeHeader({
         accessibilityRole="button"
         accessibilityLabel="Xarita"
       >
-        <Ionicons name="map-outline" size={22} color={colors.fg} />
+        <Ionicons name="map-outline" size={22} color={pal.fg} />
       </Pressable>
     </View>
   );
@@ -70,18 +71,18 @@ const styles = StyleSheet.create({
   logo: {
     fontSize: fontSize(17),
     fontWeight: "800",
-    color: colors.fg,
+    color: "#111111",
     letterSpacing: -0.3,
   },
   dot: {
-    color: colors.brandDot,
+    color: "#111111",
   },
   locationPill: {
     flexShrink: 1,
     flexDirection: "row",
     alignItems: "center",
     gap: moderateScale(4),
-    backgroundColor: colors.surface,
+    backgroundColor: "#FFFFFF",
     borderRadius: 999,
     paddingHorizontal: scale(9),
     paddingVertical: verticalScale(6),
@@ -90,7 +91,7 @@ const styles = StyleSheet.create({
   locationText: {
     fontSize: fontSize(11),
     fontWeight: "600",
-    color: colors.fg,
+    color: "#111111",
   },
   mapBtn: {
     width: scale(34),

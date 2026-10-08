@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { StatusBar } from "expo-status-bar";
+import { useMemo } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -21,7 +22,7 @@ import { planLabel } from "../../api/dashboard";
 import { formatSom, initials } from "../../api/user";
 import { useAppShell } from "../../lib/AppShellContext";
 import type { ProfileStackParamList } from "../../navigation/ProfileStack";
-import { colors } from "../../theme/colors";
+import { useShellTheme, type ShellTheme } from "../../lib/useShellTheme";
 import { MorphProfileScreen } from "./MorphProfileScreen";
 import {
   fontSize,
@@ -49,6 +50,11 @@ export function ProfileHomeScreen(props: Props) {
 
 function MysaloonProfileHome({ navigation }: Props) {
   const { t } = useTranslation();
+  const pal = useShellTheme();
+  const styles = useMemo(
+    () => createProfileStyles(pal),
+    [pal.bg, pal.fg, pal.muted, pal.card, pal.border],
+  );
   const insets = useSafeAreaInsets();
   const { dashboard, unreadCount, loading, refresh } = useProfileDashboard();
   const { signOut, user: authUser } = useAuth();
@@ -67,8 +73,9 @@ function MysaloonProfileHome({ navigation }: Props) {
   const plan = planLabel(sub);
 
   return (
-    <View style={[styles.root, { backgroundColor: colors.bg }]}>
-      <View style={{ height: insets.top, backgroundColor: colors.bg }} />
+    <View style={[styles.root, { backgroundColor: pal.bg }]}>
+      <StatusBar style={pal.status} />
+      <View style={{ height: insets.top, backgroundColor: pal.bg }} />
       <ScrollView
         style={{ flex: 1 }}
         showsVerticalScrollIndicator={false}
@@ -87,7 +94,7 @@ function MysaloonProfileHome({ navigation }: Props) {
         <View style={styles.topRow}>
           <HeaderPill
             label={t("profile.bonusSoon")}
-            icon={<Ionicons name="star" size={13} color={colors.fg} />}
+            icon={<Ionicons name="star" size={13} color={pal.fg} />}
           />
           <HeaderPill
             label={sub?.has_active ? plan : t("profile.subscription")}
@@ -100,7 +107,7 @@ function MysaloonProfileHome({ navigation }: Props) {
         <View style={styles.hero}>
           <View style={styles.avatar}>
             {loading && !dashboard ? (
-              <ActivityIndicator color={colors.fg} />
+              <ActivityIndicator color={pal.fg} />
             ) : (
               <Text style={styles.avatarText}>{initials(display)}</Text>
             )}
@@ -113,7 +120,7 @@ function MysaloonProfileHome({ navigation }: Props) {
             {verified ? (
               <Ionicons name="checkmark-circle" size={18} color="#007AFF" />
             ) : null}
-            <Ionicons name="chevron-forward" size={16} color={colors.muted} />
+            <Ionicons name="chevron-forward" size={16} color={pal.muted} />
           </Pressable>
           <View style={styles.audiencePill}>
             <Text style={styles.audienceText}>
@@ -138,7 +145,7 @@ function MysaloonProfileHome({ navigation }: Props) {
               }}
             >
               <View style={styles.quickIcon}>
-                <Ionicons name={item.icon} size={22} color={colors.fg} />
+                <Ionicons name={item.icon} size={22} color={pal.fg} />
               </View>
               <Text style={styles.quickLabel}>{t(item.labelKey)}</Text>
             </Pressable>
@@ -217,7 +224,7 @@ function MysaloonProfileHome({ navigation }: Props) {
         </SettingsGroup>
 
         <Pressable style={styles.logout} onPress={() => void signOut()}>
-          <Ionicons name="log-out-outline" size={18} color={colors.fg} />
+          <Ionicons name="log-out-outline" size={18} color={pal.fg} />
           <Text style={styles.logoutText}>{t("profile.logout")}</Text>
         </Pressable>
 
@@ -229,8 +236,9 @@ function MysaloonProfileHome({ navigation }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.bg },
+function createProfileStyles(pal: ShellTheme) {
+  return StyleSheet.create({
+  root: { flex: 1, backgroundColor: pal.bg },
   content: { paddingHorizontal: scale(16), paddingBottom: TAB_DOCK_CLEARANCE + 28, gap: moderateScale(4) },
   topRow: {
     flexDirection: "row",
@@ -242,23 +250,23 @@ const styles = StyleSheet.create({
     width: scale(88),
     height: scale(88),
     borderRadius: moderateScale(44),
-    backgroundColor: colors.surface,
+    backgroundColor: pal.card,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: verticalScale(12),
   },
-  avatarText: { fontSize: fontSize(22), fontWeight: "800", color: colors.fg },
+  avatarText: { fontSize: fontSize(22), fontWeight: "800", color: pal.fg },
   nameRow: { flexDirection: "row", alignItems: "center", gap: moderateScale(6) },
-  name: { fontSize: fontSize(17), fontWeight: "800", color: colors.fg, letterSpacing: -0.3 },
+  name: { fontSize: fontSize(17), fontWeight: "800", color: pal.fg, letterSpacing: -0.3 },
   audiencePill: {
     marginTop: verticalScale(8),
-    backgroundColor: colors.surface,
+    backgroundColor: pal.card,
     borderRadius: 999,
     paddingHorizontal: scale(10),
     paddingVertical: verticalScale(4),
   },
-  audienceText: { fontSize: fontSize(12), fontWeight: "600", color: colors.fg },
-  stats: { marginTop: verticalScale(8), fontSize: fontSize(13), color: colors.muted },
+  audienceText: { fontSize: fontSize(12), fontWeight: "600", color: pal.fg },
+  stats: { marginTop: verticalScale(8), fontSize: fontSize(13), color: pal.muted },
   quickRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -270,29 +278,30 @@ const styles = StyleSheet.create({
     width: scale(58),
     height: scale(58),
     borderRadius: moderateScale(29),
-    backgroundColor: colors.surface,
+    backgroundColor: pal.card,
     alignItems: "center",
     justifyContent: "center",
   },
-  quickLabel: { fontSize: fontSize(11), fontWeight: "600", color: colors.fg, textAlign: "center" },
+  quickLabel: { fontSize: fontSize(11), fontWeight: "600", color: pal.fg, textAlign: "center" },
   logout: {
     marginTop: verticalScale(8),
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: pal.border,
     borderRadius: moderateScale(14),
     minHeight: verticalScale(52),
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: moderateScale(8),
-    backgroundColor: colors.bg,
+    backgroundColor: pal.bg,
   },
-  logoutText: { fontSize: fontSize(15), fontWeight: "700", color: colors.fg },
+  logoutText: { fontSize: fontSize(15), fontWeight: "700", color: pal.fg },
   guestHint: {
     marginTop: verticalScale(12),
     textAlign: "center",
     fontSize: fontSize(12),
-    color: colors.muted,
+    color: pal.muted,
     lineHeight: fontSize(17),
   },
-});
+  });
+}

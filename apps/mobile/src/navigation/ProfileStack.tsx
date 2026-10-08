@@ -1,7 +1,6 @@
 import { Platform } from "react-native";
 import { createStackNavigator } from "@react-navigation/stack";
 import { useAuth } from "../auth/AuthContext";
-import { useAppShell } from "../lib/AppShellContext";
 import { useMorphAppearance } from "../lib/MorphAppearanceContext";
 import { LoginScreen } from "../screens/LoginScreen";
 import { MorphPaywallScreen } from "../screens/morph/MorphPaywallScreen";
@@ -77,9 +76,7 @@ const Stack = createStackNavigator<ProfileStackParamList>();
 /** Profil + wallet — JS stack (webda ham animatsiya ishlaydi). */
 export function ProfileStack() {
   const { isAuthenticated } = useAuth();
-  const { shell } = useAppShell();
   const { colors } = useMorphAppearance();
-  const morphHome = shell === "morph";
 
   if (!isAuthenticated) {
     return <LoginScreen />;
@@ -89,7 +86,7 @@ export function ProfileStack() {
     <Stack.Navigator
       screenOptions={{
         headerShown: false,
-        cardStyle: { backgroundColor: morphHome ? colors.bg : "#FFFFFF" },
+        cardStyle: { backgroundColor: colors.bg },
         detachPreviousScreen: Platform.OS !== "web",
         ...walletFromRight,
       }}

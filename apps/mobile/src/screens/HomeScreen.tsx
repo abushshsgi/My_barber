@@ -25,7 +25,7 @@ import { useHomeCatalog } from "../hooks/useHomeCatalog";
 import { useShellNavigation } from "../lib/shell-nav";
 import type { RootStackParamList } from "../navigation/RootNavigator";
 import { CARD_GAP, H_PAD, useHomeLayout } from "../theme/layout";
-import { colors } from "../theme/colors";
+import { useShellTheme, type ShellTheme } from "../lib/useShellTheme";
 import {
   moderateScale,
   radius,
@@ -43,6 +43,11 @@ const MemoCard = memo(ListingCard);
 
 export function HomeScreen({ onOpenMap, onOpenExplore }: Props) {
   const { t } = useTranslation();
+  const pal = useShellTheme();
+  const styles = useMemo(
+    () => createHomeStyles(pal),
+    [pal.bg, pal.fg, pal.muted, pal.card, pal.onAccent],
+  );
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { goMorph } = useShellNavigation();
@@ -112,18 +117,18 @@ export function HomeScreen({ onOpenMap, onOpenExplore }: Props) {
       style={[
         styles.root,
         {
-          backgroundColor: colors.bg,
+          backgroundColor: pal.bg,
         },
       ]}
     >
-      <View style={{ height: insets.top, backgroundColor: colors.bg }} />
+      <View style={{ height: insets.top, backgroundColor: pal.bg }} />
       <ScrollView
         style={styles.flex}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         refreshControl={
-          <RefreshControl refreshing={loading} onRefresh={refresh} tintColor={colors.fg} />
+          <RefreshControl refreshing={loading} onRefresh={refresh} tintColor={pal.fg} />
         }
       >
         <HomeHeader locationLabel={locationLabel} onPressMap={openMap} />
@@ -156,7 +161,7 @@ export function HomeScreen({ onOpenMap, onOpenExplore }: Props) {
 
         {loading && topSalons.length === 0 ? (
           <View style={styles.loader}>
-            <ActivityIndicator color={colors.fg} />
+            <ActivityIndicator color={pal.fg} />
           </View>
         ) : null}
 
@@ -214,10 +219,11 @@ export function HomeScreen({ onOpenMap, onOpenExplore }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+function createHomeStyles(pal: ShellTheme) {
+  return StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: colors.bg,
+    backgroundColor: pal.bg,
   },
   flex: {
     flex: 1,
@@ -244,21 +250,22 @@ const styles = StyleSheet.create({
     marginHorizontal: scale(16),
     padding: moderateScale(12),
     borderRadius: radius.sm,
-    backgroundColor: colors.surface,
+    backgroundColor: pal.card,
     gap: spacing.xs,
   },
   errorText: {
-    color: colors.muted,
+    color: pal.muted,
   },
   retry: {
     alignSelf: "flex-start",
-    backgroundColor: colors.fg,
+    backgroundColor: pal.fg,
     borderRadius: radius.pill,
     paddingHorizontal: scale(12),
     paddingVertical: spacing.xs,
   },
   retryText: {
     fontWeight: "700",
-    color: "#FFF",
+    color: pal.onAccent,
   },
-});
+  });
+}

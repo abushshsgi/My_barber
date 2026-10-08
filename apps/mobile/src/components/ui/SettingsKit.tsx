@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
-import { ReactNode } from "react";
+import { ReactNode, useMemo } from "react";
 import { Pressable, StyleSheet, Switch, Text, View } from "react-native";
-import { colors } from "../../theme/colors";
+import { useShellTheme, type ShellTheme } from "../../lib/useShellTheme";
 import {
   fontSize,
   moderateScale,
@@ -34,11 +34,12 @@ export function SettingsRow({
   last,
   destructive,
 }: RowProps) {
+  const { pal, styles } = useKitTheme();
   const body = (
     <View style={[styles.row, !last && styles.rowBorder, darkText && styles.rowDarkBorder]}>
       {icon ? (
         <View style={[styles.iconWrap, iconDark && styles.iconDark]}>
-          <Ionicons name={icon} size={18} color={iconDark || darkText ? "#FFF" : colors.fg} />
+          <Ionicons name={icon} size={18} color={iconDark || darkText ? pal.onAccent : pal.fg} />
         </View>
       ) : null}
       <View style={styles.textCol}>
@@ -67,7 +68,7 @@ export function SettingsRow({
           <Ionicons
             name="chevron-forward"
             size={18}
-            color={darkText ? "rgba(255,255,255,0.55)" : colors.muted}
+            color={darkText ? "rgba(255,255,255,0.55)" : pal.muted}
           />
         ) : null)}
     </View>
@@ -90,6 +91,7 @@ export function SettingsGroup({
   children: ReactNode;
   dark?: boolean;
 }) {
+  const { styles } = useKitTheme();
   return (
     <View style={styles.groupWrap}>
       {title ? <Text style={styles.groupTitle}>{title}</Text> : null}
@@ -109,6 +111,7 @@ export function ToggleRow({
   onValueChange: (v: boolean) => void;
   last?: boolean;
 }) {
+  const { pal, styles } = useKitTheme();
   return (
     <View style={[styles.row, !last && styles.rowBorder]}>
       <View style={styles.textCol}>
@@ -118,15 +121,25 @@ export function ToggleRow({
       <Switch
         value={value}
         onValueChange={onValueChange}
-        trackColor={{ false: "#D1D1D6", true: colors.fg }}
-        thumbColor="#FFFFFF"
+        trackColor={{ false: pal.iconTile, true: pal.fg }}
+        thumbColor={pal.card}
         ios_backgroundColor="#D1D1D6"
       />
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+function useKitTheme() {
+  const pal = useShellTheme();
+  const styles = useMemo(
+    () => createKitStyles(pal),
+    [pal.bg, pal.fg, pal.muted, pal.card, pal.border, pal.iconTile, pal.onAccent],
+  );
+  return { pal, styles };
+}
+
+function createKitStyles(pal: ShellTheme) {
+  return StyleSheet.create({
   groupWrap: {
     marginBottom: verticalScale(20),
   },
@@ -136,15 +149,15 @@ const styles = StyleSheet.create({
     fontSize: fontSize(12),
     fontWeight: "700",
     letterSpacing: 0.6,
-    color: colors.muted,
+    color: pal.muted,
     textTransform: "uppercase",
   },
   group: {
-    backgroundColor: colors.surface,
+    backgroundColor: pal.card,
     borderRadius: moderateScale(22),
     overflow: "hidden",
     borderWidth: 1,
-    borderColor: "rgba(0,0,0,0.06)",
+    borderColor: pal.border,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04,
@@ -167,7 +180,7 @@ const styles = StyleSheet.create({
   },
   rowBorder: {
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "rgba(0,0,0,0.06)",
+    borderBottomColor: pal.border,
   },
   pressed: {
     opacity: 0.82,
@@ -177,7 +190,7 @@ const styles = StyleSheet.create({
     width: scale(36),
     height: scale(36),
     borderRadius: moderateScale(12),
-    backgroundColor: colors.bg,
+    backgroundColor: pal.iconTile,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -191,7 +204,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: fontSize(15),
     fontWeight: "600",
-    color: colors.fg,
+    color: pal.fg,
   },
   titleDark: {
     color: "#FFFFFF",
@@ -199,7 +212,7 @@ const styles = StyleSheet.create({
   subtitle: {
     marginTop: verticalScale(2),
     fontSize: fontSize(12),
-    color: colors.muted,
+    color: pal.muted,
     lineHeight: fontSize(16),
   },
   subtitleDark: {
@@ -213,7 +226,7 @@ const styles = StyleSheet.create({
     height: verticalScale(22),
     borderRadius: moderateScale(11),
     paddingHorizontal: scale(6),
-    backgroundColor: colors.fg,
+    backgroundColor: pal.fg,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -223,12 +236,13 @@ const styles = StyleSheet.create({
   badgeText: {
     fontSize: fontSize(11),
     fontWeight: "700",
-    color: "#FFF",
+    color: pal.onAccent,
   },
   badgeTextOnDark: {
-    color: colors.fg,
+    color: "#111111",
   },
   rowDarkBorder: {
     borderBottomColor: "rgba(255,255,255,0.12)",
   },
-});
+  });
+}
