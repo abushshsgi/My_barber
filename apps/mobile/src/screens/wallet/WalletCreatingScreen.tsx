@@ -20,8 +20,9 @@ import Animated, {
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { safeBottom, safeTop } from "../../lib/safe-area";
-import { morfWordmark } from "../../branding/morf-logo";
+import { morfWordmark, morfWordmarkWhite } from "../../branding/morf-logo";
 import { useAppShell } from "../../lib/AppShellContext";
+import { useShellTheme } from "../../lib/useShellTheme";
 import {
   fontSize,
   moderateScale,
@@ -51,6 +52,7 @@ export function WalletCreatingScreen({
   onGetStarted,
 }: Props) {
   const { t } = useTranslation();
+  const pal = useShellTheme();
   const insets = useSafeAreaInsets();
   const { shell } = useAppShell();
   const isMorph = shell === "morph";
@@ -90,6 +92,7 @@ export function WalletCreatingScreen({
       style={[
         styles.root,
         {
+          backgroundColor: pal.bg,
           paddingTop: safeTop(insets.top, 20),
           paddingBottom: safeBottom(insets.bottom, 12),
         },
@@ -98,16 +101,16 @@ export function WalletCreatingScreen({
       <View style={styles.logoRow}>
         {isMorph ? (
           <Image
-            source={morfWordmark}
+            source={pal.status === "light" ? morfWordmarkWhite : morfWordmark}
             style={styles.morphLogo}
             contentFit="contain"
             accessibilityLabel="Morf AI"
           />
         ) : (
           <>
-            <View style={styles.logoBlock} />
-            <View style={[styles.logoBlock, styles.logoBlockOffset]} />
-            <Text style={styles.logoText}>{brand}</Text>
+            <View style={[styles.logoBlock, { backgroundColor: pal.fg }]} />
+            <View style={[styles.logoBlock, styles.logoBlockOffset, { backgroundColor: pal.fg }]} />
+            <Text style={[styles.logoText, { color: pal.fg }]}>{brand}</Text>
           </>
         )}
       </View>
@@ -146,7 +149,7 @@ export function WalletCreatingScreen({
       </View>
 
       <View style={styles.copy}>
-        <Text style={styles.title}>
+        <Text style={[styles.title, { color: pal.fg }]}>
           {phase === "error"
             ? t("walletPages.failTitle")
             : phase === "creating"
@@ -155,7 +158,7 @@ export function WalletCreatingScreen({
                 ? t("walletPages.readyTitle")
                 : t("walletPages.welcomeTitle")}
         </Text>
-        <Text style={styles.sub}>
+        <Text style={[styles.sub, { color: pal.muted }]}>
           {error
             ? error
             : phase === "creating"
@@ -167,18 +170,18 @@ export function WalletCreatingScreen({
       </View>
 
       <Pressable
-        style={[styles.cta, busy && styles.ctaBusy]}
+        style={[styles.cta, { backgroundColor: pal.fg }, busy && styles.ctaBusy]}
         disabled={busy}
         onPress={onGetStarted}
         accessibilityRole="button"
         accessibilityLabel={ctaLabel}
       >
         {phase === "creating" ? (
-          <ActivityIndicator color="#FFF" />
+          <ActivityIndicator color={pal.onAccent} />
         ) : phase === "ready" ? (
-          <Ionicons name="checkmark" size={22} color="#FFF" />
+          <Ionicons name="checkmark" size={22} color={pal.onAccent} />
         ) : (
-          <Text style={styles.ctaText}>{ctaLabel}</Text>
+          <Text style={[styles.ctaText, { color: pal.onAccent }]}>{ctaLabel}</Text>
         )}
       </Pressable>
     </View>

@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useShellTheme, type ShellTheme } from "../../lib/useShellTheme";
 import {
   ActivityIndicator,
   Alert,
@@ -27,8 +28,6 @@ import {
 
 type Props = NativeStackScreenProps<WalletStackParamList, "WalletFreeze">;
 
-const INK = "#1A1A1A";
-const MUTED = "#8A8A8E";
 const OPEN_MS = 480;
 const CLOSE_MS = 280;
 const USE_NATIVE = Platform.OS !== "web";
@@ -36,6 +35,11 @@ const USE_NATIVE = Platform.OS !== "web";
 /** Pastdan 480ms sheet — 1 click muzlatish / ochish. Intent route paramda qotadi (miltiltmasin). */
 export function WalletFreezeScreen({ navigation, route }: Props) {
   const { t } = useTranslation();
+  const pal = useShellTheme();
+  const styles = useMemo(
+    () => createFreezeStyles(pal),
+    [pal.fg, pal.muted, pal.card, pal.iconTile, pal.onAccent, pal.border],
+  );
   useHideTabBar();
   const insets = useSafeAreaInsets();
   const me = useWalletMe();
@@ -157,7 +161,7 @@ export function WalletFreezeScreen({ navigation, route }: Props) {
         >
           {busy ? (
             <View style={styles.loadingRow}>
-              <ActivityIndicator color="#FFF" size="small" />
+              <ActivityIndicator color={pal.onAccent} size="small" />
               <Text style={styles.primaryText}>{loadingTitle}</Text>
             </View>
           ) : (
@@ -178,64 +182,66 @@ export function WalletFreezeScreen({ navigation, route }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, justifyContent: "flex-end" },
-  backdrop: {
-    ...StyleSheet.absoluteFill,
-    backgroundColor: "#000",
-  },
-  dismissZone: {
-    ...StyleSheet.absoluteFill,
-    bottom: verticalScale(280),
-  },
-  sheet: {
-    backgroundColor: "#FFF",
-    borderTopLeftRadius: moderateScale(28),
-    borderTopRightRadius: moderateScale(28),
-    paddingHorizontal: scale(20),
-    paddingTop: verticalScale(10),
-    zIndex: 20,
-  },
-  handle: {
-    alignSelf: "center",
-    width: scale(40),
-    height: verticalScale(4),
-    borderRadius: moderateScale(2),
-    backgroundColor: "#D1D5DB",
-    marginBottom: verticalScale(18),
-  },
-  title: {
-    fontSize: fontSize(22),
-    fontWeight: "800",
-    color: INK,
-    letterSpacing: -0.4,
-    marginBottom: verticalScale(10),
-  },
-  desc: {
-    fontSize: fontSize(14),
-    lineHeight: fontSize(21),
-    color: MUTED,
-    marginBottom: verticalScale(22),
-  },
-  primary: {
-    backgroundColor: INK,
-    borderRadius: moderateScale(16),
-    paddingVertical: verticalScale(16),
-    alignItems: "center",
-    marginBottom: verticalScale(10),
-    minHeight: verticalScale(54),
-    justifyContent: "center",
-  },
-  loadingRow: { flexDirection: "row", alignItems: "center", gap: moderateScale(10) },
-  primaryText: { color: "#FFF", fontSize: fontSize(16), fontWeight: "800" },
-  secondary: {
-    backgroundColor: "#F0EEEA",
-    borderRadius: moderateScale(16),
-    paddingVertical: verticalScale(16),
-    alignItems: "center",
-    minHeight: verticalScale(54),
-    justifyContent: "center",
-  },
-  secondaryText: { color: INK, fontSize: fontSize(16), fontWeight: "700" },
-  disabled: { opacity: 0.7 },
-});
+function createFreezeStyles(pal: ShellTheme) {
+  return StyleSheet.create({
+    root: { flex: 1, justifyContent: "flex-end" },
+    backdrop: {
+      ...StyleSheet.absoluteFill,
+      backgroundColor: "#000",
+    },
+    dismissZone: {
+      ...StyleSheet.absoluteFill,
+      bottom: verticalScale(280),
+    },
+    sheet: {
+      backgroundColor: pal.card,
+      borderTopLeftRadius: moderateScale(28),
+      borderTopRightRadius: moderateScale(28),
+      paddingHorizontal: scale(20),
+      paddingTop: verticalScale(10),
+      zIndex: 20,
+    },
+    handle: {
+      alignSelf: "center",
+      width: scale(40),
+      height: verticalScale(4),
+      borderRadius: moderateScale(2),
+      backgroundColor: pal.border,
+      marginBottom: verticalScale(18),
+    },
+    title: {
+      fontSize: fontSize(22),
+      fontWeight: "800",
+      color: pal.fg,
+      letterSpacing: -0.4,
+      marginBottom: verticalScale(10),
+    },
+    desc: {
+      fontSize: fontSize(14),
+      lineHeight: fontSize(21),
+      color: pal.muted,
+      marginBottom: verticalScale(22),
+    },
+    primary: {
+      backgroundColor: pal.fg,
+      borderRadius: moderateScale(16),
+      paddingVertical: verticalScale(16),
+      alignItems: "center",
+      marginBottom: verticalScale(10),
+      minHeight: verticalScale(54),
+      justifyContent: "center",
+    },
+    loadingRow: { flexDirection: "row", alignItems: "center", gap: moderateScale(10) },
+    primaryText: { color: pal.onAccent, fontSize: fontSize(16), fontWeight: "800" },
+    secondary: {
+      backgroundColor: pal.iconTile,
+      borderRadius: moderateScale(16),
+      paddingVertical: verticalScale(16),
+      alignItems: "center",
+      minHeight: verticalScale(54),
+      justifyContent: "center",
+    },
+    secondaryText: { color: pal.fg, fontSize: fontSize(16), fontWeight: "700" },
+    disabled: { opacity: 0.7 },
+  });
+}

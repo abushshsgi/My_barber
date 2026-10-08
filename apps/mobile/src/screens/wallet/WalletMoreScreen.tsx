@@ -4,6 +4,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useCallback, useMemo } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useShellTheme, type ShellTheme } from "../../lib/useShellTheme";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { NativeBackButton } from "../../components/ui/NativeBackButton";
 import { safeBottom, safeTop } from "../../lib/safe-area";
@@ -18,11 +19,6 @@ import {
 } from "../../utils/responsive";
 
 type Props = NativeStackScreenProps<WalletStackParamList, "WalletMore">;
-
-const INK = "#111111";
-const MUTED = "#737373";
-const SOFT_BG = "#FAFAFA";
-const ICON_BG = "#F0F0F0";
 
 type GridItem = {
   key: keyof WalletStackParamList;
@@ -47,6 +43,11 @@ function buildGrid(t: (key: string) => string): GridItem[] {
 /** Ko'proq — bonus banner (tez orada) + monoxrom grid. */
 export function WalletMoreScreen({ navigation }: Props) {
   const { t } = useTranslation();
+  const pal = useShellTheme();
+  const styles = useMemo(
+    () => createMoreStyles(pal),
+    [pal.bg, pal.fg, pal.muted, pal.card, pal.iconTile, pal.status],
+  );
   useHideTabBar();
   const insets = useSafeAreaInsets();
   const me = useWalletMe();
@@ -71,7 +72,7 @@ export function WalletMoreScreen({ navigation }: Props) {
         <View style={styles.bonusWrap} pointerEvents="none">
           <View style={styles.bonusCard}>
             <View style={styles.bonusIcon}>
-              <Ionicons name="sparkles-outline" size={22} color={INK} />
+              <Ionicons name="sparkles-outline" size={22} color={pal.fg} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.bonusTitle}>{t("walletPages.bonuses")}</Text>
@@ -89,9 +90,9 @@ export function WalletMoreScreen({ navigation }: Props) {
             style={styles.frozenBanner}
             onPress={() => navigation.navigate("WalletFreeze", { isFrozen: true })}
           >
-            <Ionicons name="snow-outline" size={18} color={INK} />
+            <Ionicons name="snow-outline" size={18} color={pal.fg} />
             <Text style={styles.frozenText}>{t("walletPages.frozenManage")}</Text>
-            <Ionicons name="chevron-forward" size={16} color={MUTED} />
+            <Ionicons name="chevron-forward" size={16} color={pal.muted} />
           </Pressable>
         ) : null}
 
@@ -122,7 +123,7 @@ export function WalletMoreScreen({ navigation }: Props) {
                 }}
               >
                 <View style={styles.tileIcon}>
-                  <Ionicons name={item.icon} size={22} color={INK} />
+                  <Ionicons name={item.icon} size={22} color={pal.fg} />
                 </View>
                 <Text style={styles.tileTitle} numberOfLines={2}>
                   {title}
@@ -139,14 +140,16 @@ export function WalletMoreScreen({ navigation }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: SOFT_BG, paddingHorizontal: scale(16) },
+function createMoreStyles(pal: ShellTheme) {
+  const overlay = pal.status === "light" ? "rgba(10,10,10,0.45)" : "rgba(250,250,250,0.55)";
+  return StyleSheet.create({
+  root: { flex: 1, backgroundColor: pal.bg, paddingHorizontal: scale(16) },
   header: { flexDirection: "row", alignItems: "center", marginBottom: verticalScale(14) },
   iconBtn: {
     width: scale(40),
     height: scale(40),
     borderRadius: moderateScale(20),
-    backgroundColor: "#FFF",
+    backgroundColor: pal.card,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -155,7 +158,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontSize: fontSize(17),
     fontWeight: "800",
-    color: INK,
+    color: pal.fg,
   },
   scroll: { paddingBottom: verticalScale(28) },
   bonusWrap: {
@@ -168,7 +171,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: moderateScale(12),
-    backgroundColor: "#FFF",
+    backgroundColor: pal.card,
     borderRadius: moderateScale(22),
     padding: moderateScale(16),
   },
@@ -176,39 +179,39 @@ const styles = StyleSheet.create({
     width: scale(44),
     height: scale(44),
     borderRadius: moderateScale(14),
-    backgroundColor: ICON_BG,
+    backgroundColor: pal.iconTile,
     alignItems: "center",
     justifyContent: "center",
   },
-  bonusTitle: { fontSize: fontSize(16), fontWeight: "800", color: INK },
-  bonusSub: { marginTop: verticalScale(2), fontSize: fontSize(12), color: MUTED },
+  bonusTitle: { fontSize: fontSize(16), fontWeight: "800", color: pal.fg },
+  bonusSub: { marginTop: verticalScale(2), fontSize: fontSize(12), color: pal.muted },
   soonPill: {
     paddingHorizontal: scale(10),
     paddingVertical: verticalScale(6),
     borderRadius: 999,
-    backgroundColor: ICON_BG,
+    backgroundColor: pal.iconTile,
   },
-  soonText: { fontSize: fontSize(11), fontWeight: "700", color: MUTED },
+  soonText: { fontSize: fontSize(11), fontWeight: "700", color: pal.muted },
   bonusBlur: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: "rgba(250,250,250,0.55)",
+    backgroundColor: overlay,
   },
   frozenBanner: {
     flexDirection: "row",
     alignItems: "center",
     gap: moderateScale(8),
-    backgroundColor: "#F0F0F0",
+    backgroundColor: pal.iconTile,
     borderRadius: moderateScale(16),
     paddingHorizontal: scale(14),
     paddingVertical: verticalScale(12),
     marginBottom: verticalScale(16),
   },
-  frozenText: { flex: 1, fontSize: fontSize(13), fontWeight: "700", color: INK },
+  frozenText: { flex: 1, fontSize: fontSize(13), fontWeight: "700", color: pal.fg },
   section: {
     marginBottom: verticalScale(12),
     fontSize: fontSize(12),
     fontWeight: "700",
-    color: MUTED,
+    color: pal.muted,
     letterSpacing: 0.4,
     textTransform: "uppercase",
   },
@@ -217,7 +220,7 @@ const styles = StyleSheet.create({
     width: "47.5%",
     flexGrow: 1,
     minWidth: "45%",
-    backgroundColor: "#FFF",
+    backgroundColor: pal.card,
     borderRadius: moderateScale(20),
     padding: moderateScale(14),
     gap: moderateScale(4),
@@ -226,11 +229,12 @@ const styles = StyleSheet.create({
     width: scale(42),
     height: scale(42),
     borderRadius: moderateScale(13),
-    backgroundColor: ICON_BG,
+    backgroundColor: pal.iconTile,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: verticalScale(6),
   },
-  tileTitle: { fontSize: fontSize(14), fontWeight: "800", color: INK, letterSpacing: -0.2 },
-  tileSub: { fontSize: fontSize(11), color: MUTED, fontWeight: "500" },
-});
+  tileTitle: { fontSize: fontSize(14), fontWeight: "800", color: pal.fg, letterSpacing: -0.2 },
+  tileSub: { fontSize: fontSize(11), color: pal.muted, fontWeight: "500" },
+  });
+}

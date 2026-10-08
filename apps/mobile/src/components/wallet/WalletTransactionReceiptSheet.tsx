@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Clipboard from "expo-clipboard";
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
+import { useShellTheme, type ShellTheme } from "../../lib/useShellTheme";
 import {
   Pressable,
   ScrollView,
@@ -25,7 +26,17 @@ type Props = {
   onClose: () => void;
 };
 
+function useReceiptChrome() {
+  const pal = useShellTheme();
+  const styles = useMemo(
+    () => createReceiptStyles(pal),
+    [pal.bg, pal.fg, pal.muted, pal.card, pal.border, pal.iconTile, pal.onAccent],
+  );
+  return { pal, styles };
+}
+
 function DetailRow({ label, value }: { label: string; value: string }) {
+  const { styles } = useReceiptChrome();
   return (
     <View style={styles.row}>
       <Text style={styles.rowLabel}>{label}</Text>
@@ -36,6 +47,7 @@ function DetailRow({ label, value }: { label: string; value: string }) {
 
 export function WalletTransactionReceiptSheet({ tx, visible, onClose }: Props) {
   const insets = useSafeAreaInsets();
+  const { pal, styles } = useReceiptChrome();
   const [copied, setCopied] = useState(false);
 
   const onCopy = useCallback(async () => {
@@ -69,7 +81,7 @@ export function WalletTransactionReceiptSheet({ tx, visible, onClose }: Props) {
       <View style={[styles.sheet, { paddingBottom: safeBottom(insets.bottom, 8) }]}>
         <View style={styles.handle} />
         <Pressable style={styles.close} onPress={onClose} hitSlop={10}>
-          <Ionicons name="close" size={18} color="#64748B" />
+          <Ionicons name="close" size={18} color={pal.muted} />
         </Pressable>
 
         <Text style={styles.title}>Tranzaksiya cheki</Text>
@@ -83,7 +95,7 @@ export function WalletTransactionReceiptSheet({ tx, visible, onClose }: Props) {
                   <Ionicons
                     name={tx.kind === "in" ? "arrow-down-outline" : "arrow-up-outline"}
                     size={18}
-                    color="#FFF"
+                    color={pal.onAccent}
                   />
                 </View>
                 <View style={{ flex: 1 }}>
@@ -134,7 +146,7 @@ export function WalletTransactionReceiptSheet({ tx, visible, onClose }: Props) {
             <Ionicons
               name={copied ? "checkmark" : "copy-outline"}
               size={18}
-              color={copied ? "#16A34A" : "#64748B"}
+              color={copied ? "#16A34A" : pal.muted}
             />
           </Pressable>
           <Text style={styles.helpNote}>
@@ -146,7 +158,8 @@ export function WalletTransactionReceiptSheet({ tx, visible, onClose }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+function createReceiptStyles(pal: ShellTheme) {
+  return StyleSheet.create({
   backdrop: {
     ...StyleSheet.absoluteFill,
     backgroundColor: "rgba(0,0,0,0.45)",
@@ -157,7 +170,7 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     maxHeight: "92%",
-    backgroundColor: "#FFF",
+    backgroundColor: pal.card,
     borderTopLeftRadius: moderateScale(28),
     borderTopRightRadius: moderateScale(28),
     paddingHorizontal: scale(20),
@@ -168,7 +181,7 @@ const styles = StyleSheet.create({
     width: scale(40),
     height: verticalScale(4),
     borderRadius: moderateScale(2),
-    backgroundColor: "#E2E8F0",
+    backgroundColor: pal.border,
     marginBottom: verticalScale(12),
   },
   close: {
@@ -178,21 +191,21 @@ const styles = StyleSheet.create({
     width: scale(32),
     height: scale(32),
     borderRadius: moderateScale(16),
-    backgroundColor: "#F1F5F9",
+    backgroundColor: pal.iconTile,
     alignItems: "center",
     justifyContent: "center",
     zIndex: 2,
   },
-  title: { fontSize: fontSize(17), fontWeight: "800", color: "#0A0A0A" },
-  lead: { marginTop: verticalScale(4), fontSize: fontSize(12), color: "#94A3B8", marginBottom: verticalScale(14) },
+  title: { fontSize: fontSize(17), fontWeight: "800", color: pal.fg },
+  lead: { marginTop: verticalScale(4), fontSize: fontSize(12), color: pal.muted, marginBottom: verticalScale(14) },
   card: {
     borderRadius: moderateScale(24),
     overflow: "hidden",
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(15,23,42,0.1)",
+    borderColor: pal.border,
   },
   hero: {
-    backgroundColor: "#111111",
+    backgroundColor: pal.fg,
     paddingHorizontal: scale(18),
     paddingTop: verticalScale(18),
     paddingBottom: verticalScale(22),
@@ -202,55 +215,55 @@ const styles = StyleSheet.create({
     width: scale(42),
     height: scale(42),
     borderRadius: moderateScale(14),
-    backgroundColor: "rgba(255,255,255,0.14)",
+    backgroundColor: pal.iconTile,
     alignItems: "center",
     justifyContent: "center",
   },
-  heroTitle: { fontSize: fontSize(14), fontWeight: "700", color: "#FFF" },
-  heroMeta: { marginTop: verticalScale(2), fontSize: fontSize(11), color: "rgba(255,255,255,0.6)" },
+  heroTitle: { fontSize: fontSize(14), fontWeight: "700", color: pal.onAccent },
+  heroMeta: { marginTop: verticalScale(2), fontSize: fontSize(11), color: pal.muted },
   heroAmt: {
     marginTop: verticalScale(18),
     textAlign: "center",
     fontSize: fontSize(32),
     fontWeight: "800",
-    color: "#FFF",
+    color: pal.onAccent,
     letterSpacing: -0.6,
   },
-  details: { paddingHorizontal: scale(14), backgroundColor: "#FFF" },
+  details: { paddingHorizontal: scale(14), backgroundColor: pal.card },
   row: {
     flexDirection: "row",
     justifyContent: "space-between",
     gap: moderateScale(12),
     paddingVertical: verticalScale(12),
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "rgba(15,23,42,0.08)",
+    borderBottomColor: pal.border,
   },
-  rowLabel: { fontSize: fontSize(11), fontWeight: "500", color: "#94A3B8" },
+  rowLabel: { fontSize: fontSize(11), fontWeight: "500", color: pal.muted },
   rowValue: {
     flex: 1,
     textAlign: "right",
     fontSize: fontSize(13),
     fontWeight: "700",
-    color: "#0A0A0A",
+    color: pal.fg,
   },
   msgBlock: {
     paddingVertical: verticalScale(12),
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "rgba(15,23,42,0.08)",
+    borderBottomColor: pal.border,
   },
-  msg: { marginTop: verticalScale(4), fontSize: fontSize(13), fontWeight: "500", color: "#0A0A0A", lineHeight: fontSize(18) },
+  msg: { marginTop: verticalScale(4), fontSize: fontSize(13), fontWeight: "500", color: pal.fg, lineHeight: fontSize(18) },
   helpHead: {
     marginTop: verticalScale(16),
     marginBottom: verticalScale(8),
     fontSize: fontSize(11),
     fontWeight: "500",
-    color: "#94A3B8",
+    color: pal.muted,
   },
   idBox: {
     flexDirection: "row",
     alignItems: "center",
     gap: moderateScale(12),
-    backgroundColor: "#F1F5F9",
+    backgroundColor: pal.iconTile,
     borderRadius: moderateScale(16),
     paddingHorizontal: scale(14),
     paddingVertical: verticalScale(12),
@@ -259,7 +272,7 @@ const styles = StyleSheet.create({
     marginTop: verticalScale(2),
     fontSize: fontSize(11),
     fontWeight: "600",
-    color: "#0A0A0A",
+    color: pal.fg,
     fontVariant: ["tabular-nums"],
   },
   helpNote: {
@@ -267,6 +280,7 @@ const styles = StyleSheet.create({
     marginBottom: verticalScale(8),
     fontSize: fontSize(11),
     lineHeight: fontSize(16),
-    color: "#94A3B8",
+    color: pal.muted,
   },
-});
+  });
+}

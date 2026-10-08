@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { LinearGradient } from "expo-linear-gradient";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useShellTheme, type ShellTheme } from "../../lib/useShellTheme";
 import {
   ActivityIndicator,
   Alert,
@@ -34,7 +35,6 @@ import {
 
 type Props = NativeStackScreenProps<WalletStackParamList, "WalletGiftAmount">;
 
-const PURPLE = "#111111";
 const PRESETS = [50_000, 100_000, 200_000, 500_000, 1_000_000] as const;
 const AVATAR = ["#111111", "#737373", "#A3A3A3", "#D4D4D4", "#525252", "#E5E5E5"];
 const CARD_W = Math.min(Dimensions.get("window").width * 0.72, 280);
@@ -56,6 +56,11 @@ function avatarTone(id: number): string {
 /** 2-qadam: summa + gift card carousel → yuborish. */
 export function WalletGiftAmountScreen({ navigation, route }: Props) {
   useHideTabBar();
+  const pal = useShellTheme();
+  const styles = useMemo(
+    () => createAmountStyles(pal),
+    [pal.bg, pal.fg, pal.muted, pal.card, pal.border, pal.onAccent],
+  );
   const insets = useSafeAreaInsets();
   const { recipientUserId, recipientName, recipientWallet } = route.params;
   const { user } = useAuth();
@@ -155,7 +160,7 @@ export function WalletGiftAmountScreen({ navigation, route }: Props) {
 
   return (
     <LinearGradient
-      colors={["#F0F0F0", "#FAFAFA", "#FFFFFF"]}
+      colors={[pal.iconTile, pal.bg, pal.card]}
       locations={[0, 0.35, 1]}
       style={styles.root}
     >
@@ -195,7 +200,7 @@ export function WalletGiftAmountScreen({ navigation, route }: Props) {
               onChangeText={onAmountChange}
               placeholder="0"
               placeholderTextColor="#D1D5DB"
-              selectionColor={PURPLE}
+              selectionColor={pal.fg}
             />
             <Text style={styles.som}>so'm</Text>
           </View>
@@ -226,7 +231,7 @@ export function WalletGiftAmountScreen({ navigation, route }: Props) {
           <Text style={styles.giftHint}>Kartani tanlang — keyin yuborish ochiladi</Text>
 
           {designsLoading ? (
-            <ActivityIndicator style={{ marginTop: 24 }} color={PURPLE} />
+            <ActivityIndicator style={{ marginTop: 24 }} color={pal.fg} />
           ) : (
             <ScrollView
               ref={carouselRef}
@@ -285,7 +290,7 @@ export function WalletGiftAmountScreen({ navigation, route }: Props) {
             onPress={() => void onSend()}
           >
             {sending ? (
-              <ActivityIndicator color="#FFF" />
+              <ActivityIndicator color={pal.onAccent} />
             ) : (
               <Text style={styles.sendText}>Yuborish · {formatSomLabel(total)}</Text>
             )}
@@ -296,7 +301,8 @@ export function WalletGiftAmountScreen({ navigation, route }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+function createAmountStyles(pal: ShellTheme) {
+  return StyleSheet.create({
   root: { flex: 1 },
   safe: { flex: 1 },
   header: {
@@ -316,7 +322,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontSize: fontSize(20),
     fontWeight: "800",
-    color: "#0A0A0A",
+    color: pal.fg,
     letterSpacing: -0.3,
   },
   scroll: { paddingBottom: verticalScale(20) },
@@ -325,7 +331,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: moderateScale(12),
-    backgroundColor: "#FFF",
+    backgroundColor: pal.card,
     borderRadius: moderateScale(18),
     paddingHorizontal: scale(14),
     paddingVertical: verticalScale(14),
@@ -343,15 +349,15 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   avatarText: { fontSize: fontSize(15), fontWeight: "800", color: "#FFF" },
-  toLabel: { fontSize: fontSize(11), fontWeight: "600", color: "#9CA3AF", letterSpacing: 0.4 },
-  toName: { marginTop: verticalScale(2), fontSize: fontSize(16), fontWeight: "700", color: "#0A0A0A" },
-  toMeta: { marginTop: verticalScale(2), fontSize: fontSize(12), color: "#9CA3AF" },
+  toLabel: { fontSize: fontSize(11), fontWeight: "600", color: pal.muted, letterSpacing: 0.4 },
+  toName: { marginTop: verticalScale(2), fontSize: fontSize(16), fontWeight: "700", color: pal.fg },
+  toMeta: { marginTop: verticalScale(2), fontSize: fontSize(12), color: pal.muted },
   enterLabel: {
     marginTop: verticalScale(32),
     textAlign: "center",
     fontSize: fontSize(13),
     fontWeight: "500",
-    color: "#9CA3AF",
+    color: pal.muted,
   },
   amountBlock: {
     marginTop: verticalScale(10),
@@ -362,7 +368,7 @@ const styles = StyleSheet.create({
     width: "100%",
     fontSize: fontSize(52),
     fontWeight: "800",
-    color: "#0A0A0A",
+    color: pal.fg,
     letterSpacing: -1.6,
     textAlign: "center",
     padding: 0,
@@ -372,13 +378,13 @@ const styles = StyleSheet.create({
     marginTop: verticalScale(4),
     fontSize: fontSize(16),
     fontWeight: "700",
-    color: "#9CA3AF",
+    color: pal.muted,
   },
   balanceHint: {
     marginTop: verticalScale(8),
     textAlign: "center",
     fontSize: fontSize(12),
-    color: "#9CA3AF",
+    color: pal.muted,
   },
   presets: {
     gap: moderateScale(8),
@@ -389,29 +395,29 @@ const styles = StyleSheet.create({
     paddingHorizontal: scale(16),
     paddingVertical: verticalScale(10),
     borderRadius: 999,
-    backgroundColor: "#FFF",
+    backgroundColor: pal.card,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(15,23,42,0.1)",
+    borderColor: pal.border,
   },
   presetOn: {
-    backgroundColor: PURPLE,
-    borderColor: PURPLE,
+    backgroundColor: pal.fg,
+    borderColor: pal.fg,
   },
-  presetText: { fontSize: fontSize(13), fontWeight: "700", color: "#0A0A0A" },
-  presetTextOn: { color: "#FFF" },
+  presetText: { fontSize: fontSize(13), fontWeight: "700", color: pal.fg },
+  presetTextOn: { color: pal.onAccent },
   giftTitle: {
     marginTop: verticalScale(4),
     marginHorizontal: scale(16),
     fontSize: fontSize(17),
     fontWeight: "800",
-    color: "#0A0A0A",
+    color: pal.fg,
   },
   giftHint: {
     marginTop: verticalScale(4),
     marginBottom: verticalScale(14),
     marginHorizontal: scale(16),
     fontSize: fontSize(13),
-    color: "#9CA3AF",
+    color: pal.muted,
   },
   carousel: {
     paddingHorizontal: SIDE_PAD,
@@ -467,10 +473,11 @@ const styles = StyleSheet.create({
     marginHorizontal: scale(16),
     height: verticalScale(54),
     borderRadius: moderateScale(27),
-    backgroundColor: "#111111",
+    backgroundColor: pal.fg,
     alignItems: "center",
     justifyContent: "center",
   },
   sendBtnOff: { opacity: 0.35 },
-  sendText: { color: "#FFF", fontSize: fontSize(16), fontWeight: "700" },
-});
+  sendText: { color: pal.onAccent, fontSize: fontSize(16), fontWeight: "700" },
+  });
+}

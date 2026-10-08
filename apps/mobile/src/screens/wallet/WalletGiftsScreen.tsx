@@ -3,7 +3,7 @@ import { Ionicons } from "@expo/vector-icons";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -20,7 +20,7 @@ import { useAuth } from "../../auth/AuthContext";
 import { useReceivedGifts, useWalletMe } from "../../hooks/useWallet";
 import { designColorsById, formatSomLabel, formatTxDate } from "../../lib/wallet-format";
 import type { WalletStackParamList } from "../../navigation/WalletStack";
-import { colors } from "../../theme/colors";
+import { SHELL_LIGHT, shellChrome, useShellTheme, type ShellChrome } from "../../lib/useShellTheme";
 import {
   fontSize,
   moderateScale,
@@ -30,12 +30,22 @@ import {
 
 type Props = NativeStackScreenProps<WalletStackParamList, "WalletGifts">;
 
+let colors: ShellChrome = SHELL_LIGHT;
+let styles = createGiftStyles(colors);
+
 function favKey(userId: number) {
   return `mysaloon.gift-favorites.${userId}`;
 }
 
 export function WalletGiftsScreen({ navigation }: Props) {
   const { t } = useTranslation();
+  const pal = useShellTheme();
+  const chrome = shellChrome(pal);
+  colors = chrome;
+  styles = useMemo(
+    () => createGiftStyles(chrome),
+    [chrome.bg, chrome.fg, chrome.muted, chrome.surface, chrome.border, chrome.onAccent, chrome.status],
+  );
   useHideTabBar();
   const { user } = useAuth();
   const me = useWalletMe();
@@ -135,7 +145,7 @@ export function WalletGiftsScreen({ navigation }: Props) {
 
         <Pressable style={styles.sendBtn} onPress={() => navigation.navigate("WalletGift")}>
           <View style={styles.plus}>
-            <Ionicons name="add" size={18} color="#FFF" />
+            <Ionicons name="add" size={18} color={colors.onAccent} />
           </View>
           <Text style={styles.sendText}>{t("walletPages.sendGift")}</Text>
         </Pressable>
@@ -168,6 +178,7 @@ function GiftCard({
   starred: boolean;
   onToggleStar: () => void;
 }) {
+  const { t } = useTranslation();
   const amount = parseWalletBalance(gift.gift_amount ?? gift.amount);
   const palette = designColorsById(gift.design_id || "classic");
   const label = gift.design?.name_uz || gift.design?.name || gift.design_id;
@@ -220,7 +231,8 @@ function GiftCard({
   );
 }
 
-const styles = StyleSheet.create({
+function createGiftStyles(colors: ShellChrome) {
+  return StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
   sub: {
     paddingHorizontal: scale(16),
@@ -271,7 +283,7 @@ const styles = StyleSheet.create({
   },
   filterActive: { backgroundColor: colors.fg },
   filterText: { fontSize: fontSize(13), fontWeight: "700", color: colors.fg },
-  filterTextActive: { color: "#FFF" },
+  filterTextActive: { color: colors.onAccent },
   sendBtn: {
     marginTop: verticalScale(12),
     flexDirection: "row",
@@ -326,4 +338,5 @@ const styles = StyleSheet.create({
   giftDate: { fontSize: fontSize(12), opacity: 0.65 },
   starBtn: { flexDirection: "row", alignItems: "center", gap: moderateScale(4) },
   starText: { fontSize: fontSize(12), fontWeight: "700" },
-});
+  });
+}

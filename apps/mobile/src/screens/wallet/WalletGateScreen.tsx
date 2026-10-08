@@ -1,12 +1,12 @@
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { StyleSheet, View } from "react-native";
+import { useShellTheme } from "../../lib/useShellTheme";
 import { openWallet } from "../../api/wallet";
 import { useAuth } from "../../auth/AuthContext";
 import { useHideTabBar } from "../../hooks/useHideTabBar";
 import { isWalletOpened, markWalletOpened } from "../../lib/wallet-onboarding";
 import type { WalletStackParamList } from "../../navigation/WalletStack";
-import { colors } from "../../theme/colors";
 import { WalletCreatingScreen } from "./WalletCreatingScreen";
 
 type Props = NativeStackScreenProps<WalletStackParamList, "WalletGate">;
@@ -19,6 +19,7 @@ const MIN_CREATE_MS = 1400;
  */
 export function WalletGateScreen({ navigation }: Props) {
   useHideTabBar();
+  const pal = useShellTheme();
   const { user } = useAuth();
   const [phase, setPhase] = useState<"boot" | "welcome" | "creating" | "ready" | "error">(
     "boot",
@@ -86,7 +87,7 @@ export function WalletGateScreen({ navigation }: Props) {
   }, [user?.id, phase, navigation]);
 
   if (phase === "boot") {
-    return <View style={styles.boot} />;
+    return <View style={[styles.boot, { backgroundColor: pal.bg }]} />;
   }
 
   return (
@@ -102,6 +103,6 @@ export function WalletGateScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   boot: {
     flex: 1,
-    backgroundColor: colors.bg,
+    backgroundColor: "#FAFAFA",
   },
 });

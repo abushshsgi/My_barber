@@ -3,6 +3,7 @@ import { Ionicons } from "@expo/vector-icons";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { LinearGradient } from "expo-linear-gradient";
 import { useMemo, useState } from "react";
+import { useShellTheme, type ShellTheme } from "../../lib/useShellTheme";
 import {
   ActivityIndicator,
   FlatList,
@@ -51,6 +52,11 @@ function dayKey(iso: string) {
 /** Tranzaksiyalar — guruhlangan timeline UI. */
 export function WalletTransactionsScreen({ navigation }: Props) {
   const { t } = useTranslation();
+  const pal = useShellTheme();
+  const styles = useMemo(
+    () => createTxStyles(pal),
+    [pal.bg, pal.fg, pal.muted, pal.card, pal.border, pal.iconTile, pal.onAccent],
+  );
   useHideTabBar();
   const insets = useSafeAreaInsets();
   const [tab, setTab] = useState<"all" | "in" | "out">("all");
@@ -73,7 +79,7 @@ export function WalletTransactionsScreen({ navigation }: Props) {
 
   return (
     <View style={[styles.root, { paddingBottom: insets.bottom }]}>
-      <LinearGradient colors={["#F0F0F0", "#FAFAFA"]} style={[styles.hero, { paddingTop: safeTop(insets.top, 6) }]}>
+      <LinearGradient colors={[pal.iconTile, pal.bg]} style={[styles.hero, { paddingTop: safeTop(insets.top, 6) }]}>
         <View style={styles.header}>
           <NativeBackButton onPress={() => navigation.goBack()} />
           <Text style={styles.headerTitle}>{t("walletPages.historyTitle")}</Text>
@@ -105,7 +111,7 @@ export function WalletTransactionsScreen({ navigation }: Props) {
       </LinearGradient>
 
       {loading ? (
-        <ActivityIndicator style={{ marginTop: 40 }} color="#111" />
+        <ActivityIndicator style={{ marginTop: 40 }} color={pal.fg} />
       ) : (
         <FlatList
           data={grouped}
@@ -113,7 +119,7 @@ export function WalletTransactionsScreen({ navigation }: Props) {
           contentContainerStyle={styles.list}
           ListEmptyComponent={
             <View style={styles.emptyBox}>
-              <Ionicons name="receipt-outline" size={36} color="#D1D5DB" />
+              <Ionicons name="receipt-outline" size={36} color={pal.muted} />
               <Text style={styles.empty}>{t("wallet.noActivity")}</Text>
             </View>
           }
@@ -131,7 +137,7 @@ export function WalletTransactionsScreen({ navigation }: Props) {
                       <Ionicons
                         name={tx.kind === "in" ? "arrow-down" : "arrow-up"}
                         size={16}
-                        color="#111"
+                        color="#111111"
                       />
                     </View>
                     <View style={{ flex: 1 }}>
@@ -164,8 +170,9 @@ export function WalletTransactionsScreen({ navigation }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: "#FAFAFA" },
+function createTxStyles(pal: ShellTheme) {
+  return StyleSheet.create({
+  root: { flex: 1, backgroundColor: pal.bg },
   hero: { paddingHorizontal: scale(16), paddingBottom: verticalScale(14) },
   header: { flexDirection: "row", alignItems: "center", marginBottom: verticalScale(14) },
   backBtn: { width: scale(40), height: scale(40), alignItems: "center", justifyContent: "center" },
@@ -174,20 +181,20 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontSize: fontSize(18),
     fontWeight: "800",
-    color: "#111",
+    color: pal.fg,
   },
   stats: { flexDirection: "row", gap: moderateScale(10), marginBottom: verticalScale(14) },
   statCard: {
     flex: 1,
-    backgroundColor: "rgba(255,255,255,0.85)",
+    backgroundColor: pal.card,
     borderRadius: moderateScale(18),
     padding: moderateScale(14),
   },
-  statLabel: { fontSize: fontSize(12), fontWeight: "600", color: "#9CA3AF" },
+  statLabel: { fontSize: fontSize(12), fontWeight: "600", color: pal.muted },
   statVal: { marginTop: verticalScale(4), fontSize: fontSize(15), fontWeight: "800" },
   tabs: {
     flexDirection: "row",
-    backgroundColor: "rgba(255,255,255,0.7)",
+    backgroundColor: pal.card,
     borderRadius: moderateScale(14),
     padding: moderateScale(4),
     gap: moderateScale(4),
@@ -198,23 +205,23 @@ const styles = StyleSheet.create({
     borderRadius: moderateScale(11),
     alignItems: "center",
   },
-  tabOn: { backgroundColor: "#111" },
-  tabText: { fontSize: fontSize(13), fontWeight: "600", color: "#6B7280" },
-  tabTextOn: { color: "#FFF" },
+  tabOn: { backgroundColor: pal.fg },
+  tabText: { fontSize: fontSize(13), fontWeight: "600", color: pal.muted },
+  tabTextOn: { color: pal.onAccent },
   list: { padding: moderateScale(16), paddingBottom: verticalScale(32) },
   emptyBox: { alignItems: "center", paddingTop: verticalScale(48), gap: moderateScale(10) },
-  empty: { color: "#9CA3AF", fontSize: fontSize(14) },
+  empty: { color: pal.muted, fontSize: fontSize(14) },
   dayBlock: { marginBottom: verticalScale(18) },
   dayTitle: {
     marginBottom: verticalScale(8),
     marginLeft: scale(4),
     fontSize: fontSize(12),
     fontWeight: "700",
-    color: "#9CA3AF",
+    color: pal.muted,
     textTransform: "capitalize",
   },
   dayCard: {
-    backgroundColor: "#FFF",
+    backgroundColor: pal.card,
     borderRadius: moderateScale(20),
     overflow: "hidden",
   },
@@ -227,7 +234,7 @@ const styles = StyleSheet.create({
   },
   rowBorder: {
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "rgba(0,0,0,0.06)",
+    borderBottomColor: pal.border,
   },
   avatar: {
     width: scale(40),
@@ -236,9 +243,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  title: { fontSize: fontSize(14), fontWeight: "700", color: "#111" },
-  date: { marginTop: verticalScale(2), fontSize: fontSize(11), color: "#9CA3AF" },
+  title: { fontSize: fontSize(14), fontWeight: "700", color: pal.fg },
+  date: { marginTop: verticalScale(2), fontSize: fontSize(11), color: pal.muted },
   amt: { fontSize: fontSize(14), fontWeight: "800" },
   in: { color: "#16A34A" },
   out: { color: "#EF4444" },
-});
+  });
+}

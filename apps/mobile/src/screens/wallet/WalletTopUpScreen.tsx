@@ -2,7 +2,7 @@ import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import * as ImagePicker from "expo-image-picker";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -29,7 +29,7 @@ import { NativeHeader } from "../../components/ui/NativeHeader";
 import { useCardDeposits, useWalletMe, useWalletTransactions } from "../../hooks/useWallet";
 import { formatSomAmount, formatSomLabel, type WalletTx } from "../../lib/wallet-format";
 import type { WalletStackParamList } from "../../navigation/WalletStack";
-import { colors } from "../../theme/colors";
+import { SHELL_LIGHT, shellChrome, useShellTheme, type ShellChrome } from "../../lib/useShellTheme";
 import {
   fontSize,
   moderateScale,
@@ -38,6 +38,9 @@ import {
 } from "../../utils/responsive";
 
 type Props = NativeStackScreenProps<WalletStackParamList, "WalletTopUp">;
+
+let colors: ShellChrome = SHELL_LIGHT;
+let styles = createTopUpStyles(colors);
 
 const TOPUP_PREVIEW = 3;
 
@@ -197,6 +200,13 @@ function formatRemain(ms: number) {
 
 export function WalletTopUpScreen({ navigation }: Props) {
   const { t } = useTranslation();
+  const pal = useShellTheme();
+  const chrome = shellChrome(pal);
+  colors = chrome;
+  styles = useMemo(
+    () => createTopUpStyles(chrome),
+    [chrome.bg, chrome.fg, chrome.muted, chrome.surface, chrome.border, chrome.promo, chrome.onAccent, chrome.status],
+  );
   useHideTabBar();
   const me = useWalletMe();
   const [amount, setAmount] = useState(100_000);
@@ -603,7 +613,8 @@ export function WalletTopUpScreen({ navigation }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+function createTopUpStyles(colors: ShellChrome) {
+  return StyleSheet.create({
   root: { flex: 1, width: "100%", backgroundColor: colors.bg },
   body: { flex: 1, width: "100%", minHeight: 0, overflow: "hidden" },
   scroll: { width: "100%", flexGrow: 0 },
@@ -682,9 +693,9 @@ const styles = StyleSheet.create({
   },
   presetActive: { backgroundColor: colors.fg, borderColor: colors.fg },
   presetLabel: { fontSize: fontSize(14), fontWeight: "800", color: colors.fg },
-  presetLabelActive: { color: "#FFFFFF" },
+  presetLabelActive: { color: colors.onAccent },
   presetSub: { marginTop: verticalScale(2), fontSize: fontSize(12), color: colors.muted, fontWeight: "600" },
-  presetSubActive: { color: "rgba(255,255,255,0.72)" },
+  presetSubActive: { color: colors.status === "light" ? "rgba(17,17,17,0.62)" : "rgba(255,255,255,0.72)" },
   input: {
     borderWidth: 1,
     borderColor: colors.border,
@@ -875,4 +886,5 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: colors.fg,
   },
-});
+  });
+}

@@ -5,6 +5,7 @@ import {
 } from "@react-navigation/bottom-tabs";
 import { Image } from "expo-image";
 import { useEffect, useRef, useState } from "react";
+import { useShellTheme } from "../lib/useShellTheme";
 import {
   Animated,
   Easing,
@@ -102,10 +103,6 @@ const CENTER_BTN = scale(IS_SMALL_DEVICE ? 34 : 36);
 const TAB_ICON = scale(22);
 const SWITCH_MIN_MS = 0;
 
-/** Active / idle — oq dockda oq ikonka bo‘lmasin. */
-const PILL_FG = "#1E1E1E";
-const PILL_IDLE = "#6B7280";
-
 /**
  * Home Bar (iPhone) yoki gesture bar (Samsung) ostida dok kesilmasligi uchun
  * minimal pastki chekka. Insets nolga teng bo'lgan Android'larda ham ishlaydi.
@@ -199,6 +196,7 @@ function getTabBarVisibility(route: RouteProp<RootTabParamList, keyof RootTabPar
 
 function CustomTabBar({ state, navigation, descriptors }: BottomTabBarProps) {
   const { t } = useTranslation();
+  const pal = useShellTheme();
   const insets = useSafeAreaInsets();
   const tabBarHidden = useTabBarHidden();
   const { isAuthenticated } = useAuth();
@@ -227,12 +225,12 @@ function CustomTabBar({ state, navigation, descriptors }: BottomTabBarProps) {
   useEffect(() => {
     if (Platform.OS !== "android") return;
     try {
-      // light = ochiq system nav + qora tugmalar (oq dock bilan mos).
-      NavigationBar.setStyle("light");
+      // "light" = qora tizim tugmalari (ochiq dok). Qorong'i dokda teskarisi.
+      NavigationBar.setStyle(pal.status === "dark" ? "light" : "dark");
     } catch (err) {
       console.warn("NavigationBar error", err);
     }
-  }, [morphDock]);
+  }, [pal.status]);
 
   // Login dan keyin — obuna/chat qayerda ochilgan bo‘lsa, shu yerga qaytarish.
   useEffect(() => {
@@ -436,14 +434,14 @@ function CustomTabBar({ state, navigation, descriptors }: BottomTabBarProps) {
   const renderSideTab = (tab: TabDef) => {
     const focused = activeName === tab.name;
     const label = t(tab.labelKey);
-    const tint = focused ? PILL_FG : PILL_IDLE;
+    const tint = focused ? pal.fg : pal.muted;
     return (
       <Pressable
         key={tab.name}
         onPress={() => pressTab(tab.name)}
         style={styles.tab}
         android_ripple={{
-          color: "rgba(0,0,0,0.08)",
+          color: pal.status === "light" ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.08)",
           borderless: true,
           radius: 28,
         }}
@@ -470,9 +468,16 @@ function CustomTabBar({ state, navigation, descriptors }: BottomTabBarProps) {
 
   return (
     <View
-      style={[styles.dockOuter, styles.dockOuterLight, { paddingBottom: bottomPad }]}
+      style={[
+        styles.dockOuter,
+        {
+          paddingBottom: bottomPad,
+          backgroundColor: pal.card,
+          borderTopColor: pal.border,
+        },
+      ]}
     >
-      <View style={styles.dock}>
+      <View style={[styles.dock, { backgroundColor: pal.card, borderTopColor: pal.border }]}>
         <Animated.View
           style={[
             styles.sidesRow,
@@ -531,15 +536,15 @@ function ExploreTab() {
 
 function RootTabsInner() {
   const { shell, ready } = useAppShell();
-  const morphDock = shell === "morph";
+  const pal = useShellTheme();
 
   if (!ready) {
-    return <View style={styles.root} />;
+    return <View style={[styles.root, { backgroundColor: pal.bg }]} />;
   }
 
   return (
-    <View style={[styles.root, { backgroundColor: "#FFFFFF" }]}>
-      <AppStatusBar style="dark" />
+    <View style={[styles.root, { backgroundColor: pal.bg }]}>
+      <AppStatusBar style={pal.status} />
       <TabBarVisibilityProvider>
         <MorphSessionProvider>
           <Tab.Navigator
@@ -551,7 +556,7 @@ function RootTabsInner() {
               lazy: false,
               freezeOnBlur: true,
               tabBarStyle: FLOATING_TAB_BAR_STYLE,
-              sceneStyle: { backgroundColor: "#FFFFFF" },
+              sceneStyle: { backgroundColor: pal.bg },
               animation: "none",
             }}
           >

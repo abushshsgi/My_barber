@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { useShellTheme } from "../../lib/useShellTheme";
 import {
   fontSize,
   moderateScale,
@@ -26,6 +27,8 @@ type Props = {
 };
 
 export function AmountKeypad({ onDigit, onBackspace }: Props) {
+  const pal = useShellTheme();
+  const keyStyle = [styles.key, { backgroundColor: pal.card, borderColor: pal.border }];
   return (
     <View style={styles.grid}>
       {KEYS.map((k, i) => {
@@ -36,25 +39,25 @@ export function AmountKeypad({ onDigit, onBackspace }: Props) {
           return (
             <Pressable
               key="back"
-              style={styles.key}
+              style={keyStyle}
               onPress={onBackspace}
               accessibilityRole="button"
               accessibilityLabel="O'chirish"
             >
-              <Ionicons name="backspace-outline" size={22} color="#0A0A0A" />
+              <Ionicons name="backspace-outline" size={22} color={pal.fg} />
             </Pressable>
           );
         }
         return (
           <Pressable
             key={k.label}
-            style={styles.key}
+            style={keyStyle}
             onPress={() => onDigit(k.label)}
             accessibilityRole="button"
             accessibilityLabel={k.label}
           >
-            <Text style={styles.digit}>{k.label}</Text>
-            {k.sub ? <Text style={styles.sub}>{k.sub}</Text> : null}
+            <Text style={[styles.digit, { color: pal.fg }]}>{k.label}</Text>
+            {k.sub ? <Text style={[styles.sub, { color: pal.muted }]}>{k.sub}</Text> : null}
           </Pressable>
         );
       })}

@@ -3,6 +3,7 @@ import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import * as Clipboard from "expo-clipboard";
 import { useFocusEffect } from "@react-navigation/native";
 import { useCallback, useMemo, useState, type ReactNode } from "react";
+import { useShellTheme, type ShellTheme } from "../../lib/useShellTheme";
 import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
@@ -30,10 +31,14 @@ import {
 
 type Props = NativeStackScreenProps<WalletStackParamList, "WalletRequisites">;
 
-const INK = "#1A1A1A";
-const MUTED = "#8A8A8E";
-const SOFT_BG = "#FAFAFA";
-const ICON_BG = "#F0EEEA";
+function useReqChrome() {
+  const pal = useShellTheme();
+  const styles = useMemo(
+    () => createReqStyles(pal),
+    [pal.bg, pal.fg, pal.muted, pal.card, pal.iconTile, pal.border],
+  );
+  return { pal, styles };
+}
 
 function groupNumber(raw: string): string {
   const d = raw.replace(/\D/g, "");
@@ -44,6 +49,7 @@ function groupNumber(raw: string): string {
 /** Mening kartam — soft list layout (plastic cardsiz). */
 export function WalletRequisitesScreen({ navigation }: Props) {
   const { t } = useTranslation();
+  const { pal, styles } = useReqChrome();
   useHideTabBar();
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
@@ -100,13 +106,13 @@ export function WalletRequisitesScreen({ navigation }: Props) {
         <NativeBackButton onPress={() => navigation.goBack()} />
         <Text style={styles.headerTitle}>{t("walletPages.myCard")}</Text>
         <Pressable style={styles.iconBtn} onPress={() => void onShare()} hitSlop={8}>
-          <Ionicons name="share-outline" size={18} color={INK} />
+          <Ionicons name="share-outline" size={18} color={pal.fg} />
         </Pressable>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
         {me.loading && !me.wallet ? (
-          <ActivityIndicator color={INK} style={{ marginVertical: 40 }} />
+          <ActivityIndicator color={pal.fg} style={{ marginVertical: 40 }} />
         ) : (
           <View style={styles.hero}>
             <Text style={styles.heroLabel}>{t("walletPages.walletNumber")}</Text>
@@ -114,7 +120,7 @@ export function WalletRequisitesScreen({ navigation }: Props) {
             <Text style={styles.heroBal}>{formatSomLabel(me.balance)}</Text>
             {me.isFrozen ? (
               <View style={styles.frozenChip}>
-                <Ionicons name="snow-outline" size={14} color={INK} />
+                <Ionicons name="snow-outline" size={14} color={pal.fg} />
                 <Text style={styles.frozenText}>{t("walletPages.frozen")}</Text>
               </View>
             ) : null}
@@ -128,7 +134,7 @@ export function WalletRequisitesScreen({ navigation }: Props) {
             subtitle={t("walletPages.cardInfoSub")}
             trailing={
               <Pressable onPress={() => setRevealed((v) => !v)} hitSlop={8} style={styles.eyeBtn}>
-                <Ionicons name={revealed ? "eye-off-outline" : "eye-outline"} size={18} color={MUTED} />
+                <Ionicons name={revealed ? "eye-off-outline" : "eye-outline"} size={18} color={pal.muted} />
               </Pressable>
             }
             onPress={() => setRevealed((v) => !v)}
@@ -143,7 +149,7 @@ export function WalletRequisitesScreen({ navigation }: Props) {
               <Ionicons
                 name={copied === "holder" ? "checkmark" : "copy-outline"}
                 size={16}
-                color={copied === "holder" ? "#16A34A" : MUTED}
+                color={copied === "holder" ? "#16A34A" : pal.muted}
               />
             }
           />
@@ -157,7 +163,7 @@ export function WalletRequisitesScreen({ navigation }: Props) {
               <Ionicons
                 name={copied === "number" ? "checkmark" : "copy-outline"}
                 size={16}
-                color={copied === "number" ? "#16A34A" : MUTED}
+                color={copied === "number" ? "#16A34A" : pal.muted}
               />
             }
           />
@@ -196,6 +202,7 @@ export function WalletRequisitesScreen({ navigation }: Props) {
 }
 
 function Divider() {
+  const { styles } = useReqChrome();
   return <View style={styles.divider} />;
 }
 
@@ -214,10 +221,11 @@ function Row({
   trailing?: ReactNode;
   chevron?: boolean;
 }) {
+  const { pal, styles } = useReqChrome();
   return (
     <Pressable style={styles.row} onPress={onPress} disabled={!onPress}>
       <View style={styles.rowIcon}>
-        <Ionicons name={icon} size={20} color={INK} />
+        <Ionicons name={icon} size={20} color={pal.fg} />
       </View>
       <View style={{ flex: 1 }}>
         <Text style={styles.rowTitle}>{title}</Text>
@@ -226,19 +234,20 @@ function Row({
         </Text>
       </View>
       {trailing}
-      {chevron ? <Ionicons name="chevron-forward" size={18} color="#D1D5DB" /> : null}
+      {chevron ? <Ionicons name="chevron-forward" size={18} color={pal.muted} /> : null}
     </Pressable>
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: SOFT_BG, paddingHorizontal: scale(16) },
+function createReqStyles(pal: ShellTheme) {
+  return StyleSheet.create({
+  root: { flex: 1, backgroundColor: pal.bg, paddingHorizontal: scale(16) },
   header: { flexDirection: "row", alignItems: "center", marginBottom: verticalScale(12) },
   iconBtn: {
     width: scale(40),
     height: scale(40),
     borderRadius: moderateScale(20),
-    backgroundColor: "#FFF",
+    backgroundColor: pal.card,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -247,39 +256,39 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontSize: fontSize(17),
     fontWeight: "800",
-    color: INK,
+    color: pal.fg,
   },
   scroll: { paddingBottom: verticalScale(28) },
   hero: {
-    backgroundColor: "#FFF",
+    backgroundColor: pal.card,
     borderRadius: moderateScale(24),
     paddingVertical: verticalScale(28),
     paddingHorizontal: scale(20),
     alignItems: "center",
     marginBottom: verticalScale(16),
   },
-  heroLabel: { fontSize: fontSize(12), fontWeight: "600", color: MUTED, marginBottom: verticalScale(8) },
+  heroLabel: { fontSize: fontSize(12), fontWeight: "600", color: pal.muted, marginBottom: verticalScale(8) },
   heroNumber: {
     fontSize: fontSize(22),
     fontWeight: "800",
-    color: INK,
+    color: pal.fg,
     letterSpacing: 1.4,
     textAlign: "center",
   },
-  heroBal: { marginTop: verticalScale(10), fontSize: fontSize(15), fontWeight: "700", color: MUTED },
+  heroBal: { marginTop: verticalScale(10), fontSize: fontSize(15), fontWeight: "700", color: pal.muted },
   frozenChip: {
     marginTop: verticalScale(12),
     flexDirection: "row",
     alignItems: "center",
     gap: moderateScale(6),
-    backgroundColor: ICON_BG,
+    backgroundColor: pal.iconTile,
     paddingHorizontal: scale(12),
     paddingVertical: verticalScale(6),
     borderRadius: 999,
   },
-  frozenText: { fontSize: fontSize(12), fontWeight: "700", color: INK },
+  frozenText: { fontSize: fontSize(12), fontWeight: "700", color: pal.fg },
   list: {
-    backgroundColor: "#FFF",
+    backgroundColor: pal.card,
     borderRadius: moderateScale(22),
     overflow: "hidden",
   },
@@ -294,12 +303,12 @@ const styles = StyleSheet.create({
     width: scale(42),
     height: scale(42),
     borderRadius: moderateScale(13),
-    backgroundColor: ICON_BG,
+    backgroundColor: pal.iconTile,
     alignItems: "center",
     justifyContent: "center",
   },
-  rowTitle: { fontSize: fontSize(15), fontWeight: "700", color: INK },
-  rowSub: { marginTop: verticalScale(2), fontSize: fontSize(12), color: MUTED },
+  rowTitle: { fontSize: fontSize(15), fontWeight: "700", color: pal.fg },
+  rowSub: { marginTop: verticalScale(2), fontSize: fontSize(12), color: pal.muted },
   eyeBtn: {
     width: scale(36),
     height: scale(36),
@@ -308,8 +317,9 @@ const styles = StyleSheet.create({
   },
   divider: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: "rgba(0,0,0,0.06)",
+    backgroundColor: pal.border,
     marginLeft: scale(68),
   },
   err: { marginTop: verticalScale(14), color: "#B91C1C", fontSize: fontSize(13), textAlign: "center" },
-});
+  });
+}

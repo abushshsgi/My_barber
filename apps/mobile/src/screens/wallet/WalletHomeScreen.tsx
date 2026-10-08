@@ -4,6 +4,7 @@ import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { Image } from "expo-image";
 import { StatusBar } from "expo-status-bar";
 import { useCallback, useMemo, useState } from "react";
+import { useShellTheme, type ShellTheme } from "../../lib/useShellTheme";
 import {
   ActivityIndicator,
   Pressable,
@@ -38,10 +39,16 @@ import {
 
 type Props = NativeStackScreenProps<WalletStackParamList, "WalletHome">;
 
-const INK = "#111111";
-const MUTED = "#737373";
-const SOFT_BG = "#FFFFFF";
 const AVATAR_TONES = ["#111111", "#737373", "#A3A3A3", "#D4D4D4", "#525252", "#E5E5E5"];
+
+function useHomeChrome() {
+  const pal = useShellTheme();
+  const styles = useMemo(
+    () => createHomeStyles(pal),
+    [pal.bg, pal.fg, pal.muted, pal.card, pal.border, pal.iconTile, pal.onAccent],
+  );
+  return { pal, styles };
+}
 
 const QUICK_META: {
   key: "WalletGift" | "WalletTopUp" | "WalletQrPay" | "WalletMore";
@@ -99,6 +106,7 @@ function avatarColor(id: string | number): string {
 
 export function WalletHomeScreen({ navigation }: Props) {
   const { t } = useTranslation();
+  const { pal, styles } = useHomeChrome();
   const insets = useSafeAreaInsets();
   const { user, isAuthenticated } = useAuth();
   const me = useWalletMe();
@@ -172,7 +180,7 @@ export function WalletHomeScreen({ navigation }: Props) {
 
   return (
     <View style={[styles.root, { paddingBottom: dockPad }]}>
-      <StatusBar style="dark" />
+      <StatusBar style={pal.status} />
 
       <View
         style={[
@@ -199,13 +207,13 @@ export function WalletHomeScreen({ navigation }: Props) {
             onPress={() => navigation.navigate("WalletMore")}
             accessibilityLabel={t("walletPages.moreTitle")}
           >
-            <Ionicons name="notifications-outline" size={ICON.md} color={INK} />
+            <Ionicons name="notifications-outline" size={ICON.md} color={pal.fg} />
           </Pressable>
         </View>
 
         <View style={styles.balanceBlock}>
           {me.loading && !me.wallet ? (
-            <ActivityIndicator color={INK} />
+            <ActivityIndicator color={pal.fg} />
           ) : (
             <Pressable onPress={() => setHidden((v) => !v)} style={styles.balancePress}>
               <Text style={styles.balance} numberOfLines={1} adjustsFontSizeToFit>
@@ -214,7 +222,7 @@ export function WalletHomeScreen({ navigation }: Props) {
               <Ionicons
                 name={hidden ? "eye-off-outline" : "eye-outline"}
                 size={ICON.sm}
-                color={MUTED}
+                color={pal.muted}
                 style={styles.balanceEye}
               />
             </Pressable>
@@ -233,7 +241,7 @@ export function WalletHomeScreen({ navigation }: Props) {
               }}
             >
               <View style={styles.quickBtn}>
-                <Ionicons name={item.icon} size={ICON.lg} color={INK} />
+                <Ionicons name={item.icon} size={ICON.lg} color={pal.fg} />
               </View>
               <Text style={styles.quickLabel} numberOfLines={2}>
                 {t(item.labelKey)}
@@ -282,7 +290,7 @@ export function WalletHomeScreen({ navigation }: Props) {
             }}
           >
             <View style={styles.addContact}>
-              <Ionicons name="add" size={ICON.lg} color="#6B7280" />
+              <Ionicons name="add" size={ICON.lg} color={pal.muted} />
             </View>
             <Text style={styles.contactName}>{t("walletPages.newContact")}</Text>
           </Pressable>
@@ -306,7 +314,7 @@ export function WalletHomeScreen({ navigation }: Props) {
             ]}
           >
             <View style={styles.promoIcon}>
-              <Ionicons name="gift-outline" size={ICON.md} color={INK} />
+              <Ionicons name="gift-outline" size={ICON.md} color={pal.fg} />
             </View>
             <View style={styles.promoTextCol}>
               <Text style={styles.promoTitle} numberOfLines={1}>
@@ -316,7 +324,7 @@ export function WalletHomeScreen({ navigation }: Props) {
                 {t("walletPages.giftPromoBody")}
               </Text>
             </View>
-            <Ionicons name="chevron-forward" size={ICON.sm} color="#A3A3A3" />
+            <Ionicons name="chevron-forward" size={ICON.sm} color={pal.muted} />
           </Pressable>
 
           <Pressable
@@ -329,7 +337,7 @@ export function WalletHomeScreen({ navigation }: Props) {
             ]}
           >
             <View style={styles.promoIcon}>
-              <Ionicons name="card-outline" size={ICON.md} color={INK} />
+              <Ionicons name="card-outline" size={ICON.md} color={pal.fg} />
             </View>
             <View style={styles.promoTextCol}>
               <Text style={styles.promoTitle} numberOfLines={1}>
@@ -339,7 +347,7 @@ export function WalletHomeScreen({ navigation }: Props) {
                 {t("walletPages.cardPromoBody")}
               </Text>
             </View>
-            <Ionicons name="chevron-forward" size={ICON.sm} color="#A3A3A3" />
+            <Ionicons name="chevron-forward" size={ICON.sm} color={pal.muted} />
           </Pressable>
       </ScrollView>
 
@@ -357,11 +365,11 @@ export function WalletHomeScreen({ navigation }: Props) {
           contentContainerStyle={styles.txScrollContent}
           showsVerticalScrollIndicator={false}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={INK} />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={pal.fg} />
           }
         >
           {tx.loading && recent.length === 0 ? (
-            <ActivityIndicator style={styles.txLoader} color={INK} />
+            <ActivityIndicator style={styles.txLoader} color={pal.fg} />
           ) : recent.length === 0 ? (
             <View style={styles.emptyBox}>
               <Text style={styles.empty}>{t("walletPages.noTx")}</Text>
@@ -390,6 +398,7 @@ export function WalletHomeScreen({ navigation }: Props) {
 
 function TxRow({ item, onPress }: { item: WalletTx; onPress: () => void }) {
   const { t } = useTranslation();
+  const { styles } = useHomeChrome();
   const out = item.kind === "out";
   return (
     <Pressable style={styles.txRow} onPress={onPress}>
@@ -425,13 +434,17 @@ const QUICK_TILE = scale(IS_SMALL_DEVICE ? 48 : 58);
 const CONTACT_TILE = scale(IS_SMALL_DEVICE ? 48 : 58);
 const TX_AVATAR = scale(IS_SMALL_DEVICE ? 40 : 48);
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: SOFT_BG },
+function createHomeStyles(pal: ShellTheme) {
+  const INK = pal.fg;
+  const MUTED = pal.muted;
+  const SOFT_BG = pal.card;
+  return StyleSheet.create({
+  root: { flex: 1, backgroundColor: pal.bg },
   heroCard: {
     marginBottom: spacing.xs,
     paddingHorizontal: scale(20),
     paddingBottom: spacing.lg,
-    backgroundColor: SOFT_BG,
+    backgroundColor: pal.bg,
   },
   header: {
     flexDirection: "row",
@@ -451,7 +464,7 @@ const styles = StyleSheet.create({
     borderRadius: AVATAR / 2,
     backgroundColor: SOFT_BG,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#E7E7E7",
+    borderColor: pal.border,
     alignItems: "center",
     justifyContent: "center",
     overflow: "hidden",
@@ -467,7 +480,7 @@ const styles = StyleSheet.create({
     borderRadius: scale(44) / 2,
     backgroundColor: SOFT_BG,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#E7E7E7",
+    borderColor: pal.border,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -500,7 +513,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     backgroundColor: SOFT_BG,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#E7E7E7",
+    borderColor: pal.border,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -509,7 +522,7 @@ const styles = StyleSheet.create({
     fontSize: fontSize(11),
     lineHeight: fontSize(14),
     fontWeight: "600",
-    color: "#4B5563",
+    color: MUTED,
     textAlign: "center",
   },
   section: { paddingHorizontal: scale(20), marginTop: spacing.md },
@@ -550,13 +563,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 2,
-    borderColor: SOFT_BG,
+    borderColor: pal.bg,
   },
-  contactInitials: { fontSize: fontSize(15), fontWeight: "700", color: INK },
+  contactInitials: { fontSize: fontSize(15), fontWeight: "700", color: "#111111" },
   contactName: {
     fontSize: fontSize(12),
     fontWeight: "500",
-    color: "#4B5563",
+    color: MUTED,
     textAlign: "center",
   },
   addContact: {
@@ -565,7 +578,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     backgroundColor: SOFT_BG,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#E7E7E7",
+    borderColor: pal.border,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -591,7 +604,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     backgroundColor: SOFT_BG,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#E7E7E7",
+    borderColor: pal.border,
     shadowColor: "#111111",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.06,
@@ -603,7 +616,7 @@ const styles = StyleSheet.create({
     width: scale(36),
     height: scale(36),
     borderRadius: radius.sm,
-    backgroundColor: SOFT_BG,
+    backgroundColor: pal.iconTile,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -618,7 +631,7 @@ const styles = StyleSheet.create({
     marginTop: verticalScale(2),
     fontSize: fontSize(12),
     lineHeight: fontSize(16),
-    color: "#6B7280",
+    color: MUTED,
     fontWeight: "400",
   },
   emptyBox: { alignItems: "center", paddingVertical: spacing.xl, gap: spacing.sm },
@@ -629,7 +642,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: scale(18),
     paddingVertical: spacing.sm,
   },
-  emptyCtaText: { color: "#FFF", fontWeight: "700", fontSize: fontSize(13) },
+  emptyCtaText: { color: pal.onAccent, fontWeight: "700", fontSize: fontSize(13) },
   err: {
     marginTop: spacing.sm,
     color: "#DC2626",
@@ -649,7 +662,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  avatarText: { fontWeight: "700", fontSize: fontSize(14), color: INK },
+  avatarText: { fontWeight: "700", fontSize: fontSize(14), color: "#111111" },
   txTitle: { fontSize: fontSize(15), fontWeight: "600", color: INK },
   txDate: { marginTop: verticalScale(3), fontSize: fontSize(12), color: MUTED },
   txRight: { alignItems: "flex-end" },
@@ -657,4 +670,5 @@ const styles = StyleSheet.create({
   txOut: { color: "#EF4444" },
   txIn: { color: "#16A34A" },
   txKind: { marginTop: verticalScale(3), fontSize: fontSize(12), color: MUTED },
-});
+  });
+}

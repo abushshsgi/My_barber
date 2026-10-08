@@ -35,7 +35,7 @@ export function NativeHeader({
   if (largeTitle) {
     return (
       <View style={[styles.largeWrap, { paddingTop: topPad, backgroundColor: pal.bg }]}>
-        <AppStatusBar style="dark" />
+        <AppStatusBar style={pal.status} />
         <View style={styles.largeTop}>
           {onBack ? <NativeBackButton onPress={onBack} /> : <NativeBackSpacer />}
           {right ?? <NativeBackSpacer />}
@@ -55,7 +55,7 @@ export function NativeHeader({
         border && [styles.border, { borderBottomColor: pal.border }],
       ]}
     >
-      <AppStatusBar style="dark" />
+      <AppStatusBar style={pal.status} />
       <View style={styles.row}>
         {onBack ? <NativeBackButton onPress={onBack} /> : <NativeBackSpacer />}
         <Text

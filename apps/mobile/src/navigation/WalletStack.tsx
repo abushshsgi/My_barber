@@ -1,5 +1,6 @@
 import { Platform } from "react-native";
 import { createStackNavigator } from "@react-navigation/stack";
+import { useShellTheme } from "../lib/useShellTheme";
 import { WalletFaqScreen } from "../screens/wallet/WalletFaqScreen";
 import { WalletFreezeScreen } from "../screens/wallet/WalletFreezeScreen";
 import { WalletGateScreen } from "../screens/wallet/WalletGateScreen";
@@ -44,22 +45,19 @@ export type WalletScreenName = keyof WalletStackParamList;
 const Stack = createStackNavigator<WalletStackParamList>();
 
 export function WalletStack() {
+  const pal = useShellTheme();
   return (
     <Stack.Navigator
       initialRouteName="WalletGate"
       screenOptions={{
         headerShown: false,
-        cardStyle: { backgroundColor: "#FFFFFF" },
+        cardStyle: { backgroundColor: pal.bg },
         detachPreviousScreen: Platform.OS !== "web",
         ...walletFromRight,
       }}
     >
       <Stack.Screen name="WalletGate" component={WalletGateScreen} />
-      <Stack.Screen
-        name="WalletHome"
-        component={WalletHomeScreen}
-        options={{ cardStyle: { backgroundColor: "#FFFFFF" } }}
-      />
+      <Stack.Screen name="WalletHome" component={WalletHomeScreen} />
       <Stack.Screen name="WalletTopUp" component={WalletTopUpScreen} options={walletFromRight} />
       <Stack.Screen name="WalletGift" component={WalletGiftScreen} options={walletFromRight} />
       <Stack.Screen name="WalletGiftAmount" component={WalletGiftAmountScreen} options={walletFromRight} />

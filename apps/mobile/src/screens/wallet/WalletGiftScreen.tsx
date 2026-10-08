@@ -2,7 +2,8 @@ import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { LinearGradient } from "expo-linear-gradient";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useShellTheme, type ShellTheme } from "../../lib/useShellTheme";
 import {
   ActivityIndicator,
   Pressable,
@@ -36,8 +37,16 @@ import {
 
 type Props = NativeStackScreenProps<WalletStackParamList, "WalletGift">;
 
-const PURPLE = "#111111";
 const AVATAR = ["#111111", "#737373", "#A3A3A3", "#D4D4D4", "#525252", "#E5E5E5"];
+
+function useGiftChrome() {
+  const pal = useShellTheme();
+  const styles = useMemo(
+    () => createGiftPickStyles(pal),
+    [pal.bg, pal.fg, pal.muted, pal.card, pal.iconTile, pal.border, pal.onAccent, pal.status],
+  );
+  return { pal, styles };
+}
 
 const HINTS = [
   { icon: "person-outline" as const, label: "Ism", hint: "" },
@@ -61,6 +70,7 @@ function avatarTone(id: number | string): string {
 /** 1-qadam: kimga yuborish — tarix + maxfiy mask. */
 export function WalletGiftScreen({ navigation }: Props) {
   const { t } = useTranslation();
+  const { pal, styles } = useGiftChrome();
   useHideTabBar();
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
@@ -126,7 +136,11 @@ export function WalletGiftScreen({ navigation }: Props) {
   return (
     <View style={[styles.root, { paddingBottom: safeBottom(insets.bottom, 12) }]}>
       <LinearGradient
-        colors={["#F0F0F0", "#F3EEFF", "#FAFAFA"]}
+        colors={
+          pal.status === "light"
+            ? [pal.bg, pal.card, pal.bg]
+            : ["#F0F0F0", "#F3EEFF", "#FAFAFA"]
+        }
         style={[styles.hero, { paddingTop: safeTop(insets.top, 6) }]}
       >
         <View style={styles.header}>
@@ -137,7 +151,7 @@ export function WalletGiftScreen({ navigation }: Props) {
 
         <View style={styles.heroCard}>
           <View style={styles.heroIcon}>
-            <Ionicons name="shield-checkmark" size={22} color={PURPLE} />
+            <Ionicons name="shield-checkmark" size={22} color={pal.fg} />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.heroTitle}>Maxfiy qidiruv</Text>
@@ -149,11 +163,11 @@ export function WalletGiftScreen({ navigation }: Props) {
         </View>
 
         <View style={styles.searchBox}>
-          <Ionicons name="search" size={18} color={PURPLE} />
+          <Ionicons name="search" size={18} color={pal.fg} />
           <TextInput
             style={styles.searchInput}
             placeholder="Ism, telefon yoki to‘liq hamyon"
-            placeholderTextColor="#9CA3AF"
+            placeholderTextColor={pal.muted}
             value={query}
             onChangeText={setQuery}
             autoCorrect={false}
@@ -162,7 +176,7 @@ export function WalletGiftScreen({ navigation }: Props) {
           />
           {query ? (
             <Pressable onPress={() => setQuery("")} hitSlop={8}>
-              <Ionicons name="close-circle" size={18} color="#9CA3AF" />
+              <Ionicons name="close-circle" size={18} color={pal.muted} />
             </Pressable>
           ) : null}
         </View>
@@ -174,7 +188,7 @@ export function WalletGiftScreen({ navigation }: Props) {
               style={styles.hintChip}
               onPress={() => setQuery(h.hint)}
             >
-              <Ionicons name={h.icon} size={14} color={PURPLE} />
+              <Ionicons name={h.icon} size={14} color={pal.fg} />
               <Text style={styles.hintText}>{h.label}</Text>
             </Pressable>
           ))}
@@ -218,11 +232,11 @@ export function WalletGiftScreen({ navigation }: Props) {
         {searching ? <Text style={styles.section}>Natijalar</Text> : null}
 
         {loading && searching ? (
-          <ActivityIndicator style={{ marginTop: 28 }} color={PURPLE} />
+          <ActivityIndicator style={{ marginTop: 28 }} color={pal.fg} />
         ) : searching && results.length === 0 ? (
           <View style={styles.emptyBox}>
             <View style={styles.emptyIcon}>
-              <Ionicons name="search-outline" size={28} color="#737373" />
+              <Ionicons name="search-outline" size={28} color={pal.muted} />
             </View>
             <Text style={styles.emptyTitle}>{t("salon.notFound")}</Text>
             <Text style={styles.empty}>
@@ -242,14 +256,14 @@ export function WalletGiftScreen({ navigation }: Props) {
                 <Text style={styles.meta}>{maskWalletDisplay(r.wallet_number)}</Text>
               </View>
               <View style={styles.sendPill}>
-                <Ionicons name="arrow-forward" size={16} color="#FFF" />
+                <Ionicons name="arrow-forward" size={16} color={pal.onAccent} />
               </View>
             </Pressable>
           ))
         ) : history.length === 0 ? (
           <View style={styles.emptyBox}>
             <View style={styles.emptyIcon}>
-              <Ionicons name="people-outline" size={28} color="#737373" />
+              <Ionicons name="people-outline" size={28} color={pal.muted} />
             </View>
             <Text style={styles.emptyTitle}>Qidiruvni boshlang</Text>
             <Text style={styles.empty}>
@@ -271,6 +285,7 @@ function HistoryRow({
   badge?: string;
   onPress: () => void;
 }) {
+  const { pal, styles } = useGiftChrome();
   return (
     <Pressable style={styles.row} onPress={onPress}>
       <View style={[styles.avatar, { backgroundColor: avatarTone(item.userId) }]}>
@@ -289,13 +304,14 @@ function HistoryRow({
         </View>
         <Text style={styles.meta}>{maskWalletDisplay(item.walletMasked)}</Text>
       </View>
-      <Ionicons name="chevron-forward" size={18} color="#D1D5DB" />
+      <Ionicons name="chevron-forward" size={18} color={pal.muted} />
     </Pressable>
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: "#FAFAFA" },
+function createGiftPickStyles(pal: ShellTheme) {
+  return StyleSheet.create({
+  root: { flex: 1, backgroundColor: pal.bg },
   hero: {
     paddingHorizontal: scale(16),
     paddingBottom: verticalScale(16),
@@ -318,14 +334,14 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontSize: fontSize(18),
     fontWeight: "800",
-    color: "#0A0A0A",
+    color: pal.fg,
     letterSpacing: -0.3,
   },
   heroCard: {
     flexDirection: "row",
     alignItems: "center",
     gap: moderateScale(12),
-    backgroundColor: "rgba(255,255,255,0.72)",
+    backgroundColor: pal.card,
     borderRadius: moderateScale(18),
     padding: moderateScale(14),
     marginBottom: verticalScale(12),
@@ -334,17 +350,17 @@ const styles = StyleSheet.create({
     width: scale(44),
     height: scale(44),
     borderRadius: moderateScale(14),
-    backgroundColor: "#FFF",
+    backgroundColor: pal.card,
     alignItems: "center",
     justifyContent: "center",
   },
-  heroTitle: { fontSize: fontSize(15), fontWeight: "800", color: "#0A0A0A" },
-  heroSub: { marginTop: verticalScale(3), fontSize: fontSize(12), lineHeight: fontSize(17), color: "#6B7280" },
+  heroTitle: { fontSize: fontSize(15), fontWeight: "800", color: pal.fg },
+  heroSub: { marginTop: verticalScale(3), fontSize: fontSize(12), lineHeight: fontSize(17), color: pal.muted },
   searchBox: {
     flexDirection: "row",
     alignItems: "center",
     gap: moderateScale(10),
-    backgroundColor: "#FFF",
+    backgroundColor: pal.card,
     borderRadius: moderateScale(16),
     paddingHorizontal: scale(14),
     height: verticalScale(52),
@@ -356,7 +372,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     elevation: 2,
   },
-  searchInput: { flex: 1, fontSize: fontSize(15), color: "#0A0A0A", padding: 0 },
+  searchInput: { flex: 1, fontSize: fontSize(15), color: pal.fg, padding: 0 },
   hints: { flexDirection: "row", gap: moderateScale(8), marginTop: verticalScale(12) },
   hintChip: {
     flexDirection: "row",
@@ -365,15 +381,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: scale(12),
     paddingVertical: verticalScale(7),
     borderRadius: 999,
-    backgroundColor: "rgba(255,255,255,0.9)",
+    backgroundColor: pal.card,
   },
-  hintText: { fontSize: fontSize(12), fontWeight: "600", color: "#4B5563" },
+  hintText: { fontSize: fontSize(12), fontWeight: "600", color: pal.muted },
   list: { paddingHorizontal: scale(16), paddingTop: verticalScale(18), paddingBottom: verticalScale(28) },
   section: {
     marginBottom: verticalScale(12),
     fontSize: fontSize(13),
     fontWeight: "700",
-    color: "#6B7280",
+    color: pal.muted,
     letterSpacing: 0.2,
   },
   emptyBox: { alignItems: "center", paddingVertical: verticalScale(36), paddingHorizontal: scale(24) },
@@ -381,23 +397,23 @@ const styles = StyleSheet.create({
     width: scale(64),
     height: scale(64),
     borderRadius: moderateScale(32),
-    backgroundColor: "#F0F0F0",
+    backgroundColor: pal.iconTile,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: verticalScale(14),
   },
-  emptyTitle: { fontSize: fontSize(16), fontWeight: "800", color: "#0A0A0A", marginBottom: verticalScale(6) },
+  emptyTitle: { fontSize: fontSize(16), fontWeight: "800", color: pal.fg, marginBottom: verticalScale(6) },
   empty: {
     textAlign: "center",
     fontSize: fontSize(13),
-    color: "#9CA3AF",
+    color: pal.muted,
     lineHeight: fontSize(19),
   },
   row: {
     flexDirection: "row",
     alignItems: "center",
     gap: moderateScale(12),
-    backgroundColor: "#FFF",
+    backgroundColor: pal.card,
     borderRadius: moderateScale(16),
     paddingHorizontal: scale(14),
     paddingVertical: verticalScale(14),
@@ -417,21 +433,22 @@ const styles = StyleSheet.create({
   },
   avatarText: { fontSize: fontSize(14), fontWeight: "800", color: "#FFF" },
   nameRow: { flexDirection: "row", alignItems: "center", gap: moderateScale(8) },
-  name: { flexShrink: 1, fontSize: fontSize(15), fontWeight: "700", color: "#0A0A0A" },
+  name: { flexShrink: 1, fontSize: fontSize(15), fontWeight: "700", color: pal.fg },
   badge: {
     paddingHorizontal: scale(8),
     paddingVertical: verticalScale(2),
     borderRadius: 999,
-    backgroundColor: "#F0F0F0",
+    backgroundColor: pal.iconTile,
   },
-  badgeText: { fontSize: fontSize(10), fontWeight: "700", color: PURPLE },
-  meta: { marginTop: verticalScale(2), fontSize: fontSize(12), color: "#9CA3AF", letterSpacing: 0.6 },
+  badgeText: { fontSize: fontSize(10), fontWeight: "700", color: pal.fg },
+  meta: { marginTop: verticalScale(2), fontSize: fontSize(12), color: pal.muted, letterSpacing: 0.6 },
   sendPill: {
     width: scale(32),
     height: scale(32),
     borderRadius: moderateScale(16),
-    backgroundColor: "#111111",
+    backgroundColor: pal.fg,
     alignItems: "center",
     justifyContent: "center",
   },
-});
+  });
+}

@@ -1,7 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { LinearGradient } from "expo-linear-gradient";
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
+import { useShellTheme, type ShellTheme } from "../../lib/useShellTheme";
 import {
   ActivityIndicator,
   Alert,
@@ -48,6 +49,11 @@ export function WalletQrPayScreen({ navigation }: Props) {
   const [resolving, setResolving] = useState(false);
   const [paying, setPaying] = useState(false);
   const [torch, setTorch] = useState(false);
+  const pal = useShellTheme();
+  const styles = useMemo(
+    () => createQrStyles(pal),
+    [pal.bg, pal.fg, pal.muted, pal.card, pal.border, pal.iconTile, pal.onAccent],
+  );
 
   const onResolve = useCallback(async (raw?: string) => {
     const trimmed = (raw ?? code).trim();
@@ -110,7 +116,7 @@ export function WalletQrPayScreen({ navigation }: Props) {
               style={styles.toolBtn}
               onPress={() => Alert.alert("Yordam", "Sartarosh QR kodini skanerlang yoki kodni joylashtiring.")}
             >
-              <Ionicons name="help-circle-outline" size={20} color="#111" />
+              <Ionicons name="help-circle-outline" size={20} color={pal.fg} />
             </Pressable>
             <Pressable
               style={styles.toolBtn}
@@ -119,10 +125,10 @@ export function WalletQrPayScreen({ navigation }: Props) {
                 Alert.alert("Galereya", "Hozircha kodni qo'lda kiriting yoki joylashtiring.");
               }}
             >
-              <Ionicons name="images-outline" size={18} color="#111" />
+              <Ionicons name="images-outline" size={18} color={pal.fg} />
             </Pressable>
             <Pressable style={styles.toolBtn} onPress={() => setTorch((v) => !v)}>
-              <Ionicons name={torch ? "flash" : "flash-outline"} size={18} color="#111" />
+              <Ionicons name={torch ? "flash" : "flash-outline"} size={18} color={pal.fg} />
             </Pressable>
           </View>
         </View>
@@ -134,7 +140,7 @@ export function WalletQrPayScreen({ navigation }: Props) {
           </View>
           <View style={styles.artPhone}>
             <View style={styles.artPhoneScreen}>
-              <Ionicons name="scan-outline" size={36} color="#111111" />
+              <Ionicons name="scan-outline" size={36} color={pal.fg} />
             </View>
           </View>
         </View>
@@ -155,8 +161,8 @@ export function WalletQrPayScreen({ navigation }: Props) {
           <Text style={styles.sheetTitle}>To'lash va yuborish</Text>
           <View style={styles.sheetRow}>
             <Pressable style={styles.sheetItem} onPress={() => setPhase("scan")}>
-              <View style={[styles.sheetIcon, { backgroundColor: "#F0F0F0" }]}>
-                <Ionicons name="qr-code-outline" size={26} color="#111111" />
+              <View style={[styles.sheetIcon, { backgroundColor: pal.iconTile }]}>
+                <Ionicons name="qr-code-outline" size={26} color={pal.fg} />
               </View>
               <Text style={styles.sheetLabel}>Kod skaner</Text>
             </Pressable>
@@ -164,8 +170,8 @@ export function WalletQrPayScreen({ navigation }: Props) {
               style={styles.sheetItem}
               onPress={() => navigation.navigate("WalletGift")}
             >
-              <View style={[styles.sheetIcon, { backgroundColor: "#F0F0F0" }]}>
-                <Ionicons name="wallet-outline" size={26} color="#111111" />
+              <View style={[styles.sheetIcon, { backgroundColor: pal.iconTile }]}>
+                <Ionicons name="wallet-outline" size={26} color={pal.fg} />
               </View>
               <Text style={styles.sheetLabel}>O'tkazma</Text>
             </Pressable>
@@ -173,8 +179,8 @@ export function WalletQrPayScreen({ navigation }: Props) {
               style={styles.sheetItem}
               onPress={() => navigation.navigate("WalletGift")}
             >
-              <View style={[styles.sheetIcon, { backgroundColor: "#F0F0F0" }]}>
-                <Ionicons name="flash-outline" size={26} color="#111111" />
+              <View style={[styles.sheetIcon, { backgroundColor: pal.iconTile }]}>
+                <Ionicons name="flash-outline" size={26} color={pal.fg} />
               </View>
               <Text style={styles.sheetLabel}>Tezkor</Text>
             </Pressable>
@@ -188,7 +194,7 @@ export function WalletQrPayScreen({ navigation }: Props) {
     return (
       <View style={[styles.scanRoot, { paddingTop: safeTop(insets.top, 8), paddingBottom: safeBottom(insets.bottom, 24) }]}>
         <Pressable style={styles.closeBtn} onPress={() => setPhase("intro")}>
-          <Ionicons name="close" size={20} color="#111111" />
+          <Ionicons name="close" size={20} color={pal.fg} />
         </Pressable>
 
         <View style={styles.scanCenter}>
@@ -198,7 +204,7 @@ export function WalletQrPayScreen({ navigation }: Props) {
             <View style={[styles.corner, styles.cBL]} />
             <View style={[styles.corner, styles.cBR]} />
             <View style={styles.scanFrameInner}>
-              <Ionicons name="qr-code" size={72} color="#111" />
+              <Ionicons name="qr-code" size={72} color={pal.fg} />
             </View>
           </View>
         </View>
@@ -210,7 +216,7 @@ export function WalletQrPayScreen({ navigation }: Props) {
           <TextInput
             style={styles.manualInput}
             placeholder="yoki kodni joylashtiring…"
-            placeholderTextColor="#A3A3A3"
+            placeholderTextColor={pal.muted}
             autoCapitalize="none"
             autoCorrect={false}
             value={code}
@@ -222,9 +228,9 @@ export function WalletQrPayScreen({ navigation }: Props) {
             onPress={() => void onResolve()}
           >
             {resolving ? (
-              <ActivityIndicator color="#FFFFFF" />
+              <ActivityIndicator color={pal.onAccent} />
             ) : (
-              <Ionicons name="arrow-forward" size={20} color="#FFFFFF" />
+              <Ionicons name="arrow-forward" size={20} color={pal.onAccent} />
             )}
           </Pressable>
         </View>
@@ -253,7 +259,7 @@ export function WalletQrPayScreen({ navigation }: Props) {
         value={amount}
         onChangeText={(t) => setAmount(t.replace(/[^\d]/g, ""))}
         placeholder="0"
-        placeholderTextColor="#D1D5DB"
+        placeholderTextColor={pal.muted}
       />
 
       <Pressable
@@ -262,7 +268,7 @@ export function WalletQrPayScreen({ navigation }: Props) {
         onPress={() => void onPay()}
       >
         {paying ? (
-          <ActivityIndicator color="#FFF" />
+          <ActivityIndicator color={pal.onAccent} />
         ) : (
           <Text style={styles.enableText}>To'lash</Text>
         )}
@@ -271,8 +277,9 @@ export function WalletQrPayScreen({ navigation }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: "#FFF", paddingHorizontal: scale(20) },
+function createQrStyles(pal: ShellTheme) {
+  return StyleSheet.create({
+  root: { flex: 1, backgroundColor: pal.bg, paddingHorizontal: scale(20) },
   introTop: {
     flexDirection: "row",
     alignItems: "center",
@@ -288,7 +295,7 @@ const styles = StyleSheet.create({
   toolPill: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#F3F4F6",
+    backgroundColor: pal.iconTile,
     borderRadius: 999,
     paddingHorizontal: scale(4),
     paddingVertical: verticalScale(4),
@@ -371,7 +378,7 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     fontSize: fontSize(28),
     fontWeight: "800",
-    color: "#111",
+    color: pal.fg,
     letterSpacing: -0.6,
     lineHeight: fontSize(34),
     marginTop: verticalScale(8),
@@ -382,7 +389,7 @@ const styles = StyleSheet.create({
     marginTop: verticalScale(10),
     fontSize: fontSize(14),
     lineHeight: fontSize(20),
-    color: "#9CA3AF",
+    color: pal.muted,
     paddingHorizontal: scale(12),
   },
   enableBtn: {
@@ -392,7 +399,7 @@ const styles = StyleSheet.create({
     height: verticalScale(52),
     paddingHorizontal: scale(28),
     borderRadius: 999,
-    backgroundColor: "#111",
+    backgroundColor: pal.fg,
     alignItems: "center",
     justifyContent: "center",
     shadowColor: "#000",
@@ -401,27 +408,27 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 6 },
     elevation: 5,
   },
-  enableText: { color: "#FFF", fontSize: fontSize(15), fontWeight: "700" },
+  enableText: { color: pal.onAccent, fontSize: fontSize(15), fontWeight: "700" },
   sheet: {
     marginTop: "auto",
     marginHorizontal: -scale(20),
-    backgroundColor: "#FFF",
+    backgroundColor: pal.card,
     borderTopLeftRadius: moderateScale(28),
     borderTopRightRadius: moderateScale(28),
     paddingHorizontal: scale(20),
     paddingTop: verticalScale(10),
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(0,0,0,0.06)",
+    borderColor: pal.border,
   },
   handle: {
     alignSelf: "center",
     width: scale(40),
     height: verticalScale(4),
     borderRadius: moderateScale(2),
-    backgroundColor: "#E5E7EB",
+    backgroundColor: pal.border,
     marginBottom: verticalScale(14),
   },
-  sheetTitle: { fontSize: fontSize(17), fontWeight: "800", color: "#111", marginBottom: verticalScale(16) },
+  sheetTitle: { fontSize: fontSize(17), fontWeight: "800", color: pal.fg, marginBottom: verticalScale(16) },
   sheetRow: { flexDirection: "row", justifyContent: "space-between", paddingBottom: verticalScale(8) },
   sheetItem: { width: "30%", alignItems: "center", gap: moderateScale(8) },
   sheetIcon: {
@@ -431,16 +438,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  sheetLabel: { fontSize: fontSize(12), fontWeight: "600", color: "#4B5563", textAlign: "center" },
+  sheetLabel: { fontSize: fontSize(12), fontWeight: "600", color: pal.muted, textAlign: "center" },
 
-  scanRoot: { flex: 1, backgroundColor: "#FAFAFA", paddingHorizontal: scale(20) },
+  scanRoot: { flex: 1, backgroundColor: pal.bg, paddingHorizontal: scale(20) },
   closeBtn: {
     width: scale(40),
     height: scale(40),
     borderRadius: moderateScale(20),
-    backgroundColor: "#FFFFFF",
+    backgroundColor: pal.card,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(17,17,17,0.12)",
+    borderColor: pal.border,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -449,9 +456,9 @@ const styles = StyleSheet.create({
     width: scale(260),
     height: scale(260),
     borderRadius: moderateScale(28),
-    backgroundColor: "#F0F0F0",
+    backgroundColor: pal.iconTile,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(17,17,17,0.12)",
+    borderColor: pal.border,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -459,7 +466,7 @@ const styles = StyleSheet.create({
     width: scale(180),
     height: scale(180),
     borderRadius: moderateScale(20),
-    backgroundColor: "#FFF",
+    backgroundColor: pal.card,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -476,7 +483,7 @@ const styles = StyleSheet.create({
   scanTitle: {
     textAlign: "center",
     alignSelf: "center",
-    color: "#111111",
+    color: pal.fg,
     fontSize: fontSize(28),
     fontWeight: "800",
     letterSpacing: -0.4,
@@ -484,7 +491,7 @@ const styles = StyleSheet.create({
   scanSub: {
     textAlign: "center",
     alignSelf: "center",
-    color: "#737373",
+    color: pal.muted,
     fontSize: fontSize(14),
     marginTop: verticalScale(8),
     marginBottom: verticalScale(20),
@@ -494,20 +501,20 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: moderateScale(10),
-    backgroundColor: "#FFFFFF",
+    backgroundColor: pal.card,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(17,17,17,0.12)",
+    borderColor: pal.border,
     borderRadius: moderateScale(16),
     paddingLeft: scale(14),
     paddingRight: scale(6),
     paddingVertical: verticalScale(6),
   },
-  manualInput: { flex: 1, color: "#111111", fontSize: fontSize(14), paddingVertical: verticalScale(10) },
+  manualInput: { flex: 1, color: pal.fg, fontSize: fontSize(14), paddingVertical: verticalScale(10) },
   manualGo: {
     width: scale(44),
     height: scale(44),
     borderRadius: moderateScale(14),
-    backgroundColor: "#111111",
+    backgroundColor: pal.fg,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -517,7 +524,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: verticalScale(20),
   },
-  payHeaderTitle: { flex: 1, textAlign: "center", fontSize: fontSize(17), fontWeight: "800", color: "#111" },
+  payHeaderTitle: { flex: 1, textAlign: "center", fontSize: fontSize(17), fontWeight: "800", color: pal.fg },
   payCard: {
     borderRadius: moderateScale(24),
     padding: moderateScale(22),
@@ -526,13 +533,14 @@ const styles = StyleSheet.create({
   payTo: { color: "rgba(255,255,255,0.55)", fontSize: fontSize(12), fontWeight: "600" },
   payName: { marginTop: verticalScale(6), color: "#FFF", fontSize: fontSize(22), fontWeight: "800" },
   payBal: { marginTop: verticalScale(10), color: "rgba(255,255,255,0.65)", fontSize: fontSize(13) },
-  amtLabel: { textAlign: "center", color: "#9CA3AF", fontSize: fontSize(13), marginBottom: verticalScale(8) },
+  amtLabel: { textAlign: "center", color: pal.muted, fontSize: fontSize(13), marginBottom: verticalScale(8) },
   amtInput: {
     textAlign: "center",
     fontSize: fontSize(44),
     fontWeight: "800",
-    color: "#111",
+    color: pal.fg,
     letterSpacing: -1,
     marginBottom: verticalScale(24),
   },
-});
+  });
+}
