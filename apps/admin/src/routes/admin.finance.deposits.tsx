@@ -169,6 +169,12 @@ function AdminWalletDepositsPage() {
           <h1 className="font-heading text-3xl font-semibold tracking-tight text-foreground">
             Karta to'ldirishlar
           </h1>
+          <Link
+            to="/admin/finance/deposits-overdue"
+            className="mt-2 inline-flex text-sm font-semibold text-foreground underline-offset-2 hover:underline"
+          >
+            24 soatdan o'tgan cheklar
+          </Link>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
             Bank izohidagi kodni shu yerdagi izoh kodi bilan solishtiring. Kod, foydalanuvchi va summa bir xil bo'lsa tasdiqlang.
             {pendingCount > 0 ? ` · ${pendingCount} ta tekshiruvda` : ""}

@@ -4651,9 +4651,11 @@ function mapAdminCardDeposit(d: Record<string, any>, fallbackId?: string): Admin
 export async function fetchAdminCardDeposits(params?: {
   status?: string;
   q?: string;
+  overdue?: boolean;
 }): Promise<{ count: number; results: AdminCardDeposit[] }> {
   const sp = new URLSearchParams();
-  if (params?.status) sp.set("status", params.status);
+  if (params?.overdue) sp.set("overdue", "1");
+  else if (params?.status) sp.set("status", params.status);
   if (params?.q) sp.set("q", params.q);
   const qs = sp.toString();
   const raw = await apiJson<{

@@ -18,6 +18,7 @@ import { Route as AdminAgentsRouteImport } from './routes/admin.agents'
 import { Route as AdminAuditRouteImport } from './routes/admin.audit'
 import { Route as AdminAylanmaRouteImport } from './routes/admin.aylanma'
 import { Route as AdminBarbersRouteImport } from './routes/admin.barbers'
+import { Route as AdminBazaRouteImport } from './routes/admin.baza'
 import { Route as AdminBookingsRouteImport } from './routes/admin.bookings'
 import { Route as AdminBroadcastRouteImport } from './routes/admin.broadcast'
 import { Route as AdminCategoriesRouteImport } from './routes/admin.categories'
@@ -47,6 +48,7 @@ import { Route as AdminBarbersBarberIdRouteImport } from './routes/admin.barbers
 import { Route as AdminBookingsBookingIdRouteImport } from './routes/admin.bookings.$bookingId'
 import { Route as AdminFinanceIndexRouteImport } from './routes/admin.finance.index'
 import { Route as AdminFinanceDepositsRouteImport } from './routes/admin.finance.deposits'
+import { Route as AdminFinanceDepositsOverdueRouteImport } from './routes/admin.finance.deposits-overdue'
 import { Route as AdminFinanceFrozenRouteImport } from './routes/admin.finance.frozen'
 import { Route as AdminFinanceGiftDesignsRouteImport } from './routes/admin.finance.gift-designs'
 import { Route as AdminFinanceGiftsRouteImport } from './routes/admin.finance.gifts'
@@ -69,6 +71,8 @@ import { Route as AdminMorphAiSettingsRouteImport } from './routes/admin.morph-a
 import { Route as AdminMorphAiStudioRouteImport } from './routes/admin.morph-ai.studio'
 import { Route as AdminMorphAiSupportRouteImport } from './routes/admin.morph-ai.support'
 import { Route as AdminParvarishIndexRouteImport } from './routes/admin.parvarish.index'
+import { Route as AdminParvarishLikesRouteImport } from './routes/admin.parvarish.likes'
+import { Route as AdminParvarishObHavoRouteImport } from './routes/admin.parvarish.ob-havo'
 import { Route as AdminParvarishTarkibRouteImport } from './routes/admin.parvarish.tarkib'
 import { Route as AdminPayoutsIndexRouteImport } from './routes/admin.payouts.index'
 import { Route as AdminSalonsSalonIdRouteImport } from './routes/admin.salons.$salonId'
@@ -145,6 +149,11 @@ const AdminAylanmaRoute = AdminAylanmaRouteImport.update({
 const AdminBarbersRoute = AdminBarbersRouteImport.update({
   id: '/barbers',
   path: '/barbers',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminBazaRoute = AdminBazaRouteImport.update({
+  id: '/baza',
+  path: '/baza',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminBookingsRoute = AdminBookingsRouteImport.update({
@@ -292,6 +301,12 @@ const AdminFinanceDepositsRoute = AdminFinanceDepositsRouteImport.update({
   path: '/deposits',
   getParentRoute: () => AdminFinanceRoute,
 } as any)
+const AdminFinanceDepositsOverdueRoute =
+  AdminFinanceDepositsOverdueRouteImport.update({
+    id: '/deposits-overdue',
+    path: '/deposits-overdue',
+    getParentRoute: () => AdminFinanceRoute,
+  } as any)
 const AdminFinanceFrozenRoute = AdminFinanceFrozenRouteImport.update({
   id: '/frozen',
   path: '/frozen',
@@ -401,6 +416,16 @@ const AdminMorphAiSupportRoute = AdminMorphAiSupportRouteImport.update({
 const AdminParvarishIndexRoute = AdminParvarishIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => AdminParvarishRoute,
+} as any)
+const AdminParvarishLikesRoute = AdminParvarishLikesRouteImport.update({
+  id: '/likes',
+  path: '/likes',
+  getParentRoute: () => AdminParvarishRoute,
+} as any)
+const AdminParvarishObHavoRoute = AdminParvarishObHavoRouteImport.update({
+  id: '/ob-havo',
+  path: '/ob-havo',
   getParentRoute: () => AdminParvarishRoute,
 } as any)
 const AdminParvarishTarkibRoute = AdminParvarishTarkibRouteImport.update({
@@ -584,6 +609,7 @@ export interface FileRoutesByFullPath {
   '/admin/audit': typeof AdminAuditRoute
   '/admin/aylanma': typeof AdminAylanmaRouteWithChildren
   '/admin/barbers': typeof AdminBarbersRouteWithChildren
+  '/admin/baza': typeof AdminBazaRoute
   '/admin/bookings': typeof AdminBookingsRouteWithChildren
   '/admin/broadcast': typeof AdminBroadcastRoute
   '/admin/categories': typeof AdminCategoriesRoute
@@ -611,6 +637,7 @@ export interface FileRoutesByFullPath {
   '/admin/barbers/$barberId': typeof AdminBarbersBarberIdRouteWithChildren
   '/admin/bookings/$bookingId': typeof AdminBookingsBookingIdRoute
   '/admin/finance/deposits': typeof AdminFinanceDepositsRoute
+  '/admin/finance/deposits-overdue': typeof AdminFinanceDepositsOverdueRoute
   '/admin/finance/frozen': typeof AdminFinanceFrozenRoute
   '/admin/finance/gift-designs': typeof AdminFinanceGiftDesignsRoute
   '/admin/finance/gifts': typeof AdminFinanceGiftsRoute
@@ -630,6 +657,8 @@ export interface FileRoutesByFullPath {
   '/admin/morph-ai/settings': typeof AdminMorphAiSettingsRoute
   '/admin/morph-ai/studio': typeof AdminMorphAiStudioRoute
   '/admin/morph-ai/support': typeof AdminMorphAiSupportRoute
+  '/admin/parvarish/likes': typeof AdminParvarishLikesRoute
+  '/admin/parvarish/ob-havo': typeof AdminParvarishObHavoRoute
   '/admin/parvarish/tarkib': typeof AdminParvarishTarkibRoute
   '/admin/salons/$salonId': typeof AdminSalonsSalonIdRouteWithChildren
   '/admin/services/analytics': typeof AdminServicesAnalyticsRoute
@@ -675,6 +704,7 @@ export interface FileRoutesByTo {
   '/admin/admins': typeof AdminAdminsRoute
   '/admin/audit': typeof AdminAuditRoute
   '/admin/barbers': typeof AdminBarbersRouteWithChildren
+  '/admin/baza': typeof AdminBazaRoute
   '/admin/bookings': typeof AdminBookingsRouteWithChildren
   '/admin/broadcast': typeof AdminBroadcastRoute
   '/admin/categories': typeof AdminCategoriesRoute
@@ -695,6 +725,7 @@ export interface FileRoutesByTo {
   '/admin/agents/team': typeof AdminAgentsTeamRoute
   '/admin/bookings/$bookingId': typeof AdminBookingsBookingIdRoute
   '/admin/finance/deposits': typeof AdminFinanceDepositsRoute
+  '/admin/finance/deposits-overdue': typeof AdminFinanceDepositsOverdueRoute
   '/admin/finance/frozen': typeof AdminFinanceFrozenRoute
   '/admin/finance/gift-designs': typeof AdminFinanceGiftDesignsRoute
   '/admin/finance/gifts': typeof AdminFinanceGiftsRoute
@@ -714,6 +745,8 @@ export interface FileRoutesByTo {
   '/admin/morph-ai/settings': typeof AdminMorphAiSettingsRoute
   '/admin/morph-ai/studio': typeof AdminMorphAiStudioRoute
   '/admin/morph-ai/support': typeof AdminMorphAiSupportRoute
+  '/admin/parvarish/likes': typeof AdminParvarishLikesRoute
+  '/admin/parvarish/ob-havo': typeof AdminParvarishObHavoRoute
   '/admin/parvarish/tarkib': typeof AdminParvarishTarkibRoute
   '/admin/services/analytics': typeof AdminServicesAnalyticsRoute
   '/admin/statistics/agents': typeof AdminStatisticsAgentsRoute
@@ -760,6 +793,7 @@ export interface FileRoutesById {
   '/admin/audit': typeof AdminAuditRoute
   '/admin/aylanma': typeof AdminAylanmaRouteWithChildren
   '/admin/barbers': typeof AdminBarbersRouteWithChildren
+  '/admin/baza': typeof AdminBazaRoute
   '/admin/bookings': typeof AdminBookingsRouteWithChildren
   '/admin/broadcast': typeof AdminBroadcastRoute
   '/admin/categories': typeof AdminCategoriesRoute
@@ -787,6 +821,7 @@ export interface FileRoutesById {
   '/admin/barbers/$barberId': typeof AdminBarbersBarberIdRouteWithChildren
   '/admin/bookings/$bookingId': typeof AdminBookingsBookingIdRoute
   '/admin/finance/deposits': typeof AdminFinanceDepositsRoute
+  '/admin/finance/deposits-overdue': typeof AdminFinanceDepositsOverdueRoute
   '/admin/finance/frozen': typeof AdminFinanceFrozenRoute
   '/admin/finance/gift-designs': typeof AdminFinanceGiftDesignsRoute
   '/admin/finance/gifts': typeof AdminFinanceGiftsRoute
@@ -806,6 +841,8 @@ export interface FileRoutesById {
   '/admin/morph-ai/settings': typeof AdminMorphAiSettingsRoute
   '/admin/morph-ai/studio': typeof AdminMorphAiStudioRoute
   '/admin/morph-ai/support': typeof AdminMorphAiSupportRoute
+  '/admin/parvarish/likes': typeof AdminParvarishLikesRoute
+  '/admin/parvarish/ob-havo': typeof AdminParvarishObHavoRoute
   '/admin/parvarish/tarkib': typeof AdminParvarishTarkibRoute
   '/admin/salons/$salonId': typeof AdminSalonsSalonIdRouteWithChildren
   '/admin/services/analytics': typeof AdminServicesAnalyticsRoute
@@ -856,6 +893,7 @@ export interface FileRouteTypes {
     | '/admin/audit'
     | '/admin/aylanma'
     | '/admin/barbers'
+    | '/admin/baza'
     | '/admin/bookings'
     | '/admin/broadcast'
     | '/admin/categories'
@@ -883,6 +921,7 @@ export interface FileRouteTypes {
     | '/admin/barbers/$barberId'
     | '/admin/bookings/$bookingId'
     | '/admin/finance/deposits'
+    | '/admin/finance/deposits-overdue'
     | '/admin/finance/frozen'
     | '/admin/finance/gift-designs'
     | '/admin/finance/gifts'
@@ -902,6 +941,8 @@ export interface FileRouteTypes {
     | '/admin/morph-ai/settings'
     | '/admin/morph-ai/studio'
     | '/admin/morph-ai/support'
+    | '/admin/parvarish/likes'
+    | '/admin/parvarish/ob-havo'
     | '/admin/parvarish/tarkib'
     | '/admin/salons/$salonId'
     | '/admin/services/analytics'
@@ -947,6 +988,7 @@ export interface FileRouteTypes {
     | '/admin/admins'
     | '/admin/audit'
     | '/admin/barbers'
+    | '/admin/baza'
     | '/admin/bookings'
     | '/admin/broadcast'
     | '/admin/categories'
@@ -967,6 +1009,7 @@ export interface FileRouteTypes {
     | '/admin/agents/team'
     | '/admin/bookings/$bookingId'
     | '/admin/finance/deposits'
+    | '/admin/finance/deposits-overdue'
     | '/admin/finance/frozen'
     | '/admin/finance/gift-designs'
     | '/admin/finance/gifts'
@@ -986,6 +1029,8 @@ export interface FileRouteTypes {
     | '/admin/morph-ai/settings'
     | '/admin/morph-ai/studio'
     | '/admin/morph-ai/support'
+    | '/admin/parvarish/likes'
+    | '/admin/parvarish/ob-havo'
     | '/admin/parvarish/tarkib'
     | '/admin/services/analytics'
     | '/admin/statistics/agents'
@@ -1031,6 +1076,7 @@ export interface FileRouteTypes {
     | '/admin/audit'
     | '/admin/aylanma'
     | '/admin/barbers'
+    | '/admin/baza'
     | '/admin/bookings'
     | '/admin/broadcast'
     | '/admin/categories'
@@ -1058,6 +1104,7 @@ export interface FileRouteTypes {
     | '/admin/barbers/$barberId'
     | '/admin/bookings/$bookingId'
     | '/admin/finance/deposits'
+    | '/admin/finance/deposits-overdue'
     | '/admin/finance/frozen'
     | '/admin/finance/gift-designs'
     | '/admin/finance/gifts'
@@ -1077,6 +1124,8 @@ export interface FileRouteTypes {
     | '/admin/morph-ai/settings'
     | '/admin/morph-ai/studio'
     | '/admin/morph-ai/support'
+    | '/admin/parvarish/likes'
+    | '/admin/parvarish/ob-havo'
     | '/admin/parvarish/tarkib'
     | '/admin/salons/$salonId'
     | '/admin/services/analytics'
@@ -1186,6 +1235,13 @@ declare module '@tanstack/react-router' {
       path: '/barbers'
       fullPath: '/admin/barbers'
       preLoaderRoute: typeof AdminBarbersRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/baza': {
+      id: '/admin/baza'
+      path: '/baza'
+      fullPath: '/admin/baza'
+      preLoaderRoute: typeof AdminBazaRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/bookings': {
@@ -1391,6 +1447,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminFinanceDepositsRouteImport
       parentRoute: typeof AdminFinanceRoute
     }
+    '/admin/finance/deposits-overdue': {
+      id: '/admin/finance/deposits-overdue'
+      path: '/deposits-overdue'
+      fullPath: '/admin/finance/deposits-overdue'
+      preLoaderRoute: typeof AdminFinanceDepositsOverdueRouteImport
+      parentRoute: typeof AdminFinanceRoute
+    }
     '/admin/finance/frozen': {
       id: '/admin/finance/frozen'
       path: '/frozen'
@@ -1543,6 +1606,20 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/admin/parvarish/'
       preLoaderRoute: typeof AdminParvarishIndexRouteImport
+      parentRoute: typeof AdminParvarishRoute
+    }
+    '/admin/parvarish/likes': {
+      id: '/admin/parvarish/likes'
+      path: '/likes'
+      fullPath: '/admin/parvarish/likes'
+      preLoaderRoute: typeof AdminParvarishLikesRouteImport
+      parentRoute: typeof AdminParvarishRoute
+    }
+    '/admin/parvarish/ob-havo': {
+      id: '/admin/parvarish/ob-havo'
+      path: '/ob-havo'
+      fullPath: '/admin/parvarish/ob-havo'
+      preLoaderRoute: typeof AdminParvarishObHavoRouteImport
       parentRoute: typeof AdminParvarishRoute
     }
     '/admin/parvarish/tarkib': {
@@ -1865,6 +1942,7 @@ const AdminBookingsRouteWithChildren = AdminBookingsRoute._addFileChildren(
 
 interface AdminFinanceRouteChildren {
   AdminFinanceDepositsRoute: typeof AdminFinanceDepositsRoute
+  AdminFinanceDepositsOverdueRoute: typeof AdminFinanceDepositsOverdueRoute
   AdminFinanceFrozenRoute: typeof AdminFinanceFrozenRoute
   AdminFinanceGiftDesignsRoute: typeof AdminFinanceGiftDesignsRoute
   AdminFinanceGiftsRoute: typeof AdminFinanceGiftsRoute
@@ -1877,6 +1955,7 @@ interface AdminFinanceRouteChildren {
 
 const AdminFinanceRouteChildren: AdminFinanceRouteChildren = {
   AdminFinanceDepositsRoute: AdminFinanceDepositsRoute,
+  AdminFinanceDepositsOverdueRoute: AdminFinanceDepositsOverdueRoute,
   AdminFinanceFrozenRoute: AdminFinanceFrozenRoute,
   AdminFinanceGiftDesignsRoute: AdminFinanceGiftDesignsRoute,
   AdminFinanceGiftsRoute: AdminFinanceGiftsRoute,
@@ -1944,11 +2023,15 @@ const AdminMorphAiRouteWithChildren = AdminMorphAiRoute._addFileChildren(
 )
 
 interface AdminParvarishRouteChildren {
+  AdminParvarishLikesRoute: typeof AdminParvarishLikesRoute
+  AdminParvarishObHavoRoute: typeof AdminParvarishObHavoRoute
   AdminParvarishTarkibRoute: typeof AdminParvarishTarkibRoute
   AdminParvarishIndexRoute: typeof AdminParvarishIndexRoute
 }
 
 const AdminParvarishRouteChildren: AdminParvarishRouteChildren = {
+  AdminParvarishLikesRoute: AdminParvarishLikesRoute,
+  AdminParvarishObHavoRoute: AdminParvarishObHavoRoute,
   AdminParvarishTarkibRoute: AdminParvarishTarkibRoute,
   AdminParvarishIndexRoute: AdminParvarishIndexRoute,
 }
@@ -2099,6 +2182,7 @@ interface AdminRouteChildren {
   AdminAuditRoute: typeof AdminAuditRoute
   AdminAylanmaRoute: typeof AdminAylanmaRouteWithChildren
   AdminBarbersRoute: typeof AdminBarbersRouteWithChildren
+  AdminBazaRoute: typeof AdminBazaRoute
   AdminBookingsRoute: typeof AdminBookingsRouteWithChildren
   AdminBroadcastRoute: typeof AdminBroadcastRoute
   AdminCategoriesRoute: typeof AdminCategoriesRoute
@@ -2126,6 +2210,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminAuditRoute: AdminAuditRoute,
   AdminAylanmaRoute: AdminAylanmaRouteWithChildren,
   AdminBarbersRoute: AdminBarbersRouteWithChildren,
+  AdminBazaRoute: AdminBazaRoute,
   AdminBookingsRoute: AdminBookingsRouteWithChildren,
   AdminBroadcastRoute: AdminBroadcastRoute,
   AdminCategoriesRoute: AdminCategoriesRoute,
