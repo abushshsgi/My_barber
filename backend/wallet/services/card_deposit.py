@@ -519,7 +519,12 @@ class CardDepositService:
             raise WalletServiceError("So'rov topilmadi.")
         if deposit.status == ManualCardDeposit.Status.APPROVED and deposit.ledger_entry_id:
             return deposit
-        if deposit.status != ManualCardDeposit.Status.CLAIMED or not deposit.receipt_image:
+        # Chek yuborilgan so'rov 24 soatdan keyin expired bo'lsa ham tasdiqlanadi.
+        reviewable = deposit.status in (
+            ManualCardDeposit.Status.CLAIMED,
+            ManualCardDeposit.Status.EXPIRED,
+        )
+        if not reviewable or not deposit.receipt_image:
             raise WalletServiceError("Avval foydalanuvchi chek yuklashi kerak. Cheksiz so'rovni tasdiqlab bo'lmaydi.")
         if deposit.wallet.is_frozen:
             raise WalletServiceError("Hamyon muzlatilgan. Avval oching, keyin tasdiqlang.")
@@ -630,12 +635,31 @@ class CardDepositService:
         )
 
     @classmethod
-    def list_for_admin(cls, *, status: str | None = None, q: str = "", limit: int = 100):
+    def list_for_admin(
+        cls,
+        *,
+        status: str | None = None,
+        q: str = "",
+        limit: int = 100,
+        overdue: bool = False,
+    ):
         expire_stale_deposits()
         qs = ManualCardDeposit.objects.select_related("user", "wallet", "ledger_entry").order_by(
             "-created_at"
         )
-        if status:
+        if overdue:
+            now = timezone.now()
+            qs = (
+                qs.filter(
+                    Q(status=ManualCardDeposit.Status.EXPIRED)
+                    | Q(status=ManualCardDeposit.Status.CLAIMED, expires_at__lt=now)
+                )
+                .exclude(receipt_image="")
+                .exclude(receipt_image__isnull=True)
+                .order_by("claimed_at", "created_at")
+            )
+            limit = max(limit, 200)
+        elif status:
             qs = qs.filter(status=status)
         else:
             qs = qs.filter(

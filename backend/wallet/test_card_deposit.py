@@ -1,8 +1,10 @@
 """Tests for manual card deposit top-up flow."""
 
+from datetime import timedelta
 from decimal import Decimal
 
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.utils import timezone
 from django.test import TestCase, override_settings
 from rest_framework.test import APIClient
 
@@ -83,6 +85,39 @@ class CardDepositServiceTests(TestCase):
         wallet.refresh_from_db()
         self.assertEqual(wallet.balance, Decimal("100000"))
         self.assertEqual(again.ledger_entry_id, approved.ledger_entry_id)
+
+    def test_expired_receipt_stays_overdue_and_can_be_approved(self):
+        deposit, _resumed = CardDepositService.init_deposit(
+            user=self.user,
+            amount=Decimal("50000"),
+            idempotency_key="overdue-1",
+        )
+        claimed = CardDepositService.claim_deposit(
+            user=self.user,
+            deposit_id=str(deposit.pk),
+            receipt_file=_tiny_png(),
+        )
+        claimed.expires_at = timezone.now() - timedelta(hours=1)
+        claimed.save(update_fields=["expires_at"])
+
+        overdue = CardDepositService.list_for_admin(overdue=True)
+        self.assertEqual([row.pk for row in overdue], [claimed.pk])
+        self.assertEqual(overdue[0].status, ManualCardDeposit.Status.EXPIRED)
+
+        fresh = CardDepositService.list_for_admin(status=ManualCardDeposit.Status.CLAIMED)
+        self.assertEqual(fresh, [])
+
+        approved = CardDepositService.approve_deposit(
+            deposit_id=str(deposit.pk),
+            admin_id=1,
+            admin_email="admin@test.com",
+            note="kech tasdiq",
+        )
+        self.assertEqual(approved.status, ManualCardDeposit.Status.APPROVED)
+        wallet = WalletService.ensure_wallet(self.user)
+        wallet.refresh_from_db()
+        self.assertEqual(wallet.balance, Decimal("50000"))
+        self.assertEqual(CardDepositService.list_for_admin(overdue=True), [])
 
     def test_approve_without_receipt_is_rejected(self):
         deposit, _resumed = CardDepositService.init_deposit(

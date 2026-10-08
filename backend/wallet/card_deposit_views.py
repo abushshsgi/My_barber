@@ -197,7 +197,13 @@ class AdminWalletDepositsView(APIView):
     def get(self, request):
         status_q = (request.query_params.get("status") or "").strip() or None
         q = (request.query_params.get("q") or "").strip()
-        rows = CardDepositService.list_for_admin(status=status_q, q=q)
+        overdue = str(request.query_params.get("overdue") or "").strip().lower() in {"1", "true", "yes"}
+        rows = CardDepositService.list_for_admin(
+            status=status_q,
+            q=q,
+            overdue=overdue,
+            limit=200 if overdue else 100,
+        )
         return Response(
             {
                 "count": len(rows),
