@@ -46,7 +46,7 @@ from .models import (
 from barbers.activation_permissions import IsAuthenticatedBarberAware
 
 from .permissions import IsBarber
-from .readiness import batch_publicly_visible_barber_ids
+from .readiness import batch_publicly_visible_barber_ids, publicly_visible_barber_ids
 from .serializers import (
     BarberExpenseSerializer,
     BarberGoalSerializer,
@@ -94,19 +94,17 @@ class BarberPublicViewSet(viewsets.ReadOnlyModelViewSet):
         "work_photos",
     )
 
-    def get_queryset(self):
-        qs = (
-            BarberProfile.objects.select_related("barber")
-            .prefetch_related("services", "services__catalog_service", "work_photos", "working_hours")
-            .annotate(
-                avg_rating=Coalesce(
-                    Cast(Avg("barber__reviews_about__rating"), FloatField()),
-                    Value(0.0),
-                    output_field=FloatField(),
-                ),
-                review_count=Count("barber__reviews_about", distinct=True),
-            )
-        )
+    def _rating_annotations(self):
+        return {
+            "avg_rating": Coalesce(
+                Cast(Avg("barber__reviews_about__rating"), FloatField()),
+                Value(0.0),
+                output_field=FloatField(),
+            ),
+            "review_count": Count("barber__reviews_about", distinct=True),
+        }
+
+    def _apply_catalog_filters(self, qs):
         r = self.request.query_params
         min_price = r.get("min_price")
         max_price = r.get("max_price")
@@ -149,6 +147,8 @@ class BarberPublicViewSet(viewsets.ReadOnlyModelViewSet):
             qs = qs.filter(pq).distinct()
         if min_rating not in (None, ""):
             try:
+                if "avg_rating" not in qs.query.annotations:
+                    qs = qs.annotate(**self._rating_annotations())
                 qs = qs.filter(avg_rating__gte=float(min_rating))
             except ValueError:
                 pass
@@ -173,9 +173,17 @@ class BarberPublicViewSet(viewsets.ReadOnlyModelViewSet):
             except ValueError:
                 pass
 
-        barber_ids = list(qs.values_list("barber_id", flat=True).distinct())
-        visible = batch_publicly_visible_barber_ids(barber_ids)
-        return qs.filter(barber_id__in=visible)
+        return qs
+
+    def get_queryset(self):
+        visible = publicly_visible_barber_ids()
+        qs = (
+            BarberProfile.objects.select_related("barber")
+            .filter(barber_id__in=visible)
+            .prefetch_related("services", "services__catalog_service", "work_photos", "working_hours")
+            .annotate(**self._rating_annotations())
+        )
+        return self._apply_catalog_filters(qs)
 
     def get_serializer_class(self):
         if self.action == "list":
@@ -249,18 +257,23 @@ class BarberPublicViewSet(viewsets.ReadOnlyModelViewSet):
                 {"detail": "lat, lng required; radius_km optional."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        qs = self.get_queryset().select_related("barber")
-
-        barber_ids = list(qs.values_list("barber_id", flat=True).distinct())
-        visible = batch_publicly_visible_barber_ids(barber_ids)
+        visible = publicly_visible_barber_ids()
         if not visible:
             return Response([])
-        qs = qs.filter(barber_id__in=visible)
-        work_salons = batch_resolve_work_salons_for_barbers(list(visible))
+        # Masofa hisobi prefetch/reyting siz — yaqin 40 tasi keyin serializatsiya qilinadi.
+        scan = self._apply_catalog_filters(
+            BarberProfile.objects.select_related("barber").filter(barber_id__in=visible)
+        )
+        salon_worker_ids = list(
+            scan.exclude(barber__work_mode=Barber.WorkMode.INDEPENDENT).values_list(
+                "barber_id", flat=True
+            )
+        )
+        work_salons = batch_resolve_work_salons_for_barbers(salon_worker_ids)
 
         booking_contexts: dict[int, dict] = {}
         candidates: list[tuple] = []
-        for p in qs.iterator(chunk_size=200):
+        for p in scan:
             barber = p.barber
             salon = None
             booking_kind = "independent"
@@ -285,18 +298,28 @@ class BarberPublicViewSet(viewsets.ReadOnlyModelViewSet):
                 "salon_name": salon.name if salon is not None else None,
                 "amenities": [],
             }
-            candidates.append((p, row_lat, row_lng, d))
+            candidates.append((p.id, barber.id, row_lat, row_lng, d))
 
+        candidates.sort(key=lambda item: item[4])
+        candidates = candidates[:40]
+        if not candidates:
+            return Response([])
+
+        by_id = {
+            row.id: row
+            for row in self.get_queryset().filter(id__in=[item[0] for item in candidates])
+        }
         out = []
         ser_ctx = {"request": request, "booking_contexts": booking_contexts}
-        for p, row_lat, row_lng, d in candidates:
-            ser = BarberPublicListSerializer(p, context=ser_ctx)
-            row = dict(ser.data)
+        for profile_id, _barber_id, row_lat, row_lng, d in candidates:
+            p = by_id.get(profile_id)
+            if p is None:
+                continue
+            row = dict(BarberPublicListSerializer(p, context=ser_ctx).data)
             row["latitude"] = str(row_lat)
             row["longitude"] = str(row_lng)
             row["distance_km"] = round(d, 3)
             out.append(row)
-        out.sort(key=lambda x: x["distance_km"])
         return Response(out)
 
     @action(

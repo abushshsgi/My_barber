@@ -1,6 +1,18 @@
 from django.core.files.base import File
 from django.db import transaction
-from django.db.models import Avg, Count, FloatField, Min, Q, Value
+from django.db.models import (
+    Avg,
+    Count,
+    DecimalField,
+    F,
+    FloatField,
+    IntegerField,
+    Min,
+    OuterRef,
+    Q,
+    Subquery,
+    Value,
+)
 from django.db.models.functions import Cast, Coalesce
 from django.shortcuts import get_object_or_404
 from rest_framework import status, viewsets
@@ -125,24 +137,43 @@ class SalonViewSet(viewsets.ModelViewSet):
         """Ro‘yxat va nearby: faqat published + obuna/trial (mijoz katalogi)."""
         from salons.visibility import filter_customer_visible_salons
 
-        # PostgreSQL: Coalesce(Avg(..), Value(0)) integer/numeric aralashmasi 500 beradi — FloatField bilan bir xil.
-        score = _salon_review_score_expr()
-        # images: faqat cover fallback (list images[] bo‘sh) — binary EXISTS yo‘q
+        # Join Count+Avg+Min kartesian ko‘paytiradi va katalogni qotiradi — subquery.
+        from bookings.db_compat import reviews_has_salon_rating_column
+        from bookings.models import Review
+
+        if reviews_has_salon_rating_column():
+            score = Coalesce(F("salon_rating"), F("rating"))
+        else:
+            score = F("rating")
+        rating_sq = Subquery(
+            Review.objects.filter(salon_id=OuterRef("pk"))
+            .values("salon_id")
+            .annotate(v=Avg(score))
+            .values("v")[:1],
+            output_field=FloatField(),
+        )
+        count_sq = Subquery(
+            Review.objects.filter(salon_id=OuterRef("pk"))
+            .values("salon_id")
+            .annotate(v=Count("id"))
+            .values("v")[:1],
+            output_field=IntegerField(),
+        )
+        price_sq = Subquery(
+            Service.objects.filter(salon_id=OuterRef("pk"), is_active=True)
+            .values("salon_id")
+            .annotate(v=Min("price"))
+            .values("v")[:1],
+            output_field=DecimalField(max_digits=12, decimal_places=2),
+        )
         return (
             filter_customer_visible_salons(Salon.objects.all())
             .select_related("owner", "owner_barber")
             .prefetch_related("salon_amenities__amenity", "images")
             .annotate(
-                review_count=Count("reviews", distinct=True),
-                rating_avg=Coalesce(
-                    Cast(Avg(score), FloatField()),
-                    Value(0.0),
-                    output_field=FloatField(),
-                ),
-                price_from=Min(
-                    "services__price",
-                    filter=Q(services__is_active=True),
-                ),
+                review_count=Coalesce(count_sq, Value(0), output_field=IntegerField()),
+                rating_avg=Coalesce(rating_sq, Value(0.0), output_field=FloatField()),
+                price_from=price_sq,
             )
             .order_by("-created_at", "-id")
         )
@@ -516,18 +547,22 @@ class SalonViewSet(viewsets.ModelViewSet):
                     longitude__lte=lng_max,
                 )
             )
-            result = []
+            picked = []
             for s in salons:
                 d = haversine_km(lat, lng, float(s.latitude), float(s.longitude))
                 if d <= radius:
-                    result.append(
-                        {
-                            "salon": SalonListSerializer(s, context={"request": request}).data,
-                            "distance_km": round(d, 3),
-                        }
-                    )
-            result.sort(key=lambda x: x["distance_km"])
-            return result
+                    picked.append((s, d))
+            picked.sort(key=lambda item: item[1])
+            picked = picked[:40]
+            rows = SalonListSerializer(
+                [s for s, _d in picked],
+                many=True,
+                context={"request": request},
+            ).data
+            return [
+                {"salon": row, "distance_km": round(d, 3)}
+                for row, (_s, d) in zip(rows, picked)
+            ]
 
         payload = cached_json(prefix="salons_nearby", parts=parts, producer=produce, ttl=30)
         return Response(payload)
