@@ -44,6 +44,17 @@ export function MorphAiCarePage() {
   const hairQ = useHairCareProfile();
   const updateHair = useUpdateHairCareProfile();
   const catalogQ = useCareProducts({ recommended: true });
+  const profile = useMemo(() => loadFaceProfile(), []);
+  const savedQuiz = useMemo(() => loadCareQuiz(), []);
+  const [quiz, setQuiz] = useState<CareQuizAnswers>(
+    () => (savedQuiz && isCareQuizComplete(savedQuiz) ? savedQuiz : { condition: "", texture: "", colorStatus: "" }),
+  );
+  const [step, setStep] = useState<QuizStep | "plan">(
+    savedQuiz && isCareQuizComplete(savedQuiz) ? "plan" : 0,
+  );
+  const [panel, setPanel] = useState<"hub" | "routine" | "shelf" | "weather">("hub");
+  const [search, setSearch] = useState("");
+  const [sosOpen, setSosOpen] = useState(false);
   const searchQ = useCareProducts({ q: search.trim() || undefined, enabled: search.trim().length > 0 });
   const weatherQ = useQuery({
     queryKey: ["ai", "care", "weather", quiz.condition, quiz.texture],
@@ -57,17 +68,6 @@ export function MorphAiCarePage() {
     enabled: step === "plan",
     staleTime: 30_000,
   });
-  const profile = useMemo(() => loadFaceProfile(), []);
-  const savedQuiz = useMemo(() => loadCareQuiz(), []);
-  const [quiz, setQuiz] = useState<CareQuizAnswers>(
-    () => (savedQuiz && isCareQuizComplete(savedQuiz) ? savedQuiz : { condition: "", texture: "", colorStatus: "" }),
-  );
-  const [step, setStep] = useState<QuizStep | "plan">(
-    savedQuiz && isCareQuizComplete(savedQuiz) ? "plan" : 0,
-  );
-  const [panel, setPanel] = useState<"hub" | "routine" | "shelf" | "weather">("hub");
-  const [search, setSearch] = useState("");
-  const [sosOpen, setSosOpen] = useState(false);
   const plan = useMemo(() => buildCarePlan(profile, quiz), [profile, quiz]);
   const catalogProducts = catalogQ.data || [];
   const hydratedHair = useRef(false);
