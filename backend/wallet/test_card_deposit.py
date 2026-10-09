@@ -119,6 +119,36 @@ class CardDepositServiceTests(TestCase):
         self.assertEqual(wallet.balance, Decimal("50000"))
         self.assertEqual(CardDepositService.list_for_admin(overdue=True), [])
 
+    def test_admin_pages_keep_every_deposit(self):
+        wallet = WalletService.ensure_wallet(self.user)
+        created = []
+        for i in range(3):
+            row = ManualCardDeposit.objects.create(
+                user=self.user,
+                wallet=wallet,
+                amount=Decimal("10000"),
+                status=ManualCardDeposit.Status.APPROVED,
+                transaction_ref=f"PAGE{i}CODE",
+                merchant_ref=f"MY-PAGE-{i}",
+                receiving_card_number="8600123456789012",
+                receiving_card_masked="8600 **** **** 9012",
+                receiving_cardholder="MYSALOON LLC",
+                idempotency_key=f"page-{i}",
+                expires_at=timezone.now() + timedelta(hours=2),
+            )
+            created.append(row.pk)
+        first, total, page, size = CardDepositService.page_for_admin(page=1, page_size=2)
+        second, total_2, page_2, size_2 = CardDepositService.page_for_admin(page=2, page_size=2)
+        self.assertEqual(total, 3)
+        self.assertEqual(total_2, 3)
+        self.assertEqual(page, 1)
+        self.assertEqual(page_2, 2)
+        self.assertEqual(size, 2)
+        self.assertEqual(size_2, 2)
+        self.assertEqual(len(first), 2)
+        self.assertEqual(len(second), 1)
+        self.assertEqual({row.pk for row in first} | {row.pk for row in second}, set(created))
+
     def test_approve_without_receipt_is_rejected(self):
         deposit, _resumed = CardDepositService.init_deposit(
             user=self.user,

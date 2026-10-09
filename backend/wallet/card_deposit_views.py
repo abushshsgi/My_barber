@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import math
 from decimal import Decimal, InvalidOperation
 
 from django.core.signing import BadSignature, SignatureExpired
@@ -198,15 +199,29 @@ class AdminWalletDepositsView(APIView):
         status_q = (request.query_params.get("status") or "").strip() or None
         q = (request.query_params.get("q") or "").strip()
         overdue = str(request.query_params.get("overdue") or "").strip().lower() in {"1", "true", "yes"}
-        rows = CardDepositService.list_for_admin(
+        try:
+            page = int(request.query_params.get("page") or 1)
+        except (TypeError, ValueError):
+            page = 1
+        try:
+            page_size = int(request.query_params.get("page_size") or 8)
+        except (TypeError, ValueError):
+            page_size = 8
+        rows, total, page, page_size = CardDepositService.page_for_admin(
             status=status_q,
             q=q,
             overdue=overdue,
-            limit=200 if overdue else 100,
+            page=page,
+            page_size=page_size,
         )
+        total_pages = max(1, math.ceil(total / page_size)) if page_size else 1
         return Response(
             {
-                "count": len(rows),
+                "count": total,
+                "page": page,
+                "page_size": page_size,
+                "total_pages": total_pages,
+                "counts": CardDepositService.status_counts(),
                 "results": [admin_deposit_to_dict(d, request=request) for d in rows],
             }
         )

@@ -14,7 +14,7 @@ from django.conf import settings
 from django.core.mail import send_mail
 from django.core.signing import TimestampSigner
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Count, Q
 from django.utils import timezone
 
 from accounts.models import User
@@ -278,7 +278,7 @@ def admin_deposit_to_dict(deposit: ManualCardDeposit, request=None) -> dict[str,
             "idempotency_key": deposit.idempotency_key,
             "ledger_entry_hash": ledger.entry_hash if ledger else None,
             "client_ip": deposit.client_ip,
-            "user_agent": deposit.user_agent[:200],
+            "user_agent": (deposit.user_agent or "")[:200],
             "reviewed_by_admin_id": deposit.reviewed_by_admin_id,
             "reviewed_by_admin_email": deposit.reviewed_by_admin_email,
         }
@@ -643,51 +643,98 @@ class CardDepositService:
         limit: int = 100,
         overdue: bool = False,
     ):
-        expire_stale_deposits()
-        qs = ManualCardDeposit.objects.select_related("user", "wallet", "ledger_entry").order_by(
-            "-created_at"
-        )
+        qs = _admin_deposit_queryset(status=status, q=q, overdue=overdue)
         if overdue:
-            now = timezone.now()
-            qs = (
-                qs.filter(
-                    Q(status=ManualCardDeposit.Status.EXPIRED)
-                    | Q(status=ManualCardDeposit.Status.CLAIMED, expires_at__lt=now)
-                )
-                .exclude(receipt_image="")
-                .exclude(receipt_image__isnull=True)
-                .order_by("claimed_at", "created_at")
-            )
             limit = max(limit, 200)
-        elif status:
-            qs = qs.filter(status=status)
-        else:
-            qs = qs.filter(
-                status__in=[
-                    ManualCardDeposit.Status.CLAIMED,
-                    ManualCardDeposit.Status.AWAITING_PAYMENT,
-                    ManualCardDeposit.Status.APPROVED,
-                    ManualCardDeposit.Status.REJECTED,
-                ]
-            )
-        q = (q or "").strip()
-        if q:
-            filters = (
-                Q(transaction_ref__icontains=q)
-                | Q(merchant_ref__icontains=q)
-                | Q(idempotency_key__icontains=q)
-                | Q(user__phone__icontains=q)
-                | Q(user__full_name__icontains=q)
-                | Q(user__email__icontains=q)
-                | Q(wallet__wallet_number__icontains=q)
-            )
-            if q.isdigit():
-                filters |= Q(user_id=int(q)) | Q(wallet_id=int(q))
-            try:
-                uuid.UUID(q)
-            except ValueError:
-                pass
-            else:
-                filters |= Q(pk=q) | Q(ledger_entry_id=q)
-            qs = qs.filter(filters)
         return list(qs[:limit])
+
+    @classmethod
+    def page_for_admin(
+        cls,
+        *,
+        status: str | None = None,
+        q: str = "",
+        overdue: bool = False,
+        page: int = 1,
+        page_size: int = 8,
+    ):
+        qs = _admin_deposit_queryset(status=status, q=q, overdue=overdue)
+        try:
+            page_n = max(int(page), 1)
+        except (TypeError, ValueError):
+            page_n = 1
+        try:
+            size = int(page_size)
+        except (TypeError, ValueError):
+            size = 8
+        size = min(max(size, 1), 50)
+        total = qs.count()
+        start = (page_n - 1) * size
+        return list(qs[start : start + size]), total, page_n, size
+
+    @classmethod
+    def status_counts(cls) -> dict[str, int]:
+        labels = [
+            ManualCardDeposit.Status.AWAITING_PAYMENT,
+            ManualCardDeposit.Status.CLAIMED,
+            ManualCardDeposit.Status.APPROVED,
+            ManualCardDeposit.Status.REJECTED,
+            ManualCardDeposit.Status.EXPIRED,
+            ManualCardDeposit.Status.CANCELLED,
+        ]
+        out = {status: 0 for status in labels}
+        for row in ManualCardDeposit.objects.values("status").annotate(n=Count("pk")):
+            key = row["status"]
+            if key in out:
+                out[key] = row["n"]
+        return out
+
+
+def _admin_deposit_queryset(*, status: str | None, q: str, overdue: bool):
+    expire_stale_deposits()
+    qs = ManualCardDeposit.objects.select_related("user", "wallet", "ledger_entry").order_by(
+        "-created_at"
+    )
+    if overdue:
+        now = timezone.now()
+        qs = (
+            qs.filter(
+                Q(status=ManualCardDeposit.Status.EXPIRED)
+                | Q(status=ManualCardDeposit.Status.CLAIMED, expires_at__lt=now)
+            )
+            .exclude(receipt_image="")
+            .exclude(receipt_image__isnull=True)
+            .order_by("claimed_at", "created_at")
+        )
+    elif status:
+        qs = qs.filter(status=status)
+    else:
+        qs = qs.filter(
+            status__in=[
+                ManualCardDeposit.Status.CLAIMED,
+                ManualCardDeposit.Status.AWAITING_PAYMENT,
+                ManualCardDeposit.Status.APPROVED,
+                ManualCardDeposit.Status.REJECTED,
+            ]
+        )
+    q = (q or "").strip()
+    if q:
+        filters = (
+            Q(transaction_ref__icontains=q)
+            | Q(merchant_ref__icontains=q)
+            | Q(idempotency_key__icontains=q)
+            | Q(user__phone__icontains=q)
+            | Q(user__full_name__icontains=q)
+            | Q(user__email__icontains=q)
+            | Q(wallet__wallet_number__icontains=q)
+        )
+        if q.isdigit():
+            filters |= Q(user_id=int(q)) | Q(wallet_id=int(q))
+        try:
+            uuid.UUID(q)
+        except ValueError:
+            pass
+        else:
+            filters |= Q(pk=q) | Q(ledger_entry_id=q)
+        qs = qs.filter(filters)
+    return qs
