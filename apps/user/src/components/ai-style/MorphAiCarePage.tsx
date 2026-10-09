@@ -1,6 +1,6 @@
 import { Link, useRouter } from "@tanstack/react-router";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { ChevronLeft, ChevronRight, CloudSun, Loader2, Lock, ScanLine, Search, ShoppingBag, Zap } from "lucide-react";
+import { ChevronLeft, ChevronRight, CloudSun, Loader2, Lock, Search, ShoppingBag } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
@@ -24,6 +24,8 @@ import { useCareProducts } from "@/hooks/use-care-products";
 import { BadHairDaySosSheet } from "@/components/ai-style/BadHairDaySosSheet";
 import { CareShelfTracker } from "@/components/ai-style/CareShelfTracker";
 import { fetchCareShelf, fetchWeatherCare } from "@/lib/api/care-products";
+import { getFastPosition } from "@/lib/native-geolocation";
+import { resolveUzRegion, uzRegionImage } from "@/lib/uz-care-regions";
 
 const CONDITION_OPTS: HairCondition[] = ["oily", "dry", "normal", "damaged"];
 const TEXTURE_OPTS: HairTexture[] = ["straight", "wavy", "curly"];
@@ -54,11 +56,18 @@ export function MorphAiCarePage() {
   );
   const [panel, setPanel] = useState<"hub" | "routine" | "shelf" | "weather">("hub");
   const [search, setSearch] = useState("");
+  const [coords, setCoords] = useState<{ lat: number; lon: number } | null>(null);
   const [sosOpen, setSosOpen] = useState(false);
   const searchQ = useCareProducts({ q: search.trim() || undefined, enabled: search.trim().length > 0 });
   const weatherQ = useQuery({
-    queryKey: ["ai", "care", "weather", quiz.condition, quiz.texture],
-    queryFn: () => fetchWeatherCare({ condition: quiz.condition, texture: quiz.texture }),
+    queryKey: ["ai", "care", "weather", quiz.condition, quiz.texture, coords?.lat ?? null, coords?.lon ?? null],
+    queryFn: () =>
+      fetchWeatherCare({
+        condition: quiz.condition,
+        texture: quiz.texture,
+        lat: coords?.lat,
+        lon: coords?.lon,
+      }),
     enabled: step === "plan",
     staleTime: 10 * 60_000,
   });
@@ -71,6 +80,18 @@ export function MorphAiCarePage() {
   const plan = useMemo(() => buildCarePlan(profile, quiz), [profile, quiz]);
   const catalogProducts = catalogQ.data || [];
   const hydratedHair = useRef(false);
+
+  useEffect(() => {
+    let cancel = false;
+    void getFastPosition({ timeout: 8000, maximumAge: 120_000 })
+      .then((pos) => {
+        if (!cancel) setCoords({ lat: pos.lat, lon: pos.lng });
+      })
+      .catch(() => undefined);
+    return () => {
+      cancel = true;
+    };
+  }, []);
 
   useEffect(() => {
     if (hydratedHair.current || !hairQ.data?.complete) return;
@@ -289,7 +310,16 @@ export function MorphAiCarePage() {
     }[weatherKey] || "Ob-havo";
   const temp = weather?.current?.temperature_c;
   const tempLabel = temp == null ? "—" : `${Math.round(temp)}°`;
-  const city = weather?.location_label || "Joylashuv";
+  const city = weather?.location_label || weather?.location_place || "Joylashuv";
+  const regionHero = uzRegionImage(
+    weather?.region_id ||
+      resolveUzRegion({
+        region: weather?.location_region,
+        place: weather?.location_place || weather?.location_label,
+        lat: coords?.lat ?? weather?.latitude,
+        lon: coords?.lon ?? weather?.longitude,
+      }),
+  );
   const featured = (search.trim() ? searchQ.data : catalogProducts) || [];
   const shelfCount = shelfQ.data?.items?.length ?? 0;
 
@@ -356,54 +386,67 @@ export function MorphAiCarePage() {
             <button
               type="button"
               onClick={() => setPanel("weather")}
-              className="relative mt-4 w-full overflow-hidden rounded-3xl bg-gradient-to-br from-sky-400 via-sky-500 to-indigo-600 px-5 pb-5 pt-4 text-left text-white shadow-[0_16px_40px_-18px_rgba(37,99,235,0.65)]"
+              className="relative mt-4 h-48 w-full overflow-hidden rounded-3xl text-left text-white shadow-[0_16px_40px_-18px_rgba(0,0,0,0.45)]"
             >
-              <div className="flex items-start justify-between gap-3">
-                <CloudSun className="size-6 text-white/90" />
-                <span className="max-w-[12rem] truncate rounded-full bg-white/20 px-3 py-1 text-[12px] font-semibold">
-                  {city}
+              {regionHero ? (
+                <img src={regionHero} alt="" className="absolute inset-0 size-full object-cover object-right" />
+              ) : (
+                <span className="absolute inset-0 bg-gradient-to-br from-sky-400 via-sky-500 to-indigo-600" />
+              )}
+              <span className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/40 to-black/15" />
+              <span className="relative flex h-full flex-col justify-between p-4">
+                <span className="flex items-start justify-between gap-3">
+                  <CloudSun className="size-6 text-white/90" />
+                  <span className="max-w-[12rem] truncate rounded-full bg-black/35 px-3 py-1 text-[12px] font-semibold backdrop-blur-sm">
+                    {city}
+                  </span>
                 </span>
-              </div>
-              <div className="mt-6 flex items-end justify-between gap-3">
-                <div>
-                  <p className="text-5xl font-bold tracking-tight tabular-nums">{tempLabel}</p>
-                  <p className="mt-1 text-sm font-medium text-white/85">{weatherName}</p>
-                  {weather?.current?.humidity_pct != null ? (
-                    <p className="mt-0.5 text-xs text-white/70">
-                      Namlik {Math.round(weather.current.humidity_pct)}%
-                    </p>
-                  ) : null}
-                </div>
-                <span className="rounded-full bg-white px-3 py-2 text-[12px] font-bold text-sky-700">
-                  Tavsiyalar →
+                <span className="flex items-end justify-between gap-3">
+                  <span>
+                    <span className="block text-5xl font-bold tracking-tight tabular-nums">{tempLabel}</span>
+                    <span className="mt-1 block text-sm font-medium text-white/90">{weatherName}</span>
+                    {weather?.current?.humidity_pct != null ? (
+                      <span className="mt-0.5 block text-xs text-white/75">
+                        Namlik {Math.round(weather.current.humidity_pct)}%
+                      </span>
+                    ) : null}
+                  </span>
+                  <span className="rounded-full bg-white px-3 py-2 text-[12px] font-bold text-[#111111]">
+                    Tavsiyalar →
+                  </span>
                 </span>
-              </div>
+              </span>
             </button>
 
             <div className="mt-4 grid grid-cols-3 gap-2">
               <button
                 type="button"
                 onClick={() => setSosOpen(true)}
-                className="flex h-24 cursor-pointer flex-col justify-end rounded-2xl bg-gradient-to-br from-[#FF6B57] to-[#E9527A] p-3 text-left text-white"
+                className="relative h-28 cursor-pointer overflow-hidden rounded-2xl text-left text-white"
               >
-                <Zap className="mb-auto size-4" />
-                <span className="text-[12px] font-bold leading-tight">SOS</span>
+                <img src="/care/care-card-sos.jpg" alt="" className="absolute inset-0 size-full object-cover" />
+                <span className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
+                <span className="absolute bottom-2.5 left-2.5 text-[12px] font-bold leading-tight">SOS</span>
               </button>
               <button
                 type="button"
                 onClick={() => setPanel("shelf")}
-                className="flex h-24 cursor-pointer flex-col justify-end rounded-2xl bg-[#111111] p-3 text-left text-white"
+                className="relative h-28 cursor-pointer overflow-hidden rounded-2xl text-left text-white"
               >
-                <ShoppingBag className="mb-auto size-4" />
-                <span className="text-[12px] font-bold leading-tight">Mening mahsulotlarim</span>
-                <span className="text-[10px] text-white/55">{shelfCount} ta</span>
+                <img src="/care/care-card-shelf.jpg" alt="" className="absolute inset-0 size-full object-cover" />
+                <span className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/15 to-transparent" />
+                <span className="absolute bottom-2.5 left-2.5 right-2">
+                  <span className="block text-[12px] font-bold leading-tight">Mening mahsulotlarim</span>
+                  <span className="text-[10px] text-white/80">{shelfCount} ta</span>
+                </span>
               </button>
               <Link
                 to="/ai-style/care/ingredient"
-                className="flex h-24 flex-col justify-end rounded-2xl bg-white p-3 text-left ring-1 ring-black/10"
+                className="relative h-28 overflow-hidden rounded-2xl text-left text-white"
               >
-                <ScanLine className="mb-auto size-4" />
-                <span className="text-[12px] font-bold leading-tight">Tarkib</span>
+                <img src="/care/care-card-scan.jpg" alt="" className="absolute inset-0 size-full object-cover" />
+                <span className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
+                <span className="absolute bottom-2.5 left-2.5 text-[12px] font-bold leading-tight">Tarkib</span>
               </Link>
             </div>
 
@@ -454,7 +497,7 @@ export function MorphAiCarePage() {
                   )}
                 </div>
               ) : (
-                <div className="-mx-4 flex gap-3 overflow-x-auto px-4 pb-1">
+                <div className="-mx-4 flex gap-3 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                   {(catalogQ.isLoading ? [] : featured).slice(0, 8).map((p) => (
                     <Link
                       key={p.id}
@@ -490,25 +533,33 @@ export function MorphAiCarePage() {
                 <button
                   type="button"
                   onClick={() => setPanel("routine")}
-                  className="relative h-36 overflow-hidden rounded-2xl bg-[#111111] p-3 text-left text-white"
+                  className="relative h-40 overflow-hidden rounded-2xl text-left text-white"
                 >
-                  <span className="rounded-full bg-white/15 px-2 py-0.5 text-[10px] font-bold">Faol</span>
+                  <img src="/care/care-card-routine.jpg" alt="" className="absolute inset-0 size-full object-cover" />
+                  <span className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
+                  <span className="absolute left-3 top-3 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-bold text-[#111111]">
+                    Faol
+                  </span>
                   <span className="absolute inset-x-3 bottom-3">
                     <span className="block text-sm font-bold">Parvarish</span>
-                    <span className="mt-0.5 block truncate text-[11px] text-white/60">
+                    <span className="mt-0.5 block truncate text-[11px] text-white/80">
                       {t(`aiStylePage.care.conditions.${plan.condition}`, { defaultValue: plan.condition })}
                     </span>
                   </span>
                 </button>
                 <Link
                   to="/ai-style/care/ingredient"
-                  className="relative flex h-36 flex-col justify-end overflow-hidden rounded-2xl bg-gradient-to-br from-violet-600 to-indigo-700 p-3 text-left text-white"
+                  className="relative h-40 overflow-hidden rounded-2xl text-left text-white"
                 >
-                  <span className="absolute left-3 top-3 rounded-full bg-white/15 px-2 py-0.5 text-[10px] font-bold">
+                  <img src="/care/care-card-scan.jpg" alt="" className="absolute inset-0 size-full object-cover" />
+                  <span className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
+                  <span className="absolute left-3 top-3 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-bold text-[#111111]">
                     Skan
                   </span>
-                  <span className="text-sm font-bold">Tarkib</span>
-                  <span className="mt-0.5 text-[11px] text-white/70">Formula tahlili</span>
+                  <span className="absolute inset-x-3 bottom-3">
+                    <span className="block text-sm font-bold">Tarkib</span>
+                    <span className="mt-0.5 block text-[11px] text-white/80">Formula tahlili</span>
+                  </span>
                 </Link>
               </div>
             </div>
@@ -699,11 +750,19 @@ export function MorphAiCarePage() {
           </div>
         ) : (
           <div className="mt-4 space-y-3">
-            <div className="rounded-3xl bg-gradient-to-br from-sky-400 to-indigo-600 px-5 py-6 text-white">
+            <div className="relative overflow-hidden rounded-3xl px-5 py-6 text-white">
+              {regionHero ? (
+                <img src={regionHero} alt="" className="absolute inset-0 size-full object-cover object-right" />
+              ) : (
+                <span className="absolute inset-0 bg-gradient-to-br from-sky-400 to-indigo-600" />
+              )}
+              <span className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/45 to-black/20" />
+              <div className="relative">
               <p className="text-sm font-medium text-white/80">{city}</p>
               <p className="mt-2 text-5xl font-bold tabular-nums">{tempLabel}</p>
               <p className="mt-1 text-sm">{weatherName}</p>
               {weather?.summary ? <p className="mt-3 text-sm leading-relaxed text-white/85">{weather.summary}</p> : null}
+              </div>
             </div>
             {weather?.primary_action?.title ? (
               <div className="rounded-2xl bg-white px-4 py-3">

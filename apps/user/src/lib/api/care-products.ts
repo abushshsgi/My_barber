@@ -189,6 +189,11 @@ export async function estimateCareShelf(body: {
 
 export type WeatherCareSnapshot = {
   location_label?: string;
+  location_place?: string;
+  location_region?: string;
+  region_id?: string;
+  latitude?: number;
+  longitude?: number;
   summary?: string;
   recommendations?: string[];
   current?: {
@@ -209,10 +214,14 @@ export type WeatherCareSnapshot = {
 export async function fetchWeatherCare(params?: {
   condition?: string;
   texture?: string;
+  lat?: number;
+  lon?: number;
 }): Promise<WeatherCareSnapshot> {
   const sp = new URLSearchParams();
   if (params?.condition) sp.set("condition", params.condition);
   if (params?.texture) sp.set("texture", params.texture);
+  if (params?.lat != null) sp.set("lat", String(params.lat));
+  if (params?.lon != null) sp.set("lon", String(params.lon));
   const q = sp.toString();
   return apiJson(`/api/v1/ai/care/weather/${q ? `?${q}` : ""}`);
 }
