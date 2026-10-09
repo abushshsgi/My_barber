@@ -4608,6 +4608,12 @@ export type AdminCardDeposit = {
   reviewed_by_admin_email: string;
 };
 
+function visibleAccountEmail(email: unknown) {
+  const value = String(email ?? "").trim();
+  if (!value || value.endsWith("@phone.mysaloon.local")) return "";
+  return value;
+}
+
 function mapAdminCardDeposit(d: Record<string, any>, fallbackId?: string): AdminCardDeposit {
   return {
     id: String(d.id ?? fallbackId ?? ""),
@@ -4635,7 +4641,7 @@ function mapAdminCardDeposit(d: Record<string, any>, fallbackId?: string): Admin
       id: toInt(d.user?.id, 0),
       full_name: String(d.user?.full_name ?? ""),
       phone: String(d.user?.phone ?? ""),
-      email: String(d.user?.email ?? ""),
+      email: visibleAccountEmail(d.user?.email),
     },
     wallet_id: toInt(d.wallet_id, 0),
     wallet_number: String(d.wallet_number ?? ""),
@@ -4652,19 +4658,39 @@ export async function fetchAdminCardDeposits(params?: {
   status?: string;
   q?: string;
   overdue?: boolean;
-}): Promise<{ count: number; results: AdminCardDeposit[] }> {
+  page?: number;
+  pageSize?: number;
+}): Promise<{
+  count: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+  counts: Record<string, number>;
+  results: AdminCardDeposit[];
+}> {
   const sp = new URLSearchParams();
   if (params?.overdue) sp.set("overdue", "1");
   else if (params?.status) sp.set("status", params.status);
   if (params?.q) sp.set("q", params.q);
+  if (params?.page) sp.set("page", String(params.page));
+  if (params?.pageSize) sp.set("page_size", String(params.pageSize));
   const qs = sp.toString();
   const raw = await apiJson<{
     count: number;
+    page?: number;
+    page_size?: number;
+    total_pages?: number;
+    counts?: Record<string, number>;
     results: Array<Record<string, any>>;
   }>(`/api/v1/admin/wallet/deposits/${qs ? `?${qs}` : ""}`);
+  const results = (raw.results ?? []).map((d) => mapAdminCardDeposit(d));
   return {
-    count: raw.count,
-    results: (raw.results ?? []).map((d) => mapAdminCardDeposit(d)),
+    count: raw.count ?? results.length,
+    page: raw.page ?? params?.page ?? 1,
+    page_size: raw.page_size ?? params?.pageSize ?? results.length,
+    total_pages: raw.total_pages ?? 1,
+    counts: raw.counts ?? {},
+    results,
   };
 }
 

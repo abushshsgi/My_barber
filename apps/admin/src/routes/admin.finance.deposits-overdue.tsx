@@ -1,8 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { EmptyState } from "@/components/admin/EmptyState";
+import { Pagination } from "@/components/admin/Pagination";
 import { TableSkeleton } from "@/components/admin/Skeletons";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -28,6 +29,7 @@ export const Route = createFileRoute("/admin/finance/deposits-overdue")({
 });
 
 const OPEN_REVIEW = new Set(["claimed", "expired"]);
+const PAGE_SIZE = 8;
 
 function formatWhen(iso: string | null | undefined) {
   if (!iso) return "—";
@@ -56,6 +58,7 @@ function copyText(label: string, value: string) {
 
 function AdminOverdueDepositsPage() {
   const qc = useQueryClient();
+  const [page, setPage] = useState(1);
   const [q, setQ] = useState("");
   const [search, setSearch] = useState("");
   const [note, setNote] = useState("");
@@ -65,9 +68,16 @@ function AdminOverdueDepositsPage() {
   const [confirmCode, setConfirmCode] = useState("");
 
   const listQ = useQuery({
-    queryKey: ["admin", "wallet-deposits", "overdue", search],
-    queryFn: () => fetchAdminCardDeposits({ overdue: true, q: search || undefined }),
-    refetchInterval: 10_000,
+    queryKey: ["admin", "wallet-deposits", "overdue", search, page],
+    queryFn: () =>
+      fetchAdminCardDeposits({
+        overdue: true,
+        q: search || undefined,
+        page,
+        pageSize: PAGE_SIZE,
+      }),
+    placeholderData: keepPreviousData,
+    refetchInterval: 12_000,
   });
 
   const approveM = useMutation({
@@ -115,6 +125,12 @@ function AdminOverdueDepositsPage() {
   const typedCode = confirmCode.replace(/\s/g, "").toUpperCase();
   const codeMatches = typedCode.length > 0 && typedCode === expectedCode;
   const rows = listQ.data?.results ?? [];
+  const total = listQ.data?.count ?? rows.length;
+
+  useEffect(() => {
+    const pages = listQ.data?.total_pages ?? 1;
+    if (page > pages) setPage(pages);
+  }, [listQ.data?.total_pages, page]);
 
   return (
     <div className="mx-auto max-w-[1400px] space-y-6 p-4 sm:p-6 lg:p-8">
@@ -131,7 +147,7 @@ function AdminOverdueDepositsPage() {
         <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
           Foydalanuvchi chek yuborgan, lekin 24 soat ichida tasdiqlanmagan so'rovlar. Ular shu yerda
           qoladi — tasdiqlanguncha yoki rad etilguncha yo'qolmaydi. Pul hali hamyonga tushmagan.
-          {rows.length > 0 ? ` · ${rows.length} ta` : ""}
+          {total > 0 ? ` · jami ${total} ta, sahifada ${PAGE_SIZE} tadan` : ""}
         </p>
       </div>
 
@@ -140,6 +156,7 @@ function AdminOverdueDepositsPage() {
         onSubmit={(e) => {
           e.preventDefault();
           setSearch(q.trim());
+          setPage(1);
         }}
       >
         <Input
@@ -200,7 +217,9 @@ function AdminOverdueDepositsPage() {
                       </Link>
                       <p className="text-sm text-muted-foreground">
                         {row.user.phone || "—"}
-                        {row.user.email ? ` · ${row.user.email}` : ""}
+                        {row.user.email && !row.user.email.endsWith("@phone.mysaloon.local")
+                          ? ` · ${row.user.email}`
+                          : ""}
                       </p>
                     </div>
                     <div className="text-right">
@@ -231,7 +250,8 @@ function AdminOverdueDepositsPage() {
                           <img
                             src={row.receipt_url}
                             alt={`Chek ${code}`}
-                            className="h-44 w-full object-cover"
+                            loading="lazy"
+                            className="h-44 w-full bg-muted/30 object-contain"
                           />
                         </button>
                       ) : (
@@ -275,6 +295,15 @@ function AdminOverdueDepositsPage() {
             })}
           </div>
         )}
+        {total > 0 ? (
+          <Pagination
+            page={listQ.data?.page || page}
+            totalPages={listQ.data?.total_pages || 1}
+            count={total}
+            pageSize={listQ.data?.page_size || PAGE_SIZE}
+            onPageChange={setPage}
+          />
+        ) : null}
       </div>
 
       <Dialog open={!!receiptPreview} onOpenChange={(open) => !open && setReceiptPreview(null)}>
