@@ -20,6 +20,7 @@ import {
   fetchAdminCardDeposits,
   rejectAdminCardDeposit,
   type AdminCardDeposit,
+  adminDepositChannelLabel,
 } from "@/lib/admin-api";
 import { formatAdminUzs } from "@/lib/admin-analytics";
 import { cn } from "@/lib/utils";
@@ -359,6 +360,7 @@ function AdminWalletDepositsPage() {
                     <Badge variant="secondary" className={statusBadgeClass(row.status)}>
                       {STATUS_LABEL[row.status] || row.status}
                     </Badge>
+                    <Badge variant="secondary">{adminDepositChannelLabel(row)}</Badge>
                     {row.wallet_frozen ? (
                       <Badge variant="secondary" className="bg-destructive/10 text-destructive">
                         Muzlatilgan
@@ -455,6 +457,7 @@ function AdminWalletDepositsPage() {
                 <IdCell label="Merchant" value={receiptPreview.merchant_ref} strong />
                 <IdCell label="Depozit ID" value={receiptPreview.id} />
                 <IdCell label="User ID" value={String(receiptPreview.user.id || "")} />
+                <IdCell label="Manba" value={adminDepositChannelLabel(receiptPreview)} />
                 <IdCell label="Hamyon" value={receiptPreview.wallet_number} />
                 <IdCell
                   label="Hamyon ID"

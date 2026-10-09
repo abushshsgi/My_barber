@@ -4604,9 +4604,23 @@ export type AdminCardDeposit = {
   wallet_frozen: boolean;
   client_ip: string | null;
   user_agent: string;
+  client_channel: "web" | "mobile" | "";
   reviewed_by_admin_id: number | null;
   reviewed_by_admin_email: string;
 };
+
+export function adminDepositChannelLabel(
+  row: Pick<AdminCardDeposit, "client_channel" | "user_agent">,
+) {
+  if (row.client_channel === "mobile") return "Mobil ilova";
+  if (row.client_channel === "web") return "Web";
+  const ua = row.user_agent.toLowerCase();
+  if (ua.includes("okhttp") || ua.includes("expo") || ua.includes("mysaloon-mobile")) {
+    return "Mobil ilova";
+  }
+  if (ua) return "Web";
+  return "—";
+}
 
 function visibleAccountEmail(email: unknown) {
   const value = String(email ?? "").trim();
@@ -4649,6 +4663,8 @@ function mapAdminCardDeposit(d: Record<string, any>, fallbackId?: string): Admin
     wallet_frozen: Boolean(d.wallet_frozen),
     client_ip: d.client_ip ?? null,
     user_agent: String(d.user_agent ?? ""),
+    client_channel:
+      d.client_channel === "mobile" || d.client_channel === "web" ? d.client_channel : "",
     reviewed_by_admin_id: d.reviewed_by_admin_id != null ? toInt(d.reviewed_by_admin_id) : null,
     reviewed_by_admin_email: String(d.reviewed_by_admin_email ?? ""),
   };

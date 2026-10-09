@@ -20,6 +20,7 @@ import {
   fetchAdminCardDeposits,
   rejectAdminCardDeposit,
   type AdminCardDeposit,
+  adminDepositChannelLabel,
 } from "@/lib/admin-api";
 import { formatAdminUzs } from "@/lib/admin-analytics";
 import { cn } from "@/lib/utils";
@@ -230,6 +231,7 @@ function AdminOverdueDepositsPage() {
                         <Badge variant="secondary" className="bg-amber-500/15 text-amber-900">
                           {waitingLabel(row.claimed_at)}
                         </Badge>
+                        <Badge variant="secondary">{adminDepositChannelLabel(row)}</Badge>
                         {row.wallet_frozen ? (
                           <Badge variant="secondary" className="bg-destructive/10 text-destructive">
                             Hamyon muzlatilgan
