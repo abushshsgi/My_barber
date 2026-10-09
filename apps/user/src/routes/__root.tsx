@@ -121,17 +121,6 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   );
 }
 
-function RoutePending() {
-  return (
-    <div
-      className="pointer-events-none fixed inset-x-0 top-0 z-[60] h-0.5 overflow-hidden bg-border"
-      aria-hidden
-    >
-      <div className="h-full w-1/3 animate-pulse bg-foreground" />
-    </div>
-  );
-}
-
 const sharedRootOptions = {
   beforeLoad: async ({ location }: { location: { pathname: string } }) => {
     await requireAuth(location.pathname);
@@ -145,7 +134,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   {
     ...sharedRootOptions,
     ssr: false,
-    pendingComponent: RoutePending,
     head: () => ({
       links: [
         { rel: "stylesheet", href: appCss },

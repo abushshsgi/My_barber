@@ -24,6 +24,9 @@ export const getRouter = () => {
     mutationCache: new MutationCache({ onError: onQueryError }),
     defaultOptions: {
       queries: {
+        staleTime: 30_000,
+        gcTime: 10 * 60_000,
+        refetchOnWindowFocus: false,
         retry: (failureCount, error) => {
           if (isAuthQueryError(error)) return false;
           return failureCount < 1;
@@ -39,8 +42,7 @@ export const getRouter = () => {
     scrollRestoration: true,
     defaultPreload: "intent",
     defaultPreloadStaleTime: 60_000,
-    defaultPendingMs: 0,
-    defaultPendingMinMs: 0,
+    defaultPendingMs: 400,
   });
 
   return router;

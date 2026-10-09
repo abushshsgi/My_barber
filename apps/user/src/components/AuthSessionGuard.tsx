@@ -25,7 +25,7 @@ function NotificationsRealtimeBridge() {
 /** Tab qayta ochilganda refresh token orqali sessiyani tiklash. */
 export function AuthSessionGuard({ children }: { children: ReactNode }) {
   useEffect(() => {
-    const verify = () => {
+    const verify = (refreshHistory: boolean) => {
       if (isAuthRoute()) return;
       void bootstrapUserSession().then((ok) => {
         if (!ok && !hasValidUserSession()) return;
@@ -34,22 +34,22 @@ export function AuthSessionGuard({ children }: { children: ReactNode }) {
         if (uid) {
           prepareFaceProfileStorageForUser(uid, { allowLegacyClaim: true });
           prepareUserPrefsStorageForUser(uid, { allowLegacyClaim: true });
-          void refreshAiStyleHistoryCache();
+          if (refreshHistory) void refreshAiStyleHistoryCache();
         }
         window.dispatchEvent(new CustomEvent("mysaloon:auth-ready"));
         void registerPushNotifications();
       });
     };
 
-    verify();
-    window.addEventListener("focus", verify);
-    document.addEventListener("visibilitychange", verify);
-    const onForeground = () => verify();
-    window.addEventListener("mysaloon:app-foreground", onForeground);
+    verify(true);
+    const onFocus = () => verify(false);
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onFocus);
+    window.addEventListener("mysaloon:app-foreground", onFocus);
     return () => {
-      window.removeEventListener("focus", verify);
-      document.removeEventListener("visibilitychange", verify);
-      window.removeEventListener("mysaloon:app-foreground", onForeground);
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onFocus);
+      window.removeEventListener("mysaloon:app-foreground", onFocus);
     };
   }, []);
 

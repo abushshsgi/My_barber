@@ -16,7 +16,6 @@ import { MysaloonAppMark } from "@/components/brand/MysaloonAppMark";
 import { useAppShell } from "@/hooks/use-app-shell";
 import { isNavTabActive, isNavTabCurrent } from "@/lib/navigation";
 import { shouldShowMobileDock } from "@/lib/layout-routes";
-import { prefetchMorphAiIntroVideo } from "@/lib/morph-ai-intro";
 import { hapticLight } from "@/lib/native-haptics";
 import { cn } from "@/lib/utils";
 
@@ -124,7 +123,6 @@ export function MobileDockNav({ unreadCount: _unreadCount = 0 }: Props) {
     preloadRoutes.forEach((tab) => {
       void router.preloadRoute({ to: tab.to });
     });
-    prefetchMorphAiIntroVideo();
   }, [router]);
 
   useEffect(() => {
