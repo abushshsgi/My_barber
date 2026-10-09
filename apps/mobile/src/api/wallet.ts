@@ -281,7 +281,7 @@ export async function initCardDeposit(amount: number): Promise<CardDeposit> {
   const key = await idempotencyKey("card-init");
   return apiJson<CardDeposit>("/api/v1/wallet/top-up/card/init/", {
     method: "POST",
-    headers: { "Idempotency-Key": key },
+    headers: { "Idempotency-Key": key, "X-Client-Channel": "mobile" },
     body: JSON.stringify({ amount: amt }),
   });
 }
