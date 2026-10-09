@@ -187,6 +187,36 @@ export async function estimateCareShelf(body: {
   });
 }
 
+export type WeatherCareSnapshot = {
+  location_label?: string;
+  summary?: string;
+  recommendations?: string[];
+  current?: {
+    temperature_c?: number | null;
+    humidity_pct?: number | null;
+    condition_key?: string;
+  };
+  primary_action?: { title?: string; subtitle?: string };
+  product_plan?: Array<{
+    name?: string;
+    brand?: string;
+    tip?: string;
+    how_to_use?: string;
+    image_url?: string | null;
+  }>;
+};
+
+export async function fetchWeatherCare(params?: {
+  condition?: string;
+  texture?: string;
+}): Promise<WeatherCareSnapshot> {
+  const sp = new URLSearchParams();
+  if (params?.condition) sp.set("condition", params.condition);
+  if (params?.texture) sp.set("texture", params.texture);
+  const q = sp.toString();
+  return apiJson(`/api/v1/ai/care/weather/${q ? `?${q}` : ""}`);
+}
+
 export async function fetchCareProductByBarcode(
   barcode: string,
   profile?: { condition?: string; texture?: string; color_status?: string; scalp?: string },

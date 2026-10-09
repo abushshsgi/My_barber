@@ -1,6 +1,6 @@
 import { Link, useRouter } from "@tanstack/react-router";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { ChevronLeft, Loader2, Lock, Zap } from "lucide-react";
+import { ChevronLeft, ChevronRight, CloudSun, Loader2, Lock, ScanLine, Search, ShoppingBag, Zap } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
@@ -22,8 +22,8 @@ import { cn } from "@/lib/utils";
 import { useHairCareProfile, useUpdateHairCareProfile } from "@/hooks/use-hair-care-profile";
 import { useCareProducts } from "@/hooks/use-care-products";
 import { BadHairDaySosSheet } from "@/components/ai-style/BadHairDaySosSheet";
-import { CareAlbumTab } from "@/components/ai-style/CareAlbumTab";
 import { CareShelfTracker } from "@/components/ai-style/CareShelfTracker";
+import { fetchCareShelf, fetchWeatherCare } from "@/lib/api/care-products";
 
 const CONDITION_OPTS: HairCondition[] = ["oily", "dry", "normal", "damaged"];
 const TEXTURE_OPTS: HairTexture[] = ["straight", "wavy", "curly"];
@@ -44,6 +44,19 @@ export function MorphAiCarePage() {
   const hairQ = useHairCareProfile();
   const updateHair = useUpdateHairCareProfile();
   const catalogQ = useCareProducts({ recommended: true });
+  const searchQ = useCareProducts({ q: search.trim() || undefined, enabled: search.trim().length > 0 });
+  const weatherQ = useQuery({
+    queryKey: ["ai", "care", "weather", quiz.condition, quiz.texture],
+    queryFn: () => fetchWeatherCare({ condition: quiz.condition, texture: quiz.texture }),
+    enabled: step === "plan",
+    staleTime: 10 * 60_000,
+  });
+  const shelfQ = useQuery({
+    queryKey: ["ai", "care", "shelf"],
+    queryFn: fetchCareShelf,
+    enabled: step === "plan",
+    staleTime: 30_000,
+  });
   const profile = useMemo(() => loadFaceProfile(), []);
   const savedQuiz = useMemo(() => loadCareQuiz(), []);
   const [quiz, setQuiz] = useState<CareQuizAnswers>(
@@ -52,7 +65,8 @@ export function MorphAiCarePage() {
   const [step, setStep] = useState<QuizStep | "plan">(
     savedQuiz && isCareQuizComplete(savedQuiz) ? "plan" : 0,
   );
-  const [activeTab, setActiveTab] = useState<"plan" | "album">("plan");
+  const [panel, setPanel] = useState<"hub" | "routine" | "shelf" | "weather">("hub");
+  const [search, setSearch] = useState("");
   const [sosOpen, setSosOpen] = useState(false);
   const plan = useMemo(() => buildCarePlan(profile, quiz), [profile, quiz]);
   const catalogProducts = catalogQ.data || [];
@@ -256,6 +270,29 @@ export function MorphAiCarePage() {
     );
   }
 
+  const weather = weatherQ.data;
+  const weatherKey = weather?.current?.condition_key || "unknown";
+  const weatherName =
+    {
+      clear: "Ochiq",
+      mainly_clear: "Ochiq",
+      partly_cloudy: "Qisman bulutli",
+      overcast: "Bulutli",
+      cloudy: "Bulutli",
+      fog: "Tuman",
+      drizzle: "Mayda yomg‘ir",
+      rain: "Yomg‘ir",
+      showers: "Jala",
+      snow: "Qor",
+      storm: "Momaqaldiroq",
+      unknown: "Ob-havo",
+    }[weatherKey] || "Ob-havo";
+  const temp = weather?.current?.temperature_c;
+  const tempLabel = temp == null ? "—" : `${Math.round(temp)}°`;
+  const city = weather?.location_label || "Joylashuv";
+  const featured = (search.trim() ? searchQ.data : catalogProducts) || [];
+  const shelfCount = shelfQ.data?.items?.length ?? 0;
+
   const traits = [
     {
       label: t("aiStylePage.care.condition", { defaultValue: "Holat" }),
@@ -275,117 +312,229 @@ export function MorphAiCarePage() {
   ];
 
   return (
-    <div className="relative min-h-[100dvh] overflow-x-hidden overflow-y-auto bg-[#FAFAFA] text-[#111111]">
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-64 bg-[radial-gradient(ellipse_at_50%_0%,rgba(255,255,255,0.08),transparent_60%)]" />
-
+    <div className="relative min-h-[100dvh] overflow-x-hidden overflow-y-auto bg-[#F3F3F4] text-[#111111]">
       <div
-        className="relative z-[1] px-5 pb-[max(6rem,calc(env(safe-area-inset-bottom)+5rem))]"
-        style={{ paddingTop: "max(1rem, env(safe-area-inset-top))" }}
+        className="relative z-[1] mx-auto w-full max-w-lg px-4 pb-[max(2.5rem,env(safe-area-inset-bottom))]"
+        style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}
       >
         <div className="flex items-center justify-between">
-          <BackLink label={t("common.back")} />
-          <button
-            type="button"
-            onClick={() => setStep(0)}
-            className="cursor-pointer text-[13px] font-medium text-[#111111]/45"
-          >
-            {t("aiStylePage.care.quiz.retake", { defaultValue: "Qayta" })}
-          </button>
+          {panel === "hub" ? (
+            <BackLink label={t("common.back")} />
+          ) : (
+            <button
+              type="button"
+              onClick={() => setPanel("hub")}
+              className="inline-flex size-11 cursor-pointer items-center justify-center rounded-2xl bg-white shadow-sm ring-1 ring-black/5 active:scale-95"
+              aria-label={t("common.back")}
+            >
+              <ChevronLeft className="size-5" strokeWidth={2.25} />
+            </button>
+          )}
+          {panel === "routine" ? (
+            <button
+              type="button"
+              onClick={() => setStep(0)}
+              className="cursor-pointer text-[13px] font-medium text-[#111111]/45"
+            >
+              {t("aiStylePage.care.quiz.retake", { defaultValue: "Qayta" })}
+            </button>
+          ) : (
+            <span className="text-[13px] font-semibold tracking-tight">
+              {panel === "weather"
+                ? "Ob-havo"
+                : panel === "shelf"
+                  ? "Mening mahsulotlarim"
+                  : panel === "routine"
+                    ? "Parvarish"
+                    : "Parvarish"}
+            </span>
+          )}
         </div>
 
-        <div className="mt-5 inline-flex rounded-full bg-white p-1 ring-1 ring-black/10">
-          <button
-            type="button"
-            onClick={() => setActiveTab("plan")}
-            className={cn(
-              "h-9 rounded-full px-4 text-[13px] font-semibold transition-colors",
-              activeTab === "plan" ? "bg-[#111111] text-white" : "text-[#111111]/50",
-            )}
-          >
-            {t("aiStylePage.care.tabs.plan", { defaultValue: "Reja" })}
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab("album")}
-            className={cn(
-              "h-9 rounded-full px-4 text-[13px] font-semibold transition-colors",
-              activeTab === "album" ? "bg-[#111111] text-white" : "text-[#111111]/50",
-            )}
-          >
-            {t("aiStylePage.care.tabs.album", { defaultValue: "Parvarish Albomi" })}
-          </button>
-        </div>
+        {panel === "hub" ? (
+          <>
+            <button
+              type="button"
+              onClick={() => setPanel("weather")}
+              className="relative mt-4 w-full overflow-hidden rounded-3xl bg-gradient-to-br from-sky-400 via-sky-500 to-indigo-600 px-5 pb-5 pt-4 text-left text-white shadow-[0_16px_40px_-18px_rgba(37,99,235,0.65)]"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <CloudSun className="size-6 text-white/90" />
+                <span className="max-w-[12rem] truncate rounded-full bg-white/20 px-3 py-1 text-[12px] font-semibold">
+                  {city}
+                </span>
+              </div>
+              <div className="mt-6 flex items-end justify-between gap-3">
+                <div>
+                  <p className="text-5xl font-bold tracking-tight tabular-nums">{tempLabel}</p>
+                  <p className="mt-1 text-sm font-medium text-white/85">{weatherName}</p>
+                  {weather?.current?.humidity_pct != null ? (
+                    <p className="mt-0.5 text-xs text-white/70">
+                      Namlik {Math.round(weather.current.humidity_pct)}%
+                    </p>
+                  ) : null}
+                </div>
+                <span className="rounded-full bg-white px-3 py-2 text-[12px] font-bold text-sky-700">
+                  Tavsiyalar →
+                </span>
+              </div>
+            </button>
 
-        {activeTab === "plan" ? (
+            <div className="mt-4 grid grid-cols-3 gap-2">
+              <button
+                type="button"
+                onClick={() => setSosOpen(true)}
+                className="flex h-24 cursor-pointer flex-col justify-end rounded-2xl bg-gradient-to-br from-[#FF6B57] to-[#E9527A] p-3 text-left text-white"
+              >
+                <Zap className="mb-auto size-4" />
+                <span className="text-[12px] font-bold leading-tight">SOS</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setPanel("shelf")}
+                className="flex h-24 cursor-pointer flex-col justify-end rounded-2xl bg-[#111111] p-3 text-left text-white"
+              >
+                <ShoppingBag className="mb-auto size-4" />
+                <span className="text-[12px] font-bold leading-tight">Mening mahsulotlarim</span>
+                <span className="text-[10px] text-white/55">{shelfCount} ta</span>
+              </button>
+              <Link
+                to="/ai-style/care/ingredient"
+                className="flex h-24 flex-col justify-end rounded-2xl bg-white p-3 text-left ring-1 ring-black/10"
+              >
+                <ScanLine className="mb-auto size-4" />
+                <span className="text-[12px] font-bold leading-tight">Tarkib</span>
+              </Link>
+            </div>
+
+            <label className="mt-4 flex h-12 items-center gap-2 rounded-full bg-white px-4 ring-1 ring-black/10">
+              <Search className="size-4 text-[#111111]/40" />
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Tavsiya va mahsulot qidirish"
+                className="h-full w-full bg-transparent text-sm font-medium outline-none placeholder:text-[#111111]/35"
+              />
+            </label>
+
+            <div className="mt-5">
+              <div className="mb-2 flex items-center justify-between">
+                <h2 className="text-[13px] font-bold">Tavsiyalar</h2>
+                <Link to="/ai-style/care/products" className="text-[12px] font-semibold text-[#111111]/45">
+                  Hammasi
+                </Link>
+              </div>
+              {search.trim() ? (
+                <div className="space-y-2">
+                  {searchQ.isLoading ? (
+                    <div className="h-16 animate-pulse rounded-2xl bg-white" />
+                  ) : featured.length === 0 ? (
+                    <p className="rounded-2xl bg-white px-4 py-3 text-sm text-[#111111]/45">Topilmadi</p>
+                  ) : (
+                    featured.slice(0, 8).map((p) => (
+                      <Link
+                        key={p.id}
+                        to="/ai-style/care/products/$productId"
+                        params={{ productId: String(p.id) }}
+                        className="flex items-center gap-3 rounded-2xl bg-white p-2.5"
+                      >
+                        {p.image_url ? (
+                          <img src={p.image_url} alt="" className="size-12 rounded-xl object-cover" />
+                        ) : (
+                          <span className="grid size-12 place-items-center rounded-xl bg-[#F3F3F4] text-[10px] font-bold">
+                            {p.brand?.slice(0, 2) || "MS"}
+                          </span>
+                        )}
+                        <span className="min-w-0">
+                          <span className="block truncate text-[11px] font-medium text-[#111111]/40">{p.brand}</span>
+                          <span className="block truncate text-sm font-semibold">{p.name}</span>
+                        </span>
+                      </Link>
+                    ))
+                  )}
+                </div>
+              ) : (
+                <div className="-mx-4 flex gap-3 overflow-x-auto px-4 pb-1">
+                  {(catalogQ.isLoading ? [] : featured).slice(0, 8).map((p) => (
+                    <Link
+                      key={p.id}
+                      to="/ai-style/care/products/$productId"
+                      params={{ productId: String(p.id) }}
+                      className="relative h-44 w-36 shrink-0 overflow-hidden rounded-2xl bg-[#111111]"
+                    >
+                      {p.image_url ? (
+                        <img src={p.image_url} alt="" className="absolute inset-0 size-full object-cover" />
+                      ) : null}
+                      <span className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
+                      <span className="absolute inset-x-0 bottom-0 p-3 text-white">
+                        <span className="block truncate text-[10px] font-medium text-white/70">{p.brand || "MORF"}</span>
+                        <span className="mt-0.5 block line-clamp-2 text-[13px] font-bold leading-tight">{p.name}</span>
+                      </span>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="mt-5 rounded-3xl bg-white p-3 shadow-sm ring-1 ring-black/5">
+              <button
+                type="button"
+                onClick={() => setPanel("shelf")}
+                className="flex w-full cursor-pointer items-center gap-2 rounded-2xl px-2 py-2 text-left"
+              >
+                <ShoppingBag className="size-4" />
+                <span className="flex-1 text-sm font-bold">Mening mahsulotlarim</span>
+                <ChevronRight className="size-4 text-[#111111]/35" />
+              </button>
+              <div className="mt-2 grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setPanel("routine")}
+                  className="relative h-36 overflow-hidden rounded-2xl bg-[#111111] p-3 text-left text-white"
+                >
+                  <span className="rounded-full bg-white/15 px-2 py-0.5 text-[10px] font-bold">Faol</span>
+                  <span className="absolute inset-x-3 bottom-3">
+                    <span className="block text-sm font-bold">Parvarish</span>
+                    <span className="mt-0.5 block truncate text-[11px] text-white/60">
+                      {t(`aiStylePage.care.conditions.${plan.condition}`, { defaultValue: plan.condition })}
+                    </span>
+                  </span>
+                </button>
+                <Link
+                  to="/ai-style/care/ingredient"
+                  className="relative flex h-36 flex-col justify-end overflow-hidden rounded-2xl bg-gradient-to-br from-violet-600 to-indigo-700 p-3 text-left text-white"
+                >
+                  <span className="absolute left-3 top-3 rounded-full bg-white/15 px-2 py-0.5 text-[10px] font-bold">
+                    Skan
+                  </span>
+                  <span className="text-sm font-bold">Tarkib</span>
+                  <span className="mt-0.5 text-[11px] text-white/70">Formula tahlili</span>
+                </Link>
+              </div>
+            </div>
+          </>
+        ) : panel === "routine" ? (
           <>
             <motion.div
               initial={reduce ? false : { opacity: 0, y: 14 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, ease }}
-              className="mt-8"
+              className="mt-6"
             >
-              <p className="text-[12px] font-medium tracking-wide text-[#111111]/35">
-                {t("aiStylePage.care.badge", { defaultValue: "Parvarish" })}
-              </p>
-              <h1 className="mt-2 max-w-[17rem] text-[1.75rem] font-semibold leading-[1.12] tracking-tight">
+              <h1 className="text-[1.6rem] font-semibold leading-[1.12] tracking-tight">
                 {t("aiStylePage.care.title", { defaultValue: "Sizning rejangiz" })}
               </h1>
-              <p className="mt-3 max-w-[22rem] text-[15px] leading-relaxed text-[#111111]/70">
-                {plan.summary}
-              </p>
+              <p className="mt-3 text-[15px] leading-relaxed text-[#111111]/70">{plan.summary}</p>
             </motion.div>
-
-            <motion.button
-              type="button"
-              onClick={() => setSosOpen(true)}
-              initial={reduce ? false : { opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.04, duration: 0.35, ease }}
-              whileTap={reduce ? undefined : { scale: 0.985 }}
-              className="group relative mt-5 flex w-full cursor-pointer items-center gap-3 overflow-hidden rounded-[22px] bg-gradient-to-r from-[#FF6B57] via-[#FF8A5B] to-[#E9527A] px-4 py-3.5 text-left text-white shadow-[0_10px_28px_-10px_rgba(233,82,122,0.65)]"
-            >
-              <span className="grid size-10 shrink-0 place-items-center rounded-full bg-white/20">
-                <Zap className="size-[18px]" strokeWidth={2.5} />
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block text-[14px] font-semibold leading-tight">
-                  {t("aiStylePage.care.sos.cta", {
-                    defaultValue: "Sochim bugun yomon ko'rinayapti (SOS)",
-                  })}
-                </span>
-                <span className="mt-0.5 block text-[12px] text-white/75">
-                  {t("aiStylePage.care.sos.ctaSub", {
-                    defaultValue: "2 daqiqalik tezkor yechim olish",
-                  })}
-                </span>
-              </span>
-              <motion.span
-                aria-hidden
-                className="pointer-events-none absolute inset-y-0 -left-1/3 w-1/3 bg-gradient-to-r from-transparent via-white/25 to-transparent"
-                initial={false}
-                animate={reduce ? undefined : { x: ["0%", "420%"] }}
-                transition={{
-                  duration: 2.6,
-                  repeat: Infinity,
-                  repeatDelay: 2.4,
-                  ease: "easeInOut",
-                }}
-              />
-            </motion.button>
 
             <motion.div
               initial={reduce ? false : { opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.08, duration: 0.35, ease }}
-              className="mt-6 grid grid-cols-3 gap-2"
+              className="mt-5 grid grid-cols-3 gap-2"
             >
               {traits.map((item) => (
                 <div key={item.key} className="overflow-hidden rounded-2xl bg-white">
-                  <img
-                    src={careOptionImage(item.key)}
-                    alt=""
-                    className="aspect-[4/5] w-full object-cover object-top"
-                  />
+                  <img src={careOptionImage(item.key)} alt="" className="aspect-[4/5] w-full object-cover object-top" />
                   <div className="px-2 py-2">
                     <p className="text-[10px] text-[#111111]/35">{item.label}</p>
                     <p className="truncate text-[12px] font-semibold">{item.value}</p>
@@ -393,8 +542,6 @@ export function MorphAiCarePage() {
                 </div>
               ))}
             </motion.div>
-
-            <CareShelfTracker />
 
             <Section
               title={t("aiStylePage.care.weeklyTitle", { defaultValue: "Hafta" })}
@@ -546,14 +693,57 @@ export function MorphAiCarePage() {
               </Link>
             </motion.div>
           </>
+        ) : panel === "shelf" ? (
+          <div className="mt-4">
+            <CareShelfTracker />
+          </div>
         ) : (
-          <CareAlbumTab
-            goalHint={plan.summary}
-            fallbackProducts={catalogProducts.slice(0, 8).map((item) => ({
-              id: `catalog:${item.id}`,
-              name: [item.brand, item.name].filter(Boolean).join(" · ") || item.name,
-            }))}
-          />
+          <div className="mt-4 space-y-3">
+            <div className="rounded-3xl bg-gradient-to-br from-sky-400 to-indigo-600 px-5 py-6 text-white">
+              <p className="text-sm font-medium text-white/80">{city}</p>
+              <p className="mt-2 text-5xl font-bold tabular-nums">{tempLabel}</p>
+              <p className="mt-1 text-sm">{weatherName}</p>
+              {weather?.summary ? <p className="mt-3 text-sm leading-relaxed text-white/85">{weather.summary}</p> : null}
+            </div>
+            {weather?.primary_action?.title ? (
+              <div className="rounded-2xl bg-white px-4 py-3">
+                <p className="text-sm font-bold">{weather.primary_action.title}</p>
+                {weather.primary_action.subtitle ? (
+                  <p className="mt-1 text-xs text-[#111111]/55">{weather.primary_action.subtitle}</p>
+                ) : null}
+              </div>
+            ) : null}
+            <div>
+              <h2 className="mb-2 text-[13px] font-bold">Tavsiyalar</h2>
+              <div className="space-y-2">
+                {(weather?.recommendations || []).length === 0 ? (
+                  <p className="rounded-2xl bg-white px-4 py-3 text-sm text-[#111111]/45">
+                    {weatherQ.isLoading ? "Ob-havo yuklanmoqda…" : "Bugun uchun qo‘shimcha tavsiya yo‘q."}
+                  </p>
+                ) : (
+                  weather?.recommendations?.map((tip) => (
+                    <p key={tip} className="rounded-2xl bg-white px-4 py-3 text-sm leading-snug">
+                      {tip}
+                    </p>
+                  ))
+                )}
+              </div>
+            </div>
+            {(weather?.product_plan || []).length > 0 ? (
+              <div>
+                <h2 className="mb-2 text-[13px] font-bold">Ob-havoga mos vositalar</h2>
+                <div className="space-y-2">
+                  {weather?.product_plan?.map((item, index) => (
+                    <div key={`${item.name || "plan"}-${index}`} className="rounded-2xl bg-white px-4 py-3">
+                      <p className="text-sm font-bold">{item.name}</p>
+                      {item.brand ? <p className="text-[11px] text-[#111111]/40">{item.brand}</p> : null}
+                      {item.tip ? <p className="mt-1 text-xs text-[#111111]/55">{item.tip}</p> : null}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+          </div>
         )}
       </div>
 

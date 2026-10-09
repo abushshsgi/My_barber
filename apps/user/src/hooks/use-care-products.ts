@@ -7,10 +7,12 @@ export function useCareProducts(params?: {
   q?: string;
   category?: string;
   recommended?: boolean;
+  enabled?: boolean;
 }) {
   return useQuery({
     queryKey: [...careProductsQueryKey, params?.category || "", params?.q || "", params?.recommended ? "rec" : "all"],
     queryFn: () => fetchCareProducts(params),
+    enabled: params?.enabled !== false,
     staleTime: 30_000,
   });
 }
