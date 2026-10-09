@@ -206,6 +206,13 @@ class ManualCardDeposit(models.Model):
     receiving_bank = models.CharField(max_length=128, blank=True, default="")
     client_ip = models.GenericIPAddressField(null=True, blank=True)
     user_agent = models.CharField(max_length=512, blank=True, default="")
+    client_channel = models.CharField(
+        max_length=16,
+        blank=True,
+        default="",
+        db_index=True,
+        help_text="web yoki mobile — to'lov qaysi klientdan kelgani.",
+    )
     claimed_at = models.DateTimeField(null=True, blank=True, db_index=True)
     receipt_image = models.ImageField(
         upload_to="wallet/card_receipts/%Y/%m/",

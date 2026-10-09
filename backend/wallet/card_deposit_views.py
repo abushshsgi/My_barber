@@ -47,6 +47,22 @@ def _user_agent(request) -> str:
     return (request.META.get("HTTP_USER_AGENT") or "")[:512]
 
 
+def _client_channel(request) -> str:
+    """web yoki mobile. Header birinchi, eski ilova uchun User-Agent zaxira."""
+    raw = (
+        request.headers.get("X-Client-Channel")
+        or (request.data.get("client_channel") if hasattr(request, "data") else "")
+        or ""
+    )
+    raw = str(raw).strip().lower()
+    if raw in ("web", "mobile"):
+        return raw
+    ua = (request.META.get("HTTP_USER_AGENT") or "").lower()
+    if "okhttp" in ua or "expo" in ua or "mysaloon-mobile" in ua:
+        return "mobile"
+    return "web"
+
+
 class WalletReceivingCardView(FriendlyThrottleMixin, APIView):
     """Kompaniya kartasi rekvizitlari (to'liq raqam faqat autentifikatsiyadan keyin)."""
 
@@ -90,6 +106,7 @@ class WalletCardDepositInitView(FriendlyThrottleMixin, APIView):
                 idempotency_key=_idempotency_key(request, required=True),
                 client_ip=_client_ip(request),
                 user_agent=_user_agent(request),
+                client_channel=_client_channel(request),
             )
         except WalletServiceError as exc:
             return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)

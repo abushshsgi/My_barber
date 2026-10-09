@@ -254,8 +254,18 @@ def deposit_to_dict(
         "review_note": deposit.review_note,
         "expires_at": deposit.expires_at.isoformat(),
         "created_at": deposit.created_at.isoformat(),
+        "client_channel": (deposit.client_channel or "") or _channel_from_user_agent(deposit.user_agent),
         "ledger_entry_id": str(deposit.ledger_entry_id) if deposit.ledger_entry_id else None,
     }
+
+
+def _channel_from_user_agent(user_agent: str) -> str:
+    ua = (user_agent or "").lower()
+    if "okhttp" in ua or "expo" in ua or "mysaloon-mobile" in ua:
+        return "mobile"
+    if ua:
+        return "web"
+    return ""
 
 
 def admin_deposit_to_dict(deposit: ManualCardDeposit, request=None) -> dict[str, Any]:
@@ -308,6 +318,7 @@ def _alert_admins(deposit: ManualCardDeposit) -> None:
         f"Telefon: {user.phone or '—'}\n"
         f"Hamyon: {deposit.wallet.wallet_number}\n"
         f"Chek: {'bor' if deposit.receipt_image else 'yoq'}\n"
+        f"Manba: {'Mobil ilova' if (deposit.client_channel or '') == 'mobile' else 'Web'}\n"
         f"IP: {deposit.client_ip or '—'}\n"
         f"Vaqt: {deposit.claimed_at or deposit.created_at}\n"
     )
@@ -350,6 +361,7 @@ class CardDepositService:
         idempotency_key: str,
         client_ip: str | None = None,
         user_agent: str = "",
+        client_channel: str = "",
     ) -> tuple[ManualCardDeposit, bool]:
         """
         Yangi so'rov yaratadi yoki ochiq so'rovni qaytaradi.
@@ -415,6 +427,7 @@ class CardDepositService:
             receiving_bank=cfg["bank"],
             client_ip=client_ip,
             user_agent=(user_agent or "")[:512],
+            client_channel=(client_channel or "")[:16],
             idempotency_key=key,
             expires_at=now + timedelta(hours=INIT_TTL_HOURS),
         )
