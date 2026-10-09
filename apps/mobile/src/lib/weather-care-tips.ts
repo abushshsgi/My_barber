@@ -677,7 +677,7 @@ export function careHubLayout(
   const MIN = {
     promo: Math.max(rs(Math.round(124 * density), scale), Math.min(promoByWidth, rs(Math.round(156 * density), scale))),
     featured: rs(Math.round((narrow ? 104 : 122) * density), scale),
-    hubCard: rs(Math.round((short ? 148 : 172) * density), scale),
+    hubCard: rs(Math.round((short ? 188 : 216) * density), scale),
   };
   const MAX = {
     promo: clamp(
@@ -686,7 +686,7 @@ export function careHubLayout(
       Math.min(rs(Math.round(200 * density), scale), Math.round(height * (short ? 0.26 : 0.29))),
     ),
     featured: rs(Math.round((short ? 142 : 158) * density), scale),
-    hubCard: rs(Math.round((short ? 200 : 228) * density), scale),
+    hubCard: rs(Math.round((short ? 248 : 280) * density), scale),
   };
 
   const minTotal = MIN.promo + MIN.featured + MIN.hubCard;
