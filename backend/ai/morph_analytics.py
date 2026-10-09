@@ -10,6 +10,7 @@ from django.db.models import Avg, Count, Max, Min, Q, Sum
 from django.db.models.functions import TruncDate
 from django.utils import timezone
 
+from ai.models import AiGenerationUsage
 from ai.usage_pricing import usd_to_uzs
 from control_panel.platform_analytics import resolve_range
 
