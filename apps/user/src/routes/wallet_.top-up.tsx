@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Check } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { ProfileSubpageCard, ProfileSubpageLayout } from "@/components/profile/ProfileSubpageLayout";
@@ -51,39 +52,59 @@ function TopUpPage() {
   const [submitting, setSubmitting] = useState(false);
   const [claiming, setClaiming] = useState(false);
   const [done, setDone] = useState(false);
-  const [pendingReview, setPendingReview] = useState(false);
   const [newBalance, setNewBalance] = useState<number | null>(null);
+  const watchRef = useRef<string | null>(null);
+  const handledRef = useRef<string | null>(null);
 
   const depositsQ = useQuery({
     queryKey: ["wallet", "card-deposits", userId],
     queryFn: fetchMyCardDeposits,
     enabled: Boolean(userId),
     staleTime: 10_000,
-    refetchInterval: pendingReview ? 8_000 : false,
+    refetchInterval: (query) =>
+      (query.state.data ?? []).some((row) => row.status === "claimed") ? 8_000 : false,
   });
 
+  const claimedDeposit = useMemo(() => {
+    const fromList = (depositsQ.data ?? []).find((d) => d.status === "claimed");
+    if (fromList) return fromList;
+    return deposit?.status === "claimed" ? deposit : null;
+  }, [depositsQ.data, deposit]);
+
   const openDeposit = useMemo(
-    () => (depositsQ.data ?? []).find((d) => OPEN_STATUSES.has(d.status)) ?? null,
+    () => (depositsQ.data ?? []).find((d) => d.status === "awaiting_payment") ?? null,
     [depositsQ.data],
   );
 
   useEffect(() => {
-    if (!pendingReview || !deposit) return;
-    const latest = (depositsQ.data ?? []).find((d) => d.id === deposit.id);
-    if (!latest) return;
+    const rows = depositsQ.data ?? [];
+    const claimed =
+      rows.find((d) => d.status === "claimed") ??
+      (deposit?.status === "claimed" ? deposit : null);
+    if (claimed && handledRef.current !== claimed.id) watchRef.current = claimed.id;
+
+    const id = watchRef.current;
+    if (!id || handledRef.current === id) return;
+    const latest = rows.find((d) => d.id === id);
+    if (!latest || latest.status === "claimed" || latest.status === "awaiting_payment") return;
+
+    handledRef.current = id;
+    watchRef.current = null;
+    setCardOpen(false);
     if (latest.status === "approved") {
-      setDeposit(latest);
-      setPendingReview(false);
+      const credited = Number(latest.amount) || 0;
+      setDeposit(null);
+      setAmount(credited);
+      setCustom("");
       setDone(true);
-      setNewBalance(balance + Number(latest.amount));
+      setNewBalance(balance + credited);
       void qc.invalidateQueries({ queryKey: ["wallet"] });
       toast.success(t("topUpPage.creditedToast"));
-    } else if (latest.status === "rejected") {
-      setDeposit(latest);
-      setPendingReview(false);
-      toast.error(latest.review_note || t("topUpPage.paymentError"));
+      return;
     }
-  }, [depositsQ.data, pendingReview, deposit, t, qc, balance]);
+    setDeposit(null);
+    toast.error(latest.review_note || t("topUpPage.paymentError"));
+  }, [depositsQ.data, deposit, balance, qc, t]);
 
   const activePreset = PRESETS.includes(amount as (typeof PRESETS)[number]) && !custom;
   const amountLabel = formatInputAmount(amount);
@@ -112,15 +133,15 @@ function TopUpPage() {
     setNewBalance(null);
   };
 
-  const canSubmit = amount >= 10_000 && !submitting;
+  const canSubmit = amount >= 10_000 && !submitting && !claimedDeposit;
 
   const openExisting = (row: CardDeposit, resumedNotice = false) => {
+    if (row.status === "claimed") return;
     const n = typeof row.amount === "number" ? row.amount : Number(row.amount) || 0;
     setDeposit(row);
     setAmount(n);
     setCustom("");
     setCardOpen(true);
-    setPendingReview(row.status === "claimed");
     setDone(false);
     if (resumedNotice) {
       toast.message(t("topUpPage.resumeOpen"));
@@ -128,13 +149,14 @@ function TopUpPage() {
   };
 
   const runCardFlow = async () => {
+    if (claimedDeposit) return;
     setSubmitting(true);
     try {
-      // Avval ochiq so'rovni qayta ochamiz — xato toast emas.
       const latestOpen =
         openDeposit ??
         (await fetchMyCardDeposits()).find((d) => OPEN_STATUSES.has(d.status)) ??
         null;
+      if (latestOpen?.status === "claimed") return;
       if (latestOpen) {
         openExisting(latestOpen, true);
         return;
@@ -160,11 +182,32 @@ function TopUpPage() {
     try {
       const updated = await claimCardDeposit(deposit.id, receipt);
       setDeposit(updated);
-      setPendingReview(true);
+      setCardOpen(false);
       setDone(false);
       toast.success(t("topUpPage.claimedToast"));
       void qc.invalidateQueries({ queryKey: ["wallet"] });
       void qc.invalidateQueries({ queryKey: ["wallet", "card-deposits"] });
+      void qc.invalidateQueries({ queryKey: ["notifications"] });
+      if (typeof window !== "undefined" && "Notification" in window) {
+        const show = () => {
+          try {
+            new Notification(t("topUpPage.adminPendingTitle"), {
+              body: t("topUpPage.adminPendingBody", {
+                amount: formatInputAmount(Number(updated.amount) || 0),
+                ref: updated.transaction_ref,
+              }),
+            });
+          } catch {
+            /* brauzer bildirishnomani bloklagan */
+          }
+        };
+        if (Notification.permission === "granted") show();
+        else if (Notification.permission === "default") {
+          void Notification.requestPermission().then((perm) => {
+            if (perm === "granted") show();
+          });
+        }
+      }
     } catch (e) {
       toast.error(e instanceof Error ? e.message : t("topUpPage.paymentError"));
     } finally {
@@ -206,13 +249,28 @@ function TopUpPage() {
             so'm · {openDeposit.transaction_ref}
           </p>
           <p className="mt-0.5 text-[12px] font-medium text-black/50">
-            {openDeposit.status === "claimed"
-              ? t("topUpPage.claimedPending")
-              : t("topUpPage.continueOpen")}
+            {t("topUpPage.continueOpen")}
           </p>
         </button>
       ) : null}
 
+      {claimedDeposit ? (
+        <ProfileSubpageCard className="mt-6 border-black/15 bg-black/[0.03]">
+          <p className="text-sm font-bold text-black">{t("topUpPage.adminPendingTitle")}</p>
+          <p className="mt-1 text-xs leading-relaxed text-black/55">
+            {t("topUpPage.adminPendingBody", {
+              amount: formatInputAmount(
+                typeof claimedDeposit.amount === "number"
+                  ? claimedDeposit.amount
+                  : Number(claimedDeposit.amount) || 0,
+              ),
+              ref: claimedDeposit.transaction_ref,
+            })}
+          </p>
+          <p className="mt-2 text-xs font-medium text-black/45">{t("topUpPage.claimedPending")}</p>
+        </ProfileSubpageCard>
+      ) : (
+        <>
       <section className="mt-6">
         <h3 className="text-[10px] font-bold uppercase tracking-[0.18em] text-black/45">
           {t("topUpPage.chooseAmount")}
@@ -267,24 +325,20 @@ function TopUpPage() {
 
       {done ? (
         <ProfileSubpageCard className="mt-6 border-black/15 bg-black/[0.03]">
-          <p className="text-sm font-bold text-black">{t("topUpPage.successTitle")}</p>
-          <p className="mt-1 text-xs text-black/55">
-            {t("topUpPage.successBody", {
-              amount: amountLabel,
-              balance: formatInputAmount(totalAfter),
-            })}
-          </p>
-        </ProfileSubpageCard>
-      ) : null}
-
-      {pendingReview && !cardOpen ? (
-        <ProfileSubpageCard className="mt-6 border-black/15 bg-black/[0.03]">
-          <p className="text-sm font-bold text-black">{t("topUpPage.pendingTitle")}</p>
-          <p className="mt-1 text-xs text-black/55">
-            {t("topUpPage.pendingBody", {
-              ref: deposit?.transaction_ref ?? openDeposit?.transaction_ref ?? "—",
-            })}
-          </p>
+          <div className="flex items-start gap-3">
+            <span className="grid h-10 w-10 shrink-0 place-items-center bg-black text-white">
+              <Check className="h-5 w-5" strokeWidth={2.5} />
+            </span>
+            <div>
+              <p className="text-sm font-bold text-black">{t("topUpPage.successTitle")}</p>
+              <p className="mt-1 text-xs text-black/55">
+                {t("topUpPage.successBody", {
+                  amount: amountLabel,
+                  balance: formatInputAmount(totalAfter),
+                })}
+              </p>
+            </div>
+          </div>
         </ProfileSubpageCard>
       ) : null}
 
@@ -300,6 +354,8 @@ function TopUpPage() {
             ? t("topUpPage.continuePay")
             : t("topUpPage.submit", { amount: amountLabel })}
       </button>
+        </>
+      )}
 
       <section className="mt-8">
         <h3 className="text-[10px] font-bold uppercase tracking-[0.18em] text-black/45">

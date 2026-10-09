@@ -16,6 +16,7 @@ type WsPayload = {
   event?: string;
   id?: number;
   title?: string;
+  body?: string;
   booking_id?: number;
   payload?: { booking_id?: number };
 };
@@ -52,6 +53,21 @@ export function subscribeUserWsState(listener: (open: boolean) => void) {
 function invalidateAll() {
   for (const qc of clients) {
     void qc.invalidateQueries({ queryKey: notificationsQueryKeyBase });
+  }
+}
+
+function refreshWallet() {
+  for (const qc of clients) {
+    void qc.invalidateQueries({ queryKey: ["wallet"] });
+  }
+}
+
+function browserNotice(title?: string, body?: string) {
+  if (!title || typeof Notification === "undefined" || Notification.permission !== "granted") return;
+  try {
+    new Notification(title, { body: body || title });
+  } catch {
+    /* brauzer bildirishnomani bloklagan */
   }
 }
 
@@ -130,6 +146,16 @@ function openSocket(token: string) {
         (typeof payload.id === "number" && typeof payload.title === "string")
       ) {
         invalidateAll();
+        if (
+          payload.type === "wallet_topup" ||
+          payload.type === "wallet_deposit_claimed" ||
+          payload.type === "wallet_deposit_rejected"
+        ) {
+          refreshWallet();
+          if (payload.type !== "wallet_deposit_claimed") {
+            browserNotice(payload.title, payload.body);
+          }
+        }
         const bid = payload.booking_id ?? payload.payload?.booking_id;
         if (bid != null) refreshBookings(bid);
       }

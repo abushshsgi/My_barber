@@ -1902,6 +1902,8 @@
     "waiting": "Kutilmoqda…",
     "pendingTitle": "Tekshiruvda",
     "pendingBody": "Tranzaksiya {{ref}} admin tomonidan tekshirilmoqda. Tasdiqlansa balans darhol yangilanadi.",
+    "adminPendingTitle": "Admin hali tasdiqlamagan",
+    "adminPendingBody": "{{amount}} so'm · {{ref}}. Tasdiqlanguncha yangi to'ldirish yopiq.",
     "submit": "To'ldirish · {{amount}} so'm",
     "successTitle": "Hamyon to'ldirildi",
     "successBody": "+{{amount}} so'm qo'shildi. Yangi balans: {{balance}} so'm."

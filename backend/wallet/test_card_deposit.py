@@ -200,6 +200,20 @@ class CardDepositServiceTests(TestCase):
         self.assertEqual(str(second.pk), str(first.pk))
         self.assertEqual(ManualCardDeposit.objects.filter(user=self.user).count(), 1)
 
+    def test_claimed_deposit_blocks_new_init(self):
+        deposit, _ = CardDepositService.init_deposit(
+            user=self.user, amount=Decimal("50000"), idempotency_key="claim-block"
+        )
+        receipt = _tiny_png()
+        CardDepositService.claim_deposit(
+            user=self.user, deposit_id=str(deposit.pk), receipt_file=receipt
+        )
+        with self.assertRaises(WalletServiceError):
+            CardDepositService.init_deposit(
+                user=self.user, amount=Decimal("80000"), idempotency_key="claim-block-2"
+            )
+        self.assertEqual(ManualCardDeposit.objects.filter(user=self.user).count(), 1)
+
 
 @override_settings(
     WALLET_RECEIVING_CARD_NUMBER="8600123456789012",

@@ -119,7 +119,8 @@ export function TopUpCardSheet({
 
   if (!deposit) return null;
 
-  const claimed = deposit.status === "claimed" || deposit.status === "approved";
+  const approved = deposit.status === "approved";
+  const claimed = deposit.status === "claimed";
   const cardDigits = (deposit.receiving_card?.number || deposit.receiving_card?.masked || "").replace(
     /\D/g,
     "",
@@ -221,7 +222,19 @@ export function TopUpCardSheet({
         </div>
 
         <div className="space-y-3 px-5 pt-5">
-          {claimed ? (
+          {approved ? (
+            <div className="flex items-start gap-3 border border-black/10 bg-white px-4 py-4">
+              <span className="grid h-10 w-10 shrink-0 place-items-center bg-black text-white">
+                <Check className="h-5 w-5" strokeWidth={2.5} />
+              </span>
+              <div>
+                <p className="text-sm font-bold text-black">{t("topUpPage.successTitle")}</p>
+                <p className="mt-1 text-xs leading-relaxed text-black/55">
+                  {t("topUpPage.creditedToast")} · {displayAmount} so'm
+                </p>
+              </div>
+            </div>
+          ) : claimed ? (
             <>
               {(previewUrl || existingReceipt) && (
                 <a

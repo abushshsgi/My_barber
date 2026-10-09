@@ -1902,6 +1902,8 @@
     "waiting": "Please wait…",
     "pendingTitle": "Under review",
     "pendingBody": "Transaction {{ref}} is being reviewed. Balance updates right after approval.",
+    "adminPendingTitle": "Waiting for admin",
+    "adminPendingBody": "{{amount}} UZS · {{ref}}. A new top-up stays closed until this one is approved.",
     "submit": "Top up · {{amount}} UZS",
     "successTitle": "Wallet topped up",
     "successBody": "+{{amount}} UZS added. New balance: {{balance}} UZS."

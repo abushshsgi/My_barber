@@ -386,6 +386,10 @@ class CardDepositService:
                 ManualCardDeposit.Status.CLAIMED,
             ],
         ).order_by("-created_at")
+        if open_qs.filter(status=ManualCardDeposit.Status.CLAIMED).exists():
+            raise WalletServiceError(
+                "Oldingi to'lov admin tasdiqlamaguncha yangi to'ldirish mumkin emas."
+            )
         if open_qs.exists():
             # Xato o'rniga ochiq so'rovni qayta ochamiz (resume)
             same_amount = open_qs.filter(
