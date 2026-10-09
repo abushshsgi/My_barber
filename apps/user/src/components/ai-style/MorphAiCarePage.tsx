@@ -1,10 +1,11 @@
-import { Link, useRouter } from "@tanstack/react-router";
+import { Link, useNavigate, useRouter } from "@tanstack/react-router";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ChevronLeft, ChevronRight, CloudSun, Loader2, Lock, Search, ShoppingBag } from "lucide-react";
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { navigateBack } from "@/lib/mobile-back";
+import { CareAiRoutine } from "@/components/ai-style/CareAiRoutine";
 import {
   buildCarePlan,
   careOptionImage,
@@ -15,7 +16,7 @@ import {
   type ColorStatus,
   type HairCondition,
   type HairTexture,
-} from "@/lib/morph-ai-care";
+} from "@/lib/morf-ai-care";
 import { loadFaceProfile } from "@/lib/face-profile";
 import { fetchCareAccess } from "@/lib/api/subscriptions";
 import { cn } from "@/lib/utils";
@@ -23,7 +24,13 @@ import { useHairCareProfile, useUpdateHairCareProfile } from "@/hooks/use-hair-c
 import { useCareProducts } from "@/hooks/use-care-products";
 import { BadHairDaySosSheet } from "@/components/ai-style/BadHairDaySosSheet";
 import { CareShelfTracker } from "@/components/ai-style/CareShelfTracker";
-import { fetchCareShelf, fetchWeatherCare } from "@/lib/api/care-products";
+import {
+  fetchCareShelf,
+  fetchMyCareProducts,
+  fetchWeatherCare,
+  generateHairGrowthForecast,
+  type HairGrowthForecast,
+} from "@/lib/api/care-products";
 import { getFastPosition } from "@/lib/native-geolocation";
 import { resolveUzRegion, uzRegionImage } from "@/lib/uz-care-regions";
 
@@ -37,6 +44,7 @@ const ease = [0.22, 1, 0.36, 1] as const;
 
 export function MorphAiCarePage() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const reduce = useReducedMotion();
   const accessQ = useQuery({
     queryKey: ["subscriptions", "care-access"],
@@ -54,10 +62,14 @@ export function MorphAiCarePage() {
   const [step, setStep] = useState<QuizStep | "plan">(
     savedQuiz && isCareQuizComplete(savedQuiz) ? "plan" : 0,
   );
-  const [panel, setPanel] = useState<"hub" | "routine" | "shelf" | "weather">("hub");
+  const [panel, setPanel] = useState<"hub" | "routine" | "shelf" | "weather" | "growth">("routine");
   const [search, setSearch] = useState("");
   const [coords, setCoords] = useState<{ lat: number; lon: number } | null>(null);
   const [sosOpen, setSosOpen] = useState(false);
+  const [growthCm, setGrowthCm] = useState("8");
+  const [growthBusy, setGrowthBusy] = useState(false);
+  const [growth, setGrowth] = useState<HairGrowthForecast | null>(null);
+  const [growthError, setGrowthError] = useState("");
   const searchQ = useCareProducts({ q: search.trim() || undefined, enabled: search.trim().length > 0 });
   const weatherQ = useQuery({
     queryKey: ["ai", "care", "weather", quiz.condition, quiz.texture, coords?.lat ?? null, coords?.lon ?? null],
@@ -76,6 +88,12 @@ export function MorphAiCarePage() {
     queryFn: fetchCareShelf,
     enabled: step === "plan",
     staleTime: 30_000,
+  });
+  const myQ = useQuery({
+    queryKey: ["ai", "care", "my-products"],
+    queryFn: fetchMyCareProducts,
+    enabled: step === "plan",
+    staleTime: 20_000,
   });
   const plan = useMemo(() => buildCarePlan(profile, quiz), [profile, quiz]);
   const catalogProducts = catalogQ.data || [];
@@ -323,31 +341,18 @@ export function MorphAiCarePage() {
   const featured = (search.trim() ? searchQ.data : catalogProducts) || [];
   const shelfCount = shelfQ.data?.items?.length ?? 0;
 
-  const traits = [
-    {
-      label: t("aiStylePage.care.condition", { defaultValue: "Holat" }),
-      value: t(`aiStylePage.care.conditions.${plan.condition}`),
-      key: plan.condition,
-    },
-    {
-      label: t("aiStylePage.care.texture", { defaultValue: "Tekstura" }),
-      value: t(`aiStylePage.care.textures.${plan.texture}`),
-      key: plan.texture,
-    },
-    {
-      label: t("aiStylePage.care.colorStatus", { defaultValue: "Rang" }),
-      value: t(`aiStylePage.care.colors.${plan.colorStatus}`),
-      key: plan.colorStatus,
-    },
-  ];
-
   return (
     <div className="relative min-h-[100dvh] overflow-x-hidden overflow-y-auto bg-[#F3F3F4] text-[#111111]">
       <div
         className="relative z-[1] mx-auto w-full max-w-lg px-4 pb-[max(2.5rem,env(safe-area-inset-bottom))]"
         style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}
       >
-        <div className="flex items-center justify-between">
+        <div
+          className={cn(
+            "flex items-center",
+            panel === "routine" ? "grid grid-cols-[44px_1fr_44px]" : "justify-between",
+          )}
+        >
           {panel === "hub" ? (
             <BackLink label={t("common.back")} />
           ) : (
@@ -361,24 +366,28 @@ export function MorphAiCarePage() {
             </button>
           )}
           {panel === "routine" ? (
-            <button
-              type="button"
-              onClick={() => setStep(0)}
-              className="cursor-pointer text-[13px] font-medium text-[#111111]/45"
-            >
-              {t("aiStylePage.care.quiz.retake", { defaultValue: "Qayta" })}
-            </button>
+            <div className="min-w-0 text-center">
+              <p className="truncate text-[15px] font-extrabold tracking-tight">
+                {t("aiStylePage.care.routine.planTitle", { defaultValue: "Morf AI Parvarish Rejasi" })}
+              </p>
+              <p className="truncate text-[11px] text-[#111111]/45">
+                {t(`aiStylePage.care.conditions.${quiz.condition}`, { defaultValue: quiz.condition })}
+                {" · "}
+                {t(`aiStylePage.care.textures.${quiz.texture}`, { defaultValue: quiz.texture })}
+              </p>
+            </div>
           ) : (
             <span className="text-[13px] font-semibold tracking-tight">
               {panel === "weather"
                 ? "Ob-havo"
                 : panel === "shelf"
                   ? "Mening mahsulotlarim"
-                  : panel === "routine"
-                    ? "Parvarish"
+                  : panel === "growth"
+                    ? "O‘sish"
                     : "Parvarish"}
             </span>
           )}
+          {panel === "routine" ? <span /> : null}
         </div>
 
         {panel === "hub" ? (
@@ -436,18 +445,20 @@ export function MorphAiCarePage() {
                 <img src="/care/care-card-shelf.jpg" alt="" className="absolute inset-0 size-full object-cover" />
                 <span className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/15 to-transparent" />
                 <span className="absolute bottom-2.5 left-2.5 right-2">
-                  <span className="block text-[12px] font-bold leading-tight">Mening mahsulotlarim</span>
+                  <span className="block text-[12px] font-bold leading-tight">Javon</span>
                   <span className="text-[10px] text-white/80">{shelfCount} ta</span>
                 </span>
               </button>
-              <Link
-                to="/ai-style/care/ingredient"
-                className="relative h-28 overflow-hidden rounded-2xl text-left text-white"
+              <button
+                type="button"
+                onClick={() => setPanel("growth")}
+                className="relative h-28 cursor-pointer overflow-hidden rounded-2xl bg-gradient-to-br from-[#FFF3E8] to-[#E7B48A] text-left text-[#111111]"
               >
-                <img src="/care/care-card-scan.jpg" alt="" className="absolute inset-0 size-full object-cover" />
-                <span className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
-                <span className="absolute bottom-2.5 left-2.5 text-[12px] font-bold leading-tight">Tarkib</span>
-              </Link>
+                <span className="absolute inset-0 bg-gradient-to-t from-black/25 to-transparent" />
+                <span className="absolute bottom-2.5 left-2.5 text-[12px] font-bold leading-tight text-white">
+                  O‘sish
+                </span>
+              </button>
             </div>
 
             <label className="mt-4 flex h-12 items-center gap-2 rounded-full bg-white px-4 ring-1 ring-black/10">
@@ -554,7 +565,7 @@ export function MorphAiCarePage() {
                   <img src="/care/care-card-scan.jpg" alt="" className="absolute inset-0 size-full object-cover" />
                   <span className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
                   <span className="absolute left-3 top-3 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-bold text-[#111111]">
-                    Skan
+                    Tahlil qilingan
                   </span>
                   <span className="absolute inset-x-3 bottom-3">
                     <span className="block text-sm font-bold">Tarkib</span>
@@ -565,185 +576,74 @@ export function MorphAiCarePage() {
             </div>
           </>
         ) : panel === "routine" ? (
-          <>
-            <motion.div
-              initial={reduce ? false : { opacity: 0, y: 14 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, ease }}
-              className="mt-6"
+          <CareAiRoutine
+            quiz={quiz}
+            myProducts={myQ.data || []}
+            catalog={catalogProducts}
+            loadingProducts={myQ.isLoading}
+            onOpenCatalog={() => setPanel("hub")}
+            onOpenScan={() => navigate({ to: "/ai-style/care/ingredient" })}
+            onOpenProduct={(id) =>
+              navigate({
+                to: "/ai-style/care/products/$productId",
+                params: { productId: String(id) },
+              })
+            }
+          />
+        ) : panel === "growth" ? (
+          <div className="mt-6 space-y-3">
+            <h1 className="text-[1.6rem] font-extrabold tracking-tight">O‘sish</h1>
+            <p className="text-sm text-[#111111]/55">
+              Hozirgi uzunlik bo‘yicha 3 oylik prognoz.
+            </p>
+            <label className="block rounded-2xl bg-white px-4 py-3 ring-1 ring-black/5">
+              <span className="text-[11px] font-semibold text-[#111111]/45">Uzunlik, sm</span>
+              <input
+                value={growthCm}
+                onChange={(e) => setGrowthCm(e.target.value.replace(/[^\d.]/g, ""))}
+                inputMode="decimal"
+                className="mt-1 w-full bg-transparent text-2xl font-bold outline-none"
+              />
+            </label>
+            <button
+              type="button"
+              disabled={growthBusy}
+              onClick={() => {
+                const cm = Number(growthCm);
+                if (!Number.isFinite(cm) || cm <= 0) return;
+                setGrowthBusy(true);
+                setGrowthError("");
+                void generateHairGrowthForecast({
+                  current_length_cm: cm,
+                  check_ins_count: 1,
+                  products_used: (myQ.data || []).map((p) => p.name),
+                })
+                  .then(setGrowth)
+                  .catch((e: unknown) =>
+                    setGrowthError(e instanceof Error ? e.message : "Prognoz yaratilmadi."),
+                  )
+                  .finally(() => setGrowthBusy(false));
+              }}
+              className="flex h-12 w-full cursor-pointer items-center justify-center rounded-full bg-[#111111] text-sm font-semibold text-white disabled:opacity-50"
             >
-              <h1 className="text-[1.6rem] font-semibold leading-[1.12] tracking-tight">
-                {t("aiStylePage.care.title", { defaultValue: "Sizning rejangiz" })}
-              </h1>
-              <p className="mt-3 text-[15px] leading-relaxed text-[#111111]/70">{plan.summary}</p>
-            </motion.div>
-
-            <motion.div
-              initial={reduce ? false : { opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mt-5 grid grid-cols-3 gap-2"
-            >
-              {traits.map((item) => (
-                <div key={item.key} className="overflow-hidden rounded-2xl bg-white">
-                  <img src={careOptionImage(item.key)} alt="" className="aspect-[4/5] w-full object-cover object-top" />
-                  <div className="px-2 py-2">
-                    <p className="text-[10px] text-[#111111]/35">{item.label}</p>
-                    <p className="truncate text-[12px] font-semibold">{item.value}</p>
-                  </div>
-                </div>
-              ))}
-            </motion.div>
-
-            <Section
-              title={t("aiStylePage.care.weeklyTitle", { defaultValue: "Hafta" })}
-              delay={0.12}
-            >
-              <div className="space-y-1.5">
-                {plan.weekly.map((row, i) => (
-                  <motion.div
-                    key={row.day}
-                    initial={reduce ? false : { opacity: 0, x: -8 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.14 + i * 0.04, duration: 0.3, ease }}
-                    className="flex items-center gap-3 rounded-2xl bg-white px-3.5 py-3"
-                  >
-                    <span className="w-8 text-[13px] font-semibold text-[#111111]/40">
-                      {row.day}
-                    </span>
-                    <span className="text-[14px] font-medium">{row.task}</span>
-                  </motion.div>
-                ))}
+              {growthBusy ? "Hisoblanmoqda…" : "Prognoz"}
+            </button>
+            {growthError ? <p className="text-sm text-red-600">{growthError}</p> : null}
+            {growth ? (
+              <div className="rounded-2xl bg-white px-4 py-4 ring-1 ring-black/5">
+                <p className="text-3xl font-extrabold tabular-nums">
+                  {growth.projected_length_3_months} sm
+                </p>
+                <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-[#111111]/40">
+                  3 oy · {growth.growth_rate_status}
+                </p>
+                <p className="mt-3 text-sm leading-relaxed">{growth.ai_commentary}</p>
+                {growth.recommended_action ? (
+                  <p className="mt-2 text-sm text-[#111111]/60">{growth.recommended_action}</p>
+                ) : null}
               </div>
-            </Section>
-
-            <Section
-              title={t("aiStylePage.care.productsTitle", { defaultValue: "Mahsulotlar" })}
-              delay={0.2}
-            >
-              <div className="space-y-1.5">
-                {(catalogProducts.length > 0
-                  ? catalogProducts.slice(0, 4).map((p) => ({
-                      id: p.id,
-                      href: true as const,
-                      name: p.name,
-                      role: p.brand || p.category,
-                      tip: p.purpose_uz || p.usage_uz,
-                    }))
-                  : plan.products.map((p) => ({
-                      id: p.name,
-                      href: false as const,
-                      name: p.name,
-                      role: p.role,
-                      tip: p.tip,
-                    }))
-                ).map((p, i) => {
-                  const inner = (
-                    <>
-                      <div className="flex items-baseline justify-between gap-3">
-                        <p className="text-[14px] font-semibold">{p.name}</p>
-                        <p className="shrink-0 text-[11px] text-[#111111]/35">{p.role}</p>
-                      </div>
-                      {p.tip ? <p className="mt-1 text-[13px] text-[#111111]/50">{p.tip}</p> : null}
-                    </>
-                  );
-                  const cls = "rounded-2xl bg-white px-3.5 py-3.5";
-                  return (
-                    <motion.div
-                      key={p.id}
-                      initial={reduce ? false : { opacity: 0, y: 8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.22 + i * 0.04, duration: 0.3, ease }}
-                    >
-                      {p.href ? (
-                        <Link
-                          to="/ai-style/care/products/$productId"
-                          params={{ productId: String(p.id) }}
-                          className={cn(cls, "block")}
-                        >
-                          {inner}
-                        </Link>
-                      ) : (
-                        <div className={cls}>{inner}</div>
-                      )}
-                    </motion.div>
-                  );
-                })}
-              </div>
-            </Section>
-
-            <Section
-              title={t("aiStylePage.care.stylingTitle", { defaultValue: "Styling" })}
-              delay={0.28}
-            >
-              <ol className="space-y-1.5">
-                {plan.stylingTips.map((tip, i) => (
-                  <motion.li
-                    key={tip}
-                    initial={reduce ? false : { opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.3 + i * 0.04, duration: 0.3, ease }}
-                    className="flex gap-3 rounded-2xl bg-white px-3.5 py-3 text-[14px] leading-snug text-[#111111]/80"
-                  >
-                    <span className="shrink-0 text-[#111111]/30">{i + 1}</span>
-                    {tip}
-                  </motion.li>
-                ))}
-              </ol>
-            </Section>
-
-            <Section
-              title={t("aiStylePage.care.avoidTitle", { defaultValue: "Qilmang" })}
-              delay={0.36}
-            >
-              <div className="flex flex-wrap gap-2">
-                {plan.avoid.map((item, i) => (
-                  <motion.span
-                    key={item}
-                    initial={reduce ? false : { opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.38 + i * 0.03, duration: 0.25, ease }}
-                    className="rounded-full bg-[#F0F0F0] px-3.5 py-2 text-[13px] text-[#111111]/60"
-                  >
-                    {item}
-                  </motion.span>
-                ))}
-              </div>
-            </Section>
-
-            <motion.div
-              initial={reduce ? false : { opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.42, duration: 0.35, ease }}
-              className="mt-10"
-            >
-              <p className="text-[14px] text-[#111111]/55">
-                {t("aiStylePage.care.nextCut", {
-                  defaultValue: "Keyingi trim · ~{{days}} kun",
-                  days: plan.nextCutDays,
-                })}
-              </p>
-              <Link
-                to="/ai-style/care/ingredient"
-                className="mt-4 flex h-12 w-full items-center justify-center rounded-full bg-white text-sm font-semibold text-[#111111] ring-1 ring-black/10 active:scale-[0.98]"
-              >
-                {t("aiStylePage.care.ingredientScan.cta", {
-                  defaultValue: "Tarkib skani",
-                })}
-              </Link>
-              <Link
-                to="/ai-style/care/products"
-                className="mt-3 flex h-12 w-full items-center justify-center rounded-full bg-white text-sm font-semibold text-[#111111] ring-1 ring-black/10 active:scale-[0.98]"
-              >
-                {t("aiStylePage.care.catalog.cta", { defaultValue: "Barcha vositalar" })}
-              </Link>
-              <Link
-                to="/explore"
-                className="mt-3 flex h-12 w-full items-center justify-center rounded-full bg-[#111111] text-sm font-semibold text-white active:scale-[0.98]"
-              >
-                {t("aiStylePage.care.exploreCta", { defaultValue: "Uslub tanlash" })}
-              </Link>
-            </motion.div>
-          </>
+            ) : null}
+          </div>
         ) : panel === "shelf" ? (
           <div className="mt-4">
             <CareShelfTracker />
@@ -825,25 +725,3 @@ function BackLink({ label }: { label: string }) {
   );
 }
 
-function Section({
-  title,
-  delay,
-  children,
-}: {
-  title: string;
-  delay: number;
-  children: ReactNode;
-}) {
-  const reduce = useReducedMotion();
-  return (
-    <motion.section
-      initial={reduce ? false : { opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay, duration: 0.35, ease }}
-      className="mt-9"
-    >
-      <h2 className="mb-3 text-[12px] font-medium tracking-wide text-[#111111]/35">{title}</h2>
-      {children}
-    </motion.section>
-  );
-}

@@ -26,17 +26,25 @@ export type CareProduct = {
   warnings_uz: string;
   is_published: boolean;
   sort_order: number;
+  likes_count?: number;
+  liked_by_me?: boolean;
 };
 
 export async function fetchCareProducts(params?: {
   q?: string;
   category?: string;
   recommended?: boolean;
+  order?: "likes" | "popular" | string;
+  exclude_mine?: boolean;
+  exclude_ids?: number[];
 }): Promise<CareProduct[]> {
   const sp = new URLSearchParams();
   if (params?.q) sp.set("q", params.q);
   if (params?.category) sp.set("category", params.category);
   if (params?.recommended) sp.set("recommended", "1");
+  if (params?.order) sp.set("order", params.order);
+  if (params?.exclude_mine) sp.set("exclude_mine", "1");
+  if (params?.exclude_ids?.length) sp.set("exclude_ids", params.exclude_ids.join(","));
   const q = sp.toString();
   return apiJson(`/api/v1/ai/care/products/${q ? `?${q}` : ""}`);
 }
@@ -239,4 +247,118 @@ export async function fetchCareProductByBarcode(
   return apiJson(
     `/api/v1/products/barcode/${encodeURIComponent(barcode)}/${q ? `?${q}` : ""}`,
   );
+}
+
+export type AiCarePlanTask = {
+  id: string;
+  title: string;
+  subtitle: string;
+  time_hint?: string;
+  time?: string;
+  duration_min?: number | null;
+  icon: string;
+  product_id?: number | null;
+  product_name?: string;
+};
+
+export type AiCarePlan = {
+  summary: string;
+  morning: AiCarePlanTask[];
+  evening: AiCarePlanTask[];
+  weekly: AiCarePlanTask[];
+  weekly_schedule: {
+    day: string;
+    task: string;
+    time?: string;
+    product_id?: number | null;
+    product_name?: string;
+  }[];
+  tips: string[];
+  avoid: string[];
+};
+
+export async function fetchSavedCarePlan(params: {
+  productIds: number[];
+  profileKey: string;
+}): Promise<{ plan: AiCarePlan | null; stale: boolean }> {
+  const q = new URLSearchParams({
+    product_ids: params.productIds.join(","),
+    profile_key: params.profileKey,
+  });
+  return apiJson(`/api/v1/ai/care/plan/?${q.toString()}`);
+}
+
+export async function generateCarePlan(body: {
+  condition: string;
+  texture: string;
+  color_status: string;
+  products: { id: number; name: string; brand?: string; category?: string }[];
+  mode?: "full" | "append";
+  morning_time?: string;
+  evening_time?: string;
+}): Promise<AiCarePlan> {
+  const data = await apiJson<{ plan?: AiCarePlan; ready?: boolean; detail?: string }>(
+    "/api/v1/ai/care/plan/",
+    { method: "POST", body: JSON.stringify(body) },
+  );
+  if (data?.ready === false || !data?.plan) {
+    throw new Error(data?.detail || "Parvarish reja yaratilmadi.");
+  }
+  return data.plan;
+}
+
+export type MyCareProduct = {
+  id: number;
+  name: string;
+  brand: string;
+  category: string;
+  image_url: string | null;
+  source: string;
+  added_at: string | null;
+  usage_uz?: string;
+  purpose_uz?: string;
+};
+
+export async function fetchMyCareProducts(): Promise<MyCareProduct[]> {
+  return apiJson("/api/v1/ai/care/my-products/");
+}
+
+export async function addMyCareProduct(body: {
+  product_id: number;
+  source?: string;
+}): Promise<MyCareProduct> {
+  return apiJson("/api/v1/ai/care/my-products/", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export async function toggleCareProductLike(
+  productId: number,
+): Promise<{ liked: boolean; likes_count: number; product_id: number }> {
+  return apiJson(`/api/v1/ai/care/products/${productId}/like/`, {
+    method: "POST",
+    body: "{}",
+  });
+}
+
+export type HairGrowthForecast = {
+  projected_length_3_months: number;
+  monthly_growth_cm?: number;
+  growth_rate_status: string;
+  ai_commentary: string;
+  recommended_action: string;
+};
+
+export async function generateHairGrowthForecast(body: {
+  current_length_cm: number;
+  check_ins_count: number;
+  products_used: string[];
+}): Promise<HairGrowthForecast> {
+  const data = await apiJson<{ forecast?: HairGrowthForecast; detail?: string }>(
+    "/api/v1/ai/care/growth-forecast/",
+    { method: "POST", body: JSON.stringify(body) },
+  );
+  if (!data?.forecast) throw new Error(data?.detail || "O‘sish prognozi yaratilmadi.");
+  return data.forecast;
 }
