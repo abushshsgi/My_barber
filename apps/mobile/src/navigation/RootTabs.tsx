@@ -159,6 +159,7 @@ function getTabBarVisibility(route: RouteProp<RootTabParamList, keyof RootTabPar
     "MorphGuide",
     "MorphWelcome",
     "MorphHome",
+    "CareHome",
     "CareProductDetail",
     "CareProductGuide",
     "CareWeather",

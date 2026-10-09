@@ -1,9 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
+import { useMemo } from "react";
 import { StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import type { WeatherShieldState } from "../../types/weatherShield";
 import { SHIELD_IMAGES } from "../../services/weatherRecommendationEngine";
-import { colors } from "../../theme/colors";
+import { shellChrome, useShellTheme, type ShellChrome } from "../../lib/useShellTheme";
 import { morphFont } from "../../theme/morph-font";
 import { fontSize, moderateScale, scale, verticalScale } from "../../utils/responsive";
 import { RecommendationCard } from "./RecommendationCard";
@@ -16,6 +17,12 @@ type Props = {
 
 /** Soft Paper header + ixcham kartalar + bajarildi checkbox. */
 export function WeatherShieldContainer({ state, doneIds, onToggleDone }: Props) {
+  const pal = useShellTheme();
+  const colors = shellChrome(pal);
+  styles = useMemo(
+    () => createShieldStyles(colors),
+    [colors.bg, colors.fg, colors.muted, colors.surface, colors.promo, colors.border],
+  );
   const { width } = useWindowDimensions();
   const { recommendations, loading, error } = state;
   const hairOnly = recommendations.filter((r) => r.type !== "style");
@@ -117,7 +124,21 @@ export function WeatherShieldContainer({ state, doneIds, onToggleDone }: Props) 
   );
 }
 
-const styles = StyleSheet.create({
+let styles = createShieldStyles({
+  bg: "#FAFAFA",
+  fg: "#111111",
+  muted: "#737373",
+  surface: "#FFFFFF",
+  border: "rgba(17,17,17,0.12)",
+  promo: "#F0F0F0",
+  iconTile: "#F0F0F0",
+  accent: "#111111",
+  onAccent: "#FFFFFF",
+  status: "dark",
+});
+
+function createShieldStyles(colors: ShellChrome) {
+  return StyleSheet.create({
   root: { gap: moderateScale(10) },
   header: {
     flexDirection: "row",
@@ -132,7 +153,7 @@ const styles = StyleSheet.create({
     width: scale(40),
     height: scale(40),
     borderRadius: moderateScale(12),
-    backgroundColor: "#F7F4EF",
+    backgroundColor: colors.promo,
     overflow: "hidden",
   },
   headerImg: { width: "100%", height: "100%" },
@@ -204,4 +225,5 @@ const styles = StyleSheet.create({
     lineHeight: fontSize(16),
     color: colors.muted,
   },
-});
+  });
+}

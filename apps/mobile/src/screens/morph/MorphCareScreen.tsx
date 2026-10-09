@@ -51,7 +51,7 @@ import { AppStatusBar, safeBottom, safeTop } from "../../components/ui/AppStatus
 import { NativeBackButton } from "../../components/ui/NativeBackButton";
 import { SafeModal } from "../../components/ui/SafeModal";
 import { useCareWeather } from "../../hooks/useCareWeather";
-import { useHideTabBarWhen } from "../../hooks/useHideTabBar";
+import { useHideTabBar } from "../../hooks/useHideTabBar";
 import {
   defaultQuiz,
   estimateProductFit,
@@ -216,13 +216,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
   const [searchOpen, setSearchOpen] = useState(false);
   /** Sheet ochilib bo‘lgach grid — ochilish animatsiyasini bloklamaslik uchun. */
   const [searchListReady, setSearchListReady] = useState(false);
-  /** Hubda tab yashirin; quiz/search ham — soch tahlili to‘liq ekran. */
-  useHideTabBarWhen(
-    viewMode === "hub" ||
-      searchOpen ||
-      step === "boot" ||
-      typeof step === "number",
-  );
+  useHideTabBar();
   const [searchQuery, setSearchQuery] = useState("");
   const [sosOpen, setSosOpen] = useState(false);
   const [shelfOpen, setShelfOpen] = useState(false);

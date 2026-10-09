@@ -3,7 +3,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -32,6 +32,7 @@ import {
 } from "../../lib/morph-my-products";
 import { resolveMediaUrl } from "../../api/media";
 import type { MorphCareStackParamList } from "../../navigation/MorphCareStack";
+import { shellChrome, useShellTheme, type ShellChrome } from "../../lib/useShellTheme";
 import { morphFont } from "../../theme/morph-font";
 import {
   fontSize,
@@ -48,14 +49,20 @@ const COL_W = (Dimensions.get("window").width - H_PAD * 2 - GAP) / 2;
 
 const SOURCE_META: Record<
   MyCareProduct["source"],
-  { icon: keyof typeof Ionicons.glyphMap; color: string; bg: string }
+  { icon: keyof typeof Ionicons.glyphMap }
 > = {
-  scan: { icon: "scan-outline", color: "#111111", bg: "#F0F0F0" },
-  recommended: { icon: "sparkles-outline", color: "#111111", bg: "#F0F0F0" },
-  catalog: { icon: "grid-outline", color: "#334155", bg: "#F0F0F0" },
+  scan: { icon: "scan-outline" as const },
+  recommended: { icon: "sparkles-outline" as const },
+  catalog: { icon: "grid-outline" as const },
 };
 
 export function MorphCareMyProductsScreen({ navigation }: Props) {
+  const pal = useShellTheme();
+  const colors = shellChrome(pal);
+  const styles = useMemo(
+    () => createProductStyles(colors),
+    [colors.bg, colors.fg, colors.muted, colors.surface, colors.border, colors.promo, colors.onAccent],
+  );
   useHideTabBar();
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
@@ -177,7 +184,7 @@ export function MorphCareMyProductsScreen({ navigation }: Props) {
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
       <LinearGradient
-        colors={["#FAFAFA", "#F0F0F0", "#FAFAFA"]}
+        colors={[colors.bg, colors.promo, colors.bg]}
         locations={[0, 0.35, 1]}
         style={StyleSheet.absoluteFill}
       />
@@ -222,18 +229,18 @@ export function MorphCareMyProductsScreen({ navigation }: Props) {
           onPress={() => goMorph(navigation, "MorphIngredient")}
           accessibilityLabel={t("care.myProducts.scan")}
         >
-          <Ionicons name="scan-outline" size={18} color="#fff" />
+          <Ionicons name="scan-outline" size={18} color={colors.onAccent} />
         </Pressable>
       </View>
 
       {loading ? (
         <View style={styles.center}>
-          <ActivityIndicator color="#111111" />
+          <ActivityIndicator color={colors.fg} />
         </View>
       ) : rows.length === 0 ? (
         <View style={styles.empty}>
           <View style={styles.emptyIcon}>
-            <Ionicons name="bag-handle-outline" size={30} color="#111111" />
+            <Ionicons name="bag-handle-outline" size={30} color={colors.fg} />
           </View>
           <Text style={styles.emptyTitle}>{t("care.myProducts.emptyTitle")}</Text>
           <Text style={styles.emptySub}>{t("care.myProducts.emptySub")}</Text>
@@ -242,7 +249,7 @@ export function MorphCareMyProductsScreen({ navigation }: Props) {
               style={styles.primaryBtn}
               onPress={() => goMorph(navigation, "MorphIngredient")}
             >
-              <Ionicons name="scan" size={16} color="#fff" />
+              <Ionicons name="scan" size={16} color={colors.onAccent} />
               <Text style={styles.primaryBtnText}>{t("care.myProducts.scan")}</Text>
             </Pressable>
             <Pressable
@@ -265,13 +272,13 @@ export function MorphCareMyProductsScreen({ navigation }: Props) {
           <Text style={styles.pageSub}>{t("care.myProducts.pageSub")}</Text>
           <View style={styles.legend}>
             <View style={styles.legendItem}>
-              <Ionicons name="scan-outline" size={12} color="#111111" />
+              <Ionicons name="scan-outline" size={12} color={colors.fg} />
               <Text style={styles.legendText}>
                 {t("care.myProducts.source.scanHint", { defaultValue: "Skan orqali" })}
               </Text>
             </View>
             <View style={styles.legendItem}>
-              <Ionicons name="sparkles-outline" size={12} color="#111111" />
+              <Ionicons name="sparkles-outline" size={12} color={colors.fg} />
               <Text style={styles.legendText}>
                 {t("care.myProducts.source.recommendedHint", {
                   defaultValue: "Morf tavsiyasi",
@@ -294,15 +301,15 @@ export function MorphCareMyProductsScreen({ navigation }: Props) {
                         <Image source={{ uri: img }} style={styles.cardImg} contentFit="cover" />
                       ) : (
                         <LinearGradient
-                          colors={["#F0F0F0", "#F0F0F0"]}
+                          colors={[colors.promo, colors.promo]}
                           style={[styles.cardImg, styles.cardPh]}
                         >
-                          <Ionicons name="flask-outline" size={22} color="#111111" />
+                          <Ionicons name="flask-outline" size={22} color={colors.fg} />
                         </LinearGradient>
                       )}
-                      <View style={[styles.sourcePill, { backgroundColor: meta.bg }]}>
-                        <Ionicons name={meta.icon} size={10} color={meta.color} />
-                        <Text style={[styles.sourceText, { color: meta.color }]}>
+                      <View style={[styles.sourcePill, { backgroundColor: colors.promo }]}>
+                        <Ionicons name={meta.icon} size={10} color={colors.fg} />
+                        <Text style={[styles.sourceText, { color: colors.fg }]}>
                           {t(`care.myProducts.source.${p.source}`, { defaultValue: p.source })}
                         </Text>
                       </View>
@@ -328,7 +335,7 @@ export function MorphCareMyProductsScreen({ navigation }: Props) {
                     accessibilityRole="button"
                     accessibilityLabel={t("care.myProducts.remove")}
                   >
-                    <Ionicons name="trash-outline" size={13} color="#64748B" />
+                    <Ionicons name="trash-outline" size={13} color={colors.muted} />
                   </Pressable>
                 </View>
               );
@@ -350,8 +357,9 @@ export function MorphCareMyProductsScreen({ navigation }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, minHeight: 0, backgroundColor: "#FAFAFA" },
+function createProductStyles(colors: ShellChrome) {
+  return StyleSheet.create({
+  root: { flex: 1, minHeight: 0, backgroundColor: colors.bg },
   pageScroll: { flex: 1, minHeight: 0 },
   deleteToast: {
     position: "absolute",
@@ -364,7 +372,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: scale(12),
     paddingVertical: verticalScale(10),
     borderRadius: moderateScale(16),
-    backgroundColor: "#111111",
+    backgroundColor: colors.fg,
     shadowColor: "#111111",
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.2,
@@ -389,7 +397,7 @@ const styles = StyleSheet.create({
     ...morphFont,
     fontSize: fontSize(13),
     fontWeight: "700",
-    color: "#fff",
+    color: colors.onAccent,
   },
   header: {
     height: verticalScale(80),
@@ -405,7 +413,7 @@ const styles = StyleSheet.create({
     borderRadius: moderateScale(20),
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#FFFFFF",
+    backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: "rgba(15,23,42,0.06)",
   },
@@ -415,19 +423,19 @@ const styles = StyleSheet.create({
     borderRadius: moderateScale(20),
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#111111",
+    backgroundColor: colors.fg,
   },
   headerCenter: { flex: 1, alignItems: "center", gap: moderateScale(2) },
   h1: {
     ...morphFont,
     fontSize: fontSize(17),
     fontWeight: "700",
-    color: "#111111",
+    color: colors.fg,
   },
   count: {
     ...morphFont,
     fontSize: fontSize(12),
-    color: "rgba(15,23,42,0.45)",
+    color: colors.muted,
     fontWeight: "600",
   },
   pageSub: {
@@ -436,7 +444,7 @@ const styles = StyleSheet.create({
     marginBottom: verticalScale(8),
     fontSize: fontSize(13),
     lineHeight: fontSize(18),
-    color: "rgba(15,23,42,0.5)",
+    color: colors.muted,
   },
   legend: {
     flexDirection: "row",
@@ -448,14 +456,14 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: moderateScale(4),
-    backgroundColor: "#fff",
+    backgroundColor: colors.surface,
     paddingHorizontal: scale(8),
     paddingVertical: verticalScale(4),
     borderRadius: 999,
     borderWidth: 1,
     borderColor: "rgba(15,23,42,0.06)",
   },
-  legendText: { ...morphFont, fontSize: fontSize(11), fontWeight: "600", color: "#475569" },
+  legendText: { ...morphFont, fontSize: fontSize(11), fontWeight: "600", color: colors.muted },
   center: { flex: 1, alignItems: "center", justifyContent: "center" },
   empty: {
     flex: 1,
@@ -468,17 +476,17 @@ const styles = StyleSheet.create({
     width: scale(72),
     height: scale(72),
     borderRadius: moderateScale(24),
-    backgroundColor: "#F0F0F0",
+    backgroundColor: colors.promo,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: verticalScale(8),
   },
-  emptyTitle: { ...morphFont, fontSize: fontSize(18), fontWeight: "700", color: "#111111", textAlign: "center" },
+  emptyTitle: { ...morphFont, fontSize: fontSize(18), fontWeight: "700", color: colors.fg, textAlign: "center" },
   emptySub: {
     ...morphFont,
     fontSize: fontSize(13),
     lineHeight: fontSize(19),
-    color: "rgba(15,23,42,0.5)",
+    color: colors.muted,
     textAlign: "center",
     marginBottom: verticalScale(12),
   },
@@ -486,23 +494,23 @@ const styles = StyleSheet.create({
   primaryBtn: {
     height: verticalScale(48),
     borderRadius: 999,
-    backgroundColor: "#111111",
+    backgroundColor: colors.fg,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: moderateScale(8),
   },
-  primaryBtnText: { ...morphFont, fontSize: fontSize(14), fontWeight: "700", color: "#fff" },
+  primaryBtnText: { ...morphFont, fontSize: fontSize(14), fontWeight: "700", color: colors.onAccent },
   secondaryBtn: {
     height: verticalScale(48),
     borderRadius: 999,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: "rgba(15,23,42,0.08)",
     alignItems: "center",
     justifyContent: "center",
   },
-  secondaryBtnText: { ...morphFont, fontSize: fontSize(14), fontWeight: "600", color: "#111111" },
+  secondaryBtnText: { ...morphFont, fontSize: fontSize(14), fontWeight: "600", color: colors.fg },
   grid: { paddingHorizontal: H_PAD, paddingTop: verticalScale(4) },
   gridRow: {
     flexDirection: "row",
@@ -511,7 +519,7 @@ const styles = StyleSheet.create({
   },
   card: {
     width: COL_W,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: colors.surface,
     borderRadius: moderateScale(14),
     overflow: "hidden",
     borderWidth: 1,
@@ -524,7 +532,7 @@ const styles = StyleSheet.create({
   cardMedia: {
     width: "100%",
     height: COL_W * 0.78,
-    backgroundColor: "#F0F0F0",
+    backgroundColor: colors.promo,
     position: "relative",
   },
   cardImg: { width: "100%", height: "100%" },
@@ -539,7 +547,7 @@ const styles = StyleSheet.create({
     borderRadius: moderateScale(14),
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(255,255,255,0.96)",
+    backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: "rgba(15,23,42,0.08)",
   },
@@ -556,7 +564,8 @@ const styles = StyleSheet.create({
   },
   sourceText: { ...morphFont, fontSize: fontSize(9), fontWeight: "700" },
   cardBody: { paddingHorizontal: scale(8), paddingVertical: verticalScale(8), gap: 1, minHeight: verticalScale(58) },
-  cardName: { ...morphFont, fontSize: fontSize(12), fontWeight: "700", color: "#111111", lineHeight: fontSize(15) },
-  cardBrand: { ...morphFont, fontSize: fontSize(10), color: "rgba(15,23,42,0.55)" },
-  cardMeta: { ...morphFont, fontSize: fontSize(9), color: "rgba(15,23,42,0.4)", marginTop: 1 },
-});
+  cardName: { ...morphFont, fontSize: fontSize(12), fontWeight: "700", color: colors.fg, lineHeight: fontSize(15) },
+  cardBrand: { ...morphFont, fontSize: fontSize(10), color: colors.muted },
+  cardMeta: { ...morphFont, fontSize: fontSize(9), color: colors.muted, marginTop: 1 },
+  });
+}

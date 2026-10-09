@@ -20,7 +20,6 @@ import Reanimated, {
   useSharedValue,
   withTiming,
 } from "react-native-reanimated";
-import { TAB_DOCK_CLEARANCE } from "../../../hooks/useHideTabBar";
 import {
   clearSavedCarePlan,
   fetchSavedCarePlan,
@@ -56,7 +55,7 @@ import {
   type MyCareProduct,
 } from "../../../lib/morph-my-products";
 import { AiPlanThinkingOverlay, type AiScanProduct } from "./AiPlanThinkingOverlay";
-import { colors } from "../../../theme/colors";
+import { SHELL_LIGHT, shellChrome, useShellTheme, type ShellChrome } from "../../../lib/useShellTheme";
 import { morphFont } from "../../../theme/morph-font";
 import {
   fontSize,
@@ -304,7 +303,7 @@ function FoldChevron({ open }: { open: boolean }) {
   }));
   return (
     <Reanimated.View style={spin}>
-      <Ionicons name="chevron-down" size={16} color="#111" />
+      <Ionicons name="chevron-down" size={16} color={chrome.fg} />
     </Reanimated.View>
   );
 }
@@ -312,6 +311,9 @@ function FoldChevron({ open }: { open: boolean }) {
 function clockSortKey(task: RoutineTask): string {
   return task.time || task.timeHint || "99:99";
 }
+
+let chrome: ShellChrome = SHELL_LIGHT;
+let styles = createRoutineStyles(SHELL_LIGHT);
 
 export function CareRoutineSheet({
   quiz,
@@ -323,6 +325,12 @@ export function CareRoutineSheet({
   onOpenProduct,
   onOpenGuide,
 }: Props) {
+  const pal = useShellTheme();
+  chrome = shellChrome(pal);
+  styles = useMemo(
+    () => createRoutineStyles(chrome),
+    [chrome.bg, chrome.fg, chrome.muted, chrome.surface, chrome.border, chrome.promo, chrome.onAccent],
+  );
   const { t } = useTranslation();
   const cachedOnOpen = peekCachedCarePlan();
   const shelfOnOpen = peekMyProducts();
@@ -444,9 +452,9 @@ export function CareRoutineSheet({
       setAiError(null);
       try {
         const plan = await generateCarePlan({
-          condition: quiz.condition,
-          texture: quiz.texture,
-          color_status: quiz.colorStatus,
+          condition: quiz.condition || "normal",
+          texture: quiz.texture || "straight",
+          color_status: quiz.colorStatus || "natural",
           products: productPayload(products),
           mode: "full",
           morning_time: sched.morningTime,
@@ -640,7 +648,7 @@ export function CareRoutineSheet({
         contentContainerStyle={[
           styles.sheetContent,
           {
-            paddingBottom: TAB_DOCK_CLEARANCE + verticalScale(20),
+            paddingBottom: verticalScale(28),
           },
         ]}
         nestedScrollEnabled
@@ -651,7 +659,7 @@ export function CareRoutineSheet({
           <View style={styles.emptyHero}>
             <View style={styles.emptyGlow} />
             <View style={styles.emptyIconRing}>
-              <Ionicons name="leaf-outline" size={30} color={colors.fg} />
+              <Ionicons name="leaf-outline" size={30} color={chrome.fg} />
             </View>
             <Text style={styles.emptyEyebrow}>
               {t("care.hubParvarish", { defaultValue: "Parvarish" })}
@@ -672,7 +680,7 @@ export function CareRoutineSheet({
             </Pressable>
             <Pressable style={styles.emptySecondaryCta} onPress={onOpenScan}>
               <View style={styles.emptySecondaryIcon}>
-                <Ionicons name="scan-outline" size={16} color={colors.fg} />
+                <Ionicons name="scan-outline" size={16} color={chrome.fg} />
               </View>
               <Text style={styles.emptySecondaryCtaText}>
                 {t("care.myProducts.scan", { defaultValue: "Skaner" })}
@@ -680,7 +688,7 @@ export function CareRoutineSheet({
             </Pressable>
           </View>
         ) : showRestoring ? (
-          <ActivityIndicator color="#111" style={{ marginTop: verticalScale(48) }} />
+          <ActivityIndicator color={chrome.fg} style={{ marginTop: verticalScale(48) }} />
         ) : (
           <>
             <View style={styles.dayHero}>
@@ -693,7 +701,7 @@ export function CareRoutineSheet({
                     style={styles.refreshBtn}
                     onPress={() => void syncPlanWithProducts(myProducts, { forceFull: true })}
                   >
-                    <Ionicons name="refresh-outline" size={15} color={colors.fg} />
+                    <Ionicons name="refresh-outline" size={15} color={chrome.fg} />
                   </Pressable>
                 ) : null}
               </View>
@@ -783,7 +791,7 @@ export function CareRoutineSheet({
                           />
                         ) : (
                           <View style={[styles.productImg, styles.productPh]}>
-                            <Ionicons name={TASK_ICONS[task.icon]} size={16} color="#111" />
+                            <Ionicons name={TASK_ICONS[task.icon]} size={16} color={chrome.fg} />
                           </View>
                         )}
                         <View style={styles.productCopy}>
@@ -841,7 +849,7 @@ export function CareRoutineSheet({
                                 />
                               ) : (
                                 <View style={[styles.productImg, styles.productPh]}>
-                                  <Ionicons name={TASK_ICONS[task.icon]} size={16} color="#111" />
+                                  <Ionicons name={TASK_ICONS[task.icon]} size={16} color={chrome.fg} />
                                 </View>
                               )}
                               <View style={styles.productCopy}>
@@ -904,12 +912,12 @@ export function CareRoutineSheet({
                 <View style={styles.sectionHead}>
                   <Text style={styles.sectionTitle}>{t("care.myProducts.title")}</Text>
                   <Pressable style={styles.scanLink} onPress={onOpenScan}>
-                    <Ionicons name="scan-outline" size={16} color="#111" />
+                    <Ionicons name="scan-outline" size={16} color={chrome.fg} />
                     <Text style={styles.scanLinkText}>{t("care.myProducts.scan")}</Text>
                   </Pressable>
                 </View>
                 {loadingProducts ? (
-                  <ActivityIndicator color="#111" style={{ marginVertical: 8 }} />
+                  <ActivityIndicator color={chrome.fg} style={{ marginVertical: 8 }} />
                 ) : (
                   <View
                     style={styles.productShelf}
@@ -944,7 +952,7 @@ export function CareRoutineSheet({
                               />
                             ) : (
                               <View style={[styles.myCardImg, styles.productPh]}>
-                                <Ionicons name="flask-outline" size={20} color="#111" />
+                                <Ionicons name="flask-outline" size={20} color={chrome.fg} />
                               </View>
                             )}
                             <Text style={styles.myCardName} numberOfLines={2}>
@@ -955,7 +963,7 @@ export function CareRoutineSheet({
                       })}
                     </ScrollView>
                     <Pressable style={[styles.addCard, { width: addW }]} onPress={onOpenCatalog}>
-                      <Ionicons name="add" size={18} color="#111" />
+                      <Ionicons name="add" size={18} color={chrome.fg} />
                       <Text style={styles.addCardText} numberOfLines={1}>
                         {t("care.myProducts.addShort")}
                       </Text>
@@ -972,7 +980,8 @@ export function CareRoutineSheet({
   );
 }
 
-const styles = StyleSheet.create({
+function createRoutineStyles(colors: ShellChrome) {
+  return StyleSheet.create({
   sheetWrap: { flex: 1, minHeight: 0, position: "relative" },
   sheetScroll: { flex: 1, minHeight: 0, backgroundColor: colors.bg },
   sheetContent: {
@@ -1035,7 +1044,7 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 5,
     borderRadius: 999,
-    backgroundColor: "#EDEAE4",
+    backgroundColor: colors.promo,
     overflow: "hidden",
   },
   progressFill: {
@@ -1147,7 +1156,7 @@ const styles = StyleSheet.create({
     ...morphFont,
     fontSize: fontSize(14),
     fontWeight: "700",
-    color: "#fff",
+    color: colors.onAccent,
   },
   emptySecondaryCta: {
     flexDirection: "row",
@@ -1171,7 +1180,7 @@ const styles = StyleSheet.create({
     color: colors.fg,
   },
   celebrateOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     alignItems: "center",
     justifyContent: "center",
     zIndex: 40,
@@ -1210,7 +1219,7 @@ const styles = StyleSheet.create({
     borderRadius: moderateScale(14),
     paddingHorizontal: scale(10),
     paddingVertical: verticalScale(9),
-    backgroundColor: "#F7F5F1",
+    backgroundColor: colors.promo,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: "rgba(17,17,17,0.08)",
   },
@@ -1220,13 +1229,13 @@ const styles = StyleSheet.create({
     borderRadius: moderateScale(10),
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#ECE7DE",
+    backgroundColor: colors.promo,
   },
   shelfLinkTitle: {
     ...morphFont,
     fontSize: fontSize(12.5),
     fontWeight: "700",
-    color: "#111",
+    color: colors.fg,
   },
   shelfLinkSub: {
     ...morphFont,
@@ -1236,13 +1245,13 @@ const styles = StyleSheet.create({
   },
   scheduleCard: {
     borderRadius: moderateScale(24),
-    backgroundColor: "#FFFFFF",
+    backgroundColor: colors.surface,
     padding: moderateScale(16),
     gap: moderateScale(10),
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: "rgba(17,17,17,0.08)",
   },
-  scheduleTitle: { ...morphFont, fontSize: fontSize(17), fontWeight: "700", color: "#111" },
+  scheduleTitle: { ...morphFont, fontSize: fontSize(17), fontWeight: "700", color: colors.fg },
   scheduleSub: {
     ...morphFont,
     fontSize: fontSize(13),
@@ -1261,20 +1270,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: scale(12),
     paddingVertical: verticalScale(8),
     borderRadius: 999,
-    backgroundColor: "#F3F1EC",
+    backgroundColor: colors.promo,
   },
-  timeChipOn: { backgroundColor: "#111" },
-  timeChipText: { ...morphFont, fontSize: fontSize(13), fontWeight: "600", color: "#111" },
-  timeChipTextOn: { color: "#fff" },
+  timeChipOn: { backgroundColor: colors.fg },
+  timeChipText: { ...morphFont, fontSize: fontSize(13), fontWeight: "600", color: colors.fg },
+  timeChipTextOn: { color: colors.onAccent },
   scheduleSave: {
     marginTop: verticalScale(6),
     alignItems: "center",
     justifyContent: "center",
     paddingVertical: verticalScale(14),
     borderRadius: 999,
-    backgroundColor: "#111",
+    backgroundColor: colors.fg,
   },
-  scheduleSaveText: { ...morphFont, fontSize: fontSize(14), fontWeight: "700", color: "#fff" },
+  scheduleSaveText: { ...morphFont, fontSize: fontSize(14), fontWeight: "700", color: colors.onAccent },
   scheduleCancel: {
     ...morphFont,
     textAlign: "center",
@@ -1288,13 +1297,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: moderateScale(10),
     borderRadius: moderateScale(18),
-    backgroundColor: "#FFFFFF",
+    backgroundColor: colors.surface,
     paddingHorizontal: scale(14),
     paddingVertical: verticalScale(12),
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: "rgba(17,17,17,0.08)",
   },
-  scheduleSummaryTitle: { ...morphFont, fontSize: fontSize(13), fontWeight: "700", color: "#111" },
+  scheduleSummaryTitle: { ...morphFont, fontSize: fontSize(13), fontWeight: "700", color: colors.fg },
   scheduleSummaryMeta: {
     ...morphFont,
     fontSize: fontSize(12),
@@ -1303,7 +1312,7 @@ const styles = StyleSheet.create({
   },
   segment: {
     flexDirection: "row",
-    backgroundColor: "#F3F1EC",
+    backgroundColor: colors.promo,
     borderRadius: moderateScale(12),
     padding: 3,
   },
@@ -1316,14 +1325,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: scale(2),
   },
   segmentItemOn: {
-    backgroundColor: "#fff",
+    backgroundColor: colors.surface,
     shadowColor: "#111",
     shadowOpacity: 0.06,
     shadowRadius: 4,
     shadowOffset: { width: 0, height: 1 },
     elevation: 1,
   },
-  segmentText: { ...morphFont, fontSize: fontSize(12), fontWeight: "600", color: "rgba(17,17,17,0.45)" },
+  segmentText: { ...morphFont, fontSize: fontSize(12), fontWeight: "600", color: colors.muted },
   segmentTextOn: { color: colors.fg, fontWeight: "700" },
   modeRow: { gap: moderateScale(8), paddingRight: scale(4), paddingVertical: verticalScale(2) },
   modeChip: {
@@ -1339,7 +1348,7 @@ const styles = StyleSheet.create({
   },
   modeChipOn: { backgroundColor: colors.fg, borderColor: colors.fg },
   modeChipText: { ...morphFont, fontSize: fontSize(12), fontWeight: "700", color: colors.fg },
-  modeChipTextOn: { color: "#fff" },
+  modeChipTextOn: { color: colors.onAccent },
   aiLoadingRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -1415,7 +1424,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: scale(7),
     paddingVertical: verticalScale(3),
     borderRadius: 999,
-    backgroundColor: "#F3F1EC",
+    backgroundColor: colors.promo,
   },
   timeText: { ...morphFont, fontSize: fontSize(11), fontWeight: "700", color: colors.fg },
   playBtn: {
@@ -1470,8 +1479,8 @@ const styles = StyleSheet.create({
     borderRadius: moderateScale(12),
     backgroundColor: colors.fg,
   },
-  primaryActDone: { backgroundColor: "#E8E4DC" },
-  primaryActText: { ...morphFont, fontSize: fontSize(11), fontWeight: "700", color: "#fff" },
+  primaryActDone: { backgroundColor: colors.promo },
+  primaryActText: { ...morphFont, fontSize: fontSize(11), fontWeight: "700", color: colors.onAccent },
   primaryActTextDone: { color: colors.fg },
   planToggle: {
     flexDirection: "row",
@@ -1484,7 +1493,7 @@ const styles = StyleSheet.create({
     ...morphFont,
     fontSize: fontSize(13),
     fontWeight: "700",
-    color: "#111",
+    color: colors.fg,
   },
   productSection: {
     gap: moderateScale(8),
@@ -1494,9 +1503,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
   },
-  sectionTitle: { ...morphFont, fontSize: fontSize(16), fontWeight: "700", color: "#111" },
+  sectionTitle: { ...morphFont, fontSize: fontSize(16), fontWeight: "700", color: colors.fg },
   scanLink: { flexDirection: "row", alignItems: "center", gap: moderateScale(4) },
-  scanLinkText: { ...morphFont, fontSize: fontSize(13), fontWeight: "600", color: "#111" },
+  scanLinkText: { ...morphFont, fontSize: fontSize(13), fontWeight: "600", color: colors.fg },
   productShelf: {
     flexDirection: "row",
     alignItems: "stretch",
@@ -1507,16 +1516,16 @@ const styles = StyleSheet.create({
   productRow: { flexDirection: "row", alignItems: "stretch", gap: moderateScale(8) },
   myCard: {
     borderRadius: moderateScale(18),
-    backgroundColor: "#FFFFFF",
+    backgroundColor: colors.surface,
     padding: moderateScale(10),
     gap: moderateScale(6),
   },
   myCardImg: { width: "100%", height: verticalScale(100), borderRadius: moderateScale(14) },
-  myCardName: { ...morphFont, fontSize: fontSize(12), fontWeight: "600", color: "#111" },
+  myCardName: { ...morphFont, fontSize: fontSize(12), fontWeight: "600", color: colors.fg },
   addCard: {
     flexShrink: 0,
     borderRadius: moderateScale(14),
-    backgroundColor: "#FFFFFF",
+    backgroundColor: colors.surface,
     borderWidth: 1,
     borderStyle: "dashed",
     borderColor: "rgba(17,17,17,0.28)",
@@ -1526,12 +1535,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: scale(6),
     paddingVertical: verticalScale(6),
   },
-  addCardText: { ...morphFont, fontSize: fontSize(9), fontWeight: "600", color: "#111", textAlign: "center" },
+  addCardText: { ...morphFont, fontSize: fontSize(9), fontWeight: "600", color: colors.fg, textAlign: "center" },
   addCardTextRoomy: { fontSize: fontSize(12) },
   recCard: {
     width: scale(148),
     borderRadius: moderateScale(18),
-    backgroundColor: "#FFFFFF",
+    backgroundColor: colors.surface,
     padding: moderateScale(10),
     gap: moderateScale(8),
   },
@@ -1540,11 +1549,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: scale(8),
     paddingVertical: verticalScale(3),
     borderRadius: 999,
-    backgroundColor: "#F3F1EC",
+    backgroundColor: colors.promo,
   },
-  fitBadgeText: { ...morphFont, fontSize: fontSize(10), fontWeight: "700", color: "#111" },
+  fitBadgeText: { ...morphFont, fontSize: fontSize(10), fontWeight: "700", color: colors.fg },
   recImg: { width: "100%", height: verticalScale(96), borderRadius: moderateScale(12) },
-  recName: { ...morphFont, fontSize: fontSize(12), fontWeight: "600", color: "#111" },
+  recName: { ...morphFont, fontSize: fontSize(12), fontWeight: "600", color: colors.fg },
   seeAllText: { ...morphFont, fontSize: fontSize(13), fontWeight: "600", color: "rgba(26,26,26,0.45)" },
   profileLink: { alignSelf: "center", paddingVertical: verticalScale(12) },
   profileLinkText: {
@@ -1564,7 +1573,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: moderateScale(10),
     borderRadius: moderateScale(16),
-    backgroundColor: "#111111",
+    backgroundColor: colors.fg,
     paddingHorizontal: scale(12),
     paddingVertical: verticalScale(10),
     shadowColor: "#111111",
@@ -1585,12 +1594,13 @@ const styles = StyleSheet.create({
     ...morphFont,
     fontSize: fontSize(12.5),
     fontWeight: "700",
-    color: "#FFFFFF",
+    color: colors.onAccent,
   },
   stickyShelfSub: {
     ...morphFont,
     marginTop: 1,
     fontSize: fontSize(10.5),
-    color: "rgba(255,255,255,0.72)",
+    color: colors.muted,
   },
-});
+  });
+}

@@ -44,7 +44,7 @@ import {
 import type { HairRecommendation, WeatherAlert, WeatherData } from "../../types/weatherShield";
 import { regionLabel, UZ_REGIONS, type UzRegionId } from "../../lib/uz-regions";
 import type { MorphCareStackParamList } from "../../navigation/MorphCareStack";
-import { colors } from "../../theme/colors";
+import { shellChrome, useShellTheme, type ShellChrome } from "../../lib/useShellTheme";
 import { morphFont } from "../../theme/morph-font";
 import {
   loadTodayShieldDone,
@@ -62,6 +62,12 @@ type Props = NativeStackScreenProps<MorphCareStackParamList, "CareWeather">;
 
 export function MorphCareWeatherScreen({ navigation }: Props) {
   useHideTabBar();
+  const pal = useShellTheme();
+  const colors = shellChrome(pal);
+  const styles = useMemo(
+    () => createWeatherStyles(colors),
+    [colors.bg, colors.fg, colors.muted, colors.surface, colors.border, colors.promo, colors.onAccent],
+  );
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const {
@@ -748,7 +754,8 @@ export function MorphCareWeatherScreen({ navigation }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+function createWeatherStyles(colors: ShellChrome) {
+  return StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
   doneToast: {
     position: "absolute",
@@ -1036,7 +1043,7 @@ const styles = StyleSheet.create({
     width: scale(40),
     height: 4,
     borderRadius: 99,
-    backgroundColor: "#E5E5E5",
+    backgroundColor: colors.promo,
     marginBottom: verticalScale(10),
   },
   modalTitle: { ...morphFont, fontSize: fontSize(17), fontWeight: "800", color: colors.fg },
@@ -1059,7 +1066,7 @@ const styles = StyleSheet.create({
   },
   regionRowOn: { backgroundColor: colors.fg },
   regionName: { ...morphFont, fontSize: fontSize(14), fontWeight: "700", color: colors.fg },
-  regionNameOn: { color: "#fff" },
+  regionNameOn: { color: colors.onAccent },
   gpsBtn: {
     flexDirection: "row",
     alignItems: "center",
@@ -1072,4 +1079,5 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bg,
   },
   gpsBtnText: { ...morphFont, fontSize: fontSize(13), fontWeight: "700", color: colors.fg },
-});
+  });
+}

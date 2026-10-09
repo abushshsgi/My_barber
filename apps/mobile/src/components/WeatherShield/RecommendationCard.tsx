@@ -1,8 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
+import { useMemo } from "react";
 import { Pressable, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import type { HairRecommendation } from "../../types/weatherShield";
-import { colors } from "../../theme/colors";
+import { shellChrome, useShellTheme, type ShellChrome } from "../../lib/useShellTheme";
 import { morphFont } from "../../theme/morph-font";
 import { fontSize, moderateScale, scale } from "../../utils/responsive";
 
@@ -48,11 +49,25 @@ function DoneCheck({
       <Ionicons
         name={done ? "checkmark" : "square-outline"}
         size={iconSize}
-        color={done ? "#fff" : colors.fg}
+        color={done ? recChrome.onAccent : recChrome.fg}
       />
     </Pressable>
   );
 }
+
+let recChrome: ShellChrome = {
+  bg: "#FAFAFA",
+  fg: "#111111",
+  muted: "#737373",
+  surface: "#FFFFFF",
+  border: "rgba(17,17,17,0.12)",
+  promo: "#F0F0F0",
+  iconTile: "#F0F0F0",
+  accent: "#111111",
+  onAccent: "#FFFFFF",
+  status: "dark",
+};
+let styles = createRecStyles(recChrome);
 
 /** Soft Paper kartalar — to‘liq rasm + bosilishi aniq checkbox. */
 export function RecommendationCard({
@@ -63,6 +78,12 @@ export function RecommendationCard({
   done = false,
   onToggleDone,
 }: Props) {
+  const pal = useShellTheme();
+  recChrome = shellChrome(pal);
+  styles = useMemo(
+    () => createRecStyles(recChrome),
+    [recChrome.bg, recChrome.fg, recChrome.muted, recChrome.surface, recChrome.promo, recChrome.border, recChrome.onAccent],
+  );
   const { width } = useWindowDimensions();
   const step = String(index + 1).padStart(2, "0");
 
@@ -77,7 +98,7 @@ export function RecommendationCard({
             <Ionicons
               name={(item.icon as keyof typeof Ionicons.glyphMap) || "flask-outline"}
               size={22}
-              color={colors.fg}
+              color={recChrome.fg}
             />
           )}
         </View>
@@ -109,7 +130,7 @@ export function RecommendationCard({
             <Ionicons
               name={(item.icon as keyof typeof Ionicons.glyphMap) || "sparkles-outline"}
               size={28}
-              color={colors.fg}
+              color={recChrome.fg}
             />
           )}
           <View style={styles.tileCheckWrap}>
@@ -150,7 +171,8 @@ export function RecommendationCard({
   );
 }
 
-const styles = StyleSheet.create({
+function createRecStyles(colors: ShellChrome) {
+  return StyleSheet.create({
   imgFill: { width: "100%", height: "100%" },
   cardDone: { opacity: 0.62 },
 
@@ -164,7 +186,7 @@ const styles = StyleSheet.create({
   },
   featuredImg: {
     borderRadius: moderateScale(12),
-    backgroundColor: "#F7F4EF",
+    backgroundColor: colors.promo,
     overflow: "hidden",
     padding: scale(6),
   },
@@ -206,7 +228,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   checkBtnOff: {
-    backgroundColor: "#FFFDF9",
+    backgroundColor: colors.surface,
     borderWidth: 1.5,
     borderColor: "rgba(28,25,23,0.18)",
   },
@@ -226,7 +248,7 @@ const styles = StyleSheet.create({
     width: "100%",
     aspectRatio: 1,
     borderRadius: moderateScale(12),
-    backgroundColor: "#F7F4EF",
+    backgroundColor: colors.promo,
     alignItems: "center",
     justifyContent: "center",
     padding: scale(10),
@@ -290,8 +312,9 @@ const styles = StyleSheet.create({
     width: scale(52),
     height: scale(52),
     borderRadius: moderateScale(10),
-    backgroundColor: "#F7F4EF",
+    backgroundColor: colors.promo,
     overflow: "hidden",
     padding: scale(4),
   },
-});
+  });
+}
