@@ -207,8 +207,11 @@ export type WeatherCareSnapshot = {
   current?: {
     temperature_c?: number | null;
     humidity_pct?: number | null;
+    wind_kmh?: number | null;
     condition_key?: string;
+    uv_index?: number | null;
   };
+  uv?: { index?: number | null; level?: string; tip?: string };
   primary_action?: { title?: string; subtitle?: string };
   product_plan?: Array<{
     name?: string;
@@ -224,14 +227,76 @@ export async function fetchWeatherCare(params?: {
   texture?: string;
   lat?: number;
   lon?: number;
+  region_id?: string;
 }): Promise<WeatherCareSnapshot> {
   const sp = new URLSearchParams();
   if (params?.condition) sp.set("condition", params.condition);
   if (params?.texture) sp.set("texture", params.texture);
   if (params?.lat != null) sp.set("lat", String(params.lat));
   if (params?.lon != null) sp.set("lon", String(params.lon));
+  if (params?.region_id) sp.set("region_id", params.region_id);
   const q = sp.toString();
   return apiJson(`/api/v1/ai/care/weather/${q ? `?${q}` : ""}`);
+}
+
+export type WeatherShieldRec = {
+  id: string;
+  type: string;
+  title: string;
+  description: string;
+  priority: number;
+  icon?: string;
+  productTag?: string;
+  image_url?: string;
+};
+
+export type WeatherShieldAlert = {
+  id: string;
+  label: string;
+  severity: string;
+};
+
+export async function fetchWeatherShieldCatalog(params: {
+  temp?: number | null;
+  humidity?: number | null;
+  uv?: number | null;
+  wind?: number | null;
+  condition?: string;
+  hair_condition?: string;
+}): Promise<{
+  alerts: WeatherShieldAlert[];
+  recommendations: WeatherShieldRec[];
+  done_ids: string[];
+}> {
+  const sp = new URLSearchParams();
+  if (params.temp != null) sp.set("temp", String(params.temp));
+  if (params.humidity != null) sp.set("humidity", String(params.humidity));
+  if (params.uv != null) sp.set("uv", String(params.uv));
+  if (params.wind != null) sp.set("wind", String(params.wind));
+  if (params.condition) sp.set("condition", params.condition);
+  if (params.hair_condition) sp.set("hair_condition", params.hair_condition);
+  const q = sp.toString();
+  const body = await apiJson<{
+    alerts?: WeatherShieldAlert[];
+    recommendations?: WeatherShieldRec[];
+    done_ids?: string[];
+  }>(`/api/v1/ai/care/weather-shield/${q ? `?${q}` : ""}`);
+  return {
+    alerts: body.alerts || [],
+    recommendations: body.recommendations || [],
+    done_ids: body.done_ids || [],
+  };
+}
+
+export async function postWeatherShieldAction(body: {
+  id: string;
+  completed: boolean;
+  weather_snapshot?: Record<string, unknown>;
+}): Promise<void> {
+  await apiJson("/api/v1/ai/care/weather-shield/actions/", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
 }
 
 export async function fetchCareProductByBarcode(

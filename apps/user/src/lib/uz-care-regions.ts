@@ -59,6 +59,26 @@ export function resolveUzRegion(opts: {
   return best;
 }
 
+export const UZ_REGION_OPTIONS: Array<{ id: UzRegionId; label: string }> = [
+  { id: "tashkent", label: "Toshkent" },
+  { id: "andijan", label: "Andijon" },
+  { id: "bukhara", label: "Buxoro" },
+  { id: "fergana", label: "Farg‘ona" },
+  { id: "jizzakh", label: "Jizzax" },
+  { id: "kashkadarya", label: "Qashqadaryo" },
+  { id: "navoi", label: "Navoiy" },
+  { id: "namangan", label: "Namangan" },
+  { id: "samarkand", label: "Samarqand" },
+  { id: "sirdarya", label: "Sirdaryo" },
+  { id: "surkhandarya", label: "Surxondaryo" },
+  { id: "khorezm", label: "Xorazm" },
+  { id: "karakalpakstan", label: "Qoraqalpog‘iston" },
+];
+
+export function regionLabel(id: string | null | undefined): string {
+  return UZ_REGION_OPTIONS.find((row) => row.id === id)?.label || "Shahar";
+}
+
 export function uzRegionImage(id: string | null | undefined): string | null {
   if (!id || !REGIONS.some((row) => row.id === id)) return null;
   return `/care/regions/uz-region-${id}.png`;

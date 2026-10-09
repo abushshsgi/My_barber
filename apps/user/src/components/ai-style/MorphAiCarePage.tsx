@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { navigateBack } from "@/lib/mobile-back";
 import { CareAiRoutine } from "@/components/ai-style/CareAiRoutine";
+import { CareWeatherPanel } from "@/components/ai-style/CareWeatherPanel";
 import {
   buildCarePlan,
   careOptionImage,
@@ -32,7 +33,7 @@ import {
   type HairGrowthForecast,
 } from "@/lib/api/care-products";
 import { getFastPosition } from "@/lib/native-geolocation";
-import { resolveUzRegion, uzRegionImage } from "@/lib/uz-care-regions";
+import { resolveUzRegion, uzRegionImage, type UzRegionId } from "@/lib/uz-care-regions";
 
 const CONDITION_OPTS: HairCondition[] = ["oily", "dry", "normal", "damaged"];
 const TEXTURE_OPTS: HairTexture[] = ["straight", "wavy", "curly"];
@@ -65,6 +66,7 @@ export function MorphAiCarePage() {
   const [panel, setPanel] = useState<"hub" | "routine" | "shelf" | "weather" | "growth">("routine");
   const [search, setSearch] = useState("");
   const [coords, setCoords] = useState<{ lat: number; lon: number } | null>(null);
+  const [regionId, setRegionId] = useState<UzRegionId | null>(null);
   const [sosOpen, setSosOpen] = useState(false);
   const [growthCm, setGrowthCm] = useState("8");
   const [growthBusy, setGrowthBusy] = useState(false);
@@ -72,13 +74,14 @@ export function MorphAiCarePage() {
   const [growthError, setGrowthError] = useState("");
   const searchQ = useCareProducts({ q: search.trim() || undefined, enabled: search.trim().length > 0 });
   const weatherQ = useQuery({
-    queryKey: ["ai", "care", "weather", quiz.condition, quiz.texture, coords?.lat ?? null, coords?.lon ?? null],
+    queryKey: ["ai", "care", "weather", quiz.condition, quiz.texture, coords?.lat ?? null, coords?.lon ?? null, regionId],
     queryFn: () =>
       fetchWeatherCare({
         condition: quiz.condition,
         texture: quiz.texture,
-        lat: coords?.lat,
-        lon: coords?.lon,
+        lat: regionId ? undefined : coords?.lat,
+        lon: regionId ? undefined : coords?.lon,
+        region_id: regionId || undefined,
       }),
     enabled: step === "plan",
     staleTime: 10 * 60_000,
@@ -98,6 +101,15 @@ export function MorphAiCarePage() {
   const plan = useMemo(() => buildCarePlan(profile, quiz), [profile, quiz]);
   const catalogProducts = catalogQ.data || [];
   const hydratedHair = useRef(false);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("care-weather-region");
+      if (saved) setRegionId(saved as UzRegionId);
+    } catch {
+      /* ignore */
+    }
+  }, []);
 
   useEffect(() => {
     let cancel = false;
@@ -345,11 +357,12 @@ export function MorphAiCarePage() {
     <div className="relative min-h-[100dvh] overflow-x-hidden overflow-y-auto bg-[#F3F3F4] text-[#111111]">
       <div
         className="relative z-[1] mx-auto w-full max-w-lg px-4 pb-[max(2.5rem,env(safe-area-inset-bottom))]"
-        style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}
+        style={panel === "weather" ? undefined : { paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}
       >
         <div
           className={cn(
             "flex items-center",
+            panel === "weather" && "hidden",
             panel === "routine" ? "grid grid-cols-[44px_1fr_44px]" : "justify-between",
           )}
         >
@@ -649,60 +662,25 @@ export function MorphAiCarePage() {
             <CareShelfTracker />
           </div>
         ) : (
-          <div className="mt-4 space-y-3">
-            <div className="relative overflow-hidden rounded-3xl px-5 py-6 text-white">
-              {regionHero ? (
-                <img src={regionHero} alt="" className="absolute inset-0 size-full object-cover object-right" />
-              ) : (
-                <span className="absolute inset-0 bg-gradient-to-br from-sky-400 to-indigo-600" />
-              )}
-              <span className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/45 to-black/20" />
-              <div className="relative">
-              <p className="text-sm font-medium text-white/80">{city}</p>
-              <p className="mt-2 text-5xl font-bold tabular-nums">{tempLabel}</p>
-              <p className="mt-1 text-sm">{weatherName}</p>
-              {weather?.summary ? <p className="mt-3 text-sm leading-relaxed text-white/85">{weather.summary}</p> : null}
-              </div>
-            </div>
-            {weather?.primary_action?.title ? (
-              <div className="rounded-2xl bg-white px-4 py-3">
-                <p className="text-sm font-bold">{weather.primary_action.title}</p>
-                {weather.primary_action.subtitle ? (
-                  <p className="mt-1 text-xs text-[#111111]/55">{weather.primary_action.subtitle}</p>
-                ) : null}
-              </div>
-            ) : null}
-            <div>
-              <h2 className="mb-2 text-[13px] font-bold">Tavsiyalar</h2>
-              <div className="space-y-2">
-                {(weather?.recommendations || []).length === 0 ? (
-                  <p className="rounded-2xl bg-white px-4 py-3 text-sm text-[#111111]/45">
-                    {weatherQ.isLoading ? "Ob-havo yuklanmoqda…" : "Bugun uchun qo‘shimcha tavsiya yo‘q."}
-                  </p>
-                ) : (
-                  weather?.recommendations?.map((tip) => (
-                    <p key={tip} className="rounded-2xl bg-white px-4 py-3 text-sm leading-snug">
-                      {tip}
-                    </p>
-                  ))
-                )}
-              </div>
-            </div>
-            {(weather?.product_plan || []).length > 0 ? (
-              <div>
-                <h2 className="mb-2 text-[13px] font-bold">Ob-havoga mos vositalar</h2>
-                <div className="space-y-2">
-                  {weather?.product_plan?.map((item, index) => (
-                    <div key={`${item.name || "plan"}-${index}`} className="rounded-2xl bg-white px-4 py-3">
-                      <p className="text-sm font-bold">{item.name}</p>
-                      {item.brand ? <p className="text-[11px] text-[#111111]/40">{item.brand}</p> : null}
-                      {item.tip ? <p className="mt-1 text-xs text-[#111111]/55">{item.tip}</p> : null}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ) : null}
-          </div>
+          <CareWeatherPanel
+            weather={weather}
+            loading={weatherQ.isLoading}
+            error={weatherQ.error instanceof Error ? weatherQ.error.message : null}
+            onRetry={() => void weatherQ.refetch()}
+            regionId={regionId}
+            onRegion={(id) => {
+              setRegionId(id);
+              try {
+                if (id) localStorage.setItem("care-weather-region", id);
+                else localStorage.removeItem("care-weather-region");
+              } catch {
+                /* ignore */
+              }
+            }}
+            onBack={() => setPanel("hub")}
+            hairCondition={quiz.condition}
+            myProducts={myQ.data || []}
+          />
         )}
       </div>
 
