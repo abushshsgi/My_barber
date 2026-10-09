@@ -21,17 +21,24 @@ type CardSheetProps = {
   claiming?: boolean;
 };
 
+function groupCard(raw: string) {
+  const digits = raw.replace(/\D/g, "");
+  return digits.replace(/(\d{4})(?=\d)/g, "$1 ").trim();
+}
+
 function CopyChip({
   label,
   value,
+  copyValue,
 }: {
   label: string;
   value: string;
+  copyValue?: string;
 }) {
   const [copied, setCopied] = useState(false);
   const copy = async () => {
     try {
-      await navigator.clipboard.writeText(value);
+      await navigator.clipboard.writeText(copyValue ?? value);
       setCopied(true);
       toast.success("Nusxa olindi");
       window.setTimeout(() => setCopied(false), 1600);
@@ -113,6 +120,10 @@ export function TopUpCardSheet({
   if (!deposit) return null;
 
   const claimed = deposit.status === "claimed" || deposit.status === "approved";
+  const cardDigits = (deposit.receiving_card?.number || deposit.receiving_card?.masked || "").replace(
+    /\D/g,
+    "",
+  );
   const existingReceipt = deposit.receipt_url || null;
   const displayAmount =
     amountLabel ||
@@ -184,6 +195,19 @@ export function TopUpCardSheet({
           </div>
 
           <div className="mt-3 space-y-2">
+            <CopyChip
+              label={t("topUpPage.cardNumber", { defaultValue: "Karta" })}
+              value={groupCard(cardDigits)}
+              copyValue={cardDigits}
+            />
+            <CopyChip
+              label={t("topUpPage.cardHolder", { defaultValue: "Egasi" })}
+              value={deposit.receiving_card?.cardholder || "—"}
+            />
+            <CopyChip
+              label={t("topUpPage.cardBank", { defaultValue: "Bank" })}
+              value={deposit.receiving_card?.bank || "—"}
+            />
             <CopyChip
               label={t("topUpPage.transactionRef")}
               value={deposit.transaction_ref}

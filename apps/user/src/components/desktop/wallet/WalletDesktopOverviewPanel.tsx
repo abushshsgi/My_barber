@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Gift, Plus, RefreshCw, Wallet as WalletIcon } from "lucide-react";
+import { Gift, Plus, RefreshCw } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
@@ -8,13 +8,13 @@ import { DESKTOP_GLASS_PANEL } from "@/components/desktop/ui/desktop-glass";
 import { useCurrency } from "@/hooks/use-currency";
 import { useWalletBalance, useWalletMe, useWalletTransactions, walletMeQueryKeyFor } from "@/hooks/use-wallet";
 import { getAuthUserId } from "@/lib/auth-user";
-import { parseWalletBalance } from "@/lib/api/wallet";
-import { filterWalletTransactions, type WalletTxTab } from "@/lib/wallet-transactions";
+import { PlasticCard } from "@/components/wallet/PlasticCard";
+import { filterWalletTransactions, withoutTopups, type WalletTxTab } from "@/lib/wallet-transactions";
 import { cn } from "@/lib/utils";
 
 const RECENT_TX_LIMIT = 8;
 
-/** Desktop overview — plastik karta yo'q, dashboard uslubi. */
+/** Desktop overview — mobil ilovadagi plastik karta. */
 export function WalletDesktopOverviewPanel() {
   const { t } = useTranslation();
   const { formatPrice } = useCurrency();
@@ -25,19 +25,20 @@ export function WalletDesktopOverviewPanel() {
   const { data: walletMe } = useWalletMe();
   const { data: transactions = [], isLoading: txLoading } = useWalletTransactions(tab, 50);
 
+  const activity = useMemo(() => withoutTopups(transactions), [transactions]);
   const visible = useMemo(
-    () => filterWalletTransactions(transactions, tab).slice(0, RECENT_TX_LIMIT),
-    [transactions, tab],
+    () => filterWalletTransactions(activity, tab).slice(0, RECENT_TX_LIMIT),
+    [activity, tab],
   );
-  const hasAnyTransactions = transactions.length > 0;
+  const hasAnyTransactions = activity.length > 0;
 
   const inflowTotal = useMemo(
-    () => transactions.filter((tx) => tx.kind === "in").reduce((sum, tx) => sum + tx.amount, 0),
-    [transactions],
+    () => activity.filter((tx) => tx.kind === "in").reduce((sum, tx) => sum + tx.amount, 0),
+    [activity],
   );
   const outflowTotal = useMemo(
-    () => transactions.filter((tx) => tx.kind === "out").reduce((sum, tx) => sum + tx.amount, 0),
-    [transactions],
+    () => activity.filter((tx) => tx.kind === "out").reduce((sum, tx) => sum + tx.amount, 0),
+    [activity],
   );
 
   const refreshBalance = async () => {
@@ -100,22 +101,14 @@ export function WalletDesktopOverviewPanel() {
           </div>
         </div>
 
-        {walletMe ? (
-          <div className="mt-5 flex items-center gap-3 rounded-xl border border-border/60 bg-surface/50 p-4">
-            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-background ring-1 ring-border/60">
-              <WalletIcon className="h-5 w-5" strokeWidth={1.75} />
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                {t("walletPage.balanceLabel", { defaultValue: "Hamyon" })}
-              </p>
-              <p className="mt-0.5 truncate text-sm font-semibold">{walletMe.card.card_display}</p>
-            </div>
-            <span className="shrink-0 text-xs font-semibold text-muted-foreground">
-              {formatPrice(parseWalletBalance(walletMe.balance))}
-            </span>
-          </div>
-        ) : null}
+        <div className="mt-6 max-w-[420px]">
+          <PlasticCard
+            balance={balance}
+            cardholderName={walletMe?.card.cardholder_name}
+            walletNumber={walletNumber}
+            refreshing={refreshing}
+          />
+        </div>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-3">

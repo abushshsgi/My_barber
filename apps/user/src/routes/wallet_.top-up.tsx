@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { ProfileSubpageCard, ProfileSubpageLayout } from "@/components/profile/ProfileSubpageLayout";
 import { TopUpCardSheet } from "@/components/wallet/TopUpPaymentSheets";
-import { useWalletBalance } from "@/hooks/use-wallet";
+import { useWalletBalance, useWalletTransactions } from "@/hooks/use-wallet";
 import { getAuthUserId } from "@/lib/auth-user";
 import {
   claimCardDeposit,
@@ -43,6 +43,7 @@ function TopUpPage() {
   const qc = useQueryClient();
   const userId = getAuthUserId();
   const { balance, isLoading } = useWalletBalance();
+  const topupsQ = useWalletTransactions("all", 30, "topup");
   const [amount, setAmount] = useState<number>(100_000);
   const [custom, setCustom] = useState("");
   const [cardOpen, setCardOpen] = useState(false);
@@ -299,6 +300,36 @@ function TopUpPage() {
             ? t("topUpPage.continuePay")
             : t("topUpPage.submit", { amount: amountLabel })}
       </button>
+
+      <section className="mt-8">
+        <h3 className="text-[10px] font-bold uppercase tracking-[0.18em] text-black/45">
+          To'ldirishlar
+        </h3>
+        {topupsQ.isLoading ? (
+          <div className="mt-3 h-16 animate-pulse bg-black/[0.04]" />
+        ) : (topupsQ.data ?? []).length === 0 ? (
+          <p className="mt-3 text-[12px] font-medium text-black/45">
+            Hali pul tashlagan to'ldirish yo'q
+          </p>
+        ) : (
+          <div className="mt-3 border border-black/10 bg-white">
+            {(topupsQ.data ?? []).slice(0, 8).map((tx) => (
+              <div
+                key={tx.id}
+                className="flex items-center justify-between gap-3 border-b border-black/10 px-4 py-3 last:border-b-0"
+              >
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-bold text-black">{tx.title}</p>
+                  <p className="mt-0.5 text-[11px] font-medium text-black/45">{tx.date}</p>
+                </div>
+                <p className="shrink-0 text-sm font-bold tabular-nums text-emerald-600">
+                  +{Math.abs(tx.amount).toLocaleString("uz-UZ")} so'm
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
 
       <TopUpCardSheet
         open={cardOpen}

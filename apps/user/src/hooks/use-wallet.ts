@@ -22,8 +22,12 @@ export function walletMeQueryKeyFor(userId: number | null) {
   return userQueryKey(walletMeQueryKeyBase, userId);
 }
 
-export function walletTxQueryKeyFor(userId: number | null, direction: string) {
-  return userQueryKey(["wallet", "transactions", direction] as const, userId);
+export function walletTxQueryKeyFor(
+  userId: number | null,
+  direction: string,
+  entryType = "",
+) {
+  return userQueryKey(["wallet", "transactions", direction, entryType] as const, userId);
 }
 
 export function useWalletMe() {
@@ -47,12 +51,20 @@ export function useWalletBalance() {
   };
 }
 
-export function useWalletTransactions(direction: "all" | "in" | "out" = "all", pageSize = 50) {
+export function useWalletTransactions(
+  direction: "all" | "in" | "out" = "all",
+  pageSize = 50,
+  entryType?: string,
+) {
   const userId = getAuthUserId();
   return useQuery({
-    queryKey: walletTxQueryKeyFor(userId, direction),
+    queryKey: walletTxQueryKeyFor(userId, direction, entryType ?? ""),
     queryFn: async () => {
-      const rows = await fetchWalletTransactionsList({ direction, page_size: pageSize });
+      const rows = await fetchWalletTransactionsList({
+        direction,
+        page_size: pageSize,
+        entry_type: entryType,
+      });
       return mapLedgerEntries(rows);
     },
     enabled: authQueryEnabled(!!userId),

@@ -119,6 +119,7 @@ export async function fetchWalletTransactions(params?: {
 
 export async function fetchWalletTransactionsList(params?: {
   direction?: "all" | "in" | "out";
+  entry_type?: string;
   page?: number;
   page_size?: number;
 }): Promise<ApiLedgerEntry[]> {
@@ -126,6 +127,7 @@ export async function fetchWalletTransactionsList(params?: {
   if (params?.direction && params.direction !== "all") {
     q.set("direction", params.direction);
   }
+  if (params?.entry_type) q.set("entry_type", params.entry_type);
   if (params?.page) q.set("page", String(params.page));
   if (params?.page_size) q.set("page_size", String(params.page_size));
   const qs = q.toString();

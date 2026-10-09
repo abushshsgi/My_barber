@@ -52,6 +52,11 @@ export function filterWalletTransactions(transactions: WalletTransaction[], tab:
   return transactions.filter((tx) => tx.kind === tab);
 }
 
+/** To'ldirishlar faqat to'ldirish sahifasida. Hamyon tarixida qolganlari. */
+export function withoutTopups(transactions: WalletTransaction[]) {
+  return transactions.filter((tx) => tx.entryType !== "topup");
+}
+
 export function groupWalletTransactions(transactions: WalletTransaction[]) {
   const groups: { label: string; items: WalletTransaction[] }[] = [];
   const map = new Map<string, WalletTransaction[]>();

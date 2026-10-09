@@ -92,7 +92,10 @@ export async function fetchReceivingCard(): Promise<ReceivingCardInfo> {
 export async function initCardDeposit(amount: number): Promise<CardDeposit> {
   return apiJson<CardDeposit>("/api/v1/wallet/top-up/card/init/", {
     method: "POST",
-    headers: { "Idempotency-Key": idempotencyKey("card-init") },
+    headers: {
+      "Idempotency-Key": idempotencyKey("card-init"),
+      "X-Client-Channel": "web",
+    },
     body: JSON.stringify({ amount }),
   });
 }

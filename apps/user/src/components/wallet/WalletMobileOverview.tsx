@@ -13,7 +13,7 @@ import { WalletPullRefresh } from "@/components/wallet/WalletPullRefresh";
 import { WalletTransactionList } from "@/components/wallet/WalletTransactionList";
 import { useWalletBalance, useWalletTransactions, walletMeQueryKeyFor } from "@/hooks/use-wallet";
 import { getAuthUserId } from "@/lib/auth-user";
-import { filterWalletTransactions, type WalletTxTab } from "@/lib/wallet-transactions";
+import { filterWalletTransactions, withoutTopups, type WalletTxTab } from "@/lib/wallet-transactions";
 import { cn } from "@/lib/utils";
 
 const RECENT_TX_LIMIT = 5;
@@ -62,11 +62,12 @@ export function WalletMobileOverview() {
   const { balance, walletNumber, card, isLoading } = useWalletBalance();
   const { data: transactions = [], isLoading: txLoading } = useWalletTransactions(tab, 50);
 
+  const activity = useMemo(() => withoutTopups(transactions), [transactions]);
   const visible = useMemo(
-    () => filterWalletTransactions(transactions, tab).slice(0, RECENT_TX_LIMIT),
-    [transactions, tab],
+    () => filterWalletTransactions(activity, tab).slice(0, RECENT_TX_LIMIT),
+    [activity, tab],
   );
-  const hasAnyTransactions = transactions.length > 0;
+  const hasAnyTransactions = activity.length > 0;
 
   const tabLabels: Record<WalletTxTab, string> = {
     all: t("walletPage.tabs.all"),
