@@ -30,7 +30,9 @@ import { CardSkeleton } from "@/components/admin/Skeletons";
 import { EmptyState } from "@/components/admin/EmptyState";
 import { LivePulseBadge } from "@/components/admin/LiveMetricHero";
 import { MorphAiSeeAllLink } from "@/components/admin/MorphAiSeeAllLink";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -150,9 +152,24 @@ function MorphAiPage() {
         <LivePulseBadge label="10s" />
       </StatsPageHeader>
 
+      {q.isError ? (
+        <Alert variant="destructive">
+          <AlertTitle>Ma&apos;lumot yuklanmadi</AlertTitle>
+          <AlertDescription className="flex flex-col items-start gap-3">
+            <span>
+              {(q.error as Error)?.message ||
+                "Morph AI statistikasi olinmadi. Qayta urinib ko'ring."}
+            </span>
+            <Button type="button" variant="outline" size="sm" onClick={() => void q.refetch()}>
+              Qayta urinish
+            </Button>
+          </AlertDescription>
+        </Alert>
+      ) : null}
+
       {/* Live strip */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {q.isLoading || !d ? (
+        {q.isError ? null : q.isLoading || !d ? (
           Array.from({ length: 4 }).map((_, i) => <CardSkeleton key={i} className="min-h-[120px]" />)
         ) : (
           <>
@@ -187,7 +204,7 @@ function MorphAiPage() {
       </div>
 
       {/* Period KPIs */}
-      {q.isLoading || !d ? (
+      {q.isError ? null : q.isLoading || !d ? (
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-6">
           {Array.from({ length: 6 }).map((_, i) => (
             <CardSkeleton key={i} />
@@ -232,7 +249,7 @@ function MorphAiPage() {
               <p className="mt-1 text-sm text-muted-foreground">USD — Gemini / Morph AI chaqiruvlari</p>
             </div>
           </div>
-          {q.isLoading || !d ? (
+          {q.isError ? null : q.isLoading || !d ? (
             <CardSkeleton className="mt-4 h-[260px]" />
           ) : dailyChart.length === 0 ? (
             <EmptyState title="Ma'lumot yo'q" description="Tanlangan davrda generatsiya bo'lmagan." />
@@ -289,7 +306,7 @@ function MorphAiPage() {
         <div className="rounded-2xl border border-border bg-card p-5 shadow-card sm:p-6">
           <h2 className="font-heading text-lg font-semibold">Kunlik generatsiya</h2>
           <p className="mt-1 text-sm text-muted-foreground">Try-on va tahlil chaqiruvlari soni</p>
-          {q.isLoading || !d ? (
+          {q.isError ? null : q.isLoading || !d ? (
             <CardSkeleton className="mt-4 h-[260px]" />
           ) : dailyChart.length === 0 ? (
             <EmptyState title="Ma'lumot yo'q" description="Tanlangan davrda generatsiya bo'lmagan." />
@@ -317,7 +334,7 @@ function MorphAiPage() {
             </p>
           </div>
         </div>
-        {q.isLoading || !d ? (
+        {q.isError ? null : q.isLoading || !d ? (
           <CardSkeleton className="mt-4 h-40" />
         ) : topUsers.length === 0 ? (
           <EmptyState
@@ -387,7 +404,7 @@ function MorphAiPage() {
         <p className="mt-1 text-sm text-muted-foreground">
           Eng oxirgi 10 ta — to'liq tarix uchun Barchasi
         </p>
-        {q.isLoading || !d ? (
+        {q.isError ? null : q.isLoading || !d ? (
           <CardSkeleton className="mt-4 h-48" />
         ) : recentRows.length === 0 ? (
           <EmptyState
