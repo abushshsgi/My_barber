@@ -1,4 +1,5 @@
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { useShellTheme } from "../lib/useShellTheme";
 import { MorphGuideCarouselScreen } from "../screens/morph/MorphGuideCarouselScreen";
 import { MorphHistoryScreen } from "../screens/morph/MorphHistoryScreen";
 import { MorphHomeScreen } from "../screens/morph/MorphHomeScreen";
@@ -37,13 +38,14 @@ const Stack = createNativeStackNavigator<MorphStackParamList>();
 
 /** Try-on tab: birinchi marta Welcome → Guide; keyin MorphCapture. */
 export function MorphStack() {
+  const pal = useShellTheme();
   return (
     <Stack.Navigator
       initialRouteName="MorphCapture"
       screenOptions={{
         headerShown: false,
         animation: "slide_from_right",
-        contentStyle: { backgroundColor: "#111111" },
+        contentStyle: { backgroundColor: pal.bg },
       }}
     >
       <Stack.Screen name="MorphCapture" component={MorphTryOnScreen} />

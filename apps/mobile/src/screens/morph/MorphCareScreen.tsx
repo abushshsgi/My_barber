@@ -78,6 +78,7 @@ import { careHubLayout, weatherLocationHeroSource } from "../../lib/weather-care
 import { regionLabel } from "../../lib/uz-regions";
 import type { MorphCareStackParamList } from "../../navigation/MorphCareStack";
 import { useShellNavigation } from "../../lib/shell-nav";
+import { useShellTheme, type ShellTheme } from "../../lib/useShellTheme";
 import { morphFont } from "../../theme/morph-font";
 import {
   ASPECT,
@@ -169,8 +170,28 @@ const likeStyles = StyleSheet.create({
   },
 });
 
+const CARE_LIGHT: Pick<
+  ShellTheme,
+  "bg" | "card" | "fg" | "muted" | "iconTile" | "border" | "onAccent"
+> = {
+  bg: "#FAFAFA",
+  card: "#FFFFFF",
+  fg: "#111111",
+  muted: "#737373",
+  iconTile: "#F0F0F0",
+  border: "rgba(17,17,17,0.12)",
+  onAccent: "#FFFFFF",
+};
+
+let styles = createCareStyles(CARE_LIGHT);
+
 export function MorphCareScreen({ navigation, route }: Props) {
   const { t } = useTranslation();
+  const pal = useShellTheme();
+  styles = useMemo(
+    () => createCareStyles(pal),
+    [pal.bg, pal.card, pal.fg, pal.muted, pal.iconTile, pal.border, pal.onAccent],
+  );
   const insets = useSafeAreaInsets();
   const { isAuthenticated, user } = useAuth();
   const { goMorph } = useShellNavigation();
@@ -678,13 +699,6 @@ export function MorphCareScreen({ navigation, route }: Props) {
         };
         setQuiz(next);
         void saveCareQuiz(next);
-        if (!profile.complete) {
-          void updateHairCareProfile({
-            condition: next.condition,
-            texture: next.texture,
-            color_status: next.colorStatus,
-          }).catch(() => undefined);
-        }
         if (!retakeQuizRef.current) {
           setStep("plan");
           setViewMode("flow");
@@ -996,25 +1010,25 @@ export function MorphCareScreen({ navigation, route }: Props) {
   );
 
   if (step === "boot") {
-    return <View style={[styles.root, { backgroundColor: "#FAFAFA" }]} />;
+    return <View style={[styles.root, { backgroundColor: pal.bg }]} />;
   }
 
   if (access && !access.allowed) {
     return (
       <View style={[styles.root, styles.pad, { paddingTop: safeTop(insets.top, 12) }]}>
-        <AppStatusBar style="dark" />
+        <AppStatusBar style={pal.status} />
         <View style={styles.navBarRow}>
           <NativeBackButton
             onPress={handleBack}
             accessibilityLabel={t("common.back")}
-            color="#fff"
+            color={pal.fg}
             backgroundColor="rgba(255,255,255,0.16)"
           />
           <View style={{ width: 42 }} />
         </View>
         <Text style={[styles.muted, { marginTop: 12 }]}>{t("care.badge")}</Text>
         <View style={styles.lockWrap}>
-          <Ionicons name="lock-closed" size={28} color="rgba(255,255,255,0.5)" />
+          <Ionicons name="lock-closed" size={28} color={pal.muted} />
           <Text style={styles.lockTitle}>{t("care.badge")}</Text>
           <Text style={styles.lockSub}>{access.detail || t("care.proOnly")}</Text>
           <Pressable style={[styles.primaryBtnDark, { marginTop: 24 }]} onPress={openSubscriptions}>
@@ -1069,9 +1083,9 @@ export function MorphCareScreen({ navigation, route }: Props) {
 
     return (
       <View style={styles.onboardRoot}>
-        <AppStatusBar style="dark" />
+        <AppStatusBar style={pal.status} />
         <LinearGradient
-          colors={["#F0F0F0", "#F0F0F0", "#FAFAFA"]}
+          colors={[pal.iconTile, pal.iconTile, pal.bg]}
           start={{ x: 0.1, y: 0 }}
           end={{ x: 0.9, y: 0.55 }}
           style={StyleSheet.absoluteFill}
@@ -1210,8 +1224,8 @@ export function MorphCareScreen({ navigation, route }: Props) {
     const hubBottomPad = Math.max(hubLayout.dockClearance, safeBottom(insets.bottom, 28));
     return (
       <View style={[styles.hubRoot, { paddingBottom: hubBottomPad }]}>
-        <AppStatusBar style="dark" />
-        <View style={[StyleSheet.absoluteFill, { backgroundColor: "#FAFAFA" }]} />
+        <AppStatusBar style={pal.status} />
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: pal.bg }]} />
 
         <ScrollView
           style={styles.hubScroll}
@@ -1466,7 +1480,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
               accessibilityRole="button"
               accessibilityLabel={t("care.catalog.title")}
             >
-              <Ionicons name="search-outline" size={hubLayout.searchUi.icon} color="#111111" />
+              <Ionicons name="search-outline" size={hubLayout.searchUi.icon} color={pal.fg} />
               <Text style={[styles.searchPlaceholder, { fontSize: hubLayout.searchUi.fs }]}>
                 {t("care.catalog.search")}...
               </Text>
@@ -1480,7 +1494,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
                   },
                 ]}
               >
-                <Ionicons name="options-outline" size={hubLayout.searchUi.filterIcon} color="#fff" />
+                <Ionicons name="options-outline" size={hubLayout.searchUi.filterIcon} color={pal.onAccent} />
               </View>
             </Pressable>
           </View>
@@ -1515,7 +1529,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
                       {
                         width: hubLayout.featuredW,
                         height: hubLayout.featuredH,
-                        backgroundColor: "#ECECEC",
+                        backgroundColor: pal.iconTile,
                       },
                     ]}
                   />
@@ -1564,7 +1578,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
                         placeholderContentFit="cover"
                       />
                     ) : (
-                      <View style={[styles.featuredCardImg, { backgroundColor: "#E8E8E8" }]} />
+                      <View style={[styles.featuredCardImg, { backgroundColor: pal.iconTile }]} />
                     )}
                     <LinearGradient
                       colors={["transparent", "rgba(0,0,0,0.25)", "rgba(0,0,0,0.88)"]}
@@ -1728,7 +1742,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
                     <Ionicons
                       name="bag-handle-outline"
                       size={hubLayout.sheetUi.filterIcon}
-                      color="#111111"
+                      color={pal.fg}
                     />
                     <Text
                       style={[
@@ -1741,7 +1755,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
                     <Ionicons
                       name="chevron-forward"
                       size={Math.max(10, hubLayout.sheetUi.filterIcon - 2)}
-                      color="#737373"
+                      color={pal.muted}
                     />
                   </Pressable>
                 </View>
@@ -1853,13 +1867,13 @@ export function MorphCareScreen({ navigation, route }: Props) {
                 <View style={styles.searchSheetHandle} />
                 <View style={styles.searchSheetHeader}>
                   <View style={[styles.searchBar, styles.searchBarInSheet, styles.searchBarActive]}>
-                    <Ionicons name="search-outline" size={18} color="#111111" />
+                    <Ionicons name="search-outline" size={18} color={pal.fg} />
                     <TextInput
                       ref={searchInputRef}
                       value={searchQuery}
                       onChangeText={setSearchQuery}
                       placeholder={t("care.catalog.search")}
-                      placeholderTextColor="#737373"
+                      placeholderTextColor={pal.muted}
                       style={styles.searchInput}
                       autoFocus={false}
                       returnKeyType="search"
@@ -1877,7 +1891,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
                     accessibilityLabel={t("common.back")}
                     hitSlop={8}
                   >
-                    <Ionicons name="close" size={18} color="#111111" />
+                    <Ionicons name="close" size={18} color={pal.fg} />
                   </Pressable>
                 </View>
                 <Text style={styles.searchSheetTitle}>{t("care.catalog.title")}</Text>
@@ -1892,7 +1906,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
               >
                 {!searchListReady ? (
                   <View style={styles.searchLoading}>
-                    <ActivityIndicator color="#111111" />
+                    <ActivityIndicator color={pal.fg} />
                   </View>
                 ) : searchResults.length === 0 ? (
                   <Text style={styles.searchEmpty}>{t("care.catalog.empty")}</Text>
@@ -1918,7 +1932,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
                               />
                             ) : (
                               <View style={[styles.searchCardImg, styles.searchRowPh]}>
-                                <Ionicons name="flask-outline" size={22} color="#111111" />
+                                <Ionicons name="flask-outline" size={22} color={pal.fg} />
                               </View>
                             )}
                             <CareCatalogMark />
@@ -1964,7 +1978,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
                               <Ionicons
                                 name={item.added ? "checkmark-circle" : "bag-add-outline"}
                                 size={13}
-                                color={item.added ? "#111111" : "#fff"}
+                                color={item.added ? pal.fg : pal.onAccent}
                               />
                               <Text
                                 style={[
@@ -2049,7 +2063,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
               </Text>
             </View>
             <View style={styles.addToastCheck}>
-              <Ionicons name="checkmark" size={14} color="#fff" />
+              <Ionicons name="checkmark" size={14} color={pal.onAccent} />
             </View>
           </Animated.View>
         ) : null}
@@ -2060,7 +2074,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
 
   return (
     <View style={styles.routineRoot}>
-      <AppStatusBar style="dark" />
+      <AppStatusBar style={pal.status} />
       <View style={[styles.routineHeader, { paddingTop: safeTop(insets.top, 6) }]}>
         <Pressable
           style={styles.routineHeaderBtn}
@@ -2068,7 +2082,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
           hitSlop={8}
           accessibilityLabel={t("common.back")}
         >
-          <Ionicons name="arrow-back" size={18} color="#111" />
+          <Ionicons name="arrow-back" size={18} color={pal.fg} />
         </Pressable>
         <View style={styles.routineHeaderCenter}>
           <Text style={styles.routineHeaderTitle} numberOfLines={1}>
@@ -2104,8 +2118,12 @@ export function MorphCareScreen({ navigation, route }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: "#FAFAFA" },
+function createCareStyles(pal: Pick<
+  ShellTheme,
+  "bg" | "card" | "fg" | "muted" | "iconTile" | "border" | "onAccent"
+>) {
+  return StyleSheet.create({
+  root: { flex: 1, backgroundColor: pal.bg },
   quickActionRow: {
     width: "100%",
     flexDirection: "row",
@@ -2117,13 +2135,13 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     position: "relative",
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(17,17,17,0.08)",
+    borderColor: pal.border,
     shadowColor: "#111111",
     shadowOpacity: 0.06,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 4 },
     elevation: 2,
-    backgroundColor: "#F0F0F0",
+    backgroundColor: pal.iconTile,
   },
   /** Android expo-image: absoluteFill yetarli emas — 100% W/H majburiy. */
   quickActionImg: {
@@ -2154,12 +2172,12 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 3,
   },
-  routineRoot: { flex: 1, minHeight: 0, backgroundColor: "#FAFAFA" },
-  onboardRoot: { flex: 1, minHeight: 0, backgroundColor: "#FAFAFA" },
+  routineRoot: { flex: 1, minHeight: 0, backgroundColor: pal.bg },
+  onboardRoot: { flex: 1, minHeight: 0, backgroundColor: pal.bg },
   center: { alignItems: "center", justifyContent: "center" },
   pad: { flex: 1, paddingHorizontal: scale(20) },
   onboardPad: { flex: 1, paddingHorizontal: scale(20) },
-  hubRoot: { flex: 1, minHeight: 0, backgroundColor: "#FAFAFA", overflow: "hidden" },
+  hubRoot: { flex: 1, minHeight: 0, backgroundColor: pal.bg, overflow: "hidden" },
   hubScroll: {
     flex: 1,
     minHeight: 0,
@@ -2181,7 +2199,7 @@ const styles = StyleSheet.create({
     paddingVertical: verticalScale(10),
     paddingHorizontal: scale(12),
     borderRadius: moderateScale(18),
-    backgroundColor: "#FFFFFF",
+    backgroundColor: pal.card,
     borderWidth: 1,
     borderColor: "rgba(99,102,241,0.18)",
     shadowColor: "#111111",
@@ -2193,26 +2211,26 @@ const styles = StyleSheet.create({
     width: scale(40),
     height: scale(40),
     borderRadius: moderateScale(12),
-    backgroundColor: "#F0F0F0",
+    backgroundColor: pal.iconTile,
   },
   addToastBody: { flex: 1, minWidth: 0, gap: 1 },
   addToastEyebrow: {
     ...morphFont,
     fontSize: fontSize(11),
     fontWeight: "700",
-    color: "#111111",
+    color: pal.fg,
   },
   addToastTitle: {
     ...morphFont,
     fontSize: fontSize(14),
     fontWeight: "700",
-    color: "#111111",
+    color: pal.fg,
   },
   addToastCheck: {
     width: scale(26),
     height: scale(26),
     borderRadius: moderateScale(13),
-    backgroundColor: "#111111",
+    backgroundColor: pal.fg,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -2251,7 +2269,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingBottom: verticalScale(10),
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(17,17,17,0.12)",
+    borderColor: pal.border,
   },
   promoHeroBg: {
     width: "100%",
@@ -2524,7 +2542,7 @@ const styles = StyleSheet.create({
     width: scale(18),
     height: verticalScale(5),
     borderRadius: moderateScale(2.5),
-    backgroundColor: "#111111",
+    backgroundColor: pal.fg,
   },
   dotInactive: {
     width: scale(5),
@@ -2540,13 +2558,13 @@ const styles = StyleSheet.create({
   searchBar: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FFFFFF",
+    backgroundColor: pal.card,
     borderRadius: moderateScale(20),
     paddingLeft: scale(14),
     paddingRight: scale(6),
     height: verticalScale(48),
     borderWidth: 1,
-    borderColor: "rgba(17,17,17,0.12)",
+    borderColor: pal.border,
     gap: moderateScale(8),
     shadowColor: "#111111",
     shadowOpacity: 0.06,
@@ -2555,7 +2573,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   searchBarActive: {
-    borderColor: "#111111",
+    borderColor: pal.fg,
   },
   searchHubBtn: {
     display: "flex",
@@ -2564,7 +2582,7 @@ const styles = StyleSheet.create({
     width: scale(32),
     height: scale(32),
     borderRadius: moderateScale(16),
-    backgroundColor: "#111111",
+    backgroundColor: pal.fg,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -2578,7 +2596,7 @@ const styles = StyleSheet.create({
     ...morphFont,
     flex: 1,
     fontSize: fontSize(15),
-    color: "#111111",
+    color: pal.fg,
     paddingVertical: 0,
     height: "100%",
   },
@@ -2587,7 +2605,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: fontSize(13),
     fontWeight: "500",
-    color: "#525252",
+    color: pal.muted,
   },
   searchCloseBtn: {
     width: scale(40),
@@ -2596,9 +2614,9 @@ const styles = StyleSheet.create({
     borderRadius: moderateScale(20),
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#F3F3F5",
+    backgroundColor: pal.iconTile,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(17,17,17,0.08)",
+    borderColor: pal.border,
   },
   filterBtn: {
     width: scale(36),
@@ -2623,7 +2641,7 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     zIndex: 21,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: pal.card,
     borderTopLeftRadius: moderateScale(22),
     borderTopRightRadius: moderateScale(22),
     borderTopWidth: StyleSheet.hairlineWidth,
@@ -2640,7 +2658,7 @@ const styles = StyleSheet.create({
     paddingTop: verticalScale(8),
     paddingHorizontal: scale(12),
     gap: moderateScale(10),
-    backgroundColor: "#FFFFFF",
+    backgroundColor: pal.card,
   },
   searchSheetHeader: {
     flexDirection: "row",
@@ -2666,7 +2684,7 @@ const styles = StyleSheet.create({
     marginBottom: verticalScale(4),
     fontSize: fontSize(15),
     fontWeight: "700",
-    color: "#111111",
+    color: pal.fg,
   },
   searchSheetScroll: {
     flex: 1,
@@ -2695,7 +2713,7 @@ const styles = StyleSheet.create({
   },
   searchCard: {
     flexGrow: 0,
-    backgroundColor: "#FAFAFA",
+    backgroundColor: pal.bg,
     borderRadius: moderateScale(14),
     overflow: "hidden",
     borderWidth: 1,
@@ -2705,7 +2723,7 @@ const styles = StyleSheet.create({
   searchCardMedia: {
     width: "100%",
     aspectRatio: 1,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: pal.card,
     position: "relative",
   },
   searchCardImg: {
@@ -2732,7 +2750,7 @@ const styles = StyleSheet.create({
     ...morphFont,
     fontSize: fontSize(11),
     fontWeight: "700",
-    color: "#111111",
+    color: pal.fg,
   },
   searchCardTitle: {
     ...morphFont,
@@ -2740,7 +2758,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: scale(8),
     fontSize: fontSize(11),
     fontWeight: "700",
-    color: "#111111",
+    color: pal.fg,
     lineHeight: fontSize(14),
     minHeight: verticalScale(28),
   },
@@ -2759,7 +2777,7 @@ const styles = StyleSheet.create({
   searchAddBtn: {
     height: verticalScale(30),
     borderRadius: moderateScale(10),
-    backgroundColor: "#111111",
+    backgroundColor: pal.fg,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -2767,24 +2785,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: scale(8),
   },
   searchAddBtnAdded: {
-    backgroundColor: "#F0F0F0",
+    backgroundColor: pal.iconTile,
     borderWidth: 1,
     borderColor: "rgba(79,70,229,0.25)",
   },
   searchAddBtnDone: {
-    backgroundColor: "#111111",
+    backgroundColor: pal.fg,
   },
   searchAddBtnText: {
     ...morphFont,
     fontSize: fontSize(11),
     fontWeight: "700",
-    color: "#fff",
+    color: pal.onAccent,
   },
   searchAddBtnTextAdded: {
-    color: "#111111",
+    color: pal.fg,
   },
   searchAddBtnTextDone: {
-    color: "#fff",
+    color: pal.onAccent,
   },
   previewBackdrop: {
     flex: 1,
@@ -2806,7 +2824,7 @@ const styles = StyleSheet.create({
     overflow: "visible",
   },
   previewCard: {
-    backgroundColor: "#fff",
+    backgroundColor: pal.card,
     borderTopLeftRadius: moderateScale(24),
     borderTopRightRadius: moderateScale(24),
     paddingHorizontal: scale(16),
@@ -2828,7 +2846,7 @@ const styles = StyleSheet.create({
     aspectRatio: ASPECT.landscape,
     borderRadius: moderateScale(18),
     overflow: "hidden",
-    backgroundColor: "#F0F0F0",
+    backgroundColor: pal.iconTile,
     marginBottom: verticalScale(8),
   },
   previewImg: { width: "100%", height: "100%" },
@@ -2847,7 +2865,7 @@ const styles = StyleSheet.create({
     ...morphFont,
     fontSize: fontSize(18),
     fontWeight: "800",
-    color: "#111111",
+    color: pal.fg,
   },
   previewBrand: {
     ...morphFont,
@@ -2861,8 +2879,8 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
     fontSize: fontSize(12),
     fontWeight: "700",
-    color: "#111111",
-    backgroundColor: "#F0F0F0",
+    color: pal.fg,
+    backgroundColor: pal.iconTile,
     paddingHorizontal: scale(10),
     paddingVertical: verticalScale(4),
     borderRadius: 999,
@@ -2873,14 +2891,14 @@ const styles = StyleSheet.create({
     marginTop: verticalScale(8),
     padding: moderateScale(12),
     borderRadius: moderateScale(14),
-    backgroundColor: "#FAFAFA",
+    backgroundColor: pal.bg,
     gap: moderateScale(4),
   },
   previewSectionTitle: {
     ...morphFont,
     fontSize: fontSize(11),
     fontWeight: "700",
-    color: "#64748B",
+    color: pal.muted,
     textTransform: "uppercase",
     letterSpacing: 0.4,
   },
@@ -2888,19 +2906,19 @@ const styles = StyleSheet.create({
     ...morphFont,
     fontSize: fontSize(13),
     lineHeight: fontSize(19),
-    color: "#334155",
+    color: pal.fg,
   },
   previewIngredients: {
     ...morphFont,
     fontSize: fontSize(12),
     lineHeight: fontSize(18),
-    color: "#475569",
+    color: pal.muted,
   },
   previewWarn: {
     ...morphFont,
     fontSize: fontSize(12),
     lineHeight: fontSize(17),
-    color: "#111111",
+    color: pal.fg,
   },
   previewUsage: {
     ...morphFont,
@@ -2911,7 +2929,7 @@ const styles = StyleSheet.create({
   previewAddBtn: {
     height: verticalScale(50),
     borderRadius: moderateScale(16),
-    backgroundColor: "#111111",
+    backgroundColor: pal.fg,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -2930,7 +2948,7 @@ const styles = StyleSheet.create({
     flex: 1,
     height: verticalScale(50),
     borderRadius: moderateScale(16),
-    backgroundColor: "#111111",
+    backgroundColor: pal.fg,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -2940,10 +2958,10 @@ const styles = StyleSheet.create({
     ...morphFont,
     fontSize: fontSize(15),
     fontWeight: "700",
-    color: "#fff",
+    color: pal.onAccent,
   },
   previewAddBtnAdded: {
-    backgroundColor: "#F0F0F0",
+    backgroundColor: pal.iconTile,
     borderWidth: 1,
     borderColor: "rgba(79,70,229,0.25)",
   },
@@ -2951,10 +2969,10 @@ const styles = StyleSheet.create({
     ...morphFont,
     fontSize: fontSize(15),
     fontWeight: "700",
-    color: "#fff",
+    color: pal.onAccent,
   },
   previewAddBtnTextAdded: {
-    color: "#111111",
+    color: pal.fg,
   },
   searchRowPh: { alignItems: "center", justifyContent: "center" },
   featuredProductsScroll: {
@@ -2973,9 +2991,9 @@ const styles = StyleSheet.create({
   featuredCard: {
     borderRadius: moderateScale(20),
     overflow: "hidden",
-    backgroundColor: "#FFFFFF",
+    backgroundColor: pal.card,
     borderWidth: 1,
-    borderColor: "rgba(17,17,17,0.1)",
+    borderColor: pal.border,
   },
   featuredMedia: {
     flex: 1,
@@ -2984,7 +3002,7 @@ const styles = StyleSheet.create({
     /** Matn bloki oddiy oqimda — karta pasti hech qachon kesilmaydi. */
     justifyContent: "flex-end",
     overflow: "hidden",
-    backgroundColor: "#F0F0F0",
+    backgroundColor: pal.iconTile,
   },
   featuredCardImg: {
     position: "absolute",
@@ -3009,11 +3027,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(17,17,17,0.08)",
+    borderColor: pal.border,
   },
   featuredActionBtnActive: {
     backgroundColor: "#FFFFFF",
-    borderColor: "rgba(17,17,17,0.12)",
+    borderColor: pal.border,
   },
   featuredPlayBtn: {
     position: "absolute",
@@ -3060,12 +3078,12 @@ const styles = StyleSheet.create({
     color: "#94A3B8",
   },
   routineTop: { paddingHorizontal: scale(20), paddingBottom: verticalScale(8), gap: moderateScale(10) },
-  routineTopTitle: { ...morphFont, fontSize: fontSize(16), fontWeight: "700", color: "#111" },
+  routineTopTitle: { ...morphFont, fontSize: fontSize(16), fontWeight: "700", color: pal.fg },
   routineHeadline: {
     ...morphFont,
     fontSize: fontSize(28),
     fontWeight: "700",
-    color: "#111",
+    color: pal.fg,
     letterSpacing: -0.6,
     lineHeight: fontSize(32),
   },
@@ -3075,7 +3093,7 @@ const styles = StyleSheet.create({
     gap: moderateScale(10),
     paddingHorizontal: scale(16),
     paddingBottom: verticalScale(10),
-    backgroundColor: "#FAFAFA",
+    backgroundColor: pal.bg,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: "rgba(17,17,17,0.06)",
     zIndex: 2,
@@ -3086,9 +3104,9 @@ const styles = StyleSheet.create({
     borderRadius: scale(20),
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#FFFFFF",
+    backgroundColor: pal.card,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(17,17,17,0.08)",
+    borderColor: pal.border,
     shadowColor: "#111111",
     shadowOpacity: 0.04,
     shadowRadius: 6,
@@ -3108,14 +3126,14 @@ const styles = StyleSheet.create({
     ...morphFont,
     fontSize: fontSize(17),
     fontWeight: "800",
-    color: "#111111",
+    color: pal.fg,
     letterSpacing: -0.3,
   },
   routineHeaderSub: {
     ...morphFont,
     fontSize: fontSize(12),
     fontWeight: "500",
-    color: "rgba(17,17,17,0.45)",
+    color: pal.muted,
   },
   hubDockOuter: {
     marginTop: verticalScale(6),
@@ -3127,7 +3145,7 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   hubSheet: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: pal.card,
     paddingHorizontal: scale(14),
     paddingTop: verticalScale(16),
     paddingBottom: 0,
@@ -3135,13 +3153,13 @@ const styles = StyleSheet.create({
     borderRadius: moderateScale(24),
     overflow: "hidden",
     borderWidth: 1,
-    borderColor: "rgba(17,17,17,0.1)",
+    borderColor: pal.border,
   },
   hubSheetFlow: {
     marginTop: verticalScale(12),
     borderRadius: moderateScale(26),
     overflow: "hidden",
-    backgroundColor: "#FFFFFF",
+    backgroundColor: pal.card,
     paddingHorizontal: scale(20),
     paddingTop: verticalScale(12),
     gap: moderateScale(12),
@@ -3159,7 +3177,7 @@ const styles = StyleSheet.create({
     minWidth: 0,
     fontSize: fontSize(18),
     fontWeight: "800",
-    color: "#111111",
+    color: pal.fg,
     letterSpacing: -0.3,
   },
   reportFilter: {
@@ -3169,12 +3187,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: scale(9),
     paddingVertical: verticalScale(5),
     borderRadius: 999,
-    backgroundColor: "#F4F4F5",
+    backgroundColor: pal.iconTile,
     borderWidth: 1,
-    borderColor: "rgba(17,17,17,0.08)",
+    borderColor: pal.border,
     flexShrink: 0,
   },
-  reportFilterText: { ...morphFont, fontSize: fontSize(11), fontWeight: "700", color: "#111111" },
+  reportFilterText: { ...morphFont, fontSize: fontSize(11), fontWeight: "700", color: pal.fg },
   hubCards: {
     flexDirection: "row",
     gap: moderateScale(12),
@@ -3185,9 +3203,9 @@ const styles = StyleSheet.create({
     flex: 1,
     height: "100%",
     borderRadius: moderateScale(16),
-    backgroundColor: "#F0F0F0",
+    backgroundColor: pal.iconTile,
     borderWidth: 1,
-    borderColor: "rgba(17,17,17,0.12)",
+    borderColor: pal.border,
     overflow: "hidden",
     position: "relative",
   },
@@ -3229,7 +3247,7 @@ const styles = StyleSheet.create({
     fontSize: fontSize(9),
     fontWeight: "700",
     letterSpacing: 0.2,
-    color: "#111111",
+    color: pal.fg,
   },
   hubCardTitle: {
     ...morphFont,
@@ -3249,9 +3267,9 @@ const styles = StyleSheet.create({
     letterSpacing: -0.35,
   },
   rowBetweenLight: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  onboardBadge: { ...morphFont, fontSize: fontSize(12), fontWeight: "600", color: "#111111" },
-  onboardH1: { ...morphFont, fontSize: fontSize(28), fontWeight: "700", color: "#111", letterSpacing: -0.6, lineHeight: fontSize(34) },
-  onboardSub: { marginTop: verticalScale(10), ...morphFont, fontSize: fontSize(15), lineHeight: fontSize(22), color: "rgba(26,26,26,0.55)" },
+  onboardBadge: { ...morphFont, fontSize: fontSize(12), fontWeight: "600", color: pal.fg },
+  onboardH1: { ...morphFont, fontSize: fontSize(28), fontWeight: "700", color: pal.fg, letterSpacing: -0.6, lineHeight: fontSize(34) },
+  onboardSub: { marginTop: verticalScale(10), ...morphFont, fontSize: fontSize(15), lineHeight: fontSize(22), color: pal.muted },
   progressTrackLight: {
     marginTop: verticalScale(20),
     height: verticalScale(4),
@@ -3259,14 +3277,14 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0,0,0,0.06)",
     overflow: "hidden",
   },
-  progressFillLight: { height: "100%", backgroundColor: "#111111", borderRadius: moderateScale(99) },
+  progressFillLight: { height: "100%", backgroundColor: pal.fg, borderRadius: moderateScale(99) },
   optGridLight: { marginTop: verticalScale(24), flexDirection: "row", flexWrap: "wrap", gap: moderateScale(10) },
   scheduleOnboard: { marginTop: verticalScale(20), gap: moderateScale(10) },
   scheduleOnboardLabel: {
     ...morphFont,
     fontSize: fontSize(12),
     fontWeight: "700",
-    color: "rgba(17,17,17,0.45)",
+    color: pal.muted,
     textTransform: "uppercase",
     letterSpacing: 0.4,
     marginTop: verticalScale(4),
@@ -3276,42 +3294,42 @@ const styles = StyleSheet.create({
     paddingHorizontal: scale(14),
     paddingVertical: verticalScale(10),
     borderRadius: 999,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: pal.card,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(17,17,17,0.1)",
+    borderColor: pal.border,
   },
-  scheduleOnboardChipOn: { backgroundColor: "#111", borderColor: "#111" },
+  scheduleOnboardChipOn: { backgroundColor: pal.fg, borderColor: pal.fg },
   scheduleOnboardChipText: {
     ...morphFont,
     fontSize: fontSize(13),
     fontWeight: "700",
-    color: "#111",
+    color: pal.fg,
   },
-  scheduleOnboardChipTextOn: { color: "#fff" },
+  scheduleOnboardChipTextOn: { color: pal.onAccent },
   optCardLight: {
     width: "47%",
     minHeight: verticalScale(72),
     borderRadius: moderateScale(18),
     borderWidth: 1,
     borderColor: "rgba(0,0,0,0.06)",
-    backgroundColor: "rgba(255,255,255,0.65)",
+    backgroundColor: pal.card,
     padding: moderateScale(14),
     justifyContent: "center",
   },
-  optCardLightOn: { borderColor: "#111111", backgroundColor: "#fff" },
-  optTextLight: { ...morphFont, fontSize: fontSize(14), fontWeight: "600", color: "rgba(26,26,26,0.65)" },
-  optTextLightOn: { color: "#111" },
+  optCardLightOn: { borderColor: pal.fg, backgroundColor: pal.card },
+  optTextLight: { ...morphFont, fontSize: fontSize(14), fontWeight: "600", color: pal.muted },
+  optTextLightOn: { color: pal.fg },
   onboardFooter: { flexDirection: "row", gap: moderateScale(8), width: "100%" },
   primaryBtnLight: {
     height: verticalScale(52),
     borderRadius: 999,
-    backgroundColor: "#111",
+    backgroundColor: pal.fg,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: scale(24),
   },
   primaryBtnLightGrow: { flex: 1 },
-  primaryBtnLightText: { ...morphFont, fontSize: fontSize(14), fontWeight: "600", color: "#fff" },
+  primaryBtnLightText: { ...morphFont, fontSize: fontSize(14), fontWeight: "600", color: pal.onAccent },
   ghostBtnLight: {
     height: verticalScale(52),
     flex: 1,
@@ -3320,29 +3338,30 @@ const styles = StyleSheet.create({
     borderColor: "rgba(0,0,0,0.08)",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(255,255,255,0.6)",
+    backgroundColor: pal.card,
   },
-  ghostBtnLightText: { ...morphFont, fontSize: fontSize(14), fontWeight: "600", color: "#111" },
+  ghostBtnLightText: { ...morphFont, fontSize: fontSize(14), fontWeight: "600", color: pal.fg },
   flexGrow: { flex: 1.6 },
   disabled: { opacity: 0.5 },
-  muted: { ...morphFont, fontSize: fontSize(12), color: "rgba(255,255,255,0.35)", fontWeight: "500" },
+  muted: { ...morphFont, fontSize: fontSize(12), color: pal.muted, fontWeight: "500" },
   lockWrap: { marginTop: verticalScale(80), alignItems: "center", paddingHorizontal: scale(24) },
-  lockTitle: { marginTop: verticalScale(16), ...morphFont, fontSize: fontSize(18), fontWeight: "600", color: "#fff" },
+  lockTitle: { marginTop: verticalScale(16), ...morphFont, fontSize: fontSize(18), fontWeight: "600", color: pal.fg },
   lockSub: {
     marginTop: verticalScale(8),
     ...morphFont,
     fontSize: fontSize(14),
     lineHeight: fontSize(20),
-    color: "rgba(255,255,255,0.5)",
+    color: pal.muted,
     textAlign: "center",
   },
   primaryBtnDark: {
     height: verticalScale(48),
     borderRadius: 999,
-    backgroundColor: "#fff",
+    backgroundColor: pal.fg,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: scale(24),
   },
-  primaryBtnDarkText: { ...morphFont, fontSize: fontSize(14), fontWeight: "600", color: "#000" },
-});
+  primaryBtnDarkText: { ...morphFont, fontSize: fontSize(14), fontWeight: "600", color: pal.onAccent },
+  });
+}

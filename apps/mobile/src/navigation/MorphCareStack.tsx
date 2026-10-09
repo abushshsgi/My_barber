@@ -1,4 +1,5 @@
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { useShellTheme } from "../lib/useShellTheme";
 import { MorphCareMyProductsScreen } from "../screens/morph/MorphCareMyProductsScreen";
 import { MorphCareAlbumScreen } from "../screens/morph/MorphCareAlbumScreen";
 import { MorphCareGrowthTrackerScreen } from "../screens/morph/MorphCareGrowthTrackerScreen";
@@ -28,13 +29,14 @@ export type MorphCareStackParamList = {
 const Stack = createNativeStackNavigator<MorphCareStackParamList>();
 
 export function MorphCareStack() {
+  const pal = useShellTheme();
   return (
     <Stack.Navigator
       initialRouteName="CareHome"
       screenOptions={{
         headerShown: false,
         animation: "slide_from_right",
-        contentStyle: { backgroundColor: "#FFFFFF" },
+        contentStyle: { backgroundColor: pal.bg },
       }}
     >
       <Stack.Screen name="CareHome" component={MorphCareScreen} />

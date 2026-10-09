@@ -36,6 +36,7 @@ import { writeAppShell, writeLastShellTab } from "../../lib/app-shell";
 import { presentMorphPaywall } from "../../lib/morph-return";
 import { markMorphTryOnIntroDone } from "../../lib/morph-onboarding";
 import { useMorphSession } from "../../lib/morph-session";
+import { useShellTheme, type ShellTheme } from "../../lib/useShellTheme";
 import { pickSelfieFromCamera, pickSelfieFromGallery } from "../../lib/selfie";
 import type { MorphStackParamList } from "../../navigation/MorphStack";
 import {
@@ -210,6 +211,11 @@ export function MorphTryOnScreen({ navigation }: Props) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const { height: winH, width: winW } = useWindowDimensions();
+  const pal = useShellTheme();
+  const styles = useMemo(
+    () => createTryOnStyles(pal),
+    [pal.bg, pal.card, pal.fg, pal.muted, pal.iconTile, pal.border, pal.onAccent, pal.status],
+  );
   const { isAuthenticated } = useAuth();
   const session = useMorphSession();
   const gate = useMorphLimitGate();
@@ -490,7 +496,11 @@ export function MorphTryOnScreen({ navigation }: Props) {
         transition={300}
       />
       <LinearGradient
-        colors={["rgba(0,0,0,0.55)", "rgba(0,0,0,0.2)", "rgba(255,255,255,0.55)", "#FFFFFF"]}
+        colors={
+          pal.status === "light"
+            ? ["rgba(0,0,0,0.55)", "rgba(0,0,0,0.28)", "rgba(10,10,10,0.55)", pal.card]
+            : ["rgba(0,0,0,0.55)", "rgba(0,0,0,0.2)", "rgba(255,255,255,0.55)", pal.card]
+        }
         locations={[0, 0.28, 0.58, 0.78]}
         style={StyleSheet.absoluteFill}
         pointerEvents="none"
@@ -537,7 +547,7 @@ export function MorphTryOnScreen({ navigation }: Props) {
                 accessibilityLabel={t("morph.history")}
                 hitSlop={8}
               >
-                <Ionicons name="time-outline" size={16} color="#0A0A0A" />
+                <Ionicons name="time-outline" size={16} color={pal.fg} />
               </Pressable>
             </Animated.View>
           </View>
@@ -588,10 +598,10 @@ export function MorphTryOnScreen({ navigation }: Props) {
                   onPress={() => void startWith("camera")}
                 >
                   {busy === "camera" ? (
-                    <ActivityIndicator color="#FFFFFF" />
+                    <ActivityIndicator color={pal.onAccent} />
                   ) : (
                     <>
-                      <FaceScanIcon color="#FFFFFF" size={ACTION_ICON} />
+                      <FaceScanIcon color={pal.onAccent} size={ACTION_ICON} />
                       <Text style={styles.gridTitleLight}>{t("morph.camera")}</Text>
                     </>
                   )}
@@ -603,10 +613,10 @@ export function MorphTryOnScreen({ navigation }: Props) {
                   onPress={() => void startWith("gallery")}
                 >
                   {busy === "gallery" ? (
-                    <ActivityIndicator color="#0A0A0A" />
+                    <ActivityIndicator color={pal.fg} />
                   ) : (
                     <>
-                      <GalleryStackIcon size={ACTION_ICON} color="#0A0A0A" />
+                      <GalleryStackIcon size={ACTION_ICON} color={pal.fg} />
                       <Text style={styles.gridTitleDark}>Galereyadan tanlash</Text>
                     </>
                   )}
@@ -644,13 +654,13 @@ export function MorphTryOnScreen({ navigation }: Props) {
                     accessibilityLabel="Barcha tarix"
                   >
                     <Text style={styles.seeAllText}>{t("home.categories.all")}</Text>
-                    <Ionicons name="chevron-forward" size={14} color="#0A0A0A" />
+                    <Ionicons name="chevron-forward" size={14} color={pal.fg} />
                   </Pressable>
                 </View>
               </GestureDetector>
 
               {historyLoading && !historyFetched ? (
-                <ActivityIndicator color="#0A0A0A" style={{ marginTop: 28 }} />
+                <ActivityIndicator color={pal.fg} style={{ marginTop: 28 }} />
               ) : historyError ? (
                 <View style={styles.historyEmpty}>
                   <Text style={styles.historyEmptyText}>{historyError}</Text>
@@ -719,7 +729,7 @@ export function MorphTryOnScreen({ navigation }: Props) {
                     onPress={() => navigation.navigate("MorphHistory")}
                   >
                     <Text style={styles.fullHistoryCtaText}>{t("morph.fullHistory")}</Text>
-                    <Ionicons name="arrow-forward" size={16} color="#FFF" />
+                    <Ionicons name="arrow-forward" size={16} color={pal.onAccent} />
                   </Pressable>
                 </Animated.View>
               ) : null}
@@ -732,8 +742,13 @@ export function MorphTryOnScreen({ navigation }: Props) {
 
 const ACTION_ICON = scale(IS_SMALL_DEVICE ? 22 : 26);
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: "#FAFAFA" },
+function createTryOnStyles(
+  pal: Pick<ShellTheme, "bg" | "card" | "fg" | "muted" | "iconTile" | "border" | "onAccent" | "status">,
+) {
+  const inkSoft = pal.status === "light" ? "rgba(255,255,255,0.28)" : "rgba(0,0,0,0.22)";
+  const inkFaint = pal.status === "light" ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.08)";
+  return StyleSheet.create({
+  root: { flex: 1, backgroundColor: pal.bg },
   heroImg: {
     ...StyleSheet.absoluteFill,
     width: "100%",
@@ -769,12 +784,12 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: pal.card,
     zIndex: 1,
   },
   sheet: {
     marginTop: "auto",
-    backgroundColor: "#FFFFFF",
+    backgroundColor: pal.card,
     borderTopLeftRadius: radius.xl,
     borderTopRightRadius: radius.xl,
     paddingHorizontal: scale(16),
@@ -804,7 +819,7 @@ const styles = StyleSheet.create({
     width: scale(42),
     height: 4,
     borderRadius: 2,
-    backgroundColor: "rgba(0,0,0,0.22)",
+    backgroundColor: inkSoft,
   },
   historyIconWrap: {
     position: "absolute",
@@ -815,7 +830,7 @@ const styles = StyleSheet.create({
     width: scale(34),
     height: scale(34),
     borderRadius: scale(34) / 2,
-    backgroundColor: "rgba(0,0,0,0.06)",
+    backgroundColor: inkFaint,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -833,7 +848,7 @@ const styles = StyleSheet.create({
     right: scale(32),
     top: scale(12),
     height: verticalScale(1.5),
-    backgroundColor: "rgba(0,0,0,0.1)",
+    backgroundColor: inkFaint,
   },
   stepCol: {
     flex: 1,
@@ -845,25 +860,25 @@ const styles = StyleSheet.create({
     width: scale(24),
     height: scale(24),
     borderRadius: scale(24) / 2,
-    backgroundColor: "rgba(0,0,0,0.08)",
+    backgroundColor: inkFaint,
     alignItems: "center",
     justifyContent: "center",
   },
-  stepDotOn: { backgroundColor: "#0A0A0A" },
+  stepDotOn: { backgroundColor: pal.fg },
   stepNum: {
     fontSize: fontSize(11),
     fontWeight: "700",
-    color: "rgba(0,0,0,0.35)",
+    color: pal.muted,
     includeFontPadding: false,
   },
-  stepNumOn: { color: "#FFFFFF" },
+  stepNumOn: { color: pal.onAccent },
   stepLabel: {
     fontSize: fontSize(11),
     fontWeight: "600",
-    color: "rgba(0,0,0,0.4)",
+    color: pal.muted,
     includeFontPadding: false,
   },
-  stepLabelOn: { color: "#0A0A0A", fontWeight: "700" },
+  stepLabelOn: { color: pal.fg, fontWeight: "700" },
   errorBox: {
     backgroundColor: "rgba(185,28,28,0.08)",
     borderRadius: radius.sm,
@@ -879,12 +894,12 @@ const styles = StyleSheet.create({
   },
   errorCta: {
     alignSelf: "flex-start",
-    backgroundColor: "#111111",
+    backgroundColor: pal.fg,
     borderRadius: radius.pill,
     paddingHorizontal: scale(10),
     paddingVertical: verticalScale(5),
   },
-  errorCtaText: { color: "#FFF", fontSize: fontSize(11), fontWeight: "700" },
+  errorCtaText: { color: pal.onAccent, fontSize: fontSize(11), fontWeight: "700" },
   actionGrid: {
     flexDirection: "row",
     gap: moderateScale(10),
@@ -899,7 +914,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: spacing.xs,
-    backgroundColor: "#0A0A0A",
+    backgroundColor: pal.fg,
     borderRadius: radius.xl,
     minHeight: verticalScale(IS_SMALL_DEVICE ? 56 : 64),
     paddingHorizontal: scale(8),
@@ -917,18 +932,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: scale(8),
     paddingVertical: spacing.sm,
     borderWidth: 1.5,
-    borderColor: "rgba(0,0,0,0.22)",
+    borderColor: inkSoft,
     borderStyle: "dashed",
   },
   gridTitleLight: {
-    color: "#FFFFFF",
+    color: pal.onAccent,
     fontWeight: "700",
     fontSize: fontSize(12),
     textAlign: "center",
     includeFontPadding: false,
   },
   gridTitleDark: {
-    color: "#0A0A0A",
+    color: pal.fg,
     fontWeight: "700",
     fontSize: fontSize(12),
     textAlign: "center",
@@ -953,14 +968,14 @@ const styles = StyleSheet.create({
     paddingRight: scale(8),
   },
   historyTitle: {
-    color: "#0A0A0A",
+    color: pal.fg,
     fontSize: fontSize(15),
     fontWeight: "800",
     letterSpacing: -0.2,
   },
   historySub: {
     marginTop: verticalScale(2),
-    color: "rgba(0,0,0,0.45)",
+    color: pal.muted,
     fontSize: fontSize(11),
     fontWeight: "600",
   },
@@ -969,13 +984,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     flexShrink: 0,
     gap: moderateScale(2),
-    backgroundColor: "rgba(0,0,0,0.06)",
+    backgroundColor: inkFaint,
     borderRadius: radius.pill,
     paddingHorizontal: scale(10),
     paddingVertical: verticalScale(7),
   },
   seeAllText: {
-    color: "#0A0A0A",
+    color: pal.fg,
     fontSize: fontSize(12),
     fontWeight: "700",
   },
@@ -987,12 +1002,12 @@ const styles = StyleSheet.create({
   historyCard: {
     borderRadius: radius.md,
     overflow: "hidden",
-    backgroundColor: "#F3F3F3",
+    backgroundColor: pal.iconTile,
   },
   historyImgWrap: {
     width: "100%",
     aspectRatio: ASPECT.portrait,
-    backgroundColor: "#F3F3F3",
+    backgroundColor: pal.iconTile,
     position: "relative",
   },
   historyImg: {
@@ -1024,37 +1039,38 @@ const styles = StyleSheet.create({
     minHeight: verticalScale(120),
   },
   historyEmptyTitle: {
-    color: "#0A0A0A",
+    color: pal.fg,
     fontSize: fontSize(16),
     fontWeight: "800",
   },
   historyEmptyText: {
-    color: "rgba(0,0,0,0.45)",
+    color: pal.muted,
     fontSize: fontSize(12),
     textAlign: "center",
     lineHeight: fontSize(17),
   },
   historyRetry: {
     marginTop: spacing.sm,
-    backgroundColor: "#111111",
+    backgroundColor: pal.fg,
     borderRadius: radius.pill,
     paddingHorizontal: scale(14),
     paddingVertical: spacing.xs,
   },
-  historyRetryText: { color: "#FFF", fontWeight: "800", fontSize: fontSize(12) },
+  historyRetryText: { color: pal.onAccent, fontWeight: "800", fontSize: fontSize(12) },
   fullHistoryCta: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: moderateScale(8),
-    backgroundColor: "#0A0A0A",
+    backgroundColor: pal.fg,
     borderRadius: radius.md,
     minHeight: verticalScale(46),
     paddingHorizontal: scale(14),
   },
   fullHistoryCtaText: {
-    color: "#FFF",
+    color: pal.onAccent,
     fontWeight: "800",
     fontSize: fontSize(13),
   },
-});
+  });
+}
