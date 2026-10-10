@@ -268,6 +268,7 @@ from ai.admin_parvarish_views import (
     AdminParvarishProductDetailView,
     AdminParvarishProductListCreateView,
     AdminParvarishStatsView,
+    AdminHairCareProfilesView,
 )
 from ai.admin_baza_views import (
     AdminBazaCountriesView,
@@ -455,6 +456,7 @@ api_routes = [
     path("admin/morph-ai/catalog/", AdminMorphAiCatalogListCreateView.as_view()),
     path("admin/morph-ai/catalog/<str:style_id>/", AdminMorphAiCatalogDetailView.as_view()),
     path("admin/parvarish/stats/", AdminParvarishStatsView.as_view()),
+    path("admin/parvarish/hair-profiles/", AdminHairCareProfilesView.as_view()),
     path("admin/parvarish/likes/", AdminParvarishLikesView.as_view()),
     path("admin/parvarish/my-products/", AdminParvarishMyProductsView.as_view()),
     path("admin/parvarish/products/", AdminParvarishProductListCreateView.as_view()),

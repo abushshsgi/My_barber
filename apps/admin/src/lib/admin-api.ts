@@ -5087,6 +5087,31 @@ export type AdminCareProductLikesResponse = {
   }>;
 };
 
+export type AdminHairCareProfileRow = {
+  id: number;
+  user_id: number;
+  full_name: string;
+  phone: string;
+  username: string;
+  condition: string;
+  texture: string;
+  color_status: string;
+  scalp: string;
+  concerns: string[];
+  complete: boolean;
+  completed_at: string | null;
+  updated_at: string | null;
+};
+
+export async function fetchAdminHairCareProfiles(params?: {
+  q?: string;
+}): Promise<{ total: number; complete: number; profiles: AdminHairCareProfileRow[] }> {
+  const sp = new URLSearchParams();
+  if (params?.q) sp.set("q", params.q);
+  const q = sp.toString();
+  return apiJson(`/api/v1/admin/parvarish/hair-profiles/${q ? `?${q}` : ""}`);
+}
+
 export async function fetchAdminParvarishStats(): Promise<AdminParvarishStats> {
   return apiJson("/api/v1/admin/parvarish/stats/");
 }

@@ -73,6 +73,7 @@ import { Route as AdminMorphAiSupportRouteImport } from './routes/admin.morph-ai
 import { Route as AdminParvarishIndexRouteImport } from './routes/admin.parvarish.index'
 import { Route as AdminParvarishLikesRouteImport } from './routes/admin.parvarish.likes'
 import { Route as AdminParvarishObHavoRouteImport } from './routes/admin.parvarish.ob-havo'
+import { Route as AdminParvarishProfilesRouteImport } from './routes/admin.parvarish.profiles'
 import { Route as AdminParvarishTarkibRouteImport } from './routes/admin.parvarish.tarkib'
 import { Route as AdminPayoutsIndexRouteImport } from './routes/admin.payouts.index'
 import { Route as AdminSalonsSalonIdRouteImport } from './routes/admin.salons.$salonId'
@@ -428,6 +429,11 @@ const AdminParvarishObHavoRoute = AdminParvarishObHavoRouteImport.update({
   path: '/ob-havo',
   getParentRoute: () => AdminParvarishRoute,
 } as any)
+const AdminParvarishProfilesRoute = AdminParvarishProfilesRouteImport.update({
+  id: '/profiles',
+  path: '/profiles',
+  getParentRoute: () => AdminParvarishRoute,
+} as any)
 const AdminParvarishTarkibRoute = AdminParvarishTarkibRouteImport.update({
   id: '/tarkib',
   path: '/tarkib',
@@ -659,6 +665,7 @@ export interface FileRoutesByFullPath {
   '/admin/morph-ai/support': typeof AdminMorphAiSupportRoute
   '/admin/parvarish/likes': typeof AdminParvarishLikesRoute
   '/admin/parvarish/ob-havo': typeof AdminParvarishObHavoRoute
+  '/admin/parvarish/profiles': typeof AdminParvarishProfilesRoute
   '/admin/parvarish/tarkib': typeof AdminParvarishTarkibRoute
   '/admin/salons/$salonId': typeof AdminSalonsSalonIdRouteWithChildren
   '/admin/services/analytics': typeof AdminServicesAnalyticsRoute
@@ -747,6 +754,7 @@ export interface FileRoutesByTo {
   '/admin/morph-ai/support': typeof AdminMorphAiSupportRoute
   '/admin/parvarish/likes': typeof AdminParvarishLikesRoute
   '/admin/parvarish/ob-havo': typeof AdminParvarishObHavoRoute
+  '/admin/parvarish/profiles': typeof AdminParvarishProfilesRoute
   '/admin/parvarish/tarkib': typeof AdminParvarishTarkibRoute
   '/admin/services/analytics': typeof AdminServicesAnalyticsRoute
   '/admin/statistics/agents': typeof AdminStatisticsAgentsRoute
@@ -843,6 +851,7 @@ export interface FileRoutesById {
   '/admin/morph-ai/support': typeof AdminMorphAiSupportRoute
   '/admin/parvarish/likes': typeof AdminParvarishLikesRoute
   '/admin/parvarish/ob-havo': typeof AdminParvarishObHavoRoute
+  '/admin/parvarish/profiles': typeof AdminParvarishProfilesRoute
   '/admin/parvarish/tarkib': typeof AdminParvarishTarkibRoute
   '/admin/salons/$salonId': typeof AdminSalonsSalonIdRouteWithChildren
   '/admin/services/analytics': typeof AdminServicesAnalyticsRoute
@@ -943,6 +952,7 @@ export interface FileRouteTypes {
     | '/admin/morph-ai/support'
     | '/admin/parvarish/likes'
     | '/admin/parvarish/ob-havo'
+    | '/admin/parvarish/profiles'
     | '/admin/parvarish/tarkib'
     | '/admin/salons/$salonId'
     | '/admin/services/analytics'
@@ -1031,6 +1041,7 @@ export interface FileRouteTypes {
     | '/admin/morph-ai/support'
     | '/admin/parvarish/likes'
     | '/admin/parvarish/ob-havo'
+    | '/admin/parvarish/profiles'
     | '/admin/parvarish/tarkib'
     | '/admin/services/analytics'
     | '/admin/statistics/agents'
@@ -1126,6 +1137,7 @@ export interface FileRouteTypes {
     | '/admin/morph-ai/support'
     | '/admin/parvarish/likes'
     | '/admin/parvarish/ob-havo'
+    | '/admin/parvarish/profiles'
     | '/admin/parvarish/tarkib'
     | '/admin/salons/$salonId'
     | '/admin/services/analytics'
@@ -1622,6 +1634,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminParvarishObHavoRouteImport
       parentRoute: typeof AdminParvarishRoute
     }
+    '/admin/parvarish/profiles': {
+      id: '/admin/parvarish/profiles'
+      path: '/profiles'
+      fullPath: '/admin/parvarish/profiles'
+      preLoaderRoute: typeof AdminParvarishProfilesRouteImport
+      parentRoute: typeof AdminParvarishRoute
+    }
     '/admin/parvarish/tarkib': {
       id: '/admin/parvarish/tarkib'
       path: '/tarkib'
@@ -2025,6 +2044,7 @@ const AdminMorphAiRouteWithChildren = AdminMorphAiRoute._addFileChildren(
 interface AdminParvarishRouteChildren {
   AdminParvarishLikesRoute: typeof AdminParvarishLikesRoute
   AdminParvarishObHavoRoute: typeof AdminParvarishObHavoRoute
+  AdminParvarishProfilesRoute: typeof AdminParvarishProfilesRoute
   AdminParvarishTarkibRoute: typeof AdminParvarishTarkibRoute
   AdminParvarishIndexRoute: typeof AdminParvarishIndexRoute
 }
@@ -2032,6 +2052,7 @@ interface AdminParvarishRouteChildren {
 const AdminParvarishRouteChildren: AdminParvarishRouteChildren = {
   AdminParvarishLikesRoute: AdminParvarishLikesRoute,
   AdminParvarishObHavoRoute: AdminParvarishObHavoRoute,
+  AdminParvarishProfilesRoute: AdminParvarishProfilesRoute,
   AdminParvarishTarkibRoute: AdminParvarishTarkibRoute,
   AdminParvarishIndexRoute: AdminParvarishIndexRoute,
 }

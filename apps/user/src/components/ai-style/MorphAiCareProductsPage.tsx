@@ -3,6 +3,7 @@ import { ChevronLeft, Loader2, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useCareProducts } from "@/hooks/use-care-products";
+import { useHairCareProfile } from "@/hooks/use-hair-care-profile";
 import type { CareProductCategory } from "@/lib/api/care-products";
 import { navigateBack } from "@/lib/mobile-back";
 import { cn } from "@/lib/utils";
@@ -12,6 +13,7 @@ const CATEGORIES: CareProductCategory[] = ["shampoo", "balsam", "mask", "oil", "
 export function MorphAiCareProductsPage() {
   const { t } = useTranslation();
   const router = useRouter();
+  const hairQ = useHairCareProfile();
   const [q, setQ] = useState("");
   const [category, setCategory] = useState<string>("all");
   const list = useCareProducts({
@@ -20,6 +22,44 @@ export function MorphAiCareProductsPage() {
     recommended: true,
   });
   const rows = useMemo(() => list.data || [], [list.data]);
+
+  if (hairQ.isLoading) {
+    return (
+      <div className="grid min-h-[100dvh] place-items-center bg-[#FAFAFA]">
+        <Loader2 className="size-6 animate-spin text-[#111111]/40" />
+      </div>
+    );
+  }
+
+  if (!hairQ.data?.complete) {
+    return (
+      <div
+        className="min-h-[100dvh] bg-[#FAFAFA] px-5 text-[#111111]"
+        style={{ paddingTop: "max(1rem, env(safe-area-inset-top))" }}
+      >
+        <button
+          type="button"
+          onClick={() => navigateBack(router, "/ai-style")}
+          className="inline-flex size-11 items-center justify-center rounded-full bg-[#F0F0F0]"
+          aria-label={t("common.back")}
+        >
+          <ChevronLeft className="size-5" strokeWidth={2.25} />
+        </button>
+        <div className="mx-auto mt-24 max-w-md text-center">
+          <h1 className="text-lg font-semibold tracking-tight">Avval soch tahlilini saqlang</h1>
+          <p className="mt-2 text-sm leading-relaxed text-[#111111]/55">
+            Tavsiyalar soch holatingiz bazaga yozilgandan keyin ochiladi.
+          </p>
+          <Link
+            to="/ai-style/care"
+            className="mt-8 inline-flex h-12 items-center rounded-full bg-[#111111] px-6 text-sm font-semibold text-white"
+          >
+            Soch tahlilini boshlash
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-[100dvh] bg-[#FAFAFA] text-[#111111]">

@@ -11,7 +11,7 @@ from rest_framework.response import Response
 
 from accounts.permissions import IsAdmin
 from ai.care_serializers import CareProductSerializer
-from ai.models import CareProduct, CareProductLike, CareUserProduct, IngredientScanEntry
+from ai.models import CareProduct, CareProductLike, CareUserProduct, HairCareProfile, IngredientScanEntry
 from ai.serializers import _media_absolute_url
 from ai.unthrottled import UnthrottledAPIView
 from ai.management.commands.seed_care_demo_products import (
@@ -306,4 +306,46 @@ class AdminParvarishDemoActionView(UnthrottledAPIView):
             {"detail": "Noto'g'ri action. 'seed' yoki 'purge' yuboring."},
             status=status.HTTP_400_BAD_REQUEST,
         )
+
+
+class AdminHairCareProfilesView(UnthrottledAPIView):
+    """Foydalanuvchi soch tahlili — admin ro'yxati."""
+
+    permission_classes = [IsAdmin]
+
+    def get(self, request):
+        q = (request.query_params.get("q") or "").strip()
+        qs = HairCareProfile.objects.select_related("user").order_by("-updated_at")
+        if q:
+            qs = qs.filter(
+                Q(user__phone__icontains=q)
+                | Q(user__username__icontains=q)
+                | Q(user__full_name__icontains=q)
+                | Q(condition__icontains=q)
+                | Q(texture__icontains=q)
+                | Q(color_status__icontains=q)
+            )
+        total = qs.count()
+        complete = qs.exclude(condition="").exclude(texture="").exclude(color_status="").count()
+        rows = []
+        for profile in qs[:200]:
+            user = profile.user
+            rows.append(
+                {
+                    "id": profile.id,
+                    "user_id": user.id,
+                    "full_name": getattr(user, "full_name", "") or "",
+                    "phone": getattr(user, "phone", "") or "",
+                    "username": getattr(user, "username", "") or "",
+                    "condition": profile.condition,
+                    "texture": profile.texture,
+                    "color_status": profile.color_status,
+                    "scalp": profile.scalp,
+                    "concerns": profile.concerns if isinstance(profile.concerns, list) else [],
+                    "complete": profile.is_complete,
+                    "completed_at": profile.completed_at,
+                    "updated_at": profile.updated_at,
+                }
+            )
+        return Response({"total": total, "complete": complete, "profiles": rows})
 

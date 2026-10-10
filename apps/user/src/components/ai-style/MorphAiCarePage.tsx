@@ -11,7 +11,6 @@ import {
   buildCarePlan,
   careOptionImage,
   isCareQuizComplete,
-  loadCareQuiz,
   saveCareQuiz,
   type CareQuizAnswers,
   type ColorStatus,
@@ -56,13 +55,10 @@ export function MorphAiCarePage() {
   const updateHair = useUpdateHairCareProfile();
   const catalogQ = useCareProducts({ recommended: true });
   const profile = useMemo(() => loadFaceProfile(), []);
-  const savedQuiz = useMemo(() => loadCareQuiz(), []);
-  const [quiz, setQuiz] = useState<CareQuizAnswers>(
-    () => (savedQuiz && isCareQuizComplete(savedQuiz) ? savedQuiz : { condition: "", texture: "", colorStatus: "" }),
-  );
-  const [step, setStep] = useState<QuizStep | "plan">(
-    savedQuiz && isCareQuizComplete(savedQuiz) ? "plan" : 0,
-  );
+  const [quiz, setQuiz] = useState<CareQuizAnswers>({ condition: "", texture: "", colorStatus: "" });
+  const [step, setStep] = useState<QuizStep | "plan">(0);
+  const [savingQuiz, setSavingQuiz] = useState(false);
+  const [quizError, setQuizError] = useState("");
   const [panel, setPanel] = useState<"hub" | "routine" | "shelf" | "weather" | "growth">("routine");
   const [search, setSearch] = useState("");
   const [coords, setCoords] = useState<{ lat: number; lon: number } | null>(null);
@@ -74,25 +70,38 @@ export function MorphAiCarePage() {
   const [growthError, setGrowthError] = useState("");
   const searchQ = useCareProducts({ q: search.trim() || undefined, enabled: search.trim().length > 0 });
   const weatherQ = useQuery({
-    queryKey: ["ai", "care", "weather", quiz.condition, quiz.texture, coords?.lat ?? null, coords?.lon ?? null, regionId],
+    queryKey: ["ai", "care", "weather", hairQ.data?.condition, hairQ.data?.texture, coords?.lat ?? null, coords?.lon ?? null, regionId],
     queryFn: () =>
       fetchWeatherCare({
-        condition: quiz.condition,
-        texture: quiz.texture,
+        condition: hairQ.data?.condition || undefined,
+        texture: hairQ.data?.texture || undefined,
         lat: regionId ? undefined : coords?.lat,
         lon: regionId ? undefined : coords?.lon,
         region_id: regionId || undefined,
       }),
-    enabled: step === "plan",
+    enabled: Boolean(hairQ.data?.complete),
     staleTime: 10 * 60_000,
   });
   const myQ = useQuery({
     queryKey: ["ai", "care", "my-products"],
     queryFn: fetchMyCareProducts,
-    enabled: step === "plan",
+    enabled: Boolean(hairQ.data?.complete),
     staleTime: 20_000,
   });
-  const plan = useMemo(() => buildCarePlan(profile, quiz), [profile, quiz]);
+  const plan = useMemo(
+    () =>
+      buildCarePlan(
+        profile,
+        hairQ.data?.complete
+          ? {
+              condition: hairQ.data.condition as HairCondition,
+              texture: hairQ.data.texture as HairTexture,
+              colorStatus: hairQ.data.color_status as ColorStatus,
+            }
+          : quiz,
+      ),
+    [profile, quiz, hairQ.data],
+  );
   const catalogProducts = catalogQ.data || [];
   const hydratedHair = useRef(false);
 
@@ -129,6 +138,11 @@ export function MorphAiCarePage() {
     saveCareQuiz(next);
     setStep("plan");
   }, [hairQ.data]);
+
+  useEffect(() => {
+    if (!hairQ.isSuccess || hairQ.data.complete) return;
+    setStep((current) => (current === "plan" ? 0 : current));
+  }, [hairQ.isSuccess, hairQ.data]);
 
   if (accessQ.isLoading || hairQ.isLoading) {
     return (
@@ -167,8 +181,9 @@ export function MorphAiCarePage() {
   }
 
   const finishQuiz = () => {
-    if (!isCareQuizComplete(quiz)) return;
-    saveCareQuiz(quiz);
+    if (!isCareQuizComplete(quiz) || savingQuiz) return;
+    setSavingQuiz(true);
+    setQuizError("");
     void updateHair
       .mutateAsync({
         condition: quiz.condition,
@@ -181,28 +196,47 @@ export function MorphAiCarePage() {
               ? "dry"
               : "normal",
       })
-      .catch(() => undefined);
-    setStep("plan");
+      .then((saved) => {
+        if (!saved.complete) {
+          setQuizError("Soch tahlili saqlanmadi. Qayta urinib ko‘ring.");
+          return;
+        }
+        saveCareQuiz(quiz);
+        setStep("plan");
+      })
+      .catch((e: unknown) => {
+        setQuizError(e instanceof Error ? e.message : "Saqlab bo‘lmadi.");
+      })
+      .finally(() => setSavingQuiz(false));
   };
 
-  if (step !== "plan") {
+  if (!hairQ.data?.complete) {
     const questions = [
       {
-        title: t("aiStylePage.care.quiz.conditionQ", { defaultValue: "Soch holati?" }),
+        title: t("aiStylePage.care.quiz.conditionQ", { defaultValue: "Sochingiz qanday?" }),
+        sub: t("aiStylePage.care.quiz.conditionSub", {
+          defaultValue: "Parvarish, ob-havo, tarkib va chatbot shu javobga qarab ishlaydi.",
+        }),
         options: CONDITION_OPTS,
         value: quiz.condition,
         onPick: (v: string) => setQuiz((q) => ({ ...q, condition: v as HairCondition })),
         labelKey: "aiStylePage.care.conditions",
       },
       {
-        title: t("aiStylePage.care.quiz.textureQ", { defaultValue: "Tekstura?" }),
+        title: t("aiStylePage.care.quiz.textureQ", { defaultValue: "Teksturasi qanday?" }),
+        sub: t("aiStylePage.care.quiz.textureSub", {
+          defaultValue: "Tekis, to‘lqinli yoki jingalak — mahsulot shunga moslanadi.",
+        }),
         options: TEXTURE_OPTS,
         value: quiz.texture,
         onPick: (v: string) => setQuiz((q) => ({ ...q, texture: v as HairTexture })),
         labelKey: "aiStylePage.care.textures",
       },
       {
-        title: t("aiStylePage.care.quiz.colorQ", { defaultValue: "Rang?" }),
+        title: t("aiStylePage.care.quiz.colorQ", { defaultValue: "Rang holati?" }),
+        sub: t("aiStylePage.care.quiz.colorSub", {
+          defaultValue: "Tabiiy, bo‘yalgan yoki oqartirilgan soch uchun alohida rejim bor.",
+        }),
         options: COLOR_OPTS,
         value: quiz.colorStatus,
         onPick: (v: string) => setQuiz((q) => ({ ...q, colorStatus: v as ColorStatus })),
@@ -216,7 +250,7 @@ export function MorphAiCarePage() {
       <div className="relative min-h-[100dvh] overflow-x-hidden overflow-y-auto bg-[#FAFAFA] text-[#111111]">
         <div className="pointer-events-none absolute inset-x-0 top-0 h-56 bg-[radial-gradient(ellipse_at_50%_0%,rgba(255,255,255,0.07),transparent_65%)]" />
         <div
-          className="relative z-[1] flex min-h-[100dvh] flex-col px-5 pb-[max(6rem,calc(env(safe-area-inset-bottom)+5rem))]"
+          className="relative z-[1] mx-auto flex min-h-[100dvh] w-full max-w-lg flex-col px-5 pb-[max(6rem,calc(env(safe-area-inset-bottom)+5rem))] md:max-w-3xl lg:max-w-4xl"
           style={{ paddingTop: "max(1rem, env(safe-area-inset-top))" }}
         >
           <div className="flex items-center justify-between">
@@ -242,14 +276,17 @@ export function MorphAiCarePage() {
               transition={{ duration: 0.32, ease }}
               className="mt-10 flex-1"
             >
-              <h1 className="max-w-[16rem] text-[1.7rem] font-semibold leading-[1.15] tracking-tight">
+              <h1 className="max-w-xl text-[1.7rem] font-semibold leading-[1.15] tracking-tight lg:text-[2.1rem]">
                 {current.title}
               </h1>
+              <p className="mt-3 max-w-xl text-sm leading-relaxed text-[#111111]/55 lg:text-base">
+                {current.sub}
+              </p>
 
               <div
                 className={cn(
-                  "mt-7 grid gap-2.5",
-                  current.options.length === 3 ? "grid-cols-3" : "grid-cols-2",
+                  "mt-7 grid gap-2.5 md:gap-4",
+                  current.options.length === 3 ? "grid-cols-3" : "grid-cols-2 md:grid-cols-4",
                 )}
               >
                 {current.options.map((opt, i) => {
@@ -298,18 +335,21 @@ export function MorphAiCarePage() {
             ) : null}
             <button
               type="button"
-              disabled={!current.value}
+              disabled={!current.value || savingQuiz}
               onClick={() => {
                 if (step === 2) finishQuiz();
                 else setStep((step + 1) as QuizStep);
               }}
               className="h-12 flex-[1.6] cursor-pointer rounded-full bg-[#111111] text-sm font-semibold text-white active:scale-[0.98] disabled:opacity-40"
             >
-              {step === 2
-                ? t("aiStylePage.care.quiz.seePlan", { defaultValue: "Davom etish" })
-                : t("common.next")}
+              {savingQuiz
+                ? "Saqlanmoqda…"
+                : step === 2
+                  ? t("aiStylePage.care.quiz.seePlan", { defaultValue: "Saqlash va ochish" })
+                  : t("common.next")}
             </button>
           </div>
+          {quizError ? <p className="mt-3 text-center text-sm text-red-600">{quizError}</p> : null}
         </div>
       </div>
     );
@@ -351,7 +391,7 @@ export function MorphAiCarePage() {
       <div
         className={cn(
           "relative z-[1] mx-auto w-full px-4 pb-[max(2.5rem,env(safe-area-inset-bottom))] md:px-8",
-          panel === "hub"
+          panel === "hub" || panel === "weather"
             ? "max-w-lg sm:max-w-xl md:max-w-4xl lg:max-w-[1100px] xl:max-w-[1200px]"
             : "max-w-lg md:max-w-2xl",
         )}
@@ -382,9 +422,9 @@ export function MorphAiCarePage() {
                 {t("aiStylePage.care.routine.planTitle", { defaultValue: "Morf AI Parvarish Rejasi" })}
               </p>
               <p className="truncate text-[11px] text-[#111111]/45">
-                {t(`aiStylePage.care.conditions.${quiz.condition}`, { defaultValue: quiz.condition })}
+                {t(`aiStylePage.care.conditions.${plan.condition}`, { defaultValue: plan.condition })}
                 {" · "}
-                {t(`aiStylePage.care.textures.${quiz.texture}`, { defaultValue: quiz.texture })}
+                {t(`aiStylePage.care.textures.${plan.texture}`, { defaultValue: plan.texture })}
               </p>
             </div>
           ) : (
@@ -636,7 +676,7 @@ export function MorphAiCarePage() {
               }
             }}
             onBack={() => setPanel("hub")}
-            hairCondition={quiz.condition}
+            hairCondition={hairQ.data?.condition || quiz.condition}
             myProducts={myQ.data || []}
           />
         )}

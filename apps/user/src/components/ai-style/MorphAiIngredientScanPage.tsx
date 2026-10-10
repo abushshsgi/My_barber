@@ -107,6 +107,30 @@ export function MorphAiIngredientScanPage() {
     );
   }
 
+  if (!profileComplete) {
+    return (
+      <div
+        className="min-h-[100dvh] bg-[#FAFAFA] px-5 text-[#111111]"
+        style={{ paddingTop: "max(1rem, env(safe-area-inset-top))" }}
+      >
+        <BackLink label={t("common.back")} />
+        <div className="mx-auto mt-24 max-w-md text-center">
+          <Lock className="mx-auto size-6 text-[#111111]/50" />
+          <h1 className="mt-4 text-lg font-semibold tracking-tight">Avval soch tahlilini saqlang</h1>
+          <p className="mt-2 text-sm leading-relaxed text-[#111111]/55">
+            Tarkib skani soch holati, tekstura va rang bazaga yozilgandan keyin ochiladi.
+          </p>
+          <Link
+            to="/ai-style/care"
+            className="mt-8 inline-flex h-12 items-center rounded-full bg-[#111111] px-6 text-sm font-semibold text-white"
+          >
+            Soch tahlilini boshlash
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   const finishQuiz = async () => {
     if (!condition || !texture || !colorStatus) return;
     try {

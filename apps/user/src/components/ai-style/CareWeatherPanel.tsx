@@ -137,7 +137,7 @@ export function CareWeatherPanel({
   };
 
   return (
-    <div className="-mx-4">
+    <div className="-mx-4 lg:mx-0">
       {toast ? (
         <div className="fixed left-4 right-4 top-3 z-50 mx-auto flex max-w-sm items-center gap-2 rounded-2xl bg-[#16A34A] px-3 py-2.5 text-sm font-semibold text-white shadow-lg">
           <span className="grid size-6 place-items-center rounded-full bg-white/20">
@@ -147,7 +147,7 @@ export function CareWeatherPanel({
         </div>
       ) : null}
 
-      <div className="relative h-[280px] overflow-hidden text-white">
+      <div className="relative h-[280px] overflow-hidden text-white lg:h-[340px] lg:rounded-3xl">
         <img src={hero} alt="" className="absolute inset-0 size-full object-cover object-right" />
         <span className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/35 to-black/25" />
         <button
@@ -210,8 +210,8 @@ export function CareWeatherPanel({
       </div>
 
       {weather ? (
-        <div className="rounded-t-3xl bg-[#F6F6F7] px-4 pb-8 pt-4">
-          <div className="flex items-center gap-3">
+        <div className="rounded-t-3xl bg-[#F6F6F7] px-4 pb-8 pt-4 lg:mt-6 lg:rounded-3xl lg:bg-transparent lg:px-0 lg:pt-0">
+          <div className="flex items-center gap-3 lg:rounded-3xl lg:bg-white lg:px-4 lg:py-3 lg:ring-1 lg:ring-black/5">
             <p className="min-w-0 flex-1 text-sm leading-snug text-[#111]/70">{summary}</p>
             <button
               type="button"
@@ -222,6 +222,36 @@ export function CareWeatherPanel({
               <img src={kit[0]?.image || "/care/go-out/sunglasses.png"} alt="" className="size-full object-cover" />
             </button>
           </div>
+
+          {(weather.primary_action?.title || (weather.recommendations || []).length > 0) ? (
+            <div className="mt-5 grid gap-3 lg:grid-cols-2">
+              {weather.primary_action?.title ? (
+                <div className="rounded-3xl bg-white px-4 py-4 ring-1 ring-black/5">
+                  <p className="text-[11px] font-bold uppercase tracking-wide text-[#111]/40">
+                    Soch holatingizga mos
+                  </p>
+                  <p className="mt-1 text-base font-extrabold">{weather.primary_action.title}</p>
+                  {weather.primary_action.subtitle ? (
+                    <p className="mt-1 text-sm leading-relaxed text-[#111]/60">
+                      {weather.primary_action.subtitle}
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
+              {(weather.recommendations || []).length > 0 ? (
+                <div className="rounded-3xl bg-white px-4 py-4 ring-1 ring-black/5">
+                  <p className="text-[11px] font-bold uppercase tracking-wide text-[#111]/40">Tavsiyalar</p>
+                  <ul className="mt-2 space-y-2">
+                    {(weather.recommendations || []).map((tip) => (
+                      <li key={tip} className="text-sm leading-relaxed text-[#111]/75">
+                        {tip}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
 
           <div className="mt-5">
             <div className="flex items-start gap-3">

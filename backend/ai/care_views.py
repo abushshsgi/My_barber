@@ -94,6 +94,11 @@ class HairCareProfileMeView(UnthrottledAPIView):
             )
         ser.save()
         profile.refresh_from_db()
+        if profile.is_complete and profile.completed_at is None:
+            from django.utils import timezone
+
+            profile.completed_at = timezone.now()
+            profile.save(update_fields=["completed_at", "updated_at"])
         return Response(HairCareProfileSerializer(profile).data)
 
 

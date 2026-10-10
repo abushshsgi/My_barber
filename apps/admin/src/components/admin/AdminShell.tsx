@@ -184,6 +184,7 @@ const SECTIONS: Section[] = [
       { to: "/admin/parvarish", label: "Umumiy", icon: LayoutDashboard },
       { to: "/admin/parvarish/tarkib", label: "Tarkib", icon: FlaskConical },
       { to: "/admin/parvarish/ob-havo", label: "Ob-havo", icon: CloudSun },
+      { to: "/admin/parvarish/profiles", label: "Soch tahlili", icon: Users },
       { to: "/admin/parvarish/likes", label: "Likes", icon: Star },
     ],
   },

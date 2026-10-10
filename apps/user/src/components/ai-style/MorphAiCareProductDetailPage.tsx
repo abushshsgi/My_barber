@@ -2,6 +2,7 @@ import { Link, useRouter } from "@tanstack/react-router";
 import { ChevronLeft, Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useCareProduct } from "@/hooks/use-care-products";
+import { useHairCareProfile } from "@/hooks/use-hair-care-profile";
 import { navigateBack } from "@/lib/mobile-back";
 
 type Props = {
@@ -13,6 +14,37 @@ export function MorphAiCareProductDetailPage({ productId }: Props) {
   const router = useRouter();
   const id = Number(productId);
   const q = useCareProduct(id);
+  const hairQ = useHairCareProfile();
+
+  if (hairQ.isLoading) {
+    return (
+      <div className="grid min-h-[100dvh] place-items-center bg-[#FAFAFA]">
+        <Loader2 className="size-6 animate-spin text-[#111111]/40" />
+      </div>
+    );
+  }
+
+  if (!hairQ.data?.complete) {
+    return (
+      <div
+        className="min-h-[100dvh] bg-[#FAFAFA] px-5 text-[#111111]"
+        style={{ paddingTop: "max(1rem, env(safe-area-inset-top))" }}
+      >
+        <div className="mx-auto mt-24 max-w-md text-center">
+          <h1 className="text-lg font-semibold tracking-tight">Avval soch tahlilini saqlang</h1>
+          <p className="mt-2 text-sm leading-relaxed text-[#111111]/55">
+            Mahsulot tavsiyasi soch holatingiz saqlangandan keyin ochiladi.
+          </p>
+          <Link
+            to="/ai-style/care"
+            className="mt-8 inline-flex h-12 items-center rounded-full bg-[#111111] px-6 text-sm font-semibold text-white"
+          >
+            Soch tahlilini boshlash
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-[100dvh] bg-[#FAFAFA] text-[#111111]">
