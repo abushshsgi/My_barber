@@ -131,7 +131,7 @@ export function UserLayout({ children }: { children: React.ReactNode }) {
             !flags.isFullBleed && !flags.bazaarInset && !flags.isMobileFlush && DESKTOP_SHELL_INSET,
             flags.isMobileFlush && "px-0 lg:px-10",
             flags.bazaarInset && "lg:px-0",
-            "lg:mx-0 lg:max-w-none",
+            flags.isFullBleed && "lg:mx-0 lg:max-w-none",
           )}
         >
           {flags.isFullBleed ? (

@@ -80,8 +80,8 @@ function DockTab({
       aria-label={t(labelKey)}
       aria-current={active ? "page" : undefined}
       className={cn(
-        "group flex min-h-[44px] min-w-0 flex-1 flex-col items-center justify-center gap-0.5 py-1 outline-none transition focus-visible:ring-2 focus-visible:ring-ring",
-        compact ? "px-0.5" : "px-1",
+        "group flex min-h-11 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 px-0.5 py-1 outline-none transition focus-visible:ring-2 focus-visible:ring-ring min-[390px]:px-1",
+        compact && "px-0.5",
       )}
     >
       <span
@@ -183,9 +183,9 @@ export function MobileDockNav({ unreadCount: _unreadCount = 0 }: Props) {
             type="button"
             onClick={switchToMysaloon}
             aria-label={t("nav.mysaloon")}
-            className="relative mx-0.5 flex w-[58px] shrink-0 flex-col items-center justify-end pb-0.5"
+            className="relative mx-0.5 flex w-12 shrink-0 flex-col items-center justify-end pb-0.5 min-[390px]:w-[58px]"
           >
-            <span className="grid size-[46px] place-items-center rounded-full border-2 border-border bg-background shadow-soft transition-transform active:scale-95">
+            <span className="grid size-10 place-items-center rounded-full border-2 border-border bg-background shadow-soft transition-transform active:scale-95 min-[390px]:size-[46px]">
               <MysaloonAppMark size={28} tone="onLight" useImage />
             </span>
             <span
@@ -200,9 +200,9 @@ export function MobileDockNav({ unreadCount: _unreadCount = 0 }: Props) {
             type="button"
             onClick={switchToMorph}
             aria-label={t("nav.aiStyle")}
-            className="relative mx-0.5 flex w-[62px] shrink-0 flex-col items-center justify-end pb-0.5"
+            className="relative mx-0.5 flex w-12 shrink-0 flex-col items-center justify-end pb-0.5 min-[390px]:w-[62px]"
           >
-            <span className="grid size-[46px] place-items-center rounded-full border-2 border-border bg-foreground text-background shadow-soft transition-transform active:scale-95">
+            <span className="grid size-10 place-items-center rounded-full border-2 border-border bg-foreground text-background shadow-soft transition-transform active:scale-95 min-[390px]:size-[46px]">
               <Wand2 className="size-[22px]" strokeWidth={2.25} />
             </span>
             <span

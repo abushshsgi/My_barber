@@ -390,7 +390,7 @@ export function MorphAiHome({
           initial={reduceMotion ? false : { opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.08, duration: 0.35, ease: "easeOut" }}
-          className="mt-8 grid grid-cols-5 gap-1.5 sm:gap-2 md:mt-10 md:gap-3 lg:mt-12 lg:gap-4"
+          className="mt-8 grid grid-cols-5 gap-1 max-[389px]:gap-0.5 sm:gap-2 md:mt-10 md:gap-3 lg:mt-12 lg:gap-4"
         >
           {toolActions.map((action, i) => {
             const Icon = action.icon;
@@ -404,7 +404,7 @@ export function MorphAiHome({
                 transition={{ delay: 0.1 + i * 0.05, duration: 0.3, ease: "easeOut" }}
                 className="flex cursor-pointer flex-col items-center gap-2 rounded-2xl px-1 py-2 transition-colors duration-200 active:bg-white/[0.05] md:gap-2.5 md:py-3 lg:gap-3 lg:rounded-3xl lg:bg-white lg:px-3 lg:py-5 lg:shadow-[0_10px_30px_-18px_rgba(0,0,0,0.28)] lg:ring-1 lg:ring-black/[0.06] lg:hover:bg-[#F7F7F7]"
               >
-                <span className="grid size-12 place-items-center rounded-2xl bg-[#F0F0F0] ring-1 ring-black/10 md:size-14 lg:size-[3.75rem] lg:rounded-[22px] lg:bg-[#F4F4F4] lg:ring-0">
+                <span className="grid size-11 place-items-center rounded-2xl bg-[#F0F0F0] ring-1 ring-black/10 max-[359px]:size-10 sm:size-12 md:size-14 lg:size-[3.75rem] lg:rounded-[22px] lg:bg-[#F4F4F4] lg:ring-0">
                   <Icon className="size-[18px] text-[#111111] md:size-5 lg:size-[22px]" strokeWidth={1.75} />
                 </span>
                 <span className="line-clamp-2 text-center text-[10px] font-medium leading-tight text-[#111111]/50 md:text-[11px] lg:text-[13px] lg:text-[#111111]/70">
