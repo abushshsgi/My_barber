@@ -703,7 +703,7 @@ function CareCatalogCard({ product }: { product: CareProduct }) {
       params={{ productId: String(product.id) }}
       className="flex w-full min-w-0 flex-col overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-black/[0.06]"
     >
-      <span className="grid aspect-[4/5] place-items-center bg-[#F7F7F8]">
+      <span className="grid aspect-[4/5] place-items-center bg-white">
         {product.image_url ? (
           <img src={product.image_url} alt="" className="size-full object-contain p-3" />
         ) : null}
