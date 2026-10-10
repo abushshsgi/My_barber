@@ -110,6 +110,55 @@ PARABEN_CANON = frozenset({"paraben"})
 ALCOHOL_CANON = frozenset({"drying_alcohol"})
 HEAVY_OIL_CANON = frozenset({"heavy_oil"})
 
+# Soch o‘qi → shu holatga yordam beradigan / zararli kanonik moddalar.
+_HELPS: dict[str, frozenset[str]] = {
+    "dry": frozenset({"glycerin", "panthenol", "niacinamide", "fatty_alcohol", "btac", "heavy_oil"}),
+    "damaged": frozenset({"glycerin", "panthenol", "niacinamide", "fatty_alcohol", "btac"}),
+    "oily": frozenset({"bha", "sci", "niacinamide"}),
+    "normal": frozenset({"glycerin", "panthenol"}),
+    "bleached": frozenset({"glycerin", "panthenol", "niacinamide", "btac", "fatty_alcohol"}),
+    "colored": frozenset({"glycerin", "panthenol", "niacinamide", "btac"}),
+    "natural": frozenset({"glycerin", "panthenol"}),
+    "fine": frozenset({"sci", "bha"}),
+    "curly": frozenset({"glycerin", "panthenol", "btac", "fatty_alcohol"}),
+    "wavy": frozenset({"glycerin", "panthenol", "btac"}),
+    "straight": frozenset({"glycerin", "panthenol"}),
+    "sensitive": frozenset({"panthenol", "glycerin", "btac"}),
+}
+_HURTS: dict[str, frozenset[str]] = {
+    "dry": frozenset({"sls", "sles", "drying_alcohol", "formaldehyde"}),
+    "damaged": frozenset({"sls", "sles", "drying_alcohol", "formaldehyde"}),
+    "oily": frozenset({"heavy_oil", "silicone"}),
+    "normal": frozenset({"formaldehyde"}),
+    "bleached": frozenset({"sls", "sles", "drying_alcohol", "formaldehyde"}),
+    "colored": frozenset({"sls", "sles", "drying_alcohol", "formaldehyde"}),
+    "natural": frozenset({"formaldehyde"}),
+    "fine": frozenset({"silicone", "heavy_oil"}),
+    "curly": frozenset({"drying_alcohol", "sls", "sles"}),
+    "wavy": frozenset({"drying_alcohol", "sls"}),
+    "straight": frozenset({"formaldehyde"}),
+    "sensitive": frozenset({"fragrance", "formaldehyde", "drying_alcohol", "sls", "sles", "paraben"}),
+}
+_KNOWN_ACTIVES = frozenset(
+    {
+        "formaldehyde",
+        "sls",
+        "sles",
+        "silicone",
+        "paraben",
+        "drying_alcohol",
+        "heavy_oil",
+        "fragrance",
+        "glycerin",
+        "panthenol",
+        "niacinamide",
+        "fatty_alcohol",
+        "btac",
+        "bha",
+        "sci",
+    }
+)
+
 _SPLIT_RE = re.compile(r"[,;\n]+")
 _NON_ALNUM = re.compile(r"[^a-z0-9+\- ]+")
 
@@ -229,84 +278,259 @@ def match_care_product(
     return best, best_score
 
 
+def _profile_tags(profile: HairCareProfile | None) -> set[str]:
+    if profile is None:
+        return set()
+    tag_fn = getattr(profile, "tag_set", None)
+    if not callable(tag_fn):
+        return set()
+    try:
+        return {str(t) for t in tag_fn() if t}
+    except TypeError:
+        return set()
+
+
+def _profile_axes(profile: HairCareProfile | None) -> dict[str, str]:
+    tags = _profile_tags(profile)
+    condition = str(getattr(profile, "condition", "") or "").strip().lower() if profile else ""
+    texture = str(getattr(profile, "texture", "") or "").strip().lower() if profile else ""
+    color = str(getattr(profile, "color_status", "") or "").strip().lower() if profile else ""
+    if condition not in {"oily", "dry", "normal", "damaged"}:
+        condition = next((t for t in ("oily", "dry", "damaged", "normal") if t in tags), "")
+    if texture not in {"straight", "wavy", "curly", "fine"}:
+        texture = next((t for t in ("straight", "wavy", "curly", "fine") if t in tags), "")
+    if color not in {"natural", "colored", "bleached"}:
+        color = next((t for t in ("natural", "colored", "bleached") if t in tags), "")
+    scalp = inferred_scalp(profile)
+    if not scalp and condition in SCALP_TAGS:
+        scalp = condition
+    return {
+        "condition": condition,
+        "texture": texture,
+        "color": color,
+        "scalp": scalp,
+    }
+
+
+def _formula_from_product(product: CareProduct | None) -> list[str]:
+    if product is None:
+        return []
+    raw = getattr(product, "ingredients", None)
+    if isinstance(raw, list) and raw:
+        names = [str(item).strip() for item in raw if str(item).strip()]
+        return names[:120]
+    return parse_ingredients_text(str(getattr(product, "ingredients_text", "") or ""))
+
+
+def _resolve_formula(
+    ingredients: list[str],
+    product: CareProduct | None,
+) -> tuple[list[str], str]:
+    cleaned: list[str] = []
+    seen: set[str] = set()
+    for item in ingredients or []:
+        name = str(item or "").strip()
+        key = name.lower()
+        if not name or key in seen:
+            continue
+        seen.add(key)
+        cleaned.append(name)
+    if cleaned:
+        return cleaned[:120], "scan"
+    catalog = _formula_from_product(product)
+    if catalog:
+        return catalog, "catalog"
+    return [], "none"
+
+
+def _unread_score() -> dict[str, Any]:
+    return {
+        "verdict": "unread",
+        "safety_score": 0,
+        "flags": [],
+        "good_flags": [],
+        "bad_flags": [],
+        "dangerous_flags": [],
+        "readable": False,
+        "ingredients_source": "none",
+        "formula": [],
+        "hair_fit": {
+            "overall": None,
+            "dimensions": [],
+            "ingredients": [],
+            "profile": {},
+        },
+    }
+
+
+def _axis_percent(
+    tag: str,
+    product: CareProduct | None,
+    ordered: list[str],
+    *,
+    scalp_mode: bool = False,
+) -> int | None:
+    if not tag:
+        return None
+    score = 64.0
+    if product is not None and not scalp_mode:
+        suitable = set(_as_tag_list(getattr(product, "suitable_for", None)))
+        unsuitable = set(_as_tag_list(getattr(product, "not_suitable_for", None)))
+        if tag in suitable:
+            score += 22
+        if tag in unsuitable:
+            score -= 36
+    if product is not None and scalp_mode:
+        prod_scalp = {
+            t for t in _as_tag_list(getattr(product, "scalp_types", None)) if t in SCALP_TAGS
+        }
+        if prod_scalp:
+            score += 18 if tag in prod_scalp else -16
+    help_w = 0.0
+    hurt_w = 0.0
+    for index, name in enumerate(ordered[:40]):
+        canon = normalize_ingredient(name)
+        if not canon:
+            continue
+        weight = 1.35 if index < 5 else 1.0 if index < 14 else 0.6
+        if canon in _HELPS.get(tag, frozenset()):
+            help_w += weight
+        if canon in _HURTS.get(tag, frozenset()):
+            hurt_w += weight
+    score += min(20.0, help_w * 6.0)
+    score -= min(46.0, hurt_w * 13.0)
+    return max(0, min(100, int(round(score))))
+
+
+def _ingredient_fit_row(name: str, axes: list[str]) -> dict[str, Any]:
+    canon = normalize_ingredient(name)
+    if not canon or canon not in _KNOWN_ACTIVES:
+        return {"name": name, "percent": None, "tone": "neutral"}
+    if canon in DANGEROUS_CANON:
+        return {"name": name, "percent": 8, "tone": "bad"}
+    helped = sum(1 for tag in axes if canon in _HELPS.get(tag, frozenset()))
+    hurt = sum(1 for tag in axes if canon in _HURTS.get(tag, frozenset()))
+    score = 70.0 + min(26, helped * 14) - min(56, hurt * 22)
+    if helped == 0 and hurt == 0:
+        score -= 8
+    percent = max(0, min(100, int(round(score))))
+    if percent >= 75:
+        tone = "good"
+    elif percent >= 50:
+        tone = "caution"
+    else:
+        tone = "bad"
+    return {"name": name, "percent": percent, "tone": tone}
+
+
+def _build_hair_fit(
+    product: CareProduct | None,
+    ordered: list[str],
+    profile: HairCareProfile | None,
+    *,
+    dangerous: bool,
+) -> dict[str, Any]:
+    axes = _profile_axes(profile)
+    weights = (
+        ("condition", axes["condition"], 0.40, False),
+        ("color", axes["color"], 0.25, False),
+        ("scalp", axes["scalp"], 0.20, True),
+        ("texture", axes["texture"], 0.15, False),
+    )
+    dimensions: list[dict[str, Any]] = []
+    acc = 0.0
+    weight_sum = 0.0
+    for key, tag, weight, scalp_mode in weights:
+        percent = _axis_percent(tag, product, ordered, scalp_mode=scalp_mode)
+        if percent is None:
+            continue
+        dimensions.append({"key": key, "tag": tag, "percent": percent})
+        acc += percent * weight
+        weight_sum += weight
+    overall = int(round(acc / weight_sum)) if weight_sum else None
+    if overall is not None and dangerous:
+        overall = min(overall, 18)
+    axis_tags = [tag for tag in axes.values() if tag]
+    return {
+        "overall": overall,
+        "dimensions": dimensions,
+        "ingredients": [_ingredient_fit_row(name, axis_tags) for name in ordered[:24]],
+        "profile": {key: value for key, value in axes.items() if value},
+    }
+
+
 def score_against_hair(
     product: CareProduct | None,
     ingredients: list[str],
     profile: HairCareProfile | None,
     gemini_verdict_key: str = "",
 ) -> dict[str, Any]:
-    tags = profile.tag_set() if profile else set()
-    canon = normalize_set(ingredients)
+    formula, source = _resolve_formula(ingredients, product)
+    if not formula:
+        return _unread_score()
+
+    tags = _profile_tags(profile)
+    canon = normalize_set(formula)
     flags: list[str] = []
     good: list[str] = []
     bad: list[str] = []
     dangerous: list[str] = []
-    score = 72
 
     if canon & DANGEROUS_CANON:
         dangerous.extend(sorted(canon & DANGEROUS_CANON))
         flags.append("formaldehyde_warning")
-        score -= 55
     if canon & SULFATE_CANON:
         flags.append("sulfate_warning")
         if "bleached" in tags or "damaged" in tags or "dry" in tags:
             bad.append("sulfate")
-            score -= 18
         elif "oily" in tags:
             good.append("sulfate")
-            score += 4
-        else:
-            score -= 6
     if canon & SILICONE_CANON:
         flags.append("silicone_warning")
         if "fine" in tags or "oily" in tags:
             bad.append("silicone")
-            score -= 8
-        else:
-            score -= 2
     if canon & ALCOHOL_CANON:
         flags.append("alcohol_warning")
         if "dry" in tags or "damaged" in tags:
             bad.append("drying_alcohol")
-            score -= 12
-        else:
-            score -= 4
     if canon & PARABEN_CANON:
         flags.append("paraben_warning")
-        score -= 6
     if canon & HEAVY_OIL_CANON:
         flags.append("heavy_oil_warning")
         if "oily" in tags:
             bad.append("heavy_oil")
-            score -= 14
         elif "dry" in tags:
             good.append("heavy_oil")
-            score += 4
 
+    misses: set[str] = set()
     if product is not None:
-        suitable = set(_as_tag_list(product.suitable_for))
-        unsuitable = set(_as_tag_list(product.not_suitable_for))
-        hits = tags & suitable
+        unsuitable = set(_as_tag_list(getattr(product, "not_suitable_for", None)))
         misses = tags & unsuitable
-        score += len(hits) * 8
-        score -= len(misses) * 18
         if misses:
             flags.append("hair_type_mismatch")
+
+    hair_fit = _build_hair_fit(product, formula, profile, dangerous=bool(dangerous))
+    overall = hair_fit.get("overall")
+    if isinstance(overall, int):
+        score = overall
+    else:
+        score = 12 if dangerous else 64
 
     gemini_key = (gemini_verdict_key or "").strip().lower()
     if gemini_key == "dangerous":
         score = min(score, 25)
     elif gemini_key == "bad":
         score = min(score, 45)
-    elif gemini_key == "good":
-        score = max(score, 62)
+    if misses:
+        score = min(score, 42)
+    score = max(0, min(100, score))
+    hair_fit["overall"] = score
 
-    score = max(0, min(100, int(round(score))))
     if dangerous or score <= 28:
         verdict = "dangerous"
-    elif score <= 48 or (tags and product and tags & set(_as_tag_list(product.not_suitable_for))):
+    elif score < 48 or misses:
         verdict = "bad"
-    elif score <= 68 or flags:
+    elif score < 78:
         verdict = "caution"
     else:
         verdict = "good"
@@ -318,6 +542,10 @@ def score_against_hair(
         "good_flags": good,
         "bad_flags": bad,
         "dangerous_flags": dangerous,
+        "readable": True,
+        "ingredients_source": source,
+        "formula": formula,
+        "hair_fit": hair_fit,
     }
 
 
@@ -570,7 +798,8 @@ def suitability_for_user(
         score += len(concern_hits) * 9
         reasons.append(f"Muammolaringizga ishlaydi: {_labels(concern_hits)}.")
 
-    score += int(round((scored["safety_score"] - 72) * 0.4))
+    if scored.get("readable"):
+        score += int(round((scored["safety_score"] - 72) * 0.4))
     if "sulfate" in scored.get("bad_flags", []):
         reasons.append("Sulfatlar quruq yoki ochilgan sochni quritishi mumkin.")
     if "silicone" in scored.get("bad_flags", []):

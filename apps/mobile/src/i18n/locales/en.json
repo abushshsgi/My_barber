@@ -1240,11 +1240,27 @@
     "listTitle": "Ingredients found",
     "ingredientsCount": "{{count}} ingredients",
     "scanAgain": "Scan again",
+    "hairFitTitle": "Match for your hair",
+    "unreadTitle": "Ingredients not read",
+    "unreadBody": "The Ingredients list is not visible. We will not guess a score — take a clearer photo.",
+    "unreadTip1": "The Ingredients text on the back should be fully visible",
+    "unreadTip2": "Move closer so the text is sharp",
+    "unreadTip3": "Avoid glare and shadows",
+    "dimCondition": "Hair condition",
+    "dimTexture": "Texture",
+    "dimColor": "Color",
+    "dimScalp": "Scalp",
+    "neutral": "Neutral",
+    "catalogFormula": "Formula taken from the catalog product",
+    "yourHair": "Your hair",
+    "ingredientFit": "By ingredient",
+    "sensitive": "Sensitive",
     "verdicts": {
       "good": "Good",
       "caution": "Caution",
       "bad": "Bad",
-      "dangerous": "Dangerous"
+      "dangerous": "Dangerous",
+      "unread": "Unread"
     }
   },
   "walletPages": {

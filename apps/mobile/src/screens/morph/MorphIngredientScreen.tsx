@@ -2,7 +2,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { Image } from "expo-image";
-import { LinearGradient } from "expo-linear-gradient";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -24,9 +23,12 @@ import {
   updateHairCareProfile,
   type HairColorStatus,
   type HairCondition,
+  type HairFit,
   type HairTexture,
   type IngredientScanResponse,
 } from "../../api/care";
+import { useMorphAppearance } from "../../lib/MorphAppearanceContext";
+import type { MorphPalette } from "../../theme/morph-appearance";
 import { useHideTabBar } from "../../hooks/useHideTabBar";
 import { NativeBackButton } from "../../components/ui/NativeBackButton";
 import {
@@ -63,22 +65,24 @@ function hasQuizFields(q: CareQuizAnswers | null | undefined): boolean {
   return Boolean(q?.condition && q?.texture && q?.colorStatus);
 }
 
-function scoreTone(verdict: string, score: number): string {
-  const VERDICT_COLOR: Record<string, string> = {
-    good: "#6EE7B7",
-    caution: "#FCD34D",
-    bad: "#FB923C",
-    dangerous: "#F87171",
-  };
-  if (VERDICT_COLOR[verdict]) return VERDICT_COLOR[verdict];
-  if (score >= 70) return VERDICT_COLOR.good;
-  if (score >= 45) return VERDICT_COLOR.caution;
-  return VERDICT_COLOR.dangerous;
+function bandColor(percent: number, pal: MorphPalette): string {
+  if (percent >= 78) return pal.fg;
+  if (percent >= 55) return pal.warn;
+  return pal.destructive;
+}
+
+function verdictColor(verdict: string, percent: number | null, pal: MorphPalette): string {
+  if (verdict === "dangerous" || verdict === "bad") return pal.destructive;
+  if (verdict === "unread") return pal.muted;
+  if (verdict === "caution") return pal.warn;
+  if (percent != null) return bandColor(percent, pal);
+  return pal.fg;
 }
 
 export function MorphIngredientScreen({ navigation }: Props) {
   useHideTabBar();
   const { t } = useTranslation();
+  const { colors: pal } = useMorphAppearance();
   const insets = useSafeAreaInsets();
   const { goMorph } = useShellNavigation();
   const cameraRef = useRef<CameraView>(null);
@@ -284,10 +288,25 @@ export function MorphIngredientScreen({ navigation }: Props) {
     goMorph(navigation, "MorphCare");
   }, [navigation, goMorph]);
 
+  const axisLabel = (kind: string, tag: string) => {
+    if (!tag) return "";
+    if (kind === "texture") return t(`care.textures.${tag}`, { defaultValue: tag });
+    if (kind === "color") return t(`care.colors.${tag}`, { defaultValue: tag });
+    if (tag === "sensitive") return t("ingredient.sensitive");
+    return t(`care.conditions.${tag}`, { defaultValue: tag });
+  };
+
+  const dimTitle = (key: string) => {
+    if (key === "texture") return t("ingredient.dimTexture");
+    if (key === "color") return t("ingredient.dimColor");
+    if (key === "scalp") return t("ingredient.dimScalp");
+    return t("ingredient.dimCondition");
+  };
+
   if (booting) {
     return (
-      <View style={[styles.root, styles.center, { paddingTop: insets.top }]}>
-        <ActivityIndicator color="rgba(255,255,255,0.45)" />
+      <View style={[styles.root, styles.center, { paddingTop: insets.top, backgroundColor: pal.bg }]}>
+        <ActivityIndicator color={pal.muted} />
       </View>
     );
   }
@@ -323,37 +342,62 @@ export function MorphIngredientScreen({ navigation }: Props) {
 
   if (phase === "analyzing") {
     return (
-      <View style={[styles.root, styles.center, { paddingTop: insets.top }]}>
+      <View style={[styles.root, styles.center, { paddingTop: insets.top, backgroundColor: pal.bg }]}>
         <View style={styles.analyzingCard}>
           {preview ? (
-            <Image source={{ uri: preview }} style={styles.analyzingImg} contentFit="cover" />
+            <Image source={{ uri: preview }} style={[styles.analyzingImg, { backgroundColor: pal.cardStrong }]} contentFit="cover" />
           ) : null}
-          <ActivityIndicator color="#fff" style={{ marginTop: 18 }} />
-          <Text style={styles.analyzingTitle}>{t("ingredient.analyzing")}</Text>
-          <Text style={styles.analyzingSub}>{t("ingredient.analyzingSub")}</Text>
+          <ActivityIndicator color={pal.fg} style={{ marginTop: 18 }} />
+          <Text style={[styles.analyzingTitle, { color: pal.fg }]}>{t("ingredient.analyzing")}</Text>
+          <Text style={[styles.analyzingSub, { color: pal.muted }]}>{t("ingredient.analyzingSub")}</Text>
         </View>
       </View>
     );
   }
 
   if (phase === "result" && result) {
-    const score = result.product_analysis.safety_score;
-    const verdict = String(result.verdict || result.verdict_key || "");
-    const color = scoreTone(verdict, score);
+    const fit: HairFit | undefined = result.hair_fit;
+    const ingredientCount =
+      result.ingredients?.length || result.product_analysis.total_ingredients_count || 0;
+    const readable =
+      result.readable === false || result.verdict === "unread" || result.verdict_key === "unread"
+        ? false
+        : result.readable === true
+          ? true
+          : ingredientCount > 0;
+    const overall = readable ? (fit?.overall ?? result.product_analysis.safety_score) : null;
+    const verdict = readable ? String(result.verdict || result.verdict_key || "") : "unread";
+    const color = verdictColor(verdict, overall, pal);
     const matched = result.matched_product;
     const productName =
       result.product_analysis.product_name || matched?.name || t("ingredient.unknownProduct");
     const brand = result.product_analysis.brand || matched?.brand || "";
-    const alerts = result.critical_alerts || [];
-    const goods = result.beneficial_ingredients || [];
+    const alerts = readable ? result.critical_alerts || [] : [];
+    const goods = readable ? result.beneficial_ingredients || [] : [];
+    const rows =
+      fit?.ingredients && fit.ingredients.length > 0
+        ? fit.ingredients
+        : (result.ingredients || []).map((name) => ({
+            name,
+            percent: null as number | null,
+            tone: "neutral",
+          }));
+    const profileBits = [
+      { kind: "condition", tag: fit?.profile?.condition || quiz.condition },
+      { kind: "texture", tag: fit?.profile?.texture || quiz.texture },
+      { kind: "color", tag: fit?.profile?.color || quiz.colorStatus },
+      { kind: "scalp", tag: fit?.profile?.scalp || "" },
+    ].filter((item) => item.tag);
+    const unreadMessage = result.critical_alerts?.[0]?.message_uz || t("ingredient.unreadBody");
+    const cardStyle = {
+      backgroundColor: pal.card,
+      borderColor: pal.line,
+      borderWidth: 1,
+      borderRadius: 24,
+    } as const;
 
     return (
-      <View style={styles.root}>
-        <LinearGradient
-          colors={["rgba(255,255,255,0.08)", "transparent"]}
-          style={styles.topGlow}
-          pointerEvents="none"
-        />
+      <View style={[styles.root, { backgroundColor: pal.bg }]}>
         <ScrollView
           contentContainerStyle={{
             paddingTop: safeTop(insets.top, 8),
@@ -365,40 +409,127 @@ export function MorphIngredientScreen({ navigation }: Props) {
           <View style={styles.rowBetween}>
             <NativeBackButton
               onPress={resetScan}
-              color="#fff"
-              backgroundColor="rgba(0,0,0,0.35)"
+              color={pal.fg}
+              backgroundColor={pal.card}
             />
-            <Text style={styles.badge}>{t("ingredient.badge")}</Text>
+            <Text style={[styles.badge, { color: pal.muted }]}>{t("ingredient.badge")}</Text>
             <View style={{ width: 40 }} />
           </View>
 
-          <View style={styles.scoreBlock}>
-            <Text style={styles.badge}>{t("ingredient.badge")}</Text>
-            <View style={styles.scoreRow}>
-              <Text style={[styles.scoreNum, { color }]}>{score}</Text>
-              <Text style={styles.scoreDenom}>/ 100</Text>
-            </View>
-            {verdict ? (
-              <Text style={[styles.verdictLabel, { color }]}>
-                {t(`ingredient.verdicts.${verdict}`, { defaultValue: verdict })}
+          {!readable ? (
+            <View style={[cardStyle, { marginTop: 18, padding: 18 }]}>
+              {preview ? (
+                <Image source={{ uri: preview }} style={styles.resultPreview} contentFit="cover" />
+              ) : (
+                <View style={[styles.unreadIcon, { backgroundColor: pal.cardStrong }]}>
+                  <Ionicons name="scan-outline" size={22} color={pal.fg} />
+                </View>
+              )}
+              <Text style={[styles.productName, { color: pal.fg, marginTop: 14 }]}>
+                {t("ingredient.unreadTitle")}
               </Text>
-            ) : null}
-            <Text style={styles.productName}>{productName}</Text>
-            {brand ? <Text style={styles.brand}>{brand}</Text> : null}
-            <Text style={styles.fit}>{result.fit_uz || result.product_analysis.verdict}</Text>
-            {result.catalog_notes_uz ? (
-              <Text style={styles.notes}>{result.catalog_notes_uz}</Text>
-            ) : null}
-            <Text style={styles.count}>
-              {t("ingredient.ingredientsCount", {
-                count: result.product_analysis.total_ingredients_count,
-              })}
-            </Text>
-          </View>
+              <Text style={[styles.fit, { color: pal.muted }]}>{unreadMessage}</Text>
+              <View style={{ marginTop: 16, gap: 8 }}>
+                {[t("ingredient.unreadTip1"), t("ingredient.unreadTip2"), t("ingredient.unreadTip3")].map(
+                  (tip) => (
+                    <View key={tip} style={styles.tipRow}>
+                      <Ionicons name="checkmark-circle" size={16} color={pal.fg} />
+                      <Text style={[styles.tipText, { color: pal.fg }]}>{tip}</Text>
+                    </View>
+                  ),
+                )}
+              </View>
+            </View>
+          ) : (
+            <>
+              <View style={[cardStyle, { marginTop: 18, padding: 18 }]}>
+                <Text style={[styles.badge, { color: pal.muted }]}>{t("ingredient.hairFitTitle")}</Text>
+                <View style={styles.scoreRow}>
+                  <Text style={[styles.scoreNum, { color }]}>{overall}</Text>
+                  <Text style={[styles.scoreDenom, { color: pal.muted }]}>/ 100</Text>
+                </View>
+                {verdict ? (
+                  <View style={[styles.verdictPill, { backgroundColor: pal.cardStrong }]}>
+                    <Text style={[styles.verdictLabel, { color, marginTop: 0 }]}>
+                      {t(`ingredient.verdicts.${verdict}`, { defaultValue: verdict })}
+                    </Text>
+                  </View>
+                ) : null}
+                {profileBits.length > 0 ? (
+                  <View style={{ marginTop: 16 }}>
+                    <Text style={[styles.badge, { color: pal.muted }]}>{t("ingredient.yourHair")}</Text>
+                    <View style={styles.chipRow}>
+                      {profileBits.map((item) => (
+                        <View key={item.kind} style={[styles.chip, { backgroundColor: pal.cardStrong }]}>
+                          <Text style={[styles.chipText, { color: pal.fg }]}>
+                            {axisLabel(item.kind, item.tag)}
+                          </Text>
+                        </View>
+                      ))}
+                    </View>
+                  </View>
+                ) : null}
+              </View>
+
+              {(fit?.dimensions || []).length > 0 ? (
+                <View style={[cardStyle, { marginTop: 12, padding: 18, gap: 14 }]}>
+                  {fit!.dimensions.map((dim) => (
+                    <View key={dim.key}>
+                      <View style={styles.dimHead}>
+                        <Text style={[styles.dimLabel, { color: pal.fg }]}>{dimTitle(dim.key)}</Text>
+                        <Text style={[styles.dimPct, { color: bandColor(dim.percent, pal) }]}>
+                          {axisLabel(dim.key, dim.tag)} · {dim.percent}%
+                        </Text>
+                      </View>
+                      <View style={[styles.track, { backgroundColor: pal.track }]}>
+                        <View
+                          style={[
+                            styles.fill,
+                            {
+                              width: `${dim.percent}%` as `${number}%`,
+                              backgroundColor: bandColor(dim.percent, pal),
+                            },
+                          ]}
+                        />
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              ) : null}
+
+              <View style={[cardStyle, styles.productCard]}>
+                {preview ? (
+                  <Image source={{ uri: preview }} style={styles.resultThumb} contentFit="cover" />
+                ) : (
+                  <View style={[styles.resultThumb, { backgroundColor: pal.cardStrong, alignItems: "center", justifyContent: "center" }]}>
+                    <Ionicons name="flask-outline" size={18} color={pal.muted} />
+                  </View>
+                )}
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.productName, { color: pal.fg, marginTop: 0 }]}>{productName}</Text>
+                  {brand ? <Text style={[styles.brand, { color: pal.muted }]}>{brand}</Text> : null}
+                  <Text style={[styles.count, { color: pal.muted }]}>
+                    {t("ingredient.ingredientsCount", { count: ingredientCount })}
+                  </Text>
+                </View>
+              </View>
+              {result.fit_uz || result.product_analysis.verdict ? (
+                <Text style={[styles.fit, { color: pal.fg }]}>
+                  {result.fit_uz || result.product_analysis.verdict}
+                </Text>
+              ) : null}
+              {result.catalog_notes_uz ? (
+                <Text style={[styles.notes, { color: pal.muted }]}>{result.catalog_notes_uz}</Text>
+              ) : null}
+              {result.ingredients_source === "catalog" ? (
+                <Text style={[styles.notes, { color: pal.muted }]}>{t("ingredient.catalogFormula")}</Text>
+              ) : null}
+            </>
+          )}
 
           {matched ? (
             <Pressable
-              style={styles.matchCard}
+              style={[styles.matchCard, cardStyle, { backgroundColor: pal.card, borderColor: pal.line }]}
               onPress={() =>
                 navigation.navigate("CareProductDetail", { productId: matched.id })
               }
@@ -411,35 +542,69 @@ export function MorphIngredientScreen({ navigation }: Props) {
                     contentFit="cover"
                   />
                 ) : (
-                  <View style={[styles.matchImg, styles.matchImgPh]}>
-                    <Ionicons name="flask-outline" size={20} color="rgba(255,255,255,0.4)" />
+                  <View style={[styles.matchImg, styles.matchImgPh, { backgroundColor: pal.cardStrong }]}>
+                    <Ionicons name="flask-outline" size={20} color={pal.muted} />
                   </View>
                 )}
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.matchBadge}>{t("ingredient.catalogMatch")}</Text>
-                  <Text style={styles.matchName}>{matched.name}</Text>
-                  {matched.brand ? <Text style={styles.brand}>{matched.brand}</Text> : null}
+                  <Text style={[styles.matchBadge, { color: pal.muted }]}>{t("ingredient.catalogMatch")}</Text>
+                  <Text style={[styles.matchName, { color: pal.fg }]}>{matched.name}</Text>
+                  {matched.brand ? <Text style={[styles.brand, { color: pal.muted }]}>{matched.brand}</Text> : null}
                 </View>
-                <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.35)" />
+                <Ionicons name="chevron-forward" size={18} color={pal.muted} />
               </View>
               {matched.warnings_uz ? (
-                <Text style={styles.warningInline}>{matched.warnings_uz}</Text>
+                <Text style={[styles.warningInline, { color: pal.warn }]}>{matched.warnings_uz}</Text>
               ) : null}
             </Pressable>
           ) : null}
 
+          {readable && rows.length > 0 ? (
+            <View style={{ marginTop: 22 }}>
+              <Text style={[styles.section, { color: pal.muted }]}>{t("ingredient.ingredientFit")}</Text>
+              <View style={[cardStyle, { padding: 16, gap: 14 }]}>
+                {rows.map((row, i) => {
+                  const tone =
+                    row.percent == null ? pal.muted : bandColor(row.percent, pal);
+                  return (
+                    <View key={`${row.name}-${i}`}>
+                      <View style={styles.dimHead}>
+                        <Text style={[styles.ingName, { color: pal.fg }]} numberOfLines={1}>
+                          {row.name}
+                        </Text>
+                        <Text style={[styles.dimPct, { color: tone }]}>
+                          {row.percent == null ? t("ingredient.neutral") : `${row.percent}%`}
+                        </Text>
+                      </View>
+                      <View style={[styles.track, { backgroundColor: pal.track }]}>
+                        {row.percent != null ? (
+                          <View
+                            style={[
+                              styles.fill,
+                              { width: `${row.percent}%` as `${number}%`, backgroundColor: tone },
+                            ]}
+                          />
+                        ) : null}
+                      </View>
+                    </View>
+                  );
+                })}
+              </View>
+            </View>
+          ) : null}
+
           {alerts.length > 0 ? (
-            <View style={{ marginTop: 28 }}>
-              <Text style={styles.section}>{t("ingredient.alertsTitle")}</Text>
+            <View style={{ marginTop: 22 }}>
+              <Text style={[styles.section, { color: pal.muted }]}>{t("ingredient.alertsTitle")}</Text>
               <View style={{ gap: 8 }}>
                 {alerts.map((alert, i) => (
-                  <View key={`${alert.ingredient}-${i}`} style={styles.alertCard}>
-                    <Ionicons name="warning-outline" size={16} color="#FDA4AF" />
+                  <View key={`${alert.ingredient}-${i}`} style={[cardStyle, styles.alertCard]}>
+                    <Ionicons name="warning-outline" size={16} color={pal.destructive} />
                     <View style={{ flex: 1 }}>
                       {alert.ingredient ? (
-                        <Text style={styles.alertIng}>{alert.ingredient}</Text>
+                        <Text style={[styles.alertIng, { color: pal.fg }]}>{alert.ingredient}</Text>
                       ) : null}
-                      <Text style={styles.alertMsg}>{alert.message_uz}</Text>
+                      <Text style={[styles.alertMsg, { color: pal.muted }]}>{alert.message_uz}</Text>
                     </View>
                   </View>
                 ))}
@@ -448,15 +613,15 @@ export function MorphIngredientScreen({ navigation }: Props) {
           ) : null}
 
           {goods.length > 0 ? (
-            <View style={{ marginTop: 28 }}>
-              <Text style={styles.section}>{t("ingredient.beneficialTitle")}</Text>
+            <View style={{ marginTop: 22 }}>
+              <Text style={[styles.section, { color: pal.muted }]}>{t("ingredient.beneficialTitle")}</Text>
               <View style={{ gap: 8 }}>
                 {goods.map((item, i) => (
-                  <View key={`${item.ingredient}-${i}`} style={styles.goodCard}>
-                    <Ionicons name="checkmark-circle-outline" size={16} color="#6EE7B7" />
+                  <View key={`${item.ingredient}-${i}`} style={[cardStyle, styles.goodCard]}>
+                    <Ionicons name="checkmark-circle-outline" size={16} color={pal.fg} />
                     <View style={{ flex: 1 }}>
-                      <Text style={styles.goodIng}>{item.ingredient}</Text>
-                      <Text style={styles.goodMsg}>{item.reason_uz}</Text>
+                      <Text style={[styles.goodIng, { color: pal.fg }]}>{item.ingredient}</Text>
+                      <Text style={[styles.goodMsg, { color: pal.muted }]}>{item.reason_uz}</Text>
                     </View>
                   </View>
                 ))}
@@ -464,33 +629,30 @@ export function MorphIngredientScreen({ navigation }: Props) {
             </View>
           ) : null}
 
-          {(result.ingredients || []).length > 0 ? (
-            <View style={{ marginTop: 28 }}>
-              <Text style={styles.section}>{t("ingredient.listTitle")}</Text>
-              <Text style={styles.ingList}>{result.ingredients.join(" · ")}</Text>
-            </View>
-          ) : null}
-
-          <Pressable style={[styles.primaryBtn, { marginTop: 28 }]} onPress={resetScan}>
-            <Text style={styles.primaryBtnText}>{t("ingredient.scanAgain")}</Text>
-          </Pressable>
-          {result ? (
-            <Pressable
-              style={[
-                styles.secondaryBtnFull,
-                { marginTop: 10 },
-                inMyProducts && styles.secondaryBtnDisabled,
-              ]}
-              disabled={inMyProducts || addingProduct}
-              onPress={() => void handleAddToMyProducts()}
-            >
-              <Text style={styles.secondaryBtnText}>
-                {inMyProducts ? t("care.myProducts.alreadyAdded") : t("care.myProducts.addFromScan")}
-              </Text>
-            </Pressable>
-          ) : null}
           <Pressable
-            style={[styles.secondaryBtnFull, { marginTop: matched ? 10 : 10 }]}
+            style={[styles.primaryBtn, { marginTop: 28, backgroundColor: pal.fg }]}
+            onPress={resetScan}
+          >
+            <Text style={[styles.primaryBtnText, { color: pal.bg }]}>{t("ingredient.scanAgain")}</Text>
+          </Pressable>
+          <Pressable
+            style={[
+              styles.secondaryBtnFull,
+              { marginTop: 10, backgroundColor: pal.card, borderWidth: 1, borderColor: pal.line },
+              inMyProducts && styles.secondaryBtnDisabled,
+            ]}
+            disabled={inMyProducts || addingProduct}
+            onPress={() => void handleAddToMyProducts()}
+          >
+            <Text style={[styles.secondaryBtnText, { color: pal.fg }]}>
+              {inMyProducts ? t("care.myProducts.alreadyAdded") : t("care.myProducts.addFromScan")}
+            </Text>
+          </Pressable>
+          <Pressable
+            style={[
+              styles.secondaryBtnFull,
+              { marginTop: 10, backgroundColor: pal.card, borderWidth: 1, borderColor: pal.line },
+            ]}
             onPress={() =>
               goMorph(navigation, "MorphCare", {
                 screen: "CareHome",
@@ -498,7 +660,7 @@ export function MorphIngredientScreen({ navigation }: Props) {
               })
             }
           >
-            <Text style={styles.secondaryBtnText}>{t("ingredient.openCatalog")}</Text>
+            <Text style={[styles.secondaryBtnText, { color: pal.fg }]}>{t("ingredient.openCatalog")}</Text>
           </Pressable>
         </ScrollView>
       </View>
@@ -991,4 +1153,42 @@ const styles = StyleSheet.create({
     color: "#737373",
     textAlign: "center",
   },
+  resultPreview: {
+    width: "100%",
+    height: verticalScale(140),
+    borderRadius: moderateScale(16),
+  },
+  unreadIcon: {
+    width: scale(44),
+    height: scale(44),
+    borderRadius: moderateScale(14),
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  tipRow: { flexDirection: "row", alignItems: "center", gap: moderateScale(8) },
+  tipText: { ...morphFont, flex: 1, fontSize: fontSize(14), lineHeight: fontSize(20) },
+  verdictPill: {
+    alignSelf: "flex-start",
+    marginTop: verticalScale(8),
+    paddingHorizontal: moderateScale(10),
+    paddingVertical: verticalScale(4),
+    borderRadius: 999,
+  },
+  chipRow: { flexDirection: "row", flexWrap: "wrap", gap: moderateScale(8), marginTop: verticalScale(8) },
+  chip: { borderRadius: 999, paddingHorizontal: moderateScale(10), paddingVertical: verticalScale(5) },
+  chipText: { ...morphFont, fontSize: fontSize(12), fontWeight: "600" },
+  dimHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: moderateScale(10) },
+  dimLabel: { ...morphFont, fontSize: fontSize(13), fontWeight: "600" },
+  dimPct: { ...morphFont, fontSize: fontSize(12), fontWeight: "600" },
+  track: { height: 5, borderRadius: 99, marginTop: verticalScale(6), overflow: "hidden" },
+  fill: { height: 5, borderRadius: 99 },
+  productCard: {
+    marginTop: verticalScale(12),
+    padding: moderateScale(14),
+    flexDirection: "row",
+    alignItems: "center",
+    gap: moderateScale(12),
+  },
+  resultThumb: { width: scale(52), height: scale(52), borderRadius: moderateScale(14) },
+  ingName: { ...morphFont, flex: 1, fontSize: fontSize(13), fontWeight: "500" },
 });

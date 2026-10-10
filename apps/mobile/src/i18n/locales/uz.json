@@ -1240,11 +1240,27 @@
     "listTitle": "Topilgan tarkib",
     "ingredientsCount": "{{count}} ta modda",
     "scanAgain": "Yana skan qilish",
+    "hairFitTitle": "Sochingizga moslik",
+    "unreadTitle": "Tarkib o‘qilmadi",
+    "unreadBody": "Rasmda Ingredients ro‘yxati chiqmadi. Foizni taxmin qilmaymiz — aniqroq surat kerak.",
+    "unreadTip1": "Qadoq orqasidagi Ingredients yozuvi to‘liq ko‘rinsin",
+    "unreadTip2": "Yaqinroq turing, matn xira bo‘lmasin",
+    "unreadTip3": "Chaqnoq va soya tushmasin",
+    "dimCondition": "Soch holati",
+    "dimTexture": "Tuzilma",
+    "dimColor": "Rang",
+    "dimScalp": "Bosh terisi",
+    "neutral": "Neytral",
+    "catalogFormula": "Tarkib katalogdagi mahsulotdan olindi",
+    "yourHair": "Sizning sochingiz",
+    "ingredientFit": "Moddalar bo‘yicha",
+    "sensitive": "Sezgir",
     "verdicts": {
       "good": "Yaxshi",
       "caution": "Ehtiyot",
       "bad": "Yomon",
-      "dangerous": "Xavfli"
+      "dangerous": "Xavfli",
+      "unread": "O‘qilmadi"
     }
   },
   "walletPages": {

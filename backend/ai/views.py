@@ -620,11 +620,25 @@ class AiIngredientScanView(UnthrottledAPIView):
                 str(result.get("verdict_key") or ""),
             )
             analysis["safety_score"] = scored["safety_score"]
-            if fit_uz:
+            if scored.get("ingredients_source") == "catalog" and not ingredients:
+                result["ingredients"] = scored.get("formula") or []
+                analysis["total_ingredients_count"] = len(result["ingredients"])
+            if scored.get("readable") and fit_uz:
                 analysis["verdict"] = fit_uz[:280]
+            elif not scored.get("readable"):
+                if not str(analysis.get("verdict") or "").strip():
+                    analysis["verdict"] = "Tarkib ro'yxati o'qilmadi"
             result["product_analysis"] = analysis
             result["verdict"] = scored["verdict"]
             result["verdict_key"] = scored["verdict"]
+            result["readable"] = bool(scored.get("readable"))
+            result["ingredients_source"] = scored.get("ingredients_source") or "none"
+            result["hair_fit"] = scored.get("hair_fit") or {
+                "overall": None,
+                "dimensions": [],
+                "ingredients": [],
+                "profile": {},
+            }
             result["match_score"] = round(float(match_score), 3)
             result["flags"] = scored["flags"]
             result["good_flags"] = scored["good_flags"]

@@ -155,6 +155,30 @@ export type IngredientScanBeneficial = {
   reason_uz: string;
 };
 
+export type HairFitDimension = {
+  key: "condition" | "texture" | "color" | "scalp" | string;
+  tag: string;
+  percent: number;
+};
+
+export type HairFitIngredient = {
+  name: string;
+  percent: number | null;
+  tone: "good" | "caution" | "bad" | "neutral" | string;
+};
+
+export type HairFit = {
+  overall: number | null;
+  dimensions: HairFitDimension[];
+  ingredients: HairFitIngredient[];
+  profile?: {
+    condition?: string;
+    texture?: string;
+    color?: string;
+    scalp?: string;
+  };
+};
+
 export type IngredientScanResponse = {
   product_analysis: {
     safety_score: number;
@@ -188,6 +212,9 @@ export type IngredientScanResponse = {
     cons_uz: string;
     warnings_uz: string;
   } | null;
+  readable?: boolean;
+  ingredients_source?: "scan" | "catalog" | "none" | string;
+  hair_fit?: HairFit;
 };
 
 export async function scanIngredient(image: string): Promise<IngredientScanResponse> {

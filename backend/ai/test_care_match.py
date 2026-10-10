@@ -101,3 +101,65 @@ def test_suitability_penalizes_mismatch():
     assert fit["match_percent"] is not None
     assert fit["match_percent"] < 60
     assert fit["fit_verdict"] in {"ok", "poor"}
+
+
+def _profile(**kwargs):
+    tags = kwargs.pop("tags")
+    return SimpleNamespace(tag_set=lambda: set(tags), is_complete=True, concerns=[], **kwargs)
+
+
+def test_empty_formula_is_unread_not_a_fake_good_score():
+    profile = _profile(
+        tags={"dry", "straight", "bleached"},
+        condition="dry",
+        texture="straight",
+        color_status="bleached",
+        scalp="dry",
+    )
+    scored = score_against_hair(None, [], profile, "good")
+    assert scored["readable"] is False
+    assert scored["verdict"] == "unread"
+    assert scored["safety_score"] == 0
+    assert scored["hair_fit"]["overall"] is None
+    assert scored["hair_fit"]["dimensions"] == []
+
+
+def test_hair_fit_percents_follow_user_hair():
+    harsh = ["Sodium Laureth Sulfate", "Sodium Lauryl Sulfate", "Alcohol Denat", "Parfum"]
+    dry = _profile(
+        tags={"dry", "curly", "bleached"},
+        condition="dry",
+        texture="curly",
+        color_status="bleached",
+        scalp="dry",
+    )
+    oily = _profile(
+        tags={"oily", "straight", "natural"},
+        condition="oily",
+        texture="straight",
+        color_status="natural",
+        scalp="oily",
+    )
+    dry_fit = score_against_hair(None, harsh, dry, "good")
+    oily_fit = score_against_hair(None, harsh, oily, "")
+    assert dry_fit["readable"] is True
+    assert oily_fit["readable"] is True
+    assert dry_fit["hair_fit"]["overall"] < oily_fit["hair_fit"]["overall"]
+    assert dry_fit["verdict"] != "good"
+
+    dry_color = next(d for d in dry_fit["hair_fit"]["dimensions"] if d["key"] == "color")
+    oily_color = next(d for d in oily_fit["hair_fit"]["dimensions"] if d["key"] == "color")
+    assert dry_color["tag"] == "bleached"
+    assert oily_color["tag"] == "natural"
+    assert dry_color["percent"] < oily_color["percent"]
+
+    repair = score_against_hair(
+        None,
+        ["Aqua", "Panthenol", "Glycerin", "Sodium Laureth Sulfate"],
+        dry,
+        "",
+    )
+    rows = {row["name"]: row for row in repair["hair_fit"]["ingredients"]}
+    assert rows["Panthenol"]["percent"] > rows["Sodium Laureth Sulfate"]["percent"]
+    assert rows["Aqua"]["tone"] == "neutral"
+    assert rows["Aqua"]["percent"] is None

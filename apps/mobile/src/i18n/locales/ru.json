@@ -1240,11 +1240,27 @@
     "listTitle": "Найденный состав",
     "ingredientsCount": "{{count}} ингредиентов",
     "scanAgain": "Сканировать ещё",
+    "hairFitTitle": "Совпадение с вашими волосами",
+    "unreadTitle": "Состав не прочитан",
+    "unreadBody": "Список Ingredients на фото не виден. Процент не угадываем — нужна более чёткая фотография.",
+    "unreadTip1": "Текст Ingredients на обороте должен быть виден целиком",
+    "unreadTip2": "Подойдите ближе, чтобы текст был резким",
+    "unreadTip3": "Уберите блики и тень",
+    "dimCondition": "Состояние волос",
+    "dimTexture": "Текстура",
+    "dimColor": "Цвет",
+    "dimScalp": "Кожа головы",
+    "neutral": "Нейтрально",
+    "catalogFormula": "Состав взят из товара каталога",
+    "yourHair": "Ваши волосы",
+    "ingredientFit": "По ингредиентам",
+    "sensitive": "Чувствительная",
     "verdicts": {
       "good": "Хорошо",
       "caution": "Осторожно",
       "bad": "Плохо",
-      "dangerous": "Опасно"
+      "dangerous": "Опасно",
+      "unread": "Не прочитан"
     }
   },
   "walletPages": {
