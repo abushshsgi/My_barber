@@ -27,7 +27,7 @@ import { publicAppUrl } from "@/lib/public-origin";
 import { toShareImageSource } from "@/lib/media-url";
 import { buildTelegramShareUrl, pickMorphShareText } from "@/lib/morph-share-copy";
 import { stashBarberConsultDraft } from "@/lib/barber-consult-session";
-import { stashMorphStudioDraft } from "@/lib/morph-ai-studio-session";
+import { stashMorphStudioDraft } from "@/lib/morf-ai-studio-session";
 import { cn } from "@/lib/utils";
 
 type Suggestion = AiAnalysisResult["suggestions"][number];

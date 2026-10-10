@@ -141,7 +141,7 @@ function MorphAiPage() {
   return (
     <div className="space-y-6">
       <StatsPageHeader
-        title="Morph AI"
+        title="Morf AI"
         description="Try-on, studio va chat — kim qancha token sarflayapti, USD va so'm xarajat."
         rangeKey={rangeKey}
         onRangeChange={setRangeKey}
@@ -158,7 +158,7 @@ function MorphAiPage() {
           <AlertDescription className="flex flex-col items-start gap-3">
             <span>
               {(q.error as Error)?.message ||
-                "Morph AI statistikasi olinmadi. Qayta urinib ko'ring."}
+                "Morf AI statistikasi olinmadi. Qayta urinib ko'ring."}
             </span>
             <Button type="button" variant="outline" size="sm" onClick={() => void q.refetch()}>
               Qayta urinish
@@ -246,7 +246,7 @@ function MorphAiPage() {
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
               <h2 className="font-heading text-lg font-semibold">Kunlik xarajat</h2>
-              <p className="mt-1 text-sm text-muted-foreground">USD — Gemini / Morph AI chaqiruvlari</p>
+              <p className="mt-1 text-sm text-muted-foreground">USD — Gemini / Morf AI chaqiruvlari</p>
             </div>
           </div>
           {q.isError ? null : q.isLoading || !d ? (
@@ -340,7 +340,7 @@ function MorphAiPage() {
           <EmptyState
             className="mt-4"
             title="Hali foydalanuvchi yo'q"
-            description="Morph AI ishlatilganda bu yerda ro'yxat chiqadi."
+            description="Morf AI ishlatilganda bu yerda ro'yxat chiqadi."
           />
         ) : (
           <div className="mt-4 overflow-x-auto">

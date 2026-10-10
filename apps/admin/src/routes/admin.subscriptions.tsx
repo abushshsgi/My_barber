@@ -413,7 +413,7 @@ function AdminSubscriptionsPage() {
               </h2>
               <ul className="mt-3 space-y-2 text-sm">
                 <li className="flex justify-between">
-                  <span>Morph AI</span>
+                  <span>Morf AI</span>
                   <span className="font-semibold">{stats.usage_totals.morph_ai}</span>
                 </li>
                 <li className="flex justify-between">

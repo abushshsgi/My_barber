@@ -1,4 +1,4 @@
-"""Morph AI (AI Style) — admin analytics."""
+"""Morf AI (AI Style) — admin analytics."""
 
 from __future__ import annotations
 

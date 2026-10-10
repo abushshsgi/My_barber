@@ -1,4 +1,4 @@
-"""Yagona mijoz dashboard — MySaloon va Morph AI bitta User JWT."""
+"""Yagona mijoz dashboard — MySaloon va Morf AI bitta User JWT."""
 
 from __future__ import annotations
 

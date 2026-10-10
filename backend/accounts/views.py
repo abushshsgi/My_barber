@@ -126,7 +126,7 @@ class MeView(generics.RetrieveUpdateAPIView):
 
 
 class MeDashboardView(APIView):
-    """GET /users/me/dashboard/ — MySaloon va Morph AI uchun yagona profil payload."""
+    """GET /users/me/dashboard/ — MySaloon va Morf AI uchun yagona profil payload."""
 
     permission_classes = [IsAuthenticatedCustomer]
 
@@ -135,7 +135,7 @@ class MeDashboardView(APIView):
 
 
 class SkinProfileMeView(APIView):
-    """GET/PATCH users/me/skin-profile/ — Morph AI INCI skani uchun teri profili."""
+    """GET/PATCH users/me/skin-profile/ — Morf AI INCI skani uchun teri profili."""
 
     permission_classes = [IsAuthenticatedCustomer]
 

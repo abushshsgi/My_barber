@@ -7,7 +7,7 @@ import {
 } from "@/lib/api/ai";
 import { authQueryEnabled } from "@/lib/auth-query";
 import { hasValidUserSession } from "@/lib/api/client";
-import { patchMorphAiPrefs, readMorphAiPrefs } from "@/lib/morph-ai-prefs";
+import { patchMorphAiPrefs, readMorphAiPrefs } from "@/lib/morf-ai-prefs";
 
 export const morphAiPrivacyQueryKey = ["morph-ai", "privacy"] as const;
 

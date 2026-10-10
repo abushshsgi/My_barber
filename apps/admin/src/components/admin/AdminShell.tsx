@@ -156,7 +156,7 @@ const SECTIONS: Section[] = [
   },
   {
     key: "morph",
-    label: "Morph AI",
+    label: "Morf AI",
     icon: Sparkles,
     matchPrefixes: ["/admin/morph-ai"],
     items: [

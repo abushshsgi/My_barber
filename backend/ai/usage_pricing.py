@@ -1,4 +1,4 @@
-"""Gemini / Morph AI token va xarajat hisobi."""
+"""Gemini / Morf AI token va xarajat hisobi."""
 
 from __future__ import annotations
 

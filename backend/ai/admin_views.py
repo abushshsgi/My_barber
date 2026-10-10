@@ -1,4 +1,4 @@
-"""Admin Morph AI API — analytics, catalog, ops, settings."""
+"""Admin Morf AI API — analytics, catalog, ops, settings."""
 
 from __future__ import annotations
 

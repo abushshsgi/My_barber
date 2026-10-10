@@ -27,7 +27,7 @@ import {
   type HairGrowthDensity,
   type HairGrowthForecast,
   type HairGrowthTrackerState,
-} from "../../../lib/morph-ai-care";
+} from "../../../lib/morf-ai-care";
 import type { MyCareProduct } from "../../../lib/morph-my-products";
 import { SOFT_PAPER } from "../../../theme/morph-appearance";
 import { morphFont } from "../../../theme/morph-font";

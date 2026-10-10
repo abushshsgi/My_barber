@@ -20,7 +20,7 @@ const THUMB = 27;
 const PAD = 2;
 const TRAVEL = TRACK_W - THUMB - PAD * 2;
 
-/** iOS 18 uslubidagi pill toggle — Morph AI sozlamalari uchun. */
+/** iOS 18 uslubidagi pill toggle — Morf AI sozlamalari uchun. */
 export function MorphToggle({ value, onChange, disabled }: Props) {
   const { colors: pal } = useMorphAppearance();
   const progress = useSharedValue(value ? 1 : 0);

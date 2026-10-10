@@ -186,7 +186,7 @@ class SubscriptionConfirmView(APIView):
 
 
 class SubscriptionCareAccessView(APIView):
-    """Morph AI Parvarish — faqat Pro (yoki care entitlements)."""
+    """Morf AI Parvarish — faqat Pro (yoki care entitlements)."""
 
     permission_classes = [IsAuthenticatedCustomer]
 
@@ -197,6 +197,6 @@ class SubscriptionCareAccessView(APIView):
                 "allowed": allowed,
                 "detail": None
                 if allowed
-                else "Morph AI Parvarish Pro obunasida mavjud.",
+                else "Morf AI Parvarish Pro obunasida mavjud.",
             }
         )

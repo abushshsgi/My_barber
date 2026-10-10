@@ -9,7 +9,7 @@ import { CareAlbumContent } from "../../components/morph/care/CareAlbumContent";
 import { AppStatusBar } from "../../components/ui/AppStatusBar";
 import { NativeBackButton, NativeBackSpacer } from "../../components/ui/NativeBackButton";
 import { useHideTabBar } from "../../hooks/useHideTabBar";
-import { loadCareQuiz } from "../../lib/morph-ai-care";
+import { loadCareQuiz } from "../../lib/morf-ai-care";
 import { loadMyProducts, type MyCareProduct } from "../../lib/morph-my-products";
 import type { MorphCareStackParamList } from "../../navigation/MorphCareStack";
 import { morphFont } from "../../theme/morph-font";

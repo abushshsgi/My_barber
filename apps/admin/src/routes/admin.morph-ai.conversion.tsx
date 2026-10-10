@@ -21,7 +21,7 @@ function MorphConversionPage() {
     <div className="space-y-6">
       <StatsPageHeader
         title="Konversiya"
-        description="Try-on qilgan mijozlardan nechtasi bron qildi — Morph AI ROI."
+        description="Try-on qilgan mijozlardan nechtasi bron qildi — Morf AI ROI."
         rangeKey={rangeKey}
         onRangeChange={setRangeKey}
       />

@@ -19,7 +19,7 @@ import type { CareProduct } from "../../../api/care";
 import {
   estimateProductFit,
   type CareQuizAnswers,
-} from "../../../lib/morph-ai-care";
+} from "../../../lib/morf-ai-care";
 import { morphFont } from "../../../theme/morph-font";
 import {
   fontSize,

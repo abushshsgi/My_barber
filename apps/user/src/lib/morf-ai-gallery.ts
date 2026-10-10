@@ -5,11 +5,11 @@ import {
   type MorphAiGenerationApi,
 } from "@/lib/api/ai";
 import { resolveMediaUrl } from "@/lib/media-url";
-import { shouldPersistLooksToServer } from "@/lib/morph-ai-prefs";
+import { shouldPersistLooksToServer } from "@/lib/morf-ai-prefs";
 
 const KEY_PREFIX = "mysaloon.morphAi.generations";
 const MAX_ENTRIES = 60;
-export const MORPH_AI_GALLERY_UPDATED_EVENT = "mysaloon:morph-ai-gallery-updated";
+export const MORPH_AI_GALLERY_UPDATED_EVENT = "mysaloon:morf-ai-gallery-updated";
 
 export type MorphAiGeneration = {
   id: string;

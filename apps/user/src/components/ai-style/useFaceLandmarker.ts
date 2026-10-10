@@ -52,7 +52,7 @@ function loadImageLandmarker() {
   return imageLandmarkerPromise;
 }
 
-/** Morph AI ochilganda modelni oldindan yuklash — kamerani kutishni qisqartiradi. */
+/** Morf AI ochilganda modelni oldindan yuklash — kamerani kutishni qisqartiradi. */
 export function prefetchFaceLandmarker() {
   if (typeof window === "undefined") return;
   void loadVideoLandmarker().catch(() => undefined);

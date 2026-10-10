@@ -365,7 +365,7 @@ function ConfirmSheet({
   );
 }
 
-/** Morf AI sozlamalari — ko'rinish, limit, maxfiylik, ovoz. Chat va butun Morph AI uchun. */
+/** Morf AI sozlamalari — ko'rinish, limit, maxfiylik, ovoz. Chat va butun Morf AI uchun. */
 export function MorphChatSettingsScreen({
   limits,
   threadCount,

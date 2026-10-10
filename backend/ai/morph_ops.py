@@ -1,4 +1,4 @@
-"""Morph AI admin — errors, popularity, conversion, budget, queue, export."""
+"""Morf AI admin — errors, popularity, conversion, budget, queue, export."""
 
 from __future__ import annotations
 
@@ -597,9 +597,9 @@ def check_user_can_generate(*, user_id: int | None, kind: str) -> str | None:
     """
     s = MorphAiSettings.load()
     if kind in ("tryon", "studio") and not s.tryon_enabled:
-        return "Morph AI hozir ishlamayapti."
+        return "Morf AI hozir ishlamayapti."
     if kind in ("analyze", "face_check", "chat") and not s.analyze_enabled:
-        return "Morph AI hozir ishlamayapti."
+        return "Morf AI hozir ishlamayapti."
 
     if not user_id:
         return None
@@ -613,7 +613,7 @@ def check_user_can_generate(*, user_id: int | None, kind: str) -> str | None:
             return check_morph_entitlement(user=user, kind="chat")
         return None
 
-    # B2C obuna — Morph AI uchun majburiy + oylik tarif limiiti
+    # B2C obuna — Morf AI uchun majburiy + oylik tarif limiiti
     if kind in ("tryon", "studio", "analyze", "face_check"):
         from accounts.models import User
         from subscriptions.services import check_morph_entitlement
@@ -632,7 +632,7 @@ def is_morph_plan_limit_message(message: str) -> bool:
         "Oylik Morph",
         "Bepul Morph",
         "Bepul Morf",
-        "Morph AI faqat obuna",
+        "Morf AI faqat obuna",
         "obuna",
         "Studio Plus",
         "Bu reja Morph",

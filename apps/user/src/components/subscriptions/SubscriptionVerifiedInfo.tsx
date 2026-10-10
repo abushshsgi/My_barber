@@ -47,7 +47,7 @@ function VerifiedInfoBody({
     {
       icon: Wand2,
       text: t("subscriptionVerified.perkMorph", {
-        defaultValue: "Morph AI try-on va uslub generatsiyasi.",
+        defaultValue: "Morf AI try-on va uslub generatsiyasi.",
       }),
     },
     {
@@ -83,7 +83,7 @@ function VerifiedInfoBody({
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
             {t("subscriptionVerified.body", {
               defaultValue:
-                "Galochka Mysaloon obunasini bildiradi. U Morph AI, yuqori limitlar va profil belgisiga ega — siz ham shunday bo‘lishingiz mumkin.",
+                "Galochka Mysaloon obunasini bildiradi. U Morf AI, yuqori limitlar va profil belgisiga ega — siz ham shunday bo‘lishingiz mumkin.",
             })}
           </p>
         </div>
@@ -177,7 +177,7 @@ export function SubscriptionVerifiedInfoTrigger({
   });
   const subtitle = t("subscriptionVerified.body", {
     defaultValue:
-      "Galochka Mysaloon obunasini bildiradi. U Morph AI, yuqori limitlar va profil belgisiga ega — siz ham shunday bo‘lishingiz mumkin.",
+      "Galochka Mysaloon obunasini bildiradi. U Morf AI, yuqori limitlar va profil belgisiga ega — siz ham shunday bo‘lishingiz mumkin.",
   });
 
   if (isMobile) {

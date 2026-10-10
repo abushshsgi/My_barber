@@ -130,7 +130,7 @@ function MorphSupportPage() {
         ) : data.length === 0 ? (
           <EmptyState
             title="Murojaat yo'q"
-            description="Bu filterda Morph AI yordam yoki muammo xabari yo'q."
+            description="Bu filterda Morf AI yordam yoki muammo xabari yo'q."
           />
         ) : (
           <div className="divide-y divide-border">

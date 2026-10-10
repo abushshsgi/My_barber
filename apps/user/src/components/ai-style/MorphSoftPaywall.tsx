@@ -22,7 +22,7 @@ export function MorphSoftPaywall({ className, previewUrl }: Props) {
   const discountHint =
     offer?.eligible === true
       ? `Yangi hisob: tariflarga −${offer.discount_pct}%.`
-      : "Obuna bilan Morph AI to‘liq ochiladi.";
+      : "Obuna bilan Morf AI to‘liq ochiladi.";
 
   return (
     <section className={cn("space-y-3", className)}>
@@ -47,7 +47,7 @@ export function MorphSoftPaywall({ className, previewUrl }: Props) {
               <Lock className="size-5" strokeWidth={1.75} />
             </span>
             <p className="mt-3 text-[11px] font-bold uppercase tracking-[0.2em] text-background/50">
-              Morph AI
+              Morf AI
             </p>
             <h3 className="mt-1.5 max-w-sm text-lg font-bold leading-snug tracking-tight">
               {t("aiStylePage.softPaywall.title", {

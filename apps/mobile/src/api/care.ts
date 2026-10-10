@@ -516,7 +516,7 @@ export async function generateHairGrowthForecast(body: {
       throw new Error(
         data && typeof data.detail === "string"
           ? data.detail
-          : "Morph AI Parvarish Pro obunasida mavjud.",
+          : "Morf AI Parvarish Pro obunasida mavjud.",
       );
     }
     if (res.status === 502 || res.status === 503 || res.status === 504) {

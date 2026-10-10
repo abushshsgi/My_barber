@@ -170,10 +170,10 @@ function MorphLimitUpsellBody({
             : refGenOn
             ? t("aiStylePage.limitSheet.descLocked", {
                 defaultValue:
-                  "Yangi hisobda Morph AI ishlamaydi. 1 ta do'stni taklif qilsangiz — 1 generatsiya, yoki obuna sotib oling.",
+                  "Yangi hisobda Morf AI ishlamaydi. 1 ta do'stni taklif qilsangiz — 1 generatsiya, yoki obuna sotib oling.",
               })
             : t("aiStylePage.limitSheet.descLockedSubOnly", {
-                defaultValue: "Yangi hisobda Morph AI ishlamaydi. Obuna sotib oling.",
+                defaultValue: "Yangi hisobda Morf AI ishlamaydi. Obuna sotib oling.",
               })}
         </p>
       ) : null}

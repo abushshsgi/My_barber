@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { useSubscriptionMe } from "@/hooks/use-subscription";
 import { cn } from "@/lib/utils";
 
-/** Compact Morph AI usage meter for Morph home / explore. */
+/** Compact Morf AI usage meter for Morph home / explore. */
 export function MorphLimitMeter({
   className,
   tone = "auto",
@@ -45,7 +45,7 @@ export function MorphLimitMeter({
             oled ? "text-white/45" : "text-muted-foreground",
           )}
         >
-          Morph AI
+          Morf AI
         </span>
         <span className={cn("tabular-nums", oled ? "text-white" : "text-foreground")}>
           {remaining}/{limit} qoldi

@@ -1,6 +1,6 @@
 import { getActiveUserId, loadFaceProfileHistory } from "@/lib/face-profile";
 import { loadSavedAiStyles } from "@/lib/saved-ai-styles";
-import { loadMorphAiGenerations } from "@/lib/morph-ai-gallery";
+import { loadMorphAiGenerations } from "@/lib/morf-ai-gallery";
 
 const ONBOARD_KEY_PREFIX = "mysaloon.morphAi.onboarded";
 const INTRO_KEY_PREFIX = "mysaloon.morphAi.introSeen";

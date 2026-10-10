@@ -560,7 +560,7 @@ class AiIngredientScanView(UnthrottledAPIView):
 
         if not can_use_morph_care(user):
             return Response(
-                {"detail": "Morph AI Parvarish Pro obunasida mavjud."},
+                {"detail": "Morf AI Parvarish Pro obunasida mavjud."},
                 status=status.HTTP_403_FORBIDDEN,
             )
 
@@ -762,7 +762,7 @@ def _voice_feature_blocked(user) -> Response | None:
 
     s = MorphAiSettings.load()
     if not s.analyze_enabled:
-        return morph_generation_blocked_response("Morph AI hozir ishlamayapti.")
+        return morph_generation_blocked_response("Morf AI hozir ishlamayapti.")
     blocked = check_morph_entitlement(user=user, kind="voice")
     if blocked:
         return morph_generation_blocked_response(blocked)
@@ -1438,7 +1438,7 @@ class MorphAiGenerationListCreateView(UnthrottledAPIView):
 
 
 class MorphAiPrivacyView(UnthrottledAPIView):
-    """GET/PATCH — Morph AI maxfiylik, limit va ma'lumotlar hisobi."""
+    """GET/PATCH — Morf AI maxfiylik, limit va ma'lumotlar hisobi."""
 
     permission_classes = [IsAuthenticated]
 

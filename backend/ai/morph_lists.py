@@ -1,4 +1,4 @@
-"""Morph AI admin — paginated full-history lists + CSV export."""
+"""Morf AI admin — paginated full-history lists + CSV export."""
 
 from __future__ import annotations
 

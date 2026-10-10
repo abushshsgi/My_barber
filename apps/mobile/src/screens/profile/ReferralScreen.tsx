@@ -94,7 +94,7 @@ export function ReferralScreen({ navigation }: Props) {
           <Text style={styles.heroTitle}>Do&apos;stingizni chaqiring</Text>
           <Text style={styles.heroSub}>
             {refGenOn
-              ? "Yangi foydalanuvchi sizning kodingiz bilan kirsa, sizga 1 Morph AI generatsiya krediti beriladi. Yoki obuna oling."
+              ? "Yangi foydalanuvchi sizning kodingiz bilan kirsa, sizga 1 Morf AI generatsiya krediti beriladi. Yoki obuna oling."
               : "Do'stlaringizni MySaloon ga taklif qiling. Kodingizni ulashing."}
           </Text>
         </View>

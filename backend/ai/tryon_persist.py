@@ -28,7 +28,7 @@ def persist_tryon_generation(
     title: str = "",
     persona_id: str = "",
 ) -> MorphAiGenerationEntry | None:
-    """Try-on natijasini Morph AI history (MorphAiGenerationEntry) ga yozadi."""
+    """Try-on natijasini Morf AI history (MorphAiGenerationEntry) ga yozadi."""
     from .models import GENERATION_HISTORY_MAX_PER_USER, MorphAiGenerationEntry
 
     after_raw = (after_image or "").strip()

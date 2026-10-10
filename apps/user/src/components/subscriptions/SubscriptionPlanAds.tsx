@@ -237,7 +237,7 @@ export function SubscriptionPlanAds({
   );
 }
 
-/** Morph AI — yangi user chegirma yoki faol user upgrade. */
+/** Morf AI — yangi user chegirma yoki faol user upgrade. */
 export function SubscriptionPromoBanner({
   onNavigate,
   className,

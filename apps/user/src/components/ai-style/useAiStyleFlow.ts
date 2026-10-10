@@ -12,8 +12,8 @@ import {
   saveFaceProfile,
 } from "@/lib/face-profile";
 import type { FaceShapeKey } from "@/components/ai-style/ai-style-shared";
-import { refreshMorphAiGenerationsCache, saveMorphAiGeneration } from "@/lib/morph-ai-gallery";
-import { markMorphAiOnboarded } from "@/lib/morph-ai-session";
+import { refreshMorphAiGenerationsCache, saveMorphAiGeneration } from "@/lib/morf-ai-gallery";
+import { markMorphAiOnboarded } from "@/lib/morf-ai-session";
 import type { ExplorePersonaId } from "@/lib/explore-personas";
 import { detectFaceMetricsFromDataUrl } from "@/components/ai-style/useFaceLandmarker";
 import { prepareSelfieDataUrl, prepareSelfieFromFile } from "@/lib/selfie-image";
@@ -46,7 +46,7 @@ function formatAiRequestError(error: unknown, fallback: string): string {
     return raw;
   }
   if (isMorphRateLimitMessage(raw)) {
-    return "Morph AI hozir ishlamayapti. Keyinroq urinib ko'ring.";
+    return "Morf AI hozir ishlamayapti. Keyinroq urinib ko'ring.";
   }
   return raw.replace(/\s*Expected available in \d+ seconds?\./gi, "").trim() || raw;
 }

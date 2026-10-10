@@ -166,7 +166,7 @@ export function SubscriptionsScreen({ navigation }: Props) {
         refreshControl={<RefreshControl refreshing={loading} onRefresh={refresh} />}
       >
         <Text style={styles.subtitle}>
-          Morph AI va premium imkoniyatlar. Joriy obuna, tariflar va hamyondan to'lov.
+          Morf AI va premium imkoniyatlar. Joriy obuna, tariflar va hamyondan to'lov.
         </Text>
 
         {/* Joriy obuna */}
@@ -206,7 +206,7 @@ export function SubscriptionsScreen({ navigation }: Props) {
               {usage ? (
                 <View style={styles.usageBox}>
                   <Text style={styles.usageLine}>
-                    Morph AI: {usage.morph_ai_used}/{usage.morph_ai_limit}
+                    Morf AI: {usage.morph_ai_used}/{usage.morph_ai_limit}
                   </Text>
                   <Text style={styles.usageLine}>
                     Studio: {usage.morph_studio_used}/{usage.morph_studio_limit}
@@ -216,7 +216,7 @@ export function SubscriptionsScreen({ navigation }: Props) {
             </>
           ) : (
             <Text style={styles.emptyCurrent}>
-              Yo'q — Morph AI yopiq. Tarif tanlab obuna bo'ling.
+              Yo'q — Morf AI yopiq. Tarif tanlab obuna bo'ling.
             </Text>
           )}
         </View>

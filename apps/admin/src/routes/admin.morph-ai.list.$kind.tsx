@@ -36,7 +36,7 @@ const KIND_META: Record<
 > = {
   generations: {
     title: "Barcha generatsiyalar",
-    description: "Morph AI so'rovlari — boshidan oxirigacha.",
+    description: "Morf AI so'rovlari — boshidan oxirigacha.",
     usesRange: true,
   },
   spenders: {
@@ -153,7 +153,7 @@ function MorphAiListPage() {
     return (
       <EmptyState
         title="Noma'lum ro'yxat"
-        description="Bu Morph AI ro'yxat turi mavjud emas."
+        description="Bu Morf AI ro'yxat turi mavjud emas."
       />
     );
   }

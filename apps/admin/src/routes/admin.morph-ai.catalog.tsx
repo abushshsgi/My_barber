@@ -147,7 +147,7 @@ function MorphCatalogPage() {
         <div>
           <h1 className="font-heading text-2xl font-semibold">Hairstyle katalog</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Publish, tartib va uslub meta — Explore / Morph AI katalogi
+            Publish, tartib va uslub meta — Explore / Morf AI katalogi
           </p>
         </div>
         <Button type="button" onClick={openCreate}>

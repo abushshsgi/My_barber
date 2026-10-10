@@ -37,7 +37,7 @@ export function AccountCreatingScreen({
     return [
       "Profil yaratilmoqda",
       "Sozlamalar sinxronlanmoqda",
-      "Morph AI tayyorlanmoqda",
+      "Morf AI tayyorlanmoqda",
       "Deyarli tayyor",
     ];
   }, [t]);

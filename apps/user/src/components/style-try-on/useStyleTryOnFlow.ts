@@ -6,8 +6,8 @@ import { isMorphPlanLimitError } from "@/lib/morph-plan-limit";
 import {
   refreshMorphAiGenerationsCache,
   saveMorphAiGeneration,
-} from "@/lib/morph-ai-gallery";
-import { markMorphAiOnboarded } from "@/lib/morph-ai-session";
+} from "@/lib/morf-ai-gallery";
+import { markMorphAiOnboarded } from "@/lib/morf-ai-session";
 import { prepareSelfieDataUrl, prepareSelfieFromFile } from "@/lib/selfie-image";
 
 type UseStyleTryOnFlowOptions = {

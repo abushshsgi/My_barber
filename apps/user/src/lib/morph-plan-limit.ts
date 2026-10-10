@@ -25,7 +25,7 @@ export function isMorphPlanLimitError(error: unknown): error is MorphPlanLimitEr
 
 /** Server detail — obuna/oylik kvota (DRF throttle emas). */
 export function isMorphPlanLimitMessage(message: string): boolean {
-  return /Oylik Morph|Oylik Morf|Bepul Morph|Bepul Morf|Morph AI faqat obuna|obuna|Studio Plus|Bu reja Morph|do'stingizni taklif|Tarifni yangilang|Plus\/Pro|chat token/i.test(
+  return /Oylik Morph|Oylik Morf|Bepul Morph|Bepul Morf|Morf AI faqat obuna|obuna|Studio Plus|Bu reja Morph|do'stingizni taklif|Tarifni yangilang|Plus\/Pro|chat token/i.test(
     message,
   );
 }
@@ -59,7 +59,7 @@ export function morphChatTokensBlocked(usage: SubscriptionUsage): boolean {
   return (usage.morph_chat_tokens_remaining ?? 0) < 200;
 }
 
-/** Yangi user — faol obuna (yoki trial) bo'lmasa Morph AI yopiq. */
+/** Yangi user — faol obuna (yoki trial) bo'lmasa Morf AI yopiq. */
 export function morphAccessBlocked(me: SubscriptionMe | null | undefined): boolean {
   if (!me) return true;
   if (me.access && typeof me.access.morph_ai_allowed === "boolean") {
@@ -89,7 +89,7 @@ export function throwFromMorphApiError(res: Response, body: unknown, fallback: s
 
   if (res.status === 429 && isMorphRateLimitMessage(detail)) {
     // Soatlik / Google rate-limit — userga "kutish" ogohlantiruvi ko'rsatilmaydi.
-    throw new Error("Morph AI hozir ishlamayapti. Keyinroq urinib ko'ring.");
+    throw new Error("Morf AI hozir ishlamayapti. Keyinroq urinib ko'ring.");
   }
 
   throw new Error(detail);

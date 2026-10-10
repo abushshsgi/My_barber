@@ -45,7 +45,7 @@ import {
   type CareQuizAnswers,
   type RoutineSlot,
   type RoutineTask,
-} from "../../../lib/morph-ai-care";
+} from "../../../lib/morf-ai-care";
 import { scheduleCareReminders } from "../../../lib/care-reminders";
 import {
   loadMyProducts,

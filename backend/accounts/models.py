@@ -153,7 +153,7 @@ class FamilyMember(models.Model):
 
 
 class SkinProfile(models.Model):
-    """Mijoz teri profili — Morph AI kosmetika INCI skani uchun."""
+    """Mijoz teri profili — Morf AI kosmetika INCI skani uchun."""
 
     class SkinType(models.TextChoices):
         DRY = "dry", "Dry"

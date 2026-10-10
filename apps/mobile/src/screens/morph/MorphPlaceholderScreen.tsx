@@ -17,7 +17,7 @@ type Props = {
   icon?: keyof typeof Ionicons.glyphMap;
 };
 
-/** Morph AI tab placeholder — qorong‘u uslub. */
+/** Morf AI tab placeholder — qorong‘u uslub. */
 export function MorphPlaceholderScreen({
   title,
   subtitle,

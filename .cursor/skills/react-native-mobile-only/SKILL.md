@@ -3,7 +3,7 @@ name: react-native-mobile-only
 description: >-
   Barcha joriy feature/bugfix/UI ishlari faqat React Native ilova (apps/mobile)
   uchun qilinadi — apps/user, apps/admin, apps/barber webga tegilmaydi.
-  Use when implementing Morph AI, face check, selfie upload, toast/notification
+  Use when implementing Morf AI, face check, selfie upload, toast/notification
   animations, try-on, Expo, React Native screens, or any product work the user
   describes while targeting the mobile app; also when the user says mobile,
   React Native, Expo, apps/mobile, yoki "web emas".
@@ -24,7 +24,7 @@ description: >-
 1. Avval `apps/mobile/src/` ichida tegishli screen/hook/api ni top.
 2. UI: React Native (`View`, `Text`, `Animated`, `Pressable`) — web Sonner/shadcn emas.
 3. Toast/ogohlantirish: mobil ichidagi banner/`Animated` slide-in (yuqoridan) + auto dismiss; `Alert` faqat ruxsat/system holatlarida.
-4. Morph AI yuz tekshiruvi: `apps/mobile/src/api/ai.ts` (`checkAiStyleFace`) + `MorphResultsScreen` / capture oqimi.
+4. Morf AI yuz tekshiruvi: `apps/mobile/src/api/ai.ts` (`checkAiStyleFace`) + `MorphResultsScreen` / capture oqimi.
 5. Xato matni foydalanuvchiga tushunarli bo‘lsin — `API 400:` kabi prefikslarni ko‘rsatma.
 
 ## Tez yo‘l xaritasi

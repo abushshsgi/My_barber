@@ -31,7 +31,7 @@ from subscriptions.plans import (
 
 
 def referral_generation_enabled() -> bool:
-    """Admin Morph AI sozlamasi: 1 referal = 1 generatsiya."""
+    """Admin Morf AI sozlamasi: 1 referal = 1 generatsiya."""
     try:
         from ai.models import MorphAiSettings
 
@@ -548,7 +548,7 @@ def can_use_morph_voice(user: User) -> bool:
 
 def check_morph_entitlement(*, user: User, kind: str) -> str | None:
     """
-    Morph AI:
+    Morf AI:
     - analyze / face_check — obunasiz ochiq (tahlil → keyin generatsiya paywall).
     - chat — obunasiz bir martalik 10k token; tugagach obuna majburiy.
     - voice — faqat faol pullik obuna.
@@ -603,7 +603,7 @@ def check_morph_entitlement(*, user: User, kind: str) -> str | None:
         ents = sub.entitlements or entitlement_snapshot(sub.plan_code)
         limit = int(ents.get("morph_studio_monthly") or 0)
         if limit <= 0:
-            return "Morph AI Studio Plus yoki Pro obunasida mavjud."
+            return "Morf AI Studio Plus yoki Pro obunasida mavjud."
         if usage.morph_studio_used >= limit:
             log_event(
                 action=SubscriptionEvent.Action.LIMIT_HIT,
@@ -611,7 +611,7 @@ def check_morph_entitlement(*, user: User, kind: str) -> str | None:
                 subscription=sub,
                 detail={"kind": "morph_studio", "used": usage.morph_studio_used, "limit": limit},
             )
-            return f"Oylik Morph AI Studio limiti tugadi ({limit}/{limit}). Tarifni yangilang."
+            return f"Oylik Morf AI Studio limiti tugadi ({limit}/{limit}). Tarifni yangilang."
         return None
 
     # tryon
@@ -620,7 +620,7 @@ def check_morph_entitlement(*, user: User, kind: str) -> str | None:
         ents = sub.entitlements or entitlement_snapshot(sub.plan_code)
         limit = int(ents.get("morph_ai_monthly") or 0)
         if limit <= 0:
-            return "Bu reja Morph AI generatsiyasini qo'llab-quvvatlamaydi. Tarifni yangilang."
+            return "Bu reja Morf AI generatsiyasini qo'llab-quvvatlamaydi. Tarifni yangilang."
         if usage.morph_ai_used >= limit:
             log_event(
                 action=SubscriptionEvent.Action.LIMIT_HIT,
@@ -629,7 +629,7 @@ def check_morph_entitlement(*, user: User, kind: str) -> str | None:
                 detail={"kind": "morph_ai", "used": usage.morph_ai_used, "limit": limit},
             )
             return (
-                f"Oylik Morph AI limiti tugadi ({limit}/{limit}). "
+                f"Oylik Morf AI limiti tugadi ({limit}/{limit}). "
                 + (
                     "Tarifni yangilang yoki do'st taklif qilib kredit oling."
                     if referral_generation_enabled()

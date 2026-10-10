@@ -25,7 +25,7 @@ import {
   MORPH_AI_GALLERY_UPDATED_EVENT,
   refreshMorphAiGenerationsCache,
   type MorphAiGeneration,
-} from "@/lib/morph-ai-gallery";
+} from "@/lib/morf-ai-gallery";
 import { MobileBackButton } from "@/components/mobile/MobileBackButton";
 import { navigateBack } from "@/lib/mobile-back";
 import { APP_SHELL_DEFAULT_MYSALOON, writeAppShell } from "@/lib/app-shell";
@@ -86,7 +86,7 @@ function MarqueeRow({
             key={`${entry.id}-${i}`}
             to="/explore/$styleId"
             params={{ styleId: entry.id }}
-            className="group relative h-[8.75rem] w-[6.5rem] shrink-0 cursor-pointer overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.03] md:h-40 md:w-[7.5rem]"
+            className="group relative h-[8.75rem] w-[6.5rem] shrink-0 cursor-pointer overflow-hidden rounded-2xl border border-black/[0.06] bg-white/[0.03] md:h-44 md:w-32 lg:h-52 lg:w-40 lg:rounded-3xl"
           >
             <img
               src={entry.image}
@@ -95,7 +95,7 @@ function MarqueeRow({
               draggable={false}
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent" />
-            <p className="absolute inset-x-0 bottom-0 truncate px-2 pb-2 text-[10px] font-semibold text-[#111111]/90">
+            <p className="absolute inset-x-0 bottom-0 truncate px-2 pb-2 text-[10px] font-semibold text-white md:text-[11px] lg:px-3 lg:pb-2.5 lg:text-xs">
               {entry.title}
             </p>
           </Link>
@@ -192,7 +192,7 @@ export function MorphAiHome({
         image: g.previewImage,
         styleId: g.styleId,
       });
-      if (out.length >= 8) break;
+      if (out.length >= 12) break;
     }
     return out;
   }, [generations]);
@@ -264,8 +264,11 @@ export function MorphAiHome({
     },
   ] as const;
 
+  const homeShell =
+    "mx-auto w-full max-w-lg sm:max-w-xl md:max-w-4xl lg:max-w-[1200px] xl:max-w-[1280px]";
+
   const iconBtn =
-    "grid size-10 place-items-center rounded-full bg-[#F0F0F0] text-[#111111]/90 ring-1 ring-black/10 transition-colors duration-200 cursor-pointer active:bg-[#F0F0F0]";
+    "grid size-10 place-items-center rounded-full bg-[#F0F0F0] text-[#111111]/90 ring-1 ring-black/10 transition-colors duration-200 cursor-pointer hover:bg-white active:bg-[#F0F0F0] md:size-11";
 
   return (
     <div className="relative min-h-0 flex-1 touch-pan-y overflow-y-auto overscroll-y-contain bg-[#FAFAFA] text-[#111111] no-scrollbar [-webkit-overflow-scrolling:touch]">
@@ -306,39 +309,46 @@ export function MorphAiHome({
       />
 
       <header
-        className="sticky top-0 z-20 flex items-center gap-1.5 px-4 pb-2"
+        className="sticky top-0 z-20 bg-[#FAFAFA]/85 backdrop-blur-md"
         style={{ paddingTop: "max(0.65rem, env(safe-area-inset-top))" }}
       >
-        <MobileBackButton
-          onClick={() => {
-            navigateBack(router, "/ai-style");
-          }}
-          className="border-black/10 bg-[#F0F0F0] text-[#111111] hover:bg-white/15"
-          aria-label={t("common.back")}
-        />
-        <div className="min-w-0 flex-1" />
-        <Link
-          to="/ai-style/history"
-          className={iconBtn}
-          aria-label={t("aiStylePage.historyButton")}
-        >
-          <Clock3 className="size-[17px]" strokeWidth={2} />
-        </Link>
-        <Link to="/profile" className={iconBtn} aria-label={t("nav.profile")}>
-          <UserRound className="size-[17px]" strokeWidth={2} />
-        </Link>
+        <div className={cn(homeShell, "flex items-center gap-1.5 px-5 pb-2 md:px-8 lg:px-0")}>
+          <MobileBackButton
+            onClick={() => {
+              navigateBack(router, "/ai-style");
+            }}
+            className="border-black/10 bg-[#F0F0F0] text-[#111111] hover:bg-white/15"
+            aria-label={t("common.back")}
+          />
+          <div className="min-w-0 flex-1" />
+          <Link
+            to="/ai-style/history"
+            className={iconBtn}
+            aria-label={t("aiStylePage.historyButton")}
+          >
+            <Clock3 className="size-[17px]" strokeWidth={2} />
+          </Link>
+          <Link to="/profile" className={iconBtn} aria-label={t("nav.profile")}>
+            <UserRound className="size-[17px]" strokeWidth={2} />
+          </Link>
+        </div>
       </header>
 
-      <div className="relative z-[1] mx-auto flex w-full max-w-lg flex-col px-5 pb-[max(6rem,calc(env(safe-area-inset-bottom)+5rem))] pt-6 md:max-w-2xl md:px-8 md:pt-10">
+      <div
+        className={cn(
+          homeShell,
+          "relative z-[1] flex flex-col px-5 pb-[max(6rem,calc(env(safe-area-inset-bottom)+5rem))] pt-6 md:px-8 md:pt-8 lg:px-0 lg:pb-12 lg:pt-4",
+        )}
+      >
         <motion.section
           initial={reduceMotion ? false : { opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-          className="flex flex-col items-center text-center"
+          className="flex flex-col items-center text-center lg:flex-row lg:items-center lg:gap-8 lg:text-left"
         >
           <motion.div
             aria-hidden
-            className="relative mb-5 grid size-14 place-items-center rounded-[22px] bg-white text-[#050505] shadow-[0_0_40px_-8px_rgba(255,255,255,0.35)]"
+            className="relative mb-5 grid size-14 shrink-0 place-items-center rounded-[22px] bg-white text-[#050505] shadow-[0_0_40px_-8px_rgba(255,255,255,0.35)] md:size-16 lg:mb-0 lg:size-[4.5rem] lg:rounded-[26px]"
             animate={
               reduceMotion
                 ? undefined
@@ -352,22 +362,22 @@ export function MorphAiHome({
             }
             transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut" }}
           >
-            <Sparkles className="size-6" strokeWidth={1.75} />
+            <Sparkles className="size-6 md:size-7 lg:size-8" strokeWidth={1.75} />
             {!morphLocked && remaining != null && limit != null && limit > 0 ? (
               <LimitBadge remaining={remaining} limit={limit} />
             ) : null}
           </motion.div>
 
-          <p className="max-w-[18rem] text-[13px] leading-snug text-[#111111]/55 md:text-[14px]">
+          <p className="max-w-[18rem] text-[13px] leading-snug text-[#111111]/55 sm:max-w-xs sm:text-sm md:max-w-md md:text-[15px] lg:min-w-0 lg:max-w-xl lg:flex-1 lg:text-base lg:leading-relaxed">
             {t("aiStylePage.home.subtitle")}
           </p>
 
           <button
             type="button"
             onClick={onStartNew}
-            className="relative mt-6 flex h-12 w-full max-w-sm cursor-pointer items-center gap-3 rounded-full bg-white px-2 pl-5 text-left text-[#050505] transition-opacity duration-200 active:opacity-90 md:h-14"
+            className="relative mt-6 flex h-12 w-full max-w-sm shrink-0 cursor-pointer items-center gap-3 rounded-full bg-white px-2 pl-5 text-left text-[#050505] shadow-sm ring-1 ring-black/[0.06] transition-opacity duration-200 hover:bg-[#F7F7F7] active:opacity-90 md:mt-7 md:h-[3.25rem] md:max-w-md lg:ml-auto lg:mt-0 lg:h-14 lg:w-[22rem] lg:max-w-none"
           >
-            <span className="min-w-0 flex-1 truncate text-[13px] font-semibold">
+            <span className="min-w-0 flex-1 truncate text-[13px] font-semibold md:text-sm lg:text-[15px]">
               {t("aiStylePage.home.newLook")}
             </span>
             <span className="grid size-9 shrink-0 place-items-center rounded-full bg-[#FAFAFA] text-[#111111]">
@@ -380,7 +390,7 @@ export function MorphAiHome({
           initial={reduceMotion ? false : { opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.08, duration: 0.35, ease: "easeOut" }}
-          className="mt-8 grid grid-cols-5 gap-1.5"
+          className="mt-8 grid grid-cols-5 gap-1.5 sm:gap-2 md:mt-10 md:gap-3 lg:mt-12 lg:gap-4"
         >
           {toolActions.map((action, i) => {
             const Icon = action.icon;
@@ -392,12 +402,12 @@ export function MorphAiHome({
                 initial={reduceMotion ? false : { opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 + i * 0.05, duration: 0.3, ease: "easeOut" }}
-                className="flex cursor-pointer flex-col items-center gap-2 rounded-2xl px-1 py-2 transition-colors duration-200 active:bg-white/[0.05]"
+                className="flex cursor-pointer flex-col items-center gap-2 rounded-2xl px-1 py-2 transition-colors duration-200 active:bg-white/[0.05] md:gap-2.5 md:py-3 lg:gap-3 lg:rounded-3xl lg:bg-white lg:px-3 lg:py-5 lg:shadow-[0_10px_30px_-18px_rgba(0,0,0,0.28)] lg:ring-1 lg:ring-black/[0.06] lg:hover:bg-[#F7F7F7]"
               >
-                <span className="grid size-12 place-items-center rounded-2xl bg-[#F0F0F0] ring-1 ring-black/10">
-                  <Icon className="size-[18px] text-[#111111]" strokeWidth={1.75} />
+                <span className="grid size-12 place-items-center rounded-2xl bg-[#F0F0F0] ring-1 ring-black/10 md:size-14 lg:size-[3.75rem] lg:rounded-[22px] lg:bg-[#F4F4F4] lg:ring-0">
+                  <Icon className="size-[18px] text-[#111111] md:size-5 lg:size-[22px]" strokeWidth={1.75} />
                 </span>
-                <span className="line-clamp-2 text-center text-[10px] font-medium leading-tight text-[#111111]/50">
+                <span className="line-clamp-2 text-center text-[10px] font-medium leading-tight text-[#111111]/50 md:text-[11px] lg:text-[13px] lg:text-[#111111]/70">
                   {action.label}
                 </span>
               </motion.button>
@@ -421,21 +431,21 @@ export function MorphAiHome({
             initial={reduceMotion ? false : { opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.18, duration: 0.35, ease: "easeOut" }}
-            className="mt-8"
+            className="mt-8 md:mt-10 lg:mt-12"
           >
             <div className="mb-3 flex items-center justify-between">
-              <p className="text-[12px] font-semibold text-[#111111]/80">
+              <p className="text-[12px] font-semibold text-[#111111]/80 md:text-[13px] lg:text-sm">
                 {t("aiStylePage.home.myLooksTitle")}
               </p>
               <button
                 type="button"
                 onClick={openHistory}
-                className="cursor-pointer text-[12px] font-medium text-[#111111]/40 transition-colors duration-200 hover:text-[#111111]/70"
+                className="cursor-pointer text-[12px] font-medium text-[#111111]/40 transition-colors duration-200 hover:text-[#111111]/70 md:text-[13px]"
               >
                 {t("aiStylePage.historyViewAll")}
               </button>
             </div>
-            <div className="no-scrollbar -mx-5 flex gap-2.5 overflow-x-auto px-5">
+            <div className="no-scrollbar -mx-5 flex gap-2.5 overflow-x-auto px-5 md:-mx-8 md:gap-3 md:px-8 lg:mx-0 lg:gap-4 lg:px-0">
               {myLooks.map((look, i) => (
                 <motion.button
                   key={look.id}
@@ -444,7 +454,7 @@ export function MorphAiHome({
                   initial={reduceMotion ? false : { opacity: 0, scale: 0.92 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: 0.05 * i, duration: 0.25 }}
-                  className="relative h-[4.5rem] w-[4.5rem] shrink-0 cursor-pointer overflow-hidden rounded-full ring-1 ring-black/10 active:opacity-85"
+                  className="relative h-[4.5rem] w-[4.5rem] shrink-0 cursor-pointer overflow-hidden rounded-full ring-1 ring-black/10 transition-opacity hover:opacity-90 active:opacity-85 md:h-20 md:w-20 lg:h-24 lg:w-24"
                   aria-label={look.title}
                 >
                   <img src={look.image} alt="" className="h-full w-full object-cover object-top" />
@@ -458,15 +468,15 @@ export function MorphAiHome({
           initial={reduceMotion ? false : { opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.22, duration: 0.4, ease: "easeOut" }}
-          className="mt-9"
+          className="mt-9 md:mt-12 lg:mt-14"
         >
           <div className="mb-3 flex items-center justify-between px-0.5">
-            <p className="text-[12px] font-semibold text-[#111111]/80">
+            <p className="text-[12px] font-semibold text-[#111111]/80 md:text-[13px] lg:text-sm">
               {t("aiStylePage.home.samplesTitle")}
             </p>
             <Link
               to="/explore"
-              className="inline-flex cursor-pointer items-center gap-0.5 text-[12px] font-medium text-[#111111]/40 transition-colors duration-200 hover:text-[#111111]/70"
+              className="inline-flex cursor-pointer items-center gap-0.5 text-[12px] font-medium text-[#111111]/40 transition-colors duration-200 hover:text-[#111111]/70 md:text-[13px]"
             >
               {t("nav.explore")}
               <ArrowUpRight className="size-3.5" />
@@ -480,7 +490,7 @@ export function MorphAiHome({
                   {Array.from({ length: 4 }).map((_, i) => (
                     <div
                       key={i}
-                      className="h-[8.75rem] w-[6.5rem] shrink-0 animate-pulse rounded-2xl bg-[#F0F0F0]"
+                      className="h-[8.75rem] w-[6.5rem] shrink-0 animate-pulse rounded-2xl bg-[#F0F0F0] md:h-44 md:w-32 lg:h-52 lg:w-40 lg:rounded-3xl"
                     />
                   ))}
                 </div>

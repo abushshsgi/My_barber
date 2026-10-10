@@ -16,14 +16,14 @@ import { useExplorePersona } from "@/hooks/use-explore-persona";
 import { useHairstyle } from "@/hooks/use-hairstyles";
 import { getHairstyleImageUrl } from "@/lib/hairstyles/catalog";
 import { prefetchFaceLandmarker } from "@/components/ai-style/useFaceLandmarker";
-import { prefetchMorphAiIntroVideo } from "@/lib/morph-ai-intro";
+import { prefetchMorphAiIntroVideo } from "@/lib/morf-ai-intro";
 import { isMorphPlanLimitMessage } from "@/lib/morph-plan-limit";
 import {
   hasMorphAiIntroSeen,
   hasMorphAiOnboarded,
   markMorphAiIntroSeen,
   markMorphAiOnboarded,
-} from "@/lib/morph-ai-session";
+} from "@/lib/morf-ai-session";
 import {
   loadSavedAiStyleIds,
   removeSavedAiStyle,

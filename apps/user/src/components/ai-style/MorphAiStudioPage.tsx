@@ -53,12 +53,12 @@ import {
   MORPH_AI_GALLERY_UPDATED_EVENT,
   saveMorphAiGeneration,
   type MorphAiGeneration,
-} from "@/lib/morph-ai-gallery";
+} from "@/lib/morf-ai-gallery";
 import {
   peekMorphStudioDraft,
   stashMorphStudioDraft,
   type MorphStudioDraft,
-} from "@/lib/morph-ai-studio-session";
+} from "@/lib/morf-ai-studio-session";
 import { prepareSelfieDataUrl, prepareSelfieFromFile } from "@/lib/selfie-image";
 import { isMorphPlanLimitError } from "@/lib/morph-plan-limit";
 import { cn } from "@/lib/utils";

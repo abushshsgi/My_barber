@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import { ProfileSubpageCard } from "@/components/profile/ProfileSubpageLayout";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
-import { useMorphAiPrivacy } from "@/hooks/use-morph-ai-privacy";
+import { useMorphAiPrivacy } from "@/hooks/use-morf-ai-privacy";
 import { cn } from "@/lib/utils";
 
 function chatUsagePct(limits: {

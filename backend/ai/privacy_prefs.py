@@ -1,4 +1,4 @@
-"""Morph AI foydalanuvchi maxfiylik sozlamalari va ma'lumotlarni o'chirish."""
+"""Morf AI foydalanuvchi maxfiylik sozlamalari va ma'lumotlarni o'chirish."""
 
 from __future__ import annotations
 

@@ -7,7 +7,7 @@ export const Route = createFileRoute("/ai-style_/report")({
       { title: "Morf AI muammo — mysaloon.uz" },
       {
         name: "description",
-        content: "Morf AI muammo haqida xabar bering — Morph AI support ko'radi va hal qiladi.",
+        content: "Morf AI muammo haqida xabar bering — Morf AI support ko'radi va hal qiladi.",
       },
     ],
   }),

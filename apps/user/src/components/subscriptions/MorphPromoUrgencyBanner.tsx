@@ -55,7 +55,7 @@ export function MorphPromoUrgencyBanner({ onNavigate, className, variant = "glas
             {t("aiStylePage.limitSheet.upgradeTo", { plan: next === "plus" ? "Plus" : "Pro" })}
           </p>
           <p className="mt-0.5 text-[12px] text-muted-foreground">
-            Ko‘proq Morph AI limit va imkoniyatlar.
+            Ko‘proq Morf AI limit va imkoniyatlar.
           </p>
         </div>
         <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-full border border-black/[0.08] bg-white/50 text-foreground/70">

@@ -127,7 +127,7 @@ export function UserLayout({ children }: { children: React.ReactNode }) {
               (flags.isAiStyleSection && showMobileDock ? MOBILE_CONTENT_PADDING_CLASS : "pb-0"),
             !flags.isFullBleed && getMobileContentPaddingClass(pathname),
             !flags.isFullBleed && "lg:pb-12",
-            flags.isHome ? "lg:pt-3" : "lg:pt-6",
+            flags.isHome ? "lg:pt-3" : flags.isAiStyle ? "lg:pt-2" : "lg:pt-6",
             !flags.isFullBleed && !flags.bazaarInset && !flags.isMobileFlush && DESKTOP_SHELL_INSET,
             flags.isMobileFlush && "px-0 lg:px-10",
             flags.bazaarInset && "lg:px-0",

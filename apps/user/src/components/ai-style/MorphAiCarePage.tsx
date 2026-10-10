@@ -26,10 +26,10 @@ import { useCareProducts } from "@/hooks/use-care-products";
 import { BadHairDaySosSheet } from "@/components/ai-style/BadHairDaySosSheet";
 import { CareShelfTracker } from "@/components/ai-style/CareShelfTracker";
 import {
-  fetchCareShelf,
   fetchMyCareProducts,
   fetchWeatherCare,
   generateHairGrowthForecast,
+  type CareProduct,
   type HairGrowthForecast,
 } from "@/lib/api/care-products";
 import { getFastPosition } from "@/lib/native-geolocation";
@@ -85,12 +85,6 @@ export function MorphAiCarePage() {
       }),
     enabled: step === "plan",
     staleTime: 10 * 60_000,
-  });
-  const shelfQ = useQuery({
-    queryKey: ["ai", "care", "shelf"],
-    queryFn: fetchCareShelf,
-    enabled: step === "plan",
-    staleTime: 30_000,
   });
   const myQ = useQuery({
     queryKey: ["ai", "care", "my-products"],
@@ -351,12 +345,16 @@ export function MorphAiCarePage() {
       }),
   );
   const featured = (search.trim() ? searchQ.data : catalogProducts) || [];
-  const shelfCount = shelfQ.data?.items?.length ?? 0;
 
   return (
     <div className="relative min-h-[100dvh] overflow-x-hidden overflow-y-auto bg-[#F3F3F4] text-[#111111]">
       <div
-        className="relative z-[1] mx-auto w-full max-w-lg px-4 pb-[max(2.5rem,env(safe-area-inset-bottom))]"
+        className={cn(
+          "relative z-[1] mx-auto w-full px-4 pb-[max(2.5rem,env(safe-area-inset-bottom))] md:px-8",
+          panel === "hub"
+            ? "max-w-lg sm:max-w-xl md:max-w-4xl lg:max-w-[1100px] xl:max-w-[1200px]"
+            : "max-w-lg md:max-w-2xl",
+        )}
         style={panel === "weather" ? undefined : { paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}
       >
         <div
@@ -405,185 +403,145 @@ export function MorphAiCarePage() {
 
         {panel === "hub" ? (
           <>
-            <button
-              type="button"
-              onClick={() => setPanel("weather")}
-              className="relative mt-4 h-48 w-full overflow-hidden rounded-3xl text-left text-white shadow-[0_16px_40px_-18px_rgba(0,0,0,0.45)]"
-            >
-              {regionHero ? (
-                <img src={regionHero} alt="" className="absolute inset-0 size-full object-cover object-right" />
-              ) : (
-                <span className="absolute inset-0 bg-gradient-to-br from-sky-400 via-sky-500 to-indigo-600" />
-              )}
-              <span className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/40 to-black/15" />
-              <span className="relative flex h-full flex-col justify-between p-4">
-                <span className="flex items-start justify-between gap-3">
-                  <CloudSun className="size-6 text-white/90" />
-                  <span className="max-w-[12rem] truncate rounded-full bg-black/35 px-3 py-1 text-[12px] font-semibold backdrop-blur-sm">
-                    {city}
+            <div className="mt-4 lg:grid lg:grid-cols-[minmax(0,1.45fr)_minmax(16rem,0.85fr)] lg:items-stretch lg:gap-5">
+              <button
+                type="button"
+                onClick={() => setPanel("weather")}
+                className="relative h-48 w-full overflow-hidden rounded-3xl text-left text-white shadow-[0_16px_40px_-18px_rgba(0,0,0,0.45)] lg:h-auto lg:min-h-[280px]"
+              >
+                {regionHero ? (
+                  <img src={regionHero} alt="" className="absolute inset-0 size-full object-cover object-right" />
+                ) : (
+                  <span className="absolute inset-0 bg-gradient-to-br from-sky-400 via-sky-500 to-indigo-600" />
+                )}
+                <span className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/40 to-black/15" />
+                <span className="relative flex h-full flex-col justify-between p-4 lg:p-6">
+                  <span className="flex items-start justify-between gap-3">
+                    <CloudSun className="size-6 text-white/90" />
+                    <span className="max-w-[12rem] truncate rounded-full bg-black/35 px-3 py-1 text-[12px] font-semibold backdrop-blur-sm lg:max-w-[16rem] lg:text-sm">
+                      {city}
+                    </span>
+                  </span>
+                  <span className="flex items-end justify-between gap-3">
+                    <span>
+                      <span className="block text-5xl font-bold tracking-tight tabular-nums lg:text-6xl">{tempLabel}</span>
+                      <span className="mt-1 block text-sm font-medium text-white/90">{weatherName}</span>
+                      {weather?.current?.humidity_pct != null ? (
+                        <span className="mt-0.5 block text-xs text-white/75">
+                          Namlik {Math.round(weather.current.humidity_pct)}%
+                        </span>
+                      ) : null}
+                    </span>
+                    <span className="rounded-full bg-white px-3 py-2 text-[12px] font-bold text-[#111111] lg:px-4 lg:py-2.5 lg:text-sm">
+                      Tavsiyalar →
+                    </span>
                   </span>
                 </span>
-                <span className="flex items-end justify-between gap-3">
-                  <span>
-                    <span className="block text-5xl font-bold tracking-tight tabular-nums">{tempLabel}</span>
-                    <span className="mt-1 block text-sm font-medium text-white/90">{weatherName}</span>
-                    {weather?.current?.humidity_pct != null ? (
-                      <span className="mt-0.5 block text-xs text-white/75">
-                        Namlik {Math.round(weather.current.humidity_pct)}%
-                      </span>
-                    ) : null}
-                  </span>
-                  <span className="rounded-full bg-white px-3 py-2 text-[12px] font-bold text-[#111111]">
-                    Tavsiyalar →
-                  </span>
-                </span>
-              </span>
-            </button>
+              </button>
 
-            <div className="mt-4 grid grid-cols-3 gap-2">
-              <button
-                type="button"
-                onClick={() => setSosOpen(true)}
-                className="relative h-28 cursor-pointer overflow-hidden rounded-2xl text-left text-white"
-              >
-                <img src="/care/care-card-sos.jpg" alt="" className="absolute inset-0 size-full object-cover" />
-                <span className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
-                <span className="absolute bottom-2.5 left-2.5 text-[12px] font-bold leading-tight">SOS</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setPanel("shelf")}
-                className="relative h-28 cursor-pointer overflow-hidden rounded-2xl text-left text-white"
-              >
-                <img src="/care/care-card-shelf.jpg" alt="" className="absolute inset-0 size-full object-cover" />
-                <span className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/15 to-transparent" />
-                <span className="absolute bottom-2.5 left-2.5 right-2">
-                  <span className="block text-[12px] font-bold leading-tight">Javon</span>
-                  <span className="text-[10px] text-white/80">{shelfCount} ta</span>
-                </span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setPanel("growth")}
-                className="relative h-28 cursor-pointer overflow-hidden rounded-2xl bg-gradient-to-br from-[#FFF3E8] to-[#E7B48A] text-left text-[#111111]"
-              >
-                <span className="absolute inset-0 bg-gradient-to-t from-black/25 to-transparent" />
-                <span className="absolute bottom-2.5 left-2.5 text-[12px] font-bold leading-tight text-white">
-                  O‘sish
-                </span>
-              </button>
+              <div className="mt-4 grid grid-cols-3 gap-2 lg:mt-0 lg:grid-cols-1 lg:grid-rows-3 lg:gap-3">
+                <button
+                  type="button"
+                  onClick={() => setSosOpen(true)}
+                  className="relative h-28 cursor-pointer overflow-hidden rounded-2xl text-left text-white lg:h-full lg:min-h-[5.5rem] lg:rounded-3xl"
+                >
+                  <img src="/care/care-card-sos.jpg" alt="" className="absolute inset-0 size-full object-cover" />
+                  <span className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
+                  <span className="absolute bottom-2.5 left-2.5 text-[12px] font-bold leading-tight lg:bottom-3.5 lg:left-3.5 lg:text-sm">
+                    SOS
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPanel("shelf")}
+                  className="relative h-28 cursor-pointer overflow-hidden rounded-2xl text-left text-white lg:h-full lg:min-h-[5.5rem] lg:rounded-3xl"
+                >
+                  <img src="/care/care-card-shelf.jpg" alt="" className="absolute inset-0 size-full object-cover" />
+                  <span className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/15 to-transparent" />
+                  <span className="absolute bottom-2.5 left-2.5 text-[12px] font-bold leading-tight lg:bottom-3.5 lg:left-3.5 lg:text-sm">
+                    Javon
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPanel("growth")}
+                  className="relative h-28 cursor-pointer overflow-hidden rounded-2xl bg-gradient-to-br from-[#FFF3E8] to-[#E7B48A] text-left text-white lg:h-full lg:min-h-[5.5rem] lg:rounded-3xl"
+                >
+                  <span className="absolute inset-0 bg-gradient-to-t from-black/25 to-transparent" />
+                  <span className="absolute bottom-2.5 left-2.5 text-[12px] font-bold leading-tight lg:bottom-3.5 lg:left-3.5 lg:text-sm">
+                    O‘sish
+                  </span>
+                </button>
+              </div>
             </div>
 
-            <label className="mt-4 flex h-12 items-center gap-2 rounded-full bg-white px-4 ring-1 ring-black/10">
+            <label className="mt-4 flex h-12 items-center gap-2 rounded-full bg-white px-4 ring-1 ring-black/10 lg:mt-6 lg:h-14 lg:px-5">
               <Search className="size-4 text-[#111111]/40" />
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Tavsiya va mahsulot qidirish"
-                className="h-full w-full bg-transparent text-sm font-medium outline-none placeholder:text-[#111111]/35"
+                className="h-full w-full bg-transparent text-sm font-medium outline-none placeholder:text-[#111111]/35 lg:text-[15px]"
               />
             </label>
 
-            <div className="mt-5">
-              <div className="mb-2 flex items-center justify-between">
-                <h2 className="text-[13px] font-bold">Tavsiyalar</h2>
-                <Link to="/ai-style/care/products" className="text-[12px] font-semibold text-[#111111]/45">
+            <div className="mt-5 lg:mt-8">
+              <div className="mb-3 flex items-center justify-between">
+                <h2 className="text-[13px] font-bold lg:text-base">Tavsiyalar</h2>
+                <Link to="/ai-style/care/products" className="text-[12px] font-semibold text-[#111111]/45 lg:text-sm">
                   Hammasi
                 </Link>
               </div>
-              {search.trim() ? (
-                <div className="space-y-2">
-                  {searchQ.isLoading ? (
-                    <div className="h-16 animate-pulse rounded-2xl bg-white" />
-                  ) : featured.length === 0 ? (
-                    <p className="rounded-2xl bg-white px-4 py-3 text-sm text-[#111111]/45">Topilmadi</p>
-                  ) : (
-                    featured.slice(0, 8).map((p) => (
-                      <Link
-                        key={p.id}
-                        to="/ai-style/care/products/$productId"
-                        params={{ productId: String(p.id) }}
-                        className="flex items-center gap-3 rounded-2xl bg-white p-2.5"
-                      >
-                        {p.image_url ? (
-                          <img src={p.image_url} alt="" className="size-12 rounded-xl object-cover" />
-                        ) : (
-                          <span className="grid size-12 place-items-center rounded-xl bg-[#F3F3F4] text-[10px] font-bold">
-                            {p.brand?.slice(0, 2) || "MS"}
-                          </span>
-                        )}
-                        <span className="min-w-0">
-                          <span className="block truncate text-[11px] font-medium text-[#111111]/40">{p.brand}</span>
-                          <span className="block truncate text-sm font-semibold">{p.name}</span>
-                        </span>
-                      </Link>
-                    ))
-                  )}
+              {search.trim() && searchQ.isLoading ? (
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+                  {[0, 1, 2, 3].map((i) => (
+                    <div key={i} className="aspect-[4/5] animate-pulse rounded-3xl bg-white" />
+                  ))}
                 </div>
+              ) : search.trim() && featured.length === 0 ? (
+                <p className="rounded-2xl bg-white px-4 py-3 text-sm text-[#111111]/45">Topilmadi</p>
               ) : (
-                <div className="-mx-4 flex gap-3 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                  {(catalogQ.isLoading ? [] : featured).slice(0, 8).map((p) => (
-                    <Link
-                      key={p.id}
-                      to="/ai-style/care/products/$productId"
-                      params={{ productId: String(p.id) }}
-                      className="relative h-44 w-36 shrink-0 overflow-hidden rounded-2xl bg-[#111111]"
-                    >
-                      {p.image_url ? (
-                        <img src={p.image_url} alt="" className="absolute inset-0 size-full object-cover" />
-                      ) : null}
-                      <span className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
-                      <span className="absolute inset-x-0 bottom-0 p-3 text-white">
-                        <span className="block truncate text-[10px] font-medium text-white/70">{p.brand || "MORF"}</span>
-                        <span className="mt-0.5 block line-clamp-2 text-[13px] font-bold leading-tight">{p.name}</span>
-                      </span>
-                    </Link>
+                <div
+                  className={cn(
+                    search.trim()
+                      ? "grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
+                      : "-mx-4 flex gap-3 overflow-x-auto px-4 pb-1 [scrollbar-width:none] md:mx-0 md:grid md:grid-cols-3 md:gap-4 md:overflow-visible md:px-0 lg:grid-cols-4 xl:grid-cols-5 [&::-webkit-scrollbar]:hidden [&>a]:w-[9.5rem] [&>a]:shrink-0 md:[&>a]:w-auto",
+                  )}
+                >
+                  {(catalogQ.isLoading ? [] : featured).slice(0, search.trim() ? 12 : 8).map((p) => (
+                    <CareCatalogCard key={p.id} product={p} />
                   ))}
                 </div>
               )}
             </div>
 
-            <div className="mt-5 rounded-3xl bg-white p-3 shadow-sm ring-1 ring-black/5">
+            <div className="mt-5 lg:mt-8 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] lg:items-stretch lg:gap-5">
               <button
                 type="button"
                 onClick={() => setPanel("shelf")}
-                className="flex w-full cursor-pointer items-center gap-2 rounded-2xl px-2 py-2 text-left"
+                className="flex w-full cursor-pointer items-center gap-2 rounded-3xl bg-white px-4 py-3 text-left shadow-sm ring-1 ring-black/5 lg:px-5"
               >
                 <ShoppingBag className="size-4" />
-                <span className="flex-1 text-sm font-bold">Mening mahsulotlarim</span>
+                <span className="flex-1 text-sm font-bold lg:text-base">Mening mahsulotlarim</span>
                 <ChevronRight className="size-4 text-[#111111]/35" />
               </button>
-              <div className="mt-2 grid grid-cols-2 gap-2">
+              <div className="mt-2 grid grid-cols-2 gap-2 lg:mt-0 lg:gap-4">
                 <button
                   type="button"
                   onClick={() => setPanel("routine")}
-                  className="relative h-40 overflow-hidden rounded-2xl text-left text-white"
+                  className="relative h-40 overflow-hidden rounded-2xl text-left text-white lg:h-52 lg:rounded-3xl"
                 >
                   <img src="/care/care-card-routine.jpg" alt="" className="absolute inset-0 size-full object-cover" />
-                  <span className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
-                  <span className="absolute left-3 top-3 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-bold text-[#111111]">
-                    Faol
-                  </span>
-                  <span className="absolute inset-x-3 bottom-3">
-                    <span className="block text-sm font-bold">Parvarish</span>
-                    <span className="mt-0.5 block truncate text-[11px] text-white/80">
-                      {t(`aiStylePage.care.conditions.${plan.condition}`, { defaultValue: plan.condition })}
-                    </span>
-                  </span>
+                  <span className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
+                  <span className="absolute inset-x-3 bottom-3 text-sm font-bold lg:text-base">Parvarish</span>
                 </button>
                 <Link
                   to="/ai-style/care/ingredient"
-                  className="relative h-40 overflow-hidden rounded-2xl text-left text-white"
+                  className="relative h-40 overflow-hidden rounded-2xl text-left text-white lg:h-52 lg:rounded-3xl"
                 >
                   <img src="/care/care-card-scan.jpg" alt="" className="absolute inset-0 size-full object-cover" />
-                  <span className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
-                  <span className="absolute left-3 top-3 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-bold text-[#111111]">
-                    Tahlil qilingan
-                  </span>
-                  <span className="absolute inset-x-3 bottom-3">
-                    <span className="block text-sm font-bold">Tarkib</span>
-                    <span className="mt-0.5 block text-[11px] text-white/80">Formula tahlili</span>
-                  </span>
+                  <span className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
+                  <span className="absolute inset-x-3 bottom-3 text-sm font-bold lg:text-base">Tarkib</span>
                 </Link>
               </div>
             </div>
@@ -686,6 +644,25 @@ export function MorphAiCarePage() {
 
       <BadHairDaySosSheet open={sosOpen} onClose={() => setSosOpen(false)} />
     </div>
+  );
+}
+
+function CareCatalogCard({ product }: { product: CareProduct }) {
+  return (
+    <Link
+      to="/ai-style/care/products/$productId"
+      params={{ productId: String(product.id) }}
+      className="flex w-full min-w-0 flex-col overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-black/[0.06]"
+    >
+      <span className="grid aspect-[4/5] place-items-center bg-[#F7F7F8]">
+        {product.image_url ? (
+          <img src={product.image_url} alt="" className="size-full object-contain p-3" />
+        ) : null}
+      </span>
+      <span className="line-clamp-2 px-3 py-3 text-[13px] font-semibold leading-snug text-[#111111] lg:text-sm">
+        {product.name}
+      </span>
+    </Link>
   );
 }
 

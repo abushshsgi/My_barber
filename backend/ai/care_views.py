@@ -302,7 +302,7 @@ class CarePlanGenerateView(UnthrottledAPIView):
     def get(self, request):
         if not can_use_morph_care(request.user):
             return Response(
-                {"detail": "Morph AI Parvarish Pro obunasida mavjud."},
+                {"detail": "Morf AI Parvarish Pro obunasida mavjud."},
                 status=status.HTTP_403_FORBIDDEN,
             )
         profile = HairCareProfile.objects.filter(user=request.user).first()
@@ -322,7 +322,7 @@ class CarePlanGenerateView(UnthrottledAPIView):
 
         if not can_use_morph_care(user):
             return Response(
-                {"detail": "Morph AI Parvarish Pro obunasida mavjud."},
+                {"detail": "Morf AI Parvarish Pro obunasida mavjud."},
                 status=status.HTTP_403_FORBIDDEN,
             )
 
@@ -464,7 +464,7 @@ class CareGrowthForecastView(UnthrottledAPIView):
     def post(self, request):
         if not can_use_morph_care(request.user):
             return Response(
-                {"detail": "Morph AI Parvarish Pro obunasida mavjud."},
+                {"detail": "Morf AI Parvarish Pro obunasida mavjud."},
                 status=status.HTTP_403_FORBIDDEN,
             )
         try:
@@ -537,7 +537,7 @@ class CareSosFixView(UnthrottledAPIView):
     def post(self, request):
         if not can_use_morph_care(request.user):
             return Response(
-                {"detail": "Morph AI Parvarish Pro obunasida mavjud."},
+                {"detail": "Morf AI Parvarish Pro obunasida mavjud."},
                 status=status.HTTP_403_FORBIDDEN,
             )
 
@@ -630,7 +630,7 @@ class CareShelfEstimateView(UnthrottledAPIView):
     def post(self, request):
         if not can_use_morph_care(request.user):
             return Response(
-                {"detail": "Morph AI Parvarish Pro obunasida mavjud."},
+                {"detail": "Morf AI Parvarish Pro obunasida mavjud."},
                 status=status.HTTP_403_FORBIDDEN,
             )
         ser = CareShelfEstimateInputSerializer(data=request.data)
@@ -656,7 +656,7 @@ class CareShelfListCreateView(UnthrottledAPIView):
     def get(self, request):
         if not can_use_morph_care(request.user):
             return Response(
-                {"detail": "Morph AI Parvarish Pro obunasida mavjud."},
+                {"detail": "Morf AI Parvarish Pro obunasida mavjud."},
                 status=status.HTTP_403_FORBIDDEN,
             )
         rows = (
@@ -675,7 +675,7 @@ class CareShelfListCreateView(UnthrottledAPIView):
     def post(self, request):
         if not can_use_morph_care(request.user):
             return Response(
-                {"detail": "Morph AI Parvarish Pro obunasida mavjud."},
+                {"detail": "Morf AI Parvarish Pro obunasida mavjud."},
                 status=status.HTTP_403_FORBIDDEN,
             )
         product = None
@@ -735,7 +735,7 @@ class CareShelfDetailView(UnthrottledAPIView):
     def patch(self, request, item_id: int):
         if not can_use_morph_care(request.user):
             return Response(
-                {"detail": "Morph AI Parvarish Pro obunasida mavjud."},
+                {"detail": "Morf AI Parvarish Pro obunasida mavjud."},
                 status=status.HTTP_403_FORBIDDEN,
             )
         row = CareShelfItem.objects.filter(user=request.user, id=item_id).select_related("product").first()
@@ -798,7 +798,7 @@ class CareShelfDetailView(UnthrottledAPIView):
     def delete(self, request, item_id: int):
         if not can_use_morph_care(request.user):
             return Response(
-                {"detail": "Morph AI Parvarish Pro obunasida mavjud."},
+                {"detail": "Morf AI Parvarish Pro obunasida mavjud."},
                 status=status.HTTP_403_FORBIDDEN,
             )
         row = CareShelfItem.objects.filter(user=request.user, id=item_id).first()

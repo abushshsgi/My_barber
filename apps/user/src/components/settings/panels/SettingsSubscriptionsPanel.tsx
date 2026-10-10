@@ -368,14 +368,14 @@ export function SettingsSubscriptionsPanel() {
     return [
       {
         icon: Sparkles,
-        label: "Morph AI",
+        label: "Morf AI",
         used: u.morph_ai_used,
         limit: u.morph_ai_limit,
         remaining: u.morph_ai_remaining,
       },
       {
         icon: Wand2,
-        label: "Morph AI Studio",
+        label: "Morf AI Studio",
         used: u.morph_studio_used,
         limit: u.morph_studio_limit,
         remaining: u.morph_studio_remaining,
@@ -436,8 +436,8 @@ export function SettingsSubscriptionsPanel() {
       <p className="text-sm text-muted-foreground">
         {t("subscriptions.subtitle", {
           defaultValue: refGenOn
-            ? "Morph AI yangi userlarga yopiq. 1 ta do'stni taklif qiling (1 generatsiya) yoki obuna sotib oling."
-            : "Morph AI yangi userlarga yopiq. Obuna sotib oling.",
+            ? "Morf AI yangi userlarga yopiq. 1 ta do'stni taklif qiling (1 generatsiya) yoki obuna sotib oling."
+            : "Morf AI yangi userlarga yopiq. Obuna sotib oling.",
         })}
       </p>
 
@@ -556,12 +556,12 @@ export function SettingsSubscriptionsPanel() {
                 </p>
                 <p className="mt-1 flex items-center gap-2 text-lg font-bold">
                   <Lock className="h-4 w-4 text-muted-foreground" />
-                  Yo&apos;q — Morph AI yopiq
+                  Yo&apos;q — Morf AI yopiq
                 </p>
                 <p className="mt-2 max-w-md text-sm text-muted-foreground">
                   {refGenOn
-                    ? "Yangi hisobda Morph AI ishlamaydi. Obuna sotib oling yoki 1 ta do'stni taklif qilib 1 generatsiya oling."
-                    : "Yangi hisobda Morph AI ishlamaydi. Obuna sotib oling."}
+                    ? "Yangi hisobda Morf AI ishlamaydi. Obuna sotib oling yoki 1 ta do'stni taklif qilib 1 generatsiya oling."
+                    : "Yangi hisobda Morf AI ishlamaydi. Obuna sotib oling."}
                 </p>
               </div>
               <span className="rounded-full bg-muted px-3 py-1 text-xs font-bold text-muted-foreground">
@@ -580,7 +580,7 @@ export function SettingsSubscriptionsPanel() {
                   </span>
                 </div>
                 <p className="mt-2 text-xs text-muted-foreground">
-                  Do&apos;stingiz kodingiz bilan ro&apos;yxatdan o&apos;tsa, sizga 1 Morph AI
+                  Do&apos;stingiz kodingiz bilan ro&apos;yxatdan o&apos;tsa, sizga 1 Morf AI
                   generatsiya krediti beriladi.
                 </p>
                 <Link
@@ -637,7 +637,7 @@ export function SettingsSubscriptionsPanel() {
       <p className="text-[11px] leading-relaxed text-muted-foreground">
         Obuna faqat to&apos;lov tasdiqlangandan keyin yoqiladi. Limitlar serverda hisoblanadi.
         {refGenOn
-          ? " 1 ta do'stni taklif qilsangiz — 1 Morph AI generatsiya krediti beriladi."
+          ? " 1 ta do'stni taklif qilsangiz — 1 Morf AI generatsiya krediti beriladi."
           : ""}
       </p>
     </div>

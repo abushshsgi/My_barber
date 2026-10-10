@@ -17,7 +17,7 @@ import {
   defaultQuiz,
   loadCareQuiz,
   type CareQuizAnswers,
-} from "../../lib/morph-ai-care";
+} from "../../lib/morf-ai-care";
 import { addMyProduct, careProductToMy, isMyProduct } from "../../lib/morph-my-products";
 import type { MorphCareStackParamList } from "../../navigation/MorphCareStack";
 import { morphFont } from "../../theme/morph-font";

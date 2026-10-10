@@ -8,7 +8,7 @@ type Props = {
   className?: string;
 };
 
-/** iOS 18 uslubidagi pill toggle — Morph AI sozlamalari uchun. */
+/** iOS 18 uslubidagi pill toggle — Morf AI sozlamalari uchun. */
 export function MorphToggle({ checked, onCheckedChange, disabled, className }: Props) {
   return (
     <SwitchPrimitives.Root

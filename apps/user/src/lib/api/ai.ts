@@ -9,7 +9,7 @@ import {
 import type { ExplorePersonaId } from "@/lib/explore-personas";
 import { toShareImageSource } from "@/lib/media-url";
 import { throwFromMorphApiError } from "@/lib/morph-plan-limit";
-import { shouldPersistLooksToServer } from "@/lib/morph-ai-prefs";
+import { shouldPersistLooksToServer } from "@/lib/morf-ai-prefs";
 import { prepareStudioImagePayload } from "@/lib/selfie-image";
 import { apiFetch, apiJson } from "./client";
 

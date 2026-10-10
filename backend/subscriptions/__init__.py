@@ -1,1 +1,1 @@
-"""B2C Morph AI obuna (subscription) moduli."""
+"""B2C Morf AI obuna (subscription) moduli."""

@@ -277,7 +277,7 @@ function UserDetailPage() {
               )}
             </Section>
 
-            <Section title="Morph AI" subtitle="Stil / try-on / studio — token va xarajat">
+            <Section title="Morf AI" subtitle="Stil / try-on / studio — token va xarajat">
               <div className="mb-4 grid grid-cols-2 gap-3 text-sm sm:grid-cols-3">
                 <Stat label="Generatsiya" value={String(u.morphAi.generations)} />
                 <Stat label="Try-on" value={String(u.morphAi.tryon)} />

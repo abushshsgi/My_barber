@@ -88,7 +88,7 @@ class AiStyleHistoryEntry(models.Model):
 
 
 class AiGenerationUsage(models.Model):
-    """Morph AI (AI Style / try-on) — har bir generatsiya/token/xarajat yozuvi."""
+    """Morf AI (AI Style / try-on) — har bir generatsiya/token/xarajat yozuvi."""
 
     class Kind(models.TextChoices):
         TRYON = "tryon", "Try-on"
@@ -142,7 +142,7 @@ class AiGenerationUsage(models.Model):
 
 
 class MorphAiSettings(models.Model):
-    """Singleton — Morph AI limit, byudjet, prompt va A/B sozlamalari."""
+    """Singleton — Morf AI limit, byudjet, prompt va A/B sozlamalari."""
 
     daily_tryon_limit_per_user = models.PositiveIntegerField(
         default=20,
@@ -195,16 +195,16 @@ class MorphAiSettings(models.Model):
     )
     referral_generation_enabled = models.BooleanField(
         default=True,
-        help_text="True bo'lsa 1 referal = 1 Morph AI generatsiya krediti ishlaydi va UI da ko'rinadi.",
+        help_text="True bo'lsa 1 referal = 1 Morf AI generatsiya krediti ishlaydi va UI da ko'rinadi.",
     )
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        verbose_name = "Morph AI settings"
-        verbose_name_plural = "Morph AI settings"
+        verbose_name = "Morf AI settings"
+        verbose_name_plural = "Morf AI settings"
 
     def __str__(self) -> str:
-        return "Morph AI settings"
+        return "Morf AI settings"
 
     @classmethod
     def load(cls) -> "MorphAiSettings":
@@ -359,7 +359,7 @@ class MorphAiChatMessage(models.Model):
 
 
 class MorphAiUserPrefs(models.Model):
-    """Foydalanuvchi Morph AI maxfiylik va limit sozlamalari."""
+    """Foydalanuvchi Morf AI maxfiylik va limit sozlamalari."""
 
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL,
@@ -380,8 +380,8 @@ class MorphAiUserPrefs(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        verbose_name = "Morph AI user prefs"
-        verbose_name_plural = "Morph AI user prefs"
+        verbose_name = "Morf AI user prefs"
+        verbose_name_plural = "Morf AI user prefs"
 
     def __str__(self) -> str:
         return f"MorphAiUserPrefs({self.user_id})"

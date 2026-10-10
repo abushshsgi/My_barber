@@ -354,7 +354,7 @@ export function SettingsSupportPanel({ embedded = false }: { embedded?: boolean 
           <div>
             <p className="text-sm font-bold">Morf AI yordam</p>
             <p className="mt-1 text-sm text-muted-foreground">
-              Try-on, chat va limit savollari Morph AI supportga tushadi.
+              Try-on, chat va limit savollari Morf AI supportga tushadi.
             </p>
           </div>
         </Link>

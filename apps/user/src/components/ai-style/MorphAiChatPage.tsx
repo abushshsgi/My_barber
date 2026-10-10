@@ -8,7 +8,7 @@ import { MorphLimitUpsell } from "@/components/ai-style/MorphLimitUpsell";
 import { MorphToggle } from "@/components/ai-style/MorphToggle";
 import { MorphVoiceLiveOverlay } from "@/components/ai-style/MorphVoiceLiveOverlay";
 import { Button } from "@/components/ui/button";
-import { useMorphAiPrivacy } from "@/hooks/use-morph-ai-privacy";
+import { useMorphAiPrivacy } from "@/hooks/use-morf-ai-privacy";
 import { useMorphLimitGate } from "@/hooks/use-morph-limit-gate";
 import { useMorphVoiceChat } from "@/hooks/use-morph-voice";
 import { hasValidUserSession } from "@/lib/api/client";
@@ -18,7 +18,7 @@ import {
   patchMorphAiPrefs,
   readMorphAiPrefs,
   shouldPersistChatToServer,
-} from "@/lib/morph-ai-prefs";
+} from "@/lib/morf-ai-prefs";
 import { isMorphPlanLimitError, MorphHairProfileRequiredError } from "@/lib/morph-plan-limit";
 import { cn } from "@/lib/utils";
 

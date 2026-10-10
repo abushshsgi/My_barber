@@ -58,7 +58,7 @@ function StatisticsSubscriptionsPage() {
     <div className="space-y-6">
       <StatsPageHeader
         title="Obuna statistikasi"
-        description="Sotib olish, Morph AI foydalanish, limit tugashi va oyma-oy yangilanish."
+        description="Sotib olish, Morf AI foydalanish, limit tugashi va oyma-oy yangilanish."
       />
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -100,7 +100,7 @@ function StatisticsSubscriptionsPage() {
               label="Ishlatmagan xaridorlar"
               value={String(d.buyers_never_used_morph)}
               icon={Users}
-              hint="To‘lagan, lekin Morph AI 0 marta"
+              hint="To‘lagan, lekin Morf AI 0 marta"
             />
           </>
         )}
@@ -191,7 +191,7 @@ function StatisticsSubscriptionsPage() {
               <TableRow>
                 <TableHead>User</TableHead>
                 <TableHead>Tarif</TableHead>
-                <TableHead className="text-right">Morph AI</TableHead>
+                <TableHead className="text-right">Morf AI</TableHead>
                 <TableHead className="text-right">Studio</TableHead>
                 <TableHead />
               </TableRow>

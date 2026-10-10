@@ -23,7 +23,7 @@ import type { useStyleTryOnFlow } from "@/components/style-try-on/useStyleTryOnF
 import type { HairstyleEntry } from "@/lib/hairstyles/catalog";
 import { getHairstyleImageUrl } from "@/lib/hairstyles/catalog";
 import { stashBarberConsultDraft } from "@/lib/barber-consult-session";
-import { stashMorphStudioDraft } from "@/lib/morph-ai-studio-session";
+import { stashMorphStudioDraft } from "@/lib/morf-ai-studio-session";
 import { cn } from "@/lib/utils";
 
 type Flow = ReturnType<typeof useStyleTryOnFlow>;

@@ -28,8 +28,8 @@ const FALLBACK_PLANS: SubscriptionPlan[] = [
     features: [
       {
         key: "morph_ai",
-        label_uz: "Morph AI try-on — oyiga 5 marta",
-        label_ru: "Morph AI try-on — 5 раз в месяц",
+        label_uz: "Morf AI try-on — oyiga 5 marta",
+        label_ru: "Morf AI try-on — 5 раз в месяц",
       },
       {
         key: "chat",
@@ -38,8 +38,8 @@ const FALLBACK_PLANS: SubscriptionPlan[] = [
       },
       {
         key: "studio",
-        label_uz: "Morph AI Studio — yo'q",
-        label_ru: "Morph AI Studio — нет",
+        label_uz: "Morf AI Studio — yo'q",
+        label_ru: "Morf AI Studio — нет",
         included: false,
       },
     ],
@@ -63,8 +63,8 @@ const FALLBACK_PLANS: SubscriptionPlan[] = [
     features: [
       {
         key: "morph_ai",
-        label_uz: "Morph AI try-on — oyiga 20 marta",
-        label_ru: "Morph AI try-on — 20 раз в месяц",
+        label_uz: "Morf AI try-on — oyiga 20 marta",
+        label_ru: "Morf AI try-on — 20 раз в месяц",
       },
       {
         key: "chat",
@@ -73,8 +73,8 @@ const FALLBACK_PLANS: SubscriptionPlan[] = [
       },
       {
         key: "studio",
-        label_uz: "Morph AI Studio — 30 marta",
-        label_ru: "Morph AI Studio — 30 раз",
+        label_uz: "Morf AI Studio — 30 marta",
+        label_ru: "Morf AI Studio — 30 раз",
       },
     ],
   },
@@ -97,8 +97,8 @@ const FALLBACK_PLANS: SubscriptionPlan[] = [
     features: [
       {
         key: "morph_ai",
-        label_uz: "Morph AI try-on — oyiga 100 marta",
-        label_ru: "Morph AI try-on — 100 раз в месяц",
+        label_uz: "Morf AI try-on — oyiga 100 marta",
+        label_ru: "Morf AI try-on — 100 раз в месяц",
       },
       {
         key: "chat",
@@ -107,10 +107,10 @@ const FALLBACK_PLANS: SubscriptionPlan[] = [
       },
       {
         key: "studio",
-        label_uz: "Morph AI Studio — 150 marta",
-        label_ru: "Morph AI Studio — 150 раз",
+        label_uz: "Morf AI Studio — 150 marta",
+        label_ru: "Morf AI Studio — 150 раз",
       },
-      { key: "care", label_uz: "Morph AI Parvarish", label_ru: "Morph AI Уход" },
+      { key: "care", label_uz: "Morf AI Parvarish", label_ru: "Morf AI Уход" },
     ],
   },
 ];

@@ -1,4 +1,4 @@
-"""Morph AI Studio — admin ops: spend, edits, users + subscription join."""
+"""Morf AI Studio — admin ops: spend, edits, users + subscription join."""
 
 from __future__ import annotations
 

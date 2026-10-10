@@ -114,7 +114,7 @@ def apply_referral(*, new_user: User, code: object) -> ReferralAttribution | Non
             User.objects.filter(pk=new_user.pk, referred_by__isnull=True).update(
                 referred_by=referrer
             )
-            # 1 do'st = 1 Morph AI generatsiya krediti (admin yoqgan bo'lsa)
+            # 1 do'st = 1 Morf AI generatsiya krediti (admin yoqgan bo'lsa)
             try:
                 from subscriptions.services import referral_generation_enabled
 

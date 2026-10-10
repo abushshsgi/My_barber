@@ -20,7 +20,7 @@ import {
   MORPH_AI_GALLERY_UPDATED_EVENT,
   refreshMorphAiGenerationsCache,
   type MorphAiGeneration,
-} from "@/lib/morph-ai-gallery";
+} from "@/lib/morf-ai-gallery";
 
 export const Route = createFileRoute("/ai-style_/history")({
   head: () => ({

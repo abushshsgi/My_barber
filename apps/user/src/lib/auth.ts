@@ -10,7 +10,7 @@ import { migrateFaceProfileOnLogout, prepareFaceProfileStorageForUser } from "@/
 import {
   migrateGuestMorphAiGenerations,
   refreshMorphAiGenerationsCache,
-} from "@/lib/morph-ai-gallery";
+} from "@/lib/morf-ai-gallery";
 import { unregisterPushToken } from "@/lib/native-push";
 import { clearQueryClientCache, getQueryClient } from "@/lib/query-client";
 import {

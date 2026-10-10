@@ -35,7 +35,7 @@ export function MorphAiSubNav() {
     <div className="sticky top-0 z-20 -mx-1 space-y-2 bg-background/95 px-1 py-2 backdrop-blur supports-[backdrop-filter]:bg-background/80">
       <div className="flex items-baseline justify-between gap-3">
         <h2 className="font-heading text-sm font-semibold tracking-tight text-foreground">
-          Morph AI bo&apos;limlari
+          Morf AI bo&apos;limlari
         </h2>
         <p className="hidden text-xs text-muted-foreground sm:block">Chap menyu yoki shu tablar</p>
       </div>

@@ -219,7 +219,7 @@ class AdminUserUpdateSerializer(serializers.ModelSerializer):
 
 
 class AdminUserDetailSerializer(AdminUserSerializer):
-    """Mijoz kartochkasi — bronlar, Morph AI, hamyon (faqat o'qish)."""
+    """Mijoz kartochkasi — bronlar, Morf AI, hamyon (faqat o'qish)."""
 
     signup_method = serializers.SerializerMethodField()
     bookings_summary = serializers.SerializerMethodField()

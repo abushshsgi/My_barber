@@ -212,7 +212,7 @@ export function SettingsReferralPanel() {
               <Gift className="h-4 w-4" />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-bold">1 do'st = 1 Morph AI generatsiya</p>
+              <p className="text-sm font-bold">1 do'st = 1 Morf AI generatsiya</p>
               <p className="mt-0.5 text-xs text-muted-foreground">
                 Mavjud kreditlar: <span className="font-semibold text-foreground">{credits}</span>
               </p>

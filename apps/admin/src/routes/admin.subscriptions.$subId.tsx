@@ -98,7 +98,7 @@ function AdminSubscriptionDetailPage() {
         <p className="text-xs font-bold uppercase text-muted-foreground">Limitlar (joriy oy)</p>
         <div className="mt-3 grid gap-3 sm:grid-cols-2 text-sm">
           <div>
-            Morph AI: {d.usage.morph_ai_used} / {d.usage.morph_ai_limit} (qoldi{" "}
+            Morf AI: {d.usage.morph_ai_used} / {d.usage.morph_ai_limit} (qoldi{" "}
             {d.usage.morph_ai_remaining})
           </div>
           <div>

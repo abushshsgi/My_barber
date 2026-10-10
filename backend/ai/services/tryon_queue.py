@@ -97,7 +97,7 @@ def enqueue_tryon_job(
     depth = int(client.llen(QUEUE_KEY))
     if depth >= _max_queue_depth():
         raise AiStyleError(
-            "Morph AI hozir band. Keyinroq urinib ko'ring.",
+            "Morf AI hozir band. Keyinroq urinib ko'ring.",
             503,
         )
 

@@ -1,6 +1,6 @@
-import { hasMorphAiIntroSeen } from "@/lib/morph-ai-session";
+import { hasMorphAiIntroSeen } from "@/lib/morf-ai-session";
 
-export const MORPH_AI_INTRO_VIDEO_SRC = "/ai-style/morph-ai-intro.mp4";
+export const MORPH_AI_INTRO_VIDEO_SRC = "/ai-style/morf-ai-intro.mp4";
 
 let prefetchStarted = false;
 let blobUrl: string | null = null;
@@ -49,7 +49,7 @@ export function ensureMorphAiIntroBlob(): Promise<string> {
   return blobPromise;
 }
 
-/** Start downloading the Morph AI intro so it can play immediately on first visit. */
+/** Start downloading the Morf AI intro so it can play immediately on first visit. */
 export function prefetchMorphAiIntroVideo() {
   if (prefetchStarted || typeof window === "undefined") return;
   if (hasMorphAiIntroSeen()) return;

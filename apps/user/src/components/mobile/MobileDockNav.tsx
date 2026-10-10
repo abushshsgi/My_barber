@@ -109,7 +109,7 @@ function DockTab({
   );
 }
 
-/** Mobil pastki navigatsiya — MySaloon yoki Morph AI shell. */
+/** Mobil pastki navigatsiya — MySaloon yoki Morf AI shell. */
 export function MobileDockNav({ unreadCount: _unreadCount = 0 }: Props) {
   const { t } = useTranslation();
   const router = useRouter();

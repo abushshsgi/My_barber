@@ -1,4 +1,4 @@
-"""Morph AI / AI Style — generation usage yozuvlari."""
+"""Morf AI / AI Style — generation usage yozuvlari."""
 
 from __future__ import annotations
 

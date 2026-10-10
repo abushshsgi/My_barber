@@ -25,9 +25,9 @@ def map_gemini_http_error(status: int, body: str, *, kind: str = "general", mode
             "aistudio.google.com/apikey dan yangi kalit oling."
         )
     if status == 429 or "quota" in lowered or "rate" in lowered or "exceeded" in lowered:
-        return "Morph AI hozir ishlamayapti. Keyinroq urinib ko'ring."
+        return "Morf AI hozir ishlamayapti. Keyinroq urinib ko'ring."
     if status == 503 or "unavailable" in lowered or "high demand" in lowered:
-        return "Morph AI hozir ishlamayapti. Keyinroq urinib ko'ring."
+        return "Morf AI hozir ishlamayapti. Keyinroq urinib ko'ring."
     if status == 404:
         if kind == "image":
             return (

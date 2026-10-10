@@ -6,7 +6,7 @@ import {
   ensureMorphAiIntroBlob,
   getMorphAiIntroVideoSrc,
   prefetchMorphAiIntroVideo,
-} from "@/lib/morph-ai-intro";
+} from "@/lib/morf-ai-intro";
 
 type Props = {
   open: boolean;
@@ -101,7 +101,7 @@ export function MorphAiIntroOverlay({ open, onComplete }: Props) {
     <AnimatePresence onExitComplete={completeOnce}>
       {visible ? (
         <motion.div
-          key="morph-ai-intro"
+          key="morf-ai-intro"
           className="morph-ai-type fixed inset-0 z-[280] flex items-center justify-center bg-black text-white"
           role="dialog"
           aria-modal="true"

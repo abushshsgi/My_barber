@@ -34,7 +34,7 @@ import {
   loadCareQuiz,
   saveCareQuiz,
   type CareQuizAnswers,
-} from "../../lib/morph-ai-care";
+} from "../../lib/morf-ai-care";
 import { addMyProduct, isMyProduct } from "../../lib/morph-my-products";
 import {
   pickProductLabelFromCamera,

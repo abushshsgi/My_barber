@@ -1,5 +1,5 @@
 /** Auth / onboarding / share / explore style detail — pastki dock yo‘q.
- *  Morph AI (`/ai-style/*`) da dock ko‘rinadi (app shell switch).
+ *  Morf AI (`/ai-style/*`) da dock ko‘rinadi (app shell switch).
  */
 export function shouldShowMobileDock(pathname: string): boolean {
   if (pathname === "/auth" || pathname === "/onboarding") {

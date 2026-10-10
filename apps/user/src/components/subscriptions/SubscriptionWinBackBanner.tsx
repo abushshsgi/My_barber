@@ -38,7 +38,7 @@ export function SubscriptionWinBackBanner({ className }: { className?: string })
           </p>
           <p className="mt-0.5 text-[12px] text-muted-foreground">
             {t("homePage.winBack.hint", {
-              defaultValue: "Morph AI ochiq qolishi uchun tarifni yangilang.",
+              defaultValue: "Morf AI ochiq qolishi uchun tarifni yangilang.",
             })}
           </p>
         </div>

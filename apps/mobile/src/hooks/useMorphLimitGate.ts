@@ -10,7 +10,7 @@ export type MorphGateResult = { ok: true } | { ok: false; reason: MorphGateReaso
 type GateKind = "access" | "tryon" | "studio" | "chat" | "voice";
 
 /**
- * Morph AI limit gate.
+ * Morf AI limit gate.
  * analyze — ochiq; tryon — obuna kvotasi yoki referal krediti.
  */
 export function useMorphLimitGate() {

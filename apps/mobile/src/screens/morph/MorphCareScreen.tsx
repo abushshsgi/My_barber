@@ -64,7 +64,7 @@ import {
   MORNING_TIME_OPTIONS,
   EVENING_TIME_OPTIONS,
   type CareQuizAnswers,
-} from "../../lib/morph-ai-care";
+} from "../../lib/morf-ai-care";
 import { scheduleCareWelcomeNotification } from "../../lib/care-reminders";
 import {
   addMyProduct,

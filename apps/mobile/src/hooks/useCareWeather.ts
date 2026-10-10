@@ -8,7 +8,7 @@ import {
   saveCareWeatherCache,
 } from "../lib/care-weather-cache";
 import { getGuestLocation } from "../lib/guest";
-import { loadCareQuiz } from "../lib/morph-ai-care";
+import { loadCareQuiz } from "../lib/morf-ai-care";
 import { scheduleWeatherMorningAlert } from "../lib/weather-morning-alert";
 import {
   loadPreferredWeatherRegion,

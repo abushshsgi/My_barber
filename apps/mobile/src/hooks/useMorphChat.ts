@@ -18,7 +18,7 @@ import {
 } from "../api/ai";
 import { fetchHairCareProfile, updateHairCareProfile } from "../api/care";
 import { createPacedWriter } from "../lib/chat-pace";
-import { isCareQuizComplete, loadCareQuiz } from "../lib/morph-ai-care";
+import { isCareQuizComplete, loadCareQuiz } from "../lib/morf-ai-care";
 import {
   DEFAULT_MORPH_CHAT_PREFS,
   readMorphChatPrefs,
