@@ -443,11 +443,11 @@ export function MorphAiCarePage() {
 
         {panel === "hub" ? (
           <>
-            <div className="mt-4 lg:grid lg:grid-cols-[minmax(0,1.45fr)_minmax(16rem,0.85fr)] lg:items-stretch lg:gap-5">
+            <div className="mt-4">
               <button
                 type="button"
                 onClick={() => setPanel("weather")}
-                className="relative h-48 w-full overflow-hidden rounded-3xl text-left text-white shadow-[0_16px_40px_-18px_rgba(0,0,0,0.45)] lg:h-auto lg:min-h-[280px]"
+                className="relative h-48 w-full overflow-hidden rounded-3xl text-left text-white shadow-[0_16px_40px_-18px_rgba(0,0,0,0.45)] lg:h-56"
               >
                 {regionHero ? (
                   <img src={regionHero} alt="" className="absolute inset-0 size-full object-cover object-right" />
@@ -479,11 +479,11 @@ export function MorphAiCarePage() {
                 </span>
               </button>
 
-              <div className="mt-4 grid grid-cols-3 gap-2 lg:mt-0 lg:grid-cols-1 lg:grid-rows-3 lg:gap-3">
+              <div className="mt-4 grid grid-cols-3 gap-2 lg:mt-5 lg:gap-4">
                 <button
                   type="button"
                   onClick={() => setSosOpen(true)}
-                  className="relative h-28 cursor-pointer overflow-hidden rounded-2xl text-left text-white lg:h-full lg:min-h-[5.5rem] lg:rounded-3xl"
+                  className="relative h-28 cursor-pointer overflow-hidden rounded-2xl text-left text-white lg:h-40 lg:rounded-3xl"
                 >
                   <img src="/care/care-card-sos.jpg" alt="" className="absolute inset-0 size-full object-cover" />
                   <span className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
@@ -494,7 +494,7 @@ export function MorphAiCarePage() {
                 <button
                   type="button"
                   onClick={() => setPanel("shelf")}
-                  className="relative h-28 cursor-pointer overflow-hidden rounded-2xl text-left text-white lg:h-full lg:min-h-[5.5rem] lg:rounded-3xl"
+                  className="relative h-28 cursor-pointer overflow-hidden rounded-2xl text-left text-white lg:h-40 lg:rounded-3xl"
                 >
                   <img src="/care/care-card-shelf.jpg" alt="" className="absolute inset-0 size-full object-cover" />
                   <span className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/15 to-transparent" />
@@ -505,7 +505,7 @@ export function MorphAiCarePage() {
                 <button
                   type="button"
                   onClick={() => setPanel("growth")}
-                  className="relative h-28 cursor-pointer overflow-hidden rounded-2xl bg-gradient-to-br from-[#FFF3E8] to-[#E7B48A] text-left text-white lg:h-full lg:min-h-[5.5rem] lg:rounded-3xl"
+                  className="relative h-28 cursor-pointer overflow-hidden rounded-2xl bg-gradient-to-br from-[#FFF3E8] to-[#E7B48A] text-left text-white lg:h-40 lg:rounded-3xl"
                 >
                   <span className="absolute inset-0 bg-gradient-to-t from-black/25 to-transparent" />
                   <span className="absolute bottom-2.5 left-2.5 text-[12px] font-bold leading-tight lg:bottom-3.5 lg:left-3.5 lg:text-sm">
@@ -555,21 +555,30 @@ export function MorphAiCarePage() {
               )}
             </div>
 
-            <div className="mt-5 lg:mt-8 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] lg:items-stretch lg:gap-5">
+            <div className="mt-5 lg:mt-8">
               <button
                 type="button"
                 onClick={() => setPanel("shelf")}
-                className="flex w-full cursor-pointer items-center gap-2 rounded-3xl bg-white px-4 py-3 text-left shadow-sm ring-1 ring-black/5 lg:px-5"
+                className="flex w-full cursor-pointer items-center gap-2 rounded-3xl bg-white px-4 py-3 text-left shadow-sm ring-1 ring-black/5 lg:hidden"
               >
                 <ShoppingBag className="size-4" />
-                <span className="flex-1 text-sm font-bold lg:text-base">Mening mahsulotlarim</span>
+                <span className="flex-1 text-sm font-bold">Mening mahsulotlarim</span>
                 <ChevronRight className="size-4 text-[#111111]/35" />
               </button>
-              <div className="mt-2 grid grid-cols-2 gap-2 lg:mt-0 lg:gap-4">
+              <div className="mt-2 grid grid-cols-2 gap-2 lg:mt-0 lg:grid-cols-3 lg:gap-4">
+                <button
+                  type="button"
+                  onClick={() => setPanel("shelf")}
+                  className="relative hidden h-44 overflow-hidden rounded-3xl text-left text-white lg:block"
+                >
+                  <img src="/care/care-card-shelf.jpg" alt="" className="absolute inset-0 size-full object-cover" />
+                  <span className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
+                  <span className="absolute inset-x-3 bottom-3 text-sm font-bold">Mening mahsulotlarim</span>
+                </button>
                 <button
                   type="button"
                   onClick={() => setPanel("routine")}
-                  className="relative h-40 overflow-hidden rounded-2xl text-left text-white lg:h-52 lg:rounded-3xl"
+                  className="relative h-40 overflow-hidden rounded-2xl text-left text-white lg:h-44 lg:rounded-3xl"
                 >
                   <img src="/care/care-card-routine.jpg" alt="" className="absolute inset-0 size-full object-cover" />
                   <span className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
@@ -577,7 +586,7 @@ export function MorphAiCarePage() {
                 </button>
                 <Link
                   to="/ai-style/care/ingredient"
-                  className="relative h-40 overflow-hidden rounded-2xl text-left text-white lg:h-52 lg:rounded-3xl"
+                  className="relative h-40 overflow-hidden rounded-2xl text-left text-white lg:h-44 lg:rounded-3xl"
                 >
                   <img src="/care/care-card-scan.jpg" alt="" className="absolute inset-0 size-full object-cover" />
                   <span className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
@@ -699,7 +708,7 @@ function CareCatalogCard({ product }: { product: CareProduct }) {
           <img src={product.image_url} alt="" className="size-full object-contain p-3" />
         ) : null}
       </span>
-      <span className="line-clamp-2 px-3 py-3 text-[13px] font-semibold leading-snug text-[#111111] lg:text-sm">
+      <span className="line-clamp-2 min-w-0 break-words px-3 py-3 text-[13px] font-semibold leading-snug text-[#111111] lg:text-sm">
         {product.name}
       </span>
     </Link>
