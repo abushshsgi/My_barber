@@ -24,6 +24,7 @@ import {
   type HairColorStatus,
   type HairCondition,
   type HairFit,
+  type HairFitIngredient,
   type HairTexture,
   type IngredientScanResponse,
 } from "../../api/care";
@@ -31,6 +32,7 @@ import { useMorphAppearance } from "../../lib/MorphAppearanceContext";
 import type { MorphPalette } from "../../theme/morph-appearance";
 import { useHideTabBar } from "../../hooks/useHideTabBar";
 import { NativeBackButton } from "../../components/ui/NativeBackButton";
+import { SafeModal } from "../../components/ui/SafeModal";
 import {
   defaultQuiz,
   loadCareQuiz,
@@ -99,6 +101,7 @@ export function MorphIngredientScreen({ navigation }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [inMyProducts, setInMyProducts] = useState(false);
   const [addingProduct, setAddingProduct] = useState(false);
+  const [openIng, setOpenIng] = useState<HairFitIngredient | null>(null);
 
   const phase: Phase = useMemo(() => {
     if (result) return "result";
@@ -253,6 +256,7 @@ export function MorphIngredientScreen({ navigation }: Props) {
     setPreview(null);
     setError(null);
     setInMyProducts(false);
+    setOpenIng(null);
   };
 
   const handleAddToMyProducts = async () => {
@@ -372,8 +376,6 @@ export function MorphIngredientScreen({ navigation }: Props) {
     const productName =
       result.product_analysis.product_name || matched?.name || t("ingredient.unknownProduct");
     const brand = result.product_analysis.brand || matched?.brand || "";
-    const alerts = readable ? result.critical_alerts || [] : [];
-    const goods = readable ? result.beneficial_ingredients || [] : [];
     const rows =
       fit?.ingredients && fit.ingredients.length > 0
         ? fit.ingredients
@@ -562,69 +564,36 @@ export function MorphIngredientScreen({ navigation }: Props) {
           {readable && rows.length > 0 ? (
             <View style={{ marginTop: 22 }}>
               <Text style={[styles.section, { color: pal.muted }]}>{t("ingredient.ingredientFit")}</Text>
-              <View style={[cardStyle, { padding: 16, gap: 14 }]}>
+              <Text style={[styles.tapHint, { color: pal.muted }]}>{t("ingredient.tapHint")}</Text>
+              <View style={[cardStyle, { paddingVertical: 4 }]}>
                 {rows.map((row, i) => {
-                  const tone =
-                    row.percent == null ? pal.muted : bandColor(row.percent, pal);
+                  const tone = row.percent == null ? pal.muted : bandColor(row.percent, pal);
                   return (
-                    <View key={`${row.name}-${i}`}>
-                      <View style={styles.dimHead}>
+                    <Pressable
+                      key={`${row.name}-${i}`}
+                      onPress={() => setOpenIng(row)}
+                      style={[
+                        styles.ingRow,
+                        i > 0 && { borderTopWidth: 1, borderTopColor: pal.line },
+                      ]}
+                    >
+                      <View style={{ flex: 1, minWidth: 0 }}>
                         <Text style={[styles.ingName, { color: pal.fg }]} numberOfLines={1}>
                           {row.name}
                         </Text>
-                        <Text style={[styles.dimPct, { color: tone }]}>
-                          {row.percent == null ? t("ingredient.neutral") : `${row.percent}%`}
-                        </Text>
-                      </View>
-                      <View style={[styles.track, { backgroundColor: pal.track }]}>
-                        {row.percent != null ? (
-                          <View
-                            style={[
-                              styles.fill,
-                              { width: `${row.percent}%` as `${number}%`, backgroundColor: tone },
-                            ]}
-                          />
+                        {row.role_uz ? (
+                          <Text style={[styles.ingRole, { color: pal.muted }]} numberOfLines={1}>
+                            {row.role_uz}
+                          </Text>
                         ) : null}
                       </View>
-                    </View>
+                      <Text style={[styles.dimPct, { color: tone }]}>
+                        {row.percent == null ? t("ingredient.neutral") : `${row.percent}%`}
+                      </Text>
+                      <Ionicons name="chevron-forward" size={16} color={pal.muted} />
+                    </Pressable>
                   );
                 })}
-              </View>
-            </View>
-          ) : null}
-
-          {alerts.length > 0 ? (
-            <View style={{ marginTop: 22 }}>
-              <Text style={[styles.section, { color: pal.muted }]}>{t("ingredient.alertsTitle")}</Text>
-              <View style={{ gap: 8 }}>
-                {alerts.map((alert, i) => (
-                  <View key={`${alert.ingredient}-${i}`} style={[cardStyle, styles.alertCard]}>
-                    <Ionicons name="warning-outline" size={16} color={pal.destructive} />
-                    <View style={{ flex: 1 }}>
-                      {alert.ingredient ? (
-                        <Text style={[styles.alertIng, { color: pal.fg }]}>{alert.ingredient}</Text>
-                      ) : null}
-                      <Text style={[styles.alertMsg, { color: pal.muted }]}>{alert.message_uz}</Text>
-                    </View>
-                  </View>
-                ))}
-              </View>
-            </View>
-          ) : null}
-
-          {goods.length > 0 ? (
-            <View style={{ marginTop: 22 }}>
-              <Text style={[styles.section, { color: pal.muted }]}>{t("ingredient.beneficialTitle")}</Text>
-              <View style={{ gap: 8 }}>
-                {goods.map((item, i) => (
-                  <View key={`${item.ingredient}-${i}`} style={[cardStyle, styles.goodCard]}>
-                    <Ionicons name="checkmark-circle-outline" size={16} color={pal.fg} />
-                    <View style={{ flex: 1 }}>
-                      <Text style={[styles.goodIng, { color: pal.fg }]}>{item.ingredient}</Text>
-                      <Text style={[styles.goodMsg, { color: pal.muted }]}>{item.reason_uz}</Text>
-                    </View>
-                  </View>
-                ))}
               </View>
             </View>
           ) : null}
@@ -663,6 +632,43 @@ export function MorphIngredientScreen({ navigation }: Props) {
             <Text style={[styles.secondaryBtnText, { color: pal.fg }]}>{t("ingredient.openCatalog")}</Text>
           </Pressable>
         </ScrollView>
+        <SafeModal visible={openIng != null} transparent animationType="slide" onRequestClose={() => setOpenIng(null)}>
+          <Pressable style={styles.detailBackdrop} onPress={() => setOpenIng(null)} />
+          {openIng ? (
+            <View style={[styles.detailSheet, { backgroundColor: pal.bg, paddingBottom: safeBottom(insets.bottom, 16) }]}>
+              <View style={[styles.detailHandle, { backgroundColor: pal.line }]} />
+              <View style={styles.dimHead}>
+                <Text style={[styles.detailName, { color: pal.fg }]}>{openIng.name}</Text>
+                <Text style={[styles.dimPct, { color: openIng.percent == null ? pal.muted : bandColor(openIng.percent, pal) }]}>
+                  {openIng.percent == null ? t("ingredient.neutral") : `${openIng.percent}%`}
+                </Text>
+              </View>
+              {openIng.role_uz ? (
+                <Text style={[styles.ingRole, { color: pal.muted, marginTop: 4 }]}>{openIng.role_uz}</Text>
+              ) : null}
+              <ScrollView style={{ marginTop: 16, maxHeight: 320 }} showsVerticalScrollIndicator={false}>
+                {[
+                  [t("ingredient.whatTitle"), openIng.about_uz],
+                  [t("ingredient.formulaTitle"), openIng.formula_uz],
+                  [t("ingredient.hairTitle"), openIng.hair_uz],
+                ].map(([title, body]) =>
+                  body ? (
+                    <View key={title} style={{ marginBottom: 16 }}>
+                      <Text style={[styles.section, { color: pal.muted }]}>{title}</Text>
+                      <Text style={[styles.detailBody, { color: pal.fg }]}>{body}</Text>
+                    </View>
+                  ) : null,
+                )}
+              </ScrollView>
+              <Pressable
+                style={[styles.primaryBtn, { backgroundColor: pal.fg, marginTop: 8 }]}
+                onPress={() => setOpenIng(null)}
+              >
+                <Text style={[styles.primaryBtnText, { color: pal.bg }]}>{t("ingredient.closeDetail")}</Text>
+              </Pressable>
+            </View>
+          ) : null}
+        </SafeModal>
       </View>
     );
   }
@@ -1190,5 +1196,31 @@ const styles = StyleSheet.create({
     gap: moderateScale(12),
   },
   resultThumb: { width: scale(52), height: scale(52), borderRadius: moderateScale(14) },
-  ingName: { ...morphFont, flex: 1, fontSize: fontSize(13), fontWeight: "500" },
+  ingName: { ...morphFont, fontSize: fontSize(14), fontWeight: "600" },
+  ingRole: { ...morphFont, marginTop: 2, fontSize: fontSize(12) },
+  ingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: moderateScale(10),
+    paddingHorizontal: moderateScale(14),
+    paddingVertical: verticalScale(12),
+  },
+  tapHint: { ...morphFont, marginBottom: verticalScale(8), fontSize: fontSize(12) },
+  detailBackdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.45)" },
+  detailSheet: {
+    maxHeight: "78%",
+    borderTopLeftRadius: moderateScale(24),
+    borderTopRightRadius: moderateScale(24),
+    paddingHorizontal: moderateScale(20),
+    paddingTop: verticalScale(10),
+  },
+  detailHandle: {
+    alignSelf: "center",
+    width: scale(36),
+    height: 4,
+    borderRadius: 99,
+    marginBottom: verticalScale(14),
+  },
+  detailName: { ...morphFont, flex: 1, fontSize: fontSize(20), fontWeight: "700" },
+  detailBody: { ...morphFont, fontSize: fontSize(15), lineHeight: fontSize(22) },
 });

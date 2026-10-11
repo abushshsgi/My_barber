@@ -165,6 +165,10 @@ export type HairFitIngredient = {
   name: string;
   percent: number | null;
   tone: "good" | "caution" | "bad" | "neutral" | string;
+  role_uz?: string;
+  about_uz?: string;
+  formula_uz?: string;
+  hair_uz?: string;
 };
 
 export type HairFit = {

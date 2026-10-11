@@ -8,6 +8,7 @@ from typing import Any, Iterable
 from django.db.models import Q
 
 from ai.models import CareProduct, HairCareProfile
+from ai.services.ingredient_facts import apply_note, hair_line, ingredient_fact, is_known_fact
 
 HAIR_TAGS = frozenset(
     {
@@ -97,6 +98,13 @@ INGREDIENT_ALIASES: dict[str, str] = {
     "stearyl alcohol": "fatty_alcohol",
     "glycerin": "glycerin",
     "glycerine": "glycerin",
+    "sodium chloride": "salt",
+    "cocamide dea": "cocamide_dea",
+    "polyquaternium-7": "polyquaternium",
+    "polyquaternium 7": "polyquaternium",
+    "citric acid": "citric_acid",
+    "disodium edta": "edta",
+    "tetrasodium edta": "edta",
     "panthenol": "panthenol",
     "niacinamide": "niacinamide",
     "salicylic acid": "bha",
@@ -404,23 +412,78 @@ def _axis_percent(
 
 def _ingredient_fit_row(name: str, axes: list[str]) -> dict[str, Any]:
     canon = normalize_ingredient(name)
+    fact = ingredient_fact(canon)
+    known = is_known_fact(canon)
+    helped = [tag for tag in axes if canon and canon in _HELPS.get(tag, frozenset())]
+    hurt = [tag for tag in axes if canon and canon in _HURTS.get(tag, frozenset())]
     if not canon or canon not in _KNOWN_ACTIVES:
-        return {"name": name, "percent": None, "tone": "neutral"}
-    if canon in DANGEROUS_CANON:
-        return {"name": name, "percent": 8, "tone": "bad"}
-    helped = sum(1 for tag in axes if canon in _HELPS.get(tag, frozenset()))
-    hurt = sum(1 for tag in axes if canon in _HURTS.get(tag, frozenset()))
-    score = 70.0 + min(26, helped * 14) - min(56, hurt * 22)
-    if helped == 0 and hurt == 0:
-        score -= 8
-    percent = max(0, min(100, int(round(score))))
-    if percent >= 75:
-        tone = "good"
-    elif percent >= 50:
-        tone = "caution"
-    else:
+        tone = "neutral"
+        percent = None
+    elif canon in DANGEROUS_CANON:
         tone = "bad"
-    return {"name": name, "percent": percent, "tone": tone}
+        percent = 8
+    else:
+        score = 70.0 + min(26, len(helped) * 14) - min(56, len(hurt) * 22)
+        if not helped and not hurt:
+            score -= 8
+        percent = max(0, min(100, int(round(score))))
+        if percent >= 75:
+            tone = "good"
+        elif percent >= 50:
+            tone = "caution"
+        else:
+            tone = "bad"
+    return {
+        "name": name,
+        "percent": percent,
+        "tone": tone,
+        "known": known,
+        "role_uz": fact["role"],
+        "about_uz": fact["about"],
+        "formula_uz": fact["formula"],
+        "hair_uz": hair_line(tone, helped, hurt, _labels),
+    }
+
+
+def enrich_ingredient_rows(
+    rows: list[dict[str, Any]],
+    *,
+    notes: list[dict[str, Any]] | None = None,
+    alerts: list[dict[str, Any]] | None = None,
+    beneficial: list[dict[str, Any]] | None = None,
+) -> None:
+    """Lug'atda yo'q moddaga skan izohini qo'shadi. Ogohlantirishni takrorlamaydi."""
+    notes_by: dict[str, dict[str, Any]] = {}
+    for note in notes or []:
+        if not isinstance(note, dict):
+            continue
+        key = normalize_ingredient(str(note.get("ingredient") or ""))
+        if key:
+            notes_by[key] = note
+    alert_by: dict[str, str] = {}
+    for alert in alerts or []:
+        if not isinstance(alert, dict):
+            continue
+        key = normalize_ingredient(str(alert.get("ingredient") or ""))
+        message = str(alert.get("message_uz") or "").strip()
+        if key and message:
+            alert_by[key] = message
+    good_by: dict[str, str] = {}
+    for item in beneficial or []:
+        if not isinstance(item, dict):
+            continue
+        key = normalize_ingredient(str(item.get("ingredient") or ""))
+        message = str(item.get("reason_uz") or "").strip()
+        if key and message:
+            good_by[key] = message
+    for row in rows:
+        key = normalize_ingredient(str(row.get("name") or ""))
+        apply_note(row, notes_by.get(key))
+        if row.get("known"):
+            continue
+        extra = alert_by.get(key) or good_by.get(key) or ""
+        if extra:
+            row["hair_uz"] = extra[:280]
 
 
 def _build_hair_fit(
@@ -454,7 +517,7 @@ def _build_hair_fit(
     return {
         "overall": overall,
         "dimensions": dimensions,
-        "ingredients": [_ingredient_fit_row(name, axis_tags) for name in ordered[:24]],
+        "ingredients": [_ingredient_fit_row(name, axis_tags) for name in ordered[:40]],
         "profile": {key: value for key, value in axes.items() if value},
     }
 

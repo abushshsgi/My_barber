@@ -55,7 +55,7 @@ from .services.tryon_queue import (
 )
 from .services.gemini_barber_card import generate_barber_master_card
 from .services.care_catalog_context import build_care_catalog_context
-from .services.care_match import match_care_product, score_against_hair
+from .services.care_match import enrich_ingredient_rows, match_care_product, score_against_hair
 from .services.gemini_ingredient import analyze_ingredient_from_data_url
 from .services.gemini_style import (
     NO_FACE_MESSAGE,
@@ -639,6 +639,16 @@ class AiIngredientScanView(UnthrottledAPIView):
                 "ingredients": [],
                 "profile": {},
             }
+            fit_rows = result["hair_fit"].get("ingredients")
+            if isinstance(fit_rows, list):
+                enrich_ingredient_rows(
+                    fit_rows,
+                    notes=result.get("ingredient_notes") if isinstance(result.get("ingredient_notes"), list) else [],
+                    alerts=result.get("critical_alerts") if isinstance(result.get("critical_alerts"), list) else [],
+                    beneficial=result.get("beneficial_ingredients")
+                    if isinstance(result.get("beneficial_ingredients"), list)
+                    else [],
+                )
             result["match_score"] = round(float(match_score), 3)
             result["flags"] = scored["flags"]
             result["good_flags"] = scored["good_flags"]

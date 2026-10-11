@@ -74,8 +74,12 @@ INSTRUCTIONS:
 7. Set verdict_key to one of: good, caution, bad, dangerous.
 8. fit_uz: 1–3 short Uzbek sentences — why this product fits or does not fit THIS hair.
 9. catalog_notes_uz: short Uzbek note (matched product summary or "Katalogda topilmadi").
-10. All user-facing messages (message_uz, reason_uz, verdict, fit_uz, catalog_notes_uz)
-    MUST be in Uzbek (Latin script).
+10. All user-facing messages (message_uz, reason_uz, verdict, fit_uz, catalog_notes_uz,
+    role_uz, about_uz, formula_uz, hair_uz) MUST be in Uzbek (Latin script).
+11. ingredient_notes: one short object per extracted ingredient (max 24).
+    Do not invent ingredients that are not on the label.
+    role_uz: 1–3 words. about_uz and formula_uz: one sentence each.
+    hair_uz: one sentence for THIS user's hair profile.
 
 OUTPUT FORMAT (Raw JSON only, no markdown):
 {{
@@ -104,6 +108,15 @@ OUTPUT FORMAT (Raw JSON only, no markdown):
       "ingredient": "Panthenol",
       "reason_uz": "Soch tolasini namlaydi va yumshatadi."
     }}
+  ],
+  "ingredient_notes": [
+    {{
+      "ingredient": "Panthenol",
+      "role_uz": "Namlagich",
+      "about_uz": "B5 provitamini, sochni yumshatadi.",
+      "formula_uz": "Tarashni osonlashtirish uchun qo'shiladi.",
+      "hair_uz": "Quruq soch uchun foydali."
+    }}
   ]
 }}
 
@@ -129,7 +142,8 @@ If the image is not an ingredient list or text is unreadable, return:
       "message_uz": "Rasmda INCI tarkib ro'yxati aniqlanmadi. Mahsulot orqasidagi Ingredients yozuvini aniqroq suratga oling."
     }}
   ],
-  "beneficial_ingredients": []
+  "beneficial_ingredients": [],
+  "ingredient_notes": []
 }}
 """
 
@@ -182,6 +196,31 @@ def _normalize_beneficial(raw: Any) -> list[dict[str, str]]:
             continue
         out.append({"ingredient": name, "reason_uz": reason})
     return out[:20]
+
+
+def _normalize_notes(raw: Any) -> list[dict[str, str]]:
+    if not isinstance(raw, list):
+        return []
+    out: list[dict[str, str]] = []
+    seen: set[str] = set()
+    for item in raw:
+        if not isinstance(item, dict):
+            continue
+        name = str(item.get("ingredient") or "").strip()
+        key = name.lower()
+        if not name or key in seen:
+            continue
+        seen.add(key)
+        out.append(
+            {
+                "ingredient": name[:120],
+                "role_uz": str(item.get("role_uz") or "").strip()[:40],
+                "about_uz": str(item.get("about_uz") or "").strip()[:280],
+                "formula_uz": str(item.get("formula_uz") or "").strip()[:280],
+                "hair_uz": str(item.get("hair_uz") or "").strip()[:280],
+            }
+        )
+    return out[:24]
 
 
 def _normalize_ingredients(raw: Any) -> list[str]:
@@ -241,6 +280,7 @@ def normalize_ingredient_analysis(data: dict[str, Any]) -> dict[str, Any]:
         "ingredients": ingredients,
         "critical_alerts": _normalize_alerts(data.get("critical_alerts")),
         "beneficial_ingredients": _normalize_beneficial(data.get("beneficial_ingredients")),
+        "ingredient_notes": _normalize_notes(data.get("ingredient_notes")),
     }
 
 

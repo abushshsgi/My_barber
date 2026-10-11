@@ -1253,7 +1253,12 @@
     "neutral": "Neutral",
     "catalogFormula": "Formula taken from the catalog product",
     "yourHair": "Your hair",
-    "ingredientFit": "By ingredient",
+    "ingredientFit": "Ingredients",
+    "tapHint": "Tap for details",
+    "whatTitle": "What it is",
+    "formulaTitle": "In the formula",
+    "hairTitle": "For your hair",
+    "closeDetail": "Close",
     "sensitive": "Sensitive",
     "verdicts": {
       "good": "Good",

@@ -1253,7 +1253,12 @@
     "neutral": "Нейтрально",
     "catalogFormula": "Состав взят из товара каталога",
     "yourHair": "Ваши волосы",
-    "ingredientFit": "По ингредиентам",
+    "ingredientFit": "Состав",
+    "tapHint": "Нажмите, чтобы открыть",
+    "whatTitle": "Что это",
+    "formulaTitle": "В формуле",
+    "hairTitle": "Для ваших волос",
+    "closeDetail": "Закрыть",
     "sensitive": "Чувствительная",
     "verdicts": {
       "good": "Хорошо",

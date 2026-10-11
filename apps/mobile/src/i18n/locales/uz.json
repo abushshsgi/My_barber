@@ -1253,7 +1253,12 @@
     "neutral": "Neytral",
     "catalogFormula": "Tarkib katalogdagi mahsulotdan olindi",
     "yourHair": "Sizning sochingiz",
-    "ingredientFit": "Moddalar bo‘yicha",
+    "ingredientFit": "Moddalar",
+    "tapHint": "Batafsil ko‘rish uchun bosing",
+    "whatTitle": "Nima bu",
+    "formulaTitle": "Formulada",
+    "hairTitle": "Sochingiz uchun",
+    "closeDetail": "Yopish",
     "sensitive": "Sezgir",
     "verdicts": {
       "good": "Yaxshi",

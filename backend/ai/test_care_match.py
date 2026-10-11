@@ -163,3 +163,6 @@ def test_hair_fit_percents_follow_user_hair():
     assert rows["Panthenol"]["percent"] > rows["Sodium Laureth Sulfate"]["percent"]
     assert rows["Aqua"]["tone"] == "neutral"
     assert rows["Aqua"]["percent"] is None
+    assert "suv" in rows["Aqua"]["about_uz"].lower()
+    assert rows["Sodium Laureth Sulfate"]["role_uz"]
+    assert "ehtiyot" in rows["Sodium Laureth Sulfate"]["hair_uz"].lower()
