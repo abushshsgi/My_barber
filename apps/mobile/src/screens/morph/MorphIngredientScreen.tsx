@@ -73,14 +73,6 @@ function bandColor(percent: number, pal: MorphPalette): string {
   return pal.destructive;
 }
 
-function verdictColor(verdict: string, percent: number | null, pal: MorphPalette): string {
-  if (verdict === "dangerous" || verdict === "bad") return pal.destructive;
-  if (verdict === "unread") return pal.muted;
-  if (verdict === "caution") return pal.warn;
-  if (percent != null) return bandColor(percent, pal);
-  return pal.fg;
-}
-
 export function MorphIngredientScreen({ navigation }: Props) {
   useHideTabBar();
   const { t } = useTranslation();
@@ -371,7 +363,6 @@ export function MorphIngredientScreen({ navigation }: Props) {
           : ingredientCount > 0;
     const overall = readable ? (fit?.overall ?? result.product_analysis.safety_score) : null;
     const verdict = readable ? String(result.verdict || result.verdict_key || "") : "unread";
-    const color = verdictColor(verdict, overall, pal);
     const matched = result.matched_product;
     const productName =
       result.product_analysis.product_name || matched?.name || t("ingredient.unknownProduct");
@@ -391,6 +382,9 @@ export function MorphIngredientScreen({ navigation }: Props) {
       { kind: "scalp", tag: fit?.profile?.scalp || "" },
     ].filter((item) => item.tag);
     const unreadMessage = result.critical_alerts?.[0]?.message_uz || t("ingredient.unreadBody");
+    const fitLine = [result.fit_uz, result.product_analysis.verdict]
+      .map((line) => (line || "").trim())
+      .find((line) => line && !/o['‘’]qilmadi/i.test(line));
     const cardStyle = {
       backgroundColor: pal.card,
       borderColor: pal.line,
@@ -444,45 +438,58 @@ export function MorphIngredientScreen({ navigation }: Props) {
             </View>
           ) : (
             <>
-              <View style={[cardStyle, { marginTop: 18, padding: 18 }]}>
-                <Text style={[styles.badge, { color: pal.muted }]}>{t("ingredient.hairFitTitle")}</Text>
-                <View style={styles.scoreRow}>
-                  <Text style={[styles.scoreNum, { color }]}>{overall}</Text>
-                  <Text style={[styles.scoreDenom, { color: pal.muted }]}>/ 100</Text>
+              <View style={styles.heroBlock}>
+                {preview ? (
+                  <Image source={{ uri: preview }} style={styles.heroThumb} contentFit="cover" />
+                ) : null}
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  {brand ? <Text style={[styles.heroBrand, { color: pal.muted }]}>{brand}</Text> : null}
+                  <Text style={[styles.heroName, { color: pal.fg }]}>{productName}</Text>
+                  <Text style={[styles.heroMeta, { color: pal.muted }]}>
+                    {t("ingredient.ingredientsCount", { count: ingredientCount })}
+                    {result.ingredients_source === "catalog" ? ` · ${t("ingredient.catalogFormula")}` : ""}
+                  </Text>
                 </View>
-                {verdict ? (
-                  <View style={[styles.verdictPill, { backgroundColor: pal.cardStrong }]}>
-                    <Text style={[styles.verdictLabel, { color, marginTop: 0 }]}>
-                      {t(`ingredient.verdicts.${verdict}`, { defaultValue: verdict })}
-                    </Text>
-                  </View>
-                ) : null}
-                {profileBits.length > 0 ? (
-                  <View style={{ marginTop: 16 }}>
-                    <Text style={[styles.badge, { color: pal.muted }]}>{t("ingredient.yourHair")}</Text>
-                    <View style={styles.chipRow}>
-                      {profileBits.map((item) => (
-                        <View key={item.kind} style={[styles.chip, { backgroundColor: pal.cardStrong }]}>
-                          <Text style={[styles.chipText, { color: pal.fg }]}>
-                            {axisLabel(item.kind, item.tag)}
-                          </Text>
-                        </View>
-                      ))}
-                    </View>
-                  </View>
-                ) : null}
               </View>
 
-              {(fit?.dimensions || []).length > 0 ? (
-                <View style={[cardStyle, { marginTop: 12, padding: 18, gap: 14 }]}>
-                  {fit!.dimensions.map((dim) => (
-                    <View key={dim.key}>
-                      <View style={styles.dimHead}>
-                        <Text style={[styles.dimLabel, { color: pal.fg }]}>{dimTitle(dim.key)}</Text>
-                        <Text style={[styles.dimPct, { color: bandColor(dim.percent, pal) }]}>
-                          {axisLabel(dim.key, dim.tag)} · {dim.percent}%
-                        </Text>
+              <View style={[styles.scoreBand, { backgroundColor: pal.fg }]}>
+                <View>
+                  <Text style={[styles.scoreBandNum, { color: pal.bg }]}>{overall}</Text>
+                  <Text style={[styles.scoreBandDenom, { color: pal.bg }]}>/ 100</Text>
+                </View>
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text style={[styles.scoreBandLabel, { color: pal.bg }]}>{t("ingredient.hairFitTitle")}</Text>
+                  {verdict ? (
+                    <Text style={[styles.scoreBandVerdict, { color: pal.bg }]}>
+                      {t(`ingredient.verdicts.${verdict}`, { defaultValue: verdict })}
+                    </Text>
+                  ) : null}
+                </View>
+              </View>
+
+              {profileBits.length > 0 ? (
+                <View style={styles.chipRow}>
+                  {profileBits.map((item) => {
+                    const label = axisLabel(item.kind, item.tag);
+                    const text = item.kind === "scalp" ? `${dimTitle("scalp")} · ${label}` : label;
+                    return (
+                      <View key={item.kind} style={[styles.chip, { backgroundColor: pal.card, borderColor: pal.line, borderWidth: 1 }]}>
+                        <Text style={[styles.chipText, { color: pal.fg }]}>{text}</Text>
                       </View>
+                    );
+                  })}
+                </View>
+              ) : null}
+
+              {(fit?.dimensions || []).length > 0 ? (
+                <View style={styles.dimGrid}>
+                  {fit!.dimensions.map((dim) => (
+                    <View key={dim.key} style={[styles.dimCell, { backgroundColor: pal.card, borderColor: pal.line }]}>
+                      <Text style={[styles.dimLabel, { color: pal.muted }]}>{dimTitle(dim.key)}</Text>
+                      <Text style={[styles.dimCellValue, { color: pal.fg }]} numberOfLines={1}>
+                        {axisLabel(dim.key, dim.tag)}
+                      </Text>
+                      <Text style={[styles.dimCellPct, { color: bandColor(dim.percent, pal) }]}>{dim.percent}%</Text>
                       <View style={[styles.track, { backgroundColor: pal.track }]}>
                         <View
                           style={[
@@ -499,32 +506,9 @@ export function MorphIngredientScreen({ navigation }: Props) {
                 </View>
               ) : null}
 
-              <View style={[cardStyle, styles.productCard]}>
-                {preview ? (
-                  <Image source={{ uri: preview }} style={styles.resultThumb} contentFit="cover" />
-                ) : (
-                  <View style={[styles.resultThumb, { backgroundColor: pal.cardStrong, alignItems: "center", justifyContent: "center" }]}>
-                    <Ionicons name="flask-outline" size={18} color={pal.muted} />
-                  </View>
-                )}
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.productName, { color: pal.fg, marginTop: 0 }]}>{productName}</Text>
-                  {brand ? <Text style={[styles.brand, { color: pal.muted }]}>{brand}</Text> : null}
-                  <Text style={[styles.count, { color: pal.muted }]}>
-                    {t("ingredient.ingredientsCount", { count: ingredientCount })}
-                  </Text>
-                </View>
-              </View>
-              {result.fit_uz || result.product_analysis.verdict ? (
-                <Text style={[styles.fit, { color: pal.fg }]}>
-                  {result.fit_uz || result.product_analysis.verdict}
-                </Text>
-              ) : null}
+              {fitLine ? <Text style={[styles.fit, { color: pal.fg }]}>{fitLine}</Text> : null}
               {result.catalog_notes_uz ? (
                 <Text style={[styles.notes, { color: pal.muted }]}>{result.catalog_notes_uz}</Text>
-              ) : null}
-              {result.ingredients_source === "catalog" ? (
-                <Text style={[styles.notes, { color: pal.muted }]}>{t("ingredient.catalogFormula")}</Text>
               ) : null}
             </>
           )}
@@ -762,6 +746,62 @@ const styles = StyleSheet.create({
     color: "#fff",
     letterSpacing: -0.4,
   },
+  heroBlock: {
+    marginTop: verticalScale(22),
+    flexDirection: "row",
+    alignItems: "center",
+    gap: moderateScale(14),
+  },
+  heroThumb: {
+    width: scale(64),
+    height: scale(64),
+    borderRadius: moderateScale(18),
+  },
+  heroBrand: {
+    ...morphFont,
+    fontSize: fontSize(12),
+    fontWeight: "600",
+    letterSpacing: 0.4,
+    textTransform: "uppercase",
+  },
+  heroName: {
+    ...morphFont,
+    marginTop: 2,
+    fontSize: fontSize(22),
+    fontWeight: "700",
+    letterSpacing: -0.4,
+    lineHeight: fontSize(26),
+  },
+  heroMeta: { ...morphFont, marginTop: 4, fontSize: fontSize(12) },
+  scoreBand: {
+    marginTop: verticalScale(18),
+    borderRadius: moderateScale(22),
+    paddingHorizontal: moderateScale(18),
+    paddingVertical: verticalScale(16),
+    flexDirection: "row",
+    alignItems: "center",
+    gap: moderateScale(16),
+  },
+  scoreBandNum: { ...morphFont, fontSize: fontSize(44), fontWeight: "700", letterSpacing: -1.5 },
+  scoreBandDenom: { ...morphFont, marginTop: -2, fontSize: fontSize(12), opacity: 0.7 },
+  scoreBandLabel: { ...morphFont, fontSize: fontSize(12), opacity: 0.75 },
+  scoreBandVerdict: { ...morphFont, marginTop: 2, fontSize: fontSize(18), fontWeight: "700" },
+  dimGrid: {
+    marginTop: verticalScale(12),
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: moderateScale(8),
+  },
+  dimCell: {
+    flexBasis: "47%",
+    flexGrow: 1,
+    borderRadius: moderateScale(18),
+    borderWidth: 1,
+    padding: moderateScale(12),
+    gap: 2,
+  },
+  dimCellValue: { ...morphFont, fontSize: fontSize(15), fontWeight: "700" },
+  dimCellPct: { ...morphFont, fontSize: fontSize(13), fontWeight: "700" },
   heroTitle: {
     ...morphFont,
     marginTop: verticalScale(18),
