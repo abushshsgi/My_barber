@@ -42,15 +42,17 @@ function DoneCheck({
       accessibilityLabel={done ? "Bajarildi" : "Belgila"}
       style={[
         styles.checkBtn,
-        { width: scale(size), height: scale(size), borderRadius: moderateScale(7) },
+        {
+          width: scale(size),
+          height: scale(size),
+          borderRadius: scale(size) / 2,
+        },
         done ? styles.checkBtnOn : styles.checkBtnOff,
       ]}
     >
-      <Ionicons
-        name={done ? "checkmark" : "square-outline"}
-        size={iconSize}
-        color={done ? recChrome.onAccent : recChrome.fg}
-      />
+      {done ? (
+        <Ionicons name="checkmark" size={iconSize} color={recChrome.onAccent} />
+      ) : null}
     </Pressable>
   );
 }
@@ -93,7 +95,7 @@ export function RecommendationCard({
       <View style={[styles.featured, done && styles.cardDone]}>
         <View style={[styles.featuredImg, { width: imgSize, height: imgSize }]}>
           {item.image ? (
-            <Image source={item.image} style={styles.imgFill} contentFit="contain" />
+            <Image source={item.image} style={styles.imgFill} contentFit="cover" />
           ) : (
             <Ionicons
               name={(item.icon as keyof typeof Ionicons.glyphMap) || "flask-outline"}
@@ -125,7 +127,7 @@ export function RecommendationCard({
       <View style={[styles.tile, { width: w }, done && styles.cardDone]}>
         <View style={styles.tileImg}>
           {item.image ? (
-            <Image source={item.image} style={styles.imgFill} contentFit="contain" />
+            <Image source={item.image} style={styles.imgFill} contentFit="cover" />
           ) : (
             <Ionicons
               name={(item.icon as keyof typeof Ionicons.glyphMap) || "sparkles-outline"}
@@ -164,7 +166,7 @@ export function RecommendationCard({
       </View>
       {item.image ? (
         <View style={styles.stepThumb}>
-          <Image source={item.image} style={styles.imgFill} contentFit="contain" />
+          <Image source={item.image} style={styles.imgFill} contentFit="cover" />
         </View>
       ) : null}
     </View>
@@ -183,12 +185,14 @@ function createRecStyles(colors: ShellChrome) {
     borderRadius: moderateScale(16),
     padding: moderateScale(10),
     gap: moderateScale(10),
+    overflow: "hidden",
   },
   featuredImg: {
-    borderRadius: moderateScale(12),
-    backgroundColor: colors.promo,
+    borderRadius: moderateScale(14),
+    backgroundColor: colors.surface,
     overflow: "hidden",
-    padding: scale(6),
+    alignItems: "center",
+    justifyContent: "center",
   },
   featuredBody: { flex: 1, minWidth: 0, gap: 2 },
   metaRow: { flexDirection: "row", alignItems: "center", gap: 6 },
@@ -221,37 +225,31 @@ function createRecStyles(colors: ShellChrome) {
   checkBtn: {
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#000",
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 1 },
-    elevation: 2,
   },
   checkBtnOff: {
     backgroundColor: colors.surface,
     borderWidth: 1.5,
-    borderColor: "rgba(28,25,23,0.18)",
+    borderColor: colors.border,
   },
   checkBtnOn: {
     backgroundColor: "#16A34A",
     borderWidth: 1.5,
-    borderColor: "#15803D",
+    borderColor: "#16A34A",
   },
 
   tile: {
     backgroundColor: colors.surface,
-    borderRadius: moderateScale(14),
-    padding: moderateScale(8),
+    borderRadius: moderateScale(16),
+    overflow: "hidden",
+    paddingBottom: moderateScale(8),
     gap: 3,
   },
   tileImg: {
     width: "100%",
     aspectRatio: 1,
-    borderRadius: moderateScale(12),
-    backgroundColor: colors.promo,
+    backgroundColor: colors.surface,
     alignItems: "center",
     justifyContent: "center",
-    padding: scale(10),
     marginBottom: 2,
     overflow: "hidden",
   },
@@ -266,18 +264,21 @@ function createRecStyles(colors: ShellChrome) {
     fontWeight: "800",
     color: colors.muted,
     textTransform: "uppercase",
+    paddingHorizontal: moderateScale(8),
   },
   tileTitle: {
     ...morphFont,
     fontSize: fontSize(12),
     fontWeight: "800",
     color: colors.fg,
+    paddingHorizontal: moderateScale(8),
   },
   tileDesc: {
     ...morphFont,
     fontSize: fontSize(10),
     lineHeight: fontSize(14),
     color: colors.muted,
+    paddingHorizontal: moderateScale(8),
   },
 
   stepRow: {
@@ -311,10 +312,9 @@ function createRecStyles(colors: ShellChrome) {
   stepThumb: {
     width: scale(52),
     height: scale(52),
-    borderRadius: moderateScale(10),
-    backgroundColor: colors.promo,
+    borderRadius: moderateScale(12),
+    backgroundColor: colors.surface,
     overflow: "hidden",
-    padding: scale(4),
   },
   });
 }
