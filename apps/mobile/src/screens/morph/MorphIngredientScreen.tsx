@@ -452,57 +452,62 @@ export function MorphIngredientScreen({ navigation }: Props) {
                 </View>
               </View>
 
-              <View style={[styles.scoreBand, { backgroundColor: pal.fg }]}>
-                <View>
-                  <Text style={[styles.scoreBandNum, { color: pal.bg }]}>{overall}</Text>
-                  <Text style={[styles.scoreBandDenom, { color: pal.bg }]}>/ 100</Text>
-                </View>
-                <View style={{ flex: 1, minWidth: 0 }}>
-                  <Text style={[styles.scoreBandLabel, { color: pal.bg }]}>{t("ingredient.hairFitTitle")}</Text>
+              <View style={{ marginTop: 20 }}>
+                <Text style={[styles.badge, { color: pal.muted }]}>{t("ingredient.hairFitTitle")}</Text>
+                <View style={styles.scoreLine}>
+                  <Text style={[styles.scoreLineNum, { color: pal.fg }]}>{overall}</Text>
+                  <Text style={[styles.scoreLinePct, { color: pal.muted }]}>%</Text>
                   {verdict ? (
-                    <Text style={[styles.scoreBandVerdict, { color: pal.bg }]}>
-                      {t(`ingredient.verdicts.${verdict}`, { defaultValue: verdict })}
-                    </Text>
+                    <View style={[styles.verdictPill, { backgroundColor: pal.cardStrong, marginLeft: 8 }]}>
+                      <Text style={[styles.verdictLabel, { color: bandColor(overall ?? 0, pal), marginTop: 0 }]}>
+                        {t(`ingredient.verdicts.${verdict}`, { defaultValue: verdict })}
+                      </Text>
+                    </View>
                   ) : null}
                 </View>
+                <View style={[styles.track, { backgroundColor: pal.track, marginTop: 10, height: 6 }]}>
+                  <View
+                    style={[
+                      styles.fill,
+                      {
+                        height: 6,
+                        width: `${overall ?? 0}%` as `${number}%`,
+                        backgroundColor: bandColor(overall ?? 0, pal),
+                      },
+                    ]}
+                  />
+                </View>
+                {profileBits.length > 0 ? (
+                  <Text style={[styles.heroMeta, { color: pal.muted }]}>
+                    {profileBits
+                      .map((item) =>
+                        item.kind === "scalp"
+                          ? `${dimTitle("scalp")} ${axisLabel(item.kind, item.tag).toLowerCase()}`
+                          : axisLabel(item.kind, item.tag),
+                      )
+                      .join(" · ")}
+                  </Text>
+                ) : null}
               </View>
 
-              {profileBits.length > 0 ? (
-                <View style={styles.chipRow}>
-                  {profileBits.map((item) => {
-                    const label = axisLabel(item.kind, item.tag);
-                    const text = item.kind === "scalp" ? `${dimTitle("scalp")} · ${label}` : label;
-                    return (
-                      <View key={item.kind} style={[styles.chip, { backgroundColor: pal.card, borderColor: pal.line, borderWidth: 1 }]}>
-                        <Text style={[styles.chipText, { color: pal.fg }]}>{text}</Text>
-                      </View>
-                    );
-                  })}
-                </View>
-              ) : null}
-
               {(fit?.dimensions || []).length > 0 ? (
-                <View style={styles.dimGrid}>
-                  {fit!.dimensions.map((dim) => (
-                    <View key={dim.key} style={[styles.dimCell, { backgroundColor: pal.card, borderColor: pal.line }]}>
-                      <Text style={[styles.dimLabel, { color: pal.muted }]}>{dimTitle(dim.key)}</Text>
-                      <Text style={[styles.dimCellValue, { color: pal.fg }]} numberOfLines={1}>
-                        {axisLabel(dim.key, dim.tag)}
-                      </Text>
-                      <Text style={[styles.dimCellPct, { color: bandColor(dim.percent, pal) }]}>{dim.percent}%</Text>
-                      <View style={[styles.track, { backgroundColor: pal.track }]}>
-                        <View
-                          style={[
-                            styles.fill,
-                            {
-                              width: `${dim.percent}%` as `${number}%`,
-                              backgroundColor: bandColor(dim.percent, pal),
-                            },
-                          ]}
-                        />
+                <View style={[cardStyle, { marginTop: 16, paddingVertical: 6 }]}>
+                  {[...fit!.dimensions]
+                    .sort((a, b) => a.percent - b.percent)
+                    .map((dim, i) => (
+                      <View
+                        key={dim.key}
+                        style={[styles.fitRow, i > 0 && { borderTopWidth: 1, borderTopColor: pal.line }]}
+                      >
+                        <View style={{ flex: 1, minWidth: 0 }}>
+                          <Text style={[styles.dimLabel, { color: pal.muted }]}>{dimTitle(dim.key)}</Text>
+                          <Text style={[styles.fitRowValue, { color: pal.fg }]} numberOfLines={1}>
+                            {axisLabel(dim.key, dim.tag)}
+                          </Text>
+                        </View>
+                        <Text style={[styles.dimCellPct, { color: bandColor(dim.percent, pal) }]}>{dim.percent}%</Text>
                       </View>
-                    </View>
-                  ))}
+                    ))}
                 </View>
               ) : null}
 
@@ -546,39 +551,71 @@ export function MorphIngredientScreen({ navigation }: Props) {
           ) : null}
 
           {readable && rows.length > 0 ? (
-            <View style={{ marginTop: 22 }}>
-              <Text style={[styles.section, { color: pal.muted }]}>{t("ingredient.ingredientFit")}</Text>
-              <Text style={[styles.tapHint, { color: pal.muted }]}>{t("ingredient.tapHint")}</Text>
-              <View style={[cardStyle, { paddingVertical: 4 }]}>
-                {rows.map((row, i) => {
-                  const tone = row.percent == null ? pal.muted : bandColor(row.percent, pal);
-                  return (
-                    <Pressable
-                      key={`${row.name}-${i}`}
-                      onPress={() => setOpenIng(row)}
-                      style={[
-                        styles.ingRow,
-                        i > 0 && { borderTopWidth: 1, borderTopColor: pal.line },
-                      ]}
-                    >
-                      <View style={{ flex: 1, minWidth: 0 }}>
-                        <Text style={[styles.ingName, { color: pal.fg }]} numberOfLines={1}>
-                          {row.name}
-                        </Text>
-                        {row.role_uz ? (
-                          <Text style={[styles.ingRole, { color: pal.muted }]} numberOfLines={1}>
-                            {row.role_uz}
+            <View style={{ marginTop: 22, gap: 16 }}>
+              {(
+                [
+                  {
+                    key: "watch",
+                    title: t("ingredient.watchTitle"),
+                    items: rows
+                      .filter((row) => row.percent != null && row.tone !== "neutral" && row.percent < 75)
+                      .sort((a, b) => (a.percent ?? 0) - (b.percent ?? 0)),
+                  },
+                  {
+                    key: "good",
+                    title: t("ingredient.goodTitle"),
+                    items: rows.filter((row) => row.percent != null && row.percent >= 75),
+                  },
+                ] as const
+              ).map((group) =>
+                group.items.length > 0 ? (
+                  <View key={group.key}>
+                    <Text style={[styles.section, { color: pal.muted }]}>{group.title}</Text>
+                    <View style={[cardStyle, { paddingVertical: 4 }]}>
+                      {group.items.map((row, i) => (
+                        <Pressable
+                          key={`${row.name}-${i}`}
+                          onPress={() => setOpenIng(row)}
+                          style={[styles.ingRow, i > 0 && { borderTopWidth: 1, borderTopColor: pal.line }]}
+                        >
+                          <View style={{ flex: 1, minWidth: 0 }}>
+                            <Text style={[styles.ingName, { color: pal.fg }]} numberOfLines={1}>
+                              {row.name}
+                            </Text>
+                            {row.role_uz ? (
+                              <Text style={[styles.ingRole, { color: pal.muted }]} numberOfLines={1}>
+                                {row.role_uz}
+                              </Text>
+                            ) : null}
+                          </View>
+                          <Text style={[styles.dimPct, { color: bandColor(row.percent ?? 0, pal) }]}>
+                            {row.percent}%
                           </Text>
-                        ) : null}
-                      </View>
-                      <Text style={[styles.dimPct, { color: tone }]}>
-                        {row.percent == null ? t("ingredient.neutral") : `${row.percent}%`}
-                      </Text>
-                      <Ionicons name="chevron-forward" size={16} color={pal.muted} />
-                    </Pressable>
-                  );
-                })}
-              </View>
+                          <Ionicons name="chevron-forward" size={16} color={pal.muted} />
+                        </Pressable>
+                      ))}
+                    </View>
+                  </View>
+                ) : null,
+              )}
+              {rows.some((row) => row.percent == null || row.tone === "neutral") ? (
+                <View>
+                  <Text style={[styles.section, { color: pal.muted }]}>{t("ingredient.plainTitle")}</Text>
+                  <View style={styles.chipRow}>
+                    {rows
+                      .filter((row) => row.percent == null || row.tone === "neutral")
+                      .map((row, i) => (
+                        <Pressable
+                          key={`${row.name}-${i}`}
+                          onPress={() => setOpenIng(row)}
+                          style={[styles.chip, { backgroundColor: pal.card, borderColor: pal.line, borderWidth: 1 }]}
+                        >
+                          <Text style={[styles.chipText, { color: pal.fg }]}>{row.name}</Text>
+                        </Pressable>
+                      ))}
+                  </View>
+                </View>
+              ) : null}
             </View>
           ) : null}
 
@@ -786,6 +823,23 @@ const styles = StyleSheet.create({
   scoreBandDenom: { ...morphFont, marginTop: -2, fontSize: fontSize(12), opacity: 0.7 },
   scoreBandLabel: { ...morphFont, fontSize: fontSize(12), opacity: 0.75 },
   scoreBandVerdict: { ...morphFont, marginTop: 2, fontSize: fontSize(18), fontWeight: "700" },
+  scoreLine: { flexDirection: "row", alignItems: "flex-end", marginTop: verticalScale(4) },
+  scoreLineNum: {
+    ...morphFont,
+    fontSize: fontSize(40),
+    fontWeight: "700",
+    letterSpacing: -1.2,
+    lineHeight: fontSize(44),
+  },
+  scoreLinePct: { ...morphFont, marginBottom: verticalScale(6), marginLeft: 2, fontSize: fontSize(16) },
+  fitRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: moderateScale(12),
+    paddingHorizontal: moderateScale(14),
+    paddingVertical: verticalScale(12),
+  },
+  fitRowValue: { ...morphFont, marginTop: 2, fontSize: fontSize(16), fontWeight: "700" },
   dimGrid: {
     marginTop: verticalScale(12),
     flexDirection: "row",
