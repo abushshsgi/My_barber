@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { useIsFocused } from "@react-navigation/native";
 import { Image } from "expo-image";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -9,6 +10,7 @@ import {
   Animated,
   BackHandler,
   Easing,
+  Linking,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -143,6 +145,8 @@ export function MorphIngredientScreen({ navigation }: Props) {
   const { goMorph } = useShellNavigation();
   const cameraRef = useRef<CameraView>(null);
   const barcodeLock = useRef(false);
+  const cameraAsked = useRef(false);
+  const focused = useIsFocused();
   const frameBox = useRef<ScanRect>({ x: 0, y: 0, width: 0, height: 0 });
   const rootBox = useRef({ width: 0, height: 0 });
   const scanLine = useRef(new Animated.Value(0)).current;
@@ -206,8 +210,16 @@ export function MorphIngredientScreen({ navigation }: Props) {
   }, []);
 
   useEffect(() => {
-    if (!camPerm?.granted) void requestCamPerm();
-  }, [camPerm?.granted, requestCamPerm]);
+    if (!focused) {
+      cameraAsked.current = false;
+      return;
+    }
+    if (booting || phase !== "capture") return;
+    if (!camPerm || camPerm.granted || camPerm.canAskAgain === false) return;
+    if (cameraAsked.current) return;
+    cameraAsked.current = true;
+    void requestCamPerm();
+  }, [booting, camPerm, focused, phase, requestCamPerm]);
 
   const syncProfile = useCallback(async (answers: CareQuizAnswers) => {
     if (!hasQuizFields(answers)) return;
@@ -890,7 +902,7 @@ export function MorphIngredientScreen({ navigation }: Props) {
         };
       }}
     >
-      {camPerm?.granted ? (
+      {focused && camPerm?.granted ? (
         <CameraView
           ref={cameraRef}
           style={StyleSheet.absoluteFill}
@@ -1011,7 +1023,17 @@ export function MorphIngredientScreen({ navigation }: Props) {
           <View style={styles.barcodeIdle} />
         )}
         {!camPerm?.granted ? (
-          <Pressable style={styles.galleryBtn} onPress={() => void requestCamPerm()}>
+          <Pressable
+            style={styles.galleryBtn}
+            onPress={() => {
+              if (camPerm && camPerm.canAskAgain === false) {
+                void Linking.openSettings();
+                return;
+              }
+              cameraAsked.current = true;
+              void requestCamPerm();
+            }}
+          >
             <Ionicons name="camera-outline" size={18} color="#FFF" />
             <Text style={styles.galleryBtnText}>{t("ingredient.camera")}</Text>
           </Pressable>
