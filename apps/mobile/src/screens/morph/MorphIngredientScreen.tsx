@@ -96,6 +96,7 @@ export function MorphIngredientScreen({ navigation }: Props) {
   const barcodeLock = useRef(false);
   const [camPerm, requestCamPerm] = useCameraPermissions();
   const [scanMode, setScanMode] = useState<ScanMode>("product");
+  const [scanSheetH, setScanSheetH] = useState(0);
 
   const [booting, setBooting] = useState(true);
   const [access, setAccess] = useState<{ allowed: boolean; detail?: string } | null>(null);
@@ -847,7 +848,10 @@ export function MorphIngredientScreen({ navigation }: Props) {
         style={[styles.closeX, { top: insets.top + 8 }]}
       />
       {error ? <Text style={[styles.scanError, { top: insets.top + 56 }]}>{error}</Text> : null}
-      <View style={[styles.scanSheet, { paddingBottom: safeBottom(insets.bottom, 12) }]}>
+      <View
+        pointerEvents="box-none"
+        style={[styles.modeFloat, { bottom: scanSheetH + 10 }]}
+      >
         <View style={styles.modeRow}>
           {(["product", "barcode"] as const).map((mode) => {
             const on = scanMode === mode;
@@ -863,7 +867,7 @@ export function MorphIngredientScreen({ navigation }: Props) {
               >
                 <Ionicons
                   name={mode === "barcode" ? "barcode-outline" : "cube-outline"}
-                  size={16}
+                  size={13}
                   color={on ? "#111" : "#fff"}
                 />
                 <Text style={[styles.modeBtnText, on && styles.modeBtnTextOn]}>
@@ -873,12 +877,11 @@ export function MorphIngredientScreen({ navigation }: Props) {
             );
           })}
         </View>
-        <Text style={styles.sheetTitle}>
-          {scanMode === "barcode" ? t("ingredient.barcodeTitle") : t("ingredient.title")}
-        </Text>
-        <Text style={styles.sheetSub}>
-          {scanMode === "barcode" ? t("ingredient.barcodeSubtitle") : t("ingredient.subtitle")}
-        </Text>
+      </View>
+      <View
+        style={[styles.scanSheet, { paddingBottom: safeBottom(insets.bottom, 12) }]}
+        onLayout={(e) => setScanSheetH(e.nativeEvent.layout.height)}
+      >
         {scanMode === "product" ? (
           <>
             <Pressable
@@ -1148,25 +1151,35 @@ const styles = StyleSheet.create({
     borderRadius: 2,
     backgroundColor: "rgba(255,255,255,0.9)",
   },
+  modeFloat: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    zIndex: 4,
+    alignItems: "center",
+  },
   modeRow: {
     flexDirection: "row",
-    gap: moderateScale(8),
-    marginBottom: verticalScale(16),
+    alignItems: "center",
+    gap: 3,
+    padding: 3,
+    borderRadius: 999,
+    backgroundColor: "rgba(0,0,0,0.42)",
   },
   modeBtn: {
-    flex: 1,
-    height: verticalScale(40),
+    height: 28,
+    paddingHorizontal: 10,
     borderRadius: 999,
-    backgroundColor: "rgba(255,255,255,0.08)",
+    backgroundColor: "transparent",
     alignItems: "center",
     justifyContent: "center",
     flexDirection: "row",
-    gap: moderateScale(6),
+    gap: 4,
   },
   modeBtnOn: { backgroundColor: "#fff" },
   modeBtnText: {
     ...morphFont,
-    fontSize: fontSize(13),
+    fontSize: fontSize(11),
     fontWeight: "700",
     color: "#fff",
   },
@@ -1211,24 +1224,9 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: moderateScale(28),
     borderTopRightRadius: moderateScale(28),
     paddingHorizontal: scale(24),
-    paddingTop: verticalScale(22),
+    paddingTop: verticalScale(16),
     borderTopWidth: StyleSheet.hairlineWidth,
     borderColor: "rgba(255,255,255,0.08)",
-  },
-  sheetTitle: {
-    ...morphFont,
-    fontSize: fontSize(22),
-    fontWeight: "700",
-    color: "#FFF",
-    letterSpacing: -0.4,
-    lineHeight: fontSize(28),
-  },
-  sheetSub: {
-    ...morphFont,
-    marginTop: verticalScale(8),
-    fontSize: fontSize(14),
-    lineHeight: fontSize(20),
-    color: "rgba(255,255,255,0.55)",
   },
   captureBtn: {
     marginTop: verticalScale(18),
