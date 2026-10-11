@@ -1215,21 +1215,18 @@ export function MorphCareScreen({ navigation, route }: Props) {
 
   if (viewMode === "hub") {
     const hubTopPad = safeTop(insets.top, 10);
-    const hubBottomPad = Math.max(hubLayout.dockClearance, safeBottom(insets.bottom, 28));
+    const hubBottomPad = safeBottom(insets.bottom, 8);
     return (
       <View style={[styles.hubRoot, { paddingBottom: hubBottomPad }]}>
         <AppStatusBar style={pal.status} />
         <View style={[StyleSheet.absoluteFill, { backgroundColor: pal.bg }]} />
 
-        <ScrollView
-          style={styles.hubScroll}
-          contentContainerStyle={[
+        <View
+          style={[
+            styles.hubScroll,
             styles.hubScrollContent,
             { paddingTop: hubTopPad },
           ]}
-          keyboardShouldPersistTaps="handled"
-          nestedScrollEnabled
-          showsVerticalScrollIndicator={false}
           pointerEvents={searchOpen ? "none" : "auto"}
         >
             <WeatherHeaderCard
@@ -1448,12 +1445,15 @@ export function MorphCareScreen({ navigation, route }: Props) {
               ))}
             </View>
 
-          {/* Search Bar */}
+          {/* Search Bar — ob-havo banneri bilan bir ustun, ekranga qarab. */}
           <View
             style={[
               styles.searchSection,
               {
-                paddingHorizontal: hubLayout.hPad,
+                width: "100%",
+                maxWidth: hubLayout.promoMaxW,
+                alignSelf: "center",
+                paddingHorizontal: 0,
                 marginTop: hubLayout.sectionGap,
                 marginBottom: hubLayout.searchCatGap,
               },
@@ -1465,6 +1465,8 @@ export function MorphCareScreen({ navigation, route }: Props) {
                 styles.searchHubBtn,
                 {
                   width: "100%",
+                  maxWidth: hubLayout.promoMaxW,
+                  alignSelf: "center",
                   height: hubLayout.searchUi.h,
                   paddingLeft: hubLayout.searchUi.padL,
                   paddingRight: hubLayout.searchUi.padR,
@@ -1493,23 +1495,33 @@ export function MorphCareScreen({ navigation, route }: Props) {
             </Pressable>
           </View>
 
-          {/* Featured */}
+          {/* Featured — ko‘rinadigan qator ob-havo banneri kengligida. */}
+          <View
+            style={{
+              width: "100%",
+              maxWidth: hubLayout.promoMaxW,
+              alignSelf: "center",
+              overflow: "hidden",
+              marginTop: Math.max(4, Math.round(hubLayout.sectionGap * 0.55)),
+              marginBottom: hubLayout.sectionGap,
+            }}
+          >
           <ScrollView
             horizontal
             nestedScrollEnabled={true}
             showsHorizontalScrollIndicator={false}
             style={{
+              width: "100%",
               height: hubLayout.featuredH + Math.max(2, Math.round(hubLayout.sectionGap * 0.35)),
               flexGrow: 0,
               flexShrink: 0,
-              marginTop: Math.max(4, Math.round(hubLayout.sectionGap * 0.55)),
-              marginBottom: hubLayout.sectionGap,
             }}
             contentContainerStyle={[
               styles.featuredProductsScroll,
               {
                 height: hubLayout.featuredH,
                 alignItems: "stretch",
+                paddingHorizontal: 0,
                 paddingVertical: verticalScale(4),
               },
             ]}
@@ -1706,6 +1718,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
               );
             })}
           </ScrollView>
+          </View>
 
           {/* Hisobot sheet — featured kartochkalar ostida */}
             <View style={styles.hubDockOuter}>
@@ -1832,7 +1845,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
 
               </View>
             </View>
-        </ScrollView>
+        </View>
 
         {searchOpen ? (
           <>

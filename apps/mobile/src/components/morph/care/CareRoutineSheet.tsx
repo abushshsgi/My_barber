@@ -656,36 +656,46 @@ export function CareRoutineSheet({
         showsVerticalScrollIndicator={false}
       >
         {emptyOnly ? (
-          <View style={styles.emptyHero}>
-            <View style={styles.emptyGlow} />
-            <View style={styles.emptyIconRing}>
-              <Ionicons name="leaf-outline" size={30} color={chrome.fg} />
-            </View>
-            <Text style={styles.emptyEyebrow}>
-              {t("care.hubParvarish", { defaultValue: "Parvarish" })}
-            </Text>
-            <Text style={styles.emptyHeroTitle}>
-              {t("care.myProducts.emptyTitle", { defaultValue: "Hali mahsulot yo‘q" })}
-            </Text>
-            <Text style={styles.emptyHeroSub}>
-              {t("care.routine.needProducts", {
-                defaultValue: "Reja sizning mahsulotlaringiz bilan tuziladi — avval qo‘shing",
-              })}
-            </Text>
-            <Pressable style={styles.emptyPrimaryCta} onPress={onOpenCatalog}>
-              <Ionicons name="search-outline" size={18} color="#fff" />
-              <Text style={styles.emptyPrimaryCtaText}>
-                {t("care.catalog.title", { defaultValue: "Tavsiya etilgan mahsulotlar" })}
-              </Text>
-            </Pressable>
-            <Pressable style={styles.emptySecondaryCta} onPress={onOpenScan}>
-              <View style={styles.emptySecondaryIcon}>
-                <Ionicons name="scan-outline" size={16} color={chrome.fg} />
+          <View style={styles.emptyBoard}>
+            <View style={styles.emptyIntro}>
+              <View style={styles.emptyMark}>
+                <Ionicons name="layers-outline" size={22} color={chrome.fg} />
               </View>
-              <Text style={styles.emptySecondaryCtaText}>
-                {t("care.myProducts.scan", { defaultValue: "Skaner" })}
-              </Text>
-            </Pressable>
+              <View style={styles.emptyIntroCopy}>
+                <Text style={styles.emptyHeroTitle}>
+                  {t("care.myProducts.emptyTitle", { defaultValue: "Hali mahsulot yo‘q" })}
+                </Text>
+                <Text style={styles.emptyHeroSub}>
+                  {t("care.routine.needProducts", {
+                    defaultValue: "Reja sizning mahsulotlaringiz bilan tuziladi — avval qo‘shing",
+                  })}
+                </Text>
+              </View>
+            </View>
+            <View style={styles.emptyActions}>
+              <Pressable style={styles.emptyTile} onPress={onOpenCatalog}>
+                <View style={styles.emptyTileIcon}>
+                  <Ionicons name="beaker-outline" size={22} color={chrome.fg} />
+                </View>
+                <Text style={styles.emptyTileTitle}>
+                  {t("care.catalog.title", { defaultValue: "Soch vositalari" })}
+                </Text>
+                <Text style={styles.emptyTileSub} numberOfLines={2}>
+                  {t("care.myProducts.source.catalog", { defaultValue: "Katalog" })}
+                </Text>
+              </Pressable>
+              <Pressable style={styles.emptyTile} onPress={onOpenScan}>
+                <View style={styles.emptyTileIcon}>
+                  <Ionicons name="qr-code-outline" size={22} color={chrome.fg} />
+                </View>
+                <Text style={styles.emptyTileTitle}>
+                  {t("care.myProducts.scan", { defaultValue: "Skan" })}
+                </Text>
+                <Text style={styles.emptyTileSub} numberOfLines={2}>
+                  {t("care.myProducts.source.scanHint", { defaultValue: "Skan orqali" })}
+                </Text>
+              </Pressable>
+            </View>
           </View>
         ) : showRestoring ? (
           <ActivityIndicator color={chrome.fg} style={{ marginTop: verticalScale(48) }} />
@@ -1074,110 +1084,80 @@ function createRoutineStyles(colors: ShellChrome) {
     fontWeight: "600",
     color: colors.fg,
   },
-  emptyHero: {
-    borderRadius: moderateScale(26),
+  emptyBoard: {
+    gap: moderateScale(14),
+  },
+  emptyIntro: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: moderateScale(12),
+    paddingHorizontal: scale(4),
+    paddingTop: verticalScale(6),
+  },
+  emptyMark: {
+    width: scale(44),
+    height: scale(44),
+    borderRadius: moderateScale(14),
     backgroundColor: colors.surface,
-    paddingVertical: verticalScale(32),
-    paddingHorizontal: scale(22),
-    alignItems: "center",
-    gap: moderateScale(10),
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
-    overflow: "hidden",
-    shadowColor: "#111",
-    shadowOpacity: 0.05,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 2,
-  },
-  emptyGlow: {
-    position: "absolute",
-    top: -40,
-    width: scale(180),
-    height: scale(180),
-    borderRadius: scale(90),
-    backgroundColor: colors.promo,
-    opacity: 0.9,
-  },
-  emptyIconRing: {
-    width: scale(64),
-    height: scale(64),
-    borderRadius: scale(32),
-    backgroundColor: colors.promo,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: verticalScale(2),
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
   },
-  emptyEyebrow: {
-    ...morphFont,
-    fontSize: fontSize(10),
-    fontWeight: "700",
-    letterSpacing: 0.8,
-    textTransform: "uppercase",
-    color: colors.muted,
+  emptyIntroCopy: {
+    flex: 1,
+    minWidth: 0,
+    gap: moderateScale(4),
   },
   emptyHeroTitle: {
     ...morphFont,
     fontSize: fontSize(20),
     fontWeight: "800",
     color: colors.fg,
-    textAlign: "center",
     letterSpacing: -0.4,
   },
   emptyHeroSub: {
     ...morphFont,
     fontSize: fontSize(13),
     lineHeight: fontSize(18),
-    color: "rgba(17,17,17,0.55)",
-    textAlign: "center",
-    marginBottom: verticalScale(4),
-  },
-  emptyHeroHint: {
-    ...morphFont,
-    fontSize: fontSize(11),
     color: colors.muted,
-    textAlign: "center",
   },
-  emptyPrimaryCta: {
+  emptyActions: {
     flexDirection: "row",
-    alignItems: "center",
-    gap: moderateScale(8),
-    backgroundColor: colors.fg,
-    borderRadius: 999,
-    paddingHorizontal: scale(20),
-    paddingVertical: verticalScale(13),
-    minWidth: "86%",
-    justifyContent: "center",
-    marginTop: verticalScale(4),
+    gap: moderateScale(10),
   },
-  emptyPrimaryCtaText: {
-    ...morphFont,
-    fontSize: fontSize(14),
-    fontWeight: "700",
-    color: colors.onAccent,
-  },
-  emptySecondaryCta: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: moderateScale(8),
-    paddingVertical: verticalScale(10),
+  emptyTile: {
+    flex: 1,
+    minHeight: verticalScale(148),
+    borderRadius: moderateScale(22),
+    backgroundColor: colors.surface,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
     paddingHorizontal: scale(14),
+    paddingVertical: verticalScale(16),
+    gap: moderateScale(8),
   },
-  emptySecondaryIcon: {
-    width: scale(28),
-    height: scale(28),
-    borderRadius: scale(14),
+  emptyTileIcon: {
+    width: scale(40),
+    height: scale(40),
+    borderRadius: moderateScale(12),
     backgroundColor: colors.promo,
     alignItems: "center",
     justifyContent: "center",
+    marginBottom: verticalScale(4),
   },
-  emptySecondaryCtaText: {
+  emptyTileTitle: {
     ...morphFont,
-    fontSize: fontSize(13),
-    fontWeight: "600",
+    fontSize: fontSize(15),
+    fontWeight: "800",
     color: colors.fg,
+    letterSpacing: -0.2,
+  },
+  emptyTileSub: {
+    ...morphFont,
+    fontSize: fontSize(12),
+    lineHeight: fontSize(16),
+    color: colors.muted,
   },
   celebrateOverlay: {
     ...StyleSheet.absoluteFill,

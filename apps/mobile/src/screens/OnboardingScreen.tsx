@@ -294,7 +294,7 @@ export function OnboardingScreen({ onComplete }: { onComplete?: () => void }) {
               accessibilityLabel={t("onboarding.continue")}
             >
               <Text style={styles.primaryText}>{t("onboarding.continue")}</Text>
-              <Ionicons name="arrow-forward" size={18} color={colors.forest} />
+              <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />
             </Pressable>
           </Animated.View>
 
@@ -335,7 +335,7 @@ function Field({
   return (
     <View style={[styles.field, active && styles.fieldActive]}>
       <View style={[styles.iconWrap, active && styles.iconWrapActive]}>
-        <Ionicons name={icon} size={18} color={active ? colors.forest : colors.muted} />
+        <Ionicons name={icon} size={18} color={active ? colors.surface : colors.muted} />
       </View>
       <View style={styles.fieldBody}>
         <Text style={[styles.fieldLabel, active && styles.fieldLabelActive]}>
@@ -354,7 +354,7 @@ function Field({
           onBlur={onBlur}
           style={styles.input}
           underlineColorAndroid="transparent"
-          selectionColor={colors.forest}
+          selectionColor={colors.fg}
           {...(Platform.OS === "android"
             ? { includeFontPadding: false, textAlignVertical: "center" as const }
             : null)}
@@ -367,14 +367,14 @@ function Field({
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.bg,
   },
   center: {
     alignItems: "center",
     justifyContent: "center",
   },
   saving: {
-    color: colors.forest,
+    color: colors.fg,
     fontSize: fontSize(15),
     fontWeight: "600",
   },
@@ -398,17 +398,17 @@ const styles = StyleSheet.create({
     flex: 1,
     height: verticalScale(5),
     borderRadius: moderateScale(999),
-    backgroundColor: "#EEF6E0",
+    backgroundColor: colors.promo,
   },
   progressSegOn: {
-    backgroundColor: colors.lime,
+    backgroundColor: colors.fg,
   },
   title: {
     marginTop: verticalScale(6),
     fontSize: fontSize(28),
     lineHeight: fontSize(34),
     fontWeight: "800",
-    color: colors.forest,
+    color: colors.fg,
     letterSpacing: -0.6,
     textAlign: "center",
   },
@@ -427,27 +427,27 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: moderateScale(12),
-    backgroundColor: "#F7F8F5",
+    backgroundColor: colors.surface,
     borderRadius: moderateScale(20),
     borderWidth: 1.5,
-    borderColor: "transparent",
+    borderColor: colors.border,
     paddingHorizontal: scale(14),
     paddingVertical: verticalScale(10),
   },
   fieldActive: {
-    backgroundColor: "#F4FBE6",
-    borderColor: colors.lime,
+    backgroundColor: colors.surface,
+    borderColor: colors.fg,
   },
   iconWrap: {
     width: scale(36),
     height: scale(36),
     borderRadius: moderateScale(12),
-    backgroundColor: colors.surface,
+    backgroundColor: colors.promo,
     alignItems: "center",
     justifyContent: "center",
   },
   iconWrapActive: {
-    backgroundColor: colors.lime,
+    backgroundColor: colors.fg,
   },
   fieldBody: {
     flex: 1,
@@ -460,7 +460,7 @@ const styles = StyleSheet.create({
     marginBottom: verticalScale(2),
   },
   fieldLabelActive: {
-    color: colors.forest,
+    color: colors.fg,
   },
   input: {
     fontSize: fontSize(17),
@@ -497,7 +497,7 @@ const styles = StyleSheet.create({
   primary: {
     minHeight: verticalScale(56),
     borderRadius: moderateScale(28),
-    backgroundColor: colors.lime,
+    backgroundColor: colors.fg,
     paddingHorizontal: scale(22),
     flexDirection: "row",
     alignItems: "center",
@@ -505,7 +505,7 @@ const styles = StyleSheet.create({
     gap: moderateScale(8),
   },
   primaryText: {
-    color: colors.forest,
+    color: "#FFFFFF",
     fontSize: fontSize(16),
     fontWeight: "800",
     letterSpacing: -0.2,
