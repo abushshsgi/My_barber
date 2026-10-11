@@ -14,7 +14,12 @@ from ai.admin_parvarish_views import _unique_slug
 from ai.care_serializers import CareProductSerializer
 from ai.models import HairCareProfile
 from ai.services.barcode_country import detect_country_from_barcode, normalize_barcode
-from ai.services.care_match import parse_ingredients_text, score_against_hair, suitability_for_user
+from ai.services.care_match import (
+    enrich_ingredient_rows,
+    parse_ingredients_text,
+    score_against_hair,
+    suitability_for_user,
+)
 from ai.services.errors import AiStyleError
 from ai.services.gemini_care_catalog import analyze_catalog_photos, decode_catalog_photo
 from ai.services.gemini_care_cover import make_catalog_cover
@@ -53,6 +58,13 @@ def _profile_from_request(request) -> HairCareProfile | None:
 def _fit_payload(product_like, ingredients: list[str], profile) -> dict:
     fit = suitability_for_user(product_like, profile)
     scored = score_against_hair(product_like, ingredients, profile, "")
+    hair_fit = scored.get("hair_fit") if isinstance(scored.get("hair_fit"), dict) else {}
+    rows = hair_fit.get("ingredients")
+    if isinstance(rows, list) and rows:
+        enrich_ingredient_rows(rows)
+    percent = fit.get("match_percent")
+    if isinstance(percent, int):
+        hair_fit["overall"] = percent
     return {
         "match_percent": fit["match_percent"],
         "fit_verdict": fit["fit_verdict"] or scored.get("verdict"),
@@ -60,6 +72,10 @@ def _fit_payload(product_like, ingredients: list[str], profile) -> dict:
         "usage_steps": fit["usage_steps"],
         "safety_score": scored.get("safety_score"),
         "flags": scored.get("flags") or [],
+        "verdict": scored.get("verdict"),
+        "readable": bool(scored.get("readable")),
+        "ingredients_source": scored.get("ingredients_source") or "none",
+        "hair_fit": hair_fit,
     }
 
 

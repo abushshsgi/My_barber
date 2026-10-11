@@ -94,7 +94,7 @@ export type CareProductBarcodeLookup = {
     prefix: string;
     is_matched: boolean;
   };
-  product: CareProduct & {
+  product?: CareProduct & {
     title?: string;
     ingredients_raw?: string;
     country_of_origin?: string;
@@ -106,6 +106,10 @@ export type CareProductBarcodeLookup = {
   fit_reasons?: string[];
   usage_steps?: Array<{ title: string; desc: string; icon?: string }>;
   safety_score?: number;
+  verdict?: string;
+  readable?: boolean;
+  ingredients_source?: string;
+  hair_fit?: HairFit;
 };
 
 export async function fetchCareProductByBarcode(
@@ -118,7 +122,101 @@ export async function fetchCareProductByBarcode(
   if (profile?.color_status) sp.set("color_status", profile.color_status);
   if (profile?.scalp) sp.set("scalp", profile.scalp);
   const q = sp.toString();
-  return apiJson(`/api/v1/products/barcode/${encodeURIComponent(barcode)}/${q ? `?${q}` : ""}`);
+  const res = await apiFetch(
+    `/api/v1/products/barcode/${encodeURIComponent(barcode)}/${q ? `?${q}` : ""}`,
+    { timeoutMs: 25_000 },
+  );
+  const body = (await res.json().catch(() => null)) as
+    | (CareProductBarcodeLookup & { detail?: string })
+    | null;
+  if (res.status === 404 && body && typeof body === "object" && "barcode" in body) {
+    return { ...body, found: false, product: body.product };
+  }
+  if (!res.ok) {
+    const detail =
+      body && typeof body.detail === "string" && body.detail.trim()
+        ? body.detail
+        : "Shtrix-kod bo'yicha mahsulot topilmadi.";
+    throw new Error(detail);
+  }
+  if (!body || typeof body !== "object" || !("barcode" in body)) {
+    throw new Error("Shtrix-kod javobi noto'g'ri.");
+  }
+  return body;
+}
+
+/** Barcode lookup ni mahsulot rasmi skani bilan bir xil natija shakliga keltiradi. */
+export function barcodeLookupToIngredientScan(
+  lookup: CareProductBarcodeLookup,
+): IngredientScanResponse {
+  const product = lookup.found ? lookup.product : undefined;
+  const fromFit = (lookup.hair_fit?.ingredients || []).map((row) => row.name).filter(Boolean);
+  const ingredients =
+    product?.ingredients && product.ingredients.length > 0 ? product.ingredients : fromFit;
+  const percent = typeof lookup.match_percent === "number" ? lookup.match_percent : null;
+  const name = (product?.name || product?.title || "").trim();
+  const brand = (product?.brand || "").trim();
+  const countryName = (lookup.country?.country_name || product?.country_of_origin || "").trim();
+  const hasId = typeof product?.id === "number" && product.id > 0;
+  const readable = Boolean(lookup.found && (name || ingredients.length > 0));
+  const overall = percent ?? lookup.hair_fit?.overall ?? null;
+  return {
+    product_analysis: {
+      safety_score: typeof overall === "number" ? overall : lookup.safety_score ?? 0,
+      verdict: lookup.fit_verdict || "",
+      total_ingredients_count: ingredients.length,
+      product_name: name,
+      brand,
+    },
+    ingredients,
+    critical_alerts: [],
+    beneficial_ingredients: [],
+    verdict: lookup.verdict || lookup.fit_verdict || (readable ? "good" : "unread"),
+    verdict_key: lookup.verdict || (readable ? "good" : "unread"),
+    readable,
+    matched_product_id: hasId ? product!.id : null,
+    matched_product: hasId
+      ? {
+          id: product!.id,
+          name: name || product!.name,
+          brand,
+          category: String(product!.category || "other"),
+          image_url: product!.image_url ?? null,
+          usage_uz: product!.usage_uz || "",
+          purpose_uz: product!.purpose_uz || "",
+          pros_uz: product!.pros_uz || "",
+          cons_uz: product!.cons_uz || "",
+          warnings_uz: product!.warnings_uz || "",
+          country_of_origin: countryName,
+        }
+      : null,
+    catalog_fit:
+      percent != null
+        ? {
+            match_percent: percent,
+            fit_verdict: lookup.fit_verdict,
+            fit_reasons: lookup.fit_reasons || [],
+          }
+        : null,
+    ingredients_source: lookup.ingredients_source || (lookup.found ? "catalog" : "none"),
+    hair_fit: lookup.hair_fit
+      ? { ...lookup.hair_fit, overall }
+      : {
+          overall,
+          dimensions: [],
+          ingredients: ingredients.map((ing) => ({
+            name: ing,
+            percent: null,
+            tone: "neutral" as const,
+          })),
+        },
+    fit_uz: (lookup.fit_reasons || []).filter(Boolean).join(" "),
+    country: {
+      country_name: countryName,
+      prefix: lookup.country?.prefix,
+      is_matched: Boolean(countryName),
+    },
+  };
 }
 
 export async function toggleCareProductLike(
@@ -215,8 +313,14 @@ export type IngredientScanResponse = {
     pros_uz: string;
     cons_uz: string;
     warnings_uz: string;
+    country_of_origin?: string;
   } | null;
   readable?: boolean;
+  country?: {
+    country_name: string;
+    prefix?: string;
+    is_matched?: boolean;
+  };
   catalog_fit?: {
     match_percent: number;
     fit_verdict?: string | null;

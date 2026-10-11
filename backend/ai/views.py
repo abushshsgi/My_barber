@@ -687,6 +687,19 @@ class AiIngredientScanView(UnthrottledAPIView):
                 if product is not None
                 else None
             )
+            country_name = ""
+            if product is not None:
+                country_name = str(getattr(product, "country_of_origin", "") or "").strip()
+                barcode_code = str(getattr(product, "barcode", "") or "").strip()
+                if not country_name and barcode_code:
+                    from ai.services.barcode_country import detect_country_from_barcode
+
+                    detected = detect_country_from_barcode(barcode_code)
+                    country_name = str(detected.get("country_name") or "").strip()
+            result["country"] = {
+                "country_name": country_name,
+                "is_matched": bool(country_name),
+            }
             photo = None
             try:
                 photo = image_file_from_data_url(str(image), f"scan-{user.pk}")

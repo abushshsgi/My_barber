@@ -9,7 +9,6 @@ import {
   Animated,
   BackHandler,
   Easing,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -21,6 +20,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { safeBottom, safeTop } from "../../lib/safe-area";
 import { fetchCareAccess } from "../../api/ai";
 import {
+  barcodeLookupToIngredientScan,
+  fetchCareProductByBarcode,
   fetchHairCareProfile,
   scanIngredient,
   updateHairCareProfile,
@@ -61,6 +62,9 @@ import {
 
 type Props = NativeStackScreenProps<MorphIngredientStackParamList, "IngredientScan">;
 type Phase = "capture" | "analyzing" | "result";
+type ScanMode = "product" | "barcode";
+
+const BARCODE_TYPES = ["ean13", "ean8", "upc_a", "upc_e", "code128", "code39"] as const;
 
 /** Care bilan bir xil — production oldidan false qiling. */
 const CARE_ACCESS_DEBUG = true;
@@ -89,7 +93,9 @@ export function MorphIngredientScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
   const { goMorph } = useShellNavigation();
   const cameraRef = useRef<CameraView>(null);
+  const barcodeLock = useRef(false);
   const [camPerm, requestCamPerm] = useCameraPermissions();
+  const [scanMode, setScanMode] = useState<ScanMode>("product");
 
   const [booting, setBooting] = useState(true);
   const [access, setAccess] = useState<{ allowed: boolean; detail?: string } | null>(null);
@@ -148,7 +154,6 @@ export function MorphIngredientScreen({ navigation }: Props) {
   }, []);
 
   useEffect(() => {
-    if (Platform.OS === "web") return;
     if (!camPerm?.granted) void requestCamPerm();
   }, [camPerm?.granted, requestCamPerm]);
 
@@ -247,7 +252,7 @@ export function MorphIngredientScreen({ navigation }: Props) {
     setCapturing(true);
     setError(null);
     try {
-      if (Platform.OS !== "web" && cameraRef.current && camPerm?.granted) {
+      if (cameraRef.current && camPerm?.granted) {
         const photo = await cameraRef.current.takePictureAsync({
           quality: 0.85,
           base64: true,
@@ -284,7 +289,53 @@ export function MorphIngredientScreen({ navigation }: Props) {
     }
   };
 
+  const runBarcode = async (raw: string) => {
+    const code = raw.replace(/\D/g, "");
+    if (code.length < 8 || barcodeLock.current || busy) return;
+    barcodeLock.current = true;
+    setBusy(true);
+    setError(null);
+    setResult(null);
+    setInMyProducts(false);
+    setPreview(null);
+    try {
+      await ensureHairProfile();
+      const lookup = await fetchCareProductByBarcode(code, {
+        condition: quiz.condition,
+        texture: quiz.texture,
+        color_status: quiz.colorStatus,
+      });
+      const analysis = barcodeLookupToIngredientScan(lookup);
+      if (!lookup.found) {
+        analysis.readable = false;
+        analysis.verdict = "unread";
+        analysis.verdict_key = "unread";
+        analysis.critical_alerts = [
+          {
+            type: "not_found",
+            ingredient: "",
+            severity: "medium",
+            message_uz: t("ingredient.barcodeNotFound"),
+          },
+        ];
+      }
+      const image = lookup.product?.image_url || null;
+      if (image) setPreview(image);
+      setResult(analysis);
+      const pid = analysis.matched_product?.id ?? analysis.matched_product_id;
+      if (pid) setInMyProducts(await isMyProduct(pid));
+    } catch (e) {
+      barcodeLock.current = false;
+      const msg = e instanceof Error ? e.message : t("ingredient.scanFailed");
+      setError(msg);
+      Alert.alert(t("ingredient.badge"), msg);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const resetScan = () => {
+    barcodeLock.current = false;
     setResult(null);
     setPreview(null);
     setError(null);
@@ -385,7 +436,9 @@ export function MorphIngredientScreen({ navigation }: Props) {
             <Image source={{ uri: preview }} style={[styles.analyzingImg, { backgroundColor: pal.cardStrong }]} contentFit="cover" />
           ) : null}
           <ActivityIndicator color={pal.fg} style={{ marginTop: 18 }} />
-          <Text style={[styles.analyzingTitle, { color: pal.fg }]}>{t("ingredient.analyzing")}</Text>
+          <Text style={[styles.analyzingTitle, { color: pal.fg }]}>
+            {scanMode === "barcode" ? t("ingredient.barcodeAnalyzing") : t("ingredient.analyzing")}
+          </Text>
           <Text style={[styles.analyzingSub, { color: pal.muted }]}>{t("ingredient.analyzingSub")}</Text>
         </View>
       </View>
@@ -418,10 +471,11 @@ export function MorphIngredientScreen({ navigation }: Props) {
     const rows =
       fit?.ingredients && fit.ingredients.length > 0
         ? fit.ingredients
-        : (result.ingredients || []).map((name) => ({
+            : (result.ingredients || []).map((name) => ({
             name,
             percent: null as number | null,
             tone: "neutral",
+            role_uz: undefined as string | undefined,
           }));
     const profileBits = [
       { kind: "condition", tag: fit?.profile?.condition || quiz.condition },
@@ -430,6 +484,12 @@ export function MorphIngredientScreen({ navigation }: Props) {
       { kind: "scalp", tag: fit?.profile?.scalp || "" },
     ].filter((item) => item.tag);
     const unreadMessage = result.critical_alerts?.[0]?.message_uz || t("ingredient.unreadBody");
+    const countryName = (
+      result.country?.country_name ||
+      result.matched_product?.country_of_origin ||
+      ""
+    ).trim();
+    const countryLine = `${t("ingredient.country")}: ${countryName || t("ingredient.countryUnknown")}`;
     const fitLine = [result.fit_uz, result.product_analysis.verdict]
       .map((line) => (line || "").trim())
       .find((line) => line && !/o['‘’]qilmadi/i.test(line));
@@ -472,6 +532,7 @@ export function MorphIngredientScreen({ navigation }: Props) {
               <Text style={[styles.productName, { color: pal.fg, marginTop: 14 }]}>
                 {t("ingredient.unreadTitle")}
               </Text>
+              <Text style={[styles.heroMeta, { color: pal.muted }]}>{countryLine}</Text>
               <Text style={[styles.fit, { color: pal.muted }]}>{unreadMessage}</Text>
               <View style={{ marginTop: 16, gap: 8 }}>
                 {[t("ingredient.unreadTip1"), t("ingredient.unreadTip2"), t("ingredient.unreadTip3")].map(
@@ -497,6 +558,7 @@ export function MorphIngredientScreen({ navigation }: Props) {
                     {t("ingredient.ingredientsCount", { count: ingredientCount })}
                     {result.ingredients_source === "catalog" ? ` · ${t("ingredient.catalogFormula")}` : ""}
                   </Text>
+                  <Text style={[styles.heroMeta, { color: pal.fg }]}>{countryLine}</Text>
                 </View>
               </View>
 
@@ -726,23 +788,37 @@ export function MorphIngredientScreen({ navigation }: Props) {
 
   return (
     <View style={styles.scanRoot}>
-      {Platform.OS !== "web" && camPerm?.granted ? (
+      {camPerm?.granted ? (
         <CameraView
           ref={cameraRef}
           style={StyleSheet.absoluteFill}
           facing="back"
           mode="picture"
+          barcodeScannerSettings={
+            scanMode === "barcode" ? { barcodeTypes: [...BARCODE_TYPES] } : undefined
+          }
+          onBarcodeScanned={
+            scanMode === "barcode" && !busy
+              ? (event) => {
+                  void runBarcode(String(event?.data || ""));
+                }
+              : undefined
+          }
         />
       ) : preview ? (
         <Image source={{ uri: preview }} style={StyleSheet.absoluteFill} contentFit="cover" />
       ) : (
         <View style={[StyleSheet.absoluteFill, styles.scanCamBg]} />
       )}
-      <View style={styles.scanViewfinder} pointerEvents="none">
+      <View
+        style={[styles.scanViewfinder, scanMode === "barcode" && styles.scanViewfinderBarcode]}
+        pointerEvents="none"
+      >
         <View style={[styles.corner, styles.tl]} />
         <View style={[styles.corner, styles.tr]} />
         <View style={[styles.corner, styles.bl]} />
         <View style={[styles.corner, styles.br]} />
+        {scanMode === "barcode" ? <View style={styles.barcodeLine} /> : null}
       </View>
       <NativeBackButton
         onPress={leaveIngredient}
@@ -753,36 +829,82 @@ export function MorphIngredientScreen({ navigation }: Props) {
       />
       {error ? <Text style={[styles.scanError, { top: insets.top + 56 }]}>{error}</Text> : null}
       <View style={[styles.scanSheet, { paddingBottom: safeBottom(insets.bottom, 12) }]}>
-        <Text style={styles.sheetTitle}>{t("ingredient.title")}</Text>
-        <Text style={styles.sheetSub}>{t("ingredient.subtitle")}</Text>
-        <Pressable
-          style={[styles.captureBtn, (capturing || busy) && styles.disabled]}
-          disabled={capturing || busy}
-          onPress={() => void captureFromCamera()}
-          accessibilityLabel={t("ingredient.capture", { defaultValue: "Rasmga olish" })}
-        >
-          {capturing ? (
-            <ActivityIndicator color="#111" />
-          ) : (
-            <>
-              <Ionicons name="camera" size={22} color="#111" />
-              <Text style={styles.captureBtnText}>
-                {t("ingredient.capture", { defaultValue: "Rasmga olish" })}
-              </Text>
-            </>
-          )}
-        </Pressable>
-        <Pressable
-          style={styles.galleryBtn}
-          onPress={() =>
-            void pickProductLabelFromGallery().then((uri) => {
-              if (uri) void runScan(uri);
-            })
-          }
-        >
-          <Ionicons name="images-outline" size={18} color="#FFF" />
-          <Text style={styles.galleryBtnText}>{t("ingredient.gallery")}</Text>
-        </Pressable>
+        <View style={styles.modeRow}>
+          {(["product", "barcode"] as const).map((mode) => {
+            const on = scanMode === mode;
+            return (
+              <Pressable
+                key={mode}
+                style={[styles.modeBtn, on && styles.modeBtnOn]}
+                onPress={() => {
+                  barcodeLock.current = false;
+                  setError(null);
+                  setScanMode(mode);
+                }}
+              >
+                <Ionicons
+                  name={mode === "barcode" ? "barcode-outline" : "cube-outline"}
+                  size={16}
+                  color={on ? "#111" : "#fff"}
+                />
+                <Text style={[styles.modeBtnText, on && styles.modeBtnTextOn]}>
+                  {mode === "barcode" ? t("ingredient.modeBarcode") : t("ingredient.modeProduct")}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+        <Text style={styles.sheetTitle}>
+          {scanMode === "barcode" ? t("ingredient.barcodeTitle") : t("ingredient.title")}
+        </Text>
+        <Text style={styles.sheetSub}>
+          {scanMode === "barcode" ? t("ingredient.barcodeSubtitle") : t("ingredient.subtitle")}
+        </Text>
+        {scanMode === "product" ? (
+          <>
+            <Pressable
+              style={[styles.captureBtn, (capturing || busy) && styles.disabled]}
+              disabled={capturing || busy}
+              onPress={() => void captureFromCamera()}
+              accessibilityLabel={t("ingredient.capture", { defaultValue: "Rasmga olish" })}
+            >
+              {capturing ? (
+                <ActivityIndicator color="#111" />
+              ) : (
+                <>
+                  <Ionicons name="camera" size={22} color="#111" />
+                  <Text style={styles.captureBtnText}>
+                    {t("ingredient.capture", { defaultValue: "Rasmga olish" })}
+                  </Text>
+                </>
+              )}
+            </Pressable>
+            <Pressable
+              style={styles.galleryBtn}
+              onPress={() =>
+                void pickProductLabelFromGallery().then((uri) => {
+                  if (uri) void runScan(uri);
+                })
+              }
+            >
+              <Ionicons name="images-outline" size={18} color="#FFF" />
+              <Text style={styles.galleryBtnText}>{t("ingredient.gallery")}</Text>
+            </Pressable>
+          </>
+        ) : (
+          <View style={styles.barcodeLive}>
+            {busy ? <ActivityIndicator color="#fff" /> : <Ionicons name="scan-outline" size={18} color="#fff" />}
+            <Text style={styles.barcodeLiveText}>
+              {busy ? t("ingredient.barcodeAnalyzing") : t("ingredient.barcodeLive")}
+            </Text>
+          </View>
+        )}
+        {!camPerm?.granted ? (
+          <Pressable style={styles.galleryBtn} onPress={() => void requestCamPerm()}>
+            <Ionicons name="camera-outline" size={18} color="#FFF" />
+            <Text style={styles.galleryBtnText}>{t("ingredient.camera")}</Text>
+          </Pressable>
+        ) : null}
       </View>
     </View>
   );
@@ -986,10 +1108,65 @@ const styles = StyleSheet.create({
   scanCamBg: { backgroundColor: "#1a1a1a" },
   scanViewfinder: {
     position: "absolute",
-    top: "18%",
-    left: "12%",
-    right: "12%",
-    bottom: "42%",
+    top: "22%",
+    left: "30%",
+    right: "30%",
+    height: verticalScale(132),
+  },
+  scanViewfinderBarcode: {
+    top: "34%",
+    left: "16%",
+    right: "16%",
+    height: verticalScale(78),
+  },
+  barcodeLine: {
+    position: "absolute",
+    left: scale(10),
+    right: scale(10),
+    top: "50%",
+    height: 2,
+    marginTop: -1,
+    borderRadius: 2,
+    backgroundColor: "rgba(255,255,255,0.9)",
+  },
+  modeRow: {
+    flexDirection: "row",
+    gap: moderateScale(8),
+    marginBottom: verticalScale(16),
+  },
+  modeBtn: {
+    flex: 1,
+    height: verticalScale(40),
+    borderRadius: 999,
+    backgroundColor: "rgba(255,255,255,0.08)",
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    gap: moderateScale(6),
+  },
+  modeBtnOn: { backgroundColor: "#fff" },
+  modeBtnText: {
+    ...morphFont,
+    fontSize: fontSize(13),
+    fontWeight: "700",
+    color: "#fff",
+  },
+  modeBtnTextOn: { color: "#111" },
+  barcodeLive: {
+    marginTop: verticalScale(18),
+    height: verticalScale(54),
+    borderRadius: 999,
+    backgroundColor: "rgba(255,255,255,0.08)",
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    gap: moderateScale(8),
+  },
+  barcodeLiveText: {
+    ...morphFont,
+    fontSize: fontSize(14),
+    fontWeight: "600",
+    color: "#fff",
   },
   closeX: {
     position: "absolute",
@@ -1084,25 +1261,25 @@ const styles = StyleSheet.create({
   sheetLink: { ...morphFont, fontSize: fontSize(13), fontWeight: "500", color: "rgba(255,255,255,0.55)", paddingVertical: verticalScale(8) },
   corner: {
     position: "absolute",
-    width: scale(28),
-    height: scale(28),
+    width: scale(14),
+    height: scale(14),
     borderColor: "#fff",
   },
-  tl: { top: 0, left: 0, borderTopWidth: 3, borderLeftWidth: 3, borderTopLeftRadius: moderateScale(10) },
-  tr: { top: 0, right: 0, borderTopWidth: 3, borderRightWidth: 3, borderTopRightRadius: moderateScale(10) },
+  tl: { top: 0, left: 0, borderTopWidth: 2, borderLeftWidth: 2, borderTopLeftRadius: moderateScale(5) },
+  tr: { top: 0, right: 0, borderTopWidth: 2, borderRightWidth: 2, borderTopRightRadius: moderateScale(5) },
   bl: {
     bottom: 0,
     left: 0,
-    borderBottomWidth: 3,
-    borderLeftWidth: 3,
-    borderBottomLeftRadius: moderateScale(10),
+    borderBottomWidth: 2,
+    borderLeftWidth: 2,
+    borderBottomLeftRadius: moderateScale(5),
   },
   br: {
     bottom: 0,
     right: 0,
-    borderBottomWidth: 3,
-    borderRightWidth: 3,
-    borderBottomRightRadius: moderateScale(10),
+    borderBottomWidth: 2,
+    borderRightWidth: 2,
+    borderBottomRightRadius: moderateScale(5),
   },
   iconBtn: {
     width: scale(40),
