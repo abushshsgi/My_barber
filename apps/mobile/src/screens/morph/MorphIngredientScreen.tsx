@@ -505,7 +505,7 @@ export function MorphIngredientScreen({ navigation }: Props) {
         <ScrollView
           contentContainerStyle={{
             paddingTop: safeTop(insets.top, 8),
-            paddingBottom: safeBottom(insets.bottom, 28),
+            paddingBottom: safeBottom(insets.bottom, 108),
             paddingHorizontal: 20,
           }}
           showsVerticalScrollIndicator={false}
@@ -680,8 +680,12 @@ export function MorphIngredientScreen({ navigation }: Props) {
                     <Pressable
                       key={`${row.name}-${i}`}
                       onPress={() => openIngredient(row)}
+                      accessibilityLabel={t("ingredient.tapHint")}
                       style={[styles.ingCell, { backgroundColor: pal.card, borderColor: pal.line }]}
                     >
+                      <View style={[styles.ingInfo, { backgroundColor: pal.cardStrong, borderColor: pal.line }]}>
+                        <Text style={[styles.ingInfoMark, { color: pal.fg }]}>i</Text>
+                      </View>
                       <Text style={[styles.ingName, { color: pal.fg }]} numberOfLines={2}>
                         {row.name}
                       </Text>
@@ -696,30 +700,42 @@ export function MorphIngredientScreen({ navigation }: Props) {
             </View>
           ) : null}
 
+        </ScrollView>
+        <View
+          style={[
+            styles.resultActions,
+            {
+              paddingBottom: safeBottom(insets.bottom, 10),
+              backgroundColor: pal.bg,
+              borderTopColor: pal.line,
+            },
+          ]}
+        >
           <Pressable
-            style={[styles.primaryBtn, { marginTop: 28, backgroundColor: pal.fg }]}
+            style={[styles.resultAction, { backgroundColor: pal.fg }]}
             onPress={resetScan}
           >
-            <Text style={[styles.primaryBtnText, { color: pal.bg }]}>{t("ingredient.scanAgain")}</Text>
+            <Ionicons name="scan-outline" size={18} color={pal.bg} />
+            <Text style={[styles.resultActionLabel, { color: pal.bg }]} numberOfLines={2}>
+              {t("ingredient.scanAgain")}
+            </Text>
           </Pressable>
           <Pressable
             style={[
-              styles.secondaryBtnFull,
-              { marginTop: 10, backgroundColor: pal.card, borderWidth: 1, borderColor: pal.line },
+              styles.resultAction,
+              { backgroundColor: pal.card, borderWidth: 1, borderColor: pal.line },
               inMyProducts && styles.secondaryBtnDisabled,
             ]}
             disabled={inMyProducts || addingProduct}
             onPress={() => void handleAddToMyProducts()}
           >
-            <Text style={[styles.secondaryBtnText, { color: pal.fg }]}>
-              {inMyProducts ? t("care.myProducts.alreadyAdded") : t("care.myProducts.addFromScan")}
+            <Ionicons name={inMyProducts ? "checkmark-circle" : "add-circle-outline"} size={18} color={pal.fg} />
+            <Text style={[styles.resultActionLabel, { color: pal.fg }]} numberOfLines={2}>
+              {inMyProducts ? t("care.myProducts.alreadyAdded") : t("care.myProducts.addShort")}
             </Text>
           </Pressable>
           <Pressable
-            style={[
-              styles.secondaryBtnFull,
-              { marginTop: 10, backgroundColor: pal.card, borderWidth: 1, borderColor: pal.line },
-            ]}
+            style={[styles.resultAction, { backgroundColor: pal.card, borderWidth: 1, borderColor: pal.line }]}
             onPress={() =>
               goMorph(navigation, "MorphCare", {
                 screen: "CareHome",
@@ -727,9 +743,12 @@ export function MorphIngredientScreen({ navigation }: Props) {
               })
             }
           >
-            <Text style={[styles.secondaryBtnText, { color: pal.fg }]}>{t("ingredient.openCatalog")}</Text>
+            <Ionicons name="grid-outline" size={18} color={pal.fg} />
+            <Text style={[styles.resultActionLabel, { color: pal.fg }]} numberOfLines={2}>
+              {t("ingredient.openCatalog")}
+            </Text>
           </Pressable>
-        </ScrollView>
+        </View>
         {openIng ? (
           <Animated.View
             style={[
@@ -1497,7 +1516,48 @@ const styles = StyleSheet.create({
     gap: moderateScale(12),
   },
   resultThumb: { width: scale(52), height: scale(52), borderRadius: moderateScale(14) },
-  ingName: { ...morphFont, fontSize: fontSize(14), fontWeight: "600" },
+  ingInfo: {
+    position: "absolute",
+    top: moderateScale(8),
+    right: moderateScale(8),
+    width: scale(18),
+    height: scale(18),
+    borderRadius: scale(9),
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  ingInfoMark: {
+    ...morphFont,
+    fontSize: fontSize(11),
+    fontWeight: "700",
+    lineHeight: fontSize(13),
+  },
+  ingName: { ...morphFont, fontSize: fontSize(14), fontWeight: "600", paddingRight: scale(20) },
+  resultActions: {
+    flexDirection: "row",
+    gap: moderateScale(8),
+    paddingHorizontal: scale(16),
+    paddingTop: verticalScale(10),
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  resultAction: {
+    flex: 1,
+    minHeight: verticalScale(58),
+    borderRadius: moderateScale(16),
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 4,
+    paddingHorizontal: scale(6),
+    paddingVertical: verticalScale(8),
+  },
+  resultActionLabel: {
+    ...morphFont,
+    fontSize: fontSize(11),
+    fontWeight: "700",
+    textAlign: "center",
+    lineHeight: fontSize(14),
+  },
   ingRole: { ...morphFont, marginTop: 2, fontSize: fontSize(12) },
   ingGrid: {
     flexDirection: "row",
