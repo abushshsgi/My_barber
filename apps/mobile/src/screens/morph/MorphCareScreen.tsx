@@ -1814,26 +1814,27 @@ export function MorphCareScreen({ navigation, route }: Props) {
                     <View style={styles.hubCardImg} pointerEvents="none">
                       <CareHubScanIllustration />
                     </View>
-                    <LinearGradient
-                      colors={["transparent", "rgba(17,17,17,0.58)"]}
-                      style={styles.hubCardScrim}
-                      pointerEvents="none"
-                    />
                     <View style={styles.hubCardBody}>
                       <View style={styles.hubStatusBadge}>
-                        <Text style={[styles.hubStatusText, { fontSize: hubLayout.sheetUi.statusFs }]}>
+                        <Text style={[styles.hubStatusText, { fontSize: hubLayout.sheetUi.statusFs, color: "#171717" }]}>
                           {t("care.hubStatusAnalyzed", { defaultValue: "Tahlil qilingan" })}
                         </Text>
                       </View>
                       <View style={styles.hubCardFooter}>
                         <Text
-                          style={[styles.hubCardTitle, { fontSize: hubLayout.sheetUi.cardTitleFs }]}
+                          style={[
+                            styles.hubCardTitle,
+                            { fontSize: hubLayout.sheetUi.cardTitleFs, color: "rgba(23,23,23,0.72)" },
+                          ]}
                           numberOfLines={1}
                         >
                           {t("care.hubTarkib")}
                         </Text>
                         <Text
-                          style={[styles.hubCardMetric, { fontSize: hubLayout.sheetUi.cardMetricFs }]}
+                          style={[
+                            styles.hubCardMetric,
+                            { fontSize: hubLayout.sheetUi.cardMetricFs, color: "#171717" },
+                          ]}
                           numberOfLines={1}
                         >
                           {t("care.hubTarkibMetric")}

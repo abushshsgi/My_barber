@@ -71,57 +71,71 @@ export function CareHubRoutineIllustration() {
   );
 }
 
-/** Tarkib kartasi — skaner telefon va mahsulot idishi. */
+const SCAN_BARS: Array<[number, number]> = [
+  [126, 2.8],
+  [130.2, 1.4],
+  [133, 4],
+  [138.4, 1.4],
+  [141.2, 2.6],
+  [145.2, 1.4],
+  [148, 4.8],
+  [154.2, 1.4],
+  [157, 2.8],
+  [161.2, 1.4],
+  [164, 3.6],
+];
+
+/** Tarkib kartasi — qo‘l telefon bilan noutbukdagi shtrix-kodni skanerlaydi. */
 export function CareHubScanIllustration() {
   return (
     <Svg
       width="100%"
       height="100%"
-      viewBox="0 0 200 174"
+      viewBox="0 0 200 250"
       preserveAspectRatio="xMidYMid slice"
       style={fill}
     >
-      <Defs>
-        <LinearGradient id="careHubScanBg" x1="0" y1="0" x2="1" y2="1">
-          <Stop offset="0" stopColor="#F7F6F3" />
-          <Stop offset="1" stopColor="#D5E7E3" />
-        </LinearGradient>
-        <LinearGradient id="careHubScreen" x1="0" y1="0" x2="1" y2="1">
-          <Stop offset="0" stopColor="#E7F4F1" />
-          <Stop offset="1" stopColor="#8FBDB4" />
-        </LinearGradient>
-      </Defs>
+      <Rect width="200" height="250" fill="#F6F6F4" />
 
-      <Rect width="200" height="174" fill="url(#careHubScanBg)" />
-      <Ellipse cx="168" cy="48" rx="48" ry="36" fill="#C5DDD8" opacity={0.85} />
+      <Rect x="104" y="58" width="82" height="66" rx="4" fill="#111111" />
+      <Rect x="110" y="64" width="70" height="54" fill="#F6F6F4" />
+      {SCAN_BARS.map(([x, w]) => (
+        <Rect key={`${x}-${w}`} x={x} y={76} width={w} height={30} fill="#111111" />
+      ))}
+      <Path
+        d="M120 84V74H130 M174 74H164 M174 74V84 M120 100V110H130 M174 110H164 M174 110V100"
+        stroke="#111111"
+        strokeWidth={2.2}
+        fill="none"
+        strokeLinecap="square"
+      />
+      <Rect x="104" y="124" width="82" height="8" fill="#111111" />
+      <Path d="M92 132H196L186 150H102Z" fill="#111111" />
+      <Rect x="128" y="138" width="36" height="3" rx="1.5" fill="#F6F6F4" />
 
-      <G transform="rotate(-14 118 58)">
-        <Rect x="78" y="28" width="86" height="54" rx="10" fill="#111111" />
-        <Rect x="84" y="34" width="74" height="42" rx="6" fill="url(#careHubScreen)" />
-        <Path d="M92 55h58" stroke="#FFFFFF" strokeWidth="1.5" opacity={0.7} />
+      <G transform="rotate(-18 58 118)">
         <Path
-          d="M96 46h8M96 64h8M146 46v8M154 46h-8M146 64h8M154 56v8"
-          stroke="#111111"
-          strokeWidth="1.6"
+          fill="#111111"
+          d="M36 90C24 88 16 100 18 114 20 126 30 130 36 118L34 140C22 146 12 152 10 162L8 172 28 180 40 164 40 144 38 94Z"
+        />
+        <Path
+          d="M14 158L32 172"
+          stroke="#F6F6F4"
+          strokeWidth={3.2}
           strokeLinecap="round"
+          fill="none"
+        />
+        <Rect x="32" y="68" width="48" height="84" rx="10" fill="#111111" />
+        <Rect x="36.5" y="78" width="39" height="68" rx="4" fill="#F6F6F4" />
+        <Rect x="44" y="72" width="22" height="5" rx="2.5" fill="#111111" />
+        <Path
+          d="M44 94V86H52 M70 86H62 M70 86V94 M44 128V136H52 M70 136H62 M70 136V128"
+          stroke="#111111"
+          strokeWidth={2}
+          fill="none"
+          strokeLinecap="square"
         />
       </G>
-
-      <Rect x="78" y="96" width="44" height="70" rx="14" fill="#F4F1EC" />
-      <Rect x="78" y="96" width="44" height="16" rx="8" fill="#3E8F86" />
-      <Path
-        d="M78 124c10 6 16-4 24 2s14-2 20 4v36H78v-42z"
-        fill="#7EB8B0"
-        opacity={0.85}
-      />
-      <Path
-        d="M78 136c12 4 14-6 26-2s16 2 18 6v24H78v-28z"
-        fill="#5AA39A"
-        opacity={0.9}
-      />
-
-      <Circle cx="46" cy="118" r="16" fill="#FFFFFF" opacity={0.7} />
-      <Path d="M46 108l2.2 5 5.2 2.2-5.2 2.2-2.2 5-2.2-5-5.2-2.2 5.2-2.2 2.2-5z" fill="#C6EF4A" />
     </Svg>
   );
 }
