@@ -20,7 +20,6 @@ import {
   ShieldCheck,
   UserCog,
   History,
-  Bell,
   Search,
   Command as CommandIcon,
   LogOut,
@@ -66,6 +65,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
+import { AdminPaymentAlerts } from "@/components/admin/AdminPaymentAlerts";
 
 // ============= Sections =============
 type NavItem = {
@@ -433,10 +433,7 @@ function Topbar({
           <Search className="size-4" />
         </Button>
 
-        <Button variant="ghost" size="icon" className="relative">
-          <Bell className="size-4" />
-          <span className="absolute top-1.5 right-1.5 size-2 rounded-full bg-destructive" />
-        </Button>
+        <AdminPaymentAlerts />
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
