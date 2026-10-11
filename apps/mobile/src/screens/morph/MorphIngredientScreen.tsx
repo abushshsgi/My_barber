@@ -47,6 +47,7 @@ import {
   pickProductLabelFromCamera,
   pickProductLabelFromGallery,
 } from "../../lib/product-label";
+import { playBarcodeBeep, primeBarcodeBeep } from "../../lib/barcode-beep";
 import { toDataUrl } from "../../lib/selfie";
 import { writeAppShell, writeLastShellTab } from "../../lib/app-shell";
 import { useShellNavigation } from "../../lib/shell-nav";
@@ -65,6 +66,54 @@ type Phase = "capture" | "analyzing" | "result";
 type ScanMode = "product" | "barcode";
 
 const BARCODE_TYPES = ["ean13", "ean8", "upc_a", "upc_e", "code128", "code39"] as const;
+
+type ScanRect = { x: number; y: number; width: number; height: number };
+
+type BarcodeHit = {
+  bounds?: { origin?: { x?: number; y?: number }; size?: { width?: number; height?: number } };
+  cornerPoints?: { x?: number; y?: number }[];
+};
+
+/** Kod markazi ramka ichida bo‘lsa qabul. Koordinata ishonchsiz bo‘lsa skan to‘xtamaydi. */
+function barcodeInFrame(event: BarcodeHit, frame: ScanRect, viewW: number, viewH: number) {
+  if (frame.width < 8 || frame.height < 8 || viewW < 8 || viewH < 8) return false;
+  const raw: { x: number; y: number }[] = [];
+  for (const point of event.cornerPoints ?? []) {
+    if (typeof point.x === "number" && typeof point.y === "number") raw.push({ x: point.x, y: point.y });
+  }
+  const origin = event.bounds?.origin;
+  const size = event.bounds?.size;
+  if (
+    !raw.length &&
+    typeof origin?.x === "number" &&
+    typeof origin?.y === "number" &&
+    typeof size?.width === "number" &&
+    typeof size?.height === "number"
+  ) {
+    raw.push(
+      { x: origin.x, y: origin.y },
+      { x: origin.x + size.width, y: origin.y },
+      { x: origin.x, y: origin.y + size.height },
+      { x: origin.x + size.width, y: origin.y + size.height },
+    );
+  }
+  if (!raw.length) return true;
+  const normalized = raw.every((p) => p.x >= 0 && p.y >= 0 && p.x <= 1.05 && p.y <= 1.05);
+  const pts = normalized ? raw.map((p) => ({ x: p.x * viewW, y: p.y * viewH })) : raw;
+  const cx = pts.reduce((sum, p) => sum + p.x, 0) / pts.length;
+  const cy = pts.reduce((sum, p) => sum + p.y, 0) / pts.length;
+  const pad = 16;
+  const inside =
+    cx >= frame.x - pad &&
+    cx <= frame.x + frame.width + pad &&
+    cy >= frame.y - pad &&
+    cy <= frame.y + frame.height + pad;
+  if (inside) return true;
+  const unusable = pts.every(
+    (p) => p.x < -40 || p.y < -40 || p.x > viewW + 80 || p.y > viewH + 80,
+  );
+  return unusable;
+}
 
 /** Care bilan bir xil — production oldidan false qiling. */
 const CARE_ACCESS_DEBUG = true;
@@ -94,9 +143,11 @@ export function MorphIngredientScreen({ navigation }: Props) {
   const { goMorph } = useShellNavigation();
   const cameraRef = useRef<CameraView>(null);
   const barcodeLock = useRef(false);
+  const frameBox = useRef<ScanRect>({ x: 0, y: 0, width: 0, height: 0 });
+  const rootBox = useRef({ width: 0, height: 0 });
+  const scanLine = useRef(new Animated.Value(0)).current;
   const [camPerm, requestCamPerm] = useCameraPermissions();
   const [scanMode, setScanMode] = useState<ScanMode>("product");
-  const [scanSheetH, setScanSheetH] = useState(0);
 
   const [booting, setBooting] = useState(true);
   const [access, setAccess] = useState<{ allowed: boolean; detail?: string } | null>(null);
@@ -227,6 +278,28 @@ export function MorphIngredientScreen({ navigation }: Props) {
     void bootstrap();
   }, [bootstrap]);
 
+  useEffect(() => {
+    if (scanMode !== "barcode") return;
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(scanLine, {
+          toValue: 1,
+          duration: 1300,
+          easing: Easing.inOut(Easing.quad),
+          useNativeDriver: true,
+        }),
+        Animated.timing(scanLine, {
+          toValue: 0,
+          duration: 1300,
+          easing: Easing.inOut(Easing.quad),
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [scanLine, scanMode]);
+
   const runScan = async (dataUrl: string) => {
     setBusy(true);
     setError(null);
@@ -294,6 +367,7 @@ export function MorphIngredientScreen({ navigation }: Props) {
     const code = raw.replace(/\D/g, "");
     if (code.length < 8 || barcodeLock.current || busy) return;
     barcodeLock.current = true;
+    playBarcodeBeep();
     setBusy(true);
     setError(null);
     setResult(null);
@@ -807,7 +881,15 @@ export function MorphIngredientScreen({ navigation }: Props) {
   }
 
   return (
-    <View style={styles.scanRoot}>
+    <View
+      style={styles.scanRoot}
+      onLayout={(e) => {
+        rootBox.current = {
+          width: e.nativeEvent.layout.width,
+          height: e.nativeEvent.layout.height,
+        };
+      }}
+    >
       {camPerm?.granted ? (
         <CameraView
           ref={cameraRef}
@@ -820,6 +902,9 @@ export function MorphIngredientScreen({ navigation }: Props) {
           onBarcodeScanned={
             scanMode === "barcode" && !busy
               ? (event) => {
+                  if (!barcodeInFrame(event, frameBox.current, rootBox.current.width, rootBox.current.height)) {
+                    return;
+                  }
                   void runBarcode(String(event?.data || ""));
                 }
               : undefined
@@ -833,12 +918,31 @@ export function MorphIngredientScreen({ navigation }: Props) {
       <View
         style={[styles.scanViewfinder, scanMode === "barcode" && styles.scanViewfinderBarcode]}
         pointerEvents="none"
+        onLayout={(e) => {
+          frameBox.current = e.nativeEvent.layout;
+        }}
       >
-        <View style={[styles.corner, styles.tl]} />
-        <View style={[styles.corner, styles.tr]} />
-        <View style={[styles.corner, styles.bl]} />
-        <View style={[styles.corner, styles.br]} />
-        {scanMode === "barcode" ? <View style={styles.barcodeLine} /> : null}
+        <View style={[styles.corner, styles.tl, busy && scanMode === "barcode" && styles.cornerHot]} />
+        <View style={[styles.corner, styles.tr, busy && scanMode === "barcode" && styles.cornerHot]} />
+        <View style={[styles.corner, styles.bl, busy && scanMode === "barcode" && styles.cornerHot]} />
+        <View style={[styles.corner, styles.br, busy && scanMode === "barcode" && styles.cornerHot]} />
+        {scanMode === "barcode" ? (
+          <Animated.View
+            style={[
+              styles.barcodeLine,
+              {
+                transform: [
+                  {
+                    translateY: scanLine.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [6, Math.max(20, verticalScale(78) - 14)],
+                    }),
+                  },
+                ],
+              },
+            ]}
+          />
+        ) : null}
       </View>
       <NativeBackButton
         onPress={leaveIngredient}
@@ -847,79 +951,64 @@ export function MorphIngredientScreen({ navigation }: Props) {
         backgroundColor="rgba(0,0,0,0.35)"
         style={[styles.closeX, { top: insets.top + 8 }]}
       />
-      {error ? <Text style={[styles.scanError, { top: insets.top + 56 }]}>{error}</Text> : null}
-      <View
-        pointerEvents="box-none"
-        style={[styles.modeFloat, { bottom: scanSheetH + 10 }]}
-      >
-        <View style={styles.modeRow}>
-          {(["product", "barcode"] as const).map((mode) => {
-            const on = scanMode === mode;
-            return (
-              <Pressable
-                key={mode}
-                style={[styles.modeBtn, on && styles.modeBtnOn]}
-                onPress={() => {
-                  barcodeLock.current = false;
-                  setError(null);
-                  setScanMode(mode);
-                }}
-              >
-                <Ionicons
-                  name={mode === "barcode" ? "barcode-outline" : "cube-outline"}
-                  size={13}
-                  color={on ? "#111" : "#fff"}
-                />
-                <Text style={[styles.modeBtnText, on && styles.modeBtnTextOn]}>
-                  {mode === "barcode" ? t("ingredient.modeBarcode") : t("ingredient.modeProduct")}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
-      </View>
-      <View
-        style={[styles.scanSheet, { paddingBottom: safeBottom(insets.bottom, 12) }]}
-        onLayout={(e) => setScanSheetH(e.nativeEvent.layout.height)}
-      >
-        {scanMode === "product" ? (
-          <>
+      <View style={[styles.modeRail, { top: insets.top + 64 }]}>
+        {(["product", "barcode"] as const).map((mode) => {
+          const on = scanMode === mode;
+          return (
             <Pressable
-              style={[styles.captureBtn, (capturing || busy) && styles.disabled]}
+              key={mode}
+              style={[styles.modeTile, on && styles.modeTileOn]}
+              onPress={() => {
+                barcodeLock.current = false;
+                setError(null);
+                if (mode === "barcode") primeBarcodeBeep();
+                setScanMode(mode);
+              }}
+            >
+              <Ionicons
+                name={mode === "barcode" ? "barcode-outline" : "cube-outline"}
+                size={18}
+                color={on ? "#111" : "#fff"}
+              />
+              <Text style={[styles.modeTileText, on && styles.modeTileTextOn]}>
+                {mode === "barcode" ? t("ingredient.modeBarcode") : t("ingredient.modeProduct")}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+      {error ? <Text style={[styles.scanError, { top: insets.top + 56 }]}>{error}</Text> : null}
+      <View style={[styles.scanDock, { paddingBottom: safeBottom(insets.bottom, 16) }]}>
+        {scanMode === "product" ? (
+          <View style={styles.shutterRow}>
+            <View style={styles.shutterSide} />
+            <Pressable
+              style={[styles.shutter, (capturing || busy) && styles.disabled]}
               disabled={capturing || busy}
               onPress={() => void captureFromCamera()}
               accessibilityLabel={t("ingredient.capture", { defaultValue: "Rasmga olish" })}
             >
-              {capturing ? (
-                <ActivityIndicator color="#111" />
-              ) : (
-                <>
-                  <Ionicons name="camera" size={22} color="#111" />
-                  <Text style={styles.captureBtnText}>
-                    {t("ingredient.capture", { defaultValue: "Rasmga olish" })}
-                  </Text>
-                </>
-              )}
+              {capturing ? <ActivityIndicator color="#111" /> : <View style={styles.shutterCore} />}
             </Pressable>
             <Pressable
-              style={styles.galleryBtn}
+              style={styles.shutterSide}
               onPress={() =>
                 void pickProductLabelFromGallery().then((uri) => {
                   if (uri) void runScan(uri);
                 })
               }
+              accessibilityLabel={t("ingredient.gallery")}
             >
-              <Ionicons name="images-outline" size={18} color="#FFF" />
-              <Text style={styles.galleryBtnText}>{t("ingredient.gallery")}</Text>
+              <Ionicons name="images-outline" size={20} color="#fff" />
             </Pressable>
-          </>
-        ) : (
-          <View style={styles.barcodeLive}>
-            {busy ? <ActivityIndicator color="#fff" /> : <Ionicons name="scan-outline" size={18} color="#fff" />}
-            <Text style={styles.barcodeLiveText}>
-              {busy ? t("ingredient.barcodeAnalyzing") : t("ingredient.barcodeLive")}
-            </Text>
           </View>
+        ) : busy ? (
+          <View style={styles.barcodeStatus}>
+            <ActivityIndicator color="#fff" />
+            <Text style={styles.barcodeLiveText}>{t("ingredient.barcodeAnalyzing")}</Text>
+          </View>
+        ) : (
+          <View style={styles.barcodeIdle} />
         )}
         {!camPerm?.granted ? (
           <Pressable style={styles.galleryBtn} onPress={() => void requestCamPerm()}>
@@ -1145,54 +1234,54 @@ const styles = StyleSheet.create({
     position: "absolute",
     left: scale(10),
     right: scale(10),
-    top: "50%",
+    top: 0,
     height: 2,
-    marginTop: -1,
     borderRadius: 2,
-    backgroundColor: "rgba(255,255,255,0.9)",
+    backgroundColor: "rgba(255,255,255,0.92)",
   },
-  modeFloat: {
+  modeRail: {
     position: "absolute",
-    left: 0,
-    right: 0,
+    right: scale(12),
     zIndex: 4,
-    alignItems: "center",
+    gap: 8,
   },
-  modeRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 3,
-    padding: 3,
-    borderRadius: 999,
-    backgroundColor: "rgba(0,0,0,0.42)",
-  },
-  modeBtn: {
-    height: 28,
-    paddingHorizontal: 10,
-    borderRadius: 999,
-    backgroundColor: "transparent",
+  modeTile: {
+    width: 62,
+    minHeight: 58,
+    borderRadius: 16,
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+    backgroundColor: "rgba(0,0,0,0.45)",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(255,255,255,0.18)",
     alignItems: "center",
     justifyContent: "center",
-    flexDirection: "row",
     gap: 4,
   },
-  modeBtnOn: { backgroundColor: "#fff" },
-  modeBtnText: {
+  modeTileOn: {
+    backgroundColor: "#fff",
+    borderColor: "#fff",
+  },
+  modeTileText: {
     ...morphFont,
-    fontSize: fontSize(11),
+    fontSize: fontSize(9),
     fontWeight: "700",
     color: "#fff",
   },
-  modeBtnTextOn: { color: "#111" },
-  barcodeLive: {
-    marginTop: verticalScale(18),
-    height: verticalScale(54),
+  modeTileTextOn: { color: "#111" },
+  barcodeStatus: {
+    height: 36,
     borderRadius: 999,
-    backgroundColor: "rgba(255,255,255,0.08)",
+    paddingHorizontal: 14,
+    backgroundColor: "rgba(0,0,0,0.45)",
     alignItems: "center",
     justifyContent: "center",
     flexDirection: "row",
-    gap: moderateScale(8),
+    alignSelf: "center",
+    gap: 8,
+  },
+  barcodeIdle: {
+    height: 36,
   },
   barcodeLiveText: {
     ...morphFont,
@@ -1215,18 +1304,44 @@ const styles = StyleSheet.create({
     color: "#FDA4AF",
     fontSize: fontSize(13),
   },
-  scanSheet: {
+  scanDock: {
     position: "absolute",
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: "#171717",
-    borderTopLeftRadius: moderateScale(28),
-    borderTopRightRadius: moderateScale(28),
+    paddingTop: 12,
     paddingHorizontal: scale(24),
-    paddingTop: verticalScale(16),
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(255,255,255,0.08)",
+    backgroundColor: "transparent",
+  },
+  shutterRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 28,
+  },
+  shutter: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    borderWidth: 3,
+    borderColor: "#fff",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(0,0,0,0.25)",
+  },
+  shutterCore: {
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    backgroundColor: "#fff",
+  },
+  shutterSide: {
+    width: 46,
+    height: 46,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(0,0,0,0.4)",
   },
   captureBtn: {
     marginTop: verticalScale(18),
@@ -1278,10 +1393,11 @@ const styles = StyleSheet.create({
   sheetLink: { ...morphFont, fontSize: fontSize(13), fontWeight: "500", color: "rgba(255,255,255,0.55)", paddingVertical: verticalScale(8) },
   corner: {
     position: "absolute",
-    width: scale(14),
-    height: scale(14),
+    width: scale(18),
+    height: scale(18),
     borderColor: "#fff",
   },
+  cornerHot: { borderColor: "#F5F5F5" },
   tl: { top: 0, left: 0, borderTopWidth: 2, borderLeftWidth: 2, borderTopLeftRadius: moderateScale(5) },
   tr: { top: 0, right: 0, borderTopWidth: 2, borderRightWidth: 2, borderTopRightRadius: moderateScale(5) },
   bl: {
