@@ -55,7 +55,12 @@ from .services.tryon_queue import (
 )
 from .services.gemini_barber_card import generate_barber_master_card
 from .services.care_catalog_context import build_care_catalog_context
-from .services.care_match import enrich_ingredient_rows, match_care_product, score_against_hair
+from .services.care_match import (
+    enrich_ingredient_rows,
+    match_care_product,
+    score_against_hair,
+    suitability_for_user,
+)
 from .services.gemini_ingredient import analyze_ingredient_from_data_url
 from .services.gemini_style import (
     NO_FACE_MESSAGE,
@@ -649,13 +654,33 @@ class AiIngredientScanView(UnthrottledAPIView):
                     if isinstance(result.get("beneficial_ingredients"), list)
                     else [],
                 )
+            if product is not None:
+                catalog_fit = suitability_for_user(product, profile)
+                percent = catalog_fit.get("match_percent")
+                if isinstance(percent, int):
+                    result["catalog_fit"] = {
+                        "match_percent": percent,
+                        "fit_verdict": catalog_fit.get("fit_verdict"),
+                        "fit_reasons": catalog_fit.get("fit_reasons") or [],
+                    }
+                    analysis["safety_score"] = percent
+                    result["hair_fit"]["overall"] = percent
+                    reasons = [str(x).strip() for x in (catalog_fit.get("fit_reasons") or []) if str(x).strip()]
+                    if reasons:
+                        result["fit_uz"] = " ".join(reasons)[:500]
+                        analysis["verdict"] = result["fit_uz"][:280]
+                    note = str(result.get("catalog_notes_uz") or "").lower()
+                    if "topilmadi" in note or "o'qilmadi" in note or "o‘qilmadi" in note:
+                        result["catalog_notes_uz"] = ""
+                    result["product_analysis"] = analysis
             result["match_score"] = round(float(match_score), 3)
             result["flags"] = scored["flags"]
             result["good_flags"] = scored["good_flags"]
             result["bad_flags"] = scored["bad_flags"]
             result["dangerous_flags"] = scored["dangerous_flags"]
-            result["fit_uz"] = fit_uz
-            result["catalog_notes_uz"] = catalog_notes_uz
+            if not result.get("catalog_fit"):
+                result["fit_uz"] = fit_uz
+                result["catalog_notes_uz"] = catalog_notes_uz
             result["matched_product_id"] = product.pk if product is not None else None
             result["matched_product"] = (
                 CareProductSerializer(product, context={"request": request}).data
@@ -674,7 +699,7 @@ class AiIngredientScanView(UnthrottledAPIView):
                 ingredients=ingredients,
                 matched_product=product,
                 verdict=scored["verdict"],
-                safety_score=scored["safety_score"],
+                safety_score=analysis.get("safety_score") if isinstance(analysis.get("safety_score"), int) else scored["safety_score"],
                 result={k: v for k, v in result.items() if k != "matched_product"},
             )
             record_ai_generation(

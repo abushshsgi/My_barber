@@ -1241,6 +1241,12 @@
     "ingredientsCount": "{{count}} ingredients",
     "scanAgain": "Scan again",
     "hairFitTitle": "Match for your hair",
+    "catalogFit": {
+      "excellent": "Excellent fit",
+      "good": "Good fit",
+      "ok": "Average fit",
+      "poor": "Poor fit"
+    },
     "unreadTitle": "Ingredients not read",
     "unreadBody": "The Ingredients list is not visible. We will not guess a score — take a clearer photo.",
     "unreadTip1": "The Ingredients text on the back should be fully visible",

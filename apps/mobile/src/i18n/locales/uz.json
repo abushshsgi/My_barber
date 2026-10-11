@@ -1241,6 +1241,12 @@
     "ingredientsCount": "{{count}} ta modda",
     "scanAgain": "Yana skan qilish",
     "hairFitTitle": "Sochingizga moslik",
+    "catalogFit": {
+      "excellent": "Juda mos",
+      "good": "Yaxshi mos",
+      "ok": "O‘rtacha mos",
+      "poor": "Kam mos"
+    },
     "unreadTitle": "Tarkib o‘qilmadi",
     "unreadBody": "Rasmda Ingredients ro‘yxati chiqmadi. Foizni taxmin qilmaymiz — aniqroq surat kerak.",
     "unreadTip1": "Qadoq orqasidagi Ingredients yozuvi to‘liq ko‘rinsin",

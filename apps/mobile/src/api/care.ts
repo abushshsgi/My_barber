@@ -217,6 +217,11 @@ export type IngredientScanResponse = {
     warnings_uz: string;
   } | null;
   readable?: boolean;
+  catalog_fit?: {
+    match_percent: number;
+    fit_verdict?: string | null;
+    fit_reasons?: string[];
+  } | null;
   ingredients_source?: "scan" | "catalog" | "none" | string;
   hair_fit?: HairFit;
 };

@@ -6,6 +6,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Animated,
+  BackHandler,
+  Easing,
   Platform,
   Pressable,
   ScrollView,
@@ -32,7 +35,6 @@ import { useMorphAppearance } from "../../lib/MorphAppearanceContext";
 import type { MorphPalette } from "../../theme/morph-appearance";
 import { useHideTabBar } from "../../hooks/useHideTabBar";
 import { NativeBackButton } from "../../components/ui/NativeBackButton";
-import { SafeModal } from "../../components/ui/SafeModal";
 import {
   defaultQuiz,
   loadCareQuiz,
@@ -67,6 +69,13 @@ function hasQuizFields(q: CareQuizAnswers | null | undefined): boolean {
   return Boolean(q?.condition && q?.texture && q?.colorStatus);
 }
 
+function catalogFitKey(score: number): "excellent" | "good" | "ok" | "poor" {
+  if (score >= 85) return "excellent";
+  if (score >= 72) return "good";
+  if (score >= 58) return "ok";
+  return "poor";
+}
+
 function bandColor(percent: number, pal: MorphPalette): string {
   if (percent >= 78) return pal.fg;
   if (percent >= 55) return pal.warn;
@@ -94,6 +103,38 @@ export function MorphIngredientScreen({ navigation }: Props) {
   const [inMyProducts, setInMyProducts] = useState(false);
   const [addingProduct, setAddingProduct] = useState(false);
   const [openIng, setOpenIng] = useState<HairFitIngredient | null>(null);
+  const pageX = useRef(new Animated.Value(1)).current;
+
+  const openIngredient = (row: HairFitIngredient) => {
+    setOpenIng(row);
+    pageX.setValue(1);
+    Animated.timing(pageX, {
+      toValue: 0,
+      duration: 280,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const closeIngredient = () => {
+    Animated.timing(pageX, {
+      toValue: 1,
+      duration: 220,
+      easing: Easing.in(Easing.cubic),
+      useNativeDriver: true,
+    }).start(({ finished }) => {
+      if (finished) setOpenIng(null);
+    });
+  };
+
+  useEffect(() => {
+    if (!openIng) return;
+    const sub = BackHandler.addEventListener("hardwareBackPress", () => {
+      closeIngredient();
+      return true;
+    });
+    return () => sub.remove();
+  }, [openIng]);
 
   const phase: Phase = useMemo(() => {
     if (result) return "result";
@@ -361,7 +402,14 @@ export function MorphIngredientScreen({ navigation }: Props) {
         : result.readable === true
           ? true
           : ingredientCount > 0;
-    const overall = readable ? (fit?.overall ?? result.product_analysis.safety_score) : null;
+    const catalogFit = result.catalog_fit;
+    const overall = readable
+      ? (catalogFit?.match_percent ?? fit?.overall ?? result.product_analysis.safety_score)
+      : null;
+    const catalogLabel =
+      catalogFit && typeof catalogFit.match_percent === "number"
+        ? t(`ingredient.catalogFit.${catalogFitKey(catalogFit.match_percent)}`)
+        : "";
     const verdict = readable ? String(result.verdict || result.verdict_key || "") : "unread";
     const matched = result.matched_product;
     const productName =
@@ -457,10 +505,10 @@ export function MorphIngredientScreen({ navigation }: Props) {
                 <View style={styles.scoreLine}>
                   <Text style={[styles.scoreLineNum, { color: pal.fg }]}>{overall}</Text>
                   <Text style={[styles.scoreLinePct, { color: pal.muted }]}>%</Text>
-                  {verdict ? (
+                  {(catalogLabel || verdict) ? (
                     <View style={[styles.verdictPill, { backgroundColor: pal.cardStrong, marginLeft: 8 }]}>
                       <Text style={[styles.verdictLabel, { color: bandColor(overall ?? 0, pal), marginTop: 0 }]}>
-                        {t(`ingredient.verdicts.${verdict}`, { defaultValue: verdict })}
+                        {catalogLabel || t(`ingredient.verdicts.${verdict}`, { defaultValue: verdict })}
                       </Text>
                     </View>
                   ) : null}
@@ -490,7 +538,15 @@ export function MorphIngredientScreen({ navigation }: Props) {
                 ) : null}
               </View>
 
-              {(fit?.dimensions || []).length > 0 ? (
+              {catalogFit?.fit_reasons && catalogFit.fit_reasons.length > 0 ? (
+                <View style={{ marginTop: 14, gap: 8 }}>
+                  {catalogFit.fit_reasons.map((reason) => (
+                    <Text key={reason} style={[styles.fit, { color: pal.fg, marginTop: 0 }]}>
+                      {reason}
+                    </Text>
+                  ))}
+                </View>
+              ) : (fit?.dimensions || []).length > 0 ? (
                 <View style={[cardStyle, { marginTop: 16, paddingVertical: 6 }]}>
                   {[...fit!.dimensions]
                     .sort((a, b) => a.percent - b.percent)
@@ -511,8 +567,8 @@ export function MorphIngredientScreen({ navigation }: Props) {
                 </View>
               ) : null}
 
-              {fitLine ? <Text style={[styles.fit, { color: pal.fg }]}>{fitLine}</Text> : null}
-              {result.catalog_notes_uz ? (
+              {!catalogFit && fitLine ? <Text style={[styles.fit, { color: pal.fg }]}>{fitLine}</Text> : null}
+              {result.catalog_notes_uz && !/o['‘’]qilmadi|topilmadi/i.test(result.catalog_notes_uz) ? (
                 <Text style={[styles.notes, { color: pal.muted }]}>{result.catalog_notes_uz}</Text>
               ) : null}
             </>
@@ -551,71 +607,30 @@ export function MorphIngredientScreen({ navigation }: Props) {
           ) : null}
 
           {readable && rows.length > 0 ? (
-            <View style={{ marginTop: 22, gap: 16 }}>
-              {(
-                [
-                  {
-                    key: "watch",
-                    title: t("ingredient.watchTitle"),
-                    items: rows
-                      .filter((row) => row.percent != null && row.tone !== "neutral" && row.percent < 75)
-                      .sort((a, b) => (a.percent ?? 0) - (b.percent ?? 0)),
-                  },
-                  {
-                    key: "good",
-                    title: t("ingredient.goodTitle"),
-                    items: rows.filter((row) => row.percent != null && row.percent >= 75),
-                  },
-                ] as const
-              ).map((group) =>
-                group.items.length > 0 ? (
-                  <View key={group.key}>
-                    <Text style={[styles.section, { color: pal.muted }]}>{group.title}</Text>
-                    <View style={[cardStyle, { paddingVertical: 4 }]}>
-                      {group.items.map((row, i) => (
-                        <Pressable
-                          key={`${row.name}-${i}`}
-                          onPress={() => setOpenIng(row)}
-                          style={[styles.ingRow, i > 0 && { borderTopWidth: 1, borderTopColor: pal.line }]}
-                        >
-                          <View style={{ flex: 1, minWidth: 0 }}>
-                            <Text style={[styles.ingName, { color: pal.fg }]} numberOfLines={1}>
-                              {row.name}
-                            </Text>
-                            {row.role_uz ? (
-                              <Text style={[styles.ingRole, { color: pal.muted }]} numberOfLines={1}>
-                                {row.role_uz}
-                              </Text>
-                            ) : null}
-                          </View>
-                          <Text style={[styles.dimPct, { color: bandColor(row.percent ?? 0, pal) }]}>
-                            {row.percent}%
-                          </Text>
-                          <Ionicons name="chevron-forward" size={16} color={pal.muted} />
-                        </Pressable>
-                      ))}
-                    </View>
-                  </View>
-                ) : null,
-              )}
-              {rows.some((row) => row.percent == null || row.tone === "neutral") ? (
-                <View>
-                  <Text style={[styles.section, { color: pal.muted }]}>{t("ingredient.plainTitle")}</Text>
-                  <View style={styles.chipRow}>
-                    {rows
-                      .filter((row) => row.percent == null || row.tone === "neutral")
-                      .map((row, i) => (
-                        <Pressable
-                          key={`${row.name}-${i}`}
-                          onPress={() => setOpenIng(row)}
-                          style={[styles.chip, { backgroundColor: pal.card, borderColor: pal.line, borderWidth: 1 }]}
-                        >
-                          <Text style={[styles.chipText, { color: pal.fg }]}>{row.name}</Text>
-                        </Pressable>
-                      ))}
-                  </View>
-                </View>
-              ) : null}
+            <View style={{ marginTop: 22 }}>
+              <Text style={[styles.section, { color: pal.muted }]}>{t("ingredient.ingredientFit")}</Text>
+              <View style={styles.ingGrid}>
+                {[...rows]
+                  .sort((a, b) => (a.percent ?? 101) - (b.percent ?? 101))
+                  .map((row, i) => {
+                  const tone = row.percent == null ? pal.muted : bandColor(row.percent, pal);
+                  return (
+                    <Pressable
+                      key={`${row.name}-${i}`}
+                      onPress={() => openIngredient(row)}
+                      style={[styles.ingCell, { backgroundColor: pal.card, borderColor: pal.line }]}
+                    >
+                      <Text style={[styles.ingName, { color: pal.fg }]} numberOfLines={2}>
+                        {row.name}
+                      </Text>
+                      <Text style={[styles.ingRole, { color: tone }]} numberOfLines={1}>
+                        {row.role_uz || t("ingredient.neutral")}
+                        {row.percent != null ? ` · ${row.percent}%` : ""}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
             </View>
           ) : null}
 
@@ -653,43 +668,58 @@ export function MorphIngredientScreen({ navigation }: Props) {
             <Text style={[styles.secondaryBtnText, { color: pal.fg }]}>{t("ingredient.openCatalog")}</Text>
           </Pressable>
         </ScrollView>
-        <SafeModal visible={openIng != null} transparent animationType="slide" onRequestClose={() => setOpenIng(null)}>
-          <Pressable style={styles.detailBackdrop} onPress={() => setOpenIng(null)} />
-          {openIng ? (
-            <View style={[styles.detailSheet, { backgroundColor: pal.bg, paddingBottom: safeBottom(insets.bottom, 16) }]}>
-              <View style={[styles.detailHandle, { backgroundColor: pal.line }]} />
-              <View style={styles.dimHead}>
-                <Text style={[styles.detailName, { color: pal.fg }]}>{openIng.name}</Text>
-                <Text style={[styles.dimPct, { color: openIng.percent == null ? pal.muted : bandColor(openIng.percent, pal) }]}>
-                  {openIng.percent == null ? t("ingredient.neutral") : `${openIng.percent}%`}
-                </Text>
-              </View>
-              {openIng.role_uz ? (
-                <Text style={[styles.ingRole, { color: pal.muted, marginTop: 4 }]}>{openIng.role_uz}</Text>
-              ) : null}
-              <ScrollView style={{ marginTop: 16, maxHeight: 320 }} showsVerticalScrollIndicator={false}>
-                {[
-                  [t("ingredient.whatTitle"), openIng.about_uz],
-                  [t("ingredient.formulaTitle"), openIng.formula_uz],
-                  [t("ingredient.hairTitle"), openIng.hair_uz],
-                ].map(([title, body]) =>
-                  body ? (
-                    <View key={title} style={{ marginBottom: 16 }}>
-                      <Text style={[styles.section, { color: pal.muted }]}>{title}</Text>
-                      <Text style={[styles.detailBody, { color: pal.fg }]}>{body}</Text>
-                    </View>
-                  ) : null,
-                )}
-              </ScrollView>
-              <Pressable
-                style={[styles.primaryBtn, { backgroundColor: pal.fg, marginTop: 8 }]}
-                onPress={() => setOpenIng(null)}
-              >
-                <Text style={[styles.primaryBtnText, { color: pal.bg }]}>{t("ingredient.closeDetail")}</Text>
-              </Pressable>
+        {openIng ? (
+          <Animated.View
+            style={[
+              styles.ingPage,
+              {
+                backgroundColor: pal.bg,
+                paddingTop: safeTop(insets.top, 8),
+                transform: [
+                  {
+                    translateX: pageX.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0, 520],
+                    }),
+                  },
+                ],
+              },
+            ]}
+          >
+            <View style={[styles.rowBetween, { paddingHorizontal: 20 }]}>
+              <NativeBackButton onPress={closeIngredient} color={pal.fg} backgroundColor={pal.card} />
+              <Text style={[styles.badge, { color: pal.muted }]} numberOfLines={1}>
+                {openIng.role_uz || t("ingredient.ingredientFit")}
+              </Text>
+              <View style={{ width: 40 }} />
             </View>
-          ) : null}
-        </SafeModal>
+            <ScrollView
+              contentContainerStyle={{
+                paddingHorizontal: 20,
+                paddingTop: 22,
+                paddingBottom: safeBottom(insets.bottom, 28),
+              }}
+              showsVerticalScrollIndicator={false}
+            >
+              <Text style={[styles.detailName, { color: pal.fg }]}>{openIng.name}</Text>
+              <Text style={[styles.dimPct, { color: openIng.percent == null ? pal.muted : bandColor(openIng.percent, pal), marginTop: 8 }]}>
+                {openIng.percent == null ? t("ingredient.neutral") : `${openIng.percent}%`}
+              </Text>
+              {[
+                [t("ingredient.whatTitle"), openIng.about_uz],
+                [t("ingredient.formulaTitle"), openIng.formula_uz],
+                [t("ingredient.hairTitle"), openIng.hair_uz],
+              ].map(([title, body]) =>
+                body ? (
+                  <View key={title} style={{ marginTop: 22 }}>
+                    <Text style={[styles.section, { color: pal.muted }]}>{title}</Text>
+                    <Text style={[styles.detailBody, { color: pal.fg }]}>{body}</Text>
+                  </View>
+                ) : null,
+              )}
+            </ScrollView>
+          </Animated.View>
+        ) : null}
       </View>
     );
   }
@@ -1292,6 +1322,25 @@ const styles = StyleSheet.create({
   resultThumb: { width: scale(52), height: scale(52), borderRadius: moderateScale(14) },
   ingName: { ...morphFont, fontSize: fontSize(14), fontWeight: "600" },
   ingRole: { ...morphFont, marginTop: 2, fontSize: fontSize(12) },
+  ingGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: moderateScale(8),
+  },
+  ingCell: {
+    flexGrow: 1,
+    flexBasis: "47%",
+    maxWidth: "48%",
+    borderWidth: 1,
+    borderRadius: moderateScale(16),
+    padding: moderateScale(12),
+    minHeight: verticalScale(78),
+    justifyContent: "space-between",
+  },
+  ingPage: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 30,
+  },
   ingRow: {
     flexDirection: "row",
     alignItems: "center",
