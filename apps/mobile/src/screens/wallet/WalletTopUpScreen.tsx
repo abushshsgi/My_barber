@@ -23,11 +23,12 @@ import {
   fetchReceivingCard,
   initCardDeposit,
   MIN_TOPUP_AMOUNT,
+  parseWalletBalance,
   type CardDeposit,
 } from "../../api/wallet";
 import { NativeHeader } from "../../components/ui/NativeHeader";
 import { useCardDeposits, useWalletMe, useWalletTransactions } from "../../hooks/useWallet";
-import { formatSomAmount, formatSomLabel, type WalletTx } from "../../lib/wallet-format";
+import { formatSomAmount, formatSomLabel, formatTxDate, type WalletTx } from "../../lib/wallet-format";
 import type { WalletStackParamList } from "../../navigation/WalletStack";
 import { SHELL_LIGHT, shellChrome, useShellTheme, type ShellChrome } from "../../lib/useShellTheme";
 import {
@@ -44,7 +45,24 @@ let styles = createTopUpStyles(colors);
 
 const TOPUP_PREVIEW = 3;
 
-function TopUpHistoryRows({ items }: { items: WalletTx[] }) {
+type HistoryRow = WalletTx & { rejected?: boolean };
+
+function rejectedHistoryRows(deposits: CardDeposit[]): HistoryRow[] {
+  return deposits
+    .filter((d) => d.status === "rejected")
+    .map((d) => ({
+      id: `reject-${d.id}`,
+      kind: "in" as const,
+      title: "Karta to'ldirish",
+      date: formatTxDate(d.reviewed_at || d.created_at),
+      amount: parseWalletBalance(d.amount),
+      entryType: "topup",
+      createdAt: d.reviewed_at || d.created_at,
+      rejected: true,
+    }));
+}
+
+function TopUpHistoryRows({ items }: { items: HistoryRow[] }) {
   return (
     <>
       {items.map((tx, idx) => (
@@ -57,7 +75,12 @@ function TopUpHistoryRows({ items }: { items: WalletTx[] }) {
               {tx.date}
             </Text>
           </View>
-          <Text style={styles.historyAmt}>+{formatSomLabel(Math.abs(tx.amount))}</Text>
+          <View style={styles.historyAmtCol}>
+            {tx.rejected ? <Text style={styles.historyRejected}>Rad etilgan</Text> : null}
+            <Text style={tx.rejected ? styles.historyAmtMuted : styles.historyAmt}>
+              {tx.rejected ? formatSomLabel(Math.abs(tx.amount)) : `+${formatSomLabel(Math.abs(tx.amount))}`}
+            </Text>
+          </View>
         </View>
       ))}
     </>
@@ -227,6 +250,12 @@ export function WalletTopUpScreen({ navigation }: Props) {
   const deposits = useCardDeposits(true);
   const topups = useWalletTransactions("all", "topup", 100);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const history = useMemo(() => {
+    const credited = topups.items.map((tx) => ({ ...tx, rejected: false as const }));
+    return [...credited, ...rejectedHistoryRows(deposits.deposits)].sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    );
+  }, [topups.items, deposits.deposits]);
 
   useEffect(() => {
     void fetchReceivingCard()
@@ -483,19 +512,19 @@ export function WalletTopUpScreen({ navigation }: Props) {
 
               <View style={styles.historyHead}>
                 <Text style={styles.historyHeadTitle}>To'ldirishlar</Text>
-                {topups.items.length > TOPUP_PREVIEW ? (
+                {history.length > TOPUP_PREVIEW ? (
                   <Pressable onPress={() => setHistoryOpen(true)} hitSlop={8}>
                     <Text style={styles.historyMore}>Barchasi</Text>
                   </Pressable>
                 ) : null}
               </View>
-              {topups.loading ? (
+              {topups.loading && history.length === 0 ? (
                 <ActivityIndicator color={colors.fg} />
-              ) : topups.items.length === 0 ? (
+              ) : history.length === 0 ? (
                 <Text style={styles.help}>Hali pul tashlagan to'ldirish yo'q</Text>
               ) : (
                 <View style={styles.historyCard}>
-                  <TopUpHistoryRows items={topups.items.slice(0, TOPUP_PREVIEW)} />
+                  <TopUpHistoryRows items={history.slice(0, TOPUP_PREVIEW)} />
                 </View>
               )}
             </>
@@ -605,7 +634,7 @@ export function WalletTopUpScreen({ navigation }: Props) {
           <NativeHeader title="To'ldirishlar" onBack={() => setHistoryOpen(false)} border />
           <ScrollView style={styles.historyScroll} contentContainerStyle={styles.historyModalBody}>
             <View style={styles.historyCard}>
-              <TopUpHistoryRows items={topups.items} />
+              <TopUpHistoryRows items={history} />
             </View>
           </ScrollView>
         </SafeAreaView>
@@ -844,7 +873,10 @@ function createTopUpStyles(colors: ShellChrome) {
   historyCopy: { flex: 1, minWidth: 0 },
   historyTitle: { fontSize: fontSize(14), fontWeight: "700", color: colors.fg },
   historyDate: { marginTop: 2, fontSize: fontSize(11), color: colors.muted },
+  historyAmtCol: { alignItems: "flex-end", gap: 2 },
+  historyRejected: { fontSize: fontSize(12), fontWeight: "800", color: "#DC2626" },
   historyAmt: { fontSize: fontSize(13), fontWeight: "800", color: "#16A34A" },
+  historyAmtMuted: { fontSize: fontSize(12), fontWeight: "700", color: colors.muted },
   resultCard: {
     marginTop: verticalScale(8),
     backgroundColor: colors.surface,
