@@ -209,6 +209,76 @@ class WalletCardDepositListView(APIView):
         )
 
 
+def _ping_person(user, fallback: str) -> str:
+    if user is None:
+        return fallback
+    name = str(getattr(user, "full_name", "") or "").strip()
+    phone = str(getattr(user, "phone", "") or "").strip()
+    return name or phone or fallback
+
+
+class AdminPaymentPingsView(APIView):
+    """So'nggi to'lovlar — agregatsiz, admin fon tekshiruvi uchun."""
+
+    permission_classes = [IsAdmin]
+
+    def get(self, request):
+        from subscriptions.models import SubscriptionPayment
+        from wallet.models import QrPayment
+
+        results: list[dict] = []
+        subs = (
+            SubscriptionPayment.objects.filter(status=SubscriptionPayment.Status.PAID)
+            .select_related("user")
+            .order_by("-paid_at", "-created_at")[:8]
+        )
+        for row in subs:
+            stamp = row.paid_at or row.created_at
+            results.append(
+                {
+                    "id": f"sub:{row.id}",
+                    "amount": int(row.amount_uzs or 0),
+                    "title": f"Obuna · {_ping_person(row.user, 'Foydalanuvchi')}",
+                    "href": "/admin/subscriptions",
+                    "at": stamp.isoformat() if stamp else "",
+                }
+            )
+
+        qrs = (
+            QrPayment.objects.filter(status=QrPayment.Status.COMPLETED)
+            .select_related("payer")
+            .order_by("-created_at")[:8]
+        )
+        for row in qrs:
+            results.append(
+                {
+                    "id": f"qr:{row.id}",
+                    "amount": int(row.amount or 0),
+                    "title": f"QR · {_ping_person(row.payer, 'Mijoz')}",
+                    "href": "/admin/finance/qr-payments",
+                    "at": row.created_at.isoformat() if row.created_at else "",
+                }
+            )
+
+        deps = (
+            ManualCardDeposit.objects.filter(status=ManualCardDeposit.Status.CLAIMED)
+            .select_related("user")
+            .order_by("-claimed_at", "-created_at")[:8]
+        )
+        for row in deps:
+            stamp = row.claimed_at or row.created_at
+            results.append(
+                {
+                    "id": f"dep:{row.id}",
+                    "amount": int(row.amount or 0),
+                    "title": f"Karta to'lovi · {_ping_person(row.user, 'Mijoz')}",
+                    "href": "/admin/finance/deposits",
+                    "at": stamp.isoformat() if stamp else "",
+                }
+            )
+        return Response({"results": results})
+
+
 class AdminWalletDepositsView(APIView):
     permission_classes = [IsAdmin]
 

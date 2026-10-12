@@ -290,6 +290,28 @@ class CardDepositApiTests(TestCase):
         self.assertIn("/receipt/", claim.data["receipt_url"])
         self.assertNotIn("/media/", claim.data["receipt_url"])
 
+    def test_payment_pings_include_claimed_deposit(self):
+        init = self.client.post(
+            "/api/v1/wallet/top-up/card/init/",
+            {"amount": 50000},
+            format="json",
+            HTTP_IDEMPOTENCY_KEY="api-ping-init",
+        )
+        self.assertEqual(init.status_code, 201, init.content)
+        claim = self.client.post(
+            f"/api/v1/wallet/top-up/card/{init.data['id']}/claim/",
+            {"receipt": _tiny_png()},
+            format="multipart",
+        )
+        self.assertEqual(claim.status_code, 200, claim.content)
+
+        ping = self.admin_client.get("/api/v1/admin/finance/payment-pings/")
+        self.assertEqual(ping.status_code, 200, ping.content)
+        match = next(row for row in ping.data["results"] if row["id"] == f"dep:{init.data['id']}")
+        self.assertEqual(match["amount"], 50000)
+        self.assertEqual(match["href"], "/admin/finance/deposits")
+        self.assertIn("Api User", match["title"])
+
 
 @override_settings(
     DEBUG=False,

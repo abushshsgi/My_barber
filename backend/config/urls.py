@@ -341,6 +341,7 @@ from chat.views import ConversationListCreateView, ConversationMarkReadView, Con
 from geo.views import CurrencyRatesView, GeocodeView, MapConfigView, ReverseGeocodeView, ValidateLocationView
 from notifications.push_views import BarberPushTokenView, UserPushTokenView
 from wallet.card_deposit_views import (
+    AdminPaymentPingsView,
     AdminWalletDepositApproveView,
     AdminWalletDepositRejectView,
     AdminWalletDepositsView,
@@ -526,6 +527,7 @@ api_routes = [
     path("admin/finance/gifts/<uuid:pk>/refund/", AdminGiftRefundView.as_view()),
     path("admin/finance/gifts/<uuid:pk>/dispute/", AdminGiftDisputeView.as_view()),
     path("admin/finance/gifts/<uuid:pk>/verify-chains/", AdminGiftVerifyChainsView.as_view()),
+    path("admin/finance/payment-pings/", AdminPaymentPingsView.as_view()),
     path("admin/finance/qr-payments/", AdminQrPaymentListView.as_view()),
     path("admin/finance/qr-payments/<uuid:pk>/", AdminQrPaymentDetailView.as_view()),
     path("admin/accounts/", AdminBarberAccountsView.as_view()),
