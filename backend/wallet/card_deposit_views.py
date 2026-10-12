@@ -308,10 +308,16 @@ class AdminWalletDepositsView(APIView):
                 "page_size": page_size,
                 "total_pages": total_pages,
                 "counts": CardDepositService.status_counts(),
-                "stats": CardDepositService.overview(),
                 "results": [admin_deposit_to_dict(d, request=request) for d in rows],
             }
         )
+
+
+class AdminWalletDepositStatsView(APIView):
+    permission_classes = [IsAdmin]
+
+    def get(self, request):
+        return Response(CardDepositService.overview())
 
 
 class AdminWalletDepositApproveView(FriendlyThrottleMixin, APIView):

@@ -257,8 +257,16 @@ class CardDepositServiceTests(TestCase):
         self.assertEqual(stats["today"]["requests"], 2)
         self.assertEqual(stats["top_user"]["id"], self.user.pk)
         self.assertEqual(stats["top_user"]["amount"], 200000)
-        self.assertEqual(len(stats["days"]), 7)
+        self.assertEqual(stats["month"]["count"], 1)
+        self.assertEqual(stats["month"]["amount"], 200000)
+        self.assertEqual(stats["approval_rate"], 50)
+        self.assertEqual(stats["largest"]["amount"], 200000)
+        self.assertEqual(stats["repeat_people"], 0)
+        self.assertEqual(stats["once_people"], 1)
+        self.assertEqual(len(stats["hours"]), 24)
+        self.assertEqual(len(stats["days"]), 30)
         self.assertEqual(stats["days"][-1]["count"], 1)
+        self.assertEqual(stats["reject_notes"][0]["note"], "Noto'g'ri chek")
 
 
 @override_settings(

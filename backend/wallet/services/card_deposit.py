@@ -15,7 +15,7 @@ from django.core.mail import send_mail
 from django.core.signing import TimestampSigner
 from django.db import transaction
 from django.db.models import Count, DateTimeField, Q, Sum
-from django.db.models.functions import Coalesce, TruncDate
+from django.db.models.functions import Coalesce, ExtractHour, TruncDate
 from django.utils import timezone
 
 from accounts.models import User
@@ -711,7 +711,6 @@ class CardDepositService:
     def overview(cls) -> dict[str, Any]:
         """Admin karta to'ldirish statistikasi: kun, jami, odamlar, rad."""
         today = timezone.localdate()
-        start = today - timedelta(days=6)
         approved = ManualCardDeposit.objects.filter(status=ManualCardDeposit.Status.APPROVED)
         settled = approved.annotate(
             settled_at=Coalesce("reviewed_at", "created_at", output_field=DateTimeField())
@@ -729,20 +728,35 @@ class CardDepositService:
                 ManualCardDeposit.Status.AWAITING_PAYMENT,
             ],
         )
+        month_start = today.replace(day=1)
+        if month_start.month == 1:
+            previous_month_start = date(month_start.year - 1, 12, 1)
+        else:
+            previous_month_start = date(month_start.year, month_start.month - 1, 1)
+        previous_month_end = month_start - timedelta(days=1)
+        week_start = today - timedelta(days=6)
+        previous_week_start = today - timedelta(days=13)
+        previous_week_end = today - timedelta(days=7)
+        month_window = today - timedelta(days=29)
         top_rows = list(
             approved.values("user_id", "user__full_name", "user__phone")
             .annotate(n=Count("pk"), amount=Sum("amount"))
-            .order_by("-amount", "-n")[:8]
+            .order_by("-amount", "-n")[:12]
+        )
+        frequent_rows = list(
+            approved.values("user_id", "user__full_name", "user__phone")
+            .annotate(n=Count("pk"), amount=Sum("amount"))
+            .order_by("-n", "-amount")[:8]
         )
         day_rows = {
             _stats_day_key(row["day"]): row
             for row in settled.annotate(day=TruncDate("settled_at"))
-            .filter(settled_at__date__gte=start)
+            .filter(settled_at__date__gte=month_window)
             .values("day")
             .annotate(n=Count("pk"), amount=Sum("amount"), people=Count("user_id", distinct=True))
         }
         days = []
-        for offset in range(6, -1, -1):
+        for offset in range(29, -1, -1):
             day = today - timedelta(days=offset)
             row = day_rows.get(day.isoformat())
             days.append(
@@ -753,23 +767,87 @@ class CardDepositService:
                     "people": (row or {}).get("people") or 0,
                 }
             )
+        hour_rows = {
+            int(row["hour"]): row
+            for row in settled.filter(settled_at__date=today)
+            .annotate(hour=ExtractHour("settled_at"))
+            .values("hour")
+            .annotate(n=Count("pk"), amount=Sum("amount"))
+            if row["hour"] is not None
+        }
+        hours = []
+        for hour in range(24):
+            row = hour_rows.get(hour)
+            hours.append(
+                {
+                    "hour": hour,
+                    "count": (row or {}).get("n") or 0,
+                    "amount": _stats_money((row or {}).get("amount")),
+                }
+            )
         approved_bucket = _stats_bucket(approved)
-        average = 0
-        if approved_bucket["count"]:
-            average = approved_bucket["amount"] // approved_bucket["count"]
+        rejected_bucket = _stats_bucket(
+            ManualCardDeposit.objects.filter(status=ManualCardDeposit.Status.REJECTED)
+        )
+        decided = approved_bucket["count"] + rejected_bucket["count"]
+        average = approved_bucket["amount"] // approved_bucket["count"] if approved_bucket["count"] else 0
+        repeat_people = approved.values("user_id").annotate(n=Count("pk")).filter(n__gt=1).count()
+        once_people = approved.values("user_id").annotate(n=Count("pk")).filter(n=1).count()
+        largest = approved.select_related("user").order_by("-amount", "-created_at").first()
+        recent = [
+            _stats_event(row)
+            for row in approved.select_related("user").order_by("-reviewed_at", "-created_at")[:12]
+        ]
+        channels = [
+            {
+                "channel": row["client_channel"] or "",
+                "count": row["n"] or 0,
+                "amount": _stats_money(row["amount"]),
+                "people": row["people"] or 0,
+            }
+            for row in approved.values("client_channel")
+            .annotate(n=Count("pk"), amount=Sum("amount"), people=Count("user_id", distinct=True))
+            .order_by("-amount")
+        ]
+        reject_notes = [
+            {
+                "note": row["review_note"],
+                "count": row["n"] or 0,
+                "amount": _stats_money(row["amount"]),
+            }
+            for row in ManualCardDeposit.objects.filter(status=ManualCardDeposit.Status.REJECTED)
+            .exclude(review_note="")
+            .values("review_note")
+            .annotate(n=Count("pk"), amount=Sum("amount"))
+            .order_by("-n", "-amount")[:8]
+        ]
         return {
             "today": {
                 "requests": today_created.count(),
                 "people": today_created.values("user_id").distinct().count(),
                 "approved_count": today_approved.count(),
                 "approved_amount": _stats_money(today_approved.aggregate(amount=Sum("amount"))["amount"]),
+                "approved_people": today_approved.values("user_id").distinct().count(),
                 "rejected_count": today_rejected.count(),
+                "rejected_amount": _stats_money(today_rejected.aggregate(amount=Sum("amount"))["amount"]),
                 "pending_count": today_pending.count(),
             },
-            "approved": approved_bucket,
-            "rejected": _stats_bucket(
-                ManualCardDeposit.objects.filter(status=ManualCardDeposit.Status.REJECTED)
+            "week": _stats_bucket(settled.filter(settled_at__date__gte=week_start)),
+            "previous_week": _stats_bucket(
+                settled.filter(
+                    settled_at__date__gte=previous_week_start,
+                    settled_at__date__lte=previous_week_end,
+                )
             ),
+            "month": _stats_bucket(settled.filter(settled_at__date__gte=month_start)),
+            "previous_month": _stats_bucket(
+                settled.filter(
+                    settled_at__date__gte=previous_month_start,
+                    settled_at__date__lte=previous_month_end,
+                )
+            ),
+            "approved": approved_bucket,
+            "rejected": rejected_bucket,
             "pending": _stats_bucket(
                 ManualCardDeposit.objects.filter(
                     status__in=[
@@ -791,8 +869,18 @@ class CardDepositService:
                 ManualCardDeposit.objects.filter(status=ManualCardDeposit.Status.CANCELLED)
             ),
             "average_approved": average,
+            "approval_rate": round(100 * approved_bucket["count"] / decided) if decided else 0,
+            "repeat_people": repeat_people,
+            "once_people": once_people,
+            "average_review_minutes": _stats_review_minutes(approved),
+            "largest": _stats_event(largest) if largest else None,
             "top_user": _stats_person(top_rows[0]) if top_rows else None,
             "top_users": [_stats_person(row) for row in top_rows],
+            "frequent_users": [_stats_person(row) for row in frequent_rows],
+            "channels": channels,
+            "hours": hours,
+            "reject_notes": reject_notes,
+            "recent": recent,
             "days": days,
         }
 
@@ -810,6 +898,34 @@ def _stats_bucket(qs) -> dict[str, int]:
         "amount": _stats_money(row["amount"]),
         "people": row["people"] or 0,
     }
+
+
+def _stats_event(deposit: ManualCardDeposit | None) -> dict[str, Any] | None:
+    if deposit is None:
+        return None
+    stamp = deposit.reviewed_at or deposit.created_at
+    user = deposit.user
+    return {
+        "full_name": (getattr(user, "full_name", "") or "").strip(),
+        "phone": getattr(user, "phone", "") or "",
+        "amount": _stats_money(deposit.amount),
+        "at": stamp.isoformat() if stamp else "",
+        "channel": deposit.client_channel or "",
+    }
+
+
+def _stats_review_minutes(approved) -> int | None:
+    waits = approved.exclude(claimed_at__isnull=True).exclude(reviewed_at__isnull=True)
+    total = 0.0
+    count = 0
+    for claimed_at, reviewed_at in waits.values_list("claimed_at", "reviewed_at").iterator():
+        if not claimed_at or not reviewed_at or reviewed_at < claimed_at:
+            continue
+        total += (reviewed_at - claimed_at).total_seconds()
+        count += 1
+    if not count:
+        return None
+    return int(total / count // 60)
 
 
 def _stats_person(row: dict) -> dict[str, Any]:
