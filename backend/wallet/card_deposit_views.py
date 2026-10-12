@@ -193,7 +193,6 @@ class WalletCardReceiptView(APIView):
 
 class WalletCardDepositListView(APIView):
     permission_classes = [IsAuthenticated]
-    throttle_classes = [WalletTopUpThrottle, AuthIPThrottle]
 
     def get(self, request):
         rows = CardDepositService.list_for_user(request.user)
