@@ -4591,15 +4591,45 @@ export type AdminDepositDay = {
   people: number;
 };
 
+export type AdminDepositEvent = {
+  full_name: string;
+  phone: string;
+  amount: number;
+  at: string;
+  channel: string;
+};
+
+export type AdminDepositChannel = AdminDepositBucket & {
+  channel: string;
+};
+
+export type AdminDepositHour = {
+  hour: number;
+  count: number;
+  amount: number;
+};
+
+export type AdminDepositNote = {
+  note: string;
+  count: number;
+  amount: number;
+};
+
 export type AdminDepositStats = {
   today: {
     requests: number;
     people: number;
     approved_count: number;
     approved_amount: number;
+    approved_people: number;
     rejected_count: number;
+    rejected_amount: number;
     pending_count: number;
   };
+  week: AdminDepositBucket;
+  previous_week: AdminDepositBucket;
+  month: AdminDepositBucket;
+  previous_month: AdminDepositBucket;
   approved: AdminDepositBucket;
   rejected: AdminDepositBucket;
   pending: AdminDepositBucket;
@@ -4608,8 +4638,18 @@ export type AdminDepositStats = {
   expired: AdminDepositBucket;
   cancelled: AdminDepositBucket;
   average_approved: number;
+  approval_rate: number;
+  repeat_people: number;
+  once_people: number;
+  average_review_minutes: number | null;
+  largest: AdminDepositEvent | null;
   top_user: AdminDepositPerson | null;
   top_users: AdminDepositPerson[];
+  frequent_users: AdminDepositPerson[];
+  channels: AdminDepositChannel[];
+  hours: AdminDepositHour[];
+  reject_notes: AdminDepositNote[];
+  recent: AdminDepositEvent[];
   days: AdminDepositDay[];
 };
 
@@ -4690,6 +4730,17 @@ function mapDepositPerson(raw: any): AdminDepositPerson | null {
   };
 }
 
+function mapDepositEvent(raw: any): AdminDepositEvent | null {
+  if (!raw || typeof raw !== "object") return null;
+  return {
+    full_name: String(raw.full_name ?? "").trim(),
+    phone: String(raw.phone ?? ""),
+    amount: toInt(raw.amount, 0),
+    at: String(raw.at ?? ""),
+    channel: String(raw.channel ?? ""),
+  };
+}
+
 export function emptyAdminDepositStats(): AdminDepositStats {
   const bucket = { count: 0, amount: 0, people: 0 };
   return {
@@ -4698,9 +4749,15 @@ export function emptyAdminDepositStats(): AdminDepositStats {
       people: 0,
       approved_count: 0,
       approved_amount: 0,
+      approved_people: 0,
       rejected_count: 0,
+      rejected_amount: 0,
       pending_count: 0,
     },
+    week: { ...bucket },
+    previous_week: { ...bucket },
+    month: { ...bucket },
+    previous_month: { ...bucket },
     approved: { ...bucket },
     rejected: { ...bucket },
     pending: { ...bucket },
@@ -4709,8 +4766,18 @@ export function emptyAdminDepositStats(): AdminDepositStats {
     expired: { ...bucket },
     cancelled: { ...bucket },
     average_approved: 0,
+    approval_rate: 0,
+    repeat_people: 0,
+    once_people: 0,
+    average_review_minutes: null,
+    largest: null,
     top_user: null,
     top_users: [],
+    frequent_users: [],
+    channels: [],
+    hours: [],
+    reject_notes: [],
+    recent: [],
     days: [],
   };
 }
@@ -4725,9 +4792,15 @@ function mapAdminDepositStats(raw: any): AdminDepositStats {
       people: toInt(today.people, 0),
       approved_count: toInt(today.approved_count, 0),
       approved_amount: toInt(today.approved_amount, 0),
+      approved_people: toInt(today.approved_people, 0),
       rejected_count: toInt(today.rejected_count, 0),
+      rejected_amount: toInt(today.rejected_amount, 0),
       pending_count: toInt(today.pending_count, 0),
     },
+    week: mapDepositBucket(raw.week),
+    previous_week: mapDepositBucket(raw.previous_week),
+    month: mapDepositBucket(raw.month),
+    previous_month: mapDepositBucket(raw.previous_month),
     approved: mapDepositBucket(raw.approved),
     rejected: mapDepositBucket(raw.rejected),
     pending: mapDepositBucket(raw.pending),
@@ -4736,9 +4809,43 @@ function mapAdminDepositStats(raw: any): AdminDepositStats {
     expired: mapDepositBucket(raw.expired),
     cancelled: mapDepositBucket(raw.cancelled),
     average_approved: toInt(raw.average_approved, 0),
+    approval_rate: toInt(raw.approval_rate, 0),
+    repeat_people: toInt(raw.repeat_people, 0),
+    once_people: toInt(raw.once_people, 0),
+    average_review_minutes:
+      raw.average_review_minutes == null ? null : toInt(raw.average_review_minutes, 0),
+    largest: mapDepositEvent(raw.largest),
     top_user: mapDepositPerson(raw.top_user),
     top_users: Array.isArray(raw.top_users)
       ? raw.top_users.map(mapDepositPerson).filter((row): row is AdminDepositPerson => Boolean(row))
+      : [],
+    frequent_users: Array.isArray(raw.frequent_users)
+      ? raw.frequent_users
+          .map(mapDepositPerson)
+          .filter((row): row is AdminDepositPerson => Boolean(row))
+      : [],
+    channels: Array.isArray(raw.channels)
+      ? raw.channels.map((row) => ({
+          ...mapDepositBucket(row),
+          channel: String(row?.channel ?? ""),
+        }))
+      : [],
+    hours: Array.isArray(raw.hours)
+      ? raw.hours.map((row) => ({
+          hour: toInt(row?.hour, 0),
+          count: toInt(row?.count, 0),
+          amount: toInt(row?.amount, 0),
+        }))
+      : [],
+    reject_notes: Array.isArray(raw.reject_notes)
+      ? raw.reject_notes.map((row) => ({
+          note: String(row?.note ?? ""),
+          count: toInt(row?.count, 0),
+          amount: toInt(row?.amount, 0),
+        }))
+      : [],
+    recent: Array.isArray(raw.recent)
+      ? raw.recent.map(mapDepositEvent).filter((row): row is AdminDepositEvent => Boolean(row))
       : [],
     days: Array.isArray(raw.days)
       ? raw.days.map((day) => ({
@@ -4805,7 +4912,6 @@ export async function fetchAdminCardDeposits(params?: {
   page_size: number;
   total_pages: number;
   counts: Record<string, number>;
-  stats: AdminDepositStats;
   results: AdminCardDeposit[];
 }> {
   const sp = new URLSearchParams();
@@ -4821,7 +4927,6 @@ export async function fetchAdminCardDeposits(params?: {
     page_size?: number;
     total_pages?: number;
     counts?: Record<string, number>;
-    stats?: Record<string, any>;
     results: Array<Record<string, any>>;
   }>(`/api/v1/admin/wallet/deposits/${qs ? `?${qs}` : ""}`);
   const results = (raw.results ?? []).map((d) => mapAdminCardDeposit(d));
@@ -4831,9 +4936,13 @@ export async function fetchAdminCardDeposits(params?: {
     page_size: raw.page_size ?? params?.pageSize ?? results.length,
     total_pages: raw.total_pages ?? 1,
     counts: raw.counts ?? {},
-    stats: mapAdminDepositStats(raw.stats),
     results,
   };
+}
+
+export async function fetchAdminDepositStats(): Promise<AdminDepositStats> {
+  const raw = await apiJson<Record<string, any>>("/api/v1/admin/wallet/deposits/stats/");
+  return mapAdminDepositStats(raw);
 }
 
 export async function approveAdminCardDeposit(

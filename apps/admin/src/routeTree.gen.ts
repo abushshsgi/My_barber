@@ -49,6 +49,7 @@ import { Route as AdminBookingsBookingIdRouteImport } from './routes/admin.booki
 import { Route as AdminFinanceIndexRouteImport } from './routes/admin.finance.index'
 import { Route as AdminFinanceDepositsRouteImport } from './routes/admin.finance.deposits'
 import { Route as AdminFinanceDepositsOverdueRouteImport } from './routes/admin.finance.deposits-overdue'
+import { Route as AdminFinanceDepositsStatsRouteImport } from './routes/admin.finance.deposits-stats'
 import { Route as AdminFinanceFrozenRouteImport } from './routes/admin.finance.frozen'
 import { Route as AdminFinanceGiftDesignsRouteImport } from './routes/admin.finance.gift-designs'
 import { Route as AdminFinanceGiftsRouteImport } from './routes/admin.finance.gifts'
@@ -306,6 +307,12 @@ const AdminFinanceDepositsOverdueRoute =
   AdminFinanceDepositsOverdueRouteImport.update({
     id: '/deposits-overdue',
     path: '/deposits-overdue',
+    getParentRoute: () => AdminFinanceRoute,
+  } as any)
+const AdminFinanceDepositsStatsRoute =
+  AdminFinanceDepositsStatsRouteImport.update({
+    id: '/deposits-stats',
+    path: '/deposits-stats',
     getParentRoute: () => AdminFinanceRoute,
   } as any)
 const AdminFinanceFrozenRoute = AdminFinanceFrozenRouteImport.update({
@@ -644,6 +651,7 @@ export interface FileRoutesByFullPath {
   '/admin/bookings/$bookingId': typeof AdminBookingsBookingIdRoute
   '/admin/finance/deposits': typeof AdminFinanceDepositsRoute
   '/admin/finance/deposits-overdue': typeof AdminFinanceDepositsOverdueRoute
+  '/admin/finance/deposits-stats': typeof AdminFinanceDepositsStatsRoute
   '/admin/finance/frozen': typeof AdminFinanceFrozenRoute
   '/admin/finance/gift-designs': typeof AdminFinanceGiftDesignsRoute
   '/admin/finance/gifts': typeof AdminFinanceGiftsRoute
@@ -733,6 +741,7 @@ export interface FileRoutesByTo {
   '/admin/bookings/$bookingId': typeof AdminBookingsBookingIdRoute
   '/admin/finance/deposits': typeof AdminFinanceDepositsRoute
   '/admin/finance/deposits-overdue': typeof AdminFinanceDepositsOverdueRoute
+  '/admin/finance/deposits-stats': typeof AdminFinanceDepositsStatsRoute
   '/admin/finance/frozen': typeof AdminFinanceFrozenRoute
   '/admin/finance/gift-designs': typeof AdminFinanceGiftDesignsRoute
   '/admin/finance/gifts': typeof AdminFinanceGiftsRoute
@@ -830,6 +839,7 @@ export interface FileRoutesById {
   '/admin/bookings/$bookingId': typeof AdminBookingsBookingIdRoute
   '/admin/finance/deposits': typeof AdminFinanceDepositsRoute
   '/admin/finance/deposits-overdue': typeof AdminFinanceDepositsOverdueRoute
+  '/admin/finance/deposits-stats': typeof AdminFinanceDepositsStatsRoute
   '/admin/finance/frozen': typeof AdminFinanceFrozenRoute
   '/admin/finance/gift-designs': typeof AdminFinanceGiftDesignsRoute
   '/admin/finance/gifts': typeof AdminFinanceGiftsRoute
@@ -931,6 +941,7 @@ export interface FileRouteTypes {
     | '/admin/bookings/$bookingId'
     | '/admin/finance/deposits'
     | '/admin/finance/deposits-overdue'
+    | '/admin/finance/deposits-stats'
     | '/admin/finance/frozen'
     | '/admin/finance/gift-designs'
     | '/admin/finance/gifts'
@@ -1020,6 +1031,7 @@ export interface FileRouteTypes {
     | '/admin/bookings/$bookingId'
     | '/admin/finance/deposits'
     | '/admin/finance/deposits-overdue'
+    | '/admin/finance/deposits-stats'
     | '/admin/finance/frozen'
     | '/admin/finance/gift-designs'
     | '/admin/finance/gifts'
@@ -1116,6 +1128,7 @@ export interface FileRouteTypes {
     | '/admin/bookings/$bookingId'
     | '/admin/finance/deposits'
     | '/admin/finance/deposits-overdue'
+    | '/admin/finance/deposits-stats'
     | '/admin/finance/frozen'
     | '/admin/finance/gift-designs'
     | '/admin/finance/gifts'
@@ -1464,6 +1477,13 @@ declare module '@tanstack/react-router' {
       path: '/deposits-overdue'
       fullPath: '/admin/finance/deposits-overdue'
       preLoaderRoute: typeof AdminFinanceDepositsOverdueRouteImport
+      parentRoute: typeof AdminFinanceRoute
+    }
+    '/admin/finance/deposits-stats': {
+      id: '/admin/finance/deposits-stats'
+      path: '/deposits-stats'
+      fullPath: '/admin/finance/deposits-stats'
+      preLoaderRoute: typeof AdminFinanceDepositsStatsRouteImport
       parentRoute: typeof AdminFinanceRoute
     }
     '/admin/finance/frozen': {
@@ -1962,6 +1982,7 @@ const AdminBookingsRouteWithChildren = AdminBookingsRoute._addFileChildren(
 interface AdminFinanceRouteChildren {
   AdminFinanceDepositsRoute: typeof AdminFinanceDepositsRoute
   AdminFinanceDepositsOverdueRoute: typeof AdminFinanceDepositsOverdueRoute
+  AdminFinanceDepositsStatsRoute: typeof AdminFinanceDepositsStatsRoute
   AdminFinanceFrozenRoute: typeof AdminFinanceFrozenRoute
   AdminFinanceGiftDesignsRoute: typeof AdminFinanceGiftDesignsRoute
   AdminFinanceGiftsRoute: typeof AdminFinanceGiftsRoute
@@ -1975,6 +1996,7 @@ interface AdminFinanceRouteChildren {
 const AdminFinanceRouteChildren: AdminFinanceRouteChildren = {
   AdminFinanceDepositsRoute: AdminFinanceDepositsRoute,
   AdminFinanceDepositsOverdueRoute: AdminFinanceDepositsOverdueRoute,
+  AdminFinanceDepositsStatsRoute: AdminFinanceDepositsStatsRoute,
   AdminFinanceFrozenRoute: AdminFinanceFrozenRoute,
   AdminFinanceGiftDesignsRoute: AdminFinanceGiftDesignsRoute,
   AdminFinanceGiftsRoute: AdminFinanceGiftsRoute,

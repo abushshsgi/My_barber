@@ -20,10 +20,9 @@ import {
   fetchAdminCardDeposits,
   rejectAdminCardDeposit,
   type AdminCardDeposit,
-  type AdminDepositStats,
   adminDepositChannelLabel,
 } from "@/lib/admin-api";
-import { formatAdminUzs, formatAdminUzsExact, formatAdminUzsFull } from "@/lib/admin-analytics";
+import { formatAdminUzs, formatAdminUzsExact } from "@/lib/admin-analytics";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/admin/finance/deposits")({
@@ -110,152 +109,6 @@ function IdCell({ label, value, strong }: { label: string; value: string; strong
         {text}
       </p>
     </div>
-  );
-}
-
-function personLabel(name: string, phone: string, id: number) {
-  return name.trim() || phone.trim() || `ID ${id}`;
-}
-
-function dayLabel(iso: string) {
-  if (!iso) return "—";
-  const date = new Date(`${iso}T12:00:00`);
-  if (Number.isNaN(date.getTime())) return iso.slice(5);
-  return date.toLocaleDateString("uz-UZ", { day: "2-digit", month: "short" });
-}
-
-function StatTile({ label, value, hint }: { label: string; value: string; hint: string }) {
-  return (
-    <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
-      <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-        {label}
-      </p>
-      <p className="mt-2 font-heading text-2xl font-semibold tabular-nums tracking-tight text-foreground">
-        {value}
-      </p>
-      <p className="mt-1 text-xs text-muted-foreground">{hint}</p>
-    </div>
-  );
-}
-
-function DepositStatsPanel({ stats }: { stats: AdminDepositStats }) {
-  const maxDay = Math.max(1, ...stats.days.map((day) => day.amount));
-  const leader = stats.top_user;
-  return (
-    <section className="space-y-4">
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <StatTile
-          label="Bugun"
-          value={String(stats.today.approved_count)}
-          hint={`${formatAdminUzsFull(stats.today.approved_amount)} · ${stats.today.people} kishi so'rov yuborgan · ${stats.today.requests} ta urinish`}
-        />
-        <StatTile
-          label="Jami tasdiqlangan"
-          value={formatAdminUzsFull(stats.approved.amount)}
-          hint={`${stats.approved.count} ta to'ldirish · ${stats.approved.people} kishi · o'rtacha ${formatAdminUzsFull(stats.average_approved)}`}
-        />
-        <StatTile
-          label="Hozir kutilmoqda"
-          value={String(stats.pending.count)}
-          hint={`${formatAdminUzsFull(stats.pending.amount)} · tekshiruvda ${stats.claimed.count} · to'lov kutilmoqda ${stats.awaiting.count}`}
-        />
-        <StatTile
-          label="Rad etilgan"
-          value={String(stats.rejected.count)}
-          hint={`${formatAdminUzsFull(stats.rejected.amount)} · ${stats.rejected.people} kishi · bugun ${stats.today.rejected_count} ta`}
-        />
-      </div>
-
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
-        <div className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
-          <div className="flex flex-wrap items-end justify-between gap-3">
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                Eng ko'p to'ldirgan
-              </p>
-              <p className="mt-1 font-heading text-xl font-semibold tracking-tight">
-                {leader
-                  ? personLabel(leader.full_name, leader.phone, leader.id)
-                  : "Hali tasdiqlangan to'ldirish yo'q"}
-              </p>
-            </div>
-            {leader ? (
-              <p className="font-heading text-lg font-semibold tabular-nums">
-                {formatAdminUzsFull(leader.amount)}
-              </p>
-            ) : null}
-          </div>
-          {leader ? (
-            <p className="mt-1 text-xs text-muted-foreground">
-              {leader.count} marta · {leader.phone || `ID ${leader.id}`}
-            </p>
-          ) : null}
-          <div className="mt-4 divide-y divide-border/70">
-            {stats.top_users.length === 0 ? (
-              <p className="py-6 text-sm text-muted-foreground">
-                Tasdiqlangan odamlar ro'yxati bo'sh.
-              </p>
-            ) : (
-              stats.top_users.map((person, index) => (
-                <div key={person.id} className="flex items-center gap-3 py-2.5">
-                  <span className="w-5 text-xs font-semibold tabular-nums text-muted-foreground">
-                    {index + 1}
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold text-foreground">
-                      {personLabel(person.full_name, person.phone, person.id)}
-                    </p>
-                    <p className="truncate text-xs text-muted-foreground">
-                      {person.phone || `ID ${person.id}`} · {person.count} marta
-                    </p>
-                  </div>
-                  <p className="shrink-0 text-sm font-semibold tabular-nums">
-                    {formatAdminUzsFull(person.amount)}
-                  </p>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-
-        <div className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-            Oxirgi 7 kun
-          </p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Tasdiqlangan to'ldirishlar. Muddati o'tgan {stats.expired.count} ta, bekor{" "}
-            {stats.cancelled.count} ta.
-          </p>
-          <div className="mt-4 space-y-2.5">
-            {stats.days.length === 0 ? (
-              <p className="py-6 text-sm text-muted-foreground">Kunlik ma'lumot yo'q.</p>
-            ) : (
-              stats.days.map((day) => (
-                <div
-                  key={day.date}
-                  className="grid grid-cols-[4.5rem_minmax(0,1fr)_auto] items-center gap-3"
-                >
-                  <span className="text-xs font-medium text-muted-foreground">
-                    {dayLabel(day.date)}
-                  </span>
-                  <div className="h-2 overflow-hidden rounded-full bg-muted">
-                    <div
-                      className="h-full rounded-full bg-foreground"
-                      style={{
-                        width: `${Math.max(day.amount > 0 ? 6 : 0, (day.amount / maxDay) * 100)}%`,
-                      }}
-                    />
-                  </div>
-                  <span className="text-right text-xs font-semibold tabular-nums text-foreground">
-                    {day.count} · {formatAdminUzs(day.amount)}
-                  </span>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-      </div>
-    </section>
   );
 }
 
@@ -366,12 +219,20 @@ function AdminWalletDepositsPage() {
           <h1 className="font-heading text-3xl font-semibold tracking-tight text-foreground">
             Karta to'ldirishlar
           </h1>
-          <Link
-            to="/admin/finance/deposits-overdue"
-            className="mt-2 inline-flex text-sm font-semibold text-foreground underline-offset-2 hover:underline"
-          >
-            24 soatdan o'tgan cheklar
-          </Link>
+          <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
+            <Link
+              to="/admin/finance/deposits-stats"
+              className="text-sm font-semibold text-foreground underline-offset-2 hover:underline"
+            >
+              Statistika
+            </Link>
+            <Link
+              to="/admin/finance/deposits-overdue"
+              className="text-sm font-semibold text-foreground underline-offset-2 hover:underline"
+            >
+              24 soatdan o'tgan cheklar
+            </Link>
+          </div>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
             Bank izohidagi kodni qatordagi izoh kodi bilan solishtiring. Cheklar ko'paysa ham sahifa
             cho'zilmaydi: ro'yxat shu oynada aylanadi, rasm va identifikatorlar «Ochish» da.
@@ -380,8 +241,6 @@ function AdminWalletDepositsPage() {
           </p>
         </div>
       </div>
-
-      {listQ.data?.stats ? <DepositStatsPanel stats={listQ.data.stats} /> : null}
 
       <div className="flex flex-wrap items-center gap-2">
         {STATUS_TABS.map((tab) => {

@@ -235,6 +235,7 @@ const SECTIONS: Section[] = [
       { to: "/admin/finance", label: "Platforma daromadi", icon: TrendingUp },
       { to: "/admin/subscriptions", label: "B2C Obunalar", icon: Repeat },
       { to: "/admin/finance/deposits", label: "Karta to'ldirish", icon: CreditCard },
+      { to: "/admin/finance/deposits-stats", label: "To'ldirish statistikasi", icon: BarChart3 },
       { to: "/admin/finance/deposits-overdue", label: "Kechikkan cheklar", icon: Clock },
       { to: "/admin/finance/frozen", label: "Muzlatilgan kartalar", icon: Snowflake },
       { to: "/admin/finance/promotions", label: "TOP reklamalar", icon: Megaphone },
