@@ -112,7 +112,7 @@ export function AdminPaymentAlerts() {
 
   const getAudio = () => {
     if (!audioRef.current) {
-      const audio = new Audio("/sounds/payment-success.wav");
+      const audio = new Audio("/sounds/universfield-attention-chime-123107.mp3");
       audio.preload = "auto";
       audioRef.current = audio;
     }
