@@ -4570,6 +4570,49 @@ export async function adminGrantSubscription(body: {
   });
 }
 
+export type AdminDepositBucket = {
+  count: number;
+  amount: number;
+  people: number;
+};
+
+export type AdminDepositPerson = {
+  id: number;
+  full_name: string;
+  phone: string;
+  count: number;
+  amount: number;
+};
+
+export type AdminDepositDay = {
+  date: string;
+  count: number;
+  amount: number;
+  people: number;
+};
+
+export type AdminDepositStats = {
+  today: {
+    requests: number;
+    people: number;
+    approved_count: number;
+    approved_amount: number;
+    rejected_count: number;
+    pending_count: number;
+  };
+  approved: AdminDepositBucket;
+  rejected: AdminDepositBucket;
+  pending: AdminDepositBucket;
+  claimed: AdminDepositBucket;
+  awaiting: AdminDepositBucket;
+  expired: AdminDepositBucket;
+  cancelled: AdminDepositBucket;
+  average_approved: number;
+  top_user: AdminDepositPerson | null;
+  top_users: AdminDepositPerson[];
+  days: AdminDepositDay[];
+};
+
 export type AdminCardDeposit = {
   id: string;
   amount: number;
@@ -4628,6 +4671,86 @@ function visibleAccountEmail(email: unknown) {
   return value;
 }
 
+function mapDepositBucket(raw: any): AdminDepositBucket {
+  return {
+    count: toInt(raw?.count, 0),
+    amount: toInt(raw?.amount, 0),
+    people: toInt(raw?.people, 0),
+  };
+}
+
+function mapDepositPerson(raw: any): AdminDepositPerson | null {
+  if (!raw || raw.id == null) return null;
+  return {
+    id: toInt(raw.id, 0),
+    full_name: String(raw.full_name ?? "").trim(),
+    phone: String(raw.phone ?? ""),
+    count: toInt(raw.count, 0),
+    amount: toInt(raw.amount, 0),
+  };
+}
+
+export function emptyAdminDepositStats(): AdminDepositStats {
+  const bucket = { count: 0, amount: 0, people: 0 };
+  return {
+    today: {
+      requests: 0,
+      people: 0,
+      approved_count: 0,
+      approved_amount: 0,
+      rejected_count: 0,
+      pending_count: 0,
+    },
+    approved: { ...bucket },
+    rejected: { ...bucket },
+    pending: { ...bucket },
+    claimed: { ...bucket },
+    awaiting: { ...bucket },
+    expired: { ...bucket },
+    cancelled: { ...bucket },
+    average_approved: 0,
+    top_user: null,
+    top_users: [],
+    days: [],
+  };
+}
+
+function mapAdminDepositStats(raw: any): AdminDepositStats {
+  const base = emptyAdminDepositStats();
+  if (!raw || typeof raw !== "object") return base;
+  const today = raw.today ?? {};
+  return {
+    today: {
+      requests: toInt(today.requests, 0),
+      people: toInt(today.people, 0),
+      approved_count: toInt(today.approved_count, 0),
+      approved_amount: toInt(today.approved_amount, 0),
+      rejected_count: toInt(today.rejected_count, 0),
+      pending_count: toInt(today.pending_count, 0),
+    },
+    approved: mapDepositBucket(raw.approved),
+    rejected: mapDepositBucket(raw.rejected),
+    pending: mapDepositBucket(raw.pending),
+    claimed: mapDepositBucket(raw.claimed),
+    awaiting: mapDepositBucket(raw.awaiting),
+    expired: mapDepositBucket(raw.expired),
+    cancelled: mapDepositBucket(raw.cancelled),
+    average_approved: toInt(raw.average_approved, 0),
+    top_user: mapDepositPerson(raw.top_user),
+    top_users: Array.isArray(raw.top_users)
+      ? raw.top_users.map(mapDepositPerson).filter((row): row is AdminDepositPerson => Boolean(row))
+      : [],
+    days: Array.isArray(raw.days)
+      ? raw.days.map((day) => ({
+          date: String(day?.date ?? ""),
+          count: toInt(day?.count, 0),
+          amount: toInt(day?.amount, 0),
+          people: toInt(day?.people, 0),
+        }))
+      : [],
+  };
+}
+
 function mapAdminCardDeposit(d: Record<string, any>, fallbackId?: string): AdminCardDeposit {
   return {
     id: String(d.id ?? fallbackId ?? ""),
@@ -4682,6 +4805,7 @@ export async function fetchAdminCardDeposits(params?: {
   page_size: number;
   total_pages: number;
   counts: Record<string, number>;
+  stats: AdminDepositStats;
   results: AdminCardDeposit[];
 }> {
   const sp = new URLSearchParams();
@@ -4697,6 +4821,7 @@ export async function fetchAdminCardDeposits(params?: {
     page_size?: number;
     total_pages?: number;
     counts?: Record<string, number>;
+    stats?: Record<string, any>;
     results: Array<Record<string, any>>;
   }>(`/api/v1/admin/wallet/deposits/${qs ? `?${qs}` : ""}`);
   const results = (raw.results ?? []).map((d) => mapAdminCardDeposit(d));
@@ -4706,6 +4831,7 @@ export async function fetchAdminCardDeposits(params?: {
     page_size: raw.page_size ?? params?.pageSize ?? results.length,
     total_pages: raw.total_pages ?? 1,
     counts: raw.counts ?? {},
+    stats: mapAdminDepositStats(raw.stats),
     results,
   };
 }
