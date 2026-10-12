@@ -563,7 +563,6 @@ export function WalletTopUpScreen({ navigation }: Props) {
                   onPress={() => void copy((card.number || card.masked).replace(/\D/g, ""), "Karta")}
                 />
               ) : null}
-              {card ? <InfoLine label="Egasi" value={card.cardholder} /> : null}
               {card ? <InfoLine label="Bank" value={card.bank} /> : null}
               {deposit ? (
                 <InfoLine
