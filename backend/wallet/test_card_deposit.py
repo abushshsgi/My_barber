@@ -214,6 +214,52 @@ class CardDepositServiceTests(TestCase):
             )
         self.assertEqual(ManualCardDeposit.objects.filter(user=self.user).count(), 1)
 
+    def test_overview_reports_people_amount_and_top_user(self):
+        big, _ = CardDepositService.init_deposit(
+            user=self.user, amount=Decimal("200000"), idempotency_key="stats-big"
+        )
+        CardDepositService.claim_deposit(
+            user=self.user, deposit_id=str(big.pk), receipt_file=_tiny_png()
+        )
+        CardDepositService.approve_deposit(
+            deposit_id=str(big.pk),
+            admin_id=1,
+            admin_email="admin@test.com",
+            note="OK",
+        )
+        other = User.objects.create_user(
+            username="other@test.com",
+            email="other@test.com",
+            phone="+998901110011",
+            role=User.Role.USER,
+            full_name="Kichik User",
+        )
+        small, _ = CardDepositService.init_deposit(
+            user=other, amount=Decimal("50000"), idempotency_key="stats-small"
+        )
+        CardDepositService.claim_deposit(
+            user=other, deposit_id=str(small.pk), receipt_file=_tiny_png()
+        )
+        CardDepositService.reject_deposit(
+            deposit_id=str(small.pk),
+            admin_id=1,
+            admin_email="admin@test.com",
+            note="Noto'g'ri chek",
+        )
+
+        stats = CardDepositService.overview()
+        self.assertEqual(stats["approved"]["count"], 1)
+        self.assertEqual(stats["approved"]["amount"], 200000)
+        self.assertEqual(stats["approved"]["people"], 1)
+        self.assertEqual(stats["rejected"]["count"], 1)
+        self.assertEqual(stats["rejected"]["amount"], 50000)
+        self.assertEqual(stats["today"]["approved_count"], 1)
+        self.assertEqual(stats["today"]["requests"], 2)
+        self.assertEqual(stats["top_user"]["id"], self.user.pk)
+        self.assertEqual(stats["top_user"]["amount"], 200000)
+        self.assertEqual(len(stats["days"]), 7)
+        self.assertEqual(stats["days"][-1]["count"], 1)
+
 
 @override_settings(
     WALLET_RECEIVING_CARD_NUMBER="8600123456789012",

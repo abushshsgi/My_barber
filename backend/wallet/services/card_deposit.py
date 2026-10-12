@@ -6,7 +6,7 @@ import logging
 import secrets
 import string
 import uuid
-from datetime import timedelta
+from datetime import date, datetime, timedelta
 from decimal import Decimal, ROUND_DOWN
 from typing import Any
 
@@ -14,7 +14,8 @@ from django.conf import settings
 from django.core.mail import send_mail
 from django.core.signing import TimestampSigner
 from django.db import transaction
-from django.db.models import Count, Q
+from django.db.models import Count, DateTimeField, Q, Sum
+from django.db.models.functions import Coalesce, TruncDate
 from django.utils import timezone
 
 from accounts.models import User
@@ -705,6 +706,128 @@ class CardDepositService:
             if key in out:
                 out[key] = row["n"]
         return out
+
+    @classmethod
+    def overview(cls) -> dict[str, Any]:
+        """Admin karta to'ldirish statistikasi: kun, jami, odamlar, rad."""
+        today = timezone.localdate()
+        start = today - timedelta(days=6)
+        approved = ManualCardDeposit.objects.filter(status=ManualCardDeposit.Status.APPROVED)
+        settled = approved.annotate(
+            settled_at=Coalesce("reviewed_at", "created_at", output_field=DateTimeField())
+        )
+        today_created = ManualCardDeposit.objects.filter(created_at__date=today)
+        today_approved = settled.filter(settled_at__date=today)
+        today_rejected = ManualCardDeposit.objects.filter(
+            status=ManualCardDeposit.Status.REJECTED,
+            reviewed_at__date=today,
+        )
+        today_pending = ManualCardDeposit.objects.filter(
+            created_at__date=today,
+            status__in=[
+                ManualCardDeposit.Status.CLAIMED,
+                ManualCardDeposit.Status.AWAITING_PAYMENT,
+            ],
+        )
+        top_rows = list(
+            approved.values("user_id", "user__full_name", "user__phone")
+            .annotate(n=Count("pk"), amount=Sum("amount"))
+            .order_by("-amount", "-n")[:8]
+        )
+        day_rows = {
+            _stats_day_key(row["day"]): row
+            for row in settled.annotate(day=TruncDate("settled_at"))
+            .filter(settled_at__date__gte=start)
+            .values("day")
+            .annotate(n=Count("pk"), amount=Sum("amount"), people=Count("user_id", distinct=True))
+        }
+        days = []
+        for offset in range(6, -1, -1):
+            day = today - timedelta(days=offset)
+            row = day_rows.get(day.isoformat())
+            days.append(
+                {
+                    "date": day.isoformat(),
+                    "count": (row or {}).get("n") or 0,
+                    "amount": _stats_money((row or {}).get("amount")),
+                    "people": (row or {}).get("people") or 0,
+                }
+            )
+        approved_bucket = _stats_bucket(approved)
+        average = 0
+        if approved_bucket["count"]:
+            average = approved_bucket["amount"] // approved_bucket["count"]
+        return {
+            "today": {
+                "requests": today_created.count(),
+                "people": today_created.values("user_id").distinct().count(),
+                "approved_count": today_approved.count(),
+                "approved_amount": _stats_money(today_approved.aggregate(amount=Sum("amount"))["amount"]),
+                "rejected_count": today_rejected.count(),
+                "pending_count": today_pending.count(),
+            },
+            "approved": approved_bucket,
+            "rejected": _stats_bucket(
+                ManualCardDeposit.objects.filter(status=ManualCardDeposit.Status.REJECTED)
+            ),
+            "pending": _stats_bucket(
+                ManualCardDeposit.objects.filter(
+                    status__in=[
+                        ManualCardDeposit.Status.CLAIMED,
+                        ManualCardDeposit.Status.AWAITING_PAYMENT,
+                    ]
+                )
+            ),
+            "claimed": _stats_bucket(
+                ManualCardDeposit.objects.filter(status=ManualCardDeposit.Status.CLAIMED)
+            ),
+            "awaiting": _stats_bucket(
+                ManualCardDeposit.objects.filter(status=ManualCardDeposit.Status.AWAITING_PAYMENT)
+            ),
+            "expired": _stats_bucket(
+                ManualCardDeposit.objects.filter(status=ManualCardDeposit.Status.EXPIRED)
+            ),
+            "cancelled": _stats_bucket(
+                ManualCardDeposit.objects.filter(status=ManualCardDeposit.Status.CANCELLED)
+            ),
+            "average_approved": average,
+            "top_user": _stats_person(top_rows[0]) if top_rows else None,
+            "top_users": [_stats_person(row) for row in top_rows],
+            "days": days,
+        }
+
+
+def _stats_money(value) -> int:
+    if value is None:
+        return 0
+    return int(Decimal(value).quantize(Decimal("1"), rounding=ROUND_DOWN))
+
+
+def _stats_bucket(qs) -> dict[str, int]:
+    row = qs.aggregate(n=Count("pk"), amount=Sum("amount"), people=Count("user_id", distinct=True))
+    return {
+        "count": row["n"] or 0,
+        "amount": _stats_money(row["amount"]),
+        "people": row["people"] or 0,
+    }
+
+
+def _stats_person(row: dict) -> dict[str, Any]:
+    return {
+        "id": row["user_id"],
+        "full_name": (row.get("user__full_name") or "").strip(),
+        "phone": row.get("user__phone") or "",
+        "count": row["n"] or 0,
+        "amount": _stats_money(row["amount"]),
+    }
+
+
+def _stats_day_key(value) -> str:
+    if isinstance(value, datetime):
+        return value.date().isoformat()
+    if isinstance(value, date):
+        return value.isoformat()
+    return str(value)[:10]
 
 
 def _admin_deposit_queryset(*, status: str | None, q: str, overdue: bool):
