@@ -43,7 +43,7 @@ type Props = NativeStackScreenProps<WalletStackParamList, "WalletTopUp">;
 let colors: ShellChrome = SHELL_LIGHT;
 let styles = createTopUpStyles(colors);
 
-const TOPUP_PREVIEW = 3;
+const TOPUP_PREVIEW = 20;
 
 type HistoryRow = WalletTx & { rejected?: boolean };
 
@@ -285,20 +285,18 @@ export function WalletTopUpScreen({ navigation }: Props) {
   }, []);
 
   useEffect(() => {
-    if (!pendingReview || !deposit) return;
+    if (!deposit) return;
     const latest = deposits.deposits.find((d) => d.id === deposit.id);
-    if (!latest) return;
+    if (!latest || latest.status === deposit.status) return;
+    if (latest.status !== "approved" && latest.status !== "rejected") return;
+    setPendingReview(false);
+    setPhase("done");
+    setDeposit(latest);
     if (latest.status === "approved") {
-      setPendingReview(false);
-      setDeposit(latest);
       me.refresh();
-      Alert.alert("Muvaffaqiyat", "Balans to'ldirildi. Admin tasdiqladi.");
-    } else if (latest.status === "rejected") {
-      setPendingReview(false);
-      setPhase("done");
-      setDeposit(latest);
+      topups.refresh();
     }
-  }, [deposits.deposits, pendingReview, deposit, me]);
+  }, [deposits.deposits, deposit, me, topups]);
 
   const activeCustom = custom.length > 0;
   const effective = activeCustom ? parseDigits(custom) : amount;

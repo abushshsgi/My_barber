@@ -289,7 +289,7 @@ export function useCardDeposits(poll?: boolean) {
           if (!cancelled) setDeposits(d);
         })
         .catch(() => {
-          if (!cancelled) setDeposits([]);
+          /* vaqtinchalik tarmoq xatosi ro'yxatni o'chirmaydi */
         })
         .finally(() => {
           if (!cancelled) setLoading(false);
@@ -299,7 +299,7 @@ export function useCardDeposits(poll?: boolean) {
     if (!poll) return () => {
       cancelled = true;
     };
-    const id = setInterval(load, 8_000);
+    const id = setInterval(load, 2_000);
     return () => {
       cancelled = true;
       clearInterval(id);

@@ -36,15 +36,18 @@ function wsUrl(token: string): string {
 }
 
 function rememberApproved(rows: CardDeposit[], seen: Set<string>, announce: boolean) {
+  let changed = false;
   for (const row of rows) {
-    if (row.status !== "approved") continue;
-    if (!announce || seen.has(row.id)) {
-      seen.add(row.id);
-      continue;
-    }
+    const terminal = row.status === "approved" || row.status === "rejected";
+    if (!terminal) continue;
+    if (seen.has(row.id)) continue;
     seen.add(row.id);
-    emitWalletTopUp({ depositId: row.id, amount: String(row.amount) });
+    changed = true;
+    if (announce && row.status === "approved") {
+      emitWalletTopUp({ depositId: row.id, amount: String(row.amount) });
+    }
   }
+  if (changed && announce) refreshListeners.forEach((listener) => listener());
 }
 
 /** Admin tasdiqlaganda animatsiya: websocket + qisqa poll zaxirasi. */
@@ -69,7 +72,7 @@ export function startWalletTopUpLive(seen: Set<string>): () => void {
       rememberApproved(rows, seen, ready);
       ready = true;
       const waiting = rows.some((row) => row.status === "claimed" || row.status === "awaiting_payment");
-      schedule(waiting ? 4000 : 15000);
+      schedule(waiting ? 2000 : 15000);
     } catch {
       if (!cancelled) schedule(8000);
     }
