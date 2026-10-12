@@ -202,10 +202,6 @@ export function TopUpCardSheet({
               copyValue={cardDigits}
             />
             <CopyChip
-              label={t("topUpPage.cardHolder", { defaultValue: "Egasi" })}
-              value={deposit.receiving_card?.cardholder || "—"}
-            />
-            <CopyChip
               label={t("topUpPage.cardBank", { defaultValue: "Bank" })}
               value={deposit.receiving_card?.bank || "—"}
             />
