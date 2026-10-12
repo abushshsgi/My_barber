@@ -76,40 +76,78 @@ async function loadPaymentPings(): Promise<PaymentPing[]> {
   return rows;
 }
 
-function showOsNotice(title: string, body: string, onOpen: () => void, silent: boolean) {
+function showOsNotice(title: string, body: string, onOpen: () => void) {
   if (typeof Notification === "undefined" || Notification.permission !== "granted") return;
   try {
-    const note = new Notification(title, { body, tag: "admin-payment-ping", silent });
+    const note = new Notification(title, { body, tag: "admin-payment-ping", silent: false });
     note.onclick = () => {
       window.focus();
       onOpen();
       note.close();
     };
   } catch {
-    /* brauzer tizim bildirishnomasini rad etsa, ovoz baribir chaladi */
+    /* brauzer tizim bildirishnomasini rad etsa, chime baribir uriniladi */
   }
 }
 
-function armBackgroundKeepAlive() {
-  const Ctx = window.AudioContext || (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-  if (!Ctx) return null;
-  const ctx = new Ctx();
-  const osc = ctx.createOscillator();
-  const gain = ctx.createGain();
-  gain.gain.value = 0.001;
-  osc.frequency.value = 20;
-  osc.connect(gain);
-  gain.connect(ctx.destination);
-  osc.start();
-  void ctx.resume();
-  return ctx;
+async function pingOs(title: string, body: string, href: PayHref, onOpen: () => void) {
+  if (typeof Notification === "undefined" || Notification.permission !== "granted") return;
+  try {
+    const reg = await navigator.serviceWorker?.getRegistration();
+    if (reg) {
+      await reg.showNotification(title, {
+        body,
+        tag: "admin-payment-ping",
+        renotify: true,
+        silent: false,
+        data: { href },
+      });
+      return;
+    }
+  } catch {
+    /* sahifa bildirishnomasi */
+  }
+  showOsNotice(title, body, onOpen);
+}
+
+let bedUrl = "";
+
+function quietBedUrl() {
+  if (bedUrl) return bedUrl;
+  const sampleRate = 8000;
+  const samples = sampleRate;
+  const dataSize = samples * 2;
+  const buffer = new ArrayBuffer(44 + dataSize);
+  const view = new DataView(buffer);
+  const write = (offset: number, text: string) => {
+    for (let i = 0; i < text.length; i += 1) view.setUint8(offset + i, text.charCodeAt(i));
+  };
+  write(0, "RIFF");
+  view.setUint32(4, 36 + dataSize, true);
+  write(8, "WAVE");
+  write(12, "fmt ");
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true);
+  view.setUint16(22, 1, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * 2, true);
+  view.setUint16(32, 2, true);
+  view.setUint16(34, 16, true);
+  write(36, "data");
+  view.setUint32(40, dataSize, true);
+  for (let i = 0; i < samples; i += 1) {
+    const sample = Math.sin((2 * Math.PI * 180 * i) / sampleRate) * 0.02 * 32767;
+    view.setInt16(44 + i * 2, sample, true);
+  }
+  bedUrl = URL.createObjectURL(new Blob([buffer], { type: "audio/wav" }));
+  return bedUrl;
 }
 
 export function AdminPaymentAlerts() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const keepAliveRef = useRef<AudioContext | null>(null);
+  const bedRef = useRef<HTMLAudioElement | null>(null);
   const unlockedRef = useRef(false);
   const busyRef = useRef(false);
   const [items, setItems] = useState<PaymentPing[]>([]);
@@ -124,47 +162,69 @@ export function AdminPaymentAlerts() {
     return audioRef.current;
   };
 
-  const playSound = async () => {
+  const playSound = () => {
     const audio = getAudio();
     audio.volume = 1;
-    audio.currentTime = 0;
     try {
-      await audio.play();
-      return true;
+      audio.currentTime = 0;
     } catch {
-      return false;
+      /* hali tayyor emas */
     }
+    void audio.play().catch(() => undefined);
+  };
+
+  const startBed = () => {
+    if (!bedRef.current) {
+      const bed = new Audio(quietBedUrl());
+      bed.loop = true;
+      bed.volume = 0.05;
+      bedRef.current = bed;
+    }
+    void bedRef.current.play().catch(() => undefined);
   };
 
   useEffect(() => {
+    if ("serviceWorker" in navigator) {
+      void navigator.serviceWorker.register("/admin-alerts-sw.js").catch(() => undefined);
+    }
+    const onMessage = (event: MessageEvent<{ type?: string; href?: PayHref }>) => {
+      if (event.data?.type !== "admin-payment-open" || !event.data.href) return;
+      void navigate({ to: event.data.href });
+    };
+    navigator.serviceWorker?.addEventListener("message", onMessage);
+    return () => navigator.serviceWorker?.removeEventListener("message", onMessage);
+  }, [navigate]);
+
+  useEffect(() => {
     const unlock = () => {
-      if (unlockedRef.current) return;
-      unlockedRef.current = true;
-      if (!keepAliveRef.current) keepAliveRef.current = armBackgroundKeepAlive();
+      if (!unlockedRef.current) {
+        unlockedRef.current = true;
+        const audio = getAudio();
+        const prev = audio.volume;
+        audio.volume = 0;
+        void audio
+          .play()
+          .then(() => {
+            audio.pause();
+            audio.currentTime = 0;
+            audio.volume = prev || 1;
+          })
+          .catch(() => {
+            audio.volume = prev || 1;
+          });
+      }
+      startBed();
       if (typeof Notification !== "undefined" && Notification.permission === "default") {
         void Notification.requestPermission();
       }
-      const audio = getAudio();
-      const prev = audio.volume;
-      audio.volume = 0;
-      void audio
-        .play()
-        .then(() => {
-          audio.pause();
-          audio.currentTime = 0;
-          audio.volume = prev || 1;
-        })
-        .catch(() => {
-          audio.volume = prev || 1;
-        });
     };
     window.addEventListener("pointerdown", unlock);
     window.addEventListener("keydown", unlock);
     return () => {
       window.removeEventListener("pointerdown", unlock);
       window.removeEventListener("keydown", unlock);
-      void keepAliveRef.current?.close();
-      keepAliveRef.current = null;
+      bedRef.current?.pause();
+      bedRef.current = null;
     };
   }, []);
 
@@ -176,7 +236,7 @@ export function AdminPaymentAlerts() {
       if (stopped || busyRef.current) return;
       busyRef.current = true;
       try {
-        if (keepAliveRef.current?.state === "suspended") void keepAliveRef.current.resume();
+        if (bedRef.current?.paused) void bedRef.current.play().catch(() => undefined);
         const rows = await loadPaymentPings();
         if (stopped) return;
         const store = readSeen();
@@ -188,7 +248,6 @@ export function AdminPaymentAlerts() {
         const fresh = rows.filter((row) => !known.has(row.id));
         if (!fresh.length) return;
         writeSeen([...store.ids, ...fresh.map((row) => row.id)]);
-        const played = await playSound();
         setItems((prev) => [...fresh, ...prev].slice(0, 12));
         setUnseen((count) => count + fresh.length);
         const head = fresh[0];
@@ -197,10 +256,11 @@ export function AdminPaymentAlerts() {
         const description = `${head.title}${extra}`;
         const away = document.visibilityState === "hidden" || !document.hasFocus();
         if (away) {
-          showOsNotice(title, description, () => {
+          void pingOs(title, description, head.href, () => {
             void navigate({ to: head.href });
-          }, played);
+          });
         }
+        playSound();
         toast.success(title, {
           description,
           action: {
@@ -233,6 +293,18 @@ export function AdminPaymentAlerts() {
       if (!stopped) arm(POLL_MS);
     });
 
+    const workerUrl = URL.createObjectURL(
+      new Blob(["setInterval(() => postMessage(0), 2000)"], { type: "text/javascript" }),
+    );
+    const worker = new Worker(workerUrl);
+    worker.onmessage = () => {
+      if (document.visibilityState !== "hidden" || busyRef.current) return;
+      window.clearTimeout(timer);
+      void tick().finally(() => {
+        if (!stopped) arm(POLL_MS);
+      });
+    };
+
     const wake = () => {
       if (document.visibilityState !== "visible") return;
       window.clearTimeout(timer);
@@ -247,6 +319,8 @@ export function AdminPaymentAlerts() {
       window.clearTimeout(timer);
       document.removeEventListener("visibilitychange", wake);
       window.removeEventListener("focus", wake);
+      worker.terminate();
+      URL.revokeObjectURL(workerUrl);
     };
   }, [navigate, queryClient]);
 
