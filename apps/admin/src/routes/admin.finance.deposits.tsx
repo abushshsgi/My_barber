@@ -22,7 +22,7 @@ import {
   type AdminCardDeposit,
   adminDepositChannelLabel,
 } from "@/lib/admin-api";
-import { formatAdminUzs } from "@/lib/admin-analytics";
+import { formatAdminUzs, formatAdminUzsExact } from "@/lib/admin-analytics";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/admin/finance/deposits")({
@@ -346,7 +346,7 @@ function AdminWalletDepositsPage() {
                     ) : null}
                   </div>
                   <p className="w-28 shrink-0 text-right text-sm font-semibold tabular-nums">
-                    {formatAdminUzs(row.amount)}
+                    {formatAdminUzsExact(row.amount)}
                   </p>
                   <button
                     type="button"
@@ -426,7 +426,7 @@ function AdminWalletDepositsPage() {
             <DialogTitle>Chek va identifikatorlar</DialogTitle>
             <DialogDescription>
               {receiptPreview
-                ? `${receiptPreview.user.full_name || receiptPreview.user.phone || "User"} · ${formatAdminUzs(receiptPreview.amount)} · ${STATUS_LABEL[receiptPreview.status] || receiptPreview.status}`
+                ? `${receiptPreview.user.full_name || receiptPreview.user.phone || "User"} · ${formatAdminUzsExact(receiptPreview.amount)} · ${STATUS_LABEL[receiptPreview.status] || receiptPreview.status}`
                 : null}
             </DialogDescription>
           </DialogHeader>
@@ -525,7 +525,7 @@ function AdminWalletDepositsPage() {
             </DialogTitle>
             <DialogDescription>
               {approveTarget
-                ? `${approveTarget.user.full_name || approveTarget.user.phone || "User"} · ${formatAdminUzs(approveTarget.amount)}`
+                ? `${approveTarget.user.full_name || approveTarget.user.phone || "User"} · ${formatAdminUzsExact(approveTarget.amount)}`
                 : null}
             </DialogDescription>
           </DialogHeader>
@@ -604,7 +604,7 @@ function AdminWalletDepositsPage() {
             </DialogTitle>
             <DialogDescription>
               {rejectTarget
-                ? `${rejectTarget.user.full_name || rejectTarget.user.phone || "User"} · ${formatAdminUzs(rejectTarget.amount)}`
+                ? `${rejectTarget.user.full_name || rejectTarget.user.phone || "User"} · ${formatAdminUzsExact(rejectTarget.amount)}`
                 : null}
             </DialogDescription>
           </DialogHeader>

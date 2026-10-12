@@ -4,7 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Bell } from "lucide-react";
 import { toast } from "sonner";
 import { apiJson } from "@/lib/api";
-import { formatAdminUzsFull } from "@/lib/admin-analytics";
+import { formatAdminUzsExact } from "@/lib/admin-analytics";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -172,7 +172,7 @@ export function AdminPaymentAlerts() {
         setUnseen((count) => count + fresh.length);
         const head = fresh[0];
         const extra = fresh.length > 1 ? ` · yana ${fresh.length - 1} ta` : "";
-        toast.success(`Yangi to'lov keldi: ${formatAdminUzsFull(head.amount)}`, {
+        toast.success(`Yangi to'lov keldi: ${formatAdminUzsExact(head.amount)}`, {
           description: `${head.title}${extra}`,
           action: {
             label: "Ochish",
@@ -232,7 +232,7 @@ export function AdminPaymentAlerts() {
               className="flex flex-col items-start gap-0.5 py-2"
               onClick={() => void navigate({ to: item.href })}
             >
-              <span className="text-sm font-medium">{formatAdminUzsFull(item.amount)}</span>
+              <span className="text-sm font-medium">{formatAdminUzsExact(item.amount)}</span>
               <span className="text-xs text-muted-foreground">{item.title}</span>
             </DropdownMenuItem>
           ))

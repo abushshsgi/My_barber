@@ -161,6 +161,15 @@ export function formatAdminUzs(amount: number): string {
   return `${Math.round(amount).toLocaleString("uz-UZ")} so'm`;
 }
 
+/** To'ldirish summasi — tiyingacha, qisqartmasiz. */
+export function formatAdminUzsExact(amount: number): string {
+  if (!Number.isFinite(amount)) return "0,00 so'm";
+  return `${amount.toLocaleString("uz-UZ", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })} so'm`;
+}
+
 /** Katta hero uchun to'liq summa (K/M qisqartmasiz). */
 export function formatAdminUzsFull(amount: number): string {
   if (!Number.isFinite(amount)) return "0 so'm";

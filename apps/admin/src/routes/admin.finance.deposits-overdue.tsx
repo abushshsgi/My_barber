@@ -22,7 +22,7 @@ import {
   type AdminCardDeposit,
   adminDepositChannelLabel,
 } from "@/lib/admin-api";
-import { formatAdminUzs } from "@/lib/admin-analytics";
+import { formatAdminUzsExact } from "@/lib/admin-analytics";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/admin/finance/deposits-overdue")({
@@ -225,7 +225,7 @@ function AdminOverdueDepositsPage() {
                     </div>
                     <div className="text-right">
                       <p className="text-lg font-semibold tabular-nums">
-                        {formatAdminUzs(row.amount)}
+                        {formatAdminUzsExact(row.amount)}
                       </p>
                       <div className="mt-1 flex flex-wrap items-center justify-end gap-2">
                         <Badge variant="secondary" className="bg-amber-500/15 text-amber-900">
@@ -314,7 +314,7 @@ function AdminOverdueDepositsPage() {
             <DialogTitle>Chek</DialogTitle>
             <DialogDescription>
               {receiptPreview
-                ? `${receiptPreview.user.full_name || receiptPreview.user.phone || "User"} · ${formatAdminUzs(receiptPreview.amount)}`
+                ? `${receiptPreview.user.full_name || receiptPreview.user.phone || "User"} · ${formatAdminUzsExact(receiptPreview.amount)}`
                 : null}
             </DialogDescription>
           </DialogHeader>
@@ -364,7 +364,7 @@ function AdminOverdueDepositsPage() {
             </DialogTitle>
             <DialogDescription>
               {approveTarget
-                ? `${approveTarget.user.full_name || approveTarget.user.phone || "User"} · ${formatAdminUzs(approveTarget.amount)}`
+                ? `${approveTarget.user.full_name || approveTarget.user.phone || "User"} · ${formatAdminUzsExact(approveTarget.amount)}`
                 : null}
             </DialogDescription>
           </DialogHeader>

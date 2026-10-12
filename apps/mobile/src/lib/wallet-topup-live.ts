@@ -86,6 +86,10 @@ export function startWalletTopUpLive(seen: Set<string>): () => void {
           id?: number;
           payload?: { deposit_id?: string; entry_id?: string; amount?: string };
         };
+        if (data.type === "wallet_deposit_rejected") {
+          refreshListeners.forEach((listener) => listener());
+          return;
+        }
         if (data.type !== "wallet_topup") return;
         const depositId = String(data.payload?.deposit_id || data.payload?.entry_id || "");
         if (!depositId || seen.has(depositId)) return;

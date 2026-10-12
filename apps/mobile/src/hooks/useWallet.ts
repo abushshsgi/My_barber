@@ -274,6 +274,8 @@ export function useCardDeposits(poll?: boolean) {
   const [tick, setTick] = useState(0);
   const refresh = useCallback(() => setTick((n) => n + 1), []);
 
+  useEffect(() => subscribeWalletRefresh(refresh), [refresh]);
+
   useEffect(() => {
     if (!user?.id) {
       setDeposits([]);

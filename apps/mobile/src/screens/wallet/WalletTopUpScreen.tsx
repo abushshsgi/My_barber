@@ -266,7 +266,8 @@ export function WalletTopUpScreen({ navigation }: Props) {
       Alert.alert("Muvaffaqiyat", "Balans to'ldirildi. Admin tasdiqladi.");
     } else if (latest.status === "rejected") {
       setPendingReview(false);
-      Alert.alert("Rad etildi", latest.review_note || "To'lov rad etildi.");
+      setPhase("done");
+      setDeposit(latest);
     }
   }, [deposits.deposits, pendingReview, deposit, me]);
 
