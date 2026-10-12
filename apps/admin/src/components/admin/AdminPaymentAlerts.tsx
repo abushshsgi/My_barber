@@ -29,7 +29,7 @@ type PaymentPing = {
 };
 
 const SEEN_KEY = "admin-payment-seen-v1";
-const POLL_MS = 12_000;
+const POLL_MS = 2_500;
 
 function readSeen(): { ready: boolean; ids: string[] } {
   try {
@@ -46,65 +46,70 @@ function writeSeen(ids: string[]) {
   localStorage.setItem(SEEN_KEY, JSON.stringify({ ready: true, ids: ids.slice(-240) }));
 }
 
-async function loadPaymentPings(): Promise<PaymentPing[]> {
-  const [subs, qr, deposits] = await Promise.all([
-    apiJson<{ results?: Array<Record<string, unknown>> }>(
-      "/api/v1/admin/subscriptions/payments/?status=paid",
-    ).catch(() => ({ results: [] })),
-    apiJson<{ results?: Array<Record<string, unknown>> }>(
-      "/api/v1/admin/finance/qr-payments/?page_size=8",
-    ).catch(() => ({ results: [] })),
-    apiJson<{ results?: Array<Record<string, unknown>> }>(
-      "/api/v1/admin/wallet/deposits/?status=claimed&page_size=8",
-    ).catch(() => ({ results: [] })),
-  ]);
+const HREFS = new Set<PayHref>([
+  "/admin/subscriptions",
+  "/admin/finance/qr-payments",
+  "/admin/finance/deposits",
+]);
 
+function asHref(value: unknown): PayHref {
+  const href = String(value || "");
+  return HREFS.has(href as PayHref) ? (href as PayHref) : "/admin/finance/deposits";
+}
+
+async function loadPaymentPings(): Promise<PaymentPing[]> {
+  const data = await apiJson<{ results?: Array<Record<string, unknown>> }>(
+    "/api/v1/admin/finance/payment-pings/",
+  );
   const rows: PaymentPing[] = [];
-  for (const row of subs.results ?? []) {
-    const id = String(row.id ?? "");
-    if (!id) continue;
-    const user = row.user as { full_name?: string; phone?: string } | undefined;
-    const who = String(row.user_name || user?.full_name || user?.phone || "Foydalanuvchi");
-    rows.push({
-      id: `sub:${id}`,
-      amount: Number(row.amount_uzs ?? 0),
-      title: `Obuna · ${who}`,
-      href: "/admin/subscriptions",
-      at: String(row.paid_at || row.created_at || ""),
-    });
-  }
-  for (const row of qr.results ?? []) {
-    if (String(row.status || "") !== "completed") continue;
+  for (const row of data.results ?? []) {
     const id = String(row.id ?? "");
     if (!id) continue;
     rows.push({
-      id: `qr:${id}`,
+      id,
       amount: Number(row.amount ?? 0),
-      title: `QR · ${String(row.payer_name || "Mijoz")}`,
-      href: "/admin/finance/qr-payments",
-      at: String(row.created_at || ""),
-    });
-  }
-  for (const row of deposits.results ?? []) {
-    const id = String(row.id ?? "");
-    if (!id) continue;
-    const user = row.user as { full_name?: string; phone?: string } | undefined;
-    const who = String(user?.full_name || user?.phone || "Mijoz");
-    rows.push({
-      id: `dep:${id}`,
-      amount: Number(row.amount ?? 0),
-      title: `Karta to'lovi · ${who}`,
-      href: "/admin/finance/deposits",
-      at: String(row.claimed_at || row.created_at || ""),
+      title: String(row.title || "To'lov"),
+      href: asHref(row.href),
+      at: String(row.at || ""),
     });
   }
   return rows;
+}
+
+function showOsNotice(title: string, body: string, onOpen: () => void, silent: boolean) {
+  if (typeof Notification === "undefined" || Notification.permission !== "granted") return;
+  try {
+    const note = new Notification(title, { body, tag: "admin-payment-ping", silent });
+    note.onclick = () => {
+      window.focus();
+      onOpen();
+      note.close();
+    };
+  } catch {
+    /* brauzer tizim bildirishnomasini rad etsa, ovoz baribir chaladi */
+  }
+}
+
+function armBackgroundKeepAlive() {
+  const Ctx = window.AudioContext || (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+  if (!Ctx) return null;
+  const ctx = new Ctx();
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  gain.gain.value = 0.001;
+  osc.frequency.value = 20;
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  osc.start();
+  void ctx.resume();
+  return ctx;
 }
 
 export function AdminPaymentAlerts() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const keepAliveRef = useRef<AudioContext | null>(null);
   const unlockedRef = useRef(false);
   const busyRef = useRef(false);
   const [items, setItems] = useState<PaymentPing[]>([]);
@@ -119,18 +124,26 @@ export function AdminPaymentAlerts() {
     return audioRef.current;
   };
 
-  const playSound = () => {
+  const playSound = async () => {
     const audio = getAudio();
+    audio.volume = 1;
     audio.currentTime = 0;
-    void audio.play().catch(() => {
-      /* brauzer ovozni birinchi bosishdan keyin ochadi */
-    });
+    try {
+      await audio.play();
+      return true;
+    } catch {
+      return false;
+    }
   };
 
   useEffect(() => {
     const unlock = () => {
       if (unlockedRef.current) return;
       unlockedRef.current = true;
+      if (!keepAliveRef.current) keepAliveRef.current = armBackgroundKeepAlive();
+      if (typeof Notification !== "undefined" && Notification.permission === "default") {
+        void Notification.requestPermission();
+      }
       const audio = getAudio();
       const prev = audio.volume;
       audio.volume = 0;
@@ -146,16 +159,24 @@ export function AdminPaymentAlerts() {
         });
     };
     window.addEventListener("pointerdown", unlock);
-    return () => window.removeEventListener("pointerdown", unlock);
+    window.addEventListener("keydown", unlock);
+    return () => {
+      window.removeEventListener("pointerdown", unlock);
+      window.removeEventListener("keydown", unlock);
+      void keepAliveRef.current?.close();
+      keepAliveRef.current = null;
+    };
   }, []);
 
   useEffect(() => {
     let stopped = false;
+    let timer = 0;
 
     const tick = async () => {
-      if (stopped || busyRef.current || document.visibilityState === "hidden") return;
+      if (stopped || busyRef.current) return;
       busyRef.current = true;
       try {
+        if (keepAliveRef.current?.state === "suspended") void keepAliveRef.current.resume();
         const rows = await loadPaymentPings();
         if (stopped) return;
         const store = readSeen();
@@ -167,13 +188,21 @@ export function AdminPaymentAlerts() {
         const fresh = rows.filter((row) => !known.has(row.id));
         if (!fresh.length) return;
         writeSeen([...store.ids, ...fresh.map((row) => row.id)]);
-        playSound();
+        const played = await playSound();
         setItems((prev) => [...fresh, ...prev].slice(0, 12));
         setUnseen((count) => count + fresh.length);
         const head = fresh[0];
         const extra = fresh.length > 1 ? ` · yana ${fresh.length - 1} ta` : "";
-        toast.success(`Yangi to'lov keldi: ${formatAdminUzsExact(head.amount)}`, {
-          description: `${head.title}${extra}`,
+        const title = `Yangi to'lov keldi: ${formatAdminUzsExact(head.amount)}`;
+        const description = `${head.title}${extra}`;
+        const away = document.visibilityState === "hidden" || !document.hasFocus();
+        if (away) {
+          showOsNotice(title, description, () => {
+            void navigate({ to: head.href });
+          }, played);
+        }
+        toast.success(title, {
+          description,
           action: {
             label: "Ochish",
             onClick: () => {
@@ -191,16 +220,33 @@ export function AdminPaymentAlerts() {
       }
     };
 
-    void tick();
-    const timer = window.setInterval(() => void tick(), POLL_MS);
-    const onVisible = () => {
-      if (document.visibilityState === "visible") void tick();
+    const arm = (delay: number) => {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => {
+        void tick().finally(() => {
+          if (!stopped) arm(POLL_MS);
+        });
+      }, delay);
     };
-    document.addEventListener("visibilitychange", onVisible);
+
+    void tick().finally(() => {
+      if (!stopped) arm(POLL_MS);
+    });
+
+    const wake = () => {
+      if (document.visibilityState !== "visible") return;
+      window.clearTimeout(timer);
+      void tick().finally(() => {
+        if (!stopped) arm(POLL_MS);
+      });
+    };
+    document.addEventListener("visibilitychange", wake);
+    window.addEventListener("focus", wake);
     return () => {
       stopped = true;
-      window.clearInterval(timer);
-      document.removeEventListener("visibilitychange", onVisible);
+      window.clearTimeout(timer);
+      document.removeEventListener("visibilitychange", wake);
+      window.removeEventListener("focus", wake);
     };
   }, [navigate, queryClient]);
 
