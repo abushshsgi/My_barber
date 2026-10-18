@@ -24,7 +24,7 @@ export function BazaarSalonRowSection({ titleKey, salons, viewAllTo }: Props) {
         viewAllTo={viewAllTo}
         className="mb-4"
       />
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
         {preview.map((salon) => (
           <DesktopSalonCard key={salon.id} salon={salon} variant="marketplace" />
         ))}
@@ -37,7 +37,7 @@ export function BazaarSalonRowSectionSkeleton() {
   return (
     <div className="min-w-0 lg:col-span-5 lg:col-start-1">
       <div className="mb-4 h-8 w-48 animate-pulse rounded-lg bg-surface" />
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
         {Array.from({ length: HOME_SALON_ROW_PREVIEW }).map((_, i) => (
           <div key={i} className="animate-pulse">
             <div className="aspect-[5/4] rounded-xl bg-surface" />

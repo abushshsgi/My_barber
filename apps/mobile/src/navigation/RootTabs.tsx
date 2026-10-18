@@ -148,7 +148,9 @@ import { getFocusedRouteNameFromRoute, RouteProp } from "@react-navigation/nativ
 // ... (existing imports)
 
 function getTabBarVisibility(route: RouteProp<RootTabParamList, keyof RootTabParamList>) {
-  const routeName = getFocusedRouteNameFromRoute(route) ?? "";
+  // Stack boshlang‘ich ekranda nested nom bo‘sh keladi — Care hub shu holat.
+  const focused = getFocusedRouteNameFromRoute(route);
+  const routeName = focused || (route.name === "MorphCare" ? "CareHome" : "");
   // Yashirish kerak bo'lgan ichki stack sahifalari
   const hideOnScreens = [
     "MorphResults",

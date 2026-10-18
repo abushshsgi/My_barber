@@ -23,7 +23,7 @@ const H_SNAP =
   "no-scrollbar flex snap-x snap-mandatory gap-3 overflow-x-auto overscroll-x-contain px-4 pb-0.5 [-webkit-overflow-scrolling:touch]";
 
 /** Carousel — UI kitdagi keng listing. */
-const SLIDE = "w-[min(88vw,22rem)] shrink-0 snap-center";
+const SLIDE = "w-[min(88vw,22rem)] shrink-0 snap-center md:w-[calc(50%-0.375rem)]";
 
 const fadeUp = {
   hidden: { opacity: 0 },
@@ -181,7 +181,7 @@ export function HomeMobileCategories() {
 
   return (
     <div className="px-4">
-      <div className="no-scrollbar flex gap-2 overflow-x-auto pb-0.5">
+      <div className="no-scrollbar flex gap-2 overflow-x-auto pb-0.5 md:flex-wrap md:overflow-visible">
         <Link
           to="/"
           className="shrink-0 rounded-full bg-foreground px-4 py-2 text-[12px] font-semibold tracking-tight text-background"
@@ -232,7 +232,7 @@ export function HomeMobileNearby({ salons, title }: { salons: Salon[]; title?: s
           <ChevronRight className="size-3.5 opacity-70" />
         </Link>
       </div>
-      <ul className="space-y-7">
+      <ul className="grid grid-cols-1 gap-7 md:grid-cols-2 md:gap-x-4 md:gap-y-6">
         {salons.map((salon) => (
           <li key={salon.id}>
             <HomeSalonListingCard salon={salon} />

@@ -38,7 +38,10 @@ async function saveLocal(rows: MyCareProduct[]) {
 export async function loadMyProductsLocal(): Promise<MyCareProduct[]> {
   try {
     const raw = await AsyncStorage.getItem(MY_PRODUCTS_KEY);
-    if (!raw) return [];
+    if (!raw) {
+      memoryProducts = [];
+      return [];
+    }
     const parsed = JSON.parse(raw) as MyCareProduct[];
     const rows = Array.isArray(parsed) ? parsed : [];
     memoryProducts = rows;

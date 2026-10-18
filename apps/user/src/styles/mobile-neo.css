@@ -224,3 +224,53 @@ html[data-native-app="true"] .native-home-wordmark {
     display: none !important;
   }
 }
+
+/*
+ * Telefonlar: iPhone SE (320), Samsung (360), iPhone 14/15 (390), Pro Max (430).
+ * rem o'lchamlari tor ekranda biroz kichrayadi, 390+ da 16px qoladi.
+ * Desktop (1024+) ga tegmaydi.
+ */
+@media (max-width: 1023px) {
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    font-size: clamp(14.5px, calc(14.5px + (100vw - 320px) * 0.02143), 16px);
+  }
+
+  img,
+  video,
+  canvas,
+  iframe {
+    max-width: 100%;
+  }
+
+  .mobile-neo :where(p, h1, h2, h3, h4, h5, h6, li, figcaption, label, td, th) {
+    overflow-wrap: break-word;
+  }
+
+  /* iOS input 16px dan kichik bo'lsa sahifani kattalashtirib yuboradi */
+  .mobile-neo input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="file"]):not([type="hidden"]),
+  .mobile-neo select,
+  .mobile-neo textarea {
+    font-size: 16px;
+  }
+
+  .mobile-neo .w-screen {
+    width: 100%;
+    max-width: 100%;
+  }
+}
+
+/* Planshet (iPad 768–1024) va desktop: rasm va matn ekrandan chiqmasin. */
+@media (min-width: 768px) {
+  img,
+  video,
+  canvas,
+  iframe {
+    max-width: 100%;
+  }
+
+  .mobile-neo :where(p, h1, h2, h3, h4, h5, h6, li, figcaption, label, td, th) {
+    overflow-wrap: break-word;
+  }
+}

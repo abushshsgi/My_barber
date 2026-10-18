@@ -32,7 +32,7 @@ export function NoSalonsEmpty({
   const mapHintKey = hideStyleCtas ? "homePage.noSalonsMapHint" : descriptionKey;
 
   const actions = hideStyleCtas ? undefined : (
-    <div className={cn("flex w-full flex-col gap-2 sm:flex-row sm:justify-center", compact && "gap-1.5")}>
+    <div className={cn("flex w-full flex-col gap-2 lg:flex-row lg:justify-center", compact && "gap-1.5")}>
       <Link
         to="/ai-style"
         preload="intent"

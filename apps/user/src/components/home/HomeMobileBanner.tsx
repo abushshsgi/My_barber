@@ -92,7 +92,7 @@ export function HomeMobileBanner() {
               <Link
                 to={slide.to}
                 search={"search" in slide ? slide.search : undefined}
-                className="group relative block aspect-[2.15/1] w-full overflow-hidden bg-muted"
+                className="group relative block aspect-[2.15/1] w-full overflow-hidden bg-muted md:aspect-[2.6/1] md:max-h-[300px]"
               >
                 <img
                   src={pexelsCoverUrl(slide.photoId, 900)}

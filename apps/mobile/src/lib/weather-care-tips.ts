@@ -629,8 +629,8 @@ export function careHubLayout(
   const narrow = width < 360;
   const tall = height >= 900;
 
-  /** Floating tab dock yo‘q — Android nav / home indicator ustida qolsin. */
-  const dockClearance = Math.max(bottomInset, 32) + (short ? 14 : 18);
+  /** Tab dock yo‘q — pastki karta o‘zi shu joyni egallaydi. */
+  const dockClearance = Math.max(bottomInset, 8);
   const avail = Math.max(320, height - dockClearance - Math.max(topInset, 0));
 
   const density = tiny ? 0.86 : short ? 0.92 : tall ? 1.04 : 1;

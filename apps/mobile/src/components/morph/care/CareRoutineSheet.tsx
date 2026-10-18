@@ -3,7 +3,6 @@ import { useFocusEffect } from "@react-navigation/native";
 import { Image } from "expo-image";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
-  ActivityIndicator,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -49,6 +48,7 @@ import {
 import { scheduleCareReminders } from "../../../lib/care-reminders";
 import {
   loadMyProducts,
+  loadMyProductsLocal,
   loadRoutineDone,
   peekMyProducts,
   setRoutineTaskDone,
@@ -339,9 +339,7 @@ export function CareRoutineSheet({
   const [planOpen, setPlanOpen] = useState(false);
   const [myProducts, setMyProducts] = useState<MyCareProduct[]>(() => shelfOnOpen ?? []);
   const [doneMap, setDoneMap] = useState<Record<string, boolean>>({});
-  const [loadingProducts, setLoadingProducts] = useState(() => shelfOnOpen == null);
   const [aiPlan, setAiPlan] = useState<AiCarePlan | null>(initialPlan);
-  const [bootingPlan, setBootingPlan] = useState(() => initialPlan == null);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiAppending, setAiAppending] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
@@ -529,33 +527,32 @@ export function CareRoutineSheet({
   );
 
   const refreshLocal = useCallback(async () => {
-    if (!loadedOnceRef.current && !planRef.current && productCountRef.current === 0) {
-      setLoadingProducts(true);
+    const known = peekMyProducts();
+    if (known == null) {
+      const local = await loadMyProductsLocal();
+      productCountRef.current = local.length;
+      setMyProducts(local);
     }
-    try {
-      const [mine, done, schedRaw] = await Promise.all([
-        loadMyProducts(),
-        loadRoutineDone(selectedDate),
-        loadCareSchedule(),
-      ]);
-      productCountRef.current = mine.length;
-      setMyProducts(mine);
-      setDoneMap(done);
-      let sched = schedRaw;
-      if (!sched?.morningTime || !sched?.eveningTime) {
-        sched = { morningTime: "07:30", eveningTime: "21:00" };
-        await saveCareSchedule(sched);
-      }
-      setSchedule((prev) =>
-        prev?.morningTime === sched.morningTime && prev?.eveningTime === sched.eveningTime
-          ? prev
-          : sched,
-      );
-      loadedOnceRef.current = true;
-      return { mine, sched };
-    } finally {
-      setLoadingProducts(false);
+    const [mine, done, schedRaw] = await Promise.all([
+      loadMyProducts(),
+      loadRoutineDone(selectedDate),
+      loadCareSchedule(),
+    ]);
+    productCountRef.current = mine.length;
+    setMyProducts(mine);
+    setDoneMap(done);
+    let sched = schedRaw;
+    if (!sched?.morningTime || !sched?.eveningTime) {
+      sched = { morningTime: "07:30", eveningTime: "21:00" };
+      await saveCareSchedule(sched);
     }
+    setSchedule((prev) =>
+      prev?.morningTime === sched.morningTime && prev?.eveningTime === sched.eveningTime
+        ? prev
+        : sched,
+    );
+    loadedOnceRef.current = true;
+    return { mine, sched };
   }, [selectedDate]);
 
   useFocusEffect(
@@ -577,7 +574,6 @@ export function CareRoutineSheet({
             setAiPlan(plan);
           }
         }
-        if (live) setBootingPlan(false);
         const { mine, sched } = await refreshLocal();
         if (!live) return;
         await syncPlanWithProducts(mine, { prefs: sched });
@@ -633,8 +629,7 @@ export function CareRoutineSheet({
   const scrollW = Math.max(scale(160), rowW - addW - cardGap);
   const peekCardW = Math.max(scale(96), (scrollW - cardGap) / 2);
   const showAiThinking = regenerating;
-  const emptyOnly = !bootingPlan && !loadingProducts && !hasProducts && !aiPlan;
-  const showRestoring = !emptyOnly && !showPlans && !showAiThinking;
+  const emptyOnly = !hasProducts;
 
   const displayProductName = (name?: string | null) => {
     if (!name || name === "null" || name === "undefined") return null;
@@ -649,6 +644,7 @@ export function CareRoutineSheet({
           styles.sheetContent,
           {
             paddingBottom: verticalScale(28),
+            flexGrow: emptyOnly ? 1 : undefined,
           },
         ]}
         nestedScrollEnabled
@@ -657,48 +653,27 @@ export function CareRoutineSheet({
       >
         {emptyOnly ? (
           <View style={styles.emptyBoard}>
-            <View style={styles.emptyIntro}>
-              <View style={styles.emptyMark}>
-                <Ionicons name="layers-outline" size={22} color={chrome.fg} />
-              </View>
-              <View style={styles.emptyIntroCopy}>
-                <Text style={styles.emptyHeroTitle}>
-                  {t("care.myProducts.emptyTitle", { defaultValue: "Hali mahsulot yo‘q" })}
-                </Text>
-                <Text style={styles.emptyHeroSub}>
-                  {t("care.routine.needProducts", {
-                    defaultValue: "Reja sizning mahsulotlaringiz bilan tuziladi — avval qo‘shing",
-                  })}
-                </Text>
-              </View>
-            </View>
+            <Ionicons name="bag-handle-outline" size={30} color={chrome.fg} />
+            <Text style={styles.emptyTitle}>
+              {t("care.myProducts.emptyTitle", { defaultValue: "Hali mahsulot yo‘q" })}
+            </Text>
+            <Text style={styles.emptySub}>
+              {t("care.myProducts.emptySub", {
+                defaultValue: "Tarkib skaneridan mahsulot qo‘shing yoki katalogdan tanlang",
+              })}
+            </Text>
             <View style={styles.emptyActions}>
-              <Pressable style={styles.emptyTile} onPress={onOpenCatalog}>
-                <View style={styles.emptyTileIcon}>
-                  <Ionicons name="beaker-outline" size={22} color={chrome.fg} />
-                </View>
-                <Text style={styles.emptyTileTitle}>
-                  {t("care.catalog.title", { defaultValue: "Soch vositalari" })}
-                </Text>
-                <Text style={styles.emptyTileSub} numberOfLines={2}>
-                  {t("care.myProducts.source.catalog", { defaultValue: "Katalog" })}
-                </Text>
+              <Pressable style={styles.emptyPrimary} onPress={onOpenScan}>
+                <Ionicons name="scan" size={16} color={chrome.onAccent} />
+                <Text style={styles.emptyPrimaryText}>{t("care.myProducts.scan", { defaultValue: "Skan" })}</Text>
               </Pressable>
-              <Pressable style={styles.emptyTile} onPress={onOpenScan}>
-                <View style={styles.emptyTileIcon}>
-                  <Ionicons name="qr-code-outline" size={22} color={chrome.fg} />
-                </View>
-                <Text style={styles.emptyTileTitle}>
-                  {t("care.myProducts.scan", { defaultValue: "Skan" })}
-                </Text>
-                <Text style={styles.emptyTileSub} numberOfLines={2}>
-                  {t("care.myProducts.source.scanHint", { defaultValue: "Skan orqali" })}
+              <Pressable style={styles.emptySecondary} onPress={onOpenCatalog}>
+                <Text style={styles.emptySecondaryText}>
+                  {t("care.catalog.title", { defaultValue: "Soch vositalari" })}
                 </Text>
               </Pressable>
             </View>
           </View>
-        ) : showRestoring ? (
-          <ActivityIndicator color={chrome.fg} style={{ marginTop: verticalScale(48) }} />
         ) : (
           <>
             <View style={styles.dayHero}>
@@ -926,10 +901,7 @@ export function CareRoutineSheet({
                     <Text style={styles.scanLinkText}>{t("care.myProducts.scan")}</Text>
                   </Pressable>
                 </View>
-                {loadingProducts ? (
-                  <ActivityIndicator color={chrome.fg} style={{ marginVertical: 8 }} />
-                ) : (
-                  <View
+                <View
                     style={styles.productShelf}
                     onLayout={(e) => {
                       const next = Math.round(e.nativeEvent.layout.width);
@@ -979,7 +951,6 @@ export function CareRoutineSheet({
                       </Text>
                     </Pressable>
                   </View>
-                )}
               </Reanimated.View>
             ) : null}
           </>
@@ -1085,79 +1056,63 @@ function createRoutineStyles(colors: ShellChrome) {
     color: colors.fg,
   },
   emptyBoard: {
-    gap: moderateScale(14),
-  },
-  emptyIntro: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: moderateScale(12),
-    paddingHorizontal: scale(4),
-    paddingTop: verticalScale(6),
-  },
-  emptyMark: {
-    width: scale(44),
-    height: scale(44),
-    borderRadius: moderateScale(14),
-    backgroundColor: colors.surface,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
+    flexGrow: 1,
     alignItems: "center",
     justifyContent: "center",
-  },
-  emptyIntroCopy: {
-    flex: 1,
-    minWidth: 0,
-    gap: moderateScale(4),
-  },
-  emptyHeroTitle: {
-    ...morphFont,
-    fontSize: fontSize(20),
-    fontWeight: "800",
-    color: colors.fg,
-    letterSpacing: -0.4,
-  },
-  emptyHeroSub: {
-    ...morphFont,
-    fontSize: fontSize(13),
-    lineHeight: fontSize(18),
-    color: colors.muted,
-  },
-  emptyActions: {
-    flexDirection: "row",
-    gap: moderateScale(10),
-  },
-  emptyTile: {
-    flex: 1,
-    minHeight: verticalScale(148),
-    borderRadius: moderateScale(22),
-    backgroundColor: colors.surface,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-    paddingHorizontal: scale(14),
-    paddingVertical: verticalScale(16),
+    paddingHorizontal: scale(28),
+    paddingTop: verticalScale(36),
+    paddingBottom: verticalScale(24),
     gap: moderateScale(8),
   },
-  emptyTileIcon: {
-    width: scale(40),
-    height: scale(40),
-    borderRadius: moderateScale(12),
-    backgroundColor: colors.promo,
+  emptyTitle: {
+    ...morphFont,
+    marginTop: verticalScale(8),
+    fontSize: fontSize(18),
+    fontWeight: "700",
+    color: colors.fg,
+    textAlign: "center",
+  },
+  emptySub: {
+    ...morphFont,
+    fontSize: fontSize(13),
+    lineHeight: fontSize(19),
+    color: colors.muted,
+    textAlign: "center",
+    marginBottom: verticalScale(12),
+  },
+  emptyActions: {
+    alignSelf: "stretch",
+    gap: moderateScale(10),
+  },
+  emptyPrimary: {
+    height: verticalScale(48),
+    borderRadius: 999,
+    backgroundColor: colors.fg,
+    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: verticalScale(4),
+    gap: moderateScale(8),
   },
-  emptyTileTitle: {
+  emptyPrimaryText: {
     ...morphFont,
-    fontSize: fontSize(15),
-    fontWeight: "800",
+    fontSize: fontSize(14),
+    fontWeight: "700",
+    color: colors.onAccent,
+  },
+  emptySecondary: {
+    height: verticalScale(48),
+    borderRadius: 999,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  emptySecondaryText: {
+    ...morphFont,
+    fontSize: fontSize(14),
+    fontWeight: "600",
     color: colors.fg,
-    letterSpacing: -0.2,
-  },
-  emptyTileSub: {
-    ...morphFont,
-    fontSize: fontSize(12),
-    lineHeight: fontSize(16),
-    color: colors.muted,
   },
   celebrateOverlay: {
     ...StyleSheet.absoluteFill,

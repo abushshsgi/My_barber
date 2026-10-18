@@ -21,3 +21,4 @@ backend/secrets/
 *.tsbuildinfo
 _upstream_salon_creator_suite/
 .vercel
+.idea/
