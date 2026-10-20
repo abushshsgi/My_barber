@@ -1,0 +1,20 @@
+# EAS ignore
+node_modules/
+.expo/
+dist/
+web-build/
+.kotlin/
+
+# Generated native build outputs
+android/.gradle/
+android/app/build/
+android/build/
+android/app/.cxx/
+android/.kotlin/
+android/app/build/outputs/
+
+# Logs and temps
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+.DS_Store

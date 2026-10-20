@@ -8,18 +8,18 @@ import type {
 
 /** Local Soft Paper product shots for shield cards. */
 export const SHIELD_IMAGES = {
-  uvSpray: require("../../assets/care/weather-shield/uv-spray.png") as ImageSourcePropType,
-  antifrizz: require("../../assets/care/weather-shield/antifrizz.png") as ImageSourcePropType,
-  arganOil: require("../../assets/care/weather-shield/argan-oil.png") as ImageSourcePropType,
-  scalpMassager: require("../../assets/care/weather-shield/scalp-massager.png") as ImageSourcePropType,
-  detoxShampoo: require("../../assets/care/weather-shield/detox-shampoo.png") as ImageSourcePropType,
-  silkHat: require("../../assets/care/weather-shield/silk-hat.png") as ImageSourcePropType,
-  leaveIn: require("../../assets/care/weather-shield/leave-in.png") as ImageSourcePropType,
-  sulfateFree: require("../../assets/care/weather-shield/sulfate-free.png") as ImageSourcePropType,
-  peptide: require("../../assets/care/weather-shield/peptide.png") as ImageSourcePropType,
-  antistatic: require("../../assets/care/weather-shield/antistatic.png") as ImageSourcePropType,
-  scalpScrub: require("../../assets/care/weather-shield/scalp-scrub.png") as ImageSourcePropType,
-  headerShield: require("../../assets/care/weather-shield/header-shield.png") as ImageSourcePropType,
+  uvSpray: require("../../assets/care/weather-shield/uv-spray.jpg") as ImageSourcePropType,
+  antifrizz: require("../../assets/care/weather-shield/antifrizz.jpg") as ImageSourcePropType,
+  arganOil: require("../../assets/care/weather-shield/argan-oil.jpg") as ImageSourcePropType,
+  scalpMassager: require("../../assets/care/weather-shield/scalp-massager.jpg") as ImageSourcePropType,
+  detoxShampoo: require("../../assets/care/weather-shield/detox-shampoo.jpg") as ImageSourcePropType,
+  silkHat: require("../../assets/care/weather-shield/silk-hat.jpg") as ImageSourcePropType,
+  leaveIn: require("../../assets/care/weather-shield/leave-in.jpg") as ImageSourcePropType,
+  sulfateFree: require("../../assets/care/weather-shield/sulfate-free.jpg") as ImageSourcePropType,
+  peptide: require("../../assets/care/weather-shield/peptide.jpg") as ImageSourcePropType,
+  antistatic: require("../../assets/care/weather-shield/antistatic.jpg") as ImageSourcePropType,
+  scalpScrub: require("../../assets/care/weather-shield/scalp-scrub.jpg") as ImageSourcePropType,
+  headerShield: require("../../assets/care/weather-shield/header-shield.jpg") as ImageSourcePropType,
 };
 
 /** productTag / id → local Soft Paper shot (API image bo‘lmasa). */
