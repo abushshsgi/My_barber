@@ -1,6 +1,6 @@
 import { Link, useNavigate, useRouter } from "@tanstack/react-router";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { ChevronLeft, ChevronRight, CloudSun, Loader2, Lock, Search, ShoppingBag } from "lucide-react";
+import { ChevronLeft, ChevronRight, CloudSun, Loader2, Lock, Search, ShoppingBag, Sparkles } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
@@ -27,9 +27,7 @@ import { CareShelfTracker } from "@/components/ai-style/CareShelfTracker";
 import {
   fetchMyCareProducts,
   fetchWeatherCare,
-  generateHairGrowthForecast,
   type CareProduct,
-  type HairGrowthForecast,
 } from "@/lib/api/care-products";
 import { getFastPosition } from "@/lib/native-geolocation";
 import { resolveUzRegion, uzRegionImage, type UzRegionId } from "@/lib/uz-care-regions";
@@ -64,10 +62,6 @@ export function MorphAiCarePage() {
   const [coords, setCoords] = useState<{ lat: number; lon: number } | null>(null);
   const [regionId, setRegionId] = useState<UzRegionId | null>(null);
   const [sosOpen, setSosOpen] = useState(false);
-  const [growthCm, setGrowthCm] = useState("8");
-  const [growthBusy, setGrowthBusy] = useState(false);
-  const [growth, setGrowth] = useState<HairGrowthForecast | null>(null);
-  const [growthError, setGrowthError] = useState("");
   const searchQ = useCareProducts({ q: search.trim() || undefined, enabled: search.trim().length > 0 });
   const weatherQ = useQuery({
     queryKey: ["ai", "care", "weather", hairQ.data?.condition, hairQ.data?.texture, coords?.lat ?? null, coords?.lon ?? null, regionId],
@@ -434,7 +428,7 @@ export function MorphAiCarePage() {
                 : panel === "shelf"
                   ? "Mening mahsulotlarim"
                   : panel === "growth"
-                    ? "O‘sish"
+                    ? "O‘sish · Tez orada"
                     : "Parvarish"}
             </span>
           )}
@@ -504,10 +498,14 @@ export function MorphAiCarePage() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setPanel("growth")}
-                  className="relative h-28 cursor-pointer overflow-hidden rounded-2xl bg-gradient-to-br from-[#FFF3E8] to-[#E7B48A] text-left text-white lg:h-40 lg:rounded-3xl"
+                  disabled
+                  className="relative h-28 cursor-not-allowed overflow-hidden rounded-2xl bg-gradient-to-br from-[#FFF3E8] to-[#E7B48A] text-left text-white opacity-85 lg:h-40 lg:rounded-3xl"
+                  aria-label="O‘sish — Tez orada"
                 >
-                  <span className="absolute inset-0 bg-gradient-to-t from-black/25 to-transparent" />
+                  <span className="absolute inset-0 bg-gradient-to-t from-black/35 to-transparent" />
+                  <span className="absolute right-2 top-2 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-bold text-white backdrop-blur-sm lg:right-3 lg:top-3 lg:text-[11px]">
+                    Tez orada
+                  </span>
                   <span className="absolute bottom-2.5 left-2.5 text-[12px] font-bold leading-tight lg:bottom-3.5 lg:left-3.5 lg:text-sm">
                     O‘sish
                   </span>
@@ -611,58 +609,26 @@ export function MorphAiCarePage() {
             }
           />
         ) : panel === "growth" ? (
-          <div className="mt-6 space-y-3">
-            <h1 className="text-[1.6rem] font-extrabold tracking-tight">O‘sish</h1>
-            <p className="text-sm text-[#111111]/55">
-              Hozirgi uzunlik bo‘yicha 3 oylik prognoz.
+          <div className="mt-8 flex flex-col items-center justify-center rounded-3xl border border-dashed border-black/10 bg-white/70 px-6 py-12 text-center shadow-sm">
+            <span className="mb-3 inline-flex size-12 items-center justify-center rounded-2xl bg-[#111111]/5">
+              <Sparkles className="size-6 text-[#111111]/60" />
+            </span>
+            <span className="inline-block rounded-full bg-[#111111]/10 px-3 py-1 text-xs font-bold uppercase tracking-wider text-[#111111]/70">
+              Tez orada
+            </span>
+            <h3 className="mt-3 text-lg font-bold text-[#111111]">
+              O‘sish tahlili tez orada
+            </h3>
+            <p className="mt-1.5 max-w-sm text-sm text-[#111111]/55">
+              Soch o‘sish sur‘ati, 3 oylik prognoz va tahlil moduli tez orada ishga tushadi.
             </p>
-            <label className="block rounded-2xl bg-white px-4 py-3 ring-1 ring-black/5">
-              <span className="text-[11px] font-semibold text-[#111111]/45">Uzunlik, sm</span>
-              <input
-                value={growthCm}
-                onChange={(e) => setGrowthCm(e.target.value.replace(/[^\d.]/g, ""))}
-                inputMode="decimal"
-                className="mt-1 w-full bg-transparent text-2xl font-bold outline-none"
-              />
-            </label>
             <button
               type="button"
-              disabled={growthBusy}
-              onClick={() => {
-                const cm = Number(growthCm);
-                if (!Number.isFinite(cm) || cm <= 0) return;
-                setGrowthBusy(true);
-                setGrowthError("");
-                void generateHairGrowthForecast({
-                  current_length_cm: cm,
-                  check_ins_count: 1,
-                  products_used: (myQ.data || []).map((p) => p.name),
-                })
-                  .then(setGrowth)
-                  .catch((e: unknown) =>
-                    setGrowthError(e instanceof Error ? e.message : "Prognoz yaratilmadi."),
-                  )
-                  .finally(() => setGrowthBusy(false));
-              }}
-              className="flex h-12 w-full cursor-pointer items-center justify-center rounded-full bg-[#111111] text-sm font-semibold text-white disabled:opacity-50"
+              onClick={() => setPanel("hub")}
+              className="mt-6 inline-flex h-10 items-center justify-center rounded-full bg-[#111111] px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#111111]/90"
             >
-              {growthBusy ? "Hisoblanmoqda…" : "Prognoz"}
+              Parvarish markaziga qaytish
             </button>
-            {growthError ? <p className="text-sm text-red-600">{growthError}</p> : null}
-            {growth ? (
-              <div className="rounded-2xl bg-white px-4 py-4 ring-1 ring-black/5">
-                <p className="text-3xl font-extrabold tabular-nums">
-                  {growth.projected_length_3_months} sm
-                </p>
-                <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-[#111111]/40">
-                  3 oy · {growth.growth_rate_status}
-                </p>
-                <p className="mt-3 text-sm leading-relaxed">{growth.ai_commentary}</p>
-                {growth.recommended_action ? (
-                  <p className="mt-2 text-sm text-[#111111]/60">{growth.recommended_action}</p>
-                ) : null}
-              </div>
-            ) : null}
           </div>
         ) : panel === "shelf" ? (
           <div className="mt-4">

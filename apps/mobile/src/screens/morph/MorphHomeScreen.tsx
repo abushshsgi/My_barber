@@ -323,8 +323,8 @@ const ICON = {
 
 const CTA_HEIGHT = verticalScale(IS_SMALL_DEVICE ? 44 : 48);
 const TOOL_TILE = scale(IS_SMALL_DEVICE ? 46 : 56);
-const CARE_ICON = scale(IS_SMALL_DEVICE ? 30 : 36);
-const FIELD_HEIGHT = verticalScale(IS_SMALL_DEVICE ? 40 : 44);
+const CARE_ICON = scale(IS_SMALL_DEVICE ? 24 : 28);
+const FIELD_HEIGHT = verticalScale(IS_SMALL_DEVICE ? 36 : 40);
 
 const styles = StyleSheet.create({
   body: {
@@ -371,7 +371,7 @@ const styles = StyleSheet.create({
   },
   hero: {
     alignItems: "center",
-    paddingTop: spacing.md,
+    paddingTop: spacing.xs,
   },
   cta: {
     flexDirection: "row",
@@ -403,7 +403,7 @@ const styles = StyleSheet.create({
   },
   arrowRot: { transform: [{ rotate: "45deg" }] },
   tools: {
-    marginTop: spacing.md,
+    marginTop: spacing.xs,
     flexDirection: "row",
     justifyContent: "center",
     gap: moderateScale(8),
@@ -436,7 +436,7 @@ const styles = StyleSheet.create({
   section: {
     flex: 1,
     minHeight: 0,
-    marginTop: spacing.lg,
+    marginTop: spacing.sm,
   },
   marqueeSlot: {
     flex: 1,
@@ -463,11 +463,11 @@ const styles = StyleSheet.create({
   },
   exploreLink: { flexDirection: "row", alignItems: "center", gap: moderateScale(2) },
   careSheet: {
-    marginTop: spacing.md,
+    marginTop: spacing.sm,
     borderRadius: radius.xl,
     borderWidth: StyleSheet.hairlineWidth,
-    padding: moderateScale(14),
-    gap: spacing.sm,
+    padding: moderateScale(IS_SMALL_DEVICE ? 10 : 12),
+    gap: spacing.xs,
   },
   careRow: {
     flexDirection: "row",
@@ -475,12 +475,13 @@ const styles = StyleSheet.create({
   },
   careCard: {
     flex: 1,
-    minHeight: verticalScale(IS_SMALL_DEVICE ? 92 : 120),
+    minHeight: verticalScale(IS_SMALL_DEVICE ? 68 : 88),
+    maxHeight: verticalScale(IS_SMALL_DEVICE ? 90 : 110),
     borderRadius: radius.lg,
     borderWidth: StyleSheet.hairlineWidth,
-    padding: moderateScale(IS_SMALL_DEVICE ? 10 : 14),
+    padding: moderateScale(IS_SMALL_DEVICE ? 8 : 12),
     justifyContent: "flex-end",
-    gap: moderateScale(4),
+    gap: moderateScale(3),
   },
   careCardActive: {
     borderWidth: 1.5,
@@ -491,7 +492,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.sm,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: spacing.xs,
+    marginBottom: moderateScale(IS_SMALL_DEVICE ? 2 : 4),
   },
   careTitle: {
     ...morphFont,

@@ -173,7 +173,7 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   media: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     zIndex: 0,
   },
   image: {

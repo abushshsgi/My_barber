@@ -9,7 +9,7 @@ import Svg, {
   Stop,
 } from "react-native-svg";
 
-const fill = StyleSheet.absoluteFillObject;
+const fill = StyleSheet.absoluteFill;
 
 type Kind = "sos" | "shelf" | "growth";
 

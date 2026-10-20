@@ -10,7 +10,7 @@ import Svg, {
   Stop,
 } from "react-native-svg";
 
-const fill = StyleSheet.absoluteFillObject;
+const fill = StyleSheet.absoluteFill;
 
 /** Parvarish kartasi — serum, likopcha va sochiq. */
 export function CareHubRoutineIllustration() {

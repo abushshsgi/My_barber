@@ -629,8 +629,8 @@ export function MorphCareScreen({ navigation, route }: Props) {
   );
 
   const openGrowthTracker = useCallback(() => {
-    navigation.navigate("CareGrowthTracker");
-  }, [navigation]);
+    // Blocked — tez orada
+  }, []);
 
   const openParvarish = useCallback(() => {
     setViewMode("flow");
@@ -1419,8 +1419,10 @@ export function MorphCareScreen({ navigation, route }: Props) {
                       minWidth: 0,
                       height: hubLayout.quickActionH,
                     },
+                    card.key === "growth" && styles.quickActionCardDisabled,
                   ]}
-                  onPress={card.onPress}
+                  onPress={card.key === "growth" ? undefined : card.onPress}
+                  disabled={card.key === "growth"}
                   accessibilityRole="button"
                   accessibilityLabel={card.a11y}
                 >
@@ -1432,6 +1434,13 @@ export function MorphCareScreen({ navigation, route }: Props) {
                     style={styles.quickActionScrim}
                     pointerEvents="none"
                   />
+                  {card.key === "growth" ? (
+                    <View style={styles.quickActionSoonBadge} pointerEvents="none">
+                      <Text style={styles.quickActionSoonBadgeText}>
+                        {t("profile.soon", { defaultValue: "Tez orada" })}
+                      </Text>
+                    </View>
+                  ) : null}
                   <Text
                     style={[
                       styles.quickActionLabel,
@@ -2179,6 +2188,28 @@ function createCareStyles(pal: Pick<
     textShadowColor: "rgba(17,17,17,0.45)",
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 3,
+  },
+  quickActionSoonBadge: {
+    position: "absolute",
+    top: scale(6),
+    right: scale(6),
+    backgroundColor: "rgba(17,17,17,0.85)",
+    paddingHorizontal: scale(6),
+    paddingVertical: verticalScale(2),
+    borderRadius: moderateScale(999),
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(255,255,255,0.25)",
+    zIndex: 2,
+  },
+  quickActionSoonBadgeText: {
+    ...morphFont,
+    fontSize: fontSize(9),
+    fontWeight: "700",
+    color: "#FFFFFF",
+    letterSpacing: 0.2,
+  },
+  quickActionCardDisabled: {
+    opacity: 0.88,
   },
   routineRoot: { flex: 1, minHeight: 0, backgroundColor: pal.bg },
   onboardRoot: { flex: 1, minHeight: 0, backgroundColor: pal.bg },

@@ -714,7 +714,7 @@ export function MorphCareWeatherScreen({ navigation }: Props) {
                         <Image
                           source={item.image}
                           style={styles.goOutImg}
-                          contentFit="contain"
+                          contentFit="cover"
                           transition={180}
                         />
                       ) : (
@@ -957,7 +957,7 @@ function createWeatherStyles(colors: ShellChrome) {
     overflow: "hidden",
   },
   goOutSheet: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.bg,
     borderTopLeftRadius: moderateScale(24),
     borderTopRightRadius: moderateScale(24),
     paddingHorizontal: scale(14),
@@ -998,12 +998,10 @@ function createWeatherStyles(colors: ShellChrome) {
   goOutImgWrap: {
     width: "100%",
     aspectRatio: 1,
-    backgroundColor: "#F7F4EF",
+    backgroundColor: colors.bg,
     alignItems: "center",
     justifyContent: "center",
-    padding: scale(10),
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    overflow: "hidden",
   },
   goOutImg: { width: "100%", height: "100%" },
   goOutBody: {
