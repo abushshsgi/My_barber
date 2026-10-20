@@ -473,14 +473,14 @@ export function MorphCareWeatherScreen({ navigation }: Props) {
           />
         }
         contentContainerStyle={{
-          paddingBottom: safeBottom(insets.bottom, 32),
+          paddingBottom: safeBottom(insets.bottom, 48),
         }}
       >
         <WeatherHeaderCard
           source={heroImg}
           height={heroContentH}
           edgeToEdge
-          topExtra={scale(12)}
+          topExtra={Math.max(scale(16), 16)}
           borderRadius={0}
           paddingHorizontal={scale(16)}
           paddingBottom={verticalScale(22)}

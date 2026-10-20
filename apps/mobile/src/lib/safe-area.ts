@@ -10,19 +10,21 @@ export const SAFE_BOTTOM_MIN = 16;
 export const SAFE_TOP_MIN = 8;
 
 /** Notch / status bar ostidagi yuqori padding. */
-export function safeTop(insetsTop: number, extra = 10): number {
+export function safeTop(insetsTop: number, extra = 12): number {
+  // Zamonaviy Android (punch-hole / notch) qurilmalarida status bar 40-48dp gacha bo'ladi.
+  // RNStatusBar.currentHeight ba'zan 24dp (eski standart) qaytaradi, shuning uchun minimal chegara 42dp qilinadi.
   const androidFallback =
-    Platform.OS === "android" ? (RNStatusBar.currentHeight ?? 28) : 0;
+    Platform.OS === "android" ? Math.max(RNStatusBar.currentHeight ?? 0, 42) : 0;
   const iosFallback = Platform.OS === "ios" && insetsTop < 20 ? 47 : 0;
   return Math.max(insetsTop, androidFallback, iosFallback, SAFE_TOP_MIN) + extra;
 }
 
 /**
  * System nav / home indicator uchun pastki padding.
- * 3-tugmali Android bar va gesture bar uchun `Math.max(insets.bottom, 16)` + extra.
+ * 3-tugmali Android bar (48dp) va gesture bar uchun `Math.max(insets.bottom, 24)` + extra.
  */
-export function safeBottom(insetsBottom: number, extra = 12): number {
-  const androidMin = Platform.OS === "android" ? 24 : 0;
+export function safeBottom(insetsBottom: number, extra = 16): number {
+  const androidMin = Platform.OS === "android" ? 48 : 0;
   const iosMin = Platform.OS === "ios" && insetsBottom < 8 ? 20 : 0;
   return Math.max(insetsBottom, androidMin, iosMin, SAFE_BOTTOM_MIN) + extra;
 }

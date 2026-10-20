@@ -630,7 +630,7 @@ export function careHubLayout(
   const tall = height >= 900;
 
   /** Tab dock yo‘q — pastki karta o‘zi shu joyni egallaydi. */
-  const dockClearance = Math.max(bottomInset, 8);
+  const dockClearance = Math.max(bottomInset, 48);
   const avail = Math.max(320, height - dockClearance - Math.max(topInset, 0));
 
   const density = tiny ? 0.86 : short ? 0.92 : tall ? 1.04 : 1;
@@ -677,7 +677,7 @@ export function careHubLayout(
   const MIN = {
     promo: Math.max(rs(Math.round(124 * density), scale), Math.min(promoByWidth, rs(Math.round(156 * density), scale))),
     featured: rs(Math.round((narrow ? 104 : 122) * density), scale),
-    hubCard: rs(Math.round((short ? 116 : 132) * density), scale),
+    hubCard: rs(Math.round((short ? 96 : 108) * density), scale),
   };
   const MAX = {
     promo: clamp(
@@ -686,7 +686,7 @@ export function careHubLayout(
       Math.min(rs(Math.round(200 * density), scale), Math.round(height * (short ? 0.26 : 0.29))),
     ),
     featured: rs(Math.round((short ? 142 : 158) * density), scale),
-    hubCard: rs(Math.round((short ? 148 : 168) * density), scale),
+    hubCard: rs(Math.round((short ? 116 : 132) * density), scale),
   };
 
   const minTotal = MIN.promo + MIN.featured + MIN.hubCard;
