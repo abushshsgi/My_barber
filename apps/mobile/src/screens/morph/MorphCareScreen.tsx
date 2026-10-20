@@ -1211,18 +1211,24 @@ export function MorphCareScreen({ navigation, route }: Props) {
 
   if (viewMode === "hub") {
     const hubTopPad = safeTop(insets.top, 10);
-    const hubBottomPad = safeBottom(insets.bottom, 8);
+    const hubBottomPad = safeBottom(insets.bottom, 16);
     return (
-      <View style={[styles.hubRoot, { paddingBottom: hubBottomPad }]}>
+      <View style={styles.hubRoot}>
         <AppStatusBar style={pal.status} />
         <View style={[StyleSheet.absoluteFill, { backgroundColor: pal.bg }]} />
 
-        <View
-          style={[
-            styles.hubScroll,
+        <ScrollView
+          style={styles.hubScroll}
+          contentContainerStyle={[
             styles.hubScrollContent,
-            { paddingTop: hubTopPad },
+            {
+              paddingTop: hubTopPad,
+              paddingBottom: hubBottomPad + verticalScale(28),
+            },
           ]}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          bounces
           pointerEvents={searchOpen ? "none" : "auto"}
         >
             <WeatherHeaderCard
@@ -1734,7 +1740,6 @@ export function MorphCareScreen({ navigation, route }: Props) {
                     gap: hubLayout.sheetGap,
                     paddingTop: hubLayout.sheetTop,
                     paddingBottom: Math.max(8, Math.round(hubLayout.sheetGap * 0.75)),
-                    minHeight: hubLayout.sheetH,
                     paddingHorizontal: Math.max(12, hubLayout.hPad - 2),
                     borderRadius: hubLayout.narrow ? 18 : 24,
                   },
@@ -1772,7 +1777,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
                   </Pressable>
                 </View>
 
-                <View style={[styles.hubCards, { height: hubLayout.hubCardH }]}>
+                <View style={[styles.hubCards, { minHeight: Math.max(128, hubLayout.hubCardH) }]}>
                   <Pressable
                     style={styles.hubCard}
                     onPress={openParvarish}
@@ -1851,7 +1856,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
 
               </View>
             </View>
-        </View>
+        </ScrollView>
 
         {searchOpen ? (
           <>
@@ -2212,7 +2217,7 @@ function createCareStyles(pal: Pick<
   center: { alignItems: "center", justifyContent: "center" },
   pad: { flex: 1, paddingHorizontal: scale(20) },
   onboardPad: { flex: 1, paddingHorizontal: scale(20) },
-  hubRoot: { flex: 1, minHeight: 0, backgroundColor: pal.bg, overflow: "hidden" },
+  hubRoot: { flex: 1, minHeight: 0, backgroundColor: pal.bg },
   hubScroll: {
     flex: 1,
     minHeight: 0,
@@ -3287,19 +3292,19 @@ function createCareStyles(pal: Pick<
   hubCardTitle: {
     ...morphFont,
     flexShrink: 0,
-    fontSize: fontSize(12),
-    lineHeight: fontSize(15),
+    fontSize: fontSize(11),
+    lineHeight: fontSize(14),
     fontWeight: "600",
-    color: "rgba(255,255,255,0.82)",
+    color: "rgba(255,255,255,0.85)",
   },
   hubCardMetric: {
     ...morphFont,
     flexShrink: 0,
-    fontSize: fontSize(17),
-    lineHeight: fontSize(21),
+    fontSize: fontSize(14),
+    lineHeight: fontSize(18),
     fontWeight: "800",
     color: "#FFFFFF",
-    letterSpacing: -0.35,
+    letterSpacing: -0.2,
   },
   rowBetweenLight: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   onboardBadge: { ...morphFont, fontSize: fontSize(12), fontWeight: "600", color: pal.fg },
