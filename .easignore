@@ -1,0 +1,20 @@
+# Ignored from EAS Build archive
+**/.gradle/**
+**/build/**
+**/.cxx/**
+**/.kotlin/**
+**/node_modules/**
+**/.expo/**
+.git/
+.venv/
+_vendor/
+backend/
+apps/admin/
+apps/barber/
+apps/user/
+
+# Logs and temps
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+.DS_Store

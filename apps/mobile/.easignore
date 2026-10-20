@@ -1,17 +1,10 @@
-# EAS ignore
-node_modules/
-.expo/
-dist/
-web-build/
-.kotlin/
-
-# Generated native build outputs
-android/.gradle/
-android/app/build/
-android/build/
-android/app/.cxx/
-android/.kotlin/
-android/app/build/outputs/
+# Ignored from EAS Build archive
+**/.gradle/**
+**/build/**
+**/.cxx/**
+**/.kotlin/**
+**/node_modules/**
+**/.expo/**
 
 # Logs and temps
 npm-debug.*
