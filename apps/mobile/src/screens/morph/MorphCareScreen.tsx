@@ -1777,7 +1777,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
                   </Pressable>
                 </View>
 
-                <View style={[styles.hubCards, { minHeight: Math.max(128, hubLayout.hubCardH) }]}>
+                <View style={[styles.hubCards, { height: hubLayout.hubCardH }]}>
                   <Pressable
                     style={styles.hubCard}
                     onPress={openParvarish}
