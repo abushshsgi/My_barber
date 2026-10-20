@@ -230,6 +230,50 @@ class AdminMorphAiListView(UnthrottledAPIView):
             return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
 
 
+class AdminMorphFreeTryonView(UnthrottledAPIView):
+    """Ilovani yuklab, 1 marta bepul try-on ishlatgan userlar."""
+
+    permission_classes = [IsAdmin]
+
+    def get(self, request):
+        from accounts.models import User
+
+        qs = User.objects.filter(morph_free_tryon_used__gte=1).order_by(
+            "-morph_free_tryon_used_at",
+            "-id",
+        )
+        page = _int_param(request.query_params.get("page"), 1)
+        page_size = _int_param(request.query_params.get("page_size"), 50, hi=100)
+        total = qs.count()
+        start = (page - 1) * page_size
+        rows = []
+        for user in qs[start : start + page_size]:
+            name = (user.full_name or "").strip() or " ".join(
+                part for part in [user.first_name, user.last_name] if part
+            ).strip()
+            rows.append(
+                {
+                    "id": user.pk,
+                    "email": user.email or "",
+                    "phone": user.phone or "",
+                    "name": name,
+                    "date_joined": user.date_joined.isoformat() if user.date_joined else None,
+                    "free_tryon_used": int(user.morph_free_tryon_used or 0),
+                    "used_at": user.morph_free_tryon_used_at.isoformat()
+                    if user.morph_free_tryon_used_at
+                    else None,
+                }
+            )
+        return Response(
+            {
+                "count": total,
+                "page": page,
+                "page_size": page_size,
+                "results": rows,
+            }
+        )
+
+
 class AdminMorphAiListExportView(UnthrottledAPIView):
     permission_classes = [IsAdmin]
 

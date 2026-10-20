@@ -47,7 +47,11 @@ class SubscriptionServiceTests(TestCase):
         self.user.save(update_fields=["morph_free_tryon_eligible"])
         MorphAiSettings.load()
 
-    def test_new_user_blocked_without_subscription(self):
+    def test_new_user_one_free_tryon_then_blocked(self):
+        self.assertIsNone(check_morph_entitlement(user=self.user, kind="tryon"))
+        record_morph_usage(user=self.user, kind="tryon")
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.morph_free_tryon_used, 1)
         msg = check_morph_entitlement(user=self.user, kind="tryon") or ""
         self.assertIn("obuna", msg.lower())
         self.assertIsNone(check_morph_entitlement(user=self.user, kind="analyze"))
@@ -57,6 +61,20 @@ class SubscriptionServiceTests(TestCase):
         self.assertIn("ovoz", voice.lower())
         studio = check_morph_entitlement(user=self.user, kind="studio") or ""
         self.assertIn("obuna", studio.lower())
+
+    def test_old_user_no_free_tryon(self):
+        self.user.date_joined = timezone.now() - timedelta(days=400)
+        self.user.save(update_fields=["date_joined"])
+        msg = check_morph_entitlement(user=self.user, kind="tryon") or ""
+        self.assertIn("obuna", msg.lower())
+
+    def test_new_user_cannot_use_free_tryon_twice(self):
+        self.assertIsNone(check_morph_entitlement(user=self.user, kind="tryon"))
+        record_morph_usage(user=self.user, kind="tryon")
+        record_morph_usage(user=self.user, kind="tryon")
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.morph_free_tryon_used, 1)
+        self.assertIsNotNone(check_morph_entitlement(user=self.user, kind="tryon"))
 
     def test_activate_and_limits(self):
         sub = activate_subscription(
@@ -146,6 +164,10 @@ class SubscriptionServiceTests(TestCase):
         self.user.refresh_from_db()
         self.assertEqual(self.user.morph_referral_credits, 1)
         self.assertIsNone(check_morph_entitlement(user=self.user, kind="tryon"))
+        record_morph_usage(user=self.user, kind="tryon")
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.morph_free_tryon_used, 1)
+        self.assertEqual(self.user.morph_referral_credits, 1)
         record_morph_usage(user=self.user, kind="tryon")
         self.user.refresh_from_db()
         self.assertEqual(self.user.morph_referral_credits, 0)
@@ -253,14 +275,24 @@ class SubscriptionAPITests(TestCase):
         me = self.client.get("/api/v1/subscriptions/me/")
         self.assertEqual(me.status_code, 200)
         self.assertFalse(me.data["has_active"])
-        self.assertFalse(me.data["access"]["morph_ai_allowed"])
+        self.assertTrue(me.data["access"]["morph_ai_allowed"])
+        self.assertEqual(me.data["access"]["free_tryon_remaining"], 1)
         self.assertTrue(me.data["access"]["morph_chat_allowed"])
         self.assertFalse(me.data["access"]["morph_voice_allowed"])
-        self.assertEqual(me.data["usage"]["morph_ai_limit"], 0)
+        self.assertEqual(me.data["usage"]["morph_ai_limit"], 1)
+        self.assertEqual(me.data["usage"]["morph_ai_remaining"], 1)
         self.assertEqual(me.data["usage"]["morph_chat_tokens_limit"], 10000)
         self.assertEqual(me.data["usage"]["morph_chat_tokens_remaining"], 10000)
         self.assertTrue(me.data["referral_generation_enabled"])
         self.assertNotIn("referral_trial", me.data)
+
+    def test_me_locked_after_free_tryon(self):
+        record_morph_usage(user=self.user, kind="tryon")
+        me = self.client.get("/api/v1/subscriptions/me/")
+        self.assertEqual(me.status_code, 200)
+        self.assertFalse(me.data["access"]["morph_ai_allowed"])
+        self.assertEqual(me.data["access"]["free_tryon_remaining"], 0)
+        self.assertEqual(me.data["usage"]["morph_free_tryon_used"], 1)
 
     def test_me_chat_blocked_after_free_tokens(self):
         record_morph_chat_tokens(user=self.user, tokens=10_000)

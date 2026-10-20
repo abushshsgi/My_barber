@@ -107,9 +107,14 @@ _PLANS: dict[str, dict[str, Any]] = {
     },
 }
 
-# Yangi user — try-on yo'q, chat uchun bir martalik 10k token (oylik emas).
+# Yangi user — 1 marta bepul try-on (umrbod); chat uchun bir martalik 10k token.
+# Shu sanadan oldin ro‘yxatdan o‘tgan hisoblar bepul 1× olmaydi.
+from datetime import datetime, timezone as dt_timezone
+
+FREE_TRYON_LAUNCH_AT = datetime(2026, 10, 21, tzinfo=dt_timezone.utc)
 FREE_MORPH_AI_MONTHLY = 0
 FREE_MORPH_STUDIO_MONTHLY = 0
+FREE_MORPH_TRYON = 1
 FREE_MORPH_CHAT_TOKENS = 10_000
 # Bitta chat javobi uchun minimal qoldiq (system prompt + javob).
 CHAT_TOKEN_MIN_TURN = 200

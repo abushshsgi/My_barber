@@ -453,6 +453,7 @@ api_routes = [
     path("admin/morph-ai/free-trial-users/", AdminMorphAiFreeTrialUsersView.as_view()),
     path("admin/morph-ai/queue/", AdminMorphAiQueueView.as_view()),
     path("admin/morph-ai/gallery/", AdminMorphAiGalleryView.as_view()),
+    path("admin/morph-ai/free-tryon/", AdminMorphFreeTryonView.as_view()),
     path("admin/morph-ai/settings/", AdminMorphAiSettingsView.as_view()),
     path("admin/morph-ai/export/", AdminMorphAiExportView.as_view()),
     path("admin/morph-ai/list/<str:kind>/export/", AdminMorphAiListExportView.as_view()),
