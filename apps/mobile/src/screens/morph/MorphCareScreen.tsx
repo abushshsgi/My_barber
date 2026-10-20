@@ -474,11 +474,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
           easing: Easing.out(Easing.cubic),
           useNativeDriver: native,
         }),
-      ]).start(({ finished }) => {
-        if (finished) {
-          searchInputRef.current?.focus();
-        }
-      });
+      ]).start();
       listTimer = setTimeout(() => setSearchListReady(true), 90);
       fetchTimer = setTimeout(() => {
         const excludeIds = myProducts.map((p) => p.id);
