@@ -124,7 +124,7 @@ export function PersonalInfoPanel() {
         pal={pal}
         label={t("profile.officialName")}
         value={data.name}
-        onEdit={() => open("name", data.name === "Mehmon" ? "" : data.name)}
+        onEdit={() => open("name", data.name === t("onboarding.guest") ? "" : data.name)}
       />
       <Field
         pal={pal}

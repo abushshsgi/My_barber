@@ -43,14 +43,7 @@ import {
   verticalScale,
 } from "../utils/responsive";
 
-const NAME_ERRORS: Record<DisplayNameErrorKey, string> = {
-  nameRequired: "Ism va familiyani kiriting",
-  nameInvalidChars: "Faqat harflar, bo'sh joy, defis (-) va apostrof (') ishlatiladi.",
-  nameNeedsFull: "Ism va familiyani to'liq kiriting",
-  namePartTooShort: "Har bir qism kamida 2 ta harfdan iborat bo'lishi kerak",
-  nameTooLong: "Ism juda uzun",
-  nameTooManyParts: "Ismda so'zlar soni juda ko'p",
-};
+
 
 function splitPrefillName(user: {
   first_name?: string;
@@ -81,6 +74,15 @@ export function OnboardingScreen({ onComplete }: { onComplete?: () => void }) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const { user, refreshMe } = useAuth();
+
+  const NAME_ERRORS: Record<DisplayNameErrorKey, string> = {
+    nameRequired: t("onboarding.nameErrorRequired"),
+    nameInvalidChars: t("onboarding.nameErrorInvalidChars"),
+    nameNeedsFull: t("onboarding.nameErrorNeedsFull"),
+    namePartTooShort: t("onboarding.nameErrorPartTooShort"),
+    nameTooLong: t("onboarding.nameErrorTooLong"),
+    nameTooManyParts: t("onboarding.nameErrorTooManyParts"),
+  };
 
   const [firstName, setFirstNameRaw] = useState("");
   const [lastName, setLastNameRaw] = useState("");
@@ -125,7 +127,7 @@ export function OnboardingScreen({ onComplete }: { onComplete?: () => void }) {
   const ageNum = parseInt(age, 10);
   const ageOk = Number.isFinite(ageNum) && ageNum >= 10 && ageNum <= 100;
   const ageError =
-    ageTouched && !ageOk ? "Yosh 10–100 oralig'ida bo'lishi kerak" : null;
+    ageTouched && !ageOk ? t("onboarding.ageRange") : null;
 
   const canSubmit = nameValidation.ok && ageOk && !saving;
   const filledCount =
@@ -146,7 +148,7 @@ export function OnboardingScreen({ onComplete }: { onComplete?: () => void }) {
     const ageValue = parseInt(age, 10);
     if (!Number.isFinite(ageValue) || ageValue < 10 || ageValue > 100) {
       setAgeTouched(true);
-      setError("Yosh 10–100 oralig'ida bo'lishi kerak");
+      setError(t("onboarding.ageRange"));
       return;
     }
 
@@ -186,7 +188,7 @@ export function OnboardingScreen({ onComplete }: { onComplete?: () => void }) {
     } catch (e) {
       finishingRef.current = false;
       setSaving(false);
-      setError(e instanceof Error ? e.message : "Saqlashda xatolik");
+      setError(e instanceof Error ? e.message : t("onboarding.saveError"));
     }
   }, [age, ctaScale, firstName, lastName, onComplete, refreshMe, user?.require_profile_location]);
 
@@ -237,7 +239,7 @@ export function OnboardingScreen({ onComplete }: { onComplete?: () => void }) {
             active={focus === "first"}
             value={firstName}
             onChangeText={setFirstName}
-            placeholder="Ali"
+            placeholder={t("onboarding.placeholderFirstName")}
             autoComplete="given-name"
             autoFocus
             onFocus={() => setFocus("first")}
@@ -249,7 +251,7 @@ export function OnboardingScreen({ onComplete }: { onComplete?: () => void }) {
             active={focus === "last"}
             value={lastName}
             onChangeText={setLastName}
-            placeholder="Karimov"
+            placeholder={t("onboarding.placeholderLastName")}
             autoComplete="family-name"
             onFocus={() => setFocus("last")}
             onBlur={() => setFocus(null)}
@@ -263,7 +265,7 @@ export function OnboardingScreen({ onComplete }: { onComplete?: () => void }) {
               setAgeTouched(true);
               setAge(v.replace(/\D/g, "").slice(0, 2));
             }}
-            placeholder="25"
+            placeholder={t("onboarding.placeholderAge")}
             keyboardType="number-pad"
             maxLength={2}
             onFocus={() => setFocus("age")}

@@ -85,8 +85,8 @@ export function LocationPickerScreen({
         setHasLocationPerm(false);
         setError(
           Platform.OS === "web"
-            ? "Joylashuv ruxsati berilmadi. Brauzerda ruxsatni yoqing."
-            : "Joylashuv ruxsati berilmadi. Sozlamalardan joylashuvni yoqing.",
+            ? t("onboarding.locationPermDeniedWeb")
+            : t("onboarding.locationPermDeniedMobile"),
         );
         return;
       }
@@ -97,7 +97,7 @@ export function LocationPickerScreen({
         }),
         new Promise<never>((_, reject) => {
           setTimeout(
-            () => reject(new Error("GPS topilmadi (timeout). Qayta urinib ko'ring.")),
+            () => reject(new Error(t("onboarding.gpsTimeout"))),
             18_000,
           );
         }),
@@ -112,7 +112,7 @@ export function LocationPickerScreen({
     } finally {
       setLocating(false);
     }
-  }, []);
+  }, [t]);
 
   const onMapCoords = useCallback((nextLat: number, nextLng: number) => {
     setLat(nextLat);
@@ -261,7 +261,7 @@ export function LocationPickerScreen({
     } catch (e) {
       finishingRef.current = false;
       setSaving(false);
-      setError(e instanceof Error ? e.message : "Saqlashda xatolik");
+      setError(e instanceof Error ? e.message : t("onboarding.saveError"));
     }
   };
 
@@ -288,7 +288,7 @@ export function LocationPickerScreen({
             onPress={openMap}
             hitSlop={10}
             style={styles.backCircle}
-            accessibilityLabel="Orqaga"
+            accessibilityLabel={t("common.back")}
           >
             <Ionicons name="arrow-back" size={22} color={colors.fg} />
           </Pressable>

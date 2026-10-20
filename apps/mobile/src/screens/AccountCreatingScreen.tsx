@@ -34,12 +34,7 @@ export function AccountCreatingScreen({
   const steps = useMemo(() => {
     const raw = t("onboarding.creatingSteps", { returnObjects: true });
     if (Array.isArray(raw)) return raw as string[];
-    return [
-      "Profil yaratilmoqda",
-      "Sozlamalar sinxronlanmoqda",
-      "Morf AI tayyorlanmoqda",
-      "Deyarli tayyor",
-    ];
+    return [];
   }, [t]);
   const [active, setActive] = useState(0);
   const spin = useSharedValue(0);
