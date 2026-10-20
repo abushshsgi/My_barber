@@ -3,11 +3,18 @@ import { Platform } from "react-native";
 /** Hozir faqat Android — iOS uchun GoogleService-Info.plist kerak. */
 const ENABLED = Platform.OS === "android";
 
-async function analyticsModule() {
+type FirebaseAnalytics = {
+  logEvent: (name: string, params?: Record<string, string | number | boolean>) => Promise<void>;
+  logAppOpen: () => Promise<void>;
+  logScreenView: (p: { screen_name: string; screen_class: string }) => Promise<void>;
+};
+
+async function analyticsModule(): Promise<FirebaseAnalytics | null> {
   if (!ENABLED) return null;
   try {
     const mod = await import("@react-native-firebase/analytics");
-    return mod.default();
+    const factory = (mod as unknown as { default?: () => FirebaseAnalytics }).default;
+    return factory ? factory() : null;
   } catch (err) {
     if (__DEV__) console.warn("[analytics] native modul yuklanmadi", err);
     return null;

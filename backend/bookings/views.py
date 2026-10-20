@@ -285,7 +285,7 @@ class BookingViewSet(viewsets.ModelViewSet):
         notify_user(
             booking.customer,
             "booking_pending",
-            "Bron so‘rovi yuborildi",
+            "Bron so‘rovingiz yuborildi ⏳",
             f"{place}: bron so‘rovingiz sartarosh tasdig‘ini kutmoqda.",
             {"booking_id": booking.id},
             send_email=False,
@@ -375,7 +375,7 @@ class BookingViewSet(viewsets.ModelViewSet):
         notify_user(
             booking.customer,
             "booking_accepted",
-            "Bron tasdiqlandi",
+            "Bron tasdiqlandi ✅",
             f"{booking.salon.name if booking.salon_id else (booking.barber.full_name or booking.barber.email)} broningiz tasdiqlandi.",
             {"booking_id": booking.id},
             send_email=True,
@@ -404,7 +404,7 @@ class BookingViewSet(viewsets.ModelViewSet):
         notify_user(
             booking.customer,
             "booking_rejected",
-            "Bron rad etildi",
+            "Afsuski, bron rad etildi",
             "Sartarosh bu bronni rad etdi. Boshqa vaqt yoki sartarosh tanlashingiz mumkin.",
             {"booking_id": booking.id},
         )
@@ -476,7 +476,7 @@ class BookingViewSet(viewsets.ModelViewSet):
         notify_user(
             booking.customer,
             "booking_started",
-            "Xizmat boshlandi",
+            "Xizmatingiz boshlandi ✂️",
             "Sartarosh booking xizmatini boshladi.",
             {"booking_id": booking.id},
         )
@@ -550,7 +550,7 @@ class BookingViewSet(viewsets.ModelViewSet):
         notify_user(
             booking.customer,
             "booking_done",
-            "Xizmat yakunlandi",
+            "Xizmat yakunlandi — baho qoldiring ⭐",
             "Iltimos, sharh qoldiring.",
             {"booking_id": booking.id},
         )
@@ -618,7 +618,7 @@ class BookingViewSet(viewsets.ModelViewSet):
         notify_user(
             booking.customer,
             "booking_checked_in",
-            "Siz qabul qilindingiz",
+            "Xush kelibsiz! Siz qabul qilindingiz",
             "Sartarosh sizning kelganingizni qayd etdi.",
             {"booking_id": booking.id},
         )
@@ -695,7 +695,7 @@ class BookingViewSet(viewsets.ModelViewSet):
             notify_user(
                 booking.customer,
                 "booking_started",
-                "Xizmat boshlandi",
+                "Xizmatingiz boshlandi ✂️",
                 "Sartarosh booking xizmatini boshladi.",
                 {"booking_id": booking.id},
             )
@@ -877,7 +877,7 @@ class ReviewViewSet(viewsets.ModelViewSet):
         notify_user(
             review.author,
             "review_reply",
-            "Sharhingizga javob keldi",
+            "Sharhingizga javob keldi 💬",
             f"{bp.full_name or bp.email} sharhingizga javob berdi.",
             {"review_id": review.id, "booking_id": review.booking_id},
         )

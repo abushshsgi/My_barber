@@ -131,6 +131,7 @@ function fingerprintMe(me: SubscriptionMe | null): string {
     credits: me.referral_credits,
     access: me.access,
     welcome: me.welcome_offer,
+    free: me.free_tryon,
   });
 }
 
@@ -152,7 +153,8 @@ async function loadSnapshot(force: boolean): Promise<SubSnapshot> {
       try {
         me = await fetchSubscriptionMe();
       } catch {
-        me = null;
+        // Offline — oxirgi ma'lum holat saqlanadi (limit/obuna UI yo'qolmasin).
+        me = shared?.me ?? null;
       }
       shared = { plans, me };
       sharedAt = Date.now();

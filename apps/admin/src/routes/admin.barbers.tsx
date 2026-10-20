@@ -198,11 +198,11 @@ function BarbersListPage() {
       <FilterToolbar
         search={q}
         onSearchChange={(v) =>
-          navigate({ search: (prev) => ({ ...prev, q: v, page: 1 }) })
+          navigate({ search: (prev: SearchState) => ({ ...prev, q: v, page: 1 }) })
         }
         region={region}
         onRegionChange={(v) =>
-          navigate({ search: (prev) => ({ ...prev, region: v, page: 1 }) })
+          navigate({ search: (prev: SearchState) => ({ ...prev, region: v, page: 1 }) })
         }
         searchPlaceholder="Sartarosh ismi yoki telefoni..."
       />
@@ -230,7 +230,7 @@ function BarbersListPage() {
                 type="button"
                 onClick={() =>
                   navigate({
-                    search: (prev) => ({ ...prev, segment: seg, page: 1 }),
+                    search: (prev: SearchState) => ({ ...prev, segment: seg, page: 1 }),
                   })
                 }
                 className={cn(
@@ -277,7 +277,7 @@ function BarbersListPage() {
               type="button"
               onClick={() =>
                 navigate({
-                  search: (prev) => ({ ...prev, business_kind: opt.value, page: 1 }),
+                  search: (prev: SearchState) => ({ ...prev, business_kind: opt.value, page: 1 }),
                 })
               }
               className={cn(
@@ -434,7 +434,7 @@ function BarbersListPage() {
               count={data.count}
               pageSize={PAGE_SIZE}
               onPageChange={(p) =>
-                navigate({ search: (prev) => ({ ...prev, page: p }) })
+                navigate({ search: (prev: SearchState) => ({ ...prev, page: p }) })
               }
             />
           </>
@@ -456,3 +456,5 @@ function BarbersListPage() {
     </div>
   );
 }
+
+type SearchState = ReturnType<typeof Route.useSearch>;

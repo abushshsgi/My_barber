@@ -157,6 +157,9 @@ export function MorphPaywallView({
       >
         <Text style={styles.title}>{t(titleKey)}</Text>
         <Text style={styles.lead}>{t("morph.paywall.subtitle")}</Text>
+        {!chatBlocked && !me?.has_active && me?.free_tryon?.used ? (
+          <Text style={styles.lead}>{t("freeTryOn.used")}</Text>
+        ) : null}
 
         {(me?.usage && (reason === "limit" || me.has_active)) || (refGenOn && credits > 0) ? (
           <View style={styles.metaRow}>

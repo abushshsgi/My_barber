@@ -147,8 +147,11 @@ export function MorphHomeScreen({ navigation }: Props) {
     [isAuthenticated, navigation, session],
   );
 
-  const showLimit =
-    gate.allowed && gate.limit > 0 ? gate.remaining : null;
+  const showLimit = gate.freeTryOnAvailable
+    ? t("freeTryOn.badge")
+    : gate.allowed && gate.limit > 0
+      ? gate.remaining
+      : null;
 
   /** Marquee kartochkalari qolgan bo'sh joyga qarab o'lchanadi — scroll kerak emas. */
   const sampleCardHeight = useMemo(() => {
@@ -177,10 +180,16 @@ export function MorphHomeScreen({ navigation }: Props) {
             <Pressable
               style={[
                 styles.limitBadge,
-                gate.remaining <= Math.max(1, Math.floor(gate.limit * 0.2)) &&
-                  styles.limitLow,
+                gate.freeTryOnAvailable
+                  ? styles.limitFree
+                  : gate.remaining <= Math.max(1, Math.floor(gate.limit * 0.2)) &&
+                    styles.limitLow,
               ]}
-              onPress={() => presentMorphPaywall(navigation, "subscription", "MorphHome")}
+              onPress={
+                gate.freeTryOnAvailable
+                  ? onNewTryOn
+                  : () => presentMorphPaywall(navigation, "subscription", "MorphHome")
+              }
             >
               <Text style={styles.limitText}>{showLimit}</Text>
             </Pressable>
@@ -363,6 +372,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   limitLow: { backgroundColor: "#CA8A04" },
+  limitFree: { backgroundColor: "#16A34A", paddingHorizontal: scale(10) },
   limitText: {
     ...morphFont,
     fontSize: fontSize(10),

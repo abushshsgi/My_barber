@@ -167,6 +167,7 @@ const SECTIONS: Section[] = [
       { to: "/admin/morph-ai/catalog", label: "Katalog", icon: Tag },
       { to: "/admin/morph-ai/errors", label: "Xatolar", icon: ShieldCheck },
       { to: "/admin/morph-ai/limits", label: "Limitlar", icon: Users },
+      { to: "/admin/morph-ai/free-trial", label: "Bepul try-on", icon: Gift },
       { to: "/admin/morph-ai/queue", label: "Navbat", icon: Radio },
       { to: "/admin/morph-ai/budget", label: "Byudjet", icon: Wallet },
       { to: "/admin/morph-ai/popularity", label: "Uslublar", icon: Star },

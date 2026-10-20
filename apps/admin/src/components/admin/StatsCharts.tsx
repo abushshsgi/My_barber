@@ -134,7 +134,9 @@ export function DualBarChart({
   }));
   const maxVal = Math.max(
     1,
-    ...chartData.flatMap((d) => keys.map((k) => Number(d[k]) || 0)),
+    ...chartData.flatMap((d) =>
+      keys.map((k) => Number((d as Record<string, unknown>)[k]) || 0),
+    ),
   );
 
   return (

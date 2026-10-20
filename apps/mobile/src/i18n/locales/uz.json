@@ -1210,6 +1210,17 @@
       "waitA": "Odatda bir necha soat ichida. Javob shu yerda va bildirishnomada chiqadi."
     }
   },
+  "offline": {
+    "title": "Internet aloqasi yo'q",
+    "body": "Ma'lumotlaringiz saqlangan. Aloqa tiklanishi bilan hammasi avvalgidek ishlaydi.",
+    "retry": "Qayta tekshirish",
+    "restored": "Internet qaytdi"
+  },
+  "freeTryOn": {
+    "badge": "1 ta bepul",
+    "hint": "Yangi foydalanuvchi sifatida 1 ta try-on bepul!",
+    "used": "Bepul try-on ishlatildi. Davom etish uchun obunani tanlang."
+  },
   "errors": {
     "network": "Internet aloqasi yo'q. Qayta urinib ko'ring.",
     "server": "Server javob bermadi. Keyinroq urinib ko'ring.",

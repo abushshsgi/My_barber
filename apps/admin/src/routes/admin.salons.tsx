@@ -155,11 +155,11 @@ function SalonsListPage() {
             className="flex-col gap-3 md:flex-row md:flex-wrap md:items-center"
             search={q}
             onSearchChange={(v) =>
-              navigate({ search: (prev) => ({ ...prev, q: v, page: 1 }) })
+              navigate({ search: (prev: SearchState) => ({ ...prev, q: v, page: 1 }) })
             }
             region={region}
             onRegionChange={(v) =>
-              navigate({ search: (prev) => ({ ...prev, region: v, page: 1 }) })
+              navigate({ search: (prev: SearchState) => ({ ...prev, region: v, page: 1 }) })
             }
             searchPlaceholder="Salon, egasi, telefon yoki manzil..."
           />
@@ -173,7 +173,7 @@ function SalonsListPage() {
                   key={t.key}
                   type="button"
                   onClick={() =>
-                    navigate({ search: (prev) => ({ ...prev, status: t.key, page: 1 }) })
+                    navigate({ search: (prev: SearchState) => ({ ...prev, status: t.key, page: 1 }) })
                   }
                   className={cn(
                     "min-h-9 flex-1 rounded-lg px-3 py-2 text-center text-xs font-semibold transition-all sm:flex-none sm:px-4",
@@ -222,7 +222,7 @@ function SalonsListPage() {
                   count={data.count}
                   pageSize={PAGE_SIZE}
                   onPageChange={(p) =>
-                    navigate({ search: (prev) => ({ ...prev, page: p }) })
+                    navigate({ search: (prev: SearchState) => ({ ...prev, page: p }) })
                   }
                 />
               </div>
@@ -391,3 +391,5 @@ function InlineStat({
     </span>
   );
 }
+
+type SearchState = ReturnType<typeof Route.useSearch>;

@@ -11,7 +11,7 @@ type GateKind = "access" | "tryon" | "studio" | "chat" | "voice";
 
 /**
  * Morf AI limit gate.
- * analyze — ochiq; tryon — obuna kvotasi yoki referal krediti.
+ * analyze — ochiq; tryon — obuna kvotasi, yangi user uchun 1 marta bepul, yoki referal krediti.
  */
 export function useMorphLimitGate() {
   const { isAuthenticated } = useAuth();
@@ -85,7 +85,12 @@ export function useMorphLimitGate() {
         return { ok: true };
       }
 
-      if (credits > 0 || latest?.access?.morph_ai_allowed) {
+      if (
+        latest?.free_tryon?.available ||
+        latest?.access?.free_tryon_available ||
+        credits > 0 ||
+        latest?.access?.morph_ai_allowed
+      ) {
         return { ok: true };
       }
       return { ok: false, reason: "subscription" };
@@ -104,6 +109,11 @@ export function useMorphLimitGate() {
 
   const credits =
     me?.referral_credits ?? me?.access?.referral_credits ?? me?.usage?.referral_credits ?? 0;
+
+  const freeTryOnAvailable = Boolean(
+    !me?.has_active && (me?.free_tryon?.available || me?.access?.free_tryon_available),
+  );
+  const freeTryOnUsed = Boolean(me?.free_tryon?.used);
 
   const ensureAccess = useCallback(() => ensure("access"), [ensure]);
   const ensureAccessDetailed = useCallback(() => ensureDetailed("access"), [ensureDetailed]);
@@ -132,15 +142,23 @@ export function useMorphLimitGate() {
       ensureStudio,
       ensureStudioDetailed,
       handleError,
-      remaining: (me?.usage?.morph_ai_remaining ?? 0) + (credits > 0 && !me?.has_active ? credits : 0),
+      remaining: me?.has_active
+        ? (me?.usage?.morph_ai_remaining ?? 0)
+        : credits + (freeTryOnAvailable ? 1 : 0),
+      freeTryOnAvailable,
+      freeTryOnUsed,
       limit: me?.usage?.morph_ai_limit ?? 0,
       referralCredits: credits,
       studioRemaining: me?.usage?.morph_studio_remaining ?? 0,
       studioLimit: me?.usage?.morph_studio_limit ?? 0,
-      allowed: Boolean(me?.has_active || credits > 0 || me?.access?.morph_ai_allowed),
+      allowed: Boolean(
+        me?.has_active || credits > 0 || freeTryOnAvailable || me?.access?.morph_ai_allowed,
+      ),
     }),
     [
       credits,
+      freeTryOnAvailable,
+      freeTryOnUsed,
       ensureAccess,
       ensureAccessDetailed,
       ensureChat,

@@ -52,6 +52,7 @@ import {
 } from "react-native-safe-area-context";
 import { AppErrorBoundary } from "./src/components/AppErrorBoundary";
 import { AppStatusBar } from "./src/components/ui/AppStatusBar";
+import { OfflineBanner } from "./src/components/network/OfflineBanner";
 import { updateMe } from "./src/api/user";
 
 void ExpoSplashScreen.preventAutoHideAsync().catch(() => {});
@@ -345,6 +346,7 @@ export default function App() {
                     <AppStatusBar style="dark" />
                     <AppGate />
                   </NavigationContainer>
+                  <OfflineBanner />
                 </ToastProvider>
               </GoogleAuthSessionProvider>
             </AuthProvider>

@@ -72,7 +72,8 @@ def send_user_expo_push(
         )
     )
     data = {key: "" if value is None else str(value) for key, value in (payload or {}).items()}
-    send_expo_push(tokens, title=title, body=body, data=data, channel_id="wallet")
+    channel = "wallet" if str(data.get("type", "")).startswith("wallet") else "default"
+    send_expo_push(tokens, title=title, body=body, data=data, channel_id=channel)
 
 
 def send_barber_expo_push(

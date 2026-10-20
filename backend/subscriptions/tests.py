@@ -42,6 +42,9 @@ def _user(email: str, phone: str, name: str = "Sub User") -> User:
 class SubscriptionServiceTests(TestCase):
     def setUp(self):
         self.user = _user("subuser@test.local", "+998901111111")
+        # Eski (mavjud) user — bepul try-on huquqi yo'q.
+        self.user.morph_free_tryon_eligible = False
+        self.user.save(update_fields=["morph_free_tryon_eligible"])
         MorphAiSettings.load()
 
     def test_new_user_blocked_without_subscription(self):
@@ -166,6 +169,8 @@ class SubscriptionServiceTests(TestCase):
 class SubscriptionAPITests(TestCase):
     def setUp(self):
         self.user = _user("apiuser@test.local", "+998902222222", "API User")
+        self.user.morph_free_tryon_eligible = False
+        self.user.save(update_fields=["morph_free_tryon_eligible"])
         self.client = APIClient()
         self.client.force_authenticate(user=self.user)
         MorphAiSettings.load()
@@ -264,3 +269,94 @@ class SubscriptionAPITests(TestCase):
         self.assertFalse(me.data["access"]["morph_chat_allowed"])
         self.assertEqual(me.data["usage"]["morph_chat_tokens_remaining"], 0)
         self.assertEqual(me.data["usage"]["morph_chat_tokens_period"], "lifetime")
+
+
+@override_settings(MORPH_ENTITLEMENT_BYPASS=False)
+class FreeTryOnTests(TestCase):
+    def setUp(self):
+        MorphAiSettings.load()
+        self.user = _user("free@test.local", "+998903333333", "Free User")
+        self.client = APIClient()
+        self.client.force_authenticate(user=self.user)
+
+    def test_new_user_gets_exactly_one_free_tryon(self):
+        self.assertTrue(self.user.morph_free_tryon_eligible)
+        self.assertIsNone(check_morph_entitlement(user=self.user, kind="tryon"))
+        me = self.client.get("/api/v1/subscriptions/me/").data
+        self.assertTrue(me["access"]["morph_ai_allowed"])
+        self.assertTrue(me["free_tryon"]["available"])
+        self.assertEqual(me["usage"]["morph_ai_remaining"], 1)
+
+        record_morph_usage(user=self.user, kind="tryon")
+        self.user.refresh_from_db()
+        self.assertIsNotNone(self.user.morph_free_tryon_used_at)
+        self.assertIn("obuna", (check_morph_entitlement(user=self.user, kind="tryon") or "").lower())
+        me = self.client.get("/api/v1/subscriptions/me/").data
+        self.assertFalse(me["access"]["morph_ai_allowed"])
+        self.assertFalse(me["free_tryon"]["available"])
+        self.assertTrue(me["free_tryon"]["used"])
+
+        first_used = self.user.morph_free_tryon_used_at
+        record_morph_usage(user=self.user, kind="tryon")
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.morph_free_tryon_used_at, first_used)
+
+    def test_studio_not_covered_by_free_tryon(self):
+        self.assertIsNotNone(check_morph_entitlement(user=self.user, kind="studio"))
+
+    def test_subscriber_does_not_consume_free_tryon(self):
+        activate_subscription(
+            user=self.user,
+            plan_code=PLAN_STARTER,
+            source=UserSubscription.Source.ADMIN,
+            price_uzs=Decimal("0"),
+        )
+        record_morph_usage(user=self.user, kind="tryon")
+        self.user.refresh_from_db()
+        self.assertIsNone(self.user.morph_free_tryon_used_at)
+
+    def test_existing_user_not_eligible(self):
+        self.user.morph_free_tryon_eligible = False
+        self.user.save(update_fields=["morph_free_tryon_eligible"])
+        self.assertIsNotNone(check_morph_entitlement(user=self.user, kind="tryon"))
+
+    def test_free_tryon_used_before_referral_credit(self):
+        self.user.morph_referral_credits = 1
+        self.user.save(update_fields=["morph_referral_credits"])
+        record_morph_usage(user=self.user, kind="tryon")
+        self.user.refresh_from_db()
+        self.assertIsNotNone(self.user.morph_free_tryon_used_at)
+        self.assertEqual(self.user.morph_referral_credits, 1)
+
+
+class AdminFreeTrialUsersApiTests(TestCase):
+    def setUp(self):
+        from accounts.admin_auth import AdminPrincipal
+        from accounts.models import AdminAccount
+
+        admin = AdminAccount.objects.create(email="admin-free@test.uz", password="secret")
+        self.client = APIClient()
+        self.client.force_authenticate(user=AdminPrincipal(admin))
+
+    def test_lists_only_users_who_used_free_tryon(self):
+        used = _user("used@test.local", "+998904444444", "Used Free")
+        _user("unused@test.local", "+998905555555", "Unused Free")
+        record_morph_usage(user=used, kind="tryon")
+
+        res = self.client.get("/api/v1/admin/morph-ai/free-trial-users/")
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.data["count"], 1)
+        self.assertEqual(res.data["results"][0]["user_id"], used.pk)
+        self.assertEqual(res.data["summary"]["used_total"], 1)
+        self.assertGreaterEqual(res.data["summary"]["unused_total"], 1)
+
+        csv_res = self.client.get("/api/v1/admin/morph-ai/free-trial-users/?export=csv")
+        self.assertEqual(csv_res.status_code, 200)
+        self.assertIn("Used Free", csv_res.content.decode("utf-8"))
+
+    def test_requires_admin(self):
+        user = _user("plain@test.local", "+998906666666")
+        client = APIClient()
+        client.force_authenticate(user=user)
+        res = client.get("/api/v1/admin/morph-ai/free-trial-users/")
+        self.assertIn(res.status_code, (401, 403))

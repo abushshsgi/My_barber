@@ -23,7 +23,7 @@ import { safeBottom, safeTop } from "../lib/safe-area";
 import * as NavigationBar from "expo-navigation-bar";
 import { morfMarkWhite } from "../branding/morf-logo";
 import { ComingSoonSalons } from "../components/ComingSoonSalons";
-import { AppStatusBar, safeBottom } from "../components/ui/AppStatusBar";
+import { AppStatusBar } from "../components/ui/AppStatusBar";
 import { FLOATING_TAB_BAR_STYLE } from "../hooks/useHideTabBar";
 import { AppShellProvider, useAppShell } from "../lib/AppShellContext";
 import { MorphAppearanceProvider } from "../lib/MorphAppearanceContext";

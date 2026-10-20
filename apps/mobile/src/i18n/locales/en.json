@@ -1210,6 +1210,17 @@
       "waitA": "Usually within a few hours. The answer shows here and in a notification."
     }
   },
+  "offline": {
+    "title": "No internet connection",
+    "body": "Your data is saved. Everything will work as before once you're back online.",
+    "retry": "Check again",
+    "restored": "Back online"
+  },
+  "freeTryOn": {
+    "badge": "1 free",
+    "hint": "New users get 1 free try-on!",
+    "used": "Your free try-on has been used. Choose a plan to continue."
+  },
   "errors": {
     "network": "No internet connection. Please try again.",
     "server": "The server didn't respond. Try again later.",

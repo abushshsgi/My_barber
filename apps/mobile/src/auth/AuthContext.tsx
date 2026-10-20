@@ -18,6 +18,7 @@ import {
 import { fetchMe, type ApiUser } from "../api/user";
 import { needsOnboarding } from "../lib/onboarding";
 import { prefetchCareCatalog } from "../lib/care-catalog-cache";
+import { isOnline } from "../lib/network-status";
 import {
   clearSession,
   getAccessToken,
@@ -94,7 +95,9 @@ function normalizeAuthUser(user: ApiUser, isNewUser?: boolean): ApiUser {
   return user;
 }
 
+/** Faqat server sessiyani rad etganda — internet uzilishi logout qilmaydi. */
 function isUnauthorizedError(err: unknown): boolean {
+  if (!isOnline()) return false;
   const msg = err instanceof Error ? err.message : String(err ?? "");
   return /\b401\b|token|credentials|authenticated|авториз/i.test(msg);
 }

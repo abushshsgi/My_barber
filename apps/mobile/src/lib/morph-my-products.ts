@@ -83,7 +83,7 @@ function mapRemoteProduct(r: {
   brand?: string;
   category?: string;
   image_url: string | null;
-  added_at?: string;
+  added_at?: string | null;
   source?: string;
   usage_uz?: string;
   purpose_uz?: string;

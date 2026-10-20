@@ -141,11 +141,16 @@ function patchAnimated() {
   const timing = Animated.timing;
   const spring = Animated.spring;
   const decay = Animated.decay;
-  Animated.timing = ((value, config) =>
+  const mutable = Animated as unknown as {
+    timing: typeof Animated.timing;
+    spring: typeof Animated.spring;
+    decay: typeof Animated.decay;
+  };
+  mutable.timing = ((value, config) =>
     timing(value, disableNativeDriver(config))) as typeof Animated.timing;
-  Animated.spring = ((value, config) =>
+  mutable.spring = ((value, config) =>
     spring(value, disableNativeDriver(config))) as typeof Animated.spring;
-  Animated.decay = ((value, config) =>
+  mutable.decay = ((value, config) =>
     decay(value, disableNativeDriver(config))) as typeof Animated.decay;
   const event = Animated.event;
   Animated.event = ((argMapping, config) =>

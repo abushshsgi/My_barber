@@ -2,7 +2,14 @@ import { createFileRoute, redirect, useRouter } from "@tanstack/react-router";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { apiFetch, getAdminAccessToken } from "@/lib/api";
 
-function AdminRouteErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
+function AdminRouteErrorComponent({
+  error: rawError,
+  reset,
+}: {
+  error: unknown;
+  reset: () => void;
+}) {
+  const error = rawError instanceof Error ? rawError : new Error(String(rawError ?? "Xatolik"));
   const router = useRouter();
   return (
     <div className="p-8">

@@ -1,6 +1,7 @@
 ﻿import { API_BASE, API_ORIGIN } from "./config";
 import { getAccessToken, getRefreshToken, getSessionId, saveSession, clearSession } from "../auth/storage";
 import { friendlyNetworkError } from "../lib/network-error";
+import { markOffline, markOnline } from "../lib/network-status";
 
 export type Paginated<T> = {
   count?: number;
@@ -65,7 +66,13 @@ async function tryRefresh(): Promise<string | null> {
         },
         body: JSON.stringify({ refresh }),
       });
-      if (!res.ok) throw new Error("refresh failed");
+      markOnline();
+      if (res.status === 400 || res.status === 401 || res.status === 403) {
+        // Refresh token haqiqatan bekor — faqat shu holatda logout.
+        await clearSession();
+        return null;
+      }
+      if (!res.ok) return null;
       const data = (await res.json()) as { access: string; refresh?: string };
       await saveSession({
         access: data.access,
@@ -73,7 +80,8 @@ async function tryRefresh(): Promise<string | null> {
       });
       return data.access;
     } catch {
-      await clearSession();
+      // Internet yo'q / server javob bermadi — sessiya saqlanadi.
+      markOffline();
       return null;
     } finally {
       refreshPromise = null;
@@ -125,7 +133,7 @@ export async function apiJson<T>(path: string, init?: RequestInit): Promise<T> {
   if (!isAuthPath(path) && !headers.Authorization) {
     let token = await getAccessToken();
     if (token && accessTokenStale(token)) {
-      token = await tryRefresh();
+      token = (await tryRefresh()) ?? (await getAccessToken());
     }
     if (token) headers.Authorization = `Bearer ${token}`;
     const sessionId = await getSessionId();
@@ -140,6 +148,7 @@ export async function apiJson<T>(path: string, init?: RequestInit): Promise<T> {
       headers,
     });
 
+    markOnline();
     if (res.status === 401 && !isAuthPath(path)) {
       const next = await tryRefresh();
       if (next) {
@@ -208,6 +217,7 @@ export async function apiJson<T>(path: string, init?: RequestInit): Promise<T> {
     ) {
       throw new Error(friendlyNetworkError(err, API_BASE || API_ORIGIN));
     }
+    markOffline();
     throw new Error(friendlyNetworkError(err, API_BASE || API_ORIGIN));
   } finally {
     clearTimeout(timer);
@@ -252,7 +262,7 @@ export async function apiFetch(
   if (!isAuthPath(path) && !headers.Authorization) {
     let token = await getAccessToken();
     if (token && accessTokenStale(token)) {
-      token = await tryRefresh();
+      token = (await tryRefresh()) ?? (await getAccessToken());
     }
     if (token) headers.Authorization = `Bearer ${token}`;
     const sessionId = await getSessionId();
@@ -267,6 +277,7 @@ export async function apiFetch(
       headers,
     });
 
+    markOnline();
     if (res.status === 401 && !isAuthPath(path)) {
       const next = await tryRefresh();
       if (next) {
@@ -284,6 +295,7 @@ export async function apiFetch(
     if (err instanceof Error && err.name === "AbortError") {
       throw new Error("Backend javob bermadi (timeout). Internetni tekshiring.");
     }
+    markOffline();
     throw new Error(friendlyNetworkError(err, API_BASE || API_ORIGIN));
   } finally {
     clearTimeout(timer);

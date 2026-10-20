@@ -63,6 +63,55 @@ def _referral_credits(user: User) -> int:
     return _raw_referral_credits(user)
 
 
+def free_tryon_available(user: User) -> bool:
+    """Yangi user — bir martalik bepul try-on hali ishlatilmagan."""
+    return bool(getattr(user, "morph_free_tryon_eligible", False)) and (
+        getattr(user, "morph_free_tryon_used_at", None) is None
+    )
+
+
+def free_tryon_payload(user: User, *, has_subscription: bool) -> dict[str, Any]:
+    used_at = getattr(user, "morph_free_tryon_used_at", None)
+    return {
+        "eligible": bool(getattr(user, "morph_free_tryon_eligible", False)),
+        "available": (not has_subscription) and free_tryon_available(user),
+        "used": used_at is not None,
+        "used_at": used_at.isoformat() if used_at else None,
+    }
+
+
+def _consume_free_tryon(user: User) -> bool:
+    """Atomik: faqat birinchi muvaffaqiyatli generatsiya bepul hisoblanadi."""
+    now = timezone.now()
+    updated = User.objects.filter(
+        pk=user.pk,
+        morph_free_tryon_eligible=True,
+        morph_free_tryon_used_at__isnull=True,
+    ).update(morph_free_tryon_used_at=now)
+    if updated:
+        user.morph_free_tryon_used_at = now
+    return bool(updated)
+
+
+def _notify_free_tryon_used(user_id: int) -> None:
+    try:
+        from notifications.utils import notify_user
+
+        u = User.objects.filter(pk=user_id).first()
+        if not u:
+            return
+        notify_user(
+            u,
+            "morph_free_tryon_used",
+            "Bepul try-on natijangiz tayyor ✨",
+            "Yangi obrazingizni ko'rib chiqing! Yana uslublarni sinash uchun "
+            "obunani tanlang yoki do'stingizni taklif qiling.",
+            payload={"screen": "morph"},
+        )
+    except Exception:
+        pass
+
+
 def _client_meta(request=None) -> dict[str, str]:
     if request is None:
         return {}
@@ -264,6 +313,8 @@ def build_me_payload(user: User) -> dict[str, Any]:
     )
     ref_on = referral_generation_enabled()
     credits = _referral_credits(user)
+    free_tryon = free_tryon_payload(user, has_subscription=bool(sub))
+    free_left = 1 if free_tryon["available"] else 0
     if sub:
         usage = {
             **usage_snapshot(user, entitlements),
@@ -280,9 +331,10 @@ def build_me_payload(user: User) -> dict[str, Any]:
         usage = {
             **period,
             "is_free_tier": True,
-            "locked": credits <= 0,
+            "locked": credits <= 0 and not free_left,
             "referral_credits": credits,
-            "morph_ai_remaining": max(period["morph_ai_remaining"], credits),
+            "free_tryon_remaining": free_left,
+            "morph_ai_remaining": max(period["morph_ai_remaining"], credits + free_left),
         }
     from subscriptions.promos import get_new_user_offer
 
@@ -309,7 +361,7 @@ def build_me_payload(user: User) -> dict[str, Any]:
             "label_en": "Upgrade to Pro",
         }
 
-    allowed = bool(sub) or credits > 0
+    allowed = bool(sub) or credits > 0 or bool(free_left)
     chat = usage
     chat_remaining = int(chat.get("morph_chat_tokens_remaining") or 0)
     return {
@@ -324,6 +376,7 @@ def build_me_payload(user: User) -> dict[str, Any]:
         "days_remaining": days_remaining,
         "referral_credits": credits,
         "referral_generation_enabled": ref_on,
+        "free_tryon": free_tryon,
         "access": {
             "morph_ai_allowed": allowed,
             "morph_chat_allowed": chat_remaining >= CHAT_TOKEN_MIN_TURN,
@@ -332,6 +385,7 @@ def build_me_payload(user: User) -> dict[str, Any]:
             "message": None if allowed else _no_subscription_message(),
             "referral_credits": credits,
             "referral_generation_enabled": ref_on,
+            "free_tryon_available": free_tryon["available"],
         },
         "welcome_offer": get_new_user_offer(user),
         "upgrade": next_upgrade,
@@ -552,7 +606,7 @@ def check_morph_entitlement(*, user: User, kind: str) -> str | None:
     - analyze / face_check — obunasiz ochiq (tahlil → keyin generatsiya paywall).
     - chat — obunasiz bir martalik 10k token; tugagach obuna majburiy.
     - voice — faqat faol pullik obuna.
-    - tryon — faol obuna kvotasi YOKI referal krediti (1 do'st = 1 generatsiya).
+    - tryon — faol obuna kvotasi, yangi user uchun 1 marta bepul, YOKI referal krediti.
     - studio — faol obuna majburiy.
     """
     if kind not in ("tryon", "studio", "analyze", "face_check", "chat", "voice"):
@@ -638,6 +692,8 @@ def check_morph_entitlement(*, user: User, kind: str) -> str | None:
             )
         return None
 
+    if free_tryon_available(user):
+        return None
     if _referral_credits(user) > 0:
         return None
     return _no_subscription_message()
@@ -656,10 +712,15 @@ def record_morph_usage(*, user: User, kind: str) -> None:
         defaults={"period_end": end},
     )
     sub = get_active_subscription(user)
+    free_used = False
     if kind == "tryon":
         if sub:
             usage.morph_ai_used = usage.morph_ai_used + 1
             usage.save(update_fields=["morph_ai_used", "updated_at"])
+        elif _consume_free_tryon(user):
+            free_used = True
+            user_id = user.pk
+            transaction.on_commit(lambda: _notify_free_tryon_used(user_id))
         elif referral_generation_enabled():
             updated = User.objects.filter(pk=user.pk, morph_referral_credits__gt=0).update(
                 morph_referral_credits=F("morph_referral_credits") - 1
@@ -683,6 +744,7 @@ def record_morph_usage(*, user: User, kind: str) -> None:
             "morph_studio_used": usage.morph_studio_used,
             "morph_chat_tokens_used": usage.morph_chat_tokens_used,
             "referral_credits": _referral_credits(user),
+            "free_tryon": free_used,
         },
     )
 

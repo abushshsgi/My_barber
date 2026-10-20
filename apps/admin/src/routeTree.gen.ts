@@ -64,6 +64,7 @@ import { Route as AdminMorphAiCatalogRouteImport } from './routes/admin.morph-ai
 import { Route as AdminMorphAiChatRouteImport } from './routes/admin.morph-ai.chat'
 import { Route as AdminMorphAiConversionRouteImport } from './routes/admin.morph-ai.conversion'
 import { Route as AdminMorphAiErrorsRouteImport } from './routes/admin.morph-ai.errors'
+import { Route as AdminMorphAiFreeTrialRouteImport } from './routes/admin.morph-ai.free-trial'
 import { Route as AdminMorphAiGalleryRouteImport } from './routes/admin.morph-ai.gallery'
 import { Route as AdminMorphAiLimitsRouteImport } from './routes/admin.morph-ai.limits'
 import { Route as AdminMorphAiPopularityRouteImport } from './routes/admin.morph-ai.popularity'
@@ -386,6 +387,11 @@ const AdminMorphAiErrorsRoute = AdminMorphAiErrorsRouteImport.update({
   path: '/errors',
   getParentRoute: () => AdminMorphAiRoute,
 } as any)
+const AdminMorphAiFreeTrialRoute = AdminMorphAiFreeTrialRouteImport.update({
+  id: '/free-trial',
+  path: '/free-trial',
+  getParentRoute: () => AdminMorphAiRoute,
+} as any)
 const AdminMorphAiGalleryRoute = AdminMorphAiGalleryRouteImport.update({
   id: '/gallery',
   path: '/gallery',
@@ -664,6 +670,7 @@ export interface FileRoutesByFullPath {
   '/admin/morph-ai/chat': typeof AdminMorphAiChatRoute
   '/admin/morph-ai/conversion': typeof AdminMorphAiConversionRoute
   '/admin/morph-ai/errors': typeof AdminMorphAiErrorsRoute
+  '/admin/morph-ai/free-trial': typeof AdminMorphAiFreeTrialRoute
   '/admin/morph-ai/gallery': typeof AdminMorphAiGalleryRoute
   '/admin/morph-ai/limits': typeof AdminMorphAiLimitsRoute
   '/admin/morph-ai/popularity': typeof AdminMorphAiPopularityRoute
@@ -754,6 +761,7 @@ export interface FileRoutesByTo {
   '/admin/morph-ai/chat': typeof AdminMorphAiChatRoute
   '/admin/morph-ai/conversion': typeof AdminMorphAiConversionRoute
   '/admin/morph-ai/errors': typeof AdminMorphAiErrorsRoute
+  '/admin/morph-ai/free-trial': typeof AdminMorphAiFreeTrialRoute
   '/admin/morph-ai/gallery': typeof AdminMorphAiGalleryRoute
   '/admin/morph-ai/limits': typeof AdminMorphAiLimitsRoute
   '/admin/morph-ai/popularity': typeof AdminMorphAiPopularityRoute
@@ -852,6 +860,7 @@ export interface FileRoutesById {
   '/admin/morph-ai/chat': typeof AdminMorphAiChatRoute
   '/admin/morph-ai/conversion': typeof AdminMorphAiConversionRoute
   '/admin/morph-ai/errors': typeof AdminMorphAiErrorsRoute
+  '/admin/morph-ai/free-trial': typeof AdminMorphAiFreeTrialRoute
   '/admin/morph-ai/gallery': typeof AdminMorphAiGalleryRoute
   '/admin/morph-ai/limits': typeof AdminMorphAiLimitsRoute
   '/admin/morph-ai/popularity': typeof AdminMorphAiPopularityRoute
@@ -954,6 +963,7 @@ export interface FileRouteTypes {
     | '/admin/morph-ai/chat'
     | '/admin/morph-ai/conversion'
     | '/admin/morph-ai/errors'
+    | '/admin/morph-ai/free-trial'
     | '/admin/morph-ai/gallery'
     | '/admin/morph-ai/limits'
     | '/admin/morph-ai/popularity'
@@ -1044,6 +1054,7 @@ export interface FileRouteTypes {
     | '/admin/morph-ai/chat'
     | '/admin/morph-ai/conversion'
     | '/admin/morph-ai/errors'
+    | '/admin/morph-ai/free-trial'
     | '/admin/morph-ai/gallery'
     | '/admin/morph-ai/limits'
     | '/admin/morph-ai/popularity'
@@ -1141,6 +1152,7 @@ export interface FileRouteTypes {
     | '/admin/morph-ai/chat'
     | '/admin/morph-ai/conversion'
     | '/admin/morph-ai/errors'
+    | '/admin/morph-ai/free-trial'
     | '/admin/morph-ai/gallery'
     | '/admin/morph-ai/limits'
     | '/admin/morph-ai/popularity'
@@ -1582,6 +1594,13 @@ declare module '@tanstack/react-router' {
       path: '/errors'
       fullPath: '/admin/morph-ai/errors'
       preLoaderRoute: typeof AdminMorphAiErrorsRouteImport
+      parentRoute: typeof AdminMorphAiRoute
+    }
+    '/admin/morph-ai/free-trial': {
+      id: '/admin/morph-ai/free-trial'
+      path: '/free-trial'
+      fullPath: '/admin/morph-ai/free-trial'
+      preLoaderRoute: typeof AdminMorphAiFreeTrialRouteImport
       parentRoute: typeof AdminMorphAiRoute
     }
     '/admin/morph-ai/gallery': {
@@ -2029,6 +2048,7 @@ interface AdminMorphAiRouteChildren {
   AdminMorphAiChatRoute: typeof AdminMorphAiChatRoute
   AdminMorphAiConversionRoute: typeof AdminMorphAiConversionRoute
   AdminMorphAiErrorsRoute: typeof AdminMorphAiErrorsRoute
+  AdminMorphAiFreeTrialRoute: typeof AdminMorphAiFreeTrialRoute
   AdminMorphAiGalleryRoute: typeof AdminMorphAiGalleryRoute
   AdminMorphAiLimitsRoute: typeof AdminMorphAiLimitsRoute
   AdminMorphAiPopularityRoute: typeof AdminMorphAiPopularityRoute
@@ -2047,6 +2067,7 @@ const AdminMorphAiRouteChildren: AdminMorphAiRouteChildren = {
   AdminMorphAiChatRoute: AdminMorphAiChatRoute,
   AdminMorphAiConversionRoute: AdminMorphAiConversionRoute,
   AdminMorphAiErrorsRoute: AdminMorphAiErrorsRoute,
+  AdminMorphAiFreeTrialRoute: AdminMorphAiFreeTrialRoute,
   AdminMorphAiGalleryRoute: AdminMorphAiGalleryRoute,
   AdminMorphAiLimitsRoute: AdminMorphAiLimitsRoute,
   AdminMorphAiPopularityRoute: AdminMorphAiPopularityRoute,

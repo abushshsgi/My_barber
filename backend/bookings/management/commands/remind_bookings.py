@@ -27,7 +27,7 @@ class Command(BaseCommand):
             notify_user(
                 b.customer,
                 "reminder_1h",
-                "Bron eslatmasi",
+                "Bron vaqtiga 1 soat qoldi ⏰",
                 body_user,
                 {"booking_id": b.id},
                 send_email=True,
@@ -35,7 +35,7 @@ class Command(BaseCommand):
             notify_barber(
                 b.barber,
                 "reminder_1h",
-                "Bron eslatmasi",
+                "Bron vaqtiga 1 soat qoldi ⏰",
                 f"Mijoz: {b.customer.full_name or b.customer.email} — {b.start_at.strftime('%H:%M')}.",
                 {"booking_id": b.id},
                 send_email=True,

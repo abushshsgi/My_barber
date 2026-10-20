@@ -96,7 +96,9 @@ class TryOnQueueOpsTests(SimpleTestCase):
             '{"image":"data:image/png;base64,x","audience":"men","slug":"mid-fade","title":"Mid Fade","reference_image_url":null}',
         ]
 
-        with patch("ai.services.tryon_queue.record_ai_generation"):
+        with patch("ai.services.tryon_queue.record_ai_generation"), patch(
+            "ai.morph_ops.check_user_can_generate", return_value=None
+        ):
             processed = process_next_tryon_job(block_seconds=1)
         self.assertTrue(processed)
         saved = client.setex.call_args_list[-1][0][2]

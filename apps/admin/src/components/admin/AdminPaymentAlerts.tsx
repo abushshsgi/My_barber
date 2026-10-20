@@ -101,7 +101,7 @@ async function pingOs(title: string, body: string, href: PayHref, onOpen: () => 
         renotify: true,
         silent: false,
         data: { href },
-      });
+      } as NotificationOptions & { renotify?: boolean });
       return;
     }
   } catch {

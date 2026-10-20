@@ -37,6 +37,15 @@ export type SubscriptionUsage = {
   morph_chat_tokens_limit?: number;
   morph_chat_tokens_remaining?: number;
   morph_chat_tokens_period?: "lifetime" | "month";
+  free_tryon_remaining?: number;
+};
+
+/** Yangi user — bir martalik bepul try-on holati. */
+export type FreeTryOnState = {
+  eligible: boolean;
+  available: boolean;
+  used: boolean;
+  used_at: string | null;
 };
 
 export type UserSubscription = {
@@ -62,6 +71,7 @@ export type SubscriptionMe = {
   days_remaining?: number | null;
   referral_credits?: number;
   referral_generation_enabled?: boolean;
+  free_tryon?: FreeTryOnState;
   access?: {
     morph_ai_allowed: boolean;
     morph_chat_allowed?: boolean;
@@ -70,6 +80,7 @@ export type SubscriptionMe = {
     message: string | null;
     referral_credits?: number;
     referral_generation_enabled?: boolean;
+    free_tryon_available?: boolean;
   };
   welcome_offer?: {
     eligible: boolean;

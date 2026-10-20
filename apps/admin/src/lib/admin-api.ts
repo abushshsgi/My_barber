@@ -1649,6 +1649,8 @@ export async function fetchPlatformLiveStats(limit = 50): Promise<PlatformLiveAn
         region: row.region,
         regionLabel: row.region_label,
         segment: row.segment,
+        ownedSalons: [],
+        worksAtSalons: [],
         createdAt: row.created_at,
       })),
     },
@@ -4242,6 +4244,62 @@ export async function fetchMorphAiLimits() {
   }>("/api/v1/admin/morph-ai/limits/");
 }
 
+export type MorphFreeTrialUser = {
+  user_id: number;
+  name: string;
+  phone: string;
+  email: string;
+  gender: string;
+  date_joined: string | null;
+  free_tryon_used_at: string | null;
+  tryon_total: number;
+  platform: string;
+  client_kind: string;
+  device_name: string;
+  app_version: string;
+  last_seen_at: string | null;
+  subscription_plan: string | null;
+  subscription_status: string | null;
+};
+
+export type MorphFreeTrialUsersResponse = {
+  summary: {
+    eligible_total: number;
+    used_total: number;
+    unused_total: number;
+    converted_total: number;
+    conversion_pct: number;
+  };
+  count: number;
+  page: number;
+  page_size: number;
+  results: MorphFreeTrialUser[];
+};
+
+/** Bir martalik bepul try-on ishlatgan yangi userlar. */
+export async function fetchMorphFreeTrialUsers(params?: {
+  q?: string;
+  page?: number;
+  page_size?: number;
+}) {
+  const sp = new URLSearchParams();
+  if (params?.q?.trim()) sp.set("q", params.q.trim());
+  if (params?.page) sp.set("page", String(params.page));
+  if (params?.page_size) sp.set("page_size", String(params.page_size));
+  const qs = sp.toString();
+  return apiJson<MorphFreeTrialUsersResponse>(
+    `/api/v1/admin/morph-ai/free-trial-users/${qs ? `?${qs}` : ""}`,
+  );
+}
+
+export async function downloadMorphFreeTrialUsersCsv(q?: string): Promise<Blob> {
+  const sp = new URLSearchParams({ export: "csv" });
+  if (q?.trim()) sp.set("q", q.trim());
+  const res = await apiFetch(`/api/v1/admin/morph-ai/free-trial-users/?${sp.toString()}`);
+  if (!res.ok) throw new Error(`CSV yuklab bo'lmadi (${res.status})`);
+  return res.blob();
+}
+
 export async function fetchMorphAiQueue() {
   return apiJson<{
     enabled: boolean;
@@ -4817,38 +4875,38 @@ function mapAdminDepositStats(raw: any): AdminDepositStats {
     largest: mapDepositEvent(raw.largest),
     top_user: mapDepositPerson(raw.top_user),
     top_users: Array.isArray(raw.top_users)
-      ? raw.top_users.map(mapDepositPerson).filter((row): row is AdminDepositPerson => Boolean(row))
+      ? raw.top_users.map(mapDepositPerson).filter((row: any): row is AdminDepositPerson => Boolean(row))
       : [],
     frequent_users: Array.isArray(raw.frequent_users)
       ? raw.frequent_users
           .map(mapDepositPerson)
-          .filter((row): row is AdminDepositPerson => Boolean(row))
+          .filter((row: any): row is AdminDepositPerson => Boolean(row))
       : [],
     channels: Array.isArray(raw.channels)
-      ? raw.channels.map((row) => ({
+      ? raw.channels.map((row: any) => ({
           ...mapDepositBucket(row),
           channel: String(row?.channel ?? ""),
         }))
       : [],
     hours: Array.isArray(raw.hours)
-      ? raw.hours.map((row) => ({
+      ? raw.hours.map((row: any) => ({
           hour: toInt(row?.hour, 0),
           count: toInt(row?.count, 0),
           amount: toInt(row?.amount, 0),
         }))
       : [],
     reject_notes: Array.isArray(raw.reject_notes)
-      ? raw.reject_notes.map((row) => ({
+      ? raw.reject_notes.map((row: any) => ({
           note: String(row?.note ?? ""),
           count: toInt(row?.count, 0),
           amount: toInt(row?.amount, 0),
         }))
       : [],
     recent: Array.isArray(raw.recent)
-      ? raw.recent.map(mapDepositEvent).filter((row): row is AdminDepositEvent => Boolean(row))
+      ? raw.recent.map(mapDepositEvent).filter((row: any): row is AdminDepositEvent => Boolean(row))
       : [],
     days: Array.isArray(raw.days)
-      ? raw.days.map((day) => ({
+      ? raw.days.map((day: any) => ({
           date: String(day?.date ?? ""),
           count: toInt(day?.count, 0),
           amount: toInt(day?.amount, 0),

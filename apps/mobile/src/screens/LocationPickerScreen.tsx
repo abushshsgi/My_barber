@@ -181,7 +181,7 @@ export function LocationPickerScreen({
     let alive = true;
     setSearching(true);
     setSearchError(null);
-    const t = setTimeout(() => {
+    const timer = setTimeout(() => {
       void geocodeAddress(q)
         .then((rows) => {
           if (!alive) return;
@@ -202,7 +202,7 @@ export function LocationPickerScreen({
     }, 320);
     return () => {
       alive = false;
-      clearTimeout(t);
+      clearTimeout(timer);
     };
   }, [searchQuery, mode]);
 

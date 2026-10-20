@@ -43,7 +43,7 @@ def schedule_wallet_topup_notice(user, amount, *, payload: dict) -> None:
             notify_user(
                 user,
                 "wallet_topup",
-                "Hamyoningiz to'ldirildi",
+                "Hamyoningiz to'ldirildi 💳",
                 f"+{amount_label} so'm hisobingizga tushdi.",
                 payload=notice_payload,
             )

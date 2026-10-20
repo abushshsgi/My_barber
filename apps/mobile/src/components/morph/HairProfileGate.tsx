@@ -73,7 +73,8 @@ const styles = StyleSheet.create({
   },
   title: {
     marginTop: verticalScale(20),
-    fontFamily: morphFont.semibold,
+    fontFamily: morphFont.fontFamily,
+    fontWeight: "600",
     fontSize: fontSize(22),
     lineHeight: fontSize(28),
     letterSpacing: -0.4,
@@ -82,7 +83,7 @@ const styles = StyleSheet.create({
   body: {
     marginTop: verticalScale(10),
     maxWidth: 320,
-    fontFamily: morphFont.regular,
+    fontFamily: morphFont.fontFamily,
     fontSize: fontSize(15),
     lineHeight: fontSize(22),
     textAlign: "center",
@@ -96,7 +97,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   ctaText: {
-    fontFamily: morphFont.semibold,
+    fontFamily: morphFont.fontFamily,
+    fontWeight: "600",
     fontSize: fontSize(15),
     letterSpacing: -0.2,
   },

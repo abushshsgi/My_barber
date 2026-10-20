@@ -36,7 +36,7 @@ def _notify_chat_message(convo: Conversation, actor_kind: str, text: str) -> Non
         notify_barber(
             convo.barber,
             "chat_message",
-            "Yangi xabar",
+            "Yangi xabar 💬",
             f"{convo.user.full_name or convo.user.email}: {preview}",
             payload,
         )
@@ -44,7 +44,7 @@ def _notify_chat_message(convo: Conversation, actor_kind: str, text: str) -> Non
         notify_user(
             convo.user,
             "chat_message",
-            "Yangi xabar",
+            "Yangi xabar 💬",
             f"{convo.barber.full_name or convo.barber.email}: {preview}",
             payload,
         )

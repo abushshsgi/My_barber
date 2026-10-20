@@ -241,6 +241,7 @@ function Field({
   onEdit?: () => void;
   last?: boolean;
 }) {
+  const { t } = useTranslation();
   return (
     <View
       style={[

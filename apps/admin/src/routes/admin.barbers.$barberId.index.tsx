@@ -112,6 +112,10 @@ function BarberOverviewPage() {
         created_at: b.created_at,
         account_segment: b.account_segment,
         account_segment_label: b.account_segment_label,
+        business_kind: b.business_kind,
+        business_kind_label: b.business_kind_label,
+        email_verified: b.email_verified,
+        email_verified_at: b.email_verified_at,
       }
     : null;
 

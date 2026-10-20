@@ -225,9 +225,9 @@ export function MorphIngredientScreen({ navigation }: Props) {
     if (!hasQuizFields(answers)) return;
     await saveCareQuiz(answers);
     await updateHairCareProfile({
-      condition: answers.condition,
-      texture: answers.texture,
-      color_status: answers.colorStatus,
+      condition: answers.condition as HairCondition,
+      texture: answers.texture as HairTexture,
+      color_status: answers.colorStatus as HairColorStatus,
       scalp:
         answers.condition === "oily"
           ? "oily"
@@ -256,9 +256,9 @@ export function MorphIngredientScreen({ navigation }: Props) {
       setProfileOk(true);
       if (!profile.complete) {
         await updateHairCareProfile({
-          condition: next.condition,
-          texture: next.texture,
-          color_status: next.colorStatus,
+          condition: next.condition as HairCondition,
+          texture: next.texture as HairTexture,
+          color_status: next.colorStatus as HairColorStatus,
         }).catch(() => undefined);
       }
       return true;
@@ -1711,7 +1711,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   ingPage: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     zIndex: 30,
   },
   ingRow: {

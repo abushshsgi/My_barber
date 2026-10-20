@@ -8,6 +8,7 @@ from ai.unthrottled import UnthrottledAPIView
 
 from accounts.permissions import IsAdmin
 from ai.models import Hairstyle, MorphAiSettings
+from ai.free_trial import build_free_trial_users, build_free_trial_users_csv
 from ai.morph_analytics import build_morph_ai_analytics
 from ai.morph_lists import LIST_KINDS, build_morph_list, build_morph_list_export_csv
 from ai.morph_ops import (
@@ -133,6 +134,24 @@ class AdminMorphAiBudgetView(UnthrottledAPIView):
             build_budget_status(
                 request.query_params.get("start"),
                 request.query_params.get("end"),
+            )
+        )
+
+
+class AdminMorphAiFreeTrialUsersView(UnthrottledAPIView):
+    """Bir martalik bepul try-on ishlatgan yangi userlar."""
+
+    permission_classes = [IsAdmin]
+
+    def get(self, request):
+        q = request.query_params.get("q") or ""
+        if request.query_params.get("export") == "csv":
+            return build_free_trial_users_csv(q=q)
+        return Response(
+            build_free_trial_users(
+                q=q,
+                page_raw=request.query_params.get("page"),
+                page_size_raw=request.query_params.get("page_size"),
             )
         )
 

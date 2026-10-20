@@ -21,6 +21,7 @@ const TABS = [
   { to: "/admin/morph-ai/catalog" as const, label: "Katalog" },
   { to: "/admin/morph-ai/errors" as const, label: "Xatolar" },
   { to: "/admin/morph-ai/limits" as const, label: "Limitlar" },
+  { to: "/admin/morph-ai/free-trial" as const, label: "Bepul try-on" },
   { to: "/admin/morph-ai/queue" as const, label: "Navbat" },
   { to: "/admin/morph-ai/budget" as const, label: "Byudjet" },
   { to: "/admin/morph-ai/popularity" as const, label: "Uslublar" },

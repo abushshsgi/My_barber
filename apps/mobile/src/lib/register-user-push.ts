@@ -37,19 +37,33 @@ export async function startUserPush(seen: Set<string>): Promise<() => void> {
     handleNotification: async () => ({
       shouldShowAlert: true,
       shouldPlaySound: true,
-      shouldSetBadge: false,
+      shouldSetBadge: true,
       shouldShowBanner: true,
       shouldShowList: true,
     }),
   });
 
   if (Platform.OS === "android") {
-    await Notifications.setNotificationChannelAsync("wallet", {
-      name: "Hamyon",
+    const base = {
       importance: Notifications.AndroidImportance.MAX,
-      vibrationPattern: [0, 250, 250, 250],
-      sound: "default",
-    });
+      vibrationPattern: [0, 250, 250, 250] as number[],
+      sound: "default" as const,
+      lightColor: "#FF7A00",
+      lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
+      showBadge: true,
+    };
+    await Promise.all([
+      Notifications.setNotificationChannelAsync("default", {
+        ...base,
+        name: "Mysaloon bildirishnomalari",
+        description: "Bron, Morf AI natijalari va muhim yangiliklar",
+      }),
+      Notifications.setNotificationChannelAsync("wallet", {
+        ...base,
+        name: "Hamyon",
+        description: "Hamyon to'ldirish va to'lovlar",
+      }),
+    ]).catch(() => undefined);
   }
 
   const current = await Notifications.getPermissionsAsync();
