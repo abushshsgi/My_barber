@@ -127,9 +127,11 @@ export function widthPercent(percent: number): number {
 /** Floating tab dock balandligi — kontent ostida qoldiriladigan bo'sh joy. */
 export const TAB_DOCK_CLEARANCE = IS_SMALL_DEVICE ? 76 : 84;
 
-/** Dock + Home Indicator — sahifa `paddingBottom` uchun. */
+/** Dock + system nav — sahifa `paddingBottom` uchun (kontent nav ustida). */
 export function tabDockPadding(bottomInset: number): number {
-  return TAB_DOCK_CLEARANCE + Math.max(bottomInset, 8);
+  const androidNav =
+    Platform.OS === "android" && bottomInset < 16 ? 52 : 0;
+  return TAB_DOCK_CLEARANCE + Math.max(bottomInset, androidNav, 8);
 }
 
 /** Standart gorizontal chekka. */

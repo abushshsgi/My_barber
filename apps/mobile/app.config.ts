@@ -60,10 +60,11 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       [
         "expo-navigation-bar",
         {
+          // relative — kontent system nav ORQASIDA emas, USTIDA (Samsung/Redmi 3-tugma).
           appearance: "light",
-          behavior: "overlay-pan",
+          behavior: "inset-swipe",
           visibility: "show",
-          position: "absolute",
+          position: "relative",
         },
       ],
       "./plugins/withUncompressedNativeLibs",

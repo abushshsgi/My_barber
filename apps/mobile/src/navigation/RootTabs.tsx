@@ -23,7 +23,7 @@ import { safeBottom, safeTop } from "../lib/safe-area";
 import * as NavigationBar from "expo-navigation-bar";
 import { morfMarkWhite } from "../branding/morf-logo";
 import { ComingSoonSalons } from "../components/ComingSoonSalons";
-import { AppStatusBar } from "../components/ui/AppStatusBar";
+import { AppStatusBar, safeBottom } from "../components/ui/AppStatusBar";
 import { FLOATING_TAB_BAR_STYLE } from "../hooks/useHideTabBar";
 import { AppShellProvider, useAppShell } from "../lib/AppShellContext";
 import { MorphAppearanceProvider } from "../lib/MorphAppearanceContext";
@@ -223,7 +223,8 @@ function CustomTabBar({ state, navigation, descriptors }: BottomTabBarProps) {
   const sidesOpacity = useRef(new Animated.Value(1)).current;
   const centerScale = useRef(new Animated.Value(1)).current;
   const morphDock = displayShell === "morph";
-  const bottomPad = Math.max(insets.bottom, MIN_DOCK_BOTTOM);
+  /** System nav ustida — Samsung/Redmi 3-tugmali bar kontentni yopmasin. */
+  const bottomPad = Math.max(safeBottom(insets.bottom, 0), MIN_DOCK_BOTTOM);
 
   useEffect(() => {
     if (Platform.OS !== "android") return;

@@ -615,7 +615,11 @@ export function generalWeatherExtras(ctx: {
   return out.slice(0, 4);
 }
 
-/** Hub — bitta ekranga sig‘adi (scroll yo‘q), SE→Pro Max scale. Tab dock yo‘q. */
+/**
+ * Hub — bitta ekranga sig‘adi (scroll yo‘q), SE→Pro Max scale.
+ * `height` = kontent zonasi (safe top/bottom ALLAQAChON ayirilgan bo‘lishi kerak).
+ * `topInset`/`bottomInset` faqat chaqiruvchi to‘liq window bersa qo‘llanadi.
+ */
 export function careHubLayout(
   width: number,
   height: number,
@@ -624,27 +628,28 @@ export function careHubLayout(
 ) {
   /** Window o‘lchami o‘zgaganda (web / rotate) qayta hisoblanadi. */
   const scale = hubLayoutScale(width, height);
-  const short = height < 700;
-  const tiny = height < 640;
+  const short = height < 640;
+  const tiny = height < 560;
   const narrow = width < 360;
-  const tall = height >= 900;
+  const tall = height >= 820;
 
-  /** Tab dock yo‘q — pastki karta o‘zi shu joyni egallaydi. */
-  const dockClearance = Math.max(bottomInset, 48);
-  const avail = Math.max(320, height - dockClearance - Math.max(topInset, 0));
+  /** Agar inset berilsa (legacy) — ayiramiz; aks holda height = ready content zone. */
+  const bottomClearance = bottomInset > 0 ? Math.max(bottomInset, 48) : 0;
+  const topClearance = Math.max(topInset, 0);
+  const avail = Math.max(280, height - bottomClearance - topClearance);
 
-  const density = tiny ? 0.86 : short ? 0.92 : tall ? 1.04 : 1;
-  const gapScale = tiny ? 0.72 : short ? 0.82 : 1;
+  const density = tiny ? 0.82 : short ? 0.88 : tall ? 1.02 : 0.96;
+  const gapScale = tiny ? 0.62 : short ? 0.72 : 0.88;
 
-  const searchH = rs(Math.round(40 * density), scale);
-  const searchBlock = searchH + rs(Math.round(18 * gapScale), scale);
-  const reportHead = rs(Math.round(22 * density), scale);
-  const sheetTop = rs(Math.round(12 * density), scale);
-  const promoTopGap = rs(Math.round((short ? 4 : 8) * gapScale), scale);
-  const weatherNudge = rs(Math.round(4 * gapScale), scale);
-  const searchCatGap = rs(Math.round((short ? 10 : 14) * gapScale), scale);
-  const sectionGap = rs(Math.round((short ? 8 : 12) * gapScale), scale);
-  const gaps = rs(Math.round(14 * gapScale), scale) + weatherNudge + searchCatGap + sectionGap;
+  const searchH = rs(Math.round(36 * density), scale);
+  const searchBlock = searchH + rs(Math.round(12 * gapScale), scale);
+  const reportHead = rs(Math.round(20 * density), scale);
+  const sheetTop = rs(Math.round(8 * density), scale);
+  const promoTopGap = rs(Math.round((short ? 2 : 4) * gapScale), scale);
+  const weatherNudge = rs(Math.round(2 * gapScale), scale);
+  const searchCatGap = rs(Math.round((short ? 6 : 10) * gapScale), scale);
+  const sectionGap = rs(Math.round((short ? 6 : 8) * gapScale), scale);
+  const gaps = rs(Math.round(10 * gapScale), scale) + weatherNudge + searchCatGap + sectionGap;
 
   const hPad = narrow ? Math.max(10, rs(12, scale)) : width < 400 ? rs(14, scale) : rs(16, scale);
   /** Wide web/tablet: banner telefon kengligida qolsin (835px stretch emas). */
@@ -655,38 +660,38 @@ export function careHubLayout(
   /** Ob-havo banneri bilan bir ustun: telefon to‘liq, kompyuterda banner kengligi. */
   const quickInner = Math.min(Math.max(0, width - hPad * 2), promoMaxW);
   const quickActionW = Math.max(
-    72,
+    68,
     Math.floor((quickInner - quickGap * (quickCount - 1)) / quickCount),
   );
   const quickActionH = clamp(
-    Math.round(quickActionW * (short ? 0.78 : 0.82)),
-    narrow ? 72 : 80,
-    short ? 112 : 128,
+    Math.round(quickActionW * (short ? 0.72 : 0.76)),
+    narrow ? 64 : 72,
+    short ? 96 : 108,
   );
   const quickActionBlock = quickActionH + sectionGap;
 
   const chrome = searchBlock + quickActionBlock + reportHead + gaps + sheetTop + promoTopGap;
-  const remain = Math.max(rs(240, scale), avail - chrome);
+  const remain = Math.max(rs(200, scale), avail - chrome);
 
   const promoW = promoMaxW;
-  /** Banner biroz balandroq — temp + CTA sig‘sin. */
-  const PROMO_ASPECT = short ? 1.95 : 1.8;
+  /** Banner ixcham — bir viewportga sig‘ishi uchun. */
+  const PROMO_ASPECT = short ? 2.15 : 2.0;
   const promoByWidth = Math.round(promoW / PROMO_ASPECT);
 
   /** AI Assistant qatori olib tashlangan — joy promo + kartochkalarga beriladi. */
   const MIN = {
-    promo: Math.max(rs(Math.round(124 * density), scale), Math.min(promoByWidth, rs(Math.round(156 * density), scale))),
-    featured: rs(Math.round((narrow ? 104 : 122) * density), scale),
-    hubCard: rs(Math.round((short ? 96 : 108) * density), scale),
+    promo: Math.max(rs(Math.round(100 * density), scale), Math.min(promoByWidth, rs(Math.round(128 * density), scale))),
+    featured: rs(Math.round((narrow ? 88 : 100) * density), scale),
+    hubCard: rs(Math.round((short ? 88 : 96) * density), scale),
   };
   const MAX = {
     promo: clamp(
-      Math.max(rs(Math.round(140 * density), scale), promoByWidth),
-      rs(Math.round(128 * density), scale),
-      Math.min(rs(Math.round(200 * density), scale), Math.round(height * (short ? 0.26 : 0.29))),
+      Math.max(rs(Math.round(116 * density), scale), promoByWidth),
+      rs(Math.round(108 * density), scale),
+      Math.min(rs(Math.round(168 * density), scale), Math.round(avail * (short ? 0.22 : 0.24))),
     ),
-    featured: rs(Math.round((short ? 142 : 158) * density), scale),
-    hubCard: rs(Math.round((short ? 116 : 132) * density), scale),
+    featured: rs(Math.round((short ? 118 : 132) * density), scale),
+    hubCard: rs(Math.round((short ? 104 : 118) * density), scale),
   };
 
   const minTotal = MIN.promo + MIN.featured + MIN.hubCard;
@@ -755,7 +760,7 @@ export function careHubLayout(
     sheetH: reportHead + sheetTop + sheetGap + hubCardH + rs(Math.round(12 * density), scale),
     hPad,
     promoMaxW,
-    dockClearance,
+    dockClearance: bottomClearance,
     promoPad,
     promoRadius,
     promoTempSize: rs(

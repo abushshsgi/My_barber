@@ -240,9 +240,13 @@ export function MorphCareScreen({ navigation, route }: Props) {
   const [kbH, setKbH] = useState(0);
   const fullWinH = useRef(winH);
   if (kbH === 0) fullWinH.current = Math.max(fullWinH.current, winH);
+  /** Safe area ayirilgan kontent balandligi — scrollsiz bitta viewport. */
+  const hubTopPad = safeTop(insets.top, 8);
+  const hubBottomPad = safeBottom(insets.bottom, 8);
+  const hubContentH = Math.max(280, winH - hubTopPad - hubBottomPad);
   const hubLayout = useMemo(
-    () => careHubLayout(winW, winH, insets.top, insets.bottom),
-    [winW, winH, insets.top, insets.bottom],
+    () => careHubLayout(winW, hubContentH, 0, 0),
+    [winW, hubContentH],
   );
   const weatherKey = weather?.current?.condition_key ?? "unknown";
   const weatherTemp =
@@ -1210,41 +1214,37 @@ export function MorphCareScreen({ navigation, route }: Props) {
   }
 
   if (viewMode === "hub") {
-    const hubTopPad = safeTop(insets.top, 10);
-    const hubBottomPad = safeBottom(insets.bottom, 16);
     return (
       <View style={styles.hubRoot}>
         <AppStatusBar style={pal.status} />
         <View style={[StyleSheet.absoluteFill, { backgroundColor: pal.bg }]} />
 
-        <ScrollView
-          style={styles.hubScroll}
-          contentContainerStyle={[
+        <View
+          style={[
+            styles.hubScroll,
             styles.hubScrollContent,
             {
               paddingTop: hubTopPad,
-              paddingBottom: hubBottomPad + verticalScale(28),
+              paddingBottom: hubBottomPad,
             },
           ]}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-          bounces
           pointerEvents={searchOpen ? "none" : "auto"}
         >
             <WeatherHeaderCard
               source={weatherImg}
               height={hubLayout.promoH}
               edgeToEdge={false}
-              topExtra={scale(12)}
+              topExtra={scale(8)}
               borderRadius={hubLayout.promoRadius}
               paddingHorizontal={hubLayout.promoPad}
-              paddingBottom={verticalScale(12)}
+              paddingBottom={verticalScale(8)}
               lightStatusBar={false}
               style={{
                 width: "100%",
                 maxWidth: hubLayout.promoMaxW,
                 alignSelf: "center",
-                marginBottom: verticalScale(4),
+                marginBottom: verticalScale(2),
+                flexShrink: 0,
               }}
               topLeft={
                 <Pressable
@@ -1739,7 +1739,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
                   {
                     gap: hubLayout.sheetGap,
                     paddingTop: hubLayout.sheetTop,
-                    paddingBottom: Math.max(8, Math.round(hubLayout.sheetGap * 0.75)),
+                    paddingBottom: Math.max(10, Math.round(hubLayout.sheetGap)),
                     paddingHorizontal: Math.max(12, hubLayout.hPad - 2),
                     borderRadius: hubLayout.narrow ? 18 : 24,
                   },
@@ -1777,9 +1777,17 @@ export function MorphCareScreen({ navigation, route }: Props) {
                   </Pressable>
                 </View>
 
-                <View style={[styles.hubCards, { height: hubLayout.hubCardH }]}>
+                <View
+                  style={[
+                    styles.hubCards,
+                    {
+                      height: hubLayout.hubCardH,
+                      gap: Math.max(8, Math.round(hubLayout.sheetGap)),
+                    },
+                  ]}
+                >
                   <Pressable
-                    style={styles.hubCard}
+                    style={[styles.hubCard, { minHeight: hubLayout.hubCardH }]}
                     onPress={openParvarish}
                     accessibilityRole="button"
                     accessibilityLabel={t("care.hubParvarish")}
@@ -1816,7 +1824,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
                   </Pressable>
 
                   <Pressable
-                    style={styles.hubCard}
+                    style={[styles.hubCard, { minHeight: hubLayout.hubCardH }]}
                     onPress={openTarkib}
                     accessibilityRole="button"
                     accessibilityLabel={t("care.hubTarkib")}
@@ -1856,7 +1864,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
 
               </View>
             </View>
-        </ScrollView>
+        </View>
 
         {searchOpen ? (
           <>
@@ -2223,7 +2231,8 @@ function createCareStyles(pal: Pick<
     minHeight: 0,
   },
   hubScrollContent: {
-    flexGrow: 1,
+    flex: 1,
+    minHeight: 0,
     justifyContent: "space-between",
   },
   addToast: {
@@ -3176,20 +3185,21 @@ function createCareStyles(pal: Pick<
     color: pal.muted,
   },
   hubDockOuter: {
-    marginTop: verticalScale(6),
-    flexGrow: 1,
+    marginTop: verticalScale(4),
+    flexGrow: 0,
+    flexShrink: 0,
     paddingHorizontal: scale(10),
     paddingTop: 0,
-    paddingBottom: verticalScale(4),
+    paddingBottom: 0,
     backgroundColor: "transparent",
     justifyContent: "flex-end",
   },
   hubSheet: {
     backgroundColor: pal.card,
     paddingHorizontal: scale(14),
-    paddingTop: verticalScale(16),
-    paddingBottom: 0,
-    gap: moderateScale(14),
+    paddingTop: verticalScale(10),
+    paddingBottom: verticalScale(10),
+    gap: moderateScale(10),
     borderRadius: moderateScale(24),
     overflow: "hidden",
     borderWidth: 1,
@@ -3235,12 +3245,14 @@ function createCareStyles(pal: Pick<
   reportFilterText: { ...morphFont, fontSize: fontSize(11), fontWeight: "700", color: pal.fg },
   hubCards: {
     flexDirection: "row",
-    gap: moderateScale(12),
-    justifyContent: "flex-start",
-    alignItems: "flex-start",
+    width: "100%",
+    gap: moderateScale(10),
+    justifyContent: "space-between",
+    alignItems: "stretch",
   },
   hubCard: {
     flex: 1,
+    minWidth: 0,
     height: "100%",
     borderRadius: moderateScale(16),
     backgroundColor: pal.iconTile,
@@ -3267,7 +3279,7 @@ function createCareStyles(pal: Pick<
     minHeight: 0,
     paddingHorizontal: scale(10),
     paddingTop: verticalScale(8),
-    paddingBottom: verticalScale(10),
+    paddingBottom: verticalScale(12),
     zIndex: 2,
     justifyContent: "space-between",
     alignItems: "flex-start",

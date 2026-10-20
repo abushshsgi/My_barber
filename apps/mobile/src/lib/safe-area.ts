@@ -8,6 +8,11 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export const SAFE_BOTTOM_MIN = 16;
 export const SAFE_TOP_MIN = 8;
+/**
+ * Samsung / Redmi 3-tugmali nav (overlay / Expo Go).
+ * `position: relative` native buildda oyna allaqachon yuqorida — insetga ishonamiz.
+ */
+export const ANDROID_NAV_MIN = 52;
 
 /** Notch / status bar ostidagi yuqori padding. */
 export function safeTop(insetsTop: number, extra = 12): number {
@@ -21,17 +26,21 @@ export function safeTop(insetsTop: number, extra = 12): number {
 
 /**
  * System nav / home indicator uchun pastki padding.
- * 3-tugmali Android bar (48dp) va gesture bar uchun `Math.max(insets.bottom, 24)` + extra.
+ * Kontent telefon navigation bar ORQASIDA emas — USTIDA turadi.
+ * Android: inset juda kichik bo‘lsa (overlay) — majburiy nav balandligi.
  */
-export function safeBottom(insetsBottom: number, extra = 16): number {
-  const androidMin = Platform.OS === "android" ? 48 : 0;
+export function safeBottom(insetsBottom: number, extra = 12): number {
+  const androidMin =
+    Platform.OS === "android" && insetsBottom < 16 ? ANDROID_NAV_MIN : 0;
   const iosMin = Platform.OS === "ios" && insetsBottom < 8 ? 20 : 0;
   return Math.max(insetsBottom, androidMin, iosMin, SAFE_BOTTOM_MIN) + extra;
 }
 
-/** Footer/CTA — faqat `Math.max(insets.bottom, 16)` (extra yo‘q). */
+/** Footer/CTA — extra siz system nav balandligi. */
 export function safeBottomPad(insetsBottom: number): number {
-  return Math.max(insetsBottom, SAFE_BOTTOM_MIN);
+  const androidMin =
+    Platform.OS === "android" && insetsBottom < 16 ? ANDROID_NAV_MIN : 0;
+  return Math.max(insetsBottom, androidMin, SAFE_BOTTOM_MIN);
 }
 
 /** Screen / Modal ichida bir xil pad qiymatlari. */
