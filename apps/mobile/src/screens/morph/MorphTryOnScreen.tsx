@@ -767,7 +767,7 @@ function createTryOnStyles(
     letterSpacing: -0.4,
     textAlign: "center",
     textShadowColor: "rgba(0,0,0,0.4)",
-    textShadowOffset: { width: 0, height: 1 },
+    textShadowOffset: { width: 0, height: verticalScale(1) },
     textShadowRadius: 8,
   },
   sub: {
@@ -776,7 +776,7 @@ function createTryOnStyles(
     fontWeight: "500",
     textAlign: "center",
     textShadowColor: "rgba(0,0,0,0.35)",
-    textShadowOffset: { width: 0, height: 1 },
+    textShadowOffset: { width: 0, height: verticalScale(1) },
     textShadowRadius: 5,
   },
   dockBleed: {
@@ -1027,7 +1027,7 @@ function createTryOnStyles(
     fontSize: fontSize(11),
     fontWeight: "800",
     textShadowColor: "rgba(0,0,0,0.45)",
-    textShadowOffset: { width: 0, height: 1 },
+    textShadowOffset: { width: 0, height: verticalScale(1) },
     textShadowRadius: 3,
   },
   historyEmpty: {

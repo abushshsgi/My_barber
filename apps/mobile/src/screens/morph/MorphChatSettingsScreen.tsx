@@ -762,7 +762,7 @@ export function MorphChatSettingsScreen({
                   >
                     <View style={styles.item}>
                       <View style={styles.hubMeter}>
-                        <UsageBar pct={usagePct} color={meterColor} height={6} />
+                        <UsageBar pct={usagePct} color={meterColor} height={verticalScale(6)} />
                         <Text style={[styles.miniPct, { color: pal.fg, fontSize: fs(11) }]}>
                           {usagePct}%
                         </Text>
@@ -976,7 +976,7 @@ export function MorphChatSettingsScreen({
               usedLabel={t("chat.settings.limitUsedPct", { pct: usagePct })}
               leftLabel={t("chat.settings.limitLeftPct", { pct: Math.max(0, 100 - usagePct) })}
             />
-            <View style={{ height: 16 }} />
+            <View style={{ height: verticalScale(16) }} />
             <SettingsSection>
               <PrefToggle
                 title={t("chat.settings.limitNotify")}

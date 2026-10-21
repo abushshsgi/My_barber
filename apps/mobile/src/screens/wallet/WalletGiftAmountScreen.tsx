@@ -338,7 +338,7 @@ function createAmountStyles(pal: ShellTheme) {
     shadowColor: "#111111",
     shadowOpacity: 0.08,
     shadowRadius: 16,
-    shadowOffset: { width: 0, height: 6 },
+    shadowOffset: { width: 0, height: verticalScale(6) },
     elevation: 3,
   },
   avatar: {

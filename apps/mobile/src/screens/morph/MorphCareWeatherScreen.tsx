@@ -772,7 +772,7 @@ function createWeatherStyles(colors: ShellChrome) {
     shadowColor: "#000",
     shadowOpacity: 0.18,
     shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: verticalScale(4) },
     elevation: 6,
   },
   doneToastIcon: {
@@ -796,7 +796,7 @@ function createWeatherStyles(colors: ShellChrome) {
     shadowColor: "#000",
     shadowOpacity: 0.12,
     shadowRadius: 10,
-    shadowOffset: { width: 0, height: 3 },
+    shadowOffset: { width: 0, height: verticalScale(3) },
     elevation: 3,
   },
   cityChip: {
@@ -814,7 +814,7 @@ function createWeatherStyles(colors: ShellChrome) {
     shadowColor: "#000",
     shadowOpacity: 0.1,
     shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: verticalScale(2) },
     elevation: 2,
   },
   cityChipText: {

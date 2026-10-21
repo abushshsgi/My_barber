@@ -248,8 +248,8 @@ const styles = StyleSheet.create({
   },
   dots: { flexDirection: "row", justifyContent: "center", gap: 8 },
   dot: {
-    width: 7,
-    height: 7,
+    width: scale(7),
+    height: verticalScale(7),
     borderRadius: 3.5,
     backgroundColor: "#E5E7EB",
   },

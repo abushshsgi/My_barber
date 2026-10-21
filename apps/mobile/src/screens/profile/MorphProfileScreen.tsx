@@ -50,7 +50,7 @@ export function MorphProfileScreen({ navigation }: Props) {
     user?.full_name?.trim() ||
     [user?.first_name, user?.last_name].filter(Boolean).join(" ").trim() ||
     "Foydalanuvchi";
-  const avatarUrl = resolveMediaUrl(user?.avatar, { width: 240 });
+  const avatarUrl = resolveMediaUrl(user?.avatar, { width: scale(240) });
   const verified = dashboard?.verified ?? Boolean(user?.phone || user?.email_verified);
   const sub = dashboard?.subscription;
   const usage = sub?.usage;
@@ -288,7 +288,7 @@ export function MorphProfileScreen({ navigation }: Props) {
             contentContainerStyle={styles.historyRow}
           >
             {history.map((item) => {
-              const uri = resolveMediaUrl(item.after_url || item.before_url, { width: 280 });
+              const uri = resolveMediaUrl(item.after_url || item.before_url, { width: scale(280) });
               return (
                 <Pressable
                   key={item.id}
@@ -472,7 +472,7 @@ function makeStyles(pal: MorphPalette, fs: (n: number) => number) {
       borderWidth: 1,
       borderColor: pal.line,
       shadowColor: "#000",
-      shadowOffset: { width: 0, height: 2 },
+      shadowOffset: { width: 0, height: verticalScale(2) },
       shadowOpacity: pal.theme === "dark" ? 0.2 : 0.04,
       shadowRadius: 8,
       elevation: 2,
@@ -517,7 +517,7 @@ function makeStyles(pal: MorphPalette, fs: (n: number) => number) {
       borderWidth: 1,
       borderColor: pal.theme === "dark" ? "rgba(255,255,255,0.14)" : "rgba(17, 17, 17, 0.12)",
       shadowColor: "#111111",
-      shadowOffset: { width: 0, height: 4 },
+      shadowOffset: { width: 0, height: verticalScale(4) },
       shadowOpacity: pal.theme === "dark" ? 0.2 : 0.06,
       shadowRadius: 10,
       elevation: 3,
@@ -595,7 +595,7 @@ function makeStyles(pal: MorphPalette, fs: (n: number) => number) {
       shadowColor: "#111111",
       shadowOpacity: pal.theme === "dark" ? 0 : 0.05,
       shadowRadius: 10,
-      shadowOffset: { width: 0, height: 4 },
+      shadowOffset: { width: 0, height: verticalScale(4) },
       elevation: pal.theme === "dark" ? 0 : 2,
     },
     quickTop: {
@@ -687,7 +687,7 @@ function makeStyles(pal: MorphPalette, fs: (n: number) => number) {
       borderWidth: 1,
       borderColor: pal.line,
       shadowColor: "#000",
-      shadowOffset: { width: 0, height: 2 },
+      shadowOffset: { width: 0, height: verticalScale(2) },
       shadowOpacity: pal.theme === "dark" ? 0.15 : 0.04,
       shadowRadius: 8,
       elevation: 2,

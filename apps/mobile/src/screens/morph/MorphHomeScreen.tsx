@@ -67,7 +67,7 @@ export function MorphHomeScreen({ navigation }: Props) {
         rows.map((entry) => ({
           id: entry.id,
           title: entry.title_uz || entry.title,
-          image: resolveMediaUrl(entry.image_url, { width: 600 }) || entry.image_url,
+          image: resolveMediaUrl(entry.image_url, { width: scale(600) }) || entry.image_url,
         })),
       );
     } catch {

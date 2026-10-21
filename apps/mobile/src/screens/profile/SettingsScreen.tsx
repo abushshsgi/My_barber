@@ -128,5 +128,5 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
   content: { padding: moderateScale(16), paddingBottom: verticalScale(32) },
   infoPad: { paddingHorizontal: scale(14), paddingBottom: verticalScale(10) },
-  langSpacer: { width: 18 },
+  langSpacer: { width: scale(18) },
 });

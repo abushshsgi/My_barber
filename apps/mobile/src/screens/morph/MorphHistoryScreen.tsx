@@ -153,8 +153,8 @@ export function MorphHistoryScreen({ navigation, route }: Props) {
     navigation.navigate("MorphStudio");
   }, [closeDetail, navigation, selected, session]);
 
-  const colW = (width - 20 * 2 - 12) / 2;
-  const compareW = width - 32;
+  const colW = (width - scale(20) * 2 - scale(12)) / 2;
+  const compareW = width - scale(32);
   const compareH = Math.min(compareW * 1.15, width * 1.05);
 
   if (selected) {
@@ -402,7 +402,7 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     color: "#FFF",
     textShadowColor: "rgba(0,0,0,0.5)",
-    textShadowOffset: { width: 0, height: 1 },
+    textShadowOffset: { width: 0, height: verticalScale(1) },
     textShadowRadius: 3,
   },
   center: {

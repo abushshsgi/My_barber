@@ -293,7 +293,7 @@ export function LocationPickerScreen({
             <Ionicons name="arrow-back" size={22} color={colors.fg} />
           </Pressable>
           <Text style={styles.searchNavTitle}>{t("onboarding.locationTitle")}</Text>
-          <View style={{ width: 44 }} />
+          <View style={{ width: scale(44) }} />
         </View>
 
         <View style={styles.searchField}>
@@ -514,7 +514,7 @@ const styles = StyleSheet.create({
         shadowColor: "#000",
         shadowOpacity: 0.1,
         shadowRadius: 8,
-        shadowOffset: { width: 0, height: 2 },
+        shadowOffset: { width: 0, height: verticalScale(2) },
         elevation: 3,
       },
     }),
@@ -635,7 +635,7 @@ const styles = StyleSheet.create({
         shadowColor: "#000",
         shadowOpacity: 0.12,
         shadowRadius: 8,
-        shadowOffset: { width: 0, height: 2 },
+        shadowOffset: { width: 0, height: verticalScale(2) },
         elevation: 3,
       },
     }),
@@ -657,7 +657,7 @@ const styles = StyleSheet.create({
         shadowColor: "#000",
         shadowOpacity: 0.16,
         shadowRadius: 10,
-        shadowOffset: { width: 0, height: 3 },
+        shadowOffset: { width: 0, height: verticalScale(3) },
         elevation: 8,
       },
     }),
@@ -686,7 +686,7 @@ const styles = StyleSheet.create({
         shadowColor: "#000",
         shadowOpacity: 0.28,
         shadowRadius: 8,
-        shadowOffset: { width: 0, height: 3 },
+        shadowOffset: { width: 0, height: verticalScale(3) },
         elevation: 5,
       },
     }),
@@ -723,7 +723,7 @@ const styles = StyleSheet.create({
         shadowColor: "#000",
         shadowOpacity: 0.12,
         shadowRadius: 16,
-        shadowOffset: { width: 0, height: -4 },
+        shadowOffset: { width: 0, height: verticalScale(-4) },
         elevation: 12,
       },
     }),

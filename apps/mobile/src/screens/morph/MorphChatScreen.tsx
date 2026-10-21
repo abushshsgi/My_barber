@@ -140,7 +140,7 @@ export function MorphChatScreen() {
   );
 
   const name = displayName(user);
-  const avatarUrl = resolveMediaUrl(user?.avatar, { width: 120 });
+  const avatarUrl = resolveMediaUrl(user?.avatar, { width: scale(120) });
 
   const scrollToEnd = useCallback(() => {
     requestAnimationFrame(() => {

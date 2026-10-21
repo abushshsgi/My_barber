@@ -790,7 +790,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
         category: mp.category || "spray",
         duration: "2 Min",
         durationMinutes: 2,
-        image: resolveMediaUrl(rawImg, { width: 480 }) || rawImg || "",
+        image: resolveMediaUrl(rawImg, { width: scale(480) }) || rawImg || "",
         bgColors: ["#F0F0F0", "#F0F0F0", "#F0F0F0"],
         isUserAdded: true,
         usageText: mp.usage_uz || fromCatalog?.usage_uz,
@@ -813,7 +813,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
         category: cp.category,
         duration: cp.category === "mask" ? "5 Min" : "2 Min",
         durationMinutes: cp.category === "mask" ? 5 : 2,
-        image: resolveMediaUrl(cp.image_url, { width: 480 }) || cp.image_url || "",
+        image: resolveMediaUrl(cp.image_url, { width: scale(480) }) || cp.image_url || "",
         bgColors:
           cp.category === "mask"
             ? ["#F0F0F0", "#F0F0F0", "#F0F0F0"]
@@ -846,7 +846,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
         title: p.name,
         brand: p.brand,
         category: p.category,
-        image: resolveMediaUrl(p.image_url, { width: 360 }) || p.image_url,
+        image: resolveMediaUrl(p.image_url, { width: scale(360) }) || p.image_url,
         purpose: p.purpose_uz,
         usage: p.usage_uz,
         likes_count: p.likes_count ?? 0,
@@ -1018,7 +1018,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
             color={pal.fg}
             backgroundColor="rgba(255,255,255,0.16)"
           />
-          <View style={{ width: 42 }} />
+          <View style={{ width: scale(42) }} />
         </View>
         <Text style={[styles.muted, { marginTop: 12 }]}>{t("care.badge")}</Text>
         <View style={styles.lockWrap}>
@@ -1096,7 +1096,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
           <View style={styles.navBarRow}>
             <NativeBackButton onPress={handleBack} accessibilityLabel={t("common.back")} />
             <Text style={styles.onboardBadge}>{t("care.onboarding.badge")}</Text>
-            <View style={{ width: 42 }} />
+            <View style={{ width: scale(42) }} />
           </View>
           <ScrollView
             style={{ flex: 1, minHeight: 0 }}
@@ -2165,7 +2165,7 @@ function createCareStyles(pal: Pick<
     shadowColor: "#111111",
     shadowOpacity: 0.06,
     shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: verticalScale(4) },
     elevation: 2,
     backgroundColor: pal.iconTile,
   },
@@ -2184,7 +2184,7 @@ function createCareStyles(pal: Pick<
     left: 0,
     right: 0,
     bottom: 0,
-    height: 40,
+    height: verticalScale(40),
   },
   quickActionLabel: {
     position: "absolute",
@@ -2195,7 +2195,7 @@ function createCareStyles(pal: Pick<
     fontWeight: "700",
     letterSpacing: 0.15,
     textShadowColor: "rgba(17,17,17,0.45)",
-    textShadowOffset: { width: 0, height: 1 },
+    textShadowOffset: { width: 0, height: verticalScale(1) },
     textShadowRadius: 3,
   },
   quickActionSoonBadge: {
@@ -2252,7 +2252,7 @@ function createCareStyles(pal: Pick<
     borderWidth: 1,
     borderColor: "rgba(99,102,241,0.18)",
     shadowColor: "#111111",
-    shadowOffset: { width: 0, height: 10 },
+    shadowOffset: { width: 0, height: verticalScale(10) },
     shadowOpacity: 0.16,
     shadowRadius: 18,
   },
@@ -2375,7 +2375,7 @@ function createCareStyles(pal: Pick<
     shadowColor: "#000",
     shadowOpacity: 0.28,
     shadowRadius: 10,
-    shadowOffset: { width: 0, height: 3 },
+    shadowOffset: { width: 0, height: verticalScale(3) },
     elevation: 6,
   },
   promoRegionChip: {
@@ -2391,7 +2391,7 @@ function createCareStyles(pal: Pick<
     shadowColor: "#000",
     shadowOpacity: 0.08,
     shadowRadius: 4,
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: { width: 0, height: verticalScale(1) },
     elevation: 2,
   },
   promoRegionLabel: {
@@ -2430,7 +2430,7 @@ function createCareStyles(pal: Pick<
     color: "#FFFFFF",
     letterSpacing: -0.2,
     textShadowColor: "rgba(0,0,0,0.55)",
-    textShadowOffset: { width: 0, height: 1 },
+    textShadowOffset: { width: 0, height: verticalScale(1) },
     textShadowRadius: 4,
   },
   promoHumidity: {
@@ -2439,7 +2439,7 @@ function createCareStyles(pal: Pick<
     fontWeight: "700",
     color: "rgba(255,255,255,0.95)",
     textShadowColor: "rgba(0,0,0,0.5)",
-    textShadowOffset: { width: 0, height: 1 },
+    textShadowOffset: { width: 0, height: verticalScale(1) },
     textShadowRadius: 3,
   },
   promoChipRow: {
@@ -2488,7 +2488,7 @@ function createCareStyles(pal: Pick<
     letterSpacing: -1.5,
     lineHeight: fontSize(46),
     textShadowColor: "rgba(0,0,0,0.45)",
-    textShadowOffset: { width: 0, height: 2 },
+    textShadowOffset: { width: 0, height: verticalScale(2) },
     textShadowRadius: 6,
   },
   promoLeft: {
@@ -2554,7 +2554,7 @@ function createCareStyles(pal: Pick<
     shadowColor: "#000",
     shadowOpacity: 0.12,
     shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: verticalScale(2) },
     elevation: 3,
   },
   promoBtnText: {
@@ -2618,7 +2618,7 @@ function createCareStyles(pal: Pick<
     shadowColor: "#111111",
     shadowOpacity: 0.06,
     shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: verticalScale(2) },
     elevation: 2,
   },
   searchBarActive: {
@@ -2696,7 +2696,7 @@ function createCareStyles(pal: Pick<
     borderTopWidth: StyleSheet.hairlineWidth,
     borderColor: "rgba(0,0,0,0.06)",
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: -6 },
+    shadowOffset: { width: 0, height: verticalScale(-6) },
     shadowOpacity: 0.12,
     shadowRadius: 16,
     elevation: 16,
@@ -3159,7 +3159,7 @@ function createCareStyles(pal: Pick<
     shadowColor: "#111111",
     shadowOpacity: 0.04,
     shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: verticalScale(2) },
     elevation: 1,
   },
   routineHeaderBtnSpacer: {

@@ -132,7 +132,7 @@ export function BookingScreen({ route, navigation }: Props) {
       .catch((err) => {
         if (cancelled) return;
         setSlots([]);
-        setSlotsError(err instanceof Error ? err.message : "Vaqtlar yuklanmadi");
+        setSlotsError(err instanceof Error ? err.message : t("booking.noSlots"));
       })
       .finally(() => {
         if (!cancelled) setSlotsLoading(false);
@@ -175,11 +175,11 @@ export function BookingScreen({ route, navigation }: Props) {
         customer_phone: user?.phone || undefined,
       });
       Alert.alert(
-        "Bron qabul qilindi",
+        t("booking.bookSuccess"),
         `${salon?.name ?? "Salon"} · ${days[dayIdx].label} ${slot}`,
         [
           {
-            text: "OK",
+            text: t("common.ok"),
             onPress: () =>
               navigation.replace("BookingSuccess", {
                 bookingId: String(created.id),
@@ -342,7 +342,7 @@ export function BookingScreen({ route, navigation }: Props) {
 
         {step === 3 ? (
           <View style={styles.block}>
-            <Text style={[styles.blockTitle, { fontSize: fs(16) }]}>Tasdiqlash</Text>
+            <Text style={[styles.blockTitle, { fontSize: fs(16) }]}>{t("booking.confirmTitle")}</Text>
             <View style={styles.summary}>
               <SummaryRow label={t("booking.salon")} value={salon?.name ?? "—"} />
               <SummaryRow label={t("booking.barber")} value={selectedBarber?.name ?? "—"} />

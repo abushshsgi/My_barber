@@ -606,7 +606,7 @@ function createHomeStyles(pal: ShellTheme) {
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: pal.border,
     shadowColor: "#111111",
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: verticalScale(4) },
     shadowOpacity: 0.06,
     shadowRadius: 10,
     elevation: 2,

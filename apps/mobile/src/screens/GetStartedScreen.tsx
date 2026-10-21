@@ -75,7 +75,7 @@ export function GetStartedScreen({ onFinish }: Props) {
 
   const galleryW = Math.max(280, winW - H_PAD * 2);
   const galleryH = Math.min(Math.max(winH * 0.34, 240), 320);
-  const illustSize = Math.min(galleryW * 0.62, 220);
+  const illustSize = Math.min(galleryW * 0.62, scale(220));
   /** Kontent biroz pastroq — tepada bo'sh joy. */
   const pageTopPad = Math.max(winH * 0.1, 56);
 

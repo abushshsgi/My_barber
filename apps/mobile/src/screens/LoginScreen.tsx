@@ -100,7 +100,7 @@ export function LoginScreen() {
         setStep("code");
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Kod yuborilmadi");
+      setError(err instanceof Error ? err.message : t("auth.codeSendFailed"));
     } finally {
       setBusy(false);
     }
@@ -149,7 +149,7 @@ export function LoginScreen() {
       setHint(sent.debug_code ? `Dev kod: ${sent.debug_code}` : sent.detail);
       setStep("code");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Kod yuborilmadi");
+      setError(err instanceof Error ? err.message : t("auth.codeSendFailed"));
     } finally {
       setBusy(false);
     }
@@ -216,14 +216,14 @@ export function LoginScreen() {
               extra={
                 <View style={styles.refWrap}>
                   <Text style={[styles.refLabel, morph && styles.subMorph]}>
-                    Taklif kodi (ixtiyoriy)
+                    {t("auth.referralCodeLabel")}
                   </Text>
                   <TextInput
                     value={referralCode}
                     onChangeText={(v) => setReferralCode(v.toUpperCase())}
                     autoCapitalize="characters"
                     autoCorrect={false}
-                    placeholder="ABCD1234"
+                    placeholder={t("auth.referralCodePlaceholder")}
                     placeholderTextColor={morph ? "rgba(255,255,255,0.35)" : colors.muted}
                     style={[styles.refField, morph && styles.fieldMorph]}
                     maxLength={8}
@@ -237,15 +237,15 @@ export function LoginScreen() {
         <View style={styles.centerBlock}>
           {step === "phone" ? (
             <>
-              <Text style={titleStyle}>Raqam bilan davom eting</Text>
-              <Text style={subStyle}>SMS kod yuboriladi</Text>
+              <Text style={titleStyle}>{t("auth.phoneContinue")}</Text>
+              <Text style={subStyle}>{t("auth.smsWillBeSent")}</Text>
               <View style={[styles.phoneRow, morph && styles.phoneRowMorph]}>
                 <Text style={[styles.prefix, morph && styles.prefixMorph]}>+998</Text>
                 <TextInput
                   value={phone}
                   onChangeText={(t) => setPhone(formatUzPhoneDisplay(t))}
                   keyboardType="phone-pad"
-                  placeholder="90 123 45 67"
+                  placeholder={t("auth.phonePlaceholder")}
                   placeholderTextColor={colors.muted}
                   style={[styles.phoneInput, morph && styles.phoneInputMorph]}
                   maxLength={12}
@@ -263,13 +263,13 @@ export function LoginScreen() {
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry
-                placeholder="Parol"
+                placeholder={t("auth.passwordPlaceholder")}
                 placeholderTextColor={morph ? "rgba(255,255,255,0.35)" : colors.muted}
                 style={[styles.field, morph && styles.fieldMorph]}
                 autoFocus
               />
               <Pressable onPress={onSendOtpInstead} disabled={busy} hitSlop={8}>
-                <Text style={[styles.link, morph && styles.titleMorph]}>SMS kod bilan kirish</Text>
+                <Text style={[styles.link, morph && styles.titleMorph]}>{t("auth.smsLoginTitle")}</Text>
               </Pressable>
             </>
           ) : null}
@@ -282,7 +282,7 @@ export function LoginScreen() {
                 value={code}
                 onChangeText={(t) => setCode(t.replace(/\D/g, "").slice(0, 4))}
                 keyboardType="number-pad"
-                placeholder="••••"
+                placeholder={t("auth.codePlaceholder")}
                 placeholderTextColor={colors.muted}
                 style={[styles.field, styles.codeField, morph && styles.fieldMorph]}
                 maxLength={4}
@@ -315,12 +315,12 @@ export function LoginScreen() {
                   <ActivityIndicator color={colors.forest} />
                 ) : (
                   <Text style={[styles.primaryBtnText, morph && styles.primaryBtnTextMorph]}>
-                    Davom etish
+                    {t("common.continue")}
                   </Text>
                 )}
               </Pressable>
               <Pressable onPress={() => setStep("choose")} hitSlop={8}>
-                <Text style={[styles.secondaryLink, morph && styles.subMorph]}>Orqaga</Text>
+                <Text style={[styles.secondaryLink, morph && styles.subMorph]}>{t("common.back")}</Text>
               </Pressable>
             </View>
           ) : null}
@@ -341,12 +341,12 @@ export function LoginScreen() {
                   <ActivityIndicator color={colors.forest} />
                 ) : (
                   <Text style={[styles.primaryBtnText, morph && styles.primaryBtnTextMorph]}>
-                    Kirish
+                    {t("auth.login")}
                   </Text>
                 )}
               </Pressable>
               <Pressable onPress={() => setStep("phone")} hitSlop={8}>
-                <Text style={[styles.secondaryLink, morph && styles.subMorph]}>Orqaga</Text>
+                <Text style={[styles.secondaryLink, morph && styles.subMorph]}>{t("common.back")}</Text>
               </Pressable>
             </View>
           ) : null}
@@ -367,7 +367,7 @@ export function LoginScreen() {
                   <ActivityIndicator color={colors.forest} />
                 ) : (
                   <Text style={[styles.primaryBtnText, morph && styles.primaryBtnTextMorph]}>
-                    Tasdiqlash
+                    {t("common.confirm")}
                   </Text>
                 )}
               </Pressable>
@@ -375,24 +375,24 @@ export function LoginScreen() {
                 onPress={() => setStep(hasPassword ? "password" : "phone")}
                 hitSlop={8}
               >
-                <Text style={[styles.secondaryLink, morph && styles.subMorph]}>Orqaga</Text>
+                <Text style={[styles.secondaryLink, morph && styles.subMorph]}>{t("common.back")}</Text>
               </Pressable>
             </View>
           ) : null}
 
           <Text style={[styles.legal, morph && styles.subMorph]}>
-            Davom etish orqali{" "}
+            {t("auth.termsPrefix")}{" "}
             <Text style={[styles.legalLink, morph && styles.titleMorph]}>
-              foydalanish shartlari
+              {t("auth.terms")}
             </Text>{" "}
-            va{" "}
+            {t("auth.termsAnd")}{" "}
             <Text
               style={[styles.legalLink, morph && styles.titleMorph]}
               onPress={() => setPolicyOpen(true)}
             >
-              maxfiylik siyosati
+              {t("auth.privacy")}
             </Text>
-            ga rozilik bildirasiz. Akkaunt MySaloon va Morf AI da ishlaydi.
+            {t("auth.termsSuffix")} {t("auth.accountWorks")}
           </Text>
         </View>
       </View>

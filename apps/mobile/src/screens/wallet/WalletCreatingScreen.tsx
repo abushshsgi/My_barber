@@ -248,7 +248,7 @@ const styles = StyleSheet.create({
     shadowColor: "#111111",
     shadowOpacity: 0.22,
     shadowRadius: 18,
-    shadowOffset: { width: 0, height: 10 },
+    shadowOffset: { width: 0, height: verticalScale(10) },
     elevation: 8,
   },
   cardTop: {

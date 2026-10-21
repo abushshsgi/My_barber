@@ -57,9 +57,9 @@ export function SalonDetailScreen({ route, navigation }: Props) {
     return (
       <View style={[styles.boot, { paddingTop: insets.top }]}>
         <NativeBackButton onPress={() => navigation.goBack()} />
-        <Text style={[styles.errorText, { fontSize: fs(14) }]}>{error ?? "Topilmadi"}</Text>
+        <Text style={[styles.errorText, { fontSize: fs(14) }]}>{error ?? t("salon.notFound")}</Text>
         <Pressable style={styles.retryBtn} onPress={refresh}>
-          <Text style={[styles.retryText, { fontSize: fs(13) }]}>Qayta urinish</Text>
+          <Text style={[styles.retryText, { fontSize: fs(13) }]}>{t("common.retry")}</Text>
         </Pressable>
       </View>
     );
@@ -330,7 +330,7 @@ const styles = StyleSheet.create({
     shadowColor: "#000",
     shadowOpacity: 0.08,
     shadowRadius: 20,
-    shadowOffset: { width: 0, height: -8 },
+    shadowOffset: { width: 0, height: verticalScale(-8) },
     elevation: 8,
   },
   handle: {

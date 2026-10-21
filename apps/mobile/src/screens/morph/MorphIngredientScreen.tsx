@@ -604,7 +604,7 @@ export function MorphIngredientScreen({ navigation }: Props) {
               backgroundColor={pal.card}
             />
             <Text style={[styles.badge, { color: pal.muted }]}>{t("ingredient.badge")}</Text>
-            <View style={{ width: 40 }} />
+            <View style={{ width: scale(40) }} />
           </View>
 
           {!readable ? (
@@ -662,12 +662,12 @@ export function MorphIngredientScreen({ navigation }: Props) {
                     </View>
                   ) : null}
                 </View>
-                <View style={[styles.track, { backgroundColor: pal.track, marginTop: 10, height: 6 }]}>
+                <View style={[styles.track, { backgroundColor: pal.track, marginTop: 10, height: verticalScale(6) }]}>
                   <View
                     style={[
                       styles.fill,
                       {
-                        height: 6,
+                        height: verticalScale(6),
                         width: `${overall ?? 0}%` as `${number}%`,
                         backgroundColor: bandColor(overall ?? 0, pal),
                       },
@@ -859,7 +859,7 @@ export function MorphIngredientScreen({ navigation }: Props) {
               <Text style={[styles.badge, { color: pal.muted }]} numberOfLines={1}>
                 {openIng.role_uz || t("ingredient.ingredientFit")}
               </Text>
-              <View style={{ width: 40 }} />
+              <View style={{ width: scale(40) }} />
             </View>
             <ScrollView
               contentContainerStyle={{
@@ -1257,7 +1257,7 @@ const styles = StyleSheet.create({
     left: scale(10),
     right: scale(10),
     top: 0,
-    height: 2,
+    height: verticalScale(2),
     borderRadius: 2,
     backgroundColor: "rgba(255,255,255,0.92)",
   },
@@ -1268,11 +1268,11 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   modeTile: {
-    width: 62,
-    minHeight: 58,
+    width: scale(62),
+    minHeight: verticalScale(58),
     borderRadius: 16,
-    paddingVertical: 8,
-    paddingHorizontal: 4,
+    paddingVertical: verticalScale(8),
+    paddingHorizontal: scale(4),
     backgroundColor: "rgba(0,0,0,0.45)",
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: "rgba(255,255,255,0.18)",
@@ -1292,9 +1292,9 @@ const styles = StyleSheet.create({
   },
   modeTileTextOn: { color: "#111" },
   barcodeStatus: {
-    height: 36,
+    height: verticalScale(36),
     borderRadius: 999,
-    paddingHorizontal: 14,
+    paddingHorizontal: scale(14),
     backgroundColor: "rgba(0,0,0,0.45)",
     alignItems: "center",
     justifyContent: "center",
@@ -1303,7 +1303,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   barcodeIdle: {
-    height: 36,
+    height: verticalScale(36),
   },
   barcodeLiveText: {
     ...morphFont,
@@ -1342,8 +1342,8 @@ const styles = StyleSheet.create({
     gap: 28,
   },
   shutter: {
-    width: 72,
-    height: 72,
+    width: scale(72),
+    height: verticalScale(72),
     borderRadius: 36,
     borderWidth: 3,
     borderColor: "#fff",
@@ -1352,14 +1352,14 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0,0,0,0.25)",
   },
   shutterCore: {
-    width: 54,
-    height: 54,
+    width: scale(54),
+    height: verticalScale(54),
     borderRadius: 27,
     backgroundColor: "#fff",
   },
   shutterSide: {
-    width: 46,
-    height: 46,
+    width: scale(46),
+    height: verticalScale(46),
     borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
@@ -1518,7 +1518,7 @@ const styles = StyleSheet.create({
     borderColor: "rgba(17, 17, 17, 0.12)",
     padding: moderateScale(16),
     shadowColor: "#111111",
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: verticalScale(4) },
     shadowOpacity: 0.15,
     shadowRadius: 12,
     elevation: 3,
@@ -1642,8 +1642,8 @@ const styles = StyleSheet.create({
   dimHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: moderateScale(10) },
   dimLabel: { ...morphFont, fontSize: fontSize(13), fontWeight: "600" },
   dimPct: { ...morphFont, fontSize: fontSize(12), fontWeight: "600" },
-  track: { height: 5, borderRadius: 99, marginTop: verticalScale(6), overflow: "hidden" },
-  fill: { height: 5, borderRadius: 99 },
+  track: { height: verticalScale(5), borderRadius: 99, marginTop: verticalScale(6), overflow: "hidden" },
+  fill: { height: verticalScale(5), borderRadius: 99 },
   productCard: {
     marginTop: verticalScale(12),
     padding: moderateScale(14),

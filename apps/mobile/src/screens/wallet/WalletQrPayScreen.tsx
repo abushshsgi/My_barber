@@ -243,7 +243,7 @@ export function WalletQrPayScreen({ navigation }: Props) {
       <View style={styles.payHeader}>
         <NativeBackButton onPress={() => setPhase("scan")} />
         <Text style={styles.payHeaderTitle}>To'lovni tasdiqlash</Text>
-        <View style={{ width: 40 }} />
+        <View style={{ width: scale(40) }} />
       </View>
 
       <LinearGradient colors={["#111827", "#111111"]} style={styles.payCard}>
@@ -355,7 +355,7 @@ function createQrStyles(pal: ShellTheme) {
     shadowColor: "#000",
     shadowOpacity: 0.08,
     shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 },
+    shadowOffset: { width: 0, height: verticalScale(6) },
     elevation: 4,
   },
   artPhoneScreen: {
@@ -405,7 +405,7 @@ function createQrStyles(pal: ShellTheme) {
     shadowColor: "#000",
     shadowOpacity: 0.2,
     shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 },
+    shadowOffset: { width: 0, height: verticalScale(6) },
     elevation: 5,
   },
   enableText: { color: pal.onAccent, fontSize: fontSize(15), fontWeight: "700" },

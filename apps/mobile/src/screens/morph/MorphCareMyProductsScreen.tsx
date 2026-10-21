@@ -289,7 +289,7 @@ export function MorphCareMyProductsScreen({ navigation }: Props) {
           <View style={styles.gridRow}>
             {rows.map((p) => {
               const meta = SOURCE_META[p.source] ?? SOURCE_META.catalog;
-              const img = resolveMediaUrl(p.image_url, { width: 400 }) || p.image_url;
+              const img = resolveMediaUrl(p.image_url, { width: scale(400) }) || p.image_url;
               return (
                 <View key={p.id} style={styles.card}>
                   <Pressable
@@ -374,7 +374,7 @@ function createProductStyles(colors: ShellChrome) {
     borderRadius: moderateScale(16),
     backgroundColor: colors.fg,
     shadowColor: "#111111",
-    shadowOffset: { width: 0, height: 8 },
+    shadowOffset: { width: 0, height: verticalScale(8) },
     shadowOpacity: 0.2,
     shadowRadius: 16,
     elevation: 10,

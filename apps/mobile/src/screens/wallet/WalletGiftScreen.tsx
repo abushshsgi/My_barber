@@ -369,7 +369,7 @@ function createGiftPickStyles(pal: ShellTheme) {
     shadowColor: "#111111",
     shadowOpacity: 0.1,
     shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: verticalScale(4) },
     elevation: 2,
   },
   searchInput: { flex: 1, fontSize: fontSize(15), color: pal.fg, padding: 0 },
@@ -421,7 +421,7 @@ function createGiftPickStyles(pal: ShellTheme) {
     shadowColor: "#111111",
     shadowOpacity: 0.05,
     shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: verticalScale(2) },
     elevation: 1,
   },
   avatar: {

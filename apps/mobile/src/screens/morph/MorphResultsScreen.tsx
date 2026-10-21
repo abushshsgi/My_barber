@@ -251,7 +251,7 @@ export function MorphResultsScreen({ navigation }: Props) {
         styleId: style.id,
         title: style.title,
         match: style.match,
-        imageUrl: resolveMediaUrl(style.image_url, { width: 900 }) || style.image_url,
+        imageUrl: resolveMediaUrl(style.image_url, { width: scale(900) }) || style.image_url,
         previewImage: preview,
         salonId: style.salon_id,
         reason: style.reason_uz,
@@ -466,7 +466,7 @@ export function MorphResultsScreen({ navigation }: Props) {
                         source={{
                           uri:
                             preview ||
-                            resolveMediaUrl(item.image_url, { width: 900 }) ||
+                            resolveMediaUrl(item.image_url, { width: scale(900) }) ||
                             session.selfieDataUrl ||
                             undefined,
                         }}
@@ -668,7 +668,7 @@ export function MorphResultsScreen({ navigation }: Props) {
                         source={{
                           uri:
                             preview ||
-                            resolveMediaUrl(item.image_url, { width: 600 }) ||
+                            resolveMediaUrl(item.image_url, { width: scale(600) }) ||
                             undefined,
                         }}
                         style={styles.moreImg}
