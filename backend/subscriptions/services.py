@@ -351,7 +351,7 @@ def build_me_payload(user: User) -> dict[str, Any]:
         }
     else:
         free_tryon = free_tryon_snapshot(user)
-        free_left = int(free_tryon["morph_free_tryon_remaining"]) if _free_tryon_eligible(user) else 0
+        free_left = int(free_tryon["morph_free_tryon_remaining"]) if free_tryon_available(user) else 0
         period = usage_snapshot(
             user,
             {
@@ -651,25 +651,13 @@ def _had_prior_paid_tryon(user: User) -> bool:
     return SubscriptionUsagePeriod.objects.filter(user=user, morph_ai_used__gt=0).exists()
 
 
-def _free_tryon_eligible(user: User) -> bool:
-    if _had_any_subscription(user) or _had_prior_paid_tryon(user):
-        return False
-    if not _is_new_account_for_free_tryon(user):
-        return False
-    return int(free_tryon_snapshot(user)["morph_free_tryon_remaining"]) > 0
-
-
 def check_morph_entitlement(*, user: User, kind: str) -> str | None:
     """
     Morf AI:
     - analyze / face_check — obunasiz ochiq (tahlil → keyin generatsiya paywall).
     - chat — obunasiz bir martalik 10k token; tugagach obuna majburiy.
     - voice — faqat faol pullik obuna.
-<<<<<<< Updated upstream
     - tryon — faol obuna kvotasi, yangi user uchun 1 marta bepul, YOKI referal krediti.
-=======
-    - tryon — yangi user 1× bepul, so‘ng obuna kvotasi yoki referal krediti.
->>>>>>> Stashed changes
     - studio — faol obuna majburiy.
     """
     if kind not in ("tryon", "studio", "analyze", "face_check", "chat", "voice"):
@@ -755,11 +743,7 @@ def check_morph_entitlement(*, user: User, kind: str) -> str | None:
             )
         return None
 
-<<<<<<< Updated upstream
     if free_tryon_available(user):
-=======
-    if _free_tryon_eligible(user):
->>>>>>> Stashed changes
         return None
     if _referral_credits(user) > 0:
         return None
@@ -784,7 +768,6 @@ def record_morph_usage(*, user: User, kind: str) -> None:
         if sub:
             usage.morph_ai_used = usage.morph_ai_used + 1
             usage.save(update_fields=["morph_ai_used", "updated_at"])
-<<<<<<< Updated upstream
         elif _consume_free_tryon(user):
             free_used = True
             user_id = user.pk
@@ -796,15 +779,6 @@ def record_morph_usage(*, user: User, kind: str) -> None:
             if not updated:
                 return
             user.refresh_from_db(fields=["morph_referral_credits"])
-=======
->>>>>>> Stashed changes
-        else:
-            consumed_free = False
-            if _free_tryon_eligible(user):
-                now = timezone.now()
-                consumed_free = bool(
-                    User.objects.filter(
-                        pk=user.pk,
                         morph_free_tryon_used__lt=FREE_MORPH_TRYON,
                     ).update(
                         morph_free_tryon_used=F("morph_free_tryon_used") + 1,
