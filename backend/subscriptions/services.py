@@ -780,7 +780,7 @@ def record_morph_usage(*, user: User, kind: str) -> None:
                 return
             user.refresh_from_db(fields=["morph_referral_credits"])
         else:
-            return
+            return _no_subscription_message()
     else:
         usage.morph_studio_used = usage.morph_studio_used + 1
         usage.save(update_fields=["morph_studio_used", "updated_at"])
