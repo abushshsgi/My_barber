@@ -779,23 +779,8 @@ def record_morph_usage(*, user: User, kind: str) -> None:
             if not updated:
                 return
             user.refresh_from_db(fields=["morph_referral_credits"])
-                        morph_free_tryon_used__lt=FREE_MORPH_TRYON,
-                    ).update(
-                        morph_free_tryon_used=F("morph_free_tryon_used") + 1,
-                        morph_free_tryon_used_at=now,
-                    )
-                )
-                if consumed_free:
-                    user.refresh_from_db(fields=["morph_free_tryon_used", "morph_free_tryon_used_at"])
-            if not consumed_free and referral_generation_enabled():
-                updated = User.objects.filter(pk=user.pk, morph_referral_credits__gt=0).update(
-                    morph_referral_credits=F("morph_referral_credits") - 1
-                )
-                if not updated:
-                    return
-                user.refresh_from_db(fields=["morph_referral_credits"])
-            elif not consumed_free:
-                return
+        else:
+            return
     else:
         usage.morph_studio_used = usage.morph_studio_used + 1
         usage.save(update_fields=["morph_studio_used", "updated_at"])
