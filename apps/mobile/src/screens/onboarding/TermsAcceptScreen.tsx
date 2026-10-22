@@ -54,17 +54,16 @@ export function TermsAcceptScreen({ onFinish }: Props) {
       <Animated.Text entering={FadeInDown.delay(60)} style={styles.body}>
         {t("onboarding.termsBody")}
       </Animated.Text>
-      <View style={styles.policyLinksRow}>
-        <Pressable onPress={() => setPolicyOpen(true)} hitSlop={8}>
-          <Text style={styles.policyLink}>{getPrivacyPolicy(i18n.language).title}</Text>
+      <View style={styles.cards}>
+        <Pressable style={styles.card} onPress={() => setPolicyOpen(true)} hitSlop={8}>
+          <Text style={styles.cardTitle}>{getPrivacyPolicy(i18n.language).title}</Text>
+          <Text style={styles.cardArrow}>→</Text>
         </Pressable>
-        <Pressable onPress={() => setTermsOpen(true)} hitSlop={8}>
-          <Text style={styles.policyLink}>{getTerms(i18n.language).title}</Text>
+        <Pressable style={styles.card} onPress={() => setTermsOpen(true)} hitSlop={8}>
+          <Text style={styles.cardTitle}>{getTerms(i18n.language).title}</Text>
+          <Text style={styles.cardArrow}>→</Text>
         </Pressable>
       </View>
-      <Pressable onPress={() => setTermsOpen(true)} hitSlop={8}>
-        <Text style={styles.policyLink}>{getTerms(i18n.language).title}</Text>
-      </Pressable>
 
       <Pressable
         style={styles.checkRow}
@@ -104,17 +103,29 @@ const styles = StyleSheet.create({
     lineHeight: fontSize(22),
     color: "#525252",
   },
-  policyLink: {
-    marginTop: verticalScale(16),
-    fontSize: fontSize(15),
+  cards: {
+    marginTop: verticalScale(24),
+    gap: verticalScale(12),
+  },
+  card: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#F5F5F5",
+    borderRadius: moderateScale(16),
+    padding: moderateScale(16),
+    borderWidth: 1,
+    borderColor: "#E5E5E5",
+  },
+  cardTitle: {
+    fontSize: fontSize(16),
     fontWeight: "700",
     color: "#111",
-    textDecorationLine: "underline",
   },
-  policyLinksRow: {
-    flexDirection: "row",
-    gap: scale(16),
-    marginTop: verticalScale(16),
+  cardArrow: {
+    fontSize: fontSize(20),
+    fontWeight: "700",
+    color: "#666",
   },
   checkRow: {
     marginTop: "auto",
