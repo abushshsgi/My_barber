@@ -93,10 +93,12 @@ export function ScreenWrapper({
     const dock = withTabDock ? TAB_DOCK_CLEARANCE : 0;
     const top = applyTop ? safeTop(insets.top) : 0;
     const bottom = applyBottom ? safeBottom(insets.bottom, 0) : 0;
+    // Android 3-tugmali nav bar bo'lganlarda tab bar bo'lmasa ham kontent kesilmasligi uchun
+    const androidNavClearance = Platform.OS === "android" && !withTabDock && bottom < 16 ? 52 : 0;
 
     return {
       paddingTop: top,
-      paddingBottom: Math.max(bottom, MIN_BOTTOM_PAD) + dock,
+      paddingBottom: Math.max(bottom, MIN_BOTTOM_PAD) + dock + androidNavClearance,
       /** Landscape notch — chap/o'ng tomondagi kesilishning oldini oladi. */
       paddingLeft: applyHorizontal ? insets.left : 0,
       paddingRight: applyHorizontal ? insets.right : 0,

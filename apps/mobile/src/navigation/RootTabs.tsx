@@ -230,11 +230,13 @@ function CustomTabBar({ state, navigation, descriptors }: BottomTabBarProps) {
     if (Platform.OS !== "android") return;
     try {
       // "light" = qora tizim tugmalari (ochiq dok). Qorong'i dokda teskarisi.
-      NavigationBar.setStyle(pal.status === "dark" ? "light" : "dark");
+      // Dock rangi oq bo'lsa, navigation bar ham oq bo'lishi kerak.
+      const isLightDock = pal.card === "#FFFFFF" || pal.card.toLowerCase() === "#ffffff";
+      NavigationBar.setStyle(isLightDock ? "light" : "dark");
     } catch (err) {
       console.warn("NavigationBar error", err);
     }
-  }, [pal.status]);
+  }, [pal.card]);
 
   // Login dan keyin — obuna/chat qayerda ochilgan bo‘lsa, shu yerga qaytarish.
   useEffect(() => {

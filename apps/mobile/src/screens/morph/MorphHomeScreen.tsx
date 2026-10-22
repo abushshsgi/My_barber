@@ -163,11 +163,11 @@ export function MorphHomeScreen({ navigation }: Props) {
 
   return (
     <ScreenWrapper
-      withTabDock
+      withTabDock={false}
       padded={false}
       backgroundColor={pal.bg}
       statusBarStyle={theme === "dark" ? "light" : "dark"}
-      contentStyle={styles.body}
+      contentStyle={[styles.body, { paddingBottom: spacing.xl }]}
     >
       <View style={styles.header}>
         <View style={styles.headerBrand}>
@@ -339,7 +339,7 @@ const styles = StyleSheet.create({
   body: {
     paddingHorizontal: scale(20),
     justifyContent: "flex-start",
-    gap: spacing.xs,
+    gap: 0,
   },
   header: {
     alignItems: "center",
@@ -347,6 +347,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: scale(16),
     paddingBottom: spacing.xxs,
     minHeight: verticalScale(IS_SMALL_DEVICE ? 36 : 44),
+    marginBottom: spacing.xxs,
   },
   headerBrand: {
     alignItems: "center",
@@ -382,6 +383,7 @@ const styles = StyleSheet.create({
   hero: {
     alignItems: "center",
     paddingTop: spacing.xs,
+    marginBottom: spacing.xs,
   },
   cta: {
     flexDirection: "row",
@@ -414,6 +416,7 @@ const styles = StyleSheet.create({
   arrowRot: { transform: [{ rotate: "45deg" }] },
   tools: {
     marginTop: spacing.xs,
+    marginBottom: spacing.xs,
     flexDirection: "row",
     justifyContent: "center",
     gap: moderateScale(8),
@@ -474,6 +477,7 @@ const styles = StyleSheet.create({
   exploreLink: { flexDirection: "row", alignItems: "center", gap: moderateScale(2) },
   careSheet: {
     marginTop: spacing.sm,
+    marginBottom: spacing.sm,
     borderRadius: radius.xl,
     borderWidth: StyleSheet.hairlineWidth,
     padding: moderateScale(IS_SMALL_DEVICE ? 10 : 12),
