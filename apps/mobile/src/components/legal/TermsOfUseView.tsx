@@ -16,11 +16,9 @@ export function TermsOfUseView({ onBack }: Props) {
       <NativeHeader title={doc.title} onBack={onBack} />
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <Text style={styles.updated}>{doc.updated}</Text>
-        <View style={styles.card}>
-          <Text style={styles.body}>{doc.intro}</Text>
-        </View>
+        <Text style={styles.intro}>{doc.intro}</Text>
         {doc.sections.map((section) => (
-          <View key={section.title} style={styles.card}>
+          <View key={section.title} style={styles.section}>
             <Text style={styles.sectionTitle}>{section.title}</Text>
             {section.body ? <Text style={styles.body}>{section.body}</Text> : null}
             {section.bullets?.map((item) => (
@@ -36,14 +34,14 @@ export function TermsOfUseView({ onBack }: Props) {
           </View>
         ))}
         <Pressable
-          style={styles.card}
+          style={styles.contact}
           onPress={() => void Linking.openURL(`mailto:${doc.contactEmail}`)}
         >
           <Text style={styles.email}>{doc.contactEmail}</Text>
         </Pressable>
         {doc.externalLink ? (
           <Pressable
-            style={styles.card}
+            style={styles.contact}
             onPress={() => void Linking.openURL(doc.externalLink)}
           >
             <Text style={styles.link}>{doc.externalLink}</Text>
@@ -59,39 +57,43 @@ const styles = StyleSheet.create({
   content: {
     padding: moderateScale(20),
     paddingBottom: verticalScale(40),
-    gap: verticalScale(16),
   },
   updated: {
     fontSize: fontSize(13),
     color: colors.muted,
-    paddingHorizontal: scale(4),
-    marginBottom: verticalScale(4),
+    marginBottom: verticalScale(20),
   },
-  card: {
-    backgroundColor: colors.surface,
-    borderRadius: moderateScale(24),
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: moderateScale(20),
-    gap: verticalScale(12),
+  intro: {
+    fontSize: fontSize(15),
+    lineHeight: fontSize(23),
+    color: colors.muted,
+    marginBottom: verticalScale(24),
+  },
+  section: {
+    marginBottom: verticalScale(28),
   },
   sectionTitle: {
     fontSize: fontSize(18),
     fontWeight: "800",
     letterSpacing: -0.4,
     color: colors.fg,
-    marginBottom: verticalScale(4),
+    marginBottom: verticalScale(12),
   },
   body: {
     fontSize: fontSize(15),
     lineHeight: fontSize(23),
     color: colors.muted,
+    marginBottom: verticalScale(8),
   },
   bullet: {
     fontSize: fontSize(15),
     lineHeight: fontSize(23),
     color: colors.fg,
     paddingLeft: scale(8),
+    marginBottom: verticalScale(4),
+  },
+  contact: {
+    marginTop: verticalScale(8),
   },
   email: {
     fontSize: fontSize(16),
