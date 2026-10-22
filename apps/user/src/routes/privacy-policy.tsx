@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
-import { ProfileSubpageCard, ProfileSubpageLayout } from "@/components/profile/ProfileSubpageLayout";
+import { ProfileSubpageLayout } from "@/components/profile/ProfileSubpageLayout";
 import { getPrivacyPolicy } from "@/content/privacy-policy";
 import { parseSubpageBackTo } from "@/lib/subpage-back";
 
@@ -29,36 +29,34 @@ function PrivacyPolicyPage() {
 
   return (
     <ProfileSubpageLayout title={doc.title} subtitle={doc.updated} backTo={backTo}>
-      <div className="space-y-4">
-        <ProfileSubpageCard>
-          <p className="text-sm leading-relaxed text-muted-foreground">{doc.intro}</p>
-        </ProfileSubpageCard>
+      <article className="prose prose-sm max-w-none text-foreground">
+        <p className="leading-relaxed text-muted-foreground">{doc.intro}</p>
         {doc.sections.map((section) => (
-          <ProfileSubpageCard key={section.title}>
-            <h2 className="text-base font-bold tracking-tight">{section.title}</h2>
+          <section key={section.title} className="mt-8">
+            <h2 className="text-lg font-bold tracking-tight text-foreground">{section.title}</h2>
             {section.body ? (
-              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{section.body}</p>
+              <p className="mt-3 leading-relaxed text-muted-foreground">{section.body}</p>
             ) : null}
             {section.bullets ? (
-              <ul className="mt-3 space-y-2">
+              <ul className="mt-3 space-y-2 list-disc pl-6">
                 {section.bullets.map((item) => (
-                  <li key={item} className="text-sm leading-relaxed text-foreground/85">
+                  <li key={item} className="leading-relaxed text-foreground/85">
                     {item}
                   </li>
                 ))}
               </ul>
             ) : null}
-          </ProfileSubpageCard>
+          </section>
         ))}
-        <ProfileSubpageCard>
+        <p className="mt-8 leading-relaxed">
           <a
             href={`mailto:${doc.contactEmail}`}
-            className="text-sm font-semibold text-foreground underline decoration-foreground/30 underline-offset-2"
+            className="font-semibold text-foreground underline decoration-foreground/30 underline-offset-2"
           >
             {doc.contactEmail}
           </a>
-        </ProfileSubpageCard>
-      </div>
+        </p>
+      </article>
     </ProfileSubpageLayout>
   );
 }
