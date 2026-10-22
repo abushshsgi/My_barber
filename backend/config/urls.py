@@ -382,6 +382,7 @@ from wallet.views import (
     WalletTopUpView,
     WalletTransactionsView,
 )
+from legal.views import privacy_policy, terms_of_use
 
 
 def health(_request):
@@ -770,6 +771,8 @@ api_routes = [
 
 urlpatterns = [
     path("health/", health),
+    path("privacy-policy/", privacy_policy),
+    path("terms-of-use/", terms_of_use),
     path("api/v1/", include(api_routes)),
     path("api/", include(api_routes)),
 ]

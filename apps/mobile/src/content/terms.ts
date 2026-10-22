@@ -15,7 +15,7 @@ export type TermsDoc = {
 };
 
 const CONTACT_EMAIL = "help@mysaloon.uz";
-const EXTERNAL_LINK = "https://doc-hosting.flycricket.io/mysaloon-terms-of-use/0135a7ee-d374-4758-b045-0f861aa55d4b/terms";
+const EXTERNAL_LINK = "https://api.mysaloon.uz/terms-of-use/";
 
 const EN: TermsDoc = {
   title: "Terms & Conditions",
