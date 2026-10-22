@@ -217,7 +217,14 @@ export async function apiJson<T>(path: string, init?: RequestInit): Promise<T> {
     ) {
       throw new Error(friendlyNetworkError(err, API_BASE || API_ORIGIN));
     }
-    markOffline();
+    // Faqat haqiqiy network xatoliklarida offline deb belgilash
+    if (
+      err instanceof Error &&
+      (/network request failed|failed to fetch|enotfound|getaddrinfo|unknownhostexception|no address associated|internet|dns/i.test(err.message) ||
+       err.message.includes("Network request failed"))
+    ) {
+      markOffline();
+    }
     throw new Error(friendlyNetworkError(err, API_BASE || API_ORIGIN));
   } finally {
     clearTimeout(timer);
@@ -295,7 +302,14 @@ export async function apiFetch(
     if (err instanceof Error && err.name === "AbortError") {
       throw new Error("Backend javob bermadi (timeout). Internetni tekshiring.");
     }
-    markOffline();
+    // Faqat haqiqiy network xatoliklarida offline deb belgilash
+    if (
+      err instanceof Error &&
+      (/network request failed|failed to fetch|enotfound|getaddrinfo|unknownhostexception|no address associated|internet|dns/i.test(err.message) ||
+       err.message.includes("Network request failed"))
+    ) {
+      markOffline();
+    }
     throw new Error(friendlyNetworkError(err, API_BASE || API_ORIGIN));
   } finally {
     clearTimeout(timer);
