@@ -96,6 +96,10 @@ from accounts.address_views import (
     UserAddressListCreateView,
     UserAddressSetDefaultView,
 )
+from accounts.account_deletion_views import (
+    AccountDeletionRequestView,
+    AccountDeletionVerifyView,
+)
 from accounts.email_views import (
     UserEmailSendCodeView,
     UserEmailVerifyLinkView,
@@ -675,6 +679,8 @@ api_routes = [
     path("users/addresses/<int:pk>/", UserAddressDetailView.as_view()),
     path("users/addresses/<int:pk>/set-default/", UserAddressSetDefaultView.as_view()),
     path("users/search/", UserSearchView.as_view()),
+    path("api/account-deletion-request/", AccountDeletionRequestView.as_view()),
+    path("api/account-deletion-verify/", AccountDeletionVerifyView.as_view()),
     path("barbers/search/", BarberSearchView.as_view()),
     path("barber/auth/token/", BarberTokenView.as_view()),
     path("barber/auth/token/refresh/", BarberTokenRefreshView.as_view()),

@@ -1,6 +1,7 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
+from .account_deletion import AccountDeletionRequest
 from .uz_regions import UzRegion
 
 
