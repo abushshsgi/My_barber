@@ -203,7 +203,12 @@ function MysaloonProfileHome({ navigation }: Props) {
           <SettingsRow
             title={t("profile.privacy")}
             icon="shield-checkmark-outline"
-            onPress={() => navigation.navigate("Settings")}
+            onPress={() => navigation.navigate("PrivacyPolicy")}
+          />
+          <SettingsRow
+            title={t("profile.terms")}
+            icon="document-text-outline"
+            onPress={() => navigation.navigate("Terms")}
           />
           <SettingsRow
             title={t("profile.notifications")}

@@ -641,7 +641,7 @@ export function careHubLayout(
   const density = tiny ? 0.82 : short ? 0.88 : tall ? 1.02 : 0.96;
   const gapScale = tiny ? 0.62 : short ? 0.72 : 0.88;
 
-  const searchH = rs(Math.round(36 * density), scale);
+  const searchH = rs(Math.round(52 * density), scale);
   const searchBlock = searchH + rs(Math.round(12 * gapScale), scale);
   const reportHead = rs(Math.round(20 * density), scale);
   const sheetTop = rs(Math.round(8 * density), scale);
@@ -664,9 +664,9 @@ export function careHubLayout(
     Math.floor((quickInner - quickGap * (quickCount - 1)) / quickCount),
   );
   const quickActionH = clamp(
-    Math.round(quickActionW * (short ? 0.72 : 0.76)),
-    narrow ? 64 : 72,
-    short ? 96 : 108,
+    Math.round(quickActionW * (short ? 0.68 : 0.72)),
+    narrow ? 56 : 64,
+    short ? 84 : 96,
   );
   const quickActionBlock = quickActionH + sectionGap;
 
@@ -680,18 +680,18 @@ export function careHubLayout(
 
   /** AI Assistant qatori olib tashlangan — joy promo + kartochkalarga beriladi. */
   const MIN = {
-    promo: Math.max(rs(Math.round(100 * density), scale), Math.min(promoByWidth, rs(Math.round(128 * density), scale))),
-    featured: rs(Math.round((narrow ? 88 : 100) * density), scale),
-    hubCard: rs(Math.round((short ? 88 : 96) * density), scale),
+    promo: Math.max(rs(Math.round(140 * density), scale), Math.min(promoByWidth, rs(Math.round(176 * density), scale))),
+    featured: rs(Math.round((narrow ? 128 : 140) * density), scale),
+    hubCard: rs(Math.round((short ? 160 : 170) * density), scale),
   };
   const MAX = {
     promo: clamp(
-      Math.max(rs(Math.round(116 * density), scale), promoByWidth),
-      rs(Math.round(108 * density), scale),
-      Math.min(rs(Math.round(168 * density), scale), Math.round(avail * (short ? 0.22 : 0.24))),
+      Math.max(rs(Math.round(164 * density), scale), promoByWidth),
+      rs(Math.round(156 * density), scale),
+      Math.min(rs(Math.round(232 * density), scale), Math.round(avail * (short ? 0.30 : 0.32))),
     ),
-    featured: rs(Math.round((short ? 118 : 132) * density), scale),
-    hubCard: rs(Math.round((short ? 104 : 118) * density), scale),
+    featured: rs(Math.round((short ? 158 : 172) * density), scale),
+    hubCard: rs(Math.round((short ? 190 : 204) * density), scale),
   };
 
   const minTotal = MIN.promo + MIN.featured + MIN.hubCard;

@@ -5,7 +5,9 @@ import Animated, { FadeInDown } from "react-native-reanimated";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { PrivacyPolicyView } from "../../components/legal/PrivacyPolicyView";
+import { TermsView } from "../../components/legal/TermsView";
 import { getPrivacyPolicy } from "../../content/privacy-policy";
+import { getTerms } from "../../content/terms";
 import { safeBottom, safeTop } from "../../lib/safe-area";
 import { setTermsAccepted } from "../../lib/guest";
 import {
@@ -22,6 +24,7 @@ export function TermsAcceptScreen({ onFinish }: Props) {
   const insets = useSafeAreaInsets();
   const [accepted, setAccepted] = useState(false);
   const [policyOpen, setPolicyOpen] = useState(false);
+  const [termsOpen, setTermsOpen] = useState(false);
 
   const continueNext = async () => {
     if (!accepted) return;
@@ -31,6 +34,10 @@ export function TermsAcceptScreen({ onFinish }: Props) {
 
   if (policyOpen) {
     return <PrivacyPolicyView onBack={() => setPolicyOpen(false)} />;
+  }
+
+  if (termsOpen) {
+    return <TermsView onBack={() => setTermsOpen(false)} />;
   }
 
   return (
@@ -47,8 +54,16 @@ export function TermsAcceptScreen({ onFinish }: Props) {
       <Animated.Text entering={FadeInDown.delay(60)} style={styles.body}>
         {t("onboarding.termsBody")}
       </Animated.Text>
-      <Pressable onPress={() => setPolicyOpen(true)} hitSlop={8}>
-        <Text style={styles.policyLink}>{getPrivacyPolicy(i18n.language).title}</Text>
+      <View style={styles.policyLinksRow}>
+        <Pressable onPress={() => setPolicyOpen(true)} hitSlop={8}>
+          <Text style={styles.policyLink}>{getPrivacyPolicy(i18n.language).title}</Text>
+        </Pressable>
+        <Pressable onPress={() => setTermsOpen(true)} hitSlop={8}>
+          <Text style={styles.policyLink}>{getTerms(i18n.language).title}</Text>
+        </Pressable>
+      </View>
+      <Pressable onPress={() => setTermsOpen(true)} hitSlop={8}>
+        <Text style={styles.policyLink}>{getTerms(i18n.language).title}</Text>
       </Pressable>
 
       <Pressable
@@ -95,6 +110,11 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#111",
     textDecorationLine: "underline",
+  },
+  policyLinksRow: {
+    flexDirection: "row",
+    gap: scale(16),
+    marginTop: verticalScale(16),
   },
   checkRow: {
     marginTop: "auto",

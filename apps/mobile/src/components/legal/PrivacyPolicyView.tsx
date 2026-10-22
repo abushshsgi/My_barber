@@ -28,6 +28,11 @@ export function PrivacyPolicyView({ onBack }: Props) {
                 {item}
               </Text>
             ))}
+            {section.link ? (
+              <Pressable onPress={() => void Linking.openURL(section.link)}>
+                <Text style={styles.link}>{section.link}</Text>
+              </Pressable>
+            ) : null}
           </View>
         ))}
         <Pressable
@@ -36,6 +41,14 @@ export function PrivacyPolicyView({ onBack }: Props) {
         >
           <Text style={styles.email}>{doc.contactEmail}</Text>
         </Pressable>
+        {doc.externalLink ? (
+          <Pressable
+            style={styles.card}
+            onPress={() => void Linking.openURL(doc.externalLink)}
+          >
+            <Text style={styles.link}>{doc.externalLink}</Text>
+          </Pressable>
+        ) : null}
       </ScrollView>
     </View>
   );
@@ -80,6 +93,11 @@ const styles = StyleSheet.create({
   email: {
     fontSize: fontSize(15),
     fontWeight: "700",
+    color: colors.fg,
+    textDecorationLine: "underline",
+  },
+  link: {
+    fontSize: fontSize(14),
     color: colors.fg,
     textDecorationLine: "underline",
   },
