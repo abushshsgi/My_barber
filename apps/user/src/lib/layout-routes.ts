@@ -48,6 +48,8 @@ const STANDARD_PREFIX = [
   "/reels",
   "/stories",
   "/onboarding",
+  "/privacy-policy",
+  "/terms-of-use",
 ];
 
 const COMPACT_EXACT = new Set(["/auth"]);
@@ -121,6 +123,7 @@ export function getPageTitleKey(pathname: string): string | null {
   if (pathname === "/support") return "profile.support";
   if (pathname === "/privacy") return "profile.privacy";
   if (pathname === "/privacy-policy") return "footer.privacyPolicy";
+  if (pathname === "/terms-of-use") return "footer.termsOfUse";
   if (pathname.startsWith("/salon/")) return "common.salon";
   return null;
 }
