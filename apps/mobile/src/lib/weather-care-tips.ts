@@ -7,6 +7,7 @@ import {
   uzRegionImageSource,
   type UzRegionId,
 } from "./uz-regions";
+import i18n from "../i18n/config";
 
 function hubLayoutScale(width: number, height: number) {
   // Tor/past telefonlarda kuchliroq ixchamlash; Pro Max'da yumshoq o'sish.
@@ -345,16 +346,16 @@ export function buildGoOutKit(opts: {
     items.push({
       id: "umbrella",
       icon: "umbrella-outline",
-      title: "Soyabon",
-      howToUse: "Sumkaga solib chiqing — yomg‘ir boshlansa ochib yuring, kiyim quruq qoladi.",
+      title: i18n.t("weather.umbrella"),
+      howToUse: i18n.t("weather.umbrellaUse"),
       accent: "#2563EB",
       image: GO_OUT_IMAGES.umbrella,
     });
     items.push({
       id: "raincoat",
       icon: "shirt-outline",
-      title: "Yomg‘irplash / telefon qopchasi",
-      howToUse: "Yengil yomg‘irplash va suv o‘tkazmaydigan qopcha — kiyim va telefon quruq qoladi.",
+      title: i18n.t("weather.raincoat"),
+      howToUse: i18n.t("weather.raincoatUse"),
       accent: "#1D4ED8",
       image: GO_OUT_IMAGES.rainKit,
     });
@@ -364,8 +365,8 @@ export function buildGoOutKit(opts: {
     items.push({
       id: "winter_set",
       icon: "snow-outline",
-      title: "Sharf + qo‘lqop",
-      howToUse: "Bo‘yin va qo‘llarni sovuqdan himoya qiling — chiqishdan oldin kiyib oling.",
+      title: i18n.t("weather.winterSet"),
+      howToUse: i18n.t("weather.winterSetUse"),
       accent: "#64748B",
       image: GO_OUT_IMAGES.winterSet,
     });
@@ -373,8 +374,8 @@ export function buildGoOutKit(opts: {
       items.push({
         id: "jacket",
         icon: "shirt-outline",
-        title: "Issiq kurtka",
-        howToUse: "Qatlamlab kiying — tashqi issiq kurtka, ichida yengil kiyim.",
+        title: i18n.t("weather.jacket"),
+        howToUse: i18n.t("weather.jacketUse"),
         accent: "#0F172A",
         image: GO_OUT_IMAGES.winterSet,
       });
@@ -385,18 +386,18 @@ export function buildGoOutKit(opts: {
     items.push({
       id: "sunglasses",
       icon: "eye-outline",
-      title: "Quyosh ko‘zoynagi",
-      howToUse: "Ko‘zni UV va yorug‘likdan himoya qiling — chiqishda darhol taqing.",
+      title: i18n.t("weather.sunglasses"),
+      howToUse: i18n.t("weather.sunglassesUse"),
       accent: "#EA580C",
       image: GO_OUT_IMAGES.sunglasses,
     });
     items.push({
       id: "sunscreen",
       icon: "shield-checkmark-outline",
-      title: spfProduct ? spfProduct.name : "Quyosh kremi (SPF)",
+      title: spfProduct ? spfProduct.name : i18n.t("weather.sunscreen"),
       howToUse: spfProduct
-        ? `${spfProduct.usage_uz?.trim() || "Chiqishdan 15 daqiqa oldin yuz va ochiq teriga surting."}${spfProduct.brand ? ` · ${spfProduct.brand}` : ""}`
-        : "Chiqishdan 15 daqiqa oldin yuz, bo‘yin va qo‘llarga surting.",
+        ? `${spfProduct.usage_uz?.trim() || i18n.t("weather.sunscreenUseDefault")}${spfProduct.brand ? ` · ${spfProduct.brand}` : ""}`
+        : i18n.t("weather.sunscreenUse"),
       accent: "#F59E0B",
       image: spfImage,
       fromMyProduct: Boolean(spfProduct),
@@ -405,8 +406,8 @@ export function buildGoOutKit(opts: {
     items.push({
       id: "hat",
       icon: "sunny-outline",
-      title: "Shlyapa / kepka",
-      howToUse: "Bosh va yuzni to‘g‘ridan-to‘g‘ri quyoshdan yoping — issiq urishni kamaytiradi.",
+      title: i18n.t("weather.hat"),
+      howToUse: i18n.t("weather.hatUse"),
       accent: "#D97706",
       image: GO_OUT_IMAGES.hat,
     });
@@ -416,32 +417,32 @@ export function buildGoOutKit(opts: {
     items.push({
       id: "water",
       icon: "water-outline",
-      title: "Suv idishi",
-      howToUse: "Yo‘lda ichish uchun suv oling — issiqda har 30–40 daqiqada iching.",
+      title: i18n.t("weather.water"),
+      howToUse: i18n.t("weather.waterUse"),
       accent: "#0EA5E9",
       image: GO_OUT_IMAGES.water,
     });
     items.push({
       id: "light_clothes",
       icon: "shirt-outline",
-      title: "Yengil ochiq kiyim",
-      howToUse: "Paxta yoki yengil mato — terlash va qizarishni kamaytiradi.",
+      title: i18n.t("weather.lightClothes"),
+      howToUse: i18n.t("weather.lightClothesUse"),
       accent: "#0284C7",
       image: GO_OUT_IMAGES.lightClothes,
     });
     items.push({
       id: "cooling",
       icon: "snow-outline",
-      title: "Mini ventilyator / so‘rg‘ich",
-      howToUse: "Issiqda yuz va bo‘yinni salqinlantirish uchun oling.",
+      title: i18n.t("weather.cooling"),
+      howToUse: i18n.t("weather.coolingUse"),
       accent: "#06B6D4",
       image: GO_OUT_IMAGES.cooling,
     });
     items.push({
       id: "powerbank",
       icon: "battery-half-outline",
-      title: "Powerbank",
-      howToUse: "Issiqda navigatsiya/telefon tez tugaydi — zaryadlagich oling.",
+      title: i18n.t("weather.powerbank"),
+      howToUse: i18n.t("weather.powerbankUse"),
       accent: "#334155",
       image: GO_OUT_IMAGES.powerbank,
     });
@@ -451,8 +452,8 @@ export function buildGoOutKit(opts: {
     items.push({
       id: "tie_hair",
       icon: "cut-outline",
-      title: "Soch bog‘ich",
-      howToUse: "Kuchli shamolda chalkashishni kamaytirish uchun sochni bog‘lab yuring.",
+      title: i18n.t("weather.hairTie"),
+      howToUse: i18n.t("weather.hairTieUse"),
       accent: "#4F46E5",
       image: GO_OUT_IMAGES.hairTie,
     });
@@ -462,16 +463,16 @@ export function buildGoOutKit(opts: {
     items.push({
       id: "lip_balm",
       icon: "happy-outline",
-      title: "Lab balzami",
-      howToUse: "Quruq havoda lablar yoriladi — chiqishdan oldin balzam surting.",
+      title: i18n.t("weather.lipBalm"),
+      howToUse: i18n.t("weather.lipBalmUse"),
       accent: "#EC4899",
       image: GO_OUT_IMAGES.lipBalm,
     });
     items.push({
       id: "moisturizer",
       icon: "water-outline",
-      title: "Yuz namlovchi",
-      howToUse: "SPF ostiga yengil moisturizer — terini qurib ketishdan saqlaydi.",
+      title: i18n.t("weather.moisturizer"),
+      howToUse: i18n.t("weather.moisturizerUse"),
       accent: "#DB2777",
       image: GO_OUT_IMAGES.moisturizer,
     });
@@ -481,8 +482,8 @@ export function buildGoOutKit(opts: {
     items.push({
       id: "tissue",
       icon: "document-outline",
-      title: "Salfetka / mendil",
-      howToUse: "Namlikda terlash tez — salfetka oling, yuzni yumshoq artib turing.",
+      title: i18n.t("weather.tissue"),
+      howToUse: i18n.t("weather.tissueUse"),
       accent: "#14B8A6",
       image: GO_OUT_IMAGES.tissues,
     });
@@ -492,8 +493,8 @@ export function buildGoOutKit(opts: {
     items.push({
       id: "bright",
       icon: "flashlight-outline",
-      title: "Yorqin kiyim / chiroq",
-      howToUse: "Ko‘rinish past — yorqinroq kiyim yoki telefon chirog‘ini tayyor tuting.",
+      title: i18n.t("weather.bright"),
+      howToUse: i18n.t("weather.brightUse"),
       accent: "#A855F7",
       image: GO_OUT_IMAGES.lightClothes,
     });
@@ -575,9 +576,9 @@ export function buildGoOutSummary(opts: {
   } else if (opts.humidity != null && opts.humidity <= 35) {
     parts.push("havo quruq");
   }
-  if (opts.wind != null && opts.wind >= 25) parts.push("shamol kuchli");
-  if (!parts.length) return "Bugun ob-havo barqaror — quyidagi vositalarni oling.";
-  return `Bugun havo ${parts.join(", ")}. Chiqishdan oldin quyidagilarni oling.`;
+  if (opts.wind != null && opts.wind >= 25) parts.push(i18n.t("weather.windy"));
+  if (!parts.length) return i18n.t("weather.calm");
+  return i18n.t("weather.summary", { conditions: parts.join(", ") });
 }
 
 export function generalWeatherExtras(ctx: {

@@ -32,8 +32,8 @@ export function SecurityScreen({ navigation }: Props) {
           <SecRow
             pal={pal}
             icon="logo-google"
-            title="Google hisobi"
-            subtitle="Bu hisobda parol yo'q. Kirish Google orqali qoladi."
+            title={t("profile.googleAccount")}
+            subtitle={t("profile.googleAccountSub")}
           />
         ) : (
           <SecRow
@@ -42,8 +42,8 @@ export function SecurityScreen({ navigation }: Props) {
             title={t("profile.password")}
             subtitle={
               hasPassword
-                ? "Parol saqlangan. Keyingi safar shu parol bilan kirasiz."
-                : "SMS o'rniga parol qo'ying va keyin shu parol bilan kiring."
+                ? t("profile.passwordSaved")
+                : t("profile.setPasswordHint")
             }
             action={hasPassword ? t("profile.change") : t("profile.add")}
             onAction={() => navigation.navigate("SecurityPassword")}

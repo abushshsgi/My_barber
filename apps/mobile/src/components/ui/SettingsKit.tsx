@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { ReactNode, useMemo } from "react";
 import { Pressable, StyleSheet, Switch, Text, View } from "react-native";
 import { useShellTheme, type ShellTheme } from "../../lib/useShellTheme";
+import { useMorphAppearance } from "../../lib/MorphAppearanceContext";
 import {
   fontSize,
   moderateScale,
@@ -20,6 +21,7 @@ type RowProps = {
   onPress?: () => void;
   last?: boolean;
   destructive?: boolean;
+  morph?: boolean;
 };
 
 export function SettingsRow({
@@ -33,8 +35,9 @@ export function SettingsRow({
   onPress,
   last,
   destructive,
+  morph,
 }: RowProps) {
-  const { pal, styles } = useKitTheme();
+  const { pal, styles } = useKitTheme(morph);
   const body = (
     <View style={[styles.row, !last && styles.rowBorder, darkText && styles.rowDarkBorder]}>
       {icon ? (
@@ -86,12 +89,14 @@ export function SettingsGroup({
   title,
   children,
   dark,
+  morph,
 }: {
   title?: string;
   children: ReactNode;
   dark?: boolean;
+  morph?: boolean;
 }) {
-  const { styles } = useKitTheme();
+  const { styles } = useKitTheme(morph);
   return (
     <View style={styles.groupWrap}>
       {title ? <Text style={styles.groupTitle}>{title}</Text> : null}
@@ -129,16 +134,18 @@ export function ToggleRow({
   );
 }
 
-function useKitTheme() {
-  const pal = useShellTheme();
+function useKitTheme(morph?: boolean) {
+  const shellPal = useShellTheme();
+  const morphPal = useMorphAppearance();
+  const pal = morph ? morphPal.colors : shellPal;
   const styles = useMemo(
-    () => createKitStyles(pal),
-    [pal.bg, pal.fg, pal.muted, pal.card, pal.border, pal.iconTile, pal.onAccent],
+    () => createKitStyles(pal, morph),
+    [pal.bg, pal.fg, pal.muted, pal.card, pal.border, pal.iconTile, pal.onAccent, morph],
   );
   return { pal, styles };
 }
 
-function createKitStyles(pal: ShellTheme) {
+function createKitStyles(pal: ShellTheme | any, morph?: boolean) {
   return StyleSheet.create({
   groupWrap: {
     marginBottom: verticalScale(20),
@@ -156,7 +163,7 @@ function createKitStyles(pal: ShellTheme) {
     backgroundColor: pal.card,
     borderRadius: moderateScale(22),
     overflow: "hidden",
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: pal.border,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },

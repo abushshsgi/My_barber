@@ -743,7 +743,13 @@ export function MorphChatSettingsScreen({
                   <SettingsItem
                     icon="options"
                     title={t("chat.settings.personalization")}
-                    onPress={() => openPage("reply")}
+                    subtitle={t("common.soon")}
+                    showChevron={false}
+                  />
+                  <SettingsItem
+                    icon="globe"
+                    title={t("profile.language")}
+                    onPress={() => navigation.navigate("Language")}
                     last
                   />
                 </SettingsSection>

@@ -5,6 +5,7 @@ import type {
   WeatherData,
   WeatherShieldState,
 } from "../types/weatherShield";
+import i18n from "../i18n";
 
 /** Local Soft Paper product shots for shield cards. */
 export const SHIELD_IMAGES = {
@@ -289,9 +290,8 @@ export function getWeatherHairRecommendations(
       {
         id: "daily-hydrate",
         type: "product",
-        title: "Yengil namlantirish",
-        description:
-          "Bugun ob-havo yumshoq — leave-in yoki engil sprey bilan namlikni yangilang.",
+        title: i18n.t("weather.dailyHydrate"),
+        description: i18n.t("weather.dailyHydrateDesc"),
         priority: 1,
         icon: "water-outline",
         productTag: "leave-in",
@@ -301,9 +301,8 @@ export function getWeatherHairRecommendations(
       {
         id: "daily-scalp",
         type: "routine",
-        title: "1 daqiqa scalp massaji",
-        description:
-          "Barmoq uchlari bilan 60 soniya yumshoq massaj — qon aylanishi va porloqlik uchun.",
+        title: i18n.t("weather.dailyScalp"),
+        description: i18n.t("weather.dailyScalpDesc"),
         priority: 2,
         icon: "hand-left-outline",
         productTag: "scalp-massager",
@@ -313,9 +312,8 @@ export function getWeatherHairRecommendations(
       {
         id: "daily-ends",
         type: "routine",
-        title: "Uchlarni tekshirish",
-        description:
-          "Soch uchlariga 1 tomchi moy — quruqlik va yorilishni oldini oladi.",
+        title: i18n.t("weather.dailyEnds"),
+        description: i18n.t("weather.dailyEndsDesc"),
         priority: 3,
         icon: "leaf-outline",
         productTag: "argan-oil",

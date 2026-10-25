@@ -14,6 +14,8 @@ import { HelpCenterScreen } from "../screens/profile/HelpCenterScreen";
 import { PrivacyPolicyScreen } from "../screens/profile/PrivacyPolicyScreen";
 import { TermsScreen } from "../screens/profile/TermsScreen";
 import { SettingsScreen } from "../screens/profile/SettingsScreen";
+import { LanguageScreen } from "../screens/profile/LanguageScreen";
+import { DeleteAccountScreen } from "../screens/profile/DeleteAccountScreen";
 import { MorphAiSettingsScreen } from "../screens/morph/MorphAiSettingsScreen";
 import { SecurityPasswordScreen } from "../screens/profile/SecurityPasswordScreen";
 import { SecuritySessionsScreen } from "../screens/profile/SecuritySessionsScreen";
@@ -41,6 +43,8 @@ export type ProfileStackParamList = {
   ProfileHome: undefined;
   Orders: undefined;
   Settings: undefined;
+  Language: undefined;
+  DeleteAccount: undefined;
   MorphAiSettings: undefined;
   PersonalInfo: undefined;
   Security: undefined;
@@ -96,6 +100,8 @@ export function ProfileStack() {
       <Stack.Screen name="ProfileHome" component={ProfileHomeScreen} />
       <Stack.Screen name="Orders" component={OrdersScreen} />
       <Stack.Screen name="Settings" component={SettingsScreen} />
+      <Stack.Screen name="Language" component={LanguageScreen} />
+      <Stack.Screen name="DeleteAccount" component={DeleteAccountScreen} />
       <Stack.Screen name="MorphAiSettings" component={MorphAiSettingsScreen} />
       <Stack.Screen name="PersonalInfo" component={PersonalInfoScreen} />
       <Stack.Screen name="Security" component={SecurityScreen} />

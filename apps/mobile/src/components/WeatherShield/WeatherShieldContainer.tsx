@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { useMemo } from "react";
 import { StyleSheet, Text, useWindowDimensions, View } from "react-native";
+import { useTranslation } from "react-i18next";
 import type { WeatherShieldState } from "../../types/weatherShield";
 import { SHIELD_IMAGES } from "../../services/weatherRecommendationEngine";
 import { shellChrome, useShellTheme, type ShellChrome } from "../../lib/useShellTheme";
@@ -17,6 +18,7 @@ type Props = {
 
 /** Soft Paper header + ixcham kartalar + bajarildi checkbox. */
 export function WeatherShieldContainer({ state, doneIds, onToggleDone }: Props) {
+  const { t } = useTranslation();
   const pal = useShellTheme();
   const colors = shellChrome(pal);
   styles = useMemo(
@@ -71,9 +73,9 @@ export function WeatherShieldContainer({ state, doneIds, onToggleDone }: Props) 
       {!loading && hairOnly.length === 0 ? (
         <View style={styles.empty}>
           <Ionicons name="checkmark-circle-outline" size={20} color={colors.muted} />
-          <Text style={styles.emptyTitle}>Maxsus himoya kerak emas</Text>
+          <Text style={styles.emptyTitle}>{t("weather.noProtectionNeeded")}</Text>
           <Text style={styles.emptySub}>
-            Bugun ob-havo yumshoq — oddiy yuvish va yengil namlantirish yetarli.
+            {t("weather.noProtectionSub")}
           </Text>
         </View>
       ) : (

@@ -73,7 +73,7 @@ export function MorphProfileScreen({ navigation }: Props) {
           : "#1E1E1E";
   const styles = makeStyles(pal, fs);
 
-  const openSettings = () => navigation.navigate("MorphAiSettings");
+  const openSettings = () => navigation.navigate("Settings");
 
   return (
     <View style={[styles.root, { paddingTop: safeTop(insets.top, 0) + verticalScale(36) }]}>
@@ -143,9 +143,9 @@ export function MorphProfileScreen({ navigation }: Props) {
             <Text style={styles.metaPlan} numberOfLines={1}>
               {sub?.has_active
                 ? days != null
-                  ? `${plan} · ${days} kun qoldi`
+                  ? `${plan} · ${t("profile.daysRemaining", { days })}`
                   : plan
-                : "Obuna yo‘q"}
+                : t("profile.noSubscription")}
             </Text>
           </View>
           <Ionicons name="chevron-forward" size={18} color={pal.muted} />
@@ -158,18 +158,18 @@ export function MorphProfileScreen({ navigation }: Props) {
         >
           <View style={styles.usageTop}>
             <View style={styles.usageCopy}>
-              <Text style={styles.usageEyebrow}>Obuna</Text>
+              <Text style={styles.usageEyebrow}>{t("profile.subscription")}</Text>
               <Text style={styles.usageTitle}>
                 {sub?.has_active
                   ? aiLimit > 0
-                    ? `${aiRemain} generatsiya qoldi`
+                    ? t("profile.generationsRemaining", { count: aiRemain })
                     : plan
-                  : "Tarifni oching"}
+                  : t("profile.openPlan")}
               </Text>
               <Text style={styles.usageHint}>
                 {aiLimit > 0
                   ? `${aiUsed} / ${aiLimit} AI · Studio ${usage?.morph_studio_used ?? 0}/${usage?.morph_studio_limit ?? 0}`
-                  : "Try-on va Studio limitlari obuna bilan ochiladi"}
+                  : t("profile.tryOnStudioLimit")}
               </Text>
             </View>
             <UsageRing pct={usagePct} color={meterColor} size={64} stroke={6}>
@@ -214,7 +214,7 @@ export function MorphProfileScreen({ navigation }: Props) {
             icon="images-outline"
             accent="#2563EB"
             soft={pal.theme === "dark" ? "rgba(37,99,235,0.22)" : "rgba(37,99,235,0.12)"}
-            label="Looks"
+            label={t("morph.looks")}
             value={String(photoCount)}
             onPress={() => openMorphStack(navigation, "MorphHistory")}
           />
@@ -235,7 +235,7 @@ export function MorphProfileScreen({ navigation }: Props) {
             styles={styles}
             icon="settings-outline"
             title={t("profile.settings")}
-            subtitle="Ko'rinish, limit, maxfiylik"
+            subtitle={t("profile.settingsSubtitle")}
             onPress={openSettings}
           />
           <MenuRow
@@ -257,9 +257,9 @@ export function MorphProfileScreen({ navigation }: Props) {
         </View>
 
         <View style={styles.sectionHead}>
-          <Text style={styles.sectionTitle}>So‘nggi looks</Text>
+          <Text style={styles.sectionTitle}>{t("profile.recentLooks")}</Text>
           <Pressable onPress={() => openMorphStack(navigation, "MorphHistory")} hitSlop={8}>
-            <Text style={styles.link}>Hammasi</Text>
+            <Text style={styles.link}>{t("profile.all")}</Text>
           </Pressable>
         </View>
 
@@ -273,8 +273,8 @@ export function MorphProfileScreen({ navigation }: Props) {
               <Ionicons name="camera-outline" size={20} color={pal.fg} />
             </View>
             <View style={styles.emptyCopy}>
-              <Text style={styles.emptyTitle}>Birinchi try-on</Text>
-              <Text style={styles.emptySub}>Natijalar shu yerda saqlanadi</Text>
+              <Text style={styles.emptyTitle}>{t("profile.firstTryOn")}</Text>
+              <Text style={styles.emptySub}>{t("profile.resultsSavedHere")}</Text>
             </View>
             <Ionicons name="chevron-forward" size={16} color={pal.muted} />
           </Pressable>

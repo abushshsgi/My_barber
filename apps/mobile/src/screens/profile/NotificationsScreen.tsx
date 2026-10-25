@@ -48,7 +48,7 @@ export function NotificationsScreen({ navigation }: Props) {
   return (
     <View style={[styles.root, { backgroundColor: pal.bg }]}>
       <StatusBar style={pal.status} />
-      <NativeHeader title="Bildirishnomalar" onBack={() => navigation.goBack()} />
+      <NativeHeader title={t("profile.notifications")} onBack={() => navigation.goBack()} />
 
       <FlatList
         data={items ?? []}
@@ -64,7 +64,7 @@ export function NotificationsScreen({ navigation }: Props) {
               {t("profile.noNotifications")}
             </Text>
             <Text style={[styles.emptySub, { color: pal.muted, fontFamily: pal.font.fontFamily }]}>
-              Yangi bron, to'lov va chat xabarlari shu yerda chiqadi.
+              {t("profile.notificationsEmptySub")}
             </Text>
           </View>
           )

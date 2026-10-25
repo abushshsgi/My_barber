@@ -16,7 +16,7 @@ import { sendEmailVerificationCode, updateMe, verifyEmailCode } from "../../api/
 import { useAuth } from "../../auth/AuthContext";
 import { useProfileData } from "../../hooks/useProfileData";
 import { useAppShell } from "../../lib/AppShellContext";
-import { useShellTheme } from "../../lib/useShellTheme";
+import { useMorphAppearance } from "../../lib/MorphAppearanceContext";
 import {
   fontSize,
   moderateScale,
@@ -32,7 +32,7 @@ export function PersonalInfoPanel() {
   const data = useProfileData();
   const { refreshMe } = useAuth();
   const { shell } = useAppShell();
-  const pal = useShellTheme();
+  const { colors: pal } = useMorphAppearance();
   const hideAddress = shell === "morph";
   const email = data.user?.display_email || data.user?.email || "";
   const phone = data.user?.phone?.trim() || "";
@@ -157,10 +157,10 @@ export function PersonalInfoPanel() {
       )}
 
       <View style={[styles.infoBox, { borderColor: pal.border, backgroundColor: pal.surface }]}>
-        <Text style={[styles.infoTitle, { color: pal.fg, fontFamily: pal.font.fontFamily }]}>
+        <Text style={[styles.infoTitle, { color: pal.fg }]}>
           {t("profile.whyHiddenTitle")}
         </Text>
-        <Text style={[styles.infoBody, { color: pal.muted, fontFamily: pal.font.fontFamily }]}>
+        <Text style={[styles.infoBody, { color: pal.muted }]}>
           {t("profile.whyHiddenBody")}
         </Text>
       </View>
@@ -172,7 +172,7 @@ export function PersonalInfoPanel() {
         >
           <Pressable style={styles.scrim} onPress={busy ? undefined : closeEdit} />
           <View style={[styles.sheet, { backgroundColor: pal.card }]}>
-            <Text style={[styles.sheetTitle, { color: pal.fg, fontFamily: pal.font.fontFamily }]}>
+            <Text style={[styles.sheetTitle, { color: pal.fg }]}>
               {edit === "name"
                 ? t("profile.editName")
                 : edit === "email"
@@ -196,7 +196,6 @@ export function PersonalInfoPanel() {
                   color: pal.fg,
                   backgroundColor: pal.iconTile,
                   borderColor: pal.border,
-                  fontFamily: pal.font.fontFamily,
                 },
               ]}
             />
@@ -208,7 +207,7 @@ export function PersonalInfoPanel() {
               <Pressable
                 onPress={() => void save()}
                 disabled={busy}
-                style={[styles.sheetBtn, styles.sheetBtnPrimary, { backgroundColor: pal.fg }]}
+                style={[styles.sheetBtn, styles.sheetBtnPrimary, { backgroundColor: pal.accent }]}
               >
                 {busy ? (
                   <ActivityIndicator color={pal.bg} />
@@ -234,7 +233,7 @@ function Field({
   onEdit,
   last,
 }: {
-  pal: ReturnType<typeof useShellTheme>;
+  pal: any;
   label: string;
   value: string;
   hint?: string;
@@ -251,21 +250,21 @@ function Field({
       ]}
     >
       <View style={styles.fieldMain}>
-        <Text style={[styles.label, { color: pal.fg, fontFamily: pal.font.fontFamily }]}>
+        <Text style={[styles.label, { color: pal.fg }]}>
           {label}
         </Text>
-        <Text style={[styles.value, { color: pal.fg, fontFamily: pal.font.fontFamily }]}>
+        <Text style={[styles.value, { color: pal.fg }]}>
           {value}
         </Text>
         {hint ? (
-          <Text style={[styles.hint, { color: pal.muted, fontFamily: pal.font.fontFamily }]}>
+          <Text style={[styles.hint, { color: pal.muted }]}>
             {hint}
           </Text>
         ) : null}
       </View>
       {onEdit ? (
         <Pressable onPress={onEdit} hitSlop={8}>
-          <Text style={[styles.edit, { color: pal.accent, fontFamily: pal.font.fontFamily }]}>
+          <Text style={[styles.edit, { color: pal.accent }]}>
             {t("profile.edit")}
           </Text>
         </Pressable>
