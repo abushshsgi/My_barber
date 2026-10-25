@@ -5,7 +5,7 @@ import type {
   WeatherData,
   WeatherShieldState,
 } from "../types/weatherShield";
-import i18n from "../i18n";
+import i18nInstance from "../i18n/config";
 
 /** Local Soft Paper product shots for shield cards. */
 export const SHIELD_IMAGES = {
@@ -290,8 +290,8 @@ export function getWeatherHairRecommendations(
       {
         id: "daily-hydrate",
         type: "product",
-        title: i18n.t("weather.dailyHydrate"),
-        description: i18n.t("weather.dailyHydrateDesc"),
+        title: i18nInstance.t("weather.dailyHydrate"),
+        description: i18nInstance.t("weather.dailyHydrateDesc"),
         priority: 1,
         icon: "water-outline",
         productTag: "leave-in",
@@ -301,8 +301,8 @@ export function getWeatherHairRecommendations(
       {
         id: "daily-scalp",
         type: "routine",
-        title: i18n.t("weather.dailyScalp"),
-        description: i18n.t("weather.dailyScalpDesc"),
+        title: i18nInstance.t("weather.dailyScalp"),
+        description: i18nInstance.t("weather.dailyScalpDesc"),
         priority: 2,
         icon: "hand-left-outline",
         productTag: "scalp-massager",
@@ -312,8 +312,8 @@ export function getWeatherHairRecommendations(
       {
         id: "daily-ends",
         type: "routine",
-        title: i18n.t("weather.dailyEnds"),
-        description: i18n.t("weather.dailyEndsDesc"),
+        title: i18nInstance.t("weather.dailyEnds"),
+        description: i18nInstance.t("weather.dailyEndsDesc"),
         priority: 3,
         icon: "leaf-outline",
         productTag: "argan-oil",
