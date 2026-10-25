@@ -49,7 +49,7 @@ export function MorphProfileScreen({ navigation }: Props) {
   const display =
     user?.full_name?.trim() ||
     [user?.first_name, user?.last_name].filter(Boolean).join(" ").trim() ||
-    "Foydalanuvchi";
+    t("profile.guestName");
   const avatarUrl = resolveMediaUrl(user?.avatar, { width: scale(240) });
   const verified = dashboard?.verified ?? Boolean(user?.phone || user?.email_verified);
   const sub = dashboard?.subscription;
@@ -107,7 +107,7 @@ export function MorphProfileScreen({ navigation }: Props) {
           >
             <Ionicons name="alert-circle-outline" size={16} color={pal.destructive} />
             <Text style={styles.errorText}>{error}</Text>
-            <Text style={styles.errorRetry}>Qayta</Text>
+            <Text style={styles.errorRetry}>{t("common.retry")}</Text>
           </Pressable>
         ) : null}
 
@@ -188,7 +188,7 @@ export function MorphProfileScreen({ navigation }: Props) {
             </UsageRing>
           </View>
           <View style={styles.usageBottom}>
-            <Text style={styles.usageCta}>{sub?.has_active ? "Boshqarish" : "Sotib olish"}</Text>
+            <Text style={styles.usageCta}>{sub?.has_active ? t("profile.manage") : t("profile.purchase")}</Text>
             <Ionicons name="chevron-forward" size={14} color={pal.accent} />
           </View>
         </Pressable>
@@ -242,7 +242,7 @@ export function MorphProfileScreen({ navigation }: Props) {
             pal={pal}
             styles={styles}
             icon="notifications-outline"
-            title="Bildirishnomalar"
+            title={t("profile.notifications")}
             badge={unreadCount}
             onPress={() => navigation.navigate("Notifications")}
           />
@@ -250,7 +250,8 @@ export function MorphProfileScreen({ navigation }: Props) {
             pal={pal}
             styles={styles}
             icon="lock-closed-outline"
-            title="Xavfsizlik"
+            title={t("profile.security")}
+            subtitle={t("profile.security")}
             onPress={() => navigation.navigate("Security")}
             last
           />

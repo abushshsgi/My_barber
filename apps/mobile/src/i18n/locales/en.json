@@ -256,7 +256,17 @@
       "pickRegion": "Choose a region",
       "pickRegionSub": "If GPS is wrong — pick it yourself",
       "useGps": "Use GPS location",
-      "alertScheduled": "A reminder is set for tomorrow morning"
+      "alertScheduled": "A reminder is set for tomorrow morning",
+      "shieldTitle": "Morf Shield · Today",
+      "hairProtection": "Hair protection",
+      "dailyHint": "Mark daily — renews tomorrow",
+      "product": "Product",
+      "style": "Style",
+      "routine": "Routine",
+      "noProtectionNeeded": "No protection needed",
+      "noProtectionSub": "Today's weather is mild — no special hair care required.",
+      "swipeUp": "Swipe up to expand · down to close",
+      "swipeDown": "Swipe down to close or collapse"
     },
     "condition": "Condition",
     "texture": "Texture",

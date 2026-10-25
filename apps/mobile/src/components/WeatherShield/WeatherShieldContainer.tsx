@@ -47,9 +47,9 @@ export function WeatherShieldContainer({ state, doneIds, onToggleDone }: Props) 
           />
         </View>
         <View style={styles.headerText}>
-          <Text style={styles.eyebrow}>Morf Shield · Bugun</Text>
-          <Text style={styles.title}>Soch himoyasi</Text>
-          <Text style={styles.dayHint}>Har kuni belgilang — ertaga yangilanadi</Text>
+          <Text style={styles.eyebrow}>{t("weather.shieldTitle")}</Text>
+          <Text style={styles.title}>{t("weather.hairProtection")}</Text>
+          <Text style={styles.dayHint}>{t("weather.dailyHint")}</Text>
         </View>
         <View style={styles.headerRight}>
           {topAlert ? (

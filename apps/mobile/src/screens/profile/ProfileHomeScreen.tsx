@@ -124,7 +124,7 @@ function MysaloonProfileHome({ navigation }: Props) {
           </Pressable>
           <View style={styles.audiencePill}>
             <Text style={styles.audienceText}>
-              {sub?.has_active ? `${plan} · MySaloon` : "MySaloon"}
+              {sub?.has_active ? `${plan} · ${t("nav.mysaloon")}` : t("nav.mysaloon")}
             </Text>
           </View>
           <Text style={styles.stats}>

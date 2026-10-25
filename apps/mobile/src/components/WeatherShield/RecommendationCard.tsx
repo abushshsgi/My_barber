@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { useMemo } from "react";
 import { Pressable, StyleSheet, Text, useWindowDimensions, View } from "react-native";
+import { useTranslation } from "react-i18next";
 import type { HairRecommendation } from "../../types/weatherShield";
 import { shellChrome, useShellTheme, type ShellChrome } from "../../lib/useShellTheme";
 import { morphFont } from "../../theme/morph-font";
@@ -16,11 +17,7 @@ type Props = {
   onToggleDone?: () => void;
 };
 
-const TYPE_LABEL: Record<HairRecommendation["type"], string> = {
-  product: "Mahsulot",
-  style: "Uslub",
-  routine: "Rutina",
-};
+
 
 function DoneCheck({
   done,
@@ -31,6 +28,7 @@ function DoneCheck({
   onToggle?: () => void;
   size?: number;
 }) {
+  const { t } = useTranslation();
   if (!onToggle) return null;
   const iconSize = Math.max(11, Math.round(size * 0.55));
   return (
@@ -39,7 +37,7 @@ function DoneCheck({
       hitSlop={8}
       accessibilityRole="checkbox"
       accessibilityState={{ checked: done }}
-      accessibilityLabel={done ? "Bajarildi" : "Belgila"}
+      accessibilityLabel={done ? t("common.done") : t("routine.stepTodo")}
       style={[
         styles.checkBtn,
         {
@@ -80,6 +78,7 @@ export function RecommendationCard({
   done = false,
   onToggleDone,
 }: Props) {
+  const { t } = useTranslation();
   const pal = useShellTheme();
   recChrome = shellChrome(pal);
   styles = useMemo(
@@ -88,6 +87,12 @@ export function RecommendationCard({
   );
   const { width } = useWindowDimensions();
   const step = String(index + 1).padStart(2, "0");
+
+  const typeLabels: Record<HairRecommendation["type"], string> = {
+    product: t("weather.product"),
+    style: t("weather.style"),
+    routine: t("weather.routine"),
+  };
 
   if (variant === "featured") {
     const imgSize = scale(80);
@@ -107,7 +112,7 @@ export function RecommendationCard({
         <View style={styles.featuredBody}>
           <View style={styles.metaRow}>
             <Text style={styles.stepMuted}>{step}</Text>
-            <Text style={styles.typeMuted}>{TYPE_LABEL[item.type]}</Text>
+            <Text style={styles.typeMuted}>{typeLabels[item.type]}</Text>
           </View>
           <Text style={styles.featuredTitle} numberOfLines={1}>
             {item.title}
@@ -139,7 +144,7 @@ export function RecommendationCard({
             <DoneCheck done={done} onToggle={onToggleDone} size={22} />
           </View>
         </View>
-        <Text style={styles.tileType}>{TYPE_LABEL[item.type]}</Text>
+        <Text style={styles.tileType}>{typeLabels[item.type]}</Text>
         <Text style={styles.tileTitle} numberOfLines={2}>
           {item.title}
         </Text>
@@ -155,7 +160,7 @@ export function RecommendationCard({
       <DoneCheck done={done} onToggle={onToggleDone} size={20} />
       <View style={styles.stepBody}>
         <Text style={styles.stepType}>
-          {step} · {TYPE_LABEL[item.type]}
+          {step} · {typeLabels[item.type]}
         </Text>
         <Text style={styles.stepTitle} numberOfLines={1}>
           {item.title}
