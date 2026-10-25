@@ -642,18 +642,18 @@ export function MorphTryOnScreen({ navigation }: Props) {
                     </Text>
                     <Text style={styles.historySub} numberOfLines={1}>
                       {historyLoading
-                        ? "Yuklanmoqda…"
+                        ? t("common.loading")
                         : historyItems.length > 0
                           ? `${Math.min(previewItems.length, PREVIEW_LIMIT)} / ${historyItems.length}`
-                          : "Try-on tarixi"}
+                          : t("morph.noTryOn")}
                     </Text>
                   </View>
                   <Pressable
                     style={styles.seeAllBtn}
                     onPress={() => navigation.navigate("MorphHistory")}
-                    accessibilityLabel="Barcha tarix"
+                    accessibilityLabel={t("common.all")}
                   >
-                    <Text style={styles.seeAllText}>{t("home.categories.all")}</Text>
+                    <Text style={styles.seeAllText}>{t("common.all")}</Text>
                     <Ionicons name="chevron-forward" size={14} color={pal.fg} />
                   </Pressable>
                 </View>

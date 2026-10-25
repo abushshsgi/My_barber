@@ -16,10 +16,10 @@ import * as Updates from "expo-updates";
 
 type Props = NativeStackScreenProps<ProfileStackParamList, "Language">;
 
-const LANGS: { id: AppLang; labelKey: "profile.languageUz" | "profile.languageRu" | "profile.languageEn" }[] = [
-  { id: "uz", labelKey: "profile.languageUz" },
-  { id: "ru", labelKey: "profile.languageRu" },
-  { id: "en", labelKey: "profile.languageEn" },
+const LANGS: { id: AppLang; labelKey: "profile.languageUz" | "profile.languageRu" | "profile.languageEn"; flag: string }[] = [
+  { id: "uz", labelKey: "profile.languageUz", flag: "🇺🇿" },
+  { id: "ru", labelKey: "profile.languageRu", flag: "🇷🇺" },
+  { id: "en", labelKey: "profile.languageEn", flag: "🇬🇧" },
 ];
 
 export function LanguageScreen({ navigation }: Props) {
@@ -54,7 +54,7 @@ export function LanguageScreen({ navigation }: Props) {
             <SettingsRow
               key={item.id}
               title={t(item.labelKey)}
-              icon="globe-outline"
+              icon={item.flag}
               onPress={() => chooseLanguage(item.id)}
               last={index === LANGS.length - 1}
               trailing={

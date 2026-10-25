@@ -13,7 +13,7 @@ import {
 type RowProps = {
   title: string;
   subtitle?: string;
-  icon?: keyof typeof Ionicons.glyphMap;
+  icon?: keyof typeof Ionicons.glyphMap | string;
   iconDark?: boolean;
   darkText?: boolean;
   trailing?: ReactNode;
@@ -42,7 +42,11 @@ export function SettingsRow({
     <View style={[styles.row, !last && styles.rowBorder, darkText && styles.rowDarkBorder]}>
       {icon ? (
         <View style={[styles.iconWrap, iconDark && styles.iconDark]}>
-          <Ionicons name={icon} size={18} color={iconDark || darkText ? pal.onAccent : pal.fg} />
+          {typeof icon === "string" && icon.length <= 4 ? (
+            <Text style={styles.flagText}>{icon}</Text>
+          ) : (
+            <Ionicons name={icon} size={18} color={iconDark || darkText ? pal.onAccent : pal.fg} />
+          )}
         </View>
       ) : null}
       <View style={styles.textCol}>
@@ -250,6 +254,9 @@ function createKitStyles(pal: ShellTheme | any, morph?: boolean) {
   },
   rowDarkBorder: {
     borderBottomColor: "rgba(255,255,255,0.12)",
+  },
+  flagText: {
+    fontSize: 20,
   },
   });
 }
