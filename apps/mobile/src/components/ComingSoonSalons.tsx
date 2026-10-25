@@ -15,10 +15,11 @@ import {
 
 type Props = {
   compact?: boolean;
+  blockedOnly?: boolean;
 };
 
-/** Salonlar yo‘q — kutish matni + Morf AI ga qaytish. */
-export function ComingSoonSalons({ compact = false }: Props) {
+/** Salonlar yo‘q — kutish matni + Morf AI ga qaytish. blockedOnly true bo‘lsa faqat matn, CTA yo‘q. */
+export function ComingSoonSalons({ compact = false, blockedOnly = false }: Props) {
   const { t } = useTranslation();
   const navigation = useNavigation();
   const { goMorph } = useShellNavigation();
@@ -30,13 +31,15 @@ export function ComingSoonSalons({ compact = false }: Props) {
       </View>
       <Text style={[styles.title, compact && styles.titleSm]}>{t("comingSoon.title")}</Text>
       <Text style={[styles.sub, compact && styles.subSm]}>{t("comingSoon.sub")}</Text>
-      <Pressable
-        onPress={() => goMorph(navigation as never, "MorphTryOn")}
-        style={({ pressed }) => [styles.cta, pressed && styles.ctaPressed]}
-      >
-        <Ionicons name="sparkles" size={16} color="#FFF" />
-        <Text style={styles.ctaText}>{t("comingSoon.cta")}</Text>
-      </Pressable>
+      {!blockedOnly && (
+        <Pressable
+          onPress={() => goMorph(navigation as never, "MorphTryOn")}
+          style={({ pressed }) => [styles.cta, pressed && styles.ctaPressed]}
+        >
+          <Ionicons name="sparkles" size={16} color="#FFF" />
+          <Text style={styles.ctaText}>{t("comingSoon.cta")}</Text>
+        </Pressable>
+      )}
     </View>
   );
 }

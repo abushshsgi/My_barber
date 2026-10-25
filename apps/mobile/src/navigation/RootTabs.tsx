@@ -71,14 +71,12 @@ type TabDef = {
   iconOn: keyof typeof Ionicons.glyphMap;
 };
 
-/** MySaloon shell — Asosiy, Xarita | Explore, Profil + markaz Morf AI. */
+/** MySaloon shell — Asosiy, Profil + markaz Morf AI. Map va Explore hozircha bloklangan. */
 const MYSALOON_LEFT: TabDef[] = [
   { name: "Home", labelKey: "nav.home", icon: "home-outline", iconOn: "home" },
-  { name: "Map", labelKey: "nav.map", icon: "map-outline", iconOn: "map" },
 ];
 
 const MYSALOON_RIGHT: TabDef[] = [
-  { name: "Explore", labelKey: "nav.explore", icon: "compass-outline", iconOn: "compass" },
   { name: "Profile", labelKey: "nav.profile", icon: "person-outline", iconOn: "person" },
 ];
 
@@ -534,7 +532,7 @@ function ExploreTab() {
   const insets = useSafeAreaInsets();
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: safeTop(insets.top, 16) }}>
-      <ComingSoonSalons />
+      <ComingSoonSalons blockedOnly />
     </View>
   );
 }

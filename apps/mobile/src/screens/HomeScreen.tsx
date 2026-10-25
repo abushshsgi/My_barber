@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { TAB_DOCK_CLEARANCE } from "../hooks/useHideTabBar";
 import type { HomeCategoryKey, HomeListing } from "../api/types";
 import { ComingSoonSalons } from "../components/ComingSoonSalons";
+import { MysaloonBlockedMessage } from "../components/MysaloonBlockedMessage";
 import { HomeBanner } from "../components/home/HomeBanner";
 import { HomeCategories } from "../components/home/HomeCategories";
 import { HomeHeader } from "../components/home/HomeHeader";
@@ -134,7 +135,7 @@ export function HomeScreen({ onOpenMap, onOpenExplore }: Props) {
         <HomeHeader locationLabel={locationLabel} onPressMap={openMap} />
 
         {catalogEmpty ? (
-          <ComingSoonSalons />
+          <MysaloonBlockedMessage />
         ) : (
           <>
             <HomeBanner

@@ -11,7 +11,7 @@ const MORPH_FIRST_KEY = "mysaloon.appShell.morphFirst.v1";
 export const APP_SHELL_DEFAULT_MYSALOON = "Home" as const;
 export const APP_SHELL_DEFAULT_MORPH = "MorphTryOn" as const;
 
-const MYSALOON_TABS = new Set(["Home", "Map", "Explore", "Profile"]);
+const MYSALOON_TABS = new Set(["Home", "Profile"]);
 const MORPH_TABS = new Set([
   "MorphChat",
   "MorphCare",

@@ -12,8 +12,9 @@
   },
   "comingSoon": {
     "title": "Tez orada salonlar qo'shiladi",
-    "sub": "MySaloon ochiq — hozir salonlar ulanmoqda. Shu paytgacha Morf AI bilan uslub tanlang.",
-    "cta": "Morf AI — uslubni sinash"
+    "sub": "Bron tizimi salonlar qo'shilgandan keyin ishga tushadi.",
+    "cta": "Morf AI — uslubni sinash",
+    "mapExploreBlocked": "Tez orada qo'shiladi"
   },
   "common": {
     "back": "Orqaga",

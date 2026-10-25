@@ -22,6 +22,7 @@ import { fetchSalonsNearby } from "../api/catalog";
 import type { ApiNearbySalon } from "../api/types";
 import { useAuth } from "../auth/AuthContext";
 import { ComingSoonSalons } from "../components/ComingSoonSalons";
+import { MysaloonBlockedMessage } from "../components/MysaloonBlockedMessage";
 import { LIGHT_MAP_STYLE } from "../components/onboarding/mapStyles";
 import { DEFAULT_MAP_REGION } from "../components/onboarding/OnboardingMap";
 import { getGuestLocation } from "../lib/guest";
@@ -199,128 +200,134 @@ export function MapScreen() {
 
   return (
     <View style={styles.root}>
-      {mapReady ? (
-        <MapView
-          ref={mapRef}
-          style={StyleSheet.absoluteFill}
-          provider={Platform.OS === "android" ? PROVIDER_GOOGLE : undefined}
-          initialRegion={region}
-          customMapStyle={Platform.OS === "ios" ? LIGHT_MAP_STYLE : undefined}
-          userInterfaceStyle="light"
-          showsUserLocation={showUser}
-          showsMyLocationButton={false}
-          showsCompass={false}
-          showsScale={false}
-          showsTraffic={false}
-          showsBuildings={false}
-          showsIndoors={false}
-          showsPointsOfInterests={false}
-          toolbarEnabled={false}
-          rotateEnabled={false}
-          pitchEnabled={false}
-          moveOnMarkerPress={false}
-          loadingEnabled
-          mapPadding={{ top: insets.top + 56, right: 12, bottom: mapBottomPad + tabBarH, left: 12 }}
-          onRegionChangeComplete={(r) => setRegion(r)}
-        >
-          {salons.map((s) => (
-            <Marker
-              key={s.id}
-              coordinate={{ latitude: s.lat, longitude: s.lng }}
-              title={s.name}
-              description={s.address}
-              pinColor={s.id === selectedId ? "#FF5C5C" : "#0A0A0A"}
-              onPress={() => onSelectSalon(s)}
-            />
-          ))}
-        </MapView>
+      {salons.length === 0 && !loading ? (
+        <MysaloonBlockedMessage />
       ) : (
-        <View style={styles.mapBoot}>
-          <ActivityIndicator color={colors.fg} size="large" />
-        </View>
-      )}
-
-      <View style={[styles.topBar, { paddingTop: safeTop(insets.top, 0) }]}>
-        <View style={styles.titlePill}>
-          <Ionicons name="map" size={14} color={colors.fg} />
-          <Text style={[styles.titleText, { fontSize: fs(14) }]}>Xarita</Text>
-        </View>
-        <Pressable style={styles.locBtn} onPress={goMyLocation} disabled={locating}>
-          {locating ? (
-            <ActivityIndicator color="#FFF" size="small" />
+        <>
+          {mapReady ? (
+            <MapView
+              ref={mapRef}
+              style={StyleSheet.absoluteFill}
+              provider={Platform.OS === "android" ? PROVIDER_GOOGLE : undefined}
+              initialRegion={region}
+              customMapStyle={Platform.OS === "ios" ? LIGHT_MAP_STYLE : undefined}
+              userInterfaceStyle="light"
+              showsUserLocation={showUser}
+              showsMyLocationButton={false}
+              showsCompass={false}
+              showsScale={false}
+              showsTraffic={false}
+              showsBuildings={false}
+              showsIndoors={false}
+              showsPointsOfInterests={false}
+              toolbarEnabled={false}
+              rotateEnabled={false}
+              pitchEnabled={false}
+              moveOnMarkerPress={false}
+              loadingEnabled
+              mapPadding={{ top: insets.top + 56, right: 12, bottom: mapBottomPad + tabBarH, left: 12 }}
+              onRegionChangeComplete={(r) => setRegion(r)}
+            >
+              {salons.map((s) => (
+                <Marker
+                  key={s.id}
+                  coordinate={{ latitude: s.lat, longitude: s.lng }}
+                  title={s.name}
+                  description={s.address}
+                  pinColor={s.id === selectedId ? "#FF5C5C" : "#0A0A0A"}
+                  onPress={() => onSelectSalon(s)}
+                />
+              ))}
+            </MapView>
           ) : (
-            <Ionicons name="locate" size={18} color="#FFF" />
+            <View style={styles.mapBoot}>
+              <ActivityIndicator color={colors.fg} size="large" />
+            </View>
           )}
-        </Pressable>
-      </View>
 
-      <View
-        style={[
-          styles.sheet,
-          {
-            height: sheetH,
-            bottom: tabBarH,
-            paddingBottom: 10,
-          },
-        ]}
-      >
-        <View style={styles.sheetHandle} />
-        <View style={styles.sheetHead}>
-          <Text style={[styles.sheetTitle, { fontSize: fs(15) }]}>
-            {salons.length === 0 && !loading ? t("comingSoon.title") : "Yaqin salonlar"}
-          </Text>
-          {salons.length > 0 || loading ? (
-            <Text style={[styles.sheetCount, { fontSize: fs(12) }]}>
-              {loading ? "…" : `${salons.length} ta`}
-            </Text>
-          ) : null}
-        </View>
-        {error ? <Text style={[styles.err, { fontSize: fs(12) }]}>{error}</Text> : null}
-        {selected ? (
-          <Text style={[styles.selectedHint, { fontSize: fs(12) }]} numberOfLines={1}>
-            Tanlangan: {selected.name}
-          </Text>
-        ) : null}
-        {loading && salons.length === 0 ? (
-          <ActivityIndicator style={{ marginTop: 16 }} color={colors.fg} />
-        ) : salons.length === 0 ? (
-          <View style={styles.soonWrap}>
-            <ComingSoonSalons compact />
+          <View style={[styles.topBar, { paddingTop: safeTop(insets.top, 0) }]}>
+            <View style={styles.titlePill}>
+              <Ionicons name="map" size={14} color={colors.fg} />
+              <Text style={[styles.titleText, { fontSize: fs(14) }]}>Xarita</Text>
+            </View>
+            <Pressable style={styles.locBtn} onPress={goMyLocation} disabled={locating}>
+              {locating ? (
+                <ActivityIndicator color="#FFF" size="small" />
+              ) : (
+                <Ionicons name="locate" size={18} color="#FFF" />
+              )}
+            </Pressable>
           </View>
-        ) : (
-          <FlatList
-            data={salons}
-            keyExtractor={(item) => String(item.id)}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.listPad}
-            initialNumToRender={6}
-            windowSize={5}
-            maxToRenderPerBatch={6}
-            removeClippedSubviews
-            renderItem={({ item }) => {
-              const active = item.id === selectedId;
-              return (
-                <Pressable
-                  style={[styles.card, active && styles.cardActive, { width: Math.min(width * 0.62, 220) }]}
-                  onPress={() => onOpenSalon(item)}
-                  onLongPress={() => onSelectSalon(item)}
-                >
-                  <Text style={[styles.cardName, { fontSize: fs(13) }]} numberOfLines={1}>
-                    {item.name}
-                  </Text>
-                  <Text style={[styles.cardMeta, { fontSize: fs(11) }]} numberOfLines={1}>
-                    {item.distanceKm > 0
-                      ? `${item.distanceKm.toFixed(1)} km`
-                      : item.address || "Manzil"}
-                    {item.rating > 0 ? ` · ★ ${item.rating.toFixed(1)}` : ""}
-                  </Text>
-                </Pressable>
-              );
-            }}
-          />
-        )}
-      </View>
+
+          <View
+            style={[
+              styles.sheet,
+              {
+                height: sheetH,
+                bottom: tabBarH,
+                paddingBottom: 10,
+              },
+            ]}
+          >
+            <View style={styles.sheetHandle} />
+            <View style={styles.sheetHead}>
+              <Text style={[styles.sheetTitle, { fontSize: fs(15) }]}>
+                {salons.length === 0 && !loading ? t("comingSoon.title") : "Yaqin salonlar"}
+              </Text>
+              {salons.length > 0 || loading ? (
+                <Text style={[styles.sheetCount, { fontSize: fs(12) }]}>
+                  {loading ? "…" : `${salons.length} ta`}
+                </Text>
+              ) : null}
+            </View>
+            {error ? <Text style={[styles.err, { fontSize: fs(12) }]}>{error}</Text> : null}
+            {selected ? (
+              <Text style={[styles.selectedHint, { fontSize: fs(12) }]} numberOfLines={1}>
+                Tanlangan: {selected.name}
+              </Text>
+            ) : null}
+            {loading && salons.length === 0 ? (
+              <ActivityIndicator style={{ marginTop: 16 }} color={colors.fg} />
+            ) : salons.length === 0 ? (
+              <View style={styles.soonWrap}>
+                <ComingSoonSalons compact blockedOnly />
+              </View>
+            ) : (
+              <FlatList
+                data={salons}
+                keyExtractor={(item) => String(item.id)}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.listPad}
+                initialNumToRender={6}
+                windowSize={5}
+                maxToRenderPerBatch={6}
+                removeClippedSubviews
+                renderItem={({ item }) => {
+                  const active = item.id === selectedId;
+                  return (
+                    <Pressable
+                      style={[styles.card, active && styles.cardActive, { width: Math.min(width * 0.62, 220) }]}
+                      onPress={() => onOpenSalon(item)}
+                      onLongPress={() => onSelectSalon(item)}
+                    >
+                      <Text style={[styles.cardName, { fontSize: fs(13) }]} numberOfLines={1}>
+                        {item.name}
+                      </Text>
+                      <Text style={[styles.cardMeta, { fontSize: fs(11) }]} numberOfLines={1}>
+                        {item.distanceKm > 0
+                          ? `${item.distanceKm.toFixed(1)} km`
+                          : item.address || "Manzil"}
+                        {item.rating > 0 ? ` · ★ ${item.rating.toFixed(1)}` : ""}
+                      </Text>
+                    </Pressable>
+                  );
+                }}
+              />
+            )}
+          </View>
+        </>
+      )}
     </View>
   );
 }

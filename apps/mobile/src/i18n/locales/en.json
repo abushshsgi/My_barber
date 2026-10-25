@@ -12,8 +12,9 @@
   },
   "comingSoon": {
     "title": "Salons are joining soon",
-    "sub": "MySaloon is open — salons are connecting now. Until then, pick a style with Morf AI.",
-    "cta": "Morf AI — try a style"
+    "sub": "Booking system will be available when salons are added.",
+    "cta": "Morf AI — try a style",
+    "mapExploreBlocked": "Salons are coming soon"
   },
   "common": {
     "back": "Back",
