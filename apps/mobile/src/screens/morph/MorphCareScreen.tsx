@@ -652,7 +652,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
     if (isCareQuizComplete(saved) && !retakeQuizRef.current) {
       setQuiz(saved);
       setStep("plan");
-      setViewMode("flow");
+      setViewMode("hub");
     } else {
       setStep(0);
       setViewMode("flow");
@@ -695,7 +695,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
         void saveCareQuiz(next);
         if (!retakeQuizRef.current) {
           setStep("plan");
-          setViewMode("flow");
+          setViewMode("hub");
         }
       } else if (!isCareQuizComplete(saved)) {
         setStep(0);
@@ -742,7 +742,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
         eveningTime: draftEvening,
       });
       setStep("plan");
-      setViewMode("flow");
+      setViewMode("hub");
       // Catalog fonida — reja darrov ochiladi.
       void prefetchCareCatalog({ recommended: true, force: true })
         .then((products) => {
