@@ -7,6 +7,8 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { Platform } from "react-native";
+import * as NavigationBar from "expo-navigation-bar";
 import {
   DEFAULT_MORPH_APPEARANCE,
   MORPH_CHAT_FONT_SCALE,
@@ -58,6 +60,19 @@ export function MorphAppearanceProvider({ children }: { children: ReactNode }) {
     setAppearance(next);
     void writeMorphAppearance(next);
   }, []);
+
+  // Theme o'zgarganda Android navigation bar style yangilash
+  useEffect(() => {
+    if (Platform.OS !== "android") return;
+    try {
+      const pal = paletteFor(appearance.theme);
+      // "light" = qora icons (ochiq background), "dark" = oq icons (qorong'i background)
+      const isLightBg = pal.bg === "#FFFFFF" || pal.bg === "#FAFAFA" || pal.bg.toLowerCase() === "#ffffff" || pal.bg.toLowerCase() === "#fafafa";
+      NavigationBar.setStyle(isLightBg ? "light" : "dark");
+    } catch (err) {
+      console.warn("NavigationBar morph theme error", err);
+    }
+  }, [appearance.theme]);
 
   const setTheme = useCallback(
     (theme: MorphThemeName) => persist({ ...appearance, theme }),

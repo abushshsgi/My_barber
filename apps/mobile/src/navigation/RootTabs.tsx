@@ -227,14 +227,14 @@ function CustomTabBar({ state, navigation, descriptors }: BottomTabBarProps) {
   useEffect(() => {
     if (Platform.OS !== "android") return;
     try {
-      // "light" = qora tizim tugmalari (ochiq dok). Qorong'i dokda teskarisi.
-      // Dock rangi oq bo'lsa, navigation bar ham oq bo'lishi kerak.
-      const isLightDock = pal.card === "#FFFFFF" || pal.card.toLowerCase() === "#ffffff";
-      NavigationBar.setStyle(isLightDock ? "light" : "dark");
+      // "light" = qora tizim tugmalari (ochiq background). "dark" = oq tugmalar (qorong'i background).
+      // Background rangiga qarab navigation bar icon rangini belgilaymiz.
+      const isLightBg = pal.bg === "#FFFFFF" || pal.bg === "#FAFAFA" || pal.bg.toLowerCase() === "#ffffff" || pal.bg.toLowerCase() === "#fafafa";
+      NavigationBar.setStyle(isLightBg ? "light" : "dark");
     } catch (err) {
       console.warn("NavigationBar error", err);
     }
-  }, [pal.card]);
+  }, [pal.bg]);
 
   // Login dan keyin — obuna/chat qayerda ochilgan bo‘lsa, shu yerga qaytarish.
   useEffect(() => {

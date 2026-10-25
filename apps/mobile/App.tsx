@@ -303,7 +303,8 @@ export default function App() {
     try {
       // Position/transparency — expo-navigation-bar plugin (app.config).
       // SDK 57+: setPositionAsync / setBackgroundColorAsync olib tashlangan.
-      NavigationBar.setStyle("dark");
+      // Boot vaqtida default style: oq background -> qora icons ("light")
+      NavigationBar.setStyle("light");
     } catch (err) {
       console.warn("NavigationBar boot", err);
     }
