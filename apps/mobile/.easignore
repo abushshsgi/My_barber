@@ -6,6 +6,9 @@
 **/node_modules/**
 **/.expo/**
 
+# Machine-specific Android config
+android/local.properties
+
 # Logs and temps
 npm-debug.*
 yarn-debug.*
