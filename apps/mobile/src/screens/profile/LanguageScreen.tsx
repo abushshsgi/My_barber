@@ -12,6 +12,7 @@ import {
   scale,
   verticalScale,
 } from "../../utils/responsive";
+import * as Updates from "expo-updates";
 
 type Props = NativeStackScreenProps<ProfileStackParamList, "Language">;
 
@@ -28,7 +29,17 @@ export function LanguageScreen({ navigation }: Props) {
 
   const chooseLanguage = (next: AppLang) => {
     if (next === lang) return;
-    void setAppLanguage(next).then(() => navigation.goBack());
+    void setAppLanguage(next).then(async () => {
+      navigation.goBack();
+      if (__DEV__) {
+        console.log("Language changed to:", next);
+      }
+      try {
+        await Updates.reloadAsync();
+      } catch (e) {
+        console.warn("Failed to reload app:", e);
+      }
+    });
   };
 
   return (

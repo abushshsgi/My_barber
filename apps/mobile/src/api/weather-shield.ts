@@ -1,4 +1,5 @@
 import { apiJson, qs } from "./client";
+import { currentLang } from "../i18n/config";
 
 export type WeatherShieldRec = {
   id: string;
@@ -39,6 +40,7 @@ export async function fetchWeatherShieldCatalog(params: {
   condition?: string;
   hair_condition?: string;
 }): Promise<WeatherShieldCatalogResponse> {
+  const lang = currentLang();
   const path =
     "/api/v1/ai/care/weather-shield/" +
     qs({
@@ -49,6 +51,7 @@ export async function fetchWeatherShieldCatalog(params: {
       aqi: params.aqi ?? undefined,
       condition: params.condition,
       hair_condition: params.hair_condition,
+      lang,
     });
   const body = await apiJson<WeatherShieldCatalogResponse>(path);
   return {
