@@ -712,6 +712,10 @@
     "generationsRemaining": "{{count}} generations remaining",
     "tryOnStudioLimit": "Try-on and Studio limits open with subscription",
     "settingsSubtitle": "Appearance, limit, privacy",
+    "recentLooks": "Recent looks",
+    "all": "All",
+    "firstTryOn": "First try-on",
+    "resultsSavedHere": "Results are saved here",
     "settingsTitle": "Account settings",
     "accountGroup": "Account",
     "personalInfo": "Personal information",
@@ -783,7 +787,6 @@
     "googleAccountSub": "This account has no password. Sign-in stays through Google.",
     "sessions": "Active sessions",
     "sessionsSub": "See devices signed in to your account and sign them out.",
-    "manage": "Manage",
     "officialName": "Legal name",
     "verifiedMark": "Verified",
     "phoneChangeHint": "To change your phone number, contact the help center.",
@@ -1348,7 +1351,7 @@
     "tissue": "Tissues / handkerchief",
     "tissueUse": "Humidity increases sweating — take tissues, gently wipe your face.",
     "bright": "Bright clothing / flashlight",
-    "brightUse": "Visibility is low — wear brighter clothing or prepare phone flashlight.",
+    "brightUse": "Visibility is low — wear brighter clothing or prepare phone flashlight."
   },
   "ingredient": {
     "badge": "Ingredients",

@@ -43,9 +43,9 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       googleServicesFile: "./google-services.json",
       permissions: ["ACCESS_COARSE_LOCATION", "ACCESS_FINE_LOCATION", "RECORD_AUDIO"],
       adaptiveIcon: {
-        backgroundColor: "#FFFFFF",
+        // Icon allaqachon to‘liq dark gradient fon bilan — solid bg = APK ikonkasi to‘g‘ri.
+        backgroundColor: "#0A0A14",
         foregroundImage: "./assets/android-icon-foreground.png",
-        backgroundImage: "./assets/android-icon-background.png",
         monochromeImage: "./assets/android-icon-monochrome.png",
       },
       predictiveBackGestureEnabled: false,

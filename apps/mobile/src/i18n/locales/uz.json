@@ -787,7 +787,6 @@
     "googleAccountSub": "Bu hisobda parol yo'q. Kirish Google orqali qoladi.",
     "sessions": "Faol sessiyalar",
     "sessionsSub": "Hisobingiz ochiq bo'lgan qurilmalarni ko'ring va bekor qiling.",
-    "manage": "Boshqarish",
     "officialName": "Rasmiy ism",
     "verifiedMark": "Tasdiqlangan",
     "phoneChangeHint": "Telefon raqamini o'zgartirish uchun yordam markaziga murojaat qiling.",
@@ -1349,7 +1348,7 @@
     "tissue": "Salfetka / mendil",
     "tissueUse": "Namlikda terlash tez — salfetka oling, yuzni yumshoq artib turing.",
     "bright": "Yorqin kiyim / chiroq",
-    "brightUse": "Ko'rish past — yorqinroq kiyim yoki telefon chirog'ini tayyor tuting.",
+    "brightUse": "Ko'rish past — yorqinroq kiyim yoki telefon chirog'ini tayyor tuting."
   },
   "ingredient": {
     "badge": "Tarkib",
