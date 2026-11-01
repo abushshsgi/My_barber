@@ -17,7 +17,7 @@ export type ExploreGenJob = {
   exists: boolean;
   published: boolean;
   live_url: string | null;
-  output_mode: "public" | "media";
+  output_mode: "public" | "media" | "database";
   asset_version?: number;
   explore_anchors?: Record<string, boolean>;
   prompt: string;
@@ -33,7 +33,7 @@ export type ExploreGenStatus = {
   jobs: ExploreGenJob[];
   total: number;
   existing: number;
-  output_mode: "public" | "media";
+  output_mode: "public" | "media" | "database";
   views: Array<{ id: ExploreViewId; label: string }>;
   persona_labels?: Record<string, string>;
   audience?: "men" | "women";
@@ -48,7 +48,7 @@ export type ExploreGenResult = {
   relative_path: string;
   public_url: string | null;
   download_path: string;
-  output_mode: "public" | "media";
+  output_mode: "public" | "media" | "database";
   method?: string;
   elapsed_ms?: number;
   message?: string;

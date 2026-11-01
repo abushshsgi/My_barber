@@ -100,10 +100,12 @@ def save_media_bytes(
     data: bytes,
     *,
     content_type: str | None = None,
+    force_db: bool = False,
+    disk_mirror: bool | None = None,
 ) -> str:
     """
-    Baytlarni default_storage orqali saqlaydi (prod: Postgres StoredMedia).
-    Redeployda yo‘qolmasin.
+    Baytlarni Postgres StoredMedia ga saqlaydi (prod).
+    Railway MEDIA_ROOT papkasiga nusxa yozilmaydi, agar disk_mirror=False.
     """
     rel = normalize_media_name(rel)
     if not rel or ".." in rel.split("/"):
@@ -112,9 +114,9 @@ def save_media_bytes(
         data = bytes(data)
 
     ctype = (content_type or mimetypes.guess_type(rel)[0] or "application/octet-stream")[:128]
+    use_db = force_db or getattr(settings, "USE_DB_MEDIA", False)
 
-    # DB storage yoqilgan bo‘lsa — to‘g‘ridan StoredMedia (idempotent)
-    if getattr(settings, "USE_DB_MEDIA", False):
+    if use_db:
         from media_store.models import StoredMedia
 
         StoredMedia.objects.update_or_create(
@@ -126,23 +128,23 @@ def save_media_bytes(
             },
         )
     else:
-        # Lokal / S3 — Django storage
         try:
             if default_storage.exists(rel):
                 default_storage.delete(rel)
         except Exception:
             pass
-        # ContentFile name = basename; storage._save gets full path from save(name=)
         default_storage.save(rel, ContentFile(bytes(data), name=Path(rel).name))
 
-    # Legacy disk mirror (volume bo‘lsa) — serve_media lazy ingest uchun
-    try:
-        root = Path(settings.MEDIA_ROOT)
-        disk = root / rel
-        disk.parent.mkdir(parents=True, exist_ok=True)
-        disk.write_bytes(bytes(data))
-    except Exception:
-        pass
+    if disk_mirror is None:
+        disk_mirror = not use_db
+    if disk_mirror:
+        try:
+            root = Path(settings.MEDIA_ROOT)
+            disk = root / rel
+            disk.parent.mkdir(parents=True, exist_ok=True)
+            disk.write_bytes(bytes(data))
+        except Exception:
+            pass
 
     return rel
 

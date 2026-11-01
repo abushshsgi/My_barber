@@ -319,15 +319,13 @@ def publish_explore_asset(*, persona_id: str, slug: str, view: str = "front") ->
 
     draft_bytes = read_media_bytes(draft_rel)
     if draft_bytes:
-        save_media_bytes(live_rel, draft_bytes, content_type="image/webp")
-        # Agar local public/ mavjud bo‘lsa — frontend staticga ham nusxa
-        live_path = live_asset_path(persona_id=pid, slug=slug, view=normalized_view)
-        if PUBLIC_ROOT.is_dir() and live_path.is_relative_to(PUBLIC_ROOT):
-            try:
-                live_path.parent.mkdir(parents=True, exist_ok=True)
-                live_path.write_bytes(draft_bytes)
-            except Exception:
-                logger.exception("Explore publish: public/ ga yozib bo'lmadi")
+        save_media_bytes(
+            live_rel,
+            draft_bytes,
+            content_type="image/webp",
+            force_db=True,
+            disk_mirror=False,
+        )
     elif not live_media_exists(persona_id=pid, slug=slug, view=normalized_view) and not (
         PUBLIC_ROOT.is_dir() and live_asset_path(persona_id=pid, slug=slug, view=normalized_view).is_file()
     ):

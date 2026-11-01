@@ -98,7 +98,7 @@ function placeholderJob(input: {
     exists: false,
     published: false,
     live_url: null,
-    output_mode: "media",
+    output_mode: "database",
     prompt: "",
   };
 }
@@ -453,12 +453,12 @@ function ExploreGenDevPage() {
             </label>
           </div>
 
-          {outputMode === "media" ? (
+          {outputMode === "database" || outputMode === "media" ? (
             <div className="mt-4 rounded-2xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900">
-              <strong>Production (Railway):</strong> rasmlar server media papkasiga saqlanadi.
-              Tayyor bo&apos;lgach <strong>Explore&apos;ga joylash</strong> tugmasini bosing —
-              foydalanuvchilar shu trumakni tanlaganda haqiqiy Explore&apos;da ko&apos;radi. Yuklab
-              olish ixtiyoriy (<code className="rounded bg-white/80 px-1">persona-uslub.webp</code>
+              <strong>Saqlash:</strong> rasmlar Postgres <code>StoredMedia</code> jadvaliga
+              yoziladi — Railway media papkasiga emas. Tayyor bo&apos;lgach{" "}
+              <strong>Explore&apos;ga joylash</strong> tugmasini bosing. Yuklab olish ixtiyoriy (
+              <code className="rounded bg-white/80 px-1">persona-uslub.webp</code>
               ).
             </div>
           ) : (

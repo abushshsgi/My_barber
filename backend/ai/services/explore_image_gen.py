@@ -238,7 +238,8 @@ def _uses_public_output() -> bool:
 
 
 def output_mode() -> str:
-    return "public" if _uses_public_output() else "media"
+    """Explore gen rasmlari doim Postgres StoredMedia da."""
+    return "database"
 
 
 def asset_file_path(*, persona_id: str, slug: str, view: str = "front") -> Path:
@@ -789,7 +790,13 @@ def _resize_webp(raw: bytes, dest: Path) -> None:
 def _save_explore_draft(*, persona_id: str, slug: str, view: str, raw: bytes) -> str:
     rel = draft_asset_rel(persona_id=persona_id, slug=slug, view=view)
     webp = _resize_webp_bytes(raw)
-    return save_media_bytes(rel, webp, content_type="image/webp")
+    return save_media_bytes(
+        rel,
+        webp,
+        content_type="image/webp",
+        force_db=True,
+        disk_mirror=False,
+    )
 
 
 def generate_explore_asset(
