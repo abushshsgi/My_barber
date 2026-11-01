@@ -2,8 +2,10 @@ from unittest.mock import patch
 
 from django.test import SimpleTestCase
 
+from ai.explore_personas import MEN_CATALOG_STYLE_SLUGS, WOMEN_CATALOG_STYLE_SLUGS
 from ai.services.explore_image_gen import (
     DEV_EXPLORE_PERSONA_IDS,
+    DEV_WOMEN_EXPLORE_PERSONA_IDS,
     _assert_dev_explore_job,
     _build_view_rotation_prompt,
     _collect_view_rotation_anchors,
@@ -51,7 +53,7 @@ class ExploreImageGenPromptTests(SimpleTestCase):
     def test_rejects_niki_persona(self):
         with self.assertRaises(AiStyleError) as ctx:
             _assert_dev_explore_job(persona_id="niki", slug=ACTIVE_SLUG, view="right")
-        self.assertIn("Irland va Slavyan", ctx.exception.message)
+        self.assertIn("Irland", ctx.exception.message)
 
     def test_rejects_unknown_persona(self):
         with self.assertRaises(AiStyleError):
@@ -68,14 +70,39 @@ class ExploreImageGenPromptTests(SimpleTestCase):
             self.assertEqual(view, "left")
 
     def test_list_jobs_only_irland_slavyan_all_views(self):
-        jobs = list_explore_gen_jobs()
+        jobs = list_explore_gen_jobs("men")
         self.assertTrue(jobs)
         persona_ids = {job["persona_id"] for job in jobs}
         self.assertEqual(persona_ids, DEV_EXPLORE_PERSONA_IDS)
         views = {job["view"] for job in jobs}
         self.assertEqual(views, {"front", "left", "right", "back"})
-        # 2 personas × 12 styles × 4 views
-        self.assertEqual(len(jobs), 96)
+        self.assertEqual(len(jobs), len(DEV_EXPLORE_PERSONA_IDS) * len(MEN_CATALOG_STYLE_SLUGS) * 4)
+
+    def test_list_women_jobs_includes_reference_and_styles(self):
+        jobs = list_explore_gen_jobs("women")
+        persona_ids = {job["persona_id"] for job in jobs}
+        self.assertEqual(persona_ids, DEV_WOMEN_EXPLORE_PERSONA_IDS)
+        self.assertTrue(any(job["slug"] == "reference" for job in jobs))
+        expected = len(DEV_WOMEN_EXPLORE_PERSONA_IDS) * (
+            1 + len(WOMEN_CATALOG_STYLE_SLUGS) * 4
+        )
+        self.assertEqual(len(jobs), expected)
+
+    def test_accepts_women_personas_and_reference(self):
+        persona_id, view = _assert_dev_explore_job(
+            persona_id="leyla",
+            slug="reference",
+            view="front",
+        )
+        self.assertEqual(persona_id, "leyla")
+        self.assertEqual(view, "front")
+        persona_id, view = _assert_dev_explore_job(
+            persona_id="sofia",
+            slug="soft-bob",
+            view="left",
+        )
+        self.assertEqual(persona_id, "sofia")
+        self.assertEqual(view, "left")
 
     def test_list_jobs_does_not_download_anchor_bodies(self):
         """Status polli to'liq webp yuklamasligi kerak (Railway stderr INFO spam)."""
@@ -88,8 +115,8 @@ class ExploreImageGenPromptTests(SimpleTestCase):
             "ai.services.explore_image_gen._load_public_image",
             return_value=None,
         ):
-            jobs = list_explore_gen_jobs()
-        self.assertEqual(len(jobs), 96)
+            jobs = list_explore_gen_jobs("men")
+        self.assertEqual(len(jobs), len(DEV_EXPLORE_PERSONA_IDS) * len(MEN_CATALOG_STYLE_SLUGS) * 4)
         fetch_mock.assert_not_called()
         sample = next(j for j in jobs if j["slug"] != "reference" and j["view"] == "right")
         self.assertEqual(sample["explore_anchors"], {"front": True, "reference": True})

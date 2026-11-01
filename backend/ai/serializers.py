@@ -78,7 +78,7 @@ class HairstyleSerializer(serializers.ModelSerializer):
         if self.context.get("skip_gallery"):
             return []
         persona_id = self.context.get("persona_id")
-        if obj.audience != "men" or not persona_id:
+        if obj.audience not in {"men", "women"} or not persona_id:
             return []
         from ai.explore_personas import list_persona_style_gallery
 

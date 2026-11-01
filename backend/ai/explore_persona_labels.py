@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from ai.explore_personas import EXPLORE_PERSONAS, normalize_persona_id
+from ai.explore_personas import normalize_persona_id, persona_record
 from ai.services.gemini_style import AiStyleError
 from media_store.utils import read_json_media, write_json_media
 
@@ -33,7 +33,7 @@ def persona_display_label(persona_id: str | None) -> str:
     custom = load_persona_labels().get(pid)
     if custom:
         return custom
-    return EXPLORE_PERSONAS[pid]["label"]
+    return persona_record(pid)["label"]
 
 
 def set_persona_display_label(*, persona_id: str, label: str) -> dict[str, str]:

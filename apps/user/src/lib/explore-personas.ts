@@ -1,5 +1,32 @@
 export type ExplorePersonaId = "irland" | "slavyan" | "niki";
 
+export type ExploreWomenPersonaId = "leyla" | "sofia" | "mila";
+
+export const WOMEN_EXPLORE_PERSONAS: Array<{
+  id: ExploreWomenPersonaId;
+  label: string;
+  code: string;
+}> = [
+  { id: "leyla", label: "Leyla", code: "CA-1" },
+  { id: "sofia", label: "Sofia", code: "EU-11" },
+  { id: "mila", label: "Mila", code: "EU-12" },
+];
+
+export const WOMEN_CATALOG_STYLE_SLUGS = [
+  "soft-bob",
+  "long-layers",
+  "balayage",
+  "pixie-cut",
+  "beach-waves",
+  "straight-lob",
+  "curtain-bangs",
+  "shag-cut",
+  "braids",
+  "updo-bun",
+  "blunt-cut",
+  "highlights",
+] as const;
+
 export type ExplorePersona = {
   id: ExplorePersonaId;
   label: string;
@@ -17,7 +44,10 @@ export const EXPLORE_PERSONAS: ExplorePersona[] = [
 export const DEFAULT_EXPLORE_PERSONA: ExplorePersonaId = "irland";
 
 /** Home «Trendlar» qatori — faqat shu personaj rasmlari. */
-export const HOME_TREND_PERSONA_IDS = ["irland", "niki"] as const satisfies readonly ExplorePersonaId[];
+export const HOME_TREND_PERSONA_IDS = [
+  "irland",
+  "niki",
+] as const satisfies readonly ExplorePersonaId[];
 
 export type HomeTrendPersonaId = (typeof HOME_TREND_PERSONA_IDS)[number];
 
@@ -188,12 +218,7 @@ function defaultReadyExplorePersonaId(): ExplorePersonaId {
 }
 
 export function normalizeExplorePersonaId(value: string | null | undefined): ExplorePersonaId {
-  if (
-    value === "fransuz" ||
-    value === "skandinav" ||
-    value === "britan" ||
-    value === "evro"
-  ) {
+  if (value === "fransuz" || value === "skandinav" || value === "britan" || value === "evro") {
     return defaultReadyExplorePersonaId();
   }
   if (isExplorePersonaId(value) && hasPersonaReference(value)) return value;

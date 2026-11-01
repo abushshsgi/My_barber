@@ -16,10 +16,13 @@ from django.conf import settings
 from PIL import Image
 
 from ai.explore_personas import (
-    EXPLORE_PERSONAS,
     MEN_CATALOG_STYLE_SLUGS,
+    WOMEN_CATALOG_STYLE_SLUGS,
+    catalog_style_slugs_for_persona,
     normalize_persona_id,
+    persona_audience,
     persona_facial_hair_line,
+    persona_record,
     persona_reference_prompt,
     resolve_persona_ref_image,
     resolve_persona_style_image,
@@ -56,8 +59,10 @@ PUBLIC_ROOT = Path(settings.BASE_DIR).parent / "apps" / "user" / "public"
 OUTPUT_W, OUTPUT_H = 768, 1024
 WEBP_QUALITY = 92
 
-# Dev Explore — Irland va Slavyan: 5 Old Money jingalak × 4 ko'rinish (old/chap/o'ng/orqa).
+# Dev Explore — erkak: Irland/Slavyan; ayol: Leyla/Sofia/Mila.
 DEV_EXPLORE_PERSONA_IDS: frozenset[str] = frozenset({"irland", "slavyan"})
+DEV_WOMEN_EXPLORE_PERSONA_IDS: frozenset[str] = frozenset({"leyla", "sofia", "mila"})
+DEV_ALL_EXPLORE_PERSONA_IDS = DEV_EXPLORE_PERSONA_IDS | DEV_WOMEN_EXPLORE_PERSONA_IDS
 
 def _detect_image_mime(raw: bytes, path: Path | None = None) -> str:
     if path is not None:
@@ -191,8 +196,9 @@ def _load_explore_static_image(relative_url: str) -> tuple[str, bytes] | None:
     return _load_public_image(relative_url) or _fetch_remote_static_image(relative_url)
 
 
-def _catalog_style_image_path(slug: str) -> str:
-    return f"/hairstyles/men/{slug}.webp"
+def _catalog_style_image_path(slug: str, audience: str = "men") -> str:
+    folder = "women" if audience == "women" else "men"
+    return f"/hairstyles/{folder}/{slug}.webp"
 
 
 STYLE_NEGATIVE = (
@@ -250,19 +256,22 @@ def explore_gen_configured() -> dict[str, bool | str | None]:
 
 
 def _relative_asset_path(*, persona_id: str, slug: str, view: str = "front") -> str:
+    audience = persona_audience(persona_id)
     if slug == "reference":
-        url = resolve_persona_ref_image(audience="men", persona_id=persona_id)
+        url = resolve_persona_ref_image(audience=audience, persona_id=persona_id)
     else:
         from ai.explore_views import resolve_style_image_path_with_view
 
-        base = resolve_persona_style_image(audience="men", persona_id=persona_id, slug=slug)
+        base = resolve_persona_style_image(audience=audience, persona_id=persona_id, slug=slug)
         url = resolve_style_image_path_with_view(base_path=base, slug=slug, view=view)
     return url.lstrip("/")
 
 
 def _public_url_for(*, persona_id: str, slug: str, path: Path, view: str = "front") -> str:
     if is_explore_asset_published(persona_id, slug, view=view):
-        return resolve_explore_asset_url(audience="men", persona_id=persona_id, slug=slug)
+        return resolve_explore_asset_url(
+            audience=persona_audience(persona_id), persona_id=persona_id, slug=slug
+        )
     rel = _relative_asset_path(persona_id=persona_id, slug=slug, view=view)
     if _uses_public_output() and path.is_relative_to(PUBLIC_ROOT):
         return f"/{rel}"
@@ -277,7 +286,9 @@ def _download_path(*, persona_id: str, slug: str, view: str = "front") -> str:
     )
 
 
-def _persona_order() -> tuple[str, ...]:
+def _persona_order(audience: str = "men") -> tuple[str, ...]:
+    if audience == "women":
+        return ("leyla", "sofia", "mila")
     return ("irland", "slavyan")
 
 
@@ -315,9 +326,12 @@ def _explore_anchor_status(*, persona_id: str, slug: str, view: str) -> dict[str
 
 def _assert_dev_explore_job(*, persona_id: str, slug: str, view: str) -> tuple[str, str]:
     pid = normalize_persona_id(persona_id)
-    if pid not in DEV_EXPLORE_PERSONA_IDS:
-        raise AiStyleError("Dev Explore faqat Irland va Slavyan personajlari uchun.", 400)
-    if slug != "reference" and slug not in MEN_CATALOG_STYLE_SLUGS:
+    if pid not in DEV_ALL_EXPLORE_PERSONA_IDS:
+        raise AiStyleError(
+            "Dev Explore faqat Irland, Slavyan yoki ayol modellar (Leyla, Sofia, Mila) uchun.",
+            400,
+        )
+    if slug != "reference" and slug not in catalog_style_slugs_for_persona(pid):
         raise AiStyleError(f"Dev Explore uchun noto'g'ri uslub: {slug}", 400)
     return pid, normalize_explore_view(view)
 
@@ -346,12 +360,17 @@ def _asset_version(*, persona_id: str, slug: str, view: str, published: bool) ->
     return int(hashlib.sha1(raw[:4096]).hexdigest()[:8], 16)
 
 
-def list_explore_gen_jobs() -> list[dict[str, Any]]:
+def list_explore_gen_jobs(audience: str = "men") -> list[dict[str, Any]]:
     mode = output_mode()
     jobs: list[dict[str, Any]] = []
-    for persona_id in _persona_order():
+    catalog_audience = "women" if audience == "women" else "men"
+    if catalog_audience == "women":
+        slugs: tuple[str, ...] = ("reference", *sorted(WOMEN_CATALOG_STYLE_SLUGS))
+    else:
+        slugs = tuple(sorted(MEN_CATALOG_STYLE_SLUGS))
+    for persona_id in _persona_order(catalog_audience):
         display_label = persona_display_label(persona_id)
-        for slug in sorted(MEN_CATALOG_STYLE_SLUGS):
+        for slug in slugs:
             for view in views_for_job_slug(slug):
                 rel = _relative_asset_path(persona_id=persona_id, slug=slug, view=view)
                 path = asset_file_path(persona_id=persona_id, slug=slug, view=view)
@@ -370,7 +389,7 @@ def list_explore_gen_jobs() -> list[dict[str, Any]]:
                         "slug": slug,
                         "view": view,
                         "view_label": EXPLORE_VIEW_LABELS[view],
-                        "kind": "style",
+                        "kind": "reference" if slug == "reference" else "style",
                         "relative_path": rel,
                         "public_url": public_url or None,
                         "download_path": _download_path(
@@ -391,7 +410,7 @@ def list_explore_gen_jobs() -> list[dict[str, Any]]:
                             published=published,
                         ),
                         "live_url": resolve_explore_asset_url(
-                            audience="men",
+                            audience=catalog_audience,
                             persona_id=persona_id,
                             slug=slug,
                             view=view,
@@ -417,14 +436,16 @@ def list_explore_gen_jobs() -> list[dict[str, Any]]:
 def build_explore_gen_prompt(*, persona_id: str, slug: str, view: str = "front") -> str:
     pid = normalize_persona_id(persona_id) or "irland"
     normalized_view = normalize_explore_view(view)
+    if slug == "reference":
+        return _build_reference_generation_prompt(persona_id=pid, view=normalized_view)
     if normalized_view != "front":
         return _build_view_rotation_prompt(
             persona_id=pid,
             slug=slug,
             view=normalized_view,
         )
-    persona = EXPLORE_PERSONAS[pid]
-    style_detail = style_detail_for("men", slug)
+    persona = persona_record(pid)
+    style_detail = style_detail_for(persona_audience(pid), slug)
     return _build_style_text_prompt(
         persona_description=persona["description"],
         style_detail=style_detail,
@@ -434,12 +455,17 @@ def build_explore_gen_prompt(*, persona_id: str, slug: str, view: str = "front")
 
 def _build_reference_generation_prompt(*, persona_id: str, view: str = "front") -> str:
     pid = normalize_persona_id(persona_id) or "irland"
-    persona = EXPLORE_PERSONAS[pid]
+    persona = persona_record(pid)
     scene = persona_reference_prompt(persona_id=pid)
     pose = view_pose_line(view)
-    return f"""You are a professional barber catalog photographer for mysaloon.uz.
+    catalog_kind = (
+        "women's hairstyle reference catalog"
+        if persona_audience(pid) == "women"
+        else "men's hairstyle reference catalog"
+    )
+    return f"""You are a professional salon catalog photographer for mysaloon.uz.
 
-Create ONE ultra-sharp photorealistic studio portrait for a men's hairstyle reference catalog.
+Create ONE ultra-sharp photorealistic studio portrait for a {catalog_kind}.
 
 Person: {persona['description']}
 
@@ -527,8 +553,8 @@ def _build_view_rotation_prompt(
 ) -> str:
     """O'sha uslubning front rasmidan boshqa burchakni chizish — yuz + soch aynan saqlanadi."""
     pid = normalize_persona_id(persona_id) or "irland"
-    persona = EXPLORE_PERSONAS[pid]
-    style_detail = style_detail_for("men", slug)
+    persona = persona_record(pid)
+    style_detail = style_detail_for(persona_audience(pid), slug)
     pose = view_pose_line(view)
     facial_hair = persona_facial_hair_line(pid)
     side_hint = _style_side_consistency_hint(slug=slug, view=view)
@@ -622,8 +648,8 @@ def _build_style_edit_prompt(
     view: str = "front",
 ) -> str:
     pid = normalize_persona_id(persona_id) or "irland"
-    persona = EXPLORE_PERSONAS[pid]
-    style_detail = style_detail_for("men", slug)
+    persona = persona_record(pid)
+    style_detail = style_detail_for(persona_audience(pid), slug)
     pose = view_pose_line(view)
     catalog_hint = (
         "A second reference photo shows the target hairstyle on a model — "
@@ -821,7 +847,10 @@ def generate_explore_asset(
     prompt = build_explore_gen_prompt(persona_id=pid, slug=slug, view=normalized_view)
     started = time.monotonic()
 
-    if normalized_view != "front":
+    if slug == "reference":
+        raw = _generate_image(prompt=prompt)
+        method = _generation_method(edit=False)
+    elif normalized_view != "front":
         anchors = _collect_view_rotation_anchors(
             persona_id=pid,
             slug=slug,
@@ -855,11 +884,13 @@ def generate_explore_asset(
         public_ref = _persona_reference_bytes(persona_id=pid)
         if public_ref is None:
             raise AiStyleError(
-                "Explore'da reference portret topilmadi. Avval reference.webp mavjud bo'lishi kerak.",
+                "Avval model (reference) rasmini generatsiya qiling — soch uslublari shu qiz/yigit yuzidan yaratiladi.",
                 400,
             )
         ref_mime, ref_bytes = public_ref
-        catalog = _load_explore_static_image(_catalog_style_image_path(slug).lstrip("/"))
+        catalog = _load_explore_static_image(
+            _catalog_style_image_path(slug, persona_audience(pid)).lstrip("/")
+        )
         catalog_bytes = catalog[1] if catalog else None
         catalog_mime = catalog[0] if catalog else "image/webp"
         raw = _generate_image(

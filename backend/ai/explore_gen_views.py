@@ -17,6 +17,7 @@ from ai.explore_persona_labels import persona_display_label, set_persona_display
 from ai.explore_views import EXPLORE_VIEW_IDS, EXPLORE_VIEW_LABELS, normalize_explore_view
 from ai.services.explore_image_gen import (
     DEV_EXPLORE_PERSONA_IDS,
+    DEV_WOMEN_EXPLORE_PERSONA_IDS,
     explore_gen_configured,
     generate_explore_asset,
     list_explore_gen_jobs,
@@ -33,10 +34,14 @@ class ExploreGenStatusView(ExploreGenAuthMixin, UnthrottledAPIView):
     permission_classes = [AllowAny]
 
     def get(self, request):
-        jobs = list_explore_gen_jobs()
-        persona_labels = {
-            pid: persona_display_label(pid) for pid in sorted(DEV_EXPLORE_PERSONA_IDS)
-        }
+        audience = (request.query_params.get("audience") or "men").strip().lower()
+        if audience not in {"men", "women"}:
+            audience = "men"
+        jobs = list_explore_gen_jobs(audience)
+        scope_ids = (
+            DEV_WOMEN_EXPLORE_PERSONA_IDS if audience == "women" else DEV_EXPLORE_PERSONA_IDS
+        )
+        persona_labels = {pid: persona_display_label(pid) for pid in sorted(scope_ids)}
         return Response(
             {
                 "configured": explore_gen_configured(),
@@ -44,13 +49,14 @@ class ExploreGenStatusView(ExploreGenAuthMixin, UnthrottledAPIView):
                 "total": len(jobs),
                 "existing": sum(1 for job in jobs if job["exists"]),
                 "output_mode": output_mode(),
+                "audience": audience,
                 "views": [
                     {"id": view_id, "label": EXPLORE_VIEW_LABELS[view_id]}
                     for view_id in EXPLORE_VIEW_IDS
                 ],
                 "persona_labels": persona_labels,
                 "scope": {
-                    "persona_ids": sorted(DEV_EXPLORE_PERSONA_IDS),
+                    "persona_ids": sorted(scope_ids),
                     "views": list(EXPLORE_VIEW_IDS),
                 },
             }

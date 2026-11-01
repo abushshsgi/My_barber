@@ -206,7 +206,7 @@ class HairstyleApiTests(TestCase):
         res = self.client.get("/api/v1/hairstyles/")
         self.assertEqual(res.status_code, 200)
         body = res.json()
-        self.assertEqual(len(body), 50)
+        self.assertEqual(len(body), 62)
         self.assertEqual(body[0]["id"], "men-mid-fade")
         self.assertIn("image_url", body[0])
 

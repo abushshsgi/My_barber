@@ -42,7 +42,7 @@ def style_to_entry(
             slug=style.slug,
             audience=style.audience,
             age_group=age_group,
-            persona_id=persona_id if style.audience == "men" else None,
+            persona_id=persona_id if style.audience in {"men", "women"} else None,
         ),
     }
 
@@ -57,8 +57,8 @@ def get_published_catalog(
         qs = qs.filter(audience=audience)
     norm_group = normalize_age_group(age_group)
     styles = _styles_for_age_group(list(qs), norm_group)
-    men_persona = persona_id if audience == "men" else None
-    return [style_to_entry(style, norm_group, men_persona) for style in styles]
+    catalog_persona = persona_id if audience in {"men", "women"} else None
+    return [style_to_entry(style, norm_group, catalog_persona) for style in styles]
 
 
 def score_hairstyle(

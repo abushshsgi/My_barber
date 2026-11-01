@@ -109,13 +109,13 @@ def _resolve_age_group(request) -> str | None:
 
 
 def _resolve_persona_id(request, audience: str | None) -> str | None:
-    if audience != "men":
+    if audience not in {"men", "women"}:
         return None
     return normalize_persona_id(request.query_params.get("persona"))
 
 
 def _resolve_persona_from_body(request, audience: str | None) -> str | None:
-    if audience != "men":
+    if audience not in {"men", "women"}:
         return None
     return normalize_persona_id(request.data.get("persona"))
 
@@ -126,7 +126,10 @@ class ExplorePersonaListView(UnthrottledAPIView):
     permission_classes = [AllowAny]
 
     def get(self, request):
-        return Response(list_explore_personas())
+        audience = (request.query_params.get("audience") or "men").strip().lower()
+        if audience not in {"men", "women"}:
+            audience = "men"
+        return Response(list_explore_personas(audience))
 
 
 class HairstyleListView(UnthrottledAPIView):
@@ -157,8 +160,8 @@ class HairstyleListView(UnthrottledAPIView):
                     for style in styles
                     if age_group in (style.age_groups or [])
                 ]
-            if audience == "men" and not persona_id:
-                ready_persona_ids = [p["id"] for p in list_explore_personas()]
+            if audience in {"men", "women"} and not persona_id:
+                ready_persona_ids = [p["id"] for p in list_explore_personas(audience)]
                 # Manifest bir marta — har style×persona uchun DB EXISTS emas
                 styles = [
                     style

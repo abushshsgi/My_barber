@@ -1,8 +1,10 @@
-"""Explore erkak personajlari — 3 ta model, har biri uchun bitta reference + faol uslublar."""
+"""Explore personajlari — erkak va ayol modellar, har biri uchun reference + uslublar."""
 
 from __future__ import annotations
 
 EXPLORE_PERSONA_IDS = frozenset({"irland", "slavyan", "niki"})
+WOMEN_EXPLORE_PERSONA_IDS = frozenset({"leyla", "sofia", "mila"})
+ALL_EXPLORE_PERSONA_IDS = EXPLORE_PERSONA_IDS | WOMEN_EXPLORE_PERSONA_IDS
 
 # Har bir personaj — bitta three-quarter reference (foydalanuvchi tasdiqlagan promptlar).
 PERSONA_REFERENCE_PROMPTS: dict[str, str] = {
@@ -37,6 +39,37 @@ solid flat #E8E8E8 background, soft studio lighting,
 ultra sharp photorealistic, 85mm portrait, 8K detail,
 3:4 vertical, 768x1024
 """.strip(),
+    "leyla": """
+Professional salon studio portrait, young Central Asian woman age 24,
+warm beige skin, dark brown almond eyes, thick dark brown hair,
+neutral medium-length straight hair with a soft center part, natural brows,
+
+three-quarter view, head turned slightly toward camera, subtle natural smile,
+relaxed candid salon moment, NOT front-facing passport pose,
+
+plain white crew-neck t-shirt,
+solid flat #E8E8E8 background, soft studio lighting,
+ultra sharp photorealistic, 85mm portrait, 8K detail,
+3:4 vertical, 768x1024
+""".strip(),
+    "sofia": """
+Professional salon studio portrait, young Southern European woman age 25,
+olive skin, dark brown eyes, dark wavy hair,
+neutral medium-length natural waves, defined brows, no heavy makeup,
+
+three-quarter angle, friendly neutral expression, natural candid pose,
+plain white t-shirt, solid flat #E8E8E8, soft studio light,
+photorealistic, sharp hair texture, 3:4 vertical, 768x1024
+""".strip(),
+    "mila": """
+Professional salon studio portrait, young Eastern European woman age 26,
+pale Slavic skin, gray-green eyes, ash-blonde straight hair,
+neutral medium-length sleek cut, clean-shaven face, natural makeup,
+
+three-quarter profile looking slightly toward camera, neutral expression,
+plain white t-shirt, solid flat #E8E8E8, even studio light,
+photorealistic, 85mm portrait, 3:4 vertical, 768x1024
+""".strip(),
 }
 
 EXPLORE_PERSONAS: dict[str, dict] = {
@@ -69,6 +102,38 @@ EXPLORE_PERSONAS: dict[str, dict] = {
     },
 }
 
+WOMEN_EXPLORE_PERSONAS: dict[str, dict] = {
+    "leyla": {
+        "id": "leyla",
+        "label": "Leyla",
+        "code": "CA-1",
+        "description": (
+            "young Central Asian woman age 24, warm beige skin, dark brown almond eyes, "
+            "thick dark brown hair, neutral medium-length straight hair with a soft center part"
+        ),
+    },
+    "sofia": {
+        "id": "sofia",
+        "label": "Sofia",
+        "code": "EU-11",
+        "description": (
+            "young Southern European woman age 25, olive skin, dark brown eyes, "
+            "dark wavy hair, neutral medium-length natural waves"
+        ),
+    },
+    "mila": {
+        "id": "mila",
+        "label": "Mila",
+        "code": "EU-12",
+        "description": (
+            "young Eastern European woman age 26, pale Slavic skin, gray-green eyes, "
+            "ash-blonde straight hair, neutral medium-length sleek cut"
+        ),
+    },
+}
+
+DEFAULT_WOMEN_PERSONA = "leyla"
+
 DEFAULT_MEN_PERSONA = "irland"
 
 # Dev generatsiya — soqol darajasi (profil ko'rinishlarda bir xil bo'lishi shart).
@@ -76,6 +141,9 @@ PERSONA_FACIAL_HAIR: dict[str, str] = {
     "irland": "light ginger stubble only — faint short shadow, NOT a full beard",
     "slavyan": "clean-shaven — no facial hair at all",
     "niki": "light stubble only — faint short shadow on jaw, barely visible, NOT a full beard, NOT thick stubble",
+    "leyla": "no facial hair — natural light makeup only, no heavy glam",
+    "sofia": "no facial hair — natural light makeup only, no heavy glam",
+    "mila": "no facial hair — natural light makeup only, no heavy glam",
 }
 
 
@@ -119,6 +187,23 @@ MEN_NEW_STYLE_SLUGS = frozenset(NEW_MEN_STYLE_SLUGS) | frozenset(CURLY_BATCH_SLU
 
 MEN_CATALOG_STYLE_SLUGS = frozenset(MEN_CLASSIC_STYLE_SLUGS | MEN_NEW_STYLE_SLUGS)
 
+WOMEN_CATALOG_STYLE_SLUGS = frozenset(
+    {
+        "soft-bob",
+        "long-layers",
+        "balayage",
+        "pixie-cut",
+        "beach-waves",
+        "straight-lob",
+        "curtain-bangs",
+        "shag-cut",
+        "braids",
+        "updo-bun",
+        "blunt-cut",
+        "highlights",
+    }
+)
+
 # Yangi uslublar generate/publish qilinmaguncha faqat reference tayyor.
 NIKI_READY_SLUGS: frozenset[str] = frozenset()
 
@@ -129,6 +214,9 @@ PERSONA_READY_ASSETS: dict[str, frozenset[str]] = {
     "irland": frozenset({"reference", *IRLAND_READY_SLUGS}),
     "slavyan": frozenset({"reference"}),
     "niki": frozenset({"reference"}),
+    "leyla": frozenset(),
+    "sofia": frozenset(),
+    "mila": frozenset(),
 }
 
 # Git (public) ga qo'yilgan qo'shimcha ko'rinishlar. Front doim ready deb hisoblanadi;
@@ -150,12 +238,32 @@ def persona_static_extra_views(persona_id: str | None, slug: str) -> tuple[str, 
 
 def normalize_persona_id(raw: str | None) -> str | None:
     value = (raw or "").strip().lower()
-    if value in EXPLORE_PERSONA_IDS:
+    if value in ALL_EXPLORE_PERSONA_IDS:
         return value
     # Eski saqlangan idlar → irland
     if value in {"skandinav", "fransuz", "britan", "evro"}:
         return "irland"
     return None
+
+
+def persona_audience(persona_id: str | None) -> str:
+    pid = normalize_persona_id(persona_id)
+    if pid in WOMEN_EXPLORE_PERSONA_IDS:
+        return "women"
+    return "men"
+
+
+def persona_record(persona_id: str | None) -> dict:
+    pid = normalize_persona_id(persona_id) or DEFAULT_MEN_PERSONA
+    if pid in WOMEN_EXPLORE_PERSONAS:
+        return WOMEN_EXPLORE_PERSONAS[pid]
+    return EXPLORE_PERSONAS.get(pid, EXPLORE_PERSONAS[DEFAULT_MEN_PERSONA])
+
+
+def catalog_style_slugs_for_persona(persona_id: str | None) -> frozenset[str]:
+    if persona_audience(persona_id) == "women":
+        return WOMEN_CATALOG_STYLE_SLUGS
+    return MEN_CATALOG_STYLE_SLUGS
 
 
 def static_persona_ref_image_path(*, audience: str, persona_id: str) -> str:
@@ -168,21 +276,27 @@ def static_persona_style_image_path(*, audience: str, persona_id: str, slug: str
     return f"/hairstyles/{audience}/personas/{pid}/{slug}.webp"
 
 
-def list_explore_personas() -> list[dict]:
+def list_explore_personas(audience: str = "men") -> list[dict]:
     from ai.explore_persona_labels import persona_display_label
     from ai.explore_published import explore_asset_available
 
-    order = ("irland", "slavyan", "niki")
+    if audience == "women":
+        order = ("leyla", "sofia", "mila")
+        catalog = WOMEN_EXPLORE_PERSONAS
+    else:
+        order = ("irland", "slavyan", "niki")
+        catalog = EXPLORE_PERSONAS
+        audience = "men"
     rows: list[dict] = []
     for pid in order:
         if not explore_asset_available(pid, "reference"):
             continue
-        persona = EXPLORE_PERSONAS[pid]
+        persona = catalog[pid]
         rows.append(
             {
                 **persona,
                 "label": persona_display_label(pid),
-                "reference_url": static_persona_ref_image_path(audience="men", persona_id=pid),
+                "reference_url": static_persona_ref_image_path(audience=audience, persona_id=pid),
             }
         )
     return rows

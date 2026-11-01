@@ -11,9 +11,10 @@ from django.conf import settings
 
 from ai.explore_personas import (
     MEN_ARCHIVED_STYLE_SLUGS,
-    MEN_CATALOG_STYLE_SLUGS,
     PERSONA_READY_ASSETS,
+    catalog_style_slugs_for_persona,
     normalize_persona_id,
+    persona_audience,
     persona_static_extra_views,
     static_persona_ref_image_path,
     static_persona_style_image_path,
@@ -95,10 +96,11 @@ def draft_asset_path(*, persona_id: str, slug: str, view: str = "front") -> Path
 def live_asset_rel(*, persona_id: str, slug: str, view: str = "front") -> str:
     pid = normalize_persona_id(persona_id) or persona_id
     normalized_view = normalize_explore_view(view)
+    audience = persona_audience(pid)
     if slug == "reference":
-        rel = static_persona_ref_image_path(audience="men", persona_id=pid)
+        rel = static_persona_ref_image_path(audience=audience, persona_id=pid)
     else:
-        base = static_persona_style_image_path(audience="men", persona_id=pid, slug=slug)
+        base = static_persona_style_image_path(audience=audience, persona_id=pid, slug=slug)
         rel = resolve_style_image_path_with_view(
             base_path=base,
             slug=slug,
@@ -182,7 +184,9 @@ def view_asset_file_exists(*, persona_id: str, slug: str, view: str = "front") -
     # Publish qilingan = mavjud deb hisobla (live_media_exists × N o‘rniga)
     if is_explore_asset_published(pid, slug, view=normalized_view):
         return True
-    if _static_file_exists(audience="men", persona_id=pid, slug=slug, view=normalized_view):
+    if _static_file_exists(
+        audience=persona_audience(pid), persona_id=pid, slug=slug, view=normalized_view
+    ):
         return True
     return False
 
@@ -202,8 +206,10 @@ def explore_asset_available(persona_id: str | None, slug: str) -> bool:
     pid = normalize_persona_id(persona_id)
     if not pid:
         return False
-    if slug != "reference" and slug not in MEN_CATALOG_STYLE_SLUGS and slug not in MEN_ARCHIVED_STYLE_SLUGS:
-        return False
+    if slug != "reference":
+        allowed = catalog_style_slugs_for_persona(pid) | MEN_ARCHIVED_STYLE_SLUGS
+        if slug not in allowed:
+            return False
     if slug in PERSONA_READY_ASSETS.get(pid, frozenset()):
         return True
     if slug == "reference":
@@ -299,7 +305,11 @@ def publish_explore_asset(*, persona_id: str, slug: str, view: str = "front") ->
     pid = normalize_persona_id(persona_id)
     if not pid:
         raise AiStyleError("Noto'g'ri persona_id.", 400)
-    if slug != "reference" and slug not in MEN_CATALOG_STYLE_SLUGS and slug not in MEN_ARCHIVED_STYLE_SLUGS:
+    if (
+        slug != "reference"
+        and slug not in catalog_style_slugs_for_persona(pid)
+        and slug not in MEN_ARCHIVED_STYLE_SLUGS
+    ):
         raise AiStyleError("Noto'g'ri slug.", 400)
 
     normalized_view = normalize_explore_view(view)
@@ -329,10 +339,11 @@ def publish_explore_asset(*, persona_id: str, slug: str, view: str = "front") ->
     manifest[pid] = sorted(slugs)
     _save_manifest(manifest)
 
+    audience = persona_audience(pid)
     if slug == "reference":
-        rel = static_persona_ref_image_path(audience="men", persona_id=pid)
+        rel = static_persona_ref_image_path(audience=audience, persona_id=pid)
     else:
-        base = static_persona_style_image_path(audience="men", persona_id=pid, slug=slug)
+        base = static_persona_style_image_path(audience=audience, persona_id=pid, slug=slug)
         rel = resolve_style_image_path_with_view(
             base_path=base,
             slug=slug,
@@ -347,7 +358,7 @@ def publish_explore_asset(*, persona_id: str, slug: str, view: str = "front") ->
         "relative_path": rel.lstrip("/"),
         "public_url": rel if PUBLIC_ROOT.is_dir() and live_path.is_file() and live_path.is_relative_to(PUBLIC_ROOT) else None,
         "live_url": resolve_explore_asset_url(
-            audience="men",
+            audience=audience,
             persona_id=pid,
             slug=slug,
             view=normalized_view,
@@ -362,7 +373,7 @@ def publish_explore_persona(*, persona_id: str) -> dict[str, Any]:
         raise AiStyleError("Noto'g'ri persona_id.", 400)
 
     published: list[dict[str, Any]] = []
-    slugs = ["reference", *sorted(MEN_CATALOG_STYLE_SLUGS)]
+    slugs = ["reference", *sorted(catalog_style_slugs_for_persona(pid))]
     for slug in slugs:
         for view in views_for_job_slug(slug):
             has_draft = draft_asset_exists(persona_id=pid, slug=slug, view=view)

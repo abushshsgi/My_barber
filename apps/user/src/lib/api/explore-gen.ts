@@ -36,6 +36,7 @@ export type ExploreGenStatus = {
   output_mode: "public" | "media";
   views: Array<{ id: ExploreViewId; label: string }>;
   persona_labels?: Record<string, string>;
+  audience?: "men" | "women";
   scope?: { persona_ids: string[]; views: ExploreViewId[] };
 };
 
@@ -74,12 +75,14 @@ function exploreGenHeaders(): HeadersInit {
 
 export { exploreGenHeaders };
 
-export async function fetchExploreGenStatus(): Promise<ExploreGenStatus> {
+export async function fetchExploreGenStatus(
+  audience: "men" | "women" = "men",
+): Promise<ExploreGenStatus> {
   const secret = readExploreGenSecret();
-  const url = secret
-    ? `/api/v1/ai/dev/explore-gen/?key=${encodeURIComponent(secret)}`
-    : "/api/v1/ai/dev/explore-gen/";
-  return apiJson<ExploreGenStatus>(url, {
+  const params = new URLSearchParams();
+  params.set("audience", audience);
+  if (secret) params.set("key", secret);
+  return apiJson<ExploreGenStatus>(`/api/v1/ai/dev/explore-gen/?${params.toString()}`, {
     headers: exploreGenHeaders(),
   });
 }
@@ -196,7 +199,9 @@ export function exploreGenDownloadFilename(
 export function exploreGenDownloadUrl(job: ExploreGenJob): string {
   const secret = readExploreGenSecret();
   const base = job.download_path;
-  return secret ? `${base}${base.includes("?") ? "&" : "?"}key=${encodeURIComponent(secret)}` : base;
+  return secret
+    ? `${base}${base.includes("?") ? "&" : "?"}key=${encodeURIComponent(secret)}`
+    : base;
 }
 
 export async function downloadExploreGenAsset(job: ExploreGenJob): Promise<void> {
