@@ -33,7 +33,7 @@ def _job_ttl() -> int:
 
 
 def _max_queue_depth() -> int:
-    return int(getattr(settings, "TRYON_QUEUE_MAX_DEPTH", 200))
+    return int(getattr(settings, "TRYON_QUEUE_MAX_DEPTH", 500))
 
 
 def is_queue_enabled() -> bool:

@@ -1,4 +1,4 @@
-"""Redis navbat — try-on worker (Vertex chaqiruvlarini ketma-ket bajaradi)."""
+"""Redis navbat — try-on worker (har process 1 job; parallel uchun start.sh da bir nechta)."""
 
 from __future__ import annotations
 

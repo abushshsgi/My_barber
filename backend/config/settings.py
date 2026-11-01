@@ -185,8 +185,14 @@ TRYON_QUEUE_ENABLED = os.environ.get("TRYON_QUEUE_ENABLED", "true").lower() in (
     "true",
     "yes",
 )
-TRYON_QUEUE_MAX_DEPTH = int(os.environ.get("TRYON_QUEUE_MAX_DEPTH", "200"))
+TRYON_QUEUE_MAX_DEPTH = int(os.environ.get("TRYON_QUEUE_MAX_DEPTH", "500"))
 TRYON_JOB_TTL_SECONDS = int(os.environ.get("TRYON_JOB_TTL_SECONDS", "3600"))
+# Bir vaqtda nechta try-on (Redis worker process). 1 = ketma-ket.
+try:
+    _tryon_workers = int(os.environ.get("TRYON_WORKER_COUNT", "8") or "8")
+except ValueError:
+    _tryon_workers = 8
+TRYON_WORKER_COUNT = max(1, min(_tryon_workers, 16))
 
 # Morf AI kvota. Default o‘chiq — faqat lokal test uchun "true" qiling.
 MORPH_ENTITLEMENT_BYPASS = os.environ.get("MORPH_ENTITLEMENT_BYPASS", "false").lower() in (

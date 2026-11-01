@@ -14,8 +14,18 @@ if python manage.py showmigrations --plan 2>/dev/null | grep -q '^\[ \]'; then
 fi
 
 if [ -n "${REDIS_URL:-}" ] && [ "${TRYON_QUEUE_ENABLED:-true}" != "false" ]; then
-  echo "[start] Starting try-on Redis worker..."
-  python manage.py run_tryon_worker --poll-seconds 5 &
+  workers="${TRYON_WORKER_COUNT:-8}"
+  case "$workers" in
+    ''|*[!0-9]*) workers=8 ;;
+  esac
+  if [ "$workers" -lt 1 ]; then workers=1; fi
+  if [ "$workers" -gt 16 ]; then workers=16; fi
+  echo "[start] Starting ${workers} try-on Redis workers..."
+  i=1
+  while [ "$i" -le "$workers" ]; do
+    python manage.py run_tryon_worker --poll-seconds 5 &
+    i=$((i + 1))
+  done
 fi
 
 echo "[start] Syncing exchange rates (if stale)..."
