@@ -33,7 +33,7 @@ def _job_ttl() -> int:
 
 
 def _max_queue_depth() -> int:
-    return int(getattr(settings, "TRYON_QUEUE_MAX_DEPTH", 500))
+    return int(getattr(settings, "TRYON_QUEUE_MAX_DEPTH", 2000))
 
 
 def is_queue_enabled() -> bool:
@@ -180,6 +180,9 @@ def get_tryon_job(job_id: str, *, user_id: int) -> dict[str, Any] | None:
 
 def process_next_tryon_job(*, block_seconds: int = 5) -> bool:
     """Worker: navbatdan 1 ta ishni olib Vertex ga yuboradi."""
+    from django.db import close_old_connections
+
+    close_old_connections()
     client = _redis_client(blocking=True)
     if client is None:
         return False
