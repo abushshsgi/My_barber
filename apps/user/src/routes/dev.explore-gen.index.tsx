@@ -680,9 +680,13 @@ function ExploreGenDevPage() {
 
         {statusQuery.isError ? (
           <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-            API xato — kalit noto&apos;g&apos;ri yoki backend sozlanmagan. Lokalda{" "}
-            <code>DEBUG=true</code>, productionda <code>EXPLORE_GEN_SECRET</code> va Vertex
-            sozlamalarini tekshiring.
+            {statusQuery.error instanceof Error
+              ? statusQuery.error.message
+              : "API xato — kalit noto'g'ri yoki backend sozlanmagan."}{" "}
+            Lokalda Django <code>DEBUG=true</code> (kalitsiz ochiladi). Productionda
+            sahifaga <code>?key=EXPLORE_GEN_SECRET</code> bilan kiring; Vertex uchun{" "}
+            <code>VERTEX_PROJECT_ID</code> va <code>VERTEX_SERVICE_ACCOUNT_JSON</code>{" "}
+            kerak.
           </div>
         ) : null}
 
