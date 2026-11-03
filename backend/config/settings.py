@@ -185,19 +185,78 @@ TRYON_QUEUE_ENABLED = os.environ.get("TRYON_QUEUE_ENABLED", "true").lower() in (
     "true",
     "yes",
 )
-TRYON_QUEUE_MAX_DEPTH = int(os.environ.get("TRYON_QUEUE_MAX_DEPTH", "2000"))
+# Navbat sig'imi — 50 ta bir vaqtda so'rov uchun 200 yetarli.
+TRYON_QUEUE_MAX_DEPTH = int(os.environ.get("TRYON_QUEUE_MAX_DEPTH", "200"))
 TRYON_JOB_TTL_SECONDS = int(os.environ.get("TRYON_JOB_TTL_SECONDS", "3600"))
-# Process soni (RAM). Thread soni = bir vaqtdagi Vertex chaqiruvlar.
+# Process soni (RAM). Thread soni — slot kutish; Vertex slotlari global limiterda.
 try:
     _tryon_workers = int(os.environ.get("TRYON_WORKER_COUNT", "2") or "2")
 except ValueError:
     _tryon_workers = 2
 TRYON_WORKER_COUNT = max(1, min(_tryon_workers, 4))
 try:
-    _tryon_concurrency = int(os.environ.get("TRYON_WORKER_CONCURRENCY", "16") or "16")
+    _tryon_concurrency = int(os.environ.get("TRYON_WORKER_CONCURRENCY", "4") or "4")
 except ValueError:
-    _tryon_concurrency = 16
-TRYON_WORKER_CONCURRENCY = max(1, min(_tryon_concurrency, 32))
+    _tryon_concurrency = 4
+TRYON_WORKER_CONCURRENCY = max(1, min(_tryon_concurrency, 8))
+try:
+    _tryon_provider_conc = int(os.environ.get("TRYON_PROVIDER_CONCURRENCY", "3") or "3")
+except ValueError:
+    _tryon_provider_conc = 3
+TRYON_PROVIDER_CONCURRENCY = max(1, min(_tryon_provider_conc, 8))
+try:
+    _tryon_max_retries = int(os.environ.get("TRYON_MAX_RETRIES", "6") or "6")
+except ValueError:
+    _tryon_max_retries = 6
+TRYON_MAX_RETRIES = max(0, min(_tryon_max_retries, 12))
+try:
+    _tryon_timeout = int(os.environ.get("TRYON_REQUEST_TIMEOUT", "180") or "180")
+except ValueError:
+    _tryon_timeout = 180
+TRYON_REQUEST_TIMEOUT = max(30, min(_tryon_timeout, 240))
+try:
+    _tryon_cooldown = int(os.environ.get("TRYON_RATE_LIMIT_COOLDOWN", "15") or "15")
+except ValueError:
+    _tryon_cooldown = 15
+TRYON_RATE_LIMIT_COOLDOWN = max(1, min(_tryon_cooldown, 120))
+try:
+    _tryon_lease = int(os.environ.get("TRYON_LEASE_SECONDS", "240") or "240")
+except ValueError:
+    _tryon_lease = 240
+TRYON_LEASE_SECONDS = max(60, min(_tryon_lease, 600))
+try:
+    _tryon_dedupe = int(os.environ.get("TRYON_DEDUPE_SECONDS", "30") or "30")
+except ValueError:
+    _tryon_dedupe = 30
+TRYON_DEDUPE_SECONDS = max(5, min(_tryon_dedupe, 120))
+# Faqat ruxsat etilgan stress-test akkauntlari (vergul bilan user id).
+_tryon_test_ids: list[int] = []
+for _part in (os.environ.get("TRYON_TEST_USER_IDS", "") or "").split(","):
+    _part = _part.strip()
+    if _part.isdigit():
+        _tryon_test_ids.append(int(_part))
+TRYON_TEST_USER_IDS = tuple(_tryon_test_ids)
+try:
+    _tryon_test_budget = int(os.environ.get("TRYON_TEST_PROVIDER_BUDGET", "20") or "20")
+except ValueError:
+    _tryon_test_budget = 20
+# Stress-test: 10 job × 2 chaqiruv. Yuqori chegara 20.
+TRYON_TEST_PROVIDER_BUDGET = max(1, min(_tryon_test_budget, 20))
+try:
+    _tryon_test_ttl = int(os.environ.get("TRYON_TEST_BUDGET_TTL_SECONDS", "3600") or "3600")
+except ValueError:
+    _tryon_test_ttl = 3600
+TRYON_TEST_BUDGET_TTL_SECONDS = max(60, min(_tryon_test_ttl, 86400))
+# auto = Vertex birinchi, so'ng Studio. vertex/studio — majburiy tanlov.
+IMAGE_GENERATION_PROVIDER = (
+    os.environ.get("IMAGE_GENERATION_PROVIDER", "auto").strip().lower() or "auto"
+)
+# Navbat 429/5xx dan keyin boshqa provider (faqat vaqtinchalik xatolar).
+IMAGE_PROVIDER_FALLBACK = os.environ.get("IMAGE_PROVIDER_FALLBACK", "false").lower() in (
+    "1",
+    "true",
+    "yes",
+)
 
 # Morf AI kvota. Default o‘chiq — faqat lokal test uchun "true" qiling.
 MORPH_ENTITLEMENT_BYPASS = os.environ.get("MORPH_ENTITLEMENT_BYPASS", "false").lower() in (

@@ -58,25 +58,76 @@ def _generate_via_vertex(
     )
 
 
-def generate_image_content(body: dict[str, Any], *, model: str | None = None) -> dict[str, Any]:
-    """Vertex birinchi (GCP kvota). Studio — 429/5xx va model/config 400/404 zaxirasi."""
-    # AI Studio zaxirasi bor bo'lsa 429 da uzoq kutmasdan tez o'tamiz.
-    vertex_retries = 1 if studio_image_configured() else None
-    if vertex_credentials_configured():
+def generate_image_content(
+    body: dict[str, Any],
+    *,
+    model: str | None = None,
+    max_retries: int | None = None,
+    allow_fallback: bool | None = None,
+) -> dict[str, Any]:
+    """Vertex birinchi (GCP kvota). Studio — faqat vaqtinchalik 429/5xx zaxirasi."""
+    from .image_provider import (
+        configured_image_provider,
+        is_queue_managed_generation,
+        is_studio_fallback_forbidden,
+    )
+
+    queue_managed = is_queue_managed_generation()
+    if allow_fallback is None:
+        allow_fallback = (not queue_managed) or bool(
+            getattr(settings, "IMAGE_PROVIDER_FALLBACK", False)
+        )
+    if is_studio_fallback_forbidden():
+        allow_fallback = False
+    mode = configured_image_provider()
+
+    if is_studio_fallback_forbidden() and (
+        mode == "studio" or (mode == "auto" and not vertex_credentials_configured())
+    ):
+        raise AiStyleError("Test job faqat Vertex ishlatadi.", 503, retryable=False)
+
+    if mode == "studio":
+        if not studio_image_configured():
+            raise AiStyleError("GEMINI_API_KEY sozlanmagan.", 503, retryable=False)
+        return studio_generate_image_content(body, model=model, max_retries=max_retries)
+
+    # AI Studio zaxirasi bor bo'lsa 429 da uzoq kutmasdan tez o'tamiz (navbat emas).
+    if max_retries is not None:
+        vertex_retries = max_retries
+    elif queue_managed:
+        vertex_retries = 0
+    else:
+        vertex_retries = 1 if studio_image_configured() else None
+
+    if mode in ("auto", "vertex") and vertex_credentials_configured():
         try:
             return _generate_via_vertex(body, model=model, max_retries=vertex_retries)
         except AiStyleError as exc:
-            # 400/404: pro-image model Vertexda yo'q yoki imageConfig rad etilgan bo'lishi mumkin.
-            if studio_image_configured() and exc.status in (400, 404, 429, 502, 503, 504):
+            # Model/config xatolari — boshqa provider ga jim o'tilmaydi.
+            if exc.status in (400, 401, 403, 404):
+                raise
+            if (
+                allow_fallback
+                and mode == "auto"
+                and studio_image_configured()
+                and exc.status in (429, 502, 503, 504)
+            ):
                 logger.warning(
                     "Vertex image failed (%s), falling back to AI Studio",
                     exc.status,
                 )
-                return studio_generate_image_content(body, model=model)
+                return studio_generate_image_content(body, model=model, max_retries=0)
             raise
 
+    if mode == "vertex":
+        raise AiStyleError(
+            "Vertex AI sozlanmagan. VERTEX_PROJECT_ID + VERTEX_SERVICE_ACCOUNT_JSON kerak.",
+            503,
+            retryable=False,
+        )
+
     if studio_image_configured():
-        return studio_generate_image_content(body, model=model)
+        return studio_generate_image_content(body, model=model, max_retries=max_retries)
 
     raise AiStyleError(
         "Rasm generatsiya sozlanmagan. VERTEX_PROJECT_ID + VERTEX_SERVICE_ACCOUNT_JSON "
