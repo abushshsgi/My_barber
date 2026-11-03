@@ -21,32 +21,22 @@ _queue_managed: contextvars.ContextVar[bool] = contextvars.ContextVar(
     "tryon_queue_managed_generation",
     default=False,
 )
-_forbid_studio_fallback: contextvars.ContextVar[bool] = contextvars.ContextVar(
-    "tryon_forbid_studio_fallback",
-    default=False,
-)
 
 SUPPORTED_PROVIDERS = frozenset({"auto", "vertex", "studio"})
 
 
 @contextmanager
-def queue_generation_context(*, forbid_studio_fallback: bool = False) -> Iterator[None]:
+def queue_generation_context() -> Iterator[None]:
     """Queue workers: no in-request sleep-retry and no silent paid fallback."""
     token = _queue_managed.set(True)
-    fb_token = _forbid_studio_fallback.set(bool(forbid_studio_fallback))
     try:
         yield
     finally:
-        _forbid_studio_fallback.reset(fb_token)
         _queue_managed.reset(token)
 
 
 def is_queue_managed_generation() -> bool:
     return bool(_queue_managed.get())
-
-
-def is_studio_fallback_forbidden() -> bool:
-    return bool(_forbid_studio_fallback.get())
 
 
 def configured_image_provider() -> str:

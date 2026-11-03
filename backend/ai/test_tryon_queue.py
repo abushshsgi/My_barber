@@ -1,5 +1,4 @@
-import json
-from decimal import Decimal
+﻿from decimal import Decimal
 from threading import Lock, Thread
 from unittest.mock import MagicMock, patch
 
@@ -11,19 +10,15 @@ from ai.services.tryon_queue import (
     PROCESSING_KEY,
     QUEUE_KEY,
     STATUS_COMPLETED,
-    STATUS_FAILED,
     STATUS_PENDING,
     STATUS_RETRYING,
     acquire_provider_slot,
     enqueue_tryon_job,
-    enqueue_tryon_multiview_job,
     get_tryon_job,
     is_queue_enabled,
     process_next_tryon_job,
     recover_abandoned_jobs,
     release_provider_slot,
-    reserve_test_provider_slot,
-    retry_tryon_job,
 )
 
 
@@ -205,13 +200,6 @@ class FakeRedis:
     def eval(self, script, numkeys, *args):
         keys = args[:numkeys]
         argv = args[numkeys:]
-        if "TRYON_TEST_BUDGET" in script:
-            max_calls = int(argv[0])
-            n = self.incr(keys[0])
-            if n > max_calls:
-                self.decr(keys[0])
-                return 0
-            return 1
         if "INCR" in script:
             sem, cd = keys[0], keys[1]
             max_slots = int(argv[0])
@@ -675,214 +663,3 @@ class TryOnReliableQueueTests(SimpleTestCase):
         meta = self.redis.get(f"mysaloon:tryon:job:{job_id}")
         self.assertIn("failed", meta)
         self.assertEqual(mock_tryon.call_count, 1)
-
-
-TEST_USER_ID = 4242
-
-
-@override_settings(
-    TRYON_QUEUE_ENABLED=True,
-    TRYON_QUEUE_MAX_DEPTH=200,
-    TRYON_PROVIDER_CONCURRENCY=3,
-    TRYON_MAX_RETRIES=6,
-    TRYON_TEST_USER_IDS=(TEST_USER_ID,),
-    TRYON_TEST_PROVIDER_BUDGET=20,
-    TRYON_TEST_BUDGET_TTL_SECONDS=3600,
-    IMAGE_PROVIDER_FALLBACK=False,
-)
-class TryOnTestAccountBudgetTests(SimpleTestCase):
-    def setUp(self):
-        self.redis = FakeRedis()
-
-    def _enqueue(self, *, style_id="men-mid-fade", image="data:image/png;base64,approved"):
-        return enqueue_tryon_job(
-            user_id=TEST_USER_ID,
-            image=image,
-            style_id=style_id,
-            style_title=style_id,
-            audience="men",
-            slug=style_id,
-            reference_image_url=None,
-        )
-
-    def _job(self, job_id):
-        return json.loads(self.redis.get(f"mysaloon:tryon:job:{job_id}"))
-
-    def _flush_delayed(self):
-        delayed = self.redis.zsets.get(DELAYED_KEY, {})
-        for job_id in list(delayed):
-            delayed[job_id] = 0
-        for key in list(self.redis.kv):
-            if "cooldown" in key or key.startswith("mysaloon:tryon:sem:"):
-                self.redis.kv.pop(key, None)
-
-    @patch("ai.services.tryon_queue._save_input_photo")
-    @patch("ai.services.tryon_queue._durable_upsert")
-    @patch("ai.services.tryon_queue._notify_user")
-    @patch("ai.services.tryon_queue.get_redis_url", return_value="redis://localhost:6379/0")
-    @patch("ai.services.tryon_queue._redis_client")
-    def test_test_user_gets_max_attempts_one(self, mock_client, _url, _ws, _up, _photo):
-        mock_client.return_value = self.redis
-        job_id = self._enqueue()
-        meta = self._job(job_id)
-        self.assertEqual(meta["max_attempts"], 1)
-        self.assertTrue(meta["is_test_job"])
-        normal = enqueue_tryon_job(
-            user_id=7,
-            image="data:image/png;base64,normal",
-            style_id="men-mid-fade",
-            style_title="Mid Fade",
-            audience="men",
-            slug="mid-fade",
-            reference_image_url=None,
-        )
-        normal_meta = self._job(normal)
-        self.assertEqual(normal_meta["max_attempts"], 6)
-        self.assertFalse(normal_meta["is_test_job"])
-
-    @patch("ai.services.tryon_queue._save_input_photo")
-    @patch("ai.services.tryon_queue._durable_upsert")
-    @patch("ai.services.tryon_queue._notify_user")
-    @patch("ai.services.tryon_queue.get_redis_url", return_value="redis://localhost:6379/0")
-    @patch("ai.services.tryon_queue._redis_client")
-    def test_ten_styles_are_not_deduped(self, mock_client, _url, _ws, _up, _photo):
-        mock_client.return_value = self.redis
-        image = "data:image/png;base64,same-approved"
-        ids = [self._enqueue(style_id=f"style-{i}", image=image) for i in range(10)]
-        self.assertEqual(len(set(ids)), 10)
-        self.assertEqual(self.redis.llen(QUEUE_KEY), 10)
-
-    @patch("ai.services.tryon_queue._save_input_photo")
-    @patch("ai.services.tryon_queue._durable_upsert")
-    @patch("ai.services.tryon_queue._notify_user")
-    @patch("ai.services.tryon_queue.get_redis_url", return_value="redis://localhost:6379/0")
-    @patch("ai.services.tryon_queue._redis_client")
-    def test_multiview_rejected_for_test_user(self, mock_client, _url, _ws, _up, _photo):
-        from ai.services.errors import AiStyleError
-
-        mock_client.return_value = self.redis
-        with self.assertRaises(AiStyleError) as ctx:
-            enqueue_tryon_multiview_job(
-                user_id=TEST_USER_ID,
-                front_image="data:image/png;base64,approved",
-                style_id="men-mid-fade",
-                style_title="Mid Fade",
-                audience="men",
-                slug="mid-fade",
-            )
-        self.assertEqual(ctx.exception.status, 400)
-
-    @patch("ai.services.tryon_queue._save_result_photo")
-    @patch("ai.services.tryon_queue._save_input_photo")
-    @patch("ai.services.tryon_queue._durable_upsert")
-    @patch("ai.services.tryon_queue._notify_user")
-    @patch("ai.services.tryon_queue.generate_tryon_preview")
-    @patch("ai.morph_ops.check_user_can_generate", return_value=None)
-    @patch("ai.services.tryon_queue.record_ai_generation")
-    @patch("ai.services.tryon_queue.get_redis_url", return_value="redis://localhost:6379/0")
-    @patch("ai.services.tryon_queue._redis_client")
-    def test_test_job_allows_two_provider_calls(
-        self, mock_client, _url, _rec, _chk, mock_tryon, _ws, _up, _in, _out
-    ):
-        from ai.services.errors import AiStyleError
-
-        mock_client.return_value = self.redis
-        mock_tryon.side_effect = [
-            AiStyleError("rate", 429, retry_after=0.01),
-            AiStyleError("rate", 429, retry_after=0.01),
-            _tryon_result(),
-        ]
-        job_id = self._enqueue()
-        process_next_tryon_job(block_seconds=1)
-        self.assertEqual(self._job(job_id)["provider_call_count"], 1)
-        self._flush_delayed()
-        process_next_tryon_job(block_seconds=1)
-        meta = self._job(job_id)
-        self.assertEqual(meta["status"], STATUS_FAILED)
-        self.assertEqual(meta["provider_call_count"], 2)
-        self.assertEqual(mock_tryon.call_count, 2)
-
-    @patch("ai.services.tryon_queue._save_result_photo")
-    @patch("ai.services.tryon_queue._save_input_photo")
-    @patch("ai.services.tryon_queue._durable_upsert")
-    @patch("ai.services.tryon_queue._notify_user")
-    @patch("ai.services.tryon_queue.generate_tryon_preview")
-    @patch("ai.morph_ops.check_user_can_generate", return_value=None)
-    @patch("ai.services.tryon_queue.record_ai_generation")
-    @patch("ai.services.tryon_queue.get_redis_url", return_value="redis://localhost:6379/0")
-    @patch("ai.services.tryon_queue._redis_client")
-    def test_slot_wait_does_not_consume_provider_budget(
-        self, mock_client, _url, _rec, _chk, mock_tryon, _ws, _up, _in, _out
-    ):
-        mock_client.return_value = self.redis
-        mock_tryon.return_value = _tryon_result()
-        job_id = self._enqueue()
-        with patch("ai.services.tryon_queue.acquire_provider_slot", return_value=False):
-            process_next_tryon_job(block_seconds=1)
-        meta = self._job(job_id)
-        self.assertEqual(meta["status"], STATUS_RETRYING)
-        self.assertEqual(int(meta.get("provider_call_count") or 0), 0)
-        self.assertIsNone(self.redis.get(f"mysaloon:tryon:test_budget:{TEST_USER_ID}"))
-        self.assertEqual(mock_tryon.call_count, 0)
-
-    @patch("ai.services.tryon_queue._save_result_photo")
-    @patch("ai.services.tryon_queue._save_input_photo")
-    @patch("ai.services.tryon_queue._durable_upsert")
-    @patch("ai.services.tryon_queue._notify_user")
-    @patch("ai.services.tryon_queue.generate_tryon_preview")
-    @patch("ai.morph_ops.check_user_can_generate", return_value=None)
-    @patch("ai.services.tryon_queue.record_ai_generation")
-    @patch("ai.services.tryon_queue.get_redis_url", return_value="redis://localhost:6379/0")
-    @patch("ai.services.tryon_queue._redis_client")
-    def test_atomic_budget_caps_at_twenty(
-        self, mock_client, _url, _rec, _chk, mock_tryon, _ws, _up, _in, _out
-    ):
-        from ai.services.errors import AiStyleError
-
-        mock_client.return_value = self.redis
-        mock_tryon.side_effect = AiStyleError("rate", 429, retry_after=0.01)
-        ids = [self._enqueue(style_id=f"style-{i}") for i in range(10)]
-        for _ in range(30):
-            self._flush_delayed()
-            process_next_tryon_job(block_seconds=1)
-        self.assertEqual(mock_tryon.call_count, 20)
-        used = int(self.redis.get(f"mysaloon:tryon:test_budget:{TEST_USER_ID}") or 0)
-        self.assertEqual(used, 20)
-        for job_id in ids:
-            self.assertLessEqual(int(self._job(job_id).get("provider_call_count") or 0), 2)
-
-    @patch("ai.services.tryon_queue._save_input_photo")
-    @patch("ai.services.tryon_queue._durable_upsert")
-    @patch("ai.services.tryon_queue._notify_user")
-    @patch("ai.services.tryon_queue.get_redis_url", return_value="redis://localhost:6379/0")
-    @patch("ai.services.tryon_queue._redis_client")
-    def test_manual_retry_cannot_bypass_job_cap(self, mock_client, _url, _ws, _up, _photo):
-        mock_client.return_value = self.redis
-        job_id = self._enqueue()
-        meta = self._job(job_id)
-        meta["status"] = STATUS_FAILED
-        meta["provider_call_count"] = 2
-        meta["attempt_count"] = 2
-        self.redis.setex(f"mysaloon:tryon:job:{job_id}", 60, json.dumps(meta))
-        out = retry_tryon_job(job_id, user_id=TEST_USER_ID)
-        self.assertEqual(out["status"], STATUS_FAILED)
-        self.assertEqual(self._job(job_id)["provider_call_count"], 2)
-        self.assertEqual(self.redis.lists.get(QUEUE_KEY, []).count(job_id), 1)
-
-    @patch("ai.services.tryon_queue.get_redis_url", return_value="redis://localhost:6379/0")
-    @patch("ai.services.tryon_queue._redis_client")
-    def test_concurrent_budget_never_exceeds_cap(self, mock_client, _url):
-        mock_client.return_value = self.redis
-        wins = []
-
-        def _worker():
-            if reserve_test_provider_slot(self.redis, TEST_USER_ID):
-                wins.append(1)
-
-        threads = [Thread(target=_worker) for _ in range(40)]
-        for t in threads:
-            t.start()
-        for t in threads:
-            t.join()
-        self.assertEqual(len(wins), 20)
-        self.assertEqual(int(self.redis.get(f"mysaloon:tryon:test_budget:{TEST_USER_ID}")), 20)

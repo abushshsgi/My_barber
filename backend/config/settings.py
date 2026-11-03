@@ -229,24 +229,6 @@ try:
 except ValueError:
     _tryon_dedupe = 30
 TRYON_DEDUPE_SECONDS = max(5, min(_tryon_dedupe, 120))
-# Faqat ruxsat etilgan stress-test akkauntlari (vergul bilan user id).
-_tryon_test_ids: list[int] = []
-for _part in (os.environ.get("TRYON_TEST_USER_IDS", "") or "").split(","):
-    _part = _part.strip()
-    if _part.isdigit():
-        _tryon_test_ids.append(int(_part))
-TRYON_TEST_USER_IDS = tuple(_tryon_test_ids)
-try:
-    _tryon_test_budget = int(os.environ.get("TRYON_TEST_PROVIDER_BUDGET", "20") or "20")
-except ValueError:
-    _tryon_test_budget = 20
-# Stress-test: 10 job × 2 chaqiruv. Yuqori chegara 20.
-TRYON_TEST_PROVIDER_BUDGET = max(1, min(_tryon_test_budget, 20))
-try:
-    _tryon_test_ttl = int(os.environ.get("TRYON_TEST_BUDGET_TTL_SECONDS", "3600") or "3600")
-except ValueError:
-    _tryon_test_ttl = 3600
-TRYON_TEST_BUDGET_TTL_SECONDS = max(60, min(_tryon_test_ttl, 86400))
 # auto = Vertex birinchi, so'ng Studio. vertex/studio — majburiy tanlov.
 IMAGE_GENERATION_PROVIDER = (
     os.environ.get("IMAGE_GENERATION_PROVIDER", "auto").strip().lower() or "auto"

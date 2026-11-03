@@ -66,25 +66,14 @@ def generate_image_content(
     allow_fallback: bool | None = None,
 ) -> dict[str, Any]:
     """Vertex birinchi (GCP kvota). Studio — faqat vaqtinchalik 429/5xx zaxirasi."""
-    from .image_provider import (
-        configured_image_provider,
-        is_queue_managed_generation,
-        is_studio_fallback_forbidden,
-    )
+    from .image_provider import configured_image_provider, is_queue_managed_generation
 
     queue_managed = is_queue_managed_generation()
     if allow_fallback is None:
         allow_fallback = (not queue_managed) or bool(
             getattr(settings, "IMAGE_PROVIDER_FALLBACK", False)
         )
-    if is_studio_fallback_forbidden():
-        allow_fallback = False
     mode = configured_image_provider()
-
-    if is_studio_fallback_forbidden() and (
-        mode == "studio" or (mode == "auto" and not vertex_credentials_configured())
-    ):
-        raise AiStyleError("Test job faqat Vertex ishlatadi.", 503, retryable=False)
 
     if mode == "studio":
         if not studio_image_configured():

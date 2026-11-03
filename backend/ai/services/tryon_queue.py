@@ -36,7 +36,6 @@ SEM_PREFIX = "mysaloon:tryon:sem:"
 COOLDOWN_PREFIX = "mysaloon:tryon:cooldown:"
 METRICS_KEY = "mysaloon:tryon:metrics"
 WORKERS_KEY = "mysaloon:tryon:workers"
-TEST_BUDGET_PREFIX = "mysaloon:tryon:test_budget:"
 
 STATUS_PENDING = "pending"
 STATUS_QUEUED = "queued"  # public alias of pending
@@ -99,21 +98,6 @@ end
 return nextv
 """
 
-_RESERVE_TEST_BUDGET_LUA = """
--- TRYON_TEST_BUDGET
-local max_calls = tonumber(ARGV[1])
-local ttl = tonumber(ARGV[2])
-local n = redis.call('INCR', KEYS[1])
-if n == 1 then
-  redis.call('EXPIRE', KEYS[1], ttl)
-end
-if n > max_calls then
-  redis.call('DECR', KEYS[1])
-  return 0
-end
-return 1
-"""
-
 
 def _job_ttl() -> int:
     return int(getattr(settings, "TRYON_JOB_TTL_SECONDS", 3600))
@@ -125,68 +109,6 @@ def _max_queue_depth() -> int:
 
 def _max_retries() -> int:
     return int(getattr(settings, "TRYON_MAX_RETRIES", 6))
-
-
-def _test_user_ids() -> set[int]:
-    raw = getattr(settings, "TRYON_TEST_USER_IDS", ())
-    ids: set[int] = set()
-    if isinstance(raw, (list, tuple, set, frozenset)):
-        values = raw
-    else:
-        values = str(raw or "").split(",")
-    for item in values:
-        text = str(item).strip()
-        if text.isdigit():
-            ids.add(int(text))
-    return ids
-
-
-def _is_test_user(user_id: int) -> bool:
-    try:
-        uid = int(user_id or 0)
-    except (TypeError, ValueError):
-        return False
-    return bool(uid) and uid in _test_user_ids()
-
-
-def _is_test_job(meta: dict[str, Any] | None) -> bool:
-    if not meta:
-        return False
-    if bool(meta.get("is_test_job")):
-        return True
-    return _is_test_user(int(meta.get("user_id") or 0))
-
-
-def _test_provider_budget() -> int:
-    try:
-        return max(1, min(int(getattr(settings, "TRYON_TEST_PROVIDER_BUDGET", 20) or 20), 20))
-    except (TypeError, ValueError):
-        return 20
-
-
-def _test_job_provider_cap() -> int:
-    return 2
-
-
-def _test_budget_ttl() -> int:
-    try:
-        return max(60, min(int(getattr(settings, "TRYON_TEST_BUDGET_TTL_SECONDS", 3600) or 3600), 86400))
-    except (TypeError, ValueError):
-        return 3600
-
-
-def _test_budget_key(user_id: int) -> str:
-    return f"{TEST_BUDGET_PREFIX}{int(user_id)}"
-
-
-def _should_retry_job(meta: dict[str, Any], *, retryable: bool) -> bool:
-    if not retryable:
-        return False
-    if _is_test_job(meta):
-        return int(meta.get("provider_call_count") or 0) < _test_job_provider_cap()
-    attempts = int(meta.get("attempt_count") or 1)
-    max_attempts = int(meta.get("max_attempts") or _max_retries())
-    return attempts <= max_attempts
 
 
 def _lease_seconds() -> int:
@@ -362,12 +284,6 @@ def _durable_upsert(job_id: str, fields: dict[str, Any]) -> None:
             "idempotency_key": str(fields.get("idempotency_key") or "")[:80],
             "attempt_count": int(fields.get("attempt_count") or 0),
             "max_attempts": int(fields.get("max_attempts") or _max_retries()),
-            "result_meta": {
-                "is_test_job": bool(fields.get("is_test_job")),
-                "provider_call_count": int(fields.get("provider_call_count") or 0),
-            }
-            if fields.get("is_test_job") or fields.get("provider_call_count") is not None
-            else None,
             "lease_owner": str(fields.get("lease_owner") or "")[:64],
             "provider": str(fields.get("provider") or "")[:32],
             "model_name": str(fields.get("model_name") or "")[:120],
@@ -378,12 +294,6 @@ def _durable_upsert(job_id: str, fields: dict[str, Any]) -> None:
             defaults["lease_until"] = fields["lease_until"]
         if fields.get("status") in (STATUS_COMPLETED, STATUS_FAILED, STATUS_CANCELLED):
             defaults["completed_at"] = timezone.now()
-        if defaults.get("result_meta") is None:
-            defaults.pop("result_meta", None)
-        else:
-            existing = TryOnTask.objects.filter(pk=job_id).only("result_meta").first()
-            prev = dict(existing.result_meta or {}) if existing and isinstance(existing.result_meta, dict) else {}
-            defaults["result_meta"] = {**prev, **defaults["result_meta"]}
         TryOnTask.objects.update_or_create(id=job_id, defaults=defaults)
     except Exception:
         logger.debug("Try-on durable upsert skipped job=%s", job_id, exc_info=True)
@@ -453,10 +363,7 @@ def _task_to_meta(task) -> dict[str, Any]:
         "detail": task.error_detail or None,
         "preview_image": preview or None,
         "attempt_count": task.attempt_count,
-        "max_attempts": task.max_attempts,
         "retryable": task.status == STATUS_FAILED,
-        "is_test_job": bool((task.result_meta or {}).get("is_test_job")),
-        "provider_call_count": int((task.result_meta or {}).get("provider_call_count") or 0),
     }
 
 
@@ -542,41 +449,6 @@ def set_provider_cooldown(client, provider: str, seconds: float) -> None:
     _metric_incr(client, "http_429_total")
 
 
-def reserve_test_provider_slot(client, user_id: int) -> bool:
-    """Atomik slot: muvaffaqiyatsiz/noaniq chaqiruv ham byudjetdan tushadi, qaytarilmaydi."""
-    if not user_id:
-        return False
-    key = _test_budget_key(user_id)
-    max_calls = _test_provider_budget()
-    ttl = _test_budget_ttl()
-    try:
-        ok = client.eval(_RESERVE_TEST_BUDGET_LUA, 1, key, max_calls, ttl)
-        return int(ok or 0) == 1
-    except Exception:
-        n = int(client.incr(key) or 0)
-        try:
-            client.expire(key, ttl)
-        except Exception:
-            pass
-        if n > max_calls:
-            try:
-                client.decr(key)
-            except Exception:
-                pass
-            return False
-        return True
-
-
-def test_budget_has_room(client, user_id: int) -> bool:
-    if not user_id:
-        return False
-    try:
-        used = int(client.get(_test_budget_key(user_id)) or 0)
-    except (TypeError, ValueError):
-        used = 0
-    return used < _test_provider_budget()
-
-
 def enqueue_tryon_job(
     *,
     user_id: int,
@@ -611,12 +483,8 @@ def enqueue_tryon_job(
             503,
         )
 
-    if _is_test_user(user_id) and kind == "multiview":
-        raise AiStyleError("Test akkaunti uchun multiview o'chirilgan.", 400, retryable=False)
-
     job_id = uuid.uuid4().hex
     now = _now_iso()
-    test_job = _is_test_user(user_id)
     meta = {
         "job_id": job_id,
         "status": STATUS_PENDING,
@@ -629,9 +497,7 @@ def enqueue_tryon_job(
         "updated_at": now,
         "queue_position": int(client.llen(QUEUE_KEY)) + 1,
         "attempt_count": 0,
-        "provider_call_count": 0,
-        "is_test_job": test_job,
-        "max_attempts": 1 if test_job else _max_retries(),
+        "max_attempts": _max_retries(),
         "idempotency_key": dedupe[-80:],
     }
     payload = {
@@ -773,25 +639,11 @@ def retry_tryon_job(job_id: str, *, user_id: int) -> dict[str, Any] | None:
             client.setex(_payload_key(job_id), _job_ttl(), json.dumps(payload))
         else:
             return _public_payload(meta)
-    if _is_test_job(meta):
-        calls = int(meta.get("provider_call_count") or 0)
-        if calls >= _test_job_provider_cap() or not test_budget_has_room(client, user_id):
-            meta["retryable"] = False
-            meta["detail"] = "Test job provider limiti tugadi."
-            meta["updated_at"] = _now_iso()
-            _save_job(client, job_id, meta)
-            _durable_upsert(job_id, meta)
-            return _public_payload(meta)
-        meta["status"] = STATUS_PENDING
-        meta["detail"] = None
-        meta["retryable"] = False
-        meta["updated_at"] = _now_iso()
-    else:
-        meta["status"] = STATUS_PENDING
-        meta["attempt_count"] = 0
-        meta["detail"] = None
-        meta["retryable"] = False
-        meta["updated_at"] = _now_iso()
+    meta["status"] = STATUS_PENDING
+    meta["attempt_count"] = 0
+    meta["detail"] = None
+    meta["retryable"] = False
+    meta["updated_at"] = _now_iso()
     _save_job(client, job_id, meta)
     client.rpush(QUEUE_KEY, job_id)
     _durable_upsert(job_id, meta)
@@ -1116,21 +968,8 @@ def process_next_tryon_job(*, block_seconds: int = 5) -> bool:
     _notify_user(int(meta.get("user_id") or 0), {**generating_meta, "phase": PHASE_GENERATING})
 
     try:
-        job_kind = str(payload.get("job_kind") or meta.get("job_kind") or "tryon")
-        test_job = _is_test_job(meta)
-        if test_job and job_kind == "multiview":
-            raise AiStyleError("Test akkaunti uchun multiview o'chirilgan.", 400, retryable=False)
-        if test_job:
-            calls = int(meta.get("provider_call_count") or 0)
-            if calls >= _test_job_provider_cap():
-                raise AiStyleError("Test job provider limiti tugadi.", 429, retryable=False)
-            if not reserve_test_provider_slot(client, int(meta.get("user_id") or 0)):
-                raise AiStyleError("Test provider byudjeti tugadi.", 429, retryable=False)
-            meta["provider_call_count"] = calls + 1
-            meta["updated_at"] = _now_iso()
-            _save_job(client, job_id, meta)
-            _durable_upsert(job_id, meta)
-        with queue_generation_context(forbid_studio_fallback=test_job):
+        with queue_generation_context():
+            job_kind = str(payload.get("job_kind") or meta.get("job_kind") or "tryon")
             if job_kind == "multiview":
                 multi = generate_tryon_multiview(
                     front_data_url=str(payload.get("image") or ""),
@@ -1229,8 +1068,9 @@ def process_next_tryon_job(*, block_seconds: int = 5) -> bool:
             return True
     except AiStyleError as exc:
         attempts = int(meta.get("attempt_count") or 1)
+        max_attempts = int(meta.get("max_attempts") or _max_retries())
         retryable = bool(getattr(exc, "retryable", exc.status in (429, 502, 503, 504)))
-        if _should_retry_job(meta, retryable=retryable):
+        if retryable and attempts <= max_attempts:
             delay = getattr(exc, "retry_after", None)
             if delay is None:
                 delay = min(60.0, (2 ** max(0, attempts - 1)) + random.uniform(0.4, 2.5))
@@ -1266,7 +1106,8 @@ def process_next_tryon_job(*, block_seconds: int = 5) -> bool:
         return True
     except Exception as exc:
         attempts = int(meta.get("attempt_count") or 1)
-        if _should_retry_job(meta, retryable=True):
+        max_attempts = int(meta.get("max_attempts") or _max_retries())
+        if attempts <= max_attempts:
             delay = min(30.0, (2 ** max(0, attempts - 1)) + random.uniform(0.3, 1.5))
             _requeue_later(client, job_id, meta, delay)
             logger.exception("Try-on job error retry (%s): %s", job_id, exc)
