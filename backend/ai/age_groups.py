@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from datetime import date
 
 AGE_GROUPS = frozenset({"kids", "teen", "young", "adult", "mature"})
@@ -68,4 +70,8 @@ def resolve_hairstyle_image_path(
             )
     if not age_group or age_group == "young":
         return image_path
-    return f"/hairstyles/{audience}/{age_group}/{slug}.webp"
+    candidate = f"/hairstyles/{audience}/{age_group}/{slug}.webp"
+    public_root = Path(__file__).resolve().parents[2] / "apps" / "user" / "public"
+    if (public_root / candidate.lstrip("/")).is_file():
+        return candidate
+    return image_path
