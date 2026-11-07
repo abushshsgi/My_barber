@@ -14,19 +14,19 @@ if python manage.py showmigrations --plan 2>/dev/null | grep -q '^\[ \]'; then
 fi
 
 if [ -n "${REDIS_URL:-}" ] && [ "${TRYON_QUEUE_ENABLED:-true}" != "false" ]; then
-  workers="${TRYON_WORKER_COUNT:-2}"
-  concurrency="${TRYON_WORKER_CONCURRENCY:-16}"
+  workers="${TRYON_WORKER_COUNT:-3}"
+  concurrency="${TRYON_WORKER_CONCURRENCY:-8}"
   case "$workers" in
     ''|*[!0-9]*) workers=2 ;;
   esac
   case "$concurrency" in
-    ''|*[!0-9]*) concurrency=16 ;;
+    ''|*[!0-9]*) concurrency=4 ;;
   esac
   if [ "$workers" -lt 1 ]; then workers=1; fi
-  if [ "$workers" -gt 4 ]; then workers=4; fi
+  if [ "$workers" -gt 8 ]; then workers=8; fi
   if [ "$concurrency" -lt 1 ]; then concurrency=1; fi
   if [ "$concurrency" -gt 32 ]; then concurrency=32; fi
-  echo "[start] Starting ${workers} try-on workers x ${concurrency} threads..."
+  echo "[start] Starting ${workers} try-on workers x ${concurrency} threads (provider=${TRYON_PROVIDER:-runware}, model=${RUNWARE_TRYON_MODEL:-runware:400@2}, global provider slots=${TRYON_PROVIDER_CONCURRENCY:-8})..."
   i=1
   while [ "$i" -le "$workers" ]; do
     python manage.py run_tryon_worker --poll-seconds 5 --concurrency "${concurrency}" &

@@ -1,0 +1,288 @@
+"""Morf Try-On Runware contract tests. No live Runware account is required."""
+
+from __future__ import annotations
+
+import json
+from decimal import Decimal
+from io import BytesIO
+from unittest.mock import MagicMock, patch
+
+import requests
+from django.test import SimpleTestCase, override_settings
+from PIL import Image
+
+from ai.services.errors import AiStyleError
+
+TINY_PNG = (
+    "data:image/png;base64,"
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
+)
+
+
+def _jpeg_bytes() -> bytes:
+    buffer = BytesIO()
+    Image.new("RGB", (32, 32), (90, 70, 60)).save(buffer, format="JPEG", quality=80)
+    return buffer.getvalue()
+
+
+class _Response:
+    def __init__(self, status, payload, headers=None, text=None):
+        self.status_code = status
+        self._payload = payload
+        self.headers = headers or {}
+        self.text = text if text is not None else json.dumps(payload)
+
+    def json(self):
+        if isinstance(self._payload, Exception):
+            raise self._payload
+        return self._payload
+
+
+@override_settings(
+    TRYON_PROVIDER="runware",
+    RUNWARE_API_KEY="super-secret-key",
+    RUNWARE_API_URL="https://api.runware.ai/v1",
+    RUNWARE_TRYON_MODEL="runware:400@2",
+    RUNWARE_TRYON_WIDTH=1024,
+    RUNWARE_TRYON_HEIGHT=1024,
+    RUNWARE_TRYON_TIMEOUT=30,
+    MEDIA_URL="/media/",
+)
+class RunwareTryOnTests(SimpleTestCase):
+    def test_1024_is_inside_model_limits(self):
+        from ai.services.runware_tryon import resolved_tryon_size, snap_dimension
+
+        self.assertEqual(resolved_tryon_size("runware:400@2"), (1024, 1024))
+        self.assertEqual(snap_dimension(1000), 992)
+        self.assertEqual(snap_dimension(1024), 1024)
+
+    def test_unverified_model_is_rejected_before_http(self):
+        from ai.services.runware_tryon import generate_tryon_preview
+
+        session = MagicMock()
+        with override_settings(RUNWARE_TRYON_MODEL="runware:999@1"), patch(
+            "ai.services.runware_client.http_session", return_value=session
+        ):
+            with self.assertRaises(AiStyleError) as ctx:
+                generate_tryon_preview(
+                    selfie_data_url=TINY_PNG,
+                    audience="men",
+                    slug="mid-fade",
+                    title="Mid Fade",
+                )
+        self.assertEqual(ctx.exception.status, 503)
+        self.assertFalse(ctx.exception.retryable)
+        session.post.assert_not_called()
+
+    def test_wrong_provider_does_not_call_gemini(self):
+        from ai.services.runware_tryon import generate_tryon_preview
+
+        with override_settings(TRYON_PROVIDER="gemini"), patch(
+            "ai.services.vertex_image.generate_image_content"
+        ) as vertex:
+            with self.assertRaises(AiStyleError) as ctx:
+                generate_tryon_preview(
+                    selfie_data_url=TINY_PNG,
+                    audience="men",
+                    slug="mid-fade",
+                    title="Mid Fade",
+                )
+        self.assertEqual(ctx.exception.status, 503)
+        vertex.assert_not_called()
+
+    @patch("media_store.utils.save_media_bytes", return_value="stored.jpg")
+    @patch("ai.services.runware_tryon.download_image")
+    @patch("ai.services.runware_tryon.run_image_inference")
+    @patch("ai.services.vertex_image.generate_image_content")
+    def test_preview_uses_reference_images_and_local_media(
+        self, vertex, infer, download, _save
+    ):
+        from ai.services.runware_tryon import generate_tryon_preview
+
+        download.return_value = _jpeg_bytes()
+        infer.return_value = {
+            "imageURL": "https://im.runware.ai/image/example.jpg",
+            "cost": 0.0012,
+            "seed": 7,
+        }
+        with patch(
+            "ai.services.runware_tryon.load_public_image",
+            return_value=("image/png", _jpeg_bytes()),
+        ):
+            result = generate_tryon_preview(
+                selfie_data_url=TINY_PNG,
+                audience="men",
+                slug="mid-fade",
+                title="Mid Fade",
+                reference_image_url="/hairstyles/men/mid-fade.webp",
+            )
+
+        vertex.assert_not_called()
+        task = infer.call_args.args[0]
+        refs = task["inputs"]["referenceImages"]
+        self.assertEqual(task["model"], "runware:400@2")
+        self.assertEqual((task["width"], task["height"]), (1024, 1024))
+        self.assertEqual(len(refs), 2)
+        self.assertTrue(all(item.startswith("data:image/jpeg;base64,") for item in refs))
+        self.assertNotIn("seedImage", task)
+        self.assertIn("reference image 1", task["positivePrompt"].lower())
+        self.assertIn("reference image 2", task["positivePrompt"].lower())
+        self.assertTrue(result.preview_image.startswith("/media/ai-style/tryon-results/"))
+        self.assertNotIn("runware.ai", result.preview_image)
+        self.assertNotIn("super-secret-key", result.preview_image)
+        self.assertEqual(result.provider, "runware")
+        self.assertEqual(result.cost_usd, Decimal("0.0012"))
+        self.assertFalse(result.tokens_estimated)
+        self.assertGreaterEqual(result.latency_ms, 0)
+        download.assert_called_once_with("https://im.runware.ai/image/example.jpg")
+
+    @patch("media_store.utils.save_media_bytes", return_value="stored.jpg")
+    @patch("ai.services.runware_tryon.download_image")
+    @patch("ai.services.runware_tryon.run_image_inference")
+    def test_full_model_switches_to_the_next_without_waiting(self, infer, download, _save):
+        from ai.services.errors import AiStyleError
+        from ai.services.runware_tryon import generate_tryon_preview
+
+        download.return_value = _jpeg_bytes()
+        infer.side_effect = [
+            AiStyleError("Try-on hozir band.", 429, retryable=True),
+            AiStyleError("Try-on modeli topilmadi.", 400, retryable=False),
+            {"imageURL": "https://im.runware.ai/image/fallback.jpg", "cost": 0.002},
+        ]
+        with override_settings(
+            RUNWARE_TRYON_FALLBACK_MODELS="runware:400@6,runware:400@3"
+        ):
+            result = generate_tryon_preview(
+                selfie_data_url=TINY_PNG,
+                audience="men",
+                slug="mid-fade",
+                title="Mid Fade",
+            )
+        self.assertEqual(result.model, "runware:400@3")
+        self.assertEqual(infer.call_count, 3)
+        self.assertEqual(
+            [call.args[0]["model"] for call in infer.call_args_list],
+            ["runware:400@2", "runware:400@6", "runware:400@3"],
+        )
+
+    def test_default_chain_is_klein_9b_then_kv_then_4b(self):
+        from ai.services.runware_tryon import tryon_model_chain
+
+        with override_settings(RUNWARE_TRYON_FALLBACK_MODELS="runware:400@6,runware:400@4"):
+            self.assertEqual(
+                tryon_model_chain(),
+                ["runware:400@2", "runware:400@6", "runware:400@4"],
+            )
+
+    def test_rate_limit_is_single_attempt(self):
+        from ai.services.runware_client import run_image_inference
+
+        session = MagicMock()
+        session.post.return_value = _Response(
+            429,
+            {"errors": [{"code": "rateLimitExceeded", "message": "slow down"}]},
+            headers={"Retry-After": "4"},
+        )
+        with patch("ai.services.runware_client.http_session", return_value=session):
+            with self.assertRaises(AiStyleError) as ctx:
+                run_image_inference({"model": "runware:400@2", "positivePrompt": "edit"})
+        self.assertEqual(ctx.exception.status, 429)
+        self.assertTrue(ctx.exception.retryable)
+        self.assertEqual(ctx.exception.retry_after, 4.0)
+        self.assertEqual(session.post.call_count, 1)
+        self.assertNotIn("super-secret-key", ctx.exception.message)
+
+    def test_timeout_and_invalid_key_are_not_retried_inside_client(self):
+        from ai.services.runware_client import run_image_inference
+
+        session = MagicMock()
+        session.post.side_effect = requests.Timeout("super-secret-key timed out")
+        with patch("ai.services.runware_client.http_session", return_value=session):
+            with self.assertLogs("ai.services.runware_client", level="WARNING") as logs:
+                with self.assertRaises(AiStyleError) as ctx:
+                    run_image_inference({"model": "runware:400@2", "positivePrompt": "edit"})
+        self.assertEqual(ctx.exception.status, 504)
+        self.assertTrue(ctx.exception.retryable)
+        self.assertEqual(session.post.call_count, 1)
+        self.assertNotIn("super-secret-key", "\n".join(logs.output))
+        self.assertNotIn("super-secret-key", ctx.exception.message)
+
+        session.post.side_effect = None
+        session.post.return_value = _Response(
+            401,
+            {"errors": [{"code": "invalidApiKey", "message": "rejected super-secret-key"}]},
+        )
+        with patch("ai.services.runware_client.http_session", return_value=session):
+            with self.assertLogs("ai.services.runware_client", level="WARNING") as logs:
+                with self.assertRaises(AiStyleError) as ctx:
+                    run_image_inference({"model": "runware:400@2", "positivePrompt": "edit"})
+        self.assertEqual(ctx.exception.status, 401)
+        self.assertFalse(ctx.exception.retryable)
+        self.assertNotIn("super-secret-key", ctx.exception.message)
+        self.assertNotIn("super-secret-key", "\n".join(logs.output))
+
+    def test_insufficient_balance_empty_result_and_bad_download(self):
+        from ai.services.runware_client import download_image, run_image_inference
+
+        session = MagicMock()
+        session.post.return_value = _Response(
+            402,
+            {"errors": [{"code": "insufficientCredits", "message": "top up"}]},
+        )
+        with patch("ai.services.runware_client.http_session", return_value=session):
+            with self.assertRaises(AiStyleError) as ctx:
+                run_image_inference({"model": "runware:400@2", "positivePrompt": "edit"})
+        self.assertEqual(ctx.exception.status, 402)
+        self.assertFalse(ctx.exception.retryable)
+
+        session.post.return_value = _Response(200, {"data": []})
+        with patch("ai.services.runware_client.http_session", return_value=session):
+            with self.assertRaises(AiStyleError) as ctx:
+                run_image_inference({"model": "runware:400@2", "positivePrompt": "edit"})
+        self.assertEqual(ctx.exception.status, 502)
+
+        with patch("ai.services.runware_client.http_session", return_value=session):
+            with self.assertRaises(AiStyleError) as ctx:
+                download_image("https://evil.example/photo.jpg")
+        self.assertEqual(ctx.exception.status, 502)
+        session.get.assert_not_called()
+
+    def test_inference_posts_official_task_once(self):
+        from ai.services.runware_client import run_image_inference
+
+        session = MagicMock()
+        session.post.return_value = _Response(
+            200,
+            {"data": [{"taskType": "imageInference", "imageURL": "https://im.runware.ai/image/ii/x.jpg"}]},
+        )
+        with patch("ai.services.runware_client.http_session", return_value=session):
+            result = run_image_inference(
+                {
+                    "model": "runware:400@2",
+                    "positivePrompt": "edit reference image 1",
+                    "width": 1024,
+                    "height": 1024,
+                    "inputs": {"referenceImages": ["data:image/jpeg;base64,abcd"]},
+                }
+            )
+        self.assertEqual(result["imageURL"], "https://im.runware.ai/image/ii/x.jpg")
+        self.assertEqual(session.post.call_count, 1)
+        url = session.post.call_args.args[0]
+        body = session.post.call_args.kwargs["json"][0]
+        headers = session.post.call_args.kwargs["headers"]
+        self.assertEqual(url, "https://api.runware.ai/v1")
+        self.assertEqual(body["taskType"], "imageInference")
+        self.assertEqual(body["model"], "runware:400@2")
+        self.assertEqual(body["inputs"]["referenceImages"], ["data:image/jpeg;base64,abcd"])
+        self.assertEqual(headers["Authorization"], "Bearer super-secret-key")
+        self.assertNotIn("generativelanguage.googleapis.com", url)
+
+    def test_queue_backoff_stays_bounded(self):
+        from ai.services.tryon_queue import _provider_backoff_seconds
+
+        with override_settings(TRYON_RATE_LIMIT_COOLDOWN=15):
+            early = _provider_backoff_seconds(1, None)
+            later = _provider_backoff_seconds(10, 2)
+        self.assertGreaterEqual(early, 15)
+        self.assertGreater(later, early)
+        self.assertLessEqual(later, 120)

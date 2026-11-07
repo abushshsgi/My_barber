@@ -46,12 +46,15 @@ from .style_recommend import (
     normalize_request_audience,
     resolve_ai_style_audience,
 )
-from .services.gemini_tryon import generate_tryon_multiview, generate_tryon_preview
+from .services.runware_tryon import generate_tryon_multiview, generate_tryon_preview
 from .services.tryon_queue import (
+    cancel_tryon_job,
     enqueue_tryon_job,
     enqueue_tryon_multiview_job,
     get_tryon_job,
     is_queue_enabled,
+    list_user_tryon_jobs,
+    retry_tryon_job,
 )
 from .services.gemini_barber_card import generate_barber_master_card
 from .services.care_catalog_context import build_care_catalog_context
@@ -306,6 +309,13 @@ class AiStyleTryOnView(UnthrottledAPIView):
 
     permission_classes = [IsAuthenticated]
 
+    def get(self, request):
+        user = _require_customer_user(request)
+        if isinstance(user, Response):
+            return user
+        jobs = list_user_tryon_jobs(user_id=user.pk, limit=15)
+        return Response({"results": jobs})
+
     def post(self, request):
         user = _require_customer_user(request)
         if isinstance(user, Response):
@@ -348,6 +358,9 @@ class AiStyleTryOnView(UnthrottledAPIView):
                     {
                         "job_id": job_id,
                         "status": "queued",
+                        "state": "pending",
+                        "phase": "waiting",
+                        "message": "Navbatda kutyapsiz.",
                         "style_id": style.style_id,
                         "style_title": style.title_uz,
                     },
@@ -404,7 +417,13 @@ class AiStyleTryOnView(UnthrottledAPIView):
                 style_title=style.title_uz,
                 error_detail=exc.message,
             )
-            return Response({"detail": exc.message}, status=exc.status)
+            http_status = status.HTTP_503_SERVICE_UNAVAILABLE if exc.status == 429 else exc.status
+            detail = (
+                "Try-on navbatda. Biroz kuting, rasm tayyor bo'ladi."
+                if exc.status == 429
+                else exc.message
+            )
+            return Response({"detail": detail}, status=http_status)
 
 
 class AiStyleTryOnJobView(UnthrottledAPIView):
@@ -418,6 +437,22 @@ class AiStyleTryOnJobView(UnthrottledAPIView):
             return user
 
         job = get_tryon_job(job_id.strip(), user_id=user.pk)
+        if job is None:
+            return Response({"detail": "Topilmadi yoki muddati tugagan."}, status=404)
+        return Response(job)
+
+    def post(self, request, job_id: str):
+        user = _require_customer_user(request)
+        if isinstance(user, Response):
+            return user
+        action = str((request.data or {}).get("action") or "").strip().lower()
+        jid = job_id.strip()
+        if action == "cancel":
+            job = cancel_tryon_job(jid, user_id=user.pk)
+        elif action == "retry":
+            job = retry_tryon_job(jid, user_id=user.pk)
+        else:
+            return Response({"detail": "Unknown action"}, status=status.HTTP_400_BAD_REQUEST)
         if job is None:
             return Response({"detail": "Topilmadi yoki muddati tugagan."}, status=404)
         return Response(job)
@@ -459,6 +494,9 @@ class AiStyleTryOnViewsView(UnthrottledAPIView):
                     {
                         "job_id": job_id,
                         "status": "queued",
+                        "state": "pending",
+                        "phase": "waiting",
+                        "message": "Navbatda kutyapsiz.",
                         "style_id": style.style_id,
                         "style_title": style.title_uz,
                     },
@@ -506,7 +544,13 @@ class AiStyleTryOnViewsView(UnthrottledAPIView):
                 style_title=style.title_uz,
                 error_detail=exc.message,
             )
-            return Response({"detail": exc.message}, status=exc.status)
+            http_status = status.HTTP_503_SERVICE_UNAVAILABLE if exc.status == 429 else exc.status
+            detail = (
+                "Try-on navbatda. Biroz kuting, rasm tayyor bo'ladi."
+                if exc.status == 429
+                else exc.message
+            )
+            return Response({"detail": detail}, status=http_status)
 
 
 class AiFaceCheckView(UnthrottledAPIView):

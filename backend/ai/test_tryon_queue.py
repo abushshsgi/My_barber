@@ -1,15 +1,18 @@
-﻿from decimal import Decimal
+﻿import json
+import time
+from decimal import Decimal
 from threading import Lock, Thread
 from unittest.mock import MagicMock, patch
 
 from django.test import SimpleTestCase, override_settings
 
-from ai.services.gemini_tryon import TryOnResult
+from ai.services.runware_tryon import TryOnResult
 from ai.services.tryon_queue import (
     DELAYED_KEY,
     PROCESSING_KEY,
     QUEUE_KEY,
     STATUS_COMPLETED,
+    STATUS_FAILED,
     STATUS_PENDING,
     STATUS_RETRYING,
     acquire_provider_slot,
@@ -27,7 +30,7 @@ def _tryon_result(image="data:image/png;base64,out"):
         preview_image=image,
         prompt="p",
         model="m",
-        provider="vertex",
+        provider="runware",
         prompt_tokens=10,
         candidates_tokens=20,
         thoughts_tokens=0,
@@ -90,6 +93,13 @@ class FakeRedis:
         with self._lock:
             self.lists.setdefault(key, []).extend(values)
             return len(self.lists[key])
+
+    def lpush(self, key, *values):
+        with self._lock:
+            lst = self.lists.setdefault(key, [])
+            for value in reversed(values):
+                lst.insert(0, value)
+            return len(lst)
 
     def lrange(self, key, start, end):
         with self._lock:
@@ -219,6 +229,14 @@ class FakeRedis:
                 self.delete(sem)
                 return 0
             return self.decr(sem)
+        if "SET" in script:
+            key = keys[0]
+            new_until = float(argv[0])
+            current = float(self.get(key) or 0)
+            if current >= new_until:
+                return current
+            self.setex(key, int(float(argv[1])), str(new_until))
+            return new_until
         return 0
 
     def pipeline(self):
@@ -337,10 +355,22 @@ class TryOnQueueOpsTests(SimpleTestCase):
         mock_client_fn.return_value = client
         client.set.return_value = True
         client.blpop.return_value = ("mysaloon:tryon:queue", "job123")
-        client.get.side_effect = [
-            '{"job_id":"job123","status":"pending","user_id":1,"style_id":"men-mid-fade","style_title":"Mid Fade"}',
-            '{"image":"data:image/png;base64,x","audience":"men","slug":"mid-fade","title":"Mid Fade","reference_image_url":null}',
-        ]
+
+        def _get(key):
+            key = str(key)
+            if "payload:" in key:
+                return (
+                    '{"image":"data:image/png;base64,x","audience":"men",'
+                    '"slug":"mid-fade","title":"Mid Fade","reference_image_url":null}'
+                )
+            if "job:" in key:
+                return (
+                    '{"job_id":"job123","status":"pending","user_id":1,'
+                    '"style_id":"men-mid-fade","style_title":"Mid Fade"}'
+                )
+            return None
+
+        client.get.side_effect = _get
 
         with patch("ai.services.tryon_queue.record_ai_generation"), patch(
             "ai.morph_ops.check_user_can_generate", return_value=None
@@ -516,6 +546,42 @@ class TryOnReliableQueueTests(SimpleTestCase):
     @patch("ai.services.tryon_queue.record_ai_generation")
     @patch("ai.services.tryon_queue.get_redis_url", return_value="redis://localhost:6379/0")
     @patch("ai.services.tryon_queue._redis_client")
+    def test_http_429_keeps_retrying_past_attempt_cap(
+        self, mock_client, _url, _rec, _chk, mock_tryon, _ws, _up, _in
+    ):
+        from ai.services.errors import AiStyleError
+
+        mock_client.return_value = self.redis
+        mock_tryon.side_effect = AiStyleError("rate", 429, retry_after=1.0)
+        job_id = enqueue_tryon_job(
+            user_id=9,
+            image="data:image/png;base64,r429-cap",
+            style_id="men-mid-fade",
+            style_title="Mid Fade",
+            audience="men",
+            slug="mid-fade",
+            reference_image_url=None,
+        )
+        for _ in range(5):
+            for key in list(self.redis.kv):
+                if "cooldown" in key or key.startswith("mysaloon:tryon:sem:"):
+                    self.redis.kv.pop(key, None)
+            delayed = self.redis.zsets.get(DELAYED_KEY, {})
+            if job_id in delayed:
+                delayed[job_id] = 0
+            process_next_tryon_job(block_seconds=1)
+        meta = self.redis.get(f"mysaloon:tryon:job:{job_id}")
+        self.assertIn(STATUS_RETRYING, meta)
+        self.assertNotIn(STATUS_FAILED, meta)
+
+    @patch("ai.services.tryon_queue._save_input_photo")
+    @patch("ai.services.tryon_queue._durable_upsert")
+    @patch("ai.services.tryon_queue._notify_user")
+    @patch("ai.services.tryon_queue.generate_tryon_preview")
+    @patch("ai.morph_ops.check_user_can_generate", return_value=None)
+    @patch("ai.services.tryon_queue.record_ai_generation")
+    @patch("ai.services.tryon_queue.get_redis_url", return_value="redis://localhost:6379/0")
+    @patch("ai.services.tryon_queue._redis_client")
     def test_timeout_retries(
         self, mock_client, _url, _rec, _chk, mock_tryon, _ws, _up, _in
     ):
@@ -663,3 +729,130 @@ class TryOnReliableQueueTests(SimpleTestCase):
         meta = self.redis.get(f"mysaloon:tryon:job:{job_id}")
         self.assertIn("failed", meta)
         self.assertEqual(mock_tryon.call_count, 1)
+
+    def _clear_cooldown_and_due(self):
+        for key in list(self.redis.kv):
+            if "cooldown" in key or key.startswith("mysaloon:tryon:sem:"):
+                self.redis.kv.pop(key, None)
+        delayed = self.redis.zsets.get(DELAYED_KEY, {})
+        for job_id in list(delayed):
+            delayed[job_id] = 0
+
+    @patch("ai.services.tryon_queue._save_input_photo")
+    @patch("ai.services.tryon_queue._durable_upsert")
+    @patch("ai.services.tryon_queue._notify_user")
+    @patch("ai.services.tryon_queue.generate_tryon_preview")
+    @patch("ai.morph_ops.check_user_can_generate", return_value=None)
+    @patch("ai.services.tryon_queue.record_ai_generation")
+    @patch("ai.services.tryon_queue.get_redis_url", return_value="redis://localhost:6379/0")
+    @patch("ai.services.tryon_queue._redis_client")
+    def test_slot_wait_does_not_consume_provider_retry_budget(
+        self, mock_client, _url, _rec, _chk, mock_tryon, _ws, _up, _in
+    ):
+        mock_client.return_value = self.redis
+        mock_tryon.return_value = _tryon_result()
+        job_id = enqueue_tryon_job(
+            user_id=21,
+            image="data:image/png;base64,slot",
+            style_id="men-mid-fade",
+            style_title="Mid Fade",
+            audience="men",
+            slug="mid-fade",
+            reference_image_url=None,
+        )
+        with patch("ai.services.tryon_queue.acquire_provider_slot", return_value=False), patch(
+            "ai.services.tryon_queue.SLOT_WAIT_SECONDS", 0.01
+        ):
+            process_next_tryon_job(block_seconds=1)
+        meta = json.loads(self.redis.get(f"mysaloon:tryon:job:{job_id}"))
+        self.assertEqual(meta["status"], STATUS_RETRYING)
+        self.assertEqual(int(meta.get("provider_attempt_count") or 0), 0)
+        self.assertEqual(int(meta.get("attempt_count") or 0), 0)
+        self.assertEqual(mock_tryon.call_count, 0)
+        self.assertGreaterEqual(int(self.redis.hgetall("mysaloon:tryon:metrics").get("slot_wait_requeue_total") or 0), 1)
+
+    @patch("ai.services.tryon_queue._save_result_photo")
+    @patch("ai.services.tryon_queue._save_input_photo")
+    @patch("ai.services.tryon_queue._durable_upsert")
+    @patch("ai.services.tryon_queue._notify_user")
+    @patch("ai.services.tryon_queue.generate_tryon_preview")
+    @patch("ai.morph_ops.check_user_can_generate", return_value=None)
+    @patch("ai.services.tryon_queue.record_ai_generation")
+    @patch("ai.services.tryon_queue.get_redis_url", return_value="redis://localhost:6379/0")
+    @patch("ai.services.tryon_queue._redis_client")
+    def test_provider_retry_limit_is_http_attempts_only(
+        self, mock_client, _url, _rec, _chk, mock_tryon, _ws, _up, _in, _out
+    ):
+        from ai.services.errors import AiStyleError
+
+        mock_client.return_value = self.redis
+        mock_tryon.side_effect = AiStyleError("rate", 429, retry_after=1.0)
+        job_id = enqueue_tryon_job(
+            user_id=22,
+            image="data:image/png;base64,limit",
+            style_id="men-mid-fade",
+            style_title="Mid Fade",
+            audience="men",
+            slug="mid-fade",
+            reference_image_url=None,
+        )
+        for _ in range(8):
+            self._clear_cooldown_and_due()
+            process_next_tryon_job(block_seconds=1)
+            meta = json.loads(self.redis.get(f"mysaloon:tryon:job:{job_id}"))
+        self.assertEqual(meta["status"], STATUS_RETRYING)
+        self.assertEqual(mock_tryon.call_count, 8)
+        self.assertGreater(int(meta.get("provider_attempt_count") or 0), 3)
+
+    @patch("ai.services.tryon_queue._save_input_photo")
+    @patch("ai.services.tryon_queue._durable_upsert")
+    @patch("ai.services.tryon_queue._notify_user")
+    @patch("ai.services.tryon_queue.generate_tryon_preview")
+    @patch("ai.morph_ops.check_user_can_generate", return_value=None)
+    @patch("ai.services.tryon_queue.record_ai_generation")
+    @patch("ai.services.tryon_queue.get_redis_url", return_value="redis://localhost:6379/0")
+    @patch("ai.services.tryon_queue._redis_client")
+    def test_shared_cooldown_blocks_other_jobs(
+        self, mock_client, _url, _rec, _chk, mock_tryon, _ws, _up, _in
+    ):
+        from ai.services.errors import AiStyleError
+
+        mock_client.return_value = self.redis
+        mock_tryon.side_effect = AiStyleError("rate", 429, retry_after=30.0)
+        enqueue_tryon_job(
+            user_id=23,
+            image="data:image/png;base64,c1",
+            style_id="men-mid-fade",
+            style_title="Mid Fade",
+            audience="men",
+            slug="mid-fade",
+            reference_image_url=None,
+        )
+        enqueue_tryon_job(
+            user_id=24,
+            image="data:image/png;base64,c2",
+            style_id="men-mid-fade",
+            style_title="Mid Fade",
+            audience="men",
+            slug="mid-fade",
+            reference_image_url=None,
+        )
+        process_next_tryon_job(block_seconds=1)
+        self.assertEqual(mock_tryon.call_count, 1)
+        cool_keys = [key for key in self.redis.kv if "cooldown" in key]
+        self.assertTrue(cool_keys)
+        until = float(self.redis.get(cool_keys[0]))
+        self.assertGreater(until, time.time() + 20)
+        process_next_tryon_job(block_seconds=1)
+        self.assertEqual(mock_tryon.call_count, 1)
+
+    @patch("ai.services.tryon_queue._save_input_photo")
+    @patch("ai.services.tryon_queue._durable_upsert")
+    @patch("ai.services.tryon_queue._notify_user")
+    @patch("ai.services.tryon_queue.get_redis_url", return_value="redis://localhost:6379/0")
+    @patch("ai.services.tryon_queue._redis_client")
+    def test_provider_concurrency_cap_is_three(self, mock_client, _url, _ws, _up, _in):
+        from ai.services.tryon_queue import _provider_concurrency
+
+        mock_client.return_value = self.redis
+        self.assertLessEqual(_provider_concurrency(), 3)

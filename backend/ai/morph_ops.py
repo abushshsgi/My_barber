@@ -352,18 +352,20 @@ def build_limits_overview() -> dict[str, Any]:
 
 def queue_snapshot_admin() -> dict[str, Any]:
     from ai.services.tryon_queue import (
-        JOB_PREFIX,
         QUEUE_KEY,
+        STATUS_PENDING,
         STATUS_PROCESSING,
-        STATUS_QUEUED,
         _load_job,
         _max_queue_depth,
         _redis_client,
         is_queue_enabled,
+        queue_metrics,
     )
 
+    metrics = queue_metrics()
     if not is_queue_enabled():
         return {
+            **metrics,
             "enabled": False,
             "depth": 0,
             "max_depth": _max_queue_depth(),
@@ -373,6 +375,7 @@ def queue_snapshot_admin() -> dict[str, Any]:
     client = _redis_client()
     if client is None:
         return {
+            **metrics,
             "enabled": False,
             "depth": 0,
             "max_depth": _max_queue_depth(),
@@ -383,48 +386,36 @@ def queue_snapshot_admin() -> dict[str, Any]:
     ids = client.lrange(QUEUE_KEY, 0, 19) or []
     queued_sample = []
     for jid in ids:
-        meta = _load_job(client, jid) or {"job_id": jid, "status": STATUS_QUEUED}
+        meta = _load_job(client, jid) or {"job_id": jid, "status": STATUS_PENDING}
         queued_sample.append(
             {
                 "job_id": jid,
                 "user_id": meta.get("user_id"),
                 "style_title": meta.get("style_title") or "",
-                "status": meta.get("status") or STATUS_QUEUED,
+                "status": meta.get("status") or STATUS_PENDING,
                 "created_at": meta.get("created_at"),
             }
         )
     processing_sample = []
     try:
-        # Scan a few job keys for processing status (best-effort)
-        cursor = 0
-        scanned = 0
-        while scanned < 5:
-            cursor, keys = client.scan(cursor=cursor, match=f"{JOB_PREFIX}*", count=40)
-            for key in keys:
-                raw = client.get(key)
-                if not raw:
-                    continue
-                import json
+        from ai.services.tryon_queue import PROCESSING_KEY
 
-                try:
-                    data = json.loads(raw)
-                except Exception:
-                    continue
-                if str(data.get("status") or "") == STATUS_PROCESSING:
-                    processing_sample.append(
-                        {
-                            "job_id": data.get("job_id") or key.replace(JOB_PREFIX, ""),
-                            "user_id": data.get("user_id"),
-                            "style_title": data.get("style_title") or "",
-                            "updated_at": data.get("updated_at"),
-                        }
-                    )
-            scanned += 1
-            if cursor == 0:
-                break
+        proc_ids = client.zrange(PROCESSING_KEY, 0, 9) or []
+        for jid in proc_ids:
+            meta = _load_job(client, jid) or {"job_id": jid, "status": STATUS_PROCESSING}
+            processing_sample.append(
+                {
+                    "job_id": jid,
+                    "user_id": meta.get("user_id"),
+                    "style_title": meta.get("style_title") or "",
+                    "updated_at": meta.get("updated_at"),
+                    "status": meta.get("status") or STATUS_PROCESSING,
+                }
+            )
     except Exception:
         pass
     return {
+        **metrics,
         "enabled": True,
         "depth": depth,
         "max_depth": _max_queue_depth(),
@@ -434,15 +425,16 @@ def queue_snapshot_admin() -> dict[str, Any]:
 
 
 def clear_tryon_queue() -> dict[str, Any]:
-    from ai.services.tryon_queue import QUEUE_KEY, _redis_client, is_queue_enabled
+    from ai.services.tryon_queue import DELAYED_KEY, QUEUE_KEY, _redis_client, is_queue_enabled
 
     if not is_queue_enabled():
         return {"ok": False, "detail": "Navbat o'chirilgan", "cleared": 0}
     client = _redis_client()
     if client is None:
         return {"ok": False, "detail": "Redis yo'q", "cleared": 0}
-    depth = int(client.llen(QUEUE_KEY))
+    depth = int(client.llen(QUEUE_KEY)) + int(client.zcard(DELAYED_KEY) or 0)
     client.delete(QUEUE_KEY)
+    client.delete(DELAYED_KEY)
     return {"ok": True, "cleared": depth}
 
 
@@ -600,6 +592,10 @@ def check_user_can_generate(*, user_id: int | None, kind: str) -> str | None:
         return "Morf AI hozir ishlamayapti."
     if kind in ("analyze", "face_check", "chat") and not s.analyze_enabled:
         return "Morf AI hozir ishlamayapti."
+
+    # Try-on: oylik tarif kvotasi bloklamaydi. 10k+ foydalanuvchi navbatga tushadi.
+    if kind == "tryon":
+        return None
 
     if not user_id:
         return None

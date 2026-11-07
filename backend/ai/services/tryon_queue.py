@@ -18,9 +18,8 @@ from django.utils import timezone
 
 from config.redis_url import get_redis_url, redis_blocking_client_kwargs, redis_client_kwargs
 
-from .gemini_style import AiStyleError
-from .gemini_tryon import generate_tryon_multiview, generate_tryon_preview
-from .image_provider import provider_health, queue_generation_context
+from .errors import AiStyleError
+from .runware_tryon import generate_tryon_multiview, generate_tryon_preview
 from ..usage_log import record_ai_generation
 
 logger = logging.getLogger(__name__)
@@ -57,11 +56,16 @@ _CLIENT_MESSAGES = {
     PHASE_WAITING: "Navbatda kutyapsiz.",
     PHASE_PROCESSING: "So'rovingiz qayta ishlanmoqda.",
     PHASE_GENERATING: "Rasm yaratilmoqda.",
-    PHASE_DELAYED: "Vaqtincha kechikish. Navbat saqlanadi.",
+    PHASE_DELAYED: "Navbat saqlanadi. Birozdan so'ng qayta uriniladi.",
     PHASE_COMPLETED: "Tayyor.",
     PHASE_FAILED: "Rasm yaratilmadi. Qayta urinib ko'ring.",
     PHASE_CANCELLED: "Bekor qilindi.",
 }
+
+SLOT_WAIT_SECONDS = 10.0
+# 10k+ navbat bir necha soat turishi mumkin. Job shu oynada tugamaydi.
+MAX_QUEUE_WAIT_SECONDS = 6 * 3600
+PROVIDER_CONCURRENCY_CAP = 32
 
 _thread_local = threading.local()
 _WORKER_ID = (os.environ.get("TRYON_WORKER_ID") or "").strip() or uuid.uuid4().hex[:12]
@@ -98,6 +102,18 @@ end
 return nextv
 """
 
+_EXTEND_COOLDOWN_LUA = """
+local key = KEYS[1]
+local new_until = tonumber(ARGV[1])
+local ttl = tonumber(ARGV[2])
+local current = tonumber(redis.call('GET', key) or '0')
+if current and current >= new_until then
+  return current
+end
+redis.call('SET', key, ARGV[1], 'EX', ttl)
+return new_until
+"""
+
 
 def _job_ttl() -> int:
     return int(getattr(settings, "TRYON_JOB_TTL_SECONDS", 3600))
@@ -116,7 +132,7 @@ def _lease_seconds() -> int:
 
 
 def _provider_concurrency() -> int:
-    return int(getattr(settings, "TRYON_PROVIDER_CONCURRENCY", 3))
+    return max(1, min(int(getattr(settings, "TRYON_PROVIDER_CONCURRENCY", 3)), PROVIDER_CONCURRENCY_CAP))
 
 
 def _cooldown_seconds() -> int:
@@ -208,6 +224,63 @@ def _dedupe_key(user_id: int, style_id: str, image: str, job_kind: str) -> str:
     return f"{DEDUPE_PREFIX}{user_id}:{job_kind}:{style_id}:{fp}"
 
 
+def _created_ts(meta: dict[str, Any]) -> float:
+    raw = meta.get("created_ts")
+    try:
+        if raw is not None:
+            return float(raw)
+    except (TypeError, ValueError):
+        pass
+    created = str(meta.get("created_at") or "")
+    try:
+        return datetime.fromisoformat(created.replace("Z", "+00:00")).timestamp()
+    except ValueError:
+        return time.time()
+
+
+def _provider_attempts(meta: dict[str, Any]) -> int:
+    if meta.get("provider_attempt_count") is not None:
+        return int(meta.get("provider_attempt_count") or 0)
+    return int(meta.get("attempt_count") or 0)
+
+
+def _job_too_old(meta: dict[str, Any]) -> bool:
+    age = time.time() - _created_ts(meta)
+    return age >= min(MAX_QUEUE_WAIT_SECONDS, max(60, _job_ttl() - 60))
+
+
+def _provider_backoff_seconds(provider_attempts: int, retry_after: float | None) -> float:
+    jitter = random.uniform(0.4, 2.5)
+    exp = min(60.0, (2 ** max(0, provider_attempts - 1)) + jitter)
+    floor = float(_cooldown_seconds())
+    if retry_after is not None:
+        try:
+            retry_after = max(1.0, min(120.0, float(retry_after)))
+        except (TypeError, ValueError):
+            retry_after = None
+    if retry_after is not None:
+        return max(floor, retry_after, exp)
+    return max(floor, exp)
+
+
+def _cooldown_until(client, provider: str) -> float:
+    try:
+        raw = client.get(_cooldown_key(provider))
+        return float(raw) if raw else 0.0
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def _sleep_while_cooling(client, provider: str, *, max_seconds: float) -> bool:
+    """True if cooldown ended (caller may claim work). False = still cooling."""
+    until = _cooldown_until(client, provider)
+    remaining = until - time.time()
+    if remaining <= 0:
+        return True
+    time.sleep(min(max(0.05, max_seconds), remaining))
+    return time.time() >= until
+
+
 def _phase_for_status(status: str, *, generating: bool = False) -> str:
     if generating and status == STATUS_PROCESSING:
         return PHASE_GENERATING
@@ -233,7 +306,10 @@ def _public_payload(meta: dict[str, Any], *, generating: bool = False) -> dict[s
     out["status"] = status
     out["phase"] = phase
     out["message"] = _CLIENT_MESSAGES.get(phase, "")
+    if status == STATUS_RETRYING:
+        out["message"] = "Hozircha band. Navbatda qayta uriniladi."
     out["retryable"] = bool(meta.get("retryable")) or status == STATUS_FAILED
+    out["attempt_count"] = _provider_attempts(meta)
     if status == STATUS_PENDING:
         out["status_legacy"] = STATUS_QUEUED
     return out
@@ -343,11 +419,7 @@ def _task_to_meta(task) -> dict[str, Any]:
     preview = ""
     try:
         if task.result_photo:
-            raw = task.result_photo.read()
-            if raw:
-                import base64
-
-                preview = "data:image/jpeg;base64," + base64.b64encode(raw).decode("ascii")
+            preview = task.result_photo.url or ""
     except Exception:
         preview = ""
     return {
@@ -393,8 +465,7 @@ def _payload_from_db(job_id: str) -> dict[str, Any] | None:
 
 
 def _active_provider_name() -> str:
-    health = provider_health()
-    return str(health.get("active") or "vertex")
+    return "runware"
 
 
 def acquire_provider_slot(client, provider: str, *, wait_seconds: float = 2.0) -> bool:
@@ -441,12 +512,21 @@ def release_provider_slot(client, provider: str) -> None:
 
 
 def set_provider_cooldown(client, provider: str, seconds: float) -> None:
-    until_ts = time.time() + max(1.0, seconds)
+    seconds = max(1.0, float(seconds or _cooldown_seconds()))
+    until_ts = time.time() + seconds
+    ttl = int(seconds) + 2
+    key = _cooldown_key(provider)
     try:
-        client.setex(_cooldown_key(provider), int(seconds) + 2, str(until_ts))
+        client.eval(_EXTEND_COOLDOWN_LUA, 1, key, str(until_ts), ttl)
     except Exception:
-        pass
+        try:
+            current = client.get(key)
+            if not current or float(current) < until_ts:
+                client.setex(key, ttl, str(until_ts))
+        except Exception:
+            pass
     _metric_incr(client, "http_429_total")
+    _metric_incr(client, "provider_http_429")
 
 
 def enqueue_tryon_job(
@@ -494,9 +574,12 @@ def enqueue_tryon_job(
         "persona_id": (persona_id or "").strip(),
         "job_kind": kind,
         "created_at": now,
+        "created_ts": time.time(),
         "updated_at": now,
         "queue_position": int(client.llen(QUEUE_KEY)) + 1,
         "attempt_count": 0,
+        "provider_attempt_count": 0,
+        "queue_claim_count": 0,
         "max_attempts": _max_retries(),
         "idempotency_key": dedupe[-80:],
     }
@@ -671,6 +754,7 @@ def _release_lock(client, job_id: str) -> None:
 def promote_delayed_jobs(client) -> int:
     now = time.time()
     moved = 0
+    due_jobs: list[str] = []
     try:
         due = client.zrangebyscore(DELAYED_KEY, 0, now) or []
     except Exception:
@@ -678,7 +762,7 @@ def promote_delayed_jobs(client) -> int:
     for job_id in due:
         try:
             client.zrem(DELAYED_KEY, job_id)
-            client.rpush(QUEUE_KEY, job_id)
+            due_jobs.append(job_id)
             meta = _load_job(client, job_id)
             if meta:
                 meta["status"] = STATUS_PENDING
@@ -687,6 +771,17 @@ def promote_delayed_jobs(client) -> int:
             moved += 1
         except Exception:
             logger.debug("delayed promote failed %s", job_id, exc_info=True)
+    if due_jobs:
+        ranked = []
+        for job_id in due_jobs:
+            meta = _load_job(client, job_id) or {}
+            ranked.append((_created_ts(meta), job_id))
+        ranked.sort(key=lambda item: item[0], reverse=True)
+        try:
+            client.lpush(QUEUE_KEY, *[job_id for _ts, job_id in ranked])
+        except Exception:
+            for _ts, job_id in reversed(ranked):
+                client.rpush(QUEUE_KEY, job_id)
     return moved
 
 
@@ -770,7 +865,6 @@ def mark_worker_heartbeat(client) -> None:
 
 def queue_metrics(client=None) -> dict[str, Any]:
     client = client or _redis_client()
-    health = provider_health()
     if client is None:
         return {
             "enabled": False,
@@ -778,7 +872,7 @@ def queue_metrics(client=None) -> dict[str, Any]:
             "pending": 0,
             "processing": 0,
             "delayed": 0,
-            "provider": health,
+            "tryon_provider": "runware",
         }
     raw = {}
     try:
@@ -815,12 +909,22 @@ def queue_metrics(client=None) -> dict[str, Any]:
         "completed": completed,
         "failed": int(raw.get("failed_total") or 0),
         "retry_counts": int(raw.get("retry_total") or 0),
-        "http_429_frequency": int(raw.get("http_429_total") or 0),
+        "queue_retry_total": int(raw.get("queue_retry_total") or 0),
+        "provider_retry_total": int(raw.get("provider_retry_total") or 0),
+        "slot_wait_requeue_total": int(raw.get("slot_wait_requeue_total") or 0),
+        "http_429_frequency": int(raw.get("http_429_total") or raw.get("provider_http_429") or 0),
+        "provider_http_attempts": int(raw.get("provider_http_attempts") or 0),
+        "provider_http_429": int(raw.get("provider_http_429") or raw.get("http_429_total") or 0),
+        "queue_wait_ms": int(int(raw.get("queue_wait_ms_sum") or 0) / max(1, int(raw.get("queue_wait_count") or 0))) if int(raw.get("queue_wait_count") or 0) else 0,
+        "slot_wait_ms": int(int(raw.get("slot_wait_ms_sum") or 0) / max(1, int(raw.get("slot_wait_count") or 0))) if int(raw.get("slot_wait_count") or 0) else 0,
         "provider_latency_ms": avg,
         "average_generation_ms": avg,
         "last_generation_ms": int(raw.get("last_generation_ms") or 0),
+        "cooldown_until": _cooldown_until(client, _active_provider_name()),
         "worker_health": {"alive": alive, "count": len(alive)},
-        "provider_availability": health,
+        "tryon_provider": "runware",
+        "tryon_model": str(getattr(settings, "RUNWARE_TRYON_MODEL", "") or ""),
+        "runware_configured": bool(getattr(settings, "RUNWARE_API_KEY", "")),
         "active_slots": int(client.get(_sem_key(_active_provider_name())) or 0),
         "provider_concurrency_limit": _provider_concurrency(),
         "max_depth": _max_queue_depth(),
@@ -828,7 +932,14 @@ def queue_metrics(client=None) -> dict[str, Any]:
     }
 
 
-def _requeue_later(client, job_id: str, meta: dict[str, Any], delay: float) -> None:
+def _requeue_later(
+    client,
+    job_id: str,
+    meta: dict[str, Any],
+    delay: float,
+    *,
+    reason: str = "queue",
+) -> None:
     meta["status"] = STATUS_RETRYING
     meta["updated_at"] = _now_iso()
     meta["retry_at"] = datetime.now(UTC).isoformat()
@@ -838,6 +949,13 @@ def _requeue_later(client, job_id: str, meta: dict[str, Any], delay: float) -> N
     _release_lock(client, job_id)
     _durable_upsert(job_id, meta)
     _metric_incr(client, "retry_total")
+    if reason == "slot_wait":
+        _metric_incr(client, "slot_wait_requeue_total")
+        _metric_incr(client, "queue_retry_total")
+    elif reason == "provider":
+        _metric_incr(client, "provider_retry_total")
+    else:
+        _metric_incr(client, "queue_retry_total")
     _notify_user(int(meta.get("user_id") or 0), meta)
 
 
@@ -851,7 +969,7 @@ def _finish_terminal(client, job_id: str, meta: dict[str, Any]) -> None:
 
 
 def process_next_tryon_job(*, block_seconds: int = 5) -> bool:
-    """Worker: navbatdan 1 ta ishni olib Vertex ga yuboradi."""
+    """Worker: navbatdan 1 ta ishni olib Runware ga yuboradi."""
     from django.db import close_old_connections
 
     close_old_connections()
@@ -860,6 +978,11 @@ def process_next_tryon_job(*, block_seconds: int = 5) -> bool:
         return False
 
     mark_worker_heartbeat(client)
+    provider_name = _active_provider_name()
+    if _cooldown_until(client, provider_name) > time.time():
+        _sleep_while_cooling(client, provider_name, max_seconds=max(1.0, float(block_seconds)))
+        return False
+
     try:
         promote_delayed_jobs(client)
     except Exception:
@@ -922,7 +1045,7 @@ def process_next_tryon_job(*, block_seconds: int = 5) -> bool:
     meta["status"] = STATUS_PROCESSING
     meta["updated_at"] = _now_iso()
     meta["lease_owner"] = owner
-    meta["attempt_count"] = int(meta.get("attempt_count") or 0) + 1
+    meta["queue_claim_count"] = int(meta.get("queue_claim_count") or 0) + 1
     meta.pop("queue_position", None)
     _save_job(client, job_id, meta)
     _durable_upsert(
@@ -958,131 +1081,170 @@ def process_next_tryon_job(*, block_seconds: int = 5) -> bool:
             return True
 
     provider = _active_provider_name()
-    slot_ok = acquire_provider_slot(client, provider, wait_seconds=max(1.0, float(block_seconds)))
+    if _job_too_old(meta):
+        meta["status"] = STATUS_FAILED
+        meta["detail"] = "Navbat vaqti tugadi. Qayta urinib ko'ring."
+        meta["retryable"] = True
+        meta.pop("preview_image", None)
+        _metric_incr(client, "failed_total")
+        meta["updated_at"] = _now_iso()
+        _finish_terminal(client, job_id, meta)
+        return True
+
+    slot_started = time.time()
+    slot_ok = acquire_provider_slot(
+        client, provider, wait_seconds=max(SLOT_WAIT_SECONDS, float(block_seconds))
+    )
+    _metric_incr(client, "slot_wait_ms_sum", int((time.time() - slot_started) * 1000))
+    _metric_incr(client, "slot_wait_count")
     if not slot_ok:
         delay = min(8.0, 1.5 + random.uniform(0.2, 1.2))
-        _requeue_later(client, job_id, meta, delay)
+        cool_left = _cooldown_until(client, provider) - time.time()
+        if cool_left > 0:
+            delay = max(delay, cool_left)
+        _requeue_later(client, job_id, meta, delay, reason="slot_wait")
         return True
+
+    provider_attempts = _provider_attempts(meta) + 1
+    meta["provider_attempt_count"] = provider_attempts
+    meta["attempt_count"] = provider_attempts
+    _metric_incr(client, "provider_http_attempts")
+    queue_wait_ms = int(max(0.0, time.time() - _created_ts(meta)) * 1000)
+    _metric_incr(client, "queue_wait_ms_sum", queue_wait_ms)
+    _metric_incr(client, "queue_wait_count")
+    _save_job(client, job_id, meta)
 
     generating_meta = {**meta, "status": STATUS_PROCESSING}
     _notify_user(int(meta.get("user_id") or 0), {**generating_meta, "phase": PHASE_GENERATING})
 
     try:
-        with queue_generation_context():
-            job_kind = str(payload.get("job_kind") or meta.get("job_kind") or "tryon")
-            if job_kind == "multiview":
-                multi = generate_tryon_multiview(
-                    front_data_url=str(payload.get("image") or ""),
-                    audience=str(payload.get("audience") or "unisex"),
-                    slug=str(payload.get("slug") or ""),
-                    title=str(payload.get("title") or ""),
-                )
-                views = multi.get("views") or {}
-                meta["status"] = STATUS_COMPLETED
-                meta["preview_image"] = views.get("front") or str(payload.get("image") or "")
-                meta["views"] = views
-                meta.pop("detail", None)
-                meta["retryable"] = False
-                record_ai_generation(
-                    user_id=int(meta.get("user_id") or 0) or None,
-                    kind="tryon",
-                    status="success",
-                    prompt=str(multi.get("prompt") or "tryon_multiview"),
-                    style_id=str(meta.get("style_id") or ""),
-                    style_title=str(meta.get("style_title") or ""),
-                    model=str(multi.get("model") or ""),
-                    provider=str(multi.get("provider") or ""),
-                    job_id=job_id,
-                    prompt_tokens=int(multi.get("prompt_tokens") or 0),
-                    candidates_tokens=int(multi.get("candidates_tokens") or 0),
-                    thoughts_tokens=int(multi.get("thoughts_tokens") or 0),
-                    total_tokens=int(multi.get("total_tokens") or 0),
-                    cost_usd=multi.get("cost_usd") or 0,
-                    tokens_estimated=bool(multi.get("tokens_estimated")),
-                    latency_ms=int(multi.get("latency_ms") or 0),
-                )
-                _metric_incr(client, "completed_total")
-                _metric_incr(client, "latency_sum_ms", int(multi.get("latency_ms") or 0))
-                _metric_incr(client, "latency_count")
-                client.hset(METRICS_KEY, "last_generation_ms", int(multi.get("latency_ms") or 0))
-                meta["updated_at"] = _now_iso()
-                _save_result_photo(job_id, str(meta.get("preview_image") or ""), views)
-                _finish_terminal(client, job_id, meta)
-                return True
-
-            result = generate_tryon_preview(
-                selfie_data_url=str(payload.get("image") or ""),
+        job_kind = str(payload.get("job_kind") or meta.get("job_kind") or "tryon")
+        if job_kind == "multiview":
+            multi = generate_tryon_multiview(
+                front_data_url=str(payload.get("image") or ""),
                 audience=str(payload.get("audience") or "unisex"),
                 slug=str(payload.get("slug") or ""),
                 title=str(payload.get("title") or ""),
-                reference_image_url=payload.get("reference_image_url"),
             )
+            views = multi.get("views") or {}
             meta["status"] = STATUS_COMPLETED
-            meta["preview_image"] = result.preview_image
+            meta["preview_image"] = views.get("front") or str(payload.get("image") or "")
+            meta["views"] = views
             meta.pop("detail", None)
             meta["retryable"] = False
             record_ai_generation(
                 user_id=int(meta.get("user_id") or 0) or None,
                 kind="tryon",
                 status="success",
-                prompt=result.prompt,
+                prompt=str(multi.get("prompt") or "tryon_multiview"),
                 style_id=str(meta.get("style_id") or ""),
                 style_title=str(meta.get("style_title") or ""),
-                model=result.model,
-                provider=result.provider,
+                model=str(multi.get("model") or ""),
+                provider=str(multi.get("provider") or ""),
                 job_id=job_id,
-                prompt_tokens=result.prompt_tokens,
-                candidates_tokens=result.candidates_tokens,
-                thoughts_tokens=result.thoughts_tokens,
-                total_tokens=result.total_tokens,
-                cost_usd=result.cost_usd,
-                tokens_estimated=result.tokens_estimated,
-                latency_ms=result.latency_ms,
+                prompt_tokens=int(multi.get("prompt_tokens") or 0),
+                candidates_tokens=int(multi.get("candidates_tokens") or 0),
+                thoughts_tokens=int(multi.get("thoughts_tokens") or 0),
+                total_tokens=int(multi.get("total_tokens") or 0),
+                cost_usd=multi.get("cost_usd") or 0,
+                tokens_estimated=bool(multi.get("tokens_estimated")),
+                latency_ms=int(multi.get("latency_ms") or 0),
             )
             _metric_incr(client, "completed_total")
-            _metric_incr(client, "latency_sum_ms", int(result.latency_ms or 0))
+            _metric_incr(client, "latency_sum_ms", int(multi.get("latency_ms") or 0))
             _metric_incr(client, "latency_count")
-            client.hset(METRICS_KEY, "last_generation_ms", int(result.latency_ms or 0))
-            user_id = int(meta.get("user_id") or 0) or None
-            if user_id and result.preview_image:
-                try:
-                    from accounts.models import User
-                    from ai.tryon_persist import persist_tryon_generation
-
-                    user = User.objects.filter(pk=user_id).first()
-                    if user:
-                        persist_tryon_generation(
-                            user=user,
-                            after_image=result.preview_image,
-                            before_image=str(payload.get("image") or ""),
-                            style_id=str(meta.get("style_id") or ""),
-                            title=str(meta.get("style_title") or ""),
-                            persona_id=str(meta.get("persona_id") or ""),
-                        )
-                except Exception:
-                    logger.exception("Try-on generation persist failed job=%s", job_id)
-            _save_result_photo(job_id, result.preview_image)
+            client.hset(METRICS_KEY, "last_generation_ms", int(multi.get("latency_ms") or 0))
             meta["updated_at"] = _now_iso()
+            _save_result_photo(job_id, str(meta.get("preview_image") or ""), views)
             _finish_terminal(client, job_id, meta)
-            logger.info("Try-on job finished: %s status=%s", job_id, meta.get("status"))
             return True
+
+        result = generate_tryon_preview(
+            selfie_data_url=str(payload.get("image") or ""),
+            audience=str(payload.get("audience") or "unisex"),
+            slug=str(payload.get("slug") or ""),
+            title=str(payload.get("title") or ""),
+            reference_image_url=payload.get("reference_image_url"),
+        )
+        meta["status"] = STATUS_COMPLETED
+        meta["preview_image"] = result.preview_image
+        meta.pop("detail", None)
+        meta["retryable"] = False
+        record_ai_generation(
+            user_id=int(meta.get("user_id") or 0) or None,
+            kind="tryon",
+            status="success",
+            prompt=result.prompt,
+            style_id=str(meta.get("style_id") or ""),
+            style_title=str(meta.get("style_title") or ""),
+            model=result.model,
+            provider=result.provider,
+            job_id=job_id,
+            prompt_tokens=result.prompt_tokens,
+            candidates_tokens=result.candidates_tokens,
+            thoughts_tokens=result.thoughts_tokens,
+            total_tokens=result.total_tokens,
+            cost_usd=result.cost_usd,
+            tokens_estimated=result.tokens_estimated,
+            latency_ms=result.latency_ms,
+        )
+        _metric_incr(client, "completed_total")
+        _metric_incr(client, "latency_sum_ms", int(result.latency_ms or 0))
+        _metric_incr(client, "latency_count")
+        client.hset(METRICS_KEY, "last_generation_ms", int(result.latency_ms or 0))
+        user_id = int(meta.get("user_id") or 0) or None
+        if user_id and result.preview_image:
+            try:
+                from accounts.models import User
+                from ai.tryon_persist import persist_tryon_generation
+
+                user = User.objects.filter(pk=user_id).first()
+                if user:
+                    persist_tryon_generation(
+                        user=user,
+                        after_image=result.preview_image,
+                        before_image=str(payload.get("image") or ""),
+                        style_id=str(meta.get("style_id") or ""),
+                        title=str(meta.get("style_title") or ""),
+                        persona_id=str(meta.get("persona_id") or ""),
+                    )
+            except Exception:
+                logger.exception("Try-on generation persist failed job=%s", job_id)
+        _save_result_photo(job_id, result.preview_image)
+        meta["updated_at"] = _now_iso()
+        _finish_terminal(client, job_id, meta)
+        logger.info("Try-on job finished: %s status=%s", job_id, meta.get("status"))
+        return True
     except AiStyleError as exc:
-        attempts = int(meta.get("attempt_count") or 1)
+        attempts = _provider_attempts(meta) or 1
         max_attempts = int(meta.get("max_attempts") or _max_retries())
         retryable = bool(getattr(exc, "retryable", exc.status in (429, 502, 503, 504)))
-        if retryable and attempts <= max_attempts:
-            delay = getattr(exc, "retry_after", None)
-            if delay is None:
-                delay = min(60.0, (2 ** max(0, attempts - 1)) + random.uniform(0.4, 2.5))
-            if exc.status == 429:
-                cooldown = float(delay or _cooldown_seconds())
-                set_provider_cooldown(client, provider, cooldown)
-            _requeue_later(client, job_id, meta, float(delay))
+        # Runware 429 foydalanuvchiga chiqmaydi: navbat tugaguncha qayta uriniladi.
+        if exc.status == 429 and not _job_too_old(meta):
+            delay = min(45.0, _provider_backoff_seconds(attempts, getattr(exc, "retry_after", None)))
+            set_provider_cooldown(client, provider, delay)
+            meta["detail"] = "Navbat saqlanadi. Birozdan so'ng qayta uriniladi."
+            _requeue_later(client, job_id, meta, float(delay), reason="provider")
             logger.warning(
-                "Try-on job retrying (%s) status=%s attempt=%s delay=%.1fs",
+                "Try-on job rate-limited (%s) provider_attempt=%s delay=%.1fs",
+                job_id,
+                attempts,
+                float(delay),
+            )
+            return True
+        if retryable and attempts < max_attempts:
+            delay = _provider_backoff_seconds(attempts, getattr(exc, "retry_after", None))
+            if exc.status == 429:
+                set_provider_cooldown(client, provider, delay)
+            else:
+                delay = min(30.0, delay)
+            _requeue_later(client, job_id, meta, float(delay), reason="provider")
+            logger.warning(
+                "Try-on job retrying (%s) status=%s provider_attempt=%s/%s delay=%.1fs",
                 job_id,
                 exc.status,
                 attempts,
+                max_attempts,
                 float(delay),
             )
             return True
@@ -1105,11 +1267,11 @@ def process_next_tryon_job(*, block_seconds: int = 5) -> bool:
         _finish_terminal(client, job_id, meta)
         return True
     except Exception as exc:
-        attempts = int(meta.get("attempt_count") or 1)
+        attempts = _provider_attempts(meta) or 1
         max_attempts = int(meta.get("max_attempts") or _max_retries())
-        if attempts <= max_attempts:
+        if attempts < max_attempts:
             delay = min(30.0, (2 ** max(0, attempts - 1)) + random.uniform(0.3, 1.5))
-            _requeue_later(client, job_id, meta, delay)
+            _requeue_later(client, job_id, meta, delay, reason="provider")
             logger.exception("Try-on job error retry (%s): %s", job_id, exc)
             return True
         meta["status"] = STATUS_FAILED

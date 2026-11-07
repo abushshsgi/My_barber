@@ -2,7 +2,7 @@ from unittest.mock import patch
 
 from django.test import SimpleTestCase, override_settings
 
-from ai.services.gemini_tryon import load_public_image
+from ai.services.runware_tryon import load_public_image
 from ai.services.gemini_style import AiStyleError, parse_data_url
 from ai.style_prompts import style_detail_for
 
@@ -15,10 +15,10 @@ class StylePromptTests(SimpleTestCase):
         self.assertEqual(style_detail_for("women", "unknown"), "unknown")
 
 
-@override_settings(GEMINI_API_KEY="", VERTEX_PROJECT_ID="")
+@override_settings(RUNWARE_API_KEY="", TRYON_PROVIDER="runware")
 class TryOnServiceTests(SimpleTestCase):
-    def test_requires_image_config(self):
-        from ai.services.gemini_tryon import generate_tryon_preview
+    def test_requires_runware_key(self):
+        from ai.services.runware_tryon import generate_tryon_preview
 
         tiny = (
             "data:image/png;base64,"
@@ -33,45 +33,25 @@ class TryOnServiceTests(SimpleTestCase):
             )
         self.assertEqual(ctx.exception.status, 503)
 
+    def test_tryon_source_does_not_call_gemini_image_api(self):
+        import inspect
+
+        import ai.services.runware_tryon as tryon
+        import ai.services.tryon_queue as queue
+
+        for module in (tryon, queue):
+            source = inspect.getsource(module)
+            self.assertNotIn("generate_image_content", source)
+            self.assertNotIn("generativelanguage.googleapis.com", source)
+            self.assertNotIn("vertex_image", source)
+            self.assertNotIn("gemini_tryon", source)
+
     def test_parse_data_url(self):
         mime, raw = parse_data_url(
             "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
         )
         self.assertEqual(mime, "image/png")
         self.assertTrue(raw)
-
-    @patch("ai.services.gemini_tryon.generate_image_content")
-    def test_generate_tryon_vertex(self, mock_vertex):
-        from ai.services.gemini_tryon import generate_tryon_preview
-
-        fake_png = (
-            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
-        )
-        mock_vertex.return_value = {
-            "candidates": [
-                {
-                    "content": {
-                        "parts": [
-                            {"inlineData": {"mimeType": "image/png", "data": fake_png}},
-                        ]
-                    }
-                }
-            ]
-        }
-        with override_settings(GEMINI_API_KEY="test-studio-key"):
-            result = generate_tryon_preview(
-                selfie_data_url=(
-                    "data:image/png;base64,"
-                    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
-                ),
-                audience="men",
-                slug="mid-fade",
-                title="Mid Fade",
-            )
-        self.assertTrue(result.preview_image.startswith("data:image/png;base64,"))
-        mock_vertex.assert_called_once()
-        self.assertTrue(result.prompt)
-        self.assertGreaterEqual(result.total_tokens, 0)
 
 class PublicImageLoaderTests(SimpleTestCase):
     def test_missing_file_returns_none(self):
@@ -146,6 +126,7 @@ class ImageProviderPriorityTests(SimpleTestCase):
 
         mock_vertex.side_effect = AiStyleError("model missing", 404)
         mock_studio.return_value = {"from": "studio"}
-        out = generate_image_content({"contents": []}, model="gemini-3-pro-image")
-        self.assertEqual(out, {"from": "studio"})
-        mock_studio.assert_called_once()
+        with self.assertRaises(AiStyleError) as ctx:
+            generate_image_content({"contents": []}, model="gemini-3-pro-image")
+        self.assertEqual(ctx.exception.status, 404)
+        mock_studio.assert_not_called()

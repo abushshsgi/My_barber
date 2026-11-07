@@ -101,13 +101,13 @@ class AiStyleAnalyzeTests(TestCase):
     @patch("ai.views.generate_tryon_preview")
     def test_style_tryon_returns_preview(self, mock_tryon):
         from decimal import Decimal
-        from ai.services.gemini_tryon import TryOnResult
+        from ai.services.runware_tryon import TryOnResult
 
         mock_tryon.return_value = TryOnResult(
             preview_image="data:image/png;base64,abc",
             prompt="test prompt",
-            model="gemini-3.1-flash-lite-image",
-            provider="studio",
+            model="runware:400@2",
+            provider="runware",
             prompt_tokens=100,
             candidates_tokens=1120,
             thoughts_tokens=0,

@@ -4,10 +4,22 @@ from __future__ import annotations
 
 
 class AiStyleError(Exception):
-    def __init__(self, message: str, status: int = 400):
+    def __init__(
+        self,
+        message: str,
+        status: int = 400,
+        *,
+        retry_after: float | None = None,
+        retryable: bool | None = None,
+    ):
         super().__init__(message)
         self.message = message
         self.status = status
+        self.retry_after = retry_after
+        if retryable is None:
+            self.retryable = status in (429, 502, 503, 504)
+        else:
+            self.retryable = bool(retryable)
 
 
 def read_http_error_body(exc) -> str:
