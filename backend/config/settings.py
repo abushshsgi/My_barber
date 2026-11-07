@@ -275,8 +275,8 @@ MORPH_ENTITLEMENT_BYPASS = os.environ.get("MORPH_ENTITLEMENT_BYPASS", "false").l
     "true",
     "yes",
 )
-# Parvarish / Tarkib (ingredient-scan). Mobil CARE_ACCESS_DEBUG bilan mos — production oldidan false.
-MORPH_CARE_ACCESS_DEBUG = os.environ.get("MORPH_CARE_ACCESS_DEBUG", "true").lower() in (
+# Parvarish / Tarkib — default yopiq. Faqat lokal test uchun true.
+MORPH_CARE_ACCESS_DEBUG = os.environ.get("MORPH_CARE_ACCESS_DEBUG", "false").lower() in (
     "1",
     "true",
     "yes",
@@ -463,8 +463,32 @@ CLICK_SERVICE_ID = os.environ.get("CLICK_SERVICE_ID", "").strip()
 CLICK_SECRET_KEY = os.environ.get("CLICK_SECRET_KEY", "").strip()
 PAYME_MERCHANT_ID = os.environ.get("PAYME_MERCHANT_ID", "").strip()
 PAYME_SECRET_KEY = os.environ.get("PAYME_SECRET_KEY", "").strip()
+# Haqiqiy kassa: PAYME_ALLOW_LIVE=true + live URL + merchant id/key (VPS .env).
+PAYME_ALLOW_LIVE = os.environ.get("PAYME_ALLOW_LIVE", "").lower() in ("1", "true", "yes")
+_payme_sandbox_raw = os.environ.get("PAYME_SANDBOX", "").strip().lower()
+if _payme_sandbox_raw:
+    PAYME_SANDBOX = _payme_sandbox_raw in ("1", "true", "yes")
+else:
+    PAYME_SANDBOX = not PAYME_ALLOW_LIVE
+PAYME_API_URL = os.environ.get("PAYME_API_URL", "").strip()
+PAYME_CHECKOUT_BASE = os.environ.get("PAYME_CHECKOUT_BASE", "").strip()
+PAYME_IKPU_CODE = os.environ.get("PAYME_IKPU_CODE", "").strip()
+PAYME_PACKAGE_CODE = os.environ.get("PAYME_PACKAGE_CODE", "").strip()
+PAYME_VAT_PERCENT = os.environ.get("PAYME_VAT_PERCENT", "").strip()
+PAYME_RECEIPT_TTL_MINUTES = int(os.environ.get("PAYME_RECEIPT_TTL_MINUTES", "60"))
+# Google Play Billing huquqiy tasdiq bo'lmaguncha Android tashqi AI obuna checkout yopiq.
+GOOGLE_PLAY_AI_IAP_ELIGIBLE = os.environ.get("GOOGLE_PLAY_AI_IAP_ELIGIBLE", "").lower() in (
+    "1",
+    "true",
+    "yes",
+)
 
-# Manual card top-up (company receiving card) — users transfer here, admin confirms
+# Manual card top-up (company receiving card) — o'chirilgan: karta/chek UI yo'q.
+MANUAL_CARD_TOPUP_ENABLED = os.environ.get("MANUAL_CARD_TOPUP_ENABLED", "").lower() in (
+    "1",
+    "true",
+    "yes",
+)
 WALLET_RECEIVING_CARD_NUMBER = os.environ.get("WALLET_RECEIVING_CARD_NUMBER", "").strip()
 WALLET_RECEIVING_CARDHOLDER = os.environ.get("WALLET_RECEIVING_CARDHOLDER", "").strip()
 WALLET_RECEIVING_BANK = os.environ.get("WALLET_RECEIVING_BANK", "").strip()

@@ -1,6 +1,6 @@
+import logging
 import os
 
-from django.conf import settings
 from rest_framework import status
 from rest_framework.permissions import AllowAny
 
@@ -10,23 +10,32 @@ from rest_framework.views import APIView
 
 from subscriptions.payment import (
     confirm_provider_payment,
-    pay_with_wallet,
     start_provider_checkout,
 )
+from subscriptions.payme_client import PaymeError, PaymeNotConfigured
+from subscriptions.payme_service import PaymePaymentError, serialize_payme_payment, sync_payme_payment
 from subscriptions.plans import PLAN_CODES, list_plans, serialize_plan
 from subscriptions.promos import list_public_promos, resolve_checkout_price
 from subscriptions.services import (
+    CARE_PLUS_REQUIRED,
+    CANCEL_STILL_PREMIUM_MESSAGE,
     build_me_payload,
     can_use_morph_care,
+    can_use_morph_care_pro,
+    cancel_user_subscription,
     checkout_plan_error,
+    has_premium_access,
     serialize_subscription,
 )
 from subscriptions.throttles import (
+    SubscriptionCancelThrottle,
     SubscriptionCheckoutThrottle,
     SubscriptionConfirmThrottle,
     SubscriptionIPThrottle,
+    SubscriptionPaymentStatusThrottle,
 )
-from wallet.services.wallet_service import InsufficientBalanceError, WalletServiceError
+
+logger = logging.getLogger(__name__)
 
 
 def _default_return_url() -> str:
@@ -82,6 +91,37 @@ class SubscriptionMeView(APIView):
         return Response(build_me_payload(request.user))
 
 
+class SubscriptionCancelView(APIView):
+    """Obunani bekor qilish — Payme refund/cancel chaqirilmaydi."""
+
+    permission_classes = [IsAuthenticatedCustomer]
+    throttle_classes = [SubscriptionCancelThrottle, SubscriptionIPThrottle]
+    throttle_detail = "Obunani bekor qilish limiti. Biroz kutib qayta urinib ko'ring."
+
+    def post(self, request):
+        # Mijoz yuborgan user_id / status / expires_at e'tiborga olinmaydi.
+        try:
+            sub = cancel_user_subscription(user=request.user, request=request)
+        except ValueError as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+        premium = has_premium_access(sub)
+        return Response(
+            {
+                "ok": True,
+                "status": sub.status,
+                "is_premium": premium,
+                "auto_renew": False,
+                "expires_at": sub.ends_at.isoformat() if sub.ends_at else None,
+                "cancelled_at": sub.cancelled_at.isoformat() if sub.cancelled_at else None,
+                "can_cancel": False,
+                "message": CANCEL_STILL_PREMIUM_MESSAGE,
+                "subscription": serialize_subscription(sub),
+                "me": build_me_payload(request.user),
+            }
+        )
+
+
 class SubscriptionCheckoutView(APIView):
     permission_classes = [IsAuthenticatedCustomer]
     throttle_classes = [SubscriptionCheckoutThrottle, SubscriptionIPThrottle]
@@ -93,36 +133,24 @@ class SubscriptionCheckoutView(APIView):
         if blocked:
             return Response({"detail": blocked}, status=status.HTTP_400_BAD_REQUEST)
 
-        method = str(request.data.get("method") or request.data.get("provider") or "wallet").strip().lower()
+        method = str(request.data.get("method") or request.data.get("provider") or "payme").strip().lower()
         promo_code = str(request.data.get("promo_code") or "").strip() or None
         return_url = str(request.data.get("return_url") or _default_return_url()).strip()
         if not return_url.startswith(("http://", "https://")):
             return Response({"detail": "return_url noto'g'ri."}, status=status.HTTP_400_BAD_REQUEST)
 
-        if method == "wallet":
-            try:
-                sub = pay_with_wallet(
-                    user=request.user,
-                    plan_code=plan_code,
-                    request=request,
-                    promo_code=promo_code,
-                )
-            except InsufficientBalanceError as exc:
-                return Response({"detail": str(exc)}, status=status.HTTP_402_PAYMENT_REQUIRED)
-            except WalletServiceError as exc:
-                return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        if method in ("wallet", "click"):
             return Response(
                 {
-                    "ok": True,
-                    "method": "wallet",
-                    "subscription": serialize_subscription(sub),
-                    "me": build_me_payload(request.user),
-                    "promo_code": promo_code,
+                    "detail": (
+                        "AI Premium faqat Payme Subscribe orqali to'lanadi. "
+                        "Hamyon, Click, karta raqami va chek yuklash o'chirilgan."
+                    )
                 },
-                status=status.HTTP_201_CREATED,
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
-        if method in ("click", "payme"):
+        if method == "payme":
             try:
                 payload = start_provider_checkout(
                     user=request.user,
@@ -132,7 +160,9 @@ class SubscriptionCheckoutView(APIView):
                     request=request,
                     promo_code=promo_code,
                 )
-            except ValueError as exc:
+            except PaymeNotConfigured as exc:
+                return Response({"detail": str(exc)}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+            except (PaymeError, PaymePaymentError, ValueError) as exc:
                 return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
 
             code = (
@@ -143,7 +173,7 @@ class SubscriptionCheckoutView(APIView):
             return Response(payload, status=code)
 
         return Response(
-            {"detail": "method wallet, click yoki payme bo'lishi kerak."},
+            {"detail": "method payme bo'lishi kerak."},
             status=status.HTTP_400_BAD_REQUEST,
         )
 
@@ -185,18 +215,49 @@ class SubscriptionConfirmView(APIView):
         )
 
 
+class SubscriptionPaymentStatusView(APIView):
+    """Payme checkout holati — faqat server tekshiruvi, mijoz 'paid' deb o'tolmaydi."""
+
+    permission_classes = [IsAuthenticatedCustomer]
+    throttle_classes = [SubscriptionPaymentStatusThrottle]
+    throttle_detail = "To'lov holati so'rovlari limiti. Biroz kuting."
+
+    def get(self, request, order_id: str):
+        order_id = str(order_id or "").strip()
+        if not order_id:
+            return Response({"detail": "order_id majburiy."}, status=status.HTTP_400_BAD_REQUEST)
+        from subscriptions.models import SubscriptionPayment
+
+        payment = SubscriptionPayment.objects.filter(order_id=order_id, user=request.user).first()
+        if not payment:
+            return Response({"detail": "To'lov topilmadi."}, status=status.HTTP_404_NOT_FOUND)
+        sync_error = ""
+        if payment.provider == "payme" and payment.payme_receipt_id:
+            try:
+                payment = sync_payme_payment(user=request.user, order_id=order_id, request=request)
+            except (PaymePaymentError, PaymeError) as exc:
+                logger.warning("payme status sync failed order=%s", order_id)
+                sync_error = str(exc)[:180]
+        payload = serialize_payme_payment(payment)
+        payload["ok"] = payment.status == payment.Status.PAID
+        if sync_error:
+            payload["sync_error"] = sync_error
+        return Response(payload)
+
+
 class SubscriptionCareAccessView(APIView):
-    """Morf AI Parvarish — faqat Pro (yoki care entitlements)."""
+    """Parvarish Plus; SOS/Javon — Pro."""
 
     permission_classes = [IsAuthenticatedCustomer]
 
     def get(self, request):
         allowed = can_use_morph_care(request.user)
+        pro_allowed = can_use_morph_care_pro(request.user)
         return Response(
             {
                 "allowed": allowed,
-                "detail": None
-                if allowed
-                else "Morf AI Parvarish Pro obunasida mavjud.",
+                "pro_allowed": pro_allowed,
+                "code": "ok" if allowed else "care_plus",
+                "detail": None if allowed else CARE_PLUS_REQUIRED,
             }
         )

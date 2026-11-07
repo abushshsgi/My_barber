@@ -38,4 +38,4 @@ echo "[start] Syncing exchange rates (if stale)..."
 python manage.py sync_exchange_rates --if-stale
 
 echo "[start] Starting ASGI server..."
-exec daphne -b 0.0.0.0 -p "${PORT:?PORT is required}" config.asgi:application
+exec daphne -b 127.0.0.1 -p "${PORT:?PORT is required}" config.asgi:application

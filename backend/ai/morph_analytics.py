@@ -52,15 +52,26 @@ def _user_label(row: dict[str, Any]) -> str:
 
 def _queue_snapshot() -> dict[str, Any]:
     try:
-        from ai.services.tryon_queue import QUEUE_KEY, is_queue_enabled, _redis_client
+        from ai.services.tryon_queue import queue_metrics
 
-        if not is_queue_enabled():
-            return {"enabled": False, "depth": 0}
-        client = _redis_client()
-        if client is None:
-            return {"enabled": False, "depth": 0}
-        depth = int(client.llen(QUEUE_KEY))
-        return {"enabled": True, "depth": depth}
+        metrics = queue_metrics()
+        return {
+            "enabled": bool(metrics.get("enabled")),
+            "depth": int(metrics.get("queue_length") or 0),
+            "processing": int(metrics.get("processing") or 0),
+            "delayed": int(metrics.get("delayed") or 0),
+            "http_429_frequency": int(metrics.get("http_429_frequency") or 0),
+            "provider_http_attempts": int(metrics.get("provider_http_attempts") or 0),
+            "provider_http_429": int(metrics.get("provider_http_429") or 0),
+            "queue_retry_total": int(metrics.get("queue_retry_total") or 0),
+            "provider_retry_total": int(metrics.get("provider_retry_total") or 0),
+            "slot_wait_requeue_total": int(metrics.get("slot_wait_requeue_total") or 0),
+            "queue_wait_ms": int(metrics.get("queue_wait_ms") or 0),
+            "slot_wait_ms": int(metrics.get("slot_wait_ms") or 0),
+            "average_generation_ms": int(metrics.get("average_generation_ms") or 0),
+            "worker_health": metrics.get("worker_health") or {},
+            "provider_availability": metrics.get("provider_availability") or {},
+        }
     except Exception:
         return {"enabled": False, "depth": 0}
 

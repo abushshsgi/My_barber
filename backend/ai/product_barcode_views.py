@@ -6,10 +6,11 @@ from types import SimpleNamespace
 
 from rest_framework import status
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
 from accounts.permissions import IsAdmin
+from subscriptions.services import morph_care_block
 from ai.admin_parvarish_views import _unique_slug
 from ai.care_serializers import CareProductSerializer
 from ai.models import HairCareProfile
@@ -234,9 +235,12 @@ class AdminProductLookupView(UnthrottledAPIView):
 class ProductBarcodeLookupView(UnthrottledAPIView):
     """GET /api/products/barcode/:barcode/ — user/mobile asosiy lookup."""
 
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request, barcode: str):
+        blocked = morph_care_block(user=request.user)
+        if blocked:
+            return Response(blocked, status=status.HTTP_403_FORBIDDEN)
         code = normalize_barcode(barcode)
         if len(code) < 8:
             return Response({"detail": "Noto'g'ri barcode."}, status=400)

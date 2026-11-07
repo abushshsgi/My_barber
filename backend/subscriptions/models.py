@@ -16,6 +16,7 @@ class UserSubscription(models.Model):
         EXPIRED = "expired", "Muddati tugagan"
         CANCELLED = "cancelled", "Bekor qilingan"
         DEACTIVATED = "deactivated", "O'chirilgan"
+        REFUNDED = "refunded", "To'lov qaytarilgan"
 
     class Source(models.TextChoices):
         WALLET = "wallet", "Hamyon"
@@ -49,6 +50,7 @@ class UserSubscription(models.Model):
     payment_order_id = models.CharField(max_length=128, blank=True, default="", db_index=True)
     payment_transaction_id = models.CharField(max_length=128, blank=True, default="", db_index=True)
     wallet_entry_id = models.CharField(max_length=64, blank=True, default="")
+    cancelled_at = models.DateTimeField(null=True, blank=True, db_index=True)
     deactivated_at = models.DateTimeField(null=True, blank=True)
     deactivated_reason = models.CharField(max_length=255, blank=True, default="")
     deactivated_by = models.CharField(max_length=64, blank=True, default="")
@@ -68,10 +70,39 @@ class UserSubscription(models.Model):
         return f"{self.user_id}:{self.plan_code}:{self.status}"
 
     @property
+    def is_user_cancelled(self) -> bool:
+        return self.status == self.Status.CANCELLED and self.cancelled_at is not None
+
+    @property
     def is_currently_active(self) -> bool:
-        if self.status != self.Status.ACTIVE:
+        """Muddat ichida Premium huquqi (faol yoki foydalanuvchi bekor qilgan)."""
+        now = timezone.now()
+        if self.status == self.Status.ACTIVE:
+            pass
+        elif self.is_user_cancelled:
+            pass
+        else:
             return False
-        if self.ends_at and timezone.now() >= self.ends_at:
+        if self.starts_at and self.starts_at > now:
+            return False
+        if self.ends_at and now >= self.ends_at:
+            return False
+        return True
+
+    def grants_premium_at(self, now=None) -> bool:
+        """Status + muddat. To'lov yaroqliligini chaqiruvchi tekshiradi."""
+        now = now or timezone.now()
+        if self.status == self.Status.REFUNDED:
+            return False
+        if self.status == self.Status.ACTIVE:
+            pass
+        elif self.status == self.Status.CANCELLED and self.cancelled_at is not None:
+            pass
+        else:
+            return False
+        if self.starts_at and self.starts_at > now:
+            return False
+        if self.ends_at and now >= self.ends_at:
             return False
         return True
 
@@ -83,6 +114,8 @@ class SubscriptionPayment(models.Model):
         PENDING = "pending", "Kutilmoqda"
         PAID = "paid", "To'langan"
         FAILED = "failed", "Muvaffaqiyatsiz"
+        CANCELLED = "cancelled", "Bekor qilingan"
+        EXPIRED = "expired", "Muddati o'tgan"
         REFUNDED = "refunded", "Qaytarilgan"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -100,6 +133,7 @@ class SubscriptionPayment(models.Model):
     )
     plan_code = models.CharField(max_length=32, db_index=True)
     amount_uzs = models.DecimalField(max_digits=12, decimal_places=2)
+    amount_tiyin = models.PositiveIntegerField(default=0)
     provider = models.CharField(max_length=16, db_index=True)
     status = models.CharField(
         max_length=16,
@@ -108,6 +142,8 @@ class SubscriptionPayment(models.Model):
         db_index=True,
     )
     order_id = models.CharField(max_length=128, unique=True, db_index=True)
+    payme_receipt_id = models.CharField(max_length=64, blank=True, default="", db_index=True)
+    payme_state = models.IntegerField(null=True, blank=True)
     transaction_id = models.CharField(max_length=128, blank=True, default="", db_index=True)
     idempotency_key = models.CharField(max_length=128, unique=True, db_index=True)
     checkout_url = models.TextField(blank=True, default="")
@@ -118,6 +154,13 @@ class SubscriptionPayment(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["payme_receipt_id"],
+                condition=~models.Q(payme_receipt_id=""),
+                name="uniq_subscription_payme_receipt_id",
+            ),
+        ]
 
     def __str__(self) -> str:
         return f"{self.order_id}:{self.status}"

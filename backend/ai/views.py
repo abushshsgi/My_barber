@@ -15,7 +15,11 @@ from accounts.models import User
 
 from ai.age_groups import birth_year_to_group, normalize_age_group, resolve_hairstyle_image_path
 from ai.explore_personas import has_persona_style_asset, list_explore_personas, normalize_persona_id
-from subscriptions.services import can_use_morph_care, can_use_morph_voice, get_active_subscription
+from subscriptions.services import (
+    morph_care_block,
+    can_use_morph_voice,
+    get_active_subscription,
+)
 
 from .history_storage import image_file_from_data_url, image_file_from_source, save_history_photo, trim_user_history
 from .care_serializers import CareProductSerializer
@@ -610,11 +614,9 @@ class AiIngredientScanView(UnthrottledAPIView):
         if isinstance(user, Response):
             return user
 
-        if not can_use_morph_care(user):
-            return Response(
-                {"detail": "Morf AI Parvarish Pro obunasida mavjud."},
-                status=status.HTTP_403_FORBIDDEN,
-            )
+        blocked = morph_care_block(user=user)
+        if blocked:
+            return Response(blocked, status=status.HTTP_403_FORBIDDEN)
 
         blocked = check_user_can_generate(user_id=user.pk, kind="analyze")
         if blocked:
@@ -860,6 +862,12 @@ def _apply_chat_token_usage(user, usage: dict) -> dict:
     return chat_limits_payload(user)
 
 
+def _assistant_style_context(response_type: str, hairstyles) -> dict:
+    if response_type != "hairstyle_recommendation" or not isinstance(hairstyles, list) or not hairstyles:
+        return {}
+    return {"type": response_type, "hairstyles": hairstyles}
+
+
 def _chat_thread_id(request) -> str:
     return str(request.data.get("thread_id") or request.data.get("threadId") or "").strip()[:64]
 
@@ -1013,6 +1021,8 @@ class AiMorphChatView(UnthrottledAPIView):
             )
             limits = _apply_chat_token_usage(user, usage)
             reply = result.get("reply") or ""
+            hairstyles = result.get("hairstyles") or []
+            response_type = str(result.get("type") or "text")
             if persist:
                 append_chat_turn(
                     user_id=user.pk,
@@ -1022,13 +1032,18 @@ class AiMorphChatView(UnthrottledAPIView):
                     context=context,
                     usage_row=usage_row,
                     usage_meta=usage,
+                    assistant_context=_assistant_style_context(response_type, hairstyles),
                 )
+            from ai.services.chat_catalog import public_chat_payload
+
             return Response(
-                {
-                    "reply": reply,
-                    "limits": limits,
-                    "thread_id": thread_id or None,
-                }
+                public_chat_payload(
+                    reply=str(reply),
+                    limits=limits,
+                    thread_id=thread_id or None,
+                    response_type=response_type,
+                    hairstyles=hairstyles if isinstance(hairstyles, list) else [],
+                )
             )
         except AiStyleError as exc:
             record_ai_generation(
@@ -1070,6 +1085,8 @@ class AiMorphChatView(UnthrottledAPIView):
                         )
                         limits = _apply_chat_token_usage(user, usage)
                         reply = event.get("reply") or ""
+                        hairstyles = event.get("hairstyles") or []
+                        response_type = str(event.get("type") or "text")
                         if persist:
                             append_chat_turn(
                                 user_id=user.pk,
@@ -1079,18 +1096,24 @@ class AiMorphChatView(UnthrottledAPIView):
                                 context=context,
                                 usage_row=usage_row,
                                 usage_meta=usage,
+                                assistant_context=_assistant_style_context(
+                                    response_type,
+                                    hairstyles,
+                                ),
                             )
+                        from ai.services.chat_catalog import public_chat_payload
+
+                        done_body = public_chat_payload(
+                            reply=str(reply),
+                            limits=limits,
+                            thread_id=thread_id or None,
+                            response_type=response_type,
+                            hairstyles=hairstyles if isinstance(hairstyles, list) else [],
+                        )
+                        done_body["done"] = True
                         yield (
                             "data: "
-                            + json.dumps(
-                                {
-                                    "done": True,
-                                    "limits": limits,
-                                    "reply": reply,
-                                    "thread_id": thread_id or None,
-                                },
-                                ensure_ascii=False,
-                            )
+                            + json.dumps(done_body, ensure_ascii=False)
                             + "\n\n"
                         )
             except AiStyleError as exc:

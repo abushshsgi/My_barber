@@ -13,6 +13,19 @@ class SubscriptionConfirmThrottle(CacheFailOpenMixin, FriendlyThrottleMixin, Use
     throttle_detail = "To'lov tasdiqlash limiti. Biroz kutib qayta urinib ko'ring."
 
 
+class SubscriptionPaymentStatusThrottle(CacheFailOpenMixin, FriendlyThrottleMixin, UserRateThrottle):
+    """Faqat to'lov oynasidagi odam, taxminan 8 soniyada bir marta. Boshqa userlar hisobga kirmaydi."""
+
+    scope = "subscription_payment_status"
+    rate = "10/minute"
+    throttle_detail = "To'lov holati so'rovlari limiti. Biroz kuting."
+
+
+class SubscriptionCancelThrottle(CacheFailOpenMixin, FriendlyThrottleMixin, UserRateThrottle):
+    scope = "subscription_cancel"
+    throttle_detail = "Obunani bekor qilish limiti. Biroz kutib qayta urinib ko'ring."
+
+
 class SubscriptionIPThrottle(CacheFailOpenMixin, FriendlyThrottleMixin, SimpleRateThrottle):
     """IP bo'yicha checkout spam / carding himoya."""
 

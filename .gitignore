@@ -23,3 +23,9 @@ backend/secrets/
 _upstream_salon_creator_suite/
 .vercel
 .idea/
+
+# Production secrets
+.env.bak
+.env.*.bak
+*.service-account.json
+vertex-service-account.json

@@ -123,6 +123,7 @@ def append_chat_turn(
     context: dict[str, Any] | None = None,
     usage_row: Any | None = None,
     usage_meta: dict[str, Any] | None = None,
+    assistant_context: dict[str, Any] | None = None,
 ) -> MorphAiChatThread | None:
     """Bitta user+assistant juftligini DB ga yozadi. Xato bo'lsa asosiy flow uzilmasin."""
     try:
@@ -152,6 +153,7 @@ def append_chat_turn(
                     client_id=(assistant_client_id or "")[:64],
                     role=MorphAiChatMessage.Role.ASSISTANT,
                     content=assistant_text[:50000],
+                    context=assistant_context if isinstance(assistant_context, dict) else {},
                     prompt_tokens=int(meta.get("prompt_tokens") or 0),
                     candidates_tokens=int(meta.get("candidates_tokens") or 0),
                     thoughts_tokens=int(meta.get("thoughts_tokens") or 0),
@@ -267,12 +269,13 @@ def clear_user_threads(*, user_id: int) -> int:
 
 
 def serialize_message(msg: MorphAiChatMessage) -> dict[str, Any]:
-    return {
+    context = msg.context or {}
+    payload = {
         "id": msg.client_id or str(msg.id),
         "db_id": msg.id,
         "role": msg.role,
         "content": msg.content,
-        "context": msg.context or {},
+        "context": context,
         "prompt_tokens": msg.prompt_tokens,
         "candidates_tokens": msg.candidates_tokens,
         "thoughts_tokens": msg.thoughts_tokens,
@@ -282,6 +285,11 @@ def serialize_message(msg: MorphAiChatMessage) -> dict[str, Any]:
         "provider": msg.provider,
         "created_at": msg.created_at.isoformat() if msg.created_at else None,
     }
+    styles = context.get("hairstyles") if isinstance(context, dict) else None
+    if isinstance(styles, list) and styles:
+        payload["hairstyles"] = styles
+        payload["type"] = context.get("type") or "hairstyle_recommendation"
+    return payload
 
 
 def serialize_thread(

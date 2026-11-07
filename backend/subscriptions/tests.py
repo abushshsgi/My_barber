@@ -3,6 +3,7 @@
 from decimal import Decimal
 from datetime import timedelta
 
+from django.conf import settings as django_settings
 from django.test import TestCase, override_settings
 from django.utils import timezone
 from rest_framework.test import APIClient
@@ -11,13 +12,16 @@ from accounts.models import User
 from accounts.referral import apply_referral, ensure_referral_code
 from ai.models import MorphAiSettings
 from subscriptions.models import UserSubscription
-from subscriptions.plans import PLAN_PLUS, PLAN_STARTER
+from subscriptions.plans import PLAN_PLUS, PLAN_PRO, PLAN_STARTER
 from subscriptions.services import (
     activate_subscription,
+    can_use_morph_care,
+    can_use_morph_care_pro,
     chat_token_snapshot,
     check_morph_entitlement,
     deactivate_subscription,
     expire_if_needed,
+    morph_care_block,
     record_morph_chat_tokens,
     record_morph_usage,
 )
@@ -38,7 +42,7 @@ def _user(email: str, phone: str, name: str = "Sub User") -> User:
     )
 
 
-@override_settings(MORPH_ENTITLEMENT_BYPASS=False)
+@override_settings(MORPH_ENTITLEMENT_BYPASS=False, MORPH_CARE_ACCESS_DEBUG=False)
 class SubscriptionServiceTests(TestCase):
     def setUp(self):
         self.user = _user("subuser@test.local", "+998901111111")
@@ -157,6 +161,37 @@ class SubscriptionServiceTests(TestCase):
         self.assertIn("obuna", msg.lower())
         self.assertIn("obuna", (check_morph_entitlement(user=self.user, kind="studio") or "").lower())
 
+    def test_care_plus_and_pro_gates(self):
+        self.assertFalse(can_use_morph_care(self.user))
+        self.assertFalse(can_use_morph_care_pro(self.user))
+        activate_subscription(
+            user=self.user,
+            plan_code=PLAN_STARTER,
+            source=UserSubscription.Source.ADMIN,
+            price_uzs=Decimal("0"),
+        )
+        self.assertFalse(can_use_morph_care(self.user))
+        self.assertEqual(morph_care_block(user=self.user)["code"], "care_plus")
+        activate_subscription(
+            user=self.user,
+            plan_code=PLAN_PLUS,
+            source=UserSubscription.Source.ADMIN,
+            price_uzs=Decimal("0"),
+        )
+        self.assertTrue(can_use_morph_care(self.user))
+        self.assertFalse(can_use_morph_care_pro(self.user))
+        self.assertIsNone(morph_care_block(user=self.user))
+        self.assertEqual(morph_care_block(user=self.user, pro=True)["code"], "care_pro")
+        activate_subscription(
+            user=self.user,
+            plan_code=PLAN_PRO,
+            source=UserSubscription.Source.ADMIN,
+            price_uzs=Decimal("0"),
+        )
+        self.assertTrue(can_use_morph_care(self.user))
+        self.assertTrue(can_use_morph_care_pro(self.user))
+        self.assertIsNone(morph_care_block(user=self.user, pro=True))
+
     def test_one_referral_gives_one_generation_credit(self):
         code = ensure_referral_code(self.user)
         referee = _user("ref0@test.local", "+998901112110", "Ref 0")
@@ -187,9 +222,43 @@ class SubscriptionServiceTests(TestCase):
         self.assertIsNotNone(check_morph_entitlement(user=self.user, kind="tryon"))
 
 
-@override_settings(MORPH_ENTITLEMENT_BYPASS=False)
+@override_settings(
+    MORPH_ENTITLEMENT_BYPASS=False,
+    MORPH_CARE_ACCESS_DEBUG=False,
+    CACHES={
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "LOCATION": "subscription-api-tests",
+        }
+    },
+    REST_FRAMEWORK={
+        **django_settings.REST_FRAMEWORK,
+        "DEFAULT_THROTTLE_RATES": {
+            **django_settings.REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"],
+            "subscription_checkout": "10000/minute",
+            "subscription_confirm": "10000/minute",
+            "subscription_ip": "10000/minute",
+            "user": "10000/minute",
+            "anon": "10000/minute",
+        },
+    },
+)
 class SubscriptionAPITests(TestCase):
     def setUp(self):
+        from subscriptions.views import (
+            SubscriptionCheckoutView,
+            SubscriptionConfirmView,
+            SubscriptionPaymentStatusView,
+        )
+
+        self._throttle_restore = [
+            (SubscriptionCheckoutView, SubscriptionCheckoutView.throttle_classes),
+            (SubscriptionConfirmView, SubscriptionConfirmView.throttle_classes),
+            (SubscriptionPaymentStatusView, SubscriptionPaymentStatusView.throttle_classes),
+        ]
+        SubscriptionCheckoutView.throttle_classes = []
+        SubscriptionConfirmView.throttle_classes = []
+        SubscriptionPaymentStatusView.throttle_classes = []
         self.user = _user("apiuser@test.local", "+998902222222", "API User")
         self.user.morph_free_tryon_eligible = False
         self.user.save(update_fields=["morph_free_tryon_eligible"])
@@ -204,6 +273,10 @@ class SubscriptionAPITests(TestCase):
             metadata={"source": "test"},
         )
 
+    def tearDown(self):
+        for view, classes in self._throttle_restore:
+            view.throttle_classes = classes
+
     def test_plans_public_without_auth(self):
         anon = APIClient()
         r = anon.get("/api/v1/subscriptions/plans/")
@@ -215,8 +288,14 @@ class SubscriptionAPITests(TestCase):
         self.assertEqual(starter["morph_chat_tokens_monthly"], 50000)
         chat_feat = next(f for f in starter["features"] if f["key"] == "chat")
         self.assertIn("токенов", chat_feat["label_ru"])
-        voice_feat = next(f for f in starter["features"] if f["key"] == "voice")
-        self.assertTrue(voice_feat.get("included", True))
+        plus = next(p for p in r.data["plans"] if p["code"] == "plus")
+        self.assertTrue(plus["morph_care"])
+        self.assertFalse(plus.get("morph_care_pro"))
+        pro = next(p for p in r.data["plans"] if p["code"] == "pro")
+        self.assertTrue(pro["morph_care"])
+        self.assertTrue(pro.get("morph_care_pro"))
+        care_feat = next(f for f in plus["features"] if f["key"] == "care")
+        self.assertTrue(care_feat.get("included", True))
         r = self.client.get("/api/v1/subscriptions/plans/")
         self.assertEqual(r.status_code, 200)
         self.assertEqual(len(r.data["plans"]), 3)
@@ -226,8 +305,14 @@ class SubscriptionAPITests(TestCase):
             {"plan_code": "starter", "method": "wallet"},
             format="json",
         )
-        self.assertEqual(r2.status_code, 201, r2.data)
-        self.assertTrue(r2.data["ok"])
+        self.assertEqual(r2.status_code, 400, r2.data)
+        activate_subscription(
+            user=self.user,
+            plan_code="starter",
+            source=UserSubscription.Source.PAYME,
+            price_uzs=Decimal("9990"),
+            payment_provider="payme",
+        )
 
         me = self.client.get("/api/v1/subscriptions/me/")
         self.assertEqual(me.status_code, 200)
@@ -237,20 +322,19 @@ class SubscriptionAPITests(TestCase):
         self.assertTrue(me.data["access"]["morph_voice_allowed"])
 
     def test_checkout_rejects_downgrade_and_ignores_client_price(self):
-        first = self.client.post(
-            "/api/v1/subscriptions/checkout/",
-            {"plan_code": "plus", "method": "wallet", "amount_uzs": 1},
-            format="json",
+        first = activate_subscription(
+            user=self.user,
+            plan_code="plus",
+            source=UserSubscription.Source.PAYME,
+            price_uzs=Decimal("39990"),
+            payment_provider="payme",
         )
-        self.assertEqual(first.status_code, 201, first.data)
-        self.assertEqual(first.data["subscription"]["plan_code"], "plus")
-        # Klient 1 so'm yuborgan — server katalog/promo narxini oladi.
-        self.assertNotEqual(first.data["subscription"]["price_uzs"], 1)
-        self.assertGreaterEqual(first.data["subscription"]["price_uzs"], 20000)
+        self.assertEqual(first.plan_code, "plus")
+        self.assertGreaterEqual(first.price_uzs, 20000)
 
         down = self.client.post(
             "/api/v1/subscriptions/checkout/",
-            {"plan_code": "starter", "method": "wallet"},
+            {"plan_code": "starter", "method": "payme"},
             format="json",
         )
         self.assertEqual(down.status_code, 400, down.data)
@@ -258,18 +342,17 @@ class SubscriptionAPITests(TestCase):
 
         same = self.client.post(
             "/api/v1/subscriptions/checkout/",
-            {"plan_code": "plus", "method": "wallet"},
+            {"plan_code": "plus", "method": "payme"},
             format="json",
         )
         self.assertEqual(same.status_code, 400, same.data)
 
-        up = self.client.post(
+        wallet_up = self.client.post(
             "/api/v1/subscriptions/checkout/",
             {"plan_code": "pro", "method": "wallet"},
             format="json",
         )
-        self.assertEqual(up.status_code, 201, up.data)
-        self.assertEqual(up.data["subscription"]["plan_code"], "pro")
+        self.assertEqual(wallet_up.status_code, 400, wallet_up.data)
 
     def test_me_locked_for_new_user(self):
         me = self.client.get("/api/v1/subscriptions/me/")

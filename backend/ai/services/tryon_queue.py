@@ -63,7 +63,7 @@ _CLIENT_MESSAGES = {
 }
 
 SLOT_WAIT_SECONDS = 10.0
-# 10k+ navbat bir necha soat turishi mumkin. Job shu oynada tugamaydi.
+# Runware navbati uchun maksimal kutish va concurrency chegarasi
 MAX_QUEUE_WAIT_SECONDS = 6 * 3600
 PROVIDER_CONCURRENCY_CAP = 32
 
@@ -930,6 +930,7 @@ def queue_metrics(client=None) -> dict[str, Any]:
         "max_depth": _max_queue_depth(),
         "pg_status_counts": pg_counts,
     }
+
 
 
 def _requeue_later(

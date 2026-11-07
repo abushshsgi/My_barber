@@ -274,6 +274,75 @@ class MorphAiGenerationEntry(models.Model):
         return f"MorphAiGeneration({self.user_id}, {self.style_id}, {self.created_at})"
 
 
+class TryOnTask(models.Model):
+    """Durable Try-On job — Redis coordinates; PostgreSQL recovers lost queue state."""
+
+    class Status(models.TextChoices):
+        PENDING = "pending", "Pending"
+        PROCESSING = "processing", "Processing"
+        RETRYING = "retrying", "Retrying"
+        COMPLETED = "completed", "Completed"
+        FAILED = "failed", "Failed"
+        CANCELLED = "cancelled", "Cancelled"
+
+    class Kind(models.TextChoices):
+        TRYON = "tryon", "Try-on"
+        MULTIVIEW = "multiview", "Multiview"
+
+    id = models.CharField(max_length=32, primary_key=True)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="tryon_tasks",
+    )
+    status = models.CharField(
+        max_length=16,
+        choices=Status.choices,
+        default=Status.PENDING,
+        db_index=True,
+    )
+    job_kind = models.CharField(max_length=16, choices=Kind.choices, default=Kind.TRYON)
+    style_id = models.CharField(max_length=64, blank=True, default="")
+    style_title = models.CharField(max_length=160, blank=True, default="")
+    audience = models.CharField(max_length=16, blank=True, default="")
+    slug = models.CharField(max_length=64, blank=True, default="")
+    persona_id = models.CharField(max_length=64, blank=True, default="")
+    reference_image_url = models.CharField(max_length=512, blank=True, default="")
+    idempotency_key = models.CharField(max_length=80, blank=True, default="", db_index=True)
+    attempt_count = models.PositiveSmallIntegerField(default=0)
+    max_attempts = models.PositiveSmallIntegerField(default=6)
+    lease_until = models.DateTimeField(null=True, blank=True)
+    lease_owner = models.CharField(max_length=64, blank=True, default="")
+    provider = models.CharField(max_length=32, blank=True, default="")
+    model_name = models.CharField(max_length=120, blank=True, default="")
+    error_detail = models.CharField(max_length=500, blank=True, default="")
+    latency_ms = models.PositiveIntegerField(default=0)
+    input_photo = models.ImageField(
+        upload_to="ai-style/tryon-jobs/%Y/%m/",
+        blank=True,
+        null=True,
+    )
+    result_photo = models.ImageField(
+        upload_to="ai-style/tryon-jobs/%Y/%m/",
+        blank=True,
+        null=True,
+    )
+    result_meta = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["status", "updated_at"], name="ai_tryontask_status_upd_idx"),
+            models.Index(fields=["user", "-created_at"], name="ai_tryontask_user_created_idx"),
+        ]
+
+    def __str__(self) -> str:
+        return f"TryOnTask({self.id}, {self.status})"
+
+
 class MorphAiChatThread(models.Model):
     """Morf AI chatbot suhbat (client_id = mobil/local thread id)."""
 

@@ -54,7 +54,12 @@ def studio_edit_image_model() -> str:
     return STUDIO_EDIT_IMAGE_MODEL
 
 
-def generate_image_content(body: dict[str, Any], *, model: str | None = None) -> dict[str, Any]:
+def generate_image_content(
+    body: dict[str, Any],
+    *,
+    model: str | None = None,
+    max_retries: int | None = None,
+) -> dict[str, Any]:
     api_key = (getattr(settings, "GEMINI_API_KEY", None) or "").strip()
     if not api_key:
         raise AiStyleError(
@@ -62,10 +67,17 @@ def generate_image_content(body: dict[str, Any], *, model: str | None = None) ->
             503,
         )
 
+    from .image_provider import is_queue_managed_generation
+
     resolved = (model or "").strip() or studio_image_model()
     url = f"{STUDIO_API_BASE}/{resolved}:generateContent"
     payload_bytes = json.dumps(body).encode("utf-8")
-    max_attempts = 15
+    if max_retries is not None:
+        max_attempts = max(1, int(max_retries) + 1)
+    elif is_queue_managed_generation():
+        max_attempts = 1
+    else:
+        max_attempts = 15
 
     for attempt in range(max_attempts):
         req = urllib.request.Request(
@@ -96,7 +108,11 @@ def generate_image_content(body: dict[str, Any], *, model: str | None = None) ->
             logger.warning("Studio image HTTP %s (%s): %s", exc.code, resolved, err_body[:800])
             message = map_gemini_http_error(exc.code, err_body, kind="image", model=resolved)
             status = 429 if exc.code == 429 else (502 if exc.code >= 500 else 400)
-            raise AiStyleError(message, status) from exc
+            raise AiStyleError(
+                message,
+                status,
+                retryable=status in (429, 502, 503, 504),
+            ) from exc
         except urllib.error.URLError as exc:
             logger.warning("Studio image network error (%s): %s", resolved, exc)
             raise AiStyleError("Google AI Studio serveriga ulanib bo'lmadi.", 502) from exc
@@ -108,8 +124,17 @@ def generate_image_content(body: dict[str, Any], *, model: str | None = None) ->
 
 def image_generation_provider() -> Literal["studio", "vertex"] | None:
     """Rasm generatsiya: Vertex (GCP) birinchi, AI Studio zaxira."""
+    from .image_provider import configured_image_provider
     from .vertex_auth import vertex_image_configured
 
+    try:
+        mode = configured_image_provider()
+    except AiStyleError:
+        return None
+    if mode == "vertex":
+        return "vertex" if vertex_image_configured() else None
+    if mode == "studio":
+        return "studio" if studio_image_configured() else None
     if vertex_image_configured():
         return "vertex"
     if studio_image_configured():

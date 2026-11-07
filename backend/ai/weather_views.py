@@ -4,6 +4,9 @@ from __future__ import annotations
 
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+from rest_framework import status
+
+from subscriptions.services import morph_care_block
 
 from ai.care_serializers import CareProductSerializer
 from ai.models import CareUserProduct, HairCareProfile
@@ -69,9 +72,12 @@ class CareWeatherRegionsView(UnthrottledAPIView):
 
 
 class CareWeatherView(UnthrottledAPIView):
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request):
+        blocked = morph_care_block(user=request.user)
+        if blocked:
+            return Response(blocked, status=status.HTTP_403_FORBIDDEN)
         lat = _parse_coord(request.query_params.get("lat"))
         lon = _parse_coord(request.query_params.get("lon"))
         region_id = (request.query_params.get("region_id") or "").strip().lower() or None
@@ -114,6 +120,9 @@ class CareWeatherPlanView(UnthrottledAPIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
+        blocked = morph_care_block(user=request.user)
+        if blocked:
+            return Response(blocked, status=status.HTTP_403_FORBIDDEN)
         lat = _parse_coord(str(request.data.get("lat") or ""))
         lon = _parse_coord(str(request.data.get("lon") or ""))
         region_id = str(request.data.get("region_id") or "").strip().lower() or None

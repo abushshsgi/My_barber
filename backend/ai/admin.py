@@ -14,6 +14,7 @@ from .models import (
     MorphAiLookShare,
     MorphAiSettings,
     MorphAiUserPrefs,
+    TryOnTask,
 )
 
 
@@ -58,6 +59,24 @@ class AiGenerationUsageAdmin(admin.ModelAdmin):
     search_fields = ("user__phone", "user__email", "style_id", "job_id", "prompt")
     raw_id_fields = ("user",)
     readonly_fields = ("created_at",)
+
+
+@admin.register(TryOnTask)
+class TryOnTaskAdmin(admin.ModelAdmin):
+    list_display = (
+        "id",
+        "user",
+        "status",
+        "job_kind",
+        "style_id",
+        "attempt_count",
+        "provider",
+        "created_at",
+    )
+    list_filter = ("status", "job_kind", "provider")
+    search_fields = ("id", "user__phone", "user__email", "style_id")
+    raw_id_fields = ("user",)
+    readonly_fields = ("created_at", "updated_at", "completed_at")
 
 
 @admin.register(MorphAiLookShare)

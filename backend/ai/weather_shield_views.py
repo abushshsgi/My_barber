@@ -10,6 +10,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
 from accounts.permissions import IsAdmin
+from subscriptions.services import morph_care_block
 from ai.models import WeatherShieldCategory, WeatherShieldProduct, WeatherShieldUserAction
 from ai.serializers import _media_absolute_url
 from ai.unthrottled import UnthrottledAPIView
@@ -97,9 +98,12 @@ def product_payload(p: WeatherShieldProduct, request) -> dict:
 class WeatherShieldCatalogView(UnthrottledAPIView):
     """GET — ob-havo + soch holatiga mos himoya mahsulotlari."""
 
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request):
+        blocked = morph_care_block(user=request.user)
+        if blocked:
+            return Response(blocked, status=status.HTTP_403_FORBIDDEN)
         ensure_default_categories()
         temp = _f(request.query_params.get("temp"))
         humidity = _f(request.query_params.get("humidity"))
@@ -177,6 +181,9 @@ class WeatherShieldActionView(UnthrottledAPIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
+        blocked = morph_care_block(user=request.user)
+        if blocked:
+            return Response(blocked, status=status.HTTP_403_FORBIDDEN)
         product_id = request.data.get("product_id")
         action_key = (request.data.get("action_key") or request.data.get("id") or "").strip()
         completed = request.data.get("completed", True)

@@ -18,7 +18,17 @@ class UserSubscriptionAdmin(admin.ModelAdmin):
 
 @admin.register(SubscriptionPayment)
 class SubscriptionPaymentAdmin(admin.ModelAdmin):
-    list_display = ("order_id", "user", "plan_code", "amount_uzs", "provider", "status", "paid_at")
+    list_display = (
+        "order_id",
+        "user",
+        "plan_code",
+        "amount_uzs",
+        "amount_tiyin",
+        "provider",
+        "status",
+        "payme_receipt_id",
+        "paid_at",
+    )
     list_filter = ("status", "provider", "plan_code")
     search_fields = ("order_id", "transaction_id", "user__phone")
 
