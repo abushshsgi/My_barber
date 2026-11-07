@@ -50,7 +50,13 @@ export function BeforeAfterSlider({ beforeSeed, afterSeed, label }: Props) {
       >
         <div className="absolute left-1/2 top-1/2 grid h-9 w-9 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-white shadow-xl">
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-            <path d="M5 3L1 7l4 4M9 3l4 4-4 4" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            <path
+              d="M5 3L1 7l4 4M9 3l4 4-4 4"
+              stroke="black"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
           </svg>
         </div>
       </motion.div>

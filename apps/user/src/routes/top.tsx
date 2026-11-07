@@ -1,12 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useTranslation } from "react-i18next";
 import { DesktopPageSplit } from "@/components/desktop/DesktopPageSplit";
 import { TopSalonsDesktopPage } from "@/components/desktop/pages/TopSalonsDesktopPage";
-import { MobileListPage } from "@/components/mobile/MobileListPage";
-import { MobileSalonCard } from "@/components/mobile/MobileSalonCard";
-import { NoSalonsEmpty } from "@/components/NoSalonsEmpty";
+import { MysaloonPausedScreen } from "@/components/mobile/MysaloonPausedScreen";
 import { useTopSalons } from "@/hooks/use-top-salons";
-import type { Salon } from "@/lib/mock-data";
 
 export const Route = createFileRoute("/top")({
   head: () => ({
@@ -18,37 +14,12 @@ export const Route = createFileRoute("/top")({
   component: TopSalonsRoute,
 });
 
-type MobileProps = {
-  salons: Salon[];
-  loading: boolean;
-};
-
-function TopSalonsMobile({ salons, loading }: MobileProps) {
-  const { t } = useTranslation();
-
-  return (
-    <MobileListPage title={t("topSalonsPage.title")} subtitle={t("topSalonsPage.subtitle")}>
-      {loading ? (
-        <p className="py-8 text-center text-sm text-muted-foreground">{t("common.loading")}</p>
-      ) : salons.length === 0 ? (
-        <NoSalonsEmpty compact />
-      ) : (
-        <div className="space-y-3">
-          {salons.map((salon) => (
-            <MobileSalonCard key={salon.id} salon={salon} />
-          ))}
-        </div>
-      )}
-    </MobileListPage>
-  );
-}
-
 function TopSalonsRoute() {
   const { salons, loading } = useTopSalons();
 
   return (
     <DesktopPageSplit
-      mobile={<TopSalonsMobile salons={salons} loading={loading} />}
+      mobile={<MysaloonPausedScreen />}
       desktop={<TopSalonsDesktopPage salons={salons} loading={loading} />}
     />
   );

@@ -29,13 +29,12 @@ export function useIndependentAvailability(params: {
         date: params.date,
         barber_service_ids: params.barberServiceIds.join(","),
       }),
-    enabled:
-      authQueryEnabled(
-        (params.enabled ?? true) &&
-          params.barber > 0 &&
-          params.date.length > 0 &&
-          params.barberServiceIds.length > 0,
-      ),
+    enabled: authQueryEnabled(
+      (params.enabled ?? true) &&
+        params.barber > 0 &&
+        params.date.length > 0 &&
+        params.barberServiceIds.length > 0,
+    ),
   });
 }
 

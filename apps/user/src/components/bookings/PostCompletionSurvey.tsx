@@ -63,11 +63,7 @@ function StarRow({
   );
 }
 
-export function PostCompletionSurvey({
-  booking,
-  autoOpen = false,
-  triggerless = false,
-}: Props) {
+export function PostCompletionSurvey({ booking, autoOpen = false, triggerless = false }: Props) {
   const createReview = useCreateReview();
   const [open, setOpen] = useState(autoOpen);
   const [sheetVisible, setSheetVisible] = useState(false);
@@ -248,7 +244,9 @@ export function PostCompletionSurvey({
             <div className="space-y-6">
               <div>
                 <h3 className="text-lg font-bold">Xizmatdan qanchalik mamnunsiz?</h3>
-                <p className="mt-1 text-sm text-muted-foreground">Tez ifoda tanlang yoki yulduz qo'ying.</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Tez ifoda tanlang yoki yulduz qo'ying.
+                </p>
               </div>
               <div className="grid grid-cols-4 gap-2">
                 {EXPRESSIONS.map((item) => (
@@ -303,7 +301,9 @@ export function PostCompletionSurvey({
             <div className="space-y-6">
               <div>
                 <h3 className="text-lg font-bold">Izoh qoldirasizmi?</h3>
-                <p className="mt-1 text-sm text-muted-foreground">Ixtiyoriy — fikringiz boshqalarga yordam beradi.</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Ixtiyoriy — fikringiz boshqalarga yordam beradi.
+                </p>
               </div>
               <div>
                 <p className="mb-2 text-sm font-bold">Sartarosh uchun</p>

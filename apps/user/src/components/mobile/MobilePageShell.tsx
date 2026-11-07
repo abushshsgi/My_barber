@@ -36,9 +36,7 @@ export function MobilePageShell({
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const showDock = shouldShowMobileDock(pathname);
 
-  const backButton = (
-    <MobileBackButton onClick={() => navigateBack(router, backTo, strictBack)} />
-  );
+  const backButton = <MobileBackButton onClick={() => navigateBack(router, backTo, strictBack)} />;
 
   const titleBlock = (
     <div className="min-w-0 flex-1 pt-0.5">
@@ -50,9 +48,7 @@ export function MobilePageShell({
       >
         {title}
       </h1>
-      {subtitle ? (
-        <p className="mt-0.5 text-xs text-muted-foreground">{subtitle}</p>
-      ) : null}
+      {subtitle ? <p className="mt-0.5 text-xs text-muted-foreground">{subtitle}</p> : null}
     </div>
   );
 

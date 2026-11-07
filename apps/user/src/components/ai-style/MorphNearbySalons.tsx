@@ -43,7 +43,10 @@ export function MorphNearbySalons({ preferredSalonId, className }: Props) {
           </p>
           <div className="flex gap-2 overflow-hidden">
             {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="h-20 w-[9.5rem] shrink-0 animate-pulse rounded-2xl bg-neutral-100" />
+              <div
+                key={i}
+                className="h-20 w-[9.5rem] shrink-0 animate-pulse rounded-2xl bg-neutral-100"
+              />
             ))}
           </div>
         </div>
@@ -97,7 +100,9 @@ export function MorphNearbySalons({ preferredSalonId, className }: Props) {
               className="h-16 w-full object-cover"
             />
             <div className="flex flex-1 flex-col gap-1 px-2.5 py-2">
-              <p className="truncate text-[12px] font-bold leading-tight text-foreground">{salon.name}</p>
+              <p className="truncate text-[12px] font-bold leading-tight text-foreground">
+                {salon.name}
+              </p>
               <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
                 {salon.rating > 0 ? (
                   <span className="inline-flex items-center gap-0.5">

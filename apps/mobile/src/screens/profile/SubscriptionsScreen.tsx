@@ -1,26 +1,26 @@
 import { Ionicons } from "@expo/vector-icons";
+import { useFocusEffect } from "@react-navigation/native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
   Pressable,
-  RefreshControl,
-  ScrollView,
   StyleSheet,
   Text,
   View,
 } from "react-native";
 import { useTranslation } from "react-i18next";
 import {
-  formatSubDate,
-  formatUzs,
   isPlanUpgrade,
-  type SubscriptionPlan,
+  nextUpgradeCode,
 } from "../../api/subscriptions";
+import { PaymeCheckoutView } from "../../components/payme/PaymeCheckoutView";
+import { PaymePaySheet } from "../../components/payme/PaymePaySheet";
 import { NativeHeader } from "../../components/ui/NativeHeader";
+import { useHideTabBar } from "../../hooks/useHideTabBar";
 import { useSubscriptions } from "../../hooks/useSubscriptions";
-import { pickFeatureLabel, pickLocalizedLabel, pickPlanName } from "../../lib/plan-labels";
+import { pickFeatureLabel, pickPlanName } from "../../lib/plan-labels";
 import type { ProfileStackParamList } from "../../navigation/ProfileStack";
 import { colors } from "../../theme/colors";
 import {
@@ -32,242 +32,400 @@ import {
 
 type Props = NativeStackScreenProps<ProfileStackParamList, "Subscriptions">;
 
-function PlanGlyph({ code }: { code: string }) {
-  const name =
-    code === "pro" ? "diamond" : code === "plus" ? "sparkles" : "flash";
+function RemainRow({
+  label,
+  used,
+  limit,
+}: {
+  label: string;
+  used: number;
+  limit: number;
+}) {
+  const { t } = useTranslation();
+  const safeLimit = limit > 0 ? limit : 1;
+  const ratio = Math.min(1, Math.max(0, used / safeLimit));
+  const left = Math.max(0, safeLimit - used);
   return (
-    <View style={styles.glyph}>
-      <Ionicons name={name as keyof typeof Ionicons.glyphMap} size={20} color="#FFF" />
+    <View style={styles.remain}>
+      <View style={styles.remainTop}>
+        <Text style={styles.remainLabel}>{label}</Text>
+        <Text style={styles.remainCount}>{t("profile.leftCount", { count: left })}</Text>
+      </View>
+      <View style={styles.remainTrack}>
+        <View style={[styles.remainFill, { width: `${Math.round(ratio * 100)}%` }]} />
+      </View>
     </View>
   );
 }
 
-function PlanCard({
-  plan,
-  activeCode,
-  busy,
-  onSubscribe,
-}: {
-  plan: SubscriptionPlan;
-  activeCode: string | null;
-  busy: boolean;
-  onSubscribe: (code: string) => void;
-}) {
-  const { t, i18n } = useTranslation();
-  const lang = i18n.language;
-  const isActive = activeCode === plan.code;
-  const canUpgrade = isPlanUpgrade(plan.code, activeCode);
-  const blocked = Boolean(activeCode) && !canUpgrade && !isActive;
-
-  let badge: string | null = null;
-  if (isActive) badge = t("morph.paywall.currentPlan");
-  else if (canUpgrade && activeCode) badge = t("morph.paywall.plansUpgrade", { defaultValue: "Upgrade" });
-  else if (plan.highlight) badge = t("morph.paywall.popular");
-
-  const cta = isActive
-    ? t("morph.paywall.ctaCurrent")
-    : blocked
-      ? t("morph.paywall.ctaLower")
-      : activeCode && canUpgrade
-        ? t("morph.paywall.cta", { plan: pickPlanName(plan, lang) })
-        : t("morph.paywall.ctaWallet");
-
-  return (
-    <View style={[styles.card, plan.highlight && styles.cardHighlight, isActive && styles.cardActive]}>
-      {badge ? (
-        <View style={[styles.badge, isActive ? styles.badgeSoft : styles.badgeDark]}>
-          <Text style={[styles.badgeText, isActive && styles.badgeTextSoft]}>{badge}</Text>
-        </View>
-      ) : null}
-
-      <View style={styles.cardHead}>
-        <PlanGlyph code={plan.code} />
-        <View style={styles.cardHeadText}>
-          <Text style={styles.planName}>{pickPlanName(plan, lang)}</Text>
-          <Text style={styles.planPeriod}>
-            {t("morph.paywall.periodDays", { count: plan.period_days })}
-          </Text>
-        </View>
-      </View>
-
-      <Text style={styles.price}>
-        {formatUzs(plan.price_uzs)}
-        <Text style={styles.priceSuffix}> / {t("morph.paywall.monthShort")}</Text>
-      </Text>
-
-      <View style={styles.features}>
-        {plan.features.map((f) => {
-          const included = f.included !== false;
-          return (
-            <View key={f.key} style={styles.featureRow}>
-              <View style={[styles.check, !included && styles.checkOff]}>
-                <Ionicons
-                  name={included ? "checkmark" : "close"}
-                  size={12}
-                  color={included ? "#FFF" : colors.muted}
-                />
-              </View>
-              <Text style={[styles.featureText, !included && styles.featureOff]}>
-                {pickFeatureLabel(f, lang)}
-              </Text>
-            </View>
-          );
-        })}
-      </View>
-
-      <Pressable
-        disabled={isActive || blocked || busy}
-        onPress={() => onSubscribe(plan.code)}
-        style={[
-          styles.cta,
-          (isActive || blocked) && styles.ctaDisabled,
-          busy && styles.ctaBusy,
-        ]}
-      >
-        {busy ? (
-          <ActivityIndicator color={isActive || blocked ? colors.fg : "#FFF"} />
-        ) : (
-          <Text style={[styles.ctaText, (isActive || blocked) && styles.ctaTextDisabled]}>
-            {cta}
-          </Text>
-        )}
-      </Pressable>
-    </View>
-  );
+function taglineKey(code: string): string {
+  if (code === "plus") return "morph.paywall.taglinePlus";
+  if (code === "pro") return "morph.paywall.taglinePro";
+  return "morph.paywall.taglineStarter";
 }
 
 export function SubscriptionsScreen({ navigation }: Props) {
   const { t, i18n } = useTranslation();
   const lang = i18n.language;
-  const { plans, me, loading, error, busyCode, refresh, subscribeWallet, activeCode } =
-    useSubscriptions();
+  useHideTabBar();
+  const {
+    plans,
+    me,
+    loading,
+    error,
+    busyCode,
+    refresh,
+    startPayme,
+    paymeCheckout,
+    closePayme,
+    onPaymePaid,
+    returnFromPayme,
+    activeCode,
+  } = useSubscriptions();
   const [toast, setToast] = useState<string | null>(null);
+  const [pendingCode, setPendingCode] = useState<string | null>(null);
+  const [pickedUpgrade, setPickedUpgrade] = useState<string | null>(null);
+  const paidAlerted = useRef(false);
+  const sub = me?.subscription;
+  const nextCode = me?.has_active ? nextUpgradeCode(activeCode) : null;
+  const shopPlans = plans.filter((plan) => plan.code !== "free" && plan.purchasable !== false);
+  const upgradeChoices = me?.has_active
+    ? shopPlans.filter(
+        (plan) =>
+          (plan.code === "plus" || plan.code === "pro") && isPlanUpgrade(plan.code, activeCode),
+      )
+    : shopPlans;
+  const selectedUpgrade =
+    upgradeChoices.find((plan) => plan.code === pickedUpgrade) ??
+    upgradeChoices.find((plan) => plan.code === nextCode) ??
+    upgradeChoices[0] ??
+    null;
+  useFocusEffect(
+    useCallback(() => {
+      refresh();
+    }, [refresh]),
+  );
 
-  const onSubscribe = async (code: string) => {
-    const res = await subscribeWallet(code);
-    if (res.ok) {
-      setToast(res.message);
-      Alert.alert("Obuna", res.message);
-    } else {
-      Alert.alert("Xato", res.message);
-    }
+  useEffect(() => {
+    setPickedUpgrade(null);
+  }, [activeCode]);
+
+  const onSubscribe = (code: string) => {
+    setPendingCode(code);
   };
 
-  const sub = me?.subscription;
+  const onPayFromSheet = async () => {
+    if (!pendingCode) return;
+    const res = await startPayme(pendingCode);
+    if (!res.ok) {
+      Alert.alert("Payme", res.message);
+      return;
+    }
+    setPendingCode(null);
+  };
+
+  useEffect(() => {
+    if (paymeCheckout?.orderId) paidAlerted.current = false;
+  }, [paymeCheckout?.orderId]);
+
+  const showPaid = () => {
+    if (paidAlerted.current) return;
+    paidAlerted.current = true;
+    setToast(t("profile.payConfirmed"));
+    Alert.alert(t("profile.payConfirmedTitle"), t("profile.payConfirmed"));
+  };
+
+  const handlePaid = async () => {
+    await onPaymePaid();
+    showPaid();
+  };
+
+  const handleReturnToApp = async () => {
+    const result = await returnFromPayme();
+    if (result === "paid") showPaid();
+  };
+
   const usage = me?.usage;
+  const isCancelled = Boolean(
+    me?.has_active && (me.status === "cancelled" || sub?.status === "cancelled" || sub?.cancelled_at),
+  );
+  const canCancel = Boolean(me?.can_cancel ?? sub?.can_cancel);
+  const currentName = me?.has_active && sub
+    ? sub.plan
+      ? pickPlanName(sub.plan, lang)
+      : sub.plan_code.toUpperCase()
+    : me?.current_plan
+      ? pickPlanName(me.current_plan, lang)
+      : "Free";
+  const moneyLocale = lang.startsWith("ru") ? "ru-RU" : lang.startsWith("en") ? "en-US" : "uz-UZ";
+  const offerFeatures = selectedUpgrade?.features ?? [];
 
   return (
     <View style={styles.root}>
-      <NativeHeader title={t("profile.subscriptions")} onBack={() => navigation.goBack()} />
+      <NativeHeader
+        title={me?.has_active ? t("profile.manage") : t("profile.subscriptions")}
+        onBack={() => navigation.goBack()}
+      />
 
-      <ScrollView
-        contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={loading} onRefresh={refresh} />}
-      >
-        <Text style={styles.subtitle}>
-          Morf AI va premium imkoniyatlar. Joriy obuna, tariflar va hamyondan to'lov.
-        </Text>
-
-        {/* Joriy obuna */}
-        <View style={styles.currentCard}>
-          <View style={styles.currentTop}>
-            <Text style={styles.currentLabel}>Joriy obuna</Text>
-            <View
-              style={[
-                styles.statusChip,
-                me?.has_active ? styles.statusOn : styles.statusOff,
-              ]}
-            >
-              <Text
-                style={[
-                  styles.statusText,
-                  me?.has_active ? styles.statusTextOn : styles.statusTextOff,
-                ]}
+      <View style={styles.fit}>
+        <View style={styles.now}>
+          <View style={styles.nowTop}>
+            <Text style={styles.nowEyebrow}>{t("profile.subCurrent")}</Text>
+            {canCancel ? (
+              <Pressable
+                onPress={() => navigation.navigate("CancelSubscription")}
+                hitSlop={8}
+                accessibilityRole="button"
               >
-                {me?.has_active ? "Faol" : "Faol emas"}
-                {sub?.is_trial ? " · Sinov" : ""}
+                <Text style={styles.nowCancel}>{t("profile.cancelCta")}</Text>
+              </Pressable>
+            ) : (
+              <Text style={styles.nowStatus}>
+                {me?.has_active
+                  ? isCancelled
+                    ? t("profile.subCancelledActive")
+                    : t("profile.subActive")
+                  : "Free"}
               </Text>
-            </View>
+            )}
           </View>
-
-          {me?.has_active && sub ? (
-            <>
-              <Text style={styles.currentPlan}>
-                {sub.plan ? pickPlanName(sub.plan, lang) : sub.plan_code.toUpperCase()}
-              </Text>
-              <Text style={styles.currentMeta}>
-                {formatUzs(sub.price_uzs)} · {sub.days_remaining ?? me.days_remaining ?? "—"} kun
-                qoldi
-              </Text>
-              <Text style={styles.currentMeta}>
-                Tugash: {formatSubDate(sub.ends_at)}
-              </Text>
-              {usage ? (
-                <View style={styles.usageBox}>
-                  <Text style={styles.usageLine}>
-                    Morf AI: {usage.morph_ai_used}/{usage.morph_ai_limit}
-                  </Text>
-                  <Text style={styles.usageLine}>
-                    Studio: {usage.morph_studio_used}/{usage.morph_studio_limit}
-                  </Text>
-                </View>
-              ) : null}
-            </>
-          ) : (
-            <Text style={styles.emptyCurrent}>
-              Yo'q — Morf AI yopiq. Tarif tanlab obuna bo'ling.
+          <Text style={styles.nowName} numberOfLines={1}>
+            {currentName}
+          </Text>
+          {me?.has_active ? (
+            <Text style={styles.nowDays} numberOfLines={1}>
+              {t("profile.subDaysLeft", { count: sub?.days_remaining ?? me.days_remaining ?? 0 })}
             </Text>
-          )}
+          ) : null}
+          {usage ? (
+            <View style={styles.nowMeters}>
+              <RemainRow
+                label={t("profile.meterAi")}
+                used={usage.morph_ai_used}
+                limit={usage.morph_ai_limit || 1}
+              />
+              {typeof usage.morph_chat_tokens_limit === "number" ? (
+                <RemainRow
+                  label={t("profile.meterChat")}
+                  used={usage.morph_chat_tokens_used ?? 0}
+                  limit={usage.morph_chat_tokens_limit}
+                />
+              ) : null}
+            </View>
+          ) : null}
         </View>
 
-        {me?.welcome_offer?.eligible ? (
-          <View style={styles.offer}>
-            <Ionicons name="gift-outline" size={18} color={colors.fg} />
-            <Text style={styles.offerText}>
-              {pickLocalizedLabel(
-                me.welcome_offer,
-                lang,
-                `−${me.welcome_offer.discount_pct}%`,
-              )}
-            </Text>
-          </View>
-        ) : null}
-
         {error ? (
-          <View style={styles.errorBox}>
+          <Pressable onPress={refresh} style={styles.errorBox}>
             <Text style={styles.errorText}>{error}</Text>
-            <Pressable onPress={refresh} style={styles.retry}>
-              <Text style={styles.retryText}>Qayta urinish</Text>
-            </Pressable>
-          </View>
+          </Pressable>
         ) : null}
 
         {loading && plans.length === 0 ? (
-          <ActivityIndicator style={{ marginTop: 24 }} color={colors.fg} />
+          <ActivityIndicator color={colors.fg} />
+        ) : selectedUpgrade ? (
+          <>
+            {upgradeChoices.length > 1 ? (
+              <View style={styles.tabs}>
+                {upgradeChoices.map((plan) => {
+                  const on = plan.code === selectedUpgrade.code;
+                  return (
+                    <Pressable
+                      key={plan.code}
+                      onPress={() => setPickedUpgrade(plan.code)}
+                      style={[styles.tab, on && styles.tabOn]}
+                      accessibilityRole="tab"
+                      accessibilityState={{ selected: on }}
+                    >
+                      <Text style={[styles.tabText, on && styles.tabTextOn]}>
+                        {pickPlanName(plan, lang)}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            ) : null}
+
+            <View style={styles.offer}>
+              <Text style={styles.offerName}>{pickPlanName(selectedUpgrade, lang)}</Text>
+              <Text style={styles.offerTag} numberOfLines={1}>
+                {t(taglineKey(selectedUpgrade.code))}
+              </Text>
+              <View style={styles.priceRow}>
+                <Text style={styles.offerPrice}>
+                  {selectedUpgrade.price_uzs.toLocaleString(moneyLocale)}
+                </Text>
+                <Text style={styles.offerUnit}>
+                  {t("morph.paywall.currencyShort")} / {t("morph.paywall.monthShort")}
+                </Text>
+              </View>
+              <View style={styles.divider} />
+              <Text style={styles.includes}>{t("morph.paywall.includes")}</Text>
+              <View style={styles.feats}>
+                {offerFeatures.map((feature) => {
+                  const included = feature.included !== false;
+                  return (
+                    <View key={feature.key} style={styles.featRow}>
+                      <Ionicons
+                        name={included ? "checkmark-circle" : "close-circle"}
+                        size={17}
+                        color={included ? colors.fg : colors.muted}
+                      />
+                      <Text
+                        numberOfLines={1}
+                        style={[styles.featText, !included && styles.featOff]}
+                      >
+                        {pickFeatureLabel(feature, lang)}
+                      </Text>
+                    </View>
+                  );
+                })}
+              </View>
+            </View>
+
+            <Pressable
+              onPress={() => onSubscribe(selectedUpgrade.code)}
+              disabled={isCancelled || busyCode === selectedUpgrade.code}
+              style={[styles.payCta, (isCancelled || busyCode === selectedUpgrade.code) && styles.payCtaOff]}
+              accessibilityRole="button"
+            >
+              {busyCode === selectedUpgrade.code ? (
+                <ActivityIndicator color="#FFF" />
+              ) : (
+                <>
+                  <Text style={styles.payCtaText}>
+                    {isCancelled ? t("profile.upgradeWait") : t("morph.paywall.ctaCards")}
+                  </Text>
+                  {isCancelled ? null : (
+                    <Ionicons name="arrow-forward" size={18} color="#FFF" />
+                  )}
+                </>
+              )}
+            </Pressable>
+          </>
+        ) : me?.has_active ? (
+          <Text style={styles.stillPremium}>{t("profile.highestPlan")}</Text>
         ) : null}
 
-        <Text style={styles.sectionTitle}>Tariflar</Text>
-
-        {plans.map((plan) => (
-          <PlanCard
-            key={plan.code}
-            plan={plan}
-            activeCode={activeCode}
-            busy={busyCode === plan.code}
-            onSubscribe={onSubscribe}
-          />
-        ))}
-
         {toast ? <Text style={styles.toast}>{toast}</Text> : null}
-      </ScrollView>
+      </View>
+
+      <PaymePaySheet
+        visible={Boolean(pendingCode) && !paymeCheckout}
+        busy={Boolean(busyCode)}
+        onClose={() => setPendingCode(null)}
+        onPay={() => void onPayFromSheet()}
+      />
+      <PaymeCheckoutView
+        visible={Boolean(paymeCheckout)}
+        checkoutUrl={paymeCheckout?.checkoutUrl ?? null}
+        orderId={paymeCheckout?.orderId ?? null}
+        onClose={closePayme}
+        onPaid={handlePaid}
+        onReturnToApp={() => void handleReturnToApp()}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
-  content: { padding: moderateScale(16), paddingBottom: verticalScale(40), gap: moderateScale(12) },
+  fit: {
+    flex: 1,
+    paddingHorizontal: scale(16),
+    paddingTop: verticalScale(8),
+    paddingBottom: verticalScale(12),
+    gap: verticalScale(8),
+  },
+  now: {
+    borderRadius: moderateScale(16),
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    paddingHorizontal: scale(14),
+    paddingVertical: verticalScale(12),
+    gap: verticalScale(4),
+  },
+  nowTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  nowEyebrow: {
+    fontSize: fontSize(12),
+    fontWeight: "800",
+    letterSpacing: 0.6,
+    textTransform: "uppercase",
+    color: colors.muted,
+  },
+  nowStatus: { fontSize: fontSize(14), fontWeight: "700", color: colors.fg },
+  nowCancel: { fontSize: fontSize(14), fontWeight: "700", color: colors.muted },
+  nowName: { fontSize: fontSize(22), fontWeight: "800", color: colors.fg },
+  nowDays: { fontSize: fontSize(14), fontWeight: "600", color: colors.muted },
+  nowMeters: { marginTop: verticalScale(6), gap: verticalScale(8) },
+  remain: { gap: 4 },
+  remainTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  remainLabel: { fontSize: fontSize(15), fontWeight: "700", color: colors.fg },
+  remainCount: { fontSize: fontSize(15), fontWeight: "700", color: colors.fg },
+  remainTrack: {
+    height: verticalScale(5),
+    borderRadius: 999,
+    backgroundColor: colors.promo,
+    overflow: "hidden",
+  },
+  remainFill: { height: "100%", borderRadius: 999, backgroundColor: colors.fg },
+  tabs: {
+    flexDirection: "row",
+    borderRadius: 999,
+    padding: 3,
+    backgroundColor: colors.promo,
+  },
+  tab: {
+    flex: 1,
+    minHeight: verticalScale(34),
+    borderRadius: 999,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  tabOn: { backgroundColor: colors.fg },
+  tabText: { fontSize: fontSize(16), fontWeight: "600", color: colors.muted },
+  tabTextOn: { fontWeight: "800", color: "#FFF" },
+  offer: {
+    borderRadius: moderateScale(18),
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    paddingHorizontal: scale(14),
+    paddingVertical: verticalScale(10),
+  },
+  offerName: { fontSize: fontSize(24), fontWeight: "800", color: colors.fg },
+  offerTag: { marginTop: 2, fontSize: fontSize(14), color: colors.muted },
+  priceRow: { flexDirection: "row", alignItems: "baseline", gap: 6, marginTop: verticalScale(4) },
+  offerPrice: { fontSize: fontSize(32), lineHeight: fontSize(36), fontWeight: "800", color: colors.fg, letterSpacing: -0.8 },
+  offerUnit: { fontSize: fontSize(15), fontWeight: "600", color: colors.muted },
+  divider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.border, marginVertical: verticalScale(8) },
+  includes: {
+    fontSize: fontSize(12),
+    fontWeight: "800",
+    letterSpacing: 0.7,
+    textTransform: "uppercase",
+    color: colors.muted,
+    marginBottom: 4,
+  },
+  feats: { gap: 3 },
+  featRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  featText: { flex: 1, fontSize: fontSize(15), lineHeight: fontSize(20), fontWeight: "500", color: colors.fg },
+  featOff: { color: colors.muted },
+  payCta: {
+    marginTop: "auto",
+    minHeight: verticalScale(48),
+    borderRadius: 999,
+    backgroundColor: colors.fg,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  payCtaOff: { opacity: 0.45 },
+  payCtaText: { fontSize: fontSize(16), fontWeight: "800", color: "#FFF" },
+  scroll: { flex: 1, minHeight: 0 },
+  content: { padding: moderateScale(16), paddingBottom: verticalScale(72), gap: moderateScale(12) },
   subtitle: {
     fontSize: fontSize(13),
     lineHeight: fontSize(18),
@@ -295,6 +453,7 @@ const styles = StyleSheet.create({
   },
   statusChip: {
     borderRadius: 999,
+    maxWidth: "62%",
     paddingHorizontal: scale(10),
     paddingVertical: verticalScale(4),
   },
@@ -324,15 +483,6 @@ const styles = StyleSheet.create({
     gap: moderateScale(4),
   },
   usageLine: { fontSize: fontSize(12), color: "rgba(255,255,255,0.8)", fontWeight: "600" },
-  offer: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: moderateScale(8),
-    backgroundColor: colors.surface,
-    borderRadius: moderateScale(14),
-    padding: moderateScale(12),
-  },
-  offerText: { flex: 1, fontSize: fontSize(13), fontWeight: "700", color: colors.fg },
   sectionTitle: {
     marginTop: verticalScale(8),
     fontSize: fontSize(17),
@@ -401,7 +551,7 @@ const styles = StyleSheet.create({
     marginTop: verticalScale(4),
     minHeight: verticalScale(48),
     borderRadius: moderateScale(14),
-    backgroundColor: colors.fg,
+    backgroundColor: "#111111",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -425,4 +575,147 @@ const styles = StyleSheet.create({
   },
   retryText: { color: "#FFF", fontSize: fontSize(12), fontWeight: "700" },
   toast: { textAlign: "center", color: colors.muted, fontSize: fontSize(12), marginTop: verticalScale(8) },
+  stillPremium: {
+    fontSize: fontSize(13),
+    lineHeight: fontSize(18),
+    color: colors.muted,
+    marginTop: verticalScale(-4),
+  },
+  cancelBtn: {
+    marginTop: verticalScale(12),
+    minHeight: verticalScale(44),
+    borderRadius: moderateScale(12),
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.28)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  cancelBtnText: { fontSize: fontSize(13), fontWeight: "700", color: "#FFF" },
+  manageCard: {
+    backgroundColor: colors.surface,
+    borderRadius: moderateScale(18),
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: moderateScale(16),
+    gap: moderateScale(4),
+  },
+  manageTop: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: verticalScale(6),
+  },
+  manageEyebrow: {
+    fontSize: fontSize(11),
+    fontWeight: "700",
+    letterSpacing: 0.4,
+    textTransform: "uppercase",
+    color: colors.muted,
+  },
+  manageStatus: { fontSize: fontSize(12), fontWeight: "700", color: colors.fg },
+  managePlan: {
+    fontSize: fontSize(22),
+    fontWeight: "800",
+    color: colors.fg,
+    letterSpacing: -0.3,
+  },
+  endsLabel: {
+    marginTop: verticalScale(10),
+    fontSize: fontSize(12),
+    fontWeight: "700",
+    color: colors.muted,
+  },
+  endsDate: { fontSize: fontSize(20), fontWeight: "800", color: colors.fg },
+  endsMeta: { fontSize: fontSize(13), color: colors.muted, lineHeight: fontSize(18) },
+  meterList: { marginTop: verticalScale(12), gap: moderateScale(10) },
+  meter: { gap: moderateScale(6) },
+  meterTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  meterLabel: { fontSize: fontSize(13), fontWeight: "700", color: colors.fg },
+  meterCount: { fontSize: fontSize(13), fontWeight: "700", color: colors.fg },
+  meterTrack: {
+    height: verticalScale(6),
+    borderRadius: 999,
+    backgroundColor: colors.promo,
+    overflow: "hidden",
+  },
+  meterFill: { height: "100%", borderRadius: 999, backgroundColor: colors.fg },
+  cancelBtnLight: {
+    marginTop: verticalScale(12),
+    minHeight: verticalScale(44),
+    borderRadius: moderateScale(12),
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  cancelBtnLightText: { fontSize: fontSize(13), fontWeight: "700", color: colors.fg },
+  upgradeCard: {
+    backgroundColor: colors.surface,
+    borderRadius: moderateScale(18),
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: moderateScale(14),
+    gap: moderateScale(8),
+  },
+  upgradeCardPro: {
+    backgroundColor: "#111111",
+    borderColor: "#111111",
+  },
+  upgradeTop: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: moderateScale(12),
+  },
+  upgradeEyebrow: {
+    flex: 1,
+    fontSize: fontSize(11),
+    fontWeight: "700",
+    letterSpacing: 0.6,
+    textTransform: "uppercase",
+  },
+  upgradeName: { fontSize: fontSize(22), fontWeight: "800", letterSpacing: -0.4 },
+  upgradePrice: { fontSize: fontSize(16), fontWeight: "800" },
+  upgradePer: { fontSize: fontSize(12), fontWeight: "600" },
+  upgradeChips: { gap: moderateScale(4) },
+  upgradeChipText: { fontSize: fontSize(13), fontWeight: "600", lineHeight: fontSize(18) },
+  upgradeMissing: { fontSize: fontSize(12), lineHeight: fontSize(17) },
+  upgradeBtn: {
+    marginTop: verticalScale(2),
+    minHeight: verticalScale(42),
+    borderRadius: 999,
+    backgroundColor: colors.fg,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: scale(16),
+  },
+  upgradeBtnLight: { backgroundColor: "#FFFFFF" },
+  upgradeBtnOff: { opacity: 0.45 },
+  upgradeBtnText: { fontSize: fontSize(15), fontWeight: "800", color: "#FFF" },
+  upgradeBtnTextDark: { color: "#111111" },
+  switchRow: { flexDirection: "row", gap: moderateScale(8) },
+  switchChip: {
+    flex: 1,
+    minHeight: verticalScale(40),
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: scale(12),
+  },
+  switchChipOn: { backgroundColor: colors.fg, borderColor: colors.fg },
+  switchText: { fontSize: fontSize(14), fontWeight: "800", color: colors.fg },
+  switchTextOn: { color: "#FFFFFF" },
+  pitch: {
+    borderRadius: moderateScale(12),
+    backgroundColor: colors.promo,
+    paddingHorizontal: scale(12),
+    paddingVertical: verticalScale(8),
+    gap: moderateScale(4),
+  },
+  pitchPro: { backgroundColor: "rgba(255,255,255,0.1)" },
+  pitchText: { fontSize: fontSize(14), lineHeight: fontSize(20), fontWeight: "700" },
+  pitchCount: { fontSize: fontSize(11), fontWeight: "800", letterSpacing: 0.4 },
 });

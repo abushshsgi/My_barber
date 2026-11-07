@@ -49,7 +49,9 @@ export function HairstylePreviewFrame({
   className?: string;
 }) {
   return (
-    <div className={cn("mx-auto w-full max-w-[280px] sm:max-w-[300px] md:max-w-[320px]", className)}>
+    <div
+      className={cn("mx-auto w-full max-w-[280px] sm:max-w-[300px] md:max-w-[320px]", className)}
+    >
       {children}
     </div>
   );

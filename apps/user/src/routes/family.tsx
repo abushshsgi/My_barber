@@ -18,11 +18,7 @@ function FamilyPage() {
   const backTo = parseSubpageBackTo({ backTo: backToParam }, "/settings?section=family");
 
   return (
-    <ProfileSubpageLayout
-      title={t("family.title")}
-      subtitle={t("family.subtitle")}
-      backTo={backTo}
-    >
+    <ProfileSubpageLayout title={t("family.title")} subtitle={t("family.subtitle")} backTo={backTo}>
       <SettingsFamilyPanel />
     </ProfileSubpageLayout>
   );

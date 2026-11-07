@@ -1,9 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import {
-  BookingProcessDesktopPage,
-  BookingProcessMobilePage,
-} from "@/components/desktop/pages/BookingProcessDesktopPage";
+import { BookingProcessDesktopPage } from "@/components/desktop/pages/BookingProcessDesktopPage";
 import { DesktopPageSplit } from "@/components/desktop/DesktopPageSplit";
+import { MysaloonPausedScreen } from "@/components/mobile/MysaloonPausedScreen";
 import { useBookingProcessPage } from "@/hooks/use-booking-process-page";
 
 export const Route = createFileRoute("/bookings/$bookingId")({
@@ -23,7 +21,7 @@ function BookingProcessRoute() {
 
   return (
     <DesktopPageSplit
-      mobile={<BookingProcessMobilePage state={state} />}
+      mobile={<MysaloonPausedScreen />}
       desktop={<BookingProcessDesktopPage state={state} />}
     />
   );

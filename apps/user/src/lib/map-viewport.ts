@@ -70,9 +70,7 @@ export function filterSalonsByViewport<T extends ViewportSalon>(
   if (inRange.length === 0) return [];
 
   if (inRange.length <= cap) {
-    return inRange.sort(
-      (a, b) => (indexById.get(a.id) ?? 0) - (indexById.get(b.id) ?? 0),
-    );
+    return inRange.sort((a, b) => (indexById.get(a.id) ?? 0) - (indexById.get(b.id) ?? 0));
   }
 
   return inRange

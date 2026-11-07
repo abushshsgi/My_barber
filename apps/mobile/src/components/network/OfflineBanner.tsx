@@ -36,17 +36,16 @@ export function OfflineBanner() {
   const [checking, setChecking] = useState(false);
   const anim = useRef(new Animated.Value(online ? 0 : 1)).current;
 
-  useEffect(
-    () =>
-      subscribeNetwork((next) => {
-        setOnline(next);
-        if (next) {
-          setRestored(true);
-          setTimeout(() => setRestored(false), 2200);
-        }
-      }),
-    [],
-  );
+  useEffect(() => {
+    if (!isOnline()) void probeNetwork();
+    return subscribeNetwork((next) => {
+      setOnline(next);
+      if (next) {
+        setRestored(true);
+        setTimeout(() => setRestored(false), 2200);
+      }
+    });
+  }, []);
 
   const visible = !online || restored;
   const scaleAnim = useRef(new Animated.Value(visible ? 1 : 0.85)).current;

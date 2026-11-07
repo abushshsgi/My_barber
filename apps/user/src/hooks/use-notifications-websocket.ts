@@ -1,11 +1,7 @@
 import { useEffect } from "react";
 import { useQueryClient, type QueryClient } from "@tanstack/react-query";
 import { notificationWebSocketUrl } from "@mybarber/shared/ws-url";
-import {
-  bootstrapUserSession,
-  getUserAccessToken,
-  hasValidUserSession,
-} from "@/lib/api/client";
+import { bootstrapUserSession, getUserAccessToken, hasValidUserSession } from "@/lib/api/client";
 import { notificationsQueryKeyBase } from "@/hooks/use-notifications-api";
 import { bookingsQueryKeyBase } from "@/hooks/use-bookings-api";
 import { getAuthUserId } from "@/lib/auth-user";
@@ -63,7 +59,8 @@ function refreshWallet() {
 }
 
 function browserNotice(title?: string, body?: string) {
-  if (!title || typeof Notification === "undefined" || Notification.permission !== "granted") return;
+  if (!title || typeof Notification === "undefined" || Notification.permission !== "granted")
+    return;
   try {
     new Notification(title, { body: body || title });
   } catch {

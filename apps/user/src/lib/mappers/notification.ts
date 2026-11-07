@@ -14,12 +14,7 @@ function formatRelativeTime(iso: string): string {
 
 function mapType(t: string): Notification["type"] {
   if (t === "chat_message" || t === "CHAT") return "chat_message";
-  if (
-    t === "review" ||
-    t === "REVIEW" ||
-    t === "review_created" ||
-    t === "review_reply"
-  ) {
+  if (t === "review" || t === "REVIEW" || t === "review_created" || t === "review_reply") {
     return "review";
   }
   if (

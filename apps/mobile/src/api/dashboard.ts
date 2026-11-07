@@ -70,15 +70,15 @@ export async function fetchProfileDashboardFallback(): Promise<ProfileDashboard>
     fetchMorphAiGenerations().catch(() => [] as MorphAiGeneration[]),
     fetchFavoriteSalonIds().catch(() => []),
   ]);
-  const plan = sub?.subscription?.plan ?? null;
+  const plan = sub?.current_plan ?? sub?.subscription?.plan ?? null;
   return {
     user,
     verified: Boolean(user.phone) || Boolean(user.email_verified),
     wallet,
     subscription: {
       has_active: Boolean(sub?.has_active),
-      plan_code: sub?.subscription?.plan_code ?? null,
-      plan_name: plan?.name_uz ?? null,
+      plan_code: sub?.current_plan_code ?? sub?.subscription?.plan_code ?? "free",
+      plan_name: plan?.name_uz ?? "Free",
       badge: sub?.badge ?? null,
       days_remaining: sub?.days_remaining ?? null,
       morph_care: Boolean(sub?.morph_care),
@@ -103,14 +103,12 @@ export async function fetchProfileDashboardFallback(): Promise<ProfileDashboard>
 }
 
 export function planLabel(sub: ProfileSubscription | null | undefined): string {
-  if (!sub) return "Obuna yo‘q";
-  if (sub.has_active && sub.plan_name) return sub.plan_name;
-  if (sub.has_active && sub.plan_code) {
-    const code = sub.plan_code.toLowerCase();
-    if (code === "starter") return "Starter";
-    if (code === "plus") return "Plus";
-    if (code === "pro") return "Pro";
-    return sub.plan_code;
-  }
-  return "Obuna yo‘q";
+  if (!sub) return "Free";
+  if (sub.plan_name) return sub.plan_name;
+  const code = (sub.plan_code || "free").toLowerCase();
+  if (code === "free") return "Free";
+  if (code === "starter") return "Starter";
+  if (code === "plus") return "Plus";
+  if (code === "pro") return "Pro";
+  return sub.plan_code || "Free";
 }

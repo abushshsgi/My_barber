@@ -1,4 +1,4 @@
-export type PaywallReason = "subscription" | "limit" | "studio";
+export type PaywallReason = "subscription" | "limit" | "studio" | "pro";
 
 export type MorphReturnTo =
   | "MorphChat"

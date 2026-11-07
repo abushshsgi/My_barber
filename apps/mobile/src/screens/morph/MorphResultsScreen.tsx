@@ -151,6 +151,12 @@ export function MorphResultsScreen({ navigation }: Props) {
         const gender = await getAppGender();
         const result = await analyzeAiStyle(photo, genderToAudience(gender));
         session.setAnalyze(result);
+        const warm = result.suggestions
+          .map((item) => resolveMediaUrl(item.image_url, { width: 900 }) || item.image_url)
+          .filter((url): url is string => Boolean(url));
+        if (warm.length > 0) {
+          void Image.prefetch(warm, "memory-disk");
+        }
         setError(null);
         void saveAiStyleHistory({
           image: photo,
@@ -320,8 +326,9 @@ export function MorphResultsScreen({ navigation }: Props) {
           <Image
             source={{ uri: session.selfieDataUrl }}
             style={styles.scanPhoto}
-            contentFit="cover"
+            contentFit="contain"
             contentPosition="center"
+            cachePolicy="memory-disk"
           />
         ) : (
           <View style={styles.scanPhotoFallback} />
@@ -354,8 +361,9 @@ export function MorphResultsScreen({ navigation }: Props) {
           <Image
             source={{ uri: session.selfieDataUrl }}
             style={styles.scanPhoto}
-            contentFit="cover"
+            contentFit="contain"
             contentPosition="center"
+            cachePolicy="memory-disk"
           />
         ) : (
           <View style={styles.scanPhotoFallback} />
@@ -466,12 +474,16 @@ export function MorphResultsScreen({ navigation }: Props) {
                         source={{
                           uri:
                             preview ||
-                            resolveMediaUrl(item.image_url, { width: scale(900) }) ||
-                            session.selfieDataUrl ||
+                            resolveMediaUrl(item.image_url, { width: 900 }) ||
+                            item.image_url ||
                             undefined,
                         }}
                         style={styles.spotlightImg}
-                        resizeMode="contain"
+                        contentFit="contain"
+                        contentPosition="center"
+                        cachePolicy="memory-disk"
+                        priority="high"
+                        recyclingKey={item.id}
                       />
                       {loading ? (
                         <View style={styles.spotlightBusy}>
@@ -610,7 +622,7 @@ export function MorphResultsScreen({ navigation }: Props) {
                 onPress={openStudio}
               >
                 <Ionicons name="color-palette-outline" size={18} color="#0A0A0A" />
-                <Text style={styles.studioBtnText}>{t("morph.studio")}</Text>
+                <Text style={styles.studioBtnText}>{t("morph.studioLabel")}</Text>
               </Pressable>
             ) : null}
           </View>
@@ -668,11 +680,16 @@ export function MorphResultsScreen({ navigation }: Props) {
                         source={{
                           uri:
                             preview ||
-                            resolveMediaUrl(item.image_url, { width: scale(600) }) ||
+                            resolveMediaUrl(item.image_url, { width: 600 }) ||
+                            item.image_url ||
                             undefined,
                         }}
                         style={styles.moreImg}
-                        resizeMode="cover"
+                        contentFit="contain"
+                        contentPosition="center"
+                        cachePolicy="memory-disk"
+                        priority="high"
+                        recyclingKey={item.id}
                       />
                       {loading ? (
                         <View style={styles.moreBusy}>
@@ -736,6 +753,7 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFill,
     width: "100%",
     height: "100%",
+    backgroundColor: "#0A0A0A",
   },
   scanPhotoFallback: {
     ...StyleSheet.absoluteFill,
@@ -913,7 +931,7 @@ const styles = StyleSheet.create({
   navArrowRight: { right: scale(4) },
   spotlight: {
     overflow: "hidden",
-    backgroundColor: "#111",
+    backgroundColor: "#F4F4F4",
     aspectRatio: 3 / 4,
     borderRadius: 0,
   },

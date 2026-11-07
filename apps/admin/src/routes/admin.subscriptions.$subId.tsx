@@ -11,6 +11,8 @@ import {
   fetchAdminSubscriptionDetail,
 } from "@/lib/admin-api";
 import { useState } from "react";
+import { PaymeLogo } from "@/components/brand/PaymeLogo";
+import { formatPayWhen, paymeChannel, paymeStateLabel, PAYME_STATUS_LABEL } from "@/lib/payme-payment";
 
 export const Route = createFileRoute("/admin/subscriptions/$subId")({
   component: AdminSubscriptionDetailPage,
@@ -170,27 +172,35 @@ function AdminSubscriptionDetailPage() {
           ) : (
             d.payments.map((p) => (
               <li key={p.id} className="flex flex-wrap justify-between gap-2 border-b border-border py-2">
-                <div>
-                  <div>
-                    {p.provider} · {p.plan_code} · {p.amount_uzs.toLocaleString("uz-UZ")} so'm
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    {p.provider === "payme" ? <PaymeLogo height={14} /> : <span>{p.provider}</span>}
+                    <span>
+                      {p.plan_code} · {p.amount_uzs.toLocaleString("uz-UZ")} so'm
+                    </span>
                   </div>
+                  <div className="mt-0.5 text-xs text-muted-foreground">
+                    {p.provider === "payme" ? `${paymeChannel(p)} · ` : ""}
+                    To'langan: {formatPayWhen(p.payme_pay_time || p.paid_at)}
+                    {" · "}
+                    Yaratilgan: {formatPayWhen(p.payme_create_time || p.created_at)}
+                  </div>
+                  {p.provider === "payme" ? (
+                    <div className="mt-0.5 font-mono text-[11px] text-muted-foreground">
+                      order {p.order_id || "—"} · chek {p.payme_receipt_id || "—"} ·{" "}
+                      {paymeStateLabel(p.payme_state)}
+                    </div>
+                  ) : null}
                   {p.has_discount ? (
                     <div className="mt-0.5 text-xs text-muted-foreground">
                       Chegirma: {p.promo_code || "—"}
                       {p.discount_uzs
                         ? ` (−${p.discount_uzs.toLocaleString("uz-UZ")} so'm)`
                         : ""}
-                      {p.paid_at
-                        ? ` · ${new Date(p.paid_at).toLocaleString("uz-UZ")}`
-                        : ""}
-                    </div>
-                  ) : p.paid_at ? (
-                    <div className="mt-0.5 text-xs text-muted-foreground">
-                      {new Date(p.paid_at).toLocaleString("uz-UZ")}
                     </div>
                   ) : null}
                 </div>
-                <Badge variant="secondary">{p.status}</Badge>
+                <Badge variant="secondary">{PAYME_STATUS_LABEL[p.status] || p.status}</Badge>
               </li>
             ))
           )}

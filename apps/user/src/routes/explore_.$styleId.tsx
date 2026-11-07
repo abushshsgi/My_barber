@@ -9,7 +9,11 @@ import { PageHeader } from "@/components/PageHeader";
 import { useExplorePersona } from "@/hooks/use-explore-persona";
 import { useHairstyle } from "@/hooks/use-hairstyles";
 import { MOBILE_STICKY_CONTENT_PADDING_NO_DOCK_CLASS } from "@/lib/layout-constants";
-import { getHairstyleDisplayUrl, type HairstyleEntry, type HairstyleGalleryItem } from "@/lib/hairstyles/catalog";
+import {
+  getHairstyleDisplayUrl,
+  type HairstyleEntry,
+  type HairstyleGalleryItem,
+} from "@/lib/hairstyles/catalog";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/explore_/$styleId")({
@@ -95,7 +99,9 @@ function ExploreStyleDesktop({ entry, galleryItems }: StyleProps) {
       <aside className="sticky top-20 self-start rounded-3xl border border-border bg-surface/60 p-5">
         <h1 className="text-2xl font-bold tracking-tight">{entry.titleUz}</h1>
         {entry.descriptionUz ? (
-          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{entry.descriptionUz}</p>
+          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+            {entry.descriptionUz}
+          </p>
         ) : null}
         <div className="mt-6 flex flex-col gap-2.5">
           <Link
@@ -136,7 +142,8 @@ function ExploreStyleDetailPage() {
   }
 
   const imageUrl = getHairstyleDisplayUrl(entry);
-  const galleryItems = entry.gallery.length > 0 ? entry.gallery : [{ view: "front", label: "Old", url: imageUrl }];
+  const galleryItems =
+    entry.gallery.length > 0 ? entry.gallery : [{ view: "front", label: "Old", url: imageUrl }];
 
   return (
     <>

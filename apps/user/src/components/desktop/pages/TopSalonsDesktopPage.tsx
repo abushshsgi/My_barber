@@ -16,7 +16,9 @@ export function TopSalonsDesktopPage({ salons, loading }: Props) {
   return (
     <div className={cn("w-full pb-12 pt-6", DESKTOP_BAZAAR_INSET)}>
       <header className="mb-8">
-        <h1 className="text-2xl font-bold tracking-tight xl:text-3xl">{t("topSalonsPage.title")}</h1>
+        <h1 className="text-2xl font-bold tracking-tight xl:text-3xl">
+          {t("topSalonsPage.title")}
+        </h1>
         <p className="mt-2 text-sm text-muted-foreground">{t("topSalonsPage.subtitle")}</p>
       </header>
 

@@ -1,18 +1,19 @@
-/** Auth / onboarding / share / explore style detail — pastki dock yo‘q.
- *  Morf AI (`/ai-style/*`) da dock ko‘rinadi (app shell switch).
+import { isMysaloonPausedPath } from "@/lib/mysaloon-paused";
+
+/** Ilova docki: faqat asosiy tablar va MySaloon pauza sahifalari.
+ *  Natija, sozlama, hamyon, parvarish ichki sahifalari — docksiz.
  */
+const MOBILE_DOCK_ROOTS = new Set([
+  "/",
+  "/profile",
+  "/ai-style",
+  "/ai-style/care",
+]);
+
 export function shouldShowMobileDock(pathname: string): boolean {
-  if (pathname === "/auth" || pathname === "/onboarding") {
-    return false;
-  }
-  if (pathname === "/morf-ai" || pathname.startsWith("/morf-ai/")) {
-    return false;
-  }
-  // /explore/:styleId va /explore/:styleId/try — faqat back, dock yo'q
-  if (/^\/explore\/[^/]+/.test(pathname)) {
-    return false;
-  }
-  return true;
+  if (pathname === "/auth" || pathname === "/onboarding") return false;
+  if (MOBILE_DOCK_ROOTS.has(pathname)) return true;
+  return isMysaloonPausedPath(pathname);
 }
 
 export type DesktopContentProfile = "discovery" | "standard" | "compact";

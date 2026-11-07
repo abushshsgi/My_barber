@@ -80,13 +80,7 @@ export function useDiscoveryLocation(enabled = true): DiscoveryLocationState {
     void (async () => {
       const stored = readDiscoveryLocation();
       if (stored) {
-        apply(
-          stored.lat,
-          stored.lng,
-          stored.region ?? null,
-          stored.regionLabel ?? null,
-          "storage",
-        );
+        apply(stored.lat, stored.lng, stored.region ?? null, stored.regionLabel ?? null, "storage");
         // Region bo‘sh bo‘lsa — validate bilan to‘ldirish.
         if (!stored.region) {
           try {

@@ -23,7 +23,12 @@ function formatTxDate(iso: string): string {
     d.getFullYear() === now.getFullYear();
   const time = d.toLocaleTimeString("uz-UZ", { hour: "2-digit", minute: "2-digit" });
   if (sameDay) return `Bugun, ${time}`;
-  return d.toLocaleDateString("uz-UZ", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+  return d.toLocaleDateString("uz-UZ", {
+    day: "numeric",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 function monthGroupLabel(iso: string): string {
@@ -62,7 +67,10 @@ function adminGiftTitle(
   }
   if (action === "gift_refund" || ref === "gift_refund" || ref === "gift_refund_fee") {
     return {
-      title: ref === "gift_refund_fee" ? "Admin · dizayn to'lovi qaytarildi" : "Admin · sovg'a qaytarildi",
+      title:
+        ref === "gift_refund_fee"
+          ? "Admin · dizayn to'lovi qaytarildi"
+          : "Admin · sovg'a qaytarildi",
       subtitle: "Mablag' qaytarildi",
       adminAction: true,
       adminReason: "Mablag' qaytarildi.",

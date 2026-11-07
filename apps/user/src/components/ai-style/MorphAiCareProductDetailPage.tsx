@@ -48,10 +48,7 @@ export function MorphAiCareProductDetailPage({ productId }: Props) {
 
   return (
     <div className="min-h-[100dvh] bg-[#FAFAFA] text-[#111111]">
-      <div
-        className="px-5 pb-12"
-        style={{ paddingTop: "max(1rem, env(safe-area-inset-top))" }}
-      >
+      <div className="px-5 pb-12" style={{ paddingTop: "max(1rem, env(safe-area-inset-top))" }}>
         <button
           type="button"
           onClick={() => navigateBack(router, "/ai-style/care/products")}
@@ -126,8 +123,12 @@ export function MorphAiCareProductDetailPage({ productId }: Props) {
                 <ol className="mt-3 space-y-3">
                   {q.data.usage_steps!.map((step, i) => (
                     <li key={`${step.title}-${i}`}>
-                      <p className="text-[15px] font-semibold">{i + 1}. {step.title}</p>
-                      <p className="mt-0.5 text-[14px] leading-relaxed text-[#111111]/70">{step.desc}</p>
+                      <p className="text-[15px] font-semibold">
+                        {i + 1}. {step.title}
+                      </p>
+                      <p className="mt-0.5 text-[14px] leading-relaxed text-[#111111]/70">
+                        {step.desc}
+                      </p>
                     </li>
                   ))}
                 </ol>
@@ -136,9 +137,7 @@ export function MorphAiCareProductDetailPage({ productId }: Props) {
             <Block title={t("aiStylePage.care.catalog.who", { defaultValue: "Kimlarga" })}>
               {(q.data.suitable_for || []).length
                 ? q.data.suitable_for
-                    .map((tag) =>
-                      t(`aiStylePage.care.catalog.tags.${tag}`, { defaultValue: tag }),
-                    )
+                    .map((tag) => t(`aiStylePage.care.catalog.tags.${tag}`, { defaultValue: tag }))
                     .join(", ")
                 : "—"}
             </Block>
@@ -156,14 +155,14 @@ export function MorphAiCareProductDetailPage({ productId }: Props) {
               {q.data.cons_uz || "—"}
             </Block>
             {q.data.warnings_uz ? (
-              <Block title={t("aiStylePage.care.catalog.warnings", { defaultValue: "Ogohlantirish" })}>
+              <Block
+                title={t("aiStylePage.care.catalog.warnings", { defaultValue: "Ogohlantirish" })}
+              >
                 {q.data.warnings_uz}
               </Block>
             ) : null}
             <Block title={t("aiStylePage.care.catalog.ingredients", { defaultValue: "Tarkib" })}>
-              {q.data.ingredients_text ||
-                (q.data.ingredients || []).join(", ") ||
-                "—"}
+              {q.data.ingredients_text || (q.data.ingredients || []).join(", ") || "—"}
             </Block>
           </article>
         )}
@@ -176,7 +175,9 @@ function Block({ title, children }: { title: string; children: string }) {
   return (
     <section className="mt-8">
       <h2 className="text-[12px] font-medium tracking-wide text-[#111111]/35">{title}</h2>
-      <p className="mt-2 whitespace-pre-wrap text-[15px] leading-relaxed text-[#111111]/75">{children}</p>
+      <p className="mt-2 whitespace-pre-wrap text-[15px] leading-relaxed text-[#111111]/75">
+        {children}
+      </p>
     </section>
   );
 }

@@ -14,15 +14,8 @@ type Props = {
 export function MorphSoftPaywall({ className, previewUrl }: Props) {
   const { t } = useTranslation();
   const meQ = useSubscriptionMe();
-  const offer = meQ.data?.welcome_offer;
   const refGenOn =
-    meQ.data?.referral_generation_enabled ??
-    meQ.data?.access?.referral_generation_enabled ??
-    true;
-  const discountHint =
-    offer?.eligible === true
-      ? `Yangi hisob: tariflarga −${offer.discount_pct}%.`
-      : "Obuna bilan Morf AI to‘liq ochiladi.";
+    meQ.data?.referral_generation_enabled ?? meQ.data?.access?.referral_generation_enabled ?? true;
 
   return (
     <section className={cn("space-y-3", className)}>
@@ -56,7 +49,7 @@ export function MorphSoftPaywall({ className, previewUrl }: Props) {
             </h3>
             <p className="mt-1.5 max-w-sm text-[12px] leading-relaxed text-background/60">
               {t("aiStylePage.softPaywall.hint", {
-                defaultValue: `Selfie → yangi uslub. ${discountHint}`,
+                defaultValue: "Selfie → yangi uslub. Obuna bilan Morf AI to‘liq ochiladi.",
               })}
             </p>
             <Link

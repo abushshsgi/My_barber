@@ -24,11 +24,7 @@ import {
   markMorphAiIntroSeen,
   markMorphAiOnboarded,
 } from "@/lib/morf-ai-session";
-import {
-  loadSavedAiStyleIds,
-  removeSavedAiStyle,
-  saveAiStyle,
-} from "@/lib/saved-ai-styles";
+import { loadSavedAiStyleIds, removeSavedAiStyle, saveAiStyle } from "@/lib/saved-ai-styles";
 import type { ExplorePersonaId } from "@/lib/explore-personas";
 import type { Audience } from "@/lib/mock-data";
 
@@ -265,21 +261,29 @@ export function AiStyleFlow({ audience, menPersonaId: menPersonaIdProp, focusSty
     menPersonaId,
     tryOnByStyle: flow.tryOnByStyle,
     tryOnLoadingId: flow.tryOnLoadingId,
-    onGenerateTryOn: (styleId: string, nextPersonaId?: Parameters<typeof generateTryOn>[1], title?: string) =>
-      void generateTryOn(styleId, nextPersonaId, title),
+    onGenerateTryOn: (
+      styleId: string,
+      nextPersonaId?: Parameters<typeof generateTryOn>[1],
+      title?: string,
+    ) => void generateTryOn(styleId, nextPersonaId, title),
     onUpdateTryOnPreview: updateTryOnPreview,
   };
 
   return (
     <>
       {showHome ? (
-        <MorphAiHome
-          audience={audience}
-          onStartNew={() => void gatedStartNew()}
-          onOpenCamera={() => void gatedOpenCamera()}
-          onOpenGallery={() => void gatedOpenGallery()}
-          ensureMorphAccess={limitGate.ensureTryOn}
-          ensureMorphStudio={limitGate.ensureStudio}
+        <DesktopPageSplit
+          mobile={<AiStyleSplitLayout {...layoutProps} />}
+          desktop={
+            <MorphAiHome
+              audience={audience}
+              onStartNew={() => void gatedStartNew()}
+              onOpenCamera={() => void gatedOpenCamera()}
+              onOpenGallery={() => void gatedOpenGallery()}
+              ensureMorphAccess={limitGate.ensureTryOn}
+              ensureMorphStudio={limitGate.ensureStudio}
+            />
+          }
         />
       ) : (
         <DesktopPageSplit

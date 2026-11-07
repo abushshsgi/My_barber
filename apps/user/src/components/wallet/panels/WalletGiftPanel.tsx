@@ -292,8 +292,14 @@ export function WalletGiftPanel() {
 
   useEffect(() => {
     if (!designId || !designScrollerRef.current) return;
-    const el = designScrollerRef.current.querySelector<HTMLElement>(`[data-design-id="${designId}"]`);
-    el?.scrollIntoView({ behavior: reduced ? "auto" : "smooth", inline: "center", block: "nearest" });
+    const el = designScrollerRef.current.querySelector<HTMLElement>(
+      `[data-design-id="${designId}"]`,
+    );
+    el?.scrollIntoView({
+      behavior: reduced ? "auto" : "smooth",
+      inline: "center",
+      block: "nearest",
+    });
   }, [designId, reduced]);
 
   const selectedDesign = designs.find((d) => d.id === designId);
@@ -317,7 +323,9 @@ export function WalletGiftPanel() {
 
   const missingHint = useMemo(() => {
     if (!hasRecipient) {
-      return t("walletPage.giftPanel.recipientRequired", { defaultValue: "Qabul qiluvchini tanlang." });
+      return t("walletPage.giftPanel.recipientRequired", {
+        defaultValue: "Qabul qiluvchini tanlang.",
+      });
     }
     if (!giftInRange) {
       return t("walletPage.giftPanel.amountRange", {
@@ -401,7 +409,9 @@ export function WalletGiftPanel() {
         );
       } else {
         toast.error(
-          t("walletPage.giftPanel.recipientRequired", { defaultValue: "Qabul qiluvchini tanlang." }),
+          t("walletPage.giftPanel.recipientRequired", {
+            defaultValue: "Qabul qiluvchini tanlang.",
+          }),
         );
       }
       return;
@@ -437,11 +447,7 @@ export function WalletGiftPanel() {
     : undefined;
 
   const amountFieldValue =
-    presetId === "custom"
-      ? customAmount
-      : giftAmount > 0
-        ? giftAmount.toLocaleString("uz-UZ")
-        : "";
+    presetId === "custom" ? customAmount : giftAmount > 0 ? giftAmount.toLocaleString("uz-UZ") : "";
 
   return (
     <div className="relative pb-[7.5rem] lg:pb-0">
@@ -489,7 +495,10 @@ export function WalletGiftPanel() {
             {designsLoading ? (
               <div className="flex gap-2.5 overflow-hidden">
                 {Array.from({ length: 5 }).map((_, i) => (
-                  <div key={i} className="h-[4.5rem] w-[4.5rem] shrink-0 animate-pulse rounded-2xl bg-surface" />
+                  <div
+                    key={i}
+                    className="h-[4.5rem] w-[4.5rem] shrink-0 animate-pulse rounded-2xl bg-surface"
+                  />
                 ))}
               </div>
             ) : (

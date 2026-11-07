@@ -1,6 +1,12 @@
 import { apiJson } from "./client";
 import { apiList } from "./list-utils";
-import type { ApiSalonDetail, ApiSalonList, ApiSalonRatingSummary, ApiSalonStaff, ApiService } from "./types";
+import type {
+  ApiSalonDetail,
+  ApiSalonList,
+  ApiSalonRatingSummary,
+  ApiSalonStaff,
+  ApiService,
+} from "./types";
 import type { ApiNearbySalon } from "./types";
 
 function qs(params: Record<string, string | number | undefined>): string {

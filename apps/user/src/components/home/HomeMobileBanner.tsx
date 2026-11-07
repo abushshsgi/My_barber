@@ -25,7 +25,11 @@ const BANNER_SLIDES = [
   {
     photoId: 3993448,
     to: "/wallet" as const,
-    search: { section: "subscriptions" as const, plan: "starter" as const, returnTo: "/ai-style" as const },
+    search: {
+      section: "subscriptions" as const,
+      plan: "starter" as const,
+      returnTo: "/ai-style" as const,
+    },
     badgeKey: "homePage.subscriptionPromo.eyebrow",
     titleKey: "homePage.subscriptionPromo.bannerTitle",
     ctaKey: "homePage.subscriptionPromo.cta",
@@ -85,7 +89,11 @@ export function HomeMobileBanner() {
 
   return (
     <div className="px-4">
-      <Carousel setApi={setApi} opts={{ loop: true }} className="w-full overflow-hidden rounded-2xl">
+      <Carousel
+        setApi={setApi}
+        opts={{ loop: true }}
+        className="w-full overflow-hidden rounded-2xl"
+      >
         <CarouselContent className="-ml-0">
           {BANNER_SLIDES.map((slide) => (
             <CarouselItem key={`${slide.to}-${slide.titleKey}`} className="pl-0">

@@ -44,13 +44,7 @@ function PlanIcon({ code, className }: { code: string; className?: string }) {
   return <Icon className={className} strokeWidth={2} />;
 }
 
-export function FeatureIcon({
-  featureKey,
-  className,
-}: {
-  featureKey: string;
-  className?: string;
-}) {
+export function FeatureIcon({ featureKey, className }: { featureKey: string; className?: string }) {
   const Icon = FEATURE_ICONS[featureKey] ?? CheckFallback;
   return <Icon className={className} strokeWidth={2.25} />;
 }
@@ -181,7 +175,9 @@ export function SubscriptionPlanAds({
 
             <span className="min-w-0 flex-1">
               <span className="flex flex-wrap items-center gap-2">
-                <span className="text-[15px] font-bold tracking-tight">{pickPlanName(plan, lang)}</span>
+                <span className="text-[15px] font-bold tracking-tight">
+                  {pickPlanName(plan, lang)}
+                </span>
                 {ctaHint ? (
                   <span
                     className={cn(
@@ -237,7 +233,7 @@ export function SubscriptionPlanAds({
   );
 }
 
-/** Morf AI — yangi user chegirma yoki faol user upgrade. */
+/** Morf AI — faol obunachi uchun keyingi tarif. Chegirma yo'q. */
 export function SubscriptionPromoBanner({
   onNavigate,
   className,

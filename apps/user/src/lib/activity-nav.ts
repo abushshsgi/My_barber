@@ -7,7 +7,10 @@ export const activityHubBackSearch = (extra?: Record<string, string>) => ({
 });
 
 /** Ichki sahifadan qaytish — ?backTo= yoki activity hub. */
-export function resolveActivityBackTo(search: Record<string, unknown>, fallback = ACTIVITY_HUB_PATH): string {
+export function resolveActivityBackTo(
+  search: Record<string, unknown>,
+  fallback = ACTIVITY_HUB_PATH,
+): string {
   const backTo = search.backTo;
   if (typeof backTo === "string" && backTo.startsWith("/") && !backTo.startsWith("//")) {
     return backTo;

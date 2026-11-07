@@ -181,6 +181,28 @@ export function morphChatUsagePercent(limits: {
   return Math.max(0, Math.min(100, pct));
 }
 
+/** Foiz 100 bo‘lmaguncha limit tugagan hisoblanmaydi. */
+export function morphChatLimitExhausted(
+  limits: { daily_limit: number; daily_used: number | null } | null,
+): boolean {
+  return morphChatUsagePercent(limits) >= 100;
+}
+
+export function morphChatLimitTitleKey(
+  limits: {
+    period?: string;
+    daily_limit: number;
+    daily_used: number | null;
+  } | null,
+): "chat.settings.limitTitleOnce" | "chat.settings.limitTitleFree" | "chat.settings.limitTitle" {
+  if (limits?.period === "lifetime") {
+    return morphChatLimitExhausted(limits)
+      ? "chat.settings.limitTitleOnce"
+      : "chat.settings.limitTitleFree";
+  }
+  return "chat.settings.limitTitle";
+}
+
 export function shouldPersistChatToServer(prefs: MorphChatPrefs): boolean {
   return Boolean(prefs.saveHistory) && !prefs.privacyLocalOnly;
 }

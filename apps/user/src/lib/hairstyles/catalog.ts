@@ -211,9 +211,7 @@ export function getHairstyleImageUrl(entry: Pick<HairstyleEntry, "imageUrl">): s
 }
 
 /** Explore / kartochkalar — yo‘q yoki 404 bo‘lsa barqaror fallback. */
-export function getHairstyleDisplayUrl(
-  entry: Pick<HairstyleEntry, "imageUrl" | "slug">,
-): string {
+export function getHairstyleDisplayUrl(entry: Pick<HairstyleEntry, "imageUrl" | "slug">): string {
   const primary = getHairstyleImageUrl(entry);
   return primary || getTrendCoverUrl(entry.slug);
 }

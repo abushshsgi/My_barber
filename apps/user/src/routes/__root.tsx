@@ -5,12 +5,7 @@ import "@fontsource-variable/jost";
 import "../i18n/config";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import {
-  Link,
-  createRootRouteWithContext,
-  HeadContent,
-  Scripts,
-} from "@tanstack/react-router";
+import { Link, createRootRouteWithContext, HeadContent, Scripts } from "@tanstack/react-router";
 
 import appCss from "../styles.css?url";
 import { I18nProvider } from "../components/I18nProvider";
@@ -130,39 +125,37 @@ const sharedRootOptions = {
   errorComponent: ErrorComponent,
 };
 
-export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
-  {
-    ...sharedRootOptions,
-    ssr: false,
-    head: () => ({
-      links: [
-        { rel: "stylesheet", href: appCss },
-        { rel: "icon", href: "/favicon.ico", sizes: "any" },
-        { rel: "icon", href: "/favicon-32.png", type: "image/png", sizes: "32x32" },
-        { rel: "apple-touch-icon", href: "/apple-touch-icon.png", sizes: "180x180" },
-      ],
-      meta: [
-        { charSet: "utf-8" },
-        { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
-        { httpEquiv: "Cache-Control", content: "no-cache, no-store, must-revalidate" },
-        { httpEquiv: "Pragma", content: "no-cache" },
-        { httpEquiv: "Expires", content: "0" },
-        { name: "theme-color", content: "#ffffff" },
-        { title: "mysaloon.uz — Online salon bron qilish" },
-        {
-          name: "description",
-          content:
-            "mysaloon.uz — O'zbekistondagi sartaroshlar va go'zallik salonlarini online bron qiluvchi platforma.",
-        },
-        { property: "og:title", content: "mysaloon.uz" },
-        { property: "og:description", content: "Online salon va sartaroshxona bron platforma." },
-        { property: "og:type", content: "website" },
-        { property: "og:image", content: "https://www.mysaloon.uz/brand-logo.png" },
-      ],
-    }),
-    shellComponent: RootShell,
-  },
-);
+export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
+  ...sharedRootOptions,
+  ssr: false,
+  head: () => ({
+    links: [
+      { rel: "stylesheet", href: appCss },
+      { rel: "icon", href: "/favicon.ico", sizes: "any" },
+      { rel: "icon", href: "/favicon-32.png", type: "image/png", sizes: "32x32" },
+      { rel: "apple-touch-icon", href: "/apple-touch-icon.png", sizes: "180x180" },
+    ],
+    meta: [
+      { charSet: "utf-8" },
+      { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
+      { httpEquiv: "Cache-Control", content: "no-cache, no-store, must-revalidate" },
+      { httpEquiv: "Pragma", content: "no-cache" },
+      { httpEquiv: "Expires", content: "0" },
+      { name: "theme-color", content: "#ffffff" },
+      { title: "mysaloon.uz — Online salon bron qilish" },
+      {
+        name: "description",
+        content:
+          "mysaloon.uz — O'zbekistondagi sartaroshlar va go'zallik salonlarini online bron qiluvchi platforma.",
+      },
+      { property: "og:title", content: "mysaloon.uz" },
+      { property: "og:description", content: "Online salon va sartaroshxona bron platforma." },
+      { property: "og:type", content: "website" },
+      { property: "og:image", content: "https://www.mysaloon.uz/brand-logo.png" },
+    ],
+  }),
+  shellComponent: RootShell,
+});
 
 function RootShell({ children }: { children: React.ReactNode }) {
   return (

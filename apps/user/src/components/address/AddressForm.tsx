@@ -102,10 +102,8 @@ export function AddressForm({
   const lat = form.latitude.trim() ? parseFloat(form.latitude) : null;
   const lng = form.longitude.trim() ? parseFloat(form.longitude) : null;
   const hasGps = lat != null && lng != null;
-  const regionMismatch =
-    hasGps && validation?.matches_selected === false && form.region.length > 0;
-  const noCoverage =
-    hasGps && form.region.length > 0 && validation?.has_coverage === false;
+  const regionMismatch = hasGps && validation?.matches_selected === false && form.region.length > 0;
+  const noCoverage = hasGps && form.region.length > 0 && validation?.has_coverage === false;
 
   useEffect(() => {
     if (!hasGps || !form.region) {
@@ -188,108 +186,113 @@ export function AddressForm({
   return (
     <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4" aria-busy={locked}>
       <fieldset disabled={locked} className="space-y-4 border-0 p-0 m-0 min-w-0">
-      <div>
-        <label className="mb-2 block text-xs font-bold uppercase tracking-wide text-muted-foreground">
-          {t("addresses.city", { defaultValue: "Shahar / viloyat" })}
-        </label>
-        <RegionCitySelect value={form.region} onChange={handleRegionChange} disabled={regionsLoading} />
-        {regionMismatch ? (
-          <p className="mt-2 text-xs font-semibold text-destructive">{t("geo.regionMismatch")}</p>
-        ) : validation?.region_from_gps_label && form.region && validation.matches_selected ? (
-          <p className="mt-1.5 text-[11px] text-muted-foreground">
-            GPS: {validation.city_label || validation.region_from_gps_label}
-          </p>
-        ) : (
-          <p className="mt-1.5 text-[11px] text-muted-foreground">
-            {t("addresses.cityHint", {
-              defaultValue: "Shahar o'zgarganda yaqin salonlar va tavsiyalar yangilanadi",
-            })}
-          </p>
-        )}
-      </div>
-
-      <div>
-        <p className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">
-          {t("addresses.labelType", { defaultValue: "Manzil turi" })}
-        </p>
-        <div className="flex flex-wrap gap-2">
-          {LABELS.map((key) => (
-            <button
-              key={key}
-              type="button"
-              onClick={() => setForm((f) => ({ ...f, label: key }))}
-              className={cn(
-                "rounded-full px-3.5 py-2 text-xs font-bold",
-                form.label === key ? "bg-foreground text-background" : "bg-surface text-foreground",
-              )}
-            >
-              {t(`addresses.labels.${key}`, {
-                defaultValue: key === "home" ? "Uy" : key === "work" ? "Ofis" : "Boshqa",
+        <div>
+          <label className="mb-2 block text-xs font-bold uppercase tracking-wide text-muted-foreground">
+            {t("addresses.city", { defaultValue: "Shahar / viloyat" })}
+          </label>
+          <RegionCitySelect
+            value={form.region}
+            onChange={handleRegionChange}
+            disabled={regionsLoading}
+          />
+          {regionMismatch ? (
+            <p className="mt-2 text-xs font-semibold text-destructive">{t("geo.regionMismatch")}</p>
+          ) : validation?.region_from_gps_label && form.region && validation.matches_selected ? (
+            <p className="mt-1.5 text-[11px] text-muted-foreground">
+              GPS: {validation.city_label || validation.region_from_gps_label}
+            </p>
+          ) : (
+            <p className="mt-1.5 text-[11px] text-muted-foreground">
+              {t("addresses.cityHint", {
+                defaultValue: "Shahar o'zgarganda yaqin salonlar va tavsiyalar yangilanadi",
               })}
-            </button>
-          ))}
+            </p>
+          )}
         </div>
-      </div>
 
-      {form.label === "other" ? (
-        <input
-          value={form.custom_label}
-          onChange={(e) => setForm((f) => ({ ...f, custom_label: e.target.value }))}
-          placeholder={t("addresses.customLabel", { defaultValue: "Nom (masalan: Do'stim uyi)" })}
-          className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm font-semibold focus:border-foreground focus:outline-none"
-        />
-      ) : null}
+        <div>
+          <p className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+            {t("addresses.labelType", { defaultValue: "Manzil turi" })}
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {LABELS.map((key) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setForm((f) => ({ ...f, label: key }))}
+                className={cn(
+                  "rounded-full px-3.5 py-2 text-xs font-bold",
+                  form.label === key
+                    ? "bg-foreground text-background"
+                    : "bg-surface text-foreground",
+                )}
+              >
+                {t(`addresses.labels.${key}`, {
+                  defaultValue: key === "home" ? "Uy" : key === "work" ? "Ofis" : "Boshqa",
+                })}
+              </button>
+            ))}
+          </div>
+        </div>
 
-      <div>
-        <label className="mb-2 block text-xs font-bold uppercase tracking-wide text-muted-foreground">
-          {t("addresses.line", { defaultValue: "Manzil" })}
-        </label>
-        <textarea
-          value={form.address_line}
-          onChange={(e) => setForm((f) => ({ ...f, address_line: e.target.value }))}
-          rows={2}
-          placeholder={t("addresses.linePlaceholder", {
-            defaultValue: "Ko'cha, uy, mo'ljal…",
-          })}
-          className="w-full resize-none rounded-2xl border border-border bg-background px-4 py-3 text-sm font-semibold focus:border-foreground focus:outline-none"
-        />
-      </div>
+        {form.label === "other" ? (
+          <input
+            value={form.custom_label}
+            onChange={(e) => setForm((f) => ({ ...f, custom_label: e.target.value }))}
+            placeholder={t("addresses.customLabel", { defaultValue: "Nom (masalan: Do'stim uyi)" })}
+            className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm font-semibold focus:border-foreground focus:outline-none"
+          />
+        ) : null}
 
-      <UserAddressLocationPicker
-        region={form.region}
-        regionLabel={regionLabel}
-        address={form.address_line}
-        latitude={form.latitude}
-        longitude={form.longitude}
-        regionSyncMode={regionSyncMode}
-        requireRegion
-        setLatitude={(v) => setForm((f) => ({ ...f, latitude: v }))}
-        setLongitude={(v) => setForm((f) => ({ ...f, longitude: v }))}
-        setAddress={(v) => setForm((f) => ({ ...f, address_line: v }))}
-        onRegionSuggestion={applyRegionFromGps}
-      />
+        <div>
+          <label className="mb-2 block text-xs font-bold uppercase tracking-wide text-muted-foreground">
+            {t("addresses.line", { defaultValue: "Manzil" })}
+          </label>
+          <textarea
+            value={form.address_line}
+            onChange={(e) => setForm((f) => ({ ...f, address_line: e.target.value }))}
+            rows={2}
+            placeholder={t("addresses.linePlaceholder", {
+              defaultValue: "Ko'cha, uy, mo'ljal…",
+            })}
+            className="w-full resize-none rounded-2xl border border-border bg-background px-4 py-3 text-sm font-semibold focus:border-foreground focus:outline-none"
+          />
+        </div>
 
-      {noCoverage && !interestSubmitted ? (
-        <CoverageWaitlistCard
+        <UserAddressLocationPicker
           region={form.region}
-          lat={lat}
-          lng={lng}
-          cityLabel={validation?.city_label}
-          source="address"
-          onSubmitted={() => setInterestSubmitted(true)}
+          regionLabel={regionLabel}
+          address={form.address_line}
+          latitude={form.latitude}
+          longitude={form.longitude}
+          regionSyncMode={regionSyncMode}
+          requireRegion
+          setLatitude={(v) => setForm((f) => ({ ...f, latitude: v }))}
+          setLongitude={(v) => setForm((f) => ({ ...f, longitude: v }))}
+          setAddress={(v) => setForm((f) => ({ ...f, address_line: v }))}
+          onRegionSuggestion={applyRegionFromGps}
         />
-      ) : null}
 
-      <label className="flex items-center gap-2 text-sm font-semibold">
-        <input
-          type="checkbox"
-          checked={form.is_default}
-          onChange={(e) => setForm((f) => ({ ...f, is_default: e.target.checked }))}
-          className="h-4 w-4 rounded border-border"
-        />
-        {t("addresses.makeDefault", { defaultValue: "Asosiy manzil sifatida ishlatish" })}
-      </label>
+        {noCoverage && !interestSubmitted ? (
+          <CoverageWaitlistCard
+            region={form.region}
+            lat={lat}
+            lng={lng}
+            cityLabel={validation?.city_label}
+            source="address"
+            onSubmitted={() => setInterestSubmitted(true)}
+          />
+        ) : null}
 
+        <label className="flex items-center gap-2 text-sm font-semibold">
+          <input
+            type="checkbox"
+            checked={form.is_default}
+            onChange={(e) => setForm((f) => ({ ...f, is_default: e.target.checked }))}
+            className="h-4 w-4 rounded border-border"
+          />
+          {t("addresses.makeDefault", { defaultValue: "Asosiy manzil sifatida ishlatish" })}
+        </label>
       </fieldset>
 
       <div className="flex gap-2 pt-1">

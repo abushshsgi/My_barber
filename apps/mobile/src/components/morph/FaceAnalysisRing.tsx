@@ -22,6 +22,8 @@ type Props = {
   sequential?: boolean;
   /** Ketma-ket animatsiya tugaganda. */
   onRevealComplete?: () => void;
+  /** Kutishsiz: metrikalar darhol to‘liq. */
+  instant?: boolean;
   compact?: boolean;
   /** Selfie ustida (onDark) yoki ochiq sahifada (onLight). */
   tone?: "onDark" | "onLight";
@@ -231,6 +233,7 @@ export function FaceAnalysisRing({
   loading = false,
   sequential = false,
   onRevealComplete,
+  instant = false,
   compact = false,
   tone = "onDark",
 }: Props) {
@@ -259,6 +262,15 @@ export function FaceAnalysisRing({
         e.stopAnimation();
         e.setValue(0);
       });
+      return;
+    }
+
+    if (instant) {
+      setVisibleCount(cards.length);
+      enters.forEach((enter) => enter.setValue(1));
+      setFills(cards.map(() => 1));
+      setDisplayPcts(cards.map((card) => card.percent));
+      onDoneRef.current?.();
       return;
     }
 
@@ -339,6 +351,7 @@ export function FaceAnalysisRing({
   }, [
     loading,
     sequential,
+    instant,
     analyze,
     cards,
     enters,

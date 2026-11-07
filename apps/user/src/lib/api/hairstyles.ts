@@ -48,5 +48,7 @@ export async function fetchHairstyleById(
   if (ageGroup) params.set("age_group", ageGroup);
   if (personaId) params.set("persona", personaId);
   const query = params.toString();
-  return apiJson<ApiHairstyle>(`/api/v1/hairstyles/${encodeURIComponent(styleId)}/${query ? `?${query}` : ""}`);
+  return apiJson<ApiHairstyle>(
+    `/api/v1/hairstyles/${encodeURIComponent(styleId)}/${query ? `?${query}` : ""}`,
+  );
 }

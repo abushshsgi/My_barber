@@ -6,7 +6,11 @@ import { WalletEmptyTransactions } from "@/components/wallet/WalletEmptyTransact
 import { WalletTransactionList } from "@/components/wallet/WalletTransactionList";
 import { useWalletTransactions, walletMeQueryKeyFor } from "@/hooks/use-wallet";
 import { getAuthUserId } from "@/lib/auth-user";
-import { filterWalletTransactions, withoutTopups, type WalletTxTab } from "@/lib/wallet-transactions";
+import {
+  filterWalletTransactions,
+  withoutTopups,
+  type WalletTxTab,
+} from "@/lib/wallet-transactions";
 import { cn } from "@/lib/utils";
 
 type Props = {

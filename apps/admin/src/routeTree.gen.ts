@@ -56,6 +56,7 @@ import { Route as AdminFinanceGiftsRouteImport } from './routes/admin.finance.gi
 import { Route as AdminFinancePayoutsRouteImport } from './routes/admin.finance.payouts'
 import { Route as AdminFinancePromotionsRouteImport } from './routes/admin.finance.promotions'
 import { Route as AdminFinanceQrPaymentsRouteImport } from './routes/admin.finance.qr-payments'
+import { Route as AdminFinancePaymeRouteImport } from './routes/admin.finance.payme'
 import { Route as AdminFinanceTransactionsRouteImport } from './routes/admin.finance.transactions'
 import { Route as AdminHisobRaqamIndexRouteImport } from './routes/admin.hisob-raqam.index'
 import { Route as AdminMorphAiIndexRouteImport } from './routes/admin.morph-ai.index'
@@ -344,6 +345,11 @@ const AdminFinancePromotionsRoute = AdminFinancePromotionsRouteImport.update({
 const AdminFinanceQrPaymentsRoute = AdminFinanceQrPaymentsRouteImport.update({
   id: '/qr-payments',
   path: '/qr-payments',
+  getParentRoute: () => AdminFinanceRoute,
+} as any)
+const AdminFinancePaymeRoute = AdminFinancePaymeRouteImport.update({
+  id: '/payme',
+  path: '/payme',
   getParentRoute: () => AdminFinanceRoute,
 } as any)
 const AdminFinanceTransactionsRoute =
@@ -664,6 +670,7 @@ export interface FileRoutesByFullPath {
   '/admin/finance/payouts': typeof AdminFinancePayoutsRoute
   '/admin/finance/promotions': typeof AdminFinancePromotionsRoute
   '/admin/finance/qr-payments': typeof AdminFinanceQrPaymentsRoute
+  '/admin/finance/payme': typeof AdminFinancePaymeRoute
   '/admin/finance/transactions': typeof AdminFinanceTransactionsRoute
   '/admin/morph-ai/budget': typeof AdminMorphAiBudgetRoute
   '/admin/morph-ai/catalog': typeof AdminMorphAiCatalogRoute
@@ -755,6 +762,7 @@ export interface FileRoutesByTo {
   '/admin/finance/payouts': typeof AdminFinancePayoutsRoute
   '/admin/finance/promotions': typeof AdminFinancePromotionsRoute
   '/admin/finance/qr-payments': typeof AdminFinanceQrPaymentsRoute
+  '/admin/finance/payme': typeof AdminFinancePaymeRoute
   '/admin/finance/transactions': typeof AdminFinanceTransactionsRoute
   '/admin/morph-ai/budget': typeof AdminMorphAiBudgetRoute
   '/admin/morph-ai/catalog': typeof AdminMorphAiCatalogRoute
@@ -854,6 +862,7 @@ export interface FileRoutesById {
   '/admin/finance/payouts': typeof AdminFinancePayoutsRoute
   '/admin/finance/promotions': typeof AdminFinancePromotionsRoute
   '/admin/finance/qr-payments': typeof AdminFinanceQrPaymentsRoute
+  '/admin/finance/payme': typeof AdminFinancePaymeRoute
   '/admin/finance/transactions': typeof AdminFinanceTransactionsRoute
   '/admin/morph-ai/budget': typeof AdminMorphAiBudgetRoute
   '/admin/morph-ai/catalog': typeof AdminMorphAiCatalogRoute
@@ -957,6 +966,7 @@ export interface FileRouteTypes {
     | '/admin/finance/payouts'
     | '/admin/finance/promotions'
     | '/admin/finance/qr-payments'
+    | '/admin/finance/payme'
     | '/admin/finance/transactions'
     | '/admin/morph-ai/budget'
     | '/admin/morph-ai/catalog'
@@ -1048,6 +1058,7 @@ export interface FileRouteTypes {
     | '/admin/finance/payouts'
     | '/admin/finance/promotions'
     | '/admin/finance/qr-payments'
+    | '/admin/finance/payme'
     | '/admin/finance/transactions'
     | '/admin/morph-ai/budget'
     | '/admin/morph-ai/catalog'
@@ -1146,6 +1157,7 @@ export interface FileRouteTypes {
     | '/admin/finance/payouts'
     | '/admin/finance/promotions'
     | '/admin/finance/qr-payments'
+    | '/admin/finance/payme'
     | '/admin/finance/transactions'
     | '/admin/morph-ai/budget'
     | '/admin/morph-ai/catalog'
@@ -1538,6 +1550,13 @@ declare module '@tanstack/react-router' {
       path: '/qr-payments'
       fullPath: '/admin/finance/qr-payments'
       preLoaderRoute: typeof AdminFinanceQrPaymentsRouteImport
+      parentRoute: typeof AdminFinanceRoute
+    }
+    '/admin/finance/payme': {
+      id: '/admin/finance/payme'
+      path: '/payme'
+      fullPath: '/admin/finance/payme'
+      preLoaderRoute: typeof AdminFinancePaymeRouteImport
       parentRoute: typeof AdminFinanceRoute
     }
     '/admin/finance/transactions': {
@@ -2008,6 +2027,7 @@ interface AdminFinanceRouteChildren {
   AdminFinancePayoutsRoute: typeof AdminFinancePayoutsRoute
   AdminFinancePromotionsRoute: typeof AdminFinancePromotionsRoute
   AdminFinanceQrPaymentsRoute: typeof AdminFinanceQrPaymentsRoute
+  AdminFinancePaymeRoute: typeof AdminFinancePaymeRoute
   AdminFinanceTransactionsRoute: typeof AdminFinanceTransactionsRoute
   AdminFinanceIndexRoute: typeof AdminFinanceIndexRoute
 }
@@ -2022,6 +2042,7 @@ const AdminFinanceRouteChildren: AdminFinanceRouteChildren = {
   AdminFinancePayoutsRoute: AdminFinancePayoutsRoute,
   AdminFinancePromotionsRoute: AdminFinancePromotionsRoute,
   AdminFinanceQrPaymentsRoute: AdminFinanceQrPaymentsRoute,
+  AdminFinancePaymeRoute: AdminFinancePaymeRoute,
   AdminFinanceTransactionsRoute: AdminFinanceTransactionsRoute,
   AdminFinanceIndexRoute: AdminFinanceIndexRoute,
 }

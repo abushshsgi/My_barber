@@ -3,18 +3,17 @@ export type AppShell = "mysaloon" | "morph";
 const SHELL_KEY = "mysaloon.appShell";
 const LAST_MYSALOON_KEY = "mysaloon.appShell.last.mysaloon";
 const LAST_MORPH_KEY = "mysaloon.appShell.last.morph";
+/** Bir marta: yangi foydalanuvchi Morf AI dan boshlaydi. Saqlangan tanlov qoladi. */
+const MORPH_FIRST_KEY = "mysaloon.appShell.morphFirst.v1";
 
 export const APP_SHELL_DEFAULT_MYSALOON = "/";
 export const APP_SHELL_DEFAULT_MORPH = "/ai-style";
 
-const MYSALOON_LAST_EXACT = new Set(["/", "/map", "/explore", "/profile"]);
+const MYSALOON_LAST_EXACT = new Set(["/", "/profile"]);
 const MORPH_LAST_EXACT = new Set([
   "/ai-style",
   "/ai-style/chat",
   "/ai-style/care",
-  "/ai-style/care/ingredient",
-  "/ai-style/care/products",
-  "/ai-style/studio",
   "/profile",
 ]);
 
@@ -32,12 +31,20 @@ function canUseStorage(): boolean {
 }
 
 export function readAppShell(): AppShell {
-  if (!canUseStorage()) return "mysaloon";
+  if (!canUseStorage()) return "morph";
   try {
+    const migrated = localStorage.getItem(MORPH_FIRST_KEY);
+    if (migrated !== "1") {
+      localStorage.setItem(MORPH_FIRST_KEY, "1");
+      const existing = localStorage.getItem(SHELL_KEY);
+      if (existing === "mysaloon" || existing === "morph") return existing;
+      localStorage.setItem(SHELL_KEY, "morph");
+      return "morph";
+    }
     const raw = localStorage.getItem(SHELL_KEY);
-    return raw === "morph" ? "morph" : "mysaloon";
+    return raw === "mysaloon" ? "mysaloon" : "morph";
   } catch {
-    return "mysaloon";
+    return "morph";
   }
 }
 
@@ -70,9 +77,7 @@ export function readLastShellRoute(shell: AppShell): string {
 export function writeLastShellRoute(shell: AppShell, pathname: string): void {
   if (!canUseStorage() || !isSafeInternalPath(pathname)) return;
   const allowed =
-    shell === "morph"
-      ? MORPH_LAST_EXACT.has(pathname)
-      : MYSALOON_LAST_EXACT.has(pathname);
+    shell === "morph" ? MORPH_LAST_EXACT.has(pathname) : MYSALOON_LAST_EXACT.has(pathname);
   if (!allowed) return;
   try {
     const key = shell === "morph" ? LAST_MORPH_KEY : LAST_MYSALOON_KEY;
@@ -82,9 +87,17 @@ export function writeLastShellRoute(shell: AppShell, pathname: string): void {
   }
 }
 
-/** Morph dock tablari uchun oxirgi AI sahifa (profile emas). */
+/** Morph shellga o‘tganda profil va chat emas, oxirgi AI sahifa (odatda try-on). */
 export function readLastMorphContentRoute(): string {
   const last = readLastShellRoute("morph");
-  if (last === "/profile" || !isMorphPath(last)) return APP_SHELL_DEFAULT_MORPH;
+  if (
+    last === "/profile" ||
+    last === "/ai-style/chat" ||
+    last === "/ai-style/studio" ||
+    last.startsWith("/ai-style/care/ingredient") ||
+    !isMorphPath(last)
+  ) {
+    return APP_SHELL_DEFAULT_MORPH;
+  }
   return last;
 }

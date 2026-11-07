@@ -29,6 +29,12 @@ function resolveApiBase(): string {
 /** Native: to‘liq API URL. Web dev: same-origin (proxy) → "". */
 export const API_BASE = resolveApiBase();
 
+/** Web proxy (`API_BASE === ""`) ni yutib yubormaslik uchun. */
+export function apiUrl(path: string): string {
+  const normalized = path.startsWith("/") ? path : `/${path}`;
+  return `${API_BASE}${normalized}`;
+}
+
 /**
  * Absolute origin (media, refresh, map-config).
  * Web proxy rejimida ham haqiqiy backend host kerak — API_BASE bilan bir xil manbadan.

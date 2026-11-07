@@ -55,8 +55,7 @@ function clearLegacyFaceStorage() {
 
 function hasLegacyFaceStorage(): boolean {
   return Boolean(
-    localStorage.getItem(LEGACY_FACE_HISTORY_KEY) ||
-      localStorage.getItem(LEGACY_FACE_PROFILE_KEY),
+    localStorage.getItem(LEGACY_FACE_HISTORY_KEY) || localStorage.getItem(LEGACY_FACE_PROFILE_KEY),
   );
 }
 
@@ -146,10 +145,7 @@ function persistFaceProfileHistory(userId: number, entries: FaceProfileHistoryEn
   window.dispatchEvent(new Event(FACE_HISTORY_UPDATED_EVENT));
 }
 
-export function syncFaceProfileHistoryCache(
-  userId: number,
-  entries: FaceProfileHistoryEntry[],
-) {
+export function syncFaceProfileHistoryCache(userId: number, entries: FaceProfileHistoryEntry[]) {
   try {
     const server = entries.slice(0, FACE_HISTORY_MAX);
     const local = loadFaceProfileHistory(userId);
@@ -171,17 +167,18 @@ export function syncFaceProfileHistoryCache(
 }
 
 /** Soft-upsert after a successful POST — avoids wiping pending local rows. */
-export function upsertFaceProfileHistoryEntry(
-  entry: FaceProfileHistoryEntry,
-  userId?: number,
-) {
+export function upsertFaceProfileHistoryEntry(entry: FaceProfileHistoryEntry, userId?: number) {
   const uid = userId ?? getActiveUserId();
   if (!uid) return;
   try {
     const list = loadFaceProfileHistory(uid).filter(
       (item) =>
         item.id !== entry.id &&
-        !(item.photoDataUrl.startsWith("data:") && entry.photoDataUrl && item.scannedAt === entry.scannedAt),
+        !(
+          item.photoDataUrl.startsWith("data:") &&
+          entry.photoDataUrl &&
+          item.scannedAt === entry.scannedAt
+        ),
     );
     // Drop the most recent optimistic data-URL twin (same source, within a few seconds).
     const entryAt = Date.parse(entry.scannedAt);
@@ -217,7 +214,9 @@ export function appendFaceProfileHistory(
 
 export function enrichLatestFaceProfileHistory(
   photoDataUrl: string,
-  patch: Partial<Pick<FaceProfileHistoryEntry, "faceShapeKey" | "hairTypeKey" | "source" | "scannedAt">>,
+  patch: Partial<
+    Pick<FaceProfileHistoryEntry, "faceShapeKey" | "hairTypeKey" | "source" | "scannedAt">
+  >,
   userId?: number,
 ) {
   const uid = userId ?? getActiveUserId();

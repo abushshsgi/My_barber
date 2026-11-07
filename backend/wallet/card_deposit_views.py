@@ -6,6 +6,7 @@ import logging
 import math
 from decimal import Decimal, InvalidOperation
 
+from django.conf import settings
 from django.core.signing import BadSignature, SignatureExpired
 from django.http import FileResponse
 from rest_framework import status
@@ -47,6 +48,21 @@ def _user_agent(request) -> str:
     return (request.META.get("HTTP_USER_AGENT") or "")[:512]
 
 
+def _manual_card_topup_closed():
+    if getattr(settings, "MANUAL_CARD_TOPUP_ENABLED", False):
+        return None
+    return Response(
+        {
+            "detail": (
+                "Karta raqami ko'rsatish va chek yuklash o'chirilgan. "
+                "AI Premium Payme Subscribe orqali to'lanadi."
+            ),
+            "configured": False,
+        },
+        status=status.HTTP_410_GONE,
+    )
+
+
 def _client_channel(request) -> str:
     """web yoki mobile. Header birinchi, eski ilova uchun User-Agent zaxira."""
     raw = (
@@ -71,6 +87,9 @@ class WalletReceivingCardView(FriendlyThrottleMixin, APIView):
     throttle_detail = "Juda ko'p so'rov. Biroz kutib qayta urinib ko'ring."
 
     def get(self, request):
+        closed = _manual_card_topup_closed()
+        if closed:
+            return closed
         try:
             cfg = receiving_card_config()
         except WalletServiceError as exc:
@@ -93,6 +112,9 @@ class WalletCardDepositInitView(FriendlyThrottleMixin, APIView):
     throttle_detail = "Juda ko'p to'ldirish urinishi. Keyinroq qayta urinib ko'ring."
 
     def post(self, request):
+        closed = _manual_card_topup_closed()
+        if closed:
+            return closed
         raw_amount = request.data.get("amount")
         try:
             amount = Decimal(str(raw_amount))
@@ -125,6 +147,9 @@ class WalletCardDepositClaimView(FriendlyThrottleMixin, APIView):
     throttle_detail = "Juda ko'p 'to'ladim' so'rovi. Biroz kutib qayta urinib ko'ring."
 
     def post(self, request, deposit_id: str):
+        closed = _manual_card_topup_closed()
+        if closed:
+            return closed
         if claim_locked(request.user.pk):
             return Response(
                 {"detail": "Juda ko'p muvaffaqiyatsiz urinish. Biroz kutib qayta urinib ko'ring."},

@@ -15,13 +15,13 @@ public/hairstyles/men/personas/{persona_id}/
 
 ## 5 ta personaj (tasdiqlangan tartib)
 
-| # | ID | Laqab | Kod |
-|---|-----|-------|-----|
-| 1 | `britan` | Britan | EU-3 |
-| 2 | `irland` | Irland | EU-8 |
-| 3 | `slavyan` | Slavyan | EU-6 |
-| 4 | `evro` | Evro | EU-2 |
-| 5 | `fransuz` | Fransuz | EU-4 |
+| #   | ID        | Laqab   | Kod  |
+| --- | --------- | ------- | ---- |
+| 1   | `britan`  | Britan  | EU-3 |
+| 2   | `irland`  | Irland  | EU-8 |
+| 3   | `slavyan` | Slavyan | EU-6 |
+| 4   | `evro`    | Evro    | EU-2 |
+| 5   | `fransuz` | Fransuz | EU-4 |
 
 ---
 
@@ -45,14 +45,14 @@ ultra sharp photorealistic, 3:4 vertical, 768x1024
 
 **Papka:** `men/personas/irland/`
 
-| Fayl | Holat |
-|------|--------|
-| `reference.webp` | ✅ |
-| `mid-fade.webp` | ✅ |
-| `skin-fade.webp` | ✅ |
-| `buzz-cut.webp` | ✅ |
-| `textured-crop.webp` | ✅ |
-| `low-fade.webp` | ⏳ fallback: `men/low-fade.webp` |
+| Fayl                 | Holat                            |
+| -------------------- | -------------------------------- |
+| `reference.webp`     | ✅                               |
+| `mid-fade.webp`      | ✅                               |
+| `skin-fade.webp`     | ✅                               |
+| `buzz-cut.webp`      | ✅                               |
+| `textured-crop.webp` | ✅                               |
+| `low-fade.webp`      | ⏳ fallback: `men/low-fade.webp` |
 
 **Reference prompt:**
 
@@ -88,14 +88,14 @@ photorealistic, 85mm portrait, 3:4 vertical, 768x1024
 
 **Papka:** `men/personas/evro/`
 
-| Fayl | Holat |
-|------|--------|
-| `reference.webp` | ✅ |
-| `mid-fade.webp` | ✅ |
-| `skin-fade.webp` | ✅ |
-| `buzz-cut.webp` | ✅ |
-| `textured-crop.webp` | ✅ |
-| `low-fade.webp` | ⏳ hali generatsiya qilinmadi (fallback: `men/low-fade.webp`) |
+| Fayl                 | Holat                                                         |
+| -------------------- | ------------------------------------------------------------- |
+| `reference.webp`     | ✅                                                            |
+| `mid-fade.webp`      | ✅                                                            |
+| `skin-fade.webp`     | ✅                                                            |
+| `buzz-cut.webp`      | ✅                                                            |
+| `textured-crop.webp` | ✅                                                            |
+| `low-fade.webp`      | ⏳ hali generatsiya qilinmadi (fallback: `men/low-fade.webp`) |
 
 **Reference prompt:**
 

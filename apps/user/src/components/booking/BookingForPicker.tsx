@@ -62,7 +62,8 @@ export function BookingForPicker({ value, onChange, className }: Props) {
       {members.length === 0 ? (
         <p className="mt-3 text-xs text-muted-foreground">
           {t("booking.addFamilyHint", {
-            defaultValue: "Oila a'zolarini Sozlamalar → Oilaviy profil bo'limidan qo'shishingiz mumkin.",
+            defaultValue:
+              "Oila a'zolarini Sozlamalar → Oilaviy profil bo'limidan qo'shishingiz mumkin.",
           })}
         </p>
       ) : null}

@@ -14,7 +14,7 @@ export function MorphAiSettingsScreen({ navigation }: Props) {
       threads={[]}
       onClose={() => navigation.goBack()}
       onClearAllChats={() => wipeMorphChatsEverywhere()}
-      onOpenSubscription={() => navigation.navigate("MorphPaywall")}
+      onOpenSubscription={() => navigation.navigate("Subscriptions")}
       onSaveHistoryOff={() => void wipeMorphChatsEverywhere()}
     />
   );

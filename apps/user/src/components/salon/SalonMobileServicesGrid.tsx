@@ -64,7 +64,7 @@ export function SalonMobileServicesGrid({ salon }: { salon: Salon }) {
       {serviceGroups.map((group) => {
         const bookingBarberId = group.barberId ?? ownerBarberId;
         const groupTitle = group.barberId
-          ? group.barberName ?? t("salon.staff.title", { defaultValue: "Usta" })
+          ? (group.barberName ?? t("salon.staff.title", { defaultValue: "Usta" }))
           : t("salon.services.salonCatalog", { defaultValue: "Salon xizmatlari" });
         return (
           <div key={group.barberId ?? "salon-catalog"} className="space-y-3">

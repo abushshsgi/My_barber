@@ -11,16 +11,15 @@ const MAP_PILL_SKELETONS = [
 ] as const;
 
 function ShimmerBlock({ className, style }: { className?: string; style?: CSSProperties }) {
-  return <div className={cn("map-shimmer rounded-xl bg-foreground/[0.06]", className)} style={style} />;
+  return (
+    <div className={cn("map-shimmer rounded-xl bg-foreground/[0.06]", className)} style={style} />
+  );
 }
 
 export function MapAreaSkeleton({ className }: { className?: string }) {
   return (
     <div
-      className={cn(
-        "relative h-full w-full overflow-hidden bg-[oklch(0.96_0_0)]",
-        className,
-      )}
+      className={cn("relative h-full w-full overflow-hidden bg-[oklch(0.96_0_0)]", className)}
       aria-hidden
     >
       <div

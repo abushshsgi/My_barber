@@ -1,11 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { amenityIcon } from "@/lib/amenity-icons";
 import { formatPrice, type Salon, type SalonAmenity } from "@/lib/mock-data";
 

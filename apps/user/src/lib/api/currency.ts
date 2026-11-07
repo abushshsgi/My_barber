@@ -56,7 +56,11 @@ export async function fetchCurrencyRates(): Promise<ApiCurrencyRates> {
     if (!res.ok) {
       return buildClientFallbackRates();
     }
-    if (!body || typeof body !== "object" || !Array.isArray((body as ApiCurrencyRates).currencies)) {
+    if (
+      !body ||
+      typeof body !== "object" ||
+      !Array.isArray((body as ApiCurrencyRates).currencies)
+    ) {
       return buildClientFallbackRates();
     }
     return body as ApiCurrencyRates;

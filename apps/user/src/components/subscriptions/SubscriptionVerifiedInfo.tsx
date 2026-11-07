@@ -27,13 +27,7 @@ function planLabel(badge: BadgeLevel): string {
   return "Starter";
 }
 
-function VerifiedInfoBody({
-  badge,
-  onClose,
-}: {
-  badge: BadgeLevel;
-  onClose: () => void;
-}) {
+function VerifiedInfoBody({ badge, onClose }: { badge: BadgeLevel; onClose: () => void }) {
   const { t } = useTranslation();
   const plan = planLabel(badge);
 

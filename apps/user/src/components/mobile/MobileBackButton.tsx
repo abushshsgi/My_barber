@@ -11,9 +11,18 @@ type Props = {
 };
 
 /** Mobil sahifalar uchun bir xil orqaga tugmasi. */
-export function MobileBackButton({ onClick, className, "aria-label": ariaLabel = "Orqaga" }: Props) {
+export function MobileBackButton({
+  onClick,
+  className,
+  "aria-label": ariaLabel = "Orqaga",
+}: Props) {
   return (
-    <button type="button" onClick={onClick} className={cn(mobileBackButtonClass, className)} aria-label={ariaLabel}>
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(mobileBackButtonClass, className)}
+      aria-label={ariaLabel}
+    >
       <ChevronLeft className="size-5" strokeWidth={2.25} />
     </button>
   );

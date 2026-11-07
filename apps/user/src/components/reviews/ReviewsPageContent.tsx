@@ -91,7 +91,10 @@ function ReviewsBody({
     return (
       <div className="space-y-0 lg:grid lg:grid-cols-2 lg:gap-4 xl:grid-cols-3">
         {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="h-32 animate-pulse border-b border-border/60 bg-surface/40 lg:rounded-[24px] lg:border lg:border-border" />
+          <div
+            key={i}
+            className="h-32 animate-pulse border-b border-border/60 bg-surface/40 lg:rounded-[24px] lg:border lg:border-border"
+          />
         ))}
       </div>
     );
@@ -144,7 +147,9 @@ export function ReviewsMobilePage({
   return (
     <ProfileSubpageLayout
       title={t("reviews.title")}
-      subtitle={t("reviews.subtitle", { defaultValue: "Tashriflaringizdan keyin qoldirgan baholar." })}
+      subtitle={t("reviews.subtitle", {
+        defaultValue: "Tashriflaringizdan keyin qoldirgan baholar.",
+      })}
       backTo={backTo}
       strictBack
       flush
@@ -171,7 +176,9 @@ export function ReviewsDesktopPage({
       bare
       backTo="/profile"
       title={t("reviews.title")}
-      subtitle={t("reviews.subtitle", { defaultValue: "Tashriflaringizdan keyin qoldirgan baholar." })}
+      subtitle={t("reviews.subtitle", {
+        defaultValue: "Tashriflaringizdan keyin qoldirgan baholar.",
+      })}
     >
       <ReviewsBody reviews={reviews} loading={loading} focus={focus} />
     </AccountDesktopShell>
@@ -191,7 +198,9 @@ export function ReviewsPageShell({
 }) {
   return (
     <DesktopPageSplit
-      mobile={<ReviewsMobilePage reviews={reviews} loading={loading} focus={focus} backTo={backTo} />}
+      mobile={
+        <ReviewsMobilePage reviews={reviews} loading={loading} focus={focus} backTo={backTo} />
+      }
       desktop={<ReviewsDesktopPage reviews={reviews} loading={loading} focus={focus} />}
     />
   );

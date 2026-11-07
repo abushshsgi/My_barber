@@ -25,7 +25,9 @@ export function OffersVariantPicker({ value, onChange }: Props) {
           {activeIndex}/3
         </span>
       </div>
-      <p className="mt-1 text-[11px] text-muted-foreground">{t("offersPage.variantPicker.subtitle")}</p>
+      <p className="mt-1 text-[11px] text-muted-foreground">
+        {t("offersPage.variantPicker.subtitle")}
+      </p>
       <div className="mt-3 grid grid-cols-3 gap-2">
         {OFFERS_PAGE_VARIANTS.map((id, index) => {
           const active = value === id;

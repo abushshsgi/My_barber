@@ -19,18 +19,12 @@ export function normalizeCoverUrl(url: string | null | undefined): string | null
 function isStockCoverUrl(url: string): boolean {
   const u = url.toLowerCase();
   return (
-    u.includes("/covers/pexels/") ||
-    u.includes("images.pexels.com") ||
-    u.includes("picsum.photos")
+    u.includes("/covers/pexels/") || u.includes("images.pexels.com") || u.includes("picsum.photos")
   );
 }
 
 /** Salon cover — faqat neytral placeholder (stock/demo yo‘q). */
-export function getSalonCoverUrl(
-  _seed?: string,
-  _category?: Category,
-  _width = 900,
-): string {
+export function getSalonCoverUrl(_seed?: string, _category?: Category, _width = 900): string {
   return PLACEHOLDER_SALON;
 }
 
@@ -64,15 +58,26 @@ export function resolveCoverUrl(
 }
 
 const TREND_SEEDS = [
-  "tr1", "tr2", "tr3", "tr4", "tr5", "tr6",
-  "old-money-loose-curl", "old-money-soft-wave", "old-money-defined-curl", "beach-waves", "blunt-cut",
-  "curtain-bangs", "highlights", "soft-bob", "balayage",
+  "tr1",
+  "tr2",
+  "tr3",
+  "tr4",
+  "tr5",
+  "tr6",
+  "old-money-loose-curl",
+  "old-money-soft-wave",
+  "old-money-defined-curl",
+  "beach-waves",
+  "blunt-cut",
+  "curtain-bangs",
+  "highlights",
+  "soft-bob",
+  "balayage",
 ] as const;
 
 const TREND_PHOTO_IDS = [
-  3992859, 2523210, 3992860, 2866115, 1453001, 3992862,
-  3992863, 3992864, 3992865, 3992866, 3992867, 3992868,
-  3992869, 3992870, 3992871,
+  3992859, 2523210, 3992860, 2866115, 1453001, 3992862, 3992863, 3992864, 3992865, 3992866, 3992867,
+  3992868, 3992869, 3992870, 3992871,
 ] as const;
 
 export function pexelsCoverUrl(photoId: number, width = 560): string {

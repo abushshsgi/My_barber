@@ -1,7 +1,7 @@
 import { createFileRoute, Outlet, useMatch } from "@tanstack/react-router";
 import { DesktopPageSplit } from "@/components/desktop/DesktopPageSplit";
 import { BookingsDesktopPage } from "@/components/desktop/pages/BookingsDesktopPage";
-import { BookingsMobile } from "@/components/bookings/BookingsMobile";
+import { MysaloonPausedScreen } from "@/components/mobile/MysaloonPausedScreen";
 
 export const Route = createFileRoute("/bookings")({
   validateSearch: (search: Record<string, unknown>): { focus?: string } => ({
@@ -24,7 +24,7 @@ function MyBookings() {
   const { focus } = Route.useSearch();
   return (
     <DesktopPageSplit
-      mobile={<BookingsMobile focus={focus} />}
+      mobile={<MysaloonPausedScreen />}
       desktop={<BookingsDesktopPage focus={focus} />}
     />
   );

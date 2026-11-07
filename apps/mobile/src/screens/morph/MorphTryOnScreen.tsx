@@ -6,6 +6,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
+  BackHandler,
   Platform,
   Pressable,
   StyleSheet,
@@ -30,6 +31,7 @@ import {
   type MorphAiGeneration,
 } from "../../api/ai";
 import { useAuth } from "../../auth/AuthContext";
+import { NativeBackButton } from "../../components/ui/NativeBackButton";
 import { TAB_DOCK_CLEARANCE } from "../../hooks/useHideTabBar";
 import { useMorphLimitGate } from "../../hooks/useMorphLimitGate";
 import { writeAppShell, writeLastShellTab } from "../../lib/app-shell";
@@ -207,7 +209,7 @@ function GalleryStackIcon({ size = 28, color = "#9A9A9A" }: { size?: number; col
  * Try-on — ixcham sheet + yuqoriga swipe bilan oq history panel.
  * Ochilganda capture UI yashirinadi; oxirgi 6 ta look 2 ustunli gridda.
  */
-export function MorphTryOnScreen({ navigation }: Props) {
+export function MorphTryOnScreen({ navigation, route }: Props) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const { height: winH, width: winW } = useWindowDimensions();
@@ -459,8 +461,28 @@ export function MorphTryOnScreen({ navigation }: Props) {
           return;
         }
 
+        const pending = route.params?.pendingTryOn;
         session.clear();
         session.setSelfie(dataUrl);
+        if (pending) session.setPreferredStyle(pending.styleId, pending.title);
+
+        if (pending) {
+          const next = {
+            styleId: pending.styleId,
+            title: pending.title,
+            match: pending.match,
+            imageUrl: pending.imageUrl,
+            reason: pending.reason,
+            returnTo: pending.returnTo,
+            autoTryOn: true as const,
+          };
+          if (navigation.canGoBack()) {
+            navigation.navigate("MorphPreview", next);
+          } else {
+            navigation.replace("MorphPreview", next);
+          }
+          return;
+        }
 
         // Tahlil/generatsiya sahifasiga o'tamiz — obuna faqat Generate da so'raladi
         navigation.replace("MorphResults");
@@ -470,8 +492,26 @@ export function MorphTryOnScreen({ navigation }: Props) {
         setBusy(null);
       }
     },
-    [isAuthenticated, navigation, session],
+    [isAuthenticated, navigation, route.params?.pendingTryOn, session],
   );
+
+  useEffect(() => {
+    const pending = route.params?.pendingTryOn;
+    if (!pending) return undefined;
+    const sub = BackHandler.addEventListener("hardwareBackPress", () => {
+      if (navigation.canGoBack()) return false;
+      navigation.replace("MorphPreview", {
+        styleId: pending.styleId,
+        title: pending.title,
+        match: pending.match,
+        imageUrl: pending.imageUrl,
+        reason: pending.reason,
+        returnTo: pending.returnTo,
+      });
+      return true;
+    });
+    return () => sub.remove();
+  }, [navigation, route.params?.pendingTryOn]);
 
   const openGeneration = useCallback(
     (item: MorphAiGeneration) => {
@@ -506,6 +546,32 @@ export function MorphTryOnScreen({ navigation }: Props) {
         pointerEvents="none"
       />
 
+      {route.params?.pendingTryOn ? (
+        <View style={[styles.pendingBack, { top: insets.top + verticalScale(8) }]}>
+          <NativeBackButton
+            onPress={() => {
+              const pending = route.params?.pendingTryOn;
+              if (!pending) return;
+              if (navigation.canGoBack()) {
+                navigation.goBack();
+                return;
+              }
+              navigation.replace("MorphPreview", {
+                styleId: pending.styleId,
+                title: pending.title,
+                match: pending.match,
+                imageUrl: pending.imageUrl,
+                reason: pending.reason,
+                returnTo: pending.returnTo,
+              });
+            }}
+            accessibilityLabel={t("common.back")}
+            color="#111111"
+            backgroundColor="rgba(255,255,255,0.94)"
+          />
+        </View>
+      ) : null}
+
       <Animated.View
         entering={FadeIn.duration(400)}
         style={[styles.centerCopy, { paddingTop: insets.top + verticalScale(36) }]}
@@ -513,6 +579,11 @@ export function MorphTryOnScreen({ navigation }: Props) {
       >
         <Text style={styles.headline}>{t("morph.selfieTitle")}</Text>
         <Text style={styles.sub}>{t("morph.selfieHint")}</Text>
+        {route.params?.pendingTryOn ? (
+          <Text style={styles.pending}>
+            {t("morph.preview.pending", { title: route.params.pendingTryOn.title })}
+          </Text>
+        ) : null}
       </Animated.View>
 
       {/* Nav ostidagi oq fon — qora bo‘shliq bo‘lmasin */}
@@ -754,11 +825,26 @@ function createTryOnStyles(
     width: "100%",
     height: "100%",
   },
+  pendingBack: {
+    position: "absolute",
+    left: scale(16),
+    zIndex: 6,
+  },
   centerCopy: {
     alignItems: "center",
     paddingHorizontal: scale(24),
     gap: spacing.xs,
     zIndex: 2,
+  },
+  pending: {
+    marginTop: verticalScale(8),
+    color: "#FFF",
+    fontSize: fontSize(13),
+    fontWeight: "700",
+    textAlign: "center",
+    textShadowColor: "rgba(0,0,0,0.4)",
+    textShadowOffset: { width: 0, height: verticalScale(1) },
+    textShadowRadius: 6,
   },
   headline: {
     color: "#FFF",

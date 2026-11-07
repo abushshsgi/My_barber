@@ -273,8 +273,20 @@ export const bookings: BookingItem[] = [
 export const trendingStyles: TrendingStyle[] = [
   { id: "men-mid-fade", title: "Mid Fade", audience: "men", category: "barber", seed: "mid-fade" },
   { id: "men-buzz-cut", title: "Buzz Cut", audience: "men", category: "barber", seed: "buzz-cut" },
-  { id: "men-french-crop", title: "French Crop", audience: "men", category: "barber", seed: "french-crop" },
-  { id: "men-textured-crop", title: "Textured Crop", audience: "men", category: "barber", seed: "textured-crop" },
+  {
+    id: "men-french-crop",
+    title: "French Crop",
+    audience: "men",
+    category: "barber",
+    seed: "french-crop",
+  },
+  {
+    id: "men-textured-crop",
+    title: "Textured Crop",
+    audience: "men",
+    category: "barber",
+    seed: "textured-crop",
+  },
 ];
 
 export const giftCards: GiftCard[] = [
@@ -423,7 +435,13 @@ export function getUserSubscription(): SubscriptionPlan | null {
 }
 
 export const familyMembers: FamilyMember[] = [
-  { id: "f1", name: "Azizbek Karimov", relation: "O'zim", audience: "men", phone: "+998 90 123 45 67" },
+  {
+    id: "f1",
+    name: "Azizbek Karimov",
+    relation: "O'zim",
+    audience: "men",
+    phone: "+998 90 123 45 67",
+  },
   { id: "f2", name: "Dilnoza K.", relation: "Rafiqa", audience: "women" },
   { id: "f3", name: "Amir K.", relation: "O'g'il", audience: "men", phone: "+998 91 000 12 34" },
 ];

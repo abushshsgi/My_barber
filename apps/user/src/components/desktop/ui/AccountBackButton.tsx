@@ -14,12 +14,7 @@ type Props = {
 };
 
 /** Desktop hisob ichki sahifalari — Orqaga (odatda /profile). */
-export function AccountBackButton({
-  to = "/profile",
-  strict = true,
-  label,
-  className,
-}: Props) {
+export function AccountBackButton({ to = "/profile", strict = true, label, className }: Props) {
   const router = useRouter();
   const { t } = useTranslation();
   const text = label ?? t("common.back", { defaultValue: "Orqaga" });

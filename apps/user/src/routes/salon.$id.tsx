@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { createFileRoute, useParams } from "@tanstack/react-router";
 import { SalonDesktopPage } from "@/components/desktop/pages/SalonDesktopPage";
-import { SalonMobilePage } from "@/components/salon/SalonMobilePage";
+import { MysaloonPausedScreen } from "@/components/mobile/MysaloonPausedScreen";
 import { SalonPageSkeleton } from "@/components/salon/SalonPageSkeleton";
 import { useFavorites } from "@/hooks/use-favorites";
 import { SalonShareSheet } from "@/components/salon/SalonShareSheet";
@@ -62,7 +62,7 @@ function SalonPage() {
 
   return (
     <>
-      {isLgUp ? <SalonDesktopPage {...pageProps} /> : <SalonMobilePage {...pageProps} />}
+      {isLgUp ? <SalonDesktopPage {...pageProps} /> : <MysaloonPausedScreen />}
       {shareSalon ? (
         <SalonShareSheet open={shareOpen} onOpenChange={setShareOpen} salon={shareSalon} />
       ) : null}

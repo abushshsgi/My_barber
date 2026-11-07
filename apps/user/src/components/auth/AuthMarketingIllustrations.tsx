@@ -104,7 +104,15 @@ export function AuthMapIllustration() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.45, delay: 1.05, ease: EASE }}
       >
-        <rect x="196" y="138" width="88" height="44" rx="14" fill="currentColor" fillOpacity="0.92" />
+        <rect
+          x="196"
+          y="138"
+          width="88"
+          height="44"
+          rx="14"
+          fill="currentColor"
+          fillOpacity="0.92"
+        />
         <text x="240" y="166" textAnchor="middle" fill="white" fontSize="12" fontWeight="700">
           3 nearby
         </text>
@@ -288,12 +296,7 @@ export function AuthAiIllustration() {
         initial={{ opacity: 0, d: "M 48 78 L 120 78" }}
         animate={{
           opacity: [0, 0.85, 0.85, 0],
-          d: [
-            "M 48 78 L 120 78",
-            "M 48 78 L 120 78",
-            "M 120 78 L 200 78",
-            "M 200 78 L 272 78",
-          ],
+          d: ["M 48 78 L 120 78", "M 48 78 L 120 78", "M 120 78 L 200 78", "M 200 78 L 272 78"],
         }}
         transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut", delay: 0.35 }}
       />
@@ -347,7 +350,15 @@ export function AuthAiIllustration() {
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.4, delay: 1.1, ease: EASE }}
       >
-        <rect x="112" y="12" width="96" height="28" rx="14" fill="currentColor" fillOpacity="0.92" />
+        <rect
+          x="112"
+          y="12"
+          width="96"
+          height="28"
+          rx="14"
+          fill="currentColor"
+          fillOpacity="0.92"
+        />
         <text x="160" y="30" textAnchor="middle" fill="white" fontSize="11" fontWeight="700">
           AI match
         </text>

@@ -90,12 +90,18 @@ def _normalize_role(role: str) -> str:
 def sanitize_chat_history(messages: list[Any] | None) -> list[ChatMessage]:
     if not messages:
         return []
+    from ai.services.chat_catalog import history_style_note
+
     cleaned: list[ChatMessage] = []
     for item in messages[-MORF_CHAT_MAX_HISTORY:]:
         if not isinstance(item, dict):
             continue
         role = _normalize_role(str(item.get("role") or ""))
         content = str(item.get("content") or "").strip()
+        if role == "model":
+            note = history_style_note(item.get("hairstyles"))
+            if note:
+                content = f"{content}\n{note}".strip() if content else note
         if not content:
             continue
         cleaned.append({"role": role, "content": content[:MORF_CHAT_MAX_MESSAGE_LEN]})
@@ -331,12 +337,14 @@ def _pack_chat_result(
     usage: dict[str, Any],
     response_type: str = "text",
     hairstyles: list[dict[str, Any]] | None = None,
+    blocks: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     return {
         "reply": reply,
         "message": reply,
         "type": response_type,
         "hairstyles": hairstyles or [],
+        "blocks": blocks or [],
         "usage": usage,
         "limits": {
             "daily_limit": None,
@@ -354,10 +362,20 @@ def _selection_config() -> dict[str, Any]:
         "responseSchema": {
             "type": "OBJECT",
             "properties": {
-                "message": {"type": "STRING"},
-                "style_ids": {"type": "ARRAY", "items": {"type": "STRING"}},
+                "blocks": {
+                    "type": "ARRAY",
+                    "items": {
+                        "type": "OBJECT",
+                        "properties": {
+                            "type": {"type": "STRING"},
+                            "content": {"type": "STRING"},
+                            "hairstyle_ids": {"type": "ARRAY", "items": {"type": "STRING"}},
+                        },
+                        "required": ["type"],
+                    },
+                },
             },
-            "required": ["message", "style_ids"],
+            "required": ["blocks"],
         },
     }
 
@@ -493,7 +511,6 @@ def _finish_catalog_reply(
         build_catalog_fallback_contents,
         catalog_addendum,
         fallback_recommendation_message,
-        parse_style_selection,
         resolve_recommendation_cards,
         strip_booking_cta,
         strip_invented_image_links,
@@ -529,10 +546,32 @@ def _finish_catalog_reply(
                 raise
             body["generationConfig"] = _chat_generation_config(context)
             payload, model, provider, latency_ms = _invoke_chat(body)
+    from ai.services.chat_catalog import (
+        blocks_plain_text,
+        blocks_request_images,
+        materialize_content_blocks,
+        parse_multimodal_selection,
+        resolve_reference_ids,
+    )
+
     raw = _extract_reply_text(payload)
-    selected_message, style_ids = parse_style_selection(raw)
+    selected_message, style_ids, raw_blocks, requested_layout = parse_multimodal_selection(raw)
+    if (
+        not style_ids
+        and plan.get("reference_turn")
+        and isinstance(plan.get("prior_styles"), list)
+    ):
+        style_ids = resolve_reference_ids(message, plan.get("prior_styles") or [])
+    if plan.get("reference_turn") and not requested_layout:
+        from ai.services.chat_catalog import _COMPARE
+
+        if _COMPARE.search(message or ""):
+            requested_layout = "comparison"
     limit = int(plan.get("style_limit") or MAX_PICKS)
+    explicit_blocks = bool(raw_blocks)
     cards = resolve_recommendation_cards(plan, style_ids, limit=limit)
+    if explicit_blocks and not blocks_request_images(raw_blocks):
+        cards = []
     reply = selected_message
     raw_is_json = raw.lstrip().startswith("{") or raw.lstrip().startswith("```")
     if not reply and not raw_is_json:
@@ -544,6 +583,31 @@ def _finish_catalog_reply(
     if not reply:
         reply = raw
     reply = strip_booking_cta(reply)
+    blocks = materialize_content_blocks(
+        raw_blocks=raw_blocks,
+        cards=cards,
+        fallback_text=reply,
+        requested_layout=requested_layout,
+        fill_to_limit=bool(plan.get("fill_to_limit")) and bool(cards),
+    )
+    has_images = any(block.get("type") != "text" for block in blocks)
+    if cards and not has_images:
+        blocks = materialize_content_blocks(
+            raw_blocks=[],
+            cards=cards,
+            fallback_text=reply,
+            requested_layout=requested_layout,
+            fill_to_limit=False,
+        )
+        has_images = any(block.get("type") != "text" for block in blocks)
+    text_reply = blocks_plain_text(blocks)
+    if text_reply:
+        reply = text_reply
+    elif has_images and reply.strip() and not any(block.get("type") == "text" for block in blocks):
+        blocks = [{"type": "text", "content": reply.strip()}, *blocks]
+    if not has_images:
+        cards = []
+        blocks = []
     if not reply.strip():
         raise AiStyleError("AI javob bermadi.", 502)
     usage = _usage_from_payload(
@@ -562,6 +626,7 @@ def _finish_catalog_reply(
         usage=usage,
         response_type=response_type,
         hairstyles=cards,
+        blocks=blocks if has_images else [],
     )
 
 
@@ -614,7 +679,7 @@ def generate_morf_chat_reply(
             response_type="text",
         )
 
-    plan = plan_catalog_turn(message, prior, context)
+    plan = plan_catalog_turn(message, prior, context, source_history=history)
     if plan is not None and plan.get("mode") != "select":
         reply = (
             audience_needed_reply(message, prior)
@@ -720,17 +785,24 @@ def stream_morf_chat_reply(
     if should_structure_chat(message, prior, context):
         result = generate_morf_chat_reply(
             user_message=message,
-            history=prior,
+            history=history,
             context=context,
         )
         reply = str(result.get("reply") or "")
-        if reply:
+        blocks = result.get("blocks") if isinstance(result.get("blocks"), list) else []
+        if blocks:
+            for block in blocks:
+                yield {"block": block}
+                if block.get("type") == "text" and block.get("content"):
+                    yield {"delta": f"{block['content']}\n\n"}
+        elif reply:
             yield {"delta": reply}
         yield {
             "done": True,
             "reply": reply,
             "type": result.get("type") or "text",
             "hairstyles": result.get("hairstyles") or [],
+            "blocks": blocks,
             "usage": result.get("usage") or {},
             "limits": result.get("limits") or {},
         }

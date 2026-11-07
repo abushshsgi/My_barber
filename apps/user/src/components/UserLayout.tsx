@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, type CSSProperties } from "react";
 import { useRouterState } from "@tanstack/react-router";
 import { ClientOnly } from "@/components/ClientOnly";
 import { DemoEnvironmentBanner } from "@/components/DemoEnvironmentBanner";
@@ -6,7 +6,10 @@ import { DesktopAppHeader } from "@/components/desktop/shell/DesktopShellParts";
 import { MobileDockNav } from "@/components/mobile/MobileDockNav";
 import { SiteFooter } from "@/components/SiteFooter";
 import { ScrollToTopIndicator } from "@/components/ui/ScrollToTopIndicator";
+import { useAppShell } from "@/hooks/use-app-shell";
 import { useLayoutRouteFlags } from "@/hooks/use-layout-route-flags";
+import { useMorphAppearance } from "@/hooks/use-morph-appearance";
+import { MORPH_FONT_SCALE } from "@/lib/morph-appearance";
 import { useNavBadges } from "@/hooks/use-nav-badges";
 import {
   DESKTOP_BAZAAR_INSET,
@@ -14,10 +17,7 @@ import {
   DESKTOP_SHELL_INSET,
 } from "@/lib/desktop-bazaar-layout";
 import { shouldShowMobileDock } from "@/lib/layout-routes";
-import {
-  MOBILE_CONTENT_PADDING_CLASS,
-  getMobileContentPaddingClass,
-} from "@/lib/layout-constants";
+import { MOBILE_CONTENT_PADDING_CLASS, getMobileContentPaddingClass } from "@/lib/layout-constants";
 import { shouldShowScrollToTop } from "@/lib/scroll-to-top";
 import { cn } from "@/lib/utils";
 
@@ -60,8 +60,11 @@ function useReleaseStuckDocumentScroll(pathname: string) {
 
 export function UserLayout({ children }: { children: React.ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const { shell } = useAppShell();
+  const { appearance } = useMorphAppearance();
   const { chatUnread, notificationsUnread } = useNavBadges();
   const flags = useLayoutRouteFlags(pathname);
+  const morphChrome = flags.isMorphType || shell === "morph";
   const showMobileDock = shouldShowMobileDock(pathname);
   const isAuth = pathname === "/auth";
   const showScrollTop = shouldShowScrollToTop(pathname);
@@ -89,7 +92,14 @@ export function UserLayout({ children }: { children: React.ReactNode }) {
       className={cn(
         "min-h-screen min-w-0 overflow-x-clip bg-background text-foreground",
         flags.isMorphType && "morph-ai-type",
+        !flags.isMorphType && shell === "morph" && "morph-shell-mobile",
       )}
+      data-morph-theme={morphChrome ? appearance.theme : undefined}
+      style={
+        morphChrome
+          ? ({ ["--morph-font-scale"]: String(MORPH_FONT_SCALE[appearance.fontSize]) } as CSSProperties)
+          : undefined
+      }
     >
       <ClientOnly>
         <DemoEnvironmentBanner />
@@ -137,8 +147,7 @@ export function UserLayout({ children }: { children: React.ReactNode }) {
           {flags.isFullBleed ? (
             <div
               className={cn(
-                (flags.isMap || flags.isAiStyle) &&
-                  "flex min-h-0 flex-1 flex-col overflow-hidden",
+                (flags.isMap || flags.isAiStyle) && "flex min-h-0 flex-1 flex-col overflow-hidden",
               )}
             >
               {children}

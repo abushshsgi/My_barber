@@ -39,11 +39,7 @@ function NavRow({
   onClick?: () => void;
 }) {
   const Icon = def.icon;
-  const className = cn(
-    ITEM_CLASS,
-    active && "font-semibold",
-    asButton && "cursor-pointer",
-  );
+  const className = cn(ITEM_CLASS, active && "font-semibold", asButton && "cursor-pointer");
 
   const content = (
     <>
@@ -88,8 +84,7 @@ export function AccountNavList({
     def,
     label: t(def.labelKey, { defaultValue: def.defaultLabel }),
     active: isAccountNavActive(pathname, def.to),
-    badge:
-      def.badgeFromNotifications && unreadNotifications > 0 ? unreadNotifications : undefined,
+    badge: def.badgeFromNotifications && unreadNotifications > 0 ? unreadNotifications : undefined,
   });
 
   const panelClass =
@@ -98,10 +93,7 @@ export function AccountNavList({
       : "py-1";
 
   return (
-    <nav
-      className={panelClass}
-      aria-label={t("profile.title", { defaultValue: "Profil" })}
-    >
+    <nav className={panelClass} aria-label={t("profile.title", { defaultValue: "Profil" })}>
       {ACCOUNT_NAV_SECTIONS.map((section, sectionIndex) => (
         <div key={sectionIndex}>
           {sectionIndex > 0 ? <div className="h-px bg-border" role="separator" /> : null}
@@ -129,7 +121,9 @@ export function AccountNavList({
           <div className="h-px bg-border" role="separator" />
           <NavRow
             def={ACCOUNT_NAV_LOGOUT}
-            label={t(ACCOUNT_NAV_LOGOUT.labelKey, { defaultValue: ACCOUNT_NAV_LOGOUT.defaultLabel })}
+            label={t(ACCOUNT_NAV_LOGOUT.labelKey, {
+              defaultValue: ACCOUNT_NAV_LOGOUT.defaultLabel,
+            })}
             asButton
             onClick={() => {
               onLogout();

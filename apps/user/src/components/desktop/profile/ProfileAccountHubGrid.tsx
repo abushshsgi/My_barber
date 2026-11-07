@@ -47,8 +47,12 @@ export function ProfileAccountHubGrid({ tiles }: Props) {
                 strokeWidth={2}
               />
             </div>
-            <h2 className="mt-4 text-base font-semibold leading-snug text-foreground">{tile.title}</h2>
-            <p className="mt-2 flex-1 text-sm leading-relaxed text-muted-foreground">{tile.description}</p>
+            <h2 className="mt-4 text-base font-semibold leading-snug text-foreground">
+              {tile.title}
+            </h2>
+            <p className="mt-2 flex-1 text-sm leading-relaxed text-muted-foreground">
+              {tile.description}
+            </p>
             {(tile.meta || tile.badge) && (
               <div className="mt-4 flex items-center justify-between gap-2 border-t border-border/60 pt-4">
                 {tile.meta ? (

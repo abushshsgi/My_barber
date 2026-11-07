@@ -1,9 +1,5 @@
 import type { RegisteredRouter } from "@tanstack/react-router";
-import {
-  isMorphPath,
-  APP_SHELL_DEFAULT_MORPH,
-  APP_SHELL_DEFAULT_MYSALOON,
-} from "./app-shell";
+import { isMorphPath, APP_SHELL_DEFAULT_MORPH, APP_SHELL_DEFAULT_MYSALOON } from "./app-shell";
 
 const MORPH_HISTORY_KEY = "mysaloon.history.morph";
 const MYSALOON_HISTORY_KEY = "mysaloon.history.mysaloon";
@@ -95,19 +91,14 @@ export function popCurrentRoute(pathname: string) {
  * - Morf AI sahifalarida: faqat Morf AI ichidagi oldingi sahifaga qaytadi (masalan, Studio/Try-on), MySaloon'ga o'tib ketmaydi.
  * - MySaloon sahifalarida: faqat MySaloon ichidagi oldingi sahifaga qaytadi, Morf AI ga o'tib ketmaydi.
  */
-export function navigateBack(
-  router: RegisteredRouter,
-  fallback?: string,
-  _strict = false,
-) {
+export function navigateBack(router: RegisteredRouter, fallback?: string, _strict = false) {
   const currentPath =
     router.history.location.pathname ||
     (typeof window !== "undefined" ? window.location.pathname : "/");
   const inMorph = isMorphPath(currentPath);
 
   if (inMorph) {
-    const defaultFallback =
-      fallback && isMorphPath(fallback) ? fallback : APP_SHELL_DEFAULT_MORPH;
+    const defaultFallback = fallback && isMorphPath(fallback) ? fallback : APP_SHELL_DEFAULT_MORPH;
     const prev = getPreviousRoute(currentPath);
     popCurrentRoute(currentPath);
 

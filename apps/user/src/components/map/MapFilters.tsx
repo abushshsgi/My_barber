@@ -56,7 +56,9 @@ function FilterChip({
 function FilterSection({ title, children }: { title: string; children: ReactNode }) {
   return (
     <div className="space-y-2">
-      <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground">{title}</p>
+      <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground">
+        {title}
+      </p>
       <div className="flex flex-wrap gap-2">{children}</div>
     </div>
   );

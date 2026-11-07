@@ -29,11 +29,7 @@ export function FavoritesDesktopPage({ tab, onTabChange }: Props) {
     >
       <FavoritesTabs tab={tab} onTabChange={onTabChange} salonCount={ids.length} />
       <div className="mt-6">
-        {tab === "salons" ? (
-          <FavoriteSalonsPanel variant="desktop" />
-        ) : (
-          <FavoriteStylistsPanel />
-        )}
+        {tab === "salons" ? <FavoriteSalonsPanel variant="desktop" /> : <FavoriteStylistsPanel />}
       </div>
     </AccountDesktopShell>
   );

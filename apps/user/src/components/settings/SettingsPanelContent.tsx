@@ -20,6 +20,7 @@ import { SettingsSessionsPanel } from "@/components/settings/panels/SettingsSess
 import { SettingsSupportPanel } from "@/components/settings/panels/SettingsSupportPanel";
 import { SettingsPaymentMethodsPanel } from "@/components/settings/panels/SettingsPaymentMethodsPanel";
 import { SettingsSubscriptionsPanel } from "@/components/settings/panels/SettingsSubscriptionsPanel";
+import { MorphAppearanceSettings } from "@/components/settings/MorphAppearanceSettings";
 import type { SettingsPageState } from "@/components/settings/useSettingsPage";
 import { SETTINGS_LANGS } from "@/components/settings/useSettingsPage";
 import { setLang } from "@/i18n/config";
@@ -643,6 +644,7 @@ export function SettingsPanelContent({
 
         {section === "preferences" && (
           <>
+            <MorphAppearanceSettings />
             <SettingsFieldRow
               label={t("settings.language")}
               value={

@@ -18,13 +18,13 @@ Lokal dev: `VITE_API_URL` odatda kerak emas — Vite `/api/v1` ni `127.0.0.1:800
 
 TanStack Start + Nitro **Build Output API** ishlatadi. Build `.vercel/output` yaratadi.
 
-| Sozlama | To'g'ri qiymat | Noto'g'ri |
-|---------|----------------|-----------|
-| **Root Directory** | `apps/user` | `dist` ❌ |
+| Sozlama              | To'g'ri qiymat                   | Noto'g'ri |
+| -------------------- | -------------------------------- | --------- |
+| **Root Directory**   | `apps/user`                      | `dist` ❌ |
 | **Output Directory** | **bo'sh** (Override o'chirilgan) | `dist` ❌ |
-| **Framework Preset** | Other | Vite ❌ |
-| **Build Command** | `npm run build` | |
-| **Install Command** | `cd ../.. && npm install` | |
+| **Framework Preset** | Other                            | Vite ❌   |
+| **Build Command**    | `npm run build`                  |           |
+| **Install Command**  | `cd ../.. && npm install`        |           |
 
 Batafsil: yuqoridagi jadval va `scripts/prepare-vercel-output.mjs`.
 
@@ -42,11 +42,11 @@ Qayta deploy: `npm run build` (`.vercel/output` yaratiladi) → Vercel redeploy.
 
 ## Env
 
-| O'zgaruvchi | Qiymat |
-|-------------|--------|
-| `VITE_API_URL` | `https://api.mysaloon.uz` (production) |
-| `VITE_GOOGLE_MAPS_API_KEY` | Google Maps JS (xarita) — [Cloud Console](https://console.cloud.google.com/google/maps-apis) |
-| `NEXT_PUBLIC_BARBER_WEB_ORIGIN` | `https://partner.mysaloon.uz` (ixtiyoriy) |
+| O'zgaruvchi                     | Qiymat                                                                                       |
+| ------------------------------- | -------------------------------------------------------------------------------------------- |
+| `VITE_API_URL`                  | `https://api.mysaloon.uz` (production)                                                       |
+| `VITE_GOOGLE_MAPS_API_KEY`      | Google Maps JS (xarita) — [Cloud Console](https://console.cloud.google.com/google/maps-apis) |
+| `NEXT_PUBLIC_BARBER_WEB_ORIGIN` | `https://partner.mysaloon.uz` (ixtiyoriy)                                                    |
 
 To'liq ro'yxat: `.env.example`
 

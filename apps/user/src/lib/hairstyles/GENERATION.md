@@ -7,13 +7,13 @@ Natija: `apps/user/public/hairstyles/{men|women}/{age_group}/{slug}.webp` (768×
 
 Har bir personaj uchun **bitta reference** + **12 ta uslub**. To'liq promptlar: [`PERSONA_PROMPTS.md`](./PERSONA_PROMPTS.md)
 
-| # | Laqab | Kod | Reference fayl |
-|---|-------|-----|----------------|
-| 1 | Britan | EU-3 | `men/personas/britan/reference.webp` |
-| 2 | Irland | EU-8 | `men/personas/irland/reference.webp` |
-| 3 | Slavyan | EU-6 | `men/personas/slavyan/reference.webp` |
-| 4 | Evro | EU-2 | `men/personas/evro/reference.webp` |
-| 5 | Fransuz | EU-4 | `men/personas/fransuz/reference.webp` |
+| #   | Laqab   | Kod  | Reference fayl                        |
+| --- | ------- | ---- | ------------------------------------- |
+| 1   | Britan  | EU-3 | `men/personas/britan/reference.webp`  |
+| 2   | Irland  | EU-8 | `men/personas/irland/reference.webp`  |
+| 3   | Slavyan | EU-6 | `men/personas/slavyan/reference.webp` |
+| 4   | Evro    | EU-2 | `men/personas/evro/reference.webp`    |
+| 5   | Fransuz | EU-4 | `men/personas/fransuz/reference.webp` |
 
 **12 ta uslub:** tanlangan personaj yuzi + `--cref reference.webp --cw 100` — faqat soch o'zgaradi.
 
@@ -35,24 +35,24 @@ QOIDALAR (majburiy):
 
 ## Yosh guruhlari (age_group)
 
-| Guruh | Yosh | Papka |
-|-------|------|-------|
-| `kids` | 10–12 | `{audience}/kids/` |
-| `teen` | 13–17 | `{audience}/teen/` |
-| `young` | 18–29 | `{audience}/` (flat) |
-| `adult` | 30–44 | `{audience}/adult/` |
-| `mature` | 45+ | `{audience}/mature/` |
+| Guruh    | Yosh  | Papka                |
+| -------- | ----- | -------------------- |
+| `kids`   | 10–12 | `{audience}/kids/`   |
+| `teen`   | 13–17 | `{audience}/teen/`   |
+| `young`  | 18–29 | `{audience}/` (flat) |
+| `adult`  | 30–44 | `{audience}/adult/`  |
+| `mature` | 45+   | `{audience}/mature/` |
 
 ## Umumiy qoidalar
 
-| Parametr | Qiymat |
-|----------|--------|
-| Fon | `#E8E8E8` kulrang studiya, flat |
-| Poza | Yengil 3/4, tabiiy — **passport/ID emas** |
-| Model | **Har rasm = boshqa erkak** |
-| Nisbat | 3:4 (768×1024) |
-| Format | WebP ~85% |
-| Tiniqlik | Ultra sharp, 85mm portrait, 8K detail |
+| Parametr | Qiymat                                    |
+| -------- | ----------------------------------------- |
+| Fon      | `#E8E8E8` kulrang studiya, flat           |
+| Poza     | Yengil 3/4, tabiiy — **passport/ID emas** |
+| Model    | **Har rasm = boshqa erkak**               |
+| Nisbat   | 3:4 (768×1024)                            |
+| Format   | WebP ~85%                                 |
+| Tiniqlik | Ultra sharp, 85mm portrait, 8K detail     |
 
 ## 1. Bitta uslub uchun to‘liq prompt (namuna)
 
@@ -88,13 +88,14 @@ cartoon, watermark, text, busy background, barber shop, gradient background
 
 **Character Reference ishlatma.** Har fayl uchun yuqoridagi shablonni ishlat — faqat `[PERSONA]` va `[STYLE]` almashtir.
 
-| Fayl | STYLE |
-|------|-------|
-| `men/adult/mid-fade.webp` | mid fade, clean taper |
+| Fayl                      | STYLE                   |
+| ------------------------- | ----------------------- |
+| `men/adult/mid-fade.webp` | mid fade, clean taper   |
 | `men/adult/low-fade.webp` | low fade, natural taper |
-| ... | ... |
+| ...                       | ...                     |
 
 **Personaj misollari (har biri boshqa rasm):**
+
 - Mediterranean, olive skin
 - Black, deep brown skin
 - East Asian, light skin

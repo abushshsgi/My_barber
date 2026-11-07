@@ -63,10 +63,7 @@ export function MorphAiCareProductsPage() {
 
   return (
     <div className="min-h-[100dvh] bg-[#FAFAFA] text-[#111111]">
-      <div
-        className="px-5 pb-10"
-        style={{ paddingTop: "max(1rem, env(safe-area-inset-top))" }}
-      >
+      <div className="px-5 pb-10" style={{ paddingTop: "max(1rem, env(safe-area-inset-top))" }}>
         <button
           type="button"
           onClick={() => navigateBack(router, "/ai-style/care")}
@@ -142,11 +139,16 @@ export function MorphAiCareProductsPage() {
                 <div className="min-w-0">
                   <p className="truncate text-[15px] font-semibold">{row.name}</p>
                   <p className="truncate text-[12px] text-[#111111]/40">
-                    {row.brand || t(`aiStylePage.care.catalog.categories.${row.category}`, { defaultValue: row.category })}
+                    {row.brand ||
+                      t(`aiStylePage.care.catalog.categories.${row.category}`, {
+                        defaultValue: row.category,
+                      })}
                     {typeof row.match_percent === "number" ? ` · ${row.match_percent}%` : ""}
                   </p>
                   {row.purpose_uz ? (
-                    <p className="mt-1 line-clamp-2 text-[13px] text-[#111111]/55">{row.purpose_uz}</p>
+                    <p className="mt-1 line-clamp-2 text-[13px] text-[#111111]/55">
+                      {row.purpose_uz}
+                    </p>
                   ) : null}
                 </div>
               </Link>

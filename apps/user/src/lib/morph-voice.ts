@@ -1,10 +1,5 @@
 export type MorphVoicePhase =
-  | "idle"
-  | "recording"
-  | "transcribing"
-  | "thinking"
-  | "speaking"
-  | "waiting";
+  "idle" | "recording" | "transcribing" | "thinking" | "speaking" | "waiting";
 
 export function rmsToMetering(rms: number): number {
   if (rms <= 0.0001) return -160;

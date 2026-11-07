@@ -12,9 +12,7 @@ export type CareQuizAnswers = {
   colorStatus: ColorStatus | "";
 };
 
-export function isCareQuizComplete(
-  q: CareQuizAnswers | null | undefined,
-): q is CareQuizAnswers & {
+export function isCareQuizComplete(q: CareQuizAnswers | null | undefined): q is CareQuizAnswers & {
   condition: HairCondition;
   texture: HairTexture;
   colorStatus: ColorStatus;
@@ -149,10 +147,7 @@ function buildProducts(condition: HairCondition, colorStatus: ColorStatus): Care
 }
 
 function buildStylingTips(texture: HairTexture, condition: HairCondition): string[] {
-  const tips: string[] = [
-    "Paste/gel ni avval kaftlarda eriting.",
-    "Kam mahsulot bilan boshlang.",
-  ];
+  const tips: string[] = ["Paste/gel ni avval kaftlarda eriting.", "Kam mahsulot bilan boshlang."];
 
   if (texture === "curly") {
     tips.push("Diffuzer yoki barmoq — taroq emas.");
@@ -185,7 +180,11 @@ export function buildCarePlan(
   const texture: HairTexture = answers?.texture || pickTexture(face?.faceShapeKey);
   const density = pickDensity(face?.hairTypeKey);
   const scalp: ScalpType =
-    condition === "oily" ? "oily" : condition === "dry" || condition === "damaged" ? "dry" : "sensitive";
+    condition === "oily"
+      ? "oily"
+      : condition === "dry" || condition === "damaged"
+        ? "dry"
+        : "sensitive";
   const colorStatus: ColorStatus = answers?.colorStatus ?? "natural";
 
   const summaryByCondition: Record<HairCondition, string> = {

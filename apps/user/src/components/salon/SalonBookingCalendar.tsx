@@ -53,9 +53,7 @@ export function SalonBookingCalendar({
     return set;
   }, [availability.data?.days]);
 
-  const selected = selectedDate
-    ? new Date(`${selectedDate}T12:00:00`)
-    : internalSelected;
+  const selected = selectedDate ? new Date(`${selectedDate}T12:00:00`) : internalSelected;
 
   const handleSelect = (date: Date | undefined) => {
     setInternalSelected(date);

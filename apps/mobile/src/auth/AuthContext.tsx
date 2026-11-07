@@ -156,6 +156,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const gen = ++bootGenRef.current;
     let cancelled = false;
+    const watchdog = setTimeout(() => {
+      if (!cancelled && gen === bootGenRef.current) setLoading(false);
+    }, 5000);
     (async () => {
       try {
         const token = await getAccessToken();
@@ -195,11 +198,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } catch {
         if (!cancelled && !signedInRef.current) setUser(null);
       } finally {
+        clearTimeout(watchdog);
         if (!cancelled && gen === bootGenRef.current) setLoading(false);
       }
     })();
     return () => {
       cancelled = true;
+      clearTimeout(watchdog);
     };
   }, []);
 

@@ -1,20 +1,10 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import {
-  Calendar,
-  CalendarCheck,
-  Compass,
-  Home,
-  Map,
-  Sparkles,
-} from "lucide-react";
+import { Calendar, CalendarCheck, Compass, Home, Map, Sparkles } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { AudienceSwitch } from "@/components/AudienceSwitch";
 import { MysaloonLogo } from "@/components/brand/MysaloonLogo";
 import { DesktopHeaderActions } from "@/components/desktop/shell/DesktopHeaderActions";
-import {
-  DESKTOP_HEADER_HEIGHT_CLASS,
-  DESKTOP_SHELL_INSET,
-} from "@/lib/desktop-bazaar-layout";
+import { DESKTOP_HEADER_HEIGHT_CLASS, DESKTOP_SHELL_INSET } from "@/lib/desktop-bazaar-layout";
 import { isNavTabActive } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
 

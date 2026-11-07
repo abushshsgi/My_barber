@@ -96,7 +96,11 @@ function readCachedShelf():
 function fmtDate(iso?: string): string {
   if (!iso) return "-";
   try {
-    return new Date(iso).toLocaleDateString("uz-UZ", { day: "2-digit", month: "short", year: "numeric" });
+    return new Date(iso).toLocaleDateString("uz-UZ", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
   } catch {
     return iso;
   }
@@ -330,7 +334,8 @@ export function CareShelfTracker() {
         ) : items.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-black/10 bg-white px-4 py-6 text-center text-[13px] text-[#111111]/55">
             {t("aiStylePage.care.shelf.empty", {
-              defaultValue: "Hali mahsulot qo'shilmagan. Birinchisini qo'shing va tugash muddatini kuzating.",
+              defaultValue:
+                "Hali mahsulot qo'shilmagan. Birinchisini qo'shing va tugash muddatini kuzating.",
             })}
           </div>
         ) : (
@@ -391,7 +396,8 @@ export function CareShelfTracker() {
                       <div className="mt-2.5 grid grid-cols-2 gap-1.5 text-[11px] text-[#111111]/50">
                         <div className="inline-flex items-center gap-1.5">
                           <Calendar className="size-3" />
-                          {t("aiStylePage.care.shelf.opened", { defaultValue: "Ochilgan" })}: {fmtDate(item.opened_at)}
+                          {t("aiStylePage.care.shelf.opened", { defaultValue: "Ochilgan" })}:{" "}
+                          {fmtDate(item.opened_at)}
                         </div>
                         <div className="inline-flex items-center justify-end gap-1.5">
                           <AlertTriangle className="size-3" />
@@ -409,8 +415,15 @@ export function CareShelfTracker() {
                     <button
                       type="button"
                       onClick={() => {
-                        toast.success(t("aiStylePage.care.shelf.refillSaved", { defaultValue: "Refill eslatmasi qo'shildi" }));
-                        maybeNotifyBrowser("Refill eslatmasi", `${item.name} uchun qayta sotib olish eslatmasi saqlandi.`);
+                        toast.success(
+                          t("aiStylePage.care.shelf.refillSaved", {
+                            defaultValue: "Refill eslatmasi qo'shildi",
+                          }),
+                        );
+                        maybeNotifyBrowser(
+                          "Refill eslatmasi",
+                          `${item.name} uchun qayta sotib olish eslatmasi saqlandi.`,
+                        );
                       }}
                       className="inline-flex items-center gap-1 rounded-full bg-[#111111] px-3 py-1.5 text-[11px] font-medium text-white"
                     >
@@ -452,7 +465,11 @@ export function CareShelfTracker() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
-            <button className="absolute inset-0 bg-black/45" onClick={() => setOpen(false)} aria-label="Close" />
+            <button
+              className="absolute inset-0 bg-black/45"
+              onClick={() => setOpen(false)}
+              aria-label="Close"
+            />
             <motion.div
               initial={reduce ? false : { y: "100%" }}
               animate={{ y: 0 }}
@@ -463,7 +480,9 @@ export function CareShelfTracker() {
               <div className="flex items-center justify-between">
                 <h3 className="text-[16px] font-semibold tracking-tight">
                   {editing
-                    ? t("aiStylePage.care.shelf.editTitle", { defaultValue: "Mahsulotni tahrirlash" })
+                    ? t("aiStylePage.care.shelf.editTitle", {
+                        defaultValue: "Mahsulotni tahrirlash",
+                      })
                     : t("aiStylePage.care.shelf.addTitle", { defaultValue: "Mahsulot qo'shish" })}
                 </h3>
                 <button
@@ -509,7 +528,9 @@ export function CareShelfTracker() {
                 <input
                   value={form.brand}
                   onChange={(e) => setForm((p) => ({ ...p, brand: e.target.value }))}
-                  placeholder={t("aiStylePage.care.shelf.brand", { defaultValue: "Brend (ixtiyoriy)" })}
+                  placeholder={t("aiStylePage.care.shelf.brand", {
+                    defaultValue: "Brend (ixtiyoriy)",
+                  })}
                   className="h-11 w-full rounded-xl border border-black/10 px-3 text-[13px] outline-none focus:border-black/25"
                 />
                 <div className="grid grid-cols-2 gap-2">
@@ -557,7 +578,10 @@ export function CareShelfTracker() {
                   <select
                     value={form.pao_months}
                     onChange={(e) =>
-                      setForm((p) => ({ ...p, pao_months: e.target.value as FormState["pao_months"] }))
+                      setForm((p) => ({
+                        ...p,
+                        pao_months: e.target.value as FormState["pao_months"],
+                      }))
                     }
                     className="h-11 w-full rounded-xl border border-black/10 bg-white px-3 text-[13px] outline-none"
                   >
@@ -612,7 +636,9 @@ export function CareShelfTracker() {
                   onClick={() => saveMut.mutate()}
                   className="h-11 flex-[1.7] rounded-full bg-[#111111] text-[13px] font-semibold text-white disabled:cursor-not-allowed disabled:bg-[#111111]/20"
                 >
-                  {saving ? t("common.loading", { defaultValue: "Yuklanmoqda..." }) : t("common.save", { defaultValue: "Saqlash" })}
+                  {saving
+                    ? t("common.loading", { defaultValue: "Yuklanmoqda..." })
+                    : t("common.save", { defaultValue: "Saqlash" })}
                 </button>
               </div>
             </motion.div>

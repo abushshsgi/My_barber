@@ -48,9 +48,7 @@ export function buildHomeSalonSections(filtered: Salon[]): HomeSalonSection[] {
     },
   ];
 
-  return sections.filter(
-    (section) => section.variant === "explore" || section.salons.length > 0,
-  );
+  return sections.filter((section) => section.variant === "explore" || section.salons.length > 0);
 }
 
 export type HomeDataSlice = Pick<HomeData, "filtered">;

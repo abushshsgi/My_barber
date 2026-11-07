@@ -27,5 +27,7 @@ function ReviewsPage() {
     el?.scrollIntoView({ behavior: "smooth", block: "center" });
   }, [focus]);
 
-  return <ReviewsPageShell reviews={userReviews} loading={isLoading} focus={focus} backTo={backTo} />;
+  return (
+    <ReviewsPageShell reviews={userReviews} loading={isLoading} focus={focus} backTo={backTo} />
+  );
 }

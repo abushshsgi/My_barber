@@ -26,7 +26,9 @@ export function BarberProfileContent({ barberId }: Props) {
   if (isError || !barber) {
     return (
       <div className="px-5 py-12 text-center">
-        <p className="text-sm text-muted-foreground">{t("common.notFound", { defaultValue: "Topilmadi" })}</p>
+        <p className="text-sm text-muted-foreground">
+          {t("common.notFound", { defaultValue: "Topilmadi" })}
+        </p>
         <Link to="/map" className="mt-4 inline-block text-sm font-bold underline">
           {t("map.title", { defaultValue: "Xarita" })}
         </Link>
@@ -89,7 +91,10 @@ export function BarberProfileContent({ barberId }: Props) {
       ) : null}
 
       {barber.bookingKind === "independent" ? (
-        <BarberWorkPrefsSection workLocation={barber.workLocation} paymentMethods={barber.paymentMethods} />
+        <BarberWorkPrefsSection
+          workLocation={barber.workLocation}
+          paymentMethods={barber.paymentMethods}
+        />
       ) : null}
 
       {barber.amenities.length > 0 ? (

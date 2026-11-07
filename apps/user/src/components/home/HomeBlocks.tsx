@@ -52,9 +52,18 @@ export function HomeAudience() {
   );
 }
 
-type SearchProps = Pick<HomeData, "query" | "setQuery" | "visibleCategoryKeys" | "effectiveCat" | "setCat">;
+type SearchProps = Pick<
+  HomeData,
+  "query" | "setQuery" | "visibleCategoryKeys" | "effectiveCat" | "setCat"
+>;
 
-export function HomeSearchAndCategories({ query, setQuery, visibleCategoryKeys, effectiveCat, setCat }: SearchProps) {
+export function HomeSearchAndCategories({
+  query,
+  setQuery,
+  visibleCategoryKeys,
+  effectiveCat,
+  setCat,
+}: SearchProps) {
   const { t } = useTranslation();
 
   return (
@@ -112,7 +121,9 @@ export function HomeUnifiedSearchResults({
 
   if (loading) {
     return (
-      <div className="px-4 py-10 text-center text-sm text-muted-foreground">{t("common.loading")}</div>
+      <div className="px-4 py-10 text-center text-sm text-muted-foreground">
+        {t("common.loading")}
+      </div>
     );
   }
 
@@ -200,12 +211,7 @@ export function HomeTrendingStrip({
 
   return (
     <section className={compact ? undefined : "mt-8"}>
-      <div
-        className={cn(
-          "mb-3 flex items-end justify-between",
-          compact ? "px-4" : "mb-4 px-5",
-        )}
-      >
+      <div className={cn("mb-3 flex items-end justify-between", compact ? "px-4" : "mb-4 px-5")}>
         <h2
           className={cn(
             "font-bold tracking-tight",
@@ -263,7 +269,13 @@ export function HomeSalonList({ salons: list }: { salons: HomeData["filtered"] }
   );
 }
 
-export function HomeSalonCarousel({ salons: list, titleKey }: { salons: HomeData["featuredSalons"]; titleKey: string }) {
+export function HomeSalonCarousel({
+  salons: list,
+  titleKey,
+}: {
+  salons: HomeData["featuredSalons"];
+  titleKey: string;
+}) {
   const { t } = useTranslation();
   if (list.length === 0) return null;
 

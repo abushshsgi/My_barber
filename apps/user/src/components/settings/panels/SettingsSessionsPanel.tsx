@@ -33,7 +33,8 @@ export function SettingsSessionsPanel({ embedded = false }: { embedded?: boolean
 
   const handleRevoke = (id: number) => {
     revokeOne.mutate(id, {
-      onSuccess: () => toast.success(t("sessions.revoked", { defaultValue: "Sessiya bekor qilindi" })),
+      onSuccess: () =>
+        toast.success(t("sessions.revoked", { defaultValue: "Sessiya bekor qilindi" })),
       onError: (e: Error) => toast.error(e.message),
     });
   };
@@ -79,7 +80,9 @@ export function SettingsSessionsPanel({ embedded = false }: { embedded?: boolean
 
       {isLoading ? (
         <ProfileSubpageCard className="mt-4">
-          <p className="text-sm text-muted-foreground">{t("common.loading", { defaultValue: "Yuklanmoqda…" })}</p>
+          <p className="text-sm text-muted-foreground">
+            {t("common.loading", { defaultValue: "Yuklanmoqda…" })}
+          </p>
         </ProfileSubpageCard>
       ) : sessions.length === 0 ? (
         <div className="mt-4">
@@ -118,7 +121,9 @@ export function SettingsSessionsPanel({ embedded = false }: { embedded?: boolean
                       {formatWhen(session.last_seen_at, i18n.language)}
                     </p>
                     {session.ip_address ? (
-                      <p className="mt-0.5 text-[11px] text-muted-foreground">IP: {session.ip_address}</p>
+                      <p className="mt-0.5 text-[11px] text-muted-foreground">
+                        IP: {session.ip_address}
+                      </p>
                     ) : null}
                   </div>
                 </div>

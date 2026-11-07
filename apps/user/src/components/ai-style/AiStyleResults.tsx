@@ -1,5 +1,4 @@
 import { Link } from "@tanstack/react-router";
-import { motion } from "framer-motion";
 import { Bookmark, CalendarPlus, ExternalLink, Loader2, Sparkles } from "lucide-react";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -58,8 +57,10 @@ function StylePreview({
       <img
         src={src}
         alt=""
-        className="h-full w-full object-cover object-top"
-        loading="lazy"
+        className="h-full w-full bg-neutral-100 object-contain object-center"
+        loading="eager"
+        fetchPriority="high"
+        decoding="async"
       />
     );
   }
@@ -204,11 +205,7 @@ function SpotlightCard({
   };
 
   return (
-    <article
-      id={`ai-style-suggestion-${suggestion.id}`}
-      data-index={index}
-      className="w-full"
-    >
+    <article id={`ai-style-suggestion-${suggestion.id}`} data-index={index} className="w-full">
       <button
         type="button"
         onClick={onOpenPreview}
@@ -291,10 +288,7 @@ function SpotlightCard({
           <Bookmark className={cn("h-4 w-4", saved && "fill-current")} />
         </IconActionButton>
         {isCatalogStyleId(suggestion.id) ? (
-          <IconActionButton
-            label={t("aiStylePage.viewStyle")}
-            onClick={onOpenPreview}
-          >
+          <IconActionButton label={t("aiStylePage.viewStyle")} onClick={onOpenPreview}>
             <ExternalLink className="h-4 w-4" />
           </IconActionButton>
         ) : null}
@@ -362,13 +356,7 @@ function AiStyleSuggestionsSpotlight({
         className="-mx-5 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-1 no-scrollbar"
       >
         {suggestions.map((suggestion, index) => (
-          <motion.div
-            key={suggestion.id}
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.05 }}
-            className="flex-[0_0_100%] snap-center"
-          >
+          <div key={suggestion.id} className="flex-[0_0_100%] snap-center">
             <SpotlightCard
               suggestion={suggestion}
               index={index}
@@ -379,7 +367,7 @@ function AiStyleSuggestionsSpotlight({
               onGenerateTryOn={onGenerateTryOn}
               onOpenPreview={() => onOpenPreview(suggestion.id)}
             />
-          </motion.div>
+          </div>
         ))}
       </div>
 
@@ -440,7 +428,9 @@ function SuggestionActions({
             desktop
               ? "min-h-[42px] px-3 py-2.5 text-xs"
               : "min-w-[calc(50%-0.25rem)] flex-1 px-2 py-2.5 text-[10px]",
-            tryOnPreview ? "border-foreground bg-foreground text-background" : "border-border bg-surface",
+            tryOnPreview
+              ? "border-foreground bg-foreground text-background"
+              : "border-border bg-surface",
           )}
         >
           {tryOnLoading ? (
@@ -560,12 +550,9 @@ export function AiStyleSuggestionsCarousel({
   return (
     <div className="-mx-5 flex snap-x snap-mandatory gap-3 overflow-x-auto px-5 pb-2 no-scrollbar">
       {suggestions.map((suggestion, index) => (
-        <motion.article
+        <article
           key={suggestion.id}
           id={`ai-style-suggestion-${suggestion.id}`}
-          initial={{ opacity: 0, x: 16 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: index * 0.06 }}
           className={cn(
             "w-[min(72vw,220px)] shrink-0 snap-center",
             focusStyleId === suggestion.id && "rounded-2xl ring-2 ring-black ring-offset-2",
@@ -603,7 +590,7 @@ export function AiStyleSuggestionsCarousel({
               />
             </div>
           </div>
-        </motion.article>
+        </article>
       ))}
     </div>
   );
@@ -631,11 +618,8 @@ export function AiStyleSuggestionsStack({
   return (
     <div className="space-y-4">
       {suggestions.map((suggestion, index) => (
-        <motion.article
+        <article
           key={suggestion.id}
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: index * 0.06 }}
           className="overflow-hidden rounded-[22px] border border-border bg-background"
         >
           <div className="flex min-h-[168px]">
@@ -686,7 +670,7 @@ export function AiStyleSuggestionsStack({
               />
             </div>
           </div>
-        </motion.article>
+        </article>
       ))}
     </div>
   );
@@ -756,15 +740,17 @@ export function AiStyleResultsBlock({
   };
 
   const scrollToMoreStyles = () => {
-    document.getElementById("ai-style-more-styles")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    document
+      .getElementById("ai-style-more-styles")
+      ?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
   const previewImage =
     previewId && tryOnByStyle
-      ? tryOnByStyle[previewId] ??
+      ? (tryOnByStyle[previewId] ??
         (previewSuggestion
           ? resolveTryOnPreview(tryOnByStyle, previewSuggestion.id, menPersonaId)
-          : undefined)
+          : undefined))
       : undefined;
 
   return (
@@ -779,7 +765,9 @@ export function AiStyleResultsBlock({
               onClick={onReset}
               className={cn(
                 "shrink-0 text-[11px] font-bold",
-                minimal ? "text-neutral-500 underline underline-offset-2" : "rounded-full border border-border bg-background px-3.5 py-2 text-[10px]",
+                minimal
+                  ? "text-neutral-500 underline underline-offset-2"
+                  : "rounded-full border border-border bg-background px-3.5 py-2 text-[10px]",
               )}
             >
               {t("aiStylePage.tryAgain")}

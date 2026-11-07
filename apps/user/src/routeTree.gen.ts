@@ -16,6 +16,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as BookingsRouteImport } from './routes/bookings'
 import { Route as ChatRouteImport } from './routes/chat'
 import { Route as CompareRouteImport } from './routes/compare'
+import { Route as DeleteAccountRouteImport } from './routes/delete-account'
 import { Route as ExploreRouteImport } from './routes/explore'
 import { Route as ExploreGenRouteImport } from './routes/explore-gen'
 import { Route as FamilyRouteImport } from './routes/family'
@@ -40,6 +41,7 @@ import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as StoriesRouteImport } from './routes/stories'
 import { Route as SubscriptionsRouteImport } from './routes/subscriptions'
 import { Route as SupportRouteImport } from './routes/support'
+import { Route as TermsOfUseRouteImport } from './routes/terms-of-use'
 import { Route as TodayRouteImport } from './routes/today'
 import { Route as TopRouteImport } from './routes/top'
 import { Route as VerifyEmailRouteImport } from './routes/verify-email'
@@ -64,6 +66,7 @@ import { Route as DevExploreGenRouteImport } from './routes/dev.explore-gen'
 import { Route as ExploreStyleIdRouteImport } from './routes/explore_.$styleId'
 import { Route as SalonIdRouteImport } from './routes/salon.$id'
 import { Route as StoriesSalonIdRouteImport } from './routes/stories.$salonId'
+import { Route as SubscriptionsPaymeRouteImport } from './routes/subscriptions_.payme'
 import { Route as WalletGiftsRouteImport } from './routes/wallet_.gifts'
 import { Route as WalletHistoryRouteImport } from './routes/wallet_.history'
 import { Route as WalletQrPayRouteImport } from './routes/wallet_.qr-pay'
@@ -112,6 +115,11 @@ const ChatRoute = ChatRouteImport.update({
 const CompareRoute = CompareRouteImport.update({
   id: '/compare',
   path: '/compare',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DeleteAccountRoute = DeleteAccountRouteImport.update({
+  id: '/delete-account',
+  path: '/delete-account',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ExploreRoute = ExploreRouteImport.update({
@@ -234,6 +242,11 @@ const SupportRoute = SupportRouteImport.update({
   path: '/support',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TermsOfUseRoute = TermsOfUseRouteImport.update({
+  id: '/terms-of-use',
+  path: '/terms-of-use',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TodayRoute = TodayRouteImport.update({
   id: '/today',
   path: '/today',
@@ -354,6 +367,11 @@ const StoriesSalonIdRoute = StoriesSalonIdRouteImport.update({
   path: '/$salonId',
   getParentRoute: () => StoriesRoute,
 } as any)
+const SubscriptionsPaymeRoute = SubscriptionsPaymeRouteImport.update({
+  id: '/subscriptions_/payme',
+  path: '/subscriptions/payme',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const WalletGiftsRoute = WalletGiftsRouteImport.update({
   id: '/wallet_/gifts',
   path: '/wallet/gifts',
@@ -434,6 +452,7 @@ export interface FileRoutesByFullPath {
   '/bookings': typeof BookingsRouteWithChildren
   '/chat': typeof ChatRouteWithChildren
   '/compare': typeof CompareRoute
+  '/delete-account': typeof DeleteAccountRoute
   '/explore': typeof ExploreRoute
   '/explore-gen': typeof ExploreGenRoute
   '/family': typeof FamilyRoute
@@ -458,6 +477,7 @@ export interface FileRoutesByFullPath {
   '/stories': typeof StoriesRouteWithChildren
   '/subscriptions': typeof SubscriptionsRoute
   '/support': typeof SupportRoute
+  '/terms-of-use': typeof TermsOfUseRoute
   '/today': typeof TodayRoute
   '/top': typeof TopRoute
   '/verify-email': typeof VerifyEmailRoute
@@ -482,6 +502,7 @@ export interface FileRoutesByFullPath {
   '/explore/$styleId': typeof ExploreStyleIdRoute
   '/salon/$id': typeof SalonIdRouteWithChildren
   '/stories/$salonId': typeof StoriesSalonIdRoute
+  '/subscriptions/payme': typeof SubscriptionsPaymeRoute
   '/wallet/gifts': typeof WalletGiftsRoute
   '/wallet/history': typeof WalletHistoryRoute
   '/wallet/qr-pay': typeof WalletQrPayRoute
@@ -505,6 +526,7 @@ export interface FileRoutesByTo {
   '/bookings': typeof BookingsRouteWithChildren
   '/chat': typeof ChatRouteWithChildren
   '/compare': typeof CompareRoute
+  '/delete-account': typeof DeleteAccountRoute
   '/explore': typeof ExploreRoute
   '/explore-gen': typeof ExploreGenRoute
   '/family': typeof FamilyRoute
@@ -529,6 +551,7 @@ export interface FileRoutesByTo {
   '/stories': typeof StoriesRouteWithChildren
   '/subscriptions': typeof SubscriptionsRoute
   '/support': typeof SupportRoute
+  '/terms-of-use': typeof TermsOfUseRoute
   '/today': typeof TodayRoute
   '/top': typeof TopRoute
   '/verify-email': typeof VerifyEmailRoute
@@ -552,6 +575,7 @@ export interface FileRoutesByTo {
   '/explore/$styleId': typeof ExploreStyleIdRoute
   '/salon/$id': typeof SalonIdRouteWithChildren
   '/stories/$salonId': typeof StoriesSalonIdRoute
+  '/subscriptions/payme': typeof SubscriptionsPaymeRoute
   '/wallet/gifts': typeof WalletGiftsRoute
   '/wallet/history': typeof WalletHistoryRoute
   '/wallet/qr-pay': typeof WalletQrPayRoute
@@ -576,6 +600,7 @@ export interface FileRoutesById {
   '/bookings': typeof BookingsRouteWithChildren
   '/chat': typeof ChatRouteWithChildren
   '/compare': typeof CompareRoute
+  '/delete-account': typeof DeleteAccountRoute
   '/explore': typeof ExploreRoute
   '/explore-gen': typeof ExploreGenRoute
   '/family': typeof FamilyRoute
@@ -600,6 +625,7 @@ export interface FileRoutesById {
   '/stories': typeof StoriesRouteWithChildren
   '/subscriptions': typeof SubscriptionsRoute
   '/support': typeof SupportRoute
+  '/terms-of-use': typeof TermsOfUseRoute
   '/today': typeof TodayRoute
   '/top': typeof TopRoute
   '/verify-email': typeof VerifyEmailRoute
@@ -624,6 +650,7 @@ export interface FileRoutesById {
   '/explore_/$styleId': typeof ExploreStyleIdRoute
   '/salon/$id': typeof SalonIdRouteWithChildren
   '/stories/$salonId': typeof StoriesSalonIdRoute
+  '/subscriptions_/payme': typeof SubscriptionsPaymeRoute
   '/wallet_/gifts': typeof WalletGiftsRoute
   '/wallet_/history': typeof WalletHistoryRoute
   '/wallet_/qr-pay': typeof WalletQrPayRoute
@@ -649,6 +676,7 @@ export interface FileRouteTypes {
     | '/bookings'
     | '/chat'
     | '/compare'
+    | '/delete-account'
     | '/explore'
     | '/explore-gen'
     | '/family'
@@ -673,6 +701,7 @@ export interface FileRouteTypes {
     | '/stories'
     | '/subscriptions'
     | '/support'
+    | '/terms-of-use'
     | '/today'
     | '/top'
     | '/verify-email'
@@ -697,6 +726,7 @@ export interface FileRouteTypes {
     | '/explore/$styleId'
     | '/salon/$id'
     | '/stories/$salonId'
+    | '/subscriptions/payme'
     | '/wallet/gifts'
     | '/wallet/history'
     | '/wallet/qr-pay'
@@ -720,6 +750,7 @@ export interface FileRouteTypes {
     | '/bookings'
     | '/chat'
     | '/compare'
+    | '/delete-account'
     | '/explore'
     | '/explore-gen'
     | '/family'
@@ -744,6 +775,7 @@ export interface FileRouteTypes {
     | '/stories'
     | '/subscriptions'
     | '/support'
+    | '/terms-of-use'
     | '/today'
     | '/top'
     | '/verify-email'
@@ -767,6 +799,7 @@ export interface FileRouteTypes {
     | '/explore/$styleId'
     | '/salon/$id'
     | '/stories/$salonId'
+    | '/subscriptions/payme'
     | '/wallet/gifts'
     | '/wallet/history'
     | '/wallet/qr-pay'
@@ -790,6 +823,7 @@ export interface FileRouteTypes {
     | '/bookings'
     | '/chat'
     | '/compare'
+    | '/delete-account'
     | '/explore'
     | '/explore-gen'
     | '/family'
@@ -814,6 +848,7 @@ export interface FileRouteTypes {
     | '/stories'
     | '/subscriptions'
     | '/support'
+    | '/terms-of-use'
     | '/today'
     | '/top'
     | '/verify-email'
@@ -838,6 +873,7 @@ export interface FileRouteTypes {
     | '/explore_/$styleId'
     | '/salon/$id'
     | '/stories/$salonId'
+    | '/subscriptions_/payme'
     | '/wallet_/gifts'
     | '/wallet_/history'
     | '/wallet_/qr-pay'
@@ -862,6 +898,7 @@ export interface RootRouteChildren {
   BookingsRoute: typeof BookingsRouteWithChildren
   ChatRoute: typeof ChatRouteWithChildren
   CompareRoute: typeof CompareRoute
+  DeleteAccountRoute: typeof DeleteAccountRoute
   ExploreRoute: typeof ExploreRoute
   ExploreGenRoute: typeof ExploreGenRoute
   FamilyRoute: typeof FamilyRoute
@@ -886,6 +923,7 @@ export interface RootRouteChildren {
   StoriesRoute: typeof StoriesRouteWithChildren
   SubscriptionsRoute: typeof SubscriptionsRoute
   SupportRoute: typeof SupportRoute
+  TermsOfUseRoute: typeof TermsOfUseRoute
   TodayRoute: typeof TodayRoute
   TopRoute: typeof TopRoute
   VerifyEmailRoute: typeof VerifyEmailRoute
@@ -907,6 +945,7 @@ export interface RootRouteChildren {
   DevExploreGenRoute: typeof DevExploreGenRouteWithChildren
   ExploreStyleIdRoute: typeof ExploreStyleIdRoute
   SalonIdRoute: typeof SalonIdRouteWithChildren
+  SubscriptionsPaymeRoute: typeof SubscriptionsPaymeRoute
   WalletGiftsRoute: typeof WalletGiftsRoute
   WalletHistoryRoute: typeof WalletHistoryRoute
   WalletQrPayRoute: typeof WalletQrPayRoute
@@ -969,6 +1008,13 @@ declare module '@tanstack/react-router' {
       path: '/compare'
       fullPath: '/compare'
       preLoaderRoute: typeof CompareRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/delete-account': {
+      id: '/delete-account'
+      path: '/delete-account'
+      fullPath: '/delete-account'
+      preLoaderRoute: typeof DeleteAccountRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/explore': {
@@ -1139,6 +1185,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SupportRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/terms-of-use': {
+      id: '/terms-of-use'
+      path: '/terms-of-use'
+      fullPath: '/terms-of-use'
+      preLoaderRoute: typeof TermsOfUseRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/today': {
       id: '/today'
       path: '/today'
@@ -1307,6 +1360,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StoriesSalonIdRouteImport
       parentRoute: typeof StoriesRoute
     }
+    '/subscriptions_/payme': {
+      id: '/subscriptions_/payme'
+      path: '/subscriptions/payme'
+      fullPath: '/subscriptions/payme'
+      preLoaderRoute: typeof SubscriptionsPaymeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/wallet_/gifts': {
       id: '/wallet_/gifts'
       path: '/wallet/gifts'
@@ -1474,6 +1534,7 @@ const rootRouteChildren: RootRouteChildren = {
   BookingsRoute: BookingsRouteWithChildren,
   ChatRoute: ChatRouteWithChildren,
   CompareRoute: CompareRoute,
+  DeleteAccountRoute: DeleteAccountRoute,
   ExploreRoute: ExploreRoute,
   ExploreGenRoute: ExploreGenRoute,
   FamilyRoute: FamilyRoute,
@@ -1498,6 +1559,7 @@ const rootRouteChildren: RootRouteChildren = {
   StoriesRoute: StoriesRouteWithChildren,
   SubscriptionsRoute: SubscriptionsRoute,
   SupportRoute: SupportRoute,
+  TermsOfUseRoute: TermsOfUseRoute,
   TodayRoute: TodayRoute,
   TopRoute: TopRoute,
   VerifyEmailRoute: VerifyEmailRoute,
@@ -1519,6 +1581,7 @@ const rootRouteChildren: RootRouteChildren = {
   DevExploreGenRoute: DevExploreGenRouteWithChildren,
   ExploreStyleIdRoute: ExploreStyleIdRoute,
   SalonIdRoute: SalonIdRouteWithChildren,
+  SubscriptionsPaymeRoute: SubscriptionsPaymeRoute,
   WalletGiftsRoute: WalletGiftsRoute,
   WalletHistoryRoute: WalletHistoryRoute,
   WalletQrPayRoute: WalletQrPayRoute,

@@ -121,10 +121,11 @@ export function TopUpCardSheet({
 
   const approved = deposit.status === "approved";
   const claimed = deposit.status === "claimed";
-  const cardDigits = (deposit.receiving_card?.number || deposit.receiving_card?.masked || "").replace(
-    /\D/g,
-    "",
-  );
+  const cardDigits = (
+    deposit.receiving_card?.number ||
+    deposit.receiving_card?.masked ||
+    ""
+  ).replace(/\D/g, "");
   const existingReceipt = deposit.receipt_url || null;
   const displayAmount =
     amountLabel ||
@@ -205,10 +206,7 @@ export function TopUpCardSheet({
               label={t("topUpPage.cardBank", { defaultValue: "Bank" })}
               value={deposit.receiving_card?.bank || "—"}
             />
-            <CopyChip
-              label={t("topUpPage.transactionRef")}
-              value={deposit.transaction_ref}
-            />
+            <CopyChip label={t("topUpPage.transactionRef")} value={deposit.transaction_ref} />
             <CopyChip label={t("topUpPage.merchantRef")} value={deposit.merchant_ref} />
           </div>
 
@@ -283,7 +281,9 @@ export function TopUpCardSheet({
                   className="flex cursor-pointer flex-col items-center justify-center gap-2 border border-dashed border-black/25 bg-black/[0.02] px-4 py-7 text-center transition-colors duration-200 hover:border-black/40 hover:bg-black/[0.04]"
                 >
                   <ImagePlus className="h-6 w-6 text-black/50" />
-                  <span className="text-sm font-bold text-black">{t("topUpPage.receiptUpload")}</span>
+                  <span className="text-sm font-bold text-black">
+                    {t("topUpPage.receiptUpload")}
+                  </span>
                   <span className="text-[11px] font-medium text-black/45">
                     {t("topUpPage.receiptHint")}
                   </span>

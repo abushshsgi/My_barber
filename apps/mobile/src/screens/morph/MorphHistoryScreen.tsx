@@ -241,7 +241,7 @@ export function MorphHistoryScreen({ navigation, route }: Props) {
             </Pressable>
             <Pressable style={styles.secondaryAction} onPress={openStudio}>
               <Ionicons name="color-palette-outline" size={16} color="#111111" />
-              <Text style={styles.secondaryActionText}>{t("morph.studio")}</Text>
+              <Text style={styles.secondaryActionText}>{t("morph.studioLabel")}</Text>
             </Pressable>
           </View>
         </View>

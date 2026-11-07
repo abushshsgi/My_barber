@@ -66,7 +66,12 @@ export function ChatThreadList({ activeId, className, hideMobileTitle }: Props) 
         {!hideMobileTitle ? (
           <h2 className="text-lg font-bold tracking-tight lg:hidden">{t("chat.title")}</h2>
         ) : null}
-        <div className={cn("flex items-center gap-2 rounded-2xl bg-surface px-4 py-3", !hideMobileTitle && "mt-3 lg:mt-0")}>
+        <div
+          className={cn(
+            "flex items-center gap-2 rounded-2xl bg-surface px-4 py-3",
+            !hideMobileTitle && "mt-3 lg:mt-0",
+          )}
+        >
           <Search className="h-4 w-4 text-muted-foreground" strokeWidth={2.4} />
           <input
             value={q}
@@ -112,11 +117,7 @@ export function ChatThreadList({ activeId, className, hideMobileTitle }: Props) 
             >
               <div className="relative shrink-0">
                 {c.avatarUrl ? (
-                  <img
-                    src={c.avatarUrl}
-                    alt=""
-                    className="h-12 w-12 rounded-full object-cover"
-                  />
+                  <img src={c.avatarUrl} alt="" className="h-12 w-12 rounded-full object-cover" />
                 ) : (
                   <div
                     className="grid h-12 w-12 place-items-center rounded-full text-sm font-bold text-background"

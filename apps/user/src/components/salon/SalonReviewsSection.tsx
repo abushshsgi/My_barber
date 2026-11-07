@@ -4,12 +4,7 @@ import { useTranslation } from "react-i18next";
 import type { Review, SalonRatingSummary } from "@/lib/mock-data";
 import { SalonLaurel, formatSalonRating } from "@/components/salon/SalonLaurel";
 import { SalonReviewsList } from "@/components/salon/SalonReviewsList";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 
 const PREVIEW_COUNT = 4;
@@ -26,9 +21,14 @@ function DistributionBars({ summary }: { summary: SalonRatingSummary }) {
           <div key={star} className="flex items-center gap-3 text-sm">
             <span className="w-3 font-medium tabular-nums">{star}</span>
             <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-muted">
-              <div className="h-full rounded-full bg-foreground/90 transition-all" style={{ width }} />
+              <div
+                className="h-full rounded-full bg-foreground/90 transition-all"
+                style={{ width }}
+              />
             </div>
-            <span className="w-8 text-right text-xs text-muted-foreground tabular-nums">{count}</span>
+            <span className="w-8 text-right text-xs text-muted-foreground tabular-nums">
+              {count}
+            </span>
           </div>
         );
       })}

@@ -1,6 +1,8 @@
 import { createFileRoute, Link, useParams, useRouter } from "@tanstack/react-router";
 import { MapPin } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { MysaloonPausedScreen } from "@/components/mobile/MysaloonPausedScreen";
+import { useIsLgUp } from "@/hooks/use-mobile";
 import { ClientOnly } from "@/components/ClientOnly";
 import { MobileBackButton } from "@/components/mobile/MobileBackButton";
 import { SalonMap } from "@/components/map/SalonMap";
@@ -18,7 +20,10 @@ function SalonLocationPage() {
   const { t } = useTranslation();
   const router = useRouter();
   const { salon, isLoading } = useSalonPage(id);
+  const isLgUp = useIsLgUp();
   const hasCoords = Boolean(salon && salon.lat !== 0 && salon.lng !== 0);
+
+  if (!isLgUp) return <MysaloonPausedScreen />;
 
   if (isLoading || !salon) {
     return <SalonPageSkeleton />;

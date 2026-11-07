@@ -60,8 +60,14 @@ class SkinProfileSerializer(serializers.ModelSerializer):
         return instance
 
 
+AVATAR_MAX_BYTES = 5 * 1024 * 1024
+AVATAR_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
+AVATAR_CONTENT_TYPES = {"image/jpeg", "image/jpg", "image/pjpeg", "image/png", "image/webp"}
+
+
 class UserSerializer(serializers.ModelSerializer):
     role = serializers.SerializerMethodField()
+    avatar = serializers.ImageField(required=False, allow_null=True)
     has_password = serializers.SerializerMethodField()
     sign_in_method = serializers.SerializerMethodField()
     age = serializers.SerializerMethodField()
@@ -136,6 +142,31 @@ class UserSerializer(serializers.ModelSerializer):
         if age < 10 or age > 120:
             return None
         return age
+
+    def validate_avatar(self, value):
+        if not value:
+            return None
+        name = (getattr(value, "name", "") or "").lower()
+        ext = ""
+        if "." in name:
+            ext = name[name.rfind("."):]
+        content_type = (getattr(value, "content_type", "") or "").split(";")[0].strip().lower()
+        if ext not in AVATAR_EXTENSIONS and content_type not in AVATAR_CONTENT_TYPES:
+            raise serializers.ValidationError("Faqat JPG, PNG yoki WEBP rasm.")
+        if ext and ext not in AVATAR_EXTENSIONS:
+            raise serializers.ValidationError("Faqat JPG, PNG yoki WEBP rasm.")
+        size = int(getattr(value, "size", 0) or 0)
+        if size > AVATAR_MAX_BYTES:
+            raise serializers.ValidationError("Rasm 5 MB dan oshmasin.")
+        return value
+
+    def update(self, instance, validated_data):
+        if "avatar" in validated_data:
+            old = instance.avatar
+            new = validated_data.get("avatar")
+            if old and getattr(old, "name", None) and old != new:
+                old.delete(save=False)
+        return super().update(instance, validated_data)
 
     def validate_region(self, value):
         value = (value or "").strip()

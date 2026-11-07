@@ -12,7 +12,9 @@ export function DesktopPageHeader({ title, description, breadcrumb }: Props) {
           {breadcrumb.map((item, i) => (
             <span key={item.label} className="flex items-center gap-2">
               {i > 0 ? <span>/</span> : null}
-              <span className={i === breadcrumb.length - 1 ? "text-foreground" : undefined}>{item.label}</span>
+              <span className={i === breadcrumb.length - 1 ? "text-foreground" : undefined}>
+                {item.label}
+              </span>
             </span>
           ))}
         </nav>

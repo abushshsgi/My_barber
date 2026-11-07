@@ -31,10 +31,7 @@ function FavHeartButton({ salonId }: { salonId: string }) {
       aria-label="Sevimli"
     >
       <Heart
-        className={cn(
-          "size-[16px] text-white",
-          fav ? "fill-white" : "fill-transparent",
-        )}
+        className={cn("size-[16px] text-white", fav ? "fill-white" : "fill-transparent")}
         strokeWidth={2}
       />
     </button>
@@ -121,13 +118,7 @@ function ListingCardShell({
   favoriteSalonId?: string | null;
 }) {
   return (
-    <div
-      className={cn(
-        "overflow-hidden bg-white",
-        HOME_CARD_RADIUS,
-        CARD_SHADOW,
-      )}
-    >
+    <div className={cn("overflow-hidden bg-white", HOME_CARD_RADIUS, CARD_SHADOW)}>
       <div className={cn("relative overflow-hidden bg-muted", HOME_CARD_ASPECT)}>
         {media}
         <HeartChrome salonId={favoriteSalonId} />

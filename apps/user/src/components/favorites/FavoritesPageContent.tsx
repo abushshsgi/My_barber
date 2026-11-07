@@ -31,7 +31,11 @@ type TabsProps = {
 export function FavoritesTabs({ tab, onTabChange, salonCount }: TabsProps) {
   const { t } = useTranslation();
   const tabs = [
-    { id: "salons" as const, label: t("favorites.tabs.salons", { defaultValue: "Salonlar" }), count: salonCount },
+    {
+      id: "salons" as const,
+      label: t("favorites.tabs.salons", { defaultValue: "Salonlar" }),
+      count: salonCount,
+    },
     { id: "stylists" as const, label: t("favorites.tabs.stylists", { defaultValue: "Ustalar" }) },
   ];
 

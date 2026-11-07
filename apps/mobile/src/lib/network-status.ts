@@ -1,5 +1,5 @@
-import { AppState } from "react-native";
-import { API_BASE, API_ORIGIN } from "../api/config";
+import { AppState, Platform } from "react-native";
+import { apiUrl } from "../api/config";
 
 type Listener = (online: boolean) => void;
 
@@ -23,8 +23,23 @@ export function markOnline() {
   emit();
 }
 
+function browserSaysOnline(): boolean | null {
+  try {
+    if (typeof navigator === "undefined" || typeof navigator.onLine !== "boolean") {
+      return null;
+    }
+    return navigator.onLine;
+  } catch {
+    return null;
+  }
+}
+
 /** Fetch tarmoq xatosi — internet yo'q. Sessiya o'chirilmaydi. */
 export function markOffline() {
+  // Expo web: CORS / proxy xatosi "Failed to fetch" bo‘ladi, internet yo‘q emas.
+  if (Platform.OS === "web" && browserSaysOnline() === true) {
+    return;
+  }
   if (!online) return;
   online = false;
   emit();
@@ -61,8 +76,10 @@ export async function probeNetwork(): Promise<boolean> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), PROBE_TIMEOUT_MS);
   try {
-    const base = API_ORIGIN || API_BASE;
-    await fetch(`${base}/health/`, { method: "GET", signal: controller.signal });
+    await fetch(apiUrl("/api/v1/subscriptions/plans/"), {
+      method: "GET",
+      signal: controller.signal,
+    });
     markOnline();
     return true;
   } catch {
@@ -77,3 +94,10 @@ export async function probeNetwork(): Promise<boolean> {
 AppState.addEventListener("change", (state) => {
   if (state === "active" && !online) void probeNetwork();
 });
+
+if (typeof window !== "undefined") {
+  window.addEventListener("online", () => markOnline());
+  window.addEventListener("offline", () => {
+    if (browserSaysOnline() === false) markOffline();
+  });
+}

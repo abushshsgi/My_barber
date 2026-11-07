@@ -1,4 +1,6 @@
 import { resolveDemoApiOrigin } from "@mybarber/shared/demo-env";
+import i18n from "@/i18n/config";
+import { appAcceptLanguage, translateApiDetail } from "@/lib/api-error";
 import { migrateFaceProfileOnLogout } from "@/lib/face-profile";
 import { resolveFetchBase } from "@/lib/api/base-url";
 import { isPublicCustomerApiPath } from "@/lib/public-api-paths";
@@ -283,10 +285,12 @@ async function refreshAccess(): Promise<RefreshResult> {
 function formatApiError(body: unknown, fallback: string): string {
   if (body && typeof body === "object") {
     const obj = body as Record<string, unknown>;
-    if (typeof obj.detail === "string") return obj.detail;
+    const code = typeof obj.code === "string" ? obj.code : null;
+    if (typeof obj.detail === "string") return translateApiDetail(obj.detail, code);
+    if (typeof obj.message === "string") return translateApiDetail(obj.message, code);
     const first = Object.values(obj).find((v) => typeof v === "string" || Array.isArray(v));
-    if (typeof first === "string") return first;
-    if (Array.isArray(first) && typeof first[0] === "string") return first[0];
+    if (typeof first === "string") return translateApiDetail(first, code);
+    if (Array.isArray(first) && typeof first[0] === "string") return translateApiDetail(first[0], code);
   }
   return fallback;
 }
@@ -297,6 +301,7 @@ export async function apiFetch(
   retry = true,
 ): Promise<Response> {
   const headers = new Headers(options.headers);
+  if (!headers.has("Accept-Language")) headers.set("Accept-Language", appAcceptLanguage());
   const token = getUserAccessToken();
   const publicPath = isPublicCustomerApiPath(path);
 
@@ -332,7 +337,7 @@ export async function apiJson<T>(path: string, options: RequestInit = {}): Promi
   const body = await parseJsonBody(res);
 
   if (!res.ok) {
-    const message = formatApiError(body, res.statusText || "Xatolik");
+    const message = formatApiError(body, res.statusText || i18n.t("subscriptions.genericError"));
     if (isAuthFailureStatus(res.status) && isInvalidTokenMessage(message)) {
       handleAuthFailure();
     }
@@ -345,7 +350,7 @@ export async function apiJson<T>(path: string, options: RequestInit = {}): Promi
   }
 
   if (typeof body !== "object") {
-    throw new Error("Server noto'g'ri javob qaytardi. Sahifani yangilab qayta urinib ko'ring.");
+    throw new Error(i18n.t("apiErrors.badResponse"));
   }
 
   return body as T;

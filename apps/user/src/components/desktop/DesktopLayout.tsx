@@ -54,7 +54,9 @@ export function DesktopLayout({ children, chatUnread = 0, notificationsUnread = 
             {children}
             {showFooter ? (
               <SiteFooter
-                insetClassName={bazaarInset ? (isHome ? DESKTOP_HOME_INSET : DESKTOP_BAZAAR_INSET) : undefined}
+                insetClassName={
+                  bazaarInset ? (isHome ? DESKTOP_HOME_INSET : DESKTOP_BAZAAR_INSET) : undefined
+                }
               />
             ) : null}
           </>

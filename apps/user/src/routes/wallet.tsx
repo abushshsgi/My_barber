@@ -53,7 +53,9 @@ function WalletPage() {
 
   return (
     <DesktopPageSplit
-      mobile={<WalletMobile section={section} backTo={section === "gift" ? giftBackTo : "/wallet"} />}
+      mobile={
+        <WalletMobile section={section} backTo={section === "gift" ? giftBackTo : "/wallet"} />
+      }
       desktop={<WalletDesktopPage section={section} />}
     />
   );

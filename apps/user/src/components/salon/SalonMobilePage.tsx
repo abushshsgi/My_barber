@@ -100,7 +100,9 @@ export function SalonMobilePage({
 
           <div className="mt-3 flex min-w-0 items-start gap-2">
             <MapPin className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-            <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">{salon.address}</p>
+            <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+              {salon.address}
+            </p>
           </div>
         </div>
 

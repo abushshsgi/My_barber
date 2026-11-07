@@ -7,6 +7,8 @@ export async function shareMorphLook(opts: {
   styleId: string;
   title: string;
   previewImage?: string | null;
+  /** Tanlangan ilova tili. Bo‘lmasa oddiy sarlavha. */
+  caption?: string;
 }): Promise<void> {
   let pageUrl = `${WEB_ORIGIN}/morf-ai/look/${encodeURIComponent(opts.styleId)}`;
   if (opts.previewImage) {
@@ -23,7 +25,7 @@ export async function shareMorphLook(opts: {
       /* look URL fallback */
     }
   }
-  const message = `${opts.title} — Morf AI da sinab ko‘ring\n${pageUrl}`;
+  const message = `${opts.caption || `${opts.title} — Morf AI`}\n${pageUrl}`;
   await Share.share({ message, url: pageUrl, title: opts.title });
 }
 

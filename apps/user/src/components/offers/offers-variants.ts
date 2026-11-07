@@ -4,10 +4,7 @@ export const OFFERS_PAGE_VARIANTS: OffersPageVariant[] = ["v01", "v02", "v03"];
 
 export const OFFERS_VARIANT_STORAGE = "mysaloon.offers.variant";
 
-export const offersVariantMeta: Record<
-  OffersPageVariant,
-  { labelKey: string; hintKey: string }
-> = {
+export const offersVariantMeta: Record<OffersPageVariant, { labelKey: string; hintKey: string }> = {
   v01: {
     labelKey: "offersPage.variants.v01",
     hintKey: "offersPage.hints.v01",

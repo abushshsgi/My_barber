@@ -38,9 +38,7 @@ function absoluteMediaUrl(path: string | null | undefined): string | null {
     );
     if (apiMedia) return `${SITE_ORIGIN}${apiMedia[1]}`;
     // Prefer public CDN for catalog hairstyles
-    const mediaCatalog = raw.match(
-      /^https?:\/\/[^/]+\/media\/(hairstyles\/(?:men|women)\/.+)$/i,
-    );
+    const mediaCatalog = raw.match(/^https?:\/\/[^/]+\/media\/(hairstyles\/(?:men|women)\/.+)$/i);
     if (mediaCatalog) return `${SITE_ORIGIN}/${mediaCatalog[1]}`;
     return raw;
   }

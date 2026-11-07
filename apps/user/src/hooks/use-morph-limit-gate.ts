@@ -21,11 +21,13 @@ export function useMorphLimitGate() {
   const [me, setMe] = useState<SubscriptionMe | null>(null);
 
   const refreshMe = useCallback(async () => {
-    return qc.fetchQuery({
+    const data = await qc.fetchQuery({
       queryKey: ["subscriptions", "me"],
       queryFn: fetchSubscriptionMe,
       staleTime: 0,
     });
+    setMe(data);
+    return data;
   }, [qc]);
 
   const showLimit = useCallback((nextKind: MorphLimitKind, data: SubscriptionMe) => {
@@ -105,8 +107,7 @@ export function useMorphLimitGate() {
     async (opts?: EnsureOpts): Promise<boolean> => {
       try {
         const data = await refreshMe();
-        const voiceAllowed =
-          data.access?.morph_voice_allowed === true || data.has_active === true;
+        const voiceAllowed = data.access?.morph_voice_allowed === true || data.has_active === true;
         if (!voiceAllowed) {
           if (!opts?.silent) showLimit("voice", data);
           return false;

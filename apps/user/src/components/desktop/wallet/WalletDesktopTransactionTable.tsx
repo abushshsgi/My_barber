@@ -38,7 +38,11 @@ export function WalletDesktopTransactionTable({
   };
 
   return (
-    <div className={cn("overflow-hidden rounded-2xl border border-border/60 bg-background/80 backdrop-blur-sm")}>
+    <div
+      className={cn(
+        "overflow-hidden rounded-2xl border border-border/60 bg-background/80 backdrop-blur-sm",
+      )}
+    >
       <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border/60 px-5 py-4">
         <h2 className="text-base font-semibold text-foreground">{t("walletPage.recent")}</h2>
         {hasAny ? (
@@ -75,9 +79,15 @@ export function WalletDesktopTransactionTable({
           <table className="w-full min-w-[520px] text-left text-sm">
             <thead className="border-b border-border/60 bg-surface/40 text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
               <tr>
-                <th className="px-5 py-3">{t("walletPage.transactions", { defaultValue: "Tranzaksiyalar" })}</th>
-                <th className="px-5 py-3">{t("walletHistoryPage.date", { defaultValue: "Sana" })}</th>
-                <th className="px-5 py-3 text-right">{t("walletPage.amount", { defaultValue: "Summa" })}</th>
+                <th className="px-5 py-3">
+                  {t("walletPage.transactions", { defaultValue: "Tranzaksiyalar" })}
+                </th>
+                <th className="px-5 py-3">
+                  {t("walletHistoryPage.date", { defaultValue: "Sana" })}
+                </th>
+                <th className="px-5 py-3 text-right">
+                  {t("walletPage.amount", { defaultValue: "Summa" })}
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -92,7 +102,9 @@ export function WalletDesktopTransactionTable({
                       <span
                         className={cn(
                           "grid h-9 w-9 shrink-0 place-items-center rounded-full",
-                          tx.kind === "in" ? "bg-foreground text-background" : "bg-surface text-foreground",
+                          tx.kind === "in"
+                            ? "bg-foreground text-background"
+                            : "bg-surface text-foreground",
                         )}
                       >
                         {tx.kind === "in" ? (

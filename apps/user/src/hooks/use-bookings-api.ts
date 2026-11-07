@@ -89,7 +89,8 @@ export function useCancelBooking() {
 export function usePortfolioConsentMutation() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, consent }: { id: string; consent: boolean }) => setPortfolioConsent(id, consent),
+    mutationFn: ({ id, consent }: { id: string; consent: boolean }) =>
+      setPortfolioConsent(id, consent),
     onSuccess: (_data, vars) => {
       void qc.invalidateQueries({ queryKey: bookingsQueryKeyBase });
       void qc.invalidateQueries({ queryKey: [...bookingsQueryKeyBase, vars.id] });
@@ -125,15 +126,14 @@ export function useBookingAvailability(params: {
         date: params.date,
         service_ids: params.serviceIds.join(","),
       }),
-    enabled:
-      authQueryEnabled(
-        !!userId &&
-          (params.enabled ?? true) &&
-          params.salon > 0 &&
-          params.barber > 0 &&
-          params.date.length > 0 &&
-          params.serviceIds.length > 0,
-      ),
+    enabled: authQueryEnabled(
+      !!userId &&
+        (params.enabled ?? true) &&
+        params.salon > 0 &&
+        params.barber > 0 &&
+        params.date.length > 0 &&
+        params.serviceIds.length > 0,
+    ),
   });
 }
 

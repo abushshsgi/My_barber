@@ -51,7 +51,9 @@ function CategoryGlassCard({
       <div
         className={cn(
           "absolute inset-x-2 bottom-2 rounded-xl border border-white/20 bg-white/10 shadow-[inset_0_1px_0_rgba(255,255,255,0.1)] backdrop-blur-xl",
-          compact ? "px-2 py-1.5" : "inset-x-3 bottom-3 rounded-2xl px-3 py-2.5 sm:inset-x-4 sm:bottom-4 sm:px-4 sm:py-3",
+          compact
+            ? "px-2 py-1.5"
+            : "inset-x-3 bottom-3 rounded-2xl px-3 py-2.5 sm:inset-x-4 sm:bottom-4 sm:px-4 sm:py-3",
         )}
       >
         <div className="flex items-end justify-between gap-1.5">

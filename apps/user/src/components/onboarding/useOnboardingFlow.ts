@@ -4,10 +4,7 @@ import { toast } from "sonner";
 import { GeolocationError, getAccuratePosition } from "@/lib/native-geolocation";
 import { useMe, useUpdateMe } from "@/hooks/use-me";
 import { roundCoord } from "@/lib/api/list-utils";
-import {
-  isProfileLocationRequired,
-  userHasProfileCoords,
-} from "@/lib/recommendations";
+import { isProfileLocationRequired, userHasProfileCoords } from "@/lib/recommendations";
 import {
   sanitizeDisplayNameInput,
   validateDisplayName,
@@ -31,9 +28,7 @@ export function useOnboardingFlow() {
   const updateMe = useUpdateMe();
   const locationRequired = isProfileLocationRequired(me);
   const lastStep = locationRequired ? 3 : 2;
-  const steps = locationRequired
-    ? (["Ism", "Yosh", "Joylashuv"] as const)
-    : ONBOARDING_STEPS;
+  const steps = locationRequired ? (["Ism", "Yosh", "Joylashuv"] as const) : ONBOARDING_STEPS;
 
   const [step, setStep] = useState(1);
   const [firstName, setFirstNameRaw] = useState("");
@@ -48,10 +43,7 @@ export function useOnboardingFlow() {
 
   const hasBirth = me?.birth_year != null && Number(me.birth_year) > 1900;
   const locationOnly =
-    locationRequired &&
-    me?.onboarding_completed === true &&
-    hasBirth &&
-    !userHasProfileCoords(me);
+    locationRequired && me?.onboarding_completed === true && hasBirth && !userHasProfileCoords(me);
 
   useEffect(() => {
     if (!me || prefilled) return;
@@ -85,9 +77,7 @@ export function useOnboardingFlow() {
   );
 
   const nameError =
-    nameTouched && !nameValidation.ok
-      ? NAME_ERROR_DEFAULTS[nameValidation.errorKey]
-      : null;
+    nameTouched && !nameValidation.ok ? NAME_ERROR_DEFAULTS[nameValidation.errorKey] : null;
 
   const detectLocation = useCallback(async () => {
     setLocating(true);

@@ -8,7 +8,10 @@ const CODE_RE = new RegExp(`^[${CODE_ALPHABET}]{1,8}$`);
 export function normalizeReferralCode(raw: unknown): string {
   if (typeof raw !== "string" && typeof raw !== "number") return "";
   const upper = String(raw).trim().toUpperCase();
-  return [...upper].filter((ch) => CODE_ALPHABET.includes(ch)).join("").slice(0, 8);
+  return [...upper]
+    .filter((ch) => CODE_ALPHABET.includes(ch))
+    .join("")
+    .slice(0, 8);
 }
 
 function firstSearchValue(raw: unknown): string {
@@ -21,7 +24,9 @@ function firstSearchValue(raw: unknown): string {
  * /auth?ref= / ?referral= / ?referral_code= / ?code= dan kodni o'qiydi.
  * Ulashish havolalari ba'zan turli parametr nomlari bilan keladi.
  */
-export function parseReferralFromSearch(search: Record<string, unknown> | null | undefined): string {
+export function parseReferralFromSearch(
+  search: Record<string, unknown> | null | undefined,
+): string {
   if (!search) return "";
   for (const key of ["ref", "referral", "referral_code", "code"] as const) {
     const normalized = normalizeReferralCode(firstSearchValue(search[key]));
@@ -43,7 +48,9 @@ export function parseBarberInviteFromSearch(
 }
 
 /** window.location.search dan (SSR-safe). */
-export function parseReferralFromLocationSearch(search = typeof window !== "undefined" ? window.location.search : ""): string {
+export function parseReferralFromLocationSearch(
+  search = typeof window !== "undefined" ? window.location.search : "",
+): string {
   if (!search) return "";
   try {
     const params = new URLSearchParams(search.startsWith("?") ? search : `?${search}`);

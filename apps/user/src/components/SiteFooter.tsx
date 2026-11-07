@@ -76,7 +76,9 @@ function FooterSectionBlock({ section, mobile }: { section: FooterSection; mobil
 
   return (
     <div className="hidden min-w-0 lg:block">
-      <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-muted-foreground">{title}</p>
+      <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+        {title}
+      </p>
       <nav className="mt-3 flex flex-col gap-2">
         {section.links.map((link) => (
           <FooterNavLink key={`${section.id}-${link.to}-${link.labelKey}`} link={link} />
@@ -179,7 +181,10 @@ export function SiteFooter({ insetClassName, className }: Props) {
           <Link to="/privacy" className="text-foreground hover:underline">
             {t("footer.terms", { defaultValue: "Foydalanish shartlari" })}
           </Link>
-          <Link to="/support" className="text-muted-foreground hover:text-foreground hover:underline">
+          <Link
+            to="/support"
+            className="text-muted-foreground hover:text-foreground hover:underline"
+          >
             {t("profile.support", { defaultValue: "Yordam" })}
           </Link>
         </nav>

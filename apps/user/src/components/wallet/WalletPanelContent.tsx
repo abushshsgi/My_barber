@@ -27,7 +27,9 @@ export function WalletPanelContent({ section, hideTitle }: Props) {
       <div className={hideTitle ? undefined : "mt-4"}>
         {section === "overview" && <WalletDesktopOverviewPanel />}
 
-        {section === "transactions" && <WalletTransactionsPanel limit={30} showFullHistoryLink={false} />}
+        {section === "transactions" && (
+          <WalletTransactionsPanel limit={30} showFullHistoryLink={false} />
+        )}
 
         {section === "payments" && <SettingsPaymentMethodsPanel />}
 

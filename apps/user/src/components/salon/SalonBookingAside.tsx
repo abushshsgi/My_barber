@@ -18,10 +18,7 @@ export function SalonBookingAside({
   const { t } = useTranslation();
   const calendarBarberId =
     salon.staff.find((s) => s.isBookable !== false)?.id ?? salon.staff[0]?.id;
-  const calendarServiceIds = resolveDefaultServiceIdsForBarber(
-    salon.services,
-    calendarBarberId,
-  );
+  const calendarServiceIds = resolveDefaultServiceIdsForBarber(salon.services, calendarBarberId);
 
   return (
     <aside

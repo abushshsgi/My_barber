@@ -109,7 +109,12 @@ function AddressCard({
   );
 }
 
-export function SettingsAddressesPanel({ initialEditId, initialAdd, onEditorClose, embedded = false }: Props) {
+export function SettingsAddressesPanel({
+  initialEditId,
+  initialAdd,
+  onEditorClose,
+  embedded = false,
+}: Props) {
   const { t } = useTranslation();
   const { data: me } = useMe();
   const { data: regions = [] } = useRegions();
@@ -177,7 +182,9 @@ export function SettingsAddressesPanel({ initialEditId, initialAdd, onEditorClos
     <div className={embedded ? "mt-4" : undefined}>
       {embedded ? (
         <p className="mb-4 text-sm text-muted-foreground">
-          {t("addresses.hint", { defaultValue: "Yaqin salonlarni aniqroq topish uchun manzillar saqlang." })}
+          {t("addresses.hint", {
+            defaultValue: "Yaqin salonlarni aniqroq topish uchun manzillar saqlang.",
+          })}
         </p>
       ) : null}
 
@@ -228,7 +235,11 @@ export function SettingsAddressesPanel({ initialEditId, initialAdd, onEditorClos
                     });
                   }}
                   onDelete={() => {
-                    if (!window.confirm(t("addresses.deleteConfirm", { defaultValue: "O'chirilsinmi?" })))
+                    if (
+                      !window.confirm(
+                        t("addresses.deleteConfirm", { defaultValue: "O'chirilsinmi?" }),
+                      )
+                    )
                       return;
                     void deleteAddress.mutateAsync(addr.id).then(() => {
                       toast.success(t("addresses.deleted", { defaultValue: "Manzil o'chirildi" }));

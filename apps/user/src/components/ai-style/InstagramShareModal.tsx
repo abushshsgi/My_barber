@@ -15,9 +15,7 @@ export type InstagramStorySharePayload = {
 };
 
 export type InstagramStoryShareResult =
-  | { mode: "native-share" }
-  | { mode: "download-fallback" }
-  | { mode: "cancelled" };
+  { mode: "native-share" } | { mode: "download-fallback" } | { mode: "cancelled" };
 
 type InstagramShareModalProps = {
   open: boolean;
@@ -63,7 +61,10 @@ export async function handleInstagramStoryShare({
 
   await copyTextToClipboard(link);
 
-  const file = await imageUrlToFile(image, filename.endsWith(".png") ? "morf-ai-story.jpg" : filename);
+  const file = await imageUrlToFile(
+    image,
+    filename.endsWith(".png") ? "morf-ai-story.jpg" : filename,
+  );
 
   // iOS/Android: Instagram app → «История / Story» tanlash ekrani (rasmdagidek).
   if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
@@ -265,9 +266,7 @@ export function InstagramStoryShareButton({
     if (busy) return;
     setBusy(true);
     try {
-      const payload = resolvePayload
-        ? await resolvePayload()
-        : { shareLink, imageUrl, filename };
+      const payload = resolvePayload ? await resolvePayload() : { shareLink, imageUrl, filename };
       const result = await handleInstagramStoryShare(payload);
       if (result.mode === "cancelled") return;
       setMode(result.mode);

@@ -63,7 +63,9 @@ export function OffersVariantFeatured({ list }: Props) {
             onClick={() => setFilter(f.key)}
             className={cn(
               "rounded-full px-3.5 py-2 text-[11px] font-bold transition-colors",
-              filter === f.key ? "bg-foreground text-background" : "bg-surface text-muted-foreground",
+              filter === f.key
+                ? "bg-foreground text-background"
+                : "bg-surface text-muted-foreground",
             )}
           >
             {f.label}

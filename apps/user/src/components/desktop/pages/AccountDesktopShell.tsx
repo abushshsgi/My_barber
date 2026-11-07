@@ -36,7 +36,9 @@ export function AccountDesktopShell({
       {title ? (
         <header className="mb-6">
           <h1 className="text-2xl font-bold tracking-tight lg:text-3xl">{title}</h1>
-          {subtitle ? <p className="mt-2 max-w-2xl text-sm text-muted-foreground">{subtitle}</p> : null}
+          {subtitle ? (
+            <p className="mt-2 max-w-2xl text-sm text-muted-foreground">{subtitle}</p>
+          ) : null}
         </header>
       ) : null}
 

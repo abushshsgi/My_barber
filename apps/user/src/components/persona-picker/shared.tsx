@@ -1,6 +1,10 @@
 import { useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
-import { getPersonaRefImageUrl, type ExplorePersona, type ExplorePersonaId } from "@/lib/explore-personas";
+import {
+  getPersonaRefImageUrl,
+  type ExplorePersona,
+  type ExplorePersonaId,
+} from "@/lib/explore-personas";
 
 export type PersonaVariantProps = {
   value: ExplorePersonaId;

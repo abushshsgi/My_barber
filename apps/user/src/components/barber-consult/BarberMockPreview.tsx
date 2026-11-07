@@ -40,7 +40,8 @@ export function BarberMockPreview({ card, previewImage, cameraState }: Props) {
             <li>Neckline: {card.sides_and_back.neckline}</li>
             {card.beard_and_facial_hair.present ? (
               <li>
-                Beard: {card.beard_and_facial_hair.style} · {card.beard_and_facial_hair.length_mm} mm
+                Beard: {card.beard_and_facial_hair.style} · {card.beard_and_facial_hair.length_mm}{" "}
+                mm
               </li>
             ) : null}
           </ul>

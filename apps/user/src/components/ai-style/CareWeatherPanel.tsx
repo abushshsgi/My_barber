@@ -1,5 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
-import { Check, ChevronDown, ChevronLeft, Droplets, Loader2, LocateFixed, Sun, Wind } from "lucide-react";
+import {
+  Check,
+  ChevronDown,
+  ChevronLeft,
+  Droplets,
+  Loader2,
+  LocateFixed,
+  Sun,
+  Wind,
+} from "lucide-react";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   fetchWeatherShieldCatalog,
@@ -8,9 +17,20 @@ import {
   type WeatherCareSnapshot,
   type WeatherShieldRec,
 } from "@/lib/api/care-products";
-import { buildGoOutKit, buildGoOutSummary, shieldImageForTag, weatherHeroFallback } from "@/lib/care-go-out";
+import {
+  buildGoOutKit,
+  buildGoOutSummary,
+  shieldImageForTag,
+  weatherHeroFallback,
+} from "@/lib/care-go-out";
 import { resolveMediaUrl } from "@/lib/media-url";
-import { regionLabel, resolveUzRegion, UZ_REGION_OPTIONS, uzRegionImage, type UzRegionId } from "@/lib/uz-care-regions";
+import {
+  regionLabel,
+  resolveUzRegion,
+  UZ_REGION_OPTIONS,
+  uzRegionImage,
+  type UzRegionId,
+} from "@/lib/uz-care-regions";
 import { cn } from "@/lib/utils";
 
 const CONDITIONS: Record<string, string> = {
@@ -76,7 +96,17 @@ export function CareWeatherPanel({
   const city = regionId ? regionLabel(regionId) : regionLabel(resolvedRegion);
 
   const shieldQ = useQuery({
-    queryKey: ["ai", "care", "weather-shield", current?.temperature_c, current?.humidity_pct, uvIndex, current?.wind_kmh, conditionKey, hairCondition || ""],
+    queryKey: [
+      "ai",
+      "care",
+      "weather-shield",
+      current?.temperature_c,
+      current?.humidity_pct,
+      uvIndex,
+      current?.wind_kmh,
+      conditionKey,
+      hairCondition || "",
+    ],
     enabled: Boolean(current),
     staleTime: 5 * 60_000,
     queryFn: () =>
@@ -106,10 +136,20 @@ export function CareWeatherPanel({
     humidity: current?.humidity_pct ?? null,
     wind: current?.wind_kmh ?? null,
   };
-  const summary = useMemo(() => (current ? buildGoOutSummary(ctx) : ""), [current, conditionKey, current?.temperature_c, current?.humidity_pct, current?.wind_kmh]);
+  const summary = useMemo(
+    () => (current ? buildGoOutSummary(ctx) : ""),
+    [current, conditionKey, current?.temperature_c, current?.humidity_pct, current?.wind_kmh],
+  );
   const kit = useMemo(
     () => buildGoOutKit({ ...ctx, uvIndex, myProducts }),
-    [conditionKey, current?.temperature_c, current?.humidity_pct, current?.wind_kmh, uvIndex, myProducts],
+    [
+      conditionKey,
+      current?.temperature_c,
+      current?.humidity_pct,
+      current?.wind_kmh,
+      uvIndex,
+      myProducts,
+    ],
   );
 
   const toggle = (item: WeatherShieldRec) => {
@@ -170,12 +210,18 @@ export function CareWeatherPanel({
           {loading && !weather ? (
             <Loader2 className="size-6 animate-spin" />
           ) : error && !weather ? (
-            <button type="button" onClick={onRetry} className="cursor-pointer text-sm font-semibold">
+            <button
+              type="button"
+              onClick={onRetry}
+              className="cursor-pointer text-sm font-semibold"
+            >
               {error} · Qayta urinish
             </button>
           ) : (
             <>
-              <p className="text-[12px] font-semibold uppercase tracking-[0.14em] text-white/80">Ob-havo</p>
+              <p className="text-[12px] font-semibold uppercase tracking-[0.14em] text-white/80">
+                Ob-havo
+              </p>
               <div className="mt-1 flex items-end justify-between gap-3">
                 <p className="text-6xl font-bold leading-none tabular-nums">
                   {current?.temperature_c == null ? "—" : `${Math.round(current.temperature_c)}°`}
@@ -219,11 +265,15 @@ export function CareWeatherPanel({
               className="relative size-14 shrink-0 cursor-pointer overflow-hidden rounded-2xl bg-white ring-1 ring-black/10"
               aria-label="Uydan chiqishda oling"
             >
-              <img src={kit[0]?.image || "/care/go-out/sunglasses.png"} alt="" className="size-full object-cover" />
+              <img
+                src={kit[0]?.image || "/care/go-out/sunglasses.png"}
+                alt=""
+                className="size-full object-cover"
+              />
             </button>
           </div>
 
-          {(weather.primary_action?.title || (weather.recommendations || []).length > 0) ? (
+          {weather.primary_action?.title || (weather.recommendations || []).length > 0 ? (
             <div className="mt-5 grid gap-3 lg:grid-cols-2">
               {weather.primary_action?.title ? (
                 <div className="rounded-3xl bg-white px-4 py-4 ring-1 ring-black/5">
@@ -240,7 +290,9 @@ export function CareWeatherPanel({
               ) : null}
               {(weather.recommendations || []).length > 0 ? (
                 <div className="rounded-3xl bg-white px-4 py-4 ring-1 ring-black/5">
-                  <p className="text-[11px] font-bold uppercase tracking-wide text-[#111]/40">Tavsiyalar</p>
+                  <p className="text-[11px] font-bold uppercase tracking-wide text-[#111]/40">
+                    Tavsiyalar
+                  </p>
                   <ul className="mt-2 space-y-2">
                     {(weather.recommendations || []).map((tip) => (
                       <li key={tip} className="text-sm leading-relaxed text-[#111]/75">
@@ -255,11 +307,19 @@ export function CareWeatherPanel({
 
           <div className="mt-5">
             <div className="flex items-start gap-3">
-              <img src="/care/weather-shield/header-shield.png" alt="" className="size-12 rounded-2xl object-cover" />
+              <img
+                src="/care/weather-shield/header-shield.png"
+                alt=""
+                className="size-12 rounded-2xl object-cover"
+              />
               <div className="min-w-0 flex-1">
-                <p className="text-[11px] font-bold uppercase tracking-wide text-[#111]/40">Morf Shield · Bugun</p>
+                <p className="text-[11px] font-bold uppercase tracking-wide text-[#111]/40">
+                  Morf Shield · Bugun
+                </p>
                 <p className="text-base font-extrabold tracking-tight">Soch himoyasi</p>
-                <p className="text-[12px] text-[#111]/45">Har kuni belgilang — ertaga yangilanadi</p>
+                <p className="text-[12px] text-[#111]/45">
+                  Har kuni belgilang — ertaga yangilanadi
+                </p>
               </div>
               <div className="text-right">
                 {alert ? (
@@ -288,16 +348,38 @@ export function CareWeatherPanel({
               </div>
             ) : (
               <div className="mt-4 space-y-2">
-                {featured ? <ShieldCard item={featured} index={0} done={done.has(featured.id)} onToggle={() => toggle(featured)} variant="featured" /> : null}
+                {featured ? (
+                  <ShieldCard
+                    item={featured}
+                    index={0}
+                    done={done.has(featured.id)}
+                    onToggle={() => toggle(featured)}
+                    variant="featured"
+                  />
+                ) : null}
                 {tiles.length > 0 ? (
                   <div className="grid grid-cols-2 gap-2">
                     {tiles.map((item, index) => (
-                      <ShieldCard key={item.id} item={item} index={index + 1} done={done.has(item.id)} onToggle={() => toggle(item)} variant="tile" />
+                      <ShieldCard
+                        key={item.id}
+                        item={item}
+                        index={index + 1}
+                        done={done.has(item.id)}
+                        onToggle={() => toggle(item)}
+                        variant="tile"
+                      />
                     ))}
                   </div>
                 ) : null}
                 {steps.map((item, index) => (
-                  <ShieldCard key={item.id} item={item} index={index + 5} done={done.has(item.id)} onToggle={() => toggle(item)} variant="step" />
+                  <ShieldCard
+                    key={item.id}
+                    item={item}
+                    index={index + 5}
+                    done={done.has(item.id)}
+                    onToggle={() => toggle(item)}
+                    variant="step"
+                  />
                 ))}
               </div>
             )}
@@ -306,7 +388,11 @@ export function CareWeatherPanel({
       ) : null}
 
       {regionOpen ? (
-        <Sheet onClose={() => setRegionOpen(false)} title="Viloyatni tanlang" sub="GPS noto‘g‘ri bo‘lsa — qo‘lda tanlang">
+        <Sheet
+          onClose={() => setRegionOpen(false)}
+          title="Viloyatni tanlang"
+          sub="GPS noto‘g‘ri bo‘lsa — qo‘lda tanlang"
+        >
           <div className="max-h-[50vh] space-y-1 overflow-y-auto">
             {UZ_REGION_OPTIONS.map((row) => {
               const on = regionId === row.id;
@@ -348,10 +434,18 @@ export function CareWeatherPanel({
           <div className="grid max-h-[62vh] grid-cols-2 gap-2 overflow-y-auto">
             {kit.map((item) => (
               <div key={item.id} className="rounded-2xl bg-white p-2 ring-1 ring-black/5">
-                <img src={resolveMediaUrl(item.image) || item.image} alt="" className="h-24 w-full rounded-xl object-contain" />
+                <img
+                  src={resolveMediaUrl(item.image) || item.image}
+                  alt=""
+                  className="h-24 w-full rounded-xl object-contain"
+                />
                 <p className="mt-2 line-clamp-2 text-[13px] font-bold">{item.title}</p>
-                {item.fromMyProduct ? <p className="text-[10px] font-semibold text-[#111]/45">Mening mahsulotim</p> : null}
-                <p className="mt-1 line-clamp-3 text-[11px] leading-snug text-[#111]/55">{item.howToUse}</p>
+                {item.fromMyProduct ? (
+                  <p className="text-[10px] font-semibold text-[#111]/45">Mening mahsulotim</p>
+                ) : null}
+                <p className="mt-1 line-clamp-3 text-[11px] leading-snug text-[#111]/55">
+                  {item.howToUse}
+                </p>
               </div>
             ))}
           </div>
@@ -374,18 +468,27 @@ function ShieldCard({
   onToggle: () => void;
   variant: "featured" | "tile" | "step";
 }) {
-  const image = item.image_url ? resolveMediaUrl(item.image_url) || item.image_url : shieldImageForTag(item.productTag, item.id);
+  const image = item.image_url
+    ? resolveMediaUrl(item.image_url) || item.image_url
+    : shieldImageForTag(item.productTag, item.id);
   const step = String(index + 1).padStart(2, "0");
   if (variant === "tile") {
     return (
       <div className={cn("rounded-2xl bg-white p-2 ring-1 ring-black/5", done && "opacity-55")}>
         <div className="relative h-24 rounded-xl bg-[#F3F3F4]">
           <img src={image} alt="" className="size-full object-contain" />
-          <button type="button" onClick={onToggle} className="absolute right-1.5 top-1.5 cursor-pointer" aria-label="Bajarildi">
+          <button
+            type="button"
+            onClick={onToggle}
+            className="absolute right-1.5 top-1.5 cursor-pointer"
+            aria-label="Bajarildi"
+          >
             <CheckMark on={done} />
           </button>
         </div>
-        <p className="mt-2 text-[10px] font-semibold uppercase text-[#111]/35">{typeLabel(item.type)}</p>
+        <p className="mt-2 text-[10px] font-semibold uppercase text-[#111]/35">
+          {typeLabel(item.type)}
+        </p>
         <p className="line-clamp-2 text-[13px] font-bold">{item.title}</p>
         <p className="mt-0.5 line-clamp-2 text-[11px] text-[#111]/50">{item.description}</p>
       </div>
@@ -393,7 +496,12 @@ function ShieldCard({
   }
   if (variant === "step") {
     return (
-      <div className={cn("flex items-center gap-2 rounded-2xl bg-white p-2.5 ring-1 ring-black/5", done && "opacity-55")}>
+      <div
+        className={cn(
+          "flex items-center gap-2 rounded-2xl bg-white p-2.5 ring-1 ring-black/5",
+          done && "opacity-55",
+        )}
+      >
         <button type="button" onClick={onToggle} className="cursor-pointer" aria-label="Bajarildi">
           <CheckMark on={done} />
         </button>
@@ -409,7 +517,12 @@ function ShieldCard({
     );
   }
   return (
-    <div className={cn("flex items-center gap-3 rounded-2xl bg-white p-2.5 ring-1 ring-black/5", done && "opacity-55")}>
+    <div
+      className={cn(
+        "flex items-center gap-3 rounded-2xl bg-white p-2.5 ring-1 ring-black/5",
+        done && "opacity-55",
+      )}
+    >
       <img src={image} alt="" className="size-20 rounded-2xl object-contain" />
       <div className="min-w-0 flex-1">
         <p className="text-[10px] font-semibold text-[#111]/35">
@@ -427,7 +540,12 @@ function ShieldCard({
 
 function CheckMark({ on }: { on: boolean }) {
   return (
-    <span className={cn("grid size-6 place-items-center rounded-full border-[1.5px] border-black/20 bg-white", on && "border-[#16A34A] bg-[#16A34A] text-white")}>
+    <span
+      className={cn(
+        "grid size-6 place-items-center rounded-full border-[1.5px] border-black/20 bg-white",
+        on && "border-[#16A34A] bg-[#16A34A] text-white",
+      )}
+    >
       {on ? <Check className="size-3.5" strokeWidth={3} /> : null}
     </span>
   );
@@ -446,7 +564,12 @@ function Sheet({
 }) {
   return (
     <div className="fixed inset-0 z-40">
-      <button type="button" className="absolute inset-0 bg-black/40" onClick={onClose} aria-label="Yopish" />
+      <button
+        type="button"
+        className="absolute inset-0 bg-black/40"
+        onClick={onClose}
+        aria-label="Yopish"
+      />
       <div className="absolute inset-x-0 bottom-0 mx-auto max-w-lg rounded-t-3xl bg-[#F6F6F7] px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-3">
         <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-black/15" />
         <p className="text-base font-extrabold">{title}</p>

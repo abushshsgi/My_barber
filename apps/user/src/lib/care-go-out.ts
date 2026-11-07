@@ -53,7 +53,10 @@ function cold(ctx: Ctx) {
 
 function findSpf(products: MyCareProduct[]) {
   const re = /\b(spf|sunscreen|quyosh\s*krem|uv\s*himoya|sun\s*cream)\b/i;
-  return products.find((p) => re.test(`${p.name} ${p.brand} ${p.category} ${p.purpose_uz || ""}`)) || null;
+  return (
+    products.find((p) => re.test(`${p.name} ${p.brand} ${p.category} ${p.purpose_uz || ""}`)) ||
+    null
+  );
 }
 
 export function buildGoOutSummary(ctx: Ctx): string {
@@ -71,7 +74,9 @@ export function buildGoOutSummary(ctx: Ctx): string {
   return `Bugun havo ${parts.join(", ")}. Chiqishdan oldin quyidagilarni oling.`;
 }
 
-export function buildGoOutKit(opts: Ctx & { uvIndex?: number | null; myProducts?: MyCareProduct[] }): GoOutItem[] {
+export function buildGoOutKit(
+  opts: Ctx & { uvIndex?: number | null; myProducts?: MyCareProduct[] },
+): GoOutItem[] {
   const ctx = opts;
   const items: GoOutItem[] = [];
   const isWet = wet(ctx);
@@ -83,15 +88,41 @@ export function buildGoOutKit(opts: Ctx & { uvIndex?: number | null; myProducts?
   const spf = findSpf(opts.myProducts || []);
 
   if (isWet) {
-    items.push({ id: "umbrella", title: "Soyabon", howToUse: "Sumkaga solib chiqing — yomg‘ir boshlansa ochib yuring.", image: IMG.umbrella });
-    items.push({ id: "raincoat", title: "Yomg‘irplash / telefon qopchasi", howToUse: "Yengil yomg‘irplash va suv o‘tkazmaydigan qopcha.", image: IMG.rainKit });
+    items.push({
+      id: "umbrella",
+      title: "Soyabon",
+      howToUse: "Sumkaga solib chiqing — yomg‘ir boshlansa ochib yuring.",
+      image: IMG.umbrella,
+    });
+    items.push({
+      id: "raincoat",
+      title: "Yomg‘irplash / telefon qopchasi",
+      howToUse: "Yengil yomg‘irplash va suv o‘tkazmaydigan qopcha.",
+      image: IMG.rainKit,
+    });
   }
   if (ctx.condition === "snow" || isCold) {
-    items.push({ id: "winter_set", title: "Sharf + qo‘lqop", howToUse: "Bo‘yin va qo‘llarni sovuqdan himoya qiling.", image: IMG.winterSet });
-    if (isCold) items.push({ id: "jacket", title: "Issiq kurtka", howToUse: "Qatlamlab kiying — tashqi issiq kurtka.", image: IMG.winterSet });
+    items.push({
+      id: "winter_set",
+      title: "Sharf + qo‘lqop",
+      howToUse: "Bo‘yin va qo‘llarni sovuqdan himoya qiling.",
+      image: IMG.winterSet,
+    });
+    if (isCold)
+      items.push({
+        id: "jacket",
+        title: "Issiq kurtka",
+        howToUse: "Qatlamlab kiying — tashqi issiq kurtka.",
+        image: IMG.winterSet,
+      });
   }
   if (uvHigh || ctx.condition === "clear" || ctx.condition === "mainly_clear" || isHot) {
-    items.push({ id: "sunglasses", title: "Quyosh ko‘zoynagi", howToUse: "Ko‘zni UV va yorug‘likdan himoya qiling.", image: IMG.sunglasses });
+    items.push({
+      id: "sunglasses",
+      title: "Quyosh ko‘zoynagi",
+      howToUse: "Ko‘zni UV va yorug‘likdan himoya qiling.",
+      image: IMG.sunglasses,
+    });
     items.push({
       id: "sunscreen",
       title: spf ? spf.name : "Quyosh kremi (SPF)",
@@ -99,31 +130,99 @@ export function buildGoOutKit(opts: Ctx & { uvIndex?: number | null; myProducts?
       image: spf?.image_url || IMG.spf,
       fromMyProduct: Boolean(spf),
     });
-    items.push({ id: "hat", title: "Shlyapa / kepka", howToUse: "Bosh va yuzni to‘g‘ridan-to‘g‘ri quyoshdan yoping.", image: IMG.hat });
+    items.push({
+      id: "hat",
+      title: "Shlyapa / kepka",
+      howToUse: "Bosh va yuzni to‘g‘ridan-to‘g‘ri quyoshdan yoping.",
+      image: IMG.hat,
+    });
   }
   if (isHot || (ctx.temp != null && ctx.temp >= 26)) {
-    items.push({ id: "water", title: "Suv idishi", howToUse: "Issiqda har 30–40 daqiqada iching.", image: IMG.water });
-    items.push({ id: "light_clothes", title: "Yengil ochiq kiyim", howToUse: "Paxta yoki yengil mato — terlashni kamaytiradi.", image: IMG.lightClothes });
-    items.push({ id: "cooling", title: "Mini ventilyator / so‘rg‘ich", howToUse: "Yuz va bo‘yinni salqinlantirish uchun oling.", image: IMG.cooling });
-    items.push({ id: "powerbank", title: "Powerbank", howToUse: "Issiqda telefon tez tugaydi — zaryadlagich oling.", image: IMG.powerbank });
+    items.push({
+      id: "water",
+      title: "Suv idishi",
+      howToUse: "Issiqda har 30–40 daqiqada iching.",
+      image: IMG.water,
+    });
+    items.push({
+      id: "light_clothes",
+      title: "Yengil ochiq kiyim",
+      howToUse: "Paxta yoki yengil mato — terlashni kamaytiradi.",
+      image: IMG.lightClothes,
+    });
+    items.push({
+      id: "cooling",
+      title: "Mini ventilyator / so‘rg‘ich",
+      howToUse: "Yuz va bo‘yinni salqinlantirish uchun oling.",
+      image: IMG.cooling,
+    });
+    items.push({
+      id: "powerbank",
+      title: "Powerbank",
+      howToUse: "Issiqda telefon tez tugaydi — zaryadlagich oling.",
+      image: IMG.powerbank,
+    });
   }
-  if (windy) items.push({ id: "tie_hair", title: "Soch bog‘ich", howToUse: "Kuchli shamolda sochni bog‘lab yuring.", image: IMG.hairTie });
+  if (windy)
+    items.push({
+      id: "tie_hair",
+      title: "Soch bog‘ich",
+      howToUse: "Kuchli shamolda sochni bog‘lab yuring.",
+      image: IMG.hairTie,
+    });
   if (dryAir(ctx)) {
-    items.push({ id: "lip_balm", title: "Lab balzami", howToUse: "Quruq havoda chiqishdan oldin balzam surting.", image: IMG.lipBalm });
-    items.push({ id: "moisturizer", title: "Yuz namlovchi", howToUse: "SPF ostiga yengil moisturizer surting.", image: IMG.moisturizer });
+    items.push({
+      id: "lip_balm",
+      title: "Lab balzami",
+      howToUse: "Quruq havoda chiqishdan oldin balzam surting.",
+      image: IMG.lipBalm,
+    });
+    items.push({
+      id: "moisturizer",
+      title: "Yuz namlovchi",
+      howToUse: "SPF ostiga yengil moisturizer surting.",
+      image: IMG.moisturizer,
+    });
   }
   if (humidAir(ctx) && !isWet) {
-    items.push({ id: "tissue", title: "Salfetka / mendil", howToUse: "Namlikda terlash tez — salfetka oling.", image: IMG.tissues });
+    items.push({
+      id: "tissue",
+      title: "Salfetka / mendil",
+      howToUse: "Namlikda terlash tez — salfetka oling.",
+      image: IMG.tissues,
+    });
   }
   if (ctx.temp != null && ctx.temp >= 30) {
-    items.push({ id: "shade_plan", title: "Soya / tanaffus", howToUse: "12:00–16:00 da ochiq quyoshda uzoq turmang.", image: IMG.hat });
-    items.push({ id: "snack", title: "Yengil gazak", howToUse: "Issiqda energiya tushishi mumkin — meva yoki bar oling.", image: IMG.snack });
+    items.push({
+      id: "shade_plan",
+      title: "Soya / tanaffus",
+      howToUse: "12:00–16:00 da ochiq quyoshda uzoq turmang.",
+      image: IMG.hat,
+    });
+    items.push({
+      id: "snack",
+      title: "Yengil gazak",
+      howToUse: "Issiqda energiya tushishi mumkin — meva yoki bar oling.",
+      image: IMG.snack,
+    });
   }
-  items.push({ id: "sanitizer", title: "Antiseptik", howToUse: "Qo‘lni tez tozalash uchun mini sprey.", image: IMG.sanitizer });
-  items.push({ id: "earbuds", title: "Quloqchin / case", howToUse: "Yo‘lda chaqiruv uchun case bilan oling.", image: IMG.earbuds });
+  items.push({
+    id: "sanitizer",
+    title: "Antiseptik",
+    howToUse: "Qo‘lni tez tozalash uchun mini sprey.",
+    image: IMG.sanitizer,
+  });
+  items.push({
+    id: "earbuds",
+    title: "Quloqchin / case",
+    howToUse: "Yo‘lda chaqiruv uchun case bilan oling.",
+    image: IMG.earbuds,
+  });
 
   const seen = new Set<string>();
-  return items.filter((item) => (seen.has(item.id) ? false : (seen.add(item.id), true))).slice(0, 14);
+  return items
+    .filter((item) => (seen.has(item.id) ? false : (seen.add(item.id), true)))
+    .slice(0, 14);
 }
 
 export function shieldImageForTag(tag?: string | null, id?: string | null): string {
@@ -144,19 +243,30 @@ export function shieldImageForTag(tag?: string | null, id?: string | null): stri
 }
 
 const HERO: Record<string, string> = {
-  clear: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=1400&q=80",
-  mainly_clear: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=1400&q=80",
-  partly_cloudy: "https://images.unsplash.com/photo-1501630834273-4b5604d9a5d6?auto=format&fit=crop&w=1400&q=80",
-  overcast: "https://images.unsplash.com/photo-1499346030926-9af01ece1208?auto=format&fit=crop&w=1400&q=80",
-  cloudy: "https://images.unsplash.com/photo-1499346030926-9af01ece1208?auto=format&fit=crop&w=1400&q=80",
+  clear:
+    "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=1400&q=80",
+  mainly_clear:
+    "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=1400&q=80",
+  partly_cloudy:
+    "https://images.unsplash.com/photo-1501630834273-4b5604d9a5d6?auto=format&fit=crop&w=1400&q=80",
+  overcast:
+    "https://images.unsplash.com/photo-1499346030926-9af01ece1208?auto=format&fit=crop&w=1400&q=80",
+  cloudy:
+    "https://images.unsplash.com/photo-1499346030926-9af01ece1208?auto=format&fit=crop&w=1400&q=80",
   fog: "https://images.unsplash.com/photo-1487621167305-5d248087c724?auto=format&fit=crop&w=1400&q=80",
-  drizzle: "https://images.unsplash.com/photo-1515694346937-94d85e41e6f0?auto=format&fit=crop&w=1400&q=80",
+  drizzle:
+    "https://images.unsplash.com/photo-1515694346937-94d85e41e6f0?auto=format&fit=crop&w=1400&q=80",
   rain: "https://images.unsplash.com/photo-1515694346937-94d85e41e6f0?auto=format&fit=crop&w=1400&q=80",
-  showers: "https://images.unsplash.com/photo-1515694346937-94d85e41e6f0?auto=format&fit=crop&w=1400&q=80",
+  showers:
+    "https://images.unsplash.com/photo-1515694346937-94d85e41e6f0?auto=format&fit=crop&w=1400&q=80",
   snow: "https://images.unsplash.com/photo-1418985991508-e47386d96a71?auto=format&fit=crop&w=1400&q=80",
-  storm: "https://images.unsplash.com/photo-1605727216801-e27ce6d37b22?auto=format&fit=crop&w=1400&q=80",
+  storm:
+    "https://images.unsplash.com/photo-1605727216801-e27ce6d37b22?auto=format&fit=crop&w=1400&q=80",
 };
 
 export function weatherHeroFallback(condition: string): string {
-  return HERO[condition] || "https://images.unsplash.com/photo-1504608524841-42fe6f032b4b?auto=format&fit=crop&w=1400&q=80";
+  return (
+    HERO[condition] ||
+    "https://images.unsplash.com/photo-1504608524841-42fe6f032b4b?auto=format&fit=crop&w=1400&q=80"
+  );
 }

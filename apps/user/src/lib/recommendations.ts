@@ -11,12 +11,7 @@ export type RecommendContext = {
 
 const EARTH_RADIUS_KM = 6371;
 
-export function haversineKm(
-  lat1: number,
-  lng1: number,
-  lat2: number,
-  lng2: number,
-): number {
+export function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const toRad = (d: number) => (d * Math.PI) / 180;
   const dLat = toRad(lat2 - lat1);
   const dLng = toRad(lng2 - lng1);
@@ -133,17 +128,11 @@ export function buildRecommendContext(
 ): RecommendContext {
   if (!user) return {};
   const lat =
-    user.latitude != null && user.latitude !== ""
-      ? parseFloat(String(user.latitude))
-      : null;
+    user.latitude != null && user.latitude !== "" ? parseFloat(String(user.latitude)) : null;
   const lng =
-    user.longitude != null && user.longitude !== ""
-      ? parseFloat(String(user.longitude))
-      : null;
+    user.longitude != null && user.longitude !== "" ? parseFloat(String(user.longitude)) : null;
   const region = user.region || null;
-  const regionLabel = region
-    ? regions.find((r) => r.value === region)?.label ?? null
-    : null;
+  const regionLabel = region ? (regions.find((r) => r.value === region)?.label ?? null) : null;
   return {
     region,
     regionLabel,
@@ -153,18 +142,22 @@ export function buildRecommendContext(
 }
 
 /** @deprecated buildRecommendContext ishlating. */
-export function userRecommendContext(user?: {
-  region?: string | null;
-  latitude?: string | number | null;
-  longitude?: string | number | null;
-} | null): RecommendContext {
+export function userRecommendContext(
+  user?: {
+    region?: string | null;
+    latitude?: string | number | null;
+    longitude?: string | number | null;
+  } | null,
+): RecommendContext {
   return buildRecommendContext(user);
 }
 
-export function userHasProfileCoords(user?: {
-  latitude?: string | number | null;
-  longitude?: string | number | null;
-} | null): boolean {
+export function userHasProfileCoords(
+  user?: {
+    latitude?: string | number | null;
+    longitude?: string | number | null;
+  } | null,
+): boolean {
   if (!user) return false;
   const lat = user.latitude;
   const lng = user.longitude;
@@ -178,19 +171,23 @@ export function userHasProfileCoords(user?: {
   );
 }
 
-export function isProfileLocationRequired(user?: {
-  require_profile_location?: boolean;
-} | null): boolean {
+export function isProfileLocationRequired(
+  user?: {
+    require_profile_location?: boolean;
+  } | null,
+): boolean {
   return user?.require_profile_location === true;
 }
 
-export function needsOnboarding(user?: {
-  onboarding_completed?: boolean;
-  birth_year?: number | null;
-  latitude?: string | number | null;
-  longitude?: string | number | null;
-  require_profile_location?: boolean;
-} | null): boolean {
+export function needsOnboarding(
+  user?: {
+    onboarding_completed?: boolean;
+    birth_year?: number | null;
+    latitude?: string | number | null;
+    longitude?: string | number | null;
+    require_profile_location?: boolean;
+  } | null,
+): boolean {
   if (!user) return true;
 
   const hasBirth = user.birth_year != null && Number(user.birth_year) > 1900;

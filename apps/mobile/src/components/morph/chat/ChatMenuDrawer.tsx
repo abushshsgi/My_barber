@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { Image } from "expo-image";
+import { UserAvatar } from "../../profile/UserAvatar";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -300,13 +300,7 @@ export function ChatMenuDrawer({
               style={({ pressed }) => [styles.footerProfile, pressed && styles.pressed]}
               accessibilityRole="button"
             >
-              {avatarUrl ? (
-                <Image source={{ uri: avatarUrl }} style={styles.avatar} contentFit="cover" />
-              ) : (
-                <View style={[styles.avatar, styles.avatarFallback]}>
-                  <Text style={styles.avatarText}>{initials}</Text>
-                </View>
-              )}
+              <UserAvatar name={profileName || initials} uri={avatarUrl} size={scale(36)} />
               <Text style={styles.footerName} numberOfLines={1}>
                 {profileName}
               </Text>

@@ -14,7 +14,13 @@ import type { ApiFamilyMember, FamilyMemberPayload } from "@/lib/api/family";
 
 type EditorMode = { type: "add" } | { type: "edit"; id: number };
 
-const RELATIONS: FamilyMemberPayload["relation"][] = ["spouse", "child", "parent", "sibling", "other"];
+const RELATIONS: FamilyMemberPayload["relation"][] = [
+  "spouse",
+  "child",
+  "parent",
+  "sibling",
+  "other",
+];
 const AUDIENCES: FamilyMemberPayload["audience"][] = ["men", "women", "unisex"];
 
 function emptyForm(): FamilyMemberPayload {
@@ -90,7 +96,9 @@ function FamilyMemberForm({
         <button
           type="button"
           disabled={saving || !values.name.trim()}
-          onClick={() => onSave({ ...values, name: values.name.trim(), phone: (values.phone || "").trim() })}
+          onClick={() =>
+            onSave({ ...values, name: values.name.trim(), phone: (values.phone || "").trim() })
+          }
           className="flex-1 rounded-xl bg-foreground py-2.5 text-sm font-bold text-background disabled:opacity-50"
         >
           {t("common.save", { defaultValue: "Saqlash" })}
@@ -174,7 +182,9 @@ export function SettingsFamilyPanel({ embedded = false }: { embedded?: boolean }
 
       {isLoading ? (
         <ProfileSubpageCard>
-          <p className="text-sm text-muted-foreground">{t("common.loading", { defaultValue: "Yuklanmoqda…" })}</p>
+          <p className="text-sm text-muted-foreground">
+            {t("common.loading", { defaultValue: "Yuklanmoqda…" })}
+          </p>
         </ProfileSubpageCard>
       ) : members.length === 0 && !editor ? (
         <EmptyState

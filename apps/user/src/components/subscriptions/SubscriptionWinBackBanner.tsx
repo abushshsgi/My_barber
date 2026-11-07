@@ -13,8 +13,7 @@ export function SubscriptionWinBackBanner({ className }: { className?: string })
   const me = meQ.data;
   if (!me?.has_active) return null;
 
-  const days =
-    me.days_remaining ?? me.subscription?.days_remaining ?? null;
+  const days = me.days_remaining ?? me.subscription?.days_remaining ?? null;
   if (days == null || days > 1) return null;
 
   const isTrial =

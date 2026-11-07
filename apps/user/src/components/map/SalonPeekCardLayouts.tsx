@@ -77,11 +77,7 @@ function BookNowLink({
   const { t } = useTranslation();
 
   return (
-    <Link
-      to="/booking/$salonId"
-      params={{ salonId: salon.id }}
-      className={className}
-    >
+    <Link to="/booking/$salonId" params={{ salonId: salon.id }} className={className}>
       {children ?? String(t("map.bookNow"))}
     </Link>
   );
@@ -217,7 +213,10 @@ export function SalonPeekCardVariantD({ salon }: LayoutProps) {
           {salon.address ? (
             <p className="mt-0.5 line-clamp-1 text-[11px] text-white/80">{salon.address}</p>
           ) : null}
-          <SalonPeekMeta salon={salon} className="mt-1 text-white/90 [&_.text-muted-foreground]:text-white/70" />
+          <SalonPeekMeta
+            salon={salon}
+            className="mt-1 text-white/90 [&_.text-muted-foreground]:text-white/70"
+          />
         </div>
         <div className="flex items-center gap-2">
           <BookNowLink

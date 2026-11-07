@@ -23,6 +23,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { MysaloonLogo } from "@/components/brand/MysaloonLogo";
 import { MyNameWithBadge } from "@/components/subscriptions/SubscriptionVerifiedBadge";
+import { UserAvatar } from "@/components/profile/UserAvatar";
 import { useDisplayUser } from "@/hooks/use-me";
 import { cn } from "@/lib/utils";
 import { isNavTabActive } from "@/lib/navigation";
@@ -95,7 +96,9 @@ function SidebarLink({
       className={cn(
         "flex items-center gap-3 rounded-xl px-3 py-2 text-[13px] font-semibold transition-colors",
         indent && "pl-6",
-        active ? "bg-surface text-foreground" : "text-muted-foreground hover:bg-surface hover:text-foreground",
+        active
+          ? "bg-surface text-foreground"
+          : "text-muted-foreground hover:bg-surface hover:text-foreground",
       )}
     >
       <Icon className="h-4 w-4 shrink-0" strokeWidth={2} />
@@ -130,12 +133,6 @@ export function DesktopSidebar({ chatUnread = 0, notificationsUnread = 0 }: Prop
     }
   };
 
-  const initials = user.name
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .slice(0, 2);
-
   return (
     <aside className="fixed inset-y-0 left-0 z-40 hidden w-[260px] flex-col border-r border-border bg-background px-4 py-6 lg:flex">
       <Link to="/" className="mb-5 flex items-center px-2" aria-label="Mysaloon">
@@ -167,9 +164,7 @@ export function DesktopSidebar({ chatUnread = 0, notificationsUnread = 0 }: Prop
               preload="intent"
               className={cn(
                 "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-bold transition-colors",
-                active
-                  ? "bg-foreground text-background"
-                  : "text-foreground hover:bg-surface",
+                active ? "bg-foreground text-background" : "text-foreground hover:bg-surface",
               )}
             >
               <Icon className="h-[18px] w-[18px] shrink-0" strokeWidth={active ? 2.4 : 2} />
@@ -212,10 +207,11 @@ export function DesktopSidebar({ chatUnread = 0, notificationsUnread = 0 }: Prop
 
       <div className="mt-auto border-t border-border pt-4">
         <div className="flex items-center gap-3 rounded-xl px-2 py-2">
-          <Link to="/profile" className="flex min-w-0 flex-1 items-center gap-3 transition-colors hover:opacity-80">
-            <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-surface text-xs font-bold">
-              {initials}
-            </div>
+          <Link
+            to="/profile"
+            className="flex min-w-0 flex-1 items-center gap-3 transition-colors hover:opacity-80"
+          >
+            <UserAvatar name={user.name} src={user.avatar} size={36} />
             <div className="min-w-0 flex-1">
               <MyNameWithBadge
                 name={user.name}

@@ -1,16 +1,6 @@
 import { Link, useNavigate, useRouter, useRouterState } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import {
-  Bot,
-  Compass,
-  Droplets,
-  FlaskConical,
-  Home,
-  Map,
-  Sparkles,
-  User,
-  Wand2,
-} from "lucide-react";
+import { Bot, Droplets, Home, Sparkles, User } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { MysaloonAppMark } from "@/components/brand/MysaloonAppMark";
 import { useAppShell } from "@/hooks/use-app-shell";
@@ -19,23 +9,17 @@ import { shouldShowMobileDock } from "@/lib/layout-routes";
 import { hapticLight } from "@/lib/native-haptics";
 import { cn } from "@/lib/utils";
 
-const mysaloonLeftTabs = [
-  { to: "/", icon: Home, key: "home" },
-  { to: "/map", icon: Map, key: "map" },
-] as const;
+/** MySaloon — Asosiy va Profil. Xarita va kashfiyot dockda yo‘q. */
+const mysaloonLeftTabs = [{ to: "/", icon: Home, key: "home" }] as const;
 
-const mysaloonRightTabs = [
-  { to: "/explore", icon: Compass, key: "explore" },
-  { to: "/profile", icon: User, key: "profile" },
-] as const;
+const mysaloonRightTabs = [{ to: "/profile", icon: User, key: "profile" }] as const;
 
+/** Morf — Chat, Parvarish | Try-on, Profil. Tarkib parvarishdan ochiladi. */
 const morphLeftTabs = [
   { to: "/ai-style/chat", icon: Bot, key: "morphChat" },
   { to: "/ai-style/care", icon: Droplets, key: "morphCare" },
-  { to: "/ai-style/care/ingredient", icon: FlaskConical, key: "morphIngredient" },
 ] as const;
 
-/** Studio faqat Morph home / ichki route — dockda yo‘q. */
 const morphRightTabs = [
   { to: "/ai-style", icon: Sparkles, key: "morphTryOn" },
   { to: "/profile", icon: User, key: "profile" },
@@ -106,6 +90,17 @@ function DockTab({
         {t(labelKey)}
       </span>
     </Link>
+  );
+}
+
+function MorfDockMark() {
+  return (
+    <svg viewBox="0 0 32 32" className="size-[22px]" aria-hidden>
+      <path
+        fill="currentColor"
+        d="M16 2.5c.6 4.8 2.2 8.2 5.6 11.4C25.2 17.3 28.6 18.8 32 19.4c-3.4.6-6.8 2.1-10.4 5.5-3.4 3.2-5 6.6-5.6 11.4-.6-4.8-2.2-8.2-5.6-11.4C6.8 21.5 3.4 20 0 19.4c3.4-.6 6.8-2.1 10.4-5.5C13.8 10.7 15.4 7.3 16 2.5Z"
+      />
+    </svg>
   );
 }
 
@@ -185,7 +180,7 @@ export function MobileDockNav({ unreadCount: _unreadCount = 0 }: Props) {
             aria-label={t("nav.mysaloon")}
             className="relative mx-0.5 flex w-12 shrink-0 flex-col items-center justify-end pb-0.5 min-[390px]:w-[58px]"
           >
-            <span className="grid size-10 place-items-center rounded-full border-2 border-border bg-background shadow-soft transition-transform active:scale-95 min-[390px]:size-[46px]">
+            <span className="grid size-10 place-items-center overflow-hidden rounded-full border-2 border-border bg-background shadow-soft transition-transform active:scale-95 min-[390px]:size-[46px]">
               <MysaloonAppMark size={28} tone="onLight" useImage />
             </span>
             <span
@@ -203,7 +198,7 @@ export function MobileDockNav({ unreadCount: _unreadCount = 0 }: Props) {
             className="relative mx-0.5 flex w-12 shrink-0 flex-col items-center justify-end pb-0.5 min-[390px]:w-[62px]"
           >
             <span className="grid size-10 place-items-center rounded-full border-2 border-border bg-foreground text-background shadow-soft transition-transform active:scale-95 min-[390px]:size-[46px]">
-              <Wand2 className="size-[22px]" strokeWidth={2.25} />
+              <MorfDockMark />
             </span>
             <span
               className="mt-1 max-w-full truncate text-[10px] font-semibold leading-none text-muted-foreground"

@@ -33,9 +33,7 @@ export async function findBarbers(
   q: string,
   params?: { region?: string; scope?: string },
 ): Promise<import("./types").ApiBarberPublic[]> {
-  return apiJson(
-    `/api/v1/barbers/find/${qs({ q, region: params?.region, scope: params?.scope })}`,
-  );
+  return apiJson(`/api/v1/barbers/find/${qs({ q, region: params?.region, scope: params?.scope })}`);
 }
 
 export async function fetchBarbersList(params?: {
@@ -45,13 +43,16 @@ export async function fetchBarbersList(params?: {
   page_size?: number;
 }): Promise<import("./types").ApiBarberPublic[]> {
   const body = await apiJson<
-    import("./types").ApiBarberPublic[] | import("./types").Paginated<import("./types").ApiBarberPublic>
-  >(`/api/v1/barbers/${qs({
-    region: params?.region,
-    scope: params?.scope,
-    audience: params?.audience,
-    page_size: params?.page_size,
-  })}`);
+    | import("./types").ApiBarberPublic[]
+    | import("./types").Paginated<import("./types").ApiBarberPublic>
+  >(
+    `/api/v1/barbers/${qs({
+      region: params?.region,
+      scope: params?.scope,
+      audience: params?.audience,
+      page_size: params?.page_size,
+    })}`,
+  );
   if (Array.isArray(body)) return body;
   return Array.isArray(body.results) ? body.results : [];
 }

@@ -1,44 +1,26 @@
-import { useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
-  BadgeCheck,
-  Check,
-  Crown,
   Droplets,
   Loader2,
-  Lock,
   Sparkles,
   UserPlus,
   Users,
   Wand2,
-  X,
-  Zap,
 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { FeatureIcon } from "@/components/subscriptions/SubscriptionPlanAds";
-import { MorphPromoUrgencyBanner } from "@/components/subscriptions/MorphPromoUrgencyBanner";
 import {
+  useSubscriptionCancel,
   useSubscriptionCheckout,
   useSubscriptionMe,
   useSubscriptionPlans,
 } from "@/hooks/use-subscription";
-import { useWalletMe } from "@/hooks/use-wallet";
-import { parseWalletBalance } from "@/lib/api/wallet";
 import { getPublicSiteOrigin } from "@/lib/public-origin";
-import {
-  confirmSubscriptionPayment,
-  previewSubscriptionPromo,
-  type SubscriptionPlan,
-} from "@/lib/api/subscriptions";
+import { type SubscriptionPlan } from "@/lib/api/subscriptions";
+import { storePaymeOrder } from "@/components/subscriptions/PaymeCheckoutStatus";
 import { pickFeatureLabel, pickPlanName } from "@/lib/plan-labels";
-import {
-  filterPlansForSubscriber,
-  isPlanUpgrade,
-  upgradeCtaLabel,
-} from "@/lib/subscription-upgrade";
-import { cn } from "@/lib/utils";
+import { isPlanUpgrade, nextUpgradePlan } from "@/lib/subscription-upgrade";
 
 function readSubscriptionDeepLink(searchStr: string) {
   const sp = new URLSearchParams(searchStr.startsWith("?") ? searchStr.slice(1) : searchStr);
@@ -52,315 +34,153 @@ function readSubscriptionDeepLink(searchStr: string) {
   return { plan, returnTo };
 }
 
-function formatUzs(n: number) {
-  return `${n.toLocaleString("uz-UZ")} so'm`;
+function dateLocale(lang: string) {
+  if (lang.startsWith("en")) return "en-US";
+  if (lang.startsWith("ru")) return "ru-RU";
+  return "uz-UZ";
 }
 
-function formatDate(iso: string | null | undefined) {
+function formatUzs(n: number, lang: string, currency: string) {
+  return `${n.toLocaleString(dateLocale(lang))} ${currency}`;
+}
+
+function formatDate(iso: string | null | undefined, lang: string) {
   if (!iso) return "—";
-  return new Date(iso).toLocaleDateString("uz-UZ", {
+  return new Date(iso).toLocaleDateString(dateLocale(lang), {
     day: "numeric",
     month: "long",
     year: "numeric",
   });
 }
 
-function sourceLabel(source: string, isTrial?: boolean) {
-  if (isTrial || source === "referral_trial") return "Referal sinov";
-  if (source === "wallet") return "Hamyon";
-  if (source === "click" || source === "payme") return "To'lov";
-  if (source === "admin") return "Admin";
-  return source || "Obuna";
-}
-
-function FeatureRow({
-  included,
-  label,
-  featureKey,
-}: {
-  included: boolean;
-  label: string;
-  featureKey: string;
-}) {
-  return (
-    <li className="flex items-start gap-2.5 text-sm">
-      {included ? (
-        <span className="mt-0.5 grid size-5 shrink-0 place-items-center rounded-full bg-foreground">
-          <Check className="size-3 text-background" strokeWidth={3} />
-        </span>
-      ) : (
-        <span className="mt-0.5 grid size-5 shrink-0 place-items-center rounded-full bg-muted">
-          <X className="size-3 text-muted-foreground/60" strokeWidth={2.5} />
-        </span>
-      )}
-      <span className="flex min-w-0 items-start gap-1.5">
-        {included ? (
-          <FeatureIcon featureKey={featureKey} className="mt-0.5 size-3.5 shrink-0 opacity-60" />
-        ) : null}
-        <span
-          className={cn(
-            included
-              ? "text-foreground"
-              : "text-muted-foreground line-through decoration-muted-foreground/40",
-          )}
-        >
-          {label}
-        </span>
-      </span>
-    </li>
-  );
-}
-
-function PlanCard({
-  plan,
-  activeCode,
-  busy,
-  focused,
-  discountedPrice,
-  discountPct,
+function ShopPlanPicker({
+  plans,
+  picked,
+  busyCode,
+  pending,
+  locked = false,
+  upgrade = false,
+  onPick,
   onSubscribe,
 }: {
-  plan: SubscriptionPlan;
-  activeCode: string | null;
-  busy: boolean;
-  focused?: boolean;
-  discountedPrice?: number | null;
-  discountPct?: number | null;
-  onSubscribe: (code: string, method: "wallet" | "click" | "payme") => void;
+  plans: SubscriptionPlan[];
+  picked: string | null;
+  busyCode: string | null;
+  pending: boolean;
+  locked?: boolean;
+  upgrade?: boolean;
+  onPick: (code: string) => void;
+  onSubscribe: (code: string) => void;
 }) {
   const { t, i18n } = useTranslation();
   const lang = i18n.language;
-  const isActive = activeCode === plan.code;
-  const canUpgrade = isPlanUpgrade(plan.code, activeCode);
-  const PlanGlyph = plan.code === "pro" ? Crown : plan.code === "plus" ? Sparkles : Zap;
-  const cardRef = useRef<HTMLElement | null>(null);
-  const showDiscount = discountedPrice != null && discountedPrice < plan.price_uzs && !activeCode;
-
-  useEffect(() => {
-    if (!focused || !cardRef.current) return;
-    cardRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
-  }, [focused]);
-
-  const payLabel =
-    activeCode && canUpgrade ? upgradeCtaLabel(activeCode, true) : "Hamyondan to'lash";
-
+  const selected = plans.find((plan) => plan.code === picked) ?? plans[0] ?? null;
+  if (!selected) return null;
+  const included = selected.features.filter((feature) => feature.included !== false).slice(0, 4);
+  const busy = busyCode === selected.code || pending;
+  const cta = upgrade
+    ? locked
+      ? t("subscriptions.upgradeWait")
+      : t("subscriptions.upgradeTo", { plan: pickPlanName(selected, lang) })
+    : t("subscriptions.payWithPayme");
   return (
-    <article
-      ref={cardRef}
-      id={`sub-plan-${plan.code}`}
-      className={cn(
-        "relative overflow-hidden rounded-2xl border bg-card p-5 transition-shadow duration-200",
-        plan.highlight ? "border-border shadow-[0_1px_2px_rgba(15,15,15,0.05)]" : "border-border",
-        isActive && "ring-2 ring-foreground/80",
-        focused && !isActive && "ring-2 ring-foreground/40",
-      )}
-    >
-      {isActive ? (
-        <span className="absolute right-3 top-3 rounded-full bg-foreground/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-foreground">
-          {t("home.subscriptionPromo.planActive")}
-        </span>
-      ) : canUpgrade && activeCode ? (
-        <span className="absolute right-3 top-3 rounded-full bg-foreground px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-background">
-          {t("aiStylePage.limitSheet.plansUpgrade")}
-        </span>
-      ) : plan.highlight ? (
-        <span className="absolute right-3 top-3 rounded-full bg-foreground px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-background">
-          {t("home.subscriptionPromo.popular")}
-        </span>
-      ) : null}
-
-      <div className="flex items-center gap-2.5">
-        <span className="grid size-10 place-items-center rounded-xl bg-foreground text-background">
-          <PlanGlyph className="h-5 w-5" strokeWidth={2} />
-        </span>
-        <div className="min-w-0">
-          <div className="flex items-center gap-1.5">
-            <h3 className="text-lg font-bold tracking-tight">{pickPlanName(plan, lang)}</h3>
-            <BadgeCheck
-              className={cn(
-                "h-4 w-4",
-                plan.badge === "pro"
-                  ? "text-foreground"
-                  : plan.badge === "plus"
-                    ? "text-foreground/70"
-                    : "text-muted-foreground",
-              )}
-            />
-          </div>
+    <div className="flex flex-col gap-3">
+      {plans.length > 1 ? (
+        <div className="flex gap-2">
+          {plans.map((plan) => {
+            const on = plan.code === selected.code;
+            return (
+              <button
+                key={plan.code}
+                type="button"
+                onClick={() => onPick(plan.code)}
+                className={
+                  on
+                    ? "h-10 flex-1 cursor-pointer rounded-full bg-foreground text-sm font-bold text-background"
+                    : "h-10 flex-1 cursor-pointer rounded-full border border-border bg-card text-sm font-bold"
+                }
+              >
+                {pickPlanName(plan, lang)}
+              </button>
+            );
+          })}
         </div>
-      </div>
-
-      <p className="mt-3">
-        {showDiscount ? (
-          <>
-            <span className="mr-2 text-sm font-semibold text-muted-foreground line-through">
-              {formatUzs(plan.price_uzs)}
-            </span>
-            <span className="text-2xl font-bold tracking-tight">{formatUzs(discountedPrice!)}</span>
-          </>
-        ) : (
-          <span className="text-2xl font-bold tracking-tight">{formatUzs(plan.price_uzs)}</span>
-        )}
-        <span className="ml-1 text-sm text-muted-foreground">/ {t("common.perMonth")}</span>
-      </p>
-      {showDiscount && discountPct ? (
-        <p className="mt-1 text-[11px] font-bold text-foreground">Yangi hisob −{discountPct}%</p>
       ) : null}
-
-      <ul className="mt-4 space-y-2.5">
-        {plan.features.map((f) => (
-          <FeatureRow
-            key={f.key}
-            featureKey={f.key}
-            included={f.included !== false}
-            label={pickFeatureLabel(f, lang)}
-          />
-        ))}
-      </ul>
-
-      <div className="mt-5 space-y-2">
-        {isActive ? (
-          <div className="flex h-11 items-center justify-center rounded-xl bg-foreground/10 text-sm font-bold text-foreground">
-            Joriy obuna
-          </div>
-        ) : activeCode && !canUpgrade ? (
-          <div className="flex h-11 items-center justify-center rounded-xl bg-muted text-sm font-bold text-muted-foreground">
-            Pastroq tarif
-          </div>
-        ) : (
-          <>
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => onSubscribe(plan.code, "wallet")}
-              className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-foreground text-sm font-bold text-background disabled:opacity-60"
-            >
-              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-              {payLabel}
-            </button>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => onSubscribe(plan.code, "click")}
-                className="h-10 rounded-xl border border-border text-xs font-bold disabled:opacity-60"
-              >
-                Click
-              </button>
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => onSubscribe(plan.code, "payme")}
-                className="h-10 rounded-xl border border-border text-xs font-bold disabled:opacity-60"
-              >
-                Payme
-              </button>
-            </div>
-          </>
-        )}
-      </div>
-    </article>
+      <article className="rounded-2xl border border-border bg-card p-4">
+        <div className="flex items-start justify-between gap-3">
+          <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+            {t("subscriptions.upgradeSection")}
+          </p>
+          <p className="text-sm font-bold">
+            {formatUzs(selected.price_uzs, lang, t("common.currencySom"))}
+            <span className="font-semibold text-muted-foreground"> / {t("common.perMonth")}</span>
+          </p>
+        </div>
+        <h3 className="mt-1 text-xl font-bold tracking-tight">{pickPlanName(selected, lang)}</h3>
+        <ul className="mt-3 space-y-1 text-sm font-medium">
+          {included.map((feature) => (
+            <li key={feature.key} className="truncate">
+              {pickFeatureLabel(feature, lang)}
+            </li>
+          ))}
+        </ul>
+        <button
+          type="button"
+          disabled={busy || locked}
+          onClick={() => onSubscribe(selected.code)}
+          className="mt-4 flex h-11 w-full cursor-pointer items-center justify-center rounded-full bg-foreground text-sm font-bold text-background disabled:opacity-60"
+        >
+          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : cta}
+        </button>
+      </article>
+    </div>
   );
 }
 
 export function SettingsSubscriptionsPanel() {
-  const { t } = useTranslation();
-  const qc = useQueryClient();
+  const { t, i18n } = useTranslation();
+  const lang = i18n.language;
   const navigate = useNavigate();
   const searchStr = useRouterState({ select: (s) => s.location.searchStr });
-  const { plan: focusPlan, returnTo } = useMemo(
+  const { plan: focusPlan } = useMemo(
     () => readSubscriptionDeepLink(searchStr),
     [searchStr],
   );
   const plansQ = useSubscriptionPlans();
   const meQ = useSubscriptionMe();
   const checkout = useSubscriptionCheckout();
-  const { data: wallet } = useWalletMe();
+  const cancelSub = useSubscriptionCancel();
   const [busyCode, setBusyCode] = useState<string | null>(null);
-  const [offerPrices, setOfferPrices] = useState<Record<string, number>>({});
-
-  const welcomeOffer = meQ.data?.welcome_offer;
-  const welcomeEligible = welcomeOffer?.eligible === true;
-
-  useEffect(() => {
-    if (!welcomeEligible || !plansQ.data?.length) {
-      setOfferPrices({});
-      return;
-    }
-    let cancelled = false;
-    void (async () => {
-      const next: Record<string, number> = {};
-      for (const plan of plansQ.data) {
-        try {
-          const res = await previewSubscriptionPromo({ plan_code: plan.code });
-          if (!cancelled && res.discount_uzs > 0) next[plan.code] = res.amount_uzs;
-        } catch {
-          /* skip */
-        }
-      }
-      if (!cancelled) setOfferPrices(next);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [welcomeEligible, plansQ.data]);
-
-  const balance = wallet ? parseWalletBalance(wallet.balance) : 0;
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const [pickedPlan, setPickedPlan] = useState<string | null>(null);
   const me = meQ.data;
   const activeCode = me?.subscription?.plan_code ?? null;
   const sub = me?.subscription;
+  const isCancelled = Boolean(
+    me?.has_active && (me.status === "cancelled" || sub?.status === "cancelled" || sub?.cancelled_at),
+  );
+  const canCancel = Boolean(me?.can_cancel ?? sub?.can_cancel);
+  const endsLabel = formatDate(sub?.expires_at ?? sub?.ends_at ?? me?.expires_at, lang);
   const refGenOn =
     me?.referral_generation_enabled ?? me?.access?.referral_generation_enabled ?? true;
   const daysLeft = me?.days_remaining ?? sub?.days_remaining ?? null;
 
-  const visiblePlans = useMemo(() => {
-    const all = plansQ.data ?? [];
+  const offerPlans = useMemo(() => {
+    const all = (plansQ.data ?? []).filter(
+      (plan) => plan.code !== "free" && plan.purchasable !== false,
+    );
     if (!me?.has_active || !activeCode) return all;
-    // Faol obunachi: joriy + faqat yuqori (upgrade) tariflar
-    const upgrades = filterPlansForSubscriber(all, activeCode);
-    const current = all.find((p) => p.code === activeCode);
-    return current ? [current, ...upgrades] : upgrades;
+    return all.filter((plan) => isPlanUpgrade(plan.code, activeCode));
   }, [plansQ.data, me?.has_active, activeCode]);
-
-  const goAfterSuccess = () => {
-    if (returnTo) {
-      void navigate({ to: returnTo });
-    }
-  };
 
   useEffect(() => {
     if (typeof window === "undefined") return;
     const params = new URLSearchParams(window.location.search);
     const orderId = params.get("sub_order") || params.get("order_id");
-    const provider = (params.get("provider") || "").toLowerCase();
     if (!orderId || !orderId.startsWith("sub-")) return;
-    if (provider !== "click" && provider !== "payme") return;
-    let cancelled = false;
-    void (async () => {
-      try {
-        await confirmSubscriptionPayment({
-          provider: provider as "click" | "payme",
-          order_id: orderId,
-          transaction_id: params.get("transaction_id") || undefined,
-        });
-        if (!cancelled) {
-          toast.success("Obuna faollashtirildi!");
-          void qc.invalidateQueries({ queryKey: ["subscriptions"] });
-          void qc.invalidateQueries({ queryKey: ["wallet"] });
-          if (returnTo) {
-            void navigate({ to: returnTo });
-          }
-        }
-      } catch (e) {
-        if (!cancelled) {
-          toast.error(e instanceof Error ? e.message : "To'lovni tasdiqlab bo'lmadi");
-        }
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [qc, navigate, returnTo]);
+    storePaymeOrder(orderId);
+    void navigate({ to: "/subscriptions/payme" });
+  }, [navigate]);
 
   const usageRows = useMemo(() => {
     if (!me?.has_active) return [];
@@ -368,64 +188,43 @@ export function SettingsSubscriptionsPanel() {
     return [
       {
         icon: Sparkles,
-        label: "Morf AI",
+        label: t("subscriptions.usageAi"),
         used: u.morph_ai_used,
         limit: u.morph_ai_limit,
         remaining: u.morph_ai_remaining,
       },
       {
         icon: Wand2,
-        label: "Morf AI Studio",
+        label: t("subscriptions.usageStudio"),
         used: u.morph_studio_used,
         limit: u.morph_studio_limit,
         remaining: u.morph_studio_remaining,
       },
     ];
-  }, [me]);
+  }, [me, t]);
 
-  const onSubscribe = async (plan_code: string, method: "wallet" | "click" | "payme") => {
+  const onSubscribe = async (plan_code: string) => {
+    if (isCancelled) {
+      toast.message(t("subscriptions.stillPremium"));
+      return;
+    }
     setBusyCode(plan_code);
     try {
-      const return_url =
-        typeof window !== "undefined"
-          ? `${getPublicSiteOrigin()}${returnTo || "/wallet?section=subscriptions"}`
-          : undefined;
+      const origin = typeof window !== "undefined" ? window.location.origin : getPublicSiteOrigin();
+      const return_url = `${origin}/subscriptions/payme`;
       const res = await checkout.mutateAsync({
         plan_code,
-        method,
+        method: "payme",
         return_url,
       });
-      if (method === "wallet") {
-        toast.success("Obuna faollashtirildi!");
-        void qc.invalidateQueries({ queryKey: ["wallet"] });
-        void qc.invalidateQueries({ queryKey: ["subscriptions"] });
-        goAfterSuccess();
-        return;
-      }
+      if (res.order_id) storePaymeOrder(res.order_id);
       if (res.checkout_url) {
         window.location.assign(res.checkout_url);
         return;
       }
-      if (res.order_id) {
-        try {
-          await confirmSubscriptionPayment({
-            provider: method,
-            order_id: res.order_id,
-            transaction_id: res.transaction_id,
-          });
-          toast.success("Obuna faollashtirildi!");
-          void qc.invalidateQueries({ queryKey: ["subscriptions"] });
-          goAfterSuccess();
-          return;
-        } catch {
-          /* fall through */
-        }
-      }
-      toast.message(res.message || "To'lov sahifasi ochilmadi", {
-        description: "Hamyon balansidan to'lashni sinab ko'ring.",
-      });
+      toast.error(res.message || t("subscriptions.checkoutFailed"));
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Xatolik");
+      toast.error(e instanceof Error ? e.message : t("subscriptions.genericError"));
     } finally {
       setBusyCode(null);
     }
@@ -434,19 +233,10 @@ export function SettingsSubscriptionsPanel() {
   return (
     <div className="mt-4 space-y-6">
       <p className="text-sm text-muted-foreground">
-        {t("subscriptions.subtitle", {
-          defaultValue: refGenOn
-            ? "Morf AI yangi userlarga yopiq. 1 ta do'stni taklif qiling (1 generatsiya) yoki obuna sotib oling."
-            : "Morf AI yangi userlarga yopiq. Obuna sotib oling.",
-        })}
+        {me?.has_active
+          ? t("subscriptions.manageLead")
+          : t("subscriptions.subtitle")}
       </p>
-
-      {wallet ? (
-        <p className="text-xs text-muted-foreground">
-          Hamyon balansi:{" "}
-          <span className="font-semibold text-foreground">{formatUzs(balance)}</span>
-        </p>
-      ) : null}
 
       {/* Joriy holat — faol yoki yopiq */}
       <section className="rounded-2xl border border-border bg-card p-4 shadow-[0_1px_2px_rgba(15,15,15,0.05)]">
@@ -455,39 +245,57 @@ export function SettingsSubscriptionsPanel() {
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                  Joriy obuna
+                  {t("subscriptions.current")}
                 </p>
                 <p className="mt-1 text-lg font-bold">
-                  {sub.plan?.name_uz ?? sub.plan_code}
+                  {sub.plan ? pickPlanName(sub.plan, lang) : sub.plan_code}
                   {sub.is_trial || sub.source === "referral_trial" ? (
-                    <span className="ml-2 text-sm font-semibold text-sky-600">· Sinov</span>
+                    <span className="ml-2 text-sm font-semibold text-sky-600">
+                      · {t("subscriptions.trial")}
+                    </span>
                   ) : null}
                 </p>
                 <dl className="mt-3 grid gap-1.5 text-xs text-muted-foreground sm:grid-cols-2">
                   <div>
-                    <dt className="inline text-muted-foreground/80">Holat: </dt>
-                    <dd className="inline font-semibold text-foreground">Faol</dd>
-                  </div>
-                  <div>
-                    <dt className="inline text-muted-foreground/80">Manba: </dt>
+                    <dt className="inline text-muted-foreground/80">{t("subscriptions.statusLabel")}: </dt>
                     <dd className="inline font-semibold text-foreground">
-                      {sourceLabel(sub.source, sub.is_trial)}
+                      {isCancelled
+                        ? t("subscriptions.cancelledActive")
+                        : t("subscriptions.active")}
                     </dd>
                   </div>
                   <div>
-                    <dt className="inline text-muted-foreground/80">Boshlanish: </dt>
+                    <dt className="inline text-muted-foreground/80">{t("subscriptions.sourceLabel")}: </dt>
                     <dd className="inline font-semibold text-foreground">
-                      {formatDate(sub.starts_at)}
+                      {sub.is_trial || sub.source === "referral_trial"
+                        ? t("subscriptions.sourceReferral")
+                        : sub.source === "wallet"
+                          ? t("subscriptions.sourceWallet")
+                          : sub.source === "click" || sub.source === "payme"
+                            ? t("subscriptions.sourcePayment")
+                            : sub.source === "admin"
+                              ? t("subscriptions.sourceAdmin")
+                              : sub.source || t("subscriptions.sourceDefault")}
                     </dd>
                   </div>
                   <div>
-                    <dt className="inline text-muted-foreground/80">Amal qiladi: </dt>
+                    <dt className="inline text-muted-foreground/80">{t("subscriptions.starts")}: </dt>
                     <dd className="inline font-semibold text-foreground">
-                      {formatDate(sub.ends_at)}
+                      {formatDate(sub.starts_at, lang)}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="inline text-muted-foreground/80">{t("subscriptions.validUntil")}: </dt>
+                    <dd className="inline font-semibold text-foreground">
+                      {formatDate(sub.ends_at, lang)}
                       {typeof daysLeft === "number" ? (
                         <span className="text-muted-foreground">
                           {" "}
-                          ({daysLeft === 0 ? "bugun tugaydi" : `${daysLeft} kun qoldi`})
+                          (
+                          {daysLeft === 0
+                            ? t("subscriptions.endsToday")
+                            : t("subscriptions.daysLeft", { count: daysLeft })}
+                          )
                         </span>
                       ) : null}
                     </dd>
@@ -495,7 +303,7 @@ export function SettingsSubscriptionsPanel() {
                 </dl>
               </div>
               <span className="rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-bold text-emerald-700">
-                Faol
+                {isCancelled ? t("subscriptions.cancelledActive") : t("subscriptions.active")}
               </span>
             </div>
 
@@ -515,8 +323,8 @@ export function SettingsSubscriptionsPanel() {
                     </div>
                     <p className="mt-1 text-xs text-muted-foreground">
                       {row.limit > 0
-                        ? `${row.used} / ${row.limit} · qoldi ${row.remaining}`
-                        : "Bu rejada yo'q"}
+                        ? `${row.used} / ${row.limit} · ${t("subscriptions.usageLeft", { count: row.remaining })}`
+                        : t("subscriptions.notInPlan")}
                     </p>
                     {row.limit > 0 ? (
                       <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-background">
@@ -534,7 +342,9 @@ export function SettingsSubscriptionsPanel() {
             <div className="mt-3 flex flex-wrap gap-2 text-xs">
               <span className="inline-flex items-center gap-1 rounded-full border border-border px-2.5 py-1">
                 <Users className="h-3.5 w-3.5" />
-                {me.family_unlimited ? "Oila: cheksiz" : `Oila: ${me.family_members_max ?? 0}`}
+                {me.family_unlimited
+                  ? t("subscriptions.familyUnlimited")
+                  : t("subscriptions.familyCount", { count: me.family_members_max ?? 0 })}
               </span>
               {me.morph_care ? (
                 <Link
@@ -542,52 +352,111 @@ export function SettingsSubscriptionsPanel() {
                   className="inline-flex items-center gap-1 rounded-full border border-border px-2.5 py-1 font-medium"
                 >
                   <Droplets className="h-3.5 w-3.5" />
-                  Parvarish
+                  {t("subscriptions.care")}
                 </Link>
               ) : null}
             </div>
+            <p className="mt-3 text-xs text-muted-foreground">{t("subscriptions.autoRenewOff")}</p>
+            {isCancelled ? (
+              <p className="mt-2 text-sm text-muted-foreground">
+                {t("subscriptions.cancelledBody", { date: endsLabel })}
+              </p>
+            ) : null}
+            {canCancel ? (
+              <button
+                type="button"
+                onClick={() => setCancelOpen(true)}
+                className="mt-4 inline-flex h-10 cursor-pointer items-center justify-center rounded-xl border border-border px-4 text-xs font-bold transition-colors duration-200 hover:bg-muted/50"
+              >
+                {t("subscriptions.cancelCta")}
+              </button>
+            ) : null}
+            {cancelOpen ? (
+              <div className="mt-4 rounded-xl border border-border bg-background p-4">
+                <p className="text-[15px] font-bold">{t("subscriptions.cancelTitle")}</p>
+                <p className="mt-2 text-sm text-muted-foreground">{t("subscriptions.cancelBody")}</p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    disabled={cancelSub.isPending}
+                    onClick={async () => {
+                      try {
+                        const res = await cancelSub.mutateAsync();
+                        setCancelOpen(false);
+                        toast.success(t("subscriptions.cancelOk"));
+                      } catch (e) {
+                        toast.error(e instanceof Error ? e.message : t("subscriptions.cancelFail"));
+                      }
+                    }}
+                    className="inline-flex h-10 cursor-pointer items-center justify-center rounded-xl bg-foreground px-4 text-xs font-bold text-background disabled:opacity-60"
+                  >
+                    {cancelSub.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      t("subscriptions.cancelConfirm")
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={cancelSub.isPending}
+                    onClick={() => setCancelOpen(false)}
+                    className="inline-flex h-10 cursor-pointer items-center justify-center rounded-xl border border-border px-4 text-xs font-bold"
+                  >
+                    {t("subscriptions.cancelBack")}
+                  </button>
+                </div>
+              </div>
+            ) : null}
           </>
         ) : (
           <>
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                  Joriy obuna
+                  {t("subscriptions.current")}
                 </p>
-                <p className="mt-1 flex items-center gap-2 text-lg font-bold">
-                  <Lock className="h-4 w-4 text-muted-foreground" />
-                  Yo&apos;q — Morf AI yopiq
+                <p className="mt-1 text-lg font-bold">
+                  {me?.current_plan ? pickPlanName(me.current_plan, lang) : "Free"}
                 </p>
                 <p className="mt-2 max-w-md text-sm text-muted-foreground">
-                  {refGenOn
-                    ? "Yangi hisobda Morf AI ishlamaydi. Obuna sotib oling yoki 1 ta do'stni taklif qilib 1 generatsiya oling."
-                    : "Yangi hisobda Morf AI ishlamaydi. Obuna sotib oling."}
+                  {t("subscriptions.freePlanBody")}
                 </p>
               </div>
-              <span className="rounded-full bg-muted px-3 py-1 text-xs font-bold text-muted-foreground">
-                Faol emas
+              <span className="rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-bold text-emerald-700">
+                Free
               </span>
             </div>
+            {me?.usage ? (
+              <div className="mt-4 grid gap-2 text-sm">
+                <p className="font-semibold">
+                  {t("subscriptions.usageAi")}: {me.usage.morph_ai_used}/{me.usage.morph_ai_limit || 1}
+                </p>
+                <p className="font-semibold">
+                  {t("subscriptions.usageChat")}:{" "}
+                  {me.usage.morph_chat_tokens_used ?? 0}/{me.usage.morph_chat_tokens_limit ?? 10000}
+                </p>
+              </div>
+            ) : null}
 
             {refGenOn ? (
               <div className="mt-4 rounded-xl border border-border bg-background p-3">
                 <div className="flex items-center justify-between gap-2 text-sm font-semibold">
                   <span className="inline-flex items-center gap-2">
-                    <UserPlus className="h-4 w-4" />1 do&apos;st = 1 generatsiya
+                    <UserPlus className="h-4 w-4" />
+                    {t("subscriptions.referralOne")}
                   </span>
                   <span className="text-xs text-muted-foreground">
-                    Kredit: {me?.referral_credits ?? me?.access?.referral_credits ?? 0}
+                    {t("subscriptions.referralCredit", {
+                      count: me?.referral_credits ?? me?.access?.referral_credits ?? 0,
+                    })}
                   </span>
                 </div>
-                <p className="mt-2 text-xs text-muted-foreground">
-                  Do&apos;stingiz kodingiz bilan ro&apos;yxatdan o&apos;tsa, sizga 1 Morf AI
-                  generatsiya krediti beriladi.
-                </p>
+                <p className="mt-2 text-xs text-muted-foreground">{t("subscriptions.referralHint")}</p>
                 <Link
                   to="/referrals"
                   className="mt-3 inline-flex h-10 cursor-pointer items-center justify-center rounded-xl border border-border bg-card px-4 text-xs font-bold transition-colors duration-200 hover:bg-muted/50"
                 >
-                  Do&apos;stlarni taklif qilish
+                  {t("subscriptions.inviteFriends")}
                 </Link>
               </div>
             ) : null}
@@ -599,46 +468,24 @@ export function SettingsSubscriptionsPanel() {
         <div className="flex justify-center py-10">
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
         </div>
-      ) : (
-        <>
-          <MorphPromoUrgencyBanner variant="card" className="mb-1" />
-
-          {welcomeEligible && !me?.has_active ? (
-            <section className="rounded-2xl border border-border bg-card p-4 shadow-[0_1px_2px_rgba(15,15,15,0.05)]">
-              <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                Yangi hisob
-              </p>
-              <p className="mt-1 text-[15px] font-bold">
-                {welcomeOffer?.label_uz ?? "Birinchi 24 soat — chegirma"}
-              </p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {welcomeOffer?.hint_uz ?? "Promokod kerak emas — to‘lovda avtomatik qo‘llanadi."}
-              </p>
-            </section>
-          ) : null}
-
-          <div className="grid gap-4 lg:grid-cols-3">
-            {visiblePlans.map((plan) => (
-              <PlanCard
-                key={plan.code}
-                plan={plan}
-                activeCode={activeCode}
-                busy={busyCode === plan.code || checkout.isPending}
-                focused={focusPlan === plan.code}
-                discountedPrice={offerPrices[plan.code] ?? null}
-                discountPct={welcomeOffer?.discount_pct ?? null}
-                onSubscribe={onSubscribe}
-              />
-            ))}
-          </div>
-        </>
-      )}
+      ) : offerPlans.length ? (
+        <ShopPlanPicker
+          plans={offerPlans}
+          picked={pickedPlan ?? (me?.has_active ? nextUpgradePlan(activeCode) : focusPlan)}
+          busyCode={busyCode}
+          pending={checkout.isPending}
+          locked={isCancelled}
+          upgrade={Boolean(me?.has_active)}
+          onPick={setPickedPlan}
+          onSubscribe={onSubscribe}
+        />
+      ) : me?.has_active ? (
+        <p className="text-sm text-muted-foreground">{t("subscriptions.highestPlan")}</p>
+      ) : null}
 
       <p className="text-[11px] leading-relaxed text-muted-foreground">
-        Obuna faqat to&apos;lov tasdiqlangandan keyin yoqiladi. Limitlar serverda hisoblanadi.
-        {refGenOn
-          ? " 1 ta do'stni taklif qilsangiz — 1 Morf AI generatsiya krediti beriladi."
-          : ""}
+        {t("subscriptions.footnote")}
+        {refGenOn ? t("subscriptions.footnoteReferral") : ""}
       </p>
     </div>
   );

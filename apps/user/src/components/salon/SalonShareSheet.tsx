@@ -24,7 +24,10 @@ import { resolveMediaUrl } from "@/lib/media-url";
 import { salonPublicUrl, shareSalon, type ShareSalonResult } from "@/lib/share-salon";
 import { cn } from "@/lib/utils";
 
-type ShareSalon = Pick<Salon, "id" | "name" | "address" | "coverUrl" | "coverSeed" | "category" | "rating">;
+type ShareSalon = Pick<
+  Salon,
+  "id" | "name" | "address" | "coverUrl" | "coverSeed" | "category" | "rating"
+>;
 
 type Props = {
   open: boolean;
@@ -129,7 +132,9 @@ function SalonShareContent({ salon, onDone }: { salon: ShareSalon; onDone?: () =
               </p>
             ) : null}
             {salon.address ? (
-              <p className="mt-1 line-clamp-2 text-xs leading-snug text-muted-foreground">{salon.address}</p>
+              <p className="mt-1 line-clamp-2 text-xs leading-snug text-muted-foreground">
+                {salon.address}
+              </p>
             ) : null}
           </div>
         </div>

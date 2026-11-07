@@ -28,10 +28,7 @@ import { navigateBack } from "@/lib/mobile-back";
 import { AiStyleCamera } from "@/components/ai-style/AiStyleCamera";
 import { AiStylePhotoInput } from "@/components/ai-style/AiStyleUi";
 import { MorphLimitUpsell } from "@/components/ai-style/MorphLimitUpsell";
-import {
-  studioCategoryIcon,
-  studioPresetIcon,
-} from "@/components/ai-style/studio-preset-icons";
+import { studioCategoryIcon, studioPresetIcon } from "@/components/ai-style/studio-preset-icons";
 import { useMorfAiStoryShare } from "@/components/ai-style/useMorfAiStoryShare";
 import { useMorphLimitGate } from "@/hooks/use-morph-limit-gate";
 import {
@@ -926,7 +923,10 @@ export function MorphAiStudioPage() {
                               {optBusy ? (
                                 <Loader2 className="h-4 w-4 animate-spin text-[#111111] drop-shadow" />
                               ) : selected ? (
-                                <Check className="h-4 w-4 text-[#111111] drop-shadow" strokeWidth={2.5} />
+                                <Check
+                                  className="h-4 w-4 text-[#111111] drop-shadow"
+                                  strokeWidth={2.5}
+                                />
                               ) : !swatch ? (
                                 <PresetIcon className="h-4 w-4 text-[#111111]/90 drop-shadow" />
                               ) : null}

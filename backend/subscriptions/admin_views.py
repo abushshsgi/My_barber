@@ -60,20 +60,33 @@ def _serialize_event(ev: SubscriptionEvent) -> dict:
 
 
 def _serialize_payment(p: SubscriptionPayment, *, include_user: bool = False) -> dict:
-    promo = _payment_promo_fields(p.metadata)
+    meta = p.metadata or {}
+    promo = _payment_promo_fields(meta)
     row = {
         "id": str(p.pk),
         "user_id": p.user_id,
         "plan_code": p.plan_code,
         "amount_uzs": int(p.amount_uzs),
+        "amount_tiyin": int(p.amount_tiyin or 0),
         "provider": p.provider,
+        "method": p.provider,
         "status": p.status,
         "order_id": p.order_id,
         "transaction_id": p.transaction_id,
+        "payme_receipt_id": p.payme_receipt_id or "",
+        "payme_state": p.payme_state,
+        "card_mask": str(meta.get("card_mask") or ""),
+        "payme_create_time": meta.get("payme_create_time"),
+        "payme_pay_time": meta.get("payme_pay_time"),
+        "payme_cancel_time": meta.get("payme_cancel_time"),
+        "payme_description": str(meta.get("payme_description") or ""),
+        "payme_currency": meta.get("payme_currency"),
+        "sandbox": bool(meta.get("sandbox")),
         "paid_at": p.paid_at.isoformat() if p.paid_at else None,
         "created_at": p.created_at.isoformat(),
+        "updated_at": p.updated_at.isoformat() if p.updated_at else None,
         "subscription_id": str(p.subscription_id) if p.subscription_id else None,
-        "metadata": p.metadata or {},
+        "metadata": meta,
         **promo,
     }
     if include_user and getattr(p, "user", None) is not None:
@@ -298,6 +311,8 @@ class AdminSubscriptionPaymentsView(APIView):
                 | Q(user__email__icontains=q)
                 | Q(order_id__icontains=q)
                 | Q(plan_code__icontains=q)
+                | Q(payme_receipt_id__icontains=q)
+                | Q(transaction_id__icontains=q)
                 | Q(metadata__promo_code__icontains=q)
             )
         if promo_f:

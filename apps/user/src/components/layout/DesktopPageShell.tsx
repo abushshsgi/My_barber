@@ -14,7 +14,8 @@ type Props = {
 
 const variantClasses: Record<ShellVariant, string> = {
   single: "",
-  twoColumn: "lg:grid lg:grid-cols-[minmax(280px,360px)_1fr] lg:gap-0 lg:min-h-[calc(100dvh-3.5rem)]",
+  twoColumn:
+    "lg:grid lg:grid-cols-[minmax(280px,360px)_1fr] lg:gap-0 lg:min-h-[calc(100dvh-3.5rem)]",
   split: "lg:flex lg:min-h-[calc(100dvh-3.5rem)]",
   wizard: "lg:grid lg:grid-cols-[1fr_minmax(280px,320px)] lg:gap-8 lg:items-start",
   fullBleed: "",

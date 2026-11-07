@@ -10,10 +10,7 @@ import { cameraStateFromUi, MasterCardUI } from "@/components/barber-consult/Mas
 import { MasterCardSkeleton } from "@/components/barber-consult/MasterCardSkeleton";
 import { generateAiStyleTryOnViews, generateBarberMasterCard } from "@/lib/api/ai";
 import type { ExploreViewId } from "@/lib/explore-views";
-import {
-  loadBarberConsultDraft,
-  stashBarberConsultDraft,
-} from "@/lib/barber-consult-session";
+import { loadBarberConsultDraft, stashBarberConsultDraft } from "@/lib/barber-consult-session";
 import { loadFaceProfile } from "@/lib/face-profile";
 import { MorphPlanLimitError } from "@/lib/morph-plan-limit";
 import {
@@ -251,9 +248,7 @@ export function MorphAiConsultPage() {
             fallbackUsed={fallback}
           />
 
-          {error ? (
-            <p className="mt-3 text-[12px] font-medium text-amber-800">{error}</p>
-          ) : null}
+          {error ? <p className="mt-3 text-[12px] font-medium text-amber-800">{error}</p> : null}
 
           {(previewMode || search.preview === "barber") && (
             <div className="mt-6">

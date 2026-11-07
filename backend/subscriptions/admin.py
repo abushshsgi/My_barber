@@ -10,7 +10,16 @@ from subscriptions.models import (
 
 @admin.register(UserSubscription)
 class UserSubscriptionAdmin(admin.ModelAdmin):
-    list_display = ("user", "plan_code", "status", "source", "starts_at", "ends_at", "price_uzs")
+    list_display = (
+        "user",
+        "plan_code",
+        "status",
+        "source",
+        "starts_at",
+        "ends_at",
+        "cancelled_at",
+        "price_uzs",
+    )
     list_filter = ("status", "plan_code", "source")
     search_fields = ("user__phone", "user__email", "user__full_name", "payment_order_id")
     readonly_fields = ("id", "created_at", "updated_at")
@@ -38,6 +47,7 @@ class SubscriptionUsagePeriodAdmin(admin.ModelAdmin):
     list_display = (
         "user",
         "period_start",
+        "plan_code",
         "morph_ai_used",
         "morph_studio_used",
         "morph_chat_tokens_used",

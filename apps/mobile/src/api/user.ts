@@ -1,3 +1,4 @@
+import { Platform } from "react-native";
 import { apiJson, apiList, qs } from "./client";
 
 export type ApiUser = {
@@ -119,11 +120,44 @@ export function displayName(user: ApiUser | null): string {
   return parts || user.email?.split("@")[0] || "Foydalanuvchi";
 }
 
+const NAME_FALLBACKS = new Set(["mehmon", "foydalanuvchi", "guest", "user", "mysaloon"]);
+
+/** Farhod Ergashev → FE, Muhammad → M, ism yo'q → M. */
 export function initials(name: string): string {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return "?";
-  if (parts.length === 1) return parts[0]!.slice(0, 2).toUpperCase();
-  return `${parts[0]![0] ?? ""}${parts[1]![0] ?? ""}`.toUpperCase();
+  const cleaned = name.trim();
+  if (!cleaned || NAME_FALLBACKS.has(cleaned.toLowerCase())) return "M";
+  const parts = cleaned.split(/\s+/).filter(Boolean);
+  const first = parts[0]?.[0] ?? "";
+  if (parts.length === 1) return first.toUpperCase() || "M";
+  const second = parts[1]?.[0] ?? "";
+  return `${first}${second}`.toUpperCase();
+}
+
+export async function uploadMyAvatar(file: {
+  uri: string;
+  name: string;
+  type: string;
+  blob?: Blob;
+}): Promise<ApiUser> {
+  const body = new FormData();
+  if (file.blob) {
+    body.append("avatar", file.blob, file.name);
+  } else if (Platform.OS === "web") {
+    const res = await fetch(file.uri);
+    const blob = await res.blob();
+    const typed = blob.type ? blob : new Blob([blob], { type: file.type });
+    body.append("avatar", typed, file.name);
+  } else {
+    body.append("avatar", { uri: file.uri, name: file.name, type: file.type } as unknown as Blob);
+  }
+  return apiJson<ApiUser>("/api/v1/users/me/", { method: "PATCH", body });
+}
+
+export async function clearMyAvatar(): Promise<ApiUser> {
+  return apiJson<ApiUser>("/api/v1/users/me/", {
+    method: "PATCH",
+    body: JSON.stringify({ avatar: null }),
+  });
 }
 
 export function formatSom(amount: number | string): string {

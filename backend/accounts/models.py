@@ -1,8 +1,21 @@
+import uuid
+
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
 from .account_deletion import AccountDeletionRequest
 from .uz_regions import UzRegion
+
+
+def avatar_upload_to(instance, filename: str) -> str:
+    """Har yuklash yangi URL — kesh va boshqa qurilma eski rasmni ushlab qolmasin."""
+    ext = "jpg"
+    if isinstance(filename, str) and "." in filename:
+        raw = filename.rsplit(".", 1)[-1].lower()
+        if raw in {"jpg", "jpeg", "png", "webp"}:
+            ext = "jpg" if raw == "jpeg" else raw
+    owner = getattr(instance, "pk", None) or "new"
+    return f"avatars/{owner}-{uuid.uuid4().hex[:12]}.{ext}"
 
 
 class User(AbstractUser):
@@ -19,7 +32,7 @@ class User(AbstractUser):
     role = models.CharField(
         max_length=20, choices=Role.choices, default=Role.USER, db_index=True
     )
-    avatar = models.ImageField(upload_to="avatars/", blank=True, null=True)
+    avatar = models.ImageField(upload_to=avatar_upload_to, blank=True, null=True)
     region = models.CharField(
         max_length=32,
         choices=UzRegion.choices,
@@ -64,6 +77,11 @@ class User(AbstractUser):
     # Faqat yangi userlar: bir martalik bepul Morf AI try-on generatsiyasi.
     morph_free_tryon_eligible = models.BooleanField(default=True)
     morph_free_tryon_used_at = models.DateTimeField(null=True, blank=True, db_index=True)
+
+    @property
+    def morph_free_tryon_used(self) -> int:
+        """0/1 — bepul try-on ishlatilganmi (eski integer maydon o‘rniga)."""
+        return 1 if self.morph_free_tryon_used_at else 0
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = ["username"]

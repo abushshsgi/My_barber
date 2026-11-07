@@ -23,6 +23,8 @@ import {
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { fetchCareAccess } from "../../api/ai";
+import { HairConditionQuiz, type HairQuizAnswers } from "../../components/morph/HairConditionQuiz";
+import { MorphPaywallView } from "../../components/morph/MorphPaywallView";
 import {
   fetchCareProducts,
   fetchHairCareProfile,
@@ -92,7 +94,7 @@ type Props = NativeStackScreenProps<MorphCareStackParamList, "CareHome">;
 type QuizStep = 0 | 1 | 2 | 3;
 type ViewMode = "hub" | "flow";
 
-const CARE_ACCESS_DEBUG = true;
+const CARE_ACCESS_DEBUG = false;
 
 const CONDITION_OPTS: HairCondition[] = ["oily", "dry", "normal", "damaged"];
 const TEXTURE_OPTS: HairTexture[] = ["straight", "wavy", "curly"];
@@ -195,9 +197,13 @@ export function MorphCareScreen({ navigation, route }: Props) {
   const insets = useSafeAreaInsets();
   const { isAuthenticated, user } = useAuth();
   const { goMorph } = useShellNavigation();
-  const [access, setAccess] = useState<{ allowed: boolean; detail?: string } | null>({
-    allowed: true,
-  });
+  const [access, setAccess] = useState<{
+    allowed: boolean;
+    pro_allowed?: boolean;
+    detail?: string;
+  } | null>(null);
+  const [proPaywall, setProPaywall] = useState(false);
+  const [plusPaywall, setPlusPaywall] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>("hub");
   const [quiz, setQuiz] = useState<CareQuizAnswers>(() => defaultQuiz());
   const [step, setStep] = useState<QuizStep | "plan" | "boot">("boot");
@@ -395,8 +401,29 @@ export function MorphCareScreen({ navigation, route }: Props) {
 
   useFocusEffect(
     useCallback(() => {
-      void reloadMyProducts();
-    }, [reloadMyProducts]),
+      if (access?.allowed) void reloadMyProducts();
+      if (retakeQuizRef.current) return;
+      void (async () => {
+        const [saved, profile] = await Promise.all([
+          loadCareQuiz().catch(() => null),
+          fetchHairCareProfile().catch(() => null),
+        ]);
+        const fromServer =
+          profile?.complete && profile.condition && profile.texture && profile.color_status
+            ? {
+                condition: profile.condition as HairCondition,
+                texture: profile.texture as HairTexture,
+                colorStatus: profile.color_status as HairColorStatus,
+              }
+            : null;
+        const ready = fromServer ?? (isCareQuizComplete(saved) ? saved : null);
+        if (!ready) return;
+        setQuiz(ready);
+        void saveCareQuiz(ready);
+        setStep("plan");
+        setViewMode("hub");
+      })();
+    }, [reloadMyProducts, access?.allowed]),
   );
 
   const handleBack = useCallback(() => {
@@ -445,7 +472,15 @@ export function MorphCareScreen({ navigation, route }: Props) {
   const dayRows = weather?.days?.length ? weather.days.slice(0, 7) : buildFallbackDays();
   const selectedDate = dayRows[selectedDayIdx]?.date ?? new Date().toISOString().slice(0, 10);
 
+  const requirePlus = useCallback(() => {
+    if (!access) return false;
+    if (CARE_ACCESS_DEBUG || access.allowed) return true;
+    setPlusPaywall(true);
+    return false;
+  }, [access]);
+
   const openSearch = useCallback(() => {
+    if (!requirePlus()) return;
     setPreviewId(null);
     setPreviewVisible(false);
     setSessionAddedIds([]);
@@ -456,7 +491,7 @@ export function MorphCareScreen({ navigation, route }: Props) {
     searchBackdropOp.setValue(0);
     searchAnimPending.current = true;
     setSearchOpen(true);
-  }, [searchSheetHeight, searchSheetY, searchBackdropOp]);
+  }, [requirePlus, searchSheetHeight, searchSheetY, searchBackdropOp]);
 
   useEffect(() => {
     if (!searchOpen || !searchAnimPending.current) return;
@@ -506,8 +541,9 @@ export function MorphCareScreen({ navigation, route }: Props) {
   const openCatalog = openSearch;
 
   const openMyProducts = useCallback(() => {
+    if (!requirePlus()) return;
     navigation.navigate("CareMyProducts");
-  }, [navigation]);
+  }, [navigation, requirePlus]);
 
   useFocusEffect(
     useCallback(() => {
@@ -587,16 +623,14 @@ export function MorphCareScreen({ navigation, route }: Props) {
   );
 
   const openTarkib = useCallback(() => {
+    if (!requirePlus()) return;
     goMorph(navigation, "MorphIngredient");
-  }, [navigation, goMorph]);
-
-  const openSubscriptions = useCallback(() => {
-    goMorph(navigation, "Profile", { screen: "Subscriptions" });
-  }, [navigation, goMorph]);
+  }, [navigation, goMorph, requirePlus]);
 
   const openWeather = useCallback(() => {
+    if (!requirePlus()) return;
     navigation.navigate("CareWeather");
-  }, [navigation]);
+  }, [navigation, requirePlus]);
 
   const openProduct = useCallback(
     (productId: number) => {
@@ -633,11 +667,22 @@ export function MorphCareScreen({ navigation, route }: Props) {
   }, []);
 
   const openParvarish = useCallback(() => {
+    if (!requirePlus()) return;
     setViewMode("flow");
-  }, []);
+  }, [requirePlus]);
 
   const bootstrap = useCallback(async () => {
+    const accessRes = CARE_ACCESS_DEBUG
+      ? { allowed: true as const, pro_allowed: true, detail: undefined }
+      : await fetchCareAccess().catch(() => ({
+          allowed: false,
+          pro_allowed: false,
+          detail: undefined,
+        }));
+    setAccess(accessRes);
+
     // 1) Disk cache — hub ochilishi bilan bizning rasmlar (demo emas).
+    // Obunasiz ham soch holati so'raladi. Funksiyalar alohida Plus so'raydi.
     const [saved, localMine, diskCatalog] = await Promise.all([
       loadCareQuiz().catch(() => null),
       loadMyProductsLocal().catch(() => []),
@@ -666,11 +711,6 @@ export function MorphCareScreen({ navigation, route }: Props) {
     }
 
     try {
-      const accessRes = CARE_ACCESS_DEBUG
-        ? { allowed: true as const, detail: undefined }
-        : await fetchCareAccess().catch(() => ({ allowed: false, detail: undefined }));
-      setAccess(accessRes);
-      if (!accessRes.allowed) return;
 
       // 2) Network parallel — my products + recommended catalog.
       const [myProds, products, profile] = await Promise.all([
@@ -709,6 +749,44 @@ export function MorphCareScreen({ navigation, route }: Props) {
   useEffect(() => {
     void bootstrap();
   }, [bootstrap]);
+
+  const persistHair = async (answers: HairQuizAnswers) => {
+    setQuiz(answers);
+    setSaving(true);
+    try {
+      await saveCareQuiz(answers);
+      await saveCareSchedule({
+        morningTime: draftMorning,
+        eveningTime: draftEvening,
+      });
+      await updateHairCareProfile({
+        condition: answers.condition,
+        texture: answers.texture,
+        color_status: answers.colorStatus,
+        scalp:
+          answers.condition === "oily"
+            ? "oily"
+            : answers.condition === "dry" || answers.condition === "damaged"
+              ? "dry"
+              : "normal",
+      });
+      void markCareOnboardingSeen();
+      const greet =
+        user?.full_name ||
+        [user?.first_name, user?.last_name].filter(Boolean).join(" ") ||
+        user?.first_name ||
+        null;
+      void scheduleCareWelcomeNotification({
+        userName: greet,
+        morningTime: draftMorning,
+        eveningTime: draftEvening,
+      });
+      setStep("plan");
+      setViewMode("hub");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const finishQuiz = async () => {
     if (!isCareQuizComplete(quiz)) return;
@@ -1007,27 +1085,60 @@ export function MorphCareScreen({ navigation, route }: Props) {
     return <View style={[styles.root, { backgroundColor: pal.bg }]} />;
   }
 
-  if (access && !access.allowed) {
+  if (plusPaywall) {
     return (
-      <View style={[styles.root, styles.pad, { paddingTop: safeTop(insets.top, 12) }]}>
+      <MorphPaywallView
+        reason="subscription"
+        onClose={() => setPlusPaywall(false)}
+        onSuccess={() => {
+          setPlusPaywall(false);
+          void bootstrap();
+        }}
+        onNeedLogin={() => goMorph(navigation, "Profile")}
+      />
+    );
+  }
+
+  if (proPaywall) {
+    return (
+      <MorphPaywallView
+        reason="pro"
+        onClose={() => setProPaywall(false)}
+        onSuccess={() => {
+          setProPaywall(false);
+          void bootstrap();
+        }}
+        onNeedLogin={() => goMorph(navigation, "Profile")}
+      />
+    );
+  }
+
+  if (step !== "plan" && step !== 3) {
+    return (
+      <View style={[styles.onboardRoot, { backgroundColor: pal.bg }]}>
         <AppStatusBar style={pal.status} />
-        <View style={styles.navBarRow}>
-          <NativeBackButton
-            onPress={handleBack}
-            accessibilityLabel={t("common.back")}
-            color={pal.fg}
-            backgroundColor="rgba(255,255,255,0.16)"
-          />
-          <View style={{ width: scale(42) }} />
-        </View>
-        <Text style={[styles.muted, { marginTop: 12 }]}>{t("care.badge")}</Text>
-        <View style={styles.lockWrap}>
-          <Ionicons name="lock-closed" size={28} color={pal.muted} />
-          <Text style={styles.lockTitle}>{t("care.badge")}</Text>
-          <Text style={styles.lockSub}>{access.detail || t("care.proOnly")}</Text>
-          <Pressable style={[styles.primaryBtnDark, { marginTop: 24 }]} onPress={openSubscriptions}>
-            <Text style={styles.primaryBtnDarkText}>{t("care.seePlans")}</Text>
-          </Pressable>
+        <View
+          style={[
+            styles.onboardPad,
+            {
+              paddingTop: safeTop(insets.top, 12),
+              paddingBottom: safeBottom(insets.bottom, 16),
+            },
+          ]}
+        >
+          <View style={styles.navBarRow}>
+            <NativeBackButton onPress={handleBack} accessibilityLabel={t("common.back")} />
+            <Text style={styles.onboardBadge}>{t("care.onboarding.badge")}</Text>
+            <View style={{ width: scale(42) }} />
+          </View>
+          <ScrollView
+            style={{ flex: 1, minHeight: 0 }}
+            contentContainerStyle={{ flexGrow: 1, paddingBottom: verticalScale(24) }}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
+            <HairConditionQuiz lead={t("chat.hairAsk.lead")} onDone={persistHair} />
+          </ScrollView>
         </View>
       </View>
     );
@@ -1394,14 +1505,20 @@ export function MorphCareScreen({ navigation, route }: Props) {
                     a11y: t("care.sos.cta", {
                       defaultValue: "Sochim bugun yomon ko‘rinayapti (SOS)",
                     }),
-                    onPress: () => setSosOpen(true),
+                    onPress: () => {
+                      if (access?.pro_allowed) setSosOpen(true);
+                      else setProPaywall(true);
+                    },
                   },
                   {
                     key: "shelf",
                     a11y: t("care.shelf.title", {
                       defaultValue: "Mening parvarish vositalarim",
                     }),
-                    onPress: () => setShelfOpen(true),
+                    onPress: () => {
+                      if (access?.pro_allowed) setShelfOpen(true);
+                      else setProPaywall(true);
+                    },
                   },
                   {
                     key: "growth",

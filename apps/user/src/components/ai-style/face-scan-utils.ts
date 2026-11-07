@@ -178,13 +178,7 @@ export type FaceQuality = {
   fill: number;
   centered: boolean;
   facingCamera: boolean;
-  reason:
-    | "no_face"
-    | "too_far"
-    | "too_close"
-    | "off_center"
-    | "turn_face"
-    | "good";
+  reason: "no_face" | "too_far" | "too_close" | "off_center" | "turn_face" | "good";
 };
 
 /** MediaPipe metrikasidan selfie sifat bahosi — capture oldidan. */

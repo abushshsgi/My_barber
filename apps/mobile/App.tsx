@@ -41,6 +41,7 @@ import { TermsAcceptScreen } from "./src/screens/onboarding/TermsAcceptScreen";
 import { NotificationPromoScreen } from "./src/screens/onboarding/NotificationPromoScreen";
 import { AccountCreatingScreen } from "./src/screens/AccountCreatingScreen";
 import { ToastProvider } from "./src/components/ui/ToastProvider";
+import { PaymeSubscriptionLive } from "./src/components/payme/PaymeSubscriptionLive";
 import { WalletTopUpLive } from "./src/components/wallet/WalletTopUpLive";
 import { colors } from "./src/theme/colors";
 import { NavigationContainer } from "@react-navigation/native";
@@ -56,6 +57,19 @@ import { OfflineBanner } from "./src/components/network/OfflineBanner";
 import { updateMe } from "./src/api/user";
 
 void ExpoSplashScreen.preventAutoHideAsync().catch(() => {});
+
+function dismissNativeSplash() {
+  try {
+    ExpoSplashScreen.hide();
+  } catch {
+    /* native modul hali tayyor emas */
+  }
+  void ExpoSplashScreen.hideAsync().catch(() => {});
+}
+
+// Birinchi kadr bloklansa ham splash yopilsin (useEffect chizilishni kutadi).
+setTimeout(dismissNativeSplash, 300);
+const nativeSplashWatchdog = setTimeout(dismissNativeSplash, 2000);
 
 function blurFocusInsideHidden() {
   if (Platform.OS !== "web" || typeof document === "undefined") return;
@@ -143,15 +157,21 @@ function AppGate() {
 
   useEffect(() => {
     if (skipIntro) {
-      void initI18n("ru").then(() => {
-        void getGuestLocation().then((loc) => {
+      const bootWatchdog = setTimeout(() => setBootReady(true), 4000);
+      void initI18n("ru")
+        .then(() => getGuestLocation())
+        .then((loc) => {
           setGuestLocationState(loc);
           setBootReady(true);
-        });
-      });
-      return;
+        })
+        .catch(() => setBootReady(true))
+        .finally(() => clearTimeout(bootWatchdog));
+      return () => clearTimeout(bootWatchdog);
     }
     let alive = true;
+    const bootWatchdog = setTimeout(() => {
+      if (alive) setBootReady(true);
+    }, 4000);
     void Promise.all([
       getAppLang(),
       getFeaturesSeen(),
@@ -161,11 +181,12 @@ function AppGate() {
       getNotifPromoSeen(),
       getGuestLocation(),
       getAccountReadySeen(),
-    ]).then(
-      async ([appLang, features, welcome, g, terms, notif, loc, ready]) => {
+    ])
+      .then(async ([appLang, features, welcome, g, terms, notif, loc, ready]) => {
         if (!alive) return;
         const resolved = appLang ?? "ru";
         await initI18n(resolved);
+        if (!alive) return;
         setLang(appLang);
         setFeaturesSeenState(features || welcome);
         setGenderState(g);
@@ -174,10 +195,13 @@ function AppGate() {
         setGuestLocationState(loc);
         setAccountReadySeenState(ready || welcome);
         setBootReady(true);
-      },
-    );
+      })
+      .catch(() => {
+        if (alive) setBootReady(true);
+      });
     return () => {
       alive = false;
+      clearTimeout(bootWatchdog);
     };
   }, [skipIntro]);
 
@@ -294,9 +318,24 @@ function AppGate() {
 }
 
 export default function App() {
-  const [fontsLoaded] = useFonts({
+  const [fontsLoaded, fontError] = useFonts({
     Jost: require("./assets/fonts/Jost.ttf"),
   });
+  const [fontTimedOut, setFontTimedOut] = useState(false);
+  const canRender = fontsLoaded || fontError != null || fontTimedOut;
+
+  useEffect(() => {
+    const timer = setTimeout(() => setFontTimedOut(true), 1500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (!canRender) return;
+    dismissNativeSplash();
+    clearTimeout(nativeSplashWatchdog);
+    const retry = setTimeout(dismissNativeSplash, 350);
+    return () => clearTimeout(retry);
+  }, [canRender]);
 
   useEffect(() => {
     if (Platform.OS !== "android") return;
@@ -311,18 +350,13 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (!fontsLoaded) return;
-    void ExpoSplashScreen.hideAsync().catch(() => {});
-  }, [fontsLoaded]);
-
-  useEffect(() => {
     if (Platform.OS !== "web") return;
     fitWebViewport();
     const id = requestAnimationFrame(() => repairWebBoxNone());
     return () => cancelAnimationFrame(id);
   }, []);
 
-  if (!fontsLoaded) {
+  if (!canRender) {
     return null;
   }
 
@@ -335,6 +369,7 @@ export default function App() {
               <GoogleAuthSessionProvider>
                 <ToastProvider>
                   <WalletTopUpLive />
+                  <PaymeSubscriptionLive />
                   <NavigationContainer
                     onStateChange={() => {
                       requestAnimationFrame(() => {

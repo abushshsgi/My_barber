@@ -34,7 +34,7 @@ export function ProfileUpgradeButton({ className, variant = "pill" }: Props) {
         ? "Pro"
         : t("profile.upgradeShort", { defaultValue: "Upgrade" });
 
-  const plan = !hasActive ? "plus" : next ?? "pro";
+  const plan = !hasActive ? "plus" : (next ?? "pro");
   const display = variant === "compact" ? shortLabel : label;
 
   return (

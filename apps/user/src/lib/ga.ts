@@ -3,8 +3,7 @@ export const GA_MEASUREMENT_ID =
   (import.meta.env.VITE_GA_MEASUREMENT_ID as string | undefined)?.trim() || "G-E6F8X2K4R3";
 
 /** Production web only — skip local/dev. */
-export const GA_ENABLED =
-  import.meta.env.PROD && Boolean(GA_MEASUREMENT_ID);
+export const GA_ENABLED = import.meta.env.PROD && Boolean(GA_MEASUREMENT_ID);
 
 declare global {
   interface Window {

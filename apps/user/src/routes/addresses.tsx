@@ -36,7 +36,11 @@ function AddressesPage() {
   };
 
   return (
-    <ProfileSubpageLayout title={t("addresses.title")} subtitle={t("addresses.hint")} backTo={backTo}>
+    <ProfileSubpageLayout
+      title={t("addresses.title")}
+      subtitle={t("addresses.hint")}
+      backTo={backTo}
+    >
       <SettingsAddressesPanel
         initialEditId={editParam}
         initialAdd={addParam}

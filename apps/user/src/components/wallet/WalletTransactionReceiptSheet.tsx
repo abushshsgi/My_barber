@@ -72,13 +72,13 @@ function CopyIdRow({ value }: { value: string }) {
 function isPartyTx(tx: WalletTransaction) {
   return Boolean(
     tx.senderName ||
-      tx.recipientName ||
-      tx.senderWalletMasked ||
-      tx.recipientWalletMasked ||
-      tx.entryType === "gift_in" ||
-      tx.entryType === "gift_out" ||
-      tx.entryType === "qr_pay" ||
-      tx.entryType === "booking_pay",
+    tx.recipientName ||
+    tx.senderWalletMasked ||
+    tx.recipientWalletMasked ||
+    tx.entryType === "gift_in" ||
+    tx.entryType === "gift_out" ||
+    tx.entryType === "qr_pay" ||
+    tx.entryType === "booking_pay",
   );
 }
 

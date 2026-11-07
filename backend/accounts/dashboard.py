@@ -56,10 +56,13 @@ def build_customer_dashboard(user: User, request: Request) -> dict[str, Any]:
     history = bookings.exclude(status__in=_ACTIVE_BOOKING).count()
 
     sub = sub_payload.get("subscription") or {}
+    current = sub_payload.get("current_plan") if isinstance(sub_payload.get("current_plan"), dict) else {}
     plan = sub.get("plan") if isinstance(sub, dict) else None
     plan_name = None
     if isinstance(plan, dict):
         plan_name = plan.get("name_uz") or plan.get("name") or None
+    if not plan_name and isinstance(current, dict):
+        plan_name = current.get("name_uz") or "Free"
 
     return {
         "user": UserSerializer(user, context={"request": request}).data,
@@ -67,7 +70,7 @@ def build_customer_dashboard(user: User, request: Request) -> dict[str, Any]:
         "wallet": WalletMeSerializer(wallet).data,
         "subscription": {
             "has_active": bool(sub_payload.get("has_active")),
-            "plan_code": sub.get("plan_code") if isinstance(sub, dict) else None,
+            "plan_code": sub_payload.get("current_plan_code") or "free",
             "plan_name": plan_name,
             "badge": sub_payload.get("badge"),
             "days_remaining": sub_payload.get("days_remaining"),

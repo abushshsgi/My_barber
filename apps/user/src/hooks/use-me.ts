@@ -20,7 +20,7 @@ export function meQueryKeyFor(userId: number | null) {
 export function useMe() {
   const loggedIn = hasValidUserSession();
   return useQuery({
-    queryKey: meQueryKeyFor(loggedIn ? getAuthUser()?.id ?? -1 : null),
+    queryKey: meQueryKeyFor(loggedIn ? (getAuthUser()?.id ?? -1) : null),
     queryFn: fetchMe,
     enabled: authQueryEnabled(loggedIn),
     staleTime: 60_000,
@@ -41,9 +41,7 @@ export function useUpdateMe() {
       }
       void qc.invalidateQueries({ queryKey: meQueryKeyFor(user.id) });
       const locationChanged =
-        "region" in variables ||
-        "latitude" in variables ||
-        "longitude" in variables;
+        "region" in variables || "latitude" in variables || "longitude" in variables;
       if (locationChanged) {
         void qc.invalidateQueries({ queryKey: salonsQueryKey });
         void qc.invalidateQueries({ queryKey: barbersQueryKey });
@@ -60,7 +58,11 @@ export function useDisplayUser() {
   const cached = getAuthUser();
   const firstName = me?.first_name?.trim() || "";
   const lastName = me?.last_name?.trim() || "";
-  const fullName = me?.full_name || [firstName, lastName].filter(Boolean).join(" ") || cached?.name || "Foydalanuvchi";
+  const fullName =
+    me?.full_name ||
+    [firstName, lastName].filter(Boolean).join(" ") ||
+    cached?.name ||
+    "Foydalanuvchi";
   return {
     name: fullName,
     firstName: firstName || fullName.split(" ")[0] || "",
@@ -87,11 +89,7 @@ export function useOnboardingRequired() {
   // Session bor, /me hali yo'q — home ga o'tkazmaslik.
   const waitingForMe = loggedIn && !me && (isLoading || isPending || isFetching) && !isError;
 
-  const required = me
-    ? needsOnboarding(me)
-    : cached
-      ? needsOnboarding(cached)
-      : false;
+  const required = me ? needsOnboarding(me) : cached ? needsOnboarding(cached) : false;
 
   return {
     required: waitingForMe ? true : required,

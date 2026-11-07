@@ -23,7 +23,8 @@ type Props = {
 export function AudienceSwitch({ showProfileHint = true, variant = "default" }: Props) {
   const { t } = useTranslation();
   const { audience, setAudience, profileDefault } = useAudience();
-  const showHint = variant === "default" && showProfileHint && audience === profileDefault && audience !== "all";
+  const showHint =
+    variant === "default" && showProfileHint && audience === profileDefault && audience !== "all";
   const compact = variant === "compact";
   const header = variant === "header";
 
@@ -87,7 +88,9 @@ export function AudienceSwitch({ showProfileHint = true, variant = "default" }: 
                 active
                   ? cn(
                       ACTIVE_TONE[opt.key],
-                      compact ? "text-foreground ring-1 ring-foreground" : "pr-5 text-foreground ring-2 ring-foreground",
+                      compact
+                        ? "text-foreground ring-1 ring-foreground"
+                        : "pr-5 text-foreground ring-2 ring-foreground",
                     )
                   : "bg-background/80 text-foreground/55 hover:bg-background hover:text-foreground/75",
               )}

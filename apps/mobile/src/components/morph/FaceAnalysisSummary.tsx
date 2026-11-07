@@ -182,20 +182,13 @@ export function FaceAnalysisSummary({
   generating = false,
   bottomInset = 16,
 }: Props) {
-  const [ready, setReady] = useState(false);
-  const sliderEnter = useRef(new Animated.Value(0)).current;
+  const [ready, setReady] = useState(true);
+  const sliderEnter = useRef(new Animated.Value(1)).current
 
   useEffect(() => {
-    setReady(false);
+    setReady(true);
     sliderEnter.stopAnimation();
-    sliderEnter.setValue(0);
-    // Generate darhol ko‘rinsin; ring animatsiyasi tugagach enable bo‘ladi.
-    Animated.spring(sliderEnter, {
-      toValue: 1,
-      friction: 8,
-      tension: 55,
-      useNativeDriver: true,
-    }).start();
+    sliderEnter.setValue(1);
   }, [
     sliderEnter,
     analyze.face_shape,
@@ -206,28 +199,9 @@ export function FaceAnalysisSummary({
     analyze.hair_color_confidence,
   ]);
 
-  useEffect(() => {
-    // Ring animatsiyasi osilib qolsa ham Generate yoqilsin.
-    const fallback = setTimeout(() => setReady(true), 4200);
-    return () => clearTimeout(fallback);
-  }, [
-    analyze.face_shape,
-    analyze.hair_type,
-    analyze.hair_color,
-    analyze.face_confidence,
-    analyze.hair_type_confidence,
-    analyze.hair_color_confidence,
-  ]);
-
   return (
     <View style={[styles.sheet, { paddingBottom: Math.max(bottomInset, 14) }]}>
-      <FaceAnalysisRing
-        analyze={analyze}
-        sequential
-        compact
-        tone="onLight"
-        onRevealComplete={() => setReady(true)}
-      />
+      <FaceAnalysisRing analyze={analyze} instant compact tone="onLight" />
       <Animated.View
         style={[
           styles.sliderWrap,

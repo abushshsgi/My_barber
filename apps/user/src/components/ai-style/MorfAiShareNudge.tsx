@@ -22,12 +22,7 @@ export function MorfAiShareNudge({
   const { t } = useTranslation();
 
   return (
-    <div
-      className={cn(
-        "rounded-3xl border border-border bg-neutral-50 p-4",
-        className,
-      )}
-    >
+    <div className={cn("rounded-3xl border border-border bg-neutral-50 p-4", className)}>
       <div className="flex items-start gap-3">
         <span className="grid size-9 shrink-0 place-items-center rounded-2xl bg-black text-white">
           <Send className="h-4 w-4" strokeWidth={2.25} />
@@ -61,7 +56,11 @@ export function MorfAiShareNudge({
               "disabled:cursor-not-allowed disabled:opacity-50",
             )}
           >
-            {sharing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" strokeWidth={2.25} />}
+            {sharing ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Send className="h-4 w-4" strokeWidth={2.25} />
+            )}
             {t("aiStylePage.shareNudge.telegram", { defaultValue: "Telegram" })}
           </button>
         ) : null}

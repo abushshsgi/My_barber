@@ -27,6 +27,19 @@ export async function updateMe(data: UpdateMePayload): Promise<ApiUser> {
   });
 }
 
+export async function uploadMyAvatar(file: File): Promise<ApiUser> {
+  const body = new FormData();
+  body.append("avatar", file);
+  return apiJson<ApiUser>("/api/v1/users/me/", { method: "PATCH", body });
+}
+
+export async function clearMyAvatar(): Promise<ApiUser> {
+  return apiJson<ApiUser>("/api/v1/users/me/", {
+    method: "PATCH",
+    body: JSON.stringify({ avatar: null }),
+  });
+}
+
 export type RegionOption = { value: string; label: string };
 
 export async function fetchRegions(): Promise<RegionOption[]> {

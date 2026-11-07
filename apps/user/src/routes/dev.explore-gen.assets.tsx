@@ -1,16 +1,7 @@
 import { useEffect, useMemo, useState, type ClipboardEvent } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  Check,
-  Download,
-  ImageIcon,
-  Loader2,
-  Lock,
-  Sparkles,
-  Star,
-  Wand2,
-} from "lucide-react";
+import { Check, Download, ImageIcon, Loader2, Lock, Sparkles, Star, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -23,10 +14,7 @@ import {
   type AssetsStudioItem,
   type AssetsStudioTemplate,
 } from "@/lib/api/assets-studio";
-import {
-  readExploreGenSecret,
-  saveExploreGenSecret,
-} from "@/lib/api/explore-gen";
+import { readExploreGenSecret, saveExploreGenSecret } from "@/lib/api/explore-gen";
 import { cn } from "@/lib/utils";
 
 type Search = { key?: string };

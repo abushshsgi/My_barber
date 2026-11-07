@@ -29,7 +29,8 @@ export function BookingPaymentPicker({
     <div className={className}>
       <h2 className="text-xl font-bold">To&apos;lov usuli</h2>
       <p className="mt-1 text-sm text-muted-foreground">
-        Naqd — salonda to&apos;laysiz. Onlayn — hamyon balansidan yechiladi va sartarosh daromadiga tushadi.
+        Naqd — salonda to&apos;laysiz. Onlayn — hamyon balansidan yechiladi va sartarosh daromadiga
+        tushadi.
       </p>
       <div className="mt-4 space-y-2">
         <button
@@ -45,7 +46,9 @@ export function BookingPaymentPicker({
           </div>
           <div>
             <p className="text-sm font-bold">Naqd</p>
-            <p className="mt-0.5 text-xs text-muted-foreground">Salonda to&apos;lov — platforma daromadiga kirmaydi</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              Salonda to&apos;lov — platforma daromadiga kirmaydi
+            </p>
           </div>
         </button>
 

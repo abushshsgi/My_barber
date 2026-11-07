@@ -9,7 +9,10 @@ export function FooterLanguageSwitch({ className }: { className?: string }) {
 
   return (
     <div
-      className={cn("inline-flex items-center gap-0.5 rounded-full border border-border bg-background p-1", className)}
+      className={cn(
+        "inline-flex items-center gap-0.5 rounded-full border border-border bg-background p-1",
+        className,
+      )}
       role="group"
       aria-label="Language"
     >

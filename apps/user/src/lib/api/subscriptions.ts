@@ -13,7 +13,10 @@ export type SubscriptionPlan = {
   family_members_max: number | null;
   family_unlimited: boolean;
   morph_care: boolean;
-  badge: "basic" | "plus" | "pro";
+  morph_care_pro?: boolean;
+  badge: "free" | "basic" | "plus" | "pro";
+  purchasable?: boolean;
+  morph_voice?: boolean;
   sort_order: number;
   highlight: boolean;
   features: Array<{
@@ -51,9 +54,13 @@ export type UserSubscription = {
   is_trial?: boolean;
   starts_at: string | null;
   ends_at: string | null;
+  expires_at?: string | null;
+  cancelled_at?: string | null;
   days_remaining?: number | null;
   price_uzs: number;
   auto_renew: boolean;
+  is_premium?: boolean;
+  can_cancel?: boolean;
   entitlements: Record<string, unknown>;
   deactivated_at: string | null;
   deactivated_reason: string;
@@ -62,11 +69,21 @@ export type UserSubscription = {
 
 export type SubscriptionMe = {
   has_active: boolean;
+  is_premium?: boolean;
+  status?: string;
+  auto_renew?: boolean;
+  expires_at?: string | null;
+  cancelled_at?: string | null;
+  can_cancel?: boolean;
   subscription: UserSubscription | null;
+  last_subscription?: UserSubscription | null;
+  current_plan_code?: string;
+  current_plan?: SubscriptionPlan | null;
   entitlements: Record<string, unknown>;
   usage: SubscriptionUsage;
   badge: string | null;
   morph_care: boolean;
+  morph_care_pro?: boolean;
   family_members_max: number | null;
   family_unlimited: boolean;
   days_remaining?: number | null;
@@ -154,9 +171,26 @@ export async function fetchSubscriptionMe(): Promise<SubscriptionMe> {
   return apiJson<SubscriptionMe>("/api/v1/subscriptions/me/");
 }
 
+export async function cancelSubscription(): Promise<{
+  ok: boolean;
+  status: string;
+  is_premium: boolean;
+  expires_at: string | null;
+  cancelled_at: string | null;
+  can_cancel: boolean;
+  message: string;
+  me?: SubscriptionMe;
+  detail?: string;
+}> {
+  return apiJson("/api/v1/subscriptions/cancel/", {
+    method: "POST",
+    body: JSON.stringify({}),
+  });
+}
+
 export async function checkoutSubscription(payload: {
   plan_code: string;
-  method: "wallet" | "click" | "payme";
+  method: "payme";
   return_url?: string;
   promo_code?: string;
 }): Promise<{
@@ -170,6 +204,8 @@ export async function checkoutSubscription(payload: {
   configured?: boolean;
   message?: string;
   amount_uzs?: number;
+  amount_tiyin?: number;
+  status?: string;
   base_uzs?: number;
   discount_uzs?: number;
   promo_code?: string | null;
@@ -193,6 +229,35 @@ export async function confirmSubscriptionPayment(payload: {
   });
 }
 
-export async function fetchCareAccess(): Promise<{ allowed: boolean; detail: string | null }> {
+export type SubscriptionPaymentStatus = {
+  ok: boolean;
+  payment_id: string;
+  provider: string;
+  status: "pending" | "paid" | "failed" | "cancelled" | "expired" | "refunded" | string;
+  order_id: string;
+  plan_code: string;
+  amount_uzs: number;
+  amount_tiyin?: number;
+  checkout_url?: string | null;
+  payme_receipt_id?: string | null;
+  sandbox?: boolean;
+  message?: string;
+  subscription?: UserSubscription | null;
+  me?: SubscriptionMe;
+};
+
+export async function fetchSubscriptionPaymentStatus(
+  orderId: string,
+): Promise<SubscriptionPaymentStatus> {
+  const id = encodeURIComponent(orderId);
+  return apiJson(`/api/v1/subscriptions/payments/${id}/`);
+}
+
+export async function fetchCareAccess(): Promise<{
+  allowed: boolean;
+  pro_allowed?: boolean;
+  code?: string;
+  detail: string | null;
+}> {
   return apiJson("/api/v1/subscriptions/care-access/");
 }

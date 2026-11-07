@@ -11,9 +11,19 @@ import { MorphTryOnScreen } from "../screens/morph/MorphTryOnScreen";
 import { MorphWelcomeScreen } from "../screens/morph/MorphWelcomeScreen";
 import { ReferralScreen } from "../screens/profile/ReferralScreen";
 
+/** Chatdagi namuna kartasidan try-on — selfie olingach preview shu uslubni yasaydi. */
+export type MorphPendingTryOn = {
+  styleId: string;
+  title: string;
+  match: number;
+  imageUrl: string;
+  reason?: string;
+  returnTo?: "chat";
+};
+
 export type MorphStackParamList = {
   /** Selfie capture (qayta kirish). Tab nomi MorphTryOn dan farq qiladi. */
-  MorphCapture: undefined;
+  MorphCapture: { pendingTryOn?: MorphPendingTryOn } | undefined;
   MorphWelcome: undefined;
   MorphGuide: { startIndex?: number } | undefined;
   /** Legacy hub — Try-on tab emas; Studio / namuna uchun. */
@@ -27,6 +37,10 @@ export type MorphStackParamList = {
     previewImage?: string;
     salonId?: number | null;
     reason?: string;
+    /** Chatbot namunasidan ochilganda orqaga chatga qaytadi. */
+    returnTo?: "chat";
+    /** Selfie olingach shu sahifada try-on ni o‘zi ishga tushiradi. */
+    autoTryOn?: boolean;
   };
   MorphHistory: { generationId?: number } | undefined;
   MorphStudio: undefined;
@@ -68,7 +82,7 @@ export function MorphStack() {
       <Stack.Screen
         name="MorphPreview"
         component={MorphPreviewScreen}
-        options={{ animation: "slide_from_bottom", contentStyle: { backgroundColor: "#FFF" } }}
+        options={{ animation: "slide_from_bottom", contentStyle: { backgroundColor: pal.bg } }}
       />
       <Stack.Screen
         name="MorphHistory"

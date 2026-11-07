@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  cancelSubscription,
   checkoutSubscription,
   fetchSubscriptionMe,
   fetchSubscriptionPlans,
@@ -38,6 +39,20 @@ export function useSubscriptionPromoPreview() {
   });
 }
 
+export function useSubscriptionCancel() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: cancelSubscription,
+    onSuccess: (data) => {
+      if (data.me) {
+        qc.setQueryData<SubscriptionMe>(["subscriptions", "me"], data.me);
+      } else {
+        void qc.invalidateQueries({ queryKey: ["subscriptions", "me"] });
+      }
+    },
+  });
+}
+
 export function useSubscriptionCheckout() {
   const qc = useQueryClient();
   return useMutation({
@@ -48,7 +63,6 @@ export function useSubscriptionCheckout() {
       } else {
         void qc.invalidateQueries({ queryKey: ["subscriptions", "me"] });
       }
-      void qc.invalidateQueries({ queryKey: ["wallet", "me"] });
     },
   });
 }

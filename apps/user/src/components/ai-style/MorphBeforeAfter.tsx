@@ -24,7 +24,12 @@ export function MorphBeforeAfter({ beforeSrc, afterSrc, title, className }: Prop
   }, []);
 
   return (
-    <div className={cn("relative select-none overflow-hidden rounded-[24px] bg-black touch-none", className)}>
+    <div
+      className={cn(
+        "relative select-none overflow-hidden rounded-[24px] bg-black touch-none",
+        className,
+      )}
+    >
       <div className="relative aspect-[3/4] w-full">
         <img
           src={afterSrc}

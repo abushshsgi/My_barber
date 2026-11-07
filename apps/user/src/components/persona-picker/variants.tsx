@@ -14,7 +14,9 @@ function VariantHeader({
   return (
     <div className="flex items-end justify-between gap-3">
       <div>
-        <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">{label}</p>
+        <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+          {label}
+        </p>
         {activeCaption ? (
           <p className="mt-1 text-[11px] leading-snug text-muted-foreground">{activeCaption}</p>
         ) : null}
@@ -55,7 +57,10 @@ function StoryRingChip({
             : "bg-border/80",
         )}
       >
-        <PersonaPhoto persona={persona} className="h-full w-full rounded-full ring-2 ring-background" />
+        <PersonaPhoto
+          persona={persona}
+          className="h-full w-full rounded-full ring-2 ring-background"
+        />
       </span>
       <span
         className={cn(

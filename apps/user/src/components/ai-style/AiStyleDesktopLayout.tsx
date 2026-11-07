@@ -1,6 +1,16 @@
 import { Link, useRouter } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
-import { Check, ChevronLeft, ChevronRight, Clock3, Compass, ImagePlus, Loader2, ScanFace, UserRound } from "lucide-react";
+import {
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  Clock3,
+  Compass,
+  ImagePlus,
+  Loader2,
+  ScanFace,
+  UserRound,
+} from "lucide-react";
 import { Fragment, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { AiStyleSplitLayoutProps } from "@/components/ai-style/AiStyleSplitLayout";
@@ -9,7 +19,11 @@ import { AiStyleScanLine, GalleryValidatingHero } from "@/components/ai-style/Ai
 import { getAiStyleHeroUrl } from "@/lib/cover-images";
 import { refreshAiStyleHistoryCache } from "@/lib/api";
 import { DESKTOP_VIEWPORT_BELOW_HEADER } from "@/lib/desktop-bazaar-layout";
-import { FACE_HISTORY_UPDATED_EVENT, getActiveUserId, type FaceProfileHistoryEntry } from "@/lib/face-profile";
+import {
+  FACE_HISTORY_UPDATED_EVENT,
+  getActiveUserId,
+  type FaceProfileHistoryEntry,
+} from "@/lib/face-profile";
 import { navigateBack } from "@/lib/mobile-back";
 import { cn } from "@/lib/utils";
 
@@ -19,13 +33,7 @@ const HERO_SLIDES: Record<"men" | "women", readonly string[]> = {
 };
 const SLIDE_MS = 5000;
 
-function DesktopNavChrome({
-  onBack,
-  dark,
-}: {
-  onBack?: () => void;
-  dark?: boolean;
-}) {
+function DesktopNavChrome({ onBack, dark }: { onBack?: () => void; dark?: boolean }) {
   const router = useRouter();
   const { t } = useTranslation();
   const btn = dark
@@ -90,7 +98,11 @@ function DesktopStepRail({ step }: { step: 1 | 2 | 3 }) {
               <p
                 className={cn(
                   "text-center text-[11px] font-bold",
-                  current ? "text-foreground" : reached ? "text-foreground/60" : "text-muted-foreground",
+                  current
+                    ? "text-foreground"
+                    : reached
+                      ? "text-foreground/60"
+                      : "text-muted-foreground",
                 )}
               >
                 {label}
@@ -136,7 +148,10 @@ function DesktopHeroCarousel({ audience }: { audience: AiStyleSplitLayoutProps["
           initial={{ opacity: 0, scale: 1.04 }}
           animate={{ opacity: 1, scale: 1.08 }}
           exit={{ opacity: 0 }}
-          transition={{ opacity: { duration: 0.8 }, scale: { duration: SLIDE_MS / 1000, ease: "linear" } }}
+          transition={{
+            opacity: { duration: 0.8 },
+            scale: { duration: SLIDE_MS / 1000, ease: "linear" },
+          }}
           className="absolute inset-0 h-full w-full object-cover object-top"
         />
       </AnimatePresence>
@@ -185,7 +200,9 @@ function DesktopHistoryGrid() {
           <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
             {t("aiStylePage.historyTitle")}
           </p>
-          <p className="mt-1 text-sm font-bold text-foreground">{t("aiStylePage.historySubtitle")}</p>
+          <p className="mt-1 text-sm font-bold text-foreground">
+            {t("aiStylePage.historySubtitle")}
+          </p>
         </div>
         {entries.length > 0 ? (
           <Link
@@ -280,7 +297,7 @@ export function AiStyleDesktopLayout(props: AiStyleSplitLayoutProps) {
                 <img
                   src={props.photo!}
                   alt=""
-                  className="absolute inset-0 h-full w-full object-cover object-top"
+                  className="absolute inset-0 h-full w-full bg-black object-contain object-center"
                 />
                 {busy ? <AiStyleScanLine /> : null}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/20" />

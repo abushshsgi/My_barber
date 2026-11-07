@@ -1,538 +1,426 @@
-import { useTranslation } from "react-i18next";
+import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { LinearGradient } from "expo-linear-gradient";
-import { useCallback, useState } from "react";
+import { Image } from "expo-image";
+import { StatusBar } from "expo-status-bar";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  Image,
-  Linking,
+  BackHandler,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { safeBottom, safeTop } from "../../lib/safe-area";
 import {
+  formatMorphUserError,
   generateAiStyleTryOn,
   saveMorphAiGeneration,
 } from "../../api/ai";
-import {
-  openTelegramShare,
-  shareMorphLook,
-  WEB_ORIGIN,
-} from "../../lib/morph-share";
+import { NativeBackButton } from "../../components/ui/NativeBackButton";
 import { useHideTabBar } from "../../hooks/useHideTabBar";
 import { useMorphLimitGate } from "../../hooks/useMorphLimitGate";
 import { presentMorphPaywall } from "../../lib/morph-return";
 import { useMorphSession } from "../../lib/morph-session";
-import type { MorphStackParamList } from "../../navigation/MorphStack";
-import {
-  ASPECT,
-  fontSize,
-  moderateScale,
-  scale,
-  verticalScale,
-} from "../../utils/responsive";
+import { shareMorphLook } from "../../lib/morph-share";
+import { safeBottom, safeTop } from "../../lib/safe-area";
+import { useShellNavigation } from "../../lib/shell-nav";
+import { useShellTheme } from "../../lib/useShellTheme";
+import type { MorphPendingTryOn, MorphStackParamList } from "../../navigation/MorphStack";
+import { useTranslation } from "react-i18next";
+import { fontSize, moderateScale, scale, verticalScale } from "../../utils/responsive";
 
 type Props = NativeStackScreenProps<MorphStackParamList, "MorphPreview">;
 
 /**
- * Web `AiStylePreviewSheet` — generatsiya qilingan rasm ustiga bosilganda.
+ * Chatbot namunasi yoki try-on natijasi.
+ * Chatdan ochilganda orqaga chatbotga qaytadi.
  */
 export function MorphPreviewScreen({ navigation, route }: Props) {
   const { t } = useTranslation();
   useHideTabBar();
   const insets = useSafeAreaInsets();
+  const pal = useShellTheme();
   const session = useMorphSession();
   const gate = useMorphLimitGate();
+  const { goMorph } = useShellNavigation();
   const {
     styleId,
     title,
     match,
     imageUrl,
     previewImage: initialPreview,
-    salonId,
+    reason,
+    returnTo,
+    autoTryOn,
   } = route.params;
 
+  const fromChat = returnTo === "chat";
+  const leaving = useRef(false);
+  const openingCapture = useRef(false);
+  const autoKey = useRef<string | null>(null);
+
   const [preview, setPreview] = useState<string | null>(
-    initialPreview || session.tryOnByStyle[styleId] || null,
+    autoTryOn ? null : initialPreview || session.tryOnByStyle[styleId] || null,
   );
   const [busy, setBusy] = useState(false);
   const [sharing, setSharing] = useState(false);
-  const [saved, setSaved] = useState(false);
 
-  const imageSrc = preview || imageUrl || session.selfieDataUrl;
+  const imageSrc = preview || imageUrl || null;
+  const showMatch = Number.isFinite(match) && match > 0;
 
-  const runTryOn = useCallback(async () => {
-    if (!session.selfieDataUrl) {
-      Alert.alert("Selfie kerak", "Avval yuzingizni skanerlang.");
-      return;
-    }
-    if (preview) return;
-    const result = await gate.ensureTryOnDetailed();
-    if (!result.ok) {
-      presentMorphPaywall(
-        navigation,
-        result.reason === "limit" ? "limit" : "subscription",
-        "MorphPreview",
-      );
-      return;
-    }
-    setBusy(true);
-    try {
-      const out = await generateAiStyleTryOn(session.selfieDataUrl, styleId);
-      setPreview(out.preview_image);
-      session.setTryOn(out.preview_image, out.style_id || styleId, out.style_title || title);
-      void saveMorphAiGeneration({
-        style_id: out.style_id || styleId,
-        title: out.style_title || title,
-        before_image: session.selfieDataUrl,
-        after_image: out.preview_image,
-      }).catch(() => undefined);
-      gate.refresh();
-    } catch (err) {
-      if (gate.handleError(err)) {
-        presentMorphPaywall(navigation, "limit", "MorphPreview");
-        return;
-      }
-      Alert.alert("Xato", err instanceof Error ? err.message : "Try-on xatosi");
-    } finally {
-      setBusy(false);
-    }
-  }, [session, gate, navigation, preview, styleId, title]);
-
-  const resolveShareUrl = useCallback(async () => {
-    await shareMorphLook({
+  const pendingTryOn = useCallback((): MorphPendingTryOn => {
+    return {
       styleId,
       title,
-      previewImage: preview,
-    });
-  }, [styleId, title, preview]);
+      match,
+      imageUrl,
+      reason,
+      returnTo,
+    };
+  }, [styleId, title, match, imageUrl, reason, returnTo]);
 
-  const shareTelegram = useCallback(async () => {
+  const leaveToChat = useCallback(() => {
+    if (leaving.current) return;
+    leaving.current = true;
+    goMorph(navigation, "MorphChat");
+    requestAnimationFrame(() => {
+      navigation.reset({ index: 0, routes: [{ name: "MorphCapture" }] });
+    });
+  }, [goMorph, navigation]);
+
+  const onBack = useCallback(() => {
+    if (fromChat) {
+      leaveToChat();
+      return;
+    }
+    if (navigation.canGoBack()) {
+      navigation.goBack();
+      return;
+    }
+    navigation.navigate("MorphCapture");
+  }, [fromChat, leaveToChat, navigation]);
+
+  useEffect(() => {
+    if (!fromChat) return undefined;
+    navigation.setOptions({ gestureEnabled: false });
+    const sub = navigation.addListener("beforeRemove", (e) => {
+      if (leaving.current || openingCapture.current) return;
+      const type = e.data.action.type;
+      if (type === "NAVIGATE" || type === "RESET" || type === "REPLACE") return;
+      e.preventDefault();
+      leaveToChat();
+    });
+    return () => sub();
+  }, [fromChat, leaveToChat, navigation]);
+
+  useFocusEffect(
+    useCallback(() => {
+      openingCapture.current = false;
+      if (!fromChat) return undefined;
+      const sub = BackHandler.addEventListener("hardwareBackPress", () => {
+        leaveToChat();
+        return true;
+      });
+      return () => sub.remove();
+    }, [fromChat, leaveToChat]),
+  );
+
+  const openCapture = useCallback(() => {
+    openingCapture.current = true;
+    session.setPreferredStyle(styleId, title);
+    navigation.navigate("MorphCapture", { pendingTryOn: pendingTryOn() });
+  }, [navigation, pendingTryOn, session, styleId, title]);
+
+  const runTryOn = useCallback(
+    async (opts?: { force?: boolean }) => {
+      const photo = session.selfieDataUrl;
+      if (!photo) {
+        openCapture();
+        return;
+      }
+      if (preview && !opts?.force) return;
+
+      const result = await gate.ensureTryOnDetailed();
+      if (!result.ok) {
+        presentMorphPaywall(
+          navigation,
+          result.reason === "limit" ? "limit" : "subscription",
+          "MorphPreview",
+        );
+        return;
+      }
+
+      if (opts?.force) setPreview(null);
+      setBusy(true);
+      try {
+        const out = await generateAiStyleTryOn(photo, styleId);
+        const nextPreview = out.preview_image;
+        const nextId = out.style_id || styleId;
+        const nextTitle = out.style_title || title;
+        setPreview(nextPreview);
+        session.setTryOn(nextPreview, nextId, nextTitle);
+        session.setPreferredStyle(nextId, nextTitle);
+        void saveMorphAiGeneration({
+          style_id: nextId,
+          title: nextTitle,
+          before_image: photo,
+          after_image: nextPreview,
+        }).catch(() => undefined);
+        gate.refresh();
+      } catch (err) {
+        if (gate.handleError(err)) {
+          presentMorphPaywall(navigation, "limit", "MorphPreview");
+          return;
+        }
+        Alert.alert(
+          t("common.error"),
+          formatMorphUserError(
+            err instanceof Error ? err.message : t("morph.preview.error"),
+            t("morph.preview.error"),
+          ),
+        );
+      } finally {
+        setBusy(false);
+      }
+    },
+    [session, preview, gate, navigation, openCapture, styleId, title, t],
+  );
+
+  useEffect(() => {
+    if (!autoTryOn || !session.selfieDataUrl) return;
+    const key = `${styleId}:${session.selfieDataUrl.length}:${session.selfieDataUrl.slice(-32)}`;
+    if (autoKey.current === key) return;
+    autoKey.current = key;
+    void runTryOn({ force: true });
+  }, [autoTryOn, session.selfieDataUrl, styleId, runTryOn]);
+
+  const shareLook = useCallback(async () => {
     setSharing(true);
     try {
-      let pageUrl = `${WEB_ORIGIN}/morf-ai/look/${encodeURIComponent(styleId)}`;
-      const text = t("morph.shareCaption", { title });
-      if (preview) {
-        try {
-          const { createMorphAiLookShare } = await import("../../api/ai");
-          const created = await createMorphAiLookShare({
-            style_id: styleId,
-            title,
-            after_image: preview,
-          });
-          pageUrl =
-            created.share_page_url ||
-            `${WEB_ORIGIN}/morf-ai/share/${encodeURIComponent(created.id)}`;
-        } catch {
-          /* fallback */
-        }
-      }
-      await openTelegramShare(pageUrl, text);
+      await shareMorphLook({
+        styleId,
+        title,
+        previewImage: preview,
+        caption: t("morph.shareCaption", { title }),
+      });
     } catch (err) {
-      Alert.alert(t("morph.share"), err instanceof Error ? err.message : t("profile.genericError"));
+      Alert.alert(
+        t("common.error"),
+        err instanceof Error ? err.message : t("morph.preview.error"),
+      );
     } finally {
       setSharing(false);
     }
   }, [styleId, title, preview, t]);
 
-  const openMap = useCallback(() => {
-    void Linking.openURL(`${WEB_ORIGIN}/map`);
-  }, []);
-
-  const openBooking = useCallback(() => {
-    if (salonId) {
-      void Linking.openURL(`${WEB_ORIGIN}/booking/${salonId}`);
-      return;
-    }
-    void Linking.openURL(`${WEB_ORIGIN}/map`);
-  }, [salonId]);
-
   return (
-    <View style={[styles.root, { paddingBottom: safeBottom(insets.bottom, 0) }]}>
-      <ScrollView
-        style={{ flex: 1 }}
-        nestedScrollEnabled={true}
-        keyboardShouldPersistTaps="handled"
-        bounces={false}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 24 }}
-      >
-        <View style={styles.hero}>
-          {imageSrc ? (
-            <Image source={{ uri: imageSrc }} style={styles.heroImg} />
-          ) : (
-            <View style={[styles.heroImg, styles.heroEmpty]}>
-              <Text style={styles.heroEmptyText}>{t("morph.noImage")}</Text>
-            </View>
-          )}
+    <View style={[styles.root, { backgroundColor: pal.bg }]}>
+      <StatusBar style={pal.status} />
 
-          {busy ? (
-            <View style={styles.busy}>
-              <ActivityIndicator color="#FFF" size="large" />
-              <Text style={styles.busyText}>{t("morph.generating")}</Text>
-            </View>
-          ) : null}
+      <View style={[styles.topBar, { paddingTop: safeTop(insets.top, 8) }]}>
+        <NativeBackButton onPress={onBack} accessibilityLabel={t("common.back")} />
+        <Text style={[styles.topKicker, { color: pal.muted }, pal.font]} numberOfLines={1}>
+          {preview ? t("morph.preview.yourLook") : t("morph.preview.style")}
+        </Text>
+        <View style={styles.topSpacer} />
+      </View>
 
-          <Pressable
-            style={[styles.backBtn, { top: Math.max(insets.top, 12) }]}
-            onPress={() => {
-              const routes = navigation.getState?.()?.routes;
-              if (routes && routes.length > 1) {
-                navigation.goBack();
-              } else {
-                navigation.navigate("MorphCapture");
-              }
-            }}
-          >
-            <Ionicons name="chevron-back" size={18} color="#FFF" />
-            <Text style={styles.backText}>Orqaga</Text>
-          </Pressable>
+      <View style={[styles.poster, { backgroundColor: pal.iconTile }]}>
+        {imageSrc ? (
+          <Image
+            source={{ uri: imageSrc }}
+            style={StyleSheet.absoluteFill}
+            contentFit="cover"
+            contentPosition="top"
+            transition={180}
+          />
+        ) : (
+          <View style={styles.empty}>
+            <Text style={[styles.emptyText, { color: pal.muted }, pal.font]}>
+              {t("morph.noImage")}
+            </Text>
+          </View>
+        )}
 
-          <LinearGradient
-            colors={["transparent", "rgba(0,0,0,0.85)"]}
-            style={styles.heroGrad}
-          >
-            <Text style={styles.badge}>{preview ? "SIZNING PREVIEW" : "USLUB"}</Text>
-            <Text style={styles.title}>{title}</Text>
-            <Text style={styles.match}>{Math.round(match)}% mos</Text>
-          </LinearGradient>
+        <View style={styles.posterBadge}>
+          <Text style={[styles.posterBadgeText, pal.font]}>
+            {preview ? t("morph.preview.mine") : t("morph.preview.sample")}
+          </Text>
         </View>
 
-        <View style={styles.body}>
-          {preview ? (
-            <View style={styles.card}>
-              <View style={styles.shareHead}>
-                <View style={styles.shareIcon}>
-                  <Ionicons name="paper-plane" size={16} color="#FFF" />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.cardTitle}>{t("morph.shareFriendsTitle")}</Text>
-                  <Text style={styles.cardSub}>{t("morph.shareFriendsBody")}</Text>
-                </View>
-              </View>
-              <View style={styles.shareRow}>
-                <Pressable
-                  style={[styles.tgBtn, sharing && styles.btnDisabled]}
-                  disabled={sharing}
-                  onPress={() => void shareTelegram()}
-                >
-                  {sharing ? (
-                    <ActivityIndicator color="#FFF" />
-                  ) : (
-                    <>
-                      <Ionicons name="paper-plane" size={16} color="#FFF" />
-                      <Text style={styles.shareBtnText}>Telegram</Text>
-                    </>
-                  )}
-                </Pressable>
-                <Pressable
-                  style={[styles.igBtn, sharing && styles.btnDisabled]}
-                  disabled={sharing}
-                  onPress={() => void resolveShareUrl()}
-                >
-                  <Ionicons name="logo-instagram" size={16} color="#FFF" />
-                  <Text style={styles.shareBtnText}>Instagram</Text>
-                </Pressable>
-              </View>
-            </View>
-          ) : null}
-
-          {preview ? (
-            <View style={styles.card}>
-              <Text style={styles.cardTitle}>{t("morph.cutNearby")}</Text>
-              <Text style={styles.cardSub}>{t("morph.nearbyMap")}</Text>
-              <Pressable style={styles.mapLink} onPress={openMap}>
-                <Ionicons name="location-outline" size={16} color="#0A0A0A" />
-                <Text style={styles.mapLinkText}>{t("morph.openMap")}</Text>
-              </Pressable>
-            </View>
-          ) : null}
-
-          {preview ? (
-            <Pressable
-              style={styles.primaryBtn}
-              onPress={() => navigation.navigate("MorphStudio")}
-            >
-              <Ionicons name="color-palette-outline" size={18} color="#FFF" />
-              <Text style={styles.primaryBtnText}>AI Studio</Text>
-            </Pressable>
-          ) : null}
-
-          <Pressable
-            style={styles.secondaryBtn}
-            onPress={() =>
-              Alert.alert(
-                "AI Barber Consult",
-                "Tez orada mobil ilovada ochiladi. Hozir web versiyadan foydalaning.",
-              )
-            }
-          >
-            <Ionicons name="sparkles-outline" size={18} color="#0A0A0A" />
-            <Text style={styles.secondaryBtnText}>AI Barber Consult</Text>
-          </Pressable>
-
-          <Pressable
-            style={styles.secondaryBtn}
-            onPress={() => {
-              const routes = navigation.getState?.()?.routes;
-              if (routes && routes.length > 1) {
-                navigation.goBack();
-              } else {
-                navigation.navigate("MorphCapture");
-              }
-            }}
-          >
-            <Ionicons name="chevron-back" size={18} color="#0A0A0A" />
-            <Text style={styles.secondaryBtnText}>Natijalarga qaytish</Text>
-          </Pressable>
-
-          <View style={styles.utilRow}>
-            <UtilBtn
-              icon="download-outline"
-              label="Yuklab olish"
-              onPress={() => void resolveShareUrl()}
-            />
-            <UtilBtn
-              icon="share-outline"
-              label="Ulashish"
-              onPress={() => void resolveShareUrl()}
-            />
-            <UtilBtn
-              icon={saved ? "bookmark" : "bookmark-outline"}
-              label={saved ? "Saqlangan" : "Saqlash"}
-              active={saved}
-              onPress={() => setSaved((v) => !v)}
-            />
-            <UtilBtn
-              icon="grid-outline"
-              label={t("morph.moreStyles")}
-              onPress={() => {
-                const routes = navigation.getState?.()?.routes;
-                if (routes && routes.length > 1) {
-                  navigation.goBack();
-                } else {
-                  navigation.navigate("MorphCapture");
-                }
-              }}
-            />
+        {busy ? (
+          <View style={styles.busy}>
+            <ActivityIndicator color="#FFF" size="large" />
+            <Text style={[styles.busyText, pal.font]}>{t("morph.generating")}</Text>
           </View>
+        ) : null}
+      </View>
 
-          {!preview ? (
+      <View style={{ paddingBottom: safeBottom(insets.bottom, 12), paddingTop: verticalScale(16) }}>
+        <Text style={[styles.title, { color: pal.fg }, pal.font]} numberOfLines={2}>
+          {title}
+        </Text>
+        {reason ? (
+          <Text style={[styles.reason, { color: pal.muted }, pal.font]} numberOfLines={3}>
+            {reason}
+          </Text>
+        ) : null}
+        {showMatch ? (
+          <View style={[styles.matchPill, { backgroundColor: pal.iconTile }]}>
+            <Text style={[styles.matchText, { color: pal.fg }, pal.font]}>
+              {t("morph.preview.match", { value: Math.round(match) })}
+            </Text>
+          </View>
+        ) : null}
+
+        {preview ? (
+          <View style={styles.actions}>
             <Pressable
-              style={styles.primaryBtn}
+              style={[styles.primary, { backgroundColor: pal.accent }, sharing && styles.disabled]}
+              disabled={sharing || busy}
+              onPress={() => void shareLook()}
+            >
+              {sharing ? (
+                <ActivityIndicator color={pal.onAccent} />
+              ) : (
+                <>
+                  <Ionicons name="share-outline" size={18} color={pal.onAccent} />
+                  <Text style={[styles.primaryText, { color: pal.onAccent }, pal.font]}>
+                    {t("morph.preview.share")}
+                  </Text>
+                </>
+              )}
+            </Pressable>
+            <Pressable style={styles.textBtn} disabled={busy} onPress={openCapture}>
+              <Text style={[styles.textBtnLabel, { color: pal.muted }, pal.font]}>
+                {t("morph.preview.newPhoto")}
+              </Text>
+            </Pressable>
+          </View>
+        ) : (
+          <View style={styles.actions}>
+            <Pressable
+              style={[styles.primary, { backgroundColor: pal.accent }, busy && styles.disabled]}
               disabled={busy}
               onPress={() => void runTryOn()}
             >
               {busy ? (
-                <ActivityIndicator color="#FFF" />
+                <ActivityIndicator color={pal.onAccent} />
               ) : (
                 <>
-                  <Ionicons name="sparkles" size={18} color="#FFF" />
-                  <Text style={styles.primaryBtnText}>Mening suratimda</Text>
+                  <Ionicons name="sparkles" size={18} color={pal.onAccent} />
+                  <Text style={[styles.primaryText, { color: pal.onAccent }, pal.font]}>
+                    {t("morph.preview.tryOn")}
+                  </Text>
                 </>
               )}
             </Pressable>
-          ) : null}
-
-          <Pressable style={styles.primaryBtn} onPress={openBooking}>
-            <Ionicons name="calendar-outline" size={18} color="#FFF" />
-            <Text style={styles.primaryBtnText}>{t("booking.book")}</Text>
-          </Pressable>
-
-          <Pressable
-            onPress={() =>
-              void Linking.openURL(`${WEB_ORIGIN}/explore/${encodeURIComponent(styleId)}`)
-            }
-          >
-            <Text style={styles.stylePage}>Uslub sahifasi</Text>
-          </Pressable>
-        </View>
-      </ScrollView>
+            <Text style={[styles.hint, { color: pal.muted }, pal.font]}>{t("morph.preview.hint")}</Text>
+          </View>
+        )}
+      </View>
     </View>
   );
 }
 
-function UtilBtn({
-  icon,
-  label,
-  onPress,
-  active,
-}: {
-  icon: keyof typeof Ionicons.glyphMap;
-  label: string;
-  onPress: () => void;
-  active?: boolean;
-}) {
-  return (
-    <Pressable
-      style={[styles.utilBtn, active && styles.utilBtnOn]}
-      onPress={onPress}
-    >
-      <Ionicons name={icon} size={16} color={active ? "#FFF" : "#0A0A0A"} />
-      <Text style={[styles.utilLabel, active && styles.utilLabelOn]} numberOfLines={1}>
-        {label}
-      </Text>
-    </Pressable>
-  );
-}
-
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: "#FFF" },
-  hero: {
-    minHeight: verticalScale(420),
-    backgroundColor: "#111",
-    overflow: "hidden",
+  root: { flex: 1 },
+  topBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: scale(16),
+    paddingBottom: verticalScale(10),
+    gap: moderateScale(12),
   },
-  /** Fixed balandlik o'rniga nisbat — SE dan Pro Max gacha bir xil kadr. */
-  heroImg: { width: "100%", aspectRatio: ASPECT.portrait },
-  heroEmpty: { alignItems: "center", justifyContent: "center" },
-  heroEmptyText: { color: "#A3A3A3" },
+  topKicker: {
+    flex: 1,
+    textAlign: "center",
+    fontSize: fontSize(13),
+    fontWeight: "700",
+    letterSpacing: 0.6,
+    textTransform: "uppercase",
+  },
+  topSpacer: { width: scale(38) },
+  poster: {
+    flex: 1,
+    marginHorizontal: scale(16),
+    borderRadius: moderateScale(28),
+    overflow: "hidden",
+    minHeight: verticalScale(240),
+  },
+  empty: { flex: 1, alignItems: "center", justifyContent: "center" },
+  emptyText: { fontSize: fontSize(14), fontWeight: "600" },
+  posterBadge: {
+    position: "absolute",
+    left: scale(14),
+    bottom: verticalScale(14),
+    backgroundColor: "rgba(0,0,0,0.55)",
+    borderRadius: 999,
+    paddingHorizontal: scale(12),
+    paddingVertical: verticalScale(6),
+  },
+  posterBadgeText: {
+    color: "#FFF",
+    fontSize: fontSize(12),
+    fontWeight: "700",
+  },
   busy: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: "rgba(0,0,0,0.5)",
+    backgroundColor: "rgba(0,0,0,0.45)",
     alignItems: "center",
     justifyContent: "center",
     gap: moderateScale(10),
   },
-  busyText: { color: "#FFF", fontWeight: "700" },
-  backBtn: {
-    position: "absolute",
-    left: scale(14),
-    zIndex: 2,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: moderateScale(4),
-    backgroundColor: "rgba(0,0,0,0.55)",
-    borderRadius: 999,
-    paddingHorizontal: scale(12),
-    paddingVertical: verticalScale(8),
-  },
-  backText: { color: "#FFF", fontWeight: "800", fontSize: fontSize(13) },
-  heroGrad: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    bottom: 0,
-    paddingHorizontal: scale(20),
-    paddingBottom: verticalScale(24),
-    paddingTop: verticalScale(80),
-  },
-  badge: {
-    color: "rgba(255,255,255,0.6)",
-    fontSize: fontSize(10),
-    fontWeight: "800",
-    letterSpacing: 1.4,
-  },
-  title: { color: "#FFF", fontSize: fontSize(26), fontWeight: "800", marginTop: verticalScale(4) },
-  match: { color: "rgba(255,255,255,0.8)", fontSize: fontSize(14), marginTop: verticalScale(4), fontWeight: "600" },
-  body: { paddingHorizontal: scale(18), paddingTop: verticalScale(16), gap: moderateScale(12) },
-  card: {
-    backgroundColor: "#FAFAFA",
-    borderRadius: moderateScale(20),
-    padding: moderateScale(16),
-    gap: moderateScale(12),
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(0,0,0,0.06)",
-  },
-  shareHead: { flexDirection: "row", gap: moderateScale(12), alignItems: "flex-start" },
-  shareIcon: {
-    width: scale(36),
-    height: scale(36),
-    borderRadius: moderateScale(18),
-    backgroundColor: "#111111",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  cardTitle: { fontSize: fontSize(15), fontWeight: "800", color: "#0A0A0A" },
-  cardSub: { fontSize: fontSize(12), lineHeight: fontSize(17), color: "#737373", marginTop: verticalScale(2) },
-  shareRow: { flexDirection: "row", gap: moderateScale(10) },
-  tgBtn: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: moderateScale(8),
-    minHeight: verticalScale(46),
-    borderRadius: moderateScale(14),
-    backgroundColor: "#2AABEE",
-  },
-  igBtn: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: moderateScale(8),
-    minHeight: verticalScale(46),
-    borderRadius: moderateScale(14),
-    backgroundColor: "#C13584",
-  },
-  shareBtnText: { color: "#FFF", fontWeight: "800", fontSize: fontSize(13) },
-  btnDisabled: { opacity: 0.6 },
-  mapLink: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: moderateScale(6),
-    alignSelf: "flex-start",
-  },
-  mapLinkText: {
-    fontSize: fontSize(13),
-    fontWeight: "800",
-    color: "#0A0A0A",
-    textDecorationLine: "underline",
-  },
-  primaryBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: moderateScale(8),
-    minHeight: verticalScale(52),
-    borderRadius: moderateScale(18),
-    backgroundColor: "#111111",
-  },
-  primaryBtnText: { color: "#FFF", fontWeight: "800", fontSize: fontSize(14) },
-  secondaryBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: moderateScale(8),
-    minHeight: verticalScale(52),
-    borderRadius: moderateScale(18),
-    backgroundColor: "#FFF",
-    borderWidth: 1,
-    borderColor: "rgba(0,0,0,0.1)",
-  },
-  secondaryBtnText: { color: "#0A0A0A", fontWeight: "800", fontSize: fontSize(14) },
-  utilRow: { flexDirection: "row", gap: moderateScale(8) },
-  utilBtn: {
-    flex: 1,
-    alignItems: "center",
-    gap: moderateScale(6),
-    paddingVertical: verticalScale(12),
-    paddingHorizontal: scale(4),
-    borderRadius: moderateScale(16),
-    backgroundColor: "#F5F5F5",
-  },
-  utilBtnOn: { backgroundColor: "#111111" },
-  utilLabel: {
-    fontSize: fontSize(11),
+  busyText: { color: "#FFF", fontWeight: "700", fontSize: fontSize(14) },
+  title: {
+    paddingHorizontal: scale(22),
+    fontSize: fontSize(28),
     fontWeight: "700",
-    color: "#0A0A0A",
-    textAlign: "center",
-    includeFontPadding: false,
+    letterSpacing: -0.4,
   },
-  utilLabelOn: { color: "#FFF" },
-  stylePage: {
+  reason: {
+    paddingHorizontal: scale(22),
+    marginTop: verticalScale(6),
+    fontSize: fontSize(14),
+    lineHeight: fontSize(20),
+  },
+  matchPill: {
+    alignSelf: "flex-start",
+    marginLeft: scale(22),
+    marginTop: verticalScale(10),
+    borderRadius: 999,
+    paddingHorizontal: scale(10),
+    paddingVertical: verticalScale(4),
+  },
+  matchText: { fontSize: fontSize(12), fontWeight: "700" },
+  actions: {
+    paddingHorizontal: scale(16),
+    marginTop: verticalScale(16),
+    gap: moderateScale(8),
+  },
+  primary: {
+    minHeight: verticalScale(54),
+    borderRadius: 999,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: moderateScale(8),
+  },
+  primaryText: { fontSize: fontSize(16), fontWeight: "700" },
+  disabled: { opacity: 0.6 },
+  hint: {
     textAlign: "center",
     fontSize: fontSize(12),
-    fontWeight: "700",
-    color: "#737373",
-    textDecorationLine: "underline",
-    marginTop: verticalScale(4),
+    lineHeight: fontSize(17),
+    paddingHorizontal: scale(12),
   },
+  textBtn: {
+    minHeight: verticalScale(40),
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  textBtnLabel: { fontSize: fontSize(14), fontWeight: "700" },
 });

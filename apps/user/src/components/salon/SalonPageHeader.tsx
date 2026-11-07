@@ -25,12 +25,10 @@ export function SalonPageHeader({
   const ownerServiceCount = filterSalonCatalogServices(salon.services).length;
 
   return (
-    <div
-      className={cn(
-        isMobile ? "pb-1" : "border-b border-border pb-6 pt-8",
-      )}
-    >
-      <div className={cn("flex flex-wrap items-start justify-between", isMobile ? "gap-3" : "gap-4")}>
+    <div className={cn(isMobile ? "pb-1" : "border-b border-border pb-6 pt-8")}>
+      <div
+        className={cn("flex flex-wrap items-start justify-between", isMobile ? "gap-3" : "gap-4")}
+      >
         <div className="min-w-0 flex-1">
           <p
             className={cn(
@@ -48,7 +46,12 @@ export function SalonPageHeader({
           >
             {salon.name}
           </h1>
-          <div className={cn("mt-2 flex flex-wrap items-center gap-2", isMobile ? "text-xs" : "text-sm")}>
+          <div
+            className={cn(
+              "mt-2 flex flex-wrap items-center gap-2",
+              isMobile ? "text-xs" : "text-sm",
+            )}
+          >
             <span className="inline-flex items-center gap-1 font-semibold">
               <Star className={cn(isMobile ? "h-3.5 w-3.5" : "h-4 w-4", "fill-foreground")} />
               {salon.rating.toFixed(1)}

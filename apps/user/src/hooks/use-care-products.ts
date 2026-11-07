@@ -10,7 +10,12 @@ export function useCareProducts(params?: {
   enabled?: boolean;
 }) {
   return useQuery({
-    queryKey: [...careProductsQueryKey, params?.category || "", params?.q || "", params?.recommended ? "rec" : "all"],
+    queryKey: [
+      ...careProductsQueryKey,
+      params?.category || "",
+      params?.q || "",
+      params?.recommended ? "rec" : "all",
+    ],
     queryFn: () => fetchCareProducts(params),
     enabled: params?.enabled !== false,
     staleTime: 30_000,

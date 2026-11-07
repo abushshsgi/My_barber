@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Platform, StyleSheet, Text, View, type TextStyle } from "react-native";
 import Animated, {
   Easing,
   FadeIn,
@@ -12,6 +12,9 @@ import Animated, {
   withSequence,
   withTiming,
 } from "react-native-reanimated";
+import type { ChatContentBlock, ChatHairstyleCard } from "../../../api/ai";
+import { blocksFromLegacy, normalizeBlocks } from "../../../lib/chat-blocks";
+import { ChatContentBlocks } from "./ChatContentBlocks";
 import { ChatMarkdown } from "./ChatMarkdown";
 import { useMorphAppearance } from "../../../lib/MorphAppearanceContext";
 import { morphFont } from "../../../theme/morph-font";
@@ -29,6 +32,9 @@ type Props = {
   content: string;
   pending?: boolean;
   streaming?: boolean;
+  hairstyles?: ChatHairstyleCard[];
+  blocks?: ChatContentBlock[];
+  onOpenHairstyle?: (item: ChatHairstyleCard) => void;
 };
 
 function TypingDot({ delayMs, color }: { delayMs: number; color: string }) {
@@ -79,14 +85,23 @@ function TypingDots() {
   );
 }
 
-export function ChatBubble({ role, content, pending }: Props) {
+export function ChatBubble({ role, content, pending, hairstyles, blocks, onOpenHairstyle }: Props) {
   const isUser = role === "user";
   const { colors: pal, chatFs, theme } = useMorphAppearance();
   const isDark = theme === "dark";
   const textSize = chatFs(14);
   const line = chatFs(20);
 
-  if (pending && !content && !isUser) {
+  const normalized = !isUser ? normalizeBlocks(blocks) : [];
+  const visualBlocks = !isUser
+    ? normalized.length
+      ? normalized
+      : hairstyles?.length
+        ? blocksFromLegacy(content, hairstyles)
+        : []
+    : [];
+
+  if (pending && !content && !visualBlocks.length && !isUser) {
     return (
       <Animated.View entering={FadeIn.duration(180)} style={styles.assistantRow}>
         <TypingDots />
@@ -113,7 +128,16 @@ export function ChatBubble({ role, content, pending }: Props) {
 
   return (
     <Animated.View entering={FadeIn.duration(180)} style={styles.assistantRow}>
-      <ChatMarkdown content={content} color={pal.fg} scale={textSize / 13} />
+      {visualBlocks.length ? (
+        <ChatContentBlocks
+          blocks={visualBlocks}
+          textColor={pal.fg}
+          textScale={textSize / 13}
+          onOpenHairstyle={onOpenHairstyle}
+        />
+      ) : (
+        <ChatMarkdown content={content} color={pal.fg} scale={textSize / 13} />
+      )}
     </Animated.View>
   );
 }
@@ -146,8 +170,14 @@ const styles = StyleSheet.create({
     fontSize: fontSize(14),
     lineHeight: fontSize(20),
     color: "#111111",
+    ...(Platform.OS === "web"
+      ? ({ wordBreak: "break-word", overflowWrap: "anywhere" } as TextStyle)
+      : null),
   },
   assistantRow: {
+    width: "100%",
+    minWidth: 0,
+    alignSelf: "stretch",
     paddingHorizontal: scale(18),
     marginBottom: verticalScale(18),
   },

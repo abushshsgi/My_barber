@@ -135,7 +135,9 @@ export function UserAddressLocationPicker({
 
   const detectGps = async () => {
     if (requireRegion && !region) {
-      toast.error(t("addresses.selectCityFirst", { defaultValue: "Avval shahar / viloyatni tanlang" }));
+      toast.error(
+        t("addresses.selectCityFirst", { defaultValue: "Avval shahar / viloyatni tanlang" }),
+      );
       return;
     }
     setLocating(true);

@@ -19,14 +19,20 @@ export function isHistoryBooking(booking: BookingItem, now = Date.now()): boolea
   return new Date(booking.date).getTime() < now;
 }
 
-export function getUpcomingBookings(list: BookingItem[] | null | undefined, now = Date.now()): BookingItem[] {
+export function getUpcomingBookings(
+  list: BookingItem[] | null | undefined,
+  now = Date.now(),
+): BookingItem[] {
   const safe = Array.isArray(list) ? list : [];
   return safe
     .filter((b) => isUpcomingBooking(b, now))
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 }
 
-export function getHistoryBookings(list: BookingItem[] | null | undefined, now = Date.now()): BookingItem[] {
+export function getHistoryBookings(
+  list: BookingItem[] | null | undefined,
+  now = Date.now(),
+): BookingItem[] {
   const safe = Array.isArray(list) ? list : [];
   return safe
     .filter((b) => isHistoryBooking(b, now))

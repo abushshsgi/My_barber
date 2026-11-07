@@ -29,9 +29,7 @@ export function BookingsMobile({ focus }: Props) {
   return (
     <div className="flex min-h-full min-w-0 flex-col overflow-x-clip bg-background">
       <header className="sticky top-0 z-20 border-b border-border/50 bg-background/95 px-4 pb-2.5 backdrop-blur-md pt-[max(env(safe-area-inset-top),0.5rem)]">
-        <h1 className="text-lg font-bold leading-tight tracking-tight">
-          {t("bookings.title")}
-        </h1>
+        <h1 className="text-lg font-bold leading-tight tracking-tight">{t("bookings.title")}</h1>
         <div className="mt-2.5">
           <PagePillTabs
             tabs={[

@@ -21,7 +21,10 @@ export function MorphLookShareLanding({ styleId }: Props) {
   const navigate = useNavigate();
   const { personaId } = useExplorePersona();
   const { data: entry, isLoading } = useHairstyle(styleId, personaId);
-  const title = entry?.titleUz || entry?.title || t("aiStylePage.shareLook.defaultTitle", { defaultValue: "Yangi uslub" });
+  const title =
+    entry?.titleUz ||
+    entry?.title ||
+    t("aiStylePage.shareLook.defaultTitle", { defaultValue: "Yangi uslub" });
   const image = entry ? getHairstyleDisplayUrl(entry) : getAiStyleHeroUrl("hero-men");
 
   const tryPath = `/explore/${encodeURIComponent(styleId)}/try`;

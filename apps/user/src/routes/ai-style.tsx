@@ -7,9 +7,10 @@ type AiStyleSearch = { styleId?: string };
 
 export const Route = createFileRoute("/ai-style")({
   validateSearch: (search: Record<string, unknown>): AiStyleSearch => ({
-    styleId: typeof search.styleId === "string" && search.styleId.trim()
-      ? search.styleId.trim()
-      : undefined,
+    styleId:
+      typeof search.styleId === "string" && search.styleId.trim()
+        ? search.styleId.trim()
+        : undefined,
   }),
   beforeLoad: ({ search }) => {
     if (search.styleId) {

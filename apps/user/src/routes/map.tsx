@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { MysaloonPausedScreen } from "@/components/mobile/MysaloonPausedScreen";
 import { MapDiscoveryTabs, type MapDiscoveryTab } from "@/components/map/MapDiscoveryTabs";
 import { MapBarberList } from "@/components/map/MapBarberList";
 import { MapDesktopMapFrame } from "@/components/map/MapDesktopMapFrame";
@@ -588,94 +589,7 @@ function MapView() {
   return (
     <>
       {!isLgUp ? (
-        <div className="relative h-full min-h-0 overflow-hidden bg-surface">
-          <div className="absolute inset-0">{mapCanvas}</div>
-
-          {!listLoadingAny && catalogError ? (
-            <div className="absolute inset-x-0 bottom-0 z-30 rounded-t-[22px] border-t border-border/50 bg-background p-4 text-center">
-              <p className="text-sm font-medium text-muted-foreground">{emptyMessage}</p>
-              <button
-                type="button"
-                onClick={retryCatalog}
-                className="mt-3 rounded-2xl bg-foreground px-4 py-2 text-sm font-bold text-background"
-              >
-                {t("common.retry", { defaultValue: "Qayta urinish" })}
-              </button>
-            </div>
-          ) : !listLoadingAny &&
-            (discoveryTab === "salons" ? filtered.length === 0 : filteredBarbers.length === 0) ? (
-            <div className="absolute inset-x-0 bottom-0 z-30 max-h-[48%] overflow-y-auto rounded-t-[22px] border-t border-border/50 bg-background p-4">
-              {discoveryTab === "salons" ? (
-                <NoSalonsEmpty compact hideStyleCtas />
-              ) : (
-                <p className="text-center text-sm font-medium text-muted-foreground">
-                  {emptyMessage}
-                </p>
-              )}
-            </div>
-          ) : null}
-
-          {viewportEmpty ? (
-            <div className="absolute inset-x-4 top-20 z-30 rounded-2xl border border-border bg-background/95 px-4 py-3 text-center shadow-sm">
-              <p className="text-sm font-medium text-muted-foreground">
-                {discoveryTab === "barbers"
-                  ? t("map.emptyViewportBarbers", {
-                      defaultValue: "Bu hududda usta yo'q — xaritani siljiting.",
-                    })
-                  : t("map.emptyViewport", {
-                      defaultValue: "Bu hududda salon yo'q — xaritani siljiting.",
-                    })}
-              </p>
-            </div>
-          ) : null}
-
-          {listLoadingAny ? (
-            <MapMobileSheetSkeleton />
-          ) : discoveryTab === "salons" ? (
-            <MapSalonSheet
-              salons={sidebarSalons}
-              activeId={active}
-              onActiveChange={focusSalon}
-              query={query}
-              onQueryChange={setQuery}
-              filters={filters}
-              onFiltersChange={setFilters}
-              mapAudience={mapAudience}
-              onExpandedChange={setSheetExpanded}
-              headerSlot={
-                <MapDiscoveryTabs
-                  value={discoveryTab}
-                  onChange={setDiscoveryTab}
-                  className="w-full justify-center"
-                />
-              }
-            />
-          ) : (
-            <div className="absolute inset-x-0 bottom-0 z-30 max-h-[55vh] overflow-hidden rounded-t-[22px] border-t border-border bg-background shadow-lg">
-              <div className="border-b border-border px-4 py-3 space-y-3">
-                <MapDiscoveryTabs
-                  value={discoveryTab}
-                  onChange={setDiscoveryTab}
-                  className="w-full justify-center"
-                />
-                <input
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder={t("common.search")}
-                  className="w-full rounded-xl border border-border bg-surface px-4 py-2.5 text-sm"
-                />
-              </div>
-              <div className="max-h-[calc(55vh-88px)] overflow-y-auto">
-                <MapBarberList
-                  barbers={sidebarBarbers}
-                  activeId={active}
-                  onActiveChange={focusSalon}
-                  emptyMessage={emptyMessage}
-                />
-              </div>
-            </div>
-          )}
-        </div>
+        <MysaloonPausedScreen />
       ) : (
         <div className="relative flex h-full min-h-0 w-full overflow-hidden">
           {!desktopMapExpanded ? (

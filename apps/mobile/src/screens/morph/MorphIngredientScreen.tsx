@@ -21,6 +21,7 @@ import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { safeBottom, safeTop } from "../../lib/safe-area";
 import { fetchCareAccess } from "../../api/ai";
+import { MorphPaywallView } from "../../components/morph/MorphPaywallView";
 import {
   barcodeLookupToIngredientScan,
   fetchCareProductByBarcode,
@@ -118,7 +119,7 @@ function barcodeInFrame(event: BarcodeHit, frame: ScanRect, viewW: number, viewH
 }
 
 /** Care bilan bir xil — production oldidan false qiling. */
-const CARE_ACCESS_DEBUG = true;
+const CARE_ACCESS_DEBUG = false;
 
 function hasQuizFields(q: CareQuizAnswers | null | undefined): boolean {
   return Boolean(q?.condition && q?.texture && q?.colorStatus);
@@ -488,30 +489,16 @@ export function MorphIngredientScreen({ navigation }: Props) {
 
   if (access && !access.allowed) {
     return (
-      <View style={[styles.root, { paddingTop: safeTop(insets.top, 12), paddingHorizontal: 20 }]}>
-        <NativeBackButton
-          onPress={leaveIngredient}
-          accessibilityLabel={t("common.back")}
-          color="#fff"
-          backgroundColor="rgba(0,0,0,0.35)"
-        />
-        <View style={styles.lockWrap}>
-          <Ionicons name="lock-closed-outline" size={24} color="rgba(255,255,255,0.5)" />
-          <Text style={styles.lockTitle}>{t("ingredient.badge")}</Text>
-          <Text style={styles.lockSub}>{access.detail || t("care.proOnly")}</Text>
-          <Pressable
-            style={styles.primaryBtn}
-            onPress={() =>
-              navigation.getParent()?.navigate("MorphTryOn", {
-                screen: "MorphPaywall",
-                params: { reason: "subscription", returnTo: "MorphCapture" },
-              } as never)
-            }
-          >
-            <Text style={styles.primaryBtnText}>{t("care.seePlans")}</Text>
-          </Pressable>
-        </View>
-      </View>
+      <MorphPaywallView
+        reason="subscription"
+        onClose={leaveIngredient}
+        onSuccess={() => {
+          void bootstrap();
+        }}
+        onNeedLogin={() =>
+          navigation.getParent()?.navigate("Profile" as never)
+        }
+      />
     );
   }
 

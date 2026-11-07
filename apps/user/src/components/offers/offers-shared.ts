@@ -18,7 +18,9 @@ export function pickFeatured(list: Offer[]) {
 export function filterOffers(list: Offer[], filter: OfferFilter): Offer[] {
   if (filter === "all") return list;
   if (filter === "ending") {
-    return list.filter((o) => o.discountPct >= 25 || o.validUntil.startsWith("15") || o.validUntil.startsWith("20"));
+    return list.filter(
+      (o) => o.discountPct >= 25 || o.validUntil.startsWith("15") || o.validUntil.startsWith("20"),
+    );
   }
   return list;
 }

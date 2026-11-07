@@ -116,11 +116,7 @@ export function PlasticCard({
           boxShadow: CARD.shadow,
         }}
         initial={reduced ? false : { opacity: 0, scale: 0.96 }}
-        animate={
-          refreshing
-            ? { opacity: 1, scale: [1, 0.985, 1] }
-            : { opacity: 1, scale: 1 }
-        }
+        animate={refreshing ? { opacity: 1, scale: [1, 0.985, 1] } : { opacity: 1, scale: 1 }}
         transition={
           refreshing
             ? { duration: 0.9, repeat: Infinity, ease: "easeInOut" }
@@ -166,7 +162,9 @@ export function PlasticCard({
 
           <div className="flex items-end justify-between gap-3">
             <div className="min-w-0">
-              <p className="truncate text-[15px] font-semibold uppercase tracking-wide">{displayName}</p>
+              <p className="truncate text-[15px] font-semibold uppercase tracking-wide">
+                {displayName}
+              </p>
               {walletNumber ? (
                 <p className="mt-1.5 truncate font-mono text-[10px] tracking-wider text-background/50">
                   {walletNumber}

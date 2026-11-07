@@ -8,10 +8,8 @@ export function isChunkLoadError(reason: unknown): boolean {
       : typeof reason === "string"
         ? reason
         : "";
-  return (
-    /Failed to fetch dynamically imported module|Importing a module script failed|Loading chunk .* failed|error loading dynamically imported module|disallowed MIME type|text\/html.*module script|can't access property "component"|\.component.*undefined/i.test(
-      message,
-    )
+  return /Failed to fetch dynamically imported module|Importing a module script failed|Loading chunk .* failed|error loading dynamically imported module|disallowed MIME type|text\/html.*module script|can't access property "component"|\.component.*undefined/i.test(
+    message,
   );
 }
 

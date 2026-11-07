@@ -47,12 +47,7 @@ function SectionBlock({
       )}
     >
       {title ? (
-        <h2
-          className={cn(
-            "font-semibold tracking-tight",
-            compact ? "text-base" : "text-2xl",
-          )}
-        >
+        <h2 className={cn("font-semibold tracking-tight", compact ? "text-base" : "text-2xl")}>
           {title}
         </h2>
       ) : null}
@@ -101,7 +96,10 @@ export function SalonPageSections({
       </SectionBlock>
 
       {salon.amenities.length > 0 ? (
-        <div id="salon-amenities" className={cn("scroll-mt-20 border-b border-border lg:scroll-mt-36", sectionGap)}>
+        <div
+          id="salon-amenities"
+          className={cn("scroll-mt-20 border-b border-border lg:scroll-mt-36", sectionGap)}
+        >
           <SalonAmenitiesSection
             amenities={salon.amenities}
             variant={salon.venueKind === "salon" ? "salon" : "solo_studio"}
@@ -111,61 +109,73 @@ export function SalonPageSections({
       ) : null}
 
       {!infoOnly ? (
-      <SectionBlock id="salon-services" title={t("salon.tabs.services")} compact={compact}>
-        {isMobile ? (
-          <SalonMobileServicesGrid salon={salon} />
-        ) : (
-          <div className={compact ? "space-y-4" : "space-y-8"}>
-            {serviceGroups.map((group) => {
-              const bookingBarberId = group.barberId ?? ownerBarberId;
-              const groupTitle = group.barberId
-                ? group.barberName ?? t("salon.staff.title", { defaultValue: "Usta" })
-                : t("salon.services.salonCatalog", { defaultValue: "Salon xizmatlari" });
-              return (
-                <div key={group.barberId ?? "salon-catalog"} className={compact ? "space-y-2" : "space-y-4"}>
-                  {serviceGroups.length > 1 ? (
-                    <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                      {groupTitle}
-                    </h3>
-                  ) : null}
-                  <div className={cn("grid sm:grid-cols-2", compact ? "gap-2" : "gap-3")}>
-                    {group.services.map((s) => (
-                      <div
-                        key={s.id}
-                        className={cn(
-                          "group flex items-center justify-between gap-3",
-                          compact
-                            ? "border-b border-border py-3 last:border-b-0"
-                            : "rounded-2xl border border-border bg-background p-5 transition-all hover:border-foreground/20 hover:shadow-[0_8px_30px_-18px_rgba(0,0,0,0.15)]",
-                        )}
-                      >
-                        <div className="min-w-0">
-                          <h3 className={cn("truncate font-semibold", compact && "text-sm")}>{s.name}</h3>
-                          <p className={cn("text-muted-foreground", compact ? "mt-0.5 text-xs" : "mt-1 text-sm")}>
-                            {s.duration} {t("salon.minutes")}
-                          </p>
-                        </div>
-                        <Link
-                          to="/booking/$salonId"
-                          params={{ salonId: salon.id }}
-                          search={bookingBarberId ? { barber: bookingBarberId } : undefined}
+        <SectionBlock id="salon-services" title={t("salon.tabs.services")} compact={compact}>
+          {isMobile ? (
+            <SalonMobileServicesGrid salon={salon} />
+          ) : (
+            <div className={compact ? "space-y-4" : "space-y-8"}>
+              {serviceGroups.map((group) => {
+                const bookingBarberId = group.barberId ?? ownerBarberId;
+                const groupTitle = group.barberId
+                  ? (group.barberName ?? t("salon.staff.title", { defaultValue: "Usta" }))
+                  : t("salon.services.salonCatalog", { defaultValue: "Salon xizmatlari" });
+                return (
+                  <div
+                    key={group.barberId ?? "salon-catalog"}
+                    className={compact ? "space-y-2" : "space-y-4"}
+                  >
+                    {serviceGroups.length > 1 ? (
+                      <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        {groupTitle}
+                      </h3>
+                    ) : null}
+                    <div className={cn("grid sm:grid-cols-2", compact ? "gap-2" : "gap-3")}>
+                      {group.services.map((s) => (
+                        <div
+                          key={s.id}
                           className={cn(
-                            "grid shrink-0 place-items-center rounded-full bg-foreground text-background",
-                            compact ? "h-8 w-8" : "h-10 w-10 transition-transform group-hover:scale-105",
+                            "group flex items-center justify-between gap-3",
+                            compact
+                              ? "border-b border-border py-3 last:border-b-0"
+                              : "rounded-2xl border border-border bg-background p-5 transition-all hover:border-foreground/20 hover:shadow-[0_8px_30px_-18px_rgba(0,0,0,0.15)]",
                           )}
-                          aria-label={t("salon.bookNow")}
                         >
-                          <Plus className="h-4 w-4" />
-                        </Link>
-                      </div>
-                    ))}
+                          <div className="min-w-0">
+                            <h3 className={cn("truncate font-semibold", compact && "text-sm")}>
+                              {s.name}
+                            </h3>
+                            <p
+                              className={cn(
+                                "text-muted-foreground",
+                                compact ? "mt-0.5 text-xs" : "mt-1 text-sm",
+                              )}
+                            >
+                              {s.duration} {t("salon.minutes")}
+                            </p>
+                          </div>
+                          <Link
+                            to="/booking/$salonId"
+                            params={{ salonId: salon.id }}
+                            search={bookingBarberId ? { barber: bookingBarberId } : undefined}
+                            className={cn(
+                              "grid shrink-0 place-items-center rounded-full bg-foreground text-background",
+                              compact
+                                ? "h-8 w-8"
+                                : "h-10 w-10 transition-transform group-hover:scale-105",
+                            )}
+                            aria-label={t("salon.bookNow")}
+                          >
+                            <Plus className="h-4 w-4" />
+                          </Link>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </SectionBlock>
+                );
+              })}
+            </div>
+          )}
+        </SectionBlock>
       ) : null}
 
       {!infoOnly && salon.staff.length > 0 ? (
@@ -195,7 +205,9 @@ export function SalonPageSections({
                         .map((n) => n[0])
                         .join("")}
                     </div>
-                    <p className={cn("font-semibold", compact ? "mt-2 text-xs" : "mt-3 text-sm")}>{b.name}</p>
+                    <p className={cn("font-semibold", compact ? "mt-2 text-xs" : "mt-3 text-sm")}>
+                      {b.name}
+                    </p>
                     <p className="mt-0.5 text-[11px] text-muted-foreground">{b.role}</p>
                     {!bookable && !isOwner ? (
                       <p className="mt-1 text-[10px] font-medium text-muted-foreground">
@@ -217,7 +229,9 @@ export function SalonPageSections({
                       key={b.id}
                       className={cn(
                         "text-center opacity-60",
-                        compact ? "rounded-xl border border-border p-3" : "rounded-2xl border border-border p-5",
+                        compact
+                          ? "rounded-xl border border-border p-3"
+                          : "rounded-2xl border border-border p-5",
                       )}
                     >
                       {inner}
@@ -255,7 +269,10 @@ export function SalonPageSections({
       </SectionBlock>
 
       {!isMobile ? (
-        <div id="salon-location" className={cn("scroll-mt-20 border-b border-border lg:scroll-mt-36", sectionGap)}>
+        <div
+          id="salon-location"
+          className={cn("scroll-mt-20 border-b border-border lg:scroll-mt-36", sectionGap)}
+        >
           <SalonLocationSection
             address={salon.address}
             lat={salon.lat}
@@ -266,16 +283,25 @@ export function SalonPageSections({
       ) : null}
 
       {!isMobile && (salon.hours.length > 0 || salon.closedWeekdays.length > 0) ? (
-        <div id="salon-hours" className={cn("scroll-mt-20 border-b border-border lg:scroll-mt-36", sectionGap)}>
+        <div
+          id="salon-hours"
+          className={cn("scroll-mt-20 border-b border-border lg:scroll-mt-36", sectionGap)}
+        >
           <SalonHoursSection hours={salon.hours} closedWeekdays={salon.closedWeekdays} />
         </div>
       ) : null}
 
       {!isMobile && showCalendar ? (
-        <div id="salon-booking" className={cn("scroll-mt-20 border-b border-border lg:scroll-mt-36", sectionGap)}>
+        <div
+          id="salon-booking"
+          className={cn("scroll-mt-20 border-b border-border lg:scroll-mt-36", sectionGap)}
+        >
           <ClientOnly
             fallback={
-              <div className="h-72 animate-pulse rounded-2xl bg-muted" aria-label={t("common.loading")} />
+              <div
+                className="h-72 animate-pulse rounded-2xl bg-muted"
+                aria-label={t("common.loading")}
+              />
             }
           >
             <SalonBookingCalendar
@@ -289,7 +315,12 @@ export function SalonPageSections({
       ) : null}
 
       {salon.portfolio.length > 0 ? (
-        <SectionBlock id="salon-portfolio" title={t("salon.tabs.portfolio")} className="border-b-0" compact={compact}>
+        <SectionBlock
+          id="salon-portfolio"
+          title={t("salon.tabs.portfolio")}
+          className="border-b-0"
+          compact={compact}
+        >
           <SalonPortfolioGallery images={salon.portfolio} />
         </SectionBlock>
       ) : null}

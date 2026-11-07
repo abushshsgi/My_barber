@@ -1,20 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import {
-  Bell,
-  BellOff,
-  CalendarCheck,
-  MessageSquare,
-  Star,
-  Tag,
-  Settings2,
-} from "lucide-react";
+import { Bell, BellOff, CalendarCheck, MessageSquare, Star, Tag, Settings2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { Notification } from "@/lib/mock-data";
-import {
-  useMarkNotificationRead,
-  useNotificationsApi,
-} from "@/hooks/use-notifications-api";
+import { useMarkNotificationRead, useNotificationsApi } from "@/hooks/use-notifications-api";
 import { ProfileSubpageLayout } from "@/components/profile/ProfileSubpageLayout";
 import { EmptyState } from "@/components/EmptyState";
 import { cn } from "@/lib/utils";
@@ -37,10 +26,30 @@ const TYPE_ICON: Record<Notification["type"], typeof Bell> = {
 type Channel = "booking" | "chat_message" | "review" | "promo";
 
 const CHANNELS: { key: Channel; labelKey: string; descKey: string; icon: typeof Bell }[] = [
-  { key: "booking", labelKey: "notifications.channels.booking", descKey: "notifications.channels.bookingDesc", icon: CalendarCheck },
-  { key: "chat_message", labelKey: "notifications.channels.chat", descKey: "notifications.channels.chatDesc", icon: MessageSquare },
-  { key: "promo", labelKey: "notifications.channels.promo", descKey: "notifications.channels.promoDesc", icon: Tag },
-  { key: "review", labelKey: "notifications.channels.review", descKey: "notifications.channels.reviewDesc", icon: Star },
+  {
+    key: "booking",
+    labelKey: "notifications.channels.booking",
+    descKey: "notifications.channels.bookingDesc",
+    icon: CalendarCheck,
+  },
+  {
+    key: "chat_message",
+    labelKey: "notifications.channels.chat",
+    descKey: "notifications.channels.chatDesc",
+    icon: MessageSquare,
+  },
+  {
+    key: "promo",
+    labelKey: "notifications.channels.promo",
+    descKey: "notifications.channels.promoDesc",
+    icon: Tag,
+  },
+  {
+    key: "review",
+    labelKey: "notifications.channels.review",
+    descKey: "notifications.channels.reviewDesc",
+    icon: Star,
+  },
 ];
 
 const defaultPrefs: Record<Channel, boolean> = {
@@ -177,7 +186,9 @@ function Notifications() {
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-semibold leading-tight">{t(c.labelKey)}</p>
-                      <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">{t(c.descKey)}</p>
+                      <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">
+                        {t(c.descKey)}
+                      </p>
                     </div>
                     <span
                       role="switch"
@@ -210,7 +221,9 @@ function Notifications() {
               {t("notifications.allOffTitle", { defaultValue: "Hamma kanallar o'chirilgan" })}
             </p>
             <p className="mt-0.5 text-xs text-muted-foreground">
-              {t("notifications.allOffHint", { defaultValue: "Sozlamalardan kerakli kanallarni yoqing" })}
+              {t("notifications.allOffHint", {
+                defaultValue: "Sozlamalardan kerakli kanallarni yoqing",
+              })}
             </p>
           </div>
           <button
@@ -223,7 +236,9 @@ function Notifications() {
       )}
 
       {isLoading ? (
-        <p className="px-4 py-10 text-center text-sm text-muted-foreground">{t("common.loading")}</p>
+        <p className="px-4 py-10 text-center text-sm text-muted-foreground">
+          {t("common.loading")}
+        </p>
       ) : isError ? (
         <div className="px-4 py-10">
           <EmptyState icon={<Bell className="h-7 w-7" />} title={t("common.loadError")} />
@@ -255,7 +270,9 @@ function Notifications() {
                 <div className="min-w-0 flex-1">
                   <div className="flex items-baseline justify-between gap-2">
                     <h3 className="truncate text-sm font-semibold">{n.title}</h3>
-                    <span className="shrink-0 text-[11px] font-medium text-muted-foreground">{n.time}</span>
+                    <span className="shrink-0 text-[11px] font-medium text-muted-foreground">
+                      {n.time}
+                    </span>
                   </div>
                   <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">{n.body}</p>
                 </div>

@@ -24,13 +24,13 @@ export function createPacedWriter(onFrame: (text: string) => void) {
       return;
     }
     const remain = target.length - shown;
-    const step = remain > 120 ? 6 : remain > 40 ? 3 : 2;
+    const step = remain > 240 ? 3 : remain > 80 ? 2 : 1;
     shown = Math.min(target.length, shown + step);
     onFrame(target.slice(0, shown));
   };
 
   const ensureTimer = () => {
-    if (!timer) timer = setInterval(tick, 16);
+    if (!timer) timer = setInterval(tick, 22);
   };
 
   return {

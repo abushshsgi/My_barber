@@ -27,9 +27,15 @@ export function BarberMobilePage({ barberId }: Props) {
 
   if (isError || !barber) {
     return (
-      <MobilePageShell flush title={t("common.notFound", { defaultValue: "Topilmadi" })} backTo="/map">
+      <MobilePageShell
+        flush
+        title={t("common.notFound", { defaultValue: "Topilmadi" })}
+        backTo="/map"
+      >
         <div className="px-4 pt-4">
-          <p className="text-sm text-muted-foreground">{t("map.title", { defaultValue: "Xarita" })}</p>
+          <p className="text-sm text-muted-foreground">
+            {t("map.title", { defaultValue: "Xarita" })}
+          </p>
           <Link
             to="/map"
             className="mt-4 inline-flex rounded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-foreground"
@@ -89,7 +95,9 @@ export function BarberMobilePage({ barberId }: Props) {
 
           {barber.servicesPreview.length > 0 ? (
             <div>
-              <p className="text-sm font-semibold">{t("booking.selectService", { defaultValue: "Xizmatlar" })}</p>
+              <p className="text-sm font-semibold">
+                {t("booking.selectService", { defaultValue: "Xizmatlar" })}
+              </p>
               <ul className="mt-1.5 divide-y divide-border">
                 {barber.servicesPreview.map((name) => (
                   <li key={name} className="py-2.5 text-sm font-medium">
@@ -116,11 +124,7 @@ export function BarberMobilePage({ barberId }: Props) {
           ) : null}
 
           {barber.bookingKind === "salon" && barber.salonId ? (
-            <BarberSalonSection
-              salonId={barber.salonId}
-              salonName={barber.salonName}
-              compact
-            />
+            <BarberSalonSection salonId={barber.salonId} salonName={barber.salonName} compact />
           ) : null}
         </div>
       </MobilePageShell>
@@ -129,7 +133,9 @@ export function BarberMobilePage({ barberId }: Props) {
         <button
           type="button"
           onClick={() => void navigate({ to: bookTo })}
-          className={cn("w-full rounded-xl bg-primary py-3 text-sm font-bold text-primary-foreground")}
+          className={cn(
+            "w-full rounded-xl bg-primary py-3 text-sm font-bold text-primary-foreground",
+          )}
         >
           {t("booking.title", { defaultValue: "Band qilish" })}
         </button>

@@ -2,12 +2,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { SalonAmenity } from "@/lib/mock-data";
 import { amenityIcon } from "@/lib/amenity-icons";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 
 const PREVIEW_COUNT = 10;
@@ -30,7 +25,10 @@ function AmenityRow({
           compact ? "h-8 w-8" : "h-10 w-10 rounded-xl",
         )}
       >
-        <Icon className={cn(compact ? "h-4 w-4" : "h-5 w-5", "text-foreground")} strokeWidth={1.5} />
+        <Icon
+          className={cn(compact ? "h-4 w-4" : "h-5 w-5", "text-foreground")}
+          strokeWidth={1.5}
+        />
       </span>
       <span className={cn("text-foreground", compact ? "text-sm" : "text-base")}>{item.label}</span>
     </div>
@@ -84,9 +82,7 @@ export function SalonAmenitiesSection({
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle className="text-left text-xl font-semibold">
-              {t(titleKey)}
-            </DialogTitle>
+            <DialogTitle className="text-left text-xl font-semibold">{t(titleKey)}</DialogTitle>
           </DialogHeader>
           <div className="grid grid-cols-1 gap-x-8 sm:grid-cols-2">
             {amenities.map((item) => (

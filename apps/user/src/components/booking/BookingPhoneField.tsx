@@ -1,6 +1,11 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { formatUzLocalPhone, parseUzLocalPhone, toUzE164Phone, uzPhoneToLocalDigits } from "@/lib/phone";
+import {
+  formatUzLocalPhone,
+  parseUzLocalPhone,
+  toUzE164Phone,
+  uzPhoneToLocalDigits,
+} from "@/lib/phone";
 import { cn } from "@/lib/utils";
 
 type Props = {

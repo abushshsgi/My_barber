@@ -130,8 +130,7 @@ function AiStyleHistoryPage() {
         after_image: toShareImageSource(active.after),
       });
       const pageUrl =
-        created.share_page_url ||
-        publicAppUrl(`/morf-ai/share/${encodeURIComponent(created.id)}`);
+        created.share_page_url || publicAppUrl(`/morf-ai/share/${encodeURIComponent(created.id)}`);
       const shareTitle = pickMorphShareText(t, {
         style: active.title,
         name: created.sharer_name || "",
@@ -172,8 +171,7 @@ function AiStyleHistoryPage() {
         after_image: toShareImageSource(active.after),
       });
       const pageUrl =
-        created.share_page_url ||
-        publicAppUrl(`/morf-ai/share/${encodeURIComponent(created.id)}`);
+        created.share_page_url || publicAppUrl(`/morf-ai/share/${encodeURIComponent(created.id)}`);
       const shareTitle = pickMorphShareText(t, {
         style: active.title,
         name: created.sharer_name || "",

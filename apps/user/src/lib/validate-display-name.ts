@@ -13,8 +13,7 @@ export type DisplayNameErrorKey =
   | "nameTooManyParts";
 
 export type DisplayNameValidation =
-  | { ok: true; value: string }
-  | { ok: false; errorKey: DisplayNameErrorKey };
+  { ok: true; value: string } | { ok: false; errorKey: DisplayNameErrorKey };
 
 export function normalizeDisplayName(raw: string): string {
   return raw
@@ -37,7 +36,11 @@ export function validateDisplayName(raw: string, currentName?: string): DisplayN
     return { ok: false, errorKey: "nameRequired" };
   }
 
-  if (currentName && value.localeCompare(normalizeDisplayName(currentName), undefined, { sensitivity: "accent" }) === 0) {
+  if (
+    currentName &&
+    value.localeCompare(normalizeDisplayName(currentName), undefined, { sensitivity: "accent" }) ===
+      0
+  ) {
     return { ok: true, value };
   }
 

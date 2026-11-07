@@ -4,10 +4,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { MapFilters } from "@/components/map/MapFilters";
 import { NoSalonsEmpty } from "@/components/NoSalonsEmpty";
-import {
-  MapLoadingIndicator,
-  MapPanelSkeleton,
-} from "@/components/map/MapLoadingSkeleton";
+import { MapLoadingIndicator, MapPanelSkeleton } from "@/components/map/MapLoadingSkeleton";
 import type { AudienceFilter } from "@/hooks/use-audience";
 import type { Salon } from "@/lib/mock-data";
 import { shortPrice } from "@/lib/mock-data";
@@ -133,7 +130,12 @@ function MapDesktopSalonCard({
 
       <div className="px-0.5 pb-1.5 pt-0.5">
         <div className="flex items-start justify-between gap-2.5">
-          <Link to="/salon/$id" params={{ id: salon.id }} preload="intent" className="min-w-0 flex-1">
+          <Link
+            to="/salon/$id"
+            params={{ id: salon.id }}
+            preload="intent"
+            className="min-w-0 flex-1"
+          >
             <h3 className="line-clamp-2 text-[15px] font-bold leading-snug tracking-tight text-foreground">
               {salon.name}
             </h3>
@@ -164,7 +166,9 @@ function MapDesktopSalonCard({
           </div>
           {salon.priceFrom > 0 ? (
             <p className="shrink-0 text-right leading-none">
-              <span className="text-[15px] font-bold tabular-nums text-foreground">{shortPrice(salon.priceFrom)}</span>
+              <span className="text-[15px] font-bold tabular-nums text-foreground">
+                {shortPrice(salon.priceFrom)}
+              </span>
               <span className="ml-1 text-[12px] font-semibold text-foreground/65">
                 {t("map.priceFromSuffix")}
               </span>

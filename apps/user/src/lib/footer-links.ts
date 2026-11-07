@@ -85,7 +85,11 @@ export const FOOTER_SECTIONS: FooterSection[] = [
     titleKey: "footer.legal",
     titleDefault: "Huquqiy",
     links: [
-      { to: "/privacy-policy", labelKey: "footer.privacyPolicy", defaultValue: "Maxfiylik siyosati" },
+      {
+        to: "/privacy-policy",
+        labelKey: "footer.privacyPolicy",
+        defaultValue: "Maxfiylik siyosati",
+      },
       { to: "/privacy", labelKey: "footer.terms", defaultValue: "Foydalanish shartlari" },
       { to: "/settings", labelKey: "profile.settings", defaultValue: "Sozlamalar" },
     ],

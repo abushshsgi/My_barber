@@ -3,10 +3,7 @@ import type { CameraCapturePayload } from "@/components/ai-style/AiStyleCamera";
 import { generateAiStyleTryOn, persistAiStyleHistory } from "@/lib/api";
 import type { ExplorePersonaId } from "@/lib/explore-personas";
 import { isMorphPlanLimitError } from "@/lib/morph-plan-limit";
-import {
-  refreshMorphAiGenerationsCache,
-  saveMorphAiGeneration,
-} from "@/lib/morf-ai-gallery";
+import { refreshMorphAiGenerationsCache, saveMorphAiGeneration } from "@/lib/morf-ai-gallery";
 import { markMorphAiOnboarded } from "@/lib/morf-ai-session";
 import { prepareSelfieDataUrl, prepareSelfieFromFile } from "@/lib/selfie-image";
 
@@ -22,7 +19,11 @@ type UseStyleTryOnFlowOptions = {
 /** Strict Mode remount da juft API so'rovini oldini olish. */
 const styleTryOnInFlight = new Map<string, Promise<string>>();
 
-function styleTryOnFlightKey(styleId: string, personaId: string | null | undefined, photo: string): string {
+function styleTryOnFlightKey(
+  styleId: string,
+  personaId: string | null | undefined,
+  photo: string,
+): string {
   return `${styleId}:${personaId ?? ""}:${photo.length}:${photo.slice(32, 64)}:${photo.slice(-48)}`;
 }
 

@@ -2,12 +2,15 @@ import { useMemo } from "react";
 import type { HomeData } from "@/components/home/useHomeData";
 import { cn } from "@/lib/utils";
 import { BazaarCategoryStrip } from "./bazaar/BazaarCategoryStrip";
-import { BazaarExploreRowSection, BazaarExploreRowSectionSkeleton } from "./bazaar/BazaarExploreRowSection";
-import { BazaarSalonRowSection, BazaarSalonRowSectionSkeleton } from "./bazaar/BazaarSalonRowSection";
 import {
-  HOME_CATEGORY_ROW_AFTER,
-  buildHomeSalonSections,
-} from "@/lib/home-sections";
+  BazaarExploreRowSection,
+  BazaarExploreRowSectionSkeleton,
+} from "./bazaar/BazaarExploreRowSection";
+import {
+  BazaarSalonRowSection,
+  BazaarSalonRowSectionSkeleton,
+} from "./bazaar/BazaarSalonRowSection";
+import { HOME_CATEGORY_ROW_AFTER, buildHomeSalonSections } from "@/lib/home-sections";
 
 export function useHomeLayoutSlice(data: HomeData) {
   const { filtered, mapSalons, loading, exploreLoading, exploreRow } = data;

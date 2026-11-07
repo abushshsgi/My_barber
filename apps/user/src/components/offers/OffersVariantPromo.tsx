@@ -21,7 +21,10 @@ export function OffersVariantPromo({ list }: Props) {
   return (
     <div className="space-y-5">
       <ProfileSubpageCard>
-        <label htmlFor="promo-code" className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+        <label
+          htmlFor="promo-code"
+          className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground"
+        >
           {t("offersPage.promoInputLabel")}
         </label>
         <div className="mt-2 flex gap-2">

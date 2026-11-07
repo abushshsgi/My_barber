@@ -50,7 +50,12 @@ type Props = {
   className?: string;
 };
 
-export function ResponsiveGrid({ cols = { default: 1, lg: 2 }, gap = "gap-4", children, className }: Props) {
+export function ResponsiveGrid({
+  cols = { default: 1, lg: 2 },
+  gap = "gap-4",
+  children,
+  className,
+}: Props) {
   const d = cols.default ?? 1;
   const s = cols.sm;
   const l = cols.lg;

@@ -76,7 +76,9 @@ export function ChatThreadView({ threadId, embedded }: Props) {
   };
 
   return (
-    <div className={cn("flex min-h-0 flex-1 flex-col bg-background", !embedded && "min-h-[100dvh]")}>
+    <div
+      className={cn("flex min-h-0 flex-1 flex-col bg-background", !embedded && "min-h-[100dvh]")}
+    >
       <header
         className={cn(
           "sticky top-0 z-30 flex shrink-0 items-center gap-3 border-b border-border bg-background/95 px-3 py-3 backdrop-blur-md",
@@ -126,7 +128,11 @@ export function ChatThreadView({ threadId, embedded }: Props) {
                 initial={{ opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.18 }}
-                className={cn("flex", m.fromMe ? "justify-end" : "justify-start", grouped ? "mt-0.5" : "mt-2")}
+                className={cn(
+                  "flex",
+                  m.fromMe ? "justify-end" : "justify-start",
+                  grouped ? "mt-0.5" : "mt-2",
+                )}
               >
                 <div
                   className={cn(
@@ -190,7 +196,9 @@ export function ChatThreadView({ threadId, embedded }: Props) {
             disabled={!input.trim() || sendMessage.isPending}
             className={cn(
               "grid h-11 w-11 shrink-0 place-items-center rounded-full transition-all",
-              input.trim() ? "bg-foreground text-background active:scale-95" : "bg-surface text-muted-foreground",
+              input.trim()
+                ? "bg-foreground text-background active:scale-95"
+                : "bg-surface text-muted-foreground",
             )}
           >
             <Send className="h-4 w-4" />

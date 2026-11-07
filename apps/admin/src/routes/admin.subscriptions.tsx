@@ -34,7 +34,9 @@ import {
   fetchAdminSubscriptions,
   type AdminSubscriptionPaymentRow,
 } from "@/lib/admin-api";
+import { PaymeLogo } from "@/components/brand/PaymeLogo";
 import { formatAdminUzs } from "@/lib/admin-analytics";
+import { formatPayWhen, paymeChannel, paymeStateLabel } from "@/lib/payme-payment";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/admin/subscriptions")({
@@ -678,7 +680,14 @@ function PurchaseTable({
             <div className="text-xs text-muted-foreground">
               <span className="capitalize">{r.plan_code}</span>
               {" · "}
-              {r.provider}
+              {r.provider === "payme" ? (
+                <span className="inline-flex items-center gap-1.5">
+                  <PaymeLogo height={14} />
+                  <span>{paymeChannel(r)}</span>
+                </span>
+              ) : (
+                r.provider
+              )}
               {showPromo && r.promo_code ? (
                 <>
                   {" · "}
@@ -817,9 +826,31 @@ function PaymentsPanel({
                       <span className="text-xs text-muted-foreground">—</span>
                     )}
                   </TableCell>
-                  <TableCell className="capitalize text-xs">{row.provider}</TableCell>
+                  <TableCell className="text-xs">
+                    {row.provider === "payme" ? (
+                      <div>
+                        <PaymeLogo height={14} />
+                        <div className="mt-1">{paymeChannel(row)}</div>
+                        {row.payme_receipt_id ? (
+                          <div className="mt-0.5 font-mono text-[11px] text-muted-foreground">
+                            {row.payme_receipt_id}
+                          </div>
+                        ) : null}
+                        <div className="mt-0.5 text-[11px] text-muted-foreground">
+                          {paymeStateLabel(row.payme_state)}
+                        </div>
+                      </div>
+                    ) : (
+                      <span className="capitalize">{row.provider}</span>
+                    )}
+                  </TableCell>
                   <TableCell className="text-xs whitespace-nowrap">
-                    {formatWhen(row.paid_at || row.created_at)}
+                    <div>{formatWhen(row.paid_at || row.payme_pay_time || row.created_at)}</div>
+                    {row.provider === "payme" ? (
+                      <div className="mt-0.5 text-muted-foreground">
+                        Yaratilgan: {formatPayWhen(row.payme_create_time || row.created_at)}
+                      </div>
+                    ) : null}
                   </TableCell>
                   <TableCell>
                     {row.subscription_id ? (

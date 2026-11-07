@@ -30,7 +30,9 @@ type Props = {
 function RecipeRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-start justify-between gap-3 rounded-xl bg-white/70 px-3 py-2.5 ring-1 ring-black/5">
-      <span className="text-[11px] font-semibold uppercase tracking-wide text-neutral-500">{label}</span>
+      <span className="text-[11px] font-semibold uppercase tracking-wide text-neutral-500">
+        {label}
+      </span>
       <span className="text-right text-[13px] font-bold text-foreground">{value}</span>
     </div>
   );
@@ -139,8 +141,7 @@ export function MasterCardUI({
                 defaultValue: "Try-on preview — hozircha old (front) ko‘rinish.",
               })
             : t("barberConsult.mode3dHint", {
-                defaultValue:
-                  "Bu abstrakt bosh: fade / yuqori / soqol zonalarini ko‘rsatadi.",
+                defaultValue: "Bu abstrakt bosh: fade / yuqori / soqol zonalarini ko‘rsatadi.",
               })}
         </p>
       </div>
@@ -234,7 +235,11 @@ export function MasterCardUI({
               disabled={sharing}
               className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-border bg-white px-4 text-sm font-bold text-foreground touch-manipulation active:opacity-90"
             >
-              {sharing ? <Loader2 className="size-4 animate-spin" /> : <Share2 className="size-4" />}
+              {sharing ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <Share2 className="size-4" />
+              )}
               {t("barberConsult.shareCta", { defaultValue: "Share with Barber" })}
             </button>
           </div>
@@ -244,9 +249,6 @@ export function MasterCardUI({
   );
 }
 
-export function cameraStateFromUi(
-  view: ExploreViewId,
-  mode: "2d" | "3d",
-): ViewerCameraState {
+export function cameraStateFromUi(view: ExploreViewId, mode: "2d" | "3d"): ViewerCameraState {
   return { view, mode };
 }

@@ -8,12 +8,17 @@ import { Button } from "@/components/ui/button";
 import { useMorphAiPrivacy } from "@/hooks/use-morf-ai-privacy";
 import { cn } from "@/lib/utils";
 
-function chatUsagePct(limits: {
-  token_used?: number | null;
-  daily_used?: number | null;
-  token_limit?: number | null;
-  daily_limit?: number | null;
-} | null | undefined) {
+function chatUsagePct(
+  limits:
+    | {
+        token_used?: number | null;
+        daily_used?: number | null;
+        token_limit?: number | null;
+        daily_limit?: number | null;
+      }
+    | null
+    | undefined,
+) {
   const used = limits?.token_used ?? limits?.daily_used;
   const limit = limits?.token_limit ?? limits?.daily_limit;
   if (typeof used !== "number" || typeof limit !== "number" || !limit) return 0;

@@ -862,10 +862,20 @@ def _apply_chat_token_usage(user, usage: dict) -> dict:
     return chat_limits_payload(user)
 
 
-def _assistant_style_context(response_type: str, hairstyles) -> dict:
-    if response_type != "hairstyle_recommendation" or not isinstance(hairstyles, list) or not hairstyles:
-        return {}
-    return {"type": response_type, "hairstyles": hairstyles}
+def _assistant_style_context(response_type: str, hairstyles, blocks=None) -> dict:
+    styles = hairstyles if isinstance(hairstyles, list) else []
+    content_blocks = blocks if isinstance(blocks, list) else []
+    if response_type != "hairstyle_recommendation" or not styles:
+        if not content_blocks:
+            return {}
+    payload = {}
+    if styles:
+        payload["type"] = response_type or "hairstyle_recommendation"
+        payload["hairstyles"] = styles
+    if content_blocks:
+        payload["type"] = response_type or payload.get("type") or "hairstyle_recommendation"
+        payload["blocks"] = content_blocks
+    return payload
 
 
 def _chat_thread_id(request) -> str:
@@ -1022,6 +1032,7 @@ class AiMorphChatView(UnthrottledAPIView):
             limits = _apply_chat_token_usage(user, usage)
             reply = result.get("reply") or ""
             hairstyles = result.get("hairstyles") or []
+            blocks = result.get("blocks") or []
             response_type = str(result.get("type") or "text")
             if persist:
                 append_chat_turn(
@@ -1032,7 +1043,7 @@ class AiMorphChatView(UnthrottledAPIView):
                     context=context,
                     usage_row=usage_row,
                     usage_meta=usage,
-                    assistant_context=_assistant_style_context(response_type, hairstyles),
+                    assistant_context=_assistant_style_context(response_type, hairstyles, blocks),
                 )
             from ai.services.chat_catalog import public_chat_payload
 
@@ -1043,6 +1054,7 @@ class AiMorphChatView(UnthrottledAPIView):
                     thread_id=thread_id or None,
                     response_type=response_type,
                     hairstyles=hairstyles if isinstance(hairstyles, list) else [],
+                    blocks=blocks if isinstance(blocks, list) else [],
                 )
             )
         except AiStyleError as exc:
@@ -1064,6 +1076,12 @@ class AiMorphChatView(UnthrottledAPIView):
                     history=history,
                     context=context,
                 ):
+                    if event.get("block"):
+                        yield (
+                            "data: "
+                            + json.dumps({"block": event["block"]}, ensure_ascii=False)
+                            + "\n\n"
+                        )
                     if event.get("delta"):
                         yield f"data: {json.dumps({'delta': event['delta']}, ensure_ascii=False)}\n\n"
                     if event.get("done"):
@@ -1086,6 +1104,7 @@ class AiMorphChatView(UnthrottledAPIView):
                         limits = _apply_chat_token_usage(user, usage)
                         reply = event.get("reply") or ""
                         hairstyles = event.get("hairstyles") or []
+                        blocks = event.get("blocks") or []
                         response_type = str(event.get("type") or "text")
                         if persist:
                             append_chat_turn(
@@ -1099,6 +1118,7 @@ class AiMorphChatView(UnthrottledAPIView):
                                 assistant_context=_assistant_style_context(
                                     response_type,
                                     hairstyles,
+                                    blocks,
                                 ),
                             )
                         from ai.services.chat_catalog import public_chat_payload
@@ -1109,6 +1129,7 @@ class AiMorphChatView(UnthrottledAPIView):
                             thread_id=thread_id or None,
                             response_type=response_type,
                             hairstyles=hairstyles if isinstance(hairstyles, list) else [],
+                            blocks=blocks if isinstance(blocks, list) else [],
                         )
                         done_body["done"] = True
                         yield (

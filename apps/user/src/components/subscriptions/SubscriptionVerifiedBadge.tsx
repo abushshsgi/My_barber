@@ -38,11 +38,7 @@ export function SubscriptionVerifiedBadge({
 
   return (
     <span className={cn("inline-flex shrink-0", className)} title={label}>
-      <BadgeCheck
-        className={cn(sizeCls, tone)}
-        strokeWidth={2.5}
-        aria-label={label}
-      />
+      <BadgeCheck className={cn(sizeCls, tone)} strokeWidth={2.5} aria-label={label} />
     </span>
   );
 }

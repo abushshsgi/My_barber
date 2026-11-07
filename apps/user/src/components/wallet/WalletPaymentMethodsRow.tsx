@@ -24,7 +24,12 @@ export function WalletPaymentMethodsRow({
           <h2 className={cn("font-bold", isDesktop ? "text-sm" : "text-[13px]")}>
             {t("walletPage.savedCards")}
           </h2>
-          <p className={cn("mt-0.5 truncate text-muted-foreground", isDesktop ? "text-xs" : "text-[10px]")}>
+          <p
+            className={cn(
+              "mt-0.5 truncate text-muted-foreground",
+              isDesktop ? "text-xs" : "text-[10px]",
+            )}
+          >
             {t("walletPage.savedCardsHint")}
           </p>
         </div>
@@ -51,7 +56,7 @@ export function WalletPaymentMethodsRow({
         {wallet ? (
           <Link
             to="/wallet"
-          search={{ section: "payments" }}
+            search={{ section: "payments" }}
             className={cn(
               "flex flex-col justify-between rounded-xl border active:scale-[0.98]",
               "border-foreground bg-surface",
@@ -67,10 +72,20 @@ export function WalletPaymentMethodsRow({
               </span>
             </div>
             <div className="min-w-0">
-              <p className={cn("truncate font-bold leading-tight", isDesktop ? "text-sm" : "text-[10px]")}>
+              <p
+                className={cn(
+                  "truncate font-bold leading-tight",
+                  isDesktop ? "text-sm" : "text-[10px]",
+                )}
+              >
                 {wallet.card.card_display}
               </p>
-              <p className={cn("truncate leading-tight text-muted-foreground", isDesktop ? "text-xs" : "text-[9px]")}>
+              <p
+                className={cn(
+                  "truncate leading-tight text-muted-foreground",
+                  isDesktop ? "text-xs" : "text-[9px]",
+                )}
+              >
                 {balance.toLocaleString("uz-UZ")} so'm
               </p>
             </div>
@@ -81,7 +96,7 @@ export function WalletPaymentMethodsRow({
           <Link
             key={id}
             to="/wallet"
-          search={{ section: "payments" }}
+            search={{ section: "payments" }}
             className={cn(
               "flex flex-col justify-between rounded-xl border border-border bg-background active:scale-[0.98]",
               isDesktop ? "min-h-[88px] px-4 py-3" : "h-[54px] w-[98px] shrink-0 px-2.5 py-2",
@@ -90,7 +105,12 @@ export function WalletPaymentMethodsRow({
             <span className="grid h-6 w-6 place-items-center rounded-md bg-surface">
               <Smartphone className="h-3 w-3" />
             </span>
-            <p className={cn("truncate font-bold uppercase leading-tight", isDesktop ? "text-sm" : "text-[10px]")}>
+            <p
+              className={cn(
+                "truncate font-bold uppercase leading-tight",
+                isDesktop ? "text-sm" : "text-[10px]",
+              )}
+            >
               {id}
             </p>
           </Link>
@@ -106,7 +126,9 @@ export function WalletPaymentMethodsRow({
           aria-label={t("paymentMethods.add")}
         >
           <Plus className="h-3.5 w-3.5 text-muted-foreground" />
-          <span className={cn("font-bold text-muted-foreground", isDesktop ? "text-xs" : "text-[8px]")}>
+          <span
+            className={cn("font-bold text-muted-foreground", isDesktop ? "text-xs" : "text-[8px]")}
+          >
             {t("paymentMethods.add")}
           </span>
         </Link>

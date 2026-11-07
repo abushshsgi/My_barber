@@ -6,13 +6,7 @@ export type HairColorStatus = "natural" | "colored" | "bleached";
 
 export type HairScalp = "oily" | "dry" | "normal" | "sensitive";
 export type HairConcern =
-  | "dandruff"
-  | "hair_loss"
-  | "frizz"
-  | "breakage"
-  | "color_fade"
-  | "itch"
-  | "split_ends";
+  "dandruff" | "hair_loss" | "frizz" | "breakage" | "color_fade" | "itch" | "split_ends";
 
 export type HairCareProfile = {
   condition: HairCondition | "";
@@ -37,9 +31,7 @@ export async function fetchHairCareProfile(): Promise<HairCareProfile> {
   return apiJson<HairCareProfile>("/api/v1/users/me/hair-care-profile/");
 }
 
-export async function updateHairCareProfile(
-  body: HairCareProfileUpdate,
-): Promise<HairCareProfile> {
+export async function updateHairCareProfile(body: HairCareProfileUpdate): Promise<HairCareProfile> {
   return apiJson<HairCareProfile>("/api/v1/users/me/hair-care-profile/", {
     method: "PUT",
     body: JSON.stringify(body),

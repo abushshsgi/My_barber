@@ -1,7 +1,18 @@
 import { useQuery } from "@tanstack/react-query";
-import { fetchSalon, fetchSalons, fetchSalonsNearby, fetchSalonStaff, searchSalons } from "@/lib/api/salons";
+import {
+  fetchSalon,
+  fetchSalons,
+  fetchSalonsNearby,
+  fetchSalonStaff,
+  searchSalons,
+} from "@/lib/api/salons";
 import { authQueryEnabled, catalogQueryEnabled } from "@/lib/auth-query";
-import { mapNearbySalon, mapSalonDetail, mapSalonList, mapStaffToBarber } from "@/lib/mappers/salon";
+import {
+  mapNearbySalon,
+  mapSalonDetail,
+  mapSalonList,
+  mapStaffToBarber,
+} from "@/lib/mappers/salon";
 
 export const salonsQueryKey = ["salons"] as const;
 

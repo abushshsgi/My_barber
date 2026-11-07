@@ -48,11 +48,7 @@ export function ExploreStyleGallery({
       <div
         className={cn(
           "grid gap-2",
-          isMobileHero
-            ? "mt-3 grid-cols-4 gap-1.5"
-            : slides.length > 1
-              ? "grid-cols-4"
-              : "hidden",
+          isMobileHero ? "mt-3 grid-cols-4 gap-1.5" : slides.length > 1 ? "grid-cols-4" : "hidden",
         )}
       >
         {slides.map((item, index) => (
@@ -124,7 +120,9 @@ export function ExploreStyleGallery({
               fade ? "opacity-100" : "opacity-0",
             )}
           />
-          {!isMobileHero && !isGridCard && badge ? <div className="absolute left-3 top-3">{badge}</div> : null}
+          {!isMobileHero && !isGridCard && badge ? (
+            <div className="absolute left-3 top-3">{badge}</div>
+          ) : null}
           {!isMobileHero && !isGridCard && active?.label ? (
             <span className="absolute right-3 top-3 rounded-full bg-black/70 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white">
               {active.label}
@@ -147,7 +145,9 @@ export function ExploreStyleGallery({
       </div>
 
       {isMobileHero && description ? (
-        <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-muted-foreground">{description}</p>
+        <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-muted-foreground">
+          {description}
+        </p>
       ) : null}
 
       {thumbRow}

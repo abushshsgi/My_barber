@@ -50,12 +50,7 @@ export function CoverageWaitlistCard({
   };
 
   return (
-    <div
-      className={cn(
-        "rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4",
-        className,
-      )}
-    >
+    <div className={cn("rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4", className)}>
       <p className="text-sm font-bold">{t("coverage.comingSoon")}</p>
       <p className="mt-1 text-xs text-muted-foreground">{t("coverage.comingSoonHint")}</p>
       {submitted ? (

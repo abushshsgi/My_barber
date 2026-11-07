@@ -10,7 +10,11 @@ let displayCurrency: CurrencyCode = DEFAULT_CURRENCY;
 let uzsPerUnit = 1;
 let ratesMap: Record<string, number> = { UZS: 1 };
 
-export function configurePriceDisplay(currency: CurrencyCode, rate: number, rates?: Record<string, number>) {
+export function configurePriceDisplay(
+  currency: CurrencyCode,
+  rate: number,
+  rates?: Record<string, number>,
+) {
   displayCurrency = currency;
   if (rates) ratesMap = rates;
   uzsPerUnit = resolveUzsPerUnit(currency, rates ?? ratesMap);

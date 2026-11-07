@@ -110,7 +110,9 @@ export function DesktopSalonCard({ salon, variant = "grid", elevated = false, cl
               ) : null}
             </span>
           </div>
-          <p className={cn("truncate text-muted-foreground", elevated ? "text-base" : "text-[15px]")}>
+          <p
+            className={cn("truncate text-muted-foreground", elevated ? "text-base" : "text-[15px]")}
+          >
             {salon.category} · {salon.distanceKm} km
           </p>
           <p className={elevated ? "text-base" : "text-[15px]"}>
@@ -125,7 +127,11 @@ export function DesktopSalonCard({ salon, variant = "grid", elevated = false, cl
   if (variant === "row") {
     return (
       <div className="group flex items-center gap-4 rounded-2xl border border-border bg-background p-3 transition-shadow hover:shadow-md">
-        <Link to="/salon/$id" params={{ id: salon.id }} className="relative h-20 w-28 shrink-0 overflow-hidden rounded-xl">
+        <Link
+          to="/salon/$id"
+          params={{ id: salon.id }}
+          className="relative h-20 w-28 shrink-0 overflow-hidden rounded-xl"
+        >
           <img {...coverImgProps} className="h-full w-full object-cover" />
         </Link>
         <div className="min-w-0 flex-1">
@@ -133,7 +139,11 @@ export function DesktopSalonCard({ salon, variant = "grid", elevated = false, cl
             <Link to="/salon/$id" params={{ id: salon.id }}>
               <h3 className="truncate text-sm font-bold">{salon.name}</h3>
             </Link>
-            <button type="button" onClick={() => toggle(salon.id)} className="shrink-0 text-muted-foreground">
+            <button
+              type="button"
+              onClick={() => toggle(salon.id)}
+              className="shrink-0 text-muted-foreground"
+            >
               <Heart className={cn("h-4 w-4", fav && "fill-foreground text-foreground")} />
             </button>
           </div>
@@ -161,7 +171,10 @@ export function DesktopSalonCard({ salon, variant = "grid", elevated = false, cl
     return (
       <Link to="/salon/$id" params={{ id: salon.id }} className="group block">
         <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-surface">
-          <img {...coverImgProps} className="h-full w-full object-cover transition-transform group-hover:scale-[1.02]" />
+          <img
+            {...coverImgProps}
+            className="h-full w-full object-cover transition-transform group-hover:scale-[1.02]"
+          />
           <button
             type="button"
             onClick={(e) => {

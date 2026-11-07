@@ -101,8 +101,8 @@ export function AiStylePreviewSheet({
   const imageSrc = previewImage || suggestion.imageUrl;
   const canTryOn = Boolean(onGenerateTryOn && isCatalogStyleId(suggestion.id));
   const lookUrl = isCatalogStyleId(suggestion.id)
-      ? publicAppUrl(`/morf-ai/look/${suggestion.id}`)
-      : undefined;
+    ? publicAppUrl(`/morf-ai/look/${suggestion.id}`)
+    : undefined;
 
   const goBack = () => onOpenChange(false);
 
@@ -164,8 +164,7 @@ export function AiStylePreviewSheet({
         after_image: toShareImageSource(previewImage),
       });
       const pageUrl =
-        created.share_page_url ||
-        publicAppUrl(`/morf-ai/share/${encodeURIComponent(created.id)}`);
+        created.share_page_url || publicAppUrl(`/morf-ai/share/${encodeURIComponent(created.id)}`);
       const shareTitle = pickMorphShareText(t, {
         style: suggestion.title,
         name: created.sharer_name || "",
@@ -257,7 +256,7 @@ export function AiStylePreviewSheet({
               <img
                 src={imageSrc}
                 alt=""
-                className="h-full min-h-[min(52dvh,460px)] w-full object-cover object-top"
+                className="h-full min-h-[min(52dvh,460px)] w-full bg-neutral-100 object-contain object-center"
               />
             ) : (
               <div className="flex min-h-[min(52dvh,460px)] items-center justify-center text-sm text-neutral-500">

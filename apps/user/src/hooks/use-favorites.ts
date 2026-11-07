@@ -14,7 +14,9 @@ export function useFavorites() {
   const toggle = useCallback(
     (id: string) => {
       if (!hasValidUserSession()) {
-        toast.message(t("salon.loginForFavorite", { defaultValue: "Sevimlilar uchun tizimga kiring" }));
+        toast.message(
+          t("salon.loginForFavorite", { defaultValue: "Sevimlilar uchun tizimga kiring" }),
+        );
         void navigate({ to: "/auth", search: { redirect: `/salon/${id}` } });
         return;
       }

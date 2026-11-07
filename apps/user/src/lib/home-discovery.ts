@@ -2,8 +2,7 @@ import type { BarberDiscovery } from "@/lib/mappers/barber";
 import type { Salon } from "@/lib/mock-data";
 
 export type HomeDiscoveryItem =
-  | { type: "salon"; salon: Salon }
-  | { type: "barber"; barber: BarberDiscovery };
+  { type: "salon"; salon: Salon } | { type: "barber"; barber: BarberDiscovery };
 
 /** Salon va ustalarni bir qatorda aralash ko'rsatish. */
 export function buildMixedDiscoveryItems(

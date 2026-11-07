@@ -1,8 +1,5 @@
 import { apiJson } from "@/lib/api/client";
-import {
-  exploreGenHeaders,
-  readExploreGenSecret,
-} from "@/lib/api/explore-gen";
+import { exploreGenHeaders, readExploreGenSecret } from "@/lib/api/explore-gen";
 
 export type AssetsStudioTemplate = {
   id: string;

@@ -1,6 +1,7 @@
-﻿import { API_BASE, API_ORIGIN } from "./config";
+﻿import { API_BASE, API_ORIGIN, apiUrl } from "./config";
 import { getAccessToken, getRefreshToken, getSessionId, saveSession, clearSession } from "../auth/storage";
-import { friendlyNetworkError } from "../lib/network-error";
+import i18n, { currentLang } from "../i18n/config";
+import { friendlyNetworkError, translateApiDetail } from "../lib/network-error";
 import { markOffline, markOnline } from "../lib/network-status";
 
 export type Paginated<T> = {
@@ -57,8 +58,7 @@ async function tryRefresh(): Promise<string | null> {
     const refresh = await getRefreshToken();
     if (!refresh) return null;
     try {
-      const base = API_BASE || API_ORIGIN;
-      const res = await fetch(`${base}/api/v1/auth/token/refresh/`, {
+      const res = await fetch(apiUrl("/api/v1/auth/token/refresh/"), {
         method: "POST",
         headers: {
           Accept: "application/json",
@@ -114,6 +114,8 @@ export async function apiJson<T>(path: string, init?: RequestInit): Promise<T> {
 
   const headers: Record<string, string> = {
     Accept: "application/json",
+    "Accept-Language": currentLang(),
+    "X-Mysaloon-Client": "android",
     ...(init?.headers as Record<string, string> | undefined),
   };
   const isFormData = isMultipartBody(init?.body);
@@ -170,9 +172,13 @@ export async function apiJson<T>(path: string, init?: RequestInit): Promise<T> {
           detail?: string;
           message?: string;
           status?: string;
+          code?: string;
         };
         if (typeof j.detail === "string") detail = j.detail;
         else if (typeof j.message === "string") detail = j.message;
+        if (typeof j.code === "string" && j.code) {
+          detail = translateApiDetail(detail, j.code);
+        }
       } catch {
         /* ignore */
       }
@@ -184,9 +190,7 @@ export async function apiJson<T>(path: string, init?: RequestInit): Promise<T> {
         detail.length < 240 &&
         !/bad gateway|application failed to respond|upstream/i.test(detail);
       if (gateway && !specific) {
-        throw new Error(
-          "Server vaqtincha javob bermayapti. Bir necha soniyadan keyin qayta urinib ko'ring.",
-        );
+        throw new Error(i18n.t("errors.server"));
       }
       // API javob xatosi — alohida marker (catch da network bilan aralashtirilmasin).
       const err = new Error(
@@ -200,14 +204,7 @@ export async function apiJson<T>(path: string, init?: RequestInit): Promise<T> {
     return (await res.json()) as T;
   } catch (err) {
     if (err instanceof Error && err.name === "AbortError") {
-      throw new Error("Backend javob bermadi (timeout). Internetni tekshiring.");
-    }
-    if (
-      err instanceof Error &&
-      (err.message.startsWith("Server vaqtincha") ||
-        err.message.startsWith("Backend javob bermadi"))
-    ) {
-      throw err;
+      throw new Error(i18n.t("errors.server"));
     }
     // Backend detail (4xx) — faqat texnik matnni tozalash, network deb o‘qimaslik.
     if (
@@ -220,8 +217,9 @@ export async function apiJson<T>(path: string, init?: RequestInit): Promise<T> {
     // Faqat haqiqiy network xatoliklarida offline deb belgilash
     if (
       err instanceof Error &&
-      (/network request failed|failed to fetch|enotfound|getaddrinfo|unknownhostexception|no address associated|internet|dns/i.test(err.message) ||
-       err.message.includes("Network request failed"))
+      (/network request failed|failed to fetch|enotfound|getaddrinfo|unknownhostexception|no address associated/i.test(
+        err.message,
+      ) || err.message.includes("Network request failed"))
     ) {
       markOffline();
     }
@@ -253,6 +251,7 @@ export async function apiFetch(
 
   const headers: Record<string, string> = {
     Accept: "application/json",
+    "Accept-Language": currentLang(),
     ...(fetchInit.headers as Record<string, string> | undefined),
   };
   const isFormData = isMultipartBody(fetchInit.body);
@@ -300,13 +299,14 @@ export async function apiFetch(
     return res;
   } catch (err) {
     if (err instanceof Error && err.name === "AbortError") {
-      throw new Error("Backend javob bermadi (timeout). Internetni tekshiring.");
+      throw new Error(i18n.t("errors.server"));
     }
     // Faqat haqiqiy network xatoliklarida offline deb belgilash
     if (
       err instanceof Error &&
-      (/network request failed|failed to fetch|enotfound|getaddrinfo|unknownhostexception|no address associated|internet|dns/i.test(err.message) ||
-       err.message.includes("Network request failed"))
+      (/network request failed|failed to fetch|enotfound|getaddrinfo|unknownhostexception|no address associated/i.test(
+        err.message,
+      ) || err.message.includes("Network request failed"))
     ) {
       markOffline();
     }

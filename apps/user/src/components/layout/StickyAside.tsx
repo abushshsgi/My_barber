@@ -7,9 +7,5 @@ type Props = {
 };
 
 export function StickyAside({ children, className, topOffset = "lg:top-20" }: Props) {
-  return (
-    <aside className={cn("lg:sticky lg:self-start", topOffset, className)}>
-      {children}
-    </aside>
-  );
+  return <aside className={cn("lg:sticky lg:self-start", topOffset, className)}>{children}</aside>;
 }

@@ -26,8 +26,18 @@ export type AccountNavSectionDef = {
 export const ACCOUNT_NAV_SECTIONS: AccountNavSectionDef[] = [
   {
     items: [
-      { to: "/profile", icon: User, labelKey: "profile.desktop.myAccount", defaultLabel: "Mening hisobim" },
-      { to: "/bookings", icon: Briefcase, labelKey: "profile.bookings", defaultLabel: "Buyurtmalar" },
+      {
+        to: "/profile",
+        icon: User,
+        labelKey: "profile.desktop.myAccount",
+        defaultLabel: "Mening hisobim",
+      },
+      {
+        to: "/bookings",
+        icon: Briefcase,
+        labelKey: "profile.bookings",
+        defaultLabel: "Buyurtmalar",
+      },
       { to: "/wallet", icon: Wallet, labelKey: "profile.wallet", defaultLabel: "Hamyon" },
       { to: "/reviews", icon: MessageSquare, labelKey: "reviews.title", defaultLabel: "Sharhlar" },
       { to: "/favorites", icon: Heart, labelKey: "favorites.hubTitle", defaultLabel: "Sevimlilar" },
@@ -42,7 +52,12 @@ export const ACCOUNT_NAV_SECTIONS: AccountNavSectionDef[] = [
         defaultLabel: "Bildirishnomalar",
         badgeFromNotifications: true,
       },
-      { to: "/settings", icon: Settings, labelKey: "profile.desktop.accountSettings", defaultLabel: "Hisob sozlamalari" },
+      {
+        to: "/settings",
+        icon: Settings,
+        labelKey: "profile.desktop.accountSettings",
+        defaultLabel: "Hisob sozlamalari",
+      },
     ],
   },
 ];

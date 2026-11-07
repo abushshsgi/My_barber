@@ -3,7 +3,6 @@ import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { StatusBar } from "expo-status-bar";
 import { useMemo } from "react";
 import {
-  ActivityIndicator,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -19,7 +18,11 @@ import { TAB_DOCK_CLEARANCE } from "../../hooks/useHideTabBar";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../../auth/AuthContext";
 import { planLabel } from "../../api/dashboard";
-import { formatSom, initials } from "../../api/user";
+import { resolveMediaUrl } from "../../api/media";
+import { formatSom } from "../../api/user";
+import { AvatarEditPencil } from "../../components/profile/AvatarEditPencil";
+import { UserAvatar } from "../../components/profile/UserAvatar";
+import { useAvatarPhoto } from "../../hooks/useAvatarPhoto";
 import { useAppShell } from "../../lib/AppShellContext";
 import type { ProfileStackParamList } from "../../navigation/ProfileStack";
 import { useShellTheme, type ShellTheme } from "../../lib/useShellTheme";
@@ -58,8 +61,10 @@ function MysaloonProfileHome({ navigation }: Props) {
   const insets = useSafeAreaInsets();
   const { dashboard, unreadCount, loading, refresh } = useProfileDashboard();
   const { signOut, user: authUser } = useAuth();
+  const avatarPhoto = useAvatarPhoto(() => void refresh());
   const { setShell, rememberTab } = useAppShell();
   const user = dashboard?.user ?? authUser;
+  const avatarPath = authUser ? authUser.avatar : user?.avatar;
   const display =
     user?.full_name?.trim() ||
     [user?.first_name, user?.last_name].filter(Boolean).join(" ").trim() ||
@@ -105,12 +110,24 @@ function MysaloonProfileHome({ navigation }: Props) {
         </View>
 
         <View style={styles.hero}>
-          <View style={styles.avatar}>
-            {loading && !dashboard ? (
-              <ActivityIndicator color={pal.fg} />
-            ) : (
-              <Text style={styles.avatarText}>{initials(display)}</Text>
-            )}
+          <View style={styles.avatarWrap}>
+            <UserAvatar
+              name={display}
+              uri={resolveMediaUrl(avatarPath, { width: scale(240) })}
+              size={scale(88)}
+              busy={avatarPhoto.busy || (loading && !dashboard)}
+              onPress={avatarPhoto.openMenu}
+            />
+            <Pressable
+              onPress={avatarPhoto.openMenu}
+              disabled={avatarPhoto.busy}
+              accessibilityRole="button"
+              accessibilityLabel={t("profile.avatarPick", { defaultValue: "Profil rasmi" })}
+              hitSlop={8}
+              style={[styles.editBadge, { borderColor: pal.bg, backgroundColor: pal.card }]}
+            >
+              <AvatarEditPencil color={pal.fg} size={14} />
+            </Pressable>
           </View>
           <Pressable
             style={styles.nameRow}
@@ -237,6 +254,7 @@ function MysaloonProfileHome({ navigation }: Props) {
           {t("profile.guestHint")}
         </Text>
       </ScrollView>
+      {avatarPhoto.picker}
     </View>
   );
 }
@@ -251,6 +269,24 @@ function createProfileStyles(pal: ShellTheme) {
     marginBottom: verticalScale(18),
   },
   hero: { alignItems: "center", marginBottom: verticalScale(22) },
+  avatarWrap: {
+    width: scale(88),
+    height: scale(88),
+    marginBottom: verticalScale(12),
+    position: "relative",
+  },
+  editBadge: {
+    position: "absolute",
+    right: 0,
+    bottom: 0,
+    zIndex: 2,
+    width: scale(28),
+    height: scale(28),
+    borderRadius: scale(14),
+    borderWidth: 2,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   avatar: {
     width: scale(88),
     height: scale(88),

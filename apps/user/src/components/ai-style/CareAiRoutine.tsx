@@ -76,10 +76,7 @@ export function CareAiRoutine({
   const [open, setOpen] = useState(false);
   const [force, setForce] = useState(0);
   const [done, setDone] = useState<Record<string, boolean>>(() => loadDone(todayIso()));
-  const ids = useMemo(
-    () => [...myProducts.map((p) => p.id)].sort((a, b) => a - b),
-    [myProducts],
-  );
+  const ids = useMemo(() => [...myProducts.map((p) => p.id)].sort((a, b) => a - b), [myProducts]);
   const profileKey = `${quiz.condition}|${quiz.texture}|${quiz.colorStatus}`;
   const planQ = useQuery({
     queryKey: ["ai", "care", "plan", profileKey, ids.join(","), force],
@@ -289,7 +286,9 @@ export function CareAiRoutine({
                       {task.title}
                     </span>
                     {name ? (
-                      <span className="mt-0.5 block truncate text-[11px] text-[#111]/50">{name}</span>
+                      <span className="mt-0.5 block truncate text-[11px] text-[#111]/50">
+                        {name}
+                      </span>
                     ) : task.subtitle ? (
                       <span className="mt-0.5 block truncate text-[11px] text-[#111]/50">
                         {task.subtitle}

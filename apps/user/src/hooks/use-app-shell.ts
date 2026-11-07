@@ -10,12 +10,13 @@ import {
   writeLastShellRoute,
 } from "@/lib/app-shell";
 import { recordRouteVisit } from "@/lib/mobile-back";
+import { isMysaloonPausedPath } from "@/lib/mysaloon-paused";
 import { hapticLight } from "@/lib/native-haptics";
 
 export function useAppShell() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
-  const [storedShell, setStoredShell] = useState<AppShell>("mysaloon");
+  const [storedShell, setStoredShell] = useState<AppShell>("morph");
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
@@ -36,6 +37,17 @@ export function useAppShell() {
     }
 
     const current = readAppShell();
+    const mobile = window.matchMedia("(max-width: 1023px)").matches;
+    // Telefonda ilova ochilishi: saqlangan shell Morf bo‘lsa bosh sahifa try-on ga o‘tadi.
+    // Desktop bosh sahifa o‘z joyida qoladi. Bron URL lari pauza ekranida qoladi.
+    if (mobile && pathname === "/" && current === "morph") {
+      const to = readLastMorphContentRoute();
+      if (to !== pathname) {
+        void navigate({ to: to as never, replace: true });
+      }
+      return;
+    }
+
     if (current === "morph" && pathname === "/profile") {
       writeLastShellRoute("morph", pathname);
       setStoredShell("morph");
@@ -46,13 +58,15 @@ export function useAppShell() {
       writeLastShellRoute("mysaloon", pathname);
       setStoredShell("mysaloon");
     }
-  }, [pathname]);
+  }, [navigate, pathname]);
 
   const shell: AppShell = isMorphPath(pathname)
     ? "morph"
-    : hydrated && storedShell === "morph" && pathname === "/profile"
-      ? "morph"
-      : "mysaloon";
+    : isMysaloonPausedPath(pathname)
+      ? "mysaloon"
+      : hydrated
+        ? storedShell
+        : "morph";
 
   const switchToMorph = () => {
     void hapticLight();

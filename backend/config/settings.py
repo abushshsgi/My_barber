@@ -150,13 +150,20 @@ GEMINI_CHAT_MODEL = (
     os.environ.get("GEMINI_CHAT_MODEL", "gemini-2.5-flash-lite").strip()
     or "gemini-2.5-flash-lite"
 )
+# Morf AI chat bron taklifi. false = chatbot yozilish/bron action'ini rad etadi.
+BOOKING_ENABLED = os.environ.get("BOOKING_ENABLED", "false").strip().lower() in {
+    "1",
+    "true",
+    "yes",
+    "on",
+}
 AI_USD_TO_UZS = os.environ.get("AI_USD_TO_UZS", "11857").strip() or "11857"
 GEMINI_TTS_MODEL = (
     os.environ.get("GEMINI_TTS_MODEL", "gemini-2.5-flash-preview-tts").strip()
     or "gemini-2.5-flash-preview-tts"
 )
 
-# Try-on rasm: faqat Vertex AI + gemini-3.1-flash-lite-image
+# Try-on rasmi Runware orqali. Chat, tahlil, Explore va Studio Gemini/Vertex da qoladi.
 VERTEX_PROJECT_ID = os.environ.get("VERTEX_PROJECT_ID", "").strip()
 VERTEX_LOCATION = os.environ.get("VERTEX_LOCATION", "us-central1").strip() or "us-central1"
 VERTEX_IMAGE_MODEL = (
@@ -185,25 +192,25 @@ TRYON_QUEUE_ENABLED = os.environ.get("TRYON_QUEUE_ENABLED", "true").lower() in (
     "true",
     "yes",
 )
-# Navbat sig'imi — 50 ta bir vaqtda so'rov uchun 200 yetarli.
-TRYON_QUEUE_MAX_DEPTH = int(os.environ.get("TRYON_QUEUE_MAX_DEPTH", "200"))
-TRYON_JOB_TTL_SECONDS = int(os.environ.get("TRYON_JOB_TTL_SECONDS", "3600"))
-# Process soni (RAM). Thread soni — slot kutish; Vertex slotlari global limiterda.
+# 10k+ odam navbatga sig'adi. To'lib qolsa 503, 429 emas.
+TRYON_QUEUE_MAX_DEPTH = int(os.environ.get("TRYON_QUEUE_MAX_DEPTH", "20000"))
+TRYON_JOB_TTL_SECONDS = int(os.environ.get("TRYON_JOB_TTL_SECONDS", "21600"))
+# Process soni (RAM). Thread soni — slot kutish; Runware slotlari global limiterda.
 try:
-    _tryon_workers = int(os.environ.get("TRYON_WORKER_COUNT", "2") or "2")
+    _tryon_workers = int(os.environ.get("TRYON_WORKER_COUNT", "3") or "3")
 except ValueError:
-    _tryon_workers = 2
-TRYON_WORKER_COUNT = max(1, min(_tryon_workers, 4))
+    _tryon_workers = 3
+TRYON_WORKER_COUNT = max(1, min(_tryon_workers, 8))
 try:
-    _tryon_concurrency = int(os.environ.get("TRYON_WORKER_CONCURRENCY", "4") or "4")
+    _tryon_concurrency = int(os.environ.get("TRYON_WORKER_CONCURRENCY", "8") or "8")
 except ValueError:
-    _tryon_concurrency = 4
-TRYON_WORKER_CONCURRENCY = max(1, min(_tryon_concurrency, 8))
+    _tryon_concurrency = 8
+TRYON_WORKER_CONCURRENCY = max(1, min(_tryon_concurrency, 32))
 try:
-    _tryon_provider_conc = int(os.environ.get("TRYON_PROVIDER_CONCURRENCY", "3") or "3")
+    _tryon_provider_conc = int(os.environ.get("TRYON_PROVIDER_CONCURRENCY", "8") or "8")
 except ValueError:
-    _tryon_provider_conc = 3
-TRYON_PROVIDER_CONCURRENCY = max(1, min(_tryon_provider_conc, 3))
+    _tryon_provider_conc = 8
+TRYON_PROVIDER_CONCURRENCY = max(1, min(_tryon_provider_conc, 32))
 try:
     _tryon_max_retries = int(os.environ.get("TRYON_MAX_RETRIES", "6") or "6")
 except ValueError:
@@ -239,6 +246,35 @@ IMAGE_PROVIDER_FALLBACK = os.environ.get("IMAGE_PROVIDER_FALLBACK", "false").low
     "true",
     "yes",
 )
+# Morf Try-On. Boshqa image provider ga fallback yo'q.
+TRYON_PROVIDER = (os.environ.get("TRYON_PROVIDER", "runware").strip().lower() or "runware")
+RUNWARE_API_KEY = os.environ.get("RUNWARE_API_KEY", "").strip()
+RUNWARE_API_URL = (
+    os.environ.get("RUNWARE_API_URL", "https://api.runware.ai/v1").strip()
+    or "https://api.runware.ai/v1"
+)
+RUNWARE_TRYON_MODEL = (
+    os.environ.get("RUNWARE_TRYON_MODEL", "runware:400@2").strip() or "runware:400@2"
+)
+# 400@2 to'lsa 400@6, u ham to'lsa 400@4. To'rtinchi ID berilsa vergul bilan qo'shiladi.
+RUNWARE_TRYON_FALLBACK_MODELS = os.environ.get(
+    "RUNWARE_TRYON_FALLBACK_MODELS", "runware:400@6,runware:400@4"
+).strip()
+try:
+    _runware_width = int(os.environ.get("RUNWARE_TRYON_WIDTH", "1024") or "1024")
+except ValueError:
+    _runware_width = 1024
+try:
+    _runware_height = int(os.environ.get("RUNWARE_TRYON_HEIGHT", "1024") or "1024")
+except ValueError:
+    _runware_height = 1024
+try:
+    _runware_timeout = int(os.environ.get("RUNWARE_TRYON_TIMEOUT", "120") or "120")
+except ValueError:
+    _runware_timeout = 120
+RUNWARE_TRYON_WIDTH = max(128, min(_runware_width, 2048))
+RUNWARE_TRYON_HEIGHT = max(128, min(_runware_height, 2048))
+RUNWARE_TRYON_TIMEOUT = max(30, min(_runware_timeout, 240))
 
 # Morf AI kvota. Default o‘chiq — faqat lokal test uchun "true" qiling.
 MORPH_ENTITLEMENT_BYPASS = os.environ.get("MORPH_ENTITLEMENT_BYPASS", "false").lower() in (
@@ -433,7 +469,11 @@ CLICK_MERCHANT_ID = os.environ.get("CLICK_MERCHANT_ID", "").strip()
 CLICK_SERVICE_ID = os.environ.get("CLICK_SERVICE_ID", "").strip()
 CLICK_SECRET_KEY = os.environ.get("CLICK_SECRET_KEY", "").strip()
 PAYME_MERCHANT_ID = os.environ.get("PAYME_MERCHANT_ID", "").strip()
-PAYME_SECRET_KEY = os.environ.get("PAYME_SECRET_KEY", "").strip()
+# Subscribe API kassa paroli. Payme kabinetda "merchant key" / "kassa key" deb yoziladi.
+PAYME_SECRET_KEY = (
+    os.environ.get("PAYME_SECRET_KEY", "").strip()
+    or os.environ.get("PAYME_MERCHANT_KEY", "").strip()
+)
 # Haqiqiy kassa: PAYME_ALLOW_LIVE=true + live URL + merchant id/key (VPS .env).
 PAYME_ALLOW_LIVE = os.environ.get("PAYME_ALLOW_LIVE", "").lower() in ("1", "true", "yes")
 _payme_sandbox_raw = os.environ.get("PAYME_SANDBOX", "").strip().lower()
@@ -508,6 +548,7 @@ REST_FRAMEWORK = {
         "wallet_card_claim": "10/hour",
         "subscription_checkout": "10/hour",
         "subscription_confirm": "20/hour",
+        "subscription_cancel": "10/hour",
         "subscription_ip": "30/hour",
         "barber_shop_checkout": "8/hour",
         "barber_shop_confirm": "15/hour",
@@ -685,14 +726,3 @@ if not DEBUG:
     CSRF_COOKIE_SECURE = True
     X_FRAME_OPTIONS = "DENY"
 
-
-
-# Runware AI Try-On
-TRYON_PROVIDER = os.environ.get("TRYON_PROVIDER", "runware").strip()
-RUNWARE_API_KEY = os.environ.get("RUNWARE_API_KEY", "").strip()
-RUNWARE_API_URL = os.environ.get("RUNWARE_API_URL", "https://api.runware.ai/v1").strip()
-RUNWARE_TRYON_MODEL = os.environ.get("RUNWARE_TRYON_MODEL", "runware:400@2").strip()
-RUNWARE_TRYON_FALLBACK_MODELS = os.environ.get("RUNWARE_TRYON_FALLBACK_MODELS", "runware:400@6,runware:400@4").strip()
-RUNWARE_TRYON_WIDTH = int(os.environ.get("RUNWARE_TRYON_WIDTH", "1024"))
-RUNWARE_TRYON_HEIGHT = int(os.environ.get("RUNWARE_TRYON_HEIGHT", "1024"))
-RUNWARE_TRYON_TIMEOUT = int(os.environ.get("RUNWARE_TRYON_TIMEOUT", "120"))

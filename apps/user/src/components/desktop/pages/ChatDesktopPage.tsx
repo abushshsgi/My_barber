@@ -11,7 +11,12 @@ type InboxProps = {
 export function ChatDesktopInbox({ className }: InboxProps) {
   const { t } = useTranslation();
   return (
-    <div className={className ?? "grid h-[calc(100dvh-8rem)] grid-cols-[360px_1fr] overflow-hidden rounded-2xl border border-border"}>
+    <div
+      className={
+        className ??
+        "grid h-[calc(100dvh-8rem)] grid-cols-[360px_1fr] overflow-hidden rounded-2xl border border-border"
+      }
+    >
       <ChatThreadList className="border-r border-border" />
       <DesktopEmptyState
         icon={<MessageSquare className="h-8 w-8" />}

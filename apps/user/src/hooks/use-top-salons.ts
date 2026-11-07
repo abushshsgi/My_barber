@@ -14,14 +14,14 @@ export function useTopSalons() {
     hasCoords ? ctx.lng! : undefined,
     40,
   );
-  const { data: listSalons = [], isLoading: listLoading, error } = useSalonsList(
-    catalog.region,
-    catalog.apiScope,
-  );
+  const {
+    data: listSalons = [],
+    isLoading: listLoading,
+    error,
+  } = useSalonsList(catalog.region, catalog.apiScope);
 
   const salons = useMemo(() => {
-    const base =
-      hasCoords && nearbySalons.length > 0 ? nearbySalons : listSalons;
+    const base = hasCoords && nearbySalons.length > 0 ? nearbySalons : listSalons;
     return filterTopSalons(rankSalonsForUser(base, ctx));
   }, [hasCoords, nearbySalons, listSalons, ctx]);
 

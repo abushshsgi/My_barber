@@ -405,7 +405,10 @@ export function MorphAiHome({
                 className="flex cursor-pointer flex-col items-center gap-2 rounded-2xl px-1 py-2 transition-colors duration-200 active:bg-white/[0.05] md:gap-2.5 md:py-3 lg:gap-3 lg:rounded-3xl lg:bg-white lg:px-3 lg:py-5 lg:shadow-[0_10px_30px_-18px_rgba(0,0,0,0.28)] lg:ring-1 lg:ring-black/[0.06] lg:hover:bg-[#F7F7F7]"
               >
                 <span className="grid size-11 place-items-center rounded-2xl bg-[#F0F0F0] ring-1 ring-black/10 max-[359px]:size-10 sm:size-12 md:size-14 lg:size-[3.75rem] lg:rounded-[22px] lg:bg-[#F4F4F4] lg:ring-0">
-                  <Icon className="size-[18px] text-[#111111] md:size-5 lg:size-[22px]" strokeWidth={1.75} />
+                  <Icon
+                    className="size-[18px] text-[#111111] md:size-5 lg:size-[22px]"
+                    strokeWidth={1.75}
+                  />
                 </span>
                 <span className="line-clamp-2 text-center text-[10px] font-medium leading-tight text-[#111111]/50 md:text-[11px] lg:text-[13px] lg:text-[#111111]/70">
                   {action.label}

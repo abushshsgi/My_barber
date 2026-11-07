@@ -28,6 +28,39 @@ def _money(value: Any) -> Decimal:
         return Decimal("0")
 
 
+def _context_has_media(context: Any) -> bool:
+    if not isinstance(context, dict):
+        return False
+    styles = context.get("hairstyles")
+    if isinstance(styles, list) and any(isinstance(item, dict) and item.get("image_url") for item in styles):
+        return True
+    blocks = context.get("blocks")
+    if not isinstance(blocks, list):
+        return False
+    return any(
+        isinstance(block, dict)
+        and block.get("type") != "text"
+        and isinstance(block.get("items"), list)
+        and any(isinstance(item, dict) and item.get("image_url") for item in block["items"])
+        for block in blocks
+    )
+
+
+def _style_context(raw: dict[str, Any]) -> dict[str, Any]:
+    context = dict(raw.get("context")) if isinstance(raw.get("context"), dict) else {}
+    if _context_has_media(context):
+        return context
+    styles = raw.get("hairstyles")
+    blocks = raw.get("blocks")
+    if isinstance(styles, list) and styles:
+        context["hairstyles"] = styles
+    if isinstance(blocks, list) and blocks:
+        context["blocks"] = blocks
+    if context.get("hairstyles") or context.get("blocks"):
+        context.setdefault("type", raw.get("type") or "hairstyle_recommendation")
+    return context
+
+
 def _preview(text: str, limit: int = 160) -> str:
     raw = (text or "").strip().replace("\n", " ")
     if len(raw) <= limit:
@@ -52,11 +85,32 @@ def _trim_user_threads(user_id: int) -> None:
         MorphAiChatThread.objects.filter(id__in=ids).delete()
 
 
+def _style_label(context: Any) -> str:
+    if not isinstance(context, dict):
+        return ""
+    styles = context.get("hairstyles")
+    if isinstance(styles, list):
+        for item in styles:
+            if isinstance(item, dict) and str(item.get("name") or "").strip():
+                return str(item["name"]).strip()
+    blocks = context.get("blocks")
+    if isinstance(blocks, list):
+        for block in blocks:
+            items = block.get("items") if isinstance(block, dict) else None
+            if not isinstance(items, list):
+                continue
+            for item in items:
+                if isinstance(item, dict) and str(item.get("name") or "").strip():
+                    return str(item["name"]).strip()
+    return ""
+
+
 def _refresh_thread_stats(thread: MorphAiChatThread) -> None:
     msgs = list(
         thread.messages.order_by("created_at", "id").values(
             "role",
             "content",
+            "context",
             "prompt_tokens",
             "candidates_tokens",
             "total_tokens",
@@ -73,7 +127,7 @@ def _refresh_thread_stats(thread: MorphAiChatThread) -> None:
     if first_user:
         thread.title = _title_from_text(str(first_user["content"] or ""), thread.title or "Suhbat")
     if last:
-        thread.preview = _preview(str(last["content"] or ""))
+        thread.preview = _preview(str(last["content"] or "")) or _preview(_style_label(last.get("context")))
     thread.save(
         update_fields=[
             "message_count",
@@ -129,7 +183,8 @@ def append_chat_turn(
     try:
         user_text = (user_message or "").strip()
         assistant_text = (assistant_message or "").strip()
-        if not user_text and not assistant_text:
+        assistant_ctx = assistant_context if isinstance(assistant_context, dict) else {}
+        if not user_text and not assistant_text and not _context_has_media(assistant_ctx):
             return None
         meta = usage_meta or {}
         with transaction.atomic():
@@ -147,13 +202,13 @@ def append_chat_turn(
                     content=user_text[:20000],
                     context=context if isinstance(context, dict) else {},
                 )
-            if assistant_text:
+            if assistant_text or _context_has_media(assistant_ctx):
                 MorphAiChatMessage.objects.create(
                     thread=thread,
                     client_id=(assistant_client_id or "")[:64],
                     role=MorphAiChatMessage.Role.ASSISTANT,
                     content=assistant_text[:50000],
-                    context=assistant_context if isinstance(assistant_context, dict) else {},
+                    context=assistant_ctx,
                     prompt_tokens=int(meta.get("prompt_tokens") or 0),
                     candidates_tokens=int(meta.get("candidates_tokens") or 0),
                     thoughts_tokens=int(meta.get("thoughts_tokens") or 0),
@@ -210,14 +265,15 @@ def upsert_thread_from_client(
             if role not in (MorphAiChatMessage.Role.USER, MorphAiChatMessage.Role.ASSISTANT):
                 continue
             content = str(raw.get("content") or "").strip()
-            if not content:
+            context = _style_context(raw)
+            if not content and not _context_has_media(context):
                 continue
             cleaned.append(
                 {
                     "client_id": str(raw.get("id") or raw.get("client_id") or "")[:64],
                     "role": role,
                     "content": content[:50000],
-                    "context": raw.get("context") if isinstance(raw.get("context"), dict) else {},
+                    "context": context,
                     "prompt_tokens": int(raw.get("prompt_tokens") or 0),
                     "candidates_tokens": int(raw.get("candidates_tokens") or 0),
                     "thoughts_tokens": int(raw.get("thoughts_tokens") or 0),
@@ -286,9 +342,13 @@ def serialize_message(msg: MorphAiChatMessage) -> dict[str, Any]:
         "created_at": msg.created_at.isoformat() if msg.created_at else None,
     }
     styles = context.get("hairstyles") if isinstance(context, dict) else None
+    content_blocks = context.get("blocks") if isinstance(context, dict) else None
     if isinstance(styles, list) and styles:
         payload["hairstyles"] = styles
         payload["type"] = context.get("type") or "hairstyle_recommendation"
+    if isinstance(content_blocks, list) and content_blocks:
+        payload["blocks"] = content_blocks
+        payload["type"] = context.get("type") or payload.get("type") or "hairstyle_recommendation"
     return payload
 
 

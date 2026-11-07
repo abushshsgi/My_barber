@@ -52,7 +52,11 @@ function FavoritesMobile({
       }
     >
       <div className="px-4 pb-6">
-        {tab === "salons" ? <FavoriteSalonsPanel borderless /> : <FavoriteStylistsPanel borderless />}
+        {tab === "salons" ? (
+          <FavoriteSalonsPanel borderless />
+        ) : (
+          <FavoriteStylistsPanel borderless />
+        )}
       </div>
     </ProfileSubpageLayout>
   );

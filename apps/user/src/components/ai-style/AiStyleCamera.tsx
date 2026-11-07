@@ -46,8 +46,7 @@ async function openSelfieStream(): Promise<MediaStream> {
       if (track) {
         try {
           const caps = track.getCapabilities?.() as
-            | (MediaTrackCapabilities & { zoom?: { min: number; max: number } })
-            | undefined;
+            (MediaTrackCapabilities & { zoom?: { min: number; max: number } }) | undefined;
           if (caps?.zoom && typeof caps.zoom.min === "number") {
             await track.applyConstraints({
               advanced: [{ zoom: caps.zoom.min } as MediaTrackConstraintSet],

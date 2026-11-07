@@ -65,9 +65,9 @@ export function useCatalogScope(): CatalogScopeState {
     apiScope: isNationwide ? "all" : undefined,
     useNearby: Boolean(
       loggedIn &&
-        !isNationwide &&
-        (profileRegion || discovery.region) &&
-        scope === (profileRegion || discovery.region),
+      !isNationwide &&
+      (profileRegion || discovery.region) &&
+      scope === (profileRegion || discovery.region),
     ),
     scopeLabel,
     setScope,

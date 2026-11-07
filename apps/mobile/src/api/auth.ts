@@ -1,6 +1,6 @@
 import { Platform } from "react-native";
 import { apiJson } from "./client";
-import { API_BASE, API_ORIGIN, getExtraGoogleClientId } from "./config";
+import { getExtraGoogleClientId, apiUrl } from "./config";
 import type { ApiUser } from "./user";
 
 export type AuthSuccess = {
@@ -115,8 +115,7 @@ export async function refreshAccessToken(refresh: string): Promise<{
   access: string;
   refresh?: string;
 }> {
-  const base = API_BASE || API_ORIGIN;
-  const res = await fetch(`${base}/api/v1/auth/token/refresh/`, {
+  const res = await fetch(apiUrl("/api/v1/auth/token/refresh/"), {
     method: "POST",
     headers: {
       Accept: "application/json",

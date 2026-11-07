@@ -61,10 +61,7 @@ const PUBLIC_MEDIA_CACHE_SECONDS = 60 * 60 * 24 * 7;
 function applyPublicCacheHeaders(request: Request, pathname: string, headers: Headers): void {
   if (request.method !== "GET" && request.method !== "HEAD") return;
   if (pathname.startsWith("/media/") || pathname.startsWith("/covers/pexels/")) {
-    headers.set(
-      "Cache-Control",
-      `public, max-age=${PUBLIC_MEDIA_CACHE_SECONDS}, immutable`,
-    );
+    headers.set("Cache-Control", `public, max-age=${PUBLIC_MEDIA_CACHE_SECONDS}, immutable`);
     return;
   }
   if (pathname.startsWith("/api/v1/hairstyles")) {

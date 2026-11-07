@@ -26,8 +26,8 @@ function clearLegacyPrefsStorage() {
 function hasLegacyPrefsStorage(): boolean {
   return Boolean(
     localStorage.getItem(LEGACY_PREFS_KEY) ||
-      localStorage.getItem(LEGACY_AUDIENCE_KEY) ||
-      localStorage.getItem(LEGACY_NOTIF_PREFS_KEY),
+    localStorage.getItem(LEGACY_AUDIENCE_KEY) ||
+    localStorage.getItem(LEGACY_NOTIF_PREFS_KEY),
   );
 }
 

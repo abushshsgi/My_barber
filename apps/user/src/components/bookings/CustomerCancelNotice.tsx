@@ -112,11 +112,21 @@ export function CustomerCancelNotice({
               Bekor qilish: {formatCancelCountdown(policy.secondsUntilCutoff)} qoldi
             </p>
             {barberPolicy?.secondsUntilExpiry != null && booking.status === "pending" ? (
-              <p className={cn("mt-1 font-medium text-background/90", variant === "compact" ? "text-[11px]" : "text-xs")}>
+              <p
+                className={cn(
+                  "mt-1 font-medium text-background/90",
+                  variant === "compact" ? "text-[11px]" : "text-xs",
+                )}
+              >
                 Sartarosh javobi: {formatCancelCountdown(barberPolicy.secondsUntilExpiry)} qoldi
               </p>
             ) : null}
-            <p className={cn("mt-1 text-background/75", variant === "compact" ? "text-[11px]" : "text-xs")}>
+            <p
+              className={cn(
+                "mt-1 text-background/75",
+                variant === "compact" ? "text-[11px]" : "text-xs",
+              )}
+            >
               Buyurtmadan keyin {BOOKING_CANCEL_WINDOW_MINUTES} daqiqa ichida bekor qilish mumkin.
               {booking.status === "accepted"
                 ? " Sartarosh qabul qildi — taymer tugaguncha bekor qila olasiz."

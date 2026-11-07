@@ -242,7 +242,9 @@ function ComposeCard({
                 }}
                 className={cn(
                   "cursor-pointer rounded-full px-3 py-1.5 text-xs font-semibold transition-colors duration-200",
-                  active ? "bg-white text-black" : "bg-[#F0F0F0] text-[#111111]/70 hover:bg-white/15",
+                  active
+                    ? "bg-white text-black"
+                    : "bg-[#F0F0F0] text-[#111111]/70 hover:bg-white/15",
                 )}
               >
                 {t(`aiStylePage.support.topic.${item.id}`)}

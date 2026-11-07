@@ -149,7 +149,12 @@ function CompareContent({ variant }: { variant: "mobile" | "desktop" }) {
                     </span>
                   )}
                 />
-                <MetricRow label="Sharhlar" salons={chosen} vertical={variant === "mobile"} render={(s) => `${s.reviewCount}`} />
+                <MetricRow
+                  label="Sharhlar"
+                  salons={chosen}
+                  vertical={variant === "mobile"}
+                  render={(s) => `${s.reviewCount}`}
+                />
                 <MetricRow
                   label="Narx (dan)"
                   salons={chosen}
@@ -157,7 +162,12 @@ function CompareContent({ variant }: { variant: "mobile" | "desktop" }) {
                   vertical={variant === "mobile"}
                   render={(s) => shortPrice(s.priceFrom)}
                 />
-                <MetricRow label="Narx (gacha)" salons={chosen} vertical={variant === "mobile"} render={(s) => shortPrice(s.priceTo)} />
+                <MetricRow
+                  label="Narx (gacha)"
+                  salons={chosen}
+                  vertical={variant === "mobile"}
+                  render={(s) => shortPrice(s.priceTo)}
+                />
                 <MetricRow
                   label="Masofa"
                   salons={chosen}
@@ -169,7 +179,12 @@ function CompareContent({ variant }: { variant: "mobile" | "desktop" }) {
                     </span>
                   )}
                 />
-                <MetricRow label="Ustalar" salons={chosen} vertical={variant === "mobile"} render={(s) => `${s.staff.length}`} />
+                <MetricRow
+                  label="Ustalar"
+                  salons={chosen}
+                  vertical={variant === "mobile"}
+                  render={(s) => `${s.staff.length}`}
+                />
               </section>
 
               {allServices.length > 0 ? (
@@ -186,7 +201,9 @@ function CompareContent({ variant }: { variant: "mobile" | "desktop" }) {
                         )}
                         style={
                           variant === "desktop"
-                            ? { gridTemplateColumns: `1.4fr repeat(${chosen.length}, minmax(0, 1fr))` }
+                            ? {
+                                gridTemplateColumns: `1.4fr repeat(${chosen.length}, minmax(0, 1fr))`,
+                              }
                             : undefined
                         }
                       >
@@ -210,7 +227,11 @@ function CompareContent({ variant }: { variant: "mobile" | "desktop" }) {
                             const svc = s.services.find((x) => x.name === svcName);
                             return (
                               <span key={s.id} className="text-right font-bold tabular-nums">
-                                {svc ? shortPrice(svc.price) : <span className="text-muted-foreground">—</span>}
+                                {svc ? (
+                                  shortPrice(svc.price)
+                                ) : (
+                                  <span className="text-muted-foreground">—</span>
+                                )}
                               </span>
                             );
                           })
@@ -268,7 +289,12 @@ function CompareContent({ variant }: { variant: "mobile" | "desktop" }) {
 }
 
 function ComparePage() {
-  return <DesktopPageSplit mobile={<CompareContent variant="mobile" />} desktop={<CompareContent variant="desktop" />} />;
+  return (
+    <DesktopPageSplit
+      mobile={<CompareContent variant="mobile" />}
+      desktop={<CompareContent variant="desktop" />}
+    />
+  );
 }
 
 function MetricRow({

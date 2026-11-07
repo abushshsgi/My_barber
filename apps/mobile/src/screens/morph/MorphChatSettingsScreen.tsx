@@ -28,11 +28,16 @@ import {
   fetchMorphChatLimits,
   patchMorphAiPrivacy,
 } from "../../api/ai";
-import { displayName, initials } from "../../api/user";
+import { deleteMyAccount } from "../../api/account";
+import { resolveMediaUrl } from "../../api/media";
+import { displayName } from "../../api/user";
+import { UserAvatar } from "../../components/profile/UserAvatar";
+import { useAvatarPhoto } from "../../hooks/useAvatarPhoto";
 import { useAuth } from "../../auth/AuthContext";
 import type { MorphChatThread } from "../../hooks/useMorphChat";
 import {
   DEFAULT_MORPH_CHAT_PREFS,
+  morphChatLimitTitleKey,
   morphChatUsagePercent,
   readMorphChatLimitsSnapshot,
   readMorphChatPrefs,
@@ -384,7 +389,8 @@ export function MorphChatSettingsScreen({
   const { goMorph } = useShellNavigation();
   const insets = useSafeAreaInsets();
   const { height: windowHeight } = useWindowDimensions();
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
+  const avatarPhoto = useAvatarPhoto();
   const { colors: pal, fs } = useMorphAppearance();
   const [page, setPage] = useState<Page>("hub");
   const pageHistory = useRef<Page[]>([]);
@@ -399,7 +405,7 @@ export function MorphChatSettingsScreen({
   const [actionError, setActionError] = useState<string | null>(null);
 
   const name = useMemo(() => displayName(user), [user]);
-  const letters = useMemo(() => initials(name), [name]);
+  const avatarUrl = resolveMediaUrl(user?.avatar, { width: 240 });
   const email = user?.display_email || user?.email || "";
 
   useEffect(() => {
@@ -490,7 +496,8 @@ export function MorphChatSettingsScreen({
       cancelLabel: t("chat.settings.clearCancel"),
       onConfirm: async () => {
         try {
-          await onClearAllChats();
+          await deleteMyAccount();
+          await signOut();
         } catch (err) {
           setActionError(
             err instanceof Error && err.message.trim()
@@ -501,7 +508,7 @@ export function MorphChatSettingsScreen({
         }
       },
     });
-  }, [onClearAllChats, t]);
+  }, [signOut, t]);
 
   const exportChats = useCallback(async () => {
     if (!threads.length) {
@@ -510,8 +517,8 @@ export function MorphChatSettingsScreen({
     }
     const blocks = threads.map((th, i) => {
       const lines = th.messages
-        .filter((m) => m.content.trim())
-        .map((m) => `${m.role === "user" ? "Siz" : "Morf"}: ${m.content.trim()}`);
+        .filter((m) => (m.content || "").trim())
+        .map((m) => `${m.role === "user" ? "Siz" : "Morf"}: ${(m.content || "").trim()}`);
       return `${i + 1}. ${th.title}\n${lines.join("\n")}`;
     });
     const message = `Morf AI\n\n${blocks.join("\n\n---\n\n")}`;
@@ -616,11 +623,7 @@ export function MorphChatSettingsScreen({
           : page === "appearance"
             ? t("chat.settings.appearance")
           : page === "limits"
-            ? t(
-                snap?.period === "lifetime"
-                  ? "chat.settings.limitTitleOnce"
-                  : "chat.settings.limitTitle",
-              )
+            ? t(morphChatLimitTitleKey(snap))
             : page === "data"
               ? t("chat.settings.dataGroup")
           : page === "help"
@@ -718,20 +721,25 @@ export function MorphChatSettingsScreen({
         {page === "hub" ? (
           <>
             <View style={styles.profileBlock}>
-              <Pressable
-                onPress={() => openPage("account")}
-                accessibilityRole="button"
-                accessibilityLabel={t("profile.personalInfo")}
-              >
-                <View style={styles.avatarWrap}>
-                  <View style={styles.avatar}>
-                    <Text style={styles.avatarText}>{letters}</Text>
-                  </View>
-                  <View style={[styles.editBadge, { borderColor: pal.bg, backgroundColor: pal.cardStrong }]} accessibilityElementsHidden>
-                    <Ionicons name="pencil" size={12} color={pal.fg} />
-                  </View>
-                </View>
-              </Pressable>
+              <View style={styles.avatarWrap}>
+                <UserAvatar
+                  name={name}
+                  uri={avatarUrl}
+                  size={scale(88)}
+                  busy={avatarPhoto.busy}
+                  onPress={avatarPhoto.openMenu}
+                />
+                <Pressable
+                  onPress={avatarPhoto.openMenu}
+                  disabled={avatarPhoto.busy}
+                  accessibilityRole="button"
+                  accessibilityLabel={t("profile.avatarPick", { defaultValue: "Profil rasmi" })}
+                  hitSlop={8}
+                  style={[styles.editBadge, { borderColor: pal.bg, backgroundColor: pal.cardStrong }]}
+                >
+                  <Ionicons name="pencil" size={12} color={pal.fg} />
+                </Pressable>
+              </View>
               <Text style={[styles.profileName, { color: pal.fg, fontSize: fs(20) }]}>{name}</Text>
             </View>
 
@@ -782,11 +790,7 @@ export function MorphChatSettingsScreen({
                       >
                         <View style={styles.itemCopy}>
                           <Text style={[styles.itemTitle, { color: pal.fg, fontSize: fs(15) }]}>
-                            {t(
-                              snap?.period === "lifetime"
-                                ? "chat.settings.limitTitleOnce"
-                                : "chat.settings.limitTitle",
-                            )}
+                            {t(morphChatLimitTitleKey(snap))}
                           </Text>
                           <Text style={[styles.itemSubtitle, { color: pal.muted, fontSize: fs(12) }]}>
                             {t("chat.settings.limitUsedPct", { pct: usagePct })}
@@ -894,10 +898,7 @@ export function MorphChatSettingsScreen({
                     <View style={[styles.iconTile, { backgroundColor: pal.iconTile }]}>
                       <Ionicons name="trash" size={18} color={DESTRUCTIVE} />
                     </View>
-                    <Text style={styles.destructiveText}>
-                      {t("chat.settings.clearChats")}
-                      {threadCount > 0 ? ` · ${threadCount}` : ""}
-                    </Text>
+                    <Text style={styles.destructiveText}>{t("chat.settings.clearChats")}</Text>
                   </Pressable>
                 </View>
               </>
@@ -1149,6 +1150,7 @@ export function MorphChatSettingsScreen({
           onConfirm={runConfirm}
         />
       ) : null}
+      {avatarPhoto.picker}
     </GestureHandlerRootView>
   );
 }
@@ -1219,6 +1221,7 @@ const styles = StyleSheet.create({
     width: scale(88),
     height: scale(88),
     marginBottom: verticalScale(14),
+    position: "relative",
   },
   avatar: {
     width: scale(88),
@@ -1239,6 +1242,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     right: 0,
     bottom: 0,
+    zIndex: 2,
     width: scale(28),
     height: scale(28),
     borderRadius: moderateScale(14),

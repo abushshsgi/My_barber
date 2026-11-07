@@ -1,5 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
-import { fetchBarberByBarberId, fetchBarbersList, fetchBarbersNearby, findBarbers } from "@/lib/api/barbers";
+import {
+  fetchBarberByBarberId,
+  fetchBarbersList,
+  fetchBarbersNearby,
+  findBarbers,
+} from "@/lib/api/barbers";
 import { catalogQueryEnabled } from "@/lib/auth-query";
 import { mapBarberDiscovery } from "@/lib/mappers/barber";
 

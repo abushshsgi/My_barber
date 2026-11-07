@@ -176,6 +176,8 @@ class SubscriptionUsagePeriod(models.Model):
     )
     period_start = models.DateField(db_index=True)
     period_end = models.DateField()
+    # Hisoblagich qaysi tarifga tegishli. Tarif almashganda nolga tushadi.
+    plan_code = models.CharField(max_length=32, blank=True, default="")
     morph_ai_used = models.PositiveIntegerField(default=0)
     morph_studio_used = models.PositiveIntegerField(default=0)
     morph_chat_tokens_used = models.PositiveIntegerField(default=0)

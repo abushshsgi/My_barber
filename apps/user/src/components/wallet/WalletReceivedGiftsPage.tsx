@@ -1,13 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import {
-  CalendarCheck,
-  Crown,
-  Gift,
-  Inbox,
-  Plus,
-  Sparkles,
-  Star,
-} from "lucide-react";
+import { CalendarCheck, Crown, Gift, Inbox, Plus, Sparkles, Star } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { MysaloonLogo } from "@/components/brand/MysaloonLogo";
@@ -121,17 +113,13 @@ function ReceivedGiftCard({
             <p className="text-[9px] font-semibold uppercase tracking-[0.14em] opacity-45">
               {t("walletPage.received.from", { defaultValue: "Yuboruvchi" })}
             </p>
-            <p className="mt-0.5 truncate text-sm font-bold">
-              {gift.sender_name || "Do'st"}
-            </p>
+            <p className="mt-0.5 truncate text-sm font-bold">{gift.sender_name || "Do'st"}</p>
           </div>
           <div className="min-w-0 text-right">
             <p className="text-[9px] font-semibold uppercase tracking-[0.14em] opacity-45">
               {t("walletPage.received.to", { defaultValue: "Oluvchi" })}
             </p>
-            <p className="mt-0.5 truncate text-sm font-bold">
-              {gift.recipient_name || "Siz"}
-            </p>
+            <p className="mt-0.5 truncate text-sm font-bold">{gift.recipient_name || "Siz"}</p>
           </div>
         </div>
       </div>
@@ -296,7 +284,10 @@ export function WalletReceivedGiftsPage() {
         <div className="flex min-w-0 flex-1 gap-1.5 rounded-[16px] bg-surface/80 p-1">
           {(
             [
-              { id: "all", label: t("walletPage.received.filterAll", { defaultValue: "Barchasi" }) },
+              {
+                id: "all",
+                label: t("walletPage.received.filterAll", { defaultValue: "Barchasi" }),
+              },
               {
                 id: "starred",
                 label: t("walletPage.received.filterStarred", { defaultValue: "Kolleksiya" }),
@@ -309,9 +300,7 @@ export function WalletReceivedGiftsPage() {
               onClick={() => setFilter(tab.id)}
               className={cn(
                 "min-w-0 flex-1 cursor-pointer rounded-[12px] px-3 py-2 text-[12px] font-bold transition-colors",
-                filter === tab.id
-                  ? "bg-foreground text-background"
-                  : "text-muted-foreground",
+                filter === tab.id ? "bg-foreground text-background" : "text-muted-foreground",
               )}
             >
               {tab.label}

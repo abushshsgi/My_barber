@@ -21,7 +21,9 @@ export function BookingsDesktopPage({ focus }: Props) {
 
   useEffect(() => {
     if (!focus) return;
-    document.getElementById(`booking-${focus}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+    document
+      .getElementById(`booking-${focus}`)
+      ?.scrollIntoView({ behavior: "smooth", block: "center" });
     if (bookings.some((b) => b.id === focus && getUpcomingBookings([b], now).length)) {
       setTab("upcoming");
     }

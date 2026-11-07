@@ -43,20 +43,12 @@ async function assetToDataUrl(
   return null;
 }
 
-/** Webda allowsEditing ko‘pincha picker’ni buzadi. */
+/** Asl kadr. Crop/zoom yo‘q — tahlil va natija o‘sha rasmni ko‘rsatadi. */
 function pickerExtras() {
-  if (Platform.OS === "web") {
-    return {
-      quality: 0.72 as const,
-      base64: true,
-      allowsEditing: false,
-    };
-  }
   return {
     quality: 0.72 as const,
     base64: true,
-    allowsEditing: true,
-    aspect: [3, 4] as [number, number],
+    allowsEditing: false,
   };
 }
 

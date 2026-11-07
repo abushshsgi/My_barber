@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useFocusEffect } from "@react-navigation/native";
 import {
   fetchNotifications,
@@ -9,6 +9,7 @@ import {
   fetchProfileDashboardFallback,
   type ProfileDashboard,
 } from "../api/dashboard";
+import { onPaymeActivated } from "../lib/payme-session";
 
 export type ProfileDashboardState = {
   dashboard: ProfileDashboard | null;
@@ -27,6 +28,8 @@ export function useProfileDashboard(): ProfileDashboardState {
   const [tick, setTick] = useState(0);
 
   const refresh = useCallback(() => setTick((n) => n + 1), []);
+
+  useEffect(() => onPaymeActivated(() => refresh()), [refresh]);
 
   useFocusEffect(
     useCallback(() => {

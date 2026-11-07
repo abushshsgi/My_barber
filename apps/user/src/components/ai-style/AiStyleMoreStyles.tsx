@@ -16,9 +16,7 @@ import {
   listReadyExplorePersonas,
   type ExplorePersonaId,
 } from "@/lib/explore-personas";
-import {
-  type HairstyleEntry,
-} from "@/lib/hairstyles/catalog";
+import { type HairstyleEntry } from "@/lib/hairstyles/catalog";
 import type { Audience } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 
@@ -46,7 +44,8 @@ function MoreStyleCard({
   onOpenPreview?: (item: MoreStyleItem, match: number) => void;
 }) {
   const { t } = useTranslation();
-  const personaLabel = EXPLORE_PERSONAS.find((persona) => persona.id === item.personaId)?.label ?? item.personaId;
+  const personaLabel =
+    EXPLORE_PERSONAS.find((persona) => persona.id === item.personaId)?.label ?? item.personaId;
   const [fallbackSrc, setFallbackSrc] = useState(() =>
     getPersonaStyleImageUrl(item.personaId, item.entry.slug),
   );
@@ -61,7 +60,8 @@ function MoreStyleCard({
           onOpenPreview?.(item, match);
           return;
         }
-        if (!loading) onGenerate(item.entry.id, item.personaId, item.entry.titleUz || item.entry.title);
+        if (!loading)
+          onGenerate(item.entry.id, item.personaId, item.entry.titleUz || item.entry.title);
       }}
       className={cn(
         "min-w-0 text-left transition-opacity active:opacity-90",
@@ -72,8 +72,10 @@ function MoreStyleCard({
         <img
           src={imageSrc}
           alt={item.entry.titleUz}
-          loading="lazy"
-          className="h-full w-full object-cover object-top"
+          loading="eager"
+          fetchPriority="high"
+          decoding="async"
+          className="h-full w-full object-contain object-center"
           onError={() => setFallbackSrc(getTrendCoverUrl(item.entry.slug))}
         />
 

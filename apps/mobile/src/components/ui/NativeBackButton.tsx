@@ -57,9 +57,9 @@ export function NativeBackButton({
   );
 }
 
-/** Header balance uchun bo‘sh joy — back bilan bir xil o‘lcham. */
+/** Sarlavha markazda tursin — ko‘rinadigan bo‘sh tugma emas. */
 export function NativeBackSpacer({ style }: { style?: StyleProp<ViewStyle> }) {
-  return <View style={[styles.btn, styles.spacer, style]} />;
+  return <View style={[styles.spacer, style]} />;
 }
 
 const styles = StyleSheet.create({
@@ -72,7 +72,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   spacer: {
-    backgroundColor: "transparent",
+    width: NATIVE_BACK_SIZE,
+    height: NATIVE_BACK_SIZE,
   },
   pressed: {
     opacity: 0.7,

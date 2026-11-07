@@ -1,9 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { MorphPersonalShareLanding } from "@/components/ai-style/MorphPersonalShareLanding";
-import {
-  buildMorphShareHeadMeta,
-  fetchMorphShareSeo,
-} from "@/lib/morph-share-seo.server";
+import { buildMorphShareHeadMeta, fetchMorphShareSeo } from "@/lib/morph-share-seo.server";
 
 export const Route = createFileRoute("/morf-ai/share/$shareId")({
   ssr: false,

@@ -50,26 +50,36 @@ function VerifyEmailPage() {
         {!token ? (
           <>
             <XCircle className="mx-auto h-12 w-12 text-destructive" />
-            <h1 className="mt-4 text-xl font-semibold">{t("emailVerify.invalid", { defaultValue: "Havola noto'g'ri" })}</h1>
+            <h1 className="mt-4 text-xl font-semibold">
+              {t("emailVerify.invalid", { defaultValue: "Havola noto'g'ri" })}
+            </h1>
             <p className="mt-2 text-sm text-muted-foreground">
-              {t("emailVerify.invalidHint", { defaultValue: "Email xabaringizdagi havolani qayta oching." })}
+              {t("emailVerify.invalidHint", {
+                defaultValue: "Email xabaringizdagi havolani qayta oching.",
+              })}
             </p>
           </>
         ) : verify.isPending ? (
           <>
             <Loader2 className="mx-auto h-12 w-12 animate-spin text-muted-foreground" />
-            <h1 className="mt-4 text-xl font-semibold">{t("emailVerify.checking", { defaultValue: "Tasdiqlanmoqda…" })}</h1>
+            <h1 className="mt-4 text-xl font-semibold">
+              {t("emailVerify.checking", { defaultValue: "Tasdiqlanmoqda…" })}
+            </h1>
           </>
         ) : verify.isError ? (
           <>
             <XCircle className="mx-auto h-12 w-12 text-destructive" />
-            <h1 className="mt-4 text-xl font-semibold">{t("emailVerify.failed", { defaultValue: "Tasdiqlanmadi" })}</h1>
+            <h1 className="mt-4 text-xl font-semibold">
+              {t("emailVerify.failed", { defaultValue: "Tasdiqlanmadi" })}
+            </h1>
             <p className="mt-2 text-sm text-muted-foreground">{(verify.error as Error).message}</p>
           </>
         ) : (
           <>
             <CheckCircle2 className="mx-auto h-12 w-12 text-emerald-600" />
-            <h1 className="mt-4 text-xl font-semibold">{t("emailVerify.success", { defaultValue: "Email tasdiqlandi" })}</h1>
+            <h1 className="mt-4 text-xl font-semibold">
+              {t("emailVerify.success", { defaultValue: "Email tasdiqlandi" })}
+            </h1>
             <p className="mt-2 text-sm text-muted-foreground">
               {me?.display_email || verify.data?.user.display_email}
             </p>

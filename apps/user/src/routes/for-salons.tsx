@@ -55,7 +55,9 @@ function ForSalonsPage() {
       setSeats("");
       setPhone("");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Yuborib bo‘lmadi — Partner orqali boshlang");
+      toast.error(
+        err instanceof Error ? err.message : "Yuborib bo‘lmadi — Partner orqali boshlang",
+      );
     } finally {
       setSending(false);
     }
@@ -68,7 +70,10 @@ function ForSalonsPage() {
           <Link to="/" className="inline-flex">
             <MysaloonLogo size="md" />
           </Link>
-          <Link to="/" className="text-sm font-semibold text-muted-foreground hover:text-foreground">
+          <Link
+            to="/"
+            className="text-sm font-semibold text-muted-foreground hover:text-foreground"
+          >
             {t("common.back", { defaultValue: "Bosh sahifa" })}
           </Link>
         </div>

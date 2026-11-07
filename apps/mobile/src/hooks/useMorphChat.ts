@@ -17,7 +17,9 @@ import {
   type MorphChatThreadRemote,
 } from "../api/ai";
 import { fetchHairCareProfile, updateHairCareProfile } from "../api/care";
+import { cardsFromBlocks, historyStyleRefs } from "../lib/chat-blocks";
 import { createPacedWriter } from "../lib/chat-pace";
+import { matchReplyHairstyles } from "../lib/chat-style-match";
 import { isCareQuizComplete, loadCareQuiz } from "../lib/morf-ai-care";
 import {
   DEFAULT_MORPH_CHAT_PREFS,
@@ -93,15 +95,28 @@ function newId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
+function messageText(message: MorphChatMessage): string {
+  return (message.content || "").trim();
+}
+
+function messageHasMedia(message: MorphChatMessage): boolean {
+  if (message.hairstyles?.some((item) => item?.image_url)) return true;
+  return Boolean(
+    message.blocks?.some(
+      (block) => block?.type !== "text" && Array.isArray(block.items) && block.items.some((item) => item?.image_url),
+    ),
+  );
+}
+
 function realMessages(messages: MorphChatMessage[]): MorphChatMessage[] {
   return messages.filter(
-    (m) => m.id !== "welcome" && (m.streaming || m.content.trim().length > 0),
+    (m) => m.id !== "welcome" && (m.streaming || messageText(m).length > 0 || messageHasMedia(m)),
   );
 }
 
 function persistable(messages: MorphChatMessage[]): MorphChatMessage[] {
   return realMessages(messages)
-    .filter((m) => m.content.trim().length > 0)
+    .filter((m) => messageText(m).length > 0 || messageHasMedia(m))
     .map(({ streaming: _ignored, ...rest }) => rest);
 }
 
@@ -145,6 +160,17 @@ function remoteToLocal(row: MorphChatThreadRemote): MorphChatThread | null {
       id: String(m.id || newId()),
       role: m.role,
       content: String(m.content || ""),
+      hairstyles: Array.isArray(m.hairstyles)
+        ? m.hairstyles
+        : Array.isArray(m.context?.hairstyles)
+          ? m.context.hairstyles
+          : undefined,
+      blocks: Array.isArray(m.blocks)
+        ? m.blocks
+        : Array.isArray(m.context?.blocks)
+          ? m.context.blocks
+          : undefined,
+      type: m.type || m.context?.type,
     }));
   if (!messages.length && !(row.preview || row.title)) return null;
   return {
@@ -409,7 +435,18 @@ export function useMorphChat() {
                 void syncMorphChatThread({
                   id: th.id,
                   title: th.title,
-                  messages: th.messages,
+                  messages: th.messages.map((m) => ({
+                    ...m,
+                    context: {
+                      ...(m.hairstyles?.length || m.blocks?.length
+                        ? {
+                            type: m.type || "hairstyle_recommendation",
+                            ...(m.hairstyles?.length ? { hairstyles: m.hairstyles } : {}),
+                            ...(m.blocks?.length ? { blocks: m.blocks } : {}),
+                          }
+                        : {}),
+                    },
+                  })),
                   updated_at: th.updatedAt,
                 }).catch(() => undefined);
               }
@@ -494,10 +531,14 @@ export function useMorphChat() {
         role: "user",
         content: trimmed,
       };
-      const history = persistable(messagesRef.current).map((m) => ({
-        role: m.role,
-        content: m.content,
-      }));
+      const history = persistable(messagesRef.current).map((m) => {
+        const styles = historyStyleRefs(m);
+        return {
+          role: m.role,
+          content: m.content,
+          ...(styles.length ? { hairstyles: styles } : {}),
+        };
+      });
       const nextMessages = [...realMessages(messagesRef.current), userMsg];
       messagesRef.current = nextMessages;
       setMessages(nextMessages);
@@ -552,6 +593,9 @@ export function useMorphChat() {
 
         let finalText = "";
         let resLimits: MorphChatLimits;
+        let hairstyles: MorphChatMessage["hairstyles"];
+        let blocks: MorphChatMessage["blocks"];
+        const liveBlocks: NonNullable<MorphChatMessage["blocks"]> = [];
         const sendPayload = {
           message: trimmed,
           history: historyPayload,
@@ -559,24 +603,50 @@ export function useMorphChat() {
           thread_id: threadId,
           persist,
         };
-        if (prefs.streaming && !options?.voice) {
-          const res = await streamMorphChatMessage(sendPayload, (chunk) => writer.append(chunk));
-          finalText = (await writer.finish()) || res.reply;
-          resLimits = res.limits;
-        } else {
-          writer.cancel();
-          const res = await sendMorphChatMessage(sendPayload);
-          finalText = res.reply;
-          resLimits = res.limits;
-          if (activeThreadIdRef.current === threadId) {
-            const instant = messagesRef.current.map((m) =>
+        const pace = !options?.voice;
+        const res =
+          prefs.streaming && pace
+            ? await streamMorphChatMessage(
+                sendPayload,
+                (chunk) => writer.append(chunk),
+                (block) => {
+                  liveBlocks.push(block);
+                  if (activeThreadIdRef.current !== threadId) return;
+                  const withBlocks = messagesRef.current.map((m) =>
+                    m.id === assistantMsg.id ? { ...m, blocks: [...liveBlocks], streaming: true } : m,
+                  );
+                  messagesRef.current = withBlocks;
+                  setMessages(withBlocks);
+                },
+              )
+            : await sendMorphChatMessage(sendPayload);
+        resLimits = res.limits;
+        blocks = res.blocks?.length ? res.blocks : liveBlocks.length ? liveBlocks : undefined;
+        hairstyles = res.hairstyles?.length ? res.hairstyles : cardsFromBlocks(blocks);
+        if (pace) {
+          writer.replace(res.reply || "");
+          if (!blocks?.length && !hairstyles?.length && res.reply) {
+            hairstyles = await matchReplyHairstyles(res.reply, trimmed);
+          }
+          if ((blocks?.length || hairstyles?.length) && activeThreadIdRef.current === threadId) {
+            const withCards = messagesRef.current.map((m) =>
               m.id === assistantMsg.id
-                ? { ...m, content: finalText, streaming: true }
+                ? {
+                    ...m,
+                    ...(hairstyles?.length ? { hairstyles } : {}),
+                    ...(blocks?.length ? { blocks } : {}),
+                    type: "hairstyle_recommendation" as const,
+                    streaming: true,
+                  }
                 : m,
             );
-            messagesRef.current = instant;
-            setMessages(instant);
+            messagesRef.current = withCards;
+            setMessages(withCards);
           }
+          finalText = (await writer.finish()) || res.reply;
+        } else {
+          writer.cancel();
+          finalText = res.reply;
         }
         setLimits(resLimits);
         void writeMorphChatLimitsSnapshot(resLimits);
@@ -605,6 +675,8 @@ export function useMorphChat() {
           id: assistantMsg.id,
           role: "assistant",
           content: finalText,
+          ...(hairstyles?.length ? { hairstyles, type: "hairstyle_recommendation" as const } : {}),
+          ...(blocks?.length ? { blocks, type: "hairstyle_recommendation" as const } : {}),
         };
         lastReplyRef.current = finalText;
         if (activeThreadIdRef.current === threadId) {
@@ -732,6 +804,17 @@ export function useMorphChat() {
     prefsRef.current = await readMorphChatPrefs();
   }, []);
 
+  const refreshLimits = useCallback(async () => {
+    try {
+      const remoteLimits = await fetchMorphChatLimits();
+      setLimits(remoteLimits);
+      void writeMorphChatLimitsSnapshot(remoteLimits);
+      return remoteLimits;
+    } catch {
+      return null;
+    }
+  }, []);
+
   const visibleThreads = useMemo(
     () => threads.filter((th) => realMessages(th.messages).length > 0),
     [threads],
@@ -764,6 +847,7 @@ export function useMorphChat() {
     clearError,
     clearAllChats,
     reloadPrefs,
+    refreshLimits,
     startNewChat,
     openThread,
     deleteThread,

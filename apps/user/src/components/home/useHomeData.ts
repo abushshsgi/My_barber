@@ -30,14 +30,22 @@ export function useHomeData() {
   const { personaId } = useExplorePersona();
   const ageGroup = useUserAgeGroup();
   const catalog = useCatalogScope();
-  const { data: menHairstyles = [], isLoading: menExploreLoading } = useHairstyles("men", personaId, {
-    ignoreAgeGroup: true,
-    enabled: audience === "all" || audience === "men",
-  });
-  const { data: womenHairstyles = [], isLoading: womenExploreLoading } = useHairstyles("women", null, {
-    ignoreAgeGroup: true,
-    enabled: audience === "all" || audience === "women",
-  });
+  const { data: menHairstyles = [], isLoading: menExploreLoading } = useHairstyles(
+    "men",
+    personaId,
+    {
+      ignoreAgeGroup: true,
+      enabled: audience === "all" || audience === "men",
+    },
+  );
+  const { data: womenHairstyles = [], isLoading: womenExploreLoading } = useHairstyles(
+    "women",
+    null,
+    {
+      ignoreAgeGroup: true,
+      enabled: audience === "all" || audience === "women",
+    },
+  );
   const hairstyles = useMemo(() => {
     if (audience === "men") return menHairstyles;
     if (audience === "women") return womenHairstyles;
@@ -45,16 +53,21 @@ export function useHomeData() {
   }, [audience, menHairstyles, womenHairstyles]);
   const ctx = useRecommendContext();
   const hasCoords = catalog.useNearby && ctx.lat != null && ctx.lng != null;
-  const { data: nearbySalons = [], isLoading: nearbyLoading, isError: nearbyError } = useSalonsNearby(
+  const {
+    data: nearbySalons = [],
+    isLoading: nearbyLoading,
+    isError: nearbyError,
+  } = useSalonsNearby(
     hasCoords ? ctx.lat! : undefined,
     hasCoords ? ctx.lng! : undefined,
     40,
     hasCoords,
   );
-  const { data: listSalons = [], isLoading: listLoading, error } = useSalonsList(
-    catalog.region,
-    catalog.apiScope,
-  );
+  const {
+    data: listSalons = [],
+    isLoading: listLoading,
+    error,
+  } = useSalonsList(catalog.region, catalog.apiScope);
 
   const salons = useMemo(() => {
     const useNearby = hasCoords && !nearbyError && nearbySalons.length > 0;
@@ -99,10 +112,7 @@ export function useHomeData() {
     return audienceToCategory(audience);
   }, [audience, cat]);
 
-  const visibleCategoryKeys = useMemo(
-    () => categoriesForAudience(audience),
-    [audience],
-  );
+  const visibleCategoryKeys = useMemo(() => categoriesForAudience(audience), [audience]);
 
   const filtered = useMemo(() => {
     const source = searchActive ? searchSalons : salons;
@@ -151,10 +161,7 @@ export function useHomeData() {
   const topOffer = useMemo((): Offer | undefined => undefined, []);
 
   const featuredSalons = useMemo(() => filtered.slice(0, 4), [filtered]);
-  const mapSalons = useMemo(
-    () => salons.filter((s) => hasValidMapCoords(s.lat, s.lng)),
-    [salons],
-  );
+  const mapSalons = useMemo(() => salons.filter((s) => hasValidMapCoords(s.lat, s.lng)), [salons]);
   const mapBarbers = useMemo(
     () => browseBarbers.filter((b) => hasValidMapCoords(b.lat, b.lng)),
     [browseBarbers],
@@ -162,13 +169,9 @@ export function useHomeData() {
   const personalized = catalog.isLoggedIn && !catalog.isNationwide;
 
   const salonsLoading = hasCoords
-    ? !(
-        (!nearbyLoading && !nearbyError && nearbySalons.length > 0) ||
-        !listLoading
-      )
+    ? !((!nearbyLoading && !nearbyError && nearbySalons.length > 0) || !listLoading)
     : listLoading;
-  const loading =
-    salonsLoading || (searchActive && (searchSalonsLoading || searchBarbersLoading));
+  const loading = salonsLoading || (searchActive && (searchSalonsLoading || searchBarbersLoading));
   // Barberlar parallel — salon empty state barberlarni kutmasin
   const barbersLoading = nearbyBarbersLoading || listBarbersLoading;
 

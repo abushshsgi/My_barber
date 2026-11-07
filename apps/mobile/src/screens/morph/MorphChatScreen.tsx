@@ -13,16 +13,18 @@ import {
   StyleSheet,
   Text,
   View,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
 } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import type { MorphChatMessage } from "../../api/ai";
+import type { ChatHairstyleCard, MorphChatMessage } from "../../api/ai";
 import { resolveMediaUrl } from "../../api/media";
 import { displayName, initials } from "../../api/user";
 import { useAuth } from "../../auth/AuthContext";
-import { HairProfileGate } from "../../components/morph/HairProfileGate";
 import { MorphPaywallView } from "../../components/morph/MorphPaywallView";
 import { ChatBubble } from "../../components/morph/chat/ChatBubble";
+import { ChatHairAsk } from "../../components/morph/chat/ChatHairAsk";
 import { ChatInputBar } from "../../components/morph/chat/ChatInputBar";
 import { ChatMenuDrawer } from "../../components/morph/chat/ChatMenuDrawer";
 import { ChatNotice } from "../../components/morph/chat/ChatNotice";
@@ -37,7 +39,7 @@ import { useMorphVoice } from "../../hooks/useMorphVoice";
 import { useMorphLimitGate } from "../../hooks/useMorphLimitGate";
 import { readLastMorphContentTab, writeAppShell, writeLastShellTab } from "../../lib/app-shell";
 import { MORPH_CHAT_DEBUG } from "../../lib/morph-debug";
-import { morphChatUsagePercent } from "../../lib/morph-chat-prefs";
+import { morphChatLimitTitleKey, morphChatUsagePercent } from "../../lib/morph-chat-prefs";
 import {
   consumeMorphReturn,
   peekMorphReturn,
@@ -65,13 +67,43 @@ export function MorphChatScreen() {
   const { isAuthenticated, user } = useAuth();
   const gate = useMorphLimitGate();
   const listRef = useRef<FlatList<MorphChatMessage>>(null);
+  const stickToBottom = useRef(true);
   const chat = useMorphChat();
   const { colors: pal } = useMorphAppearance();
   const pendingDraft = useRef<string | null>(null);
+  const [hairDraft, setHairDraft] = useState<string | null>(null);
+  const [hairSaving, setHairSaving] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [paywall, setPaywall] = useState<PaywallReason | null>(null);
+  const [paywallEpoch, setPaywallEpoch] = useState(0);
+
+  const openHairstyle = useCallback(
+    (item: ChatHairstyleCard) => {
+      const imageUrl = resolveMediaUrl(item.image_url, { width: scale(900) }) || item.image_url;
+      navigation.navigate(
+        "MorphTryOn",
+        {
+          screen: "MorphPreview",
+          params: {
+            styleId: item.id,
+            title: item.name,
+            match: 0,
+            imageUrl,
+            reason: item.description || "",
+            returnTo: "chat",
+          },
+        } as never,
+      );
+    },
+    [navigation],
+  );
+
+  const openPaywall = useCallback((reason: PaywallReason) => {
+    setPaywallEpoch((n) => n + 1);
+    setPaywall(reason);
+  }, []);
 
   const showPaywall = useCallback(
     (reason: PaywallReason, draft?: string) => {
@@ -82,9 +114,9 @@ export function MorphChatScreen() {
         draft: draft || pendingDraft.current || undefined,
         chatOpen,
       });
-      setPaywall(reason);
+      openPaywall(reason);
     },
-    [chatOpen],
+    [chatOpen, openPaywall],
   );
 
   const closePaywall = useCallback(() => {
@@ -111,7 +143,7 @@ export function MorphChatScreen() {
       let cancelled = false;
       void (async () => {
         if (!isAuthenticated) {
-          setPaywall(pending.reason ?? "subscription");
+          openPaywall(pending.reason ?? "subscription");
           return;
         }
         const result = MORPH_CHAT_DEBUG
@@ -127,7 +159,7 @@ export function MorphChatScreen() {
             await chat.sendText(draft);
           }
         } else {
-          setPaywall(result.reason === "limit" ? "limit" : "subscription");
+          openPaywall(result.reason === "limit" ? "limit" : "subscription");
         }
       })();
 
@@ -143,8 +175,22 @@ export function MorphChatScreen() {
   const avatarUrl = resolveMediaUrl(user?.avatar, { width: scale(120) });
 
   const scrollToEnd = useCallback(() => {
+    stickToBottom.current = true;
     requestAnimationFrame(() => {
       listRef.current?.scrollToEnd({ animated: true });
+    });
+  }, []);
+
+  const onChatScroll = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
+    const distance = contentSize.height - (contentOffset.y + layoutMeasurement.height);
+    stickToBottom.current = distance < 140;
+  }, []);
+
+  const onChatContentSize = useCallback(() => {
+    if (!stickToBottom.current) return;
+    requestAnimationFrame(() => {
+      listRef.current?.scrollToEnd({ animated: false });
     });
   }, []);
 
@@ -156,23 +202,15 @@ export function MorphChatScreen() {
       }
       if (MORPH_CHAT_DEBUG) return true;
 
-      // Sync cache — network kutmasdan darhol yuborish
-      const me = gate.me;
-      const remaining = me?.usage?.morph_chat_tokens_remaining;
-      if (typeof remaining === "number" && remaining < 200) {
-        showPaywall("limit", draft);
+      const result = await gate.ensureChatDetailed();
+      if (!result.ok) {
+        showPaywall(result.reason === "limit" ? "limit" : "subscription", draft);
         return false;
       }
-      if (me?.access?.morph_chat_allowed === false) {
-        showPaywall("limit", draft);
-        return false;
-      }
-
-      // Fonida yangilash (UI bloklanmasin)
-      void gate.refresh();
+      void chat.refreshLimits();
       return true;
     },
-    [gate.me, gate.refresh, isAuthenticated, showPaywall],
+    [chat.refreshLimits, gate.ensureChatDetailed, isAuthenticated, showPaywall],
   );
 
   const requireVoice = useCallback(async () => {
@@ -259,8 +297,12 @@ export function MorphChatScreen() {
       let cancelled = false;
       void (async () => {
         const result = await gate.ensureChatDetailed();
-        if (cancelled || result.ok) return;
-        setPaywall(result.reason === "limit" ? "limit" : "subscription");
+        if (cancelled) return;
+        if (result.ok) {
+          await chat.refreshLimits();
+          return;
+        }
+        openPaywall(result.reason === "limit" ? "limit" : "subscription");
       })();
       return () => {
         cancelled = true;
@@ -289,9 +331,15 @@ export function MorphChatScreen() {
 
   const onSend = useCallback(async () => {
     const draft = chat.input.trim();
-    if (!draft || chat.sending) return;
+    if (!draft || chat.sending || hairSaving) return;
     const ok = await requireAccess(draft);
     if (!ok) return;
+    if (!chat.hairComplete) {
+      chat.setInput("");
+      setHairDraft(draft);
+      setChatOpen(true);
+      return;
+    }
     // Avval yuborish (optimistic), keyin chat UI — birinchi bosishda yo‘qolmasin
     const sentPromise = chat.sendText(draft);
     setChatOpen(true);
@@ -302,12 +350,25 @@ export function MorphChatScreen() {
       return;
     }
     scrollToEnd();
-  }, [chat, requireAccess, scrollToEnd, showPaywall]);
+  }, [chat, hairSaving, requireAccess, scrollToEnd, showPaywall]);
+
+  const finishHairAsk = useCallback(async () => {
+    const draft = hairDraft;
+    await chat.refreshHairProfile();
+    setHairDraft(null);
+    setHairSaving(false);
+    if (!draft) return;
+    setChatOpen(true);
+    const sent = await chat.sendText(draft);
+    if (sent === "limit") showPaywall("limit", draft);
+    scrollToEnd();
+  }, [chat, hairDraft, scrollToEnd, showPaywall]);
 
   const onPaywallSuccess = useCallback(async () => {
     consumeMorphReturn();
     setPaywall(null);
     gate.refresh();
+    await chat.refreshLimits();
     const draft = pendingDraft.current || chat.input.trim();
     pendingDraft.current = null;
     setChatOpen(true);
@@ -391,11 +452,7 @@ export function MorphChatScreen() {
     />
   ) : chat.limitWarning ? (
     <ChatNotice
-      title={
-        chat.limits?.period === "lifetime"
-          ? t("chat.settings.limitTitleOnce")
-          : t("chat.settings.limitTitle")
-      }
+      title={t(morphChatLimitTitleKey(chat.limits))}
       message={chat.limitWarning}
       dismissA11y={t("chat.errorDismissA11y")}
       tone="warning"
@@ -439,19 +496,22 @@ export function MorphChatScreen() {
 
   const paywallModal = (
     <SafeModal visible={paywall != null} animationType="slide" onRequestClose={closePaywall}>
-      <MorphPaywallView
-        reason={paywall ?? "subscription"}
-        onClose={closePaywall}
-        onSuccess={() => void onPaywallSuccess()}
-        onNeedLogin={onNeedLogin}
-        onOpenReferral={() => {
-          closePaywall();
-          navigation.navigate({
-            name: "Profile",
-            params: { screen: "Referrals" },
-          } as never);
-        }}
-      />
+      {paywall != null ? (
+        <MorphPaywallView
+          key={`${paywall}-${paywallEpoch}`}
+          reason={paywall}
+          onClose={closePaywall}
+          onSuccess={() => void onPaywallSuccess()}
+          onNeedLogin={onNeedLogin}
+          onOpenReferral={() => {
+            closePaywall();
+            navigation.navigate({
+              name: "Profile",
+              params: { screen: "Referrals" },
+            } as never);
+          }}
+        />
+      ) : null}
     </SafeModal>
   );
 
@@ -519,22 +579,6 @@ export function MorphChatScreen() {
     );
   }
 
-  if (!chat.hairComplete) {
-    return (
-      <View style={[styles.root, { backgroundColor: pal.bg }]}>
-        <StatusBar style={pal.status} />
-        <HairProfileGate
-          title={t("chat.hairGate.title")}
-          body={t("chat.hairGate.body")}
-          cta={t("chat.hairGate.cta")}
-          backA11y={t("chat.home.backA11y")}
-          onOpenCare={() => navigation.navigate("MorphCare")}
-          onBack={leaveChat}
-        />
-      </View>
-    );
-  }
-
   if (!chatOpen) {
     return (
       <KeyboardAvoidingView
@@ -568,6 +612,11 @@ export function MorphChatScreen() {
               onSelect={async (p) => {
                 const ok = await requireAccess();
                 if (!ok) return;
+                if (!chat.hairComplete) {
+                  setHairDraft(p.label);
+                  setChatOpen(true);
+                  return;
+                }
                 setChatOpen(true);
                 await chat.sendQuickPrompt(p.id as any);
                 scrollToEnd();
@@ -672,18 +721,34 @@ export function MorphChatScreen() {
         <FlatList
           ref={listRef}
           data={chat.messages}
-          extraData={`${chat.sending}-${chat.messages[chat.messages.length - 1]?.content ?? ""}`}
+          extraData={`${chat.sending}-${chat.messages[chat.messages.length - 1]?.content ?? ""}-${chat.messages[chat.messages.length - 1]?.blocks?.length ?? 0}-${chat.messages[chat.messages.length - 1]?.hairstyles?.length ?? 0}`}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
             <ChatBubble
               role={item.role}
               content={item.content}
-              pending={Boolean(item.streaming) && !item.content}
-              streaming={Boolean(item.streaming) && Boolean(item.content)}
+              pending={Boolean(item.streaming) && !item.content && !item.blocks?.length}
+              streaming={Boolean(item.streaming) && Boolean(item.content || item.blocks?.length)}
+              hairstyles={item.hairstyles}
+              blocks={item.blocks}
+              onOpenHairstyle={openHairstyle}
             />
           )}
           contentContainerStyle={styles.list}
-          onContentSizeChange={scrollToEnd}
+          ListFooterComponent={
+            hairDraft ? (
+              <ChatHairAsk
+                draft={hairDraft}
+                onSaved={() => {
+                  setHairSaving(true);
+                  return finishHairAsk();
+                }}
+              />
+            ) : null
+          }
+          onScroll={onChatScroll}
+          scrollEventThrottle={32}
+          onContentSizeChange={onChatContentSize}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         />

@@ -26,7 +26,9 @@ export function MapBarberList({
   const { t } = useTranslation();
 
   if (loading) {
-    return <p className="px-4 py-8 text-center text-sm text-muted-foreground">{t("common.loading")}</p>;
+    return (
+      <p className="px-4 py-8 text-center text-sm text-muted-foreground">{t("common.loading")}</p>
+    );
   }
 
   if (barbers.length === 0) {

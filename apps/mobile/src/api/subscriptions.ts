@@ -1,3 +1,4 @@
+import i18n from "../i18n/config";
 import { apiJson } from "./client";
 
 export type SubscriptionPlan = {
@@ -13,7 +14,10 @@ export type SubscriptionPlan = {
   family_members_max: number | null;
   family_unlimited: boolean;
   morph_care: boolean;
-  badge: "basic" | "plus" | "pro";
+  morph_care_pro?: boolean;
+  badge: "free" | "basic" | "plus" | "pro";
+  purchasable?: boolean;
+  morph_voice?: boolean;
   sort_order: number;
   highlight: boolean;
   features: Array<{
@@ -57,17 +61,33 @@ export type UserSubscription = {
   is_trial?: boolean;
   starts_at: string | null;
   ends_at: string | null;
+  expires_at?: string | null;
+  cancelled_at?: string | null;
   days_remaining?: number | null;
   price_uzs: number;
   auto_renew: boolean;
+  is_premium?: boolean;
+  can_cancel?: boolean;
+  payment_provider?: string;
+  payment_id?: string;
 };
 
 export type SubscriptionMe = {
   has_active: boolean;
+  is_premium?: boolean;
+  status?: string;
+  auto_renew?: boolean;
+  expires_at?: string | null;
+  cancelled_at?: string | null;
+  can_cancel?: boolean;
   subscription: UserSubscription | null;
+  last_subscription?: UserSubscription | null;
+  current_plan_code?: string;
+  current_plan?: SubscriptionPlan | null;
   usage: SubscriptionUsage;
   badge: string | null;
   morph_care: boolean;
+  morph_care_pro?: boolean;
   days_remaining?: number | null;
   referral_credits?: number;
   referral_generation_enabled?: boolean;
@@ -111,9 +131,27 @@ export async function fetchSubscriptionMe(): Promise<SubscriptionMe> {
   return apiJson<SubscriptionMe>("/api/v1/subscriptions/me/");
 }
 
+export async function cancelSubscription(): Promise<{
+  ok: boolean;
+  status: string;
+  is_premium: boolean;
+  expires_at: string | null;
+  cancelled_at: string | null;
+  can_cancel: boolean;
+  message: string;
+  me?: SubscriptionMe;
+  detail?: string;
+}> {
+  return apiJson("/api/v1/subscriptions/cancel/", {
+    method: "POST",
+    body: JSON.stringify({}),
+  });
+}
+
 export async function checkoutSubscription(payload: {
   plan_code: string;
-  method: "wallet" | "click" | "payme";
+  method: "payme";
+  return_url?: string;
   promo_code?: string;
 }): Promise<{
   ok?: boolean;
@@ -122,11 +160,33 @@ export async function checkoutSubscription(payload: {
   detail?: string;
   message?: string;
   amount_uzs?: number;
+  amount_tiyin?: number;
+  checkout_url?: string | null;
+  order_id?: string;
+  status?: string;
 }> {
   return apiJson("/api/v1/subscriptions/checkout/", {
     method: "POST",
     body: JSON.stringify(payload),
   });
+}
+
+export type SubscriptionPaymentStatus = {
+  ok: boolean;
+  status: string;
+  order_id: string;
+  checkout_url?: string | null;
+  payme_receipt_id?: string | null;
+  message?: string;
+  sync_error?: string;
+  amount_uzs?: number;
+};
+
+export async function fetchSubscriptionPaymentStatus(
+  orderId: string,
+): Promise<SubscriptionPaymentStatus> {
+  const id = encodeURIComponent(orderId);
+  return apiJson(`/api/v1/subscriptions/payments/${id}/`);
 }
 
 const PLAN_RANK: Record<string, number> = {
@@ -140,21 +200,35 @@ export function isPlanUpgrade(planCode: string, activeCode: string | null | unde
   return (PLAN_RANK[planCode] ?? 0) > (PLAN_RANK[activeCode] ?? 0);
 }
 
-export function upgradeCtaLabel(code: string | null | undefined, hasActive: boolean): string {
-  if (!hasActive) return "Hamyondan to'lash";
+/** Starter → plus, Plus → pro. Pro da keyingi tarif yo'q. */
+export function nextUpgradeCode(code: string | null | undefined): "plus" | "pro" | null {
   const c = (code || "").toLowerCase();
-  if (c === "starter") return "Plus ga upgrade";
-  if (c === "plus") return "Pro ga upgrade";
-  return "Joriy obuna";
+  if (c === "starter") return "plus";
+  if (c === "plus") return "pro";
+  return null;
+}
+
+export function upgradeCtaLabel(code: string | null | undefined, hasActive: boolean): string {
+  if (!hasActive) return i18n.t("profile.purchase");
+  const next = nextUpgradeCode(code);
+  if (next) return i18n.t("profile.upgradeTo", { plan: next === "plus" ? "Plus" : "Pro" });
+  return i18n.t("profile.manage");
+}
+
+function moneyLocale(): string {
+  const lang = (i18n.resolvedLanguage || i18n.language || "uz").slice(0, 2);
+  if (lang === "en") return "en-US";
+  if (lang === "ru") return "ru-RU";
+  return "uz-UZ";
 }
 
 export function formatUzs(n: number): string {
-  return `${Math.round(n).toLocaleString("uz-UZ")} so'm`;
+  return `${Math.round(n).toLocaleString(moneyLocale())} ${i18n.t("morph.paywall.currencyShort")}`;
 }
 
 export function formatSubDate(iso: string | null | undefined): string {
   if (!iso) return "—";
-  return new Date(iso).toLocaleDateString("uz-UZ", {
+  return new Date(iso).toLocaleDateString(moneyLocale(), {
     day: "numeric",
     month: "long",
     year: "numeric",

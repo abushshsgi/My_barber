@@ -53,10 +53,7 @@ export default {
       const { pathname } = new URL(request.url);
       if (request.method === "GET" && /^\/salon\/[^/]+\/?$/.test(pathname)) {
         response = await injectSalonOgIntoHtml(response, pathname);
-      } else if (
-        request.method === "GET" &&
-        /^\/morf-ai\/(share|look)\/[^/]+\/?$/.test(pathname)
-      ) {
+      } else if (request.method === "GET" && /^\/morf-ai\/(share|look)\/[^/]+\/?$/.test(pathname)) {
         response = await injectMorphOgIntoHtml(response, pathname);
       }
 

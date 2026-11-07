@@ -38,13 +38,21 @@ export function AppShellProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let alive = true;
-    void readAppShell().then((value) => {
-      if (!alive) return;
-      setShellState(value);
-      setReady(true);
-    });
+    const watchdog = setTimeout(() => {
+      if (alive) setReady(true);
+    }, 2500);
+    void readAppShell()
+      .then((value) => {
+        if (!alive) return;
+        setShellState(value);
+        setReady(true);
+      })
+      .catch(() => {
+        if (alive) setReady(true);
+      });
     return () => {
       alive = false;
+      clearTimeout(watchdog);
     };
   }, []);
 

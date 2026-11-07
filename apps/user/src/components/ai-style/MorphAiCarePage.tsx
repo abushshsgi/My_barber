@@ -1,6 +1,14 @@
 import { Link, useNavigate, useRouter } from "@tanstack/react-router";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { ChevronLeft, ChevronRight, CloudSun, Loader2, Lock, Search, ShoppingBag, Sparkles } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  CloudSun,
+  Loader2,
+  Search,
+  ShoppingBag,
+  Sparkles,
+} from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
@@ -24,11 +32,7 @@ import { useHairCareProfile, useUpdateHairCareProfile } from "@/hooks/use-hair-c
 import { useCareProducts } from "@/hooks/use-care-products";
 import { BadHairDaySosSheet } from "@/components/ai-style/BadHairDaySosSheet";
 import { CareShelfTracker } from "@/components/ai-style/CareShelfTracker";
-import {
-  fetchMyCareProducts,
-  fetchWeatherCare,
-  type CareProduct,
-} from "@/lib/api/care-products";
+import { fetchMyCareProducts, fetchWeatherCare, type CareProduct } from "@/lib/api/care-products";
 import { getFastPosition } from "@/lib/native-geolocation";
 import { resolveUzRegion, uzRegionImage, type UzRegionId } from "@/lib/uz-care-regions";
 
@@ -53,18 +57,34 @@ export function MorphAiCarePage() {
   const updateHair = useUpdateHairCareProfile();
   const catalogQ = useCareProducts({ recommended: true });
   const profile = useMemo(() => loadFaceProfile(), []);
-  const [quiz, setQuiz] = useState<CareQuizAnswers>({ condition: "", texture: "", colorStatus: "" });
+  const [quiz, setQuiz] = useState<CareQuizAnswers>({
+    condition: "",
+    texture: "",
+    colorStatus: "",
+  });
   const [step, setStep] = useState<QuizStep | "plan">(0);
   const [savingQuiz, setSavingQuiz] = useState(false);
   const [quizError, setQuizError] = useState("");
-  const [panel, setPanel] = useState<"hub" | "routine" | "shelf" | "weather" | "growth">("routine");
+  const [panel, setPanel] = useState<"hub" | "routine" | "shelf" | "weather" | "growth">("hub");
   const [search, setSearch] = useState("");
   const [coords, setCoords] = useState<{ lat: number; lon: number } | null>(null);
   const [regionId, setRegionId] = useState<UzRegionId | null>(null);
   const [sosOpen, setSosOpen] = useState(false);
-  const searchQ = useCareProducts({ q: search.trim() || undefined, enabled: search.trim().length > 0 });
+  const searchQ = useCareProducts({
+    q: search.trim() || undefined,
+    enabled: search.trim().length > 0,
+  });
   const weatherQ = useQuery({
-    queryKey: ["ai", "care", "weather", hairQ.data?.condition, hairQ.data?.texture, coords?.lat ?? null, coords?.lon ?? null, regionId],
+    queryKey: [
+      "ai",
+      "care",
+      "weather",
+      hairQ.data?.condition,
+      hairQ.data?.texture,
+      coords?.lat ?? null,
+      coords?.lon ?? null,
+      regionId,
+    ],
     queryFn: () =>
       fetchWeatherCare({
         condition: hairQ.data?.condition || undefined,
@@ -73,13 +93,13 @@ export function MorphAiCarePage() {
         lon: regionId ? undefined : coords?.lon,
         region_id: regionId || undefined,
       }),
-    enabled: Boolean(hairQ.data?.complete),
+    enabled: Boolean(accessQ.data?.allowed && hairQ.data?.complete),
     staleTime: 10 * 60_000,
   });
   const myQ = useQuery({
     queryKey: ["ai", "care", "my-products"],
     queryFn: fetchMyCareProducts,
-    enabled: Boolean(hairQ.data?.complete),
+    enabled: Boolean(accessQ.data?.allowed && hairQ.data?.complete),
     staleTime: 20_000,
   });
   const plan = useMemo(
@@ -138,38 +158,20 @@ export function MorphAiCarePage() {
     setStep((current) => (current === "plan" ? 0 : current));
   }, [hairQ.isSuccess, hairQ.data]);
 
-  if (accessQ.isLoading || hairQ.isLoading) {
+  const goSubscribe = () => {
+    void navigate({ to: "/wallet", search: { section: "subscriptions" } });
+  };
+  const needPlus = () => {
+    if (accessQ.isLoading) return true;
+    if (accessQ.data?.allowed) return false;
+    goSubscribe();
+    return true;
+  };
+
+  if (hairQ.isLoading) {
     return (
       <div className="grid min-h-[100dvh] place-items-center bg-[#FAFAFA] text-[#111111]">
         <Loader2 className="size-6 animate-spin text-[#111111]/40" />
-      </div>
-    );
-  }
-
-  if (accessQ.data && !accessQ.data.allowed) {
-    return (
-      <div
-        className="min-h-[100dvh] bg-[#FAFAFA] px-5 text-[#111111]"
-        style={{ paddingTop: "max(1rem, env(safe-area-inset-top))" }}
-      >
-        <BackLink label={t("common.back")} />
-        <div className="mx-auto mt-24 max-w-xs text-center">
-          <Lock className="mx-auto size-6 text-[#111111]/50" />
-          <h1 className="mt-4 text-lg font-semibold tracking-tight">
-            {t("aiStylePage.care.badge", { defaultValue: "Parvarish" })}
-          </h1>
-          <p className="mt-2 text-sm text-[#111111]/50">
-            {accessQ.data.detail ||
-              t("aiStylePage.care.proOnly", { defaultValue: "Pro obunasida." })}
-          </p>
-          <Link
-            to="/wallet"
-            search={{ section: "subscriptions" }}
-            className="mt-8 inline-flex h-12 items-center rounded-full bg-[#111111] px-6 text-sm font-semibold text-white"
-          >
-            {t("aiStylePage.care.seePlans", { defaultValue: "Obunalar" })}
-          </Link>
-        </div>
       </div>
     );
   }
@@ -381,7 +383,7 @@ export function MorphAiCarePage() {
   const featured = (search.trim() ? searchQ.data : catalogProducts) || [];
 
   return (
-    <div className="relative min-h-[100dvh] overflow-x-hidden overflow-y-auto bg-[#F3F3F4] text-[#111111]">
+    <div className="relative min-h-[100dvh] overflow-x-hidden overflow-y-auto bg-[var(--morph-bg,#FAFAFA)] text-[var(--morph-fg,#111111)]">
       <div
         className={cn(
           "relative z-[1] mx-auto w-full px-4 pb-[max(2.5rem,env(safe-area-inset-bottom))] md:px-8",
@@ -389,17 +391,25 @@ export function MorphAiCarePage() {
             ? "max-w-lg sm:max-w-xl md:max-w-4xl lg:max-w-[1100px] xl:max-w-[1200px]"
             : "max-w-lg md:max-w-2xl",
         )}
-        style={panel === "weather" ? undefined : { paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}
+        style={
+          panel === "weather" ? undefined : { paddingTop: "max(0.75rem, env(safe-area-inset-top))" }
+        }
       >
         <div
           className={cn(
             "flex items-center",
             panel === "weather" && "hidden",
-            panel === "routine" ? "grid grid-cols-[44px_1fr_44px]" : "justify-between",
+            panel === "routine"
+              ? "grid grid-cols-[44px_1fr_44px]"
+              : panel === "hub"
+                ? "justify-center lg:justify-between"
+                : "justify-between",
           )}
         >
           {panel === "hub" ? (
-            <BackLink label={t("common.back")} />
+            <span className="hidden lg:inline-flex">
+              <BackLink label={t("common.back")} />
+            </span>
           ) : (
             <button
               type="button"
@@ -413,10 +423,14 @@ export function MorphAiCarePage() {
           {panel === "routine" ? (
             <div className="min-w-0 text-center">
               <p className="truncate text-[15px] font-extrabold tracking-tight">
-                {t("aiStylePage.care.routine.planTitle", { defaultValue: "Morf AI Parvarish Rejasi" })}
+                {t("aiStylePage.care.routine.planTitle", {
+                  defaultValue: "Morf AI Parvarish Rejasi",
+                })}
               </p>
               <p className="truncate text-[11px] text-[#111111]/45">
-                {t(`aiStylePage.care.conditions.${plan.condition}`, { defaultValue: plan.condition })}
+                {t(`aiStylePage.care.conditions.${plan.condition}`, {
+                  defaultValue: plan.condition,
+                })}
                 {" · "}
                 {t(`aiStylePage.care.textures.${plan.texture}`, { defaultValue: plan.texture })}
               </p>
@@ -440,11 +454,18 @@ export function MorphAiCarePage() {
             <div className="mt-4">
               <button
                 type="button"
-                onClick={() => setPanel("weather")}
+                onClick={() => {
+                  if (needPlus()) return;
+                  setPanel("weather");
+                }}
                 className="relative h-48 w-full overflow-hidden rounded-3xl text-left text-white shadow-[0_16px_40px_-18px_rgba(0,0,0,0.45)] lg:h-56"
               >
                 {regionHero ? (
-                  <img src={regionHero} alt="" className="absolute inset-0 size-full object-cover object-right" />
+                  <img
+                    src={regionHero}
+                    alt=""
+                    className="absolute inset-0 size-full object-cover object-right"
+                  />
                 ) : (
                   <span className="absolute inset-0 bg-gradient-to-br from-sky-400 via-sky-500 to-indigo-600" />
                 )}
@@ -458,8 +479,12 @@ export function MorphAiCarePage() {
                   </span>
                   <span className="flex items-end justify-between gap-3">
                     <span>
-                      <span className="block text-5xl font-bold tracking-tight tabular-nums lg:text-6xl">{tempLabel}</span>
-                      <span className="mt-1 block text-sm font-medium text-white/90">{weatherName}</span>
+                      <span className="block text-5xl font-bold tracking-tight tabular-nums lg:text-6xl">
+                        {tempLabel}
+                      </span>
+                      <span className="mt-1 block text-sm font-medium text-white/90">
+                        {weatherName}
+                      </span>
                       {weather?.current?.humidity_pct != null ? (
                         <span className="mt-0.5 block text-xs text-white/75">
                           Namlik {Math.round(weather.current.humidity_pct)}%
@@ -476,10 +501,20 @@ export function MorphAiCarePage() {
               <div className="mt-4 grid grid-cols-3 gap-2 lg:mt-5 lg:gap-4">
                 <button
                   type="button"
-                  onClick={() => setSosOpen(true)}
+                  onClick={() => {
+                    if (!accessQ.data?.pro_allowed) {
+                      void navigate({ to: "/wallet", search: { section: "subscriptions" } });
+                      return;
+                    }
+                    setSosOpen(true);
+                  }}
                   className="relative h-28 cursor-pointer overflow-hidden rounded-2xl text-left text-white lg:h-40 lg:rounded-3xl"
                 >
-                  <img src="/care/care-card-sos.jpg" alt="" className="absolute inset-0 size-full object-cover" />
+                  <img
+                    src="/care/care-card-sos.jpg"
+                    alt=""
+                    className="absolute inset-0 size-full object-cover"
+                  />
                   <span className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
                   <span className="absolute bottom-2.5 left-2.5 text-[12px] font-bold leading-tight lg:bottom-3.5 lg:left-3.5 lg:text-sm">
                     SOS
@@ -487,10 +522,20 @@ export function MorphAiCarePage() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setPanel("shelf")}
+                  onClick={() => {
+                    if (!accessQ.data?.pro_allowed) {
+                      void navigate({ to: "/wallet", search: { section: "subscriptions" } });
+                      return;
+                    }
+                    setPanel("shelf");
+                  }}
                   className="relative h-28 cursor-pointer overflow-hidden rounded-2xl text-left text-white lg:h-40 lg:rounded-3xl"
                 >
-                  <img src="/care/care-card-shelf.jpg" alt="" className="absolute inset-0 size-full object-cover" />
+                  <img
+                    src="/care/care-card-shelf.jpg"
+                    alt=""
+                    className="absolute inset-0 size-full object-cover"
+                  />
                   <span className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/15 to-transparent" />
                   <span className="absolute bottom-2.5 left-2.5 text-[12px] font-bold leading-tight lg:bottom-3.5 lg:left-3.5 lg:text-sm">
                     Javon
@@ -526,7 +571,10 @@ export function MorphAiCarePage() {
             <div className="mt-5 lg:mt-8">
               <div className="mb-3 flex items-center justify-between">
                 <h2 className="text-[13px] font-bold lg:text-base">Tavsiyalar</h2>
-                <Link to="/ai-style/care/products" className="text-[12px] font-semibold text-[#111111]/45 lg:text-sm">
+                <Link
+                  to="/ai-style/care/products"
+                  className="text-[12px] font-semibold text-[#111111]/45 lg:text-sm"
+                >
                   Hammasi
                 </Link>
               </div>
@@ -537,7 +585,9 @@ export function MorphAiCarePage() {
                   ))}
                 </div>
               ) : search.trim() && featured.length === 0 ? (
-                <p className="rounded-2xl bg-white px-4 py-3 text-sm text-[#111111]/45">Topilmadi</p>
+                <p className="rounded-2xl bg-white px-4 py-3 text-sm text-[#111111]/45">
+                  Topilmadi
+                </p>
               ) : (
                 <div
                   className={cn(
@@ -546,9 +596,11 @@ export function MorphAiCarePage() {
                       : "-mx-4 flex gap-3 overflow-x-auto px-4 pb-1 [scrollbar-width:none] md:mx-0 md:grid md:grid-cols-3 md:gap-4 md:overflow-visible md:px-0 lg:grid-cols-4 xl:grid-cols-5 [&::-webkit-scrollbar]:hidden [&>a]:w-[9.5rem] [&>a]:shrink-0 md:[&>a]:w-auto",
                   )}
                 >
-                  {(catalogQ.isLoading ? [] : featured).slice(0, search.trim() ? 12 : 8).map((p) => (
-                    <CareCatalogCard key={p.id} product={p} />
-                  ))}
+                  {(catalogQ.isLoading ? [] : featured)
+                    .slice(0, search.trim() ? 12 : 8)
+                    .map((p) => (
+                      <CareCatalogCard key={p.id} product={p} locked={!accessQ.data?.allowed} onLocked={goSubscribe} />
+                    ))}
                 </div>
               )}
             </div>
@@ -556,7 +608,13 @@ export function MorphAiCarePage() {
             <div className="mt-5 lg:mt-8">
               <button
                 type="button"
-                onClick={() => setPanel("shelf")}
+                onClick={() => {
+                  if (!accessQ.data?.pro_allowed) {
+                    goSubscribe();
+                    return;
+                  }
+                  setPanel("shelf");
+                }}
                 className="flex w-full cursor-pointer items-center gap-2 rounded-3xl bg-white px-4 py-3 text-left shadow-sm ring-1 ring-black/5 lg:hidden"
               >
                 <ShoppingBag className="size-4" />
@@ -566,30 +624,61 @@ export function MorphAiCarePage() {
               <div className="mt-2 grid grid-cols-2 gap-2 lg:mt-0 lg:grid-cols-3 lg:gap-4">
                 <button
                   type="button"
-                  onClick={() => setPanel("shelf")}
+                  onClick={() => {
+                    if (!accessQ.data?.pro_allowed) {
+                      goSubscribe();
+                      return;
+                    }
+                    setPanel("shelf");
+                  }}
                   className="relative hidden h-44 overflow-hidden rounded-3xl text-left text-white lg:block"
                 >
-                  <img src="/care/care-card-shelf.jpg" alt="" className="absolute inset-0 size-full object-cover" />
+                  <img
+                    src="/care/care-card-shelf.jpg"
+                    alt=""
+                    className="absolute inset-0 size-full object-cover"
+                  />
                   <span className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
-                  <span className="absolute inset-x-3 bottom-3 text-sm font-bold">Mening mahsulotlarim</span>
+                  <span className="absolute inset-x-3 bottom-3 text-sm font-bold">
+                    Mening mahsulotlarim
+                  </span>
                 </button>
                 <button
                   type="button"
-                  onClick={() => setPanel("routine")}
+                  onClick={() => {
+                    if (needPlus()) return;
+                    setPanel("routine");
+                  }}
                   className="relative h-40 overflow-hidden rounded-2xl text-left text-white lg:h-44 lg:rounded-3xl"
                 >
-                  <img src="/care/care-card-routine.jpg" alt="" className="absolute inset-0 size-full object-cover" />
+                  <img
+                    src="/care/care-card-routine.jpg"
+                    alt=""
+                    className="absolute inset-0 size-full object-cover"
+                  />
                   <span className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
-                  <span className="absolute inset-x-3 bottom-3 text-sm font-bold lg:text-base">Parvarish</span>
+                  <span className="absolute inset-x-3 bottom-3 text-sm font-bold lg:text-base">
+                    Parvarish
+                  </span>
                 </button>
-                <Link
-                  to="/ai-style/care/ingredient"
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (needPlus()) return;
+                    void navigate({ to: "/ai-style/care/ingredient" });
+                  }}
                   className="relative h-40 overflow-hidden rounded-2xl text-left text-white lg:h-44 lg:rounded-3xl"
                 >
-                  <img src="/care/care-card-scan.jpg" alt="" className="absolute inset-0 size-full object-cover" />
+                  <img
+                    src="/care/care-card-scan.jpg"
+                    alt=""
+                    className="absolute inset-0 size-full object-cover"
+                  />
                   <span className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
-                  <span className="absolute inset-x-3 bottom-3 text-sm font-bold lg:text-base">Tarkib</span>
-                </Link>
+                  <span className="absolute inset-x-3 bottom-3 text-sm font-bold lg:text-base">
+                    Tarkib
+                  </span>
+                </button>
               </div>
             </div>
           </>
@@ -616,9 +705,7 @@ export function MorphAiCarePage() {
             <span className="inline-block rounded-full bg-[#111111]/10 px-3 py-1 text-xs font-bold uppercase tracking-wider text-[#111111]/70">
               Tez orada
             </span>
-            <h3 className="mt-3 text-lg font-bold text-[#111111]">
-              O‘sish tahlili tez orada
-            </h3>
+            <h3 className="mt-3 text-lg font-bold text-[#111111]">O‘sish tahlili tez orada</h3>
             <p className="mt-1.5 max-w-sm text-sm text-[#111111]/55">
               Soch o‘sish sur‘ati, 3 oylik prognoz va tahlil moduli tez orada ishga tushadi.
             </p>
@@ -662,7 +749,33 @@ export function MorphAiCarePage() {
   );
 }
 
-function CareCatalogCard({ product }: { product: CareProduct }) {
+function CareCatalogCard({
+  product,
+  locked,
+  onLocked,
+}: {
+  product: CareProduct;
+  locked?: boolean;
+  onLocked?: () => void;
+}) {
+  if (locked) {
+    return (
+      <button
+        type="button"
+        onClick={onLocked}
+        className="flex w-full min-w-0 cursor-pointer flex-col overflow-hidden rounded-3xl bg-white text-left shadow-sm ring-1 ring-black/[0.06]"
+      >
+        <span className="grid aspect-[4/5] place-items-center bg-white">
+          {product.image_url ? (
+            <img src={product.image_url} alt="" className="size-full object-contain p-3" />
+          ) : null}
+        </span>
+        <span className="line-clamp-2 min-w-0 break-words px-3 py-3 text-[13px] font-semibold leading-snug text-[#111111] lg:text-sm">
+          {product.name}
+        </span>
+      </button>
+    );
+  }
   return (
     <Link
       to="/ai-style/care/products/$productId"
@@ -694,4 +807,3 @@ function BackLink({ label }: { label: string }) {
     </button>
   );
 }
-

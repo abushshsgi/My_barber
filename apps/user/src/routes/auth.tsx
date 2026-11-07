@@ -66,13 +66,14 @@ const phoneAuthEnabled =
   (import.meta as unknown as { env?: Record<string, string | undefined> }).env
     ?.VITE_PHONE_AUTH_ENABLED === "true";
 /** GSI faqat bitta Web client ID qabul qiladi (vergulli ro'yxat → invalid_client). */
-const googleClientId = (
-  (import.meta as unknown as { env?: Record<string, string | undefined> }).env
-    ?.VITE_GOOGLE_CLIENT_ID || ""
-)
-  .trim()
-  .split(",")[0]
-  ?.trim() || "";
+const googleClientId =
+  (
+    (import.meta as unknown as { env?: Record<string, string | undefined> }).env
+      ?.VITE_GOOGLE_CLIENT_ID || ""
+  )
+    .trim()
+    .split(",")[0]
+    ?.trim() || "";
 
 function Auth() {
   const { t } = useTranslation();

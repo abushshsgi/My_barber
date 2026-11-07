@@ -117,7 +117,16 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
       formatPrice,
       shortPrice,
     }),
-    [currency, data?.source, data?.updated_at, formatPrice, isLoading, rates, setCurrency, shortPrice],
+    [
+      currency,
+      data?.source,
+      data?.updated_at,
+      formatPrice,
+      isLoading,
+      rates,
+      setCurrency,
+      shortPrice,
+    ],
   );
 
   return <CurrencyContext.Provider value={value}>{children}</CurrencyContext.Provider>;

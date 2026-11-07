@@ -20,6 +20,7 @@ import { MorphAiSettingsScreen } from "../screens/morph/MorphAiSettingsScreen";
 import { SecurityPasswordScreen } from "../screens/profile/SecurityPasswordScreen";
 import { SecuritySessionsScreen } from "../screens/profile/SecuritySessionsScreen";
 import { SubscriptionsScreen } from "../screens/profile/SubscriptionsScreen";
+import { CancelSubscriptionScreen } from "../screens/profile/CancelSubscriptionScreen";
 import { ReferralScreen } from "../screens/profile/ReferralScreen";
 import { WalletFaqScreen } from "../screens/wallet/WalletFaqScreen";
 import { WalletFreezeScreen } from "../screens/wallet/WalletFreezeScreen";
@@ -56,6 +57,7 @@ export type ProfileStackParamList = {
   PrivacyPolicy: undefined;
   Terms: undefined;
   Subscriptions: undefined;
+  CancelSubscription: undefined;
   MorphPaywall: { reason?: import("../lib/morph-return").PaywallReason; returnTo?: import("../lib/morph-return").MorphReturnTo } | undefined;
   Referrals: undefined;
   WalletGate: undefined;
@@ -113,6 +115,7 @@ export function ProfileStack() {
       <Stack.Screen name="Terms" component={TermsScreen} />
       <Stack.Screen name="Notifications" component={NotificationsScreen} />
       <Stack.Screen name="Subscriptions" component={SubscriptionsScreen} />
+      <Stack.Screen name="CancelSubscription" component={CancelSubscriptionScreen} />
       <Stack.Screen name="Referrals" component={ReferralScreen} />
       <Stack.Screen
         name="MorphPaywall"

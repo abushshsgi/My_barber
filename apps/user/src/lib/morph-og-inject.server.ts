@@ -104,9 +104,7 @@ export async function injectMorphOgIntoHtml(
     const { meta, links } = buildMorphShareHeadMeta(shareId, seo);
     const withHead = await injectHeadTags(response, meta, links);
     if (!seo?.image) return withHead;
-    const tryHref = seo.styleId
-      ? `/explore/${encodeURIComponent(seo.styleId)}/try`
-      : "/ai-style";
+    const tryHref = seo.styleId ? `/explore/${encodeURIComponent(seo.styleId)}/try` : "/ai-style";
     return injectBodyStart(
       withHead,
       shareStaticFallback({

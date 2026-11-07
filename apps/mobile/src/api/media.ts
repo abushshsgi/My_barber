@@ -103,8 +103,12 @@ export function resolveMediaUrl(
   path: string | null | undefined,
   opts?: { width?: number },
 ): string | null {
-  const raw = path?.trim();
-  if (!raw) return null;
+  const rawInput = path?.trim();
+  if (!rawInput) return null;
+  const catalogMedia = rawInput.match(
+    /^(?:https?:\/\/[^/]+)?\/media\/(hairstyles\/(?:men|women)\/.+)$/i,
+  );
+  const raw = catalogMedia?.[1] ? `/${catalogMedia[1]}` : rawInput;
 
   const pexels = raw.match(PEXELS_RE);
   if (pexels) {

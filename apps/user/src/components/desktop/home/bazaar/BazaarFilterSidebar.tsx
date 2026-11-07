@@ -30,10 +30,7 @@ export function BazaarFilterSidebar({
 
   return (
     <div
-      className={cn(
-        "flex h-full flex-col rounded-2xl bg-audience-all p-4 shadow-sm",
-        className,
-      )}
+      className={cn("flex h-full flex-col rounded-2xl bg-audience-all p-4 shadow-sm", className)}
     >
       <p className="flex shrink-0 items-center gap-2 text-sm font-bold">
         <SlidersHorizontal className="h-4 w-4 text-foreground" />
@@ -59,9 +56,7 @@ export function BazaarFilterSidebar({
             onClick={() => setCat(key)}
             className={cn(
               "flex w-full items-center rounded-xl px-3 py-2.5 text-left text-sm font-medium transition-colors",
-              effectiveCat === key
-                ? "bg-foreground text-background shadow-sm"
-                : "text-foreground",
+              effectiveCat === key ? "bg-foreground text-background shadow-sm" : "text-foreground",
             )}
           >
             {t(`home.categories.${key}`)}

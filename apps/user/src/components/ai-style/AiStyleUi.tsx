@@ -25,13 +25,10 @@ export function GalleryValidatingHero({ previewUrl }: { previewUrl: string }) {
 
   return (
     <div className="relative h-full w-full overflow-hidden bg-neutral-950">
-      <motion.img
+      <img
         src={previewUrl}
         alt=""
-        className="absolute inset-0 h-full w-full object-cover object-top"
-        initial={{ scale: 1.04, filter: "blur(8px)" }}
-        animate={{ scale: 1.08, filter: "blur(0px)" }}
-        transition={{ duration: 0.7, ease: "easeOut" }}
+        className="absolute inset-0 h-full w-full bg-black object-contain object-center"
       />
       <div className="absolute inset-0 bg-black/25" />
       <div className="absolute inset-x-0 bottom-0 h-[55%] bg-gradient-to-t from-black/90 via-black/50 to-transparent" />
@@ -78,7 +75,12 @@ export function GalleryValidatingHero({ previewUrl }: { previewUrl: string }) {
                   key={i}
                   className="h-1.5 w-1.5 rounded-full bg-white/90"
                   animate={{ opacity: [0.2, 1, 0.2], scale: [0.85, 1, 0.85] }}
-                  transition={{ duration: 1.1, repeat: Infinity, delay: i * 0.18, ease: "easeInOut" }}
+                  transition={{
+                    duration: 1.1,
+                    repeat: Infinity,
+                    delay: i * 0.18,
+                    ease: "easeInOut",
+                  }}
                 />
               ))}
             </div>
@@ -119,9 +121,7 @@ export function AiStyleAnalyzeCta({ analyzing, validating, onAnalyze, label }: A
       )}
     >
       {analyzing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-      {analyzing
-        ? (label ?? t("aiStylePage.analyzing"))
-        : t("aiStylePage.analyzeCta")}
+      {analyzing ? (label ?? t("aiStylePage.analyzing")) : t("aiStylePage.analyzeCta")}
     </button>
   );
 }

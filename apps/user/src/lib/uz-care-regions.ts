@@ -19,14 +19,29 @@ const REGIONS: Array<{ id: UzRegionId; match: RegExp; lat: number; lon: number }
   { id: "bukhara", match: /buxoro|bukhara|бухоро|бухара/, lat: 39.7681, lon: 64.4556 },
   { id: "fergana", match: /farg.?ona|fergana|фарғона|фергана/, lat: 40.3864, lon: 71.7864 },
   { id: "jizzakh", match: /jizzax|jizzakh|джиззак|жиззах/, lat: 40.1158, lon: 67.8422 },
-  { id: "kashkadarya", match: /qashqadaryo|kashkadarya|shahrisabz|қашқадарё/, lat: 38.8606, lon: 65.7891 },
+  {
+    id: "kashkadarya",
+    match: /qashqadaryo|kashkadarya|shahrisabz|қашқадарё/,
+    lat: 38.8606,
+    lon: 65.7891,
+  },
   { id: "navoi", match: /navoiy|navoi|навои/, lat: 40.1039, lon: 65.3686 },
   { id: "namangan", match: /namangan|наманган/, lat: 40.9983, lon: 71.6726 },
   { id: "samarkand", match: /samarqand|samarkand|самарқанд|самарканд/, lat: 39.6542, lon: 66.9597 },
   { id: "sirdarya", match: /sirdaryo|sirdarya|syr.?darya|сирдарё/, lat: 40.5, lon: 68.6667 },
-  { id: "surkhandarya", match: /surxondaryo|surkhandarya|termez|сурхондарё/, lat: 37.2242, lon: 67.2783 },
+  {
+    id: "surkhandarya",
+    match: /surxondaryo|surkhandarya|termez|сурхондарё/,
+    lat: 37.2242,
+    lon: 67.2783,
+  },
   { id: "khorezm", match: /xorazm|khorezm|khiva|xiva|хоразм|хива/, lat: 41.3775, lon: 60.3619 },
-  { id: "karakalpakstan", match: /qoraqalpo|karakalpak|nukus|қорақалпоқ|нукус/, lat: 42.4603, lon: 59.6164 },
+  {
+    id: "karakalpakstan",
+    match: /qoraqalpo|karakalpak|nukus|қорақалпоқ|нукус/,
+    lat: 42.4603,
+    lon: 59.6164,
+  },
 ];
 
 export function resolveUzRegion(opts: {

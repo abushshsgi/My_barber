@@ -20,8 +20,7 @@ export function useSalonPage(id: string) {
 
   const staffRaw = useQuery({
     queryKey: ["salons", id, "staff", audience],
-    queryFn: () =>
-      fetchSalonStaff(id, audience === "all" ? undefined : { audience }),
+    queryFn: () => fetchSalonStaff(id, audience === "all" ? undefined : { audience }),
     enabled: detailReady,
     staleTime: 60_000,
   });
@@ -94,9 +93,7 @@ export function useSalonPage(id: string) {
       reviews: resolvedReviews,
       portfolio: (() => {
         const gallery = base.portfolio ?? [];
-        const work = (portfolio.data ?? [])
-          .map((u) => u?.trim())
-          .filter(Boolean) as string[];
+        const work = (portfolio.data ?? []).map((u) => u?.trim()).filter(Boolean) as string[];
         const merged = [...gallery, ...work];
         return merged.filter((url, i, arr) => arr.indexOf(url) === i);
       })(),

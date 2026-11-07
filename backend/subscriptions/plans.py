@@ -6,18 +6,22 @@ from copy import deepcopy
 from decimal import Decimal
 from typing import Any
 
+PLAN_FREE = "free"
 PLAN_STARTER = "starter"
 PLAN_PLUS = "plus"
 PLAN_PRO = "pro"
 
+# Sotib olinadigan tariflar. Free avtomatik — to'lov katalogiga kirmaydi.
 PLAN_CODES = (PLAN_STARTER, PLAN_PLUS, PLAN_PRO)
 PLAN_RANK = {
+    PLAN_FREE: 0,
     PLAN_STARTER: 1,
     PLAN_PLUS: 2,
     PLAN_PRO: 3,
 }
 # Yagona narx. Ilova, preview va Payme shu so'mni ko'rsatadi. Chegirma qo'shilmaydi.
 OFFICIAL_PRICE_UZS = {
+    PLAN_FREE: 0,
     PLAN_STARTER: 9990,
     PLAN_PLUS: 29990,
     PLAN_PRO: 69990,
@@ -35,6 +39,42 @@ def _feat(key: str, uz: str, ru: str, en: str, *, included: bool = True) -> dict
 
 
 _PLANS: dict[str, dict[str, Any]] = {
+    PLAN_FREE: {
+        "code": PLAN_FREE,
+        "name_uz": "Free",
+        "name_ru": "Free",
+        "name_en": "Free",
+        "price_uzs": Decimal(0),
+        "period_days": 0,
+        "morph_ai_monthly": 1,
+        "morph_studio_monthly": 0,
+        "morph_chat_tokens_monthly": 10_000,
+        "family_members_max": 0,
+        "morph_care": False,
+        "morph_care_pro": False,
+        "morph_voice": False,
+        "purchasable": False,
+        "badge": "free",
+        "sort_order": 0,
+        "highlight": False,
+        "features": [
+            _feat(
+                "morph_ai",
+                "Morf AI try-on — 1 ta generatsiya bepul",
+                "Morf AI try-on — 1 бесплатная генерация",
+                "Morf AI try-on — 1 free generation",
+            ),
+            _feat(
+                "chat",
+                "Morf AI chat — 10 000 token bepul",
+                "Morf AI чат — 10 000 токенов бесплатно",
+                "Morf AI chat — 10,000 free tokens",
+            ),
+            _feat("studio", "Morf AI Studio — yo'q", "Morf AI Studio — нет", "Morf AI Studio — not included", included=False),
+            _feat("voice", "Ovozli suhbat — yo'q", "Голосовой чат — нет", "Voice chat — not included", included=False),
+            _feat("care", "Parvarish, Tarkib, ob-havo — yo'q", "Уход, состав, погода — нет", "Care, scan, weather — not included", included=False),
+        ],
+    },
     PLAN_STARTER: {
         "code": PLAN_STARTER,
         "name_uz": "Starter",
@@ -147,10 +187,30 @@ def get_plan(code: str) -> dict[str, Any] | None:
     return deepcopy(plan)
 
 
-def list_plans() -> list[dict[str, Any]]:
-    plans = [deepcopy(p) for p in _PLANS.values()]
+def is_purchasable_plan(code: str) -> bool:
+    plan = _PLANS.get((code or "").strip().lower())
+    if not plan:
+        return False
+    return bool(plan.get("purchasable", True))
+
+
+def list_plans(*, include_free: bool = False) -> list[dict[str, Any]]:
+    """Do'kon katalogi. Free faqat joriy tarif sifatida, sotuv ro'yxatida yo'q."""
+    plans = [
+        deepcopy(p)
+        for p in _PLANS.values()
+        if include_free or p.get("purchasable", True)
+    ]
     plans.sort(key=lambda p: p["sort_order"])
     return plans
+
+
+def free_plan() -> dict[str, Any]:
+    """Ro'yxatdan o'tgan, hali tarif sotib olmagan userning joriy rejasi."""
+    plan = get_plan(PLAN_FREE)
+    if plan is None:
+        raise RuntimeError("Free tarif katalogda yo'q.")
+    return plan
 
 
 def serialize_plan(plan: dict[str, Any]) -> dict[str, Any]:

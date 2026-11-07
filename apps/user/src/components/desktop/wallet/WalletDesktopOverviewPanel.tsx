@@ -6,10 +6,19 @@ import { useQueryClient } from "@tanstack/react-query";
 import { WalletDesktopTransactionTable } from "@/components/desktop/wallet/WalletDesktopTransactionTable";
 import { DESKTOP_GLASS_PANEL } from "@/components/desktop/ui/desktop-glass";
 import { useCurrency } from "@/hooks/use-currency";
-import { useWalletBalance, useWalletMe, useWalletTransactions, walletMeQueryKeyFor } from "@/hooks/use-wallet";
+import {
+  useWalletBalance,
+  useWalletMe,
+  useWalletTransactions,
+  walletMeQueryKeyFor,
+} from "@/hooks/use-wallet";
 import { getAuthUserId } from "@/lib/auth-user";
 import { PlasticCard } from "@/components/wallet/PlasticCard";
-import { filterWalletTransactions, withoutTopups, type WalletTxTab } from "@/lib/wallet-transactions";
+import {
+  filterWalletTransactions,
+  withoutTopups,
+  type WalletTxTab,
+} from "@/lib/wallet-transactions";
 import { cn } from "@/lib/utils";
 
 const RECENT_TX_LIMIT = 8;
@@ -54,7 +63,10 @@ export function WalletDesktopOverviewPanel() {
   const stats = [
     { label: t("walletPage.stats.cashback"), value: formatPrice(inflowTotal) },
     { label: t("walletPage.stats.bonus"), value: "0" },
-    { label: t("walletPage.stats.spent", { defaultValue: "Chiqim" }), value: formatPrice(outflowTotal) },
+    {
+      label: t("walletPage.stats.spent", { defaultValue: "Chiqim" }),
+      value: formatPrice(outflowTotal),
+    },
   ];
 
   return (
@@ -69,7 +81,9 @@ export function WalletDesktopOverviewPanel() {
               {isLoading ? "…" : formatPrice(balance)}
             </p>
             {walletNumber ? (
-              <p className="mt-2 font-mono text-xs tracking-wide text-muted-foreground">{walletNumber}</p>
+              <p className="mt-2 font-mono text-xs tracking-wide text-muted-foreground">
+                {walletNumber}
+              </p>
             ) : null}
           </div>
 

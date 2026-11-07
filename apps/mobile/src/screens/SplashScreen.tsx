@@ -104,51 +104,49 @@ export function SplashScreen({
   onLanguagePick,
 }: Props) {
   const insets = useSafeAreaInsets();
-  const logoOp = useRef(new Animated.Value(0)).current;
-  const logoY = useRef(new Animated.Value(16)).current;
-  const langOp = useRef(new Animated.Value(showLanguage ? 0 : 1)).current;
-  const langY = useRef(new Animated.Value(showLanguage ? 16 : 0)).current;
+  const logoOp = useRef(new Animated.Value(1)).current;
+  const logoY = useRef(new Animated.Value(0)).current;
+  const langOp = useRef(new Animated.Value(1)).current;
+  const langY = useRef(new Animated.Value(0)).current;
+  const finished = useRef(false);
 
   useEffect(() => {
-    Animated.parallel([
-      Animated.timing(logoOp, {
-        toValue: 1,
-        duration: 480,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-      Animated.timing(logoY, {
-        toValue: 0,
-        duration: 480,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-    ]).start();
-
-    if (!showLanguage) {
-      const timer = setTimeout(() => onFinish(), 900);
-      return () => clearTimeout(timer);
+    const finish = () => {
+      if (finished.current) return;
+      finished.current = true;
+      onFinish();
+    };
+    // Til tugmalari animatsiyasiz ham bosiladi. Avto-o‘tish animatsiyaga bog‘liq emas.
+    const timer = showLanguage ? null : setTimeout(finish, 900);
+    try {
+      logoOp.setValue(0);
+      logoY.setValue(16);
+      Animated.parallel([
+        Animated.timing(logoOp, {
+          toValue: 1,
+          duration: 480,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+        Animated.timing(logoY, {
+          toValue: 0,
+          duration: 480,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+      ]).start();
+    } catch {
+      logoOp.setValue(1);
+      logoY.setValue(0);
     }
-
-    Animated.parallel([
-      Animated.timing(langOp, {
-        toValue: 1,
-        duration: 420,
-        delay: 180,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-      Animated.timing(langY, {
-        toValue: 0,
-        duration: 420,
-        delay: 180,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, [logoOp, logoY, langOp, langY, showLanguage, onFinish]);
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
+  }, [logoOp, logoY, showLanguage, onFinish]);
 
   const pick = (lang: AppLang) => {
+    if (finished.current) return;
+    finished.current = true;
     onLanguagePick?.(lang);
     onFinish();
     void setAppLang(lang);

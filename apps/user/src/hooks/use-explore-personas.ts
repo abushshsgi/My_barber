@@ -17,9 +17,11 @@ export function useExplorePersonas() {
 
 export function useExplorePersonaList() {
   const query = useExplorePersonas();
-  const personas = query.data?.length ? query.data : EXPLORE_PERSONAS.map((persona) => ({
-    ...persona,
-    reference_url: `/hairstyles/men/personas/${persona.id}/reference.webp`,
-  }));
+  const personas = query.data?.length
+    ? query.data
+    : EXPLORE_PERSONAS.map((persona) => ({
+        ...persona,
+        reference_url: `/hairstyles/men/personas/${persona.id}/reference.webp`,
+      }));
   return { ...query, personas };
 }

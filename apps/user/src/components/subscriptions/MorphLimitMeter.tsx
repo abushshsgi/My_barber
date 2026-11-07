@@ -51,7 +51,9 @@ export function MorphLimitMeter({
           {remaining}/{limit} qoldi
         </span>
       </div>
-      <div className={cn("mt-2 h-1.5 overflow-hidden rounded-full", oled ? "bg-white/10" : "bg-muted")}>
+      <div
+        className={cn("mt-2 h-1.5 overflow-hidden rounded-full", oled ? "bg-white/10" : "bg-muted")}
+      >
         <div
           className={cn("h-full rounded-full", oled ? "bg-[#CA8A04]" : "bg-foreground")}
           style={{ width: `${pct}%` }}

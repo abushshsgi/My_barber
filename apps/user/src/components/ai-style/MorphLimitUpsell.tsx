@@ -45,12 +45,9 @@ function MorphLimitUpsellBody({
   const plansQ = useSubscriptionPlans();
   const usage = me?.usage;
   const planName = planLabelFromMe(me, i18n.language);
-  const credits =
-    me?.referral_credits ?? me?.access?.referral_credits ?? 0;
+  const credits = me?.referral_credits ?? me?.access?.referral_credits ?? 0;
   const refGenOn =
-    me?.referral_generation_enabled ??
-    me?.access?.referral_generation_enabled ??
-    true;
+    me?.referral_generation_enabled ?? me?.access?.referral_generation_enabled ?? true;
   const isTryOn = kind === "tryon";
   const isChat = kind === "chat";
   const isVoice = kind === "voice";
@@ -63,18 +60,17 @@ function MorphLimitUpsellBody({
   const plans = plansQ.data ?? [];
   const activeCode = me?.subscription?.plan_code ?? null;
   const next = nextUpgradePlan(activeCode);
-  const offer = me?.welcome_offer;
 
   const used = isChat
-    ? usage?.morph_chat_tokens_used ?? 0
+    ? (usage?.morph_chat_tokens_used ?? 0)
     : isTryOn
-      ? usage?.morph_ai_used ?? 0
-      : usage?.morph_studio_used ?? 0;
+      ? (usage?.morph_ai_used ?? 0)
+      : (usage?.morph_studio_used ?? 0);
   const limit = isChat
-    ? usage?.morph_chat_tokens_limit ?? 0
+    ? (usage?.morph_chat_tokens_limit ?? 0)
     : isTryOn
-      ? usage?.morph_ai_limit ?? 0
-      : usage?.morph_studio_limit ?? 0;
+      ? (usage?.morph_ai_limit ?? 0)
+      : (usage?.morph_studio_limit ?? 0);
   const usagePct = limit > 0 ? Math.min(100, Math.round((used / limit) * 100)) : 100;
 
   return (
@@ -115,10 +111,10 @@ function MorphLimitUpsellBody({
                   isVoice
                     ? "aiStylePage.limitSheet.voiceTitle"
                     : isChat
-                    ? "aiStylePage.limitSheet.chatTitle"
-                    : isTryOn
-                      ? "aiStylePage.limitSheet.tryonTitle"
-                      : "aiStylePage.limitSheet.studioTitle",
+                      ? "aiStylePage.limitSheet.chatTitle"
+                      : isTryOn
+                        ? "aiStylePage.limitSheet.tryonTitle"
+                        : "aiStylePage.limitSheet.studioTitle",
                 )}
           </h3>
           <p className="mt-2 max-w-[22rem] text-sm leading-relaxed text-white/50">
@@ -168,13 +164,13 @@ function MorphLimitUpsellBody({
           {isVoice
             ? t("aiStylePage.limitSheet.descVoice")
             : refGenOn
-            ? t("aiStylePage.limitSheet.descLocked", {
-                defaultValue:
-                  "Yangi hisobda Morf AI ishlamaydi. 1 ta do'stni taklif qilsangiz — 1 generatsiya, yoki obuna sotib oling.",
-              })
-            : t("aiStylePage.limitSheet.descLockedSubOnly", {
-                defaultValue: "Yangi hisobda Morf AI ishlamaydi. Obuna sotib oling.",
-              })}
+              ? t("aiStylePage.limitSheet.descLocked", {
+                  defaultValue:
+                    "Yangi hisobda Morf AI ishlamaydi. 1 ta do'stni taklif qilsangiz — 1 generatsiya, yoki obuna sotib oling.",
+                })
+              : t("aiStylePage.limitSheet.descLockedSubOnly", {
+                  defaultValue: "Yangi hisobda Morf AI ishlamaydi. Obuna sotib oling.",
+                })}
         </p>
       ) : null}
 
@@ -222,9 +218,7 @@ function MorphLimitUpsellBody({
             )}
           >
             <Crown className="size-5" strokeWidth={2.25} />
-            {offer?.eligible
-              ? `Obuna olish (−${offer.discount_pct}%)`
-              : t("aiStylePage.limitSheet.buyPlan", { defaultValue: "Obuna olish" })}
+            {t("aiStylePage.limitSheet.buyPlan", { defaultValue: "Obuna olish" })}
           </Link>
           {refGenOn && !isChat ? (
             <Link

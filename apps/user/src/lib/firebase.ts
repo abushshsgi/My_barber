@@ -13,8 +13,7 @@ const firebaseConfig = {
     (import.meta.env.VITE_FIREBASE_AUTH_DOMAIN as string | undefined)?.trim() ||
     "mysaloon-4227d.firebaseapp.com",
   projectId:
-    (import.meta.env.VITE_FIREBASE_PROJECT_ID as string | undefined)?.trim() ||
-    "mysaloon-4227d",
+    (import.meta.env.VITE_FIREBASE_PROJECT_ID as string | undefined)?.trim() || "mysaloon-4227d",
   storageBucket:
     (import.meta.env.VITE_FIREBASE_STORAGE_BUCKET as string | undefined)?.trim() ||
     "mysaloon-4227d.firebasestorage.app",

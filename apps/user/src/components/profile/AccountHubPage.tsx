@@ -4,11 +4,7 @@ import { ChevronRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { ProfileSubpageLayout } from "@/components/profile/ProfileSubpageLayout";
 import { useIsLgUp } from "@/hooks/use-mobile";
-import {
-  getHubByKey,
-  resolveHubItems,
-  type AccountHubKey,
-} from "@/lib/account-hubs";
+import { getHubByKey, resolveHubItems, type AccountHubKey } from "@/lib/account-hubs";
 
 type Props = {
   hubKey: AccountHubKey;

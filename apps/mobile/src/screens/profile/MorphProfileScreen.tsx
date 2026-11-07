@@ -17,7 +17,9 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { safeBottom, safeTop } from "../../lib/safe-area";
 import { planLabel } from "../../api/dashboard";
 import { resolveMediaUrl } from "../../api/media";
-import { initials } from "../../api/user";
+import { AvatarEditPencil } from "../../components/profile/AvatarEditPencil";
+import { UserAvatar } from "../../components/profile/UserAvatar";
+import { useAvatarPhoto } from "../../hooks/useAvatarPhoto";
 import { useAuth } from "../../auth/AuthContext";
 import { useProfileDashboard } from "../../hooks/useProfileDashboard";
 import { TAB_DOCK_CLEARANCE } from "../../hooks/useHideTabBar";
@@ -42,16 +44,17 @@ export function MorphProfileScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
   const { signOut, user: authUser } = useAuth();
   const { dashboard, unreadCount, loading, error, refresh } = useProfileDashboard();
+  const avatarPhoto = useAvatarPhoto(() => void refresh());
   const { colors: pal, fs } = useMorphAppearance();
   const { setShell, rememberTab } = useAppShell();
 
   const user = dashboard?.user ?? authUser;
+  const avatarPath = authUser ? authUser.avatar : user?.avatar;
   const display =
     user?.full_name?.trim() ||
     [user?.first_name, user?.last_name].filter(Boolean).join(" ").trim() ||
     t("profile.guestName");
-  const avatarUrl = resolveMediaUrl(user?.avatar, { width: scale(240) });
-  const verified = dashboard?.verified ?? Boolean(user?.phone || user?.email_verified);
+  const avatarUrl = resolveMediaUrl(avatarPath, { width: scale(240) });
   const sub = dashboard?.subscription;
   const usage = sub?.usage;
   const history = dashboard?.morph.history ?? [];
@@ -111,48 +114,50 @@ export function MorphProfileScreen({ navigation }: Props) {
           </Pressable>
         ) : null}
 
-        <Pressable
-          onPress={openSettings}
-          style={({ pressed }) => [styles.identity, pressed && styles.pressed]}
-          accessibilityRole="button"
-          accessibilityLabel={t("profile.settings")}
-        >
+        <View style={styles.identity}>
           <View style={styles.avatarWrap}>
-            {avatarUrl ? (
-              <Image
-                source={{ uri: avatarUrl }}
-                style={styles.avatarImg}
-                contentFit="cover"
-                cachePolicy="memory-disk"
-              />
-            ) : (
-              <LinearGradient colors={["#2A9B8F", "#1D6F68"]} style={styles.avatar}>
-                <Text style={styles.avatarText}>{initials(display)}</Text>
-              </LinearGradient>
-            )}
-            {verified ? (
-              <View style={styles.checkBadge}>
-                <Ionicons name="checkmark" size={11} color="#FFFFFF" />
-              </View>
-            ) : null}
+            <UserAvatar
+              name={display}
+              uri={avatarUrl}
+              size={scale(56)}
+              busy={avatarPhoto.busy}
+              onPress={avatarPhoto.openMenu}
+            />
+            <Pressable
+              onPress={avatarPhoto.openMenu}
+              disabled={avatarPhoto.busy}
+              accessibilityRole="button"
+              accessibilityLabel={t("profile.avatarPick", { defaultValue: "Profil rasmi" })}
+              hitSlop={6}
+              style={[styles.editBadge, { borderColor: pal.card, backgroundColor: pal.cardStrong }]}
+            >
+              <AvatarEditPencil color={pal.fg} size={13} />
+            </Pressable>
           </View>
-          <View style={styles.identityBody}>
-            <Text style={styles.name} numberOfLines={1}>
-              {display}
-            </Text>
-            <Text style={styles.metaPlan} numberOfLines={1}>
-              {sub?.has_active
-                ? days != null
-                  ? `${plan} · ${t("profile.daysRemaining", { days })}`
-                  : plan
-                : t("profile.noSubscription")}
-            </Text>
-          </View>
-          <Ionicons name="chevron-forward" size={18} color={pal.muted} />
-        </Pressable>
+          <Pressable
+            onPress={openSettings}
+            style={({ pressed }) => [styles.identityMain, pressed && styles.pressed]}
+            accessibilityRole="button"
+            accessibilityLabel={t("profile.settings")}
+          >
+            <View style={styles.identityBody}>
+              <Text style={styles.name} numberOfLines={1}>
+                {display}
+              </Text>
+              <Text style={styles.metaPlan} numberOfLines={1}>
+                {t("profile.settings")}
+              </Text>
+            </View>
+            <View style={styles.identityChevron}>
+              <Ionicons name="chevron-forward" size={16} color={pal.muted} />
+            </View>
+          </Pressable>
+        </View>
 
         <Pressable
-          onPress={() => navigation.navigate("MorphPaywall")}
+          onPress={() =>
+            navigation.navigate(sub?.has_active ? "Subscriptions" : "MorphPaywall")
+          }
           style={({ pressed }) => [styles.usageCard, pressed && styles.pressed]}
           accessibilityRole="button"
         >
@@ -160,11 +165,9 @@ export function MorphProfileScreen({ navigation }: Props) {
             <View style={styles.usageCopy}>
               <Text style={styles.usageEyebrow}>{t("profile.subscription")}</Text>
               <Text style={styles.usageTitle}>
-                {sub?.has_active
-                  ? aiLimit > 0
-                    ? t("profile.generationsRemaining", { count: aiRemain })
-                    : plan
-                  : t("profile.openPlan")}
+                {aiLimit > 0
+                  ? t("profile.generationsRemaining", { count: aiRemain })
+                  : plan}
               </Text>
               <Text style={styles.usageHint}>
                 {aiLimit > 0
@@ -224,7 +227,7 @@ export function MorphProfileScreen({ navigation }: Props) {
             icon="color-wand-outline"
             accent="#0F766E"
             soft={pal.theme === "dark" ? "rgba(15,118,110,0.22)" : "rgba(15,118,110,0.12)"}
-            label={t("morph.studio")}
+            label={t("morph.studioLabel")}
             onPress={() => openMorphStack(navigation, "MorphStudio")}
           />
         </View>
@@ -331,6 +334,7 @@ export function MorphProfileScreen({ navigation }: Props) {
           <Text style={styles.logoutText}>{t("profile.logout")}</Text>
         </Pressable>
       </ScrollView>
+      {avatarPhoto.picker}
     </View>
   );
 }
@@ -465,10 +469,11 @@ function makeStyles(pal: MorphPalette, fs: (n: number) => number) {
     identity: {
       flexDirection: "row",
       alignItems: "center",
-      gap: moderateScale(12),
+      gap: moderateScale(14),
       backgroundColor: pal.card,
-      borderRadius: moderateScale(20),
-      padding: moderateScale(13),
+      borderRadius: moderateScale(22),
+      paddingHorizontal: moderateScale(14),
+      paddingVertical: moderateScale(12),
       marginBottom: verticalScale(10),
       borderWidth: 1,
       borderColor: pal.line,
@@ -479,6 +484,25 @@ function makeStyles(pal: MorphPalette, fs: (n: number) => number) {
       elevation: 2,
     },
     avatarWrap: { position: "relative" },
+    identityMain: {
+      flex: 1,
+      minWidth: 0,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: moderateScale(14),
+    },
+    editBadge: {
+      position: "absolute",
+      right: -2,
+      bottom: -2,
+      zIndex: 2,
+      width: scale(22),
+      height: scale(22),
+      borderRadius: scale(11),
+      borderWidth: 2,
+      alignItems: "center",
+      justifyContent: "center",
+    },
     avatar: {
       width: scale(52),
       height: scale(52),
@@ -488,28 +512,23 @@ function makeStyles(pal: MorphPalette, fs: (n: number) => number) {
     },
     avatarImg: { width: scale(52), height: scale(52), borderRadius: moderateScale(26) },
     avatarText: { ...morphFont, fontSize: fs(17), fontWeight: "700", color: "#FFFFFF" },
-    checkBadge: {
-      position: "absolute",
-      right: -1,
-      bottom: -1,
-      width: scale(18),
-      height: scale(18),
-      borderRadius: moderateScale(9),
-      backgroundColor: pal.accent,
-      alignItems: "center",
-      justifyContent: "center",
-      borderWidth: 2,
-      borderColor: pal.card,
-    },
     identityBody: { flex: 1, minWidth: 0 },
     name: {
       ...morphFont,
-      fontSize: fs(16),
-      fontWeight: "700",
+      fontSize: fs(18),
+      fontWeight: "800",
       color: pal.fg,
       letterSpacing: -0.4,
     },
-    metaPlan: { marginTop: verticalScale(2), ...morphFont, fontSize: fs(12), color: pal.muted },
+    metaPlan: { marginTop: verticalScale(2), ...morphFont, fontSize: fs(13), fontWeight: "600", color: pal.muted },
+    identityChevron: {
+      width: scale(28),
+      height: scale(28),
+      borderRadius: scale(14),
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: pal.theme === "dark" ? "rgba(255,255,255,0.06)" : "rgba(17,17,17,0.04)",
+    },
     usageCard: {
       backgroundColor: pal.theme === "dark" ? pal.card : "#FFFFFF",
       borderRadius: moderateScale(20),

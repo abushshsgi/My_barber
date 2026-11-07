@@ -249,7 +249,10 @@ html[data-native-app="true"] .native-home-wordmark {
   }
 
   /* iOS input 16px dan kichik bo'lsa sahifani kattalashtirib yuboradi */
-  .mobile-neo input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="file"]):not([type="hidden"]),
+  .mobile-neo
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="button"]):not(
+      [type="submit"]
+    ):not([type="reset"]):not([type="file"]):not([type="hidden"]),
   .mobile-neo select,
   .mobile-neo textarea {
     font-size: 16px;

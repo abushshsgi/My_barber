@@ -1,9 +1,6 @@
 import { FaceLandmarker, FilesetResolver } from "@mediapipe/tasks-vision";
 import { useEffect, useRef, useState } from "react";
-import {
-  metricsFromLandmarks,
-  type FaceFrameMetrics,
-} from "@/components/ai-style/face-scan-utils";
+import { metricsFromLandmarks, type FaceFrameMetrics } from "@/components/ai-style/face-scan-utils";
 
 const MODEL =
   "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task";
@@ -20,10 +17,7 @@ function loadVision() {
   return visionPromise;
 }
 
-async function createLandmarker(
-  delegate: "GPU" | "CPU",
-  runningMode: "VIDEO" | "IMAGE",
-) {
+async function createLandmarker(delegate: "GPU" | "CPU", runningMode: "VIDEO" | "IMAGE") {
   const vision = await loadVision();
   return FaceLandmarker.createFromOptions(vision, {
     baseOptions: { modelAssetPath: MODEL, delegate },

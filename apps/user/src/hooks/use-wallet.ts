@@ -22,11 +22,7 @@ export function walletMeQueryKeyFor(userId: number | null) {
   return userQueryKey(walletMeQueryKeyBase, userId);
 }
 
-export function walletTxQueryKeyFor(
-  userId: number | null,
-  direction: string,
-  entryType = "",
-) {
+export function walletTxQueryKeyFor(userId: number | null, direction: string, entryType = "") {
   return userQueryKey(["wallet", "transactions", direction, entryType] as const, userId);
 }
 

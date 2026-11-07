@@ -135,9 +135,10 @@ export function SalonImageCarousel({
         if (pauseOnInteract) paused.current = true;
       }}
       onPointerUp={() => {
-        if (pauseOnInteract) window.setTimeout(() => {
-          paused.current = false;
-        }, 2500);
+        if (pauseOnInteract)
+          window.setTimeout(() => {
+            paused.current = false;
+          }, 2500);
       }}
       onPointerLeave={() => {
         paused.current = false;

@@ -72,9 +72,12 @@ export function DeployRecovery() {
 
     void syncVersion();
 
-    const timer = window.setInterval(() => {
-      if (document.visibilityState === "visible") void syncVersion();
-    }, 5 * 60 * 1000);
+    const timer = window.setInterval(
+      () => {
+        if (document.visibilityState === "visible") void syncVersion();
+      },
+      5 * 60 * 1000,
+    );
 
     const onVisible = () => {
       if (document.visibilityState === "visible") void syncVersion();

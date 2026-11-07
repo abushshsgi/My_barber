@@ -3,7 +3,7 @@ import { CalendarPlus, Flame } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { DesktopPageSplit } from "@/components/desktop/DesktopPageSplit";
 import { AccountDesktopShell } from "@/components/desktop/pages/AccountDesktopShell";
-import { MobileListPage } from "@/components/mobile/MobileListPage";
+import { MysaloonPausedScreen } from "@/components/mobile/MysaloonPausedScreen";
 import { PageSpotlightEmpty } from "@/components/ui/PageSpotlightEmpty";
 
 export const Route = createFileRoute("/today")({
@@ -19,8 +19,12 @@ function TodayHero() {
         <Flame className="h-3.5 w-3.5" />
         {t("todayPage.heroBadge")}
       </span>
-      <h2 className="mt-3 text-2xl font-bold tracking-tight text-foreground sm:text-[28px]">{t("todayPage.heroTitle")}</h2>
-      <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted-foreground">{t("todayPage.heroDesc")}</p>
+      <h2 className="mt-3 text-2xl font-bold tracking-tight text-foreground sm:text-[28px]">
+        {t("todayPage.heroTitle")}
+      </h2>
+      <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted-foreground">
+        {t("todayPage.heroDesc")}
+      </p>
     </section>
   );
 }
@@ -36,7 +40,8 @@ function TodayContent() {
         tone="warm"
         title={t("todayPage.empty", { defaultValue: "Bugungi bo'sh vaqtlar tez orada" })}
         description={t("todayPage.emptyHint", {
-          defaultValue: "Salonlar jadvali ulanishi bilan shu yerda haqiqiy bo'sh slotlar ko'rsatiladi.",
+          defaultValue:
+            "Salonlar jadvali ulanishi bilan shu yerda haqiqiy bo'sh slotlar ko'rsatiladi.",
         })}
         action={
           <Link
@@ -51,24 +56,20 @@ function TodayContent() {
   );
 }
 
-function TodayMobile() {
-  const { t } = useTranslation();
-  return (
-    <MobileListPage title={t("todayPage.title")} subtitle={t("todayPage.pickerSubtitle")}>
-      <TodayContent />
-    </MobileListPage>
-  );
-}
-
 function TodayDesktop() {
   const { t } = useTranslation();
   return (
-    <AccountDesktopShell wide bare title={t("todayPage.title")} subtitle={t("todayPage.pickerSubtitle")}>
+    <AccountDesktopShell
+      wide
+      bare
+      title={t("todayPage.title")}
+      subtitle={t("todayPage.pickerSubtitle")}
+    >
       <TodayContent />
     </AccountDesktopShell>
   );
 }
 
 function TodayPage() {
-  return <DesktopPageSplit mobile={<TodayMobile />} desktop={<TodayDesktop />} />;
+  return <DesktopPageSplit mobile={<MysaloonPausedScreen />} desktop={<TodayDesktop />} />;
 }

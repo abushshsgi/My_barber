@@ -1,5 +1,7 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { sanitizeDisplayError } from "../lib/network-error";
 import { apiFetch, apiJson } from "./client";
+import { resolveMediaUrl } from "./media";
 
 export class MorphPlanLimitError extends Error {
   code = "morph_plan_limit" as const;
@@ -137,7 +139,10 @@ export type AiStyleTryOnResponse = {
 
 type AiStyleTryOnJobResponse = {
   job_id: string;
-  status: "queued" | "processing" | "completed" | "failed";
+  status: "queued" | "pending" | "processing" | "retrying" | "completed" | "failed" | "cancelled";
+  phase?: "waiting" | "processing" | "generating" | "delayed" | "completed" | "failed" | "cancelled";
+  message?: string;
+  retryable?: boolean;
   style_id: string;
   style_title: string;
   preview_image?: string;
@@ -199,14 +204,41 @@ export type MorphAiLookShare = {
   created_at: string;
 };
 
+function presentTryOnImage(value: string | undefined): string {
+  if (!value) return "";
+  return resolveMediaUrl(value) || value;
+}
+
+function presentTryOnResult(body: AiStyleTryOnResponse): AiStyleTryOnResponse {
+  const views = body.views
+    ? (Object.fromEntries(
+        Object.entries(body.views).map(([key, value]) => [
+          key,
+          value ? presentTryOnImage(value) : value,
+        ]),
+      ) as AiStyleTryOnResponse["views"])
+    : body.views;
+  return {
+    ...body,
+    preview_image: presentTryOnImage(body.preview_image),
+    views,
+  };
+}
+
 const TRYON_POLL_MS = 2000;
-const TRYON_POLL_TIMEOUT_MS = 120_000;
+const TRYON_POLL_TIMEOUT_MS = 1_800_000;
+const TRYON_JOB_STORAGE_KEY = "mysaloon.tryon.active_job";
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 async function pollTryOnJob(jobId: string): Promise<AiStyleTryOnResponse> {
+  try {
+    await AsyncStorage.setItem(TRYON_JOB_STORAGE_KEY, jobId);
+  } catch {
+    /* ignore */
+  }
   const deadline = Date.now() + TRYON_POLL_TIMEOUT_MS;
   while (Date.now() < deadline) {
     await sleep(TRYON_POLL_MS);
@@ -214,15 +246,25 @@ async function pollTryOnJob(jobId: string): Promise<AiStyleTryOnResponse> {
       `/api/v1/ai/style-tryon/${jobId}/`,
     );
     if (job.status === "completed" && job.preview_image) {
-      return {
+      try {
+        await AsyncStorage.removeItem(TRYON_JOB_STORAGE_KEY);
+      } catch {
+        /* ignore */
+      }
+      return presentTryOnResult({
         preview_image: job.preview_image,
         style_id: job.style_id,
         style_title: job.style_title,
         views: job.views,
-      };
+      });
     }
-    if (job.status === "failed") {
-      throw new Error(job.detail ?? "Rasm yaratishda xatolik");
+    if (job.status === "failed" || job.status === "cancelled") {
+      try {
+        await AsyncStorage.removeItem(TRYON_JOB_STORAGE_KEY);
+      } catch {
+        /* ignore */
+      }
+      throw new Error(job.detail ?? job.message ?? "Rasm yaratishda xatolik");
     }
   }
   throw new Error("Rasm yaratish juda uzoq davom etdi. Qayta urinib ko'ring.");
@@ -324,7 +366,25 @@ export async function analyzeAiStyle(
   return body as AiStyleAnalyzeResponse;
 }
 
+const tryOnInFlight = new Map<string, Promise<AiStyleTryOnResponse>>();
+
 export async function generateAiStyleTryOn(
+  image: string,
+  styleId: string,
+): Promise<AiStyleTryOnResponse> {
+  const flightKey = `${styleId}:${image.length}:${image.slice(32, 64)}`;
+  const existing = tryOnInFlight.get(flightKey);
+  if (existing) return existing;
+  const run = generateAiStyleTryOnOnce(image, styleId);
+  tryOnInFlight.set(flightKey, run);
+  try {
+    return await run;
+  } finally {
+    tryOnInFlight.delete(flightKey);
+  }
+}
+
+async function generateAiStyleTryOnOnce(
   image: string,
   styleId: string,
 ): Promise<AiStyleTryOnResponse> {
@@ -371,7 +431,7 @@ export async function generateAiStyleTryOn(
     "preview_image" in body &&
     typeof body.preview_image === "string"
   ) {
-    return body as AiStyleTryOnResponse;
+    return presentTryOnResult(body as AiStyleTryOnResponse);
   }
 
   throw new Error("Rasm yaratishda xatolik");
@@ -467,15 +527,55 @@ export async function createMorphAiLookShare(payload: {
   });
 }
 
-export async function fetchCareAccess(): Promise<{ allowed: boolean; detail?: string }> {
+export async function fetchCareAccess(): Promise<{
+  allowed: boolean;
+  pro_allowed?: boolean;
+  code?: string;
+  detail?: string;
+}> {
   return apiJson("/api/v1/subscriptions/care-access/");
 }
+
+export type ChatHairstyleCard = {
+  id: string;
+  name: string;
+  image_url: string;
+  description?: string;
+  audience?: string;
+  gender?: string;
+  hair_length?: string;
+  hair_texture?: string;
+  tags?: string[];
+};
+
+export type ChatImageLayout =
+  | "single_image"
+  | "image_pair"
+  | "image_grid"
+  | "image_carousel"
+  | "comparison";
+
+export type ChatContentBlock =
+  | { type: "text"; content: string }
+  | { type: ChatImageLayout; items: ChatHairstyleCard[] };
 
 export type MorphChatMessage = {
   id: string;
   role: "user" | "assistant";
   content: string;
   streaming?: boolean;
+  type?: string;
+  hairstyles?: ChatHairstyleCard[];
+  blocks?: ChatContentBlock[];
+  context?: { hairstyles?: ChatHairstyleCard[]; blocks?: ChatContentBlock[]; type?: string };
+};
+
+export type MorphChatTurn = {
+  reply: string;
+  limits: MorphChatLimits;
+  type?: string;
+  hairstyles?: ChatHairstyleCard[];
+  blocks?: ChatContentBlock[];
 };
 
 export type MorphChatContext = {
@@ -555,7 +655,11 @@ export type MorphChatThreadRemote = {
 
 export type MorphChatSendPayload = {
   message: string;
-  history?: Array<{ role: "user" | "assistant"; content: string }>;
+  history?: Array<{
+    role: "user" | "assistant";
+    content: string;
+    hairstyles?: Array<Pick<ChatHairstyleCard, "id" | "name" | "audience" | "gender">>;
+  }>;
   context?: MorphChatContext;
   thread_id?: string;
   persist?: boolean;
@@ -620,16 +724,40 @@ OUTPUT FORMAT (JSON):
   return { progress_headline, ai_verdict, growth_tag };
 }
 
+function chatTurnFromBody(body: {
+  reply?: string;
+  limits?: MorphChatLimits;
+  type?: string;
+  hairstyles?: ChatHairstyleCard[];
+  blocks?: ChatContentBlock[];
+} | null): MorphChatTurn {
+  return {
+    reply: body?.reply || "",
+    limits: body?.limits ?? { daily_limit: 10000, daily_used: null, daily_remaining: null },
+    type: body?.type,
+    hairstyles: Array.isArray(body?.hairstyles) ? body?.hairstyles : undefined,
+    blocks: Array.isArray(body?.blocks) ? body.blocks : undefined,
+  };
+}
+
 export async function sendMorphChatMessage(
   payload: MorphChatSendPayload,
-): Promise<{ reply: string; limits: MorphChatLimits }> {
+): Promise<MorphChatTurn> {
   const res = await apiFetch("/api/v1/ai/chat/", {
     method: "POST",
     body: JSON.stringify(payload),
     timeoutMs: 60_000,
   });
   const body = (await res.json().catch(() => null)) as
-    | { reply?: string; limits?: MorphChatLimits; detail?: string; code?: string }
+    | {
+        reply?: string;
+        limits?: MorphChatLimits;
+        detail?: string;
+        code?: string;
+        type?: string;
+        hairstyles?: ChatHairstyleCard[];
+        blocks?: ChatContentBlock[];
+      }
     | null;
   if (!res.ok) {
     if (res.status === 403 && body?.code === "morph_plan_limit") {
@@ -640,10 +768,7 @@ export async function sendMorphChatMessage(
   if (!body?.reply) {
     throw new Error("Chat javobi noto'g'ri");
   }
-  return {
-    reply: body.reply,
-    limits: body.limits ?? { daily_limit: 10000, daily_used: null, daily_remaining: null },
-  };
+  return chatTurnFromBody(body);
 }
 
 type StreamEvent = {
@@ -655,6 +780,10 @@ type StreamEvent = {
   status?: number;
   detail?: string;
   code?: string;
+  type?: string;
+  hairstyles?: ChatHairstyleCard[];
+  blocks?: ChatContentBlock[];
+  block?: ChatContentBlock;
 };
 
 function parseSseBuffer(buffer: string): { events: StreamEvent[]; rest: string } {
@@ -682,7 +811,8 @@ function parseSseBuffer(buffer: string): { events: StreamEvent[]; rest: string }
 export async function streamMorphChatMessage(
   payload: MorphChatSendPayload,
   onDelta: (chunk: string) => void,
-): Promise<{ reply: string; limits: MorphChatLimits }> {
+  onBlock?: (block: ChatContentBlock) => void,
+): Promise<MorphChatTurn> {
   const res = await apiFetch("/api/v1/ai/chat/", {
     method: "POST",
     body: JSON.stringify({ ...payload, stream: true }),
@@ -703,59 +833,81 @@ export async function streamMorphChatMessage(
   }
 
   const ctype = (res.headers.get("content-type") || "").toLowerCase();
-  if (!ctype.includes("text/event-stream") || !res.body) {
-    const body = (await res.json().catch(() => null)) as
-      | { reply?: string; limits?: MorphChatLimits }
-      | null;
+  const canStream = Boolean(res.body && typeof res.body.getReader === "function");
+  if (!ctype.includes("text/event-stream")) {
+    const body = (await res.json().catch(() => null)) as {
+      reply?: string;
+      limits?: MorphChatLimits;
+      type?: string;
+      hairstyles?: ChatHairstyleCard[];
+      blocks?: ChatContentBlock[];
+    } | null;
     if (!body?.reply) throw new Error("Chat javobi noto'g'ri");
     onDelta(body.reply);
-    return {
-      reply: body.reply,
-      limits: body.limits ?? { daily_limit: 10000, daily_used: null, daily_remaining: null },
-    };
+    return chatTurnFromBody(body);
   }
 
-  const reader = res.body.getReader();
-  const decoder = new TextDecoder();
-  let buffer = "";
   let reply = "";
+  let responseType: string | undefined;
+  let hairstyles: ChatHairstyleCard[] | undefined;
+  let blocks: ChatContentBlock[] | undefined;
   let limits: MorphChatLimits = {
     daily_limit: 10000,
     daily_used: null,
     daily_remaining: null,
   };
 
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-    const parsed = parseSseBuffer(buffer);
-    buffer = parsed.rest;
-    for (const event of parsed.events) {
-      if (event.error) {
-        if (event.status === 403) throw new MorphPlanLimitError(event.error);
-        throw new Error(formatMorphUserError(event.error, "Chat javob bermadi"));
+  const applyEvent = (event: StreamEvent) => {
+    if (event.error) {
+      if (event.status === 403) throw new MorphPlanLimitError(event.error);
+      throw new Error(formatMorphUserError(event.error, "Chat javob bermadi"));
+    }
+    if (event.block) {
+      blocks = [...(blocks ?? []), event.block];
+      onBlock?.(event.block);
+    }
+    if (event.delta) {
+      reply += event.delta;
+      onDelta(event.delta);
+    }
+    if (event.done) {
+      if (event.reply) reply = event.reply;
+      if (event.limits) limits = event.limits;
+      if (event.type) responseType = event.type;
+      if (Array.isArray(event.hairstyles)) hairstyles = event.hairstyles;
+      if (Array.isArray(event.blocks)) blocks = event.blocks;
+    }
+  };
+
+  const applyBuffer = (buffer: string, flush: boolean) => {
+    const normalized = flush && buffer.trim() && !buffer.endsWith("\n\n") ? `${buffer}\n\n` : buffer;
+    const parsed = parseSseBuffer(normalized);
+    for (const event of parsed.events) applyEvent(event);
+    return parsed.rest;
+  };
+
+  if (!canStream) {
+    applyBuffer(await res.text(), true);
+  } else {
+    const reader = res.body!.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) {
+        buffer += decoder.decode();
+        applyBuffer(buffer, true);
+        break;
       }
-      if (event.delta) {
-        reply += event.delta;
-        onDelta(event.delta);
-      }
-      if (event.done) {
-        if (event.reply && !reply) {
-          reply = event.reply;
-          onDelta(event.reply);
-        } else if (event.reply) {
-          reply = event.reply;
-        }
-        if (event.limits) limits = event.limits;
-      }
+      buffer += decoder.decode(value, { stream: true });
+      buffer = applyBuffer(buffer, false);
     }
   }
 
   if (!reply.trim()) {
     throw new Error("Chat javobi noto'g'ri");
   }
-  return { reply, limits };
+  return { reply, limits, type: responseType, hairstyles, blocks };
 }
 
 export async function fetchMorphChatThreads(options?: {

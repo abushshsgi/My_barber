@@ -104,12 +104,7 @@ export function OnboardingSteps({ state, variant = "mobile" }: Props) {
         {nameError ? (
           <p className="text-xs font-semibold text-destructive">{nameError}</p>
         ) : (
-          <p
-            className={cn(
-              "text-muted-foreground",
-              isDesktop ? "text-sm" : "text-xs",
-            )}
-          >
+          <p className={cn("text-muted-foreground", isDesktop ? "text-sm" : "text-xs")}>
             Faqat harflar, bo&apos;sh joy, defis (-) va apostrof (&apos;).
           </p>
         )}
@@ -193,10 +188,7 @@ export function OnboardingSteps({ state, variant = "mobile" }: Props) {
 
       {lat == null || lng == null ? (
         <p
-          className={cn(
-            "text-muted-foreground",
-            isDesktop ? "text-sm" : "text-center text-[11px]",
-          )}
+          className={cn("text-muted-foreground", isDesktop ? "text-sm" : "text-center text-[11px]")}
         >
           Davom etish uchun joylashuvni aniqlang yoki xaritadan pinni siljiting.
         </p>

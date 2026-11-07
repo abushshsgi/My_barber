@@ -100,10 +100,7 @@ export async function initCardDeposit(amount: number): Promise<CardDeposit> {
   });
 }
 
-export async function claimCardDeposit(
-  depositId: string,
-  receipt: File,
-): Promise<CardDeposit> {
+export async function claimCardDeposit(depositId: string, receipt: File): Promise<CardDeposit> {
   const fd = new FormData();
   fd.append("receipt", receipt);
   return apiJson<CardDeposit>(`/api/v1/wallet/top-up/card/${depositId}/claim/`, {

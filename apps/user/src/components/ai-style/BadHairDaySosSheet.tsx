@@ -1,13 +1,5 @@
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import {
-  Check,
-  Loader2,
-  RotateCcw,
-  Scissors,
-  Sparkles,
-  X,
-  Zap,
-} from "lucide-react";
+import { Check, Loader2, RotateCcw, Scissors, Sparkles, X, Zap } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -23,11 +15,18 @@ type Phase = 1 | 2 | 3 | "loading" | "result";
 
 const ease = [0.22, 1, 0.36, 1] as const;
 
-const TIME_OPTS: { value: SosTime; emoji: string; key: string; fallback: string; hint: string }[] = [
-  { value: "2min", emoji: "⚡", key: "time2", fallback: "2 daqiqa", hint: "Atigi 2 min bor" },
-  { value: "5-10min", emoji: "⏱️", key: "time5", fallback: "5-10 daqiqa", hint: "Biroz vaqt bor" },
-  { value: "15min+", emoji: "⏳", key: "time15", fallback: "15+ daqiqa", hint: "Vaqt yetarli" },
-];
+const TIME_OPTS: { value: SosTime; emoji: string; key: string; fallback: string; hint: string }[] =
+  [
+    { value: "2min", emoji: "⚡", key: "time2", fallback: "2 daqiqa", hint: "Atigi 2 min bor" },
+    {
+      value: "5-10min",
+      emoji: "⏱️",
+      key: "time5",
+      fallback: "5-10 daqiqa",
+      hint: "Biroz vaqt bor",
+    },
+    { value: "15min+", emoji: "⏳", key: "time15", fallback: "15+ daqiqa", hint: "Vaqt yetarli" },
+  ];
 
 const ISSUE_OPTS: { value: SosIssue; emoji: string; key: string; fallback: string }[] = [
   { value: "frizzy", emoji: "💨", key: "issueFrizzy", fallback: "Chirib ketgan" },
@@ -52,13 +51,7 @@ const LOADING_LINES = [
 ];
 
 /** Emergency "Bad Hair Day" wizard — 3 savol, keyin 60 soniyalik yechim. */
-export function BadHairDaySosSheet({
-  open,
-  onClose,
-}: {
-  open: boolean;
-  onClose: () => void;
-}) {
+export function BadHairDaySosSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { t } = useTranslation();
   const reduce = useReducedMotion();
   const [phase, setPhase] = useState<Phase>(1);
@@ -133,10 +126,8 @@ export function BadHairDaySosSheet({
   const canNext = phase === 1 ? !!time : phase === 2 ? issues.length > 0 : true;
 
   const stepTitle = useMemo(() => {
-    if (phase === 1)
-      return t("aiStylePage.care.sos.q1", { defaultValue: "Qancha vaqtingiz bor?" });
-    if (phase === 2)
-      return t("aiStylePage.care.sos.q2", { defaultValue: "Asosiy muammo nima?" });
+    if (phase === 1) return t("aiStylePage.care.sos.q1", { defaultValue: "Qancha vaqtingiz bor?" });
+    if (phase === 2) return t("aiStylePage.care.sos.q2", { defaultValue: "Asosiy muammo nima?" });
     return t("aiStylePage.care.sos.q3", { defaultValue: "Qo'l ostingizda nima bor?" });
   }, [phase, t]);
 
@@ -197,7 +188,10 @@ export function BadHairDaySosSheet({
                   {[1, 2, 3].map((n) => {
                     const idx = phase === "loading" ? 3 : phase;
                     return (
-                      <div key={n} className="h-[3px] flex-1 overflow-hidden rounded-full bg-white/25">
+                      <div
+                        key={n}
+                        className="h-[3px] flex-1 overflow-hidden rounded-full bg-white/25"
+                      >
                         <motion.div
                           className="h-full rounded-full bg-white"
                           initial={false}

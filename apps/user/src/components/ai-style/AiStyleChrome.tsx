@@ -55,25 +55,13 @@ export function AiStyleChrome({ tone = "light", className, title, onBack }: Prop
         </p>
       </div>
 
-      <Link
-        to="/explore"
-        className={iconBtn}
-        aria-label={t("nav.explore")}
-      >
+      <Link to="/explore" className={iconBtn} aria-label={t("nav.explore")}>
         <Compass className="size-[18px]" strokeWidth={2} />
       </Link>
-      <Link
-        to="/ai-style/history"
-        className={iconBtn}
-        aria-label={t("aiStylePage.historyButton")}
-      >
+      <Link to="/ai-style/history" className={iconBtn} aria-label={t("aiStylePage.historyButton")}>
         <Clock3 className="size-[18px]" strokeWidth={2} />
       </Link>
-      <Link
-        to="/profile"
-        className={iconBtn}
-        aria-label={t("nav.profile")}
-      >
+      <Link to="/profile" className={iconBtn} aria-label={t("nav.profile")}>
         <UserRound className="size-[18px]" strokeWidth={2} />
       </Link>
     </header>

@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { DesktopPageSplit } from "@/components/desktop/DesktopPageSplit";
-import { BarberMobilePage } from "@/components/barber/BarberMobilePage";
+import { MysaloonPausedScreen } from "@/components/mobile/MysaloonPausedScreen";
 import { BarberProfileContent } from "@/components/barber/BarberProfileContent";
 
 export const Route = createFileRoute("/barber/$barberId")({
@@ -14,7 +14,7 @@ function BarberProfilePage() {
   const { barberId } = Route.useParams();
   return (
     <DesktopPageSplit
-      mobile={<BarberMobilePage barberId={barberId} />}
+      mobile={<MysaloonPausedScreen />}
       desktop={
         <div className="mx-auto max-w-2xl py-8">
           <BarberProfileContent barberId={barberId} />

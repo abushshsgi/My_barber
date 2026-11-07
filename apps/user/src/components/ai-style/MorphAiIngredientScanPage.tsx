@@ -1,14 +1,6 @@
 import { Link, useRouter } from "@tanstack/react-router";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import {
-  AlertTriangle,
-  CheckCircle2,
-  ChevronLeft,
-  Images,
-  Loader2,
-  Lock,
-  X,
-} from "lucide-react";
+import { AlertTriangle, CheckCircle2, ChevronLeft, Images, Loader2, Lock, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
@@ -18,11 +10,7 @@ import { useIngredientScan } from "@/hooks/use-ingredient-scan";
 import { useHairCareProfile, useUpdateHairCareProfile } from "@/hooks/use-hair-care-profile";
 import { fetchCareAccess } from "@/lib/api/subscriptions";
 import type { IngredientScanResponse } from "@/lib/api/ai";
-import type {
-  HairColorStatus,
-  HairCondition,
-  HairTexture,
-} from "@/lib/api/hair-care-profile";
+import type { HairColorStatus, HairCondition, HairTexture } from "@/lib/api/hair-care-profile";
 import { prepareSelfieFromFile } from "@/lib/selfie-image";
 import { cn } from "@/lib/utils";
 
@@ -116,7 +104,9 @@ export function MorphAiIngredientScanPage() {
         <BackLink label={t("common.back")} />
         <div className="mx-auto mt-24 max-w-md text-center">
           <Lock className="mx-auto size-6 text-[#111111]/50" />
-          <h1 className="mt-4 text-lg font-semibold tracking-tight">Avval soch tahlilini saqlang</h1>
+          <h1 className="mt-4 text-lg font-semibold tracking-tight">
+            Avval soch tahlilini saqlang
+          </h1>
           <p className="mt-2 text-sm leading-relaxed text-[#111111]/55">
             Tarkib skani soch holati, tekstura va rang bazaga yozilgandan keyin ochiladi.
           </p>
@@ -206,7 +196,11 @@ export function MorphAiIngredientScanPage() {
     ] as const;
     const current = questions[quizStep];
     const canNext =
-      quizStep === 0 ? Boolean(condition) : quizStep === 1 ? Boolean(texture) : Boolean(colorStatus);
+      quizStep === 0
+        ? Boolean(condition)
+        : quizStep === 1
+          ? Boolean(texture)
+          : Boolean(colorStatus);
     const progress = ((quizStep + 1) / questions.length) * 100;
 
     return (
@@ -293,7 +287,9 @@ export function MorphAiIngredientScanPage() {
   if (screen === "result" && result) {
     const score = result.product_analysis.safety_score;
     const verdict = result.verdict || result.verdict_key || "";
-    const scoreColor = VERDICT_TONE[verdict] || (score >= 70 ? "text-emerald-300" : score >= 45 ? "text-amber-300" : "text-rose-300");
+    const scoreColor =
+      VERDICT_TONE[verdict] ||
+      (score >= 70 ? "text-emerald-300" : score >= 45 ? "text-amber-300" : "text-rose-300");
     const matched = result.matched_product;
 
     return (
@@ -318,7 +314,9 @@ export function MorphAiIngredientScanPage() {
               <p className="mb-1.5 text-sm text-[#111111]/45">/ 100</p>
             </div>
             {verdict ? (
-              <p className={cn("mt-2 text-[13px] font-semibold uppercase tracking-wide", scoreColor)}>
+              <p
+                className={cn("mt-2 text-[13px] font-semibold uppercase tracking-wide", scoreColor)}
+              >
                 {t(`aiStylePage.care.verdicts.${verdict}`, {
                   defaultValue:
                     verdict === "good"
@@ -357,7 +355,9 @@ export function MorphAiIngredientScanPage() {
                 {t("aiStylePage.care.catalog.match", { defaultValue: "Katalogdagi mahsulot" })}
               </p>
               <p className="mt-1 text-[15px] font-semibold">{matched.name}</p>
-              {matched.brand ? <p className="text-[12px] text-[#111111]/45">{matched.brand}</p> : null}
+              {matched.brand ? (
+                <p className="text-[12px] text-[#111111]/45">{matched.brand}</p>
+              ) : null}
               {matched.purpose_uz ? (
                 <p className="mt-2 text-[13px] text-[#111111]/55">{matched.purpose_uz}</p>
               ) : null}
@@ -459,9 +459,7 @@ export function MorphAiIngredientScanPage() {
         setCondition(
           hairQ.data?.condition && hairQ.data.condition !== "" ? hairQ.data.condition : null,
         );
-        setTexture(
-          hairQ.data?.texture && hairQ.data.texture !== "" ? hairQ.data.texture : null,
-        );
+        setTexture(hairQ.data?.texture && hairQ.data.texture !== "" ? hairQ.data.texture : null);
         setColorStatus(
           hairQ.data?.color_status && hairQ.data.color_status !== ""
             ? hairQ.data.color_status
@@ -514,10 +512,27 @@ function ScanCorners() {
       style={{ top: "12%", bottom: "42%" }}
       aria-hidden
     >
-      <span className={cn("absolute left-0 top-0 rounded-tl-xl border-l-[3.5px] border-t-[3.5px]", arm)} />
-      <span className={cn("absolute right-0 top-0 rounded-tr-xl border-r-[3.5px] border-t-[3.5px]", arm)} />
-      <span className={cn("absolute bottom-0 left-0 rounded-bl-xl border-b-[3.5px] border-l-[3.5px]", arm)} />
-      <span className={cn("absolute bottom-0 right-0 rounded-br-xl border-b-[3.5px] border-r-[3.5px]", arm)} />
+      <span
+        className={cn("absolute left-0 top-0 rounded-tl-xl border-l-[3.5px] border-t-[3.5px]", arm)}
+      />
+      <span
+        className={cn(
+          "absolute right-0 top-0 rounded-tr-xl border-r-[3.5px] border-t-[3.5px]",
+          arm,
+        )}
+      />
+      <span
+        className={cn(
+          "absolute bottom-0 left-0 rounded-bl-xl border-b-[3.5px] border-l-[3.5px]",
+          arm,
+        )}
+      />
+      <span
+        className={cn(
+          "absolute bottom-0 right-0 rounded-br-xl border-b-[3.5px] border-r-[3.5px]",
+          arm,
+        )}
+      />
     </div>
   );
 }

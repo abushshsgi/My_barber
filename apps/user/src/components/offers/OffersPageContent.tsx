@@ -89,7 +89,9 @@ export function OffersPageContent({ desktop = false }: Props) {
                   {t("offersPage.promoApplied", { code: applied })}
                 </p>
               ) : (
-                <p className="mt-3 text-[12px] text-muted-foreground">{t("offersPage.promoHint")}</p>
+                <p className="mt-3 text-[12px] text-muted-foreground">
+                  {t("offersPage.promoHint")}
+                </p>
               )}
             </div>
             <div className="mt-8 border-t border-border pt-6">
@@ -105,7 +107,8 @@ export function OffersPageContent({ desktop = false }: Props) {
           <h3 className="mt-5 text-2xl font-extrabold tracking-tight">{t("offersPage.empty")}</h3>
           <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-muted-foreground">
             {t("offersPage.emptyHint", {
-              defaultValue: "Tez orada yangi salon aksiyalari shu yerda paydo bo'ladi. Hozircha kuponlardan foydalaning.",
+              defaultValue:
+                "Tez orada yangi salon aksiyalari shu yerda paydo bo'ladi. Hozircha kuponlardan foydalaning.",
             })}
           </p>
           {salonOffers.length > 0 ? null : (
@@ -129,13 +132,18 @@ export function OffersPageContent({ desktop = false }: Props) {
             {t("offersPage.heroTitle", { defaultValue: "Kuponlar va salon aksiyalari" })}
           </h2>
           <p className="mt-2 max-w-lg text-sm leading-relaxed text-white/75">
-            {t("offersPage.subtitle", { defaultValue: "Salonlar va xizmatlar bo'yicha maxsus takliflar" })}
+            {t("offersPage.subtitle", {
+              defaultValue: "Salonlar va xizmatlar bo'yicha maxsus takliflar",
+            })}
           </p>
         </div>
       </section>
 
       <section className="rounded-[24px] border border-border bg-background p-4 sm:p-5">
-        <label htmlFor="promo-code" className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+        <label
+          htmlFor="promo-code"
+          className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground"
+        >
           {t("offersPage.promoInputLabel")}
         </label>
         <div className="mt-2 flex gap-2">

@@ -259,6 +259,14 @@ export function useAiStyleFlow(options: UseAiStyleFlowOptions = {}) {
           replace_latest: true,
         });
         setResult(mapped);
+        if (typeof window !== "undefined") {
+          for (const suggestion of mapped.suggestions) {
+            if (!suggestion.imageUrl) continue;
+            const warmer = new window.Image();
+            warmer.decoding = "async";
+            warmer.src = suggestion.imageUrl;
+          }
+        }
         setDone(true);
         markMorphAiOnboarded();
       } catch (e) {
@@ -312,9 +320,7 @@ export function useAiStyleFlow(options: UseAiStyleFlowOptions = {}) {
         setTryOnByStyle((prev) => ({ ...prev, [cacheKey]: previewImage }));
         if (!joinedExisting) {
           const resolvedTitle =
-            title ??
-            result?.suggestions.find((s) => s.id === styleId)?.title ??
-            styleId;
+            title ?? result?.suggestions.find((s) => s.id === styleId)?.title ?? styleId;
           // Server try-on tugaganda historyga yozadi — remote POST qilmaslik (duplicate).
           saveMorphAiGeneration({
             styleId,
@@ -349,46 +355,32 @@ export function useAiStyleFlow(options: UseAiStyleFlowOptions = {}) {
     [photo, tryOnByStyle, menPersonaId, result, tryOnGate, onPlanLimit, onTryOnSuccess],
   );
 
-  const updateTryOnPreview = useCallback((cacheKey: string, previewImage: string) => {
-    setTryOnByStyle((prev) => ({ ...prev, [cacheKey]: previewImage }));
-    // cacheKey is either styleId or `${personaId}:${styleId}`
-    const styleId = cacheKey.includes(":") ? cacheKey.slice(cacheKey.indexOf(":") + 1) : cacheKey;
-    const title =
-      result?.suggestions.find((s) => s.id === styleId)?.title ?? styleId;
-    saveMorphAiGeneration({
-      styleId,
-      title,
-      previewImage,
-      beforeImage: photo ?? undefined,
-      personaId: menPersonaId ?? undefined,
-      syncRemote: false,
-    });
-    window.setTimeout(() => {
-      void refreshMorphAiGenerationsCache();
-    }, 1200);
-  }, [photo, result, menPersonaId]);
+  const updateTryOnPreview = useCallback(
+    (cacheKey: string, previewImage: string) => {
+      setTryOnByStyle((prev) => ({ ...prev, [cacheKey]: previewImage }));
+      // cacheKey is either styleId or `${personaId}:${styleId}`
+      const styleId = cacheKey.includes(":") ? cacheKey.slice(cacheKey.indexOf(":") + 1) : cacheKey;
+      const title = result?.suggestions.find((s) => s.id === styleId)?.title ?? styleId;
+      saveMorphAiGeneration({
+        styleId,
+        title,
+        previewImage,
+        beforeImage: photo ?? undefined,
+        personaId: menPersonaId ?? undefined,
+        syncRemote: false,
+      });
+      window.setTimeout(() => {
+        void refreshMorphAiGenerationsCache();
+      }, 1200);
+    },
+    [photo, result, menPersonaId],
+  );
 
   useEffect(() => {
     if (!photo || !audience || analyzing || done || analyzeTriggeredRef.current) return;
     analyzeTriggeredRef.current = true;
     void analyze(audience);
   }, [photo, audience, analyzing, done, analyze]);
-
-  // Bitta avto try-on: faqat tahlil tugagach (eski focusStyleId effecti bilan juft so'rov ketardi).
-  useEffect(() => {
-    if (!done || !result?.suggestions.length) return;
-    const primary = focusStyleId
-      ? result.suggestions.find((s) => s.id === focusStyleId) ?? result.suggestions[0]
-      : result.suggestions[0];
-    if (!primary) return;
-    const primaryKey = tryOnCacheKey(primary.id, menPersonaId);
-    if (autoTryOnStartedRef.current === primaryKey) return;
-    if (tryOnByStyle[primaryKey] || tryOnLoadingId === primaryKey) return;
-    // Limit / xato bo‘lganda avto-qayta urinish — toast spamni to‘xtatadi.
-    if (tryOnFailedRef.current.has(primaryKey)) return;
-    autoTryOnStartedRef.current = primaryKey;
-    void generateTryOn(primary.id, undefined, primary.title, "auto");
-  }, [done, result, focusStyleId, tryOnByStyle, tryOnLoadingId, generateTryOn, menPersonaId]);
 
   const reset = () => {
     analyzeTriggeredRef.current = false;

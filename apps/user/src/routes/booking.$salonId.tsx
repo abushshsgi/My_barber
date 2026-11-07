@@ -4,17 +4,25 @@ import { ShoppingBag, Star } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { BookingForPicker } from "@/components/booking/BookingForPicker";
-import { BookingPaymentPicker, type BookingPaymentMethod } from "@/components/booking/BookingPaymentPicker";
+import {
+  BookingPaymentPicker,
+  type BookingPaymentMethod,
+} from "@/components/booking/BookingPaymentPicker";
 import { BookingPhoneField, useBookingPhoneGate } from "@/components/booking/BookingPhoneField";
 import { BookingServiceSelectGrid } from "@/components/booking/BookingServiceSelectGrid";
 import { DesktopPageSplit } from "@/components/desktop/DesktopPageSplit";
+import { MysaloonPausedScreen } from "@/components/mobile/MysaloonPausedScreen";
 import { DesktopPageHeader } from "@/components/desktop/ui/DesktopPageHeader";
 import { BookingSummaryAside } from "@/components/booking/BookingSummaryAside";
 import { formatPrice } from "@/lib/mock-data";
 import { PageHeader } from "@/components/PageHeader";
 import { MobileStickyActionBar } from "@/components/mobile/MobileStickyActionBar";
 import { Stepper } from "@/components/Stepper";
-import { useCreateBooking, useBookingAvailability, useAvailabilityMonth } from "@/hooks/use-bookings-api";
+import {
+  useCreateBooking,
+  useBookingAvailability,
+  useAvailabilityMonth,
+} from "@/hooks/use-bookings-api";
 import { useWalletBalance } from "@/hooks/use-wallet";
 import { useFamilyMembers } from "@/hooks/use-family";
 import { useDisplayUser } from "@/hooks/use-me";
@@ -125,8 +133,7 @@ function useBookingSalonState(
       return new Date(s.start).toLocaleTimeString("uz-UZ", { hour: "2-digit", minute: "2-digit" });
     }) ?? [];
   const slotsLoading = step === 3 && availability.isLoading;
-  const slotsClosedReason =
-    availability.data?.closed_reason ?? availability.data?.detail ?? null;
+  const slotsClosedReason = availability.data?.closed_reason ?? availability.data?.detail ?? null;
 
   const serviceIdNums = serviceIds.map((id) => parseInt(id, 10)).filter(Number.isFinite);
   const today = useMemo(() => new Date(), []);
@@ -168,7 +175,7 @@ function useBookingSalonState(
   const total = selectedServices.reduce((sum, s) => sum + s.price, 0);
   const bookedForLabel =
     familyMemberId != null
-      ? familyMembers.find((m) => m.id === familyMemberId)?.name ?? ""
+      ? (familyMembers.find((m) => m.id === familyMemberId)?.name ?? "")
       : user.name || t("booking.forSelf", { defaultValue: "O'zim uchun" });
   const canAdvance =
     (step === 1 && barberId) ||
@@ -268,7 +275,41 @@ function BookingStepContent({
   state: ReturnType<typeof useBookingSalonState>;
   t: ReturnType<typeof useTranslation>["t"];
 }) {
-  const { salon, step, familyMemberId, setFamilyMemberId, barberId, setBarberId, serviceIds, setServiceIds, dayIdx, setDayIdx, slot, setSlot, dayList, slotOptions, slotsLoading, slotsClosedReason, availableDates, monthLoaded, selectedServices, barberServiceOptions, barberServicesLoading, barberServicesError, retryBarberServices, selectedBarber, bookedForLabel, total, paymentMethod, setPaymentMethod, notes, setNotes, walletBalance, walletLoading, phoneGate } = state;
+  const {
+    salon,
+    step,
+    familyMemberId,
+    setFamilyMemberId,
+    barberId,
+    setBarberId,
+    serviceIds,
+    setServiceIds,
+    dayIdx,
+    setDayIdx,
+    slot,
+    setSlot,
+    dayList,
+    slotOptions,
+    slotsLoading,
+    slotsClosedReason,
+    availableDates,
+    monthLoaded,
+    selectedServices,
+    barberServiceOptions,
+    barberServicesLoading,
+    barberServicesError,
+    retryBarberServices,
+    selectedBarber,
+    bookedForLabel,
+    total,
+    paymentMethod,
+    setPaymentMethod,
+    notes,
+    setNotes,
+    walletBalance,
+    walletLoading,
+    phoneGate,
+  } = state;
   if (!salon) return null;
 
   if (step === 1) {
@@ -312,7 +353,9 @@ function BookingStepContent({
                   {!bookable ? (
                     <p className="mt-1 text-[10px] font-medium text-muted-foreground">
                       {isOwner
-                        ? t("salon.staff.notBookableYet", { defaultValue: "Hozircha band qilib bo'lmaydi" })
+                        ? t("salon.staff.notBookableYet", {
+                            defaultValue: "Hozircha band qilib bo'lmaydi",
+                          })
                         : t("salon.staff.comingSoon", { defaultValue: "Tez orada" })}
                     </p>
                   ) : (
@@ -378,31 +421,31 @@ function BookingStepContent({
       <div>
         <h2 className="text-xl font-bold">{t("booking.selectTime")}</h2>
         <div className="mt-5 min-w-0 overflow-x-clip">
-        <div className="no-scrollbar flex touch-pan-x gap-2 overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch]">
-          {dayList.map((d, i) => {
-            const iso = d.full.toISOString().slice(0, 10);
-            const unavailable = monthLoaded && !availableDates.has(iso);
-            return (
-            <button
-              key={i}
-              type="button"
-              disabled={unavailable}
-              onClick={() => {
-                setDayIdx(i);
-                setSlot(null);
-              }}
-              className={cn(
-                "flex h-14 w-12 shrink-0 flex-col items-center justify-center rounded-xl",
-                dayIdx === i ? "bg-foreground text-background" : "bg-surface",
-                unavailable && "cursor-not-allowed opacity-40",
-              )}
-            >
-              <span className="text-[10px] font-bold uppercase opacity-70">{d.day}</span>
-              <span className="text-base font-bold">{d.date}</span>
-            </button>
-            );
-          })}
-        </div>
+          <div className="no-scrollbar flex touch-pan-x gap-2 overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch]">
+            {dayList.map((d, i) => {
+              const iso = d.full.toISOString().slice(0, 10);
+              const unavailable = monthLoaded && !availableDates.has(iso);
+              return (
+                <button
+                  key={i}
+                  type="button"
+                  disabled={unavailable}
+                  onClick={() => {
+                    setDayIdx(i);
+                    setSlot(null);
+                  }}
+                  className={cn(
+                    "flex h-14 w-12 shrink-0 flex-col items-center justify-center rounded-xl",
+                    dayIdx === i ? "bg-foreground text-background" : "bg-surface",
+                    unavailable && "cursor-not-allowed opacity-40",
+                  )}
+                >
+                  <span className="text-[10px] font-bold uppercase opacity-70">{d.day}</span>
+                  <span className="text-base font-bold">{d.date}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
         {slotsLoading ? (
           <div className="mt-6 grid grid-cols-3 gap-2">
@@ -413,12 +456,22 @@ function BookingStepContent({
         ) : slotOptions.length === 0 ? (
           <p className="mt-6 rounded-2xl border-2 border-border p-4 text-sm text-muted-foreground">
             {slotsClosedReason ??
-              t("booking.noSlots", { defaultValue: "Bu kuni bo'sh vaqt yo'q. Boshqa kunni tanlang." })}
+              t("booking.noSlots", {
+                defaultValue: "Bu kuni bo'sh vaqt yo'q. Boshqa kunni tanlang.",
+              })}
           </p>
         ) : (
           <div className="mt-6 grid grid-cols-3 gap-2">
             {slotOptions.map((s) => (
-              <button key={s} type="button" onClick={() => setSlot(s)} className={cn("rounded-xl border-2 py-3 text-sm font-bold", slot === s ? "border-foreground bg-foreground text-background" : "border-border")}>
+              <button
+                key={s}
+                type="button"
+                onClick={() => setSlot(s)}
+                className={cn(
+                  "rounded-xl border-2 py-3 text-sm font-bold",
+                  slot === s ? "border-foreground bg-foreground text-background" : "border-border",
+                )}
+              >
                 {s}
               </button>
             ))}
@@ -432,10 +485,7 @@ function BookingStepContent({
     <div className="space-y-6">
       <h2 className="text-xl font-bold">{t("booking.summary")}</h2>
       {phoneGate.needsPhone ? (
-        <BookingPhoneField
-          value={phoneGate.phoneDigits}
-          onChange={phoneGate.setPhoneDigits}
-        />
+        <BookingPhoneField value={phoneGate.phoneDigits} onChange={phoneGate.setPhoneDigits} />
       ) : null}
       <BookingForPicker value={familyMemberId} onChange={setFamilyMemberId} />
       <BookingPaymentPicker
@@ -450,17 +500,33 @@ function BookingStepContent({
         <div className="my-4 h-px bg-border" />
         <div className="space-y-2 text-sm">
           <div className="flex justify-between">
-            <span className="text-muted-foreground">{t("booking.forWhom", { defaultValue: "Kim uchun" })}</span>
+            <span className="text-muted-foreground">
+              {t("booking.forWhom", { defaultValue: "Kim uchun" })}
+            </span>
             <span className="font-bold">{bookedForLabel}</span>
           </div>
-          <div className="flex justify-between"><span className="text-muted-foreground">Usta</span><span className="font-bold">{selectedBarber?.name}</span></div>
-          <div className="flex justify-between"><span className="text-muted-foreground">Vaqt</span><span className="font-bold">{dayList[dayIdx].day} {dayList[dayIdx].date} · {slot}</span></div>
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Usta</span>
+            <span className="font-bold">{selectedBarber?.name}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Vaqt</span>
+            <span className="font-bold">
+              {dayList[dayIdx].day} {dayList[dayIdx].date} · {slot}
+            </span>
+          </div>
         </div>
         <div className="my-4 h-px bg-border" />
         {selectedServices.map((s) => (
-          <div key={s.id} className="flex justify-between text-sm"><span>{s.name}</span><span className="font-bold">{formatPrice(s.price)}</span></div>
+          <div key={s.id} className="flex justify-between text-sm">
+            <span>{s.name}</span>
+            <span className="font-bold">{formatPrice(s.price)}</span>
+          </div>
         ))}
-        <div className="mt-4 flex justify-between font-bold"><span>{t("booking.total")}</span><span className="text-xl">{formatPrice(total)}</span></div>
+        <div className="mt-4 flex justify-between font-bold">
+          <span>{t("booking.total")}</span>
+          <span className="text-xl">{formatPrice(total)}</span>
+        </div>
       </div>
       <BookingNotesField value={notes} onChange={setNotes} t={t} />
     </div>
@@ -493,7 +559,9 @@ function BookingNotesField({
         })}
         className="mt-2 w-full resize-none rounded-2xl border-2 border-border bg-surface p-4 text-sm outline-none transition-colors focus:border-foreground"
       />
-      <p className="mt-1 text-right text-[11px] text-muted-foreground tabular-nums">{value.length}/500</p>
+      <p className="mt-1 text-right text-[11px] text-muted-foreground tabular-nums">
+        {value.length}/500
+      </p>
     </div>
   );
 }
@@ -553,17 +621,36 @@ function BookingMobileNavButtons({
   return <BookingNavButtons state={state} t={t} />;
 }
 
-function BookingNavButtons({ state, t }: { state: ReturnType<typeof useBookingSalonState>; t: ReturnType<typeof useTranslation>["t"] }) {
+function BookingNavButtons({
+  state,
+  t,
+}: {
+  state: ReturnType<typeof useBookingSalonState>;
+  t: ReturnType<typeof useTranslation>["t"];
+}) {
   const { step, setStep, canAdvance, handleSubmit, isSubmitting } = state;
   return (
     <div className="mt-8 flex gap-2">
       {step > 1 ? (
-        <button type="button" disabled={isSubmitting} onClick={() => setStep((s) => s - 1)} className="flex-1 rounded-2xl border-2 border-foreground py-4 text-sm font-bold disabled:opacity-50">
+        <button
+          type="button"
+          disabled={isSubmitting}
+          onClick={() => setStep((s) => s - 1)}
+          className="flex-1 rounded-2xl border-2 border-foreground py-4 text-sm font-bold disabled:opacity-50"
+        >
           {t("common.back")}
         </button>
       ) : null}
       {step < 4 ? (
-        <button type="button" disabled={!canAdvance} onClick={() => canAdvance && setStep((s) => s + 1)} className={cn("flex-[2] rounded-2xl py-4 text-sm font-bold", canAdvance ? "bg-foreground text-background" : "bg-surface-2 text-muted-foreground")}>
+        <button
+          type="button"
+          disabled={!canAdvance}
+          onClick={() => canAdvance && setStep((s) => s + 1)}
+          className={cn(
+            "flex-[2] rounded-2xl py-4 text-sm font-bold",
+            canAdvance ? "bg-foreground text-background" : "bg-surface-2 text-muted-foreground",
+          )}
+        >
           {t("common.next")}
         </button>
       ) : (
@@ -573,7 +660,9 @@ function BookingNavButtons({ state, t }: { state: ReturnType<typeof useBookingSa
           onClick={() => void handleSubmit()}
           className="flex-[2] rounded-2xl bg-foreground py-4 text-sm font-bold text-background disabled:opacity-60"
         >
-          {isSubmitting ? t("common.loading", { defaultValue: "Yuklanmoqda..." }) : t("booking.confirm")}
+          {isSubmitting
+            ? t("common.loading", { defaultValue: "Yuklanmoqda..." })
+            : t("booking.confirm")}
         </button>
       )}
     </div>
@@ -585,16 +674,27 @@ function BookingMobile() {
   const { salonId } = useParams({ from: "/booking/$salonId" });
   const { date: initialDate, barber: initialBarber } = Route.useSearch();
   const state = useBookingSalonState(salonId, { initialDate, initialBarber });
-  const stepLabels = [t("booking.step1"), t("booking.step2"), t("booking.step3"), t("booking.step4")];
+  const stepLabels = [
+    t("booking.step1"),
+    t("booking.step2"),
+    t("booking.step3"),
+    t("booking.step4"),
+  ];
 
   if (state.isLoading || !state.salon) {
-    return <div className="flex min-h-[40vh] items-center justify-center"><p className="text-sm text-muted-foreground">{t("common.loading")}</p></div>;
+    return (
+      <div className="flex min-h-[40vh] items-center justify-center">
+        <p className="text-sm text-muted-foreground">{t("common.loading")}</p>
+      </div>
+    );
   }
 
   return (
     <div>
       <PageHeader showBack sticky title={t("booking.title")} />
-      <div className="px-4 pt-2"><Stepper steps={stepLabels} current={state.step} showLabels /></div>
+      <div className="px-4 pt-2">
+        <Stepper steps={stepLabels} current={state.step} showLabels />
+      </div>
       <div className={cn("px-4 pt-5", MOBILE_STICKY_CONTENT_PADDING_CLASS)}>
         <BookingStepContent state={state} t={t} />
       </div>
@@ -610,16 +710,27 @@ function BookingDesktop() {
   const { salonId } = useParams({ from: "/booking/$salonId" });
   const { date: initialDate, barber: initialBarber } = Route.useSearch();
   const state = useBookingSalonState(salonId, { initialDate, initialBarber });
-  const stepLabels = [t("booking.step1"), t("booking.step2"), t("booking.step3"), t("booking.step4")];
+  const stepLabels = [
+    t("booking.step1"),
+    t("booking.step2"),
+    t("booking.step3"),
+    t("booking.step4"),
+  ];
 
   if (state.isLoading || !state.salon) {
-    return <div className="flex min-h-[40vh] items-center justify-center"><p className="text-sm text-muted-foreground">{t("common.loading")}</p></div>;
+    return (
+      <div className="flex min-h-[40vh] items-center justify-center">
+        <p className="text-sm text-muted-foreground">{t("common.loading")}</p>
+      </div>
+    );
   }
 
   return (
     <div>
       <DesktopPageHeader title={t("booking.title")} description={state.salon.name} />
-      <div className="mt-6 max-w-xl"><Stepper steps={stepLabels} current={state.step} /></div>
+      <div className="mt-6 max-w-xl">
+        <Stepper steps={stepLabels} current={state.step} />
+      </div>
       <div className="mt-8 grid grid-cols-[1fr_320px] gap-8 items-start">
         <div>
           <BookingStepContent state={state} t={t} />
@@ -641,5 +752,5 @@ function BookingDesktop() {
 }
 
 function BookingFlow() {
-  return <DesktopPageSplit mobile={<BookingMobile />} desktop={<BookingDesktop />} />;
+  return <DesktopPageSplit mobile={<MysaloonPausedScreen />} desktop={<BookingDesktop />} />;
 }

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from datetime import date, timedelta
 from decimal import Decimal
 from typing import Any
@@ -18,6 +19,14 @@ from subscriptions.models import (
     SubscriptionUsagePeriod,
     UserSubscription,
 )
+from subscriptions.messages import (
+    CANCEL_BLOCK_REBUY_MESSAGE,
+    CANCEL_MISSING_MESSAGE,
+    CANCEL_STILL_PREMIUM_MESSAGE,
+    NOT_AN_UPGRADE_MESSAGE,
+    PLAN_CODE_INVALID,
+    request_lang,
+)
 from subscriptions.plans import (
     CHAT_TOKEN_MIN_TURN,
     FREE_MORPH_AI_MONTHLY,
@@ -26,12 +35,16 @@ from subscriptions.plans import (
     FREE_MORPH_TRYON,
     FREE_TRYON_LAUNCH_AT,
     PLAN_CODES,
+    PLAN_FREE,
     PLAN_PRO,
+    free_plan,
     get_plan,
     is_plan_upgrade,
     plan_rank,
     serialize_plan,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def referral_generation_enabled() -> bool:
@@ -159,7 +172,7 @@ def entitlement_snapshot(plan_code: str) -> dict[str, Any]:
         "morph_ai_monthly": plan["morph_ai_monthly"],
         "morph_studio_monthly": plan["morph_studio_monthly"],
         "morph_chat_tokens_monthly": int(plan.get("morph_chat_tokens_monthly") or 0),
-        "morph_voice": True,
+        "morph_voice": bool(plan.get("morph_voice", True)),
         "family_members_max": plan["family_members_max"],
         "morph_care": plan["morph_care"],
         "morph_care_pro": bool(plan.get("morph_care_pro")),
@@ -239,13 +252,7 @@ def get_latest_subscription(user: User) -> UserSubscription | None:
     return UserSubscription.objects.filter(user=user).order_by("-created_at", "-ends_at").first()
 
 
-CANCEL_STILL_PREMIUM_MESSAGE = (
-    "Obuna bekor qilindi. Premium muddati tugaguncha ishlaydi."
-)
-CANCEL_BLOCK_REBUY_MESSAGE = (
-    "Premium hali faol. Yangi obuna muddat tugagach xarid qilinadi."
-)
-CANCEL_MISSING_MESSAGE = "Bekor qilish uchun faol obuna topilmadi."
+# Matnlar subscriptions.messages da — testlar shu nomlarni services dan import qiladi.
 
 
 @transaction.atomic
@@ -315,17 +322,14 @@ def checkout_plan_error(*, user: User, plan_code: str) -> str | None:
     """Klient tarif kodini yuboradi — narx va daraja faqat serverda."""
     code = (plan_code or "").strip().lower()
     if code not in PLAN_CODES:
-        return "plan_code starter, plus yoki pro bo'lishi kerak."
+        return PLAN_CODE_INVALID
     sub = get_active_subscription(user)
     if not sub:
         return None
     if sub.is_user_cancelled:
         return CANCEL_BLOCK_REBUY_MESSAGE
     if not is_plan_upgrade(code, sub.plan_code):
-        return (
-            "Joriy tarifdan past yoki teng tarifga o'tib bo'lmaydi. "
-            "Yuqori tarifni tanlang."
-        )
+        return NOT_AN_UPGRADE_MESSAGE
     return None
 
 
@@ -339,25 +343,103 @@ def get_or_create_usage(user: User) -> SubscriptionUsagePeriod:
     return usage
 
 
+def quota_for_subscription(sub: UserSubscription) -> dict[str, Any]:
+    """Faol tarifning joriy katalogi.
+
+    Obuna yozuvidagi eski entitlements (0 yoki pastki tarif) yangi tarif
+    limitini bosib qo'ymaydi.
+    """
+    live = entitlement_snapshot(sub.plan_code)
+    if live:
+        return live
+    return dict(sub.entitlements or {})
+
+
+def _quota_int(quota: dict[str, Any], key: str) -> int:
+    raw = quota.get(key)
+    try:
+        return max(0, int(raw or 0))
+    except (TypeError, ValueError):
+        return 0
+
+
+def _usage_predates_plan(usage: SubscriptionUsagePeriod, sub: UserSubscription) -> bool:
+    """Hisoblagich shu obuna boshlanishidan oldin yig'ilgan."""
+    started = sub.starts_at
+    touched = usage.updated_at
+    if not started or not touched or touched >= started:
+        return False
+    return bool(usage.morph_ai_used or usage.morph_studio_used or usage.morph_chat_tokens_used)
+
+
+def align_usage_to_plan(user: User, sub: UserSubscription) -> SubscriptionUsagePeriod:
+    """Oylik hisoblagichni faol tarifga moslash.
+
+    Bepul → Starter, Starter → Plus, Plus → Pro: oldingi kvota yangi tarifga
+    ko'chmaydi. Shu tarif ichida sarf o'zgarishsiz qoladi.
+    """
+    start, end = current_period_bounds()
+    code = (sub.plan_code or "").strip().lower()
+    with transaction.atomic():
+        usage, _ = SubscriptionUsagePeriod.objects.select_for_update().get_or_create(
+            user=user,
+            period_start=start,
+            defaults={"period_end": end, "plan_code": code},
+        )
+        current = (usage.plan_code or "").strip().lower()
+        if current == code and code:
+            return usage
+        reset = bool(current and current != code) or (
+            not current and _usage_predates_plan(usage, sub)
+        )
+        fields = ["plan_code", "updated_at"]
+        if reset:
+            usage.morph_ai_used = 0
+            usage.morph_studio_used = 0
+            usage.morph_chat_tokens_used = 0
+            fields.extend(["morph_ai_used", "morph_studio_used", "morph_chat_tokens_used"])
+        usage.plan_code = code
+        if usage.period_end != end:
+            usage.period_end = end
+            fields.append("period_end")
+        usage.save(update_fields=fields)
+        return usage
+
+
+def reset_usage_for_plan(user: User, plan_code: str) -> SubscriptionUsagePeriod:
+    """Tarif yoqilganda shu oygi try-on, studio va chat hisoblagichini 0 qilish."""
+    start, end = current_period_bounds()
+    code = (plan_code or "").strip().lower()
+    with transaction.atomic():
+        usage, _ = SubscriptionUsagePeriod.objects.select_for_update().get_or_create(
+            user=user,
+            period_start=start,
+            defaults={"period_end": end, "plan_code": code},
+        )
+        usage.plan_code = code
+        usage.period_end = end
+        usage.morph_ai_used = 0
+        usage.morph_studio_used = 0
+        usage.morph_chat_tokens_used = 0
+        usage.save(
+            update_fields=[
+                "plan_code",
+                "period_end",
+                "morph_ai_used",
+                "morph_studio_used",
+                "morph_chat_tokens_used",
+                "updated_at",
+            ]
+        )
+        return usage
+
+
 def chat_token_limit_for_user(user: User) -> int:
-    """Obuna: oylik tarif. Obunasiz: bir martalik 10k."""
+    """Obuna: joriy tarifning oylik tokeni. Obunasiz: bir martalik 10k."""
     sub = get_active_subscription(user)
     if not sub:
         return FREE_MORPH_CHAT_TOKENS
-    ents = sub.entitlements or {}
-    raw = ents.get("morph_chat_tokens_monthly")
-    if raw is not None:
-        try:
-            return max(0, int(raw))
-        except (TypeError, ValueError):
-            pass
-    plan = get_plan(sub.plan_code)
-    if plan:
-        try:
-            return max(0, int(plan.get("morph_chat_tokens_monthly") or FREE_MORPH_CHAT_TOKENS))
-        except (TypeError, ValueError):
-            return FREE_MORPH_CHAT_TOKENS
-    return FREE_MORPH_CHAT_TOKENS
+    return _quota_int(quota_for_subscription(sub), "morph_chat_tokens_monthly")
 
 
 def _free_chat_tokens_used(user: User) -> int:
@@ -402,8 +484,8 @@ def free_tryon_snapshot(user: User) -> dict[str, Any]:
 def chat_token_snapshot(user: User) -> dict[str, Any]:
     sub = get_active_subscription(user)
     if sub:
-        usage = get_or_create_usage(user)
-        limit = chat_token_limit_for_user(user)
+        usage = align_usage_to_plan(user, sub)
+        limit = _quota_int(quota_for_subscription(sub), "morph_chat_tokens_monthly")
         used = int(usage.morph_chat_tokens_used or 0)
         period = "month"
     else:
@@ -420,7 +502,13 @@ def chat_token_snapshot(user: User) -> dict[str, Any]:
 
 
 def usage_snapshot(user: User, entitlements: dict[str, Any] | None) -> dict[str, Any]:
-    usage = get_or_create_usage(user)
+    sub = get_active_subscription(user)
+    if sub:
+        # Chaqiruvchi eski snapshot bersa ham, limit faol tarif katalogidan olinadi.
+        entitlements = quota_for_subscription(sub)
+        usage = align_usage_to_plan(user, sub)
+    else:
+        usage = get_or_create_usage(user)
     ai_limit = int((entitlements or {}).get("morph_ai_monthly") or 0)
     studio_limit = int((entitlements or {}).get("morph_studio_monthly") or 0)
     chat = chat_token_snapshot(user)
@@ -437,6 +525,21 @@ def usage_snapshot(user: User, entitlements: dict[str, Any] | None) -> dict[str,
         else 0,
         **chat,
     }
+
+
+def current_plan_for_subscription(sub: UserSubscription | None) -> dict[str, Any]:
+    """Pullik obuna bo'lmasa joriy tarif Free. Ro'yxatdan keyin avtomatik."""
+    if sub is not None:
+        paid = get_plan(sub.plan_code)
+        if paid is not None:
+            return paid
+    return free_plan()
+
+
+def serialize_current_plan(sub: UserSubscription | None) -> dict[str, Any]:
+    from subscriptions.plans import serialize_plan
+
+    return serialize_plan(current_plan_for_subscription(sub))
 
 
 def build_me_payload(user: User) -> dict[str, Any]:
@@ -465,14 +568,19 @@ def build_me_payload(user: User) -> dict[str, Any]:
                 "morph_studio_monthly": FREE_MORPH_STUDIO_MONTHLY,
             },
         )
+        gen_limit = int(free_plan().get("morph_ai_monthly") or FREE_MORPH_TRYON)
+        gen_used = int(tryon_counts["morph_free_tryon_used"])
         usage = {
             **period,
             **tryon_counts,
             "is_free_tier": True,
+            "plan_code": PLAN_FREE,
             "locked": credits <= 0 and not free_left,
             "referral_credits": credits,
             "free_tryon_remaining": free_left,
-            "morph_ai_remaining": max(period["morph_ai_remaining"], credits + free_left),
+            "morph_ai_limit": gen_limit,
+            "morph_ai_used": gen_used,
+            "morph_ai_remaining": free_left + credits,
         }
     from subscriptions.promos import get_new_user_offer
 
@@ -482,9 +590,18 @@ def build_me_payload(user: User) -> dict[str, Any]:
         delta = sub.ends_at - now
         days_remaining = max(0, int(delta.total_seconds() // 86400))
 
-    plan_code = sub.plan_code if sub else None
+    plan_code = sub.plan_code if sub else PLAN_FREE
+    current_plan = serialize_current_plan(sub)
+    free_ents = entitlement_snapshot(PLAN_FREE)
     next_upgrade = None
-    if plan_code == "starter":
+    if plan_code == PLAN_FREE:
+        next_upgrade = {
+            "plan_code": "starter",
+            "label_uz": "Starter ga o'tish",
+            "label_ru": "Перейти на Starter",
+            "label_en": "Move to Starter",
+        }
+    elif plan_code == "starter":
         next_upgrade = {
             "plan_code": "plus",
             "label_uz": "Plus ga upgrade",
@@ -519,9 +636,11 @@ def build_me_payload(user: User) -> dict[str, Any]:
         "can_cancel": bool(sub and sub.status == UserSubscription.Status.ACTIVE and not sub.cancelled_at),
         "subscription": serialize_subscription(sub) if sub else None,
         "last_subscription": last,
-        "entitlements": entitlements if sub else {},
+        "current_plan_code": plan_code,
+        "current_plan": current_plan,
+        "entitlements": entitlements if sub else free_ents,
         "usage": usage,
-        "badge": entitlements.get("badge") if sub else None,
+        "badge": entitlements.get("badge") if sub else free_ents.get("badge"),
         "morph_care": bool(entitlements.get("morph_care")) if sub else False,
         "morph_care_pro": bool(entitlements.get("morph_care_pro")) if sub else False,
         "family_members_max": entitlements.get("family_members_max") if sub else 0,
@@ -539,6 +658,7 @@ def build_me_payload(user: User) -> dict[str, Any]:
             "referral_credits": credits,
             "referral_generation_enabled": ref_on,
             "free_tryon_available": free_tryon["available"],
+            "free_tryon_remaining": free_left,
         },
         "welcome_offer": get_new_user_offer(user),
         "upgrade": next_upgrade,
@@ -657,7 +777,62 @@ def activate_subscription(
         },
         request=request,
     )
+    if source in {
+        UserSubscription.Source.PAYME,
+        UserSubscription.Source.WALLET,
+        UserSubscription.Source.CLICK,
+    }:
+        lang = request_lang(request)
+        user_id = user.pk
+        bought = plan_code
+        transaction.on_commit(
+            lambda: _notify_subscription_purchased(
+                user_id=user_id,
+                plan_code=bought,
+                lang=lang,
+            )
+        )
+    # Yangi yoki yuqori tarif — oldingi (bepul/starter/plus) hisoblagich yangi limitni yemaydi.
+    reset_usage_for_plan(user, plan_code)
     return sub
+
+
+_PLAN_LABEL = {"starter": "Starter", "plus": "Plus", "pro": "Pro"}
+_PAID_COPY = {
+    "uz": (
+        "Obuna muvaffaqiyatli sotib olindi",
+        "{plan} tarifi yoqildi. Morf AI limitlari ochiq.",
+    ),
+    "ru": (
+        "Подписка успешно оформлена",
+        "Тариф {plan} включён. Лимиты Morf AI открыты.",
+    ),
+    "en": (
+        "Subscription purchased",
+        "The {plan} plan is on. Morf AI limits are unlocked.",
+    ),
+}
+
+
+def _notify_subscription_purchased(*, user_id: int, plan_code: str, lang: str) -> None:
+    """Ilova ichidagi bildirishnoma va telefonga push (Expo + FCM)."""
+    try:
+        from notifications.utils import notify_user
+
+        buyer = User.objects.filter(pk=user_id).first()
+        if not buyer:
+            return
+        title, body = _PAID_COPY.get(lang) or _PAID_COPY["uz"]
+        plan = _PLAN_LABEL.get(plan_code, plan_code)
+        notify_user(
+            buyer,
+            "subscription_paid",
+            title,
+            body.format(plan=plan),
+            payload={"screen": "subscriptions", "plan_code": plan_code},
+        )
+    except Exception:
+        logger.warning("subscription purchase push failed user=%s", user_id)
 
 
 @transaction.atomic
@@ -741,8 +916,7 @@ def family_member_limit_for(user: User) -> int | None:
     sub = get_active_subscription(user)
     if not sub:
         return 0
-    ents = sub.entitlements or entitlement_snapshot(sub.plan_code)
-    return ents.get("family_members_max", 0)
+    return quota_for_subscription(sub).get("family_members_max", 0)
 
 
 CARE_PLUS_REQUIRED = "Morf AI Parvarish Plus obunasida mavjud."
@@ -872,9 +1046,8 @@ def check_morph_entitlement(*, user: User, kind: str) -> str | None:
     if kind == "studio":
         if not sub:
             return _no_subscription_message()
-        usage = get_or_create_usage(user)
-        ents = sub.entitlements or entitlement_snapshot(sub.plan_code)
-        limit = int(ents.get("morph_studio_monthly") or 0)
+        usage = align_usage_to_plan(user, sub)
+        limit = _quota_int(quota_for_subscription(sub), "morph_studio_monthly")
         if limit <= 0:
             return "Morf AI Studio Plus yoki Pro obunasida mavjud."
         if usage.morph_studio_used >= limit:
@@ -889,9 +1062,8 @@ def check_morph_entitlement(*, user: User, kind: str) -> str | None:
 
     # tryon
     if sub:
-        usage = get_or_create_usage(user)
-        ents = sub.entitlements or entitlement_snapshot(sub.plan_code)
-        limit = int(ents.get("morph_ai_monthly") or 0)
+        usage = align_usage_to_plan(user, sub)
+        limit = _quota_int(quota_for_subscription(sub), "morph_ai_monthly")
         if limit <= 0:
             return "Bu reja Morf AI generatsiyasini qo'llab-quvvatlamaydi. Tarifni yangilang."
         if usage.morph_ai_used >= limit:
@@ -924,19 +1096,20 @@ def record_morph_usage(*, user: User, kind: str) -> None:
         return
     from django.db.models import F
 
-    start, end = current_period_bounds()
-    usage, _ = SubscriptionUsagePeriod.objects.select_for_update().get_or_create(
-        user=user,
-        period_start=start,
-        defaults={"period_end": end},
-    )
     sub = get_active_subscription(user)
     free_used = False
-    if kind == "tryon":
-        if sub:
-            usage.morph_ai_used = usage.morph_ai_used + 1
-            usage.save(update_fields=["morph_ai_used", "updated_at"])
-        elif _consume_free_tryon(user):
+    if kind == "tryon" and sub:
+        usage = align_usage_to_plan(user, sub)
+        usage.morph_ai_used = int(usage.morph_ai_used or 0) + 1
+        usage.save(update_fields=["morph_ai_used", "updated_at"])
+    elif kind == "tryon":
+        start, end = current_period_bounds()
+        usage, _ = SubscriptionUsagePeriod.objects.select_for_update().get_or_create(
+            user=user,
+            period_start=start,
+            defaults={"period_end": end},
+        )
+        if _consume_free_tryon(user):
             free_used = True
             user_id = user.pk
             transaction.on_commit(lambda: _notify_free_tryon_used(user_id))
@@ -949,7 +1122,17 @@ def record_morph_usage(*, user: User, kind: str) -> None:
             user.refresh_from_db(fields=["morph_referral_credits"])
         else:
             return _no_subscription_message()
+    elif sub:
+        usage = align_usage_to_plan(user, sub)
+        usage.morph_studio_used = int(usage.morph_studio_used or 0) + 1
+        usage.save(update_fields=["morph_studio_used", "updated_at"])
     else:
+        start, end = current_period_bounds()
+        usage, _ = SubscriptionUsagePeriod.objects.select_for_update().get_or_create(
+            user=user,
+            period_start=start,
+            defaults={"period_end": end},
+        )
         usage.morph_studio_used = usage.morph_studio_used + 1
         usage.save(update_fields=["morph_studio_used", "updated_at"])
 
@@ -974,12 +1157,7 @@ def record_morph_chat_tokens(*, user: User, tokens: int) -> dict[str, Any]:
     added = max(0, int(tokens or 0))
     sub = get_active_subscription(user)
     if sub:
-        start, end = current_period_bounds()
-        usage, _ = SubscriptionUsagePeriod.objects.select_for_update().get_or_create(
-            user=user,
-            period_start=start,
-            defaults={"period_end": end},
-        )
+        usage = align_usage_to_plan(user, sub)
         if added:
             usage.morph_chat_tokens_used = int(usage.morph_chat_tokens_used or 0) + added
             usage.save(update_fields=["morph_chat_tokens_used", "updated_at"])

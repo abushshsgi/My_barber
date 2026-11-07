@@ -19,8 +19,7 @@ export function useAutoLocationSync() {
 
     if (me.require_profile_location !== true) return;
 
-    const needsLocation =
-      !me.region?.trim() || me.latitude == null || me.longitude == null;
+    const needsLocation = !me.region?.trim() || me.latitude == null || me.longitude == null;
     if (!needsLocation) return;
 
     attempted.current = true;

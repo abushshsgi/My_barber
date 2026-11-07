@@ -37,13 +37,7 @@ function GoogleGlyph({ className }: { className?: string }) {
   );
 }
 
-function EmphasizedChrome({
-  children,
-  busy,
-}: {
-  children: ReactNode;
-  busy?: boolean;
-}) {
+function EmphasizedChrome({ children, busy }: { children: ReactNode; busy?: boolean }) {
   const { t } = useTranslation();
   return (
     <div
@@ -118,18 +112,19 @@ function GoogleSignInButtonInner({
     }
   };
 
-  const button = buttonWidth > 0 ? (
-    <GoogleLogin
-      onSuccess={(response) => void handleSuccess(response.credential)}
-      onError={() => toast.error(t("auth.googleErrGeneric"))}
-      theme={emphasized ? "filled_blue" : "outline"}
-      size="large"
-      shape="rectangular"
-      text="continue_with"
-      width={buttonWidth}
-      locale="uz"
-    />
-  ) : null;
+  const button =
+    buttonWidth > 0 ? (
+      <GoogleLogin
+        onSuccess={(response) => void handleSuccess(response.credential)}
+        onError={() => toast.error(t("auth.googleErrGeneric"))}
+        theme={emphasized ? "filled_blue" : "outline"}
+        size="large"
+        shape="rectangular"
+        text="continue_with"
+        width={buttonWidth}
+        locale="uz"
+      />
+    ) : null;
 
   if (!emphasized) {
     return (

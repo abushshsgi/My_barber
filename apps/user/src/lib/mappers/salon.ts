@@ -1,4 +1,9 @@
-import type { ApiNearbySalon, ApiSalonDetail, ApiSalonList, ApiSalonRatingSummary } from "@/lib/api/types";
+import type {
+  ApiNearbySalon,
+  ApiSalonDetail,
+  ApiSalonList,
+  ApiSalonRatingSummary,
+} from "@/lib/api/types";
 import { resolveCoverUrl } from "@/lib/cover-images";
 import { resolveMediaUrl } from "@/lib/media-url";
 import type { Audience, Category, Salon, SalonRatingSummary } from "@/lib/mock-data";
@@ -28,7 +33,11 @@ function resolveCategory(api: ApiSalonList): Category {
   if (fromKind) return fromKind.category;
   const name = api.name.toLowerCase();
   if (/nail|gel pro|manicure|polish/i.test(name)) return "nails";
-  if (/spa|wellness|harmony|zen|oasis|serenity|retreat|calm|hammom|massaj|glow|beauty|silk|luxe|chic|rose|elite|viva|pearl|femme|studio/i.test(name)) {
+  if (
+    /spa|wellness|harmony|zen|oasis|serenity|retreat|calm|hammom|massaj|glow|beauty|silk|luxe|chic|rose|elite|viva|pearl|femme|studio/i.test(
+      name,
+    )
+  ) {
     return "beauty";
   }
   return "barber";
@@ -84,7 +93,12 @@ export function mapSalonList(api: ApiSalonList, distanceKm = 0): Salon {
       icon: a.icon,
       label: a.label,
     })),
-    venueKind: api.venue_kind === "salon" ? "salon" : api.venue_kind === "solo_studio" ? "solo_studio" : undefined,
+    venueKind:
+      api.venue_kind === "salon"
+        ? "salon"
+        : api.venue_kind === "solo_studio"
+          ? "solo_studio"
+          : undefined,
     hours: [],
     closedWeekdays: [],
     ratingSummary: null,

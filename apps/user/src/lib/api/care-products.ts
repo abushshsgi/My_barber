@@ -55,13 +55,7 @@ export async function fetchCareProduct(id: number): Promise<CareProduct> {
 
 export type SosTime = "2min" | "5-10min" | "15min+";
 export type SosIssue = "frizzy" | "oily" | "bedhead" | "dry";
-export type SosTool =
-  | "dryer"
-  | "dry_shampoo"
-  | "water_spray"
-  | "comb"
-  | "wax_gel"
-  | "nothing";
+export type SosTool = "dryer" | "dry_shampoo" | "water_spray" | "comb" | "wax_gel" | "nothing";
 
 export type SosFix = {
   title: string;
@@ -135,7 +129,10 @@ export type CareShelfEstimate = {
   ai_advice: string;
 };
 
-export async function fetchCareShelf(): Promise<{ items: CareShelfItem[]; summary: CareShelfSummary }> {
+export async function fetchCareShelf(): Promise<{
+  items: CareShelfItem[];
+  summary: CareShelfSummary;
+}> {
   return apiJson("/api/v1/ai/care/shelf/");
 }
 
@@ -309,9 +306,7 @@ export async function fetchCareProductByBarcode(
   if (profile?.color_status) sp.set("color_status", profile.color_status);
   if (profile?.scalp) sp.set("scalp", profile.scalp);
   const q = sp.toString();
-  return apiJson(
-    `/api/v1/products/barcode/${encodeURIComponent(barcode)}/${q ? `?${q}` : ""}`,
-  );
+  return apiJson(`/api/v1/products/barcode/${encodeURIComponent(barcode)}/${q ? `?${q}` : ""}`);
 }
 
 export type AiCarePlanTask = {

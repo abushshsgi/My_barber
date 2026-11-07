@@ -1,5 +1,12 @@
 import { Link } from "@tanstack/react-router";
-import { AnimatePresence, animate, motion, useMotionValue, useTransform, type PanInfo } from "framer-motion";
+import {
+  AnimatePresence,
+  animate,
+  motion,
+  useMotionValue,
+  useTransform,
+  type PanInfo,
+} from "framer-motion";
 import { Check, ChevronLeft, ChevronRight, ChevronsUp, Loader2, ScanFace, X } from "lucide-react";
 import { Fragment, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -9,7 +16,11 @@ import { AiStyleScanLine, GalleryValidatingHero } from "@/components/ai-style/Ai
 import type { AiAnalysisResult } from "@/components/ai-style/ai-style-shared";
 import { getAiStyleHeroUrl } from "@/lib/cover-images";
 import { refreshAiStyleHistoryCache } from "@/lib/api";
-import { FACE_HISTORY_UPDATED_EVENT, getActiveUserId, type FaceProfileHistoryEntry } from "@/lib/face-profile";
+import {
+  FACE_HISTORY_UPDATED_EVENT,
+  getActiveUserId,
+  type FaceProfileHistoryEntry,
+} from "@/lib/face-profile";
 import type { ExplorePersonaId } from "@/lib/explore-personas";
 import type { Audience } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
@@ -77,9 +88,7 @@ function StepRail({ step }: { step: 1 | 2 | 3 }) {
               <div
                 className={cn(
                   "grid h-8 w-8 place-items-center rounded-full text-[11px] font-bold transition-all",
-                  reached
-                    ? "bg-black text-white"
-                    : "bg-neutral-100 text-neutral-400",
+                  reached ? "bg-black text-white" : "bg-neutral-100 text-neutral-400",
                   current && "ring-4 ring-black/8",
                 )}
               >
@@ -111,12 +120,8 @@ function StepRail({ step }: { step: 1 | 2 | 3 }) {
 
 function ResultsHero({ photo }: { photo: string }) {
   return (
-    <div className="relative h-full w-full overflow-hidden">
-      <img
-        src={photo}
-        alt=""
-        className="absolute inset-0 h-full w-full object-cover object-top"
-      />
+    <div className="relative h-full w-full overflow-hidden bg-black">
+      <img src={photo} alt="" className="absolute inset-0 h-full w-full object-contain object-center" />
       <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-transparent" />
       <div
         aria-hidden
@@ -331,7 +336,9 @@ function UploadHistorySheet({ open }: { open: boolean }) {
           <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
             {t("aiStylePage.historyTitle")}
           </p>
-          <p className="mt-1 text-base font-bold text-foreground">{t("aiStylePage.historySubtitle")}</p>
+          <p className="mt-1 text-base font-bold text-foreground">
+            {t("aiStylePage.historySubtitle")}
+          </p>
         </div>
         {entries.length > 0 ? (
           <Link
@@ -517,7 +524,7 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
         <img
           src={props.photo!}
           alt=""
-          className="absolute inset-0 h-full w-full object-cover object-top"
+          className="absolute inset-0 h-full w-full bg-black object-contain object-center"
         />
         {busy ? <AiStyleScanLine /> : null}
         <div
@@ -564,13 +571,9 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
         className={cn(
           "relative shrink-0 overflow-hidden",
           isUploadStep && "min-h-0",
-          showResults && "h-[14dvh]",
+          showResults && "h-[38dvh]",
         )}
-        style={
-          isUploadStep
-            ? { height: `calc(100dvh - ${UPLOAD_PANEL_HEIGHT}px)` }
-            : undefined
-        }
+        style={isUploadStep ? { height: `calc(100dvh - ${UPLOAD_PANEL_HEIGHT}px)` } : undefined}
       >
         {isGalleryValidating ? (
           <GalleryValidatingHero previewUrl={props.validatingPreview!} />
@@ -579,11 +582,7 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
         ) : (
           <HeroCarousel audience={props.audience} hintActive={showHistoryHint} />
         )}
-        <AiStyleChrome
-          tone="dark"
-          className="absolute inset-x-0 top-0"
-          onBack={props.onGoHome}
-        />
+        <AiStyleChrome tone="dark" className="absolute inset-x-0 top-0" onBack={props.onGoHome} />
       </div>
 
       {isUploadStep ? (
@@ -605,84 +604,79 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
                 !historyOpen && "cursor-grab touch-none active:cursor-grabbing",
               )}
             >
-            <motion.div
-              onPan={historyOpen ? onPanelPan : undefined}
-              onPanEnd={historyOpen ? onPanelPanEnd : undefined}
-              className={cn(
-                "relative mb-2 flex w-full shrink-0 items-center",
-                historyOpen ? "h-11 touch-none" : "justify-center py-2",
-                historyOpen && "cursor-grab active:cursor-grabbing",
-              )}
-            >
-              {historyOpen ? (
-                <>
-                  <div className="pointer-events-none absolute inset-x-0 flex justify-center">
-                    <div aria-hidden className="h-1 w-10 rounded-full bg-muted-foreground/25" />
-                  </div>
-                  <div className="ml-auto">
-                    <button
-                      type="button"
-                      onClick={() => snapPanel(false)}
-                      onPointerDown={(event) => event.stopPropagation()}
-                      aria-label={t("common.close")}
-                      className="relative z-10 grid h-9 w-9 place-items-center rounded-full border border-border/70 bg-neutral-50 text-foreground active:opacity-80"
-                    >
-                      <X className="h-4 w-4" strokeWidth={2.25} />
-                    </button>
-                  </div>
-                </>
-              ) : (
-                <div aria-hidden className="h-1 w-10 rounded-full bg-muted-foreground/25" />
-              )}
-            </motion.div>
+              <motion.div
+                onPan={historyOpen ? onPanelPan : undefined}
+                onPanEnd={historyOpen ? onPanelPanEnd : undefined}
+                className={cn(
+                  "relative mb-2 flex w-full shrink-0 items-center",
+                  historyOpen ? "h-11 touch-none" : "justify-center py-2",
+                  historyOpen && "cursor-grab active:cursor-grabbing",
+                )}
+              >
+                {historyOpen ? (
+                  <>
+                    <div className="pointer-events-none absolute inset-x-0 flex justify-center">
+                      <div aria-hidden className="h-1 w-10 rounded-full bg-muted-foreground/25" />
+                    </div>
+                    <div className="ml-auto">
+                      <button
+                        type="button"
+                        onClick={() => snapPanel(false)}
+                        onPointerDown={(event) => event.stopPropagation()}
+                        aria-label={t("common.close")}
+                        className="relative z-10 grid h-9 w-9 place-items-center rounded-full border border-border/70 bg-neutral-50 text-foreground active:opacity-80"
+                      >
+                        <X className="h-4 w-4" strokeWidth={2.25} />
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <div aria-hidden className="h-1 w-10 rounded-full bg-muted-foreground/25" />
+                )}
+              </motion.div>
 
-            <AnimatePresence initial={false} mode="wait">
-              {historyOpen ? (
-                <motion.div
-                  key="history-panel-content"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.2, ease: "easeOut" }}
-                  className="min-h-0 flex-1 overflow-y-auto"
-                >
-                  <UploadHistorySheet open={historyOpen} />
-                </motion.div>
-              ) : (
-                <motion.div
-                  key="upload-panel-content"
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                  exit={{ opacity: 0, height: 0 }}
-                  transition={{ duration: 0.22, ease: "easeOut" }}
-                  className="overflow-hidden"
-                >
-                  <StepRail step={props.step} />
+              <AnimatePresence initial={false} mode="wait">
+                {historyOpen ? (
                   <motion.div
-                    initial={{ opacity: 0, y: 16 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.28, duration: 0.5, ease: "easeOut" }}
-                    className="mt-8 space-y-3"
+                    key="history-panel-content"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.2, ease: "easeOut" }}
+                    className="min-h-0 flex-1 overflow-y-auto"
                   >
-                    <UploadActions
-                      onOpenCamera={props.openCamera}
-                      onOpenGallery={props.openFile}
-                      validating={props.validating}
-                    />
+                    <UploadHistorySheet open={historyOpen} />
                   </motion.div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+                ) : (
+                  <motion.div
+                    key="upload-panel-content"
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.22, ease: "easeOut" }}
+                    className="overflow-hidden"
+                  >
+                    <StepRail step={props.step} />
+                    <motion.div
+                      initial={{ opacity: 0, y: 16 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.28, duration: 0.5, ease: "easeOut" }}
+                      className="mt-8 space-y-3"
+                    >
+                      <UploadActions
+                        onOpenCamera={props.openCamera}
+                        onOpenGallery={props.openFile}
+                        validating={props.validating}
+                      />
+                    </motion.div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </motion.div>
           </motion.div>
         </>
       ) : showResults ? (
-        <motion.div
-          initial={{ y: "100%" }}
-          animate={{ y: 0 }}
-          transition={{ type: "spring", damping: 36, stiffness: 170, mass: 1.15 }}
-          className="relative -mt-14 flex min-h-0 flex-1 flex-col overflow-y-auto rounded-t-[28px] bg-white px-5 pb-[max(2rem,env(safe-area-inset-bottom))] pt-5 text-black"
-        >
+        <div className="relative flex min-h-0 flex-1 flex-col overflow-y-auto bg-white px-5 pb-[max(2rem,env(safe-area-inset-bottom))] pt-4 text-black">
           <div className="min-h-0 flex-1 text-left">
             {props.onGoHome ? (
               <button
@@ -711,7 +705,7 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
               selfiePhoto={props.photo}
             />
           </div>
-        </motion.div>
+        </div>
       ) : null}
     </div>
   );
