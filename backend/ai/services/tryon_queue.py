@@ -19,7 +19,7 @@ from django.utils import timezone
 from config.redis_url import get_redis_url, redis_blocking_client_kwargs, redis_client_kwargs
 
 from .gemini_style import AiStyleError
-from .gemini_tryon import generate_tryon_multiview, generate_tryon_preview
+from .runware_tryon import generate_tryon_multiview, generate_tryon_preview
 from .image_provider import provider_health, queue_generation_context
 from ..usage_log import record_ai_generation
 
