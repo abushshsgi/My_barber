@@ -685,3 +685,14 @@ if not DEBUG:
     CSRF_COOKIE_SECURE = True
     X_FRAME_OPTIONS = "DENY"
 
+
+
+# Runware AI Try-On
+TRYON_PROVIDER = os.environ.get("TRYON_PROVIDER", "runware").strip()
+RUNWARE_API_KEY = os.environ.get("RUNWARE_API_KEY", "").strip()
+RUNWARE_API_URL = os.environ.get("RUNWARE_API_URL", "https://api.runware.ai/v1").strip()
+RUNWARE_TRYON_MODEL = os.environ.get("RUNWARE_TRYON_MODEL", "runware:400@2").strip()
+RUNWARE_TRYON_FALLBACK_MODELS = os.environ.get("RUNWARE_TRYON_FALLBACK_MODELS", "runware:400@6,runware:400@4").strip()
+RUNWARE_TRYON_WIDTH = int(os.environ.get("RUNWARE_TRYON_WIDTH", "1024"))
+RUNWARE_TRYON_HEIGHT = int(os.environ.get("RUNWARE_TRYON_HEIGHT", "1024"))
+RUNWARE_TRYON_TIMEOUT = int(os.environ.get("RUNWARE_TRYON_TIMEOUT", "120"))
