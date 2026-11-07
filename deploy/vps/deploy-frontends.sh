@@ -61,7 +61,7 @@ if [ -f "$ROOT/deploy/vps/build.env" ]; then
   set +a
 fi
 
-if printf '%s\n' "$FILES" | grep -q '^package-lock.json$'; then
+if [ ! -d "$ROOT/node_modules" ] || printf '%s\n' "$FILES" | grep -q '^package-lock.json$'; then
   npm ci
 fi
 
