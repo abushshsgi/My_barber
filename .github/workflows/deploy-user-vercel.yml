@@ -34,9 +34,9 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    env:
+      VERCEL_USER_DEPLOY_HOOK: ${{ secrets.VERCEL_USER_DEPLOY_HOOK }}
     steps:
       - name: Trigger Vercel deploy hook
-        if: ${{ secrets.VERCEL_USER_DEPLOY_HOOK != '' }}
-        env:
-          VERCEL_USER_DEPLOY_HOOK: ${{ secrets.VERCEL_USER_DEPLOY_HOOK }}
+        if: ${{ env.VERCEL_USER_DEPLOY_HOOK != '' }}
         run: curl -fsS -X POST "$VERCEL_USER_DEPLOY_HOOK"
