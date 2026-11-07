@@ -64,13 +64,13 @@ npm run build:frontends
 
 
 
-| Ilova | Vercel domen | Env |
+| Ilova | VPS domen | Env |
 
 |--------|----------------|-----|
 
 | mijoz | `https://www.mysaloon.uz` | `VITE_API_URL` **o‘chirish** (same-origin `/api/v1` proxy) |
-| admin | `https://admin.mysaloon.uz` | `VITE_API_URL` **o‘chirish** (same-origin `/api/v1` proxy; CORS yo‘q) |
-| barber | `https://partner.mysaloon.uz` | `VITE_API_URL=https://api.mysaloon.uz` (yoki same-origin proxy) |
+| admin | `https://admin.mysaloon.uz` | `VITE_API_URL` **o‘chirish** (nginx `/api/v1` ni API ga uzatadi) |
+| barber | `https://partner.mysaloon.uz` | `VITE_API_URL=https://api.mysaloon.uz` |
 
 
 
@@ -98,25 +98,21 @@ Mijoz ilovasi: `NEXT_PUBLIC_BARBER_WEB_ORIGIN=https://partner.mysaloon.uz`
 
 
 
-1. **DNS** — frontend domenlar Vercel ga, `api` subdomain Railway ga.
+1. **DNS** — `www`, `mysaloon.uz`, `admin`, `partner` VPS IP siga. `api` Railway da qoladi.
 
-2. **Har bir ilova** — alohida Vercel project: Root Directory `apps/user` / `apps/admin` / `apps/barber`.
+2. **Server** — `sudo bash deploy/vps/deploy-frontends.sh all`, keyin certbot.
 
 3. **Backend** `FRONTEND_*_ORIGIN` — CORS uchun (yuqoridagi ro‘yxat).
 
-4. O‘zgaruvchilarni o‘zgartirgach — Railway va Vercel da **Redeploy**.
+4. O‘zgaruvchilarni o‘zgartirgach — Railway ni qayta chiqaring, frontendni VPS da qayta build qiling.
 
 
 
-## Deploy (masalan Vercel)
+## Deploy (VPS)
 
 
 
-Har bir ilova uchun **alohida Vercel project**: Root Directory mos ravishda `apps/user`, `apps/admin`, yoki `apps/barber`. Environment: `VITE_API_URL` — backend HTTPS manzili.
-
-
-
-Monorepo: Vercelda “Include source files outside root” yoki workspace sozlamalari kerak bo‘lishi mumkin; `package.json` loyiha ildizida, `npm install` ildizdan bajariladi.
+Uchala frontend bitta serverda: `/opt/mysaloon/Mybarber`. User ilova Node (port 3000), admin va partner nginx statik papkasi. Buyruq: `sudo bash deploy/vps/deploy-frontends.sh auto`. API `https://api.mysaloon.uz` da qoladi.
 
 
 

@@ -1,0 +1,39 @@
+name: Deploy frontends to VPS
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/user/**"
+      - "apps/admin/**"
+      - "apps/barber/**"
+      - "packages/**"
+      - "package-lock.json"
+      - "package.json"
+      - "deploy/vps/**"
+      - ".github/workflows/deploy-frontends-vps.yml"
+
+concurrency:
+  group: deploy-frontends-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    if: vars.VPS_HOST != ''
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy on the VPS
+        env:
+          VPS_HOST: ${{ vars.VPS_HOST }}
+          VPS_USER: ${{ vars.VPS_USER }}
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+        run: |
+          if [ -z "$VPS_USER" ] || [ -z "$VPS_SSH_KEY" ]; then
+            echo "VPS_USER variable yoki VPS_SSH_KEY secret yo'q."
+            exit 1
+          fi
+          mkdir -p ~/.ssh
+          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/mysaloon
+          chmod 600 ~/.ssh/mysaloon
+          ssh -o StrictHostKeyChecking=accept-new -i ~/.ssh/mysaloon "$VPS_USER@$VPS_HOST" \
+            "cd /opt/mysaloon/Mybarber && sudo bash deploy/vps/deploy-frontends.sh auto"

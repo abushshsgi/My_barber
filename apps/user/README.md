@@ -14,37 +14,25 @@ http://localhost:3000
 
 Lokal dev: `VITE_API_URL` odatda kerak emas — Vite `/api/v1` ni `127.0.0.1:8000` ga proxy qiladi.
 
-## Vercel deploy (MUHIM)
+## VPS deploy
 
-TanStack Start + Nitro **Build Output API** ishlatadi. Build `.vercel/output` yaratadi.
+User ilova Nitro `node-server` sifatida ishlaydi: `node dist/server/index.mjs` (port 3000). Nginx `www.mysaloon.uz` va `mysaloon.uz` ni shu portga uzatadi. Admin va partner statik SPA.
 
-| Sozlama              | To'g'ri qiymat                   | Noto'g'ri |
-| -------------------- | -------------------------------- | --------- |
-| **Root Directory**   | `apps/user`                      | `dist` ❌ |
-| **Output Directory** | **bo'sh** (Override o'chirilgan) | `dist` ❌ |
-| **Framework Preset** | Other                            | Vite ❌   |
-| **Build Command**    | `npm run build`                  |           |
-| **Install Command**  | `cd ../.. && npm install`        |           |
+Serverda birinchi marta:
 
-Batafsil: yuqoridagi jadval va `scripts/prepare-vercel-output.mjs`.
+```bash
+cd /opt/mysaloon/Mybarber
+sudo bash deploy/vps/deploy-frontends.sh all
+sudo certbot --nginx -d www.mysaloon.uz -d mysaloon.uz -d admin.mysaloon.uz -d partner.mysaloon.uz
+```
 
-### Oq ekran (MIME / main.tsx xatosi)
-
-Agar brauzer `Failed to load module script … main.tsx` yoki `main.jsx` ko'rsatsa:
-
-1. **Root Directory** `apps/user` bo'lishi kerak (repo ildizi emas).
-2. **Output Directory** bo'sh — `dist` yoki `dist/static` qo'ymang (Build Output API ishlatiladi).
-3. **Framework Preset** — **Other**, Vite emas.
-4. Dashboard'dagi **SPA rewrites** (`/(.*) → /index.html`) o'chirilgan bo'lishi kerak — ular `/assets/*.js` ni ham HTML qaytaradi.
-5. `apps/user/index.html` bo'lmasligi kerak — Vercel'da SSR o'rniga statik fayl sifatida chiqadi.
-
-Qayta deploy: `npm run build` (`.vercel/output` yaratiladi) → Vercel redeploy.
+`apps/user/index.html` bo'lmasligi kerak — u SSR o'rniga statik fayl bo'lib chiqadi.
 
 ## Env
 
 | O'zgaruvchi                     | Qiymat                                                                                       |
 | ------------------------------- | -------------------------------------------------------------------------------------------- |
-| `VITE_API_URL`                  | `https://api.mysaloon.uz` (production)                                                       |
+| `VITE_API_URL`                  | productionda bo'sh — so'rovlar shu domen orqali API ga ketadi                                |
 | `VITE_GOOGLE_MAPS_API_KEY`      | Google Maps JS (xarita) — [Cloud Console](https://console.cloud.google.com/google/maps-apis) |
 | `NEXT_PUBLIC_BARBER_WEB_ORIGIN` | `https://partner.mysaloon.uz` (ixtiyoriy)                                                    |
 

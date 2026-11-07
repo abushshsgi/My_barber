@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "node scripts/write-build-version.mjs && vite dev",
-    "build": "node scripts/write-build-version.mjs && vite build && node scripts/prepare-vercel-output.mjs",
+    "build": "node scripts/write-build-version.mjs && vite build",
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
     "lint": "eslint .",

@@ -14,6 +14,7 @@ packages/**/node_modules/
 .env
 .env.local
 .env.production
+deploy/vps/build.env
 .env.tryon-test.local
 backend/secrets/
 .cursor/*

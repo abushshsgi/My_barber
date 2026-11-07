@@ -30,12 +30,7 @@ export default defineConfig({
     },
   },
   nitro: {
-    preset: "vercel",
-    output: {
-      dir: "dist",
-      serverDir: "dist/functions/__server.func",
-      publicDir: "dist/static",
-    },
+    preset: "node-server",
   },
   tanstackStart: {
     server: { entry: "server" },
