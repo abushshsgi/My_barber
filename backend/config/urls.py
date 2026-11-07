@@ -97,6 +97,7 @@ from accounts.address_views import (
     UserAddressSetDefaultView,
 )
 from accounts.account_deletion_views import (
+    AccountDeleteNowView,
     AccountDeletionRequestView,
     AccountDeletionVerifyView,
 )
@@ -108,10 +109,12 @@ from accounts.email_views import (
 from accounts.family_views import FamilyMemberDetailView, FamilyMemberListCreateView
 from accounts.referral_views import MyReferralView
 from subscriptions.views import (
+    SubscriptionCancelView,
     SubscriptionCareAccessView,
     SubscriptionCheckoutView,
     SubscriptionConfirmView,
     SubscriptionMeView,
+    SubscriptionPaymentStatusView,
     SubscriptionPlansView,
     SubscriptionPromoPreviewView,
 )
@@ -668,9 +671,12 @@ api_routes = [
     path("subscriptions/plans/", SubscriptionPlansView.as_view()),
     path("subscriptions/promo-preview/", SubscriptionPromoPreviewView.as_view()),
     path("subscriptions/me/", SubscriptionMeView.as_view()),
+    path("subscriptions/cancel/", SubscriptionCancelView.as_view()),
     path("subscriptions/checkout/", SubscriptionCheckoutView.as_view()),
     path("subscriptions/confirm/", SubscriptionConfirmView.as_view()),
+    path("subscriptions/payments/<str:order_id>/", SubscriptionPaymentStatusView.as_view()),
     path("subscriptions/care-access/", SubscriptionCareAccessView.as_view()),
+    path("users/me/delete/", AccountDeleteNowView.as_view()),
     path("users/me/", MeView.as_view()),
     path("users/me/dashboard/", MeDashboardView.as_view()),
     path("users/me/skin-profile/", SkinProfileMeView.as_view()),

@@ -156,7 +156,7 @@ GEMINI_TTS_MODEL = (
     or "gemini-2.5-flash-preview-tts"
 )
 
-# Try-on rasmi Runware orqali. Chat, tahlil, Explore va Studio Gemini/Vertex da qoladi.
+# Try-on rasm: faqat Vertex AI + gemini-3.1-flash-lite-image
 VERTEX_PROJECT_ID = os.environ.get("VERTEX_PROJECT_ID", "").strip()
 VERTEX_LOCATION = os.environ.get("VERTEX_LOCATION", "us-central1").strip() or "us-central1"
 VERTEX_IMAGE_MODEL = (
@@ -185,25 +185,25 @@ TRYON_QUEUE_ENABLED = os.environ.get("TRYON_QUEUE_ENABLED", "true").lower() in (
     "true",
     "yes",
 )
-# 10k+ odam navbatga sig'adi. To'lib qolsa 503, 429 emas.
-TRYON_QUEUE_MAX_DEPTH = int(os.environ.get("TRYON_QUEUE_MAX_DEPTH", "20000"))
-TRYON_JOB_TTL_SECONDS = int(os.environ.get("TRYON_JOB_TTL_SECONDS", "21600"))
-# Process soni (RAM). Thread soni — slot kutish; Runware slotlari global limiterda.
+# Navbat sig'imi — 50 ta bir vaqtda so'rov uchun 200 yetarli.
+TRYON_QUEUE_MAX_DEPTH = int(os.environ.get("TRYON_QUEUE_MAX_DEPTH", "200"))
+TRYON_JOB_TTL_SECONDS = int(os.environ.get("TRYON_JOB_TTL_SECONDS", "3600"))
+# Process soni (RAM). Thread soni — slot kutish; Vertex slotlari global limiterda.
 try:
-    _tryon_workers = int(os.environ.get("TRYON_WORKER_COUNT", "3") or "3")
+    _tryon_workers = int(os.environ.get("TRYON_WORKER_COUNT", "2") or "2")
 except ValueError:
-    _tryon_workers = 3
-TRYON_WORKER_COUNT = max(1, min(_tryon_workers, 8))
+    _tryon_workers = 2
+TRYON_WORKER_COUNT = max(1, min(_tryon_workers, 4))
 try:
-    _tryon_concurrency = int(os.environ.get("TRYON_WORKER_CONCURRENCY", "8") or "8")
+    _tryon_concurrency = int(os.environ.get("TRYON_WORKER_CONCURRENCY", "4") or "4")
 except ValueError:
-    _tryon_concurrency = 8
-TRYON_WORKER_CONCURRENCY = max(1, min(_tryon_concurrency, 32))
+    _tryon_concurrency = 4
+TRYON_WORKER_CONCURRENCY = max(1, min(_tryon_concurrency, 8))
 try:
-    _tryon_provider_conc = int(os.environ.get("TRYON_PROVIDER_CONCURRENCY", "8") or "8")
+    _tryon_provider_conc = int(os.environ.get("TRYON_PROVIDER_CONCURRENCY", "3") or "3")
 except ValueError:
-    _tryon_provider_conc = 8
-TRYON_PROVIDER_CONCURRENCY = max(1, min(_tryon_provider_conc, 32))
+    _tryon_provider_conc = 3
+TRYON_PROVIDER_CONCURRENCY = max(1, min(_tryon_provider_conc, 3))
 try:
     _tryon_max_retries = int(os.environ.get("TRYON_MAX_RETRIES", "6") or "6")
 except ValueError:
@@ -239,35 +239,6 @@ IMAGE_PROVIDER_FALLBACK = os.environ.get("IMAGE_PROVIDER_FALLBACK", "false").low
     "true",
     "yes",
 )
-# Morf Try-On. Boshqa image provider ga fallback yo'q.
-TRYON_PROVIDER = (os.environ.get("TRYON_PROVIDER", "runware").strip().lower() or "runware")
-RUNWARE_API_KEY = os.environ.get("RUNWARE_API_KEY", "").strip()
-RUNWARE_API_URL = (
-    os.environ.get("RUNWARE_API_URL", "https://api.runware.ai/v1").strip()
-    or "https://api.runware.ai/v1"
-)
-RUNWARE_TRYON_MODEL = (
-    os.environ.get("RUNWARE_TRYON_MODEL", "runware:400@2").strip() or "runware:400@2"
-)
-# 400@2 to'lsa 400@6, u ham to'lsa 400@4. To'rtinchi ID berilsa vergul bilan qo'shiladi.
-RUNWARE_TRYON_FALLBACK_MODELS = os.environ.get(
-    "RUNWARE_TRYON_FALLBACK_MODELS", "runware:400@6,runware:400@4"
-).strip()
-try:
-    _runware_width = int(os.environ.get("RUNWARE_TRYON_WIDTH", "1024") or "1024")
-except ValueError:
-    _runware_width = 1024
-try:
-    _runware_height = int(os.environ.get("RUNWARE_TRYON_HEIGHT", "1024") or "1024")
-except ValueError:
-    _runware_height = 1024
-try:
-    _runware_timeout = int(os.environ.get("RUNWARE_TRYON_TIMEOUT", "120") or "120")
-except ValueError:
-    _runware_timeout = 120
-RUNWARE_TRYON_WIDTH = max(128, min(_runware_width, 2048))
-RUNWARE_TRYON_HEIGHT = max(128, min(_runware_height, 2048))
-RUNWARE_TRYON_TIMEOUT = max(30, min(_runware_timeout, 240))
 
 # Morf AI kvota. Default o‘chiq — faqat lokal test uchun "true" qiling.
 MORPH_ENTITLEMENT_BYPASS = os.environ.get("MORPH_ENTITLEMENT_BYPASS", "false").lower() in (
@@ -275,8 +246,8 @@ MORPH_ENTITLEMENT_BYPASS = os.environ.get("MORPH_ENTITLEMENT_BYPASS", "false").l
     "true",
     "yes",
 )
-# Parvarish / Tarkib (ingredient-scan). Mobil CARE_ACCESS_DEBUG bilan mos — production oldidan false.
-MORPH_CARE_ACCESS_DEBUG = os.environ.get("MORPH_CARE_ACCESS_DEBUG", "true").lower() in (
+# Parvarish / Tarkib — default yopiq. Faqat lokal test uchun true.
+MORPH_CARE_ACCESS_DEBUG = os.environ.get("MORPH_CARE_ACCESS_DEBUG", "false").lower() in (
     "1",
     "true",
     "yes",
@@ -463,8 +434,32 @@ CLICK_SERVICE_ID = os.environ.get("CLICK_SERVICE_ID", "").strip()
 CLICK_SECRET_KEY = os.environ.get("CLICK_SECRET_KEY", "").strip()
 PAYME_MERCHANT_ID = os.environ.get("PAYME_MERCHANT_ID", "").strip()
 PAYME_SECRET_KEY = os.environ.get("PAYME_SECRET_KEY", "").strip()
+# Haqiqiy kassa: PAYME_ALLOW_LIVE=true + live URL + merchant id/key (VPS .env).
+PAYME_ALLOW_LIVE = os.environ.get("PAYME_ALLOW_LIVE", "").lower() in ("1", "true", "yes")
+_payme_sandbox_raw = os.environ.get("PAYME_SANDBOX", "").strip().lower()
+if _payme_sandbox_raw:
+    PAYME_SANDBOX = _payme_sandbox_raw in ("1", "true", "yes")
+else:
+    PAYME_SANDBOX = not PAYME_ALLOW_LIVE
+PAYME_API_URL = os.environ.get("PAYME_API_URL", "").strip()
+PAYME_CHECKOUT_BASE = os.environ.get("PAYME_CHECKOUT_BASE", "").strip()
+PAYME_IKPU_CODE = os.environ.get("PAYME_IKPU_CODE", "").strip()
+PAYME_PACKAGE_CODE = os.environ.get("PAYME_PACKAGE_CODE", "").strip()
+PAYME_VAT_PERCENT = os.environ.get("PAYME_VAT_PERCENT", "").strip()
+PAYME_RECEIPT_TTL_MINUTES = int(os.environ.get("PAYME_RECEIPT_TTL_MINUTES", "60"))
+# Google Play Billing huquqiy tasdiq bo'lmaguncha Android tashqi AI obuna checkout yopiq.
+GOOGLE_PLAY_AI_IAP_ELIGIBLE = os.environ.get("GOOGLE_PLAY_AI_IAP_ELIGIBLE", "").lower() in (
+    "1",
+    "true",
+    "yes",
+)
 
-# Manual card top-up (company receiving card) — users transfer here, admin confirms
+# Manual card top-up (company receiving card) — o'chirilgan: karta/chek UI yo'q.
+MANUAL_CARD_TOPUP_ENABLED = os.environ.get("MANUAL_CARD_TOPUP_ENABLED", "").lower() in (
+    "1",
+    "true",
+    "yes",
+)
 WALLET_RECEIVING_CARD_NUMBER = os.environ.get("WALLET_RECEIVING_CARD_NUMBER", "").strip()
 WALLET_RECEIVING_CARDHOLDER = os.environ.get("WALLET_RECEIVING_CARDHOLDER", "").strip()
 WALLET_RECEIVING_BANK = os.environ.get("WALLET_RECEIVING_BANK", "").strip()

@@ -35,7 +35,14 @@ from ai.services.gemini_care_plan import generate_care_plan
 from ai.services.gemini_growth_forecast import generate_hair_growth_forecast
 from ai.services.gemini_sos_style import generate_sos_fix
 from ai.unthrottled import UnthrottledAPIView
-from subscriptions.services import can_use_morph_care
+from subscriptions.services import morph_care_block
+
+
+def _deny_care(user, *, pro: bool = False):
+    blocked = morph_care_block(user=user, pro=pro)
+    if blocked:
+        return Response(blocked, status=status.HTTP_403_FORBIDDEN)
+    return None
 
 
 def _liked_ids_for(user, product_ids: list[int]) -> set[int]:
@@ -71,6 +78,7 @@ class HairCareProfileMeView(UnthrottledAPIView):
     permission_classes = [IsAuthenticatedCustomer]
 
     def get(self, request):
+        # Soch holati — obunasiz ham so'raladi va saqlanadi (chat limiti alohida).
         profile, _ = HairCareProfile.objects.get_or_create(user=request.user)
         return Response(HairCareProfileSerializer(profile).data)
 
@@ -227,6 +235,9 @@ class CareProductLikeToggleView(UnthrottledAPIView):
     permission_classes = [IsAuthenticatedCustomer]
 
     def post(self, request, product_id: int):
+        denied = _deny_care(request.user)
+        if denied:
+            return denied
         try:
             product = CareProduct.objects.get(pk=product_id, is_published=True)
         except CareProduct.DoesNotExist:
@@ -305,11 +316,9 @@ class CarePlanGenerateView(UnthrottledAPIView):
     permission_classes = [IsAuthenticatedCustomer]
 
     def get(self, request):
-        if not can_use_morph_care(request.user):
-            return Response(
-                {"detail": "Morf AI Parvarish Pro obunasida mavjud."},
-                status=status.HTTP_403_FORBIDDEN,
-            )
+        denied = _deny_care(request.user)
+        if denied:
+            return denied
         profile = HairCareProfile.objects.filter(user=request.user).first()
         product_ids = _sorted_ids(request.query_params.get("product_ids"))
         profile_key = (request.query_params.get("profile_key") or "").strip()
@@ -319,17 +328,18 @@ class CarePlanGenerateView(UnthrottledAPIView):
         return Response(_plan_payload(row, product_ids=product_ids, profile_key=profile_key))
 
     def delete(self, request):
+        denied = _deny_care(request.user)
+        if denied:
+            return denied
         UserCarePlan.objects.filter(user=request.user).delete()
         return Response({"ok": True})
 
     def post(self, request):
         user = request.user
 
-        if not can_use_morph_care(user):
-            return Response(
-                {"detail": "Morf AI Parvarish Pro obunasida mavjud."},
-                status=status.HTTP_403_FORBIDDEN,
-            )
+        denied = _deny_care(user)
+        if denied:
+            return denied
 
         profile = HairCareProfile.objects.filter(user=user).first()
         condition = (request.data.get("condition") or (profile.condition if profile else "") or "").strip()
@@ -467,11 +477,9 @@ class CareGrowthForecastView(UnthrottledAPIView):
     permission_classes = [IsAuthenticatedCustomer]
 
     def post(self, request):
-        if not can_use_morph_care(request.user):
-            return Response(
-                {"detail": "Morf AI Parvarish Pro obunasida mavjud."},
-                status=status.HTTP_403_FORBIDDEN,
-            )
+        denied = _deny_care(request.user)
+        if denied:
+            return denied
         try:
             current_length_cm = float(request.data.get("current_length_cm"))
         except (TypeError, ValueError):
@@ -540,11 +548,9 @@ class CareSosFixView(UnthrottledAPIView):
     permission_classes = [IsAuthenticatedCustomer]
 
     def post(self, request):
-        if not can_use_morph_care(request.user):
-            return Response(
-                {"detail": "Morf AI Parvarish Pro obunasida mavjud."},
-                status=status.HTTP_403_FORBIDDEN,
-            )
+        denied = _deny_care(request.user, pro=True)
+        if denied:
+            return denied
 
         time_available = str(request.data.get("time_available") or "").strip().lower()
         if time_available not in SOS_TIME_CHOICES:
@@ -633,11 +639,9 @@ class CareShelfEstimateView(UnthrottledAPIView):
     permission_classes = [IsAuthenticatedCustomer]
 
     def post(self, request):
-        if not can_use_morph_care(request.user):
-            return Response(
-                {"detail": "Morf AI Parvarish Pro obunasida mavjud."},
-                status=status.HTTP_403_FORBIDDEN,
-            )
+        denied = _deny_care(request.user, pro=True)
+        if denied:
+            return denied
         ser = CareShelfEstimateInputSerializer(data=request.data)
         ser.is_valid(raise_exception=True)
         d = ser.validated_data
@@ -659,11 +663,9 @@ class CareShelfListCreateView(UnthrottledAPIView):
     permission_classes = [IsAuthenticatedCustomer]
 
     def get(self, request):
-        if not can_use_morph_care(request.user):
-            return Response(
-                {"detail": "Morf AI Parvarish Pro obunasida mavjud."},
-                status=status.HTTP_403_FORBIDDEN,
-            )
+        denied = _deny_care(request.user, pro=True)
+        if denied:
+            return denied
         rows = (
             CareShelfItem.objects.filter(user=request.user)
             .select_related("product")
@@ -678,11 +680,9 @@ class CareShelfListCreateView(UnthrottledAPIView):
         return Response({"items": items, "summary": summary})
 
     def post(self, request):
-        if not can_use_morph_care(request.user):
-            return Response(
-                {"detail": "Morf AI Parvarish Pro obunasida mavjud."},
-                status=status.HTTP_403_FORBIDDEN,
-            )
+        denied = _deny_care(request.user, pro=True)
+        if denied:
+            return denied
         product = None
         raw_product_id = request.data.get("product_id")
         if raw_product_id not in (None, "", 0, "0"):
@@ -738,11 +738,9 @@ class CareShelfDetailView(UnthrottledAPIView):
     permission_classes = [IsAuthenticatedCustomer]
 
     def patch(self, request, item_id: int):
-        if not can_use_morph_care(request.user):
-            return Response(
-                {"detail": "Morf AI Parvarish Pro obunasida mavjud."},
-                status=status.HTTP_403_FORBIDDEN,
-            )
+        denied = _deny_care(request.user, pro=True)
+        if denied:
+            return denied
         row = CareShelfItem.objects.filter(user=request.user, id=item_id).select_related("product").first()
         if not row:
             return Response({"detail": "Topilmadi"}, status=404)
@@ -801,11 +799,9 @@ class CareShelfDetailView(UnthrottledAPIView):
         return Response({"item": _serialize_shelf_item(request, row), "usage": usage})
 
     def delete(self, request, item_id: int):
-        if not can_use_morph_care(request.user):
-            return Response(
-                {"detail": "Morf AI Parvarish Pro obunasida mavjud."},
-                status=status.HTTP_403_FORBIDDEN,
-            )
+        denied = _deny_care(request.user, pro=True)
+        if denied:
+            return denied
         row = CareShelfItem.objects.filter(user=request.user, id=item_id).first()
         if not row:
             return Response(status=status.HTTP_204_NO_CONTENT)
@@ -837,6 +833,9 @@ class CareMyProductListCreateView(UnthrottledAPIView):
     permission_classes = [IsAuthenticatedCustomer]
 
     def get(self, request):
+        denied = _deny_care(request.user)
+        if denied:
+            return denied
         rows = (
             CareUserProduct.objects.filter(user=request.user)
             .select_related("product")
@@ -845,6 +844,9 @@ class CareMyProductListCreateView(UnthrottledAPIView):
         return Response([_serialize_my_product(request, r) for r in rows if r.product_id])
 
     def post(self, request):
+        denied = _deny_care(request.user)
+        if denied:
+            return denied
         try:
             product_id = int(request.data.get("product_id"))
         except (TypeError, ValueError):
@@ -875,6 +877,9 @@ class CareMyProductDeleteView(UnthrottledAPIView):
     permission_classes = [IsAuthenticatedCustomer]
 
     def delete(self, request, product_id: int):
+        denied = _deny_care(request.user)
+        if denied:
+            return denied
         deleted, _ = CareUserProduct.objects.filter(
             user=request.user, product_id=product_id
         ).delete()

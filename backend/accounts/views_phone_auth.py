@@ -76,12 +76,12 @@ def _parse_phone_auth_intent(raw: object) -> str:
 
 
 def _get_or_create_user_by_phone(phone: str) -> tuple[User, bool]:
-    user = User.objects.filter(phone=phone).first()
+    user = User.objects.filter(phone=phone, is_active=True).first()
     if user:
         return user, False
 
     email = phone_to_internal_email(phone)
-    user = User.objects.filter(email__iexact=email).first()
+    user = User.objects.filter(email__iexact=email, is_active=True).first()
     if user:
         if not user.phone:
             user.phone = phone
@@ -99,10 +99,10 @@ def _get_or_create_user_by_phone(phone: str) -> tuple[User, bool]:
             )
             return user, True
     except IntegrityError:
-        user = User.objects.filter(phone=phone).first()
+        user = User.objects.filter(phone=phone, is_active=True).first()
         if user:
             return user, False
-        user = User.objects.filter(email__iexact=email).first()
+        user = User.objects.filter(email__iexact=email, is_active=True).first()
         if user:
             if not user.phone:
                 user.phone = phone
@@ -200,7 +200,7 @@ class PhoneCheckView(APIView):
         if not phone:
             return Response({"detail": "Telefon raqami noto'g'ri."}, status=400)
 
-        user = User.objects.filter(phone=phone, role=User.Role.USER).first()
+        user = User.objects.filter(phone=phone, role=User.Role.USER, is_active=True).first()
         return Response(
             {
                 "phone": phone,
@@ -234,7 +234,7 @@ class PhonePasswordLoginView(APIView):
                 status=429,
             )
 
-        user = User.objects.filter(phone=phone, role=User.Role.USER).first()
+        user = User.objects.filter(phone=phone, role=User.Role.USER, is_active=True).first()
         if not user or not user.has_usable_password() or not user.check_password(password):
             record_password_failure(phone)
             return Response(

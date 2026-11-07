@@ -18,8 +18,9 @@ from django.utils import timezone
 
 from config.redis_url import get_redis_url, redis_blocking_client_kwargs, redis_client_kwargs
 
-from .errors import AiStyleError
-from .runware_tryon import generate_tryon_multiview, generate_tryon_preview
+from .gemini_style import AiStyleError
+from .gemini_tryon import generate_tryon_multiview, generate_tryon_preview
+from .image_provider import provider_health, queue_generation_context
 from ..usage_log import record_ai_generation
 
 logger = logging.getLogger(__name__)
@@ -63,9 +64,8 @@ _CLIENT_MESSAGES = {
 }
 
 SLOT_WAIT_SECONDS = 10.0
-# 10k+ navbat bir necha soat turishi mumkin. Job shu oynada tugamaydi.
-MAX_QUEUE_WAIT_SECONDS = 6 * 3600
-PROVIDER_CONCURRENCY_CAP = 32
+MAX_QUEUE_WAIT_SECONDS = 900
+PROVIDER_CONCURRENCY_CAP = 3
 
 _thread_local = threading.local()
 _WORKER_ID = (os.environ.get("TRYON_WORKER_ID") or "").strip() or uuid.uuid4().hex[:12]
@@ -419,7 +419,11 @@ def _task_to_meta(task) -> dict[str, Any]:
     preview = ""
     try:
         if task.result_photo:
-            preview = task.result_photo.url or ""
+            raw = task.result_photo.read()
+            if raw:
+                import base64
+
+                preview = "data:image/jpeg;base64," + base64.b64encode(raw).decode("ascii")
     except Exception:
         preview = ""
     return {
@@ -465,7 +469,8 @@ def _payload_from_db(job_id: str) -> dict[str, Any] | None:
 
 
 def _active_provider_name() -> str:
-    return "runware"
+    health = provider_health()
+    return str(health.get("active") or "vertex")
 
 
 def acquire_provider_slot(client, provider: str, *, wait_seconds: float = 2.0) -> bool:
@@ -865,6 +870,7 @@ def mark_worker_heartbeat(client) -> None:
 
 def queue_metrics(client=None) -> dict[str, Any]:
     client = client or _redis_client()
+    health = provider_health()
     if client is None:
         return {
             "enabled": False,
@@ -872,7 +878,7 @@ def queue_metrics(client=None) -> dict[str, Any]:
             "pending": 0,
             "processing": 0,
             "delayed": 0,
-            "tryon_provider": "runware",
+            "provider": health,
         }
     raw = {}
     try:
@@ -922,9 +928,7 @@ def queue_metrics(client=None) -> dict[str, Any]:
         "last_generation_ms": int(raw.get("last_generation_ms") or 0),
         "cooldown_until": _cooldown_until(client, _active_provider_name()),
         "worker_health": {"alive": alive, "count": len(alive)},
-        "tryon_provider": "runware",
-        "tryon_model": str(getattr(settings, "RUNWARE_TRYON_MODEL", "") or ""),
-        "runware_configured": bool(getattr(settings, "RUNWARE_API_KEY", "")),
+        "provider_availability": health,
         "active_slots": int(client.get(_sem_key(_active_provider_name())) or 0),
         "provider_concurrency_limit": _provider_concurrency(),
         "max_depth": _max_queue_depth(),
@@ -969,7 +973,7 @@ def _finish_terminal(client, job_id: str, meta: dict[str, Any]) -> None:
 
 
 def process_next_tryon_job(*, block_seconds: int = 5) -> bool:
-    """Worker: navbatdan 1 ta ishni olib Runware ga yuboradi."""
+    """Worker: navbatdan 1 ta ishni olib Vertex ga yuboradi."""
     from django.db import close_old_connections
 
     close_old_connections()
@@ -1118,120 +1122,108 @@ def process_next_tryon_job(*, block_seconds: int = 5) -> bool:
     _notify_user(int(meta.get("user_id") or 0), {**generating_meta, "phase": PHASE_GENERATING})
 
     try:
-        job_kind = str(payload.get("job_kind") or meta.get("job_kind") or "tryon")
-        if job_kind == "multiview":
-            multi = generate_tryon_multiview(
-                front_data_url=str(payload.get("image") or ""),
+        with queue_generation_context():
+            job_kind = str(payload.get("job_kind") or meta.get("job_kind") or "tryon")
+            if job_kind == "multiview":
+                multi = generate_tryon_multiview(
+                    front_data_url=str(payload.get("image") or ""),
+                    audience=str(payload.get("audience") or "unisex"),
+                    slug=str(payload.get("slug") or ""),
+                    title=str(payload.get("title") or ""),
+                )
+                views = multi.get("views") or {}
+                meta["status"] = STATUS_COMPLETED
+                meta["preview_image"] = views.get("front") or str(payload.get("image") or "")
+                meta["views"] = views
+                meta.pop("detail", None)
+                meta["retryable"] = False
+                record_ai_generation(
+                    user_id=int(meta.get("user_id") or 0) or None,
+                    kind="tryon",
+                    status="success",
+                    prompt=str(multi.get("prompt") or "tryon_multiview"),
+                    style_id=str(meta.get("style_id") or ""),
+                    style_title=str(meta.get("style_title") or ""),
+                    model=str(multi.get("model") or ""),
+                    provider=str(multi.get("provider") or ""),
+                    job_id=job_id,
+                    prompt_tokens=int(multi.get("prompt_tokens") or 0),
+                    candidates_tokens=int(multi.get("candidates_tokens") or 0),
+                    thoughts_tokens=int(multi.get("thoughts_tokens") or 0),
+                    total_tokens=int(multi.get("total_tokens") or 0),
+                    cost_usd=multi.get("cost_usd") or 0,
+                    tokens_estimated=bool(multi.get("tokens_estimated")),
+                    latency_ms=int(multi.get("latency_ms") or 0),
+                )
+                _metric_incr(client, "completed_total")
+                _metric_incr(client, "latency_sum_ms", int(multi.get("latency_ms") or 0))
+                _metric_incr(client, "latency_count")
+                client.hset(METRICS_KEY, "last_generation_ms", int(multi.get("latency_ms") or 0))
+                meta["updated_at"] = _now_iso()
+                _save_result_photo(job_id, str(meta.get("preview_image") or ""), views)
+                _finish_terminal(client, job_id, meta)
+                return True
+
+            result = generate_tryon_preview(
+                selfie_data_url=str(payload.get("image") or ""),
                 audience=str(payload.get("audience") or "unisex"),
                 slug=str(payload.get("slug") or ""),
                 title=str(payload.get("title") or ""),
+                reference_image_url=payload.get("reference_image_url"),
             )
-            views = multi.get("views") or {}
             meta["status"] = STATUS_COMPLETED
-            meta["preview_image"] = views.get("front") or str(payload.get("image") or "")
-            meta["views"] = views
+            meta["preview_image"] = result.preview_image
             meta.pop("detail", None)
             meta["retryable"] = False
             record_ai_generation(
                 user_id=int(meta.get("user_id") or 0) or None,
                 kind="tryon",
                 status="success",
-                prompt=str(multi.get("prompt") or "tryon_multiview"),
+                prompt=result.prompt,
                 style_id=str(meta.get("style_id") or ""),
                 style_title=str(meta.get("style_title") or ""),
-                model=str(multi.get("model") or ""),
-                provider=str(multi.get("provider") or ""),
+                model=result.model,
+                provider=result.provider,
                 job_id=job_id,
-                prompt_tokens=int(multi.get("prompt_tokens") or 0),
-                candidates_tokens=int(multi.get("candidates_tokens") or 0),
-                thoughts_tokens=int(multi.get("thoughts_tokens") or 0),
-                total_tokens=int(multi.get("total_tokens") or 0),
-                cost_usd=multi.get("cost_usd") or 0,
-                tokens_estimated=bool(multi.get("tokens_estimated")),
-                latency_ms=int(multi.get("latency_ms") or 0),
+                prompt_tokens=result.prompt_tokens,
+                candidates_tokens=result.candidates_tokens,
+                thoughts_tokens=result.thoughts_tokens,
+                total_tokens=result.total_tokens,
+                cost_usd=result.cost_usd,
+                tokens_estimated=result.tokens_estimated,
+                latency_ms=result.latency_ms,
             )
             _metric_incr(client, "completed_total")
-            _metric_incr(client, "latency_sum_ms", int(multi.get("latency_ms") or 0))
+            _metric_incr(client, "latency_sum_ms", int(result.latency_ms or 0))
             _metric_incr(client, "latency_count")
-            client.hset(METRICS_KEY, "last_generation_ms", int(multi.get("latency_ms") or 0))
+            client.hset(METRICS_KEY, "last_generation_ms", int(result.latency_ms or 0))
+            user_id = int(meta.get("user_id") or 0) or None
+            if user_id and result.preview_image:
+                try:
+                    from accounts.models import User
+                    from ai.tryon_persist import persist_tryon_generation
+
+                    user = User.objects.filter(pk=user_id).first()
+                    if user:
+                        persist_tryon_generation(
+                            user=user,
+                            after_image=result.preview_image,
+                            before_image=str(payload.get("image") or ""),
+                            style_id=str(meta.get("style_id") or ""),
+                            title=str(meta.get("style_title") or ""),
+                            persona_id=str(meta.get("persona_id") or ""),
+                        )
+                except Exception:
+                    logger.exception("Try-on generation persist failed job=%s", job_id)
+            _save_result_photo(job_id, result.preview_image)
             meta["updated_at"] = _now_iso()
-            _save_result_photo(job_id, str(meta.get("preview_image") or ""), views)
             _finish_terminal(client, job_id, meta)
+            logger.info("Try-on job finished: %s status=%s", job_id, meta.get("status"))
             return True
-
-        result = generate_tryon_preview(
-            selfie_data_url=str(payload.get("image") or ""),
-            audience=str(payload.get("audience") or "unisex"),
-            slug=str(payload.get("slug") or ""),
-            title=str(payload.get("title") or ""),
-            reference_image_url=payload.get("reference_image_url"),
-        )
-        meta["status"] = STATUS_COMPLETED
-        meta["preview_image"] = result.preview_image
-        meta.pop("detail", None)
-        meta["retryable"] = False
-        record_ai_generation(
-            user_id=int(meta.get("user_id") or 0) or None,
-            kind="tryon",
-            status="success",
-            prompt=result.prompt,
-            style_id=str(meta.get("style_id") or ""),
-            style_title=str(meta.get("style_title") or ""),
-            model=result.model,
-            provider=result.provider,
-            job_id=job_id,
-            prompt_tokens=result.prompt_tokens,
-            candidates_tokens=result.candidates_tokens,
-            thoughts_tokens=result.thoughts_tokens,
-            total_tokens=result.total_tokens,
-            cost_usd=result.cost_usd,
-            tokens_estimated=result.tokens_estimated,
-            latency_ms=result.latency_ms,
-        )
-        _metric_incr(client, "completed_total")
-        _metric_incr(client, "latency_sum_ms", int(result.latency_ms or 0))
-        _metric_incr(client, "latency_count")
-        client.hset(METRICS_KEY, "last_generation_ms", int(result.latency_ms or 0))
-        user_id = int(meta.get("user_id") or 0) or None
-        if user_id and result.preview_image:
-            try:
-                from accounts.models import User
-                from ai.tryon_persist import persist_tryon_generation
-
-                user = User.objects.filter(pk=user_id).first()
-                if user:
-                    persist_tryon_generation(
-                        user=user,
-                        after_image=result.preview_image,
-                        before_image=str(payload.get("image") or ""),
-                        style_id=str(meta.get("style_id") or ""),
-                        title=str(meta.get("style_title") or ""),
-                        persona_id=str(meta.get("persona_id") or ""),
-                    )
-            except Exception:
-                logger.exception("Try-on generation persist failed job=%s", job_id)
-        _save_result_photo(job_id, result.preview_image)
-        meta["updated_at"] = _now_iso()
-        _finish_terminal(client, job_id, meta)
-        logger.info("Try-on job finished: %s status=%s", job_id, meta.get("status"))
-        return True
     except AiStyleError as exc:
         attempts = _provider_attempts(meta) or 1
         max_attempts = int(meta.get("max_attempts") or _max_retries())
         retryable = bool(getattr(exc, "retryable", exc.status in (429, 502, 503, 504)))
-        # Runware 429 foydalanuvchiga chiqmaydi: navbat tugaguncha qayta uriniladi.
-        if exc.status == 429 and not _job_too_old(meta):
-            delay = min(45.0, _provider_backoff_seconds(attempts, getattr(exc, "retry_after", None)))
-            set_provider_cooldown(client, provider, delay)
-            meta["detail"] = "Navbat saqlanadi. Birozdan so'ng qayta uriniladi."
-            _requeue_later(client, job_id, meta, float(delay), reason="provider")
-            logger.warning(
-                "Try-on job rate-limited (%s) provider_attempt=%s delay=%.1fs",
-                job_id,
-                attempts,
-                float(delay),
-            )
-            return True
         if retryable and attempts < max_attempts:
             delay = _provider_backoff_seconds(attempts, getattr(exc, "retry_after", None))
             if exc.status == 429:

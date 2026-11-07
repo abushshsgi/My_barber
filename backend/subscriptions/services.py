@@ -26,8 +26,10 @@ from subscriptions.plans import (
     FREE_MORPH_TRYON,
     FREE_TRYON_LAUNCH_AT,
     PLAN_CODES,
+    PLAN_PRO,
     get_plan,
     is_plan_upgrade,
+    plan_rank,
     serialize_plan,
 )
 
@@ -160,6 +162,7 @@ def entitlement_snapshot(plan_code: str) -> dict[str, Any]:
         "morph_voice": True,
         "family_members_max": plan["family_members_max"],
         "morph_care": plan["morph_care"],
+        "morph_care_pro": bool(plan.get("morph_care_pro")),
         "badge": plan["badge"],
         "period_days": plan["period_days"],
     }
@@ -176,36 +179,136 @@ def current_period_bounds(now=None) -> tuple[date, date]:
 
 
 def expire_if_needed(sub: UserSubscription) -> UserSubscription:
-    """Muddati o'tgan faol obunani expired qilish."""
-    if sub.status != UserSubscription.Status.ACTIVE or not sub.ends_at:
+    """Muddati o'tgan faol yoki bekor qilingan obunani expired qilish."""
+    if not sub.ends_at:
         return sub
     if timezone.now() < sub.ends_at:
+        return sub
+    can_expire = sub.status == UserSubscription.Status.ACTIVE or sub.is_user_cancelled
+    if not can_expire:
         return sub
 
     with transaction.atomic():
         locked = UserSubscription.objects.select_for_update().get(pk=sub.pk)
-        if locked.status == UserSubscription.Status.ACTIVE and locked.ends_at:
-            if timezone.now() >= locked.ends_at:
-                locked.status = UserSubscription.Status.EXPIRED
-                locked.save(update_fields=["status", "updated_at"])
-                log_event(
-                    action=SubscriptionEvent.Action.EXPIRED,
-                    user=locked.user,
-                    subscription=locked,
-                    detail={"ends_at": locked.ends_at.isoformat()},
-                )
+        still_open = locked.status == UserSubscription.Status.ACTIVE or locked.is_user_cancelled
+        if still_open and locked.ends_at and timezone.now() >= locked.ends_at:
+            locked.status = UserSubscription.Status.EXPIRED
+            locked.save(update_fields=["status", "updated_at"])
+            log_event(
+                action=SubscriptionEvent.Action.EXPIRED,
+                user=locked.user,
+                subscription=locked,
+                detail={"ends_at": locked.ends_at.isoformat()},
+            )
         return locked
 
 
+def subscription_payment_is_valid(sub: UserSubscription) -> bool:
+    """Refunded to'lov Premium bermaydi. Admin/trial to'lovsiz ham yaroqli."""
+    if sub.status == UserSubscription.Status.REFUNDED:
+        return False
+    return not sub.payments.filter(status=SubscriptionPayment.Status.REFUNDED).exists()
+
+
+def has_premium_access(sub: UserSubscription | None, now=None) -> bool:
+    """Faol yoki bekor qilingan, lekin muddati tugamagan va to'lovi yaroqli."""
+    if sub is None:
+        return False
+    now = now or timezone.now()
+    if sub.ends_at and now >= sub.ends_at:
+        expire_if_needed(sub)
+        return False
+    if not sub.grants_premium_at(now):
+        return False
+    return subscription_payment_is_valid(sub)
+
+
 def get_active_subscription(user: User) -> UserSubscription | None:
-    qs = UserSubscription.objects.filter(
-        user=user, status=UserSubscription.Status.ACTIVE
+    qs = UserSubscription.objects.filter(user=user).filter(
+        Q(status=UserSubscription.Status.ACTIVE)
+        | Q(status=UserSubscription.Status.CANCELLED, cancelled_at__isnull=False)
     ).order_by("-ends_at", "-created_at")
-    for sub in qs[:5]:
+    for sub in qs[:8]:
         sub = expire_if_needed(sub)
-        if sub.is_currently_active:
+        if has_premium_access(sub):
             return sub
     return None
+
+
+def get_latest_subscription(user: User) -> UserSubscription | None:
+    return UserSubscription.objects.filter(user=user).order_by("-created_at", "-ends_at").first()
+
+
+CANCEL_STILL_PREMIUM_MESSAGE = (
+    "Obuna bekor qilindi. Premium muddati tugaguncha ishlaydi."
+)
+CANCEL_BLOCK_REBUY_MESSAGE = (
+    "Premium hali faol. Yangi obuna muddat tugagach xarid qilinadi."
+)
+CANCEL_MISSING_MESSAGE = "Bekor qilish uchun faol obuna topilmadi."
+
+
+@transaction.atomic
+def cancel_user_subscription(*, user: User, request=None) -> UserSubscription:
+    """Foydalanuvchi o'z obunasini bekor qiladi.
+
+    Payme refund/cancel chaqirilmaydi, to'lov yozuvi o'zgarmaydi.
+    Takroriy so'rov xato qaytarmaydi. Qator qulfi bir vaqtdagi so'rovlarni ketma-ket qiladi.
+    """
+    now = timezone.now()
+    rows = list(
+        UserSubscription.objects.select_for_update()
+        .filter(user=user)
+        .filter(
+            Q(status=UserSubscription.Status.ACTIVE)
+            | Q(status=UserSubscription.Status.CANCELLED, cancelled_at__isnull=False)
+        )
+        .order_by("-ends_at", "-created_at")
+    )
+    rows = rows[:8]
+    chosen: UserSubscription | None = None
+    for row in rows:
+        if row.ends_at and now >= row.ends_at:
+            row.status = UserSubscription.Status.EXPIRED
+            row.save(update_fields=["status", "updated_at"])
+            log_event(
+                action=SubscriptionEvent.Action.EXPIRED,
+                user=row.user,
+                subscription=row,
+                detail={"ends_at": row.ends_at.isoformat(), "via": "cancel"},
+                request=request,
+            )
+            continue
+        if not row.grants_premium_at(now) or not subscription_payment_is_valid(row):
+            continue
+        chosen = row
+        break
+
+    if chosen is None:
+        raise ValueError(CANCEL_MISSING_MESSAGE)
+
+    if chosen.is_user_cancelled:
+        return chosen
+
+    ends_at = chosen.ends_at
+    chosen.status = UserSubscription.Status.CANCELLED
+    chosen.cancelled_at = now
+    chosen.auto_renew = False
+    chosen.ends_at = ends_at
+    chosen.save(update_fields=["status", "cancelled_at", "auto_renew", "ends_at", "updated_at"])
+    log_event(
+        action=SubscriptionEvent.Action.CANCELLED,
+        user=user,
+        subscription=chosen,
+        actor=f"user:{user.pk}",
+        detail={
+            "ends_at": chosen.ends_at.isoformat() if chosen.ends_at else None,
+            "payme_untouched": True,
+            "refund": False,
+        },
+        request=request,
+    )
+    return chosen
 
 
 def checkout_plan_error(*, user: User, plan_code: str) -> str | None:
@@ -214,7 +317,11 @@ def checkout_plan_error(*, user: User, plan_code: str) -> str | None:
     if code not in PLAN_CODES:
         return "plan_code starter, plus yoki pro bo'lishi kerak."
     sub = get_active_subscription(user)
-    if sub and not is_plan_upgrade(code, sub.plan_code):
+    if not sub:
+        return None
+    if sub.is_user_cancelled:
+        return CANCEL_BLOCK_REBUY_MESSAGE
+    if not is_plan_upgrade(code, sub.plan_code):
         return (
             "Joriy tarifdan past yoki teng tarifga o'tib bo'lmaydi. "
             "Yuqori tarifni tanlang."
@@ -269,18 +376,15 @@ def _free_chat_tokens_used(user: User) -> int:
 
 
 def _free_tryon_used(user: User) -> int:
-    raw = getattr(user, "morph_free_tryon_used", None)
-    if raw is not None:
-        try:
-            return max(0, int(raw or 0))
-        except (TypeError, ValueError):
-            pass
+    used_at = getattr(user, "morph_free_tryon_used_at", None)
+    if used_at is not None:
+        return 1
     stored = (
         User.objects.filter(pk=user.pk)
-        .values_list("morph_free_tryon_used", flat=True)
+        .values_list("morph_free_tryon_used_at", flat=True)
         .first()
     )
-    return max(0, int(stored or 0))
+    return 1 if stored else 0
 
 
 def free_tryon_snapshot(user: User) -> dict[str, Any]:
@@ -336,10 +440,12 @@ def usage_snapshot(user: User, entitlements: dict[str, Any] | None) -> dict[str,
 
 
 def build_me_payload(user: User) -> dict[str, Any]:
+    from subscriptions.payme_service import reconcile_pending_payme
+
+    reconcile_pending_payme(user)
     sub = get_active_subscription(user)
-    entitlements = (sub.entitlements if sub else None) or (
-        entitlement_snapshot(sub.plan_code) if sub else {}
-    )
+    # Katalog flaglari jonli reja asosida — eski entitlements snapshot chetlab o'tmasin.
+    entitlements = entitlement_snapshot(sub.plan_code) if sub else {}
     ref_on = referral_generation_enabled()
     credits = _referral_credits(user)
     free_tryon = free_tryon_payload(user, has_subscription=bool(sub))
@@ -350,8 +456,8 @@ def build_me_payload(user: User) -> dict[str, Any]:
             "referral_credits": credits,
         }
     else:
-        free_tryon = free_tryon_snapshot(user)
-        free_left = int(free_tryon["morph_free_tryon_remaining"]) if free_tryon_available(user) else 0
+        tryon_counts = free_tryon_snapshot(user)
+        free_left = int(tryon_counts["morph_free_tryon_remaining"]) if free_tryon_available(user) else 0
         period = usage_snapshot(
             user,
             {
@@ -361,7 +467,7 @@ def build_me_payload(user: User) -> dict[str, Any]:
         )
         usage = {
             **period,
-            **free_tryon,
+            **tryon_counts,
             "is_free_tier": True,
             "locked": credits <= 0 and not free_left,
             "referral_credits": credits,
@@ -396,13 +502,28 @@ def build_me_payload(user: User) -> dict[str, Any]:
     allowed = bool(sub) or credits > 0 or bool(free_left)
     chat = usage
     chat_remaining = int(chat.get("morph_chat_tokens_remaining") or 0)
+    last = None
+    last_status = "none"
+    if not sub:
+        last_row = get_latest_subscription(user)
+        if last_row:
+            last = serialize_subscription(last_row)
+            last_status = last_row.status
     return {
         "has_active": bool(sub),
+        "is_premium": bool(sub),
+        "status": sub.status if sub else last_status,
+        "auto_renew": bool(sub.auto_renew) if sub else False,
+        "expires_at": sub.ends_at.isoformat() if sub and sub.ends_at else None,
+        "cancelled_at": sub.cancelled_at.isoformat() if sub and sub.cancelled_at else None,
+        "can_cancel": bool(sub and sub.status == UserSubscription.Status.ACTIVE and not sub.cancelled_at),
         "subscription": serialize_subscription(sub) if sub else None,
+        "last_subscription": last,
         "entitlements": entitlements if sub else {},
         "usage": usage,
         "badge": entitlements.get("badge") if sub else None,
         "morph_care": bool(entitlements.get("morph_care")) if sub else False,
+        "morph_care_pro": bool(entitlements.get("morph_care_pro")) if sub else False,
         "family_members_max": entitlements.get("family_members_max") if sub else 0,
         "family_unlimited": entitlements.get("family_members_max") is None if sub else False,
         "days_remaining": days_remaining,
@@ -432,6 +553,12 @@ def serialize_subscription(sub: UserSubscription) -> dict[str, Any]:
         delta = sub.ends_at - now
         days_remaining = max(0, int(delta.total_seconds() // 86400))
     is_trial = sub.source == UserSubscription.Source.REFERRAL_TRIAL
+    premium = has_premium_access(sub, now)
+    can_cancel = (
+        sub.status == UserSubscription.Status.ACTIVE
+        and not sub.cancelled_at
+        and premium
+    )
     return {
         "id": str(sub.pk),
         "plan_code": sub.plan_code,
@@ -441,9 +568,15 @@ def serialize_subscription(sub: UserSubscription) -> dict[str, Any]:
         "is_trial": is_trial,
         "starts_at": sub.starts_at.isoformat() if sub.starts_at else None,
         "ends_at": sub.ends_at.isoformat() if sub.ends_at else None,
+        "expires_at": sub.ends_at.isoformat() if sub.ends_at else None,
+        "cancelled_at": sub.cancelled_at.isoformat() if sub.cancelled_at else None,
         "days_remaining": days_remaining,
         "price_uzs": int(sub.price_uzs),
-        "auto_renew": sub.auto_renew,
+        "auto_renew": bool(sub.auto_renew),
+        "is_premium": premium,
+        "can_cancel": can_cancel,
+        "payment_provider": sub.payment_provider or "",
+        "payment_id": sub.payment_order_id or sub.payment_transaction_id or "",
         "entitlements": sub.entitlements or entitlement_snapshot(sub.plan_code),
         "deactivated_at": sub.deactivated_at.isoformat() if sub.deactivated_at else None,
         "deactivated_reason": sub.deactivated_reason,
@@ -475,13 +608,13 @@ def activate_subscription(
     now = timezone.now()
     ends = now + timedelta(days=days)
 
-    # Mavjud faol obunalarni to'xtatish (upgrade/replace)
+    # Mavjud faol obunalarni to'xtatish (upgrade/replace) — user-cancel emas.
     active_qs = UserSubscription.objects.select_for_update().filter(
         user=user,
         status=UserSubscription.Status.ACTIVE,
     )
     for old in active_qs:
-        old.status = UserSubscription.Status.CANCELLED
+        old.status = UserSubscription.Status.DEACTIVATED
         old.deactivated_at = now
         old.deactivated_reason = "Replaced by new subscription"
         old.deactivated_by = actor
@@ -612,6 +745,10 @@ def family_member_limit_for(user: User) -> int | None:
     return ents.get("family_members_max", 0)
 
 
+CARE_PLUS_REQUIRED = "Morf AI Parvarish Plus obunasida mavjud."
+CARE_PRO_REQUIRED = "SOS va Javon faqat Pro obunasida mavjud."
+
+
 def can_use_morph_care(user: User) -> bool:
     from django.conf import settings
 
@@ -623,8 +760,39 @@ def can_use_morph_care(user: User) -> bool:
     sub = get_active_subscription(user)
     if not sub:
         return False
-    ents = sub.entitlements or entitlement_snapshot(sub.plan_code)
-    return bool(ents.get("morph_care"))
+    plan = get_plan(sub.plan_code)
+    return bool(plan and plan.get("morph_care"))
+
+
+def can_use_morph_care_pro(user: User) -> bool:
+    """SOS / Javon — faqat Pro."""
+    from django.conf import settings
+
+    if getattr(settings, "MORPH_ENTITLEMENT_BYPASS", False):
+        return True
+    if getattr(settings, "MORPH_CARE_ACCESS_DEBUG", False):
+        return True
+
+    sub = get_active_subscription(user)
+    if not sub:
+        return False
+    plan = get_plan(sub.plan_code)
+    if plan and "morph_care_pro" in plan:
+        return bool(plan.get("morph_care_pro"))
+    return plan_rank(sub.plan_code) >= plan_rank(PLAN_PRO)
+
+
+def morph_care_block(*, user: User, pro: bool = False) -> dict[str, str] | None:
+    """None = ruxsat. Aks holda 403 JSON."""
+    if pro:
+        if can_use_morph_care_pro(user):
+            return None
+        if can_use_morph_care(user):
+            return {"detail": CARE_PRO_REQUIRED, "code": "care_pro"}
+        return {"detail": CARE_PLUS_REQUIRED, "code": "care_plus"}
+    if can_use_morph_care(user):
+        return None
+    return {"detail": CARE_PLUS_REQUIRED, "code": "care_plus"}
 
 
 def can_use_morph_voice(user: User) -> bool:

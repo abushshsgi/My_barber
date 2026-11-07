@@ -90,10 +90,13 @@ def pay_with_wallet(*, user: User, plan_code: str, request=None, promo_code: str
     except WalletServiceError:
         raise
 
+    from subscriptions.payme_client import uzs_to_tiyin
+
     payment = SubscriptionPayment.objects.create(
         user=user,
         plan_code=plan_code,
         amount_uzs=price,
+        amount_tiyin=uzs_to_tiyin(price),
         provider="wallet",
         status=SubscriptionPayment.Status.PAID,
         order_id=order_id,
@@ -162,6 +165,20 @@ def start_provider_checkout(
     if blocked:
         raise ValueError(blocked)
 
+    if provider == "payme":
+        from subscriptions.payme_service import start_payme_checkout
+
+        payload = start_payme_checkout(
+            user=user,
+            plan_code=plan_code,
+            request=request,
+            promo_code=promo_code,
+            return_url=return_url,
+        )
+        payload["ok"] = True
+        payload["configured"] = True
+        return payload
+
     priced = resolve_checkout_price(plan_code=plan_code, promo_code=promo_code, user=user)
     price = Decimal(priced["amount_uzs"])
     order_id = build_subscription_order_id(
@@ -176,10 +193,13 @@ def start_provider_checkout(
         return_url=return_url,
     )
 
+    from subscriptions.payme_client import uzs_to_tiyin
+
     payment = SubscriptionPayment.objects.create(
         user=user,
         plan_code=plan_code,
         amount_uzs=price,
+        amount_tiyin=uzs_to_tiyin(price),
         provider=provider,
         status=SubscriptionPayment.Status.PENDING,
         order_id=order_id,
@@ -228,7 +248,6 @@ def start_provider_checkout(
     }
 
 
-@transaction.atomic
 def confirm_provider_payment(
     *,
     user: User,
@@ -249,13 +268,66 @@ def confirm_provider_payment(
     if base is None or amount > base:
         raise ValueError("Narx mos kelmadi — xavfsizlik tekshiruvi.")
 
+    if provider == "payme":
+        from subscriptions.payme_service import PaymePaymentError, sync_payme_payment
+
+        try:
+            # Alohida atomic: terminal holat (bekor/qaytarilgan) rollback qilinmasin.
+            payment = sync_payme_payment(user=user, order_id=order_id, request=request)
+        except PaymePaymentError as exc:
+            raise ValueError(str(exc)) from exc
+        except Exception as exc:
+            from subscriptions.payme_client import PaymeError
+
+            if isinstance(exc, PaymeError):
+                raise ValueError(str(exc)) from exc
+            raise
+        if payment.status == SubscriptionPayment.Status.PAID and payment.subscription_id:
+            sub = payment.subscription
+            assert sub is not None
+            return sub
+        if payment.status == SubscriptionPayment.Status.PENDING:
+            raise ValueError("Payme to'lovi hali tasdiqlanmagan.")
+        if payment.status == SubscriptionPayment.Status.CANCELLED:
+            raise ValueError("Payme to'lovi bekor qilingan.")
+        if payment.status == SubscriptionPayment.Status.EXPIRED:
+            raise ValueError("Payme to'lovi muddati o'tgan.")
+        if payment.status == SubscriptionPayment.Status.REFUNDED:
+            raise ValueError("Payme to'lovi qaytarilgan.")
+        raise ValueError("Payme to'lovi muvaffaqiyatsiz.")
+
+    if provider == "click":
+        raise ValueError("AI Premium Click orqali to'lanmaydi. Payme Subscribe ishlating.")
+
     if provider not in ("click", "payme"):
-        raise ValueError("provider must be click or payme.")
+        raise ValueError("provider payme bo'lishi kerak.")
 
     configured = _provider_configured(provider)  # type: ignore[arg-type]
     if not configured and not settings.DEBUG:
         raise RuntimeError(f"{provider.upper()} hali sozlanmagan.")
 
+    with transaction.atomic():
+        return _confirm_click_payment(
+            user=user,
+            order_id=order_id,
+            provider=provider,
+            plan_code=plan_code,
+            amount=amount,
+            transaction_id=transaction_id,
+            request=request,
+        )
+
+
+def _confirm_click_payment(
+    *,
+    user: User,
+    order_id: str,
+    provider: str,
+    plan_code: str,
+    amount: Decimal,
+    transaction_id: str,
+    request=None,
+) -> UserSubscription:
     payment = (
         SubscriptionPayment.objects.select_for_update()
         .filter(order_id=order_id, user=user)

@@ -128,12 +128,12 @@ def _apply_google_profile(user: User, profile: GoogleProfile) -> None:
 
 
 def get_or_create_user_from_google(profile: GoogleProfile) -> tuple[User, bool]:
-    user = User.objects.filter(google_sub=profile.sub, role=User.Role.USER).first()
+    user = User.objects.filter(google_sub=profile.sub, role=User.Role.USER, is_active=True).first()
     if user:
         _apply_google_profile(user, profile)
         return user, False
 
-    user = User.objects.filter(email__iexact=profile.email, role=User.Role.USER).first()
+    user = User.objects.filter(email__iexact=profile.email, role=User.Role.USER, is_active=True).first()
     if user:
         _apply_google_profile(user, profile)
         return user, False
@@ -153,11 +153,11 @@ def get_or_create_user_from_google(profile: GoogleProfile) -> tuple[User, bool]:
             )
             return user, True
     except IntegrityError:
-        user = User.objects.filter(google_sub=profile.sub, role=User.Role.USER).first()
+        user = User.objects.filter(google_sub=profile.sub, role=User.Role.USER, is_active=True).first()
         if user:
             _apply_google_profile(user, profile)
             return user, False
-        user = User.objects.filter(email__iexact=profile.email, role=User.Role.USER).first()
+        user = User.objects.filter(email__iexact=profile.email, role=User.Role.USER, is_active=True).first()
         if user:
             _apply_google_profile(user, profile)
             return user, False

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+
 import secrets
 from datetime import timedelta
 
@@ -37,7 +38,7 @@ class AccountDeletionRequest(models.Model):
 
     # Processing
     processed_at = models.DateTimeField(null=True, blank=True)
-    user_id = models.PositiveIntegerField(null=True, blank=True, db_index=True)  # Set after verification
+    user_id = models.BigIntegerField(null=True, blank=True, db_index=True)
 
     # Meta
     ip_address = models.GenericIPAddressField(null=True, blank=True)

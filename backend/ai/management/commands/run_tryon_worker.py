@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 
 class Command(BaseCommand):
-    help = "Try-on Redis navbatini tinglaydi va Runware generatsiyani bajaradi."
+    help = "Try-on Redis navbatini tinglaydi va Vertex generatsiyani bajaradi."
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -47,10 +47,9 @@ class Command(BaseCommand):
         raw = options["concurrency"]
         concurrency = max(1, min(int(raw if raw is not None else configured), 8))
         slots = int(getattr(settings, "TRYON_PROVIDER_CONCURRENCY", 3) or 3)
-        model = getattr(settings, "RUNWARE_TRYON_MODEL", "runware:400@2")
         self.stdout.write(
-            f"Try-on worker ishga tushdi (provider=runware, model={model}, "
-            f"poll={poll}s, threads={concurrency}, global_provider_slots={slots})..."
+            f"Try-on worker ishga tushdi (poll={poll}s, threads={concurrency}, "
+            f"global_provider_slots={slots})..."
         )
         self._recover()
 

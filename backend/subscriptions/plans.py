@@ -16,6 +16,12 @@ PLAN_RANK = {
     PLAN_PLUS: 2,
     PLAN_PRO: 3,
 }
+# Yagona narx. Ilova, preview va Payme shu so'mni ko'rsatadi. Chegirma qo'shilmaydi.
+OFFICIAL_PRICE_UZS = {
+    PLAN_STARTER: 9990,
+    PLAN_PLUS: 29990,
+    PLAN_PRO: 69990,
+}
 
 # Unlimited oila a'zolari uchun sentinel (DB/JSON da None saqlanadi).
 FAMILY_UNLIMITED = None
@@ -34,24 +40,23 @@ _PLANS: dict[str, dict[str, Any]] = {
         "name_uz": "Starter",
         "name_ru": "Starter",
         "name_en": "Starter",
-        "price_uzs": Decimal("9990"),
+        "price_uzs": Decimal(OFFICIAL_PRICE_UZS[PLAN_STARTER]),
         "period_days": 30,
         "morph_ai_monthly": 5,
         "morph_studio_monthly": 0,
         "morph_chat_tokens_monthly": 50_000,
         "family_members_max": 0,
         "morph_care": False,
+        "morph_care_pro": False,
         "badge": "basic",
         "sort_order": 1,
         "highlight": False,
         "features": [
             _feat("morph_ai", "Morf AI try-on — oyiga 5 marta", "Morf AI try-on — 5 раз в месяц", "Morf AI try-on — 5 times / month"),
             _feat("chat", "Morf AI chat — 50 000 token / oy", "Morf AI чат — 50 000 токенов / мес", "Morf AI chat — 50,000 tokens / month"),
-            _feat("voice", "Jonli ovozli suhbat", "Живой голосовой чат", "Live voice chat"),
-            _feat("badge", "Oddiy tasdiqlangan belgi", "Обычный значок подтверждения", "Standard verified badge"),
             _feat("studio", "Morf AI Studio — yo'q", "Morf AI Studio — нет", "Morf AI Studio — not included", included=False),
-            _feat("family", "Oila a'zolari — yo'q", "Члены семьи — нет", "Family members — not included", included=False),
-            _feat("care", "Morf AI Parvarish — yo'q", "Morf AI Уход — нет", "Morf AI Care — not included", included=False),
+            _feat("care", "Parvarish, Tarkib, ob-havo — yo'q", "Уход, состав, погода — нет", "Care, scan, weather — not included", included=False),
+            _feat("sos", "SOS va Javon — yo'q", "SOS и полка — нет", "SOS and Shelf — not included", included=False),
         ],
     },
     PLAN_PLUS: {
@@ -59,24 +64,27 @@ _PLANS: dict[str, dict[str, Any]] = {
         "name_uz": "Plus",
         "name_ru": "Plus",
         "name_en": "Plus",
-        "price_uzs": Decimal("39990"),
+        "price_uzs": Decimal(OFFICIAL_PRICE_UZS[PLAN_PLUS]),
         "period_days": 30,
         "morph_ai_monthly": 20,
         "morph_studio_monthly": 30,
         "morph_chat_tokens_monthly": 150_000,
         "family_members_max": 2,
-        "morph_care": False,
+        "morph_care": True,
+        "morph_care_pro": False,
         "badge": "plus",
         "sort_order": 2,
         "highlight": True,
         "features": [
             _feat("morph_ai", "Morf AI try-on — oyiga 20 marta", "Morf AI try-on — 20 раз в месяц", "Morf AI try-on — 20 times / month"),
             _feat("chat", "Morf AI chat — 150 000 token / oy", "Morf AI чат — 150 000 токенов / мес", "Morf AI chat — 150,000 tokens / month"),
-            _feat("voice", "Jonli ovozli suhbat", "Живой голосовой чат", "Live voice chat"),
-            _feat("studio", "Morf AI Studio — 30 marta", "Morf AI Studio — 30 раз", "Morf AI Studio — 30 times"),
-            _feat("family", "Oila a'zolari — 2 kishi (qo'shish va bron)", "Семья — 2 человека (добавить и записаться)", "Family members — 2 people (add and book)"),
-            _feat("badge", "Premium tasdiqlangan belgi", "Премиум значок подтверждения", "Premium verified badge"),
-            _feat("care", "Morf AI Parvarish — yo'q", "Morf AI Уход — нет", "Morf AI Care — not included", included=False),
+            _feat("studio", "Morf AI Studio — sochni AI tahriri (30 marta)", "Morf AI Studio — ИИ-редактор (30 раз)", "Morf AI Studio — AI edits (30 times)"),
+            _feat("care", "Shaxsiy parvarish rejasi", "Личный план ухода", "Personal care plan"),
+            _feat("scan", "Tarkib skani — mahsulot sizga mosmi", "Скан состава — подходит ли продукт", "Ingredient scan — does it fit you"),
+            _feat("weather", "Ob-havo bo'yicha soch himoyasi", "Защита волос по погоде", "Weather-based hair protection"),
+            _feat("growth", "Soch o'sish prognozi", "Прогноз роста волос", "Hair growth forecast"),
+            _feat("sos", "SOS — faqat Pro", "SOS — только Pro", "SOS — Pro only", included=False),
+            _feat("shelf", "Javon — faqat Pro", "Полка — только Pro", "Shelf — Pro only", included=False),
         ],
     },
     PLAN_PRO: {
@@ -84,25 +92,27 @@ _PLANS: dict[str, dict[str, Any]] = {
         "name_uz": "Pro",
         "name_ru": "Pro",
         "name_en": "Pro",
-        "price_uzs": Decimal("89990"),
+        "price_uzs": Decimal(OFFICIAL_PRICE_UZS[PLAN_PRO]),
         "period_days": 30,
         "morph_ai_monthly": 100,
         "morph_studio_monthly": 150,
         "morph_chat_tokens_monthly": 500_000,
         "family_members_max": FAMILY_UNLIMITED,
         "morph_care": True,
+        "morph_care_pro": True,
         "badge": "pro",
         "sort_order": 3,
         "highlight": False,
         "features": [
             _feat("morph_ai", "Morf AI try-on — oyiga 100 marta", "Morf AI try-on — 100 раз в месяц", "Morf AI try-on — 100 times / month"),
             _feat("chat", "Morf AI chat — 500 000 token / oy", "Morf AI чат — 500 000 токенов / мес", "Morf AI chat — 500,000 tokens / month"),
-            _feat("voice", "Jonli ovozli suhbat", "Живой голосовой чат", "Live voice chat"),
-            _feat("studio", "Morf AI Studio — 150 marta", "Morf AI Studio — 150 раз", "Morf AI Studio — 150 times"),
-            _feat("family", "Oila a'zolari — cheksiz qo'shish va bron", "Семья — безлимитное добавление и запись", "Family members — unlimited add and book"),
-            _feat("care", "Morf AI Parvarish", "Morf AI Уход", "Morf AI Care"),
-            _feat("badge", "Eng yuqori tasdiqlangan belgi", "Максимальный значок подтверждения", "Highest verified badge"),
-            _feat("priority", "Ustuvor qo'llab-quvvatlash", "Приоритетная поддержка", "Priority support"),
+            _feat("studio", "Morf AI Studio — 150 ta tahrir", "Morf AI Studio — 150 правок", "Morf AI Studio — 150 edits"),
+            _feat("care", "Shaxsiy parvarish rejasi", "Личный план ухода", "Personal care plan"),
+            _feat("scan", "Tarkib skani — mahsulot sizga mosmi", "Скан состава — подходит ли продукт", "Ingredient scan — does it fit you"),
+            _feat("weather", "Ob-havo bo'yicha soch himoyasi", "Защита волос по погоде", "Weather-based hair protection"),
+            _feat("growth", "Soch o'sish prognozi", "Прогноз роста волос", "Hair growth forecast"),
+            _feat("sos", "SOS — 60 soniyada yomon kun yechimi", "SOS — решение за 60 секунд", "SOS — 60-second bad-hair fix"),
+            _feat("shelf", "Javon — mahsulot tugashini kuzatish", "Полка — когда закончится средство", "Shelf — refill tracker"),
         ],
     },
 }
@@ -146,15 +156,24 @@ def list_plans() -> list[dict[str, Any]]:
 def serialize_plan(plan: dict[str, Any]) -> dict[str, Any]:
     """API uchun JSON-safe plan."""
     out = deepcopy(plan)
-    out["price_uzs"] = int(plan["price_uzs"])
+    out["price_uzs"] = official_price_uzs(str(plan["code"]))
     fam = plan.get("family_members_max")
     out["family_members_max"] = fam  # None = unlimited
     out["family_unlimited"] = fam is None
     return out
 
 
+def official_price_uzs(code: str) -> int:
+    """Payme va UI uchun yagona so'm. Boshqa summa yuborilmaydi."""
+    key = (code or "").strip().lower()
+    price = OFFICIAL_PRICE_UZS.get(key)
+    if price is None:
+        raise ValueError("Noto'g'ri obuna rejasi.")
+    return int(price)
+
+
 def plan_price(code: str) -> Decimal | None:
-    plan = get_plan(code)
-    if not plan:
+    key = (code or "").strip().lower()
+    if key not in OFFICIAL_PRICE_UZS:
         return None
-    return Decimal(plan["price_uzs"])
+    return Decimal(OFFICIAL_PRICE_UZS[key])

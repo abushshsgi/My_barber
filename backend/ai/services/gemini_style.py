@@ -40,7 +40,7 @@ HAIR_COLORS = frozenset(
 HAIR_TEXTURES = frozenset({"straight", "wavy", "curly", "coily"})
 BEARD_LEVELS = frozenset({"none", "light", "full"})
 DETECTED_GENDERS = frozenset({"male", "female", "unclear"})
-GEMINI_VISION_MODEL = "gemini-2.5-flash"
+GEMINI_VISION_MODEL = "gemini-3.5-flash-lite"
 NO_FACE_MESSAGE = "Yuzdan boshqa narsa yuklandi. Iltimos, yuz shaklingizni yuboring!"
 
 HAIR_COLOR_HEX = {

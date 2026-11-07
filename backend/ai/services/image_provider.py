@@ -1,8 +1,7 @@
-"""Image provider selection for Explore, Studio, and other non-try-on images.
+"""Unified image generation provider selection (Vertex primary; Studio optional).
 
-Morf Try-On does not use this selector. It calls Runware only (TRYON_PROVIDER).
-IMAGE_GENERATION_PROVIDER=runware stays rejected so Explore and Studio cannot
-switch to Runware or drop their Gemini/Vertex configuration.
+Runware is not enabled: no verified production credentials or request contract
+in this codebase. IMAGE_GENERATION_PROVIDER=runware is rejected.
 """
 
 from __future__ import annotations

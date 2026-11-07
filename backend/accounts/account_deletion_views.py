@@ -9,13 +9,60 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from accounts.account_deletion import AccountDeletionRequest
-from accounts.models import User
+from accounts.customer_permissions import IsAuthenticatedCustomer
+from accounts.models import User, UserSession
 from accounts.phone_auth import normalize_uz_phone
+from accounts.session_service import revoke_refresh_jti
 
 __all__ = [
     "AccountDeletionRequestView",
     "AccountDeletionVerifyView",
+    "AccountDeleteNowView",
 ]
+
+
+def delete_customer_account(user: User) -> None:
+    """Akkauntni o'chiradi. Qayta Google/telefon kirishi yangi bo'sh hisob ochadi."""
+    from django.db.models.deletion import ProtectedError
+
+    from ai.privacy_prefs import wipe_user_morph_data
+
+    for session in UserSession.objects.filter(user=user):
+        revoke_refresh_jti(session.refresh_jti)
+    try:
+        wipe_user_morph_data(user_id=user.pk, kind="all")
+    except Exception:
+        pass
+    try:
+        with transaction.atomic():
+            user.delete()
+        return
+    except ProtectedError:
+        pass
+    user.email = f"deleted-{user.pk}@deleted.mysaloon.invalid"
+    user.username = f"deleted-{user.pk}"
+    user.phone = None
+    user.google_sub = None
+    user.referral_code = None
+    user.is_active = False
+    user.full_name = ""
+    user.first_name = ""
+    user.last_name = ""
+    user.set_unusable_password()
+    user.save()
+
+
+class AccountDeleteNowView(APIView):
+    """POST /api/v1/users/me/delete/ — hozir o'chirish, keyin login yangi hisob."""
+
+    permission_classes = [IsAuthenticatedCustomer]
+
+    def post(self, request):
+        user = request.user
+        if getattr(user, "role", None) != User.Role.USER:
+            return Response({"code": "forbidden", "detail": "Forbidden."}, status=status.HTTP_403_FORBIDDEN)
+        delete_customer_account(user)
+        return Response({"ok": True, "code": "account_deleted"})
 
 
 
