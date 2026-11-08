@@ -1834,6 +1834,23 @@
       "medium": "Средняя длина",
       "long": "Длинные волосы"
     },
+    "hairColors": {
+      "black": "Чёрный",
+      "dark_brown": "Тёмно-каштановый",
+      "brown": "Каштановый",
+      "light_brown": "Светло-каштановый",
+      "blonde": "Блонд",
+      "red": "Рыжий",
+      "gray": "Седой",
+      "other": "Другой"
+    },
+    "generateCta": "Generatsiya qilish",
+    "recsCount": "{{count}} рекомендации",
+    "copyLink": "Копировать",
+    "shareFriendsTitle": "Поделиться с друзьями",
+    "shareFriendsHint": "Поделитесь этим образом",
+    "aiChatAdvice": "AI чат — получить совет",
+    "moreStylesNextHint": "Следующие стили, подходящие вашему лицу",
     "reasons": {
       "default": "Подходит форме лица и типу волос",
       "t1": "Смягчает контуры, современный fade",

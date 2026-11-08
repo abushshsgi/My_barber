@@ -14,7 +14,6 @@ import { useMorphLimitGate } from "@/hooks/use-morph-limit-gate";
 import { useExplorePersona } from "@/hooks/use-explore-persona";
 import { useHairstyle } from "@/hooks/use-hairstyles";
 import { getHairstyleImageUrl } from "@/lib/hairstyles/catalog";
-import { prefetchFaceLandmarker } from "@/components/ai-style/useFaceLandmarker";
 import { isMorphPlanLimitMessage } from "@/lib/morph-plan-limit";
 import { hasMorphAiOnboarded, markMorphAiOnboarded } from "@/lib/morf-ai-session";
 import { loadSavedAiStyleIds, removeSavedAiStyle, saveAiStyle } from "@/lib/saved-ai-styles";
@@ -80,11 +79,11 @@ export function AiStyleFlow({ audience, menPersonaId: menPersonaIdProp, focusSty
     validatingPreview,
     validating,
     analyzing,
+    summaryReady,
     done,
     result,
     error,
     cameraOpen,
-    faceHint,
     fileRef,
     onFile,
     onCameraCapture,
@@ -92,6 +91,7 @@ export function AiStyleFlow({ audience, menPersonaId: menPersonaIdProp, focusSty
     openCamera,
     closeCamera,
     analyze,
+    acceptSummary,
     generateTryOn,
     updateTryOnPreview,
     reset,
@@ -101,9 +101,6 @@ export function AiStyleFlow({ audience, menPersonaId: menPersonaIdProp, focusSty
   const [onboarded, setOnboarded] = useState(() => hasMorphAiOnboarded());
   const [showCapture, setShowCapture] = useState(() => !hasMorphAiOnboarded());
 
-  useEffect(() => {
-    prefetchFaceLandmarker();
-  }, []);
 
   const displayResult = useMemo(() => {
     if (!result || !focusStyleId || !focusHairstyle) return result;
@@ -141,7 +138,7 @@ export function AiStyleFlow({ audience, menPersonaId: menPersonaIdProp, focusSty
     openFile();
   }, [limitGate, openFile]);
 
-  const step: 1 | 2 | 3 = !photo ? 1 : analyzing || validating ? 2 : done ? 3 : 2;
+  const step: 1 | 2 | 3 = !photo ? 1 : done ? 3 : 2;
   const showHome = onboarded && !showCapture && !photo && !done;
 
   useEffect(() => {
@@ -179,12 +176,6 @@ export function AiStyleFlow({ audience, menPersonaId: menPersonaIdProp, focusSty
     }
     toast.error(error);
   }, [error, limitGate]);
-
-  useEffect(() => {
-    if (photo && faceHint?.source === "camera_scan") {
-      toast.success(t("aiStylePage.faceProfileSaved"));
-    }
-  }, [photo, faceHint, t]);
 
   useEffect(() => {
     if (done) {
@@ -231,6 +222,7 @@ export function AiStyleFlow({ audience, menPersonaId: menPersonaIdProp, focusSty
     validatingPreview,
     validating,
     analyzing,
+    summaryReady,
     done,
     result: displayResult,
     focusStyleId,
@@ -241,6 +233,7 @@ export function AiStyleFlow({ audience, menPersonaId: menPersonaIdProp, focusSty
     openFile: () => void gatedOpenGallery(),
     openCamera: () => void gatedOpenCamera(),
     onAnalyze: () => void analyze(audience),
+    onAcceptSummary: acceptSummary,
     menPersonaId,
     tryOnByStyle: flow.tryOnByStyle,
     tryOnLoadingId: flow.tryOnLoadingId,

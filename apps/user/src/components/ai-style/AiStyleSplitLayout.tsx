@@ -10,8 +10,9 @@ import { Check, ChevronLeft, ChevronRight, Clock, Loader2, X } from "lucide-reac
 import { Fragment, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AiStyleChrome } from "@/components/ai-style/AiStyleChrome";
-import { AiStyleResultsBlock } from "@/components/ai-style/AiStyleResults";
-import { AiStyleScanLine, GalleryValidatingHero } from "@/components/ai-style/AiStyleUi";
+import { FaceAnalysisSummarySheet } from "@/components/ai-style/FaceAnalysisSummarySheet";
+import { AiStyleResultsPage } from "@/components/ai-style/AiStyleResultsPage";
+import { GalleryValidatingHero } from "@/components/ai-style/AiStyleUi";
 import type { AiAnalysisResult } from "@/components/ai-style/ai-style-shared";
 import { refreshAiStyleHistoryCache } from "@/lib/api";
 import {
@@ -39,6 +40,7 @@ export type AiStyleSplitLayoutProps = {
   validatingPreview: string | null;
   validating: boolean;
   analyzing: boolean;
+  summaryReady?: boolean;
   done: boolean;
   result: AiAnalysisResult | null;
   focusStyleId?: string;
@@ -49,6 +51,7 @@ export type AiStyleSplitLayoutProps = {
   openFile: () => void;
   openCamera: () => void;
   onAnalyze: () => void;
+  onAcceptSummary?: () => void;
   tryOnByStyle: Record<string, string>;
   tryOnLoadingId: string | null;
   onGenerateTryOn: (styleId: string, personaId?: ExplorePersonaId, title?: string) => void;
@@ -103,19 +106,6 @@ function StepRail({ step }: { step: 1 | 2 | 3 }) {
           </Fragment>
         );
       })}
-    </div>
-  );
-}
-
-function ResultsHero({ photo }: { photo: string }) {
-  return (
-    <div className="relative h-full w-full overflow-hidden bg-black">
-      <img src={photo} alt="" className="absolute inset-0 h-full w-full object-contain object-center" />
-      <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-transparent" />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-x-0 bottom-0 h-[42%] bg-gradient-to-t from-black/85 via-black/55 to-transparent"
-      />
     </div>
   );
 }
@@ -307,6 +297,7 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
   const tryOnBusy = autoTryOn && props.tryOnLoadingId === props.focusStyleId;
   const busy = props.analyzing || props.validating || tryOnBusy;
   const showResults = props.done && !!props.result;
+  const showSummary = Boolean(props.summaryReady && props.result && props.photo && !showResults);
   const isPhotoPreview = !!props.photo && !showResults;
   const isUploadStep = !props.photo && !showResults;
   const [historyRevealHeight, setHistoryRevealHeight] = useState(getHistoryRevealHeight);
@@ -382,6 +373,45 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
     }
   };
 
+  if (showResults && props.result) {
+    return (
+      <AiStyleResultsPage
+        result={props.result}
+        photo={props.photo}
+        tryOnByStyle={props.tryOnByStyle}
+        tryOnLoadingId={props.tryOnLoadingId}
+        menPersonaId={props.menPersonaId}
+        audience={props.audience}
+        onBack={props.onGoHome ?? props.onReset}
+        onGenerateTryOn={props.onGenerateTryOn}
+      />
+    );
+  }
+
+  if (showSummary && props.result && props.photo) {
+    return (
+      <div className="relative h-[100dvh] overflow-hidden bg-black">
+        <img
+          src={props.photo}
+          alt=""
+          className="absolute inset-0 h-full w-full bg-black object-contain object-center"
+        />
+        <button
+          type="button"
+          onClick={props.onGoHome ?? props.onReset}
+          className="absolute left-3 z-20 grid size-8 place-items-center rounded-full bg-white/94"
+          style={{ top: "max(10px, env(safe-area-inset-top))" }}
+          aria-label={t("common.back")}
+        >
+          <ChevronLeft className="h-[18px] w-[18px] text-[#0A0A0A]" strokeWidth={2.4} />
+        </button>
+        <div className="absolute inset-x-0 bottom-0 z-10">
+          <FaceAnalysisSummarySheet result={props.result} onStartGenerate={() => props.onAcceptSummary?.()} />
+        </div>
+      </div>
+    );
+  }
+
   if (isPhotoPreview) {
     return (
       <div className="relative h-[100dvh] overflow-hidden bg-black">
@@ -390,39 +420,33 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
           alt=""
           className="absolute inset-0 h-full w-full bg-black object-contain object-center"
         />
-        {busy ? <AiStyleScanLine /> : null}
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-x-0 bottom-0 h-[38%] bg-gradient-to-t from-black/75 via-black/35 to-transparent"
-        />
+        <div aria-hidden className="absolute inset-0 bg-black/22" />
         <AiStyleChrome
           tone="dark"
           className="absolute inset-x-0 top-0"
-          onBack={props.onGoHome ?? props.onReset}
+          onBack={busy ? undefined : props.onGoHome ?? props.onReset}
         />
         <div
-          className="absolute inset-x-0 bottom-0 z-10 space-y-3 px-5"
-          style={{ paddingBottom: "max(1.5rem, env(safe-area-inset-bottom))" }}
+          className="absolute inset-x-0 z-10 px-4"
+          style={{ bottom: "max(3.5rem, calc(env(safe-area-inset-bottom) + 2.5rem))" }}
         >
-          {!busy ? (
+          {busy ? (
+            <div className="flex min-h-[54px] items-center justify-center gap-2.5 rounded-[18px] bg-[rgba(30,30,30,0.92)] px-5 text-sm font-bold text-white">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              {props.analyzing
+                ? t("aiStylePage.analyzing")
+                : tryOnBusy
+                  ? t("aiStylePage.tryOnGenerating")
+                  : t("aiStylePage.preparingPhoto")}
+            </div>
+          ) : (
             <button
               type="button"
               onClick={props.onReset}
-              className="mx-auto block rounded-full border border-white/30 bg-black/25 px-4 py-2 text-[11px] font-bold text-white backdrop-blur-md active:opacity-80"
+              className="flex min-h-[54px] w-full items-center justify-center rounded-[18px] bg-[rgba(30,30,30,0.92)] text-sm font-bold text-white"
             >
               {t("aiStylePage.retake")}
             </button>
-          ) : (
-            <div className="overflow-hidden rounded-2xl border border-white/15 bg-black/35 backdrop-blur-md">
-              <div className="flex items-center justify-center gap-2 px-5 py-4 text-sm font-bold text-white">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                {props.analyzing
-                  ? t("aiStylePage.analyzing")
-                  : tryOnBusy
-                    ? t("aiStylePage.tryOnGenerating")
-                    : t("aiStylePage.preparingPhoto")}
-              </div>
-            </div>
           )}
         </div>
       </div>
@@ -432,21 +456,12 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
   return (
     <div className="relative flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-white">
       <div
-        className={cn(
-          "relative shrink-0 overflow-hidden",
-          isUploadStep && "absolute inset-0",
-          showResults && "h-[38dvh]",
-        )}
+        className={cn("relative shrink-0 overflow-hidden", isUploadStep && "absolute inset-0")}
       >
         {isGalleryValidating ? (
           <GalleryValidatingHero previewUrl={props.validatingPreview!} />
-        ) : showResults && props.photo ? (
-          <ResultsHero photo={props.photo} />
         ) : (
           <TryOnHero />
-        )}
-        {isUploadStep ? null : (
-          <AiStyleChrome tone="dark" className="absolute inset-x-0 top-0" onBack={props.onGoHome} />
         )}
       </div>
 
@@ -544,37 +559,6 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
             </motion.div>
           </motion.div>
         </>
-      ) : showResults ? (
-        <div className="relative flex min-h-0 flex-1 flex-col overflow-y-auto bg-white px-5 pb-[max(2rem,env(safe-area-inset-bottom))] pt-4 text-black">
-          <div className="min-h-0 flex-1 text-left">
-            {props.onGoHome ? (
-              <button
-                type="button"
-                onClick={props.onGoHome}
-                className="mb-4 inline-flex items-center gap-1.5 rounded-full border border-border bg-neutral-50 px-3.5 py-2 text-[11px] font-bold text-foreground active:opacity-80"
-              >
-                <ChevronLeft className="h-3.5 w-3.5" strokeWidth={2.5} />
-                {t("aiStylePage.home.backToHome")}
-              </button>
-            ) : null}
-            <AiStyleResultsBlock
-              result={props.result!}
-              saved={props.saved}
-              onToggleSave={props.onToggleSave}
-              onReset={props.onReset}
-              layout="carousel"
-              variant="minimal"
-              audience={props.audience}
-              focusStyleId={props.focusStyleId}
-              menPersonaId={props.menPersonaId}
-              tryOnByStyle={props.tryOnByStyle}
-              tryOnLoadingId={props.tryOnLoadingId}
-              onGenerateTryOn={props.onGenerateTryOn}
-              onUpdateTryOnPreview={props.onUpdateTryOnPreview}
-              selfiePhoto={props.photo}
-            />
-          </div>
-        </div>
       ) : null}
     </div>
   );

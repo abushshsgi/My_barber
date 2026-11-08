@@ -161,14 +161,13 @@ export function AiStyleMoreStyles({
       }
     }
 
-    return out.sort((a, b) => {
-      const personaOrder =
-        personas.findIndex((persona) => persona.id === a.personaId) -
-        personas.findIndex((persona) => persona.id === b.personaId);
-      if (personaOrder !== 0) return personaOrder;
-      return a.entry.titleUz.localeCompare(b.entry.titleUz, "uz");
-    });
-  }, [list, excludeIds]);
+    const ranked = out.sort((a, b) => resolveMatch(b.entry) - resolveMatch(a.entry));
+    for (let i = ranked.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [ranked[i], ranked[j]] = [ranked[j], ranked[i]];
+    }
+    return ranked;
+  }, [list, excludeIds, result.faceShapeKey, result.hairTypeKey, suggestionMatchById]);
 
   if (!onGenerateTryOn) return null;
 

@@ -2,19 +2,8 @@ import { Camera, Loader2, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
-import {
-  evaluateFaceQuality,
-  isFaceReadyForCapture,
-  metricsFromLandmarks,
-  mirrorX,
-  smoothMetrics,
-  type FaceFrameMetrics,
-  type FaceQuality,
-} from "@/components/ai-style/face-scan-utils";
-import { useFaceLandmarker } from "@/components/ai-style/useFaceLandmarker";
 import type { FaceShapeKey } from "@/components/ai-style/ai-style-shared";
 import { ensureCameraPermission } from "@/lib/native-camera";
-import { cn } from "@/lib/utils";
 
 const FACE_CAMERA_ATTR = "data-face-camera";
 
@@ -30,7 +19,6 @@ type Props = {
   onCapture: (payload: CameraCapturePayload) => void;
 };
 
-/** Prefer wide selfie FOV — avoid high-res ideals that force digital zoom on some phones. */
 async function openSelfieStream(): Promise<MediaStream> {
   const attempts: MediaStreamConstraints[] = [
     { audio: false, video: { facingMode: { ideal: "user" } } },
@@ -41,22 +29,7 @@ async function openSelfieStream(): Promise<MediaStream> {
   let lastError: unknown;
   for (const constraints of attempts) {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
-      const track = stream.getVideoTracks()[0];
-      if (track) {
-        try {
-          const caps = track.getCapabilities?.() as
-            (MediaTrackCapabilities & { zoom?: { min: number; max: number } }) | undefined;
-          if (caps?.zoom && typeof caps.zoom.min === "number") {
-            await track.applyConstraints({
-              advanced: [{ zoom: caps.zoom.min } as MediaTrackConstraintSet],
-            });
-          }
-        } catch {
-          /* zoom not supported — keep stream */
-        }
-      }
-      return stream;
+      return await navigator.mediaDevices.getUserMedia(constraints);
     } catch (error) {
       lastError = error;
     }
@@ -64,44 +37,18 @@ async function openSelfieStream(): Promise<MediaStream> {
   throw lastError instanceof Error ? lastError : new Error("Camera unavailable");
 }
 
-function ContourOverlay({ metrics }: { metrics: FaceFrameMetrics | null }) {
-  if (!metrics?.contour.length) return null;
-  const points = metrics.contour
-    .map((p) => {
-      const m = mirrorX(p);
-      return `${(m.x * 100).toFixed(2)}% ${(m.y * 100).toFixed(2)}%`;
-    })
-    .join(", ");
-  return (
-    <div
-      className="pointer-events-none absolute inset-0 z-[2]"
-      aria-hidden
-      style={{
-        clipPath: `polygon(${points})`,
-        boxShadow: "inset 0 0 0 2px rgba(255,255,255,0.85)",
-        background: "rgba(255,255,255,0.06)",
-      }}
-    />
-  );
-}
-
 export function AiStyleCamera({ open, onClose, onCapture }: Props) {
   const { t } = useTranslation();
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const rafRef = useRef<number | null>(null);
-  const metricsRef = useRef<FaceFrameMetrics | null>(null);
-  const smoothRef = useRef<FaceFrameMetrics | null>(null);
   const capturingRef = useRef(false);
   const onCloseRef = useRef(onClose);
+  const onCaptureRef = useRef(onCapture);
   onCloseRef.current = onClose;
+  onCaptureRef.current = onCapture;
 
   const [ready, setReady] = useState(false);
-  const [faceDetected, setFaceDetected] = useState(false);
-  const [quality, setQuality] = useState<FaceQuality>(() => evaluateFaceQuality(null));
   const [cameraError, setCameraError] = useState<string | null>(null);
-
-  const { landmarkerRef, ready: landmarkerReady, error: landmarkerError } = useFaceLandmarker(open);
 
   const handleClose = useCallback((event?: React.SyntheticEvent) => {
     event?.preventDefault();
@@ -116,13 +63,8 @@ export function AiStyleCamera({ open, onClose, onCapture }: Props) {
     if (capturingRef.current) return;
     const video = videoRef.current;
     if (!video || video.videoWidth <= 0) return;
-    // MediaPipe ishlayotganda sifat past bo‘lsa to‘xtatamiz; model yuklanmasa ruxsat.
-    if (!landmarkerError && landmarkerReady && !isFaceReadyForCapture(metricsRef.current)) {
-      return;
-    }
 
     capturingRef.current = true;
-
     const canvas = document.createElement("canvas");
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
@@ -136,14 +78,11 @@ export function AiStyleCamera({ open, onClose, onCapture }: Props) {
     ctx.scale(-1, 1);
     ctx.drawImage(video, 0, 0);
 
-    const metrics = metricsRef.current;
-    onCapture({
+    onCaptureRef.current({
       dataUrl: canvas.toDataURL("image/jpeg", 0.92),
-      faceShapeKey: metrics?.faceShapeKey,
-      ratios: metrics?.ratios,
     });
     handleClose();
-  }, [onCapture, handleClose, landmarkerError, landmarkerReady]);
+  }, [handleClose]);
 
   useEffect(() => {
     if (!open) {
@@ -156,11 +95,7 @@ export function AiStyleCamera({ open, onClose, onCapture }: Props) {
     document.body.style.overflow = "hidden";
 
     setReady(false);
-    setFaceDetected(false);
-    setQuality(evaluateFaceQuality(null));
     setCameraError(null);
-    metricsRef.current = null;
-    smoothRef.current = null;
     capturingRef.current = false;
 
     let cancelled = false;
@@ -190,9 +125,9 @@ export function AiStyleCamera({ open, onClose, onCapture }: Props) {
           video.setAttribute("webkit-playsinline", "true");
           await video.play();
         }
-        setReady(true);
+        if (!cancelled) setReady(true);
       } catch {
-        setCameraError(t("aiStylePage.cameraDenied"));
+        if (!cancelled) setCameraError(t("aiStylePage.cameraDenied"));
       }
     };
 
@@ -200,7 +135,6 @@ export function AiStyleCamera({ open, onClose, onCapture }: Props) {
 
     return () => {
       cancelled = true;
-      if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
       streamRef.current?.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
       document.documentElement.removeAttribute(FACE_CAMERA_ATTR);
@@ -209,59 +143,29 @@ export function AiStyleCamera({ open, onClose, onCapture }: Props) {
   }, [open, t]);
 
   useEffect(() => {
-    if (!open || !ready || capturingRef.current) return;
-
-    const loop = () => {
+    if (!open || !ready) return;
+    let cancelled = false;
+    let attempts = 0;
+    const tick = () => {
+      if (cancelled || capturingRef.current) return;
       const video = videoRef.current;
-      const landmarker = landmarkerRef.current;
-      if (video && video.readyState >= 2 && landmarker && landmarkerReady) {
-        const result = landmarker.detectForVideo(video, performance.now());
-        const landmarks = result.faceLandmarks?.[0];
-        if (landmarks) {
-          const raw = metricsFromLandmarks(landmarks);
-          const frame = raw ? smoothMetrics(smoothRef.current, raw) : null;
-          smoothRef.current = frame;
-          metricsRef.current = frame;
-          setFaceDetected(frame !== null);
-          setQuality(evaluateFaceQuality(frame));
-        } else {
-          smoothRef.current = null;
-          metricsRef.current = null;
-          setFaceDetected(false);
-          setQuality(evaluateFaceQuality(null));
-        }
+      if (video && video.readyState >= 2 && video.videoWidth > 0) {
+        captureFrame();
+        return;
       }
-      rafRef.current = requestAnimationFrame(loop);
+      attempts += 1;
+      if (attempts < 45) {
+        requestAnimationFrame(tick);
+      }
     };
-
-    rafRef.current = requestAnimationFrame(loop);
+    const timer = window.setTimeout(tick, 80);
     return () => {
-      if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
+      cancelled = true;
+      window.clearTimeout(timer);
     };
-  }, [open, ready, landmarkerReady, landmarkerRef]);
+  }, [open, ready, captureFrame]);
 
   if (!open || typeof document === "undefined") return null;
-
-  const canShoot = ready && isFaceReadyForCapture(metricsRef.current);
-  const statusText = !ready
-    ? t("aiStylePage.scanLoading")
-    : landmarkerError
-      ? t("aiStylePage.scanLoadFailed", {
-          defaultValue: "Yuz skaneri yuklanmadi — baribir rasmga olishingiz mumkin",
-        })
-      : quality.reason === "no_face"
-        ? t("aiStylePage.scanCenter")
-        : quality.reason === "too_far"
-          ? t("aiStylePage.scanTooFar", { defaultValue: "Yuzni yaqinroq tuting" })
-          : quality.reason === "too_close"
-            ? t("aiStylePage.scanTooClose", { defaultValue: "Biroz uzoqlashing" })
-            : quality.reason === "turn_face"
-              ? t("aiStylePage.scanTurnFace", { defaultValue: "Yuzni to‘g‘ri kameraga qarang" })
-              : quality.reason === "off_center"
-                ? t("aiStylePage.scanOffCenter", {
-                    defaultValue: "Yuzni oval ichiga joylashtiring",
-                  })
-                : t("aiStylePage.cameraReadyHint", { defaultValue: "Tayyor — rasmga oling" });
 
   return createPortal(
     <div
@@ -293,29 +197,6 @@ export function AiStyleCamera({ open, onClose, onCapture }: Props) {
               autoPlay
               className="h-full w-full scale-x-[-1] object-cover object-center"
             />
-
-            <div className="pointer-events-none absolute inset-0 z-[1]">
-              <div className="absolute left-1/2 top-[40%] -translate-x-1/2 -translate-y-1/2">
-                <div
-                  className={cn(
-                    "rounded-[48%] border-2 transition-colors duration-200",
-                    quality.level === "good"
-                      ? "border-emerald-300"
-                      : faceDetected
-                        ? "border-white"
-                        : "border-white/35",
-                  )}
-                  style={{
-                    width: "min(72vw, 280px)",
-                    height: "min(92vw, 360px)",
-                    boxShadow: "0 0 0 9999px rgba(0,0,0,0.5)",
-                  }}
-                />
-              </div>
-            </div>
-
-            <ContourOverlay metrics={smoothRef.current} />
-
             <button
               type="button"
               onClick={handleClose}
@@ -329,31 +210,17 @@ export function AiStyleCamera({ open, onClose, onCapture }: Props) {
             >
               <X className="h-5 w-5" strokeWidth={2.5} />
             </button>
-
             <div
               className="pointer-events-none absolute inset-x-0 z-20 flex flex-col items-center gap-3 px-6 text-center"
               style={{ bottom: "max(2rem, env(safe-area-inset-bottom))" }}
             >
-              {!ready || !landmarkerReady ? (
-                <Loader2 className="h-5 w-5 animate-spin text-white/70" />
-              ) : null}
-              <p className="text-sm font-medium text-white/90">{statusText}</p>
-              <div className="h-1.5 w-40 overflow-hidden rounded-full bg-white/20">
-                <div
-                  className={cn(
-                    "h-full rounded-full transition-all duration-200",
-                    quality.level === "good"
-                      ? "bg-emerald-400"
-                      : quality.level === "ok"
-                        ? "bg-amber-300"
-                        : "bg-[#F0F0F0]0",
-                  )}
-                  style={{ width: `${Math.round(quality.score * 100)}%` }}
-                />
-              </div>
+              {!ready ? <Loader2 className="h-5 w-5 animate-spin text-white/70" /> : null}
+              <p className="text-sm font-medium text-white/90">
+                {ready ? t("aiStylePage.capturePhoto") : t("aiStylePage.scanLoading")}
+              </p>
               <button
                 type="button"
-                disabled={!ready || (!canShoot && !landmarkerError)}
+                disabled={!ready}
                 onClick={captureFrame}
                 onPointerDown={(event) => event.stopPropagation()}
                 className="pointer-events-auto grid size-[76px] place-items-center rounded-full border-[3px] border-white bg-white/15 shadow-[0_8px_28px_-8px_rgba(0,0,0,0.55)] transition active:scale-95 disabled:opacity-40"
@@ -363,9 +230,6 @@ export function AiStyleCamera({ open, onClose, onCapture }: Props) {
                   <Camera className="h-6 w-6" strokeWidth={2.25} />
                 </span>
               </button>
-              <p className="pointer-events-none text-[11px] font-semibold text-white/65">
-                {t("aiStylePage.capturePhoto")}
-              </p>
             </div>
           </>
         )}

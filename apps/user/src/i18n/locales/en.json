@@ -1832,6 +1832,23 @@
       "medium": "Medium hair",
       "long": "Long hair"
     },
+    "hairColors": {
+      "black": "Black",
+      "dark_brown": "Dark brown",
+      "brown": "Brown",
+      "light_brown": "Light brown",
+      "blonde": "Blonde",
+      "red": "Red",
+      "gray": "Gray",
+      "other": "Other"
+    },
+    "generateCta": "Generate",
+    "recsCount": "{{count}} suggestions",
+    "copyLink": "Copy",
+    "shareFriendsTitle": "Share with friends",
+    "shareFriendsHint": "Share this look",
+    "aiChatAdvice": "AI chat — get advice",
+    "moreStylesNextHint": "More styles that fit your face",
     "reasons": {
       "default": "Matches your face shape and hair type",
       "t1": "Softens contours with a modern fade balance",

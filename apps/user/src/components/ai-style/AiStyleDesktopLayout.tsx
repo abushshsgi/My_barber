@@ -14,7 +14,9 @@ import {
 import { Fragment, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { AiStyleSplitLayoutProps } from "@/components/ai-style/AiStyleSplitLayout";
-import { AiStyleResultsBlock } from "@/components/ai-style/AiStyleResults";
+import { AiStyleResultsPage } from "@/components/ai-style/AiStyleResultsPage";
+import { FaceAnalysisRings } from "@/components/ai-style/FaceAnalysisRings";
+import { FaceAnalysisSummarySheet } from "@/components/ai-style/FaceAnalysisSummarySheet";
 import { AiStyleScanLine, GalleryValidatingHero } from "@/components/ai-style/AiStyleUi";
 import { getAiStyleHeroUrl } from "@/lib/cover-images";
 import { refreshAiStyleHistoryCache } from "@/lib/api";
@@ -259,7 +261,8 @@ export function AiStyleDesktopLayout(props: AiStyleSplitLayoutProps) {
   const tryOnBusy = autoTryOn && props.tryOnLoadingId === props.focusStyleId;
   const busy = props.analyzing || props.validating || tryOnBusy;
   const showResults = props.done && !!props.result;
-  const isPhotoPreview = !!props.photo && !showResults;
+  const showSummary = Boolean(props.summaryReady && props.result && props.photo && !showResults);
+  const isPhotoPreview = !!props.photo && !showResults && !showSummary;
   const isUploadStep = !props.photo && !showResults;
   const isGalleryValidating = props.validating && !!props.validatingPreview;
 
@@ -281,7 +284,7 @@ export function AiStyleDesktopLayout(props: AiStyleSplitLayoutProps) {
           <div
             className={cn(
               "relative w-full overflow-hidden rounded-[28px] border border-border/50 bg-surface shadow-[0_20px_60px_-24px_rgba(15,15,15,0.25)]",
-              isPhotoPreview || showResults
+              isPhotoPreview || showResults || showSummary
                 ? "aspect-[3/4] max-h-full max-w-[min(100%,520px)]"
                 : "h-full min-h-[420px]",
             )}
@@ -292,7 +295,7 @@ export function AiStyleDesktopLayout(props: AiStyleSplitLayoutProps) {
 
             {isGalleryValidating ? (
               <GalleryValidatingHero previewUrl={props.validatingPreview!} />
-            ) : isPhotoPreview || showResults ? (
+            ) : isPhotoPreview || showResults || showSummary ? (
               <div className="relative h-full w-full">
                 <img
                   src={props.photo!}
@@ -301,7 +304,14 @@ export function AiStyleDesktopLayout(props: AiStyleSplitLayoutProps) {
                 />
                 {busy ? <AiStyleScanLine /> : null}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/20" />
-                {busy ? (
+                {showSummary && props.result ? (
+                  <div className="absolute inset-x-0 bottom-0">
+                    <FaceAnalysisSummarySheet
+                      result={props.result}
+                      onStartGenerate={() => props.onAcceptSummary?.()}
+                    />
+                  </div>
+                ) : busy ? (
                   <div className="absolute inset-x-8 bottom-8">
                     <div className="flex items-center justify-center gap-2 rounded-2xl border border-white/20 bg-black/45 px-5 py-4 text-sm font-bold text-white backdrop-blur-md">
                       <Loader2 className="h-4 w-4 animate-spin" />
@@ -331,14 +341,18 @@ export function AiStyleDesktopLayout(props: AiStyleSplitLayoutProps) {
                 <h1 className="mt-1.5 text-xl font-semibold tracking-tight text-foreground xl:text-[1.65rem]">
                   {showResults
                     ? t("aiStylePage.resultsTitle")
-                    : isPhotoPreview
+                    : showSummary
+                      ? t("aiStylePage.analysisTitle")
+                      : isPhotoPreview
                       ? t("aiStylePage.photoReadyTitle")
                       : t("aiStylePage.uploadTitle")}
                 </h1>
                 <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
                   {showResults
                     ? t("aiStylePage.resultsHint")
-                    : isPhotoPreview
+                    : showSummary
+                      ? t("aiStylePage.resultDesc")
+                      : isPhotoPreview
                       ? t("aiStylePage.photoReadyDesc")
                       : t("aiStylePage.uploadHint")}
                 </p>
@@ -440,24 +454,29 @@ export function AiStyleDesktopLayout(props: AiStyleSplitLayoutProps) {
               </div>
             ) : null}
 
+            {showSummary && props.result ? (
+              <div className="space-y-4">
+                <FaceAnalysisRings result={props.result} />
+                <button
+                  type="button"
+                  onClick={() => props.onAcceptSummary?.()}
+                  className="w-full rounded-[1.25rem] bg-foreground py-4 text-sm font-bold text-background"
+                >
+                  Generate
+                </button>
+              </div>
+            ) : null}
+
             {showResults && props.result ? (
-              <AiStyleResultsBlock
+              <AiStyleResultsPage
                 result={props.result}
-                saved={props.saved}
-                onToggleSave={props.onToggleSave}
-                onReset={props.onReset}
-                layout="stack"
-                variant="default"
-                hideSectionTitle
-                hideResetButton
-                audience={props.audience}
-                focusStyleId={props.focusStyleId}
-                menPersonaId={props.menPersonaId}
+                photo={props.photo}
                 tryOnByStyle={props.tryOnByStyle}
                 tryOnLoadingId={props.tryOnLoadingId}
+                menPersonaId={props.menPersonaId}
+                audience={props.audience}
+                onBack={props.onGoHome ?? props.onReset}
                 onGenerateTryOn={props.onGenerateTryOn}
-                onUpdateTryOnPreview={props.onUpdateTryOnPreview}
-                selfiePhoto={props.photo}
               />
             ) : null}
           </div>

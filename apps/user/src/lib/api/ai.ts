@@ -29,6 +29,12 @@ export type AiStyleSuggestionApi = {
 export type AiStyleAnalyzeResponse = {
   face_shape: "oval" | "round" | "square";
   hair_type: "short" | "medium" | "long";
+  hair_color?: string;
+  hair_texture?: string;
+  beard?: string;
+  face_confidence?: number;
+  hair_type_confidence?: number;
+  hair_color_confidence?: number;
   summary_uz: string;
   detected_gender?: "male" | "female" | "unclear";
   suggestions: AiStyleSuggestionApi[];
@@ -126,12 +132,24 @@ function presentTryOnResult<T extends { preview_image: string; views?: Partial<R
   };
 }
 
-const TRYON_POLL_MS = 2000;
+const TRYON_POLL_MS = 350;
 const TRYON_POLL_TIMEOUT_MS = 1_800_000;
 const MULTIVIEW_POLL_TIMEOUT_MS = 720_000;
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function decodeTryOnImage(url: string): Promise<string> {
+  if (typeof window === "undefined" || !url) return url;
+  await new Promise<void>((resolve) => {
+    const img = new window.Image();
+    img.decoding = "async";
+    img.onload = () => resolve();
+    img.onerror = () => resolve();
+    img.src = url;
+  });
+  return url;
 }
 
 async function pollAiStyleTryOnJob(
@@ -140,20 +158,24 @@ async function pollAiStyleTryOnJob(
 ): Promise<AiStyleTryOnResponse> {
   const timeoutMs = options?.timeoutMs ?? TRYON_POLL_TIMEOUT_MS;
   const deadline = Date.now() + timeoutMs;
+  let delay = 0;
   while (Date.now() < deadline) {
-    await sleep(TRYON_POLL_MS);
+    if (delay > 0) await sleep(delay);
     const job = await apiJson<AiStyleTryOnJobResponse>(`/api/v1/ai/style-tryon/${jobId}/`);
     if (job.status === "completed" && job.preview_image) {
-      return presentTryOnResult({
+      const result = presentTryOnResult({
         preview_image: job.preview_image,
         style_id: job.style_id,
         style_title: job.style_title,
         views: job.views,
       });
+      result.preview_image = await decodeTryOnImage(result.preview_image);
+      return result;
     }
     if (job.status === "failed" || job.status === "cancelled") {
       throw new Error(job.detail ?? job.message ?? "Rasm yaratishda xatolik");
     }
+    delay = delay === 0 ? TRYON_POLL_MS : Math.min(1200, Math.round(delay * 1.35));
   }
   throw new Error("Rasm yaratish juda uzoq davom etdi. Qayta urinib ko'ring.");
 }
@@ -190,7 +212,9 @@ export async function generateAiStyleTryOn(
     "preview_image" in body &&
     typeof body.preview_image === "string"
   ) {
-    return presentTryOnResult(body as AiStyleTryOnResponse);
+    const result = presentTryOnResult(body as AiStyleTryOnResponse);
+    result.preview_image = await decodeTryOnImage(result.preview_image);
+    return result;
   }
 
   throw new Error("Rasm yaratishda xatolik");

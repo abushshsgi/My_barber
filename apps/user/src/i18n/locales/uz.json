@@ -1832,6 +1832,23 @@
       "medium": "O'rtacha soch",
       "long": "Uzun soch"
     },
+    "hairColors": {
+      "black": "Qora",
+      "dark_brown": "To'q jigarrang",
+      "brown": "Jigarrang",
+      "light_brown": "Och jigarrang",
+      "blonde": "Sariq",
+      "red": "Qizg'ish",
+      "gray": "Oq/kulrang",
+      "other": "Boshqa"
+    },
+    "generateCta": "Generatsiya qilish",
+    "recsCount": "{{count}} ta tavsiya",
+    "copyLink": "Nusxa",
+    "shareFriendsTitle": "Do‘stlarga ulashish",
+    "shareFriendsHint": "Ushbu lookni ulashing",
+    "aiChatAdvice": "AI chat — maslahat olish",
+    "moreStylesNextHint": "Yuzingizga keyingi mos keladigan uslublar",
     "reasons": {
       "default": "Yuz shaklingiz va soch turiga mos keladi",
       "t1": "Yuz konturini yumshatadi, zamonaviy fade balans",

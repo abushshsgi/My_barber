@@ -23,6 +23,12 @@ export interface AiSuggestion {
 export interface AiAnalysisResult {
   faceShapeKey: FaceShapeKey;
   hairTypeKey: HairTypeKey;
+  hairColorKey?: string;
+  hairTextureKey?: string;
+  beardKey?: string;
+  faceConfidence?: number;
+  hairTypeConfidence?: number;
+  hairColorConfidence?: number;
   summaryUz?: string;
   suggestions: AiSuggestion[];
 }
@@ -69,6 +75,12 @@ export function mapAiStyleResponse(data: AiStyleAnalyzeResponse): AiAnalysisResu
   return {
     faceShapeKey: data.face_shape,
     hairTypeKey: data.hair_type,
+    hairColorKey: data.hair_color || "other",
+    hairTextureKey: data.hair_texture,
+    beardKey: data.beard,
+    faceConfidence: data.face_confidence,
+    hairTypeConfidence: data.hair_type_confidence,
+    hairColorConfidence: data.hair_color_confidence,
     summaryUz: data.summary_uz,
     suggestions: data.suggestions.map((s) => ({
       id: s.id,

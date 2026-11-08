@@ -65,6 +65,7 @@ export function useAiStyleFlow(options: UseAiStyleFlowOptions = {}) {
   const [preparingPhoto, setPreparingPhoto] = useState(false);
   const [preparingPreview, setPreparingPreview] = useState<string | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
+  const [summaryReady, setSummaryReady] = useState(false);
   const [done, setDone] = useState(false);
   const [result, setResult] = useState<AiAnalysisResult | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -93,6 +94,7 @@ export function useAiStyleFlow(options: UseAiStyleFlowOptions = {}) {
       const prepared = await prepareSelfieDataUrl(dataUrl);
       setPhoto(prepared);
       setDone(false);
+      setSummaryReady(false);
       setResult(null);
       setTryOnByStyle({});
       setTryOnLoadingId(null);
@@ -123,14 +125,10 @@ export function useAiStyleFlow(options: UseAiStyleFlowOptions = {}) {
     setError(null);
     try {
       const prepared = await prepareSelfieDataUrl(dataUrl);
-      // Galereya selfiesida ham MediaPipe — face_hint Gemini analyze ga ketadi.
-      let metricsFace: Awaited<ReturnType<typeof detectFaceMetricsFromDataUrl>> = null;
-      try {
-        metricsFace = await detectFaceMetricsFromDataUrl(prepared);
-      } catch {
-        metricsFace = null;
-      }
-
+      const metricsFace = await Promise.race([
+        detectFaceMetricsFromDataUrl(prepared).catch(() => null),
+        new Promise<null>((resolve) => window.setTimeout(() => resolve(null), 280)),
+      ]);
       if (metricsFace) {
         const scannedAt = new Date().toISOString();
         setFaceHint({
@@ -161,6 +159,7 @@ export function useAiStyleFlow(options: UseAiStyleFlowOptions = {}) {
       setError(message);
       setPhoto(null);
       setDone(false);
+      setSummaryReady(false);
       setResult(null);
     } finally {
       setPreparingPhoto(false);
@@ -222,6 +221,7 @@ export function useAiStyleFlow(options: UseAiStyleFlowOptions = {}) {
       if (!photo) return;
       setAnalyzing(true);
       setDone(false);
+      setSummaryReady(false);
       setError(null);
       try {
         const data = await analyzeAiStyle(
@@ -267,11 +267,12 @@ export function useAiStyleFlow(options: UseAiStyleFlowOptions = {}) {
             warmer.src = suggestion.imageUrl;
           }
         }
-        setDone(true);
+        setSummaryReady(true);
         markMorphAiOnboarded();
       } catch (e) {
         setError(formatAiRequestError(e, "AI tahlil xatosi"));
         setDone(false);
+        setSummaryReady(false);
         setResult(null);
       } finally {
         setAnalyzing(false);
@@ -318,6 +319,7 @@ export function useAiStyleFlow(options: UseAiStyleFlowOptions = {}) {
       try {
         const previewImage = await run;
         setTryOnByStyle((prev) => ({ ...prev, [cacheKey]: previewImage }));
+        setTryOnLoadingId(null);
         if (!joinedExisting) {
           const resolvedTitle =
             title ?? result?.suggestions.find((s) => s.id === styleId)?.title ?? styleId;
@@ -376,11 +378,17 @@ export function useAiStyleFlow(options: UseAiStyleFlowOptions = {}) {
     [photo, result, menPersonaId],
   );
 
+  const acceptSummary = useCallback(() => {
+    if (!result) return;
+    setDone(true);
+    setSummaryReady(false);
+  }, [result]);
+
   useEffect(() => {
-    if (!photo || !audience || analyzing || done || analyzeTriggeredRef.current) return;
+    if (!photo || !audience || analyzing || done || summaryReady || analyzeTriggeredRef.current) return;
     analyzeTriggeredRef.current = true;
     void analyze(audience);
-  }, [photo, audience, analyzing, done, analyze]);
+  }, [photo, audience, analyzing, done, summaryReady, analyze]);
 
   const reset = () => {
     analyzeTriggeredRef.current = false;
@@ -388,6 +396,7 @@ export function useAiStyleFlow(options: UseAiStyleFlowOptions = {}) {
     tryOnFailedRef.current.clear();
     setPhoto(null);
     setDone(false);
+    setSummaryReady(false);
     setResult(null);
     setError(null);
     setAnalyzing(false);
@@ -405,6 +414,7 @@ export function useAiStyleFlow(options: UseAiStyleFlowOptions = {}) {
     validatingPreview: preparingPreview,
     validating: preparingPhoto,
     analyzing,
+    summaryReady,
     done,
     result,
     error,
@@ -419,6 +429,7 @@ export function useAiStyleFlow(options: UseAiStyleFlowOptions = {}) {
     openCamera,
     closeCamera,
     analyze,
+    acceptSummary,
     generateTryOn,
     updateTryOnPreview,
     reset,
