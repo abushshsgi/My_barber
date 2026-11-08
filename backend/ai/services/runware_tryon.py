@@ -142,6 +142,57 @@ def resolved_tryon_size(model: str | None = None) -> tuple[int, int]:
     return width, height
 
 
+def _output_size_for_bytes(raw: bytes, model: str) -> tuple[int, int]:
+    """Keep the selfie aspect ratio so the model edits in place instead of inventing a new face."""
+    fallback = resolved_tryon_size(model)
+    spec = _model_spec(model)
+    try:
+        image = Image.open(BytesIO(raw))
+        image = ImageOps.exif_transpose(image)
+        src_w, src_h = image.size
+    except Exception:
+        return fallback
+    if src_w < 1 or src_h < 1:
+        return fallback
+    max_w, max_h = fallback
+    if src_w >= src_h:
+        width = snap_dimension(max_w, step=spec["step"], lo=spec["min_edge"], hi=spec["max_edge"])
+        height = snap_dimension(
+            int(width * src_h / src_w),
+            step=spec["step"],
+            lo=spec["min_edge"],
+            hi=spec["max_edge"],
+        )
+    else:
+        height = snap_dimension(max_h, step=spec["step"], lo=spec["min_edge"], hi=spec["max_edge"])
+        width = snap_dimension(
+            int(height * src_w / src_h),
+            step=spec["step"],
+            lo=spec["min_edge"],
+            hi=spec["max_edge"],
+        )
+    return width, height
+
+
+_RECOLOR_MARKERS = (
+    "balayage",
+    "highlight",
+    "blonde",
+    "platinum",
+    "bleach",
+    "dye",
+    "color",
+    "rang",
+    "sariq",
+    "qora soch",
+)
+
+
+def _style_requests_recolor(title: str, style_detail: str) -> bool:
+    blob = f"{title} {style_detail}".lower()
+    return any(marker in blob for marker in _RECOLOR_MARKERS)
+
+
 def load_public_image(relative_url: str) -> tuple[str, bytes] | None:
     rel = (relative_url or "").lstrip("/")
     if not rel or ".." in rel.split("/"):
@@ -236,24 +287,26 @@ def _publish(jpeg: bytes) -> str:
         return to_data_url("image/jpeg", jpeg)
 
 
-def _build_tryon_prompt(*, title: str, style_detail: str, has_reference: bool) -> str:
-    if has_reference:
-        reference = (
-            "Reference image 1 is the client portrait and the only identity to keep. "
-            "Reference image 2 is a hairstyle sample: copy only its haircut shape, length, "
-            "texture, and color. Do not copy the sample person's face, skin, body, clothes, or background."
+def _build_tryon_prompt(*, title: str, style_detail: str) -> str:
+    color_lock = (
+        ""
+        if _style_requests_recolor(title, style_detail)
+        else (
+            "Keep this person's original hair color, undertone, and natural variation. "
+            "Do not dye, bleach, or add highlights. "
         )
-    else:
-        reference = (
-            "Reference image 1 is the client portrait. Change only the hair."
-        )
+    )
     return (
-        "Edit the client photo for a photorealistic salon hairstyle try-on. "
-        f'{reference} Target hairstyle: "{title}" — {style_detail}. '
-        "Keep the exact face, identity, face shape, skin tone, age, expression, pose, "
-        "camera angle, clothing, and background from reference image 1. "
-        "Change the hair only, with natural texture and realistic lighting. "
-        "No text, watermark, logo, or extra people."
+        "In-place photorealistic edit of reference image 1. "
+        "Reference image 1 is the original photograph of the real client. "
+        "Keep the identical person: the same face, face shape, bone structure, eyes, "
+        "eyebrows, nose, mouth, ears, skin texture, skin tone, age, expression, pose, "
+        "head position, camera angle, framing, clothing, and background. "
+        "Do not replace, beautify, reshape, or regenerate the face. "
+        f'Change only the haircut on this same head to "{title}" — {style_detail}. '
+        f"{color_lock}"
+        "The new hair must follow this person's real hairline and scalp. "
+        "No different person, no sample-model face, no text, watermark, or extra people."
     )
 
 
@@ -306,12 +359,15 @@ def _infer_edit(
             "model": model,
             "positivePrompt": prompt[:10000],
             "negativePrompt": (
-                "different person, changed face, changed face shape, changed skin tone, "
+                "different person, identity change, new face, swapped face, sample model face, "
+                "changed face shape, beautified face, regenerated face, changed skin tone, "
                 "changed expression, changed clothes, changed background, extra people, "
                 "text, watermark, logo, cartoon, plastic skin, blurry"
             ),
             "width": width,
             "height": height,
+            "steps": 4,
+            "CFGScale": 3.5,
             "inputs": {"referenceImages": references},
         }
     )
@@ -351,8 +407,9 @@ def _infer_with_fallback(
 ) -> tuple[bytes, Decimal, bool, int, str]:
     chain = tryon_model_chain()
     last: AiStyleError | None = None
+    source = images[0] if images else b""
     for index, model in enumerate(chain):
-        width, height = resolved_tryon_size(model)
+        width, height = _output_size_for_bytes(source, model)
         try:
             jpeg, cost, estimated, latency_ms = _infer_edit(
                 prompt=prompt,
@@ -430,14 +487,9 @@ def generate_tryon_preview(
     _mime, selfie = load_image_bytes(selfie_data_url)
     style_detail = style_detail_for(audience, slug)
     images = [selfie]
-    reference = load_public_image(reference_image_url or "") if reference_image_url else None
-    if reference:
-        images.append(reference[1])
-    prompt = _build_tryon_prompt(
-        title=title,
-        style_detail=style_detail,
-        has_reference=reference is not None,
-    )
+    # Catalog hairstyle photos are other people. FLUX.2 treats extra references as
+    # identity sources, so a second face leaks into the result. Hair is text-only.
+    prompt = _build_tryon_prompt(title=title, style_detail=style_detail)
     jpeg, cost, estimated, latency_ms, model = _infer_with_fallback(prompt=prompt, images=images)
     return _result(
         preview=_publish(jpeg),

@@ -56,6 +56,13 @@ class RunwareTryOnTests(SimpleTestCase):
         self.assertEqual(snap_dimension(1000), 992)
         self.assertEqual(snap_dimension(1024), 1024)
 
+    def test_output_size_follows_selfie_aspect(self):
+        from ai.services.runware_tryon import _output_size_for_bytes
+
+        buffer = BytesIO()
+        Image.new("RGB", (768, 1024), (90, 70, 60)).save(buffer, format="JPEG", quality=80)
+        self.assertEqual(_output_size_for_bytes(buffer.getvalue(), "runware:400@2"), (768, 1024))
+
     def test_unverified_model_is_rejected_before_http(self):
         from ai.services.runware_tryon import generate_tryon_preview
 
@@ -121,12 +128,14 @@ class RunwareTryOnTests(SimpleTestCase):
         task = infer.call_args.args[0]
         refs = task["inputs"]["referenceImages"]
         self.assertEqual(task["model"], "runware:400@2")
-        self.assertEqual((task["width"], task["height"]), (1024, 1024))
-        self.assertEqual(len(refs), 2)
+        self.assertEqual(len(refs), 1)
         self.assertTrue(all(item.startswith("data:image/jpeg;base64,") for item in refs))
         self.assertNotIn("seedImage", task)
-        self.assertIn("reference image 1", task["positivePrompt"].lower())
-        self.assertIn("reference image 2", task["positivePrompt"].lower())
+        prompt = task["positivePrompt"].lower()
+        self.assertIn("reference image 1", prompt)
+        self.assertNotIn("reference image 2", prompt)
+        self.assertIn("identical person", prompt)
+        self.assertIn("change only the haircut", prompt)
         self.assertTrue(result.preview_image.startswith("/media/ai-style/tryon-results/"))
         self.assertNotIn("runware.ai", result.preview_image)
         self.assertNotIn("super-secret-key", result.preview_image)
